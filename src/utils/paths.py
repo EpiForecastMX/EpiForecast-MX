@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Optional
 
 
-def ensure_path(path_str: str | Path) -> Path:
+def asegurar_ruta(path_str: str | Path) -> Path:
     """
     Convierte un string o Path en objeto Path y crea los directorios necesarios.
 

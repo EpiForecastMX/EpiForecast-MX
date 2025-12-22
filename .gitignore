@@ -4,6 +4,9 @@
 # Log File
 /logs
 
+# imagenes
+/reports
+
 # Mac OS-specific storage files
 .DS_Store
 

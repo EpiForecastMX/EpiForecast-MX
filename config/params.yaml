@@ -9,6 +9,7 @@ paths:
   models: "./models"
   reports: "./reports"
   figures: "${paths.reports}/figures"
+  docs: "${paths.reports}/docs"
 
 download:
   dataset_id: "1YYV3qvaKk0f6MbyVjVwQnhsQqPSWBIA8"
@@ -27,3 +28,15 @@ metadata:
 
 cleaning:
   skew_threshold: 0.5
+
+limpieza_dataset:
+  cols_to_drop:
+    - "Pag."
+    - "Cuadro "
+    - "No_01"
+    - "No_02"
+    - "No_03"
+    - "No_04"
+    - "Ax_002"
+    - "Padecimiento"
+

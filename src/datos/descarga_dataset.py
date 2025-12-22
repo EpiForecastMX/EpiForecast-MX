@@ -14,7 +14,7 @@ class DatasetDownloader:
     # Preparación del directorio de salida
     def prepare_directory(self):
         logger.debug(f"Creando directorio: {self.output_path}") # Log de creación de carpeta
-        paths.ensure_path(self.output_path)                     # Asegura que la carpeta exista
+        paths.asegurar_ruta(self.output_path)                     # Asegura que la carpeta exista
 
     # Descarga del dataset desde Google Drive
     def download(self):
