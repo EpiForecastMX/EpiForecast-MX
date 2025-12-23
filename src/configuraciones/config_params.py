@@ -1,8 +1,13 @@
+# src/configuraciones/config_params.py
+from __future__ import annotations
+
 from omegaconf import OmegaConf
 from loguru import logger
-import sys
+from pathlib import Path
+from datetime import datetime
 
-# Carga de Configuración
+import os, sys, platform
+
 try:
     conf_params = OmegaConf.load("config/params.yaml")
     conf_logging = OmegaConf.load("config/logging.yaml")
@@ -10,16 +15,14 @@ except FileNotFoundError as e:
     logger.error(f"Archivo de configuración no encontrado: {e}")
     sys.exit(1)
 
-# Fusionar configuraciones en un solo objeto
-conf = OmegaConf.merge(conf_params, conf_logging)
 
-# Resolver interpolaciones (ej. ${var})
+conf = OmegaConf.merge(conf_params, conf_logging)
 conf = OmegaConf.to_container(conf, resolve=True)
 
 # Configurar logger según YAML
 if "logging" in conf:
     sinks = conf["logging"].get("sinks", [])
-    logger.remove()  # elimina configuración por defecto
+    logger.remove() 
 
     for sink in sinks:
         if sink["type"] == "stderr":
@@ -46,9 +49,22 @@ if "logging" in conf:
                 diagnose=sink.get("diagnose", False),
             )
 
-    logger.info("Logger inicializado con configuración desde logging.yaml")
 
-# Ejemplo de uso: accede a claves que sí existen
-#logger.debug(f"Ruta de datos RAW: {conf['paths']['raw']}")
-#logger.debug(f"Dataset ID: {conf['download']['dataset_id']}")
-#logger.debug(f"Autor: {conf['metadata']['author']}")
+    yaml_path = Path("config/logging.yaml").resolve()
+    env = os.getenv("APP_ENV", "local")
+    cwd = Path.cwd()
+    pyv = platform.python_version()
+    pid = os.getpid()
+
+    sinks_conf = conf.get("logging", {}).get("sinks", [])
+    sinks_count = len(sinks_conf)
+    sinks_types = ",".join(sorted({s.get("type", "stderr") for s in sinks_conf})) or "stderr"
+
+    logger.info(
+    f"Logging inicializado | status=ok | env={env} | cwd={cwd} | python={pyv} | timestamp={datetime.now():%Y-%m-%d %H:%M:%S}"
+    )
+
+    logger.debug(
+    f"Logging inicializado | status=ok | env={env} | config={yaml_path} | sinks={sinks_count} ({sinks_types}) | "
+    f"cwd={cwd} | pid={pid} | python={pyv} | timestamp={datetime.now():%Y-%m-%d %H:%M:%S}"
+    )

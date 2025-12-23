@@ -27,3 +27,15 @@ def asegurar_ruta(path_str: str | Path) -> Path:
         path.mkdir(parents=True, exist_ok=True)
 
     return path
+
+
+
+def existe_archivo(path_str: str | Path) -> bool:
+    """
+    Verifica si un archivo existe en el sistema de archivos.
+
+    :param path_str: Ruta del archivo como str o Path.
+    :return: True si el archivo existe, False en caso contrario.
+    """
+    path = Path(path_str)  # Convertimos a Path para manejar ambos tipos
+    return path.is_file()  # is_file() asegura que sea un archivo, no un directorio
