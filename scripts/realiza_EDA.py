@@ -22,9 +22,8 @@ def main():
     # Ejecutar EDA
     eda_builder = EDAReportBuilder(
         df=df,
-        titulo="Análisis Exploratorio de Datos – Ventas",
-        subtitulo="Demostración de separación EDA + PDF",
-        periodo=("2025-01-01", "2025-04-30"),
+        titulo="Análisis Exploratorio de Datos",
+        subtitulo="Subtitulo del reporte EDA",
         fuente_datos=raw_file,
         carpeta_salida="output",
         max_cols_numericas=6,

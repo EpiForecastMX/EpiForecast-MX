@@ -8,18 +8,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from datetime import datetime
+from loguru import logger
 
-# ----- Objeto de transferencia de datos para el reporte -----
+from src.configuraciones.config_params import conf
+
+# ----- Objeto de datos para el reporte -----
 
 @dataclass
 class ReportData:
     titulo: str
     subtitulo: Optional[str]
-    periodo: Optional[Tuple[str, str]]  # (inicio, fin) como texto
     fuente_datos: Optional[str]
 
     # Resumen general
-    resumen_general: Dict[str, str]     # e.g. {'Filas': '1000', 'Columnas': '18', ...}
+    resumen_general: Dict[str, str]
 
     # Estadísticas y tablas
     estadisticas_numericas: Optional[pd.DataFrame]  # describe() o similar
@@ -41,15 +43,12 @@ class EDAReportBuilder:
     - Estadísticas descriptivas numéricas
     - Tablas de top categorías por columnas categóricas
     - Figuras (histogramas, correlación, series temporales si aplica)
-
-    Guarda las figuras en `carpeta_salida/figuras` y retorna un ReportData.
     """
     def __init__(
         self,
         df: pd.DataFrame,
         titulo: str = "Análisis Exploratorio de Datos",
         subtitulo: Optional[str] = None,
-        periodo: Optional[Tuple[str, str]] = None,
         fuente_datos: Optional[str] = None,
         carpeta_salida: str = "output",
         max_cols_numericas: int = 8,
@@ -59,10 +58,10 @@ class EDAReportBuilder:
         self.df = df.copy()
         self.titulo = titulo
         self.subtitulo = subtitulo
-        self.periodo = periodo
         self.fuente_datos = fuente_datos
 
         self.carpeta_salida = carpeta_salida
+    #*******cambiar la carpet de figuras por la de reports/figures**********#
         self.carpeta_figuras = os.path.join(carpeta_salida, "figuras")
         os.makedirs(self.carpeta_figuras, exist_ok=True)
 
@@ -79,6 +78,7 @@ class EDAReportBuilder:
         tipos = self.df.dtypes.astype(str)
         nulos = self.df.isna().sum()
         resumen = {
+            "Fuente": self.fuente_datos,
             "Filas": f"{len(self.df):,}",
             "Columnas": f"{self.df.shape[1]:,}",
             "Porcentaje de nulos": f"{(self.df.isna().mean().mean() * 100):.2f}%",
@@ -88,7 +88,8 @@ class EDAReportBuilder:
         tipos_contados = tipos.value_counts()
         tipos_texto = ", ".join([f"{t}: {c}" for t, c in tipos_contados.items()])
         resumen["Tipos de datos"] = tipos_texto
-        # Columnas con más nulos (top 5)
+
+#*************** crear una tabla para las columnas con nulos ***********************#
         top_nulos = nulos.sort_values(ascending=False).head(5)
         resumen["Top columnas con nulos"] = "; ".join([f"{col} ({val})" for col, val in top_nulos.items()])
         return resumen
@@ -186,22 +187,28 @@ class EDAReportBuilder:
         plt.close()
         return ruta
 
+    def _filtrar_padecimiento(self, padecimiento: str) -> None:
+        """
+        Filtra el DataFrame para incluir solo filas con el padecimiento especificado.
+        """
+        #logger.info(f"Filtrando datos para el padecimiento: {padecimiento}")
+        if 'Padecimiento' in self.df.columns:
+
+            filtrado = self.df[self.df['Padecimiento'].astype(str).str.contains(padecimiento, case=False, na=False)].copy()
+            self.df = filtrado
+        
+        
+
+
+
     def run(self) -> ReportData:
         """
         Ejecuta el EDA completo y retorna el ReportData a consumir por el generador de PDF.
         """
-        # Si hay columnas que parecen fechas en texto, intentar convertirlas
-        for col in self.df.columns:
-            if self.df[col].dtype == 'object':
-                # Intento ligero de parseo (opcional)
-                try:
-                    parsed = pd.to_datetime(self.df[col], errors='raise', infer_datetime_format=True)
-                    # Si parsea con éxito y tiene suficiente tasa de fechas válidas, conservar
-                    if parsed.notna().mean() > 0.8:
-                        self.df[col] = parsed
-                except Exception:
-                    pass
 
+        padecimiento = conf["reporte_EDA"]["filtro_padecimiento"]
+
+        self._filtrar_padecimiento(padecimiento)
         resumen = self._resumen_general()
         est_num = self._estadisticas_numericas()
         tablas_cat = self._tablas_categoricas()
@@ -209,6 +216,7 @@ class EDAReportBuilder:
         figuras = []
         figuras += self._plot_histogramas()
         corr_path = self._plot_correlacion()
+
         if corr_path:
             figuras.append(corr_path)
         serie_path = self._plot_serie_temporal()
@@ -218,7 +226,6 @@ class EDAReportBuilder:
         return ReportData(
             titulo=self.titulo,
             subtitulo=self.subtitulo,
-            periodo=self.periodo,
             fuente_datos=self.fuente_datos,
             resumen_general=resumen,
             estadisticas_numericas=est_num,

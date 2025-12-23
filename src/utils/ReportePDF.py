@@ -17,10 +17,7 @@ from src.datos.EDA import ReportData
 
 
 def _tabla_desde_dataframe(df) -> Table:
-    """
-    Convierte un DataFrame en una tabla platypus de reportlab.
-    Limita tamaño si es necesario.
-    """
+
     data = [ [str(c) for c in ["columna"] + df.columns.tolist()] ]  # Encabezado con 'columna'
     for idx, row in df.iterrows():
         data.append([str(idx)] + [str(v) for v in row.tolist()])
@@ -142,9 +139,6 @@ class PDFReportGenerator:
         story.append(Paragraph(self.datos.titulo, self.styles['Titulo']))
         if self.datos.subtitulo:
             story.append(Paragraph(self.datos.subtitulo, self.styles['Subtitulo']))
-        if self.datos.periodo:
-            pini, pfin = self.datos.periodo
-            story.append(Paragraph(f"Periodo: {pini} a {pfin}", self.styles['NormalJust']))
         if self.datos.fuente_datos:
             story.append(Paragraph(f"Fuente: {self.datos.fuente_datos}", self.styles['NormalJust']))
         story.append(Spacer(1, 12))
