@@ -59,3 +59,31 @@ Proyecto para predecir casos de Alzheimer en México mediante modelos de aprendi
 
 --------
 
+
+## 💼 Clonar repositorio
+```bash
+git clone https://github.com/Jarcos-nual/Alzheimer.git
+cd Alzheimer/
+```
+
+--------
+
+## 📦 Instalar paqueterías
+```bash
+pip install -r requirements.txt --quiet
+```
+--------
+
+## 📚 Makefile
+
+--------
+
+Descargar Dataset:
+```bash
+make data
+```
+
+Generar Análisis Exploratorio de Datos
+```bash
+make eda
+```
