@@ -72,11 +72,21 @@ def cabecera_pie(canv: canvas.Canvas, doc: SimpleDocTemplate):
     """Encabezado y pie de página comunes."""
     width, height = A4
     canv.saveState()
+    
+    # Margen
+    margen = 0.5 * cm 
+
+    canv.setStrokeColor(colors.HexColor("#A3BFD9"))
+    canv.setLineWidth(1)
+    canv.rect(margen, margen, width - 2*margen, height - 2*margen)
+    
+
     # Encabezado
     canv.setFont("Helvetica", 9)
     canv.setFillColor(colors.grey)
     canv.drawString(2 * cm, height - 1 * cm, "Reporte EDA")
     # Pie con página
+
     canv.setFillColor(colors.black)
     page_num = canv.getPageNumber()
     canv.drawRightString(width - 2 * cm, 1 * cm, f"Página {page_num}")
