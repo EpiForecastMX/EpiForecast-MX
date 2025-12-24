@@ -25,12 +25,6 @@ metadata:
   license_name: "MIT License"
   license_url: "https://opensource.org/licenses/MIT"
 
-reporte_EDA:
-  filtro_padecimiento: "Alzheimer"
-  nombre_reporte: "EDA_${reporte_EDA.filtro_padecimiento}"
-  formato: "PDF"
-  incluir_graficos: true
-
 cleaning:
   skew_threshold: 0.5
 

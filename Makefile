@@ -66,6 +66,11 @@ data:
 	$(PYTHON_INTERPRETER) -m scripts.get_dataset
 
 
+.PHONY: eda
+eda:
+	$(PYTHON_INTERPRETER) -m scripts.realiza_EDA
+
+
 #################################################################################
 # Self Documenting Commands                                                     #
 #################################################################################

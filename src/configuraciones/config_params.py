@@ -11,12 +11,13 @@ import os, sys, platform
 try:
     conf_params = OmegaConf.load("config/params.yaml")
     conf_logging = OmegaConf.load("config/logging.yaml")
+    conf_reportes = OmegaConf.load("config/reportes.yaml")
 except FileNotFoundError as e:
     logger.error(f"Archivo de configuración no encontrado: {e}")
     sys.exit(1)
 
 
-conf = OmegaConf.merge(conf_params, conf_logging)
+conf = OmegaConf.merge(conf_params, conf_logging, conf_reportes)
 conf = OmegaConf.to_container(conf, resolve=True)
 
 # Configurar logger según YAML

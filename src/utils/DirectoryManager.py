@@ -1,7 +1,7 @@
 import os
 
 from pathlib import Path
-from typing import Optional
+from loguru import logger
 
 
 def asegurar_ruta(path_str: str | Path) -> Path:
@@ -21,9 +21,10 @@ def asegurar_ruta(path_str: str | Path) -> Path:
 
     # Si es archivo, crear carpeta contenedora
     if path.suffix:
+        logger.info(f"Creando carpeta contenedora para archivo: {path}")
         path.parent.mkdir(parents=True, exist_ok=True)
     else:
-        # Si es directorio, crear directamente
+        logger.info(f"Creando carpeta: {path}")
         path.mkdir(parents=True, exist_ok=True)
 
     return path

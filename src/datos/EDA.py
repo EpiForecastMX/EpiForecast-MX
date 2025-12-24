@@ -1,235 +1,252 @@
-
-# eda/eda.py
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
 import os
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 from datetime import datetime
 from loguru import logger
 
 from src.configuraciones.config_params import conf
+from src.utils import DirectoryManager
+from scipy.stats import gaussian_kde
+import numpy as np
 
-# ----- Objeto de datos para el reporte -----
 
 @dataclass
 class ReportData:
     titulo: str
     subtitulo: Optional[str]
     fuente_datos: Optional[str]
-
-    # Resumen general
     resumen_general: Dict[str, str]
+    resumen_datos: Optional[pd.DataFrame]
+    resumen_datos_nulos: Optional[pd.DataFrame]
 
-    # Estadísticas y tablas
-    estadisticas_numericas: Optional[pd.DataFrame]  # describe() o similar
-    tablas_categoricas: Dict[str, pd.DataFrame]     # top-K por columna categórica
+    estadisticas_numericas: Optional[pd.DataFrame]
+    estadisticas_categoricas: Optional[pd.DataFrame]
 
-    # Paths de figuras generadas por el EDA
+    tablas_categoricas: Dict[str, pd.DataFrame]     
     figuras: List[str] = field(default_factory=list)
-
-    # Notas u observaciones
     notas: Optional[str] = None
 
 
-# ----- Constructor del reporte desde un DataFrame -----
-
 class EDAReportBuilder:
-    """
-    Construye los insumos de un reporte a partir de un DataFrame:
-    - Resumen general (filas, columnas, tipos, nulos)
-    - Estadísticas descriptivas numéricas
-    - Tablas de top categorías por columnas categóricas
-    - Figuras (histogramas, correlación, series temporales si aplica)
-    """
-    def __init__(
-        self,
-        df: pd.DataFrame,
-        titulo: str = "Análisis Exploratorio de Datos",
-        subtitulo: Optional[str] = None,
-        fuente_datos: Optional[str] = None,
-        carpeta_salida: str = "output",
-        max_cols_numericas: int = 8,
-        max_categorias_tabla: int = 10,
-        estilo_fuente_figuras: str = "DejaVu Sans"
-    ):
+    """Genera insumos de un reporte EDA a partir de un DataFrame."""
+
+    def __init__(self, df: pd.DataFrame, titulo: str, subtitulo: str, fuente_datos: str,
+                 max_cols_numericas: int = 8, max_categorias_tabla: int = 10):
         self.df = df.copy()
-        self.titulo = titulo
-        self.subtitulo = subtitulo
-        self.fuente_datos = fuente_datos
+        self.titulo, self.subtitulo, self.fuente_datos = titulo, subtitulo, fuente_datos
+        self.max_cols_numericas, self.max_categorias_tabla = max_cols_numericas, max_categorias_tabla
 
-        self.carpeta_salida = carpeta_salida
-    #*******cambiar la carpet de figuras por la de reports/figures**********#
-        self.carpeta_figuras = os.path.join(carpeta_salida, "figuras")
-        os.makedirs(self.carpeta_figuras, exist_ok=True)
+        self.carpeta_salida = conf["paths"]["figures"]
+        DirectoryManager.asegurar_ruta(self.carpeta_salida)
+        logger.info(f"Las imágenes se guardarán en: {self.carpeta_salida}")
 
-        self.max_cols_numericas = max_cols_numericas
-        self.max_categorias_tabla = max_categorias_tabla
-        self.estilo_fuente_figuras = estilo_fuente_figuras
-
-        # Configurar estilo de matplotlib (acentos, legibilidad)
-        plt.rcParams['font.family'] = self.estilo_fuente_figuras
-        plt.rcParams['axes.titlesize'] = 12
-        plt.rcParams['axes.labelsize'] = 10
+        plt.rcParams.update({
+            'font.family': conf["reporte_EDA"]["estilo_fuente"],
+            'axes.titlesize': 12,
+            'axes.labelsize': 10
+        })
 
     def _resumen_general(self) -> Dict[str, str]:
-        tipos = self.df.dtypes.astype(str)
-        nulos = self.df.isna().sum()
-        resumen = {
+
+        return {
+            "Fecha de EDA": datetime.now().strftime("%Y-%m-%d %H:%M"),
             "Fuente": self.fuente_datos,
             "Filas": f"{len(self.df):,}",
             "Columnas": f"{self.df.shape[1]:,}",
-            "Porcentaje de nulos": f"{(self.df.isna().mean().mean() * 100):.2f}%",
-            "Fecha de EDA": datetime.now().strftime("%Y-%m-%d %H:%M")
+            "Porcentaje de nulos": f"{self.df.isna().mean().mean() * 100:.2f}%",
         }
-        # Un pequeño resumen de tipos
-        tipos_contados = tipos.value_counts()
-        tipos_texto = ", ".join([f"{t}: {c}" for t, c in tipos_contados.items()])
-        resumen["Tipos de datos"] = tipos_texto
+    
+    def _resumen_datos_unicos(self) -> pd.DataFrame:
+        """
+        Genera un resumen con la cantidad de valores únicos por columna.
+        """
+        tipos = self.df.dtypes.astype(str)
+        unicos = self.df.nunique(dropna=True)
 
-#*************** crear una tabla para las columnas con nulos ***********************#
-        top_nulos = nulos.sort_values(ascending=False).head(5)
-        resumen["Top columnas con nulos"] = "; ".join([f"{col} ({val})" for col, val in top_nulos.items()])
-        return resumen
+        df_info = pd.DataFrame({
+            "Tipo de dato": tipos,
+            "Valores únicos": unicos
+        })
+
+        df_info = df_info[df_info["Valores únicos"] > 0]
+
+        return df_info.sort_values(by="Valores únicos", ascending=False)
+
+    
+    def _resumen_datos_nulos(self) -> pd.DataFrame:
+        """
+        Genera un resumen con la cantidad de valores nulos por columna.
+        """
+        tipos = self.df.dtypes.astype(str)
+        nulos = self.df.isna().sum()
+        df_info = pd.DataFrame({
+            "Tipo de dato": tipos,
+            "Nulos": nulos
+        })
+
+        df_info = df_info[df_info["Nulos"] > 0]
+
+        return df_info.sort_values(by="Nulos", ascending=False)
+
 
     def _estadisticas_numericas(self) -> Optional[pd.DataFrame]:
-        num = self.df.select_dtypes(include=['number'])
-        if num.empty:
-            return None
-        # Limitar a max_cols_numericas para hacer el PDF manejable
-        cols = num.columns.tolist()[:self.max_cols_numericas]
-        desc = num[cols].describe().T
-        desc = desc.rename(columns={
+        num = self.df.select_dtypes(include='number')
+        if num.empty: return None
+        desc = num.iloc[:, :self.max_cols_numericas].describe().T.rename(columns={
             "count": "conteo", "mean": "media", "std": "desv_est",
             "min": "mín", "25%": "p25", "50%": "p50", "75%": "p75", "max": "máx"
         })
         return desc.round(3)
+    
+    def _estadisticas_categoricas(self) -> Optional[pd.DataFrame]:
+        """
+        Genera un resumen estadístico para variables categóricas:
+        - Conteo total
+        - Valores únicos
+        - Moda (valor más frecuente)
+        - Frecuencia de la moda
+        - % de la moda sobre el total
+        """
+        cat = self.df.select_dtypes(include=['object', 'category'])
+        if cat.empty:
+            return None
+
+        resumen = []
+        for col in cat.columns:
+            serie = cat[col].dropna()
+            conteo = len(serie)
+            unicos = serie.nunique()
+            moda = serie.mode().iloc[0] if not serie.mode().empty else "N/A"
+            freq_moda = serie.value_counts().iloc[0] if not serie.value_counts().empty else 0
+            porcentaje_moda = (freq_moda / conteo * 100) if conteo > 0 else 0
+
+            resumen.append({
+                "columna": col,
+                "conteo": conteo,
+                "valores_únicos": unicos,
+                "moda": moda,
+                "freq_moda": freq_moda,
+                "%_moda": round(porcentaje_moda, 2)
+            })
+
+        df_resumen = pd.DataFrame(resumen).set_index("columna")
+        return df_resumen
+
+
+
 
     def _tablas_categoricas(self) -> Dict[str, pd.DataFrame]:
         cat = self.df.select_dtypes(include=['object', 'category'])
         tablas = {}
         for col in cat.columns:
-            vc = cat[col].fillna("N/A").value_counts(dropna=False).head(self.max_categorias_tabla)
-            tablas[col] = vc.rename("frecuencia").to_frame()
+            tabla = (
+                cat[col]
+                .fillna("N/A")
+                .value_counts()
+                .head(self.max_categorias_tabla)
+                .to_frame("frecuencia")
+            )
+            tabla.index.name = col 
+            tablas[col] = tabla
         return tablas
 
-    def _plot_histogramas(self) -> List[str]:
-        num = self.df.select_dtypes(include=['number'])
-        rutas = []
-        if num.empty:
-            return rutas
-        cols = num.columns.tolist()[:self.max_cols_numericas]
-        for col in cols:
-            plt.figure(figsize=(6, 4))
-            ax = plt.gca()
-            ax.hist(num[col].dropna(), bins=20, color="#2a9d8f", edgecolor="white")
-            ax.set_title(f"Histograma de {col}")
-            ax.set_xlabel(col)
-            ax.set_ylabel("Frecuencia")
-            ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-            ruta = os.path.join(self.carpeta_figuras, f"hist_{col}.png")
-            plt.tight_layout()
-            plt.savefig(ruta, dpi=140)
-            plt.close()
-            rutas.append(ruta)
-        return rutas
 
-    def _plot_correlacion(self) -> Optional[str]:
-        num = self.df.select_dtypes(include=['number'])
-        if num.shape[1] < 2:
-            return None
-        corr = num.corr(numeric_only=True)
-        plt.figure(figsize=(6, 5))
-        im = plt.imshow(corr, cmap="viridis", aspect="auto")
-        plt.colorbar(im, fraction=0.046, pad=0.04)
-        plt.xticks(ticks=range(len(corr.columns)), labels=corr.columns, rotation=45, ha="right")
-        plt.yticks(ticks=range(len(corr.index)), labels=corr.index)
-        plt.title("Matriz de correlación (numérica)")
+    def _guardar_figura(self, nombre: str) -> str:
+        ruta = os.path.join(self.carpeta_salida, nombre)
         plt.tight_layout()
-        ruta = os.path.join(self.carpeta_figuras, "correlacion.png")
         plt.savefig(ruta, dpi=150)
         plt.close()
         return ruta
 
+    def _plot_histogramas(self) -> List[str]:
+        rutas = []
+        for col in self.df.select_dtypes(include='number').columns[:self.max_cols_numericas]:
+            serie = self.df[col].dropna()
+
+            if serie.empty:
+                continue
+
+            plt.figure(figsize=(6, 4))
+            plt.hist(serie, bins=20, color="#2a9d8f", edgecolor="white", alpha=0.6, density=True)
+
+            # Línea de tendencia (KDE)
+            kde = gaussian_kde(serie)
+            x_vals = np.linspace(serie.min(), serie.max(), 200)
+            plt.plot(x_vals, kde(x_vals), color="red", linewidth=2, label="Tendencia")
+
+            plt.title(f"Histograma de {col}")
+            plt.ylabel("Densidad")
+            plt.xlabel("")   # 👈 sin etiqueta en eje X
+            plt.legend()
+
+            rutas.append(self._guardar_figura(f"hist_{col}.png"))
+
+
+        return rutas
+
+
+    def _plot_correlacion(self) -> Optional[str]:
+        # Seleccionar solo columnas numéricas
+        num = self.df.select_dtypes(include='number')
+
+        # 👇 Filtrar columnas que tienen al menos un valor no nulo
+        num = num.dropna(axis=1, how="all")
+
+        # Si quedan menos de 2 columnas válidas, no tiene sentido graficar
+        if num.shape[1] < 2:
+            return None
+
+        plt.figure(figsize=(6, 5))
+        im = plt.imshow(num.corr(numeric_only=True), cmap="viridis", aspect="auto")
+        plt.colorbar(im, fraction=0.046, pad=0.04)
+        plt.xticks(range(len(num.columns)), num.columns, rotation=45, ha="right")
+        plt.yticks(range(len(num.columns)), num.columns)
+        plt.title("Matriz de correlación (numérica)")
+
+        return self._guardar_figura("correlacion.png")
+
+
     def _plot_serie_temporal(self) -> Optional[str]:
-        """
-        Si existe una columna de fecha (dtype datetime64) y una numérica,
-        grafica una serie temporal agregada.
-        """
-        fechas = self.df.select_dtypes(include=['datetime64[ns]', 'datetime64[ns, UTC]'])
-        num = self.df.select_dtypes(include=['number'])
-        if fechas.shape[1] < 1 or num.shape[1] < 1:
-            return None
+        fechas = self.df.select_dtypes(include='datetime64[ns]')
+        num = self.df.select_dtypes(include='number')
+        if fechas.empty or num.empty: return None
 
-        # Usar la primera fecha y primera numérica
-        fcol = fechas.columns[0]
-        ncol = num.columns[0]
-        tmp = self.df[[fcol, ncol]].dropna().copy()
-        if tmp.empty:
-            return None
+        tmp = self.df[[fechas.columns[0], num.columns[0]]].dropna().sort_values(fechas.columns[0])
+        if tmp.empty: return None
 
-        # Agregar por periodo (semanal por defecto)
-        tmp = tmp.sort_values(fcol)
-        tmp['__periodo__'] = tmp[fcol].dt.to_period('W').dt.start_time
-        serie = tmp.groupby('__periodo__')[ncol].mean()
+        tmp['periodo'] = tmp[fechas.columns[0]].dt.to_period('W').dt.start_time
+        serie = tmp.groupby('periodo')[num.columns[0]].mean()
 
         plt.figure(figsize=(7, 3.8))
         plt.plot(serie.index, serie.values, color="#e76f51", linewidth=2)
-        plt.title(f"Serie temporal (promedio semanal de {ncol})")
-        plt.xlabel("Periodo")
-        plt.ylabel(ncol)
-        plt.grid(alpha=0.3)
-        plt.tight_layout()
-        ruta = os.path.join(self.carpeta_figuras, "serie_temporal.png")
-        plt.savefig(ruta, dpi=150)
-        plt.close()
-        return ruta
+        plt.title(f"Serie temporal (promedio semanal de {num.columns[0]})")
+        plt.xlabel("Periodo"); plt.ylabel(num.columns[0]); plt.grid(alpha=0.3)
+        return self._guardar_figura("serie_temporal.png")
 
     def _filtrar_padecimiento(self, padecimiento: str) -> None:
-        """
-        Filtra el DataFrame para incluir solo filas con el padecimiento especificado.
-        """
-        #logger.info(f"Filtrando datos para el padecimiento: {padecimiento}")
         if 'Padecimiento' in self.df.columns:
-
-            filtrado = self.df[self.df['Padecimiento'].astype(str).str.contains(padecimiento, case=False, na=False)].copy()
-            self.df = filtrado
-        
-        
-
-
+            self.df = self.df[self.df['Padecimiento'].astype(str).str.contains(padecimiento, case=False, na=False)]
 
     def run(self) -> ReportData:
-        """
-        Ejecuta el EDA completo y retorna el ReportData a consumir por el generador de PDF.
-        """
+        self._filtrar_padecimiento(conf["reporte_EDA"]["filtro_padecimiento"])
+        figuras = self._plot_histogramas()
+        for plot_func in [self._plot_correlacion, self._plot_serie_temporal]:
+            ruta = plot_func()
+            if ruta: figuras.append(ruta)
 
-        padecimiento = conf["reporte_EDA"]["filtro_padecimiento"]
-
-        self._filtrar_padecimiento(padecimiento)
-        resumen = self._resumen_general()
-        est_num = self._estadisticas_numericas()
-        tablas_cat = self._tablas_categoricas()
-
-        figuras = []
-        figuras += self._plot_histogramas()
-        corr_path = self._plot_correlacion()
-
-        if corr_path:
-            figuras.append(corr_path)
-        serie_path = self._plot_serie_temporal()
-        if serie_path:
-            figuras.append(serie_path)
-
-        return ReportData(
-            titulo=self.titulo,
+            return ReportData(
+                titulo=self.titulo,
             subtitulo=self.subtitulo,
             fuente_datos=self.fuente_datos,
-            resumen_general=resumen,
-            estadisticas_numericas=est_num,
-            tablas_categoricas=tablas_cat,
+            resumen_general=self._resumen_general(),
+            resumen_datos=self._resumen_datos_unicos(),
+            resumen_datos_nulos=self._resumen_datos_nulos(),
+            estadisticas_numericas=self._estadisticas_numericas(),
+            estadisticas_categoricas=self._estadisticas_categoricas(),
+            tablas_categoricas=self._tablas_categoricas(),
             figuras=figuras,
             notas="Generado automáticamente por EDAReportBuilder."
         )

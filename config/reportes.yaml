@@ -1,0 +1,5 @@
+reporte_EDA:
+  filtro_padecimiento: "Alzheimer"
+  nombre_reporte: "EDA_${reporte_EDA.filtro_padecimiento}"
+  titulo_reporte: "Análisis Exploratorio de Datos"
+  estilo_fuente: "DejaVu Sans"
