@@ -4,10 +4,11 @@ loguru==0.7.3
 omegaconf==2.3.0
 
 # Visualization
-matplotlib>=3.10.8  # versión reciente y estable
+matplotlib>=3.10.8
+seaborn==0.13.2
 
 # Numerical Computing
-numpy>=2.0.0        # versión mayor estable
+numpy>=2.0.0
 
 # Data Manipulation
 pandas==2.3.3
@@ -22,7 +23,7 @@ cookiecutter-data-science==2.3.0
 ipykernel>=6.29.0
 
 # Utilities
-gdown==5.2.0        # descarga de datasets desde Google Drive
+gdown==5.2.0
 typer==0.20.1       # CLI para scripts
 tabulate==0.9.0
 reportlab==4.4.7

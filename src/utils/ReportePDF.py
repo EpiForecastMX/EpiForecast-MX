@@ -224,7 +224,7 @@ class PDFReportGenerator:
             story.append(Paragraph("No se identificaron columnas categóricas.", self.styles['NormalJust']))
         story.append(PageBreak())
 
-    def _agregar_figuras(self, story: List[Any]):
+    def _agregar_histogramas(self, story: List[Any]):
         story.append(Paragraph("histogramas generados", self.styles['Seccion']))
         page_w, _ = A4
         available_w = page_w - 4 * cm
@@ -234,7 +234,7 @@ class PDFReportGenerator:
         figuras_por_pagina = 2
         contador = 0
 
-        for ruta in self.datos.figuras:
+        for ruta in self.datos.histograma:
             if os.path.exists(ruta):
                 img = Image(ruta)
                 img._restrictSize(max_w, max_h)
@@ -249,6 +249,33 @@ class PDFReportGenerator:
                     story.append(PageBreak())
 
         # Si al final no se cerró la página y hay figuras, forzar salto
+        if contador % figuras_por_pagina != 0:
+            story.append(PageBreak())
+
+    def _agregar_barras_categoricas(self, story: List[Any]):
+        story.append(Paragraph("histogramas generados", self.styles['Seccion']))
+        page_w, _ = A4
+        available_w = page_w - 4 * cm
+        max_w = min(self.ancho_figura_cm * cm, available_w)
+        max_h = 11 * cm
+
+        figuras_por_pagina = 2
+        contador = 0
+
+        for ruta in self.datos.barras_categoricas:
+            if os.path.exists(ruta):
+                img = Image(ruta)
+                img._restrictSize(max_w, max_h)
+                story.append(KeepInFrame(max_w, max_h, [img], mode='shrink'))
+                story.append(Spacer(1, 6))
+                #story.append(Paragraph(os.path.basename(ruta), self.styles['NormalJust']))
+                story.append(Spacer(1, 8))
+
+                contador += 1
+    
+                if contador % figuras_por_pagina == 0:
+                    story.append(PageBreak())
+
         if contador % figuras_por_pagina != 0:
             story.append(PageBreak())
 
@@ -273,8 +300,10 @@ class PDFReportGenerator:
         self._agregar_portada_con_estadisticas(story)
         # Página siguiente: tablas de campos
         self._agregar_tablas_campos(story)
-        # Figuras
-        self._agregar_figuras(story)
+        # Histogramas
+        self._agregar_histogramas(story)
+        # Barras
+        self._agregar_barras_categoricas(story)
         # Notas
         #self._agregar_notas(story)
 

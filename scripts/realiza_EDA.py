@@ -14,12 +14,12 @@ def main():
 
     logger.info(f"Generando reporte EDA en {ruta_reporte}...")
     datos_reporte = EDAReportBuilder(
-        df=df,
-        titulo=conf["reporte_EDA"]["titulo_reporte"],
-        subtitulo=conf["reporte_EDA"]["filtro_padecimiento"],
-        fuente_datos=raw_file,
-        max_cols_numericas=6,
-        max_categorias_tabla=8
+        df = df,
+        titulo = conf["reporte_EDA"]["titulo_reporte"],
+        subtitulo = conf["reporte_EDA"]["filtro_padecimiento"],
+        fuente_datos = raw_file,
+        numero_cols_numericas = conf["reporte_EDA"]["max_cols_numericas"],
+        numero_cols_categoricas = conf["reporte_EDA"]["max_categorias_tabla"],
     ).run()
 
     PDFReportGenerator(datos_reporte, archivo_salida=ruta_reporte, ancho_figura_cm=16).build()

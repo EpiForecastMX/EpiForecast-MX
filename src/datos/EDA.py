@@ -3,6 +3,7 @@ from typing import List, Dict, Optional
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
 from matplotlib.ticker import MaxNLocator
 from datetime import datetime
 from loguru import logger
@@ -26,7 +27,10 @@ class ReportData:
     estadisticas_categoricas: Optional[pd.DataFrame]
 
     tablas_categoricas: Dict[str, pd.DataFrame]     
-    figuras: List[str] = field(default_factory=list)
+    
+    histograma: List[str] = field(default_factory=list)
+    barras_categoricas: List[str] = field(default_factory=list)
+
     notas: Optional[str] = None
 
 
@@ -34,10 +38,10 @@ class EDAReportBuilder:
     """Genera insumos de un reporte EDA a partir de un DataFrame."""
 
     def __init__(self, df: pd.DataFrame, titulo: str, subtitulo: str, fuente_datos: str,
-                 max_cols_numericas: int = 8, max_categorias_tabla: int = 10):
+                 numero_cols_numericas: int = 8, numero_cols_categoricas: int = 10):
         self.df = df.copy()
         self.titulo, self.subtitulo, self.fuente_datos = titulo, subtitulo, fuente_datos
-        self.max_cols_numericas, self.max_categorias_tabla = max_cols_numericas, max_categorias_tabla
+        self.numero_cols_numericas, self.numero_cols_categoricas = numero_cols_numericas, numero_cols_categoricas
 
         self.carpeta_salida = conf["paths"]["figures"]
         DirectoryManager.asegurar_ruta(self.carpeta_salida)
@@ -95,7 +99,7 @@ class EDAReportBuilder:
     def _estadisticas_numericas(self) -> Optional[pd.DataFrame]:
         num = self.df.select_dtypes(include='number')
         if num.empty: return None
-        desc = num.iloc[:, :self.max_cols_numericas].describe().T.rename(columns={
+        desc = num.iloc[:, :self.numero_cols_numericas].describe().T.rename(columns={
             "count": "conteo", "mean": "media", "std": "desv_est",
             "min": "mín", "25%": "p25", "50%": "p50", "75%": "p75", "max": "máx"
         })
@@ -146,7 +150,7 @@ class EDAReportBuilder:
                 cat[col]
                 .fillna("N/A")
                 .value_counts()
-                .head(self.max_categorias_tabla)
+                .head(self.numero_cols_categoricas)
                 .to_frame("frecuencia")
             )
             tabla.index.name = col 
@@ -163,7 +167,7 @@ class EDAReportBuilder:
 
     def _plot_histogramas(self) -> List[str]:
         rutas = []
-        for col in self.df.select_dtypes(include='number').columns[:self.max_cols_numericas]:
+        for col in self.df.select_dtypes(include='number'):
             serie = self.df[col].dropna()
 
             if serie.empty:
@@ -179,11 +183,64 @@ class EDAReportBuilder:
 
             plt.title(f"Histograma de {col}")
             plt.ylabel("Densidad")
-            plt.xlabel("")   # 👈 sin etiqueta en eje X
+            plt.xlabel("")
             plt.legend()
 
             rutas.append(self._guardar_figura(f"hist_{col}.png"))
+        return rutas
+    
 
+    def _plot_categoricas(self) -> List[str]:
+        rutas: List[str] = []
+        cat = self.df.select_dtypes(include=['object', 'category', 'bool'])
+
+        top_k = 20  # ✅ Top máximo a mostrar (20)
+
+        for col in cat.columns:
+            serie = self.df[col]
+
+            # Convertir booleanos a texto para evitar rarezas
+            if pd.api.types.is_bool_dtype(serie):
+                serie = serie.astype('object')
+
+            # Nulos a "N/A"
+            serie = serie.fillna("N/A")
+
+            # Conteos ordenados desc
+            conteos = serie.value_counts()
+
+            # Tomar solo el Top-20 (SIN agrupar "Otros")
+            if len(conteos) > top_k:
+                conteos = conteos.head(top_k)
+
+            # --- Porcentajes ---
+            # Porcentaje sobre el total del Top-20 mostrado:
+            total_top = int(conteos.sum())
+            if total_top == 0:
+                continue
+
+            porcentajes = (conteos / total_top * 100).round(1)
+
+            # --- Graficar ---
+            plt.figure(figsize=(9, 5))
+            plt.bar(porcentajes.index, porcentajes.values,
+                    color="#2a9d8f", alpha=0.85, edgecolor="white")
+
+            plt.title(f"Distribución de {col} (Top {min(top_k, len(porcentajes))})")
+            plt.ylabel("Porcentaje (%)")
+            plt.xlabel("")
+
+            # Rotar etiquetas si son largas o demasiadas
+            if len(porcentajes) > 12 or max(map(lambda s: len(str(s)), porcentajes.index)) > 10:
+                plt.xticks(rotation=45, ha="right")
+
+            # Etiquetas encima de cada barra con '%'
+            ymax = porcentajes.max()
+            for i, v in enumerate(porcentajes.values):
+                plt.text(i, v + ymax * 0.01, f"{v}%", ha="center", fontsize=9)
+
+            plt.tight_layout()
+            rutas.append(self._guardar_figura(f"barras_{col}.png"))
 
         return rutas
 
@@ -207,6 +264,92 @@ class EDAReportBuilder:
         plt.title("Matriz de correlación (numérica)")
 
         return self._guardar_figura("correlacion.png")
+    
+
+    def _plot_box_plot(self) -> Optional[str]:
+
+        top_k = 20  # ✅ Top máximo a mostrar (20)
+        tipo: str = "violin"
+        rutas: List[str] = []
+
+        if self.df is None or self.df.empty:
+            return rutas
+
+        # Detectar numéricas y categóricas
+        cols_num = list(self.df.select_dtypes(include="number").columns)
+        cols_cat = list(self.df.select_dtypes(include=["object", "category", "bool"]).columns)
+
+        if not cols_num or not cols_cat:
+            return rutas  # no hay columnas para graficar
+
+        sns.set_theme(style="whitegrid")
+
+        # Iterar sobre todas las combinaciones categórica-numérica
+        for cat_col in cols_cat:
+            cat_series = self.df[cat_col].copy()
+            if pd.api.types.is_bool_dtype(cat_series):
+                cat_series = cat_series.astype("object")
+            cat_series = cat_series.fillna("N/A")
+
+            # Limitar al Top-k categorías por frecuencia
+            conteo_cat = cat_series.value_counts()
+            categorias_top = list(conteo_cat.head(top_k).index)
+
+            # Subconjunto del DF con solo las categorías top
+            df_plot = self.df.copy()
+            df_plot[cat_col] = cat_series
+            df_plot = df_plot[df_plot[cat_col].isin(categorias_top)]
+
+            if df_plot.empty:
+                continue
+
+            for col_num in cols_num:
+                serie_num = df_plot[col_num].dropna()
+                if serie_num.empty:
+                    continue
+
+                plt.figure(figsize=(10, 6))
+
+                # Construir el gráfico según 'tipo'
+                if tipo.lower() == "violin":
+                    ax = sns.violinplot(
+                        x=cat_col,
+                        y=col_num,
+                        data=df_plot,
+                        inner="box",
+                        palette="Set2",
+                        cut=0,
+                        linewidth=1,
+                    )
+                    titulo_tipo = "Violín (inner=box)"
+                else:
+                    ax = sns.boxplot(
+                        x=cat_col,
+                        y=col_num,
+                        data=df_plot,
+                        palette="Set2",
+                        showfliers=True,
+                    )
+                    titulo_tipo = "Caja (Boxplot)"
+
+                # Títulos y etiquetas
+                ax.set_title(f"{titulo_tipo}: {col_num} por {cat_col} (Top {len(categorias_top)})", fontsize=12)
+                ax.set_xlabel("")  # sin etiqueta en eje X
+                ax.set_ylabel(col_num)
+
+                # Rotar etiquetas del eje X si son largas/muchas
+                ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="right")
+
+                plt.tight_layout()
+
+                # Guardar figura
+                nombre_archivo = f"{tipo.lower()}_{col_num}_por_{cat_col}.png"
+                rutas.append(self._guardar_figura(nombre_archivo))
+
+        return rutas
+
+
+
 
 
     def _plot_serie_temporal(self) -> Optional[str]:
@@ -232,13 +375,17 @@ class EDAReportBuilder:
 
     def run(self) -> ReportData:
         self._filtrar_padecimiento(conf["reporte_EDA"]["filtro_padecimiento"])
-        figuras = self._plot_histogramas()
+        
+        plot_histogramas = self._plot_histogramas()
+        plot_barras_categoricas = self._plot_categoricas()
+        plot_violin = self._plot_box_plot()
+
         for plot_func in [self._plot_correlacion, self._plot_serie_temporal]:
             ruta = plot_func()
-            if ruta: figuras.append(ruta)
+            if ruta: plot_histogramas.append(ruta)
 
             return ReportData(
-                titulo=self.titulo,
+            titulo=self.titulo,
             subtitulo=self.subtitulo,
             fuente_datos=self.fuente_datos,
             resumen_general=self._resumen_general(),
@@ -247,6 +394,7 @@ class EDAReportBuilder:
             estadisticas_numericas=self._estadisticas_numericas(),
             estadisticas_categoricas=self._estadisticas_categoricas(),
             tablas_categoricas=self._tablas_categoricas(),
-            figuras=figuras,
+            histograma = plot_histogramas,
+            barras_categoricas= plot_barras_categoricas,
             notas="Generado automáticamente por EDAReportBuilder."
         )

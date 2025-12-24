@@ -3,3 +3,5 @@ reporte_EDA:
   nombre_reporte: "EDA_${reporte_EDA.filtro_padecimiento}"
   titulo_reporte: "Análisis Exploratorio de Datos"
   estilo_fuente: "DejaVu Sans"
+  max_cols_numericas: 8
+  max_categorias_tabla: 8
