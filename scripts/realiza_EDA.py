@@ -2,6 +2,7 @@ import pandas as pd
 from src.configuraciones.config_params import conf, logger
 from src.datos.EDA import EDAReportBuilder
 from src.utils.ReportePDF import PDFReportGenerator
+from src.utils import DirectoryManager
 
 
 def main():
@@ -13,13 +14,16 @@ def main():
     df = pd.read_csv(raw_file)
 
     logger.info(f"Generando reporte EDA en {ruta_reporte}...")
+    DirectoryManager.asegurar_ruta(ruta_reporte)
+
+
+
     datos_reporte = EDAReportBuilder(
         df = df,
         titulo = conf["reporte_EDA"]["titulo_reporte"],
         subtitulo = conf["reporte_EDA"]["filtro_padecimiento"],
         fuente_datos = raw_file,
-        numero_cols_numericas = conf["reporte_EDA"]["max_cols_numericas"],
-        numero_cols_categoricas = conf["reporte_EDA"]["max_categorias_tabla"],
+        numero_top_columnas = conf["reporte_EDA"]["max_cols"],
     ).run()
 
     PDFReportGenerator(datos_reporte, archivo_salida=ruta_reporte, ancho_figura_cm=16).build()
