@@ -1,13 +1,9 @@
-import os
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional
 from datetime import datetime
 
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
-import numpy as np
-from scipy.stats import gaussian_kde
 from loguru import logger
 
 from src.configuraciones.config_params import conf
@@ -43,6 +39,7 @@ class EDAReportBuilder:
         self.graficos_helper = GraficosHelper(self.carpeta_salida, self.numero_top_columnas)
 
         DirectoryManager.asegurar_ruta(self.carpeta_salida)
+        DirectoryManager.limpia_carpeta(self.carpeta_salida)
         logger.debug(f"El reporte se generará con título: {self.titulo}")
         logger.debug(f"El subtítulo del reporte es: {self.subtitulo}")
         logger.debug(f"La fuente de datos es: {self.fuente_datos}")

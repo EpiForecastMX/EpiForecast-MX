@@ -13,10 +13,7 @@ def main():
     logger.info(f"Cargando datos desde {raw_file}...")
     df = pd.read_csv(raw_file)
 
-    logger.info(f"Generando reporte EDA en {ruta_reporte}...")
     DirectoryManager.asegurar_ruta(ruta_reporte)
-
-
 
     datos_reporte = EDAReportBuilder(
         df = df,
@@ -27,7 +24,7 @@ def main():
     ).run()
 
     PDFReportGenerator(datos_reporte, archivo_salida=ruta_reporte, ancho_figura_cm=16).build()
-    print(f"Reporte generado en: {ruta_reporte}")
+    logger.info(f"Reporte generado en: {ruta_reporte}")
 
 
 if __name__ == "__main__":

@@ -40,3 +40,20 @@ def existe_archivo(path_str: str | Path) -> bool:
     """
     path = Path(path_str)  # Convertimos a Path para manejar ambos tipos
     return path.is_file()  # is_file() asegura que sea un archivo, no un directorio
+
+def limpia_carpeta(path_str: str | Path) -> None:
+    """
+    Elimina todos los archivos dentro de una carpeta especificada.
+
+    :param path_str: Ruta de la carpeta como str o Path.
+    """
+    path = Path(path_str)
+
+    if not path.is_dir():
+        raise ValueError(f"La ruta {path} no es una carpeta válida.")
+
+    for archivo in path.iterdir():
+        if archivo.is_file():
+            logger.debug(f"Eliminando archivo: {archivo}")
+            archivo.unlink()
+
