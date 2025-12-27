@@ -4,7 +4,7 @@ from loguru import logger
 from typing import List, Dict, Any, Optional
 from reportlab.lib.pagesizes import A4
 from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle, PageBreak, KeepInFrame
+    SimpleDocTemplate, Paragraph, Spacer, Image, LongTable, TableStyle, PageBreak, KeepInFrame
 )
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
@@ -18,9 +18,8 @@ from src.datos.EDA import ReportData
 
 def crear_tabla(data: List[List[Any]],
                 colWidths: Optional[List[float]] = None,
-                hAlign: str = "CENTER") -> Table:
-    """Crea una tabla con estilo estándar."""
-    table = Table(data, colWidths=colWidths, hAlign=hAlign)
+                hAlign: str = "CENTER") -> LongTable:
+    table = LongTable(data, colWidths=colWidths, hAlign=hAlign,splitByRow=0)
     table.setStyle(TableStyle([
         ('FONT', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
@@ -36,7 +35,7 @@ def crear_tabla(data: List[List[Any]],
     return table
 
 
-def tabla_desde_dataframe(df: pd.DataFrame) -> Table:
+def tabla_desde_dataframe(df: pd.DataFrame) -> LongTable:
     """Convierte un DataFrame en tabla PDF."""
     if df is None or df.empty:
         return crear_tabla([["Sin datos"], ["—"]], colWidths=[16 * cm])
@@ -53,7 +52,7 @@ def tabla_desde_dataframe(df: pd.DataFrame) -> Table:
     return crear_tabla(data, colWidths=col_widths)
 
 
-def tabla_kv(dic: Dict[str, str]) -> Table:
+def tabla_kv(dic: Dict[str, str]) -> LongTable:
     """Convierte un dict clave-valor en tabla PDF."""
     data = [["Campo", "Valor"]] + [[str(k), str(v)] for k, v in dic.items()] if dic else [["Campo", "Valor"], ["—", "—"]]
     return crear_tabla(data, colWidths=[7 * cm, 9 * cm])
@@ -106,8 +105,8 @@ class PDFReportGenerator:
         return styles
 
     def _agregar_tabla_si_existe(self, story: List[Any], titulo: str, df: Optional[pd.DataFrame]):
+        
         story.append(Paragraph(titulo, self.styles['Seccion']))
-        #story.append(Spacer(1, 12))
         story.append(tabla_desde_dataframe(df) if isinstance(df, pd.DataFrame) and not df.empty
                      else Paragraph("No se encontraron datos.", self.styles['NormalJust']))
         story.append(Spacer(1, 12))
@@ -123,9 +122,9 @@ class PDFReportGenerator:
 
     def _agregar_tablas_campos(self, story: List[Any]):
 
+        self._agregar_tabla_si_existe(story, "Características de los campos", getattr(self.datos, "resumen_datos", None))
         self._agregar_tabla_si_existe(story, "Estadísticas descriptivas de variables numéricas", self.datos.estadisticas_numericas)
         self._agregar_tabla_si_existe(story, "Estadísticas descriptivas de variables categóricas", getattr(self.datos, "estadisticas_categoricas", None))
-        self._agregar_tabla_si_existe(story, "Características de los campos", getattr(self.datos, "resumen_datos", None))
         self._agregar_tabla_si_existe(story, "Campos con valores nulos", getattr(self.datos, "resumen_datos_nulos", None))
         story.append(PageBreak())
 

@@ -12,6 +12,7 @@ from loguru import logger
 
 from src.configuraciones.config_params import conf
 from src.utils import DirectoryManager
+from src.utils.graficos import GraficosHelper
 
 
 @dataclass
@@ -34,11 +35,12 @@ class EDAReportBuilder:
 
     def __init__(self, df: pd.DataFrame, titulo: str, subtitulo: str, fuente_datos: str,
                  numero_top_columnas: int = 8):
+        
         self.df = df.copy()
         self.titulo, self.subtitulo, self.fuente_datos = titulo, subtitulo, fuente_datos
         self.numero_top_columnas = numero_top_columnas
-
         self.carpeta_salida = conf["paths"]["figures"]
+        self.graficos_helper = GraficosHelper(self.carpeta_salida, self.numero_top_columnas)
 
         DirectoryManager.asegurar_ruta(self.carpeta_salida)
         logger.debug(f"El reporte se generará con título: {self.titulo}")
@@ -181,83 +183,18 @@ class EDAReportBuilder:
         return {col: serie.fillna("N/A").value_counts().head(self.numero_top_columnas).to_frame("frecuencia")
                 for col, serie in cat.items()}
 
-
-
     # ------------------ Gráficos ------------------
-    def _guardar_figura(self, nombre: str) -> str:
-        ruta = os.path.join(self.carpeta_salida, nombre)
-        plt.tight_layout(); plt.savefig(ruta, dpi=150); plt.close()
-        return ruta
-
-
     def plot_histograma(self, col: str) -> Optional[str]:
-
-        serie = self.df[col].dropna()
-        if serie.empty: return None
-
-        plt.hist(
-            serie, 
-            bins=20, 
-            color="#2a9d8f", 
-            edgecolor="white", 
-            alpha=0.6, 
-            density=True
-            )
-        
-        kde = gaussian_kde(serie)
-        x_vals = np.linspace(serie.min(), serie.max(), 200)
-        plt.plot(x_vals, kde(x_vals), color="red", linewidth=2)
-        plt.title(f"Histograma de {col}"); plt.ylabel("Densidad")
-        return self._guardar_figura(f"hist_{col}.png")
-
+        return self.graficos_helper.plot_histograma(self.df[col], col)
 
     def plot_categorica_barras(self, col: str) -> Optional[str]:
-        serie = self.df[col].dropna()
-        if serie.empty:
-            return None
-
-        conteos = serie.value_counts().head(self.numero_top_columnas)
-        top_real = min(self.numero_top_columnas, len(serie.value_counts()))
-
-        porcentajes = (conteos / conteos.sum() * 100).round(1)
-
-        porcentajes_recortados = porcentajes.copy()
-        porcentajes_recortados.index = [
-            str(lbl)[:25] + ("..." if len(str(lbl)) > 25 else "")
-            for lbl in porcentajes_recortados.index
-        ]
-
-        ax = sns.barplot(
-            x=porcentajes_recortados.values,
-            y=porcentajes_recortados.index,
-            hue=porcentajes_recortados.index,
-            dodge=False,
-            palette="muted",
-            legend=False
-        )
-
-        titulo = f"Distribución porcentual de {col} - Top {top_real}"
-        ax.set_title(titulo)
-        ax.set_xlabel(None)
-        ax.set_ylabel(None)
-
-        plt.xticks(rotation=45, ha='right')
-
-        for i, v in enumerate(porcentajes_recortados.values):
-            ax.text(v + 0.5, i, f"{v}%", va="center")
-
-        return self._guardar_figura(f"barras_{col}.png")
-
+        return self.graficos_helper.plot_categorica_barras(self.df[col], col)
+    
+    def plot_violin(self, col: str) -> Optional[str]:
+        return self.graficos_helper.plot_violin(self.df[col], col)
     
     def plot_correlacion(self) -> Optional[str]:
-        num = self.df.select_dtypes(include='number').dropna(axis=1, how="all")
-        if num.shape[1] < 2: return None
-        sns.heatmap(num.corr(numeric_only=True), cmap="viridis", annot=True)
-        plt.title("Matriz de correlación")
-        return self._guardar_figura("correlacion.png")
-
-
-
+        return self.graficos_helper.plot_correlacion(self.df)
 
     # ------------------ Ejecución ------------------
     def run(self) -> ReportData:
@@ -274,6 +211,11 @@ class EDAReportBuilder:
         for col in self.df.select_dtypes(include=['object', 'category']).columns:
             logger.debug(f"Generando gráfico de barras para la columna categórica: {col}")
             ruta = self.plot_categorica_barras(col)
+            if ruta: figuras.append(ruta)
+        
+        for col in self.df.columns:
+            logger.debug(f"Generando gráfico de violín para la columna numérica: {col}")
+            ruta = self.plot_violin(col)
             if ruta: figuras.append(ruta)
 
         corr = self.plot_correlacion()
