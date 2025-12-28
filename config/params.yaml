@@ -16,6 +16,7 @@ download:
 
 data:
   raw_data_file: "${paths.raw}/data_raw.csv"
+  interim_data_file: "${paths.interim}/data_clean.csv"
 
 metadata:
   author: "Juan Carlos Perez Nava"

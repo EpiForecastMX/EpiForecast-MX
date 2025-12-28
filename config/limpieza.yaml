@@ -3,3 +3,14 @@ columnas_eliminar:
   - 'No_02'
   - 'No_03'
   - 'No_04'
+  - 'Ax_002'
+  - 'Padecimiento'
+  - 'Cuadro'
+
+renglones_eliminar:
+  - Nombre: "Ax_003"
+    valor:
+      - "Acum."
+  - Nombre: "Entidad"
+    valor:
+      - "TOTAL"

@@ -18,7 +18,7 @@ def main():
     datos_reporte = EDAReportBuilder(
         df = df,
         titulo = conf["reporte_EDA"]["titulo_reporte"],
-        subtitulo = conf["reporte_EDA"]["filtro_padecimiento"],
+        subtitulo = conf["reporte_EDA"]["subtitulo_reporte"],
         fuente_datos = raw_file,
         numero_top_columnas = conf["reporte_EDA"]["max_cols"],
     ).run()
