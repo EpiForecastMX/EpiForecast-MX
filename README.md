@@ -83,7 +83,12 @@ Descargar Dataset:
 make data
 ```
 
-Generar Análisis Exploratorio de Datos
+Generar Análisis Exploratorio de Datos:
 ```bash
 make eda
+```
+
+Realizar limpieza de datos:
+```bash
+make clean
 ```

@@ -70,6 +70,11 @@ data:
 eda:
 	$(PYTHON_INTERPRETER) -m scripts.realiza_EDA
 
+.PHONY: clean 
+clean:
+	$(PYTHON_INTERPRETER) -m scripts.limpieza_dataset
+
+
 
 #################################################################################
 # Self Documenting Commands                                                     #
