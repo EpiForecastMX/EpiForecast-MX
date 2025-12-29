@@ -10,6 +10,7 @@ class CleanDataset:
         self.columas_a_eliminar = conf["columnas_eliminar"]
         self.renglones_a_eliminar = conf["renglones_eliminar"]
         self.valores_sustituir = conf["valores_sustituir"]
+        self.cadena_sustituir = conf["sustituir_cadena"]
 
     def _filtrar_padecimiento(self, padecimiento: str) -> None:
         
@@ -22,25 +23,42 @@ class CleanDataset:
     def _elimina_columnas(self) -> pd.DataFrame:
         """Elimina columnas indicadas en el archivo de configuración."""
 
-        logger.info(f'Eliminando columnas : {self.columas_a_eliminar}')
+        logger.debug(f'Eliminando columnas : {self.columas_a_eliminar}')
         self.df.drop(columns=self.columas_a_eliminar, inplace=True, errors='ignore')
         logger.debug(f'Columnas restantes: {self.df.columns.tolist()}')
 
         return self.df
     
     def _sustituir_valores(self) -> pd.DataFrame:
-        """Sustituye valores nulos en el DataFrame."""
 
-        for reemplazo in self.valores_sustituir:
-            nombre_columna = reemplazo["Nombre"]
-            valor_viejo = reemplazo["valor_viejo"]
-            valor_nuevo = reemplazo["valor_nuevo"]
-            logger.debug(f'Sustituyendo en columna {nombre_columna}: {valor_viejo} por {valor_nuevo}')
-            self.df[nombre_columna] = self.df[nombre_columna].replace(valor_viejo, valor_nuevo)
+        for regla in self.valores_sustituir:
+            nombre_columna = regla["columna_objetivo"]
+            valor_actual = regla["texto_a_reemplazar"]
+            valor_nuevo = regla["texto_sustituto"]
+            logger.debug(f'Sustituyendo en columna "{nombre_columna}": "{valor_actual}" por "{valor_nuevo}"')
+            self.df[nombre_columna] = self.df[nombre_columna].replace(valor_actual, valor_nuevo)
 
-        self.df["Valor"] = pd.to_numeric(self.df["Valor"].replace("-", "0"), errors="coerce")
+        for regla in self.cadena_sustituir:
+            nombre_columna = regla["columna_objetivo"]
+            valor_actual = regla["texto_a_reemplazar"]
+            valor_nuevo = regla["texto_sustituto"]
+            tipo_dato = regla["tipo"]
+            logger.debug(f'Sustituyendo en columna "{nombre_columna}": "{valor_actual}" por "{valor_nuevo}" convertir a tipo "{tipo_dato}"')
+            
+            if not nombre_columna or nombre_columna not in self.df.columns:
+                logger.debug(f'Columna no identificada {nombre_columna}')
+                pass
 
-
+            
+            self.df[nombre_columna] = (
+                self.df[nombre_columna]
+                .astype(str)
+                .str.replace(valor_actual, valor_nuevo, regex=False)  # subcadena literal
+                .str.strip()
+                .pipe(pd.to_numeric, errors='coerce')
+                .astype(tipo_dato)  # opcional: enteros anulables
+                )
+            
         return self.df
 
     def _eliminar_registros(self) -> pd.DataFrame:

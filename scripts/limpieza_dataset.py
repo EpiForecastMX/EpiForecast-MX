@@ -78,11 +78,13 @@ def generar_notas()  -> str:
     # Sección: valores_sustituir
     if sustituciones:
         partes.append("Valores sustituidos:<br/>")
-        for s in sustituciones:
-            nombre = str(s.get("Nombre", "(sin nombre)"))
-            viejo = str(s.get("valor_viejo", "(sin valor_viejo)"))
-            nuevo = str(s.get("valor_nuevo", "(sin valor_nuevo)"))
-            partes.append(f"&nbsp;&nbsp;• {nombre}: “{viejo}” → “{nuevo}”")
+        for regla in renglones:
+            nombre = str(regla.get("Nombre", "(sin nombre)"))
+            valores = regla.get("valor", [])
+            valores = valores if isinstance(valores, list) else [valores]
+            partes.append(f"&nbsp;&nbsp;• {nombre}:<br/>")
+            for v in valores:
+                partes.append(f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- {str(v)}<br/>")
         partes.append("<br/>")
 
     if len(columnas) == 0 and len(renglones) == 0 and len(sustituciones) == 0:

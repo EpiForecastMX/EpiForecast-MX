@@ -11,12 +11,26 @@ renglones_eliminar:
   - Nombre: "Ax_003"
     valor:
       - "Acum."
+      - "Sem."
+  
   - Nombre: "Entidad"
     valor:
       - "TOTAL"
 
 
 valores_sustituir:
-  - Nombre: "Entidad"
-    valor_viejo: "Distrito Federal"
-    valor_nuevo: "Ciudad de México"
+  - columna_objetivo: "Entidad"
+    texto_a_reemplazar: "Distrito Federal"
+    texto_sustituto: "Ciudad de México"
+
+
+sustituir_cadena:
+  - columna_objetivo: "Semana"
+    texto_a_reemplazar: "sem"
+    texto_sustituto: ""
+    tipo: "Int64"
+
+  - columna_objetivo: "Valor"
+    texto_a_reemplazar: "-"
+    texto_sustituto: "0"
+    tipo: "Int64"
