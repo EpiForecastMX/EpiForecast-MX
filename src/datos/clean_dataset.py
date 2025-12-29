@@ -9,6 +9,7 @@ class CleanDataset:
         self.df.columns = [col.strip() for col in self.df.columns]
         self.columas_a_eliminar = conf["columnas_eliminar"]
         self.renglones_a_eliminar = conf["renglones_eliminar"]
+        self.valores_sustituir = conf["valores_sustituir"]
 
     def _filtrar_padecimiento(self, padecimiento: str) -> None:
         
@@ -30,7 +31,16 @@ class CleanDataset:
     def _sustituir_valores(self) -> pd.DataFrame:
         """Sustituye valores nulos en el DataFrame."""
 
+        for reemplazo in self.valores_sustituir:
+            nombre_columna = reemplazo["Nombre"]
+            valor_viejo = reemplazo["valor_viejo"]
+            valor_nuevo = reemplazo["valor_nuevo"]
+            logger.debug(f'Sustituyendo en columna {nombre_columna}: {valor_viejo} por {valor_nuevo}')
+            self.df[nombre_columna] = self.df[nombre_columna].replace(valor_viejo, valor_nuevo)
+
         self.df["Valor"] = pd.to_numeric(self.df["Valor"].replace("-", "0"), errors="coerce")
+
+
         return self.df
 
     def _eliminar_registros(self) -> pd.DataFrame:
@@ -54,11 +64,6 @@ class CleanDataset:
 
         return self.df
     
-
-
-    #def generate_reporte(self) -> None:
-
-
 
     def run(self) -> pd.DataFrame:
         

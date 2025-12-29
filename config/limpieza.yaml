@@ -14,3 +14,9 @@ renglones_eliminar:
   - Nombre: "Entidad"
     valor:
       - "TOTAL"
+
+
+valores_sustituir:
+  - Nombre: "Entidad"
+    valor_viejo: "Distrito Federal"
+    valor_nuevo: "Ciudad de México"

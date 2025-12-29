@@ -120,6 +120,13 @@ class PDFReportGenerator:
         story.append(tabla_kv(self.datos.resumen_general))
         story.append(PageBreak())
 
+    def _agregar_notas(self, story: List[Any]):
+        if self.datos.notas:
+            #notas_html = self.datos.notas.replace("\n", "<br/>")
+            story.append(Paragraph("Notas", self.styles['Seccion']))
+            story.append(Paragraph(self.datos.notas or "—", self.styles['NormalJust']))
+            story.append(PageBreak())
+
     def _agregar_tablas_campos(self, story: List[Any]):
 
         self._agregar_tabla_si_existe(story, "Características de los campos", getattr(self.datos, "resumen_datos", None))
@@ -178,5 +185,6 @@ class PDFReportGenerator:
         self._agregar_tablas_campos(story)
         logger.debug("Agregando figuras al reporte PDF.")
         self._agregar_figuras(story)
+        self._agregar_notas(story)
 
         doc.build(story, onFirstPage=cabecera_pie, onLaterPages=cabecera_pie)

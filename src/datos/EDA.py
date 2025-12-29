@@ -175,10 +175,63 @@ class EDAReportBuilder:
                       f" | columnas consideradas = {cat.shape[1]} de {self.df.shape[1]}| formato de salida = {type(resumen)}")
         return pd.DataFrame(resumen).set_index("columna")
 
+
+
     def tablas_categoricas(self) -> Dict[str, pd.DataFrame]:
+
+        logger.debug("Generando tablas de frecuencias para columnas categóricas...")
         cat = self.df.select_dtypes(include=['object', 'category'])
-        return {col: serie.fillna("N/A").value_counts().head(self.numero_top_columnas).to_frame("frecuencia")
-                for col, serie in cat.items()}
+        resultados: Dict[str, pd.DataFrame] = {}
+
+        for col in cat.columns:
+            serie = cat[col]
+            vc = serie.fillna("N/A").value_counts(dropna=False)
+            n = int(self.numero_top_columnas) if hasattr(self, "numero_top_columnas") else 10
+
+            logger.debug(f"Generando tabla de frecuencias top para la columna: {col}, Número de categorías a mostrar: {n}")
+
+            if n <= 0:
+                resultados[col] = pd.DataFrame(columns=["frecuencia", "Observaciones"])
+                continue
+
+            if len(vc) <= n:
+                df_out = vc.to_frame("frecuencia")
+
+            else:
+                
+                logger.debug(f"La columna {col} tiene más de {n} categorías únicas. Generando tabla combinada de top máximos y mínimos.")
+                half = n // 2
+                if half == 0:
+                    half = 1
+
+                top_max = vc.sort_values(ascending=False).head(half)
+
+                restantes = vc.drop(top_max.index, errors='ignore')
+                top_min = restantes.sort_values(ascending=True).head(n - half)
+
+                df_max = top_max.to_frame("frecuencia")
+                df_max["Observaciones"] = "Valores más frecuentes"
+
+                df_min = top_min.to_frame("frecuencia")
+                df_min["Observaciones"] = "Valores menos frecuentes"
+
+                separador = pd.DataFrame(
+                    {"frecuencia": "...", "Observaciones": ["..."]},
+                    index=["..."]
+                )
+
+                df_min = df_min.sort_values(by="frecuencia", ascending=False)
+                df_out = pd.concat([df_max, separador, df_min])
+            
+            df_out.index.name = col
+            resultados[col] = df_out
+
+        return resultados
+
+
+
+
+
 
     # ------------------ Gráficos ------------------
     def plot_histograma(self, col: str) -> Optional[str]:
@@ -230,5 +283,5 @@ class EDAReportBuilder:
             estadisticas_categoricas=self.estadisticas_categoricas(),
             tablas_categoricas=self.tablas_categoricas(),
             figuras=figuras,
-            notas="Generado automáticamente por EDAReportBuilder."
+            notas= None
         )
