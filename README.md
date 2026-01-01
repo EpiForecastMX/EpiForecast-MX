@@ -48,9 +48,6 @@ Proyecto para predecir casos de Alzheimer en México mediante modelos de aprendi
 
 ```
 
---------
-
-
 ## 💼 Clonar repositorio
 ```bash
 git clone https://github.com/Jarcos-nual/Alzheimer.git
@@ -61,9 +58,7 @@ cd Alzheimer/
 
 ## 📚 Makefile
 
---------
-
-### 🔧 Configurar entorno de Python con conda
+### 🔧 Configurar entorno de Python
 Crea el entorno del intérprete de Python utilizando **conda**:
 
 ```bash
@@ -85,7 +80,7 @@ Produce el informe de **Exploratory Data Analysis** con visualizaciones y estad�
 ```bash
 make eda
 ```
-### 🧹 Limpieza de dato
+### 🧹 Limpieza de datos
 Ejecuta el proceso de depuración de datos:
 ```bash
 make clean
