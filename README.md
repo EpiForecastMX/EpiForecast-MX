@@ -54,8 +54,6 @@ git clone https://github.com/Jarcos-nual/Alzheimer.git
 cd Alzheimer/
 ```
 
---------
-
 ## 📚 Makefile
 
 ### 🔧 Configurar entorno de Python
