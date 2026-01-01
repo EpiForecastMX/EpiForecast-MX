@@ -2,7 +2,7 @@
 # GLOBALS                                                                       #
 #################################################################################
 
-PROJECT_NAME = Alzheimer
+PROJECT_NAME = integrador
 PYTHON_VERSION = 3.14
 PYTHON_INTERPRETER = python
 
@@ -40,7 +40,7 @@ format:
 	ruff format
 
 
-## Set up Python interpreter environment
+## Configurar el entorno del intérprete de Python a través de conda
 .PHONY: create_environment
 create_environment:
 	

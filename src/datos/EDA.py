@@ -1,3 +1,4 @@
+# src/datos/EDA.py
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional
 from datetime import datetime
@@ -7,7 +8,7 @@ import matplotlib.pyplot as plt
 from loguru import logger
 
 from src.configuraciones.config_params import conf
-from src.utils import DirectoryManager
+from src.utils import directory_manager
 from src.utils.graficos import GraficosHelper
 
 
@@ -29,34 +30,37 @@ class ReportData:
 class EDAReportBuilder:
     """Genera insumos de un reporte EDA a partir de un DataFrame."""
 
-    def __init__(self, df: pd.DataFrame, titulo: str, subtitulo: str, fuente_datos: str,
-                 numero_top_columnas: int = 8):
+    def __init__(self,
+                 df: pd.DataFrame,
+                 fuente_datos: str,
+                 opciones: dict):
+        
         
         self.df = df.copy()
-        self.titulo, self.subtitulo, self.fuente_datos = titulo, subtitulo, fuente_datos
-        self.numero_top_columnas = numero_top_columnas
         self.carpeta_salida = conf["paths"]["figures"]
+        self.titulo = opciones['titulo_reporte']
+        self.subtitulo = opciones['subtitulo_reporte']
+        self.fuente_datos = fuente_datos
+        self.numero_top_columnas = opciones['max_cols']
+        self.genera_boxplot = opciones['boxplot']
+        self.genera_violin = opciones['violin']
+        self.campo_comparativa = opciones['bp_comparativa'] 
         self.graficos_helper = GraficosHelper(self.carpeta_salida, self.numero_top_columnas)
 
-        DirectoryManager.asegurar_ruta(self.carpeta_salida)
-        DirectoryManager.limpia_carpeta(self.carpeta_salida)
+        directory_manager.asegurar_ruta(self.carpeta_salida)
+        directory_manager.limpia_carpeta(self.carpeta_salida)
+
         logger.debug(f"El reporte se generará con título: {self.titulo}")
         logger.debug(f"El subtítulo del reporte es: {self.subtitulo}")
         logger.debug(f"La fuente de datos es: {self.fuente_datos}")
         logger.debug(f"Número máximo de columnas a mostrar: {self.numero_top_columnas}")
         logger.info(f"Las imágenes se guardarán en: {self.carpeta_salida}")
 
-        plt.rcParams.update({
-            'font.family': conf["reporte_EDA"]["estilo_fuente"],
-            'axes.titlesize': 12,
-            'axes.labelsize': 10
-        })
-
     # ------------------ Filtrar padecimiento ------------------
 
     def _filtrar_padecimiento(self, padecimiento: str) -> None:
         
-        logger.info(f"Filtrando datos por padecimiento: {padecimiento}")
+        logger.info(f"Filtrando datos por padecimiento: '{padecimiento}'")
         if "Padecimiento" in self.df.columns and padecimiento:
             self.df = self.df[self.df["Padecimiento"]
                             .astype(str)
@@ -142,9 +146,8 @@ class EDAReportBuilder:
                "count": "conteo", "mean": "media", "std": "desv_est",
                "min": "mín", "25%": "p25", "50%": "p50",
                "75%": "p75", "max": "máx"
-           })
-           .round(3)
-    )
+           }).round(3)
+        )   
 
         logger.debug( f"Dataframe de estadísticas numéricas generado | filas = {len(estadisticas_numericas):,} | columnas = {estadisticas_numericas.shape[1]:,}"
                       f" | columnas consideradas = {num.shape[1]} de {self.df.shape[1]} | formato de salida = {type(estadisticas_numericas)}")
@@ -172,7 +175,7 @@ class EDAReportBuilder:
         } for col, serie in cat.items() if not serie.empty]
 
         logger.debug( f"Dataframe de estadísticas categóricas generado | filas = {len(resumen):,} | columnas = {len(resumen[0].keys())} "
-                      f" | columnas consideradas = {cat.shape[1]} de {self.df.shape[1]}| formato de salida = {type(resumen)}")
+                      f" | columnas consideradas = {cat.shape[1]} de {self.df.shape[1]} | formato de salida = {type(resumen)}")
         return pd.DataFrame(resumen).set_index("columna")
 
 
@@ -199,7 +202,7 @@ class EDAReportBuilder:
 
             else:
                 
-                logger.debug(f"La columna {col} tiene más de {n} categorías únicas. Generando tabla combinada de top máximos y mínimos.")
+                logger.debug(f"La columna '{col}' tiene más de {n} categorías únicas. Generando tabla combinada de top máximos y mínimos.")
                 half = n // 2
                 if half == 0:
                     half = 1
@@ -228,11 +231,6 @@ class EDAReportBuilder:
 
         return resultados
 
-
-
-
-
-
     # ------------------ Gráficos ------------------
     def plot_histograma(self, col: str) -> Optional[str]:
         return self.graficos_helper.plot_histograma(self.df[col], col)
@@ -243,8 +241,12 @@ class EDAReportBuilder:
     def plot_violin(self, col: str) -> Optional[str]:
         return self.graficos_helper.plot_violin(self.df[col], col)
     
+    def plot_box(self, col: str, col_comparativa: str) -> Optional[str]:
+        return self.graficos_helper.plot_box(self.df, col, col_comparativa)
+    
     def plot_correlacion(self) -> Optional[str]:
         return self.graficos_helper.plot_correlacion(self.df)
+
 
     # ------------------ Ejecución ------------------
     def run(self) -> ReportData:
@@ -254,19 +256,26 @@ class EDAReportBuilder:
         self._filtrar_padecimiento(padecimiento)
 
         for col in self.df.select_dtypes(include='number').columns:
-            logger.debug(f"Generando histograma para la columna numérica: {col}")
+            logger.debug(f"Generando histograma para la columna numérica: '{col}'")
             ruta = self.plot_histograma(col)
             if ruta: figuras.append(ruta)
 
         for col in self.df.select_dtypes(include=['object', 'category']).columns:
-            logger.debug(f"Generando gráfico de barras para la columna categórica: {col}")
+            logger.debug(f"Generando gráfico de barras para la columna categórica: '{col}'")
             ruta = self.plot_categorica_barras(col)
             if ruta: figuras.append(ruta)
+
+        if self.genera_violin:
+            for col in self.df.columns:
+                logger.debug(f"Generando gráfico de violín para la columna numérica: '{col}'")
+                ruta = self.plot_violin(col)
+                if ruta: figuras.append(ruta)
         
-        for col in self.df.columns:
-            logger.debug(f"Generando gráfico de violín para la columna numérica: {col}")
-            ruta = self.plot_violin(col)
-            if ruta: figuras.append(ruta)
+        if self.genera_boxplot:
+            for col in self.df.columns:
+                logger.debug(f"Creando gráfico de caja para la columna '{col}' con referencia en '{self.campo_comparativa}'")
+                ruta = self.plot_box(col,self.campo_comparativa)
+                if ruta: figuras.append(ruta)
 
         corr = self.plot_correlacion()
         logger.debug("Generando matriz de correlación para columnas numéricas.")

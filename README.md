@@ -9,52 +9,43 @@ Proyecto para predecir casos de Alzheimer en México mediante modelos de aprendi
 ## Project Organization
 
 ```
-├── LICENSE            <- Open-source license if one is chosen
-├── Makefile           <- Makefile with convenience commands like `make data` or `make train`
-├── README.md          <- The top-level README for developers using this project.
+├── config             <- Archivos de configuración en formato YAML
+│
 ├── data
-│   ├── external       <- Data from third party sources.
-│   ├── interim        <- Intermediate data that has been transformed.
-│   ├── processed      <- The final, canonical data sets for modeling.
-│   └── raw            <- The original, immutable data dump.
+│   ├── external       <- Datos obtenidos de fuentes externas (no generados internamente)
+│   ├── interim        <- Resultados temporales de transformaciones, útiles para depuración y trazabilidad
+│   ├── processed      <- Conjuntos de datos definitivos y estandarizados listos para análisis y modelado
+│   └── raw            <- Captura inicial de datos sin modificaciones
 │
-├── docs               <- A default mkdocs project; see www.mkdocs.org for details
+├── docs               <- Proyecto base de documentación 
 │
-├── models             <- Trained and serialized models, model predictions, or model summaries
+├── logs               <- Registros generados automáticamente durante la ejecución del proyecto
 │
-├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-│                         the creator's initials, and a short `-` delimited description, e.g.
-│                         `1.0-jqp-initial-data-exploration`.
+├── models             <- Modelos entrenados y serializados
 │
-├── pyproject.toml     <- Project configuration file with package metadata for 
-│                         alzheimer and configuration for tools like black
+├── notebooks          <- Notebooks de Jupyter para exploración y análisis
 │
-├── references         <- Data dictionaries, manuals, and all other explanatory materials.
+├── references         <- Diccionarios de datos, manuales y materiales explicativos
 │
-├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-│   └── figures        <- Generated graphics and figures to be used in reporting
+├── reports            <- Resultados de análisis exportados en formatos reproducibles (HTML, PDF, LaTeX)
+│   └── figures        <- Visualizaciones generadas automáticamente para documentación y reportes
 │
-├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-│                         generated with `pip freeze > requirements.txt`
+├── scripts            <- Carpeta que contiene los archivos en Python utilizados para instanciar clases y orquestar flujos
 │
-├── setup.cfg          <- Configuration file for flake8
+├── src
+│   └── configuraciones <- Módulos que gestionan parámetros y configuraciones del proyecto desde archivos YAML
+│   └── datos           <- Módulos con clases para limpieza, transformación y preparación de datos
+│   └── utils           <- Funciones auxiliares para directorios, visualización y generación automatizada de reportes
 │
-└── alzheimer   <- Source code for use in this project.
-    │
-    ├── __init__.py             <- Makes alzheimer a Python module
-    │
-    ├── config.py               <- Store useful variables and configuration
-    │
-    ├── dataset.py              <- Scripts to download or generate data
-    │
-    ├── features.py             <- Code to create features for modeling
-    │
-    ├── modeling                
-    │   ├── __init__.py 
-    │   ├── predict.py          <- Code to run model inference with trained models          
-    │   └── train.py            <- Code to train models
-    │
-    └── plots.py                <- Code to create visualizations
+├── Makefile           <- Archivo Makefile que centraliza comandos para automatizar tareas del proyecto (descarga de datos, entrenamiento, etc.)
+│
+├── pyproject.toml     <- Archivo de configuración principal para dependencias y metadatos del proyecto en Python
+│
+├── README.md          <- Documento inicial con instrucciones, dependencias y guías para configurar y ejecutar el proyecto
+│
+└── requirements.txt   <- Lista de dependencias en Python necesarias para ejecutar el proyecto
+
+
 ```
 
 --------
@@ -68,27 +59,34 @@ cd Alzheimer/
 
 --------
 
-## 📦 Instalar paqueterías
-```bash
-pip install -r requirements.txt --quiet
-```
---------
-
 ## 📚 Makefile
 
 --------
 
-Descargar Dataset:
+### 🔧 Configurar entorno de Python con conda
+Crea el entorno del intérprete de Python utilizando **conda**:
+
+```bash
+make create_environment
+```
+### 📦 Instalar dependencia
+Instala todas las librerías y paquetes necesarios definidos en el archivo de requisitos:
+```bash
+make requirements
+```
+
+### 📂 Descargar dataset
+Obtén los datos requeridos para el análisis:
 ```bash
 make data
 ```
-
-Generar Análisis Exploratorio de Datos:
+### 📊 Generar análisis exploratorio (EDA)
+Produce el informe de **Exploratory Data Analysis** con visualizaciones y estadísticas iniciales:
 ```bash
 make eda
 ```
-
-Realizar limpieza de datos:
+### 🧹 Limpieza de dato
+Ejecuta el proceso de depuración de datos:
 ```bash
 make clean
 ```

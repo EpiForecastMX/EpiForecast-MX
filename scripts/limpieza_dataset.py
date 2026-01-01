@@ -1,11 +1,10 @@
 # src/scripts/limpieza_dataset.py
-
 import pandas as pd
 from src.configuraciones.config_params import conf, logger
 from src.datos.clean_dataset import CleanDataset
-from src.utils import DirectoryManager
+from src.utils import directory_manager
 from src.datos.EDA import EDAReportBuilder
-from src.utils.ReportePDF import PDFReportGenerator
+from src.utils.reporte_PDF import PDFReportGenerator
 from typing import List, Dict, Any
 from omegaconf import DictConfig
 
@@ -36,8 +35,6 @@ def generar_notas()  -> str:
     renglones: List[Dict[str, Any]] = _get_section(conf, "renglones_eliminar")
     sustituciones: List[Dict[str, Any]] = _get_section(conf, "valores_sustituir")
 
-
-    
     partes.append(
     "Reglas aplicadas durante el proceso de limpieza de datos.<br/><br/>"
     "Estas reglas están definidas en el archivo de configuración limpieza.yaml, "
@@ -75,7 +72,7 @@ def generar_notas()  -> str:
                 partes.append(f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- {str(v)}<br/>")
         partes.append("<br/>")
 
-    # Sección: valores_sustituir
+
     if sustituciones:
         partes.append("Valores sustituidos:<br/>")
         for regla in renglones:
@@ -98,11 +95,11 @@ def main():
 
     raw_file = conf["data"]["raw_data_file"]
     interim_file = conf["data"]["interim_data_file"]
-
     archivo_salida = f"{conf['reporte_clean_dataset']['nombre_reporte']}.pdf"
     ruta_reporte = f"{conf['paths']['docs']}/{archivo_salida}"
+    opciones_reporte = conf['reporte_clean_dataset']
 
-    DirectoryManager.asegurar_ruta(interim_file)
+    directory_manager.asegurar_ruta(interim_file)
 
     logger.info(f"Cargando datos desde {raw_file}...")
     df = pd.read_csv(raw_file)
@@ -114,10 +111,8 @@ def main():
 
     datos_reporte = EDAReportBuilder(
         df = clean_df,
-        titulo = conf["reporte_clean_dataset"]["titulo_reporte"],
-        subtitulo = conf["reporte_clean_dataset"]["subtitulo_reporte"],
         fuente_datos = interim_file,
-        numero_top_columnas = conf["reporte_clean_dataset"]["max_cols"],
+        opciones = opciones_reporte
     ).run()
 
 

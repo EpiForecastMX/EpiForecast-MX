@@ -25,18 +25,3 @@ metadata:
   url: "https://github.com/Jarcos-nual/Alzheimer"
   license_name: "MIT License"
   license_url: "https://opensource.org/licenses/MIT"
-
-cleaning:
-  skew_threshold: 0.5
-
-limpieza_dataset:
-  cols_to_drop:
-    - "Pag."
-    - "Cuadro "
-    - "No_01"
-    - "No_02"
-    - "No_03"
-    - "No_04"
-    - "Ax_002"
-    - "Padecimiento"
-

@@ -1,6 +1,4 @@
 # src/configuraciones/config_params.py
-from __future__ import annotations
-
 from omegaconf import OmegaConf
 from loguru import logger
 from pathlib import Path

@@ -6,6 +6,7 @@ columnas_eliminar:
   - 'Ax_002'
   - 'Padecimiento'
   - 'Cuadro'
+  - 'Pag.'
 
 renglones_eliminar:
   - Nombre: "Ax_003"
@@ -17,13 +18,11 @@ renglones_eliminar:
     valor:
       - "TOTAL"
 
-
 valores_sustituir:
   - columna_objetivo: "Entidad"
     texto_a_reemplazar: "Distrito Federal"
     texto_sustituto: "Ciudad de México"
-
-
+    
 sustituir_cadena:
   - columna_objetivo: "Semana"
     texto_a_reemplazar: "sem"

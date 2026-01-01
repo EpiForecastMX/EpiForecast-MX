@@ -1,4 +1,4 @@
-# src/scripts/transformaciones.py
+# src/scripts/realiza_prep.py
 import pandas as pd
 from src.configuraciones.config_params import conf, logger
 from src.datos.preparacion import dataPreparation

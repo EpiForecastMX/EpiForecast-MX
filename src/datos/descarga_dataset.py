@@ -1,8 +1,7 @@
 # src/datos/descarga_dataset.py
-
 import gdown
 from loguru import logger
-from src.utils import DirectoryManager
+from src.utils import directory_manager
 
 # Clase encargada de descargar datasets desde Google Drive a una ruta local
 
@@ -19,13 +18,13 @@ class DatasetDownloader:
         Prepara el directorio de salida.
         Retorna True si se debe descargar (no existe o force=True), False si NO.
         """
-        DirectoryManager.asegurar_ruta(self.output_path)
+        directory_manager.asegurar_ruta(self.output_path)
         
-        if DirectoryManager.existe_archivo(self.output_path) and not self.force:
+        if directory_manager.existe_archivo(self.output_path) and not self.force:
             logger.info(f"El archivo ya existe: {self.output_path}. Se omite la descarga.")
             return False
         
-        if self.force and DirectoryManager.existe_archivo(self.output_path):            
+        if self.force and directory_manager.existe_archivo(self.output_path):            
             logger.warning(f"El archivo existe pero 'force=True': se volverá a descargar -> {self.output_path}")
         else:
             logger.debug(f"Archivo no encontrado. Se descargará en: {self.output_path}")

@@ -1,3 +1,4 @@
+# src/utils/graficos.py
 import os
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -86,8 +87,6 @@ class GraficosHelper:
         top_valores = serie.value_counts().nlargest(self.numero_top_columnas).index
         serie = serie[serie.isin(top_valores)]
 
-
-
         plt.figure(figsize=(6, 4))
         sns.violinplot(
             y=serie,
@@ -106,3 +105,24 @@ class GraficosHelper:
         sns.heatmap(num.corr(numeric_only=True), cmap="viridis", annot=True)
         plt.title("Matriz de correlación")
         return self._guardar_figura("correlacion.png")
+    
+    def plot_box(self, serie, col: str, col_comparativa: str) -> Optional[str]:
+
+        if col == col_comparativa:
+            return None
+
+        sns.boxplot(x=col, y=col_comparativa,
+                    data=serie,
+                    palette="Set2",
+                    hue=col,
+                    legend=False,
+                    notch=True,
+                    fliersize=1,
+                    boxprops=dict(alpha=0.7))
+        plt.title(f"Distribución de Valor por {col}")
+        plt.xlabel("")
+        plt.xticks(rotation=90)
+
+
+
+        return self._guardar_figura(f"box_{col}.png")

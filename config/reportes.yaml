@@ -3,13 +3,17 @@ reporte_EDA:
   nombre_reporte: "EDA_${reporte_EDA.filtro_padecimiento}"
   titulo_reporte: "Análisis Exploratorio de Datos"
   subtitulo_reporte: "Padecimiento: ${reporte_EDA.filtro_padecimiento} (RAW Data)"
-  estilo_fuente: "DejaVu Sans"
-  max_cols: 10
+  boxplot: False
+  bp_comparativa: ""
+  violin: True
+  max_cols: 12
 
 
 reporte_clean_dataset:
   nombre_reporte: "EDA_${reporte_EDA.filtro_padecimiento} (Clean Data)"
   titulo_reporte: "Análisis Exploratorio de Datos"
   subtitulo_reporte: "Padecimiento: ${reporte_EDA.filtro_padecimiento} (Clean Data)"
-  estilo_fuente: "DejaVu Sans"
-  max_cols: 10
+  boxplot: True
+  bp_comparativa: "Valor"
+  violin: False
+  max_cols: 12
