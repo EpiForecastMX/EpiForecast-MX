@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from loguru import logger
 
 from src.configuraciones.config_params import conf
+from src.utils.datos import OperacionesDatos
 
 class dataPreparation:
         
@@ -36,9 +37,20 @@ class dataPreparation:
         self.df_interim["casos_semanales_acum"] = self.df_interim["Casos_Hombres_acum"] + self.df_interim["Casos_Mujeres_acum"]
         self.df_interim["casos_semanales_dif"] = self.df_interim["casos_semanales_acum"].diff()
 
-        casos_nacionales = self.df_interim.groupby("Fecha")["casos_semanales_dif"].sum()
-        casos_nacionales = casos_nacionales.clip(lower=0)
+        iqr, rango = OperacionesDatos.outliers_iqr(self.df_interim,"casos_semanales_acum", factor=1.5)
+        logger.info(f"\n{iqr}")
+        logger.info(f"\n{rango}")
         
+
+        
+        
+
+        casos_nacionales = self.df_interim.groupby("Fecha")["casos_semanales_dif"].sum()
+        #clip limita los valores de una Serie o DataFrame dentro de un rango.
+        casos_nacionales = casos_nacionales.clip(lower=0)
+
+
+        """
         #esto da una grafica muy parecida ...
         casos_nacionales = casos_nacionales.drop("2016-05-16")
         casos_nacionales = casos_nacionales[casos_nacionales != 0 ]
@@ -52,6 +64,8 @@ class dataPreparation:
         plt.grid(True, linestyle='--', alpha=0.6)
         plt.legend()
         plt.show()
+
+        """
 
 
 
