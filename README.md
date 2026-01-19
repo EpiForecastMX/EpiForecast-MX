@@ -83,3 +83,19 @@ Ejecuta el proceso de depuración de datos:
 ```bash
 make clean
 ```
+
+
+## 📚 Fuentes de Información
+
+Para la obtención, verificación y actualización de los datos epidemiológicos utilizados en este proyecto, se consultan las siguientes fuentes oficiales:
+
+- **Boletín Epidemiológico Actual**  
+  Publicado semanalmente por la Dirección General de Epidemiología (DGE).  
+  Disponible en: https://www.gob.mx/salud/acciones-y-programas/direccion-general-de-epidemiologia-boletin-epidemiologico
+
+- **Histórico de Boletines Epidemiológicos**  
+  Archivo completo de ediciones previas del boletín epidemiológico.  
+  Disponible en: https://www.gob.mx/salud/acciones-y-programas/historico-boletin-epidemiologico
+
+Estas fuentes garantizan el acceso a información confiable y actualizada proporcionada por la Secretaría de Salud de México.
+``
