@@ -98,4 +98,3 @@ Para la obtención, verificación y actualización de los datos epidemiológicos
   Disponible en: https://www.gob.mx/salud/acciones-y-programas/historico-boletin-epidemiologico
 
 Estas fuentes garantizan el acceso a información confiable y actualizada proporcionada por la Secretaría de Salud de México.
-``
