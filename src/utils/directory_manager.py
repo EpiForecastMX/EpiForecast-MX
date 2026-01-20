@@ -18,12 +18,11 @@ def asegurar_ruta(path_str: str | Path) -> Path:
     """
     path = Path(path_str)
 
-    # Si es archivo, crear carpeta contenedora
-    if path.suffix:
-        logger.info(f"Creando carpeta contenedora para archivo: {path}")
-        path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        logger.info(f"Carpeta localizada: {path}")
+
     else:
-        logger.info(f"Creando carpeta: {path}")
+        logger.warning(f"La carpeta no existe, creando: {path}")
         path.mkdir(parents=True, exist_ok=True)
 
     return path
@@ -47,6 +46,8 @@ def limpia_carpeta(path_str: str | Path) -> None:
     :param path_str: Ruta de la carpeta como str o Path.
     """
     path = Path(path_str)
+
+    logger.info(f'limpiando carpeta: {path}')
 
     if not path.is_dir():
         raise ValueError(f"La ruta {path} no es una carpeta válida.")

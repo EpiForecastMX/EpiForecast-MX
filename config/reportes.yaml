@@ -6,7 +6,7 @@ reporte_EDA:
   boxplot: False
   bp_comparativa: ""
   violin: True
-  max_cols: 12
+  max_cols: 33  #limita el número de variables que se visualizarán en la gráfica
 
 
 reporte_clean_dataset:
@@ -14,6 +14,6 @@ reporte_clean_dataset:
   titulo_reporte: "Análisis Exploratorio de Datos"
   subtitulo_reporte: "Padecimiento: ${reporte_EDA.filtro_padecimiento} (Clean Data)"
   boxplot: True
-  bp_comparativa: "Valor"
+  bp_comparativa: "Anio"
   violin: False
-  max_cols: 12
+  max_cols: 34

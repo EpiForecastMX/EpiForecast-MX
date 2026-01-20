@@ -81,7 +81,7 @@ make eda
 ### 🧹 Limpieza de datos
 Ejecuta el proceso de depuración de datos:
 ```bash
-make clean
+make clean_dataset
 ```
 
 

@@ -80,6 +80,8 @@ class GraficosHelper:
     def plot_violin(self, serie, col: str) -> Optional[str]:
 
         serie = serie.dropna()
+        alto = 6
+        ancho = 8
 
         if serie.empty:
             return None
@@ -87,7 +89,19 @@ class GraficosHelper:
         top_valores = serie.value_counts().nlargest(self.numero_top_columnas).index
         serie = serie[serie.isin(top_valores)]
 
-        plt.figure(figsize=(6, 4))
+        cantidad = len(top_valores)
+
+        if cantidad == 1:
+            alto = 2
+        elif 5 <= cantidad <= 30:
+            alto = 6
+            ancho = 8
+        elif cantidad > 30:
+            alto = 8
+            ancho = 10
+
+
+        plt.figure(figsize=(ancho, alto))
         sns.violinplot(
             y=serie,
             inner=None,

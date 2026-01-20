@@ -1,22 +1,10 @@
 columnas_eliminar:
-  - 'No_01'
-  - 'No_02'
-  - 'No_03'
-  - 'No_04'
-  - 'Ax_002'
   - 'Padecimiento'
-  - 'Cuadro'
-  - 'Pag.'
+  - 'Acumulado_anio_anterior'
+  - 'Casos_semana'
+
 
 renglones_eliminar:
-  - Nombre: "Ax_003"
-    valor:
-      - "Acum."
-      - "Sem."
-  
-  - Nombre: "Entidad"
-    valor:
-      - "TOTAL"
 
 valores_sustituir:
   - columna_objetivo: "Entidad"
@@ -24,12 +12,3 @@ valores_sustituir:
     texto_sustituto: "Ciudad de México"
     
 sustituir_cadena:
-  - columna_objetivo: "Semana"
-    texto_a_reemplazar: "sem"
-    texto_sustituto: ""
-    tipo: "Int64"
-
-  - columna_objetivo: "Valor"
-    texto_a_reemplazar: "-"
-    texto_sustituto: "0"
-    tipo: "Int64"

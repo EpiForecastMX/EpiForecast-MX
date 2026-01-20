@@ -15,7 +15,7 @@ def main():
     logger.info(f"Cargando datos desde {raw_file}...")
     df = pd.read_csv(raw_file)
 
-    directory_manager.asegurar_ruta(ruta_reporte)
+    directory_manager.asegurar_ruta(conf['paths']['docs'])
 
     datos_reporte = EDAReportBuilder(
         df = df,

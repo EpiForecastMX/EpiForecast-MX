@@ -15,39 +15,41 @@ class dataPreparation:
     
     def _agrupa_dataset(self):
          
-        self.df_interim = self.df.pivot_table(
-            index=["Año", "Semana", "Entidad"],
-            columns="Ax_003",
-            values="Valor",
-            aggfunc="first"
-        ).reset_index()
+        #self.df_interim = self.df.pivot_table(
+        #    index=["Año", "Semana", "Entidad"],
+        #    columns="Ax_003",
+        #    values="Valor",
+        #    aggfunc="first"
+        #).reset_index()
 
-        self.df_interim = self.df_interim.rename(columns={
-            "H": "Casos_Hombres_acum",
-            "M": "Casos_Mujeres_acum"
-        })
+        #self.df_interim = self.df_interim.rename(columns={
+        #    "H": "Casos_Hombres",
+        #    "M": "Casos_Mujeres"
+        #})
 
-        self.df_interim  = self.df_interim .sort_values(["Entidad", "Año", "Semana"])
+        #self.df_interim  = self.df_interim .sort_values(["Entidad", "Año", "Semana"])
 
-        self.df_interim["Fecha"] = pd.to_datetime(
-        self.df_interim["Año"].astype(str) + self.df_interim["Semana"].astype(str).str.zfill(2) + "1",
-        format="%G%V%u"
-        )
+        #logger.info(f'\n{self.df_interim}')
+
+        #self.df_interim["Fecha"] = pd.to_datetime(
+        #self.df_interim["Año"].astype(str) + self.df_interim["Semana"].astype(str).str.zfill(2) + "1",
+        #format="%G%V%u"
+        #)
         
-        self.df_interim["casos_semanales_acum"] = self.df_interim["Casos_Hombres_acum"] + self.df_interim["Casos_Mujeres_acum"]
-        self.df_interim["casos_semanales_dif"] = self.df_interim["casos_semanales_acum"].diff()
+        #self.df_interim["casos_semanales_acum"] = self.df_interim["Casos_Hombres_acum"] + self.df_interim["Casos_Mujeres_acum"]
+        #self.df_interim["casos_semanales_dif"] = self.df_interim["casos_semanales_acum"].diff()
 
-        iqr, rango = OperacionesDatos.outliers_iqr(self.df_interim,"casos_semanales_acum", factor=1.5)
-        logger.info(f"\n{iqr}")
-        logger.info(f"\n{rango}")
+        #iqr, rango = OperacionesDatos.outliers_iqr(self.df_interim,"casos_semanales_acum", factor=1.5)
+        #logger.info(f"\n{iqr}")
+        #logger.info(f"\n{rango}")
         
 
         
         
 
-        casos_nacionales = self.df_interim.groupby("Fecha")["casos_semanales_dif"].sum()
+        #casos_nacionales = self.df_interim.groupby("Fecha")["casos_semanales_dif"].sum()
         #clip limita los valores de una Serie o DataFrame dentro de un rango.
-        casos_nacionales = casos_nacionales.clip(lower=0)
+        #casos_nacionales = casos_nacionales.clip(lower=0)
 
 
         """
