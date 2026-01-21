@@ -17,3 +17,14 @@ reporte_clean_dataset:
   bp_comparativa: "Anio"
   violin: False
   max_cols: 34
+
+
+
+reporte_interim_stage_transformed:
+  nombre_reporte: "EDA_${reporte_EDA.filtro_padecimiento} Transformacion"
+  titulo_reporte: "Análisis Exploratorio de Datos"
+  subtitulo_reporte: "Padecimiento: ${reporte_EDA.filtro_padecimiento} Transformacion (interim)"
+  boxplot: False
+  bp_comparativa: "Anio"
+  violin: False
+  max_cols: 34

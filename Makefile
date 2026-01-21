@@ -71,6 +71,11 @@ eda:
 clean_dataset:
 	$(PYTHON_INTERPRETER) -m scripts.limpieza_dataset
 
+## Aplica las conversiones requeridas y acondiciona la información para su procesamiento posterior.
+.PHONY: prepare
+prepare:
+	$(PYTHON_INTERPRETER) -m scripts.realiza_prep
+
 
 
 #################################################################################
