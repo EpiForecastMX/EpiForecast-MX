@@ -90,6 +90,7 @@ class dataTransformation:
         mask_validos = mask_neg & es_consecutivo
         
         df_outliers_hombres.loc[mask_validos.shift(-1, fill_value=False), "Incremento_hombres"] += df_outliers_hombres.loc[mask_validos, "Incremento_hombres"].values
+        df_outliers_hombres.loc[mask_validos, "Incremento_hombres"] = 0
         
         logger.info(df_outliers_hombres)
 
@@ -97,8 +98,8 @@ class dataTransformation:
         
 
 
-        #prueba = Path(conf["paths"]["interim"]) / "prueba.csv"
-        #df_outliers_hombres.to_csv(prueba, index=False)
+        prueba = Path(conf["paths"]["interim"]) / "prueba.csv"
+        df_outliers_hombres.to_csv(prueba, index=False)
 
          
 
