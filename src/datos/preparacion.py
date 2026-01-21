@@ -6,6 +6,8 @@ from loguru import logger
 from src.configuraciones.config_params import conf
 from src.utils.datos import OperacionesDatos
 
+from pathlib import Path
+
 class dataPreparation:
         
     def __init__(self, df: pd.DataFrame):
@@ -14,6 +16,40 @@ class dataPreparation:
 
     
     def _agrupa_dataset(self):
+        
+        self.df = self.df.sort_values(by=["Anio", "Entidad", "Semana"]).reset_index(drop=True)
+
+        self.df["Prev_hombres"] = self.df.groupby("Entidad")["Acumulado_hombres"].shift()
+        self.df["Prev_mujeres"] = self.df.groupby("Entidad")["Acumulado_mujeres"].shift()
+
+        # Calcular incrementos usando el valor anterior
+        self.df["Incremento_hombres"] = self.df["Acumulado_hombres"] - self.df["Prev_hombres"]
+        self.df["Incremento_mujeres"] = self.df["Acumulado_mujeres"] - self.df["Prev_mujeres"]
+
+        # Regla especial: Semana 2 diferencia = valor acumulado
+        mask_semana2 = self.df["Semana"] == 2
+        self.df.loc[mask_semana2, "Incremento_hombres"] = self.df.loc[mask_semana2, "Acumulado_hombres"]
+        self.df.loc[mask_semana2, "Incremento_mujeres"] = self.df.loc[mask_semana2, "Acumulado_mujeres"]
+
+
+
+
+
+
+        # Mostrar las primeras filas
+        prueba = Path(conf["paths"]["interim"]) / "prueba.csv"
+
+        self.df.to_csv(prueba, index=False)
+
+        """
+        por limpiar, eliminar semana 53, como la primer semana considera la ultima
+        semana del año pasado, mejor lo consideramos como semana 52
+        """
+
+
+
+
+
          
         #self.df_interim = self.df.pivot_table(
         #    index=["Año", "Semana", "Entidad"],

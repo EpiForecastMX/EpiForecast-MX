@@ -30,7 +30,6 @@ def generar_notas()  -> str:
     
     partes: List[str] = []
 
-    
     columnas: List[str] = _get_section(conf, "columnas_eliminar")
     renglones: List[Dict[str, Any]] = _get_section(conf, "renglones_eliminar")
     sustituciones: List[Dict[str, Any]] = _get_section(conf, "valores_sustituir")
@@ -40,7 +39,6 @@ def generar_notas()  -> str:
     "Estas reglas están definidas en el archivo de configuración limpieza.yaml, "
     "el cual indica:<br/>"
     "&nbsp;&nbsp;• Columnas eliminadas<br/>"
-    "&nbsp;&nbsp;• Registros eliminados<br/>"
     "&nbsp;&nbsp;• Valores a sustituir para asegurar la consistencia<br/><br/>"
     )
     
@@ -48,7 +46,6 @@ def generar_notas()  -> str:
     partes.append(
         f"Resumen:<br/>"
         f"&nbsp;&nbsp;Columnas eliminadas = {len(columnas)}, <br/>"
-        f"&nbsp;&nbsp;Registros eliminados = {len(renglones)}, <br/>"
         f"&nbsp;&nbsp;Sustituciones = {len(sustituciones)}<br/>"
     )
     partes.append("<br/>")
@@ -63,18 +60,6 @@ def generar_notas()  -> str:
     # Sección: renglones_eliminar
     if renglones:
         partes.append("Registros eliminados:<br/>")
-        for regla in renglones:
-            nombre = str(regla.get("Nombre", "(sin nombre)"))
-            valores = regla.get("valor", [])
-            valores = valores if isinstance(valores, list) else [valores]
-            partes.append(f"&nbsp;&nbsp;• {nombre}:<br/>")
-            for v in valores:
-                partes.append(f"&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- {str(v)}<br/>")
-        partes.append("<br/>")
-
-
-    if sustituciones:
-        partes.append("Valores sustituidos:<br/>")
         for regla in renglones:
             nombre = str(regla.get("Nombre", "(sin nombre)"))
             valores = regla.get("valor", [])
@@ -109,6 +94,7 @@ def main():
     
     clean_df.to_csv(interim_file, index=False)
     logger.info(f"Datos limpios guardados en: {interim_file}")
+
 
     datos_reporte = EDAReportBuilder(
         df = clean_df,

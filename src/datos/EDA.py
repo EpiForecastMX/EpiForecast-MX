@@ -66,12 +66,10 @@ class EDAReportBuilder:
             logger.error("No se puede filtrar: la columna 'Padecimiento' no existe en el DataFrame.")
             return
         
-        
         if self.df.empty:
             logger.error("No se puede filtrar, DataFrame vacío.")
             return
 
-        
         logger.info(f"Filtrando datos por padecimiento: '{padecimiento}'")
         
         total_antes = len(self.df)

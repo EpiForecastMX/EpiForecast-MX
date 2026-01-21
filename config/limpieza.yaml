@@ -1,14 +1,13 @@
 columnas_eliminar:
   - 'Padecimiento'
   - 'Acumulado_anio_anterior'
-  - 'Casos_semana'
-
-
-renglones_eliminar:
 
 valores_sustituir:
   - columna_objetivo: "Entidad"
     texto_a_reemplazar: "Distrito Federal"
     texto_sustituto: "Ciudad de México"
     
-sustituir_cadena:
+
+registros_eliminar:
+  - nombre: "Semana"
+    valor:  53
