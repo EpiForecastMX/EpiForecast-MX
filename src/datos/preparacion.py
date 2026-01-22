@@ -103,31 +103,39 @@ class dataTransformation:
 
             self.df.loc[self.df[columna] < 0,columna] = 0
 
-    def _tratamiento_outliers(self):
+    def _tratamiento_outliers(self,columnas: list):
 
-        columnas = ["Incremento_hombres","Incremento_mujeres"]
-        
         for columna in columnas:
             _ , metadatos = OperacionesDatos.outliers_iqr(self.df,columna)
             lim_inf = metadatos[0]
             lim_sup = metadatos[1]
+            q1 = metadatos[2]
+            q3 = metadatos[3]
+            iqr = metadatos[4]
+
+            mascara_inf = self.df[columna] < lim_inf
+            total_inf = mascara_inf.sum()
+
+            mascara_sup = self.df[columna] > lim_sup
+            total_sup = mascara_sup.sum()
+
+           
+            logger.info(
+                f"Rangos intercuartiles para '{columna}': IQR={iqr}, Q1={q1}, Q3={q3}"
+            )
+            logger.info(
+                f"Límite inferior: {lim_inf} | Registros por debajo del límite: {total_inf}"
+            )
+            logger.info(
+                f"Límite superior: {lim_sup} | Registros por encima del límite: {total_sup}"
+            )
 
             self.df.loc[self.df[columna] < lim_inf, columna] = lim_inf
             self.df.loc[self.df[columna] > lim_sup, columna] = lim_sup
 
             self.df[columna] = self.df[columna].round(0).astype(int)
 
-            logger.info(metadatos)
-
-
-
-
-        
-
-
-         
-
-
+            
     def pruebas(self):
 
 
@@ -162,7 +170,9 @@ class dataTransformation:
         self._ajusta_semanas()
         self._agrupa_dataset()
         self._convertir_negativos()
-        self._tratamiento_outliers()
+
+        columnas = ["Incremento_hombres","Incremento_mujeres"]
+        self._tratamiento_outliers(columnas)
         
         self.pruebas()
 
