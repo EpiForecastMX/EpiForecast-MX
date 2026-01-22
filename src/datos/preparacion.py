@@ -7,8 +7,7 @@ from loguru import logger
 from src.utils.datos import OperacionesDatos
 
 from src.configuraciones.config_params import conf
-from src.datos.EDA import EDAReportBuilder
-from src.utils.reporte_PDF import PDFReportGenerator
+
 
 from pathlib import Path
 
@@ -18,6 +17,7 @@ class dataTransformation:
             self.df = df.copy()
             self.df_interim = pd.DataFrame
             self.opciones_reporte = conf['reporte_interim_stage_transformed']
+
 
     def _ajusta_semanas(self):
                  
@@ -67,39 +67,63 @@ class dataTransformation:
         self.df.loc[filas_anio, 'Fecha'] = pd.to_datetime(self.df.loc[filas_anio, 'Anio'].astype(str) + '-01-01')
 
 
-    def _identifica_atipicos(self):
-         
-        df_outliers_hombres ,cuartiles_hombres = OperacionesDatos.outliers_iqr(self.df,'Incremento_hombres')
-        df_outliers_mujeres ,cuartiles_mujeres = OperacionesDatos.outliers_iqr(self.df,'Incremento_mujeres')
+    def _convertir_negativos(self):
 
-        df_outliers_hombres = df_outliers_hombres.sort_values(by=["Anio", "Entidad", "Semana"]).reset_index(drop=True)
+        columnas = ["Incremento_hombres","Incremento_mujeres"]
+
+        for columna in columnas:
+            mascara_negativos = self.df[columna] < 0
         
-        mask_neg = df_outliers_hombres["Incremento_hombres"] < 0
+            anio_prev    = self.df["Anio"].shift(1)
+            semana_prev  = self.df["Semana"].shift(1)
+            entidad_prev = self.df["Entidad"].shift(1)
+            valor_prev   = self.df[columna].shift(1)
+
+            es_consecutivo = (
+                (self.df["Anio"] == anio_prev) &
+                (self.df["Entidad"] == entidad_prev) &
+                (self.df["Semana"] == semana_prev + 1)
+            )
         
-        anio_prev    = df_outliers_hombres["Anio"].shift(1)
-        semana_prev  = df_outliers_hombres["Semana"].shift(1)
-        entidad_prev = df_outliers_hombres["Entidad"].shift(1)
+            mascara_actualizar = mascara_negativos & es_consecutivo
+
+            suma = valor_prev + self.df[columna]
+
+            # --- Si la suma es positiva ---
+            condicion_positiva = mascara_actualizar & (suma >= 0)
+
+            self.df.loc[condicion_positiva.shift(-1, fill_value=False), columna] = suma[condicion_positiva].values
+            self.df.loc[condicion_positiva, columna] = 0
+
+            # --- Si la suma es negativa o cero ---
+            condicion_negativa = mascara_actualizar & (suma < 0)
+            self.df.loc[condicion_negativa, columna] = 0
+
+            # --- convierte a cero los valores que no fueron afectados ---
+
+            self.df.loc[self.df[columna] < 0,columna] = 0
+
+    def _tratamiento_outliers(self):
+
+        columnas = ["Incremento_hombres","Incremento_mujeres"]
+        
+        for columna in columnas:
+            _ , metadatos = OperacionesDatos.outliers_iqr(self.df,columna)
+            lim_inf = metadatos[0]
+            lim_sup = metadatos[1]
+
+            self.df.loc[self.df[columna] < lim_inf, columna] = lim_inf
+            self.df.loc[self.df[columna] > lim_sup, columna] = lim_sup
+
+            self.df[columna] = self.df[columna].round(0).astype(int)
+
+            logger.info(metadatos)
+
+
+
 
         
-        es_consecutivo = (
-        (df_outliers_hombres["Anio"] == anio_prev) &
-        (df_outliers_hombres["Entidad"] == entidad_prev) &
-        (df_outliers_hombres["Semana"] == semana_prev + 1)
-        )
 
-        mask_validos = mask_neg & es_consecutivo
-        
-        df_outliers_hombres.loc[mask_validos.shift(-1, fill_value=False), "Incremento_hombres"] += df_outliers_hombres.loc[mask_validos, "Incremento_hombres"].values
-        df_outliers_hombres.loc[mask_validos, "Incremento_hombres"] = 0
-        
-        logger.info(df_outliers_hombres)
-
-
-        
-
-
-        prueba = Path(conf["paths"]["interim"]) / "prueba.csv"
-        df_outliers_hombres.to_csv(prueba, index=False)
 
          
 
@@ -112,13 +136,17 @@ class dataTransformation:
         self.df.to_csv(prueba, index=False)
 
 
-        casos_nacionales = self.df.groupby("Fecha")["Incremento_mujeres"].sum()
-        #clip limita los valores de una Serie o DataFrame dentro de un rango.
-        #casos_nacionales = casos_nacionales.clip(lower=0)
+        casos_hombres = self.df.groupby("Fecha")["Incremento_hombres"].sum()
+        casos_mujeres = self.df.groupby("Fecha")["Incremento_mujeres"].sum()
+
+        casos_totales = casos_hombres + casos_mujeres
 
 
         plt.figure(figsize=(16, 6))
-        plt.plot(casos_nacionales.index, casos_nacionales.values, label='Total de Casos Nacionales', color='navy')
+
+        plt.plot(casos_hombres.index, casos_hombres.values, label='Casos Hombres', color='steelblue')
+        plt.plot(casos_mujeres.index, casos_mujeres.values, label='Casos Mujeres', color='darkred')
+        plt.plot(casos_totales.index, casos_totales.values, label='Total Nacional', color='navy', linewidth=2)
 
         plt.title('Casos Semanales de Alzheimer a Nivel Nacional (Evolución 2014-2024)')
         plt.xlabel('Año')
@@ -128,19 +156,13 @@ class dataTransformation:
         plt.show()
 
 
-
-
-         
     def run(self) -> pd.DataFrame:
         
 
         self._ajusta_semanas()
         self._agrupa_dataset()
-        self._identifica_atipicos()
+        self._convertir_negativos()
+        self._tratamiento_outliers()
+        
+        self.pruebas()
 
-
-
-
-
-
-        #self.pruebas()
