@@ -20,20 +20,20 @@ requirements:
 
 
 
-## Elimina archivos compilados de Python (*.pyc, *.pyo) y carpetas __pycache__
+# Elimina archivos compilados de Python (*.pyc, *.pyo) y carpetas __pycache__
 .PHONY: clean
 clean:
 	find . -type f -name "*.py[co]" -delete
 	find . -type d -name "__pycache__" -delete
 
 
-## Analiza el código con Ruff para verificar formato y calidad del código
+# Analiza el código con Ruff para verificar formato y calidad del código
 .PHONY: lint
 lint:
 	ruff format --check
 	ruff check
 
-## Format source code with ruff
+# Format source code with ruff
 .PHONY: format
 format:
 	ruff check --fix
@@ -55,28 +55,27 @@ create_environment:
 # PROJECT RULES                                                                 #
 #################################################################################
 
-
 ## Obtiene el dataset original para iniciar el flujo de análisis.
-.PHONY: data
-data: 
+.PHONY: descarga
+descarga: 
 	$(PYTHON_INTERPRETER) -m scripts.get_dataset
 
-# Ejecuta el análisis exploratorio de datos (EDA).
-.PHONY: eda
-eda:
-	$(PYTHON_INTERPRETER) -m scripts.realiza_EDA
+## Filtrar dataset con el padecimiento configurado
+.PHONY: filtra
+filtra:
+	@echo ">>> Filtrando dataset con el padecimiento configurado..."
+	$(PYTHON_INTERPRETER) -m scripts.padecimiento
+	@echo ">>> Filtrado completado."
 
 ## Limpia y prepara el dataset eliminando valores nulos, duplicados y formateando columnas.
-.PHONY: clean_dataset
-clean_dataset:
+.PHONY: limpia
+limpia:
 	$(PYTHON_INTERPRETER) -m scripts.limpieza_dataset
 
 ## Aplica las conversiones requeridas y acondiciona la información para su procesamiento posterior.
-.PHONY: prepare
-prepare:
+.PHONY: prepara
+prepara:
 	$(PYTHON_INTERPRETER) -m scripts.realiza_prep
-
-
 
 #################################################################################
 # Self Documenting Commands                                                     #

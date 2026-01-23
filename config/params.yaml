@@ -1,3 +1,9 @@
+padecimiento:
+  columna: "Padecimiento"
+  tipo: "Alzheimer"
+  force: True
+  reporte: True
+
 paths:
   data: "./data"
   raw: "${paths.data}/raw" 
@@ -19,6 +25,7 @@ download:
 
 data:
   raw_data_file: "${paths.raw}/data_raw.csv"
+  raw_data_filter: "${paths.raw}/data_raw_${padecimiento.tipo}.csv"
   interim_data_file: "${paths.interim}/data_clean.csv"
   interim_stage_transformed: "${paths.interim}/data_stage_transformed.csv"
 

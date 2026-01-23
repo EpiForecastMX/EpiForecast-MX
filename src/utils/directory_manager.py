@@ -19,7 +19,7 @@ def asegurar_ruta(path_str: str | Path) -> Path:
     path = Path(path_str)
 
     if path.exists():
-        logger.info(f"Carpeta localizada: {path}")
+        logger.debug(f"Carpeta localizada: {path}")
 
     else:
         logger.warning(f"La carpeta no existe, creando: {path}")
@@ -47,7 +47,7 @@ def limpia_carpeta(path_str: str | Path) -> None:
     """
     path = Path(path_str)
 
-    logger.info(f'limpiando carpeta: {path}')
+    logger.debug(f'limpiando carpeta: {path}')
 
     if not path.is_dir():
         raise ValueError(f"La ruta {path} no es una carpeta válida.")

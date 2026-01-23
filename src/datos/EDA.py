@@ -4,7 +4,6 @@ from typing import List, Dict, Optional
 from datetime import datetime
 
 import pandas as pd
-import matplotlib.pyplot as plt
 from loguru import logger
 
 from src.configuraciones.config_params import conf
@@ -56,59 +55,7 @@ class EDAReportBuilder:
         logger.debug(f"El subtítulo del reporte es: {self.subtitulo}")
         logger.debug(f"La fuente de datos es: {self.fuente_datos}")
         logger.debug(f"Número máximo de columnas a mostrar: {self.numero_top_columnas}")
-        logger.info(f"Las imágenes se guardarán en: {self.carpeta_salida}")
-
-    # ------------------ Filtrar padecimiento ------------------
-
-    def _filtrar_padecimiento(self, padecimiento: str) -> None:
-
-        if "Padecimiento" not in self.df.columns:
-            logger.error("No se puede filtrar: la columna 'Padecimiento' no existe en el DataFrame.")
-            return
-        
-        if self.df.empty:
-            logger.error("No se puede filtrar, DataFrame vacío.")
-            return
-
-        logger.info(f"Filtrando datos por padecimiento: '{padecimiento}'")
-        
-        total_antes = len(self.df)
-
-        if "Padecimiento" in self.df.columns and padecimiento:
-            self.df = self.df[self.df["Padecimiento"]
-                            .astype(str)
-                            .str.contains(padecimiento, case=False, na=False)]
-            
-        total_despues = len(self.df)
-
-        
-        if total_despues == 0:
-            logger.warning(f"No se encontraron registros relacionados con el padecimiento: '{padecimiento}'.")
-            self.df = self.df_raw.copy()
-            
-            padecimientos = self.df["Padecimiento"].dropna().unique().tolist()
-            lista_padecimientos = "<br/>".join(f"<b>{p}</b>" for p in padecimientos)
-            
-            self.notas = (
-                        f"No se identificaron registros asociados al padecimiento <b>{padecimiento}</b>.<br/>"
-                        "Se generó el reporte con los siguientes padecimientos detectados:<br/>"
-                        f"{lista_padecimientos}"
-            )
-
-        else:
-            logger.info(
-            f"Filtrado aplicado: {total_despues} de {total_antes} registros corresponden a '{padecimiento}'."
-            )
-            
-            self.notas = (
-                f"El reporte se generó con registros asociados al padecimiento <b>{padecimiento}</b>."
-                f"Del total de <strong>{total_antes:,}</strong> registros disponibles en el conjunto de datos, "
-                f"se identificaron <strong>{total_despues:,}</strong> registros que coinciden con el padecimiento "
-                f"<strong>{padecimiento}</strong>. "
-                "Estos registros han sido utilizados para generar el análisis y la información presentada en este reporte."
-            )
-
-
+        logger.debug(f"Las imágenes se guardarán en: {self.carpeta_salida}")
 
     # ------------------ Resúmenes ------------------
     def resumen_general(self) -> Dict[str, str]:
@@ -298,7 +245,7 @@ class EDAReportBuilder:
         figuras = []
         padecimiento = conf["reporte_EDA"]["filtro_padecimiento"]
 
-        self._filtrar_padecimiento(padecimiento)
+        #self._filtrar_padecimiento(padecimiento)
 
         for col in self.df.select_dtypes(include='number').columns:
             logger.debug(f"Generando histograma para la columna numérica: '{col}'")

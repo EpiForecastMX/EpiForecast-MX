@@ -1,5 +1,5 @@
 reporte_EDA:
-  filtro_padecimiento: "Alzheimer"
+  filtro_padecimiento: "${padecimiento.tipo}"
   nombre_reporte: "EDA_${reporte_EDA.filtro_padecimiento}"
   titulo_reporte: "Análisis Exploratorio de Datos"
   subtitulo_reporte: "Padecimiento: ${reporte_EDA.filtro_padecimiento} (RAW Data)"
@@ -7,6 +7,9 @@ reporte_EDA:
   bp_comparativa: ""
   violin: True
   max_cols: 33  #limita el número de variables que se visualizarán en la gráfica
+  carpeta: "${paths.docs}"
+  ruta: "${paths.docs}/${reporte_EDA.nombre_reporte}.pdf"
+
 
 
 reporte_clean_dataset:

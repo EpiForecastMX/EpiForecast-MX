@@ -78,7 +78,7 @@ def generar_notas()  -> str:
 
 def main():
 
-    raw_file = conf["data"]["raw_data_file"]
+    raw_file = conf["data"]["raw_data_filter"]
     interim_path = conf["paths"]["interim"]
     interim_file = conf["data"]["interim_data_file"]
     archivo_salida = f"{conf['reporte_clean_dataset']['nombre_reporte']}.pdf"
