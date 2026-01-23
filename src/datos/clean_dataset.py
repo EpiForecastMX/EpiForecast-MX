@@ -7,119 +7,131 @@ class CleanDataset:
     def __init__(self, df: pd.DataFrame):
         self.df = df.copy()
         self.df_raw = df.copy()
-        self.df.columns = [col.strip() for col in self.df.columns]
 
         #reglas de limpieza especificadas en limpieza.yaml
-        self.columas_a_eliminar = conf["columnas_eliminar"]
-        self.valores_sustituir = conf["valores_sustituir"]
-        self.registros_eliminar = conf["registros_eliminar"]
+        self.columas_a_eliminar = conf.get("columnas_eliminar")
+        self.valores_a_sustituir = conf.get("valores_sustituir")
+        self.registros_a_eliminar = conf.get("registros_eliminar")
 
-    def _filtrar_padecimiento(self, padecimiento: str) -> bool:
-
-        if "Padecimiento" not in self.df.columns:
-            logger.error("No se puede filtrar: la columna 'Padecimiento' no existe en el DataFrame.")
-            return False
-        
-        if self.df.empty:
-            logger.error("No se puede filtrar, DataFrame vacío.")
-            return False
-        
-        logger.info(f"Filtrando datos por padecimiento: {padecimiento}")
-        
-        if "Padecimiento" in self.df.columns and padecimiento:
-            self.df = self.df[self.df["Padecimiento"]
-                            .astype(str)
-                            .str.contains(padecimiento, case=False, na=False)]
             
-        total_despues = len(self.df)
-
-        if total_despues == 0:
-            logger.warning(f"No se encontraron registros relacionados con el padecimiento: '{padecimiento}'.")
-            self.df = self.df_raw.copy()
-            
-        return True
-            
-
 
     def _elimina_columnas(self) -> pd.DataFrame:
-        """Elimina columnas indicadas en el archivo de configuración."""
+        """Elimina las columnas indicadas en la configuración."""
 
-        columnas_existentes = set(self.df.columns)
-        columnas_a_eliminar = set(self.columas_a_eliminar)
-        columnas_encontradas = columnas_existentes.intersection(columnas_a_eliminar)
-        columnas_no_encontradas = columnas_a_eliminar - columnas_existentes
+        self.df.columns = [col.strip() for col in self.df.columns]
 
-        if columnas_encontradas:
-            logger.debug(f"Eliminando columnas: {sorted(columnas_encontradas)}")
-            self.df.drop(columns=columnas_encontradas, inplace=True)
+        existentes = set(self.df.columns)
+        a_eliminar = set(self.columas_a_eliminar)
+
+        encontradas = a_eliminar & existentes
+        no_encontradas = a_eliminar - existentes
+
+        if encontradas:
+            logger.debug(f"Eliminando columnas: {sorted(encontradas)}")
+            self.df.drop(columns=encontradas, inplace=True)
         else:
-            logger.info("Ninguna de las columnas a eliminar está presente en el DataFrame.")
+            logger.info("No se encontraron en el DataFrame las columnas configuradas para eliminar.")
 
-        if columnas_no_encontradas:
-            logger.warning(f"Columnas no encontradas y no eliminadas: {sorted(columnas_no_encontradas)}")
+        if no_encontradas:
+            logger.warning(f"Columnas no localizadas: {sorted(no_encontradas)}")
 
         logger.debug(f"Columnas restantes: {self.df.columns.tolist()}")
 
-
         return self.df
+
     
     def _sustituir_valores(self) -> pd.DataFrame:
+        """Aplica reglas de sustitución sobre el DataFrame, contando cambios por regla."""
 
-        for regla in self.valores_sustituir:
-            nombre_columna = regla["columna_objetivo"]
-            valor_actual = regla["texto_a_reemplazar"]
-            valor_nuevo = regla["texto_sustituto"]
-            logger.debug(f'Sustituyendo en columna "{nombre_columna}": "{valor_actual}" por "{valor_nuevo}"')
-            self.df[nombre_columna] = self.df[nombre_columna].replace(valor_actual, valor_nuevo)
+        total_cambios = 0
+
+        for regla in self.valores_a_sustituir:
+            columna = regla["columna_objetivo"]
+            viejo = regla["texto_a_reemplazar"]
+            nuevo = regla["texto_sustituto"]
+
+            logger.debug(f'Sustituyendo en columna "{columna}": "{viejo}" por "{nuevo}"')
+
+            if columna not in self.df.columns:
+                logger.warning(f"Columna no encontrada: {columna} (regla omitida)")
+                continue
+
+            serie = self.df[columna]
+            
+            try:
+                coincidencias = (serie == viejo).sum()
+            except Exception:
+                coincidencias = (serie.astype(str) == str(viejo)).sum()
+
+            if coincidencias:
+                        self.df[columna] = serie.replace(viejo, nuevo)
+                        total_cambios += int(coincidencias)
+
+            logger.info(f"Se realizaron {total_cambios} actualizaciones.")
 
         return self.df
     
 
     def _eliminar_registros(self) -> pd.DataFrame:
-        """Elimina registros indicados en el archivo de configuración."""
 
-        numero_registros_inicial = len(self.df)
-        logger.debug(f'Número de registros inicial: {numero_registros_inicial}')
+        """Elimina registros según las reglas configuradas."""
 
-        for registro in self.registros_eliminar:
-            logger.debug(f'Eliminando registros de la columna: {registro["nombre"]} con valor: {registro["valor"]}')
-            nombre = registro["nombre"]
-            valor = [registro["valor"]]
-            self.df = self.df[~self.df[nombre].isin(valor)]
+        registros_iniciales = len(self.df)
+        logger.debug(f"Registros iniciales: {registros_iniciales}")
 
+        for regla in self.registros_a_eliminar:
+            columna = regla.get("columna_objetivo")
+            valor = regla.get("valor")
 
-        numero_registros_final = len(self.df)
-        logger.debug(f'Número de registros final: {numero_registros_final}')
-        logger.info(f'Registros eliminados: {numero_registros_inicial - numero_registros_final}')
+            if columna not in self.df.columns:
+                logger.warning(f"Columna no encontrada: '{columna}'. Regla omitida.")
+                continue
+
+            coincidencias = (self.df[columna] == valor).sum()
+            logger.debug(
+                f"Regla -> columna: '{columna}' | valor: '{valor}' | "
+                f"Coincidencias encontradas: {coincidencias}"
+            )
+
+            if coincidencias > 0:
+                self.df = self.df[self.df[columna] != valor]
+
+        registros_finales = len(self.df)
+        eliminados = registros_iniciales - registros_finales
+
+        logger.debug(f"Registros finales: {registros_finales}")
+        logger.info(f"Total de registros eliminados: {eliminados}")
 
         return self.df
 
+
     def run(self) -> pd.DataFrame:
-      
-        filtrado = self._filtrar_padecimiento(conf["reporte_EDA"]["filtro_padecimiento"])
 
-        if filtrado:
-
-            if self.columas_a_eliminar is None or not self.columas_a_eliminar:
-                logger.info("No se especificaron columnas para eliminar.")
-            else:
-                num_cols = len(self.columas_a_eliminar)
-                logger.info(
-                f'Se encontraron {num_cols} columnas configuradas para eliminar: {self.columas_a_eliminar}'
-                )
-                self._elimina_columnas()
-
-            if self.valores_sustituir is None or not self.valores_sustituir:
-                logger.info("No se especificaron registros para sustituir.")
+        if not self.columas_a_eliminar:
+            logger.info("No se especificaron columnas para eliminar.")
         
-            else:
-                self._sustituir_valores()
+        else:
+            logger.info(f"Se encontraron {len(self.columas_a_eliminar)} registro(s) configurado(s) para eliminar.")
+            for contador, regla in enumerate(self.columas_a_eliminar, start=1):
+                logger.debug(f"Reg {contador} | columna = {regla}")
 
-            if self.registros_eliminar is None or not self.registros_eliminar:
-                logger.info("No se especificaron registros para eliminar.")
+            self._elimina_columnas()
         
-            else:
-                self._eliminar_registros()
+        if not self.valores_a_sustituir:
+            logger.info("No se especificaron registros para sustituir.")
+        
+        else:
+            logger.info(f"Total de reglas de sustitución configuradas: {len(self.valores_a_sustituir)}")
+            self._sustituir_valores()
 
-
+        if not self.registros_a_eliminar:
+            logger.info("No se especificaron registros para eliminar.")
+        
+        else:
+            logger.info(f"Se encontraron {len(self.registros_a_eliminar)} registro(s) configurado(s) para eliminar.")
+            for contador, regla in enumerate(self.registros_a_eliminar, start=1):
+                logger.debug(f"Reg {contador} | columna = '{regla['columna_objetivo']}' | valor = {regla['valor']}")
+            
+            self._eliminar_registros()
+        
         return self.df

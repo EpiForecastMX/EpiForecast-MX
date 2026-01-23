@@ -2,7 +2,7 @@ reporte_EDA:
   filtro_padecimiento: "${padecimiento.tipo}"
   nombre_reporte: "EDA_${reporte_EDA.filtro_padecimiento}"
   titulo_reporte: "Análisis Exploratorio de Datos"
-  subtitulo_reporte: "Padecimiento: ${reporte_EDA.filtro_padecimiento} (RAW Data)"
+  subtitulo_reporte: "Padecimiento: ${padecimiento.tipo} (RAW Data)"
   boxplot: False
   bp_comparativa: ""
   violin: True
@@ -13,13 +13,15 @@ reporte_EDA:
 
 
 reporte_clean_dataset:
-  nombre_reporte: "EDA_${reporte_EDA.filtro_padecimiento} (Clean Data)"
+  nombre_reporte: "EDA_${padecimiento.tipo} (Clean Data)"
   titulo_reporte: "Análisis Exploratorio de Datos"
-  subtitulo_reporte: "Padecimiento: ${reporte_EDA.filtro_padecimiento} (Clean Data)"
+  subtitulo_reporte: "Padecimiento: ${padecimiento.tipo} (Clean Data)"
   boxplot: True
   bp_comparativa: "Anio"
   violin: False
   max_cols: 34
+  carpeta: "${paths.docs}"
+  ruta: "${paths.docs}/${reporte_clean_dataset.nombre_reporte}.pdf"
 
 
 

@@ -15,8 +15,19 @@ class dataTransformation:
         
     def __init__(self, df: pd.DataFrame):
             self.df = df.copy()
-            self.df_interim = pd.DataFrame
-            self.opciones_reporte = conf['reporte_interim_stage_transformed']
+            self.df_agrupado = pd.DataFrame 
+            self.opciones = conf.get("opciones_FE")
+            self.regiones = conf.get("regiones")
+            self.raw_data_filter = conf.get("data", {}).get("interim_stage_transformed")
+
+    
+    def get_opcion(self, nombre: str):
+        for item in self.opciones:
+            if nombre in item:
+                return item[nombre]
+        return None
+
+
 
 
     def _ajusta_semanas(self):
@@ -42,7 +53,9 @@ class dataTransformation:
         self.df = self.df.sort_values(by=["Anio", "Entidad", "Semana"]).reset_index(drop=True)
 
     
-    def _agrupa_dataset(self):
+    def _prepara_series_tiempo(self):
+
+
 
         self.df["Prev_hombres"] = self.df.groupby("Entidad")["Acumulado_hombres"].shift()
         self.df["Prev_mujeres"] = self.df.groupby("Entidad")["Acumulado_mujeres"].shift()
@@ -67,7 +80,7 @@ class dataTransformation:
         self.df.loc[filas_anio, 'Fecha'] = pd.to_datetime(self.df.loc[filas_anio, 'Anio'].astype(str) + '-01-01')
 
 
-    def _convertir_negativos(self):
+    def _ajusta_incrementos(self):
 
         columnas = ["Incremento_hombres","Incremento_mujeres"]
 
@@ -103,7 +116,7 @@ class dataTransformation:
 
             self.df.loc[self.df[columna] < 0,columna] = 0
 
-    def _tratamiento_outliers(self,columnas: list):
+    def _ajusta_outliers(self,columnas: list):
 
         for columna in columnas:
             _ , metadatos = OperacionesDatos.outliers_iqr(self.df,columna)
@@ -134,27 +147,102 @@ class dataTransformation:
             self.df.loc[self.df[columna] > lim_sup, columna] = lim_sup
 
             self.df[columna] = self.df[columna].round(0).astype(int)
+    
+    def agrupar_incrementos(self):
+        
+        """
+        Genera agrupaciones dinámicas dependiendo de la opción seleccionada en el YAML.
+
+        agrupamiento puede ser:
+        - 'Sexo'
+        - 'Entidad'
+        - 'Ambos'
+        """
+        
+        agrupa_cfg = self.get_opcion("agrupa")
+        agrupamiento = str(agrupa_cfg.get("valor", "")).strip().lower()
+
+        
+        # =====================================
+        # AGRUPACIÓN POR SEXO
+        # =====================================
+        
+        if agrupamiento == "sexo":
+            
+            self.df_agrupado = (
+                self.df.groupby("Fecha")
+                .agg(
+                    incrementos_hombres=("Incremento_hombres", "sum"),
+                    incrementos_mujeres=("Incremento_mujeres", "sum")
+                )
+                .reset_index()
+            )
+
+        elif agrupamiento == "entidad":
 
             
+            self.df_agrupado = (
+                self.df.groupby(["Fecha", "Entidad"])
+                .agg(
+                    incrementos_hombres=("Incremento_hombres", "sum"),
+                    incrementos_mujeres=("Incremento_mujeres", "sum")
+                )
+                .reset_index()
+                .sort_values(["Fecha", "Entidad"])
+            )
+
+   
+        else:
+            logger.warning(f"Agrupamiento desconocido: {agrupamiento}. No se generará agrupación.")
+
+
     def pruebas(self):
-
-
-        # Mostrar las primeras filas
-        prueba = Path(conf["paths"]["interim"]) / "prueba.csv"
-        self.df.to_csv(prueba, index=False)
-
-
-        casos_hombres = self.df.groupby("Fecha")["Incremento_hombres"].sum()
-        casos_mujeres = self.df.groupby("Fecha")["Incremento_mujeres"].sum()
-
-        casos_totales = casos_hombres + casos_mujeres
 
 
         plt.figure(figsize=(16, 6))
 
-        plt.plot(casos_hombres.index, casos_hombres.values, label='Casos Hombres', color='steelblue')
-        plt.plot(casos_mujeres.index, casos_mujeres.values, label='Casos Mujeres', color='darkred')
-        plt.plot(casos_totales.index, casos_totales.values, label='Total Nacional', color='navy', linewidth=2)
+        # para sexo
+        plt.plot(self.df_agrupado["Fecha"],self.df_agrupado["incrementos_hombres"] , label='Casos Hombres', color='steelblue')
+        plt.plot(self.df_agrupado["Fecha"],self.df_agrupado["incrementos_mujeres"] , label='Casos Hombres', color='darkred')
+
+        
+
+        # Para regiones
+        """
+        mapa_regiones = {
+            estado: r["nombre"]
+            for r in self.regiones
+            for estado in r.get("estados", [])
+        }
+
+        self.df_agrupado["Region"] = self.df_agrupado["Entidad"].map(mapa_regiones)
+
+        
+        region_objetivo = "Centro-Sur"
+        df_region = (self.df_agrupado[self.df_agrupado["Region"] == region_objetivo]
+                    .sort_values("Fecha")
+                    .reset_index(drop=True))
+                
+        df_region_resumen = (
+            self.df_agrupado.dropna(subset=["Region"])
+            .groupby(["Fecha", "Region"])
+            .agg(
+                incrementos_hombres=("incrementos_hombres", "sum"),
+                incrementos_mujeres=("incrementos_mujeres", "sum")
+            )
+            .reset_index()
+            .sort_values(["Region", "Fecha"])
+        )
+
+        
+        df_r = (df_region_resumen[df_region_resumen["Region"] == "Sureste"].sort_values("Fecha"))
+
+
+        plt.plot(df_r["Fecha"], df_r["incrementos_hombres"], label="Hombres", color="steelblue")
+        plt.plot(df_r["Fecha"], df_r["incrementos_mujeres"], label="Mujeres", color="darkred")
+        """
+
+
 
         plt.title('Casos Semanales de Alzheimer a Nivel Nacional (Evolución 2014-2024)')
         plt.xlabel('Año')
@@ -164,15 +252,20 @@ class dataTransformation:
         plt.show()
 
 
-    def run(self) -> pd.DataFrame:
-        
+    def run(self) -> pd.DataFrame:       
+
+        outlier_cfg = self.get_opcion("tratamiento_outliers")
 
         self._ajusta_semanas()
-        self._agrupa_dataset()
-        self._convertir_negativos()
+        self._prepara_series_tiempo()
+        self._ajusta_incrementos()
 
-        columnas = ["Incremento_hombres","Incremento_mujeres"]
-        self._tratamiento_outliers(columnas)
-        
-        self.pruebas()
+        if outlier_cfg['activo']:
+            self._ajusta_outliers(outlier_cfg['columnas'])
 
+        self.agrupar_incrementos()
+
+
+        if not self.df_agrupado.empty:
+            self.df_agrupado.to_csv(self.raw_data_filter, index=False)
+            #self.pruebas()

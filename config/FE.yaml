@@ -1,0 +1,56 @@
+opciones_FE:
+  - tratamiento_outliers:
+      activo: true
+      columnas:
+        - Incremento_hombres
+        - Incremento_mujeres
+
+  - agrupa:
+      valor: Entidad  # Agrupa por Sexo, Entidad o Ambos
+
+
+regiones:
+  - nombre: Norte
+    estados:
+      - Baja California
+      - Baja California Sur
+      - Sonora
+      - Chihuahua
+      - Coahuila
+      - Nuevo León
+      - Tamaulipas
+      - Sinaloa
+      - Durango
+
+  - nombre: Occidente
+    estados:
+      - Zacatecas
+      - Aguascalientes
+      - Jalisco
+      - Colima
+      - Michoacán
+      - Nayarit
+      - San Luis Potosí
+      - Guanajuato
+      - Querétaro
+
+  - nombre: Centro
+    estados:
+      - Ciudad de México
+      - Estado de México
+      - Morelos
+      - Tlaxcala
+      - Puebla
+      - Hidalgo
+      - Veracruz
+
+  - nombre: Sureste
+    estados:
+      - Guerrero
+      - Oaxaca
+      - Chiapas
+      - Tabasco
+      - Campeche
+      - Yucatán
+      - Quintana Roo
+
