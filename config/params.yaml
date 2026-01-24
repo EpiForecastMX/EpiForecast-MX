@@ -1,7 +1,7 @@
 padecimiento:
   columna: "Padecimiento"
   tipo: "Alzheimer"
-  force: True
+  force: True # Sobrescribe filtrado previo
   reporte: True
 
 paths:
