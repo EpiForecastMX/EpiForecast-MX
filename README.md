@@ -51,7 +51,7 @@ Proyecto para predecir casos de Enfermedades Neurológicas y de Salud en México
 ## 📥 Clonar repositorio
 
 ```bash
-git clone https://github.com/Jarcos-nual/Alzheimer.git
+git clone https://github.com/Jarcos-nual/IntegradorIMSS_Fase2.git
 ```
 Para la extracción de datos desde los archivos PDF de los boletines epidemiológicos sobre enfermedades mentales se utiliza también el siguiente proyecto:
 
