@@ -57,6 +57,13 @@ reset_logs:
 	@mkdir -p ./logs
 	@echo ">>> Carpeta de logs reiniciada."
 
+.PHONY: reset_interim
+reset_interim:
+	@echo ">>> Reiniciando carpeta interim"
+	@rm -rf ./data/interim
+	@mkdir -p ./data/interim
+	@echo ">>> Carpeta interim reiniciada."
+
 ## Verifica que el entorno conda esté activo
 .PHONY: prueba
 prueba:
@@ -97,7 +104,7 @@ transforma:
 
 ## Ejecuta el flujo completo: filtrar, limpiar y transformar dataset
 .PHONY: prepara
-prepara: reset_logs filtra limpia transforma
+prepara: reset_logs reset_interim filtra limpia transforma
 	@echo ">>> Flujo completo ejecutado."
 
 

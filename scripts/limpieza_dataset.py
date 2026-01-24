@@ -43,16 +43,22 @@ def main():
             logger.info(f"archivo {interim_file} encontrado. El archivo será sobrescrito.")
             df_clean.to_csv(interim_file,index=False)
 
-            opciones_reporte = conf.get('reporte_clean_dataset')
+        else:
+            logger.info(f"archivo {interim_file} no localizado. Guardando archivo.")
+            df_clean.to_csv(interim_file,index=False)
+        
+        opciones_reporte = conf.get('reporte_clean_dataset')
 
-            datos_reporte = EDAReportBuilder(
-                df = df_clean,
-                fuente_datos = interim_file,
-                opciones = opciones_reporte
-            ).run()
+        datos_reporte = EDAReportBuilder(
+            df = df_clean,
+            fuente_datos = interim_file,
+            opciones = opciones_reporte
+        ).run()
 
-            PDFReportGenerator(datos_reporte, archivo_salida=opciones_reporte.get('ruta'), ancho_figura_cm=16).build()
-            logger.info(f"Reporte generado en: {opciones_reporte.get('ruta')}")
+        PDFReportGenerator(datos_reporte, archivo_salida=opciones_reporte.get('ruta'), ancho_figura_cm=16).build()
+        logger.info(f"Reporte generado en: {opciones_reporte.get('ruta')}")
+        
+        
 
 
 if __name__ == "__main__":
