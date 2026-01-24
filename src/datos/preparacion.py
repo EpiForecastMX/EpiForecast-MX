@@ -1,15 +1,11 @@
 # src/datos/preparacion.py
-import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from loguru import logger
 
-from src.utils.datos import OperacionesDatos
-
 from src.configuraciones.config_params import conf
-
-
-from pathlib import Path
+from src.utils.datos import OperacionesDatos
 
 class dataTransformation:
         
@@ -19,6 +15,7 @@ class dataTransformation:
             self.opciones = conf.get("opciones_FE")
             self.regiones = conf.get("regiones")
             self.raw_data_filter = conf.get("data", {}).get("interim_stage_transformed")
+            self.agrupamiento = str(self.get_opcion("agrupa").get("valor", "")).strip().lower()
 
     
     def get_opcion(self, nombre: str):
@@ -38,24 +35,25 @@ class dataTransformation:
         # Identifica las filas donde la semana es 1. 
         # En esos casos, se hará un ajuste especial.
         filas_semana_1 = self.df['Semana'] == 1
-
+        logger.debug(f"{len(filas_semana_1)} registros identificados con semana = 1.")
         
         # Si la semana es 1, se cambia a 52.  
         # Para el resto, simplemente se resta 1 a la sema
+        logger.info("Aplicando desplazamiento en las semanas.")
         self.df['Semana'] = np.where(filas_semana_1, 52, self.df['Semana'] - 1)
-
         
         # Para las filas donde la semana era 1, también se resta 1 al año
         # porque la nueva semana 52 pertenece al año anterior.
         self.df.loc[filas_semana_1, 'Anio'] = self.df.loc[filas_semana_1, 'Anio'] - 1
 
         # Ordena el Dataframe de acuerdo con el año, entidad y semana
+        logger.info("Ordenando el dataset.")
         self.df = self.df.sort_values(by=["Anio", "Entidad", "Semana"]).reset_index(drop=True)
 
     
     def _prepara_series_tiempo(self):
 
-
+        logger.info("Inicializando preparación de series temporales.")
 
         self.df["Prev_hombres"] = self.df.groupby("Entidad")["Acumulado_hombres"].shift()
         self.df["Prev_mujeres"] = self.df.groupby("Entidad")["Acumulado_mujeres"].shift()
@@ -85,7 +83,12 @@ class dataTransformation:
         columnas = ["Incremento_hombres","Incremento_mujeres"]
 
         for columna in columnas:
+            logger.info(f"Iniciando ajuste de incrementos en columna '{columna}'.")
+            
             mascara_negativos = self.df[columna] < 0
+            num_negativos = mascara_negativos.sum()
+            logger.info(f"Detectados {num_negativos} valores negativos en '{columna}'.")
+
         
             anio_prev    = self.df["Anio"].shift(1)
             semana_prev  = self.df["Semana"].shift(1)
@@ -99,6 +102,8 @@ class dataTransformation:
             )
         
             mascara_actualizar = mascara_negativos & es_consecutivo
+            num_actualizar = mascara_actualizar.sum()
+            logger.info(f"{num_actualizar} registros consecutivos serán evaluados para ajuste en '{columna}'.")
 
             suma = valor_prev + self.df[columna]
 
@@ -113,7 +118,10 @@ class dataTransformation:
             self.df.loc[condicion_negativa, columna] = 0
 
             # --- convierte a cero los valores que no fueron afectados ---
-
+            restantes = (self.df[columna] < 0).sum()
+            if restantes > 0:
+                logger.info(f"Normalizando {restantes} valor(es) normalizado(s) a cero en '{columna}'.")
+            
             self.df.loc[self.df[columna] < 0,columna] = 0
 
     def _ajusta_outliers(self,columnas: list):
@@ -131,8 +139,7 @@ class dataTransformation:
 
             mascara_sup = self.df[columna] > lim_sup
             total_sup = mascara_sup.sum()
-
-           
+  
             logger.info(
                 f"Rangos intercuartiles para '{columna}': IQR={iqr}, Q1={q1}, Q3={q3}"
             )
@@ -158,16 +165,13 @@ class dataTransformation:
         - 'Entidad'
         - 'Ambos'
         """
-        
-        agrupa_cfg = self.get_opcion("agrupa")
-        agrupamiento = str(agrupa_cfg.get("valor", "")).strip().lower()
-
-        
+        logger.info(f"Aplicando agrupamiento configurado: {self.agrupamiento}")
+      
         # =====================================
         # AGRUPACIÓN POR SEXO
         # =====================================
         
-        if agrupamiento == "sexo":
+        if self.agrupamiento == "sexo":
             
             self.df_agrupado = (
                 self.df.groupby("Fecha")
@@ -176,11 +180,12 @@ class dataTransformation:
                     incrementos_mujeres=("Incremento_mujeres", "sum")
                 )
                 .reset_index()
+                .sort_values(["Fecha"])
             )
+            logger.info(f"Se obtuvieron {len(self.df_agrupado)} registros agrupados.")
 
-        elif agrupamiento == "entidad":
+        elif self.agrupamiento == "region":
 
-            
             self.df_agrupado = (
                 self.df.groupby(["Fecha", "Entidad"])
                 .agg(
@@ -190,61 +195,59 @@ class dataTransformation:
                 .reset_index()
                 .sort_values(["Fecha", "Entidad"])
             )
+            logger.info(f"Se obtuvieron {len(self.df_agrupado)} registros agrupados.")
 
    
         else:
-            logger.warning(f"Agrupamiento desconocido: {agrupamiento}. No se generará agrupación.")
+            logger.warning(f"Agrupamiento desconocido: {self.agrupamiento}. No se generará agrupación.")
 
 
     def pruebas(self):
 
-
+        padecimiento = conf.get("padecimiento")
         plt.figure(figsize=(16, 6))
 
-        # para sexo
-        plt.plot(self.df_agrupado["Fecha"],self.df_agrupado["incrementos_hombres"] , label='Casos Hombres', color='steelblue')
-        plt.plot(self.df_agrupado["Fecha"],self.df_agrupado["incrementos_mujeres"] , label='Casos Hombres', color='darkred')
+        if self.agrupamiento == "sexo":
+            anio_min = self.df_agrupado['Fecha'].min().year
+            anio_max = self.df_agrupado['Fecha'].max().year
+            plt.plot(self.df_agrupado["Fecha"],self.df_agrupado["incrementos_hombres"] , label='Casos Hombres', color='steelblue')
+            plt.plot(self.df_agrupado["Fecha"],self.df_agrupado["incrementos_mujeres"] , label='Casos Hombres', color='darkred')
+            plt.title(f'Casos Semanales de {padecimiento["tipo"]} a Nivel Nacional (Evolución {anio_min}-{anio_max})')
 
         
+        elif self.agrupamiento == "region":
 
-        # Para regiones
-        """
-        mapa_regiones = {
-            estado: r["nombre"]
-            for r in self.regiones
-            for estado in r.get("estados", [])
-        }
-
-        self.df_agrupado["Region"] = self.df_agrupado["Entidad"].map(mapa_regiones)
-
-        
-        region_objetivo = "Centro-Sur"
-        df_region = (self.df_agrupado[self.df_agrupado["Region"] == region_objetivo]
-                    .sort_values("Fecha")
-                    .reset_index(drop=True))
+            agrupamiento_cfg = self.get_opcion("agrupa")
+            region_objetivo = agrupamiento_cfg["region"]
                 
-        df_region_resumen = (
-            self.df_agrupado.dropna(subset=["Region"])
-            .groupby(["Fecha", "Region"])
-            .agg(
-                incrementos_hombres=("incrementos_hombres", "sum"),
-                incrementos_mujeres=("incrementos_mujeres", "sum")
+            mapa_regiones = {
+                estado: r["nombre"]
+                for r in self.regiones
+                for estado in r.get("estados", [])
+            }
+
+            self.df_agrupado["Region"] = self.df_agrupado["Entidad"].map(mapa_regiones)
+                    
+            df_region_resumen = (
+                self.df_agrupado.dropna(subset=["Region"])
+                .groupby(["Fecha", "Region"])
+                .agg(
+                    incrementos_hombres=("incrementos_hombres", "sum"),
+                    incrementos_mujeres=("incrementos_mujeres", "sum")
+                )
+                .reset_index()
+                .sort_values(["Region", "Fecha"])
             )
-            .reset_index()
-            .sort_values(["Region", "Fecha"])
-        )
 
-        
-        df_r = (df_region_resumen[df_region_resumen["Region"] == "Sureste"].sort_values("Fecha"))
+            df_r = (df_region_resumen[df_region_resumen["Region"] == region_objetivo].sort_values("Fecha"))
 
+            anio_min = df_r['Fecha'].min().year
+            anio_max = df_r['Fecha'].max().year
 
-        plt.plot(df_r["Fecha"], df_r["incrementos_hombres"], label="Hombres", color="steelblue")
-        plt.plot(df_r["Fecha"], df_r["incrementos_mujeres"], label="Mujeres", color="darkred")
-        """
-
-
-
-        plt.title('Casos Semanales de Alzheimer a Nivel Nacional (Evolución 2014-2024)')
+            plt.plot(df_r["Fecha"], df_r["incrementos_hombres"], label="Hombres", color="steelblue")
+            plt.plot(df_r["Fecha"], df_r["incrementos_mujeres"], label="Mujeres", color="darkred")
+            plt.title(f'Casos Semanales de {padecimiento["tipo"]} region {region_objetivo} (Evolución {anio_min}-{anio_max})')
+  
         plt.xlabel('Año')
         plt.ylabel('Número de Nuevos Casos')
         plt.grid(True, linestyle='--', alpha=0.6)
@@ -260,7 +263,8 @@ class dataTransformation:
         self._prepara_series_tiempo()
         self._ajusta_incrementos()
 
-        if outlier_cfg['activo']:
+        if outlier_cfg['IQR']:
+            logger.info(f"Imputación por IQR habilitada ({outlier_cfg['IQR']}) | Columnas: '{outlier_cfg['columnas']}'")
             self._ajusta_outliers(outlier_cfg['columnas'])
 
         self.agrupar_incrementos()
@@ -268,4 +272,4 @@ class dataTransformation:
 
         if not self.df_agrupado.empty:
             self.df_agrupado.to_csv(self.raw_data_filter, index=False)
-            #self.pruebas()
+            self.pruebas()

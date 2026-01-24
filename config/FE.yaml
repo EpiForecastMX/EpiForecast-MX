@@ -1,12 +1,13 @@
 opciones_FE:
   - tratamiento_outliers:
-      activo: true
+      IQR: false
       columnas:
         - Incremento_hombres
         - Incremento_mujeres
 
   - agrupa:
-      valor: Entidad  # Agrupa por Sexo, Entidad o Ambos
+      valor: Sexo  # Agrupa por Sexo, region o Ambos
+      region: Centro  # Solo cuando se agrupa por region: Norte, Occidente, Centro, Sureste
 
 
 regiones:
@@ -37,7 +38,7 @@ regiones:
   - nombre: Centro
     estados:
       - Ciudad de México
-      - Estado de México
+      - México
       - Morelos
       - Tlaxcala
       - Puebla

@@ -1,5 +1,6 @@
 # src/datos/filtrar_padecimiento.py
 import pandas as pd
+
 from loguru import logger
 
 class FiltraPadecimiento:

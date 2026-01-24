@@ -18,8 +18,6 @@ requirements:
 	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
 	
 
-
-
 # Elimina archivos compilados de Python (*.pyc, *.pyo) y carpetas __pycache__
 .PHONY: clean
 clean:
@@ -40,14 +38,30 @@ format:
 	ruff format
 
 
-## Configurar el entorno del intérprete de Python a través de conda
+## Configurar el entorno con independencias del intérprete de Python a través de conda
 .PHONY: create_environment
 create_environment:
-	
+	@echo ">>> Creando entorno conda..."
 	conda create --name $(PROJECT_NAME) python=$(PYTHON_VERSION) -y
-	
+	@echo ">>> Entorno creado. Activando e instalando dependencias..."
+	conda run -n $(PROJECT_NAME) $(PYTHON_INTERPRETER) -m pip install -U pip
+	conda run -n $(PROJECT_NAME) $(PYTHON_INTERPRETER) -m pip install -r requirements.txt
 	@echo ">>> conda env created. Activate with:\nconda activate $(PROJECT_NAME)"
 	
+
+## Reinicia la carpeta de registros (logs)
+.PHONY: reset_logs
+reset_logs:
+	@echo ">>> Reiniciando carpeta de logs..."
+	@rm -rf ./logs
+	@mkdir -p ./logs
+	@echo ">>> Carpeta de logs reiniciada."
+
+## Verifica que el entorno conda esté activo
+.PHONY: prueba
+prueba:
+	@echo ">>> Ejecutando prueba en entorno $(PROJECT_NAME)..."
+	@conda run -n $(PROJECT_NAME) $(PYTHON_INTERPRETER) -m scripts.realiza_prep
 
 
 
@@ -70,12 +84,22 @@ filtra:
 ## Limpia y prepara el dataset eliminando valores nulos, duplicados y formateando columnas.
 .PHONY: limpia
 limpia:
+	@echo ">>> Iniciando limpieza del dataset"
 	$(PYTHON_INTERPRETER) -m scripts.limpieza_dataset
+	@echo ">>> Limpieza del dataset completada."
 
 ## Aplica las conversiones requeridas y acondiciona la información para su procesamiento posterior.
-.PHONY: prepara
-prepara:
+.PHONY: transforma
+transforma:
+	@echo ">>> Iniciando extracción y transformación de características..."
 	$(PYTHON_INTERPRETER) -m scripts.realiza_prep
+	@echo ">>> Preparación completada."
+
+## Ejecuta el flujo completo: filtrar, limpiar y transformar dataset
+.PHONY: prepara
+prepara: reset_logs filtra limpia transforma
+	@echo ">>> Flujo completo ejecutado."
+
 
 #################################################################################
 # Self Documenting Commands                                                     #

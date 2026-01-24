@@ -1,10 +1,12 @@
 # src/scripts/padecimiento.py
 import pandas as pd
-from src.utils import directory_manager
+
 from src.configuraciones.config_params import conf, logger
-from src.datos.filtrar_padecimiento import FiltraPadecimiento
 from src.datos.EDA import EDAReportBuilder
+from src.datos.filtrar_padecimiento import FiltraPadecimiento
+from src.utils import directory_manager
 from src.utils.reporte_PDF import PDFReportGenerator
+
 
 
 def filtrar() -> tuple[bool, pd.DataFrame | None]:

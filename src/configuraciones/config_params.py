@@ -1,10 +1,12 @@
 # src/configuraciones/config_params.py
-from omegaconf import OmegaConf
-from loguru import logger
-from pathlib import Path
+import os
+import platform
+import sys
 from datetime import datetime
+from pathlib import Path
 
-import os, sys, platform
+from loguru import logger
+from omegaconf import OmegaConf
 
 try:
     conf_params = OmegaConf.load("config/params.yaml")

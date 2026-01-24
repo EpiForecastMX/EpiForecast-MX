@@ -1,10 +1,12 @@
 # src/utils/graficos.py
 import os
-import matplotlib.pyplot as plt
-import seaborn as sns
-import numpy as np
-from scipy.stats import gaussian_kde
 from typing import Optional
+
+import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
+from scipy.stats import gaussian_kde
+
 
 class GraficosHelper:
     def __init__(self, carpeta_salida: str, numero_top_columnas: int):

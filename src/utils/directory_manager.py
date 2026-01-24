@@ -1,5 +1,6 @@
 # src/utils/directory_manager.py
 from pathlib import Path
+
 from loguru import logger
 
 
@@ -26,8 +27,6 @@ def asegurar_ruta(path_str: str | Path) -> Path:
         path.mkdir(parents=True, exist_ok=True)
 
     return path
-
-
 
 def existe_archivo(path_str: str | Path) -> bool:
     """

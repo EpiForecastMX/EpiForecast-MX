@@ -1,7 +1,7 @@
 # src/datos/EDA.py
 from dataclasses import dataclass, field
-from typing import List, Dict, Optional
 from datetime import datetime
+from typing import Dict, List, Optional
 
 import pandas as pd
 from loguru import logger
@@ -9,6 +9,7 @@ from loguru import logger
 from src.configuraciones.config_params import conf
 from src.utils import directory_manager
 from src.utils.graficos import GraficosHelper
+
 
 
 @dataclass

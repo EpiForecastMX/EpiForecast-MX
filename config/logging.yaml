@@ -25,5 +25,5 @@ logging:
       retention: "7 days"
       compression: "zip"
       enqueue: true
-      backtrace: true
-      diagnose: false
+      backtrace: false
+      diagnose: true

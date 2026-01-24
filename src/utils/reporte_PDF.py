@@ -1,18 +1,27 @@
 # src/utils/reporte_PDF.py
 import os
+from typing import Any, Dict, List, Optional
+
 import pandas as pd
 from loguru import logger
-from typing import List, Dict, Any, Optional
-from reportlab.lib.pagesizes import A4
-from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Image, LongTable, TableStyle, PageBreak, KeepInFrame
-)
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import cm
 from reportlab.pdfgen import canvas
+from reportlab.platypus import (
+    Image,
+    KeepInFrame,
+    LongTable,
+    PageBreak,
+    Paragraph,
+    SimpleDocTemplate,
+    Spacer,
+    TableStyle,
+)
 
 from src.datos.EDA import ReportData
+
 
 
 # ---------- Helpers ---------- #

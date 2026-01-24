@@ -1,5 +1,6 @@
 # src/datos/clean_dataset.py
 import pandas as pd
+
 from src.configuraciones.config_params import conf, logger
 
 class CleanDataset:
@@ -12,8 +13,6 @@ class CleanDataset:
         self.columas_a_eliminar = conf.get("columnas_eliminar")
         self.valores_a_sustituir = conf.get("valores_sustituir")
         self.registros_a_eliminar = conf.get("registros_eliminar")
-
-            
 
     def _elimina_columnas(self) -> pd.DataFrame:
         """Elimina las columnas indicadas en la configuración."""
@@ -39,7 +38,6 @@ class CleanDataset:
 
         return self.df
 
-    
     def _sustituir_valores(self) -> pd.DataFrame:
         """Aplica reglas de sustitución sobre el DataFrame, contando cambios por regla."""
 
@@ -70,7 +68,6 @@ class CleanDataset:
             logger.info(f"Se realizaron {total_cambios} actualizaciones.")
 
         return self.df
-    
 
     def _eliminar_registros(self) -> pd.DataFrame:
 
@@ -103,7 +100,6 @@ class CleanDataset:
         logger.info(f"Total de registros eliminados: {eliminados}")
 
         return self.df
-
 
     def run(self) -> pd.DataFrame:
 
