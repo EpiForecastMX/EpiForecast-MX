@@ -61,7 +61,7 @@ Proyecto para predecir casos de Enfermedades Neurológicas y de Salud en México
      ```bash
      wsl --install Ubuntu
      ```
-   - Esto instalará la última versión de WSL junto con una distribución de Linux por defecto (generalmente Ubuntu).  
+   - Esto instalará la última versión de WSL junto con una distribución de Linux.  
    - Una vez configurado el usuario principal
 
 2. **Preparar el script de instalación de Miniconda**

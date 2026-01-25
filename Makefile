@@ -72,14 +72,6 @@ reset_interim:
 	@mkdir -p ./data/interim
 	@echo ">>> Carpeta interim reiniciada."
 
-## Verifica que el entorno conda esté activo
-.PHONY: prueba
-prueba:
-	@echo ">>> Ejecutando prueba en entorno $(PROJECT_NAME)..."
-	@conda run -n $(PROJECT_NAME) $(PYTHON_INTERPRETER) -m scripts.realiza_prep
-
-
-
 #################################################################################
 # PROJECT RULES                                                                 #
 #################################################################################
@@ -90,22 +82,22 @@ get_dataset:
 	$(PYTHON_INTERPRETER) -m scripts.get_dataset
 
 ## Filtrar dataset con el padecimiento configurado
-.PHONY: filtra
-filtra:
+.PHONY: filter
+filter:
 	@echo ">>> Filtrando dataset con el padecimiento configurado..."
 	$(PYTHON_INTERPRETER) -m scripts.padecimiento
 	@echo ">>> Filtrado completado."
 
 ## Limpia y prepara el dataset eliminando valores nulos, duplicados y formateando columnas.
-.PHONY: limpia
-limpia:
+.PHONY: clean
+clean:
 	@echo ">>> Iniciando limpieza del dataset"
 	$(PYTHON_INTERPRETER) -m scripts.limpieza_dataset
 	@echo ">>> Limpieza del dataset completada."
 
 ## Aplica las conversiones requeridas y acondiciona la información para su procesamiento posterior.
-.PHONY: transforma
-transforma:
+.PHONY: transform
+transform:
 	@echo ">>> Iniciando extracción y transformación de características..."
 	$(PYTHON_INTERPRETER) -m scripts.realiza_prep
 	@echo ">>> Preparación completada."
