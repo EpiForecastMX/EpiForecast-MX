@@ -6,13 +6,6 @@ PROJECT_NAME = integrador
 PYTHON_VERSION = 3.12
 PYTHON_INTERPRETER = python
 
-# Detectar sistema operativo
-ifeq ($(OS),Windows_NT)
-    ACTIVATE = Scripts/activate
-else
-    ACTIVATE = bin/activate
-endif
-
 #################################################################################
 # COMMANDS                                                                      #
 #################################################################################

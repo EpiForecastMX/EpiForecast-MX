@@ -51,7 +51,45 @@ Proyecto para predecir casos de Enfermedades Neurológicas y de Salud en México
 ## 🐍 Requisitos
 
 - Python 3.12
-- Make
+- WSL
+- Conda
+
+## 🐧 Pasos para configurar WSL y Miniconda
+
+1. **Instalar WSL**
+   - Ejecuta en PowerShell (como administrador):
+     ```bash
+     wsl --install Ubuntu
+     ```
+   - Esto instalará la última versión de WSL junto con una distribución de Linux por defecto (generalmente Ubuntu).  
+   - Una vez configurado el usuario principal
+
+2. **Preparar el script de instalación de Miniconda**
+   - Asegúrate de tener el archivo `setup_wsl.sh` en la ruta:
+     
+     ```
+     \\wsl.localhost\Ubuntu\home\<usuario>\
+     ```
+
+   - Donde `<usuario>` corresponde al nombre de usuario principal que configuraste al instalar WSL.
+
+   - Dale permisos de ejecución al script:
+     ```bash
+     chmod +x setup_wsl.sh
+     ```
+
+3. **Ejecutar el script**
+   - Lanza el script para instalar Miniconda:
+     ```bash
+     ./setup_wsl.sh
+     ```
+   - Este script descargará e instalará Miniconda, configurando tu entorno de Python.
+
+4. **Verificar la instalación**
+   - Comprueba que Miniconda está disponible:
+     ```bash
+     conda --version
+     ```
 
 ## 📥 Clonar repositorio
 
