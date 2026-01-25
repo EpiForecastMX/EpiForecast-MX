@@ -48,10 +48,15 @@ Proyecto para predecir casos de Enfermedades Neurológicas y de Salud en México
 
 ```
 
+## 🐍 Requisitos
+
+- Python 3.12
+- Make
+
 ## 📥 Clonar repositorio
 
 ```bash
-git clone https://github.com/Jarcos-nual/IntegradorIMSS_Fase2.git
+git clone https://github.com/IntegradorIMSS2026Team01/EpiForecast-MX.git
 ```
 Para la extracción de datos desde los archivos PDF de los boletines epidemiológicos sobre enfermedades mentales se utiliza también el siguiente proyecto:
 
@@ -62,7 +67,7 @@ git clone https://github.com/luisgss10/data-extraction-mx-enfermedades-mentales.
 ## 📚 Makefile
 
 ### 🔧 Configurar entorno de Python
-Crea el entorno del intérprete de Python utilizando **conda**:
+Crea el entorno del intérprete de Python (compatible con Mac/Linux y Windows):
 
 ```bash
 make create_environment
