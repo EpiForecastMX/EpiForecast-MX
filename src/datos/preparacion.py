@@ -195,8 +195,18 @@ class dataTransformation:
                 .reset_index()
                 .sort_values(["Fecha", "Entidad"])
             )
-            logger.info(f"Se obtuvieron {len(self.df_agrupado)} registros agrupados.")
 
+            agrupamiento_cfg = self.get_opcion("agrupa")
+                
+            mapa_regiones = {
+                estado: r["nombre"]
+                for r in self.regiones
+                for estado in r.get("estados", [])
+            }
+
+            self.df_agrupado["Region"] = self.df_agrupado["Entidad"].map(mapa_regiones)
+                    
+            logger.info(f"Se obtuvieron {len(self.df_agrupado)} registros agrupados.")
    
         else:
             logger.warning(f"Agrupamiento desconocido: {self.agrupamiento}. No se generará agrupación.")
@@ -219,15 +229,10 @@ class dataTransformation:
 
             agrupamiento_cfg = self.get_opcion("agrupa")
             region_objetivo = agrupamiento_cfg["region"]
-                
-            mapa_regiones = {
-                estado: r["nombre"]
-                for r in self.regiones
-                for estado in r.get("estados", [])
-            }
 
-            self.df_agrupado["Region"] = self.df_agrupado["Entidad"].map(mapa_regiones)
-                    
+            logger.info(self.agrupamiento )
+                
+           
             df_region_resumen = (
                 self.df_agrupado.dropna(subset=["Region"])
                 .groupby(["Fecha", "Region"])
