@@ -14,7 +14,8 @@ class dataTransformation:
             self.df_agrupado = pd.DataFrame 
             self.opciones = conf.get("opciones_FE")
             self.regiones = conf.get("regiones")
-            self.raw_data_filter = conf.get("data", {}).get("interim_stage_transformed")
+
+            self.raw_data_filter = conf.get("data", {}).get("data_prepare")
             self.agrupamiento = str(self.get_opcion("agrupa").get("valor", "")).strip().lower()
 
     
@@ -23,9 +24,6 @@ class dataTransformation:
             if nombre in item:
                 return item[nombre]
         return None
-
-
-
 
     def _ajusta_semanas(self):
                  
@@ -196,8 +194,6 @@ class dataTransformation:
                 .sort_values(["Fecha", "Entidad"])
             )
 
-            agrupamiento_cfg = self.get_opcion("agrupa")
-                
             mapa_regiones = {
                 estado: r["nombre"]
                 for r in self.regiones
@@ -229,9 +225,6 @@ class dataTransformation:
 
             agrupamiento_cfg = self.get_opcion("agrupa")
             region_objetivo = agrupamiento_cfg["region"]
-
-            logger.info(self.agrupamiento )
-                
            
             df_region_resumen = (
                 self.df_agrupado.dropna(subset=["Region"])
@@ -276,5 +269,6 @@ class dataTransformation:
 
 
         if not self.df_agrupado.empty:
-            self.df_agrupado.to_csv(self.raw_data_filter, index=False)
             self.pruebas()
+        
+        return self.df_agrupado

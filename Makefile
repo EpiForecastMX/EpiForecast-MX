@@ -104,7 +104,7 @@ transform:
 
 ## Ejecuta el flujo completo: filtrar, limpiar y transformar dataset
 .PHONY: preprocess
-preprocess: reset_logs reset_interim filtra limpia transforma
+preprocess: reset_logs reset_interim filter clean transform
 	@echo ">>> Flujo completo ejecutado."
 
 

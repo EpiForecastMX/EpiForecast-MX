@@ -29,6 +29,7 @@ data:
   raw_data_filter: "${paths.raw}/data_raw_${padecimiento.tipo}.csv"
   interim_data_file: "${paths.interim}/data_clean.csv"
   interim_stage_transformed: "${paths.interim}/data_stage_transformed.csv"
+  data_prepare: "${paths.processed}/data_prepare_${padecimiento.tipo}.csv"
 
 metadata:
   author: "Juan Carlos Perez Nava"
