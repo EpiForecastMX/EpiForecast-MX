@@ -49,7 +49,7 @@ format:
 .PHONY: create_environment_conda
 create_environment_conda:
 	@echo ">>> Creando entorno conda..."
-	conda create --name $(PROJECT_NAME) python=$(PYTHON_VERSION) -y
+	conda create --name integrador python=3.12 -c conda-forge --override-channels -y
 	@echo ">>> Entorno creado. Activando e instalando dependencias..."
 	conda run -n $(PROJECT_NAME) $(PYTHON_INTERPRETER) -m pip install -U pip
 	conda run -n $(PROJECT_NAME) $(PYTHON_INTERPRETER) -m pip install -r requirements.txt
