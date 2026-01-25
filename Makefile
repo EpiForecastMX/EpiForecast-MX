@@ -19,8 +19,8 @@ requirements:
 	
 
 # Elimina archivos compilados de Python (*.pyc, *.pyo) y carpetas __pycache__
-.PHONY: clean
-clean:
+.PHONY: clean_py
+clean_py:
 	find . -type f -name "*.py[co]" -delete
 	find . -type d -name "__pycache__" -delete
 
