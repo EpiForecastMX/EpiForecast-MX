@@ -1,6 +1,6 @@
 opciones_FE:
   - tratamiento_outliers:
-      IQR: false
+      IQR: False
       columnas:
         - Incremento_hombres
         - Incremento_mujeres

@@ -211,7 +211,7 @@ class dataTransformation:
             anio_min = self.df_agrupado['Fecha'].min().year
             anio_max = self.df_agrupado['Fecha'].max().year
             plt.plot(self.df_agrupado["Fecha"],self.df_agrupado["incrementos_hombres"] , label='Casos Hombres', color='steelblue')
-            plt.plot(self.df_agrupado["Fecha"],self.df_agrupado["incrementos_mujeres"] , label='Casos Hombres', color='darkred')
+            plt.plot(self.df_agrupado["Fecha"],self.df_agrupado["incrementos_mujeres"] , label='Casos Mujeres', color='darkred')
             plt.title(f'Casos Semanales de {padecimiento["tipo"]} a Nivel Nacional (Evolución {anio_min}-{anio_max})')
 
         
