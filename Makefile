@@ -38,16 +38,26 @@ format:
 	ruff format
 
 
-## Configurar el entorno con independencias del intérprete de Python a través de conda
-.PHONY: create_environment
-create_environment:
+## Configurar el entorno con conda
+.PHONY: create_environment_conda
+create_environment_conda:
 	@echo ">>> Creando entorno conda..."
 	conda create --name $(PROJECT_NAME) python=$(PYTHON_VERSION) -y
 	@echo ">>> Entorno creado. Activando e instalando dependencias..."
 	conda run -n $(PROJECT_NAME) $(PYTHON_INTERPRETER) -m pip install -U pip
 	conda run -n $(PROJECT_NAME) $(PYTHON_INTERPRETER) -m pip install -r requirements.txt
 	@echo ">>> conda env created. Activate with:\nconda activate $(PROJECT_NAME)"
-	
+
+## Configurar el entorno con venv
+.PHONY: create_environment
+create_environment:
+	@echo ">>> Creando entorno virtual con venv..."
+	$(PYTHON_INTERPRETER)$(PYTHON_VERSION) -m venv $(PROJECT_NAME)
+	@echo ">>> Entorno creado. Activando e instalando dependencias..."
+	$(PROJECT_NAME)/Scripts/activate && \
+	$(PYTHON_INTERPRETER) -m pip install --upgrade pip && \
+	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
+	@echo ">>> venv creado. Activa con:\nsource $(PROJECT_NAME)/Scripts/activate (Windows: .\\$(PROJECT_NAME)\\Scripts\\activate)"
 
 ## Reinicia la carpeta de registros (logs)
 .PHONY: reset_logs
