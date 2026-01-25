@@ -3,8 +3,15 @@
 #################################################################################
 
 PROJECT_NAME = integrador
-PYTHON_VERSION = 3.14
+PYTHON_VERSION = 3.12
 PYTHON_INTERPRETER = python
+
+# Detectar sistema operativo
+ifeq ($(OS),Windows_NT)
+    ACTIVATE = Scripts/activate
+else
+    ACTIVATE = bin/activate
+endif
 
 #################################################################################
 # COMMANDS                                                                      #
@@ -54,10 +61,8 @@ create_environment:
 	@echo ">>> Creando entorno virtual con venv..."
 	$(PYTHON_INTERPRETER)$(PYTHON_VERSION) -m venv $(PROJECT_NAME)
 	@echo ">>> Entorno creado. Activando e instalando dependencias..."
-	$(PROJECT_NAME)/Scripts/activate && \
-	$(PYTHON_INTERPRETER) -m pip install --upgrade pip && \
-	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
-	@echo ">>> venv creado. Activa con:\nsource $(PROJECT_NAME)/Scripts/activate (Windows: .\\$(PROJECT_NAME)\\Scripts\\activate)"
+	. $(PROJECT_NAME)/$(ACTIVATE) && pip install --upgrade pip && pip install -r requirements.txt
+	@echo ">>> venv creado. Activa con: source $(PROJECT_NAME)/$(ACTIVATE)"
 
 ## Reinicia la carpeta de registros (logs)
 .PHONY: reset_logs
