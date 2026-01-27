@@ -125,3 +125,15 @@ export PRINT_HELP_PYSCRIPT
 
 help:
 	@$(PYTHON_INTERPRETER) -c "${PRINT_HELP_PYSCRIPT}" < $(MAKEFILE_LIST)
+
+## Instalar dependencias del sistema (macOS)
+.PHONY: setup_mac
+setup_mac:
+	brew install ghostscript
+	@echo ">>> Dependencias del sistema instaladas."
+
+## Instalar dependencias del sistema (Linux)
+.PHONY: setup_linux
+setup_linux:
+	sudo apt-get install -y ghostscript
+	@echo ">>> Dependencias del sistema instaladas."

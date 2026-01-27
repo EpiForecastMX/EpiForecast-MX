@@ -1,10 +1,10 @@
-# Enfermedades Neurológicas y de Salud
+# EpiForecast-MX
 
 <a target="_blank" href="https://cookiecutter-data-science.drivendata.org/">
     <img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" />
 </a>
 
-Proyecto para predecir casos de Enfermedades Neurológicas y de Salud en México mediante modelos de aprendizaje automático y análisis demográfico.
+Proyecto para predecir casos de Enfermedades Neurológicas y de Salud Mental en México mediante modelos de aprendizaje automático y análisis demográfico.
 
 ## 📂 Organización del proyecto
 
@@ -37,91 +37,159 @@ Proyecto para predecir casos de Enfermedades Neurológicas y de Salud en México
 │   └── datos           <- Módulos con clases para limpieza, transformación y preparación de datos
 │   └── utils           <- Funciones auxiliares para directorios, visualización y generación automatizada de reportes
 │
-├── Makefile            <- Archivo Makefile que centraliza comandos para automatizar tareas del proyecto (descarga de datos, entrenamiento, etc.)
+├── Makefile            <- Archivo Makefile que centraliza comandos para automatizar tareas del proyecto
 │
-├── pyproject.toml      <- Archivo de configuración principal para dependencias y metadatos del proyecto en Python
+├── pyproject.toml      <- Archivo de configuración principal para dependencias y metadatos del proyecto
 │
 ├── README.md           <- Documento inicial con instrucciones, dependencias y guías para configurar y ejecutar el proyecto
 │
 └── requirements.txt    <- Lista de dependencias en Python necesarias para ejecutar el proyecto
-
-
 ```
 
 ## 🐍 Requisitos
 
 - Python 3.12
-- WSL
-- Conda
+- Conda o venv
+- Git
 
-## 🐧 Pasos para configurar WSL y Miniconda
+## 🖥️ Dependencias del Sistema
 
-1. **Instalar WSL**
-   - Ejecuta en PowerShell (como administrador):
-     ```bash
-     wsl --install Ubuntu
-     ```
-   - Esto instalará la última versión de WSL junto con una distribución de Linux.  
-   - Una vez configurado el usuario principal
+Antes de instalar las dependencias de Python, es necesario instalar **Ghostscript** para el procesamiento de PDFs.
 
-2. **Preparar el script de instalación de Miniconda**
-   - Asegúrate de tener el archivo `setup_wsl.sh` en la ruta:
-     
-     ```
-     \\wsl.localhost\Ubuntu\home\<usuario>\
-     ```
+### macOS
+```bash
+brew install ghostscript
+```
 
-   - Donde `<usuario>` corresponde al nombre de usuario principal que configuraste al instalar WSL.
+Si no tienes Homebrew instalado:
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+```
 
-   - Dale permisos de ejecución al script:
-     ```bash
-     chmod +x setup_wsl.sh
-     ```
+### Windows (WSL / Ubuntu)
+```bash
+sudo apt-get update
+sudo apt-get install -y ghostscript
+```
 
-3. **Ejecutar el script**
-   - Lanza el script para instalar Miniconda:
-     ```bash
-     ./setup_wsl.sh
-     ```
-   - Este script descargará e instalará Miniconda, configurando tu entorno de Python.
+### Linux (Ubuntu/Debian)
+```bash
+sudo apt-get update
+sudo apt-get install -y ghostscript
+```
 
-4. **Verificar la instalación**
-   - Comprueba que Miniconda está disponible:
-     ```bash
-     conda --version
-     ```
+---
 
-## 📥 Clonar repositorio
+## 🍎 Configuración en macOS
 
+### 1. Clonar el repositorio
 ```bash
 git clone https://github.com/IntegradorIMSS2026Team01/EpiForecast-MX.git
+cd EpiForecast-MX
 ```
-Para la extracción de datos desde los archivos PDF de los boletines epidemiológicos sobre enfermedades mentales se utiliza también el siguiente proyecto:
+
+### 2. Crear entorno virtual
+Con **venv**:
+```bash
+make create_environment
+```
+
+Con **Conda**:
+```bash
+make create_environment_conda
+```
+
+### 3. Activar el entorno
+Con **venv**:
+```bash
+source integrador/bin/activate
+```
+
+Con **Conda**:
+```bash
+conda activate integrador
+```
+
+### 4. Instalar dependencias de Python
+```bash
+make requirements
+```
+
+---
+
+## 🐧 Configuración en Windows (WSL)
+
+### 1. Instalar WSL
+Ejecuta en PowerShell (como administrador):
+```bash
+wsl --install Ubuntu
+```
+
+### 2. Preparar el script de instalación de Miniconda
+Asegúrate de tener el archivo `setup_wsl.sh` en la ruta:
+```
+\\wsl.localhost\Ubuntu\home\<usuario>\
+```
+
+Dale permisos de ejecución al script:
+```bash
+chmod +x setup_wsl.sh
+```
+
+### 3. Ejecutar el script
+```bash
+./setup_wsl.sh
+```
+
+### 4. Verificar la instalación
+```bash
+conda --version
+```
+
+### 5. Clonar el repositorio
+```bash
+git clone https://github.com/IntegradorIMSS2026Team01/EpiForecast-MX.git
+cd EpiForecast-MX
+```
+
+### 6. Crear entorno e instalar dependencias
+```bash
+make create_environment_conda
+conda activate integrador
+make requirements
+```
+
+---
+
+## 📚 Comandos del Makefile
+
+| Comando | Descripción |
+|---------|-------------|
+| `make help` | Muestra los comandos disponibles |
+| `make requirements` | Instala las dependencias de Python |
+| `make create_environment` | Crea entorno virtual con venv |
+| `make create_environment_conda` | Crea entorno virtual con Conda |
+| `make get_dataset` | Descarga el dataset original |
+| `make preprocess` | Ejecuta el flujo completo: filtrar, limpiar y transformar |
+| `make filter` | Filtra el dataset por padecimiento |
+| `make clean` | Limpia el dataset (nulos, duplicados) |
+| `make transform` | Aplica transformaciones al dataset |
+| `make lint` | Analiza el código con Ruff |
+| `make format` | Formatea el código con Ruff |
+| `make reset_logs` | Reinicia la carpeta de logs |
+| `make reset_interim` | Reinicia la carpeta interim |
+
+---
+
+## 📥 Repositorios Relacionados
+
+Para la extracción de datos desde los archivos PDF de los boletines epidemiológicos:
 
 ```bash
 git clone https://github.com/luisgss10/data-extraction-mx-enfermedades-mentales.git
 ```
 
-## 📚 Makefile
-
-### 🔧 Configurar entorno de Python
-Crea el entorno del intérprete de Python (compatible con Mac/Linux y Windows):
-
-```bash
-make create_environment
-```
-
-### 📂 Descargar dataset
-Obtén los datos requeridos para el análisis:
-```bash
-make data
-```
-
-## 🔄 Preparación del dataset
-Ejecuta el flujo completo de filtrado, limpieza y transformación del dataset:
-```bash
-make prepara
-```
+---
 
 ## 📚 Fuentes de Información
 
@@ -136,3 +204,17 @@ Para la obtención, verificación y actualización de los datos epidemiológicos
   Disponible en: https://www.gob.mx/salud/acciones-y-programas/historico-boletin-epidemiologico
 
 Estas fuentes garantizan el acceso a información confiable y actualizada proporcionada por la Secretaría de Salud de México.
+
+---
+
+## 👥 Equipo
+
+- Juan Carlos Pérez Nava
+- Luis Gerardo Sánchez
+- Sly (Haowei)
+
+**Asesora:** Dra. Grettel Barceló Alonso - Tecnológico de Monterrey
+
+**Stakeholders IMSS:**
+- Dra. Ruth Pérez (Project Leader)
+- Dra. Lina Díaz Castro (Psychiatry Researcher)
