@@ -16,7 +16,7 @@ Proyecto para predecir casos de Enfermedades Neurológicas y de Salud Mental en 
 │   ├── interim         <- Resultados temporales de transformaciones, útiles para depuración y trazabilidad
 │   ├── processed       <- Conjuntos de datos definitivos y estandarizados listos para análisis y modelado
 │   ├── raw             <- Captura inicial de datos sin modificaciones
-│   └── raw_PDFs        <- Boletines epidemiológicos en formato PDF (entrada para extracción)
+│   └── raw_PDFs        <- Boletines epidemiológicos en formato PDF (versionados con DVC)
 │
 ├── docs                <- Proyecto base de documentación 
 │
@@ -53,6 +53,7 @@ Proyecto para predecir casos de Enfermedades Neurológicas y de Salud Mental en 
 - Python 3.12
 - Conda o venv
 - Git
+- AWS CLI (para acceso a datos versionados)
 
 ## 🖥️ Dependencias del Sistema
 
@@ -79,6 +80,43 @@ sudo apt-get install -y ghostscript
 sudo apt-get update
 sudo apt-get install -y ghostscript
 ```
+
+---
+
+## 📦 Versionado de Datos (DVC + S3)
+
+Este proyecto utiliza **DVC (Data Version Control)** para versionar los datos y almacenarlos en **Amazon S3**. Esto permite:
+
+- Reproducibilidad total del pipeline
+- Colaboración eficiente (no subir GBs a Git)
+- Historial de cambios en los datos
+
+### Datos versionados
+
+| Dataset | Ubicación | Descripción |
+|---------|-----------|-------------|
+| `raw_PDFs/` | `data/raw_PDFs/` | 629 boletines epidemiológicos (~1GB) |
+| `dataset_boletin_epidemiologico.csv` | `data/processed/` | Dataset consolidado (60,288 filas) |
+
+### Configurar acceso a S3
+
+Solicita las credenciales de AWS al equipo y configura:
+
+```bash
+aws configure
+# AWS Access Key ID: <proporcionado>
+# AWS Secret Access Key: <proporcionado>
+# Default region: us-east-1
+# Default output format: json
+```
+
+### Descargar datos
+
+```bash
+dvc pull
+```
+
+Esto descarga todos los datos versionados (~1GB) a tu máquina local.
 
 ---
 
@@ -112,9 +150,16 @@ Con **Conda**:
 conda activate integrador
 ```
 
-### 4. Instalar dependencias de Python
+### 4. Instalar dependencias y descargar datos
 ```bash
 make requirements
+aws configure  # Configurar credenciales AWS
+dvc pull       # Descargar datos desde S3
+```
+
+O en un solo comando (requiere AWS configurado):
+```bash
+make setup
 ```
 
 ---
@@ -127,7 +172,7 @@ Ejecuta en PowerShell (como administrador):
 wsl --install Ubuntu
 ```
 
-### 2. Preparar el script de instalación de Miniconda
+### 2. Preparar el script de instalación
 Asegúrate de tener el archivo `setup_wsl.sh` en la ruta:
 ```
 \\wsl.localhost\Ubuntu\home\<usuario>\
@@ -143,23 +188,22 @@ chmod +x setup_wsl.sh
 ./setup_wsl.sh
 ```
 
-### 4. Verificar la instalación
-```bash
-conda --version
-```
+Esto instala: build-essential, Ghostscript, AWS CLI y Miniconda.
 
-### 5. Clonar el repositorio
+### 4. Configurar AWS y clonar repositorio
 ```bash
+aws configure  # Ingresar credenciales proporcionadas por el equipo
+
 git clone https://github.com/IntegradorIMSS2026Team01/EpiForecast-MX.git
 cd EpiForecast-MX
 ```
 
-### 6. Crear entorno e instalar dependencias
+### 5. Setup completo
 ```bash
-make create_environment_conda
-conda activate integrador
-make requirements
+make setup-linux
 ```
+
+Esto instala dependencias y descarga los datos desde S3.
 
 ---
 
@@ -167,7 +211,31 @@ make requirements
 
 El proyecto incluye un módulo integrado para extraer tablas epidemiológicas desde los boletines PDF del SINAVE.
 
-### Uso con Interfaz Gráfica (Recomendado)
+### Uso con CLI (Recomendado para automatización)
+
+```bash
+# Sincronizar datos desde S3 y ejecutar pipeline
+python -m src.extraccion.cli run --sync
+
+# Solo ejecutar (asume datos ya descargados)
+python -m src.extraccion.cli run
+
+# Con todas las opciones
+python -m src.extraccion.cli run --sync --save-pages --save-tables
+
+# Ver estado de sincronización
+python -m src.extraccion.cli status
+```
+
+O usando el Makefile:
+
+```bash
+make extract-sync   # Sincroniza desde S3 y ejecuta
+make extract        # Solo ejecuta (datos locales)
+make extract-full   # Ejecuta con todos los outputs
+```
+
+### Uso con Interfaz Gráfica
 
 ```bash
 python -m src.extraccion.gui
@@ -179,14 +247,6 @@ La GUI permite:
 - Definir keywords (enfermedades a buscar)
 - Activar/desactivar guardado de páginas extraídas y CSVs individuales
 
-### Uso por Línea de Comandos
-
-Colocar los PDFs en `data/raw_PDFs/` y ejecutar:
-
-```bash
-python -m src.extraccion.extraer_tabla
-```
-
 ### Salidas Generadas
 
 | Archivo | Descripción |
@@ -197,23 +257,82 @@ python -m src.extraccion.extraer_tabla
 
 ---
 
+## 🔄 Flujo Semanal (Agregar nuevo boletín)
+
+Cada semana se publica un nuevo boletín epidemiológico. Para agregarlo:
+
+### Opción 1: Comando único
+```bash
+make data-weekly PDF=~/Downloads/sem01_2025.pdf
+```
+
+### Opción 2: Paso a paso
+```bash
+# 1. Agregar PDF al tracking
+make data-add PDF=~/Downloads/sem01_2025.pdf
+
+# 2. Commit y push a S3
+make data-commit
+```
+
+Esto:
+1. Copia el PDF a `data/raw_PDFs/`
+2. Actualiza el tracking de DVC
+3. Sube a S3
+4. Hace commit y push a Git
+
+---
+
 ## 📚 Comandos del Makefile
+
+### Gestión de Datos (DVC)
 
 | Comando | Descripción |
 |---------|-------------|
-| `make help` | Muestra los comandos disponibles |
-| `make requirements` | Instala las dependencias de Python |
-| `make create_environment` | Crea entorno virtual con venv |
-| `make create_environment_conda` | Crea entorno virtual con Conda |
-| `make get_dataset` | Descarga el dataset original |
-| `make preprocess` | Ejecuta el flujo completo: filtrar, limpiar y transformar |
-| `make filter` | Filtra el dataset por padecimiento |
-| `make clean` | Limpia el dataset (nulos, duplicados) |
-| `make transform` | Aplica transformaciones al dataset |
-| `make lint` | Analiza el código con Ruff |
-| `make format` | Formatea el código con Ruff |
-| `make reset_logs` | Reinicia la carpeta de logs |
-| `make reset_interim` | Reinicia la carpeta interim |
+| `make data-pull` | Descarga datos desde S3 |
+| `make data-push` | Sube datos a S3 |
+| `make data-add PDF=...` | Agrega nuevo PDF al tracking |
+| `make data-commit` | Commit y push de cambios de datos |
+| `make data-weekly PDF=...` | Flujo completo semanal |
+| `make data-status` | Ver estado de sincronización DVC |
+
+### Extracción de PDFs
+
+| Comando | Descripción |
+|---------|-------------|
+| `make extract` | Ejecuta pipeline de extracción |
+| `make extract-sync` | Sincroniza S3 y ejecuta pipeline |
+| `make extract-full` | Ejecuta con todos los outputs |
+
+### Setup y Entorno
+
+| Comando | Descripción |
+|---------|-------------|
+| `make setup` | Setup completo macOS (deps + datos) |
+| `make setup-linux` | Setup completo Linux/WSL |
+| `make requirements` | Instala dependencias de Python |
+| `make create_environment` | Crea entorno con venv |
+| `make create_environment_conda` | Crea entorno con Conda |
+
+### Preprocesamiento
+
+| Comando | Descripción |
+|---------|-------------|
+| `make preprocess` | Flujo completo: filtrar, limpiar, transformar |
+| `make filter` | Filtra dataset por padecimiento |
+| `make clean` | Limpia dataset (nulos, duplicados) |
+| `make transform` | Aplica transformaciones |
+
+### Utilidades
+
+| Comando | Descripción |
+|---------|-------------|
+| `make help` | Muestra comandos disponibles |
+| `make lint` | Analiza código con Ruff |
+| `make format` | Formatea código con Ruff |
+| `make reset_logs` | Reinicia carpeta de logs |
+| `make reset_interim` | Reinicia carpeta interim |
+| `make clean_py` | Limpia archivos .pyc y __pycache__ |
 
 ---
 
@@ -237,7 +356,7 @@ Estas fuentes garantizan el acceso a información confiable y actualizada propor
 
 - Juan Carlos Pérez Nava
 - Luis Gerardo Sánchez
-- Sly (Haowei)
+- Javieer Augusto Rebull Saucedo
 
 **Asesora:** Dra. Grettel Barceló Alonso - Tecnológico de Monterrey
 
