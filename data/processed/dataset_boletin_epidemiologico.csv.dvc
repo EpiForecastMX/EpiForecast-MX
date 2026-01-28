@@ -1,5 +1,5 @@
 outs:
-- md5: f7d41c96931c059762a4dfc72f1e5e29
-  size: 2520539
+- md5: 08a84174f1e013628025d5f2552300bf
+  size: 2460181
   hash: md5
   path: dataset_boletin_epidemiologico.csv
