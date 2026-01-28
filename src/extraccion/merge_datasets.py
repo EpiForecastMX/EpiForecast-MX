@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 from typing import List, Optional
-
+from datetime import datetime
 import typer
 from src.extraccion.pipeline import run_pipeline
 
@@ -17,7 +17,6 @@ DEFAULT_KEYWORDS = ["Depresión", "Parkinson", "Alzheimer"]
 def _has_tty() -> bool:
     # True si stdin y stdout son interactivos (terminal real)
     return sys.stdin.isatty() and sys.stdout.isatty()
-
 
 def _pick_directory_gui() -> Optional[Path]:
     try:
@@ -36,6 +35,16 @@ def _pick_directory_gui() -> Optional[Path]:
     except Exception:
         return None
 
+def rename_csv_with_timestamp(csv_path: str | Path) -> Path:
+    csv_path = Path(csv_path)
+    if not csv_path.exists():
+        raise FileNotFoundError(f"No existe el archivo: {csv_path}")
+    if csv_path.suffix.lower() != ".csv":
+        raise ValueError("El archivo no es .csv")
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    new_path = csv_path.with_name(f"{csv_path.stem}_{timestamp}.csv")
+    csv_path.rename(new_path)
+    return new_path
 
 @app.command()
 def main(
