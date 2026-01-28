@@ -15,7 +15,8 @@ Proyecto para predecir casos de Enfermedades Neurológicas y de Salud Mental en 
 │   ├── external        <- Datos obtenidos de fuentes externas (no generados internamente)
 │   ├── interim         <- Resultados temporales de transformaciones, útiles para depuración y trazabilidad
 │   ├── processed       <- Conjuntos de datos definitivos y estandarizados listos para análisis y modelado
-│   └── raw             <- Captura inicial de datos sin modificaciones
+│   ├── raw             <- Captura inicial de datos sin modificaciones
+│   └── raw_PDFs        <- Boletines epidemiológicos en formato PDF (entrada para extracción)
 │
 ├── docs                <- Proyecto base de documentación 
 │
@@ -33,8 +34,9 @@ Proyecto para predecir casos de Enfermedades Neurológicas y de Salud Mental en 
 ├── scripts             <- Carpeta que contiene los archivos en Python utilizados para instanciar clases y orquestar flujos
 │
 ├── src
-│   └── configuraciones <- Módulos que gestionan parámetros y configuraciones del proyecto desde archivos YAML
-│   └── datos           <- Módulos con clases para limpieza, transformación y preparación de datos
+│   ├── configuraciones <- Módulos que gestionan parámetros y configuraciones del proyecto desde archivos YAML
+│   ├── datos           <- Módulos con clases para limpieza, transformación y preparación de datos
+│   ├── extraccion      <- Módulo para extracción de tablas epidemiológicas desde PDFs
 │   └── utils           <- Funciones auxiliares para directorios, visualización y generación automatizada de reportes
 │
 ├── Makefile            <- Archivo Makefile que centraliza comandos para automatizar tareas del proyecto
@@ -161,6 +163,40 @@ make requirements
 
 ---
 
+## 📊 Módulo de Extracción de Datos (PDFs)
+
+El proyecto incluye un módulo integrado para extraer tablas epidemiológicas desde los boletines PDF del SINAVE.
+
+### Uso con Interfaz Gráfica (Recomendado)
+
+```bash
+python -m src.extraccion.gui
+```
+
+La GUI permite:
+- Seleccionar carpeta de entrada (PDFs)
+- Seleccionar carpeta de salida
+- Definir keywords (enfermedades a buscar)
+- Activar/desactivar guardado de páginas extraídas y CSVs individuales
+
+### Uso por Línea de Comandos
+
+Colocar los PDFs en `data/raw_PDFs/` y ejecutar:
+
+```bash
+python -m src.extraccion.extraer_tabla
+```
+
+### Salidas Generadas
+
+| Archivo | Descripción |
+|---------|-------------|
+| `dataset_boletin_epidemiologico.csv` | Dataset consolidado con todos los datos extraídos |
+| `csv_tablas_individuales/` | CSVs por cada PDF procesado (opcional) |
+| `pdf_matched_pages/` | PDFs de 1 página con las tablas encontradas (opcional) |
+
+---
+
 ## 📚 Comandos del Makefile
 
 | Comando | Descripción |
@@ -178,16 +214,6 @@ make requirements
 | `make format` | Formatea el código con Ruff |
 | `make reset_logs` | Reinicia la carpeta de logs |
 | `make reset_interim` | Reinicia la carpeta interim |
-
----
-
-## 📥 Repositorios Relacionados
-
-Para la extracción de datos desde los archivos PDF de los boletines epidemiológicos:
-
-```bash
-git clone https://github.com/luisgss10/data-extraction-mx-enfermedades-mentales.git
-```
 
 ---
 
