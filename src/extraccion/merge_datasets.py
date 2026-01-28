@@ -1,13 +1,11 @@
 from __future__ import annotations
 
-from datetime import datetime
+import sys
 from pathlib import Path
 from typing import List, Optional
 
 import typer
-
 from src.extraccion.pipeline import run_pipeline
-
 
 app = typer.Typer(add_completion=False)
 
@@ -16,10 +14,14 @@ DEFAULT_OUTPUT_DIR = Path("data/include/output")
 DEFAULT_KEYWORDS = ["Depresión", "Parkinson", "Alzheimer"]
 
 
-def _pick_directory_gui() -> Optional[str]:
-    """Return a directory path chosen via GUI, or None if cancelled/unavailable."""
+def _has_tty() -> bool:
+    # True si stdin y stdout son interactivos (terminal real)
+    return sys.stdin.isatty() and sys.stdout.isatty()
+
+
+def _pick_directory_gui() -> Optional[Path]:
     try:
-        from tkinter import Tk, filedialog  # lazy import
+        from tkinter import Tk, filedialog
     except Exception:
         return None
 
@@ -28,27 +30,28 @@ def _pick_directory_gui() -> Optional[str]:
         root.withdraw()
         folder = filedialog.askdirectory()
         root.destroy()
-        return folder or None
+        return Path(folder) if folder else None
     except Exception:
         return None
 
 
 @app.command()
 def main(
-    input_dir: Path = typer.Option(DEFAULT_INPUT_DIR, "--input", "-i", exists=False, file_okay=False, dir_okay=True),
+    input_dir: Path = typer.Option(DEFAULT_INPUT_DIR, "--input", "-i", file_okay=False, dir_okay=True),
     output_dir: Path = typer.Option(DEFAULT_OUTPUT_DIR, "--output", "-o", file_okay=False, dir_okay=True),
-    keywords: List[str] = typer.Option(DEFAULT_KEYWORDS, "--kw", help="Repite --kw para varias keywords."),
-    gui: bool = typer.Option(False, "--gui", help="Abrir selector de carpeta (Tkinter)."),
+    keywords: List[str] = typer.Option(DEFAULT_KEYWORDS, "--kw"),
     save_matched_pages: bool = typer.Option(False, "--save-matched-pages"),
     save_individual_tables: bool = typer.Option(False, "--save-individual-tables"),
 ):
-    # GUI selection overrides input_dir if requested
-    if gui:
-        picked = _pick_directory_gui()
-        if picked:
-            input_dir = Path(picked)
-        else:
-            typer.echo("⚠️ No se seleccionó directorio (o no hay GUI). Se usa --input.")
+    # "Smart": solo pregunta si hay terminal interactiva
+    if _has_tty():
+        if typer.confirm(f"¿Deseas cambiar la carpeta por defecto? ({input_dir})", default=False):
+            picked = _pick_directory_gui()
+            if picked:
+                input_dir = picked
+            else:
+                typer.echo("⚠️ No se pudo abrir el selector o no se eligió carpeta. Se usa la carpeta actual.")
+    # Si no hay TTY, no preguntamos nada y usamos defaults o flags
 
     if not input_dir.exists():
         typer.echo(f"❌ Directorio de entrada no existe: {input_dir}", err=True)
