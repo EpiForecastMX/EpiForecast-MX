@@ -5,6 +5,7 @@
 PROJECT_NAME = integrador
 PYTHON_VERSION = 3.12
 PYTHON_INTERPRETER = python
+ACTIVATE := bin/activate
 
 #################################################################################
 # COMMANDS                                                                      #
