@@ -200,3 +200,5 @@ integrador/
 !data/*.dvc
 !data/.gitignore
 .DS_Store
+!data/processed/*.dvc
+!data/processed/.gitignore
