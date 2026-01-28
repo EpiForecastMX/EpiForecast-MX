@@ -1,5 +1,5 @@
 # Data
-/data/
+/data/*
 
 # Log File
 /logs
@@ -197,3 +197,5 @@ cython_debug/
 .pypirc
 
 integrador/
+!data/*.dvc
+!data/.gitignore

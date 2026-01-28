@@ -74,6 +74,59 @@ reset_interim:
 	@echo ">>> Carpeta interim reiniciada."
 
 #################################################################################
+# DATA VERSION CONTROL (DVC)                                                    #
+#################################################################################
+
+## Descargar datos desde S3 (para nuevos colaboradores o sync)
+.PHONY: data-pull
+data-pull:
+	@echo ">>> Descargando datos desde S3..."
+	dvc pull
+	@echo ">>> Datos sincronizados."
+
+## Subir datos a S3 (después de agregar nuevos PDFs)
+.PHONY: data-push
+data-push:
+	@echo ">>> Subiendo datos a S3..."
+	dvc push
+	@echo ">>> Datos subidos a S3."
+
+## Agregar nuevo PDF semanal y sincronizar (uso: make data-add PDF=path/to/file.pdf)
+.PHONY: data-add
+data-add:
+ifndef PDF
+	$(error Uso: make data-add PDF=ruta/al/archivo.pdf)
+endif
+	@echo ">>> Agregando nuevo PDF: $(PDF)"
+	cp "$(PDF)" data/raw_PDFs/
+	dvc add data/raw_PDFs
+	@echo ">>> PDF agregado. Ejecuta 'make data-commit' para commitear."
+
+## Commitear cambios de datos y push a remotes
+.PHONY: data-commit
+data-commit:
+	@echo ">>> Commiteando cambios de datos..."
+	git add data/raw_PDFs.dvc data/.gitignore
+	git commit -m "data: add new weekly PDF $$(date +%Y-%W)"
+	dvc push
+	git push
+	@echo ">>> Datos commiteados y sincronizados."
+
+## Flujo completo semanal: agregar PDF, commitear y push (uso: make data-weekly PDF=path/to/file.pdf)
+.PHONY: data-weekly
+data-weekly: data-add data-commit
+	@echo ">>> Flujo semanal completado."
+
+## Ver estado de DVC
+.PHONY: data-status
+data-status:
+	@echo ">>> Estado de DVC:"
+	dvc status
+	@echo ""
+	@echo ">>> Archivos trackeados:"
+	dvc list . --dvc-only
+
+#################################################################################
 # PROJECT RULES                                                                 #
 #################################################################################
 
@@ -138,3 +191,13 @@ setup_mac:
 setup_linux:
 	sudo apt-get install -y ghostscript
 	@echo ">>> Dependencias del sistema instaladas."
+
+## Setup completo para nuevos colaboradores (macOS)
+.PHONY: setup
+setup: setup_mac requirements data-pull
+	@echo ">>> Setup completo. Proyecto listo para trabajar."
+
+## Setup completo para nuevos colaboradores (Linux)
+.PHONY: setup-linux
+setup-linux: setup_linux requirements data-pull
+	@echo ">>> Setup completo. Proyecto listo para trabajar."

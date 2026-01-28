@@ -1,0 +1,6 @@
+outs:
+- md5: cc53d2b005ae270308248328e5fe34e0.dir
+  size: 972356118
+  nfiles: 629
+  hash: md5
+  path: raw_PDFs

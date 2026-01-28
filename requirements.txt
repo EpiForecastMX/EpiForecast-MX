@@ -1,4 +1,3 @@
-
 # =========================================
 # Logging & Configuration
 # =========================================
@@ -8,20 +7,19 @@ omegaconf==2.3.0     # Manejo flexible de configuraciones
 # =========================================
 # Visualization
 # =========================================
-matplotlib==3.10.0   # Graficos y visualizacion
-seaborn==0.13.2      # VisualizaciÃ³n estadÃ­stica
+matplotlib==3.10.0   # Gráficos y visualización
+seaborn==0.13.2      # Visualización estadística
 
 # =========================================
 # Numerical Computing
 # =========================================
-numpy==2.0.0         # Computacion numerica
-scipy==1.14.1       # Funciones científicas y estadísticas
-
+numpy==2.0.0         # Computación numérica
+scipy==1.14.1        # Funciones científicas y estadísticas
 
 # =========================================
 # Data Manipulation
 # =========================================
-pandas==2.3.0        # Manipulacion y analisis de datos
+pandas==2.3.0        # Manipulación y análisis de datos
 
 # =========================================
 # Machine Learning
@@ -44,7 +42,7 @@ ipykernel==6.29.0    # Kernel para notebooks
 gdown==5.2.0         # Descarga desde Google Drive
 typer==0.20.1        # CLI para scripts
 tabulate==0.9.0      # Tablas en consola
-reportlab==4.4.7     # Generacion de PDFs
+reportlab==4.4.7     # Generación de PDFs
 ruff==0.14.10        # Linter y formateador para Python
 
 # =========================================
@@ -55,9 +53,11 @@ statsmodels==0.14.4  # Modelos estadísticos y series de tiempo
 # =========================================
 # PDF Processing
 # =========================================
-camelot-py[base]==0.11.0  # Extracción de tablas de PDFs
-pypdf==4.3.1              # Manipulación de PDFs
-# Data Extraction (PDF tables)
-camelot-py[cv]
-pypdf
-ghostscript
+camelot-py[cv]==0.11.0  # Extracción de tablas de PDFs (incluye OpenCV)
+pypdf==4.3.1            # Manipulación de PDFs
+ghostscript==0.7        # Wrapper de Ghostscript para Python
+
+# =========================================
+# Data Version Control & Cloud Storage
+# =========================================
+dvc[s3]>=3.50.0      # Versionado de datos con soporte S3
