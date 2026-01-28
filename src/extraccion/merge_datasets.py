@@ -6,12 +6,14 @@ from typing import List, Optional
 from datetime import datetime
 import typer
 from src.extraccion.pipeline import run_pipeline
+import shutil
 
 app = typer.Typer(add_completion=False)
 
 DEFAULT_INPUT_DIR = Path("data/include/")
 DEFAULT_OUTPUT_DIR = Path("data/include/output")
 DEFAULT_KEYWORDS = ["Depresión", "Parkinson", "Alzheimer"]
+DEFAULT_FILENAME = "dataset_boletin_epidemiologico.csv"
 
 
 def _has_tty() -> bool:
@@ -34,6 +36,32 @@ def _pick_directory_gui() -> Optional[Path]:
         return Path(folder) if folder else None
     except Exception:
         return None
+
+
+def ensure_empty_dir_or_exit(path: Path, *, interactive: bool = True) -> None:
+    path.mkdir(parents=True, exist_ok=True)
+    has_contents = any(path.iterdir())
+    if not has_contents:
+        return
+    if interactive and sys.stdin.isatty() and sys.stdout.isatty():
+        ok = typer.confirm(
+            f"⚠️ La carpeta de salida no está vacía: {path}\n¿Quieres borrar su contenido y continuar?",
+            default=False,
+        )
+        if not ok:
+            typer.echo("⛔ Cancelado por el usuario. No se ejecutó el pipeline.")
+            raise typer.Exit(0)
+
+        for p in path.iterdir():
+            if p.is_dir():
+                shutil.rmtree(p)
+            else:
+                p.unlink()
+        typer.echo("🧹 Contenido borrado.")
+        return
+
+    typer.echo(f"❌ La carpeta no está vacía y no hay modo interactivo: {path}", err=True)
+    raise typer.Exit(1)
 
 def rename_csv_with_timestamp(csv_path: str | Path) -> Path:
     csv_path = Path(csv_path)
@@ -79,6 +107,7 @@ def main(
     typer.echo("=" * 60 + "\n")
 
     try:
+        ensure_empty_dir_or_exit(output_dir)
         run_pipeline(
             input_dir=str(input_dir),
             output_dir=str(output_dir),
@@ -88,8 +117,18 @@ def main(
             log_fn=typer.echo,
         )
         typer.echo("\n✅ Pipeline completado exitosamente.")
+
     except Exception as e:
         typer.echo(f"\n❌ Error en pipeline: {e}", err=True)
+        raise typer.Exit(1)
+    
+    output_file = str(DEFAULT_OUTPUT_DIR) + "/" + DEFAULT_FILENAME
+    typer.echo("\n>> Renombrando archivo de salida: {output_file}")
+    
+    try:
+        rename_csv_with_timestamp(output_file)
+    except Exception as e:
+        typer.echo(f"\n❌ Error en renombrar archivo: {e}", err=True)
         raise typer.Exit(1)
 
 
