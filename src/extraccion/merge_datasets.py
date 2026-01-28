@@ -28,6 +28,8 @@ def _pick_directory_gui() -> Optional[Path]:
     try:
         root = Tk()
         root.withdraw()
+        root.attributes("-topmost", True)
+        root.update
         folder = filedialog.askdirectory()
         root.destroy()
         return Path(folder) if folder else None
