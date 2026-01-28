@@ -199,3 +199,4 @@ cython_debug/
 integrador/
 !data/*.dvc
 !data/.gitignore
+.DS_Store
