@@ -9,6 +9,7 @@ omegaconf==2.3.0     # Manejo flexible de configuraciones
 # =========================================
 matplotlib==3.10.0   # Gráficos y visualización
 seaborn==0.13.2      # Visualización estadística
+plotly==5.24.0       # Visualizaciones interactivas
 
 # =========================================
 # Numerical Computing
@@ -35,6 +36,7 @@ cookiecutter-data-science==2.3.0  # Plantillas para proyectos
 # Jupyter & Development
 # =========================================
 ipykernel==6.29.0    # Kernel para notebooks
+nbformat>=4.2.0      # Formato de notebooks (requerido por Plotly)
 
 # =========================================
 # Utilities
