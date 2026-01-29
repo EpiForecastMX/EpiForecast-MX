@@ -9,5 +9,3 @@ valores_sustituir:
     texto_sustituto: "Ciudad de México"
 
 registros_eliminar:
-  - columna_objetivo: "Semana"
-    valor:  53

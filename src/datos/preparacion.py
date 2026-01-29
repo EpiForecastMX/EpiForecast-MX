@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from loguru import logger
+from datetime import date
 
 from src.configuraciones.config_params import conf
 from src.utils.datos import OperacionesDatos
@@ -28,26 +29,53 @@ class dataTransformation:
 
     def _ajusta_semanas(self):
                  
-        if not self.df['Semana'].between(1, 52).all():
+        if not self.df['Semana'].between(1, 53).all():
             raise ValueError("Se encontraron semanas fuera del rango")
 
-        # Identifica las filas donde la semana es 1. 
-        # En esos casos, se hará un ajuste especial.
+        
+        
         filas_semana_1 = self.df['Semana'] == 1
-        logger.debug(f"{len(filas_semana_1)} registros identificados con semana = 1.")
-        
-        # Si la semana es 1, se cambia a 52.  
-        # Para el resto, simplemente se resta 1 a la sema
-        logger.info("Aplicando desplazamiento en las semanas.")
-        self.df['Semana'] = np.where(filas_semana_1, 52, self.df['Semana'] - 1)
-        
-        # Para las filas donde la semana era 1, también se resta 1 al año
-        # porque la nueva semana 52 pertenece al año anterior.
-        self.df.loc[filas_semana_1, 'Anio'] = self.df.loc[filas_semana_1, 'Anio'] - 1
+        filas_no_semana_1 = ~filas_semana_1
 
-        # Ordena el Dataframe de acuerdo con el año, entidad y semana
-        logger.info("Ordenando el dataset.")
+        logger.debug(f"{filas_semana_1.sum()} registros identificados con semana = 1.")
+        filas_semana_53 = self.df['Semana'] == 53
+        logger.debug(f"{filas_semana_53.sum()} registros identificados con semana = 53.")
+
+        #Para los que NO son semana 1: restar 1
+        self.df.loc[filas_no_semana_1, 'Semana'] = self.df.loc[filas_no_semana_1, 'Semana'] - 1
+
+        #Preparar el máximo de semana por año 
+        agg_por_anio = (
+            self.df
+            .groupby('Anio', as_index=False)
+            .agg(max_semana=('Semana', 'max'))
+        )
+
+        #Construir mapa: año -> max_semana observado
+        mapa_max_semana = dict(zip(agg_por_anio['Anio'], agg_por_anio['max_semana']))
+
+        #Calcular el año anterior para las filas con semana 1
+        anio_prev = self.df.loc[filas_semana_1, 'Anio'] - 1
+
+        #Obtener el máximo del año anterior y sumarle +1
+        max_global_sem = self.df['Semana'].max()
+        max_prev_anio = anio_prev.map(mapa_max_semana)
+
+        #Si el año anterior no existe en los datos (NaN), usar el máximo global
+        max_prev_anio = max_prev_anio.fillna(max_global_sem)
+
+        #La nueva semana para las filas de semana 1 será (max_prev_anio + 1)
+        nueva_semana_para_sem1 = (max_prev_anio + 1).astype(int)
+
+        #Asignar
+        self.df.loc[filas_semana_1, 'Anio'] = anio_prev.values
+        self.df.loc[filas_semana_1, 'Semana'] = nueva_semana_para_sem1.values
+
+        #Ordenar
         self.df = self.df.sort_values(by=["Anio", "Entidad", "Semana"]).reset_index(drop=True)
+
+        logger.info("Ordenando el dataset.")
+        
 
     
     def _prepara_series_tiempo(self):
@@ -75,53 +103,98 @@ class dataTransformation:
         # Ajusta el año a aquellas fechas de la semana 1 que caen en año anterior
         filas_anio = (self.df['Semana'] == 1) & (self.df['Fecha'].dt.year < self.df['Anio'])
         self.df.loc[filas_anio, 'Fecha'] = pd.to_datetime(self.df.loc[filas_anio, 'Anio'].astype(str) + '-01-01')
-
+    
 
     def _ajusta_incrementos(self):
-
-        columnas = ["Incremento_hombres","Incremento_mujeres"]
-
-        for columna in columnas:
-            logger.info(f"Iniciando ajuste de incrementos en columna '{columna}'.")
-            
-            mascara_negativos = self.df[columna] < 0
-            num_negativos = mascara_negativos.sum()
-            logger.info(f"Detectados {num_negativos} valores negativos en '{columna}'.")
-
         
+        for columna in ["Incremento_hombres", "Incremento_mujeres"]:
+            # 1) Identificar negativos
+            mascara_neg = self.df[columna] < 0
+
+            # 2) Consecutividad con la fila previa (misma Entidad, mismo Año, y Semana == Semana_prev + 1)
             anio_prev    = self.df["Anio"].shift(1)
             semana_prev  = self.df["Semana"].shift(1)
             entidad_prev = self.df["Entidad"].shift(1)
             valor_prev   = self.df[columna].shift(1)
 
-            es_consecutivo = (
-                (self.df["Anio"] == anio_prev) &
+            es_consec = (
                 (self.df["Entidad"] == entidad_prev) &
-                (self.df["Semana"] == semana_prev + 1)
+                (self.df["Anio"]    == anio_prev) &
+                (self.df["Semana"]  == semana_prev + 1)
             )
-        
-            mascara_actualizar = mascara_negativos & es_consecutivo
-            num_actualizar = mascara_actualizar.sum()
-            logger.info(f"{num_actualizar} registros consecutivos serán evaluados para ajuste en '{columna}'.")
 
-            suma = valor_prev + self.df[columna]
+            # Negativo actual + previo positivo + consecutivo
+            mascara_act = mascara_neg & es_consec & (valor_prev > 0)
 
-            # --- Si la suma es positiva ---
-            condicion_positiva = mascara_actualizar & (suma >= 0)
+            # 3) AJUSTAR EL PREVIO (t-1) con "previo + actual_negativo"
+            #    - Recorte a >= 0
+            #    - Redondeo a entero
+            nuevo_prev = (valor_prev + self.df[columna]).where(mascara_act).clip(lower=0)
+            # Redondear a enteros (0 decimales) y castear a int
+            nuevo_prev = np.rint(nuevo_prev).astype("Int64")
 
-            self.df.loc[condicion_positiva.shift(-1, fill_value=False), columna] = suma[condicion_positiva].values
-            self.df.loc[condicion_positiva, columna] = 0
+            # Índices del previo (t-1) donde escribir
+            prev_index = self.df.index.to_series().shift(1)
+            targets_prev = prev_index[mascara_act].dropna().astype(int)
 
-            # --- Si la suma es negativa o cero ---
-            condicion_negativa = mascara_actualizar & (suma < 0)
-            self.df.loc[condicion_negativa, columna] = 0
+            # Escribir en el PREVIO (solo en las filas válidas)
+            self.df.loc[targets_prev, columna] = nuevo_prev[mascara_act].astype(int).values
 
-            # --- convierte a cero los valores que no fueron afectados ---
-            restantes = (self.df[columna] < 0).sum()
-            if restantes > 0:
-                logger.info(f"Normalizando {restantes} valor(es) normalizado(s) a cero en '{columna}'.")
-            
-            self.df.loc[self.df[columna] < 0,columna] = 0
+            # 4) EXTRAPOLACIÓN CON 3 SEMANAS PREVIAS (t-1, t-2, t-3) usando la COLUMNA YA ACTUALIZADA
+            #    shift(1): excluye la semana actual
+            #    rolling(3): últimas 3 semanas previas dentro del mismo (Entidad, Anio)
+            prev3_mean = (
+                self.df.groupby(["Entidad", "Anio"])[columna]
+                    .transform(lambda s: s.shift(1).rolling(window=3, min_periods=1).mean())
+            )
+
+            # Redondear el promedio a entero y reemplazar NaN por 0 (si no hay historial)
+            prev3_mean = np.rint(prev3_mean).astype("Int64").fillna(0).astype(int)
+
+            # 5) Escribir la EXTRAPOLACIÓN en la fila ACTUAL (negativa + consecutiva + previo>0)
+            self.df.loc[mascara_act, columna] = prev3_mean[mascara_act].values
+
+            # 6) Asegurar que TODA la columna quede en enteros (por si quedan floats por mezclas pandas)
+            self.df[columna] = np.rint(self.df[columna]).astype(int)
+
+    def _ajusta_negativos(self):
+
+        for columna in ["Incremento_hombres", "Incremento_mujeres"]:
+            # 1) Máscara de negativos
+            neg = self.df[columna] < 0
+
+            # 2) Vecinos anterior y siguiente
+            prev_val = self.df[columna].shift(1)
+            next_val = self.df[columna].shift(-1)
+
+            # 3) Tratar NaN/inf como 0 en vecinos
+            prev_val = prev_val.replace([np.inf, -np.inf], np.nan).fillna(0)
+            next_val = next_val.replace([np.inf, -np.inf], np.nan).fillna(0)
+
+            # 4) Candidatos: cuando el actual sea negativo (si quieres exigir que existan ambos vecinos,
+            #    puedes usar: neg & prev_val.notna() & next_val.notna() ; pero aquí ya tratamos NaN como 0)
+            candidatos = neg
+
+            # 5) Extrapolado = promedio simple (t-1, t+1), con manejo robusto de NaN/inf
+            extrap = (prev_val + next_val) / 2.0
+
+            # 6) Tratar NaN/inf del extrapolado como 0, redondear y castear a entero
+            extrap = extrap.replace([np.inf, -np.inf], np.nan).fillna(0)
+            extrap = np.rint(extrap).astype(int)
+
+            # 7) Sustituir SOLO el valor negativo actual por el extrapolado
+            self.df.loc[candidatos, columna] = extrap[candidatos].values
+
+            # 8) Como toque final, asegurar que la columna quede en enteros,
+            #    tratando cualquier NaN/inf residual como 0 antes de castear
+            self.df[columna] = (
+                pd.Series(self.df[columna], index=self.df.index)
+                .replace([np.inf, -np.inf], np.nan)
+                .fillna(0)
+                .round()  # redundante si quieres, por claridad
+                .astype(int)
+            )
+
 
     def _ajusta_outliers(self,columnas: list):
 
@@ -153,8 +226,9 @@ class dataTransformation:
             self.df.loc[self.df[columna] > lim_sup, columna] = lim_sup
 
             self.df[columna] = self.df[columna].round(0).astype(int)
+
     
-    def agrupar_incrementos(self):
+    def agrupar(self):
         
         """
         Genera agrupaciones dinámicas dependiendo de la opción seleccionada en el YAML.
@@ -271,15 +345,19 @@ class dataTransformation:
 
         outlier_cfg = self.get_opcion("tratamiento_outliers")
 
+        
         self._ajusta_semanas()
         self._prepara_series_tiempo()
         self._ajusta_incrementos()
+        self._ajusta_negativos()
+        
+
 
         if outlier_cfg['IQR']:
             logger.info(f"Imputación por IQR habilitada ({outlier_cfg['IQR']}) | Columnas: '{outlier_cfg['columnas']}'")
             self._ajusta_outliers(outlier_cfg['columnas'])
 
-        self.agrupar_incrementos()
+        self.agrupar()
 
 
         if not self.df_agrupado.empty:

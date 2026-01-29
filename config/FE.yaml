@@ -6,7 +6,7 @@ opciones_FE:
         - Incremento_mujeres
 
   - agrupa:
-      valor: region  # Agrupa por Sexo, Region
+      valor: Sexo  # Agrupa por Sexo, Region
       region: Centro  # Solo cuando se agrupa por region: Norte, Occidente, Centro, Sureste
 
 

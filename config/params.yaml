@@ -2,8 +2,8 @@ padecimiento:
   columna: "Padecimiento"
   tipo: "Alzheimer" # Depresión, Parkinson y Alzheimer
   force: True # Sobrescribe filtrado previo
-  reporte: True # Generar reporte de filtrado
-  reporte_clean: True # Generar reporte de datos tratados
+  reporte: False # Generar reporte de filtrado
+  reporte_clean: False # Generar reporte de datos tratados
 
 paths:
   data: "./data"
