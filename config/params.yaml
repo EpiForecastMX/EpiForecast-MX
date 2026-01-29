@@ -25,6 +25,7 @@ download:
 
 
 data:
+  boletin: "${paths.processed}/dataset_boletin_epidemiologico.csv"
   raw_data_file: "${paths.raw}/data_raw.csv"
   raw_data_filter: "${paths.raw}/data_raw_${padecimiento.tipo}.csv"
   interim_data_file: "${paths.interim}/data_clean.csv"

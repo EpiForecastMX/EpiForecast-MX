@@ -130,7 +130,7 @@ data-status:
 # PROJECT RULES                                                                 #
 #################################################################################
 
-## Obtiene el dataset original para iniciar el flujo de análisis.
+# Obtiene el dataset original para iniciar el flujo de análisis.
 .PHONY: get_dataset
 get_dataset: 
 	$(PYTHON_INTERPRETER) -m scripts.get_dataset
@@ -158,7 +158,7 @@ transform:
 
 ## Ejecuta el flujo completo: filtrar, limpiar y transformar dataset
 .PHONY: preprocess
-preprocess: reset_logs reset_interim filter clean transform
+preprocess: reset_logs reset_interim filter get_dataset clean transform
 	@echo ">>> Flujo completo ejecutado."
 
 
