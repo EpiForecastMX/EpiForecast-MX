@@ -305,7 +305,7 @@ def run_pipeline(input_dir, output_dir, keywords, save_matched_pages=False, save
             if save_individual_tables:
                 wide_df = reshape_wide(df_clean, year, week, col_map)
                 per_page_csv = os.path.join(tablas_dir, f"{year}_W{week:02d}_P{page}.csv")
-                wide_df.to_csv(per_page_csv, index=False)
+                wide_df.to_csv(per_page_csv, index=False, encoding="utf-8")
 
             df_long = reshape(df_clean, year, week, col_map)
             all_rows.append(df_long)
@@ -336,7 +336,7 @@ def run_pipeline(input_dir, output_dir, keywords, save_matched_pages=False, save
         return
 
     final_df = pd.concat(all_rows, ignore_index=True)
-    final_df.to_csv(output_csv, index=False)
+    final_df.to_csv(output_csv, index=False, encoding="utf-8")
 
     log_fn(f"Archivo final generado: {output_csv}")
     log_fn(f"Total de filas: {len(final_df)}")
