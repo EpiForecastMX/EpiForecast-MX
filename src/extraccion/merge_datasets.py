@@ -244,7 +244,7 @@ def main(
     typer.echo("=" * 60 + "\n")
 
     try:
-        ensure_empty_dir_or_exit(output_dir)
+        #ensure_empty_dir_or_exit(output_dir) for debugging, deshabilitado por el momento
         run_pipeline(
             input_dir=str(input_dir),
             output_dir=str(output_dir),
