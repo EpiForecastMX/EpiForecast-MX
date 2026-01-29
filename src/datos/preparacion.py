@@ -6,6 +6,7 @@ from loguru import logger
 
 from src.configuraciones.config_params import conf
 from src.utils.datos import OperacionesDatos
+from src.utils.graficos import GraficosHelper
 
 class dataTransformation:
         
@@ -216,12 +217,25 @@ class dataTransformation:
         if self.agrupamiento == "sexo":
             anio_min = self.df_agrupado['Fecha'].min().year
             anio_max = self.df_agrupado['Fecha'].max().year
+            
+            
+            carpeta_salida = conf["paths"]["figures"]
+            acumulados_sexo = ["Acumulado_hombres", "Acumulado_mujeres"]
+            graficos = GraficosHelper(carpeta_salida, 40)
+
+            for sexo in acumulados_sexo:        
+                graficos.plot_violin(self.df,sexo,padecimiento)
+            
             plt.plot(self.df_agrupado["Fecha"],self.df_agrupado["incrementos_hombres"] , label='Casos Hombres', color='steelblue')
             plt.plot(self.df_agrupado["Fecha"],self.df_agrupado["incrementos_mujeres"] , label='Casos Mujeres', color='darkred')
             plt.title(f'Casos Semanales de {padecimiento["tipo"]} a Nivel Nacional (Evolución {anio_min}-{anio_max})')
 
+
+
         
         elif self.agrupamiento == "region":
+
+            
 
             agrupamiento_cfg = self.get_opcion("agrupa")
             region_objetivo = agrupamiento_cfg["region"]

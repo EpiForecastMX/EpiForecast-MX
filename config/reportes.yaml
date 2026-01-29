@@ -18,7 +18,7 @@ reporte_clean_dataset:
   subtitulo_reporte: "Padecimiento: ${padecimiento.tipo} (Clean Data)"
   boxplot: True
   bp_comparativa: "Anio"
-  violin: False
+  violin: True
   max_cols: 34
   carpeta: "${paths.docs}"
   ruta: "${paths.docs}/${reporte_clean_dataset.nombre_reporte}.pdf"

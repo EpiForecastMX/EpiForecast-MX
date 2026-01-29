@@ -79,39 +79,23 @@ class GraficosHelper:
 
         return self._guardar_figura(f"barras_{col}.png")
 
-    def plot_violin(self, serie, col: str) -> Optional[str]:
-
-        serie = serie.dropna()
-        alto = 6
-        ancho = 8
-
-        if serie.empty:
-            return None
-
-        top_valores = serie.value_counts().nlargest(self.numero_top_columnas).index
-        serie = serie[serie.isin(top_valores)]
-
-        cantidad = len(top_valores)
-
-        if cantidad == 1:
-            alto = 2
-        elif 5 <= cantidad <= 30:
-            alto = 6
-            ancho = 8
-        elif cantidad > 30:
-            alto = 8
-            ancho = 10
-
-
-        plt.figure(figsize=(ancho, alto))
+    def plot_violin(self, df, col, padecimiento) -> Optional[str]:
+        
+        plt.figure(figsize=(12,6))
         sns.violinplot(
-            y=serie,
-            inner=None,
-            color="#2a9d8f",
-            linewidth=1.2
+            x="Anio",
+            y=col,
+            hue="Anio",
+            data=df,
+            palette="viridis",
+            inner=None
         )
-        plt.title(f"Gráfico de violín de {col}")
-        plt.ylabel(None)
+
+        plt.title(f"Distribución de Casos por Semana - {padecimiento} ({col})")
+        plt.xlabel(None)
+        plt.ylabel("Casos por semana")
+        plt.xticks(rotation=45)
+        plt.legend().remove()
 
         return self._guardar_figura(f"violin_{col}.png")
 

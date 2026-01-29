@@ -231,8 +231,8 @@ class EDAReportBuilder:
     def plot_categorica_barras(self, col: str) -> Optional[str]:
         return self.graficos_helper.plot_categorica_barras(self.df[col], col)
     
-    def plot_violin(self, col: str) -> Optional[str]:
-        return self.graficos_helper.plot_violin(self.df[col], col)
+    def plot_violin(self,sexo,padecimiento) -> Optional[str]:
+        return self.graficos_helper.plot_violin(self.df,sexo,padecimiento)
     
     def plot_box(self, col: str, col_comparativa: str) -> Optional[str]:
         return self.graficos_helper.plot_box(self.df, col, col_comparativa)
@@ -259,9 +259,10 @@ class EDAReportBuilder:
             if ruta: figuras.append(ruta)
 
         if self.genera_violin:
-            for col in self.df.columns:
-                logger.debug(f"Generando gráfico de violín para la columna numérica: '{col}'")
-                ruta = self.plot_violin(col)
+            acumulados_sexo = ["Acumulado_hombres", "Acumulado_mujeres"]
+            for sexo in acumulados_sexo:
+                logger.debug(f"Generando gráfico de violín para la columna numérica: '{sexo}'")
+                ruta = self.plot_violin(sexo,padecimiento)
                 if ruta: figuras.append(ruta)
         
         if self.genera_boxplot:
