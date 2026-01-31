@@ -88,7 +88,8 @@ class GraficosHelper:
             hue="Anio",
             data=df,
             palette="viridis",
-            inner=None
+            inner=None,
+            cut=0
         )
 
         plt.title(f"Distribución de Casos por Semana - {padecimiento} ({col})")
