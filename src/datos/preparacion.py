@@ -33,7 +33,6 @@ class dataTransformation:
             raise ValueError("Se encontraron semanas fuera del rango")
 
         
-        
         filas_semana_1 = self.df['Semana'] == 1
         filas_no_semana_1 = ~filas_semana_1
 
@@ -130,7 +129,6 @@ class dataTransformation:
             #    - Recorte a >= 0
             #    - Redondeo a entero
             nuevo_prev = (valor_prev + self.df[columna]).where(mascara_act).clip(lower=0)
-            # Redondear a enteros (0 decimales) y castear a int
             nuevo_prev = np.rint(nuevo_prev).astype("Int64")
 
             # Índices del previo (t-1) donde escribir
@@ -177,6 +175,10 @@ class dataTransformation:
 
             # 5) Extrapolado = promedio simple (t-1, t+1), con manejo robusto de NaN/inf
             extrap = (prev_val + next_val) / 2.0
+            
+            # Si hay valores negativos, se ponen en cero
+            extrap = extrap.clip(lower=0)
+
 
             # 6) Tratar NaN/inf del extrapolado como 0, redondear y castear a entero
             extrap = extrap.replace([np.inf, -np.inf], np.nan).fillna(0)
@@ -191,7 +193,7 @@ class dataTransformation:
                 pd.Series(self.df[columna], index=self.df.index)
                 .replace([np.inf, -np.inf], np.nan)
                 .fillna(0)
-                .round()  # redundante si quieres, por claridad
+                .round()
                 .astype(int)
             )
 
@@ -344,21 +346,17 @@ class dataTransformation:
     def run(self) -> pd.DataFrame:       
 
         outlier_cfg = self.get_opcion("tratamiento_outliers")
-
         
         self._ajusta_semanas()
         self._prepara_series_tiempo()
         self._ajusta_incrementos()
         self._ajusta_negativos()
         
-
-
         if outlier_cfg['IQR']:
             logger.info(f"Imputación por IQR habilitada ({outlier_cfg['IQR']}) | Columnas: '{outlier_cfg['columnas']}'")
             self._ajusta_outliers(outlier_cfg['columnas'])
 
         self.agrupar()
-
 
         if not self.df_agrupado.empty:
             self.pruebas()
