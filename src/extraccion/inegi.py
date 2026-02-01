@@ -2,6 +2,7 @@ import json
 import requests
 import pandas as pd
 import typer
+import matplotlib.pyplot as plt
 
 # ========= Configuración =========
 BASE_PXWEB = "https://www.inegi.org.mx/app/tabulados/pxwebv2/api/v1/es"
@@ -19,6 +20,29 @@ QUERY = {
          "selection": {"filter": "item", "values": ["0", "1", "2"]}},
     ],
     "response": {"format": "json-stat"},
+}
+
+URL_SUPERFICIE = (
+        "https://www.inegi.org.mx/app/api/indicadores/interna_v1_3/API.svc/"
+        "ValorIndicador/1001000001/"
+        "01,02,03,04,05,06,07,08,09,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32/"
+        "null/es/null/null/3/n/0/1/null/null/1/6/json/"
+        "563cbaa8-58bb-fef8-6763-1f1dae318f99"
+    )
+
+ESTADOS_DICT = {
+    "Ags.": "Aguascalientes", "BC": "Baja California", "BCS": "Baja California Sur",
+    "Camp.": "Campeche", "Chih.": "Chihuahua", "Chis.": "Chiapas",
+    "CDMX": "Ciudad de México", "Coah.": "Coahuila de Zaragoza", "Col.": "Colima",
+    "Dgo.": "Durango", "Gto.": "Guanajuato", "Gro.": "Guerrero",
+    "Hgo.": "Hidalgo", "Jal.": "Jalisco", "Mex.": "México",
+    "Mich.": "Michoacán de Ocampo", "Mor.": "Morelos", "Nay.": "Nayarit",
+    "NL": "Nuevo León", "Oax.": "Oaxaca", "Pue.": "Puebla",
+    "Qro.": "Querétaro", "Q. Roo": "Quintana Roo", "SLP": "San Luis Potosí",
+    "Sin.": "Sinaloa", "Son.": "Sonora", "Tab.": "Tabasco",
+    "Tamps.": "Tamaulipas", "Tlax.": "Tlaxcala",
+    "Ver.": "Veracruz de Ignacio de la Llave", "Yuc.": "Yucatán",
+    "Zac.": "Zacatecas"
 }
 
 app = typer.Typer(add_completion=False)
@@ -108,6 +132,14 @@ def validar_hombres_mujeres_vs_total(df_wide: pd.DataFrame) -> None:
             f"{ejemplos}"
         )
 
+def get_superficie_estados(url, catalogo):
+    data = requests.get(url, timeout=30).json()
+    return pd.DataFrame({
+        "Entidad federativa": [
+            catalogo[e] for e in data["dimension"]["municipality"]["category"]["index"]
+        ],
+        "Superficie_km2": data["value"]
+    })
 
 def run():
     log(">>>🚀 Consultando PxWeb (INEGI)...")
@@ -116,35 +148,34 @@ def run():
     log(">>>🔄 Convirtiendo JSON-STAT a DataFrame (formato long)...")
     df = jsonstat_a_dataframe(data)
 
-    log(">>>🧮 Convirtiendo 'valor' a numérico...")
-    df["valor"] = pd.to_numeric(df["valor"], errors="coerce")
-
-    log(">>>🧩 Verificando columna 'Grupo quinquenal de edad'...")
-    if "Grupo quinquenal de edad" not in df.columns:
+    log(">>>🧮 Ajustando DataFrame")
+    df["valor"] = pd.to_numeric(df["valor"], errors="coerce") # Convirtiendo a numéricos
+    if "Grupo quinquenal de edad" not in df.columns: # Eliminando Grupo quinquenal de edad
         df["Grupo quinquenal de edad"] = "Total"
-
-    log(">>>🧹 Filtrando solo 'Total' en grupo quinquenal de edad...")
-    df2 = df[df["Grupo quinquenal de edad"] == "Total"].copy()
-
-    log(">>>🗑️ Eliminando columna 'Grupo quinquenal de edad'...")
-    df2 = df2.drop(columns=["Grupo quinquenal de edad"])
-
-    log(">>>🔁 Convirtiendo a formato wide (Sexo → columnas)...")
-    df3 = df2.set_index(["Entidad federativa", "Periodo", "Sexo"])
-    df_wide = df3["valor"].unstack("Sexo").reset_index()
+    df = df[df["Grupo quinquenal de edad"] == "Total"].copy()
+    df = df.drop(columns=["Grupo quinquenal de edad"])
+    df = df.set_index(["Entidad federativa", "Periodo", "Sexo"]) #Convirtiendo a formato wide (Sexo → columnas)
+    df = df["valor"].unstack("Sexo").reset_index()
 
     log(">>>✅ Validando Hombres + Mujeres = Total...")
-    validar_hombres_mujeres_vs_total(df_wide)
+    validar_hombres_mujeres_vs_total(df)
 
     log(">>>🎯 Filtrando solo el periodo 2020")
     print("==" * 60)
-    df_2020 = df_wide[df_wide["Periodo"] == "2020"].copy() # Filtrando por 2020 solamente
+    df_2020 = df[df["Periodo"] == "2020"].copy() # Filtrando por 2020 solamente
     df_2020 = df_2020.reset_index(drop=True) # Reset al indice
     df_2020 = df_2020.drop(columns=["Periodo"]) # Se hace drop a periodo (ya no se ocupa)
     df_2020.columns.name = None # Se quita el nombre al indice
     print(df_2020)
     print("==" * 60)
 
+    log(">>>🚀 Descargabndo datos de extensión territorial")
+    df_superficie = get_superficie_estados(url=URL_SUPERFICIE, catalogo=ESTADOS_DICT)
+    
+    log(">>>🎯 Combinando DataFrames")
+    df_2020 = df_superficie.merge(df_2020, on="Entidad federativa", how="inner")
+    print(df_2020)
+        
     log(">>>🎯 Calculando clasificaciones")
     print("==" * 60)
     df_cat = df_2020.copy()
@@ -167,6 +198,7 @@ def run():
     df_cat = df_cat[  # Se deja el DataFrame final solo con las columnas requeridas
         [
             "Entidad federativa",
+            "Superficie_km2",
             "Hombres",
             "Mujeres",
             "Total",
@@ -178,7 +210,6 @@ def run():
 
     print(df_cat)
     print("==" * 60)
-
 
 @app.command()
 def main():
