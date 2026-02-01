@@ -6,6 +6,13 @@ def eda_inegi(df):
     print("\n=== Conteo de valores NaN por columna ===")
     print(df.isna().sum())
 
+    # Aviso si falta la región
+    if "region_salud_mental" in df.columns:
+        faltantes = df[df["region_salud_mental"].isna()]["Entidad federativa"].unique()
+        if len(faltantes) > 0:
+            print("\n⚠️ Estados sin region_salud_mental:")
+            print(sorted(faltantes))
+
     # ===== Formato tablas (sin notación exponencial) =====
     pd.set_option("display.float_format", lambda x: f"{x:,.2f}")
     pd.set_option("display.max_rows", 100)
@@ -28,19 +35,23 @@ def eda_inegi(df):
     print(dfp.sort_values("Superficie_km2", ascending=False)[["Entidad federativa", "Superficie_km2"]].head(5))
 
     print("\n=== Conteos categóricos ===")
+    if "region_salud_mental" in dfp.columns:
+        print("\nRegión salud mental:")
+        print(dfp["region_salud_mental"].value_counts(dropna=False))
+
     print("\nTamaño poblacional (rangos fijos):")
-    print(dfp["tamano_poblacional_predefinido"].value_counts())
+    print(dfp["tamano_poblacional_predefinido"].value_counts(dropna=False))
     print("\nTamaño poblacional (percentiles):")
-    print(dfp["tamano_poblacional_grupo_percentil"].value_counts())
+    print(dfp["tamano_poblacional_grupo_percentil"].value_counts(dropna=False))
     print("\nExtensión territorial (percentiles):")
-    print(dfp["extension_territorial_percentil"].value_counts())
+    print(dfp["extension_territorial_percentil"].value_counts(dropna=False))
     print("\nDensidad poblacional (percentiles):")
-    print(dfp["densidad_poblacional_percentil"].value_counts())
+    print(dfp["densidad_poblacional_percentil"].value_counts(dropna=False))
     print("\nRatio H/M:")
-    print(dfp["ratio_h_m_cat"].value_counts())
+    print(dfp["ratio_h_m_cat"].value_counts(dropna=False))
 
     # ===== Asegurar ratio_h_m si no existe =====
-    if "ratio_h_m" not in dfp.columns:
+    if "ratio_h_m" not in dfp.columns and {"Hombres", "Mujeres"}.issubset(dfp.columns):
         dfp["ratio_h_m"] = dfp["Hombres"] / dfp["Mujeres"].replace({0: pd.NA})
 
     # ===== Helper: colores por categoría (sin paleta fija) =====
@@ -62,10 +73,18 @@ def eda_inegi(df):
     orden_extension = ["Territorio pequeño", "Medio-pequeño", "Medio-grande", "Grande"]
     orden_densidad = ["Baja", "Media-baja", "Media-alta", "Alta"]
 
+    orden_region = [
+        "Metropolitana alta",
+        "Urbana media",
+        "Rural / dispersa",
+        "Sur-Sureste vulnerable",
+    ]
+
     map_ratio = {k: i for i, k in enumerate(orden_ratio)}
     map_tamano = {k: i for i, k in enumerate(orden_tamano)}
     map_extension = {k: i for i, k in enumerate(orden_extension)}
     map_densidad = {k: i for i, k in enumerate(orden_densidad)}
+    map_region = {k: i for i, k in enumerate(orden_region)}
 
     # ===== DataFrames por gráfica (ordenados por categoría y valor) =====
     df_total = dfp.sort_values(
@@ -104,8 +123,20 @@ def eda_inegi(df):
         ascending=[True, False],
     )
 
+    df_total_region = None
+    if "region_salud_mental" in dfp.columns:
+        df_total_region = dfp.sort_values(
+            by=["region_salud_mental", "Total"],
+            key=lambda s: s.map(map_region) if s.name == "region_salud_mental" else s,
+            ascending=[True, False],
+        )
+
     # ===== Figura única (barras con color por categoría) =====
-    fig, axes = plt.subplots(3, 2, figsize=(20, 14))
+    # Si existe region_salud_mental: hacemos 4x2 (agrega 2 gráficas). Si no, 3x2 como antes.
+    if df_total_region is not None:
+        fig, axes = plt.subplots(4, 2, figsize=(20, 18))
+    else:
+        fig, axes = plt.subplots(3, 2, figsize=(20, 14))
 
     def plot_bar(ax, dfx, ycol, catcol, title):
         x = list(range(len(dfx)))
@@ -143,16 +174,32 @@ def eda_inegi(df):
         "Población mujeres (orden: categoría ratio, color: categoría ratio)"
     )
 
+    if df_total_region is not None:
+        plot_bar(
+            axes[3, 0], df_total_region, "Total", "region_salud_mental",
+            "Población total (orden: región salud mental, color: región)"
+        )
+        plot_bar(
+            axes[3, 1], df_total_region, "densidad_poblacion", "region_salud_mental",
+            "Densidad poblacional (orden: región salud mental, color: región)"
+        )
+
     plt.tight_layout()
     plt.show()
+
 
 def boxplots_inegi(df):
     import pandas as pd
     import matplotlib.pyplot as plt
 
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    # Si existe region_salud_mental: agregamos 1 fila extra (3x2). Si no: 2x2 como antes.
+    tiene_region = "region_salud_mental" in df.columns
 
-    # Copia solo para graficar (evita tocar tu DF original)
+    if tiene_region:
+        fig, axes = plt.subplots(3, 2, figsize=(14, 14))
+    else:
+        fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+
     dfp = df.copy()
 
     # Log solo funciona con valores > 0
@@ -208,6 +255,29 @@ def boxplots_inegi(df):
     axes[1, 1].set_title("Ratio H/M por categoría")
     axes[1, 1].set_xlabel("")
     axes[1, 1].set_ylabel("Ratio H/M")
+
+    if tiene_region:
+        dfp.boxplot(
+            column="densidad_poblacion",
+            by="region_salud_mental",
+            ax=axes[2, 0],
+            grid=False
+        )
+        axes[2, 0].set_yscale("log")
+        axes[2, 0].set_title("Densidad por región salud mental (escala log)")
+        axes[2, 0].set_xlabel("")
+        axes[2, 0].set_ylabel("hab/km²")
+
+        dfp.boxplot(
+            column="Total",
+            by="region_salud_mental",
+            ax=axes[2, 1],
+            grid=False
+        )
+        axes[2, 1].set_yscale("log")
+        axes[2, 1].set_title("Población total por región salud mental (escala log)")
+        axes[2, 1].set_xlabel("")
+        axes[2, 1].set_ylabel("Población")
 
     plt.suptitle("")
     plt.tight_layout()

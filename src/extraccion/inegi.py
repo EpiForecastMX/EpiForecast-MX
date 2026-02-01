@@ -46,6 +46,48 @@ ESTADOS_DICT = {
     "Ver.": "Veracruz de Ignacio de la Llave", "Yuc.": "Yucatán",
     "Zac.": "Zacatecas"
 }
+REGION_SALUD_MENTAL = {
+    # Altamente urbanas / metropolitanas
+    "Ciudad de México": "Metropolitana alta",
+    "México": "Metropolitana alta",
+    "Nuevo León": "Metropolitana alta",
+    "Jalisco": "Metropolitana alta",
+
+    # Urbanas medias e industrializadas
+    "Aguascalientes": "Urbana media",
+    "Baja California": "Urbana media",
+    "Baja California Sur": "Urbana media",
+    "Chihuahua": "Urbana media",
+    "Coahuila de Zaragoza": "Urbana media",
+    "Colima": "Urbana media",
+    "Durango": "Urbana media",
+    "Guanajuato": "Urbana media",
+    "Morelos": "Urbana media",
+    "Querétaro": "Urbana media",
+    "San Luis Potosí": "Urbana media",
+    "Sinaloa": "Urbana media",
+    "Sonora": "Urbana media",
+    "Tamaulipas": "Urbana media",
+    "Zacatecas": "Urbana media",
+
+    # Rurales y dispersas
+    "Guerrero": "Rural / dispersa",
+    "Hidalgo": "Rural / dispersa",
+    "Michoacán de Ocampo": "Rural / dispersa",
+    "Nayarit": "Rural / dispersa",
+    "Puebla": "Rural / dispersa",
+    "Tlaxcala": "Rural / dispersa",
+    "Veracruz de Ignacio de la Llave": "Rural / dispersa",
+
+    # Sur-Sureste estructuralmente vulnerable
+    "Campeche": "Sur-Sureste vulnerable",
+    "Chiapas": "Sur-Sureste vulnerable",
+    "Oaxaca": "Sur-Sureste vulnerable",
+    "Tabasco": "Sur-Sureste vulnerable",
+    "Yucatán": "Sur-Sureste vulnerable",
+    "Quintana Roo": "Sur-Sureste vulnerable"
+}
+
 
 app = typer.Typer(add_completion=False)
 log = typer.echo
@@ -178,6 +220,11 @@ def run():
         
     log(">>>🎯 Calculando clasificaciones")
     df_cat = df_2020.copy()
+    df_cat["region_salud_mental"] = df_cat["Entidad federativa"].map(REGION_SALUD_MENTAL)
+    faltantes = df_cat[df_cat["region_salud_mental"].isna()]["Entidad federativa"].unique()
+    if len(faltantes) > 0:
+        log(f"⚠️ Estados sin REGION_SALUD_MENTAL: {', '.join(sorted(faltantes))}")
+    
     df_cat["ratio_h_m"] = df_cat["Hombres"] / df_cat["Mujeres"]  # Se calcula la proporción hombres / mujeres
     df_cat["ratio_h_m_cat"] = pd.cut(  # Se categoriza el ratio en 3 grupos interpretables
         df_cat["ratio_h_m"],
