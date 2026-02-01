@@ -11,6 +11,7 @@ matplotlib==3.10.0   # Gráficos y visualización
 seaborn==0.13.2      # Visualización estadística
 plotly==5.24.0       # Visualizaciones interactivas
 kaleido==0.2.1       # Exportar Plotly a imágenes estáticas
+rich>=13.0           # Imprimir tablas en formato legible en consola
 
 # =========================================
 # Numerical Computing
