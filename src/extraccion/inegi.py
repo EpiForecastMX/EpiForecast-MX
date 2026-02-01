@@ -1,7 +1,7 @@
 import json
 import requests
 import pandas as pd
-
+import typer
 
 # ========= Configuración =========
 BASE_PXWEB = "https://www.inegi.org.mx/app/tabulados/pxwebv2/api/v1/es"
@@ -21,6 +21,8 @@ QUERY = {
     "response": {"format": "json-stat"},
 }
 
+app = typer.Typer(add_completion=False)
+log = typer.echo
 
 # ========= Descarga en memoria =========
 def descargar_jsonstat_pxweb(db: str, tabla_px: str, consulta: dict, timeout: int = 60) -> dict:
@@ -90,48 +92,62 @@ def jsonstat_a_dataframe(data: dict) -> pd.DataFrame:
 def validar_hombres_mujeres_vs_total(df_wide: pd.DataFrame) -> None:
     """
     Valida que Hombres + Mujeres == Total por fila.
-    Imprime un resumen y ejemplos si hay inconsistencias.
+    Solo loggea si hay inconsistencias.
     """
     diff = df_wide["Total"] - (df_wide["Hombres"] + df_wide["Mujeres"])
     errores = df_wide[diff != 0]
 
-    print(f"Filas totales: {len(df_wide)}")
-    print(f"Filas con error (H+M != Total): {len(errores)}")
-
     if not errores.empty:
-        print("\nEjemplos con error:")
-        print(
-            errores[
-                ["Entidad federativa", "Periodo", "Hombres", "Mujeres", "Total"]
-            ].head(10)
+        ejemplos = errores[
+            ["Entidad federativa", "Hombres", "Mujeres", "Total"]
+        ].head(5).to_string(index=False)
+
+        log(
+            "⚠️ Inconsistencias detectadas: Hombres + Mujeres ≠ Total.\n"
+            "Revisa estos registros:\n"
+            f"{ejemplos}"
         )
-    else:
-        print("\nValidación OK: Hombres + Mujeres = Total en todas las filas.")
 
 
 def run():
-    # 1) Descarga los datos desde PxWeb (INEGI) y los mantiene en memoria
+    log(">>>🚀 Consultando PxWeb (INEGI)...")
     data = descargar_jsonstat_pxweb(DB, TABLA_PX, QUERY)
 
-    # 2) Convierte el JSON-STAT a un DataFrame en formato largo (long)
+    log(">>>🔄 Convirtiendo JSON-STAT a DataFrame (formato long)...")
     df = jsonstat_a_dataframe(data)
 
-    # 3) Filtra únicamente el total por grupo quinquenal de edad. Elimina grupos específicos y "No especificado", quedandose solo con Total
+    log(">>>🧮 Convirtiendo 'valor' a numérico...")
+    df["valor"] = pd.to_numeric(df["valor"], errors="coerce")
+
+    log(">>>🧩 Verificando columna 'Grupo quinquenal de edad'...")
+    if "Grupo quinquenal de edad" not in df.columns:
+        df["Grupo quinquenal de edad"] = "Total"
+
+    log(">>>🧹 Filtrando solo 'Total' en grupo quinquenal de edad...")
     df2 = df[df["Grupo quinquenal de edad"] == "Total"].copy()
 
-    # 4) Elimina la columna de edad porque ya no aporta información
+    log(">>>🗑️ Eliminando columna 'Grupo quinquenal de edad'...")
     df2 = df2.drop(columns=["Grupo quinquenal de edad"])
 
-    # 5) Define un índice jerárquico para preparar el cambio a formato wide. Cada combinación (Entidad, Periodo, Sexo) tendrá un solo valor
+    log(">>>🔁 Convirtiendo a formato wide (Sexo → columnas)...")
     df3 = df2.set_index(["Entidad federativa", "Periodo", "Sexo"])
-
-    # 6) Convierte la columna "Sexo" en columnas (wide format). El valor numérico queda en columnas separadas: Total, Hombres, Mujeres
     df_wide = df3["valor"].unstack("Sexo").reset_index()
 
-    # 7) Muestra el resultado final
-    print(df_wide)
-
-    # 8) Validar que cantidad de hombres + cantidad de mujeres = Total
+    log(">>>✅ Validando Hombres + Mujeres = Total...")
     validar_hombres_mujeres_vs_total(df_wide)
 
-run()
+    log(">>>🎯 Filtrando solo el periodo 2020")
+    print("==" * 60)
+    df_2020 = df_wide[df_wide["Periodo"] == "2020"].copy()
+    df_2020 = df_2020.reset_index(drop=True)
+    df_2020 = df_2020.drop(columns=["Periodo"])
+    df_2020.columns.name = None
+    print(df_2020)
+    print("==" * 60)
+
+@app.command()
+def main():
+    run()
+
+if __name__ == "__main__":
+    app()
