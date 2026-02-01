@@ -199,9 +199,9 @@ cython_debug/
 integrador/
 !data/*.dvc
 !data/.gitignore
-.DS_Store
+
+# Permitir que Git vea data/processed/, pero ignorar su contenido
+!/data/processed/
+/data/processed/*
 !data/processed/*.dvc
 !data/processed/.gitignore
-!/data/processed/
-!/data/processed/*.dvc
-!/data/processed/.gitignore
