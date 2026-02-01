@@ -145,3 +145,70 @@ def eda_inegi(df):
 
     plt.tight_layout()
     plt.show()
+
+def boxplots_inegi(df):
+    import pandas as pd
+    import matplotlib.pyplot as plt
+
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+
+    # Copia solo para graficar (evita tocar tu DF original)
+    dfp = df.copy()
+
+    # Log solo funciona con valores > 0
+    for col in ["densidad_poblacion", "Total"]:
+        if col in dfp.columns:
+            dfp.loc[dfp[col] <= 0, col] = pd.NA
+
+    # 1) Densidad por extensión (LOG)
+    dfp.boxplot(
+        column="densidad_poblacion",
+        by="extension_territorial_percentil",
+        ax=axes[0, 0],
+        grid=False
+    )
+    axes[0, 0].set_yscale("log")
+    axes[0, 0].set_title("Densidad por extensión territorial (escala log)")
+    axes[0, 0].set_xlabel("")
+    axes[0, 0].set_ylabel("hab/km²")
+
+    # 2) Población total por tamaño poblacional (LOG)
+    dfp.boxplot(
+        column="Total",
+        by="tamano_poblacional_grupo_percentil",
+        ax=axes[0, 1],
+        grid=False
+    )
+    axes[0, 1].set_yscale("log")
+    axes[0, 1].set_title("Población total por tamaño (escala log)")
+    axes[0, 1].set_xlabel("")
+    axes[0, 1].set_ylabel("Población")
+
+    # 3) Superficie por extensión (LINEAL)
+    dfp.boxplot(
+        column="Superficie_km2",
+        by="extension_territorial_percentil",
+        ax=axes[1, 0],
+        grid=False
+    )
+    axes[1, 0].set_title("Superficie por extensión territorial")
+    axes[1, 0].set_xlabel("")
+    axes[1, 0].set_ylabel("km²")
+
+    # 4) Ratio H/M por categoría (LINEAL)
+    if "ratio_h_m" not in dfp.columns and {"Hombres", "Mujeres"}.issubset(dfp.columns):
+        dfp["ratio_h_m"] = dfp["Hombres"] / dfp["Mujeres"].replace({0: pd.NA})
+
+    dfp.boxplot(
+        column="ratio_h_m",
+        by="ratio_h_m_cat",
+        ax=axes[1, 1],
+        grid=False
+    )
+    axes[1, 1].set_title("Ratio H/M por categoría")
+    axes[1, 1].set_xlabel("")
+    axes[1, 1].set_ylabel("Ratio H/M")
+
+    plt.suptitle("")
+    plt.tight_layout()
+    plt.show()
