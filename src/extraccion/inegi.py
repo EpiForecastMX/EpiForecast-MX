@@ -3,7 +3,7 @@ import requests
 import pandas as pd
 import typer
 import matplotlib.pyplot as plt
-from src.extraccion.inegi_eda import eda_inegi, boxplots_inegi
+from src.extraccion.inegi_eda import eda_inegi
 
 
 # ========= Configuración =========
@@ -260,7 +260,6 @@ def run():
     log(">>>✅ Iniciando EDA")
     
     eda_inegi(df_cat)
-    boxplots_inegi(df_cat)
 
 @app.command()
 def main():
