@@ -138,12 +138,47 @@ def run():
 
     log(">>>🎯 Filtrando solo el periodo 2020")
     print("==" * 60)
-    df_2020 = df_wide[df_wide["Periodo"] == "2020"].copy()
-    df_2020 = df_2020.reset_index(drop=True)
-    df_2020 = df_2020.drop(columns=["Periodo"])
-    df_2020.columns.name = None
+    df_2020 = df_wide[df_wide["Periodo"] == "2020"].copy() # Filtrando por 2020 solamente
+    df_2020 = df_2020.reset_index(drop=True) # Reset al indice
+    df_2020 = df_2020.drop(columns=["Periodo"]) # Se hace drop a periodo (ya no se ocupa)
+    df_2020.columns.name = None # Se quita el nombre al indice
     print(df_2020)
     print("==" * 60)
+
+    log(">>>🎯 Calculando clasificaciones")
+    print("==" * 60)
+    df_cat = df_2020.copy()
+    df_cat["ratio_h_m"] = df_cat["Hombres"] / df_cat["Mujeres"]  # Se calcula la proporción hombres / mujeres
+    df_cat["ratio_h_m_cat"] = pd.cut(  # Se categoriza el ratio en 3 grupos interpretables
+        df_cat["ratio_h_m"],
+        bins=[-float("inf"), 0.99, 1.01, float("inf")],
+        labels=["Mayormente mujeres", "Balanceado", "Mayormente hombres"]
+    )
+    df_cat["tamano_poblacional_predefinido"] = pd.cut(  # Se clasifica el tamaño poblacional por rangos fijos
+        df_cat["Total"],
+        bins=[0, 1_000_000, 3_000_000, 6_000_000, df_cat["Total"].max()],
+        labels=["0-1M", "1-3M", "3-6M", "6M+"]
+    )
+    df_cat["tamano_poblacional_grupo_percentil"] = pd.qcut(  # Se agrupa el tamaño poblacional por cuartiles
+        df_cat["Total"],
+        q=4,
+        labels=["Población baja", "Media-baja", "Media-alta", "Alta"]
+    )
+    df_cat = df_cat[  # Se deja el DataFrame final solo con las columnas requeridas
+        [
+            "Entidad federativa",
+            "Hombres",
+            "Mujeres",
+            "Total",
+            "ratio_h_m_cat",
+            "tamano_poblacional_predefinido",
+            "tamano_poblacional_grupo_percentil",
+        ]
+    ]
+
+    print(df_cat)
+    print("==" * 60)
+
 
 @app.command()
 def main():
