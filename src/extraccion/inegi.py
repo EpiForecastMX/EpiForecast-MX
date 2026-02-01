@@ -3,6 +3,8 @@ import requests
 import pandas as pd
 import typer
 import matplotlib.pyplot as plt
+from src.extraccion.inegi_eda import eda_inegi
+
 
 # ========= Configuración =========
 BASE_PXWEB = "https://www.inegi.org.mx/app/tabulados/pxwebv2/api/v1/es"
@@ -161,23 +163,20 @@ def run():
     validar_hombres_mujeres_vs_total(df)
 
     log(">>>🎯 Filtrando solo el periodo 2020")
-    print("==" * 60)
     df_2020 = df[df["Periodo"] == "2020"].copy() # Filtrando por 2020 solamente
     df_2020 = df_2020.reset_index(drop=True) # Reset al indice
     df_2020 = df_2020.drop(columns=["Periodo"]) # Se hace drop a periodo (ya no se ocupa)
     df_2020.columns.name = None # Se quita el nombre al indice
-    print(df_2020)
-    print("==" * 60)
 
     log(">>>🚀 Descargabndo datos de extensión territorial")
     df_superficie = get_superficie_estados(url=URL_SUPERFICIE, catalogo=ESTADOS_DICT)
+    df_superficie["Superficie_km2"] = pd.to_numeric(df_superficie["Superficie_km2"].str.replace(",", "", regex=False), errors="coerce")
     
     log(">>>🎯 Combinando DataFrames")
     df_2020 = df_superficie.merge(df_2020, on="Entidad federativa", how="inner")
-    print(df_2020)
+    df_2020 = df_2020.sort_values("Entidad federativa").reset_index(drop=True)
         
     log(">>>🎯 Calculando clasificaciones")
-    print("==" * 60)
     df_cat = df_2020.copy()
     df_cat["ratio_h_m"] = df_cat["Hombres"] / df_cat["Mujeres"]  # Se calcula la proporción hombres / mujeres
     df_cat["ratio_h_m_cat"] = pd.cut(  # Se categoriza el ratio en 3 grupos interpretables
@@ -185,6 +184,7 @@ def run():
         bins=[-float("inf"), 0.99, 1.01, float("inf")],
         labels=["Mayormente mujeres", "Balanceado", "Mayormente hombres"]
     )
+
     df_cat["tamano_poblacional_predefinido"] = pd.cut(  # Se clasifica el tamaño poblacional por rangos fijos
         df_cat["Total"],
         bins=[0, 1_000_000, 3_000_000, 6_000_000, df_cat["Total"].max()],
@@ -195,21 +195,24 @@ def run():
         q=4,
         labels=["Población baja", "Media-baja", "Media-alta", "Alta"]
     )
-    df_cat = df_cat[  # Se deja el DataFrame final solo con las columnas requeridas
-        [
-            "Entidad federativa",
-            "Superficie_km2",
-            "Hombres",
-            "Mujeres",
-            "Total",
-            "ratio_h_m_cat",
-            "tamano_poblacional_predefinido",
-            "tamano_poblacional_grupo_percentil",
-        ]
-    ]
+    df_cat["densidad_poblacion"] = df_cat["Total"] / df_cat["Superficie_km2"]
 
-    print(df_cat)
-    print("==" * 60)
+    df_cat["extension_territorial_percentil"] = pd.qcut(
+        df_cat["Superficie_km2"],
+        q=4,
+        labels=["Territorio pequeño", "Medio-pequeño", "Medio-grande", "Grande"]
+    )
+
+    df_cat["densidad_poblacional_percentil"] = pd.qcut(
+        df_cat["densidad_poblacion"],
+        q=4,
+        labels=["Baja", "Media-baja", "Media-alta", "Alta"]
+    )
+    
+    log(">>>✅ DataFrame Finalizado con éxito")
+    log(">>>✅ Iniciando EDA")
+    
+    eda_inegi(df_cat)
 
 @app.command()
 def main():
