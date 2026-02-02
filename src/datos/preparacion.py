@@ -231,117 +231,27 @@ class dataTransformation:
 
     
     def agrupar(self):
-        
-        """
-        Genera agrupaciones dinámicas dependiendo de la opción seleccionada en el YAML.
 
-        agrupamiento puede ser:
-        - 'Sexo'
-        - 'Entidad'
-        - 'Ambos'
-        """
-        logger.info(f"Aplicando agrupamiento configurado: {self.agrupamiento}")
-      
-        # =====================================
-        # AGRUPACIÓN POR SEXO
-        # =====================================
-        
-        if self.agrupamiento == "sexo":
-            
-            self.df_agrupado = (
-                self.df.groupby("Fecha")
-                .agg(
-                    incrementos_hombres=("Incremento_hombres", "sum"),
-                    incrementos_mujeres=("Incremento_mujeres", "sum")
+        logger.info(f"Aplicando agrupamiento")
+                   
+        self.df_agrupado = (
+            self.df.groupby(["Fecha","Entidad"])
+            .agg(
+                incrementos_hombres=("Incremento_hombres", "sum"),
+                incrementos_mujeres=("Incremento_mujeres", "sum")
                 )
-                .reset_index()
-                .sort_values(["Fecha"])
-            )
-            logger.info(f"Se obtuvieron {len(self.df_agrupado)} registros agrupados.")
+            .reset_index()
+            .sort_values(["Fecha","Entidad"])
+        )
+        logger.info(f"Se obtuvieron {len(self.df_agrupado)} registros agrupados.")
 
-        elif self.agrupamiento == "region":
-
-            self.df_agrupado = (
-                self.df.groupby(["Fecha", "Entidad"])
-                .agg(
-                    incrementos_hombres=("Incremento_hombres", "sum"),
-                    incrementos_mujeres=("Incremento_mujeres", "sum")
-                )
-                .reset_index()
-                .sort_values(["Fecha", "Entidad"])
-            )
-
-            mapa_regiones = {
-                estado: r["nombre"]
-                for r in self.regiones
-                for estado in r.get("estados", [])
+        mapa_regiones = {
+            estado: r["nombre"]
+            for r in self.regiones
+            for estado in r.get("estados", [])
             }
 
-            self.df_agrupado["Region"] = self.df_agrupado["Entidad"].map(mapa_regiones)
-                    
-            logger.info(f"Se obtuvieron {len(self.df_agrupado)} registros agrupados.")
-   
-        else:
-            logger.warning(f"Agrupamiento desconocido: {self.agrupamiento}. No se generará agrupación.")
-
-
-    def pruebas(self):
-
-        padecimiento = conf.get("padecimiento")
-        plt.figure(figsize=(16, 6))
-
-        if self.agrupamiento == "sexo":
-            anio_min = self.df_agrupado['Fecha'].min().year
-            anio_max = self.df_agrupado['Fecha'].max().year
-            
-            
-            carpeta_salida = conf["paths"]["figures"]
-            acumulados_sexo = ["Acumulado_hombres", "Acumulado_mujeres"]
-            graficos = GraficosHelper(carpeta_salida, 40)
-
-            for sexo in acumulados_sexo:        
-                graficos.plot_violin(self.df,sexo,padecimiento)
-            
-            plt.plot(self.df_agrupado["Fecha"],self.df_agrupado["incrementos_hombres"] , label='Casos Hombres', color='steelblue')
-            plt.plot(self.df_agrupado["Fecha"],self.df_agrupado["incrementos_mujeres"] , label='Casos Mujeres', color='darkred')
-            plt.title(f'Casos Semanales de {padecimiento["tipo"]} a Nivel Nacional (Evolución {anio_min}-{anio_max})')
-
-
-
-        
-        elif self.agrupamiento == "region":
-
-            
-
-            agrupamiento_cfg = self.get_opcion("agrupa")
-            region_objetivo = agrupamiento_cfg["region"]
-           
-            df_region_resumen = (
-                self.df_agrupado.dropna(subset=["Region"])
-                .groupby(["Fecha", "Region"])
-                .agg(
-                    incrementos_hombres=("incrementos_hombres", "sum"),
-                    incrementos_mujeres=("incrementos_mujeres", "sum")
-                )
-                .reset_index()
-                .sort_values(["Region", "Fecha"])
-            )
-
-            df_r = (df_region_resumen[df_region_resumen["Region"] == region_objetivo].sort_values("Fecha"))
-
-            anio_min = df_r['Fecha'].min().year
-            anio_max = df_r['Fecha'].max().year
-
-            plt.plot(df_r["Fecha"], df_r["incrementos_hombres"], label="Hombres", color="steelblue")
-            plt.plot(df_r["Fecha"], df_r["incrementos_mujeres"], label="Mujeres", color="darkred")
-            plt.title(f'Casos Semanales de {padecimiento["tipo"]} region {region_objetivo} (Evolución {anio_min}-{anio_max})')
-  
-        plt.xlabel('Año')
-        plt.ylabel('Número de Nuevos Casos')
-        plt.grid(True, linestyle='--', alpha=0.6)
-        plt.legend()
-        plt.show()
-
+        self.df_agrupado["Region"] = self.df_agrupado["Entidad"].map(mapa_regiones)
 
     def run(self) -> pd.DataFrame:       
 
@@ -357,8 +267,5 @@ class dataTransformation:
             self._ajusta_outliers(outlier_cfg['columnas'])
 
         self.agrupar()
-
-        if not self.df_agrupado.empty:
-            self.pruebas()
         
         return self.df_agrupado

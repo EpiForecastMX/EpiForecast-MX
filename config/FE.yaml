@@ -1,14 +1,12 @@
 opciones_FE:
   - tratamiento_outliers:
-      IQR: False
+      IQR: True
       columnas:
         - Incremento_hombres
         - Incremento_mujeres
 
   - agrupa:
       valor: Sexo  # Agrupa por Sexo, Region
-      region: Centro  # Solo cuando se agrupa por region: Norte, Occidente, Centro, Sureste
-
 
 regiones:
   - nombre: Norte
