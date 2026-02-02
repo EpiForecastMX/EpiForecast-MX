@@ -257,6 +257,7 @@ def run():
     )
     
     log(">>>✅ DataFrame Finalizado con éxito")
+    df_cat.to_csv("data/processed/inegi.csv", index=False, encoding="utf-8")
     log(">>>✅ Iniciando EDA")
     
     eda_inegi(df_cat)
