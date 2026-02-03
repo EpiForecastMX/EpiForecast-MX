@@ -52,7 +52,7 @@ def main():
 
         if padecimiento.get("reporte"):
 
-            opciones_reporte = conf.get('reporte_EDA')
+            opciones_reporte = conf.get('reporte_filtrado')
             ruta_df = conf.get("data", {}).get("raw_data_filter")
 
             directory_manager.asegurar_ruta(opciones_reporte.get('carpeta'))

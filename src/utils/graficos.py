@@ -4,14 +4,20 @@ from typing import Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import seaborn as sns
+
 from scipy.stats import gaussian_kde
+from src.configuraciones.config_params import conf
 
 
 class GraficosHelper:
     def __init__(self, carpeta_salida: str, numero_top_columnas: int):
         self.carpeta_salida = carpeta_salida
         self.numero_top_columnas = numero_top_columnas
+        self.conf_paleta = conf['IMSS_COLORS']
+        self.conf_paleta_secuencial = conf['PALETTE_MAIN']
+        self.conf_paleta_sexo = conf['PALETTE_SEXO']
 
     def _guardar_figura(self, nombre: str) -> str:
         ruta = os.path.join(self.carpeta_salida, nombre)
@@ -20,29 +26,52 @@ class GraficosHelper:
         plt.close()
         return ruta
 
-    def plot_histograma(self, serie, col: str) -> Optional[str]:
+    def plot_histograma(self, serie, col: str,tono: int = 0) -> Optional[str]:
+        
         serie = serie.dropna()
         if serie.empty:
             return None
 
         plt.hist(
             serie,
-            bins=20,
-            color="#2a9d8f",
-            edgecolor="white",
+            bins=50,
+            density=True,
             alpha=0.6,
-            density=True
+            color=self.conf_paleta_secuencial[tono],
+            edgecolor="white",
+            linewidth=0.5
         )
 
-        kde = gaussian_kde(serie)
-        x_vals = np.linspace(serie.min(), serie.max(), 200)
-        plt.plot(x_vals, kde(x_vals), color="red", linewidth=2)
+        try:
+            kde = gaussian_kde(serie)
+            x_vals = np.linspace(serie.min(), serie.max(), 300)
+            plt.plot(x_vals, kde(x_vals), color=self.conf_paleta['neutral_black'], linewidth=2)
+        except Exception:
+            pass
+
+        plt.axvline(serie.mean(),
+                    color=self.conf_paleta['burgundy'],
+                    linestyle="--",
+                    linewidth=1.2, 
+                    label=f"Media: {serie.mean():,.0f}"
+                    )
+        
+        plt.axvline(serie.median(),
+                    color=self.conf_paleta['teal'],
+                    linestyle="-.",
+                    linewidth=1.2, 
+                    label=f"Mediana: {serie.median():,.0f}"
+                    )
+        
+
         plt.title(f"Histograma de {col}")
+        plt.legend(fontsize=8, loc="upper right")
         plt.ylabel("Densidad")
 
         return self._guardar_figura(f"hist_{col}.png")
 
     def plot_categorica_barras(self, serie, col: str) -> Optional[str]:
+        
         serie = serie.dropna()
         if serie.empty:
             return None
@@ -100,11 +129,23 @@ class GraficosHelper:
 
         return self._guardar_figura(f"violin_{col}.png")
 
-    def plot_correlacion(self, serie) -> Optional[str]:
-        num = serie.select_dtypes(include='number').dropna(axis=1, how="all")
+    def plot_correlacion(self, df) -> Optional[str]:
+        num = df.dropna()
+        corr = num.corr()
+
         if num.shape[1] < 2: return None
-        sns.heatmap(num.corr(numeric_only=True), cmap="viridis", annot=True)
+        fig, ax = plt.subplots(figsize=(9, 7))
+        mask = np.triu(np.ones_like(corr, dtype=bool), k=1)
+        sns.heatmap(
+            corr, mask=mask, annot=True, fmt=".2f", cmap="RdYlGn",
+            center=0, vmin=-1, vmax=1, square=True, linewidths=0.8,
+            cbar_kws={"label": "Correlacion de Pearson", "shrink": 0.8},
+            annot_kws={"size": 10, "fontweight": "bold"}, ax=ax
+        )
         plt.title("Matriz de correlación")
+        ax.tick_params(axis="x", rotation=45)
+        fig.tight_layout()
+
         return self._guardar_figura("correlacion.png")
     
     def plot_box(self, serie, col: str, col_comparativa: str) -> Optional[str]:
@@ -124,6 +165,34 @@ class GraficosHelper:
         plt.xlabel("")
         plt.xticks(rotation=90)
 
-
-
         return self._guardar_figura(f"box_{col}.png")
+    
+    
+    def serie_tiempo(self,df:pd.DataFrame ,padecimiento: str) -> Optional[str]:
+
+        serie_tiempo = df.groupby("Fecha")[["incrementos_hombres", "incrementos_mujeres"]].sum()
+        plt.figure(figsize=(16,4))
+        
+        plt.plot(serie_tiempo.index,serie_tiempo['incrementos_hombres'],
+                 linewidth=1.2, alpha=0.8, color=self.conf_paleta_sexo["Hombres"], label="Hombres")
+        plt.plot(serie_tiempo.index,serie_tiempo['incrementos_mujeres'],
+                 linewidth=1.2, alpha=0.8, color=self.conf_paleta_sexo["Mujeres"], label="Mujeres")
+        
+        try:
+            covid_start = pd.Timestamp("2020-03-01")
+            covid_end = pd.Timestamp("2021-06-01")
+            plt.axvspan(covid_start, covid_end, alpha=0.1, color="red", label="Covid")
+        except Exception:
+            pass
+
+        plt.xlabel("Fecha")
+        plt.ylabel("Incrementos semanales")
+        plt.title(f"Evolución semanal nacional de {padecimiento}")
+        plt.legend(fontsize=10)
+        plt.tight_layout()
+        plt.grid(True,color="gray", alpha=0.3, linestyle="--",linewidth=0.5)
+
+        return self._guardar_figura(f"serie_tiempo_{padecimiento}.png")
+
+        
+

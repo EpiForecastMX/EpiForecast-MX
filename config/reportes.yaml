@@ -1,35 +1,91 @@
-reporte_EDA:
+reporte_filtrado:
   filtro_padecimiento: "${padecimiento.tipo}"
-  nombre_reporte: "EDA_${reporte_EDA.filtro_padecimiento}"
+  nombre_reporte: "EDA_${reporte_filtrado.filtro_padecimiento}"
   titulo_reporte: "Análisis Exploratorio de Datos"
   subtitulo_reporte: "Padecimiento: ${padecimiento.tipo} (RAW Data)"
-  boxplot: False
-  bp_comparativa: ""
   violin: True
   max_cols: 33  #limita el número de variables que se visualizarán en la gráfica
   carpeta: "${paths.docs}"
-  ruta: "${paths.docs}/${reporte_EDA.nombre_reporte}.pdf"
-
+  ruta: "${paths.docs}/${reporte_filtrado.nombre_reporte}.pdf"
+  COLS_NUMERICAS:
+    - "Anio"
+    - "Semana"
+    - "Casos_semana"
+    - "Acumulado_hombres"
+    - "Acumulado_mujeres"
+    - "Acumulado_anio_anterior"
+  COLS_CATEGORICAS:
+    - "Entidad"
+    - "Padecimiento"
 
 
 reporte_clean_dataset:
+  filtro_padecimiento: "${padecimiento.tipo}"
   nombre_reporte: "EDA_${padecimiento.tipo} (Clean Data)"
   titulo_reporte: "Análisis Exploratorio de Datos"
   subtitulo_reporte: "Padecimiento: ${padecimiento.tipo} (Clean Data)"
-  boxplot: True
-  bp_comparativa: "Anio"
   violin: True
-  max_cols: 34
+  max_cols: 33
   carpeta: "${paths.docs}"
   ruta: "${paths.docs}/${reporte_clean_dataset.nombre_reporte}.pdf"
+  COLS_NUMERICAS:
+    - "Anio"
+    - "Semana"
+    - "Acumulado_hombres"
+    - "Acumulado_mujeres"
+  COLS_CATEGORICAS:
+    - "Entidad"
 
 
+# --- Paleta IMSS institucional (Guía cromática oficial 2026) ----------------------
+IMSS_COLORS:
+  neutral_black: "#231F20"   # PANTONE Neutral Black C
+  burgundy: "#9B2242"        # PANTONE 7420 C
+  dark_burgundy: "#6F1D46"   # PANTONE 7421 C
+  cool_gray: "#97999B"       # PANTONE Cool Gray C
+  teal: "#00524E"            # PANTONE IMSS 561 C
+  dark_teal: "#173F35"       # PANTONE 627 C
+  cream: "#E8D5B5"           # PANTONE 7402 C
+  gold: "#B58500"            # PANTONE 1255 C
 
-reporte_interim_stage_transformed:
-  nombre_reporte: "EDA_${reporte_EDA.filtro_padecimiento} Transformacion"
-  titulo_reporte: "Análisis Exploratorio de Datos"
-  subtitulo_reporte: "Padecimiento: ${reporte_EDA.filtro_padecimiento} Transformacion (interim)"
-  boxplot: False
-  bp_comparativa: "Anio"
-  violin: False
-  max_cols: 34
+# Paleta secuencial para gráficos
+PALETTE_MAIN:
+  - "#00524E"   # teal
+  - "#9B2242"   # burgundy
+  - "#B58500"   # gold
+  - "#173F35"   # dark_teal
+  - "#6F1D46"   # dark_burgundy
+  - "#97999B"   # cool_gray
+  - "#231F20"   # neutral_black
+  - "#E8D5B5"   # cream
+
+PALETTE_PADECIMIENTO:
+  Depresión: "#9B2242"   # burgundy
+  Parkinson: "#00524E"   # teal
+  Alzheimer: "#B58500"   # gold
+
+PALETTE_SEXO:
+  Hombres: "#00524E"     # teal
+  Mujeres: "#9B2242"     # burgundy
+
+# --- Estilo global de matplotlib ---------------------------------------------
+matplotlib_rcParams:
+  figure.facecolor: "white"
+  axes.facecolor: "white"
+  axes.edgecolor: "#97999B"        # cool_gray
+  axes.labelcolor: "#231F20"       # neutral_black
+  text.color: "#231F20"            # neutral_black
+  xtick.color: "#231F20"           # neutral_black
+  ytick.color: "#231F20"           # neutral_black
+  axes.grid: true
+  grid.alpha: 0.3
+  grid.color: "#97999B"            # cool_gray
+  font.family: "sans-serif"
+  font.size: 11
+  axes.titlesize: 13
+  axes.titleweight: "bold"
+  figure.titlesize: 15
+  figure.titleweight: "bold"
+  figure.dpi: 120
+  savefig.dpi: 150
+  savefig.bbox: "tight"

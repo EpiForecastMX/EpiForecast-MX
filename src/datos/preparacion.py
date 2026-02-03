@@ -224,11 +224,7 @@ class dataTransformation:
                 f"Límite superior: {lim_sup} | Registros por encima del límite: {total_sup}"
             )
 
-            self.df.loc[self.df[columna] < lim_inf, columna] = lim_inf
-            self.df.loc[self.df[columna] > lim_sup, columna] = lim_sup
-
-            self.df[columna] = self.df[columna].round(0).astype(int)
-
+            self.df[columna] = self.df[columna].clip(lower=lim_inf, upper=lim_sup).round(0).astype(int)
     
     def agrupar(self):
 
@@ -267,5 +263,14 @@ class dataTransformation:
             self._ajusta_outliers(outlier_cfg['columnas'])
 
         self.agrupar()
-        
+
+        #Prueba inicio
+        paths = conf.get("paths")
+        padecimiento = conf.get('padecimiento')
+
+        grafica = GraficosHelper(paths['figures'], 33)
+
+        grafica.serie_tiempo(self.df_agrupado,padecimiento['tipo'])
+        #prueba fin
+
         return self.df_agrupado

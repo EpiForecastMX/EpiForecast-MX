@@ -6,50 +6,53 @@ opciones_FE:
         - Incremento_mujeres
 
   - agrupa:
-      valor: Sexo  # Agrupa por Sexo, Region
+      valor: Sexo
 
 regiones:
   - nombre: Norte
     estados:
       - Baja California
       - Baja California Sur
-      - Sonora
       - Chihuahua
       - Coahuila
-      - Nuevo León
-      - Tamaulipas
-      - Sinaloa
       - Durango
+      - Nuevo León
+      - Sinaloa
+      - Sonora
+      - Tamaulipas
+      
 
   - nombre: Occidente
     estados:
-      - Zacatecas
       - Aguascalientes
-      - Jalisco
       - Colima
+      - Guanajuato
+      - Jalisco
       - Michoacán
       - Nayarit
       - San Luis Potosí
-      - Guanajuato
-      - Querétaro
+      - Zacatecas
 
   - nombre: Centro
     estados:
       - Ciudad de México
+      - Hidalgo
       - México
       - Morelos
-      - Tlaxcala
       - Puebla
-      - Hidalgo
-      - Veracruz
+      - Querétaro
+      - Tlaxcala
 
   - nombre: Sureste
     estados:
+      - Campeche
+      - Chiapas
       - Guerrero
       - Oaxaca
-      - Chiapas
-      - Tabasco
-      - Campeche
-      - Yucatán
       - Quintana Roo
+      - Tabasco
+      - Veracruz
+      - Yucatán
+      
+      
 

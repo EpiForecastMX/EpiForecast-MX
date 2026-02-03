@@ -35,6 +35,7 @@ def ejecuta_limpieza_raw() -> tuple[bool, pd.DataFrame | None]:
 def main():
 
     resultado, df_clean = ejecuta_limpieza_raw()
+    configuracion_padecimiento = conf.get("padecimiento")
 
     if resultado:
         interim_file = conf["data"]["interim_data_file"]
@@ -47,16 +48,18 @@ def main():
             logger.info(f"archivo {interim_file} no localizado. Guardando archivo.")
             df_clean.to_csv(interim_file,index=False)
         
-        opciones_reporte = conf.get('reporte_clean_dataset')
+        
+        if configuracion_padecimiento.get("reporte"):
+            opciones_reporte = conf.get('reporte_clean_dataset')
 
-        datos_reporte = EDAReportBuilder(
-            df = df_clean,
-            fuente_datos = interim_file,
-            opciones = opciones_reporte
-        ).run()
+            datos_reporte = EDAReportBuilder(
+                df = df_clean,
+                fuente_datos = interim_file,
+                opciones = opciones_reporte
+            ).run()
 
-        PDFReportGenerator(datos_reporte, archivo_salida=opciones_reporte.get('ruta'), ancho_figura_cm=16).build()
-        logger.info(f"Reporte generado en: {opciones_reporte.get('ruta')}")
+            PDFReportGenerator(datos_reporte, archivo_salida=opciones_reporte.get('ruta'), ancho_figura_cm=16).build()
+            logger.info(f"Reporte generado en: {opciones_reporte.get('ruta')}")
         
         
 
