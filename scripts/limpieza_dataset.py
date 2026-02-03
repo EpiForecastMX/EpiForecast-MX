@@ -49,7 +49,7 @@ def main():
             df_clean.to_csv(interim_file,index=False)
         
         
-        if configuracion_padecimiento.get("reporte"):
+        if configuracion_padecimiento.get("reporte_clean"):
             opciones_reporte = conf.get('reporte_clean_dataset')
 
             datos_reporte = EDAReportBuilder(
