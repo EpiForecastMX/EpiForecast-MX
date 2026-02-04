@@ -77,15 +77,25 @@ jobs:
       - name: Stash new PDFs + DVC pull
         if: steps.scraper.outputs.new_count != '0'
         run: |
+          # Debug: mostrar contenido del flag file
+          echo "=== Flag file contents ==="
+          cat -A /tmp/sinave_new_files.txt
+          echo "=== End flag file ==="
+
           # Mover PDFs recien descargados a /tmp para que dvc pull no los borre
           mkdir -p /tmp/stash_pdfs
-          while IFS= read -r fname; do
-            [ -n "$fname" ] && mv "data/raw_PDFs/$fname" /tmp/stash_pdfs/
-          done < /tmp/sinave_new_files.txt
+          for fname in $(cat /tmp/sinave_new_files.txt); do
+            if [ -f "data/raw_PDFs/$fname" ]; then
+              mv "data/raw_PDFs/$fname" /tmp/stash_pdfs/
+              echo "Stashed: $fname"
+            else
+              echo "WARNING: no encontrado data/raw_PDFs/$fname"
+            fi
+          done
           echo "Stashed $(ls /tmp/stash_pdfs/ | wc -l) new PDF(s)"
 
           # Restaurar todos los PDFs existentes desde DVC
-          dvc pull
+          dvc pull --force
           echo "DVC pull complete: $(ls data/raw_PDFs/ | wc -l) existing PDF(s)"
 
       - name: Restore new PDFs + DVC add/push
