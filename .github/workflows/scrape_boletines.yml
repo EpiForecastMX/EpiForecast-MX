@@ -1,17 +1,3 @@
-# .github/workflows/scrape_boletines.yml
-#
-# Scraper automatizado de boletines SINAVE para EpiForecast-MX.
-# Corre diario a las 2 PM hora CDMX (20:00 UTC).
-# Tambien se puede correr manualmente desde Actions.
-#
-# Secrets requeridos en GitHub:
-#   AWS_ACCESS_KEY_ID
-#   AWS_SECRET_ACCESS_KEY
-#   AWS_REGION
-#   S3_BUCKET
-#   S3_PREFIX
-#   SNS_TOPIC_ARN       (opcional)
-
 name: Scrape Boletines SINAVE
 
 on:
@@ -62,6 +48,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/registry.json
+          git add -f data/registry.json
           git diff --staged --quiet || git commit -m "chore(data): registry actualizado $(date +%Y-%m-%d)"
           git push
