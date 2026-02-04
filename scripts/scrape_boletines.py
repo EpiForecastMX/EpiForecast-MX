@@ -4,12 +4,17 @@ scrape_boletines.py - Scraper automatizado de boletines SINAVE.
 
 Ubicacion: scripts/scrape_boletines.py
 
-Uso local (sin S3):
+Descarga boletines nuevos a data/raw_PDFs/ (versionados con DVC).
+Escribe /tmp/sinave_new_files.txt con los nombres de archivos nuevos
+para que el workflow de GitHub Actions sepa si debe correr dvc add/push.
+
+Uso local:
   cd EpiForecast-MX
   python scripts/scrape_boletines.py
 
-Variables de entorno (para CI/CD):
-  S3_BUCKET, S3_PREFIX, AWS_REGION, SNS_TOPIC_ARN
+Variables de entorno (opcionales, para CI/CD):
+  SNS_TOPIC_ARN   - ARN del topic SNS para notificaciones
+  AWS_REGION       - Region AWS (default: us-east-1)
 """
 
 import os
@@ -18,7 +23,6 @@ import sys
 import json
 import logging
 import requests
-import boto3
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -44,9 +48,10 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 REGISTRY_PATH = PROJECT_ROOT / "data" / "registry.json"
 LOCAL_PDF_DIR = PROJECT_ROOT / "data" / "raw_PDFs"
 
-# AWS
-S3_BUCKET = os.getenv("S3_BUCKET", "")
-S3_PREFIX = os.getenv("S3_PREFIX", "raw/boletines/")
+# Flag file para CI/CD: lista de archivos nuevos descargados
+NEW_FILES_FLAG = Path("/tmp/sinave_new_files.txt")
+
+# AWS (solo para SNS)
 SNS_TOPIC_ARN = os.getenv("SNS_TOPIC_ARN", "")
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
 
@@ -84,8 +89,7 @@ def scrape_bulletins() -> list[dict]:
         <div>Semana Epidemiologica 03</div>
         <div>
           <a class="btn btn-default"
-             href="/cms/uploads/attachment/file/.../Boletin-0326.pdf"
-             onclick="a_onClick('salud', 'Semana Epidemiologica 03')">
+             href="/cms/uploads/attachment/file/.../Boletin-0326.pdf">
           </a>
         </div>
       </li>
@@ -95,7 +99,6 @@ def scrape_bulletins() -> list[dict]:
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
-    # User-agent para evitar bloqueos en headless
     options.add_argument(
         "user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -109,26 +112,22 @@ def scrape_bulletins() -> list[dict]:
         log.info("Navegando a %s", TARGET_URL)
         driver.get(TARGET_URL)
 
-        # Esperar a que carguen los <li> de boletines
         WebDriverWait(driver, 30).until(
             EC.presence_of_element_located(
                 (By.CSS_SELECTOR, "li.clearfix.documents")
             )
         )
 
-        # Cada <li class="clearfix documents"> es un boletin
         items = driver.find_elements(
             By.CSS_SELECTOR, "li.clearfix.documents"
         )
         log.info("Encontrados %d boletines en la pagina", len(items))
 
         for item in items:
-            # Texto del div: "Semana Epidemiologica 03"
             text = item.text.strip()
             match = re.search(r"(\d+)", text)
             semana = match.group(1).zfill(2) if match else None
 
-            # Link de descarga dentro del <li>
             try:
                 link = item.find_element(
                     By.CSS_SELECTOR, "a.btn.btn-default"
@@ -137,13 +136,11 @@ def scrape_bulletins() -> list[dict]:
             except Exception:
                 href = ""
 
-            # URL completa
             if href.startswith("/"):
                 full_url = BASE_URL + href
             else:
                 full_url = href
 
-            # Filename: YYYY_semWW.pdf
             year = datetime.now().year
             filename = f"{year}_sem{semana}.pdf" if semana else None
 
@@ -161,30 +158,18 @@ def scrape_bulletins() -> list[dict]:
 
 
 # ──────────────────────────────────────────────
-# Download + S3
+# Download (local)
 # ──────────────────────────────────────────────
-def download_pdf(url: str) -> bytes:
+def download_pdf(url: str, dest: Path) -> None:
     log.info("Descargando: %s", url)
     r = requests.get(url, stream=True, timeout=60)
     r.raise_for_status()
-    chunks = []
-    for chunk in r.iter_content(8192):
-        if chunk:
-            chunks.append(chunk)
-    return b"".join(chunks)
-
-
-def upload_to_s3(data: bytes, filename: str) -> str:
-    s3 = boto3.client("s3", region_name=AWS_REGION)
-    key = f"{S3_PREFIX}{filename}"
-    s3.put_object(
-        Bucket=S3_BUCKET,
-        Key=key,
-        Body=data,
-        ContentType="application/pdf",
-    )
-    log.info("Subido a s3://%s/%s", S3_BUCKET, key)
-    return key
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    with open(dest, "wb") as f:
+        for chunk in r.iter_content(8192):
+            if chunk:
+                f.write(chunk)
+    log.info("Guardado: %s", dest)
 
 
 # ──────────────────────────────────────────────
@@ -195,6 +180,8 @@ def notify(new_bulletins: list[dict]) -> None:
         log.info("SNS_TOPIC_ARN no configurado, skip notificacion")
         return
 
+    import boto3
+
     sns = boto3.client("sns", region_name=AWS_REGION)
     lines = [
         f"  - Semana {b['semana']}: {b['filename']}"
@@ -204,7 +191,7 @@ def notify(new_bulletins: list[dict]) -> None:
         f"Se detectaron {len(new_bulletins)} boletines nuevos "
         f"({datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}):\n\n"
         + "\n".join(lines)
-        + f"\n\nSubidos a s3://{S3_BUCKET}/{S3_PREFIX}"
+        + "\n\nVersionados con DVC en EpiForecast-MX."
     )
     sns.publish(
         TopicArn=SNS_TOPIC_ARN,
@@ -242,55 +229,56 @@ def main() -> int:
         if not already_in_registry and not already_on_disk:
             new_bulletins.append(b)
         elif not already_in_registry and already_on_disk:
-            # Archivo existe pero no esta en registry, solo registrar
             log.info("Ya existe en disco, registrando: %s", b["filename"])
             registry["bulletins"][b["semana"]] = {
                 "url": b["url"],
                 "filename": b["filename"],
-                "s3_key": str(LOCAL_PDF_DIR / b["filename"]),
                 "downloaded_at": datetime.now(timezone.utc).isoformat(),
             }
 
     if not new_bulletins:
         log.info("No hay boletines nuevos para descargar.")
-        # Guardar registry por si se registraron archivos existentes
         save_registry(registry)
         return 0
 
     log.info("Boletines NUEVOS: %d", len(new_bulletins))
 
-    # 4. Descargar y subir/guardar
+    # 4. Descargar localmente a data/raw_PDFs/
+    new_filenames = []
     for b in new_bulletins:
-        pdf_data = download_pdf(b["url"])
-
-        if S3_BUCKET:
-            s3_key = upload_to_s3(pdf_data, b["filename"])
-        else:
-            LOCAL_PDF_DIR.mkdir(parents=True, exist_ok=True)
-            local_path = LOCAL_PDF_DIR / b["filename"]
-            with open(local_path, "wb") as f:
-                f.write(pdf_data)
-            s3_key = str(local_path)
-            log.info("Guardado local: %s", local_path)
+        dest = LOCAL_PDF_DIR / b["filename"]
+        download_pdf(b["url"], dest)
 
         registry["bulletins"][b["semana"]] = {
             "url": b["url"],
             "filename": b["filename"],
-            "s3_key": s3_key,
             "downloaded_at": datetime.now(timezone.utc).isoformat(),
         }
+        new_filenames.append(b["filename"])
 
     # 5. Guardar registry
     save_registry(registry)
 
-    # 6. Notificar
+    # 6. Escribir flag de archivos nuevos (para CI/CD)
+    NEW_FILES_FLAG.write_text("\n".join(new_filenames))
+    log.info("Flag de archivos nuevos: %s (%d archivos)",
+             NEW_FILES_FLAG, len(new_filenames))
+
+    # 7. Escribir GITHUB_OUTPUT si estamos en CI
+    github_output = os.getenv("GITHUB_OUTPUT")
+    if github_output:
+        with open(github_output, "a") as f:
+            f.write(f"new_count={len(new_filenames)}\n")
+
+    # 8. Notificar
     notify(new_bulletins)
 
-    # 7. Resumen
+    # 9. Resumen
     for b in new_bulletins:
         print(f"NUEVO: Semana {b['semana']} -> {b['filename']}")
 
-    log.info("=== Fin: %d nuevos boletines procesados ===", len(new_bulletins))
+    log.info("=== Fin: %d nuevos boletines procesados ===",
+             len(new_bulletins))
     return 0
 
 

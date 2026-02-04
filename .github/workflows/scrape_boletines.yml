@@ -1,3 +1,21 @@
+# .github/workflows/scrape_boletines.yml
+#
+# Scraper automatizado de boletines SINAVE para EpiForecast-MX.
+# Corre diario a las 2 PM hora CDMX (20:00 UTC).
+# Tambien se puede correr manualmente desde Actions.
+#
+# Flujo:
+#   1. Scraper detecta y descarga boletines nuevos a data/raw_PDFs/
+#   2. Si hay nuevos: dvc pull → restaura PDFs existentes →
+#      mueve nuevos de vuelta → dvc add → dvc push
+#   3. Git commit: registry.json + raw_PDFs.dvc
+#
+# Secrets requeridos en GitHub:
+#   AWS_ACCESS_KEY_ID
+#   AWS_SECRET_ACCESS_KEY
+#   AWS_REGION
+#   SNS_TOPIC_ARN       (opcional)
+
 name: Scrape Boletines SINAVE
 
 on:
@@ -36,18 +54,57 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      # ── Fase 1: Scraper detecta y descarga nuevos ──
       - name: Run scraper
+        id: scraper
         env:
-          S3_BUCKET: ${{ secrets.S3_BUCKET }}
-          S3_PREFIX: ${{ secrets.S3_PREFIX }}
           SNS_TOPIC_ARN: ${{ secrets.SNS_TOPIC_ARN }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
-        run: python scripts/scrape_boletines.py
+        run: |
+          python scripts/scrape_boletines.py
+          if [ -f /tmp/sinave_new_files.txt ]; then
+            NEW_COUNT=$(grep -c . /tmp/sinave_new_files.txt || echo "0")
+            echo "new_count=$NEW_COUNT" >> $GITHUB_OUTPUT
+          else
+            echo "new_count=0" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Commit registry changes
+      # ── Fase 2: DVC (solo si hay boletines nuevos) ──
+      - name: Install DVC
+        if: steps.scraper.outputs.new_count != '0'
+        run: pip install dvc[s3]
+
+      - name: Stash new PDFs + DVC pull
+        if: steps.scraper.outputs.new_count != '0'
+        run: |
+          # Mover PDFs recien descargados a /tmp para que dvc pull no los borre
+          mkdir -p /tmp/stash_pdfs
+          while IFS= read -r fname; do
+            [ -n "$fname" ] && mv "data/raw_PDFs/$fname" /tmp/stash_pdfs/
+          done < /tmp/sinave_new_files.txt
+          echo "Stashed $(ls /tmp/stash_pdfs/ | wc -l) new PDF(s)"
+
+          # Restaurar todos los PDFs existentes desde DVC
+          dvc pull
+          echo "DVC pull complete: $(ls data/raw_PDFs/ | wc -l) existing PDF(s)"
+
+      - name: Restore new PDFs + DVC add/push
+        if: steps.scraper.outputs.new_count != '0'
+        run: |
+          # Copiar PDFs nuevos de vuelta a la carpeta versionada
+          cp /tmp/stash_pdfs/*.pdf data/raw_PDFs/
+          echo "Total PDFs: $(ls data/raw_PDFs/ | wc -l)"
+
+          # Re-trackear con DVC y subir solo los nuevos
+          dvc add data/raw_PDFs
+          dvc push
+
+      # ── Fase 3: Git commit (siempre, por si registry cambio) ──
+      - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f data/registry.json
-          git diff --staged --quiet || git commit -m "chore(data): registry actualizado $(date +%Y-%m-%d)"
+          git add data/raw_PDFs.dvc data/.gitignore 2>/dev/null || true
+          git diff --staged --quiet || git commit -m "chore(data): actualizado $(date +%Y-%m-%d)"
           git push
