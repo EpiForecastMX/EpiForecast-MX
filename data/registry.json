@@ -11,6 +11,12 @@
       "filename": "2026_sem01.pdf",
       "s3_key": "/Users/haowei/Documents/Integrador/EpiForecast-MX/data/raw_PDFs/2026_sem01.pdf",
       "downloaded_at": "2026-02-04T04:45:29.531816+00:00"
+    },
+    "03": {
+      "url": "https://www.gob.mx/cms/uploads/attachment/file/1054461/Boletin-0326.pdf",
+      "filename": "2026_sem03.pdf",
+      "s3_key": "2026_sem03.pdf",
+      "downloaded_at": "2026-02-04T05:32:21.434830+00:00"
     }
   }
 }
