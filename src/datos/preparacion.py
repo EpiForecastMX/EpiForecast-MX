@@ -31,7 +31,6 @@ class dataTransformation:
                  
         if not self.df['Semana'].between(1, 53).all():
             raise ValueError("Se encontraron semanas fuera del rango")
-
         
         filas_semana_1 = self.df['Semana'] == 1
         filas_no_semana_1 = ~filas_semana_1
@@ -74,6 +73,7 @@ class dataTransformation:
         self.df = self.df.sort_values(by=["Anio", "Entidad", "Semana"]).reset_index(drop=True)
 
         logger.info("Ordenando el dataset.")
+        
         
 
     
@@ -231,7 +231,7 @@ class dataTransformation:
         logger.info(f"Aplicando agrupamiento")
                    
         self.df_agrupado = (
-            self.df.groupby(["Fecha","Entidad"])
+            self.df.groupby(["Semana","Fecha","Entidad"])
             .agg(
                 incrementos_hombres=("Incremento_hombres", "sum"),
                 incrementos_mujeres=("Incremento_mujeres", "sum")
@@ -265,6 +265,8 @@ class dataTransformation:
         self.agrupar()
 
         #Prueba inicio
+        logger.info(f'\n{self.df_agrupado}')
+
         paths = conf.get("paths")
         padecimiento = conf.get('padecimiento')
 
