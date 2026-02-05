@@ -3,14 +3,12 @@
     "02": {
       "url": "https://www.gob.mx/cms/uploads/attachment/file/1051875/sem02.pdf",
       "filename": "2026_sem02.pdf",
-      "s3_key": "/Users/haowei/Documents/Integrador/EpiForecast-MX/data/raw_PDFs/2026_sem02.pdf",
       "downloaded_at": "2026-02-04T04:45:29.531566+00:00"
     },
     "01": {
       "url": "https://www.gob.mx/cms/uploads/attachment/file/1049391/sem01.pdf",
       "filename": "2026_sem01.pdf",
-      "s3_key": "/Users/haowei/Documents/Integrador/EpiForecast-MX/data/raw_PDFs/2026_sem01.pdf",
       "downloaded_at": "2026-02-04T04:45:29.531816+00:00"
-    },
+    }
   }
 }
