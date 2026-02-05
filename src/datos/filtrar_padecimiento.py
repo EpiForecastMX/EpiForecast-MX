@@ -25,6 +25,12 @@ class FiltraPadecimiento:
         if self.columna not in self.df_raw.columns:
             logger.error(f"No se puede filtrar: la columna '{self.columna}' no existe en el DataFrame.")
             return False
+        
+        if self.padecimiento.lower() == 'general':
+            logger.info(f"Padecimiento no configurado, no se realizará filtrado.")
+            self.df_raw_filtrado = self.df_raw.copy()
+            return True
+
 
         if not self.padecimiento:
             logger.error("No se puede filtrar: el tipo de padecimiento no está definido.")
@@ -51,6 +57,11 @@ class FiltraPadecimiento:
                     f"No se encontraron registros para el padecimiento {self.padecimiento}."
                 )
                 return None
+            
+            if filtrados == total_registros:
+                logger.info(f"No se aplicó filtrado por padecimiento. Registros totales: {filtrados}")
+                return self.df_raw_filtrado
+
 
             logger.success(
                 f"Registros filtrados: {filtrados} de {total_registros} "

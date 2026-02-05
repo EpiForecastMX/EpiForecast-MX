@@ -1,5 +1,4 @@
 columnas_eliminar:
-  - 'Padecimiento'
   - 'Acumulado_anio_anterior'
   - 'Casos_semana'
 

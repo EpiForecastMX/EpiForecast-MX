@@ -35,6 +35,7 @@ def filtrar() -> tuple[bool, pd.DataFrame | None]:
     dataframe = pd.read_csv(raw_file)
     df_filtrado = FiltraPadecimiento(dataframe, padecimiento).run()
 
+
     if df_filtrado is not None:
         logger.success(f"Guardando archivo filtrado en: {raw_data_filter}")
         df_filtrado.to_csv(raw_data_filter, index=False)

@@ -70,19 +70,17 @@ class dataTransformation:
         self.df.loc[filas_semana_1, 'Semana'] = nueva_semana_para_sem1.values
 
         #Ordenar
-        self.df = self.df.sort_values(by=["Anio", "Entidad", "Semana"]).reset_index(drop=True)
+        self.df = self.df.sort_values(by=["Padecimiento","Anio", "Entidad", "Semana"]).reset_index(drop=True)
 
         logger.info("Ordenando el dataset.")
         
-        
-
-    
+            
     def _prepara_series_tiempo(self):
 
         logger.info("Inicializando preparación de series temporales.")
 
-        self.df["Prev_hombres"] = self.df.groupby("Entidad")["Acumulado_hombres"].shift()
-        self.df["Prev_mujeres"] = self.df.groupby("Entidad")["Acumulado_mujeres"].shift()
+        self.df["Prev_hombres"] = self.df.groupby(["Padecimiento", "Entidad"])["Acumulado_hombres"].shift()
+        self.df["Prev_mujeres"] = self.df.groupby(["Padecimiento", "Entidad"])["Acumulado_mujeres"].shift()
 
         # Calcular incrementos usando el valor anterior
         self.df["Incremento_hombres"] = self.df["Acumulado_hombres"] - self.df["Prev_hombres"]
@@ -111,12 +109,14 @@ class dataTransformation:
             mascara_neg = self.df[columna] < 0
 
             # 2) Consecutividad con la fila previa (misma Entidad, mismo Año, y Semana == Semana_prev + 1)
+            padecimiento = self.df["Padecimiento"].shift(1)
             anio_prev    = self.df["Anio"].shift(1)
             semana_prev  = self.df["Semana"].shift(1)
             entidad_prev = self.df["Entidad"].shift(1)
             valor_prev   = self.df[columna].shift(1)
 
             es_consec = (
+                (self.df["Padecimiento"] == padecimiento) &
                 (self.df["Entidad"] == entidad_prev) &
                 (self.df["Anio"]    == anio_prev) &
                 (self.df["Semana"]  == semana_prev + 1)
@@ -142,7 +142,7 @@ class dataTransformation:
             #    shift(1): excluye la semana actual
             #    rolling(3): últimas 3 semanas previas dentro del mismo (Entidad, Anio)
             prev3_mean = (
-                self.df.groupby(["Entidad", "Anio"])[columna]
+                self.df.groupby(["Padecimiento","Entidad", "Anio"])[columna]
                     .transform(lambda s: s.shift(1).rolling(window=3, min_periods=1).mean())
             )
 
@@ -200,44 +200,79 @@ class dataTransformation:
 
     def _ajusta_outliers(self,columnas: list):
 
+        
         for columna in columnas:
-            _ , metadatos = OperacionesDatos.outliers_iqr(self.df,columna)
-            lim_inf = metadatos[0]
-            lim_sup = metadatos[1]
-            q1 = metadatos[2]
-            q3 = metadatos[3]
-            iqr = metadatos[4]
-
-            mascara_inf = self.df[columna] < lim_inf
-            total_inf = mascara_inf.sum()
-
-            mascara_sup = self.df[columna] > lim_sup
-            total_sup = mascara_sup.sum()
-  
-            logger.info(
-                f"Rangos intercuartiles para '{columna}': IQR={iqr}, Q1={q1}, Q3={q3}"
+            # 1) Construye un DataFrame de estadísticas por Padecimiento usando tu función
+            #    outliers_iqr sobre el subconjunto g (g es df filtrado por Padecimiento)
+            stats = (
+                self.df.groupby("Padecimiento", sort=False)
+                    .apply(lambda g: pd.Series(
+                        # Desempaqueta lo que regresa tu función
+                        # _, [lim_inf, lim_sup, q1, q3, iqr] = OperacionesDatos.outliers_iqr(g, columna)
+                        # y colócalo en un Series con nombres
+                        (lambda met: {
+                            "q1":  met[2],
+                            "q3":  met[3],
+                            "iqr": met[4],
+                            "lim_inf": met[0],
+                            "lim_sup": met[1],
+                        })(OperacionesDatos.outliers_iqr(g, columna)[1])
+                    ))
+                    .reset_index()
             )
-            logger.info(
-                f"Límite inferior: {lim_inf} | Registros por debajo del límite: {total_inf}"
-            )
-            logger.info(
-                f"Límite superior: {lim_sup} | Registros por encima del límite: {total_sup}"
+            # stats tiene: Padecimiento, q1, q3, iqr, lim_inf, lim_sup (para ESTA columna)
+
+            # 2) Une las stats al df (por Padecimiento)
+            self.df = self.df.merge(
+                stats[["Padecimiento", "q1", "q3", "iqr", "lim_inf", "lim_sup"]],
+                on="Padecimiento", how="left"
             )
 
-            self.df[columna] = self.df[columna].clip(lower=lim_inf, upper=lim_sup).round(0).astype(int)
+            # 3) (Opcional) Log por Padecimiento
+            for pade, sub in self.df.groupby("Padecimiento", sort=False):
+                # Evita NaN al loggear
+                iqr     = sub["iqr"].iloc[0]
+                q1      = sub["q1"].iloc[0]
+                q3      = sub["q3"].iloc[0]
+                lim_inf = sub["lim_inf"].iloc[0]
+                lim_sup = sub["lim_sup"].iloc[0]
+
+                mascara_inf = sub[columna] < lim_inf
+                mascara_sup = sub[columna] > lim_sup
+                total_inf = int(mascara_inf.sum())
+                total_sup = int(mascara_sup.sum())
+
+                logger.info(f"[{pade}] Rangos intercuartiles para '{columna}': IQR={iqr}, Q1={q1}, Q3={q3}")
+                logger.info(f"[{pade}] Límite inferior: {lim_inf} | Registros por debajo del límite: {total_inf}")
+                logger.info(f"[{pade}] Límite superior: {lim_sup} | Registros por encima del límite: {total_sup}")
+
+            # 4) Clip vectorizado por fila usando los límites del propio padecimiento
+            #    (más rápido que apply(axis=1))
+            x = self.df[columna].to_numpy()
+            lo = self.df["lim_inf"].to_numpy()
+            hi = self.df["lim_sup"].to_numpy()
+
+            x_clipped = np.clip(x, lo, hi)
+
+            # Redondea y asigna de vuelta (usa Int64 “nullable” si puede haber NaN)
+            self.df[columna] = pd.Series(x_clipped, index=self.df.index).round(0).astype("Int64")
+
+            # 5) Limpia columnas auxiliares antes de pasar a la siguiente columna
+            self.df = self.df.drop(columns=["q1", "q3", "iqr", "lim_inf", "lim_sup"])
+
     
     def agrupar(self):
 
         logger.info(f"Aplicando agrupamiento")
                    
         self.df_agrupado = (
-            self.df.groupby(["Semana","Fecha","Entidad"])
+            self.df.groupby(["Padecimiento","Semana","Fecha","Entidad"])
             .agg(
                 incrementos_hombres=("Incremento_hombres", "sum"),
                 incrementos_mujeres=("Incremento_mujeres", "sum")
                 )
             .reset_index()
-            .sort_values(["Fecha","Entidad"])
+            .sort_values(["Padecimiento","Fecha","Entidad"])
         )
         logger.info(f"Se obtuvieron {len(self.df_agrupado)} registros agrupados.")
 
@@ -262,17 +297,28 @@ class dataTransformation:
             logger.info(f"Imputación por IQR habilitada ({outlier_cfg['IQR']}) | Columnas: '{outlier_cfg['columnas']}'")
             self._ajusta_outliers(outlier_cfg['columnas'])
 
+
+        #logger.info(f'\n{self.df}')
         self.agrupar()
 
+    
         #Prueba inicio
-        logger.info(f'\n{self.df_agrupado}')
 
         paths = conf.get("paths")
         padecimiento = conf.get('padecimiento')
 
         grafica = GraficosHelper(paths['figures'], 33)
 
-        grafica.serie_tiempo(self.df_agrupado,padecimiento['tipo'])
+        
+        padecimientos = self.df["Padecimiento"].unique()
+        print(padecimientos)
+
+        df_graficar = self.df_agrupado[self.df_agrupado["Region"] == "Occidente"]
+        df_graficar
+
+        for padecimiento in padecimientos:
+            grafica.serie_tiempo(df_graficar[df_graficar["Padecimiento"] == padecimiento],padecimiento)
         #prueba fin
+    
 
         return self.df_agrupado
