@@ -1,0 +1,123 @@
+# .github/workflows/process_boletines.yml
+# ─────────────────────────────────────────────────────────────
+# Pipeline de extracción y merge automático de boletines SINAVE
+# ─────────────────────────────────────────────────────────────
+#
+# Se dispara automáticamente cuando:
+#   1. El workflow scrape_boletines.yml termina con éxito
+#   2. Manualmente via workflow_dispatch
+#
+# Flujo:
+#   dvc pull → detectar PDFs nuevos → camelot extract → merge CSV → git push → SNS
+#
+name: Process Boletines
+
+on:
+  # Se dispara cuando el scraper termina exitosamente
+  workflow_run:
+    workflows: ["Scrape Boletines SINAVE"]   # ← nombre exacto del scraper workflow
+    types: [completed]
+
+  # Dispatch manual (para re-procesar o testing)
+  workflow_dispatch:
+    inputs:
+      new_files:
+        description: "Archivos específicos a procesar (CSV, ej: 2026_sem04.pdf,2026_sem05.pdf). Vacío = autodetect."
+        required: false
+        default: ""
+
+jobs:
+  process:
+    # Solo corre si el scraper terminó con éxito (o si es dispatch manual)
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # ── 1. Checkout ──
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0           # necesario para git push
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── 2. Python + deps ──
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install system deps (ghostscript para camelot)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends ghostscript
+
+      - name: Install Python deps
+        run: |
+          pip install --upgrade pip
+          pip install pandas "camelot-py[cv]" opencv-python-headless pypdf boto3
+
+      # ── 3. DVC + pull ──
+      - name: Install DVC
+        run: pip install dvc[s3]
+
+      - name: Configure DVC remote
+        run: |
+          dvc remote modify myremote --local access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          dvc remote modify myremote --local secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Pull PDFs from S3
+        run: dvc pull
+
+      - name: Verify PDFs
+        run: |
+          echo "PDFs en data/raw_PDFs/:"
+          ls data/raw_PDFs/*.pdf 2>/dev/null | wc -l
+
+      # ── 4. Ejecutar procesamiento ──
+      - name: Run extraction & merge pipeline
+        id: process
+        env:
+          SNS_TOPIC_ARN: ${{ secrets.SNS_TOPIC_ARN }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          PYTHONPATH: "."
+        run: |
+          NEW_FILES="${{ github.event.inputs.new_files || '' }}"
+          if [ -n "$NEW_FILES" ]; then
+            python scripts/ci_process_boletines.py --new-files "$NEW_FILES"
+          else
+            python scripts/ci_process_boletines.py
+          fi
+
+      # ── 5. DVC add + push del dataset ──
+      - name: Version dataset con DVC
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        run: |
+          dvc add data/processed/dataset_boletin_epidemiologico.csv
+          dvc push
+
+      # ── 6. Git commit del .dvc file ──
+      - name: Commit .dvc pointer
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add data/processed/dataset_boletin_epidemiologico.csv.dvc
+          git add data/processed/.gitignore
+
+          if git diff --cached --quiet; then
+            echo "No hay cambios en el .dvc. Nada que commitear."
+          else
+            ROWS="${{ steps.process.outputs.rows_added || '?' }}"
+            FILES="${{ steps.process.outputs.files_processed || '?' }}"
+            git commit -m "ci: actualiza dataset.dvc — ${FILES} boletín(es), ${ROWS} filas nuevas [skip ci]"
+            git push
+            echo "✅ dataset.dvc actualizado y pusheado."
+          fi
