@@ -66,8 +66,8 @@ jobs:
 
       - name: Configure DVC remote
         run: |
-          dvc remote modify myremote --local access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-          dvc remote modify myremote --local secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          dvc remote modify s3remote --local access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          dvc remote modify s3remote --local secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Pull PDFs from S3
         run: dvc pull
