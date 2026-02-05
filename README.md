@@ -11,7 +11,8 @@ Proyecto para predecir casos de Enfermedades Neurológicas y de Salud Mental en 
 ```
 ├── .github
 │   └── workflows
-│       └── scrape_boletines.yml  <- GitHub Actions: scraper automatizado SINAVE (diario 2PM CDMX)
+│       ├── scrape_boletines.yml   <- GitHub Actions: scraper automatizado SINAVE (diario 2PM CDMX)
+│       └── process_boletines.yml  <- GitHub Actions: extracción + merge automático (trigger encadenado)
 │
 ├── config              <- Archivos de configuración en formato YAML
 │
@@ -37,7 +38,8 @@ Proyecto para predecir casos de Enfermedades Neurológicas y de Salud Mental en 
 │   └── figures         <- Visualizaciones generadas automáticamente para documentación y reportes
 │
 ├── scripts             <- Carpeta que contiene los archivos en Python utilizados para instanciar clases y orquestar flujos
-│   └── scrape_boletines.py  <- Scraper automatizado de boletines SINAVE
+│   ├── scrape_boletines.py      <- Scraper automatizado de boletines SINAVE
+│   └── ci_process_boletines.py  <- Pipeline CI: extracción + merge incremental al dataset
 │
 ├── src
 │   ├── configuraciones <- Módulos que gestionan parámetros y configuraciones del proyecto desde archivos YAML
@@ -136,45 +138,66 @@ Esto descarga todos los datos versionados (~1GB) a tu máquina local.
 
 ---
 
-## 🤖 Scraper Automatizado SINAVE
+## 🤖 Pipeline Automatizado SINAVE (Scraper → Extracción → Dataset)
 
-El proyecto incluye un scraper automatizado que detecta y descarga nuevos boletines epidemiológicos del SINAVE cada día, los versiona con DVC y notifica al equipo por email.
+El proyecto cuenta con un pipeline completamente automatizado que detecta nuevos boletines epidemiológicos del SINAVE, los descarga, extrae las tablas de datos y actualiza el dataset consolidado — todo sin intervención manual.
 
 ### Arquitectura
 
 ```
-┌─────────────────────┐     ┌──────────────┐     ┌─────────────┐
-│  GitHub Actions      │     │  gob.mx      │     │  AWS S3     │
-│  (cron 2PM CDMX)    │────▶│  SINAVE      │     │  DVC cache  │
-│                      │     │  boletines   │     │             │
-│  1. Scrape           │     └──────────────┘     │             │
-│  2. Download PDF     │                          │             │
-│  3. DVC pull (629+)  │◀────────────────────────▶│             │
-│  4. DVC add + push   │────────────────────────▶│             │
-│  5. Git commit       │                          └─────────────┘
-│  6. SNS notify       │────────────────────────▶ 📧 Email
-└─────────────────────┘
+scrape_boletines.yml                        process_boletines.yml
+┌──────────────────────────┐   trigger     ┌──────────────────────────────┐
+│  1. Selenium scrape      │──────────────▶│  1. dvc pull (PDFs + dataset)│
+│  2. Descarga PDF nuevo   │  workflow_run │  2. Detectar PDFs nuevos     │
+│  3. dvc add + push (S3)  │               │  3. Camelot extract tablas   │
+│  4. Git commit registry  │               │  4. Merge → dataset CSV      │
+│  5. SNS: "PDF nuevo" 📧  │               │  5. dvc add + push (S3)      │
+└──────────────────────────┘               │  6. Git commit .dvc pointer  │
+                                            │  7. SNS: "Dataset updated" 📧│
+                                            └──────────────────────────────┘
 ```
 
-### Flujo detallado
+El encadenamiento es automático: cuando `scrape_boletines.yml` termina con éxito, `process_boletines.yml` se dispara vía `workflow_run`. El resultado final es que el dataset consolidado (`data/processed/dataset_boletin_epidemiologico.csv`) se actualiza con las filas del nuevo boletín.
 
-1. **Detección**: Selenium scrapes la página de boletines SINAVE, compara con `data/registry.json`
+### Fase 1: Scraper (`scrape_boletines.yml`)
+
+1. **Detección**: Selenium navega la página de boletines SINAVE, compara con `data/registry.json`
 2. **Descarga**: Si hay boletines nuevos, descarga PDFs a `data/raw_PDFs/`
-3. **Versionado**: `dvc pull --force` restaura PDFs existentes, agrega los nuevos, `dvc add` + `dvc push`
+3. **Versionado**: `dvc add` + `dvc push` sube los PDFs a S3
 4. **Commit**: GitHub Actions commitea `registry.json` y `raw_PDFs.dvc` automáticamente
 5. **Notificación**: SNS envía email al equipo con detalles de los nuevos boletines
 
-### Archivos del scraper
+### Fase 2: Extracción y Merge (`process_boletines.yml`)
+
+1. **Trigger**: Se dispara automáticamente al completar el scraper (también permite dispatch manual)
+2. **Detección de nuevos**: Compara los PDFs disponibles contra los pares (año, semana) existentes en el dataset
+3. **Extracción**: Usa `camelot-py` para extraer las tablas epidemiológicas de Depresión (F32), Parkinson (G20) y Alzheimer (G30) de cada PDF nuevo
+4. **Merge incremental**: Agrega solo las filas faltantes al dataset principal, normalizando la columna Semana para evitar duplicados
+5. **Versionado**: `dvc add` + `dvc push` del dataset actualizado
+6. **Commit**: GitHub Actions commitea el `.dvc` pointer actualizado
+7. **Manejo de errores**: Si un PDF tiene formato incompatible (ej. boletines anteriores a 2015) y produce 0 filas, el pipeline sale limpio sin fallar
+
+### Archivos del pipeline
 
 | Archivo | Descripción |
 |---------|-------------|
 | `scripts/scrape_boletines.py` | Script principal del scraper (Selenium + requests) |
-| `.github/workflows/scrape_boletines.yml` | Workflow de GitHub Actions |
+| `scripts/ci_process_boletines.py` | Pipeline CI: detección, extracción con camelot, merge incremental |
+| `.github/workflows/scrape_boletines.yml` | Workflow del scraper (cron diario + dispatch manual) |
+| `.github/workflows/process_boletines.yml` | Workflow de extracción (trigger encadenado + dispatch manual) |
 | `data/registry.json` | Registro de boletines descargados (git-tracked) |
+| `src/extraccion/pipeline.py` | Core de extracción: busca páginas con keywords, extrae tablas con camelot |
+
+### Características del pipeline CI
+
+- **Idempotente**: Si no hay PDFs nuevos, termina con exit 0 sin modificar nada
+- **Self-healing**: Detecta PDFs faltantes de runs anteriores que pudieron fallar
+- **Tolerante a errores**: PDFs con formato antiguo o incompatible no causan fallas
+- **Incremental**: Solo procesa PDFs que no están representados en el dataset
 
 ### Schedule
 
-El workflow corre automáticamente **todos los días a las 2:00 PM hora CDMX** (20:00 UTC). También se puede disparar manualmente desde la pestaña Actions del repositorio.
+El scraper corre automáticamente **todos los días a las 2:00 PM hora CDMX** (20:00 UTC). El procesamiento se encadena automáticamente tras cada ejecución exitosa del scraper. Ambos workflows también se pueden disparar manualmente desde la pestaña Actions del repositorio.
 
 ### GitHub Secrets requeridos
 
@@ -185,23 +208,28 @@ El workflow corre automáticamente **todos los días a las 2:00 PM hora CDMX** (
 | `AWS_REGION` | Región AWS (`us-east-1`) |
 | `SNS_TOPIC_ARN` | ARN del topic SNS para notificaciones (opcional) |
 
-### Sincronizar datos después del scraper
+### Sincronizar datos después del pipeline
 
-Cuando el scraper descargue un nuevo boletín, sincroniza tu local:
+Cuando el pipeline procese un nuevo boletín, sincroniza tu local:
 
 ```bash
 git pull && dvc pull
 ```
 
-### Correr el scraper manualmente (local)
+Recibirás una notificación por email (SNS) tanto cuando se detecte un nuevo boletín como cuando el dataset se actualice.
+
+### Correr localmente
 
 ```bash
+# Scraper (detecta y descarga PDFs nuevos)
 python scripts/scrape_boletines.py
-```
 
-Variables de entorno opcionales:
-- `SNS_TOPIC_ARN` — ARN del topic SNS para notificaciones
-- `AWS_REGION` — Región AWS (default: `us-east-1`)
+# Procesamiento (extrae y actualiza dataset)
+PYTHONPATH=. python scripts/ci_process_boletines.py
+
+# Procesamiento con archivos específicos
+PYTHONPATH=. python scripts/ci_process_boletines.py --new-files "2026_sem04.pdf"
+```
 
 ### Verificar estado
 
@@ -209,11 +237,14 @@ Variables de entorno opcionales:
 # Ver cuántos PDFs están versionados
 cat data/raw_PDFs.dvc | grep nfiles
 
-# Ver últimos archivos en S3
-aws s3 ls s3://epiforecast-mx-data/ --recursive | sort -k1,2 -r | head -10
-
 # Ver registro de boletines
 cat data/registry.json
+
+# Ver filas en dataset
+python -c "import pandas as pd; print(len(pd.read_csv('data/processed/dataset_boletin_epidemiologico.csv')))"
+
+# Ver últimos archivos en S3
+aws s3 ls s3://epiforecast-mx-data/ --recursive | sort -k1,2 -r | head -10
 ```
 
 ---
@@ -361,15 +392,21 @@ Cada semana se publica un nuevo boletín epidemiológico. Existen dos formas de 
 
 ### Opción 1: Automático (recomendado)
 
-El scraper automatizado detecta y descarga nuevos boletines diariamente. Solo necesitas sincronizar tu local:
+El pipeline automatizado detecta, descarga, extrae y actualiza el dataset diariamente. Solo necesitas sincronizar tu local:
 
 ```bash
 git pull && dvc pull
 ```
 
-Recibirás una notificación por email (SNS) cuando se detecte un nuevo boletín.
+Recibirás notificaciones por email (SNS) cuando se detecte un nuevo boletín y cuando el dataset se actualice con los datos extraídos.
 
-### Opción 2: Comando único (manual)
+### Opción 2: Dispatch manual desde GitHub Actions
+
+Desde la pestaña Actions del repositorio, puedes disparar manualmente:
+1. `Scrape Boletines SINAVE` — descarga PDFs nuevos (el procesamiento se encadena automáticamente)
+2. `Process Boletines SINAVE` — ejecuta solo la extracción + merge (útil para reprocesar)
+
+### Opción 3: Comando único (manual local)
 ```bash
 make data-weekly PDF=~/Downloads/sem01_2025.pdf
 ```
