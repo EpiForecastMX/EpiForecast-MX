@@ -289,14 +289,30 @@ def main(explicit_files: list[str] | None = None) -> int:
         shutil.rmtree(UPDATE_DIR, ignore_errors=True)
         return 1
 
-    # 5. Verificar que se generó el CSV
+    # 5. Verificar que se generó el CSV y tiene datos
     extracted_csv = UPDATE_OUTPUT_DIR / "dataset_boletin_epidemiologico.csv"
     if not extracted_csv.exists():
-        log.error("Pipeline no generó CSV de salida en: %s", extracted_csv)
+        log.warning("Pipeline no generó CSV de salida en: %s", extracted_csv)
+        log.info("Posible causa: PDFs con formato antiguo o incompatible (0 filas extraídas).")
         shutil.rmtree(UPDATE_DIR, ignore_errors=True)
-        return 1
+        write_github_outputs(new_pdfs, 0)
+        return 0
 
-    log.info("CSV extraído: %s", extracted_csv)
+    # Verificar que el CSV no esté vacío (solo headers o 0 filas)
+    try:
+        df_check = pd.read_csv(extracted_csv)
+        if df_check.empty:
+            log.warning("CSV extraído tiene 0 filas. PDFs incompatibles o formato antiguo.")
+            shutil.rmtree(UPDATE_DIR, ignore_errors=True)
+            write_github_outputs(new_pdfs, 0)
+            return 0
+    except Exception:
+        log.warning("CSV extraído no se pudo leer. Saltando merge.")
+        shutil.rmtree(UPDATE_DIR, ignore_errors=True)
+        write_github_outputs(new_pdfs, 0)
+        return 0
+
+    log.info("CSV extraído: %s (%d filas)", extracted_csv, len(df_check))
 
     # 6. Merge incremental con dataset principal
     try:
