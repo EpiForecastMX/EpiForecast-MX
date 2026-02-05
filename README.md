@@ -9,6 +9,10 @@ Proyecto para predecir casos de Enfermedades Neurológicas y de Salud Mental en 
 ## 📂 Organización del proyecto
 
 ```
+├── .github
+│   └── workflows
+│       └── scrape_boletines.yml  <- GitHub Actions: scraper automatizado SINAVE (diario 2PM CDMX)
+│
 ├── config              <- Archivos de configuración en formato YAML
 │
 ├── data
@@ -16,9 +20,10 @@ Proyecto para predecir casos de Enfermedades Neurológicas y de Salud Mental en 
 │   ├── interim         <- Resultados temporales de transformaciones, útiles para depuración y trazabilidad
 │   ├── processed       <- Conjuntos de datos definitivos y estandarizados listos para análisis y modelado
 │   ├── raw             <- Captura inicial de datos sin modificaciones
-│   └── raw_PDFs        <- Boletines epidemiológicos en formato PDF (versionados con DVC)
+│   ├── raw_PDFs        <- Boletines epidemiológicos en formato PDF (versionados con DVC)
+│   └── registry.json   <- Registro de boletines descargados por el scraper (git-tracked)
 │
-├── docs                <- Proyecto base de documentación 
+├── docs                <- Proyecto base de documentación
 │
 ├── logs                <- Registros generados automáticamente durante la ejecución del proyecto
 │
@@ -32,6 +37,7 @@ Proyecto para predecir casos de Enfermedades Neurológicas y de Salud Mental en 
 │   └── figures         <- Visualizaciones generadas automáticamente para documentación y reportes
 │
 ├── scripts             <- Carpeta que contiene los archivos en Python utilizados para instanciar clases y orquestar flujos
+│   └── scrape_boletines.py  <- Scraper automatizado de boletines SINAVE
 │
 ├── src
 │   ├── configuraciones <- Módulos que gestionan parámetros y configuraciones del proyecto desde archivos YAML
@@ -95,8 +101,8 @@ Este proyecto utiliza **DVC (Data Version Control)** para versionar los datos y 
 
 | Dataset | Ubicación | Descripción |
 |---------|-----------|-------------|
-| `raw_PDFs/` | `data/raw_PDFs/` | 629 boletines epidemiológicos (~1GB) |
-| `dataset_boletin_epidemiologico.csv` | `data/processed/` | Dataset consolidado (60,288 filas) |
+| `raw_PDFs/` | `data/raw_PDFs/` | 630+ boletines epidemiológicos (~1GB) |
+| `dataset_boletin_epidemiologico.csv` | `data/processed/` | Dataset consolidado (60,288+ filas) |
 
 ### Configurar acceso a S3
 
@@ -117,6 +123,98 @@ dvc pull
 ```
 
 Esto descarga todos los datos versionados (~1GB) a tu máquina local.
+
+### Infraestructura AWS
+
+| Recurso | Valor |
+|---------|-------|
+| Bucket S3 | `s3://epiforecast-mx-data` |
+| DVC cache | `files/md5/` (content-addressed storage) |
+| SNS Topic | `arn:aws:sns:us-east-1:564141855321:sinave-alertas` |
+| IAM user | `textract-sly-user` |
+| Región | `us-east-1` |
+
+---
+
+## 🤖 Scraper Automatizado SINAVE
+
+El proyecto incluye un scraper automatizado que detecta y descarga nuevos boletines epidemiológicos del SINAVE cada día, los versiona con DVC y notifica al equipo por email.
+
+### Arquitectura
+
+```
+┌─────────────────────┐     ┌──────────────┐     ┌─────────────┐
+│  GitHub Actions      │     │  gob.mx      │     │  AWS S3     │
+│  (cron 2PM CDMX)    │────▶│  SINAVE      │     │  DVC cache  │
+│                      │     │  boletines   │     │             │
+│  1. Scrape           │     └──────────────┘     │             │
+│  2. Download PDF     │                          │             │
+│  3. DVC pull (629+)  │◀────────────────────────▶│             │
+│  4. DVC add + push   │────────────────────────▶│             │
+│  5. Git commit       │                          └─────────────┘
+│  6. SNS notify       │────────────────────────▶ 📧 Email
+└─────────────────────┘
+```
+
+### Flujo detallado
+
+1. **Detección**: Selenium scrapes la página de boletines SINAVE, compara con `data/registry.json`
+2. **Descarga**: Si hay boletines nuevos, descarga PDFs a `data/raw_PDFs/`
+3. **Versionado**: `dvc pull --force` restaura PDFs existentes, agrega los nuevos, `dvc add` + `dvc push`
+4. **Commit**: GitHub Actions commitea `registry.json` y `raw_PDFs.dvc` automáticamente
+5. **Notificación**: SNS envía email al equipo con detalles de los nuevos boletines
+
+### Archivos del scraper
+
+| Archivo | Descripción |
+|---------|-------------|
+| `scripts/scrape_boletines.py` | Script principal del scraper (Selenium + requests) |
+| `.github/workflows/scrape_boletines.yml` | Workflow de GitHub Actions |
+| `data/registry.json` | Registro de boletines descargados (git-tracked) |
+
+### Schedule
+
+El workflow corre automáticamente **todos los días a las 2:00 PM hora CDMX** (20:00 UTC). También se puede disparar manualmente desde la pestaña Actions del repositorio.
+
+### GitHub Secrets requeridos
+
+| Secret | Descripción |
+|--------|-------------|
+| `AWS_ACCESS_KEY_ID` | Credencial de acceso AWS |
+| `AWS_SECRET_ACCESS_KEY` | Credencial secreta AWS |
+| `AWS_REGION` | Región AWS (`us-east-1`) |
+| `SNS_TOPIC_ARN` | ARN del topic SNS para notificaciones (opcional) |
+
+### Sincronizar datos después del scraper
+
+Cuando el scraper descargue un nuevo boletín, sincroniza tu local:
+
+```bash
+git pull && dvc pull
+```
+
+### Correr el scraper manualmente (local)
+
+```bash
+python scripts/scrape_boletines.py
+```
+
+Variables de entorno opcionales:
+- `SNS_TOPIC_ARN` — ARN del topic SNS para notificaciones
+- `AWS_REGION` — Región AWS (default: `us-east-1`)
+
+### Verificar estado
+
+```bash
+# Ver cuántos PDFs están versionados
+cat data/raw_PDFs.dvc | grep nfiles
+
+# Ver últimos archivos en S3
+aws s3 ls s3://epiforecast-mx-data/ --recursive | sort -k1,2 -r | head -10
+
+# Ver registro de boletines
+cat data/registry.json
+```
 
 ---
 
@@ -259,14 +357,24 @@ La GUI permite:
 
 ## 🔄 Flujo Semanal (Agregar nuevo boletín)
 
-Cada semana se publica un nuevo boletín epidemiológico. Para agregarlo:
+Cada semana se publica un nuevo boletín epidemiológico. Existen dos formas de incorporarlo:
 
-### Opción 1: Comando único
+### Opción 1: Automático (recomendado)
+
+El scraper automatizado detecta y descarga nuevos boletines diariamente. Solo necesitas sincronizar tu local:
+
+```bash
+git pull && dvc pull
+```
+
+Recibirás una notificación por email (SNS) cuando se detecte un nuevo boletín.
+
+### Opción 2: Comando único (manual)
 ```bash
 make data-weekly PDF=~/Downloads/sem01_2025.pdf
 ```
 
-### Opción 2: Paso a paso
+### Opción 3: Paso a paso (manual)
 ```bash
 # 1. Agregar PDF al tracking
 make data-add PDF=~/Downloads/sem01_2025.pdf
@@ -340,12 +448,12 @@ Esto:
 
 Para la obtención, verificación y actualización de los datos epidemiológicos utilizados en este proyecto, se consultan las siguientes fuentes oficiales:
 
-- **Boletín Epidemiológico Actual**  
-  Publicado semanalmente por la Dirección General de Epidemiología (DGE).  
+- **Boletín Epidemiológico Actual**
+  Publicado semanalmente por la Dirección General de Epidemiología (DGE).
   Disponible en: https://www.gob.mx/salud/acciones-y-programas/direccion-general-de-epidemiologia-boletin-epidemiologico
 
-- **Histórico de Boletines Epidemiológicos**  
-  Archivo completo de ediciones previas del boletín epidemiológico.  
+- **Histórico de Boletines Epidemiológicos**
+  Archivo completo de ediciones previas del boletín epidemiológico.
   Disponible en: https://www.gob.mx/salud/acciones-y-programas/historico-boletin-epidemiologico
 
 Estas fuentes garantizan el acceso a información confiable y actualizada proporcionada por la Secretaría de Salud de México.
@@ -356,7 +464,7 @@ Estas fuentes garantizan el acceso a información confiable y actualizada propor
 
 - Juan Carlos Pérez Nava
 - Luis Gerardo Sánchez
-- Javieer Augusto Rebull Saucedo
+- Javier Augusto Rebull Saucedo
 
 **Asesora:** Dra. Grettel Barceló Alonso - Tecnológico de Monterrey
 
