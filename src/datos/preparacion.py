@@ -217,7 +217,8 @@ class dataTransformation:
                             "lim_inf": met[0],
                             "lim_sup": met[1],
                         })(OperacionesDatos.outliers_iqr(g, columna)[1])
-                    ))
+                    ), include_groups=False 
+                    )
                     .reset_index()
             )
             # stats tiene: Padecimiento, q1, q3, iqr, lim_inf, lim_sup (para ESTA columna)
