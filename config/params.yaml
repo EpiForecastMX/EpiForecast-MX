@@ -34,6 +34,7 @@ data:
   data_prepare: "${paths.processed}/data_prepare_${padecimiento.tipo}.csv"
   inegi: "${paths.utils}/inegi.csv"
   data_inegi: "${paths.processed}/data_inegi_${padecimiento.tipo}.csv"
+  xlsx_inegi: "${paths.processed}/EpiForecast-MX.xlsx"
 
 metadata:
   author: "Juan Carlos Perez Nava"

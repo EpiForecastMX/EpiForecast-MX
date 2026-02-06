@@ -13,6 +13,7 @@ class MapeaInegi:
         conf_paths = conf.get("data")
         self.inegi_path = conf_paths['inegi']
         self.final_path = conf_paths['data_inegi']
+        self.xlsx_path = conf_paths['xlsx_inegi']
         self.inegi = pd.DataFrame
         self.df_merge = pd.DataFrame
 
@@ -59,12 +60,6 @@ class MapeaInegi:
                 logger.info(f"archivo {self.final_path} no localizado. Guardando archivo.")
             
             self.df_merge.to_csv(self.final_path,index=False)
-
-        
-            
-
-
-
-
+            self.df_merge.to_excel(self.xlsx_path,sheet_name="data",index=False)
 
 
