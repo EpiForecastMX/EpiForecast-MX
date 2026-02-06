@@ -4,12 +4,18 @@ import pandas as pd
 import typer
 import matplotlib.pyplot as plt
 from src.extraccion.inegi_eda import eda_inegi
+from src.configuraciones.config_params import conf
+from src.utils import directory_manager
 
 
 # ========= Configuración =========
 BASE_PXWEB = "https://www.inegi.org.mx/app/tabulados/pxwebv2/api/v1/es"
 DB = "Poblacion"
 TABLA_PX = "Poblacion_01.px"
+conf_paths = conf.get("data")
+utils_path = conf['paths']['utils']
+inegi_path = conf['data']['inegi']
+
 
 QUERY = {
     "query": [
@@ -257,7 +263,8 @@ def run():
     )
     
     log(">>>✅ DataFrame Finalizado con éxito")
-    df_cat.to_csv("data/processed/inegi.csv", index=False, encoding="utf-8")
+    directory_manager.asegurar_ruta(utils_path)
+    df_cat.to_csv(inegi_path, index=False, encoding="utf-8")
     log(">>>✅ Iniciando EDA")
     
     eda_inegi(df_cat)
