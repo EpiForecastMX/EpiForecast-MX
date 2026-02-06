@@ -7,7 +7,6 @@ from datetime import date
 
 from src.configuraciones.config_params import conf
 from src.utils.datos import OperacionesDatos
-from src.utils.graficos import GraficosHelper
 
 class dataTransformation:
         
@@ -298,28 +297,6 @@ class dataTransformation:
             logger.info(f"Imputación por IQR habilitada ({outlier_cfg['IQR']}) | Columnas: '{outlier_cfg['columnas']}'")
             self._ajusta_outliers(outlier_cfg['columnas'])
 
-
-        #logger.info(f'\n{self.df}')
         self.agrupar()
-
-    
-        #Prueba inicio
-
-        paths = conf.get("paths")
-        padecimiento = conf.get('padecimiento')
-
-        grafica = GraficosHelper(paths['figures'], 33)
-
-        
-        padecimientos = self.df["Padecimiento"].unique()
-        print(padecimientos)
-
-        df_graficar = self.df_agrupado[self.df_agrupado["Region"] == "Occidente"]
-        df_graficar
-
-        for padecimiento in padecimientos:
-            grafica.serie_tiempo(df_graficar[df_graficar["Padecimiento"] == padecimiento],padecimiento)
-        #prueba fin
-    
 
         return self.df_agrupado

@@ -41,6 +41,25 @@ class SerieTiempoProphet:
 
     def run(self):
 
-        model, forecast = self.entrenar("incrementos_mujeres", periodos = 365)
-        self.graficar(model,forecast,'prueba')
+        #model, forecast = self.entrenar("incrementos_mujeres", periodos = 365)
+        #self.graficar(model,forecast,'prueba')
+
+        #Prueba inicio
+        from src.utils.graficos import GraficosHelper 
+
+        paths = conf.get("paths")
+        padecimiento = conf.get('padecimiento')
+
+
+        grafica = GraficosHelper(paths['figures'], 33)
+
+                
+        padecimientos = self.df["Padecimiento"].unique()
+
+
+        
+        for padecimiento in padecimientos:
+            grafica.serie_tiempo(self.df[self.df['Padecimiento'] == padecimiento],padecimiento,False,True)
+        
+        
 

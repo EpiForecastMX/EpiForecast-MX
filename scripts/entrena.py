@@ -6,7 +6,7 @@ from src.configuraciones.config_params import conf, logger
 
 def main():
 
-    ruta_datos = conf['data']['data_prepare']
+    ruta_datos = conf['data']['data_inegi']
     df_entrenamiento = pd.read_csv(ruta_datos)
     SerieTiempoProphet(df_entrenamiento).run()
 

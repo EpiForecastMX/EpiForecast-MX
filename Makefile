@@ -161,8 +161,8 @@ transform:
 preprocess: reset_logs reset_interim get_dataset filter clean transform
 	@echo ">>> Flujo completo ejecutado."
 
-.PHONY: entrena
-entrena:
+.PHONY: train
+train:
 	@echo ">>> Iniciando entrenamiento"
 	$(PYTHON_INTERPRETER) -m scripts.entrena
 	@echo ">>> Entrenamiento completado."

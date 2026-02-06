@@ -168,16 +168,42 @@ class GraficosHelper:
         return self._guardar_figura(f"box_{col}.png")
     
     
-    def serie_tiempo(self,df:pd.DataFrame ,padecimiento: str) -> Optional[str]:
+    def serie_tiempo(self,df:pd.DataFrame ,padecimiento: str, agrupamiento_sexo: bool = True, agrupamiento_entidad: bool = False) -> Optional[str]:
 
-        serie_tiempo = df.groupby("Fecha")[["incrementos_hombres", "incrementos_mujeres"]].sum()
-        plt.figure(figsize=(16,4))
+        ancho = 16
+        alto = 4
+
+        plt.figure(figsize=(ancho,alto))
+
+        if agrupamiento_sexo and not agrupamiento_entidad:
+            
+            serie_tiempo = df.groupby("Fecha")[["incrementos_hombres", "incrementos_mujeres"]].sum()
         
-        plt.plot(serie_tiempo.index,serie_tiempo['incrementos_hombres'],
+            plt.plot(serie_tiempo.index,serie_tiempo['incrementos_hombres'],
                  linewidth=1.2, alpha=0.8, color=self.conf_paleta_sexo["Hombres"], label="Hombres")
-        plt.plot(serie_tiempo.index,serie_tiempo['incrementos_mujeres'],
+            plt.plot(serie_tiempo.index,serie_tiempo['incrementos_mujeres'],
                  linewidth=1.2, alpha=0.8, color=self.conf_paleta_sexo["Mujeres"], label="Mujeres")
         
+        if not agrupamiento_sexo and agrupamiento_entidad:
+            regiones = "region_salud_mental" # Parametrizar !!!!!!
+
+            serie_tiempo = (
+                df.groupby(["Fecha",regiones])[["incrementos_hombres", "incrementos_mujeres"]]
+                .sum()
+                .assign(incrementos_totales=lambda g: g["incrementos_hombres"] + g["incrementos_mujeres"])
+                .reset_index()
+            )
+
+            for region, datos in serie_tiempo.groupby(regiones):
+                plt.plot(
+                    datos['Fecha'], 
+                    datos["incrementos_totales"],
+                    linewidth=1.2, 
+                    alpha=0.8, 
+                    label=region
+                )
+
+    
         try:
             covid_start = pd.Timestamp("2020-03-01")
             covid_end = pd.Timestamp("2021-06-01")
@@ -187,7 +213,7 @@ class GraficosHelper:
 
         plt.xlabel("Fecha")
         plt.ylabel("Incrementos semanales")
-        plt.title(f"Evolución semanal nacional de {padecimiento}")
+        plt.title(f"Evolución semanal nacional de {padecimiento} ({regiones})")
         plt.legend(fontsize=10)
         plt.tight_layout()
         plt.grid(True,color="gray", alpha=0.3, linestyle="--",linewidth=0.5)
