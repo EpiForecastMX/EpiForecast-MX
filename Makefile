@@ -135,25 +135,31 @@ data-status:
 get_dataset: 
 	$(PYTHON_INTERPRETER) -m scripts.get_dataset
 
-## Filtrar dataset con el padecimiento configurado
+# Filtrar dataset con el padecimiento configurado
 .PHONY: filter
 filter:
 	@echo ">>> Filtrando dataset con el padecimiento configurado..."
 	$(PYTHON_INTERPRETER) -m scripts.padecimiento
 	@echo ">>> Filtrado completado."
 
-## Limpia y prepara el dataset eliminando valores nulos, duplicados y formateando columnas.
+# Limpia y prepara el dataset eliminando valores nulos, duplicados y formateando columnas.
 .PHONY: clean
 clean:
 	@echo ">>> Iniciando limpieza del dataset"
 	$(PYTHON_INTERPRETER) -m scripts.limpieza_dataset
 	@echo ">>> Limpieza del dataset completada."
 
-## Aplica las conversiones requeridas y acondiciona la información para su procesamiento posterior.
+# Aplica las conversiones requeridas y acondiciona la información para su procesamiento posterior.
 .PHONY: transform
 transform:
 	@echo ">>> Iniciando extracción y transformación de características..."
 	$(PYTHON_INTERPRETER) -m scripts.realiza_prep
+	@echo ">>> Preparación completada."
+
+.PHONY: get_inegi
+get_inegi:
+	@echo ">>> Extrayendo datos de INEGI..."
+	$(PYTHON_INTERPRETER) -m src.extraccion.inegi
 	@echo ">>> Preparación completada."
 
 .PHONY: mapper
@@ -164,7 +170,7 @@ mapper:
 
 ## Ejecuta el flujo completo: filtrar, limpiar y transformar dataset
 .PHONY: preprocess
-preprocess: reset_logs reset_interim get_dataset filter clean transform mapper
+preprocess: reset_logs reset_interim get_dataset filter clean transform get_inegi mapper
 	@echo ">>> Flujo completo ejecutado."
 
 .PHONY: train
