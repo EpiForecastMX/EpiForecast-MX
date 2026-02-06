@@ -156,9 +156,15 @@ transform:
 	$(PYTHON_INTERPRETER) -m scripts.realiza_prep
 	@echo ">>> Preparación completada."
 
+.PHONY: mapper
+mapper:
+	@echo ">>> Iniciando mapeando entidades con INEGI..."
+	$(PYTHON_INTERPRETER) -m scripts.mapea
+	@echo ">>> Preparación completada."
+
 ## Ejecuta el flujo completo: filtrar, limpiar y transformar dataset
 .PHONY: preprocess
-preprocess: reset_logs reset_interim get_dataset filter clean transform
+preprocess: reset_logs reset_interim get_dataset filter clean transform mapper
 	@echo ">>> Flujo completo ejecutado."
 
 .PHONY: train
