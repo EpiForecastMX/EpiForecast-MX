@@ -49,7 +49,6 @@ class SerieTiempoProphet:
 
     def agrupa(self) -> bool:
         sexo_validos = {"todos","hombres","mujeres"}
-        logger.info(self.df.info())
 
         if self.sexo.lower() in sexo_validos:
             logger.info(f'Filtrando por {self.sexo}')
@@ -223,7 +222,7 @@ class SerieTiempoProphet:
         plt.figure(figsize=(15, 5))
         plt.plot(df_eval['ds'], df_eval['y'], 'o-', label='Datos Reales')
         plt.plot(df_eval['ds'], df_eval['yhat'], 'x--', label='Pronóstico')
-        plt.title(f'Pronóstico vs. Realidad ({self.region}) agrupamiento por {self.sexo})')
+        plt.title(f'Pronóstico vs Realidad — Región: {self.region}, Agrupado por {self.sexo.capitalize()}')
         plt.legend()
         plt.grid(alpha=0.3)
         plt.show()
@@ -231,14 +230,14 @@ class SerieTiempoProphet:
 
     def run(self):
 
-        #self.region = 'Urbana media'
+        self.region = 'Urbana media'
         #self.region = 'Sur-Sureste vulnerable'
-        self.region = 'Metropolitana alta'
+        #self.region = 'Metropolitana alta'
         #self.region = 'Rural / dispersa'
 
         #self.sexo = 'hombres'
-        #self.sexo = 'mujeres'
-        self.sexo = 'todos'
+        self.sexo = 'mujeres'
+        #self.sexo = 'todos'
 
         if self.filtrar_region():
             if self.agrupa():
