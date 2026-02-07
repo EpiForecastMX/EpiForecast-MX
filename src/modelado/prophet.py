@@ -14,6 +14,17 @@ class SerieTiempoProphet:
 
         self.serie = self.df.groupby("Fecha")[["incrementos_hombres", "incrementos_mujeres"]].sum()
 
+        
+        self.serie_region = (
+            self.df
+            .groupby(["Fecha", "region_salud_mental"], as_index=False)[
+                ["incrementos_hombres", "incrementos_mujeres"]
+            ]
+            .sum()
+            .assign(total=lambda d: d["incrementos_hombres"] + d["incrementos_mujeres"])
+        )
+
+
 
     def entrenar(self, columna: str, periodos: int = 365):
 
@@ -41,8 +52,9 @@ class SerieTiempoProphet:
 
     def run(self):
 
-        #model, forecast = self.entrenar("incrementos_mujeres", periodos = 365)
-        #self.graficar(model,forecast,'prueba')
+        logger.info(self.df.info())
+        model, forecast = self.entrenar("incrementos_mujeres", periodos = 365)
+        self.graficar(model,forecast,'prueba')
 
         #Prueba inicio
         from src.utils.graficos import GraficosHelper 

@@ -9,7 +9,8 @@ from typing import Dict, Any
 
 class GetInegi:
 
-    def __init__(self):
+    def __init__(self, forzar = False):
+        self.sobreescribe = forzar
         self.conf_paths = conf.get("data")
         self.utils_path = conf['paths']['utils']
         self.inegi_path = conf['data']['inegi']
@@ -19,6 +20,7 @@ class GetInegi:
         self.TABLA_PX = "Poblacion_01.px"
 
         self.df = pd.DataFrame
+        self.df_superficie = pd.DataFrame
 
         self.QUERY = {
             "query": [
@@ -56,7 +58,7 @@ class GetInegi:
             "Zac.": "Zacatecas"
         }
 
-        REGION_SALUD_MENTAL = {
+        self.REGION_SALUD_MENTAL = {
             # Altamente urbanas / metropolitanas
             "Ciudad de México": "Metropolitana alta",
             "México": "Metropolitana alta",
@@ -201,7 +203,7 @@ class GetInegi:
     
     def validar_hombres_mujeres_vs_total(self) -> None:
 
-        diff = self.df["Total"] - (self.df["Hombres"] + df_self.dfwide["Mujeres"])
+        diff = self.df["Total"] - (self.df["Hombres"] + self.df["Mujeres"])
         errores = self.df[diff != 0]
 
         if not errores.empty:
@@ -209,25 +211,115 @@ class GetInegi:
                 ["Entidad federativa", "Hombres", "Mujeres", "Total"]
             ].head(5).to_string(index=False)
 
-        logger.error("Inconsistencias detectadas: Hombres + Mujeres ≠ Total")
-        logger.error("Revisa estos registros:\n"
-            f"{ejemplos}"
+            logger.error("Inconsistencias detectadas: Hombres + Mujeres ≠ Total")
+            logger.error("Revisa estos registros:\n"
+                f"{ejemplos}"
+            )
+
+    def filtra_periodo_max(self) -> None:
+
+        self.df = (
+            self.df[self.df["Periodo"] == self.df["Periodo"].max()]  # Filtrar por el máximo periodo
+            .copy()                                                  # Copiar para evitar advertencias
+            .reset_index(drop=True)                                  # Resetear índice
+            .drop(columns=["Periodo"])                               # Eliminar columna 'Periodo'
         )
 
+        self.df.columns.name = None
 
 
+    def get_superficie_estados(self) -> None:
+        data = requests.get(self.URL_SUPERFICIE, timeout=30).json()
+        
+        self.df_superficie = pd.DataFrame({
+                "Entidad federativa": [
+                    self.ESTADOS_DICT[e] for e in data["dimension"]["municipality"]["category"]["index"]
+                ],
+                "Superficie_km2": data["value"]
+            }) 
+        
+        self.df_superficie["Superficie_km2"] = pd.to_numeric(self.df_superficie["Superficie_km2"].str.replace(",", "", regex=False), errors="coerce")
+        
+        self.df = (
+            self.df_superficie
+            .merge(self.df, on="Entidad federativa", how="inner")
+            .sort_values("Entidad federativa")
+            .reset_index(drop=True)
+        )
 
         
 
+
+    def clasificaciones(self):
+
+        self.df["region_salud_mental"] = self.df["Entidad federativa"].map(self.REGION_SALUD_MENTAL)
+        faltantes = self.df[self.df["region_salud_mental"].isna()]["Entidad federativa"].unique()
+        if len(faltantes) > 0:
+            logger.warning(f"Estados sin REGION_SALUD_MENTAL: {', '.join(sorted(faltantes))}")
+
+        self.df["ratio_h_m"] = self.df["Hombres"] / self.df["Mujeres"]  # Se calcula la proporción hombres / mujeres
+        self.df["ratio_h_m_cat"] = pd.cut(  # Se categoriza el ratio en 3 grupos interpretables
+        self.df["ratio_h_m"],
+        bins=[-float("inf"), 0.99, 1.01, float("inf")],
+        labels=["Mayormente mujeres", "Balanceado", "Mayormente hombres"]
+        )
+
+        self.df["tamano_poblacional_predefinido"] = pd.cut(  # Se clasifica el tamaño poblacional por rangos fijos
+        self.df["Total"],
+        bins=[0, 1_000_000, 3_000_000, 6_000_000, self.df["Total"].max()],
+        labels=["0-1M", "1-3M", "3-6M", "6M+"]
+        )
+
+        self.df["tamano_poblacional_grupo_percentil"] = pd.qcut(  # Se agrupa el tamaño poblacional por cuartiles
+        self.df["Total"],
+        q=4,
+        labels=["Población baja", "Media-baja", "Media-alta", "Alta"]
+        )
+
+        self.df["densidad_poblacion"] = self.df["Total"] / self.df["Superficie_km2"]
+
+        self.df["extension_territorial_percentil"] = pd.qcut(
+        self.df["Superficie_km2"],
+        q=4,
+        labels=["Territorio pequeño", "Medio-pequeño", "Medio-grande", "Grande"]
+        )
+
+        self.df["densidad_poblacional_percentil"] = pd.qcut(
+        self.df["densidad_poblacion"],
+        q=4,
+        labels=["Baja", "Media-baja", "Media-alta", "Alta"]
+        )
+        
+  
+
     def run(self):
 
-        data = self.descargar_jsonstat_pxweb(self.DB, self.TABLA_PX, self.QUERY)
-        self.df = self.jsonstat_a_dataframe(data)
+        if not directory_manager.existe_archivo(self.inegi_path) or self.sobreescribe:
+            
+            logger.info(f"Generando archivo {self.inegi_path}")
+        
+            data = self.descargar_jsonstat_pxweb(self.DB, self.TABLA_PX, self.QUERY)
+            self.df = self.jsonstat_a_dataframe(data)
+            self.ajusta_dataframe()
+            self.validar_hombres_mujeres_vs_total()
+            self.filtra_periodo_max()
+            self.get_superficie_estados()
+            self.clasificaciones()
 
-        self.ajusta_dataframe()
-        self.validar_hombres_mujeres_vs_total()
+            directory_manager.asegurar_ruta(self.utils_path)
+  
+            if directory_manager.existe_archivo(self.inegi_path):
+                logger.warning(f"archivo {self.inegi_path} encontrado. El archivo será sobrescrito.")
 
+            else:
+                logger.success(f"archivo {self.inegi_path} no localizado. Guardando archivo.")
 
+            self.df.to_csv(self.inegi_path, index=False, encoding="utf-8")
+        
+        else:
+            if directory_manager.existe_archivo(self.inegi_path):
+                logger.error(f"Archivo {self.inegi_path} localizado")
+            
+            else: 
+                logger.error(f"Archivo no generado")
 
-
-    

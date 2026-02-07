@@ -8,7 +8,7 @@ from src.datos.get_inegi import GetInegi
 def main():
 
     
-    obj = GetInegi()
+    obj = GetInegi(False)
     obj.run()
 
 

@@ -159,7 +159,7 @@ transform:
 .PHONY: get_inegi
 get_inegi:
 	@echo ">>> Extrayendo datos de INEGI..."
-	$(PYTHON_INTERPRETER) -m src.extraccion.inegi
+	$(PYTHON_INTERPRETER) -m scripts.descarga_inegi
 	@echo ">>> Preparación completada."
 
 .PHONY: mapper
