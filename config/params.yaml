@@ -4,6 +4,20 @@ padecimiento:
   force: True # Sobrescribe filtrado previo
   reporte: False # Generar reporte de filtrado
   reporte_clean: False # Generar reporte de datos tratados
+  modelado_region: 'Metropolitana alta' # Region para el modelado del modelo Prophet
+  modelado_sexo: 'todos'   # agrupamiento por sexo para el modelado del modelo Prophet
+
+# Regiones:
+# Urbana media
+# Sur-Sureste vulnerable
+# Metropolitana alta
+# Rural / dispersa'
+
+# Sexo:
+# hombres
+# mujeres
+# todos
+
 
 paths:
   data: "./data"
