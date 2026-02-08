@@ -6,6 +6,7 @@ padecimiento:
   reporte_clean: False # Generar reporte de datos tratados
   modelado_region: 'Metropolitana alta' # Region para el modelado del modelo Prophet
   modelado_sexo: 'todos'   # agrupamiento por sexo para el modelado del modelo Prophet
+  entrena_modelo: True # Genera modelo final con el dataset completo
 
 # Regiones:
 # Urbana media
@@ -32,6 +33,7 @@ paths:
   figures: "${paths.reports}/figures"
   docs: "${paths.reports}/docs"
   utils: "${paths.data}/utils"
+  forecast: "${paths.data}/forecast"
 
 download:
   dataset_id: "1zFpeQewhh-otoCSMo0OoTc5yGzQlCxRv?"
@@ -49,6 +51,8 @@ data:
   inegi: "${paths.utils}/inegi.csv"
   data_inegi: "${paths.processed}/data_inegi_${padecimiento.tipo}.csv"
   xlsx_inegi: "${paths.processed}/EpiForecast-MX.xlsx"
+  model_train: "${paths.models}/Prophet_${padecimiento.tipo}_${padecimiento.modelado_region}_${padecimiento.modelado_sexo}.pkl"
+  forecast: "${paths.forecast}/Prophet_${padecimiento.tipo}_${padecimiento.modelado_region}_${padecimiento.modelado_sexo}.csv"
 
 metadata:
   author: "Juan Carlos Perez Nava"

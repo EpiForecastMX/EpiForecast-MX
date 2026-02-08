@@ -2,6 +2,7 @@
 
 import itertools
 import logging
+import pickle
 
 import cmdstanpy
 import matplotlib.pyplot as plt
@@ -16,6 +17,7 @@ from sklearn.metrics import (
 from sklearn.model_selection import TimeSeriesSplit
 
 from src.configuraciones.config_params import conf, logger
+from src.utils import directory_manager
 
 logging.getLogger("cmdstanpy").disabled = True
 
@@ -27,8 +29,15 @@ class SerieTiempoProphet:
         self.df = df.copy()
         self.df["Fecha"] = pd.to_datetime(self.df["Fecha"])
         self.serie = pd.DataFrame
+        self.padecimiento = conf['padecimiento']['tipo']
         self.region = conf['padecimiento']['modelado_region']
         self.sexo = conf['padecimiento']['modelado_sexo']
+        self.model_save = conf['data']['model_train']
+        self.forecast_save = conf['data']['forecast']
+        self.model_path = conf['paths']['models']
+        self.forecast_path = conf['paths']['forecast']
+        self.entrena = conf['padecimiento']['entrena_modelo']
+
 
         self.param_grid = conf['param_grid_prophet']
         self.mapeo_columnas = conf['mapeo_columnas']
@@ -41,7 +50,7 @@ class SerieTiempoProphet:
         self.fechas_atipicas = pd.DataFrame(self.periodos_atipicos)
         self.fechas_atipicas["ds"] = pd.to_datetime(self.fechas_atipicas["ds"])
 
-        self.df_serie_train = pd.DataFrame
+        self.df_serie = pd.DataFrame
         self.train_data = pd.DataFrame
         self.test_data = pd.DataFrame
 
@@ -79,12 +88,11 @@ class SerieTiempoProphet:
         
     def crea_train_test(self) -> None:
         
-        self.df_serie_train = self.serie.reset_index()[["Fecha", self.mapeo_columnas[self.sexo.lower()]]]
-        self.df_serie_train.columns = ["ds", "y"]
+        self.df_serie = self.serie.reset_index()[["Fecha", self.mapeo_columnas[self.sexo.lower()]]]
+        self.df_serie.columns = ["ds", "y"]
 
-        self.train_data = self.df_serie_train[self.df_serie_train['ds'] < self.FECHA_CORTE_ENTRENAMIENTO]
-        self.test_data = self.df_serie_train[self.df_serie_train['ds'] >= self.FECHA_CORTE_ENTRENAMIENTO]
-
+        self.train_data = self.df_serie[self.df_serie['ds'] < self.FECHA_CORTE_ENTRENAMIENTO]
+        self.test_data = self.df_serie[self.df_serie['ds'] >= self.FECHA_CORTE_ENTRENAMIENTO]
 
     def prophet_cross_val(self) -> dict:
 
@@ -142,9 +150,9 @@ class SerieTiempoProphet:
         
         return best_param
     
-    def train(self,parametros) -> tuple [Prophet, pd.DataFrame]:
+    def train_test(self,parametros) -> pd.DataFrame:
 
-        modelo_final = Prophet(
+        modelo_test = Prophet(
                 yearly_seasonality=30,
                 weekly_seasonality=True,
                 daily_seasonality=False,
@@ -152,13 +160,13 @@ class SerieTiempoProphet:
                 **parametros
             )
         
-        modelo_final.add_seasonality(name='monthly', period=30.5, fourier_order=5)
-        modelo_final.fit(self.train_data)
+        modelo_test.add_seasonality(name='monthly', period=30.5, fourier_order=5)
+        modelo_test.fit(self.train_data)
 
         # --- Generación del Pronóstico ---
         horizonte_total = len(self.test_data)
-        future_final = modelo_final.make_future_dataframe(periods=horizonte_total, freq="W-MON")
-        forecast_final = modelo_final.predict(future_final)
+        future_final = modelo_test.make_future_dataframe(periods=horizonte_total, freq="W-MON")
+        forecast_final = modelo_test.predict(future_final)
 
         df_eval = pd.merge(
             self.test_data,
@@ -169,7 +177,22 @@ class SerieTiempoProphet:
 
         df_eval = df_eval.dropna(subset=["yhat"])
 
-        return modelo_final,df_eval
+        return df_eval
+    
+    def train(self,parametros) -> Prophet:
+        
+        modelo_final = Prophet(
+                yearly_seasonality=30,
+                weekly_seasonality=True,
+                daily_seasonality=False,
+                holidays=self.fechas_atipicas,
+                **parametros
+            )
+        
+        modelo_final.add_seasonality(name='monthly', period=30.5, fourier_order=5)
+        modelo_final.fit(self.df_serie)
+
+        return modelo_final
     
     def calcular_metricas(self,df_eval_periodo, nombre_periodo):
         y_true = df_eval_periodo['y']
@@ -201,29 +224,19 @@ class SerieTiempoProphet:
             if self.agrupa():
                 
                 parametros = self.prophet_cross_val()
-                modelo_prophet, df_eval = self.train(parametros)
-     
-                df_eval_2025 = df_eval[df_eval['ds'].dt.year == 2025]
-                self.calcular_metricas(df_eval_2025, "2023 (Año 1 del Pronóstico)")
-                self.graficar(df_eval_2025)
-
-
-        #model, forecast = self.entrenar("incrementos_mujeres", periodos = 365)
-        #self.graficar(model,forecast,'prueba')
-
-        #Prueba inicio
-        from src.utils.graficos import GraficosHelper 
-
-        paths = conf.get("paths")
-        padecimiento = conf.get('padecimiento')
-
-
-        grafica = GraficosHelper(paths['figures'], 33)
+                df_eval = self.train_test(parametros)
+                directory_manager.asegurar_ruta(self.forecast_path)
+                df_eval.to_csv(self.forecast_save)
 
                 
-        padecimientos = self.df["Padecimiento"].unique()
-     
-        for padecimiento in padecimientos:
-            grafica.serie_tiempo(self.df[self.df['Padecimiento'] == padecimiento],padecimiento,False,True)
-         #Prueba fin
+                #df_eval_2025 = df_eval[df_eval['ds'].dt.year == 2025]
+                #self.calcular_metricas(df_eval_2025, "2023 (Año 1 del Pronóstico)")
+                #self.graficar(df_eval_2025)
+
+                if self.entrena:
+                    directory_manager.asegurar_ruta(self.model_path)
+                    modelo_entrenado = self.train(parametros)
+
+                    with open(self.model_save,'wb') as f:
+                        pickle.dump(modelo_entrenado,f)
         

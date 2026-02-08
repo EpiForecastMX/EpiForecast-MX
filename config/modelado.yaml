@@ -31,7 +31,7 @@ peridos_atipicos:
     upper_window: 182
 
 mapeo_columnas:
-  hombres: incrementos_hombres
+  hombres: incrementos_hombres 
   mujeres: incrementos_mujeres
   todos: todos
 
