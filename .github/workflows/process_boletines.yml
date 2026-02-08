@@ -121,3 +121,42 @@ jobs:
             git push
             echo "✅ dataset.dvc actualizado y pusheado."
           fi
+
+      # ── 7. Notificación SNS (éxito) ──
+      - name: SNS Notification (Success)
+        if: success() && env.SNS_TOPIC_ARN != ''
+        env:
+          SNS_TOPIC_ARN: ${{ secrets.SNS_TOPIC_ARN }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          ROWS="${{ steps.process.outputs.rows_added || 'N/A' }}"
+          FILES="${{ steps.process.outputs.files_processed || 'N/A' }}"
+          aws sns publish \
+            --topic-arn "$SNS_TOPIC_ARN" \
+            --subject "✅ EpiForecast-MX: Pipeline completado" \
+            --message "Pipeline de procesamiento ejecutado exitosamente.
+
+          📊 Archivos procesados: ${FILES}
+          📈 Filas agregadas: ${ROWS}
+          🔗 Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ⏰ Fecha: $(date -u '+%Y-%m-%d %H:%M UTC')"
+
+      # ── 8. Notificación SNS (fallo) ──
+      - name: SNS Notification (Failure)
+        if: failure() && env.SNS_TOPIC_ARN != ''
+        env:
+          SNS_TOPIC_ARN: ${{ secrets.SNS_TOPIC_ARN }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+        run: |
+          aws sns publish \
+            --topic-arn "$SNS_TOPIC_ARN" \
+            --subject "❌ EpiForecast-MX: Pipeline fallido" \
+            --message "El pipeline de procesamiento ha fallado.
+
+          ⚠️ Revisar logs para más detalles.
+          🔗 Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          ⏰ Fecha: $(date -u '+%Y-%m-%d %H:%M UTC')"
