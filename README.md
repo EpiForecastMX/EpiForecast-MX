@@ -208,17 +208,38 @@ make data-pull
 
 ## Comandos
 
+Todos los comandos están definidos en el `Makefile` de la raíz del proyecto. Ejecuta `make help` para ver los disponibles.
+
+### Setup y Entorno
+
+| Comando | Descripción |
+|---------|-------------|
+| `make setup` | Setup completo para macOS (Ghostscript + dependencias + datos) |
+| `make setup-linux` | Setup completo para Linux/WSL |
+| `make setup_mac` | Instala solo dependencias del sistema (macOS) |
+| `make setup_linux` | Instala solo dependencias del sistema (Linux) |
+| `make create_environment` | Crea entorno virtual con venv e instala dependencias |
+| `make create_environment_conda` | Crea entorno con Conda e instala dependencias |
+| `make requirements` | Instala/actualiza dependencias de Python |
+
 ### Pipeline de Datos
 
 | Comando | Descripción |
 |---------|-------------|
-| `make preprocess` | Ejecuta pipeline completo: filtrar → limpiar → transformar → mapear INEGI |
+| `make preprocess` | Pipeline completo: get_dataset → filter → clean → transform → get_inegi → mapper |
+| `make get_dataset` | Copia dataset base desde `data/processed/` a `data/raw/` |
 | `make filter` | Filtra dataset por padecimiento configurado en `params.yaml` |
 | `make clean` | Limpia datos: elimina nulos, duplicados, formatea columnas |
-| `make transform` | Aplica feature engineering |
+| `make transform` | Aplica feature engineering y transformaciones |
 | `make get_inegi` | Descarga datos demográficos del INEGI |
 | `make mapper` | Mapea entidades con regiones INEGI |
-| `make train` | Entrena modelo Prophet |
+
+### Modelado
+
+| Comando | Descripción |
+|---------|-------------|
+| `make train` | Entrena modelo Prophet con validación cruzada temporal |
+| `make predict` | Genera predicciones usando el modelo entrenado |
 
 ### Gestión de Datos (DVC)
 
@@ -226,26 +247,26 @@ make data-pull
 |---------|-------------|
 | `make data-pull` | Descarga datos desde S3 |
 | `make data-push` | Sube datos a S3 |
-| `make data-status` | Muestra estado de sincronización |
-| `make data-add PDF=ruta/archivo.pdf` | Agrega nuevo boletín al tracking |
-| `make data-commit` | Commitea y sube cambios de datos |
-| `make data-weekly PDF=ruta/archivo.pdf` | Flujo semanal completo |
+| `make data-status` | Muestra estado de sincronización DVC |
+| `make data-add PDF=ruta/archivo.pdf` | Agrega nuevo boletín PDF al tracking |
+| `make data-commit` | Commitea cambios de datos y push a Git + S3 |
+| `make data-weekly PDF=ruta/archivo.pdf` | Flujo semanal completo (add + commit) |
 
 ### Calidad de Código
 
 | Comando | Descripción |
 |---------|-------------|
-| `make lint` | Verifica código con Ruff |
-| `make format` | Formatea código con Ruff |
-| `make clean_py` | Elimina archivos `.pyc` y `__pycache__` |
+| `make lint` | Verifica código con Ruff (formato + linting) |
+| `make format` | Auto-formatea código con Ruff |
+| `make clean_py` | Elimina archivos `.pyc` y carpetas `__pycache__` |
 
 ### Utilidades
 
 | Comando | Descripción |
 |---------|-------------|
-| `make help` | Muestra todos los comandos disponibles |
-| `make reset_logs` | Reinicia carpeta de logs |
-| `make reset_interim` | Reinicia carpeta de datos intermedios |
+| `make help` | Muestra todos los comandos disponibles con descripción |
+| `make reset_logs` | Elimina y recrea carpeta `logs/` |
+| `make reset_interim` | Elimina y recrea carpeta `data/interim/` |
 
 ---
 

@@ -179,6 +179,13 @@ train:
 	$(PYTHON_INTERPRETER) -m scripts.entrena
 	@echo ">>> Entrenamiento completado."
 
+## Generar predicciones con modelo entrenado
+.PHONY: predict
+predict:
+	@echo ">>> Generando predicciones..."
+	$(PYTHON_INTERPRETER) -m scripts.predice
+	@echo ">>> Predicciones generadas."
+
 #################################################################################
 # Self Documenting Commands                                                     #
 #################################################################################
