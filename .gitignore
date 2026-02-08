@@ -205,3 +205,4 @@ integrador/
 /data/processed/*
 !data/processed/*.dvc
 !data/processed/.gitignore
+models/Prophet_General_Metropolitana alta_todos.pkl
