@@ -125,11 +125,11 @@ class GetInegi:
             
             except requests.RequestException as ex:
                 logger.error("PxWeb fallo HTTP/red: %s", ex, exc_info=True)
-                raise self.PxWebError(f"Falla al consultar PxWeb: {ex}") from ex
-            
+                raise RuntimeError(f"Falla al consultar PxWeb: {ex}") from ex
+
             except ValueError as ex:
                 logger.error("PxWeb respuesta no-JSON: %s", ex, exc_info=True)
-                raise self.PxWebError("La respuesta de PxWeb no es JSON válido.") from ex
+                raise RuntimeError("La respuesta de PxWeb no es JSON válido.") from ex
 
 
     # ========= Conversión JSON-STAT v2 -> DataFrame =========
@@ -318,7 +318,7 @@ class GetInegi:
         
         else:
             if directory_manager.existe_archivo(self.inegi_path):
-                logger.error(f"Archivo {self.inegi_path} localizado")
+                logger.info(f"Archivo {self.inegi_path} localizado")
             
             else: 
                 logger.error(f"Archivo no generado")

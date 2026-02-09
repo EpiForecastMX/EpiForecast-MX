@@ -23,14 +23,13 @@ def ejecuta_limpieza_raw() -> tuple[bool, pd.DataFrame | None]:
     clean_df = CleanDataset(dataframe_filtrado).run()
 
     cambios = not dataframe_filtrado.equals(clean_df)
-    
+
     if cambios:
         logger.info("El dataset fue modificado.")
-        return True, clean_df
-        
     else:
         logger.info("El dataset no tuvo cambios.")
-        return False, None
+
+    return True, clean_df
 
 def main():
 
