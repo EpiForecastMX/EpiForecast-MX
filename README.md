@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/IMSS.svg/1200px-IMSS.svg.png" alt="IMSS Logo" width="120"/>
+  <img src="https://images.seeklogo.com/logo-png/7/1/imss-logo-png_seeklogo-70988.png" alt="IMSS Logo" width="120"/>
 </p>
 
 <h1 align="center">EpiForecast-MX</h1>
@@ -362,37 +362,65 @@ make preprocess
 ### Flujo de Archivos
 
 ```
- dvc pull (obligatorio)
-     │
-     ▼
- data/processed/dataset_boletin_epidemiologico.csv
-     │
-     │  [get_dataset] copia a raw
-     ▼
- data/raw/data_raw.csv
-     │
-     │  [filter] filtra por padecimiento
-     ▼
- data/raw/data_raw_General.csv
-     │
-     │  [clean] limpieza de datos
-     ▼
- data/interim/data_clean.csv
-     │
-     │  [transform] feature engineering
-     ▼
- data/processed/data_prepare_General.csv ──────────┐
-                                                    │
- API INEGI ──▶ [get_inegi] ──▶ data/utils/inegi.csv │
-                                                    │
-                              [mapper] ◄────────────┘
-                                 │
-                                 ▼
-                data/processed/data_inegi_General.csv
-                data/processed/EpiForecast-MX.xlsx
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PREREQUISITO: make data-pull  (descarga datos versionados desde S3)       │
+└──────────────────────────────────┬──────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PASO 1: reset_logs                                                        │
+│  Limpia ──▶ logs/                                                          │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  PASO 2: reset_interim                                                     │
+│  Limpia ──▶ data/interim/                                                  │
+└──────────────────────────────────┬──────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PASO 3: get_dataset                                                       │
+│  Lee:    data/processed/dataset_boletin_epidemiologico.csv  (vía DVC)      │
+│  Produce: data/raw/data_raw.csv                                            │
+└──────────────────────────────────┬──────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PASO 4: filter                                                            │
+│  Lee:    data/raw/data_raw.csv                                             │
+│  Produce: data/raw/data_raw_General.csv                                    │
+└──────────────────────────────────┬──────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PASO 5: clean                                                             │
+│  Lee:    data/raw/data_raw_General.csv                                     │
+│  Produce: data/interim/data_clean.csv                                      │
+└──────────────────────────────────┬──────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PASO 6: transform                                                         │
+│  Lee:    data/interim/data_clean.csv                                       │
+│  Produce: data/processed/data_prepare_General.csv                          │
+└──────────────────────────────────┬──────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PASO 7: get_inegi                                                         │
+│  Lee:    API INEGI (PxWeb población + superficie)                          │
+│  Produce: data/utils/inegi.csv                                             │
+└──────────────────────────────────┬──────────────────────────────────────────┘
+                                   │
+                                   ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│  PASO 8: mapper                                                            │
+│  Lee:    data/processed/data_prepare_General.csv                           │
+│          data/utils/inegi.csv                                              │
+│  Produce: data/processed/data_inegi_General.csv                            │
+│           data/processed/EpiForecast-MX.xlsx                               │
+└─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-> **Importante:** No ejecutes `make -j preprocess` (modo paralelo). Los pasos son secuenciales y dependen de la salida del paso anterior.
+> **Importante:** No ejecutes `make -j preprocess` (modo paralelo). Los pasos son secuenciales y dependen de la salida del paso anterior. Los nombres de archivo con `General` corresponden al valor por defecto de `padecimiento.tipo` en `config/params.yaml`.
 
 ---
 
