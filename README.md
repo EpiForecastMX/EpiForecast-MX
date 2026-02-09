@@ -26,6 +26,7 @@
   <a href="#instalación">Instalación</a> •
   <a href="#comandos">Comandos</a> •
   <a href="#cicd">CI/CD</a> •
+  <a href="#pipeline-de-preprocesamiento">Pipeline</a> •
   <a href="#stack-tecnológico">Stack</a> •
   <a href="#equipo">Equipo</a>
 </p>
@@ -324,6 +325,74 @@ Cuando el pipeline actualice el dataset, sincroniza tu entorno local:
 ```bash
 git pull && dvc pull
 ```
+
+---
+
+## Pipeline de Preprocesamiento
+
+El comando `make preprocess` ejecuta el pipeline completo de preparación de datos. **Antes de ejecutarlo, es obligatorio descargar los datos versionados con DVC.**
+
+### Ejecución
+
+```bash
+# 1. Descargar datos desde S3 (obligatorio antes de preprocess)
+make data-pull
+
+# 2. Ejecutar pipeline completo de preprocesamiento
+make preprocess
+```
+
+### Pasos del Pipeline
+
+`make preprocess` ejecuta los siguientes targets en orden secuencial:
+
+| # | Target | Lee | Produce |
+|---|--------|-----|---------|
+| 1 | `reset_logs` | — | `logs/` (directorio limpio) |
+| 2 | `reset_interim` | — | `data/interim/` (directorio limpio) |
+| 3 | `get_dataset` | `data/processed/dataset_boletin_epidemiologico.csv` | `data/raw/data_raw.csv` |
+| 4 | `filter` | `data/raw/data_raw.csv` | `data/raw/data_raw_{padecimiento}.csv` |
+| 5 | `clean` | `data/raw/data_raw_{padecimiento}.csv` | `data/interim/data_clean.csv` |
+| 6 | `transform` | `data/interim/data_clean.csv` | `data/processed/data_prepare_{padecimiento}.csv` |
+| 7 | `get_inegi` | API INEGI (PxWeb + Superficie) | `data/utils/inegi.csv` |
+| 8 | `mapper` | `data/processed/data_prepare_{padecimiento}.csv` + `data/utils/inegi.csv` | `data/processed/data_inegi_{padecimiento}.csv` + `data/processed/EpiForecast-MX.xlsx` |
+
+> `{padecimiento}` se resuelve según `padecimiento.tipo` en `config/params.yaml` (por defecto: `General`).
+
+### Flujo de Archivos
+
+```
+ dvc pull (obligatorio)
+     │
+     ▼
+ data/processed/dataset_boletin_epidemiologico.csv
+     │
+     │  [get_dataset] copia a raw
+     ▼
+ data/raw/data_raw.csv
+     │
+     │  [filter] filtra por padecimiento
+     ▼
+ data/raw/data_raw_General.csv
+     │
+     │  [clean] limpieza de datos
+     ▼
+ data/interim/data_clean.csv
+     │
+     │  [transform] feature engineering
+     ▼
+ data/processed/data_prepare_General.csv ──────────┐
+                                                    │
+ API INEGI ──▶ [get_inegi] ──▶ data/utils/inegi.csv │
+                                                    │
+                              [mapper] ◄────────────┘
+                                 │
+                                 ▼
+                data/processed/data_inegi_General.csv
+                data/processed/EpiForecast-MX.xlsx
+```
+
+> **Importante:** No ejecutes `make -j preprocess` (modo paralelo). Los pasos son secuenciales y dependen de la salida del paso anterior.
 
 ---
 
