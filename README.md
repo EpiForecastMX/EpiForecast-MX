@@ -221,6 +221,7 @@ Todos los comandos están definidos en el `Makefile` de la raíz del proyecto. E
 | `make create_environment` | Crea entorno virtual con venv e instala dependencias |
 | `make create_environment_conda` | Crea entorno con Conda e instala dependencias |
 | `make requirements` | Instala/actualiza dependencias de Python |
+| `make imss` | **Sincronización rápida:** activa entorno + git pull + dvc pull |
 
 ### Pipeline de Datos
 
