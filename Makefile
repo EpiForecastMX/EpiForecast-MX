@@ -227,20 +227,13 @@ setup-linux: setup_linux requirements data-pull
 	@echo ">>> Setup completo. Proyecto listo para trabajar."
 
 ## Sincronización rápida IMSS: activa entorno, pull código y datos
+## Uso: source scripts/imss.sh (no usar make imss directamente)
 .PHONY: imss
 imss:
 	@echo "══════════════════════════════════════════════════════════"
-	@echo ">>> [1/4] Desactivando ambientes virtuales previos..."
-	@echo "══════════════════════════════════════════════════════════"
-	@bash -c 'type deactivate &>/dev/null && deactivate 2>/dev/null || true'
-	@bash -c 'type conda &>/dev/null && conda deactivate 2>/dev/null || true'
-	@echo ">>> [2/4] Activando entorno del proyecto ($(PROJECT_NAME))..."
-	@echo ">>> [3/4] Sincronizando código desde GitHub..."
-	@bash -c 'source $(PROJECT_NAME)/$(ACTIVATE) && git pull origin main'
-	@echo ">>> [4/4] Sincronizando datos desde S3..."
-	@bash -c 'source $(PROJECT_NAME)/$(ACTIVATE) && dvc pull'
-	@echo "══════════════════════════════════════════════════════════"
-	@echo ">>> ✅ Sincronización IMSS completada."
-	@echo ">>> Para activar el entorno en tu terminal:"
-	@echo ">>>   source $(PROJECT_NAME)/bin/activate"
+	@echo ">>> Para sincronizar Y activar el entorno, ejecuta:"
+	@echo ""
+	@echo "    source scripts/imss.sh"
+	@echo ""
+	@echo ">>> (make no puede modificar tu shell actual)"
 	@echo "══════════════════════════════════════════════════════════"
