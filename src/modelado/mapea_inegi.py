@@ -60,6 +60,6 @@ class MapeaInegi:
                 logger.info(f"archivo {self.final_path} no localizado. Guardando archivo.")
             
             self.df_merge.to_csv(self.final_path,index=False)
+            logger.info(f"archivo {self.final_path} guardado.")
             self.df_merge.to_excel(self.xlsx_path,sheet_name="data",index=False)
-
-
+            logger.info(f"archivo {self.xlsx_path} guardado.")
