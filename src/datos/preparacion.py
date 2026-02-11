@@ -72,8 +72,7 @@ class dataTransformation:
         self.df = self.df.sort_values(by=["Padecimiento","Anio", "Entidad", "Semana"]).reset_index(drop=True)
 
         logger.info("Ordenando el dataset.")
-        
-            
+                 
     def _prepara_series_tiempo(self):
 
         logger.info("Inicializando preparación de series temporales.")
@@ -99,7 +98,7 @@ class dataTransformation:
         # Ajusta el año a aquellas fechas de la semana 1 que caen en año anterior
         #filas_anio = (self.df['Semana'] == 1) & (self.df['Fecha'].dt.year < self.df['Anio'])
         #self.df.loc[filas_anio, 'Fecha'] = pd.to_datetime(self.df.loc[filas_anio, 'Anio'].astype(str) + '-01-01')
-    
+        #self.df.loc[filas_anio, 'Fecha'] = (pd.to_datetime(self.df.loc[filas_anio, 'Anio'].astype(str) + '-01-01')+ pd.offsets.Week(weekday=0))  # primer lunes
 
     def _ajusta_incrementos(self):
         
@@ -128,7 +127,6 @@ class dataTransformation:
             #    - Recorte a >= 0
             #    - Redondeo a entero
             nuevo_prev = (valor_prev + self.df[columna]).where(mascara_act).clip(lower=0)
-            nuevo_prev = np.rint(nuevo_prev).astype("Int64")
 
             # Índices del previo (t-1) donde escribir
             prev_index = self.df.index.to_series().shift(1)
@@ -196,10 +194,8 @@ class dataTransformation:
                 .astype(int)
             )
 
-
     def _ajusta_outliers(self,columnas: list):
 
-        
         for columna in columnas:
             # 1) Construye un DataFrame de estadísticas por Padecimiento usando tu función
             #    outliers_iqr sobre el subconjunto g (g es df filtrado por Padecimiento)
@@ -259,8 +255,13 @@ class dataTransformation:
 
             # 5) Limpia columnas auxiliares antes de pasar a la siguiente columna
             self.df = self.df.drop(columns=["q1", "q3", "iqr", "lim_inf", "lim_sup"])
-
     
+    def _ajusta_outliers_zscore(self,columnas,umbral,reemplazo):
+        
+        for col in columnas:
+            self.df = OperacionesDatos.zscore(self.df, col, umbral=umbral, reemplazo=reemplazo)
+
+
     def agrupar(self):
 
         logger.info(f"Aplicando agrupamiento")
@@ -290,12 +291,17 @@ class dataTransformation:
         
         self._ajusta_semanas()
         self._prepara_series_tiempo()
-        self._ajusta_incrementos()
+        #self._ajusta_incrementos() # procedimiento para la imputacion del 2016
         self._ajusta_negativos()
         
         if outlier_cfg['IQR']:
-            logger.info(f"Imputación por IQR habilitada ({outlier_cfg['IQR']}) | Columnas: '{outlier_cfg['columnas']}'")
-            self._ajusta_outliers(outlier_cfg['columnas'])
+            # ajuste de outliers a traves de IQR, se cambio a zscore
+            #logger.info(f"Imputación por IQR habilitada ({outlier_cfg['IQR']}) | Columnas: '{outlier_cfg['columnas']}'")
+            #self._ajusta_outliers(outlier_cfg['columnas']) 
+
+            logger.info(f"Imputación por z-score habilitada: ({outlier_cfg['IQR']}) | Columnas: '{outlier_cfg['columnas']}'")
+            self._ajusta_outliers_zscore(outlier_cfg['columnas'],outlier_cfg['umbral'],outlier_cfg['reemplazo'])
+            
 
         self.agrupar()
 
