@@ -4,6 +4,8 @@ opciones_FE:
       columnas:
         - Incremento_hombres
         - Incremento_mujeres
+      umbral: 3
+      reemplazo: "cercano" # None, 'media', 'mediana' o 'cercano'
 
   - agrupa:
       valor: Sexo
