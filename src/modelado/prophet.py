@@ -1,5 +1,6 @@
 # src/modelado/prophet.py
 
+import os
 import itertools
 import logging
 import pickle
@@ -29,15 +30,17 @@ class SerieTiempoProphet:
         self.df = df.copy()
         self.df["Fecha"] = pd.to_datetime(self.df["Fecha"])
         self.serie = pd.DataFrame
+
+        self.modelado_estados = conf['padecimiento']['modelado_estados']
         self.padecimiento = conf['padecimiento']['tipo']
         self.region = conf['padecimiento']['modelado_region']
         self.sexo = conf['padecimiento']['modelado_sexo']
-        self.model_save = conf['data']['model_train']
-        self.forecast_save = conf['data']['forecast']
-        self.model_path = conf['paths']['models']
-        self.forecast_path = conf['paths']['forecast']
         self.entrena = conf['padecimiento']['entrena_modelo']
 
+        self.model_path = conf['paths']['models']
+        self.model_save = conf['data']['model_train']
+        self.forecast_path = conf['paths']['forecast']
+        self.forecast_save = conf['data']['forecast']
 
         self.param_grid = conf['param_grid_prophet']
         self.mapeo_columnas = conf['mapeo_columnas']
@@ -54,70 +57,52 @@ class SerieTiempoProphet:
         self.train_data = pd.DataFrame
         self.test_data = pd.DataFrame
 
-    def filtrar_region(self) -> bool:
 
-        if self.region in self.regiones_INEGI:
-            self.df = self.df[self.df['region_salud_mental'] == self.region]
-            return True
-        
-        else:
-            logger.error(f'Opción inválida: {self.region}. Valores permitidos: {sorted(self.regiones_INEGI)}')
-            return False
+    def agrupa(self,agrupador: str,region: str) -> bool:
+        base = (
+            self.df
+            .loc[self.df[agrupador] == region,["Fecha", agrupador, "incrementos_hombres", "incrementos_mujeres"]]
+            .groupby(["Fecha",agrupador], as_index=False)[["incrementos_hombres", "incrementos_mujeres"]]
+            .sum()
+            .set_index("Fecha")
+        )
+        base["todos"] = base["incrementos_hombres"] + base["incrementos_mujeres"]
+        self.serie = base
 
-    def agrupa(self) -> bool:
-
-        if self.sexo.lower() in self.sexo_valido:
-            logger.info(f'Filtrando por {self.sexo}')
-
-            base = (
-                self.df
-                .groupby("Fecha")[["incrementos_hombres", "incrementos_mujeres"]]
-                .sum()
-            )
-
-            base["todos"] = base["incrementos_hombres"] + base["incrementos_mujeres"]
-            self.serie = base[[self.mapeo_columnas[self.sexo.lower()]]]
-
-            self.crea_train_test()
-
-            return True
-            
-        else:
-            logger.error(f'Opción inválida: {self.sexo}. Valores permitidos: {sorted(self.sexo_valido)}')
-            return False
-        
     def crea_train_test(self) -> None:
+        self.serie = self.serie.rename_axis("ds").reset_index()
+        self.serie = self.serie.rename(columns = {"todos":"y"})
+        self.train_data = self.serie[self.serie['ds'] < self.FECHA_CORTE_ENTRENAMIENTO]
+        self.test_data = self.serie[self.serie['ds'] >= self.FECHA_CORTE_ENTRENAMIENTO]
+
+        logger.info(f"Datos de entrenamiento: {len(self.train_data)} semanas (hasta {self.train_data['ds'].max().date()})")
+        logger.info(f"Datos de prueba: {len(self.test_data)} semanas (desde {self.test_data['ds'].min().date()})")
         
-        self.df_serie = self.serie.reset_index()[["Fecha", self.mapeo_columnas[self.sexo.lower()]]]
-        self.df_serie.columns = ["ds", "y"]
-
-        self.train_data = self.df_serie[self.df_serie['ds'] < self.FECHA_CORTE_ENTRENAMIENTO]
-        self.test_data = self.df_serie[self.df_serie['ds'] >= self.FECHA_CORTE_ENTRENAMIENTO]
-
     def prophet_cross_val(self) -> dict:
 
         parametros = [dict(zip(self.param_grid.keys(), v)) for v in itertools.product(*self.param_grid.values())]
-        
         logger.info(f"Se probarán {len(parametros)} combinaciones de hiperparámetros.")
         
+        # Mostrar eventos configurados
         for _, fila in self.fechas_atipicas.iterrows():
             logger.warning(
             f"Evento configurado:'{fila['holiday']}' con una ventana de afectación de {fila['upper_window']} días."
         )
-        
-        logger.info(f"Datos de entrenamiento: {len(self.train_data)} semanas (hasta {self.train_data['ds'].max().date()})")
-        logger.info(f"Datos de prueba: {len(self.test_data)} semanas (desde {self.test_data['ds'].min().date()})")
 
-        # Búsqueda de Hiperparámetros 
         tscv = TimeSeriesSplit(n_splits=self.TRAIN_SPLIT)
         best_rmse = float('inf')
         best_param = None
 
-        for parametro in parametros:
+        for iteracion, parametro in enumerate(parametros):
+            
             rmse_fold = []
+
+            resumen = ", ".join(f"{k}={v}" for k, v in parametro.items())
+
             for train_idx, val_idx in tscv.split(self.train_data):
                 train_fold = self.train_data.iloc[train_idx]
                 val_fold = self.train_data.iloc[val_idx]
+                
                 try:
                     modelo_cv = Prophet(
                             yearly_seasonality=True,
@@ -130,25 +115,51 @@ class SerieTiempoProphet:
                     modelo_cv.add_seasonality(name='monthly', period=30.5,fourier_order=3)
                     modelo_cv.fit(train_fold)
 
-                    future_cv = modelo_cv.make_future_dataframe(periods=len(val_fold),freq='W-MON')
+                    
+                    future_cv = modelo_cv.make_future_dataframe(
+                                        periods=len(val_fold), freq='W-MON'
+                                    )
                     forecast_cv = modelo_cv.predict(future_cv)
-                    y_pred_cv = forecast_cv.iloc[-len(val_fold):]['yhat']
 
-                    rmse_fold.append(np.sqrt(mean_squared_error(val_fold['y'],y_pred_cv)))
-                
+                    y_pred_cv = forecast_cv.iloc[-len(val_fold):]['yhat']
+                    rmse = np.sqrt(mean_squared_error(val_fold['y'], y_pred_cv))
+                    rmse_fold.append(rmse)
+
                 except Exception as e:
                     logger.warning(f'Ocurrio excepcion {e}')
                     continue
 
                 if rmse_fold:
-                    mean_rmse = np.mean(rmse_fold)
-                    if mean_rmse < best_rmse:
-                        best_rmse = mean_rmse
-                        best_param = parametro
+                    mean_rmse = float(np.mean(rmse_fold))
+                    logger.debug(f"RMSE promedio: {mean_rmse:.4f}")
 
-        logger.info(f"Mejores parámetros encontrados: {best_rmse}")
-        
+            if mean_rmse < best_rmse:
+                best_rmse = mean_rmse
+                best_param = parametro
+                logger.info(f"[CV] Iteración {iteracion + 1}/{len(parametros)} – Nuevo mejor RMSE: {best_rmse:.4f}")
+                        
+            else:
+                logger.debug(f"[CV] Iteración {iteracion + 1}/{len(parametros)} - No se obtuvo ningún RMSE válido para {resumen}")
+
+        logger.success(f"Mejor RMSE promedio: {best_rmse:.4f}")
+        logger.success(f"Mejor conjunto de parámetros encontrado: {best_param}")
+
         return best_param
+    
+    def train(self,parametros) -> Prophet:
+        
+        modelo_final = Prophet(
+                yearly_seasonality=30,
+                weekly_seasonality=True,
+                daily_seasonality=False,
+                holidays=self.fechas_atipicas,
+                **parametros
+            )
+        
+        modelo_final.add_seasonality(name='monthly', period=30.5, fourier_order=5)
+        modelo_final.fit(self.train_data)
+
+        return modelo_final
     
     def train_test(self,parametros) -> pd.DataFrame:
 
@@ -179,21 +190,6 @@ class SerieTiempoProphet:
 
         return df_eval
     
-    def train(self,parametros) -> Prophet:
-        
-        modelo_final = Prophet(
-                yearly_seasonality=30,
-                weekly_seasonality=True,
-                daily_seasonality=False,
-                holidays=self.fechas_atipicas,
-                **parametros
-            )
-        
-        modelo_final.add_seasonality(name='monthly', period=30.5, fourier_order=5)
-        modelo_final.fit(self.df_serie)
-
-        return modelo_final
-    
     def calcular_metricas(self,df_eval_periodo, nombre_periodo):
         y_true = df_eval_periodo['y']
         y_pred = df_eval_periodo['yhat']
@@ -219,24 +215,38 @@ class SerieTiempoProphet:
 
     def run(self):
 
+        directory_manager.asegurar_ruta(self.model_path)
 
-        if self.filtrar_region():
-            if self.agrupa():
-                
-                parametros = self.prophet_cross_val()
-                df_eval = self.train_test(parametros)
-                directory_manager.asegurar_ruta(self.forecast_path)
-                df_eval.to_csv(self.forecast_save)
+        if self.modelado_estados:
+            agrupador = 'Entidad'
 
-                
-                #df_eval_2025 = df_eval[df_eval['ds'].dt.year == 2025]
-                #self.calcular_metricas(df_eval_2025, "2023 (Año 1 del Pronóstico)")
-                #self.graficar(df_eval_2025)
-
-                if self.entrena:
-                    directory_manager.asegurar_ruta(self.model_path)
-                    modelo_entrenado = self.train(parametros)
-
-                    with open(self.model_save,'wb') as f:
-                        pickle.dump(modelo_entrenado,f)
+        if not self.modelado_estados:
+            agrupador = 'region_salud_mental'
         
+        regiones = sorted(self.df[agrupador].unique())
+        rmse = float('inf')
+        
+        for region in regiones:
+            self.agrupa(agrupador,region)
+            self.crea_train_test()
+            logger.info(f"Ejecutando validación cruzada del modelo para la región: {region}")
+
+            parametros = self.prophet_cross_val()
+            modelo = self.train(parametros)
+            
+            ruta = os.path.join(self.model_path, f"Prophet_{region}.pkl")
+
+            with open(ruta,'wb') as f:
+                pickle.dump(modelo,f)
+
+            logger.success(f"[SAVE] Modelo de '{region}' guardado correctamente en: {ruta}")
+        
+
+
+
+"""                    
+                    #df_eval_2025 = df_eval[df_eval['ds'].dt.year == 2025]
+                    #self.calcular_metricas(df_eval_2025, "2023 (Año 1 del Pronóstico)")
+                    #self.graficar(df_eval_2025)
+            
+"""
