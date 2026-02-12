@@ -1,11 +1,15 @@
 opciones_FE:
   - tratamiento_outliers:
       IQR: True
+      metodo: 'zscore' # 'zscore', 'IQR'
       columnas:
         - Incremento_hombres
         - Incremento_mujeres
       umbral: 3
-      reemplazo: "cercano" # None, 'media', 'mediana' o 'cercano'
+      reemplazo: "mediana" # None, 'media', 'mediana' o 'cercano'
+      agrupacion:
+        - Padecimiento
+        - Entidad
 
   - agrupa:
       valor: Sexo
