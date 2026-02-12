@@ -194,17 +194,13 @@ class dataTransformation:
                 .astype(int)
             )
 
-    def _ajusta_outliers(self,columnas: list):
+    def _ajusta_outliers(self,columnas: list, agrupacion:list):
 
         for columna in columnas:
-            # 1) Construye un DataFrame de estadísticas por Padecimiento usando tu función
-            #    outliers_iqr sobre el subconjunto g (g es df filtrado por Padecimiento)
+
             stats = (
-                self.df.groupby("Padecimiento", sort=False)
+                self.df.groupby(agrupacion, sort=False)
                     .apply(lambda g: pd.Series(
-                        # Desempaqueta lo que regresa tu función
-                        # _, [lim_inf, lim_sup, q1, q3, iqr] = OperacionesDatos.outliers_iqr(g, columna)
-                        # y colócalo en un Series con nombres
                         (lambda met: {
                             "q1":  met[2],
                             "q3":  met[3],
@@ -216,15 +212,11 @@ class dataTransformation:
                     )
                     .reset_index()
             )
-            # stats tiene: Padecimiento, q1, q3, iqr, lim_inf, lim_sup (para ESTA columna)
-
-            # 2) Une las stats al df (por Padecimiento)
             self.df = self.df.merge(
                 stats[["Padecimiento", "q1", "q3", "iqr", "lim_inf", "lim_sup"]],
                 on="Padecimiento", how="left"
             )
 
-            # 3) (Opcional) Log por Padecimiento
             for pade, sub in self.df.groupby("Padecimiento", sort=False):
                 # Evita NaN al loggear
                 iqr     = sub["iqr"].iloc[0]
@@ -242,25 +234,20 @@ class dataTransformation:
                 logger.info(f"[{pade}] Límite inferior: {lim_inf} | Registros por debajo del límite: {total_inf}")
                 logger.info(f"[{pade}] Límite superior: {lim_sup} | Registros por encima del límite: {total_sup}")
 
-            # 4) Clip vectorizado por fila usando los límites del propio padecimiento
-            #    (más rápido que apply(axis=1))
             x = self.df[columna].to_numpy()
             lo = self.df["lim_inf"].to_numpy()
             hi = self.df["lim_sup"].to_numpy()
 
             x_clipped = np.clip(x, lo, hi)
 
-            # Redondea y asigna de vuelta (usa Int64 “nullable” si puede haber NaN)
             self.df[columna] = pd.Series(x_clipped, index=self.df.index).round(0).astype("Int64")
 
-            # 5) Limpia columnas auxiliares antes de pasar a la siguiente columna
             self.df = self.df.drop(columns=["q1", "q3", "iqr", "lim_inf", "lim_sup"])
     
-    def _ajusta_outliers_zscore(self,columnas,umbral,reemplazo):
+    def _ajusta_outliers_zscore(self,columnas: list,agrupacion: list, umbral: int, reemplazo: str):
         
         for col in columnas:
-            self.df = OperacionesDatos.zscore(self.df, col, umbral=umbral, reemplazo=reemplazo)
-
+            self.df = OperacionesDatos.zscore(self.df, col, agrupacion,umbral, reemplazo)
 
     def agrupar(self):
 
@@ -291,17 +278,32 @@ class dataTransformation:
         
         self._ajusta_semanas()
         self._prepara_series_tiempo()
-        #self._ajusta_incrementos() # procedimiento para la imputacion del 2016
+        #self._ajusta_incrementos()  Procedimiento para el tratamiento de datos semana 20 2016
+        #                            Se retira este ajuste               
         self._ajusta_negativos()
         
         if outlier_cfg['IQR']:
-            # ajuste de outliers a traves de IQR, se cambio a zscore
-            #logger.info(f"Imputación por IQR habilitada ({outlier_cfg['IQR']}) | Columnas: '{outlier_cfg['columnas']}'")
-            #self._ajusta_outliers(outlier_cfg['columnas']) 
-
-            logger.info(f"Imputación por z-score habilitada: ({outlier_cfg['IQR']}) | Columnas: '{outlier_cfg['columnas']}'")
-            self._ajusta_outliers_zscore(outlier_cfg['columnas'],outlier_cfg['umbral'],outlier_cfg['reemplazo'])
             
+            if outlier_cfg['metodo'].lower() == 'iqr': # Se recomienda no usar este metodo, agrega muchos datos no validos
+                logger.info(
+                    f"Imputación habilitada: método: '{outlier_cfg['metodo']}' | "
+                    f"columnas: {outlier_cfg['columnas']}, | "
+                    f"umbral: {outlier_cfg['umbral']}"
+                )
+                self._ajusta_outliers(outlier_cfg['columnas'],outlier_cfg['agrupacion']) 
+
+            elif outlier_cfg['metodo'].lower() == 'zscore':
+                logger.info(
+                    f"Imputación habilitada: método: '{outlier_cfg['metodo']}' | "
+                    f"columnas: {outlier_cfg['columnas']} | "
+                    f"umbral: {outlier_cfg['umbral']} | "
+                    f"reemplazo: {outlier_cfg['reemplazo']}"
+                )
+                self._ajusta_outliers_zscore(outlier_cfg['columnas'],outlier_cfg['agrupacion'],outlier_cfg['umbral'],outlier_cfg['reemplazo'])
+            else:
+                logger.error(f"Opcion no válida: {outlier_cfg.get('metodo')}")
+                raise ValueError(f"Opcion no válida: {outlier_cfg.get('metodo')}")
+
 
         self.agrupar()
 

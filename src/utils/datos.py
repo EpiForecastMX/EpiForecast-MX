@@ -67,14 +67,15 @@ class OperacionesDatos:
     def zscore(
         df: pd.DataFrame,
         columna: str,
+        agrupacion: list,
         umbral: float = 3,
-        reemplazo=None
+        reemplazo="media"
     ):
             df = df.copy()
 
             # Calcular medias y desviaciones por grupo
-            medias = df.groupby("Padecimiento")[columna].transform("mean").round().astype(int)
-            desvios = df.groupby("Padecimiento")[columna].transform("std").round().astype(int)
+            medias = df.groupby(agrupacion)[columna].transform("mean").round().astype(int)
+            desvios = df.groupby(agrupacion)[columna].transform("std").round().astype(int)
 
 
             # Calcular Z-score y outliers
@@ -83,11 +84,13 @@ class OperacionesDatos:
 
             if reemplazo is not None:
                 if reemplazo.lower() == "media":
-                    df.loc[df[f"Outlier_{columna}"], columna] = medias[df[f"Outlier_{columna}"]]
+                    df.loc[df[f"Outlier_{columna}"], columna] = medias[df[f"Outlier_{columna}"]].round().astype(int)
+
 
                 elif reemplazo.lower() == "mediana":
-                    medianas = df.groupby("Padecimiento")[columna].transform("median")
-                    df.loc[df[f"Outlier_{columna}"], columna] = medianas[df[f"Outlier_{columna}"]]
+                    medianas = df.groupby(agrupacion)[columna].transform("median")
+                    df.loc[df[f"Outlier_{columna}"], columna] = medianas[df[f"Outlier_{columna}"]].round().astype(int)
+
 
                 elif reemplazo.lower() == "cercano":
                     limite_inferior = medias - umbral * desvios
