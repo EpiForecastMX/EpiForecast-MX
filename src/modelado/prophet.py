@@ -78,7 +78,7 @@ class SerieTiempoProphet:
         logger.info(f"Datos de entrenamiento: {len(self.train_data)} semanas (hasta {self.train_data['ds'].max().date()})")
         logger.info(f"Datos de prueba: {len(self.test_data)} semanas (desde {self.test_data['ds'].min().date()})")
         
-    def prophet_cross_val(self) -> dict:
+    def prophet_cross_val(self) -> tuple [dict, float]:
 
         parametros = [dict(zip(self.param_grid.keys(), v)) for v in itertools.product(*self.param_grid.values())]
         logger.info(f"Se probarán {len(parametros)} combinaciones de hiperparámetros.")
@@ -144,7 +144,7 @@ class SerieTiempoProphet:
         logger.success(f"Mejor RMSE promedio: {best_rmse:.4f}")
         logger.success(f"Mejor conjunto de parámetros encontrado: {best_param}")
 
-        return best_param
+        return best_param, best_rmse
     
     def train(self,parametros) -> Prophet:
         
@@ -224,24 +224,41 @@ class SerieTiempoProphet:
             agrupador = 'region_salud_mental'
         
         regiones = sorted(self.df[agrupador].unique())
-        rmse = float('inf')
+
+        resultados = []
         
         for region in regiones:
             self.agrupa(agrupador,region)
             self.crea_train_test()
             logger.info(f"Ejecutando validación cruzada del modelo para la región: {region}")
 
-            parametros = self.prophet_cross_val()
+            parametros, rmse = self.prophet_cross_val()
             modelo = self.train(parametros)
             
+            resultados.append([region,rmse,parametros])
+            
+            directory_manager.asegurar_ruta(self.model_path)
             ruta = os.path.join(self.model_path, f"Prophet_{region}.pkl")
 
             with open(ruta,'wb') as f:
                 pickle.dump(modelo,f)
 
-            logger.success(f"[SAVE] Modelo de '{region}' guardado correctamente en: {ruta}")
-        
+            logger.success(f"Modelo de '{region}' guardado correctamente en: {ruta}")
+            
+            
+            df_resultados = pd.DataFrame(resultados, columns = ['Region','RMSE','parametros'])
+            serie_params = df_resultados['parametros'].where(
+                    df_resultados['parametros'].apply(lambda x: isinstance(x, dict)),
+                    other=None
+                )
+            parametros_expandidos = pd.json_normalize(serie_params)
+            df_resultados = pd.concat(
+                        [df_resultados.drop(columns=['parametros']), parametros_expandidos],
+                        axis=1
+                    )
 
+            ruta_rmse = os.path.join(self.model_path, f"Prophet_{agrupador}.csv")
+            df_resultados.to_csv(ruta_rmse, index=False, encoding='utf-8')
 
 
 """                    
