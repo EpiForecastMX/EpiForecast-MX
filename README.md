@@ -39,7 +39,7 @@
 
 ### Objetivo
 
-Predecir la incidencia de **Depresión (F32)**, **Parkinson (G20)** y **Alzheimer (G30)** mediante modelos de series de tiempo, utilizando datos históricos (2012-2026) del Sistema Nacional de Vigilancia Epidemiológica (SINAVE) e indicadores demográficos del INEGI.
+Predecir la incidencia de **Depresión (F32)**, **Parkinson (G20)** y **Alzheimer (G30)** mediante modelos de series de tiempo, utilizando datos históricos (2014-2026) del Sistema Nacional de Vigilancia Epidemiológica (SINAVE) e indicadores demográficos del INEGI.
 
 El sistema genera **proyecciones a nivel nacional y estatal** (32 entidades federativas) con intervalos de predicción confiables, proporcionando herramientas para la **planificación estratégica en salud pública**.
 
@@ -67,7 +67,7 @@ El sistema genera **proyecciones a nivel nacional y estatal** (32 entidades fede
 │           ▼                                                                      │
 │   ┌───────────────────┐      ┌───────────────────┐      ┌──────────────────┐   │
 │   │  Scraper Diario   │─────▶│  Extracción PDF   │─────▶│  Dataset CSV     │   │
-│   │  (Selenium)       │      │  (Camelot)        │      │  (2012-2026)     │   │
+│   │  (Selenium)       │      │  (Camelot)        │      │  (2014-2026)     │   │
 │   └───────────────────┘      └───────────────────┘      └──────────────────┘   │
 │           │                          │                          │               │
 │           ▼                          ▼                          ▼               │
@@ -118,34 +118,43 @@ EpiForecast-MX/
 │   └── process_boletines.yml   #   └─ Extracción y merge automático
 │
 ├── config/                     # Configuración YAML
-│   ├── params.yaml             #   └─ Parámetros generales
-│   ├── modelado.yaml           #   └─ Hiperparámetros Prophet
+│   ├── params.yaml             #   └─ Parámetros generales y rutas
+│   ├── modelado.yaml           #   └─ Hiperparámetros Prophet y periodos atípicos
 │   ├── limpieza.yaml           #   └─ Reglas de limpieza de datos
-│   ├── FE.yaml                 #   └─ Feature engineering
-│   └── logging.yaml            #   └─ Configuración de logs
+│   ├── FE.yaml                 #   └─ Feature engineering, regiones, outliers
+│   ├── reportes.yaml           #   └─ Paleta IMSS, matplotlib rcParams, templates EDA
+│   └── logging.yaml            #   └─ Loguru dual-sink (consola + archivo)
 │
 ├── data/
-│   ├── raw_PDFs/               # 630+ boletines epidemiológicos 2012-2026 (~1GB, DVC)
-│   ├── processed/              # Dataset consolidado 60,000+ filas (DVC)
-│   ├── interim/                # Datos intermedios
-│   ├── external/               # Datos externos (INEGI)
+│   ├── raw_PDFs/               # ~633 boletines epidemiológicos 2014-2026 (~1GB, DVC)
+│   ├── raw/                    # CSVs crudos (data_raw.csv, data_raw_{padecimiento}.csv)
+│   ├── processed/              # Dataset consolidado, data_prepare, data_inegi, .xlsx (DVC)
+│   ├── interim/                # Datos intermedios (data_clean.csv)
+│   ├── utils/                  # Datos auxiliares (inegi.csv)
 │   └── registry.json           # Registro de boletines descargados
 │
 ├── src/
-│   ├── configuraciones/        # Gestión de configuración
-│   ├── datos/                  # Limpieza y preparación
-│   ├── extraccion/             # Pipeline de extracción PDF
-│   ├── modelado/               # Modelos Prophet
-│   └── utils/                  # Utilidades compartidas
+│   ├── configuraciones/        # Gestión de configuración (OmegaConf + Loguru)
+│   ├── datos/                  # Limpieza, filtrado, FE, EDA, descarga INEGI
+│   ├── extraccion/             # Pipeline de extracción PDF (Camelot)
+│   ├── modelado/               # Prophet (train/predict), mapeo INEGI
+│   └── utils/                  # Gráficos, reportes PDF, directory manager
 │
-├── scripts/                    # Scripts de orquestación
-├── models/                     # Modelos entrenados (.pkl)
-├── notebooks/                  # Análisis exploratorio
-├── reports/figures/            # Visualizaciones generadas
+├── scripts/                    # Entry points para Makefile y CI/CD
+├── models/                     # Modelos entrenados Prophet (.pkl)
+├── notebooks/                  # Libretas de análisis (Avance 1-3, Data Extract)
+├── outputs/                    # Visualizaciones generadas
+│   ├── eda/                    #   └─ Gráficos EDA (21+ figuras)
+│   └── feature_engineering/    #   └─ Heatmaps, bump charts, series temporales
+├── logs/                       # Logs rotativos (Loguru)
+├── reports/                    # Reportes y figuras
+│   ├── docs/                   #   └─ PDFs de EDA generados
+│   └── figures/                #   └─ Figuras de reportes
 │
 ├── Makefile                    # Automatización de tareas
 ├── requirements.txt            # Dependencias Python
-└── pyproject.toml              # Metadatos del proyecto
+├── pyproject.toml              # Metadatos del proyecto y config Ruff
+└── CLAUDE.md                   # Guía de contexto para Claude Code
 ```
 
 ---
@@ -240,8 +249,8 @@ Todos los comandos están definidos en el `Makefile` de la raíz del proyecto. E
 
 | Comando | Descripción |
 |---------|-------------|
-| `make train` | Entrena modelo Prophet con validación cruzada temporal |
-| `make predict` | Genera predicciones usando el modelo entrenado |
+| `make train` | Entrena modelo Prophet con CV temporal (por estado o región según config) |
+| `make predict` | Genera predicciones (60 semanas) usando los modelos entrenados |
 
 ### Gestión de Datos (DVC)
 
@@ -442,13 +451,16 @@ make preprocess
 | SciPy | 1.14.1 | Funciones estadísticas |
 | Camelot | 0.11.0 | Extracción de tablas PDF |
 | pypdf | 4.3.1 | Manipulación de PDFs |
+| ghostscript | 0.7 | Wrapper de Ghostscript para Python |
 
 ### Machine Learning
 
 | Librería | Versión | Uso |
 |----------|---------|-----|
 | Prophet | 1.3.0 | Pronóstico de series de tiempo |
+| cmdstanpy | >=1.2.0 | Backend de Stan para Prophet |
 | scikit-learn | 1.5.0 | Validación cruzada y métricas |
+| xgboost | >=2.0.0 | Gradient boosting (notebooks) |
 | statsmodels | 0.14.4 | Análisis estadístico |
 
 ### Visualización
@@ -458,6 +470,14 @@ make preprocess
 | Matplotlib | 3.10.0 | Gráficos estáticos |
 | Seaborn | 0.13.2 | Visualización estadística |
 | Plotly | 5.24.0 | Gráficos interactivos |
+| kaleido | 0.2.1 | Exportar Plotly a imágenes estáticas |
+
+### Reportes
+
+| Librería | Versión | Uso |
+|----------|---------|-----|
+| reportlab | 4.4.7 | Generación de reportes PDF |
+| rich | >=13.0 | Tablas formateadas en consola |
 
 ### Infraestructura
 

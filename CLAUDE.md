@@ -4,90 +4,240 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-EpiForecast-MX is an epidemiological forecasting system for predicting neurological disease cases (Alzheimer's, Parkinson's, Depression) in Mexico. It uses Facebook Prophet for time series forecasting with data from SINAVE (Sistema Nacional de Vigilancia Epidemiológica).
+**EpiForecast-MX** es una plataforma de inteligencia epidemiológica desarrollada en colaboración con el **Instituto Mexicano del Seguro Social (IMSS)** como proyecto Capstone de la Maestría en Inteligencia Artificial Aplicada del Tecnológico de Monterrey.
 
-## Common Commands
+Predice la incidencia semanal de tres padecimientos neurológicos/salud mental:
+- **Depresión (CIE-10: F32)**
+- **Parkinson (CIE-10: G20)**
+- **Alzheimer (CIE-10: G30)**
+
+Utiliza Facebook Prophet para series de tiempo, con datos históricos (2014-2026) del SINAVE e indicadores demográficos del INEGI. Genera proyecciones a nivel **estatal** (32 entidades) o por **región INEGI de salud mental**, segmentadas por sexo.
+
+## Convenciones del Proyecto
+
+- **Idioma de commits:** español (ej. `Feat: implementando imputación por zscore`)
+- **Branding IMSS:** paleta cromática institucional definida en `config/reportes.yaml` (`IMSS_COLORS`, `PALETTE_MAIN`, `PALETTE_PADECIMIENTO`, `PALETTE_SEXO`)
+- **Tasas:** los indicadores per cápita se expresan por **100,000 habitantes**
+- **Entorno virtual:** se llama `integrador/` (no `.venv`); activar con `source integrador/bin/activate`
+- **Configuración:** todos los parámetros en YAML (`config/`), cargados via OmegaConf en `src/configuraciones/config_params.py`
+- **Logging:** Loguru con dual-sink (consola + archivo rotativo) configurado en `config/logging.yaml`
+- **Versionado de datos:** archivos grandes (PDFs, datasets) trackeados por DVC en S3 (`s3://epiforecast-mx-data/`)
+- **Linter/formatter:** Ruff (line-length 99)
+
+## Estructura de Directorios
+
+```
+EpiForecast-MX/
+├── .github/workflows/              # Pipelines CI/CD
+│   ├── scrape_boletines.yml        #   Scraper diario SINAVE (2 PM CDMX)
+│   └── process_boletines.yml       #   Extracción y merge automático
+│
+├── config/                         # Configuración YAML
+│   ├── params.yaml                 #   Parámetros generales y rutas
+│   ├── modelado.yaml               #   Hiperparámetros Prophet, CV, periodos atípicos
+│   ├── limpieza.yaml               #   Reglas de limpieza (columnas a eliminar, sustituciones)
+│   ├── FE.yaml                     #   Feature engineering, regiones, outliers (IQR/Z-score)
+│   ├── reportes.yaml               #   Paleta IMSS, matplotlib rcParams, templates EDA
+│   └── logging.yaml                #   Loguru dual-sink (consola + archivo)
+│
+├── data/
+│   ├── raw_PDFs/                   # ~633 boletines epidemiológicos 2014-2026 (DVC)
+│   ├── raw/                        # CSVs crudos (data_raw.csv, data_raw_{padecimiento}.csv)
+│   ├── interim/                    # Datos intermedios (data_clean.csv)
+│   ├── processed/                  # Dataset final, data_prepare, data_inegi, .xlsx
+│   ├── utils/                      # Datos auxiliares (inegi.csv)
+│   └── registry.json               # Registro de boletines descargados (anti-duplicados)
+│
+├── src/
+│   ├── configuraciones/            # Carga de config YAML + logger (config_params.py)
+│   ├── datos/                      # Limpieza, filtrado, FE, EDA, descarga, INEGI
+│   │   ├── clean_dataset.py        #   Limpieza de datos
+│   │   ├── filtrar_padecimiento.py #   Filtrado por padecimiento
+│   │   ├── preparacion.py          #   Feature engineering (outliers, agrupación, regiones)
+│   │   ├── get_inegi.py            #   Descarga datos INEGI (PxWeb + superficie)
+│   │   ├── descarga_dataset.py     #   Copia dataset base
+│   │   └── EDA.py                  #   Análisis exploratorio (ReportData)
+│   ├── extraccion/                 # Pipeline de extracción PDF
+│   │   ├── pipeline.py             #   Extracción con Camelot (keywords F32, G20, G30)
+│   │   ├── merge_datasets.py       #   Merge incremental al dataset principal
+│   │   ├── cli.py / gui.py         #   Interfaces CLI y GUI
+│   │   └── inegi.py / inegi_eda.py #   Utilidades INEGI
+│   ├── modelado/                   # Modelos Prophet
+│   │   ├── prophet.py              #   SerieTiempoProphet (CV, train, eval por estado/región)
+│   │   ├── forecast.py             #   ForecastModelLoader (carga .pkl y predice)
+│   │   └── mapea_inegi.py          #   MapeaInegi (merge datos + INEGI + export xlsx)
+│   └── utils/                      # Utilidades compartidas
+│       ├── graficos.py             #   GraficosHelper (histogramas, violins, series, etc.)
+│       ├── reporte_PDF.py          #   PDFReportGenerator (reportes EDA con reportlab)
+│       ├── directory_manager.py    #   Gestión de carpetas y archivos
+│       └── datos.py                #   OperacionesDatos (helpers pandas)
+│
+├── scripts/                        # Entry points para Makefile y CI/CD
+│   ├── entrena.py                  #   make train
+│   ├── predice.py                  #   make predict
+│   ├── padecimiento.py             #   make filter
+│   ├── limpieza_dataset.py         #   make clean
+│   ├── realiza_prep.py             #   make transform
+│   ├── descarga_inegi.py           #   make get_inegi
+│   ├── mapea.py                    #   make mapper
+│   ├── get_dataset.py              #   make get_dataset
+│   ├── scrape_boletines.py         #   CI: scraper SINAVE
+│   ├── ci_process_boletines.py     #   CI: extracción + merge
+│   └── imss.sh                     #   Sincronización rápida (source scripts/imss.sh)
+│
+├── notebooks/                      # Libretas de análisis
+│   ├── Avance1.Equipo01.ipynb
+│   ├── Avance2_Equipo01.ipynb
+│   ├── Avance3.Equipo01.ipynb
+│   └── Data_Extract_ProyectoIntegrador_Equipo1.ipynb
+│
+├── outputs/                        # Visualizaciones generadas
+│   ├── eda/                        #   Gráficos EDA (21+ figuras)
+│   └── feature_engineering/        #   Gráficos FE (heatmaps, bump charts, series)
+│
+├── models/                         # Modelos entrenados Prophet (.pkl)
+├── logs/                           # Logs rotativos (Loguru)
+├── reports/                        # Reportes PDF y figuras
+│   ├── docs/                       #   PDFs de EDA generados
+│   └── figures/                    #   Figuras de reportes
+│
+├── Makefile                        # Automatización de tareas
+├── requirements.txt                # Dependencias Python
+├── pyproject.toml                  # Metadatos del proyecto y config Ruff
+└── CLAUDE.md                       # Este archivo
+```
+
+## Stack Técnico
+
+| Categoría | Tecnologías |
+|-----------|-------------|
+| Lenguaje | Python 3.12 |
+| Forecasting | Prophet 1.3, cmdstanpy |
+| ML / Stats | scikit-learn, xgboost, statsmodels, SciPy |
+| Datos | pandas, NumPy |
+| PDF Extraction | camelot-py (+ Ghostscript), pypdf |
+| Visualización | matplotlib, seaborn, plotly, kaleido |
+| Reportes | reportlab (PDF), rich (consola) |
+| Config / Logging | OmegaConf, Loguru |
+| Data Versioning | DVC + Amazon S3 |
+| CI/CD | GitHub Actions, Selenium (scraping) |
+| Cloud | AWS S3, AWS SNS |
+| Code Quality | Ruff |
+
+## Comandos Útiles
 
 ### Setup
 ```bash
-make setup          # Full macOS setup (deps + Python + DVC data)
-make setup-linux    # Linux/WSL setup
-make requirements   # Install Python dependencies only
-make data-pull      # Download data from S3 via DVC
+make setup              # macOS: Ghostscript + deps + DVC pull
+make setup-linux        # Linux/WSL equivalente
+make requirements       # Solo instalar dependencias Python
+make data-pull          # Descargar datos desde S3 via DVC
+source scripts/imss.sh  # Sync rápido: activa venv + git pull + dvc pull
+```
+
+### Pipeline de Preprocesamiento
+```bash
+make preprocess   # Pipeline completo (secuencial, NO usar -j):
+                  #   reset_logs → reset_interim → get_dataset → filter
+                  #   → clean → transform → get_inegi → mapper
+make filter       # Filtrar por padecimiento (config/params.yaml → padecimiento.tipo)
+make clean        # Limpiar dataset (nulos, duplicados, formato)
+make transform    # Feature engineering (outliers IQR/Z-score, regiones, agrupación)
+make get_inegi    # Descargar datos demográficos INEGI
+make mapper       # Mapear entidades con regiones INEGI → genera .csv y .xlsx
+```
+
+### Modelado
+```bash
+make train        # Entrena Prophet con CV temporal (por estado o región según config)
+make predict      # Genera predicciones (60 semanas) con modelo entrenado
+```
+
+### DVC
+```bash
+make data-pull    # Descargar datos desde S3
+make data-push    # Subir datos a S3
+make data-status  # Estado de sincronización
+make data-add PDF=ruta/archivo.pdf   # Trackear nuevo PDF
+make data-commit  # Commitear datos + push a Git y S3
 ```
 
 ### Code Quality
 ```bash
-make lint           # Run Ruff linter (check + format check)
-make format         # Auto-format with Ruff
+make lint         # Ruff check + format check
+make format       # Auto-format con Ruff
 ```
 
-### Data Pipeline
-```bash
-make preprocess     # Full pipeline: filter → clean → transform → INEGI mapping
-make filter         # Filter by disease (config/params.yaml → padecimiento)
-make clean          # Clean dataset (nulls, duplicates, formatting)
-make transform      # Feature engineering
-make get_inegi      # Download INEGI demographic data
-make mapper         # Map entities with INEGI regions
-make train          # Train Prophet model
+## Arquitectura
+
+### Flujo de Datos
+```
+SINAVE PDFs ──▶ Extracción (Camelot) ──▶ Merge ──▶ dataset_boletin_epidemiologico.csv
+                                                           │
+                      ┌────────────────────────────────────┘
+                      ▼
+              filter (por padecimiento)
+                      │
+                      ▼
+              clean (nulos, duplicados, formato)
+                      │
+                      ▼
+              transform (FE: outliers IQR/Z-score, agrupación por sexo, regiones)
+                      │
+                      ▼
+              mapper (merge con INEGI: población, superficie, región salud mental)
+                      │
+                      ▼
+              train (Prophet por estado o región × sexo)
+                      │
+                      ▼
+              models/*.pkl  +  predict → forecasts CSV
 ```
 
-### DVC Data Management
-```bash
-make data-pull      # Pull data from S3
-make data-push      # Push data to S3
-make data-status    # View sync status
-make data-add PDF=path/to/file.pdf  # Track new PDF
+### Configuración Clave (`config/params.yaml`)
+
+```yaml
+padecimiento:
+  tipo: "General"           # General | Depresión | Parkinson | Alzheimer
+  modelado_estados: true    # true = modelos por estado, false = por región INEGI
+  modelado_region: "Metropolitana alta"  # región específica (si modelado_estados=false)
+  modelado_sexo: "todos"    # hombres | mujeres | todos
+  entrena_modelo: true      # entrenar modelo final con todo el dataset
 ```
 
-## Architecture
+### Regiones INEGI de Salud Mental
+- Urbana media
+- Sur-Sureste vulnerable
+- Metropolitana alta
+- Rural / dispersa
 
-### Data Flow
-```
-SINAVE PDFs → Extraction (Camelot) → Merge → Clean → Feature Engineering → Prophet Model
-     ↓                                                        ↓
-  registry.json                                    models/ + forecasts/
-```
+### Periodos Atípicos Configurados (modelado.yaml)
+- **Pandemia COVID-19**: 2020-03-23, ventana de 913 días (~2.5 años)
+- **Atípico 2016**: 2016-05-16, ventana de 182 días
 
-### Key Modules
+## CI/CD (GitHub Actions)
 
-- **`src/datos/`** - Data cleaning (`clean_dataset.py`), filtering (`filtrar_padecimiento.py`), feature engineering (`preparacion.py`), INEGI integration (`get_inegi.py`)
-- **`src/extraccion/`** - PDF table extraction (`pipeline.py`), dataset merging (`merge_datasets.py`), CLI/GUI interfaces
-- **`src/modelado/`** - Prophet time series model (`prophet.py`), model loading utilities (`forecast.py`)
-- **`src/configuraciones/`** - YAML config loading and logging setup (`config_params.py`)
-- **`scripts/`** - Entry points for Makefile targets
-
-### Configuration Files (config/)
-
-- **`params.yaml`** - Main config: disease selection, file paths, metadata
-- **`modelado.yaml`** - Prophet hyperparameters, cross-validation splits, atypical periods (COVID-19)
-- **`limpieza.yaml`** - Columns to drop, value substitutions
-- **`FE.yaml`** - Feature engineering rules, regional mappings, outlier treatment
-- **`logging.yaml`** - Loguru dual-sink config (console + rotating files)
-
-### Automated CI/CD (GitHub Actions)
-
-1. **`scrape_boletines.yml`** - Daily scraper (2 PM CDMX) downloads new SINAVE bulletins
-2. **`process_boletines.yml`** - Triggered after scraper; extracts tables and merges to dataset
-
-Both pipelines use DVC for S3 sync and send SNS notifications on completion.
-
-## Key Patterns
-
-- **Configuration:** All parameters in YAML files, loaded via OmegaConf in `config_params.py`
-- **Logging:** Loguru with structured format, configured per `logging.yaml`
-- **Data Versioning:** Large files (PDFs, datasets) tracked by DVC in S3 (`s3://epiforecast-mx-data/`)
-- **PDF Extraction:** Camelot library with keyword search for disease tables
+1. **`scrape_boletines.yml`** — Diario 2 PM CDMX: Selenium descarga nuevos boletines SINAVE → DVC push → git commit → SNS
+2. **`process_boletines.yml`** — Trigger post-scraping: extrae tablas (Camelot, keywords F32/G20/G30) → merge incremental → DVC push → SNS
 
 ## Data Files
 
-- **`data/raw_PDFs/`** - 630+ epidemiological bulletins (DVC-versioned)
-- **`data/processed/dataset_boletin_epidemiologico.csv`** - Main dataset (60k+ rows)
-- **`data/registry.json`** - Tracks processed bulletins (prevents duplicates)
+- **`data/raw_PDFs/`** — ~633 boletines epidemiológicos 2014-2026 (~1GB, DVC-versioned)
+- **`data/processed/dataset_boletin_epidemiologico.csv`** — Dataset consolidado (DVC-versioned)
+- **`data/registry.json`** — Registro de boletines procesados (anti-duplicados)
+- **`data/utils/inegi.csv`** — Datos demográficos INEGI (población, superficie)
 
-## Dependencies
+## Estado Actual del Pipeline
 
-Python 3.12 required. Key libraries: pandas, prophet, camelot-py, selenium, dvc[s3], omegaconf, loguru, ruff.
+### Funcional
+- Pipeline de preprocesamiento completo (`make preprocess`)
+- Scraping + procesamiento automatizado (CI/CD)
+- Entrenamiento Prophet con CV temporal por estado o región (`make train`)
+- Predicción básica (`make predict`)
+- Generación de reportes EDA en PDF
+- Detección de outliers parametrizada (IQR / Z-score)
 
-System dependency: Ghostscript (for PDF processing) - installed via `make setup`.
+### TODOs / Inconsistencias Conocidas
+- **`pyproject.toml`**: `requires-python = "~=3.14.0"` debería ser `~=3.12.0`; `name = "alzheimer"` y `[tool.ruff] src = ["alzheimer"]` deberían reflejar el nombre actual del proyecto
+- **`predict`**: implementación básica (carga un solo modelo); pendiente iterar sobre todos los `.pkl` generados por `train`
+- **`metadata` en `params.yaml`**: referencia al proyecto antiguo ("Alzheimer", URL de repo anterior)
