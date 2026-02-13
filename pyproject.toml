@@ -3,9 +3,9 @@ requires = ["flit_core >=3.2,<4"]
 build-backend = "flit_core.buildapi"
 
 [project]
-name = "alzheimer"
+name = "epiforecast-mx"
 version = "0.0.1"
-description = "Proyecto para predecir casos de Alzheimer en M\u00e9xico mediante modelos de aprendizaje autom\u00e1tico y an\u00e1lisis demogr\u00e1fico."
+description = "Sistema de pronóstico epidemiológico para Depresión (F32), Parkinson (G20) y Alzheimer (G30) en México, desarrollado en colaboración con el IMSS."
 authors = [
   { name = "ITESM" },
 ]
@@ -13,20 +13,20 @@ authors = [
 readme = "README.md"
 classifiers = [
     "Programming Language :: Python :: 3",
-    
+
 ]
-requires-python = "~=3.14.0"
+requires-python = "~=3.12.0"
 
 
 [tool.ruff]
 line-length = 99
-src = ["alzheimer"]
-include = ["pyproject.toml", "alzheimer/**/*.py"]
+src = ["src"]
+include = ["pyproject.toml", "src/**/*.py", "scripts/**/*.py"]
 
 [tool.ruff.lint]
 extend-select = ["I"]  # Add import sorting
 
 [tool.ruff.lint.isort]
-known-first-party = ["alzheimer"]
+known-first-party = ["src"]
 force-sort-within-sections = true
 
