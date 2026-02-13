@@ -10,6 +10,7 @@ from omegaconf import OmegaConf
 
 try:
     conf_params = OmegaConf.load("config/params.yaml")
+    conf_rutas = OmegaConf.load("config/rutas.yaml")
     conf_logging = OmegaConf.load("config/logging.yaml")
     conf_reportes = OmegaConf.load("config/reportes.yaml")
     conf_limpieza = OmegaConf.load("config/limpieza.yaml")
@@ -20,7 +21,7 @@ except FileNotFoundError as e:
     sys.exit(1)
 
 
-conf = OmegaConf.merge(conf_params, conf_logging, conf_reportes, conf_limpieza, conf_FE,conf_train)
+conf = OmegaConf.merge(conf_params, conf_rutas, conf_logging, conf_reportes, conf_limpieza, conf_FE,conf_train)
 conf = OmegaConf.to_container(conf, resolve=True)
 
 # Configurar logger según YAML
