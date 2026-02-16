@@ -1,0 +1,193 @@
+Padecimiento,Estado,Sexo,MAPE_CV,RMSE_CV,MAE_CV,MAPE_Train,N_Outliers
+Depresión,Aguascalientes,Hombres,56.09,5.25,3.99,53.09,0
+Depresión,Aguascalientes,Mujeres,42.9,11.98,9.3,40.06,0
+Depresión,Baja California,Hombres,40.02,9.21,7.26,46.77,0
+Depresión,Baja California,Mujeres,26.71,17.7,13.19,33.77,0
+Depresión,Baja California Sur,Hombres,98.9,5.46,4.01,74.48,0
+Depresión,Baja California Sur,Mujeres,57.27,8.05,5.79,46.85,0
+Depresión,Campeche,Hombres,62.59,3.76,2.83,57.55,0
+Depresión,Campeche,Mujeres,53.49,8.44,6.04,44.31,0
+Depresión,Chiapas,Hombres,62.63,5.24,3.84,62.93,0
+Depresión,Chiapas,Mujeres,38.53,12.4,8.87,40.79,0
+Depresión,Chihuahua,Hombres,27.82,11.64,8.39,26.45,0
+Depresión,Chihuahua,Mujeres,26.0,28.79,20.7,27.48,0
+Depresión,Ciudad de México,Hombres,3.91,4.68,1.84,3.39,0
+Depresión,Ciudad de México,Mujeres,5.56,14.05,5.97,6.78,0
+Depresión,Coahuila,Hombres,83.97,7.64,5.53,88.45,0
+Depresión,Coahuila,Mujeres,72.59,16.11,12.26,67.77,0
+Depresión,Colima,Hombres,64.54,5.55,3.88,63.03,0
+Depresión,Colima,Mujeres,44.12,11.2,8.2,36.11,0
+Depresión,Durango,Hombres,43.12,8.2,6.56,46.01,0
+Depresión,Durango,Mujeres,37.6,21.73,16.55,49.95,0
+Depresión,Guanajuato,Hombres,40.55,6.52,5.0,48.13,0
+Depresión,Guanajuato,Mujeres,38.67,20.1,15.68,52.91,0
+Depresión,Guerrero,Hombres,92.13,6.94,5.26,84.46,0
+Depresión,Guerrero,Mujeres,82.67,18.97,14.35,74.46,0
+Depresión,Hidalgo,Hombres,53.22,5.1,3.9,46.38,0
+Depresión,Hidalgo,Mujeres,39.62,14.94,11.54,35.82,0
+Depresión,Jalisco,Hombres,26.16,9.1,6.31,25.29,0
+Depresión,Jalisco,Mujeres,14.32,20.96,14.55,18.18,0
+Depresión,Michoacán,Hombres,35.61,9.15,7.06,37.62,0
+Depresión,Michoacán,Mujeres,25.2,18.62,14.45,22.98,0
+Depresión,Morelos,Hombres,66.52,7.22,5.28,61.76,0
+Depresión,Morelos,Mujeres,39.99,18.54,12.93,37.02,0
+Depresión,México,Hombres,23.47,10.33,7.51,23.78,0
+Depresión,México,Mujeres,20.22,26.21,18.23,20.59,0
+Depresión,Nayarit,Hombres,52.19,9.55,7.1,52.03,0
+Depresión,Nayarit,Mujeres,53.04,25.02,18.13,45.37,0
+Depresión,Nuevo León,Hombres,40.27,8.67,6.7,45.16,0
+Depresión,Nuevo León,Mujeres,30.09,20.59,15.88,28.49,0
+Depresión,Oaxaca,Hombres,70.65,6.46,4.69,63.48,0
+Depresión,Oaxaca,Mujeres,54.95,13.56,9.71,50.25,0
+Depresión,Puebla,Hombres,75.12,10.48,8.13,67.89,0
+Depresión,Puebla,Mujeres,61.02,23.91,17.34,63.23,0
+Depresión,Querétaro,Hombres,75.05,3.34,2.42,64.34,0
+Depresión,Querétaro,Mujeres,56.67,9.31,6.37,51.64,0
+Depresión,Quintana Roo,Hombres,85.36,4.44,3.31,72.38,0
+Depresión,Quintana Roo,Mujeres,48.71,10.49,7.14,48.66,0
+Depresión,San Luis Potosí,Hombres,47.85,7.46,5.75,47.01,0
+Depresión,San Luis Potosí,Mujeres,34.85,14.85,11.44,31.77,0
+Depresión,Sinaloa,Hombres,35.47,8.36,6.59,31.99,0
+Depresión,Sinaloa,Mujeres,27.93,18.68,14.79,22.94,0
+Depresión,Sonora,Hombres,60.01,6.75,5.07,53.54,0
+Depresión,Sonora,Mujeres,38.58,15.83,12.05,33.84,0
+Depresión,Tabasco,Hombres,73.23,10.49,7.43,78.01,0
+Depresión,Tabasco,Mujeres,56.88,22.69,16.46,44.36,0
+Depresión,Tamaulipas,Hombres,40.05,9.93,7.88,37.11,0
+Depresión,Tamaulipas,Mujeres,27.42,18.36,14.38,23.23,0
+Depresión,Tlaxcala,Hombres,69.74,3.31,2.32,57.98,0
+Depresión,Tlaxcala,Mujeres,49.46,7.79,5.19,45.03,0
+Depresión,Veracruz,Hombres,35.92,9.67,7.57,34.4,0
+Depresión,Veracruz,Mujeres,37.31,28.35,21.76,31.35,0
+Depresión,Yucatán,Hombres,69.4,7.23,5.11,65.21,0
+Depresión,Yucatán,Mujeres,49.86,15.29,11.66,42.47,0
+Depresión,Zacatecas,Hombres,52.64,4.96,3.58,52.68,0
+Depresión,Zacatecas,Mujeres,32.8,10.67,7.85,31.88,0
+Parkinson,Aguascalientes,Hombres,41.24,1.04,0.84,42.12,0
+Parkinson,Aguascalientes,Mujeres,47.71,0.86,0.69,46.05,0
+Parkinson,Baja California,Hombres,60.85,1.66,1.34,47.96,0
+Parkinson,Baja California,Mujeres,57.55,1.71,1.34,47.44,0
+Parkinson,Baja California Sur,Hombres,61.06,0.85,0.66,50.39,0
+Parkinson,Baja California Sur,Mujeres,68.55,0.68,0.55,66.39,0
+Parkinson,Campeche,Hombres,43.25,1.07,0.81,43.47,0
+Parkinson,Campeche,Mujeres,55.34,0.86,0.69,52.91,0
+Parkinson,Chiapas,Hombres,51.82,1.5,1.16,48.2,0
+Parkinson,Chiapas,Mujeres,45.58,1.39,1.06,39.81,0
+Parkinson,Chihuahua,Hombres,69.03,2.46,2.02,60.37,0
+Parkinson,Chihuahua,Mujeres,71.5,2.6,2.11,67.31,0
+Parkinson,Ciudad de México,Hombres,86.38,2.83,2.29,70.66,0
+Parkinson,Ciudad de México,Mujeres,90.22,2.85,2.26,70.54,0
+Parkinson,Coahuila,Hombres,63.64,2.07,1.57,51.72,0
+Parkinson,Coahuila,Mujeres,63.25,1.92,1.45,48.12,0
+Parkinson,Colima,Hombres,61.63,1.74,1.36,49.19,0
+Parkinson,Colima,Mujeres,61.89,1.68,1.29,46.29,0
+Parkinson,Durango,Hombres,78.13,2.17,1.76,62.85,0
+Parkinson,Durango,Mujeres,70.34,2.02,1.64,55.87,0
+Parkinson,Guanajuato,Hombres,56.11,1.59,1.28,45.32,0
+Parkinson,Guanajuato,Mujeres,51.49,1.46,1.15,42.03,0
+Parkinson,Guerrero,Hombres,53.22,1.29,1.0,39.2,0
+Parkinson,Guerrero,Mujeres,52.63,1.42,1.1,39.81,0
+Parkinson,Hidalgo,Hombres,45.91,1.26,0.99,39.26,0
+Parkinson,Hidalgo,Mujeres,49.07,1.21,0.89,38.11,0
+Parkinson,Jalisco,Hombres,38.16,2.32,1.86,40.31,0
+Parkinson,Jalisco,Mujeres,50.44,2.56,2.08,46.58,0
+Parkinson,Michoacán,Hombres,68.18,2.06,1.65,62.02,0
+Parkinson,Michoacán,Mujeres,64.01,1.95,1.56,60.81,0
+Parkinson,Morelos,Hombres,64.48,2.07,1.7,56.71,0
+Parkinson,Morelos,Mujeres,61.8,1.92,1.52,55.99,0
+Parkinson,México,Hombres,67.18,2.6,2.17,56.17,0
+Parkinson,México,Mujeres,70.44,2.45,2.01,62.96,0
+Parkinson,Nayarit,Hombres,43.38,1.12,0.88,35.57,0
+Parkinson,Nayarit,Mujeres,49.26,1.03,0.82,41.38,0
+Parkinson,Nuevo León,Hombres,60.68,2.0,1.58,56.87,0
+Parkinson,Nuevo León,Mujeres,56.98,1.78,1.42,54.38,0
+Parkinson,Oaxaca,Hombres,63.65,1.78,1.38,53.52,0
+Parkinson,Oaxaca,Mujeres,56.0,1.59,1.25,44.92,0
+Parkinson,Puebla,Hombres,80.07,2.27,1.81,60.14,0
+Parkinson,Puebla,Mujeres,74.31,2.2,1.71,57.47,0
+Parkinson,Querétaro,Hombres,44.93,0.83,0.68,48.68,0
+Parkinson,Querétaro,Mujeres,58.4,0.78,0.62,61.08,0
+Parkinson,Quintana Roo,Hombres,53.5,0.93,0.72,44.4,0
+Parkinson,Quintana Roo,Mujeres,57.21,1.13,0.8,46.0,0
+Parkinson,San Luis Potosí,Hombres,59.97,1.58,1.27,47.25,0
+Parkinson,San Luis Potosí,Mujeres,62.05,1.71,1.32,45.05,0
+Parkinson,Sinaloa,Hombres,63.53,2.52,2.04,57.22,0
+Parkinson,Sinaloa,Mujeres,69.02,2.5,2.03,63.12,0
+Parkinson,Sonora,Hombres,65.23,1.69,1.34,54.42,0
+Parkinson,Sonora,Mujeres,60.14,1.61,1.26,44.29,0
+Parkinson,Tabasco,Hombres,52.63,1.55,1.23,41.92,0
+Parkinson,Tabasco,Mujeres,47.32,1.3,1.01,43.45,0
+Parkinson,Tamaulipas,Hombres,63.44,2.27,1.82,64.3,0
+Parkinson,Tamaulipas,Mujeres,56.59,2.01,1.59,57.72,0
+Parkinson,Tlaxcala,Hombres,41.97,0.93,0.75,47.37,0
+Parkinson,Tlaxcala,Mujeres,48.28,0.97,0.74,49.75,0
+Parkinson,Veracruz,Hombres,47.76,2.35,1.85,46.1,0
+Parkinson,Veracruz,Mujeres,62.4,2.56,2.07,56.11,0
+Parkinson,Yucatán,Hombres,49.21,1.31,0.97,38.25,0
+Parkinson,Yucatán,Mujeres,49.67,1.28,0.96,39.07,0
+Parkinson,Zacatecas,Hombres,57.65,0.76,0.61,60.06,0
+Parkinson,Zacatecas,Mujeres,68.69,0.75,0.54,65.1,0
+Alzheimer,Aguascalientes,Hombres,80.04,0.44,0.3,82.66,0
+Alzheimer,Aguascalientes,Mujeres,66.24,0.57,0.47,71.76,0
+Alzheimer,Baja California,Hombres,39.6,0.81,0.7,46.38,0
+Alzheimer,Baja California,Mujeres,33.48,0.87,0.75,31.41,0
+Alzheimer,Baja California Sur,Hombres,84.2,0.36,0.21,84.44,0
+Alzheimer,Baja California Sur,Mujeres,87.88,0.37,0.22,83.97,0
+Alzheimer,Campeche,Hombres,73.64,0.54,0.41,72.5,0
+Alzheimer,Campeche,Mujeres,76.93,0.5,0.39,75.31,0
+Alzheimer,Chiapas,Hombres,68.36,0.65,0.52,64.03,0
+Alzheimer,Chiapas,Mujeres,52.75,0.71,0.62,53.81,0
+Alzheimer,Chihuahua,Hombres,34.41,0.86,0.72,30.05,0
+Alzheimer,Chihuahua,Mujeres,31.91,0.77,0.61,30.68,0
+Alzheimer,Ciudad de México,Hombres,41.28,0.86,0.75,36.79,0
+Alzheimer,Ciudad de México,Mujeres,34.12,0.9,0.71,31.11,0
+Alzheimer,Coahuila,Hombres,57.8,0.81,0.67,52.33,0
+Alzheimer,Coahuila,Mujeres,60.37,0.86,0.71,43.26,0
+Alzheimer,Colima,Hombres,61.22,0.63,0.52,64.45,0
+Alzheimer,Colima,Mujeres,48.51,0.81,0.68,51.91,0
+Alzheimer,Durango,Hombres,61.28,0.67,0.56,63.58,0
+Alzheimer,Durango,Mujeres,43.71,0.76,0.67,50.71,0
+Alzheimer,Guanajuato,Hombres,54.44,0.67,0.6,64.92,0
+Alzheimer,Guanajuato,Mujeres,40.6,0.79,0.68,44.27,0
+Alzheimer,Guerrero,Hombres,68.96,0.54,0.4,70.99,0
+Alzheimer,Guerrero,Mujeres,64.4,0.67,0.54,64.25,0
+Alzheimer,Hidalgo,Hombres,65.51,0.53,0.45,72.1,0
+Alzheimer,Hidalgo,Mujeres,56.87,0.69,0.59,63.08,0
+Alzheimer,Jalisco,Hombres,31.42,0.85,0.66,31.31,0
+Alzheimer,Jalisco,Mujeres,32.05,0.71,0.53,28.02,0
+Alzheimer,Michoacán,Hombres,47.15,0.73,0.63,49.92,0
+Alzheimer,Michoacán,Mujeres,38.3,0.84,0.72,40.04,0
+Alzheimer,Morelos,Hombres,66.01,0.6,0.48,67.5,0
+Alzheimer,Morelos,Mujeres,52.72,0.75,0.64,54.49,0
+Alzheimer,México,Hombres,43.87,0.87,0.74,33.26,0
+Alzheimer,México,Mujeres,36.11,0.9,0.79,34.34,0
+Alzheimer,Nayarit,Hombres,56.5,0.72,0.6,57.53,0
+Alzheimer,Nayarit,Mujeres,48.48,0.83,0.71,43.45,0
+Alzheimer,Nuevo León,Hombres,34.79,0.85,0.72,31.86,0
+Alzheimer,Nuevo León,Mujeres,34.59,0.85,0.73,31.52,0
+Alzheimer,Oaxaca,Hombres,53.46,0.76,0.62,55.9,0
+Alzheimer,Oaxaca,Mujeres,39.05,0.86,0.74,42.73,0
+Alzheimer,Puebla,Hombres,62.25,0.62,0.51,70.74,0
+Alzheimer,Puebla,Mujeres,52.1,0.68,0.59,60.12,0
+Alzheimer,Querétaro,Hombres,79.69,0.47,0.34,81.86,0
+Alzheimer,Querétaro,Mujeres,73.4,0.45,0.34,79.95,0
+Alzheimer,Quintana Roo,Hombres,79.65,0.39,0.3,81.6,0
+Alzheimer,Quintana Roo,Mujeres,80.57,0.51,0.37,75.04,0
+Alzheimer,San Luis Potosí,Hombres,56.56,0.6,0.51,65.64,0
+Alzheimer,San Luis Potosí,Mujeres,45.15,0.74,0.65,52.0,0
+Alzheimer,Sinaloa,Hombres,36.99,0.87,0.73,32.28,0
+Alzheimer,Sinaloa,Mujeres,33.64,0.85,0.71,32.35,0
+Alzheimer,Sonora,Hombres,39.8,0.79,0.68,41.92,0
+Alzheimer,Sonora,Mujeres,35.32,0.86,0.73,32.8,0
+Alzheimer,Tabasco,Hombres,49.3,0.7,0.62,59.88,0
+Alzheimer,Tabasco,Mujeres,50.95,0.77,0.64,60.68,0
+Alzheimer,Tamaulipas,Hombres,38.67,0.89,0.77,33.35,0
+Alzheimer,Tamaulipas,Mujeres,36.09,0.88,0.74,31.82,0
+Alzheimer,Tlaxcala,Hombres,83.79,0.37,0.25,87.74,0
+Alzheimer,Tlaxcala,Mujeres,76.45,0.41,0.3,82.32,0
+Alzheimer,Veracruz,Hombres,33.52,0.88,0.73,31.24,0
+Alzheimer,Veracruz,Mujeres,34.42,0.86,0.69,31.57,0
+Alzheimer,Yucatán,Hombres,77.79,0.57,0.42,71.08,0
+Alzheimer,Yucatán,Mujeres,56.3,0.73,0.61,54.84,0
+Alzheimer,Zacatecas,Hombres,83.85,0.35,0.24,85.6,0
+Alzheimer,Zacatecas,Mujeres,79.27,0.44,0.31,81.35,0
