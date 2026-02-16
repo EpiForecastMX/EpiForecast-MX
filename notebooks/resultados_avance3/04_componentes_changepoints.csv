@@ -1,0 +1,4 @@
+Padecimiento,Var_Trend_pct,Var_Yearly_pct,N_Changepoints_Total,N_Changepoints_COVID,Changepoints_COVID
+Depresión,82.4,17.6,25,5,2020-02-24; 2020-07-13; 2020-11-30; 2021-04-19; 2021-09-06
+Parkinson,60.3,39.7,25,5,2020-02-24; 2020-07-13; 2020-11-30; 2021-04-19; 2021-09-06
+Alzheimer,45.6,54.4,25,5,2020-02-24; 2020-07-13; 2020-11-30; 2021-04-19; 2021-09-06
