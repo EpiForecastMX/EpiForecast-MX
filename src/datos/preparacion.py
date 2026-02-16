@@ -272,6 +272,10 @@ class dataTransformation:
 
         self.df_agrupado["Region"] = self.df_agrupado["Entidad"].map(mapa_regiones)
 
+    def genera_todos(self):
+
+        self.df_agrupado["incrementos_total"] = self.df_agrupado["incrementos_hombres"] + self.df_agrupado["incrementos_mujeres"]
+
     def run(self) -> pd.DataFrame:       
 
         outlier_cfg = self.get_opcion("tratamiento_outliers")
@@ -306,5 +310,6 @@ class dataTransformation:
 
 
         self.agrupar()
+        self.genera_todos()
 
         return self.df_agrupado

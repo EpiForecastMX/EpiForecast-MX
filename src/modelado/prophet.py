@@ -3,7 +3,7 @@
 import os
 import itertools
 import logging
-import pickle
+
 
 import cmdstanpy
 import matplotlib.pyplot as plt
@@ -25,29 +25,26 @@ logging.getLogger("cmdstanpy").disabled = True
 
 
 class SerieTiempoProphet:
-    def __init__(self, df: pd.DataFrame):
+    def __init__(self, 
+                 df: pd.DataFrame,
+                 sexo: str = None):
         
         self.df = df.copy()
         self.df["Fecha"] = pd.to_datetime(self.df["Fecha"])
         self.serie = pd.DataFrame
+        self.sexo = sexo
 
         self.modelado_estados = conf['padecimiento']['modelado_estados']
-        self.padecimiento = conf['padecimiento']['tipo']
-        self.region = conf['padecimiento']['modelado_region']
-        self.sexo = conf['padecimiento']['modelado_sexo']
         self.entrena = conf['padecimiento']['entrena_modelo']
-
         self.model_path = conf['paths']['models']
         self.model_save = conf['data']['model_train']
-        self.forecast_path = conf['paths']['forecast']
-        self.forecast_save = conf['data']['forecast']
 
         self.param_grid = conf['param_grid_prophet']
         self.mapeo_columnas = conf['mapeo_columnas']
         self.FECHA_CORTE_ENTRENAMIENTO = conf['FECHA_CORTE_ENTRENAMIENTO']
         self.TRAIN_SPLIT = conf['TS_SPLITS']
         self.regiones_INEGI = conf['regiones_INEGI']
-        self.sexo_valido = conf['valores_sexo']
+
         
         self.periodos_atipicos = conf['peridos_atipicos']
         self.fechas_atipicas = pd.DataFrame(self.periodos_atipicos)
@@ -58,20 +55,18 @@ class SerieTiempoProphet:
         self.test_data = pd.DataFrame
 
 
-    def agrupa(self,agrupador: str,region: str) -> bool:
+    def agrupa(self) -> bool:
+        
         base = (
             self.df
-            .loc[self.df[agrupador] == region,["Fecha", agrupador, "incrementos_hombres", "incrementos_mujeres"]]
-            .groupby(["Fecha",agrupador], as_index=False)[["incrementos_hombres", "incrementos_mujeres"]]
+            .groupby("Fecha")[self.sexo]
             .sum()
-            .set_index("Fecha")
         )
-        base["todos"] = base["incrementos_hombres"] + base["incrementos_mujeres"]
         self.serie = base
 
     def crea_train_test(self) -> None:
         self.serie = self.serie.rename_axis("ds").reset_index()
-        self.serie = self.serie.rename(columns = {"todos":"y"})
+        self.serie = self.serie.rename(columns = {self.sexo:"y"})
         self.train_data = self.serie[self.serie['ds'] < self.FECHA_CORTE_ENTRENAMIENTO]
         self.test_data = self.serie[self.serie['ds'] >= self.FECHA_CORTE_ENTRENAMIENTO]
 
@@ -213,53 +208,17 @@ class SerieTiempoProphet:
         plt.grid(alpha=0.3)
         plt.show()
 
-    def run(self):
+    def run(self) -> tuple[Prophet, float, dict]:
 
-        directory_manager.asegurar_ruta(self.model_path)
+        self.agrupa()
+        self.crea_train_test()
 
-        if self.modelado_estados:
-            agrupador = 'Entidad'
+        parametros, rmse = self.prophet_cross_val()
+        modelo = self.train(parametros)
 
-        if not self.modelado_estados:
-            agrupador = 'region_salud_mental'
-        
-        regiones = sorted(self.df[agrupador].unique())
-
-        resultados = []
-        
-        for region in regiones:
-            self.agrupa(agrupador,region)
-            self.crea_train_test()
-            logger.info(f"Ejecutando validación cruzada del modelo para la región: {region}")
-
-            parametros, rmse = self.prophet_cross_val()
-            modelo = self.train(parametros)
-            
-            resultados.append([region,rmse,parametros])
-            
-            directory_manager.asegurar_ruta(self.model_path)
-            ruta = os.path.join(self.model_path, f"Prophet_{region}.pkl")
-
-            with open(ruta,'wb') as f:
-                pickle.dump(modelo,f)
-
-            logger.success(f"Modelo de '{region}' guardado correctamente en: {ruta}")
-            
-            
-            df_resultados = pd.DataFrame(resultados, columns = ['Region','RMSE','parametros'])
-            serie_params = df_resultados['parametros'].where(
-                    df_resultados['parametros'].apply(lambda x: isinstance(x, dict)),
-                    other=None
-                )
-            parametros_expandidos = pd.json_normalize(serie_params)
-            df_resultados = pd.concat(
-                        [df_resultados.drop(columns=['parametros']), parametros_expandidos],
-                        axis=1
-                    )
-
-            ruta_rmse = os.path.join(self.model_path, f"Prophet_{agrupador}.csv")
-            df_resultados.to_csv(ruta_rmse, index=False, encoding='utf-8')
-
+        return modelo, rmse, parametros
+     
+     
 
 """                    
                     #df_eval_2025 = df_eval[df_eval['ds'].dt.year == 2025]
