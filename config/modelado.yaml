@@ -1,19 +1,19 @@
 param_grid_prophet:
   seasonality_mode:
     - additive
-    - multiplicative
+  #  - multiplicative
   changepoint_prior_scale:
     - 0.05
-    - 0.1
-    - 0.5
-    - 0.7
-    - 1.0
+#    - 0.1
+#    - 0.5
+#    - 0.7
+#    - 1.0
   seasonality_prior_scale:
     - 0.25
-    - 0.5
-    - 0.6
-    - 0.7
-    - 1.0
+ #   - 0.5
+ #   - 0.6
+ #   - 0.7
+ #   - 1.0
 
 FECHA_CORTE_ENTRENAMIENTO: "2025-01-01"
 TS_SPLITS: 3
@@ -31,9 +31,9 @@ peridos_atipicos:
     upper_window: 182
 
 mapeo_columnas:
-  hombres: incrementos_hombres 
-  mujeres: incrementos_mujeres
-  todos: todos
+  incrementos_hombres: hombres 
+  incrementos_mujeres: mujeres
+  incrementos_total: general
 
 regiones_INEGI:
   - 'Urbana media'
@@ -42,6 +42,6 @@ regiones_INEGI:
   - 'Rural / dispersa'
 
 valores_sexo:
-  - 'hombres'
-  - 'mujeres'
-  - 'todos'
+  - incrementos_hombres
+  - incrementos_mujeres
+  - incrementos_total

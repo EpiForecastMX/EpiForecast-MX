@@ -6,20 +6,10 @@ padecimiento:
   reporte_clean: false             # Genera reporte de datos tratados
   modelado_estados: True           # Genera modelos por estados (true) o región (false)
   modelado_region: "Metropolitana alta" # Región para Prophet
-  modelado_sexo: "todos"           # Agrupamiento por sexo
   entrena_modelo: true             # Entrena modelo final con todo el dataset
 
 
-# Regiones:
-# Urbana media
-# Sur-Sureste vulnerable
-# Metropolitana alta
-# Rural / dispersa'
 
-# Sexo:
-# hombres
-# mujeres
-# todos
 
 
 
