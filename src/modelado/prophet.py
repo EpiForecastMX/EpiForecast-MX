@@ -109,15 +109,11 @@ class SerieTiempoProphet:
 
                     modelo_cv.add_seasonality(name='monthly', period=30.5,fourier_order=3)
                     modelo_cv.fit(train_fold)
-
                     
-                    future_cv = modelo_cv.make_future_dataframe(
-                                        periods=len(val_fold), freq='W-MON'
-                                    )
-                    forecast_cv = modelo_cv.predict(future_cv)
+                    forecast_cv = modelo_cv.predict(val_fold[['ds']])
 
-                    y_pred_cv = forecast_cv.iloc[-len(val_fold):]['yhat']
-                    rmse = np.sqrt(mean_squared_error(val_fold['y'], y_pred_cv))
+                    merged = val_fold[['ds','y']].merge(forecast_cv[['ds','yhat']], on='ds')
+                    rmse = np.sqrt(mean_squared_error(merged['y'], merged['yhat']))
                     rmse_fold.append(rmse)
 
                 except Exception as e:
