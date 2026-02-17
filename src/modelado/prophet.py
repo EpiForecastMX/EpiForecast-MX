@@ -43,6 +43,7 @@ class SerieTiempoProphet:
         self.mapeo_columnas = conf['mapeo_columnas']
         self.FECHA_CORTE_ENTRENAMIENTO = conf['FECHA_CORTE_ENTRENAMIENTO']
         self.TRAIN_SPLIT = conf['TS_SPLITS']
+        self.TEST_SIZE = conf['TEST_SIZE']
         self.regiones_INEGI = conf['regiones_INEGI']
 
         
@@ -84,7 +85,7 @@ class SerieTiempoProphet:
             f"Evento configurado:'{fila['holiday']}' con una ventana de afectación de {fila['upper_window']} días."
         )
 
-        tscv = TimeSeriesSplit(n_splits=self.TRAIN_SPLIT)
+        tscv = TimeSeriesSplit(n_splits=self.TRAIN_SPLIT,test_size=self.TEST_SIZE)
         best_rmse = float('inf')
         best_param = None
 
