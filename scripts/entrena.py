@@ -1,4 +1,5 @@
 # src/scripts/entrena.py
+
 import pandas as pd
 import pickle
 import re
@@ -11,16 +12,35 @@ from src.configuraciones.config_params import conf, logger
 from src.utils import directory_manager
 
 
+
 def normalizar(region: str) -> str:
-     
     formato = unicodedata.normalize("NFKD", region).encode("ascii", "ignore").decode("ascii")
-    region_normalizado = re.sub(r"\s+", "_", formato)
-    return region_normalizado
-     
+    return re.sub(r"\s+", "_", formato)
+
+
+def entrenar(df, padecimiento, sexo, ruta_base, fecha, mapeo, region=None):
+    ruta_padecimiento = os.path.join(ruta_base, normalizar(padecimiento))
+    directory_manager.asegurar_ruta(ruta_padecimiento)
+
+    modelo, rmse, parametros = SerieTiempoProphet(df, sexo=sexo).run()
+    fila = {"padecimiento": padecimiento, "sexo": sexo, "rmse": rmse, **parametros}
+    fila["nivel"] = "nacional" if region is None else "regional"
+    if region:
+        fila["Entidad"] = region
+
+    nombre_extra = f"_{normalizar(region)}" if region else ""
+    nombre_modelo = f"Prophet_{normalizar(padecimiento)}{nombre_extra}_{mapeo.get(sexo, sexo)}_{fecha}.pkl"
+    ruta_modelo = os.path.join(ruta_padecimiento, nombre_modelo)
+
+    with open(ruta_modelo, 'wb') as f:
+        pickle.dump(modelo, f)
+
+    fila["archivo_modelo"] = nombre_modelo
+
+    return fila, ruta_padecimiento
+
 
 def main():
-
-    
     fecha = datetime.now().strftime("%Y%m%d")
 
     modelado_estados = conf['padecimiento']['modelado_estados']
@@ -31,70 +51,32 @@ def main():
     ruta_datos = conf['data']['data_inegi']
     df_entrenamiento = pd.read_csv(ruta_datos)
 
-    if modelado_estados:
-        agrupador = 'Entidad'
-    
-    if not modelado_estados:
-        agrupador = 'region_salud_mental'
-   
-   
+    agrupador = 'Entidad' if modelado_estados else 'region_salud_mental'
     regiones = sorted(df_entrenamiento[agrupador].unique())
     padecimientos = sorted(df_entrenamiento["Padecimiento"].unique())
 
-    """
-    # Entrenamiento Nacional por sexo
     for padecimiento in padecimientos:
+        logger.info(f'iniciando entrenamiento para el padecimiento: {padecimiento}')
+        df_padecimiento = df_entrenamiento[df_entrenamiento['Padecimiento'] == padecimiento]
         resultados = []
+
+        # Nacional
         for sexo in valores_sexo:
-            ruta_padecimiento = os.path.join(model_path,normalizar(padecimiento))
-            directory_manager.asegurar_ruta(ruta_padecimiento)
-                
-            df_padecimiento = df_entrenamiento[df_entrenamiento['Padecimiento'] == padecimiento]
-            modelo , rmse, parametros = SerieTiempoProphet(df_padecimiento,sexo=sexo).run()
-            
-            fila = {"padecimiento": padecimiento,"sexo": sexo, "rmse": rmse, **parametros}
+            logger.info(f"Entrenando modelo Prophet | Padecimiento: {padecimiento} | Nivel: Nacional | Sexo: {sexo}")
+            fila, ruta_padecimiento = entrenar(df_padecimiento, padecimiento, sexo, model_path, fecha, mapeo)
             resultados.append(fila)
 
-            ruta_modelo = os.path.join(ruta_padecimiento, f"Prophet_{normalizar(padecimiento)}_{sexo}_{fecha}.pkl")
-            
-            with open(ruta_modelo,'wb') as f:
-                pickle.dump(modelo,f)
-                
-        ruta_rmse = os.path.join(ruta_padecimiento, f"Prophet_{normalizar(padecimiento)}_{fecha}.csv")
-        df_resultados = pd.DataFrame(resultados)
-        df_resultados.to_csv(ruta_rmse, index=False, encoding="utf-8")
-    
-    """
-    
-    # Entrenamiento por Estado
-    for padecimiento in padecimientos:
-        ruta_padecimiento = os.path.join(model_path,normalizar(padecimiento))
-        resultados = []
-        df_padecimiento = df_entrenamiento[df_entrenamiento['Padecimiento'] == padecimiento]
-        
+        # Regional
         for region in regiones:
-            df_region = df_padecimiento[df_padecimiento['Entidad'] == region]
-
+            df_region = df_padecimiento[df_padecimiento[agrupador] == region]
             for sexo in valores_sexo:
-
-                logger.info(f'Entrenando - {region} - {sexo}')
-
-                modelo , rmse, parametros = SerieTiempoProphet(df_padecimiento,sexo=sexo).run()
-                fila = {"padecimiento": padecimiento,"Entidad" : region,"sexo": sexo, "rmse": rmse, **parametros}
+                logger.info(f"Entrenando modelo Prophet | Padecimiento: {padecimiento} | Nivel: {'Nacional' if region is None else 'Regional'} | Región: {region or 'Todos'} | Sexo: {sexo}")
+                fila, _ = entrenar(df_region, padecimiento, sexo, model_path, fecha, mapeo, region=region)
                 resultados.append(fila)
 
-                ruta_modelo = os.path.join(ruta_padecimiento, f"Prophet_{normalizar(padecimiento)}_{normalizar(region)}_{mapeo[sexo]}_{fecha}.pkl")
-                
-                with open(ruta_modelo,'wb') as f:
-                    pickle.dump(modelo,f)
-                
-        ruta_rmse = os.path.join(ruta_padecimiento, f"Prophet_{normalizar(padecimiento)}_regiones_{fecha}.csv")
-        df_resultados = pd.DataFrame(resultados)
-        df_resultados.to_csv(ruta_rmse, index=False, encoding="utf-8")
-
-        
-        
-
+        # Guardar todo en un solo CSV
+        ruta_rmse = os.path.join(ruta_padecimiento, f"Prophet_{normalizar(padecimiento)}_completo_{fecha}.csv")
+        pd.DataFrame(resultados).to_csv(ruta_rmse, index=False, encoding="utf-8")
 
 
 if __name__ == "__main__":

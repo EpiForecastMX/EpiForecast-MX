@@ -80,7 +80,7 @@ class SerieTiempoProphet:
         
         # Mostrar eventos configurados
         for _, fila in self.fechas_atipicas.iterrows():
-            logger.warning(
+            logger.debug(
             f"Evento configurado:'{fila['holiday']}' con una ventana de afectación de {fila['upper_window']} días."
         )
 
