@@ -62,16 +62,18 @@ def main():
 
         # Nacional
         for sexo in valores_sexo:
-            logger.info(f"Entrenando modelo Prophet | Padecimiento: {padecimiento} | Nivel: Nacional | Sexo: {sexo}")
+            logger.info(f"Iniciando CV Prophet | Padecimiento: {padecimiento} | Nivel: Nacional | Sexo: {sexo}")
             fila, ruta_padecimiento = entrenar(df_padecimiento, padecimiento, sexo, model_path, fecha, mapeo)
+            logger.success(f"Finalizado Prophet | Padecimiento: {padecimiento} | Nivel: Nacional | Sexo: {sexo}")
             resultados.append(fila)
 
         # Regional
         for region in regiones:
             df_region = df_padecimiento[df_padecimiento[agrupador] == region]
             for sexo in valores_sexo:
-                logger.info(f"Entrenando modelo Prophet | Padecimiento: {padecimiento} | Nivel: {'Nacional' if region is None else 'Regional'} | Región: {region or 'Todos'} | Sexo: {sexo}")
+                logger.info(f"Iniciando CV Prophet | Padecimiento: {padecimiento} | Nivel: {'Nacional' if region is None else 'Regional'} | Región: {region or 'Todos'} | Sexo: {sexo}")
                 fila, _ = entrenar(df_region, padecimiento, sexo, model_path, fecha, mapeo, region=region)
+                logger.success(f"Finalizado Prophet | Padecimiento: {padecimiento} | Nivel: {'Nacional' if region is None else 'Regional'} | Región: {region or 'Todos'} | Sexo: {sexo}")
                 resultados.append(fila)
 
         # Guardar todo en un solo CSV

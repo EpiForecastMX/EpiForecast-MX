@@ -95,9 +95,17 @@ class SerieTiempoProphet:
 
             resumen = ", ".join(f"{k}={v}" for k, v in parametro.items())
 
-            for train_idx, val_idx in tscv.split(self.train_data):
+            for fold_iteration, (train_idx, val_idx) in enumerate(tscv.split(self.train_data)):
                 train_fold = self.train_data.iloc[train_idx]
                 val_fold = self.train_data.iloc[val_idx]
+
+                logger.debug(
+                    f"Fold {fold_iteration+1}: "
+                    f"Train hasta {train_fold['ds'].max().date()}, "
+                    f"Val desde {val_fold['ds'].min().date()} "
+                    f"hasta {val_fold['ds'].max().date()}"
+                )
+
                 
                 try:
                     modelo_cv = Prophet(
