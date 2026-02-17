@@ -1,4 +1,4 @@
-# src/scripts/entrena.py
+# scripts/entrena.py
 
 import pandas as pd
 import pickle
@@ -10,7 +10,6 @@ from datetime import datetime
 from src.modelado.prophet import SerieTiempoProphet
 from src.configuraciones.config_params import conf, logger
 from src.utils import directory_manager
-
 
 
 def normalizar(region: str) -> str:
@@ -32,7 +31,7 @@ def entrenar(df, padecimiento, sexo, ruta_base, fecha, mapeo, region=None):
     nombre_modelo = f"Prophet_{normalizar(padecimiento)}{nombre_extra}_{mapeo.get(sexo, sexo)}_{fecha}.pkl"
     ruta_modelo = os.path.join(ruta_padecimiento, nombre_modelo)
 
-    with open(ruta_modelo, 'wb') as f:
+    with open(ruta_modelo, "wb") as f:
         pickle.dump(modelo, f)
 
     fila["archivo_modelo"] = nombre_modelo
@@ -43,42 +42,72 @@ def entrenar(df, padecimiento, sexo, ruta_base, fecha, mapeo, region=None):
 def main():
     fecha = datetime.now().strftime("%Y%m%d")
 
-    modelado_estados = conf['padecimiento']['modelado_estados']
-    model_path = conf['paths']['models']
-    valores_sexo = conf['valores_sexo']
-    mapeo = conf['mapeo_columnas']
+    modelado_estados = conf["padecimiento"]["modelado_estados"]
+    model_path = conf["paths"]["models"]
+    valores_sexo = conf["valores_sexo"]
+    mapeo = conf["mapeo_columnas"]
 
-    ruta_datos = conf['data']['data_inegi']
+    ruta_datos = conf["data"]["data_inegi"]
     df_entrenamiento = pd.read_csv(ruta_datos)
 
-    agrupador = 'Entidad' if modelado_estados else 'region_salud_mental'
+    agrupador = "Entidad" if modelado_estados else "region_salud_mental"
     regiones = sorted(df_entrenamiento[agrupador].unique())
     padecimientos = sorted(df_entrenamiento["Padecimiento"].unique())
 
+    # Total = por cada padecimiento: len(sexos) nacional + len(regiones)*len(sexos) regional
+    total = len(padecimientos) * len(valores_sexo) * (1 + len(regiones))
+    contador = 0
+
+    logger.info(
+        "Iniciando entrenamiento | padecimientos: {} | regiones: {} | sexo: {} | total modelos: {}",
+        len(padecimientos), len(regiones), len(valores_sexo), total,
+    )
+
     for padecimiento in padecimientos:
-        logger.info(f'iniciando entrenamiento para el padecimiento: {padecimiento}')
-        df_padecimiento = df_entrenamiento[df_entrenamiento['Padecimiento'] == padecimiento]
+        logger.info("Padecimiento: {}", padecimiento)
+        df_padecimiento = df_entrenamiento[df_entrenamiento["Padecimiento"] == padecimiento]
         resultados = []
+        ruta_padecimiento = None
 
         # Nacional
         for sexo in valores_sexo:
-            logger.info(f"Iniciando CV Prophet | Padecimiento: {padecimiento} | Nivel: Nacional | Sexo: {sexo}")
+            contador += 1
+            pct = contador / total * 100
+            logger.info(
+                "[{}/{}] {:.0f}% | CV Prophet | {} | Nacional | Sexo: {}",
+                contador, total, pct, padecimiento, sexo,
+            )
             fila, ruta_padecimiento = entrenar(df_padecimiento, padecimiento, sexo, model_path, fecha, mapeo)
-            logger.success(f"Finalizado Prophet | Padecimiento: {padecimiento} | Nivel: Nacional | Sexo: {sexo}")
+            logger.success(
+                "[{}/{}] {:.0f}% | Completado | {} | Nacional | Sexo: {}",
+                contador, total, pct, padecimiento, sexo,
+            )
             resultados.append(fila)
 
         # Regional
         for region in regiones:
             df_region = df_padecimiento[df_padecimiento[agrupador] == region]
             for sexo in valores_sexo:
-                logger.info(f"Iniciando CV Prophet | Padecimiento: {padecimiento} | Nivel: {'Nacional' if region is None else 'Regional'} | Región: {region or 'Todos'} | Sexo: {sexo}")
+                contador += 1
+                pct = contador / total * 100
+                logger.info(
+                    "[{}/{}] {:.0f}% | CV Prophet | {} | Regional | Región: {} | Sexo: {}",
+                    contador, total, pct, padecimiento, region, sexo,
+                )
                 fila, _ = entrenar(df_region, padecimiento, sexo, model_path, fecha, mapeo, region=region)
-                logger.success(f"Finalizado Prophet | Padecimiento: {padecimiento} | Nivel: {'Nacional' if region is None else 'Regional'} | Región: {region or 'Todos'} | Sexo: {sexo}")
+                logger.success(
+                    "[{}/{}] {:.0f}% | Completado | {} | Regional | Región: {} | Sexo: {}",
+                    contador, total, pct, padecimiento, region, sexo,
+                )
                 resultados.append(fila)
 
-        # Guardar todo en un solo CSV
-        ruta_rmse = os.path.join(ruta_padecimiento, f"Prophet_{normalizar(padecimiento)}_completo_{fecha}.csv")
-        pd.DataFrame(resultados).to_csv(ruta_rmse, index=False, encoding="utf-8")
+        # Guardar resultados del padecimiento
+        if ruta_padecimiento:
+            ruta_rmse = os.path.join(ruta_padecimiento, f"Prophet_{normalizar(padecimiento)}_completo_{fecha}.csv")
+            pd.DataFrame(resultados).to_csv(ruta_rmse, index=False, encoding="utf-8")
+            logger.success("Resultados guardados: {}", ruta_rmse)
+
+    logger.success("Entrenamiento completado. {} modelos entrenados.", total)
 
 
 if __name__ == "__main__":
