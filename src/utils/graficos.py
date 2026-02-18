@@ -223,8 +223,10 @@ class GraficosHelper:
 
         return self._guardar_figura(f"serie_tiempo_{padecimiento}.png")
 
+
     def graficar_pronostico(
         self,
+        modelo,
         forecast: pd.DataFrame,
         serie: pd.DataFrame,
         titulo: str,
@@ -241,6 +243,17 @@ class GraficosHelper:
             padecimiento:    Nombre normalizado (Depresion / Parkinson / Alzheimer).
             nombre_archivo:  Nombre del PNG sin extensión.
         """
+        y = serie["y"]
+        Q1, Q3 = y.quantile(0.25), y.quantile(0.75)
+        IQR = Q3 - Q1
+
+        out_mask = (y < Q1 - 1.5 * IQR) | (y > Q3 + 1.5 * IQR)
+        outliers = serie[out_mask]
+        fecha_max = serie["ds"].max()
+        y_max = serie["y"].max()
+
+        fig, ax = plt.subplots(figsize=(17, 5.5))
+
         pal = self.conf_paleta_padecimiento.get(
             padecimiento,
             {"c1": self.conf_paleta["burgundy"], "cl": "#D4758B"},
@@ -252,18 +265,9 @@ class GraficosHelper:
         forecast = forecast.dropna(subset=["ds", "yhat", "yhat_lower", "yhat_upper"])
         serie = serie.dropna(subset=["ds", "y"])
 
-        y = serie["y"]
-        Q1, Q3 = y.quantile(0.25), y.quantile(0.75)
-        IQR = Q3 - Q1
-        out_mask = (y < Q1 - 1.5 * IQR) | (y > Q3 + 1.5 * IQR)
-        outliers = serie[out_mask]
 
-        fecha_max = serie["ds"].max()
-        y_max = float(y.max()) if not y.empty else 1.0
 
-        fig, ax = plt.subplots(figsize=(17, 5.5))
-
-        # 1. Franja COVID-19
+         # ── 1. FRANJA COVID-19 ──────────────────────────────────────────────────
         ax.axvspan(covid_ini, covid_fin, alpha=0.10, color="#E53935", zorder=0)
         ax.annotate(
             "COVID-19", xy=(mid_covid, y_max * 0.96),
@@ -271,28 +275,28 @@ class GraficosHelper:
             bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="#C62828", alpha=0.85, lw=1.2),
         )
 
-        # 2. Banda intervalo de predicción
+        # ── 2. INTERVALO DE PREDICCIÓN (banda) ──────────────────────────────────n
         ax.fill_between(
             forecast["ds"], forecast["yhat_lower"], forecast["yhat_upper"],
             alpha=0.18, color=pal["c1"], zorder=1,
             label="Intervalo de predicción (80%)",
         )
 
-        # 3. Observaciones reales
+        # ── 3. OBSERVACIONES REALES (puntos verdes) ────────────────────────────
         ax.scatter(
             serie["ds"], serie["y"],
             s=10, color=self.conf_paleta["teal"], alpha=0.50, zorder=3,
             label="● Observaciones reales (incrementos semanales)",
         )
 
-        # 4. Línea de pronóstico Prophet
+        # ── 4. LÍNEA DE PRONÓSTICO PROPHET (línea roja) ────────────────────────
         ax.plot(
             forecast["ds"], forecast["yhat"],
             color=self.conf_paleta["burgundy"], linewidth=1.6, zorder=4,
             label="── Pronóstico Prophet (ŷ)",
         )
 
-        # 5. Outliers (triángulos)
+        # ── 5. OUTLIERS (triángulos) ───────────────────────────────────────────
         if len(outliers) > 0:
             ax.scatter(
                 outliers["ds"], outliers["y"],
@@ -301,11 +305,13 @@ class GraficosHelper:
                 label=f"▲ Outliers detectados (IQR) — n={len(outliers)}",
             )
 
-        # 6. Divisor datos / pronóstico
+        # ── 6. DIVISOR DATOS / PRONÓSTICO ──────────────────────────────────────
         ax.axvline(fecha_max, color=self.conf_paleta["cool_gray"], ls=":", lw=1.2, alpha=0.7)
         ax.text(fecha_max, y_max * 0.03, "  ← Datos │ Pronóstico →",
                 fontsize=8, color=self.conf_paleta["cool_gray"], va="bottom")
+        
 
+        # ── Formato ────────────────────────────────────────────────────────────
         ax.set_title(titulo, fontsize=14, fontweight="bold", pad=12)
         ax.set_xlabel("Fecha")
         ax.set_ylabel("Incrementos Semanales")
@@ -313,6 +319,9 @@ class GraficosHelper:
                   fancybox=True, borderpad=0.8, handletextpad=0.6)
         ax.xaxis.set_major_locator(mdates.YearLocator())
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+
+
+
 
         ruta = os.path.join(self.carpeta_salida, f"{nombre_archivo}.png")
         fig.tight_layout()
