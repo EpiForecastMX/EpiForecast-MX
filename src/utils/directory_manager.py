@@ -11,7 +11,7 @@ def asegurar_ruta(path_str: str | Path) -> Path:
         logger.debug(f"Carpeta existente: {path}")
 
     else:
-        logger.info(f"Carpeta no encontrada, creando: {path}")
+        logger.warning(f"Carpeta no encontrada, creando: {path}")
         path.mkdir(parents=True, exist_ok=True)
 
     return path

@@ -1,61 +1,78 @@
-#scripts/predice.py
+# scripts/predice.py
 import pandas as pd
 from pathlib import Path
-from src.modelado.forecast import ForecastModelLoader
+
+from src.modelado.forecast import ForecastModelLoader, generar_graficos_pronostico
 from src.configuraciones.config_params import conf, logger
+from src.utils import directory_manager
+
 
 def parse_nombre_modelo(stem: str) -> dict:
+    """Extrae metadatos del nombre del archivo .pkl.
+
+    Formato esperado: Prophet_{padecimiento}[_{entidad}]_{modo}_{fecha}
+    Ejemplo: Prophet_Alzheimer_Nuevo_Leon_hombres_20260216
+    """
     parts = stem.split("_")
     if len(parts) < 4:
-        raise ValueError(f"Nombre de modelo inconsistente: {stem}")
+        raise ValueError(f"Nombre de modelo inesperado: {stem!r}")
 
-    modelo = parts[0]
     padecimiento = parts[1]
     fecha = parts[-1]
     modo = parts[-2]
-
-    # Si falta entidad (solo 4 partes), la marcamos blank
-    if len(parts) == 4:
-        entidad = ""
-    else:
-        entidad = " ".join(parts[2:-2])
+    entidad = " ".join(parts[2:-2]) if len(parts) > 4 else ""
 
     return {
-        "Predict_Modelo": modelo,
-        "Predict_Padecimiento": padecimiento,
-        "Predict_Entidad": entidad,
-        "Predict_Modo": modo,
-        "Predict_Fecha": fecha,
+        "meta_padecimiento": padecimiento,
+        "meta_entidad": entidad,
+        "meta_modo": modo,
+        "meta_fecha_modelo": fecha,
     }
 
 
 def main():
-    base_models = Path(conf["data"]["model_train"])
+    periodo = conf["prediccion"]["periodo"]
+    base_models = Path(conf["paths"]["models"])
     out_file = Path(conf["data"]["forecast"])
-    out_file.parent.mkdir(parents=True, exist_ok=True)
+    directory_manager.asegurar_ruta(out_file.parent)
 
-    modelos = list(base_models.rglob("*.pkl"))
+    modelos = sorted(base_models.rglob("*.pkl"))
     total = len(modelos)
     if total == 0:
-        raise FileNotFoundError(f"No encontré .pkl en {base_models}")
-    logger.info(f">>> {total} modelos detectados. Iniciando predicciones.")
+        raise FileNotFoundError(f"No se encontraron modelos .pkl en: {base_models}")
+
+    logger.info("Modelos detectados: {} | periodo: {} semanas | salida: {}", total, periodo, out_file)
 
     frames = []
+    errores = []
 
     for i, pkl in enumerate(modelos, start=1):
-        pct = int(i*100 / total)
-        logger.info(f"[{i}/{total}] {pct}% → {pkl}")
-        
-        meta = parse_nombre_modelo(pkl.stem)
-        df = ForecastModelLoader(60, model_path=pkl).run()
-        for k, v in meta.items():
-            df[k] = v
-        frames.append(df)
-        
+        pct = int(i * 100 / total)
+        logger.info("[{}/{}] {}% → {}", i, total, pct, pkl.name)
+
+        try:
+            meta = parse_nombre_modelo(pkl.stem)
+            df = ForecastModelLoader(periodo=periodo, model_path=pkl).run()
+            for k, v in meta.items():
+                df[k] = v
+            frames.append(df)
+        except Exception as e:
+            logger.warning("Error en {}: {}", pkl.name, e)
+            errores.append(pkl.name)
+
+    if not frames:
+        raise RuntimeError("Ninguna predicción generada.")
+
     out = pd.concat(frames, ignore_index=True)
     out.to_csv(out_file, index=False)
-    logger.info(f"Predicciones completadas. Archivo CSV guardado: {out_file}")
-    
+
+    logger.success("Predicciones guardadas: {} | modelos: {} | errores: {}", out_file, len(frames), len(errores))
+    if errores:
+        for nombre in errores:
+            logger.warning("  Falló: {}", nombre)
+
+    #generar_graficos_pronostico()
+
 
 if __name__ == "__main__":
     main()
