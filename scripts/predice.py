@@ -32,8 +32,13 @@ def parse_nombre_modelo(stem: str) -> dict:
 
 def main():
     periodo = conf["prediccion"]["periodo"]
+    serie_path = conf["data"]["data_inegi"]
     base_models = Path(conf["paths"]["models"])
     out_file = Path(conf["data"]["forecast"])
+
+    serie = pd.read_csv(serie_path)
+
+
     directory_manager.asegurar_ruta(out_file.parent)
 
     modelos = sorted(base_models.rglob("*.pkl"))
@@ -71,6 +76,7 @@ def main():
         for nombre in errores:
             logger.warning("  Falló: {}", nombre)
 
+    #modelo, forecast, serie 
     #generar_graficos_pronostico()
 
 

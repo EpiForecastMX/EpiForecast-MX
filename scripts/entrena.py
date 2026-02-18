@@ -33,7 +33,8 @@ def entrenar(df, padecimiento, sexo, ruta_base, fecha, mapeo, region=None, force
             logger.info("Modelo ya existe, omitiendo: {}", existentes[0].name)
             return None, ruta_padecimiento
 
-    modelo, rmse, parametros = SerieTiempoProphet(df, sexo=sexo).run()
+    stp = SerieTiempoProphet(df, sexo=sexo)
+    modelo, rmse, parametros = stp.run()
     fila = {"padecimiento": padecimiento, "sexo": sexo, "rmse": rmse, **parametros}
     fila["nivel"] = "nacional" if region is None else "regional"
     if region:
@@ -41,6 +42,10 @@ def entrenar(df, padecimiento, sexo, ruta_base, fecha, mapeo, region=None, force
 
     with open(ruta_modelo, "wb") as f:
         pickle.dump(modelo, f)
+
+    ruta_csv = os.path.join(ruta_padecimiento, nombre_modelo.replace(".pkl", ".csv"))
+    stp.train_data.to_csv(ruta_csv, index=False, encoding="utf-8")
+    logger.info("Datos de entrenamiento guardados: {}", os.path.basename(ruta_csv))
 
     fila["archivo_modelo"] = nombre_modelo
 
