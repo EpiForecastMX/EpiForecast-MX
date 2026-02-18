@@ -6,6 +6,7 @@ import re
 import unicodedata
 import os
 from datetime import datetime
+from pathlib import Path
 
 from src.modelado.prophet import SerieTiempoProphet
 from src.configuraciones.config_params import conf, logger
@@ -17,19 +18,26 @@ def normalizar(region: str) -> str:
     return re.sub(r"\s+", "_", formato)
 
 
-def entrenar(df, padecimiento, sexo, ruta_base, fecha, mapeo, region=None):
+def entrenar(df, padecimiento, sexo, ruta_base, fecha, mapeo, region=None, force=False):
     ruta_padecimiento = os.path.join(ruta_base, normalizar(padecimiento))
     directory_manager.asegurar_ruta(ruta_padecimiento)
+
+    nombre_extra = f"_{normalizar(region)}" if region else ""
+    nombre_modelo = f"Prophet_{normalizar(padecimiento)}{nombre_extra}_{mapeo.get(sexo, sexo)}_{fecha}.pkl"
+    ruta_modelo = os.path.join(ruta_padecimiento, nombre_modelo)
+
+    if not force:
+        patron = f"Prophet_{normalizar(padecimiento)}{nombre_extra}_{mapeo.get(sexo, sexo)}_*.pkl"
+        existentes = list(Path(ruta_padecimiento).glob(patron))
+        if existentes:
+            logger.info("Modelo ya existe, omitiendo: {}", existentes[0].name)
+            return None, ruta_padecimiento
 
     modelo, rmse, parametros = SerieTiempoProphet(df, sexo=sexo).run()
     fila = {"padecimiento": padecimiento, "sexo": sexo, "rmse": rmse, **parametros}
     fila["nivel"] = "nacional" if region is None else "regional"
     if region:
         fila["Entidad"] = region
-
-    nombre_extra = f"_{normalizar(region)}" if region else ""
-    nombre_modelo = f"Prophet_{normalizar(padecimiento)}{nombre_extra}_{mapeo.get(sexo, sexo)}_{fecha}.pkl"
-    ruta_modelo = os.path.join(ruta_padecimiento, nombre_modelo)
 
     with open(ruta_modelo, "wb") as f:
         pickle.dump(modelo, f)
@@ -43,6 +51,7 @@ def main():
     fecha = datetime.now().strftime("%Y%m%d")
 
     modelado_estados = conf["padecimiento"]["modelado_estados"]
+    force = conf["padecimiento"]["entrena_modelo"]
     model_path = conf["paths"]["models"]
     valores_sexo = conf["valores_sexo"]
     mapeo = conf["mapeo_columnas"]
@@ -77,7 +86,7 @@ def main():
                 "[{}/{}] {:.0f}% | CV Prophet | {} | Nacional | Sexo: {}",
                 contador, total, pct, padecimiento, sexo,
             )
-            fila, ruta_padecimiento = entrenar(df_padecimiento, padecimiento, sexo, model_path, fecha, mapeo)
+            fila, ruta_padecimiento = entrenar(df_padecimiento, padecimiento, sexo, model_path, fecha, mapeo, force=force)
             logger.success(
                 "[{}/{}] {:.0f}% | Completado | {} | Nacional | Sexo: {}",
                 contador, total, pct, padecimiento, sexo,
@@ -94,7 +103,7 @@ def main():
                     "[{}/{}] {:.0f}% | CV Prophet | {} | Regional | Región: {} | Sexo: {}",
                     contador, total, pct, padecimiento, region, sexo,
                 )
-                fila, _ = entrenar(df_region, padecimiento, sexo, model_path, fecha, mapeo, region=region)
+                fila, _ = entrenar(df_region, padecimiento, sexo, model_path, fecha, mapeo, region=region, force=force)
                 logger.success(
                     "[{}/{}] {:.0f}% | Completado | {} | Regional | Región: {} | Sexo: {}",
                     contador, total, pct, padecimiento, region, sexo,

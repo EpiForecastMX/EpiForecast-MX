@@ -60,9 +60,19 @@ PALETTE_MAIN:
   - "#E8D5B5"   # cream
 
 PALETTE_PADECIMIENTO:
-  Depresión: "#9B2242"   # burgundy
-  Parkinson: "#00524E"   # teal
-  Alzheimer: "#B58500"   # gold
+  Depresion:             # sin acento → coincide con nombre normalizado de modelos
+    c1: "#9B2242"        # burgundy (línea principal)
+    cl: "#D4758B"        # burgundy claro (banda)
+  Parkinson:
+    c1: "#00524E"        # teal (línea principal)
+    cl: "#4A9E9A"        # teal claro (banda)
+  Alzheimer:
+    c1: "#B58500"        # gold (línea principal)
+    cl: "#D4B24A"        # gold claro (banda)
+
+COVID:
+  inicio: "2020-03-15"  # Inicio confinamiento México
+  fin: "2021-06-30"     # Fin confinamiento estricto
 
 PALETTE_SEXO:
   Hombres: "#00524E"     # teal
