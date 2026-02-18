@@ -29,4 +29,5 @@ data:
   inegi: "${paths.utils}/inegi.csv"
   data_inegi: "${paths.processed}/data_inegi_${padecimiento.tipo}.csv"
   xlsx_inegi: "${paths.processed}/EpiForecast-MX.xlsx"
-  model_train: "${paths.models}/Prophet_"
+  model_train: "${paths.models}/"
+  forecast: "${paths.forecast}/all_forecast.csv"
