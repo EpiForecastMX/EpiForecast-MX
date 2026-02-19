@@ -27,6 +27,8 @@ echo ">>> [3/4] Sincronizando código desde GitHub..."
 git pull origin main
 
 echo ">>> [4/4] Sincronizando datos desde S3..."
+# Limpiar .DS_Store antes de dvc pull (macOS los genera y bloquean DVC)
+find . -name ".DS_Store" -delete 2>/dev/null
 dvc pull
 
 echo "══════════════════════════════════════════════════════════"
