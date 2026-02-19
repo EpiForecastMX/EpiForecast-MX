@@ -10,34 +10,28 @@ from src.utils import directory_manager
 def parse_nombre_modelo(stem: str) -> dict:
     """Extrae metadatos del nombre del archivo .pkl.
 
-    Formato esperado: Prophet_{padecimiento}[_{entidad}]_{modo}_{fecha}
-    Ejemplo: Prophet_Alzheimer_Nuevo_Leon_hombres_20260216
+    Formato esperado: Prophet_{padecimiento}[_{entidad}]_{modo}
+    Ejemplo: Prophet_Alzheimer_Nuevo_Leon_hombres
     """
     parts = stem.split("_")
-    if len(parts) < 4:
+    if len(parts) < 3:
         raise ValueError(f"Nombre de modelo inesperado: {stem!r}")
 
     padecimiento = parts[1]
-    fecha = parts[-1]
-    modo = parts[-2]
-    entidad = " ".join(parts[2:-2]) if len(parts) > 4 else ""
+    modo = parts[-1]
+    entidad = " ".join(parts[2:-1]) if len(parts) > 3 else ""
 
     return {
         "meta_padecimiento": padecimiento,
         "meta_entidad": entidad,
         "meta_modo": modo,
-        "meta_fecha_modelo": fecha,
     }
 
 
 def main():
     periodo = conf["prediccion"]["periodo"]
-    serie_path = conf["data"]["data_inegi"]
     base_models = Path(conf["paths"]["models"])
     out_file = Path(conf["data"]["forecast"])
-
-    serie = pd.read_csv(serie_path)
-
 
     directory_manager.asegurar_ruta(out_file.parent)
 
@@ -77,7 +71,7 @@ def main():
             logger.warning("  Falló: {}", nombre)
 
     #modelo, forecast, serie 
-    #generar_graficos_pronostico()
+    generar_graficos_pronostico()
 
 
 if __name__ == "__main__":

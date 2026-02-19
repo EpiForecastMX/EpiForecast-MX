@@ -226,7 +226,6 @@ class GraficosHelper:
 
     def graficar_pronostico(
         self,
-        modelo,
         forecast: pd.DataFrame,
         serie: pd.DataFrame,
         titulo: str,
