@@ -206,3 +206,7 @@ integrador/
 !data/processed/*.dvc
 !data/processed/.gitignore
 models/Prophet_General_Metropolitana alta_todos.pkl
+!/data/raw/
+/data/raw/*
+!data/raw/*.dvc
+!data/raw/.gitignore
