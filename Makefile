@@ -186,6 +186,20 @@ predict:
 	$(PYTHON_INTERPRETER) -m scripts.predice
 	@echo ">>> Predicciones generadas."
 
+## Versionar modelos entrenados con DVC y subir a S3
+.PHONY: models-push
+models-push:
+	dvc add models/
+	dvc push
+	@echo ">>> Modelos versionados y subidos a S3."
+
+## Versionar forecast con DVC y subir a S3
+.PHONY: forecast-push
+forecast-push:
+	dvc add forecast/all_forecast.csv
+	dvc push
+	@echo ">>> Forecast versionado y subido a S3."
+
 #################################################################################
 # Self Documenting Commands                                                     #
 #################################################################################
