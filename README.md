@@ -268,6 +268,7 @@ Todos los comandos están definidos en el `Makefile` de la raíz del proyecto. E
 | `make data-add PDF=ruta/archivo.pdf` | Agrega nuevo boletín PDF al tracking |
 | `make data-commit` | Commitea cambios de datos y push a Git + S3 |
 | `make data-weekly PDF=ruta/archivo.pdf` | Flujo semanal completo (add + commit) |
+| `make s3-sync` | Sube CSVs directamente a S3 (acceso directo, sin DVC) |
 
 ### Calidad de Código
 
@@ -514,6 +515,21 @@ dvc pull
 ```
 
 Esto descarga automaticamente los modelos y forecasts mas recientes desde S3.
+
+### Acceso directo a CSVs en S3
+
+Ademas del versionado con DVC, los CSVs clave se publican directamente en S3 para acceso sin necesidad de DVC (dashboards, APIs, consumo externo):
+
+| Archivo | Ruta S3 |
+|---------|---------|
+| Datos con INEGI | `s3://epiforecast-mx-data/latest/data_inegi_General.csv` |
+| Forecast consolidado | `s3://epiforecast-mx-data/latest/all_forecast.csv` |
+
+Para actualizar estos archivos despues de un reentrenamiento:
+
+```bash
+make s3-sync
+```
 
 ---
 
