@@ -200,6 +200,14 @@ forecast-push:
 	dvc push
 	@echo ">>> Forecast versionado y subido a S3."
 
+## Subir CSVs de datos y forecast directamente a S3 (acceso directo, sin DVC)
+.PHONY: s3-sync
+s3-sync:
+	@echo ">>> Subiendo CSVs a s3://epiforecast-mx-data/latest/ ..."
+	aws s3 cp data/processed/data_inegi_General.csv s3://epiforecast-mx-data/latest/data_inegi_General.csv
+	aws s3 cp forecast/all_forecast.csv s3://epiforecast-mx-data/latest/all_forecast.csv
+	@echo ">>> CSVs disponibles en s3://epiforecast-mx-data/latest/"
+
 #################################################################################
 # Self Documenting Commands                                                     #
 #################################################################################
