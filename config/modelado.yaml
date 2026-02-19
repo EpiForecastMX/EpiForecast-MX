@@ -2,9 +2,9 @@ param_grid_prophet:
   seasonality_mode:
     - multiplicative        # additive descartado: RMSE ~7-9 vs ~5-6 en CV
   changepoint_prior_scale:
-    - 0.005                 # 0.001 causa fallo L-BFGS (paisaje demasiado plano)
     - 0.01                  # mejor en CV anterior
     - 0.05
+    - 0.1
   seasonality_prior_scale:
     - 0.5
     - 1.0                   # mejor en CV anterior
