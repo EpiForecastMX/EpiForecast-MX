@@ -91,7 +91,11 @@ El sistema genera **proyecciones a nivel nacional y estatal** (32 entidades fede
 │                                    └─────────────────────────────────────┘      │
 │                                                              │                   │
 │                                                              ▼                   │
+│                                                  models/*.pkl (DVC → S3)        │
+│                                                              │                   │
+│                                                              ▼                   │
 │                                                     Pronósticos CSV              │
+│                                                       (DVC → S3)                │
 │                                                                                  │
 └─────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -141,7 +145,7 @@ EpiForecast-MX/
 │   └── utils/                  # Gráficos, reportes PDF, directory manager
 │
 ├── scripts/                    # Entry points para Makefile y CI/CD
-├── models/                     # Modelos entrenados Prophet (.pkl)
+├── models/                     # Modelos entrenados Prophet (.pkl) (DVC)
 ├── notebooks/                  # Libretas de análisis (Avance 1-3, Data Extract)
 ├── outputs/                    # Visualizaciones generadas
 │   ├── eda/                    #   └─ Gráficos EDA (21+ figuras)
@@ -249,8 +253,10 @@ Todos los comandos están definidos en el `Makefile` de la raíz del proyecto. E
 
 | Comando | Descripción |
 |---------|-------------|
-| `make train` | Entrena modelo Prophet con CV temporal (por estado o región según config) |
-| `make predict` | Genera predicciones (60 semanas) usando los modelos entrenados |
+| `make train` | Entrena modelo Prophet con CV temporal (por estado o region segun config) |
+| `make predict` | Genera predicciones (120 semanas) usando los modelos entrenados |
+| `make models-push` | Versiona modelos con DVC y sube a S3 |
+| `make forecast-push` | Versiona forecast con DVC y sube a S3 |
 
 ### Gestión de Datos (DVC)
 
@@ -430,6 +436,84 @@ make preprocess
 ```
 
 > **Importante:** No ejecutes `make -j preprocess` (modo paralelo). Los pasos son secuenciales y dependen de la salida del paso anterior. Los nombres de archivo con `General` corresponden al valor por defecto de `padecimiento.tipo` en `config/params.yaml`.
+
+---
+
+## Flujo de Modelado (Entrenamiento y Prediccion)
+
+Una vez completado el preprocesamiento, el flujo de modelado genera modelos Prophet por estado/region y sexo, y produce un forecast consolidado.
+
+### Flujo completo
+
+```bash
+# 1. Entrenar modelos (genera .pkl y .csv en models/)
+make train
+
+# 2. Versionar modelos y subir a S3
+make models-push
+
+# 3. Generar predicciones consolidadas (forecast/all_forecast.csv)
+make predict
+
+# 4. Versionar forecast y subir a S3
+make forecast-push
+
+# 5. Commit de archivos DVC y push a GitHub
+git add models.dvc forecast/all_forecast.csv.dvc
+git commit -m "feat: nuevos modelos y forecast"
+git push
+```
+
+### Diagrama
+
+```
+make train
+    │
+    ▼
+models/
+├── Alzheimer/    ─┐
+├── Depresion/     ├── Prophet_{Padecimiento}_{Estado}_{Sexo}_{Fecha}.pkl
+└── Parkinson/    ─┘
+    │
+    ▼
+make models-push ──▶ DVC add + push ──▶ S3 (s3://epiforecast-mx-data)
+    │
+    ▼
+make predict
+    │
+    ▼
+forecast/all_forecast.csv  (todas las predicciones consolidadas, 120 semanas)
+    │
+    ▼
+make forecast-push ──▶ DVC add + push ──▶ S3
+    │
+    ▼
+git add *.dvc && git commit && git push
+```
+
+### Archivos DVC generados
+
+| Archivo | Contenido | Almacenamiento |
+|---------|-----------|----------------|
+| `models.dvc` | Hash de toda la carpeta `models/` (~900 archivos, ~109 MB) | S3 |
+| `forecast/all_forecast.csv.dvc` | Hash del forecast consolidado (~180 MB) | S3 |
+
+> Ambos archivos `.dvc` se commitean a Git. Los datos reales viven en S3 y se descargan con `dvc pull`.
+
+### Sincronizacion para el equipo
+
+Cuando un miembro del equipo entrena nuevos modelos y hace push, los demas solo necesitan:
+
+```bash
+# Opcion 1: Sincronizacion rapida (activa entorno + git pull + dvc pull)
+source scripts/imss.sh
+
+# Opcion 2: Manual
+git pull origin main
+dvc pull
+```
+
+Esto descarga automaticamente los modelos y forecasts mas recientes desde S3.
 
 ---
 

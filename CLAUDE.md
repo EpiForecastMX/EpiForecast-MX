@@ -21,7 +21,7 @@ Utiliza Facebook Prophet para series de tiempo, con datos históricos (2014-2026
 - **Entorno virtual:** se llama `integrador/` (no `.venv`); activar con `source integrador/bin/activate`
 - **Configuración:** todos los parámetros en YAML (`config/`), cargados via OmegaConf en `src/configuraciones/config_params.py`
 - **Logging:** Loguru con dual-sink (consola + archivo rotativo) configurado en `config/logging.yaml`
-- **Versionado de datos:** archivos grandes (PDFs, datasets) trackeados por DVC en S3 (`s3://epiforecast-mx-data/`)
+- **Versionado de datos:** archivos grandes (PDFs, datasets, modelos, forecast) trackeados por DVC en S3 (`s3://epiforecast-mx-data/`)
 - **Linter/formatter:** Ruff (line-length 99)
 
 ## Estructura de Directorios
@@ -95,7 +95,7 @@ EpiForecast-MX/
 │   ├── eda/                        #   Gráficos EDA (21+ figuras)
 │   └── feature_engineering/        #   Gráficos FE (heatmaps, bump charts, series)
 │
-├── models/                         # Modelos entrenados Prophet (.pkl)
+├── models/                         # Modelos entrenados Prophet (.pkl) (DVC)
 ├── logs/                           # Logs rotativos (Loguru)
 ├── reports/                        # Reportes PDF y figuras
 │   ├── docs/                       #   PDFs de EDA generados
@@ -149,15 +149,28 @@ make mapper       # Mapear entidades con regiones INEGI → genera .csv y .xlsx
 
 ### Modelado
 ```bash
-make train        # Entrena Prophet con CV temporal (por estado o región según config)
-make predict      # Genera predicciones (60 semanas) con modelo entrenado
+make train          # Entrena Prophet con CV temporal (por estado o region segun config)
+make models-push    # Versiona modelos con DVC y sube a S3
+make predict        # Genera predicciones (120 semanas) con modelos entrenados
+make forecast-push  # Versiona forecast con DVC y sube a S3
+```
+
+### Flujo completo de modelado
+```bash
+make train          # 1. Entrenar
+make models-push    # 2. Subir modelos a S3
+make predict        # 3. Predecir
+make forecast-push  # 4. Subir forecast a S3
+git add models.dvc forecast/all_forecast.csv.dvc
+git commit -m "feat: nuevos modelos y forecast"
+git push
 ```
 
 ### DVC
 ```bash
-make data-pull    # Descargar datos desde S3
+make data-pull    # Descargar datos, modelos y forecast desde S3
 make data-push    # Subir datos a S3
-make data-status  # Estado de sincronización
+make data-status  # Estado de sincronizacion
 make data-add PDF=ruta/archivo.pdf   # Trackear nuevo PDF
 make data-commit  # Commitear datos + push a Git y S3
 ```
@@ -188,10 +201,10 @@ SINAVE PDFs ──▶ Extracción (Camelot) ──▶ Merge ──▶ dataset_bo
               mapper (merge con INEGI: población, superficie, región salud mental)
                       │
                       ▼
-              train (Prophet por estado o región × sexo)
+              train (Prophet por estado o region x sexo)
                       │
                       ▼
-              models/*.pkl  +  predict → forecasts CSV
+              models/*.pkl (DVC → S3)  +  predict → forecast/all_forecast.csv (DVC → S3)
 ```
 
 ### Configuración Clave (`config/params.yaml`)
@@ -220,12 +233,14 @@ padecimiento:
 1. **`scrape_boletines.yml`** — Diario 2 PM CDMX: Selenium descarga nuevos boletines SINAVE → DVC push → git commit → SNS
 2. **`process_boletines.yml`** — Trigger post-scraping: extrae tablas (Camelot, keywords F32/G20/G30) → merge incremental → DVC push → SNS
 
-## Data Files
+## Data Files (DVC-versioned en S3)
 
-- **`data/raw_PDFs/`** — ~633 boletines epidemiológicos 2014-2026 (~1GB, DVC-versioned)
-- **`data/processed/dataset_boletin_epidemiologico.csv`** — Dataset consolidado (DVC-versioned)
-- **`data/registry.json`** — Registro de boletines procesados (anti-duplicados)
-- **`data/utils/inegi.csv`** — Datos demográficos INEGI (población, superficie)
+- **`data/raw_PDFs/`** — ~633 boletines epidemiologicos 2014-2026 (~1GB)
+- **`data/processed/dataset_boletin_epidemiologico.csv`** — Dataset consolidado
+- **`models/`** — ~900 modelos Prophet .pkl + .csv de entrenamiento (~109 MB)
+- **`forecast/all_forecast.csv`** — Predicciones consolidadas (~180 MB)
+- **`data/registry.json`** — Registro de boletines procesados (anti-duplicados, Git)
+- **`data/utils/inegi.csv`** — Datos demograficos INEGI (poblacion, superficie, Git)
 
 ## Estado Actual del Pipeline
 
@@ -238,6 +253,5 @@ padecimiento:
 - Detección de outliers parametrizada (IQR / Z-score)
 
 ### TODOs / Inconsistencias Conocidas
-- **`pyproject.toml`**: `requires-python = "~=3.14.0"` debería ser `~=3.12.0`; `name = "alzheimer"` y `[tool.ruff] src = ["alzheimer"]` deberían reflejar el nombre actual del proyecto
-- **`predict`**: implementación básica (carga un solo modelo); pendiente iterar sobre todos los `.pkl` generados por `train`
+- **`pyproject.toml`**: `requires-python = "~=3.14.0"` deberia ser `~=3.12.0`; `name = "alzheimer"` y `[tool.ruff] src = ["alzheimer"]` deberian reflejar el nombre actual del proyecto
 - **`metadata` en `params.yaml`**: referencia al proyecto antiguo ("Alzheimer", URL de repo anterior)
