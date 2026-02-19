@@ -147,8 +147,8 @@ class SerieTiempoProphet:
 
         return best_param, best_rmse
     
-    def train(self,parametros) -> Prophet:
-        
+    def train(self, parametros) -> Prophet:
+
         modelo_final = Prophet(
                 holidays=self.fechas_atipicas,
                 **self.param_model,
@@ -156,7 +156,19 @@ class SerieTiempoProphet:
             )
 
         modelo_final.add_seasonality(**self.add_seasonality_params)
-        modelo_final.fit(self.train_data)
+
+        try:
+            modelo_final.fit(self.train_data)
+        except Exception as e:
+            logger.warning("L-BFGS fallo, reintentando con changepoint_prior_scale=0.05: {}", e)
+            parametros_fallback = {**parametros, "changepoint_prior_scale": 0.05}
+            modelo_final = Prophet(
+                holidays=self.fechas_atipicas,
+                **self.param_model,
+                **parametros_fallback
+            )
+            modelo_final.add_seasonality(**self.add_seasonality_params)
+            modelo_final.fit(self.train_data)
 
         return modelo_final
     
