@@ -2,8 +2,7 @@ param_grid_prophet:
   seasonality_mode:
     - multiplicative        # additive descartado: RMSE ~7-9 vs ~5-6 en CV
   changepoint_prior_scale:
-    - 0.001
-    - 0.005
+    - 0.005                 # 0.001 causa fallo L-BFGS (paisaje demasiado plano)
     - 0.01                  # mejor en CV anterior
     - 0.05
   seasonality_prior_scale:
@@ -19,7 +18,7 @@ param_model:
 add_seasonality:
   name: 'yearly_custom'
   period: 52.18             # 365.25/7 — anual exacto en semanas
-  fourier_order: 8          # mas flexible que Prophet default (10)
+  fourier_order: 5          # reducido de 8: menos params = L-BFGS mas estable
 
 FECHA_CORTE_ENTRENAMIENTO: "2025-01-01"
 TS_SPLITS: 4
