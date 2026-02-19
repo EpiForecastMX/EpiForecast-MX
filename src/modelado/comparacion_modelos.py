@@ -1,0 +1,698 @@
+# src/modelado/comparacion_modelos.py
+"""
+Módulo de comparación de modelos para forecasting epidemiológico.
+
+Evalúa Prophet, XGBoost, SARIMAX y Ridge con cross-validation temporal
+y tracking de experimentos compatible con SageMaker Experiments.
+"""
+
+import itertools
+import json
+import logging
+import time
+import warnings
+from abc import ABC, abstractmethod
+from datetime import datetime
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+from sklearn.metrics import (
+    mean_absolute_error,
+    mean_absolute_percentage_error,
+    mean_squared_error,
+)
+from sklearn.model_selection import TimeSeriesSplit
+
+from src.configuraciones.config_params import logger
+
+
+# ─── Features temporales para modelos tabulares ───────────────────────────────
+
+
+def crear_features_temporales(df, lags=None, rolling_windows=None):
+    """Genera features de calendario y lag para modelos tabulares (XGBoost, Ridge)."""
+    if lags is None:
+        lags = [1, 2, 4, 12, 52]
+    if rolling_windows is None:
+        rolling_windows = [4, 12, 26]
+
+    out = df[["ds", "y"]].copy()
+    out = out.sort_values("ds").reset_index(drop=True)
+
+    # Calendario
+    out["week_of_year"] = out["ds"].dt.isocalendar().week.astype(int)
+    out["month"] = out["ds"].dt.month
+    out["quarter"] = out["ds"].dt.quarter
+    out["year"] = out["ds"].dt.year
+
+    # Encoding cíclico (evita discontinuidad semana 52→1)
+    out["week_sin"] = np.sin(2 * np.pi * out["week_of_year"] / 52)
+    out["week_cos"] = np.cos(2 * np.pi * out["week_of_year"] / 52)
+    out["month_sin"] = np.sin(2 * np.pi * out["month"] / 12)
+    out["month_cos"] = np.cos(2 * np.pi * out["month"] / 12)
+
+    # Lags
+    for lag in lags:
+        out[f"lag_{lag}"] = out["y"].shift(lag)
+
+    # Rolling stats (shift 1 para evitar data leakage)
+    for w in rolling_windows:
+        out[f"rolling_mean_{w}"] = out["y"].shift(1).rolling(window=w).mean()
+        out[f"rolling_std_{w}"] = out["y"].shift(1).rolling(window=w).std()
+
+    return out
+
+
+def _feature_cols(df):
+    """Retorna columnas de features (todo excepto ds, y)."""
+    return [c for c in df.columns if c not in ("ds", "y")]
+
+
+# ─── Clase base de modelo ─────────────────────────────────────────────────────
+
+
+class ModeloBase(ABC):
+    """Interfaz base para todos los modelos de forecasting."""
+
+    nombre: str = "base"
+
+    @abstractmethod
+    def fit(self, train_df: pd.DataFrame) -> None:
+        """Entrena con DataFrame que contiene columnas ds, y."""
+
+    @abstractmethod
+    def predict(self, dates_df: pd.DataFrame) -> np.ndarray:
+        """Predice para un DataFrame con columna ds. Retorna array de predicciones."""
+
+    def set_params(self, params: dict) -> None:
+        """Configura hiperparámetros. Override en subclases."""
+        self._params = params
+
+    def cross_validate(self, train_df, param_grid, n_splits=4, test_size=53):
+        """CV temporal con grid search. Retorna (mejores_params, mejor_rmse, historial)."""
+        if not param_grid:
+            param_list = [{}]
+        else:
+            keys = list(param_grid.keys())
+            combos = list(itertools.product(*param_grid.values()))
+            param_list = [dict(zip(keys, v)) for v in combos]
+
+        tscv = TimeSeriesSplit(n_splits=n_splits, test_size=test_size)
+        best_rmse = float("inf")
+        best_params = {}
+        historial = []
+
+        logger.info(
+            f"[{self.nombre}] {len(param_list)} combinaciones × {n_splits} folds "
+            f"= {len(param_list) * n_splits} evaluaciones"
+        )
+
+        for i, params in enumerate(param_list):
+            fold_rmses = []
+
+            for fold_idx, (train_idx, val_idx) in enumerate(tscv.split(train_df)):
+                fold_train = train_df.iloc[train_idx]
+                fold_val = train_df.iloc[val_idx]
+
+                try:
+                    self.set_params(params)
+                    self.fit(fold_train)
+                    preds = self.predict(fold_val)
+                    rmse = np.sqrt(mean_squared_error(fold_val["y"].values, preds))
+                    fold_rmses.append(rmse)
+                    logger.debug(
+                        f"[{self.nombre}] Iter {i + 1} Fold {fold_idx + 1}: RMSE={rmse:.4f}"
+                    )
+                except Exception as e:
+                    logger.warning(f"[{self.nombre}] Error en iter {i + 1} fold {fold_idx + 1}: {e}")
+                    continue
+
+            if fold_rmses:
+                mean_rmse = float(np.mean(fold_rmses))
+                std_rmse = float(np.std(fold_rmses))
+                historial.append({
+                    "params": params,
+                    "mean_rmse": mean_rmse,
+                    "std_rmse": std_rmse,
+                    "folds_completados": len(fold_rmses),
+                })
+                if mean_rmse < best_rmse:
+                    best_rmse = mean_rmse
+                    best_params = params
+                    logger.info(
+                        f"[{self.nombre}] CV iter {i + 1}/{len(param_list)} — "
+                        f"Nuevo mejor RMSE: {best_rmse:.4f} ± {std_rmse:.4f}"
+                    )
+
+        logger.success(f"[{self.nombre}] Mejor RMSE: {best_rmse:.4f} | Params: {best_params}")
+        return best_params, best_rmse, historial
+
+
+# ─── Prophet ──────────────────────────────────────────────────────────────────
+
+
+class ModeloProphet(ModeloBase):
+    nombre = "Prophet"
+
+    def __init__(self, periodos_atipicos=None, seasonality_config=None, base_params=None):
+        self._params = {}
+        self._model = None
+        self._periodos_atipicos = periodos_atipicos
+        self._seasonality_config = seasonality_config or {
+            "name": "yearly_custom",
+            "period": 52.18,
+            "fourier_order": 5,
+        }
+        self._base_params = base_params or {
+            "yearly_seasonality": False,
+            "weekly_seasonality": False,
+            "daily_seasonality": False,
+        }
+
+    def set_params(self, params):
+        self._params = params
+
+    def fit(self, train_df):
+        from prophet import Prophet
+
+        logging.getLogger("cmdstanpy").disabled = True
+
+        holidays = None
+        if self._periodos_atipicos:
+            holidays = pd.DataFrame(self._periodos_atipicos)
+            holidays["ds"] = pd.to_datetime(holidays["ds"])
+
+        model = Prophet(holidays=holidays, **self._base_params, **self._params)
+        model.add_seasonality(**self._seasonality_config)
+        model.fit(train_df[["ds", "y"]])
+        self._model = model
+
+    def predict(self, dates_df):
+        forecast = self._model.predict(dates_df[["ds"]])
+        return forecast["yhat"].values
+
+
+# ─── XGBoost ──────────────────────────────────────────────────────────────────
+
+
+class ModeloXGBoost(ModeloBase):
+    nombre = "XGBoost"
+
+    def __init__(self, lags=None, rolling_windows=None):
+        self._params = {"n_estimators": 300, "max_depth": 5, "learning_rate": 0.05}
+        self._model = None
+        self._lags = lags or [1, 2, 4, 8, 12, 52]
+        self._rolling_windows = rolling_windows or [4, 12, 26]
+        self._train_df_full = None
+        self._feat_cols = None
+
+    def set_params(self, params):
+        base = {"n_estimators": 300, "max_depth": 5, "learning_rate": 0.05}
+        self._params = {**base, **params}
+
+    def fit(self, train_df):
+        import xgboost as xgb
+
+        featured = crear_features_temporales(
+            train_df, lags=self._lags, rolling_windows=self._rolling_windows
+        )
+        featured = featured.dropna()
+        self._train_df_full = train_df.copy()
+
+        self._feat_cols = _feature_cols(featured)
+        X = featured[self._feat_cols].values
+        y = featured["y"].values
+
+        self._model = xgb.XGBRegressor(**self._params, random_state=42, verbosity=0)
+        self._model.fit(X, y)
+
+    def predict(self, dates_df):
+        # Concatenar train + dates para calcular lags correctamente
+        combined = pd.concat([
+            self._train_df_full[["ds", "y"]],
+            dates_df[["ds"]].assign(y=np.nan),
+        ]).reset_index(drop=True)
+
+        featured = crear_features_temporales(
+            combined, lags=self._lags, rolling_windows=self._rolling_windows
+        )
+
+        mask = featured["ds"].isin(dates_df["ds"])
+        pred_features = featured.loc[mask, self._feat_cols].ffill().bfill()
+
+        return self._model.predict(pred_features.values)
+
+
+# ─── SARIMAX ──────────────────────────────────────────────────────────────────
+
+
+class ModeloSARIMAX(ModeloBase):
+    """SARIMAX de statsmodels. NOTA: con seasonal_order s=52 puede ser lento (~2-5 min/fold)."""
+
+    nombre = "SARIMAX"
+
+    def __init__(self):
+        self._params = {"order": (1, 1, 1), "seasonal_order": (0, 0, 0, 0)}
+        self._model = None
+        self._train_series = None
+
+    def set_params(self, params):
+        parsed = {}
+        for k, v in params.items():
+            parsed[k] = tuple(v) if isinstance(v, list) else v
+        self._params = parsed
+
+    def fit(self, train_df):
+        from statsmodels.tsa.statespace.sarimax import SARIMAX
+
+        warnings.filterwarnings("ignore", category=UserWarning)
+
+        series = train_df.set_index("ds")["y"].asfreq("W-MON")
+        series = series.ffill()
+        self._train_series = series
+
+        order = self._params.get("order", (1, 1, 1))
+        seasonal = self._params.get("seasonal_order", (0, 0, 0, 0))
+
+        model = SARIMAX(
+            series,
+            order=order,
+            seasonal_order=seasonal,
+            enforce_stationarity=False,
+            enforce_invertibility=False,
+        )
+        self._model = model.fit(disp=False, maxiter=200)
+
+    def predict(self, dates_df):
+        start = dates_df["ds"].min()
+        end = dates_df["ds"].max()
+        forecast = self._model.predict(start=start, end=end)
+
+        result = dates_df[["ds"]].merge(
+            forecast.reset_index().rename(columns={"index": "ds", 0: "yhat"}),
+            on="ds",
+            how="left",
+        )
+        return result["yhat"].fillna(0).values
+
+    def cross_validate(self, train_df, param_grid, n_splits=4, test_size=53):
+        """CV especial para SARIMAX: order y seasonal_order son tuplas, no escalares."""
+        orders = param_grid.get("order", [(1, 1, 1)])
+        seasonal_orders = param_grid.get("seasonal_order", [(0, 0, 0, 0)])
+
+        tscv = TimeSeriesSplit(n_splits=n_splits, test_size=test_size)
+        best_rmse = float("inf")
+        best_params = {}
+        historial = []
+        total_combos = len(orders) * len(seasonal_orders)
+
+        logger.info(
+            f"[SARIMAX] {total_combos} combinaciones × {n_splits} folds "
+            f"= {total_combos * n_splits} evaluaciones"
+        )
+
+        combo_idx = 0
+        for order in orders:
+            for seasonal in seasonal_orders:
+                combo_idx += 1
+                params = {
+                    "order": tuple(order) if isinstance(order, list) else order,
+                    "seasonal_order": tuple(seasonal) if isinstance(seasonal, list) else seasonal,
+                }
+                fold_rmses = []
+
+                for fold_idx, (train_idx, val_idx) in enumerate(tscv.split(train_df)):
+                    fold_train = train_df.iloc[train_idx]
+                    fold_val = train_df.iloc[val_idx]
+
+                    try:
+                        self.set_params(params)
+                        self.fit(fold_train)
+                        preds = self.predict(fold_val)
+                        rmse = np.sqrt(mean_squared_error(fold_val["y"].values, preds))
+                        fold_rmses.append(rmse)
+                    except Exception as e:
+                        logger.debug(f"[SARIMAX] Fold {fold_idx + 1} error con {params}: {e}")
+                        continue
+
+                if fold_rmses:
+                    mean_rmse = float(np.mean(fold_rmses))
+                    std_rmse = float(np.std(fold_rmses))
+                    historial.append({
+                        "params": params,
+                        "mean_rmse": mean_rmse,
+                        "std_rmse": std_rmse,
+                        "folds_completados": len(fold_rmses),
+                    })
+                    if mean_rmse < best_rmse:
+                        best_rmse = mean_rmse
+                        best_params = params
+                        logger.info(
+                            f"[SARIMAX] Combo {combo_idx}/{total_combos} — "
+                            f"Nuevo mejor RMSE: {best_rmse:.4f} ± {std_rmse:.4f}"
+                        )
+
+        logger.success(f"[SARIMAX] Mejor RMSE: {best_rmse:.4f} | Params: {best_params}")
+        return best_params, best_rmse, historial
+
+
+# ─── Ridge ────────────────────────────────────────────────────────────────────
+
+
+class ModeloRidge(ModeloBase):
+    nombre = "Ridge"
+
+    def __init__(self, lags=None, rolling_windows=None):
+        self._params = {"alpha": 1.0}
+        self._model = None
+        self._lags = lags or [1, 2, 4, 8, 12, 52]
+        self._rolling_windows = rolling_windows or [4, 12, 26]
+        self._train_df_full = None
+        self._scaler = None
+        self._feat_cols = None
+
+    def set_params(self, params):
+        self._params = {"alpha": 1.0, **params}
+
+    def fit(self, train_df):
+        from sklearn.linear_model import Ridge
+        from sklearn.preprocessing import StandardScaler
+
+        featured = crear_features_temporales(
+            train_df, lags=self._lags, rolling_windows=self._rolling_windows
+        )
+        featured = featured.dropna()
+        self._train_df_full = train_df.copy()
+
+        self._feat_cols = _feature_cols(featured)
+        X = featured[self._feat_cols].values
+        y = featured["y"].values
+
+        self._scaler = StandardScaler()
+        X_scaled = self._scaler.fit_transform(X)
+
+        self._model = Ridge(alpha=self._params.get("alpha", 1.0))
+        self._model.fit(X_scaled, y)
+
+    def predict(self, dates_df):
+        combined = pd.concat([
+            self._train_df_full[["ds", "y"]],
+            dates_df[["ds"]].assign(y=np.nan),
+        ]).reset_index(drop=True)
+
+        featured = crear_features_temporales(
+            combined, lags=self._lags, rolling_windows=self._rolling_windows
+        )
+        mask = featured["ds"].isin(dates_df["ds"])
+        pred_features = featured.loc[mask, self._feat_cols].ffill().bfill()
+
+        X_scaled = self._scaler.transform(pred_features.values)
+        return self._model.predict(X_scaled)
+
+
+# ─── Experiment Tracker ───────────────────────────────────────────────────────
+
+
+class ExperimentTracker:
+    """
+    Registra métricas, parámetros y artefactos de experimentos.
+    Compatible con ejecución local (CSV/JSON) y SageMaker Experiments.
+    """
+
+    def __init__(self, nombre_experimento, directorio="./experiments", usar_sagemaker=False):
+        self.nombre = nombre_experimento
+        self.directorio = Path(directorio)
+        self.directorio.mkdir(parents=True, exist_ok=True)
+        self.usar_sagemaker = usar_sagemaker
+        self._resultados = []
+        self._trial_actual = None
+        self._run_sagemaker = None
+        self._timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+        logger.info(f"Experimento '{nombre_experimento}' iniciado | {self._timestamp}")
+
+    def iniciar_trial(self, nombre_trial):
+        """Inicia un trial (una combinación modelo/datos específica)."""
+        self._trial_actual = {
+            "trial": nombre_trial,
+            "timestamp": datetime.now().isoformat(),
+            "parametros": {},
+            "metricas": {},
+        }
+        logger.info(f"─── Trial: {nombre_trial} ───")
+
+        if self.usar_sagemaker:
+            try:
+                from sagemaker.experiments.run import Run
+
+                self._run_sagemaker = Run(
+                    experiment_name=self.nombre,
+                    run_name=nombre_trial,
+                )
+                self._run_sagemaker.__enter__()
+            except ImportError:
+                logger.warning("sagemaker SDK no disponible, usando solo tracking local")
+                self.usar_sagemaker = False
+
+    def log_parametro(self, nombre, valor):
+        """Registra un hiperparámetro."""
+        self._trial_actual["parametros"][nombre] = valor
+        if self.usar_sagemaker and self._run_sagemaker:
+            self._run_sagemaker.log_parameter(nombre, str(valor))
+
+    def log_parametros(self, params: dict):
+        """Registra múltiples hiperparámetros."""
+        for k, v in params.items():
+            self.log_parametro(k, v)
+
+    def log_metrica(self, nombre, valor, paso=None):
+        """Registra una métrica."""
+        self._trial_actual["metricas"][nombre] = valor
+        logger.info(f"  {nombre}: {valor:.4f}")
+        if self.usar_sagemaker and self._run_sagemaker:
+            self._run_sagemaker.log_metric(nombre, valor, step=paso)
+
+    def finalizar_trial(self):
+        """Cierra el trial actual y guarda resultados."""
+        self._resultados.append(self._trial_actual)
+
+        if self.usar_sagemaker and self._run_sagemaker:
+            try:
+                self._run_sagemaker.__exit__(None, None, None)
+            except Exception:
+                pass
+            self._run_sagemaker = None
+
+    def guardar_resumen(self):
+        """Guarda resumen completo en CSV y JSON."""
+        # JSON con detalle completo
+        ruta_json = self.directorio / f"{self.nombre}_{self._timestamp}.json"
+        with open(ruta_json, "w", encoding="utf-8") as f:
+            json.dump(self._resultados, f, indent=2, ensure_ascii=False, default=str)
+        logger.success(f"Resultados JSON guardados: {ruta_json}")
+
+        # CSV resumen plano
+        filas = []
+        for r in self._resultados:
+            fila = {"trial": r["trial"], "timestamp": r["timestamp"]}
+            fila.update({f"param_{k}": v for k, v in r["parametros"].items()})
+            fila.update(r["metricas"])
+            filas.append(fila)
+
+        if filas:
+            df = pd.DataFrame(filas)
+            ruta_csv = self.directorio / f"{self.nombre}_{self._timestamp}.csv"
+            df.to_csv(ruta_csv, index=False, encoding="utf-8")
+            logger.success(f"Resumen CSV guardado: {ruta_csv}")
+
+            # Imprimir ranking por RMSE
+            if "cv_rmse" in df.columns:
+                ranking = df.dropna(subset=["cv_rmse"]).sort_values("cv_rmse")
+                logger.info("═══ Ranking de modelos (CV RMSE) ═══")
+                for pos, (_, row) in enumerate(ranking.iterrows(), 1):
+                    test_info = ""
+                    if "test_rmse" in row and pd.notna(row.get("test_rmse")):
+                        test_info = f" | Test RMSE: {row['test_rmse']:.4f}"
+                    logger.info(
+                        f"  #{pos} {row['trial']}: CV RMSE={row['cv_rmse']:.4f}{test_info}"
+                    )
+
+        return self._resultados
+
+
+# ─── Comparador de Modelos ────────────────────────────────────────────────────
+
+
+class ComparadorModelos:
+    """
+    Orquesta la comparación de múltiples modelos sobre los mismos datos
+    con cross-validation temporal y tracking de experimentos.
+
+    Uso:
+        config = OmegaConf.load("config/experimentos.yaml")
+        comparador = ComparadorModelos(config["experimentos"])
+        comparador.ejecutar(df_serie, "Depresión", "incrementos_total")
+        comparador.guardar_resultados()
+    """
+
+    def __init__(self, config_experimentos: dict):
+        self.config = config_experimentos
+
+        cv_conf = config_experimentos.get("cv", {})
+        self.n_splits = cv_conf.get("n_splits", 4)
+        self.test_size = cv_conf.get("test_size", 53)
+        self.fecha_corte = cv_conf.get("fecha_corte", "2025-01-01")
+
+        tracking_conf = config_experimentos.get("tracking", {})
+        self.tracker = ExperimentTracker(
+            nombre_experimento=config_experimentos.get("nombre", "epiforecast-exp"),
+            directorio=tracking_conf.get("directorio_resultados", "./experiments"),
+            usar_sagemaker=tracking_conf.get("sagemaker", False),
+        )
+
+    def _crear_modelos(self, periodos_atipicos=None):
+        """Instancia los modelos activos según configuración."""
+        config_modelos = self.config.get("modelos", {})
+        modelos = []
+
+        if config_modelos.get("prophet", {}).get("activo", False):
+            modelos.append((
+                ModeloProphet(periodos_atipicos=periodos_atipicos),
+                config_modelos["prophet"].get("param_grid", {}),
+            ))
+
+        if config_modelos.get("xgboost", {}).get("activo", False):
+            feat_conf = config_modelos["xgboost"].get("features", {})
+            modelos.append((
+                ModeloXGBoost(
+                    lags=feat_conf.get("lags"),
+                    rolling_windows=feat_conf.get("rolling_windows"),
+                ),
+                config_modelos["xgboost"].get("param_grid", {}),
+            ))
+
+        if config_modelos.get("sarimax", {}).get("activo", False):
+            modelos.append((
+                ModeloSARIMAX(),
+                config_modelos["sarimax"].get("param_grid", {}),
+            ))
+
+        if config_modelos.get("ridge", {}).get("activo", False):
+            feat_conf = config_modelos["ridge"].get("features", {})
+            modelos.append((
+                ModeloRidge(
+                    lags=feat_conf.get("lags"),
+                    rolling_windows=feat_conf.get("rolling_windows"),
+                ),
+                config_modelos["ridge"].get("param_grid", {}),
+            ))
+
+        return modelos
+
+    def ejecutar(self, df, padecimiento, sexo, region=None, periodos_atipicos=None):
+        """
+        Ejecuta comparación de todos los modelos activos.
+
+        Args:
+            df: DataFrame con columnas ds, y (serie temporal ya agrupada)
+            padecimiento: nombre del padecimiento
+            sexo: etiqueta de sexo
+            region: entidad/región (None = nacional)
+            periodos_atipicos: lista de dicts para Prophet holidays
+
+        Returns:
+            Lista de dicts con resultados por modelo
+        """
+        nivel = region or "Nacional"
+        logger.info(f"══════ Comparando modelos | {padecimiento} | {nivel} | {sexo} ══════")
+
+        # Split train/test
+        df["ds"] = pd.to_datetime(df["ds"])
+        train_df = df[df["ds"] < self.fecha_corte].copy()
+        test_df = df[df["ds"] >= self.fecha_corte].copy()
+        logger.info(
+            f"Train: {len(train_df)} semanas (hasta {train_df['ds'].max().date()}) | "
+            f"Test: {len(test_df)} semanas"
+        )
+
+        modelos = self._crear_modelos(periodos_atipicos)
+        resultados = []
+
+        for modelo, param_grid in modelos:
+            trial_name = f"{modelo.nombre}_{padecimiento}_{nivel}_{sexo}"
+            self.tracker.iniciar_trial(trial_name)
+
+            self.tracker.log_parametros({
+                "modelo": modelo.nombre,
+                "padecimiento": padecimiento,
+                "sexo": sexo,
+                "nivel": nivel,
+                "train_size": len(train_df),
+                "test_size": len(test_df),
+            })
+
+            inicio = time.time()
+
+            try:
+                # Cross-validation con grid search
+                best_params, best_rmse, historial = modelo.cross_validate(
+                    train_df, param_grid, self.n_splits, self.test_size
+                )
+
+                # Entrenar modelo final con mejores parámetros
+                modelo.set_params(best_params)
+                modelo.fit(train_df)
+
+                self.tracker.log_metrica("cv_rmse", best_rmse)
+
+                # Evaluar en test set si hay datos
+                if len(test_df) > 0:
+                    preds = modelo.predict(test_df)
+                    y_true = test_df["y"].values
+
+                    test_rmse = np.sqrt(mean_squared_error(y_true, preds))
+                    test_mae = mean_absolute_error(y_true, preds)
+
+                    mask_nonzero = y_true != 0
+                    if mask_nonzero.any():
+                        test_mape = (
+                            mean_absolute_percentage_error(
+                                y_true[mask_nonzero], preds[mask_nonzero]
+                            )
+                            * 100
+                        )
+                    else:
+                        test_mape = float("nan")
+
+                    self.tracker.log_metrica("test_rmse", test_rmse)
+                    self.tracker.log_metrica("test_mae", test_mae)
+                    self.tracker.log_metrica("test_mape", test_mape)
+
+                # Guardar mejores hiperparámetros
+                self.tracker.log_parametros(
+                    {f"best_{k}": v for k, v in best_params.items()}
+                )
+
+            except Exception as e:
+                logger.error(f"[{modelo.nombre}] Error fatal: {e}")
+                self.tracker.log_metrica("cv_rmse", float("nan"))
+                self.tracker.log_parametro("error", str(e))
+
+            duracion = time.time() - inicio
+            self.tracker.log_metrica("duracion_segundos", duracion)
+            self.tracker.finalizar_trial()
+
+            resultados.append({
+                "modelo": modelo.nombre,
+                "padecimiento": padecimiento,
+                "sexo": sexo,
+                "nivel": nivel,
+                "best_params": best_params,
+            })
+
+        return resultados
+
+    def guardar_resultados(self):
+        """Persiste todos los resultados del experimento."""
+        return self.tracker.guardar_resumen()

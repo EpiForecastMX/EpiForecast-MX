@@ -179,6 +179,26 @@ train:
 	$(PYTHON_INTERPRETER) -m scripts.entrena
 	@echo ">>> Entrenamiento completado."
 
+## Comparar modelos (Prophet, XGBoost, SARIMAX, Ridge) con CV temporal
+.PHONY: experiment
+experiment:
+	@echo ">>> Iniciando comparación de modelos..."
+	$(PYTHON_INTERPRETER) -m scripts.entrena_aws
+	@echo ">>> Comparación completada. Resultados en ./experiments/"
+
+## Lanzar comparación en SageMaker (requiere Docker + AWS CLI)
+.PHONY: experiment-aws
+experiment-aws:
+	@echo ">>> Build imagen Docker + lanzar en SageMaker..."
+	$(PYTHON_INTERPRETER) aws/sagemaker_launcher.py --build --launch
+
+## Test local con Docker (simula SageMaker)
+.PHONY: experiment-docker
+experiment-docker:
+	@echo ">>> Probando localmente con Docker..."
+	docker build -t epiforecast-mx-training -f aws/Dockerfile .
+	$(PYTHON_INTERPRETER) aws/sagemaker_launcher.py --local
+
 ## Generar predicciones con modelo entrenado
 .PHONY: predict
 predict:
