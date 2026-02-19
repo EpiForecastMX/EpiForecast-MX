@@ -51,6 +51,9 @@ class SerieTiempoProphet:
         self.fechas_atipicas = pd.DataFrame(self.periodos_atipicos)
         self.fechas_atipicas["ds"] = pd.to_datetime(self.fechas_atipicas["ds"])
 
+        self.param_model = dict(conf['param_model'])
+        self.add_seasonality_params = dict(conf['add_seasonality'])
+
         self.df_serie = pd.DataFrame
         self.train_data = pd.DataFrame
         self.test_data = pd.DataFrame
@@ -109,14 +112,12 @@ class SerieTiempoProphet:
                 
                 try:
                     modelo_cv = Prophet(
-                            yearly_seasonality=True,
-                            weekly_seasonality=True,
-                            daily_seasonality=False,
                             holidays=self.fechas_atipicas,
+                            **self.param_model,
                             **parametro
                     )
 
-                    modelo_cv.add_seasonality(name='monthly', period=30.5,fourier_order=3)
+                    modelo_cv.add_seasonality(**self.add_seasonality_params)
                     modelo_cv.fit(train_fold)
                     
                     forecast_cv = modelo_cv.predict(val_fold[['ds']])
@@ -149,14 +150,12 @@ class SerieTiempoProphet:
     def train(self,parametros) -> Prophet:
         
         modelo_final = Prophet(
-                yearly_seasonality=30,
-                weekly_seasonality=True,
-                daily_seasonality=False,
                 holidays=self.fechas_atipicas,
+                **self.param_model,
                 **parametros
             )
-        
-        modelo_final.add_seasonality(name='monthly', period=30.5, fourier_order=5)
+
+        modelo_final.add_seasonality(**self.add_seasonality_params)
         modelo_final.fit(self.train_data)
 
         return modelo_final
@@ -164,14 +163,12 @@ class SerieTiempoProphet:
     def train_test(self,parametros) -> pd.DataFrame:
 
         modelo_test = Prophet(
-                yearly_seasonality=30,
-                weekly_seasonality=True,
-                daily_seasonality=False,
                 holidays=self.fechas_atipicas,
+                **self.param_model,
                 **parametros
             )
-        
-        modelo_test.add_seasonality(name='monthly', period=30.5, fourier_order=5)
+
+        modelo_test.add_seasonality(**self.add_seasonality_params)
         modelo_test.fit(self.train_data)
 
         # --- Generación del Pronóstico ---
