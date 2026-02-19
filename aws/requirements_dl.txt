@@ -2,11 +2,13 @@
 # Dependencias adicionales para modelos Deep Learning (TFT, DeepAR, LightGBM+LSTM)
 #
 # REQUIERE: Python 3.12 (ver pyproject.toml)
-# Instalar: pip install -r aws/requirements_dl.txt
+# Instalar DESPUÉS de requirements.txt:
+#   pip install -r requirements.txt
+#   pip install -r aws/requirements_dl.txt
 #
-# NOTA: neuralforecast instala PyTorch y PyTorch Lightning automáticamente.
-# En GPU, instalar torch con CUDA primero: pip install torch --index-url https://download.pytorch.org/whl/cu121
+# En GPU, instalar torch con CUDA primero:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu121
 
-numpy>=1.26,<2.3        # Fijar numpy compatible con Python 3.12
+packaging<26             # Compatibilidad con mlflow/streamlit
 neuralforecast>=1.7.0    # TFT, DeepAR, LSTM (incluye torch + pytorch-lightning)
 lightgbm>=4.0.0          # LightGBM para modelo híbrido
