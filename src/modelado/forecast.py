@@ -11,10 +11,13 @@ from src.utils import directory_manager
 from src.utils.graficos import GraficosHelper
 
 
-def _normalizar(s: str) -> str:
-    """Elimina acentos y normaliza espacios para comparación tolerante."""
+def _normalizar_nombre(s: str) -> str:
+    """Normaliza para nombres de archivo: elimina acentos y reemplaza espacios con '_'.
+
+    Debe coincidir con la función normalizar() de scripts/entrena.py.
+    """
     sin_acento = unicodedata.normalize("NFKD", str(s)).encode("ascii", "ignore").decode("ascii")
-    return re.sub(r"\s+", " ", sin_acento).strip().lower()
+    return re.sub(r"\s+", "_", sin_acento)
 
 
 def generar_graficos_pronostico() -> None:
@@ -26,26 +29,18 @@ def generar_graficos_pronostico() -> None:
             {entidad | Nacional}/
               {nombre_archivo}.png
 
-    Lee el CSV consolidado de predicciones, cruza con data_inegi para obtener
-    las observaciones reales y llama a GraficosHelper.graficar_pronostico()
+    Lee el CSV consolidado de predicciones y el CSV de entrenamiento guardado
+    junto a cada .pkl, luego llama a GraficosHelper.graficar_pronostico()
     por cada combinación única (meta_padecimiento, meta_entidad, meta_modo).
     """
     forecast_file = Path(conf["data"]["forecast"])
-    data_inegi_file = Path(conf["data"]["data_inegi"])
+    models_root = Path(conf["paths"]["models"])
     forecast_root = Path(conf["paths"]["forecast"])
-
-    # mapeo_columnas: {col_df: modo} → invertido: {modo: col_df}
-    mapeo_inv = {v: k for k, v in conf["mapeo_columnas"].items()}
-    agrupador = "Entidad" if conf["padecimiento"]["modelado_estados"] else "region_salud_mental"
 
     df_forecast = pd.read_csv(forecast_file)
     df_forecast["ds"] = pd.to_datetime(df_forecast["ds"], errors="coerce")
     df_forecast = df_forecast.dropna(subset=["ds"])
-    df_data = pd.read_csv(data_inegi_file)
-    df_data["Fecha"] = pd.to_datetime(df_data["Fecha"], errors="coerce")
-    df_data = df_data.dropna(subset=["Fecha"])
 
-    # GraficosHelper: carpeta_salida se actualiza por iteración
     graficos = GraficosHelper(carpeta_salida="", numero_top_columnas=10)
 
     modelos = (
@@ -61,7 +56,25 @@ def generar_graficos_pronostico() -> None:
         entidad = "" if pd.isna(row["meta_entidad"]) else str(row["meta_entidad"])
         modo = str(row["meta_modo"])
 
-        # Carpeta: forecast/{padecimiento}/{entidad | Nacional}/
+        # CSV de entrenamiento: mismo nombre que el .pkl, con extensión .csv
+        pad_norm = _normalizar_nombre(padecimiento)
+        entidad_norm = _normalizar_nombre(entidad) if entidad else ""
+        csv_name = (
+            f"Prophet_{pad_norm}_{entidad_norm}_{modo}.csv"
+            if entidad_norm
+            else f"Prophet_{pad_norm}_{modo}.csv"
+        )
+        csv_path = models_root / pad_norm / csv_name
+
+        if not csv_path.exists():
+            logger.warning("CSV de entrenamiento no encontrado, omitiendo: {}", csv_path)
+            continue
+
+        serie = pd.read_csv(csv_path)
+        serie["ds"] = pd.to_datetime(serie["ds"], errors="coerce")
+        serie = serie.dropna(subset=["ds"])
+
+        # Carpeta de salida: forecast/{padecimiento}/{entidad | Nacional}/
         nivel_dir = entidad.replace(" ", "_") if entidad else "Nacional"
         carpeta = forecast_root / padecimiento / nivel_dir
         directory_manager.asegurar_ruta(carpeta)
@@ -74,27 +87,6 @@ def generar_graficos_pronostico() -> None:
             & (df_forecast["meta_modo"] == modo)
         )
         forecast = df_forecast[mask_fc][["ds", "yhat", "yhat_lower", "yhat_upper"]].copy()
-
-        # Serie real desde data_inegi
-        col_sexo = mapeo_inv.get(modo)
-        if col_sexo is None:
-            logger.warning("Modo '{}' sin mapeo de columna, omitiendo gráfico.", modo)
-            continue
-
-        df_pad = df_data[df_data["Padecimiento"] == padecimiento]
-        if entidad:
-            entidad_norm = _normalizar(entidad)
-            df_pad = df_pad[df_pad[agrupador].apply(_normalizar) == entidad_norm]
-
-        serie = (
-            df_pad.groupby("Fecha")[col_sexo]
-            .sum()
-            .rename_axis("ds")
-            .reset_index()
-            .rename(columns={col_sexo: "y"})
-        )
-        serie["ds"] = pd.to_datetime(serie["ds"], errors="coerce")
-        serie = serie.dropna(subset=["ds"])
 
         nivel_label = entidad if entidad else "Nacional"
         titulo = f"{padecimiento} · {nivel_label} · {modo}"

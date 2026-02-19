@@ -5,7 +5,6 @@ import pickle
 import re
 import unicodedata
 import os
-from datetime import datetime
 from pathlib import Path
 
 from src.modelado.prophet import SerieTiempoProphet
@@ -18,19 +17,17 @@ def normalizar(region: str) -> str:
     return re.sub(r"\s+", "_", formato)
 
 
-def entrenar(df, padecimiento, sexo, ruta_base, fecha, mapeo, region=None, force=False):
+def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False):
     ruta_padecimiento = os.path.join(ruta_base, normalizar(padecimiento))
     directory_manager.asegurar_ruta(ruta_padecimiento)
 
     nombre_extra = f"_{normalizar(region)}" if region else ""
-    nombre_modelo = f"Prophet_{normalizar(padecimiento)}{nombre_extra}_{mapeo.get(sexo, sexo)}_{fecha}.pkl"
+    nombre_modelo = f"Prophet_{normalizar(padecimiento)}{nombre_extra}_{mapeo.get(sexo, sexo)}.pkl"
     ruta_modelo = os.path.join(ruta_padecimiento, nombre_modelo)
 
     if not force:
-        patron = f"Prophet_{normalizar(padecimiento)}{nombre_extra}_{mapeo.get(sexo, sexo)}_*.pkl"
-        existentes = list(Path(ruta_padecimiento).glob(patron))
-        if existentes:
-            logger.info("Modelo ya existe, omitiendo: {}", existentes[0].name)
+        if Path(ruta_modelo).exists():
+            logger.info("Modelo ya existe, omitiendo: {}", Path(ruta_modelo).name)
             return None, ruta_padecimiento
 
     stp = SerieTiempoProphet(df, sexo=sexo)
@@ -53,8 +50,6 @@ def entrenar(df, padecimiento, sexo, ruta_base, fecha, mapeo, region=None, force
 
 
 def main():
-    fecha = datetime.now().strftime("%Y%m%d")
-
     modelado_estados = conf["padecimiento"]["modelado_estados"]
     force = conf["padecimiento"]["entrena_modelo"]
     model_path = conf["paths"]["models"]
@@ -91,7 +86,7 @@ def main():
                 "[{}/{}] {:.0f}% | CV Prophet | {} | Nacional | Sexo: {}",
                 contador, total, pct, padecimiento, sexo,
             )
-            fila, ruta_padecimiento = entrenar(df_padecimiento, padecimiento, sexo, model_path, fecha, mapeo, force=force)
+            fila, ruta_padecimiento = entrenar(df_padecimiento, padecimiento, sexo, model_path, mapeo, force=force)
             logger.success(
                 "[{}/{}] {:.0f}% | Completado | {} | Nacional | Sexo: {}",
                 contador, total, pct, padecimiento, sexo,
@@ -108,7 +103,7 @@ def main():
                     "[{}/{}] {:.0f}% | CV Prophet | {} | Regional | Región: {} | Sexo: {}",
                     contador, total, pct, padecimiento, region, sexo,
                 )
-                fila, _ = entrenar(df_region, padecimiento, sexo, model_path, fecha, mapeo, region=region, force=force)
+                fila, _ = entrenar(df_region, padecimiento, sexo, model_path, mapeo, region=region, force=force)
                 logger.success(
                     "[{}/{}] {:.0f}% | Completado | {} | Regional | Región: {} | Sexo: {}",
                     contador, total, pct, padecimiento, region, sexo,
@@ -117,7 +112,7 @@ def main():
 
         # Guardar resultados del padecimiento
         if ruta_padecimiento:
-            ruta_rmse = os.path.join(ruta_padecimiento, f"Prophet_{normalizar(padecimiento)}_completo_{fecha}.csv")
+            ruta_rmse = os.path.join(ruta_padecimiento, f"Prophet_{normalizar(padecimiento)}_completo.csv")
             pd.DataFrame(resultados).to_csv(ruta_rmse, index=False, encoding="utf-8")
             logger.success("Resultados guardados: {}", ruta_rmse)
 
