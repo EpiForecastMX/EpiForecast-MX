@@ -1,0 +1,5 @@
+outs:
+- md5: e82f3bc3e227033c3365cc4a170b6717
+  size: 189242752
+  hash: md5
+  path: all_forecast.csv
