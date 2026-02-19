@@ -205,7 +205,8 @@ integrador/
 /data/processed/*
 !data/processed/*.dvc
 !data/processed/.gitignore
-models/Prophet_General_Metropolitana alta_todos.pkl
+# Models (DVC-tracked en S3)
+/models
 !/data/raw/
 /data/raw/*
 !data/raw/*.dvc
