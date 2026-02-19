@@ -1,0 +1,10 @@
+# aws/requirements_dl.txt
+# Dependencias adicionales para modelos Deep Learning (TFT, DeepAR, LightGBM+LSTM)
+#
+# Instalar: pip install -r aws/requirements_dl.txt
+#
+# NOTA: neuralforecast instala PyTorch y PyTorch Lightning automáticamente.
+# En GPU, instalar torch con CUDA primero: pip install torch --index-url https://download.pytorch.org/whl/cu121
+
+neuralforecast>=1.7.0    # TFT, DeepAR, LSTM (incluye torch + pytorch-lightning)
+lightgbm>=4.0.0          # LightGBM para modelo híbrido

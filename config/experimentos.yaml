@@ -6,6 +6,7 @@ experimentos:
   descripcion: "Comparación de modelos para forecasting epidemiológico IMSS"
 
   modelos:
+    # ── Modelos clásicos (sin GPU, rápidos) ──────────────────────
     prophet:
       activo: true
       param_grid:
@@ -63,9 +64,66 @@ experimentos:
         lags: [1, 2, 4, 8, 12, 52]
         rolling_windows: [4, 12, 26]
 
+    # ── Modelos Deep Learning (requieren neuralforecast) ─────────
+    # Instalar: pip install -r aws/requirements_dl.txt
+    # NOTA: grids pequeños porque cada fit toma ~3-5 min en CPU.
+    #       Para pruebas rápidas, activar solo 1-2 modelos DL a la vez.
+    tft:
+      activo: true
+      param_grid:
+        hidden_size:
+          - 16
+          - 32
+        learning_rate:
+          - 0.001
+          - 0.01
+        max_steps:
+          - 200
+      nota: >
+        Temporal Fusion Transformer — estado del arte interpretable.
+        Maneja covariables estáticas (sexo, entidad) y mecanismos de
+        atención para identificar variables más relevantes.
+
+    deepar:
+      activo: true
+      param_grid:
+        hidden_size:
+          - 32
+          - 64
+        learning_rate:
+          - 0.001
+          - 0.005
+        max_steps:
+          - 200
+      nota: >
+        DeepAR (Amazon) — forecasting probabilístico. Genera distribuciones
+        de probabilidad para estimar incertidumbre. Recomendado por
+        Dra. Grettel Barceló para series con pocas observaciones.
+
+    lightgbm_lstm:
+      activo: true
+      param_grid:
+        lgbm_n_estimators:
+          - 300
+        lgbm_max_depth:
+          - 5
+          - 7
+        ensemble_weight_lgbm:
+          - 0.3
+          - 0.5
+          - 0.7
+        lstm_max_steps:
+          - 200
+      features:
+        lags: [1, 2, 4, 8, 12, 52]
+        rolling_windows: [4, 12, 26]
+      nota: >
+        Híbrido LightGBM + LSTM — combina features tabulares (LightGBM)
+        con patrones secuenciales (LSTM). Ensemble ponderado configurable.
+
   cv:
     n_splits: 4
-    test_size: 53              # ~1 año en semanas
+    test_size: 52              # 52 semanas = 1 año (alineado con estacionalidad anual)
     fecha_corte: "2025-01-01"
 
   tracking:
@@ -78,10 +136,11 @@ aws:
   sagemaker:
     role_arn: ""               # arn:aws:iam::ACCOUNT_ID:role/SageMakerExecutionRole
     region: "us-east-1"
-    instance_type: "ml.m5.xlarge"    # 4 vCPU, 16 GB RAM — suficiente para Prophet/XGBoost
+    instance_type: "ml.m5.xlarge"    # 4 vCPU, 16 GB — modelos clásicos
+    # Para modelos DL usar ml.g4dn.xlarge (GPU T4) o ml.p3.2xlarge (GPU V100)
     instance_count: 1
     max_runtime_seconds: 86400       # 24 horas máximo
-    volume_size_gb: 30
+    volume_size_gb: 50               # Más espacio para PyTorch + modelos DL
     output_s3: "s3://epiforecast-mx-data/experiments/"
     ecr_repository: "epiforecast-mx-training"
     image_tag: "latest"

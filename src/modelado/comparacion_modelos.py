@@ -2,13 +2,16 @@
 """
 Módulo de comparación de modelos para forecasting epidemiológico.
 
-Evalúa Prophet, XGBoost, SARIMAX y Ridge con cross-validation temporal
-y tracking de experimentos compatible con SageMaker Experiments.
+Evalúa Prophet, XGBoost, SARIMAX, Ridge, TFT, DeepAR y LightGBM+LSTM
+con cross-validation temporal y tracking de experimentos compatible con
+SageMaker Experiments.
 """
 
+import gc
 import itertools
 import json
 import logging
+import os
 import time
 import warnings
 from abc import ABC, abstractmethod
@@ -411,6 +414,295 @@ class ModeloRidge(ModeloBase):
         return self._model.predict(X_scaled)
 
 
+# ─── Temporal Fusion Transformer (TFT) ────────────────────────────────────────
+
+
+class ModeloTFT(ModeloBase):
+    """
+    Temporal Fusion Transformer — estado del arte en forecasting interpretable.
+    Maneja covariables estáticas, entradas temporales conocidas y desconocidas.
+    Requiere: pip install neuralforecast
+    """
+
+    nombre = "TFT"
+
+    def __init__(self):
+        self._default_params = {
+            "hidden_size": 16,
+            "n_head": 1,
+            "dropout": 0.1,
+            "learning_rate": 0.003,
+            "max_steps": 200,
+            "input_size": 104,
+        }
+        self._params = dict(self._default_params)
+        self._nf = None
+        self._h = 52
+        self._train_df = None
+
+    def set_params(self, params):
+        self._params = {**self._default_params, **params}
+
+    def fit(self, train_df):
+        from neuralforecast import NeuralForecast
+        from neuralforecast.models import TFT
+
+        os.environ["NIXTLA_ID_AS_COL"] = "true"
+        warnings.filterwarnings("ignore", module="pytorch_lightning")
+        warnings.filterwarnings("ignore", module="lightning")
+
+        df = train_df[["ds", "y"]].copy()
+        df["unique_id"] = "series"
+        df["ds"] = pd.to_datetime(df["ds"])
+        df = df.sort_values("ds").reset_index(drop=True)
+        self._train_df = df
+
+        input_size = min(self._params["input_size"], max(10, len(df) // 3))
+
+        model = TFT(
+            h=self._h,
+            input_size=input_size,
+            hidden_size=self._params["hidden_size"],
+            n_head=self._params["n_head"],
+            dropout=self._params["dropout"],
+            learning_rate=self._params["learning_rate"],
+            max_steps=self._params["max_steps"],
+            scaler_type="standard",
+            random_seed=42,
+            trainer_kwargs={"enable_progress_bar": False, "enable_model_summary": False},
+        )
+
+        self._nf = NeuralForecast(models=[model], freq="W-MON")
+        self._nf.fit(df=df)
+
+    def predict(self, dates_df):
+        n_steps = len(dates_df)
+        forecasts = self._nf.predict()
+        preds = forecasts["TFT"].values
+
+        if len(preds) >= n_steps:
+            return preds[:n_steps]
+        return np.pad(preds, (0, n_steps - len(preds)), constant_values=preds[-1])
+
+    def cross_validate(self, train_df, param_grid, n_splits=4, test_size=53):
+        self._h = test_size
+        result = super().cross_validate(train_df, param_grid, n_splits, test_size)
+        gc.collect()
+        return result
+
+
+# ─── DeepAR (Probabilistic Forecasting) ──────────────────────────────────────
+
+
+class ModeloDeepAR(ModeloBase):
+    """
+    DeepAR — forecasting probabilístico con autoregresión profunda.
+    Genera distribuciones de probabilidad (útil para rangos de incertidumbre).
+    Recomendado por Dra. Grettel Barceló para series con pocas observaciones.
+    Requiere: pip install neuralforecast
+    """
+
+    nombre = "DeepAR"
+
+    def __init__(self):
+        self._default_params = {
+            "hidden_size": 32,
+            "n_layers": 2,
+            "dropout": 0.1,
+            "learning_rate": 0.001,
+            "max_steps": 200,
+            "input_size": 104,
+        }
+        self._params = dict(self._default_params)
+        self._nf = None
+        self._h = 52
+        self._train_df = None
+
+    def set_params(self, params):
+        self._params = {**self._default_params, **params}
+
+    def fit(self, train_df):
+        from neuralforecast import NeuralForecast
+        from neuralforecast.models import DeepAR
+
+        os.environ["NIXTLA_ID_AS_COL"] = "true"
+        warnings.filterwarnings("ignore", module="pytorch_lightning")
+        warnings.filterwarnings("ignore", module="lightning")
+
+        df = train_df[["ds", "y"]].copy()
+        df["unique_id"] = "series"
+        df["ds"] = pd.to_datetime(df["ds"])
+        df = df.sort_values("ds").reset_index(drop=True)
+        self._train_df = df
+
+        input_size = min(self._params["input_size"], max(10, len(df) // 3))
+
+        model = DeepAR(
+            h=self._h,
+            input_size=input_size,
+            hidden_size=self._params["hidden_size"],
+            n_layers=self._params.get("n_layers", 2),
+            dropout=self._params["dropout"],
+            learning_rate=self._params["learning_rate"],
+            max_steps=self._params["max_steps"],
+            scaler_type="standard",
+            random_seed=42,
+            trainer_kwargs={"enable_progress_bar": False, "enable_model_summary": False},
+        )
+
+        self._nf = NeuralForecast(models=[model], freq="W-MON")
+        self._nf.fit(df=df)
+
+    def predict(self, dates_df):
+        n_steps = len(dates_df)
+        forecasts = self._nf.predict()
+
+        # DeepAR puede devolver columna "DeepAR" o "DeepAR-median"
+        if "DeepAR" in forecasts.columns:
+            preds = forecasts["DeepAR"].values
+        elif "DeepAR-median" in forecasts.columns:
+            preds = forecasts["DeepAR-median"].values
+        else:
+            cols = [c for c in forecasts.columns if c.startswith("DeepAR")]
+            preds = forecasts[cols[0]].values
+
+        if len(preds) >= n_steps:
+            return preds[:n_steps]
+        return np.pad(preds, (0, n_steps - len(preds)), constant_values=preds[-1])
+
+    def cross_validate(self, train_df, param_grid, n_splits=4, test_size=53):
+        self._h = test_size
+        result = super().cross_validate(train_df, param_grid, n_splits, test_size)
+        gc.collect()
+        return result
+
+
+# ─── LightGBM + LSTM Híbrido ─────────────────────────────────────────────────
+
+
+class ModeloLightGBM_LSTM(ModeloBase):
+    """
+    Modelo híbrido: LightGBM (features tabulares) + LSTM (patrones secuenciales).
+    Ensemble por promedio ponderado configurable.
+    Requiere: pip install lightgbm neuralforecast
+    """
+
+    nombre = "LightGBM+LSTM"
+
+    def __init__(self, lags=None, rolling_windows=None):
+        self._default_params = {
+            "lgbm_n_estimators": 300,
+            "lgbm_max_depth": 5,
+            "lgbm_learning_rate": 0.05,
+            "lstm_hidden_size": 32,
+            "lstm_n_layers": 2,
+            "lstm_max_steps": 200,
+            "ensemble_weight_lgbm": 0.5,
+        }
+        self._params = dict(self._default_params)
+        self._lgbm = None
+        self._nf_lstm = None
+        self._lags = lags or [1, 2, 4, 8, 12, 52]
+        self._rolling_windows = rolling_windows or [4, 12, 26]
+        self._train_df_full = None
+        self._feat_cols = None
+        self._h = 52
+
+    def set_params(self, params):
+        self._params = {**self._default_params, **params}
+
+    def fit(self, train_df):
+        import lightgbm as lgb
+        from neuralforecast import NeuralForecast
+        from neuralforecast.models import LSTM
+
+        os.environ["NIXTLA_ID_AS_COL"] = "true"
+        warnings.filterwarnings("ignore", module="pytorch_lightning")
+        warnings.filterwarnings("ignore", module="lightning")
+
+        self._train_df_full = train_df.copy()
+
+        # ── LightGBM (features tabulares) ──
+        featured = crear_features_temporales(
+            train_df, lags=self._lags, rolling_windows=self._rolling_windows
+        )
+        featured = featured.dropna()
+
+        self._feat_cols = _feature_cols(featured)
+        X = featured[self._feat_cols].values
+        y = featured["y"].values
+
+        self._lgbm = lgb.LGBMRegressor(
+            n_estimators=self._params["lgbm_n_estimators"],
+            max_depth=self._params["lgbm_max_depth"],
+            learning_rate=self._params["lgbm_learning_rate"],
+            random_state=42,
+            verbosity=-1,
+        )
+        self._lgbm.fit(X, y)
+
+        # ── LSTM (patrones secuenciales) ──
+        df_lstm = train_df[["ds", "y"]].copy()
+        df_lstm["unique_id"] = "series"
+        df_lstm["ds"] = pd.to_datetime(df_lstm["ds"])
+        df_lstm = df_lstm.sort_values("ds").reset_index(drop=True)
+
+        input_size = min(104, max(10, len(df_lstm) // 3))
+
+        model = LSTM(
+            h=self._h,
+            input_size=input_size,
+            hidden_size=self._params["lstm_hidden_size"],
+            n_layers=self._params.get("lstm_n_layers", 2),
+            max_steps=self._params["lstm_max_steps"],
+            scaler_type="standard",
+            random_seed=42,
+            trainer_kwargs={"enable_progress_bar": False, "enable_model_summary": False},
+        )
+
+        self._nf_lstm = NeuralForecast(models=[model], freq="W-MON")
+        self._nf_lstm.fit(df=df_lstm)
+
+    def predict(self, dates_df):
+        n_steps = len(dates_df)
+        weight = self._params.get("ensemble_weight_lgbm", 0.5)
+
+        # ── LightGBM ──
+        combined = pd.concat([
+            self._train_df_full[["ds", "y"]],
+            dates_df[["ds"]].assign(y=np.nan),
+        ]).reset_index(drop=True)
+
+        featured = crear_features_temporales(
+            combined, lags=self._lags, rolling_windows=self._rolling_windows
+        )
+        mask = featured["ds"].isin(dates_df["ds"])
+        pred_features = featured.loc[mask, self._feat_cols].ffill().bfill()
+        lgbm_preds = self._lgbm.predict(pred_features.values)
+
+        # ── LSTM ──
+        lstm_forecasts = self._nf_lstm.predict()
+        lstm_preds = lstm_forecasts["LSTM"].values
+
+        if len(lstm_preds) < n_steps:
+            lstm_preds = np.pad(
+                lstm_preds,
+                (0, n_steps - len(lstm_preds)),
+                constant_values=lstm_preds[-1] if len(lstm_preds) > 0 else 0,
+            )
+        else:
+            lstm_preds = lstm_preds[:n_steps]
+
+        # ── Ensemble ponderado ──
+        return weight * lgbm_preds + (1 - weight) * lstm_preds
+
+    def cross_validate(self, train_df, param_grid, n_splits=4, test_size=53):
+        self._h = test_size
+        result = super().cross_validate(train_df, param_grid, n_splits, test_size)
+        gc.collect()
+        return result
+
+
 # ─── Experiment Tracker ───────────────────────────────────────────────────────
 
 
@@ -587,6 +879,54 @@ class ComparadorModelos:
                 ),
                 config_modelos["ridge"].get("param_grid", {}),
             ))
+
+        # ── Modelos Deep Learning (requieren neuralforecast) ──
+        if config_modelos.get("tft", {}).get("activo", False):
+            try:
+                import neuralforecast  # noqa: F401
+
+                modelos.append((
+                    ModeloTFT(),
+                    config_modelos["tft"].get("param_grid", {}),
+                ))
+            except ImportError:
+                logger.warning(
+                    "neuralforecast no instalado — TFT desactivado. "
+                    "Instalar: pip install -r aws/requirements_dl.txt"
+                )
+
+        if config_modelos.get("deepar", {}).get("activo", False):
+            try:
+                import neuralforecast  # noqa: F401
+
+                modelos.append((
+                    ModeloDeepAR(),
+                    config_modelos["deepar"].get("param_grid", {}),
+                ))
+            except ImportError:
+                logger.warning(
+                    "neuralforecast no instalado — DeepAR desactivado. "
+                    "Instalar: pip install -r aws/requirements_dl.txt"
+                )
+
+        if config_modelos.get("lightgbm_lstm", {}).get("activo", False):
+            try:
+                import lightgbm  # noqa: F401
+                import neuralforecast  # noqa: F401
+
+                feat_conf = config_modelos["lightgbm_lstm"].get("features", {})
+                modelos.append((
+                    ModeloLightGBM_LSTM(
+                        lags=feat_conf.get("lags"),
+                        rolling_windows=feat_conf.get("rolling_windows"),
+                    ),
+                    config_modelos["lightgbm_lstm"].get("param_grid", {}),
+                ))
+            except ImportError:
+                logger.warning(
+                    "lightgbm y/o neuralforecast no instalados — LightGBM+LSTM desactivado. "
+                    "Instalar: pip install -r aws/requirements_dl.txt"
+                )
 
         return modelos
 
