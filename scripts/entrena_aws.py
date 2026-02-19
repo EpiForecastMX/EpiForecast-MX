@@ -97,11 +97,25 @@ def main():
     # Configuración del pipeline
     modelado_estados = conf["padecimiento"]["modelado_estados"]
     mapeo = conf["mapeo_columnas"]
-    valores_sexo = conf["valores_sexo"]
+    valores_sexo = list(conf["valores_sexo"])
 
     agrupador = "Entidad" if modelado_estados else "region_salud_mental"
     regiones = sorted(df_entrenamiento[agrupador].unique())
     padecimientos = sorted(df_entrenamiento["Padecimiento"].unique())
+
+    # ── Aplicar scope (filtrar para pruebas rápidas) ──
+    scope = config_exp.get("scope", {})
+
+    if scope.get("padecimientos"):
+        padecimientos = [p for p in padecimientos if p in scope["padecimientos"]]
+
+    if scope.get("sexos"):
+        valores_sexo = [s for s in valores_sexo if s in scope["sexos"]]
+
+    if scope.get("max_regiones"):
+        regiones = regiones[: scope["max_regiones"]]
+
+    solo_regional = scope.get("solo_regional", False)
 
     # Periodos atípicos (para Prophet)
     periodos_atipicos = conf.get("peridos_atipicos", [])
@@ -109,13 +123,17 @@ def main():
     # Crear comparador
     comparador = ComparadorModelos(config_exp)
 
-    total_combinaciones = len(padecimientos) * len(valores_sexo) * (1 + len(regiones))
+    # Calcular total de combinaciones según scope
+    combos_nacional = 0 if solo_regional else len(padecimientos) * len(valores_sexo)
+    combos_regional = len(padecimientos) * len(regiones) * len(valores_sexo)
+    total_combinaciones = combos_nacional + combos_regional
     contador = 0
 
     logger.info(
         f"Iniciando comparación de modelos | "
         f"padecimientos: {len(padecimientos)} | regiones: {len(regiones)} | "
-        f"sexo: {len(valores_sexo)} | combinaciones totales: {total_combinaciones}"
+        f"sexo: {len(valores_sexo)} | solo_regional: {solo_regional} | "
+        f"combinaciones totales: {total_combinaciones}"
     )
 
     modelos_activos = [k for k, v in config_exp.get("modelos", {}).items() if v.get("activo")]
@@ -125,33 +143,33 @@ def main():
         logger.info(f"═══ Padecimiento: {padecimiento} ═══")
         df_padecimiento = df_entrenamiento[df_entrenamiento["Padecimiento"] == padecimiento]
 
-        # ── Nacional ──
-        for sexo in valores_sexo:
-            contador += 1
-            pct = contador / total_combinaciones * 100
-            logger.info(
-                f"[{contador}/{total_combinaciones}] {pct:.0f}% | "
-                f"{padecimiento} | Nacional | {sexo}"
-            )
+        # ── Nacional (omitir si solo_regional) ──
+        if not solo_regional:
+            for sexo in valores_sexo:
+                contador += 1
+                pct = contador / total_combinaciones * 100
+                logger.info(
+                    f"[{contador}/{total_combinaciones}] {pct:.0f}% | "
+                    f"{padecimiento} | Nacional | {sexo}"
+                )
 
-            # Preparar serie temporal (mismo flujo que SerieTiempoProphet.agrupa)
-            serie = (
-                df_padecimiento
-                .groupby("Fecha")[sexo]
-                .sum()
-                .rename_axis("ds")
-                .reset_index()
-                .rename(columns={sexo: "y"})
-            )
-            serie["ds"] = pd.to_datetime(serie["ds"])
+                serie = (
+                    df_padecimiento
+                    .groupby("Fecha")[sexo]
+                    .sum()
+                    .rename_axis("ds")
+                    .reset_index()
+                    .rename(columns={sexo: "y"})
+                )
+                serie["ds"] = pd.to_datetime(serie["ds"])
 
-            comparador.ejecutar(
-                serie,
-                padecimiento=padecimiento,
-                sexo=mapeo.get(sexo, sexo),
-                region=None,
-                periodos_atipicos=periodos_atipicos,
-            )
+                comparador.ejecutar(
+                    serie,
+                    padecimiento=padecimiento,
+                    sexo=mapeo.get(sexo, sexo),
+                    region=None,
+                    periodos_atipicos=periodos_atipicos,
+                )
 
         # ── Regional ──
         for region in regiones:

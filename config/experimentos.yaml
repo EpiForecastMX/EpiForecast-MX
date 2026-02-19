@@ -121,6 +121,14 @@ experimentos:
         Híbrido LightGBM + LSTM — combina features tabulares (LightGBM)
         con patrones secuenciales (LSTM). Ensemble ponderado configurable.
 
+  # ── Scope: limitar qué combinaciones correr ─────────────────
+  # Útil para pruebas rápidas. null = todo.
+  scope:
+    solo_regional: true          # true = solo regiones, sin nivel nacional
+    padecimientos: null           # null = todos, o lista: ["Depresión", "Alzheimer"]
+    sexos: null                   # null = todos, o lista: ["incrementos_total"]
+    max_regiones: null            # null = todas, o int para limitar (ej: 2)
+
   cv:
     n_splits: 4
     test_size: 52              # 52 semanas = 1 año (alineado con estacionalidad anual)
