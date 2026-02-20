@@ -1,128 +1,112 @@
 # config/experimentos.yaml
-# Configuración para comparación de modelos y experimentos en AWS SageMaker
-# Actualizado con hallazgos del CLAUDE.md (Feb 2026)
+# Comparacion de modelos — actualizado con hallazgos CLAUDE.md (Feb 2026)
 
 experimentos:
-  nombre: "epiforecast-comparacion"
-  descripcion: "Comparación de modelos para forecasting epidemiológico IMSS"
+  nombre: epiforecast-comparacion
+  descripcion: Comparacion de modelos para forecasting epidemiologico IMSS
 
-  # ── Transformación del target ─────────────────────────────────────────
-  # Pipeline: conteo → tasa/100K → log(1+y) → modelo → exp-1 → tasa → conteo
   transformacion:
-    log_transform: true       # log(1 + tasa_100k) — estabiliza varianza
+    log_transform: true
     tasa_por: 100000
-    columna_poblacion: "Total"
+    columna_poblacion: Total
 
-  # ── Periodos atípicos (Prophet holidays) ─────────────────────────────
   periodos_atipicos:
     - holiday: pandemia_covid
       ds: "2020-03-23"
       lower_window: 0
-      upper_window: 913     # ~2.5 años
+      upper_window: 913
     - holiday: atipico_2016
       ds: "2016-05-16"
       lower_window: 0
       upper_window: 182
 
   modelos:
-    # ══════════════════════════════════════════════════════════════════════
-    # PROPHET — Grids diferenciados por padecimiento (hallazgo clave)
-    # ══════════════════════════════════════════════════════════════════════
-    # - Depresión: más flexibilidad (cp hasta 0.05), Fourier alto (15-20)
-    # - Alzheimer: additive gana ~67% con log-transform, Fourier bajo (5-10)
-    # - Parkinson: similar a Alzheimer, cp rígido (0.01)
-    #
-    # fourier_order es el hallazgo más impactante del benchmark Equipo 16:
-    #   MAPE 10.3% → 9.75% solo con Fourier 20 para Depresión nacional
-    # ══════════════════════════════════════════════════════════════════════
-
     prophet:
       activo: true
-      # Grid base (aplica si no hay grid específico para el padecimiento)
       param_grid:
+        # Grid base (fallback si no hay grid específico)
         seasonality_mode:
           - multiplicative
           - additive
         changepoint_prior_scale:
           - 0.01
           - 0.03
+          - 0.05
         seasonality_prior_scale:
           - 0.1
           - 0.5
           - 1.0
         fourier_order:
+          - 5
           - 10
-          - 15
 
-      # Grids específicos por padecimiento (override del base)
       grids_por_padecimiento:
-        "Depresión":
+        # --- ALZHEIMER: grid estrecho, multiplicativo domina (77%) ---
+        Alzheimer:
           seasonality_mode:
-            - multiplicative
-            - additive
+            - multiplicative              # ganador absoluto (77%)
           changepoint_prior_scale:
-            - 0.01
-            - 0.03
-            - 0.05            # más flexibilidad — COVID cambió estructura
+            - 0.005                       # NUEVO: explorar más suave
+            - 0.01                        # ganador anterior
+            - 0.03                        # 2° lugar
           seasonality_prior_scale:
-            - 0.1
-            - 0.5
-            - 1.0
+            - 0.1                         # ganador (41%)
+            - 0.5                         # 2° lugar (28%)
           fourier_order:
+            - 5                           # ganador en 297 modelos
             - 10
-            - 15
-            - 20              # Fourier alto — benchmark sugiere alto impacto
+          # Total: 1×3×2×2 = 12 combos
 
-        "Alzheimer":
+        # --- DEPRESIÓN: grid amplio, ambos modos competitivos ---
+        Depresion:
           seasonality_mode:
-            - additive          # gana ~67% con log-transform
-            - multiplicative
+            - additive                    # promedio mejor para Depresión (49.5%)
+            - multiplicative              # competitivo en ciertos estados
           changepoint_prior_scale:
-            - 0.01
-            - 0.03            # competitivo en algunos estados
+            - 0.01                        # dominante global (61%)
+            - 0.03                        # no hay diferencia significativa
+            - 0.05                        # ganador en estados volátiles
           seasonality_prior_scale:
-            - 0.1
-            - 0.5
-          fourier_order:
-            - 5
-            - 10              # series más estables, no necesitan Fourier alto
-
-        "Parkinson":
-          seasonality_mode:
-            - additive
-            - multiplicative
-          changepoint_prior_scale:
-            - 0.01             # cp rígido funciona bien
-          seasonality_prior_scale:
-            - 0.1
-            - 0.5
-            - 1.0
+            - 0.05                        # NUEVO: explorar más regularización
+            - 0.1                         # ganador anterior
+            - 0.5                         # 2° lugar
           fourier_order:
             - 5
             - 10
+          # Total: 2×3×3×2 = 36 combos
 
-    # ── Modelos clásicos ─────────────────────────────────────────────────
+        # --- PARKINSON: intermedio, cp bajo, multiplicativo domina (72%) ---
+        Parkinson:
+          seasonality_mode:
+            - additive
+            - multiplicative
+          changepoint_prior_scale:
+            - 0.005                       # NUEVO: explorar más suave
+            - 0.01                        # ganador absoluto (62%)
+          seasonality_prior_scale:
+            - 0.1                         # ganador (40%)
+            - 0.5                         # 2° lugar
+            - 1.0                         # 3° lugar
+          fourier_order:
+            - 5                           # ganador en 297 modelos
+            - 10
+          # Total: 2×2×3×2 = 24 combos
+
     xgboost:
-      activo: true
+      activo: false  # Solo Prophet para esta corrida
       param_grid:
         n_estimators:
           - 100
-          - 300
-          - 500
         max_depth:
-          - 3
           - 5
-          - 7
         learning_rate:
-          - 0.01
           - 0.05
-          - 0.1
       features:
         lags: [1, 2, 4, 8, 12, 52]
         rolling_windows: [4, 12, 26]
 
     sarimax:
-      activo: false           # Desactivar por default — muy lento con s=52
+      activo: false
       param_grid:
         order:
           - [1, 1, 1]
@@ -133,106 +117,112 @@ experimentos:
           - [0, 1, 1, 52]
 
     ridge:
-      activo: true
+      activo: false  # Solo Prophet para esta corrida
       param_grid:
         alpha:
-          - 0.01
-          - 0.1
           - 1.0
-          - 10.0
-          - 100.0
       features:
-        lags: [1, 2, 4, 8, 12, 52]
-        rolling_windows: [4, 12, 26]
+        lags:
+          - 1
+          - 2
+          - 4
+          - 8
+          - 12
+          - 52
+        rolling_windows:
+          - 4
+          - 12
+          - 26
 
-    # ── Modelos Deep Learning (requieren neuralforecast) ─────────────────
-    # Instalar: pip install -r aws/requirements_dl.txt
     tft:
-      activo: true
+      activo: false  # Solo Prophet para esta corrida
       param_grid:
         hidden_size:
           - 16
-          - 32
         learning_rate:
-          - 0.001
           - 0.01
         max_steps:
-          - 200
-      nota: >
-        Temporal Fusion Transformer — estado del arte interpretable.
-        Maneja covariables estáticas (sexo, entidad) y mecanismos de
-        atención para identificar variables más relevantes.
+          - 100
 
     deepar:
-      activo: true
+      activo: false  # Solo Prophet para esta corrida
       param_grid:
         hidden_size:
           - 32
-          - 64
         learning_rate:
           - 0.001
-          - 0.005
         max_steps:
-          - 200
-      nota: >
-        DeepAR (Amazon) — forecasting probabilístico. Genera distribuciones
-        de probabilidad. Recomendado por Dra. Grettel para series con
-        pocas observaciones al entrenar modelo global multi-series.
+          - 100
 
     lightgbm_lstm:
-      activo: true
+      activo: false  # Solo Prophet para esta corrida
       param_grid:
         lgbm_n_estimators:
           - 300
         lgbm_max_depth:
           - 5
-          - 7
         ensemble_weight_lgbm:
-          - 0.3
           - 0.5
-          - 0.7
         lstm_max_steps:
-          - 200
+          - 100
       features:
-        lags: [1, 2, 4, 8, 12, 52]
-        rolling_windows: [4, 12, 26]
-      nota: >
-        Híbrido LightGBM + LSTM — combina features tabulares (LightGBM)
-        con patrones secuenciales (LSTM). Ensemble ponderado configurable.
+        lags:
+          - 1
+          - 2
+          - 4
+          - 8
+          - 12
+          - 52
+        rolling_windows:
+          - 4
+          - 12
+          - 26
 
-  # ── Scope: limitar qué combinaciones correr ─────────────────────────
-  # Útil para pruebas rápidas. null = todo.
+    neuralprophet:
+      activo: false  # DESACTIVADO: conflicto pytorch-lightning con neuralforecast
+      param_grid:
+        n_lags:
+          - 52
+        learning_rate:
+          - 0.1
+        epochs:
+          - 50
+        n_changepoints:
+          - 10
+        ar_layers:
+          - [16]
+
   scope:
-    solo_regional: true          # true = solo regiones, sin nivel nacional
-    padecimientos: null           # null = todos, o lista: ["Depresión"]
-    sexos: null                   # null = todos, o lista: ["incrementos_total"]
-    max_regiones: null            # null = todas, o int para limitar
+    solo_regional: true
+    padecimientos: []  # Vacío = todos (Depresión, Alzheimer, Parkinson)
+    sexos:
+      - incrementos_total
+    max_regiones: 1    # Solo Aguascalientes (primera región alfabéticamente)
 
   cv:
     n_splits: 4
-    test_size: 52              # 52 semanas = 1 año (estacionalidad anual completa)
+    test_size: 52
     fecha_corte: "2025-01-01"
-    # ── Ponderación de folds ──────────────────────────────────────────
-    # Fold 1 (COVID, 2020-12→2021-12) penaliza 56% vs Fold 4 en Depresión.
-    # Sesga hacia rigidez excesiva (cp=0.01 gana por no sobreajustar al dip).
-    # Pesos lineales crecientes: [0.5, 0.75, 1.0, 1.25] — recientes pesan más.
     ponderar_folds: true
-    pesos_folds: [0.5, 0.75, 1.0, 1.25]
+    pesos_folds:
+      - 0.5
+      - 0.75
+      - 1.0
+      - 1.25
 
   tracking:
     local: true
     sagemaker: false
-    directorio_resultados: "./experiments"
+    directorio_resultados: ./experiments
 
-# ─── Configuración AWS SageMaker ─────────────────────────────────────────
 aws:
   sagemaker:
     role_arn: "arn:aws:iam::564141855321:role/SageMakerExecutionRole"
-    region: "us-east-1"
-    instance_type: "ml.m5.xlarge"
+    region: us-east-1
+    instance_type: ml.m5.xlarge  # CPU para prueba ligera (~$0.23/hr). Full run: ml.g4dn.xlarge
     instance_count: 1
     max_runtime_seconds: 86400
     volume_size_gb: 50
     output_s3: "s3://epiforecast-mx-data/experiments/"
-    ecr_repository: "epiforecast-mx-training"
-    image_tag: "latest"
+    ecr_repository: epiforecast-mx-training
+    image_tag: latest

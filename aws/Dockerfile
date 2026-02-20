@@ -11,9 +11,8 @@
 
 FROM python:3.12-slim
 
-# Dependencias del sistema (Ghostscript para camelot, gcc para cmdstanpy/Prophet)
+# Dependencias del sistema (gcc para cmdstanpy/Prophet)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ghostscript \
     gcc \
     g++ \
     && rm -rf /var/lib/apt/lists/*
@@ -21,11 +20,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /opt/ml/code
 
 # Instalar dependencias Python (cache de capas Docker)
-COPY requirements.txt .
+COPY aws/requirements_train.txt .
 COPY aws/requirements_aws.txt .
+COPY aws/requirements_dl.txt .
 RUN pip install --no-cache-dir -U pip \
-    && pip install --no-cache-dir -r requirements.txt \
-    && pip install --no-cache-dir -r requirements_aws.txt
+    && pip install --no-cache-dir -r requirements_train.txt \
+    && pip install --no-cache-dir -r requirements_aws.txt \
+    && pip install --no-cache-dir -r requirements_dl.txt
 
 # Copiar código fuente
 COPY src/ src/

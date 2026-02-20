@@ -10,6 +10,7 @@ SageMaker Experiments.
 import gc
 import itertools
 import json
+import joblib
 import logging
 import os
 import time
@@ -91,6 +92,24 @@ class ModeloBase(ABC):
     def set_params(self, params: dict) -> None:
         """Configura hiperparámetros. Override en subclases."""
         self._params = params
+
+    def guardar_modelo(self, path: Path) -> str:
+        """
+        Serializa el modelo entrenado a disco.
+        Retorna la ruta del archivo guardado.
+        Override en subclases con necesidades especiales (neuralforecast).
+        """
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        archivo = path.with_suffix(".joblib")
+        joblib.dump(self, archivo)
+        logger.info(f"  💾 Modelo guardado: {archivo} ({archivo.stat().st_size / 1024:.0f} KB)")
+        return str(archivo)
+
+    @classmethod
+    def cargar_modelo(cls, path: str):
+        """Carga un modelo serializado."""
+        return joblib.load(path)
 
     def cross_validate(self, train_df, param_grid, n_splits=4, test_size=53,
                        pesos_folds=None):
@@ -510,7 +529,8 @@ class ModeloTFT(ModeloBase):
             max_steps=self._params["max_steps"],
             scaler_type="standard",
             random_seed=42,
-            trainer_kwargs={"enable_progress_bar": False, "enable_model_summary": False},
+            enable_progress_bar=False,
+            enable_model_summary=False,
         )
 
         self._nf = NeuralForecast(models=[model], freq="W-MON")
@@ -525,14 +545,24 @@ class ModeloTFT(ModeloBase):
             return preds[:n_steps]
         return np.pad(preds, (0, n_steps - len(preds)), constant_values=preds[-1])
 
-    def cross_validate(self, train_df, param_grid, n_splits=4, test_size=53):
+    def cross_validate(self, train_df, param_grid, n_splits=4, test_size=53,
+                       pesos_folds=None):
         self._h = test_size
-        result = super().cross_validate(train_df, param_grid, n_splits, test_size)
+        result = super().cross_validate(train_df, param_grid, n_splits, test_size,
+                                        pesos_folds=pesos_folds)
         gc.collect()
         return result
 
-
-# ─── DeepAR (Probabilistic Forecasting) ──────────────────────────────────────
+    def guardar_modelo(self, path: Path) -> str:
+        """Guarda NeuralForecast wrapper (incluye checkpoint PyTorch)."""
+        path = Path(path)
+        save_dir = path.parent / f"{path.stem}_nf"
+        save_dir.mkdir(parents=True, exist_ok=True)
+        self._nf.save(str(save_dir), overwrite=True)
+        # Guardar params por separado
+        joblib.dump({"params": self._params, "h": self._h}, path.with_suffix(".meta.joblib"))
+        logger.info(f"  💾 TFT guardado: {save_dir}/")
+        return str(save_dir)
 
 
 class ModeloDeepAR(ModeloBase):
@@ -581,14 +611,15 @@ class ModeloDeepAR(ModeloBase):
         model = DeepAR(
             h=self._h,
             input_size=input_size,
-            hidden_size=self._params["hidden_size"],
-            n_layers=self._params.get("n_layers", 2),
-            dropout=self._params["dropout"],
+            lstm_hidden_size=self._params["hidden_size"],
+            lstm_n_layers=self._params.get("n_layers", 2),
+            lstm_dropout=self._params.get("dropout", 0.1),
             learning_rate=self._params["learning_rate"],
             max_steps=self._params["max_steps"],
             scaler_type="standard",
             random_seed=42,
-            trainer_kwargs={"enable_progress_bar": False, "enable_model_summary": False},
+            enable_progress_bar=False,
+            enable_model_summary=False,
         )
 
         self._nf = NeuralForecast(models=[model], freq="W-MON")
@@ -611,11 +642,23 @@ class ModeloDeepAR(ModeloBase):
             return preds[:n_steps]
         return np.pad(preds, (0, n_steps - len(preds)), constant_values=preds[-1])
 
-    def cross_validate(self, train_df, param_grid, n_splits=4, test_size=53):
+    def cross_validate(self, train_df, param_grid, n_splits=4, test_size=53,
+                       pesos_folds=None):
         self._h = test_size
-        result = super().cross_validate(train_df, param_grid, n_splits, test_size)
+        result = super().cross_validate(train_df, param_grid, n_splits, test_size,
+                                        pesos_folds=pesos_folds)
         gc.collect()
         return result
+
+    def guardar_modelo(self, path: Path) -> str:
+        """Guarda NeuralForecast wrapper (incluye checkpoint PyTorch)."""
+        path = Path(path)
+        save_dir = path.parent / f"{path.stem}_nf"
+        save_dir.mkdir(parents=True, exist_ok=True)
+        self._nf.save(str(save_dir), overwrite=True)
+        joblib.dump({"params": self._params, "h": self._h}, path.with_suffix(".meta.joblib"))
+        logger.info(f"  💾 DeepAR guardado: {save_dir}/")
+        return str(save_dir)
 
 
 # ─── LightGBM + LSTM Híbrido ─────────────────────────────────────────────────
@@ -693,12 +736,13 @@ class ModeloLightGBM_LSTM(ModeloBase):
         model = LSTM(
             h=self._h,
             input_size=input_size,
-            hidden_size=self._params["lstm_hidden_size"],
-            n_layers=self._params.get("lstm_n_layers", 2),
+            encoder_hidden_size=self._params["lstm_hidden_size"],
+            encoder_n_layers=self._params.get("lstm_n_layers", 2),
             max_steps=self._params["lstm_max_steps"],
             scaler_type="standard",
             random_seed=42,
-            trainer_kwargs={"enable_progress_bar": False, "enable_model_summary": False},
+            enable_progress_bar=False,
+            enable_model_summary=False,
         )
 
         self._nf_lstm = NeuralForecast(models=[model], freq="W-MON")
@@ -737,9 +781,147 @@ class ModeloLightGBM_LSTM(ModeloBase):
         # ── Ensemble ponderado ──
         return weight * lgbm_preds + (1 - weight) * lstm_preds
 
-    def cross_validate(self, train_df, param_grid, n_splits=4, test_size=53):
+    def cross_validate(self, train_df, param_grid, n_splits=4, test_size=53,
+                       pesos_folds=None):
         self._h = test_size
-        result = super().cross_validate(train_df, param_grid, n_splits, test_size)
+        result = super().cross_validate(train_df, param_grid, n_splits, test_size,
+                                        pesos_folds=pesos_folds)
+        gc.collect()
+        return result
+
+    def guardar_modelo(self, path: Path) -> str:
+        """Guarda LightGBM (joblib) + LSTM (NeuralForecast) por separado."""
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        # LightGBM
+        lgbm_file = path.with_suffix(".lgbm.joblib")
+        joblib.dump(self._lgbm, lgbm_file)
+        # LSTM
+        lstm_dir = path.parent / f"{path.stem}_lstm_nf"
+        lstm_dir.mkdir(parents=True, exist_ok=True)
+        self._nf_lstm.save(str(lstm_dir), overwrite=True)
+        # Meta (params, weights, scaler, etc.)
+        meta = {
+            "params": self._params, "h": self._h,
+            "ensemble_w": self._params.get("ensemble_weight_lgbm", 0.5),
+            "scaler": getattr(self, "_scaler", None),
+            "feat_cols": getattr(self, "_feat_cols", None),
+        }
+        joblib.dump(meta, path.with_suffix(".meta.joblib"))
+        logger.info(f"  💾 LightGBM+LSTM guardado: {path.parent}/")
+        return str(path.parent)
+
+
+# ─── NeuralProphet (Prophet + Neural Networks) ──────────────────────────────
+
+
+class ModeloNeuralProphet(ModeloBase):
+    """
+    NeuralProphet — evolución oficial de Prophet por Meta AI.
+    Reemplaza Stan con PyTorch, agrega auto-regresión y covariables rezagadas.
+
+    Ventajas sobre Prophet clásico:
+    - Auto-regresión (AR-Net): captura contexto local con lags
+    - Componentes configurables como redes neuronales
+    - Entrenamiento con SGD (más rápido y extensible)
+    - Misma descomposición interpretable (tendencia + estacionalidad + eventos)
+
+    Requiere: pip install neuralprophet
+    """
+
+    nombre = "NeuralProphet"
+
+    def __init__(self, periodos_atipicos=None):
+        self._default_params = {
+            "n_lags": 52,
+            "n_forecasts": 52,
+            "learning_rate": 0.01,
+            "epochs": 100,
+            "yearly_seasonality": True,
+            "weekly_seasonality": False,
+            "daily_seasonality": False,
+            "n_changepoints": 10,
+            "changepoints_range": 0.8,
+            "ar_layers": [32],
+        }
+        self._params = dict(self._default_params)
+        self._model = None
+        self._periodos_atipicos = periodos_atipicos
+
+    def set_params(self, params):
+        self._params = {**self._default_params, **params}
+
+    def fit(self, train_df):
+        from neuralprophet import NeuralProphet, set_log_level
+
+        set_log_level("ERROR")
+        warnings.filterwarnings("ignore", module="pytorch_lightning")
+        warnings.filterwarnings("ignore", module="lightning")
+        warnings.filterwarnings("ignore", module="neuralprophet")
+
+        n_lags = self._params.get("n_lags", 52)
+        n_forecasts = self._params.get("n_forecasts", 52)
+        ar_layers_val = self._params.get("ar_layers", [32])
+
+        model = NeuralProphet(
+            n_lags=n_lags,
+            n_forecasts=n_forecasts,
+            learning_rate=self._params.get("learning_rate", 0.01),
+            epochs=self._params.get("epochs", 100),
+            yearly_seasonality=self._params.get("yearly_seasonality", True),
+            weekly_seasonality=False,
+            daily_seasonality=False,
+            n_changepoints=self._params.get("n_changepoints", 10),
+            changepoints_range=self._params.get("changepoints_range", 0.8),
+            ar_layers=ar_layers_val if isinstance(ar_layers_val, list) else [ar_layers_val],
+            batch_size="auto",
+            trainer_config={"accelerator": "auto"},
+        )
+
+        # Agregar periodos atípicos como eventos si existen
+        if self._periodos_atipicos:
+            for atipico in self._periodos_atipicos:
+                nombre_evento = atipico.get("holiday", "evento")
+                model.add_country_holidays(country_name="MX")
+                break  # NeuralProphet maneja holidays de país directamente
+
+        df = train_df[["ds", "y"]].copy()
+        df["ds"] = pd.to_datetime(df["ds"])
+        df = df.sort_values("ds").reset_index(drop=True)
+
+        self._model = model
+        self._model.fit(df, freq="W")
+
+    def predict(self, dates_df):
+        n_steps = len(dates_df)
+        future = self._model.make_future_dataframe(
+            df=None,
+            periods=n_steps,
+            n_historic_predictions=False,
+        )
+        forecast = self._model.predict(future)
+
+        # NeuralProphet puede devolver múltiples columnas yhat1..yhatN
+        yhat_cols = [c for c in forecast.columns if c.startswith("yhat")]
+        if yhat_cols:
+            # Usar la última predicción de cada step (yhat{n_forecasts})
+            preds = forecast[yhat_cols[-1]].values
+        else:
+            preds = forecast["yhat1"].values
+
+        # Ajustar longitud
+        if len(preds) >= n_steps:
+            return preds[:n_steps]
+        return np.pad(preds, (0, n_steps - len(preds)), constant_values=preds[-1])
+
+    def cross_validate(self, train_df, param_grid, n_splits=4, test_size=53,
+                       pesos_folds=None):
+        # Ajustar n_forecasts al test_size de CV
+        if param_grid and "n_forecasts" not in param_grid:
+            for combo_key in list(param_grid.keys()):
+                pass  # mantener grid como está
+        result = super().cross_validate(train_df, param_grid, n_splits, test_size,
+                                        pesos_folds=pesos_folds)
         gc.collect()
         return result
 
@@ -902,18 +1084,31 @@ class ComparadorModelos:
         """
         Obtiene el grid de Prophet específico para el padecimiento.
         Si no hay grid específico, usa el grid base.
+        Normaliza acentos para match (ej. Depresión → Depresion).
         """
+        import unicodedata
+
         config_prophet = self.config.get("modelos", {}).get("prophet", {})
         grids_especificos = config_prophet.get("grids_por_padecimiento", {})
 
-        if padecimiento and padecimiento in grids_especificos:
-            grid = grids_especificos[padecimiento]
-            logger.info(f"[Prophet] Usando grid específico para {padecimiento}")
-        else:
-            grid = config_prophet.get("param_grid", {})
-            logger.info(f"[Prophet] Usando grid base (sin específico para {padecimiento})")
+        # Normalizar: quitar acentos para buscar en el dict
+        def sin_acentos(texto):
+            return unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode("ascii")
 
-        return grid
+        grid_encontrado = None
+        if padecimiento and grids_especificos:
+            pad_norm = sin_acentos(padecimiento)
+            for key, grid in grids_especificos.items():
+                if sin_acentos(key) == pad_norm:
+                    grid_encontrado = grid
+                    break
+
+        if grid_encontrado:
+            logger.info(f"[Prophet] Usando grid especifico para {padecimiento}")
+            return grid_encontrado
+        else:
+            logger.info(f"[Prophet] Usando grid base (sin especifico para {padecimiento})")
+            return config_prophet.get("param_grid", {})
 
     def _crear_modelos(self, periodos_atipicos=None, padecimiento=None):
         """Instancia los modelos activos según configuración."""
@@ -1001,6 +1196,20 @@ class ComparadorModelos:
                     "Instalar: pip install -r aws/requirements_dl.txt"
                 )
 
+        if config_modelos.get("neuralprophet", {}).get("activo", False):
+            try:
+                import neuralprophet as _np  # noqa: F401
+
+                modelos.append((
+                    ModeloNeuralProphet(periodos_atipicos=periodos_atipicos),
+                    config_modelos["neuralprophet"].get("param_grid", {}),
+                ))
+            except ImportError:
+                logger.warning(
+                    "neuralprophet no instalado — NeuralProphet desactivado. "
+                    "Instalar: pip install neuralprophet"
+                )
+
         return modelos
 
     def _serie_es_viable(self, df, umbral_zeros=0.95):
@@ -1077,6 +1286,9 @@ class ComparadorModelos:
             })
 
             inicio = time.time()
+            historial = []
+            best_params = {}
+            best_rmse = float("nan")
 
             try:
                 # Cross-validation con grid search (ponderado si configurado)
@@ -1085,11 +1297,29 @@ class ComparadorModelos:
                     pesos_folds=pesos,
                 )
 
+                # ── Guardar historial completo de grid search ──
+                self.tracker.log_parametro("grid_search_total_combos", len(historial))
+                # Top 5 combinaciones para el reporte
+                historial_sorted = sorted(historial, key=lambda x: x["mean_rmse"])
+                top_n = min(5, len(historial_sorted))
+                for rank, h in enumerate(historial_sorted[:top_n], 1):
+                    self.tracker.log_parametro(f"grid_top{rank}_params", str(h["params"]))
+                    self.tracker.log_parametro(f"grid_top{rank}_rmse", f"{h['mean_rmse']:.4f}")
+                    self.tracker.log_parametro(f"grid_top{rank}_std", f"{h['std_rmse']:.4f}")
+
+                # ── Guardar métricas por fold del mejor modelo ──
+                if historial_sorted:
+                    best_entry = historial_sorted[0]
+                    for fi, fold_rmse in enumerate(best_entry.get("fold_rmses", []), 1):
+                        self.tracker.log_parametro(f"best_fold{fi}_rmse", f"{fold_rmse:.4f}")
+
                 # Entrenar modelo final con mejores parámetros
                 modelo.set_params(best_params)
                 modelo.fit(train_df)
 
                 self.tracker.log_metrica("cv_rmse", best_rmse)
+                if historial_sorted:
+                    self.tracker.log_metrica("cv_rmse_std", historial_sorted[0]["std_rmse"])
 
                 # Evaluar en test set si hay datos
                 if len(test_df) > 0:
@@ -1122,10 +1352,45 @@ class ComparadorModelos:
                         test_rmse_orig = np.sqrt(mean_squared_error(y_orig, preds_orig))
                         self.tracker.log_metrica("test_rmse_original_scale", test_rmse_orig)
 
+                        test_mae_orig = mean_absolute_error(y_orig, preds_orig)
+                        self.tracker.log_metrica("test_mae_original_scale", test_mae_orig)
+
+                        mask_orig = y_orig != 0
+                        if mask_orig.any():
+                            test_mape_orig = (
+                                mean_absolute_percentage_error(
+                                    y_orig[mask_orig], preds_orig[mask_orig]
+                                )
+                                * 100
+                            )
+                            self.tracker.log_metrica("test_mape_original_scale", test_mape_orig)
+
+                    # ── Guardar predicciones para gráficas ──
+                    preds_dir = self.tracker.directorio / "predicciones"
+                    preds_dir.mkdir(parents=True, exist_ok=True)
+                    preds_df = pd.DataFrame({
+                        "ds": test_df["ds"].values,
+                        "y_true": y_true,
+                        "y_pred": preds,
+                    })
+                    if self.log_transform and "y_original" in test_df.columns:
+                        preds_df["y_true_original"] = test_df["y_original"].values
+                        preds_df["y_pred_original"] = np.maximum(np.expm1(preds), 0)
+
+                    preds_file = preds_dir / f"{trial_name}.csv"
+                    preds_df.to_csv(preds_file, index=False)
+
                 # Guardar mejores hiperparámetros
                 self.tracker.log_parametros(
                     {f"best_{k}": v for k, v in best_params.items()}
                 )
+
+                # ── Guardar historial completo como JSON separado ──
+                hist_dir = self.tracker.directorio / "grid_history"
+                hist_dir.mkdir(parents=True, exist_ok=True)
+                hist_file = hist_dir / f"{trial_name}.json"
+                with open(hist_file, "w", encoding="utf-8") as f:
+                    json.dump(historial, f, indent=2, ensure_ascii=False, default=str)
 
             except Exception as e:
                 logger.error(f"[{modelo.nombre}] Error fatal: {e}")
@@ -1142,7 +1407,36 @@ class ComparadorModelos:
                 "sexo": sexo,
                 "nivel": nivel,
                 "best_params": best_params,
+                "historial_grid": historial,
+                "cv_rmse": best_rmse,
+                "_modelo_obj": modelo,  # Referencia temporal para guardar top 2
             })
+
+        # ── Guardar top 2 modelos serializados ──
+        logger.info(f"📦 Guardando modelos | {len(resultados)} candidatos")
+        validos = [r for r in resultados if np.isfinite(r.get("cv_rmse", float("nan")))]
+        logger.info(f"📦 Modelos válidos (finite RMSE): {len(validos)}")
+        if validos:
+            ranking = sorted(validos, key=lambda x: x["cv_rmse"])
+            top_n = min(2, len(ranking))
+            modelos_dir = self.tracker.directorio / "modelos"
+            modelos_dir.mkdir(parents=True, exist_ok=True)
+            logger.info(f"📦 Guardando top {top_n} en: {modelos_dir}")
+
+            for rank, r in enumerate(ranking[:top_n], 1):
+                trial_name = f"{r['modelo']}_{padecimiento}_{nivel}_{sexo}"
+                try:
+                    ruta = modelos_dir / trial_name
+                    r["_modelo_obj"].guardar_modelo(ruta)
+                    logger.info(f"  🏆 Top {rank}: {trial_name} (CV RMSE={r['cv_rmse']:.4f})")
+                except Exception as e:
+                    logger.warning(f"  ⚠️ No se pudo guardar {trial_name}: {e}")
+                    import traceback
+                    traceback.print_exc()
+
+        # Limpiar referencias a objetos (liberar memoria)
+        for r in resultados:
+            r.pop("_modelo_obj", None)
 
         return resultados
 

@@ -62,9 +62,10 @@ def build_and_push_image(config):
         capture_output=True,
     )
 
-    # Build y push
+    # Build y push (forzar amd64 para SageMaker)
     subprocess.run(
-        ["docker", "build", "-t", repo, "-f", "aws/Dockerfile", "."],
+        ["docker", "build", "--platform", "linux/amd64",
+         "-t", repo, "-f", "aws/Dockerfile", "."],
         check=True,
     )
     subprocess.run(["docker", "tag", f"{repo}:{tag}", image_uri], check=True)
@@ -120,9 +121,7 @@ def launch_training_job(config, image_uri=None):
             "PYTHONPATH": "/opt/ml/code",
             "PYTHONUNBUFFERED": "1",
         },
-        hyperparameters={
-            "config_experimentos": json.dumps(exp_config),
-        },
+        # Config ya está baked en la imagen Docker (config/experimentos.yaml)
     )
 
     # Canal de datos: subir CSV de entrenamiento a S3
@@ -143,9 +142,12 @@ def launch_training_job(config, image_uri=None):
     print(f"Datos subidos a: {training_input}")
     print(f"Lanzando Training Job con {aws_config['instance_type']}...")
 
+    from datetime import datetime
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+
     estimator.fit(
         inputs={"training": training_input},
-        job_name=f"epiforecast-{exp_config.get('nombre', 'exp')}",
+        job_name=f"epiforecast-{timestamp}",
         wait=False,  # No bloquear — monitorear desde consola de SageMaker
     )
 
