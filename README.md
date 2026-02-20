@@ -47,7 +47,7 @@ El sistema genera **proyecciones a nivel nacional y estatal** (32 entidades fede
 
 - **Extracción automatizada** de datos desde boletines epidemiológicos oficiales (PDF)
 - **Pipeline CI/CD completo** que detecta, descarga y procesa nuevos boletines diariamente
-- **Modelado predictivo** con Facebook Prophet segmentado por región y sexo
+- **Modelado predictivo** con Facebook Prophet segmentado por región y sexo, normalizado a **tasa por 100,000 habitantes**
 - **Versionado de datos** con DVC sobre Amazon S3 para reproducibilidad total
 - **Notificaciones automáticas** vía Amazon SNS al equipo cuando se actualizan datos
 
@@ -253,7 +253,7 @@ Todos los comandos están definidos en el `Makefile` de la raíz del proyecto. E
 
 | Comando | Descripción |
 |---------|-------------|
-| `make train` | Entrena modelo Prophet con CV temporal (por estado o region segun config) |
+| `make train` | Entrena modelo Prophet con CV temporal (tasa por 100K, por estado o region) |
 | `make predict` | Genera predicciones (120 semanas) usando los modelos entrenados |
 | `make models-push` | Versiona modelos con DVC y sube a S3 |
 | `make forecast-push` | Versiona forecast con DVC y sube a S3 |
@@ -443,6 +443,24 @@ make preprocess
 ## Flujo de Modelado (Entrenamiento y Prediccion)
 
 Una vez completado el preprocesamiento, el flujo de modelado genera modelos Prophet por estado/region y sexo, y produce un forecast consolidado.
+
+### Normalizacion a tasa por 100K habitantes
+
+Prophet modela **tasas de incidencia por 100,000 habitantes** en vez de conteos absolutos. Esto:
+
+- Iguala la escala entre estados con diferente poblacion (CDMX ~9M vs Colima ~730K)
+- Estabiliza la optimizacion L-BFGS de Prophet (valores en rango 0-10 vs 0-500+)
+- Produce RMSE comparable entre estados grandes y pequenos
+
+Las predicciones se **desnormalizan automaticamente** a conteos absolutos en `all_forecast.csv`. El CSV incluye tanto `yhat` (conteos) como `yhat_tasa` (por 100K).
+
+Configuracion en `config/modelado.yaml`:
+
+```yaml
+normalizar_tasa: true          # modelar tasa por 100K
+columna_poblacion: "Total"     # columna de poblacion
+tasa_por: 100000               # factor de normalizacion
+```
 
 ### Flujo completo
 

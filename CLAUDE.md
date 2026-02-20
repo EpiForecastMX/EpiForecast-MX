@@ -11,7 +11,7 @@ Predice la incidencia semanal de tres padecimientos neurológicos/salud mental:
 - **Parkinson (CIE-10: G20)**
 - **Alzheimer (CIE-10: G30)**
 
-Utiliza Facebook Prophet para series de tiempo, con datos históricos (2014-2026) del SINAVE e indicadores demográficos del INEGI. Genera proyecciones a nivel **estatal** (32 entidades) o por **región INEGI de salud mental**, segmentadas por sexo.
+Utiliza Facebook Prophet para series de tiempo, con datos históricos (2014-2026) del SINAVE e indicadores demográficos del INEGI. Los modelos trabajan con **tasas por 100,000 habitantes** (no conteos absolutos) para normalizar la escala entre estados. Genera proyecciones a nivel **estatal** (32 entidades) o por **región INEGI de salud mental**, segmentadas por sexo.
 
 ## Convenciones del Proyecto
 
@@ -149,9 +149,9 @@ make mapper       # Mapear entidades con regiones INEGI → genera .csv y .xlsx
 
 ### Modelado
 ```bash
-make train          # Entrena Prophet con CV temporal (por estado o region segun config)
+make train          # Entrena Prophet con CV temporal (tasa por 100K, por estado o region)
 make models-push    # Versiona modelos con DVC y sube a S3
-make predict        # Genera predicciones (120 semanas) con modelos entrenados
+make predict        # Genera predicciones (120 semanas), desnormaliza a conteos
 make forecast-push  # Versiona forecast con DVC y sube a S3
 ```
 
@@ -201,10 +201,11 @@ SINAVE PDFs ──▶ Extracción (Camelot) ──▶ Merge ──▶ dataset_bo
               mapper (merge con INEGI: población, superficie, región salud mental)
                       │
                       ▼
-              train (Prophet por estado o region x sexo)
+              train (Prophet por estado o region x sexo, tasa por 100K)
                       │
                       ▼
-              models/*.pkl (DVC → S3)  +  predict → forecast/all_forecast.csv (DVC → S3)
+              models/*.pkl (DVC → S3)  +  predict (desnormaliza a conteos)
+                      │                     → forecast/all_forecast.csv (DVC → S3)
 ```
 
 ### Configuración Clave (`config/params.yaml`)
@@ -223,6 +224,15 @@ padecimiento:
 - Sur-Sureste vulnerable
 - Metropolitana alta
 - Rural / dispersa
+
+### Normalización a Tasa por 100K (modelado.yaml)
+Prophet modela `y = (incidencia / población) × 100,000` en vez de conteos absolutos. Al predecir, `forecast.py` desnormaliza automáticamente a conteos (`yhat = yhat_tasa × población / 100,000`). El CSV de entrenamiento (sidecar del .pkl) guarda la columna `Total` para la desnormalización.
+
+```yaml
+normalizar_tasa: true          # activar normalización
+columna_poblacion: "Total"     # columna de población en data_inegi
+tasa_por: 100000               # factor (per 100K hab.)
+```
 
 ### Periodos Atípicos Configurados (modelado.yaml)
 - **Pandemia COVID-19**: 2020-03-23, ventana de 913 días (~2.5 años)
@@ -247,8 +257,8 @@ padecimiento:
 ### Funcional
 - Pipeline de preprocesamiento completo (`make preprocess`)
 - Scraping + procesamiento automatizado (CI/CD)
-- Entrenamiento Prophet con CV temporal por estado o región (`make train`)
-- Predicción básica (`make predict`)
+- Entrenamiento Prophet con CV temporal por estado o región, normalizado a tasa por 100K (`make train`)
+- Predicción con desnormalización automática a conteos (`make predict`)
 - Generación de reportes EDA en PDF
 - Detección de outliers parametrizada (IQR / Z-score)
 
