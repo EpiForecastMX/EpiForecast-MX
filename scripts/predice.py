@@ -1,6 +1,7 @@
 # scripts/predice.py
 import pandas as pd
 from pathlib import Path
+import unicodedata
 
 from src.modelado.forecast import ForecastModelLoader, generar_graficos_pronostico
 from src.configuraciones.config_params import conf, logger
@@ -27,6 +28,46 @@ def parse_nombre_modelo(stem: str) -> dict:
         "meta_modo": modo,
     }
 
+def estandarizar_valores(df: pd.DataFrame) -> pd.DataFrame:
+    import unicodedata
+
+    # Normaliza texto para poder comparar minúsculas, sin acentos, sin espacios extra
+    def key(x) -> str:
+        s = "" if x is None else str(x).strip().lower()
+        s = unicodedata.normalize("NFKD", s)
+        s = "".join(c for c in s if not unicodedata.combining(c))
+        s = " ".join(s.split())
+        return s
+
+    # Diccionario de estandarización de padecimientos
+    # clave: forma normalizada
+    # valor: forma final deseada
+    PADECIMIENTOS = {
+        "depresion": "Depresión",
+    }
+
+    # Diccionario de estandarización de entidades
+    ENTIDADES = {
+        "ciudad de mexico": "Ciudad de México",
+        "mexico": "México",
+        "nuevo leon": "Nuevo León",
+        "queretaro": "Querétaro",
+        "san luis potosi": "San Luis Potosí",
+        "yucatan": "Yucatán",
+    }
+
+    # Aplica la estandarización a las columnas relevantes
+    # Solo modifica el valor si existe en el diccionario
+    for col, mapping in [
+        ("meta_padecimiento", PADECIMIENTOS),
+        ("Padecimiento", PADECIMIENTOS),
+        ("meta_entidad", ENTIDADES),
+        ("Entidad", ENTIDADES),
+    ]:
+        if col in df.columns:
+            df[col] = df[col].map(lambda v: mapping.get(key(v), v))
+
+    return df
 
 def main():
     periodo = conf["prediccion"]["periodo"]
@@ -63,6 +104,7 @@ def main():
         raise RuntimeError("Ninguna predicción generada.")
 
     out = pd.concat(frames, ignore_index=True)
+    out = estandarizar_valores(out)
     out.to_csv(out_file, index=False)
 
     logger.success("Predicciones guardadas: {} | modelos: {} | errores: {}", out_file, len(frames), len(errores))
