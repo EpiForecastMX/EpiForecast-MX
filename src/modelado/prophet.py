@@ -57,6 +57,7 @@ class SerieTiempoProphet:
         self.normalizar_tasa = conf.get('normalizar_tasa', False)
         self.col_poblacion = conf.get('columna_poblacion', 'Total')
         self.tasa_por = conf.get('tasa_por', 100000)
+        self.log_transform = conf.get('log_transform', False)
         self.poblacion_valor = None
 
         self.df_serie = pd.DataFrame
@@ -86,6 +87,10 @@ class SerieTiempoProphet:
             )
         else:
             self.serie = self.serie.rename(columns={self.sexo: "y"})
+
+        if self.log_transform:
+            self.serie["y"] = np.log1p(self.serie["y"])
+            logger.info("Log-transform aplicado: y = log(1 + y)")
 
         self.train_data = self.serie[self.serie['ds'] < self.FECHA_CORTE_ENTRENAMIENTO]
         self.test_data = self.serie[self.serie['ds'] >= self.FECHA_CORTE_ENTRENAMIENTO]

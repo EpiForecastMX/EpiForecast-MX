@@ -4,6 +4,7 @@ import re
 import unicodedata
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from src.configuraciones.config_params import conf, logger
@@ -114,6 +115,7 @@ class ForecastModelLoader:
         self.poblacion = None
         self.normalizar_tasa = conf.get('normalizar_tasa', False)
         self.tasa_por = conf.get('tasa_por', 100000)
+        self.log_transform = conf.get('log_transform', False)
 
     def load(self) -> None:
         if not self.model_path.exists():
@@ -132,6 +134,11 @@ class ForecastModelLoader:
     def predict(self) -> pd.DataFrame:
         future = self.model.make_future_dataframe(periods=self.periodo, freq="W-MON")
         forecast = self.model.predict(future)
+
+        # Revertir log-transform: exp(yhat) - 1
+        if self.log_transform:
+            for col in ['yhat', 'yhat_lower', 'yhat_upper']:
+                forecast[col] = np.expm1(forecast[col])
 
         # Desnormalizar si el modelo fue entrenado con tasa por 100K
         if self.normalizar_tasa and self.poblacion:
