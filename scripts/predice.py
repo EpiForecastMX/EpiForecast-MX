@@ -70,7 +70,6 @@ def main():
         for nombre in errores:
             logger.warning("  Falló: {}", nombre)
 
-    #modelo, forecast, serie 
     generar_graficos_pronostico()
 
 

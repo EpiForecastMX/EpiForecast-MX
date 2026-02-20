@@ -36,6 +36,7 @@ def generar_graficos_pronostico() -> None:
     forecast_file = Path(conf["data"]["forecast"])
     models_root = Path(conf["paths"]["models"])
     forecast_root = Path(conf["paths"]["forecast"])
+    train_root = models_root
 
     df_forecast = pd.read_csv(forecast_file)
     df_forecast["ds"] = pd.to_datetime(df_forecast["ds"], errors="coerce")
@@ -64,7 +65,7 @@ def generar_graficos_pronostico() -> None:
             if entidad_norm
             else f"Prophet_{pad_norm}_{modo}.csv"
         )
-        csv_path = models_root / pad_norm / csv_name
+        csv_path = train_root / pad_norm / csv_name
 
         if not csv_path.exists():
             logger.warning("CSV de entrenamiento no encontrado, omitiendo: {}", csv_path)
