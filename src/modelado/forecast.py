@@ -111,6 +111,9 @@ class ForecastModelLoader:
         self.model_path = Path(model_path)
         self.model = None
         self.periodo = periodo
+        self.poblacion = None
+        self.normalizar_tasa = conf.get('normalizar_tasa', False)
+        self.tasa_por = conf.get('tasa_por', 100000)
 
     def load(self) -> None:
         if not self.model_path.exists():
@@ -119,9 +122,25 @@ class ForecastModelLoader:
         with open(self.model_path, "rb") as f:
             self.model = pickle.load(f)
 
+        # Leer población del CSV de entrenamiento (sidecar del .pkl)
+        csv_path = self.model_path.with_suffix('.csv')
+        if self.normalizar_tasa and csv_path.exists():
+            train_csv = pd.read_csv(csv_path, nrows=1)
+            if 'Total' in train_csv.columns:
+                self.poblacion = train_csv['Total'].iloc[0]
+
     def predict(self) -> pd.DataFrame:
         future = self.model.make_future_dataframe(periods=self.periodo, freq="W-MON")
-        return self.model.predict(future)
+        forecast = self.model.predict(future)
+
+        # Desnormalizar si el modelo fue entrenado con tasa por 100K
+        if self.normalizar_tasa and self.poblacion:
+            forecast['yhat_tasa'] = forecast['yhat']
+            forecast['yhat'] = forecast['yhat'] * self.poblacion / self.tasa_por
+            forecast['yhat_lower'] = forecast['yhat_lower'] * self.poblacion / self.tasa_por
+            forecast['yhat_upper'] = forecast['yhat_upper'] * self.poblacion / self.tasa_por
+
+        return forecast
 
     def run(self) -> pd.DataFrame:
         self.load()

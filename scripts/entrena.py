@@ -36,6 +36,9 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False)
     fila["nivel"] = "nacional" if region is None else "regional"
     if region:
         fila["Entidad"] = region
+    if stp.normalizar_tasa and stp.poblacion_valor:
+        fila["poblacion"] = stp.poblacion_valor
+        fila["normalizado"] = True
 
     with open(ruta_modelo, "wb") as f:
         pickle.dump(modelo, f)

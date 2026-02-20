@@ -1,3 +1,7 @@
+normalizar_tasa: true          # modelar tasa por 100K en vez de conteos absolutos
+columna_poblacion: "Total"     # columna de población para normalizar
+tasa_por: 100000               # factor de normalización (per 100K hab.)
+
 param_grid_prophet:
   seasonality_mode:
     - multiplicative        # domina en ~94% de los modelos
