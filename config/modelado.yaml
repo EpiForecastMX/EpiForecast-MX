@@ -1,13 +1,15 @@
 param_grid_prophet:
   seasonality_mode:
-    - multiplicative        # additive descartado: RMSE ~7-9 vs ~5-6 en CV
+    - multiplicative        # domina en ~94% de los modelos
   changepoint_prior_scale:
-    - 0.03                  # explora debajo del sweet spot
-    - 0.05                  # mejor RMSE promedio en Alzheimer CV
-    - 0.1                   # flexibilidad alta para estados grandes
+    - 0.01                  # AÑADIR: ganador absoluto (34.7% de modelos)
+    - 0.03                  # 19.3%
+    - 0.05                  # 21.2%
+
   seasonality_prior_scale:
+    - 0.1                   # AÑADIR: gana 18.1%, ausente del grid actual
     - 0.5
-    - 1.0                   # mejor en CV anterior
+    - 1.0                   # ganador más frecuente (30.8%)
     - 2.0
 
 param_model:
