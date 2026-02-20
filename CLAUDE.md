@@ -225,13 +225,31 @@ padecimiento:
 - Metropolitana alta
 - Rural / dispersa
 
-### Normalización a Tasa por 100K (modelado.yaml)
-Prophet modela `y = (incidencia / población) × 100,000` en vez de conteos absolutos. Al predecir, `forecast.py` desnormaliza automáticamente a conteos (`yhat = yhat_tasa × población / 100,000`). El CSV de entrenamiento (sidecar del .pkl) guarda la columna `Total` para la desnormalización.
+### Transformaciones del Target (modelado.yaml)
+
+Prophet modela el target con tres transformaciones secuenciales:
+
+1. **Normalización a tasa por 100K:** `y_tasa = (incidencia / población) × 100,000`
+2. **Log-transform:** `y = log(1 + y_tasa)` — estabiliza varianza en series volátiles (especialmente Depresión)
+3. **Prophet entrena sobre `y`** (espacio log-tasa)
+
+Al predecir, `forecast.py` revierte ambas transformaciones: `exp(ŷ) - 1` → desnormaliza a conteos. El CSV de entrenamiento (sidecar del .pkl) guarda la columna `Total` para la desnormalización.
 
 ```yaml
 normalizar_tasa: true          # activar normalización
 columna_poblacion: "Total"     # columna de población en data_inegi
 tasa_por: 100000               # factor (per 100K hab.)
+log_transform: true            # log(1+y) para estabilizar varianza
+```
+
+### Grid de hiperparámetros (modelado.yaml)
+El grid incluye `additive` y `multiplicative` como modos de estacionalidad. CV elige automáticamente; `additive` gana en ~49% de modelos de Depresión.
+
+```yaml
+param_grid_prophet:
+  seasonality_mode: [multiplicative, additive]
+  changepoint_prior_scale: [0.01, 0.03, 0.05]
+  seasonality_prior_scale: [0.1, 0.5, 1.0, 2.0]
 ```
 
 ### Periodos Atípicos Configurados (modelado.yaml)
@@ -257,8 +275,8 @@ tasa_por: 100000               # factor (per 100K hab.)
 ### Funcional
 - Pipeline de preprocesamiento completo (`make preprocess`)
 - Scraping + procesamiento automatizado (CI/CD)
-- Entrenamiento Prophet con CV temporal por estado o región, normalizado a tasa por 100K (`make train`)
-- Predicción con desnormalización automática a conteos (`make predict`)
+- Entrenamiento Prophet con CV temporal por estado o región, normalizado a tasa por 100K + log-transform (`make train`)
+- Predicción con inversión de log-transform y desnormalización automática a conteos (`make predict`)
 - Generación de reportes EDA en PDF
 - Detección de outliers parametrizada (IQR / Z-score)
 

@@ -444,15 +444,25 @@ make preprocess
 
 Una vez completado el preprocesamiento, el flujo de modelado genera modelos Prophet por estado/region y sexo, y produce un forecast consolidado.
 
-### Normalizacion a tasa por 100K habitantes
+### Transformaciones del Target
 
-Prophet modela **tasas de incidencia por 100,000 habitantes** en vez de conteos absolutos. Esto:
+Prophet no modela conteos absolutos directamente. Se aplican dos transformaciones al target para mejorar la calidad del ajuste:
 
+**1. Normalizacion a tasa por 100K habitantes**
 - Iguala la escala entre estados con diferente poblacion (CDMX ~9M vs Colima ~730K)
-- Estabiliza la optimizacion L-BFGS de Prophet (valores en rango 0-10 vs 0-500+)
 - Produce RMSE comparable entre estados grandes y pequenos
 
-Las predicciones se **desnormalizan automaticamente** a conteos absolutos en `all_forecast.csv`. El CSV incluye tanto `yhat` (conteos) como `yhat_tasa` (por 100K).
+**2. Log-transform: `y = log(1 + tasa)`**
+- Estabiliza la varianza en series volatiles (especialmente Depresion)
+- Comprime picos extremos, permitiendo a Prophet ajustar mejor la estacionalidad
+- Redujo el RMSE medio de Depresion en **-64%** y elimino todos los modelos con RMSE > 1.0
+
+**3. Modo de estacionalidad adaptativo**
+- El grid de cross-validation incluye `additive` y `multiplicative`
+- CV elige automaticamente: `additive` gana en ~49% de modelos de Depresion
+- Alzheimer y Parkinson prefieren `multiplicative` (~74%)
+
+Las predicciones se **desnormalizan automaticamente** a conteos absolutos en `all_forecast.csv` (primero `exp(y) - 1`, luego `× poblacion / 100K`). El CSV incluye tanto `yhat` (conteos) como `yhat_tasa` (por 100K).
 
 Configuracion en `config/modelado.yaml`:
 
@@ -460,6 +470,12 @@ Configuracion en `config/modelado.yaml`:
 normalizar_tasa: true          # modelar tasa por 100K
 columna_poblacion: "Total"     # columna de poblacion
 tasa_por: 100000               # factor de normalizacion
+log_transform: true            # log(1+y) para estabilizar varianza
+
+param_grid_prophet:
+  seasonality_mode: [multiplicative, additive]
+  changepoint_prior_scale: [0.01, 0.03, 0.05]
+  seasonality_prior_scale: [0.1, 0.5, 1.0, 2.0]
 ```
 
 ### Flujo completo
