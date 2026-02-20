@@ -1,10 +1,12 @@
 normalizar_tasa: true          # modelar tasa por 100K en vez de conteos absolutos
 columna_poblacion: "Total"     # columna de población para normalizar
 tasa_por: 100000               # factor de normalización (per 100K hab.)
+log_transform: true            # log(1+y) para estabilizar varianza en series volátiles
 
 param_grid_prophet:
   seasonality_mode:
-    - multiplicative        # domina en ~94% de los modelos
+    - multiplicative
+    - additive              # CV elige: additive puede funcionar mejor en Depresión
   changepoint_prior_scale:
     - 0.01                  # AÑADIR: ganador absoluto (34.7% de modelos)
     - 0.03                  # 19.3%
