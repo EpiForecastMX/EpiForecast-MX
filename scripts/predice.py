@@ -20,7 +20,7 @@ def parse_nombre_modelo(stem: str) -> dict:
 
     padecimiento = parts[1]
     modo = parts[-1]
-    entidad = " ".join(parts[2:-1]) if len(parts) > 3 else ""
+    entidad = " ".join(parts[2:-1]) if len(parts) > 3 else "Nacional"
 
     return {
         "meta_padecimiento": padecimiento,
@@ -50,6 +50,7 @@ def estandarizar_valores(df: pd.DataFrame) -> pd.DataFrame:
     ENTIDADES = {
         "ciudad de mexico": "Ciudad de México",
         "mexico": "México",
+        "michoacan": "Michoacán",
         "nuevo leon": "Nuevo León",
         "queretaro": "Querétaro",
         "san luis potosi": "San Luis Potosí",
