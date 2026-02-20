@@ -54,23 +54,39 @@ class SerieTiempoProphet:
         self.param_model = dict(conf['param_model'])
         self.add_seasonality_params = dict(conf['add_seasonality'])
 
+        self.normalizar_tasa = conf.get('normalizar_tasa', False)
+        self.col_poblacion = conf.get('columna_poblacion', 'Total')
+        self.tasa_por = conf.get('tasa_por', 100000)
+        self.poblacion_valor = None
+
         self.df_serie = pd.DataFrame
         self.train_data = pd.DataFrame
         self.test_data = pd.DataFrame
 
 
-    def agrupa(self) -> bool:
-        
-        base = (
-            self.df
-            .groupby("Fecha")[self.sexo]
-            .sum()
-        )
-        self.serie = base
+    def agrupa(self) -> None:
+        agg_dict = {self.sexo: "sum"}
+        if self.normalizar_tasa and self.col_poblacion in self.df.columns:
+            # sum: para un estado es igual a first (1 fila/fecha),
+            # para nacional suma las 32 poblaciones estatales = población nacional
+            agg_dict[self.col_poblacion] = "sum"
+        self.serie = self.df.groupby("Fecha").agg(agg_dict)
 
     def crea_train_test(self) -> None:
         self.serie = self.serie.rename_axis("ds").reset_index()
-        self.serie = self.serie.rename(columns = {self.sexo:"y"})
+
+        if self.normalizar_tasa and self.col_poblacion in self.serie.columns:
+            self.poblacion_valor = self.serie[self.col_poblacion].iloc[0]
+            self.serie["y_original"] = self.serie[self.sexo]
+            self.serie["y"] = (self.serie[self.sexo] / self.poblacion_valor) * self.tasa_por
+            self.serie = self.serie.drop(columns=[self.sexo])
+            logger.info(
+                "Normalizado a tasa por {:,.0f} hab. (población: {:,.0f})",
+                self.tasa_por, self.poblacion_valor,
+            )
+        else:
+            self.serie = self.serie.rename(columns={self.sexo: "y"})
+
         self.train_data = self.serie[self.serie['ds'] < self.FECHA_CORTE_ENTRENAMIENTO]
         self.test_data = self.serie[self.serie['ds'] >= self.FECHA_CORTE_ENTRENAMIENTO]
 
