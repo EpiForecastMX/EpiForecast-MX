@@ -142,7 +142,7 @@ experimentos:
 # ─── Configuración AWS SageMaker ─────────────────────────────────
 aws:
   sagemaker:
-    role_arn: ""               # arn:aws:iam::ACCOUNT_ID:role/SageMakerExecutionRole
+    role_arn: "arn:aws:iam::564141855321:role/SageMakerExecutionRole"
     region: "us-east-1"
     instance_type: "ml.m5.xlarge"    # 4 vCPU, 16 GB — modelos clásicos
     # Para modelos DL usar ml.g4dn.xlarge (GPU T4) o ml.p3.2xlarge (GPU V100)
