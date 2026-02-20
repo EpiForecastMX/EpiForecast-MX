@@ -1,26 +1,107 @@
 # config/experimentos.yaml
 # Configuración para comparación de modelos y experimentos en AWS SageMaker
+# Actualizado con hallazgos del CLAUDE.md (Feb 2026)
 
 experimentos:
   nombre: "epiforecast-comparacion"
   descripcion: "Comparación de modelos para forecasting epidemiológico IMSS"
 
+  # ── Transformación del target ─────────────────────────────────────────
+  # Pipeline: conteo → tasa/100K → log(1+y) → modelo → exp-1 → tasa → conteo
+  transformacion:
+    log_transform: true       # log(1 + tasa_100k) — estabiliza varianza
+    tasa_por: 100000
+    columna_poblacion: "Total"
+
+  # ── Periodos atípicos (Prophet holidays) ─────────────────────────────
+  periodos_atipicos:
+    - holiday: pandemia_covid
+      ds: "2020-03-23"
+      lower_window: 0
+      upper_window: 913     # ~2.5 años
+    - holiday: atipico_2016
+      ds: "2016-05-16"
+      lower_window: 0
+      upper_window: 182
+
   modelos:
-    # ── Modelos clásicos (sin GPU, rápidos) ──────────────────────
+    # ══════════════════════════════════════════════════════════════════════
+    # PROPHET — Grids diferenciados por padecimiento (hallazgo clave)
+    # ══════════════════════════════════════════════════════════════════════
+    # - Depresión: más flexibilidad (cp hasta 0.05), Fourier alto (15-20)
+    # - Alzheimer: additive gana ~67% con log-transform, Fourier bajo (5-10)
+    # - Parkinson: similar a Alzheimer, cp rígido (0.01)
+    #
+    # fourier_order es el hallazgo más impactante del benchmark Equipo 16:
+    #   MAPE 10.3% → 9.75% solo con Fourier 20 para Depresión nacional
+    # ══════════════════════════════════════════════════════════════════════
+
     prophet:
       activo: true
+      # Grid base (aplica si no hay grid específico para el padecimiento)
       param_grid:
         seasonality_mode:
           - multiplicative
+          - additive
         changepoint_prior_scale:
           - 0.01
-          - 0.05
-          - 0.1
+          - 0.03
         seasonality_prior_scale:
+          - 0.1
           - 0.5
           - 1.0
-          - 2.0
+        fourier_order:
+          - 10
+          - 15
 
+      # Grids específicos por padecimiento (override del base)
+      grids_por_padecimiento:
+        "Depresión":
+          seasonality_mode:
+            - multiplicative
+            - additive
+          changepoint_prior_scale:
+            - 0.01
+            - 0.03
+            - 0.05            # más flexibilidad — COVID cambió estructura
+          seasonality_prior_scale:
+            - 0.1
+            - 0.5
+            - 1.0
+          fourier_order:
+            - 10
+            - 15
+            - 20              # Fourier alto — benchmark sugiere alto impacto
+
+        "Alzheimer":
+          seasonality_mode:
+            - additive          # gana ~67% con log-transform
+            - multiplicative
+          changepoint_prior_scale:
+            - 0.01
+            - 0.03            # competitivo en algunos estados
+          seasonality_prior_scale:
+            - 0.1
+            - 0.5
+          fourier_order:
+            - 5
+            - 10              # series más estables, no necesitan Fourier alto
+
+        "Parkinson":
+          seasonality_mode:
+            - additive
+            - multiplicative
+          changepoint_prior_scale:
+            - 0.01             # cp rígido funciona bien
+          seasonality_prior_scale:
+            - 0.1
+            - 0.5
+            - 1.0
+          fourier_order:
+            - 5
+            - 10
+
+    # ── Modelos clásicos ─────────────────────────────────────────────────
     xgboost:
       activo: true
       param_grid:
@@ -41,14 +122,14 @@ experimentos:
         rolling_windows: [4, 12, 26]
 
     sarimax:
-      activo: true
+      activo: false           # Desactivar por default — muy lento con s=52
       param_grid:
         order:
           - [1, 1, 1]
           - [2, 1, 1]
           - [1, 1, 2]
         seasonal_order:
-          - [1, 1, 1, 52]    # Estacionalidad anual (lento, ~2-5 min/fold)
+          - [1, 1, 1, 52]
           - [0, 1, 1, 52]
 
     ridge:
@@ -64,10 +145,8 @@ experimentos:
         lags: [1, 2, 4, 8, 12, 52]
         rolling_windows: [4, 12, 26]
 
-    # ── Modelos Deep Learning (requieren neuralforecast) ─────────
+    # ── Modelos Deep Learning (requieren neuralforecast) ─────────────────
     # Instalar: pip install -r aws/requirements_dl.txt
-    # NOTA: grids pequeños porque cada fit toma ~3-5 min en CPU.
-    #       Para pruebas rápidas, activar solo 1-2 modelos DL a la vez.
     tft:
       activo: true
       param_grid:
@@ -97,8 +176,8 @@ experimentos:
           - 200
       nota: >
         DeepAR (Amazon) — forecasting probabilístico. Genera distribuciones
-        de probabilidad para estimar incertidumbre. Recomendado por
-        Dra. Grettel Barceló para series con pocas observaciones.
+        de probabilidad. Recomendado por Dra. Grettel para series con
+        pocas observaciones al entrenar modelo global multi-series.
 
     lightgbm_lstm:
       activo: true
@@ -121,34 +200,39 @@ experimentos:
         Híbrido LightGBM + LSTM — combina features tabulares (LightGBM)
         con patrones secuenciales (LSTM). Ensemble ponderado configurable.
 
-  # ── Scope: limitar qué combinaciones correr ─────────────────
+  # ── Scope: limitar qué combinaciones correr ─────────────────────────
   # Útil para pruebas rápidas. null = todo.
   scope:
     solo_regional: true          # true = solo regiones, sin nivel nacional
-    padecimientos: null           # null = todos, o lista: ["Depresión", "Alzheimer"]
+    padecimientos: null           # null = todos, o lista: ["Depresión"]
     sexos: null                   # null = todos, o lista: ["incrementos_total"]
-    max_regiones: null            # null = todas, o int para limitar (ej: 2)
+    max_regiones: null            # null = todas, o int para limitar
 
   cv:
     n_splits: 4
-    test_size: 52              # 52 semanas = 1 año (alineado con estacionalidad anual)
+    test_size: 52              # 52 semanas = 1 año (estacionalidad anual completa)
     fecha_corte: "2025-01-01"
+    # ── Ponderación de folds ──────────────────────────────────────────
+    # Fold 1 (COVID, 2020-12→2021-12) penaliza 56% vs Fold 4 en Depresión.
+    # Sesga hacia rigidez excesiva (cp=0.01 gana por no sobreajustar al dip).
+    # Pesos lineales crecientes: [0.5, 0.75, 1.0, 1.25] — recientes pesan más.
+    ponderar_folds: true
+    pesos_folds: [0.5, 0.75, 1.0, 1.25]
 
   tracking:
     local: true
-    sagemaker: false           # Activar cuando se ejecute en SageMaker
+    sagemaker: false
     directorio_resultados: "./experiments"
 
-# ─── Configuración AWS SageMaker ─────────────────────────────────
+# ─── Configuración AWS SageMaker ─────────────────────────────────────────
 aws:
   sagemaker:
     role_arn: "arn:aws:iam::564141855321:role/SageMakerExecutionRole"
     region: "us-east-1"
-    instance_type: "ml.m5.xlarge"    # 4 vCPU, 16 GB — modelos clásicos
-    # Para modelos DL usar ml.g4dn.xlarge (GPU T4) o ml.p3.2xlarge (GPU V100)
+    instance_type: "ml.m5.xlarge"
     instance_count: 1
-    max_runtime_seconds: 86400       # 24 horas máximo
-    volume_size_gb: 50               # Más espacio para PyTorch + modelos DL
+    max_runtime_seconds: 86400
+    volume_size_gb: 50
     output_s3: "s3://epiforecast-mx-data/experiments/"
     ecr_repository: "epiforecast-mx-training"
     image_tag: "latest"

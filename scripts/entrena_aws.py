@@ -117,8 +117,12 @@ def main():
 
     solo_regional = scope.get("solo_regional", False)
 
-    # Periodos atípicos (para Prophet)
-    periodos_atipicos = conf.get("peridos_atipicos", [])
+    # Periodos atípicos (desde config de experimentos, más completo)
+    periodos_atipicos_raw = config_exp.get("periodos_atipicos", [])
+    if not periodos_atipicos_raw:
+        # Fallback a config principal
+        periodos_atipicos_raw = conf.get("peridos_atipicos", [])
+    periodos_atipicos = periodos_atipicos_raw
 
     # Crear comparador
     comparador = ComparadorModelos(config_exp)

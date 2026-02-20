@@ -92,8 +92,19 @@ class ModeloBase(ABC):
         """Configura hiperparámetros. Override en subclases."""
         self._params = params
 
-    def cross_validate(self, train_df, param_grid, n_splits=4, test_size=53):
-        """CV temporal con grid search. Retorna (mejores_params, mejor_rmse, historial)."""
+    def cross_validate(self, train_df, param_grid, n_splits=4, test_size=53,
+                       pesos_folds=None):
+        """
+        CV temporal con grid search y ponderación opcional de folds.
+
+        Args:
+            pesos_folds: lista de pesos por fold (ej. [0.5, 0.75, 1.0, 1.25]).
+                         Fold 1 (COVID) pesa menos, folds recientes pesan más.
+                         None = promedio simple (sin ponderación).
+
+        Returns:
+            (mejores_params, mejor_rmse, historial)
+        """
         if not param_grid:
             param_list = [{}]
         else:
@@ -109,6 +120,7 @@ class ModeloBase(ABC):
         logger.info(
             f"[{self.nombre}] {len(param_list)} combinaciones × {n_splits} folds "
             f"= {len(param_list) * n_splits} evaluaciones"
+            + (f" (ponderado: {pesos_folds})" if pesos_folds else "")
         )
 
         for i, params in enumerate(param_list):
@@ -132,12 +144,19 @@ class ModeloBase(ABC):
                     continue
 
             if fold_rmses:
-                mean_rmse = float(np.mean(fold_rmses))
+                # Promedio ponderado si hay pesos, simple si no
+                if pesos_folds and len(fold_rmses) == len(pesos_folds):
+                    weights = np.array(pesos_folds[:len(fold_rmses)])
+                    mean_rmse = float(np.average(fold_rmses, weights=weights))
+                else:
+                    mean_rmse = float(np.mean(fold_rmses))
+
                 std_rmse = float(np.std(fold_rmses))
                 historial.append({
                     "params": params,
                     "mean_rmse": mean_rmse,
                     "std_rmse": std_rmse,
+                    "fold_rmses": fold_rmses,
                     "folds_completados": len(fold_rmses),
                 })
                 if mean_rmse < best_rmse:
@@ -156,17 +175,22 @@ class ModeloBase(ABC):
 
 
 class ModeloProphet(ModeloBase):
+    """
+    Prophet con soporte para fourier_order como hiperparámetro de grid search.
+
+    Hallazgos clave del CLAUDE.md:
+    - fourier_order=20 es la mejora más impactante para Depresión (Benchmark Equipo 16)
+    - additive gana ~67% para Alzheimer con log-transform
+    - cp=0.01 domina, pero cp=0.03-0.05 es competitivo para Depresión
+    - yearly_seasonality=False + add_seasonality custom es el approach correcto
+    """
+
     nombre = "Prophet"
 
-    def __init__(self, periodos_atipicos=None, seasonality_config=None, base_params=None):
+    def __init__(self, periodos_atipicos=None, base_params=None):
         self._params = {}
         self._model = None
         self._periodos_atipicos = periodos_atipicos
-        self._seasonality_config = seasonality_config or {
-            "name": "yearly_custom",
-            "period": 52.18,
-            "fourier_order": 5,
-        }
         self._base_params = base_params or {
             "yearly_seasonality": False,
             "weekly_seasonality": False,
@@ -174,7 +198,7 @@ class ModeloProphet(ModeloBase):
         }
 
     def set_params(self, params):
-        self._params = params
+        self._params = params.copy()
 
     def fit(self, train_df):
         from prophet import Prophet
@@ -186,8 +210,20 @@ class ModeloProphet(ModeloBase):
             holidays = pd.DataFrame(self._periodos_atipicos)
             holidays["ds"] = pd.to_datetime(holidays["ds"])
 
-        model = Prophet(holidays=holidays, **self._base_params, **self._params)
-        model.add_seasonality(**self._seasonality_config)
+        # Separar fourier_order del resto de params (no es parámetro de Prophet())
+        prophet_params = {k: v for k, v in self._params.items() if k != "fourier_order"}
+        fourier_order = self._params.get("fourier_order", 10)
+
+        model = Prophet(holidays=holidays, **self._base_params, **prophet_params)
+
+        # Estacionalidad anual custom con Fourier configurable
+        # period=52.18 = 365.25/7 (anual exacto en semanas)
+        model.add_seasonality(
+            name="yearly_custom",
+            period=52.18,
+            fourier_order=fourier_order,
+        )
+
         model.fit(train_df[["ds", "y"]])
         self._model = model
 
@@ -299,7 +335,8 @@ class ModeloSARIMAX(ModeloBase):
         )
         return result["yhat"].fillna(0).values
 
-    def cross_validate(self, train_df, param_grid, n_splits=4, test_size=53):
+    def cross_validate(self, train_df, param_grid, n_splits=4, test_size=53,
+                       pesos_folds=None):
         """CV especial para SARIMAX: order y seasonal_order son tuplas, no escalares."""
         orders = param_grid.get("order", [(1, 1, 1)])
         seasonal_orders = param_grid.get("seasonal_order", [(0, 0, 0, 0)])
@@ -340,7 +377,11 @@ class ModeloSARIMAX(ModeloBase):
                         continue
 
                 if fold_rmses:
-                    mean_rmse = float(np.mean(fold_rmses))
+                    if pesos_folds and len(fold_rmses) == len(pesos_folds):
+                        weights = np.array(pesos_folds[:len(fold_rmses)])
+                        mean_rmse = float(np.average(fold_rmses, weights=weights))
+                    else:
+                        mean_rmse = float(np.mean(fold_rmses))
                     std_rmse = float(np.std(fold_rmses))
                     historial.append({
                         "params": params,
@@ -821,6 +862,12 @@ class ComparadorModelos:
     Orquesta la comparación de múltiples modelos sobre los mismos datos
     con cross-validation temporal y tracking de experimentos.
 
+    Mejoras incorporadas del CLAUDE.md:
+    - Grids diferenciados por padecimiento para Prophet
+    - Ponderación de folds (COVID Fold 1 pesa menos)
+    - Log-transform del target
+    - Filtrado de series vacías (>95% zeros)
+
     Uso:
         config = OmegaConf.load("config/experimentos.yaml")
         comparador = ComparadorModelos(config["experimentos"])
@@ -833,8 +880,16 @@ class ComparadorModelos:
 
         cv_conf = config_experimentos.get("cv", {})
         self.n_splits = cv_conf.get("n_splits", 4)
-        self.test_size = cv_conf.get("test_size", 53)
+        self.test_size = cv_conf.get("test_size", 52)
         self.fecha_corte = cv_conf.get("fecha_corte", "2025-01-01")
+
+        # Ponderación de folds (COVID correction)
+        self.ponderar_folds = cv_conf.get("ponderar_folds", False)
+        self.pesos_folds = cv_conf.get("pesos_folds", None)
+
+        # Log-transform config
+        transf = config_experimentos.get("transformacion", {})
+        self.log_transform = transf.get("log_transform", True)
 
         tracking_conf = config_experimentos.get("tracking", {})
         self.tracker = ExperimentTracker(
@@ -843,15 +898,33 @@ class ComparadorModelos:
             usar_sagemaker=tracking_conf.get("sagemaker", False),
         )
 
-    def _crear_modelos(self, periodos_atipicos=None):
+    def _obtener_grid_prophet(self, padecimiento=None):
+        """
+        Obtiene el grid de Prophet específico para el padecimiento.
+        Si no hay grid específico, usa el grid base.
+        """
+        config_prophet = self.config.get("modelos", {}).get("prophet", {})
+        grids_especificos = config_prophet.get("grids_por_padecimiento", {})
+
+        if padecimiento and padecimiento in grids_especificos:
+            grid = grids_especificos[padecimiento]
+            logger.info(f"[Prophet] Usando grid específico para {padecimiento}")
+        else:
+            grid = config_prophet.get("param_grid", {})
+            logger.info(f"[Prophet] Usando grid base (sin específico para {padecimiento})")
+
+        return grid
+
+    def _crear_modelos(self, periodos_atipicos=None, padecimiento=None):
         """Instancia los modelos activos según configuración."""
         config_modelos = self.config.get("modelos", {})
         modelos = []
 
         if config_modelos.get("prophet", {}).get("activo", False):
+            grid = self._obtener_grid_prophet(padecimiento)
             modelos.append((
                 ModeloProphet(periodos_atipicos=periodos_atipicos),
-                config_modelos["prophet"].get("param_grid", {}),
+                grid,
             ))
 
         if config_modelos.get("xgboost", {}).get("activo", False):
@@ -930,13 +1003,23 @@ class ComparadorModelos:
 
         return modelos
 
+    def _serie_es_viable(self, df, umbral_zeros=0.95):
+        """
+        Filtra series con >95% zeros (ej. BCS Alzheimer).
+        RMSE=0 en estas series es engañoso, no deberían entrenarse.
+        """
+        proporcion_zeros = (df["y"] == 0).sum() / len(df)
+        if proporcion_zeros > umbral_zeros:
+            return False, proporcion_zeros
+        return True, proporcion_zeros
+
     def ejecutar(self, df, padecimiento, sexo, region=None, periodos_atipicos=None):
         """
         Ejecuta comparación de todos los modelos activos.
 
         Args:
             df: DataFrame con columnas ds, y (serie temporal ya agrupada)
-            padecimiento: nombre del padecimiento
+            padecimiento: nombre del padecimiento (para grid diferenciado)
             sexo: etiqueta de sexo
             region: entidad/región (None = nacional)
             periodos_atipicos: lista de dicts para Prophet holidays
@@ -947,6 +1030,22 @@ class ComparadorModelos:
         nivel = region or "Nacional"
         logger.info(f"══════ Comparando modelos | {padecimiento} | {nivel} | {sexo} ══════")
 
+        # ── Filtrar series vacías ──
+        es_viable, pct_zeros = self._serie_es_viable(df)
+        if not es_viable:
+            logger.warning(
+                f"⚠️ Serie {padecimiento}/{nivel}/{sexo} tiene {pct_zeros:.0%} zeros — "
+                f"OMITIDA (umbral >95%). RMSE=0 sería engañoso."
+            )
+            return []
+
+        # ── Log-transform ──
+        if self.log_transform:
+            df = df.copy()
+            df["y_original"] = df["y"].copy()
+            df["y"] = np.log1p(df["y"])  # log(1 + y)
+            logger.info(f"Log-transform aplicado: rango y [{df['y'].min():.3f}, {df['y'].max():.3f}]")
+
         # Split train/test
         df["ds"] = pd.to_datetime(df["ds"])
         train_df = df[df["ds"] < self.fecha_corte].copy()
@@ -956,8 +1055,11 @@ class ComparadorModelos:
             f"Test: {len(test_df)} semanas"
         )
 
-        modelos = self._crear_modelos(periodos_atipicos)
+        modelos = self._crear_modelos(periodos_atipicos, padecimiento=padecimiento)
         resultados = []
+
+        # Pesos de folds para CV
+        pesos = self.pesos_folds if self.ponderar_folds else None
 
         for modelo, param_grid in modelos:
             trial_name = f"{modelo.nombre}_{padecimiento}_{nivel}_{sexo}"
@@ -970,14 +1072,17 @@ class ComparadorModelos:
                 "nivel": nivel,
                 "train_size": len(train_df),
                 "test_size": len(test_df),
+                "log_transform": self.log_transform,
+                "ponderar_folds": self.ponderar_folds,
             })
 
             inicio = time.time()
 
             try:
-                # Cross-validation con grid search
+                # Cross-validation con grid search (ponderado si configurado)
                 best_params, best_rmse, historial = modelo.cross_validate(
-                    train_df, param_grid, self.n_splits, self.test_size
+                    train_df, param_grid, self.n_splits, self.test_size,
+                    pesos_folds=pesos,
                 )
 
                 # Entrenar modelo final con mejores parámetros
@@ -1008,6 +1113,14 @@ class ComparadorModelos:
                     self.tracker.log_metrica("test_rmse", test_rmse)
                     self.tracker.log_metrica("test_mae", test_mae)
                     self.tracker.log_metrica("test_mape", test_mape)
+
+                    # Si log-transform, también reportar métricas en escala original
+                    if self.log_transform and "y_original" in test_df.columns:
+                        y_orig = test_df["y_original"].values
+                        preds_orig = np.expm1(preds)  # exp(x) - 1
+                        preds_orig = np.maximum(preds_orig, 0)  # no negativos
+                        test_rmse_orig = np.sqrt(mean_squared_error(y_orig, preds_orig))
+                        self.tracker.log_metrica("test_rmse_original_scale", test_rmse_orig)
 
                 # Guardar mejores hiperparámetros
                 self.tracker.log_parametros(
