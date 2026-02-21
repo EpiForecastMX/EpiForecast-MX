@@ -199,17 +199,18 @@ class SerieTiempoProphet:
         best_metrics = {}
 
         # Mejora 3: umbral Newton-prone — si combo con cp=X hizo timeout,
-        # skip combos con cp ≤ X (cp más bajo = más changepoints = Newton peor)
+        # skip combos con cp < X (cp más bajo = más changepoints = Newton peor).
+        # Usa < (estricto): si cp=0.05 falló, aún probar otros cp=0.05 con distinto sm/sp.
         newton_cp_threshold = None
 
         for iteracion, parametro in enumerate(parametros):
             cp = parametro.get('changepoint_prior_scale', 0)
             resumen = ", ".join(f"{k}={v}" for k, v in parametro.items())
 
-            # Mejora 3: skip combos Newton-prone
-            if newton_cp_threshold is not None and cp <= newton_cp_threshold:
+            # Mejora 3: skip combos con cp estrictamente menor al que causó Newton
+            if newton_cp_threshold is not None and cp < newton_cp_threshold:
                 logger.warning(
-                    "Skip combo (Newton-prone): cp={} ≤ umbral {} | {}",
+                    "Skip combo (Newton-prone): cp={} < umbral {} | {}",
                     cp, newton_cp_threshold, resumen,
                 )
                 continue
@@ -326,8 +327,24 @@ class SerieTiempoProphet:
             else:
                 logger.debug(f"[CV] Iteración {iteracion + 1}/{len(parametros)} - No se obtuvo ningún RMSE válido para {resumen}")
 
-        logger.success(f"Mejor RMSE: {best_metrics.get('rmse', 0):.4f} | MAE: {best_metrics.get('mae', 0):.4f} | MAPE: {best_metrics.get('mape', 0):.2f}%")
-        logger.success(f"Mejor conjunto de parámetros encontrado: {best_param}")
+        # Fallback: si todos los combos hicieron timeout (Newton total), usar defaults
+        if best_param is None:
+            best_param = {k: v[0] for k, v in self.param_grid.items()}
+            if 'changepoint_prior_scale' in self.param_grid:
+                best_param['changepoint_prior_scale'] = max(
+                    self.param_grid['changepoint_prior_scale']
+                )
+            best_metrics = {"rmse": None, "mae": None, "mape": None}
+            logger.warning(
+                "Todos los combos hicieron timeout (Newton). Params default: {}", best_param
+            )
+        else:
+            logger.success(
+                f"Mejor RMSE: {best_metrics.get('rmse', 0):.4f} | "
+                f"MAE: {best_metrics.get('mae', 0):.4f} | "
+                f"MAPE: {best_metrics.get('mape', 0):.2f}%"
+            )
+            logger.success(f"Mejor conjunto de parámetros encontrado: {best_param}")
 
         return best_param, best_metrics
     
