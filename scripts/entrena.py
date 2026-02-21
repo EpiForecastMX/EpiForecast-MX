@@ -22,6 +22,13 @@ def normalizar(region: str) -> str:
 
 
 def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False):
+    # Imports locales: evita que cloudpickle (loky) intente serializar estos objetos
+    # como globals de __main__. OmegaConf y loguru no son pickle-safe.
+    # Cada worker re-importa los módulos frescos.
+    from src.configuraciones.config_params import conf, logger
+    from src.modelado.prophet import SerieTiempoProphet
+    from src.utils import directory_manager
+
     ruta_padecimiento = os.path.join(ruta_base, normalizar(padecimiento))
     directory_manager.asegurar_ruta(ruta_padecimiento)
 
