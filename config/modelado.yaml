@@ -2,22 +2,21 @@ normalizar_tasa: true          # modelar tasa por 100K en vez de conteos absolut
 columna_poblacion: "Total"     # columna de población para normalizar
 tasa_por: 100000               # factor de normalización (per 100K hab.)
 log_transform: true            # log(1+y) para estabilizar varianza en series volátiles
-umbral_minimo_semanal: 1.0     # promedio mínimo de casos/semana para entrenar (< umbral → insuficiente)
+umbral_minimo_semanal: 0.5     # promedio mínimo de casos/semana para entrenar (< umbral → insuficiente). v5: 1.0→0.5 recupera ~40 modelos
 
 param_grid_prophet:
-  # Grids v4 — diferenciados por padecimiento (Feb 2026, validado con 2 corridas paralelas)
+  # Grids v5 — optimizados con datos de 297 modelos v4 (Feb 2026)
   alzheimer:
     seasonality_mode:
       - multiplicative        # additive +51% RMSE; eliminado
     changepoint_prior_scale:
       - 0.01                  # ganador 85% top-20%
       - 0.03
-      # 0.005 eliminado: causa L-BFGS failures (cae a Newton)
-      # 0.05 eliminado: nunca gana, +97% RMSE
     seasonality_prior_scale:
+      - 0.05                  # v5: agregado (patrón exitoso en Depresión)
       - 0.1                   # mejores en top 20%
       - 0.5                   # mejores en top 20%
-    # 4 combinaciones (antes 6)
+    # 6 combinaciones (v4: 4)
 
   depresion:
     seasonality_mode:
@@ -28,26 +27,26 @@ param_grid_prophet:
       - 0.03
       - 0.05
     seasonality_prior_scale:
-      - 0.05                  # explorar menor regularización
+      - 0.025                 # v5: exploración de mayor regularización
+      - 0.05
       - 0.1                   # ganador regional
       - 0.5
-      - 1.0                   # re-agregado: ganador en 29.3% de modelos (v3 + corrida paralela)
-    # 24 combinaciones (antes 18)
+      # 1.0 eliminado v5: ganaba 29% pero RMSE medio peor que sp≤0.5
+    # 24 combinaciones (v4: 24)
 
   parkinson:
     seasonality_mode:
       - multiplicative        # ganador dominante
       - additive              # competitivo en algunas entidades
     changepoint_prior_scale:
-      - 0.01
-      - 0.03                  # punto intermedio faltante (corrida paralela)
-      - 0.05                  # mejor RMSE promedio (0.0573 vs 0.0633 de 0.01)
-      - 0.07                  # explorar más flexibilidad
+      - 0.03                  # v5: poda cp=0.01 (Newton-prone) y cp=0.07 (nunca gana)
+      - 0.04                  # v5: interpolación fina en zona óptima
+      - 0.05                  # mejor RMSE promedio (0.0573)
     seasonality_prior_scale:
       - 0.1                   # zona óptima
       - 0.5                   # ganador claro (RMSE 0.0461)
-      - 1.0                   # re-agregado: corrida paralela sugiere beneficio
-    # 24 combinaciones (antes 12)
+      - 1.0
+    # 18 combinaciones (v4: 24)
 
 param_model:
   yearly_seasonality: False  # reemplazado por add_seasonality con period exacto
@@ -63,8 +62,8 @@ add_seasonality:
 n_changepoints_regional: 12  # regional: reduce overfitting en entidades < 1M hab. (vs 25 global)
 
 n_jobs_train: -2               # paralelismo joblib: -1=todos los cores, -2=todos-1, 1=secuencial
-cv_timeout_por_combo: 120      # seg máx por combinación de HP en CV (0=sin límite). Backstop general
-cv_timeout_por_fold: 45        # seg máx por fold individual en CV (>45s = Newton seguro → skip combo). 0=sin límite
+cv_timeout_por_combo: 90       # seg máx por combinación de HP en CV (0=sin límite). v5: 120→90 más agresivo
+cv_timeout_por_fold: 35        # seg máx por fold individual (>35s = Newton seguro → skip combo). v5: 45→35
 
 FECHA_CORTE_ENTRENAMIENTO: "2025-01-01"
 TS_SPLITS: 4
