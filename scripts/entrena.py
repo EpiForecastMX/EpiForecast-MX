@@ -161,7 +161,10 @@ def main():
                 delayed(entrenar)(*job) for job in jobs
             )
         else:
-            resultados_raw = [entrenar(*job) for job in jobs]
+            resultados_raw = []
+            for i, job in enumerate(jobs, 1):
+                logger.info("[{}/{}] {:.0f}%", i, len(jobs), i / len(jobs) * 100)
+                resultados_raw.append(entrenar(*job))
 
         resultados = [f for f in resultados_raw if f is not None]
 
