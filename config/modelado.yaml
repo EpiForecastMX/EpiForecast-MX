@@ -4,19 +4,49 @@ tasa_por: 100000               # factor de normalización (per 100K hab.)
 log_transform: true            # log(1+y) para estabilizar varianza en series volátiles
 
 param_grid_prophet:
-  seasonality_mode:
-    - multiplicative
-    - additive              # CV elige: additive puede funcionar mejor en Depresión
-  changepoint_prior_scale:
-    - 0.01                  # AÑADIR: ganador absoluto (34.7% de modelos)
-    - 0.03                  # 19.3%
-    - 0.05                  # 21.2%
+  # Grids diferenciados por padecimiento (análisis CV — Feb 2026, 297 modelos)
+  alzheimer:
+    seasonality_mode:
+      - multiplicative        # additive +51% RMSE; additive eliminado
+    changepoint_prior_scale:
+      - 0.005                 # sub-threshold; explorar
+      - 0.01                  # ganador 85% top-20%
+      - 0.03
+      # 0.05 eliminado: nunca gana, +97% RMSE
+    seasonality_prior_scale:
+      - 0.1                   # mejores en top 20%
+      - 0.5                   # mejores en top 20%
+      # 1.0 y 2.0 eliminados: peores consistentemente
+    # 8 combinaciones (antes 24, -67% CV)
 
-  seasonality_prior_scale:
-    - 0.1                   # AÑADIR: gana 18.1%, ausente del grid actual
-    - 0.5
-    - 1.0                   # ganador más frecuente (30.8%)
-    - 2.0
+  depresion:
+    seasonality_mode:
+      - additive              # mejor promedio (0.2017 vs 0.2183)
+      - multiplicative        # gap pequeño; depende de entidad
+    changepoint_prior_scale:
+      - 0.01                  # diferencias pequeñas entre valores; mantener los 3
+      - 0.03
+      - 0.05
+    seasonality_prior_scale:
+      - 0.05                  # AÑADIR: explorar menor regularización
+      - 0.1                   # ganador regional
+      - 0.5
+      # 1.0 y 2.0 eliminados: +16-19% RMSE vs. 0.1
+    # 18 combinaciones (antes 24, -25% CV)
+
+  parkinson:
+    seasonality_mode:
+      - multiplicative        # ganador dominante
+      - additive              # competitivo en algunas entidades
+    changepoint_prior_scale:
+      - 0.01
+      - 0.05                  # mejor RMSE promedio (0.0573 vs 0.0633 de 0.01)
+      - 0.07                  # AÑADIR: explorar más flexibilidad
+    seasonality_prior_scale:
+      - 0.1                   # zona óptima
+      - 0.5                   # ganador claro (RMSE 0.0461)
+      # 1.0 eliminado: peor de todos (RMSE 0.0738)
+    # 18 combinaciones (antes 24, -25% CV)
 
 param_model:
   yearly_seasonality: False  # reemplazado por add_seasonality con period exacto
@@ -27,6 +57,9 @@ add_seasonality:
   name: 'yearly_custom'
   period: 52.18             # 365.25/7 — anual exacto en semanas
   fourier_order: 5          # reducido de 8: menos params = L-BFGS mas estable
+  fourier_order_regional: 3 # regional: fourier_order=5 sobreajusta en series cortas (Depresión)
+
+n_changepoints_regional: 12  # regional: reduce overfitting en entidades < 1M hab. (vs 25 global)
 
 FECHA_CORTE_ENTRENAMIENTO: "2025-01-01"
 TS_SPLITS: 4

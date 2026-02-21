@@ -39,7 +39,21 @@ class SerieTiempoProphet:
         self.model_path = conf['paths']['models']
         self.model_save = conf['data']['model_train']
 
-        self.param_grid = conf['param_grid_prophet']
+        _GRID_KEY = {
+            "Alzheimer": "alzheimer",
+            "Depresión": "depresion",
+            "Parkinson": "parkinson",
+        }
+        tipo = self.df['Padecimiento'].iloc[0] if 'Padecimiento' in self.df.columns else None
+        grid_key = _GRID_KEY.get(tipo)
+        if grid_key is None:
+            raise ValueError(
+                f"param_grid_prophet no definido para padecimiento='{tipo}'. "
+                f"Valores válidos: {list(_GRID_KEY)}"
+            )
+        self.param_grid = conf['param_grid_prophet'][grid_key]
+        logger.info("Grid de hiperparámetros: {} ({})", tipo, grid_key)
+
         self.mapeo_columnas = conf['mapeo_columnas']
         self.FECHA_CORTE_ENTRENAMIENTO = conf['FECHA_CORTE_ENTRENAMIENTO']
         self.TRAIN_SPLIT = conf['TS_SPLITS']
@@ -52,7 +66,20 @@ class SerieTiempoProphet:
         self.fechas_atipicas["ds"] = pd.to_datetime(self.fechas_atipicas["ds"])
 
         self.param_model = dict(conf['param_model'])
-        self.add_seasonality_params = dict(conf['add_seasonality'])
+
+        # fourier_order_regional: se usa solo en modelos por estado (series más cortas)
+        raw_seasonality = dict(conf['add_seasonality'])
+        fourier_order_regional = raw_seasonality.pop('fourier_order_regional', None)
+        if self.modelado_estados and fourier_order_regional is not None:
+            raw_seasonality['fourier_order'] = fourier_order_regional
+            logger.debug("fourier_order_regional={} aplicado (modelado por estado)", fourier_order_regional)
+        self.add_seasonality_params = raw_seasonality
+
+        # n_changepoints_regional: reduce overfitting en series estatales cortas
+        n_cp_regional = conf.get('n_changepoints_regional', None)
+        if self.modelado_estados and n_cp_regional is not None:
+            self.param_model['n_changepoints'] = n_cp_regional
+            logger.debug("n_changepoints_regional={} aplicado (modelado por estado)", n_cp_regional)
 
         self.normalizar_tasa = conf.get('normalizar_tasa', False)
         self.col_poblacion = conf.get('columna_poblacion', 'Total')
