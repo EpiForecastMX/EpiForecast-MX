@@ -18,6 +18,7 @@ def _normalizar_nombre(s: str) -> str:
     Debe coincidir con la función normalizar() de scripts/entrena.py.
     """
     sin_acento = unicodedata.normalize("NFKD", str(s)).encode("ascii", "ignore").decode("ascii")
+    sin_acento = sin_acento.replace("/", "-")
     return re.sub(r"\s+", "_", sin_acento)
 
 

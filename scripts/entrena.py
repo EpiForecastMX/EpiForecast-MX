@@ -18,6 +18,7 @@ from src.utils import directory_manager
 
 def normalizar(region: str) -> str:
     formato = unicodedata.normalize("NFKD", region).encode("ascii", "ignore").decode("ascii")
+    formato = formato.replace("/", "-")
     return re.sub(r"\s+", "_", formato)
 
 
