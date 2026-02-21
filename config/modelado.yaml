@@ -63,6 +63,7 @@ add_seasonality:
 n_changepoints_regional: 12  # regional: reduce overfitting en entidades < 1M hab. (vs 25 global)
 
 n_jobs_train: -2               # paralelismo joblib: -1=todos los cores, -2=todos-1, 1=secuencial
+cv_timeout_por_combo: 120      # seg máx por combinación de HP en CV (0=sin límite). Evita Newton fallbacks de 10+ min
 
 FECHA_CORTE_ENTRENAMIENTO: "2025-01-01"
 TS_SPLITS: 4

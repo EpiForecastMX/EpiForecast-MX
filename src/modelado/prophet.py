@@ -3,6 +3,7 @@
 import os
 import itertools
 import logging
+import time
 
 
 import cmdstanpy
@@ -107,6 +108,7 @@ class SerieTiempoProphet:
             logger.debug("n_changepoints_regional={} aplicado (modelado por estado)", n_cp_regional)
 
         self.cv_weights = conf.get('cv_weights', None)
+        self.cv_timeout = conf.get('cv_timeout_por_combo', 0)
 
         self.normalizar_tasa = conf.get('normalizar_tasa', False)
         self.col_poblacion = conf.get('columna_poblacion', 'Total')
@@ -183,8 +185,10 @@ class SerieTiempoProphet:
             mae_fold = []
             mape_fold = []
             fold_indices = []
+            timed_out = False
 
             resumen = ", ".join(f"{k}={v}" for k, v in parametro.items())
+            t_combo = time.time()
 
             for fold_iteration, (train_idx, val_idx) in enumerate(tscv.split(self.train_data)):
                 train_fold = self.train_data.iloc[train_idx]
@@ -222,7 +226,22 @@ class SerieTiempoProphet:
                     logger.warning(f'Ocurrio excepcion {e}')
                     continue
 
-            if rmse_fold:
+                # Timeout: si esta combo excede el límite, saltar folds restantes
+                if self.cv_timeout and (time.time() - t_combo) > self.cv_timeout:
+                    logger.warning(
+                        "Timeout CV: {:.0f}s > {}s en fold {}/{}. Skip combo: {}",
+                        time.time() - t_combo, self.cv_timeout,
+                        fold_iteration + 1, self.TRAIN_SPLIT, resumen,
+                    )
+                    timed_out = True
+                    break
+
+            if timed_out:
+                # Combo descartada por timeout: no considerar como candidata
+                mean_rmse = float('inf')
+                mean_mae = float('inf')
+                mean_mape = float('inf')
+            elif rmse_fold:
                 if self.cv_weights and len(self.cv_weights) >= self.TRAIN_SPLIT:
                     weights = [self.cv_weights[i] for i in fold_indices]
                     mean_rmse = float(np.average(rmse_fold, weights=weights))
