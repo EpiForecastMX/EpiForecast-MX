@@ -25,14 +25,18 @@ logging.getLogger("cmdstanpy").disabled = True
 
 
 class SerieTiempoProphet:
-    def __init__(self, 
+    def __init__(self,
                  df: pd.DataFrame,
-                 sexo: str = None):
-        
+                 sexo: str = None,
+                 entidad: str = None,
+                 padecimiento: str = None):
+
         self.df = df.copy()
         self.df["Fecha"] = pd.to_datetime(self.df["Fecha"])
         self.serie = pd.DataFrame
         self.sexo = sexo
+        self.entidad = entidad
+        self.padecimiento = padecimiento
 
         self.modelado_estados = conf['padecimiento']['modelado_estados']
         self.entrena = conf['padecimiento']['entrena_modelo']
@@ -60,10 +64,31 @@ class SerieTiempoProphet:
         self.TEST_SIZE = conf['TEST_SIZE']
         self.regiones_INEGI = conf['regiones_INEGI']
 
-        
+
         self.periodos_atipicos = conf['peridos_atipicos']
         self.fechas_atipicas = pd.DataFrame(self.periodos_atipicos)
         self.fechas_atipicas["ds"] = pd.to_datetime(self.fechas_atipicas["ds"])
+
+        # Agregar cambios de régimen específicos de esta entidad/padecimiento
+        cambios = conf.get('cambios_regimen', [])
+        if cambios and entidad:
+            filtrados = [
+                c for c in cambios
+                if c.get('entidad') == entidad
+                and (not c.get('padecimiento') or c.get('padecimiento') == padecimiento)
+            ]
+            if filtrados:
+                df_cambios = pd.DataFrame(filtrados)
+                df_cambios["ds"] = pd.to_datetime(df_cambios["ds"])
+                cols_prophet = ["holiday", "ds", "lower_window", "upper_window"]
+                df_cambios = df_cambios[cols_prophet]
+                self.fechas_atipicas = pd.concat(
+                    [self.fechas_atipicas, df_cambios], ignore_index=True
+                )
+                logger.info(
+                    "Cambios de régimen agregados para {}: {}",
+                    entidad, [c['holiday'] for c in filtrados],
+                )
 
         self.param_model = dict(conf['param_model'])
 
@@ -125,6 +150,12 @@ class SerieTiempoProphet:
         logger.info(f"Datos de entrenamiento: {len(self.train_data)} semanas (hasta {self.train_data['ds'].max().date()})")
         logger.info(f"Datos de prueba: {len(self.test_data)} semanas (desde {self.test_data['ds'].min().date()})")
         
+    def promedio_semanal(self) -> float:
+        """Retorna el promedio semanal del conteo original (antes de transformaciones)."""
+        if "y_original" in self.train_data.columns:
+            return float(self.train_data["y_original"].mean())
+        return float(self.train_data["y"].mean())
+
     def prophet_cross_val(self) -> tuple [dict, float]:
 
         parametros = [dict(zip(self.param_grid.keys(), v)) for v in itertools.product(*self.param_grid.values())]
