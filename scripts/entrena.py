@@ -9,6 +9,8 @@ import unicodedata
 import os
 from pathlib import Path
 
+from joblib import Parallel, delayed
+
 from src.modelado.prophet import SerieTiempoProphet
 from src.configuraciones.config_params import conf, logger
 from src.utils import directory_manager
@@ -30,7 +32,7 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False)
     if not force:
         if Path(ruta_modelo).exists():
             logger.info("Modelo ya existe, omitiendo: {}", Path(ruta_modelo).name)
-            return None, ruta_padecimiento
+            return None
 
     t_start = time.time()
 
@@ -38,21 +40,27 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False)
     stp.agrupa()
     stp.crea_train_test()
 
-    # Verificar umbral mínimo de casos por semana (marca confianza, pero entrena de todos modos)
+    # Verificar umbral mínimo de casos por semana
     umbral = conf.get('umbral_minimo_semanal', 0)
     promedio = stp.promedio_semanal()
     es_insuficiente = umbral and promedio < umbral
+
     if es_insuficiente:
+        # Skip CV: usar primer combo del grid como default (serie casi plana, HP da igual)
+        parametros = {k: v[0] for k, v in stp.param_grid.items()}
+        metrics = {"rmse": None, "mae": None, "mape": None}
         logger.warning(
-            "Serie de baja confianza: promedio {:.2f} casos/semana < umbral {:.1f} | {} | {} | {}",
-            promedio, umbral, padecimiento, region or "Nacional", sexo,
+            "Baja confianza: skip CV, params default | {:.2f} casos/sem | {} | {} | {}",
+            promedio, padecimiento, region or "Nacional", sexo,
         )
-
-    parametros, metrics = stp.prophet_cross_val()
-    t_cv = time.time()
-
-    modelo = stp.train(parametros)
-    t_train = time.time()
+        t_cv = time.time()
+        modelo = stp.train(parametros)
+        t_train = time.time()
+    else:
+        parametros, metrics = stp.prophet_cross_val()
+        t_cv = time.time()
+        modelo = stp.train(parametros)
+        t_train = time.time()
 
     fila = {
         "padecimiento": padecimiento, "sexo": sexo,
@@ -76,16 +84,16 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False)
 
     ruta_csv = os.path.join(ruta_padecimiento, nombre_modelo.replace(".pkl", ".csv"))
     stp.train_data.to_csv(ruta_csv, index=False, encoding="utf-8")
-    logger.info("Datos de entrenamiento guardados: {}", os.path.basename(ruta_csv))
 
     fila["archivo_modelo"] = nombre_modelo
     logger.info(
-        "Métricas: RMSE={:.4f} | MAE={:.4f} | MAPE={:.2f}% | CV={:.1f}s | Train={:.1f}s | Confianza: {}",
-        metrics["rmse"], metrics["mae"], metrics["mape"],
+        "Completado: {} | {} | {} | RMSE={} | CV={:.1f}s | Train={:.1f}s | {}",
+        padecimiento, region or "Nacional", mapeo.get(sexo, sexo),
+        f"{metrics['rmse']:.4f}" if metrics["rmse"] is not None else "N/A",
         fila["tiempo_cv_seg"], fila["tiempo_train_seg"], fila["confianza"],
     )
 
-    return fila, ruta_padecimiento
+    return fila
 
 
 def main():
@@ -94,8 +102,9 @@ def main():
     modelado_estados = conf["padecimiento"]["modelado_estados"]
     force = conf["padecimiento"]["entrena_modelo"]
     model_path = conf["paths"]["models"]
-    valores_sexo = conf["valores_sexo"]
-    mapeo = conf["mapeo_columnas"]
+    valores_sexo = list(conf["valores_sexo"])
+    mapeo = dict(conf["mapeo_columnas"])
+    n_jobs = conf.get("n_jobs_train", 1)
 
     ruta_datos = conf["data"]["data_inegi"]
     df_entrenamiento = pd.read_csv(ruta_datos)
@@ -104,66 +113,62 @@ def main():
     regiones = sorted(df_entrenamiento[agrupador].unique())
     padecimientos = sorted(df_entrenamiento["Padecimiento"].unique())
 
-    # Total = por cada padecimiento: len(sexos) nacional + len(regiones)*len(sexos) regional
     total = len(padecimientos) * len(valores_sexo) * (1 + len(regiones))
-    contador = 0
 
     logger.info(
-        "Iniciando entrenamiento | padecimientos: {} | regiones: {} | sexo: {} | total modelos: {}",
-        len(padecimientos), len(regiones), len(valores_sexo), total,
+        "Iniciando entrenamiento | padecimientos: {} | regiones: {} | sexo: {} | "
+        "total modelos: {} | n_jobs: {}",
+        len(padecimientos), len(regiones), len(valores_sexo), total, n_jobs,
     )
 
     for padecimiento in padecimientos:
-        logger.info("Padecimiento: {}", padecimiento)
+        t_pad = time.time()
+        logger.info("═══ Padecimiento: {} ═══", padecimiento)
         df_padecimiento = df_entrenamiento[df_entrenamiento["Padecimiento"] == padecimiento]
-        resultados = []
-        ruta_padecimiento = None
+
+        ruta_padecimiento = os.path.join(model_path, normalizar(padecimiento))
+        directory_manager.asegurar_ruta(ruta_padecimiento)
+
+        # Construir lista de jobs: (df, padecimiento, sexo, ruta_base, mapeo, region, force)
+        jobs = []
 
         # Nacional
         for sexo in valores_sexo:
-            contador += 1
-            pct = contador / total * 100
-            logger.info(
-                "[{}/{}] {:.0f}% | CV Prophet | {} | Nacional | Sexo: {}",
-                contador, total, pct, padecimiento, sexo,
-            )
-            fila, ruta_padecimiento = entrenar(df_padecimiento, padecimiento, sexo, model_path, mapeo, force=force)
-            logger.success(
-                "[{}/{}] {:.0f}% | Completado | {} | Nacional | Sexo: {}",
-                contador, total, pct, padecimiento, sexo,
-            )
-            resultados.append(fila)
+            jobs.append((df_padecimiento, padecimiento, sexo, model_path, mapeo, None, force))
 
         # Regional
         for region in regiones:
             df_region = df_padecimiento[df_padecimiento[agrupador] == region]
             for sexo in valores_sexo:
-                contador += 1
-                pct = contador / total * 100
-                logger.info(
-                    "[{}/{}] {:.0f}% | CV Prophet | {} | Regional | Región: {} | Sexo: {}",
-                    contador, total, pct, padecimiento, region, sexo,
-                )
-                fila, _ = entrenar(df_region, padecimiento, sexo, model_path, mapeo, region=region, force=force)
-                logger.success(
-                    "[{}/{}] {:.0f}% | Completado | {} | Regional | Región: {} | Sexo: {}",
-                    contador, total, pct, padecimiento, region, sexo,
-                )
-                resultados.append(fila)
+                jobs.append((df_region, padecimiento, sexo, model_path, mapeo, region, force))
 
-        # Guardar resultados del padecimiento
-        resultados = [f for f in resultados if f is not None]
-        if ruta_padecimiento and resultados:
-            ruta_rmse = os.path.join(ruta_padecimiento, f"Prophet_{normalizar(padecimiento)}_completo.csv")
+        logger.info("{} modelos a procesar para {}", len(jobs), padecimiento)
+
+        if n_jobs != 1:
+            resultados_raw = Parallel(n_jobs=n_jobs, backend="loky")(
+                delayed(entrenar)(*job) for job in jobs
+            )
+        else:
+            resultados_raw = [entrenar(*job) for job in jobs]
+
+        resultados = [f for f in resultados_raw if f is not None]
+
+        if resultados:
+            ruta_rmse = os.path.join(
+                ruta_padecimiento, f"Prophet_{normalizar(padecimiento)}_completo.csv"
+            )
             pd.DataFrame(resultados).to_csv(ruta_rmse, index=False, encoding="utf-8")
+            entrenados = len(resultados)
             insuficientes = sum(1 for f in resultados if f.get("confianza") == "insuficiente")
-            if insuficientes:
-                logger.warning("Series de baja confianza: {}/{}", insuficientes, len(resultados))
-            logger.success("Resultados guardados: {}", ruta_rmse)
+            t_elapsed = time.time() - t_pad
+            logger.success(
+                "{}: {} modelos en {:.1f} min ({} baja confianza)",
+                padecimiento, entrenados, t_elapsed / 60, insuficientes,
+            )
 
     t_total = time.time() - t_inicio_global
     logger.success(
-        "Entrenamiento completado. {} modelos procesados en {:.1f} min ({:.1f} h).",
+        "Entrenamiento completado. {} modelos en {:.1f} min ({:.1f} h).",
         total, t_total / 60, t_total / 3600,
     )
 
