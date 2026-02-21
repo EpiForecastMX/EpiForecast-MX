@@ -211,3 +211,6 @@ integrador/
 /data/raw/*
 !data/raw/*.dvc
 !data/raw/.gitignore
+
+# Tableau temp/lock files
+viz/.~*.twbr
