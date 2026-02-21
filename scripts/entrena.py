@@ -152,7 +152,7 @@ def main():
         logger.info("{} modelos a procesar para {}", len(jobs), padecimiento)
 
         if n_jobs != 1:
-            resultados_raw = Parallel(n_jobs=n_jobs, backend="loky")(
+            resultados_raw = Parallel(n_jobs=n_jobs, backend="loky", verbose=10)(
                 delayed(entrenar)(*job) for job in jobs
             )
         else:
