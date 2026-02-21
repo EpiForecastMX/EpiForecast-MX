@@ -38,24 +38,15 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False)
     stp.agrupa()
     stp.crea_train_test()
 
-    # Verificar umbral mínimo de casos por semana
+    # Verificar umbral mínimo de casos por semana (marca confianza, pero entrena de todos modos)
     umbral = conf.get('umbral_minimo_semanal', 0)
     promedio = stp.promedio_semanal()
-    if umbral and promedio < umbral:
+    es_insuficiente = umbral and promedio < umbral
+    if es_insuficiente:
         logger.warning(
-            "Serie insuficiente: promedio {:.2f} casos/semana < umbral {:.1f} | {} | {} | {}",
+            "Serie de baja confianza: promedio {:.2f} casos/semana < umbral {:.1f} | {} | {} | {}",
             promedio, umbral, padecimiento, region or "Nacional", sexo,
         )
-        fila = {
-            "padecimiento": padecimiento, "sexo": sexo, "rmse": None,
-            "mae": None, "mape": None,
-            "nivel": "nacional" if region is None else "regional",
-            "confianza": "insuficiente", "promedio_semanal": round(promedio, 2),
-            "tiempo_seg": round(time.time() - t_start, 1),
-        }
-        if region:
-            fila["Entidad"] = region
-        return fila, ruta_padecimiento
 
     parametros, metrics = stp.prophet_cross_val()
     t_cv = time.time()
@@ -69,6 +60,8 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False)
         **parametros,
     }
     fila["nivel"] = "nacional" if region is None else "regional"
+    fila["confianza"] = "insuficiente" if es_insuficiente else "normal"
+    fila["promedio_semanal"] = round(promedio, 2)
     fila["tiempo_cv_seg"] = round(t_cv - t_start, 1)
     fila["tiempo_train_seg"] = round(t_train - t_cv, 1)
     fila["tiempo_total_seg"] = round(t_train - t_start, 1)
@@ -87,9 +80,9 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False)
 
     fila["archivo_modelo"] = nombre_modelo
     logger.info(
-        "Métricas: RMSE={:.4f} | MAE={:.4f} | MAPE={:.2f}% | CV={:.1f}s | Train={:.1f}s",
+        "Métricas: RMSE={:.4f} | MAE={:.4f} | MAPE={:.2f}% | CV={:.1f}s | Train={:.1f}s | Confianza: {}",
         metrics["rmse"], metrics["mae"], metrics["mape"],
-        fila["tiempo_cv_seg"], fila["tiempo_train_seg"],
+        fila["tiempo_cv_seg"], fila["tiempo_train_seg"], fila["confianza"],
     )
 
     return fila, ruta_padecimiento
@@ -165,7 +158,7 @@ def main():
             pd.DataFrame(resultados).to_csv(ruta_rmse, index=False, encoding="utf-8")
             insuficientes = sum(1 for f in resultados if f.get("confianza") == "insuficiente")
             if insuficientes:
-                logger.warning("Series insuficientes descartadas: {}/{}", insuficientes, len(resultados))
+                logger.warning("Series de baja confianza: {}/{}", insuficientes, len(resultados))
             logger.success("Resultados guardados: {}", ruta_rmse)
 
     t_total = time.time() - t_inicio_global
