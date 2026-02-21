@@ -69,9 +69,13 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False)
         modelo = stp.train(parametros)
         t_train = time.time()
 
+    mape_raw = metrics["mape"]
+    mape_clipped = mape_raw is not None and mape_raw >= 999.0
+
     fila = {
         "padecimiento": padecimiento, "sexo": sexo,
-        "rmse": metrics["rmse"], "mae": metrics["mae"], "mape": metrics["mape"],
+        "rmse": metrics["rmse"], "mae": metrics["mae"], "mape": mape_raw,
+        "mape_confiable": not mape_clipped,
         **parametros,
     }
     fila["nivel"] = "nacional" if region is None else "regional"
