@@ -106,6 +106,8 @@ class SerieTiempoProphet:
             self.param_model['n_changepoints'] = n_cp_regional
             logger.debug("n_changepoints_regional={} aplicado (modelado por estado)", n_cp_regional)
 
+        self.cv_weights = conf.get('cv_weights', None)
+
         self.normalizar_tasa = conf.get('normalizar_tasa', False)
         self.col_poblacion = conf.get('columna_poblacion', 'Total')
         self.tasa_por = conf.get('tasa_por', 100000)
@@ -156,11 +158,14 @@ class SerieTiempoProphet:
             return float(self.train_data["y_original"].mean())
         return float(self.train_data["y"].mean())
 
-    def prophet_cross_val(self) -> tuple [dict, float]:
+    def prophet_cross_val(self) -> tuple[dict, dict]:
 
         parametros = [dict(zip(self.param_grid.keys(), v)) for v in itertools.product(*self.param_grid.values())]
         logger.info(f"Se probarán {len(parametros)} combinaciones de hiperparámetros.")
-        
+
+        if self.cv_weights:
+            logger.info("CV con pesos progresivos: {}", list(self.cv_weights))
+
         # Mostrar eventos configurados
         for _, fila in self.fechas_atipicas.iterrows():
             logger.debug(
@@ -170,10 +175,14 @@ class SerieTiempoProphet:
         tscv = TimeSeriesSplit(n_splits=self.TRAIN_SPLIT,test_size=self.TEST_SIZE)
         best_rmse = float('inf')
         best_param = None
+        best_metrics = {}
 
         for iteracion, parametro in enumerate(parametros):
-            
+
             rmse_fold = []
+            mae_fold = []
+            mape_fold = []
+            fold_indices = []
 
             resumen = ", ".join(f"{k}={v}" for k, v in parametro.items())
 
@@ -188,7 +197,6 @@ class SerieTiempoProphet:
                     f"hasta {val_fold['ds'].max().date()}"
                 )
 
-                
                 try:
                     modelo_cv = Prophet(
                             holidays=self.fechas_atipicas,
@@ -198,33 +206,60 @@ class SerieTiempoProphet:
 
                     modelo_cv.add_seasonality(**self.add_seasonality_params)
                     modelo_cv.fit(train_fold)
-                    
+
                     forecast_cv = modelo_cv.predict(val_fold[['ds']])
 
                     merged = val_fold[['ds','y']].merge(forecast_cv[['ds','yhat']], on='ds')
                     rmse = np.sqrt(mean_squared_error(merged['y'], merged['yhat']))
+                    mae = mean_absolute_error(merged['y'], merged['yhat'])
+                    mape = mean_absolute_percentage_error(merged['y'], merged['yhat']) * 100
                     rmse_fold.append(rmse)
+                    mae_fold.append(mae)
+                    mape_fold.append(mape)
+                    fold_indices.append(fold_iteration)
 
                 except Exception as e:
                     logger.warning(f'Ocurrio excepcion {e}')
                     continue
 
-                if rmse_fold:
+            if rmse_fold:
+                if self.cv_weights and len(self.cv_weights) >= self.TRAIN_SPLIT:
+                    weights = [self.cv_weights[i] for i in fold_indices]
+                    mean_rmse = float(np.average(rmse_fold, weights=weights))
+                    mean_mae = float(np.average(mae_fold, weights=weights))
+                    mean_mape = float(np.average(mape_fold, weights=weights))
+                else:
                     mean_rmse = float(np.mean(rmse_fold))
-                    logger.debug(f"RMSE promedio: {mean_rmse:.4f}")
+                    mean_mae = float(np.mean(mae_fold))
+                    mean_mape = float(np.mean(mape_fold))
+                logger.debug(
+                    f"Métricas CV: RMSE={mean_rmse:.4f}, MAE={mean_mae:.4f}, MAPE={mean_mape:.2f}%"
+                )
+            else:
+                mean_rmse = float('inf')
+                mean_mae = float('inf')
+                mean_mape = float('inf')
 
             if mean_rmse < best_rmse:
                 best_rmse = mean_rmse
                 best_param = parametro
-                logger.info(f"[CV] Iteración {iteracion + 1}/{len(parametros)} – Nuevo mejor RMSE: {best_rmse:.4f}")
-                        
+                best_metrics = {
+                    "rmse": mean_rmse,
+                    "mae": mean_mae,
+                    "mape": mean_mape,
+                }
+                logger.info(
+                    f"[CV] Iteración {iteracion + 1}/{len(parametros)} – "
+                    f"Nuevo mejor RMSE: {best_rmse:.4f} | MAE: {mean_mae:.4f} | MAPE: {mean_mape:.2f}%"
+                )
+
             else:
                 logger.debug(f"[CV] Iteración {iteracion + 1}/{len(parametros)} - No se obtuvo ningún RMSE válido para {resumen}")
 
-        logger.success(f"Mejor RMSE promedio: {best_rmse:.4f}")
+        logger.success(f"Mejor RMSE: {best_metrics.get('rmse', 0):.4f} | MAE: {best_metrics.get('mae', 0):.4f} | MAPE: {best_metrics.get('mape', 0):.2f}%")
         logger.success(f"Mejor conjunto de parámetros encontrado: {best_param}")
 
-        return best_param, best_rmse
+        return best_param, best_metrics
     
     def train(self, parametros) -> Prophet:
 
@@ -301,15 +336,15 @@ class SerieTiempoProphet:
         plt.grid(alpha=0.3)
         plt.show()
 
-    def run(self) -> tuple[Prophet, float, dict]:
+    def run(self) -> tuple[Prophet, dict, dict]:
 
         self.agrupa()
         self.crea_train_test()
 
-        parametros, rmse = self.prophet_cross_val()
+        parametros, metrics = self.prophet_cross_val()
         modelo = self.train(parametros)
 
-        return modelo, rmse, parametros
+        return modelo, metrics, parametros
      
      
 

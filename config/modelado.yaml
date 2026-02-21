@@ -5,20 +5,19 @@ log_transform: true            # log(1+y) para estabilizar varianza en series vo
 umbral_minimo_semanal: 1.0     # promedio mínimo de casos/semana para entrenar (< umbral → insuficiente)
 
 param_grid_prophet:
-  # Grids diferenciados por padecimiento (análisis CV — Feb 2026, 297 modelos)
+  # Grids v4 — diferenciados por padecimiento (Feb 2026, validado con 2 corridas paralelas)
   alzheimer:
     seasonality_mode:
-      - multiplicative        # additive +51% RMSE; additive eliminado
+      - multiplicative        # additive +51% RMSE; eliminado
     changepoint_prior_scale:
-      - 0.005                 # sub-threshold; explorar
       - 0.01                  # ganador 85% top-20%
       - 0.03
+      # 0.005 eliminado: causa L-BFGS failures (cae a Newton)
       # 0.05 eliminado: nunca gana, +97% RMSE
     seasonality_prior_scale:
       - 0.1                   # mejores en top 20%
       - 0.5                   # mejores en top 20%
-      # 1.0 y 2.0 eliminados: peores consistentemente
-    # 8 combinaciones (antes 24, -67% CV)
+    # 4 combinaciones (antes 6)
 
   depresion:
     seasonality_mode:
@@ -29,11 +28,11 @@ param_grid_prophet:
       - 0.03
       - 0.05
     seasonality_prior_scale:
-      - 0.05                  # AÑADIR: explorar menor regularización
+      - 0.05                  # explorar menor regularización
       - 0.1                   # ganador regional
       - 0.5
-      # 1.0 y 2.0 eliminados: +16-19% RMSE vs. 0.1
-    # 18 combinaciones (antes 24, -25% CV)
+      - 1.0                   # re-agregado: ganador en 29.3% de modelos (v3 + corrida paralela)
+    # 24 combinaciones (antes 18)
 
   parkinson:
     seasonality_mode:
@@ -41,13 +40,14 @@ param_grid_prophet:
       - additive              # competitivo en algunas entidades
     changepoint_prior_scale:
       - 0.01
+      - 0.03                  # punto intermedio faltante (corrida paralela)
       - 0.05                  # mejor RMSE promedio (0.0573 vs 0.0633 de 0.01)
-      - 0.07                  # AÑADIR: explorar más flexibilidad
+      - 0.07                  # explorar más flexibilidad
     seasonality_prior_scale:
       - 0.1                   # zona óptima
       - 0.5                   # ganador claro (RMSE 0.0461)
-      # 1.0 eliminado: peor de todos (RMSE 0.0738)
-    # 18 combinaciones (antes 24, -25% CV)
+      - 1.0                   # re-agregado: corrida paralela sugiere beneficio
+    # 24 combinaciones (antes 12)
 
 param_model:
   yearly_seasonality: False  # reemplazado por add_seasonality con period exacto
@@ -65,6 +65,13 @@ n_changepoints_regional: 12  # regional: reduce overfitting en entidades < 1M ha
 FECHA_CORTE_ENTRENAMIENTO: "2025-01-01"
 TS_SPLITS: 4
 TEST_SIZE: 53
+
+# Pesos progresivos para CV: folds recientes pesan más (corrida paralela validó beneficio)
+# Fold 1 (2020-2021, post-COVID): peso 0.5  — periodo atípico, menos relevante
+# Fold 2 (2021-2022, recuperación): peso 0.75
+# Fold 3 (2022-2023, estabilización): peso 1.0
+# Fold 4 (2023-2024, actual): peso 1.25 — más representativo del forecast
+cv_weights: [0.5, 0.75, 1.0, 1.25]
 
 peridos_atipicos:
   - holiday: pandemia_covid
