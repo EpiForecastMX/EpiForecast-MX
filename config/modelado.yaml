@@ -62,6 +62,8 @@ add_seasonality:
 
 n_changepoints_regional: 12  # regional: reduce overfitting en entidades < 1M hab. (vs 25 global)
 
+n_jobs_train: -2               # paralelismo joblib: -1=todos los cores, -2=todos-1, 1=secuencial
+
 FECHA_CORTE_ENTRENAMIENTO: "2025-01-01"
 TS_SPLITS: 4
 TEST_SIZE: 53
