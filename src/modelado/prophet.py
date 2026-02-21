@@ -216,7 +216,7 @@ class SerieTiempoProphet:
                     merged = val_fold[['ds','y']].merge(forecast_cv[['ds','yhat']], on='ds')
                     rmse = np.sqrt(mean_squared_error(merged['y'], merged['yhat']))
                     mae = mean_absolute_error(merged['y'], merged['yhat'])
-                    mape = mean_absolute_percentage_error(merged['y'], merged['yhat']) * 100
+                    mape = min(mean_absolute_percentage_error(merged['y'], merged['yhat']) * 100, 999.0)
                     rmse_fold.append(rmse)
                     mae_fold.append(mae)
                     mape_fold.append(mape)
