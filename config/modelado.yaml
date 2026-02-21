@@ -2,6 +2,7 @@ normalizar_tasa: true          # modelar tasa por 100K en vez de conteos absolut
 columna_poblacion: "Total"     # columna de población para normalizar
 tasa_por: 100000               # factor de normalización (per 100K hab.)
 log_transform: true            # log(1+y) para estabilizar varianza en series volátiles
+umbral_minimo_semanal: 1.0     # promedio mínimo de casos/semana para entrenar (< umbral → insuficiente)
 
 param_grid_prophet:
   # Grids diferenciados por padecimiento (análisis CV — Feb 2026, 297 modelos)
@@ -91,4 +92,17 @@ valores_sexo:
   - incrementos_hombres
   - incrementos_mujeres
   - incrementos_total
+
+# Cambios de régimen por entidad/padecimiento (se agregan como holidays a Prophet)
+# NOTA: Solo incluir cambios temporales. Los cambios permanentes (step functions)
+# empeoran el RMSE con holidays porque Prophet los trata como eventos temporales.
+# Nayarit, Colima, Durango, BCS fueron probados y empeoraron (+5-10% RMSE).
+# Tabasco mejora -6.2% porque su cambio tiene un patrón más compatible con holidays.
+cambios_regimen:
+  - holiday: cambio_regimen_tabasco_2023
+    ds: "2023-01-09"
+    lower_window: 0
+    upper_window: 365
+    entidad: "Tabasco"
+    padecimiento: "Depresión"
 

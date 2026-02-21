@@ -30,8 +30,29 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False)
             logger.info("Modelo ya existe, omitiendo: {}", Path(ruta_modelo).name)
             return None, ruta_padecimiento
 
-    stp = SerieTiempoProphet(df, sexo=sexo)
-    modelo, rmse, parametros = stp.run()
+    stp = SerieTiempoProphet(df, sexo=sexo, entidad=region, padecimiento=padecimiento)
+    stp.agrupa()
+    stp.crea_train_test()
+
+    # Verificar umbral mínimo de casos por semana
+    umbral = conf.get('umbral_minimo_semanal', 0)
+    promedio = stp.promedio_semanal()
+    if umbral and promedio < umbral:
+        logger.warning(
+            "Serie insuficiente: promedio {:.2f} casos/semana < umbral {:.1f} | {} | {} | {}",
+            promedio, umbral, padecimiento, region or "Nacional", sexo,
+        )
+        fila = {
+            "padecimiento": padecimiento, "sexo": sexo, "rmse": None,
+            "nivel": "nacional" if region is None else "regional",
+            "confianza": "insuficiente", "promedio_semanal": round(promedio, 2),
+        }
+        if region:
+            fila["Entidad"] = region
+        return fila, ruta_padecimiento
+
+    parametros, rmse = stp.prophet_cross_val()
+    modelo = stp.train(parametros)
     fila = {"padecimiento": padecimiento, "sexo": sexo, "rmse": rmse, **parametros}
     fila["nivel"] = "nacional" if region is None else "regional"
     if region:
@@ -114,12 +135,16 @@ def main():
                 resultados.append(fila)
 
         # Guardar resultados del padecimiento
-        if ruta_padecimiento:
+        resultados = [f for f in resultados if f is not None]
+        if ruta_padecimiento and resultados:
             ruta_rmse = os.path.join(ruta_padecimiento, f"Prophet_{normalizar(padecimiento)}_completo.csv")
             pd.DataFrame(resultados).to_csv(ruta_rmse, index=False, encoding="utf-8")
+            insuficientes = sum(1 for f in resultados if f.get("confianza") == "insuficiente")
+            if insuficientes:
+                logger.warning("Series insuficientes descartadas: {}/{}", insuficientes, len(resultados))
             logger.success("Resultados guardados: {}", ruta_rmse)
 
-    logger.success("Entrenamiento completado. {} modelos entrenados.", total)
+    logger.success("Entrenamiento completado. {} modelos procesados.", total)
 
 
 if __name__ == "__main__":
