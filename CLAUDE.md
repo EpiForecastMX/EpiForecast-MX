@@ -305,6 +305,23 @@ Nota: Solo se incluyen cambios temporales. Los step functions permanentes (Nayar
 - **`data/registry.json`** — Registro de boletines procesados (anti-duplicados, Git)
 - **`data/utils/inegi.csv`** — Datos demograficos INEGI (poblacion, superficie, Git)
 
+## Resultados del Modelado (v4 — 2025-02-21)
+
+297 modelos Prophet entrenados (3 padecimientos × 33 entidades × 3 sexos) en ~57 minutos con `n_jobs=-2` (joblib).
+
+| Padecimiento | Modelos | Insuficientes | RMSE medio | RMSE rango | Mejor estado | Peor estado |
+|-------------|---------|---------------|------------|------------|-------------|-------------|
+| Depresión | 99 | 0 | 0.114 | 0.04–0.41 | Querétaro (0.04) | Nayarit (0.41) |
+| Parkinson | 99 | 20 | 0.065 | 0.02–0.18 | Sinaloa (0.02) | BCS (0.18) |
+| Alzheimer | 99 | 64 | 0.054 | 0.01–0.22 | Tabasco (0.01) | Chihuahua (0.22) |
+
+- **213 modelos con confianza "normal"**, 84 marcados "insuficiente" (promedio < 1 caso/semana)
+- **Depresión** tiene 100% cobertura (todos los estados tienen suficiente volumen)
+- **Alzheimer** tiene solo 35 modelos normales (65% insuficientes) — estados de baja población
+- Modelo más lento: Chihuahua-Depresión (39 min por fallback Newton en L-BFGS)
+- Forecast: 120 semanas a futuro, desnormalizado a conteos en `all_forecast.csv`
+- Hallazgos detallados en `REPORTE_HALLAZGOS_MODELADO_v2.md`
+
 ## Estado Actual del Pipeline
 
 ### Funcional
@@ -314,7 +331,11 @@ Nota: Solo se incluyen cambios temporales. Los step functions permanentes (Nayar
 - Predicción con inversión de log-transform y desnormalización automática a conteos (`make predict`)
 - Generación de reportes EDA en PDF
 - Detección de outliers parametrizada (IQR / Z-score)
+- Entrenamiento paralelo con joblib (`n_jobs=-2`, backend loky)
+- Progreso % visible en modo paralelo y secuencial
 
 ### TODOs / Inconsistencias Conocidas
 - **`pyproject.toml`**: `requires-python = "~=3.14.0"` deberia ser `~=3.12.0`; `name = "alzheimer"` y `[tool.ruff] src = ["alzheimer"]` deberian reflejar el nombre actual del proyecto
 - **`metadata` en `params.yaml`**: referencia al proyecto antiguo ("Alzheimer", URL de repo anterior)
+- **Nayarit-Depresión**: RMSE=0.41 (peor modelo), cambio de régimen 2018 no absorbido completamente
+- **Chihuahua-Depresión**: Newton fallback causa 39 min de entrenamiento (vs ~30s promedio)

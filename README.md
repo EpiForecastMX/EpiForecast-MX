@@ -584,6 +584,21 @@ dvc pull
 
 Esto descarga automaticamente los modelos y forecasts mas recientes desde S3.
 
+### Resultados del Modelado (v4)
+
+297 modelos Prophet entrenados (3 padecimientos x 33 entidades x 3 sexos):
+
+| Padecimiento | Modelos | Insuficientes | RMSE medio | Cobertura |
+|-------------|---------|---------------|------------|-----------|
+| Depresion | 99 | 0 | 0.114 | 100% |
+| Parkinson | 99 | 20 | 0.065 | 80% |
+| Alzheimer | 99 | 64 | 0.054 | 35% |
+
+- **213 modelos con confianza "normal"**, 84 marcados "insuficiente" (< 1 caso/semana promedio)
+- Forecast: **120 semanas** a futuro, desnormalizado a conteos absolutos
+- Tiempo total de entrenamiento: ~57 minutos (joblib paralelo, `n_jobs=-2`)
+- Resultados detallados en `REPORTE_HALLAZGOS_MODELADO_v2.md`
+
 ### Acceso directo a CSVs en S3
 
 Ademas del versionado con DVC, los CSVs clave se publican directamente en S3 para acceso sin necesidad de DVC (dashboards, APIs, consumo externo):
