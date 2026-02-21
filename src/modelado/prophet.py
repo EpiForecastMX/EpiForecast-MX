@@ -4,6 +4,7 @@ import os
 import itertools
 import logging
 import time
+import concurrent.futures
 
 
 import cmdstanpy
@@ -109,6 +110,7 @@ class SerieTiempoProphet:
 
         self.cv_weights = conf.get('cv_weights', None)
         self.cv_timeout = conf.get('cv_timeout_por_combo', 0)
+        self.cv_timeout_fold = conf.get('cv_timeout_por_fold', 0)
 
         self.normalizar_tasa = conf.get('normalizar_tasa', False)
         self.col_poblacion = conf.get('columna_poblacion', 'Total')
@@ -160,10 +162,27 @@ class SerieTiempoProphet:
             return float(self.train_data["y_original"].mean())
         return float(self.train_data["y"].mean())
 
+    def _fit_with_timeout(self, modelo, data, timeout_sec):
+        """Fit Prophet con timeout por fold. Retorna True si OK, False si timeout."""
+        pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+        future = pool.submit(modelo.fit, data)
+        try:
+            future.result(timeout=timeout_sec)
+            return True
+        except concurrent.futures.TimeoutError:
+            return False
+        finally:
+            pool.shutdown(wait=False)
+
     def prophet_cross_val(self) -> tuple[dict, dict]:
 
         parametros = [dict(zip(self.param_grid.keys(), v)) for v in itertools.product(*self.param_grid.values())]
-        logger.info(f"Se probarán {len(parametros)} combinaciones de hiperparámetros.")
+
+        # Mejora 1: ordenar por cp descendente — cp alto converge rápido con L-BFGS,
+        # cp bajo es donde Newton aparece. Si ya tenemos buenos resultados de cp altos,
+        # el timeout corta los cp bajos sin perder calidad.
+        parametros.sort(key=lambda p: p.get('changepoint_prior_scale', 0), reverse=True)
+        logger.info("Se probarán {} combinaciones de HP (ordenadas por cp desc).", len(parametros))
 
         if self.cv_weights:
             logger.info("CV con pesos progresivos: {}", list(self.cv_weights))
@@ -179,7 +198,21 @@ class SerieTiempoProphet:
         best_param = None
         best_metrics = {}
 
+        # Mejora 3: umbral Newton-prone — si combo con cp=X hizo timeout,
+        # skip combos con cp ≤ X (cp más bajo = más changepoints = Newton peor)
+        newton_cp_threshold = None
+
         for iteracion, parametro in enumerate(parametros):
+            cp = parametro.get('changepoint_prior_scale', 0)
+            resumen = ", ".join(f"{k}={v}" for k, v in parametro.items())
+
+            # Mejora 3: skip combos Newton-prone
+            if newton_cp_threshold is not None and cp <= newton_cp_threshold:
+                logger.warning(
+                    "Skip combo (Newton-prone): cp={} ≤ umbral {} | {}",
+                    cp, newton_cp_threshold, resumen,
+                )
+                continue
 
             rmse_fold = []
             mae_fold = []
@@ -187,7 +220,6 @@ class SerieTiempoProphet:
             fold_indices = []
             timed_out = False
 
-            resumen = ", ".join(f"{k}={v}" for k, v in parametro.items())
             t_combo = time.time()
 
             for fold_iteration, (train_idx, val_idx) in enumerate(tscv.split(self.train_data)):
@@ -209,7 +241,25 @@ class SerieTiempoProphet:
                     )
 
                     modelo_cv.add_seasonality(**self.add_seasonality_params)
-                    modelo_cv.fit(train_fold)
+
+                    # Mejora 2: timeout por fold individual (>45s = Newton seguro)
+                    if self.cv_timeout_fold:
+                        fit_ok = self._fit_with_timeout(
+                            modelo_cv, train_fold, self.cv_timeout_fold
+                        )
+                        if not fit_ok:
+                            logger.warning(
+                                "Timeout fold: >{:.0f}s en fold {}/{}. "
+                                "Newton detectado → skip combo y cp ≤ {}: {}",
+                                self.cv_timeout_fold,
+                                fold_iteration + 1, self.TRAIN_SPLIT,
+                                cp, resumen,
+                            )
+                            timed_out = True
+                            newton_cp_threshold = cp
+                            break
+                    else:
+                        modelo_cv.fit(train_fold)
 
                     forecast_cv = modelo_cv.predict(val_fold[['ds']])
 
@@ -226,7 +276,7 @@ class SerieTiempoProphet:
                     logger.warning(f'Ocurrio excepcion {e}')
                     continue
 
-                # Timeout: si esta combo excede el límite, saltar folds restantes
+                # Timeout por combo (backstop): si total excede el límite
                 if self.cv_timeout and (time.time() - t_combo) > self.cv_timeout:
                     logger.warning(
                         "Timeout CV: {:.0f}s > {}s en fold {}/{}. Skip combo: {}",
@@ -234,6 +284,7 @@ class SerieTiempoProphet:
                         fold_iteration + 1, self.TRAIN_SPLIT, resumen,
                     )
                     timed_out = True
+                    newton_cp_threshold = cp
                     break
 
             if timed_out:
