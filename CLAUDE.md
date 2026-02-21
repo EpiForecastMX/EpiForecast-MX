@@ -248,17 +248,19 @@ Grids diferenciados por padecimiento (optimizados tras análisis de 297 modelos)
 ```yaml
 param_grid_prophet:
   alzheimer:
-    seasonality_mode: [multiplicative]           # additive eliminado (+51% RMSE)
-    changepoint_prior_scale: [0.005, 0.01, 0.03] # 0.01 ganador en 85% top-20%
-    seasonality_prior_scale: [0.1, 0.5]           # 6 combinaciones
+    seasonality_mode: [multiplicative]              # additive eliminado (+51% RMSE)
+    changepoint_prior_scale: [0.01, 0.03]           # 0.005 eliminado (L-BFGS failures)
+    seasonality_prior_scale: [0.1, 0.5]             # 4 combinaciones
   depresion:
-    seasonality_mode: [additive, multiplicative]  # additive mejor promedio
+    seasonality_mode: [additive, multiplicative]    # additive mejor promedio
     changepoint_prior_scale: [0.01, 0.03, 0.05]
-    seasonality_prior_scale: [0.05, 0.1, 0.5]    # 18 combinaciones
+    seasonality_prior_scale: [0.05, 0.1, 0.5, 1.0] # 1.0 re-agregado (ganador 29.3%)
+    # 24 combinaciones
   parkinson:
     seasonality_mode: [multiplicative, additive]
-    changepoint_prior_scale: [0.01, 0.05, 0.07]  # 0.05 mejor RMSE promedio
-    seasonality_prior_scale: [0.1, 0.5]           # 12 combinaciones
+    changepoint_prior_scale: [0.01, 0.03, 0.05, 0.07] # 0.03 agregado
+    seasonality_prior_scale: [0.1, 0.5, 1.0]           # 1.0 re-agregado
+    # 24 combinaciones
 ```
 
 La selección del grid se hace automáticamente en `SerieTiempoProphet.__init__` leyendo la columna `Padecimiento` del DataFrame.
@@ -270,8 +272,14 @@ Para series estatales (más cortas que las nacionales), se aplican automáticame
 
 Ambos se aplican solo cuando `modelado_estados: true` en `params.yaml`.
 
-### Filtro de series insuficientes
-Series con promedio < `umbral_minimo_semanal` (default: 1.0 caso/semana) se descartan antes de CV. Genera fila con `confianza: "insuficiente"` y `rmse: None` en el CSV de resultados, sin generar `.pkl`. Esto filtra ~84 modelos (principalmente Alzheimer y Parkinson en estados de baja población).
+### Cross-validation con pesos progresivos
+Los 4 folds de CV se ponderan con `cv_weights: [0.5, 0.75, 1.0, 1.25]`, dando más peso a los folds recientes (2023-2024) y menos al periodo post-COVID (2020-2021). Se usa `np.average()` en vez de `np.mean()`.
+
+### Métricas de CV
+`prophet_cross_val()` retorna RMSE, MAE y MAPE. El CSV de resultados incluye las tres métricas más `tiempo_cv_seg`, `tiempo_train_seg` y `tiempo_total_seg` por modelo.
+
+### Clasificación de confianza
+Series con promedio < `umbral_minimo_semanal` (default: 1.0 caso/semana) se marcan con `confianza: "insuficiente"` en el CSV de resultados. **Se entrenan y generan `.pkl` de todos modos** para que el dashboard Tableau muestre todas las entidades con su etiqueta de confianza. ~84 modelos son insuficientes (principalmente Alzheimer y Parkinson en estados de baja población).
 
 ### Periodos Atípicos Configurados (modelado.yaml)
 - **Pandemia COVID-19**: 2020-03-23, ventana de 913 días (~2.5 años)
