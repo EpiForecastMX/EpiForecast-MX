@@ -182,6 +182,7 @@ def main():
             for k, v in meta.items():
                 df[k] = v
             df["archivo_modelo_usado"] = pkl.name
+            df["archivo_modelo_original"] = pkl.name
             frames.append(df)
         except Exception as e:
             logger.warning("Error en {}: {}", pkl.name, e)
@@ -214,6 +215,7 @@ def main():
                 for k, v in meta.items():
                     df[k] = v
                 df["archivo_modelo_usado"] = pkl_regional_name
+                df["archivo_modelo_original"] = f"{stem_insuf}.pkl"
                 frames.append(df)
                 logger.info(
                     "Fallback regional: {} → {} (pob={:,.0f})",
@@ -231,8 +233,37 @@ def main():
     out = estandarizar_valores(out)
     
     met = _cargar_metricas_completos(base_models)
+
+    # 1) Trae valores del modelo ORIGINAL
+    met_orig = met.rename(columns={
+        "rmse": "rmse_original",
+        "mae": "mae_original",
+        "mape": "mape_original",
+        "mase": "mase_original",
+        "confianza": "confianza_original",
+        "normalizado": "normalizado_original",
+        "poblacion": "poblacion_original",
+    })
     out = out.merge(
-        met,
+        met_orig,
+        how="left",
+        left_on="archivo_modelo_original",
+        right_on="archivo_modelo",
+        validate="m:1",
+    ).drop(columns=["archivo_modelo"])
+
+    # 2) Trae métricas del modelo USADO
+    met_used = met.rename(columns={
+        "rmse": "rmse_usado",
+        "mae": "mae_usado",
+        "mape": "mape_usado",
+        "mase": "mase_usado",
+        "confianza": "confianza_usado",
+        "normalizado": "normalizado_usado",
+        "poblacion": "poblacion_usado",
+    })
+    out = out.merge(
+        met_used,
         how="left",
         left_on="archivo_modelo_usado",
         right_on="archivo_modelo",
