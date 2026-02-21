@@ -31,3 +31,4 @@ data:
   xlsx_inegi: "${paths.processed}/EpiForecast-MX.xlsx"
   model_train: "${paths.models}/"
   forecast: "${paths.forecast}/all_forecast.csv"
+  tableau: "${paths.processed}/tableau.csv"
