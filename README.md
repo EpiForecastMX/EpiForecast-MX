@@ -474,11 +474,13 @@ Prophet no modela conteos absolutos directamente. Se aplican dos transformacione
 
 **6. Cross-validation con pesos progresivos**
 - `cv_weights: [0.5, 0.75, 1.0, 1.25]` prioriza folds recientes sobre periodo post-COVID
-- Metricas: RMSE, MAE y MAPE por modelo + tiempos de entrenamiento
+- Metricas: RMSE, MAE, MAPE y **MASE** (v6) por modelo + tiempos de entrenamiento
+- **MASE** (Mean Absolute Scaled Error): MAE_modelo / MAE_naive_lag52. MASE < 1 = mejor que baseline naive
 
-**7. Clasificacion de confianza**
+**7. Clasificacion de confianza y modo hibrido (v6)**
 - Series con promedio < 0.5 caso/semana se marcan `confianza: "insuficiente"` (~40 modelos)
-- Se entrenan y generan .pkl de todos modos para el dashboard Tableau
+- **Modo hibrido** (`modelado_hibrido: True` en `params.yaml`): entrena modelos regionales de fallback para estados insuficientes
+- En prediccion, el modelo regional se desnormaliza con poblacion estatal individual
 
 **8. Cambios de regimen por entidad**
 - Se configuran como holidays en Prophet, filtrados por entidad/padecimiento
@@ -589,21 +591,22 @@ dvc pull
 
 Esto descarga automaticamente los modelos y forecasts mas recientes desde S3.
 
-### Resultados del Modelado (v5)
+### Resultados del Modelado (v6)
 
-297 modelos Prophet entrenados (3 padecimientos x 33 entidades x 3 sexos):
+297 modelos estatales Prophet + fallback regionales (modo hibrido):
 
-| Padecimiento | Modelos | Insuficientes | RMSE medio | Cobertura |
-|-------------|---------|---------------|------------|-----------|
-| Alzheimer | 99 | 35 | 0.033 | 65% |
-| Depresion | 99 | 0 | 0.206 | 100% |
-| Parkinson | 99 | 5 | 0.064 | 95% |
+| Padecimiento | Modelos | Insuficientes | Fallback regional | RMSE medio | Cobertura |
+|-------------|---------|---------------|-------------------|------------|-----------|
+| Alzheimer | 99 | 35 | 35 | 0.033 | 100% |
+| Depresion | 99 | 0 | 0 | 0.206 | 100% |
+| Parkinson | 99 | 5 | 5 | 0.064 | 100% |
 
-- **257 modelos con confianza "normal"**, 40 marcados "insuficiente" (< 0.5 caso/semana promedio)
+- **100% cobertura estatal** con prediccion informada gracias al modo hibrido (v5: 87%)
+- **MASE** (v6): nueva metrica escala-independiente (MAE_modelo / MAE_naive_lag52)
+- 40 modelos insuficientes usan fallback regional (prediccion util vs plana en v5)
 - Forecast: **120 semanas** a futuro, desnormalizado a conteos absolutos
-- Tiempo total: **44.5 minutos** (v4: 57 min, -22% con proteccion anti-Newton)
-- Grids v5 optimizados: 48 combos de HP con nuevos valores ganadores (sp=0.025, cp=0.04)
-- Resultados detallados en `REPORTE_HALLAZGOS_MODELADO_v2.md`
+- Tiempo total: **~45 minutos** con n_jobs=-2 (joblib loky)
+- Resultados detallados en `REPORTE_HALLAZGOS_MODELADO_v3.md`
 
 ### Acceso directo a CSVs en S3
 

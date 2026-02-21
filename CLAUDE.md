@@ -214,6 +214,7 @@ SINAVE PDFs ──▶ Extracción (Camelot) ──▶ Merge ──▶ dataset_bo
 padecimiento:
   tipo: "General"           # General | Depresión | Parkinson | Alzheimer
   modelado_estados: true    # true = modelos por estado, false = por región INEGI
+  modelado_hibrido: true    # fallback regional para estados insuficientes (v6)
   modelado_region: "Metropolitana alta"  # región específica (si modelado_estados=false)
   modelado_sexo: "todos"    # hombres | mujeres | todos
   entrena_modelo: true      # entrenar modelo final con todo el dataset
@@ -283,10 +284,10 @@ Prophet puede caer a Newton optimizer (~100-500x más lento) cuando L-BFGS no co
 Resultado: Chihuahua-Depresión pasó de 39 min (v4) a 4 min (v5).
 
 ### Métricas de CV
-`prophet_cross_val()` retorna RMSE, MAE y MAPE. El CSV de resultados incluye las tres métricas más `tiempo_cv_seg`, `tiempo_train_seg` y `tiempo_total_seg` por modelo.
+`prophet_cross_val()` retorna RMSE, MAE, MAPE y **MASE** (v6). MASE = MAE_modelo / MAE_naive_seasonal (lag-52 semanas). MASE < 1 = mejor que baseline naive. El CSV de resultados incluye las cuatro métricas más `tiempo_cv_seg`, `tiempo_train_seg` y `tiempo_total_seg` por modelo.
 
-### Clasificación de confianza
-Series con promedio < `umbral_minimo_semanal` (default: 0.5 caso/semana) se marcan con `confianza: "insuficiente"` en el CSV de resultados. **Se entrenan y generan `.pkl` de todos modos** para que el dashboard Tableau muestre todas las entidades con su etiqueta de confianza. ~40 modelos son insuficientes (principalmente Alzheimer en estados de baja población).
+### Clasificación de confianza y modo híbrido (v6)
+Series con promedio < `umbral_minimo_semanal` (default: 0.5 caso/semana) se marcan con `confianza: "insuficiente"`. Con `modelado_hibrido: true` (v6), se entrenan modelos regionales de fallback y el CSV incluye columna `usar_regional` que mapea cada modelo insuficiente a su .pkl regional. En predicción, se usa el modelo regional pero se desnormaliza con la población estatal individual.
 
 ### Periodos Atípicos Configurados (modelado.yaml)
 - **Pandemia COVID-19**: 2020-03-23, ventana de 913 días (~2.5 años)
@@ -312,22 +313,22 @@ Nota: Solo se incluyen cambios temporales. Los step functions permanentes (Nayar
 - **`data/registry.json`** — Registro de boletines procesados (anti-duplicados, Git)
 - **`data/utils/inegi.csv`** — Datos demograficos INEGI (poblacion, superficie, Git)
 
-## Resultados del Modelado (v5 — 2026-02-21)
+## Resultados del Modelado (v6 — 2026-02-21)
 
-297 modelos Prophet entrenados (3 padecimientos × 33 entidades × 3 sexos) en ~44.5 minutos con `n_jobs=-2` (joblib).
+297 modelos estatales Prophet + fallback regionales (modo híbrido) en ~45 minutos con `n_jobs=-2` (joblib).
 
-| Padecimiento | Modelos | Insuficientes | RMSE medio | Tiempo |
-|-------------|---------|---------------|------------|--------|
-| Alzheimer | 99 | 35 | 0.033 | ~2 min |
-| Depresión | 99 | 0 | 0.206 | ~28 min |
-| Parkinson | 99 | 5 | 0.064 | ~14 min |
+| Padecimiento | Modelos | Insuficientes | Fallback regional | RMSE medio | Tiempo |
+|-------------|---------|---------------|-------------------|------------|--------|
+| Alzheimer | 99 | 35 | 35 | 0.033 | ~2 min |
+| Depresión | 99 | 0 | 0 | 0.206 | ~28 min |
+| Parkinson | 99 | 5 | 5 | 0.064 | ~14 min |
 
-- **257 modelos con confianza "normal"**, 40 marcados "insuficiente" (promedio < 0.5 caso/semana)
-- **Depresión** tiene 100% cobertura, Parkinson 95%, Alzheimer 65%
+- **100% cobertura estatal** con predicción informada (v5: 87%) gracias al modo híbrido
+- **MASE** agregado como métrica de CV (escala-independiente, funciona con ceros)
+- **40 modelos insuficientes** ahora usan fallback regional (predicción útil vs plana en v5)
 - Anti-Newton: Chihuahua-Depresión de 39 min (v4) a **4 min** (v5)
-- Nuevos HP ganadores: sp=0.025 (Dep 29%), sp=0.05 (Alz 41%), cp=0.04 (Park 20%)
 - Forecast: 120 semanas a futuro, desnormalizado a conteos en `all_forecast.csv`
-- Hallazgos detallados en `REPORTE_HALLAZGOS_MODELADO_v2.md`
+- Hallazgos detallados en `REPORTE_HALLAZGOS_MODELADO_v3.md`
 
 ## Estado Actual del Pipeline
 
@@ -335,6 +336,8 @@ Nota: Solo se incluyen cambios temporales. Los step functions permanentes (Nayar
 - Pipeline de preprocesamiento completo (`make preprocess`)
 - Scraping + procesamiento automatizado (CI/CD)
 - Entrenamiento Prophet con CV temporal por estado o región, normalizado a tasa por 100K + log-transform (`make train`)
+- **Modo híbrido** (v6): fallback regional automático para estados insuficientes
+- **MASE** (v6): métrica escala-independiente en CV (MAE_modelo / MAE_naive_lag52)
 - Predicción con inversión de log-transform y desnormalización automática a conteos (`make predict`)
 - Generación de reportes EDA en PDF
 - Detección de outliers parametrizada (IQR / Z-score)
