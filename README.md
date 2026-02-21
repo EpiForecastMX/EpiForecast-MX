@@ -462,21 +462,25 @@ Prophet no modela conteos absolutos directamente. Se aplican dos transformacione
 - CV elige automaticamente: `additive` gana en ~49% de modelos de Depresion
 - Alzheimer y Parkinson prefieren `multiplicative` (~74%)
 
-**4. Grids diferenciados por padecimiento**
-- Cada padecimiento tiene su propio grid de hiperparametros, optimizado tras analisis de 297 modelos
-- Alzheimer: solo multiplicative, 6 combinaciones
-- Depresion: ambos modos, 18 combinaciones
-- Parkinson: ambos modos, 12 combinaciones
+**4. Grids diferenciados por padecimiento (v4)**
+- Cada padecimiento tiene su propio grid de hiperparametros, validado con 2 corridas paralelas
+- Alzheimer: solo multiplicative, 4 combinaciones
+- Depresion: ambos modos, 24 combinaciones (sp=1.0 re-agregado)
+- Parkinson: ambos modos, 24 combinaciones (cp=0.03 y sp=1.0 agregados)
 
 **5. Parametros regionales para modelos por estado**
 - `fourier_order_regional: 3` (vs 5 nacional) para reducir overfitting en series cortas
 - `n_changepoints_regional: 12` (vs 25 default) para entidades de baja poblacion
 
-**6. Filtro de series insuficientes**
-- Series con promedio < 1 caso/semana se descartan antes de CV (~84 modelos filtrados)
-- Genera fila con `confianza: "insuficiente"` sin modelo .pkl
+**6. Cross-validation con pesos progresivos**
+- `cv_weights: [0.5, 0.75, 1.0, 1.25]` prioriza folds recientes sobre periodo post-COVID
+- Metricas: RMSE, MAE y MAPE por modelo + tiempos de entrenamiento
 
-**7. Cambios de regimen por entidad**
+**7. Clasificacion de confianza**
+- Series con promedio < 1 caso/semana se marcan `confianza: "insuficiente"` (~84 modelos)
+- Se entrenan y generan .pkl de todos modos para el dashboard Tableau
+
+**8. Cambios de regimen por entidad**
 - Se configuran como holidays en Prophet, filtrados por entidad/padecimiento
 - Tabasco Depresion (2023): -6.2% RMSE
 
@@ -494,16 +498,18 @@ umbral_minimo_semanal: 1.0     # promedio minimo de casos/semana para entrenar
 param_grid_prophet:
   alzheimer:
     seasonality_mode: [multiplicative]
-    changepoint_prior_scale: [0.005, 0.01, 0.03]
-    seasonality_prior_scale: [0.1, 0.5]
+    changepoint_prior_scale: [0.01, 0.03]
+    seasonality_prior_scale: [0.1, 0.5]              # 4 combos
   depresion:
     seasonality_mode: [additive, multiplicative]
     changepoint_prior_scale: [0.01, 0.03, 0.05]
-    seasonality_prior_scale: [0.05, 0.1, 0.5]
+    seasonality_prior_scale: [0.05, 0.1, 0.5, 1.0]  # 24 combos
   parkinson:
     seasonality_mode: [multiplicative, additive]
-    changepoint_prior_scale: [0.01, 0.05, 0.07]
-    seasonality_prior_scale: [0.1, 0.5]
+    changepoint_prior_scale: [0.01, 0.03, 0.05, 0.07]
+    seasonality_prior_scale: [0.1, 0.5, 1.0]         # 24 combos
+
+cv_weights: [0.5, 0.75, 1.0, 1.25]  # pesos progresivos para CV
 ```
 
 ### Flujo completo
