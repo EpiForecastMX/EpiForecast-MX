@@ -462,11 +462,11 @@ Prophet no modela conteos absolutos directamente. Se aplican dos transformacione
 - CV elige automaticamente: `additive` gana en ~49% de modelos de Depresion
 - Alzheimer y Parkinson prefieren `multiplicative` (~74%)
 
-**4. Grids diferenciados por padecimiento (v4)**
-- Cada padecimiento tiene su propio grid de hiperparametros, validado con 2 corridas paralelas
-- Alzheimer: solo multiplicative, 4 combinaciones
-- Depresion: ambos modos, 24 combinaciones (sp=1.0 re-agregado)
-- Parkinson: ambos modos, 24 combinaciones (cp=0.03 y sp=1.0 agregados)
+**4. Grids diferenciados por padecimiento (v5)**
+- Cada padecimiento tiene su propio grid de hiperparametros, optimizado con datos de 297 modelos v4
+- Alzheimer: solo multiplicative, 6 combinaciones (sp=0.05 nuevo ganador #1 con 41%)
+- Depresion: ambos modos, 24 combinaciones (sp=0.025 nuevo ganador #1 con 29%)
+- Parkinson: ambos modos, 18 combinaciones (cp=0.04 nuevo, gana en 20% de modelos)
 
 **5. Parametros regionales para modelos por estado**
 - `fourier_order_regional: 3` (vs 5 nacional) para reducir overfitting en series cortas
@@ -477,12 +477,17 @@ Prophet no modela conteos absolutos directamente. Se aplican dos transformacione
 - Metricas: RMSE, MAE y MAPE por modelo + tiempos de entrenamiento
 
 **7. Clasificacion de confianza**
-- Series con promedio < 1 caso/semana se marcan `confianza: "insuficiente"` (~84 modelos)
+- Series con promedio < 0.5 caso/semana se marcan `confianza: "insuficiente"` (~40 modelos)
 - Se entrenan y generan .pkl de todos modos para el dashboard Tableau
 
 **8. Cambios de regimen por entidad**
 - Se configuran como holidays en Prophet, filtrados por entidad/padecimiento
 - Tabasco Depresion (2023): -6.2% RMSE
+
+**9. Proteccion anti-Newton (v5)**
+- Prophet puede caer a Newton optimizer (~100-500x mas lento) cuando L-BFGS no converge
+- 3 capas de proteccion: sort combos por cp descendente, timeout por fold (35s), threshold Newton-prone
+- Resultado: Chihuahua-Depresion paso de 39 min (v4) a 4 min (v5)
 
 Las predicciones se **desnormalizan automaticamente** a conteos absolutos en `all_forecast.csv` (primero `exp(y) - 1`, luego `× poblacion / 100K`). El CSV incluye tanto `yhat` (conteos) como `yhat_tasa` (por 100K).
 
@@ -493,21 +498,21 @@ normalizar_tasa: true          # modelar tasa por 100K
 columna_poblacion: "Total"     # columna de poblacion
 tasa_por: 100000               # factor de normalizacion
 log_transform: true            # log(1+y) para estabilizar varianza
-umbral_minimo_semanal: 1.0     # promedio minimo de casos/semana para entrenar
+umbral_minimo_semanal: 0.5     # promedio minimo de casos/semana para entrenar (v5: 1.0→0.5)
 
 param_grid_prophet:
   alzheimer:
     seasonality_mode: [multiplicative]
     changepoint_prior_scale: [0.01, 0.03]
-    seasonality_prior_scale: [0.1, 0.5]              # 4 combos
+    seasonality_prior_scale: [0.05, 0.1, 0.5]        # 6 combos (v5: +sp=0.05)
   depresion:
     seasonality_mode: [additive, multiplicative]
     changepoint_prior_scale: [0.01, 0.03, 0.05]
-    seasonality_prior_scale: [0.05, 0.1, 0.5, 1.0]  # 24 combos
+    seasonality_prior_scale: [0.025, 0.05, 0.1, 0.5] # 24 combos (v5: +sp=0.025, -sp=1.0)
   parkinson:
     seasonality_mode: [multiplicative, additive]
-    changepoint_prior_scale: [0.01, 0.03, 0.05, 0.07]
-    seasonality_prior_scale: [0.1, 0.5, 1.0]         # 24 combos
+    changepoint_prior_scale: [0.03, 0.04, 0.05]
+    seasonality_prior_scale: [0.1, 0.5, 1.0]         # 18 combos (v5: +cp=0.04, -cp=0.01/0.07)
 
 cv_weights: [0.5, 0.75, 1.0, 1.25]  # pesos progresivos para CV
 ```

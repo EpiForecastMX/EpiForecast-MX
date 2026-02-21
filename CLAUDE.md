@@ -343,6 +343,4 @@ Nota: Solo se incluyen cambios temporales. Los step functions permanentes (Nayar
 - Protección anti-Newton de 3 capas (sort + fold timeout + threshold)
 
 ### TODOs / Inconsistencias Conocidas
-- **`pyproject.toml`**: `requires-python = "~=3.14.0"` deberia ser `~=3.12.0`; `name = "alzheimer"` y `[tool.ruff] src = ["alzheimer"]` deberian reflejar el nombre actual del proyecto
-- **`metadata` en `params.yaml`**: referencia al proyecto antiguo ("Alzheimer", URL de repo anterior)
 - **Nayarit-Depresión**: RMSE=0.39 (peor modelo), cambio de régimen 2018 no absorbido completamente
