@@ -5,6 +5,7 @@ padecimiento:
   reporte: false                   # Genera reporte de filtrado
   reporte_clean: false             # Genera reporte de datos tratados
   modelado_estados: True           # Genera modelos por estados (true) o región (false)
+  solo_nacional: False             # True = solo modelos nacionales (skip regionales/estatales)
   entrena_modelo: True             # Entrena modelo final con todo el dataset
 
 inegi:

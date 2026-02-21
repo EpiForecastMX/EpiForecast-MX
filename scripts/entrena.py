@@ -107,6 +107,7 @@ def main():
     t_inicio_global = time.time()
 
     modelado_estados = bool(conf["padecimiento"]["modelado_estados"])
+    solo_nacional = bool(conf["padecimiento"].get("solo_nacional", False))
     force = bool(conf["padecimiento"]["entrena_modelo"])
     model_path = str(conf["paths"]["models"])
     valores_sexo = [str(s) for s in conf["valores_sexo"]]
@@ -117,15 +118,15 @@ def main():
     df_entrenamiento = pd.read_csv(ruta_datos)
 
     agrupador = "Entidad" if modelado_estados else "region_salud_mental"
-    regiones = sorted(df_entrenamiento[agrupador].unique())
+    regiones = [] if solo_nacional else sorted(df_entrenamiento[agrupador].unique())
     padecimientos = sorted(df_entrenamiento["Padecimiento"].unique())
 
     total = len(padecimientos) * len(valores_sexo) * (1 + len(regiones))
 
     logger.info(
         "Iniciando entrenamiento | padecimientos: {} | regiones: {} | sexo: {} | "
-        "total modelos: {} | n_jobs: {}",
-        len(padecimientos), len(regiones), len(valores_sexo), total, n_jobs,
+        "total modelos: {} | n_jobs: {} | solo_nacional: {}",
+        len(padecimientos), len(regiones), len(valores_sexo), total, n_jobs, solo_nacional,
     )
 
     for padecimiento in padecimientos:
