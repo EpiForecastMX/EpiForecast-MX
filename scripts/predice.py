@@ -105,6 +105,25 @@ def _cargar_mapeo_hibrido(base_models: Path) -> dict:
                 }
     return mapeo
 
+def _cargar_metricas_completos(base_models: Path) -> pd.DataFrame:
+    frames = []
+    for csv_path in sorted(base_models.rglob("*_completo.csv")):
+        try:
+            df = pd.read_csv(csv_path)
+        except Exception:
+            continue
+        if "archivo_modelo" not in df.columns:
+            continue
+        df["archivo_modelo"] = df["archivo_modelo"].astype(str)
+
+        cols = [c for c in ["archivo_modelo","rmse","mae","mape","mase","confianza","normalizado","poblacion"] if c in df.columns]
+        frames.append(df[cols].copy())
+
+    if not frames:
+        return pd.DataFrame(columns=["archivo_modelo"])
+
+    met = pd.concat(frames, ignore_index=True).drop_duplicates("archivo_modelo")
+    return met
 
 def main():
     periodo = conf["prediccion"]["periodo"]
@@ -162,6 +181,7 @@ def main():
             df = ForecastModelLoader(periodo=periodo, model_path=pkl).run()
             for k, v in meta.items():
                 df[k] = v
+            df["archivo_modelo_usado"] = pkl.name
             frames.append(df)
         except Exception as e:
             logger.warning("Error en {}: {}", pkl.name, e)
@@ -193,6 +213,7 @@ def main():
                 meta = parse_nombre_modelo(stem_insuf)
                 for k, v in meta.items():
                     df[k] = v
+                df["archivo_modelo_usado"] = pkl_regional_name
                 frames.append(df)
                 logger.info(
                     "Fallback regional: {} → {} (pob={:,.0f})",
@@ -208,6 +229,16 @@ def main():
 
     out = pd.concat(frames, ignore_index=True)
     out = estandarizar_valores(out)
+    
+    met = _cargar_metricas_completos(base_models)
+    out = out.merge(
+        met,
+        how="left",
+        left_on="archivo_modelo_usado",
+        right_on="archivo_modelo",
+        validate="m:1",
+    ).drop(columns=["archivo_modelo"])
+
     out.to_csv(out_file, index=False)
 
     logger.success("Predicciones guardadas: {} | modelos: {} | errores: {}", out_file, len(frames), len(errores))
