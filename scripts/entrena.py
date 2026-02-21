@@ -1,5 +1,7 @@
 # scripts/entrena.py
 
+import time
+
 import pandas as pd
 import pickle
 import re
@@ -30,6 +32,8 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False)
             logger.info("Modelo ya existe, omitiendo: {}", Path(ruta_modelo).name)
             return None, ruta_padecimiento
 
+    t_start = time.time()
+
     stp = SerieTiempoProphet(df, sexo=sexo, entidad=region, padecimiento=padecimiento)
     stp.agrupa()
     stp.crea_train_test()
@@ -44,17 +48,30 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False)
         )
         fila = {
             "padecimiento": padecimiento, "sexo": sexo, "rmse": None,
+            "mae": None, "mape": None,
             "nivel": "nacional" if region is None else "regional",
             "confianza": "insuficiente", "promedio_semanal": round(promedio, 2),
+            "tiempo_seg": round(time.time() - t_start, 1),
         }
         if region:
             fila["Entidad"] = region
         return fila, ruta_padecimiento
 
-    parametros, rmse = stp.prophet_cross_val()
+    parametros, metrics = stp.prophet_cross_val()
+    t_cv = time.time()
+
     modelo = stp.train(parametros)
-    fila = {"padecimiento": padecimiento, "sexo": sexo, "rmse": rmse, **parametros}
+    t_train = time.time()
+
+    fila = {
+        "padecimiento": padecimiento, "sexo": sexo,
+        "rmse": metrics["rmse"], "mae": metrics["mae"], "mape": metrics["mape"],
+        **parametros,
+    }
     fila["nivel"] = "nacional" if region is None else "regional"
+    fila["tiempo_cv_seg"] = round(t_cv - t_start, 1)
+    fila["tiempo_train_seg"] = round(t_train - t_cv, 1)
+    fila["tiempo_total_seg"] = round(t_train - t_start, 1)
     if region:
         fila["Entidad"] = region
     if stp.normalizar_tasa and stp.poblacion_valor:
@@ -69,11 +86,18 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False)
     logger.info("Datos de entrenamiento guardados: {}", os.path.basename(ruta_csv))
 
     fila["archivo_modelo"] = nombre_modelo
+    logger.info(
+        "Métricas: RMSE={:.4f} | MAE={:.4f} | MAPE={:.2f}% | CV={:.1f}s | Train={:.1f}s",
+        metrics["rmse"], metrics["mae"], metrics["mape"],
+        fila["tiempo_cv_seg"], fila["tiempo_train_seg"],
+    )
 
     return fila, ruta_padecimiento
 
 
 def main():
+    t_inicio_global = time.time()
+
     modelado_estados = conf["padecimiento"]["modelado_estados"]
     force = conf["padecimiento"]["entrena_modelo"]
     model_path = conf["paths"]["models"]
@@ -144,7 +168,11 @@ def main():
                 logger.warning("Series insuficientes descartadas: {}/{}", insuficientes, len(resultados))
             logger.success("Resultados guardados: {}", ruta_rmse)
 
-    logger.success("Entrenamiento completado. {} modelos procesados.", total)
+    t_total = time.time() - t_inicio_global
+    logger.success(
+        "Entrenamiento completado. {} modelos procesados en {:.1f} min ({:.1f} h).",
+        total, t_total / 60, t_total / 3600,
+    )
 
 
 if __name__ == "__main__":
