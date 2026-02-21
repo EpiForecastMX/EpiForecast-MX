@@ -186,6 +186,12 @@ predict:
 	$(PYTHON_INTERPRETER) -m scripts.predice
 	@echo ">>> Predicciones generadas."
 
+.PHONY: tableau
+tableau:
+	@echo ">>> Construyendo dataset final para Tableau..."
+	$(PYTHON_INTERPRETER) -m scripts.build_tableau
+	@echo ">>> Listo."
+
 ## Versionar modelos entrenados con DVC y subir a S3
 .PHONY: models-push
 models-push:
