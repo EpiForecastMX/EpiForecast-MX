@@ -177,6 +177,90 @@ def main():
 
         resultados = [f for f in resultados_raw if f is not None]
 
+        # --- Modo híbrido: fallback regional para modelos insuficientes ---
+        modelado_hibrido = bool(
+            conf["padecimiento"].get("modelado_hibrido", False)
+        )
+        if modelado_hibrido and modelado_estados and resultados:
+            insuf = [
+                f for f in resultados
+                if f.get("confianza") == "insuficiente" and f.get("nivel") == "regional"
+            ]
+            if insuf:
+                # Mapear estado → región INEGI
+                mapa_region = (
+                    df_padecimiento[["Entidad", "region_salud_mental"]]
+                    .drop_duplicates()
+                    .set_index("Entidad")["region_salud_mental"]
+                    .to_dict()
+                )
+                # Regiones que tienen al menos 1 estado insuficiente
+                regiones_afectadas = sorted({
+                    mapa_region[f["Entidad"]]
+                    for f in insuf if f.get("Entidad") in mapa_region
+                })
+                logger.info(
+                    "Modo híbrido: {} insuficientes en {} regiones → {}",
+                    len(insuf), len(regiones_afectadas), regiones_afectadas,
+                )
+
+                # Entrenar modelos regionales de fallback
+                jobs_regional = []
+                for region in regiones_afectadas:
+                    df_region = df_padecimiento[
+                        df_padecimiento["region_salud_mental"] == region
+                    ]
+                    for sexo in valores_sexo:
+                        region_tag = f"region_{region}"
+                        jobs_regional.append((
+                            df_region, padecimiento, sexo, model_path, mapeo,
+                            region_tag, force,
+                        ))
+
+                total_reg = len(jobs_regional)
+                jobs_regional = [
+                    (*job, (i, total_reg))
+                    for i, job in enumerate(jobs_regional, 1)
+                ]
+                logger.info(
+                    "Entrenando {} modelos regionales de fallback para {}",
+                    total_reg, padecimiento,
+                )
+
+                if n_jobs != 1:
+                    res_reg_raw = Parallel(n_jobs=n_jobs, backend="loky", verbose=10)(
+                        delayed(entrenar)(*job) for job in jobs_regional
+                    )
+                else:
+                    res_reg_raw = [entrenar(*job) for job in jobs_regional]
+
+                res_regional = [f for f in res_reg_raw if f is not None]
+                resultados.extend(res_regional)
+
+                # Agregar columna usar_regional: mapea cada modelo insuficiente a su .pkl regional
+                for fila in resultados:
+                    if (
+                        fila.get("confianza") == "insuficiente"
+                        and fila.get("nivel") == "regional"
+                        and fila.get("Entidad") in mapa_region
+                    ):
+                        region = mapa_region[fila["Entidad"]]
+                        region_tag = f"region_{region}"
+                        sexo = fila["sexo"]
+                        pkl_regional = (
+                            f"Prophet_{normalizar(padecimiento)}"
+                            f"_{normalizar(region_tag)}"
+                            f"_{mapeo.get(sexo, sexo)}.pkl"
+                        )
+                        fila["usar_regional"] = pkl_regional
+                    else:
+                        fila.setdefault("usar_regional", None)
+
+                logger.success(
+                    "Modo híbrido: {} modelos regionales entrenados para {}",
+                    len(res_regional), padecimiento,
+                )
+
         if resultados:
             ruta_rmse = os.path.join(
                 ruta_padecimiento, f"Prophet_{normalizar(padecimiento)}_completo.csv"

@@ -1,4 +1,5 @@
 # scripts/predice.py
+import re
 import pandas as pd
 from pathlib import Path
 import unicodedata
@@ -6,6 +7,13 @@ import unicodedata
 from src.modelado.forecast import ForecastModelLoader, generar_graficos_pronostico
 from src.configuraciones.config_params import conf, logger
 from src.utils import directory_manager
+
+
+def _normalizar(s: str) -> str:
+    """Normaliza para nombres de archivo (debe coincidir con entrena.normalizar)."""
+    out = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii")
+    out = out.replace("/", "-")
+    return re.sub(r"\s+", "_", out)
 
 
 def parse_nombre_modelo(stem: str) -> dict:
@@ -70,10 +78,39 @@ def estandarizar_valores(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
+def _cargar_mapeo_hibrido(base_models: Path) -> dict:
+    """Lee _completo.csv de cada padecimiento y construye mapeo hibrido.
+
+    Returns:
+        dict: {stem_insuficiente: {"pkl_regional": str, "poblacion": float, "entidad": str}}
+              Solo incluye modelos insuficientes que tienen usar_regional asignado.
+    """
+    mapeo = {}
+    for csv_path in sorted(base_models.rglob("*_completo.csv")):
+        try:
+            df = pd.read_csv(csv_path)
+        except Exception:
+            continue
+        if "usar_regional" not in df.columns:
+            continue
+        for _, row in df.iterrows():
+            if pd.notna(row.get("usar_regional")) and row.get("confianza") == "insuficiente":
+                stem = row["archivo_modelo"].replace(".pkl", "")
+                mapeo[stem] = {
+                    "pkl_regional": row["usar_regional"],
+                    "poblacion": row.get("poblacion"),
+                    "entidad": row.get("Entidad"),
+                    "padecimiento": row.get("padecimiento"),
+                    "sexo": row.get("sexo"),
+                }
+    return mapeo
+
+
 def main():
     periodo = conf["prediccion"]["periodo"]
     base_models = Path(conf["paths"]["models"])
     out_file = Path(conf["data"]["forecast"])
+    modelado_hibrido = bool(conf["padecimiento"].get("modelado_hibrido", False))
 
     directory_manager.asegurar_ruta(out_file.parent)
 
@@ -82,6 +119,21 @@ def main():
     if total == 0:
         raise FileNotFoundError(f"No se encontraron modelos .pkl en: {base_models}")
 
+    # Cargar mapeo híbrido si aplica
+    mapeo_hibrido = _cargar_mapeo_hibrido(base_models) if modelado_hibrido else {}
+    stems_insuf = set(mapeo_hibrido.keys())
+    # Modelos region_* solo se usan como fallback, no generan forecast propio
+    stems_regional = {
+        pkl.stem for pkl in modelos
+        if pkl.stem.startswith("Prophet_") and "_region_" in pkl.stem
+    }
+
+    if mapeo_hibrido:
+        logger.info(
+            "Modo híbrido activo: {} modelos insuficientes con fallback regional",
+            len(mapeo_hibrido),
+        )
+
     logger.info("Modelos detectados: {} | periodo: {} semanas | salida: {}", total, periodo, out_file)
 
     frames = []
@@ -89,6 +141,20 @@ def main():
 
     for i, pkl in enumerate(modelos, start=1):
         pct = int(i * 100 / total)
+
+        # Skip modelos insuficientes (se reemplazan con fallback regional)
+        if pkl.stem in stems_insuf:
+            logger.info(
+                "[{}/{}] {}% → SKIP insuficiente (fallback): {}",
+                i, total, pct, pkl.name,
+            )
+            continue
+
+        # Skip modelos region_* (solo se usan como fallback, no directamente)
+        if pkl.stem in stems_regional:
+            logger.info("[{}/{}] {}% → SKIP regional (solo fallback): {}", i, total, pct, pkl.name)
+            continue
+
         logger.info("[{}/{}] {}% → {}", i, total, pct, pkl.name)
 
         try:
@@ -100,6 +166,42 @@ def main():
         except Exception as e:
             logger.warning("Error en {}: {}", pkl.name, e)
             errores.append(pkl.name)
+
+    # --- Fallback regional: predecir con modelo regional, desnormalizar con población estatal ---
+    if mapeo_hibrido:
+        logger.info("Generando {} predicciones con fallback regional...", len(mapeo_hibrido))
+        for stem_insuf, info in mapeo_hibrido.items():
+            pkl_regional_name = info["pkl_regional"]
+            padecimiento = info["padecimiento"]
+            pad_norm = _normalizar(padecimiento)
+            pkl_regional = base_models / pad_norm / pkl_regional_name
+
+            if not pkl_regional.exists():
+                logger.warning("Modelo regional no encontrado: {}", pkl_regional)
+                errores.append(f"fallback:{stem_insuf}")
+                continue
+
+            try:
+                loader = ForecastModelLoader(periodo=periodo, model_path=pkl_regional)
+                loader.load()
+                # Reemplazar población regional por la del estado individual
+                if info.get("poblacion"):
+                    loader.poblacion = info["poblacion"]
+                df = loader.predict()
+
+                # Metadatos del estado (no de la región)
+                meta = parse_nombre_modelo(stem_insuf)
+                for k, v in meta.items():
+                    df[k] = v
+                frames.append(df)
+                logger.info(
+                    "Fallback regional: {} → {} (pob={:,.0f})",
+                    stem_insuf, pkl_regional_name,
+                    info.get("poblacion", 0),
+                )
+            except Exception as e:
+                logger.warning("Error en fallback {}: {}", stem_insuf, e)
+                errores.append(f"fallback:{stem_insuf}")
 
     if not frames:
         raise RuntimeError("Ninguna predicción generada.")
