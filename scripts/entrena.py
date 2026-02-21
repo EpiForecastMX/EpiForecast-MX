@@ -21,13 +21,18 @@ def normalizar(region: str) -> str:
     return re.sub(r"\s+", "_", formato)
 
 
-def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False):
+def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False, progreso=None):
     # Imports locales: evita que cloudpickle (loky) intente serializar estos objetos
     # como globals de __main__. OmegaConf y loguru no son pickle-safe.
     # Cada worker re-importa los módulos frescos.
     from src.configuraciones.config_params import conf, logger
     from src.modelado.prophet import SerieTiempoProphet
     from src.utils import directory_manager
+
+    if progreso:
+        i, total = progreso
+        logger.info("[{}/{}] {:.0f}% | {} | {} | {}", i, total, i / total * 100,
+                    padecimiento, region or "Nacional", mapeo.get(sexo, sexo))
 
     ruta_padecimiento = os.path.join(ruta_base, normalizar(padecimiento))
     directory_manager.asegurar_ruta(ruta_padecimiento)
@@ -154,17 +159,18 @@ def main():
             for sexo in valores_sexo:
                 jobs.append((df_region, padecimiento, sexo, model_path, mapeo, region, force))
 
-        logger.info("{} modelos a procesar para {}", len(jobs), padecimiento)
+        # Agregar índice de progreso a cada job
+        total_jobs = len(jobs)
+        jobs = [(*job, (i, total_jobs)) for i, job in enumerate(jobs, 1)]
+
+        logger.info("{} modelos a procesar para {}", total_jobs, padecimiento)
 
         if n_jobs != 1:
             resultados_raw = Parallel(n_jobs=n_jobs, backend="loky", verbose=10)(
                 delayed(entrenar)(*job) for job in jobs
             )
         else:
-            resultados_raw = []
-            for i, job in enumerate(jobs, 1):
-                logger.info("[{}/{}] {:.0f}%", i, len(jobs), i / len(jobs) * 100)
-                resultados_raw.append(entrenar(*job))
+            resultados_raw = [entrenar(*job) for job in jobs]
 
         resultados = [f for f in resultados_raw if f is not None]
 
