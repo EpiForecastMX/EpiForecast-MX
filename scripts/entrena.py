@@ -99,12 +99,12 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False)
 def main():
     t_inicio_global = time.time()
 
-    modelado_estados = conf["padecimiento"]["modelado_estados"]
-    force = conf["padecimiento"]["entrena_modelo"]
-    model_path = conf["paths"]["models"]
-    valores_sexo = list(conf["valores_sexo"])
-    mapeo = dict(conf["mapeo_columnas"])
-    n_jobs = conf.get("n_jobs_train", 1)
+    modelado_estados = bool(conf["padecimiento"]["modelado_estados"])
+    force = bool(conf["padecimiento"]["entrena_modelo"])
+    model_path = str(conf["paths"]["models"])
+    valores_sexo = [str(s) for s in conf["valores_sexo"]]
+    mapeo = {str(k): str(v) for k, v in conf["mapeo_columnas"].items()}
+    n_jobs = int(conf.get("n_jobs_train", 1))
 
     ruta_datos = conf["data"]["data_inegi"]
     df_entrenamiento = pd.read_csv(ruta_datos)
