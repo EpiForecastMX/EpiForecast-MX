@@ -14,16 +14,28 @@
 | Cambio | Descripcion | Impacto |
 |---|---|---|
 | **MASE** | Nueva metrica escala-independiente en CV | Evalua si modelo supera baseline naive lag-52 |
-| **Modo hibrido** | Fallback regional para estados insuficientes | Elimina predicciones planas en 40 modelos |
+| **Modo hibrido** | Fallback regional para estados insuficientes | Elimina predicciones planas en 41 modelos |
 | **Fix normalizar()** | Sanitiza `/` en nombres de region | Evita error de ruta en "Rural / dispersa" |
 
 ### Metricas v5 vs v6
 
 | Metrica | v5 | v6 | Cambio |
 |---|---|---|---|
-| Modelos insuficientes (sin prediccion util) | 40 | **0** | -100% |
-| Cobertura estatal con prediccion informada | 87% | **100%** | +13pp |
+| Modelos insuficientes (sin prediccion util) | 41 | **0** | -100% |
+| Cobertura estatal con prediccion informada | 86% | **100%** | +14pp |
 | Metricas de CV | RMSE, MAE, MAPE | RMSE, MAE, MAPE, **MASE** | +1 metrica |
+
+### Resultados reales del entrenamiento v6
+
+| Padecimiento | Modelos | Insuficientes | Fallback | RMSE medio | MASE medio |
+|---|---|---|---|---|---|
+| Alzheimer | 99 + 9 regionales | 36 | 36 | 0.027 | 0.74 |
+| Depresion | 99 | 0 | 0 | 0.183 | 0.80 |
+| Parkinson | 99 + 6 regionales | 5 | 5 | 0.057 | 0.75 |
+
+- **MASE < 1** en los tres padecimientos → todos los modelos superan baseline naive estacional
+- 15 modelos regionales de fallback entrenados (9 Alzheimer + 6 Parkinson)
+- Tiempo total: ~45 minutos con n_jobs=-2 (joblib loky)
 
 ---
 
@@ -66,7 +78,7 @@ Donde `MAE_naive_seasonal` es el error medio absoluto de un baseline naive con l
 
 ### 3.1 Problema
 
-En v5, 40 modelos estatales (35 Alzheimer + 5 Parkinson) tenian `confianza: "insuficiente"` (promedio < 0.5 casos/semana). Estos modelos se entrenaban con params default (sin CV) y producian predicciones casi planas, sin valor predictivo real.
+En v5, 41 modelos estatales (36 Alzheimer + 5 Parkinson) tenian `confianza: "insuficiente"` (promedio < 0.5 casos/semana). Estos modelos se entrenaban con params default (sin CV) y producian predicciones casi planas, sin valor predictivo real.
 
 ### 3.2 Solucion
 
@@ -169,7 +181,7 @@ Un CSV por padecimiento: `models/{Padecimiento}/Prophet_{Padecimiento}_completo.
 | Cambio | Detalle | Impacto |
 |---|---|---|
 | MASE | Nueva metrica en CV y CSV | Evalua vs baseline naive lag-52 |
-| Modo hibrido | Fallback regional para insuficientes | 40 modelos con prediccion informada |
+| Modo hibrido | Fallback regional para insuficientes | 41 modelos con prediccion informada |
 | Fix normalizar() | `"/"` → `"-"` en nombres de region | Evita error de ruta |
 | Columna `mase` | En `_completo.csv` | Metrica adicional para evaluacion |
 | Columna `usar_regional` | En `_completo.csv` | Mapea insuficiente → .pkl regional |

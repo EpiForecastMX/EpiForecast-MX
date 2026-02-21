@@ -315,17 +315,17 @@ Nota: Solo se incluyen cambios temporales. Los step functions permanentes (Nayar
 
 ## Resultados del Modelado (v6 — 2026-02-21)
 
-297 modelos estatales Prophet + fallback regionales (modo híbrido) en ~45 minutos con `n_jobs=-2` (joblib).
+297 modelos estatales Prophet + 15 fallback regionales (modo híbrido) en ~45 minutos con `n_jobs=-2` (joblib).
 
-| Padecimiento | Modelos | Insuficientes | Fallback regional | RMSE medio | Tiempo |
-|-------------|---------|---------------|-------------------|------------|--------|
-| Alzheimer | 99 | 35 | 35 | 0.033 | ~2 min |
-| Depresión | 99 | 0 | 0 | 0.206 | ~28 min |
-| Parkinson | 99 | 5 | 5 | 0.064 | ~14 min |
+| Padecimiento | Modelos | Insuficientes | Fallback regional | RMSE medio | MASE medio | Tiempo |
+|-------------|---------|---------------|-------------------|------------|------------|--------|
+| Alzheimer | 99 | 36 | 36 | 0.027 | 0.74 | ~2 min |
+| Depresión | 99 | 0 | 0 | 0.183 | 0.80 | ~28 min |
+| Parkinson | 99 | 5 | 5 | 0.057 | 0.75 | ~14 min |
 
 - **100% cobertura estatal** con predicción informada (v5: 87%) gracias al modo híbrido
-- **MASE** agregado como métrica de CV (escala-independiente, funciona con ceros)
-- **40 modelos insuficientes** ahora usan fallback regional (predicción útil vs plana en v5)
+- **MASE < 1** en los tres padecimientos → modelos superan baseline naive estacional (lag-52)
+- **41 modelos insuficientes** ahora usan fallback regional (predicción útil vs plana en v5)
 - Anti-Newton: Chihuahua-Depresión de 39 min (v4) a **4 min** (v5)
 - Forecast: 120 semanas a futuro, desnormalizado a conteos en `all_forecast.csv`
 - Hallazgos detallados en `REPORTE_HALLAZGOS_MODELADO_v3.md`

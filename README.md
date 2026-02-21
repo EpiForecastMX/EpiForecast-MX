@@ -478,7 +478,7 @@ Prophet no modela conteos absolutos directamente. Se aplican dos transformacione
 - **MASE** (Mean Absolute Scaled Error): MAE_modelo / MAE_naive_lag52. MASE < 1 = mejor que baseline naive
 
 **7. Clasificacion de confianza y modo hibrido (v6)**
-- Series con promedio < 0.5 caso/semana se marcan `confianza: "insuficiente"` (~40 modelos)
+- Series con promedio < 0.5 caso/semana se marcan `confianza: "insuficiente"` (~41 modelos)
 - **Modo hibrido** (`modelado_hibrido: True` en `params.yaml`): entrena modelos regionales de fallback para estados insuficientes
 - En prediccion, el modelo regional se desnormaliza con poblacion estatal individual
 
@@ -593,17 +593,17 @@ Esto descarga automaticamente los modelos y forecasts mas recientes desde S3.
 
 ### Resultados del Modelado (v6)
 
-297 modelos estatales Prophet + fallback regionales (modo hibrido):
+297 modelos estatales Prophet + 15 fallback regionales (modo hibrido):
 
-| Padecimiento | Modelos | Insuficientes | Fallback regional | RMSE medio | Cobertura |
-|-------------|---------|---------------|-------------------|------------|-----------|
-| Alzheimer | 99 | 35 | 35 | 0.033 | 100% |
-| Depresion | 99 | 0 | 0 | 0.206 | 100% |
-| Parkinson | 99 | 5 | 5 | 0.064 | 100% |
+| Padecimiento | Modelos | Insuficientes | Fallback regional | RMSE medio | MASE medio | Cobertura |
+|-------------|---------|---------------|-------------------|------------|------------|-----------|
+| Alzheimer | 99 | 36 | 36 | 0.027 | 0.74 | 100% |
+| Depresion | 99 | 0 | 0 | 0.183 | 0.80 | 100% |
+| Parkinson | 99 | 5 | 5 | 0.057 | 0.75 | 100% |
 
 - **100% cobertura estatal** con prediccion informada gracias al modo hibrido (v5: 87%)
-- **MASE** (v6): nueva metrica escala-independiente (MAE_modelo / MAE_naive_lag52)
-- 40 modelos insuficientes usan fallback regional (prediccion util vs plana en v5)
+- **MASE < 1** en los tres padecimientos: modelos superan baseline naive estacional (lag-52)
+- 41 modelos insuficientes usan fallback regional (prediccion util vs plana en v5)
 - Forecast: **120 semanas** a futuro, desnormalizado a conteos absolutos
 - Tiempo total: **~45 minutos** con n_jobs=-2 (joblib loky)
 - Resultados detallados en `REPORTE_HALLAZGOS_MODELADO_v3.md`
