@@ -243,18 +243,45 @@ log_transform: true            # log(1+y) para estabilizar varianza
 ```
 
 ### Grid de hiperparámetros (modelado.yaml)
-El grid incluye `additive` y `multiplicative` como modos de estacionalidad. CV elige automáticamente; `additive` gana en ~49% de modelos de Depresión.
+Grids diferenciados por padecimiento (optimizados tras análisis de 297 modelos). CV elige automáticamente el mejor conjunto.
 
 ```yaml
 param_grid_prophet:
-  seasonality_mode: [multiplicative, additive]
-  changepoint_prior_scale: [0.01, 0.03, 0.05]
-  seasonality_prior_scale: [0.1, 0.5, 1.0, 2.0]
+  alzheimer:
+    seasonality_mode: [multiplicative]           # additive eliminado (+51% RMSE)
+    changepoint_prior_scale: [0.005, 0.01, 0.03] # 0.01 ganador en 85% top-20%
+    seasonality_prior_scale: [0.1, 0.5]           # 6 combinaciones
+  depresion:
+    seasonality_mode: [additive, multiplicative]  # additive mejor promedio
+    changepoint_prior_scale: [0.01, 0.03, 0.05]
+    seasonality_prior_scale: [0.05, 0.1, 0.5]    # 18 combinaciones
+  parkinson:
+    seasonality_mode: [multiplicative, additive]
+    changepoint_prior_scale: [0.01, 0.05, 0.07]  # 0.05 mejor RMSE promedio
+    seasonality_prior_scale: [0.1, 0.5]           # 12 combinaciones
 ```
+
+La selección del grid se hace automáticamente en `SerieTiempoProphet.__init__` leyendo la columna `Padecimiento` del DataFrame.
+
+### Parámetros regionales para modelos por estado
+Para series estatales (más cortas que las nacionales), se aplican automáticamente:
+- **`fourier_order_regional: 3`** — reduce overfitting vs fourier_order=5 nacional (especialmente Depresión)
+- **`n_changepoints_regional: 12`** — reduce overfitting en entidades < 1M hab. (vs 25 default de Prophet)
+
+Ambos se aplican solo cuando `modelado_estados: true` en `params.yaml`.
+
+### Filtro de series insuficientes
+Series con promedio < `umbral_minimo_semanal` (default: 1.0 caso/semana) se descartan antes de CV. Genera fila con `confianza: "insuficiente"` y `rmse: None` en el CSV de resultados, sin generar `.pkl`. Esto filtra ~84 modelos (principalmente Alzheimer y Parkinson en estados de baja población).
 
 ### Periodos Atípicos Configurados (modelado.yaml)
 - **Pandemia COVID-19**: 2020-03-23, ventana de 913 días (~2.5 años)
 - **Atípico 2016**: 2016-05-16, ventana de 182 días
+
+### Cambios de régimen por entidad (modelado.yaml)
+Se agregan como holidays a Prophet, filtrados por `entidad` y `padecimiento` en `SerieTiempoProphet.__init__`:
+- **Tabasco Depresión**: 2023-01-09, ventana 365 días (-6.2% RMSE)
+
+Nota: Solo se incluyen cambios temporales. Los step functions permanentes (Nayarit, Colima, Durango, BCS) empeoran el RMSE con holidays porque Prophet los trata como eventos temporales.
 
 ## CI/CD (GitHub Actions)
 
