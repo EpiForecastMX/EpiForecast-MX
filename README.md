@@ -584,19 +584,20 @@ dvc pull
 
 Esto descarga automaticamente los modelos y forecasts mas recientes desde S3.
 
-### Resultados del Modelado (v4)
+### Resultados del Modelado (v5)
 
 297 modelos Prophet entrenados (3 padecimientos x 33 entidades x 3 sexos):
 
 | Padecimiento | Modelos | Insuficientes | RMSE medio | Cobertura |
 |-------------|---------|---------------|------------|-----------|
-| Depresion | 99 | 0 | 0.114 | 100% |
-| Parkinson | 99 | 20 | 0.065 | 80% |
-| Alzheimer | 99 | 64 | 0.054 | 35% |
+| Alzheimer | 99 | 35 | 0.033 | 65% |
+| Depresion | 99 | 0 | 0.206 | 100% |
+| Parkinson | 99 | 5 | 0.064 | 95% |
 
-- **213 modelos con confianza "normal"**, 84 marcados "insuficiente" (< 1 caso/semana promedio)
+- **257 modelos con confianza "normal"**, 40 marcados "insuficiente" (< 0.5 caso/semana promedio)
 - Forecast: **120 semanas** a futuro, desnormalizado a conteos absolutos
-- Tiempo total de entrenamiento: ~57 minutos (joblib paralelo, `n_jobs=-2`)
+- Tiempo total: **44.5 minutos** (v4: 57 min, -22% con proteccion anti-Newton)
+- Grids v5 optimizados: 48 combos de HP con nuevos valores ganadores (sp=0.025, cp=0.04)
 - Resultados detallados en `REPORTE_HALLAZGOS_MODELADO_v2.md`
 
 ### Acceso directo a CSVs en S3
