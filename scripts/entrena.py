@@ -25,9 +25,19 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False)
     # Imports locales: evita que cloudpickle (loky) intente serializar estos objetos
     # como globals de __main__. OmegaConf y loguru no son pickle-safe.
     # Cada worker re-importa los módulos frescos.
+    import sys
+    import multiprocessing
     from src.configuraciones.config_params import conf, logger
     from src.modelado.prophet import SerieTiempoProphet
     from src.utils import directory_manager
+
+    # Workers paralelos: suprimir logs INFO para evitar salida intercalada.
+    # Solo WARNING+ (L-BFGS failures, confianza insuficiente, etc.)
+    # El proceso principal mantiene logging completo.
+    if multiprocessing.current_process().name != "MainProcess":
+        logger.remove()
+        logger.add(sys.stderr, level="WARNING",
+                   format="{time:HH:mm:ss} | {level: <8} | {message}")
 
     ruta_padecimiento = os.path.join(ruta_base, normalizar(padecimiento))
     directory_manager.asegurar_ruta(ruta_padecimiento)
