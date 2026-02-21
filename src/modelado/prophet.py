@@ -218,6 +218,7 @@ class SerieTiempoProphet:
             rmse_fold = []
             mae_fold = []
             mape_fold = []
+            mase_fold = []
             fold_indices = []
             timed_out = False
 
@@ -268,9 +269,18 @@ class SerieTiempoProphet:
                     rmse = np.sqrt(mean_squared_error(merged['y'], merged['yhat']))
                     mae = mean_absolute_error(merged['y'], merged['yhat'])
                     mape = min(mean_absolute_percentage_error(merged['y'], merged['yhat']) * 100, 999.0)
+                    # MASE: MAE / MAE_naive_seasonal (lag-52 semanas)
+                    y_train = train_fold['y'].values
+                    if len(y_train) > 52:
+                        mae_naive = float(np.mean(np.abs(y_train[52:] - y_train[:-52])))
+                        mase = mae / mae_naive if mae_naive > 0 else None
+                    else:
+                        mase = None
+
                     rmse_fold.append(rmse)
                     mae_fold.append(mae)
                     mape_fold.append(mape)
+                    mase_fold.append(mase)
                     fold_indices.append(fold_iteration)
 
                 except Exception as e:
@@ -293,6 +303,7 @@ class SerieTiempoProphet:
                 mean_rmse = float('inf')
                 mean_mae = float('inf')
                 mean_mape = float('inf')
+                mean_mase = None
             elif rmse_fold:
                 if self.cv_weights and len(self.cv_weights) >= self.TRAIN_SPLIT:
                     weights = [self.cv_weights[i] for i in fold_indices]
@@ -303,13 +314,30 @@ class SerieTiempoProphet:
                     mean_rmse = float(np.mean(rmse_fold))
                     mean_mae = float(np.mean(mae_fold))
                     mean_mape = float(np.mean(mape_fold))
+                # MASE: promediar excluyendo None
+                valid_mase = [m for m in mase_fold if m is not None]
+                if valid_mase:
+                    if self.cv_weights and len(self.cv_weights) >= self.TRAIN_SPLIT:
+                        mase_weights = [
+                            self.cv_weights[fold_indices[i]]
+                            for i, m in enumerate(mase_fold) if m is not None
+                        ]
+                        mean_mase = float(np.average(valid_mase, weights=mase_weights))
+                    else:
+                        mean_mase = float(np.mean(valid_mase))
+                else:
+                    mean_mase = None
                 logger.debug(
-                    f"Métricas CV: RMSE={mean_rmse:.4f}, MAE={mean_mae:.4f}, MAPE={mean_mape:.2f}%"
+                    f"Métricas CV: RMSE={mean_rmse:.4f}, MAE={mean_mae:.4f}, "
+                    f"MAPE={mean_mape:.2f}%, MASE={mean_mase:.3f}" if mean_mase is not None
+                    else f"Métricas CV: RMSE={mean_rmse:.4f}, MAE={mean_mae:.4f}, "
+                    f"MAPE={mean_mape:.2f}%, MASE=N/A"
                 )
             else:
                 mean_rmse = float('inf')
                 mean_mae = float('inf')
                 mean_mape = float('inf')
+                mean_mase = None
 
             if mean_rmse < best_rmse:
                 best_rmse = mean_rmse
@@ -318,6 +346,7 @@ class SerieTiempoProphet:
                     "rmse": mean_rmse,
                     "mae": mean_mae,
                     "mape": mean_mape,
+                    "mase": mean_mase,
                 }
                 logger.info(
                     f"[CV] Iteración {iteracion + 1}/{len(parametros)} – "
@@ -334,7 +363,7 @@ class SerieTiempoProphet:
                 best_param['changepoint_prior_scale'] = max(
                     self.param_grid['changepoint_prior_scale']
                 )
-            best_metrics = {"rmse": None, "mae": None, "mape": None}
+            best_metrics = {"rmse": None, "mae": None, "mape": None, "mase": None}
             logger.warning(
                 "Todos los combos hicieron timeout (Newton). Params default: {}", best_param
             )

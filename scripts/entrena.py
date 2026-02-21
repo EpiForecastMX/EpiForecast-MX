@@ -61,7 +61,7 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False,
     if es_insuficiente:
         # Skip CV: usar primer combo del grid como default (serie casi plana, HP da igual)
         parametros = {k: v[0] for k, v in stp.param_grid.items()}
-        metrics = {"rmse": None, "mae": None, "mape": None}
+        metrics = {"rmse": None, "mae": None, "mape": None, "mase": None}
         logger.warning(
             "Baja confianza: skip CV, params default | {:.2f} casos/sem | {} | {} | {}",
             promedio, padecimiento, region or "Nacional", sexo,
@@ -81,6 +81,7 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False,
     fila = {
         "padecimiento": padecimiento, "sexo": sexo,
         "rmse": metrics["rmse"], "mae": metrics["mae"], "mape": mape_raw,
+        "mase": metrics.get("mase"),
         "mape_confiable": not mape_clipped,
         **parametros,
     }
@@ -103,11 +104,12 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False,
     stp.train_data.to_csv(ruta_csv, index=False, encoding="utf-8")
 
     fila["archivo_modelo"] = nombre_modelo
+    mase_str = f"{metrics['mase']:.3f}" if metrics.get("mase") is not None else "N/A"
     logger.info(
-        "Completado: {} | {} | {} | RMSE={} | CV={:.1f}s | Train={:.1f}s | {}",
+        "Completado: {} | {} | {} | RMSE={} | MASE={} | CV={:.1f}s | Train={:.1f}s | {}",
         padecimiento, region or "Nacional", mapeo.get(sexo, sexo),
         f"{metrics['rmse']:.4f}" if metrics["rmse"] is not None else "N/A",
-        fila["tiempo_cv_seg"], fila["tiempo_train_seg"], fila["confianza"],
+        mase_str, fila["tiempo_cv_seg"], fila["tiempo_train_seg"], fila["confianza"],
     )
 
     return fila
