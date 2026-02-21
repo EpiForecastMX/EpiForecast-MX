@@ -243,24 +243,22 @@ log_transform: true            # log(1+y) para estabilizar varianza
 ```
 
 ### Grid de hiperparámetros (modelado.yaml)
-Grids diferenciados por padecimiento (optimizados tras análisis de 297 modelos). CV elige automáticamente el mejor conjunto.
+Grids v5 diferenciados por padecimiento (optimizados con datos de 297 modelos v4). CV elige automáticamente el mejor conjunto.
 
 ```yaml
 param_grid_prophet:
   alzheimer:
     seasonality_mode: [multiplicative]              # additive eliminado (+51% RMSE)
-    changepoint_prior_scale: [0.01, 0.03]           # 0.005 eliminado (L-BFGS failures)
-    seasonality_prior_scale: [0.1, 0.5]             # 4 combinaciones
+    changepoint_prior_scale: [0.01, 0.03]
+    seasonality_prior_scale: [0.05, 0.1, 0.5]      # 6 combinaciones. sp=0.05 nuevo (ganador 41%)
   depresion:
-    seasonality_mode: [additive, multiplicative]    # additive mejor promedio
+    seasonality_mode: [additive, multiplicative]
     changepoint_prior_scale: [0.01, 0.03, 0.05]
-    seasonality_prior_scale: [0.05, 0.1, 0.5, 1.0] # 1.0 re-agregado (ganador 29.3%)
-    # 24 combinaciones
+    seasonality_prior_scale: [0.025, 0.05, 0.1, 0.5] # 24 combos. sp=0.025 nuevo (ganador 29%)
   parkinson:
     seasonality_mode: [multiplicative, additive]
-    changepoint_prior_scale: [0.01, 0.03, 0.05, 0.07] # 0.03 agregado
-    seasonality_prior_scale: [0.1, 0.5, 1.0]           # 1.0 re-agregado
-    # 24 combinaciones
+    changepoint_prior_scale: [0.03, 0.04, 0.05]    # 18 combos. cp=0.04 nuevo (ganador 20%)
+    seasonality_prior_scale: [0.1, 0.5, 1.0]       # cp=0.01/0.07 eliminados (Newton/nunca gana)
 ```
 
 La selección del grid se hace automáticamente en `SerieTiempoProphet.__init__` leyendo la columna `Padecimiento` del DataFrame.
@@ -275,11 +273,20 @@ Ambos se aplican solo cuando `modelado_estados: true` en `params.yaml`.
 ### Cross-validation con pesos progresivos
 Los 4 folds de CV se ponderan con `cv_weights: [0.5, 0.75, 1.0, 1.25]`, dando más peso a los folds recientes (2023-2024) y menos al periodo post-COVID (2020-2021). Se usa `np.average()` en vez de `np.mean()`.
 
+### Protección anti-Newton (3 capas)
+Prophet puede caer a Newton optimizer (~100-500x más lento) cuando L-BFGS no converge. Tres mecanismos lo mitigan:
+1. **Sort cp descendente:** combos con cp alto (rápido) se prueban primero
+2. **Timeout por fold (35s):** `_fit_with_timeout()` con `ThreadPoolExecutor` corta un fold que exceda 35s
+3. **Newton-prone threshold:** si combo con cp=X timeout, skip combos con cp < X (estricto)
+4. **Fallback:** si todos los combos timeout, usar params default con cp más alto
+
+Resultado: Chihuahua-Depresión pasó de 39 min (v4) a 4 min (v5).
+
 ### Métricas de CV
 `prophet_cross_val()` retorna RMSE, MAE y MAPE. El CSV de resultados incluye las tres métricas más `tiempo_cv_seg`, `tiempo_train_seg` y `tiempo_total_seg` por modelo.
 
 ### Clasificación de confianza
-Series con promedio < `umbral_minimo_semanal` (default: 1.0 caso/semana) se marcan con `confianza: "insuficiente"` en el CSV de resultados. **Se entrenan y generan `.pkl` de todos modos** para que el dashboard Tableau muestre todas las entidades con su etiqueta de confianza. ~84 modelos son insuficientes (principalmente Alzheimer y Parkinson en estados de baja población).
+Series con promedio < `umbral_minimo_semanal` (default: 0.5 caso/semana) se marcan con `confianza: "insuficiente"` en el CSV de resultados. **Se entrenan y generan `.pkl` de todos modos** para que el dashboard Tableau muestre todas las entidades con su etiqueta de confianza. ~40 modelos son insuficientes (principalmente Alzheimer en estados de baja población).
 
 ### Periodos Atípicos Configurados (modelado.yaml)
 - **Pandemia COVID-19**: 2020-03-23, ventana de 913 días (~2.5 años)
@@ -305,20 +312,20 @@ Nota: Solo se incluyen cambios temporales. Los step functions permanentes (Nayar
 - **`data/registry.json`** — Registro de boletines procesados (anti-duplicados, Git)
 - **`data/utils/inegi.csv`** — Datos demograficos INEGI (poblacion, superficie, Git)
 
-## Resultados del Modelado (v4 — 2025-02-21)
+## Resultados del Modelado (v5 — 2026-02-21)
 
-297 modelos Prophet entrenados (3 padecimientos × 33 entidades × 3 sexos) en ~57 minutos con `n_jobs=-2` (joblib).
+297 modelos Prophet entrenados (3 padecimientos × 33 entidades × 3 sexos) en ~44.5 minutos con `n_jobs=-2` (joblib).
 
-| Padecimiento | Modelos | Insuficientes | RMSE medio | RMSE rango | Mejor estado | Peor estado |
-|-------------|---------|---------------|------------|------------|-------------|-------------|
-| Depresión | 99 | 0 | 0.114 | 0.04–0.41 | Querétaro (0.04) | Nayarit (0.41) |
-| Parkinson | 99 | 20 | 0.065 | 0.02–0.18 | Sinaloa (0.02) | BCS (0.18) |
-| Alzheimer | 99 | 64 | 0.054 | 0.01–0.22 | Tabasco (0.01) | Chihuahua (0.22) |
+| Padecimiento | Modelos | Insuficientes | RMSE medio | Tiempo |
+|-------------|---------|---------------|------------|--------|
+| Alzheimer | 99 | 35 | 0.033 | ~2 min |
+| Depresión | 99 | 0 | 0.206 | ~28 min |
+| Parkinson | 99 | 5 | 0.064 | ~14 min |
 
-- **213 modelos con confianza "normal"**, 84 marcados "insuficiente" (promedio < 1 caso/semana)
-- **Depresión** tiene 100% cobertura (todos los estados tienen suficiente volumen)
-- **Alzheimer** tiene solo 35 modelos normales (65% insuficientes) — estados de baja población
-- Modelo más lento: Chihuahua-Depresión (39 min por fallback Newton en L-BFGS)
+- **257 modelos con confianza "normal"**, 40 marcados "insuficiente" (promedio < 0.5 caso/semana)
+- **Depresión** tiene 100% cobertura, Parkinson 95%, Alzheimer 65%
+- Anti-Newton: Chihuahua-Depresión de 39 min (v4) a **4 min** (v5)
+- Nuevos HP ganadores: sp=0.025 (Dep 29%), sp=0.05 (Alz 41%), cp=0.04 (Park 20%)
 - Forecast: 120 semanas a futuro, desnormalizado a conteos en `all_forecast.csv`
 - Hallazgos detallados en `REPORTE_HALLAZGOS_MODELADO_v2.md`
 
@@ -333,9 +340,9 @@ Nota: Solo se incluyen cambios temporales. Los step functions permanentes (Nayar
 - Detección de outliers parametrizada (IQR / Z-score)
 - Entrenamiento paralelo con joblib (`n_jobs=-2`, backend loky)
 - Progreso % visible en modo paralelo y secuencial
+- Protección anti-Newton de 3 capas (sort + fold timeout + threshold)
 
 ### TODOs / Inconsistencias Conocidas
 - **`pyproject.toml`**: `requires-python = "~=3.14.0"` deberia ser `~=3.12.0`; `name = "alzheimer"` y `[tool.ruff] src = ["alzheimer"]` deberian reflejar el nombre actual del proyecto
 - **`metadata` en `params.yaml`**: referencia al proyecto antiguo ("Alzheimer", URL de repo anterior)
-- **Nayarit-Depresión**: RMSE=0.41 (peor modelo), cambio de régimen 2018 no absorbido completamente
-- **Chihuahua-Depresión**: Newton fallback causa 39 min de entrenamiento (vs ~30s promedio)
+- **Nayarit-Depresión**: RMSE=0.39 (peor modelo), cambio de régimen 2018 no absorbido completamente

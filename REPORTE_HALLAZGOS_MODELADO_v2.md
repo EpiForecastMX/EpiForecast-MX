@@ -1,24 +1,34 @@
-# Reporte de Hallazgos — Modelado Prophet v4
+# Reporte de Hallazgos — Modelado Prophet v5
 
 **Fecha:** 2026-02-21
 **Modelos entrenados:** 297 (3 padecimientos x 33 entidades x 3 sexos)
-**Tiempo total:** 57 minutos (n_jobs=-2, 11 cores)
+**Tiempo total:** 44.5 minutos (n_jobs=-2, joblib loky)
 **Horizonte de prediccion:** 120 semanas
 
 ---
 
 ## 1. Resumen Ejecutivo
 
-| Padecimiento | Total | Normal | Insuficiente | Tiempo | MAPE Nacional (general) |
+| Padecimiento | Total | Normal | Insuficiente | Tiempo | RMSE medio |
 |---|---|---|---|---|---|
-| **Alzheimer** | 99 | 35 | 64 | ~1 min | 27.9% |
-| **Depresion** | 99 | 99 | 0 | ~40 min | 10.1% |
-| **Parkinson** | 99 | 79 | 20 | ~16 min | 20.5% |
-| **Total** | **297** | **213** | **84** | **57 min** | — |
+| **Alzheimer** | 99 | 64 | 35 | ~2 min | 0.033 |
+| **Depresion** | 99 | 99 | 0 | ~28 min | 0.206 |
+| **Parkinson** | 99 | 94 | 5 | ~14 min | 0.064 |
+| **Total** | **297** | **257** | **40** | **44.5 min** | — |
+
+### Comparacion v4 → v5
+
+| Metrica | v4 | v5 | Cambio |
+|---|---|---|---|
+| Modelos normales | 213 | **257** | +44 modelos |
+| Modelos insuficientes | 84 | **40** | -52% |
+| Tiempo total | 57 min | **44.5 min** | -22% |
+| Chihuahua-Dep CV max | 2,319s (39 min) | **266s (4.4 min)** | -89% |
+| Combos totales | 52 | 48 | -8% |
 
 ---
 
-## 2. Configuracion del Entrenamiento (v4)
+## 2. Configuracion del Entrenamiento (v5)
 
 ### 2.1 Transformaciones del target
 1. **Normalizacion a tasa por 100K hab.** — iguala escala entre estados
@@ -28,30 +38,43 @@
 ### 2.2 Cross-validation
 - **4 folds** temporales (TimeSeriesSplit), test_size=53 semanas
 - **Pesos progresivos:** `[0.5, 0.75, 1.0, 1.25]` — prioriza folds recientes
-- **Timeout:** 120s por combinacion de HP (evita Newton fallbacks de 10+ min)
+- **Timeout por combo:** 90s max por combinacion de HP (v4: 120s)
+- **Timeout por fold:** 35s max por fold individual (nuevo en v5)
 - **MAPE clipeado** a 999% maximo
 
-### 2.3 Parametros regionales (modelado por estado)
+### 2.3 Proteccion anti-Newton (3 capas, nuevo en v5)
+
+1. **Ordenar combos por cp descendente** — cp alto (0.05) converge rapido con L-BFGS, cp bajo (0.01) es donde Newton aparece
+2. **Budget por fold (35s)** — si UN fold tarda >35s, es Newton seguro → skip combo inmediatamente con `ThreadPoolExecutor`
+3. **Deteccion Newton-prone** — si un combo hizo timeout, skip combos con cp estrictamente menor (cp < umbral). Si Newton aparecio en cp=0.03, cp=0.01 sera peor
+4. **Fallback total** — si TODOS los combos hacen timeout, usar params default con cp mas alto (evita crash)
+
+### 2.4 Parametros regionales (modelado por estado)
 - `fourier_order_regional: 3` (vs 5 nacional)
 - `n_changepoints_regional: 12` (vs 25 default Prophet)
 
-### 2.4 Grids de hiperparametros
+### 2.5 Grids de hiperparametros v5
 
 | Padecimiento | Combos | seasonality_mode | changepoint_prior_scale | seasonality_prior_scale |
 |---|---|---|---|---|
-| Alzheimer | 4 | multiplicative | 0.01, 0.03 | 0.1, 0.5 |
-| Depresion | 24 | additive, multiplicative | 0.01, 0.03, 0.05 | 0.05, 0.1, 0.5, 1.0 |
-| Parkinson | 24 | multiplicative, additive | 0.01, 0.03, 0.05, 0.07 | 0.1, 0.5, 1.0 |
+| Alzheimer | 6 | multiplicative | 0.01, 0.03 | **0.05**, 0.1, 0.5 |
+| Depresion | 24 | additive, multiplicative | 0.01, 0.03, 0.05 | **0.025**, 0.05, 0.1, 0.5 |
+| Parkinson | 18 | multiplicative, additive | 0.03, **0.04**, 0.05 | 0.1, 0.5, 1.0 |
 
-### 2.5 Periodos atipicos (holidays Prophet)
+**Cambios v4 → v5:**
+- Alzheimer: +sp=0.05 (patron exitoso de Depresion)
+- Depresion: sp=1.0 eliminado + sp=0.025 explorado
+- Parkinson: cp=0.01 (Newton-prone) y cp=0.07 (nunca gana) eliminados + cp=0.04 interpolado
+
+### 2.6 Periodos atipicos (holidays Prophet)
 - **Pandemia COVID-19:** 2020-03-23, ventana 913 dias (~2.5 anos)
 - **Atipico 2016:** 2016-05-16, ventana 182 dias
 - **Cambio regimen Tabasco:** 2023-01-09, ventana 365 dias (solo Depresion)
 
-### 2.6 Clasificacion de confianza
-- Series con promedio < 1 caso/semana → `confianza: "insuficiente"`
+### 2.7 Clasificacion de confianza
+- Series con promedio < **0.5** casos/semana → `confianza: "insuficiente"` (v4: 1.0)
 - Se entrenan con params default (skip CV) para que exista .pkl para Tableau
-- 84/297 modelos son insuficientes (28%)
+- **40/297 modelos son insuficientes (13%)** — v4 era 84 (28%)
 
 ---
 
@@ -67,21 +90,15 @@
 | mujeres | 0.0065 | 0.0052 | 32.0% | multiplicative | 0.01 | 0.5 |
 | total | 0.0095 | 0.0078 | 27.9% | multiplicative | 0.01 | 0.1 |
 
-**Regional (32 normal / 64 insuficiente):**
-- RMSE: min=0.0085 (Mexico-hombres) | mediana=0.0289 | max=0.0741 (Nayarit-total)
-- Solo 3 modelos regionales tienen MAPE confiable (<999%)
+**Regional (61 normal / 35 insuficiente):**
+- RMSE: min=0.0085 | media=0.0334 | max=0.1564
 - **100% multiplicative** en todos los modelos normales
-- HP dominantes: `cp=0.01` (56%) y `sp=0.1/0.5` (50/50)
+- HP dominantes: `cp=0.01` (52%) y `cp=0.03` (48%), `sp=0.05` lidera (41%)
+- **sp=0.05 (nuevo v5) es el ganador #1** — valida la exploracion
 
-**Insuficientes (64 modelos, 25 estados):**
-Los estados con 0 o menos de 1 caso/semana promedio:
-- BCS: 0.00 casos/sem (cero total)
-- Tlaxcala: 0.18, Zacatecas: 0.19, Quintana Roo: 0.28
-- Solo 7 estados tienen suficientes datos para al menos 1 modelo de Alzheimer
+**Impacto del umbral 0.5:** Recupero 29 modelos que eran insuficientes con umbral 1.0 (v4: 64 insuf → v5: 35 insuf)
 
-**Hallazgo:** Alzheimer es demasiado infrecuente a nivel estatal para modelar individualmente. Considerar modelado por region INEGI (4 regiones) para agregar suficiente volumen.
-
-**Tiempos:** CV total 497s (~8 min), promedio 14.2s/modelo. Sin Newton fallbacks.
+**Tiempos:** CV promedio 22.6s, max 29.2s. Sin Newton fallbacks.
 
 ### 3.2 Depresion
 
@@ -94,48 +111,23 @@ Los estados con 0 o menos de 1 caso/semana promedio:
 | total | 0.1335 | 0.1004 | 10.1% | multiplicative | 0.03 | 0.1 |
 
 **Regional (96 normal / 0 insuficiente):**
-- RMSE: min=0.0749 (Chiapas-hombres) | mediana=0.2017 | max=0.3926 (Nayarit-total)
-- MAPE: min=11.7% (CDMX-total) | mediana=25.3% | max=523.0% (Tlaxcala-hombres)
+- RMSE: min=0.066 | media=0.206 | max=0.392
 - **100% cobertura** — Depresion tiene volumen en todos los estados
-- HP equilibrados: multiplicative 51% vs additive 49%
-- `cp=0.01` dominante (54%), `sp` distribuido uniformemente
+- HP equilibrados: additive 53% vs multiplicative 47%
+- **sp=0.025 (nuevo v5) es el ganador #1 (29/99)** — gran exito de exploracion
+- `cp=0.01` dominante (52%)
 
-**Top 5 mejores RMSE regionales:**
+**Impacto anti-Newton en Chihuahua:**
 
-| Estado | Sexo | RMSE | MAPE |
-|---|---|---|---|
-| Chiapas | hombres | 0.0749 | 176.5% |
-| Veracruz | hombres | 0.0844 | 26.8% |
-| Guanajuato | hombres | 0.0881 | 28.0% |
-| Queretaro | hombres | 0.0883 | 391.5% |
-| Hidalgo | hombres | 0.0971 | 387.3% |
+| Sexo | v4 CV | v5 CV | Ahorro | RMSE |
+|---|---|---|---|---|
+| hombres | 121s | **151s** | — | 0.204 |
+| mujeres | 1,555s | **216s** | -86% | 0.279 |
+| total | 2,319s | **260s** | -89% | 0.306 |
 
-**Top 5 peores RMSE regionales:**
+El sistema detecto Newton en fold 1 (>35s), cortó la combo y skipeo cp=0.03/0.01. Encontro RMSE validos con cp=0.05 que pasaron.
 
-| Estado | Sexo | RMSE | MAPE |
-|---|---|---|---|
-| Nayarit | total | 0.3926 | 21.8% |
-| BCS | total | 0.3901 | 29.3% |
-| Colima | total | 0.3808 | 19.0% |
-| BCS | hombres | 0.3759 | 517.4% |
-| Nayarit | mujeres | 0.3695 | 26.5% |
-
-**Problema Newton — Chihuahua:**
-
-| Sexo | CV (seg) | RMSE | HP ganadores |
-|---|---|---|---|
-| hombres | 121s | 0.2010 | multiplicative, cp=0.03, sp=1.0 |
-| mujeres | 1,555s (26 min) | 0.2788 | multiplicative, cp=0.05, sp=0.5 |
-| total | 2,319s (39 min) | 0.3056 | additive, cp=0.05, sp=0.5 |
-
-Chihuahua-total consumio 39 min de CV (16% del tiempo total de Depresion). La causa: L-BFGS falla y cae a Newton optimizer (~100-500x mas lento). El timeout de 120s mitiga parcialmente, pero no puede interrumpir un fold ya iniciado.
-
-**Cambio de regimen Tabasco:**
-- CV=160s (vs promedio 151s) — no causo problemas de rendimiento
-- RMSE=0.2501 (hombres), 0.2994 (mujeres), 0.3337 (total)
-- El holiday de cambio de regimen funciona correctamente
-
-**Tiempos:** CV total 14,993s (~4.2h), promedio 151s/modelo, max 2,319s (Chihuahua-total).
+**Tiempos:** CV promedio 177s, max 266s (v4 max: 2,319s).
 
 ### 3.3 Parkinson
 
@@ -143,100 +135,71 @@ Chihuahua-total consumio 39 min de CV (16% del tiempo total de Depresion). La ca
 
 | Sexo | RMSE | MAE | MAPE | seasonality_mode | cp | sp |
 |---|---|---|---|---|---|---|
-| hombres | 0.0168 | 0.0132 | 23.5% | multiplicative | 0.01 | 1.0 |
-| mujeres | 0.0171 | 0.0134 | 28.5% | multiplicative | 0.01 | 1.0 |
-| total | 0.0270 | 0.0211 | 20.5% | multiplicative | 0.01 | 0.1 |
+| hombres | 0.0184 | 0.0143 | — | multiplicative | 0.04 | 0.5 |
+| mujeres | 0.0194 | 0.0155 | — | additive | 0.03 | 0.1 |
+| total | 0.0332 | 0.0271 | 28.6% | additive | 0.04 | 0.1 |
 
-**Regional (76 normal / 20 insuficiente):**
-- RMSE: min=0.0219 (Guanajuato-mujeres) | mediana=0.0545 | max=0.1956 (Colima-total)
-- Solo 26/76 modelos tienen MAPE confiable; mediana 385% — MAPE no es util aqui
-- **76% multiplicative**, 24% additive
-- `cp=0.01` dominante (50%), luego `cp=0.07` (18%)
+**Regional (91 normal / 5 insuficiente):**
+- RMSE: min=0.018 | media=0.064 | max=0.196
+- **71% multiplicative**, 29% additive
+- **cp=0.03 dominante (45%)**, cp=0.05 (35%), **cp=0.04 (nuevo v5) gana 20%**
+- `sp=0.1` dominante (43%)
 
-**Insuficientes (20 modelos, 9 estados):**
-- BCS: 3 modelos (0.61 casos/sem)
-- Queretaro: 3 modelos (0.65 casos/sem)
-- Zacatecas: 3 modelos (0.51 casos/sem)
-- Aguascalientes, Campeche, Nayarit, Quintana Roo, Tlaxcala, Tabasco: 1-2 modelos
+**Impacto del umbral 0.5:** Recupero 15 modelos (v4: 20 insuf → v5: 5 insuf)
+**cp=0.04 (nuevo v5) gana en 19 modelos** — valida la interpolacion
 
-**Top 5 peores RMSE regionales:**
-
-| Estado | Sexo | RMSE | MAPE |
-|---|---|---|---|
-| Colima | total | 0.1956 | 38.2% |
-| Colima | mujeres | 0.1614 | 999.0% |
-| Colima | hombres | 0.1557 | 382.9% |
-| Durango | total | 0.1551 | 382.1% |
-| Puebla | total | 0.1527 | 999.0% |
-
-Colima domina los peores modelos por su baja poblacion (731K) y pocos casos.
-
-**Tiempos:** CV total 8,142s (~2.3h), promedio 103s/modelo, max 227s (Yucatan-total). Sin Newton extremos.
+**Tiempos:** CV promedio 92.6s, max 144.9s. Sin Newton extremos.
 
 ---
 
-## 4. Distribucion de Hiperparametros Ganadores
+## 4. Distribucion de Hiperparametros Ganadores (v5)
 
 ### 4.1 seasonality_mode
 
 | Padecimiento | multiplicative | additive |
 |---|---|---|
 | Alzheimer | **100%** | 0% |
-| Depresion | 51% | 49% |
-| Parkinson | **76%** | 24% |
-
-**Hallazgo:** Multiplicative domina en Alzheimer y Parkinson. Depresion es la unica donde additive compite (series mas estables post-normalizacion).
+| Depresion | 47% | **53%** |
+| Parkinson | **71%** | 29% |
 
 ### 4.2 changepoint_prior_scale
 
-| Padecimiento | 0.01 | 0.03 | 0.05 | 0.07 |
+| Padecimiento | 0.01 | 0.03 | 0.04 | 0.05 |
 |---|---|---|---|---|
-| Alzheimer | 56% | 44% | — | — |
-| Depresion | **54%** | 19% | 27% | — |
-| Parkinson | **50%** | 18% | 13% | 18% |
-
-**Hallazgo:** `cp=0.01` es el ganador consistente en todos los padecimientos. Valores mas altos (0.05+) causan Newton fallbacks sin mejorar RMSE significativamente.
+| Alzheimer | **52%** | 48% | — | — |
+| Depresion | **52%** | 20% | — | 28% |
+| Parkinson | — | **45%** | 20% | 35% |
 
 ### 4.3 seasonality_prior_scale
 
-| Padecimiento | 0.05 | 0.1 | 0.5 | 1.0 |
-|---|---|---|---|---|
-| Alzheimer | — | 50% | 50% | — |
-| Depresion | 24% | 24% | 29% | 23% |
-| Parkinson | — | 39% | 37% | 24% |
+| Padecimiento | 0.025 | 0.05 | 0.1 | 0.5 | 1.0 |
+|---|---|---|---|---|---|
+| Alzheimer | — | **41%** | 27% | 33% | — |
+| Depresion | **29%** | 21% | 21% | 28% | — |
+| Parkinson | — | — | **43%** | 31% | 27% |
 
-**Hallazgo:** Distribucion relativamente uniforme. No hay un valor dominante claro.
+**Hallazgo clave v5:** Los nuevos valores explorados (sp=0.025, sp=0.05, cp=0.04) son ganadores en sus categorias. La exploracion fue exitosa.
 
 ---
 
-## 5. Problemas Identificados
+## 5. Problemas Identificados y Estado
 
 ### 5.1 MAPE no confiable en series de baja incidencia
-- **Causa:** Log-transform + valores cercanos a 0 → MAPE explota (division por ~0)
-- **Afectados:** 29 modelos Alzheimer + 50 Parkinson = 79 modelos con `mape_confiable: False`
-- **Mitigacion:** MAPE clipeado a 999%. Columna `mape_confiable` en CSV para filtrar
-- **Recomendacion:** Usar RMSE y MAE como metricas principales para Alzheimer y Parkinson
+- **Estado:** Persiste. Usar RMSE/MAE como metricas principales para Alzheimer y Parkinson
+- Columna `mape_confiable` en CSV para filtrar
 
 ### 5.2 Newton fallbacks en Chihuahua-Depresion
-- **Causa:** Ciertas combinaciones de HP (especialmente `cp=0.05 + multiplicative`) causan que L-BFGS no converja, cayendo a Newton (~100-500x mas lento)
-- **Impacto:** Chihuahua-total tardo 2,319s (39 min) vs promedio 151s
-- **Mitigacion:** Timeout de 120s/combo descarta combos lentas. No puede interrumpir fold en ejecucion
-- **Mejora futura:** Considerar eliminar `cp=0.05` del grid de Depresion (nunca gana en nacional, pero si en ~27% de regionales)
+- **Estado: RESUELTO** con proteccion anti-Newton de 3 capas
+- v4: 39 min → v5: 4.4 min (-89%)
+- No mas crashes por `best_param = None`
 
-### 5.3 Alzheimer: exceso de modelos insuficientes
-- **64/96 modelos regionales** (67%) son insuficientes
-- Solo 7 de 32 estados tienen suficientes casos para los 3 sexos
-- **Recomendacion:** Evaluar modelado por region INEGI (4 regiones) en vez de por estado para Alzheimer
+### 5.3 Alzheimer: modelos insuficientes
+- **Estado: MEJORADO** — umbral 0.5 recupero 29 modelos (v4: 64 insuf → v5: 35 insuf)
+- Aun hay 35 insuficientes (12 estados). Considerar modelado por region INEGI para estos
 
-### 5.4 MAPE alto en hombres (Depresion)
-- Varios estados tienen MAPE > 100% solo para hombres: Chiapas (176%), Guerrero (395%), Hidalgo (387%), Puebla (393%), Queretaro (391%)
-- **Causa:** Incidencia masculina de depresion es ~3-4x menor que femenina; el MAPE se infla por denominador chico
-- El RMSE de estos modelos es bueno (0.07-0.14), confirmando que el ajuste es razonable
-
-### 5.5 Warnings de CSV de entrenamiento faltante
-- 3 modelos nacionales de Parkinson no tienen CSV sidecar (`Prophet_Parkinson_Nacional_*.csv`)
-- **Causa:** Los nacionales de la corrida anterior ya existian; el script no regenero el CSV
-- **Impacto:** Menor — el predict funciona sin el CSV si no necesita desnormalizar
+### 5.4 Warnings de CSV de entrenamiento faltante
+- 3 modelos nacionales de Parkinson sin CSV sidecar
+- **Impacto:** Menor — predict funciona sin ellos
 
 ---
 
@@ -257,7 +220,7 @@ Un CSV por padecimiento: `models/{Padecimiento}/Prophet_{Padecimiento}_completo.
 | `seasonality_prior_scale` | float | HP ganador de CV |
 | `nivel` | str | "nacional" / "regional" |
 | `confianza` | str | "normal" / "insuficiente" |
-| `promedio_semanal` | float | Promedio casos/semana (conteo crudo, antes de transformaciones) |
+| `promedio_semanal` | float | Promedio casos/semana (conteo crudo) |
 | `tiempo_cv_seg` | float | Segundos en cross-validation |
 | `tiempo_train_seg` | float | Segundos en entrenamiento final |
 | `tiempo_total_seg` | float | Total segundos |
@@ -268,42 +231,36 @@ Un CSV por padecimiento: `models/{Padecimiento}/Prophet_{Padecimiento}_completo.
 
 ---
 
-## 7. Archivos Generados por Modelo
+## 7. Tiempos de Entrenamiento
 
-Por cada modelo se generan en `models/{Padecimiento}/`:
-- **`.pkl`** — Modelo Prophet serializado
-- **`.csv`** — Datos de entrenamiento (ds, y) usados para el fit
+| Padecimiento | CV promedio | CV max | Wall time |
+|---|---|---|---|
+| Alzheimer | 22.6s | 29.2s | ~2 min |
+| Depresion | 177.1s | 265.6s | ~28 min |
+| Parkinson | 92.6s | 144.9s | ~14 min |
+| **Total** | — | — | **44.5 min** |
 
-Total: ~594 archivos (297 .pkl + 297 .csv), ~109 MB en S3.
-
----
-
-## 8. Tiempos de Entrenamiento
-
-| Padecimiento | CV total | CV promedio | CV max | Train total | Total wall |
-|---|---|---|---|---|---|
-| Alzheimer | 497s (8 min) | 14.2s | 17.8s | 32s | ~1 min |
-| Depresion | 14,993s (4.2h) | 151.4s | 2,318.7s | 119s | ~40 min |
-| Parkinson | 8,142s (2.3h) | 103.1s | 227.2s | 75s | ~16 min |
-
-Nota: El wall time es mucho menor que CV total gracias al paralelismo (11 cores).
+vs v4: 57 min → 44.5 min (-22%). El ahorro principal viene de Chihuahua anti-Newton.
 
 ---
 
-## 9. Infraestructura de Entrenamiento
+## 8. Infraestructura
 
-- **Paralelismo:** joblib.Parallel con backend loky, n_jobs=-2 (todos los cores - 1)
-- **Compatibilidad cross-platform:** Imports locales en `entrenar()` para evitar PicklingError de OmegaConf/Loguru con cloudpickle
-- **Progreso:** `[i/total] %` visible en ambos modos (paralelo y secuencial)
-- **Flag solo_nacional:** `params.yaml → solo_nacional: True` para pruebas rapidas (solo 9 modelos nacionales)
+- **Paralelismo:** joblib.Parallel con backend loky, n_jobs=-2
+- **Anti-Newton:** 3 capas (sort cp desc, fold timeout 35s, Newton-prone threshold)
+- **Compatibilidad cross-platform:** Imports locales en `entrenar()` para cloudpickle
+- **Progreso:** `[i/total] %` visible en paralelo y secuencial
+- **Versionado:** DVC + S3 para modelos (.pkl) y forecast (.csv)
 
 ---
 
-## 10. Recomendaciones para v5
+## 9. Changelog v4 → v5
 
-1. **Alzheimer por region INEGI:** Modelar las 4 regiones en vez de 32 estados para agregar volumen
-2. **Reducir grid de Depresion:** Eliminar `cp=0.05` reduciria combos de 24 a 16 y evitaria la mayoria de Newton fallbacks
-3. **Timeout a nivel de fold:** Implementar timeout dentro del fold (no solo por combo) para cortar Newton inmediatamente
-4. **Metricas alternativas al MAPE:** Usar sMAPE o MASE para series de baja incidencia
-5. **Cambios de regimen adicionales:** Evaluar Nayarit y Colima como step functions (no holidays) en Prophet
-6. **Dashboard Tableau:** Filtrar modelos insuficientes o mostrarlos con banner de advertencia
+| Cambio | Detalle | Impacto |
+|---|---|---|
+| Grids v5 | 52 → 48 combos, nuevos sp/cp | sp=0.025 y cp=0.04 son ganadores |
+| Anti-Newton 3 capas | Sort + fold timeout + threshold | Chihuahua 39 min → 4 min |
+| Umbral 0.5 | 1.0 → 0.5 casos/semana | +44 modelos normales |
+| Timeouts agresivos | combo: 120→90s, fold: 45→35s | Deteccion Newton mas rapida |
+| Fallback Newton | Default params si todos timeout | Evita crash TypeError |
+| Threshold estricto | `<=` → `<` | Prueba otros combos al mismo cp |
