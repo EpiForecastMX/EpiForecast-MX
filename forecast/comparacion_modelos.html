@@ -488,17 +488,15 @@ tbody tr:hover{background:var(--cream-pale)}
   <h2 class="section-title reveal">La Batalla: Cara a Cara</h2>
   <p class="section-sub reveal">258 series, 6 modelos. &iquest;Quien gana mas peleas?</p>
 
-  <div class="charts-row reveal">
-    <div class="chart-wrap">
-      <h3>Victorias por modelo</h3>
-      <p class="chart-sub">Numero de series donde cada modelo obtuvo el menor MASE</p>
-      <canvas id="chartWins" style="max-height:500px;min-height:360px"></canvas>
-    </div>
-    <div class="chart-wrap">
-      <h3>Mediana MASE por modelo</h3>
-      <p class="chart-sub">Menor es mejor. Linea roja = 1.0 (umbral naive)</p>
-      <canvas id="chartMASE"></canvas>
-    </div>
+  <div class="chart-wrap reveal" style="margin-top:2rem">
+    <h3>Victorias por modelo</h3>
+    <p class="chart-sub">Numero de series donde cada modelo obtuvo el menor MASE</p>
+    <canvas id="chartWins" style="max-height:400px"></canvas>
+  </div>
+  <div class="chart-wrap reveal" style="margin-top:2rem">
+    <h3>Mediana MASE por modelo</h3>
+    <p class="chart-sub">Menor es mejor. Linea roja = 1.0 (umbral naive)</p>
+    <canvas id="chartMASE"></canvas>
   </div>
 
   <div class="callout-gold reveal" style="margin-top:2rem">
