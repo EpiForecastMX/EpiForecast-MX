@@ -206,6 +206,13 @@ report:
 	$(PYTHON_INTERPRETER) -m scripts.genera_reporte
 	@echo ">>> Reporte disponible en forecast/reporte_resultados.html"
 
+## Generar bitacora HTML del modelado Prophet v1-v6
+.PHONY: bitacora
+bitacora:
+	@echo ">>> Generando bitacora del modelado..."
+	$(PYTHON_INTERPRETER) -m scripts.genera_bitacora
+	@echo ">>> Bitacora disponible en forecast/bitacora_modelado.html"
+
 ## Versionar forecast con DVC y subir a S3
 .PHONY: forecast-push
 forecast-push:
