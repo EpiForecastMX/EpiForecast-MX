@@ -340,6 +340,7 @@ Nota: Solo se incluyen cambios temporales. Los step functions permanentes (Nayar
 - **`forecast/index.html`** — Galería HTML interactiva para visualizar los 312 PNGs de pronóstico (filtros, lightbox, búsqueda). Abrir en navegador: `open forecast/index.html`
 - **`forecast/reporte_resultados.html`** — Reporte HTML interactivo de resultados del modelado (Chart.js, branding IMSS, 7 secciones). Generado con `make report`
 - **`forecast/bitacora_modelado.html`** — Bitácora HTML del recorrido completo del modelado Prophet v1-v6 (12 secciones, 11 charts Chart.js, timeline CSS, branding IMSS). Generado con `make bitacora`
+- **`forecast/comparacion_modelos.html`** — Reporte interactivo: comparación de 6 modelos (1,548 trials SageMaker). Generado externamente
 - **`data/registry.json`** — Registro de boletines procesados (anti-duplicados, Git)
 - **`data/utils/inegi.csv`** — Datos demograficos INEGI (poblacion, superficie, Git)
 
@@ -361,6 +362,37 @@ Nota: Solo se incluyen cambios temporales. Los step functions permanentes (Nayar
 - **312 gráficos** de pronóstico: 288 estatales + 9 nacionales + 15 regionales
 - **Galería HTML** interactiva: `forecast/index.html` (filtros por padecimiento/nivel/sexo, lightbox, búsqueda)
 - Hallazgos detallados en `REPORTE_HALLAZGOS_MODELADO_v3.md`
+
+### Benchmark SageMaker v5-full (2026-02-22)
+
+Comparación de 6 algoritmos en AWS SageMaker para validar Prophet como modelo de producción.
+
+| Métrica | Valor |
+|---------|-------|
+| Trials totales | 1,548 (6 modelos × 258 series) |
+| Duración | 9.8 horas (ml.m5.xlarge) |
+| Costo | ~$9.80 USD |
+| Series evaluadas | 258 de 297 (87%) — 39 omitidas por incidencia < 0.5/semana |
+
+| Modelo | Wins | % | MASE mediana |
+|--------|------|---|-------------|
+| **Prophet** | 61 | 23.6% | 0.745 |
+| DeepAR | 50 | 19.4% | 0.748 |
+| LightGBM+LSTM | 49 | 19.0% | 0.748 |
+| TFT | 37 | 14.3% | 0.773 |
+| Ridge | 33 | 12.8% | 0.822 |
+| XGBoost | 28 | 10.9% | 0.832 |
+
+**Hallazgos clave:**
+- Prophet consistente: 78% dentro del 20% del ganador, pero no dominante (23.6%)
+- Deep learning colectivamente gana 53% de series (DeepAR + LightGBM+LSTM + TFT)
+- Por padecimiento: Prophet domina Alzheimer (33%), empata en Depresión (26%), pierde en Parkinson (15% vs DeepAR 26%)
+- Prophet consume 68% del tiempo de cómputo (6.7h de 9.8h)
+
+**Archivos del benchmark:**
+- `Sagemaker results-v5-full/` — Excel, JSON HPs, CSV 1548 trials, reporte MD
+- `forecast/comparacion_modelos.html` — Reporte interactivo (19 charts Chart.js, tablas con filtros)
+- Fork SageMaker: `claude/EpiForecast-MX` con `aws/sagemaker_launcher.py`, Dockerfile, `config/experimentos.yaml`
 
 ## Estado Actual del Pipeline
 

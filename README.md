@@ -627,6 +627,26 @@ Esto descarga automaticamente los modelos y forecasts mas recientes desde S3.
 - Tiempo total: **~45 minutos** con n_jobs=-2 (joblib loky)
 - Resultados detallados en `REPORTE_HALLAZGOS_MODELADO_v3.md`
 
+### Benchmark SageMaker (6 modelos, 1,548 trials)
+
+Para validar Prophet como modelo de producción, se ejecutó un benchmark masivo en AWS SageMaker comparando 6 algoritmos sobre 258 series temporales.
+
+| Modelo | Wins | % | MASE mediana |
+|--------|------|---|-------------|
+| **Prophet** | 61 | 23.6% | 0.745 |
+| DeepAR | 50 | 19.4% | 0.748 |
+| LightGBM+LSTM | 49 | 19.0% | 0.748 |
+| TFT | 37 | 14.3% | 0.773 |
+| Ridge | 33 | 12.8% | 0.822 |
+| XGBoost | 28 | 10.9% | 0.832 |
+
+- **1,548 trials** en 9.8 horas (ml.m5.xlarge, ~$10 USD)
+- Prophet consistente (78% dentro del 20% del ganador) pero no dominante
+- Deep learning colectivamente gana 53% de series
+- Por padecimiento: Prophet domina Alzheimer (33%), empata en Depresión (26%), pierde en Parkinson (15%)
+- Reporte interactivo: `forecast/comparacion_modelos.html` (19 charts Chart.js)
+- Resultados completos: `Sagemaker results-v5-full/`
+
 ### Reporte HTML de Resultados
 
 El archivo `forecast/reporte_resultados.html` es un reporte interactivo self-contained que presenta los resultados generales del modelado Prophet. Se genera con `make report` a partir de `forecast/all_forecast.csv`.
