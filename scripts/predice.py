@@ -232,8 +232,10 @@ def main():
     out = pd.concat(frames, ignore_index=True)
     out = estandarizar_valores(out)
     
+    logger.info(">>> Forecast: Cargando métricas del modelo desde *_completo.csv (rmse, mae, mape, mase, confianza, normalizado, población)")
     met = _cargar_metricas_completos(base_models)
 
+    logger.info(">>> Forecast: Seccionando métricas en ORIGINAL y USADO")
     # 1) Trae valores del modelo ORIGINAL
     met_orig = met.rename(columns={
         "rmse": "rmse_original",
@@ -262,6 +264,7 @@ def main():
         "normalizado": "normalizado_usado",
         "poblacion": "poblacion_usado",
     })
+    logger.info(">>> Forecast: Procesando merge de métricas modelo ORIGINAL y modelo USADO desde *_completo.csv")
     out = out.merge(
         met_used,
         how="left",
@@ -269,6 +272,8 @@ def main():
         right_on="archivo_modelo",
         validate="m:1",
     ).drop(columns=["archivo_modelo"])
+    logger.info(">>> Forecast: Listo. yhat generado (directo/fallback) + métricas del modelo original y del modelo usado")
+    logger.info(">>> Forecast: Detalles | filas={} | columnas={} | yhat={} | rmse_usado={} | mae_usado={} | mape_usado={} | mase_usado={} | conf_orig_nulls={} | conf_usado_nulls={}",len(out),out.shape[1],out["yhat"].notna().sum(),out["rmse_usado"].notna().sum(),out["mae_usado"].notna().sum(),out["mape_usado"].notna().sum(),out["mase_usado"].notna().sum(),out["confianza_original"].isna().sum(),out["confianza_usado"].isna().sum(),)
 
     out.to_csv(out_file, index=False)
 
