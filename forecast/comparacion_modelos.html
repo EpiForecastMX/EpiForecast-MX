@@ -769,17 +769,33 @@ tbody tr:hover{background:var(--cream-pale)}
   <h2 class="section-title reveal">Ranking Completo</h2>
   <p class="section-sub reveal">258 series, mostrando el mejor modelo de cada una.</p>
 
-  <div class="charts-row reveal">
-    <div class="chart-wrap">
-      <h3>Top 10 &mdash; Mejores series</h3>
-      <p class="chart-sub">Series con MASE más bajo (mejor predicción)</p>
-      <canvas id="chartTop10"></canvas>
+  <div class="chart-wrap reveal" style="margin-top:2rem">
+    <h3>Top 10 &mdash; Mejores series</h3>
+    <p class="chart-sub">Series con MASE más bajo (mejor predicción). Cada par de barras muestra el modelo ganador (color sólido) vs Prophet (semitransparente).</p>
+    <div style="display:flex;flex-wrap:wrap;gap:.6rem .8rem;margin-bottom:1rem">
+      <span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:600"><span style="width:10px;height:10px;border-radius:50%;background:#00524E;display:inline-block"></span> Prophet</span>
+      <span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:600"><span style="width:10px;height:10px;border-radius:50%;background:#9B2242;display:inline-block"></span> TFT</span>
+      <span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:600"><span style="width:10px;height:10px;border-radius:50%;background:#B58500;display:inline-block"></span> DeepAR</span>
+      <span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:600"><span style="width:10px;height:10px;border-radius:50%;background:#2E7D32;display:inline-block"></span> LightGBM+LSTM</span>
+      <span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:600"><span style="width:10px;height:10px;border-radius:50%;background:#E65100;display:inline-block"></span> XGBoost</span>
+      <span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:600"><span style="width:10px;height:10px;border-radius:50%;background:#5C6BC0;display:inline-block"></span> Ridge</span>
+      <span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;color:var(--cool-gray)">| Barra transparente = Prophet</span>
     </div>
-    <div class="chart-wrap">
-      <h3>Bottom 10 &mdash; Peores series</h3>
-      <p class="chart-sub">Series donde ninguno de los 6 modelos rinde bien</p>
-      <canvas id="chartBottom10"></canvas>
+    <canvas id="chartTop10" style="min-height:480px;max-height:560px"></canvas>
+  </div>
+  <div class="chart-wrap reveal" style="margin-top:2rem">
+    <h3>Bottom 10 &mdash; Peores series</h3>
+    <p class="chart-sub">Series donde ninguno de los 6 modelos rinde bien. MASE &gt; 1.0 = peor que el baseline naive.</p>
+    <div style="display:flex;flex-wrap:wrap;gap:.6rem .8rem;margin-bottom:1rem">
+      <span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:600"><span style="width:10px;height:10px;border-radius:50%;background:#00524E;display:inline-block"></span> Prophet</span>
+      <span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:600"><span style="width:10px;height:10px;border-radius:50%;background:#9B2242;display:inline-block"></span> TFT</span>
+      <span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:600"><span style="width:10px;height:10px;border-radius:50%;background:#B58500;display:inline-block"></span> DeepAR</span>
+      <span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:600"><span style="width:10px;height:10px;border-radius:50%;background:#2E7D32;display:inline-block"></span> LightGBM+LSTM</span>
+      <span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:600"><span style="width:10px;height:10px;border-radius:50%;background:#E65100;display:inline-block"></span> XGBoost</span>
+      <span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;font-weight:600"><span style="width:10px;height:10px;border-radius:50%;background:#5C6BC0;display:inline-block"></span> Ridge</span>
+      <span style="display:inline-flex;align-items:center;gap:.3rem;font-size:.78rem;color:var(--cool-gray)">| Barra transparente = Prophet</span>
     </div>
+    <canvas id="chartBottom10" style="min-height:480px;max-height:560px"></canvas>
   </div>
 
   <div class="table-wrapper reveal" style="margin-top:2rem">
@@ -1466,37 +1482,64 @@ new Chart(document.getElementById('chartEfficiency'),{
 });
 
 // ============ CHART: TOP 10 ============
+function top10Label(t){ return t.pad.substring(0,3)+' — '+(t.nivel||'').replace(/_/g,' ')+' ('+t.sexo+')'; }
 new Chart(document.getElementById('chartTop10'),{
   type:'bar',
   data:{
-    labels:TOP10.map(t=>t.nivel.replace(/_/g,' ')),
+    labels:TOP10.map(top10Label),
     datasets:[
-      {label:'Ganador',data:TOP10.map(t=>t.best_mase),backgroundColor:TOP10.map(t=>modelColorAlpha(t.best_model,0.8)),borderColor:TOP10.map(t=>modelColor(t.best_model)),borderWidth:2,borderRadius:4,barPercentage:0.7},
-      {label:'Prophet',data:TOP10.map(t=>t.prophet_mase),backgroundColor:'rgba(0,82,78,0.2)',borderColor:'#00524E',borderWidth:2,borderRadius:4,barPercentage:0.7}
+      {label:'Ganador',data:TOP10.map(t=>t.best_mase),backgroundColor:TOP10.map(t=>modelColorAlpha(t.best_model,0.85)),borderColor:TOP10.map(t=>modelColor(t.best_model)),borderWidth:2,borderRadius:6,barPercentage:0.82,categoryPercentage:0.85},
+      {label:'Prophet',data:TOP10.map(t=>t.prophet_mase),backgroundColor:'rgba(0,82,78,0.15)',borderColor:'#00524E',borderWidth:2,borderRadius:6,borderDash:[4,3],barPercentage:0.82,categoryPercentage:0.85}
     ]
   },
   options:{
-    indexAxis:'y',responsive:true,
-    plugins:{legend:{position:'top'},datalabels:{display:false}},
-    scales:{x:{title:{display:true,text:'MASE'},grid:{color:'rgba(0,0,0,.05)'}},y:{grid:{display:false},ticks:{font:{size:10}}}}
-  }
+    indexAxis:'y',responsive:true,maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      datalabels:{anchor:'end',align:'right',font:{family:'JetBrains Mono',size:11,weight:500},color:function(ctx){return ctx.datasetIndex===0?modelColor(TOP10[ctx.dataIndex].best_model):'#00524E'},
+        formatter:function(v,ctx){
+          if(ctx.datasetIndex===0) return TOP10[ctx.dataIndex].best_model+' '+v.toFixed(3);
+          return v.toFixed(3);
+        }
+      }
+    },
+    scales:{
+      x:{title:{display:true,text:'MASE',font:{size:12,weight:600}},grid:{color:'rgba(0,0,0,.08)'},ticks:{font:{size:11}}},
+      y:{grid:{display:false},ticks:{font:{size:12,weight:500},padding:4}}
+    }
+  },
+  plugins:[ChartDataLabels]
 });
 
 // ============ CHART: BOTTOM 10 ============
 new Chart(document.getElementById('chartBottom10'),{
   type:'bar',
   data:{
-    labels:BOTTOM10.map(t=>(t.nivel||'').replace(/_/g,' ')),
+    labels:BOTTOM10.map(top10Label),
     datasets:[
-      {label:'Mejor modelo',data:BOTTOM10.map(t=>t.best_mase),backgroundColor:BOTTOM10.map(t=>modelColorAlpha(t.best_model,0.8)),borderColor:BOTTOM10.map(t=>modelColor(t.best_model)),borderWidth:2,borderRadius:4,barPercentage:0.7},
-      {label:'Prophet',data:BOTTOM10.map(t=>t.prophet_mase),backgroundColor:'rgba(0,82,78,0.2)',borderColor:'#00524E',borderWidth:2,borderRadius:4,barPercentage:0.7}
+      {label:'Mejor modelo',data:BOTTOM10.map(t=>t.best_mase),backgroundColor:BOTTOM10.map(t=>modelColorAlpha(t.best_model,0.85)),borderColor:BOTTOM10.map(t=>modelColor(t.best_model)),borderWidth:2,borderRadius:6,barPercentage:0.82,categoryPercentage:0.85},
+      {label:'Prophet',data:BOTTOM10.map(t=>t.prophet_mase),backgroundColor:'rgba(0,82,78,0.15)',borderColor:'#00524E',borderWidth:2,borderRadius:6,borderDash:[4,3],barPercentage:0.82,categoryPercentage:0.85}
     ]
   },
   options:{
-    indexAxis:'y',responsive:true,
-    plugins:{legend:{position:'top'},datalabels:{display:false}},
-    scales:{x:{title:{display:true,text:'MASE'},min:1.0,grid:{color:'rgba(0,0,0,.05)'}},y:{grid:{display:false},ticks:{font:{size:10}}}}
-  }
+    indexAxis:'y',responsive:true,maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      datalabels:{anchor:'end',align:'right',font:{family:'JetBrains Mono',size:11,weight:500},color:function(ctx){return ctx.datasetIndex===0?modelColor(BOTTOM10[ctx.dataIndex].best_model):'#00524E'},
+        formatter:function(v,ctx){
+          if(ctx.datasetIndex===0) return BOTTOM10[ctx.dataIndex].best_model+' '+v.toFixed(3);
+          return v.toFixed(3);
+        }
+      }
+    },
+    scales:{
+      x:{title:{display:true,text:'MASE',font:{size:12,weight:600}},grid:{color:'rgba(0,0,0,.08)'},ticks:{font:{size:11}},
+        annotation:{annotations:{baseline:{type:'line',xMin:1,xMax:1,borderColor:'#b91c1c',borderWidth:2,borderDash:[6,3],label:{display:true,content:'Naive = 1.0',position:'start',backgroundColor:'#b91c1c',font:{size:9}}}}}
+      },
+      y:{grid:{display:false},ticks:{font:{size:12,weight:500},padding:4}}
+    }
+  },
+  plugins:[ChartDataLabels]
 });
 
 // ============ TABLE ============
