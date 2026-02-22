@@ -3,7 +3,7 @@
 **Fecha:** 2026-02-21
 **Modelos entrenados:** 297 estatales + fallback regionales (modo hibrido)
 **Tiempo total estimado:** ~45 minutos (n_jobs=-2, joblib loky)
-**Horizonte de prediccion:** 120 semanas
+**Horizonte de prediccion:** 52 semanas
 
 ---
 
