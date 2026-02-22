@@ -249,7 +249,6 @@ class GraficosHelper:
         out_mask = (y < Q1 - 1.5 * IQR) | (y > Q3 + 1.5 * IQR)
         outliers = serie[out_mask]
         fecha_max = serie["ds"].max()
-        y_max = serie["y"].max()
 
         fig, ax = plt.subplots(figsize=(17, 5.5))
 
@@ -305,10 +304,24 @@ class GraficosHelper:
                 label=f"▲ Outliers detectados (IQR) — n={len(outliers)}",
             )
 
-        # ── 6. DIVISOR DATOS / PRONÓSTICO ──────────────────────────────────────
+        # ── 6. DIVISOR TRAIN / TEST ─────────────────────────────────────────────
+        fecha_corte = pd.Timestamp(conf["FECHA_CORTE_ENTRENAMIENTO"])
+        ax.axvline(fecha_corte, color=self.conf_paleta["cool_gray"], ls="--", lw=1.0, alpha=0.6)
+        ax.text(fecha_corte, 0.90, "← [CV] Entrenamiento ",
+                fontsize=8, color=self.conf_paleta["cool_gray"], va="top", ha="right",
+                transform=ax.get_xaxis_transform())
+        ax.text(fecha_corte, 0.90, " Prueba [CV] →",
+                fontsize=8, color=self.conf_paleta["cool_gray"], va="top", ha="left",
+                transform=ax.get_xaxis_transform())
+
+        # ── 7. DIVISOR DATOS / PRONÓSTICO ──────────────────────────────────────
         ax.axvline(fecha_max, color=self.conf_paleta["cool_gray"], ls=":", lw=1.2, alpha=0.7)
-        ax.text(fecha_max, y_max * 0.03, "  ← Datos │ Pronóstico →",
-                fontsize=8, color=self.conf_paleta["cool_gray"], va="bottom")
+        ax.text(fecha_max, 0.97, "← Entrenamiento ",
+                fontsize=8, color=self.conf_paleta["cool_gray"], va="top", ha="right",
+                transform=ax.get_xaxis_transform())
+        ax.text(fecha_max, 0.97, " Pronóstico →",
+                fontsize=8, color=self.conf_paleta["cool_gray"], va="top", ha="left",
+                transform=ax.get_xaxis_transform())
         
 
         # ── Formato ────────────────────────────────────────────────────────────

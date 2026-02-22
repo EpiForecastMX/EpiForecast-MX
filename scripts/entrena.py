@@ -101,7 +101,7 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False,
         pickle.dump(modelo, f)
 
     ruta_csv = os.path.join(ruta_padecimiento, nombre_modelo.replace(".pkl", ".csv"))
-    stp.train_data.to_csv(ruta_csv, index=False, encoding="utf-8")
+    stp.serie.to_csv(ruta_csv, index=False, encoding="utf-8")
 
     fila["archivo_modelo"] = nombre_modelo
     mase_str = f"{metrics['mase']:.3f}" if metrics.get("mase") is not None else "N/A"
