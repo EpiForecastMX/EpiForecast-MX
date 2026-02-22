@@ -82,10 +82,10 @@ peridos_atipicos:
     lower_window: 0
     upper_window: 913  # dias impacto pandemia 2.5 * 365.25
 
-  - holiday: atipico_2016
-    ds: "2016-05-16"
-    lower_window: 0
-    upper_window: 182
+  #- holiday: atipico_2016
+  #  ds: "2016-05-16"
+  #  lower_window: 0
+  #  upper_window: 182
 
 mapeo_columnas:
   incrementos_hombres: hombres 

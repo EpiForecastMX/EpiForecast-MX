@@ -77,6 +77,14 @@ def generar_graficos_pronostico() -> None:
         serie["ds"] = pd.to_datetime(serie["ds"], errors="coerce")
         serie = serie.dropna(subset=["ds"])
 
+        # y_original contiene los conteos crudos (antes de normalizar y log-transform),
+        # misma escala que yhat en all_forecast.csv (conteos desnormalizados).
+        # Si no existe (modelos sin normalización), se usa y directamente.
+        if "y_original" in serie.columns:
+            serie = serie[["ds", "y_original"]].rename(columns={"y_original": "y"})
+        else:
+            serie = serie[["ds", "y"]]
+
         # Carpeta de salida: forecast/{padecimiento}/{entidad | Nacional}/
         nivel_dir = entidad.replace(" ", "_") if entidad else "Nacional"
         carpeta = forecast_root / padecimiento / nivel_dir
@@ -105,7 +113,6 @@ def generar_graficos_pronostico() -> None:
         logger.info("[{}/{}] Guardado: {}", i + 1, total, Path(ruta).name)
 
     logger.success("Gráficos generados: {} → {}", total, forecast_root)
-
 
 class ForecastModelLoader:
 

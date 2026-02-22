@@ -269,8 +269,9 @@ class GraficosHelper:
          # ── 1. FRANJA COVID-19 ──────────────────────────────────────────────────
         ax.axvspan(covid_ini, covid_fin, alpha=0.10, color="#E53935", zorder=0)
         ax.annotate(
-            "COVID-19", xy=(mid_covid, y_max * 0.96),
-            fontsize=9, fontweight="bold", color="#C62828", ha="center",
+            "COVID-19", xy=(mid_covid, 0.97),
+            xycoords=("data", "axes fraction"),
+            fontsize=9, fontweight="bold", color="#C62828", ha="center", va="top",
             bbox=dict(boxstyle="round,pad=0.3", fc="white", ec="#C62828", alpha=0.85, lw=1.2),
         )
 
@@ -328,4 +329,3 @@ class GraficosHelper:
         plt.close(fig)
 
         return ruta
-
