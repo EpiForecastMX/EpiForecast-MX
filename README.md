@@ -254,7 +254,7 @@ Todos los comandos están definidos en el `Makefile` de la raíz del proyecto. E
 | Comando | Descripción |
 |---------|-------------|
 | `make train` | Entrena modelo Prophet con CV temporal (tasa por 100K, por estado o region) |
-| `make predict` | Genera predicciones (120 semanas) usando los modelos entrenados |
+| `make predict` | Genera predicciones (52 semanas) usando los modelos entrenados |
 | `make models-push` | Versiona modelos con DVC y sube a S3 |
 | `make forecast-push` | Versiona forecast con DVC y sube a S3 |
 
@@ -566,7 +566,7 @@ make models-push ──▶ DVC add + push ──▶ S3 (s3://epiforecast-mx-data
 make predict
     │
     ▼
-forecast/all_forecast.csv  (todas las predicciones consolidadas, 120 semanas)
+forecast/all_forecast.csv  (todas las predicciones consolidadas, 52 semanas)
     │
     ▼
 make forecast-push ──▶ DVC add + push ──▶ S3
@@ -612,7 +612,7 @@ Esto descarga automaticamente los modelos y forecasts mas recientes desde S3.
 - **100% cobertura estatal** con prediccion informada gracias al modo hibrido (v5: 87%)
 - **MASE < 1** en los tres padecimientos: modelos superan baseline naive estacional (lag-52)
 - 41 modelos insuficientes usan fallback regional (prediccion util vs plana en v5)
-- Forecast: **120 semanas** a futuro, desnormalizado a conteos absolutos
+- Forecast: **52 semanas** a futuro, desnormalizado a conteos absolutos
 - Tiempo total: **~45 minutos** con n_jobs=-2 (joblib loky)
 - Resultados detallados en `REPORTE_HALLAZGOS_MODELADO_v3.md`
 

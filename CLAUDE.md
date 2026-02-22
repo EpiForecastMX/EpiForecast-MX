@@ -154,7 +154,7 @@ make mapper       # Mapear entidades con regiones INEGI → genera .csv y .xlsx
 ```bash
 make train          # Entrena Prophet con CV temporal (tasa por 100K, por estado o region)
 make models-push    # Versiona modelos con DVC y sube a S3
-make predict        # Genera predicciones (120 semanas), desnormaliza a conteos
+make predict        # Genera predicciones (52 semanas), desnormaliza a conteos
 make forecast-push  # Versiona forecast con DVC y sube a S3
 ```
 
@@ -333,7 +333,7 @@ Nota: Solo se incluyen cambios temporales. Los step functions permanentes (Nayar
 - **MASE < 1** en los tres padecimientos → modelos superan baseline naive estacional (lag-52)
 - **41 modelos insuficientes** ahora usan fallback regional (predicción útil vs plana en v5)
 - Anti-Newton: Chihuahua-Depresión de 39 min (v4) a **4 min** (v5)
-- Forecast: 120 semanas a futuro, desnormalizado a conteos en `all_forecast.csv`
+- Forecast: 52 semanas a futuro, desnormalizado a conteos en `all_forecast.csv`
 - Hallazgos detallados en `REPORTE_HALLAZGOS_MODELADO_v3.md`
 
 ## Estado Actual del Pipeline
