@@ -388,7 +388,7 @@ class SerieTiempoProphet:
         modelo_final.add_seasonality(**self.add_seasonality_params)
 
         try:
-            modelo_final.fit(self.train_data)
+            modelo_final.fit(self.serie)
         except Exception as e:
             logger.warning("L-BFGS fallo, reintentando con changepoint_prior_scale=0.05: {}", e)
             parametros_fallback = {**parametros, "changepoint_prior_scale": 0.05}
@@ -398,7 +398,7 @@ class SerieTiempoProphet:
                 **parametros_fallback
             )
             modelo_final.add_seasonality(**self.add_seasonality_params)
-            modelo_final.fit(self.train_data)
+            modelo_final.fit(self.serie)
 
         return modelo_final
     
