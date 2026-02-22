@@ -1805,8 +1805,8 @@ const observer = new IntersectionObserver(entries=>{
 },{threshold:0.1});
 document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
 
-// Smooth scroll
-document.querySelectorAll('nav a, .toc a').forEach(a=>{
+// Smooth scroll (only for internal #anchor links)
+document.querySelectorAll('nav a[href^="#"], .toc a[href^="#"]').forEach(a=>{
   a.addEventListener('click',e=>{
     e.preventDefault();
     const target=document.querySelector(a.getAttribute('href'));
