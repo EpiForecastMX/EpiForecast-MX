@@ -332,6 +332,7 @@ Nota: Solo se incluyen cambios temporales. Los step functions permanentes (Nayar
 - **`data/processed/dataset_boletin_epidemiologico.csv`** — Dataset consolidado
 - **`models/`** — ~900 modelos Prophet .pkl + .csv de entrenamiento (~109 MB)
 - **`forecast/all_forecast.csv`** — Predicciones consolidadas (~180 MB). Incluye entradas estatales, nacionales y regionales, con columnas de métricas del modelo (rmse, mae, mape, mase, confianza) para modelo original y usado (Tableau tooltips)
+- **`forecast/index.html`** — Galería HTML interactiva para visualizar los 312 PNGs de pronóstico (filtros, lightbox, búsqueda). Abrir en navegador: `open forecast/index.html`
 - **`data/registry.json`** — Registro de boletines procesados (anti-duplicados, Git)
 - **`data/utils/inegi.csv`** — Datos demograficos INEGI (poblacion, superficie, Git)
 
@@ -351,6 +352,7 @@ Nota: Solo se incluyen cambios temporales. Los step functions permanentes (Nayar
 - Anti-Newton: Chihuahua-Depresión de 39 min (v4) a **4 min** (v5)
 - Forecast: 52 semanas a futuro, desnormalizado a conteos en `all_forecast.csv` (estatal + Nacional + Regional)
 - **312 gráficos** de pronóstico: 288 estatales + 9 nacionales + 15 regionales
+- **Galería HTML** interactiva: `forecast/index.html` (filtros por padecimiento/nivel/sexo, lightbox, búsqueda)
 - Hallazgos detallados en `REPORTE_HALLAZGOS_MODELADO_v3.md`
 
 ## Estado Actual del Pipeline

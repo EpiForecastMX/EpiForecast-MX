@@ -145,6 +145,11 @@ EpiForecast-MX/
 │   └── utils/                  # Gráficos, reportes PDF, directory manager
 │
 ├── scripts/                    # Entry points para Makefile y CI/CD
+├── forecast/                    # Predicciones y gráficos
+│   ├── all_forecast.csv         #   └─ Predicciones consolidadas (DVC)
+│   ├── index.html               #   └─ Galería HTML interactiva de gráficos
+│   └── {Padecimiento}/          #   └─ PNGs por padecimiento/entidad/sexo
+│
 ├── models/                     # Modelos entrenados Prophet (.pkl) (DVC)
 ├── notebooks/                  # Libretas de análisis (Avance 1-3, Data Extract)
 ├── outputs/                    # Visualizaciones generadas
@@ -615,6 +620,22 @@ Esto descarga automaticamente los modelos y forecasts mas recientes desde S3.
 - Forecast: **52 semanas** a futuro, desnormalizado a conteos absolutos
 - Tiempo total: **~45 minutos** con n_jobs=-2 (joblib loky)
 - Resultados detallados en `REPORTE_HALLAZGOS_MODELADO_v3.md`
+
+### Galeria de Graficos de Pronostico
+
+El archivo `forecast/index.html` es una galeria HTML interactiva que permite visualizar los 312 graficos de pronostico generados por `make predict`. Se abre directamente en el navegador sin necesidad de servidor.
+
+**Funcionalidades:**
+- **Filtros combinables**: Padecimiento (Alzheimer/Depresion/Parkinson), Nivel (Nacional/Regional/Estatal), Sexo (General/Hombres/Mujeres)
+- **Busqueda por texto**: filtra por nombre de entidad, region o padecimiento
+- **Modos de vista**: Normal (cards grandes) y Compacto (grid denso)
+- **Lightbox**: click en cualquier grafico para ver ampliado, con navegacion por teclado (flechas, Escape)
+- **Contador**: muestra cuantos graficos coinciden con los filtros activos
+
+```bash
+# Abrir la galeria en el navegador (macOS)
+open forecast/index.html
+```
 
 ### Acceso directo a CSVs en S3
 
