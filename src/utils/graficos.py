@@ -285,14 +285,14 @@ class GraficosHelper:
         ax.scatter(
             serie["ds"], serie["y"],
             s=10, color=self.conf_paleta["teal"], alpha=0.50, zorder=3,
-            label="● Observaciones reales (incrementos semanales)",
+            label="Observaciones reales (incrementos semanales)",
         )
 
         # ── 4. LÍNEA DE PRONÓSTICO PROPHET (línea roja) ────────────────────────
         ax.plot(
             forecast["ds"], forecast["yhat"],
             color=self.conf_paleta["burgundy"], linewidth=1.6, zorder=4,
-            label="── Pronóstico Prophet (ŷ)",
+            label="Pronóstico Prophet (ŷ)",
         )
 
         # ── 5. OUTLIERS (triángulos) ───────────────────────────────────────────
@@ -301,7 +301,7 @@ class GraficosHelper:
                 outliers["ds"], outliers["y"],
                 marker="^", s=55, color="#FF1744", edgecolors="#B71C1C",
                 linewidths=0.8, zorder=5,
-                label=f"▲ Outliers detectados (IQR) — n={len(outliers)}",
+                label=f"Outliers detectados (IQR) — n={len(outliers)}",
             )
 
         # ── 6. DIVISOR TRAIN / TEST ─────────────────────────────────────────────
