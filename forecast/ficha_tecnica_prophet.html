@@ -1,0 +1,1942 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ficha Técnica del Modelo Prophet — EpiForecast-MX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --burgundy:#9B2242;--dark-burgundy:#6F1D46;--teal:#00524E;--dark-teal:#173F35;
+  --gold:#B58500;--cream:#E8D5B5;--cream-light:#F5EDE0;--cream-pale:#FAF6F0;
+  --cool-gray:#97999B;--neutral-black:#231F20;
+  --burgundy-light:#D4758B;--teal-light:#4A9E9A;--gold-light:#D4B24A;
+  --font-display:'DM Serif Display',Georgia,serif;
+  --font-body:'Source Sans 3','Source Sans Pro',sans-serif;
+  --font-mono:'JetBrains Mono','Fira Code',monospace;
+  --shadow-sm:0 2px 8px rgba(0,0,0,.06);--shadow-md:0 8px 24px rgba(0,0,0,.06);
+  --shadow-lg:0 16px 48px rgba(0,0,0,.08);--radius:16px;--radius-sm:10px;
+}
+body{font-family:var(--font-body);background:var(--cream-pale);color:var(--neutral-black);line-height:1.7;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.025;pointer-events:none;z-index:0}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(23,63,53,.96);backdrop-filter:blur(16px);border-bottom:1px solid rgba(232,213,181,.1);padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between}
+nav .logo{color:var(--cream);font-family:var(--font-display);font-size:1.3rem;letter-spacing:.02em}
+nav .nav-links{display:flex;gap:1.5rem;flex-wrap:wrap;align-items:center}
+nav .nav-links a{color:rgba(232,213,181,.7);text-decoration:none;font-size:.82rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;transition:color .2s}
+nav .nav-links a:hover{color:var(--cream)}
+
+/* LAYOUT */
+.container{max-width:1200px;margin:0 auto;padding:0 2rem;position:relative;z-index:1}
+section{padding:4rem 0}
+.section-title{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.5rem);margin-bottom:.5rem;color:var(--dark-teal)}
+.section-sub{color:var(--cool-gray);font-size:1rem;margin-bottom:2.5rem}
+
+/* HERO */
+.hero{padding:10rem 2rem 6rem;text-align:center;background:linear-gradient(170deg,#0a1a16 0%,var(--dark-teal) 35%,var(--teal) 65%,#1a3025 100%);color:var(--cream-pale);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 800px 600px at 20% 30%,rgba(181,133,0,.15),transparent),radial-gradient(ellipse 900px 700px at 80% 70%,rgba(155,34,66,.15),transparent);pointer-events:none}
+.hero::after{content:'';position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.04;pointer-events:none}
+.hero h1{font-family:var(--font-display);font-size:clamp(2.5rem,7vw,4.5rem);line-height:1.05;margin-bottom:.5rem;position:relative}
+.hero h1 em{font-style:italic;color:var(--gold-light)}
+.hero .subtitle{font-size:clamp(1rem,2.5vw,1.3rem);opacity:.8;font-weight:300;margin-bottom:.75rem;position:relative}
+.hero .subtitle2{font-size:clamp(.82rem,1.5vw,.95rem);opacity:.5;font-weight:400;margin-bottom:3rem;position:relative;font-family:var(--font-mono)}
+.hero-kpis{display:flex;justify-content:center;gap:1.5rem;flex-wrap:wrap;position:relative}
+.hero-kpi{background:rgba(255,255,255,.06);border:1px solid rgba(232,213,181,.12);border-radius:var(--radius);padding:1.5rem 2rem;backdrop-filter:blur(8px);min-width:150px;transition:transform .3s,box-shadow .3s}
+.hero-kpi:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.3)}
+.hero-kpi .value{font-family:var(--font-display);font-size:2.5rem;display:block;background:linear-gradient(135deg,var(--cream),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-kpi .label{font-size:.78rem;text-transform:uppercase;letter-spacing:1px;opacity:.6}
+
+/* CARDS */
+.card{background:#fff;border-radius:var(--radius);padding:2rem;box-shadow:var(--shadow-md);border:1px solid rgba(0,0,0,.04);transition:transform .3s,box-shadow .3s;overflow:hidden}
+.card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:2rem}
+.card-grid-3{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.5rem}
+.card-header{display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:2px solid var(--cream-light)}
+.card-title{font-family:var(--font-display);font-size:1.3rem}
+
+/* PARAM CARDS (dark teal) */
+.param-card{background:linear-gradient(135deg,var(--dark-teal),var(--teal));color:var(--cream-pale);border-radius:var(--radius);padding:1.75rem 2rem;box-shadow:var(--shadow-md);position:relative;overflow:hidden}
+.param-card::before{content:'';position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.04;pointer-events:none}
+.param-card h4{font-family:var(--font-mono);font-size:.95rem;color:var(--gold-light);margin-bottom:.4rem;font-weight:500}
+.param-card .param-value{font-family:var(--font-mono);font-size:1.4rem;color:#fff;font-weight:500;margin-bottom:.75rem;display:block}
+.param-card p{font-size:.88rem;opacity:.85;line-height:1.65}
+.param-card .param-why{margin-top:.75rem;padding-top:.75rem;border-top:1px solid rgba(232,213,181,.2);font-size:.82rem;opacity:.7}
+.param-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.5rem}
+
+/* CHART */
+.chart-wrap{background:#fff;border-radius:var(--radius);padding:2rem;box-shadow:var(--shadow-md);border:1px solid rgba(0,0,0,.04)}
+.chart-wrap canvas{max-height:380px}
+.chart-wrap h3{font-family:var(--font-display);font-size:1.3rem;color:var(--dark-teal);margin-bottom:.25rem}
+.chart-wrap .chart-sub{font-size:.85rem;color:var(--cool-gray);margin-bottom:1.5rem}
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:2rem}
+
+/* CALLOUT */
+.callout{background:linear-gradient(135deg,rgba(0,82,78,.06),rgba(181,133,0,.04));border:1px solid rgba(0,82,78,.15);border-left:4px solid var(--teal);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:1.5rem 2rem;margin:2rem 0;font-size:.95rem}
+.callout-gold{border-left-color:var(--gold);background:linear-gradient(135deg,rgba(181,133,0,.06),rgba(155,34,66,.03))}
+.callout-burgundy{border-left-color:var(--burgundy);background:linear-gradient(135deg,rgba(155,34,66,.06),rgba(0,82,78,.03))}
+.callout strong{color:var(--dark-teal)}
+.callout-gold strong{color:var(--gold)}
+.callout-burgundy strong{color:var(--burgundy)}
+
+/* BADGE */
+.badge{display:inline-block;padding:.2rem .7rem;border-radius:100px;font-family:var(--font-mono);font-size:.78rem;font-weight:500}
+.badge-green{background:#e6f4ea;color:#1a7431}
+.badge-yellow{background:#fef7e0;color:#8a6d00}
+.badge-red{background:#fde8e8;color:#b91c1c}
+.badge-teal{background:rgba(0,82,78,.1);color:var(--teal)}
+.badge-gray{background:#f0f0f0;color:#555}
+
+/* TABLE */
+.table-wrapper{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow-md);border:1px solid rgba(0,0,0,.04);overflow:hidden}
+table.ref-table{width:100%;border-collapse:collapse;font-size:.85rem}
+table.ref-table thead th{padding:.8rem 1rem;text-align:left;font-weight:600;text-transform:uppercase;font-size:.7rem;letter-spacing:.5px;color:var(--cream-pale);background:var(--dark-teal);border-bottom:2px solid rgba(232,213,181,.2)}
+table.ref-table tbody td{padding:.65rem 1rem;border-bottom:1px solid var(--cream-light);vertical-align:middle}
+table.ref-table tbody tr:hover{background:var(--cream-pale)}
+table.ref-table .mono{font-family:var(--font-mono);font-size:.82rem}
+table.ref-table .cell-added{background:#e6f4ea;color:#1a7431;font-weight:600;font-size:.8rem;padding:.3rem .6rem;border-radius:6px;display:inline-block}
+table.ref-table .cell-removed{background:#fde8e8;color:#b91c1c;font-weight:600;font-size:.8rem;padding:.3rem .6rem;border-radius:6px;display:inline-block}
+table.ref-table .cell-modified{background:#fef7e0;color:#8a6d00;font-weight:600;font-size:.8rem;padding:.3rem .6rem;border-radius:6px;display:inline-block}
+table.ref-table .cell-same{color:var(--cool-gray);font-size:.82rem}
+
+/* TOC */
+.toc{background:#fff;border-radius:var(--radius);padding:1.5rem 2rem;box-shadow:var(--shadow-md);margin-bottom:3rem}
+.toc h3{font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:1rem}
+.toc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.5rem}
+.toc a{color:var(--teal);text-decoration:none;font-size:.88rem;padding:.3rem .5rem;border-radius:6px;transition:background .2s;display:block}
+.toc a:hover{background:var(--cream-pale)}
+.toc a .toc-num{font-family:var(--font-mono);font-size:.75rem;color:var(--cool-gray);margin-right:.3rem}
+
+/* PIPELINE */
+.pipeline{display:flex;align-items:center;gap:0;flex-wrap:wrap;margin:2rem 0}
+.pipe-step{background:#fff;border-radius:var(--radius-sm);padding:1.5rem 1.75rem;box-shadow:var(--shadow-md);border:1px solid rgba(0,0,0,.04);flex:1;min-width:220px;position:relative}
+.pipe-step .step-num{font-family:var(--font-mono);font-size:.75rem;color:var(--cool-gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem}
+.pipe-step h4{font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:.5rem}
+.pipe-step .formula{font-family:var(--font-mono);font-size:.88rem;background:var(--cream-pale);border:1px solid var(--cream);border-radius:6px;padding:.5rem .75rem;margin:.5rem 0;display:block;color:var(--dark-teal)}
+.pipe-step p{font-size:.85rem;color:#555;line-height:1.6}
+.pipe-arrow{font-size:2rem;color:var(--gold);padding:0 .5rem;flex-shrink:0;align-self:center}
+
+/* FOLD DIAGRAM */
+.fold-diagram{margin:2rem 0}
+.fold-row{display:flex;gap:.5rem;align-items:center;margin-bottom:.75rem}
+.fold-label{font-family:var(--font-mono);font-size:.78rem;color:var(--cool-gray);min-width:60px;text-align:right}
+.fold-bar-wrap{display:flex;flex:1;height:36px;border-radius:6px;overflow:hidden;gap:2px}
+.fold-train{background:linear-gradient(90deg,rgba(0,82,78,.25),rgba(0,82,78,.4));display:flex;align-items:center;justify-content:flex-end;padding-right:.5rem;font-family:var(--font-mono);font-size:.72rem;color:var(--teal);font-weight:600}
+.fold-test{background:linear-gradient(90deg,rgba(181,133,0,.4),rgba(181,133,0,.6));display:flex;align-items:center;justify-content:center;padding:0 .5rem;font-family:var(--font-mono);font-size:.72rem;color:#6a5000;font-weight:600}
+.fold-weight{margin-left:1rem;font-family:var(--font-mono);font-size:.82rem;font-weight:600;min-width:50px}
+
+/* FLOWCHART */
+.flowchart{display:flex;flex-direction:column;gap:.75rem;max-width:700px;margin:2rem auto}
+.flow-node{background:#fff;border-radius:var(--radius-sm);padding:1rem 1.5rem;box-shadow:var(--shadow-sm);border-left:4px solid var(--teal);position:relative}
+.flow-node.decision{border-left-color:var(--gold);background:linear-gradient(135deg,#fff,#fffdf5)}
+.flow-node.action{border-left-color:var(--teal)}
+.flow-node.warning{border-left-color:var(--burgundy);background:linear-gradient(135deg,#fff,#fff8f8)}
+.flow-node.success{border-left-color:#2E7D32;background:linear-gradient(135deg,#fff,#f6faf6)}
+.flow-node h5{font-family:var(--font-mono);font-size:.82rem;font-weight:600;margin-bottom:.25rem}
+.flow-node p{font-size:.85rem;color:#555;margin:0}
+.flow-connector{text-align:center;color:var(--cool-gray);font-size:1.2rem;line-height:1}
+
+/* GRID HEATMAP */
+.grid-heat{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:1rem}
+.grid-heat thead th{padding:.65rem .8rem;text-align:center;font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.3px;color:var(--cool-gray);border-bottom:2px solid var(--cream-light)}
+.grid-heat thead th:first-child{text-align:left}
+.grid-heat tbody td{padding:.6rem .8rem;text-align:center;border-bottom:1px solid var(--cream-light);font-family:var(--font-mono);font-size:.85rem;vertical-align:middle}
+.grid-heat tbody td:first-child{text-align:left;font-family:var(--font-body);font-weight:600;color:var(--dark-teal)}
+.heat-hi{background:rgba(0,82,78,.18);color:var(--dark-teal);border-radius:6px;padding:.25rem .5rem;font-weight:700;display:inline-block}
+.heat-mid{background:rgba(181,133,0,.15);color:#6a5000;border-radius:6px;padding:.25rem .5rem;display:inline-block}
+.heat-lo{background:rgba(155,34,66,.08);color:var(--dark-burgundy);border-radius:6px;padding:.25rem .5rem;display:inline-block}
+.heat-elim{background:#f0f0f0;color:var(--cool-gray);border-radius:6px;padding:.25rem .5rem;font-style:italic;font-size:.75rem;display:inline-block;text-decoration:line-through}
+
+/* METRIC CARDS */
+.metric-card{background:#fff;border-radius:var(--radius);padding:1.75rem 2rem;box-shadow:var(--shadow-md);border:1px solid rgba(0,0,0,.04);border-top:4px solid var(--teal)}
+.metric-card.gold{border-top-color:var(--gold)}
+.metric-card.burgundy{border-top-color:var(--burgundy)}
+.metric-card.green{border-top-color:#2E7D32}
+.metric-card h4{font-family:var(--font-display);font-size:1.2rem;color:var(--dark-teal);margin-bottom:.5rem}
+.metric-card .formula-block{font-family:var(--font-mono);font-size:.88rem;background:var(--cream-pale);border:1px solid var(--cream);border-radius:8px;padding:.75rem 1rem;margin:.75rem 0;color:var(--dark-teal);line-height:1.8}
+.metric-card p{font-size:.88rem;color:#555;line-height:1.65}
+.metric-card .threshold{display:inline-flex;gap:.5rem;align-items:center;margin-top:.5rem;font-size:.82rem;font-family:var(--font-mono)}
+
+/* STATS ROW */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem;margin:2rem 0}
+.stat-box{background:#fff;border-radius:var(--radius-sm);padding:1.2rem;text-align:center;box-shadow:var(--shadow-sm);border-top:3px solid var(--teal)}
+.stat-box .big-num{font-family:var(--font-display);font-size:2rem;color:var(--dark-teal);line-height:1.1}
+.stat-box .stat-desc{font-size:.75rem;color:var(--cool-gray);margin-top:.3rem;text-transform:uppercase;letter-spacing:.5px}
+.stat-box.burgundy{border-top-color:var(--burgundy)}
+.stat-box.burgundy .big-num{color:var(--dark-burgundy)}
+.stat-box.gold{border-top-color:var(--gold)}
+.stat-box.gold .big-num{color:var(--gold)}
+.stat-box.green{border-top-color:#2E7D32}
+.stat-box.green .big-num{color:#1a7431}
+
+/* VERDICT */
+.verdict{background:linear-gradient(170deg,var(--dark-teal) 0%,var(--teal) 100%);color:var(--cream-pale);border-radius:var(--radius);padding:3rem;margin-top:2rem;position:relative;overflow:hidden}
+.verdict::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 600px 400px at 80% 20%,rgba(181,133,0,.15),transparent);pointer-events:none}
+.verdict h3{font-family:var(--font-display);font-size:2rem;margin-bottom:1rem;position:relative}
+.verdict p{font-size:1rem;opacity:.9;line-height:1.8;position:relative;max-width:900px}
+
+/* EVO TABLE */
+.evo-table{width:100%;border-collapse:collapse;font-size:.85rem}
+.evo-table thead th{padding:.7rem .8rem;text-align:left;font-weight:600;text-transform:uppercase;font-size:.7rem;letter-spacing:.5px;color:var(--cream-pale);background:var(--dark-teal)}
+.evo-table thead th:not(:first-child){text-align:center}
+.evo-table tbody td{padding:.6rem .8rem;border-bottom:1px solid var(--cream-light);vertical-align:middle}
+.evo-table tbody td:not(:first-child){text-align:center}
+.evo-table tbody tr:hover{background:var(--cream-pale)}
+.evo-table .param-name{font-family:var(--font-mono);font-size:.82rem;font-weight:600;color:var(--dark-teal)}
+
+/* REVEAL */
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .6s,transform .6s}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* SECTION DIVIDER */
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--cream),transparent);margin:1rem 0}
+
+/* FOOTER */
+footer{background:var(--dark-teal);color:rgba(232,213,181,.7);text-align:center;padding:3rem 2rem;font-size:.88rem;line-height:1.8}
+footer strong{color:var(--cream)}
+footer a{color:var(--gold);text-decoration:none;transition:opacity .2s}
+footer a:hover{opacity:.7}
+
+/* CODE INLINE */
+code{font-family:var(--font-mono);font-size:.85em;background:rgba(0,82,78,.08);color:var(--dark-teal);border-radius:4px;padding:.1rem .4rem}
+
+/* RESPONSIVE */
+@media(max-width:768px){
+  .charts-row{grid-template-columns:1fr}
+  .hero-kpis{gap:1rem}
+  .hero-kpi{min-width:130px;padding:1rem 1.5rem}
+  .hero-kpi .value{font-size:1.8rem}
+  nav .nav-links{display:none}
+  .card-grid,.card-grid-3,.param-grid{grid-template-columns:1fr}
+  .pipeline{flex-direction:column}
+  .pipe-arrow{transform:rotate(90deg)}
+}
+
+/* PRINT */
+@media print{
+  nav,footer{display:none}
+  body{background:#fff}
+  body::before{display:none}
+  .reveal{opacity:1;transform:none}
+  section{padding:2rem 0;page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="index.html" class="logo" style="text-decoration:none;color:var(--cream)">EpiForecast-MX</a>
+  <div class="nav-links">
+    <a href="index.html" class="ext" style="color:var(--gold)">Inicio</a>
+    <a href="EpiDashboard.html" class="ext" style="color:var(--gold)">Dashboard</a>
+    <a href="reporte_resultados.html" class="ext" style="color:var(--gold)">Resultados</a>
+    <a href="Reports/index.html" class="ext" style="color:var(--gold)">Pronósticos</a>
+    <a href="bitacora_modelado.html" class="ext" style="color:var(--gold)">Bitácora</a>
+    <a href="comparacion_modelos.html" class="ext" style="color:var(--gold)">Comparación</a>
+    <a href="#transformaciones" style="border-left:1px solid rgba(232,213,181,.3);padding-left:1.5rem">Transformaciones</a>
+    <a href="#estacionalidad">Estacionalidad</a>
+    <a href="#grid">Grid</a>
+    <a href="#cv">Cross-Val</a>
+    <a href="#newton">Anti-Newton</a>
+    <a href="#hibrido">Híbrido</a>
+    <a href="#metricas">Métricas</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <h1>Ficha Técnica del<br><em>Modelo Prophet</em></h1>
+  <p class="subtitle">Anatomía completa del motor de predicción de EpiForecast-MX</p>
+  <p class="subtitle2">v6 &mdash; Febrero 2026 &mdash; 312 modelos &middot; 3 padecimientos &middot; 32 entidades</p>
+  <div class="hero-kpis">
+    <div class="hero-kpi"><span class="value">48</span><span class="label">Combinaciones grid</span></div>
+    <div class="hero-kpi"><span class="value">4</span><span class="label">Folds CV</span></div>
+    <div class="hero-kpi"><span class="value">3</span><span class="label">Transformaciones target</span></div>
+    <div class="hero-kpi"><span class="value">5</span><span class="label">Capas anti-Newton</span></div>
+    <div class="hero-kpi"><span class="value">0.76</span><span class="label">MASE medio (3 pad.)</span></div>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- TOC -->
+<section style="padding-top:2.5rem;padding-bottom:0">
+<div class="toc reveal">
+  <h3>Contenido</h3>
+  <div class="toc-grid">
+    <a href="#transformaciones"><span class="toc-num">01</span> Transformaciones del target</a>
+    <a href="#estacionalidad"><span class="toc-num">02</span> Estacionalidad y tendencia</a>
+    <a href="#grid"><span class="toc-num">03</span> Grid de hiperparámetros</a>
+    <a href="#cv"><span class="toc-num">04</span> Cross-validation temporal</a>
+    <a href="#newton"><span class="toc-num">05</span> Protección anti-Newton</a>
+    <a href="#hibrido"><span class="toc-num">06</span> Modo híbrido y confianza</a>
+    <a href="#atipicos"><span class="toc-num">07</span> Periodos atípicos</a>
+    <a href="#metricas"><span class="toc-num">08</span> Métricas de evaluación</a>
+    <a href="#resultados"><span class="toc-num">09</span> Resultados v6</a>
+    <a href="#mapa"><span class="toc-num">10</span> Mapa completo de parámetros</a>
+  </div>
+</div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SECCIÓN 1: TRANSFORMACIONES DEL TARGET                       -->
+<!-- ============================================================ -->
+<section id="transformaciones">
+  <h2 class="section-title reveal">1. Transformaciones del Target</h2>
+  <p class="section-sub reveal">Tres pasos secuenciales convierten los conteos crudos en el espacio donde Prophet entrena</p>
+
+  <div class="callout reveal">
+    <strong>Por qué no entrenar directamente sobre conteos absolutos:</strong> CDMX tiene 9.2 millones de habitantes y Colima 730 mil. El RMSE de CDMX dominaría cualquier métrica agregada. Las tres transformaciones eliminan este sesgo de escala, estabilizan la varianza y colocan el target en un espacio donde Prophet puede aprender patrones estacionales comparables entre entidades.
+  </div>
+
+  <div class="pipeline reveal">
+    <div class="pipe-step" style="border-top:4px solid var(--teal)">
+      <div class="step-num">Paso 1</div>
+      <h4>Normalización a tasa por 100K</h4>
+      <code class="formula" style="display:block;font-family:var(--font-mono);font-size:.88rem;background:var(--cream-pale);border:1px solid var(--cream);border-radius:6px;padding:.6rem .9rem;margin:.6rem 0;color:var(--dark-teal)">y_tasa = (incidencia / población) × 100,000</code>
+      <p>Normaliza por tamaño de la entidad. CDMX y Colima ahora son directamente comparables. El RMSE deja de estar dominado por los estados grandes.</p>
+      <p class="param-why" style="margin-top:.6rem;padding-top:.6rem;border-top:1px solid var(--cream-light);font-size:.82rem;color:var(--cool-gray)">Fuente de población: <code>data/utils/inegi.csv</code> — columna <code>Total</code> (proyecciones CONAPO por año)</p>
+    </div>
+    <div class="pipe-arrow">&#8594;</div>
+    <div class="pipe-step" style="border-top:4px solid var(--gold)">
+      <div class="step-num">Paso 2</div>
+      <h4>Log-transform</h4>
+      <code class="formula" style="display:block;font-family:var(--font-mono);font-size:.88rem;background:var(--cream-pale);border:1px solid var(--cream);border-radius:6px;padding:.6rem .9rem;margin:.6rem 0;color:var(--dark-teal)">y = log(1 + y_tasa)</code>
+      <p>Estabiliza la varianza. Series con picos extremos (Depresión post-pandemia, alertas epidemiológicas) quedan comprimidas. El <code>+1</code> garantiza que log(0)=0 sin indefinidos.</p>
+      <p class="param-why" style="margin-top:.6rem;padding-top:.6rem;border-top:1px solid var(--cream-light);font-size:.82rem;color:var(--cool-gray)">Impacto medido: redujo el RMSE mediano de Depresión en -64% vs serie sin log-transform</p>
+    </div>
+    <div class="pipe-arrow">&#8594;</div>
+    <div class="pipe-step" style="border-top:4px solid var(--burgundy)">
+      <div class="step-num">Paso 3</div>
+      <h4>Espacio de entrenamiento</h4>
+      <code class="formula" style="display:block;font-family:var(--font-mono);font-size:.88rem;background:var(--cream-pale);border:1px solid var(--cream);border-radius:6px;padding:.6rem .9rem;margin:.6rem 0;color:var(--dark-teal)">Prophet.fit(df[y = log(1 + y_tasa)])</code>
+      <p>El modelo aprende en espacio log-tasa. Al predecir, se revierten ambas transformaciones para obtener conteos absolutos:</p>
+      <code class="formula" style="display:block;font-family:var(--font-mono);font-size:.82rem;background:var(--cream-pale);border:1px solid var(--cream);border-radius:6px;padding:.5rem .8rem;margin:.4rem 0;color:var(--dark-teal)">conteos = (exp(ŷ) - 1) × población / 100,000</code>
+    </div>
+    <div class="pipe-arrow">&#8594;</div>
+    <div class="pipe-step" style="border-top:4px solid #2E7D32;background:linear-gradient(135deg,#fff,#f6faf6)">
+      <div class="step-num">Salida</div>
+      <h4>all_forecast.csv</h4>
+      <p>Conteos absolutos desnormalizados por entidad y semana. El CSV sidecar del <code>.pkl</code> guarda <code>y_original</code> y <code>Total</code> (población) para la inversión exacta en producción.</p>
+      <p class="param-why" style="margin-top:.6rem;padding-top:.6rem;border-top:1px solid var(--cream-light);font-size:.82rem;color:var(--cool-gray)">Columnas: <code>yhat</code> (conteos), <code>yhat_lower</code>, <code>yhat_upper</code> (IC 95%)</p>
+    </div>
+  </div>
+
+  <div class="charts-row reveal" style="margin-top:2rem">
+    <div class="chart-wrap">
+      <h3>Efecto del log-transform en Depresión</h3>
+      <p class="chart-sub">Comparación conceptual: varianza antes y después. Datos estilizados representativos.</p>
+      <canvas id="chartLogTransform"></canvas>
+    </div>
+    <div class="card" style="align-self:start">
+      <div class="card-header">
+        <div style="width:14px;height:14px;border-radius:50%;background:var(--gold);flex-shrink:0"></div>
+        <h3 class="card-title">Propiedades matemáticas</h3>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:1rem">
+        <div style="padding:1rem;background:var(--cream-pale);border-radius:var(--radius-sm);border-left:3px solid var(--teal)">
+          <div style="font-family:var(--font-mono);font-size:.82rem;font-weight:600;color:var(--dark-teal);margin-bottom:.3rem">Simetrizacion</div>
+          <p style="font-size:.85rem;color:#555">El log comprime colas largas a la derecha. Series de Depresión con CV &gt;2 quedan cerca de distribución normal en log-espacio.</p>
+        </div>
+        <div style="padding:1rem;background:var(--cream-pale);border-radius:var(--radius-sm);border-left:3px solid var(--gold)">
+          <div style="font-family:var(--font-mono);font-size:.82rem;font-weight:600;color:var(--gold);margin-bottom:.3rem">Interpretabilidad</div>
+          <p style="font-size:.85rem;color:#555">Prophet modela cambios relativos (multiplicativos en log-espacio). Un cambio de +0.1 en y representa ~+10.5% en tasa original.</p>
+        </div>
+        <div style="padding:1rem;background:var(--cream-pale);border-radius:var(--radius-sm);border-left:3px solid var(--burgundy)">
+          <div style="font-family:var(--font-mono);font-size:.82rem;font-weight:600;color:var(--burgundy);margin-bottom:.3rem">Restriccion de no-negatividad</div>
+          <p style="font-size:.85rem;color:#555">exp(ŷ) &ge; 0 siempre. Nunca se predice una tasa negativa, lo que elimina post-procesamiento de clipping.</p>
+        </div>
+        <div style="padding:1rem;background:var(--cream-pale);border-radius:var(--radius-sm);border-left:3px solid #2E7D32">
+          <div style="font-family:var(--font-mono);font-size:.82rem;font-weight:600;color:#1a7431;margin-bottom:.3rem">Config activa</div>
+          <p style="font-size:.85rem;color:#555"><code>normalizar_tasa: true</code><br><code>log_transform: true</code><br><code>tasa_por: 100000</code><br><code>columna_poblacion: "Total"</code></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ============================================================ -->
+<!-- SECCIÓN 2: ESTACIONALIDAD Y TENDENCIA                        -->
+<!-- ============================================================ -->
+<section id="estacionalidad">
+  <h2 class="section-title reveal">2. Estacionalidad y Tendencia</h2>
+  <p class="section-sub reveal">Configuración de los componentes estructurales de Prophet para series epidemiológicas semanales</p>
+
+  <div class="callout reveal">
+    <strong>Prophet descompone la serie en:</strong> tendencia (changepoints) + estacionalidad (Fourier) + efectos de calendario (holidays) + ruido. La configuración de EpiForecast-MX deshabilita las estacionalidades default de Prophet y las reemplaza con una estacionalidad anual personalizada de mayor precisión.
+  </div>
+
+  <h3 class="reveal" style="font-family:var(--font-display);font-size:1.4rem;color:var(--dark-teal);margin-bottom:1.5rem;margin-top:2rem">Estacionalidades deshabilitadas</h3>
+
+  <div class="param-grid reveal">
+    <div class="param-card">
+      <h4>yearly_seasonality</h4>
+      <span class="param-value">False</span>
+      <p>La estacionalidad anual default de Prophet usa periodo=365.25 días (sin decimales), impreciso para series semanales. Se reemplaza con una estacionalidad personalizada de periodo exacto.</p>
+      <p class="param-why">Sustituida por: <code>add_seasonality(period=52.18, fourier_order=5)</code></p>
+    </div>
+    <div class="param-card">
+      <h4>weekly_seasonality</h4>
+      <span class="param-value">False</span>
+      <p>Los datos tienen una observación por semana epidemiológica (SINAVE). No existe variación intra-semanal que modelar — activarla solo agrega ruido al modelo.</p>
+      <p class="param-why">Frecuencia de datos: 1 obs/semana (resolución temporal = semana)</p>
+    </div>
+    <div class="param-card">
+      <h4>daily_seasonality</h4>
+      <span class="param-value">False</span>
+      <p>Mismo razonamiento: sin variación diaria en datos semanales. Activarla introduce 14 coeficientes sin respaldo empírico (7 sin + 7 cos para fourier_order=7).</p>
+      <p class="param-why">Siempre False en series epidemiológicas semanales</p>
+    </div>
+  </div>
+
+  <h3 class="reveal" style="font-family:var(--font-display);font-size:1.4rem;color:var(--dark-teal);margin-bottom:1.5rem;margin-top:2.5rem">Estacionalidad personalizada</h3>
+
+  <div class="param-grid reveal">
+    <div class="param-card" style="background:linear-gradient(135deg,var(--dark-teal),#1a5c50)">
+      <h4>period (estacionalidad anual)</h4>
+      <span class="param-value">52.18 semanas</span>
+      <p>Equivalente exacto de 365.25 / 7 = 52.1786... semanas. Captura el ciclo anual real con mayor precisión que el periodo default de Prophet en días.</p>
+      <p class="param-why">365.25 / 7 = 52.178... — el 0.25 captura los años bisiestos en promedio</p>
+    </div>
+    <div class="param-card" style="background:linear-gradient(135deg,#1a4a40,var(--dark-teal))">
+      <h4>fourier_order — Nacional</h4>
+      <span class="param-value">5 (10 columnas)</span>
+      <p>Genera 5 funciones seno + 5 coseno = 10 regresores en la matriz de diseño. Permite patrones estacionales complejos con hasta 5 "armónicos".</p>
+      <p class="param-why">Ejemplo: brotes de otoño + temporada navide&ntilde;a + repunte primaveral = 3 armónicos mínimo</p>
+    </div>
+    <div class="param-card" style="background:linear-gradient(135deg,#254040,var(--dark-teal))">
+      <h4>fourier_order — Regional/Estatal</h4>
+      <span class="param-value">3 (6 columnas)</span>
+      <p>Series estatales son más cortas y volátiles. Con fourier_order=5 en series de ~285 puntos, hay riesgo de overfitting al patrón de entrenamiento. <strong>-40% coeficientes.</strong></p>
+      <p class="param-why">Activo cuando: <code>modelado_estados: true</code> en params.yaml</p>
+    </div>
+    <div class="param-card" style="background:linear-gradient(135deg,var(--dark-teal),#1a4535)">
+      <h4>n_changepoints — Nacional</h4>
+      <span class="param-value">25 (default Prophet)</span>
+      <p>1 changepoint cada ~11 semanas en la serie completa (~285 semanas). Captura cambios de tendencia anuales y post-pandemia con suficiente granularidad.</p>
+      <p class="param-why">Prophet los distribuye uniformemente en el 80% inicial de la serie</p>
+    </div>
+    <div class="param-card" style="background:linear-gradient(135deg,#1a3a30,var(--dark-teal))">
+      <h4>n_changepoints — Regional/Estatal</h4>
+      <span class="param-value">12</span>
+      <p>Con 25 changepoints en series cortas (~150 puntos para estados pequeños), Prophet sobreajusta cambios locales. 12 = 1 changepoint cada ~12 semanas (~1 por trimestre).</p>
+      <p class="param-why">Activo cuando: <code>modelado_estados: true</code> — previene overfitting en estados &lt;1M hab.</p>
+    </div>
+    <div class="param-card" style="background:linear-gradient(135deg,#1a5040,var(--teal))">
+      <h4>growth</h4>
+      <span class="param-value">"linear"</span>
+      <p>Tendencia lineal (por tramos, ajustada en changepoints). La tendencia "logistic" requiere definir una capacidad de saturación (<code>cap</code>) que no está justificada epidemiológicamente.</p>
+      <p class="param-why">Apropiado para padecimientos crónicos sin límite observable de saturación a corto plazo</p>
+    </div>
+  </div>
+
+  <div class="chart-wrap reveal" style="margin-top:2rem">
+    <h3>Armónicos de Fourier: Fourier Order 3 vs 5</h3>
+    <p class="chart-sub">Comparación conceptual de la riqueza de patrones estacionales con 3 vs 5 armónicos (1 año = 52 semanas)</p>
+    <canvas id="chartFourier"></canvas>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ============================================================ -->
+<!-- SECCIÓN 3: GRID DE HIPERPARÁMETROS                           -->
+<!-- ============================================================ -->
+<section id="grid">
+  <h2 class="section-title reveal">3. Grid de Hiperparámetros</h2>
+  <p class="section-sub reveal">Grids v5 diferenciados por padecimiento — optimizados con datos de 297 modelos v4</p>
+
+  <!-- EXPLICACION DE PARÁMETROS -->
+  <h3 class="reveal" style="font-family:var(--font-display);font-size:1.5rem;color:var(--dark-teal);margin-bottom:1.25rem">3.1 Qué controla cada parámetro</h3>
+
+  <div class="card-grid-3 reveal">
+    <div class="card" style="border-top:4px solid var(--teal)">
+      <div style="font-family:var(--font-mono);font-size:.8rem;color:var(--cool-gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem">changepoint_prior_scale</div>
+      <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--dark-teal);margin-bottom:.75rem">Flexibilidad de la tendencia</h3>
+      <p style="font-size:.88rem;color:#555;line-height:1.65;margin-bottom:1rem">Controla qué tanto puede cambiar la tendencia en cada changepoint. Es una prior Laplace sobre los deltas de tendencia.</p>
+      <div style="display:flex;flex-direction:column;gap:.5rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:.4rem .6rem;background:#e6f4ea;border-radius:6px;font-size:.82rem">
+          <span style="font-family:var(--font-mono);color:#1a7431;font-weight:600">cp = 0.01</span>
+          <span style="color:#1a7431">Tendencia muy suave, pocos cambios</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:.4rem .6rem;background:#fef7e0;border-radius:6px;font-size:.82rem">
+          <span style="font-family:var(--font-mono);color:#8a6d00;font-weight:600">cp = 0.05</span>
+          <span style="color:#8a6d00">Balance entre flexibilidad y estabilidad</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:.4rem .6rem;background:#fde8e8;border-radius:6px;font-size:.82rem">
+          <span style="font-family:var(--font-mono);color:#b91c1c;font-weight:600">cp muy bajo</span>
+          <span style="color:#b91c1c">Riesgo: activa optimizador Newton (lento)</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="border-top:4px solid var(--gold)">
+      <div style="font-family:var(--font-mono);font-size:.8rem;color:var(--cool-gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem">seasonality_prior_scale</div>
+      <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--gold);margin-bottom:.75rem">Regularización estacional</h3>
+      <p style="font-size:.88rem;color:#555;line-height:1.65;margin-bottom:1rem">Controla la amplitud de los coeficientes de Fourier. Prior Normal(0, sp). Valores bajos = estacionalidad más suave y regularizada.</p>
+      <div style="display:flex;flex-direction:column;gap:.5rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:.4rem .6rem;background:#e6f4ea;border-radius:6px;font-size:.82rem">
+          <span style="font-family:var(--font-mono);color:#1a7431;font-weight:600">sp = 0.025</span>
+          <span style="color:#1a7431">Alta regularización (series volátiles)</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:.4rem .6rem;background:#fef7e0;border-radius:6px;font-size:.82rem">
+          <span style="font-family:var(--font-mono);color:#8a6d00;font-weight:600">sp = 0.5</span>
+          <span style="color:#8a6d00">Amplitud estacional moderada (ganador frecuente en Parkinson)</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:.4rem .6rem;background:#fde8e8;border-radius:6px;font-size:.82rem">
+          <span style="font-family:var(--font-mono);color:#b91c1c;font-weight:600">sp = 1.0+</span>
+          <span style="color:#b91c1c">Riesgo: sobreajuste estacional, peor test RMSE</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="border-top:4px solid var(--burgundy)">
+      <div style="font-family:var(--font-mono);font-size:.8rem;color:var(--cool-gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem">seasonality_mode</div>
+      <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--dark-burgundy);margin-bottom:.75rem">Modo de estacionalidad</h3>
+      <p style="font-size:.88rem;color:#555;line-height:1.65;margin-bottom:1rem">Define cómo interactúa la componente estacional con la tendencia.</p>
+      <div style="display:flex;flex-direction:column;gap:.75rem">
+        <div style="padding:.75rem;background:var(--cream-pale);border-radius:8px;border-left:3px solid var(--teal)">
+          <div style="font-family:var(--font-mono);font-size:.8rem;font-weight:600;color:var(--dark-teal);margin-bottom:.25rem">additive</div>
+          <p style="font-size:.82rem;color:#555">y(t) = tendencia(t) + estacionalidad(t) + ruido<br>La amplitud estacional es <strong>constante</strong> independiente del nivel de tendencia. Mejor para Depresión.</p>
+        </div>
+        <div style="padding:.75rem;background:var(--cream-pale);border-radius:8px;border-left:3px solid var(--burgundy)">
+          <div style="font-family:var(--font-mono);font-size:.8rem;font-weight:600;color:var(--dark-burgundy);margin-bottom:.25rem">multiplicative</div>
+          <p style="font-size:.82rem;color:#555">y(t) = tendencia(t) × (1 + estacionalidad(t)) + ruido<br>La amplitud <strong>escala con la tendencia</strong>. Mejor para Alzheimer (crecimiento poblacional).</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ALZHEIMER GRID -->
+  <h3 class="reveal" style="font-family:var(--font-display);font-size:1.5rem;color:var(--dark-teal);margin-bottom:1rem;margin-top:3rem">3.2 Alzheimer — 6 combinaciones</h3>
+
+  <div class="callout callout-gold reveal">
+    <strong>Enfermedad neurodegenerativa con crecimiento tendencial.</strong> La estacionalidad multiplicativa gana siempre: a mayor prevalencia, mayor amplitud estacional. changepoint_prior_scale bajo (0.01-0.03) prefiere tendencias suaves — la incidencia de Alzheimer no presenta quiebres abruptos. sp=0.05 (nuevo en v5) fue el ganador en 41% de los modelos.
+  </div>
+
+  <div class="card reveal">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start">
+      <div>
+        <h4 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:1rem">Grid activo (v5)</h4>
+        <table class="grid-heat">
+          <thead>
+            <tr>
+              <th>cp \ sp</th>
+              <th>0.05 <span class="badge badge-green" style="font-size:.65rem;padding:.1rem .4rem">nuevo</span></th>
+              <th>0.1</th>
+              <th>0.5</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>cp=0.01</td>
+              <td><span class="heat-hi">Ganador 41%</span></td>
+              <td><span class="heat-mid">Frecuente</span></td>
+              <td><span class="heat-lo">Raro</span></td>
+            </tr>
+            <tr>
+              <td>cp=0.03</td>
+              <td><span class="heat-mid">Moderado</span></td>
+              <td><span class="heat-mid">Moderado</span></td>
+              <td><span class="heat-lo">Raro</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <p style="font-size:.82rem;color:var(--cool-gray);margin-top:.75rem">seasonality_mode: solo <strong>multiplicative</strong> (additive eliminado: +51% RMSE vs multiplicative)</p>
+      </div>
+      <div>
+        <h4 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:1rem">Resumen del grid</h4>
+        <div style="display:flex;flex-direction:column;gap:.6rem">
+          <div style="display:flex;justify-content:space-between;padding:.5rem .75rem;background:var(--cream-pale);border-radius:8px;font-size:.88rem">
+            <span>Combinaciones totales</span><span style="font-family:var(--font-mono);font-weight:600;color:var(--dark-teal)">6</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.5rem .75rem;background:var(--cream-pale);border-radius:8px;font-size:.88rem">
+            <span>seasonality_mode</span><span style="font-family:var(--font-mono);font-size:.82rem;color:var(--teal)">[multiplicative]</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.5rem .75rem;background:var(--cream-pale);border-radius:8px;font-size:.88rem">
+            <span>changepoint_prior_scale</span><span style="font-family:var(--font-mono);font-size:.82rem;color:var(--teal)">[0.01, 0.03]</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.5rem .75rem;background:var(--cream-pale);border-radius:8px;font-size:.88rem">
+            <span>seasonality_prior_scale</span><span style="font-family:var(--font-mono);font-size:.82rem;color:var(--teal)">[0.05, 0.1, 0.5]</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.5rem .75rem;background:#fde8e8;border-radius:8px;font-size:.88rem">
+            <span>Eliminado</span><span style="font-family:var(--font-mono);font-size:.82rem;color:#b91c1c">additive (+51% RMSE)</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.5rem .75rem;background:#e6f4ea;border-radius:8px;font-size:.88rem">
+            <span>RMSE medio v6</span><span style="font-family:var(--font-mono);font-weight:700;color:#1a7431">0.027</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEPRESION GRID -->
+  <h3 class="reveal" style="font-family:var(--font-display);font-size:1.5rem;color:var(--dark-teal);margin-bottom:1rem;margin-top:3rem">3.3 Depresión — 24 combinaciones</h3>
+
+  <div class="callout callout-burgundy reveal">
+    <strong>La serie más volátil y el grid más amplio.</strong> Depresión presenta picos pandémicos, sub-registro temporal y recuperación no lineal. Se prueban ambos seasonality_mode y el rango más amplio de cp y sp. sp=0.025 (nuevo en v5) aplica mayor regularización para series estatales inestables. sp=1.0 fue eliminado: ganaba en 29% de modelos individuales pero con peor RMSE medio global.
+  </div>
+
+  <div class="card reveal">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start">
+      <div>
+        <h4 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:.75rem">Grid additive (12 combos)</h4>
+        <table class="grid-heat">
+          <thead>
+            <tr>
+              <th>cp \ sp</th>
+              <th>0.025 <span class="badge badge-green" style="font-size:.65rem;padding:.1rem .4rem">nuevo</span></th>
+              <th>0.05</th>
+              <th>0.1</th>
+              <th>0.5</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>cp=0.01</td><td><span class="heat-mid">Moderado</span></td><td><span class="heat-hi">Alto</span></td><td><span class="heat-mid">Moderado</span></td><td><span class="heat-lo">Bajo</span></td></tr>
+            <tr><td>cp=0.03</td><td><span class="heat-mid">Moderado</span></td><td><span class="heat-hi">Alto</span></td><td><span class="heat-mid">Moderado</span></td><td><span class="heat-lo">Bajo</span></td></tr>
+            <tr><td>cp=0.05</td><td><span class="heat-lo">Bajo</span></td><td><span class="heat-mid">Moderado</span></td><td><span class="heat-mid">Moderado</span></td><td><span class="heat-lo">Bajo</span></td></tr>
+          </tbody>
+        </table>
+        <h4 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:.75rem;margin-top:1rem">Grid multiplicative (12 combos)</h4>
+        <table class="grid-heat">
+          <thead>
+            <tr>
+              <th>cp \ sp</th>
+              <th>0.025</th><th>0.05</th><th>0.1</th><th>0.5</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>cp=0.01</td><td><span class="heat-lo">Bajo</span></td><td><span class="heat-mid">Moderado</span></td><td><span class="heat-mid">Moderado</span></td><td><span class="heat-lo">Bajo</span></td></tr>
+            <tr><td>cp=0.03</td><td><span class="heat-lo">Bajo</span></td><td><span class="heat-mid">Moderado</span></td><td><span class="heat-hi">Alto</span></td><td><span class="heat-lo">Bajo</span></td></tr>
+            <tr><td>cp=0.05</td><td><span class="heat-lo">Bajo</span></td><td><span class="heat-lo">Bajo</span></td><td><span class="heat-mid">Moderado</span></td><td><span class="heat-lo">Bajo</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div>
+        <h4 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:1rem">Resumen del grid</h4>
+        <div style="display:flex;flex-direction:column;gap:.6rem">
+          <div style="display:flex;justify-content:space-between;padding:.5rem .75rem;background:var(--cream-pale);border-radius:8px;font-size:.88rem">
+            <span>Combinaciones totales</span><span style="font-family:var(--font-mono);font-weight:600;color:var(--dark-teal)">24</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.5rem .75rem;background:var(--cream-pale);border-radius:8px;font-size:.88rem">
+            <span>seasonality_mode</span><span style="font-family:var(--font-mono);font-size:.82rem;color:var(--teal)">[additive, multiplicative]</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.5rem .75rem;background:var(--cream-pale);border-radius:8px;font-size:.88rem">
+            <span>changepoint_prior_scale</span><span style="font-family:var(--font-mono);font-size:.82rem;color:var(--teal)">[0.01, 0.03, 0.05]</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.5rem .75rem;background:var(--cream-pale);border-radius:8px;font-size:.88rem">
+            <span>seasonality_prior_scale</span><span style="font-family:var(--font-mono);font-size:.82rem;color:var(--teal)">[0.025, 0.05, 0.1, 0.5]</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.5rem .75rem;background:#fde8e8;border-radius:8px;font-size:.88rem">
+            <span>Eliminado</span><span style="font-family:var(--font-mono);font-size:.82rem;color:#b91c1c">sp=1.0 (peor RMSE medio)</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.5rem .75rem;background:#e6f4ea;border-radius:8px;font-size:.88rem">
+            <span>Additive RMSE medio</span><span style="font-family:var(--font-mono);font-weight:700;color:#1a7431">0.2017</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.5rem .75rem;background:#fef7e0;border-radius:8px;font-size:.88rem">
+            <span>Multiplicative RMSE medio</span><span style="font-family:var(--font-mono);font-weight:600;color:#8a6d00">0.2183</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.5rem .75rem;background:#e6f4ea;border-radius:8px;font-size:.88rem">
+            <span>RMSE medio v6</span><span style="font-family:var(--font-mono);font-weight:700;color:#1a7431">0.183</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PARKINSON GRID -->
+  <h3 class="reveal" style="font-family:var(--font-display);font-size:1.5rem;color:var(--dark-teal);margin-bottom:1rem;margin-top:3rem">3.4 Parkinson — 18 combinaciones</h3>
+
+  <div class="callout reveal">
+    <strong>El grid más depurado tras la guerra contra Newton.</strong> cp=0.01 eliminado (causaba Newton en el 35% de series). cp=0.07 eliminado (nunca ganaba). cp=0.04 nuevo (interpolación entre 0.03 y 0.05 que mejoró cobertura). sp=0.5 fue el ganador claro con RMSE=0.0461, reduciéndolo ~15% vs sp=0.1.
+  </div>
+
+  <div class="card reveal">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:start">
+      <div>
+        <h4 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:1rem">Grid activo (v5)</h4>
+        <table class="grid-heat">
+          <thead>
+            <tr>
+              <th>cp \ sp</th>
+              <th>0.1</th>
+              <th>0.5 <span class="badge badge-green" style="font-size:.65rem;padding:.1rem .4rem">ganador</span></th>
+              <th>1.0</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>cp=0.03</td>
+              <td><span class="heat-mid">Moderado</span></td>
+              <td><span class="heat-hi">RMSE 0.046</span></td>
+              <td><span class="heat-lo">Raro</span></td>
+            </tr>
+            <tr>
+              <td>cp=0.04 <span class="badge badge-green" style="font-size:.65rem;padding:.1rem .3rem">nuevo</span></td>
+              <td><span class="heat-mid">Moderado</span></td>
+              <td><span class="heat-hi">Alto</span></td>
+              <td><span class="heat-lo">Raro</span></td>
+            </tr>
+            <tr>
+              <td>cp=0.05</td>
+              <td><span class="heat-mid">Moderado</span></td>
+              <td><span class="heat-mid">Moderado</span></td>
+              <td><span class="heat-lo">Bajo</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div style="margin-top:.75rem;padding:.6rem .75rem;background:#fde8e8;border-radius:8px;font-size:.82rem;color:#b91c1c">
+          <strong>Eliminados:</strong> cp=0.01 (Newton-prone), cp=0.07 (nunca ganaba) — ambos de v4
+        </div>
+        <p style="font-size:.82rem;color:var(--cool-gray);margin-top:.5rem">seasonality_mode: [multiplicative, additive]</p>
+      </div>
+      <div>
+        <h4 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:1rem">Resumen del grid</h4>
+        <div style="display:flex;flex-direction:column;gap:.6rem">
+          <div style="display:flex;justify-content:space-between;padding:.5rem .75rem;background:var(--cream-pale);border-radius:8px;font-size:.88rem">
+            <span>Combinaciones totales</span><span style="font-family:var(--font-mono);font-weight:600;color:var(--dark-teal)">18</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.5rem .75rem;background:var(--cream-pale);border-radius:8px;font-size:.88rem">
+            <span>seasonality_mode</span><span style="font-family:var(--font-mono);font-size:.82rem;color:var(--teal)">[multiplicative, additive]</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.5rem .75rem;background:var(--cream-pale);border-radius:8px;font-size:.88rem">
+            <span>changepoint_prior_scale</span><span style="font-family:var(--font-mono);font-size:.82rem;color:var(--teal)">[0.03, 0.04, 0.05]</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.5rem .75rem;background:var(--cream-pale);border-radius:8px;font-size:.88rem">
+            <span>seasonality_prior_scale</span><span style="font-family:var(--font-mono);font-size:.82rem;color:var(--teal)">[0.1, 0.5, 1.0]</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.5rem .75rem;background:#e6f4ea;border-radius:8px;font-size:.88rem">
+            <span>sp ganador</span><span style="font-family:var(--font-mono);font-weight:700;color:#1a7431">0.5 (RMSE 0.046)</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.5rem .75rem;background:#e6f4ea;border-radius:8px;font-size:.88rem">
+            <span>RMSE medio v6</span><span style="font-family:var(--font-mono);font-weight:700;color:#1a7431">0.057</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARTS GRID -->
+  <div class="charts-row reveal" style="margin-top:2rem">
+    <div class="chart-wrap">
+      <h3>Combinaciones por padecimiento</h3>
+      <p class="chart-sub">Total de combinaciones en el grid de CV por enfermedad</p>
+      <canvas id="chartCombos"></canvas>
+    </div>
+    <div class="chart-wrap">
+      <h3>Distribucion de hiperparametros</h3>
+      <p class="chart-sub">Valores de changepoint_prior_scale por padecimiento</p>
+      <canvas id="chartCpDist"></canvas>
+    </div>
+  </div>
+
+  <!-- TABLA EVOLUCIÓN -->
+  <h3 class="reveal" style="font-family:var(--font-display);font-size:1.5rem;color:var(--dark-teal);margin-bottom:1.25rem;margin-top:3rem">3.5 Evolución del Grid: v4 → v5 → v6</h3>
+
+  <div class="table-wrapper reveal">
+    <table class="ref-table">
+      <thead>
+        <tr>
+          <th>Parámetro / Padecimiento</th>
+          <th>v4</th>
+          <th>v5</th>
+          <th>v6</th>
+          <th>Motivo</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono">Alzheimer · additive</td>
+          <td><span class="cell-same">Incluido</span></td>
+          <td><span class="cell-removed">Eliminado</span></td>
+          <td><span class="cell-removed">Eliminado</span></td>
+          <td style="font-size:.82rem">+51% RMSE vs multiplicative</td>
+        </tr>
+        <tr>
+          <td class="mono">Alzheimer · sp=0.05</td>
+          <td><span class="cell-same">No estaba</span></td>
+          <td><span class="cell-added">Agregado</span></td>
+          <td><span class="cell-same">Mantiene</span></td>
+          <td style="font-size:.82rem">Ganador en 41% de modelos Alzheimer</td>
+        </tr>
+        <tr>
+          <td class="mono">Depresión · sp=0.025</td>
+          <td><span class="cell-same">No estaba</span></td>
+          <td><span class="cell-added">Agregado</span></td>
+          <td><span class="cell-same">Mantiene</span></td>
+          <td style="font-size:.82rem">Mayor regularización para series volátiles</td>
+        </tr>
+        <tr>
+          <td class="mono">Depresión · sp=1.0</td>
+          <td><span class="cell-same">Incluido</span></td>
+          <td><span class="cell-removed">Eliminado</span></td>
+          <td><span class="cell-removed">Eliminado</span></td>
+          <td style="font-size:.82rem">Ganaba 29% individual pero peor RMSE medio</td>
+        </tr>
+        <tr>
+          <td class="mono">Parkinson · cp=0.01</td>
+          <td><span class="cell-same">Incluido</span></td>
+          <td><span class="cell-removed">Eliminado</span></td>
+          <td><span class="cell-removed">Eliminado</span></td>
+          <td style="font-size:.82rem">Newton-prone en 35% de series Parkinson</td>
+        </tr>
+        <tr>
+          <td class="mono">Parkinson · cp=0.07</td>
+          <td><span class="cell-same">Incluido</span></td>
+          <td><span class="cell-removed">Eliminado</span></td>
+          <td><span class="cell-removed">Eliminado</span></td>
+          <td style="font-size:.82rem">Nunca ganaba — desechar para ahorrar tiempo</td>
+        </tr>
+        <tr>
+          <td class="mono">Parkinson · cp=0.04</td>
+          <td><span class="cell-same">No estaba</span></td>
+          <td><span class="cell-added">Agregado</span></td>
+          <td><span class="cell-same">Mantiene</span></td>
+          <td style="font-size:.82rem">Interpolación 0.03–0.05, ganador en 20% Parkinson</td>
+        </tr>
+        <tr>
+          <td class="mono">fourier_order estatal</td>
+          <td><span class="cell-same">5 (igual que nacional)</span></td>
+          <td><span class="cell-modified">3 (reducido)</span></td>
+          <td><span class="cell-same">Mantiene 3</span></td>
+          <td style="font-size:.82rem">Previene overfitting en series cortas estatales</td>
+        </tr>
+        <tr>
+          <td class="mono">n_changepoints estatal</td>
+          <td><span class="cell-same">25 (igual que nacional)</span></td>
+          <td><span class="cell-modified">12 (reducido)</span></td>
+          <td><span class="cell-same">Mantiene 12</span></td>
+          <td style="font-size:.82rem">1 changepoint cada 24 sem vs 11 sem (más estable)</td>
+        </tr>
+        <tr>
+          <td class="mono">MASE metric en CV</td>
+          <td><span class="cell-same">No estaba</span></td>
+          <td><span class="cell-same">No estaba</span></td>
+          <td><span class="cell-added">Agregado v6</span></td>
+          <td style="font-size:.82rem">MAE_modelo / MAE_naive_lag52 — escala-independiente</td>
+        </tr>
+        <tr>
+          <td class="mono">Modo híbrido (fallback regional)</td>
+          <td><span class="cell-same">No estaba</span></td>
+          <td><span class="cell-same">No estaba</span></td>
+          <td><span class="cell-added">Agregado v6</span></td>
+          <td style="font-size:.82rem">100% cobertura estatal (vs 87% en v5)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ============================================================ -->
+<!-- SECCIÓN 4: CROSS-VALIDATION TEMPORAL                         -->
+<!-- ============================================================ -->
+<section id="cv">
+  <h2 class="section-title reveal">4. Cross-Validation Temporal</h2>
+  <p class="section-sub reveal">4 folds con pesos progresivos — los periodos recientes pesan más en la selección del modelo</p>
+
+  <div class="callout reveal">
+    <strong>Por qué validación cruzada temporal y no aleatoria:</strong> Las series epidemiológicas tienen dependencia temporal. Una división aleatoria permitiría que el modelo "vea el futuro" durante el entrenamiento. TimeSeriesSplit garantiza que el fold de test siempre está cronológicamente después del fold de entrenamiento — igual que la situación de producción.
+  </div>
+
+  <div class="card reveal" style="margin-top:2rem">
+    <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--dark-teal);margin-bottom:1.5rem">Estructura de los 4 folds</h3>
+    <div class="fold-diagram">
+      <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:1.25rem">
+        <span style="min-width:60px;text-align:right;font-family:var(--font-mono);font-size:.72rem;color:var(--cool-gray)">Fold 1</span>
+        <div style="display:flex;flex:1;height:36px;border-radius:6px;overflow:hidden;gap:2px">
+          <div class="fold-train" style="flex:5">Entrenamiento (2014-2020)</div>
+          <div class="fold-test" style="flex:1">Test 2020-21</div>
+        </div>
+        <span style="margin-left:1rem;font-family:var(--font-mono);font-size:.82rem;font-weight:600;color:var(--cool-gray);min-width:50px">×0.50</span>
+        <span style="font-size:.8rem;color:var(--cool-gray);max-width:180px">Post-COVID atípico</span>
+      </div>
+      <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:1.25rem">
+        <span style="min-width:60px;text-align:right;font-family:var(--font-mono);font-size:.72rem;color:var(--cool-gray)">Fold 2</span>
+        <div style="display:flex;flex:1;height:36px;border-radius:6px;overflow:hidden;gap:2px">
+          <div class="fold-train" style="flex:6">Entrenamiento (2014-2021)</div>
+          <div class="fold-test" style="flex:1">Test 2021-22</div>
+        </div>
+        <span style="margin-left:1rem;font-family:var(--font-mono);font-size:.82rem;font-weight:600;color:var(--cool-gray);min-width:50px">×0.75</span>
+        <span style="font-size:.8rem;color:var(--cool-gray);max-width:180px">Recuperación pandémica</span>
+      </div>
+      <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:1.25rem">
+        <span style="min-width:60px;text-align:right;font-family:var(--font-mono);font-size:.72rem;color:var(--cool-gray)">Fold 3</span>
+        <div style="display:flex;flex:1;height:36px;border-radius:6px;overflow:hidden;gap:2px">
+          <div class="fold-train" style="flex:7">Entrenamiento (2014-2022)</div>
+          <div class="fold-test" style="flex:1">Test 2022-23</div>
+        </div>
+        <span style="margin-left:1rem;font-family:var(--font-mono);font-size:.82rem;font-weight:600;color:var(--teal);min-width:50px">×1.00</span>
+        <span style="font-size:.8rem;color:var(--cool-gray);max-width:180px">Estabilización post-COVID</span>
+      </div>
+      <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:1.25rem">
+        <span style="min-width:60px;text-align:right;font-family:var(--font-mono);font-size:.72rem;color:var(--cool-gray)">Fold 4</span>
+        <div style="display:flex;flex:1;height:36px;border-radius:6px;overflow:hidden;gap:2px">
+          <div class="fold-train" style="flex:8">Entrenamiento (2014-2023)</div>
+          <div class="fold-test" style="flex:1">Test 2023-24</div>
+        </div>
+        <span style="margin-left:1rem;font-family:var(--font-mono);font-size:.82rem;font-weight:700;color:var(--dark-teal);min-width:50px">×1.25</span>
+        <span style="font-size:.8rem;color:var(--cool-gray);max-width:180px">Comportamiento actual</span>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--cream-light)">
+      <div>
+        <h4 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:.75rem">Ponderacion progresiva</h4>
+        <p style="font-size:.88rem;color:#555;line-height:1.65">En lugar de <code>np.mean(metrics)</code> sobre los 4 folds, se usa:</p>
+        <div style="font-family:var(--font-mono);font-size:.88rem;background:var(--cream-pale);border:1px solid var(--cream);border-radius:8px;padding:.75rem 1rem;margin:.75rem 0;color:var(--dark-teal)">
+          RMSE_cv = np.average(<br>
+          &nbsp;&nbsp;[rmse_f1, rmse_f2, rmse_f3, rmse_f4],<br>
+          &nbsp;&nbsp;weights=[0.50, 0.75, 1.00, 1.25]<br>
+          )
+        </div>
+        <p style="font-size:.85rem;color:#555">El fold post-COVID (2020-2021) recibe la mitad del peso del fold actual. Evita que el periodo atípico domine la selección de hiperparámetros.</p>
+      </div>
+      <div>
+        <h4 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:.75rem">Parámetros de CV</h4>
+        <div style="display:flex;flex-direction:column;gap:.5rem">
+          <div style="display:flex;justify-content:space-between;padding:.4rem .7rem;background:var(--cream-pale);border-radius:6px;font-size:.85rem">
+            <span>Método</span><span style="font-family:var(--font-mono);color:var(--dark-teal)">TimeSeriesSplit</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.4rem .7rem;background:var(--cream-pale);border-radius:6px;font-size:.85rem">
+            <span>n_splits</span><span style="font-family:var(--font-mono);color:var(--dark-teal)">4</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.4rem .7rem;background:var(--cream-pale);border-radius:6px;font-size:.85rem">
+            <span>test_size</span><span style="font-family:var(--font-mono);color:var(--dark-teal)">53 semanas (~1 año)</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.4rem .7rem;background:var(--cream-pale);border-radius:6px;font-size:.85rem">
+            <span>Criterio de selección</span><span style="font-family:var(--font-mono);color:var(--dark-teal)">RMSE ponderado mínimo</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.4rem .7rem;background:var(--cream-pale);border-radius:6px;font-size:.85rem">
+            <span>Modelo final</span><span style="font-family:var(--font-mono);color:var(--dark-teal)">Reentrenar con serie COMPLETA</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:.4rem .7rem;background:#e6f4ea;border-radius:6px;font-size:.85rem">
+            <span>Timeout por fold</span><span style="font-family:var(--font-mono);color:#1a7431">35 segundos</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="charts-row reveal" style="margin-top:2rem">
+    <div class="chart-wrap">
+      <h3>Pesos de los folds de CV</h3>
+      <p class="chart-sub">Mayor peso a periodos recientes — menor al periodo pandémico</p>
+      <canvas id="chartCvWeights"></canvas>
+    </div>
+    <div class="card" style="align-self:start">
+      <div class="card-header">
+        <div style="width:14px;height:14px;border-radius:50%;background:var(--teal);flex-shrink:0"></div>
+        <h3 class="card-title">Entrenamiento del modelo final</h3>
+      </div>
+      <p style="font-size:.9rem;color:#555;line-height:1.7;margin-bottom:1rem">Después de la CV, el mejor conjunto de hiperparámetros se usa para entrenar el modelo <strong>con la serie completa</strong> (2014-2026), no solo el split de entrenamiento del último fold.</p>
+      <div style="padding:1rem;background:linear-gradient(135deg,rgba(0,82,78,.06),rgba(181,133,0,.04));border-radius:8px;border-left:3px solid var(--teal)">
+        <p style="font-size:.85rem;color:var(--dark-teal);font-weight:600;margin-bottom:.25rem">Razonamiento</p>
+        <p style="font-size:.85rem;color:#555">CV evalúa el desempeño predictivo. El .pkl en producción necesita toda la información disponible para el pronóstico futuro — incluir 2024-2026 mejora la proyección a 52 semanas.</p>
+      </div>
+      <div style="margin-top:1rem;padding:1rem;background:#e6f4ea;border-radius:8px;border-left:3px solid #2E7D32">
+        <p style="font-size:.85rem;color:#1a7431;font-weight:600;margin-bottom:.25rem">Impacto</p>
+        <p style="font-size:.85rem;color:#555">+53 semanas de datos adicionales en el modelo final vs v4 (que entrenaba solo hasta el split de CV). Mejora especialmente la proyección en series con tendencia reciente marcada.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+</div><!-- end container part 1 -->
+
+<div class="container">
+
+<!-- ============================================================ -->
+<!-- SECCIÓN 5: PROTECCIÓN ANTI-NEWTON                            -->
+<!-- ============================================================ -->
+<section id="newton">
+  <h2 class="section-title reveal">5. Protección Anti-Newton</h2>
+  <p class="section-sub reveal">Sistema de 5 capas para prevenir que Prophet caiga al optimizador Newton (100-500x más lento)</p>
+
+  <div class="callout callout-burgundy reveal">
+    <strong>El problema:</strong> Prophet usa L-BFGS por defecto (rápido). Cuando no converge — usualmente con <code>changepoint_prior_scale</code> muy bajo — cae silenciosamente al optimizador Newton, que puede tardar 30-90 minutos por modelo. Chihuahua-Depresión tardaba <strong>39 minutos</strong> en v4. Con las 5 capas de protección, pasó a <strong>4 minutos en v5</strong> — una reducción de 9.75x.
+  </div>
+
+  <div class="stats-row reveal">
+    <div class="stat-box burgundy">
+      <div class="big-num">39 min</div>
+      <div class="stat-desc">Chihuahua-Depresión v4</div>
+    </div>
+    <div class="stat-box green">
+      <div class="big-num">4 min</div>
+      <div class="stat-desc">Chihuahua-Depresión v5</div>
+    </div>
+    <div class="stat-box gold">
+      <div class="big-num">9.75x</div>
+      <div class="stat-desc">Speedup logrado</div>
+    </div>
+    <div class="stat-box">
+      <div class="big-num">35 s</div>
+      <div class="stat-desc">Timeout por fold</div>
+    </div>
+    <div class="stat-box">
+      <div class="big-num">90 s</div>
+      <div class="stat-desc">Timeout por combo</div>
+    </div>
+  </div>
+
+  <div class="flowchart reveal">
+    <div class="flow-node action">
+      <h5>Capa 1 — Sort cp descendente</h5>
+      <p>El grid se ordena de mayor a menor <code>changepoint_prior_scale</code> antes de iniciar CV. Los combos con cp alto (ej. 0.05) son menos propensos a Newton y convergen más rápido — se prueban primero para establecer un baseline rápido.</p>
+    </div>
+    <div class="flow-connector">&#8595;</div>
+    <div class="flow-node decision">
+      <h5>Capa 2 — Timeout por fold (35 s)</h5>
+      <p>Cada fold de CV corre en un <code>ThreadPoolExecutor</code> con un timeout de 35 segundos. Si el fold excede ese límite, se cancela y el combo recibe RMSE=infinito para ese fold.</p>
+    </div>
+    <div class="flow-connector">&#8595;</div>
+    <div class="flow-node warning">
+      <h5>Capa 3 — Newton-prone threshold</h5>
+      <p>Si un combo con <code>cp=X</code> genera timeout en cualquier fold, se registra X como "umbral Newton". Todos los combos con <code>cp &lt; X</code> se saltan (skip) automáticamente, ya que son aún más propensos a Newton.</p>
+    </div>
+    <div class="flow-connector">&#8595;</div>
+    <div class="flow-node decision">
+      <h5>Capa 4 — Timeout por combo (90 s)</h5>
+      <p>Backstop total por combinación. Si los 4 folds juntos superan 90 segundos, el combo completo se descarta. Evita que un solo combo atípico bloquee el grid search.</p>
+    </div>
+    <div class="flow-connector">&#8595;</div>
+    <div class="flow-node success">
+      <h5>Capa 5 — Fallback a defaults</h5>
+      <p>Si todos los combos del grid generan timeout, se usa el primer valor del grid con el mayor cp disponible (el menos propenso a Newton). Garantiza que siempre se produce un modelo, aunque sea con hiperparámetros conservadores.</p>
+    </div>
+  </div>
+
+  <div class="charts-row reveal" style="margin-top:2rem">
+    <div class="chart-wrap">
+      <h3>Caso de estudio: Chihuahua-Depresión</h3>
+      <p class="chart-sub">Tiempo de entrenamiento v4 vs v5 — impacto de la protección anti-Newton</p>
+      <canvas id="chartNewton"></canvas>
+    </div>
+    <div class="card" style="align-self:start">
+      <div class="card-header">
+        <div style="width:14px;height:14px;border-radius:50%;background:var(--burgundy);flex-shrink:0"></div>
+        <h3 class="card-title">Por qué cp bajo activa Newton</h3>
+      </div>
+      <p style="font-size:.88rem;color:#555;line-height:1.7;margin-bottom:1rem">Con <code>changepoint_prior_scale=0.01</code>, la prior Laplace es extremadamente estrecha. L-BFGS necesita muchos pasos para encontrar la curvatura correcta en ese espacio de parámetros — y a menudo falla la convergencia, activando el fallback a Newton.</p>
+      <div style="display:flex;flex-direction:column;gap:.75rem">
+        <div style="padding:.75rem;background:#fde8e8;border-radius:8px;border-left:3px solid var(--burgundy)">
+          <div style="font-family:var(--font-mono);font-size:.8rem;font-weight:600;color:var(--dark-burgundy);margin-bottom:.25rem">L-BFGS (normal)</div>
+          <p style="font-size:.82rem;color:#555">Optimizador quasi-Newton de memoria limitada. Tipicamente converge en 50-200 iteraciones. Tiempo: 2-10 segundos por fold.</p>
+        </div>
+        <div style="padding:.75rem;background:#fde8e8;border-radius:8px;border-left:3px solid #8B0000">
+          <div style="font-family:var(--font-mono);font-size:.8rem;font-weight:600;color:#8B0000;margin-bottom:.25rem">Newton (lento)</div>
+          <p style="font-size:.82rem;color:#555">Newton completo requiere la Hessiana exacta. En espacio de alta dimensión (Fourier + changepoints), puede tardar 500-2000 iteraciones. Tiempo: 5-40 minutos por fold.</p>
+        </div>
+        <div style="padding:.75rem;background:#e6f4ea;border-radius:8px;border-left:3px solid #2E7D32">
+          <div style="font-family:var(--font-mono);font-size:.8rem;font-weight:600;color:#1a7431;margin-bottom:.25rem">Con protección anti-Newton</div>
+          <p style="font-size:.82rem;color:#555">cp=0.01 se prueba primero (orden descendente). Si timeout en fold 1, se salta todos los cp menores. Tiempo total: &lt;5 min por serie.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ============================================================ -->
+<!-- SECCIÓN 6: MODO HÍBRIDO Y CONFIANZA                          -->
+<!-- ============================================================ -->
+<section id="hibrido">
+  <h2 class="section-title reveal">6. Modo Híbrido y Confianza</h2>
+  <p class="section-sub reveal">Cobertura 100% estatal — estados con datos insuficientes usan modelos regionales como fallback</p>
+
+  <div class="callout callout-gold reveal">
+    <strong>Problema v5:</strong> 41 series estatales tenían promedio &lt;0.5 casos/semana. En v5, estos modelos producían proyecciones planas (sin información útil). En v6, el modo híbrido los redirige a un modelo regional — manteniendo la desnormalización con la población individual de cada estado.
+  </div>
+
+  <div class="stats-row reveal">
+    <div class="stat-box">
+      <div class="big-num">0.5</div>
+      <div class="stat-desc">Umbral mínimo (casos/sem)</div>
+    </div>
+    <div class="stat-box burgundy">
+      <div class="big-num">41</div>
+      <div class="stat-desc">Modelos insuficientes v6</div>
+    </div>
+    <div class="stat-box green">
+      <div class="big-num">100%</div>
+      <div class="stat-desc">Cobertura estatal v6</div>
+    </div>
+    <div class="stat-box">
+      <div class="big-num">87%</div>
+      <div class="stat-desc">Cobertura estatal v5</div>
+    </div>
+    <div class="stat-box gold">
+      <div class="big-num">4</div>
+      <div class="stat-desc">Regiones INEGI salud mental</div>
+    </div>
+  </div>
+
+  <div class="card-grid reveal" style="margin-top:2rem">
+    <div class="card" style="border-top:4px solid var(--burgundy)">
+      <div style="font-family:var(--font-mono);font-size:.8rem;color:var(--cool-gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem">umbral_minimo_semanal</div>
+      <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--dark-burgundy);margin-bottom:.75rem">0.5 casos/semana</h3>
+      <p style="font-size:.88rem;color:#555;line-height:1.7">Si el promedio semanal de una serie estatal es &lt; 0.5, se marca como <code>confianza: "insuficiente"</code>. Reducido de 1.0 (v5) a 0.5 (v6) para recuperar ~40 modelos que tenían datos usables pero escasos.</p>
+      <div style="margin-top:1rem;padding:.75rem;background:#fde8e8;border-radius:8px;font-size:.85rem;color:#555">
+        <strong style="color:var(--dark-burgundy)">Distribución por padecimiento:</strong><br>
+        Alzheimer: 36 insuficientes &middot; Parkinson: 5 insuficientes &middot; Depresión: 0
+      </div>
+    </div>
+
+    <div class="card" style="border-top:4px solid var(--teal)">
+      <div style="font-family:var(--font-mono);font-size:.8rem;color:var(--cool-gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.5rem">modelado_hibrido: true</div>
+      <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--dark-teal);margin-bottom:.75rem">Lógica de fallback</h3>
+      <div style="display:flex;flex-direction:column;gap:.6rem;font-size:.88rem">
+        <div style="display:flex;gap:.75rem;align-items:flex-start">
+          <span style="min-width:22px;height:22px;border-radius:50%;background:rgba(0,82,78,.15);color:var(--teal);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:.72rem;font-weight:700;flex-shrink:0">1</span>
+          <p style="color:#555;margin:0">CV y entrenamiento regional se realizan normalmente (datos agregados suficientes)</p>
+        </div>
+        <div style="display:flex;gap:.75rem;align-items:flex-start">
+          <span style="min-width:22px;height:22px;border-radius:50%;background:rgba(0,82,78,.15);color:var(--teal);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:.72rem;font-weight:700;flex-shrink:0">2</span>
+          <p style="color:#555;margin:0">Estado insuficiente: el .pkl regional del estado correspondiente se usa para predicción</p>
+        </div>
+        <div style="display:flex;gap:.75rem;align-items:flex-start">
+          <span style="min-width:22px;height:22px;border-radius:50%;background:rgba(0,82,78,.15);color:var(--teal);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:.72rem;font-weight:700;flex-shrink:0">3</span>
+          <p style="color:#555;margin:0">La desnormalización usa la <strong>población individual del estado</strong>, no la regional — escala correcta</p>
+        </div>
+        <div style="display:flex;gap:.75rem;align-items:flex-start">
+          <span style="min-width:22px;height:22px;border-radius:50%;background:rgba(0,82,78,.15);color:var(--teal);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:.72rem;font-weight:700;flex-shrink:0">4</span>
+          <p style="color:#555;margin:0">El CSV <code>all_forecast.csv</code> incluye columna <code>usar_regional</code> y mapeo a .pkl regional</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card reveal" style="margin-top:2rem">
+    <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--dark-teal);margin-bottom:1.25rem">Regiones INEGI de Salud Mental</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1rem">
+      <div style="padding:1.25rem;background:linear-gradient(135deg,var(--dark-teal),var(--teal));color:var(--cream-pale);border-radius:var(--radius-sm)">
+        <div style="font-family:var(--font-mono);font-size:.78rem;opacity:.7;margin-bottom:.4rem">Región 1</div>
+        <div style="font-family:var(--font-display);font-size:1.1rem;margin-bottom:.5rem">Metropolitana alta</div>
+        <p style="font-size:.82rem;opacity:.8">CDMX, Jalisco, Nuevo León, Estado de México. Alta densidad, servicios de salud mental desarrollados.</p>
+      </div>
+      <div style="padding:1.25rem;background:linear-gradient(135deg,#1a4a3a,var(--teal));color:var(--cream-pale);border-radius:var(--radius-sm)">
+        <div style="font-family:var(--font-mono);font-size:.78rem;opacity:.7;margin-bottom:.4rem">Región 2</div>
+        <div style="font-family:var(--font-display);font-size:1.1rem;margin-bottom:.5rem">Urbana media</div>
+        <p style="font-size:.82rem;opacity:.8">Aguascalientes, Querétaro, Guanajuato, Coahuila. Urbanización creciente, cobertura IMSS media.</p>
+      </div>
+      <div style="padding:1.25rem;background:linear-gradient(135deg,#203a30,var(--dark-teal));color:var(--cream-pale);border-radius:var(--radius-sm)">
+        <div style="font-family:var(--font-mono);font-size:.78rem;opacity:.7;margin-bottom:.4rem">Región 3</div>
+        <div style="font-family:var(--font-display);font-size:1.1rem;margin-bottom:.5rem">Sur-Sureste vulnerable</div>
+        <p style="font-size:.82rem;opacity:.8">Chiapas, Oaxaca, Guerrero, Veracruz. Alta marginalidad, sub-registro alto, series más cortas.</p>
+      </div>
+      <div style="padding:1.25rem;background:linear-gradient(135deg,#1a3828,var(--dark-teal));color:var(--cream-pale);border-radius:var(--radius-sm)">
+        <div style="font-family:var(--font-mono);font-size:.78rem;opacity:.7;margin-bottom:.4rem">Región 4</div>
+        <div style="font-family:var(--font-display);font-size:1.1rem;margin-bottom:.5rem">Rural / dispersa</div>
+        <p style="font-size:.82rem;opacity:.8">Durango, Zacatecas, Colima, BCS, Nayarit. Baja densidad, mayor proporción de modelos insuficientes.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-wrap reveal" style="margin-top:2rem">
+    <h3>Distribucion de modelos por confianza y padecimiento</h3>
+    <p class="chart-sub">Modelos con confianza "normal" vs "insuficiente" — los insuficientes usan fallback regional en v6</p>
+    <canvas id="chartConfianza"></canvas>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ============================================================ -->
+<!-- SECCIÓN 7: PERIODOS ATÍPICOS                                 -->
+<!-- ============================================================ -->
+<section id="atipicos">
+  <h2 class="section-title reveal">7. Periodos Atípicos</h2>
+  <p class="section-sub reveal">Holidays de Prophet que absorben eventos extraordinarios sin contaminar los patrones estacionales normales</p>
+
+  <div class="callout reveal">
+    <strong>Cómo funcionan en Prophet:</strong> Los periodos atípicos se pasan como <code>holidays</code> con <code>lower_window</code> y <code>upper_window</code>. Prophet aprende un efecto específico para esas fechas, separándolo del componente estacional. Esto evita que COVID-19, por ejemplo, distorsione el patrón anual aprendido para todos los años.
+  </div>
+
+  <!-- TIMELINE -->
+  <div class="reveal" style="position:relative;padding:2rem 0;margin:2rem 0">
+    <div style="position:absolute;left:120px;top:0;bottom:0;width:2px;background:linear-gradient(180deg,var(--teal),var(--gold),var(--cool-gray))"></div>
+
+    <!-- COVID -->
+    <div style="display:flex;align-items:flex-start;gap:2rem;margin-bottom:2.5rem">
+      <div style="min-width:110px;text-align:right;font-family:var(--font-mono);font-size:.78rem;color:var(--cool-gray);padding-top:.3rem">2020-03-23</div>
+      <div style="width:16px;height:16px;border-radius:50%;background:var(--burgundy);border:3px solid #fff;box-shadow:0 0 0 2px var(--burgundy);flex-shrink:0;margin-top:.25rem;z-index:1"></div>
+      <div style="flex:1;background:#fff;border-radius:var(--radius-sm);padding:1.25rem 1.5rem;box-shadow:var(--shadow-sm);border-left:4px solid var(--burgundy)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.5rem">
+          <h4 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-burgundy)">Pandemia COVID-19</h4>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <span class="badge badge-red">913 días</span>
+            <span class="badge badge-red">~2.5 años</span>
+            <span class="badge badge-teal">Activo</span>
+          </div>
+        </div>
+        <p style="font-size:.88rem;color:#555;line-height:1.65;margin-top:.5rem">Declaración de pandemia. Los tres padecimientos experimentaron disrupciones distintas: Depresión con pico de demanda + colapso de reporte, Parkinson con interrupción de consultas, Alzheimer con sub-registro en domicilios. La ventana de 913 días cubre hasta mediados de 2022, absorbiendo la fase de recuperación gradual.</p>
+        <div style="margin-top:.75rem;font-family:var(--font-mono);font-size:.82rem;background:var(--cream-pale);border-radius:6px;padding:.5rem .75rem;color:var(--dark-teal)">lower_window: 0 &nbsp;&middot;&nbsp; upper_window: 913</div>
+      </div>
+    </div>
+
+    <!-- TABASCO -->
+    <div style="display:flex;align-items:flex-start;gap:2rem;margin-bottom:2.5rem">
+      <div style="min-width:110px;text-align:right;font-family:var(--font-mono);font-size:.78rem;color:var(--cool-gray);padding-top:.3rem">2023-01-09</div>
+      <div style="width:16px;height:16px;border-radius:50%;background:var(--gold);border:3px solid #fff;box-shadow:0 0 0 2px var(--gold);flex-shrink:0;margin-top:.25rem;z-index:1"></div>
+      <div style="flex:1;background:#fff;border-radius:var(--radius-sm);padding:1.25rem 1.5rem;box-shadow:var(--shadow-sm);border-left:4px solid var(--gold)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.5rem">
+          <h4 style="font-family:var(--font-display);font-size:1.1rem;color:var(--gold)">Tabasco — Cambio de régimen (Depresión)</h4>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+            <span class="badge badge-yellow">365 días</span>
+            <span class="badge badge-yellow">Solo Depresión</span>
+            <span class="badge badge-teal">Activo</span>
+          </div>
+        </div>
+        <p style="font-size:.88rem;color:#555;line-height:1.65;margin-top:.5rem">Quiebre estadístico en la serie de Depresión de Tabasco a principios de 2023 — posiblemente asociado a cambio en protocolo de diagnóstico o sistema de reporte. Sin este holiday, el RMSE de Tabasco-Depresión era 6.2% más alto. Filtrado por <code>entidad="Tabasco"</code> y <code>padecimiento="Depresión"</code>.</p>
+        <div style="margin-top:.75rem;font-family:var(--font-mono);font-size:.82rem;background:var(--cream-pale);border-radius:6px;padding:.5rem .75rem;color:var(--dark-teal)">lower_window: 0 &nbsp;&middot;&nbsp; upper_window: 365 &nbsp;&middot;&nbsp; RMSE mejora: -6.2%</div>
+      </div>
+    </div>
+
+    <!-- RECHAZADOS -->
+    <div style="display:flex;align-items:flex-start;gap:2rem">
+      <div style="min-width:110px;text-align:right;font-family:var(--font-mono);font-size:.78rem;color:var(--cool-gray);padding-top:.3rem">Probados</div>
+      <div style="width:16px;height:16px;border-radius:50%;background:var(--cool-gray);border:3px solid #fff;box-shadow:0 0 0 2px var(--cool-gray);flex-shrink:0;margin-top:.25rem;z-index:1"></div>
+      <div style="flex:1;background:#fff;border-radius:var(--radius-sm);padding:1.25rem 1.5rem;box-shadow:var(--shadow-sm);border-left:4px solid var(--cool-gray)">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.5rem">
+          <h4 style="font-family:var(--font-display);font-size:1.1rem;color:var(--cool-gray)">Rechazados — sin mejora de RMSE</h4>
+          <span class="badge badge-gray">Descartados</span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:.75rem;margin-top:.75rem">
+          <div style="padding:.6rem .9rem;background:#f0f0f0;border-radius:8px;font-size:.85rem">
+            <div style="font-family:var(--font-mono);font-size:.78rem;color:var(--cool-gray);margin-bottom:.2rem">Atípico 2016</div>
+            <p style="color:#555;margin:0">No produjo mejora estadisticamente significativa en ningún padecimiento. Removido en v5.</p>
+          </div>
+          <div style="padding:.6rem .9rem;background:#f0f0f0;border-radius:8px;font-size:.85rem">
+            <div style="font-family:var(--font-mono);font-size:.78rem;color:var(--cool-gray);margin-bottom:.2rem">Step functions (Nayarit, Colima, Durango, BCS)</div>
+            <p style="color:#555;margin:0">Cambios de régimen permanentes (posibles fusiones de clínicas o redefinición de catchment). Prophet trata los holidays como eventos temporales — mal ajuste para escalones permanentes. Empeoraron el RMSE.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ============================================================ -->
+<!-- SECCIÓN 8: MÉTRICAS DE EVALUACIÓN                            -->
+<!-- ============================================================ -->
+<section id="metricas">
+  <h2 class="section-title reveal">8. Métricas de Evaluación</h2>
+  <p class="section-sub reveal">Cuatro métricas complementarias — cada una captura un aspecto distinto del error de pronóstico</p>
+
+  <div class="card-grid reveal">
+    <div class="metric-card">
+      <div style="font-family:var(--font-mono);font-size:.78rem;color:var(--cool-gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.4rem">Métrica principal de selección</div>
+      <h4>RMSE</h4>
+      <div class="formula-block">RMSE = sqrt( (1/n) &sum; (y&hat; - y)&sup2; )</div>
+      <p>Error cuadrático medio. Penaliza errores grandes (outliers) más que errores pequeños debido al cuadrado. Se minimiza en el grid search de CV. Expresado en unidades de log-tasa por 100K.</p>
+      <div class="threshold">
+        <span class="badge badge-green">Alzheimer &lt; 0.03</span>
+        <span class="badge badge-yellow">Depresión &lt; 0.20</span>
+        <span class="badge badge-teal">Parkinson &lt; 0.06</span>
+      </div>
+    </div>
+
+    <div class="metric-card gold">
+      <div style="font-family:var(--font-mono);font-size:.78rem;color:var(--cool-gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.4rem">Reportada en resultados</div>
+      <h4 style="color:var(--gold)">MAE</h4>
+      <div class="formula-block">MAE = (1/n) &sum; |y&hat; - y|</div>
+      <p>Error absoluto medio. Más interpretable que RMSE: representa el error típico en unidades log-tasa. Más robusto a outliers que RMSE. Se incluye en <code>all_forecast.csv</code> como métrica de diagnóstico.</p>
+      <div class="threshold">
+        <span class="badge badge-teal">Complementa al RMSE</span>
+        <span class="badge badge-gray">Sin thresholds fijos</span>
+      </div>
+    </div>
+
+    <div class="metric-card burgundy">
+      <div style="font-family:var(--font-mono);font-size:.78rem;color:var(--cool-gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.4rem">Solo si mape_confiable</div>
+      <h4 style="color:var(--dark-burgundy)">MAPE</h4>
+      <div class="formula-block">MAPE = (100/n) &sum; |y&hat; - y| / |y|</div>
+      <p>Error porcentual absoluto medio. Problemático cuando <code>y &approx; 0</code> (explosión a infinito). Se usa la bandera <code>mape_confiable</code>: solo se reporta si el mínimo de y es &gt;0.1. Se clipea a 999 para evitar infinitos.</p>
+      <div class="threshold">
+        <span class="badge badge-red">Inestable con series esporádicas</span>
+        <span class="badge badge-yellow">Clipeado a 999</span>
+      </div>
+    </div>
+
+    <div class="metric-card green">
+      <div style="font-family:var(--font-mono);font-size:.78rem;color:var(--cool-gray);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.4rem">Nuevo en v6 — escala-independiente</div>
+      <h4 style="color:#1a7431">MASE</h4>
+      <div class="formula-block">MASE = MAE_modelo / MAE_naive_lag52<br><br>MAE_naive_lag52 = (1/n) &sum; |y(t) - y(t-52)|</div>
+      <p>Error absoluto medio escalado. El denominador es el MAE de un modelo naive que predice el mismo valor que hace 52 semanas (lag-52). <strong>MASE &lt; 1</strong> significa que el modelo supera al baseline seasonal naive.</p>
+      <div class="threshold">
+        <span class="badge badge-green">MASE &lt; 1 = mejor que naive</span>
+        <span class="badge badge-red">MASE &gt; 1 = peor que naive</span>
+      </div>
+      <div style="margin-top:.75rem;padding:.6rem .8rem;background:#e6f4ea;border-radius:6px;font-size:.82rem;color:#1a7431">
+        v6: Alzheimer 0.74, Depresion 0.80, Parkinson 0.75 — todos &lt; 1
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-wrap reveal" style="margin-top:2rem">
+    <h3>Comparacion de métricas por padecimiento (v6)</h3>
+    <p class="chart-sub">RMSE y MASE medios — normalizado para visualización conjunta (escala diferente entre métricas)</p>
+    <canvas id="chartMetricas"></canvas>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ============================================================ -->
+<!-- SECCIÓN 9: RESULTADOS V6                                     -->
+<!-- ============================================================ -->
+<section id="resultados">
+  <h2 class="section-title reveal">9. Resultados v6</h2>
+  <p class="section-sub reveal">297 modelos estatales + 15 fallback regionales — 312 series, ~45 minutos con n_jobs=-2</p>
+
+  <div class="stats-row reveal">
+    <div class="stat-box">
+      <div class="big-num">297</div>
+      <div class="stat-desc">Modelos estatales</div>
+    </div>
+    <div class="stat-box">
+      <div class="big-num">15</div>
+      <div class="stat-desc">Modelos regionales fallback</div>
+    </div>
+    <div class="stat-box green">
+      <div class="big-num">312</div>
+      <div class="stat-desc">Graficos generados</div>
+    </div>
+    <div class="stat-box gold">
+      <div class="big-num">~45</div>
+      <div class="stat-desc">Minutos entrenamiento total</div>
+    </div>
+    <div class="stat-box">
+      <div class="big-num">52</div>
+      <div class="stat-desc">Semanas de proyección</div>
+    </div>
+  </div>
+
+  <div class="table-wrapper reveal" style="margin-top:2rem">
+    <table class="ref-table">
+      <thead>
+        <tr>
+          <th>Padecimiento</th>
+          <th>Modelos</th>
+          <th>Insuficientes</th>
+          <th>Fallback regional</th>
+          <th>RMSE medio</th>
+          <th>MAE medio</th>
+          <th>MASE medio</th>
+          <th>Tiempo</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Alzheimer</strong></td>
+          <td class="mono">99</td>
+          <td class="mono" style="color:var(--burgundy)">36</td>
+          <td class="mono" style="color:var(--gold)">36</td>
+          <td class="mono" style="color:#1a7431;font-weight:700">0.027</td>
+          <td class="mono">0.021</td>
+          <td class="mono" style="color:#1a7431;font-weight:700">0.74</td>
+          <td class="mono">~2 min</td>
+        </tr>
+        <tr>
+          <td><strong>Depresión</strong></td>
+          <td class="mono">99</td>
+          <td class="mono" style="color:#1a7431">0</td>
+          <td class="mono" style="color:#1a7431">0</td>
+          <td class="mono" style="color:var(--gold);font-weight:700">0.183</td>
+          <td class="mono">0.143</td>
+          <td class="mono" style="color:var(--gold);font-weight:700">0.80</td>
+          <td class="mono">~28 min</td>
+        </tr>
+        <tr>
+          <td><strong>Parkinson</strong></td>
+          <td class="mono">99</td>
+          <td class="mono" style="color:var(--burgundy)">5</td>
+          <td class="mono" style="color:var(--gold)">5</td>
+          <td class="mono" style="color:#1a7431;font-weight:700">0.057</td>
+          <td class="mono">0.044</td>
+          <td class="mono" style="color:#1a7431;font-weight:700">0.75</td>
+          <td class="mono">~14 min</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="verdict reveal">
+    <h3>Conclusiones del modelado v6</h3>
+    <p>Los tres padecimientos presentan <strong>MASE &lt; 1</strong> — los modelos Prophet superan consistentemente al baseline naive estacional (lag-52 semanas). El modo híbrido elev&oacute; la cobertura estatal informada del 87% (v5) al <strong>100% (v6)</strong>. La protección anti-Newton redujo el tiempo de entrenamiento de Depresión de &gt;2 horas (v4) a 28 minutos. El sistema está listo para producción con 52 semanas de proyección por entidad.</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1.5rem;margin-top:2rem;position:relative">
+      <div style="text-align:center">
+        <div style="font-family:var(--font-display);font-size:2.5rem;background:linear-gradient(135deg,var(--cream),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">0.76</div>
+        <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:1px;opacity:.6;margin-top:.25rem">MASE medio global</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-family:var(--font-display);font-size:2.5rem;background:linear-gradient(135deg,var(--cream),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">312</div>
+        <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:1px;opacity:.6;margin-top:.25rem">Gráficos PNG</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-family:var(--font-display);font-size:2.5rem;background:linear-gradient(135deg,var(--cream),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">100%</div>
+        <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:1px;opacity:.6;margin-top:.25rem">Cobertura estatal</div>
+      </div>
+      <div style="text-align:center">
+        <div style="font-family:var(--font-display);font-size:2.5rem;background:linear-gradient(135deg,var(--cream),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">45 min</div>
+        <div style="font-size:.75rem;text-transform:uppercase;letter-spacing:1px;opacity:.6;margin-top:.25rem">Entrenamiento completo</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="charts-row reveal" style="margin-top:2rem">
+    <div class="chart-wrap">
+      <h3>RMSE medio por padecimiento (v6)</h3>
+      <p class="chart-sub">En espacio log-tasa por 100K — escalas diferentes entre padecimientos</p>
+      <canvas id="chartResultRmse"></canvas>
+    </div>
+    <div class="chart-wrap">
+      <h3>MASE medio por padecimiento (v6)</h3>
+      <p class="chart-sub">MASE &lt; 1.0 indica superioridad sobre el baseline naive estacional</p>
+      <canvas id="chartResultMase"></canvas>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- ============================================================ -->
+<!-- SECCIÓN 10: MAPA COMPLETO DE PARÁMETROS                      -->
+<!-- ============================================================ -->
+<section id="mapa">
+  <h2 class="section-title reveal">10. Mapa Completo de Parámetros</h2>
+  <p class="section-sub reveal">Referencia exhaustiva de todos los parámetros de configuración del sistema Prophet en EpiForecast-MX</p>
+
+  <div class="table-wrapper reveal">
+    <table class="ref-table">
+      <thead>
+        <tr>
+          <th>Parámetro</th>
+          <th>Archivo config</th>
+          <th>Valor</th>
+          <th>Tipo</th>
+          <th>Condicional</th>
+          <th>Impacto</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td colspan="6" style="background:var(--dark-teal);color:var(--cream);font-weight:700;font-size:.75rem;text-transform:uppercase;letter-spacing:1px;padding:.4rem 1rem">Target y normalización</td></tr>
+        <tr>
+          <td class="mono">normalizar_tasa</td><td class="mono">modelado.yaml</td>
+          <td><span class="badge badge-teal">true</span></td><td style="font-size:.82rem">bool</td>
+          <td style="font-size:.82rem">Siempre</td>
+          <td style="font-size:.82rem">Convierte conteos a tasa por 100K</td>
+        </tr>
+        <tr>
+          <td class="mono">tasa_por</td><td class="mono">modelado.yaml</td>
+          <td class="mono">100000</td><td style="font-size:.82rem">int</td>
+          <td style="font-size:.82rem">Siempre</td>
+          <td style="font-size:.82rem">Factor de escala per cápita</td>
+        </tr>
+        <tr>
+          <td class="mono">columna_poblacion</td><td class="mono">modelado.yaml</td>
+          <td class="mono">"Total"</td><td style="font-size:.82rem">str</td>
+          <td style="font-size:.82rem">Siempre</td>
+          <td style="font-size:.82rem">Columna INEGI para desnormalizar</td>
+        </tr>
+        <tr>
+          <td class="mono">log_transform</td><td class="mono">modelado.yaml</td>
+          <td><span class="badge badge-teal">true</span></td><td style="font-size:.82rem">bool</td>
+          <td style="font-size:.82rem">Siempre</td>
+          <td style="font-size:.82rem">log(1+y_tasa) — estabiliza varianza</td>
+        </tr>
+
+        <tr><td colspan="6" style="background:var(--dark-teal);color:var(--cream);font-weight:700;font-size:.75rem;text-transform:uppercase;letter-spacing:1px;padding:.4rem 1rem">Estacionalidad</td></tr>
+        <tr>
+          <td class="mono">yearly_seasonality</td><td class="mono">prophet.py</td>
+          <td><span class="badge badge-red">False</span></td><td style="font-size:.82rem">bool</td>
+          <td style="font-size:.82rem">Siempre</td>
+          <td style="font-size:.82rem">Reemplazada por custom add_seasonality</td>
+        </tr>
+        <tr>
+          <td class="mono">weekly_seasonality</td><td class="mono">prophet.py</td>
+          <td><span class="badge badge-red">False</span></td><td style="font-size:.82rem">bool</td>
+          <td style="font-size:.82rem">Siempre</td>
+          <td style="font-size:.82rem">Sin variación intra-semanal (1 obs/sem)</td>
+        </tr>
+        <tr>
+          <td class="mono">daily_seasonality</td><td class="mono">prophet.py</td>
+          <td><span class="badge badge-red">False</span></td><td style="font-size:.82rem">bool</td>
+          <td style="font-size:.82rem">Siempre</td>
+          <td style="font-size:.82rem">Sin variación diaria en datos semanales</td>
+        </tr>
+        <tr>
+          <td class="mono">period (custom anual)</td><td class="mono">prophet.py</td>
+          <td class="mono">52.18</td><td style="font-size:.82rem">float</td>
+          <td style="font-size:.82rem">Siempre</td>
+          <td style="font-size:.82rem">365.25/7 — captura años bisiestos</td>
+        </tr>
+        <tr>
+          <td class="mono">fourier_order (nacional)</td><td class="mono">modelado.yaml</td>
+          <td class="mono">5</td><td style="font-size:.82rem">int</td>
+          <td style="font-size:.82rem">modelado_estados: false</td>
+          <td style="font-size:.82rem">10 coeficientes — patrones complejos</td>
+        </tr>
+        <tr>
+          <td class="mono">fourier_order_regional</td><td class="mono">modelado.yaml</td>
+          <td class="mono">3</td><td style="font-size:.82rem">int</td>
+          <td style="font-size:.82rem">modelado_estados: true</td>
+          <td style="font-size:.82rem">6 coeficientes — previene overfitting estatal</td>
+        </tr>
+
+        <tr><td colspan="6" style="background:var(--dark-teal);color:var(--cream);font-weight:700;font-size:.75rem;text-transform:uppercase;letter-spacing:1px;padding:.4rem 1rem">Tendencia y changepoints</td></tr>
+        <tr>
+          <td class="mono">growth</td><td class="mono">prophet.py</td>
+          <td class="mono">"linear"</td><td style="font-size:.82rem">str</td>
+          <td style="font-size:.82rem">Siempre</td>
+          <td style="font-size:.82rem">Sin capacidad de saturación definida</td>
+        </tr>
+        <tr>
+          <td class="mono">n_changepoints (nacional)</td><td class="mono">prophet.py</td>
+          <td class="mono">25</td><td style="font-size:.82rem">int</td>
+          <td style="font-size:.82rem">modelado_estados: false</td>
+          <td style="font-size:.82rem">1 cp cada ~11 sem — resolución alta</td>
+        </tr>
+        <tr>
+          <td class="mono">n_changepoints_regional</td><td class="mono">modelado.yaml</td>
+          <td class="mono">12</td><td style="font-size:.82rem">int</td>
+          <td style="font-size:.82rem">modelado_estados: true</td>
+          <td style="font-size:.82rem">1 cp cada ~24 sem — evita sobreajuste</td>
+        </tr>
+
+        <tr><td colspan="6" style="background:var(--dark-teal);color:var(--cream);font-weight:700;font-size:.75rem;text-transform:uppercase;letter-spacing:1px;padding:.4rem 1rem">Hiperparámetros del grid</td></tr>
+        <tr>
+          <td class="mono">changepoint_prior_scale</td><td class="mono">modelado.yaml</td>
+          <td class="mono">[0.01–0.05]</td><td style="font-size:.82rem">float</td>
+          <td style="font-size:.82rem">Por padecimiento</td>
+          <td style="font-size:.82rem">Flexibilidad de tendencia — riesgo Newton si muy bajo</td>
+        </tr>
+        <tr>
+          <td class="mono">seasonality_prior_scale</td><td class="mono">modelado.yaml</td>
+          <td class="mono">[0.025–1.0]</td><td style="font-size:.82rem">float</td>
+          <td style="font-size:.82rem">Por padecimiento</td>
+          <td style="font-size:.82rem">Regularización estacional — mayor = más compleja</td>
+        </tr>
+        <tr>
+          <td class="mono">seasonality_mode</td><td class="mono">modelado.yaml</td>
+          <td class="mono">additive / multiplicative</td><td style="font-size:.82rem">str</td>
+          <td style="font-size:.82rem">Por padecimiento</td>
+          <td style="font-size:.82rem">Interacción estacionalidad-tendencia</td>
+        </tr>
+
+        <tr><td colspan="6" style="background:var(--dark-teal);color:var(--cream);font-weight:700;font-size:.75rem;text-transform:uppercase;letter-spacing:1px;padding:.4rem 1rem">Cross-validation</td></tr>
+        <tr>
+          <td class="mono">n_splits</td><td class="mono">modelado.yaml</td>
+          <td class="mono">4</td><td style="font-size:.82rem">int</td>
+          <td style="font-size:.82rem">Siempre</td>
+          <td style="font-size:.82rem">Folds temporales de CV</td>
+        </tr>
+        <tr>
+          <td class="mono">test_size</td><td class="mono">modelado.yaml</td>
+          <td class="mono">53</td><td style="font-size:.82rem">int (semanas)</td>
+          <td style="font-size:.82rem">Siempre</td>
+          <td style="font-size:.82rem">~1 año de evaluación por fold</td>
+        </tr>
+        <tr>
+          <td class="mono">cv_weights</td><td class="mono">modelado.yaml</td>
+          <td class="mono">[0.5, 0.75, 1.0, 1.25]</td><td style="font-size:.82rem">list[float]</td>
+          <td style="font-size:.82rem">Siempre</td>
+          <td style="font-size:.82rem">Ponderación progresiva — más peso a folds recientes</td>
+        </tr>
+
+        <tr><td colspan="6" style="background:var(--dark-teal);color:var(--cream);font-weight:700;font-size:.75rem;text-transform:uppercase;letter-spacing:1px;padding:.4rem 1rem">Protección anti-Newton</td></tr>
+        <tr>
+          <td class="mono">fold_timeout_seg</td><td class="mono">modelado.yaml</td>
+          <td class="mono">35</td><td style="font-size:.82rem">int (seg)</td>
+          <td style="font-size:.82rem">Siempre</td>
+          <td style="font-size:.82rem">Máximo por fold en ThreadPoolExecutor</td>
+        </tr>
+        <tr>
+          <td class="mono">combo_timeout_seg</td><td class="mono">modelado.yaml</td>
+          <td class="mono">90</td><td style="font-size:.82rem">int (seg)</td>
+          <td style="font-size:.82rem">Siempre</td>
+          <td style="font-size:.82rem">Backstop total por combinación de hiperparámetros</td>
+        </tr>
+
+        <tr><td colspan="6" style="background:var(--dark-teal);color:var(--cream);font-weight:700;font-size:.75rem;text-transform:uppercase;letter-spacing:1px;padding:.4rem 1rem">Modo híbrido y confianza</td></tr>
+        <tr>
+          <td class="mono">modelado_hibrido</td><td class="mono">params.yaml</td>
+          <td><span class="badge badge-teal">true</span></td><td style="font-size:.82rem">bool</td>
+          <td style="font-size:.82rem">v6+</td>
+          <td style="font-size:.82rem">Fallback regional para estados insuficientes</td>
+        </tr>
+        <tr>
+          <td class="mono">umbral_minimo_semanal</td><td class="mono">modelado.yaml</td>
+          <td class="mono">0.5</td><td style="font-size:.82rem">float</td>
+          <td style="font-size:.82rem">modelado_hibrido: true</td>
+          <td style="font-size:.82rem">Casos/sem mínimo para confianza "normal"</td>
+        </tr>
+
+        <tr><td colspan="6" style="background:var(--dark-teal);color:var(--cream);font-weight:700;font-size:.75rem;text-transform:uppercase;letter-spacing:1px;padding:.4rem 1rem">Periodos atípicos (holidays)</td></tr>
+        <tr>
+          <td class="mono">COVID-19 holiday</td><td class="mono">modelado.yaml</td>
+          <td class="mono">2020-03-23 + 913d</td><td style="font-size:.82rem">date + days</td>
+          <td style="font-size:.82rem">Todos los padecimientos</td>
+          <td style="font-size:.82rem">Absorbe disrupción pandémica sin contaminar estacionalidad</td>
+        </tr>
+        <tr>
+          <td class="mono">Tabasco-Depresión holiday</td><td class="mono">modelado.yaml</td>
+          <td class="mono">2023-01-09 + 365d</td><td style="font-size:.82rem">date + days</td>
+          <td style="font-size:.82rem">Solo Tabasco + Depresión</td>
+          <td style="font-size:.82rem">-6.2% RMSE en esa serie específica</td>
+        </tr>
+
+        <tr><td colspan="6" style="background:var(--dark-teal);color:var(--cream);font-weight:700;font-size:.75rem;text-transform:uppercase;letter-spacing:1px;padding:.4rem 1rem">Entrenamiento paralelo</td></tr>
+        <tr>
+          <td class="mono">n_jobs</td><td class="mono">modelado.yaml</td>
+          <td class="mono">-2</td><td style="font-size:.82rem">int</td>
+          <td style="font-size:.82rem">make train</td>
+          <td style="font-size:.82rem">joblib: todos los núcleos menos uno (loky backend)</td>
+        </tr>
+        <tr>
+          <td class="mono">backend</td><td class="mono">prophet.py</td>
+          <td class="mono">"loky"</td><td style="font-size:.82rem">str</td>
+          <td style="font-size:.82rem">Siempre</td>
+          <td style="font-size:.82rem">Multiprocessing robusto para Prophet (fork-safe)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+</div><!-- end container part 2 -->
+
+<!-- FOOTER -->
+<footer>
+  <p><strong>EpiForecast-MX</strong> — IMSS × Tec de Monterrey</p>
+  <p style="margin-top:.75rem">
+    <a href="index.html">Inicio</a> ·
+    <a href="EpiDashboard.html">Dashboard</a> ·
+    <a href="reporte_resultados.html">Resultados</a> ·
+    <a href="Reports/index.html">Pronósticos</a> ·
+    <a href="bitacora_modelado.html">Bitácora</a> ·
+    <a href="comparacion_modelos.html">Comparación</a>
+  </p>
+  <p style="margin-top:.5rem">Ficha Técnica Prophet — Generado feb 2026</p>
+</footer>
+
+<script>
+// ============ CHART: LOG TRANSFORM ============
+(function(){
+  const weeks = Array.from({length:60},(_,i)=>i+1);
+  // Simulated raw rate series (Depresión-like) with high variance
+  const raw = weeks.map(w=>{
+    const seasonal = 4 + 3*Math.sin(2*Math.PI*w/52) + 1.5*Math.cos(4*Math.PI*w/52);
+    const noise = (Math.random()-0.5)*8;
+    const spike = (w>20&&w<25)?18:0;
+    return Math.max(0.1, seasonal + noise + spike);
+  });
+  const logged = raw.map(v=>Math.log(1+v));
+  new Chart(document.getElementById('chartLogTransform'),{
+    type:'line',
+    data:{
+      labels:weeks,
+      datasets:[
+        {label:'Tasa cruda (por 100K)',data:raw,borderColor:'rgba(155,34,66,.7)',backgroundColor:'rgba(155,34,66,.08)',borderWidth:1.5,pointRadius:0,tension:.3,yAxisID:'y'},
+        {label:'log(1 + tasa)',data:logged,borderColor:'rgba(0,82,78,.9)',backgroundColor:'rgba(0,82,78,.1)',borderWidth:2,pointRadius:0,tension:.3,yAxisID:'y2'}
+      ]
+    },
+    options:{
+      responsive:true,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{position:'top',labels:{font:{family:'Source Sans 3'},usePointStyle:true}},
+        datalabels:{display:false}
+      },
+      scales:{
+        x:{display:true,title:{display:true,text:'Semana',font:{family:'Source Sans 3'}},grid:{display:false},ticks:{maxTicksLimit:12}},
+        y:{position:'left',title:{display:true,text:'Tasa cruda',font:{family:'Source Sans 3'}},grid:{color:'rgba(0,0,0,.05)'}},
+        y2:{position:'right',title:{display:true,text:'log(1+tasa)',font:{family:'Source Sans 3'}},grid:{display:false}}
+      }
+    }
+  });
+})();
+
+// ============ CHART: FOURIER ORDERS ============
+(function(){
+  const t = Array.from({length:104},(_,i)=>i/104);
+  function fourier(t,order){
+    return t.map(x=>{
+      let v=0;
+      for(let k=1;k<=order;k++){
+        v += Math.sin(2*Math.PI*k*x)/(k*1.5) + Math.cos(2*Math.PI*k*x*1.1)/(k*2);
+      }
+      return v;
+    });
+  }
+  const f3=fourier(t,3);
+  const f5=fourier(t,5);
+  new Chart(document.getElementById('chartFourier'),{
+    type:'line',
+    data:{
+      labels:t.map((_,i)=>i%13===0?Math.round(i/2)+' sem':''),
+      datasets:[
+        {label:'Fourier order=3 (estatal, 6 cols)',data:f3,borderColor:'rgba(181,133,0,.85)',backgroundColor:'rgba(181,133,0,.06)',borderWidth:2,pointRadius:0,tension:.1},
+        {label:'Fourier order=5 (nacional, 10 cols)',data:f5,borderColor:'rgba(0,82,78,.85)',backgroundColor:'rgba(0,82,78,.06)',borderWidth:2,pointRadius:0,tension:.1}
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{position:'top',labels:{font:{family:'Source Sans 3'},usePointStyle:true}},
+        datalabels:{display:false}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{maxTicksLimit:10,font:{size:10}}},
+        y:{grid:{color:'rgba(0,0,0,.05)'},title:{display:true,text:'Amplitud estacional (u.a.)',font:{family:'Source Sans 3'}}}
+      }
+    }
+  });
+})();
+
+// ============ CHART: GRID COMBOS ============
+new Chart(document.getElementById('chartCombos'),{
+  type:'bar',
+  data:{
+    labels:['Alzheimer','Depresión','Parkinson'],
+    datasets:[{
+      label:'Combinaciones totales en grid',
+      data:[6,24,18],
+      backgroundColor:['rgba(0,82,78,.75)','rgba(155,34,66,.75)','rgba(181,133,0,.75)'],
+      borderColor:['rgba(0,82,78,1)','rgba(155,34,66,1)','rgba(181,133,0,1)'],
+      borderWidth:2,borderRadius:10,barPercentage:.65
+    }]
+  },
+  options:{
+    responsive:true,
+    plugins:{
+      legend:{display:false},
+      datalabels:{anchor:'end',align:'top',font:{family:'JetBrains Mono',size:13,weight:'700'},color:'#231F20',formatter:v=>v+' combos'}
+    },
+    scales:{
+      y:{grid:{color:'rgba(0,0,0,.05)'},min:0,max:30,ticks:{stepSize:6}},
+      x:{grid:{display:false},ticks:{font:{weight:600,family:'Source Sans 3'}}}
+    }
+  },
+  plugins:[ChartDataLabels]
+});
+
+// ============ CHART: CP DISTRIBUTION ============
+new Chart(document.getElementById('chartCpDist'),{
+  type:'bar',
+  data:{
+    labels:['cp=0.01','cp=0.03','cp=0.04','cp=0.05'],
+    datasets:[
+      {label:'Alzheimer',data:[1,1,0,0],backgroundColor:'rgba(0,82,78,.75)',borderRadius:6,borderWidth:0},
+      {label:'Depresión',data:[1,1,0,1],backgroundColor:'rgba(155,34,66,.75)',borderRadius:6,borderWidth:0},
+      {label:'Parkinson',data:[0,1,1,1],backgroundColor:'rgba(181,133,0,.75)',borderRadius:6,borderWidth:0}
+    ]
+  },
+  options:{
+    responsive:true,
+    plugins:{
+      legend:{position:'top',labels:{font:{family:'Source Sans 3'},usePointStyle:true}},
+      datalabels:{display:false}
+    },
+    scales:{
+      x:{stacked:false,grid:{display:false},ticks:{font:{family:'JetBrains Mono',size:11}}},
+      y:{stacked:false,grid:{color:'rgba(0,0,0,.05)'},title:{display:true,text:'Incluido en grid (1=sí)'},ticks:{stepSize:1,max:1.5}}
+    }
+  }
+});
+
+// ============ CHART: CV WEIGHTS ============
+new Chart(document.getElementById('chartCvWeights'),{
+  type:'bar',
+  data:{
+    labels:['Fold 1\n2020-21 (post-COVID)','Fold 2\n2021-22 (recuperación)','Fold 3\n2022-23 (estabilización)','Fold 4\n2023-24 (actual)'],
+    datasets:[{
+      label:'Peso en RMSE ponderado',
+      data:[0.50,0.75,1.00,1.25],
+      backgroundColor:['rgba(155,34,66,.5)','rgba(181,133,0,.6)','rgba(0,82,78,.7)','rgba(0,82,78,.95)'],
+      borderColor:['rgba(155,34,66,1)','rgba(181,133,0,1)','rgba(0,82,78,1)','rgba(23,63,53,1)'],
+      borderWidth:2,borderRadius:10,barPercentage:.7
+    }]
+  },
+  options:{
+    responsive:true,
+    plugins:{
+      legend:{display:false},
+      datalabels:{anchor:'end',align:'top',font:{family:'JetBrains Mono',size:13,weight:'700'},color:'#231F20',formatter:v=>'×'+v}
+    },
+    scales:{
+      y:{grid:{color:'rgba(0,0,0,.05)'},min:0,max:1.5,ticks:{callback:v=>'×'+v}},
+      x:{grid:{display:false},ticks:{font:{family:'Source Sans 3',size:11}}}
+    }
+  },
+  plugins:[ChartDataLabels]
+});
+
+// ============ CHART: ANTI-NEWTON ============
+new Chart(document.getElementById('chartNewton'),{
+  type:'bar',
+  data:{
+    labels:['v4 (sin protección)','v5 (con protección)'],
+    datasets:[{
+      label:'Minutos para Chihuahua-Depresión',
+      data:[39,4],
+      backgroundColor:['rgba(155,34,66,.75)','rgba(46,125,50,.75)'],
+      borderColor:['rgba(155,34,66,1)','rgba(46,125,50,1)'],
+      borderWidth:2,borderRadius:12,barPercentage:.55
+    }]
+  },
+  options:{
+    responsive:true,
+    plugins:{
+      legend:{display:false},
+      datalabels:{anchor:'end',align:'top',font:{family:'JetBrains Mono',size:14,weight:'700'},color:'#231F20',formatter:v=>v+' min'}
+    },
+    scales:{
+      y:{grid:{color:'rgba(0,0,0,.05)'},title:{display:true,text:'Tiempo (minutos)'},min:0,max:45},
+      x:{grid:{display:false},ticks:{font:{family:'Source Sans 3',weight:'600'}}}
+    }
+  },
+  plugins:[ChartDataLabels]
+});
+
+// ============ CHART: CONFIANZA ============
+new Chart(document.getElementById('chartConfianza'),{
+  type:'bar',
+  data:{
+    labels:['Alzheimer','Depresión','Parkinson'],
+    datasets:[
+      {label:'Confianza normal',data:[63,99,94],backgroundColor:'rgba(0,82,78,.75)',borderRadius:8,borderWidth:0},
+      {label:'Insuficiente (fallback regional)',data:[36,0,5],backgroundColor:'rgba(155,34,66,.7)',borderRadius:8,borderWidth:0}
+    ]
+  },
+  options:{
+    responsive:true,
+    plugins:{
+      legend:{position:'top',labels:{font:{family:'Source Sans 3'},usePointStyle:true}},
+      datalabels:{display:false}
+    },
+    scales:{
+      x:{stacked:true,grid:{display:false},ticks:{font:{family:'Source Sans 3',weight:'600'}}},
+      y:{stacked:true,grid:{color:'rgba(0,0,0,.05)'},title:{display:true,text:'Número de modelos'},max:110}
+    }
+  }
+});
+
+// ============ CHART: MÉTRICAS ============
+new Chart(document.getElementById('chartMetricas'),{
+  type:'bar',
+  data:{
+    labels:['Alzheimer','Depresión','Parkinson'],
+    datasets:[
+      {label:'RMSE medio',data:[0.027,0.183,0.057],backgroundColor:'rgba(0,82,78,.75)',borderRadius:8,borderWidth:0,yAxisID:'y'},
+      {label:'MASE medio',data:[0.74,0.80,0.75],backgroundColor:'rgba(181,133,0,.75)',borderRadius:8,borderWidth:0,yAxisID:'y2'}
+    ]
+  },
+  options:{
+    responsive:true,
+    plugins:{
+      legend:{position:'top',labels:{font:{family:'Source Sans 3'},usePointStyle:true}},
+      datalabels:{display:false}
+    },
+    scales:{
+      x:{grid:{display:false},ticks:{font:{family:'Source Sans 3',weight:'600'}}},
+      y:{position:'left',grid:{color:'rgba(0,0,0,.05)'},title:{display:true,text:'RMSE (log-tasa)'}},
+      y2:{position:'right',grid:{display:false},title:{display:true,text:'MASE'},min:0,max:1.2,ticks:{callback:v=>v.toFixed(2)}}
+    }
+  }
+});
+
+// ============ CHART: RESULT RMSE ============
+new Chart(document.getElementById('chartResultRmse'),{
+  type:'bar',
+  data:{
+    labels:['Alzheimer','Depresión','Parkinson'],
+    datasets:[{
+      label:'RMSE medio v6',
+      data:[0.027,0.183,0.057],
+      backgroundColor:['rgba(0,82,78,.8)','rgba(155,34,66,.8)','rgba(181,133,0,.8)'],
+      borderColor:['rgba(0,82,78,1)','rgba(155,34,66,1)','rgba(181,133,0,1)'],
+      borderWidth:2,borderRadius:12,barPercentage:.6
+    }]
+  },
+  options:{
+    responsive:true,
+    plugins:{
+      legend:{display:false},
+      datalabels:{anchor:'end',align:'top',font:{family:'JetBrains Mono',size:13,weight:'700'},color:'#231F20',formatter:v=>v.toFixed(3)}
+    },
+    scales:{
+      y:{grid:{color:'rgba(0,0,0,.05)'},title:{display:true,text:'RMSE (log-tasa por 100K)'}},
+      x:{grid:{display:false},ticks:{font:{family:'Source Sans 3',weight:'600'}}}
+    }
+  },
+  plugins:[ChartDataLabels]
+});
+
+// ============ CHART: RESULT MASE ============
+(function(){
+  const ctx=document.getElementById('chartResultMase');
+  new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:['Alzheimer','Depresión','Parkinson'],
+      datasets:[{
+        label:'MASE medio v6',
+        data:[0.74,0.80,0.75],
+        backgroundColor:['rgba(0,82,78,.8)','rgba(155,34,66,.8)','rgba(181,133,0,.8)'],
+        borderColor:['rgba(0,82,78,1)','rgba(155,34,66,1)','rgba(181,133,0,1)'],
+        borderWidth:2,borderRadius:12,barPercentage:.6
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{display:false},
+        datalabels:{anchor:'end',align:'top',font:{family:'JetBrains Mono',size:13,weight:'700'},color:'#231F20',formatter:v=>v.toFixed(2)},
+        annotation:{
+          annotations:{
+            line1:{type:'line',yMin:1,yMax:1,borderColor:'rgba(155,34,66,.8)',borderWidth:2,borderDash:[6,4],label:{display:true,content:'Baseline naive (MASE=1)',position:'end',font:{size:11,family:'Source Sans 3'},color:'rgba(155,34,66,1)',backgroundColor:'rgba(255,255,255,.8)'}}
+          }
+        }
+      },
+      scales:{
+        y:{grid:{color:'rgba(0,0,0,.05)'},title:{display:true,text:'MASE (< 1 = mejor que naive)'},min:0,max:1.2},
+        x:{grid:{display:false},ticks:{font:{family:'Source Sans 3',weight:'600'}}}
+      }
+    },
+    plugins:[ChartDataLabels]
+  });
+})();
+
+// ============ REVEAL ANIMATION ============
+const observer=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');observer.unobserve(e.target)}});
+},{threshold:0.08});
+document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+
+// ============ SMOOTH SCROLL (internal anchors only) ============
+document.querySelectorAll('nav a[href^="#"], .toc a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{
+    e.preventDefault();
+    const target=document.querySelector(a.getAttribute('href'));
+    if(target) target.scrollIntoView({behavior:'smooth',block:'start'});
+  });
+});
+</script>
+
+</body>
+</html>
