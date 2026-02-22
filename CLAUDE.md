@@ -64,7 +64,7 @@ EpiForecast-MX/
 │   │   └── inegi.py / inegi_eda.py #   Utilidades INEGI
 │   ├── modelado/                   # Modelos Prophet
 │   │   ├── prophet.py              #   SerieTiempoProphet (CV, train, eval por estado/región)
-│   │   ├── forecast.py             #   ForecastModelLoader (carga .pkl y predice)
+│   │   ├── forecast.py             #   ForecastModelLoader + gráficos (estatal/Nacional/Regional)
 │   │   └── mapea_inegi.py          #   MapeaInegi (merge datos + INEGI + export xlsx)
 │   └── utils/                      # Utilidades compartidas
 │       ├── graficos.py             #   GraficosHelper (histogramas, violins, series, etc.)
@@ -209,6 +209,7 @@ SINAVE PDFs ──▶ Extracción (Camelot) ──▶ Merge ──▶ dataset_bo
                       ▼
               models/*.pkl (DVC → S3)  +  predict (desnormaliza a conteos)
                       │                     → forecast/all_forecast.csv (DVC → S3)
+                      │                     → forecast/{pad}/{Estado|Nacional|Region_*}/*.png
 ```
 
 ### Configuración Clave (`config/params.yaml`)
@@ -292,6 +293,21 @@ Resultado: Chihuahua-Depresión pasó de 39 min (v4) a 4 min (v5).
 ### Clasificación de confianza y modo híbrido (v6)
 Series con promedio < `umbral_minimo_semanal` (default: 0.5 caso/semana) se marcan con `confianza: "insuficiente"`. Con `modelado_hibrido: true` (v6), se entrenan modelos regionales de fallback y el CSV incluye columna `usar_regional` que mapea cada modelo insuficiente a su .pkl regional. En predicción, se usa el modelo regional pero se desnormaliza con la población estatal individual.
 
+### Gráficos de pronóstico (`make predict`)
+`generar_graficos_pronostico()` en `forecast.py` genera un PNG por cada combinación única (padecimiento, entidad, modo) en `all_forecast.csv`. Estructura de salida:
+
+```
+forecast/{Padecimiento}/
+  ├── {Estado}/                        # 32 estados × 3 modos = 96 por padecimiento
+  ├── Nacional/                        # 3 modos (general, hombres, mujeres)
+  └── Region_{nombre}/                 # Por cada modelo regional standalone
+      └── {Padecimiento}_{nivel}_{modo}.png
+```
+
+- **Nacional**: modelos `Prophet_{pad}_{modo}.pkl` (sin entidad en el nombre). `predice.py` los parsea con `meta_entidad="Nacional"` y `forecast.py` construye el CSV sidecar como `Prophet_{pad}_{modo}.csv`.
+- **Regional standalone**: `predice.py` genera predicciones independientes para cada `region_*.pkl` con `meta_entidad="Region {nombre}"`. `forecast.py` construye el CSV sidecar como `Prophet_{pad}_region_{nombre_norm}_{modo}.csv` y guarda en `forecast/{pad}/Region_{nombre_norm}/`.
+- **Fallback estatal**: estados insuficientes usan el modelo regional pero se grafican en su propia carpeta estatal (con población individual).
+
 ### Entrenamiento final con serie completa
 Después de CV, el modelo final (`.pkl`) se entrena con **toda la serie** (`self.serie`), no solo el split de entrenamiento. CV sigue usando splits para evaluar, pero el `.pkl` aprovecha todos los datos disponibles para máxima precisión en producción.
 
@@ -315,7 +331,7 @@ Nota: Solo se incluyen cambios temporales. Los step functions permanentes (Nayar
 - **`data/raw_PDFs/`** — ~633 boletines epidemiologicos 2014-2026 (~1GB)
 - **`data/processed/dataset_boletin_epidemiologico.csv`** — Dataset consolidado
 - **`models/`** — ~900 modelos Prophet .pkl + .csv de entrenamiento (~109 MB)
-- **`forecast/all_forecast.csv`** — Predicciones consolidadas (~180 MB). Incluye columnas de métricas del modelo (rmse, mae, mape, mase, confianza) para modelo original y usado (Tableau tooltips)
+- **`forecast/all_forecast.csv`** — Predicciones consolidadas (~180 MB). Incluye entradas estatales, nacionales y regionales, con columnas de métricas del modelo (rmse, mae, mape, mase, confianza) para modelo original y usado (Tableau tooltips)
 - **`data/registry.json`** — Registro de boletines procesados (anti-duplicados, Git)
 - **`data/utils/inegi.csv`** — Datos demograficos INEGI (poblacion, superficie, Git)
 
@@ -333,7 +349,8 @@ Nota: Solo se incluyen cambios temporales. Los step functions permanentes (Nayar
 - **MASE < 1** en los tres padecimientos → modelos superan baseline naive estacional (lag-52)
 - **41 modelos insuficientes** ahora usan fallback regional (predicción útil vs plana en v5)
 - Anti-Newton: Chihuahua-Depresión de 39 min (v4) a **4 min** (v5)
-- Forecast: 52 semanas a futuro, desnormalizado a conteos en `all_forecast.csv`
+- Forecast: 52 semanas a futuro, desnormalizado a conteos en `all_forecast.csv` (estatal + Nacional + Regional)
+- **312 gráficos** de pronóstico: 288 estatales + 9 nacionales + 15 regionales
 - Hallazgos detallados en `REPORTE_HALLAZGOS_MODELADO_v3.md`
 
 ## Estado Actual del Pipeline
@@ -345,6 +362,7 @@ Nota: Solo se incluyen cambios temporales. Los step functions permanentes (Nayar
 - **Modo híbrido** (v6): fallback regional automático para estados insuficientes
 - **MASE** (v6): métrica escala-independiente en CV (MAE_modelo / MAE_naive_lag52)
 - Predicción con inversión de log-transform y desnormalización automática a conteos (`make predict`)
+- Gráficos de pronóstico para modelos estatales, nacionales y regionales (312 PNGs)
 - Generación de reportes EDA en PDF
 - Detección de outliers parametrizada (IQR / Z-score)
 - Entrenamiento paralelo con joblib (`n_jobs=-2`, backend loky)
