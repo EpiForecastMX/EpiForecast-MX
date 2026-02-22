@@ -46,6 +46,24 @@ def generar_graficos_pronostico() -> None:
 
     graficos = GraficosHelper(carpeta_salida="", numero_top_columnas=10)
 
+    # Cargar hiperparámetros de los CSVs completos (uno por padecimiento)
+    hp_frames = []
+    for csv_hp in models_root.rglob("*_completo.csv"):
+        try:
+            df_hp = pd.read_csv(csv_hp, usecols=[
+                "archivo_modelo", "seasonality_mode",
+                "changepoint_prior_scale", "seasonality_prior_scale",
+            ])
+            hp_frames.append(df_hp)
+        except Exception:
+            pass
+    df_hp_all = (
+        pd.concat(hp_frames, ignore_index=True)
+        .drop_duplicates("archivo_modelo")
+        .set_index("archivo_modelo")
+        if hp_frames else pd.DataFrame()
+    )
+
     modelos = (
         df_forecast[["meta_padecimiento", "meta_entidad", "meta_modo"]]
         .drop_duplicates()
@@ -135,6 +153,14 @@ def generar_graficos_pronostico() -> None:
             "es_fallback": es_fallback,
             "modelo_usado": str(metricas_row["archivo_modelo_usado"]),
         }
+
+        # Agregar hiperparámetros del modelo usado
+        modelo_key = str(metricas_row["archivo_modelo_usado"])
+        if not df_hp_all.empty and modelo_key in df_hp_all.index:
+            hp = df_hp_all.loc[modelo_key]
+            metricas["seasonality_mode"] = str(hp["seasonality_mode"])
+            metricas["changepoint_prior_scale"] = float(hp["changepoint_prior_scale"])
+            metricas["seasonality_prior_scale"] = float(hp["seasonality_prior_scale"])
 
         nivel_label = entidad if entidad else "Nacional"
         titulo = f"{padecimiento} · {nivel_label} · {modo}"

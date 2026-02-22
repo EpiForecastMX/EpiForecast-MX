@@ -280,7 +280,7 @@ class GraficosHelper:
 
         # ── Figura ───────────────────────────────────────────────────────
         fig, ax = plt.subplots(figsize=(18, 7.5))
-        fig.subplots_adjust(bottom=0.22, top=0.88, left=0.06, right=0.97)
+        fig.subplots_adjust(bottom=0.24, top=0.88, left=0.06, right=0.97)
 
         # Título principal y subtítulo
         fig.suptitle(
@@ -301,17 +301,17 @@ class GraficosHelper:
         # ── 2. Franja COVID-19 ──────────────────────────────────────────
         covid_ini = pd.Timestamp(self.conf_covid["inicio"])
         covid_fin = pd.Timestamp(self.conf_covid["fin"])
-        mid_covid = covid_ini + (covid_fin - covid_ini) / 2
         ax.axvspan(covid_ini, covid_fin, alpha=0.07, color="#E53935", zorder=0)
+        mid_covid = covid_ini + (covid_fin - covid_ini) / 2
         ax.annotate(
             "COVID-19",
-            xy=(covid_ini, 0.97),
+            xy=(mid_covid, 1.0),
             xycoords=("data", "axes fraction"),
-            fontsize=9, fontweight="bold", color="#C62828",
-            ha="left", va="top", rotation=90,
+            fontsize=7, fontweight="bold", color="#C62828",
+            ha="center", va="top",
             bbox=dict(
-                boxstyle="round,pad=0.3", fc="white", ec="#C62828",
-                alpha=0.92, lw=1.0,
+                boxstyle="round,pad=0.25", fc="#FFEBEE", ec="#EF9A9A",
+                alpha=0.85, lw=0.6,
             ),
         )
 
@@ -410,47 +410,62 @@ class GraficosHelper:
         handles, labels = ax.get_legend_handles_labels()
         fig.legend(
             handles, labels,
-            loc="lower center", bbox_to_anchor=(0.5, 0.10),
+            loc="lower center", bbox_to_anchor=(0.5, 0.12),
             ncol=len(handles), fontsize=9,
             framealpha=0.90, fancybox=True, edgecolor="#ddd",
             borderpad=0.6, handletextpad=0.5, columnspacing=1.5,
         )
 
-        # ── Ficha técnica (métricas del modelo) ──────────────────────────
+        # ── Ficha técnica (métricas + hiperparámetros) ─────────────────
         if metricas:
             mase_v = metricas.get("mase")
             rmse_v = metricas.get("rmse")
             confianza = metricas.get("confianza", "normal")
-
             es_fallback = metricas.get("es_fallback", False)
             modelo_usado = metricas.get("modelo_usado", "")
 
-            partes_m = ["Prophet (Meta/Facebook)", "IC 80 %"]
+            lineas = ["Prophet (Meta/Facebook)  ·  IC 80 %"]
+
+            metricas_parts = []
             if mase_v is not None and mase_v < 100:
                 interp = "supera naive" if mase_v < 1 else "no supera naive"
-                partes_m.append(f"MASE: {mase_v:.2f} ({interp})")
+                metricas_parts.append(f"MASE: {mase_v:.2f} ({interp})")
             if rmse_v is not None and rmse_v < 100:
-                partes_m.append(f"RMSE: {rmse_v:.4f}")
+                metricas_parts.append(f"RMSE: {rmse_v:.4f}")
+            if metricas_parts:
+                lineas.append("  ·  ".join(metricas_parts))
+
             if es_fallback:
-                # Extraer nombre de región del .pkl usado
                 region = ""
                 if "region_" in modelo_usado:
                     region = modelo_usado.split("region_")[1].rsplit("_", 1)[0]
                     region = region.replace("_", " ").replace("-", "/")
-                partes_m.append(
+                lineas.append(
                     f"Modelo regional ({region})"
                     if region else "Modelo regional de respaldo"
                 )
             elif confianza == "normal":
-                partes_m.append("Modelo estatal propio")
+                lineas.append("Modelo estatal propio")
 
+            hp_parts = []
+            if metricas.get("seasonality_mode"):
+                hp_parts.append(f"Estac: {metricas['seasonality_mode']}")
+            if metricas.get("changepoint_prior_scale") is not None:
+                hp_parts.append(f"CP: {metricas['changepoint_prior_scale']}")
+            if metricas.get("seasonality_prior_scale") is not None:
+                hp_parts.append(f"SP: {metricas['seasonality_prior_scale']}")
+            if hp_parts:
+                lineas.append("  ·  ".join(hp_parts))
+
+            ficha = "\n".join(lineas)
             fig.text(
-                0.5, 0.03,
-                "  ·  ".join(partes_m),
-                ha="center", va="center", fontsize=9,
-                color=c_text, fontstyle="italic",
+                0.5, 0.01, ficha,
+                ha="center", va="bottom",
+                fontsize=7, fontstyle="italic",
+                color="#666",
+                linespacing=1.5,
                 bbox=dict(
-                    boxstyle="round,pad=0.5", fc="#F5F5F5", ec="#ddd",
+                    boxstyle="round,pad=0.4", fc="#F8F8F8", ec="#ccc",
                     alpha=0.9, lw=0.5,
                 ),
             )
