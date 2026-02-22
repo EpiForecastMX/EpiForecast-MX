@@ -110,6 +110,32 @@ def generar_graficos_pronostico() -> None:
         )
         forecast = df_forecast[mask_fc][["ds", "yhat", "yhat_lower", "yhat_upper"]].copy()
 
+        # Extraer métricas del modelo para la ficha técnica del gráfico
+        metricas_row = df_forecast.loc[mask_fc, [
+            "mase_usado", "rmse_usado",
+            "confianza_original", "archivo_modelo_original", "archivo_modelo_usado",
+        ]].iloc[0]
+        es_fallback = (
+            str(metricas_row["archivo_modelo_original"])
+            != str(metricas_row["archivo_modelo_usado"])
+        )
+        metricas = {
+            "mase": (
+                float(metricas_row["mase_usado"])
+                if pd.notna(metricas_row["mase_usado"]) else None
+            ),
+            "rmse": (
+                float(metricas_row["rmse_usado"])
+                if pd.notna(metricas_row["rmse_usado"]) else None
+            ),
+            "confianza": (
+                str(metricas_row["confianza_original"])
+                if pd.notna(metricas_row["confianza_original"]) else "normal"
+            ),
+            "es_fallback": es_fallback,
+            "modelo_usado": str(metricas_row["archivo_modelo_usado"]),
+        }
+
         nivel_label = entidad if entidad else "Nacional"
         titulo = f"{padecimiento} · {nivel_label} · {modo}"
         nombre_archivo = f"{padecimiento}_{nivel_dir}_{modo}"
@@ -120,6 +146,7 @@ def generar_graficos_pronostico() -> None:
             titulo=titulo,
             padecimiento=padecimiento,
             nombre_archivo=nombre_archivo,
+            metricas=metricas,
         )
         logger.info("[{}/{}] Guardado: {}", i + 1, total, Path(ruta).name)
 
