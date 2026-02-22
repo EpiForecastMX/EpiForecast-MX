@@ -176,7 +176,45 @@ Un CSV por padecimiento: `models/{Padecimiento}/Prophet_{Padecimiento}_completo.
 
 ---
 
-## 7. Changelog v5 → v6
+## 7. Cambios Adicionales v6
+
+### 7.1 Entrenamiento final con serie completa
+
+El modelo final (`.pkl`) ahora entrena con **toda la serie** (`self.serie`) en lugar de solo el split de entrenamiento (`self.train_data`). CV sigue usando splits para evaluar hiperparametros, pero el modelo que se guarda aprovecha todos los datos disponibles para maxima precision en produccion.
+
+**Cambio:** `prophet.py` linea 391: `modelo_final.fit(self.train_data)` → `modelo_final.fit(self.serie)`
+
+### 7.2 Remocion de holiday atipico 2016
+
+El periodo atipico 2016 (`2016-05-16`, ventana 182 dias) fue removido de `modelado.yaml` por no aportar mejora en RMSE. Solo queda el holiday de pandemia COVID-19.
+
+### 7.3 Metricas del modelo en all_forecast.csv
+
+`predice.py` ahora enriquece `all_forecast.csv` con metricas de calidad del modelo, leyendo los `_completo.csv`:
+
+| Columna nueva | Descripcion |
+|---|---|
+| `archivo_modelo_usado` | Nombre del .pkl que genero la prediccion |
+| `archivo_modelo_original` | Nombre del .pkl estatal original (puede diferir si usa fallback) |
+| `rmse_original` / `rmse_usado` | RMSE del modelo original y del modelo usado |
+| `mae_original` / `mae_usado` | MAE del modelo original y del modelo usado |
+| `mape_original` / `mape_usado` | MAPE del modelo original y del modelo usado |
+| `mase_original` / `mase_usado` | MASE del modelo original y del modelo usado |
+| `confianza_original` / `confianza_usado` | Confianza (normal/insuficiente) de ambos modelos |
+
+Esto permite que el dashboard Tableau muestre tooltips con informacion de calidad del modelo.
+
+### 7.4 Graficos con datos historicos en escala correcta
+
+`forecast.py` ahora usa la columna `y_original` (conteos crudos antes de normalizar y log-transform) para los graficos de pronostico. Esto asegura que los datos historicos esten en la misma escala que las predicciones (conteos absolutos).
+
+### 7.5 Mejoras en graficos de pronostico
+
+`graficos.py` agrega un divisor visual train/test de CV en los graficos y mejora el posicionamiento de anotaciones (COVID-19, divisor datos/pronostico) usando coordenadas de ejes en vez de coordenadas de datos.
+
+---
+
+## 8. Changelog v5 → v6
 
 | Cambio | Detalle | Impacto |
 |---|---|---|
@@ -186,3 +224,8 @@ Un CSV por padecimiento: `models/{Padecimiento}/Prophet_{Padecimiento}_completo.
 | Columna `mase` | En `_completo.csv` | Metrica adicional para evaluacion |
 | Columna `usar_regional` | En `_completo.csv` | Mapea insuficiente → .pkl regional |
 | `modelado_hibrido` | Nuevo parametro en `params.yaml` | Activa/desactiva fallback |
+| Serie completa en train | `fit(self.serie)` en vez de `fit(self.train_data)` | Modelo final mas preciso |
+| Remocion atipico 2016 | Comentado en `modelado.yaml` | Sin mejora en RMSE |
+| Metricas en forecast | rmse/mae/mape/mase/confianza en `all_forecast.csv` | Tooltips Tableau |
+| Graficos y_original | Usa conteos crudos para historico | Misma escala que predicciones |
+| Divisor CV train/test | Linea visual en graficos de pronostico | Mejor legibilidad |

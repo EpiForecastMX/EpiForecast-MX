@@ -101,6 +101,9 @@ EpiForecast-MX/
 │   ├── docs/                       #   PDFs de EDA generados
 │   └── figures/                    #   Figuras de reportes
 │
+├── viz/                            # Dashboards Tableau
+│   └── viz_epiforecastmx.twb      #   Workbook principal (tooltips con métricas)
+│
 ├── Makefile                        # Automatización de tareas
 ├── requirements.txt                # Dependencias Python
 ├── pyproject.toml                  # Metadatos del proyecto y config Ruff
@@ -234,7 +237,7 @@ Prophet modela el target con tres transformaciones secuenciales:
 2. **Log-transform:** `y = log(1 + y_tasa)` — estabiliza varianza en series volátiles (especialmente Depresión)
 3. **Prophet entrena sobre `y`** (espacio log-tasa)
 
-Al predecir, `forecast.py` revierte ambas transformaciones: `exp(ŷ) - 1` → desnormaliza a conteos. El CSV de entrenamiento (sidecar del .pkl) guarda la columna `Total` para la desnormalización.
+Al predecir, `forecast.py` revierte ambas transformaciones: `exp(ŷ) - 1` → desnormaliza a conteos. El CSV de entrenamiento (sidecar del .pkl) guarda la columna `Total` y `y_original` (conteos crudos) para la desnormalización y gráficos.
 
 ```yaml
 normalizar_tasa: true          # activar normalización
@@ -289,9 +292,12 @@ Resultado: Chihuahua-Depresión pasó de 39 min (v4) a 4 min (v5).
 ### Clasificación de confianza y modo híbrido (v6)
 Series con promedio < `umbral_minimo_semanal` (default: 0.5 caso/semana) se marcan con `confianza: "insuficiente"`. Con `modelado_hibrido: true` (v6), se entrenan modelos regionales de fallback y el CSV incluye columna `usar_regional` que mapea cada modelo insuficiente a su .pkl regional. En predicción, se usa el modelo regional pero se desnormaliza con la población estatal individual.
 
+### Entrenamiento final con serie completa
+Después de CV, el modelo final (`.pkl`) se entrena con **toda la serie** (`self.serie`), no solo el split de entrenamiento. CV sigue usando splits para evaluar, pero el `.pkl` aprovecha todos los datos disponibles para máxima precisión en producción.
+
 ### Periodos Atípicos Configurados (modelado.yaml)
 - **Pandemia COVID-19**: 2020-03-23, ventana de 913 días (~2.5 años)
-- **Atípico 2016**: 2016-05-16, ventana de 182 días
+- ~~**Atípico 2016**: removido (sin mejora en RMSE)~~
 
 ### Cambios de régimen por entidad (modelado.yaml)
 Se agregan como holidays a Prophet, filtrados por `entidad` y `padecimiento` en `SerieTiempoProphet.__init__`:
@@ -309,7 +315,7 @@ Nota: Solo se incluyen cambios temporales. Los step functions permanentes (Nayar
 - **`data/raw_PDFs/`** — ~633 boletines epidemiologicos 2014-2026 (~1GB)
 - **`data/processed/dataset_boletin_epidemiologico.csv`** — Dataset consolidado
 - **`models/`** — ~900 modelos Prophet .pkl + .csv de entrenamiento (~109 MB)
-- **`forecast/all_forecast.csv`** — Predicciones consolidadas (~180 MB)
+- **`forecast/all_forecast.csv`** — Predicciones consolidadas (~180 MB). Incluye columnas de métricas del modelo (rmse, mae, mape, mase, confianza) para modelo original y usado (Tableau tooltips)
 - **`data/registry.json`** — Registro de boletines procesados (anti-duplicados, Git)
 - **`data/utils/inegi.csv`** — Datos demograficos INEGI (poblacion, superficie, Git)
 

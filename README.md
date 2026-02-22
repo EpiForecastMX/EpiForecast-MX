@@ -491,6 +491,14 @@ Prophet no modela conteos absolutos directamente. Se aplican dos transformacione
 - 3 capas de proteccion: sort combos por cp descendente, timeout por fold (35s), threshold Newton-prone
 - Resultado: Chihuahua-Depresion paso de 39 min (v4) a 4 min (v5)
 
+**10. Entrenamiento final con serie completa**
+- Despues de CV, el modelo final (`.pkl`) entrena con **toda la serie** (no solo el split de entrenamiento)
+- Maximiza precision en produccion usando todos los datos disponibles
+
+**11. Metricas en forecast para Tableau**
+- `all_forecast.csv` incluye metricas del modelo original y del modelo usado (rmse, mae, mape, mase, confianza)
+- Permite tooltips informativos en el dashboard Tableau
+
 Las predicciones se **desnormalizan automaticamente** a conteos absolutos en `all_forecast.csv` (primero `exp(y) - 1`, luego `× poblacion / 100K`). El CSV incluye tanto `yhat` (conteos) como `yhat_tasa` (por 100K).
 
 Configuracion en `config/modelado.yaml`:
