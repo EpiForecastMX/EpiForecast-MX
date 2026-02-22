@@ -199,6 +199,13 @@ models-push:
 	dvc push
 	@echo ">>> Modelos versionados y subidos a S3."
 
+## Generar reporte HTML de resultados del modelado
+.PHONY: report
+report:
+	@echo ">>> Generando reporte HTML..."
+	$(PYTHON_INTERPRETER) -m scripts.genera_reporte
+	@echo ">>> Reporte disponible en forecast/reporte_resultados.html"
+
 ## Versionar forecast con DVC y subir a S3
 .PHONY: forecast-push
 forecast-push:

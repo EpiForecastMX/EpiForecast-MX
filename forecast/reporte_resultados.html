@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resultados del Modelado — EpiForecast-MX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --burgundy:#9B2242;--dark-burgundy:#6F1D46;--teal:#00524E;--dark-teal:#173F35;
+  --gold:#B58500;--cream:#E8D5B5;--cream-light:#F5EDE0;--cream-pale:#FAF6F0;
+  --cool-gray:#97999B;--neutral-black:#231F20;
+  --burgundy-light:#D4758B;--teal-light:#4A9E9A;--gold-light:#D4B24A;
+  --font-display:'DM Serif Display',Georgia,serif;
+  --font-body:'Source Sans 3','Source Sans Pro',sans-serif;
+  --font-mono:'JetBrains Mono','Fira Code',monospace;
+  --shadow-sm:0 2px 8px rgba(0,0,0,.06);--shadow-md:0 8px 24px rgba(0,0,0,.06);
+  --shadow-lg:0 16px 48px rgba(0,0,0,.06);--radius:16px;--radius-sm:10px;
+}
+body{font-family:var(--font-body);background:var(--cream-pale);color:var(--neutral-black);line-height:1.7;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.025;pointer-events:none;z-index:0}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(23,63,53,.96);backdrop-filter:blur(16px);border-bottom:1px solid rgba(232,213,181,.1);padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between}
+nav .logo{color:var(--cream);font-family:var(--font-display);font-size:1.3rem;letter-spacing:.02em}
+nav .nav-links{display:flex;gap:1.5rem}
+nav .nav-links a{color:rgba(232,213,181,.7);text-decoration:none;font-size:.85rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;transition:color .2s}
+nav .nav-links a:hover{color:var(--cream)}
+nav .nav-links a.sep{margin-left:1rem;padding-left:1.25rem;border-left:1px solid rgba(232,213,181,.25)}
+nav .nav-links a.ext{color:var(--gold-light)}
+
+.container{max-width:1200px;margin:0 auto;padding:0 2rem;position:relative;z-index:1}
+section{padding:4rem 0}
+.section-title{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.5rem);margin-bottom:.5rem;color:var(--dark-teal)}
+.section-sub{color:var(--cool-gray);font-size:1rem;margin-bottom:2.5rem}
+
+.hero{padding:10rem 2rem 6rem;text-align:center;background:linear-gradient(170deg,var(--dark-teal) 0%,var(--teal) 60%,rgba(0,82,78,.85) 100%);color:var(--cream-pale);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 800px 600px at 30% 20%,rgba(181,133,0,.12),transparent),radial-gradient(ellipse 600px 500px at 70% 80%,rgba(155,34,66,.08),transparent);pointer-events:none}
+.hero h1{font-family:var(--font-display);font-size:clamp(2.5rem,6vw,4.5rem);line-height:1.1;margin-bottom:1rem;position:relative}
+.hero .subtitle{font-size:clamp(1rem,2vw,1.25rem);opacity:.8;font-weight:300;margin-bottom:3rem;position:relative}
+.hero-kpis{display:flex;justify-content:center;gap:2rem;flex-wrap:wrap;position:relative}
+.hero-kpi{background:rgba(255,255,255,.08);border:1px solid rgba(232,213,181,.15);border-radius:var(--radius);padding:2rem 2.5rem;backdrop-filter:blur(8px);min-width:180px;transition:transform .3s,box-shadow .3s}
+.hero-kpi:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.2)}
+.hero-kpi .value{font-family:var(--font-display);font-size:3rem;display:block;background:linear-gradient(135deg,var(--cream),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-kpi .label{font-size:.85rem;text-transform:uppercase;letter-spacing:1px;opacity:.7}
+
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:2rem}
+.card{background:#fff;border-radius:var(--radius);padding:2rem;box-shadow:var(--shadow-md);border:1px solid rgba(0,0,0,.04);transition:transform .3s,box-shadow .3s}
+.card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+.card-header{display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:2px solid var(--cream-light)}
+.card-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;box-shadow:0 0 8px currentColor}
+.card-title{font-family:var(--font-display);font-size:1.4rem}
+.card-metrics{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.metric{background:var(--cream-pale);border-radius:var(--radius-sm);padding:.75rem 1rem}
+.metric-value{font-family:var(--font-mono);font-size:1.4rem;font-weight:500}
+.metric-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.5px;color:var(--cool-gray)}
+
+.chart-wrap{background:#fff;border-radius:var(--radius);padding:2rem;box-shadow:var(--shadow-md);border:1px solid rgba(0,0,0,.04)}
+.chart-wrap canvas{max-height:400px}
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:2rem}
+
+/* guide cards */
+.guide-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.5rem;margin-top:1.5rem}
+.guide-card{background:#fff;border-radius:var(--radius);padding:1.5rem 1.75rem;box-shadow:var(--shadow-sm);border-left:4px solid var(--teal)}
+.guide-card h3{font-family:var(--font-display);font-size:1.15rem;margin-bottom:.5rem;color:var(--dark-teal)}
+.guide-card p{font-size:.92rem;color:#555;line-height:1.7}
+.guide-card .badge{margin:0 2px}
+
+/* region map */
+.region-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem;margin-top:1rem}
+.region-card{background:var(--cream-pale);border-radius:var(--radius-sm);padding:1rem 1.25rem;border:1px solid var(--cream)}
+.region-card h4{font-size:.95rem;font-weight:700;margin-bottom:.4rem;color:var(--dark-teal)}
+.region-card p{font-size:.82rem;color:var(--cool-gray);line-height:1.5}
+
+/* table */
+.table-wrapper{background:#fff;border-radius:var(--radius);box-shadow:var(--shadow-md);border:1px solid rgba(0,0,0,.04);overflow:hidden}
+.table-controls{display:flex;gap:1rem;padding:1.5rem 2rem;flex-wrap:wrap;border-bottom:1px solid var(--cream-light);align-items:center}
+.table-controls input,.table-controls select{font-family:var(--font-body);font-size:.9rem;padding:.5rem 1rem;border:1px solid var(--cream);border-radius:6px;background:var(--cream-pale);color:var(--neutral-black);outline:none;transition:border-color .2s}
+.table-controls input:focus,.table-controls select:focus{border-color:var(--teal)}
+.table-controls input{flex:1;min-width:180px}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+thead th{padding:1rem 1.25rem;text-align:left;font-weight:600;text-transform:uppercase;font-size:.75rem;letter-spacing:.5px;color:var(--cool-gray);border-bottom:2px solid var(--cream-light);cursor:pointer;user-select:none;white-space:nowrap;transition:color .2s}
+thead th:hover{color:var(--teal)}
+thead th.sorted-asc::after{content:' \25B2';font-size:.65rem}
+thead th.sorted-desc::after{content:' \25BC';font-size:.65rem}
+tbody td{padding:.85rem 1.25rem;border-bottom:1px solid var(--cream-light);vertical-align:middle}
+tbody tr{transition:background .15s}
+tbody tr:hover{background:var(--cream-pale)}
+.group-header td{background:var(--dark-teal);color:var(--cream);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:1px;padding:.6rem 1.25rem;border:none}
+
+.badge{display:inline-block;padding:.2rem .7rem;border-radius:100px;font-family:var(--font-mono);font-size:.8rem;font-weight:500}
+.badge-green{background:#e6f4ea;color:#1a7431}
+.badge-yellow{background:#fef7e0;color:#8a6d00}
+.badge-red{background:#fde8e8;color:#b91c1c}
+.badge-tipo{font-family:var(--font-body);font-size:.78rem;font-weight:600;padding:.25rem .8rem;border-radius:100px}
+.badge-propio{background:#e6f4ea;color:#1a7431}
+.badge-fallback{background:#fef0e6;color:#c2590a}
+
+.cob-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.75rem}
+.cob-item{display:flex;align-items:center;gap:.75rem;background:#fff;border-radius:var(--radius-sm);padding:.6rem 1rem;box-shadow:var(--shadow-sm);border:1px solid rgba(0,0,0,.04);font-size:.88rem}
+.cob-item .estado-name{flex:1;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cob-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.cob-dot.propio{background:#1a7431;box-shadow:0 0 4px rgba(26,116,49,.4)}
+.cob-dot.fallback{background:#c2590a;box-shadow:0 0 4px rgba(194,89,10,.4)}
+.cob-dot.sin_modelo{background:var(--cool-gray);opacity:.4}
+.cob-summary{display:flex;gap:2rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.cob-summary-item{display:flex;align-items:center;gap:.5rem;font-size:.85rem}
+
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .6s ease,transform .6s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+footer{background:var(--dark-teal);color:rgba(232,213,181,.7);padding:3rem 2rem;text-align:center;font-size:.85rem;position:relative;z-index:1}
+footer a{color:var(--gold-light);text-decoration:none}
+footer a:hover{color:var(--cream)}
+footer .footer-title{font-family:var(--font-display);color:var(--cream);font-size:1.2rem;margin-bottom:.5rem}
+
+@media(max-width:768px){
+  nav .nav-links{display:none}
+  .hero{padding:8rem 1.5rem 4rem}.hero-kpis{gap:1rem}.hero-kpi{min-width:140px;padding:1.25rem}.hero-kpi .value{font-size:2.2rem}
+  .card-grid,.charts-row,.guide-grid,.region-grid{grid-template-columns:1fr}
+  .table-controls{flex-direction:column}section{padding:2.5rem 0}.container{padding:0 1rem}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="logo" style="text-decoration:none;color:inherit">EpiForecast-MX</a>
+  <div class="nav-links">
+    <a href="index.html" class="ext">Inicio</a>
+    <a href="EpiDashboard.html" class="ext">Dashboard</a>
+    <a href="Reports/index.html" class="ext">Pronosticos</a>
+    <a href="#guia" class="sep">Guia</a>
+    <a href="#resumen">Resumen</a>
+    <a href="#calidad">Calidad</a>
+    <a href="#ranking">Ranking</a>
+    <a href="#cobertura">Cobertura</a>
+  </div>
+</nav>
+
+<!-- ═══ HERO ═══ -->
+<section class="hero">
+  <h1>Resultados del Modelado</h1>
+  <p class="subtitle">EpiForecast-MX &middot; IMSS &times; Tec de Monterrey &middot; 22/02/2026</p>
+  <div class="hero-kpis">
+    <div class="hero-kpi"><span class="value">312</span><span class="label">Modelos Prophet</span></div>
+    <div class="hero-kpi"><span class="value">100%</span><span class="label">Cobertura Estatal</span></div>
+    <div class="hero-kpi"><span class="value">0.77</span><span class="label">MASE Promedio</span></div>
+    <div class="hero-kpi"><span class="value">111</span><span class="label">Excelentes (MASE&lt;0.7)</span></div>
+  </div>
+</section>
+
+<!-- ═══ GUIA ═══ -->
+<section id="guia" style="background:#fff;padding:4rem 0">
+  <div class="container">
+    <h2 class="section-title reveal">Antes de empezar: guia rapida</h2>
+    <p class="section-sub reveal">Todo lo que necesitas saber para entender este reporte, explicado de forma sencilla</p>
+    <div class="guide-grid">
+      <div class="guide-card" style="border-left-color:var(--teal)">
+        <h3>Que mide el MASE</h3>
+        <p>El MASE es como una <strong>calificacion</strong> del modelo. Lo compara contra el metodo mas simple posible: repetir lo que paso hace exactamente un ano.
+        <br><br><span class="badge badge-green">&lt; 0.7 Excelente</span> <span class="badge badge-yellow">0.7 – 1.0 Bueno</span> <span class="badge badge-red">&gt; 1.0 Necesita mejora</span>
+        <br><br>Si el MASE es menor a 1, <strong>nuestro modelo es mejor que solo copiar el pasado</strong>. Entre mas bajo, mejor.</p>
+      </div>
+      <div class="guide-card" style="border-left-color:var(--gold)">
+        <h3>Las 4 regiones INEGI de salud mental</h3>
+        <p>El INEGI agrupa los 32 estados en <strong>4 zonas</strong> segun sus patrones de salud mental. Esto importa porque estados de la misma zona se comportan de forma similar:</p>
+        <div class="region-grid" style="margin-top:.75rem">
+          <div class="region-card"><h4>Metropolitana alta</h4><p>CDMX, Edo. Mex, Jalisco, Nuevo Leon, Chihuahua, Baja California, Coahuila, Sinaloa, Sonora, Tamaulipas</p></div>
+          <div class="region-card"><h4>Urbana media</h4><p>Aguascalientes, BCS, Colima, Durango, Guanajuato, Morelos, Queretaro, San Luis Potosi, Zacatecas</p></div>
+          <div class="region-card"><h4>Sur-Sureste vulnerable</h4><p>Campeche, Chiapas, Oaxaca, Quintana Roo, Tabasco, Veracruz, Yucatan</p></div>
+          <div class="region-card"><h4>Rural / dispersa</h4><p>Guerrero, Hidalgo, Michoacan, Nayarit, Puebla, Tlaxcala</p></div>
+        </div>
+      </div>
+      <div class="guide-card" style="border-left-color:var(--burgundy)">
+        <h3>Que es un modelo &laquo;fallback&raquo; regional</h3>
+        <p>Algunos estados tienen <strong>tan pocos casos</strong> (menos de 0.5 por semana) que no hay datos suficientes para entrenar un modelo confiable solo para ese estado.
+        <br><br>En lugar de dar un pronostico malo, <strong>usamos el modelo de toda su region INEGI</strong>, que tiene muchos mas datos. El pronostico final se ajusta con la poblacion individual de cada estado.
+        <br><br>Es como pedir prestada la experiencia de los vecinos para hacer una mejor prediccion.</p>
+      </div>
+      <div class="guide-card" style="border-left-color:var(--cool-gray)">
+        <h3>Por que hay diferente numero de modelos</h3>
+        <p>Cada padecimiento tiene una base de <strong>99 modelos</strong> (32 estados &times; 3 modos de sexo + 3 nacionales). La diferencia viene de cuantos modelos regionales de respaldo se necesitan:
+        <br><br><strong>Alzheimer</strong>: 108 modelos (99 base + 9 regionales de respaldo). 35 modelos estatales no tienen datos suficientes y usan el modelo de su region (3 regiones activas).<br><strong>Depresión</strong>: 99 modelos (32 estados x 3 modos + 3 nacionales). Todos los estados tienen datos suficientes.<br><strong>Parkinson</strong>: 105 modelos (99 base + 6 regionales de respaldo). 5 modelos estatales no tienen datos suficientes y usan el modelo de su region (2 regiones activas).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ RESUMEN ═══ -->
+<section id="resumen">
+  <div class="container">
+    <h2 class="section-title reveal">Resumen por Padecimiento</h2>
+    <p class="section-sub reveal">Desempeno agregado de los modelos Prophet por enfermedad</p>
+    <div class="card-grid" id="pad-cards"></div>
+    <div class="charts-row">
+      <div class="chart-wrap"><canvas id="maseCompareChart"></canvas></div>
+      <div class="chart-wrap"><canvas id="doughnutChart"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CALIDAD ═══ -->
+<section id="calidad" style="background:#fff;padding:4rem 0">
+  <div class="container">
+    <h2 class="section-title reveal">Distribucion de Calidad</h2>
+    <p class="section-sub reveal">Como se distribuyen los modelos segun su MASE — la mayoria estan en rango bueno o excelente</p>
+    <div class="chart-wrap"><canvas id="histoChart"></canvas></div>
+  </div>
+</section>
+
+<!-- ═══ SEXO ═══ -->
+<section id="sexo">
+  <div class="container">
+    <h2 class="section-title reveal">Desglose por Sexo</h2>
+    <p class="section-sub reveal">Comparacion de MASE entre modelos generales, masculinos y femeninos. Los modelos &laquo;general&raquo; suelen ser mejores porque tienen mas datos.</p>
+    <div class="chart-wrap"><canvas id="sexoChart"></canvas></div>
+  </div>
+</section>
+
+<!-- ═══ TOP/BOTTOM ═══ -->
+<section id="topbottom" style="background:#fff;padding:4rem 0">
+  <div class="container">
+    <h2 class="section-title reveal">Los 10 Mejores y 10 Peores</h2>
+    <p class="section-sub reveal">Modelos con el MASE mas bajo (mejor) y mas alto (peor). CDMX domina los mejores; Estado de Mexico domina los peores.</p>
+    <div class="charts-row">
+      <div class="chart-wrap"><canvas id="topChart"></canvas></div>
+      <div class="chart-wrap"><canvas id="bottomChart"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ RANKING ═══ -->
+<section id="ranking">
+  <div class="container">
+    <h2 class="section-title reveal">Ranking Completo</h2>
+    <p class="section-sub reveal">Los 312 modelos agrupados por nivel: Nacional, Regional y Estatal</p>
+    <div class="table-wrapper">
+      <div class="table-controls">
+        <input type="text" id="searchBox" placeholder="Buscar estado...">
+        <select id="filterPad"><option value="">Todos los padecimientos</option></select>
+        <select id="filterModo">
+          <option value="">Todos los modos</option>
+          <option value="General">General</option>
+          <option value="Hombres">Hombres</option>
+          <option value="Mujeres">Mujeres</option>
+        </select>
+        <select id="filterGrupo">
+          <option value="">Todos los niveles</option>
+          <option value="Nacional">Nacional</option>
+          <option value="Regional">Regional</option>
+          <option value="Estatal">Estatal</option>
+        </select>
+      </div>
+      <div style="overflow-x:auto">
+        <table id="rankingTable">
+          <thead><tr>
+            <th data-col="entidad">Entidad</th>
+            <th data-col="padecimiento">Padecimiento</th>
+            <th data-col="modo">Modo</th>
+            <th data-col="mase">MASE</th>
+            <th data-col="rmse">RMSE</th>
+            <th data-col="tipo">Tipo</th>
+            <th data-col="confianza">Confianza</th>
+          </tr></thead>
+          <tbody id="rankingBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ COBERTURA ═══ -->
+<section id="cobertura" style="background:#fff;padding:4rem 0">
+  <div class="container">
+    <h2 class="section-title reveal">Cobertura Geografica</h2>
+    <p class="section-sub reveal">Tipo de modelo por estado: <span class="cob-dot propio" style="display:inline-block;vertical-align:middle"></span> Propio (datos suficientes) &nbsp; <span class="cob-dot fallback" style="display:inline-block;vertical-align:middle"></span> Fallback regional (usa modelo de su zona). Orden: Alzheimer, Depresion, Parkinson.</p>
+    <div class="cob-summary" id="cobSummary"></div>
+    <div class="cob-grid" id="cobGrid"></div>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <div class="footer-title">EpiForecast-MX</div>
+  <p>Plataforma de inteligencia epidemiologica &middot; IMSS &times; Tec de Monterrey</p>
+  <p style="margin-top:.5rem"><a href="index.html">Galeria de Pronosticos (312 graficos)</a></p>
+  <p style="margin-top:1rem;opacity:.5">Generado el 22/02/2026 con datos 2014-2026</p>
+</footer>
+
+<script>
+const D = {"total_modelos": 312, "cobertura_estatal": 100, "mase_global": 0.77, "fecha": "22/02/2026", "modelos_excelentes": 111, "modelos_deficientes": 30, "conteo_tipo": {"nacional": 9, "regional": 15, "estatal": 288}, "por_padecimiento": [{"padecimiento": "Alzheimer", "total": 108, "estatales": 96, "nacionales": 3, "regionales": 9, "mase": 0.72, "rmse": 0.024, "mae": 0.02, "mape": 762.11, "insuficientes": 35, "fallback": 35, "mase_min": 0.55, "mase_max": 1.24, "mase_median": 0.7}, {"padecimiento": "Depresión", "total": 99, "estatales": 96, "nacionales": 3, "regionales": 0, "mase": 0.82, "rmse": 0.205, "mae": 0.165, "mape": 69.33, "insuficientes": 0, "fallback": 0, "mase_min": 0.53, "mase_max": 1.31, "mase_median": 0.79}, {"padecimiento": "Parkinson", "total": 105, "estatales": 96, "nacionales": 3, "regionales": 6, "mase": 0.78, "rmse": 0.06, "mae": 0.047, "mape": 714.51, "insuficientes": 5, "fallback": 5, "mase_min": 0.37, "mase_max": 1.44, "mase_median": 0.77}], "mase_histo": [{"padecimiento": "Alzheimer", "bins": [0, 54, 41, 9, 4]}, {"padecimiento": "Depresión", "bins": [0, 21, 43, 20, 15]}, {"padecimiento": "Parkinson", "bins": [3, 33, 37, 21, 11]}], "mase_bin_labels": ["< 0.5", "0.5–0.7", "0.7–0.85", "0.85–1.0", "> 1.0"], "por_sexo": [{"padecimiento": "Alzheimer", "modo": "general", "modo_label": "General", "count": 36, "mase": 0.72, "rmse": 0.035}, {"padecimiento": "Alzheimer", "modo": "hombres", "modo_label": "Hombres", "count": 36, "mase": 0.69, "rmse": 0.012}, {"padecimiento": "Alzheimer", "modo": "mujeres", "modo_label": "Mujeres", "count": 36, "mase": 0.76, "rmse": 0.024}, {"padecimiento": "Depresión", "modo": "general", "modo_label": "General", "count": 33, "mase": 0.8, "rmse": 0.24}, {"padecimiento": "Depresión", "modo": "hombres", "modo_label": "Hombres", "count": 33, "mase": 0.87, "rmse": 0.158}, {"padecimiento": "Depresión", "modo": "mujeres", "modo_label": "Mujeres", "count": 33, "mase": 0.8, "rmse": 0.219}, {"padecimiento": "Parkinson", "modo": "general", "modo_label": "General", "count": 35, "mase": 0.76, "rmse": 0.078}, {"padecimiento": "Parkinson", "modo": "hombres", "modo_label": "Hombres", "count": 35, "mase": 0.79, "rmse": 0.053}, {"padecimiento": "Parkinson", "modo": "mujeres", "modo_label": "Mujeres", "count": 35, "mase": 0.79, "rmse": 0.049}], "ranking": [{"entidad": "Aguascalientes", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.57, "rmse": 0.015, "mae": 0.012, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Aguascalientes", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.6, "rmse": 0.008, "mae": 0.006, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Aguascalientes", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.6, "rmse": 0.011, "mae": 0.009, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Baja California", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.65, "rmse": 0.039, "mae": 0.033, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Baja California", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.83, "rmse": 0.022, "mae": 0.019, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Baja California", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.65, "rmse": 0.029, "mae": 0.024, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Baja California Sur", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.57, "rmse": 0.015, "mae": 0.012, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Baja California Sur", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.6, "rmse": 0.008, "mae": 0.006, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Baja California Sur", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.6, "rmse": 0.011, "mae": 0.009, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Campeche", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.92, "rmse": 0.078, "mae": 0.066, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Campeche", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.71, "rmse": 0.009, "mae": 0.007, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Campeche", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.73, "rmse": 0.011, "mae": 0.009, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Chiapas", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.8, "rmse": 0.02, "mae": 0.015, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Chiapas", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.71, "rmse": 0.009, "mae": 0.007, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Chiapas", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.9, "rmse": 0.013, "mae": 0.012, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Chihuahua", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.55, "rmse": 0.045, "mae": 0.037, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Chihuahua", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.6, "rmse": 0.027, "mae": 0.021, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Chihuahua", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.6, "rmse": 0.037, "mae": 0.031, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Ciudad de México", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.65, "rmse": 0.019, "mae": 0.016, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Ciudad de México", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.57, "rmse": 0.009, "mae": 0.008, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Ciudad de México", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.72, "rmse": 0.015, "mae": 0.012, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Coahuila", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.8, "rmse": 0.051, "mae": 0.037, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Coahuila", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.96, "rmse": 0.03, "mae": 0.024, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Coahuila", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.89, "rmse": 0.037, "mae": 0.027, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Colima", "padecimiento": "Alzheimer", "modo": "General", "mase": 1.09, "rmse": 0.155, "mae": 0.133, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Colima", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.6, "rmse": 0.008, "mae": 0.006, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Colima", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 1.24, "rmse": 0.122, "mae": 0.106, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Durango", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.77, "rmse": 0.058, "mae": 0.045, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Durango", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.6, "rmse": 0.008, "mae": 0.006, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Durango", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.98, "rmse": 0.044, "mae": 0.038, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Guanajuato", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.63, "rmse": 0.016, "mae": 0.012, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Guanajuato", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.6, "rmse": 0.008, "mae": 0.006, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Guanajuato", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.79, "rmse": 0.013, "mae": 0.011, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Guerrero", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.79, "rmse": 0.023, "mae": 0.019, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Guerrero", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.66, "rmse": 0.007, "mae": 0.005, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Guerrero", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.7, "rmse": 0.01, "mae": 0.009, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Hidalgo", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.75, "rmse": 0.025, "mae": 0.021, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Hidalgo", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.66, "rmse": 0.007, "mae": 0.005, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Hidalgo", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.7, "rmse": 0.01, "mae": 0.009, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Jalisco", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.81, "rmse": 0.033, "mae": 0.027, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Jalisco", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.74, "rmse": 0.018, "mae": 0.015, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Jalisco", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.84, "rmse": 0.024, "mae": 0.02, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Michoacán", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.81, "rmse": 0.029, "mae": 0.024, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Michoacán", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.89, "rmse": 0.015, "mae": 0.014, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Michoacán", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.83, "rmse": 0.023, "mae": 0.018, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Morelos", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.67, "rmse": 0.048, "mae": 0.037, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Morelos", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.6, "rmse": 0.008, "mae": 0.006, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Morelos", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.82, "rmse": 0.035, "mae": 0.03, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "México", "padecimiento": "Alzheimer", "modo": "General", "mase": 1.17, "rmse": 0.016, "mae": 0.013, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "México", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 1.08, "rmse": 0.008, "mae": 0.007, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "México", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.97, "rmse": 0.01, "mae": 0.008, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Nacional", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.6, "rmse": 0.009, "mae": 0.007, "confianza": "normal", "tipo": "Propio", "grupo": "Nacional", "orden": 0}, {"entidad": "Nacional", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.58, "rmse": 0.004, "mae": 0.003, "confianza": "normal", "tipo": "Propio", "grupo": "Nacional", "orden": 0}, {"entidad": "Nacional", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.61, "rmse": 0.006, "mae": 0.005, "confianza": "normal", "tipo": "Propio", "grupo": "Nacional", "orden": 0}, {"entidad": "Nayarit", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.6, "rmse": 0.074, "mae": 0.06, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Nayarit", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.66, "rmse": 0.007, "mae": 0.005, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Nayarit", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.74, "rmse": 0.059, "mae": 0.053, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Nuevo León", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.59, "rmse": 0.026, "mae": 0.021, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Nuevo León", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.61, "rmse": 0.015, "mae": 0.012, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Nuevo León", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.59, "rmse": 0.021, "mae": 0.017, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Oaxaca", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.73, "rmse": 0.033, "mae": 0.025, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Oaxaca", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.85, "rmse": 0.019, "mae": 0.015, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Oaxaca", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.8, "rmse": 0.025, "mae": 0.018, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Puebla", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.84, "rmse": 0.027, "mae": 0.022, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Puebla", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.66, "rmse": 0.007, "mae": 0.005, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Puebla", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.8, "rmse": 0.019, "mae": 0.015, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Querétaro", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.57, "rmse": 0.015, "mae": 0.012, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Querétaro", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.6, "rmse": 0.008, "mae": 0.006, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Querétaro", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.6, "rmse": 0.011, "mae": 0.009, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Quintana Roo", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.64, "rmse": 0.014, "mae": 0.012, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Quintana Roo", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.71, "rmse": 0.009, "mae": 0.007, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Quintana Roo", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.73, "rmse": 0.011, "mae": 0.009, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Region Rural / dispersa", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.69, "rmse": 0.013, "mae": 0.011, "confianza": "normal", "tipo": "Propio", "grupo": "Regional", "orden": 1}, {"entidad": "Region Rural / dispersa", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.66, "rmse": 0.007, "mae": 0.005, "confianza": "normal", "tipo": "Propio", "grupo": "Regional", "orden": 1}, {"entidad": "Region Rural / dispersa", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.7, "rmse": 0.01, "mae": 0.009, "confianza": "normal", "tipo": "Propio", "grupo": "Regional", "orden": 1}, {"entidad": "Region Sur-Sureste vulnerable", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.64, "rmse": 0.014, "mae": 0.012, "confianza": "normal", "tipo": "Propio", "grupo": "Regional", "orden": 1}, {"entidad": "Region Sur-Sureste vulnerable", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.71, "rmse": 0.009, "mae": 0.007, "confianza": "normal", "tipo": "Propio", "grupo": "Regional", "orden": 1}, {"entidad": "Region Sur-Sureste vulnerable", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.73, "rmse": 0.011, "mae": 0.009, "confianza": "normal", "tipo": "Propio", "grupo": "Regional", "orden": 1}, {"entidad": "Region Urbana media", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.57, "rmse": 0.015, "mae": 0.012, "confianza": "normal", "tipo": "Propio", "grupo": "Regional", "orden": 1}, {"entidad": "Region Urbana media", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.6, "rmse": 0.008, "mae": 0.006, "confianza": "normal", "tipo": "Propio", "grupo": "Regional", "orden": 1}, {"entidad": "Region Urbana media", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.6, "rmse": 0.011, "mae": 0.009, "confianza": "normal", "tipo": "Propio", "grupo": "Regional", "orden": 1}, {"entidad": "San Luis Potosí", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.75, "rmse": 0.035, "mae": 0.027, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "San Luis Potosí", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.6, "rmse": 0.008, "mae": 0.006, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "San Luis Potosí", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 1.0, "rmse": 0.03, "mae": 0.025, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Sinaloa", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.7, "rmse": 0.062, "mae": 0.052, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Sinaloa", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.66, "rmse": 0.039, "mae": 0.031, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Sinaloa", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.72, "rmse": 0.046, "mae": 0.038, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Sonora", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.59, "rmse": 0.041, "mae": 0.034, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Sonora", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.63, "rmse": 0.025, "mae": 0.022, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Sonora", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.66, "rmse": 0.033, "mae": 0.026, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Tabasco", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.8, "rmse": 0.043, "mae": 0.035, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Tabasco", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.71, "rmse": 0.009, "mae": 0.007, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Tabasco", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.73, "rmse": 0.011, "mae": 0.009, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Tamaulipas", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.75, "rmse": 0.055, "mae": 0.043, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Tamaulipas", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.73, "rmse": 0.03, "mae": 0.023, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Tamaulipas", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.83, "rmse": 0.044, "mae": 0.034, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Tlaxcala", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.69, "rmse": 0.013, "mae": 0.011, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Tlaxcala", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.66, "rmse": 0.007, "mae": 0.005, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Tlaxcala", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.7, "rmse": 0.01, "mae": 0.009, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Veracruz", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.72, "rmse": 0.025, "mae": 0.02, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Veracruz", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.77, "rmse": 0.014, "mae": 0.011, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Veracruz", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.74, "rmse": 0.018, "mae": 0.015, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Yucatán", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.78, "rmse": 0.041, "mae": 0.034, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Yucatán", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.71, "rmse": 0.009, "mae": 0.007, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Yucatán", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.87, "rmse": 0.033, "mae": 0.027, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Zacatecas", "padecimiento": "Alzheimer", "modo": "General", "mase": 0.57, "rmse": 0.015, "mae": 0.012, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Zacatecas", "padecimiento": "Alzheimer", "modo": "Hombres", "mase": 0.6, "rmse": 0.008, "mae": 0.006, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Zacatecas", "padecimiento": "Alzheimer", "modo": "Mujeres", "mase": 0.6, "rmse": 0.011, "mae": 0.009, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Aguascalientes", "padecimiento": "Depresión", "modo": "General", "mase": 0.56, "rmse": 0.248, "mae": 0.203, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Aguascalientes", "padecimiento": "Depresión", "modo": "Hombres", "mase": 0.53, "rmse": 0.153, "mae": 0.122, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Aguascalientes", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.55, "rmse": 0.223, "mae": 0.182, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Baja California", "padecimiento": "Depresión", "modo": "General", "mase": 0.54, "rmse": 0.171, "mae": 0.131, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Baja California", "padecimiento": "Depresión", "modo": "Hombres", "mase": 0.72, "rmse": 0.136, "mae": 0.112, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Baja California", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.55, "rmse": 0.152, "mae": 0.116, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Baja California Sur", "padecimiento": "Depresión", "modo": "General", "mase": 1.06, "rmse": 0.381, "mae": 0.314, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Baja California Sur", "padecimiento": "Depresión", "modo": "Hombres", "mase": 1.31, "rmse": 0.378, "mae": 0.332, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Baja California Sur", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.84, "rmse": 0.3, "mae": 0.233, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Campeche", "padecimiento": "Depresión", "modo": "General", "mase": 0.68, "rmse": 0.253, "mae": 0.191, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Campeche", "padecimiento": "Depresión", "modo": "Hombres", "mase": 0.73, "rmse": 0.195, "mae": 0.157, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Campeche", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.71, "rmse": 0.245, "mae": 0.191, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Chiapas", "padecimiento": "Depresión", "modo": "General", "mase": 1.1, "rmse": 0.192, "mae": 0.162, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Chiapas", "padecimiento": "Depresión", "modo": "Hombres", "mase": 1.03, "rmse": 0.075, "mae": 0.06, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Chiapas", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 1.08, "rmse": 0.168, "mae": 0.138, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Chihuahua", "padecimiento": "Depresión", "modo": "General", "mase": 0.85, "rmse": 0.308, "mae": 0.245, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Chihuahua", "padecimiento": "Depresión", "modo": "Hombres", "mase": 0.72, "rmse": 0.203, "mae": 0.172, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Chihuahua", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.88, "rmse": 0.284, "mae": 0.22, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Ciudad de México", "padecimiento": "Depresión", "modo": "General", "mase": 0.73, "rmse": 0.221, "mae": 0.157, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Ciudad de México", "padecimiento": "Depresión", "modo": "Hombres", "mase": 0.78, "rmse": 0.144, "mae": 0.107, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Ciudad de México", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.73, "rmse": 0.21, "mae": 0.155, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Coahuila", "padecimiento": "Depresión", "modo": "General", "mase": 0.66, "rmse": 0.262, "mae": 0.217, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Coahuila", "padecimiento": "Depresión", "modo": "Hombres", "mase": 1.02, "rmse": 0.178, "mae": 0.146, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Coahuila", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.64, "rmse": 0.221, "mae": 0.18, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Colima", "padecimiento": "Depresión", "modo": "General", "mase": 0.96, "rmse": 0.388, "mae": 0.321, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Colima", "padecimiento": "Depresión", "modo": "Hombres", "mase": 1.21, "rmse": 0.362, "mae": 0.299, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Colima", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.87, "rmse": 0.346, "mae": 0.285, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Durango", "padecimiento": "Depresión", "modo": "General", "mase": 0.81, "rmse": 0.292, "mae": 0.234, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Durango", "padecimiento": "Depresión", "modo": "Hombres", "mase": 0.71, "rmse": 0.189, "mae": 0.155, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Durango", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.87, "rmse": 0.284, "mae": 0.238, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Guanajuato", "padecimiento": "Depresión", "modo": "General", "mase": 0.77, "rmse": 0.181, "mae": 0.143, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Guanajuato", "padecimiento": "Depresión", "modo": "Hombres", "mase": 0.93, "rmse": 0.086, "mae": 0.07, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Guanajuato", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.8, "rmse": 0.17, "mae": 0.133, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Guerrero", "padecimiento": "Depresión", "modo": "General", "mase": 0.72, "rmse": 0.257, "mae": 0.205, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Guerrero", "padecimiento": "Depresión", "modo": "Hombres", "mase": 0.87, "rmse": 0.138, "mae": 0.111, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Guerrero", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.74, "rmse": 0.226, "mae": 0.182, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Hidalgo", "padecimiento": "Depresión", "modo": "General", "mase": 0.74, "rmse": 0.218, "mae": 0.167, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Hidalgo", "padecimiento": "Depresión", "modo": "Hombres", "mase": 0.67, "rmse": 0.097, "mae": 0.078, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Hidalgo", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.82, "rmse": 0.211, "mae": 0.169, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Jalisco", "padecimiento": "Depresión", "modo": "General", "mase": 0.66, "rmse": 0.166, "mae": 0.122, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Jalisco", "padecimiento": "Depresión", "modo": "Hombres", "mase": 0.78, "rmse": 0.115, "mae": 0.093, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Jalisco", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.67, "rmse": 0.154, "mae": 0.111, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Michoacán", "padecimiento": "Depresión", "modo": "General", "mase": 1.04, "rmse": 0.229, "mae": 0.187, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Michoacán", "padecimiento": "Depresión", "modo": "Hombres", "mase": 1.08, "rmse": 0.148, "mae": 0.122, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Michoacán", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 1.07, "rmse": 0.211, "mae": 0.17, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Morelos", "padecimiento": "Depresión", "modo": "General", "mase": 0.53, "rmse": 0.233, "mae": 0.18, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Morelos", "padecimiento": "Depresión", "modo": "Hombres", "mase": 0.62, "rmse": 0.169, "mae": 0.131, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Morelos", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.56, "rmse": 0.224, "mae": 0.174, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "México", "padecimiento": "Depresión", "modo": "General", "mase": 1.22, "rmse": 0.214, "mae": 0.185, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "México", "padecimiento": "Depresión", "modo": "Hombres", "mase": 1.26, "rmse": 0.107, "mae": 0.089, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "México", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 1.22, "rmse": 0.184, "mae": 0.157, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Nacional", "padecimiento": "Depresión", "modo": "General", "mase": 0.77, "rmse": 0.135, "mae": 0.103, "confianza": "normal", "tipo": "Propio", "grupo": "Nacional", "orden": 0}, {"entidad": "Nacional", "padecimiento": "Depresión", "modo": "Hombres", "mase": 0.79, "rmse": 0.066, "mae": 0.051, "confianza": "normal", "tipo": "Propio", "grupo": "Nacional", "orden": 0}, {"entidad": "Nacional", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.78, "rmse": 0.121, "mae": 0.092, "confianza": "normal", "tipo": "Propio", "grupo": "Nacional", "orden": 0}, {"entidad": "Nayarit", "padecimiento": "Depresión", "modo": "General", "mase": 0.81, "rmse": 0.364, "mae": 0.291, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Nayarit", "padecimiento": "Depresión", "modo": "Hombres", "mase": 0.78, "rmse": 0.261, "mae": 0.207, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Nayarit", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.84, "rmse": 0.371, "mae": 0.299, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Nuevo León", "padecimiento": "Depresión", "modo": "General", "mase": 0.74, "rmse": 0.171, "mae": 0.133, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Nuevo León", "padecimiento": "Depresión", "modo": "Hombres", "mase": 0.8, "rmse": 0.1, "mae": 0.078, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Nuevo León", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.78, "rmse": 0.16, "mae": 0.122, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Oaxaca", "padecimiento": "Depresión", "modo": "General", "mase": 0.78, "rmse": 0.192, "mae": 0.156, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Oaxaca", "padecimiento": "Depresión", "modo": "Hombres", "mase": 0.93, "rmse": 0.105, "mae": 0.085, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Oaxaca", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.81, "rmse": 0.169, "mae": 0.14, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Puebla", "padecimiento": "Depresión", "modo": "General", "mase": 0.88, "rmse": 0.254, "mae": 0.199, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Puebla", "padecimiento": "Depresión", "modo": "Hombres", "mase": 0.96, "rmse": 0.138, "mae": 0.111, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Puebla", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.92, "rmse": 0.226, "mae": 0.174, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Querétaro", "padecimiento": "Depresión", "modo": "General", "mase": 0.78, "rmse": 0.196, "mae": 0.151, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Querétaro", "padecimiento": "Depresión", "modo": "Hombres", "mase": 0.78, "rmse": 0.087, "mae": 0.071, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Querétaro", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.83, "rmse": 0.186, "mae": 0.143, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Quintana Roo", "padecimiento": "Depresión", "modo": "General", "mase": 0.64, "rmse": 0.22, "mae": 0.176, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Quintana Roo", "padecimiento": "Depresión", "modo": "Hombres", "mase": 0.8, "rmse": 0.149, "mae": 0.117, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Quintana Roo", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.63, "rmse": 0.197, "mae": 0.159, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "San Luis Potosí", "padecimiento": "Depresión", "modo": "General", "mase": 0.78, "rmse": 0.206, "mae": 0.169, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "San Luis Potosí", "padecimiento": "Depresión", "modo": "Hombres", "mase": 0.72, "rmse": 0.141, "mae": 0.113, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "San Luis Potosí", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.77, "rmse": 0.187, "mae": 0.152, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Sinaloa", "padecimiento": "Depresión", "modo": "General", "mase": 0.78, "rmse": 0.22, "mae": 0.179, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Sinaloa", "padecimiento": "Depresión", "modo": "Hombres", "mase": 0.78, "rmse": 0.146, "mae": 0.12, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Sinaloa", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.74, "rmse": 0.203, "mae": 0.159, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Sonora", "padecimiento": "Depresión", "modo": "General", "mase": 1.0, "rmse": 0.269, "mae": 0.226, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Sonora", "padecimiento": "Depresión", "modo": "Hombres", "mase": 0.92, "rmse": 0.154, "mae": 0.123, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Sonora", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.98, "rmse": 0.246, "mae": 0.205, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Tabasco", "padecimiento": "Depresión", "modo": "General", "mase": 0.86, "rmse": 0.333, "mae": 0.267, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Tabasco", "padecimiento": "Depresión", "modo": "Hombres", "mase": 1.12, "rmse": 0.251, "mae": 0.203, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Tabasco", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.91, "rmse": 0.305, "mae": 0.25, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Tamaulipas", "padecimiento": "Depresión", "modo": "General", "mase": 0.7, "rmse": 0.197, "mae": 0.156, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Tamaulipas", "padecimiento": "Depresión", "modo": "Hombres", "mase": 0.66, "rmse": 0.142, "mae": 0.111, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Tamaulipas", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.69, "rmse": 0.175, "mae": 0.139, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Tlaxcala", "padecimiento": "Depresión", "modo": "General", "mase": 0.84, "rmse": 0.238, "mae": 0.193, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Tlaxcala", "padecimiento": "Depresión", "modo": "Hombres", "mase": 0.98, "rmse": 0.154, "mae": 0.128, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Tlaxcala", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.88, "rmse": 0.231, "mae": 0.184, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Veracruz", "padecimiento": "Depresión", "modo": "General", "mase": 0.65, "rmse": 0.178, "mae": 0.127, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Veracruz", "padecimiento": "Depresión", "modo": "Hombres", "mase": 0.72, "rmse": 0.085, "mae": 0.066, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Veracruz", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.69, "rmse": 0.162, "mae": 0.121, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Yucatán", "padecimiento": "Depresión", "modo": "General", "mase": 0.84, "rmse": 0.283, "mae": 0.232, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Yucatán", "padecimiento": "Depresión", "modo": "Hombres", "mase": 1.0, "rmse": 0.185, "mae": 0.151, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Yucatán", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.84, "rmse": 0.25, "mae": 0.205, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Zacatecas", "padecimiento": "Depresión", "modo": "General", "mase": 0.89, "rmse": 0.245, "mae": 0.203, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Zacatecas", "padecimiento": "Depresión", "modo": "Hombres", "mase": 0.9, "rmse": 0.165, "mae": 0.138, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Zacatecas", "padecimiento": "Depresión", "modo": "Mujeres", "mase": 0.84, "rmse": 0.223, "mae": 0.183, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Aguascalientes", "padecimiento": "Parkinson", "modo": "General", "mase": 0.74, "rmse": 0.076, "mae": 0.06, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Aguascalientes", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.86, "rmse": 0.06, "mae": 0.049, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Aguascalientes", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.82, "rmse": 0.048, "mae": 0.042, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Baja California", "padecimiento": "Parkinson", "modo": "General", "mase": 0.63, "rmse": 0.061, "mae": 0.047, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Baja California", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.65, "rmse": 0.038, "mae": 0.032, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Baja California", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.67, "rmse": 0.047, "mae": 0.033, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Baja California Sur", "padecimiento": "Parkinson", "modo": "General", "mase": 0.81, "rmse": 0.115, "mae": 0.093, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Baja California Sur", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.96, "rmse": 0.092, "mae": 0.078, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Baja California Sur", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.65, "rmse": 0.023, "mae": 0.018, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Campeche", "padecimiento": "Parkinson", "modo": "General", "mase": 0.86, "rmse": 0.124, "mae": 0.103, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Campeche", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 1.01, "rmse": 0.103, "mae": 0.081, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Campeche", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.84, "rmse": 0.019, "mae": 0.016, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Chiapas", "padecimiento": "Parkinson", "modo": "General", "mase": 0.71, "rmse": 0.036, "mae": 0.029, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Chiapas", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.66, "rmse": 0.024, "mae": 0.019, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Chiapas", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.87, "rmse": 0.025, "mae": 0.019, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Chihuahua", "padecimiento": "Parkinson", "modo": "General", "mase": 0.61, "rmse": 0.079, "mae": 0.064, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Chihuahua", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.73, "rmse": 0.057, "mae": 0.046, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Chihuahua", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.61, "rmse": 0.058, "mae": 0.046, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Ciudad de México", "padecimiento": "Parkinson", "modo": "General", "mase": 0.38, "rmse": 0.051, "mae": 0.042, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Ciudad de México", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.38, "rmse": 0.03, "mae": 0.024, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Ciudad de México", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.37, "rmse": 0.03, "mae": 0.022, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Coahuila", "padecimiento": "Parkinson", "modo": "General", "mase": 0.54, "rmse": 0.075, "mae": 0.058, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Coahuila", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.61, "rmse": 0.051, "mae": 0.039, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Coahuila", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.69, "rmse": 0.052, "mae": 0.042, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Colima", "padecimiento": "Parkinson", "modo": "General", "mase": 0.78, "rmse": 0.199, "mae": 0.162, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Colima", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.77, "rmse": 0.157, "mae": 0.127, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Colima", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.86, "rmse": 0.168, "mae": 0.132, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Durango", "padecimiento": "Parkinson", "modo": "General", "mase": 0.81, "rmse": 0.156, "mae": 0.121, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Durango", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.9, "rmse": 0.11, "mae": 0.085, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Durango", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.78, "rmse": 0.099, "mae": 0.073, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Guanajuato", "padecimiento": "Parkinson", "modo": "General", "mase": 0.8, "rmse": 0.036, "mae": 0.029, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Guanajuato", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.88, "rmse": 0.025, "mae": 0.021, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Guanajuato", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.84, "rmse": 0.022, "mae": 0.017, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Guerrero", "padecimiento": "Parkinson", "modo": "General", "mase": 0.8, "rmse": 0.057, "mae": 0.044, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Guerrero", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.76, "rmse": 0.034, "mae": 0.026, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Guerrero", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.79, "rmse": 0.038, "mae": 0.03, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Hidalgo", "padecimiento": "Parkinson", "modo": "General", "mase": 0.64, "rmse": 0.054, "mae": 0.038, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Hidalgo", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.61, "rmse": 0.034, "mae": 0.026, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Hidalgo", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.7, "rmse": 0.037, "mae": 0.025, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Jalisco", "padecimiento": "Parkinson", "modo": "General", "mase": 0.91, "rmse": 0.086, "mae": 0.067, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Jalisco", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.81, "rmse": 0.051, "mae": 0.039, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Jalisco", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.95, "rmse": 0.056, "mae": 0.043, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Michoacán", "padecimiento": "Parkinson", "modo": "General", "mase": 0.88, "rmse": 0.064, "mae": 0.052, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Michoacán", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.85, "rmse": 0.043, "mae": 0.034, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Michoacán", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.88, "rmse": 0.04, "mae": 0.033, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Morelos", "padecimiento": "Parkinson", "modo": "General", "mase": 0.66, "rmse": 0.128, "mae": 0.104, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Morelos", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.72, "rmse": 0.086, "mae": 0.07, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Morelos", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.69, "rmse": 0.09, "mae": 0.072, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "México", "padecimiento": "Parkinson", "modo": "General", "mase": 1.44, "rmse": 0.05, "mae": 0.042, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "México", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 1.2, "rmse": 0.03, "mae": 0.024, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "México", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 1.3, "rmse": 0.026, "mae": 0.021, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Nacional", "padecimiento": "Parkinson", "modo": "General", "mase": 0.8, "rmse": 0.033, "mae": 0.027, "confianza": "normal", "tipo": "Propio", "grupo": "Nacional", "orden": 0}, {"entidad": "Nacional", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.74, "rmse": 0.017, "mae": 0.014, "confianza": "normal", "tipo": "Propio", "grupo": "Nacional", "orden": 0}, {"entidad": "Nacional", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.89, "rmse": 0.02, "mae": 0.016, "confianza": "normal", "tipo": "Propio", "grupo": "Nacional", "orden": 0}, {"entidad": "Nayarit", "padecimiento": "Parkinson", "modo": "General", "mase": 0.76, "rmse": 0.113, "mae": 0.094, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Nayarit", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.74, "rmse": 0.079, "mae": 0.063, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Nayarit", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.77, "rmse": 0.07, "mae": 0.059, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Nuevo León", "padecimiento": "Parkinson", "modo": "General", "mase": 0.58, "rmse": 0.042, "mae": 0.033, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Nuevo León", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.63, "rmse": 0.031, "mae": 0.024, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Nuevo León", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.56, "rmse": 0.026, "mae": 0.02, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Oaxaca", "padecimiento": "Parkinson", "modo": "General", "mase": 0.67, "rmse": 0.051, "mae": 0.041, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Oaxaca", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.7, "rmse": 0.035, "mae": 0.029, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Oaxaca", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.65, "rmse": 0.031, "mae": 0.025, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Puebla", "padecimiento": "Parkinson", "modo": "General", "mase": 1.16, "rmse": 0.154, "mae": 0.114, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Puebla", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 1.14, "rmse": 0.093, "mae": 0.067, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Puebla", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 1.07, "rmse": 0.085, "mae": 0.065, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Querétaro", "padecimiento": "Parkinson", "modo": "General", "mase": 0.63, "rmse": 0.039, "mae": 0.03, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Querétaro", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.78, "rmse": 0.03, "mae": 0.026, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Querétaro", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.65, "rmse": 0.023, "mae": 0.018, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Quintana Roo", "padecimiento": "Parkinson", "modo": "General", "mase": 0.75, "rmse": 0.068, "mae": 0.05, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Quintana Roo", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.88, "rmse": 0.047, "mae": 0.036, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Quintana Roo", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.9, "rmse": 0.05, "mae": 0.039, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Region Sur-Sureste vulnerable", "padecimiento": "Parkinson", "modo": "General", "mase": 0.86, "rmse": 0.035, "mae": 0.028, "confianza": "normal", "tipo": "Propio", "grupo": "Regional", "orden": 1}, {"entidad": "Region Sur-Sureste vulnerable", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.9, "rmse": 0.024, "mae": 0.02, "confianza": "normal", "tipo": "Propio", "grupo": "Regional", "orden": 1}, {"entidad": "Region Sur-Sureste vulnerable", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.84, "rmse": 0.019, "mae": 0.016, "confianza": "normal", "tipo": "Propio", "grupo": "Regional", "orden": 1}, {"entidad": "Region Urbana media", "padecimiento": "Parkinson", "modo": "General", "mase": 0.69, "rmse": 0.038, "mae": 0.031, "confianza": "normal", "tipo": "Propio", "grupo": "Regional", "orden": 1}, {"entidad": "Region Urbana media", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.76, "rmse": 0.024, "mae": 0.019, "confianza": "normal", "tipo": "Propio", "grupo": "Regional", "orden": 1}, {"entidad": "Region Urbana media", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.65, "rmse": 0.023, "mae": 0.018, "confianza": "normal", "tipo": "Propio", "grupo": "Regional", "orden": 1}, {"entidad": "San Luis Potosí", "padecimiento": "Parkinson", "modo": "General", "mase": 0.7, "rmse": 0.073, "mae": 0.059, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "San Luis Potosí", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.75, "rmse": 0.049, "mae": 0.038, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "San Luis Potosí", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.67, "rmse": 0.047, "mae": 0.038, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Sinaloa", "padecimiento": "Parkinson", "modo": "General", "mase": 0.56, "rmse": 0.096, "mae": 0.077, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Sinaloa", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.57, "rmse": 0.063, "mae": 0.051, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Sinaloa", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.64, "rmse": 0.072, "mae": 0.058, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Sonora", "padecimiento": "Parkinson", "modo": "General", "mase": 0.58, "rmse": 0.06, "mae": 0.049, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Sonora", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.67, "rmse": 0.048, "mae": 0.039, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Sonora", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.61, "rmse": 0.041, "mae": 0.033, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Tabasco", "padecimiento": "Parkinson", "modo": "General", "mase": 1.12, "rmse": 0.101, "mae": 0.08, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Tabasco", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 1.05, "rmse": 0.071, "mae": 0.055, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Tabasco", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 1.09, "rmse": 0.058, "mae": 0.046, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Tamaulipas", "padecimiento": "Parkinson", "modo": "General", "mase": 0.78, "rmse": 0.097, "mae": 0.065, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Tamaulipas", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.81, "rmse": 0.062, "mae": 0.048, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Tamaulipas", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.88, "rmse": 0.075, "mae": 0.047, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Tlaxcala", "padecimiento": "Parkinson", "modo": "General", "mase": 0.77, "rmse": 0.09, "mae": 0.071, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Tlaxcala", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.8, "rmse": 0.055, "mae": 0.048, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Tlaxcala", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.92, "rmse": 0.066, "mae": 0.052, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Veracruz", "padecimiento": "Parkinson", "modo": "General", "mase": 0.67, "rmse": 0.051, "mae": 0.041, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Veracruz", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.74, "rmse": 0.037, "mae": 0.03, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Veracruz", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.8, "rmse": 0.036, "mae": 0.03, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Yucatán", "padecimiento": "Parkinson", "modo": "General", "mase": 0.97, "rmse": 0.087, "mae": 0.066, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Yucatán", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 1.02, "rmse": 0.057, "mae": 0.045, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Yucatán", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.98, "rmse": 0.058, "mae": 0.043, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Zacatecas", "padecimiento": "Parkinson", "modo": "General", "mase": 0.66, "rmse": 0.048, "mae": 0.042, "confianza": "normal", "tipo": "Propio", "grupo": "Estatal", "orden": 2}, {"entidad": "Zacatecas", "padecimiento": "Parkinson", "modo": "Hombres", "mase": 0.76, "rmse": 0.024, "mae": 0.019, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}, {"entidad": "Zacatecas", "padecimiento": "Parkinson", "modo": "Mujeres", "mase": 0.65, "rmse": 0.023, "mae": 0.018, "confianza": "insuficiente", "tipo": "Regional (fallback)", "grupo": "Estatal", "orden": 2}], "cobertura": [{"estado": "Aguascalientes", "alzheimer": "fallback", "depresion": "propio", "parkinson": "propio"}, {"estado": "Baja California", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Baja California Sur", "alzheimer": "fallback", "depresion": "propio", "parkinson": "propio"}, {"estado": "Campeche", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Chiapas", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Chihuahua", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Ciudad de México", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Coahuila", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Colima", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Durango", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Guanajuato", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Guerrero", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Hidalgo", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Jalisco", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Michoacán", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Morelos", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "México", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Nayarit", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Nuevo León", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Oaxaca", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Puebla", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Querétaro", "alzheimer": "fallback", "depresion": "propio", "parkinson": "propio"}, {"estado": "Quintana Roo", "alzheimer": "fallback", "depresion": "propio", "parkinson": "propio"}, {"estado": "San Luis Potosí", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Sinaloa", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Sonora", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Tabasco", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Tamaulipas", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Tlaxcala", "alzheimer": "fallback", "depresion": "propio", "parkinson": "propio"}, {"estado": "Veracruz", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Yucatán", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Zacatecas", "alzheimer": "fallback", "depresion": "propio", "parkinson": "propio"}], "cobertura_resumen": {"alzheimer": {"propios": 26, "fallback": 6}, "depresion": {"propios": 32, "fallback": 0}, "parkinson": {"propios": 32, "fallback": 0}}, "top10": [{"label": "Ciudad de México — Parkinson (mujeres)", "mase": 0.37, "padecimiento": "Parkinson"}, {"label": "Ciudad de México — Parkinson (hombres)", "mase": 0.38, "padecimiento": "Parkinson"}, {"label": "Ciudad de México — Parkinson (general)", "mase": 0.38, "padecimiento": "Parkinson"}, {"label": "Aguascalientes — Depresión (hombres)", "mase": 0.53, "padecimiento": "Depresión"}, {"label": "Morelos — Depresión (general)", "mase": 0.53, "padecimiento": "Depresión"}, {"label": "Baja California — Depresión (general)", "mase": 0.54, "padecimiento": "Depresión"}, {"label": "Coahuila — Parkinson (general)", "mase": 0.54, "padecimiento": "Parkinson"}, {"label": "Baja California — Depresión (mujeres)", "mase": 0.55, "padecimiento": "Depresión"}, {"label": "Chihuahua — Alzheimer (general)", "mase": 0.55, "padecimiento": "Alzheimer"}, {"label": "Aguascalientes — Depresión (mujeres)", "mase": 0.55, "padecimiento": "Depresión"}], "bottom10": [{"label": "México — Parkinson (general)", "mase": 1.44, "padecimiento": "Parkinson"}, {"label": "Baja California Sur — Depresión (hombres)", "mase": 1.31, "padecimiento": "Depresión"}, {"label": "México — Parkinson (mujeres)", "mase": 1.3, "padecimiento": "Parkinson"}, {"label": "México — Depresión (hombres)", "mase": 1.26, "padecimiento": "Depresión"}, {"label": "Colima — Alzheimer (mujeres)", "mase": 1.24, "padecimiento": "Alzheimer"}, {"label": "México — Depresión (general)", "mase": 1.22, "padecimiento": "Depresión"}, {"label": "México — Depresión (mujeres)", "mase": 1.22, "padecimiento": "Depresión"}, {"label": "Colima — Depresión (hombres)", "mase": 1.21, "padecimiento": "Depresión"}, {"label": "México — Parkinson (hombres)", "mase": 1.2, "padecimiento": "Parkinson"}, {"label": "México — Alzheimer (general)", "mase": 1.17, "padecimiento": "Alzheimer"}], "pad_meta": [{"name": "Alzheimer", "key": "alzheimer", "main": "#B58500", "light": "#D4B24A", "glow": "rgba(181,133,0,0.10)"}, {"name": "Depresión", "key": "depresion", "main": "#9B2242", "light": "#D4758B", "glow": "rgba(155,34,66,0.06)"}, {"name": "Parkinson", "key": "parkinson", "main": "#00524E", "light": "#4A9E9A", "glow": "rgba(0,82,78,0.08)"}], "regiones_inegi": {"Metropolitana alta": ["Baja California", "Chihuahua", "Ciudad de México", "Coahuila", "Jalisco", "México", "Nuevo León", "Sinaloa", "Sonora", "Tamaulipas"], "Urbana media": ["Aguascalientes", "Baja California Sur", "Colima", "Durango", "Guanajuato", "Morelos", "Querétaro", "San Luis Potosí", "Zacatecas"], "Sur-Sureste vulnerable": ["Campeche", "Chiapas", "Oaxaca", "Quintana Roo", "Tabasco", "Veracruz", "Yucatán"], "Rural / dispersa": ["Guerrero", "Hidalgo", "Michoacán", "Nayarit", "Puebla", "Tlaxcala"]}};
+
+const PC = {};
+D.pad_meta.forEach(p => { PC[p.name] = {main:p.main,light:p.light,glow:p.glow}; });
+
+// Populate filter
+const fp = document.getElementById('filterPad');
+D.pad_meta.forEach(p => { const o=document.createElement('option');o.value=p.name;o.textContent=p.name;fp.appendChild(o); });
+
+// Reveal
+const obs = new IntersectionObserver(es => { es.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); }); }, {threshold:.08});
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+/* ── Pad cards ── */
+try {
+  const ct = document.getElementById('pad-cards');
+  D.por_padecimiento.forEach(p => {
+    const c = PC[p.padecimiento] || {main:'#333',glow:'rgba(0,0,0,.05)'};
+    const card = document.createElement('div');
+    card.className = 'card reveal';
+    card.innerHTML = `
+      <div class="card-header">
+        <span class="card-dot" style="color:${c.main};background:${c.main}"></span>
+        <span class="card-title">${p.padecimiento}</span>
+      </div>
+      <div class="card-metrics">
+        <div class="metric"><div class="metric-value">${p.total}</div><div class="metric-label">Modelos</div></div>
+        <div class="metric" style="background:${c.glow}"><div class="metric-value" style="color:${c.main}">${p.mase}</div><div class="metric-label">MASE Medio</div></div>
+        <div class="metric"><div class="metric-value">${p.mase_min} – ${p.mase_max}</div><div class="metric-label">MASE Rango</div></div>
+        <div class="metric"><div class="metric-value">${p.rmse}</div><div class="metric-label">RMSE Medio</div></div>
+        <div class="metric"><div class="metric-value">${p.insuficientes}</div><div class="metric-label">Insuficientes</div></div>
+        <div class="metric"><div class="metric-value">${p.fallback}</div><div class="metric-label">Fallback Regional</div></div>
+      </div>`;
+    ct.appendChild(card);
+    obs.observe(card);
+  });
+} catch(e) { console.warn('cards:', e); }
+
+/* ── MASE comparison bar ── */
+try {
+  const pads = D.por_padecimiento;
+  new Chart(document.getElementById('maseCompareChart'), {
+    type: 'bar',
+    data: {
+      labels: pads.map(p => p.padecimiento),
+      datasets: [
+        { label:'MASE Medio', data:pads.map(p=>p.mase), backgroundColor:pads.map(p=>PC[p.padecimiento].main), borderRadius:6, borderSkipped:false },
+        { label:'MASE Mediana', data:pads.map(p=>p.mase_median), backgroundColor:pads.map(p=>PC[p.padecimiento].light), borderRadius:6, borderSkipped:false }
+      ]
+    },
+    options: {
+      responsive:true, indexAxis:'y',
+      plugins: {
+        title: { display:true, text:'MASE por Padecimiento (media vs mediana)', font:{ family:"'Source Sans 3'", size:14 } },
+        legend: { position:'bottom', labels:{ font:{ family:"'Source Sans 3'" } } }
+      },
+      scales: {
+        x: { beginAtZero:true, max:1.2, grid:{ color:'rgba(0,0,0,.06)' },
+          title:{ display:true, text:'MASE (menor = mejor)', font:{ family:"'Source Sans 3'" } } },
+        y: { grid:{ display:false } }
+      }
+    }
+  });
+} catch(e) { console.warn('maseCompare:', e); }
+
+/* ── Doughnut: propio vs fallback ── */
+try {
+  const pads = D.por_padecimiento;
+  const propios = pads.map(p => p.estatales - p.fallback);
+  const fallbacks = pads.map(p => p.fallback);
+  new Chart(document.getElementById('doughnutChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Modelo propio', 'Fallback regional'],
+      datasets: pads.map((p, i) => ({
+        label: p.padecimiento,
+        data: [propios[i], fallbacks[i]],
+        backgroundColor: ['#1a7431', '#c2590a'],
+        borderWidth: 2, borderColor: '#fff'
+      }))
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: { display:true, text:'Modelos Propios vs Fallback (estatales)', font:{ family:"'Source Sans 3'", size:14 } },
+        legend: { position:'bottom', labels:{ font:{ family:"'Source Sans 3'" } } },
+        tooltip: { callbacks: { label: ctx => {
+          const ds = ctx.dataset;
+          const total = ds.data.reduce((a,b)=>a+b,0);
+          const pct = total ? Math.round(ctx.parsed / total * 100) : 0;
+          return `${ctx.label}: ${ctx.parsed} (${pct}%)`;
+        } } }
+      }
+    }
+  });
+} catch(e) { console.warn('doughnut:', e); }
+
+/* ── MASE histogram ── */
+try {
+  const binColors = ['#1a7431','#4ade80','#facc15','#f97316','#b91c1c'];
+  new Chart(document.getElementById('histoChart'), {
+    type: 'bar',
+    data: {
+      labels: D.mase_bin_labels,
+      datasets: D.mase_histo.map(h => ({
+        label: h.padecimiento,
+        data: h.bins,
+        backgroundColor: PC[h.padecimiento].main,
+        borderRadius: 4, borderSkipped: false
+      }))
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: { display:true, text:'Cuantos modelos hay en cada rango de MASE', font:{ family:"'Source Sans 3'", size:14 } },
+        legend: { position:'bottom', labels:{ font:{ family:"'Source Sans 3'" } } }
+      },
+      scales: {
+        y: { beginAtZero:true, title:{ display:true, text:'Numero de modelos', font:{ family:"'Source Sans 3'" } }, grid:{ color:'rgba(0,0,0,.06)' } },
+        x: { grid:{ display:false }, title:{ display:true, text:'Rango de MASE', font:{ family:"'Source Sans 3'" } } }
+      }
+    }
+  });
+} catch(e) { console.warn('histo:', e); }
+
+/* ── Sexo chart ── */
+try {
+  const pads = D.pad_meta.map(p=>p.name);
+  const modos = ['general','hombres','mujeres'];
+  const ml = {general:'General',hombres:'Hombres',mujeres:'Mujeres'};
+  const mc = {general:'#97999B',hombres:'#00524E',mujeres:'#9B2242'};
+  const ds = modos.map(m => ({
+    label: ml[m],
+    data: pads.map(pad => { const f=D.por_sexo.find(s=>s.padecimiento===pad&&s.modo===m); return f?f.mase:0; }),
+    backgroundColor: mc[m], borderRadius:6, borderSkipped:false
+  }));
+  new Chart(document.getElementById('sexoChart'), {
+    type:'bar', data:{labels:pads,datasets:ds},
+    options: {
+      responsive:true,
+      plugins: {
+        title:{ display:true, text:'MASE por Sexo y Padecimiento', font:{ family:"'Source Sans 3'", size:14 } },
+        legend:{ position:'bottom', labels:{ font:{ family:"'Source Sans 3'" } } },
+        tooltip:{ callbacks:{ label: ctx=>`${ctx.dataset.label}: MASE ${ctx.parsed.y}` } }
+      },
+      scales: {
+        y:{ beginAtZero:true, title:{ display:true, text:'MASE', font:{ family:"'Source Sans 3'" } }, grid:{ color:'rgba(0,0,0,.06)' } },
+        x:{ grid:{ display:false } }
+      }
+    }
+  });
+} catch(e) { console.warn('sexo:', e); }
+
+/* ── Top/Bottom horizontal bars ── */
+try {
+  function hbar(id, items, title, colorFn) {
+    const labels = items.map(i=>i.label.length>35 ? i.label.substring(0,35)+'...' : i.label);
+    new Chart(document.getElementById(id), {
+      type:'bar',
+      data: {
+        labels,
+        datasets: [{ data:items.map(i=>i.mase), backgroundColor:items.map(i => {
+          const c = PC[i.padecimiento]; return c ? c.main : '#999';
+        }), borderRadius:4, borderSkipped:false }]
+      },
+      options: {
+        indexAxis:'y', responsive:true,
+        plugins: {
+          title:{ display:true, text:title, font:{ family:"'Source Sans 3'", size:14 } },
+          legend:{ display:false },
+          tooltip:{ callbacks:{ label:ctx=>'MASE: '+ctx.parsed.x } }
+        },
+        scales: {
+          x: { beginAtZero:true, grid:{ color:'rgba(0,0,0,.06)' } },
+          y: { grid:{ display:false }, ticks:{ font:{ size:11, family:"'Source Sans 3'" } } }
+        }
+      }
+    });
+  }
+  hbar('topChart', D.top10, 'Top 10 — Mejor MASE');
+  hbar('bottomChart', D.bottom10, 'Bottom 10 — Mayor MASE');
+} catch(e) { console.warn('topbottom:', e); }
+
+/* ── Ranking table ── */
+try {
+  const tbody = document.getElementById('rankingBody');
+  let rows = D.ranking;
+  let sortCol = 'orden'; let sortAsc = true;
+
+  function maseBadge(v) {
+    if(v==null) return '<span class="badge badge-yellow">N/A</span>';
+    const cls = v<0.7?'badge-green':v<=1.0?'badge-yellow':'badge-red';
+    return `<span class="badge ${cls}">${v}</span>`;
+  }
+  function tipoBadge(t) {
+    return `<span class="badge-tipo ${t==='Propio'?'badge-propio':'badge-fallback'}">${t}</span>`;
+  }
+
+  function render(data) {
+    // Group by grupo
+    const groups = {};
+    const groupOrder = ['Nacional','Regional','Estatal'];
+    const groupLabels = {
+      'Nacional': 'Nacional (modelos con todos los datos del pais)',
+      'Regional': 'Regional (modelos por region INEGI de salud mental)',
+      'Estatal': 'Estatal (modelos por estado — 32 entidades)'
+    };
+    data.forEach(r => {
+      if(!groups[r.grupo]) groups[r.grupo] = [];
+      groups[r.grupo].push(r);
+    });
+
+    let html = '';
+    groupOrder.forEach(g => {
+      const items = groups[g];
+      if(!items || items.length===0) return;
+      html += `<tr class="group-header"><td colspan="7">${groupLabels[g] || g} (${items.length})</td></tr>`;
+      items.forEach(r => {
+        html += `<tr>
+          <td style="font-weight:600">${r.entidad}</td>
+          <td><span style="color:${PC[r.padecimiento]?.main||'#333'}">${r.padecimiento}</span></td>
+          <td>${r.modo}</td>
+          <td>${maseBadge(r.mase)}</td>
+          <td style="font-family:var(--font-mono)">${r.rmse ?? '—'}</td>
+          <td>${tipoBadge(r.tipo)}</td>
+          <td>${r.confianza}</td>
+        </tr>`;
+      });
+    });
+    tbody.innerHTML = html;
+  }
+
+  function filterAndSort() {
+    const q = document.getElementById('searchBox').value.toLowerCase();
+    const padF = document.getElementById('filterPad').value;
+    const modoF = document.getElementById('filterModo').value;
+    const grupoF = document.getElementById('filterGrupo').value;
+    let filtered = rows.filter(r => {
+      if(q && !r.entidad.toLowerCase().includes(q)) return false;
+      if(padF && r.padecimiento!==padF) return false;
+      if(modoF && r.modo!==modoF) return false;
+      if(grupoF && r.grupo!==grupoF) return false;
+      return true;
+    });
+    filtered.sort((a,b) => {
+      let va=a[sortCol],vb=b[sortCol];
+      if(va==null)va=999;if(vb==null)vb=999;
+      if(typeof va==='string'){va=va.toLowerCase();vb=(vb||'').toLowerCase();}
+      return sortAsc?(va<vb?-1:va>vb?1:0):(va>vb?-1:va<vb?1:0);
+    });
+    render(filtered);
+  }
+
+  document.getElementById('searchBox').addEventListener('input', filterAndSort);
+  document.getElementById('filterPad').addEventListener('change', filterAndSort);
+  document.getElementById('filterModo').addEventListener('change', filterAndSort);
+  document.getElementById('filterGrupo').addEventListener('change', filterAndSort);
+
+  document.querySelectorAll('#rankingTable thead th').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.col;
+      if(sortCol===col) sortAsc=!sortAsc; else { sortCol=col; sortAsc=true; }
+      document.querySelectorAll('#rankingTable thead th').forEach(t=>t.classList.remove('sorted-asc','sorted-desc'));
+      th.classList.add(sortAsc?'sorted-asc':'sorted-desc');
+      filterAndSort();
+    });
+  });
+  filterAndSort();
+} catch(e) { console.warn('ranking:', e); }
+
+/* ── Cobertura ── */
+try {
+  const grid = document.getElementById('cobGrid');
+  const summary = document.getElementById('cobSummary');
+  const padKeys = D.pad_meta.map(p=>p.key);
+  const padLabels = {}; D.pad_meta.forEach(p=>{padLabels[p.key]=p.name;});
+
+  padKeys.forEach(pk => {
+    const res = D.cobertura_resumen[pk];
+    const c = PC[padLabels[pk]];
+    summary.innerHTML += `<div class="cob-summary-item">
+      <span class="cob-dot propio"></span>
+      <span style="color:${c.main};font-weight:600">${padLabels[pk]}</span>
+      ${res.propios} propios, ${res.fallback} fallback
+    </div>`;
+  });
+
+  D.cobertura.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'cob-item';
+    const dots = padKeys.map(pk=>`<span class="cob-dot ${item[pk]}" title="${padLabels[pk]}: ${item[pk]}"></span>`).join('');
+    div.innerHTML = `<span class="estado-name">${item.estado}</span>${dots}`;
+    grid.appendChild(div);
+  });
+} catch(e) { console.warn('cobertura:', e); }
+
+/* ── Smooth scroll ── */
+document.querySelectorAll('nav a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const el = document.querySelector(a.getAttribute('href'));
+    if(el) el.scrollIntoView({ behavior:'smooth' });
+  });
+});
+</script>
+</body>
+</html>

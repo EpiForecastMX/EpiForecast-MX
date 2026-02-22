@@ -75,6 +75,7 @@ EpiForecast-MX/
 ├── scripts/                        # Entry points para Makefile y CI/CD
 │   ├── entrena.py                  #   make train
 │   ├── predice.py                  #   make predict
+│   ├── genera_reporte.py           #   make report (reporte HTML de resultados)
 │   ├── padecimiento.py             #   make filter
 │   ├── limpieza_dataset.py         #   make clean
 │   ├── realiza_prep.py             #   make transform
@@ -155,6 +156,7 @@ make mapper       # Mapear entidades con regiones INEGI → genera .csv y .xlsx
 make train          # Entrena Prophet con CV temporal (tasa por 100K, por estado o region)
 make models-push    # Versiona modelos con DVC y sube a S3
 make predict        # Genera predicciones (52 semanas), desnormaliza a conteos
+make report         # Genera reporte HTML interactivo (forecast/reporte_resultados.html)
 make forecast-push  # Versiona forecast con DVC y sube a S3
 ```
 
@@ -163,7 +165,8 @@ make forecast-push  # Versiona forecast con DVC y sube a S3
 make train          # 1. Entrenar
 make models-push    # 2. Subir modelos a S3
 make predict        # 3. Predecir
-make forecast-push  # 4. Subir forecast a S3
+make report         # 4. Generar reporte HTML de resultados
+make forecast-push  # 5. Subir forecast a S3
 git add models.dvc forecast/all_forecast.csv.dvc
 git commit -m "feat: nuevos modelos y forecast"
 git push
@@ -333,6 +336,7 @@ Nota: Solo se incluyen cambios temporales. Los step functions permanentes (Nayar
 - **`models/`** — ~900 modelos Prophet .pkl + .csv de entrenamiento (~109 MB)
 - **`forecast/all_forecast.csv`** — Predicciones consolidadas (~180 MB). Incluye entradas estatales, nacionales y regionales, con columnas de métricas del modelo (rmse, mae, mape, mase, confianza) para modelo original y usado (Tableau tooltips)
 - **`forecast/index.html`** — Galería HTML interactiva para visualizar los 312 PNGs de pronóstico (filtros, lightbox, búsqueda). Abrir en navegador: `open forecast/index.html`
+- **`forecast/reporte_resultados.html`** — Reporte HTML interactivo de resultados del modelado (Chart.js, branding IMSS, 7 secciones). Generado con `make report`
 - **`data/registry.json`** — Registro de boletines procesados (anti-duplicados, Git)
 - **`data/utils/inegi.csv`** — Datos demograficos INEGI (poblacion, superficie, Git)
 

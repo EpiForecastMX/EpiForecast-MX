@@ -145,9 +145,11 @@ EpiForecast-MX/
 │   └── utils/                  # Gráficos, reportes PDF, directory manager
 │
 ├── scripts/                    # Entry points para Makefile y CI/CD
+│   ├── genera_reporte.py       #   └─ Generador del reporte HTML (make report)
 ├── forecast/                    # Predicciones y gráficos
 │   ├── all_forecast.csv         #   └─ Predicciones consolidadas (DVC)
 │   ├── index.html               #   └─ Galería HTML interactiva de gráficos
+│   ├── reporte_resultados.html  #   └─ Reporte HTML de resultados del modelado
 │   └── {Padecimiento}/          #   └─ PNGs por padecimiento/entidad/sexo
 │
 ├── models/                     # Modelos entrenados Prophet (.pkl) (DVC)
@@ -260,6 +262,7 @@ Todos los comandos están definidos en el `Makefile` de la raíz del proyecto. E
 |---------|-------------|
 | `make train` | Entrena modelo Prophet con CV temporal (tasa por 100K, por estado o region) |
 | `make predict` | Genera predicciones (52 semanas) usando los modelos entrenados |
+| `make report` | Genera reporte HTML interactivo de resultados del modelado (`forecast/reporte_resultados.html`) |
 | `make models-push` | Versiona modelos con DVC y sube a S3 |
 | `make forecast-push` | Versiona forecast con DVC y sube a S3 |
 
@@ -544,10 +547,13 @@ make models-push
 # 3. Generar predicciones consolidadas (forecast/all_forecast.csv)
 make predict
 
-# 4. Versionar forecast y subir a S3
+# 4. Generar reporte HTML de resultados
+make report
+
+# 5. Versionar forecast y subir a S3
 make forecast-push
 
-# 5. Commit de archivos DVC y push a GitHub
+# 6. Commit de archivos DVC y push a GitHub
 git add models.dvc forecast/all_forecast.csv.dvc
 git commit -m "feat: nuevos modelos y forecast"
 git push
@@ -620,6 +626,29 @@ Esto descarga automaticamente los modelos y forecasts mas recientes desde S3.
 - Forecast: **52 semanas** a futuro, desnormalizado a conteos absolutos
 - Tiempo total: **~45 minutos** con n_jobs=-2 (joblib loky)
 - Resultados detallados en `REPORTE_HALLAZGOS_MODELADO_v3.md`
+
+### Reporte HTML de Resultados
+
+El archivo `forecast/reporte_resultados.html` es un reporte interactivo self-contained que presenta los resultados generales del modelado Prophet. Se genera con `make report` a partir de `forecast/all_forecast.csv`.
+
+**Secciones:**
+- **Guia rapida**: Explicacion accesible de conceptos clave (MASE, regiones INEGI, fallback regional, clasificacion de confianza)
+- **Resumen por padecimiento**: KPIs, tarjetas con metricas y graficos comparativos (MASE, distribucion de modelos, histograma)
+- **Desglose por sexo**: Comparacion de MASE entre general, hombres y mujeres por padecimiento
+- **Ranking de modelos**: Tabla interactiva sorteable y filtrable con 312 modelos, agrupados por Nacional/Regional/Estatal, color-coded por calidad (MASE)
+- **Cobertura geografica**: Grid visual de 32 estados con tipo de modelo (propio vs fallback) por padecimiento
+- **Top 10 / Bottom 10**: Mejores y peores modelos por MASE
+- **Explicacion de metricas**: Cards con formulas, interpretacion y umbrales de MASE, RMSE, MAE, MAPE
+
+**Tecnologias:** Chart.js 4.x (CDN), Google Fonts, CSS animations con IntersectionObserver, branding IMSS.
+
+```bash
+# Generar el reporte
+make report
+
+# Abrir en navegador (macOS)
+open forecast/reporte_resultados.html
+```
 
 ### Galeria de Graficos de Pronostico
 
