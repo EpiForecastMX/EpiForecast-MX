@@ -230,9 +230,14 @@ tbody tr:hover{background:var(--cream-pale)}
 <body>
 
 <nav>
-  <div class="logo">EpiForecast-MX</div>
+  <a href="index.html" class="logo" style="text-decoration:none;color:var(--cream)">EpiForecast-MX</a>
   <div class="nav-links">
-    <a href="#resumen">Resumen</a>
+    <a href="index.html" class="ext" style="color:var(--gold)">Inicio</a>
+    <a href="EpiDashboard.html" class="ext" style="color:var(--gold)">Dashboard</a>
+    <a href="reporte_resultados.html" class="ext" style="color:var(--gold)">Resultados</a>
+    <a href="Reports/index.html" class="ext" style="color:var(--gold)">Pronósticos</a>
+    <a href="bitacora_modelado.html" class="ext" style="color:var(--gold)">Bitácora</a>
+    <a href="#resumen" style="border-left:1px solid rgba(232,213,181,.3);padding-left:1.5rem">Resumen</a>
     <a href="#modelos">Modelos</a>
     <a href="#batalla">Batalla</a>
     <a href="#prophet">Prophet</a>
@@ -322,7 +327,7 @@ tbody tr:hover{background:var(--cream-pale)}
   <p class="section-sub reveal">La pregunta central: &iquest;es Prophet realmente el mejor modelo para pronostico epidemiologico?</p>
 
   <div class="callout reveal">
-    <strong>TL;DR:</strong> Entrenamos 1,548 modelos en AWS SageMaker comparando 6 algoritmos (Prophet, TFT, DeepAR, LightGBM+LSTM, XGBoost, Ridge) en 258 series epidemiologicas de Mexico. <strong>Ningun modelo domina absolutamente.</strong> TFT gana en mas series (26.4%), seguido de Prophet (23.3%). Pero Prophet tiene la <strong>mejor mediana MASE (0.745)</strong>, esta en el <strong>top 3 en el 59.3% de las series</strong>, y cuando pierde, el 78% de las veces esta a menos del 20% del ganador. Prophet es el modelo mas <strong>consistente, interpretable y confiable</strong> para produccion.
+    Entrenamos 1,548 modelos en AWS SageMaker comparando 6 algoritmos (Prophet, TFT, DeepAR, LightGBM+LSTM, XGBoost, Ridge) en 258 series epidemiologicas de Mexico. <strong>Ningun modelo domina absolutamente.</strong> TFT gana en mas series (26.4%), seguido de Prophet (23.3%). Pero Prophet tiene la <strong>mejor mediana MASE (0.745)</strong>, esta en el <strong>top 3 en el 59.3% de las series</strong>, y cuando pierde, el 78% de las veces esta a menos del 20% del ganador. Prophet es el modelo mas <strong>consistente, interpretable y confiable</strong> para produccion.
   </div>
 
   <div class="card-grid-3 reveal" style="margin-top:2rem">
@@ -487,7 +492,7 @@ tbody tr:hover{background:var(--cream-pale)}
     <div class="chart-wrap">
       <h3>Victorias por modelo</h3>
       <p class="chart-sub">Numero de series donde cada modelo obtuvo el menor MASE</p>
-      <canvas id="chartWins"></canvas>
+      <canvas id="chartWins" style="max-height:500px;min-height:360px"></canvas>
     </div>
     <div class="chart-wrap">
       <h3>Mediana MASE por modelo</h3>
@@ -1098,17 +1103,17 @@ tbody tr:hover{background:var(--cream-pale)}
 
   <div class="card-grid-3 reveal" style="margin-top:2rem">
     <div class="card" style="border-top:4px solid var(--teal);text-align:center">
-      <div style="font-size:3rem;margin-bottom:.5rem">&#x1F3C6;</div>
+      <div style="margin-bottom:.75rem"><svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="56" height="56" rx="14" fill="rgba(0,82,78,.08)"/><path d="M28 14l3.09 6.26L38 21.27l-5 4.87 1.18 6.88L28 29.77l-6.18 3.25L23 26.14l-5-4.87 6.91-1.01L28 14z" fill="none" stroke="#00524E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M18 36v6M28 38v4M38 36v6" stroke="#00524E" stroke-width="2" stroke-linecap="round"/><path d="M15 42h26" stroke="#00524E" stroke-width="2" stroke-linecap="round"/></svg></div>
       <h3 style="font-family:var(--font-display);font-size:1.2rem;color:var(--dark-teal)">Produccion</h3>
       <p style="font-size:.9rem;color:#555;margin-top:.5rem">Prophet con hiperparametros optimizados por serie. 258 modelos individuales actualizados semanalmente.</p>
     </div>
     <div class="card" style="border-top:4px solid var(--burgundy);text-align:center">
-      <div style="font-size:3rem;margin-bottom:.5rem">&#x1F504;</div>
+      <div style="margin-bottom:.75rem"><svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="56" height="56" rx="14" fill="rgba(155,34,66,.08)"/><path d="M28 40V28" stroke="#9B2242" stroke-width="2" stroke-linecap="round"/><path d="M28 16a12 12 0 0 1 0 24" stroke="#9B2242" stroke-width="2" stroke-linecap="round" stroke-dasharray="4 3"/><path d="M28 16a12 12 0 0 0 0 24" stroke="#9B2242" stroke-width="2.5" stroke-linecap="round"/><path d="M22 18l6-2 -1 6" stroke="#9B2242" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M34 38l-6 2 1-6" stroke="#9B2242" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       <h3 style="font-family:var(--font-display);font-size:1.2rem;color:var(--dark-burgundy)">Fallback</h3>
       <p style="font-size:.9rem;color:#555;margin-top:.5rem">TFT o DeepAR para las ~21 series con gap &gt;20%. Modelo regional para las 39 series omitidas.</p>
     </div>
     <div class="card" style="border-top:4px solid var(--gold);text-align:center">
-      <div style="font-size:3rem;margin-bottom:.5rem">&#x1F4CA;</div>
+      <div style="margin-bottom:.75rem"><svg width="56" height="56" viewBox="0 0 56 56" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="56" height="56" rx="14" fill="rgba(181,133,0,.08)"/><rect x="14" y="14" width="28" height="28" rx="4" stroke="#B58500" stroke-width="2"/><path d="M18 34l5-6 4 3 7-10 4 5" stroke="#B58500" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><circle cx="38" cy="26" r="2.5" fill="#B58500"/><path d="M18 38h20" stroke="#B58500" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="2 2"/></svg></div>
       <h3 style="font-family:var(--font-display);font-size:1.2rem;color:var(--gold)">Monitoreo</h3>
       <p style="font-size:.9rem;color:#555;margin-top:.5rem">Re-evaluar cada trimestre con SageMaker. Costo: ~$10 USD. Si TFT mejora con mas datos, considerar migracion gradual.</p>
     </div>
@@ -1117,6 +1122,13 @@ tbody tr:hover{background:var(--cream-pale)}
 
 <footer style="text-align:center;padding:3rem 2rem;color:var(--cool-gray);font-size:.85rem;border-top:1px solid var(--cream-light);margin-top:4rem">
   <p><strong>EpiForecast-MX</strong> &mdash; Instituto Mexicano del Seguro Social &times; Tec de Monterrey</p>
+  <p style="margin-top:.75rem">
+    <a href="index.html" style="color:var(--gold)">Inicio</a> &middot;
+    <a href="EpiDashboard.html" style="color:var(--gold)">Dashboard</a> &middot;
+    <a href="reporte_resultados.html" style="color:var(--gold)">Reporte de Resultados</a> &middot;
+    <a href="Reports/index.html" style="color:var(--gold)">Pronósticos</a> &middot;
+    <a href="bitacora_modelado.html" style="color:var(--gold)">Bitácora</a>
+  </p>
   <p style="margin-top:.5rem">Maestria en Inteligencia Artificial Aplicada &mdash; Proyecto Capstone 2026</p>
   <p style="margin-top:.5rem;font-family:var(--font-mono);font-size:.75rem">Generado: 22 febrero 2026 &bull; AWS SageMaker ml.m5.xlarge &bull; 1,548 modelos &bull; ~$9.80 USD</p>
 </footer>
