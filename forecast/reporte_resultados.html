@@ -186,6 +186,21 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
         <p>Cada padecimiento tiene una base de <strong>99 modelos</strong> (32 estados &times; 3 modos de sexo + 3 nacionales). La diferencia viene de cuantos modelos regionales de respaldo se necesitan:
         <br><br><strong>Alzheimer</strong>: 108 modelos (99 base + 9 regionales de respaldo). 35 modelos estatales no tienen datos suficientes y usan el modelo de su region (3 regiones activas).<br><strong>Depresión</strong>: 99 modelos (32 estados x 3 modos + 3 nacionales). Todos los estados tienen datos suficientes.<br><strong>Parkinson</strong>: 105 modelos (99 base + 6 regionales de respaldo). 5 modelos estatales no tienen datos suficientes y usan el modelo de su region (2 regiones activas).</p>
       </div>
+      <div class="guide-card" style="border-left-color:var(--teal)">
+        <h3>Las 4 metricas del modelo</h3>
+        <p>Cada modelo se evalua con cuatro metricas complementarias:
+        <br><br><strong>MASE</strong> &mdash; Compara el error del modelo contra un baseline naive (repetir el valor de hace 1 ano). Menor a 1 = mejor que el baseline. <em>Metrica principal.</em>
+        <br><strong>RMSE</strong> &mdash; Error cuadratico medio. Penaliza errores grandes. Esta en espacio log-tasa, por eso son numeros pequenos (~0.05&ndash;0.2).
+        <br><strong>MAE</strong> &mdash; Error absoluto medio. Similar al RMSE pero sin penalizar extremos. Tambien en espacio log-tasa.
+        <br><strong>MAPE</strong> &mdash; Error porcentual. Intuitivo (&laquo;el modelo se equivoca X%&raquo;), pero problematico cuando la incidencia es cercana a cero.
+        <br><br><em>Nota: RMSE y MAE estan en escala log-tasa (no en casos), por eso sus valores son pequenos.</em></p>
+      </div>
+      <div class="guide-card" style="border-left-color:var(--burgundy)">
+        <h3>Por que MAPE muestra 999%</h3>
+        <p>El MAPE se calcula como <strong>|error| / |valor real| &times; 100</strong>. Cuando la incidencia semanal es cercana a cero (comun en Alzheimer y Parkinson estatales), el denominador se acerca a cero y el MAPE explota hacia infinito.
+        <br><br>Para evitar valores infinitos, se <strong>capea a 999%</strong>. Esto ocurre en <strong>~44% de los modelos</strong> (138 de 312), principalmente en padecimientos de baja incidencia.
+        <br><br>Por esta razon, <strong>MASE es la metrica principal</strong>: no sufre este problema porque compara contra un baseline en vez de dividir por el valor real.</p>
+      </div>
     </div>
   </div>
 </section>
@@ -263,6 +278,7 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
             <th data-col="modo">Modo</th>
             <th data-col="mase">MASE</th>
             <th data-col="rmse">RMSE</th>
+            <th data-col="mae">MAE</th>
             <th data-col="tipo">Tipo</th>
             <th data-col="confianza">Confianza</th>
           </tr></thead>
@@ -322,6 +338,8 @@ try {
         <div class="metric" style="background:${c.glow}"><div class="metric-value" style="color:${c.main}">${p.mase}</div><div class="metric-label">MASE Medio</div></div>
         <div class="metric"><div class="metric-value">${p.mase_min} – ${p.mase_max}</div><div class="metric-label">MASE Rango</div></div>
         <div class="metric"><div class="metric-value">${p.rmse}</div><div class="metric-label">RMSE Medio</div></div>
+        <div class="metric"><div class="metric-value">${p.mae}</div><div class="metric-label">MAE Medio</div></div>
+        <div class="metric"><div class="metric-value">${p.mape != null && p.mape >= 999 ? p.mape + '% \u26A0' : (p.mape != null ? p.mape + '%' : '—')}</div><div class="metric-label">${p.mape != null && p.mape >= 999 ? '<span title="Capeado por incidencia cercana a cero">MAPE Medio \u26A0</span>' : 'MAPE Medio'}</div></div>
         <div class="metric"><div class="metric-value">${p.insuficientes}</div><div class="metric-label">Insuficientes</div></div>
         <div class="metric"><div class="metric-value">${p.fallback}</div><div class="metric-label">Fallback Regional</div></div>
       </div>`;
@@ -508,7 +526,7 @@ try {
     groupOrder.forEach(g => {
       const items = groups[g];
       if(!items || items.length===0) return;
-      html += `<tr class="group-header"><td colspan="7">${groupLabels[g] || g} (${items.length})</td></tr>`;
+      html += `<tr class="group-header"><td colspan="8">${groupLabels[g] || g} (${items.length})</td></tr>`;
       items.forEach(r => {
         html += `<tr>
           <td style="font-weight:600">${r.entidad}</td>
@@ -516,6 +534,7 @@ try {
           <td>${r.modo}</td>
           <td>${maseBadge(r.mase)}</td>
           <td style="font-family:var(--font-mono)">${r.rmse ?? '—'}</td>
+          <td style="font-family:var(--font-mono)">${r.mae ?? '—'}</td>
           <td>${tipoBadge(r.tipo)}</td>
           <td>${r.confianza}</td>
         </tr>`;
