@@ -364,18 +364,31 @@ class GraficosHelper:
             ha="left", va="top",
         )
 
-        # ── 8. Divisor CV (entrenamiento / prueba) ───────────────────────
+        # ── 8. Zona CV: último fold de prueba (banda visible) ────────────
         fecha_corte = pd.Timestamp(conf["FECHA_CORTE_ENTRENAMIENTO"])
-        ax.axvline(fecha_corte, color=c_gray, ls=":", lw=1.0, alpha=0.5, zorder=6)
+        test_weeks = conf.get("TEST_SIZE", 53)
+        fecha_cv_inicio = fecha_corte - pd.Timedelta(weeks=test_weeks)
+
+        ax.axvspan(
+            fecha_cv_inicio, fecha_corte,
+            alpha=0.08, color=c_gray, zorder=0,
+        )
+        ax.axvline(
+            fecha_cv_inicio, color=c_gray, ls=":", lw=1.2, alpha=0.6, zorder=6,
+        )
         ax.annotate(
-            "Entrenamiento ← CV → Prueba",
-            xy=(fecha_corte, 0.02),
+            "← Entrenamiento",
+            xy=(fecha_cv_inicio, 0.88),
             xycoords=("data", "axes fraction"),
-            fontsize=7.5, color=c_gray, ha="center", va="bottom",
-            bbox=dict(
-                boxstyle="round,pad=0.25", fc="white", ec="#ddd",
-                alpha=0.8, lw=0.5,
-            ),
+            fontsize=8.5, fontweight="semibold", color=c_gray,
+            ha="right", va="top",
+        )
+        ax.annotate(
+            "Prueba CV →",
+            xy=(fecha_cv_inicio, 0.88),
+            xycoords=("data", "axes fraction"),
+            fontsize=8.5, fontweight="semibold", color=c_gray,
+            ha="left", va="top",
         )
 
         # ── Formato de ejes ──────────────────────────────────────────────
