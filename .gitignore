@@ -214,3 +214,7 @@ integrador/
 
 # Tableau temp/lock files
 viz/.~*.twbr
+
+# Notebooks: archivos grandes (>100MB)
+notebooks/data/all_forecast.csv
+notebooks/data/tableau.csv
