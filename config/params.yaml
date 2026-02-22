@@ -13,4 +13,4 @@ inegi:
   force: false                      # Sobrescribe el archivo INEGI aunque ya exista
 
 prediccion:
-  periodo: 120                       # Semanas a predecir por modelo
+  periodo: 52                        # Semanas a predecir por modelo
