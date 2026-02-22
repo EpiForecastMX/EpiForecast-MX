@@ -78,6 +78,27 @@ def estandarizar_valores(df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
+def _parse_regional(stem: str) -> dict:
+    """Extrae metadatos de un modelo regional.
+
+    Formato: Prophet_{padecimiento}_region_{region_parts}_{modo}
+    Ejemplo: Prophet_Alzheimer_region_Sur-Sureste_vulnerable_general
+    Returns: {"meta_padecimiento": ..., "meta_entidad": "Region ...", "meta_modo": ...}
+    """
+    parts = stem.split("_")
+    padecimiento = parts[1]
+    modo = parts[-1]
+    # Todo entre "region" y el último part es el nombre de la región
+    idx_region = parts.index("region")
+    region_parts = parts[idx_region + 1 : -1]
+    region_name = " ".join(region_parts).replace("- ", "/ ")
+    return {
+        "meta_padecimiento": padecimiento,
+        "meta_entidad": f"Region {region_name}",
+        "meta_modo": modo,
+    }
+
+
 def _cargar_mapeo_hibrido(base_models: Path) -> dict:
     """Lee _completo.csv de cada padecimiento y construye mapeo hibrido.
 
@@ -141,11 +162,12 @@ def main():
     # Cargar mapeo híbrido si aplica
     mapeo_hibrido = _cargar_mapeo_hibrido(base_models) if modelado_hibrido else {}
     stems_insuf = set(mapeo_hibrido.keys())
-    # Modelos region_* solo se usan como fallback, no generan forecast propio
-    stems_regional = {
-        pkl.stem for pkl in modelos
+    # Modelos region_* — se identifican para predicción standalone
+    pkls_regional = [
+        pkl for pkl in modelos
         if pkl.stem.startswith("Prophet_") and "_region_" in pkl.stem
-    }
+    ]
+    stems_regional = {pkl.stem for pkl in pkls_regional}
 
     if mapeo_hibrido:
         logger.info(
@@ -225,6 +247,23 @@ def main():
             except Exception as e:
                 logger.warning("Error en fallback {}: {}", stem_insuf, e)
                 errores.append(f"fallback:{stem_insuf}")
+
+    # --- Predicciones standalone para modelos regionales ---
+    if pkls_regional:
+        logger.info("Generando {} predicciones regionales standalone...", len(pkls_regional))
+        for pkl in pkls_regional:
+            try:
+                meta = _parse_regional(pkl.stem)
+                df = ForecastModelLoader(periodo=periodo, model_path=pkl).run()
+                for k, v in meta.items():
+                    df[k] = v
+                df["archivo_modelo_usado"] = pkl.name
+                df["archivo_modelo_original"] = pkl.name
+                frames.append(df)
+                logger.info("Regional standalone: {} → {}", pkl.name, meta["meta_entidad"])
+            except Exception as e:
+                logger.warning("Error en regional {}: {}", pkl.name, e)
+                errores.append(f"regional:{pkl.name}")
 
     if not frames:
         raise RuntimeError("Ninguna predicción generada.")

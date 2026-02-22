@@ -61,12 +61,20 @@ def generar_graficos_pronostico() -> None:
 
         # CSV de entrenamiento: mismo nombre que el .pkl, con extensión .csv
         pad_norm = _normalizar_nombre(padecimiento)
-        entidad_norm = _normalizar_nombre(entidad) if entidad else ""
-        csv_name = (
-            f"Prophet_{pad_norm}_{entidad_norm}_{modo}.csv"
-            if entidad_norm
-            else f"Prophet_{pad_norm}_{modo}.csv"
-        )
+
+        if not entidad or entidad.lower() == "nacional":
+            csv_name = f"Prophet_{pad_norm}_{modo}.csv"
+            entidad_norm = ""
+        elif entidad.startswith("Region "):
+            # Modelos regionales: Prophet_{pad}_region_{region}_{modo}.csv
+            region_part = entidad[len("Region "):]
+            region_norm = _normalizar_nombre(region_part)
+            csv_name = f"Prophet_{pad_norm}_region_{region_norm}_{modo}.csv"
+            entidad_norm = _normalizar_nombre(entidad)
+        else:
+            entidad_norm = _normalizar_nombre(entidad)
+            csv_name = f"Prophet_{pad_norm}_{entidad_norm}_{modo}.csv"
+
         csv_path = train_root / pad_norm / csv_name
 
         if not csv_path.exists():
@@ -86,7 +94,10 @@ def generar_graficos_pronostico() -> None:
             serie = serie[["ds", "y"]]
 
         # Carpeta de salida: forecast/{padecimiento}/{entidad | Nacional}/
-        nivel_dir = entidad.replace(" ", "_") if entidad else "Nacional"
+        if not entidad or entidad.lower() == "nacional":
+            nivel_dir = "Nacional"
+        else:
+            nivel_dir = entidad.replace("/", "-").replace(" ", "_")
         carpeta = forecast_root / padecimiento / nivel_dir
         directory_manager.asegurar_ruta(carpeta)
         graficos.carpeta_salida = str(carpeta)
