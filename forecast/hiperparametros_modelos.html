@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hiperparámetros de los Modelos — EpiForecast-MX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --burgundy:#9B2242;--dark-burgundy:#6F1D46;--teal:#00524E;--dark-teal:#173F35;
+  --gold:#B58500;--cream:#E8D5B5;--cream-light:#F5EDE0;--cream-pale:#FAF6F0;
+  --cool-gray:#97999B;--neutral-black:#231F20;
+  --prophet:#00524E;--tft:#9B2242;--deepar:#B58500;--lgbm:#2E7D32;--xgb:#E65100;--ridge:#5C6BC0;
+  --font-display:'DM Serif Display',Georgia,serif;
+  --font-body:'Source Sans 3','Source Sans Pro',sans-serif;
+  --font-mono:'JetBrains Mono','Fira Code',monospace;
+  --shadow-sm:0 2px 8px rgba(0,0,0,.06);--shadow-md:0 8px 24px rgba(0,0,0,.06);
+  --shadow-lg:0 16px 48px rgba(0,0,0,.06);--radius:16px;--radius-sm:10px;
+}
+body{font-family:var(--font-body);background:var(--cream-pale);color:var(--neutral-black);line-height:1.7;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.025;pointer-events:none;z-index:0}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(23,63,53,.96);backdrop-filter:blur(16px);border-bottom:1px solid rgba(232,213,181,.1);padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between}
+nav .logo{color:var(--cream);font-family:var(--font-display);font-size:1.3rem;letter-spacing:.02em;text-decoration:none}
+nav .nav-links{display:flex;gap:1.5rem;flex-wrap:wrap}
+nav .nav-links a{color:rgba(232,213,181,.7);text-decoration:none;font-size:.85rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;transition:color .2s}
+nav .nav-links a:hover{color:var(--cream)}
+
+.container{max-width:1200px;margin:0 auto;padding:0 2rem;position:relative;z-index:1}
+section{padding:4rem 0}
+.section-title{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.5rem);margin-bottom:.5rem;color:var(--dark-teal)}
+.section-sub{color:var(--cool-gray);font-size:1rem;margin-bottom:2.5rem}
+
+/* Hero */
+.hero{padding:10rem 2rem 6rem;text-align:center;background:linear-gradient(170deg,#1a0a12 0%,var(--dark-teal) 40%,var(--teal) 70%,var(--dark-burgundy) 100%);color:var(--cream-pale);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 800px 600px at 30% 40%,rgba(181,133,0,.12),transparent),radial-gradient(ellipse 900px 700px at 70% 60%,rgba(155,34,66,.15),transparent);pointer-events:none}
+.hero h1{font-family:var(--font-display);font-size:clamp(2.2rem,6vw,4rem);line-height:1.1;margin-bottom:.75rem;position:relative}
+.hero h1 em{font-style:italic;color:var(--gold-light,#D4B24A)}
+.hero .subtitle{font-size:clamp(1rem,2.5vw,1.3rem);opacity:.8;font-weight:300;margin-bottom:.5rem;position:relative}
+.hero .subtitle2{font-size:clamp(.85rem,1.5vw,1rem);opacity:.5;font-weight:400;font-family:var(--font-mono);position:relative}
+
+/* Cards */
+.card{background:#fff;border-radius:var(--radius);padding:2rem;box-shadow:var(--shadow-md);border:1px solid rgba(0,0,0,.04);transition:transform .3s,box-shadow .3s;overflow:hidden}
+.card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+
+/* Model section */
+.model-section{margin-bottom:4rem}
+.model-header{display:flex;align-items:center;gap:1.5rem;margin-bottom:2rem;padding:2rem 2.5rem;border-radius:var(--radius);color:#fff;position:relative;overflow:hidden}
+.model-header::before{content:'';position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.06;pointer-events:none}
+.model-header h2{font-family:var(--font-display);font-size:2rem;position:relative}
+.model-header .model-type{font-family:var(--font-mono);font-size:.75rem;text-transform:uppercase;letter-spacing:1px;opacity:.7;position:relative}
+.model-header .model-num{font-family:var(--font-display);font-size:3.5rem;opacity:.2;position:absolute;right:2rem;top:50%;transform:translateY(-50%)}
+
+/* HP table */
+.hp-table{width:100%;border-collapse:collapse;font-size:.9rem;margin:1.5rem 0}
+.hp-table thead th{padding:.75rem 1rem;text-align:left;font-weight:600;text-transform:uppercase;font-size:.72rem;letter-spacing:.5px;color:#fff;border-bottom:none}
+.hp-table tbody td{padding:.7rem 1rem;border-bottom:1px solid var(--cream-light);vertical-align:top}
+.hp-table tbody tr:hover{background:var(--cream-pale)}
+.hp-table .hp-name{font-family:var(--font-mono);font-weight:500;color:var(--dark-teal);white-space:nowrap}
+.hp-table .hp-val{font-family:var(--font-mono);font-weight:500}
+.hp-table .hp-desc{font-size:.85rem;color:#555;line-height:1.6}
+
+/* Callout */
+.callout{background:linear-gradient(135deg,rgba(0,82,78,.06),rgba(181,133,0,.04));border:1px solid rgba(0,82,78,.15);border-left:4px solid var(--teal);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:1.5rem 2rem;margin:1.5rem 0;font-size:.95rem}
+.callout strong{color:var(--dark-teal)}
+.callout-gold{border-left-color:var(--gold);background:linear-gradient(135deg,rgba(181,133,0,.06),rgba(155,34,66,.03))}
+.callout-gold strong{color:var(--gold)}
+.callout-burgundy{border-left-color:var(--burgundy);background:linear-gradient(135deg,rgba(155,34,66,.06),rgba(0,82,78,.03))}
+.callout-burgundy strong{color:var(--burgundy)}
+
+/* Pros/Cons */
+.pros-cons{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin:1.5rem 0}
+.pros,.cons{border-radius:var(--radius-sm);padding:1.5rem;font-size:.9rem}
+.pros{background:#e8f5e9;border:1px solid #c8e6c9}
+.cons{background:#fde8e8;border:1px solid #f5c6c6}
+.pros h4,.cons h4{font-family:var(--font-display);font-size:1.1rem;margin-bottom:.75rem}
+.pros h4{color:#1a7431}
+.cons h4{color:#b91c1c}
+.pros li,.cons li{margin-bottom:.4rem;line-height:1.6;color:#333}
+
+/* Badge */
+.badge{display:inline-block;padding:.2rem .7rem;border-radius:100px;font-family:var(--font-mono);font-size:.8rem;font-weight:500}
+.badge-green{background:#e6f4ea;color:#1a7431}
+.badge-yellow{background:#fef7e0;color:#8a6d00}
+.badge-red{background:#fde8e8;color:#b91c1c}
+.badge-teal{background:rgba(0,82,78,.1);color:var(--teal)}
+.badge-blue{background:rgba(92,107,192,.1);color:#5C6BC0}
+
+/* Grid combos */
+.grid-combos{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1rem;margin:1.5rem 0}
+.combo-card{background:#fff;border-radius:var(--radius-sm);padding:1.2rem 1.5rem;box-shadow:var(--shadow-sm);border-left:4px solid var(--teal)}
+.combo-card h4{font-family:var(--font-display);font-size:1rem;color:var(--dark-teal);margin-bottom:.3rem}
+.combo-card .combo-size{font-family:var(--font-mono);font-size:1.8rem;color:var(--teal);font-weight:700}
+.combo-card .combo-detail{font-size:.8rem;color:var(--cool-gray);margin-top:.25rem;line-height:1.5}
+
+/* Code block */
+.code-block{background:#1e1e2e;color:#cdd6f4;border-radius:var(--radius-sm);padding:1.5rem;font-family:var(--font-mono);font-size:.82rem;line-height:1.7;overflow-x:auto;margin:1rem 0}
+.code-block .comment{color:#6c7086}
+.code-block .keyword{color:#cba6f7}
+.code-block .string{color:#a6e3a1}
+.code-block .number{color:#fab387}
+.code-block .fn{color:#89b4fa}
+
+/* Stats row */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:1rem;margin:2rem 0}
+.stat-box{background:#fff;border-radius:var(--radius-sm);padding:1.2rem;text-align:center;box-shadow:var(--shadow-sm);border-top:3px solid var(--teal)}
+.stat-box .big-num{font-family:var(--font-display);font-size:2rem;color:var(--dark-teal);line-height:1.1}
+.stat-box .stat-desc{font-size:.72rem;color:var(--cool-gray);margin-top:.3rem;text-transform:uppercase;letter-spacing:.5px}
+
+/* Compare table */
+.compare-table{width:100%;border-collapse:collapse;margin:1.5rem 0;font-size:.88rem}
+.compare-table thead th{padding:.7rem 1rem;text-align:left;font-weight:600;font-size:.72rem;text-transform:uppercase;letter-spacing:.5px;color:#fff;background:var(--dark-teal)}
+.compare-table tbody td{padding:.65rem 1rem;border-bottom:1px solid var(--cream-light)}
+.compare-table tbody tr:hover{background:var(--cream-pale)}
+
+/* TOC */
+.toc{background:#fff;border-radius:var(--radius);padding:1.5rem 2rem;box-shadow:var(--shadow-md);margin-bottom:3rem}
+.toc h3{font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:1rem}
+.toc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.5rem}
+.toc a{color:var(--teal);text-decoration:none;font-size:.88rem;padding:.3rem .5rem;border-radius:6px;transition:background .2s;display:block}
+.toc a:hover{background:var(--cream-pale)}
+.toc a .toc-num{font-family:var(--font-mono);font-size:.75rem;color:var(--cool-gray);margin-right:.3rem}
+
+/* Reveal */
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .6s,transform .6s}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* Responsive */
+@media(max-width:768px){
+  .model-header{flex-direction:column;text-align:center}
+  .model-header .model-num{display:none}
+  .pros-cons{grid-template-columns:1fr}
+  .grid-combos{grid-template-columns:1fr}
+  nav .nav-links{display:none}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="logo" style="text-decoration:none;color:var(--cream)">EpiForecast-MX</a>
+  <div class="nav-links">
+    <a href="index.html" class="ext" style="color:var(--gold)">Inicio</a>
+    <a href="EpiDashboard.html" class="ext" style="color:var(--gold)">Dashboard</a>
+    <a href="reporte_resultados.html" class="ext" style="color:var(--gold)">Resultados</a>
+    <a href="Reports/index.html" class="ext" style="color:var(--gold)">Pronósticos</a>
+    <a href="bitacora_modelado.html" class="ext" style="color:var(--gold)">Bitácora</a>
+    <a href="comparacion_modelos.html" class="ext" style="color:var(--gold)">Comparación</a>
+    <a href="ficha_tecnica_prophet.html" class="ext" style="color:var(--gold)">Ficha Prophet</a>
+    <a href="#prophet-sec" style="border-left:1px solid rgba(232,213,181,.3);padding-left:1.5rem">Prophet</a>
+    <a href="#tft-sec">TFT</a>
+    <a href="#deepar-sec">DeepAR</a>
+    <a href="#lgbm-sec">LGB+LSTM</a>
+    <a href="#xgb-sec">XGBoost</a>
+    <a href="#ridge-sec">Ridge</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1>Los <em>Hiperparámetros</em> Detrás de Cada Modelo</h1>
+  <p class="subtitle">Qué palancas ajustamos, por qué, y cómo afectan el pronóstico epidemiológico.</p>
+  <p class="subtitle2">EpiForecast-MX &mdash; 6 modelos &times; 258 series &mdash; AWS SageMaker v5-full</p>
+</div>
+
+<div class="container">
+
+<!-- TOC -->
+<section style="padding-bottom:0">
+<div class="toc reveal">
+  <h3>Contenido</h3>
+  <div class="toc-grid">
+    <a href="#intro"><span class="toc-num">00</span> Qué son los hiperparámetros</a>
+    <a href="#pipeline"><span class="toc-num">01</span> Pipeline de datos</a>
+    <a href="#cv"><span class="toc-num">02</span> Validación cruzada</a>
+    <a href="#prophet-sec"><span class="toc-num">03</span> Prophet</a>
+    <a href="#tft-sec"><span class="toc-num">04</span> TFT</a>
+    <a href="#deepar-sec"><span class="toc-num">05</span> DeepAR</a>
+    <a href="#lgbm-sec"><span class="toc-num">06</span> LightGBM+LSTM</a>
+    <a href="#xgb-sec"><span class="toc-num">07</span> XGBoost</a>
+    <a href="#ridge-sec"><span class="toc-num">08</span> Ridge</a>
+    <a href="#comparativa"><span class="toc-num">09</span> Tabla comparativa</a>
+  </div>
+</div>
+</section>
+
+<!-- ============ 0. INTRO ============ -->
+<section id="intro">
+  <h2 class="section-title reveal">Qué son los hiperparámetros</h2>
+  <p class="section-sub reveal">Los "botones y perillas" que ajustamos antes de entrenar un modelo.</p>
+
+  <div class="card reveal">
+    <p style="font-size:1.05rem;line-height:1.8;color:#333">
+      Un modelo de machine learning tiene dos tipos de configuración: los <strong>parámetros</strong> (que el modelo aprende automáticamente de los datos) y los <strong>hiperparámetros</strong> (que nosotros definimos antes de entrenar).
+    </p>
+    <p style="font-size:1.05rem;line-height:1.8;color:#333;margin-top:1rem">
+      Imagina un auto de carreras: los <strong>parámetros</strong> son como la habilidad del piloto &mdash; mejora con práctica. Los <strong>hiperparámetros</strong> son como la configuración del motor, la presión de las llantas y la aerodinámica &mdash; los ingenieros los ajustan <em>antes</em> de la carrera.
+    </p>
+    <p style="font-size:1.05rem;line-height:1.8;color:#333;margin-top:1rem">
+      Elegir mal los hiperparámetros puede hacer que un modelo excelente funcione pésimamente. Elegirlos bien es la diferencia entre un pronóstico mediocre y uno que supera al baseline naive en el 86% de las series.
+    </p>
+  </div>
+
+  <div class="callout reveal" style="margin-top:1.5rem">
+    <strong>Grid Search:</strong> Para Prophet, probamos múltiples combinaciones de hiperparámetros (hasta 24 por serie) y seleccionamos la mejor mediante validación cruzada temporal. Para los modelos de deep learning (TFT, DeepAR, LightGBM+LSTM) y ML clásico (XGBoost, Ridge), usamos una configuración fija optimizada previamente, ya que su entrenamiento es más costoso computacionalmente.
+  </div>
+</section>
+
+<!-- ============ 1. PIPELINE ============ -->
+<section id="pipeline">
+  <h2 class="section-title reveal">Pipeline de Transformación de Datos</h2>
+  <p class="section-sub reveal">Todos los modelos reciben los mismos datos, transformados de la misma manera.</p>
+
+  <div class="card reveal">
+    <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--dark-teal);margin-bottom:1rem">De conteos crudos a la entrada del modelo</h3>
+    <div class="code-block">
+<span class="comment"># 1. Tasa por 100,000 habitantes</span>
+y_tasa = (incidencia_semanal / población_estado) × <span class="number">100,000</span>
+
+<span class="comment"># 2. Log-transform (estabiliza varianza, comprime picos)</span>
+y_final = <span class="fn">log</span>(<span class="number">1</span> + y_tasa)
+
+<span class="comment"># 3. El modelo entrena con y_final</span>
+modelo.<span class="fn">fit</span>(y_final)
+
+<span class="comment"># 4. Inversión para obtener predicción en escala original</span>
+yhat_tasa = <span class="fn">exp</span>(yhat) - <span class="number">1</span>
+yhat_conteo = yhat_tasa × población / <span class="number">100,000</span>
+    </div>
+    <p style="font-size:.9rem;color:#555;margin-top:1rem;line-height:1.7">
+      <strong>¿Por qué tasas?</strong> Normaliza la escala entre estados con poblaciones muy diferentes (CDMX ~9M vs Colima ~730K). Sin esto, CDMX dominaría todas las métricas por volumen.
+    </p>
+    <p style="font-size:.9rem;color:#555;margin-top:.5rem;line-height:1.7">
+      <strong>¿Por qué log-transform?</strong> Las series epidemiológicas tienen varianza proporcional al nivel (más casos = más variabilidad). El logaritmo estabiliza esto y comprime los picos extremos de Depresión.
+    </p>
+  </div>
+
+  <div class="card reveal" style="margin-top:1.5rem">
+    <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--dark-teal);margin-bottom:1rem">Períodos atípicos</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+      <div style="padding:1rem;background:var(--cream-pale);border-radius:var(--radius-sm);border-left:4px solid var(--burgundy)">
+        <h4 style="font-family:var(--font-display);color:var(--dark-burgundy)">COVID-19</h4>
+        <p style="font-size:.85rem;color:#555;margin-top:.3rem">Inicio: <span style="font-family:var(--font-mono)">2020-03-23</span><br>Duración: <span style="font-family:var(--font-mono)">913 días</span> (~2.5 años)<br>Prophet lo trata como "holiday" para no ajustar la tendencia al colapso pandémico.</p>
+      </div>
+      <div style="padding:1rem;background:var(--cream-pale);border-radius:var(--radius-sm);border-left:4px solid var(--gold)">
+        <h4 style="font-family:var(--font-display);color:var(--gold)">Cambio régimen Tabasco 2023</h4>
+        <p style="font-size:.85rem;color:#555;margin-top:.3rem">Inicio: <span style="font-family:var(--font-mono)">2023-01-09</span><br>Duración: <span style="font-family:var(--font-mono)">365 días</span><br>Solo aplica a Depresión en Tabasco. Cambio estructural en el reporte.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2. CV ============ -->
+<section id="cv">
+  <h2 class="section-title reveal">Validación Cruzada Temporal</h2>
+  <p class="section-sub reveal">Cómo evaluamos cada modelo: 4 folds expansivos con ponderación anti-COVID.</p>
+
+  <div class="card reveal">
+    <div class="stats-row" style="margin-top:0">
+      <div class="stat-box"><div class="big-num">4</div><div class="stat-desc">Folds temporales</div></div>
+      <div class="stat-box"><div class="big-num">52</div><div class="stat-desc">Semanas test</div></div>
+      <div class="stat-box"><div class="big-num">730</div><div class="stat-desc">Días mín. train</div></div>
+      <div class="stat-box" style="border-top-color:var(--burgundy)"><div class="big-num" style="color:var(--dark-burgundy)">2025-01</div><div class="stat-desc">Fecha de corte</div></div>
+    </div>
+
+    <h3 style="font-family:var(--font-display);font-size:1.2rem;color:var(--dark-teal);margin:1.5rem 0 1rem">Ponderación de folds</h3>
+    <p style="font-size:.92rem;color:#555;line-height:1.7;margin-bottom:1rem">
+      El Fold 1 contiene el choque de COVID-19, que es un evento anómalo e irrepetible. Si ponderamos todos los folds igual, el modelo se sesga hacia <em>rigidez excesiva</em> (para no sobreajustar al dip pandémico). Por eso penalizamos el Fold 1 y favorecemos los folds recientes.
+    </p>
+    <table class="compare-table">
+      <thead><tr><th>Fold</th><th>Período de validación</th><th>Peso</th><th>Contexto</th></tr></thead>
+      <tbody>
+        <tr><td style="font-family:var(--font-mono);font-weight:600">1</td><td>2020-12 &rarr; 2021-12</td><td><span class="badge badge-red">0.50</span></td><td>Pleno COVID &mdash; anomalía irrepetible, se penaliza</td></tr>
+        <tr><td style="font-family:var(--font-mono);font-weight:600">2</td><td>2021-12 &rarr; 2022-12</td><td><span class="badge badge-yellow">0.75</span></td><td>Recuperación post-COVID</td></tr>
+        <tr><td style="font-family:var(--font-mono);font-weight:600">3</td><td>2022-12 &rarr; 2023-12</td><td><span class="badge badge-green">1.00</span></td><td>Normalización</td></tr>
+        <tr><td style="font-family:var(--font-mono);font-weight:600">4</td><td>2024-01 &rarr; 2024-12</td><td><span class="badge badge-green">1.25</span></td><td>Datos más recientes &mdash; se favorece</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:.85rem;color:var(--cool-gray);margin-top:.75rem">El RMSE final ponderado = &sum;(peso<sub>i</sub> &times; RMSE<sub>i</sub>) / &sum;(peso<sub>i</sub>). Esto permite que el modelo priorice el desempeño en datos recientes sin ignorar completamente el período COVID.</p>
+  </div>
+</section>
+
+<!-- ============ 3. PROPHET ============ -->
+<section id="prophet-sec">
+  <div class="model-section">
+    <div class="model-header reveal" style="background:linear-gradient(135deg,var(--dark-teal),var(--teal))">
+      <div>
+        <h2>Prophet</h2>
+        <span class="model-type">Modelo aditivo de series de tiempo &bull; Meta/Facebook</span>
+      </div>
+      <span class="model-num">01</span>
+    </div>
+
+    <div class="card reveal">
+      <p style="font-size:1rem;line-height:1.8;color:#333">
+        Prophet descompone la serie en tres componentes: <strong>tendencia</strong> (dirección general), <strong>estacionalidad</strong> (patrones cíclicos anuales/semanales), y <strong>holidays</strong> (eventos especiales como COVID-19). Es el único modelo con <strong>grid search completo</strong>: probamos múltiples combinaciones y elegimos la mejor por validación cruzada.
+      </p>
+    </div>
+
+    <h3 class="reveal" style="font-family:var(--font-display);font-size:1.4rem;color:var(--dark-teal);margin:2rem 0 1rem">Hiperparámetros del Grid Search</h3>
+
+    <div class="card reveal" style="padding:0;overflow:hidden">
+      <table class="hp-table">
+        <thead style="background:var(--dark-teal)">
+          <tr><th>Hiperparámetro</th><th>Valores probados</th><th>Descripción</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="hp-name">seasonality_mode</td>
+            <td class="hp-val"><span class="badge badge-teal">multiplicative</span> <span class="badge badge-teal">additive</span></td>
+            <td class="hp-desc">
+              <strong>Multiplicative:</strong> La estacionalidad es un <em>porcentaje</em> del nivel actual. Si la incidencia sube, los picos estacionales también crecen proporcionalmente.<br>
+              <strong>Additive:</strong> La estacionalidad es una cantidad <em>fija</em> que se suma/resta, independiente del nivel.
+              <br><span class="badge badge-yellow" style="margin-top:.5rem">Resultado: multiplicative domina (62%) excepto en Depresión con log-transform donde additive gana</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="hp-name">changepoint_prior_scale</td>
+            <td class="hp-val"><span class="badge badge-teal">0.01</span> <span class="badge badge-teal">0.03</span> <span class="badge badge-teal">0.05</span></td>
+            <td class="hp-desc">
+              Controla la <strong>flexibilidad de la tendencia</strong>. Valores bajos (0.01) = tendencia rígida, pocos cambios de dirección. Valores altos (0.05) = tendencia flexible, se adapta más rápido a cambios.
+              <br><strong>Analogía:</strong> Es como la "dureza de la suspensión" de un auto. Muy blanda (0.05) y absorbe cada bache (sobreajuste al COVID). Muy dura (0.01) y no detecta curvas reales.
+              <br><span class="badge badge-yellow" style="margin-top:.5rem">Resultado: 0.03 ganó en 39%, seguido de 0.01 con 31%</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="hp-name">seasonality_prior_scale</td>
+            <td class="hp-val"><span class="badge badge-teal">0.1</span> <span class="badge badge-teal">0.5</span> <span class="badge badge-teal">1.0</span></td>
+            <td class="hp-desc">
+              Controla la <strong>fuerza del patrón estacional</strong>. Valores bajos (0.1) = patrón estricto y suave. Valores altos (1.0+) = permite estacionalidad más irregular y detallada.
+              <br><strong>Analogía:</strong> Es como el "zoom" en la estacionalidad. Zoom bajo (0.1) ve la forma general (invierno sube, verano baja). Zoom alto (1.0) captura mini-picos semana a semana.
+              <br><span class="badge badge-yellow" style="margin-top:.5rem">Resultado: 0.5 ganó en 30%, seguido de 0.05 con 25%</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="hp-name">fourier_order</td>
+            <td class="hp-val"><span class="badge badge-green">5</span> (fijo)</td>
+            <td class="hp-desc">
+              Número de <strong>términos de Fourier</strong> para modelar la estacionalidad anual. Más términos = curva más detallada. El default de Prophet es 10, pero nuestros experimentos anteriores confirmaron que <strong>5 es óptimo</strong> para evitar sobreajuste en series cortas.
+              <br><strong>Analogía:</strong> Fourier 5 = dibujar la estacionalidad con 5 ondas. Fourier 20 = usar 20 ondas (captura cada micro-patrón pero puede sobreajustar al ruido).
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="reveal" style="font-family:var(--font-display);font-size:1.3rem;color:var(--dark-teal);margin:2rem 0 1rem">Grid por padecimiento</h3>
+    <p class="reveal" style="font-size:.92rem;color:#555;margin-bottom:1rem">Cada padecimiento tiene un grid diferente porque sus patrones temporales son distintos.</p>
+
+    <div class="grid-combos reveal">
+      <div class="combo-card" style="border-left-color:var(--burgundy)">
+        <h4>Depresión</h4>
+        <div class="combo-size">24</div>
+        <div class="combo-detail">2 seasonality_mode &times; 3 cp &times; 4 sp &times; 1 fourier<br>El grid más amplio: Depresión tiene patrones más complejos y variados.</div>
+      </div>
+      <div class="combo-card" style="border-left-color:var(--teal)">
+        <h4>Parkinson</h4>
+        <div class="combo-size">18</div>
+        <div class="combo-detail">2 seasonality_mode &times; 3 cp &times; 3 sp &times; 1 fourier<br>cp empieza en 0.03 (no 0.01): Parkinson requiere más flexibilidad.</div>
+      </div>
+      <div class="combo-card" style="border-left-color:var(--gold)">
+        <h4>Alzheimer</h4>
+        <div class="combo-size">6</div>
+        <div class="combo-detail">1 seasonality_mode &times; 2 cp &times; 3 sp &times; 1 fourier<br>Solo multiplicative: series estables con baja incidencia. Grid pequeño = entrenamiento rápido.</div>
+      </div>
+    </div>
+
+    <h3 class="reveal" style="font-family:var(--font-display);font-size:1.3rem;color:var(--dark-teal);margin:2rem 0 1rem">Parámetros fijos</h3>
+    <div class="card reveal" style="padding:0;overflow:hidden">
+      <table class="hp-table">
+        <thead style="background:var(--dark-teal)"><tr><th>Parámetro</th><th>Valor</th><th>Razón</th></tr></thead>
+        <tbody>
+          <tr><td class="hp-name">yearly_seasonality</td><td class="hp-val">False</td><td class="hp-desc">Desactivada la estacionalidad anual automática. Usamos una personalizada con <code>add_seasonality('yearly_custom', period=52.18, fourier_order=5)</code> para tener control del fourier_order.</td></tr>
+          <tr><td class="hp-name">weekly_seasonality</td><td class="hp-val">False</td><td class="hp-desc">Datos semanales (1 observación/semana), no hay variación intra-semanal.</td></tr>
+          <tr><td class="hp-name">daily_seasonality</td><td class="hp-val">False</td><td class="hp-desc">No aplica para datos semanales.</td></tr>
+          <tr><td class="hp-name">holidays</td><td class="hp-val">COVID-19 (913d)</td><td class="hp-desc">El período pandémico se marca como "holiday" para que Prophet no ajuste su tendencia a la caída de 2020-2022.</td></tr>
+          <tr><td class="hp-name">cv_timeout_por_combo</td><td class="hp-val">90s</td><td class="hp-desc">Tiempo máximo por combinación. Si Prophet entra en "modo Newton lento" (optimizador L-BFGS diverge), se corta el entrenamiento y se usa el resultado parcial.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pros-cons reveal" style="margin-top:2rem">
+      <div class="pros">
+        <h4>Ventajas</h4>
+        <ul style="padding-left:1.2rem">
+          <li>Grid search completo: se adapta a cada serie individual</li>
+          <li>Descomposición interpretable (tendencia + estacionalidad + holidays)</li>
+          <li>Manejo nativo de datos faltantes y valores atípicos</li>
+          <li>Predicción a horizontes largos (120 semanas) sin acumulación de error</li>
+          <li>Los médicos del IMSS pueden entender y validar los componentes</li>
+          <li>Mediana MASE de 0.745 &mdash; la mejor de los 6 modelos</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h4>Limitaciones</h4>
+        <ul style="padding-left:1.2rem">
+          <li>Lento: 93.5s promedio por serie (68% del tiempo total)</li>
+          <li>Problemas de convergencia (Newton fallback) en algunas series</li>
+          <li>No captura relaciones no lineales complejas</li>
+          <li>Grid search es costoso: 6-24 combos &times; 4 folds por serie</li>
+          <li>Depende de hipótesis de descomposición aditiva/multiplicativa</li>
+          <li>No aprovecha información cruzada entre series</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 4. TFT ============ -->
+<section id="tft-sec">
+  <div class="model-section">
+    <div class="model-header reveal" style="background:linear-gradient(135deg,var(--dark-burgundy),var(--burgundy))">
+      <div>
+        <h2>Temporal Fusion Transformer (TFT)</h2>
+        <span class="model-type">Red neuronal Transformer &bull; Google Research</span>
+      </div>
+      <span class="model-num">02</span>
+    </div>
+
+    <div class="card reveal">
+      <p style="font-size:1rem;line-height:1.8;color:#333">
+        TFT es una arquitectura de <strong>deep learning</strong> basada en el mecanismo de <strong>atención</strong> (el mismo concepto detrás de GPT y ChatGPT). Aprende automáticamente qué momentos del pasado son más relevantes para predecir el futuro. Puede capturar patrones no lineales y relaciones complejas que Prophet no detecta.
+      </p>
+    </div>
+
+    <div class="card reveal" style="margin-top:1.5rem;padding:0;overflow:hidden">
+      <table class="hp-table">
+        <thead style="background:var(--dark-burgundy)"><tr><th>Hiperparámetro</th><th>Valor</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="hp-name">hidden_size</td>
+            <td class="hp-val"><span class="badge" style="background:rgba(155,34,66,.1);color:var(--burgundy)">16</span></td>
+            <td class="hp-desc">Dimensión del espacio de representación interno del Transformer. <strong>16 es deliberadamente pequeño</strong>: nuestras series tienen ~500 observaciones, un hidden_size grande (64-256) sobreajustaría. Es como usar un telescopio pequeño para un objeto cercano &mdash; no necesitas el Hubble.<br><span class="badge badge-yellow" style="margin-top:.5rem">Trade-off: menos expresividad, pero más estable con datos limitados</span></td>
+          </tr>
+          <tr>
+            <td class="hp-name">learning_rate</td>
+            <td class="hp-val"><span class="badge" style="background:rgba(155,34,66,.1);color:var(--burgundy)">0.01</span></td>
+            <td class="hp-desc">Tamaño del paso de optimización. 0.01 es relativamente alto para deep learning, pero con solo 100 pasos de entrenamiento, necesitamos avanzar rápido. <strong>Analogía:</strong> caminar con pasos grandes en un laberinto pequeño.</td>
+          </tr>
+          <tr>
+            <td class="hp-name">max_steps</td>
+            <td class="hp-val"><span class="badge" style="background:rgba(155,34,66,.1);color:var(--burgundy)">100</span></td>
+            <td class="hp-desc">Número máximo de iteraciones de entrenamiento. 100 es conservador &mdash; preferimos subentrenar ligeramente a sobreajustar. El default típico es 200-1000, pero con series cortas, menos es más.</td>
+          </tr>
+          <tr>
+            <td class="hp-name">n_head</td>
+            <td class="hp-val"><span class="badge badge-blue">1</span> (fijo)</td>
+            <td class="hp-desc">Número de "cabezas de atención". Con 1 cabeza, el modelo enfoca su atención en un solo aspecto a la vez. Múltiples cabezas permitirían atender patrones simultáneos, pero con series pequeñas, 1 es suficiente.</td>
+          </tr>
+          <tr>
+            <td class="hp-name">dropout</td>
+            <td class="hp-val"><span class="badge badge-blue">0.1</span> (fijo)</td>
+            <td class="hp-desc">Probabilidad de "apagar" neuronas aleatoriamente durante el entrenamiento. Previene sobreajuste. 0.1 = 10% de las neuronas se desactivan en cada paso.</td>
+          </tr>
+          <tr>
+            <td class="hp-name">input_size</td>
+            <td class="hp-val"><span class="badge badge-blue">104</span> (fijo)</td>
+            <td class="hp-desc">Ventana de retrospectiva: <strong>104 semanas = 2 años</strong> de datos históricos como contexto. Permite capturar 2 ciclos anuales completos de estacionalidad.</td>
+          </tr>
+          <tr>
+            <td class="hp-name">scaler_type</td>
+            <td class="hp-val"><span class="badge badge-blue">standard</span> (fijo)</td>
+            <td class="hp-desc">Estandarización (media=0, desviación=1) antes de entrenar. Las redes neuronales requieren inputs normalizados para converger correctamente.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout reveal" style="margin-top:1.5rem">
+      <strong>¿Por qué no hay grid search para TFT?</strong> Entrenar un TFT es ~30 segundos por serie, vs ~94 para Prophet con grid. Si probáramos incluso 4 combinaciones, cada serie tomaría 2 minutos. Con 258 series, pasaríamos de 2.2 horas a 8.6 horas solo para TFT. El costo no se justifica dado que la configuración actual ya produce resultados competitivos (68 victorias, más que cualquier otro modelo).
+    </div>
+
+    <div class="pros-cons reveal" style="margin-top:1.5rem">
+      <div class="pros">
+        <h4>Ventajas</h4>
+        <ul style="padding-left:1.2rem">
+          <li>Mayor número de victorias individuales (68/258 = 26.4%)</li>
+          <li>Mecanismo de atención captura dependencias temporales complejas</li>
+          <li>Maneja naturalmente la no linealidad</li>
+          <li>Proporciona intervalos de predicción probabilísticos</li>
+          <li>Relativamente rápido para deep learning (30s/serie)</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h4>Limitaciones</h4>
+        <ul style="padding-left:1.2rem">
+          <li>Caja negra: difícil explicar <em>por qué</em> predice lo que predice</li>
+          <li>Mediana MASE (0.773) inferior a Prophet (0.745)</li>
+          <li>Sensible al tamaño del dataset &mdash; puede fallar con pocas observaciones</li>
+          <li>No tiene grid search &mdash; podría mejorar con optimización de HPs</li>
+          <li>Requiere PyTorch/GPU para entrenamiento eficiente</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. DEEPAR ============ -->
+<section id="deepar-sec">
+  <div class="model-section">
+    <div class="model-header reveal" style="background:linear-gradient(135deg,#7a6200,var(--gold))">
+      <div>
+        <h2>DeepAR</h2>
+        <span class="model-type">Red neuronal recurrente (LSTM) &bull; Amazon</span>
+      </div>
+      <span class="model-num">03</span>
+    </div>
+
+    <div class="card reveal">
+      <p style="font-size:1rem;line-height:1.8;color:#333">
+        DeepAR es una red neuronal <strong>recurrente</strong> (LSTM) desarrollada por Amazon. A diferencia de TFT (que "mira" todo el pasado a la vez con atención), DeepAR procesa la serie <strong>paso a paso</strong>, como leer un libro página por página. Genera predicciones <strong>probabilísticas</strong>: no solo dice "la incidencia será 45", sino "será 45 &plusmn; 12 con 95% de confianza".
+      </p>
+    </div>
+
+    <div class="card reveal" style="margin-top:1.5rem;padding:0;overflow:hidden">
+      <table class="hp-table">
+        <thead style="background:#7a6200"><tr><th>Hiperparámetro</th><th>Valor</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="hp-name">hidden_size</td>
+            <td class="hp-val"><span class="badge" style="background:rgba(181,133,0,.12);color:var(--gold)">32</span></td>
+            <td class="hp-desc">Dimensión del estado oculto LSTM. <strong>32 es el doble que TFT (16)</strong> porque LSTM necesita más capacidad para su procesamiento secuencial. Es la "memoria de trabajo" de la red.</td>
+          </tr>
+          <tr>
+            <td class="hp-name">learning_rate</td>
+            <td class="hp-val"><span class="badge" style="background:rgba(181,133,0,.12);color:var(--gold)">0.001</span></td>
+            <td class="hp-desc"><strong>10x más bajo que TFT (0.01).</strong> Los modelos probabilísticos son más sensibles a pasos de optimización grandes. Pasos pequeños = convergencia más estable pero más lenta.</td>
+          </tr>
+          <tr>
+            <td class="hp-name">max_steps</td>
+            <td class="hp-val"><span class="badge" style="background:rgba(181,133,0,.12);color:var(--gold)">100</span></td>
+            <td class="hp-desc">Igual que TFT. 100 iteraciones con learning_rate bajo producen una convergencia suave.</td>
+          </tr>
+          <tr>
+            <td class="hp-name">n_layers</td>
+            <td class="hp-val"><span class="badge badge-blue">2</span> (fijo)</td>
+            <td class="hp-desc">Dos capas LSTM apiladas. La primera captura patrones de bajo nivel (tendencias locales), la segunda aprende patrones de alto nivel (estacionalidad, régimen).</td>
+          </tr>
+          <tr>
+            <td class="hp-name">dropout</td>
+            <td class="hp-val"><span class="badge badge-blue">0.1</span> (fijo)</td>
+            <td class="hp-desc">Dropout recurrente del 10%. Ayuda a evitar que la red "memorice" secuencias exactas del entrenamiento.</td>
+          </tr>
+          <tr>
+            <td class="hp-name">input_size</td>
+            <td class="hp-val"><span class="badge badge-blue">104</span> (fijo)</td>
+            <td class="hp-desc">Ventana de 2 años (104 semanas). Idéntico a TFT para comparación justa.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pros-cons reveal" style="margin-top:1.5rem">
+      <div class="pros">
+        <h4>Ventajas</h4>
+        <ul style="padding-left:1.2rem">
+          <li>Predicciones probabilísticas nativas (intervalos de confianza)</li>
+          <li>40 victorias (15.5%) &mdash; competitivo en todas las categorías</li>
+          <li>Muy rápido: solo 8 segundos promedio por serie</li>
+          <li>LSTM captura bien dependencias de largo plazo</li>
+          <li>Puede aprender patrones de múltiples series simultáneamente</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h4>Limitaciones</h4>
+        <ul style="padding-left:1.2rem">
+          <li>Procesamiento secuencial es más lento que la atención paralela de TFT</li>
+          <li>Difícil de interpretar &mdash; el estado oculto LSTM es opaco</li>
+          <li>Puede olvidar patrones muy antiguos (vanishing gradients)</li>
+          <li>Sensible a la inicialización aleatoria</li>
+          <li>Sin grid search &mdash; configuración fija no optimizada por serie</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6. LightGBM+LSTM ============ -->
+<section id="lgbm-sec">
+  <div class="model-section">
+    <div class="model-header reveal" style="background:linear-gradient(135deg,#1B5E20,#2E7D32)">
+      <div>
+        <h2>LightGBM+LSTM</h2>
+        <span class="model-type">Ensemble híbrido &bull; Microsoft + PyTorch</span>
+      </div>
+      <span class="model-num">04</span>
+    </div>
+
+    <div class="card reveal">
+      <p style="font-size:1rem;line-height:1.8;color:#333">
+        Este es nuestro <strong>modelo híbrido</strong>: combina la velocidad y robustez de LightGBM (árboles de decisión potenciados) con la capacidad secuencial de LSTM (red neuronal recurrente). La predicción final es un <strong>promedio ponderado</strong> de ambos: <code style="font-family:var(--font-mono);background:var(--cream-pale);padding:.1rem .4rem;border-radius:4px">y = 0.5 &times; LightGBM + 0.5 &times; LSTM</code>. La idea: donde uno falla, el otro compensa.
+      </p>
+    </div>
+
+    <div class="card reveal" style="margin-top:1.5rem;padding:0;overflow:hidden">
+      <table class="hp-table">
+        <thead style="background:#1B5E20"><tr><th>Hiperparámetro</th><th>Valor</th><th>Componente</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="hp-name">lgbm_n_estimators</td>
+            <td class="hp-val"><span class="badge" style="background:rgba(46,125,50,.12);color:#2E7D32">300</span></td>
+            <td>LightGBM</td>
+            <td class="hp-desc">Número de árboles. 300 es 3x más que XGBoost (100) porque LightGBM usa árboles más ligeros (leaf-wise vs level-wise). Más árboles = más refinamiento, pero con learning_rate bajo no sobreajusta.</td>
+          </tr>
+          <tr>
+            <td class="hp-name">lgbm_max_depth</td>
+            <td class="hp-val"><span class="badge" style="background:rgba(46,125,50,.12);color:#2E7D32">5</span></td>
+            <td>LightGBM</td>
+            <td class="hp-desc">Profundidad máxima de cada árbol. 5 niveles = hasta 32 hojas. Suficiente para capturar interacciones entre features (lag_52 &times; mes del año) sin sobreajustar.</td>
+          </tr>
+          <tr>
+            <td class="hp-name">lgbm_learning_rate</td>
+            <td class="hp-val"><span class="badge badge-blue">0.05</span> (fijo)</td>
+            <td>LightGBM</td>
+            <td class="hp-desc">Contribución de cada árbol nuevo. 0.05 = cada árbol aporta solo 5% de corrección. Entrenamiento lento pero estable.</td>
+          </tr>
+          <tr>
+            <td class="hp-name">lstm_hidden_size</td>
+            <td class="hp-val"><span class="badge badge-blue">32</span> (fijo)</td>
+            <td>LSTM</td>
+            <td class="hp-desc">Misma dimensión que DeepAR. El componente LSTM del ensemble aprende patrones secuenciales complementarios a los árboles.</td>
+          </tr>
+          <tr>
+            <td class="hp-name">lstm_max_steps</td>
+            <td class="hp-val"><span class="badge" style="background:rgba(46,125,50,.12);color:#2E7D32">100</span></td>
+            <td>LSTM</td>
+            <td class="hp-desc">Iteraciones de entrenamiento del componente LSTM. Igual que DeepAR y TFT.</td>
+          </tr>
+          <tr>
+            <td class="hp-name">ensemble_weight_lgbm</td>
+            <td class="hp-val"><span class="badge" style="background:rgba(46,125,50,.12);color:#2E7D32">0.5</span></td>
+            <td>Ensemble</td>
+            <td class="hp-desc"><strong>50% LightGBM + 50% LSTM.</strong> Peso igual a ambos componentes. No se optimizó este peso por serie &mdash; un valor fijo de 0.5 es robusto como punto de partida.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="reveal" style="font-family:var(--font-display);font-size:1.2rem;color:var(--dark-teal);margin:1.5rem 0 1rem">Features de ingeniería (componente LightGBM)</h3>
+    <div class="card reveal">
+      <p style="font-size:.92rem;color:#555;margin-bottom:1rem">El componente LightGBM necesita <strong>features manuales</strong> (a diferencia de Prophet que las descubre automáticamente):</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+        <div>
+          <h4 style="font-family:var(--font-display);font-size:1rem;color:var(--dark-teal);margin-bottom:.5rem">Lags temporales</h4>
+          <div style="font-family:var(--font-mono);font-size:.82rem;line-height:2;color:#333">
+            <span class="badge badge-teal">lag_1</span> <span class="badge badge-teal">lag_2</span> <span class="badge badge-teal">lag_4</span> <span class="badge badge-teal">lag_8</span> <span class="badge badge-teal">lag_12</span> <span class="badge badge-teal">lag_52</span>
+          </div>
+          <p style="font-size:.82rem;color:var(--cool-gray);margin-top:.5rem">Valores de hace 1, 2, 4, 8, 12 y 52 semanas. El lag_52 captura la estacionalidad anual.</p>
+        </div>
+        <div>
+          <h4 style="font-family:var(--font-display);font-size:1rem;color:var(--dark-teal);margin-bottom:.5rem">Estadísticas móviles</h4>
+          <div style="font-family:var(--font-mono);font-size:.82rem;line-height:2;color:#333">
+            <span class="badge badge-teal">rolling_mean_4</span> <span class="badge badge-teal">rolling_std_4</span><br>
+            <span class="badge badge-teal">rolling_mean_12</span> <span class="badge badge-teal">rolling_std_12</span><br>
+            <span class="badge badge-teal">rolling_mean_26</span> <span class="badge badge-teal">rolling_std_26</span>
+          </div>
+          <p style="font-size:.82rem;color:var(--cool-gray);margin-top:.5rem">Media y desviación móvil de 1, 3 y 6 meses.</p>
+        </div>
+      </div>
+      <div style="margin-top:1rem">
+        <h4 style="font-family:var(--font-display);font-size:1rem;color:var(--dark-teal);margin-bottom:.5rem">Variables calendario</h4>
+        <div style="font-family:var(--font-mono);font-size:.82rem;line-height:2;color:#333">
+          <span class="badge badge-teal">week_of_year</span> <span class="badge badge-teal">month</span> <span class="badge badge-teal">quarter</span> <span class="badge badge-teal">year</span> <span class="badge badge-teal">week_sin</span> <span class="badge badge-teal">week_cos</span> <span class="badge badge-teal">month_sin</span> <span class="badge badge-teal">month_cos</span>
+        </div>
+        <p style="font-size:.82rem;color:var(--cool-gray);margin-top:.5rem">Codificación cíclica (seno/coseno) para que la semana 52 esté "cerca" de la semana 1, evitando discontinuidad artificial.</p>
+      </div>
+    </div>
+
+    <div class="pros-cons reveal" style="margin-top:1.5rem">
+      <div class="pros">
+        <h4>Ventajas</h4>
+        <ul style="padding-left:1.2rem">
+          <li>48 victorias (18.6%) &mdash; tercer modelo más exitoso</li>
+          <li>Menor tasa de último lugar: solo 14/258 (5.4%)</li>
+          <li>Diversificación: si LightGBM falla, LSTM puede compensar y viceversa</li>
+          <li>Rápido: 4.8s promedio (LightGBM es casi instantáneo)</li>
+          <li>Features interpretables (importancia de features disponible)</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h4>Limitaciones</h4>
+        <ul style="padding-left:1.2rem">
+          <li>El peso fijo 50/50 puede no ser óptimo para todas las series</li>
+          <li>Features manuales requieren ingeniería previa</li>
+          <li>LightGBM no captura tendencia nativa (depende de lag_52)</li>
+          <li>Predicción multi-step es recursiva = acumula error</li>
+          <li>Complejidad de implementación: dos modelos que mantener</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 7. XGBOOST ============ -->
+<section id="xgb-sec">
+  <div class="model-section">
+    <div class="model-header reveal" style="background:linear-gradient(135deg,#BF360C,#E65100)">
+      <div>
+        <h2>XGBoost</h2>
+        <span class="model-type">Gradient boosting &bull; Árboles de decisión potenciados</span>
+      </div>
+      <span class="model-num">05</span>
+    </div>
+
+    <div class="card reveal">
+      <p style="font-size:1rem;line-height:1.8;color:#333">
+        XGBoost es el "caballo de batalla" del machine learning tabular. Construye cientos de <strong>árboles de decisión pequeños</strong>, donde cada nuevo árbol corrige los errores del anterior. Es extremadamente rápido (0.5s por serie) pero no tiene componentes explícitas de tendencia ni estacionalidad &mdash; debe aprenderlas de los features.
+      </p>
+    </div>
+
+    <div class="card reveal" style="margin-top:1.5rem;padding:0;overflow:hidden">
+      <table class="hp-table">
+        <thead style="background:#BF360C"><tr><th>Hiperparámetro</th><th>Valor</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="hp-name">n_estimators</td>
+            <td class="hp-val"><span class="badge" style="background:rgba(230,81,0,.12);color:#E65100">100</span></td>
+            <td class="hp-desc">Número de árboles. 100 es conservador &mdash; suficiente para series cortas sin riesgo de sobreajuste. Compárese con 300 de LightGBM (que usa árboles más ligeros).</td>
+          </tr>
+          <tr>
+            <td class="hp-name">max_depth</td>
+            <td class="hp-val"><span class="badge" style="background:rgba(230,81,0,.12);color:#E65100">5</span></td>
+            <td class="hp-desc">Profundidad máxima de cada árbol. Igual que LightGBM. Árboles poco profundos capturan patrones generales sin memorizar ruido.</td>
+          </tr>
+          <tr>
+            <td class="hp-name">learning_rate</td>
+            <td class="hp-val"><span class="badge" style="background:rgba(230,81,0,.12);color:#E65100">0.05</span></td>
+            <td class="hp-desc">Tasa de aprendizaje. 0.05 = cada árbol contribuye poco individualmente. Esto, combinado con 100 árboles, da un modelo conservador y estable.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout reveal callout-burgundy" style="margin-top:1.5rem">
+      <strong>Features idénticas a LightGBM:</strong> XGBoost usa exactamente los mismos lags (1,2,4,8,12,52), estadísticas móviles (4,12,26 semanas) y variables calendario con codificación cíclica. La diferencia es que XGBoost construye árboles "nivel por nivel" (level-wise) mientras LightGBM lo hace "hoja por hoja" (leaf-wise), y no tiene el componente LSTM complementario.
+    </div>
+
+    <div class="pros-cons reveal" style="margin-top:1.5rem">
+      <div class="pros">
+        <h4>Ventajas</h4>
+        <ul style="padding-left:1.2rem">
+          <li>Ultra-rápido: 0.5 segundos por serie</li>
+          <li>Robusto ante datos faltantes y outliers</li>
+          <li>Importancia de features interpretable</li>
+          <li>Amplia comunidad y documentación</li>
+          <li>No requiere GPU</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h4>Limitaciones</h4>
+        <ul style="padding-left:1.2rem">
+          <li>73 veces último lugar (28.3%) &mdash; el peor registro</li>
+          <li>Mediana MASE 0.832 &mdash; significativamente peor que Prophet (0.745)</li>
+          <li>Predicción recursiva multi-step acumula error progresivamente</li>
+          <li>Sin tendencia ni estacionalidad explícita</li>
+          <li>Solo 22 victorias (8.5%) &mdash; 5to de 6 modelos</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 8. RIDGE ============ -->
+<section id="ridge-sec">
+  <div class="model-section">
+    <div class="model-header reveal" style="background:linear-gradient(135deg,#283593,#5C6BC0)">
+      <div>
+        <h2>Ridge</h2>
+        <span class="model-type">Regresión lineal regularizada &bull; Baseline</span>
+      </div>
+      <span class="model-num">06</span>
+    </div>
+
+    <div class="card reveal">
+      <p style="font-size:1rem;line-height:1.8;color:#333">
+        Ridge es nuestro <strong>baseline</strong>: el modelo más simple posible. Es una regresión lineal con regularización L2 que penaliza coeficientes grandes. Su propósito es establecer un piso de rendimiento: <strong>si un modelo sofisticado no puede vencer a una línea recta, algo anda mal</strong>. Sorprendentemente, Ridge gana 20 series, lo que sugiere que algunas series son tan simples que la complejidad adicional perjudica.
+      </p>
+    </div>
+
+    <div class="card reveal" style="margin-top:1.5rem;padding:0;overflow:hidden">
+      <table class="hp-table">
+        <thead style="background:#283593"><tr><th>Hiperparámetro</th><th>Valor</th><th>Descripción</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="hp-name">alpha</td>
+            <td class="hp-val"><span class="badge" style="background:rgba(92,107,192,.12);color:#5C6BC0">1.0</span></td>
+            <td class="hp-desc">
+              Fuerza de regularización L2. Controla cuánto se penalizan los coeficientes grandes.
+              <br><strong>Alpha = 0:</strong> regresión lineal pura (sin regularización, riesgo de sobreajuste).
+              <br><strong>Alpha = 1.0:</strong> regularización moderada. Los coeficientes se "encogen" hacia cero pero no desaparecen.
+              <br><strong>Alpha &rarr; &infin;:</strong> todos los coeficientes se vuelven ~0, el modelo predice la media.
+              <br><span class="badge badge-yellow" style="margin-top:.5rem">1.0 es el valor por defecto de scikit-learn &mdash; un balance conservador</span>
+            </td>
+          </tr>
+          <tr>
+            <td class="hp-name">StandardScaler</td>
+            <td class="hp-val"><span class="badge badge-blue">Sí</span> (fijo)</td>
+            <td class="hp-desc">Todas las features se estandarizan (media=0, desviación=1) antes de entrenar. Crítico para Ridge porque la regularización L2 depende de la escala de las features.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout reveal" style="margin-top:1.5rem">
+      <strong>Mismo set de features que XGBoost y LightGBM:</strong> Lags (1,2,4,8,12,52), rolling stats (4,12,26), y calendario cíclico. La diferencia es que Ridge busca una combinación lineal de estos features, mientras los árboles pueden capturar interacciones no lineales (ej. "si lag_52 &gt; 2.0 Y mes = enero, entonces subir").
+    </div>
+
+    <div class="pros-cons reveal" style="margin-top:1.5rem">
+      <div class="pros">
+        <h4>Ventajas</h4>
+        <ul style="padding-left:1.2rem">
+          <li>El más rápido de todos: 0.1 segundos por serie</li>
+          <li>Completamente interpretable: coeficientes lineales</li>
+          <li>Imposible de sobreajustar con alpha=1.0</li>
+          <li>20 victorias: gana en series con patrones lineales simples</li>
+          <li>Baseline sólido para validar modelos más complejos</li>
+        </ul>
+      </div>
+      <div class="cons">
+        <h4>Limitaciones</h4>
+        <ul style="padding-left:1.2rem">
+          <li>67 veces último lugar (26%) &mdash; segundo peor</li>
+          <li>No captura patrones no lineales ni interacciones</li>
+          <li>Predicción recursiva multi-step acumula error</li>
+          <li>Sin componente de tendencia ni estacionalidad</li>
+          <li>Mediana MASE 0.822 &mdash; por debajo de todos excepto XGBoost</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 9. COMPARATIVA ============ -->
+<section id="comparativa">
+  <h2 class="section-title reveal">Tabla Comparativa Final</h2>
+  <p class="section-sub reveal">Los 6 modelos lado a lado: hiperparámetros, complejidad, resultados y velocidad.</p>
+
+  <div class="card reveal" style="padding:0;overflow:hidden">
+    <div style="overflow-x:auto">
+    <table class="compare-table" style="min-width:900px">
+      <thead>
+        <tr>
+          <th>Aspecto</th>
+          <th style="background:var(--prophet)">Prophet</th>
+          <th style="background:var(--tft)">TFT</th>
+          <th style="background:var(--deepar)">DeepAR</th>
+          <th style="background:var(--lgbm)">LGB+LSTM</th>
+          <th style="background:var(--xgb)">XGBoost</th>
+          <th style="background:var(--ridge)">Ridge</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="font-weight:600">Tipo</td>
+          <td>Aditivo / descomposición</td>
+          <td>Transformer</td>
+          <td>LSTM recurrente</td>
+          <td>Ensemble híbrido</td>
+          <td>Gradient boosting</td>
+          <td>Regresión lineal</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600">Grid search</td>
+          <td><span class="badge badge-green">6-24 combos</span></td>
+          <td>1 (fijo)</td>
+          <td>1 (fijo)</td>
+          <td>1 (fijo)</td>
+          <td>1 (fijo)</td>
+          <td>1 (fijo)</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600">HPs clave</td>
+          <td style="font-family:var(--font-mono);font-size:.78rem">season_mode, cp, sp, fourier</td>
+          <td style="font-family:var(--font-mono);font-size:.78rem">hidden=16, lr=0.01, steps=100</td>
+          <td style="font-family:var(--font-mono);font-size:.78rem">hidden=32, lr=0.001, steps=100</td>
+          <td style="font-family:var(--font-mono);font-size:.78rem">trees=300, depth=5, w=0.5</td>
+          <td style="font-family:var(--font-mono);font-size:.78rem">trees=100, depth=5, lr=0.05</td>
+          <td style="font-family:var(--font-mono);font-size:.78rem">alpha=1.0</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600">Lookback</td>
+          <td>Todo el histórico</td>
+          <td>104 sem (2 años)</td>
+          <td>104 sem (2 años)</td>
+          <td>52 sem + lags</td>
+          <td>Lags manuales</td>
+          <td>Lags manuales</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600">Victorias</td>
+          <td><strong>60 (23.3%)</strong></td>
+          <td><strong>68 (26.4%)</strong></td>
+          <td>40 (15.5%)</td>
+          <td>48 (18.6%)</td>
+          <td>22 (8.5%)</td>
+          <td>20 (7.8%)</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600">Mediana MASE</td>
+          <td><span class="badge badge-green">0.745</span></td>
+          <td>0.773</td>
+          <td>0.748</td>
+          <td>0.748</td>
+          <td><span class="badge badge-yellow">0.832</span></td>
+          <td><span class="badge badge-yellow">0.822</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600">Último lugar</td>
+          <td>33 (12.8%)</td>
+          <td>37 (14.3%)</td>
+          <td>34 (13.2%)</td>
+          <td><span class="badge badge-green">14 (5.4%)</span></td>
+          <td><span class="badge badge-red">73 (28.3%)</span></td>
+          <td><span class="badge badge-red">67 (26.0%)</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600">Velocidad</td>
+          <td><span class="badge badge-red">93.5s</span></td>
+          <td><span class="badge badge-yellow">30.2s</span></td>
+          <td><span class="badge badge-green">8.0s</span></td>
+          <td><span class="badge badge-green">4.8s</span></td>
+          <td><span class="badge badge-green">0.5s</span></td>
+          <td><span class="badge badge-green">0.1s</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600">Interpretable</td>
+          <td><span class="badge badge-green">Alta</span></td>
+          <td><span class="badge badge-red">Baja</span></td>
+          <td><span class="badge badge-red">Baja</span></td>
+          <td><span class="badge badge-yellow">Media</span></td>
+          <td><span class="badge badge-yellow">Media</span></td>
+          <td><span class="badge badge-green">Alta</span></td>
+        </tr>
+        <tr>
+          <td style="font-weight:600">Multi-step nativo</td>
+          <td><span class="badge badge-green">Sí</span></td>
+          <td><span class="badge badge-green">Sí</span></td>
+          <td><span class="badge badge-green">Sí</span></td>
+          <td><span class="badge badge-red">No (recursivo)</span></td>
+          <td><span class="badge badge-red">No (recursivo)</span></td>
+          <td><span class="badge badge-red">No (recursivo)</span></td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="callout reveal" style="margin-top:2rem">
+    <strong>Conclusión sobre hiperparámetros:</strong> Prophet es el único modelo con optimización individual por serie (grid search). Si aplicáramos grid search a TFT y DeepAR, podrían mejorar significativamente, pero el costo computacional se multiplicaría por 4-10x. La decisión de usar configuración fija para deep learning es un <strong>trade-off pragmático</strong>: resultados competitivos al 26% del costo. Para producción, Prophet con HPs óptimos por serie ofrece la mejor relación calidad-costo-interpretabilidad.
+  </div>
+</section>
+
+<footer style="text-align:center;padding:3rem 2rem;color:var(--cool-gray);font-size:.85rem;border-top:1px solid var(--cream-light);margin-top:4rem">
+  <p><strong>EpiForecast-MX</strong> &mdash; Instituto Mexicano del Seguro Social &times; Tec de Monterrey</p>
+  <p style="margin-top:.75rem">
+    <a href="index.html" style="color:var(--gold)">Inicio</a> &middot;
+    <a href="EpiDashboard.html" style="color:var(--gold)">Dashboard</a> &middot;
+    <a href="reporte_resultados.html" style="color:var(--gold)">Resultados</a> &middot;
+    <a href="Reports/index.html" style="color:var(--gold)">Pronósticos</a> &middot;
+    <a href="bitacora_modelado.html" style="color:var(--gold)">Bitácora</a> &middot;
+    <a href="comparacion_modelos.html" style="color:var(--gold)">Comparación</a> &middot;
+    <a href="ficha_tecnica_prophet.html" style="color:var(--gold)">Ficha Prophet</a>
+  </p>
+  <p style="margin-top:.5rem">Hiperparámetros de los 6 Modelos &mdash; Generado feb 2026</p>
+</footer>
+
+</div><!-- /container -->
+
+<script>
+// Reveal animation
+const observer = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');observer.unobserve(e.target)}});
+},{threshold:0.1});
+document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+
+// Smooth scroll
+document.querySelectorAll('nav a, .toc a').forEach(a=>{
+  a.addEventListener('click',e=>{
+    const href = a.getAttribute('href');
+    if(href && href.startsWith('#')){
+      e.preventDefault();
+      const target=document.querySelector(href);
+      if(target) target.scrollIntoView({behavior:'smooth',block:'start'});
+    }
+  });
+});
+</script>
+
+</body>
+</html>
