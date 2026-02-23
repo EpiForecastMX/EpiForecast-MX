@@ -98,12 +98,22 @@ section{padding:4rem 0}
 .yaml-val{color:var(--burgundy)}
 .yaml-cm{color:var(--cool-gray)}
 
-/* Pipeline diagram */
-.pipeline{display:flex;align-items:center;gap:0;flex-wrap:wrap;margin:2rem 0;justify-content:center}
-.pipeline-step{background:#fff;border:2px solid var(--teal);border-radius:var(--radius-sm);padding:.75rem 1.25rem;font-size:.85rem;font-weight:600;color:var(--dark-teal);text-align:center;min-width:120px}
-.pipeline-arrow{color:var(--gold);font-size:1.5rem;padding:0 .5rem;flex-shrink:0}
-.pipeline-step.active{background:var(--teal);color:#fff;border-color:var(--teal)}
-.pipeline-step.highlight{background:var(--burgundy);color:#fff;border-color:var(--burgundy)}
+/* Pipeline steps — redesigned */
+.pipeline-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem 1.5rem;margin:2rem 0;position:relative}
+.pipeline-step{position:relative;background:#fff;border-radius:var(--radius);padding:1.25rem 1rem .75rem;text-align:center;box-shadow:var(--shadow-sm);border:1px solid rgba(0,0,0,.04);transition:transform .3s,box-shadow .3s}
+.pipeline-step:hover{transform:translateY(-3px);box-shadow:var(--shadow-md)}
+.pipeline-step .step-num{display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:50%;font-family:var(--font-mono);font-size:.9rem;font-weight:700;margin-bottom:.6rem;color:#fff}
+.pipeline-step .step-num.c-teal{background:var(--teal)}
+.pipeline-step .step-num.c-gold{background:var(--gold)}
+.pipeline-step .step-num.c-burgundy{background:var(--burgundy)}
+.pipeline-step .step-label{font-family:var(--font-display);font-size:1rem;color:var(--dark-teal);display:block;margin-bottom:.25rem}
+.pipeline-step .step-desc{font-size:.78rem;color:var(--cool-gray);line-height:1.4}
+.pipeline-step .step-fn{display:inline-block;margin-top:.5rem;font-family:var(--font-mono);font-size:.7rem;background:var(--cream-light);color:var(--dark-teal);padding:.15rem .5rem;border-radius:4px}
+/* connector arrows between steps */
+.pipeline-step:not(:nth-child(4n))::after{content:'';position:absolute;right:-1rem;top:50%;width:.75rem;height:2px;background:var(--gold)}
+.pipeline-step:not(:nth-child(4n))::before{content:'';position:absolute;right:-1.1rem;top:50%;transform:translateY(-50%);border:5px solid transparent;border-left:6px solid var(--gold)}
+/* row connector: last col to next row first col */
+.pipeline-step:nth-child(4)::after,.pipeline-step:nth-child(4)::before{display:none}
 
 /* Table */
 .compare-table{width:100%;border-collapse:collapse;margin:1.5rem 0;font-size:.9rem}
@@ -159,7 +169,10 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
   .container{padding:0 1.25rem}
   .charts-row{grid-template-columns:1fr}
   .card-grid,.card-grid-3,.viz-grid{grid-template-columns:1fr}
-  .pipeline{flex-direction:column;gap:.5rem}.pipeline-arrow{transform:rotate(90deg)}
+  .pipeline-steps{grid-template-columns:repeat(2,1fr);gap:1rem}
+  .pipeline-step:not(:nth-child(4n))::after,.pipeline-step:not(:nth-child(4n))::before{display:none}
+  .pipeline-step:nth-child(odd):not(:last-child)::after{content:'';display:block;position:absolute;right:-0.75rem;top:50%;width:.5rem;height:2px;background:var(--gold)}
+  .pipeline-step:nth-child(odd):not(:last-child)::before{content:'';display:block;position:absolute;right:-.85rem;top:50%;transform:translateY(-50%);border:4px solid transparent;border-left:5px solid var(--gold)}
 }
 </style>
 </head>
@@ -327,22 +340,55 @@ g = g.assign(incrementos_hombres=pd.NA, incrementos_mujeres=pd.NA)
   <h2 class="section-title">Pipeline: <code>build_tableau.py</code></h2>
   <p class="section-sub">8 pasos para construir el dataset integrado de visualizacion</p>
 
-  <div class="pipeline" style="margin-bottom:2rem">
-    <div class="pipeline-step">A. Lectura</div>
-    <span class="pipeline-arrow">&rarr;</span>
-    <div class="pipeline-step">B. Parse fechas</div>
-    <span class="pipeline-arrow">&rarr;</span>
-    <div class="pipeline-step">C. Fix Sem. 53</div>
-    <span class="pipeline-arrow">&rarr;</span>
-    <div class="pipeline-step active">D. Expansion</div>
-    <span class="pipeline-arrow">&rarr;</span>
-    <div class="pipeline-step">E. Validacion</div>
-    <span class="pipeline-arrow">&rarr;</span>
-    <div class="pipeline-step active">F. Outer merge</div>
-    <span class="pipeline-arrow">&rarr;</span>
-    <div class="pipeline-step">G. RMSE</div>
-    <span class="pipeline-arrow">&rarr;</span>
-    <div class="pipeline-step highlight">H. Escritura</div>
+  <div class="pipeline-steps">
+    <div class="pipeline-step">
+      <span class="step-num c-teal">A</span>
+      <span class="step-label">Lectura</span>
+      <span class="step-desc">Historico INEGI + all_forecast.csv</span>
+      <span class="step-fn">load_inputs()</span>
+    </div>
+    <div class="pipeline-step">
+      <span class="step-num c-teal">B</span>
+      <span class="step-label">Parse fechas</span>
+      <span class="step-desc">Fecha&rarr;ds, mapeo columnas, limpieza</span>
+      <span class="step-fn">prepare_inputs()</span>
+    </div>
+    <div class="pipeline-step">
+      <span class="step-num c-gold">C</span>
+      <span class="step-label">Fix Sem. 53</span>
+      <span class="step-desc">Desambigua 2014-12-29 y 2025-12-29</span>
+      <span class="step-fn">drop_duplicates()</span>
+    </div>
+    <div class="pipeline-step">
+      <span class="step-num c-teal">D</span>
+      <span class="step-label">Expansion</span>
+      <span class="step-desc">Triplica a general / hombres / mujeres</span>
+      <span class="step-fn">expand_real_by_modo()</span>
+    </div>
+    <div class="pipeline-step">
+      <span class="step-num c-gold">E</span>
+      <span class="step-label">Validacion</span>
+      <span class="step-desc">Unicidad por 4 llaves en ambas entradas</span>
+      <span class="step-fn">duplicated() check</span>
+    </div>
+    <div class="pipeline-step">
+      <span class="step-num c-teal">F</span>
+      <span class="step-label">Outer merge</span>
+      <span class="step-desc">Join historico + forecast, validate m:1</span>
+      <span class="step-fn">merge(how="outer")</span>
+    </div>
+    <div class="pipeline-step">
+      <span class="step-num c-teal">G</span>
+      <span class="step-label">RMSE</span>
+      <span class="step-desc">Solo donde coexisten y_real y yhat</span>
+      <span class="step-fn">groupby().mean()</span>
+    </div>
+    <div class="pipeline-step">
+      <span class="step-num c-burgundy">H</span>
+      <span class="step-label">Escritura</span>
+      <span class="step-desc">Fill, validacion NaN, tableau.csv</span>
+      <span class="step-fn">to_csv()</span>
+    </div>
   </div>
 
   <div class="card" style="margin-bottom:2rem">
