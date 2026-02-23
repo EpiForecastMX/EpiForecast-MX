@@ -280,7 +280,7 @@ class GraficosHelper:
 
         # ── Figura ───────────────────────────────────────────────────────
         fig, ax = plt.subplots(figsize=(18, 7.5))
-        fig.subplots_adjust(bottom=0.24, top=0.88, left=0.06, right=0.97)
+        fig.subplots_adjust(bottom=0.13, top=0.89, left=0.055, right=0.975)
 
         # Título principal y subtítulo
         fig.suptitle(
@@ -319,7 +319,7 @@ class GraficosHelper:
         ax.fill_between(
             forecast["ds"], forecast["yhat_lower"], forecast["yhat_upper"],
             alpha=0.20, color=c_band, zorder=1,
-            label="Intervalo 80 % (se amplía con el horizonte)",
+            label="Intervalo 80 %",
         )
 
         # ── 4. Observaciones reales (puntos pequeños) ────────────────────
@@ -333,7 +333,7 @@ class GraficosHelper:
         ax.plot(
             forecast["ds"], forecast["yhat"],
             color=c_fc, linewidth=2.2, zorder=4,
-            label="Pronóstico Prophet (ŷ)",
+            label="Pronóstico Prophet",
         )
 
         # ── 6. Outliers (triángulos con borde blanco) ────────────────────
@@ -364,24 +364,28 @@ class GraficosHelper:
             ha="left", va="top",
         )
 
-        # ── 8. Línea de corte CV ────────────────────────────────────────
+        # ── 8. Zona de prueba CV (sombra gris + etiquetas) ─────────────
         fecha_corte = pd.Timestamp(conf["FECHA_CORTE_ENTRENAMIENTO"])
 
+        ax.axvspan(
+            fecha_corte, fecha_max_datos,
+            alpha=0.06, color=c_gray, zorder=0,
+        )
         ax.axvline(
             fecha_corte, color=c_gray, ls=":", lw=1.2, alpha=0.6, zorder=6,
         )
         ax.annotate(
-            "← Entrenamiento",
+            "Entrenamiento",
             xy=(fecha_corte, 0.88),
             xycoords=("data", "axes fraction"),
-            fontsize=8.5, fontweight="semibold", color=c_gray,
+            fontsize=7.5, color=c_gray,
             ha="right", va="top",
         )
         ax.annotate(
-            "Prueba CV →",
+            "Prueba CV",
             xy=(fecha_corte, 0.88),
             xycoords=("data", "axes fraction"),
-            fontsize=8.5, fontweight="semibold", color=c_gray,
+            fontsize=7.5, color=c_gray,
             ha="left", va="top",
         )
 
@@ -400,17 +404,17 @@ class GraficosHelper:
             ax.spines[spine].set_color(c_gray)
             ax.spines[spine].set_linewidth(0.5)
 
-        # ── Leyenda horizontal (debajo del gráfico) ──────────────────────
+        # ── Leyenda + ficha: banda compacta bajo el eje X ───────────────
         handles, labels = ax.get_legend_handles_labels()
         fig.legend(
             handles, labels,
-            loc="lower center", bbox_to_anchor=(0.5, 0.12),
-            ncol=len(handles), fontsize=9,
-            framealpha=0.90, fancybox=True, edgecolor="#ddd",
-            borderpad=0.6, handletextpad=0.5, columnspacing=1.5,
+            loc="lower center", bbox_to_anchor=(0.515, 0.04),
+            ncol=len(handles), fontsize=9.5,
+            frameon=False, handlelength=1.8,
+            handletextpad=0.4, columnspacing=2.0,
         )
 
-        # ── Ficha técnica (métricas + hiperparámetros) ─────────────────
+        # Ficha técnica: una linea justo debajo de la leyenda
         if metricas:
             mase_v = metricas.get("mase")
             rmse_v = metricas.get("rmse")
@@ -418,50 +422,39 @@ class GraficosHelper:
             es_fallback = metricas.get("es_fallback", False)
             modelo_usado = metricas.get("modelo_usado", "")
 
-            lineas = ["Prophet (Meta/Facebook)  ·  IC 80 %"]
+            tokens = ["Prophet (Meta/Facebook)", "IC 80 %"]
 
-            metricas_parts = []
             if mase_v is not None and mase_v < 100:
-                interp = "supera naive" if mase_v < 1 else "no supera naive"
-                metricas_parts.append(f"MASE: {mase_v:.2f} ({interp})")
+                tag = "supera naive" if mase_v < 1 else "no supera naive"
+                tokens.append(f"MASE: {mase_v:.2f} ({tag})")
             if rmse_v is not None and rmse_v < 100:
-                metricas_parts.append(f"RMSE: {rmse_v:.4f}")
-            if metricas_parts:
-                lineas.append("  ·  ".join(metricas_parts))
+                tokens.append(f"RMSE: {rmse_v:.4f}")
 
             if es_fallback:
                 region = ""
                 if "region_" in modelo_usado:
                     region = modelo_usado.split("region_")[1].rsplit("_", 1)[0]
                     region = region.replace("_", " ").replace("-", "/")
-                lineas.append(
-                    f"Modelo regional ({region})"
-                    if region else "Modelo regional de respaldo"
+                tokens.append(
+                    f"Modelo: Regional ({region})"
+                    if region else "Modelo: Regional (respaldo)"
                 )
             elif confianza == "normal":
-                lineas.append("Modelo estatal propio")
+                tokens.append("Modelo: Estatal propio")
 
-            hp_parts = []
             if metricas.get("seasonality_mode"):
-                hp_parts.append(f"Estac: {metricas['seasonality_mode']}")
+                tokens.append(f"Estac: {metricas['seasonality_mode']}")
             if metricas.get("changepoint_prior_scale") is not None:
-                hp_parts.append(f"CP: {metricas['changepoint_prior_scale']}")
+                tokens.append(f"CP: {metricas['changepoint_prior_scale']}")
             if metricas.get("seasonality_prior_scale") is not None:
-                hp_parts.append(f"SP: {metricas['seasonality_prior_scale']}")
-            if hp_parts:
-                lineas.append("  ·  ".join(hp_parts))
+                tokens.append(f"SP: {metricas['seasonality_prior_scale']}")
 
-            ficha = "\n".join(lineas)
+            ficha = "  |  ".join(tokens)
             fig.text(
-                0.5, 0.01, ficha,
+                0.515, 0.008, ficha,
                 ha="center", va="bottom",
-                fontsize=7, fontstyle="italic",
-                color="#666",
-                linespacing=1.5,
-                bbox=dict(
-                    boxstyle="round,pad=0.4", fc="#F8F8F8", ec="#ccc",
-                    alpha=0.9, lw=0.5,
-                ),
+                fontsize=8.5, family="sans-serif",
+                color="#999",
             )
 
         # ── Guardar ──────────────────────────────────────────────────────
