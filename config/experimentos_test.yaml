@@ -1,24 +1,26 @@
-# config/experimentos_prod_v5_full.yaml
-# PRODUCCIÓN v5 FINAL — 6 modelos × 3 padecimientos × 33 regiones × 3 sexos
-# Con MASE, sin atípico_2016, Newton protection, umbral 0.5
-# Estimado: ~10-12h en ml.g4dn.xlarge (~$10 USD)
-# ~297 series × 6 modelos = ~1,782 trials (menos omitidas por umbral)
+# config/experimentos_test.yaml
+# SMOKE TEST v5 — valida pipeline antes de producción
+# Scope: Depresión × (Nacional + Tabasco + Jalisco) × general = 3 combos × 6 modelos = 18 trials
+# Estimado: ~15-20 min en GPU
 
 experimentos:
-  nombre: epiforecast-prod-v5-full
-  descripcion: Produccion final — 6 modelos, 3 sexos, MASE, sin atipico_2016
+  nombre: epiforecast-test-v5
+  descripcion: Smoke test — pipeline completo con grids v5
 
   transformacion:
     log_transform: true
     tasa_por: 100000
     columna_poblacion: Total
 
-  # Solo COVID (atipico_2016 REMOVIDO — sin impacto medible en RMSE)
   periodos_atipicos:
     - holiday: pandemia_covid
       ds: "2020-03-23"
       lower_window: 0
       upper_window: 913
+    - holiday: atipico_2016
+      ds: "2016-05-16"
+      lower_window: 0
+      upper_window: 182
 
   cambios_regimen:
     - holiday: cambio_regimen_tabasco_2023
@@ -52,7 +54,6 @@ experimentos:
           - 5
 
       grids_por_padecimiento:
-        # Alzheimer: 1×2×3×1 = 6 combos
         Alzheimer:
           seasonality_mode:
             - multiplicative
@@ -66,7 +67,6 @@ experimentos:
           fourier_order:
             - 5
 
-        # Depresión: 2×3×4×1 = 24 combos
         Depresion:
           seasonality_mode:
             - additive
@@ -83,7 +83,6 @@ experimentos:
           fourier_order:
             - 5
 
-        # Parkinson: 2×3×3×1 = 18 combos
         Parkinson:
           seasonality_mode:
             - multiplicative
@@ -164,12 +163,13 @@ experimentos:
 
   scope:
     solo_regional: false
-    padecimientos: []      # Todos (Depresión, Alzheimer, Parkinson)
+    padecimientos:
+      - Depresión
     sexos:
       - incrementos_total
-      - incrementos_hombres
-      - incrementos_mujeres
-    # Sin filtro regiones = 32 estados + Nacional
+    regiones:
+      - Tabasco
+      - Jalisco
 
   cv:
     n_splits: 4
@@ -193,7 +193,7 @@ aws:
     region: us-east-1
     instance_type: ml.g4dn.xlarge
     instance_count: 1
-    max_runtime_seconds: 64800    # 18h safety margin
+    max_runtime_seconds: 7200
     volume_size_gb: 50
     output_s3: "s3://epiforecast-mx-data/experiments/"
     ecr_repository: epiforecast-mx-training

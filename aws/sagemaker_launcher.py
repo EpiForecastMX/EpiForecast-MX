@@ -23,8 +23,8 @@ from omegaconf import OmegaConf
 from pathlib import Path
 
 
-def cargar_config():
-    config = OmegaConf.load("config/experimentos.yaml")
+def cargar_config(config_path="config/experimentos.yaml"):
+    config = OmegaConf.load(config_path)
     return OmegaConf.to_container(config, resolve=True)
 
 
@@ -107,6 +107,28 @@ def launch_training_job(config, image_uri=None):
 
     session = sagemaker.Session()
 
+    # Métricas que SageMaker parsea de los logs en tiempo real
+    metric_definitions = [
+        # --- Cross-validation ---
+        {"Name": "cv_rmse",          "Regex": r"cv_rmse:\s+([0-9.]+)"},
+        {"Name": "cv_rmse_std",      "Regex": r"cv_rmse_std:\s+([0-9.]+)"},
+        # --- Test set (escala log) ---
+        {"Name": "test_rmse",        "Regex": r"test_rmse:\s+([0-9.]+)"},
+        {"Name": "test_mae",         "Regex": r"test_mae:\s+([0-9.]+)"},
+        {"Name": "test_mape",        "Regex": r"test_mape:\s+([0-9.]+)"},
+        # --- Test set (escala original) ---
+        {"Name": "test_rmse_orig",   "Regex": r"test_rmse_original_scale:\s+([0-9.]+)"},
+        {"Name": "test_mae_orig",    "Regex": r"test_mae_original_scale:\s+([0-9.]+)"},
+        {"Name": "test_mape_orig",   "Regex": r"test_mape_original_scale:\s+([0-9.]+)"},
+        # --- Timing ---
+        {"Name": "duracion_seg",     "Regex": r"duracion_segundos:\s+([0-9.]+)"},
+        # --- Per-fold breakdown ---
+        {"Name": "fold1_rmse",       "Regex": r"best_fold1_rmse:\s+([0-9.]+)"},
+        {"Name": "fold2_rmse",       "Regex": r"best_fold2_rmse:\s+([0-9.]+)"},
+        {"Name": "fold3_rmse",       "Regex": r"best_fold3_rmse:\s+([0-9.]+)"},
+        {"Name": "fold4_rmse",       "Regex": r"best_fold4_rmse:\s+([0-9.]+)"},
+    ]
+
     # Crear Estimator
     estimator = Estimator(
         image_uri=image_uri,
@@ -117,9 +139,12 @@ def launch_training_job(config, image_uri=None):
         max_run=aws_config.get("max_runtime_seconds", 86400),
         output_path=aws_config.get("output_s3", "s3://epiforecast-mx-data/experiments/"),
         sagemaker_session=session,
+        metric_definitions=metric_definitions,
+        enable_sagemaker_metrics=True,
         environment={
             "PYTHONPATH": "/opt/ml/code",
             "PYTHONUNBUFFERED": "1",
+            "AWS_DEFAULT_REGION": region,
         },
         # Config ya está baked en la imagen Docker (config/experimentos.yaml)
     )
@@ -144,10 +169,11 @@ def launch_training_job(config, image_uri=None):
 
     from datetime import datetime
     timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    job_name = f"epiforecast-{timestamp}"
 
     estimator.fit(
         inputs={"training": training_input},
-        job_name=f"epiforecast-{timestamp}",
+        job_name=job_name,
         wait=False,  # No bloquear — monitorear desde consola de SageMaker
     )
 
@@ -187,9 +213,26 @@ def main():
     parser.add_argument("--build", action="store_true", help="Build y push imagen a ECR")
     parser.add_argument("--launch", action="store_true", help="Lanzar Training Job")
     parser.add_argument("--local", action="store_true", help="Test local con Docker")
+    parser.add_argument(
+        "--config", default="config/experimentos.yaml",
+        help="Ruta al YAML de configuración (default: config/experimentos.yaml)",
+    )
     args = parser.parse_args()
 
-    config = cargar_config()
+    config_path = Path(args.config)
+    if not config_path.exists():
+        print(f"ERROR: No existe {config_path}")
+        sys.exit(1)
+
+    # Si se usa un config distinto al default, copiarlo como experimentos.yaml
+    # (Docker bake: COPY config/ config/ → lee config/experimentos.yaml)
+    default_path = Path("config/experimentos.yaml")
+    if config_path.resolve() != default_path.resolve():
+        import shutil
+        print(f"📋 Copiando {config_path} → {default_path} (para Docker bake)")
+        shutil.copy2(config_path, default_path)
+
+    config = cargar_config(str(default_path))
 
     if args.local:
         test_local(config)

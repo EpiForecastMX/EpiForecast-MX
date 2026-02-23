@@ -1,24 +1,26 @@
-# config/experimentos_prod_v5_full.yaml
-# PRODUCCIÓN v5 FINAL — 6 modelos × 3 padecimientos × 33 regiones × 3 sexos
-# Con MASE, sin atípico_2016, Newton protection, umbral 0.5
-# Estimado: ~10-12h en ml.g4dn.xlarge (~$10 USD)
-# ~297 series × 6 modelos = ~1,782 trials (menos omitidas por umbral)
+# config/experimentos_prod_v5.yaml
+# PRODUCCIÓN v5 — Comparación 6 modelos × 3 padecimientos × 32 estados + Nacional
+# Estimado: ~12h en ml.g4dn.xlarge (~$9.50 USD)
+# Grids v5 con Newton protection + umbral 0.5
 
 experimentos:
-  nombre: epiforecast-prod-v5-full
-  descripcion: Produccion final — 6 modelos, 3 sexos, MASE, sin atipico_2016
+  nombre: epiforecast-prod-v5
+  descripcion: Produccion v5 — 6 modelos, grids optimizados, Newton protection
 
   transformacion:
     log_transform: true
     tasa_por: 100000
     columna_poblacion: Total
 
-  # Solo COVID (atipico_2016 REMOVIDO — sin impacto medible en RMSE)
   periodos_atipicos:
     - holiday: pandemia_covid
       ds: "2020-03-23"
       lower_window: 0
       upper_window: 913
+    - holiday: atipico_2016
+      ds: "2016-05-16"
+      lower_window: 0
+      upper_window: 182
 
   cambios_regimen:
     - holiday: cambio_regimen_tabasco_2023
@@ -164,12 +166,10 @@ experimentos:
 
   scope:
     solo_regional: false
-    padecimientos: []      # Todos (Depresión, Alzheimer, Parkinson)
+    padecimientos: []      # Vacío = todos (Depresión, Alzheimer, Parkinson)
     sexos:
       - incrementos_total
-      - incrementos_hombres
-      - incrementos_mujeres
-    # Sin filtro regiones = 32 estados + Nacional
+    # Sin filtro de regiones = todas las 32 + Nacional
 
   cv:
     n_splits: 4

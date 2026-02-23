@@ -1,4 +1,4 @@
 # aws/requirements_aws.txt
 # Dependencias adicionales para ejecución en SageMaker
-sagemaker>=2.200.0
+sagemaker>=2.200.0,<3.0.0
 sagemaker-training>=4.7.0

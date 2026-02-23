@@ -30,8 +30,48 @@ from sklearn.model_selection import TimeSeriesSplit
 
 from src.configuraciones.config_params import logger
 
+# Suprimir mensajes de PyTorch Lightning / LitLogger (tip de litlogger, progress bars, etc.)
+for _mod in ("pytorch_lightning", "lightning.pytorch", "lightning.fabric", "lightning", "litlogger"):
+    logging.getLogger(_mod).setLevel(logging.WARNING)
+
 
 # ─── Features temporales para modelos tabulares ───────────────────────────────
+
+
+def calcular_mase(y_true, y_pred, y_train, season=52):
+    """
+    MASE — Mean Absolute Scaled Error (Hyndman & Koehler, 2006).
+
+    Compara el MAE del modelo contra un baseline naive estacional (lag=season).
+    MASE < 1.0 → modelo supera al naive; MASE > 1.0 → peor que naive.
+
+    Args:
+        y_true: valores reales del periodo de evaluación
+        y_pred: predicciones del modelo
+        y_train: serie de entrenamiento (para calcular el naive baseline)
+        season: lag estacional (52 = anual para datos semanales)
+
+    Returns:
+        float o None si el denominador es 0 (serie constante)
+    """
+    y_true = np.asarray(y_true)
+    y_pred = np.asarray(y_pred)
+    y_train = np.asarray(y_train)
+
+    if len(y_train) <= season:
+        return None
+
+    # MAE del modelo
+    mae_model = np.mean(np.abs(y_true - y_pred))
+
+    # MAE del naive estacional (predice valor de hace `season` periodos)
+    naive_errors = np.abs(y_train[season:] - y_train[:-season])
+    mae_naive = np.mean(naive_errors)
+
+    if mae_naive == 0 or np.isnan(mae_naive):
+        return None
+
+    return float(mae_model / mae_naive)
 
 
 def crear_features_temporales(df, lags=None, rolling_windows=None):
@@ -112,14 +152,17 @@ class ModeloBase(ABC):
         return joblib.load(path)
 
     def cross_validate(self, train_df, param_grid, n_splits=4, test_size=53,
-                       pesos_folds=None):
+                       pesos_folds=None, cv_timeout=0, cv_timeout_por_fold=0):
         """
-        CV temporal con grid search y ponderación opcional de folds.
+        CV temporal con grid search, ponderación opcional y timeout por combo/fold.
 
         Args:
             pesos_folds: lista de pesos por fold (ej. [0.5, 0.75, 1.0, 1.25]).
-                         Fold 1 (COVID) pesa menos, folds recientes pesan más.
-                         None = promedio simple (sin ponderación).
+            cv_timeout: seg máx acumulados por combo. 0 = sin límite.
+            cv_timeout_por_fold: seg máx por fold individual. 0 = sin límite.
+                Si un fold excede este tiempo (probable Newton fallback),
+                se descarta el combo y se marcan como "Newton-prone" los combos
+                con changepoint_prior_scale ≤ al actual.
 
         Returns:
             (mejores_params, mejor_rmse, historial)
@@ -131,30 +174,61 @@ class ModeloBase(ABC):
             combos = list(itertools.product(*param_grid.values()))
             param_list = [dict(zip(keys, v)) for v in combos]
 
+        # ── Ordenar combos: cp descendente (los cp altos convergen con L-BFGS,
+        #    los cp bajos tienden a Newton) → evalúa los seguros primero ──
+        if any("changepoint_prior_scale" in p for p in param_list):
+            param_list.sort(
+                key=lambda p: p.get("changepoint_prior_scale", 0), reverse=True
+            )
+
         tscv = TimeSeriesSplit(n_splits=n_splits, test_size=test_size)
         best_rmse = float("inf")
         best_params = {}
         historial = []
+        newton_cp_threshold = None  # cp ≤ este valor → skip (Newton-prone)
 
         logger.info(
             f"[{self.nombre}] {len(param_list)} combinaciones × {n_splits} folds "
             f"= {len(param_list) * n_splits} evaluaciones"
             + (f" (ponderado: {pesos_folds})" if pesos_folds else "")
+            + (" (ordenado por cp desc)" if any("changepoint_prior_scale" in p for p in param_list) else "")
         )
 
         for i, params in enumerate(param_list):
+            # ── Newton-prone: skip combos con cp ≤ umbral detectado ──
+            cp_actual = params.get("changepoint_prior_scale")
+            if newton_cp_threshold is not None and cp_actual is not None:
+                if cp_actual <= newton_cp_threshold:
+                    logger.info(
+                        f"[{self.nombre}] ⏭️ Skip combo {i + 1} (cp={cp_actual} ≤ "
+                        f"Newton threshold {newton_cp_threshold}): {params}"
+                    )
+                    continue
+
             fold_rmses = []
+            fold_mases = []
+            timed_out = False
+            t_combo = time.time()
 
             for fold_idx, (train_idx, val_idx) in enumerate(tscv.split(train_df)):
                 fold_train = train_df.iloc[train_idx]
                 fold_val = train_df.iloc[val_idx]
 
+                t_fold = time.time()
                 try:
                     self.set_params(params)
                     self.fit(fold_train)
                     preds = self.predict(fold_val)
                     rmse = np.sqrt(mean_squared_error(fold_val["y"].values, preds))
                     fold_rmses.append(rmse)
+
+                    # MASE por fold
+                    mase = calcular_mase(
+                        fold_val["y"].values, preds,
+                        fold_train["y"].values, season=52
+                    )
+                    if mase is not None:
+                        fold_mases.append(mase)
                     logger.debug(
                         f"[{self.nombre}] Iter {i + 1} Fold {fold_idx + 1}: RMSE={rmse:.4f}"
                     )
@@ -162,7 +236,39 @@ class ModeloBase(ABC):
                     logger.warning(f"[{self.nombre}] Error en iter {i + 1} fold {fold_idx + 1}: {e}")
                     continue
 
-            if fold_rmses:
+                fold_duration = time.time() - t_fold
+
+                # ── Per-fold budget: si un solo fold > umbral → Newton seguro ──
+                if cv_timeout_por_fold and fold_duration > cv_timeout_por_fold:
+                    logger.warning(
+                        f"[{self.nombre}] ⏰ Fold {fold_idx + 1} tardó {fold_duration:.0f}s > "
+                        f"{cv_timeout_por_fold}s (probable Newton). Skip combo: {params}"
+                    )
+                    # Marcar Newton-prone: cp ≤ actual van a fallar también
+                    if cp_actual is not None:
+                        newton_cp_threshold = cp_actual
+                        logger.warning(
+                            f"[{self.nombre}] 🔒 Newton-prone: cp ≤ {newton_cp_threshold} "
+                            f"serán saltados para esta serie"
+                        )
+                    timed_out = True
+                    break
+
+                # ── Timeout acumulado por combo ──
+                if cv_timeout and (time.time() - t_combo) > cv_timeout:
+                    logger.warning(
+                        f"[{self.nombre}] ⏰ Timeout CV: {time.time() - t_combo:.0f}s > {cv_timeout}s "
+                        f"en fold {fold_idx + 1}/{n_splits}. Skip combo: {params}"
+                    )
+                    if cp_actual is not None:
+                        newton_cp_threshold = cp_actual
+                    timed_out = True
+                    break
+
+            if timed_out:
+                # Combo descartada por timeout
+                continue
+            elif fold_rmses:
                 # Promedio ponderado si hay pesos, simple si no
                 if pesos_folds and len(fold_rmses) == len(pesos_folds):
                     weights = np.array(pesos_folds[:len(fold_rmses)])
@@ -171,11 +277,24 @@ class ModeloBase(ABC):
                     mean_rmse = float(np.mean(fold_rmses))
 
                 std_rmse = float(np.std(fold_rmses))
+
+                # MASE promedio (mismos pesos que RMSE)
+                if fold_mases:
+                    if pesos_folds and len(fold_mases) == len(pesos_folds):
+                        weights_m = np.array(pesos_folds[:len(fold_mases)])
+                        mean_mase = float(np.average(fold_mases, weights=weights_m))
+                    else:
+                        mean_mase = float(np.mean(fold_mases))
+                else:
+                    mean_mase = None
+
                 historial.append({
                     "params": params,
                     "mean_rmse": mean_rmse,
                     "std_rmse": std_rmse,
+                    "mean_mase": mean_mase,
                     "fold_rmses": fold_rmses,
+                    "fold_mases": fold_mases,
                     "folds_completados": len(fold_rmses),
                 })
                 if mean_rmse < best_rmse:
@@ -206,10 +325,14 @@ class ModeloProphet(ModeloBase):
 
     nombre = "Prophet"
 
-    def __init__(self, periodos_atipicos=None, base_params=None):
+    def __init__(self, periodos_atipicos=None, base_params=None,
+                 fourier_order_regional=None, n_changepoints_regional=None):
         self._params = {}
         self._model = None
         self._periodos_atipicos = periodos_atipicos
+        self._fourier_order_regional = fourier_order_regional
+        self._n_changepoints_regional = n_changepoints_regional
+        self._is_regional = False  # Set by ejecutar() based on region
         self._base_params = base_params or {
             "yearly_seasonality": False,
             "weekly_seasonality": False,
@@ -231,9 +354,17 @@ class ModeloProphet(ModeloBase):
 
         # Separar fourier_order del resto de params (no es parámetro de Prophet())
         prophet_params = {k: v for k, v in self._params.items() if k != "fourier_order"}
-        fourier_order = self._params.get("fourier_order", 10)
+        fourier_order = self._params.get("fourier_order", 5)
 
-        model = Prophet(holidays=holidays, **self._base_params, **prophet_params)
+        # Regional: reducir fourier_order y n_changepoints para evitar overfitting
+        if self._is_regional and self._fourier_order_regional is not None:
+            fourier_order = self._fourier_order_regional
+        
+        base = dict(self._base_params)
+        if self._is_regional and self._n_changepoints_regional is not None:
+            base["n_changepoints"] = self._n_changepoints_regional
+
+        model = Prophet(holidays=holidays, **base, **prophet_params)
 
         # Estacionalidad anual custom con Fourier configurable
         # period=52.18 = 365.25/7 (anual exacto en semanas)
@@ -355,7 +486,7 @@ class ModeloSARIMAX(ModeloBase):
         return result["yhat"].fillna(0).values
 
     def cross_validate(self, train_df, param_grid, n_splits=4, test_size=53,
-                       pesos_folds=None):
+                       pesos_folds=None, cv_timeout=0, cv_timeout_por_fold=0):
         """CV especial para SARIMAX: order y seasonal_order son tuplas, no escalares."""
         orders = param_grid.get("order", [(1, 1, 1)])
         seasonal_orders = param_grid.get("seasonal_order", [(0, 0, 0, 0)])
@@ -546,7 +677,7 @@ class ModeloTFT(ModeloBase):
         return np.pad(preds, (0, n_steps - len(preds)), constant_values=preds[-1])
 
     def cross_validate(self, train_df, param_grid, n_splits=4, test_size=53,
-                       pesos_folds=None):
+                       pesos_folds=None, cv_timeout=0, cv_timeout_por_fold=0):
         self._h = test_size
         result = super().cross_validate(train_df, param_grid, n_splits, test_size,
                                         pesos_folds=pesos_folds)
@@ -643,7 +774,7 @@ class ModeloDeepAR(ModeloBase):
         return np.pad(preds, (0, n_steps - len(preds)), constant_values=preds[-1])
 
     def cross_validate(self, train_df, param_grid, n_splits=4, test_size=53,
-                       pesos_folds=None):
+                       pesos_folds=None, cv_timeout=0, cv_timeout_por_fold=0):
         self._h = test_size
         result = super().cross_validate(train_df, param_grid, n_splits, test_size,
                                         pesos_folds=pesos_folds)
@@ -782,7 +913,7 @@ class ModeloLightGBM_LSTM(ModeloBase):
         return weight * lgbm_preds + (1 - weight) * lstm_preds
 
     def cross_validate(self, train_df, param_grid, n_splits=4, test_size=53,
-                       pesos_folds=None):
+                       pesos_folds=None, cv_timeout=0, cv_timeout_por_fold=0):
         self._h = test_size
         result = super().cross_validate(train_df, param_grid, n_splits, test_size,
                                         pesos_folds=pesos_folds)
@@ -915,7 +1046,7 @@ class ModeloNeuralProphet(ModeloBase):
         return np.pad(preds, (0, n_steps - len(preds)), constant_values=preds[-1])
 
     def cross_validate(self, train_df, param_grid, n_splits=4, test_size=53,
-                       pesos_folds=None):
+                       pesos_folds=None, cv_timeout=0, cv_timeout_por_fold=0):
         # Ajustar n_forecasts al test_size de CV
         if param_grid and "n_forecasts" not in param_grid:
             for combo_key in list(param_grid.keys()):
@@ -959,15 +1090,23 @@ class ExperimentTracker:
 
         if self.usar_sagemaker:
             try:
+                import boto3
                 from sagemaker.experiments.run import Run
+                from sagemaker.session import Session
+
+                # Crear session con región explícita
+                region = os.environ.get("AWS_REGION", os.environ.get("AWS_DEFAULT_REGION", "us-east-1"))
+                boto_session = boto3.Session(region_name=region)
+                self._sm_session = Session(boto_session=boto_session)
 
                 self._run_sagemaker = Run(
                     experiment_name=self.nombre,
                     run_name=nombre_trial,
+                    sagemaker_session=self._sm_session,
                 )
                 self._run_sagemaker.__enter__()
-            except ImportError:
-                logger.warning("sagemaker SDK no disponible, usando solo tracking local")
+            except Exception as e:
+                logger.warning(f"SageMaker Experiments no disponible ({e}), usando solo tracking local")
                 self.usar_sagemaker = False
 
     def log_parametro(self, nombre, valor):
@@ -1069,15 +1208,28 @@ class ComparadorModelos:
         self.ponderar_folds = cv_conf.get("ponderar_folds", False)
         self.pesos_folds = cv_conf.get("pesos_folds", None)
 
+        # CV timeout por combo (evita Newton fallbacks)
+        prophet_conf = config_experimentos.get("modelos", {}).get("prophet", {})
+        self.cv_timeout = prophet_conf.get("cv_timeout_por_combo", 0)
+        self.cv_timeout_fold = prophet_conf.get("cv_timeout_por_fold", 0)
+
+        # Umbral mínimo semanal para series insuficientes
+        self.umbral_minimo_semanal = prophet_conf.get("umbral_minimo_semanal", 1.0)
+
         # Log-transform config
         transf = config_experimentos.get("transformacion", {})
         self.log_transform = transf.get("log_transform", True)
 
         tracking_conf = config_experimentos.get("tracking", {})
+        # Auto-detectar SageMaker: si existe /opt/ml → estamos en container
+        en_sagemaker = Path("/opt/ml/model").exists()
+        usar_sm = tracking_conf.get("sagemaker", False) or en_sagemaker
+        if en_sagemaker:
+            logger.info("🔬 SageMaker Experiments activado (detectado entorno /opt/ml)")
         self.tracker = ExperimentTracker(
             nombre_experimento=config_experimentos.get("nombre", "epiforecast-exp"),
             directorio=tracking_conf.get("directorio_resultados", "./experiments"),
-            usar_sagemaker=tracking_conf.get("sagemaker", False),
+            usar_sagemaker=usar_sm,
         )
 
     def _obtener_grid_prophet(self, padecimiento=None):
@@ -1117,8 +1269,13 @@ class ComparadorModelos:
 
         if config_modelos.get("prophet", {}).get("activo", False):
             grid = self._obtener_grid_prophet(padecimiento)
+            prophet_conf = config_modelos["prophet"]
             modelos.append((
-                ModeloProphet(periodos_atipicos=periodos_atipicos),
+                ModeloProphet(
+                    periodos_atipicos=periodos_atipicos,
+                    fourier_order_regional=prophet_conf.get("fourier_order_regional"),
+                    n_changepoints_regional=prophet_conf.get("n_changepoints_regional"),
+                ),
                 grid,
             ))
 
@@ -1212,15 +1369,23 @@ class ComparadorModelos:
 
         return modelos
 
-    def _serie_es_viable(self, df, umbral_zeros=0.95):
+    def _serie_es_viable(self, df, umbral_zeros=0.95, umbral_promedio=1.0):
         """
-        Filtra series con >95% zeros (ej. BCS Alzheimer).
-        RMSE=0 en estas series es engañoso, no deberían entrenarse.
+        Filtra series insuficientes:
+        1. >95% zeros (ej. BCS Alzheimer) → RMSE=0 engañoso
+        2. Promedio < 1 caso/semana → datos insuficientes para entrenar
+
+        El umbral_promedio se aplica sobre y ANTES de log-transform.
         """
         proporcion_zeros = (df["y"] == 0).sum() / len(df)
         if proporcion_zeros > umbral_zeros:
-            return False, proporcion_zeros
-        return True, proporcion_zeros
+            return False, f"{proporcion_zeros:.0%} zeros"
+
+        promedio = df["y"].mean()
+        if promedio < umbral_promedio:
+            return False, f"promedio={promedio:.2f} < {umbral_promedio}"
+
+        return True, "OK"
 
     def ejecutar(self, df, padecimiento, sexo, region=None, periodos_atipicos=None):
         """
@@ -1239,14 +1404,19 @@ class ComparadorModelos:
         nivel = region or "Nacional"
         logger.info(f"══════ Comparando modelos | {padecimiento} | {nivel} | {sexo} ══════")
 
-        # ── Filtrar series vacías ──
-        es_viable, pct_zeros = self._serie_es_viable(df)
+        # ── Filtrar series insuficientes ──
+        es_viable, motivo = self._serie_es_viable(
+            df, umbral_promedio=self.umbral_minimo_semanal
+        )
         if not es_viable:
             logger.warning(
-                f"⚠️ Serie {padecimiento}/{nivel}/{sexo} tiene {pct_zeros:.0%} zeros — "
-                f"OMITIDA (umbral >95%). RMSE=0 sería engañoso."
+                f"⚠️ Serie {padecimiento}/{nivel}/{sexo} — {motivo} — "
+                f"OMITIDA (serie insuficiente)."
             )
             return []
+
+        # Calcular promedio semanal antes de transformaciones
+        promedio_semanal = float(df["y"].mean())
 
         # ── Log-transform ──
         if self.log_transform:
@@ -1274,6 +1444,10 @@ class ComparadorModelos:
             trial_name = f"{modelo.nombre}_{padecimiento}_{nivel}_{sexo}"
             self.tracker.iniciar_trial(trial_name)
 
+            # Regional flag para Prophet (fourier_order y n_changepoints reducidos)
+            if hasattr(modelo, "_is_regional"):
+                modelo._is_regional = region is not None
+
             self.tracker.log_parametros({
                 "modelo": modelo.nombre,
                 "padecimiento": padecimiento,
@@ -1291,10 +1465,16 @@ class ComparadorModelos:
             best_rmse = float("nan")
 
             try:
+                # CV timeout: solo aplica a Prophet (evita Newton fallbacks)
+                timeout = self.cv_timeout if modelo.nombre == "Prophet" else 0
+                fold_timeout = self.cv_timeout_fold if modelo.nombre == "Prophet" else 0
+
                 # Cross-validation con grid search (ponderado si configurado)
                 best_params, best_rmse, historial = modelo.cross_validate(
                     train_df, param_grid, self.n_splits, self.test_size,
                     pesos_folds=pesos,
+                    cv_timeout=timeout,
+                    cv_timeout_por_fold=fold_timeout,
                 )
 
                 # ── Guardar historial completo de grid search ──
@@ -1315,11 +1495,28 @@ class ComparadorModelos:
 
                 # Entrenar modelo final con mejores parámetros
                 modelo.set_params(best_params)
-                modelo.fit(train_df)
+                try:
+                    modelo.fit(train_df)
+                except Exception as fit_err:
+                    # L-BFGS fallback: reintentar con cp=0.05 (más estable)
+                    if modelo.nombre == "Prophet":
+                        logger.warning(
+                            f"[Prophet] L-BFGS falló en fit final, "
+                            f"reintentando con cp=0.05: {fit_err}"
+                        )
+                        fallback_params = {**best_params, "changepoint_prior_scale": 0.05}
+                        modelo.set_params(fallback_params)
+                        modelo.fit(train_df)
+                    else:
+                        raise
 
                 self.tracker.log_metrica("cv_rmse", best_rmse)
                 if historial_sorted:
                     self.tracker.log_metrica("cv_rmse_std", historial_sorted[0]["std_rmse"])
+                    # MASE del mejor combo
+                    best_mase = historial_sorted[0].get("mean_mase")
+                    if best_mase is not None:
+                        self.tracker.log_metrica("cv_mase", best_mase)
 
                 # Evaluar en test set si hay datos
                 if len(test_df) > 0:
@@ -1331,11 +1528,12 @@ class ComparadorModelos:
 
                     mask_nonzero = y_true != 0
                     if mask_nonzero.any():
-                        test_mape = (
+                        test_mape = min(
                             mean_absolute_percentage_error(
                                 y_true[mask_nonzero], preds[mask_nonzero]
                             )
-                            * 100
+                            * 100,
+                            999.0,  # Clip: evita MAPE = billones% con log-transform
                         )
                     else:
                         test_mape = float("nan")
@@ -1343,6 +1541,13 @@ class ComparadorModelos:
                     self.tracker.log_metrica("test_rmse", test_rmse)
                     self.tracker.log_metrica("test_mae", test_mae)
                     self.tracker.log_metrica("test_mape", test_mape)
+
+                    # MASE en test set
+                    test_mase = calcular_mase(
+                        y_true, preds, train_df["y"].values, season=52
+                    )
+                    if test_mase is not None:
+                        self.tracker.log_metrica("test_mase", test_mase)
 
                     # Si log-transform, también reportar métricas en escala original
                     if self.log_transform and "y_original" in test_df.columns:
@@ -1357,13 +1562,23 @@ class ComparadorModelos:
 
                         mask_orig = y_orig != 0
                         if mask_orig.any():
-                            test_mape_orig = (
+                            test_mape_orig = min(
                                 mean_absolute_percentage_error(
                                     y_orig[mask_orig], preds_orig[mask_orig]
                                 )
-                                * 100
+                                * 100,
+                                999.0,
                             )
                             self.tracker.log_metrica("test_mape_original_scale", test_mape_orig)
+
+                        # MASE original scale
+                        if "y_original" in train_df.columns:
+                            test_mase_orig = calcular_mase(
+                                y_orig, preds_orig,
+                                train_df["y_original"].values, season=52
+                            )
+                            if test_mase_orig is not None:
+                                self.tracker.log_metrica("test_mase_original_scale", test_mase_orig)
 
                     # ── Guardar predicciones para gráficas ──
                     preds_dir = self.tracker.directorio / "predicciones"
@@ -1409,6 +1624,8 @@ class ComparadorModelos:
                 "best_params": best_params,
                 "historial_grid": historial,
                 "cv_rmse": best_rmse,
+                "promedio_semanal": round(promedio_semanal, 2),
+                "confianza": "normal",
                 "_modelo_obj": modelo,  # Referencia temporal para guardar top 2
             })
 

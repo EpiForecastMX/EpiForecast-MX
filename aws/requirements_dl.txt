@@ -5,10 +5,8 @@
 # Instalar DESPUÉS de requirements.txt:
 #   pip install -r requirements.txt
 #   pip install -r aws/requirements_dl.txt
-#
-# En GPU, instalar torch con CUDA primero:
-#   pip install torch --index-url https://download.pytorch.org/whl/cu121
 
 packaging<26             # Compatibilidad con mlflow/streamlit
 neuralforecast>=1.7.0    # TFT, DeepAR, LSTM (incluye torch + pytorch-lightning)
 lightgbm>=4.0.0          # LightGBM para modelo híbrido
+# neuralprophet>=0.8.0   # DESACTIVADO: conflicto pytorch-lightning <2.0 vs >=2.0

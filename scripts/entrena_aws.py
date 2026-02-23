@@ -107,10 +107,17 @@ def main():
     scope = config_exp.get("scope", {})
 
     if scope.get("padecimientos"):
-        padecimientos = [p for p in padecimientos if p in scope["padecimientos"]]
+        # Normalizar acentos para comparar (YAML: Depresion, datos: Depresión)
+        scope_norm = [normalizar(p) for p in scope["padecimientos"]]
+        padecimientos = [p for p in padecimientos if normalizar(p) in scope_norm]
 
     if scope.get("sexos"):
         valores_sexo = [s for s in valores_sexo if s in scope["sexos"]]
+
+    # Filtrar regiones específicas (para pruebas rápidas)
+    if scope.get("regiones"):
+        scope_reg_norm = [normalizar(r) for r in scope["regiones"]]
+        regiones = [r for r in regiones if normalizar(r) in scope_reg_norm]
 
     if scope.get("max_regiones"):
         regiones = regiones[: scope["max_regiones"]]
@@ -122,7 +129,29 @@ def main():
     if not periodos_atipicos_raw:
         # Fallback a config principal
         periodos_atipicos_raw = conf.get("peridos_atipicos", [])
-    periodos_atipicos = periodos_atipicos_raw
+    periodos_atipicos_base = periodos_atipicos_raw
+
+    # Cambios de régimen condicionales por entidad/padecimiento
+    cambios_regimen = config_exp.get("cambios_regimen", [])
+
+    def _holidays_para(padecimiento, region=None):
+        """Combina holidays base + cambios_regimen aplicables."""
+        holidays = list(periodos_atipicos_base)
+        for cr in cambios_regimen:
+            cr_entidad = cr.get("entidad")
+            cr_padecimiento = cr.get("padecimiento")
+            if cr_entidad and region and cr_entidad.lower() != region.lower():
+                continue
+            if cr_padecimiento and cr_padecimiento != padecimiento:
+                continue
+            # Solo pasar campos que Prophet necesita
+            holidays.append({
+                "holiday": cr["holiday"],
+                "ds": cr["ds"],
+                "lower_window": cr.get("lower_window", 0),
+                "upper_window": cr.get("upper_window", 0),
+            })
+        return holidays
 
     # Crear comparador
     comparador = ComparadorModelos(config_exp)
@@ -172,7 +201,7 @@ def main():
                     padecimiento=padecimiento,
                     sexo=mapeo.get(sexo, sexo),
                     region=None,
-                    periodos_atipicos=periodos_atipicos,
+                    periodos_atipicos=_holidays_para(padecimiento, region=None),
                 )
 
         # ── Regional ──
@@ -202,7 +231,7 @@ def main():
                     padecimiento=padecimiento,
                     sexo=mapeo.get(sexo, sexo),
                     region=normalizar(region),
-                    periodos_atipicos=periodos_atipicos,
+                    periodos_atipicos=_holidays_para(padecimiento, region=region),
                 )
 
     # Guardar todos los resultados
