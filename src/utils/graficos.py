@@ -252,7 +252,7 @@ class GraficosHelper:
         IQR = Q3 - Q1
         out_mask = (y < Q1 - 1.5 * IQR) | (y > Q3 + 1.5 * IQR)
         outliers = serie[out_mask]
-        fecha_max_datos = serie["ds"].max()
+        fecha_max_datos = pd.Timestamp(conf["FECHA_CORTE_ENTRENAMIENTO"])
         fecha_max_fc = forecast["ds"].max()
 
         # ── Paleta de colores ────────────────────────────────────────────
