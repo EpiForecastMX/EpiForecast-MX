@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conclusiones del Proyecto | EpiForecast-MX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3"></script>
+<style>
+:root{
+  --burgundy:#9B2242;--dark-burgundy:#6F1D46;--teal:#00524E;--dark-teal:#173F35;
+  --gold:#B58500;--cream:#E8D5B5;--cream-light:#F5EDE0;--cream-pale:#FAF6F0;
+  --cool-gray:#97999B;--neutral-black:#231F20;
+  --burgundy-light:#D4758B;--teal-light:#4A9E9A;--gold-light:#D4B24A;
+  --font-display:'DM Serif Display',Georgia,serif;
+  --font-body:'Source Sans 3','Source Sans Pro',sans-serif;
+  --font-mono:'JetBrains Mono','Fira Code',monospace;
+  --shadow-sm:0 2px 8px rgba(0,0,0,.06);--shadow-md:0 8px 24px rgba(0,0,0,.06);
+  --shadow-lg:0 16px 48px rgba(0,0,0,.06);--radius:16px;--radius-sm:10px;
+  --prophet:#00524E;--tft:#9B2242;--deepar:#B58500;--lgbm:#2E7D32;--xgb:#E65100;--ridge:#5C6BC0;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-body);background:var(--cream-pale);color:var(--neutral-black);line-height:1.7;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.025;pointer-events:none;z-index:0}
+.container{max-width:1200px;margin:0 auto;padding:0 2rem;position:relative;z-index:1}
+section{padding:4rem 0}
+.section-title{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.5rem);margin-bottom:.5rem;color:var(--dark-teal)}
+.section-sub{color:var(--cool-gray);font-size:1rem;margin-bottom:2.5rem}
+code{font-family:var(--font-mono);font-size:.85em;background:rgba(0,82,78,.08);color:var(--dark-teal);border-radius:4px;padding:.1rem .4rem}
+
+/* Nav */
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(23,63,53,.96);backdrop-filter:blur(16px);border-bottom:1px solid rgba(232,213,181,.1);padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between}
+nav .logo{color:var(--cream);font-family:var(--font-display);font-size:1.3rem;letter-spacing:.02em;text-decoration:none}
+nav .nav-links{display:flex;gap:1.5rem;flex-wrap:wrap}
+nav .nav-links a{color:rgba(232,213,181,.7);text-decoration:none;font-size:.85rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;transition:color .2s}
+nav .nav-links a:hover{color:var(--cream)}
+nav .nav-links a.ext{color:var(--gold-light)}
+nav .nav-links a.sep{border-left:1px solid rgba(232,213,181,.25);padding-left:1.25rem}
+
+/* Hero */
+.hero{padding:10rem 2rem 6rem;text-align:center;background:linear-gradient(170deg,#0a1a16 0%,var(--dark-teal) 30%,var(--teal) 60%,rgba(0,82,78,.85) 100%);color:var(--cream-pale);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 800px 600px at 30% 20%,rgba(181,133,0,.12),transparent),radial-gradient(ellipse 600px 500px at 70% 80%,rgba(155,34,66,.08),transparent);pointer-events:none}
+.hero::after{content:'';position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.04;pointer-events:none}
+.hero h1{font-family:var(--font-display);font-size:clamp(2.5rem,6vw,4.5rem);line-height:1.1;margin-bottom:1rem;position:relative}
+.hero h1 em{font-style:italic;color:var(--gold-light)}
+.hero .subtitle{font-size:clamp(1rem,2vw,1.25rem);opacity:.8;font-weight:300;margin-bottom:1rem;position:relative}
+.hero .subtitle2{font-size:clamp(.85rem,1.5vw,1rem);opacity:.5;font-weight:400;margin-bottom:3rem;position:relative;font-family:var(--font-mono)}
+.hero-kpis{display:flex;justify-content:center;gap:1.5rem;flex-wrap:wrap;position:relative}
+.hero-kpi{background:rgba(255,255,255,.07);border:1px solid rgba(232,213,181,.12);border-radius:var(--radius);padding:1.5rem 2rem;backdrop-filter:blur(8px);min-width:140px;transition:transform .3s,box-shadow .3s}
+.hero-kpi:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.2)}
+.hero-kpi .value{font-family:var(--font-display);font-size:2.5rem;display:block;background:linear-gradient(135deg,var(--cream),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-kpi .label{font-size:.8rem;text-transform:uppercase;letter-spacing:1px;opacity:.6}
+
+/* TOC */
+.toc{background:#fff;border-radius:var(--radius);padding:1.5rem 2rem;box-shadow:var(--shadow-md);margin-bottom:3rem}
+.toc h3{font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:1rem}
+.toc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.5rem}
+.toc a{color:var(--teal);text-decoration:none;font-size:.88rem;padding:.3rem .5rem;border-radius:6px;transition:background .2s;display:block}
+.toc a:hover{background:var(--cream-pale)}
+.toc a .toc-num{font-family:var(--font-mono);font-size:.75rem;color:var(--cool-gray);margin-right:.3rem}
+
+/* Cards */
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:2rem}
+.card-grid-3{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.5rem}
+.card{background:#fff;border-radius:var(--radius);padding:2rem;box-shadow:var(--shadow-md);border:1px solid rgba(0,0,0,.04);transition:transform .3s,box-shadow .3s;overflow:hidden}
+.card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+.card-header{display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:2px solid var(--cream-light)}
+.card-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;box-shadow:0 0 8px currentColor}
+.card-title{font-family:var(--font-display);font-size:1.4rem}
+.card-metrics{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.metric{background:var(--cream-pale);border-radius:var(--radius-sm);padding:.75rem 1rem}
+.metric-value{font-family:var(--font-mono);font-size:1.4rem;font-weight:500}
+.metric-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.5px;color:var(--cool-gray)}
+
+/* Guide cards */
+.guide-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.5rem;margin-top:1.5rem}
+.guide-card{background:#fff;border-radius:var(--radius);padding:1.5rem 1.75rem;box-shadow:var(--shadow-sm);border-left:4px solid var(--teal);transition:transform .3s,box-shadow .3s}
+.guide-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.guide-card h3{font-family:var(--font-display);font-size:1.15rem;margin-bottom:.5rem;color:var(--dark-teal)}
+.guide-card p{font-size:.92rem;color:#555;line-height:1.7}
+.guide-card.gold{border-left-color:var(--gold)}
+.guide-card.burgundy{border-left-color:var(--burgundy)}
+.guide-card.green{border-left-color:#2E7D32}
+
+/* Concept cards */
+.concept-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.5rem}
+.concept-card{background:#fff;border-radius:var(--radius);padding:1.5rem 1.75rem;box-shadow:var(--shadow-sm);border-left:4px solid var(--teal)}
+.concept-card h4{font-family:var(--font-display);font-size:1.1rem;margin-bottom:.5rem;color:var(--dark-teal)}
+.concept-card p{font-size:.88rem;color:#555;line-height:1.7}
+.concept-card.gold{border-left-color:var(--gold)}
+.concept-card.burgundy{border-left-color:var(--burgundy)}
+.concept-card.green{border-left-color:#2E7D32}
+
+/* Stat boxes */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1rem;margin:2rem 0}
+.stat-box{background:#fff;border-radius:var(--radius-sm);padding:1.2rem;text-align:center;box-shadow:var(--shadow-sm);border-top:3px solid var(--teal)}
+.stat-box .big-num{font-family:var(--font-display);font-size:2rem;color:var(--dark-teal);line-height:1.1}
+.stat-box .stat-desc{font-size:.75rem;color:var(--cool-gray);margin-top:.3rem;text-transform:uppercase;letter-spacing:.5px}
+.stat-box.burgundy{border-top-color:var(--burgundy)}
+.stat-box.burgundy .big-num{color:var(--dark-burgundy)}
+.stat-box.gold{border-top-color:var(--gold)}
+.stat-box.gold .big-num{color:var(--gold)}
+.stat-box.green{border-top-color:#2E7D32}
+.stat-box.green .big-num{color:#1a7431}
+
+/* Callout */
+.callout{background:linear-gradient(135deg,rgba(0,82,78,.06),rgba(181,133,0,.04));border:1px solid rgba(0,82,78,.15);border-left:4px solid var(--teal);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:1.5rem 2rem;margin:2rem 0;font-size:.95rem}
+.callout-gold{border-left-color:var(--gold);background:linear-gradient(135deg,rgba(181,133,0,.06),rgba(155,34,66,.03))}
+.callout-burgundy{border-left-color:var(--burgundy);background:linear-gradient(135deg,rgba(155,34,66,.06),rgba(0,82,78,.03))}
+.callout strong{color:var(--dark-teal)}
+.callout-gold strong{color:var(--gold)}
+.callout-burgundy strong{color:var(--burgundy)}
+
+/* Badge */
+.badge{display:inline-block;padding:.2rem .7rem;border-radius:100px;font-family:var(--font-mono);font-size:.8rem;font-weight:500}
+.badge-green{background:#e6f4ea;color:#1a7431}
+.badge-yellow{background:#fef7e0;color:#8a6d00}
+.badge-red{background:#fde8e8;color:#b91c1c}
+.badge-teal{background:rgba(0,82,78,.1);color:var(--teal)}
+.badge-gray{background:#f0f0f0;color:#555}
+
+/* Compare table */
+.compare-table{width:100%;border-collapse:collapse;margin:1.5rem 0;font-size:.9rem}
+.compare-table thead th{background:var(--dark-teal);color:var(--cream);padding:.75rem 1rem;text-align:left;font-weight:600;font-size:.8rem;text-transform:uppercase;letter-spacing:.5px}
+.compare-table tbody td{padding:.7rem 1rem;border-bottom:1px solid var(--cream-light)}
+.compare-table tbody tr:hover{background:var(--cream-light)}
+.compare-table .better{color:#1a7431;font-weight:600}
+.compare-table .worse{color:#b91c1c;font-weight:600}
+.compare-table .best{color:#1a7431;font-weight:700}
+.compare-table .mono{font-family:var(--font-mono);font-size:.85rem}
+
+/* Chart */
+.chart-wrap{background:#fff;border-radius:var(--radius);padding:2rem;box-shadow:var(--shadow-md);border:1px solid rgba(0,0,0,.04)}
+.chart-wrap canvas{max-height:400px}
+.chart-wrap h3{font-family:var(--font-display);font-size:1.3rem;color:var(--dark-teal);margin-bottom:.25rem}
+.chart-wrap .chart-sub{font-size:.85rem;color:var(--cool-gray);margin-bottom:1.5rem}
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:2rem}
+
+/* Verdict */
+.verdict{background:linear-gradient(170deg,var(--dark-teal) 0%,var(--teal) 100%);color:var(--cream-pale);border-radius:var(--radius);padding:3rem;margin-top:2rem;position:relative;overflow:hidden}
+.verdict::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 600px 400px at 80% 20%,rgba(181,133,0,.15),transparent);pointer-events:none}
+.verdict h3{font-family:var(--font-display);font-size:2rem;margin-bottom:1rem;position:relative}
+.verdict p{font-size:1.05rem;opacity:.9;line-height:1.8;position:relative;max-width:900px}
+.verdict .verdict-stats{display:flex;gap:2rem;margin-top:2rem;flex-wrap:wrap;position:relative}
+.verdict .v-stat{text-align:center;min-width:120px}
+.verdict .v-stat .v-num{font-family:var(--font-display);font-size:2.5rem;background:linear-gradient(135deg,var(--cream),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.verdict .v-stat .v-lbl{font-size:.75rem;text-transform:uppercase;letter-spacing:1px;opacity:.6}
+
+/* Person cards */
+.person-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:2rem}
+.person-card{background:#fff;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-md);border:1px solid rgba(0,0,0,.04);transition:transform .3s,box-shadow .3s}
+.person-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+.person-card-head{padding:1.5rem 2rem 1rem;display:flex;align-items:center;gap:1rem}
+.person-avatar{width:80px;height:80px;border-radius:50%;flex-shrink:0;object-fit:cover;border:3px solid var(--cream-light);box-shadow:0 4px 12px rgba(0,0,0,.12)}
+.person-card-head h3{font-family:var(--font-display);font-size:1.25rem;color:var(--dark-teal)}
+.person-card-head .person-role{font-family:var(--font-mono);font-size:.75rem;text-transform:uppercase;letter-spacing:1px;color:var(--cool-gray)}
+.person-card-body{padding:0 2rem 2rem}
+.person-card-body blockquote{font-size:.9rem;color:#555;line-height:1.75;border-left:3px solid var(--cream);padding-left:1rem;margin:0;font-style:italic}
+.person-avance{font-family:var(--font-mono);font-size:.72rem;color:var(--cool-gray);margin-top:.75rem;text-transform:uppercase;letter-spacing:.5px}
+
+/* Evo cards */
+.evo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2rem;margin-top:1.5rem}
+.evo-card{background:#fff;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-md)}
+.evo-card-head{padding:1.25rem 1.5rem;color:#fff;font-family:var(--font-display);font-size:1.2rem}
+.evo-card-body{padding:1.5rem}
+.evo-card-body .evo-stat{display:flex;justify-content:space-between;padding:.4rem 0;border-bottom:1px solid var(--cream-light);font-size:.88rem}
+.evo-card-body .evo-stat:last-child{border:none}
+.evo-card-body .evo-val{font-family:var(--font-mono);font-weight:500}
+
+/* Ref table */
+table.ref-table{width:100%;border-collapse:collapse;font-size:.85rem}
+table.ref-table thead th{padding:.8rem 1rem;text-align:left;font-weight:600;text-transform:uppercase;font-size:.7rem;letter-spacing:.5px;color:var(--cream-pale);background:var(--dark-teal);border-bottom:2px solid rgba(232,213,181,.2)}
+table.ref-table tbody td{padding:.65rem 1rem;border-bottom:1px solid var(--cream-light);vertical-align:middle}
+table.ref-table tbody tr:hover{background:var(--cream-pale)}
+table.ref-table .mono{font-family:var(--font-mono);font-size:.82rem}
+
+/* Section divider */
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--cream),transparent);margin:1rem 0}
+
+/* Reveal */
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .6s ease,transform .6s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* Footer */
+footer{background:var(--dark-teal);color:rgba(232,213,181,.7);padding:3rem 2rem;text-align:center;font-size:.85rem;position:relative;z-index:1}
+footer a{color:var(--gold-light);text-decoration:none}
+footer a:hover{color:var(--cream)}
+footer .footer-title{font-family:var(--font-display);color:var(--cream);font-size:1.2rem;margin-bottom:.5rem}
+
+/* Responsive */
+@media(max-width:768px){
+  nav .nav-links{display:none}
+  .hero{padding:8rem 1.5rem 4rem}
+  .hero-kpis{gap:1rem}
+  .hero-kpi{min-width:130px;padding:1rem}
+  .hero-kpi .value{font-size:2rem}
+  .container{padding:0 1.25rem}
+  .charts-row{grid-template-columns:1fr}
+  .card-grid,.card-grid-3,.person-grid,.concept-grid,.guide-grid{grid-template-columns:1fr}
+  .evo-grid{grid-template-columns:1fr}
+  section{padding:2.5rem 0}
+}
+@media print{
+  nav,footer{display:none}
+  body{background:#fff}
+  body::before{display:none}
+  .reveal{opacity:1;transform:none}
+  section{padding:2rem 0;page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav>
+  <a href="index.html" class="logo">EpiForecast-MX</a>
+  <div class="nav-links">
+    <a href="index.html" class="ext">Inicio</a>
+    <a href="EpiDashboard.html" class="ext">Dashboard</a>
+    <a href="reporte_resultados.html" class="ext">Resultados</a>
+    <a href="Reports/index.html" class="ext">Pronosticos</a>
+    <a href="bitacora_modelado.html" class="ext">Bitacora</a>
+    <a href="comparacion_modelos.html" class="ext">Comparacion</a>
+    <a href="ficha_tecnica_prophet.html" class="ext">Ficha Prophet</a>
+    <a href="hiperparametros_modelos.html" class="ext">HPs SageMaker</a>
+    <a href="construccion_dashboard.html" class="ext">Construccion</a>
+    <a href="#vision" class="sep">Vision</a>
+    <a href="#baseline">Baseline</a>
+    <a href="#sagemaker">SageMaker</a>
+    <a href="#mase">MASE</a>
+    <a href="#personales">Reflexiones</a>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero">
+  <h1>Conclusiones del <em>Proyecto</em></h1>
+  <p class="subtitle">EpiForecast-MX &middot; IMSS &times; Tec de Monterrey</p>
+  <p class="subtitle2">Maestria en Inteligencia Artificial Aplicada &bull; Febrero 2026</p>
+  <div class="hero-kpis">
+    <div class="hero-kpi"><span class="value">312</span><span class="label">Modelos Prophet</span></div>
+    <div class="hero-kpi"><span class="value">100%</span><span class="label">Cobertura Estatal</span></div>
+    <div class="hero-kpi"><span class="value">1,548</span><span class="label">Trials SageMaker</span></div>
+    <div class="hero-kpi"><span class="value">4</span><span class="label">Avances Entregados</span></div>
+  </div>
+</section>
+
+<!-- TOC -->
+<section style="padding:2rem 0 0">
+  <div class="container">
+    <div class="toc reveal">
+      <h3>Contenido</h3>
+      <div class="toc-grid">
+        <a href="#vision"><span class="toc-num">01</span> Vision general</a>
+        <a href="#eda"><span class="toc-num">02</span> Analisis de datos y EDA</a>
+        <a href="#fe"><span class="toc-num">03</span> Feature Engineering</a>
+        <a href="#baseline"><span class="toc-num">04</span> Baseline: 297 modelos</a>
+        <a href="#optimizacion"><span class="toc-num">05</span> Optimizacion v5/v6</a>
+        <a href="#sagemaker"><span class="toc-num">06</span> Benchmark SageMaker</a>
+        <a href="#tableau"><span class="toc-num">07</span> Dashboard Tableau</a>
+        <a href="#hallazgos"><span class="toc-num">08</span> Hallazgos clave</a>
+        <a href="#mase"><span class="toc-num">09</span> MASE: la metrica que importa</a>
+        <a href="#limitaciones"><span class="toc-num">10</span> Limitaciones y trabajo futuro</a>
+        <a href="#equipo"><span class="toc-num">11</span> Reflexiones del equipo</a>
+        <a href="#personales"><span class="toc-num">12</span> Reflexiones personales</a>
+        <a href="#agradecimientos"><span class="toc-num">13</span> Agradecimientos</a>
+        <a href="#ficha"><span class="toc-num">14</span> Ficha tecnica</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 1. Vision general -->
+<section id="vision">
+  <div class="container">
+    <h2 class="section-title reveal">1. Vision general</h2>
+    <p class="section-sub reveal">Que es EpiForecast-MX y por que existe</p>
+
+    <div class="card reveal" style="max-width:900px">
+      <p style="font-size:1.05rem;line-height:1.8">
+        <strong>EpiForecast-MX</strong> es una plataforma de inteligencia epidemiologica desarrollada en colaboracion con el
+        <strong>Instituto Mexicano del Seguro Social (IMSS)</strong> como proyecto Capstone de la Maestria en Inteligencia
+        Artificial Aplicada del Tecnologico de Monterrey. Predice la incidencia semanal de tres padecimientos neurologicos
+        y de salud mental a nivel estatal en Mexico:
+      </p>
+      <div class="stats-row" style="margin-top:1.5rem">
+        <div class="stat-box burgundy"><div class="big-num">F32</div><div class="stat-desc">Depresion</div></div>
+        <div class="stat-box"><div class="big-num">G20</div><div class="stat-desc">Parkinson</div></div>
+        <div class="stat-box gold"><div class="big-num">G30</div><div class="stat-desc">Alzheimer</div></div>
+      </div>
+      <p style="margin-top:1.5rem;font-size:.95rem;color:#555;line-height:1.7">
+        Los datos provienen del <strong>SINAVE</strong> (Sistema Nacional de Vigilancia Epidemiologica), con registros
+        semanales desde 2014 hasta 2026 extraidos de mas de 633 boletines epidemiologicos en PDF. Los modelos trabajan con
+        <strong>tasas por 100,000 habitantes</strong> normalizadas con datos demograficos del INEGI, generando proyecciones
+        a 52 semanas para las 32 entidades federativas, segmentadas por sexo.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- 2. EDA -->
+<section id="eda" style="background:#fff;padding:4rem 0">
+  <div class="container">
+    <h2 class="section-title reveal">2. Analisis de datos y EDA</h2>
+    <p class="section-sub reveal">De PDFs crudos a un dataset estructurado</p>
+
+    <div class="stats-row reveal">
+      <div class="stat-box"><div class="big-num">633</div><div class="stat-desc">Boletines PDF</div></div>
+      <div class="stat-box gold"><div class="big-num">60K+</div><div class="stat-desc">Registros</div></div>
+      <div class="stat-box burgundy"><div class="big-num">32</div><div class="stat-desc">Entidades</div></div>
+      <div class="stat-box green"><div class="big-num">2014-2026</div><div class="stat-desc">Periodo</div></div>
+    </div>
+
+    <div class="guide-grid reveal">
+      <div class="guide-card">
+        <h3>Extraccion con Camelot</h3>
+        <p>Tablas extraidas de boletines PDF del SINAVE con keywords <code>F32</code>, <code>G20</code>, <code>G30</code>. Pipeline automatizado con Ghostscript y merge incremental.</p>
+      </div>
+      <div class="guide-card gold">
+        <h3>Normalizacion de entidades</h3>
+        <p>Estandarizacion de nombres de estados (variaciones en acentos, abreviaturas, errores tipograficos) para garantizar consistencia en las 32 entidades.</p>
+      </div>
+      <div class="guide-card burgundy">
+        <h3>Semana epidemiologica 53</h3>
+        <p>Manejo especial de anos con 53 semanas epidemiologicas. Deteccion y tratamiento de duplicados en semanas de transicion entre anos.</p>
+      </div>
+      <div class="guide-card green">
+        <h3>Deteccion de outliers (IQR)</h3>
+        <p>Identificacion sistematica de valores atipicos con metodo IQR parametrizado. Muchos outliers coinciden con periodos de captura irregular del SINAVE.</p>
+      </div>
+    </div>
+
+    <div class="callout reveal" style="margin-top:2rem">
+      <strong>Hallazgo clave del EDA:</strong> La Depresion (F32) representa el 87% de la incidencia total de los tres
+      padecimientos, con una estacionalidad marcada y heterogeneidad regional significativa. Parkinson y Alzheimer muestran
+      tasas mucho menores pero con tendencias en aumento sostenido.
+    </div>
+  </div>
+</section>
+
+<!-- 3. Feature Engineering -->
+<section id="fe">
+  <div class="container">
+    <h2 class="section-title reveal">3. Feature Engineering</h2>
+    <p class="section-sub reveal">Transformaciones que elevan la calidad predictiva</p>
+
+    <div class="concept-grid reveal">
+      <div class="concept-card">
+        <h4>Tasa por 100K habitantes</h4>
+        <p>Normalizacion de conteos absolutos a tasas per capita usando poblacion INEGI. Permite comparar estados de tamanos radicalmente diferentes (CDMX vs BCS).</p>
+      </div>
+      <div class="concept-card gold">
+        <h4>Regiones INEGI de salud mental</h4>
+        <p>Agrupacion de las 32 entidades en 4 regiones: <em>Urbana media</em>, <em>Sur-Sureste vulnerable</em>, <em>Metropolitana alta</em> y <em>Rural / dispersa</em>.</p>
+      </div>
+      <div class="concept-card burgundy">
+        <h4>Variables demograficas</h4>
+        <p>Integracion de poblacion total, superficie, densidad poblacional y clasificacion de regiones via PxWeb API del INEGI.</p>
+      </div>
+      <div class="concept-card green">
+        <h4>CI/CD automatizado</h4>
+        <p>Scraping diario de nuevos boletines SINAVE (GitHub Actions + Selenium), extraccion automatica y merge incremental al dataset principal.</p>
+      </div>
+    </div>
+
+    <div class="callout callout-gold reveal" style="margin-top:2rem">
+      <strong>Log-transform:</strong> <code>y = log(1 + tasa)</code> estabiliza la varianza en series volatiles,
+      especialmente Depresion. Al predecir se revierte con <code>exp(y) - 1</code> para obtener conteos interpretables.
+    </div>
+  </div>
+</section>
+
+<!-- 4. Baseline -->
+<section id="baseline" style="background:#fff;padding:4rem 0">
+  <div class="container">
+    <h2 class="section-title reveal">4. Baseline: 297 modelos Prophet</h2>
+    <p class="section-sub reveal">Matriz 3 padecimientos x 33 niveles x 3 sexos</p>
+
+    <div class="stats-row reveal">
+      <div class="stat-box"><div class="big-num">297</div><div class="stat-desc">Modelos estatales</div></div>
+      <div class="stat-box gold"><div class="big-num">4</div><div class="stat-desc">Folds de CV</div></div>
+      <div class="stat-box burgundy"><div class="big-num">913</div><div class="stat-desc">Dias COVID marcados</div></div>
+      <div class="stat-box green"><div class="big-num">52</div><div class="stat-desc">Semanas pronostico</div></div>
+    </div>
+
+    <div class="guide-grid reveal" style="margin-top:2rem">
+      <div class="guide-card">
+        <h3>Cross-validation temporal</h3>
+        <p>4 folds con ventanas deslizantes que respetan la temporalidad. Pesos progresivos <code>[0.5, 0.75, 1.0, 1.25]</code> que priorizan periodos recientes sobre post-COVID.</p>
+      </div>
+      <div class="guide-card gold">
+        <h3>COVID como cambio estructural</h3>
+        <p>Pandemia marcada como periodo atipico (2020-03-23, ventana 913 dias). Prophet captura los changepoints automaticamente sin intervencion manual.</p>
+      </div>
+      <div class="guide-card burgundy">
+        <h3>Entrenamiento final</h3>
+        <p>Despues de CV, el modelo final (.pkl) se entrena con <strong>toda la serie</strong>, no solo el split de entrenamiento. CV evalua; el .pkl aprovecha todos los datos.</p>
+      </div>
+    </div>
+
+    <div class="callout reveal" style="margin-top:2rem">
+      <strong>Resultado baseline:</strong> 297 modelos entrenados cubriendo el 87% de las series. Las 39 series con incidencia
+      promedio menor a 0.5 casos/semana se marcaron como insuficientes y quedaron sin prediccion informada.
+    </div>
+  </div>
+</section>
+
+<!-- 5. Optimizacion v5/v6 -->
+<section id="optimizacion">
+  <div class="container">
+    <h2 class="section-title reveal">5. Optimizacion v5/v6</h2>
+    <p class="section-sub reveal">De baseline a produccion: anti-Newton, MASE y modo hibrido</p>
+
+    <div class="evo-grid reveal">
+      <div class="evo-card">
+        <div class="evo-card-head" style="background:var(--cool-gray)">v4 &mdash; Baseline</div>
+        <div class="evo-card-body">
+          <div class="evo-stat"><span>Modelos</span><span class="evo-val">297</span></div>
+          <div class="evo-stat"><span>Cobertura</span><span class="evo-val">87%</span></div>
+          <div class="evo-stat"><span>Insuficientes</span><span class="evo-val worse">39</span></div>
+          <div class="evo-stat"><span>Anti-Newton</span><span class="evo-val worse">No</span></div>
+          <div class="evo-stat"><span>MASE</span><span class="evo-val">N/A</span></div>
+          <div class="evo-stat"><span>Chihuahua-Dep</span><span class="evo-val worse">39 min</span></div>
+        </div>
+      </div>
+      <div class="evo-card">
+        <div class="evo-card-head" style="background:var(--gold)">v5 &mdash; Optimizacion</div>
+        <div class="evo-card-body">
+          <div class="evo-stat"><span>Modelos</span><span class="evo-val">297</span></div>
+          <div class="evo-stat"><span>Cobertura</span><span class="evo-val">87%</span></div>
+          <div class="evo-stat"><span>Insuficientes</span><span class="evo-val worse">39</span></div>
+          <div class="evo-stat"><span>Anti-Newton</span><span class="evo-val better">3 capas</span></div>
+          <div class="evo-stat"><span>MASE</span><span class="evo-val">N/A</span></div>
+          <div class="evo-stat"><span>Chihuahua-Dep</span><span class="evo-val better">4 min</span></div>
+        </div>
+      </div>
+      <div class="evo-card">
+        <div class="evo-card-head" style="background:var(--teal)">v6 &mdash; Produccion</div>
+        <div class="evo-card-body">
+          <div class="evo-stat"><span>Modelos</span><span class="evo-val best">312</span></div>
+          <div class="evo-stat"><span>Cobertura</span><span class="evo-val best">100%</span></div>
+          <div class="evo-stat"><span>Insuficientes</span><span class="evo-val best">0 (41 fallback)</span></div>
+          <div class="evo-stat"><span>Anti-Newton</span><span class="evo-val better">3 capas</span></div>
+          <div class="evo-stat"><span>MASE</span><span class="evo-val best">0.76</span></div>
+          <div class="evo-stat"><span>Chihuahua-Dep</span><span class="evo-val better">4 min</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="guide-grid reveal" style="margin-top:2rem">
+      <div class="guide-card">
+        <h3>Proteccion anti-Newton</h3>
+        <p>3 capas: sort descendente por <code>cp</code>, timeout 35s por fold, y threshold Newton-prone. Chihuahua-Depresion de <strong>39 min a 4 min</strong>.</p>
+      </div>
+      <div class="guide-card gold">
+        <h3>Grids diferenciados por padecimiento</h3>
+        <p>Optimizados con datos de 297 modelos v4. Cada padecimiento tiene su propio grid de hiperparametros ajustado a su comportamiento epidemiologico.</p>
+      </div>
+      <div class="guide-card burgundy">
+        <h3>MASE: metrica escala-independiente</h3>
+        <p><code>MASE = MAE / MAE_naive(lag-52)</code>. MASE &lt; 1 significa que el modelo supera al baseline naive estacional. Media v6: <strong>0.76</strong>.</p>
+      </div>
+      <div class="guide-card green">
+        <h3>Modo hibrido (v6)</h3>
+        <p>41 series insuficientes ahora usan fallback regional: modelos regionales de respaldo con desnormalizacion por poblacion estatal individual. <strong>100% cobertura</strong>.</p>
+      </div>
+    </div>
+
+    <!-- Evolution chart -->
+    <div class="chart-wrap reveal" style="margin-top:2rem;max-width:700px">
+      <h3>Evolucion v4 a v6</h3>
+      <p class="chart-sub">Cobertura estatal, modelos insuficientes y MASE medio</p>
+      <canvas id="chartEvolucion"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- 6. Benchmark SageMaker -->
+<section id="sagemaker" style="background:#fff;padding:4rem 0">
+  <div class="container">
+    <h2 class="section-title reveal">6. Benchmark SageMaker</h2>
+    <p class="section-sub reveal">1,548 trials para validar Prophet como modelo de produccion</p>
+
+    <div class="stats-row reveal">
+      <div class="stat-box"><div class="big-num">1,548</div><div class="stat-desc">Trials totales</div></div>
+      <div class="stat-box gold"><div class="big-num">6</div><div class="stat-desc">Modelos evaluados</div></div>
+      <div class="stat-box burgundy"><div class="big-num">9.8h</div><div class="stat-desc">Duracion total</div></div>
+      <div class="stat-box green"><div class="big-num">~$9.80</div><div class="stat-desc">Costo USD</div></div>
+    </div>
+
+    <!-- Winners table -->
+    <div class="card reveal" style="margin-top:2rem;overflow-x:auto">
+      <table class="compare-table">
+        <thead>
+          <tr><th>Modelo</th><th>Tipo</th><th>Victorias</th><th>%</th><th>MASE mediana</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong style="color:var(--teal)">Prophet</strong></td><td>Estadistico</td><td class="mono best">67</td><td class="mono best">26.0%</td><td class="mono">0.745</td></tr>
+          <tr><td><strong style="color:var(--lgbm)">LightGBM+LSTM</strong></td><td>Hibrido ML/DL</td><td class="mono">52</td><td class="mono">20.2%</td><td class="mono">0.748</td></tr>
+          <tr><td><strong style="color:var(--deepar)">TFT</strong></td><td>Deep Learning</td><td class="mono">45</td><td class="mono">17.4%</td><td class="mono">0.773</td></tr>
+          <tr><td><strong style="color:var(--deepar)">DeepAR</strong></td><td>Deep Learning</td><td class="mono">44</td><td class="mono">17.1%</td><td class="mono">0.748</td></tr>
+          <tr><td><strong style="color:var(--xgb)">XGBoost</strong></td><td>Machine Learning</td><td class="mono">28</td><td class="mono">10.9%</td><td class="mono">0.832</td></tr>
+          <tr><td><strong style="color:var(--ridge)">Ridge</strong></td><td>Machine Learning</td><td class="mono">22</td><td class="mono">8.5%</td><td class="mono">0.822</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Charts row -->
+    <div class="charts-row reveal">
+      <div class="chart-wrap">
+        <h3>Victorias por modelo</h3>
+        <p class="chart-sub">258 series evaluadas &mdash; 6 modelos</p>
+        <canvas id="chartVictorias"></canvas>
+      </div>
+      <div class="chart-wrap">
+        <h3>Victorias por padecimiento</h3>
+        <p class="chart-sub">Desglose por Alzheimer, Depresion y Parkinson</p>
+        <canvas id="chartPadecimiento"></canvas>
+      </div>
+    </div>
+
+    <!-- Key insights -->
+    <div class="guide-grid reveal" style="margin-top:2rem">
+      <div class="guide-card">
+        <h3>Prophet: consistente pero no dominante</h3>
+        <p>Gana pluralidad en cada padecimiento, pero los margenes son estrechos. El 77% de las veces que pierde, esta a menos del 10% del ganador.</p>
+      </div>
+      <div class="guide-card gold">
+        <h3>Deep Learning colectivamente fuerte</h3>
+        <p>DeepAR + LightGBM+LSTM + TFT ganan el 54.7% de las series combinados. Sin embargo, ningun modelo individual supera a Prophet.</p>
+      </div>
+      <div class="guide-card burgundy">
+        <h3>Paradoja Prophet vs TFT</h3>
+        <p>TFT domina Parkinson general (Prophet solo 2/33 wins) pero Prophet recupera competitividad (~30%) en desagregaciones por sexo.</p>
+      </div>
+    </div>
+
+    <div class="callout callout-gold reveal" style="margin-top:2rem">
+      <strong>Conclusion SageMaker:</strong> Prophet es la mejor opcion para produccion considerando consistencia, interpretabilidad
+      y costo computacional. Sin embargo, ~21 series con gap mayor a 20% son candidatas a usar modelos alternativos (TFT, DeepAR).
+    </div>
+  </div>
+</section>
+
+<!-- 7. Dashboard Tableau -->
+<section id="tableau">
+  <div class="container">
+    <h2 class="section-title reveal">7. Dashboard Tableau</h2>
+    <p class="section-sub reveal">Visualizacion interactiva para tomadores de decisiones</p>
+
+    <div class="guide-grid reveal">
+      <div class="guide-card">
+        <h3>8 visualizaciones interactivas</h3>
+        <p>Mapa coropletico, series de tiempo, tablas de ranking, distribucion por sexo, comparacion regional, metricas del modelo, intervalos de confianza y tendencias.</p>
+      </div>
+      <div class="guide-card gold">
+        <h3>Pipeline automatizado</h3>
+        <p>Script <code>build_tableau</code> genera un dataset unico consolidado desde <code>all_forecast.csv</code> con metricas, clasificacion de confianza y metadatos para Tableau.</p>
+      </div>
+      <div class="guide-card burgundy">
+        <h3>Tooltips con metricas</h3>
+        <p>Cada punto en Tableau muestra RMSE, MAE, MAPE, MASE, tipo de modelo (propio/fallback) y nivel de confianza. Informacion completa sin salir del dashboard.</p>
+      </div>
+      <div class="guide-card green">
+        <h3>Branding IMSS</h3>
+        <p>Paleta cromatica institucional del IMSS aplicada: teal, burgundy, gold y cream. Coherencia visual entre dashboard, reportes HTML y presentaciones.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 8. Hallazgos clave -->
+<section id="hallazgos" style="background:#fff;padding:4rem 0">
+  <div class="container">
+    <h2 class="section-title reveal">8. Hallazgos clave</h2>
+    <p class="section-sub reveal">Descubrimientos mas importantes del proyecto</p>
+
+    <div class="guide-grid reveal">
+      <div class="guide-card">
+        <h3>MASE &lt; 1 en los tres padecimientos</h3>
+        <p>Todos los modelos Prophet superan al baseline naive estacional (lag-52 semanas). <span class="badge badge-green">Alzheimer 0.74</span> <span class="badge badge-green">Parkinson 0.75</span> <span class="badge badge-yellow">Depresion 0.80</span></p>
+      </div>
+      <div class="guide-card gold">
+        <h3>100% cobertura con modo hibrido</h3>
+        <p>Las 41 series insuficientes (36 Alzheimer, 5 Parkinson) ahora tienen prediccion informada via fallback regional. Paso de 87% a 100% de cobertura.</p>
+      </div>
+      <div class="guide-card burgundy">
+        <h3>Heterogeneidad entre estados</h3>
+        <p>Algunos estados presentan series limpias y predecibles (MASE &lt; 0.7), mientras otros son desafiantes. Las diferencias reflejan la infraestructura de captura mas que la dinamica epidemiologica.</p>
+      </div>
+      <div class="guide-card green">
+        <h3>Prophet: robusto pero no unico</h3>
+        <p>El benchmark SageMaker confirma que Prophet es competitivo (26% wins), pero deep learning colectivamente gana 54.7%. Un ensemble futuro podria mejorar las predicciones.</p>
+      </div>
+      <div class="guide-card">
+        <h3>COVID como disruptor temporal</h3>
+        <p>La pandemia genero un quiebre estructural de 2.5 anos (913 dias). Prophet captura los changepoints automaticamente, validando su idoneidad para eventos no anticipados.</p>
+      </div>
+      <div class="guide-card gold">
+        <h3>Depresion hombres: la serie mas dificil</h3>
+        <p>MAPE 36.6% vs 25.9% general. La subnotificacion de salud mental masculina genera patrones mas erraticos y reduce la predictibilidad del modelo.</p>
+      </div>
+      <div class="guide-card burgundy">
+        <h3>Log-transform: impacto significativo</h3>
+        <p><code>log(1 + tasa)</code> estabiliza la varianza en series volatiles. Especialmente efectivo para Depresion, donde la varianza crece con la media.</p>
+      </div>
+      <div class="guide-card green">
+        <h3>Anti-Newton: eficiencia 10x</h3>
+        <p>Proteccion de 3 capas redujo Chihuahua-Depresion de 39 a 4 minutos. El pipeline completo de 297 modelos se entrena en ~45 minutos con paralelismo.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 9. MASE: la metrica que importa -->
+<section id="mase">
+  <div class="container">
+    <h2 class="section-title reveal">9. MASE: la metrica que importa</h2>
+    <p class="section-sub reveal">Mean Absolute Scaled Error &mdash; por que elegimos esta metrica y que revela</p>
+
+    <div class="card reveal" style="max-width:900px">
+      <p style="font-size:1.05rem;line-height:1.8;margin-bottom:1rem">
+        El <strong>MASE</strong> (Hyndman &amp; Koehler, 2006) compara el error absoluto del modelo contra un
+        baseline naive estacional (lag-52 semanas). A diferencia del MAPE, el MASE es
+        <strong>escala-independiente</strong>: no se distorsiona con tasas bajas (Alzheimer, Parkinson) donde el
+        denominador pequeno infla artificialmente el porcentaje de error.
+      </p>
+      <div style="font-family:var(--font-mono);font-size:1.1rem;background:var(--cream-pale);border:1px solid var(--cream);border-radius:8px;padding:1rem 1.5rem;margin:1rem 0;color:var(--dark-teal);text-align:center">
+        MASE = MAE<sub>modelo</sub> / MAE<sub>naive</sub>(lag-52)
+      </div>
+      <div style="display:flex;gap:1.5rem;flex-wrap:wrap;margin-top:1rem">
+        <div><span class="badge badge-green">MASE &lt; 0.7</span> Excelente</div>
+        <div><span class="badge badge-green">0.7 &ndash; 1.0</span> Supera al naive</div>
+        <div><span class="badge badge-red">MASE &gt; 1.0</span> Peor que naive estacional</div>
+      </div>
+    </div>
+
+    <div class="stats-row reveal" style="margin-top:2rem">
+      <div class="stat-box green"><div class="big-num">0.74</div><div class="stat-desc">MASE Alzheimer</div></div>
+      <div class="stat-box green"><div class="big-num">0.75</div><div class="stat-desc">MASE Parkinson</div></div>
+      <div class="stat-box gold"><div class="big-num">0.80</div><div class="stat-desc">MASE Depresion</div></div>
+      <div class="stat-box"><div class="big-num">&lt; 1.0</div><div class="stat-desc">Los 3 superan naive</div></div>
+    </div>
+
+    <!-- MASE charts -->
+    <div class="charts-row reveal" style="margin-top:2rem">
+      <div class="chart-wrap">
+        <h3>MASE por padecimiento y sexo</h3>
+        <p class="chart-sub">Mejor modelo por serie &mdash; benchmark SageMaker v5-full</p>
+        <canvas id="chartMASE"></canvas>
+      </div>
+      <div class="chart-wrap">
+        <h3>MASE promedio por modelo</h3>
+        <p class="chart-sub">Todos los trials &mdash; solo Parkinson y Alzheimer &lt; 1.0 en todos los modelos</p>
+        <canvas id="chartMASEModelo"></canvas>
+      </div>
+    </div>
+
+    <!-- MASE comparison table -->
+    <div class="card reveal" style="margin-top:2rem;overflow-x:auto">
+      <h3 style="font-family:var(--font-display);font-size:1.2rem;color:var(--dark-teal);margin-bottom:1rem">MASE vs MAPE: por que MASE es superior</h3>
+      <table class="compare-table">
+        <thead>
+          <tr><th>Padecimiento x Sexo</th><th>MAPE (%)</th><th>MASE</th><th>% series MASE &lt; 1.0</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Depresion general</td><td class="mono">25.9</td><td class="mono best">0.810</td><td class="mono">79.8%</td></tr>
+          <tr><td>Depresion hombres</td><td class="mono worse">36.6</td><td class="mono">0.858</td><td class="mono">~75%</td></tr>
+          <tr><td>Depresion mujeres</td><td class="mono">27.9</td><td class="mono best">0.782</td><td class="mono">~83%</td></tr>
+          <tr><td>Parkinson general</td><td class="mono worse">52.0</td><td class="mono best">0.693</td><td class="mono">86.3%</td></tr>
+          <tr><td>Parkinson hombres</td><td class="mono worse">54.1</td><td class="mono">0.737</td><td class="mono">~84%</td></tr>
+          <tr><td>Parkinson mujeres</td><td class="mono worse">51.5</td><td class="mono best">0.714</td><td class="mono">~87%</td></tr>
+          <tr><td>Alzheimer general</td><td class="mono worse">46.4</td><td class="mono best">0.689</td><td class="mono">90.6%</td></tr>
+          <tr><td>Alzheimer hombres</td><td class="mono worse">46.4</td><td class="mono best">0.690</td><td class="mono">~91%</td></tr>
+          <tr><td>Alzheimer mujeres</td><td class="mono worse">48.9</td><td class="mono best">0.698</td><td class="mono">~90%</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout-burgundy reveal" style="margin-top:2rem">
+      <strong>Paradoja MAPE vs MASE:</strong> Parkinson y Alzheimer tienen MAPE alto (&gt;46%) pero MASE
+      excelente (&lt;0.75). El MAPE infla el error cuando la tasa base es baja (denominador pequeno).
+      El MASE revela que los modelos predicen <em>mucho mejor</em> que un baseline naive &mdash; la metrica
+      correcta cambia completamente la narrativa del desempeno.
+    </div>
+  </div>
+</section>
+
+<!-- 10. Limitaciones -->
+<section id="limitaciones" style="background:#fff;padding:4rem 0">
+  <div class="container">
+    <h2 class="section-title reveal">10. Limitaciones y trabajo futuro</h2>
+    <p class="section-sub reveal">Que queda pendiente y como continuar</p>
+
+    <div class="concept-grid reveal">
+      <div class="concept-card burgundy">
+        <h4>Nayarit-Depresion</h4>
+        <p>RMSE 0.39 (peor modelo). Cambio de regimen en 2018 no absorbido completamente por Prophet. Candidato a modelo alternativo o intervencion manual.</p>
+      </div>
+      <div class="concept-card burgundy">
+        <h4>39 series omitidas del benchmark</h4>
+        <p>Series con incidencia &lt; 0.5/semana (todas Alzheimer + 4 Parkinson) no se evaluaron en SageMaker. Su comportamiento con otros modelos es desconocido.</p>
+      </div>
+      <div class="concept-card gold">
+        <h4>Ensemble de modelos</h4>
+        <p>Para las ~21 series con gap &gt; 20% vs el ganador, un modelo hibrido Prophet + TFT/DeepAR podria mejorar significativamente las predicciones.</p>
+      </div>
+      <div class="concept-card">
+        <h4>Monitoreo trimestral</h4>
+        <p>Sistema de re-evaluacion periodica de metricas para detectar degradacion del modelo. Alertas automaticas cuando MASE suba por encima de 1.0.</p>
+      </div>
+      <div class="concept-card gold">
+        <h4>Variables exogenas IMSS</h4>
+        <p>Incorporar datos internos del IMSS (consultas, prescripciones, personal medico) como regresores adicionales en Prophet para mejorar precision estatal.</p>
+      </div>
+      <div class="concept-card green">
+        <h4>Expansion a otros padecimientos</h4>
+        <p>El pipeline es parametrizado y puede adaptarse a otros codigos CIE-10. La arquitectura soporta expansion sin cambios estructurales.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 11. Reflexiones del equipo -->
+<section id="equipo">
+  <div class="container">
+    <h2 class="section-title reveal">11. Reflexiones del equipo</h2>
+    <p class="section-sub reveal">Aprendizajes colectivos sobre interdisciplinariedad y pipeline</p>
+
+    <div class="guide-grid reveal">
+      <div class="guide-card">
+        <h3>Pipeline como herramienta de validacion</h3>
+        <p>Un pipeline solido no solo prepara datos para modelar, sino que funciona como herramienta de validacion continua. Cada etapa confirma visualmente patrones, tendencias y posibles errores.</p>
+      </div>
+      <div class="guide-card gold">
+        <h3>Proyecto como sistema vivo</h3>
+        <p>El diseno del pipeline considera la deteccion de nuevos boletines y la actualizacion progresiva del dataset, reduciendo la dependencia de procesos manuales y garantizando resultados actualizados.</p>
+      </div>
+      <div class="guide-card burgundy">
+        <h3>Baseline: referencia objetiva</h3>
+        <p>Un baseline no es un modelo &ldquo;malo&rdquo; que se descarta: es la referencia objetiva que da sentido a toda optimizacion posterior. Sin el, cualquier mejora seria anecdotica.</p>
+      </div>
+      <div class="guide-card green">
+        <h3>Comunicacion visual</h3>
+        <p>La comunicacion visual de resultados es tan importante como los resultados mismos, especialmente cuando los stakeholders son medicos, no ingenieros.</p>
+      </div>
+      <div class="guide-card">
+        <h3>Viabilidad confirmada</h3>
+        <p>Prophet captura las dinamicas temporales de Depresion, Parkinson y Alzheimer. Cada padecimiento tiene comportamiento epidemiologico distinto que justifica modelos separados.</p>
+      </div>
+      <div class="guide-card gold">
+        <h3>Datos imperfectos, modelos robustos</h3>
+        <p>El sistema de pronostico debe ser robusto ante las imperfecciones reales de los datos epidemiologicos: captura irregular, subnotificacion, cambios de regimen no anticipados.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 11. Reflexiones personales -->
+<section id="personales">
+  <div class="container">
+    <h2 class="section-title reveal">12. Reflexiones personales</h2>
+    <p class="section-sub reveal">La voz de cada integrante sobre el proyecto completo</p>
+
+    <div class="person-grid reveal">
+      <!-- Javier -->
+      <div class="person-card">
+        <div class="person-card-head">
+          <img class="person-avatar" src="JARS20206.jpg" alt="Javier Rebull">
+          <div>
+            <h3>Javier Augusto Rebull Saucedo</h3>
+            <span class="person-role">Santander</span>
+          </div>
+        </div>
+        <div class="person-card-body">
+          <blockquote>
+            Este proyecto transformo mi manera de pensar la ingenieria de datos. Desde la primera entrega, enfocarnos en la reproducibilidad y trazabilidad del procesamiento nos dio una base solida que resulto mas valiosa que cualquier modelo sofisticado. Disenar y ejecutar 297 modelos baseline me obligo a pensar en escalabilidad real: funciones reutilizables, pipelines parametrizados y visualizaciones automaticas para cualquier combinacion de padecimiento, estado y sexo. El aprendizaje mas profundo fue entender que un baseline no es un modelo &ldquo;malo&rdquo; &mdash; es la referencia objetiva que da sentido a toda optimizacion. Sin los 297 modelos v4, las mejoras del v5 y v6 no tendrian fundamento. Construir el dashboard ejecutivo y las visualizaciones para el IMSS me enseno que la comunicacion visual de resultados es tan importante como los resultados mismos, especialmente cuando los stakeholders son medicos, no ingenieros.
+          </blockquote>
+        </div>
+      </div>
+
+      <!-- Juan Carlos -->
+      <div class="person-card">
+        <div class="person-card-head">
+          <img class="person-avatar" src="JARCOS2026.jpg" alt="Juan Carlos Perez">
+          <div>
+            <h3>Juan Carlos Perez Nava</h3>
+            <span class="person-role">IMSS</span>
+          </div>
+        </div>
+        <div class="person-card-body">
+          <blockquote>
+            Como profesional de TI en el IMSS, este proyecto tiene un significado particular: estamos construyendo herramientas que podrian integrarse directamente en los procesos de planificacion institucional. Desde el EDA inicial aprendi que no basta con cargar datos y correr analisis automaticos; es necesario entender que representan y donde pueden enganar. La validacion cruzada temporal me mostro la importancia de evaluar modelos con ventanas deslizantes que simulan el escenario real de pronostico. La deteccion de outliers fue reveladora: muchos valores atipicos coinciden con periodos de captura irregular que conozco de primera mano. El pipeline completo &mdash; desde la extraccion de PDFs hasta el benchmark SageMaker &mdash; demostro que un sistema de pronostico epidemiologico robusto es viable con datos reales e imperfectos del SINAVE.
+          </blockquote>
+        </div>
+      </div>
+
+      <!-- Luis -->
+      <div class="person-card">
+        <div class="person-card-head">
+          <img class="person-avatar" src="LUIS2026.jpg" alt="Luis Sanchez">
+          <div>
+            <h3>Luis Gerardo Sanchez Salazar</h3>
+            <span class="person-role">Tesla</span>
+          </div>
+        </div>
+        <div class="person-card-body">
+          <blockquote>
+            Mi experiencia en ingenieria de controles en Tesla me dio una perspectiva particular sobre sistemas dinamicos, y las series de tiempo epidemiologicas comparten mas de lo esperado con los sistemas que modelo profesionalmente: tendencias, estacionalidades, perturbaciones externas y la necesidad de intervalos de confianza para la toma de decisiones. Integrar datos del INEGI con el SINAVE y construir la capa de visualizacion en Tableau evidencio la importancia de traducir resultados tecnicos a formatos consumibles por tomadores de decisiones. Lo que mas me impacto fue la heterogeneidad entre estados: mientras algunos presentan series limpias y predecibles, otros son practicamente impredecibles &mdash; lo cual apunta a diferencias en la infraestructura de captura, no en la dinamica epidemiologica. El benchmark SageMaker con 1,548 trials fue la prueba de fuego que valido nuestras decisiones de modelado.
+          </blockquote>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 13. Agradecimientos -->
+<section id="agradecimientos" style="background:#fff;padding:4rem 0">
+  <div class="container">
+    <h2 class="section-title reveal">13. Agradecimientos</h2>
+    <p class="section-sub reveal">A quienes hicieron posible este proyecto</p>
+
+    <div class="verdict reveal">
+      <h3>Gracias a nuestras asesoras</h3>
+      <p>
+        Este proyecto no habria sido posible sin la guia y el apoyo de nuestras asesoras academicas e institucionales,
+        quienes nos orientaron en cada etapa con retroalimentacion experta y vision estrategica.
+      </p>
+      <div class="verdict-stats" style="margin-top:2rem">
+        <div class="v-stat">
+          <div style="font-family:var(--font-display);font-size:1.3rem;color:var(--cream);margin-bottom:.25rem">Dra. Grettel Barcelo Alonso</div>
+          <div class="v-lbl">Asesora academica &mdash; Tec de Monterrey</div>
+        </div>
+      </div>
+      <div class="verdict-stats" style="margin-top:1rem">
+        <div class="v-stat">
+          <div style="font-family:var(--font-display);font-size:1.3rem;color:var(--cream);margin-bottom:.25rem">Dra. Ruth Perez</div>
+          <div class="v-lbl">Asesora institucional</div>
+        </div>
+      </div>
+      <div class="verdict-stats" style="margin-top:1rem">
+        <div class="v-stat">
+          <div style="font-family:var(--font-display);font-size:1.3rem;color:var(--cream);margin-bottom:.25rem">Dra. Lina Diaz Castro</div>
+          <div class="v-lbl">Asesora institucional</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout callout-gold reveal" style="margin-top:2rem">
+      <strong>Nota especial:</strong> La retroalimentacion de la Dra. Grettel sobre la necesidad de separar los padecimientos
+      fue determinante. Al modelarlos independientemente, las diferencias epidemiologicas entre Depresion, Parkinson y Alzheimer
+      se hicieron evidentes no solo en las metricas, sino en la estructura misma de las series.
+    </div>
+  </div>
+</section>
+
+<!-- 13. Ficha tecnica -->
+<section id="ficha">
+  <div class="container">
+    <h2 class="section-title reveal">14. Ficha tecnica</h2>
+    <p class="section-sub reveal">Resumen ejecutivo del stack, metricas y archivos del proyecto</p>
+
+    <div class="card reveal" style="overflow-x:auto">
+      <table class="ref-table">
+        <thead>
+          <tr><th>Componente</th><th>Detalle</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>Lenguaje</strong></td><td class="mono">Python 3.12</td></tr>
+          <tr><td><strong>Modelo principal</strong></td><td class="mono">Prophet 1.3 (cmdstanpy)</td></tr>
+          <tr><td><strong>Benchmark</strong></td><td class="mono">Prophet, XGBoost, Ridge, TFT, DeepAR, LightGBM+LSTM</td></tr>
+          <tr><td><strong>Cloud</strong></td><td class="mono">AWS S3 (DVC) + SageMaker (ml.m5.xlarge)</td></tr>
+          <tr><td><strong>CI/CD</strong></td><td class="mono">GitHub Actions + Selenium (scraping diario)</td></tr>
+          <tr><td><strong>Visualizacion</strong></td><td class="mono">Tableau, matplotlib, seaborn, plotly, Chart.js</td></tr>
+          <tr><td><strong>Modelos entrenados</strong></td><td class="mono">297 estatales + 15 regionales = 312 total</td></tr>
+          <tr><td><strong>Trials benchmark</strong></td><td class="mono">1,548 (258 series x 6 modelos)</td></tr>
+          <tr><td><strong>MASE medio (v6)</strong></td><td class="mono">Alzheimer 0.74 | Parkinson 0.75 | Depresion 0.80</td></tr>
+          <tr><td><strong>Cobertura</strong></td><td class="mono">100% (32 entidades x 3 padecimientos x 3 sexos)</td></tr>
+          <tr><td><strong>Horizonte</strong></td><td class="mono">52 semanas a futuro</td></tr>
+          <tr><td><strong>Periodo datos</strong></td><td class="mono">2014 &ndash; 2026 (633 boletines SINAVE)</td></tr>
+          <tr><td><strong>Costo benchmark</strong></td><td class="mono">~$9.80 USD (9.8 horas ml.m5.xlarge)</td></tr>
+          <tr><td><strong>Tiempo entrenamiento</strong></td><td class="mono">~45 min (n_jobs=-2, joblib loky)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="reveal" style="font-family:var(--font-display);font-size:1.3rem;color:var(--dark-teal);margin-top:2rem">Archivos principales</h3>
+    <div class="card reveal" style="margin-top:1rem;overflow-x:auto">
+      <table class="ref-table">
+        <thead>
+          <tr><th>Archivo</th><th>Descripcion</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="mono">forecast/all_forecast.csv</td><td>Predicciones consolidadas (~180 MB)</td></tr>
+          <tr><td class="mono">forecast/reporte_resultados.html</td><td>Reporte interactivo de resultados</td></tr>
+          <tr><td class="mono">forecast/bitacora_modelado.html</td><td>Bitacora v1-v6 del modelado</td></tr>
+          <tr><td class="mono">forecast/comparacion_modelos.html</td><td>Benchmark SageMaker (1,548 trials)</td></tr>
+          <tr><td class="mono">forecast/index.html</td><td>Galeria de 312 PNGs de pronostico</td></tr>
+          <tr><td class="mono">models/*.pkl</td><td>312 modelos Prophet entrenados (~109 MB)</td></tr>
+          <tr><td class="mono">data/processed/</td><td>Dataset final procesado</td></tr>
+          <tr><td class="mono">EpiDashboard.html</td><td>Dashboard Tableau embebido</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-title">EpiForecast-MX</div>
+  <p>Plataforma de inteligencia epidemiologica &middot; IMSS &times; Tec de Monterrey</p>
+  <p style="margin-top:.75rem">
+    <a href="index.html">Inicio</a> &middot;
+    <a href="EpiDashboard.html">Dashboard</a> &middot;
+    <a href="reporte_resultados.html">Resultados</a> &middot;
+    <a href="Reports/index.html">Pronosticos</a> &middot;
+    <a href="bitacora_modelado.html">Bitacora</a> &middot;
+    <a href="comparacion_modelos.html">Comparacion</a> &middot;
+    <a href="ficha_tecnica_prophet.html">Ficha Prophet</a> &middot;
+    <a href="hiperparametros_modelos.html">HPs SageMaker</a> &middot;
+    <a href="construccion_dashboard.html">Construccion Dashboard</a>
+  </p>
+  <p style="margin-top:.5rem">Maestria en Inteligencia Artificial Aplicada &mdash; Proyecto Capstone 2026</p>
+  <p style="margin-top:.5rem;font-family:var(--font-mono);font-size:.75rem;opacity:.5">Generado: 22 febrero 2026</p>
+</footer>
+
+<script>
+Chart.defaults.font.family = "'Source Sans 3', sans-serif";
+Chart.register(ChartDataLabels);
+
+// Color palette
+const C = {
+  prophet:'#00524E', tft:'#9B2242', deepar:'#B58500', lgbm:'#2E7D32', xgb:'#E65100', ridge:'#5C6BC0',
+  prophetA:'rgba(0,82,78,.8)', tftA:'rgba(155,34,66,.7)', deparA:'rgba(181,133,0,.7)',
+  lgbmA:'rgba(46,125,50,.7)', xgbA:'rgba(230,81,0,.7)', ridgeA:'rgba(92,107,192,.7)'
+};
+
+// Chart 1: Victorias por modelo (horizontal bar)
+try {
+  new Chart(document.getElementById('chartVictorias'), {
+    type: 'bar',
+    data: {
+      labels: ['Prophet','LightGBM+LSTM','TFT','DeepAR','XGBoost','Ridge'],
+      datasets: [{
+        label: 'Victorias',
+        data: [67, 52, 45, 44, 28, 22],
+        backgroundColor: [C.prophetA, C.lgbmA, C.tftA, C.deparA, C.xgbA, C.ridgeA],
+        borderRadius: 6,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        datalabels: {
+          anchor: 'end', align: 'end', offset: 4,
+          font: { family: "'JetBrains Mono'", size: 12, weight: 500 },
+          color: '#231F20',
+          formatter: function(v) { return v + ' (' + (v/258*100).toFixed(1) + '%)'; }
+        }
+      },
+      scales: {
+        x: { beginAtZero: true, max: 85, grid: { color: 'rgba(0,0,0,.06)' }, title: { display: true, text: 'Series ganadas', font: { family: "'Source Sans 3'" } } },
+        y: { grid: { display: false }, ticks: { font: { family: "'Source Sans 3'", size: 12, weight: 600 } } }
+      }
+    }
+  });
+} catch(e) { console.warn('chartVictorias:', e); }
+
+// Chart 2: Victorias por padecimiento (stacked bar)
+try {
+  new Chart(document.getElementById('chartPadecimiento'), {
+    type: 'bar',
+    data: {
+      labels: ['Alzheimer','Depresion','Parkinson'],
+      datasets: [
+        { label: 'Prophet', data: [21, 26, 20], backgroundColor: C.prophetA, borderRadius: 2, borderSkipped: false },
+        { label: 'LightGBM+LSTM', data: [10, 24, 18], backgroundColor: C.lgbmA, borderRadius: 2, borderSkipped: false },
+        { label: 'TFT', data: [11, 15, 19], backgroundColor: C.tftA, borderRadius: 2, borderSkipped: false },
+        { label: 'DeepAR', data: [6, 21, 17], backgroundColor: C.deparA, borderRadius: 2, borderSkipped: false },
+        { label: 'XGBoost', data: [13, 8, 7], backgroundColor: C.xgbA, borderRadius: 2, borderSkipped: false },
+        { label: 'Ridge', data: [3, 5, 14], backgroundColor: C.ridgeA, borderRadius: 2, borderSkipped: false }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { family: "'Source Sans 3'", size: 11 }, padding: 10, boxWidth: 14 } },
+        datalabels: { display: false }
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false } },
+        y: { stacked: true, title: { display: true, text: 'Series ganadas', font: { family: "'Source Sans 3'" } }, grid: { color: 'rgba(0,0,0,.06)' } }
+      }
+    }
+  });
+} catch(e) { console.warn('chartPadecimiento:', e); }
+
+// Chart 3: Evolucion v4 -> v5 -> v6
+try {
+  new Chart(document.getElementById('chartEvolucion'), {
+    type: 'bar',
+    data: {
+      labels: ['v4 (Baseline)', 'v5 (Optimizacion)', 'v6 (Produccion)'],
+      datasets: [
+        {
+          label: 'Cobertura (%)',
+          data: [87, 87, 100],
+          backgroundColor: 'rgba(0,82,78,.7)',
+          borderRadius: 6, borderSkipped: false
+        },
+        {
+          label: 'Modelos insuficientes',
+          data: [39, 39, 0],
+          backgroundColor: 'rgba(155,34,66,.6)',
+          borderRadius: 6, borderSkipped: false
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { family: "'Source Sans 3'" }, padding: 12 } },
+        datalabels: {
+          anchor: 'end', align: 'end', offset: 2,
+          font: { family: "'JetBrains Mono'", size: 11, weight: 500 },
+          color: '#231F20'
+        }
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: { beginAtZero: true, max: 110, grid: { color: 'rgba(0,0,0,.06)' }, title: { display: true, text: 'Valor', font: { family: "'Source Sans 3'" } } }
+      }
+    }
+  });
+} catch(e) { console.warn('chartEvolucion:', e); }
+
+// Chart 4: MASE por padecimiento y sexo (grouped bar)
+try {
+  new Chart(document.getElementById('chartMASE'), {
+    type: 'bar',
+    data: {
+      labels: ['Depresion','Parkinson','Alzheimer'],
+      datasets: [
+        { label: 'General', data: [0.810, 0.693, 0.689], backgroundColor: 'rgba(0,82,78,.75)', borderRadius: 4, borderSkipped: false },
+        { label: 'Hombres', data: [0.858, 0.737, 0.690], backgroundColor: 'rgba(181,133,0,.65)', borderRadius: 4, borderSkipped: false },
+        { label: 'Mujeres', data: [0.782, 0.714, 0.698], backgroundColor: 'rgba(155,34,66,.6)', borderRadius: 4, borderSkipped: false }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { family: "'Source Sans 3'" }, padding: 12, boxWidth: 14 } },
+        datalabels: {
+          anchor: 'end', align: 'end', offset: 2,
+          font: { family: "'JetBrains Mono'", size: 10, weight: 500 },
+          color: '#231F20',
+          formatter: function(v) { return v.toFixed(3); }
+        },
+        annotation: { annotations: {
+          line1: { type: 'line', yMin: 1.0, yMax: 1.0, borderColor: 'rgba(185,28,28,.4)', borderWidth: 2, borderDash: [6,4],
+            label: { display: true, content: 'Naive baseline (1.0)', position: 'start', font: { family: "'Source Sans 3'", size: 11 }, color: '#b91c1c', backgroundColor: 'rgba(253,232,232,.9)', padding: 4 }
+          }
+        }}
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: { beginAtZero: true, max: 1.15, grid: { color: 'rgba(0,0,0,.06)' }, title: { display: true, text: 'MASE', font: { family: "'Source Sans 3'" } } }
+      }
+    }
+  });
+} catch(e) { console.warn('chartMASE:', e); }
+
+// Chart 5: MASE promedio por modelo (horizontal bar)
+try {
+  new Chart(document.getElementById('chartMASEModelo'), {
+    type: 'bar',
+    data: {
+      labels: ['Prophet','DeepAR','TFT','LightGBM+LSTM','Ridge','XGBoost'],
+      datasets: [{
+        label: 'MASE promedio (3 padecimientos)',
+        data: [0.799, 0.806, 0.813, 0.837, 0.883, 0.901],
+        backgroundColor: [C.prophetA, C.deparA, C.tftA, C.lgbmA, C.ridgeA, C.xgbA],
+        borderRadius: 6,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        datalabels: {
+          anchor: 'end', align: 'end', offset: 4,
+          font: { family: "'JetBrains Mono'", size: 11, weight: 500 },
+          color: '#231F20'
+        },
+        annotation: { annotations: {
+          line1: { type: 'line', xMin: 1.0, xMax: 1.0, borderColor: 'rgba(185,28,28,.4)', borderWidth: 2, borderDash: [6,4] }
+        }}
+      },
+      scales: {
+        x: { beginAtZero: true, max: 1.1, grid: { color: 'rgba(0,0,0,.06)' }, title: { display: true, text: 'MASE promedio', font: { family: "'Source Sans 3'" } } },
+        y: { grid: { display: false }, ticks: { font: { family: "'Source Sans 3'", size: 12, weight: 600 } } }
+      }
+    }
+  });
+} catch(e) { console.warn('chartMASEModelo:', e); }
+
+// Reveal animation
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('visible'); observer.unobserve(e.target); } });
+}, { threshold: 0.08 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// Smooth scroll
+document.querySelectorAll('nav a[href^="#"], .toc a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const href = a.getAttribute('href');
+    if(!href || !href.startsWith('#')) return;
+    const t = document.querySelector(href);
+    if(t){ e.preventDefault(); t.scrollIntoView({ behavior:'smooth', block:'start' }); }
+  });
+});
+</script>
+</body>
+</html>

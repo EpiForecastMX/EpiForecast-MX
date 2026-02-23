@@ -132,8 +132,14 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
   <div class="nav-links">
     <a href="index.html" class="ext">Inicio</a>
     <a href="EpiDashboard.html" class="ext">Dashboard</a>
-    <a href="Reports/index.html" class="ext">Pronosticos</a>
-    <a href="#guia" class="sep">Guia</a>
+    <a href="Reports/index.html" class="ext">Pronósticos</a>
+    <a href="bitacora_modelado.html" class="ext">Bitácora</a>
+    <a href="comparacion_modelos.html" class="ext">Comparación</a>
+    <a href="ficha_tecnica_prophet.html" class="ext">Ficha Prophet</a>
+    <a href="hiperparametros_modelos.html" class="ext">HPs SageMaker</a>
+    <a href="construccion_dashboard.html" class="ext">Construcción</a>
+    <a href="conclusiones.html" class="ext">Conclusiones</a>
+    <a href="#guia" class="sep">Guía</a>
     <a href="#resumen">Resumen</a>
     <a href="#calidad">Calidad</a>
     <a href="#ranking">Ranking</a>
@@ -156,50 +162,50 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
 <!-- ═══ GUIA ═══ -->
 <section id="guia" style="background:#fff;padding:4rem 0">
   <div class="container">
-    <h2 class="section-title reveal">Antes de empezar: guia rapida</h2>
+    <h2 class="section-title reveal">Antes de empezar: guía rápida</h2>
     <p class="section-sub reveal">Todo lo que necesitas saber para entender este reporte, explicado de forma sencilla</p>
     <div class="guide-grid">
       <div class="guide-card" style="border-left-color:var(--teal)">
-        <h3>Que mide el MASE</h3>
-        <p>El MASE es como una <strong>calificacion</strong> del modelo. Lo compara contra el metodo mas simple posible: repetir lo que paso hace exactamente un ano.
+        <h3>Qué mide el MASE</h3>
+        <p>El MASE es como una <strong>calificación</strong> del modelo. Lo compara contra el método más simple posible: repetir lo que pasó hace exactamente un año.
         <br><br><span class="badge badge-green">&lt; 0.7 Excelente</span> <span class="badge badge-yellow">0.7 – 1.0 Bueno</span> <span class="badge badge-red">&gt; 1.0 Necesita mejora</span>
-        <br><br>Si el MASE es menor a 1, <strong>nuestro modelo es mejor que solo copiar el pasado</strong>. Entre mas bajo, mejor.</p>
+        <br><br>Si el MASE es menor a 1, <strong>nuestro modelo es mejor que solo copiar el pasado</strong>. Entre más bajo, mejor.</p>
       </div>
       <div class="guide-card" style="border-left-color:var(--gold)">
         <h3>Las 4 regiones INEGI de salud mental</h3>
-        <p>El INEGI agrupa los 32 estados en <strong>4 zonas</strong> segun sus patrones de salud mental. Esto importa porque estados de la misma zona se comportan de forma similar:</p>
+        <p>El INEGI agrupa los 32 estados en <strong>4 zonas</strong> según sus patrones de salud mental. Esto importa porque estados de la misma zona se comportan de forma similar:</p>
         <div class="region-grid" style="margin-top:.75rem">
-          <div class="region-card"><h4>Metropolitana alta</h4><p>CDMX, Edo. Mex, Jalisco, Nuevo Leon, Chihuahua, Baja California, Coahuila, Sinaloa, Sonora, Tamaulipas</p></div>
-          <div class="region-card"><h4>Urbana media</h4><p>Aguascalientes, BCS, Colima, Durango, Guanajuato, Morelos, Queretaro, San Luis Potosi, Zacatecas</p></div>
-          <div class="region-card"><h4>Sur-Sureste vulnerable</h4><p>Campeche, Chiapas, Oaxaca, Quintana Roo, Tabasco, Veracruz, Yucatan</p></div>
-          <div class="region-card"><h4>Rural / dispersa</h4><p>Guerrero, Hidalgo, Michoacan, Nayarit, Puebla, Tlaxcala</p></div>
+          <div class="region-card"><h4>Metropolitana alta</h4><p>CDMX, Edo. Mex, Jalisco, Nuevo León, Chihuahua, Baja California, Coahuila, Sinaloa, Sonora, Tamaulipas</p></div>
+          <div class="region-card"><h4>Urbana media</h4><p>Aguascalientes, BCS, Colima, Durango, Guanajuato, Morelos, Querétaro, San Luis Potosí, Zacatecas</p></div>
+          <div class="region-card"><h4>Sur-Sureste vulnerable</h4><p>Campeche, Chiapas, Oaxaca, Quintana Roo, Tabasco, Veracruz, Yucatán</p></div>
+          <div class="region-card"><h4>Rural / dispersa</h4><p>Guerrero, Hidalgo, Michoacán, Nayarit, Puebla, Tlaxcala</p></div>
         </div>
       </div>
       <div class="guide-card" style="border-left-color:var(--burgundy)">
-        <h3>Que es un modelo &laquo;fallback&raquo; regional</h3>
+        <h3>Qué es un modelo &laquo;fallback&raquo; regional</h3>
         <p>Algunos estados tienen <strong>tan pocos casos</strong> (menos de 0.5 por semana) que no hay datos suficientes para entrenar un modelo confiable solo para ese estado.
-        <br><br>En lugar de dar un pronostico malo, <strong>usamos el modelo de toda su region INEGI</strong>, que tiene muchos mas datos. El pronostico final se ajusta con la poblacion individual de cada estado.
-        <br><br>Es como pedir prestada la experiencia de los vecinos para hacer una mejor prediccion.</p>
+        <br><br>En lugar de dar un pronóstico malo, <strong>usamos el modelo de toda su región INEGI</strong>, que tiene muchos más datos. El pronóstico final se ajusta con la población individual de cada estado.
+        <br><br>Es como pedir prestada la experiencia de los vecinos para hacer una mejor predicción.</p>
       </div>
       <div class="guide-card" style="border-left-color:var(--cool-gray)">
-        <h3>Por que hay diferente numero de modelos</h3>
-        <p>Cada padecimiento tiene una base de <strong>99 modelos</strong> (32 estados &times; 3 modos de sexo + 3 nacionales). La diferencia viene de cuantos modelos regionales de respaldo se necesitan:
-        <br><br><strong>Alzheimer</strong>: 108 modelos (99 base + 9 regionales de respaldo). 35 modelos estatales no tienen datos suficientes y usan el modelo de su region (3 regiones activas).<br><strong>Depresión</strong>: 99 modelos (32 estados x 3 modos + 3 nacionales). Todos los estados tienen datos suficientes.<br><strong>Parkinson</strong>: 105 modelos (99 base + 6 regionales de respaldo). 5 modelos estatales no tienen datos suficientes y usan el modelo de su region (2 regiones activas).</p>
+        <h3>Por qué hay diferente número de modelos</h3>
+        <p>Cada padecimiento tiene una base de <strong>99 modelos</strong> (32 estados &times; 3 modos de sexo + 3 nacionales). La diferencia viene de cuántos modelos regionales de respaldo se necesitan:
+        <br><br><strong>Alzheimer</strong>: 108 modelos (99 base + 9 regionales de respaldo). 35 modelos estatales no tienen datos suficientes y usan el modelo de su región (3 regiones activas).<br><strong>Depresión</strong>: 99 modelos (32 estados x 3 modos + 3 nacionales). Todos los estados tienen datos suficientes.<br><strong>Parkinson</strong>: 105 modelos (99 base + 6 regionales de respaldo). 5 modelos estatales no tienen datos suficientes y usan el modelo de su región (2 regiones activas).</p>
       </div>
       <div class="guide-card" style="border-left-color:var(--teal)">
-        <h3>Las 4 metricas del modelo</h3>
-        <p>Cada modelo se evalua con cuatro metricas complementarias:
-        <br><br><strong>MASE</strong> &mdash; Compara el error del modelo contra un baseline naive (repetir el valor de hace 1 ano). Menor a 1 = mejor que el baseline. <em>Metrica principal.</em>
-        <br><strong>RMSE</strong> &mdash; Error cuadratico medio. Penaliza errores grandes. Esta en espacio log-tasa, por eso son numeros pequenos (~0.05&ndash;0.2).
-        <br><strong>MAE</strong> &mdash; Error absoluto medio. Similar al RMSE pero sin penalizar extremos. Tambien en espacio log-tasa.
-        <br><strong>MAPE</strong> &mdash; Error porcentual. Intuitivo (&laquo;el modelo se equivoca X%&raquo;), pero problematico cuando la incidencia es cercana a cero.
-        <br><br><em>Nota: RMSE y MAE estan en escala log-tasa (no en casos), por eso sus valores son pequenos.</em></p>
+        <h3>Las 4 métricas del modelo</h3>
+        <p>Cada modelo se evalúa con cuatro métricas complementarias:
+        <br><br><strong>MASE</strong> &mdash; Compara el error del modelo contra un baseline naive (repetir el valor de hace 1 año). Menor a 1 = mejor que el baseline. <em>Métrica principal.</em>
+        <br><strong>RMSE</strong> &mdash; Error cuadrático medio. Penaliza errores grandes. Está en espacio log-tasa, por eso son números pequeños (~0.05&ndash;0.2).
+        <br><strong>MAE</strong> &mdash; Error absoluto medio. Similar al RMSE pero sin penalizar extremos. También en espacio log-tasa.
+        <br><strong>MAPE</strong> &mdash; Error porcentual. Intuitivo (&laquo;el modelo se equivoca X%&raquo;), pero problemático cuando la incidencia es cercana a cero.
+        <br><br><em>Nota: RMSE y MAE están en escala log-tasa (no en casos), por eso sus valores son pequeños.</em></p>
       </div>
       <div class="guide-card" style="border-left-color:var(--burgundy)">
-        <h3>Por que MAPE muestra 999%</h3>
-        <p>El MAPE se calcula como <strong>|error| / |valor real| &times; 100</strong>. Cuando la incidencia semanal es cercana a cero (comun en Alzheimer y Parkinson estatales), el denominador se acerca a cero y el MAPE explota hacia infinito.
+        <h3>Por qué MAPE muestra 999%</h3>
+        <p>El MAPE se calcula como <strong>|error| / |valor real| &times; 100</strong>. Cuando la incidencia semanal es cercana a cero (común en Alzheimer y Parkinson estatales), el denominador se acerca a cero y el MAPE explota hacia infinito.
         <br><br>Para evitar valores infinitos, se <strong>capea a 999%</strong>. Esto ocurre en <strong>~44% de los modelos</strong> (138 de 312), principalmente en padecimientos de baja incidencia.
-        <br><br>Por esta razon, <strong>MASE es la metrica principal</strong>: no sufre este problema porque compara contra un baseline en vez de dividir por el valor real.</p>
+        <br><br>Por esta razón, <strong>MASE es la métrica principal</strong>: no sufre este problema porque compara contra un baseline en vez de dividir por el valor real.</p>
       </div>
     </div>
   </div>
@@ -209,7 +215,7 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
 <section id="resumen">
   <div class="container">
     <h2 class="section-title reveal">Resumen por Padecimiento</h2>
-    <p class="section-sub reveal">Desempeno agregado de los modelos Prophet por enfermedad</p>
+    <p class="section-sub reveal">Desempeño agregado de los modelos Prophet por enfermedad</p>
     <div class="card-grid" id="pad-cards"></div>
     <div class="charts-row">
       <div class="chart-wrap"><canvas id="maseCompareChart"></canvas></div>
@@ -221,8 +227,8 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
 <!-- ═══ CALIDAD ═══ -->
 <section id="calidad" style="background:#fff;padding:4rem 0">
   <div class="container">
-    <h2 class="section-title reveal">Distribucion de Calidad</h2>
-    <p class="section-sub reveal">Como se distribuyen los modelos segun su MASE — la mayoria estan en rango bueno o excelente</p>
+    <h2 class="section-title reveal">Distribución de Calidad</h2>
+    <p class="section-sub reveal">Cómo se distribuyen los modelos según su MASE — la mayoría están en rango bueno o excelente</p>
     <div class="chart-wrap"><canvas id="histoChart"></canvas></div>
   </div>
 </section>
@@ -231,7 +237,7 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
 <section id="sexo">
   <div class="container">
     <h2 class="section-title reveal">Desglose por Sexo</h2>
-    <p class="section-sub reveal">Comparacion de MASE entre modelos generales, masculinos y femeninos. Los modelos &laquo;general&raquo; suelen ser mejores porque tienen mas datos.</p>
+    <p class="section-sub reveal">Comparación de MASE entre modelos generales, masculinos y femeninos. Los modelos &laquo;general&raquo; suelen ser mejores porque tienen más datos.</p>
     <div class="chart-wrap"><canvas id="sexoChart"></canvas></div>
   </div>
 </section>
@@ -240,7 +246,7 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
 <section id="topbottom" style="background:#fff;padding:4rem 0">
   <div class="container">
     <h2 class="section-title reveal">Los 10 Mejores y 10 Peores</h2>
-    <p class="section-sub reveal">Modelos con el MASE mas bajo (mejor) y mas alto (peor). CDMX domina los mejores; Estado de Mexico domina los peores.</p>
+    <p class="section-sub reveal">Modelos con el MASE más bajo (mejor) y más alto (peor). CDMX domina los mejores; Estado de México domina los peores.</p>
     <div class="charts-row">
       <div class="chart-wrap"><canvas id="topChart"></canvas></div>
       <div class="chart-wrap"><canvas id="bottomChart"></canvas></div>
@@ -292,8 +298,8 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
 <!-- ═══ COBERTURA ═══ -->
 <section id="cobertura" style="background:#fff;padding:4rem 0">
   <div class="container">
-    <h2 class="section-title reveal">Cobertura Geografica</h2>
-    <p class="section-sub reveal">Tipo de modelo por estado: <span class="cob-dot propio" style="display:inline-block;vertical-align:middle"></span> Propio (datos suficientes) &nbsp; <span class="cob-dot fallback" style="display:inline-block;vertical-align:middle"></span> Fallback regional (usa modelo de su zona). Orden: Alzheimer, Depresion, Parkinson.</p>
+    <h2 class="section-title reveal">Cobertura Geográfica</h2>
+    <p class="section-sub reveal">Tipo de modelo por estado: <span class="cob-dot propio" style="display:inline-block;vertical-align:middle"></span> Propio (datos suficientes) &nbsp; <span class="cob-dot fallback" style="display:inline-block;vertical-align:middle"></span> Fallback regional (usa modelo de su zona). Orden: Alzheimer, Depresión, Parkinson.</p>
     <div class="cob-summary" id="cobSummary"></div>
     <div class="cob-grid" id="cobGrid"></div>
   </div>
@@ -302,8 +308,8 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
 <!-- ═══ FOOTER ═══ -->
 <footer>
   <div class="footer-title">EpiForecast-MX</div>
-  <p>Plataforma de inteligencia epidemiologica &middot; IMSS &times; Tec de Monterrey</p>
-  <p style="margin-top:.5rem"><a href="index.html">Galeria de Pronosticos (312 graficos)</a></p>
+  <p>Plataforma de inteligencia epidemiológica &middot; IMSS &times; Tec de Monterrey</p>
+  <p style="margin-top:.5rem"><a href="index.html">Inicio</a> &middot; <a href="EpiDashboard.html">Dashboard</a> &middot; <a href="Reports/index.html">Pronósticos</a> &middot; <a href="bitacora_modelado.html">Bitácora</a> &middot; <a href="comparacion_modelos.html">Comparación de Modelos</a> &middot; <a href="ficha_tecnica_prophet.html">Ficha Prophet</a> &middot; <a href="hiperparametros_modelos.html">HPs SageMaker</a> &middot; <a href="construccion_dashboard.html">Construcción Dashboard</a> &middot; <a href="conclusiones.html">Conclusiones</a></p>
   <p style="margin-top:1rem;opacity:.5">Generado el 22/02/2026 con datos 2014-2026</p>
 </footer>
 
@@ -428,7 +434,7 @@ try {
         legend: { position:'bottom', labels:{ font:{ family:"'Source Sans 3'" } } }
       },
       scales: {
-        y: { beginAtZero:true, title:{ display:true, text:'Numero de modelos', font:{ family:"'Source Sans 3'" } }, grid:{ color:'rgba(0,0,0,.06)' } },
+        y: { beginAtZero:true, title:{ display:true, text:'Número de modelos', font:{ family:"'Source Sans 3'" } }, grid:{ color:'rgba(0,0,0,.06)' } },
         x: { grid:{ display:false }, title:{ display:true, text:'Rango de MASE', font:{ family:"'Source Sans 3'" } } }
       }
     }
@@ -514,7 +520,7 @@ try {
     const groupOrder = ['Nacional','Regional','Estatal'];
     const groupLabels = {
       'Nacional': 'Nacional (modelos con todos los datos del pais)',
-      'Regional': 'Regional (modelos por region INEGI de salud mental)',
+      'Regional': 'Regional (modelos por región INEGI de salud mental)',
       'Estatal': 'Estatal (modelos por estado — 32 entidades)'
     };
     data.forEach(r => {
