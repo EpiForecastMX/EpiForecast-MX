@@ -364,28 +364,22 @@ class GraficosHelper:
             ha="left", va="top",
         )
 
-        # ── 8. Zona CV: último fold de prueba (banda visible) ────────────
+        # ── 8. Línea de corte CV ────────────────────────────────────────
         fecha_corte = pd.Timestamp(conf["FECHA_CORTE_ENTRENAMIENTO"])
-        test_weeks = conf.get("TEST_SIZE", 53)
-        fecha_cv_inicio = fecha_corte - pd.Timedelta(weeks=test_weeks)
 
-        ax.axvspan(
-            fecha_cv_inicio, fecha_corte,
-            alpha=0.08, color=c_gray, zorder=0,
-        )
         ax.axvline(
-            fecha_cv_inicio, color=c_gray, ls=":", lw=1.2, alpha=0.6, zorder=6,
+            fecha_corte, color=c_gray, ls=":", lw=1.2, alpha=0.6, zorder=6,
         )
         ax.annotate(
             "← Entrenamiento",
-            xy=(fecha_cv_inicio, 0.88),
+            xy=(fecha_corte, 0.88),
             xycoords=("data", "axes fraction"),
             fontsize=8.5, fontweight="semibold", color=c_gray,
             ha="right", va="top",
         )
         ax.annotate(
             "Prueba CV →",
-            xy=(fecha_cv_inicio, 0.88),
+            xy=(fecha_corte, 0.88),
             xycoords=("data", "axes fraction"),
             fontsize=8.5, fontweight="semibold", color=c_gray,
             ha="left", va="top",
