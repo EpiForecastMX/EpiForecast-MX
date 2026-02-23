@@ -65,8 +65,9 @@ section{padding:4rem 0}
 .param-card::before{content:'';position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.04;pointer-events:none}
 .param-card h4{font-family:var(--font-mono);font-size:.95rem;color:var(--gold-light);margin-bottom:.4rem;font-weight:500}
 .param-card .param-value{font-family:var(--font-mono);font-size:1.4rem;color:#fff;font-weight:500;margin-bottom:.75rem;display:block}
-.param-card p{font-size:.88rem;opacity:.85;line-height:1.65}
-.param-card .param-why{margin-top:.75rem;padding-top:.75rem;border-top:1px solid rgba(232,213,181,.2);font-size:.82rem;opacity:.7}
+.param-card p{font-size:.88rem;opacity:.92;line-height:1.65}
+.param-card .param-why{margin-top:.75rem;padding-top:.75rem;border-top:1px solid rgba(232,213,181,.25);font-size:.82rem;opacity:.85}
+.param-card code{background:rgba(232,213,181,.18);color:#fff;padding:.15em .45em;border-radius:4px;font-size:.85em;font-weight:500}
 .param-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.5rem}
 
 /* CHART */
@@ -240,6 +241,7 @@ code{font-family:var(--font-mono);font-size:.85em;background:rgba(0,82,78,.08);c
     <a href="bitacora_modelado.html" class="ext" style="color:var(--gold)">Bitácora</a>
     <a href="comparacion_modelos.html" class="ext" style="color:var(--gold)">Comparación</a>
     <a href="hiperparametros_modelos.html" class="ext" style="color:var(--gold)">HPs SageMaker</a>
+    <a href="construccion_dashboard.html" class="ext" style="color:var(--gold)">Construcción</a>
     <a href="#transformaciones" style="border-left:1px solid rgba(232,213,181,.3);padding-left:1.5rem">Transformaciones</a>
     <a href="#estacionalidad">Estacionalidad</a>
     <a href="#grid">Grid</a>
@@ -733,7 +735,7 @@ code{font-family:var(--font-mono);font-size:.85em;background:rgba(0,82,78,.08);c
       <canvas id="chartCombos"></canvas>
     </div>
     <div class="chart-wrap">
-      <h3>Distribucion de hiperparametros</h3>
+      <h3>Distribución de hiperparámetros</h3>
       <p class="chart-sub">Valores de changepoint_prior_scale por padecimiento</p>
       <canvas id="chartCpDist"></canvas>
     </div>
@@ -1146,7 +1148,7 @@ code{font-family:var(--font-mono);font-size:.85em;background:rgba(0,82,78,.08);c
   </div>
 
   <div class="chart-wrap reveal" style="margin-top:2rem">
-    <h3>Distribucion de modelos por confianza y padecimiento</h3>
+    <h3>Distribución de modelos por confianza y padecimiento</h3>
     <p class="chart-sub">Modelos con confianza "normal" vs "insuficiente" — los insuficientes usan fallback regional en v6</p>
     <canvas id="chartConfianza"></canvas>
   </div>
@@ -1289,7 +1291,7 @@ code{font-family:var(--font-mono);font-size:.85em;background:rgba(0,82,78,.08);c
   </div>
 
   <div class="chart-wrap reveal" style="margin-top:2rem">
-    <h3>Comparacion de métricas por padecimiento (v6)</h3>
+    <h3>Comparación de métricas por padecimiento (v6)</h3>
     <p class="chart-sub">RMSE y MASE medios — normalizado para visualización conjunta (escala diferente entre métricas)</p>
     <canvas id="chartMetricas"></canvas>
   </div>
@@ -1315,7 +1317,7 @@ code{font-family:var(--font-mono);font-size:.85em;background:rgba(0,82,78,.08);c
     </div>
     <div class="stat-box green">
       <div class="big-num">312</div>
-      <div class="stat-desc">Graficos generados</div>
+      <div class="stat-desc">Gráficos generados</div>
     </div>
     <div class="stat-box gold">
       <div class="big-num">~45</div>
@@ -1631,7 +1633,8 @@ code{font-family:var(--font-mono);font-size:.85em;background:rgba(0,82,78,.08);c
     <a href="Reports/index.html">Pronósticos</a> ·
     <a href="bitacora_modelado.html">Bitácora</a> ·
     <a href="comparacion_modelos.html">Comparación</a> ·
-    <a href="hiperparametros_modelos.html">HPs SageMaker</a>
+    <a href="hiperparametros_modelos.html">HPs SageMaker</a> ·
+    <a href="construccion_dashboard.html">Construcción Dashboard</a>
   </p>
   <p style="margin-top:.5rem">Ficha Técnica Prophet — Generado feb 2026</p>
 </footer>
