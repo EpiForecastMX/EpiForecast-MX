@@ -222,13 +222,13 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
     <a href="index.html" class="ext">Inicio</a>
     <a href="EpiDashboard.html" class="ext">Dashboard</a>
     <a href="reporte_resultados.html" class="ext">Resultados</a>
-    <a href="Reports/index.html" class="ext">Pronosticos</a>
-    <a href="bitacora_modelado.html" class="ext">Bitacora</a>
-    <a href="comparacion_modelos.html" class="ext">Comparacion</a>
+    <a href="Reports/index.html" class="ext">Pron&oacute;sticos</a>
+    <a href="bitacora_modelado.html" class="ext">Bit&aacute;cora</a>
+    <a href="comparacion_modelos.html" class="ext">Comparaci&oacute;n</a>
     <a href="ficha_tecnica_prophet.html" class="ext">Ficha Prophet</a>
     <a href="hiperparametros_modelos.html" class="ext">HPs SageMaker</a>
-    <a href="construccion_dashboard.html" class="ext">Construccion</a>
-    <a href="#vision" class="sep">Vision</a>
+    <a href="construccion_dashboard.html" class="ext">Construcci&oacute;n</a>
+    <a href="#vision" class="sep">Visi&oacute;n</a>
     <a href="#baseline">Baseline</a>
     <a href="#sagemaker">SageMaker</a>
     <a href="#mase">MASE</a>
@@ -240,7 +240,7 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
 <section class="hero">
   <h1>Conclusiones del <em>Proyecto</em></h1>
   <p class="subtitle">EpiForecast-MX &middot; IMSS &times; Tec de Monterrey</p>
-  <p class="subtitle2">Maestria en Inteligencia Artificial Aplicada &bull; Febrero 2026</p>
+  <p class="subtitle2">Maestr&iacute;a en Inteligencia Artificial Aplicada &bull; Febrero 2026</p>
   <div class="hero-kpis">
     <div class="hero-kpi"><span class="value">312</span><span class="label">Modelos Prophet</span></div>
     <div class="hero-kpi"><span class="value">100%</span><span class="label">Cobertura Estatal</span></div>
@@ -255,47 +255,47 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
     <div class="toc reveal">
       <h3>Contenido</h3>
       <div class="toc-grid">
-        <a href="#vision"><span class="toc-num">01</span> Vision general</a>
-        <a href="#eda"><span class="toc-num">02</span> Analisis de datos y EDA</a>
+        <a href="#vision"><span class="toc-num">01</span> Visi&oacute;n general</a>
+        <a href="#eda"><span class="toc-num">02</span> An&aacute;lisis de datos y EDA</a>
         <a href="#fe"><span class="toc-num">03</span> Feature Engineering</a>
         <a href="#baseline"><span class="toc-num">04</span> Baseline: 297 modelos</a>
-        <a href="#optimizacion"><span class="toc-num">05</span> Optimizacion v5/v6</a>
+        <a href="#optimizaci&oacute;n"><span class="toc-num">05</span> Optimizaci&oacute;n v5/v6</a>
         <a href="#sagemaker"><span class="toc-num">06</span> Benchmark SageMaker</a>
         <a href="#tableau"><span class="toc-num">07</span> Dashboard Tableau</a>
         <a href="#hallazgos"><span class="toc-num">08</span> Hallazgos clave</a>
-        <a href="#mase"><span class="toc-num">09</span> MASE: la metrica que importa</a>
+        <a href="#mase"><span class="toc-num">09</span> MASE: la m&eacute;trica que importa</a>
         <a href="#limitaciones"><span class="toc-num">10</span> Limitaciones y trabajo futuro</a>
         <a href="#equipo"><span class="toc-num">11</span> Reflexiones del equipo</a>
         <a href="#personales"><span class="toc-num">12</span> Reflexiones personales</a>
         <a href="#agradecimientos"><span class="toc-num">13</span> Agradecimientos</a>
-        <a href="#ficha"><span class="toc-num">14</span> Ficha tecnica</a>
+        <a href="#ficha"><span class="toc-num">14</span> Ficha t&eacute;cnica</a>
       </div>
     </div>
   </div>
 </section>
 
-<!-- 1. Vision general -->
+<!-- 1. Visi&oacute;n general -->
 <section id="vision">
   <div class="container">
-    <h2 class="section-title reveal">1. Vision general</h2>
-    <p class="section-sub reveal">Que es EpiForecast-MX y por que existe</p>
+    <h2 class="section-title reveal">1. Visi&oacute;n general</h2>
+    <p class="section-sub reveal">Qu&eacute; es EpiForecast-MX y por qu&eacute; existe</p>
 
     <div class="card reveal" style="max-width:900px">
       <p style="font-size:1.05rem;line-height:1.8">
-        <strong>EpiForecast-MX</strong> es una plataforma de inteligencia epidemiologica desarrollada en colaboracion con el
-        <strong>Instituto Mexicano del Seguro Social (IMSS)</strong> como proyecto Capstone de la Maestria en Inteligencia
-        Artificial Aplicada del Tecnologico de Monterrey. Predice la incidencia semanal de tres padecimientos neurologicos
-        y de salud mental a nivel estatal en Mexico:
+        <strong>EpiForecast-MX</strong> es una plataforma de inteligencia epidemiol&oacute;gica desarrollada en colaboraci&oacute;n con el
+        <strong>Instituto Mexicano del Seguro Social (IMSS)</strong> como proyecto Capstone de la Maestr&iacute;a en Inteligencia
+        Artificial Aplicada del Tecnol&oacute;gico de Monterrey. Predice la incidencia semanal de tres padecimientos neurol&oacute;gicos
+        y de salud mental a nivel estatal en M&eacute;xico:
       </p>
       <div class="stats-row" style="margin-top:1.5rem">
-        <div class="stat-box burgundy"><div class="big-num">F32</div><div class="stat-desc">Depresion</div></div>
+        <div class="stat-box burgundy"><div class="big-num">F32</div><div class="stat-desc">Depresi&oacute;n</div></div>
         <div class="stat-box"><div class="big-num">G20</div><div class="stat-desc">Parkinson</div></div>
         <div class="stat-box gold"><div class="big-num">G30</div><div class="stat-desc">Alzheimer</div></div>
       </div>
       <p style="margin-top:1.5rem;font-size:.95rem;color:#555;line-height:1.7">
-        Los datos provienen del <strong>SINAVE</strong> (Sistema Nacional de Vigilancia Epidemiologica), con registros
-        semanales desde 2014 hasta 2026 extraidos de mas de 633 boletines epidemiologicos en PDF. Los modelos trabajan con
-        <strong>tasas por 100,000 habitantes</strong> normalizadas con datos demograficos del INEGI, generando proyecciones
+        Los datos provienen del <strong>SINAVE</strong> (Sistema Nacional de Vigilancia Epidemiol&oacute;gica), con registros
+        semanales desde 2014 hasta 2026 extra&iacute;dos de m&aacute;s de 633 boletines epidemiol&oacute;gicos en PDF. Los modelos trabajan con
+        <strong>tasas por 100,000 habitantes</strong> normalizadas con datos demogr&aacute;ficos del INEGI, generando proyecciones
         a 52 semanas para las 32 entidades federativas, segmentadas por sexo.
       </p>
     </div>
@@ -305,37 +305,37 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
 <!-- 2. EDA -->
 <section id="eda" style="background:#fff;padding:4rem 0">
   <div class="container">
-    <h2 class="section-title reveal">2. Analisis de datos y EDA</h2>
+    <h2 class="section-title reveal">2. An&aacute;lisis de datos y EDA</h2>
     <p class="section-sub reveal">De PDFs crudos a un dataset estructurado</p>
 
     <div class="stats-row reveal">
       <div class="stat-box"><div class="big-num">633</div><div class="stat-desc">Boletines PDF</div></div>
       <div class="stat-box gold"><div class="big-num">60K+</div><div class="stat-desc">Registros</div></div>
       <div class="stat-box burgundy"><div class="big-num">32</div><div class="stat-desc">Entidades</div></div>
-      <div class="stat-box green"><div class="big-num">2014-2026</div><div class="stat-desc">Periodo</div></div>
+      <div class="stat-box green"><div class="big-num">2014-2026</div><div class="stat-desc">Per&iacute;odo</div></div>
     </div>
 
     <div class="guide-grid reveal">
       <div class="guide-card">
-        <h3>Extraccion con Camelot</h3>
-        <p>Tablas extraidas de boletines PDF del SINAVE con keywords <code>F32</code>, <code>G20</code>, <code>G30</code>. Pipeline automatizado con Ghostscript y merge incremental.</p>
+        <h3>Extracci&oacute;n con Camelot</h3>
+        <p>Tablas extra&iacute;das de boletines PDF del SINAVE con keywords <code>F32</code>, <code>G20</code>, <code>G30</code>. Pipeline automatizado con Ghostscript y merge incremental.</p>
       </div>
       <div class="guide-card gold">
-        <h3>Normalizacion de entidades</h3>
-        <p>Estandarizacion de nombres de estados (variaciones en acentos, abreviaturas, errores tipograficos) para garantizar consistencia en las 32 entidades.</p>
+        <h3>Normalizaci&oacute;n de entidades</h3>
+        <p>Estandarizaci&oacute;n de nombres de estados (variaciones en acentos, abreviaturas, errores tipogr&aacute;ficos) para garantizar consistencia en las 32 entidades.</p>
       </div>
       <div class="guide-card burgundy">
-        <h3>Semana epidemiologica 53</h3>
-        <p>Manejo especial de anos con 53 semanas epidemiologicas. Deteccion y tratamiento de duplicados en semanas de transicion entre anos.</p>
+        <h3>Semana epidemiol&oacute;gica 53</h3>
+        <p>Manejo especial de a&ntilde;os con 53 semanas epidemiol&oacute;gicas. Detecci&oacute;n y tratamiento de duplicados en semanas de transici&oacute;n entre a&ntilde;os.</p>
       </div>
       <div class="guide-card green">
-        <h3>Deteccion de outliers (IQR)</h3>
-        <p>Identificacion sistematica de valores atipicos con metodo IQR parametrizado. Muchos outliers coinciden con periodos de captura irregular del SINAVE.</p>
+        <h3>Detecci&oacute;n de outliers (IQR)</h3>
+        <p>Identificaci&oacute;n sistem&aacute;tica de valores at&iacute;picos con m&eacute;todo IQR parametrizado. Muchos outliers coinciden con per&iacute;odos de captura irregular del SINAVE.</p>
       </div>
     </div>
 
     <div class="callout reveal" style="margin-top:2rem">
-      <strong>Hallazgo clave del EDA:</strong> La Depresion (F32) representa el 87% de la incidencia total de los tres
+      <strong>Hallazgo clave del EDA:</strong> La Depresi&oacute;n (F32) representa el 87% de la incidencia total de los tres
       padecimientos, con una estacionalidad marcada y heterogeneidad regional significativa. Parkinson y Alzheimer muestran
       tasas mucho menores pero con tendencias en aumento sostenido.
     </div>
@@ -351,25 +351,25 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
     <div class="concept-grid reveal">
       <div class="concept-card">
         <h4>Tasa por 100K habitantes</h4>
-        <p>Normalizacion de conteos absolutos a tasas per capita usando poblacion INEGI. Permite comparar estados de tamanos radicalmente diferentes (CDMX vs BCS).</p>
+        <p>Normalizaci&oacute;n de conteos absolutos a tasas per capita usando poblaci&oacute;n INEGI. Permite comparar estados de tama&ntilde;os radicalmente diferentes (CDMX vs BCS).</p>
       </div>
       <div class="concept-card gold">
         <h4>Regiones INEGI de salud mental</h4>
-        <p>Agrupacion de las 32 entidades en 4 regiones: <em>Urbana media</em>, <em>Sur-Sureste vulnerable</em>, <em>Metropolitana alta</em> y <em>Rural / dispersa</em>.</p>
+        <p>Agrupaci&oacute;n de las 32 entidades en 4 regiones: <em>Urbana media</em>, <em>Sur-Sureste vulnerable</em>, <em>Metropolitana alta</em> y <em>Rural / dispersa</em>.</p>
       </div>
       <div class="concept-card burgundy">
-        <h4>Variables demograficas</h4>
-        <p>Integracion de poblacion total, superficie, densidad poblacional y clasificacion de regiones via PxWeb API del INEGI.</p>
+        <h4>Variables demogr&aacute;ficas</h4>
+        <p>Integraci&oacute;n de poblaci&oacute;n total, superficie, densidad poblacional y clasificaci&oacute;n de regiones v&iacute;a PxWeb API del INEGI.</p>
       </div>
       <div class="concept-card green">
         <h4>CI/CD automatizado</h4>
-        <p>Scraping diario de nuevos boletines SINAVE (GitHub Actions + Selenium), extraccion automatica y merge incremental al dataset principal.</p>
+        <p>Scraping diario de nuevos boletines SINAVE (GitHub Actions + Selenium), extracci&oacute;n autom&aacute;tica y merge incremental al dataset principal.</p>
       </div>
     </div>
 
     <div class="callout callout-gold reveal" style="margin-top:2rem">
-      <strong>Log-transform:</strong> <code>y = log(1 + tasa)</code> estabiliza la varianza en series volatiles,
-      especialmente Depresion. Al predecir se revierte con <code>exp(y) - 1</code> para obtener conteos interpretables.
+      <strong>Log-transform:</strong> <code>y = log(1 + tasa)</code> estabiliza la varianza en series vol&aacute;tiles,
+      especialmente Depresi&oacute;n. Al predecir se revierte con <code>exp(y) - 1</code> para obtener conteos interpretables.
     </div>
   </div>
 </section>
@@ -383,37 +383,37 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
     <div class="stats-row reveal">
       <div class="stat-box"><div class="big-num">297</div><div class="stat-desc">Modelos estatales</div></div>
       <div class="stat-box gold"><div class="big-num">4</div><div class="stat-desc">Folds de CV</div></div>
-      <div class="stat-box burgundy"><div class="big-num">913</div><div class="stat-desc">Dias COVID marcados</div></div>
-      <div class="stat-box green"><div class="big-num">52</div><div class="stat-desc">Semanas pronostico</div></div>
+      <div class="stat-box burgundy"><div class="big-num">913</div><div class="stat-desc">D&iacute;as COVID marcados</div></div>
+      <div class="stat-box green"><div class="big-num">52</div><div class="stat-desc">Semanas pron&oacute;stico</div></div>
     </div>
 
     <div class="guide-grid reveal" style="margin-top:2rem">
       <div class="guide-card">
         <h3>Cross-validation temporal</h3>
-        <p>4 folds con ventanas deslizantes que respetan la temporalidad. Pesos progresivos <code>[0.5, 0.75, 1.0, 1.25]</code> que priorizan periodos recientes sobre post-COVID.</p>
+        <p>4 folds con ventanas deslizantes que respetan la temporalidad. Pesos progresivos <code>[0.5, 0.75, 1.0, 1.25]</code> que priorizan per&iacute;odos recientes sobre post-COVID.</p>
       </div>
       <div class="guide-card gold">
         <h3>COVID como cambio estructural</h3>
-        <p>Pandemia marcada como periodo atipico (2020-03-23, ventana 913 dias). Prophet captura los changepoints automaticamente sin intervencion manual.</p>
+        <p>Pandemia marcada como per&iacute;odo at&iacute;pico (2020-03-23, ventana 913 d&iacute;as). Prophet captura los changepoints autom&aacute;ticamente sin intervenci&oacute;n manual.</p>
       </div>
       <div class="guide-card burgundy">
         <h3>Entrenamiento final</h3>
-        <p>Despues de CV, el modelo final (.pkl) se entrena con <strong>toda la serie</strong>, no solo el split de entrenamiento. CV evalua; el .pkl aprovecha todos los datos.</p>
+        <p>Despu&eacute;s de CV, el modelo final (.pkl) se entrena con <strong>toda la serie</strong>, no solo el split de entrenamiento. CV eval&uacute;a; el .pkl aprovecha todos los datos.</p>
       </div>
     </div>
 
     <div class="callout reveal" style="margin-top:2rem">
       <strong>Resultado baseline:</strong> 297 modelos entrenados cubriendo el 87% de las series. Las 39 series con incidencia
-      promedio menor a 0.5 casos/semana se marcaron como insuficientes y quedaron sin prediccion informada.
+      promedio menor a 0.5 casos/semana se marcaron como insuficientes y quedaron sin predicci&oacute;n informada.
     </div>
   </div>
 </section>
 
-<!-- 5. Optimizacion v5/v6 -->
-<section id="optimizacion">
+<!-- 5. Optimizaci&oacute;n v5/v6 -->
+<section id="optimizaci&oacute;n">
   <div class="container">
-    <h2 class="section-title reveal">5. Optimizacion v5/v6</h2>
-    <p class="section-sub reveal">De baseline a produccion: anti-Newton, MASE y modo hibrido</p>
+    <h2 class="section-title reveal">5. Optimizaci&oacute;n v5/v6</h2>
+    <p class="section-sub reveal">De baseline a producci&oacute;n: anti-Newton, MASE y modo h&iacute;brido</p>
 
     <div class="evo-grid reveal">
       <div class="evo-card">
@@ -428,7 +428,7 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
         </div>
       </div>
       <div class="evo-card">
-        <div class="evo-card-head" style="background:var(--gold)">v5 &mdash; Optimizacion</div>
+        <div class="evo-card-head" style="background:var(--gold)">v5 &mdash; Optimizaci&oacute;n</div>
         <div class="evo-card-body">
           <div class="evo-stat"><span>Modelos</span><span class="evo-val">297</span></div>
           <div class="evo-stat"><span>Cobertura</span><span class="evo-val">87%</span></div>
@@ -439,7 +439,7 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
         </div>
       </div>
       <div class="evo-card">
-        <div class="evo-card-head" style="background:var(--teal)">v6 &mdash; Produccion</div>
+        <div class="evo-card-head" style="background:var(--teal)">v6 &mdash; Producci&oacute;n</div>
         <div class="evo-card-body">
           <div class="evo-stat"><span>Modelos</span><span class="evo-val best">312</span></div>
           <div class="evo-stat"><span>Cobertura</span><span class="evo-val best">100%</span></div>
@@ -453,26 +453,26 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
 
     <div class="guide-grid reveal" style="margin-top:2rem">
       <div class="guide-card">
-        <h3>Proteccion anti-Newton</h3>
-        <p>3 capas: sort descendente por <code>cp</code>, timeout 35s por fold, y threshold Newton-prone. Chihuahua-Depresion de <strong>39 min a 4 min</strong>.</p>
+        <h3>Protecci&oacute;n anti-Newton</h3>
+        <p>3 capas: sort descendente por <code>cp</code>, timeout 35s por fold, y threshold Newton-prone. Chihuahua-Depresi&oacute;n de <strong>39 min a 4 min</strong>.</p>
       </div>
       <div class="guide-card gold">
         <h3>Grids diferenciados por padecimiento</h3>
-        <p>Optimizados con datos de 297 modelos v4. Cada padecimiento tiene su propio grid de hiperparametros ajustado a su comportamiento epidemiologico.</p>
+        <p>Optimizados con datos de 297 modelos v4. Cada padecimiento tiene su propio grid de hiperpar&aacute;metros ajustado a su comportamiento epidemiol&oacute;gico.</p>
       </div>
       <div class="guide-card burgundy">
-        <h3>MASE: metrica escala-independiente</h3>
+        <h3>MASE: m&eacute;trica escala-independiente</h3>
         <p><code>MASE = MAE / MAE_naive(lag-52)</code>. MASE &lt; 1 significa que el modelo supera al baseline naive estacional. Media v6: <strong>0.76</strong>.</p>
       </div>
       <div class="guide-card green">
-        <h3>Modo hibrido (v6)</h3>
-        <p>41 series insuficientes ahora usan fallback regional: modelos regionales de respaldo con desnormalizacion por poblacion estatal individual. <strong>100% cobertura</strong>.</p>
+        <h3>Modo h&iacute;brido (v6)</h3>
+        <p>41 series insuficientes ahora usan fallback regional: modelos regionales de respaldo con desnormalizaci&oacute;n por poblaci&oacute;n estatal individual. <strong>100% cobertura</strong>.</p>
       </div>
     </div>
 
     <!-- Evolution chart -->
     <div class="chart-wrap reveal" style="margin-top:2rem;max-width:700px">
-      <h3>Evolucion v4 a v6</h3>
+      <h3>Evoluci&oacute;n v4 a v6</h3>
       <p class="chart-sub">Cobertura estatal, modelos insuficientes y MASE medio</p>
       <canvas id="chartEvolucion"></canvas>
     </div>
@@ -483,12 +483,12 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
 <section id="sagemaker" style="background:#fff;padding:4rem 0">
   <div class="container">
     <h2 class="section-title reveal">6. Benchmark SageMaker</h2>
-    <p class="section-sub reveal">1,548 trials para validar Prophet como modelo de produccion</p>
+    <p class="section-sub reveal">1,548 trials para validar Prophet como modelo de producci&oacute;n</p>
 
     <div class="stats-row reveal">
       <div class="stat-box"><div class="big-num">1,548</div><div class="stat-desc">Trials totales</div></div>
-      <div class="stat-box gold"><div class="big-num">6</div><div class="stat-desc">Modelos evaluados</div></div>
-      <div class="stat-box burgundy"><div class="big-num">9.8h</div><div class="stat-desc">Duracion total</div></div>
+      <div class="stat-box gold"><div class="big-num">6</div><div class="stat-desc">Modelos eval&uacute;ados</div></div>
+      <div class="stat-box burgundy"><div class="big-num">9.8h</div><div class="stat-desc">Duraci&oacute;n total</div></div>
       <div class="stat-box green"><div class="big-num">~$9.80</div><div class="stat-desc">Costo USD</div></div>
     </div>
 
@@ -499,8 +499,8 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
           <tr><th>Modelo</th><th>Tipo</th><th>Victorias</th><th>%</th><th>MASE mediana</th></tr>
         </thead>
         <tbody>
-          <tr><td><strong style="color:var(--teal)">Prophet</strong></td><td>Estadistico</td><td class="mono best">67</td><td class="mono best">26.0%</td><td class="mono">0.745</td></tr>
-          <tr><td><strong style="color:var(--lgbm)">LightGBM+LSTM</strong></td><td>Hibrido ML/DL</td><td class="mono">52</td><td class="mono">20.2%</td><td class="mono">0.748</td></tr>
+          <tr><td><strong style="color:var(--teal)">Prophet</strong></td><td>Estad&iacute;stico</td><td class="mono best">67</td><td class="mono best">26.0%</td><td class="mono">0.745</td></tr>
+          <tr><td><strong style="color:var(--lgbm)">LightGBM+LSTM</strong></td><td>H&iacute;brido ML/DL</td><td class="mono">52</td><td class="mono">20.2%</td><td class="mono">0.748</td></tr>
           <tr><td><strong style="color:var(--deepar)">TFT</strong></td><td>Deep Learning</td><td class="mono">45</td><td class="mono">17.4%</td><td class="mono">0.773</td></tr>
           <tr><td><strong style="color:var(--deepar)">DeepAR</strong></td><td>Deep Learning</td><td class="mono">44</td><td class="mono">17.1%</td><td class="mono">0.748</td></tr>
           <tr><td><strong style="color:var(--xgb)">XGBoost</strong></td><td>Machine Learning</td><td class="mono">28</td><td class="mono">10.9%</td><td class="mono">0.832</td></tr>
@@ -513,12 +513,12 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
     <div class="charts-row reveal">
       <div class="chart-wrap">
         <h3>Victorias por modelo</h3>
-        <p class="chart-sub">258 series evaluadas &mdash; 6 modelos</p>
+        <p class="chart-sub">258 series eval&uacute;adas &mdash; 6 modelos</p>
         <canvas id="chartVictorias"></canvas>
       </div>
       <div class="chart-wrap">
         <h3>Victorias por padecimiento</h3>
-        <p class="chart-sub">Desglose por Alzheimer, Depresion y Parkinson</p>
+        <p class="chart-sub">Desglose por Alzheimer, Depresi&oacute;n y Parkinson</p>
         <canvas id="chartPadecimiento"></canvas>
       </div>
     </div>
@@ -527,11 +527,11 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
     <div class="guide-grid reveal" style="margin-top:2rem">
       <div class="guide-card">
         <h3>Prophet: consistente pero no dominante</h3>
-        <p>Gana pluralidad en cada padecimiento, pero los margenes son estrechos. El 77% de las veces que pierde, esta a menos del 10% del ganador.</p>
+        <p>Gana pluralidad en cada padecimiento, pero los m&aacute;rgenes son estrechos. El 77% de las veces que pierde, est&aacute; a menos del 10% del ganador.</p>
       </div>
       <div class="guide-card gold">
         <h3>Deep Learning colectivamente fuerte</h3>
-        <p>DeepAR + LightGBM+LSTM + TFT ganan el 54.7% de las series combinados. Sin embargo, ningun modelo individual supera a Prophet.</p>
+        <p>DeepAR + LightGBM+LSTM + TFT ganan el 54.7% de las series combinados. Sin embargo, ning&uacute;n modelo individual supera a Prophet.</p>
       </div>
       <div class="guide-card burgundy">
         <h3>Paradoja Prophet vs TFT</h3>
@@ -540,7 +540,7 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
     </div>
 
     <div class="callout callout-gold reveal" style="margin-top:2rem">
-      <strong>Conclusion SageMaker:</strong> Prophet es la mejor opcion para produccion considerando consistencia, interpretabilidad
+      <strong>Conclusi&oacute;n SageMaker:</strong> Prophet es la mejor opci&oacute;n para producci&oacute;n considerando consistencia, interpretabilidad
       y costo computacional. Sin embargo, ~21 series con gap mayor a 20% son candidatas a usar modelos alternativos (TFT, DeepAR).
     </div>
   </div>
@@ -550,24 +550,24 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
 <section id="tableau">
   <div class="container">
     <h2 class="section-title reveal">7. Dashboard Tableau</h2>
-    <p class="section-sub reveal">Visualizacion interactiva para tomadores de decisiones</p>
+    <p class="section-sub reveal">Visualizaci&oacute;n interactiva para tomadores de decisiones</p>
 
     <div class="guide-grid reveal">
       <div class="guide-card">
         <h3>8 visualizaciones interactivas</h3>
-        <p>Mapa coropletico, series de tiempo, tablas de ranking, distribucion por sexo, comparacion regional, metricas del modelo, intervalos de confianza y tendencias.</p>
+        <p>Mapa coropl&eacute;tico, series de tiempo, tablas de ranking, distribuci&oacute;n por sexo, comparaci&oacute;n regional, m&eacute;tricas del modelo, intervalos de confianza y tendencias.</p>
       </div>
       <div class="guide-card gold">
         <h3>Pipeline automatizado</h3>
-        <p>Script <code>build_tableau</code> genera un dataset unico consolidado desde <code>all_forecast.csv</code> con metricas, clasificacion de confianza y metadatos para Tableau.</p>
+        <p>Script <code>build_tableau</code> genera un dataset &uacute;nico consolidado desde <code>all_forecast.csv</code> con m&eacute;tricas, clasificaci&oacute;n de confianza y metadatos para Tableau.</p>
       </div>
       <div class="guide-card burgundy">
-        <h3>Tooltips con metricas</h3>
-        <p>Cada punto en Tableau muestra RMSE, MAE, MAPE, MASE, tipo de modelo (propio/fallback) y nivel de confianza. Informacion completa sin salir del dashboard.</p>
+        <h3>Tooltips con m&eacute;tricas</h3>
+        <p>Cada punto en Tableau muestra RMSE, MAE, MAPE, MASE, tipo de modelo (propio/fallback) y nivel de confianza. Informaci&oacute;n completa sin salir del dashboard.</p>
       </div>
       <div class="guide-card green">
         <h3>Branding IMSS</h3>
-        <p>Paleta cromatica institucional del IMSS aplicada: teal, burgundy, gold y cream. Coherencia visual entre dashboard, reportes HTML y presentaciones.</p>
+        <p>Paleta crom&aacute;tica institucional del IMSS aplicada: teal, burgundy, gold y cream. Coherencia visual entre dashboard, reportes HTML y presentaciones.</p>
       </div>
     </div>
   </div>
@@ -577,57 +577,57 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
 <section id="hallazgos" style="background:#fff;padding:4rem 0">
   <div class="container">
     <h2 class="section-title reveal">8. Hallazgos clave</h2>
-    <p class="section-sub reveal">Descubrimientos mas importantes del proyecto</p>
+    <p class="section-sub reveal">Descubrimientos m&aacute;s importantes del proyecto</p>
 
     <div class="guide-grid reveal">
       <div class="guide-card">
         <h3>MASE &lt; 1 en los tres padecimientos</h3>
-        <p>Todos los modelos Prophet superan al baseline naive estacional (lag-52 semanas). <span class="badge badge-green">Alzheimer 0.74</span> <span class="badge badge-green">Parkinson 0.75</span> <span class="badge badge-yellow">Depresion 0.80</span></p>
+        <p>Todos los modelos Prophet superan al baseline naive estacional (lag-52 semanas). <span class="badge badge-green">Alzheimer 0.74</span> <span class="badge badge-green">Parkinson 0.75</span> <span class="badge badge-yellow">Depresi&oacute;n 0.80</span></p>
       </div>
       <div class="guide-card gold">
-        <h3>100% cobertura con modo hibrido</h3>
-        <p>Las 41 series insuficientes (36 Alzheimer, 5 Parkinson) ahora tienen prediccion informada via fallback regional. Paso de 87% a 100% de cobertura.</p>
+        <h3>100% cobertura con modo h&iacute;brido</h3>
+        <p>Las 41 series insuficientes (36 Alzheimer, 5 Parkinson) ahora tienen predicci&oacute;n informada v&iacute;a fallback regional. Paso de 87% a 100% de cobertura.</p>
       </div>
       <div class="guide-card burgundy">
         <h3>Heterogeneidad entre estados</h3>
-        <p>Algunos estados presentan series limpias y predecibles (MASE &lt; 0.7), mientras otros son desafiantes. Las diferencias reflejan la infraestructura de captura mas que la dinamica epidemiologica.</p>
+        <p>Algunos estados presentan series limpias y predecibles (MASE &lt; 0.7), mientras otros son desafiantes. Las diferencias reflejan la infraestructura de captura m&aacute;s que la din&aacute;mica epidemiol&oacute;gica.</p>
       </div>
       <div class="guide-card green">
-        <h3>Prophet: robusto pero no unico</h3>
-        <p>El benchmark SageMaker confirma que Prophet es competitivo (26% wins), pero deep learning colectivamente gana 54.7%. Un ensemble futuro podria mejorar las predicciones.</p>
+        <h3>Prophet: robusto pero no el &uacute;nico</h3>
+        <p>El benchmark SageMaker confirma que Prophet es competitivo (26% wins), pero deep learning colectivamente gana 54.7%. Un ensemble futuro podr&iacute;a mejorar las predicciones.</p>
       </div>
       <div class="guide-card">
         <h3>COVID como disruptor temporal</h3>
-        <p>La pandemia genero un quiebre estructural de 2.5 anos (913 dias). Prophet captura los changepoints automaticamente, validando su idoneidad para eventos no anticipados.</p>
+        <p>La pandemia gener&oacute; un quiebre estructural de 2.5 a&ntilde;os (913 d&iacute;as). Prophet captura los changepoints autom&aacute;ticamente, validando su idoneidad para eventos no anticipados.</p>
       </div>
       <div class="guide-card gold">
-        <h3>Depresion hombres: la serie mas dificil</h3>
-        <p>MAPE 36.6% vs 25.9% general. La subnotificacion de salud mental masculina genera patrones mas erraticos y reduce la predictibilidad del modelo.</p>
+        <h3>Depresi&oacute;n hombres: la serie m&aacute;s dif&iacute;cil</h3>
+        <p>MAPE 36.6% vs 25.9% general. La subnotificaci&oacute;n de salud mental masculina genera patrones m&aacute;s err&aacute;ticos y reduce la predictibilidad del modelo.</p>
       </div>
       <div class="guide-card burgundy">
         <h3>Log-transform: impacto significativo</h3>
-        <p><code>log(1 + tasa)</code> estabiliza la varianza en series volatiles. Especialmente efectivo para Depresion, donde la varianza crece con la media.</p>
+        <p><code>log(1 + tasa)</code> estabiliza la varianza en series vol&aacute;tiles. Especialmente efectivo para Depresi&oacute;n, donde la varianza crece con la media.</p>
       </div>
       <div class="guide-card green">
         <h3>Anti-Newton: eficiencia 10x</h3>
-        <p>Proteccion de 3 capas redujo Chihuahua-Depresion de 39 a 4 minutos. El pipeline completo de 297 modelos se entrena en ~45 minutos con paralelismo.</p>
+        <p>Protecci&oacute;n de 3 capas redujo Chihuahua-Depresi&oacute;n de 39 a 4 minutos. El pipeline completo de 297 modelos se entrena en ~45 minutos con paralelismo.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- 9. MASE: la metrica que importa -->
+<!-- 9. MASE: la m&eacute;trica que importa -->
 <section id="mase">
   <div class="container">
-    <h2 class="section-title reveal">9. MASE: la metrica que importa</h2>
-    <p class="section-sub reveal">Mean Absolute Scaled Error &mdash; por que elegimos esta metrica y que revela</p>
+    <h2 class="section-title reveal">9. MASE: la m&eacute;trica que importa</h2>
+    <p class="section-sub reveal">Mean Absolute Scaled Error &mdash; por qu&eacute; elegimos esta m&eacute;trica y qu&eacute; revela</p>
 
     <div class="card reveal" style="max-width:900px">
       <p style="font-size:1.05rem;line-height:1.8;margin-bottom:1rem">
         El <strong>MASE</strong> (Hyndman &amp; Koehler, 2006) compara el error absoluto del modelo contra un
         baseline naive estacional (lag-52 semanas). A diferencia del MAPE, el MASE es
         <strong>escala-independiente</strong>: no se distorsiona con tasas bajas (Alzheimer, Parkinson) donde el
-        denominador pequeno infla artificialmente el porcentaje de error.
+        denominador peque&ntilde;o infla artificialmente el porcentaje de error.
       </p>
       <div style="font-family:var(--font-mono);font-size:1.1rem;background:var(--cream-pale);border:1px solid var(--cream);border-radius:8px;padding:1rem 1.5rem;margin:1rem 0;color:var(--dark-teal);text-align:center">
         MASE = MAE<sub>modelo</sub> / MAE<sub>naive</sub>(lag-52)
@@ -642,7 +642,7 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
     <div class="stats-row reveal" style="margin-top:2rem">
       <div class="stat-box green"><div class="big-num">0.74</div><div class="stat-desc">MASE Alzheimer</div></div>
       <div class="stat-box green"><div class="big-num">0.75</div><div class="stat-desc">MASE Parkinson</div></div>
-      <div class="stat-box gold"><div class="big-num">0.80</div><div class="stat-desc">MASE Depresion</div></div>
+      <div class="stat-box gold"><div class="big-num">0.80</div><div class="stat-desc">MASE Depresi&oacute;n</div></div>
       <div class="stat-box"><div class="big-num">&lt; 1.0</div><div class="stat-desc">Los 3 superan naive</div></div>
     </div>
 
@@ -662,15 +662,15 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
 
     <!-- MASE comparison table -->
     <div class="card reveal" style="margin-top:2rem;overflow-x:auto">
-      <h3 style="font-family:var(--font-display);font-size:1.2rem;color:var(--dark-teal);margin-bottom:1rem">MASE vs MAPE: por que MASE es superior</h3>
+      <h3 style="font-family:var(--font-display);font-size:1.2rem;color:var(--dark-teal);margin-bottom:1rem">MASE vs MAPE: por qu&eacute; MASE es superior</h3>
       <table class="compare-table">
         <thead>
           <tr><th>Padecimiento x Sexo</th><th>MAPE (%)</th><th>MASE</th><th>% series MASE &lt; 1.0</th></tr>
         </thead>
         <tbody>
-          <tr><td>Depresion general</td><td class="mono">25.9</td><td class="mono best">0.810</td><td class="mono">79.8%</td></tr>
-          <tr><td>Depresion hombres</td><td class="mono worse">36.6</td><td class="mono">0.858</td><td class="mono">~75%</td></tr>
-          <tr><td>Depresion mujeres</td><td class="mono">27.9</td><td class="mono best">0.782</td><td class="mono">~83%</td></tr>
+          <tr><td>Depresi&oacute;n general</td><td class="mono">25.9</td><td class="mono best">0.810</td><td class="mono">79.8%</td></tr>
+          <tr><td>Depresi&oacute;n hombres</td><td class="mono worse">36.6</td><td class="mono">0.858</td><td class="mono">~75%</td></tr>
+          <tr><td>Depresi&oacute;n mujeres</td><td class="mono">27.9</td><td class="mono best">0.782</td><td class="mono">~83%</td></tr>
           <tr><td>Parkinson general</td><td class="mono worse">52.0</td><td class="mono best">0.693</td><td class="mono">86.3%</td></tr>
           <tr><td>Parkinson hombres</td><td class="mono worse">54.1</td><td class="mono">0.737</td><td class="mono">~84%</td></tr>
           <tr><td>Parkinson mujeres</td><td class="mono worse">51.5</td><td class="mono best">0.714</td><td class="mono">~87%</td></tr>
@@ -683,9 +683,9 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
 
     <div class="callout callout-burgundy reveal" style="margin-top:2rem">
       <strong>Paradoja MAPE vs MASE:</strong> Parkinson y Alzheimer tienen MAPE alto (&gt;46%) pero MASE
-      excelente (&lt;0.75). El MAPE infla el error cuando la tasa base es baja (denominador pequeno).
-      El MASE revela que los modelos predicen <em>mucho mejor</em> que un baseline naive &mdash; la metrica
-      correcta cambia completamente la narrativa del desempeno.
+      excelente (&lt;0.75). El MAPE infla el error cuando la tasa base es baja (denominador peque&ntilde;o).
+      El MASE revela que los modelos predicen <em>mucho mejor</em> que un baseline naive &mdash; la m&eacute;trica
+      correcta cambia completamente la narrativa del desempe&ntilde;o.
     </div>
   </div>
 </section>
@@ -694,12 +694,12 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
 <section id="limitaciones" style="background:#fff;padding:4rem 0">
   <div class="container">
     <h2 class="section-title reveal">10. Limitaciones y trabajo futuro</h2>
-    <p class="section-sub reveal">Que queda pendiente y como continuar</p>
+    <p class="section-sub reveal">Qu&eacute; queda pendiente y c&oacute;mo continuar</p>
 
     <div class="concept-grid reveal">
       <div class="concept-card burgundy">
-        <h4>Nayarit-Depresion</h4>
-        <p>RMSE 0.39 (peor modelo). Cambio de regimen en 2018 no absorbido completamente por Prophet. Candidato a modelo alternativo o intervencion manual.</p>
+        <h4>Nayarit-Depresi&oacute;n</h4>
+        <p>RMSE 0.39 (peor modelo). Cambio de r&eacute;gimen en 2018 no absorbido completamente por Prophet. Candidato a modelo alternativo o intervenci&oacute;n manual.</p>
       </div>
       <div class="concept-card burgundy">
         <h4>39 series omitidas del benchmark</h4>
@@ -707,19 +707,19 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
       </div>
       <div class="concept-card gold">
         <h4>Ensemble de modelos</h4>
-        <p>Para las ~21 series con gap &gt; 20% vs el ganador, un modelo hibrido Prophet + TFT/DeepAR podria mejorar significativamente las predicciones.</p>
+        <p>Para las ~21 series con gap &gt; 20% vs el ganador, un modelo h&iacute;brido Prophet + TFT/DeepAR podr&iacute;a mejorar significativamente las predicciones.</p>
       </div>
       <div class="concept-card">
         <h4>Monitoreo trimestral</h4>
-        <p>Sistema de re-evaluacion periodica de metricas para detectar degradacion del modelo. Alertas automaticas cuando MASE suba por encima de 1.0.</p>
+        <p>Sistema de reevaluaci&oacute;n peri&oacute;dica de m&eacute;tricas para detectar degradaci&oacute;n del modelo. Alertas autom&aacute;ticas cuando MASE suba por encima de 1.0.</p>
       </div>
       <div class="concept-card gold">
-        <h4>Variables exogenas IMSS</h4>
-        <p>Incorporar datos internos del IMSS (consultas, prescripciones, personal medico) como regresores adicionales en Prophet para mejorar precision estatal.</p>
+        <h4>Variables ex&oacute;genas IMSS</h4>
+        <p>Incorporar datos internos del IMSS (consultas, prescripciones, personal m&eacute;dico) como regresores adicionales en Prophet para mejorar precisi&oacute;n estatal.</p>
       </div>
       <div class="concept-card green">
-        <h4>Expansion a otros padecimientos</h4>
-        <p>El pipeline es parametrizado y puede adaptarse a otros codigos CIE-10. La arquitectura soporta expansion sin cambios estructurales.</p>
+        <h4>Expansi&oacute;n a otros padecimientos</h4>
+        <p>El pipeline es parametrizado y puede adaptarse a otros c&oacute;digos CIE-10. La arquitectura soporta expansi&oacute;n sin cambios estructurales.</p>
       </div>
     </div>
   </div>
@@ -733,28 +733,28 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
 
     <div class="guide-grid reveal">
       <div class="guide-card">
-        <h3>Pipeline como herramienta de validacion</h3>
-        <p>Un pipeline solido no solo prepara datos para modelar, sino que funciona como herramienta de validacion continua. Cada etapa confirma visualmente patrones, tendencias y posibles errores.</p>
+        <h3>Pipeline como herramienta de validaci&oacute;n</h3>
+        <p>Un pipeline s&oacute;lido no solo prepara datos para modelar, sino que funciona como herramienta de validaci&oacute;n continua. Cada etapa confirma visualmente patrones, tendencias y posibles errores.</p>
       </div>
       <div class="guide-card gold">
         <h3>Proyecto como sistema vivo</h3>
-        <p>El diseno del pipeline considera la deteccion de nuevos boletines y la actualizacion progresiva del dataset, reduciendo la dependencia de procesos manuales y garantizando resultados actualizados.</p>
+        <p>El dise&ntilde;o del pipeline considera la detecci&oacute;n de nuevos boletines y la actualizaci&oacute;n progresiva del dataset, reduciendo la dependencia de procesos manuales y garantizando resultados actualizados.</p>
       </div>
       <div class="guide-card burgundy">
         <h3>Baseline: referencia objetiva</h3>
-        <p>Un baseline no es un modelo &ldquo;malo&rdquo; que se descarta: es la referencia objetiva que da sentido a toda optimizacion posterior. Sin el, cualquier mejora seria anecdotica.</p>
+        <p>Un baseline no es un modelo &ldquo;malo&rdquo; que se descarta: es la referencia objetiva que da sentido a toda optimizaci&oacute;n posterior. Sin &eacute;l, cualquier mejora ser&iacute;a anecd&oacute;tica.</p>
       </div>
       <div class="guide-card green">
-        <h3>Comunicacion visual</h3>
-        <p>La comunicacion visual de resultados es tan importante como los resultados mismos, especialmente cuando los stakeholders son medicos, no ingenieros.</p>
+        <h3>Comunicaci&oacute;n visual</h3>
+        <p>La comunicaci&oacute;n visual de resultados es tan importante como los resultados mismos, especialmente cuando los stakeholders son m&eacute;dicos, no ingenieros.</p>
       </div>
       <div class="guide-card">
         <h3>Viabilidad confirmada</h3>
-        <p>Prophet captura las dinamicas temporales de Depresion, Parkinson y Alzheimer. Cada padecimiento tiene comportamiento epidemiologico distinto que justifica modelos separados.</p>
+        <p>Prophet captura las din&aacute;micas temporales de Depresi&oacute;n, Parkinson y Alzheimer. Cada padecimiento tiene comportamiento epidemiol&oacute;gico distinto que justifica modelos separados.</p>
       </div>
       <div class="guide-card gold">
         <h3>Datos imperfectos, modelos robustos</h3>
-        <p>El sistema de pronostico debe ser robusto ante las imperfecciones reales de los datos epidemiologicos: captura irregular, subnotificacion, cambios de regimen no anticipados.</p>
+        <p>El sistema de pron&oacute;stico debe ser robusto ante las imperfecciones reales de los datos epidemiol&oacute;gicos: captura irregular, subnotificaci&oacute;n, cambios de r&eacute;gimen no anticipados.</p>
       </div>
     </div>
   </div>
@@ -778,7 +778,7 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
         </div>
         <div class="person-card-body">
           <blockquote>
-            Este proyecto transformo mi manera de pensar la ingenieria de datos. Desde la primera entrega, enfocarnos en la reproducibilidad y trazabilidad del procesamiento nos dio una base solida que resulto mas valiosa que cualquier modelo sofisticado. Disenar y ejecutar 297 modelos baseline me obligo a pensar en escalabilidad real: funciones reutilizables, pipelines parametrizados y visualizaciones automaticas para cualquier combinacion de padecimiento, estado y sexo. El aprendizaje mas profundo fue entender que un baseline no es un modelo &ldquo;malo&rdquo; &mdash; es la referencia objetiva que da sentido a toda optimizacion. Sin los 297 modelos v4, las mejoras del v5 y v6 no tendrian fundamento. Construir el dashboard ejecutivo y las visualizaciones para el IMSS me enseno que la comunicacion visual de resultados es tan importante como los resultados mismos, especialmente cuando los stakeholders son medicos, no ingenieros.
+            Este proyecto transform&oacute; mi manera de pensar la ingenier&iacute;a de datos. Desde la primera entrega, enfocarnos en la reproducibilidad y trazabilidad del procesamiento nos dio una base s&oacute;lida que result&oacute; m&aacute;s valiosa que cualquier modelo sofisticado. Dise&ntilde;ar y ejecutar 297 modelos baseline me oblig&oacute; a pensar en escalabilidad real: funciones reutilizables, pipelines parametrizados y visualizaciones autom&aacute;ticas para cualquier combinaci&oacute;n de padecimiento, estado y sexo. El aprendizaje m&aacute;s profundo fue entender que un baseline no es un modelo &ldquo;malo&rdquo; &mdash; es la referencia objetiva que da sentido a toda optimizaci&oacute;n. Sin los 297 modelos v4, las mejoras del v5 y v6 no tendr&iacute;an fundamento. Construir el dashboard ejecutivo y las visualizaciones para el IMSS me ense&ntilde;&oacute; que la comunicaci&oacute;n visual de resultados es tan importante como los resultados mismos, especialmente cuando los stakeholders son m&eacute;dicos, no ingenieros.
           </blockquote>
         </div>
       </div>
@@ -786,15 +786,15 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
       <!-- Juan Carlos -->
       <div class="person-card">
         <div class="person-card-head">
-          <img class="person-avatar" src="JARCOS2026.jpg" alt="Juan Carlos Perez">
+          <img class="person-avatar" src="JARCOS2026.jpg" alt="Juan Carlos P&eacute;rez">
           <div>
-            <h3>Juan Carlos Perez Nava</h3>
+            <h3>Juan Carlos P&eacute;rez Nava</h3>
             <span class="person-role">IMSS</span>
           </div>
         </div>
         <div class="person-card-body">
           <blockquote>
-            Como profesional de TI en el IMSS, este proyecto tiene un significado particular: estamos construyendo herramientas que podrian integrarse directamente en los procesos de planificacion institucional. Desde el EDA inicial aprendi que no basta con cargar datos y correr analisis automaticos; es necesario entender que representan y donde pueden enganar. La validacion cruzada temporal me mostro la importancia de evaluar modelos con ventanas deslizantes que simulan el escenario real de pronostico. La deteccion de outliers fue reveladora: muchos valores atipicos coinciden con periodos de captura irregular que conozco de primera mano. El pipeline completo &mdash; desde la extraccion de PDFs hasta el benchmark SageMaker &mdash; demostro que un sistema de pronostico epidemiologico robusto es viable con datos reales e imperfectos del SINAVE.
+            Como profesional de TI en el IMSS, este proyecto tiene un significado particular: estamos construyendo herramientas que podr&iacute;an integrarse directamente en los procesos de planificaci&oacute;n institucional. Desde el EDA inicial aprend&iacute; que no basta con cargar datos y correr an&aacute;lisis autom&aacute;ticos; es necesario entender qu&eacute; representan y d&oacute;nde pueden enga&ntilde;ar. La validaci&oacute;n cruzada temporal me mostr&oacute; la importancia de evaluar modelos con ventanas deslizantes que simulan el escenario real de pron&oacute;stico. La detecci&oacute;n de outliers fue reveladora: muchos valores at&iacute;picos coinciden con per&iacute;odos de captura irregular que conozco de primera mano. El pipeline completo &mdash; desde la extracci&oacute;n de PDFs hasta el benchmark SageMaker &mdash; demostr&oacute; que un sistema de pron&oacute;stico epidemiol&oacute;gico robusto es viable con datos reales e imperfectos del SINAVE.
           </blockquote>
         </div>
       </div>
@@ -802,15 +802,15 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
       <!-- Luis -->
       <div class="person-card">
         <div class="person-card-head">
-          <img class="person-avatar" src="LUIS2026.jpg" alt="Luis Sanchez">
+          <img class="person-avatar" src="LUIS2026.jpg" alt="Luis S&aacute;nchez">
           <div>
-            <h3>Luis Gerardo Sanchez Salazar</h3>
+            <h3>Luis Gerardo S&aacute;nchez Salazar</h3>
             <span class="person-role">Tesla</span>
           </div>
         </div>
         <div class="person-card-body">
           <blockquote>
-            Mi experiencia en ingenieria de controles en Tesla me dio una perspectiva particular sobre sistemas dinamicos, y las series de tiempo epidemiologicas comparten mas de lo esperado con los sistemas que modelo profesionalmente: tendencias, estacionalidades, perturbaciones externas y la necesidad de intervalos de confianza para la toma de decisiones. Integrar datos del INEGI con el SINAVE y construir la capa de visualizacion en Tableau evidencio la importancia de traducir resultados tecnicos a formatos consumibles por tomadores de decisiones. Lo que mas me impacto fue la heterogeneidad entre estados: mientras algunos presentan series limpias y predecibles, otros son practicamente impredecibles &mdash; lo cual apunta a diferencias en la infraestructura de captura, no en la dinamica epidemiologica. El benchmark SageMaker con 1,548 trials fue la prueba de fuego que valido nuestras decisiones de modelado.
+            Mi experiencia en ingenier&iacute;a de controles en Tesla me dio una perspectiva particular sobre sistemas din&aacute;micos, y las series de tiempo epidemiol&oacute;gicas comparten m&aacute;s de lo esperado con los sistemas que modelo profesionalmente: tendencias, estacionalidades, perturbaciones externas y la necesidad de intervalos de confianza para la toma de decisiones. Integrar datos del INEGI con el SINAVE y construir la capa de visualizaci&oacute;n en Tableau evidenci&oacute; la importancia de traducir resultados t&eacute;cnicos a formatos consumibles por tomadores de decisiones. Lo que m&aacute;s me impact&oacute; fue la heterogeneidad entre estados: mientras algunos presentan series limpias y predecibles, otros son pr&aacute;cticamente impredecibles &mdash; lo cual apunta a diferencias en la infraestructura de captura, no en la din&aacute;mica epidemiol&oacute;gica. El benchmark SageMaker con 1,548 trials fue la prueba de fuego que valid&oacute; nuestras decisiones de modelado.
           </blockquote>
         </div>
       </div>
@@ -827,42 +827,42 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
     <div class="verdict reveal">
       <h3>Gracias a nuestras asesoras</h3>
       <p>
-        Este proyecto no habria sido posible sin la guia y el apoyo de nuestras asesoras academicas e institucionales,
-        quienes nos orientaron en cada etapa con retroalimentacion experta y vision estrategica.
+        Este proyecto no habr&iacute;a sido posible sin la gu&iacute;a y el apoyo de nuestras asesoras acad&eacute;micas e institucionales,
+        quienes nos orientaron en cada etapa con retroalimentaci&oacute;n experta y vision estrat&eacute;gica.
       </p>
       <div class="verdict-stats" style="margin-top:2rem">
         <div class="v-stat">
-          <div style="font-family:var(--font-display);font-size:1.3rem;color:var(--cream);margin-bottom:.25rem">Dra. Grettel Barcelo Alonso</div>
-          <div class="v-lbl">Asesora academica &mdash; Tec de Monterrey</div>
+          <div style="font-family:var(--font-display);font-size:1.3rem;color:var(--cream);margin-bottom:.25rem">Dra. Grettel Barcel&oacute; Alonso</div>
+          <div class="v-lbl">Asesora acad&eacute;mica &mdash; Tec de Monterrey</div>
         </div>
       </div>
       <div class="verdict-stats" style="margin-top:1rem">
         <div class="v-stat">
-          <div style="font-family:var(--font-display);font-size:1.3rem;color:var(--cream);margin-bottom:.25rem">Dra. Ruth Perez</div>
+          <div style="font-family:var(--font-display);font-size:1.3rem;color:var(--cream);margin-bottom:.25rem">Dra. Ruth P&eacute;rez</div>
           <div class="v-lbl">Asesora institucional</div>
         </div>
       </div>
       <div class="verdict-stats" style="margin-top:1rem">
         <div class="v-stat">
-          <div style="font-family:var(--font-display);font-size:1.3rem;color:var(--cream);margin-bottom:.25rem">Dra. Lina Diaz Castro</div>
+          <div style="font-family:var(--font-display);font-size:1.3rem;color:var(--cream);margin-bottom:.25rem">Dra. Lina D&iacute;az Castro</div>
           <div class="v-lbl">Asesora institucional</div>
         </div>
       </div>
     </div>
 
     <div class="callout callout-gold reveal" style="margin-top:2rem">
-      <strong>Nota especial:</strong> La retroalimentacion de la Dra. Grettel sobre la necesidad de separar los padecimientos
-      fue determinante. Al modelarlos independientemente, las diferencias epidemiologicas entre Depresion, Parkinson y Alzheimer
-      se hicieron evidentes no solo en las metricas, sino en la estructura misma de las series.
+      <strong>Nota especial:</strong> La retroalimentaci&oacute;n de la Dra. Grettel sobre la necesidad de separar los padecimientos
+      fue determinante. Al modelarlos independientemente, las diferencias epidemiol&oacute;gicas entre Depresi&oacute;n, Parkinson y Alzheimer
+      se hicieron evidentes no solo en las m&eacute;tricas, sino en la estructura misma de las series.
     </div>
   </div>
 </section>
 
-<!-- 13. Ficha tecnica -->
+<!-- 13. Ficha t&eacute;cnica -->
 <section id="ficha">
   <div class="container">
-    <h2 class="section-title reveal">14. Ficha tecnica</h2>
-    <p class="section-sub reveal">Resumen ejecutivo del stack, metricas y archivos del proyecto</p>
+    <h2 class="section-title reveal">14. Ficha t&eacute;cnica</h2>
+    <p class="section-sub reveal">Resumen ejecutivo del stack, m&eacute;tricas y archivos del proyecto</p>
 
     <div class="card reveal" style="overflow-x:auto">
       <table class="ref-table">
@@ -875,13 +875,13 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
           <tr><td><strong>Benchmark</strong></td><td class="mono">Prophet, XGBoost, Ridge, TFT, DeepAR, LightGBM+LSTM</td></tr>
           <tr><td><strong>Cloud</strong></td><td class="mono">AWS S3 (DVC) + SageMaker (ml.m5.xlarge)</td></tr>
           <tr><td><strong>CI/CD</strong></td><td class="mono">GitHub Actions + Selenium (scraping diario)</td></tr>
-          <tr><td><strong>Visualizacion</strong></td><td class="mono">Tableau, matplotlib, seaborn, plotly, Chart.js</td></tr>
+          <tr><td><strong>Visualizaci&oacute;n</strong></td><td class="mono">Tableau, matplotlib, seaborn, plotly, Chart.js</td></tr>
           <tr><td><strong>Modelos entrenados</strong></td><td class="mono">297 estatales + 15 regionales = 312 total</td></tr>
           <tr><td><strong>Trials benchmark</strong></td><td class="mono">1,548 (258 series x 6 modelos)</td></tr>
-          <tr><td><strong>MASE medio (v6)</strong></td><td class="mono">Alzheimer 0.74 | Parkinson 0.75 | Depresion 0.80</td></tr>
+          <tr><td><strong>MASE medio (v6)</strong></td><td class="mono">Alzheimer 0.74 | Parkinson 0.75 | Depresi&oacute;n 0.80</td></tr>
           <tr><td><strong>Cobertura</strong></td><td class="mono">100% (32 entidades x 3 padecimientos x 3 sexos)</td></tr>
           <tr><td><strong>Horizonte</strong></td><td class="mono">52 semanas a futuro</td></tr>
-          <tr><td><strong>Periodo datos</strong></td><td class="mono">2014 &ndash; 2026 (633 boletines SINAVE)</td></tr>
+          <tr><td><strong>Per&iacute;odo datos</strong></td><td class="mono">2014 &ndash; 2026 (633 boletines SINAVE)</td></tr>
           <tr><td><strong>Costo benchmark</strong></td><td class="mono">~$9.80 USD (9.8 horas ml.m5.xlarge)</td></tr>
           <tr><td><strong>Tiempo entrenamiento</strong></td><td class="mono">~45 min (n_jobs=-2, joblib loky)</td></tr>
         </tbody>
@@ -892,14 +892,14 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
     <div class="card reveal" style="margin-top:1rem;overflow-x:auto">
       <table class="ref-table">
         <thead>
-          <tr><th>Archivo</th><th>Descripcion</th></tr>
+          <tr><th>Archivo</th><th>Descripci&oacute;n</th></tr>
         </thead>
         <tbody>
           <tr><td class="mono">forecast/all_forecast.csv</td><td>Predicciones consolidadas (~180 MB)</td></tr>
           <tr><td class="mono">forecast/reporte_resultados.html</td><td>Reporte interactivo de resultados</td></tr>
-          <tr><td class="mono">forecast/bitacora_modelado.html</td><td>Bitacora v1-v6 del modelado</td></tr>
+          <tr><td class="mono">forecast/bitacora_modelado.html</td><td>Bit&aacute;cora v1-v6 del modelado</td></tr>
           <tr><td class="mono">forecast/comparacion_modelos.html</td><td>Benchmark SageMaker (1,548 trials)</td></tr>
-          <tr><td class="mono">forecast/index.html</td><td>Galeria de 312 PNGs de pronostico</td></tr>
+          <tr><td class="mono">forecast/index.html</td><td>Galer&iacute;a de 312 PNGs de pron&oacute;stico</td></tr>
           <tr><td class="mono">models/*.pkl</td><td>312 modelos Prophet entrenados (~109 MB)</td></tr>
           <tr><td class="mono">data/processed/</td><td>Dataset final procesado</td></tr>
           <tr><td class="mono">EpiDashboard.html</td><td>Dashboard Tableau embebido</td></tr>
@@ -912,19 +912,19 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
 <!-- Footer -->
 <footer>
   <div class="footer-title">EpiForecast-MX</div>
-  <p>Plataforma de inteligencia epidemiologica &middot; IMSS &times; Tec de Monterrey</p>
+  <p>Plataforma de inteligencia epidemiol&oacute;gica &middot; IMSS &times; Tec de Monterrey</p>
   <p style="margin-top:.75rem">
     <a href="index.html">Inicio</a> &middot;
     <a href="EpiDashboard.html">Dashboard</a> &middot;
     <a href="reporte_resultados.html">Resultados</a> &middot;
-    <a href="Reports/index.html">Pronosticos</a> &middot;
-    <a href="bitacora_modelado.html">Bitacora</a> &middot;
-    <a href="comparacion_modelos.html">Comparacion</a> &middot;
+    <a href="Reports/index.html">Pron&oacute;sticos</a> &middot;
+    <a href="bitacora_modelado.html">Bit&aacute;cora</a> &middot;
+    <a href="comparacion_modelos.html">Comparaci&oacute;n</a> &middot;
     <a href="ficha_tecnica_prophet.html">Ficha Prophet</a> &middot;
     <a href="hiperparametros_modelos.html">HPs SageMaker</a> &middot;
-    <a href="construccion_dashboard.html">Construccion Dashboard</a>
+    <a href="construccion_dashboard.html">Construcci&oacute;n Dashboard</a>
   </p>
-  <p style="margin-top:.5rem">Maestria en Inteligencia Artificial Aplicada &mdash; Proyecto Capstone 2026</p>
+  <p style="margin-top:.5rem">Maestr&iacute;a en Inteligencia Artificial Aplicada &mdash; Proyecto Capstone 2026</p>
   <p style="margin-top:.5rem;font-family:var(--font-mono);font-size:.75rem;opacity:.5">Generado: 22 febrero 2026</p>
 </footer>
 
@@ -978,7 +978,7 @@ try {
   new Chart(document.getElementById('chartPadecimiento'), {
     type: 'bar',
     data: {
-      labels: ['Alzheimer','Depresion','Parkinson'],
+      labels: ['Alzheimer','Depresión','Parkinson'],
       datasets: [
         { label: 'Prophet', data: [21, 26, 20], backgroundColor: C.prophetA, borderRadius: 2, borderSkipped: false },
         { label: 'LightGBM+LSTM', data: [10, 24, 18], backgroundColor: C.lgbmA, borderRadius: 2, borderSkipped: false },
@@ -1007,7 +1007,7 @@ try {
   new Chart(document.getElementById('chartEvolucion'), {
     type: 'bar',
     data: {
-      labels: ['v4 (Baseline)', 'v5 (Optimizacion)', 'v6 (Produccion)'],
+      labels: ['v4 (Baseline)', 'v5 (Optimización)', 'v6 (Producción)'],
       datasets: [
         {
           label: 'Cobertura (%)',
@@ -1046,7 +1046,7 @@ try {
   new Chart(document.getElementById('chartMASE'), {
     type: 'bar',
     data: {
-      labels: ['Depresion','Parkinson','Alzheimer'],
+      labels: ['Depresión','Parkinson','Alzheimer'],
       datasets: [
         { label: 'General', data: [0.810, 0.693, 0.689], backgroundColor: 'rgba(0,82,78,.75)', borderRadius: 4, borderSkipped: false },
         { label: 'Hombres', data: [0.858, 0.737, 0.690], backgroundColor: 'rgba(181,133,0,.65)', borderRadius: 4, borderSkipped: false },
