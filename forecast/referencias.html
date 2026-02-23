@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Referencias Bibliogr&aacute;ficas | EpiForecast-MX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --burgundy:#9B2242;--dark-burgundy:#6F1D46;--teal:#00524E;--dark-teal:#173F35;
+  --gold:#B58500;--cream:#E8D5B5;--cream-light:#F5EDE0;--cream-pale:#FAF6F0;
+  --cool-gray:#97999B;--neutral-black:#231F20;
+  --burgundy-light:#D4758B;--teal-light:#4A9E9A;--gold-light:#D4B24A;
+  --font-display:'DM Serif Display',Georgia,serif;
+  --font-body:'Source Sans 3','Source Sans Pro',sans-serif;
+  --font-mono:'JetBrains Mono','Fira Code',monospace;
+  --shadow-sm:0 2px 8px rgba(0,0,0,.06);--shadow-md:0 8px 24px rgba(0,0,0,.06);
+  --shadow-lg:0 16px 48px rgba(0,0,0,.06);--radius:16px;--radius-sm:10px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-body);background:var(--cream-pale);color:var(--neutral-black);line-height:1.7;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.025;pointer-events:none;z-index:0}
+.container{max-width:1200px;margin:0 auto;padding:0 2rem;position:relative;z-index:1}
+section{padding:4rem 0}
+.section-title{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.5rem);margin-bottom:.5rem;color:var(--dark-teal)}
+.section-sub{color:var(--cool-gray);font-size:1rem;margin-bottom:2.5rem}
+
+/* Nav */
+.nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(23,63,53,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(232,213,181,.08);transition:box-shadow .3s,background .3s}.nav.scrolled{box-shadow:0 4px 30px rgba(0,0,0,.18);background:rgba(23,63,53,.97)}.nav-inner{max-width:1200px;margin:0 auto;padding:0 2rem;display:flex;align-items:center;height:64px;gap:1rem}.nav-logo{font-family:var(--font-display);font-size:1.3rem;color:var(--cream);letter-spacing:.02em;flex-shrink:0;text-decoration:none}.nav-logo span{color:var(--gold)}.nav-menu{display:flex;align-items:center;gap:.25rem;list-style:none;flex:1;justify-content:center}.nav-group{position:relative}.nav-group-toggle{display:flex;align-items:center;gap:.3rem;color:rgba(232,213,181,.65);font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;padding:.5rem .85rem;border-radius:6px;cursor:pointer;transition:color .2s,background .2s;white-space:nowrap;border:none;background:none;font-family:inherit}.nav-group-toggle:hover,.nav-group:hover .nav-group-toggle{color:var(--cream);background:rgba(232,213,181,.06)}.nav-group-toggle svg{width:10px;height:10px;opacity:.5;transition:transform .2s}.nav-group:hover .nav-group-toggle svg{transform:rotate(180deg);opacity:.8}.nav-dropdown{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(-4px);background:rgba(23,63,53,.98);backdrop-filter:blur(16px);border:1px solid rgba(232,213,181,.1);border-radius:12px;padding:.5rem;min-width:200px;opacity:0;visibility:hidden;transition:opacity .15s,transform .15s,visibility .15s;box-shadow:0 12px 40px rgba(0,0,0,.25)}.nav-group:hover .nav-dropdown{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}.nav-dropdown::before{content:'';position:absolute;top:-8px;left:0;right:0;height:8px}.nav-dropdown a{display:flex;align-items:center;gap:.75rem;padding:.6rem 1rem;color:rgba(232,213,181,.7);font-size:.82rem;font-weight:500;border-radius:8px;transition:background .15s,color .15s;text-decoration:none;white-space:nowrap}.nav-dropdown a:hover{background:rgba(232,213,181,.08);color:var(--cream)}.nav-dropdown a svg{width:16px;height:16px;opacity:.5;flex-shrink:0}.nav-dropdown a:hover svg{opacity:.8}.nav-ctas{display:flex;gap:.5rem;align-items:center;flex-shrink:0}.nav-cta{display:inline-flex;align-items:center;gap:.4rem;padding:.4rem 1rem;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;border-radius:100px;text-decoration:none;transition:transform .2s,box-shadow .2s,background .2s;white-space:nowrap}.nav-cta:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(181,133,0,.3)}.nav-cta--primary{background:var(--gold);color:var(--dark-teal)}.nav-cta--secondary{background:rgba(232,213,181,.1);color:var(--gold);border:1px solid rgba(181,133,0,.3)}.nav-cta--secondary:hover{background:rgba(181,133,0,.15);color:var(--gold)}.nav-cta svg{width:14px;height:14px}.nav-hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px}.nav-hamburger span{width:24px;height:2px;background:var(--cream);transition:transform .3s,opacity .3s}.nav-mobile{display:none;flex-direction:column;background:rgba(23,63,53,.98);backdrop-filter:blur(16px);padding:1rem 2rem 1.5rem;border-bottom:1px solid rgba(232,213,181,.1)}.nav-mobile.show{display:flex}.nav-mobile-group{border-bottom:1px solid rgba(232,213,181,.06)}.nav-mobile-heading{display:flex;align-items:center;justify-content:space-between;padding:.85rem 0;color:rgba(232,213,181,.7);font-size:.82rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;cursor:pointer}.nav-mobile-heading svg{width:10px;height:10px;transition:transform .2s}.nav-mobile-group.open .nav-mobile-heading svg{transform:rotate(180deg)}.nav-mobile-items{display:none;flex-direction:column;padding-bottom:.5rem}.nav-mobile-group.open .nav-mobile-items{display:flex}.nav-mobile-items a{padding:.5rem 1rem;color:rgba(232,213,181,.55);font-size:.82rem;text-decoration:none;border-radius:6px;transition:background .15s,color .15s}.nav-mobile-items a:hover{background:rgba(232,213,181,.06);color:var(--cream)}.nav-mobile-ctas{display:flex;gap:.5rem;margin-top:1rem}@media(max-width:768px){.nav-menu,.nav-ctas{display:none}.nav-hamburger{display:flex}}
+
+/* Hero */
+.hero{padding:10rem 2rem 6rem;text-align:center;background:linear-gradient(170deg,#0a1a16 0%,var(--dark-teal) 30%,var(--teal) 60%,rgba(0,82,78,.85) 100%);color:var(--cream-pale);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 800px 600px at 30% 20%,rgba(181,133,0,.12),transparent),radial-gradient(ellipse 600px 500px at 70% 80%,rgba(155,34,66,.08),transparent);pointer-events:none}
+.hero::after{content:'';position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.04;pointer-events:none}
+.hero h1{font-family:var(--font-display);font-size:clamp(2.5rem,6vw,4.5rem);line-height:1.1;margin-bottom:1rem;position:relative}
+.hero h1 em{font-style:italic;color:var(--gold-light)}
+.hero .subtitle{font-size:clamp(1rem,2vw,1.25rem);opacity:.8;font-weight:300;margin-bottom:1rem;position:relative}
+.hero .subtitle2{font-size:clamp(.85rem,1.5vw,1rem);opacity:.5;font-weight:400;margin-bottom:3rem;position:relative;font-family:var(--font-mono)}
+.hero-kpis{display:flex;justify-content:center;gap:1.5rem;flex-wrap:wrap;position:relative}
+.hero-kpi{background:rgba(255,255,255,.07);border:1px solid rgba(232,213,181,.12);border-radius:var(--radius);padding:1.5rem 2rem;backdrop-filter:blur(8px);min-width:140px;transition:transform .3s,box-shadow .3s}
+.hero-kpi:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.2)}
+.hero-kpi .value{font-family:var(--font-display);font-size:2.5rem;display:block;background:linear-gradient(135deg,var(--cream),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-kpi .label{font-size:.8rem;text-transform:uppercase;letter-spacing:1px;opacity:.6}
+
+/* TOC */
+.toc{background:#fff;border-radius:var(--radius);padding:1.5rem 2rem;box-shadow:var(--shadow-md);margin-bottom:3rem}
+.toc h3{font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:1rem}
+.toc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:.5rem}
+.toc a{color:var(--teal);text-decoration:none;font-size:.88rem;padding:.3rem .5rem;border-radius:6px;transition:background .2s;display:block}
+.toc a:hover{background:var(--cream-pale)}
+.toc a .toc-num{font-family:var(--font-mono);font-size:.75rem;color:var(--cool-gray);margin-right:.3rem}
+
+/* Reference items */
+.ref-list{display:flex;flex-direction:column;gap:1.25rem;margin-top:1.5rem}
+.ref-item{display:flex;gap:1.25rem;background:#fff;border-radius:var(--radius);padding:1.5rem 1.75rem;box-shadow:var(--shadow-sm);border-left:4px solid var(--teal);transition:transform .3s,box-shadow .3s}
+.ref-item:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+.ref-num{font-family:var(--font-mono);font-size:1rem;font-weight:500;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;background:var(--teal)}
+.ref-content{flex:1;min-width:0}
+.ref-authors{font-weight:600;color:var(--dark-teal);font-size:.95rem;margin-bottom:.25rem}
+.ref-title{font-style:italic;font-size:1.05rem;color:var(--neutral-black);margin-bottom:.25rem;line-height:1.5}
+.ref-source{font-family:var(--font-mono);font-size:.82rem;color:var(--cool-gray);margin-bottom:.4rem}
+.ref-link{display:inline-flex;align-items:center;gap:.35rem;color:var(--teal);text-decoration:none;font-size:.85rem;font-weight:600;transition:color .2s;word-break:break-all}
+.ref-link:hover{color:var(--dark-teal)}
+.ref-link svg{flex-shrink:0}
+
+/* Section-specific border & number colors */
+.ref-item.cat-ts{border-left-color:var(--teal)}
+.ref-item.cat-ts .ref-num{background:var(--teal)}
+
+.ref-item.cat-epi{border-left-color:var(--burgundy)}
+.ref-item.cat-epi .ref-num{background:var(--burgundy)}
+
+.ref-item.cat-ml{border-left-color:var(--gold)}
+.ref-item.cat-ml .ref-num{background:var(--gold)}
+
+.ref-item.cat-datos{border-left-color:#2E7D32}
+.ref-item.cat-datos .ref-num{background:#2E7D32}
+
+.ref-item.cat-metodo{border-left-color:var(--dark-burgundy)}
+.ref-item.cat-metodo .ref-num{background:var(--dark-burgundy)}
+
+.ref-item.cat-tools{border-left-color:var(--cool-gray)}
+.ref-item.cat-tools .ref-num{background:var(--cool-gray)}
+
+/* Section divider */
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--cream),transparent);margin:1rem 0}
+
+/* Reveal */
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .6s ease,transform .6s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* Footer */
+footer{background:var(--dark-teal);color:rgba(232,213,181,.7);padding:3rem 2rem;text-align:center;font-size:.85rem;position:relative;z-index:1}
+footer a{color:var(--gold-light);text-decoration:none}
+footer a:hover{color:var(--cream)}
+footer .footer-title{font-family:var(--font-display);color:var(--cream);font-size:1.2rem;margin-bottom:.5rem}
+
+/* Responsive */
+@media(max-width:768px){
+  .hero{padding:8rem 1.5rem 4rem}
+  .hero-kpis{gap:1rem}
+  .hero-kpi{min-width:130px;padding:1rem}
+  .hero-kpi .value{font-size:2rem}
+  .container{padding:0 1.25rem}
+  .ref-item{flex-direction:column;gap:.75rem}
+  .ref-num{width:32px;height:32px;font-size:.85rem}
+  section{padding:2.5rem 0}
+}
+@media print{
+  .nav,footer{display:none}
+  body{background:#fff}
+  body::before{display:none}
+  .reveal{opacity:1;transform:none}
+  section{padding:2rem 0;page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav" id="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo" style="text-decoration:none">EpiForecast<span>-MX</span></a>
+      <ul class="nav-menu">
+        <li class="nav-group">
+          <button class="nav-group-toggle">Proyecto <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg></button>
+          <div class="nav-dropdown">
+            <a href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>Inicio</a>
+            <a href="EpiDashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+            <a href="Reports/index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Pronósticos</a>
+          </div>
+        </li>
+        <li class="nav-group">
+          <button class="nav-group-toggle">Metodología <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg></button>
+          <div class="nav-dropdown">
+            <a href="bitacora_modelado.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Bitácora v1-v6</a>
+            <a href="ficha_tecnica_prophet.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Ficha Prophet</a>
+            <a href="hiperparametros_modelos.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>HPs SageMaker</a>
+            <a href="construccion_dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>Arquitectura Dashboard</a>
+          </div>
+        </li>
+        <li class="nav-group">
+          <button class="nav-group-toggle">Resultados <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg></button>
+          <div class="nav-dropdown">
+            <a href="reporte_resultados.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg>Resultados</a>
+            <a href="comparacion_modelos.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Comparación SageMaker</a>
+            <a href="conclusiones.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Conclusiones</a>
+            <a href="referencias.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>Referencias</a>
+          </div>
+        </li>
+      </ul>
+      <div class="nav-ctas">
+        <a href="EpiDashboard.html" class="nav-cta nav-cta--primary">Dashboard</a>
+        <a href="https://github.com/IntegradorIMSS2026Team01" target="_blank" rel="noopener" class="nav-cta nav-cta--secondary" style="padding:0.4rem 0.6rem" title="GitHub"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg></a>
+      </div>
+      <div class="nav-hamburger" onclick="document.getElementById('navMobile').classList.toggle('show')" aria-label="Men&uacute;"><span></span><span></span><span></span></div>
+    </div>
+    <div class="nav-mobile" id="navMobile">
+      <div class="nav-mobile-group">
+        <div class="nav-mobile-heading" onclick="this.parentElement.classList.toggle('open')">Proyecto <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg></div>
+        <div class="nav-mobile-items"><a href="index.html">Inicio</a><a href="EpiDashboard.html">Dashboard</a><a href="Reports/index.html">Pronósticos</a></div>
+      </div>
+      <div class="nav-mobile-group">
+        <div class="nav-mobile-heading" onclick="this.parentElement.classList.toggle('open')">Metodología <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg></div>
+        <div class="nav-mobile-items"><a href="bitacora_modelado.html">Bitácora v1-v6</a><a href="ficha_tecnica_prophet.html">Ficha Prophet</a><a href="hiperparametros_modelos.html">HPs SageMaker</a><a href="construccion_dashboard.html">Arquitectura Dashboard</a></div>
+      </div>
+      <div class="nav-mobile-group">
+        <div class="nav-mobile-heading" onclick="this.parentElement.classList.toggle('open')">Resultados <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg></div>
+        <div class="nav-mobile-items"><a href="reporte_resultados.html">Resultados</a><a href="comparacion_modelos.html">Comparación SageMaker</a><a href="conclusiones.html">Conclusiones</a><a href="referencias.html">Referencias</a></div>
+      </div>
+      <div class="nav-mobile-ctas"><a href="EpiDashboard.html" class="nav-cta nav-cta--primary" style="justify-content:center;padding:.6rem 1.5rem;flex:1">Dashboard</a></div>
+    </div>
+  </nav>
+
+<!-- Hero -->
+<section class="hero">
+  <h1>Referencias <em>Bibliogr&aacute;ficas</em></h1>
+  <p class="subtitle">EpiForecast-MX &middot; IMSS &times; Tec de Monterrey</p>
+  <p class="subtitle2">Maestr&iacute;a en Inteligencia Artificial Aplicada &bull; Febrero 2026</p>
+  <div class="hero-kpis">
+    <div class="hero-kpi"><span class="value">43</span><span class="label">Referencias</span></div>
+    <div class="hero-kpi"><span class="value">6</span><span class="label">Categor&iacute;as tem&aacute;ticas</span></div>
+    <div class="hero-kpi"><span class="value">63%</span><span class="label">Con enlace digital</span></div>
+  </div>
+</section>
+
+<!-- TOC -->
+<section style="padding:2rem 0 0">
+  <div class="container">
+    <div class="toc reveal">
+      <h3>Contenido</h3>
+      <div class="toc-grid">
+        <a href="#series"><span class="toc-num">01</span> Pron&oacute;stico de series de tiempo</a>
+        <a href="#epidemiologia"><span class="toc-num">02</span> Epidemiolog&iacute;a y salud p&uacute;blica</a>
+        <a href="#ml"><span class="toc-num">03</span> Machine learning y deep learning</a>
+        <a href="#datos"><span class="toc-num">04</span> Datos y fuentes oficiales</a>
+        <a href="#metodologia"><span class="toc-num">05</span> Metodolog&iacute;a y marcos de trabajo</a>
+        <a href="#herramientas"><span class="toc-num">06</span> Herramientas y software</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 1. Pron&oacute;stico de series de tiempo -->
+<section id="series">
+  <div class="container">
+    <h2 class="section-title reveal">1. Pron&oacute;stico de series de tiempo</h2>
+    <p class="section-sub reveal">Fundamentos te&oacute;ricos del modelado temporal con Prophet, descomposici&oacute;n estacional y validaci&oacute;n cruzada</p>
+
+    <div class="ref-list">
+
+      <div class="ref-item cat-ts reveal">
+        <div class="ref-num">1</div>
+        <div class="ref-content">
+          <p class="ref-authors">Taylor, S. J., y Letham, B.</p>
+          <p class="ref-title">Forecasting at scale</p>
+          <p class="ref-source">The American Statistician, 72(1), 37&ndash;45, 2018</p>
+          <a href="https://doi.org/10.1080/00031305.2017.1380080" target="_blank" rel="noopener" class="ref-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            doi.org/10.1080/00031305.2017.1380080
+          </a>
+        </div>
+      </div>
+
+      <div class="ref-item cat-ts reveal">
+        <div class="ref-num">2</div>
+        <div class="ref-content">
+          <p class="ref-authors">Hyndman, R. J., y Koehler, A. B.</p>
+          <p class="ref-title">Another look at measures of forecast accuracy</p>
+          <p class="ref-source">International Journal of Forecasting, 22(4), 679&ndash;688, 2006</p>
+          <a href="https://doi.org/10.1016/j.ijforecast.2006.03.001" target="_blank" rel="noopener" class="ref-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            doi.org/10.1016/j.ijforecast.2006.03.001
+          </a>
+        </div>
+      </div>
+
+      <div class="ref-item cat-ts reveal">
+        <div class="ref-num">3</div>
+        <div class="ref-content">
+          <p class="ref-authors">Hyndman, R. J., y Athanasopoulos, G.</p>
+          <p class="ref-title">Forecasting: Principles and practice (3a ed.)</p>
+          <p class="ref-source">OTexts, 2021</p>
+          <a href="https://otexts.com/fpp3/" target="_blank" rel="noopener" class="ref-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            otexts.com/fpp3/
+          </a>
+        </div>
+      </div>
+
+      <div class="ref-item cat-ts reveal">
+        <div class="ref-num">4</div>
+        <div class="ref-content">
+          <p class="ref-authors">Cleveland, R. B., Cleveland, W. S., McRae, J. E., y Terpenning, I.</p>
+          <p class="ref-title">STL: A seasonal-trend decomposition procedure based on loess</p>
+          <p class="ref-source">Journal of Official Statistics, 6(1), 3&ndash;33, 1990</p>
+        </div>
+      </div>
+
+      <div class="ref-item cat-ts reveal">
+        <div class="ref-num">5</div>
+        <div class="ref-content">
+          <p class="ref-authors">Bergmeir, C., y Ben&iacute;tez, J. M.</p>
+          <p class="ref-title">On the use of cross-validation for time series predictor evaluation</p>
+          <p class="ref-source">Information Sciences, 191, 192&ndash;213, 2012</p>
+          <a href="https://doi.org/10.1016/j.ins.2011.12.028" target="_blank" rel="noopener" class="ref-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            doi.org/10.1016/j.ins.2011.12.028
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="container"><div class="section-divider"></div></div>
+
+<!-- 2. Epidemiolog&iacute;a y salud p&uacute;blica -->
+<section id="epidemiologia">
+  <div class="container">
+    <h2 class="section-title reveal">2. Epidemiolog&iacute;a y salud p&uacute;blica</h2>
+    <p class="section-sub reveal">Determinantes sociales, prevalencia de trastornos mentales en M&eacute;xico e impacto de la pandemia COVID-19</p>
+
+    <div class="ref-list">
+
+      <div class="ref-item cat-epi reveal">
+        <div class="ref-num">6</div>
+        <div class="ref-content">
+          <p class="ref-authors">Alegr&iacute;a, M., et al.</p>
+          <p class="ref-title">Social determinants of mental health</p>
+          <p class="ref-source">Social Psychiatry and Psychiatric Epidemiology, 2018</p>
+        </div>
+      </div>
+
+      <div class="ref-item cat-epi reveal">
+        <div class="ref-num">7</div>
+        <div class="ref-content">
+          <p class="ref-authors">Morales-Chain&eacute;, S., L&oacute;pez-Montoya, A., Bosch-Maldonado, A., Berista&iacute;n-Aguirre, A., Robles-Garc&iacute;a, R., y L&oacute;pez-Rosales, F.</p>
+          <p class="ref-title">Incidence of depression and suicide rate in Mexico</p>
+          <p class="ref-source">Salud Mental, 46(5), 131&ndash;139, 2023</p>
+          <a href="https://doi.org/10.17711/SM.0185-3325.2023.017" target="_blank" rel="noopener" class="ref-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            doi.org/10.17711/SM.0185-3325.2023.017
+          </a>
+        </div>
+      </div>
+
+      <div class="ref-item cat-epi reveal">
+        <div class="ref-num">8</div>
+        <div class="ref-content">
+          <p class="ref-authors">Romero-Guerrero, X. R., Cort&eacute;s-Garc&iacute;a, H., Alc&aacute;ntar-Ch&aacute;vez, F., Miranda-Garc&iacute;a, M., Almaz&aacute;n-Farf&aacute;n, V., y Victoria-Carrasco, O. Y.</p>
+          <p class="ref-title">Prevalencia relacionada a trastornos mentales y del comportamiento en poblaci&oacute;n derechohabiente del IMSS, 2021</p>
+          <p class="ref-source">Revista M&eacute;dica del Instituto Mexicano del Seguro Social, 62(3), 1&ndash;8, 2024</p>
+          <a href="https://doi.org/10.5281/zenodo.10998791" target="_blank" rel="noopener" class="ref-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            doi.org/10.5281/zenodo.10998791
+          </a>
+        </div>
+      </div>
+
+      <div class="ref-item cat-epi reveal">
+        <div class="ref-num">9</div>
+        <div class="ref-content">
+          <p class="ref-authors">Antonio-Villa, N. E., et al.</p>
+          <p class="ref-title">Socio-demographic inequalities and excess non-COVID-19 mortality during the COVID-19 pandemic</p>
+          <p class="ref-source">International Journal of Epidemiology, 51(6), 1711&ndash;1723, 2022</p>
+          <a href="https://doi.org/10.1093/ije/dyac184" target="_blank" rel="noopener" class="ref-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            doi.org/10.1093/ije/dyac184
+          </a>
+        </div>
+      </div>
+
+      <div class="ref-item cat-epi reveal">
+        <div class="ref-num">10</div>
+        <div class="ref-content">
+          <p class="ref-authors">Hern&aacute;ndez-D&iacute;az, Y., et al.</p>
+          <p class="ref-title">Mental health impact of the COVID-19 pandemic on Mexican population: A systematic review</p>
+          <p class="ref-source">International Journal of Environmental Research and Public Health, 19(11), 6953, 2022</p>
+          <a href="https://doi.org/10.3390/ijerph19116953" target="_blank" rel="noopener" class="ref-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            doi.org/10.3390/ijerph19116953
+          </a>
+        </div>
+      </div>
+
+      <div class="ref-item cat-epi reveal">
+        <div class="ref-num">11</div>
+        <div class="ref-content">
+          <p class="ref-authors">Elliott, P., y Wartenberg, D.</p>
+          <p class="ref-title">Spatial epidemiology</p>
+          <p class="ref-source">Environmental Health Perspectives, 112(9), 2004</p>
+        </div>
+      </div>
+
+      <div class="ref-item cat-epi reveal">
+        <div class="ref-num">12</div>
+        <div class="ref-content">
+          <p class="ref-authors">Rothman, K. J., Greenland, S., y Lash, T. L.</p>
+          <p class="ref-title">Modern epidemiology (3a ed.)</p>
+          <p class="ref-source">Lippincott Williams &amp; Wilkins, 2008</p>
+        </div>
+      </div>
+
+      <div class="ref-item cat-epi reveal">
+        <div class="ref-num">13</div>
+        <div class="ref-content">
+          <p class="ref-authors">P&eacute;rez-Hern&aacute;ndez, R.</p>
+          <p class="ref-title">Enfermedades neurol&oacute;gicas y trastornos mentales en M&eacute;xico 2014&ndash;2024</p>
+          <p class="ref-source">Sin fecha de publicaci&oacute;n</p>
+        </div>
+      </div>
+
+      <div class="ref-item cat-epi reveal">
+        <div class="ref-num">14</div>
+        <div class="ref-content">
+          <p class="ref-authors">Organizaci&oacute;n Mundial de la Salud</p>
+          <p class="ref-title">Reportes sobre salud mental y enfermedades neurol&oacute;gicas</p>
+          <p class="ref-source">OMS, 2014, 2022, 2025</p>
+          <a href="https://www.who.int/" target="_blank" rel="noopener" class="ref-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            who.int
+          </a>
+        </div>
+      </div>
+
+      <div class="ref-item cat-epi reveal">
+        <div class="ref-num">15</div>
+        <div class="ref-content">
+          <p class="ref-authors">Organizaci&oacute;n Panamericana de la Salud</p>
+          <p class="ref-title">La carga de los trastornos mentales en la Regi&oacute;n de las Am&eacute;ricas</p>
+          <p class="ref-source">OPS, 2021</p>
+          <a href="https://www.paho.org/" target="_blank" rel="noopener" class="ref-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            paho.org
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="container"><div class="section-divider"></div></div>
+
+<!-- 3. Machine learning y deep learning -->
+<section id="ml">
+  <div class="container">
+    <h2 class="section-title reveal">3. Machine learning y deep learning</h2>
+    <p class="section-sub reveal">Algoritmos de aprendizaje autom&aacute;tico, metodolog&iacute;as MLOps y marcos de referencia CRISP-ML(Q)</p>
+
+    <div class="ref-list">
+
+      <div class="ref-item cat-ml reveal">
+        <div class="ref-num">16</div>
+        <div class="ref-content">
+          <p class="ref-authors">G&eacute;ron, A.</p>
+          <p class="ref-title">Hands-on machine learning with Scikit-Learn, Keras, and TensorFlow (3a ed.)</p>
+          <p class="ref-source">O'Reilly Media, 2022</p>
+        </div>
+      </div>
+
+      <div class="ref-item cat-ml reveal">
+        <div class="ref-num">17</div>
+        <div class="ref-content">
+          <p class="ref-authors">Hastie, T., Tibshirani, R., y Friedman, J.</p>
+          <p class="ref-title">The elements of statistical learning (2a ed.)</p>
+          <p class="ref-source">Springer, 2009</p>
+          <a href="https://doi.org/10.1007/978-0-387-84858-7" target="_blank" rel="noopener" class="ref-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            doi.org/10.1007/978-0-387-84858-7
+          </a>
+        </div>
+      </div>
+
+      <div class="ref-item cat-ml reveal">
+        <div class="ref-num">18</div>
+        <div class="ref-content">
+          <p class="ref-authors">James, G., Witten, D., Hastie, T., y Tibshirani, R.</p>
+          <p class="ref-title">An introduction to statistical learning with applications in R (2a ed.)</p>
+          <p class="ref-source">Springer, 2021</p>
+          <a href="https://doi.org/10.1007/978-1-0716-1418-1" target="_blank" rel="noopener" class="ref-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            doi.org/10.1007/978-1-0716-1418-1
+          </a>
+        </div>
+      </div>
+
+      <div class="ref-item cat-ml reveal">
+        <div class="ref-num">19</div>
+        <div class="ref-content">
+          <p class="ref-authors">Studer, S., et al.</p>
+          <p class="ref-title">Towards CRISP-ML(Q): A machine learning process model with quality assurance methodology</p>
+          <p class="ref-source">Machine Learning and Knowledge Extraction, 3(2), 392&ndash;413, 2021</p>
+          <a href="https://doi.org/10.3390/make3020020" target="_blank" rel="noopener" class="ref-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            doi.org/10.3390/make3020020
+          </a>
+        </div>
+      </div>
+
+      <div class="ref-item cat-ml reveal">
+        <div class="ref-num">20</div>
+        <div class="ref-content">
+          <p class="ref-authors">Visengeriyeva, L., et al.</p>
+          <p class="ref-title">CRISP-ML(Q): The ML Lifecycle Process</p>
+          <p class="ref-source">ML-Ops.org, 2023</p>
+          <a href="https://ml-ops.org/content/crisp-ml" target="_blank" rel="noopener" class="ref-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            ml-ops.org/content/crisp-ml
+          </a>
+        </div>
+      </div>
+
+      <div class="ref-item cat-ml reveal">
+        <div class="ref-num">21</div>
+        <div class="ref-content">
+          <p class="ref-authors">Costa, R.</p>
+          <p class="ref-title">The CRISP-ML Methodology: A Step-by-Step Approach to Real-World Machine Learning Projects</p>
+          <p class="ref-source">2022</p>
+        </div>
+      </div>
+
+      <div class="ref-item cat-ml reveal">
+        <div class="ref-num">22</div>
+        <div class="ref-content">
+          <p class="ref-authors">Kreuzberger, D., K&uuml;hl, N., y Hirschl, S.</p>
+          <p class="ref-title">Machine learning operations (MLOps): Overview, definition, and architecture</p>
+          <p class="ref-source">IEEE Access, 11, 31866&ndash;31879, 2023</p>
+          <a href="https://doi.org/10.1109/ACCESS.2023.3262138" target="_blank" rel="noopener" class="ref-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            doi.org/10.1109/ACCESS.2023.3262138
+          </a>
+        </div>
+      </div>
+
+      <div class="ref-item cat-ml reveal">
+        <div class="ref-num">23</div>
+        <div class="ref-content">
+          <p class="ref-authors">Data Science Dojo</p>
+          <p class="ref-title">101 machine learning algorithms for data science with cheat sheets</p>
+          <p class="ref-source">Data Science Dojo, 2023</p>
+          <a href="https://datasciencedojo.com/blog/machine-learning-algorithms/" target="_blank" rel="noopener" class="ref-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            datasciencedojo.com/blog/machine-learning-algorithms/
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="container"><div class="section-divider"></div></div>
+
+<!-- 4. Datos y fuentes oficiales -->
+<section id="datos">
+  <div class="container">
+    <h2 class="section-title reveal">4. Datos y fuentes oficiales</h2>
+    <p class="section-sub reveal">Fuentes primarias de datos epidemiol&oacute;gicos, demogr&aacute;ficos y socioecon&oacute;micos de M&eacute;xico</p>
+
+    <div class="ref-list">
+
+      <div class="ref-item cat-datos reveal">
+        <div class="ref-num">24</div>
+        <div class="ref-content">
+          <p class="ref-authors">Secretar&iacute;a de Salud / SINAVE</p>
+          <p class="ref-title">Bolet&iacute;n Epidemiol&oacute;gico &mdash; Sistema Nacional de Vigilancia Epidemiol&oacute;gica</p>
+          <p class="ref-source">Gobierno de M&eacute;xico</p>
+          <a href="https://www.gob.mx/salud/sinave" target="_blank" rel="noopener" class="ref-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            gob.mx/salud/sinave
+          </a>
+        </div>
+      </div>
+
+      <div class="ref-item cat-datos reveal">
+        <div class="ref-num">25</div>
+        <div class="ref-content">
+          <p class="ref-authors">INEGI</p>
+          <p class="ref-title">&Aacute;reas geogr&aacute;ficas, localidades, marco geoestad&iacute;stico, API PxWeb</p>
+          <p class="ref-source">Instituto Nacional de Estad&iacute;stica y Geograf&iacute;a, sin fecha</p>
+          <a href="https://www.inegi.org.mx/" target="_blank" rel="noopener" class="ref-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            inegi.org.mx
+          </a>
+        </div>
+      </div>
+
+      <div class="ref-item cat-datos reveal">
+        <div class="ref-num">26</div>
+        <div class="ref-content">
+          <p class="ref-authors">CONEVAL</p>
+          <p class="ref-title">&Iacute;ndices de marginaci&oacute;n por entidad federativa y municipio</p>
+          <p class="ref-source">Consejo Nacional de Evaluaci&oacute;n de la Pol&iacute;tica de Desarrollo Social, 2020</p>
+        </div>
+      </div>
+
+      <div class="ref-item cat-datos reveal">
+        <div class="ref-num">27</div>
+        <div class="ref-content">
+          <p class="ref-authors">CONAPO</p>
+          <p class="ref-title">&Iacute;ndices de marginaci&oacute;n por entidad federativa y municipio</p>
+          <p class="ref-source">Consejo Nacional de Poblaci&oacute;n, 2020</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="container"><div class="section-divider"></div></div>
+
+<!-- 5. Metodolog&iacute;a y marcos de trabajo -->
+<section id="metodologia">
+  <div class="container">
+    <h2 class="section-title reveal">5. Metodolog&iacute;a y marcos de trabajo</h2>
+    <p class="section-sub reveal">Investigaci&oacute;n cuantitativa, an&aacute;lisis exploratorio, ingenier&iacute;a de caracter&iacute;sticas y manejo de datos desbalanceados</p>
+
+    <div class="ref-list">
+
+      <div class="ref-item cat-metodo reveal">
+        <div class="ref-num">28</div>
+        <div class="ref-content">
+          <p class="ref-authors">Hern&aacute;ndez-Sampieri, R., y Mendoza, C.</p>
+          <p class="ref-title">Metodolog&iacute;a de la investigaci&oacute;n: Las rutas de la investigaci&oacute;n cuantitativa, cualitativa y mixta (3a ed.)</p>
+          <p class="ref-source">McGraw-Hill, 2023</p>
+        </div>
+      </div>
+
+      <div class="ref-item cat-metodo reveal">
+        <div class="ref-num">29</div>
+        <div class="ref-content">
+          <p class="ref-authors">Tukey, J. W.</p>
+          <p class="ref-title">Exploratory data analysis</p>
+          <p class="ref-source">Addison-Wesley, 1977</p>
+        </div>
+      </div>
+
+      <div class="ref-item cat-metodo reveal">
+        <div class="ref-num">30</div>
+        <div class="ref-content">
+          <p class="ref-authors">Brownlee, J.</p>
+          <p class="ref-title">How to Choose a Feature Selection Method for Machine Learning</p>
+          <p class="ref-source">Machine Learning Mastery, 2020</p>
+          <a href="https://machinelearningmastery.com/feature-selection-with-real-and-categorical-data/" target="_blank" rel="noopener" class="ref-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            machinelearningmastery.com/feature-selection-with-real-and-categorical-data/
+          </a>
+        </div>
+      </div>
+
+      <div class="ref-item cat-metodo reveal">
+        <div class="ref-num">31</div>
+        <div class="ref-content">
+          <p class="ref-authors">Galli, S.</p>
+          <p class="ref-title">Python Feature Engineering Cookbook (2a ed.)</p>
+          <p class="ref-source">Packt Publishing, 2022</p>
+        </div>
+      </div>
+
+      <div class="ref-item cat-metodo reveal">
+        <div class="ref-num">32</div>
+        <div class="ref-content">
+          <p class="ref-authors">Kumar Mukhiya, S., y Ahmed, U.</p>
+          <p class="ref-title">Hands-On Exploratory Data Analysis with Python</p>
+          <p class="ref-source">Packt Publishing, 2020</p>
+        </div>
+      </div>
+
+      <div class="ref-item cat-metodo reveal">
+        <div class="ref-num">33</div>
+        <div class="ref-content">
+          <p class="ref-authors">Huang, C. Y., y Dai, H. L.</p>
+          <p class="ref-title">Learning from class-imbalanced data</p>
+          <p class="ref-source">Data Science in Finance and Economics, 1(1), 2021</p>
+          <a href="https://www.aimspress.com/article/doi/10.3934/DSFE.2021002" target="_blank" rel="noopener" class="ref-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            aimspress.com/article/doi/10.3934/DSFE.2021002
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="container"><div class="section-divider"></div></div>
+
+<!-- 6. Herramientas y software -->
+<section id="herramientas">
+  <div class="container">
+    <h2 class="section-title reveal">6. Herramientas y software</h2>
+    <p class="section-sub reveal">Versionado de datos, principios de visualizaci&oacute;n y dise&ntilde;o de dashboards</p>
+
+    <div class="ref-list">
+
+      <div class="ref-item cat-tools reveal">
+        <div class="ref-num">34</div>
+        <div class="ref-content">
+          <p class="ref-authors">Iterative</p>
+          <p class="ref-title">DVC: Data version control</p>
+          <p class="ref-source">Documentaci&oacute;n oficial, 2024</p>
+          <a href="https://dvc.org/doc" target="_blank" rel="noopener" class="ref-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            dvc.org/doc
+          </a>
+        </div>
+      </div>
+
+      <div class="ref-item cat-tools reveal">
+        <div class="ref-num">35</div>
+        <div class="ref-content">
+          <p class="ref-authors">Few, S.</p>
+          <p class="ref-title">Information dashboard design: The effective visual communication of data</p>
+          <p class="ref-source">O'Reilly Media, 2006</p>
+        </div>
+      </div>
+
+      <div class="ref-item cat-tools reveal">
+        <div class="ref-num">36</div>
+        <div class="ref-content">
+          <p class="ref-authors">Midway, S. R.</p>
+          <p class="ref-title">Principles of effective data visualization</p>
+          <p class="ref-source">Patterns, 1(9), 100141, 2020</p>
+          <a href="https://doi.org/10.1016/j.patter.2020.100141" target="_blank" rel="noopener" class="ref-link">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            doi.org/10.1016/j.patter.2020.100141
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-title">EpiForecast-MX</div>
+  <p>Plataforma de inteligencia epidemiol&oacute;gica &middot; IMSS &times; Tec de Monterrey</p>
+  <p style="margin-top:.75rem">
+    <a href="index.html">Inicio</a> &middot;
+    <a href="EpiDashboard.html">Dashboard</a> &middot;
+    <a href="Reports/index.html">Pron&oacute;sticos</a> &middot;
+    <a href="reporte_resultados.html">Resultados</a> &middot;
+    <a href="bitacora_modelado.html">Bit&aacute;cora</a> &middot;
+    <a href="comparacion_modelos.html">Comparaci&oacute;n</a> &middot;
+    <a href="ficha_tecnica_prophet.html">Ficha Prophet</a> &middot;
+    <a href="hiperparametros_modelos.html">HPs SageMaker</a> &middot;
+    <a href="construccion_dashboard.html">Arquitectura Dashboard</a> &middot;
+    <a href="conclusiones.html">Conclusiones</a> &middot;
+    <a href="referencias.html">Referencias</a>
+  </p>
+  <p style="margin-top:.5rem">Maestr&iacute;a en Inteligencia Artificial Aplicada &mdash; Proyecto Capstone 2026</p>
+</footer>
+
+<script>
+// Reveal animation
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('visible'); observer.unobserve(e.target); } });
+}, { threshold: 0.08 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// Nav scroll
+const nav=document.getElementById('nav');if(nav)window.addEventListener('scroll',()=>nav.classList.toggle('scrolled',window.scrollY>40));
+
+// Smooth scroll
+document.querySelectorAll('nav a[href^="#"], .toc a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const href = a.getAttribute('href');
+    if(!href || !href.startsWith('#')) return;
+    const t = document.querySelector(href);
+    if(t){ e.preventDefault(); t.scrollIntoView({ behavior:'smooth', block:'start' }); }
+  });
+});
+</script>
+</body>
+</html>
