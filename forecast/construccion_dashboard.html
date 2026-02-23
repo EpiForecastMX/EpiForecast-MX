@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Construccion del Dashboard Tableau — EpiForecast-MX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --burgundy:#9B2242;--dark-burgundy:#6F1D46;--teal:#00524E;--dark-teal:#173F35;
+  --gold:#B58500;--cream:#E8D5B5;--cream-light:#F5EDE0;--cream-pale:#FAF6F0;
+  --cool-gray:#97999B;--neutral-black:#231F20;
+  --burgundy-light:#D4758B;--teal-light:#4A9E9A;--gold-light:#D4B24A;
+  --font-display:'DM Serif Display',Georgia,serif;
+  --font-body:'Source Sans 3','Source Sans Pro',sans-serif;
+  --font-mono:'JetBrains Mono','Fira Code',monospace;
+  --shadow-sm:0 2px 8px rgba(0,0,0,.06);--shadow-md:0 8px 24px rgba(0,0,0,.06);
+  --shadow-lg:0 16px 48px rgba(0,0,0,.06);--radius:16px;--radius-sm:10px;
+}
+body{font-family:var(--font-body);background:var(--cream-pale);color:var(--neutral-black);line-height:1.7;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.025;pointer-events:none;z-index:0}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(23,63,53,.96);backdrop-filter:blur(16px);border-bottom:1px solid rgba(232,213,181,.1);padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between}
+nav .logo{color:var(--cream);font-family:var(--font-display);font-size:1.3rem;letter-spacing:.02em;text-decoration:none}
+nav .nav-links{display:flex;gap:1.5rem;flex-wrap:wrap}
+nav .nav-links a{color:rgba(232,213,181,.7);text-decoration:none;font-size:.85rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;transition:color .2s}
+nav .nav-links a:hover{color:var(--cream)}
+nav .nav-links a.ext{color:var(--gold-light)}
+nav .nav-links a.sep{border-left:1px solid rgba(232,213,181,.25);padding-left:1.25rem}
+
+.container{max-width:1200px;margin:0 auto;padding:0 2rem;position:relative;z-index:1}
+section{padding:4rem 0}
+.section-title{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.5rem);margin-bottom:.5rem;color:var(--dark-teal)}
+.section-sub{color:var(--cool-gray);font-size:1rem;margin-bottom:2.5rem}
+
+/* Hero */
+.hero{padding:10rem 2rem 6rem;text-align:center;background:linear-gradient(170deg,#0a1628 0%,var(--dark-teal) 40%,var(--teal) 70%,rgba(0,82,78,.85) 100%);color:var(--cream-pale);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 800px 600px at 30% 20%,rgba(181,133,0,.12),transparent),radial-gradient(ellipse 600px 500px at 70% 80%,rgba(155,34,66,.08),transparent);pointer-events:none}
+.hero::after{content:'';position:absolute;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.04;pointer-events:none}
+.hero h1{font-family:var(--font-display);font-size:clamp(2.5rem,6vw,4.5rem);line-height:1.1;margin-bottom:1rem;position:relative}
+.hero h1 em{font-style:italic;color:var(--gold-light)}
+.hero .subtitle{font-size:clamp(1rem,2vw,1.25rem);opacity:.8;font-weight:300;margin-bottom:1rem;position:relative}
+.hero .subtitle2{font-size:clamp(.85rem,1.5vw,1rem);opacity:.5;font-weight:400;margin-bottom:3rem;position:relative;font-family:var(--font-mono)}
+.hero-kpis{display:flex;justify-content:center;gap:1.5rem;flex-wrap:wrap;position:relative}
+.hero-kpi{background:rgba(255,255,255,.07);border:1px solid rgba(232,213,181,.12);border-radius:var(--radius);padding:1.5rem 2rem;backdrop-filter:blur(8px);min-width:140px;transition:transform .3s,box-shadow .3s}
+.hero-kpi:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.2)}
+.hero-kpi .value{font-family:var(--font-display);font-size:2.5rem;display:block;background:linear-gradient(135deg,var(--cream),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-kpi .label{font-size:.8rem;text-transform:uppercase;letter-spacing:1px;opacity:.6}
+
+/* Cards */
+.card{background:#fff;border-radius:var(--radius);padding:2rem;box-shadow:var(--shadow-md);border:1px solid rgba(0,0,0,.04);transition:transform .3s,box-shadow .3s;overflow:hidden}
+.card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:2rem}
+.card-grid-3{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.5rem}
+.card-header{display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:2px solid var(--cream-light)}
+.card-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;box-shadow:0 0 8px currentColor}
+.card-title{font-family:var(--font-display);font-size:1.4rem}
+
+/* Chart */
+.chart-wrap{background:#fff;border-radius:var(--radius);padding:2rem;box-shadow:var(--shadow-md);border:1px solid rgba(0,0,0,.04)}
+.chart-wrap canvas{max-height:400px}
+.chart-wrap h3{font-family:var(--font-display);font-size:1.3rem;color:var(--dark-teal);margin-bottom:.25rem}
+.chart-wrap .chart-sub{font-size:.85rem;color:var(--cool-gray);margin-bottom:1.5rem}
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:2rem}
+
+/* Callout */
+.callout{background:linear-gradient(135deg,rgba(0,82,78,.06),rgba(181,133,0,.04));border:1px solid rgba(0,82,78,.15);border-left:4px solid var(--teal);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:1.5rem 2rem;margin:2rem 0;font-size:.95rem}
+.callout-gold{border-left-color:var(--gold);background:linear-gradient(135deg,rgba(181,133,0,.06),rgba(155,34,66,.03))}
+.callout-burgundy{border-left-color:var(--burgundy);background:linear-gradient(135deg,rgba(155,34,66,.06),rgba(0,82,78,.03))}
+.callout strong{color:var(--dark-teal)}
+.callout-gold strong{color:var(--gold)}
+.callout-burgundy strong{color:var(--burgundy)}
+
+/* Badge */
+.badge{display:inline-block;padding:.2rem .7rem;border-radius:100px;font-family:var(--font-mono);font-size:.8rem;font-weight:500}
+.badge-green{background:#e6f4ea;color:#1a7431}
+.badge-yellow{background:#fef7e0;color:#8a6d00}
+.badge-red{background:#fde8e8;color:#b91c1c}
+.badge-teal{background:rgba(0,82,78,.1);color:var(--teal)}
+
+/* Code */
+.code-block{background:var(--neutral-black);color:#e0e0e0;border-radius:var(--radius-sm);padding:1.25rem 1.5rem;font-family:var(--font-mono);font-size:.82rem;line-height:1.6;overflow-x:auto;margin:1.5rem 0;position:relative}
+.code-block .kw{color:#c792ea}
+.code-block .fn{color:#82aaff}
+.code-block .st{color:#c3e88d}
+.code-block .cm{color:#546e7a}
+.code-block .num{color:#f78c6c}
+.code-block .op{color:#89ddff}
+.code-label{position:absolute;top:.5rem;right:.75rem;font-size:.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--cool-gray);opacity:.6}
+
+/* YAML */
+.yaml-block{background:var(--cream-light);border-left:4px solid var(--teal);border-radius:0 var(--radius-sm) var(--radius-sm) 0;padding:1.25rem 1.5rem;font-family:var(--font-mono);font-size:.82rem;line-height:1.6;overflow-x:auto;margin:1.5rem 0}
+.yaml-key{color:var(--teal);font-weight:500}
+.yaml-val{color:var(--burgundy)}
+.yaml-cm{color:var(--cool-gray)}
+
+/* Pipeline diagram */
+.pipeline{display:flex;align-items:center;gap:0;flex-wrap:wrap;margin:2rem 0;justify-content:center}
+.pipeline-step{background:#fff;border:2px solid var(--teal);border-radius:var(--radius-sm);padding:.75rem 1.25rem;font-size:.85rem;font-weight:600;color:var(--dark-teal);text-align:center;min-width:120px}
+.pipeline-arrow{color:var(--gold);font-size:1.5rem;padding:0 .5rem;flex-shrink:0}
+.pipeline-step.active{background:var(--teal);color:#fff;border-color:var(--teal)}
+.pipeline-step.highlight{background:var(--burgundy);color:#fff;border-color:var(--burgundy)}
+
+/* Table */
+.compare-table{width:100%;border-collapse:collapse;margin:1.5rem 0;font-size:.9rem}
+.compare-table thead th{background:var(--dark-teal);color:var(--cream);padding:.75rem 1rem;text-align:left;font-weight:600;font-size:.8rem;text-transform:uppercase;letter-spacing:.5px}
+.compare-table tbody td{padding:.7rem 1rem;border-bottom:1px solid var(--cream-light)}
+.compare-table tbody tr:hover{background:var(--cream-light)}
+
+/* Timeline */
+.timeline{position:relative;padding:2rem 0 2rem 3rem}
+.timeline::before{content:'';position:absolute;left:1rem;top:0;bottom:0;width:3px;background:linear-gradient(180deg,var(--teal),var(--gold),var(--burgundy));border-radius:2px}
+.tl-item{position:relative;margin-bottom:2.5rem}
+.tl-item::before{content:'';position:absolute;left:-2.35rem;top:.5rem;width:14px;height:14px;border-radius:50%;background:var(--teal);border:3px solid #fff;box-shadow:0 0 0 3px var(--teal)}
+.tl-item:nth-child(2)::before{background:var(--gold);box-shadow:0 0 0 3px var(--gold)}
+.tl-item:nth-child(3)::before{background:var(--burgundy);box-shadow:0 0 0 3px var(--burgundy)}
+.tl-version{font-family:var(--font-mono);font-size:.8rem;font-weight:500;color:var(--burgundy);text-transform:uppercase;letter-spacing:1px;margin-bottom:.25rem}
+.tl-title{font-family:var(--font-display);font-size:1.3rem;color:var(--dark-teal);margin-bottom:.5rem}
+.tl-desc{font-size:.92rem;color:#555;line-height:1.7}
+
+/* Viz grid */
+.viz-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:2rem;margin-top:2rem}
+.viz-card{background:#fff;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow-md);border:1px solid rgba(0,0,0,.04);transition:transform .3s,box-shadow .3s}
+.viz-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+.viz-card-num{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:50%;background:var(--teal);color:#fff;font-family:var(--font-mono);font-size:.85rem;font-weight:600;margin-right:.75rem;flex-shrink:0}
+.viz-card-head{padding:1.5rem 2rem 1rem;display:flex;align-items:center}
+.viz-card-head h3{font-family:var(--font-display);font-size:1.2rem;color:var(--dark-teal)}
+.viz-card-body{padding:0 2rem 1.5rem;font-size:.9rem;color:#555;line-height:1.7}
+.viz-card-foot{background:var(--cream-pale);padding:.75rem 2rem;font-family:var(--font-mono);font-size:.75rem;color:var(--cool-gray)}
+
+/* Reveal */
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .6s ease,transform .6s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* Footer */
+footer{background:var(--dark-teal);color:rgba(232,213,181,.7);padding:3rem 2rem;text-align:center;font-size:.85rem;position:relative;z-index:1}
+footer a{color:var(--gold-light);text-decoration:none}
+footer a:hover{color:var(--cream)}
+footer .footer-title{font-family:var(--font-display);color:var(--cream);font-size:1.2rem;margin-bottom:.5rem}
+
+/* Flow diagram */
+.flow-diagram{display:flex;flex-direction:column;gap:0;align-items:center;margin:2rem 0}
+.flow-row{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;justify-content:center}
+.flow-box{background:#fff;border:2px solid var(--teal);border-radius:var(--radius-sm);padding:.6rem 1.2rem;font-size:.82rem;font-weight:600;color:var(--dark-teal);text-align:center;min-width:100px}
+.flow-box.data{border-color:var(--gold);background:rgba(181,133,0,.06)}
+.flow-box.script{border-color:var(--teal);background:rgba(0,82,78,.06)}
+.flow-box.output{border-color:var(--burgundy);background:rgba(155,34,66,.06)}
+.flow-box.cloud{border-color:#5C6BC0;background:rgba(92,107,192,.06)}
+.flow-arrow-down{color:var(--cool-gray);font-size:1.2rem;text-align:center;padding:.25rem 0}
+
+/* Responsive */
+@media(max-width:768px){
+  nav .nav-links{display:none}
+  .hero{padding:8rem 1.5rem 4rem}.hero-kpis{gap:1rem}.hero-kpi{min-width:130px;padding:1rem}.hero-kpi .value{font-size:2rem}
+  .container{padding:0 1.25rem}
+  .charts-row{grid-template-columns:1fr}
+  .card-grid,.card-grid-3,.viz-grid{grid-template-columns:1fr}
+  .pipeline{flex-direction:column;gap:.5rem}.pipeline-arrow{transform:rotate(90deg)}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="logo">EpiForecast-MX</a>
+  <div class="nav-links">
+    <a href="index.html" class="ext">Inicio</a>
+    <a href="EpiDashboard.html" class="ext">Dashboard</a>
+    <a href="reporte_resultados.html" class="ext">Resultados</a>
+    <a href="Reports/index.html" class="ext">Pronosticos</a>
+    <a href="bitacora_modelado.html" class="ext">Bitacora</a>
+    <a href="comparacion_modelos.html" class="ext">Comparacion</a>
+    <a href="ficha_tecnica_prophet.html" class="ext">Ficha Prophet</a>
+    <a href="hiperparametros_modelos.html" class="ext">HPs SageMaker</a>
+    <a href="#arquitectura" class="sep">Arquitectura</a>
+    <a href="#diagnostico">Diagnostico</a>
+    <a href="#pipeline">Pipeline</a>
+    <a href="#visualizaciones">Vistas</a>
+    <a href="#evolucion">Evolucion</a>
+    <a href="#automatizacion">Automatizacion</a>
+  </div>
+</nav>
+
+<!-- ═══════════ HERO ═══════════ -->
+<section class="hero">
+  <h1>Construccion del <em>Dashboard</em></h1>
+  <p class="subtitle">Del dato crudo a la visualizacion interactiva en Tableau Public</p>
+  <p class="subtitle2">Diagnostico post-entrenamiento, pipeline de datos, migracion y automatizacion</p>
+  <div class="hero-kpis">
+    <div class="hero-kpi"><span class="value">8</span><span class="label">Visualizaciones</span></div>
+    <div class="hero-kpi"><span class="value">297</span><span class="label">Modelos Prophet</span></div>
+    <div class="hero-kpi"><span class="value">4</span><span class="label">Llaves de join</span></div>
+    <div class="hero-kpi"><span class="value">3</span><span class="label">Avances iterativos</span></div>
+    <div class="hero-kpi"><span class="value">1</span><span class="label">Dataset integrado</span></div>
+  </div>
+</section>
+
+<!-- ═══════════ 1. VISION GENERAL ═══════════ -->
+<div class="container">
+
+<section class="reveal" id="vision">
+  <h2 class="section-title">Vision general</h2>
+  <p class="section-sub">De boletines epidemiologicos a un dashboard interactivo embebido en la web</p>
+
+  <div class="callout">
+    <strong>Objetivo del dashboard:</strong> Permitir a investigadores del IMSS y stakeholders del Tec de Monterrey explorar interactivamente datos historicos (2014-2026) y predicciones a 52 semanas de tres padecimientos neurologicos (Depresion F32, Parkinson G20, Alzheimer G30), desagregados por entidad federativa, sexo y semana epidemiologica.
+  </div>
+
+  <div class="card" style="margin-top:2rem">
+    <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--dark-teal);margin-bottom:1rem">El problema no estaba en Tableau</h3>
+    <p>Tras la fase de entrenamiento, las fechas futuras desaparecian al filtrar por entidad o padecimiento en Tableau. La persistencia del error incluso en vistas simplificadas revelo que el defecto no era visual sino <strong>estructural</strong>: estaba en la integracion de datos aguas abajo del entrenamiento. El diagnostico completo, la reconstruccion del pipeline y la migracion a un dataset unico (<code>tableau.csv</code>) constituyen el nucleo de este reporte.</p>
+  </div>
+</section>
+
+<!-- ═══════════ 2. ARQUITECTURA ═══════════ -->
+<section class="reveal" id="arquitectura">
+  <h2 class="section-title">Arquitectura de datos</h2>
+  <p class="section-sub">Pipeline completo: desde SINAVE hasta Tableau Public</p>
+
+  <div class="flow-diagram">
+    <div class="flow-row">
+      <div class="flow-box data">SINAVE PDFs<br><span style="font-size:.7rem;opacity:.6">~633 boletines</span></div>
+      <span class="pipeline-arrow">&rarr;</span>
+      <div class="flow-box script">Extraccion<br><span style="font-size:.7rem;opacity:.6">Camelot + PyPDF</span></div>
+      <span class="pipeline-arrow">&rarr;</span>
+      <div class="flow-box data">dataset_boletin.csv</div>
+    </div>
+    <div class="flow-arrow-down">&darr;</div>
+    <div class="flow-row">
+      <div class="flow-box script">make preprocess<br><span style="font-size:.7rem;opacity:.6">filter &rarr; clean &rarr; transform &rarr; mapper</span></div>
+    </div>
+    <div class="flow-arrow-down">&darr;</div>
+    <div class="flow-row">
+      <div class="flow-box data">data_inegi_General.csv<br><span style="font-size:.7rem;opacity:.6">Historico + INEGI</span></div>
+    </div>
+    <div class="flow-arrow-down">&darr;</div>
+    <div class="flow-row">
+      <div class="flow-box script">make train<br><span style="font-size:.7rem;opacity:.6">Prophet CV + modelos .pkl</span></div>
+      <span class="pipeline-arrow">&rarr;</span>
+      <div class="flow-box script">make predict<br><span style="font-size:.7rem;opacity:.6">predice.py + fallback hibrido</span></div>
+      <span class="pipeline-arrow">&rarr;</span>
+      <div class="flow-box data">all_forecast.csv<br><span style="font-size:.7rem;opacity:.6">~180 MB</span></div>
+    </div>
+    <div class="flow-arrow-down">&darr;</div>
+    <div class="flow-row">
+      <div class="flow-box highlight" style="border-color:var(--burgundy);background:rgba(155,34,66,.08)">make tableau<br><span style="font-size:.7rem;opacity:.6">build_tableau.py</span></div>
+      <span class="pipeline-arrow">&rarr;</span>
+      <div class="flow-box output">tableau.csv<br><span style="font-size:.7rem;opacity:.6">Dataset integrado final</span></div>
+    </div>
+    <div class="flow-arrow-down">&darr;</div>
+    <div class="flow-row">
+      <div class="flow-box cloud">Tableau Public<br><span style="font-size:.7rem;opacity:.6">8 visualizaciones embebidas</span></div>
+      <span class="pipeline-arrow">&rarr;</span>
+      <div class="flow-box cloud">EpiDashboard.html<br><span style="font-size:.7rem;opacity:.6">proyectointegrador.org</span></div>
+    </div>
+  </div>
+
+  <div class="callout-gold callout" style="margin-top:2rem">
+    <strong>Principio rector:</strong> Pipeline reproducible &rarr; Publicacion automatizada &rarr; Consumo visual. El dashboard es la consecuencia del pipeline, no un artefacto ad hoc.
+  </div>
+</section>
+
+<!-- ═══════════ 3. DIAGNOSTICO ═══════════ -->
+<section class="reveal" id="diagnostico">
+  <h2 class="section-title">Diagnostico post-entrenamiento</h2>
+  <p class="section-sub">El pipeline fallaba por inconsistencias en el dataset, no por Tableau</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-dot" style="color:var(--burgundy)"></div>
+        <h3 class="card-title">Semana 53 vs Semana 1</h3>
+      </div>
+      <p style="font-size:.92rem;color:#555">Se detectaron <strong>duplicados reales</strong> en el historico INEGI en fechas especificas (<code>2014-12-29</code> y <code>2025-12-29</code>) por colision entre Semana 53 y Semana 1. Esto rompia la unicidad esperada para los joins y provocaba filas fantasma que desaparecian al filtrar.</p>
+      <div class="code-block" style="margin-top:1rem">
+        <span class="code-label">build_tableau.py</span>
+<span class="cm"># Fix determinista: preferir Semana 53 cuando existe</span>
+<span class="kw">if</span> <span class="st">"Semana"</span> <span class="kw">in</span> real.columns:
+    special_ds = pd.to_datetime([<span class="st">"2014-12-29"</span>, <span class="st">"2025-12-29"</span>])
+    is_special = real[<span class="st">"ds"</span>].isin(special_ds)
+    <span class="kw">if</span> is_special.any():
+        b = real.loc[is_special].copy()
+        b[<span class="st">"_wk_pref"</span>] = (b[<span class="st">"Semana"</span>] == <span class="num">53</span>).astype(<span class="kw">int</span>)
+        b = b.sort_values(...).drop_duplicates(keep=<span class="st">"first"</span>)
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-dot" style="color:var(--teal)"></div>
+        <h3 class="card-title">Politica de NaN</h3>
+      </div>
+      <p style="font-size:.92rem;color:#555">Se decidio <strong>no inventar datos</strong>: no rellenar <code>yhat</code> donde no existe, no mezclar valores reales con forecast, y mantener NaN como ausencia real de informacion. El dataset se construye con <code>outer join</code> y una validacion minima correcta: prohibir NaN <strong>solo</strong> en llaves criticas.</p>
+      <div class="code-block" style="margin-top:1rem">
+        <span class="code-label">Validacion</span>
+key_cols = [<span class="st">"ds"</span>, <span class="st">"padecimiento"</span>, <span class="st">"entidad"</span>, <span class="st">"meta_modo"</span>]
+bad_keys = out[key_cols].isna().sum()
+<span class="kw">if</span> <span class="kw">not</span> bad_keys.empty:
+    <span class="kw">raise</span> ValueError(<span class="st">"NaN en llaves criticas"</span>)
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-dot" style="color:var(--gold)"></div>
+        <h3 class="card-title">Triple conteo de modos</h3>
+      </div>
+      <p style="font-size:.92rem;color:#555">Al expandir el historico a <code>general/hombres/mujeres</code>, se evito inflar <code>SUM(Incrementos_*)</code> en Tableau dejando poblado <strong>solo</strong> el incremento correspondiente al modo y poniendo NaN en los otros dos. Asi, filtrar por <code>meta_modo=hombres</code> solo cuenta hombres.</p>
+      <div class="code-block" style="margin-top:1rem">
+        <span class="code-label">expand_real_by_modo</span>
+g = r.assign(meta_modo=<span class="st">"general"</span>,  y_real=r[<span class="st">"incrementos_total"</span>])
+h = r.assign(meta_modo=<span class="st">"hombres"</span>,  y_real=r[<span class="st">"incrementos_hombres"</span>])
+m = r.assign(meta_modo=<span class="st">"mujeres"</span>,  y_real=r[<span class="st">"incrementos_mujeres"</span>])
+<span class="cm"># Solo el incremento del modo queda poblado</span>
+g = g.assign(incrementos_hombres=pd.NA, incrementos_mujeres=pd.NA)
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 4. PIPELINE BUILD_TABLEAU ═══════════ -->
+<section class="reveal" id="pipeline">
+  <h2 class="section-title">Pipeline: <code>build_tableau.py</code></h2>
+  <p class="section-sub">8 pasos para construir el dataset integrado de visualizacion</p>
+
+  <div class="pipeline" style="margin-bottom:2rem">
+    <div class="pipeline-step">A. Lectura</div>
+    <span class="pipeline-arrow">&rarr;</span>
+    <div class="pipeline-step">B. Parse fechas</div>
+    <span class="pipeline-arrow">&rarr;</span>
+    <div class="pipeline-step">C. Fix Sem. 53</div>
+    <span class="pipeline-arrow">&rarr;</span>
+    <div class="pipeline-step active">D. Expansion</div>
+    <span class="pipeline-arrow">&rarr;</span>
+    <div class="pipeline-step">E. Validacion</div>
+    <span class="pipeline-arrow">&rarr;</span>
+    <div class="pipeline-step active">F. Outer merge</div>
+    <span class="pipeline-arrow">&rarr;</span>
+    <div class="pipeline-step">G. RMSE</div>
+    <span class="pipeline-arrow">&rarr;</span>
+    <div class="pipeline-step highlight">H. Escritura</div>
+  </div>
+
+  <div class="card" style="margin-bottom:2rem">
+    <h3 style="font-family:var(--font-display);font-size:1.2rem;color:var(--dark-teal);margin-bottom:1rem">Contrato de llaves</h3>
+    <p style="font-size:.92rem;color:#555;margin-bottom:1rem">La llave compuesta del dataset final es:</p>
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1rem">
+      <span class="badge badge-teal">ds</span>
+      <span class="badge badge-teal">padecimiento</span>
+      <span class="badge badge-teal">entidad</span>
+      <span class="badge badge-teal">meta_modo</span>
+    </div>
+    <p style="font-size:.92rem;color:#555">El pipeline exige <strong>unicidad</strong> por esta llave en ambas entradas (historico expandido y forecast) antes de hacer el merge. El merge es <code>outer</code> para no perder historico ni forecast, y se usa <code>validate="m:1"</code> para controlar cardinalidad.</p>
+  </div>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Paso</th><th>Funcion</th><th>Descripcion</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><span class="badge badge-teal">A</span></td><td><code>load_inputs()</code></td><td>Lee <code>data_inegi_General.csv</code> (historico INEGI) y <code>all_forecast.csv</code> (predicciones)</td></tr>
+      <tr><td><span class="badge badge-teal">B</span></td><td><code>prepare_inputs()</code></td><td>Parsea <code>Fecha</code>&rarr;<code>ds</code>, mapea columnas del forecast, elimina fechas invalidas</td></tr>
+      <tr><td><span class="badge badge-yellow">C</span></td><td>Fix Semana 53</td><td>Desambigua <code>2014-12-29</code> y <code>2025-12-29</code> prefiriendo Semana 53 sobre Semana 1</td></tr>
+      <tr><td><span class="badge badge-green">D</span></td><td><code>expand_real_by_modo()</code></td><td>Triplica historico en 3 modos; solo el incremento correspondiente queda poblado</td></tr>
+      <tr><td><span class="badge badge-yellow">E</span></td><td>Validacion duplicados</td><td>Verifica unicidad en <code>[ds, padecimiento, entidad, meta_modo]</code> en ambas entradas</td></tr>
+      <tr><td><span class="badge badge-green">F</span></td><td><code>outer merge</code></td><td>Join historico + forecast por las 4 llaves, <code>validate="m:1"</code></td></tr>
+      <tr><td><span class="badge badge-teal">G</span></td><td>RMSE por modelo</td><td>Calcula RMSE solo donde coexisten <code>y_real</code> y <code>yhat</code></td></tr>
+      <tr><td><span class="badge badge-green">H</span></td><td>Escritura</td><td>Renombra, fill numerico (excluyendo incrementos), valida llaves, escribe <code>tableau.csv</code></td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ═══════════ 5. PREDICE.PY — METRICAS HIBRIDAS ═══════════ -->
+<section class="reveal" id="metricas">
+  <h2 class="section-title">Metricas: modelo original vs usado</h2>
+  <p class="section-sub">Trazabilidad completa del fallback hibrido en <code>predice.py</code></p>
+
+  <div class="charts-row">
+    <div class="card">
+      <h3 style="font-family:var(--font-display);font-size:1.2rem;color:var(--dark-teal);margin-bottom:1rem">Modelo propio</h3>
+      <p style="font-size:.92rem;color:#555">Para los 256 modelos con <span class="badge badge-green">confianza suficiente</span>, <code>archivo_modelo_original</code> y <code>archivo_modelo_usado</code> apuntan al mismo <code>.pkl</code>. Las metricas original y usado son identicas.</p>
+    </div>
+    <div class="card">
+      <h3 style="font-family:var(--font-display);font-size:1.2rem;color:var(--dark-teal);margin-bottom:1rem">Fallback regional</h3>
+      <p style="font-size:.92rem;color:#555">Para los <strong>41 modelos insuficientes</strong>, el forecast viene del modelo regional pero se desnormaliza con la poblacion <strong>estatal individual</strong>. Las metricas se desdoblan:</p>
+      <ul style="font-size:.88rem;color:#555;margin-top:.5rem;padding-left:1.25rem">
+        <li><code>rmse_original</code>, <code>mase_original</code> &mdash; del modelo estatal propio</li>
+        <li><code>rmse_usado</code>, <code>mase_usado</code> &mdash; del modelo regional fallback</li>
+        <li><code>confianza_original</code> = "insuficiente"</li>
+        <li><code>confianza_usado</code> = "suficiente"</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="chart-wrap" style="margin-top:2rem">
+    <h3>Distribucion de modelos por tipo</h3>
+    <p class="chart-sub">297 modelos estatales + 15 regionales de fallback</p>
+    <canvas id="chartModelos" height="220"></canvas>
+  </div>
+
+  <div class="callout" style="margin-top:2rem">
+    <strong>Tooltips informativos en Tableau:</strong> Los tooltips despliegan RMSE, MAE, MAPE, MASE y modelo utilizado, manteniendo la visualizacion principal limpia mientras el detalle tecnico queda disponible bajo demanda. El MASE se clasifica categoricamente: excelente (&lt;0.7), bueno (0.7-1.0), requiere mejora (&gt;1.0).
+  </div>
+</section>
+
+<!-- ═══════════ 6. VISUALIZACIONES TABLEAU ═══════════ -->
+<section class="reveal" id="visualizaciones">
+  <h2 class="section-title">Las 8 visualizaciones</h2>
+  <p class="section-sub">Embebidas en <code>EpiDashboard.html</code> via Tableau Public JavaScript API</p>
+
+  <div class="viz-grid">
+    <div class="viz-card">
+      <div class="viz-card-head">
+        <span class="viz-card-num">01</span>
+        <h3>Tabla de datos</h3>
+      </div>
+      <div class="viz-card-body">Tabla interactiva con datos epidemiologicos por entidad, ano, semana y sexo. Se incorpora informacion demografica del INEGI. Filtrable por ano, genero y padecimiento.</div>
+      <div class="viz-card-foot">Tabla de datos &middot; viz_epiforecastmx</div>
+    </div>
+
+    <div class="viz-card">
+      <div class="viz-card-head">
+        <span class="viz-card-num">02</span>
+        <h3>Mapa de Mexico</h3>
+      </div>
+      <div class="viz-card-body">Variables demograficas y territoriales por entidad: densidad poblacional, superficie, casos desagregados por genero. Se aplica normalizacion min-max para gradientes de color coherentes al alternar variables.</div>
+      <div class="viz-card-foot">Mapa de Mexico &middot; viz_epiforecastmx</div>
+    </div>
+
+    <div class="viz-card">
+      <div class="viz-card-head">
+        <span class="viz-card-num">03</span>
+        <h3>Mexico en categorias</h3>
+      </div>
+      <div class="viz-card-body">Categorizaciones analiticas: region geografica, region socio-urbana, densidad poblacional, extension territorial y ratio por genero. Incluye rangos fijos y percentiles para comparaciones estructurales.</div>
+      <div class="viz-card-foot">Mexico en categorias &middot; viz_epiforecastmx</div>
+    </div>
+
+    <div class="viz-card">
+      <div class="viz-card-head">
+        <span class="viz-card-num">04</span>
+        <h3>Casos por ano</h3>
+      </div>
+      <div class="viz-card-body">Tasa anual de incremento normalizada por poblacion (por 100K hab.), desagregada por genero. Recorte visual de extremos preservando valores reales en el detalle.</div>
+      <div class="viz-card-foot">Casos por ano &middot; viz_epiforecastmx</div>
+    </div>
+
+    <div class="viz-card">
+      <div class="viz-card-head">
+        <span class="viz-card-num">05</span>
+        <h3>Casos semanales</h3>
+      </div>
+      <div class="viz-card-body">Tasa semanal de incremento normalizada, permitiendo analizar la dinamica de corto plazo y detectar variaciones intra-anuales. Recorte por percentiles para legibilidad.</div>
+      <div class="viz-card-foot">Casos por semana &middot; viz_epiforecastmx</div>
+    </div>
+
+    <div class="viz-card">
+      <div class="viz-card-head">
+        <span class="viz-card-num" style="background:var(--burgundy)">06</span>
+        <h3>Prediccion e incertidumbre</h3>
+      </div>
+      <div class="viz-card-body">Trayectoria estimada del modelo con rango de variacion (intervalo de confianza). Filtrable por ano. Incluye linea de referencia COVID y banda asociada. <span class="badge badge-yellow">En desarrollo</span></div>
+      <div class="viz-card-foot">Predicciones &middot; En migracion al dashboard unificado</div>
+    </div>
+
+    <div class="viz-card">
+      <div class="viz-card-head">
+        <span class="viz-card-num" style="background:var(--gold)">07</span>
+        <h3>Dash Predicciones</h3>
+      </div>
+      <div class="viz-card-body">Dashboard integrado: desempeno del modelo (observado vs predicho) + KPIs de confianza + modelo Prophet utilizado. Contrasta puntos observados con linea de prediccion continua.</div>
+      <div class="viz-card-foot">Dash Predicciones &middot; viz_epiforecastmx</div>
+    </div>
+
+    <div class="viz-card">
+      <div class="viz-card-head">
+        <span class="viz-card-num" style="background:var(--gold)">08</span>
+        <h3>Ultimas 52 semanas</h3>
+      </div>
+      <div class="viz-card-body">Ventana temporal de 52 semanas observadas + 52 proyectadas. Resumen del comportamiento reciente y su extension esperada, clave para la toma de decisiones.</div>
+      <div class="viz-card-foot">Ultimas 52 semanas &middot; viz_epiforecastmx</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 7. MIGRACION A DATASET UNICO ═══════════ -->
+<section class="reveal" id="migracion">
+  <h2 class="section-title">Migracion al dataset integrado</h2>
+  <p class="section-sub">De dos fuentes fragmentadas a un unico <code>tableau.csv</code> con llave homogenea</p>
+
+  <div class="charts-row">
+    <div class="card">
+      <h3 style="font-family:var(--font-display);font-size:1.15rem;color:var(--burgundy);margin-bottom:.75rem">Antes: arquitectura fragmentada</h3>
+      <ul style="font-size:.88rem;color:#555;padding-left:1.25rem;line-height:2">
+        <li>Dos fuentes de datos separadas (historico + forecast)</li>
+        <li>Joins implícitos en Tableau (Relationships)</li>
+        <li>Filtros sobre campos del historico excluian filas futuras</li>
+        <li>Fechas futuras desaparecian al filtrar por entidad</li>
+        <li>Calculos LOD dependian de la separacion de fuentes</li>
+        <li>Metricas agregadas infladas por duplicados</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="font-family:var(--font-display);font-size:1.15rem;color:var(--teal);margin-bottom:.75rem">Despues: dataset unico</h3>
+      <ul style="font-size:.88rem;color:#555;padding-left:1.25rem;line-height:2">
+        <li>Un solo <code>tableau.csv</code> con llave compuesta</li>
+        <li>Todos los registros responden a los mismos filtros</li>
+        <li>NaN semantico: ausencia real, no error</li>
+        <li>Historico y forecast conviven sin joins implícitos</li>
+        <li>Expresiones LOD recalibradas para una fuente</li>
+        <li>Acciones de filtro sin dependencias residuales</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:2rem">
+    <h3 style="font-family:var(--font-display);font-size:1.15rem;color:var(--dark-teal);margin-bottom:.75rem">Reconstruccion del workbook</h3>
+    <p style="font-size:.92rem;color:#555">La migracion no fue un simple "cambiar fuente": requirio reconstruir sistematicamente multiples componentes:</p>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1rem;margin-top:1rem">
+      <div style="background:var(--cream-pale);border-radius:var(--radius-sm);padding:1rem">
+        <strong style="font-size:.85rem;color:var(--dark-teal)">Fuente de datos</strong>
+        <p style="font-size:.82rem;color:#555;margin-top:.25rem">Todas las hojas apuntadas al nuevo CSV con tipos validados</p>
+      </div>
+      <div style="background:var(--cream-pale);border-radius:var(--radius-sm);padding:1rem">
+        <strong style="font-size:.85rem;color:var(--dark-teal)">Campos calculados</strong>
+        <p style="font-size:.82rem;color:#555;margin-top:.25rem">Condiciones logicas basadas en meta_modo, WINDOW_* revisadas</p>
+      </div>
+      <div style="background:var(--cream-pale);border-radius:var(--radius-sm);padding:1rem">
+        <strong style="font-size:.85rem;color:var(--dark-teal)">Agregaciones LOD</strong>
+        <p style="font-size:.82rem;color:#555;margin-top:.25rem">SUM, AVG, FIXED recalibrados para evitar duplicaciones</p>
+      </div>
+      <div style="background:var(--cream-pale);border-radius:var(--radius-sm);padding:1rem">
+        <strong style="font-size:.85rem;color:var(--dark-teal)">Filtros y parametros</strong>
+        <p style="font-size:.82rem;color:#555;margin-top:.25rem">Globales remapeados, acciones de resaltado verificadas</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 8. DECISIONES UX ═══════════ -->
+<section class="reveal" id="ux">
+  <h2 class="section-title">Decisiones UX/UI</h2>
+  <p class="section-sub">Diseno centrado en interpretabilidad, no en decoracion</p>
+
+  <div class="card-grid-3">
+    <div class="card">
+      <h3 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:.5rem">Contexto temporal</h3>
+      <p style="font-size:.88rem;color:#555">Linea de referencia COVID-19 y ajuste a fecha continua (condicion necesaria para bandas en Tableau). Titulos con referencias temporales claras sin sobrecargar.</p>
+    </div>
+    <div class="card">
+      <h3 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:.5rem">MASE categorico</h3>
+      <p style="font-size:.88rem;color:#555">Clasificacion interpretable: <span class="badge badge-green">Excelente</span> (&lt;0.7), <span class="badge badge-yellow">Bueno</span> (0.7-1.0), <span class="badge badge-red">Mejora</span> (&gt;1.0). El usuario entiende sin interpretar la metrica cruda.</p>
+    </div>
+    <div class="card">
+      <h3 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:.5rem">Tooltips informativos</h3>
+      <p style="font-size:.88rem;color:#555">RMSE, MAE, MAPE, MASE y modelo utilizado bajo demanda. La visualizacion principal queda limpia; el detalle tecnico aparece al hover.</p>
+    </div>
+    <div class="card">
+      <h3 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:.5rem">Dashboard integrado</h3>
+      <p style="font-size:.88rem;color:#555">Worksheets de predicciones y desempeno se integraron en un unico dashboard "Predicciones" con una nueva worksheet "KPIs" (confianza + modelo Prophet).</p>
+    </div>
+    <div class="card">
+      <h3 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:.5rem">Normalizacion de mapas</h3>
+      <p style="font-size:.88rem;color:#555">Normalizacion min-max para variables con magnitudes muy diferentes (densidad, superficie, casos). El gradiente de color es consistente al alternar variables.</p>
+    </div>
+    <div class="card">
+      <h3 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:.5rem">Ventana 2 anos</h3>
+      <p style="font-size:.88rem;color:#555">52 semanas historicas + 52 proyectadas. Controlada por parametro de seleccion unica (workaround a limitacion de Tableau). <span class="badge badge-yellow">En desarrollo</span></p>
+    </div>
+  </div>
+
+  <div class="code-block" style="margin-top:2rem">
+    <span class="code-label">Tableau - Normalizacion para mapas</span>
+<span class="cm">// Campo calculado en Tableau:</span>
+<span class="cm">// Normaliza cualquier variable al rango [0,1] para coherencia</span>
+<span class="cm">// visual al alternar entre densidad, superficie y casos.</span>
+
+(<span class="fn">SUM</span>([Variable seleccionada])
+ - <span class="fn">WINDOW_MIN</span>(<span class="fn">SUM</span>([Variable seleccionada])))
+/ (<span class="fn">WINDOW_MAX</span>(<span class="fn">SUM</span>([Variable seleccionada]))
+ - <span class="fn">WINDOW_MIN</span>(<span class="fn">SUM</span>([Variable seleccionada])))
+  </div>
+</section>
+
+<!-- ═══════════ 9. EVOLUCION ═══════════ -->
+<section class="reveal" id="evolucion">
+  <h2 class="section-title">Evolucion del dashboard</h2>
+  <p class="section-sub">Tres avances iterativos: de tablas basicas a un pipeline integrado</p>
+
+  <div class="timeline">
+    <div class="tl-item">
+      <div class="tl-version">Avance 2 — Semana 3</div>
+      <div class="tl-title">Fundamentos: tablas, mapas y series</div>
+      <div class="tl-desc">
+        <p>Primeras 5 visualizaciones: tabla de datos interactiva, mapa de Mexico, vista por categorias, casos anuales y semanales. Dashboard ejecutivo comparativo con los 3 padecimientos. Modelo baseline Prophet con cross-validation temporal.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.75rem">
+          <span class="badge badge-teal">Tabla de datos</span>
+          <span class="badge badge-teal">Mapa de Mexico</span>
+          <span class="badge badge-teal">Categorias</span>
+          <span class="badge badge-teal">Casos anuales</span>
+          <span class="badge badge-teal">Casos semanales</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-version">Avance 3 — Semana 4-5</div>
+      <div class="tl-title">Normalizacion, modelos por estado, dashboard integral</div>
+      <div class="tl-desc">
+        <p>Se implemento normalizacion min-max para mapas con variables de magnitudes dispares. Modelo expandido a nivel estatal (99 modelos por padecimiento). Dashboard integral con heatmaps y bump charts de rendimiento.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.75rem">
+          <span class="badge badge-yellow">Min-max maps</span>
+          <span class="badge badge-yellow">99 modelos/pad</span>
+          <span class="badge badge-yellow">Dashboard integral</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-version">Avance 4 — Semana 6</div>
+      <div class="tl-title">Pipeline integrado, migracion y automatizacion</div>
+      <div class="tl-desc">
+        <p>Diagnostico post-entrenamiento, correccion de Semana 53, politica de NaN explicitos, contrato de llaves, expansion por modo, <code>build_tableau.py</code>. Migracion a dataset unico. Experimento de automatizacion GitHub Actions &rarr; Google Sheets &rarr; Tableau Public.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.75rem">
+          <span class="badge badge-green">build_tableau.py</span>
+          <span class="badge badge-green">Dataset unico</span>
+          <span class="badge badge-green">Metricas orig/usado</span>
+          <span class="badge badge-green">Automatizacion</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-wrap" style="margin-top:2rem">
+    <h3>Componentes del dashboard por avance</h3>
+    <p class="chart-sub">Crecimiento acumulativo de funcionalidad</p>
+    <canvas id="chartEvolucion" height="200"></canvas>
+  </div>
+</section>
+
+<!-- ═══════════ 10. AUTOMATIZACION ═══════════ -->
+<section class="reveal" id="automatizacion">
+  <h2 class="section-title">Automatizacion: GitHub Actions + Google Sheets</h2>
+  <p class="section-sub">Validacion del principio pipeline &rarr; publicacion &rarr; consumo</p>
+
+  <div class="card" style="margin-bottom:2rem">
+    <h3 style="font-family:var(--font-display);font-size:1.2rem;color:var(--dark-teal);margin-bottom:1rem">Arquitectura del experimento</h3>
+    <div class="flow-diagram">
+      <div class="flow-row">
+        <div class="flow-box script">GitHub Actions<br><span style="font-size:.7rem;opacity:.6">cron: 0 * * * * (cada hora)</span></div>
+        <span class="pipeline-arrow">&rarr;</span>
+        <div class="flow-box script">update_sheet.py<br><span style="font-size:.7rem;opacity:.6">gspread + service account</span></div>
+        <span class="pipeline-arrow">&rarr;</span>
+        <div class="flow-box data">Google Sheets<br><span style="font-size:.7rem;opacity:.6">Dataset publico</span></div>
+      </div>
+      <div class="flow-arrow-down">&darr; <span style="font-size:.7rem;color:var(--cool-gray)">auto-refresh ~24h</span></div>
+      <div class="flow-row">
+        <div class="flow-box cloud">Tableau Public<br><span style="font-size:.7rem;opacity:.6">Fuente: Google Sheets</span></div>
+        <span class="pipeline-arrow">&rarr;</span>
+        <div class="flow-box cloud">Web embed<br><span style="font-size:.7rem;opacity:.6">proyectointegrador.org</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="charts-row">
+    <div class="card">
+      <h3 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:.75rem">Identidad no interactiva</h3>
+      <p style="font-size:.88rem;color:#555">Service account de Google Cloud como identidad tecnica. Credenciales en GitHub Secrets (no versionadas). El Sheet se comparte con el correo de la service account.</p>
+      <table class="compare-table" style="margin-top:1rem">
+        <thead><tr><th>Componente</th><th>Responsabilidad</th></tr></thead>
+        <tbody>
+          <tr><td>Google Cloud / IAM</td><td>Control de acceso</td></tr>
+          <tr><td>GitHub Actions</td><td>Ejecucion automatizada</td></tr>
+          <tr><td>Google Sheets</td><td>Persistencia de datos</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:.75rem">Resultados y limitaciones</h3>
+      <p style="font-size:.88rem;color:#555">La escritura a Google Sheets funciona correctamente en cada ejecucion. La incertidumbre esta en <strong>el lado de Tableau Public</strong>: no ofrece control sobre triggers ni schedules de refresh.</p>
+      <div class="callout-burgundy callout" style="margin-top:1rem;padding:1rem 1.25rem;font-size:.85rem">
+        <strong>Limitacion estructural:</strong> Tableau Public no gestiona credenciales de datos protegidos por diseno. Para una arquitectura robusta y gobernada, la solucion correcta es Tableau Cloud o Tableau Server.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 11. TABLEAU PUBLIC ═══════════ -->
+<section class="reveal" id="tableau-public">
+  <h2 class="section-title">Tableau Public: costos y limitaciones</h2>
+  <p class="section-sub">Excelente para difusion, no disenada como plataforma de automatizacion</p>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Producto</th><th>Costo aprox.</th><th>Refresh programado</th><th>Uso principal</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>Tableau Public</strong></td><td>Gratis</td><td>Solo Google Sheets (~1x/dia)</td><td>Publicacion abierta</td></tr>
+      <tr><td>Tableau Desktop</td><td>~70 USD/mes</td><td>No</td><td>Desarrollo y autoria</td></tr>
+      <tr><td>Tableau Cloud (Creator)</td><td>~75 USD/mes</td><td>Si</td><td>Desarrollo + publicacion</td></tr>
+      <tr><td>Tableau Cloud (Explorer)</td><td>~42 USD/mes</td><td>Si</td><td>Exploracion interactiva</td></tr>
+      <tr><td>Tableau Cloud (Viewer)</td><td>~15 USD/mes</td><td>Si</td><td>Consumo de dashboards</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout" style="margin-top:2rem">
+    <strong>Agradecimiento:</strong> Se agradece la colaboracion de la Dra. Grettel, quien facilito el acceso a una licencia de Tableau Desktop para el desarrollo del workbook <code>viz_epiforecastmx.twb</code>.
+  </div>
+</section>
+
+<!-- ═══════════ 12. LECCIONES ═══════════ -->
+<section class="reveal" id="lecciones">
+  <h2 class="section-title">Lecciones aprendidas</h2>
+  <p class="section-sub">Del diagnostico del Avance 4 al estado actual del pipeline</p>
+
+  <div class="card-grid">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-dot" style="color:var(--teal)"></div>
+        <h3 class="card-title">Semantica sobre estetica</h3>
+      </div>
+      <p style="font-size:.92rem;color:#555">Los errores en Tableau no se resolvieron con ajustes visuales. El problema estaba en la estructura del dataset. Los NaN no son errores: son semantica. La visualizacion es consecuencia de datos bien construidos.</p>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-dot" style="color:var(--gold)"></div>
+        <h3 class="card-title">Contrato > convencion</h3>
+      </div>
+      <p style="font-size:.92rem;color:#555">Definir un contrato explicito de llaves (<code>ds, padecimiento, entidad, meta_modo</code>) y validarlo con <code>validate="m:1"</code> previene errores silenciosos que solo se manifiestan en produccion.</p>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-dot" style="color:var(--burgundy)"></div>
+        <h3 class="card-title">Trazabilidad end-to-end</h3>
+      </div>
+      <p style="font-size:.92rem;color:#555">El desdoblamiento <code>original</code> vs <code>usado</code> en metricas permite auditar exactamente que modelo genero cada prediccion. Con 41 modelos en fallback, la transparencia es critica.</p>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-dot" style="color:var(--teal)"></div>
+        <h3 class="card-title">Pipeline reproducible</h3>
+      </div>
+      <p style="font-size:.92rem;color:#555"><code>make tableau</code> es un unico comando que genera el dataset final. Cualquier miembro del equipo puede reconstruir <code>tableau.csv</code> desde cero en cualquier momento.</p>
+    </div>
+  </div>
+
+  <div class="chart-wrap" style="margin-top:2rem">
+    <h3>Anatomia del dataset final: <code>tableau.csv</code></h3>
+    <p class="chart-sub">Columnas clave agrupadas por proposito</p>
+    <canvas id="chartColumnas" height="250"></canvas>
+  </div>
+</section>
+
+<!-- ═══════════ 13. FICHA TECNICA ═══════════ -->
+<section class="reveal" id="ficha">
+  <h2 class="section-title">Ficha tecnica</h2>
+  <p class="section-sub">Resumen de scripts, archivos y comandos del pipeline de visualizacion</p>
+
+  <table class="compare-table">
+    <thead>
+      <tr><th>Componente</th><th>Archivo / Comando</th><th>Proposito</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Prediccion</td><td><code>scripts/predice.py</code> / <code>make predict</code></td><td>Genera <code>all_forecast.csv</code> con yhat + metricas orig/usado</td></tr>
+      <tr><td>Dataset Tableau</td><td><code>scripts/build_tableau.py</code> / <code>make tableau</code></td><td>Integra historico + forecast en <code>tableau.csv</code></td></tr>
+      <tr><td>Workbook</td><td><code>viz/viz_epiforecastmx.twb</code></td><td>8 visualizaciones interactivas en Tableau</td></tr>
+      <tr><td>Web embed</td><td><code>EpiDashboard.html</code></td><td>Pagina web con embeds Tableau Public JS API</td></tr>
+      <tr><td>Automatizacion</td><td><code>hourly.yml</code> + <code>update_sheet.py</code></td><td>Experimento GitHub Actions &rarr; Google Sheets</td></tr>
+      <tr><td>Notebook</td><td><code>notebooks/Avance4_Luis_Reconstruido.ipynb</code></td><td>Documentacion completa del proceso (6 secciones)</td></tr>
+    </tbody>
+  </table>
+
+  <div class="yaml-block" style="margin-top:2rem">
+<span class="yaml-cm"># Flujo completo del dashboard</span>
+<span class="yaml-key">make</span> <span class="yaml-val">train</span>          <span class="yaml-cm"># 1. Entrenar 297 modelos Prophet</span>
+<span class="yaml-key">make</span> <span class="yaml-val">models-push</span>    <span class="yaml-cm"># 2. Subir modelos a S3 (DVC)</span>
+<span class="yaml-key">make</span> <span class="yaml-val">predict</span>        <span class="yaml-cm"># 3. Generar all_forecast.csv + fallback hibrido</span>
+<span class="yaml-key">make</span> <span class="yaml-val">tableau</span>        <span class="yaml-cm"># 4. Construir tableau.csv (dataset integrado)</span>
+<span class="yaml-key">make</span> <span class="yaml-val">forecast-push</span>  <span class="yaml-cm"># 5. Subir forecast a S3</span>
+<span class="yaml-cm"># 6. Actualizar Tableau Desktop con nuevo CSV</span>
+<span class="yaml-cm"># 7. Publicar en Tableau Public</span>
+<span class="yaml-cm"># 8. Verificar embeds en EpiDashboard.html</span>
+  </div>
+</section>
+
+</div><!-- /container -->
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer>
+  <div class="footer-title">EpiForecast-MX</div>
+  <p>Plataforma de inteligencia epidemiologica &middot; IMSS &times; Tec de Monterrey</p>
+  <p style="margin-top:.75rem">
+    <a href="index.html">Inicio</a> &middot;
+    <a href="EpiDashboard.html">Dashboard</a> &middot;
+    <a href="reporte_resultados.html">Resultados</a> &middot;
+    <a href="Reports/index.html">Pronosticos</a> &middot;
+    <a href="bitacora_modelado.html">Bitacora</a> &middot;
+    <a href="comparacion_modelos.html">Comparacion</a> &middot;
+    <a href="ficha_tecnica_prophet.html">Ficha Prophet</a> &middot;
+    <a href="hiperparametros_modelos.html">HPs SageMaker</a>
+  </p>
+  <p style="margin-top:.5rem">Basado en el Avance 4 de Luis Gerardo Sanchez Salazar (A01232963)</p>
+  <p style="margin-top:.5rem;font-family:var(--font-mono);font-size:.75rem;opacity:.5">Generado: 22 febrero 2026</p>
+</footer>
+
+<!-- ═══════════ SCRIPTS ═══════════ -->
+<script>
+/* ── Reveal on scroll ── */
+const obs = new IntersectionObserver(es => {
+  es.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.08 });
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+/* ── Smooth scroll for internal links only ── */
+document.querySelectorAll('nav a[href^="#"], .toc a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const href = a.getAttribute('href');
+    if (!href || !href.startsWith('#')) return;
+    const t = document.querySelector(href);
+    if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  });
+});
+
+/* ── Chart: Modelos por tipo ── */
+const ctxMod = document.getElementById('chartModelos');
+if (ctxMod) new Chart(ctxMod, {
+  type: 'bar',
+  data: {
+    labels: ['Alzheimer', 'Depresion', 'Parkinson'],
+    datasets: [
+      {
+        label: 'Modelo propio',
+        data: [63, 99, 94],
+        backgroundColor: 'rgba(0,82,78,.7)',
+        borderRadius: 6
+      },
+      {
+        label: 'Fallback regional',
+        data: [36, 0, 5],
+        backgroundColor: 'rgba(155,34,66,.6)',
+        borderRadius: 6
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { position: 'top', labels: { font: { family: "'Source Sans 3'" } } } },
+    scales: {
+      x: { stacked: true, grid: { display: false }, ticks: { font: { family: "'Source Sans 3'" } } },
+      y: { stacked: true, beginAtZero: true, title: { display: true, text: 'Modelos', font: { family: "'Source Sans 3'" } } }
+    }
+  }
+});
+
+/* ── Chart: Evolucion ── */
+const ctxEvo = document.getElementById('chartEvolucion');
+if (ctxEvo) new Chart(ctxEvo, {
+  type: 'bar',
+  data: {
+    labels: ['Avance 2', 'Avance 3', 'Avance 4'],
+    datasets: [
+      {
+        label: 'Vistas Tableau',
+        data: [5, 7, 8],
+        backgroundColor: 'rgba(0,82,78,.65)',
+        borderRadius: 6
+      },
+      {
+        label: 'Scripts pipeline',
+        data: [1, 2, 4],
+        backgroundColor: 'rgba(181,133,0,.65)',
+        borderRadius: 6
+      },
+      {
+        label: 'Campos calculados',
+        data: [3, 8, 15],
+        backgroundColor: 'rgba(155,34,66,.5)',
+        borderRadius: 6
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { position: 'top', labels: { font: { family: "'Source Sans 3'" } } } },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { family: "'Source Sans 3'" } } },
+      y: { beginAtZero: true, title: { display: true, text: 'Componentes', font: { family: "'Source Sans 3'" } } }
+    }
+  }
+});
+
+/* ── Chart: Columnas de tableau.csv ── */
+const ctxCol = document.getElementById('chartColumnas');
+if (ctxCol) new Chart(ctxCol, {
+  type: 'doughnut',
+  data: {
+    labels: ['Llaves (4)', 'Historico (6)', 'Forecast (5)', 'Metricas original (7)', 'Metricas usado (7)', 'Demograficas (4)', 'Metadata (3)'],
+    datasets: [{
+      data: [4, 6, 5, 7, 7, 4, 3],
+      backgroundColor: [
+        'rgba(0,82,78,.8)',
+        'rgba(181,133,0,.7)',
+        'rgba(155,34,66,.7)',
+        'rgba(0,82,78,.5)',
+        'rgba(155,34,66,.4)',
+        'rgba(92,107,192,.6)',
+        'rgba(151,153,155,.5)'
+      ],
+      borderWidth: 2,
+      borderColor: '#FAF6F0'
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'right',
+        labels: { font: { family: "'Source Sans 3'", size: 12 }, padding: 12 }
+      }
+    }
+  }
+});
+</script>
+</body>
+</html>
