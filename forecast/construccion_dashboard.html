@@ -394,12 +394,13 @@ g = g.assign(incrementos_hombres=pd.NA, incrementos_mujeres=pd.NA)
   <div class="card" style="margin-bottom:2rem">
     <h3 style="font-family:var(--font-display);font-size:1.2rem;color:var(--dark-teal);margin-bottom:1rem">Contrato de llaves</h3>
     <p style="font-size:.92rem;color:#555;margin-bottom:1rem">La llave compuesta del dataset final es:</p>
-    <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1rem">
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:.75rem">
       <span class="badge badge-teal">ds</span>
       <span class="badge badge-teal">padecimiento</span>
       <span class="badge badge-teal">entidad</span>
       <span class="badge badge-teal">meta_modo</span>
     </div>
+    <p style="font-size:.85rem;color:#777;margin-bottom:1rem"><code>meta_modo</code> indica la segmentación por sexo: <strong>general</strong> (ambos sexos), <strong>hombres</strong> o <strong>mujeres</strong>. Cada combinación de padecimiento, entidad y modo genera un modelo independiente.</p>
     <p style="font-size:.92rem;color:#555">El pipeline exige <strong>unicidad</strong> por esta llave en ambas entradas (histórico expandido y forecast) antes de hacer el merge. El merge es <code>outer</code> para no perder histórico ni forecast, y se usa <code>validate="m:1"</code> para controlar cardinalidad.</p>
   </div>
 
