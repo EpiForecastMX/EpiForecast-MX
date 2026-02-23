@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Construccion del Dashboard Tableau — EpiForecast-MX</title>
+<title>Construcción del Dashboard Tableau — EpiForecast-MX</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Source+Sans+3:ital,wght@0,300;0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -190,19 +190,19 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
     <a href="ficha_tecnica_prophet.html" class="ext">Ficha Prophet</a>
     <a href="hiperparametros_modelos.html" class="ext">HPs SageMaker</a>
     <a href="#arquitectura" class="sep">Arquitectura</a>
-    <a href="#diagnostico">Diagnostico</a>
+    <a href="#diagnostico">Diagnóstico</a>
     <a href="#pipeline">Pipeline</a>
     <a href="#visualizaciones">Vistas</a>
-    <a href="#evolucion">Evolucion</a>
-    <a href="#automatizacion">Automatizacion</a>
+    <a href="#evolucion">Evolución</a>
+    <a href="#automatizacion">Automatización</a>
   </div>
 </nav>
 
 <!-- ═══════════ HERO ═══════════ -->
 <section class="hero">
-  <h1>Construccion del <em>Dashboard</em></h1>
-  <p class="subtitle">Del dato crudo a la visualizacion interactiva en Tableau Public</p>
-  <p class="subtitle2">Diagnostico post-entrenamiento, pipeline de datos, migracion y automatizacion</p>
+  <h1>Construcción del <em>Dashboard</em></h1>
+  <p class="subtitle">Del dato crudo a la visualización interactiva en Tableau Public</p>
+  <p class="subtitle2">Diagnóstico post-entrenamiento, pipeline de datos, migración y automatización</p>
   <div class="hero-kpis">
     <div class="hero-kpi"><span class="value">8</span><span class="label">Visualizaciones</span></div>
     <div class="hero-kpi"><span class="value">297</span><span class="label">Modelos Prophet</span></div>
@@ -216,16 +216,16 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
 <div class="container">
 
 <section class="reveal" id="vision">
-  <h2 class="section-title">Vision general</h2>
-  <p class="section-sub">De boletines epidemiologicos a un dashboard interactivo embebido en la web</p>
+  <h2 class="section-title">Visión general</h2>
+  <p class="section-sub">De boletines epidemiológicos a un dashboard interactivo embebido en la web</p>
 
   <div class="callout">
-    <strong>Objetivo del dashboard:</strong> Permitir a investigadores del IMSS y stakeholders del Tec de Monterrey explorar interactivamente datos historicos (2014-2026) y predicciones a 52 semanas de tres padecimientos neurologicos (Depresion F32, Parkinson G20, Alzheimer G30), desagregados por entidad federativa, sexo y semana epidemiologica.
+    <strong>Objetivo del dashboard:</strong> Permitir a investigadores del IMSS y stakeholders del Tec de Monterrey explorar interactivamente datos históricos (2014-2026) y predicciones a 52 semanas de tres padecimientos neurológicos (Depresión F32, Parkinson G20, Alzheimer G30), desagregados por entidad federativa, sexo y semana epidemiológica.
   </div>
 
   <div class="card" style="margin-top:2rem">
     <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--dark-teal);margin-bottom:1rem">El problema no estaba en Tableau</h3>
-    <p>Tras la fase de entrenamiento, las fechas futuras desaparecian al filtrar por entidad o padecimiento en Tableau. La persistencia del error incluso en vistas simplificadas revelo que el defecto no era visual sino <strong>estructural</strong>: estaba en la integracion de datos aguas abajo del entrenamiento. El diagnostico completo, la reconstruccion del pipeline y la migracion a un dataset unico (<code>tableau.csv</code>) constituyen el nucleo de este reporte.</p>
+    <p>Tras la fase de entrenamiento, las fechas futuras desaparecían al filtrar por entidad o padecimiento en Tableau. La persistencia del error incluso en vistas simplificadas reveló que el defecto no era visual sino <strong>estructural</strong>: estaba en la integración de datos aguas abajo del entrenamiento. El diagnóstico completo, la reconstrucción del pipeline y la migración a un dataset único (<code>tableau.csv</code>) constituyen el núcleo de este reporte.</p>
   </div>
 </section>
 
@@ -238,7 +238,7 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
     <div class="flow-row">
       <div class="flow-box data">SINAVE PDFs<br><span style="font-size:.7rem;opacity:.6">~633 boletines</span></div>
       <span class="pipeline-arrow">&rarr;</span>
-      <div class="flow-box script">Extraccion<br><span style="font-size:.7rem;opacity:.6">Camelot + PyPDF</span></div>
+      <div class="flow-box script">Extracción<br><span style="font-size:.7rem;opacity:.6">Camelot + PyPDF</span></div>
       <span class="pipeline-arrow">&rarr;</span>
       <div class="flow-box data">dataset_boletin.csv</div>
     </div>
@@ -248,13 +248,13 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
     </div>
     <div class="flow-arrow-down">&darr;</div>
     <div class="flow-row">
-      <div class="flow-box data">data_inegi_General.csv<br><span style="font-size:.7rem;opacity:.6">Historico + INEGI</span></div>
+      <div class="flow-box data">data_inegi_General.csv<br><span style="font-size:.7rem;opacity:.6">Histórico + INEGI</span></div>
     </div>
     <div class="flow-arrow-down">&darr;</div>
     <div class="flow-row">
       <div class="flow-box script">make train<br><span style="font-size:.7rem;opacity:.6">Prophet CV + modelos .pkl</span></div>
       <span class="pipeline-arrow">&rarr;</span>
-      <div class="flow-box script">make predict<br><span style="font-size:.7rem;opacity:.6">predice.py + fallback hibrido</span></div>
+      <div class="flow-box script">make predict<br><span style="font-size:.7rem;opacity:.6">predice.py + fallback híbrido</span></div>
       <span class="pipeline-arrow">&rarr;</span>
       <div class="flow-box data">all_forecast.csv<br><span style="font-size:.7rem;opacity:.6">~180 MB</span></div>
     </div>
@@ -273,13 +273,13 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
   </div>
 
   <div class="callout-gold callout" style="margin-top:2rem">
-    <strong>Principio rector:</strong> Pipeline reproducible &rarr; Publicacion automatizada &rarr; Consumo visual. El dashboard es la consecuencia del pipeline, no un artefacto ad hoc.
+    <strong>Principio rector:</strong> Pipeline reproducible &rarr; Publicación automatizada &rarr; Consumo visual. El dashboard es la consecuencia del pipeline, no un artefacto ad hoc.
   </div>
 </section>
 
-<!-- ═══════════ 3. DIAGNOSTICO ═══════════ -->
+<!-- ═══════════ 3. DIAGNÓSTICO ═══════════ -->
 <section class="reveal" id="diagnostico">
-  <h2 class="section-title">Diagnostico post-entrenamiento</h2>
+  <h2 class="section-title">Diagnóstico post-entrenamiento</h2>
   <p class="section-sub">El pipeline fallaba por inconsistencias en el dataset, no por Tableau</p>
 
   <div class="card-grid">
@@ -288,7 +288,7 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
         <div class="card-dot" style="color:var(--burgundy)"></div>
         <h3 class="card-title">Semana 53 vs Semana 1</h3>
       </div>
-      <p style="font-size:.92rem;color:#555">Se detectaron <strong>duplicados reales</strong> en el historico INEGI en fechas especificas (<code>2014-12-29</code> y <code>2025-12-29</code>) por colision entre Semana 53 y Semana 1. Esto rompia la unicidad esperada para los joins y provocaba filas fantasma que desaparecian al filtrar.</p>
+      <p style="font-size:.92rem;color:#555">Se detectaron <strong>duplicados reales</strong> en el histórico INEGI en fechas específicas (<code>2014-12-29</code> y <code>2025-12-29</code>) por colisión entre Semana 53 y Semana 1. Esto rompía la unicidad esperada para los joins y provocaba filas fantasma que desaparecían al filtrar.</p>
       <div class="code-block" style="margin-top:1rem">
         <span class="code-label">build_tableau.py</span>
 <span class="cm"># Fix determinista: preferir Semana 53 cuando existe</span>
@@ -305,11 +305,11 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
     <div class="card">
       <div class="card-header">
         <div class="card-dot" style="color:var(--teal)"></div>
-        <h3 class="card-title">Politica de NaN</h3>
+        <h3 class="card-title">Política de NaN</h3>
       </div>
-      <p style="font-size:.92rem;color:#555">Se decidio <strong>no inventar datos</strong>: no rellenar <code>yhat</code> donde no existe, no mezclar valores reales con forecast, y mantener NaN como ausencia real de informacion. El dataset se construye con <code>outer join</code> y una validacion minima correcta: prohibir NaN <strong>solo</strong> en llaves criticas.</p>
+      <p style="font-size:.92rem;color:#555">Se decidió <strong>no inventar datos</strong>: no rellenar <code>yhat</code> donde no existe, no mezclar valores reales con forecast, y mantener NaN como ausencia real de información. El dataset se construye con <code>outer join</code> y una validación mínima correcta: prohibir NaN <strong>solo</strong> en llaves críticas.</p>
       <div class="code-block" style="margin-top:1rem">
-        <span class="code-label">Validacion</span>
+        <span class="code-label">Validación</span>
 key_cols = [<span class="st">"ds"</span>, <span class="st">"padecimiento"</span>, <span class="st">"entidad"</span>, <span class="st">"meta_modo"</span>]
 bad_keys = out[key_cols].isna().sum()
 <span class="kw">if</span> <span class="kw">not</span> bad_keys.empty:
@@ -322,7 +322,7 @@ bad_keys = out[key_cols].isna().sum()
         <div class="card-dot" style="color:var(--gold)"></div>
         <h3 class="card-title">Triple conteo de modos</h3>
       </div>
-      <p style="font-size:.92rem;color:#555">Al expandir el historico a <code>general/hombres/mujeres</code>, se evito inflar <code>SUM(Incrementos_*)</code> en Tableau dejando poblado <strong>solo</strong> el incremento correspondiente al modo y poniendo NaN en los otros dos. Asi, filtrar por <code>meta_modo=hombres</code> solo cuenta hombres.</p>
+      <p style="font-size:.92rem;color:#555">Al expandir el histórico a <code>general/hombres/mujeres</code>, se evitó inflar <code>SUM(Incrementos_*)</code> en Tableau dejando poblado <strong>solo</strong> el incremento correspondiente al modo y poniendo NaN en los otros dos. Así, filtrar por <code>meta_modo=hombres</code> solo cuenta hombres.</p>
       <div class="code-block" style="margin-top:1rem">
         <span class="code-label">expand_real_by_modo</span>
 g = r.assign(meta_modo=<span class="st">"general"</span>,  y_real=r[<span class="st">"incrementos_total"</span>])
@@ -338,13 +338,13 @@ g = g.assign(incrementos_hombres=pd.NA, incrementos_mujeres=pd.NA)
 <!-- ═══════════ 4. PIPELINE BUILD_TABLEAU ═══════════ -->
 <section class="reveal" id="pipeline">
   <h2 class="section-title">Pipeline: <code>build_tableau.py</code></h2>
-  <p class="section-sub">8 pasos para construir el dataset integrado de visualizacion</p>
+  <p class="section-sub">8 pasos para construir el dataset integrado de visualización</p>
 
   <div class="pipeline-steps">
     <div class="pipeline-step">
       <span class="step-num c-teal">A</span>
       <span class="step-label">Lectura</span>
-      <span class="step-desc">Historico INEGI + all_forecast.csv</span>
+      <span class="step-desc">Histórico INEGI + all_forecast.csv</span>
       <span class="step-fn">load_inputs()</span>
     </div>
     <div class="pipeline-step">
@@ -361,20 +361,20 @@ g = g.assign(incrementos_hombres=pd.NA, incrementos_mujeres=pd.NA)
     </div>
     <div class="pipeline-step">
       <span class="step-num c-teal">D</span>
-      <span class="step-label">Expansion</span>
+      <span class="step-label">Expansión</span>
       <span class="step-desc">Triplica a general / hombres / mujeres</span>
       <span class="step-fn">expand_real_by_modo()</span>
     </div>
     <div class="pipeline-step">
       <span class="step-num c-gold">E</span>
-      <span class="step-label">Validacion</span>
+      <span class="step-label">Validación</span>
       <span class="step-desc">Unicidad por 4 llaves en ambas entradas</span>
       <span class="step-fn">duplicated() check</span>
     </div>
     <div class="pipeline-step">
       <span class="step-num c-teal">F</span>
       <span class="step-label">Outer merge</span>
-      <span class="step-desc">Join historico + forecast, validate m:1</span>
+      <span class="step-desc">Join histórico + forecast, validate m:1</span>
       <span class="step-fn">merge(how="outer")</span>
     </div>
     <div class="pipeline-step">
@@ -386,7 +386,7 @@ g = g.assign(incrementos_hombres=pd.NA, incrementos_mujeres=pd.NA)
     <div class="pipeline-step">
       <span class="step-num c-burgundy">H</span>
       <span class="step-label">Escritura</span>
-      <span class="step-desc">Fill, validacion NaN, tableau.csv</span>
+      <span class="step-desc">Fill, validación NaN, tableau.csv</span>
       <span class="step-fn">to_csv()</span>
     </div>
   </div>
@@ -400,20 +400,20 @@ g = g.assign(incrementos_hombres=pd.NA, incrementos_mujeres=pd.NA)
       <span class="badge badge-teal">entidad</span>
       <span class="badge badge-teal">meta_modo</span>
     </div>
-    <p style="font-size:.92rem;color:#555">El pipeline exige <strong>unicidad</strong> por esta llave en ambas entradas (historico expandido y forecast) antes de hacer el merge. El merge es <code>outer</code> para no perder historico ni forecast, y se usa <code>validate="m:1"</code> para controlar cardinalidad.</p>
+    <p style="font-size:.92rem;color:#555">El pipeline exige <strong>unicidad</strong> por esta llave en ambas entradas (histórico expandido y forecast) antes de hacer el merge. El merge es <code>outer</code> para no perder histórico ni forecast, y se usa <code>validate="m:1"</code> para controlar cardinalidad.</p>
   </div>
 
   <table class="compare-table">
     <thead>
-      <tr><th>Paso</th><th>Funcion</th><th>Descripcion</th></tr>
+      <tr><th>Paso</th><th>Función</th><th>Descripción</th></tr>
     </thead>
     <tbody>
-      <tr><td><span class="badge badge-teal">A</span></td><td><code>load_inputs()</code></td><td>Lee <code>data_inegi_General.csv</code> (historico INEGI) y <code>all_forecast.csv</code> (predicciones)</td></tr>
-      <tr><td><span class="badge badge-teal">B</span></td><td><code>prepare_inputs()</code></td><td>Parsea <code>Fecha</code>&rarr;<code>ds</code>, mapea columnas del forecast, elimina fechas invalidas</td></tr>
+      <tr><td><span class="badge badge-teal">A</span></td><td><code>load_inputs()</code></td><td>Lee <code>data_inegi_General.csv</code> (histórico INEGI) y <code>all_forecast.csv</code> (predicciones)</td></tr>
+      <tr><td><span class="badge badge-teal">B</span></td><td><code>prepare_inputs()</code></td><td>Parsea <code>Fecha</code>&rarr;<code>ds</code>, mapea columnas del forecast, elimina fechas inválidas</td></tr>
       <tr><td><span class="badge badge-yellow">C</span></td><td>Fix Semana 53</td><td>Desambigua <code>2014-12-29</code> y <code>2025-12-29</code> prefiriendo Semana 53 sobre Semana 1</td></tr>
-      <tr><td><span class="badge badge-green">D</span></td><td><code>expand_real_by_modo()</code></td><td>Triplica historico en 3 modos; solo el incremento correspondiente queda poblado</td></tr>
-      <tr><td><span class="badge badge-yellow">E</span></td><td>Validacion duplicados</td><td>Verifica unicidad en <code>[ds, padecimiento, entidad, meta_modo]</code> en ambas entradas</td></tr>
-      <tr><td><span class="badge badge-green">F</span></td><td><code>outer merge</code></td><td>Join historico + forecast por las 4 llaves, <code>validate="m:1"</code></td></tr>
+      <tr><td><span class="badge badge-green">D</span></td><td><code>expand_real_by_modo()</code></td><td>Triplica histórico en 3 modos; solo el incremento correspondiente queda poblado</td></tr>
+      <tr><td><span class="badge badge-yellow">E</span></td><td>Validación de duplicados</td><td>Verifica unicidad en <code>[ds, padecimiento, entidad, meta_modo]</code> en ambas entradas</td></tr>
+      <tr><td><span class="badge badge-green">F</span></td><td><code>outer merge</code></td><td>Join histórico + forecast por las 4 llaves, <code>validate="m:1"</code></td></tr>
       <tr><td><span class="badge badge-teal">G</span></td><td>RMSE por modelo</td><td>Calcula RMSE solo donde coexisten <code>y_real</code> y <code>yhat</code></td></tr>
       <tr><td><span class="badge badge-green">H</span></td><td>Escritura</td><td>Renombra, fill numerico (excluyendo incrementos), valida llaves, escribe <code>tableau.csv</code></td></tr>
     </tbody>
@@ -422,17 +422,17 @@ g = g.assign(incrementos_hombres=pd.NA, incrementos_mujeres=pd.NA)
 
 <!-- ═══════════ 5. PREDICE.PY — METRICAS HIBRIDAS ═══════════ -->
 <section class="reveal" id="metricas">
-  <h2 class="section-title">Metricas: modelo original vs usado</h2>
-  <p class="section-sub">Trazabilidad completa del fallback hibrido en <code>predice.py</code></p>
+  <h2 class="section-title">Métricas: modelo original vs usado</h2>
+  <p class="section-sub">Trazabilidad completa del fallback híbrido en <code>predice.py</code></p>
 
   <div class="charts-row">
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:1.2rem;color:var(--dark-teal);margin-bottom:1rem">Modelo propio</h3>
-      <p style="font-size:.92rem;color:#555">Para los 256 modelos con <span class="badge badge-green">confianza suficiente</span>, <code>archivo_modelo_original</code> y <code>archivo_modelo_usado</code> apuntan al mismo <code>.pkl</code>. Las metricas original y usado son identicas.</p>
+      <p style="font-size:.92rem;color:#555">Para los 256 modelos con <span class="badge badge-green">confianza suficiente</span>, <code>archivo_modelo_original</code> y <code>archivo_modelo_usado</code> apuntan al mismo <code>.pkl</code>. Las métricas original y usado son idénticas.</p>
     </div>
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:1.2rem;color:var(--dark-teal);margin-bottom:1rem">Fallback regional</h3>
-      <p style="font-size:.92rem;color:#555">Para los <strong>41 modelos insuficientes</strong>, el forecast viene del modelo regional pero se desnormaliza con la poblacion <strong>estatal individual</strong>. Las metricas se desdoblan:</p>
+      <p style="font-size:.92rem;color:#555">Para los <strong>41 modelos insuficientes</strong>, el forecast viene del modelo regional pero se desnormaliza con la población <strong>estatal individual</strong>. Las métricas se desdoblan:</p>
       <ul style="font-size:.88rem;color:#555;margin-top:.5rem;padding-left:1.25rem">
         <li><code>rmse_original</code>, <code>mase_original</code> &mdash; del modelo estatal propio</li>
         <li><code>rmse_usado</code>, <code>mase_usado</code> &mdash; del modelo regional fallback</li>
@@ -449,7 +449,7 @@ g = g.assign(incrementos_hombres=pd.NA, incrementos_mujeres=pd.NA)
   </div>
 
   <div class="callout" style="margin-top:2rem">
-    <strong>Tooltips informativos en Tableau:</strong> Los tooltips despliegan RMSE, MAE, MAPE, MASE y modelo utilizado, manteniendo la visualizacion principal limpia mientras el detalle tecnico queda disponible bajo demanda. El MASE se clasifica categoricamente: excelente (&lt;0.7), bueno (0.7-1.0), requiere mejora (&gt;1.0).
+    <strong>Tooltips informativos en Tableau:</strong> Los tooltips despliegan RMSE, MAE, MAPE, MASE y modelo utilizado, manteniendo la visualización principal limpia mientras el detalle técnico queda disponible bajo demanda. El MASE se clasifica categóricamente: excelente (&lt;0.7), bueno (0.7-1.0), requiere mejora (&gt;1.0).
   </div>
 </section>
 
@@ -464,7 +464,7 @@ g = g.assign(incrementos_hombres=pd.NA, incrementos_mujeres=pd.NA)
         <span class="viz-card-num">01</span>
         <h3>Tabla de datos</h3>
       </div>
-      <div class="viz-card-body">Tabla interactiva con datos epidemiologicos por entidad, ano, semana y sexo. Se incorpora informacion demografica del INEGI. Filtrable por ano, genero y padecimiento.</div>
+      <div class="viz-card-body">Tabla interactiva con datos epidemiológicos por entidad, año, semana y sexo. Se incorpora información demográfica del INEGI. Filtrable por año, género y padecimiento.</div>
       <div class="viz-card-foot">Tabla de datos &middot; viz_epiforecastmx</div>
     </div>
 
@@ -473,7 +473,7 @@ g = g.assign(incrementos_hombres=pd.NA, incrementos_mujeres=pd.NA)
         <span class="viz-card-num">02</span>
         <h3>Mapa de Mexico</h3>
       </div>
-      <div class="viz-card-body">Variables demograficas y territoriales por entidad: densidad poblacional, superficie, casos desagregados por genero. Se aplica normalizacion min-max para gradientes de color coherentes al alternar variables.</div>
+      <div class="viz-card-body">Variables demográficas y territoriales por entidad: densidad poblacional, superficie, casos desagregados por género. Se aplica normalización min-max para gradientes de color coherentes al alternar variables.</div>
       <div class="viz-card-foot">Mapa de Mexico &middot; viz_epiforecastmx</div>
     </div>
 
@@ -482,17 +482,17 @@ g = g.assign(incrementos_hombres=pd.NA, incrementos_mujeres=pd.NA)
         <span class="viz-card-num">03</span>
         <h3>Mexico en categorias</h3>
       </div>
-      <div class="viz-card-body">Categorizaciones analiticas: region geografica, region socio-urbana, densidad poblacional, extension territorial y ratio por genero. Incluye rangos fijos y percentiles para comparaciones estructurales.</div>
+      <div class="viz-card-body">Categorizaciones analíticas: región geográfica, región socio-urbana, densidad poblacional, extensión territorial y ratio por género. Incluye rangos fijos y percentiles para comparaciones estructurales.</div>
       <div class="viz-card-foot">Mexico en categorias &middot; viz_epiforecastmx</div>
     </div>
 
     <div class="viz-card">
       <div class="viz-card-head">
         <span class="viz-card-num">04</span>
-        <h3>Casos por ano</h3>
+        <h3>Casos por año</h3>
       </div>
-      <div class="viz-card-body">Tasa anual de incremento normalizada por poblacion (por 100K hab.), desagregada por genero. Recorte visual de extremos preservando valores reales en el detalle.</div>
-      <div class="viz-card-foot">Casos por ano &middot; viz_epiforecastmx</div>
+      <div class="viz-card-body">Tasa anual de incremento normalizada por población (por 100K hab.), desagregada por género. Recorte visual de extremos preservando valores reales en el detalle.</div>
+      <div class="viz-card-foot">Casos por año &middot; viz_epiforecastmx</div>
     </div>
 
     <div class="viz-card">
@@ -500,17 +500,17 @@ g = g.assign(incrementos_hombres=pd.NA, incrementos_mujeres=pd.NA)
         <span class="viz-card-num">05</span>
         <h3>Casos semanales</h3>
       </div>
-      <div class="viz-card-body">Tasa semanal de incremento normalizada, permitiendo analizar la dinamica de corto plazo y detectar variaciones intra-anuales. Recorte por percentiles para legibilidad.</div>
+      <div class="viz-card-body">Tasa semanal de incremento normalizada, permitiendo analizar la dinámica de corto plazo y detectar variaciones intra-anuales. Recorte por percentiles para legibilidad.</div>
       <div class="viz-card-foot">Casos por semana &middot; viz_epiforecastmx</div>
     </div>
 
     <div class="viz-card">
       <div class="viz-card-head">
         <span class="viz-card-num" style="background:var(--burgundy)">06</span>
-        <h3>Prediccion e incertidumbre</h3>
+        <h3>Predicción e incertidumbre</h3>
       </div>
-      <div class="viz-card-body">Trayectoria estimada del modelo con rango de variacion (intervalo de confianza). Filtrable por ano. Incluye linea de referencia COVID y banda asociada. <span class="badge badge-yellow">En desarrollo</span></div>
-      <div class="viz-card-foot">Predicciones &middot; En migracion al dashboard unificado</div>
+      <div class="viz-card-body">Trayectoria estimada del modelo con rango de variación (intervalo de confianza). Filtrable por año. Incluye línea de referencia COVID y banda asociada. <span class="badge badge-yellow">En desarrollo</span></div>
+      <div class="viz-card-foot">Predicciones &middot; En migración al dashboard unificado</div>
     </div>
 
     <div class="viz-card">
@@ -518,45 +518,45 @@ g = g.assign(incrementos_hombres=pd.NA, incrementos_mujeres=pd.NA)
         <span class="viz-card-num" style="background:var(--gold)">07</span>
         <h3>Dash Predicciones</h3>
       </div>
-      <div class="viz-card-body">Dashboard integrado: desempeno del modelo (observado vs predicho) + KPIs de confianza + modelo Prophet utilizado. Contrasta puntos observados con linea de prediccion continua.</div>
+      <div class="viz-card-body">Dashboard integrado: desempeño del modelo (observado vs predicho) + KPIs de confianza + modelo Prophet utilizado. Contrasta puntos observados con línea de predicción continua.</div>
       <div class="viz-card-foot">Dash Predicciones &middot; viz_epiforecastmx</div>
     </div>
 
     <div class="viz-card">
       <div class="viz-card-head">
         <span class="viz-card-num" style="background:var(--gold)">08</span>
-        <h3>Ultimas 52 semanas</h3>
+        <h3>Últimas 52 semanas</h3>
       </div>
-      <div class="viz-card-body">Ventana temporal de 52 semanas observadas + 52 proyectadas. Resumen del comportamiento reciente y su extension esperada, clave para la toma de decisiones.</div>
-      <div class="viz-card-foot">Ultimas 52 semanas &middot; viz_epiforecastmx</div>
+      <div class="viz-card-body">Ventana temporal de 52 semanas observadas + 52 proyectadas. Resumen del comportamiento reciente y su extensión esperada, clave para la toma de decisiones.</div>
+      <div class="viz-card-foot">Últimas 52 semanas &middot; viz_epiforecastmx</div>
     </div>
   </div>
 </section>
 
-<!-- ═══════════ 7. MIGRACION A DATASET UNICO ═══════════ -->
+<!-- ═══════════ 7. MIGRACIÓN A DATASET ÚNICO ═══════════ -->
 <section class="reveal" id="migracion">
-  <h2 class="section-title">Migracion al dataset integrado</h2>
-  <p class="section-sub">De dos fuentes fragmentadas a un unico <code>tableau.csv</code> con llave homogenea</p>
+  <h2 class="section-title">Migración al dataset integrado</h2>
+  <p class="section-sub">De dos fuentes fragmentadas a un único <code>tableau.csv</code> con llave homogénea</p>
 
   <div class="charts-row">
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:1.15rem;color:var(--burgundy);margin-bottom:.75rem">Antes: arquitectura fragmentada</h3>
       <ul style="font-size:.88rem;color:#555;padding-left:1.25rem;line-height:2">
-        <li>Dos fuentes de datos separadas (historico + forecast)</li>
+        <li>Dos fuentes de datos separadas (histórico + forecast)</li>
         <li>Joins implícitos en Tableau (Relationships)</li>
-        <li>Filtros sobre campos del historico excluian filas futuras</li>
-        <li>Fechas futuras desaparecian al filtrar por entidad</li>
-        <li>Calculos LOD dependian de la separacion de fuentes</li>
-        <li>Metricas agregadas infladas por duplicados</li>
+        <li>Filtros sobre campos del histórico excluían filas futuras</li>
+        <li>Fechas futuras desaparecían al filtrar por entidad</li>
+        <li>Cálculos LOD dependían de la separación de fuentes</li>
+        <li>Métricas agregadas infladas por duplicados</li>
       </ul>
     </div>
     <div class="card">
-      <h3 style="font-family:var(--font-display);font-size:1.15rem;color:var(--teal);margin-bottom:.75rem">Despues: dataset unico</h3>
+      <h3 style="font-family:var(--font-display);font-size:1.15rem;color:var(--teal);margin-bottom:.75rem">Después: dataset único</h3>
       <ul style="font-size:.88rem;color:#555;padding-left:1.25rem;line-height:2">
         <li>Un solo <code>tableau.csv</code> con llave compuesta</li>
         <li>Todos los registros responden a los mismos filtros</li>
-        <li>NaN semantico: ausencia real, no error</li>
-        <li>Historico y forecast conviven sin joins implícitos</li>
+        <li>NaN semántico: ausencia real, no error</li>
+        <li>Histórico y forecast conviven sin joins implícitos</li>
         <li>Expresiones LOD recalibradas para una fuente</li>
         <li>Acciones de filtro sin dependencias residuales</li>
       </ul>
@@ -564,8 +564,8 @@ g = g.assign(incrementos_hombres=pd.NA, incrementos_mujeres=pd.NA)
   </div>
 
   <div class="card" style="margin-top:2rem">
-    <h3 style="font-family:var(--font-display);font-size:1.15rem;color:var(--dark-teal);margin-bottom:.75rem">Reconstruccion del workbook</h3>
-    <p style="font-size:.92rem;color:#555">La migracion no fue un simple "cambiar fuente": requirio reconstruir sistematicamente multiples componentes:</p>
+    <h3 style="font-family:var(--font-display);font-size:1.15rem;color:var(--dark-teal);margin-bottom:.75rem">Reconstrucción del workbook</h3>
+    <p style="font-size:.92rem;color:#555">La migración no fue un simple "cambiar fuente": requirió reconstruir sistemáticamente múltiples componentes:</p>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:1rem;margin-top:1rem">
       <div style="background:var(--cream-pale);border-radius:var(--radius-sm);padding:1rem">
         <strong style="font-size:.85rem;color:var(--dark-teal)">Fuente de datos</strong>
@@ -580,7 +580,7 @@ g = g.assign(incrementos_hombres=pd.NA, incrementos_mujeres=pd.NA)
         <p style="font-size:.82rem;color:#555;margin-top:.25rem">SUM, AVG, FIXED recalibrados para evitar duplicaciones</p>
       </div>
       <div style="background:var(--cream-pale);border-radius:var(--radius-sm);padding:1rem">
-        <strong style="font-size:.85rem;color:var(--dark-teal)">Filtros y parametros</strong>
+        <strong style="font-size:.85rem;color:var(--dark-teal)">Filtros y parámetros</strong>
         <p style="font-size:.82rem;color:#555;margin-top:.25rem">Globales remapeados, acciones de resaltado verificadas</p>
       </div>
     </div>
@@ -590,37 +590,37 @@ g = g.assign(incrementos_hombres=pd.NA, incrementos_mujeres=pd.NA)
 <!-- ═══════════ 8. DECISIONES UX ═══════════ -->
 <section class="reveal" id="ux">
   <h2 class="section-title">Decisiones UX/UI</h2>
-  <p class="section-sub">Diseno centrado en interpretabilidad, no en decoracion</p>
+  <p class="section-sub">Diseño centrado en interpretabilidad, no en decoración</p>
 
   <div class="card-grid-3">
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:.5rem">Contexto temporal</h3>
-      <p style="font-size:.88rem;color:#555">Linea de referencia COVID-19 y ajuste a fecha continua (condicion necesaria para bandas en Tableau). Titulos con referencias temporales claras sin sobrecargar.</p>
+      <p style="font-size:.88rem;color:#555">Línea de referencia COVID-19 y ajuste a fecha continua (condición necesaria para bandas en Tableau). Títulos con referencias temporales claras sin sobrecargar.</p>
     </div>
     <div class="card">
-      <h3 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:.5rem">MASE categorico</h3>
-      <p style="font-size:.88rem;color:#555">Clasificacion interpretable: <span class="badge badge-green">Excelente</span> (&lt;0.7), <span class="badge badge-yellow">Bueno</span> (0.7-1.0), <span class="badge badge-red">Mejora</span> (&gt;1.0). El usuario entiende sin interpretar la metrica cruda.</p>
+      <h3 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:.5rem">MASE categórico</h3>
+      <p style="font-size:.88rem;color:#555">Clasificación interpretable: <span class="badge badge-green">Excelente</span> (&lt;0.7), <span class="badge badge-yellow">Bueno</span> (0.7-1.0), <span class="badge badge-red">Mejora</span> (&gt;1.0). El usuario entiende sin interpretar la métrica cruda.</p>
     </div>
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:.5rem">Tooltips informativos</h3>
-      <p style="font-size:.88rem;color:#555">RMSE, MAE, MAPE, MASE y modelo utilizado bajo demanda. La visualizacion principal queda limpia; el detalle tecnico aparece al hover.</p>
+      <p style="font-size:.88rem;color:#555">RMSE, MAE, MAPE, MASE y modelo utilizado bajo demanda. La visualización principal queda limpia; el detalle técnico aparece al hover.</p>
     </div>
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:.5rem">Dashboard integrado</h3>
-      <p style="font-size:.88rem;color:#555">Worksheets de predicciones y desempeno se integraron en un unico dashboard "Predicciones" con una nueva worksheet "KPIs" (confianza + modelo Prophet).</p>
+      <p style="font-size:.88rem;color:#555">Worksheets de predicciones y desempeño se integraron en un único dashboard "Predicciones" con una nueva worksheet "KPIs" (confianza + modelo Prophet).</p>
     </div>
     <div class="card">
-      <h3 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:.5rem">Normalizacion de mapas</h3>
-      <p style="font-size:.88rem;color:#555">Normalizacion min-max para variables con magnitudes muy diferentes (densidad, superficie, casos). El gradiente de color es consistente al alternar variables.</p>
+      <h3 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:.5rem">Normalización de mapas</h3>
+      <p style="font-size:.88rem;color:#555">Normalización min-max para variables con magnitudes muy diferentes (densidad, superficie, casos). El gradiente de color es consistente al alternar variables.</p>
     </div>
     <div class="card">
-      <h3 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:.5rem">Ventana 2 anos</h3>
-      <p style="font-size:.88rem;color:#555">52 semanas historicas + 52 proyectadas. Controlada por parametro de seleccion unica (workaround a limitacion de Tableau). <span class="badge badge-yellow">En desarrollo</span></p>
+      <h3 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:.5rem">Ventana 2 años</h3>
+      <p style="font-size:.88rem;color:#555">52 semanas históricas + 52 proyectadas. Controlada por parámetro de selección única (workaround a limitación de Tableau). <span class="badge badge-yellow">En desarrollo</span></p>
     </div>
   </div>
 
   <div class="code-block" style="margin-top:2rem">
-    <span class="code-label">Tableau - Normalizacion para mapas</span>
+    <span class="code-label">Tableau - Normalización para mapas</span>
 <span class="cm">// Campo calculado en Tableau:</span>
 <span class="cm">// Normaliza cualquier variable al rango [0,1] para coherencia</span>
 <span class="cm">// visual al alternar entre densidad, superficie y casos.</span>
@@ -632,10 +632,10 @@ g = g.assign(incrementos_hombres=pd.NA, incrementos_mujeres=pd.NA)
   </div>
 </section>
 
-<!-- ═══════════ 9. EVOLUCION ═══════════ -->
+<!-- ═══════════ 9. EVOLUCIÓN ═══════════ -->
 <section class="reveal" id="evolucion">
-  <h2 class="section-title">Evolucion del dashboard</h2>
-  <p class="section-sub">Tres avances iterativos: de tablas basicas a un pipeline integrado</p>
+  <h2 class="section-title">Evolución del dashboard</h2>
+  <p class="section-sub">Tres avances iterativos: de tablas básicas a un pipeline integrado</p>
 
   <div class="timeline">
     <div class="tl-item">
@@ -655,9 +655,9 @@ g = g.assign(incrementos_hombres=pd.NA, incrementos_mujeres=pd.NA)
 
     <div class="tl-item">
       <div class="tl-version">Avance 3 — Semana 4-5</div>
-      <div class="tl-title">Normalizacion, modelos por estado, dashboard integral</div>
+      <div class="tl-title">Normalización, modelos por estado, dashboard integral</div>
       <div class="tl-desc">
-        <p>Se implemento normalizacion min-max para mapas con variables de magnitudes dispares. Modelo expandido a nivel estatal (99 modelos por padecimiento). Dashboard integral con heatmaps y bump charts de rendimiento.</p>
+        <p>Se implementó normalización min-max para mapas con variables de magnitudes dispares. Modelo expandido a nivel estatal (99 modelos por padecimiento). Dashboard integral con heatmaps y bump charts de rendimiento.</p>
         <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.75rem">
           <span class="badge badge-yellow">Min-max maps</span>
           <span class="badge badge-yellow">99 modelos/pad</span>
@@ -668,14 +668,14 @@ g = g.assign(incrementos_hombres=pd.NA, incrementos_mujeres=pd.NA)
 
     <div class="tl-item">
       <div class="tl-version">Avance 4 — Semana 6</div>
-      <div class="tl-title">Pipeline integrado, migracion y automatizacion</div>
+      <div class="tl-title">Pipeline integrado, migración y automatización</div>
       <div class="tl-desc">
-        <p>Diagnostico post-entrenamiento, correccion de Semana 53, politica de NaN explicitos, contrato de llaves, expansion por modo, <code>build_tableau.py</code>. Migracion a dataset unico. Experimento de automatizacion GitHub Actions &rarr; Google Sheets &rarr; Tableau Public.</p>
+        <p>Diagnóstico post-entrenamiento, corrección de Semana 53, política de NaN explícitos, contrato de llaves, expansión por modo, <code>build_tableau.py</code>. Migración a dataset único. Experimento de automatización GitHub Actions &rarr; Google Sheets &rarr; Tableau Public.</p>
         <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.75rem">
           <span class="badge badge-green">build_tableau.py</span>
-          <span class="badge badge-green">Dataset unico</span>
-          <span class="badge badge-green">Metricas orig/usado</span>
-          <span class="badge badge-green">Automatizacion</span>
+          <span class="badge badge-green">Dataset único</span>
+          <span class="badge badge-green">Métricas orig/usado</span>
+          <span class="badge badge-green">Automatización</span>
         </div>
       </div>
     </div>
@@ -688,10 +688,10 @@ g = g.assign(incrementos_hombres=pd.NA, incrementos_mujeres=pd.NA)
   </div>
 </section>
 
-<!-- ═══════════ 10. AUTOMATIZACION ═══════════ -->
+<!-- ═══════════ 10. AUTOMATIZACIÓN ═══════════ -->
 <section class="reveal" id="automatizacion">
-  <h2 class="section-title">Automatizacion: GitHub Actions + Google Sheets</h2>
-  <p class="section-sub">Validacion del principio pipeline &rarr; publicacion &rarr; consumo</p>
+  <h2 class="section-title">Automatización: GitHub Actions + Google Sheets</h2>
+  <p class="section-sub">Validación del principio pipeline &rarr; publicación &rarr; consumo</p>
 
   <div class="card" style="margin-bottom:2rem">
     <h3 style="font-family:var(--font-display);font-size:1.2rem;color:var(--dark-teal);margin-bottom:1rem">Arquitectura del experimento</h3>
@@ -701,7 +701,7 @@ g = g.assign(incrementos_hombres=pd.NA, incrementos_mujeres=pd.NA)
         <span class="pipeline-arrow">&rarr;</span>
         <div class="flow-box script">update_sheet.py<br><span style="font-size:.7rem;opacity:.6">gspread + service account</span></div>
         <span class="pipeline-arrow">&rarr;</span>
-        <div class="flow-box data">Google Sheets<br><span style="font-size:.7rem;opacity:.6">Dataset publico</span></div>
+        <div class="flow-box data">Google Sheets<br><span style="font-size:.7rem;opacity:.6">Dataset público</span></div>
       </div>
       <div class="flow-arrow-down">&darr; <span style="font-size:.7rem;color:var(--cool-gray)">auto-refresh ~24h</span></div>
       <div class="flow-row">
@@ -715,21 +715,21 @@ g = g.assign(incrementos_hombres=pd.NA, incrementos_mujeres=pd.NA)
   <div class="charts-row">
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:.75rem">Identidad no interactiva</h3>
-      <p style="font-size:.88rem;color:#555">Service account de Google Cloud como identidad tecnica. Credenciales en GitHub Secrets (no versionadas). El Sheet se comparte con el correo de la service account.</p>
+      <p style="font-size:.88rem;color:#555">Service account de Google Cloud como identidad técnica. Credenciales en GitHub Secrets (no versionadas). El Sheet se comparte con el correo de la service account.</p>
       <table class="compare-table" style="margin-top:1rem">
         <thead><tr><th>Componente</th><th>Responsabilidad</th></tr></thead>
         <tbody>
           <tr><td>Google Cloud / IAM</td><td>Control de acceso</td></tr>
-          <tr><td>GitHub Actions</td><td>Ejecucion automatizada</td></tr>
+          <tr><td>GitHub Actions</td><td>Ejecución automatizada</td></tr>
           <tr><td>Google Sheets</td><td>Persistencia de datos</td></tr>
         </tbody>
       </table>
     </div>
     <div class="card">
       <h3 style="font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:.75rem">Resultados y limitaciones</h3>
-      <p style="font-size:.88rem;color:#555">La escritura a Google Sheets funciona correctamente en cada ejecucion. La incertidumbre esta en <strong>el lado de Tableau Public</strong>: no ofrece control sobre triggers ni schedules de refresh.</p>
+      <p style="font-size:.88rem;color:#555">La escritura a Google Sheets funciona correctamente en cada ejecución. La incertidumbre está en <strong>el lado de Tableau Public</strong>: no ofrece control sobre triggers ni schedules de refresh.</p>
       <div class="callout-burgundy callout" style="margin-top:1rem;padding:1rem 1.25rem;font-size:.85rem">
-        <strong>Limitacion estructural:</strong> Tableau Public no gestiona credenciales de datos protegidos por diseno. Para una arquitectura robusta y gobernada, la solucion correcta es Tableau Cloud o Tableau Server.
+        <strong>Limitacion estructural:</strong> Tableau Public no gestiona credenciales de datos protegidos por diseño. Para una arquitectura robusta y gobernada, la solución correcta es Tableau Cloud o Tableau Server.
       </div>
     </div>
   </div>
@@ -738,7 +738,7 @@ g = g.assign(incrementos_hombres=pd.NA, incrementos_mujeres=pd.NA)
 <!-- ═══════════ 11. TABLEAU PUBLIC ═══════════ -->
 <section class="reveal" id="tableau-public">
   <h2 class="section-title">Tableau Public: costos y limitaciones</h2>
-  <p class="section-sub">Excelente para difusion, no disenada como plataforma de automatizacion</p>
+  <p class="section-sub">Excelente para difusión, no diseñada como plataforma de automatización</p>
 
   <table class="compare-table">
     <thead>
@@ -761,62 +761,62 @@ g = g.assign(incrementos_hombres=pd.NA, incrementos_mujeres=pd.NA)
 <!-- ═══════════ 12. LECCIONES ═══════════ -->
 <section class="reveal" id="lecciones">
   <h2 class="section-title">Lecciones aprendidas</h2>
-  <p class="section-sub">Del diagnostico del Avance 4 al estado actual del pipeline</p>
+  <p class="section-sub">Del diagnóstico del Avance 4 al estado actual del pipeline</p>
 
   <div class="card-grid">
     <div class="card">
       <div class="card-header">
         <div class="card-dot" style="color:var(--teal)"></div>
-        <h3 class="card-title">Semantica sobre estetica</h3>
+        <h3 class="card-title">Semántica sobre estética</h3>
       </div>
-      <p style="font-size:.92rem;color:#555">Los errores en Tableau no se resolvieron con ajustes visuales. El problema estaba en la estructura del dataset. Los NaN no son errores: son semantica. La visualizacion es consecuencia de datos bien construidos.</p>
+      <p style="font-size:.92rem;color:#555">Los errores en Tableau no se resolvieron con ajustes visuales. El problema estaba en la estructura del dataset. Los NaN no son errores: son semántica. La visualización es consecuencia de datos bien construidos.</p>
     </div>
     <div class="card">
       <div class="card-header">
         <div class="card-dot" style="color:var(--gold)"></div>
         <h3 class="card-title">Contrato > convencion</h3>
       </div>
-      <p style="font-size:.92rem;color:#555">Definir un contrato explicito de llaves (<code>ds, padecimiento, entidad, meta_modo</code>) y validarlo con <code>validate="m:1"</code> previene errores silenciosos que solo se manifiestan en produccion.</p>
+      <p style="font-size:.92rem;color:#555">Definir un contrato explícito de llaves (<code>ds, padecimiento, entidad, meta_modo</code>) y validarlo con <code>validate="m:1"</code> previene errores silenciosos que solo se manifiestan en producción.</p>
     </div>
     <div class="card">
       <div class="card-header">
         <div class="card-dot" style="color:var(--burgundy)"></div>
         <h3 class="card-title">Trazabilidad end-to-end</h3>
       </div>
-      <p style="font-size:.92rem;color:#555">El desdoblamiento <code>original</code> vs <code>usado</code> en metricas permite auditar exactamente que modelo genero cada prediccion. Con 41 modelos en fallback, la transparencia es critica.</p>
+      <p style="font-size:.92rem;color:#555">El desdoblamiento <code>original</code> vs <code>usado</code> en métricas permite auditar exactamente qué modelo generó cada predicción. Con 41 modelos en fallback, la transparencia es crítica.</p>
     </div>
     <div class="card">
       <div class="card-header">
         <div class="card-dot" style="color:var(--teal)"></div>
         <h3 class="card-title">Pipeline reproducible</h3>
       </div>
-      <p style="font-size:.92rem;color:#555"><code>make tableau</code> es un unico comando que genera el dataset final. Cualquier miembro del equipo puede reconstruir <code>tableau.csv</code> desde cero en cualquier momento.</p>
+      <p style="font-size:.92rem;color:#555"><code>make tableau</code> es un único comando que genera el dataset final. Cualquier miembro del equipo puede reconstruir <code>tableau.csv</code> desde cero en cualquier momento.</p>
     </div>
   </div>
 
   <div class="chart-wrap" style="margin-top:2rem">
     <h3>Anatomia del dataset final: <code>tableau.csv</code></h3>
-    <p class="chart-sub">Columnas clave agrupadas por proposito</p>
+    <p class="chart-sub">Columnas clave agrupadas por propósito</p>
     <canvas id="chartColumnas" height="250"></canvas>
   </div>
 </section>
 
-<!-- ═══════════ 13. FICHA TECNICA ═══════════ -->
+<!-- ═══════════ 13. FICHA TÉCNICA ═══════════ -->
 <section class="reveal" id="ficha">
-  <h2 class="section-title">Ficha tecnica</h2>
-  <p class="section-sub">Resumen de scripts, archivos y comandos del pipeline de visualizacion</p>
+  <h2 class="section-title">Ficha técnica</h2>
+  <p class="section-sub">Resumen de scripts, archivos y comandos del pipeline de visualización</p>
 
   <table class="compare-table">
     <thead>
-      <tr><th>Componente</th><th>Archivo / Comando</th><th>Proposito</th></tr>
+      <tr><th>Componente</th><th>Archivo / Comando</th><th>Propósito</th></tr>
     </thead>
     <tbody>
-      <tr><td>Prediccion</td><td><code>scripts/predice.py</code> / <code>make predict</code></td><td>Genera <code>all_forecast.csv</code> con yhat + metricas orig/usado</td></tr>
-      <tr><td>Dataset Tableau</td><td><code>scripts/build_tableau.py</code> / <code>make tableau</code></td><td>Integra historico + forecast en <code>tableau.csv</code></td></tr>
+      <tr><td>Predicción</td><td><code>scripts/predice.py</code> / <code>make predict</code></td><td>Genera <code>all_forecast.csv</code> con yhat + métricas orig/usado</td></tr>
+      <tr><td>Dataset Tableau</td><td><code>scripts/build_tableau.py</code> / <code>make tableau</code></td><td>Integra histórico + forecast en <code>tableau.csv</code></td></tr>
       <tr><td>Workbook</td><td><code>viz/viz_epiforecastmx.twb</code></td><td>8 visualizaciones interactivas en Tableau</td></tr>
-      <tr><td>Web embed</td><td><code>EpiDashboard.html</code></td><td>Pagina web con embeds Tableau Public JS API</td></tr>
-      <tr><td>Automatizacion</td><td><code>hourly.yml</code> + <code>update_sheet.py</code></td><td>Experimento GitHub Actions &rarr; Google Sheets</td></tr>
-      <tr><td>Notebook</td><td><code>notebooks/Avance4_Luis_Reconstruido.ipynb</code></td><td>Documentacion completa del proceso (6 secciones)</td></tr>
+      <tr><td>Web embed</td><td><code>EpiDashboard.html</code></td><td>Página web con embeds Tableau Public JS API</td></tr>
+      <tr><td>Automatización</td><td><code>hourly.yml</code> + <code>update_sheet.py</code></td><td>Experimento GitHub Actions &rarr; Google Sheets</td></tr>
+      <tr><td>Notebook</td><td><code>notebooks/Avance4_Luis_Reconstruido.ipynb</code></td><td>Documentación completa del proceso (6 secciones)</td></tr>
     </tbody>
   </table>
 
@@ -824,7 +824,7 @@ g = g.assign(incrementos_hombres=pd.NA, incrementos_mujeres=pd.NA)
 <span class="yaml-cm"># Flujo completo del dashboard</span>
 <span class="yaml-key">make</span> <span class="yaml-val">train</span>          <span class="yaml-cm"># 1. Entrenar 297 modelos Prophet</span>
 <span class="yaml-key">make</span> <span class="yaml-val">models-push</span>    <span class="yaml-cm"># 2. Subir modelos a S3 (DVC)</span>
-<span class="yaml-key">make</span> <span class="yaml-val">predict</span>        <span class="yaml-cm"># 3. Generar all_forecast.csv + fallback hibrido</span>
+<span class="yaml-key">make</span> <span class="yaml-val">predict</span>        <span class="yaml-cm"># 3. Generar all_forecast.csv + fallback híbrido</span>
 <span class="yaml-key">make</span> <span class="yaml-val">tableau</span>        <span class="yaml-cm"># 4. Construir tableau.csv (dataset integrado)</span>
 <span class="yaml-key">make</span> <span class="yaml-val">forecast-push</span>  <span class="yaml-cm"># 5. Subir forecast a S3</span>
 <span class="yaml-cm"># 6. Actualizar Tableau Desktop con nuevo CSV</span>
@@ -902,7 +902,7 @@ if (ctxMod) new Chart(ctxMod, {
   }
 });
 
-/* ── Chart: Evolucion ── */
+/* ── Chart: Evolución ── */
 const ctxEvo = document.getElementById('chartEvolucion');
 if (ctxEvo) new Chart(ctxEvo, {
   type: 'bar',
@@ -944,7 +944,7 @@ const ctxCol = document.getElementById('chartColumnas');
 if (ctxCol) new Chart(ctxCol, {
   type: 'doughnut',
   data: {
-    labels: ['Llaves (4)', 'Historico (6)', 'Forecast (5)', 'Metricas original (7)', 'Metricas usado (7)', 'Demograficas (4)', 'Metadata (3)'],
+    labels: ['Llaves (4)', 'Histórico (6)', 'Forecast (5)', 'Métricas original (7)', 'Métricas usado (7)', 'Demográficas (4)', 'Metadata (3)'],
     datasets: [{
       data: [4, 6, 5, 7, 7, 4, 3],
       backgroundColor: [
