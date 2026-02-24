@@ -112,8 +112,8 @@ jobs:
       # ── Fase 3: Git commit (siempre, por si registry cambio) ──
       - name: Commit changes
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git config user.name "Javier Rebull"
+          git config user.email "168046724+jrebull@users.noreply.github.com"
           
           # Debug: mostrar estado de archivos
           echo "=== Git status ==="
