@@ -1,6 +1,6 @@
 # src/utils/reporte_PDF.py
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import pandas as pd
 from loguru import logger
@@ -20,181 +20,269 @@ from reportlab.platypus import (
     TableStyle,
 )
 
-from src.datos.EDA import ReportData
+from src.datos.EDA import ReportData, SeccionNota
 
 
+# ---------- Helpers de tabla ---------- #
 
-# ---------- Helpers ---------- #
-
-def crear_tabla(data: List[List[Any]],
-                colWidths: Optional[List[float]] = None,
-                hAlign: str = "CENTER") -> LongTable:
-    table = LongTable(data, colWidths=colWidths, hAlign=hAlign,splitByRow=0)
+def crear_tabla(
+    data: list[list[Any]],
+    col_widths: list[float] | None = None,
+    h_align: str = "CENTER",
+) -> LongTable:
+    """Crea una LongTable con estilo institucional IMSS."""
+    # splitByRow=0: evita que una fila se parta entre dos páginas
+    table = LongTable(data, colWidths=col_widths, hAlign=h_align, splitByRow=0)
     table.setStyle(TableStyle([
-        ('FONT', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
-        ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.whitesmoke, colors.white]),
-        ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),
-        ('GRID', (0, 0), (-1, -1), 0.25, colors.grey),
-        ('LEFTPADDING', (0, 0), (-1, -1), 6),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 6),
-        ('TOPPADDING', (0, 0), (-1, -1), 4),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ("FONT",           (0, 0), (-1,  0), "Helvetica-Bold"),
+        ("BACKGROUND",     (0, 0), (-1,  0), colors.lightgrey),
+        ("ALIGN",          (0, 0), (-1,  0), "CENTER"),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.whitesmoke, colors.white]),
+        ("ALIGN",          (1, 1), (-1, -1), "RIGHT"),
+        ("GRID",           (0, 0), (-1, -1), 0.25, colors.grey),
+        ("LEFTPADDING",    (0, 0), (-1, -1), 6),
+        ("RIGHTPADDING",   (0, 0), (-1, -1), 6),
+        ("TOPPADDING",     (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING",  (0, 0), (-1, -1), 4),
     ]))
     return table
 
 
-def tabla_desde_dataframe(df: pd.DataFrame) -> LongTable:
+def tabla_desde_dataframe(df: pd.DataFrame | None) -> LongTable:
     """Convierte un DataFrame en tabla PDF."""
     if df is None or df.empty:
-        return crear_tabla([["Sin datos"], ["—"]], colWidths=[16 * cm])
+        return crear_tabla([["Sin datos"], ["—"]], col_widths=[16 * cm])
 
     header = [df.index.name or "columna"] + df.columns.tolist()
     rows = [[str(idx)] + [str(v) for v in row] for idx, row in df.iterrows()]
-    data = [header] + rows
 
     if len(header) <= 4:
-        col_widths = [6 * cm] + [((16 * cm) - 6 * cm) / (len(header) - 1)] * (len(header) - 1)
+        ancho_resto = (16 * cm - 6 * cm) / (len(header) - 1)
+        col_widths: list[float] | None = [6 * cm] + [ancho_resto] * (len(header) - 1)
     else:
         col_widths = None
 
-    return crear_tabla(data, colWidths=col_widths)
+    return crear_tabla([header] + rows, col_widths=col_widths)
 
 
-def tabla_kv(dic: Dict[str, str]) -> LongTable:
-    """Convierte un dict clave-valor en tabla PDF."""
-    data = [["Campo", "Valor"]] + [[str(k), str(v)] for k, v in dic.items()] if dic else [["Campo", "Valor"], ["—", "—"]]
-    return crear_tabla(data, colWidths=[7 * cm, 9 * cm])
+def tabla_kv(dic: dict[str, str] | None) -> LongTable:
+    """Convierte un diccionario clave-valor en tabla PDF de dos columnas."""
+    if not dic:
+        data = [["Campo", "Valor"], ["—", "—"]]
+    else:
+        data = [["Campo", "Valor"]] + [[str(k), str(v)] for k, v in dic.items()]
+    return crear_tabla(data, col_widths=[7 * cm, 9 * cm])
 
 
-def cabecera_pie(canv: canvas.Canvas, doc: SimpleDocTemplate):
-    """Encabezado y pie de página comunes."""
-    width, height = A4
-    margen = 0.5 * cm
-    canv.saveState()
+def _hacer_cabecera_pie(titulo_reporte: str):
+    """Retorna el callback onPage con el título del reporte inyectado como closure."""
 
-    canv.setStrokeColor(colors.HexColor("#A3BFD9"))
-    canv.setLineWidth(1)
-    canv.rect(margen, margen, width - 2*margen, height - 2*margen)
+    def cabecera_pie(canv: canvas.Canvas, doc: SimpleDocTemplate) -> None:
+        width, height = A4
+        margen = 0.5 * cm
+        canv.saveState()
 
-    canv.setFont("Helvetica", 9)
-    canv.setFillColor(colors.grey)
-    canv.drawString(2 * cm, height - 1 * cm, "Reporte EDA")
+        canv.setStrokeColor(colors.HexColor("#A3BFD9"))
+        canv.setLineWidth(1)
+        canv.rect(margen, margen, width - 2 * margen, height - 2 * margen)
 
-    canv.setFillColor(colors.black)
-    canv.drawRightString(width - 2 * cm, 1 * cm, f"Página {canv.getPageNumber()}")
-    canv.restoreState()
+        canv.setFont("Helvetica", 9)
+        canv.setFillColor(colors.grey)
+        canv.drawString(2 * cm, height - 1 * cm, titulo_reporte)
+
+        canv.setFillColor(colors.black)
+        canv.drawRightString(width - 2 * cm, 1 * cm, f"Página {canv.getPageNumber()}")
+        canv.restoreState()
+
+    return cabecera_pie
 
 
 # ---------- Clase principal ---------- #
 
 class PDFReportGenerator:
+    """Genera un reporte PDF de EDA a partir de un objeto ReportData."""
 
-    def __init__(self, datos_reporte: ReportData,
-                 archivo_salida,
-                 ancho_figura_cm: float = 16.0):
+    def __init__(
+        self,
+        datos_reporte: ReportData,
+        archivo_salida: str | os.PathLike,
+        ancho_figura_cm: float = 16.0,
+    ) -> None:
         self.datos = datos_reporte
         self.archivo_salida = archivo_salida
         self.ancho_figura_cm = ancho_figura_cm
         self.styles = self._crear_estilos()
 
+    # ---------- Estilos ---------- #
+
     def _crear_estilos(self):
         styles = getSampleStyleSheet()
-        styles.add(ParagraphStyle(name='Titulo', parent=styles['Title'],
-                                  fontName='Helvetica-Bold', fontSize=18, leading=22,
-                                  alignment=1, spaceAfter=12))
-        styles.add(ParagraphStyle(name='Subtitulo', parent=styles['Normal'],
-                                  fontName='Helvetica', fontSize=12, textColor=colors.grey,
-                                  alignment=1, spaceAfter=12))
-        styles.add(ParagraphStyle(name='Seccion', parent=styles['Heading2'],
-                                  fontName='Helvetica-Bold', fontSize=14,
-                                  spaceBefore=12, spaceAfter=6, alignment=1))
-        styles.add(ParagraphStyle(name='NormalJust', parent=styles['Normal'],
-                                  fontName='Helvetica', fontSize=10, leading=14))
+        styles.add(ParagraphStyle(
+            name="Titulo", parent=styles["Title"],
+            fontName="Helvetica-Bold", fontSize=18, leading=22,
+            alignment=1, spaceAfter=12,
+        ))
+        styles.add(ParagraphStyle(
+            name="Subtitulo", parent=styles["Normal"],
+            fontName="Helvetica", fontSize=12, textColor=colors.grey,
+            alignment=1, spaceAfter=12,
+        ))
+        styles.add(ParagraphStyle(
+            name="Seccion", parent=styles["Heading2"],
+            fontName="Helvetica-Bold", fontSize=14,
+            spaceBefore=12, spaceAfter=6, alignment=1,
+        ))
+        styles.add(ParagraphStyle(
+            name="NormalJust", parent=styles["Normal"],
+            fontName="Helvetica", fontSize=10, leading=14,
+        ))
         return styles
 
-    def _agregar_tabla_si_existe(self, story: List[Any], titulo: str, df: Optional[pd.DataFrame]):
-        
-        story.append(Paragraph(titulo, self.styles['Seccion']))
-        story.append(tabla_desde_dataframe(df) if isinstance(df, pd.DataFrame) and not df.empty
-                     else Paragraph("No se encontraron datos.", self.styles['NormalJust']))
-        story.append(Spacer(1, 12))
+    # ---------- Secciones ---------- #
 
-    def _agregar_portada(self, story: List[Any]):
-
-        story.append(Paragraph(self.datos.titulo, self.styles['Titulo']))
+    def _agregar_portada(self, story: list[Any]) -> None:
+        story.append(Paragraph(self.datos.titulo, self.styles["Titulo"]))
         if self.datos.subtitulo:
-            story.append(Paragraph(self.datos.subtitulo, self.styles['Subtitulo']))
+            story.append(Paragraph(self.datos.subtitulo, self.styles["Subtitulo"]))
         story.append(Spacer(1, 24))
         story.append(tabla_kv(self.datos.resumen_general))
         story.append(PageBreak())
 
-    def _agregar_notas(self, story: List[Any]):
-        if self.datos.notas:
-            #notas_html = self.datos.notas.replace("\n", "<br/>")
-            story.append(Paragraph("Notas", self.styles['Seccion']))
-            story.append(Paragraph(self.datos.notas or "—", self.styles['NormalJust']))
-            story.append(PageBreak())
+    def _agregar_tabla_si_existe(
+        self, story: list[Any], titulo: str, df: pd.DataFrame | None
+    ) -> None:
+        story.append(Spacer(1, 6))
+        story.append(Paragraph(titulo, self.styles["Seccion"]))
+        if isinstance(df, pd.DataFrame) and not df.empty:
+            story.append(tabla_desde_dataframe(df))
+        else:
+            story.append(Paragraph("No se encontraron datos.", self.styles["NormalJust"]))
+        story.append(Spacer(1, 12))
 
-    def _agregar_tablas_campos(self, story: List[Any]):
-
-        self._agregar_tabla_si_existe(story, "Características de los campos", getattr(self.datos, "resumen_datos", None))
-        self._agregar_tabla_si_existe(story, "Estadísticas descriptivas de variables numéricas", self.datos.estadisticas_numericas)
-        self._agregar_tabla_si_existe(story, "Estadísticas descriptivas de variables categóricas", getattr(self.datos, "estadisticas_categoricas", None))
-        self._agregar_tabla_si_existe(story, "Campos con valores nulos", getattr(self.datos, "resumen_datos_nulos", None))
+    def _agregar_tablas_campos(self, story: list[Any]) -> None:
+        self._agregar_tabla_si_existe(story, "Características de los campos",
+                                      self.datos.resumen_datos)
+        self._agregar_tabla_si_existe(story, "Estadísticas descriptivas de variables numéricas",
+                                      self.datos.estadisticas_numericas)
+        self._agregar_tabla_si_existe(story, "Estadísticas descriptivas de variables categóricas",
+                                      self.datos.estadisticas_categoricas)
+        self._agregar_tabla_si_existe(story, "Campos con valores nulos",
+                                      self.datos.resumen_datos_nulos)
         story.append(PageBreak())
 
-        story.append(Paragraph("Distribuciones de variables categóricas", self.styles['Seccion']))
+        story.append(Paragraph("Distribuciones de variables categóricas", self.styles["Seccion"]))
         if self.datos.tablas_categoricas:
             for df in self.datos.tablas_categoricas.values():
                 story.append(tabla_desde_dataframe(df))
                 story.append(Spacer(1, 8))
         else:
-            story.append(Paragraph("No se identificaron columnas categóricas.", self.styles['NormalJust']))
+            story.append(Paragraph("No se identificaron columnas categóricas.",
+                                   self.styles["NormalJust"]))
         story.append(PageBreak())
 
-    def _agregar_figuras(self, story: List[Any]):
-        story.append(Paragraph("Histogramas generados", self.styles['Seccion']))
-        max_w, max_h = min(self.ancho_figura_cm * cm, A4[0] - 4 * cm), 11 * cm
+    def _agregar_figuras(self, story: list[Any]) -> None:
+        story.append(Paragraph("Visualizaciones generadas", self.styles["Seccion"]))
+        max_w = min(self.ancho_figura_cm * cm, A4[0] - 4 * cm)
+        # Espacio útil vertical en A4 (página - márgenes - encabezado/pie)
+        alto_pagina = A4[1] - 5.5 * cm
+        # Umbral: figuras con altura natural > 14 cm reciben página propia
+        umbral_alto = 14 * cm
         contador = 0
+        par_abierto = False   # lleva cuenta de si hay una figura "suelta" en la página actual
 
         for ruta in self.datos.figuras:
-            if os.path.exists(ruta):
-                img = Image(ruta)
+            if not os.path.exists(ruta):
+                logger.warning(f"Figura no encontrada, se omite: {ruta}")
+                continue
+
+            img = Image(ruta)
+            # Altura proporcional al ancho disponible (mantiene aspect ratio)
+            aspect = img.imageHeight / img.imageWidth if img.imageWidth > 0 else 1.0
+            h_natural = aspect * max_w
+            es_figura_alta = h_natural > umbral_alto
+
+            if es_figura_alta:
+                # Si hay una figura suelta arriba, cerrar la página antes
+                if par_abierto:
+                    story.append(PageBreak())
+                    par_abierto = False
+                max_h = min(h_natural, alto_pagina)
                 img._restrictSize(max_w, max_h)
-                story.append(KeepInFrame(max_w, max_h, [img], mode='shrink'))
+                story.append(KeepInFrame(max_w, max_h, [img], mode="shrink"))
+                story.append(PageBreak())
+            else:
+                max_h = min(h_natural, umbral_alto)
+                img._restrictSize(max_w, max_h)
+                story.append(KeepInFrame(max_w, max_h, [img], mode="shrink"))
                 story.append(Spacer(1, 8))
-                contador += 1
-                if contador % 2 == 0:
+                par_abierto = not par_abierto
+                if not par_abierto:   # se completó el par → salto de página
                     story.append(PageBreak())
 
-        if contador % 2 != 0:
+            contador += 1
+
+        if par_abierto:
             story.append(PageBreak())
 
-    def build(self):
-        doc = SimpleDocTemplate(self.archivo_salida, pagesize=A4,
-                                leftMargin=2 * cm, rightMargin=2 * cm,
-                                topMargin=2.2 * cm, bottomMargin=2.0 * cm)
-        logger.info(f"Generando reporte PDF en: {self.archivo_salida}")
-        
-        page_w_cm = round(doc.pagesize[0] / cm, 2)
-        page_h_cm = round(doc.pagesize[1] / cm, 2)
+    def _agregar_seccion_nota(self, story: list[Any], seccion: SeccionNota) -> None:
+        """Renderiza una SeccionNota: título + texto libre + tabla kv + DataFrame."""
+        story.append(Spacer(1, 6))
+        story.append(Paragraph(seccion.titulo, self.styles["Seccion"]))
+        if seccion.texto:
+            story.append(Paragraph(seccion.texto, self.styles["NormalJust"]))
+            story.append(Spacer(1, 8))
+        if seccion.parametros:
+            story.append(tabla_kv(seccion.parametros))
+            story.append(Spacer(1, 8))
+        if isinstance(seccion.tabla, pd.DataFrame) and not seccion.tabla.empty:
+            story.append(tabla_desde_dataframe(seccion.tabla))
+        story.append(Spacer(1, 12))
 
-        logger.debug(f"Datos del reporte: tamaño página: {page_w_cm} x {page_h_cm} cm | Márgenes -> "
-            f"izq: {doc.leftMargin/cm:.2f} cm, "
-            f"der: {doc.rightMargin/cm:.2f} cm, "
-            f"sup: {doc.topMargin/cm:.2f} cm, "
-            f"inf: {doc.bottomMargin/cm:.2f} cm"
+    def _agregar_notas(self, story: list[Any]) -> None:
+        tiene_notas = bool(self.datos.notas or self.datos.secciones_notas)
+        if not tiene_notas:
+            return
+
+        story.append(Paragraph("Notas del proceso", self.styles["Titulo"]))
+        story.append(Spacer(1, 8))
+
+        # Texto libre (compatibilidad con campo legacy `notas`)
+        if self.datos.notas:
+            story.append(Paragraph(self.datos.notas, self.styles["NormalJust"]))
+            story.append(Spacer(1, 16))
+
+        # Secciones estructuradas
+        for seccion in self.datos.secciones_notas:
+            self._agregar_seccion_nota(story, seccion)
+
+        story.append(PageBreak())
+
+    # ---------- Punto de entrada ---------- #
+
+    def build(self) -> None:
+        """Construye y guarda el reporte PDF."""
+        doc = SimpleDocTemplate(
+            self.archivo_salida,
+            pagesize=A4,
+            leftMargin=2 * cm,
+            rightMargin=2 * cm,
+            topMargin=2.2 * cm,
+            bottomMargin=2.0 * cm,
+        )
+        logger.info(f"Generando reporte PDF: {self.archivo_salida}")
+        logger.debug(
+            f"Página {doc.pagesize[0] / cm:.2f} × {doc.pagesize[1] / cm:.2f} cm | "
+            f"Márgenes izq={doc.leftMargin / cm:.2f} der={doc.rightMargin / cm:.2f} "
+            f"sup={doc.topMargin / cm:.2f} inf={doc.bottomMargin / cm:.2f} cm"
         )
 
-        story: List[Any] = []
-        logger.debug("Agregando portada al reporte PDF.")
+        story: list[Any] = []
+        logger.debug("Construyendo secciones del reporte PDF.")
         self._agregar_portada(story)
-        logger.debug("Agregando tablas de campos al reporte PDF.")
         self._agregar_tablas_campos(story)
-        logger.debug("Agregando figuras al reporte PDF.")
         self._agregar_figuras(story)
         self._agregar_notas(story)
 
-        doc.build(story, onFirstPage=cabecera_pie, onLaterPages=cabecera_pie)
+        on_page = _hacer_cabecera_pie(self.datos.titulo)
+        doc.build(story, onFirstPage=on_page, onLaterPages=on_page)
+        logger.success(f"Reporte PDF generado: {self.archivo_salida}")

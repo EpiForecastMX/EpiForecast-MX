@@ -2,7 +2,7 @@ padecimiento:
   columna: "Padecimiento"
   tipo: "General"                  # General, Depresión, Parkinson, Alzheimer
   force: true                      # Sobrescribe el filtrado previo
-  reporte: false                   # Genera reporte de filtrado
+  reporte: true                   # Genera reporte de filtrado
   reporte_clean: false             # Genera reporte de datos tratados
   modelado_estados: True           # Genera modelos por estados (true) o región (false)
   modelado_hibrido: True           # Fallback regional para estados insuficientes (solo con modelado_estados)

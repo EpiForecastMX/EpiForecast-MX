@@ -2,227 +2,238 @@
 import os
 from typing import Optional
 
+import matplotlib as mpl
 import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
-
 from scipy.stats import gaussian_kde
+
 from src.configuraciones.config_params import conf
 
 
 class GraficosHelper:
-    def __init__(self, carpeta_salida: str, numero_top_columnas: int):
+    def __init__(self, carpeta_salida: str, numero_top_columnas: int) -> None:
         self.carpeta_salida = carpeta_salida
         self.numero_top_columnas = numero_top_columnas
-        self.conf_paleta = conf['IMSS_COLORS']
-        self.conf_paleta_secuencial = conf['PALETTE_MAIN']
-        self.conf_paleta_sexo = conf['PALETTE_SEXO']
-        self.conf_paleta_padecimiento = conf['PALETTE_PADECIMIENTO']
-        self.conf_covid = conf['COVID']
+        self.conf_paleta = conf["IMSS_COLORS"]
+        self.conf_paleta_secuencial = conf["PALETTE_MAIN"]
+        self.conf_paleta_sexo = conf["PALETTE_SEXO"]
+        self.conf_paleta_padecimiento = conf["PALETTE_PADECIMIENTO"]
+        self.conf_covid = conf["COVID"]
 
-    def _guardar_figura(self, nombre: str) -> str:
+        # Aplicar rcParams IMSS globalmente (excluye savefig.* — se manejan en _guardar_figura)
+        self._dpi: int = int(conf.get("matplotlib_rcParams", {}).get("savefig.dpi", 150))
+        _rc = {k: v for k, v in conf.get("matplotlib_rcParams", {}).items()
+               if not k.startswith("savefig.")}
+        mpl.rcParams.update(_rc)
+
+    # ---------- Helpers internos ---------- #
+
+    def _guardar_figura(self, fig: plt.Figure, nombre: str) -> str:
+        """Guarda la figura con configuración IMSS y cierra el objeto."""
         ruta = os.path.join(self.carpeta_salida, nombre)
-        plt.tight_layout()
-        plt.savefig(ruta, dpi=150)
-        plt.close()
+        fig.tight_layout()
+        fig.savefig(ruta, dpi=self._dpi, facecolor="white", edgecolor="none", bbox_inches="tight")
+        plt.close(fig)
         return ruta
 
-    def plot_histograma(self, serie, col: str,tono: int = 0) -> Optional[str]:
+    def _aplicar_estilo_ax(self, ax: plt.Axes) -> None:
+        """Estilo minimalista IMSS: sin espinas sup/der, grid horizontal suave."""
+        for spine in ("top", "right"):
+            ax.spines[spine].set_visible(False)
+        for spine in ("left", "bottom"):
+            ax.spines[spine].set_color(self.conf_paleta["cool_gray"])
+            ax.spines[spine].set_linewidth(0.6)
+        ax.yaxis.grid(True, alpha=0.25, color=self.conf_paleta["cool_gray"],
+                      linestyle="--", linewidth=0.5)
+        ax.xaxis.grid(False)
 
+    # ---------- Gráficos EDA ---------- #
+
+    def plot_histograma(self, serie: pd.Series, col: str, tono: int = 0) -> Optional[str]:
+        """Histograma de densidad con curva KDE y líneas de media/mediana."""
         serie = serie.dropna()
         if serie.empty:
             return None
 
-        plt.hist(
-            serie,
-            bins=50,
-            density=True,
-            alpha=0.6,
-            color=self.conf_paleta_secuencial[tono],
-            edgecolor="white",
-            linewidth=0.5
-        )
+        color = self.conf_paleta_secuencial[tono % len(self.conf_paleta_secuencial)]
+        fig, ax = plt.subplots(figsize=(10, 5))
+
+        ax.hist(serie, bins=50, density=True, alpha=0.65,
+                color=color, edgecolor="white", linewidth=0.5)
 
         try:
             kde = gaussian_kde(serie)
             x_vals = np.linspace(serie.min(), serie.max(), 300)
-            plt.plot(x_vals, kde(x_vals), color=self.conf_paleta['neutral_black'], linewidth=2)
+            ax.plot(x_vals, kde(x_vals), color=self.conf_paleta["neutral_black"], linewidth=2)
         except Exception:
             pass
 
-        plt.axvline(serie.mean(),
-                    color=self.conf_paleta['burgundy'],
-                    linestyle="--",
-                    linewidth=1.2,
-                    label=f"Media: {serie.mean():,.0f}"
-                    )
+        ax.axvline(serie.mean(), color=self.conf_paleta["burgundy"], linestyle="--",
+                   linewidth=1.5, label=f"Media: {serie.mean():,.1f}")
+        ax.axvline(serie.median(), color=self.conf_paleta["teal"], linestyle="-.",
+                   linewidth=1.5, label=f"Mediana: {serie.median():,.1f}")
 
-        plt.axvline(serie.median(),
-                    color=self.conf_paleta['teal'],
-                    linestyle="-.",
-                    linewidth=1.2,
-                    label=f"Mediana: {serie.median():,.0f}"
-                    )
+        ax.set_title(f"Distribución de {col}", fontsize=13, fontweight="bold")
+        ax.set_xlabel(col, fontsize=11)
+        ax.set_ylabel("Densidad", fontsize=11)
+        ax.legend(fontsize=9, loc="upper right", framealpha=0.7)
+        self._aplicar_estilo_ax(ax)
 
+        return self._guardar_figura(fig, f"hist_{col}.png")
 
-        plt.title(f"Histograma de {col}")
-        plt.legend(fontsize=8, loc="upper right")
-        plt.ylabel("Densidad")
-
-        return self._guardar_figura(f"hist_{col}.png")
-
-    def plot_categorica_barras(self, serie, col: str) -> Optional[str]:
-
+    def plot_categorica_barras(self, serie: pd.Series, col: str) -> Optional[str]:
+        """Barras horizontales con porcentajes y paleta IMSS secuencial."""
         serie = serie.dropna()
         if serie.empty:
             return None
 
         conteos = serie.value_counts().head(self.numero_top_columnas)
-        top_real = min(self.numero_top_columnas, len(serie.value_counts()))
-
+        top_real = len(conteos)
         porcentajes = (conteos / conteos.sum() * 100).round(1)
 
-        porcentajes_recortados = porcentajes.copy()
-        porcentajes_recortados.index = [
-            str(lbl)[:25] + ("..." if len(str(lbl)) > 25 else "")
-            for lbl in porcentajes_recortados.index
+        etiquetas = [
+            str(lbl)[:30] + ("…" if len(str(lbl)) > 30 else "")
+            for lbl in porcentajes.index
         ]
 
-        ax = sns.barplot(
-            x=porcentajes_recortados.values,
-            y=porcentajes_recortados.index,
-            hue=porcentajes_recortados.index,
-            dodge=False,
-            palette="muted",
-            legend=False
-        )
+        fig, ax = plt.subplots(figsize=(10, max(4, top_real * 0.45)))
 
-        titulo = f"Distribución porcentual de {col} - Top {top_real}"
-        ax.set_title(titulo)
-        ax.set_xlabel(None)
-        ax.set_ylabel(None)
+        n_paleta = len(self.conf_paleta_secuencial)
+        colores = (self.conf_paleta_secuencial * -(-top_real // n_paleta))[:top_real]
+        bars = ax.barh(etiquetas, porcentajes.values, color=colores,
+                       edgecolor="white", height=0.65)
 
-        plt.xticks(rotation=45, ha='right')
+        for bar, v in zip(bars, porcentajes.values):
+            ax.text(v + 0.3, bar.get_y() + bar.get_height() / 2,
+                    f"{v:.1f}%", va="center", ha="left", fontsize=9,
+                    color=self.conf_paleta["neutral_black"])
 
-        for i, v in enumerate(porcentajes_recortados.values):
-            ax.text(v + 0.5, i, f"{v}%", va="center")
+        ax.set_title(f"Top {top_real} — {col}", fontsize=13, fontweight="bold")
+        ax.set_xlabel("Porcentaje (%)", fontsize=10)
+        ax.invert_yaxis()
+        self._aplicar_estilo_ax(ax)
+        # Para barras horizontales: grid vertical, no horizontal
+        ax.yaxis.grid(False)
+        ax.xaxis.grid(True, alpha=0.25, linestyle="--",
+                      color=self.conf_paleta["cool_gray"])
 
-        return self._guardar_figura(f"barras_{col}.png")
+        return self._guardar_figura(fig, f"barras_{col}.png")
 
-    def plot_violin(self, df, col, padecimiento) -> Optional[str]:
+    def plot_violin(self, df: pd.DataFrame, col: str, padecimiento: str) -> Optional[str]:
+        """Violín por año con cuartiles visibles y paleta IMSS."""
+        if col not in df.columns or df[col].dropna().empty:
+            return None
 
-        plt.figure(figsize=(12,6))
+        anios = sorted(df["Anio"].unique())
+        n = len(anios)
+        n_paleta = len(self.conf_paleta_secuencial)
+        colores = (self.conf_paleta_secuencial * -(-n // n_paleta))[:n]
+
+        fig, ax = plt.subplots(figsize=(14, 6))
         sns.violinplot(
-            x="Anio",
-            y=col,
-            hue="Anio",
-            data=df,
-            palette="viridis",
-            inner=None,
-            cut=0
+            x="Anio", y=col, hue="Anio",
+            data=df, palette=colores,
+            inner="quart", cut=0, legend=False, ax=ax,
         )
 
-        plt.title(f"Distribución de Casos por Semana - {padecimiento} ({col})")
-        plt.xlabel(None)
-        plt.ylabel("Casos por semana")
-        plt.xticks(rotation=45)
-        plt.legend().remove()
+        sexo_label = col.replace("Acumulado_", "").capitalize()
+        ax.set_title(f"Distribución semanal de casos — {padecimiento} ({sexo_label})",
+                     fontsize=13, fontweight="bold")
+        ax.set_xlabel("Año", fontsize=11)
+        ax.set_ylabel("Casos acumulados", fontsize=11)
+        ax.tick_params(axis="x", rotation=45)
+        self._aplicar_estilo_ax(ax)
 
-        return self._guardar_figura(f"violin_{col}.png")
+        return self._guardar_figura(fig, f"violin_{col}.png")
 
-    def plot_correlacion(self, df) -> Optional[str]:
+    def plot_correlacion(self, df: pd.DataFrame) -> Optional[str]:
+        """Heatmap triangular inferior de correlación de Pearson."""
         num = df.dropna()
-        corr = num.corr()
+        if num.shape[1] < 2:
+            return None
 
-        if num.shape[1] < 2: return None
+        corr = num.corr()
         fig, ax = plt.subplots(figsize=(9, 7))
+        # k=1 → oculta triángulo superior estricto; diagonal (auto-correlación) queda visible
         mask = np.triu(np.ones_like(corr, dtype=bool), k=1)
+
         sns.heatmap(
             corr, mask=mask, annot=True, fmt=".2f", cmap="RdYlGn",
             center=0, vmin=-1, vmax=1, square=True, linewidths=0.8,
-            cbar_kws={"label": "Correlacion de Pearson", "shrink": 0.8},
-            annot_kws={"size": 10, "fontweight": "bold"}, ax=ax
+            cbar_kws={"label": "Correlación de Pearson", "shrink": 0.8},
+            annot_kws={"size": 10, "fontweight": "bold"}, ax=ax,
         )
-        plt.title("Matriz de correlación")
+        ax.set_title("Matriz de correlación", fontsize=13, fontweight="bold")
         ax.tick_params(axis="x", rotation=45)
-        fig.tight_layout()
 
-        return self._guardar_figura("correlacion.png")
+        return self._guardar_figura(fig, "correlacion.png")
 
-    def plot_box(self, serie, col: str, col_comparativa: str) -> Optional[str]:
+    # ---------- Gráficos de análisis complementarios ---------- #
 
+    def plot_box(self, serie: pd.DataFrame, col: str, col_comparativa: str) -> Optional[str]:
         if col == col_comparativa:
             return None
 
-        sns.boxplot(x=col, y=col_comparativa,
-                    data=serie,
-                    palette="Set2",
-                    hue=col,
-                    legend=False,
-                    notch=True,
-                    fliersize=1,
-                    boxprops=dict(alpha=0.7))
-        plt.title(f"Distribución de Valor por {col}")
-        plt.xlabel("")
-        plt.xticks(rotation=90)
+        fig, ax = plt.subplots()
+        sns.boxplot(
+            x=col, y=col_comparativa, data=serie,
+            palette="Set2", hue=col, legend=False,
+            notch=True, fliersize=1, boxprops=dict(alpha=0.7),
+            ax=ax,
+        )
+        ax.set_title(f"Distribución de {col_comparativa} por {col}")
+        ax.set_xlabel("")
+        ax.tick_params(axis="x", rotation=90)
+        self._aplicar_estilo_ax(ax)
 
-        return self._guardar_figura(f"box_{col}.png")
+        return self._guardar_figura(fig, f"box_{col}.png")
 
+    def serie_tiempo(self, df: pd.DataFrame, padecimiento: str,
+                     agrupamiento_sexo: bool = True,
+                     agrupamiento_entidad: bool = False) -> Optional[str]:
 
-    def serie_tiempo(self,df:pd.DataFrame ,padecimiento: str, agrupamiento_sexo: bool = True, agrupamiento_entidad: bool = False) -> Optional[str]:
-
-        ancho = 16
-        alto = 4
-
-        plt.figure(figsize=(ancho,alto))
+        fig, ax = plt.subplots(figsize=(16, 4))
+        subtitulo = ""
 
         if agrupamiento_sexo and not agrupamiento_entidad:
+            st = df.groupby("Fecha")[["incrementos_hombres", "incrementos_mujeres"]].sum()
+            ax.plot(st.index, st["incrementos_hombres"], linewidth=1.2, alpha=0.8,
+                    color=self.conf_paleta_sexo["Hombres"], label="Hombres")
+            ax.plot(st.index, st["incrementos_mujeres"], linewidth=1.2, alpha=0.8,
+                    color=self.conf_paleta_sexo["Mujeres"], label="Mujeres")
+            subtitulo = "por sexo"
 
-            serie_tiempo = df.groupby("Fecha")[["incrementos_hombres", "incrementos_mujeres"]].sum()
-
-            plt.plot(serie_tiempo.index,serie_tiempo['incrementos_hombres'],
-                 linewidth=1.2, alpha=0.8, color=self.conf_paleta_sexo["Hombres"], label="Hombres")
-            plt.plot(serie_tiempo.index,serie_tiempo['incrementos_mujeres'],
-                 linewidth=1.2, alpha=0.8, color=self.conf_paleta_sexo["Mujeres"], label="Mujeres")
-
-        if not agrupamiento_sexo and agrupamiento_entidad:
-            regiones = "region_salud_mental" # Parametrizar !!!!!!
-
-            serie_tiempo = (
-                df.groupby(["Fecha",regiones])[["incrementos_hombres", "incrementos_mujeres"]]
+        elif not agrupamiento_sexo and agrupamiento_entidad:
+            col_region = "region_salud_mental"
+            st = (
+                df.groupby(["Fecha", col_region])[["incrementos_hombres", "incrementos_mujeres"]]
                 .sum()
                 .assign(incrementos_totales=lambda g: g["incrementos_hombres"] + g["incrementos_mujeres"])
                 .reset_index()
             )
-
-            for region, datos in serie_tiempo.groupby(regiones):
-                plt.plot(
-                    datos['Fecha'],
-                    datos["incrementos_totales"],
-                    linewidth=1.2,
-                    alpha=0.8,
-                    label=region
-                )
-
+            for region, datos in st.groupby(col_region):
+                ax.plot(datos["Fecha"], datos["incrementos_totales"],
+                        linewidth=1.2, alpha=0.8, label=region)
+            subtitulo = f"por {col_region}"
 
         try:
             covid_start = pd.Timestamp("2020-03-01")
             covid_end = pd.Timestamp("2021-06-01")
-            plt.axvspan(covid_start, covid_end, alpha=0.1, color="red", label="Covid")
+            ax.axvspan(covid_start, covid_end, alpha=0.1, color="red", label="Covid")
         except Exception:
             pass
 
-        plt.xlabel("Fecha")
-        plt.ylabel("Incrementos semanales")
-        plt.title(f"Evolución semanal nacional de {padecimiento} ({regiones})")
-        plt.legend(fontsize=10)
-        plt.tight_layout()
-        plt.grid(True,color="gray", alpha=0.3, linestyle="--",linewidth=0.5)
+        ax.set_xlabel("Fecha", fontsize=11)
+        ax.set_ylabel("Incrementos semanales", fontsize=11)
+        ax.set_title(f"Evolución semanal nacional de {padecimiento} {subtitulo}".strip())
+        ax.legend(fontsize=10)
+        self._aplicar_estilo_ax(ax)
+        ax.yaxis.grid(True, alpha=0.3, color="gray", linestyle="--", linewidth=0.5)
 
-        return self._guardar_figura(f"serie_tiempo_{padecimiento}.png")
-
+        return self._guardar_figura(fig, f"serie_tiempo_{padecimiento}.png")
 
     def graficar_pronostico(
         self,

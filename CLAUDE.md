@@ -52,7 +52,7 @@ EpiForecast-MX/
 │   ├── configuraciones/            # Carga de config YAML + logger (config_params.py)
 │   ├── datos/                      # Limpieza, filtrado, FE, EDA, descarga, INEGI
 │   │   ├── clean_dataset.py        #   Limpieza de datos
-│   │   ├── filtrar_padecimiento.py #   Filtrado por padecimiento
+│   │   ├── filtro_padecimiento.py  #   Filtrado por padecimiento
 │   │   ├── preparacion.py          #   Feature engineering (outliers, agrupación, regiones)
 │   │   ├── get_inegi.py            #   Descarga datos INEGI (PxWeb + superficie)
 │   │   ├── descarga_dataset.py     #   Copia dataset base
@@ -77,7 +77,7 @@ EpiForecast-MX/
 │   ├── predice.py                  #   make predict
 │   ├── genera_reporte.py           #   make report (reporte HTML de resultados)
 │   ├── genera_bitacora.py          #   make bitacora (bitácora HTML del modelado v1-v6)
-│   ├── padecimiento.py             #   make filter
+│   ├── filtra_padecimiento.py      #   make filter
 │   ├── limpieza_dataset.py         #   make clean
 │   ├── realiza_prep.py             #   make transform
 │   ├── descarga_inegi.py           #   make get_inegi

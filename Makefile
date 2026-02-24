@@ -139,7 +139,7 @@ get_dataset:
 .PHONY: filter
 filter:
 	@echo ">>> Filtrando dataset con el padecimiento configurado..."
-	$(PYTHON_INTERPRETER) -m scripts.padecimiento
+	$(PYTHON_INTERPRETER) -m scripts.filtra_padecimiento
 	@echo ">>> Filtrado completado."
 
 # Limpia y prepara el dataset eliminando valores nulos, duplicados y formateando columnas.

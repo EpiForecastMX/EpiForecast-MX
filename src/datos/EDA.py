@@ -1,7 +1,6 @@
 # src/datos/EDA.py
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Dict, List, Optional
 
 import pandas as pd
 from loguru import logger
@@ -11,20 +10,43 @@ from src.utils import directory_manager
 from src.utils.graficos import GraficosHelper
 
 
+@dataclass
+class SeccionNota:
+    """Sección estructurada del bloque de notas del reporte PDF.
+
+    Cada proceso que construya un ReportData puede agregar una o varias
+    SeccionNota con la información que considere relevante:
+
+    Ejemplo::
+
+        nota = SeccionNota(
+            titulo="Proceso de limpieza",
+            texto="Se eliminaron filas con nulos en columnas críticas.",
+            parametros={"Filas antes": "10,000", "Filas después": "9,500"},
+        )
+        report_data.secciones_notas.append(nota)
+    """
+
+    titulo: str
+    texto: str | None = None                    # párrafo descriptivo libre
+    parametros: dict[str, str] | None = None    # se renderiza como tabla clave-valor
+    tabla: pd.DataFrame | None = None           # se renderiza como tabla de datos
+
 
 @dataclass
 class ReportData:
     titulo: str
-    subtitulo: Optional[str]
-    fuente_datos: Optional[str]
-    resumen_general: Dict[str, str]
-    resumen_datos: Optional[pd.DataFrame]
-    resumen_datos_nulos: Optional[pd.DataFrame]
-    estadisticas_numericas: Optional[pd.DataFrame]
-    estadisticas_categoricas: Optional[pd.DataFrame]
-    tablas_categoricas: Dict[str, pd.DataFrame]
-    figuras: List[str] = field(default_factory=list)
-    notas: Optional[str] = None
+    subtitulo: str | None
+    fuente_datos: str | None
+    resumen_general: dict[str, str]
+    resumen_datos: pd.DataFrame | None
+    resumen_datos_nulos: pd.DataFrame | None
+    estadisticas_numericas: pd.DataFrame | None
+    estadisticas_categoricas: pd.DataFrame | None
+    tablas_categoricas: dict[str, pd.DataFrame]
+    figuras: list[str] = field(default_factory=list)
+    notas: str | None = None                              # texto libre (compatibilidad)
+    secciones_notas: list[SeccionNota] = field(default_factory=list)  # secciones estructuradas
 
 
 class EDAReportBuilder:
@@ -56,7 +78,7 @@ class EDAReportBuilder:
         logger.debug(f"Las imágenes se guardarán en: {self.carpeta_salida}")
 
     # ------------------ Resúmenes ------------------
-    def resumen_general(self) -> Dict[str, str]:
+    def resumen_general(self) -> dict[str, str]:
 
         logger.debug("Generando resumen general de los datos...")
 
@@ -120,7 +142,7 @@ class EDAReportBuilder:
 
 
     # ------------------ Estadísticas de valores numéricos ------------------
-    def estadisticas_numericas(self) -> Optional[pd.DataFrame]:
+    def estadisticas_numericas(self) -> pd.DataFrame | None:
 
         logger.debug("Generando estadísticas de columnas numéricas...")
 
@@ -145,7 +167,7 @@ class EDAReportBuilder:
     
 
     # ------------------ Estadísticas de valores categoricos ------------------
-    def estadisticas_categoricas(self) -> Optional[pd.DataFrame]:
+    def estadisticas_categoricas(self) -> pd.DataFrame | None:
         
         logger.debug("Generando estadísticas de columnas categóricas...")
         
@@ -174,7 +196,7 @@ class EDAReportBuilder:
         return pd.DataFrame(resumen).set_index("columna")
 
 
-    def tablas_categoricas(self) -> Dict[str, pd.DataFrame]:
+    def tablas_categoricas(self) -> dict[str, pd.DataFrame]:
 
         logger.debug("Generando tablas de frecuencias para columnas categóricas...")
         cat = self.opciones_reporte['COLS_CATEGORICAS']
@@ -198,16 +220,16 @@ class EDAReportBuilder:
 
 
     # ------------------ Gráficos ------------------
-    def plot_histograma(self, col: str, tono: int) -> Optional[str]:
+    def plot_histograma(self, col: str, tono: int) -> str | None:
         return self.graficos_helper.plot_histograma(self.df[col], col, tono)
 
-    def plot_categorica_barras(self, col: str) -> Optional[str]:
+    def plot_categorica_barras(self, col: str) -> str | None:
         return self.graficos_helper.plot_categorica_barras(self.df[col], col)
     
-    def plot_violin(self,sexo,padecimiento) -> Optional[str]:
+    def plot_violin(self, sexo, padecimiento) -> str | None:
         return self.graficos_helper.plot_violin(self.df,sexo,padecimiento)
     
-    def plot_correlacion(self) -> Optional[str]:
+    def plot_correlacion(self) -> str | None:
         return self.graficos_helper.plot_correlacion(self.df[self.opciones_reporte['COLS_NUMERICAS']])
 
 
@@ -218,24 +240,26 @@ class EDAReportBuilder:
         for tono, col in enumerate(self.opciones_reporte['COLS_NUMERICAS']):
             logger.debug(f"Generando histograma para la columna numérica: '{col}'")
             ruta = self.plot_histograma(col, tono)
-            if ruta: figuras.append(ruta)
+            if ruta:
+                figuras.append(ruta)
 
         for col in self.opciones_reporte['COLS_CATEGORICAS']:
             logger.debug(f"Generando gráfico de barras para la columna categórica: '{col}'")
             ruta = self.plot_categorica_barras(col)
-            if ruta: figuras.append(ruta)
+            if ruta:
+                figuras.append(ruta)
 
         if self.genera_violin:
-            acumulados_sexo = ["Acumulado_hombres", "Acumulado_mujeres"]
-            for sexo in acumulados_sexo:
+            for sexo in ["Acumulado_hombres", "Acumulado_mujeres"]:
                 logger.debug(f"Generando gráfico de violín para la columna numérica: '{sexo}'")
-                ruta = self.plot_violin(sexo,self.opciones_reporte["filtro_padecimiento"])
-                if ruta: figuras.append(ruta)
+                ruta = self.plot_violin(sexo, self.opciones_reporte["filtro_padecimiento"])
+                if ruta:
+                    figuras.append(ruta)
 
         corr = self.plot_correlacion()
         logger.debug("Generando matriz de correlación para columnas numéricas.")
-        if corr: figuras.append(corr)
-
+        if corr:
+            figuras.append(corr)
 
         return ReportData(
             titulo=self.opciones_reporte['titulo_reporte'],
@@ -248,5 +272,5 @@ class EDAReportBuilder:
             estadisticas_categoricas=self.estadisticas_categoricas(),
             tablas_categoricas=self.tablas_categoricas(),
             figuras=figuras,
-            notas=self.notas
+            notas=self.notas,
         )

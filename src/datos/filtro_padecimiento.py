@@ -1,4 +1,4 @@
-# src/datos/filtrar_padecimiento.py
+# src/datos/filtro_padecimiento.py
 import pandas as pd
 
 from loguru import logger
@@ -23,19 +23,22 @@ class FiltraPadecimiento:
             return False
 
         if self.columna not in self.df_raw.columns:
-            logger.error(f"No se puede filtrar: la columna '{self.columna}' no existe en el DataFrame.")
+            logger.error("No se puede filtrar: la columna '{}' no existe en el DataFrame.", self.columna)
             return False
-        
+
         if not self.padecimiento:
             logger.error("No se puede filtrar: el tipo de padecimiento no está definido.")
             return False
 
-        if self.padecimiento.lower() == 'general':
-            logger.info("Tipo 'General' configurado: se retornan todos los registros sin filtrar.")
+        if self.padecimiento.lower() == "general":
+            logger.info(
+                "Tipo 'General' configurado: se retornan todos los registros sin filtrar | total={}",
+                len(self.df_raw),
+            )
             self.df_raw_filtrado = self.df_raw.copy()
             return True
 
-        logger.info(f"Filtrando por '{self.padecimiento}' en columna '{self.columna}'")
+        logger.info("Filtrando por '{}' en columna '{}'", self.padecimiento, self.columna)
 
         self.df_raw_filtrado = self.df_raw[
             self.df_raw[self.columna]
@@ -47,25 +50,24 @@ class FiltraPadecimiento:
 
     def run(self) -> pd.DataFrame:
 
-        if self._filtrar_padecimiento():
-            total_registros = len(self.df_raw)
-            filtrados = len(self.df_raw_filtrado)
-
-            if filtrados == 0:
-                logger.error(
-                    f"Sin resultados: ningún registro coincide con '{self.padecimiento}'."
-                )
-                return None
-
-            if filtrados == total_registros:
-                logger.info(f"Sin filtrado aplicado. Total de registros: {filtrados:,}")
-                return self.df_raw_filtrado
-
-            logger.success(
-                f"Filtrado completado: {filtrados:,} de {total_registros:,} registros "
-                f"({(filtrados/total_registros)*100:.2f}%)"
-            )
-            return self.df_raw_filtrado
-
-        else:
+        if not self._filtrar_padecimiento():
             return None
+
+        total_registros = len(self.df_raw)
+        filtrados = len(self.df_raw_filtrado)
+
+        if filtrados == 0:
+            logger.error(
+                "Sin resultados: ningún registro coincide con '{}'.", self.padecimiento
+            )
+            return None
+
+        if filtrados < total_registros:
+            logger.success(
+                "Filtrado completado | registros={:,} de {:,} ({:.2f}%)",
+                filtrados,
+                total_registros,
+                (filtrados / total_registros) * 100,
+            )
+
+        return self.df_raw_filtrado
