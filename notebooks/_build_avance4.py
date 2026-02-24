@@ -256,9 +256,16 @@ for _pad in ['Alzheimer', 'Depresion', 'Parkinson']:
 df_prophet = pd.concat(dfs, ignore_index=True)
 df_prophet['sexo'] = df_prophet['sexo'].map(_sex_map)
 
-# Clasificar nivel
-df_prophet['_nivel'] = df_prophet['nivel'].fillna('estatal')
-df_prophet.loc[df_prophet['_nivel'] == '', '_nivel'] = 'estatal'
+# Clasificar nivel real: nacional / estatal / regional_fallback
+# En el CSV: nivel=nacional (3 nac), nivel=regional (estados + regiones reales)
+# Regiones reales tienen Entidad que empieza con 'region_'
+def _classify(row):
+    if row['nivel'] == 'nacional':
+        return 'nacional'
+    if pd.notna(row.get('Entidad')) and str(row['Entidad']).startswith('region_'):
+        return 'regional'
+    return 'estatal'
+df_prophet['_nivel'] = df_prophet.apply(_classify, axis=1)
 
 # --- 2. SageMaker Excel (7 hojas) ---
 _XL = SAGEMAKER / 'EpiForecast_v5_full_Analisis.xlsx'
