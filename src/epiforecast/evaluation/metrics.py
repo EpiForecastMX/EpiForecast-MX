@@ -1,60 +1,66 @@
-"""Forecasting evaluation metrics (MAPE, RMSE, MAE, MDAPE, MASE)."""
+# src/epiforecast/evaluation/metrics.py
+"""Forecasting evaluation metrics.
+
+All functions accept numpy arrays and return scalar floats.
+MASE additionally requires training data for naive baseline.
+"""
+
+from __future__ import annotations
 
 import numpy as np
-import pandas as pd
-from sklearn.metrics import (
-    mean_absolute_error,
-    mean_absolute_percentage_error,
-    mean_squared_error,
-)
+from numpy.typing import ArrayLike
 
 
-def rmse(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+def rmse(y_true: ArrayLike, y_pred: ArrayLike) -> float:
     """Root Mean Squared Error."""
-    return float(np.sqrt(mean_squared_error(y_true, y_pred)))
+    y_true, y_pred = np.asarray(y_true, dtype=float), np.asarray(y_pred, dtype=float)
+    return float(np.sqrt(np.mean((y_true - y_pred) ** 2)))
 
 
-def mae(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+def mae(y_true: ArrayLike, y_pred: ArrayLike) -> float:
     """Mean Absolute Error."""
-    return float(mean_absolute_error(y_true, y_pred))
+    y_true, y_pred = np.asarray(y_true, dtype=float), np.asarray(y_pred, dtype=float)
+    return float(np.mean(np.abs(y_true - y_pred)))
 
 
-def mape(y_true: np.ndarray, y_pred: np.ndarray, cap: float = 999.0) -> float:
-    """Mean Absolute Percentage Error (capped)."""
-    return float(min(mean_absolute_percentage_error(y_true, y_pred) * 100, cap))
+def mape(y_true: ArrayLike, y_pred: ArrayLike) -> float:
+    """Mean Absolute Percentage Error (%).
+
+    Zeros in y_true are excluded to avoid division by zero.
+    Returns percentage (e.g., 6.11 not 0.0611).
+    """
+    y_true, y_pred = np.asarray(y_true, dtype=float), np.asarray(y_pred, dtype=float)
+    mask = y_true != 0
+    if not mask.any():
+        return 0.0
+    return float(np.mean(np.abs((y_true[mask] - y_pred[mask]) / y_true[mask])) * 100)
 
 
 def mase(
-    y_true: np.ndarray,
-    y_pred: np.ndarray,
-    y_train: np.ndarray,
-    seasonal_period: int = 52,
+    y_true: ArrayLike,
+    y_pred: ArrayLike,
+    y_train: ArrayLike,
+    season: int = 52,
 ) -> float | None:
-    """Mean Absolute Scaled Error (vs seasonal naive baseline).
+    """Mean Absolute Scaled Error vs seasonal naive (lag = season).
 
-    MASE < 1 means model beats the naive seasonal baseline (lag=seasonal_period).
-    Returns None if training data is too short for seasonal naive.
+    MASE < 1: better than naive seasonal.
+    MASE = 1: equal to naive seasonal.
+    MASE > 1: worse than naive seasonal.
+
+    Returns None if training series too short for seasonal naive.
     """
-    if len(y_train) <= seasonal_period:
+    y_true = np.asarray(y_true, dtype=float)
+    y_pred = np.asarray(y_pred, dtype=float)
+    y_train = np.asarray(y_train, dtype=float)
+
+    if len(y_train) <= season:
         return None
-    mae_model = mean_absolute_error(y_true, y_pred)
-    mae_naive = float(np.mean(np.abs(y_train[seasonal_period:] - y_train[:-seasonal_period])))
+
+    mae_model = float(np.mean(np.abs(y_true - y_pred)))
+    mae_naive = float(np.mean(np.abs(y_train[season:] - y_train[:-season])))
+
     if mae_naive == 0:
         return None
+
     return float(mae_model / mae_naive)
-
-
-def compute_all(
-    y_true: np.ndarray,
-    y_pred: np.ndarray,
-    y_train: np.ndarray | None = None,
-) -> dict[str, float | None]:
-    """Compute all metrics at once."""
-    result = {
-        "rmse": rmse(y_true, y_pred),
-        "mae": mae(y_true, y_pred),
-        "mape": mape(y_true, y_pred),
-    }
-    if y_train is not None:
-        result["mase"] = mase(y_true, y_pred, y_train)
-    return result
