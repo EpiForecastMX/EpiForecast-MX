@@ -155,15 +155,15 @@ model-pipeline: train models-push predict report forecast-push
 ## Lint: verificar formato y calidad
 .PHONY: lint
 lint:
-	ruff format --check
-	ruff check
+	ruff format --check src/epiforecast/ tests/
+	ruff check src/epiforecast/ tests/
 	@echo ">>> Lint passed."
 
 ## Format: auto-formatear código
 .PHONY: format
 format:
-	ruff check --fix
-	ruff format
+	ruff check --fix src/epiforecast/ tests/
+	ruff format src/epiforecast/ tests/
 	@echo ">>> Formatted."
 
 ## Type check con mypy
