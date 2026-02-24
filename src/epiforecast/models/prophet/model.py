@@ -154,7 +154,7 @@ class ProphetForecaster(ForecastModel):
 
         future = self._model.make_future_dataframe(periods=horizon, freq="W-MON")
         forecast = self._model.predict(future)
-        return forecast[["ds", "yhat", "yhat_lower", "yhat_upper"]]
+        return forecast[["ds", "yhat", "yhat_lower", "yhat_upper"]]  # type: ignore[no-any-return]
 
     def cross_validate(self, data: pd.DataFrame) -> dict[str, float]:
         """Run cross-validation. Delegates to ProphetCrossValidator."""

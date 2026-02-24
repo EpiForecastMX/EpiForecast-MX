@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import platform
 import sys
+from typing import Any, cast
 
 from loguru import logger
 from omegaconf import OmegaConf
@@ -21,10 +22,10 @@ except FileNotFoundError as e:
     sys.exit(1)
 
 
-conf = OmegaConf.merge(
+_merged = OmegaConf.merge(
     conf_params, conf_rutas, conf_logging, conf_reportes, conf_limpieza, conf_FE, conf_train
 )
-conf = OmegaConf.to_container(conf, resolve=True)
+conf: dict[str, Any] = cast(dict[str, Any], OmegaConf.to_container(_merged, resolve=True))
 
 # Configurar logger según YAML
 if "logging" in conf:

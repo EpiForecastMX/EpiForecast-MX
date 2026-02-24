@@ -43,7 +43,7 @@ class FiltraPadecimiento:
 
         return True
 
-    def run(self) -> pd.DataFrame:
+    def run(self) -> pd.DataFrame | None:
         if not self._filtrar_padecimiento():
             return None
 

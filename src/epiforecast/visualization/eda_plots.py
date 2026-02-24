@@ -125,7 +125,7 @@ class EDAReportBuilder:
         return df_unicos
 
     # ------------------ Resumen de valores nulos ------------------
-    def resumen_nulos(self) -> pd.DataFrame:
+    def resumen_nulos(self) -> pd.DataFrame | None:
         logger.debug("Generando resumen de valores nulos por columna...")
 
         df_nulos = (

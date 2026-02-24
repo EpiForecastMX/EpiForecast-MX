@@ -142,19 +142,21 @@ class ProphetTuner:
         """Load condition-specific HP grid from config."""
         df = self.forecaster.df
         tipo = df["Padecimiento"].iloc[0] if "Padecimiento" in df.columns else None
-        grid_key = _GRID_KEY_MAP.get(tipo)
+        grid_key = _GRID_KEY_MAP.get(tipo)  # type: ignore[arg-type]
         if grid_key is None:
             raise ValueError(
                 f"param_grid_prophet no definido para padecimiento='{tipo}'. "
                 f"Valores válidos: {list(_GRID_KEY_MAP)}"
             )
         logger.info("Grid de hiperparámetros: {} ({})", tipo, grid_key)
-        return conf["param_grid_prophet"][grid_key]
+        return conf["param_grid_prophet"][grid_key]  # type: ignore[no-any-return]
 
     def _build_sorted_combos(self) -> list[dict]:
         """Build all HP combinations, sorted by cp descending (Layer 1)."""
         keys = self.param_grid.keys()
-        combos = [dict(zip(keys, v, strict=False)) for v in itertools.product(*self.param_grid.values())]
+        combos = [
+            dict(zip(keys, v, strict=False)) for v in itertools.product(*self.param_grid.values())
+        ]
         combos.sort(key=lambda p: p.get("changepoint_prior_scale", 0), reverse=True)
         return combos
 

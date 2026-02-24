@@ -1,3 +1,5 @@
+from typing import Literal
+
 import matplotlib.pyplot as plt
 import pandas as pd
 from rich.console import Console
@@ -21,7 +23,9 @@ def _print_df(df: pd.DataFrame, title: str, max_rows: int = 10, nd: int = 2):
     dfx = df.head(max_rows).copy()
     t = Table(title=title, show_lines=False)
     for c in dfx.columns:
-        justify = "right" if pd.api.types.is_numeric_dtype(dfx[c]) else "left"
+        justify: Literal["default", "left", "center", "right", "full"] = (
+            "right" if pd.api.types.is_numeric_dtype(dfx[c]) else "left"
+        )
         t.add_column(str(c), justify=justify, overflow="fold")
     for _, row in dfx.iterrows():
         t.add_row(*[_fmt(row[c], nd=nd) for c in dfx.columns])

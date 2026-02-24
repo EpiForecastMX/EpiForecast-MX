@@ -10,7 +10,7 @@ from src.epiforecast.utils.config import conf, logger
 class MapeaInegi:
     def __init__(self, df: pd.DataFrame):
         self.df = df.copy()
-        conf_paths = conf.get("data")
+        conf_paths = conf["data"]
         self.inegi_path = conf_paths["inegi"]
         self.final_path = conf_paths["data_inegi"]
         self.xlsx_path = conf_paths["xlsx_inegi"]

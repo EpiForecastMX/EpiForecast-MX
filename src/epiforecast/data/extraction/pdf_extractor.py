@@ -1,5 +1,6 @@
 import os
 import re
+from typing import Any
 
 import camelot
 import pandas as pd
@@ -101,7 +102,7 @@ def pad_prev_year_cols(df: pd.DataFrame, keywords: list[str]) -> pd.DataFrame:
     if df.shape[1] != no_prev:
         return df  # ya trae año anterior, o viene raro (lo manejas aparte)
 
-    out = {}
+    out: dict[int, Any] = {}
     out[0] = df[0]  # Entidad
 
     for i, kw in enumerate(keywords):

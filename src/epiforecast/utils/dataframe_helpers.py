@@ -1,5 +1,7 @@
 # src/utils/datos.py
 
+from typing import Literal
+
 import numpy as np
 import pandas as pd
 
@@ -17,7 +19,7 @@ class OperacionesDatos:
         df: pd.DataFrame,
         col: str,
         factor: float = 1.5,
-        interpolation: str = "linear",
+        interpolation: Literal["linear", "lower", "higher", "midpoint", "nearest"] = "linear",
     ) -> dict[str, float]:
         """
         Calcula Q1, Q3, IQR y límites (inferior/superior) para una columna específica.
@@ -55,7 +57,7 @@ class OperacionesDatos:
         df: pd.DataFrame,
         col: str,
         factor: float = 1.5,
-        interpolation: str = "linear",
+        interpolation: Literal["linear", "lower", "higher", "midpoint", "nearest"] = "linear",
     ) -> tuple[pd.DataFrame, list]:
         """
         Devuelve un DataFrame con las filas que son outliers por IQR en la columna 'col'.
@@ -73,6 +75,7 @@ class OperacionesDatos:
 
         return df_out, metadatos
 
+    @staticmethod
     def zscore(
         df: pd.DataFrame, columna: str, agrupacion: list, umbral: float = 3, reemplazo="media"
     ):

@@ -10,9 +10,9 @@ from src.epiforecast.utils.dataframe_helpers import OperacionesDatos
 class dataTransformation:
     def __init__(self, df: pd.DataFrame):
         self.df = df.copy()
-        self.df_agrupado = pd.DataFrame
-        self.opciones = conf.get("opciones_FE")
-        self.regiones = conf.get("regiones")
+        self.df_agrupado: pd.DataFrame = pd.DataFrame()
+        self.opciones = conf.get("opciones_FE", [])
+        self.regiones = conf.get("regiones", [])
 
         self.raw_data_filter = conf.get("data", {}).get("data_prepare")
         self.agrupamiento = str(self.get_opcion("agrupa").get("valor", "")).strip().lower()
@@ -191,7 +191,7 @@ class dataTransformation:
         for columna in columnas:
             stats = (
                 self.df.groupby(agrupacion, sort=False)
-                .apply(
+                .apply(  # type: ignore[call-overload]
                     lambda g: pd.Series(
                         (
                             lambda met: {

@@ -140,7 +140,7 @@ def generar_graficos_pronostico() -> None:
             nombre_archivo=nombre_archivo,
             metricas=metricas,
         )
-        logger.info("[{}/{}] Guardado: {}", i + 1, total, Path(ruta).name)
+        logger.info("[{}/{}] Guardado: {}", i + 1, total, Path(ruta).name)  # type: ignore[operator]
 
     logger.success("Gráficos generados: {} → {}", total, forecast_root)
 

@@ -117,7 +117,11 @@ class GraficosHelper:
         n_paleta = len(self.conf_paleta_secuencial)
         colores = (self.conf_paleta_secuencial * -(-top_real // n_paleta))[:top_real]
         bars = ax.barh(
-            etiquetas, porcentajes.values, color=colores, edgecolor="white", height=0.65
+            etiquetas,
+            porcentajes.values,  # type: ignore[arg-type]
+            color=colores,
+            edgecolor="white",
+            height=0.65,
         )
 
         for bar, v in zip(bars, porcentajes.values):
@@ -288,7 +292,7 @@ class GraficosHelper:
         try:
             covid_start = pd.Timestamp("2020-03-01")
             covid_end = pd.Timestamp("2021-06-01")
-            ax.axvspan(covid_start, covid_end, alpha=0.1, color="red", label="Covid")
+            ax.axvspan(covid_start, covid_end, alpha=0.1, color="red", label="Covid")  # type: ignore[arg-type]
         except Exception:
             pass
 
@@ -384,11 +388,11 @@ class GraficosHelper:
         # ── 2. Franja COVID-19 ──────────────────────────────────────────
         covid_ini = pd.Timestamp(self.conf_covid["inicio"])
         covid_fin = pd.Timestamp(self.conf_covid["fin"])
-        ax.axvspan(covid_ini, covid_fin, alpha=0.07, color="#E53935", zorder=0)
+        ax.axvspan(covid_ini, covid_fin, alpha=0.07, color="#E53935", zorder=0)  # type: ignore[arg-type]
         mid_covid = covid_ini + (covid_fin - covid_ini) / 2
         ax.annotate(
             "COVID-19",
-            xy=(mid_covid, 1.0),
+            xy=(mid_covid, 1.0),  # type: ignore[arg-type]
             xycoords=("data", "axes fraction"),
             fontsize=7,
             fontweight="bold",
@@ -484,14 +488,14 @@ class GraficosHelper:
         fecha_corte = pd.Timestamp(conf["FECHA_CORTE_ENTRENAMIENTO"])
 
         ax.axvspan(
-            fecha_corte,
+            fecha_corte,  # type: ignore[arg-type]
             fecha_max_datos,
             alpha=0.06,
             color=c_gray,
             zorder=0,
         )
         ax.axvline(
-            fecha_corte,
+            fecha_corte,  # type: ignore[arg-type]
             color=c_gray,
             ls=":",
             lw=1.2,
@@ -500,7 +504,7 @@ class GraficosHelper:
         )
         ax.annotate(
             "Entrenamiento",
-            xy=(fecha_corte, 0.88),
+            xy=(fecha_corte, 0.88),  # type: ignore[arg-type]
             xycoords=("data", "axes fraction"),
             fontsize=7.5,
             color=c_gray,
@@ -509,7 +513,7 @@ class GraficosHelper:
         )
         ax.annotate(
             "Prueba CV",
-            xy=(fecha_corte, 0.88),
+            xy=(fecha_corte, 0.88),  # type: ignore[arg-type]
             xycoords=("data", "axes fraction"),
             fontsize=7.5,
             color=c_gray,

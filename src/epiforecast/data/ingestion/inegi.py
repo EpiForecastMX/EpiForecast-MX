@@ -138,7 +138,7 @@ class GetInegi:
             logger.info(
                 "PxWeb OK | status={} | bytes={}", resp.status_code, len(resp.content or b"")
             )
-            return data
+            return data  # type: ignore[no-any-return]
 
         except requests.RequestException as ex:
             logger.exception("PxWeb error HTTP/red: {}", ex)

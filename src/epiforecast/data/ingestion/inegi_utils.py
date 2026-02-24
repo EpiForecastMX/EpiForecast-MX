@@ -130,7 +130,7 @@ def descargar_jsonstat_pxweb(db: str, tabla_px: str, consulta: dict, timeout: in
 
     resp = requests.post(url, headers=headers, json=consulta, timeout=timeout)
     resp.raise_for_status()
-    return resp.json()
+    return resp.json()  # type: ignore[no-any-return]
 
 
 # ========= Conversión JSON-STAT v2 -> DataFrame =========
