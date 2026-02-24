@@ -1,0 +1,10 @@
+columnas_eliminar:
+  - 'Acumulado_anio_anterior'
+  - 'Casos_semana'
+
+valores_sustituir:
+  - columna_objetivo: "Entidad"
+    texto_a_reemplazar: "Distrito Federal"
+    texto_sustituto: "Ciudad de México"
+
+registros_eliminar:

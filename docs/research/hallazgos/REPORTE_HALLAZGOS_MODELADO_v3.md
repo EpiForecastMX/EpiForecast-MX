@@ -1,0 +1,231 @@
+# Reporte de Hallazgos — Modelado Prophet v6
+
+**Fecha:** 2026-02-21
+**Modelos entrenados:** 297 estatales + fallback regionales (modo hibrido)
+**Tiempo total estimado:** ~45 minutos (n_jobs=-2, joblib loky)
+**Horizonte de prediccion:** 52 semanas
+
+---
+
+## 1. Resumen Ejecutivo
+
+### Cambios v5 → v6
+
+| Cambio | Descripcion | Impacto |
+|---|---|---|
+| **MASE** | Nueva metrica escala-independiente en CV | Evalua si modelo supera baseline naive lag-52 |
+| **Modo hibrido** | Fallback regional para estados insuficientes | Elimina predicciones planas en 41 modelos |
+| **Fix normalizar()** | Sanitiza `/` en nombres de region | Evita error de ruta en "Rural / dispersa" |
+
+### Metricas v5 vs v6
+
+| Metrica | v5 | v6 | Cambio |
+|---|---|---|---|
+| Modelos insuficientes (sin prediccion util) | 41 | **0** | -100% |
+| Cobertura estatal con prediccion informada | 86% | **100%** | +14pp |
+| Metricas de CV | RMSE, MAE, MAPE | RMSE, MAE, MAPE, **MASE** | +1 metrica |
+
+### Resultados reales del entrenamiento v6
+
+| Padecimiento | Modelos | Insuficientes | Fallback | RMSE medio | MASE medio |
+|---|---|---|---|---|---|
+| Alzheimer | 99 + 9 regionales | 36 | 36 | 0.027 | 0.74 |
+| Depresion | 99 | 0 | 0 | 0.183 | 0.80 |
+| Parkinson | 99 + 6 regionales | 5 | 5 | 0.057 | 0.75 |
+
+- **MASE < 1** en los tres padecimientos → todos los modelos superan baseline naive estacional
+- 15 modelos regionales de fallback entrenados (9 Alzheimer + 6 Parkinson)
+- Tiempo total: ~45 minutos con n_jobs=-2 (joblib loky)
+
+---
+
+## 2. Nueva Metrica: MASE (Mean Absolute Scaled Error)
+
+### 2.1 Definicion
+
+```
+MASE = MAE_modelo / MAE_naive_seasonal
+```
+
+Donde `MAE_naive_seasonal` es el error medio absoluto de un baseline naive con lag de 52 semanas (prediccion = valor de hace 1 ano).
+
+### 2.2 Interpretacion
+
+| MASE | Significado |
+|---|---|
+| < 1.0 | Modelo es **mejor** que el baseline naive estacional |
+| = 1.0 | Modelo es **igual** al baseline naive |
+| > 1.0 | Modelo es **peor** que el baseline naive |
+
+### 2.3 Ventajas sobre MAPE
+
+- **Escala-independiente:** funciona igual para series con valores grandes y pequenos
+- **Funciona con ceros:** MAPE explota cuando `y=0`; MASE no tiene ese problema
+- **Baseline interpretable:** compara contra un predictor concreto (naive lag-52), no contra una escala arbitraria
+- **Recomendado por Hyndman & Koehler (2006)** como metrica principal para series de tiempo
+
+### 2.4 Implementacion
+
+- Se computa en cada fold de CV usando los datos de entrenamiento del fold
+- Se requieren >52 observaciones en el fold de entrenamiento (siempre se cumple con series de 500+ semanas)
+- Se promedia con los mismos `cv_weights` progresivos que RMSE/MAE/MAPE
+- Si `MAE_naive = 0` (serie constante), MASE retorna `None`
+- Columna `mase` agregada al CSV de resultados (`_completo.csv`)
+
+---
+
+## 3. Modo Hibrido — Fallback Regional
+
+### 3.1 Problema
+
+En v5, 41 modelos estatales (36 Alzheimer + 5 Parkinson) tenian `confianza: "insuficiente"` (promedio < 0.5 casos/semana). Estos modelos se entrenaban con params default (sin CV) y producian predicciones casi planas, sin valor predictivo real.
+
+### 3.2 Solucion
+
+El **modo hibrido** combina modelos estatales (para estados con datos suficientes) con modelos regionales de fallback (para estados insuficientes):
+
+1. **Entrenamiento estatal normal** — como en v5, 297 modelos por estado x sexo
+2. **Identificacion de insuficientes** — estados con promedio < 0.5 casos/semana
+3. **Agrupacion por region INEGI** — se identifican las regiones afectadas
+4. **Entrenamiento regional** — se entrenan modelos Prophet por region INEGI (agrupando todos los estados de la region)
+5. **Prediccion con desnormalizacion estatal** — el modelo regional predice tasa por 100K; se desnormaliza con la poblacion del estado individual
+
+### 3.3 Por que funciona
+
+- El modelo regional ve **mas datos** (suma de varios estados) → serie mas robusta
+- La tasa por 100K es **escala-independiente** → una tasa regional aplica razonablemente a cada estado
+- Para estados con <0.5 casos/semana, **cualquier prediccion informada** es mejor que la prediccion plana del modelo insuficiente
+- El experimento `exp/regional-alzheimer` demostro: RMSE **3.5x mejor** que modelos estatales, y **0 insuficientes**
+
+### 3.4 Configuracion
+
+```yaml
+# config/params.yaml
+padecimiento:
+  modelado_estados: True     # modelos por estado (prerequisito)
+  modelado_hibrido: True     # activa fallback regional para insuficientes
+```
+
+### 3.5 Nombres de archivo
+
+- Modelos regionales: `Prophet_{Padecimiento}_region_{Region}_{sexo}.pkl`
+- Ejemplo: `Prophet_Alzheimer_region_Sur-Sureste_vulnerable_hombres.pkl`
+- El CSV `_completo.csv` incluye columna `usar_regional` que mapea cada modelo insuficiente a su .pkl regional
+
+### 3.6 Regiones INEGI afectadas
+
+| Region | Estados insuficientes (Alzheimer) |
+|---|---|
+| Sur-Sureste vulnerable | Campeche, Chiapas, Guerrero, Oaxaca, Quintana Roo, Tabasco, Yucatan |
+| Rural / dispersa | Aguascalientes, Colima, Durango, Nayarit, San Luis Potosi, Tlaxcala, Zacatecas |
+| Urbana media | Baja California Sur, Hidalgo, Morelos, Queretaro, Sonora, Tamaulipas |
+| Metropolitana alta | Solo algunos modelos de sexo especifico |
+
+---
+
+## 4. Experimentos Descartados
+
+### 4.1 Rolling Mean Smoothing (`exp/smoothing-sparse`)
+
+- **Hipotesis:** suavizar series sparse con rolling mean de ventana 4-8 semanas podria reducir ruido
+- **Resultado:** 0% mejora en RMSE. El log-transform ya suaviza lo necesario
+- **Conclusion:** descartado. No implementado en v6
+
+---
+
+## 5. Fix normalizar() — Sanitizacion de `/`
+
+La region INEGI "Rural / dispersa" contiene `/` que causa error al crear rutas de archivo.
+
+**Antes:** `normalizar("Rural / dispersa")` → `"Rural_/_dispersa"` (ruta invalida)
+**Despues:** `normalizar("Rural / dispersa")` → `"Rural_-_dispersa"` (ruta valida)
+
+Fix aplicado en dos funciones que deben coincidir:
+- `scripts/entrena.py` → `normalizar()`
+- `src/modelado/forecast.py` → `_normalizar_nombre()`
+
+---
+
+## 6. Estructura del CSV de Resultados (v6)
+
+Un CSV por padecimiento: `models/{Padecimiento}/Prophet_{Padecimiento}_completo.csv`
+
+| Columna | Tipo | Descripcion |
+|---|---|---|
+| `padecimiento` | str | Alzheimer, Depresion, Parkinson |
+| `sexo` | str | incrementos_hombres / incrementos_mujeres / incrementos_total |
+| `rmse` | float/null | RMSE de CV (null si insuficiente) |
+| `mae` | float/null | MAE de CV |
+| `mape` | float/null | MAPE de CV, clipeado a 999% max |
+| `mase` | float/null | **MASE de CV (nuevo v6)** — <1 = mejor que naive lag-52 |
+| `mape_confiable` | bool | False si MAPE fue clipeado a 999% |
+| `seasonality_mode` | str | additive / multiplicative |
+| `changepoint_prior_scale` | float | HP ganador de CV |
+| `seasonality_prior_scale` | float | HP ganador de CV |
+| `nivel` | str | "nacional" / "regional" |
+| `confianza` | str | "normal" / "insuficiente" |
+| `promedio_semanal` | float | Promedio casos/semana (conteo crudo) |
+| `tiempo_cv_seg` | float | Segundos en cross-validation |
+| `tiempo_train_seg` | float | Segundos en entrenamiento final |
+| `tiempo_total_seg` | float | Total segundos |
+| `Entidad` | str | Nombre del estado (solo regionales) |
+| `poblacion` | int | Poblacion usada para normalizar |
+| `normalizado` | bool | True (siempre con tasa por 100K) |
+| `archivo_modelo` | str | Nombre del .pkl generado |
+| `usar_regional` | str/null | **Nombre del .pkl regional de fallback (nuevo v6)** |
+
+---
+
+## 7. Cambios Adicionales v6
+
+### 7.1 Entrenamiento final con serie completa
+
+El modelo final (`.pkl`) ahora entrena con **toda la serie** (`self.serie`) en lugar de solo el split de entrenamiento (`self.train_data`). CV sigue usando splits para evaluar hiperparametros, pero el modelo que se guarda aprovecha todos los datos disponibles para maxima precision en produccion.
+
+**Cambio:** `prophet.py` linea 391: `modelo_final.fit(self.train_data)` → `modelo_final.fit(self.serie)`
+
+### 7.2 Remocion de holiday atipico 2016
+
+El periodo atipico 2016 (`2016-05-16`, ventana 182 dias) fue removido de `modelado.yaml` por no aportar mejora en RMSE. Solo queda el holiday de pandemia COVID-19.
+
+### 7.3 Metricas del modelo en all_forecast.csv
+
+`predice.py` ahora enriquece `all_forecast.csv` con metricas de calidad del modelo, leyendo los `_completo.csv`:
+
+| Columna nueva | Descripcion |
+|---|---|
+| `archivo_modelo_usado` | Nombre del .pkl que genero la prediccion |
+| `archivo_modelo_original` | Nombre del .pkl estatal original (puede diferir si usa fallback) |
+| `rmse_original` / `rmse_usado` | RMSE del modelo original y del modelo usado |
+| `mae_original` / `mae_usado` | MAE del modelo original y del modelo usado |
+| `mape_original` / `mape_usado` | MAPE del modelo original y del modelo usado |
+| `mase_original` / `mase_usado` | MASE del modelo original y del modelo usado |
+| `confianza_original` / `confianza_usado` | Confianza (normal/insuficiente) de ambos modelos |
+
+Esto permite que el dashboard Tableau muestre tooltips con informacion de calidad del modelo.
+
+### 7.4 Graficos con datos historicos en escala correcta
+
+`forecast.py` ahora usa la columna `y_original` (conteos crudos antes de normalizar y log-transform) para los graficos de pronostico. Esto asegura que los datos historicos esten en la misma escala que las predicciones (conteos absolutos).
+
+### 7.5 Mejoras en graficos de pronostico
+
+`graficos.py` agrega un divisor visual train/test de CV en los graficos y mejora el posicionamiento de anotaciones (COVID-19, divisor datos/pronostico) usando coordenadas de ejes en vez de coordenadas de datos.
+
+---
+
+## 8. Changelog v5 → v6
+
+| Cambio | Detalle | Impacto |
+|---|---|---|
+| MASE | Nueva metrica en CV y CSV | Evalua vs baseline naive lag-52 |
+| Modo hibrido | Fallback regional para insuficientes | 41 modelos con prediccion informada |
+| Fix normalizar() | `"/"` → `"-"` en nombres de region | Evita error de ruta |
+| Columna `mase` | En `_completo.csv` | Metrica adicional para evaluacion |
+| Columna `usar_regional` | En `_completo.csv` | Mapea insuficiente → .pkl regional |
+| `modelado_hibrido` | Nuevo parametro en `params.yaml` | Activa/desactiva fallback |
+| Serie completa en train | `fit(self.serie)` en vez de `fit(self.train_data)` | Modelo final mas preciso |
+| Remocion atipico 2016 | Comentado en `modelado.yaml` | Sin mejora en RMSE |
+| Metricas en forecast | rmse/mae/mape/mase/confianza en `all_forecast.csv` | Tooltips Tableau |
+| Graficos y_original | Usa conteos crudos para historico | Misma escala que predicciones |
+| Divisor CV train/test | Linea visual en graficos de pronostico | Mejor legibilidad |

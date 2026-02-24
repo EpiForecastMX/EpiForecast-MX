@@ -1,0 +1,34 @@
+paths:
+  data: "./data"
+  raw: "${paths.data}/raw" 
+  interim: "${paths.data}/interim"
+  processed: "${paths.data}/processed"
+  external: "${paths.data}/external"
+  prediction: "${paths.data}/prediction"
+  synthetic: "${paths.data}/synthetic"
+  models: "./models"
+  reports: "./reports"
+  figures: "${paths.reports}/figures"
+  docs: "${paths.reports}/docs"
+  utils: "${paths.data}/utils"
+  forecast: "./forecast"
+
+download:
+  dataset_id: "1zFpeQewhh-otoCSMo0OoTc5yGzQlCxRv?"
+  cookies: "use_cookies"
+  force: False  # True: Fuerza la descarga, si el RAW existe, se elimina y se vuelve a descargar.
+
+
+data:
+  boletin: "${paths.processed}/dataset_boletin_epidemiologico.csv"
+  raw_data_file: "${paths.raw}/data_raw.csv"
+  raw_data_filter: "${paths.raw}/data_raw_${padecimiento.tipo}.csv"
+  interim_data_file: "${paths.interim}/data_clean.csv"
+  interim_stage_transformed: "${paths.interim}/data_stage_transformed.csv"
+  data_prepare: "${paths.processed}/data_prepare_${padecimiento.tipo}.csv"
+  inegi: "${paths.utils}/inegi.csv"
+  data_inegi: "${paths.processed}/data_inegi_${padecimiento.tipo}.csv"
+  xlsx_inegi: "${paths.processed}/EpiForecast-MX.xlsx"
+  model_train: "${paths.models}/"
+  forecast: "${paths.forecast}/all_forecast.csv"
+  tableau: "${paths.processed}/tableau.csv"
