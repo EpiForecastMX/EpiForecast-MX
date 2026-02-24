@@ -234,6 +234,7 @@ ESTADOS_32 = [
 def save_fig(fig, name, dpi=150):
     path = FIGDIR / f'{name}.png'
     fig.savefig(path, dpi=dpi, bbox_inches='tight', facecolor='white')
+    plt.show()
     plt.close(fig)
     print(f'  Guardado: {path}')
 
