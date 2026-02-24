@@ -1,13 +1,12 @@
 # src/datos/get_inegi.py
-import requests
 import pandas as pd
+import requests
 
-from src.epiforecast.utils.config import conf, logger
 from src.epiforecast.utils import paths as directory_manager
+from src.epiforecast.utils.config import conf, logger
 
 
 class GetInegi:
-
     def __init__(self, forzar=False):
         self.sobreescribe = forzar
         self.utils_path = conf["paths"]["utils"]
@@ -23,12 +22,12 @@ class GetInegi:
         self.QUERY = {
             "query": [
                 # 0 = Total nacional, 1..32 = estados
-                {"code": "Entidad federativa",
-                 "selection": {"filter": "item", "values": [str(i) for i in range(1, 33)]}},
-                {"code": "Periodo",
-                 "selection": {"filter": "item", "values": ["4", "5", "3"]}},
-                {"code": "Sexo",
-                 "selection": {"filter": "item", "values": ["0", "1", "2"]}},
+                {
+                    "code": "Entidad federativa",
+                    "selection": {"filter": "item", "values": [str(i) for i in range(1, 33)]},
+                },
+                {"code": "Periodo", "selection": {"filter": "item", "values": ["4", "5", "3"]}},
+                {"code": "Sexo", "selection": {"filter": "item", "values": ["0", "1", "2"]}},
             ],
             "response": {"format": "json-stat"},
         }
@@ -42,17 +41,37 @@ class GetInegi:
         )
 
         self.ESTADOS_DICT = {
-            "Ags.": "Aguascalientes", "BC": "Baja California", "BCS": "Baja California Sur",
-            "Camp.": "Campeche", "Chih.": "Chihuahua", "Chis.": "Chiapas",
-            "CDMX": "Ciudad de México", "Coah.": "Coahuila de Zaragoza", "Col.": "Colima",
-            "Dgo.": "Durango", "Gto.": "Guanajuato", "Gro.": "Guerrero",
-            "Hgo.": "Hidalgo", "Jal.": "Jalisco", "Mex.": "México",
-            "Mich.": "Michoacán de Ocampo", "Mor.": "Morelos", "Nay.": "Nayarit",
-            "NL": "Nuevo León", "Oax.": "Oaxaca", "Pue.": "Puebla",
-            "Qro.": "Querétaro", "Q. Roo": "Quintana Roo", "SLP": "San Luis Potosí",
-            "Sin.": "Sinaloa", "Son.": "Sonora", "Tab.": "Tabasco",
-            "Tamps.": "Tamaulipas", "Tlax.": "Tlaxcala",
-            "Ver.": "Veracruz de Ignacio de la Llave", "Yuc.": "Yucatán",
+            "Ags.": "Aguascalientes",
+            "BC": "Baja California",
+            "BCS": "Baja California Sur",
+            "Camp.": "Campeche",
+            "Chih.": "Chihuahua",
+            "Chis.": "Chiapas",
+            "CDMX": "Ciudad de México",
+            "Coah.": "Coahuila de Zaragoza",
+            "Col.": "Colima",
+            "Dgo.": "Durango",
+            "Gto.": "Guanajuato",
+            "Gro.": "Guerrero",
+            "Hgo.": "Hidalgo",
+            "Jal.": "Jalisco",
+            "Mex.": "México",
+            "Mich.": "Michoacán de Ocampo",
+            "Mor.": "Morelos",
+            "Nay.": "Nayarit",
+            "NL": "Nuevo León",
+            "Oax.": "Oaxaca",
+            "Pue.": "Puebla",
+            "Qro.": "Querétaro",
+            "Q. Roo": "Quintana Roo",
+            "SLP": "San Luis Potosí",
+            "Sin.": "Sinaloa",
+            "Son.": "Sonora",
+            "Tab.": "Tabasco",
+            "Tamps.": "Tamaulipas",
+            "Tlax.": "Tlaxcala",
+            "Ver.": "Veracruz de Ignacio de la Llave",
+            "Yuc.": "Yucatán",
             "Zac.": "Zacatecas",
         }
 
@@ -97,7 +116,9 @@ class GetInegi:
 
     # ========= Descarga en memoria =========
 
-    def descargar_jsonstat_pxweb(self, db: str, tabla_px: str, consulta: dict, timeout: int = 60) -> dict:
+    def descargar_jsonstat_pxweb(
+        self, db: str, tabla_px: str, consulta: dict, timeout: int = 60
+    ) -> dict:
         url = f"{self.BASE_PXWEB.rstrip('/')}/{db.strip('/')}/{tabla_px.lstrip('/')}"
         headers = {
             "User-Agent": "Mozilla/5.0 (compatible; PxWebClient/1.0)",
@@ -106,13 +127,17 @@ class GetInegi:
             "Origin": "https://www.inegi.org.mx",
             "Referer": "https://www.inegi.org.mx/",
         }
-        logger.info("PxWeb POST | url={} | db={} | tabla={} | timeout={}s", url, db, tabla_px, timeout)
+        logger.info(
+            "PxWeb POST | url={} | db={} | tabla={} | timeout={}s", url, db, tabla_px, timeout
+        )
 
         try:
             resp = requests.post(url, headers=headers, json=consulta, timeout=timeout)
             resp.raise_for_status()
             data = resp.json()
-            logger.info("PxWeb OK | status={} | bytes={}", resp.status_code, len(resp.content or b""))
+            logger.info(
+                "PxWeb OK | status={} | bytes={}", resp.status_code, len(resp.content or b"")
+            )
             return data
 
         except requests.RequestException as ex:
@@ -180,14 +205,20 @@ class GetInegi:
         self.df = self.df.set_index(["Entidad federativa", "Periodo", "Sexo"])
         self.df = self.df["valor"].unstack("Sexo").reset_index()
 
-        logger.debug("DataFrame ajustado | filas={} | columnas={}", len(self.df), list(self.df.columns))
+        logger.debug(
+            "DataFrame ajustado | filas={} | columnas={}", len(self.df), list(self.df.columns)
+        )
 
     def validar_hombres_mujeres_vs_total(self) -> None:
         diff = self.df["Total"] - (self.df["Hombres"] + self.df["Mujeres"])
         errores = self.df[diff != 0]
 
         if not errores.empty:
-            ejemplos = errores[["Entidad federativa", "Hombres", "Mujeres", "Total"]].head(5).to_string(index=False)
+            ejemplos = (
+                errores[["Entidad federativa", "Hombres", "Mujeres", "Total"]]
+                .head(5)
+                .to_string(index=False)
+            )
             logger.error("Inconsistencias detectadas: Hombres + Mujeres ≠ Total\n{}", ejemplos)
         else:
             logger.debug("Validación OK: Hombres + Mujeres = Total en todos los registros.")
@@ -201,7 +232,9 @@ class GetInegi:
             .drop(columns=["Periodo"])
         )
         self.df.columns.name = None
-        logger.info("Periodo máximo seleccionado: {} | filas resultantes: {}", periodo_max, len(self.df))
+        logger.info(
+            "Periodo máximo seleccionado: {} | filas resultantes: {}", periodo_max, len(self.df)
+        )
 
     def get_superficie_estados(self) -> None:
         logger.info("Descargando superficies estatales desde API INEGI...")
@@ -214,13 +247,15 @@ class GetInegi:
             logger.exception("Error al descargar superficie estatal: {}", ex)
             raise RuntimeError(f"Falla al descargar superficie estatal: {ex}") from ex
 
-        self.df_superficie = pd.DataFrame({
-            "Entidad federativa": [
-                self.ESTADOS_DICT[e]
-                for e in data["dimension"]["municipality"]["category"]["index"]
-            ],
-            "Superficie_km2": data["value"],
-        })
+        self.df_superficie = pd.DataFrame(
+            {
+                "Entidad federativa": [
+                    self.ESTADOS_DICT[e]
+                    for e in data["dimension"]["municipality"]["category"]["index"]
+                ],
+                "Superficie_km2": data["value"],
+            }
+        )
 
         self.df_superficie["Superficie_km2"] = pd.to_numeric(
             self.df_superficie["Superficie_km2"].str.replace(",", "", regex=False),
@@ -228,8 +263,7 @@ class GetInegi:
         )
 
         self.df = (
-            self.df_superficie
-            .merge(self.df, on="Entidad federativa", how="inner")
+            self.df_superficie.merge(self.df, on="Entidad federativa", how="inner")
             .sort_values("Entidad federativa")
             .reset_index(drop=True)
         )
@@ -237,10 +271,14 @@ class GetInegi:
         logger.info("Superficie estatal obtenida | entidades={}", len(self.df_superficie))
 
     def clasificaciones(self) -> None:
-        self.df["region_salud_mental"] = self.df["Entidad federativa"].map(self.REGION_SALUD_MENTAL)
+        self.df["region_salud_mental"] = self.df["Entidad federativa"].map(
+            self.REGION_SALUD_MENTAL
+        )
         faltantes = self.df[self.df["region_salud_mental"].isna()]["Entidad federativa"].unique()
         if len(faltantes) > 0:
-            logger.warning("Estados sin región de salud mental asignada: {}", ", ".join(sorted(faltantes)))
+            logger.warning(
+                "Estados sin región de salud mental asignada: {}", ", ".join(sorted(faltantes))
+            )
 
         self.df["ratio_h_m"] = self.df["Hombres"] / self.df["Mujeres"]
         self.df["ratio_h_m_cat"] = pd.cut(
@@ -270,7 +308,9 @@ class GetInegi:
             labels=["Baja", "Media-baja", "Media-alta", "Alta"],
         )
 
-        logger.debug("Clasificaciones calculadas | columnas nuevas: region, ratios, tamaños, densidad.")
+        logger.debug(
+            "Clasificaciones calculadas | columnas nuevas: region, ratios, tamaños, densidad."
+        )
 
     def run(self) -> None:
         if directory_manager.existe_archivo(self.inegi_path) and not self.sobreescribe:

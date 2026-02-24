@@ -2,11 +2,11 @@
 import os
 from typing import Any
 
-import pandas as pd
 from loguru import logger
+import pandas as pd
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import cm
 from reportlab.pdfgen import canvas
 from reportlab.platypus import (
@@ -22,8 +22,8 @@ from reportlab.platypus import (
 
 from src.epiforecast.visualization.eda_plots import ReportData, SeccionNota
 
-
 # ---------- Helpers de tabla ---------- #
+
 
 def crear_tabla(
     data: list[list[Any]],
@@ -33,18 +33,22 @@ def crear_tabla(
     """Crea una LongTable con estilo institucional IMSS."""
     # splitByRow=0: evita que una fila se parta entre dos páginas
     table = LongTable(data, colWidths=col_widths, hAlign=h_align, splitByRow=0)
-    table.setStyle(TableStyle([
-        ("FONT",           (0, 0), (-1,  0), "Helvetica-Bold"),
-        ("BACKGROUND",     (0, 0), (-1,  0), colors.lightgrey),
-        ("ALIGN",          (0, 0), (-1,  0), "CENTER"),
-        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.whitesmoke, colors.white]),
-        ("ALIGN",          (1, 1), (-1, -1), "RIGHT"),
-        ("GRID",           (0, 0), (-1, -1), 0.25, colors.grey),
-        ("LEFTPADDING",    (0, 0), (-1, -1), 6),
-        ("RIGHTPADDING",   (0, 0), (-1, -1), 6),
-        ("TOPPADDING",     (0, 0), (-1, -1), 4),
-        ("BOTTOMPADDING",  (0, 0), (-1, -1), 4),
-    ]))
+    table.setStyle(
+        TableStyle(
+            [
+                ("FONT", (0, 0), (-1, 0), "Helvetica-Bold"),
+                ("BACKGROUND", (0, 0), (-1, 0), colors.lightgrey),
+                ("ALIGN", (0, 0), (-1, 0), "CENTER"),
+                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.whitesmoke, colors.white]),
+                ("ALIGN", (1, 1), (-1, -1), "RIGHT"),
+                ("GRID", (0, 0), (-1, -1), 0.25, colors.grey),
+                ("LEFTPADDING", (0, 0), (-1, -1), 6),
+                ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+                ("TOPPADDING", (0, 0), (-1, -1), 4),
+                ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+            ]
+        )
+    )
     return table
 
 
@@ -99,6 +103,7 @@ def _hacer_cabecera_pie(titulo_reporte: str):
 
 # ---------- Clase principal ---------- #
 
+
 class PDFReportGenerator:
     """Genera un reporte PDF de EDA a partir de un objeto ReportData."""
 
@@ -117,25 +122,48 @@ class PDFReportGenerator:
 
     def _crear_estilos(self):
         styles = getSampleStyleSheet()
-        styles.add(ParagraphStyle(
-            name="Titulo", parent=styles["Title"],
-            fontName="Helvetica-Bold", fontSize=18, leading=22,
-            alignment=1, spaceAfter=12,
-        ))
-        styles.add(ParagraphStyle(
-            name="Subtitulo", parent=styles["Normal"],
-            fontName="Helvetica", fontSize=12, textColor=colors.grey,
-            alignment=1, spaceAfter=12,
-        ))
-        styles.add(ParagraphStyle(
-            name="Seccion", parent=styles["Heading2"],
-            fontName="Helvetica-Bold", fontSize=14,
-            spaceBefore=12, spaceAfter=6, alignment=1,
-        ))
-        styles.add(ParagraphStyle(
-            name="NormalJust", parent=styles["Normal"],
-            fontName="Helvetica", fontSize=10, leading=14,
-        ))
+        styles.add(
+            ParagraphStyle(
+                name="Titulo",
+                parent=styles["Title"],
+                fontName="Helvetica-Bold",
+                fontSize=18,
+                leading=22,
+                alignment=1,
+                spaceAfter=12,
+            )
+        )
+        styles.add(
+            ParagraphStyle(
+                name="Subtitulo",
+                parent=styles["Normal"],
+                fontName="Helvetica",
+                fontSize=12,
+                textColor=colors.grey,
+                alignment=1,
+                spaceAfter=12,
+            )
+        )
+        styles.add(
+            ParagraphStyle(
+                name="Seccion",
+                parent=styles["Heading2"],
+                fontName="Helvetica-Bold",
+                fontSize=14,
+                spaceBefore=12,
+                spaceAfter=6,
+                alignment=1,
+            )
+        )
+        styles.add(
+            ParagraphStyle(
+                name="NormalJust",
+                parent=styles["Normal"],
+                fontName="Helvetica",
+                fontSize=10,
+                leading=14,
+            )
+        )
         return styles
 
     # ---------- Secciones ---------- #
@@ -160,14 +188,22 @@ class PDFReportGenerator:
         story.append(Spacer(1, 12))
 
     def _agregar_tablas_campos(self, story: list[Any]) -> None:
-        self._agregar_tabla_si_existe(story, "Características de los campos",
-                                      self.datos.resumen_datos)
-        self._agregar_tabla_si_existe(story, "Estadísticas descriptivas de variables numéricas",
-                                      self.datos.estadisticas_numericas)
-        self._agregar_tabla_si_existe(story, "Estadísticas descriptivas de variables categóricas",
-                                      self.datos.estadisticas_categoricas)
-        self._agregar_tabla_si_existe(story, "Campos con valores nulos",
-                                      self.datos.resumen_datos_nulos)
+        self._agregar_tabla_si_existe(
+            story, "Características de los campos", self.datos.resumen_datos
+        )
+        self._agregar_tabla_si_existe(
+            story,
+            "Estadísticas descriptivas de variables numéricas",
+            self.datos.estadisticas_numericas,
+        )
+        self._agregar_tabla_si_existe(
+            story,
+            "Estadísticas descriptivas de variables categóricas",
+            self.datos.estadisticas_categoricas,
+        )
+        self._agregar_tabla_si_existe(
+            story, "Campos con valores nulos", self.datos.resumen_datos_nulos
+        )
         story.append(PageBreak())
 
         story.append(Paragraph("Distribuciones de variables categóricas", self.styles["Seccion"]))
@@ -176,8 +212,9 @@ class PDFReportGenerator:
                 story.append(tabla_desde_dataframe(df))
                 story.append(Spacer(1, 8))
         else:
-            story.append(Paragraph("No se identificaron columnas categóricas.",
-                                   self.styles["NormalJust"]))
+            story.append(
+                Paragraph("No se identificaron columnas categóricas.", self.styles["NormalJust"])
+            )
         story.append(PageBreak())
 
     def _agregar_figuras(self, story: list[Any]) -> None:
@@ -188,7 +225,7 @@ class PDFReportGenerator:
         # Umbral: figuras con altura natural > 14 cm reciben página propia
         umbral_alto = 14 * cm
         contador = 0
-        par_abierto = False   # lleva cuenta de si hay una figura "suelta" en la página actual
+        par_abierto = False  # lleva cuenta de si hay una figura "suelta" en la página actual
 
         for ruta in self.datos.figuras:
             if not os.path.exists(ruta):
@@ -216,7 +253,7 @@ class PDFReportGenerator:
                 story.append(KeepInFrame(max_w, max_h, [img], mode="shrink"))
                 story.append(Spacer(1, 8))
                 par_abierto = not par_abierto
-                if not par_abierto:   # se completó el par → salto de página
+                if not par_abierto:  # se completó el par → salto de página
                     story.append(PageBreak())
 
             contador += 1

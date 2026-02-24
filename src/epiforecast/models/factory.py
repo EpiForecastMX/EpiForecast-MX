@@ -4,16 +4,17 @@ from typing import Any
 
 from src.epiforecast.models.base import ForecastModel
 
-
 # Registry of available models — add new models here without modifying existing code (OCP)
 _MODEL_REGISTRY: dict[str, type[ForecastModel]] = {}
 
 
 def register_model(name: str):
     """Decorator to register a model class in the factory."""
+
     def decorator(cls: type[ForecastModel]):
         _MODEL_REGISTRY[name] = cls
         return cls
+
     return decorator
 
 
@@ -29,9 +30,7 @@ def create_model(name: str, **kwargs: Any) -> ForecastModel:
     """
     if name not in _MODEL_REGISTRY:
         available = ", ".join(_MODEL_REGISTRY.keys())
-        raise ValueError(
-            f"Unknown model '{name}'. Available: {available}"
-        )
+        raise ValueError(f"Unknown model '{name}'. Available: {available}")
     return _MODEL_REGISTRY[name](**kwargs)
 
 

@@ -97,6 +97,15 @@ force-sort-within-sections = true
 [tool.ruff.lint.per-file-ignores]
 "notebooks/*" = ["ERA"]
 "tests/*" = ["B011"]
+"src/epiforecast/data/extraction/*" = ["PTH103", "PTH110", "PTH112", "PTH118", "PTH122", "PTH123", "PTH208", "B007", "B018", "B904", "F841", "N803", "SIM102"]
+"src/epiforecast/data/ingestion/*" = ["B023", "B905"]
+"src/epiforecast/data/preprocessing/transformer.py" = ["B023", "B905", "ERA001", "N801"]
+"src/epiforecast/visualization/base.py" = ["PTH118", "B905", "N806"]
+"src/epiforecast/visualization/eda_plots.py" = ["E701"]
+"src/epiforecast/visualization/inegi_plots.py" = ["E741"]
+"src/epiforecast/visualization/reporters.py" = ["PTH110"]
+"src/epiforecast/utils/config.py" = ["N816"]
+"src/epiforecast/utils/dataframe_helpers.py" = ["N805"]
 
 # ─── Mypy ─────────────────────────────────────────────────────────────────────
 [tool.mypy]

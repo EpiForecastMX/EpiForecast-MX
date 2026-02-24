@@ -11,7 +11,6 @@ Features:
 from __future__ import annotations
 
 import concurrent.futures
-import time
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -54,7 +53,8 @@ class ProphetCrossValidator:
         return tuner.run()
 
     def evaluate_combo(
-        self, params: dict,
+        self,
+        params: dict,
     ) -> tuple[dict, bool, float | None]:
         """Evaluate a single HP combination across all CV folds.
 
@@ -86,8 +86,10 @@ class ProphetCrossValidator:
 
             logger.debug(
                 "Fold {}: Train hasta {}, Val {} → {}",
-                fold_idx + 1, train_fold["ds"].max().date(),
-                val_fold["ds"].min().date(), val_fold["ds"].max().date(),
+                fold_idx + 1,
+                train_fold["ds"].max().date(),
+                val_fold["ds"].min().date(),
+                val_fold["ds"].max().date(),
             )
 
             try:
@@ -99,7 +101,10 @@ class ProphetCrossValidator:
                     if not fit_ok:
                         logger.warning(
                             "Timeout fold: >{:.0f}s en fold {}/{}. Newton → skip cp ≤ {}",
-                            self.fold_timeout, fold_idx + 1, self.n_splits, cp,
+                            self.fold_timeout,
+                            fold_idx + 1,
+                            self.n_splits,
+                            cp,
                         )
                         timed_out = True
                         newton_cp = cp
@@ -145,12 +150,18 @@ class ProphetCrossValidator:
             )
 
         metrics = self._aggregate_folds(
-            rmse_folds, mae_folds, mape_folds, mase_folds, fold_indices,
+            rmse_folds,
+            mae_folds,
+            mape_folds,
+            mase_folds,
+            fold_indices,
         )
 
         logger.debug(
             "Métricas CV: RMSE={:.4f}, MAE={:.4f}, MAPE={:.2f}%{}",
-            metrics["rmse"], metrics["mae"], metrics["mape"],
+            metrics["rmse"],
+            metrics["mae"],
+            metrics["mape"],
             f", MASE={metrics['mase']:.3f}" if metrics["mase"] is not None else ", MASE=N/A",
         )
 
@@ -195,7 +206,8 @@ class ProphetCrossValidator:
             if self.cv_weights and len(self.cv_weights) >= self.n_splits:
                 mase_weights = [
                     self.cv_weights[fold_indices[i]]
-                    for i, m in enumerate(mase_folds) if m is not None
+                    for i, m in enumerate(mase_folds)
+                    if m is not None
                 ]
                 mean_mase = float(np.average(valid_mase, weights=mase_weights))
             else:

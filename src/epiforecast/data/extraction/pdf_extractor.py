@@ -1,17 +1,15 @@
 import os
 import re
+
 import camelot
 import pandas as pd
 from pypdf import PdfReader, PdfWriter
 
-SEMANA_REGEX = re.compile(
-    r"Semana\s+(\d{1,2}).*?(\d{4})",
-    re.IGNORECASE
-)
+SEMANA_REGEX = re.compile(r"Semana\s+(\d{1,2}).*?(\d{4})", re.IGNORECASE)
 SEMANA_REGEX_2 = re.compile(
-    r"semana\s+epidemiol[oó]gica\s+(\d{1,2})\s+del\s+(\d{4})",
-    re.IGNORECASE
+    r"semana\s+epidemiol[oó]gica\s+(\d{1,2})\s+del\s+(\d{4})", re.IGNORECASE
 )
+
 
 def build_column_map(keywords: list[str], start_col: int = 1, step: int = 4):
     col_map = {}
@@ -25,6 +23,7 @@ def build_column_map(keywords: list[str], start_col: int = 1, step: int = 4):
         }
     return col_map
 
+
 def find_page_and_week(pdf_path, KEYWORDS):
     """
     Busca la página del PDF que contiene todas las keywords
@@ -35,11 +34,11 @@ def find_page_and_week(pdf_path, KEYWORDS):
         text = page.extract_text() or ""
         # Verifica que todas las palabras clave estén presentes
         if all(k.lower() in text.lower() for k in KEYWORDS):
-            match = SEMANA_REGEX.search(text) # Opción 1: "Semana 12 2024"
+            match = SEMANA_REGEX.search(text)  # Opción 1: "Semana 12 2024"
             if match:
                 week, year = match.groups()
                 return i + 1, int(year), int(week)
-            match2 = SEMANA_REGEX_2.search(text) # Opción 2: "semana epidemiológica 42 del 2024"
+            match2 = SEMANA_REGEX_2.search(text)  # Opción 2: "semana epidemiológica 42 del 2024"
             if match2:
                 week2, year2 = match2.groups()
                 return i + 1, int(year2), int(week2) + 1
@@ -47,12 +46,14 @@ def find_page_and_week(pdf_path, KEYWORDS):
             return i + 1, 8888, 99
     return None, None, None
 
+
 def extract_matched_page(pdf_path: str, page_index_0: int, out_pdf_path: str):
     reader = PdfReader(pdf_path)
     writer = PdfWriter()
     writer.add_page(reader.pages[page_index_0])
     with open(out_pdf_path, "wb") as f:
         writer.write(f)
+
 
 def eliminar_columnas_vacias(df, start_state="Aguascalientes", end_state="Zacatecas"):
     """
@@ -76,10 +77,15 @@ def eliminar_columnas_vacias(df, start_state="Aguascalientes", end_state="Zacate
 
     sub = df.loc[i_start:i_end, :]  # solo filas Aguascalientes..Zacatecas
 
-    is_blank = sub.astype(str).apply(lambda col: col.str.strip().eq(""))  # True si vacío o espacios
-    keep_cols = is_blank.mean(axis=0) < 1.0  # conserva columnas que no son 100% vacías en ese rango
+    is_blank = sub.astype(str).apply(
+        lambda col: col.str.strip().eq("")
+    )  # True si vacío o espacios
+    keep_cols = (
+        is_blank.mean(axis=0) < 1.0
+    )  # conserva columnas que no son 100% vacías en ese rango
 
     return df.loc[:, keep_cols]
+
 
 def pad_prev_year_cols(df: pd.DataFrame, keywords: list[str]) -> pd.DataFrame:
     """
@@ -104,9 +110,10 @@ def pad_prev_year_cols(df: pd.DataFrame, keywords: list[str]) -> pd.DataFrame:
         out[new_base + 0] = df[old_base + 0]  # total semana
         out[new_base + 1] = df[old_base + 1]  # hombres
         out[new_base + 2] = df[old_base + 2]  # mujeres
-        out[new_base + 3] = pd.NA            # año anterior (faltante)
+        out[new_base + 3] = pd.NA  # año anterior (faltante)
 
     return pd.DataFrame(out)
+
 
 def clean_df(df, min_numeric_cells=2):
     """
@@ -125,7 +132,9 @@ def clean_df(df, min_numeric_cells=2):
 
     # 3) Quita filas basura
     df = df[df[0].ne("")]
-    df = df[~df[0].str.match(r"^(ENTIDAD|FEDERATIVA|TOTAL.*|FUENTE.*|NOTA.*)$", case=False, na=False)]
+    df = df[
+        ~df[0].str.match(r"^(ENTIDAD|FEDERATIVA|TOTAL.*|FUENTE.*|NOTA.*)$", case=False, na=False)
+    ]
 
     # 4) Normaliza celdas numéricas SOLO para validar filas (no conviertas todo a 0 aquí)
     num_cols = [c for c in df.columns if c != 0]
@@ -138,12 +147,13 @@ def clean_df(df, min_numeric_cells=2):
     is_zeroish = cells.apply(lambda col: col.eq("-") | col.eq(""))
     is_int = cells_clean.apply(lambda col: col.str.fullmatch(r"\d+").fillna(False))
 
-    numeric_like = (is_int | is_zeroish)
+    numeric_like = is_int | is_zeroish
     numeric_count = numeric_like.sum(axis=1)
 
     df = df[numeric_count >= min_numeric_cells]
 
     return df.reset_index(drop=True)
+
 
 def normalize_number(x):
     if pd.isna(x):
@@ -163,22 +173,26 @@ def normalize_number(x):
     # cualquier otra cosa (n.e., texto, etc.) => NA
     return pd.NA
 
+
 def reshape(df: pd.DataFrame, year: int, week: int, col_map: dict) -> pd.DataFrame:
     records = []
     for _, row in df.iterrows():
         estado = row[0]
         for disease, cols in col_map.items():
-            records.append({
-                "Anio": year,
-                "Semana": f"{week:02d}",
-                "Entidad": estado,
-                "Padecimiento": disease,
-                "Casos_semana": normalize_number(row[cols["total"]]),
-                "Acumulado_hombres": normalize_number(row[cols["hombres"]]),
-                "Acumulado_mujeres": normalize_number(row[cols["mujeres"]]),
-                "Acumulado_anio_anterior": normalize_number(row[cols["total_prev"]]),
-            })
+            records.append(
+                {
+                    "Anio": year,
+                    "Semana": f"{week:02d}",
+                    "Entidad": estado,
+                    "Padecimiento": disease,
+                    "Casos_semana": normalize_number(row[cols["total"]]),
+                    "Acumulado_hombres": normalize_number(row[cols["hombres"]]),
+                    "Acumulado_mujeres": normalize_number(row[cols["mujeres"]]),
+                    "Acumulado_anio_anterior": normalize_number(row[cols["total_prev"]]),
+                }
+            )
     return pd.DataFrame(records)
+
 
 def reshape_wide(df: pd.DataFrame, year: int, week: int, col_map: dict) -> pd.DataFrame:
     """
@@ -201,18 +215,21 @@ def reshape_wide(df: pd.DataFrame, year: int, week: int, col_map: dict) -> pd.Da
         records.append(rec)
     return pd.DataFrame(records)
 
+
 def print_run_summary(run_log, log_fn=print):
     headers = ["Nombre del archivo", "Anio", "Semana", "Pagina match", "Filas"]
     rows = []
 
     for r in run_log:
-        rows.append([
-            str(r.get("file", "")),
-            "" if r.get("year") is None else str(r.get("year")),
-            "" if r.get("week") is None else f"{int(r.get('week')):02d}",
-            "" if r.get("page") is None else str(r.get("page")),
-            "" if r.get("rows") is None else str(r.get("rows")),
-        ])
+        rows.append(
+            [
+                str(r.get("file", "")),
+                "" if r.get("year") is None else str(r.get("year")),
+                "" if r.get("week") is None else f"{int(r.get('week')):02d}",
+                "" if r.get("page") is None else str(r.get("page")),
+                "" if r.get("rows") is None else str(r.get("rows")),
+            ]
+        )
 
     widths = [len(h) for h in headers]
     for row in rows:
@@ -233,7 +250,16 @@ def print_run_summary(run_log, log_fn=print):
     pct = (ok / total * 100) if total else 0.0
     log_fn(f"\nExito: {ok}/{total} = {pct:.1f}% (match y 32 filas)")
 
-def run_pipeline(input_dir, output_dir, keywords, save_matched_pages=False, save_individual_tables=False, log_fn=print, on_file=None):
+
+def run_pipeline(
+    input_dir,
+    output_dir,
+    keywords,
+    save_matched_pages=False,
+    save_individual_tables=False,
+    log_fn=print,
+    on_file=None,
+):
     if not os.path.isdir(input_dir):
         raise ValueError("Input dir inválido.")
     if not os.path.isdir(output_dir):
@@ -263,21 +289,23 @@ def run_pipeline(input_dir, output_dir, keywords, save_matched_pages=False, save
     all_rows = []
     page_found = 0
     run_log = []
-    failed_files=[]
+    failed_files = []
 
     for idx, file in enumerate(pdf_files, start=1):
         if on_file:
             on_file(file)
         pct = (idx / total_pdfs * 100) if total_pdfs else 100.0
         pdf_path = os.path.join(input_dir, file)
-        try: 
+        try:
             page, year, week = find_page_and_week(pdf_path, keywords)
             filas_base = None
             status = "‼️"
 
             if not page:
                 log_fn("  ‼️ No se encontró página válida")
-                run_log.append({"file": file, "year": year, "week": week, "page": page, "rows": filas_base})
+                run_log.append(
+                    {"file": file, "year": year, "week": week, "page": page, "rows": filas_base}
+                )
                 log_fn(f"{idx:>3}/{total_pdfs:<3} | {pct:>6.1f}% | {file} | - | - | {status}")
                 continue
 
@@ -292,8 +320,12 @@ def run_pipeline(input_dir, output_dir, keywords, save_matched_pages=False, save
             if tables.n == 0:
                 log_fn("  ⚠️ Camelot no detectó tablas")
                 status = "⚠️"
-                run_log.append({"file": file, "year": year, "week": week, "page": page, "rows": filas_base})
-                log_fn(f"{idx:>3}/{total_pdfs:<3} | {pct:>6.1f}% | {file} | p{page} | {year} W{week:02d} | sin tabla {status} ")
+                run_log.append(
+                    {"file": file, "year": year, "week": week, "page": page, "rows": filas_base}
+                )
+                log_fn(
+                    f"{idx:>3}/{total_pdfs:<3} | {pct:>6.1f}% | {file} | p{page} | {year} W{week:02d} | sin tabla {status} "
+                )
                 continue
 
             df_raw = tables[0].df
@@ -310,13 +342,19 @@ def run_pipeline(input_dir, output_dir, keywords, save_matched_pages=False, save
             df_long = reshape(df_clean, year, week, col_map)
             all_rows.append(df_long)
 
-            run_log.append({"file": file, "year": year, "week": week, "page": page, "rows": filas_base})
-            log_fn(f"{idx:>3}/{total_pdfs:<3} | {pct:>6.1f}% | {file} | p{page} | {year} W{week:02d} | filas={filas_base} {status}")
+            run_log.append(
+                {"file": file, "year": year, "week": week, "page": page, "rows": filas_base}
+            )
+            log_fn(
+                f"{idx:>3}/{total_pdfs:<3} | {pct:>6.1f}% | {file} | p{page} | {year} W{week:02d} | filas={filas_base} {status}"
+            )
 
         except Exception as e:
             failed_files.append(file)
             run_log.append({"file": file, "year": None, "week": None, "page": None, "rows": None})
-            log_fn(f"{idx:>3}/{total_pdfs:<3} | {pct:>6.1f}% | {file} | ERROR ({type(e).__name__}): {e}")
+            log_fn(
+                f"{idx:>3}/{total_pdfs:<3} | {pct:>6.1f}% | {file} | ERROR ({type(e).__name__}): {e}"
+            )
             continue
 
     if failed_files:

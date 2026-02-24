@@ -1,12 +1,10 @@
 # src/utils/datos.py
-from typing import Dict, List, Tuple
 
 import numpy as np
 import pandas as pd
 
 
 class OperacionesDatos:
-
     @staticmethod
     def _validar_columna(df: pd.DataFrame, col: str) -> None:
         if col not in df.columns:
@@ -20,7 +18,7 @@ class OperacionesDatos:
         col: str,
         factor: float = 1.5,
         interpolation: str = "linear",
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Calcula Q1, Q3, IQR y límites (inferior/superior) para una columna específica.
         Devuelve un dict con: {'q1','q3','iqr','lim_inf','lim_sup'}.
@@ -30,7 +28,13 @@ class OperacionesDatos:
         serie = df[col].dropna()
         if serie.empty:
             # Si está vacía tras eliminar NaN, devuelve NaN en todo
-            return {"q1": np.nan, "q3": np.nan, "iqr": np.nan, "lim_inf": np.nan, "lim_sup": np.nan}
+            return {
+                "q1": np.nan,
+                "q3": np.nan,
+                "iqr": np.nan,
+                "lim_inf": np.nan,
+                "lim_sup": np.nan,
+            }
 
         q1 = serie.quantile(0.25, interpolation=interpolation)
         q3 = serie.quantile(0.75, interpolation=interpolation)
@@ -38,7 +42,13 @@ class OperacionesDatos:
         lim_inf = float(q1 - factor * iqr)
         lim_sup = float(q3 + factor * iqr)
 
-        return {"q1": float(q1), "q3": float(q3), "iqr": iqr, "lim_inf": lim_inf, "lim_sup": lim_sup}
+        return {
+            "q1": float(q1),
+            "q3": float(q3),
+            "iqr": iqr,
+            "lim_inf": lim_inf,
+            "lim_sup": lim_sup,
+        }
 
     @staticmethod
     def outliers_iqr(
@@ -46,7 +56,7 @@ class OperacionesDatos:
         col: str,
         factor: float = 1.5,
         interpolation: str = "linear",
-    ) -> Tuple[pd.DataFrame, List]:
+    ) -> tuple[pd.DataFrame, list]:
         """
         Devuelve un DataFrame con las filas que son outliers por IQR en la columna 'col'.
         metadatos: lim_inf, lim_sup, q1, q3, iqr, col_origen.
@@ -62,55 +72,45 @@ class OperacionesDatos:
         metadatos = [lim_inf, lim_sup, stats["q1"], stats["q3"], stats["iqr"], col]
 
         return df_out, metadatos
-    
 
     def zscore(
-        df: pd.DataFrame,
-        columna: str,
-        agrupacion: list,
-        umbral: float = 3,
-        reemplazo="media"
+        df: pd.DataFrame, columna: str, agrupacion: list, umbral: float = 3, reemplazo="media"
     ):
-            df = df.copy()
+        df = df.copy()
 
-            # Calcular medias y desviaciones por grupo
-            medias = df.groupby(agrupacion)[columna].transform("mean").round().astype(int)
-            desvios = df.groupby(agrupacion)[columna].transform("std").round().astype(int)
+        # Calcular medias y desviaciones por grupo
+        medias = df.groupby(agrupacion)[columna].transform("mean").round().astype(int)
+        desvios = df.groupby(agrupacion)[columna].transform("std").round().astype(int)
 
+        # Calcular Z-score y outliers
+        df[f"Zscore_{columna}"] = (df[columna] - medias) / desvios
+        df[f"Outlier_{columna}"] = df[f"Zscore_{columna}"].abs() > umbral
 
-            # Calcular Z-score y outliers
-            df[f"Zscore_{columna}"] = (df[columna] - medias) / desvios
-            df[f"Outlier_{columna}"] = df[f"Zscore_{columna}"].abs() > umbral
+        if reemplazo is not None:
+            if reemplazo.lower() == "media":
+                df.loc[df[f"Outlier_{columna}"], columna] = (
+                    medias[df[f"Outlier_{columna}"]].round().astype(int)
+                )
 
-            if reemplazo is not None:
-                if reemplazo.lower() == "media":
-                    df.loc[df[f"Outlier_{columna}"], columna] = medias[df[f"Outlier_{columna}"]].round().astype(int)
+            elif reemplazo.lower() == "mediana":
+                medianas = df.groupby(agrupacion)[columna].transform("median")
+                df.loc[df[f"Outlier_{columna}"], columna] = (
+                    medianas[df[f"Outlier_{columna}"]].round().astype(int)
+                )
 
+            elif reemplazo.lower() == "cercano":
+                limite_inferior = medias - umbral * desvios
+                limite_superior = medias + umbral * desvios
+                df.loc[df[f"Outlier_{columna}"] & (df[columna] < limite_inferior), columna] = (
+                    limite_inferior[df[f"Outlier_{columna}"] & (df[columna] < limite_inferior)]
+                )
+                df.loc[df[f"Outlier_{columna}"] & (df[columna] > limite_superior), columna] = (
+                    limite_superior[df[f"Outlier_{columna}"] & (df[columna] > limite_superior)]
+                )
 
-                elif reemplazo.lower() == "mediana":
-                    medianas = df.groupby(agrupacion)[columna].transform("median")
-                    df.loc[df[f"Outlier_{columna}"], columna] = medianas[df[f"Outlier_{columna}"]].round().astype(int)
+            else:
+                raise ValueError("reemplazo debe ser None, 'media', 'mediana' o 'cercano'")
 
+        df[columna] = df[columna].round().astype(int)
 
-                elif reemplazo.lower() == "cercano":
-                    limite_inferior = medias - umbral * desvios
-                    limite_superior = medias + umbral * desvios
-                    df.loc[df[f"Outlier_{columna}"] & (df[columna] < limite_inferior), columna] = limite_inferior[df[f"Outlier_{columna}"] & (df[columna] < limite_inferior)]
-                    df.loc[df[f"Outlier_{columna}"] & (df[columna] > limite_superior), columna] = limite_superior[df[f"Outlier_{columna}"] & (df[columna] > limite_superior)]
-
-                else:
-                    raise ValueError("reemplazo debe ser None, 'media', 'mediana' o 'cercano'")
-
-            df[columna] = df[columna].round().astype(int)
-
-            return df
-
-
-
-
-
-
-
-
-
-
+        return df

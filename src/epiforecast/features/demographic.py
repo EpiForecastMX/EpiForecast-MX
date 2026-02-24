@@ -1,19 +1,19 @@
 # src/modelado/mapea_inegi.py
-import pandas as pd
 import sys
 
-from src.epiforecast.utils.config import conf, logger
+import pandas as pd
+
 from src.epiforecast.utils import paths as directory_manager
+from src.epiforecast.utils.config import conf, logger
 
 
 class MapeaInegi:
-
     def __init__(self, df: pd.DataFrame):
         self.df = df.copy()
         conf_paths = conf.get("data")
-        self.inegi_path = conf_paths['inegi']
-        self.final_path = conf_paths['data_inegi']
-        self.xlsx_path = conf_paths['xlsx_inegi']
+        self.inegi_path = conf_paths["inegi"]
+        self.final_path = conf_paths["data_inegi"]
+        self.xlsx_path = conf_paths["xlsx_inegi"]
         self.inegi = pd.DataFrame()
         self.df_merge = pd.DataFrame()
 

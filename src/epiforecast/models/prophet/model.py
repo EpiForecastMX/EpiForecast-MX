@@ -6,8 +6,8 @@ Delegates: cross-validation to cross_validator.py, HP tuning to tuner.py.
 """
 
 import logging
-import pickle
 from pathlib import Path
+import pickle
 from typing import Any
 
 import numpy as np
@@ -94,7 +94,8 @@ class ProphetForecaster(ForecastModel):
             self.serie = self.serie.drop(columns=[self.sexo])
             logger.info(
                 "Normalizado a tasa por {:,.0f} hab. (población: {:,.0f})",
-                self.tasa_por, self.poblacion_valor,
+                self.tasa_por,
+                self.poblacion_valor,
             )
         else:
             self.serie = self.serie.rename(columns={self.sexo: "y"})
@@ -108,11 +109,13 @@ class ProphetForecaster(ForecastModel):
 
         logger.info(
             "Train: {} semanas (hasta {})",
-            len(self.train_data), self.train_data["ds"].max().date(),
+            len(self.train_data),
+            self.train_data["ds"].max().date(),
         )
         logger.info(
             "Test: {} semanas (desde {})",
-            len(self.test_data), self.test_data["ds"].min().date(),
+            len(self.test_data),
+            self.test_data["ds"].min().date(),
         )
 
     def promedio_semanal(self) -> float:
@@ -167,7 +170,7 @@ class ProphetForecaster(ForecastModel):
             raise RuntimeError("No model to save. Call fit() first.")
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        with open(path, "wb") as f:
+        with path.open("wb") as f:
             pickle.dump(self._model, f)
         logger.info("Modelo guardado: {}", path)
 
@@ -176,7 +179,7 @@ class ProphetForecaster(ForecastModel):
         path = Path(path)
         if not path.exists():
             raise FileNotFoundError(f"Modelo no encontrado: {path}")
-        with open(path, "rb") as f:
+        with path.open("rb") as f:
             self._model = pickle.load(f)
         logger.info("Modelo cargado: {}", path)
 
@@ -248,7 +251,8 @@ class ProphetForecaster(ForecastModel):
         cambios = conf.get("cambios_regimen", [])
         if cambios and self.entidad:
             filtrados = [
-                c for c in cambios
+                c
+                for c in cambios
                 if c.get("entidad") == self.entidad
                 and (not c.get("padecimiento") or c.get("padecimiento") == self.padecimiento)
             ]
@@ -259,7 +263,8 @@ class ProphetForecaster(ForecastModel):
                 holidays = pd.concat([holidays, df_cambios[cols]], ignore_index=True)
                 logger.info(
                     "Cambios de régimen para {}: {}",
-                    self.entidad, [c["holiday"] for c in filtrados],
+                    self.entidad,
+                    [c["holiday"] for c in filtrados],
                 )
 
         return holidays

@@ -5,14 +5,14 @@ Reads all_forecast.csv + training CSVs, generates one PNG per
 (padecimiento, entidad, modo) combination using GraficosHelper.
 """
 
+from pathlib import Path
 import re
 import unicodedata
-from pathlib import Path
 
 import pandas as pd
 
-from src.epiforecast.utils.config import conf, logger
 from src.epiforecast.utils import paths as directory_manager
+from src.epiforecast.utils.config import conf, logger
 from src.epiforecast.visualization.base import GraficosHelper
 
 
@@ -46,10 +46,15 @@ def generar_graficos_pronostico() -> None:
     hp_frames = []
     for csv_hp in models_root.rglob("*_completo.csv"):
         try:
-            df_hp = pd.read_csv(csv_hp, usecols=[
-                "archivo_modelo", "seasonality_mode",
-                "changepoint_prior_scale", "seasonality_prior_scale",
-            ])
+            df_hp = pd.read_csv(
+                csv_hp,
+                usecols=[
+                    "archivo_modelo",
+                    "seasonality_mode",
+                    "changepoint_prior_scale",
+                    "seasonality_prior_scale",
+                ],
+            )
             hp_frames.append(df_hp)
         except Exception:
             pass
@@ -57,7 +62,8 @@ def generar_graficos_pronostico() -> None:
         pd.concat(hp_frames, ignore_index=True)
         .drop_duplicates("archivo_modelo")
         .set_index("archivo_modelo")
-        if hp_frames else pd.DataFrame()
+        if hp_frames
+        else pd.DataFrame()
     )
 
     modelos = (
@@ -80,7 +86,7 @@ def generar_graficos_pronostico() -> None:
             csv_name = f"Prophet_{pad_norm}_{modo}.csv"
             entidad_norm = ""
         elif entidad.startswith("Region "):
-            region_part = entidad[len("Region "):]
+            region_part = entidad[len("Region ") :]
             region_norm = _normalizar_nombre(region_part)
             csv_name = f"Prophet_{pad_norm}_region_{region_norm}_{modo}.csv"
             entidad_norm = _normalizar_nombre(entidad)
@@ -145,17 +151,25 @@ def _extract_metricas(
     df_hp_all: pd.DataFrame,
 ) -> dict:
     """Extract model metrics and HP for chart annotation."""
-    row = df_forecast.loc[mask, [
-        "mase_usado", "rmse_usado",
-        "confianza_original", "archivo_modelo_original", "archivo_modelo_usado",
-    ]].iloc[0]
+    row = df_forecast.loc[
+        mask,
+        [
+            "mase_usado",
+            "rmse_usado",
+            "confianza_original",
+            "archivo_modelo_original",
+            "archivo_modelo_usado",
+        ],
+    ].iloc[0]
 
     es_fallback = str(row["archivo_modelo_original"]) != str(row["archivo_modelo_usado"])
 
     metricas = {
         "mase": float(row["mase_usado"]) if pd.notna(row["mase_usado"]) else None,
         "rmse": float(row["rmse_usado"]) if pd.notna(row["rmse_usado"]) else None,
-        "confianza": str(row["confianza_original"]) if pd.notna(row["confianza_original"]) else "normal",
+        "confianza": str(row["confianza_original"])
+        if pd.notna(row["confianza_original"])
+        else "normal",
         "es_fallback": es_fallback,
         "modelo_usado": str(row["archivo_modelo_usado"]),
     }

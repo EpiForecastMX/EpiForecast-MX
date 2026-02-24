@@ -5,13 +5,13 @@ Handles: loading .pkl models, reversing log-transform, desnormalizing rates to c
 Does NOT handle: visualization (see visualization/forecast_plots.py).
 """
 
-import pickle
 from pathlib import Path
+import pickle
 
 import numpy as np
 import pandas as pd
 
-from src.epiforecast.utils.config import conf, logger
+from src.epiforecast.utils.config import conf
 
 
 class ForecastModelLoader:
@@ -31,7 +31,7 @@ class ForecastModelLoader:
         if not self.model_path.exists():
             raise FileNotFoundError(f"Modelo no encontrado: {self.model_path}")
 
-        with open(self.model_path, "rb") as f:
+        with self.model_path.open("rb") as f:
             self.model = pickle.load(f)
 
         # Read population from training CSV (sidecar of .pkl)
