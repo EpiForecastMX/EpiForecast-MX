@@ -35,6 +35,7 @@ reporte_clean_dataset:
     - "Acumulado_mujeres"
   COLS_CATEGORICAS:
     - "Entidad"
+    - "Padecimiento"
 
 
 # --- Paleta IMSS institucional (Guía cromática oficial 2026) ----------------------
