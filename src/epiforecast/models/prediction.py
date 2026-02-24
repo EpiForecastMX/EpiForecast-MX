@@ -7,9 +7,9 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from src.configuraciones.config_params import conf, logger
-from src.utils import directory_manager
-from src.utils.graficos import GraficosHelper
+from src.epiforecast.utils.config import conf, logger
+from src.epiforecast.utils import paths as directory_manager
+from src.epiforecast.visualization.base import GraficosHelper
 
 
 def _normalizar_nombre(s: str) -> str:

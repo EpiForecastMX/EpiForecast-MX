@@ -2,8 +2,8 @@
 import pandas as pd
 import sys
 
-from src.configuraciones.config_params import conf, logger
-from src.utils import directory_manager
+from src.epiforecast.utils.config import conf, logger
+from src.epiforecast.utils import paths as directory_manager
 
 
 class MapeaInegi:

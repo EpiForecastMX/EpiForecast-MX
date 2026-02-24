@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List, Optional
 from datetime import datetime
 import typer
-from src.extraccion.pipeline import run_pipeline
+from src.epiforecast.data.extraction.pdf_extractor import run_pipeline
 import shutil
 import pandas as pd
 import re

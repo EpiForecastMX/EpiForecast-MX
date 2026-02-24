@@ -3,9 +3,9 @@ import requests
 import pandas as pd
 import typer
 import matplotlib.pyplot as plt
-from src.extraccion.inegi_eda import eda_inegi
-from src.configuraciones.config_params import conf
-from src.utils import directory_manager
+from src.epiforecast.visualization.inegi_plots import eda_inegi
+from src.epiforecast.utils.config import conf
+from src.epiforecast.utils import paths as directory_manager
 
 
 # ========= Configuración =========

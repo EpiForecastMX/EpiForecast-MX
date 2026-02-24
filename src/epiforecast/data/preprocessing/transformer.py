@@ -5,8 +5,8 @@ import pandas as pd
 from loguru import logger
 from datetime import date
 
-from src.configuraciones.config_params import conf
-from src.utils.datos import OperacionesDatos
+from src.epiforecast.utils.config import conf
+from src.epiforecast.utils.dataframe_helpers import OperacionesDatos
 
 class dataTransformation:
         
