@@ -156,6 +156,7 @@ Equipo 01 &middot; Febrero 2026</p>
 
     # --- Celda 2: Imports ---
     cells.append(code("""\
+%matplotlib inline
 import warnings
 warnings.filterwarnings('ignore')
 
