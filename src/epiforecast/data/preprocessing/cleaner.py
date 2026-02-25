@@ -43,7 +43,7 @@ class CleanDataset:
 
     def _normalizar_columnas(self) -> None:
         """Elimina espacios en blanco de los nombres de todas las columnas."""
-        self.df.columns = [col.strip() for col in self.df.columns]
+        self.df.columns = [col.strip() for col in self.df.columns]  # type: ignore[assignment]
 
     def _elimina_columnas(self) -> None:
         """Elimina las columnas indicadas en la configuración."""

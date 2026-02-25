@@ -12,9 +12,9 @@ console = Console()
 def _fmt(v, nd=2):
     if pd.isna(v):
         return ""
-    if isinstance(v, (int, float)) and float(v).is_integer():
+    if isinstance(v, int | float) and float(v).is_integer():
         return f"{int(v):,}"
-    if isinstance(v, (int, float)):
+    if isinstance(v, int | float):
         return f"{v:,.{nd}f}"
     return str(v)
 

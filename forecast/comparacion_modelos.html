@@ -944,8 +944,8 @@ tbody tr:hover{background:var(--cream-pale)}
   </div>
 
   <div class="callout reveal">
-    <strong>Lectura del podio:</strong> Cada fila muestra los 3 mejores modelos para una serie específica. La columna "Rango Prophet" indica en qué posición quedó Prophet (de 6 modelos). 
-    Un rango 1-3 (verde) significa que Prophet está en el podio; 4-5 (naranja) es competitivo; 6 (rojo) significa último lugar. 
+    <strong>Lectura del podio:</strong> Cada fila muestra los 3 mejores modelos para una serie específica. La columna "Rango Prophet" indica en qué posición quedó Prophet (de 6 modelos).
+    Un rango 1-3 (verde) significa que Prophet está en el podio; 4-5 (naranja) es competitivo; 6 (rojo) significa último lugar.
     <strong>En 153 de 258 series (59.3%), Prophet está en el podio.</strong>
   </div>
 
@@ -997,7 +997,7 @@ tbody tr:hover{background:var(--cream-pale)}
   <p class="section-sub reveal">Detalle de qué modelo gana en cada combinación padecimiento &times; sexo. &iquest;Dónde domina cada algoritmo?</p>
 
   <div class="callout reveal callout-gold">
-    <strong>Mapa de calor:</strong> Cada celda muestra cuántas series gana cada modelo en una combinación específica de padecimiento y sexo. 
+    <strong>Mapa de calor:</strong> Cada celda muestra cuántas series gana cada modelo en una combinación específica de padecimiento y sexo.
     Las celdas más oscuras/coloreadas representan el modelo dominante en ese segmento. Esto permite identificar <strong>nichos de especialización</strong> de cada algoritmo.
   </div>
 
@@ -1018,7 +1018,7 @@ tbody tr:hover{background:var(--cream-pale)}
           </tr>
         </thead>
         <tbody>
-          
+
         <tr>
           <td>Alzheimer &times; general</td>
           <td><span class="heat-cell" style="background:rgba(0,82,78,0.30)">8</span></td><td><span class="heat-cell" style="background:var(--tft);color:#fff;font-weight:700">9</span></td><td><span class="heat-cell" style="background:rgba(0,82,78,0.16)">3</span></td><td><span class="heat-cell" style="background:rgba(0,82,78,0.16)">3</span></td><td><span class="heat-cell" style="background:rgba(0,82,78,0.19)">4</span></td><td><span class="heat-cell" style="background:#f9f9f9;color:#ccc">0</span></td>
@@ -1120,9 +1120,9 @@ tbody tr:hover{background:var(--cream-pale)}
   </div>
 
   <div class="callout reveal callout-burgundy">
-    <strong>&iquest;Por qué se omiten series?</strong> Se aplica un <strong>umbral de varianza mínima (&lt; 0.5)</strong> sobre la serie transformada. 
-    Cuando una serie tiene incidencia casi nula (muy pocos casos reportados por semana), la varianza de la serie en log-space es extremadamente baja. 
-    Modelar estas series produciría métricas distorsionadas: un MASE de 0.0001 no significa "predicción perfecta" sino que hay <strong>casi nada que predecir</strong>. 
+    <strong>&iquest;Por qué se omiten series?</strong> Se aplica un <strong>umbral de varianza mínima (&lt; 0.5)</strong> sobre la serie transformada.
+    Cuando una serie tiene incidencia casi nula (muy pocos casos reportados por semana), la varianza de la serie en log-space es extremadamente baja.
+    Modelar estas series produciría métricas distorsionadas: un MASE de 0.0001 no significa "predicción perfecta" sino que hay <strong>casi nada que predecir</strong>.
     Este filtro protege la integridad de las métricas y evita que modelos "ganen" simplemente prediciendo cero.
   </div>
 
@@ -1132,8 +1132,8 @@ tbody tr:hover{background:var(--cream-pale)}
       <div class="card-title">Composición de las 39 series omitidas</div>
     </div>
     <p style="font-size:.92rem;color:#555;line-height:1.7;margin-bottom:1.5rem">
-      <strong>35 de 39</strong> (89.7%) son de <strong>Alzheimer</strong>, el padecimiento con menor incidencia per cápita. 
-      Los 4 restantes son de <strong>Parkinson</strong>. <strong>Depresión no pierde ninguna serie</strong> por su alta incidencia en todos los estados. 
+      <strong>35 de 39</strong> (89.7%) son de <strong>Alzheimer</strong>, el padecimiento con menor incidencia per cápita.
+      Los 4 restantes son de <strong>Parkinson</strong>. <strong>Depresión no pierde ninguna serie</strong> por su alta incidencia en todos los estados.
       El subgrupo más afectado es <strong>Alzheimer hombres</strong> (19 estados omitidos de 33 posibles), consistente con la baja incidencia reportada de Alzheimer en hombres a nivel estatal.
     </p>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.75rem;margin-bottom:1.5rem">
@@ -1164,7 +1164,7 @@ tbody tr:hover{background:var(--cream-pale)}
   <p class="reveal" style="font-size:.9rem;color:var(--cool-gray);margin-bottom:1rem">Cada tarjeta muestra los estados que fueron excluidos en esa combinación padecimiento &times; sexo.</p>
 
   <div class="omitted-grid reveal">
-    
+
     <div class="omitted-card" style="border-left-color:var(--burgundy)">
       <h4>Alzheimer</h4>
       <div class="omit-sexo">general &mdash; 6 estados</div>
@@ -1193,7 +1193,7 @@ tbody tr:hover{background:var(--cream-pale)}
   </div>
 
   <div class="callout reveal" style="margin-top:2rem">
-    <strong>Estrategia para producción:</strong> Las 39 series omitidas utilizarán un <strong>fallback regional</strong>: se agrupan estados vecinos con incidencia baja para crear un modelo de región que capture la tendencia general. 
+    <strong>Estrategia para producción:</strong> Las 39 series omitidas utilizarán un <strong>fallback regional</strong>: se agrupan estados vecinos con incidencia baja para crear un modelo de región que capture la tendencia general.
     Esto es mejor que no predecir nada, y coherente con el enfoque de <strong>regiones INEGI de salud mental</strong> ya definidas en el proyecto.
   </div>
 </section>
@@ -1862,7 +1862,7 @@ if(WINNERS_DETAIL['Parkinson']) makeWinnersChart('chartWinnersPark','Parkinson',
       Object.entries(sexObj).forEach(([m,v])=>{totalWins[m]=(totalWins[m]||0)+v});
     });
   });
-  
+
   // Gini-like concentration: what % of wins come from top pad
   const concentrations = medalModels.map(m=>{
     const padWins = {};
@@ -1876,7 +1876,7 @@ if(WINNERS_DETAIL['Parkinson']) makeWinnersChart('chartWinnersPark','Parkinson',
     const total = totalWins[m] || 1;
     return Math.round(maxPad / total * 100);
   });
-  
+
   new Chart(document.getElementById('chartConcentration'),{
     type:'bar',
     data:{

@@ -1,9 +1,9 @@
 # src/configuraciones/config_params.py
+from datetime import datetime
 import os
+from pathlib import Path
 import platform
 import sys
-from datetime import datetime
-from pathlib import Path
 
 from loguru import logger
 from omegaconf import OmegaConf
@@ -21,13 +21,15 @@ except FileNotFoundError as e:
     sys.exit(1)
 
 
-conf = OmegaConf.merge(conf_params, conf_rutas, conf_logging, conf_reportes, conf_limpieza, conf_FE,conf_train)
+conf = OmegaConf.merge(
+    conf_params, conf_rutas, conf_logging, conf_reportes, conf_limpieza, conf_FE, conf_train
+)
 conf = OmegaConf.to_container(conf, resolve=True)
 
 # Configurar logger según YAML
 if "logging" in conf:
     sinks = conf["logging"].get("sinks", [])
-    logger.remove() 
+    logger.remove()
 
     for sink in sinks:
         if sink["type"] == "stderr":
@@ -54,7 +56,6 @@ if "logging" in conf:
                 diagnose=sink.get("diagnose", False),
             )
 
-
     yaml_path = Path("config/logging.yaml").resolve()
     env = os.getenv("APP_ENV", "local")
     cwd = Path.cwd()
@@ -66,10 +67,10 @@ if "logging" in conf:
     sinks_types = ",".join(sorted({s.get("type", "stderr") for s in sinks_conf})) or "stderr"
 
     logger.info(
-    f"Logging inicializado | status=ok | env={env} | cwd={cwd} | python={pyv} | timestamp={datetime.now():%Y-%m-%d %H:%M:%S}"
+        f"Logging inicializado | status=ok | env={env} | cwd={cwd} | python={pyv} | timestamp={datetime.now():%Y-%m-%d %H:%M:%S}"
     )
 
     logger.debug(
-    f"Logging inicializado | status=ok | env={env} | config={yaml_path} | sinks={sinks_count} ({sinks_types}) | "
-    f"cwd={cwd} | pid={pid} | python={pyv} | timestamp={datetime.now():%Y-%m-%d %H:%M:%S}"
+        f"Logging inicializado | status=ok | env={env} | config={yaml_path} | sinks={sinks_count} ({sinks_types}) | "
+        f"cwd={cwd} | pid={pid} | python={pyv} | timestamp={datetime.now():%Y-%m-%d %H:%M:%S}"
     )

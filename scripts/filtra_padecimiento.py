@@ -35,7 +35,9 @@ def filtrar() -> tuple[bool, pd.DataFrame | None]:
         return True, pd.read_csv(raw_data_filter)
 
     dataframe = pd.read_csv(raw_file)
-    logger.info("Dataset cargado | filas={:,} | columnas={}", len(dataframe), len(dataframe.columns))
+    logger.info(
+        "Dataset cargado | filas={:,} | columnas={}", len(dataframe), len(dataframe.columns)
+    )
 
     df_filtrado = FiltraPadecimiento(dataframe, padecimiento).run()
 
@@ -57,7 +59,6 @@ def main():
     padecimiento = conf["padecimiento"]
 
     if padecimiento["reporte"]:
-
         opciones_reporte = conf["reporte_filtrado"]
 
         directory_manager.asegurar_ruta(opciones_reporte["carpeta"])
@@ -68,7 +69,9 @@ def main():
             opciones=opciones_reporte,
         ).run()
 
-        PDFReportGenerator(datos_reporte, archivo_salida=opciones_reporte["ruta"], ancho_figura_cm=16).build()
+        PDFReportGenerator(
+            datos_reporte, archivo_salida=opciones_reporte["ruta"], ancho_figura_cm=16
+        ).build()
         logger.success("Reporte PDF generado | archivo={}", opciones_reporte["ruta"])
 
 

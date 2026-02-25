@@ -9,9 +9,8 @@ Uso:
     python -m src.extraccion.cli --help
 """
 
-import subprocess
-import sys
 from pathlib import Path
+import subprocess
 
 import typer
 
@@ -29,11 +28,11 @@ def dvc_pull() -> bool:
     """Ejecuta dvc pull y retorna True si fue exitoso."""
     typer.echo("🔄 Sincronizando datos desde S3 (dvc pull)...")
     result = subprocess.run(["dvc", "pull"], capture_output=True, text=True)
-    
+
     if result.returncode != 0:
         typer.echo(f"❌ Error en dvc pull: {result.stderr}", err=True)
         return False
-    
+
     typer.echo("✅ Datos sincronizados.")
     return True
 
@@ -48,30 +47,32 @@ def dvc_status() -> bool:
 @app.command()
 def run(
     input_dir: str = typer.Option(DEFAULT_INPUT_DIR, "--input", "-i", help="Directorio de PDFs"),
-    output_dir: str = typer.Option(DEFAULT_OUTPUT_DIR, "--output", "-o", help="Directorio de salida"),
+    output_dir: str = typer.Option(
+        DEFAULT_OUTPUT_DIR, "--output", "-o", help="Directorio de salida"
+    ),
     keywords: str = typer.Option(
-        ",".join(DEFAULT_KEYWORDS),
-        "--keywords", "-k",
-        help="Keywords separadas por coma"
+        ",".join(DEFAULT_KEYWORDS), "--keywords", "-k", help="Keywords separadas por coma"
     ),
     sync: bool = typer.Option(False, "--sync", "-s", help="Ejecutar dvc pull antes de procesar"),
     save_pages: bool = typer.Option(False, "--save-pages", help="Guardar páginas PDF extraídas"),
-    save_tables: bool = typer.Option(False, "--save-tables", help="Guardar CSVs individuales por semana"),
+    save_tables: bool = typer.Option(
+        False, "--save-tables", help="Guardar CSVs individuales por semana"
+    ),
 ):
     """
     Ejecuta el pipeline de extracción de tablas epidemiológicas.
-    
+
     Por defecto lee de data/raw_PDFs (sincronizado via DVC desde S3).
     """
     # Validar directorios
     input_path = Path(input_dir)
     output_path = Path(output_dir)
-    
+
     if not input_path.exists():
         typer.echo(f"❌ Directorio de entrada no existe: {input_dir}", err=True)
         typer.echo("💡 Tip: Usa --sync para descargar datos desde S3", err=True)
         raise typer.Exit(1)
-    
+
     # Sincronizar si se pidió
     if sync:
         if not dvc_pull():
@@ -81,17 +82,17 @@ def run(
         if not dvc_status():
             typer.echo("⚠️  Los datos locales pueden estar desactualizados.")
             typer.echo("💡 Tip: Usa --sync para sincronizar con S3")
-    
+
     # Crear output dir si no existe
     output_path.mkdir(parents=True, exist_ok=True)
-    
+
     # Parsear keywords
     kw_list = [k.strip() for k in keywords.split(",") if k.strip()]
-    
+
     if not kw_list:
         typer.echo("❌ Debe especificar al menos una keyword", err=True)
         raise typer.Exit(1)
-    
+
     typer.echo(f"\n{'='*60}")
     typer.echo("🚀 Iniciando pipeline de extracción")
     typer.echo(f"{'='*60}")
@@ -99,7 +100,7 @@ def run(
     typer.echo(f"📁 Output:   {output_dir}")
     typer.echo(f"🔑 Keywords: {kw_list}")
     typer.echo(f"{'='*60}\n")
-    
+
     # Ejecutar pipeline
     try:
         run_pipeline(

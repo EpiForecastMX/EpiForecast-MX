@@ -1,38 +1,30 @@
 # src/modelado/prophet.py
 
-import os
+import concurrent.futures
 import itertools
 import logging
 import time
-import concurrent.futures
 
-
-import cmdstanpy
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from prophet import Prophet
 from sklearn.metrics import (
     mean_absolute_error,
-    mean_squared_error,
     mean_absolute_percentage_error,
+    mean_squared_error,
 )
 from sklearn.model_selection import TimeSeriesSplit
 
 from src.configuraciones.config_params import conf, logger
-from src.utils import directory_manager
 
 logging.getLogger("cmdstanpy").disabled = True
 
 
-
 class SerieTiempoProphet:
-    def __init__(self,
-                 df: pd.DataFrame,
-                 sexo: str = None,
-                 entidad: str = None,
-                 padecimiento: str = None):
-
+    def __init__(
+        self, df: pd.DataFrame, sexo: str = None, entidad: str = None, padecimiento: str = None
+    ):
         self.df = df.copy()
         self.df["Fecha"] = pd.to_datetime(self.df["Fecha"])
         self.serie = pd.DataFrame
@@ -40,44 +32,44 @@ class SerieTiempoProphet:
         self.entidad = entidad
         self.padecimiento = padecimiento
 
-        self.modelado_estados = conf['padecimiento']['modelado_estados']
-        self.entrena = conf['padecimiento']['entrena_modelo']
-        self.model_path = conf['paths']['models']
-        self.model_save = conf['data']['model_train']
+        self.modelado_estados = conf["padecimiento"]["modelado_estados"]
+        self.entrena = conf["padecimiento"]["entrena_modelo"]
+        self.model_path = conf["paths"]["models"]
+        self.model_save = conf["data"]["model_train"]
 
         _GRID_KEY = {
             "Alzheimer": "alzheimer",
             "Depresión": "depresion",
             "Parkinson": "parkinson",
         }
-        tipo = self.df['Padecimiento'].iloc[0] if 'Padecimiento' in self.df.columns else None
+        tipo = self.df["Padecimiento"].iloc[0] if "Padecimiento" in self.df.columns else None
         grid_key = _GRID_KEY.get(tipo)
         if grid_key is None:
             raise ValueError(
                 f"param_grid_prophet no definido para padecimiento='{tipo}'. "
                 f"Valores válidos: {list(_GRID_KEY)}"
             )
-        self.param_grid = conf['param_grid_prophet'][grid_key]
+        self.param_grid = conf["param_grid_prophet"][grid_key]
         logger.info("Grid de hiperparámetros: {} ({})", tipo, grid_key)
 
-        self.mapeo_columnas = conf['mapeo_columnas']
-        self.FECHA_CORTE_ENTRENAMIENTO = conf['FECHA_CORTE_ENTRENAMIENTO']
-        self.TRAIN_SPLIT = conf['TS_SPLITS']
-        self.TEST_SIZE = conf['TEST_SIZE']
-        self.regiones_INEGI = conf['regiones_INEGI']
+        self.mapeo_columnas = conf["mapeo_columnas"]
+        self.FECHA_CORTE_ENTRENAMIENTO = conf["FECHA_CORTE_ENTRENAMIENTO"]
+        self.TRAIN_SPLIT = conf["TS_SPLITS"]
+        self.TEST_SIZE = conf["TEST_SIZE"]
+        self.regiones_INEGI = conf["regiones_INEGI"]
 
-
-        self.periodos_atipicos = conf['peridos_atipicos']
+        self.periodos_atipicos = conf["peridos_atipicos"]
         self.fechas_atipicas = pd.DataFrame(self.periodos_atipicos)
         self.fechas_atipicas["ds"] = pd.to_datetime(self.fechas_atipicas["ds"])
 
         # Agregar cambios de régimen específicos de esta entidad/padecimiento
-        cambios = conf.get('cambios_regimen', [])
+        cambios = conf.get("cambios_regimen", [])
         if cambios and entidad:
             filtrados = [
-                c for c in cambios
-                if c.get('entidad') == entidad
-                and (not c.get('padecimiento') or c.get('padecimiento') == padecimiento)
+                c
+                for c in cambios
+                if c.get("entidad") == entidad
+                and (not c.get("padecimiento") or c.get("padecimiento") == padecimiento)
             ]
             if filtrados:
                 df_cambios = pd.DataFrame(filtrados)
@@ -89,39 +81,43 @@ class SerieTiempoProphet:
                 )
                 logger.info(
                     "Cambios de régimen agregados para {}: {}",
-                    entidad, [c['holiday'] for c in filtrados],
+                    entidad,
+                    [c["holiday"] for c in filtrados],
                 )
 
-        self.param_model = dict(conf['param_model'])
+        self.param_model = dict(conf["param_model"])
 
         # fourier_order_regional: se usa solo en modelos por estado (series más cortas)
-        raw_seasonality = dict(conf['add_seasonality'])
-        fourier_order_regional = raw_seasonality.pop('fourier_order_regional', None)
+        raw_seasonality = dict(conf["add_seasonality"])
+        fourier_order_regional = raw_seasonality.pop("fourier_order_regional", None)
         if self.modelado_estados and fourier_order_regional is not None:
-            raw_seasonality['fourier_order'] = fourier_order_regional
-            logger.debug("fourier_order_regional={} aplicado (modelado por estado)", fourier_order_regional)
+            raw_seasonality["fourier_order"] = fourier_order_regional
+            logger.debug(
+                "fourier_order_regional={} aplicado (modelado por estado)", fourier_order_regional
+            )
         self.add_seasonality_params = raw_seasonality
 
         # n_changepoints_regional: reduce overfitting en series estatales cortas
-        n_cp_regional = conf.get('n_changepoints_regional', None)
+        n_cp_regional = conf.get("n_changepoints_regional", None)
         if self.modelado_estados and n_cp_regional is not None:
-            self.param_model['n_changepoints'] = n_cp_regional
-            logger.debug("n_changepoints_regional={} aplicado (modelado por estado)", n_cp_regional)
+            self.param_model["n_changepoints"] = n_cp_regional
+            logger.debug(
+                "n_changepoints_regional={} aplicado (modelado por estado)", n_cp_regional
+            )
 
-        self.cv_weights = conf.get('cv_weights', None)
-        self.cv_timeout = conf.get('cv_timeout_por_combo', 0)
-        self.cv_timeout_fold = conf.get('cv_timeout_por_fold', 0)
+        self.cv_weights = conf.get("cv_weights", None)
+        self.cv_timeout = conf.get("cv_timeout_por_combo", 0)
+        self.cv_timeout_fold = conf.get("cv_timeout_por_fold", 0)
 
-        self.normalizar_tasa = conf.get('normalizar_tasa', False)
-        self.col_poblacion = conf.get('columna_poblacion', 'Total')
-        self.tasa_por = conf.get('tasa_por', 100000)
-        self.log_transform = conf.get('log_transform', False)
+        self.normalizar_tasa = conf.get("normalizar_tasa", False)
+        self.col_poblacion = conf.get("columna_poblacion", "Total")
+        self.tasa_por = conf.get("tasa_por", 100000)
+        self.log_transform = conf.get("log_transform", False)
         self.poblacion_valor = None
 
         self.df_serie = pd.DataFrame
         self.train_data = pd.DataFrame
         self.test_data = pd.DataFrame
-
 
     def agrupa(self) -> None:
         agg_dict = {self.sexo: "sum"}
@@ -141,7 +137,8 @@ class SerieTiempoProphet:
             self.serie = self.serie.drop(columns=[self.sexo])
             logger.info(
                 "Normalizado a tasa por {:,.0f} hab. (población: {:,.0f})",
-                self.tasa_por, self.poblacion_valor,
+                self.tasa_por,
+                self.poblacion_valor,
             )
         else:
             self.serie = self.serie.rename(columns={self.sexo: "y"})
@@ -150,12 +147,16 @@ class SerieTiempoProphet:
             self.serie["y"] = np.log1p(self.serie["y"])
             logger.info("Log-transform aplicado: y = log(1 + y)")
 
-        self.train_data = self.serie[self.serie['ds'] < self.FECHA_CORTE_ENTRENAMIENTO]
-        self.test_data = self.serie[self.serie['ds'] >= self.FECHA_CORTE_ENTRENAMIENTO]
+        self.train_data = self.serie[self.serie["ds"] < self.FECHA_CORTE_ENTRENAMIENTO]
+        self.test_data = self.serie[self.serie["ds"] >= self.FECHA_CORTE_ENTRENAMIENTO]
 
-        logger.info(f"Datos de entrenamiento: {len(self.train_data)} semanas (hasta {self.train_data['ds'].max().date()})")
-        logger.info(f"Datos de prueba: {len(self.test_data)} semanas (desde {self.test_data['ds'].min().date()})")
-        
+        logger.info(
+            f"Datos de entrenamiento: {len(self.train_data)} semanas (hasta {self.train_data['ds'].max().date()})"
+        )
+        logger.info(
+            f"Datos de prueba: {len(self.test_data)} semanas (desde {self.test_data['ds'].min().date()})"
+        )
+
     def promedio_semanal(self) -> float:
         """Retorna el promedio semanal del conteo original (antes de transformaciones)."""
         if "y_original" in self.train_data.columns:
@@ -175,13 +176,15 @@ class SerieTiempoProphet:
             pool.shutdown(wait=False)
 
     def prophet_cross_val(self) -> tuple[dict, dict]:
-
-        parametros = [dict(zip(self.param_grid.keys(), v)) for v in itertools.product(*self.param_grid.values())]
+        parametros = [
+            dict(zip(self.param_grid.keys(), v, strict=False))
+            for v in itertools.product(*self.param_grid.values())
+        ]
 
         # Mejora 1: ordenar por cp descendente — cp alto converge rápido con L-BFGS,
         # cp bajo es donde Newton aparece. Si ya tenemos buenos resultados de cp altos,
         # el timeout corta los cp bajos sin perder calidad.
-        parametros.sort(key=lambda p: p.get('changepoint_prior_scale', 0), reverse=True)
+        parametros.sort(key=lambda p: p.get("changepoint_prior_scale", 0), reverse=True)
         logger.info("Se probarán {} combinaciones de HP (ordenadas por cp desc).", len(parametros))
 
         if self.cv_weights:
@@ -190,11 +193,11 @@ class SerieTiempoProphet:
         # Mostrar eventos configurados
         for _, fila in self.fechas_atipicas.iterrows():
             logger.debug(
-            f"Evento configurado:'{fila['holiday']}' con una ventana de afectación de {fila['upper_window']} días."
-        )
+                f"Evento configurado:'{fila['holiday']}' con una ventana de afectación de {fila['upper_window']} días."
+            )
 
-        tscv = TimeSeriesSplit(n_splits=self.TRAIN_SPLIT,test_size=self.TEST_SIZE)
-        best_rmse = float('inf')
+        tscv = TimeSeriesSplit(n_splits=self.TRAIN_SPLIT, test_size=self.TEST_SIZE)
+        best_rmse = float("inf")
         best_param = None
         best_metrics = {}
 
@@ -204,14 +207,16 @@ class SerieTiempoProphet:
         newton_cp_threshold = None
 
         for iteracion, parametro in enumerate(parametros):
-            cp = parametro.get('changepoint_prior_scale', 0)
+            cp = parametro.get("changepoint_prior_scale", 0)
             resumen = ", ".join(f"{k}={v}" for k, v in parametro.items())
 
             # Mejora 3: skip combos con cp estrictamente menor al que causó Newton
             if newton_cp_threshold is not None and cp < newton_cp_threshold:
                 logger.warning(
                     "Skip combo (Newton-prone): cp={} < umbral {} | {}",
-                    cp, newton_cp_threshold, resumen,
+                    cp,
+                    newton_cp_threshold,
+                    resumen,
                 )
                 continue
 
@@ -237,9 +242,7 @@ class SerieTiempoProphet:
 
                 try:
                     modelo_cv = Prophet(
-                            holidays=self.fechas_atipicas,
-                            **self.param_model,
-                            **parametro
+                        holidays=self.fechas_atipicas, **self.param_model, **parametro
                     )
 
                     modelo_cv.add_seasonality(**self.add_seasonality_params)
@@ -254,8 +257,10 @@ class SerieTiempoProphet:
                                 "Timeout fold: >{:.0f}s en fold {}/{}. "
                                 "Newton detectado → skip combo y cp ≤ {}: {}",
                                 self.cv_timeout_fold,
-                                fold_iteration + 1, self.TRAIN_SPLIT,
-                                cp, resumen,
+                                fold_iteration + 1,
+                                self.TRAIN_SPLIT,
+                                cp,
+                                resumen,
                             )
                             timed_out = True
                             newton_cp_threshold = cp
@@ -263,14 +268,16 @@ class SerieTiempoProphet:
                     else:
                         modelo_cv.fit(train_fold)
 
-                    forecast_cv = modelo_cv.predict(val_fold[['ds']])
+                    forecast_cv = modelo_cv.predict(val_fold[["ds"]])
 
-                    merged = val_fold[['ds','y']].merge(forecast_cv[['ds','yhat']], on='ds')
-                    rmse = np.sqrt(mean_squared_error(merged['y'], merged['yhat']))
-                    mae = mean_absolute_error(merged['y'], merged['yhat'])
-                    mape = min(mean_absolute_percentage_error(merged['y'], merged['yhat']) * 100, 999.0)
+                    merged = val_fold[["ds", "y"]].merge(forecast_cv[["ds", "yhat"]], on="ds")
+                    rmse = np.sqrt(mean_squared_error(merged["y"], merged["yhat"]))
+                    mae = mean_absolute_error(merged["y"], merged["yhat"])
+                    mape = min(
+                        mean_absolute_percentage_error(merged["y"], merged["yhat"]) * 100, 999.0
+                    )
                     # MASE: MAE / MAE_naive_seasonal (lag-52 semanas)
-                    y_train = train_fold['y'].values
+                    y_train = train_fold["y"].values
                     if len(y_train) > 52:
                         mae_naive = float(np.mean(np.abs(y_train[52:] - y_train[:-52])))
                         mase = mae / mae_naive if mae_naive > 0 else None
@@ -284,15 +291,18 @@ class SerieTiempoProphet:
                     fold_indices.append(fold_iteration)
 
                 except Exception as e:
-                    logger.warning(f'Ocurrio excepcion {e}')
+                    logger.warning(f"Ocurrio excepcion {e}")
                     continue
 
                 # Timeout por combo (backstop): si total excede el límite
                 if self.cv_timeout and (time.time() - t_combo) > self.cv_timeout:
                     logger.warning(
                         "Timeout CV: {:.0f}s > {}s en fold {}/{}. Skip combo: {}",
-                        time.time() - t_combo, self.cv_timeout,
-                        fold_iteration + 1, self.TRAIN_SPLIT, resumen,
+                        time.time() - t_combo,
+                        self.cv_timeout,
+                        fold_iteration + 1,
+                        self.TRAIN_SPLIT,
+                        resumen,
                     )
                     timed_out = True
                     newton_cp_threshold = cp
@@ -300,9 +310,9 @@ class SerieTiempoProphet:
 
             if timed_out:
                 # Combo descartada por timeout: no considerar como candidata
-                mean_rmse = float('inf')
-                mean_mae = float('inf')
-                mean_mape = float('inf')
+                mean_rmse = float("inf")
+                mean_mae = float("inf")
+                mean_mape = float("inf")
                 mean_mase = None
             elif rmse_fold:
                 if self.cv_weights and len(self.cv_weights) >= self.TRAIN_SPLIT:
@@ -320,7 +330,8 @@ class SerieTiempoProphet:
                     if self.cv_weights and len(self.cv_weights) >= self.TRAIN_SPLIT:
                         mase_weights = [
                             self.cv_weights[fold_indices[i]]
-                            for i, m in enumerate(mase_fold) if m is not None
+                            for i, m in enumerate(mase_fold)
+                            if m is not None
                         ]
                         mean_mase = float(np.average(valid_mase, weights=mase_weights))
                     else:
@@ -329,14 +340,15 @@ class SerieTiempoProphet:
                     mean_mase = None
                 logger.debug(
                     f"Métricas CV: RMSE={mean_rmse:.4f}, MAE={mean_mae:.4f}, "
-                    f"MAPE={mean_mape:.2f}%, MASE={mean_mase:.3f}" if mean_mase is not None
+                    f"MAPE={mean_mape:.2f}%, MASE={mean_mase:.3f}"
+                    if mean_mase is not None
                     else f"Métricas CV: RMSE={mean_rmse:.4f}, MAE={mean_mae:.4f}, "
                     f"MAPE={mean_mape:.2f}%, MASE=N/A"
                 )
             else:
-                mean_rmse = float('inf')
-                mean_mae = float('inf')
-                mean_mape = float('inf')
+                mean_rmse = float("inf")
+                mean_mae = float("inf")
+                mean_mape = float("inf")
                 mean_mase = None
 
             if mean_rmse < best_rmse:
@@ -354,14 +366,16 @@ class SerieTiempoProphet:
                 )
 
             else:
-                logger.debug(f"[CV] Iteración {iteracion + 1}/{len(parametros)} - No se obtuvo ningún RMSE válido para {resumen}")
+                logger.debug(
+                    f"[CV] Iteración {iteracion + 1}/{len(parametros)} - No se obtuvo ningún RMSE válido para {resumen}"
+                )
 
         # Fallback: si todos los combos hicieron timeout (Newton total), usar defaults
         if best_param is None:
             best_param = {k: v[0] for k, v in self.param_grid.items()}
-            if 'changepoint_prior_scale' in self.param_grid:
-                best_param['changepoint_prior_scale'] = max(
-                    self.param_grid['changepoint_prior_scale']
+            if "changepoint_prior_scale" in self.param_grid:
+                best_param["changepoint_prior_scale"] = max(
+                    self.param_grid["changepoint_prior_scale"]
                 )
             best_metrics = {"rmse": None, "mae": None, "mape": None, "mase": None}
             logger.warning(
@@ -376,14 +390,9 @@ class SerieTiempoProphet:
             logger.success(f"Mejor conjunto de parámetros encontrado: {best_param}")
 
         return best_param, best_metrics
-    
-    def train(self, parametros) -> Prophet:
 
-        modelo_final = Prophet(
-                holidays=self.fechas_atipicas,
-                **self.param_model,
-                **parametros
-            )
+    def train(self, parametros) -> Prophet:
+        modelo_final = Prophet(holidays=self.fechas_atipicas, **self.param_model, **parametros)
 
         modelo_final.add_seasonality(**self.add_seasonality_params)
 
@@ -393,22 +402,15 @@ class SerieTiempoProphet:
             logger.warning("L-BFGS fallo, reintentando con changepoint_prior_scale=0.05: {}", e)
             parametros_fallback = {**parametros, "changepoint_prior_scale": 0.05}
             modelo_final = Prophet(
-                holidays=self.fechas_atipicas,
-                **self.param_model,
-                **parametros_fallback
+                holidays=self.fechas_atipicas, **self.param_model, **parametros_fallback
             )
             modelo_final.add_seasonality(**self.add_seasonality_params)
             modelo_final.fit(self.serie)
 
         return modelo_final
-    
-    def train_test(self,parametros) -> pd.DataFrame:
 
-        modelo_test = Prophet(
-                holidays=self.fechas_atipicas,
-                **self.param_model,
-                **parametros
-            )
+    def train_test(self, parametros) -> pd.DataFrame:
+        modelo_test = Prophet(holidays=self.fechas_atipicas, **self.param_model, **parametros)
 
         modelo_test.add_seasonality(**self.add_seasonality_params)
         modelo_test.fit(self.train_data)
@@ -418,42 +420,37 @@ class SerieTiempoProphet:
         future_final = modelo_test.make_future_dataframe(periods=horizonte_total, freq="W-MON")
         forecast_final = modelo_test.predict(future_final)
 
-        df_eval = pd.merge(
-            self.test_data,
-            forecast_final[['ds', 'yhat']],
-            on='ds',
-            how='left'
-        )
+        df_eval = pd.merge(self.test_data, forecast_final[["ds", "yhat"]], on="ds", how="left")
 
         df_eval = df_eval.dropna(subset=["yhat"])
 
         return df_eval
-    
-    def calcular_metricas(self,df_eval_periodo, nombre_periodo):
-        y_true = df_eval_periodo['y']
-        y_pred = df_eval_periodo['yhat']
-        
+
+    def calcular_metricas(self, df_eval_periodo, nombre_periodo):
+        y_true = df_eval_periodo["y"]
+        y_pred = df_eval_periodo["yhat"]
+
         mape = mean_absolute_percentage_error(y_true, y_pred) * 100
         rmse = np.sqrt(mean_squared_error(y_true, y_pred))
         mae = mean_absolute_error(y_true, y_pred)
-        
+
         print(f"\n--- Métricas para el período: {nombre_periodo} ---")
         print(f"MAPE: {mape:.2f}%")
         print(f"RMSE: {rmse:.2f}")
         print(f"MAE:  {mae:.2f}")
 
     def graficar(self, df_eval):
-
         plt.figure(figsize=(15, 5))
-        plt.plot(df_eval['ds'], df_eval['y'], 'o-', label='Datos Reales')
-        plt.plot(df_eval['ds'], df_eval['yhat'], 'x--', label='Pronóstico')
-        plt.title(f'Pronóstico vs Realidad — Región: {self.region}, Agrupado por {self.sexo.capitalize()}')
+        plt.plot(df_eval["ds"], df_eval["y"], "o-", label="Datos Reales")
+        plt.plot(df_eval["ds"], df_eval["yhat"], "x--", label="Pronóstico")
+        plt.title(
+            f"Pronóstico vs Realidad — Región: {self.region}, Agrupado por {self.sexo.capitalize()}"
+        )
         plt.legend()
         plt.grid(alpha=0.3)
         plt.show()
 
     def run(self) -> tuple[Prophet, dict, dict]:
-
         self.agrupa()
         self.crea_train_test()
 
@@ -461,12 +458,11 @@ class SerieTiempoProphet:
         modelo = self.train(parametros)
 
         return modelo, metrics, parametros
-     
-     
 
-"""                    
+
+"""
                     #df_eval_2025 = df_eval[df_eval['ds'].dt.year == 2025]
                     #self.calcular_metricas(df_eval_2025, "2023 (Año 1 del Pronóstico)")
                     #self.graficar(df_eval_2025)
-            
+
 """

@@ -1,7 +1,7 @@
 import os
 import threading
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import filedialog, messagebox, ttk
 
 from src.extraccion.pipeline import run_pipeline
 
@@ -17,7 +17,9 @@ class App(tk.Tk):
         self.test_output_dir = "/Users/luisgss10/Documents/To be deleted/output2014"
 
         self.input_dir = tk.StringVar(value=self.test_input_dir if self.test_mode else os.getcwd())
-        self.output_dir = tk.StringVar(value=self.test_output_dir if self.test_mode else os.getcwd())
+        self.output_dir = tk.StringVar(
+            value=self.test_output_dir if self.test_mode else os.getcwd()
+        )
 
         self.keywords = tk.StringVar(value="Depresión, Parkinson, Alzheimer")
         self.save_pages = tk.BooleanVar(value=True)
@@ -37,7 +39,7 @@ class App(tk.Tk):
 
         txt = tk.Text(top, wrap="word")
         txt.pack(fill="both", expand=True, padx=10, pady=10)
-        texto_ayuda="""KEYWORDS
+        texto_ayuda = """KEYWORDS
 
         NOTA: Esta función se encuentra deshabilitada por desarrollo.
         De momento disponible solamente para Depresión, Parkinson, Alzheimer.
@@ -55,42 +57,52 @@ class App(tk.Tk):
 
         ttk.Button(top, text="Cerrar", command=top.destroy).pack(pady=(0, 10))
 
-    
-    
     def _build_ui(self):
         pad = 10
         frm = ttk.Frame(self)
         frm.pack(fill="x", padx=pad, pady=pad)
 
         ttk.Label(frm, text="Carpeta de entrada (PDFs):").grid(row=0, column=0, sticky="w")
-        ttk.Entry(frm, textvariable=self.input_dir, width=70).grid(row=0, column=1, sticky="we", padx=6)
+        ttk.Entry(frm, textvariable=self.input_dir, width=70).grid(
+            row=0, column=1, sticky="we", padx=6
+        )
         ttk.Button(frm, text="Browse", command=self._browse_input).grid(row=0, column=2)
 
         ttk.Label(frm, text="Carpeta de salida:").grid(row=1, column=0, sticky="w", pady=(6, 0))
-        ttk.Entry(frm, textvariable=self.output_dir, width=70).grid(row=1, column=1, sticky="we", padx=6, pady=(6, 0))
-        ttk.Button(frm, text="Browse", command=self._browse_output).grid(row=1, column=2, pady=(6, 0))
+        ttk.Entry(frm, textvariable=self.output_dir, width=70).grid(
+            row=1, column=1, sticky="we", padx=6, pady=(6, 0)
+        )
+        ttk.Button(frm, text="Browse", command=self._browse_output).grid(
+            row=1, column=2, pady=(6, 0)
+        )
 
         ttk.Label(frm, text="KEYWORDS:").grid(row=2, column=0, sticky="w", pady=(6, 0))
         kw_frame = ttk.Frame(frm)
         kw_frame.grid(row=2, column=1, sticky="we", padx=6, pady=(6, 0))
 
-        ttk.Entry(kw_frame, textvariable=self.keywords, state="disabled").pack(side="left", fill="x", expand=True)
+        ttk.Entry(kw_frame, textvariable=self.keywords, state="disabled").pack(
+            side="left", fill="x", expand=True
+        )
 
-        ttk.Button(kw_frame, text="?", width=3, command=self._show_keywords_help).pack(side="left", padx=(6, 0))
+        ttk.Button(kw_frame, text="?", width=3, command=self._show_keywords_help).pack(
+            side="left", padx=(6, 0)
+        )
 
         ttk.Checkbutton(frm, text="Guardar página match", variable=self.save_pages).grid(
             row=3, column=1, sticky="w", pady=(8, 0)
         )
 
-        ttk.Checkbutton(frm, text="Guardar CSV individuales", variable=self.save_individual_tables).grid(
-            row=4, column=1, sticky="w", pady=(4, 0)
-        )
+        ttk.Checkbutton(
+            frm, text="Guardar CSV individuales", variable=self.save_individual_tables
+        ).grid(row=4, column=1, sticky="w", pady=(4, 0))
 
         ttk.Checkbutton(frm, text="Mostrar preview al finalizar", variable=self.show_preview).grid(
             row=5, column=1, sticky="w", pady=(4, 0)
         )
 
-        ttk.Button(frm, text="RUN", command=self._run_clicked).grid(row=5, column=2, sticky="e", pady=(4, 0))
+        ttk.Button(frm, text="RUN", command=self._run_clicked).grid(
+            row=5, column=2, sticky="e", pady=(4, 0)
+        )
 
         frm.columnconfigure(1, weight=1)
 
@@ -102,7 +114,7 @@ Extractor de tablas: Boletín Epidemiológico (México)
 
 Este programa procesa boletines en PDF y genera:
 1) Un CSV consolidado listo para análisis.
-2) Páginas individuales en PDF de la tabla seleccionada. 
+2) Páginas individuales en PDF de la tabla seleccionada.
 3) Tablas (csv) individuales por PDF de la tabla seleccionada.
 
 El boletín se actualiza semanalmente por el Sistema Nacional de Vigilancia Epidemiológica (SINAVE).
@@ -126,7 +138,7 @@ Salida:
         self._log(texto_bienvenida)
         footer = ttk.Frame(self)
         footer.pack(fill="x", padx=10, pady=(0, 10))
-        texto_acercade="""
+        texto_acercade = """
 Acerca de:
 Extractor de tablas - Boletín Epidemiológico SINAVE
 Versión: 1.0.0
@@ -135,36 +147,38 @@ Este proyecto fue realizado académicamente en colaboración del Tecnológico de
 
 Equipo:
 A01795941@tec.mx - Juan Carlos Pérez
-A01795838@tec.mx - Javier Rebull 
+A01795838@tec.mx - Javier Rebull
 A01232963@tec.mx - Luis Sánchez
 """
         ttk.Button(
             footer,
             text="Acerca de...",
-            command=lambda: messagebox.showinfo("Acerca de", texto_acercade)
+            command=lambda: messagebox.showinfo("Acerca de", texto_acercade),
         ).pack(side="left")
 
         ttk.Button(footer, text="Salir", command=self.destroy).pack(side="right")
 
-
-
     def _browse_input(self):
-        initialdir = self.test_input_dir if self.test_mode else (self.input_dir.get() or os.getcwd())
+        initialdir = (
+            self.test_input_dir if self.test_mode else (self.input_dir.get() or os.getcwd())
+        )
         d = filedialog.askdirectory(initialdir=initialdir)
         if d:
             self.input_dir.set(d)
 
     def _browse_output(self):
-        initialdir = self.test_output_dir if self.test_mode else (self.output_dir.get() or os.getcwd())
+        initialdir = (
+            self.test_output_dir if self.test_mode else (self.output_dir.get() or os.getcwd())
+        )
         d = filedialog.askdirectory(initialdir=initialdir)
         if d:
             self.output_dir.set(d)
 
-    
     def _show_csv_preview(self, csv_path: str, n_rows: int = 50):
-        import pandas as pd
-        from tkinter import ttk
         import tkinter as tk
+        from tkinter import ttk
+
+        import pandas as pd
 
         if not os.path.exists(csv_path):
             messagebox.showwarning("Preview", f"No se encontró el archivo:\n{csv_path}")
@@ -196,7 +210,6 @@ A01232963@tec.mx - Luis Sánchez
 
         ttk.Button(top, text="Cerrar", command=top.destroy).pack(pady=(0, 10))
 
-    
     def _log(self, msg: str):
         self.log.insert("end", msg + "\n")
         self.log.see("end")
@@ -217,7 +230,9 @@ A01232963@tec.mx - Luis Sánchez
                 self._log_safe("\n=== Inicio ===")
                 self.current_file = None
                 run_pipeline(
-                    inp, out, kw,
+                    inp,
+                    out,
+                    kw,
                     save_matched_pages=save_pages,
                     save_individual_tables=save_tables,
                     log_fn=self._log_safe,
@@ -230,6 +245,7 @@ A01232963@tec.mx - Luis Sánchez
 
             except Exception as e:
                 import traceback
+
                 tb = traceback.format_exc()
                 self._log_safe(f"\nERROR ({type(e).__name__}): {e}\n{tb}")
                 fname = getattr(self, "current_file", "desconocido")
@@ -237,6 +253,7 @@ A01232963@tec.mx - Luis Sánchez
                 self.after(0, lambda msg=msg: messagebox.showerror("Error", msg))
 
         threading.Thread(target=worker, daemon=True).start()
+
 
 if __name__ == "__main__":
     App().mainloop()

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 ci_process_boletines.py — Procesamiento automático de boletines nuevos.
 
@@ -28,13 +27,13 @@ Exit codes:
     1 - Error en el procesamiento
 """
 
-import os
-import re
-import sys
-import shutil
+from datetime import UTC, datetime
 import logging
+import os
 from pathlib import Path
-from datetime import datetime, timezone
+import re
+import shutil
+import sys
 
 import pandas as pd
 
@@ -148,14 +147,10 @@ def merge_into_dataset(extracted_csv: Path, target_csv: Path) -> int:
     df_new_cmp = df_new.copy()
     df_target_cmp = df_target.copy()
     df_new_cmp["Semana"] = (
-        pd.to_numeric(df_new_cmp["Semana"], errors="coerce")
-        .astype("Int64")
-        .astype("string")
+        pd.to_numeric(df_new_cmp["Semana"], errors="coerce").astype("Int64").astype("string")
     )
     df_target_cmp["Semana"] = (
-        pd.to_numeric(df_target_cmp["Semana"], errors="coerce")
-        .astype("Int64")
-        .astype("string")
+        pd.to_numeric(df_target_cmp["Semana"], errors="coerce").astype("Int64").astype("string")
     )
 
     # Left join para encontrar filas que faltan en target
@@ -200,7 +195,7 @@ def notify_sns(new_files: list[str], rows_added: int) -> None:
 
     message = (
         f"📊 Pipeline de extracción completado\n"
-        f"({datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')})\n\n"
+        f"({datetime.now(UTC).strftime('%Y-%m-%d %H:%M UTC')})\n\n"
         f"Boletines procesados:\n{file_list}\n\n"
         f"Filas nuevas agregadas al dataset: {rows_added}\n"
         f"Dataset: data/processed/dataset_boletin_epidemiologico.csv\n\n"

@@ -1,11 +1,12 @@
 # scripts/predice.py
-import re
-import pandas as pd
 from pathlib import Path
+import re
 import unicodedata
 
-from src.modelado.forecast import ForecastModelLoader, generar_graficos_pronostico
+import pandas as pd
+
 from src.configuraciones.config_params import conf, logger
+from src.modelado.forecast import ForecastModelLoader, generar_graficos_pronostico
 from src.utils import directory_manager
 
 
@@ -35,6 +36,7 @@ def parse_nombre_modelo(stem: str) -> dict:
         "meta_entidad": entidad,
         "meta_modo": modo,
     }
+
 
 def estandarizar_valores(df: pd.DataFrame) -> pd.DataFrame:
     import unicodedata
@@ -77,6 +79,7 @@ def estandarizar_valores(df: pd.DataFrame) -> pd.DataFrame:
             df[col] = df[col].map(lambda v: mapping.get(key(v), v))
 
     return df
+
 
 def _parse_regional(stem: str) -> dict:
     """Extrae metadatos de un modelo regional.
@@ -126,6 +129,7 @@ def _cargar_mapeo_hibrido(base_models: Path) -> dict:
                 }
     return mapeo
 
+
 def _cargar_metricas_completos(base_models: Path) -> pd.DataFrame:
     frames = []
     for csv_path in sorted(base_models.rglob("*_completo.csv")):
@@ -137,7 +141,20 @@ def _cargar_metricas_completos(base_models: Path) -> pd.DataFrame:
             continue
         df["archivo_modelo"] = df["archivo_modelo"].astype(str)
 
-        cols = [c for c in ["archivo_modelo","rmse","mae","mape","mase","confianza","normalizado","poblacion"] if c in df.columns]
+        cols = [
+            c
+            for c in [
+                "archivo_modelo",
+                "rmse",
+                "mae",
+                "mape",
+                "mase",
+                "confianza",
+                "normalizado",
+                "poblacion",
+            ]
+            if c in df.columns
+        ]
         frames.append(df[cols].copy())
 
     if not frames:
@@ -145,6 +162,7 @@ def _cargar_metricas_completos(base_models: Path) -> pd.DataFrame:
 
     met = pd.concat(frames, ignore_index=True).drop_duplicates("archivo_modelo")
     return met
+
 
 def main():
     periodo = conf["prediccion"]["periodo"]
@@ -164,8 +182,7 @@ def main():
     stems_insuf = set(mapeo_hibrido.keys())
     # Modelos region_* — se identifican para predicción standalone
     pkls_regional = [
-        pkl for pkl in modelos
-        if pkl.stem.startswith("Prophet_") and "_region_" in pkl.stem
+        pkl for pkl in modelos if pkl.stem.startswith("Prophet_") and "_region_" in pkl.stem
     ]
     stems_regional = {pkl.stem for pkl in pkls_regional}
 
@@ -175,7 +192,9 @@ def main():
             len(mapeo_hibrido),
         )
 
-    logger.info("Modelos detectados: {} | periodo: {} semanas | salida: {}", total, periodo, out_file)
+    logger.info(
+        "Modelos detectados: {} | periodo: {} semanas | salida: {}", total, periodo, out_file
+    )
 
     frames = []
     errores = []
@@ -187,7 +206,10 @@ def main():
         if pkl.stem in stems_insuf:
             logger.info(
                 "[{}/{}] {}% → SKIP insuficiente (fallback): {}",
-                i, total, pct, pkl.name,
+                i,
+                total,
+                pct,
+                pkl.name,
             )
             continue
 
@@ -241,7 +263,8 @@ def main():
                 frames.append(df)
                 logger.info(
                     "Fallback regional: {} → {} (pob={:,.0f})",
-                    stem_insuf, pkl_regional_name,
+                    stem_insuf,
+                    pkl_regional_name,
                     info.get("poblacion", 0),
                 )
             except Exception as e:
@@ -270,21 +293,25 @@ def main():
 
     out = pd.concat(frames, ignore_index=True)
     out = estandarizar_valores(out)
-    
-    logger.info(">>> Forecast: Cargando métricas del modelo desde *_completo.csv (rmse, mae, mape, mase, confianza, normalizado, población)")
+
+    logger.info(
+        ">>> Forecast: Cargando métricas del modelo desde *_completo.csv (rmse, mae, mape, mase, confianza, normalizado, población)"
+    )
     met = _cargar_metricas_completos(base_models)
 
     logger.info(">>> Forecast: Seccionando métricas en ORIGINAL y USADO")
     # 1) Trae valores del modelo ORIGINAL
-    met_orig = met.rename(columns={
-        "rmse": "rmse_original",
-        "mae": "mae_original",
-        "mape": "mape_original",
-        "mase": "mase_original",
-        "confianza": "confianza_original",
-        "normalizado": "normalizado_original",
-        "poblacion": "poblacion_original",
-    })
+    met_orig = met.rename(
+        columns={
+            "rmse": "rmse_original",
+            "mae": "mae_original",
+            "mape": "mape_original",
+            "mase": "mase_original",
+            "confianza": "confianza_original",
+            "normalizado": "normalizado_original",
+            "poblacion": "poblacion_original",
+        }
+    )
     out = out.merge(
         met_orig,
         how="left",
@@ -294,16 +321,20 @@ def main():
     ).drop(columns=["archivo_modelo"])
 
     # 2) Trae métricas del modelo USADO
-    met_used = met.rename(columns={
-        "rmse": "rmse_usado",
-        "mae": "mae_usado",
-        "mape": "mape_usado",
-        "mase": "mase_usado",
-        "confianza": "confianza_usado",
-        "normalizado": "normalizado_usado",
-        "poblacion": "poblacion_usado",
-    })
-    logger.info(">>> Forecast: Procesando merge de métricas modelo ORIGINAL y modelo USADO desde *_completo.csv")
+    met_used = met.rename(
+        columns={
+            "rmse": "rmse_usado",
+            "mae": "mae_usado",
+            "mape": "mape_usado",
+            "mase": "mase_usado",
+            "confianza": "confianza_usado",
+            "normalizado": "normalizado_usado",
+            "poblacion": "poblacion_usado",
+        }
+    )
+    logger.info(
+        ">>> Forecast: Procesando merge de métricas modelo ORIGINAL y modelo USADO desde *_completo.csv"
+    )
     out = out.merge(
         met_used,
         how="left",
@@ -311,12 +342,30 @@ def main():
         right_on="archivo_modelo",
         validate="m:1",
     ).drop(columns=["archivo_modelo"])
-    logger.info(">>> Forecast: Listo. yhat generado (directo/fallback) + métricas del modelo original y del modelo usado")
-    logger.info(">>> Forecast: Detalles | filas={} | columnas={} | yhat={} | rmse_usado={} | mae_usado={} | mape_usado={} | mase_usado={} | conf_orig_nulls={} | conf_usado_nulls={}",len(out),out.shape[1],out["yhat"].notna().sum(),out["rmse_usado"].notna().sum(),out["mae_usado"].notna().sum(),out["mape_usado"].notna().sum(),out["mase_usado"].notna().sum(),out["confianza_original"].isna().sum(),out["confianza_usado"].isna().sum(),)
+    logger.info(
+        ">>> Forecast: Listo. yhat generado (directo/fallback) + métricas del modelo original y del modelo usado"
+    )
+    logger.info(
+        ">>> Forecast: Detalles | filas={} | columnas={} | yhat={} | rmse_usado={} | mae_usado={} | mape_usado={} | mase_usado={} | conf_orig_nulls={} | conf_usado_nulls={}",
+        len(out),
+        out.shape[1],
+        out["yhat"].notna().sum(),
+        out["rmse_usado"].notna().sum(),
+        out["mae_usado"].notna().sum(),
+        out["mape_usado"].notna().sum(),
+        out["mase_usado"].notna().sum(),
+        out["confianza_original"].isna().sum(),
+        out["confianza_usado"].isna().sum(),
+    )
 
     out.to_csv(out_file, index=False)
 
-    logger.success("Predicciones guardadas: {} | modelos: {} | errores: {}", out_file, len(frames), len(errores))
+    logger.success(
+        "Predicciones guardadas: {} | modelos: {} | errores: {}",
+        out_file,
+        len(frames),
+        len(errores),
+    )
     if errores:
         for nombre in errores:
             logger.warning("  Falló: {}", nombre)

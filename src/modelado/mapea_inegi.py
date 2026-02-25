@@ -1,19 +1,19 @@
 # src/modelado/mapea_inegi.py
-import pandas as pd
 import sys
+
+import pandas as pd
 
 from src.configuraciones.config_params import conf, logger
 from src.utils import directory_manager
 
 
 class MapeaInegi:
-
     def __init__(self, df: pd.DataFrame):
         self.df = df.copy()
         conf_paths = conf.get("data")
-        self.inegi_path = conf_paths['inegi']
-        self.final_path = conf_paths['data_inegi']
-        self.xlsx_path = conf_paths['xlsx_inegi']
+        self.inegi_path = conf_paths["inegi"]
+        self.final_path = conf_paths["data_inegi"]
+        self.xlsx_path = conf_paths["xlsx_inegi"]
         self.inegi = pd.DataFrame()
         self.df_merge = pd.DataFrame()
 

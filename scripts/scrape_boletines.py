@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 scrape_boletines.py - Scraper automatizado de boletines SINAVE.
 
@@ -17,19 +16,19 @@ Variables de entorno (opcionales, para CI/CD):
   AWS_REGION       - Region AWS (default: us-east-1)
 """
 
-import os
-import re
-import sys
+from datetime import UTC, datetime
 import json
 import logging
-import requests
+import os
 from pathlib import Path
-from datetime import datetime, timezone
+import re
+import sys
 
+import requests
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
 
 # ──────────────────────────────────────────────
 # Config
@@ -67,7 +66,7 @@ log = logging.getLogger(__name__)
 # ──────────────────────────────────────────────
 def load_registry() -> dict:
     if REGISTRY_PATH.exists():
-        with open(REGISTRY_PATH, "r") as f:
+        with open(REGISTRY_PATH) as f:
             return json.load(f)
     return {"bulletins": {}}
 
@@ -113,14 +112,10 @@ def scrape_bulletins() -> list[dict]:
         driver.get(TARGET_URL)
 
         WebDriverWait(driver, 30).until(
-            EC.presence_of_element_located(
-                (By.CSS_SELECTOR, "li.clearfix.documents")
-            )
+            EC.presence_of_element_located((By.CSS_SELECTOR, "li.clearfix.documents"))
         )
 
-        items = driver.find_elements(
-            By.CSS_SELECTOR, "li.clearfix.documents"
-        )
+        items = driver.find_elements(By.CSS_SELECTOR, "li.clearfix.documents")
         log.info("Encontrados %d boletines en la pagina", len(items))
 
         for item in items:
@@ -129,9 +124,7 @@ def scrape_bulletins() -> list[dict]:
             semana = match.group(1).zfill(2) if match else None
 
             try:
-                link = item.find_element(
-                    By.CSS_SELECTOR, "a.btn.btn-default"
-                )
+                link = item.find_element(By.CSS_SELECTOR, "a.btn.btn-default")
                 href = link.get_attribute("href") or ""
             except Exception:
                 href = ""
@@ -145,11 +138,13 @@ def scrape_bulletins() -> list[dict]:
             filename = f"{year}_sem{semana}.pdf" if semana else None
 
             if semana and full_url and filename:
-                bulletins.append({
-                    "semana": semana,
-                    "url": full_url,
-                    "filename": filename,
-                })
+                bulletins.append(
+                    {
+                        "semana": semana,
+                        "url": full_url,
+                        "filename": filename,
+                    }
+                )
 
     finally:
         driver.quit()
@@ -183,13 +178,10 @@ def notify(new_bulletins: list[dict]) -> None:
     import boto3
 
     sns = boto3.client("sns", region_name=AWS_REGION)
-    lines = [
-        f"  - Semana {b['semana']}: {b['filename']}"
-        for b in new_bulletins
-    ]
+    lines = [f"  - Semana {b['semana']}: {b['filename']}" for b in new_bulletins]
     message = (
         f"Se detectaron {len(new_bulletins)} boletines nuevos "
-        f"({datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')}):\n\n"
+        f"({datetime.now(UTC).strftime('%Y-%m-%d %H:%M UTC')}):\n\n"
         + "\n".join(lines)
         + "\n\nVersionados con DVC en EpiForecast-MX."
     )
@@ -233,7 +225,7 @@ def main() -> int:
             registry["bulletins"][b["semana"]] = {
                 "url": b["url"],
                 "filename": b["filename"],
-                "downloaded_at": datetime.now(timezone.utc).isoformat(),
+                "downloaded_at": datetime.now(UTC).isoformat(),
             }
 
     if not new_bulletins:
@@ -252,7 +244,7 @@ def main() -> int:
         registry["bulletins"][b["semana"]] = {
             "url": b["url"],
             "filename": b["filename"],
-            "downloaded_at": datetime.now(timezone.utc).isoformat(),
+            "downloaded_at": datetime.now(UTC).isoformat(),
         }
         new_filenames.append(b["filename"])
 
@@ -261,8 +253,7 @@ def main() -> int:
 
     # 6. Escribir flag de archivos nuevos (para CI/CD)
     NEW_FILES_FLAG.write_text("\n".join(new_filenames))
-    log.info("Flag de archivos nuevos: %s (%d archivos)",
-             NEW_FILES_FLAG, len(new_filenames))
+    log.info("Flag de archivos nuevos: %s (%d archivos)", NEW_FILES_FLAG, len(new_filenames))
 
     # 7. Escribir GITHUB_OUTPUT si estamos en CI
     github_output = os.getenv("GITHUB_OUTPUT")
@@ -277,8 +268,7 @@ def main() -> int:
     for b in new_bulletins:
         print(f"NUEVO: Semana {b['semana']} -> {b['filename']}")
 
-    log.info("=== Fin: %d nuevos boletines procesados ===",
-             len(new_bulletins))
+    log.info("=== Fin: %d nuevos boletines procesados ===", len(new_bulletins))
     return 0
 
 

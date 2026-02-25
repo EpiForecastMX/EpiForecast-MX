@@ -27,13 +27,15 @@ class CleanDataset:
 
     def resumen(self) -> dict[str, str]:
         """Retorna las métricas de la limpieza como dict clave-valor (para SeccionNota)."""
-        cols_eliminadas_str = ", ".join(self._columnas_eliminadas) if self._columnas_eliminadas else "—"
+        cols_eliminadas_str = (
+            ", ".join(self._columnas_eliminadas) if self._columnas_eliminadas else "—"
+        )
         return {
-            "Filas antes":             f"{self._filas_inicial:,}",
-            "Filas después":           f"{len(self.df):,}",
-            "Registros eliminados":    f"{self._registros_eliminados:,}",
-            "Columnas antes":          f"{self._cols_inicial}",
-            "Columnas eliminadas":     f"{len(self._columnas_eliminadas)}  ({cols_eliminadas_str})",
+            "Filas antes": f"{self._filas_inicial:,}",
+            "Filas después": f"{len(self.df):,}",
+            "Registros eliminados": f"{self._registros_eliminados:,}",
+            "Columnas antes": f"{self._cols_inicial}",
+            "Columnas eliminadas": f"{len(self._columnas_eliminadas)}  ({cols_eliminadas_str})",
             "Sustituciones aplicadas": f"{self._sustituciones:,}",
         }
 
@@ -48,7 +50,7 @@ class CleanDataset:
         existentes = set(self.df.columns)
         a_eliminar = set(self.columnas_a_eliminar)
 
-        encontradas    = sorted(a_eliminar & existentes)
+        encontradas = sorted(a_eliminar & existentes)
         no_encontradas = sorted(a_eliminar - existentes)
 
         if encontradas:
@@ -56,7 +58,9 @@ class CleanDataset:
             self.df.drop(columns=encontradas, inplace=True)
             self._columnas_eliminadas.extend(encontradas)
         else:
-            logger.info("No se encontraron en el DataFrame las columnas configuradas para eliminar.")
+            logger.info(
+                "No se encontraron en el DataFrame las columnas configuradas para eliminar."
+            )
 
         if no_encontradas:
             logger.warning("Columnas no localizadas en el DataFrame: {}", no_encontradas)
@@ -69,8 +73,8 @@ class CleanDataset:
 
         for regla in self.valores_a_sustituir:
             columna = regla["columna_objetivo"]
-            viejo   = regla["texto_a_reemplazar"]
-            nuevo   = regla["texto_sustituto"]
+            viejo = regla["texto_a_reemplazar"]
+            nuevo = regla["texto_sustituto"]
 
             logger.debug('Sustituyendo en "{}": "{}" → "{}"', columna, viejo, nuevo)
 
@@ -97,7 +101,7 @@ class CleanDataset:
 
         for regla in self.registros_a_eliminar:
             columna = regla["columna_objetivo"]
-            valor   = regla["valor"]
+            valor = regla["valor"]
 
             if columna not in self.df.columns:
                 logger.warning("Columna no encontrada: '{}'. Regla omitida.", columna)
@@ -106,7 +110,9 @@ class CleanDataset:
             coincidencias = int((self.df[columna] == valor).sum())
             logger.debug(
                 "Regla | columna: '{}' | valor: '{}' | coincidencias: {}",
-                columna, valor, coincidencias,
+                columna,
+                valor,
+                coincidencias,
             )
 
             if coincidencias > 0:
@@ -121,7 +127,8 @@ class CleanDataset:
     def run(self) -> pd.DataFrame:
         logger.info(
             "Iniciando limpieza | filas: {:,} | columnas: {}",
-            self._filas_inicial, self._cols_inicial,
+            self._filas_inicial,
+            self._cols_inicial,
         )
 
         self._normalizar_columnas()
@@ -146,6 +153,9 @@ class CleanDataset:
 
         logger.info(
             "Limpieza completada | filas: {:,} → {:,} | columnas: {} → {}",
-            self._filas_inicial, len(self.df), self._cols_inicial, self.df.shape[1],
+            self._filas_inicial,
+            len(self.df),
+            self._cols_inicial,
+            self.df.shape[1],
         )
         return self.df

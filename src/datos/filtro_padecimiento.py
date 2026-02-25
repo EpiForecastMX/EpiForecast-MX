@@ -1,29 +1,24 @@
 # src/datos/filtro_padecimiento.py
+from loguru import logger
 import pandas as pd
 
-from loguru import logger
 
 class FiltraPadecimiento:
-
-    def __init__(self,
-                 df: pd.DataFrame,
-                 padecimiento : dict
-                 ):
-        
+    def __init__(self, df: pd.DataFrame, padecimiento: dict):
         self.df_raw = df.copy()
         self.columna = padecimiento.get("columna")
         self.padecimiento = padecimiento.get("tipo")
         self.df_raw_filtrado = pd.DataFrame()
-    
 
     def _filtrar_padecimiento(self) -> bool:
-
         if self.df_raw.empty:
             logger.error("No se puede filtrar: DataFrame vacío.")
             return False
 
         if self.columna not in self.df_raw.columns:
-            logger.error("No se puede filtrar: la columna '{}' no existe en el DataFrame.", self.columna)
+            logger.error(
+                "No se puede filtrar: la columna '{}' no existe en el DataFrame.", self.columna
+            )
             return False
 
         if not self.padecimiento:
@@ -49,7 +44,6 @@ class FiltraPadecimiento:
         return True
 
     def run(self) -> pd.DataFrame:
-
         if not self._filtrar_padecimiento():
             return None
 
@@ -57,9 +51,7 @@ class FiltraPadecimiento:
         filtrados = len(self.df_raw_filtrado)
 
         if filtrados == 0:
-            logger.error(
-                "Sin resultados: ningún registro coincide con '{}'.", self.padecimiento
-            )
+            logger.error("Sin resultados: ningún registro coincide con '{}'.", self.padecimiento)
             return None
 
         if filtrados < total_registros:

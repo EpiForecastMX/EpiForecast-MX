@@ -21,7 +21,9 @@ def transforma_dataset() -> tuple[bool, pd.DataFrame | None]:
     df_transformado = dataTransformation(df).run()
 
     if df_transformado.empty:
-        logger.error("La transformación produjo un DataFrame vacío. No se guardó: {}", transform_file)
+        logger.error(
+            "La transformación produjo un DataFrame vacío. No se guardó: {}", transform_file
+        )
         return False, None
 
     directory_manager.asegurar_ruta(transform_path)

@@ -1,18 +1,17 @@
 # scripts/entrena.py
 
-import time
-
-import pandas as pd
-import pickle
-import re
-import unicodedata
 import os
 from pathlib import Path
+import pickle
+import re
+import time
+import unicodedata
 
 from joblib import Parallel, delayed
+import pandas as pd
 
-from src.modelado.prophet import SerieTiempoProphet
 from src.configuraciones.config_params import conf, logger
+from src.modelado.prophet import SerieTiempoProphet
 from src.utils import directory_manager
 
 
@@ -27,13 +26,19 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False,
     # como globals de __main__. OmegaConf y loguru no son pickle-safe.
     # Cada worker re-importa los módulos frescos.
     from src.configuraciones.config_params import conf, logger
-    from src.modelado.prophet import SerieTiempoProphet
     from src.utils import directory_manager
 
     if progreso:
         i, total = progreso
-        logger.info("[{}/{}] {:.0f}% | {} | {} | {}", i, total, i / total * 100,
-                    padecimiento, region or "Nacional", mapeo.get(sexo, sexo))
+        logger.info(
+            "[{}/{}] {:.0f}% | {} | {} | {}",
+            i,
+            total,
+            i / total * 100,
+            padecimiento,
+            region or "Nacional",
+            mapeo.get(sexo, sexo),
+        )
 
     ruta_padecimiento = os.path.join(ruta_base, normalizar(padecimiento))
     directory_manager.asegurar_ruta(ruta_padecimiento)
@@ -54,7 +59,7 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False,
     stp.crea_train_test()
 
     # Verificar umbral mínimo de casos por semana
-    umbral = conf.get('umbral_minimo_semanal', 0)
+    umbral = conf.get("umbral_minimo_semanal", 0)
     promedio = stp.promedio_semanal()
     es_insuficiente = umbral and promedio < umbral
 
@@ -64,7 +69,10 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False,
         metrics = {"rmse": None, "mae": None, "mape": None, "mase": None}
         logger.warning(
             "Baja confianza: skip CV, params default | {:.2f} casos/sem | {} | {} | {}",
-            promedio, padecimiento, region or "Nacional", sexo,
+            promedio,
+            padecimiento,
+            region or "Nacional",
+            sexo,
         )
         t_cv = time.time()
         modelo = stp.train(parametros)
@@ -79,8 +87,11 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False,
     mape_clipped = mape_raw is not None and mape_raw >= 999.0
 
     fila = {
-        "padecimiento": padecimiento, "sexo": sexo,
-        "rmse": metrics["rmse"], "mae": metrics["mae"], "mape": mape_raw,
+        "padecimiento": padecimiento,
+        "sexo": sexo,
+        "rmse": metrics["rmse"],
+        "mae": metrics["mae"],
+        "mape": mape_raw,
         "mase": metrics.get("mase"),
         "mape_confiable": not mape_clipped,
         **parametros,
@@ -107,9 +118,14 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False,
     mase_str = f"{metrics['mase']:.3f}" if metrics.get("mase") is not None else "N/A"
     logger.info(
         "Completado: {} | {} | {} | RMSE={} | MASE={} | CV={:.1f}s | Train={:.1f}s | {}",
-        padecimiento, region or "Nacional", mapeo.get(sexo, sexo),
+        padecimiento,
+        region or "Nacional",
+        mapeo.get(sexo, sexo),
         f"{metrics['rmse']:.4f}" if metrics["rmse"] is not None else "N/A",
-        mase_str, fila["tiempo_cv_seg"], fila["tiempo_train_seg"], fila["confianza"],
+        mase_str,
+        fila["tiempo_cv_seg"],
+        fila["tiempo_train_seg"],
+        fila["confianza"],
     )
 
     return fila
@@ -138,7 +154,12 @@ def main():
     logger.info(
         "Iniciando entrenamiento | padecimientos: {} | regiones: {} | sexo: {} | "
         "total modelos: {} | n_jobs: {} | solo_nacional: {}",
-        len(padecimientos), len(regiones), len(valores_sexo), total, n_jobs, solo_nacional,
+        len(padecimientos),
+        len(regiones),
+        len(valores_sexo),
+        total,
+        n_jobs,
+        solo_nacional,
     )
 
     for padecimiento in padecimientos:
@@ -178,12 +199,11 @@ def main():
         resultados = [f for f in resultados_raw if f is not None]
 
         # --- Modo híbrido: fallback regional para modelos insuficientes ---
-        modelado_hibrido = bool(
-            conf["padecimiento"].get("modelado_hibrido", False)
-        )
+        modelado_hibrido = bool(conf["padecimiento"].get("modelado_hibrido", False))
         if modelado_hibrido and modelado_estados and resultados:
             insuf = [
-                f for f in resultados
+                f
+                for f in resultados
                 if f.get("confianza") == "insuficiente" and f.get("nivel") == "regional"
             ]
             if insuf:
@@ -195,36 +215,40 @@ def main():
                     .to_dict()
                 )
                 # Regiones que tienen al menos 1 estado insuficiente
-                regiones_afectadas = sorted({
-                    mapa_region[f["Entidad"]]
-                    for f in insuf if f.get("Entidad") in mapa_region
-                })
+                regiones_afectadas = sorted(
+                    {mapa_region[f["Entidad"]] for f in insuf if f.get("Entidad") in mapa_region}
+                )
                 logger.info(
                     "Modo híbrido: {} insuficientes en {} regiones → {}",
-                    len(insuf), len(regiones_afectadas), regiones_afectadas,
+                    len(insuf),
+                    len(regiones_afectadas),
+                    regiones_afectadas,
                 )
 
                 # Entrenar modelos regionales de fallback
                 jobs_regional = []
                 for region in regiones_afectadas:
-                    df_region = df_padecimiento[
-                        df_padecimiento["region_salud_mental"] == region
-                    ]
+                    df_region = df_padecimiento[df_padecimiento["region_salud_mental"] == region]
                     for sexo in valores_sexo:
                         region_tag = f"region_{region}"
-                        jobs_regional.append((
-                            df_region, padecimiento, sexo, model_path, mapeo,
-                            region_tag, force,
-                        ))
+                        jobs_regional.append(
+                            (
+                                df_region,
+                                padecimiento,
+                                sexo,
+                                model_path,
+                                mapeo,
+                                region_tag,
+                                force,
+                            )
+                        )
 
                 total_reg = len(jobs_regional)
-                jobs_regional = [
-                    (*job, (i, total_reg))
-                    for i, job in enumerate(jobs_regional, 1)
-                ]
+                jobs_regional = [(*job, (i, total_reg)) for i, job in enumerate(jobs_regional, 1)]
                 logger.info(
                     "Entrenando {} modelos regionales de fallback para {}",
-                    total_reg, padecimiento,
+                    total_reg,
+                    padecimiento,
                 )
 
                 if n_jobs != 1:
@@ -258,7 +282,8 @@ def main():
 
                 logger.success(
                     "Modo híbrido: {} modelos regionales entrenados para {}",
-                    len(res_regional), padecimiento,
+                    len(res_regional),
+                    padecimiento,
                 )
 
         if resultados:
@@ -271,13 +296,18 @@ def main():
             t_elapsed = time.time() - t_pad
             logger.success(
                 "{}: {} modelos en {:.1f} min ({} baja confianza)",
-                padecimiento, entrenados, t_elapsed / 60, insuficientes,
+                padecimiento,
+                entrenados,
+                t_elapsed / 60,
+                insuficientes,
             )
 
     t_total = time.time() - t_inicio_global
     logger.success(
         "Entrenamiento completado. {} modelos en {:.1f} min ({:.1f} h).",
-        total, t_total / 60, t_total / 3600,
+        total,
+        t_total / 60,
+        t_total / 3600,
     )
 
 

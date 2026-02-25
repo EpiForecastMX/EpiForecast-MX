@@ -88,7 +88,7 @@ peridos_atipicos:
   #  upper_window: 182
 
 mapeo_columnas:
-  incrementos_hombres: hombres 
+  incrementos_hombres: hombres
   incrementos_mujeres: mujeres
   incrementos_total: general
 
@@ -115,4 +115,3 @@ cambios_regimen:
     upper_window: 365
     entidad: "Tabasco"
     padecimiento: "Depresión"
-

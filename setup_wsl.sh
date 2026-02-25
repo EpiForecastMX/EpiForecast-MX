@@ -39,10 +39,10 @@ fi
 echo "📥 Descargando instalador de Miniconda..."
 if [ ! -d "$HOME/miniconda3" ]; then
     wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
-    
+
     echo "💿 Instalando Miniconda en modo silencioso..."
     bash ./Miniconda3-latest-Linux-x86_64.sh -b
-    
+
     echo "🧹 Limpiando instalador..."
     rm ./Miniconda3-latest-Linux-x86_64.sh
 else

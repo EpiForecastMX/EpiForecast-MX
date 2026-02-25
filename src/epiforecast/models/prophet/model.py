@@ -90,7 +90,7 @@ class ProphetForecaster(ForecastModel):
         if self.normalizar_tasa and self.col_poblacion in self.serie.columns:
             self.poblacion_valor = self.serie[self.col_poblacion].iloc[0]
             self.serie["y_original"] = self.serie[self.sexo]
-            self.serie["y"] = (self.serie[self.sexo] / self.poblacion_valor) * self.tasa_por
+            self.serie["y"] = (self.serie[self.sexo] / self.poblacion_valor) * self.tasa_por  # type: ignore[operator]
             self.serie = self.serie.drop(columns=[self.sexo])
             logger.info(
                 "Normalizado a tasa por {:,.0f} hab. (población: {:,.0f})",

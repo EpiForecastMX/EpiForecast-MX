@@ -9,8 +9,8 @@ con ~67 celdas, ~24 figuras, paleta IMSS y ortografia impecable.
 """
 
 import json
-import uuid
 from pathlib import Path
+import uuid
 
 # ---------------------------------------------------------------------------
 # Constantes de estilo
@@ -70,7 +70,7 @@ def code(source):
 
 def sec(num, title):
     """Header de seccion con divider y ancla."""
-    return f"{DIV}\n\n## {num}. {title} <a id=\"sec{num}\"></a>"
+    return f'{DIV}\n\n## {num}. {title} <a id="sec{num}"></a>'
 
 
 # ---------------------------------------------------------------------------
@@ -80,7 +80,8 @@ def acto_0():
     cells = []
 
     # --- Celda 0: Portada HTML ---
-    cells.append(md("""\
+    cells.append(
+        md("""\
 <div style="background: linear-gradient(135deg, #003A70 0%, #004E8C 40%, #006847 100%);
 border-radius: 12px; padding: 50px 40px 40px; margin: 0 0 30px;
 color: white; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.15);">
@@ -129,10 +130,12 @@ font-weight: 600; letter-spacing: 1px; text-transform: uppercase; font-size: 0.8
 <p style="color: rgba(255,255,255,0.5); font-size: 0.85em; margin: 0;">
 Equipo 01 &middot; Febrero 2026</p>
 
-</div>"""))
+</div>""")
+    )
 
     # --- Celda 1: Tabla de contenidos ---
-    cells.append(md("""\
+    cells.append(
+        md("""\
 ### Contenido
 
 | # | Secci&oacute;n | Figuras |
@@ -152,10 +155,12 @@ Equipo 01 &middot; Febrero 2026</p>
 | 13 | [Conclusiones](#sec13) | &mdash; |
 | 14 | [Reflexiones del equipo](#sec14) | &mdash; |
 | 15 | [Referencias y enlaces](#sec15) | &mdash; |
-| A | [Ap&eacute;ndice: Ficha T&eacute;cnica de Prophet](#secA) | Fig A1-A3 |"""))
+| A | [Ap&eacute;ndice: Ficha T&eacute;cnica de Prophet](#secA) | Fig A1-A3 |""")
+    )
 
     # --- Celda 2: Imports ---
-    cells.append(code("""\
+    cells.append(
+        code("""\
 %matplotlib inline
 import warnings
 warnings.filterwarnings('ignore')
@@ -171,10 +176,12 @@ import matplotlib.patches as mpatches
 from matplotlib.lines import Line2D
 import seaborn as sns
 from PIL import Image
-import yaml"""))
+import yaml""")
+    )
 
     # --- Celda 3: Config y paleta IMSS ---
-    cells.append(code("""\
+    cells.append(
+        code("""\
 # --- Cargar paleta IMSS desde config/reportes.yaml ---
 with open('../config/reportes.yaml') as f:
     _cfg = yaml.safe_load(f)
@@ -210,10 +217,12 @@ for k, v in _cfg['matplotlib_rcParams'].items():
     plt.rcParams[k] = v
 plt.rcParams['figure.figsize'] = (12, 5)
 
-print('Paleta IMSS cargada correctamente.')"""))
+print('Paleta IMSS cargada correctamente.')""")
+    )
 
     # --- Celda 4: Rutas y helper save_fig ---
-    cells.append(code("""\
+    cells.append(
+        code("""\
 ROOT = Path('..')
 SAGEMAKER = ROOT / 'Sagemaker results-v5-full'
 FIGDIR = Path('figuras_avance4')
@@ -238,10 +247,12 @@ def save_fig(fig, name, dpi=150):
     print(f'  Guardado: {path}')
     # No cerrar: %matplotlib inline muestra la figura al final de la celda
 
-print(f'Directorio de figuras: {FIGDIR.resolve()}')"""))
+print(f'Directorio de figuras: {FIGDIR.resolve()}')""")
+    )
 
     # --- Celda 5: Carga de datos unificada ---
-    cells.append(code("""\
+    cells.append(
+        code("""\
 # === Carga unificada de todos los datos ===
 
 # --- 1. Prophet completo (3 padecimientos) ---
@@ -288,7 +299,8 @@ print(f'  - Nacionales: {(df_prophet["_nivel"] == "nacional").sum()}')
 print(f'  - Regionales: {(df_prophet["_nivel"] == "regional").sum()}')
 print(f'SageMaker raw: {len(df_raw_sm)} trials')
 print(f'Ganadores: {len(df_ganadores)} series')
-print(f'HP \u00f3ptimos: {len(hp_optimos["series"])} series')"""))
+print(f'HP \u00f3ptimos: {len(hp_optimos["series"])} series')""")
+    )
 
     return cells
 
@@ -300,7 +312,8 @@ def acto_1():
     cells = []
 
     # --- Celda 6: Sec 1. Contexto ---
-    cells.append(md(f"""\
+    cells.append(
+        md(f"""\
 {sec(1, 'Contexto del proyecto')}
 
 **EpiForecast-MX** es una plataforma de inteligencia epidemiol\u00f3gica desarrollada en colaboraci\u00f3n con el
@@ -314,10 +327,12 @@ Predice la incidencia semanal de tres padecimientos neurol\u00f3gicos y de salud
 - **Alzheimer** (CIE-10: G30) \u2014 menor incidencia, muchos estados con datos insuficientes
 
 Los datos provienen del **SINAVE** (Sistema Nacional de Vigilancia Epidemiol\u00f3gica), con 633 boletines
-epidemiol\u00f3gicos semanales de 2014 a 2026, complementados con indicadores demogr\u00e1ficos del INEGI."""))
+epidemiol\u00f3gicos semanales de 2014 a 2026, complementados con indicadores demogr\u00e1ficos del INEGI.""")
+    )
 
     # --- Celda 7: Cifras clave ---
-    cells.append(md("""\
+    cells.append(
+        md("""\
 ### Cifras clave del proyecto
 
 | Concepto | Valor |
@@ -329,17 +344,21 @@ epidemiol\u00f3gicos semanales de 2014 a 2026, complementados con indicadores de
 | Series de tiempo | 258 evaluadas + 39 omitidas |
 | Modelos Prophet (v6) | 312 (297 estatales + 15 regionales) |
 | Modelos SageMaker | 1,548 trials (6 algoritmos) |
-| M\u00e9trica principal | MASE (Mean Absolute Scaled Error) |"""))
+| M\u00e9trica principal | MASE (Mean Absolute Scaled Error) |""")
+    )
 
     # --- Celda 8: Sec 2. Recorrido v1-v6 ---
-    cells.append(md(f"""\
+    cells.append(
+        md(f"""\
 {sec(2, 'Recorrido de optimizaci\u00f3n: v1 a v6')}
 
 Evoluci\u00f3n del pipeline Prophet a lo largo de seis versiones, desde el baseline con par\u00e1metros
-default hasta el modelo h\u00edbrido con fallback regional."""))
+default hasta el modelo h\u00edbrido con fallback regional.""")
+    )
 
     # --- Celda 9: Tabla de versiones ---
-    cells.append(md("""\
+    cells.append(
+        md("""\
 ### Tabla comparativa de versiones
 
 | Versi\u00f3n | Cambio principal | Modelos | MASE medio | Tiempo | Mejora |
@@ -355,10 +374,12 @@ default hasta el modelo h\u00edbrido con fallback regional."""))
 - **v3:** Primera cobertura estatal completa (32 entidades). Entrenamiento de 3 horas por procesamiento secuencial.
 - **v4:** Triplicaci\u00f3n de modelos (general + hombres + mujeres). Grid diferenciado por padecimiento basado en an\u00e1lisis de 297 modelos v3.
 - **v5:** Reducci\u00f3n de 92% en tiempo de entrenamiento gracias a protecci\u00f3n anti-Newton y paralelizaci\u00f3n con joblib.
-- **v6:** 100% de cobertura estatal con predicci\u00f3n informada (41 modelos insuficientes usan fallback regional)."""))
+- **v6:** 100% de cobertura estatal con predicci\u00f3n informada (41 modelos insuficientes usan fallback regional).""")
+    )
 
     # --- Celda 10: Fig 1 — Timeline v1-v6 ---
-    cells.append(code("""\
+    cells.append(
+        code("""\
 # --- Fig 1: Timeline v1 a v6 (step chart con doble eje) ---
 versions = ['v1', 'v2', 'v3', 'v4', 'v5', 'v6']
 mase_vals = [1.10, 0.85, 0.82, 0.78, 0.76, 0.76]
@@ -404,10 +425,12 @@ h2 = Line2D([0], [0], color=IMSS['burgundy'], lw=2.5, ls='--',
 ax1.legend(handles=[h1, h2], loc='upper right', framealpha=0.9)
 
 fig.tight_layout()
-save_fig(fig, 'fig01_timeline_v1_v6')"""))
+save_fig(fig, 'fig01_timeline_v1_v6')""")
+    )
 
     # --- Celda 11: Sec 3. Metodologia ---
-    cells.append(md(f"""\
+    cells.append(
+        md(f"""\
 {sec(3, 'Metodolog\u00eda Prophet')}
 
 Facebook Prophet descompone cada serie de tiempo en tendencia, estacionalidad y eventos at\u00edpicos.
@@ -417,10 +440,12 @@ El pipeline aplica tres transformaciones secuenciales antes de entrenar:
 2. **Log-transform:** `y = log(1 + y_tasa)` \u2014 estabiliza varianza en series vol\u00e1tiles
 3. **Prophet entrena sobre `y`** (espacio log-tasa)
 
-Al predecir, se revierten ambas transformaciones: `exp(y_hat) - 1` \u2192 desnormaliza a conteos."""))
+Al predecir, se revierten ambas transformaciones: `exp(y_hat) - 1` \u2192 desnormaliza a conteos.""")
+    )
 
     # --- Celda 12: Tabla metricas + umbrales ---
-    cells.append(md("""\
+    cells.append(
+        md("""\
 ### M\u00e9tricas de evaluaci\u00f3n y umbrales
 
 | M\u00e9trica | F\u00f3rmula | Interpretaci\u00f3n |
@@ -442,10 +467,12 @@ Al predecir, se revierten ambas transformaciones: `exp(y_hat) - 1` \u2192 desnor
 
 - **4 folds** con horizonte de 53 semanas (1 a\u00f1o)
 - **Pesos progresivos:** `[0.5, 0.75, 1.0, 1.25]` \u2014 m\u00e1s peso a folds recientes (2023-2024)
-- **Fecha de corte:** 2025-01-01"""))
+- **Fecha de corte:** 2025-01-01""")
+    )
 
     # --- Celda 13: Grids HP por padecimiento ---
-    cells.append(md("""\
+    cells.append(
+        md("""\
 ### Grids de hiperpar\u00e1metros por padecimiento (v5)
 
 Grids diferenciados optimizados con datos de 297 modelos v4:
@@ -458,10 +485,12 @@ Grids diferenciados optimizados con datos de 297 modelos v4:
 
 **Par\u00e1metros regionales** (modelos estatales):
 - `fourier_order`: 3 (vs 5 nacional) \u2014 reduce overfitting
-- `n_changepoints`: 12 (vs 25 default) \u2014 adecuado para series cortas"""))
+- `n_changepoints`: 12 (vs 25 default) \u2014 adecuado para series cortas""")
+    )
 
     # --- Celda 14: Fig 2 — Heatmap HP por padecimiento ---
-    cells.append(code("""\
+    cells.append(
+        code("""\
 # --- Fig 2: Heatmap de hiperparametros ganadores por padecimiento ---
 # Fuente: modelos estatales con confianza normal del Prophet completo
 df_hp = df_prophet[
@@ -487,7 +516,8 @@ for ax, pad in zip(axes, PAD_ORDER):
 fig.suptitle('Fig 2. Frecuencia de hiperpar\u00e1metros ganadores por padecimiento',
              fontsize=14, fontweight='bold', y=1.02)
 fig.tight_layout()
-save_fig(fig, 'fig02_heatmap_hp')"""))
+save_fig(fig, 'fig02_heatmap_hp')""")
+    )
 
     return cells
 
@@ -499,15 +529,18 @@ def acto_2():
     cells = []
 
     # --- Celda 15: Sec 4 ---
-    cells.append(md(f"""\
+    cells.append(
+        md(f"""\
 {sec(4, 'Resultados de producci\u00f3n: 312 modelos')}
 
 El pipeline v6 entren\u00f3 312 modelos Prophet en ~45 minutos con paralelizaci\u00f3n joblib:
 297 modelos estatales (32 estados x 3 sexos x 3 padecimientos) y 15 modelos regionales
-de fallback para estados con datos insuficientes."""))
+de fallback para estados con datos insuficientes.""")
+    )
 
     # --- Celda 16: Tabla resumen ---
-    cells.append(md("""\
+    cells.append(
+        md("""\
 ### Resumen por padecimiento
 
 | Padecimiento | Modelos | Insuficientes | Fallback regional | RMSE medio | MASE medio | Tiempo |
@@ -515,10 +548,12 @@ de fallback para estados con datos insuficientes."""))
 | **Alzheimer** | 99 | 36 | 36 | 0.027 | 0.74 | ~2 min |
 | **Depresi\u00f3n** | 99 | 0 | 0 | 0.183 | 0.80 | ~28 min |
 | **Parkinson** | 99 | 5 | 5 | 0.057 | 0.75 | ~14 min |
-| **Total** | **297 + 15** | **41** | **41** | \u2014 | **0.76** | **~45 min** |"""))
+| **Total** | **297 + 15** | **41** | **41** | \u2014 | **0.76** | **~45 min** |""")
+    )
 
     # --- Celda 17: Fig 3 — Histograma MASE ---
-    cells.append(code("""\
+    cells.append(
+        code("""\
 # --- Fig 3: Histograma MASE de 312 modelos con zonas de umbral ---
 df_est = df_prophet[
     (df_prophet['_nivel'].isin(['estatal', 'nacional'])) &
@@ -556,10 +591,12 @@ ax.set_title('Fig 3. Distribuci\u00f3n de MASE en modelos Prophet (v6)',
              fontsize=13, pad=10)
 ax.legend(loc='upper right', fontsize=9)
 fig.tight_layout()
-save_fig(fig, 'fig03_histograma_mase')"""))
+save_fig(fig, 'fig03_histograma_mase')""")
+    )
 
     # --- Celda 18: Fig 4 — Heatmap estatal 32x3 ---
-    cells.append(code("""\
+    cells.append(
+        code("""\
 # --- Fig 4: Heatmap MASE por estado x padecimiento ---
 df_gen = df_prophet[
     (df_prophet['_nivel'] == 'estatal') &
@@ -586,10 +623,12 @@ ax.set_title('Fig 4. MASE por entidad y padecimiento (modo general)',
 ax.set_xlabel('')
 ax.set_ylabel('')
 fig.tight_layout()
-save_fig(fig, 'fig04_heatmap_estatal')"""))
+save_fig(fig, 'fig04_heatmap_estatal')""")
+    )
 
     # --- Celda 19: Fig 5 — Donut confianza ---
-    cells.append(code("""\
+    cells.append(
+        code("""\
 # --- Fig 5: Donut de distribucion de confianza ---
 df_est_all = df_prophet[df_prophet['_nivel'] == 'estatal'].copy()
 
@@ -624,18 +663,22 @@ for t in autotexts:
 ax.set_title('Fig 5. Clasificaci\u00f3n de confianza de los 297 modelos estatales',
              fontsize=13, pad=20)
 fig.tight_layout()
-save_fig(fig, 'fig05_donut_confianza')"""))
+save_fig(fig, 'fig05_donut_confianza')""")
+    )
 
     # --- Celda 20: Sec 5 Galeria ---
-    cells.append(md(f"""\
+    cells.append(
+        md(f"""\
 {sec(5, 'Galer\u00eda de pron\u00f3sticos')}
 
 Cada modelo genera un gr\u00e1fico PNG con la serie hist\u00f3rica, la banda de predicci\u00f3n a 52 semanas
 y las m\u00e9tricas de cross-validation. En total se generan 312 gr\u00e1ficos:
-288 estatales + 9 nacionales + 15 regionales."""))
+288 estatales + 9 nacionales + 15 regionales.""")
+    )
 
     # --- Celda 21: Fig 6 — Triptych nacional ---
-    cells.append(code("""\
+    cells.append(
+        code("""\
 # --- Fig 6: Triptych de pronosticos nacionales ---
 fig, axes = plt.subplots(1, 3, figsize=(18, 5))
 pad_dirs = {'Depresi\u00f3n': 'Depresi\u00f3n', 'Alzheimer': 'Alzheimer', 'Parkinson': 'Parkinson'}
@@ -654,12 +697,14 @@ for ax, pad in zip(axes, PAD_ORDER):
 fig.suptitle('Fig 6. Pron\u00f3sticos nacionales (modo general)',
              fontsize=14, fontweight='bold', y=1.02)
 fig.tight_layout()
-save_fig(fig, 'fig06_triptych_nacional')"""))
+save_fig(fig, 'fig06_triptych_nacional')""")
+    )
 
     # --- Celdas 22-24: Grids 32 estados por padecimiento ---
-    for fig_num, pad in [(7, 'Depresi\u00f3n'), (8, 'Alzheimer'), (9, 'Parkinson')]:
+    for fig_num, pad in [(7, "Depresi\u00f3n"), (8, "Alzheimer"), (9, "Parkinson")]:
         pad_dir = pad  # directory name preserves tilde
-        cells.append(code(f"""\
+        cells.append(
+            code(f"""\
 # --- Fig {fig_num}: Grid 32 estados - {pad} ---
 fig, axes = plt.subplots(8, 4, figsize=(20, 40))
 axes_flat = axes.flatten()
@@ -681,7 +726,8 @@ for i, estado in enumerate(ESTADOS_32):
 fig.suptitle('Fig {fig_num}. Pron\u00f3sticos estatales: {pad} (modo general)',
              fontsize=16, fontweight='bold', y=1.0)
 fig.tight_layout()
-save_fig(fig, 'fig{fig_num:02d}_grid_{pad_dir.lower().replace("\u00f3", "o").replace("\u00e9", "e")}')"""))
+save_fig(fig, 'fig{fig_num:02d}_grid_{pad_dir.lower().replace("\u00f3", "o").replace("\u00e9", "e")}')""")
+        )
 
     return cells
 
@@ -694,7 +740,8 @@ def acto_3():
     cells = []
 
     # --- Celda 25: Sec 6. Benchmark ---
-    cells.append(md(f"""\
+    cells.append(
+        md(f"""\
 {sec(6, 'Benchmark SageMaker: 6 algoritmos')}
 
 Para validar Prophet como modelo de producci\u00f3n, se ejecut\u00f3 un benchmark comparativo en
@@ -706,10 +753,12 @@ Para validar Prophet como modelo de producci\u00f3n, se ejecut\u00f3 un benchmar
 | Infraestructura | ml.m5.xlarge (4 vCPU, 16 GB RAM) |
 | Duraci\u00f3n total | 9.8 horas |
 | Costo estimado | ~$9.80 USD |
-| Series evaluadas | 258 de 297 (87%) \u2014 39 omitidas por incidencia < 0.5/semana |"""))
+| Series evaluadas | 258 de 297 (87%) \u2014 39 omitidas por incidencia < 0.5/semana |""")
+    )
 
     # --- Celda 26: Tabla modelos ---
-    cells.append(md("""\
+    cells.append(
+        md("""\
 ### Los 6 modelos evaluados
 
 | Modelo | Familia | Descripci\u00f3n |
@@ -719,10 +768,12 @@ Para validar Prophet como modelo de producci\u00f3n, se ejecut\u00f3 un benchmar
 | **LightGBM+LSTM** | Ensemble h\u00edbrido | Gradient boosting + memoria temporal LSTM |
 | **TFT** | Deep learning (Transformer) | Temporal Fusion Transformer con atenci\u00f3n (Lim et al., 2021) |
 | **Ridge** | Regresi\u00f3n lineal | Regresi\u00f3n regularizada L2 con features temporales |
-| **XGBoost** | Gradient boosting | \u00c1rboles de decisi\u00f3n con boosting (Chen & Guestrin, 2016) |"""))
+| **XGBoost** | Gradient boosting | \u00c1rboles de decisi\u00f3n con boosting (Chen & Guestrin, 2016) |""")
+    )
 
     # --- Celda 27: Fig 10 — Bar horizontal ganadores globales ---
-    cells.append(code("""\
+    cells.append(
+        code("""\
 # --- Fig 10: Ganadores globales por modelo ---
 wins = df_ganadores['Modelo Ganador'].value_counts().reindex(MODEL_ORDER, fill_value=0)
 colors = [MODEL_COLORS[m] for m in wins.index]
@@ -741,10 +792,12 @@ ax.set_title('Fig 10. Modelo ganador por serie (258 series)',
 ax.invert_yaxis()
 ax.set_xlim(0, wins.max() * 1.25)
 fig.tight_layout()
-save_fig(fig, 'fig10_ganadores_global')"""))
+save_fig(fig, 'fig10_ganadores_global')""")
+    )
 
     # --- Celda 28: Fig 11 — Grouped bar ganadores por padecimiento ---
-    cells.append(code("""\
+    cells.append(
+        code("""\
 # --- Fig 11: Ganadores por modelo y padecimiento ---
 ct = pd.crosstab(df_ganadores['Modelo Ganador'], df_ganadores['Padecimiento'])
 ct = ct.reindex(index=MODEL_ORDER, columns=PAD_ORDER, fill_value=0)
@@ -767,10 +820,12 @@ ax.set_ylabel('Series ganadas')
 ax.set_title('Fig 11. Modelo ganador por padecimiento', fontsize=13, pad=10)
 ax.legend(title='Padecimiento')
 fig.tight_layout()
-save_fig(fig, 'fig11_ganadores_padecimiento')"""))
+save_fig(fig, 'fig11_ganadores_padecimiento')""")
+    )
 
     # --- Celda 29: Fig 12 — Violin MASE por modelo ---
-    cells.append(code("""\
+    cells.append(
+        code("""\
 # --- Fig 12: Violin de MASE por modelo ---
 # Usar columna adecuada de MASE del raw results
 _mase_col = 'test_mase'
@@ -790,10 +845,12 @@ ax.set_title('Fig 12. Distribuci\u00f3n de MASE por modelo (258 series)',
 ax.set_xlabel('')
 ax.set_ylabel('MASE')
 fig.tight_layout()
-save_fig(fig, 'fig12_violin_mase_modelo')"""))
+save_fig(fig, 'fig12_violin_mase_modelo')""")
+    )
 
     # --- Celda 30: Fig 13 — Heatmap MASE mediana modelo x padecimiento ---
-    cells.append(code("""\
+    cells.append(
+        code("""\
 # --- Fig 13: Heatmap MASE mediana por modelo y padecimiento ---
 pivot_sm = df_mase_modelo.pivot_table(
     index='Modelo', columns='Padecimiento', values='MASE Median', aggfunc='first')
@@ -808,10 +865,12 @@ ax.set_title('Fig 13. MASE mediana por modelo y padecimiento',
 ax.set_xlabel('')
 ax.set_ylabel('')
 fig.tight_layout()
-save_fig(fig, 'fig13_heatmap_mase_modelo')"""))
+save_fig(fig, 'fig13_heatmap_mase_modelo')""")
+    )
 
     # --- Celda 31: Tabla resumen rendimiento ---
-    cells.append(md("""\
+    cells.append(
+        md("""\
 ### Resumen de rendimiento
 
 | Modelo | Wins | Win % | MASE mediana | % MASE < 1.0 |
@@ -824,17 +883,21 @@ save_fig(fig, 'fig13_heatmap_mase_modelo')"""))
 | **XGBoost** | 28 | 10.9% | 0.832 | \u2014 |
 
 Deep learning (DeepAR + LightGBM+LSTM + TFT) colectivamente gana el 53% de las series.
-Sin embargo, Prophet tiene la mejor MASE mediana global (0.745)."""))
+Sin embargo, Prophet tiene la mejor MASE mediana global (0.745).""")
+    )
 
     # --- Celda 32: Sec 7 ---
-    cells.append(md(f"""\
+    cells.append(
+        md(f"""\
 {sec(7, 'An\u00e1lisis por padecimiento')}
 
 El rendimiento var\u00eda significativamente entre padecimientos. Depresi\u00f3n es el m\u00e1s dif\u00edcil
-de predecir (alta variabilidad post-COVID), mientras que Alzheimer muestra patrones m\u00e1s estables."""))
+de predecir (alta variabilidad post-COVID), mientras que Alzheimer muestra patrones m\u00e1s estables.""")
+    )
 
     # --- Celda 33: Fig 14 — Violin triptych ---
-    cells.append(code("""\
+    cells.append(
+        code("""\
 # --- Fig 14: Violin triptych MASE por padecimiento ---
 _mase_col = 'test_mase'
 df_v2 = df_raw_sm[['modelo', 'padecimiento', _mase_col]].dropna().copy()
@@ -859,10 +922,12 @@ for ax, pad in zip(axes, PAD_ORDER):
 fig.suptitle('Fig 14. Distribuci\u00f3n de MASE por modelo y padecimiento',
              fontsize=14, fontweight='bold', y=1.02)
 fig.tight_layout()
-save_fig(fig, 'fig14_violin_triptych')"""))
+save_fig(fig, 'fig14_violin_triptych')""")
+    )
 
     # --- Celda 34: Fig 15 — % MASE<1.0 ---
-    cells.append(code("""\
+    cells.append(
+        code("""\
 # --- Fig 15: % MASE<1.0 por modelo y padecimiento ---
 pct = df_mase_modelo.pivot_table(
     index='Modelo', columns='Padecimiento', values='% MASE<1.0', aggfunc='first')
@@ -889,24 +954,30 @@ ax.set_title('Fig 15. Porcentaje de series que superan el baseline naive',
 ax.legend(title='Padecimiento')
 ax.set_ylim(0, 105)
 fig.tight_layout()
-save_fig(fig, 'fig15_pct_mase_bajo1')"""))
+save_fig(fig, 'fig15_pct_mase_bajo1')""")
+    )
 
     # --- Celda 35: Outliers ---
-    cells.append(md("""\
+    cells.append(
+        md("""\
 ### Entidades con comportamiento at\u00edpico
 
 - **Nayarit (Depresi\u00f3n):** RMSE = 0.39, el peor modelo del pipeline. Cambio de r\u00e9gimen abrupto en 2018 no absorbido completamente por Prophet.
 - **Guanajuato:** Alta variabilidad en las tres series. Deep learning tiende a capturarlo mejor.
-- **Baja California Sur y San Luis Potos\u00ed:** Series cortas con poca estacionalidad visible; modelos lineales (Ridge) compiten sorprendentemente bien."""))
+- **Baja California Sur y San Luis Potos\u00ed:** Series cortas con poca estacionalidad visible; modelos lineales (Ridge) compiten sorprendentemente bien.""")
+    )
 
     # --- Celda 36: Sec 8 ---
-    cells.append(md(f"""\
+    cells.append(
+        md(f"""\
 {sec(8, 'An\u00e1lisis por sexo')}
 
-Evaluaci\u00f3n de c\u00f3mo var\u00eda el rendimiento de los modelos seg\u00fan la segmentaci\u00f3n por sexo."""))
+Evaluaci\u00f3n de c\u00f3mo var\u00eda el rendimiento de los modelos seg\u00fan la segmentaci\u00f3n por sexo.""")
+    )
 
     # --- Celda 37: Fig 16 — Heatmap victorias sexo ---
-    cells.append(code("""\
+    cells.append(
+        code("""\
 # --- Fig 16: Heatmap de victorias por padecimiento, sexo y modelo ---
 # Construir pivot: padecimiento x sexo, valor = modelo ganador dominante
 ct_sex = pd.crosstab(
@@ -922,17 +993,21 @@ ax.set_title('Fig 16. Victorias por padecimiento, sexo y modelo',
 ax.set_xlabel('Modelo')
 ax.set_ylabel('')
 fig.tight_layout()
-save_fig(fig, 'fig16_heatmap_sexo')"""))
+save_fig(fig, 'fig16_heatmap_sexo')""")
+    )
 
     # --- Celda 38: Sec 9 ---
-    cells.append(md(f"""\
+    cells.append(
+        md(f"""\
 {sec(9, 'Predicciones cara a cara')}
 
 Comparaci\u00f3n visual de predicciones entre Prophet y los mejores modelos alternativos
-en series representativas."""))
+en series representativas.""")
+    )
 
     # --- Celda 39: Fig 17 — 3x3 grid predicciones ---
-    cells.append(code("""\
+    cells.append(
+        code("""\
 # --- Fig 17: Predicciones cara a cara (3 series showcase x 3 modelos) ---
 # Seleccionar 3 series representativas:
 # 1) Prophet gana claramente, 2) Prophet pierde, 3) competitiva
@@ -975,10 +1050,12 @@ for row, (pad, sexo, nivel) in enumerate(_showcase):
 fig.suptitle('Fig 17. Predicciones cara a cara: real vs modelo (escala original)',
              fontsize=14, fontweight='bold', y=1.01)
 fig.tight_layout()
-save_fig(fig, 'fig17_cara_a_cara')"""))
+save_fig(fig, 'fig17_cara_a_cara')""")
+    )
 
     # --- Celda 40: Fig 18 — Scatter gap Prophet ---
-    cells.append(code("""\
+    cells.append(
+        code("""\
 # --- Fig 18: Scatter gap de Prophet vs mejor modelo por serie ---
 df_gap = df_ganadores[['Padecimiento', 'Gap vs Best (%)']].dropna().copy()
 # Convertir a numerico si es string
@@ -1011,7 +1088,8 @@ ax.set_title('Fig 18. Proximidad de Prophet al modelo ganador por serie',
              fontsize=13, pad=10)
 ax.legend(title='Padecimiento', loc='upper left')
 fig.tight_layout()
-save_fig(fig, 'fig18_scatter_gap')"""))
+save_fig(fig, 'fig18_scatter_gap')""")
+    )
 
     return cells
 
@@ -1024,14 +1102,17 @@ def acto_4():
     cells = []
 
     # --- Celda 41: Sec 10 ---
-    cells.append(md(f"""\
+    cells.append(
+        md(f"""\
 {sec(10, 'Selecci\u00f3n del modelo final')}
 
 Con 1,548 trials evaluados en SageMaker, la selecci\u00f3n del modelo de producci\u00f3n se basa
-en m\u00faltiples criterios cuantitativos y cualitativos."""))
+en m\u00faltiples criterios cuantitativos y cualitativos.""")
+    )
 
     # --- Celda 42: Fig 19 — Proximidad Prophet al ganador ---
-    cells.append(code("""\
+    cells.append(
+        code("""\
 # --- Fig 19: Proximidad de Prophet al ganador (% dentro de umbral) ---
 df_gap2 = df_ganadores['Gap vs Best (%)'].dropna()
 df_gap2 = pd.to_numeric(df_gap2, errors='coerce').dropna()
@@ -1052,10 +1133,12 @@ ax.set_title('Fig 19. Proximidad de Prophet al modelo ganador',
              fontsize=13, pad=10)
 ax.set_ylim(0, 100)
 fig.tight_layout()
-save_fig(fig, 'fig19_proximidad_prophet')"""))
+save_fig(fig, 'fig19_proximidad_prophet')""")
+    )
 
     # --- Celda 43: Fig 20 — Radar comparativo ---
-    cells.append(code("""\
+    cells.append(
+        code("""\
 # --- Fig 20: Radar comparativo multi-metrica ---
 categories = ['Wins', 'MASE\\n(inv.)', 'Velocidad', 'Interpretab.', 'Cobertura', 'Consistencia']
 n_cats = len(categories)
@@ -1086,10 +1169,12 @@ ax.set_title('Fig 20. Comparativo multi-m\u00e9trica (top 3 modelos)',
              fontsize=13, pad=25)
 ax.legend(loc='lower right', bbox_to_anchor=(1.2, -0.05), fontsize=10)
 fig.tight_layout()
-save_fig(fig, 'fig20_radar_comparativo')"""))
+save_fig(fig, 'fig20_radar_comparativo')""")
+    )
 
     # --- Celda 44: 7 argumentos ---
-    cells.append(md(f"""\
+    cells.append(
+        md(f"""\
 ### Argumentos para la selecci\u00f3n de Prophet
 
 {GREEN_BOX}
@@ -1125,20 +1210,24 @@ con Makefile, versionado de modelos con DVC.
 {GOLD_BOX}
 <strong>7. Dominio en Alzheimer:</strong> Prophet gana el 33% de las series de Alzheimer,
 el padecimiento prioritario para el IMSS por subdiagn\u00f3stico.
-</div>"""))
+</div>""")
+    )
 
     # --- Celda 45: Limitaciones ---
-    cells.append(md("""\
+    cells.append(
+        md("""\
 ### Limitaciones y compromisos reconocidos
 
 - **Prophet no domina:** gana solo el 23.6% de las series. Deep learning colectivamente supera a Prophet en el 53% de los casos.
 - **Depresi\u00f3n es vulnerable:** MASE mediana de 0.935, cercana al umbral naive. Un ensemble con DeepAR podr\u00eda mejorar este padecimiento.
 - **Tiempo de entrenamiento:** Prophet consume el 68% del tiempo total del benchmark (6.7h de 9.8h). Los modelos lineales son 10-50x m\u00e1s r\u00e1pidos.
 - **Sin variables ex\u00f3genas din\u00e1micas:** el pipeline actual no incorpora covariables externas (clima, movilidad, vacunaci\u00f3n). TFT podr\u00eda aprovecharlas mejor.
-- **Evaluaci\u00f3n en escala log:** las m\u00e9tricas de CV se calculan en espacio log-tasa. Las m\u00e9tricas en escala original (conteos) pueden diferir."""))
+- **Evaluaci\u00f3n en escala log:** las m\u00e9tricas de CV se calculan en espacio log-tasa. Las m\u00e9tricas en escala original (conteos) pueden diferir.""")
+    )
 
     # --- Celda 46: Sec 11 Dashboard ---
-    cells.append(md(f"""\
+    cells.append(
+        md(f"""\
 {sec(11, 'Dashboard Tableau')}
 
 Integraci\u00f3n con Tableau Public para la visualizaci\u00f3n interactiva de los resultados
@@ -1148,10 +1237,12 @@ del modelado, accesible al equipo cl\u00ednico del IMSS sin necesidad de ejecuta
 <strong>Contribuci\u00f3n de Luis S\u00e1nchez:</strong> Diagn\u00f3stico post-entrenamiento,
 reconstrucci\u00f3n del pipeline de datos para Tableau, migraci\u00f3n del workbook
 y experimento de automatizaci\u00f3n con GitHub Actions + Google Sheets.
-</div>"""))
+</div>""")
+    )
 
     # --- Celda 47: Dashboard contenido ---
-    cells.append(md("""\
+    cells.append(
+        md("""\
 ### Pipeline de datos y migraci\u00f3n
 
 La arquitectura se migr\u00f3 de dos fuentes separadas (hist\u00f3ricos + pron\u00f3sticos) a un
@@ -1176,10 +1267,12 @@ principal incertidumbre.
 |:---------|:-------------|:-------------------|
 | Tableau Public | Gratis | Solo Google Sheets (~1x/d\u00eda) |
 | Tableau Cloud (Creator) | ~75 USD/mes | S\u00ed |
-| Tableau Cloud (Viewer) | ~15 USD/mes | S\u00ed |"""))
+| Tableau Cloud (Viewer) | ~15 USD/mes | S\u00ed |""")
+    )
 
     # --- Celda 48: Galeria dashboard ---
-    cells.append(md("""\
+    cells.append(
+        md("""\
 ### Galer\u00eda del dashboard
 
 <table style="width:100%; border-collapse: collapse; margin: 20px 0;">
@@ -1225,7 +1318,8 @@ principal incertidumbre.
 <p align="center" style="color: #666; font-size: 0.85em;"><em>Agregaci\u00f3n anual: tendencias de largo plazo por padecimiento.</em></p>
 </td>
 </tr>
-</table>"""))
+</table>""")
+    )
 
     return cells
 
@@ -1238,7 +1332,8 @@ def acto_5():
     cells = []
 
     # --- Celda 49: Sec 12 Publicacion ---
-    cells.append(md(f"""\
+    cells.append(
+        md(f"""\
 {sec(12, 'Publicaci\u00f3n acad\u00e9mica')}
 
 ### Art\u00edculo en preparaci\u00f3n
@@ -1258,10 +1353,12 @@ def acto_5():
 4. Comparativa rigurosa con 6 modelos alternativos (1,548 trials en AWS SageMaker).
 5. Discusi\u00f3n de trade-offs entre interpretabilidad, rendimiento y costo operativo.
 
-La publicaci\u00f3n busca contribuir al campo de la epidemiolog\u00eda computacional en M\u00e9xico, proporcionando una metodolog\u00eda reproducible para el pron\u00f3stico de padecimientos neurol\u00f3gicos con datos p\u00fablicos del sistema de vigilancia epidemiol\u00f3gica."""))
+La publicaci\u00f3n busca contribuir al campo de la epidemiolog\u00eda computacional en M\u00e9xico, proporcionando una metodolog\u00eda reproducible para el pron\u00f3stico de padecimientos neurol\u00f3gicos con datos p\u00fablicos del sistema de vigilancia epidemiol\u00f3gica.""")
+    )
 
     # --- Celda 50: Sec 13 Conclusiones ---
-    cells.append(md(f"""\
+    cells.append(
+        md(f"""\
 {sec(13, 'Conclusiones y Siguientes Pasos')}
 
 ### Hallazgos principales
@@ -1308,10 +1405,12 @@ El 36% de los modelos XGBoost/Ridge no superan la baseline naive en Depresi\u00f
 1. **Ensemble jer\u00e1rquico**: combinar Prophet con TFT/DeepAR para series donde Prophet pierde consistentemente.
 2. **Actualizaci\u00f3n incremental**: integrar nuevos boletines SINAVE v\u00eda CI/CD para reentrenar modelos trimestralmente.
 3. **Dashboard ejecutivo**: vista gerencial en Tableau para el equipo cl\u00ednico del IMSS.
-4. **Publicaci\u00f3n acad\u00e9mica**: art\u00edculo con Dra. Ruth P\u00e9rez y Dra. Lina D\u00edaz Castro del IMSS."""))
+4. **Publicaci\u00f3n acad\u00e9mica**: art\u00edculo con Dra. Ruth P\u00e9rez y Dra. Lina D\u00edaz Castro del IMSS.""")
+    )
 
     # --- Celda 51: Sec 14 Reflexiones ---
-    cells.append(md(f"""\
+    cells.append(
+        md(f"""\
 {sec(14, 'Reflexiones del Equipo')}
 
 ### Reflexiones individuales
@@ -1330,14 +1429,18 @@ El 36% de los modelos XGBoost/Ridge no superan la baseline naive en Depresi\u00f
 
 **Luis S\u00e1nchez** \u2014 Dashboard Tableau y visualizaci\u00f3n
 
-(Pendiente)"""))
+(Pendiente)""")
+    )
 
     # --- Celda 52: Sec 15 Referencias ---
-    cells.append(md(f"""\
-{sec(15, 'Referencias y Enlaces')}"""))
+    cells.append(
+        md(f"""\
+{sec(15, 'Referencias y Enlaces')}""")
+    )
 
     # --- Celda 53: Referencias academicas ---
-    cells.append(md("""\
+    cells.append(
+        md("""\
 ### Referencias acad\u00e9micas
 
 1. Taylor, S. J., & Letham, B. (2018). Forecasting at scale. *The American Statistician*, 72(1), 37\u201345. https://doi.org/10.1080/00031305.2017.1380080
@@ -1350,10 +1453,12 @@ El 36% de los modelos XGBoost/Ridge no superan la baseline naive en Depresi\u00f
 
 5. Chen, T., & Guestrin, C. (2016). XGBoost: A scalable tree boosting system. *Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining*, 785\u2013794. https://doi.org/10.1145/2939672.2939785
 
-6. G\u00e9ron, A. (2022). *Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow* (3.a ed.). O'Reilly Media."""))
+6. G\u00e9ron, A. (2022). *Hands-On Machine Learning with Scikit-Learn, Keras, and TensorFlow* (3.a ed.). O'Reilly Media.""")
+    )
 
     # --- Celda 54: Tabla de enlaces ---
-    cells.append(md("""\
+    cells.append(
+        md("""\
 ### Recursos y enlaces del proyecto
 
 | Recurso | Enlace |
@@ -1370,7 +1475,8 @@ El 36% de los modelos XGBoost/Ridge no superan la baseline naive en Depresi\u00f
 | Conclusiones | `forecast/conclusiones.html` |
 | Dashboard T\u00e9cnico | `forecast/construccion_dashboard.html` |
 | Datos S3 | `s3://epiforecast-mx-data/latest/` |
-| Art\u00edculo (draft) | En preparaci\u00f3n |"""))
+| Art\u00edculo (draft) | En preparaci\u00f3n |""")
+    )
 
     return cells
 
@@ -1383,7 +1489,8 @@ def apendice():
     cells = []
 
     # --- Celda 55: Header apendice ---
-    cells.append(md(f"""\
+    cells.append(
+        md(f"""\
 {DIV}
 
 ## Ap\u00e9ndice A: Ficha T\u00e9cnica de Prophet <a id="secA"></a>
@@ -1392,10 +1499,12 @@ def apendice():
 <summary style="cursor: pointer; font-size: 1.1em; font-weight: bold; color: #003A70;
 padding: 10px; background: #f0f4f8; border-radius: 4px; margin: 10px 0;">
 Expandir / Contraer ficha t\u00e9cnica completa
-</summary>"""))
+</summary>""")
+    )
 
     # --- Celda 56: FT.1 Transformaciones del target ---
-    cells.append(md("""\
+    cells.append(
+        md("""\
 ### FT.1 Transformaciones del target
 
 El pipeline aplica dos transformaciones secuenciales antes de entrenar Prophet:
@@ -1405,10 +1514,12 @@ El pipeline aplica dos transformaciones secuenciales antes de entrenar Prophet:
 | 1 | Normalizaci\u00f3n a tasa | `y_tasa = (incidencia / poblaci\u00f3n) x 100,000` | Comparabilidad entre estados |
 | 2 | Log-transform | `y = log(1 + y_tasa)` | Estabilizar varianza |
 
-Al predecir, se invierte: `exp(y_hat) - 1` \u2192 desnormaliza con poblaci\u00f3n estatal \u2192 conteos."""))
+Al predecir, se invierte: `exp(y_hat) - 1` \u2192 desnormaliza con poblaci\u00f3n estatal \u2192 conteos.""")
+    )
 
     # --- Celda 57: Fig A1 — Log-transform ---
-    cells.append(code("""\
+    cells.append(
+        code("""\
 # --- Fig A1: Efecto del log-transform ---
 # Simular una serie tipo Depresion para ilustrar
 np.random.seed(42)
@@ -1437,10 +1548,12 @@ for ax, title, y, c in zip(axes, titles, series, colors):
 fig.suptitle('Fig A1. Efecto de las transformaciones sobre la varianza',
              fontsize=13, fontweight='bold', y=1.03)
 fig.tight_layout()
-save_fig(fig, 'figA1_log_transform')"""))
+save_fig(fig, 'figA1_log_transform')""")
+    )
 
     # --- Celda 58: FT.2 Estacionalidad y Fourier ---
-    cells.append(md("""\
+    cells.append(
+        md("""\
 ### FT.2 Estacionalidad y series de Fourier
 
 Prophet modela la estacionalidad anual como una suma de arm\u00f3nicos de Fourier:
@@ -1455,10 +1568,12 @@ donde `P = 365.25` d\u00edas y `n` va de 1 hasta `fourier_order`.
 | `n_changepoints` | 25 (default) | 12 |
 
 El `fourier_order` reducido para modelos estatales previene el sobreajuste
-en series m\u00e1s cortas y con menor se\u00f1al estacional."""))
+en series m\u00e1s cortas y con menor se\u00f1al estacional.""")
+    )
 
     # --- Celda 59: Fig A2 — Armonicos Fourier ---
-    cells.append(code("""\
+    cells.append(
+        code("""\
 # --- Fig A2: Armonicos de Fourier ---
 t = np.linspace(0, 365.25 * 2, 1000)
 P = 365.25
@@ -1493,10 +1608,12 @@ ax.set_ylabel('Amplitud')
 fig.suptitle('Fig A2. Arm\u00f3nicos de Fourier para estacionalidad anual',
              fontsize=13, fontweight='bold', y=1.02)
 fig.tight_layout()
-save_fig(fig, 'figA2_fourier')"""))
+save_fig(fig, 'figA2_fourier')""")
+    )
 
     # --- Celda 60: FT.3 Cross-validation temporal ---
-    cells.append(md("""\
+    cells.append(
+        md("""\
 ### FT.3 Cross-validation temporal con pesos progresivos
 
 El pipeline utiliza 4 folds de validaci\u00f3n cruzada temporal (**expanding window**),
@@ -1508,10 +1625,12 @@ post-COVID (2020-2021).
 
 La m\u00e9trica final es `np.average(rmse_folds, weights=cv_weights)` en vez de
 `np.mean()`, lo que sesga la selecci\u00f3n de hiperpar\u00e1metros hacia combos que
-funcionan bien en datos recientes."""))
+funcionan bien en datos recientes.""")
+    )
 
     # --- Celda 61: Fig A3 — Diagrama de folds ---
-    cells.append(code("""\
+    cells.append(
+        code("""\
 # --- Fig A3: Diagrama de folds de cross-validation ---
 fig, ax = plt.subplots(figsize=(14, 4))
 
@@ -1550,10 +1669,12 @@ ax.set_xlim(2013.5, 2025.5)
 ax.set_title('Fig A3. Cross-validation temporal con pesos progresivos',
              fontsize=13, pad=10)
 fig.tight_layout()
-save_fig(fig, 'figA3_cv_folds')"""))
+save_fig(fig, 'figA3_cv_folds')""")
+    )
 
     # --- Celda 62: FT.4 Anti-Newton ---
-    cells.append(md("""\
+    cells.append(
+        md("""\
 ### FT.4 Protecci\u00f3n anti-Newton
 
 Prophet puede caer al optimizador Newton (~100-500x m\u00e1s lento) cuando L-BFGS no converge.
@@ -1565,10 +1686,12 @@ Tres mecanismos lo mitigan:
 | 2 | Timeout por fold (35s) | `ThreadPoolExecutor` corta un fold que exceda 35s |
 | 3 | Newton-prone threshold | Si combo con CP=X timeout, skip combos con CP < X |
 
-**Resultado:** Chihuahua-Depresi\u00f3n pas\u00f3 de 39 min (v4) a 4 min (v5)."""))
+**Resultado:** Chihuahua-Depresi\u00f3n pas\u00f3 de 39 min (v4) a 4 min (v5).""")
+    )
 
     # --- Celda 63: FT.5 Modo hibrido ---
-    cells.append(md("""\
+    cells.append(
+        md("""\
 ### FT.5 Modo h\u00edbrido y clasificaci\u00f3n de confianza
 
 Series con promedio < 0.5 casos/semana se clasifican como `confianza: insuficiente`.
@@ -1582,10 +1705,12 @@ Con `modelado_hibrido: true` (v6):
 - Urbana media
 - Sur-Sureste vulnerable
 - Metropolitana alta
-- Rural / dispersa"""))
+- Rural / dispersa""")
+    )
 
     # --- Celda 64: FT.6 Periodos atipicos ---
-    cells.append(md("""\
+    cells.append(
+        md("""\
 ### FT.6 Periodos at\u00edpicos configurados
 
 | Evento | Fecha inicio | Ventana | Efecto |
@@ -1594,10 +1719,12 @@ Con `modelado_hibrido: true` (v6):
 | Cambio de r\u00e9gimen Tabasco (Depresi\u00f3n) | 2023-01-09 | 365 d\u00edas | Holiday filtrado por entidad (-6.2% RMSE) |
 
 Los cambios de r\u00e9gimen permanentes (Nayarit, Colima, Durango, BCS) no se modelan
-como holidays porque Prophet los trata como eventos temporales, empeorando el RMSE."""))
+como holidays porque Prophet los trata como eventos temporales, empeorando el RMSE.""")
+    )
 
     # --- Celda 65: FT.7 Mapa de parametros ---
-    cells.append(md("""\
+    cells.append(
+        md("""\
 ### FT.7 Mapa completo de par\u00e1metros
 
 | Par\u00e1metro | Valor | Fuente |
@@ -1616,15 +1743,18 @@ como holidays porque Prophet los trata como eventos temporales, empeorando el RM
 | `n_changepoints_regional` | 12 | `config/modelado.yaml` |
 | `fold_timeout_seconds` | 35 | `config/modelado.yaml` |
 
-</details>"""))
+</details>""")
+    )
 
     # --- Celda 66: Footer ---
-    cells.append(md(f"""\
+    cells.append(
+        md(f"""\
 {DIV}
 
 *Notebook generado como parte del Avance 4 \u2014 Modelos Alternativos y Selecci\u00f3n del Modelo Final.*
 
-*EpiForecast-MX \u2014 Equipo 01 \u2014 Febrero 2026*"""))
+*EpiForecast-MX \u2014 Equipo 01 \u2014 Febrero 2026*""")
+    )
 
     return cells
 

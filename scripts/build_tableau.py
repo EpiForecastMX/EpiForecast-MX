@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+
 import pandas as pd
 
 from src.configuraciones.config_params import conf, logger
@@ -138,8 +139,7 @@ def build_and_save_tableau(real_long: pd.DataFrame, fcst: pd.DataFrame, out_file
     out = out.sort_values(["padecimiento", "entidad", "ds", "meta_modo"]).reset_index(drop=True)
     out.to_csv(out_file, index=False)
     logger.success(
-        "tableau.csv generado: {} | filas: {} | cols: {}",
-        out_file, len(out), out.shape[1]
+        "tableau.csv generado: {} | filas: {} | cols: {}", out_file, len(out), out.shape[1]
     )
 
 

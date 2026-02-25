@@ -1,6 +1,7 @@
 # scripts/mapea.py
-import pandas as pd
 import sys
+
+import pandas as pd
 
 from src.configuraciones.config_params import conf, logger
 from src.modelado.mapea_inegi import MapeaInegi

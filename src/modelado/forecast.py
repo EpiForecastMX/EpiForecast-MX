@@ -1,8 +1,8 @@
 # src/modelado/forecast.py
+from pathlib import Path
 import pickle
 import re
 import unicodedata
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -50,10 +50,15 @@ def generar_graficos_pronostico() -> None:
     hp_frames = []
     for csv_hp in models_root.rglob("*_completo.csv"):
         try:
-            df_hp = pd.read_csv(csv_hp, usecols=[
-                "archivo_modelo", "seasonality_mode",
-                "changepoint_prior_scale", "seasonality_prior_scale",
-            ])
+            df_hp = pd.read_csv(
+                csv_hp,
+                usecols=[
+                    "archivo_modelo",
+                    "seasonality_mode",
+                    "changepoint_prior_scale",
+                    "seasonality_prior_scale",
+                ],
+            )
             hp_frames.append(df_hp)
         except Exception:
             pass
@@ -61,7 +66,8 @@ def generar_graficos_pronostico() -> None:
         pd.concat(hp_frames, ignore_index=True)
         .drop_duplicates("archivo_modelo")
         .set_index("archivo_modelo")
-        if hp_frames else pd.DataFrame()
+        if hp_frames
+        else pd.DataFrame()
     )
 
     modelos = (
@@ -85,7 +91,7 @@ def generar_graficos_pronostico() -> None:
             entidad_norm = ""
         elif entidad.startswith("Region "):
             # Modelos regionales: Prophet_{pad}_region_{region}_{modo}.csv
-            region_part = entidad[len("Region "):]
+            region_part = entidad[len("Region ") :]
             region_norm = _normalizar_nombre(region_part)
             csv_name = f"Prophet_{pad_norm}_region_{region_norm}_{modo}.csv"
             entidad_norm = _normalizar_nombre(entidad)
@@ -129,26 +135,30 @@ def generar_graficos_pronostico() -> None:
         forecast = df_forecast[mask_fc][["ds", "yhat", "yhat_lower", "yhat_upper"]].copy()
 
         # Extraer métricas del modelo para la ficha técnica del gráfico
-        metricas_row = df_forecast.loc[mask_fc, [
-            "mase_usado", "rmse_usado",
-            "confianza_original", "archivo_modelo_original", "archivo_modelo_usado",
-        ]].iloc[0]
-        es_fallback = (
-            str(metricas_row["archivo_modelo_original"])
-            != str(metricas_row["archivo_modelo_usado"])
+        metricas_row = df_forecast.loc[
+            mask_fc,
+            [
+                "mase_usado",
+                "rmse_usado",
+                "confianza_original",
+                "archivo_modelo_original",
+                "archivo_modelo_usado",
+            ],
+        ].iloc[0]
+        es_fallback = str(metricas_row["archivo_modelo_original"]) != str(
+            metricas_row["archivo_modelo_usado"]
         )
         metricas = {
             "mase": (
-                float(metricas_row["mase_usado"])
-                if pd.notna(metricas_row["mase_usado"]) else None
+                float(metricas_row["mase_usado"]) if pd.notna(metricas_row["mase_usado"]) else None
             ),
             "rmse": (
-                float(metricas_row["rmse_usado"])
-                if pd.notna(metricas_row["rmse_usado"]) else None
+                float(metricas_row["rmse_usado"]) if pd.notna(metricas_row["rmse_usado"]) else None
             ),
             "confianza": (
                 str(metricas_row["confianza_original"])
-                if pd.notna(metricas_row["confianza_original"]) else "normal"
+                if pd.notna(metricas_row["confianza_original"])
+                else "normal"
             ),
             "es_fallback": es_fallback,
             "modelo_usado": str(metricas_row["archivo_modelo_usado"]),
@@ -178,16 +188,16 @@ def generar_graficos_pronostico() -> None:
 
     logger.success("Gráficos generados: {} → {}", total, forecast_root)
 
-class ForecastModelLoader:
 
+class ForecastModelLoader:
     def __init__(self, periodo: int, model_path: Path):
         self.model_path = Path(model_path)
         self.model = None
         self.periodo = periodo
         self.poblacion = None
-        self.normalizar_tasa = conf.get('normalizar_tasa', False)
-        self.tasa_por = conf.get('tasa_por', 100000)
-        self.log_transform = conf.get('log_transform', False)
+        self.normalizar_tasa = conf.get("normalizar_tasa", False)
+        self.tasa_por = conf.get("tasa_por", 100000)
+        self.log_transform = conf.get("log_transform", False)
 
     def load(self) -> None:
         if not self.model_path.exists():
@@ -197,11 +207,11 @@ class ForecastModelLoader:
             self.model = pickle.load(f)
 
         # Leer población del CSV de entrenamiento (sidecar del .pkl)
-        csv_path = self.model_path.with_suffix('.csv')
+        csv_path = self.model_path.with_suffix(".csv")
         if self.normalizar_tasa and csv_path.exists():
             train_csv = pd.read_csv(csv_path, nrows=1)
-            if 'Total' in train_csv.columns:
-                self.poblacion = train_csv['Total'].iloc[0]
+            if "Total" in train_csv.columns:
+                self.poblacion = train_csv["Total"].iloc[0]
 
     def predict(self) -> pd.DataFrame:
         future = self.model.make_future_dataframe(periods=self.periodo, freq="W-MON")
@@ -209,15 +219,15 @@ class ForecastModelLoader:
 
         # Revertir log-transform: exp(yhat) - 1
         if self.log_transform:
-            for col in ['yhat', 'yhat_lower', 'yhat_upper']:
+            for col in ["yhat", "yhat_lower", "yhat_upper"]:
                 forecast[col] = np.expm1(forecast[col])
 
         # Desnormalizar si el modelo fue entrenado con tasa por 100K
         if self.normalizar_tasa and self.poblacion:
-            forecast['yhat_tasa'] = forecast['yhat']
-            forecast['yhat'] = forecast['yhat'] * self.poblacion / self.tasa_por
-            forecast['yhat_lower'] = forecast['yhat_lower'] * self.poblacion / self.tasa_por
-            forecast['yhat_upper'] = forecast['yhat_upper'] * self.poblacion / self.tasa_por
+            forecast["yhat_tasa"] = forecast["yhat"]
+            forecast["yhat"] = forecast["yhat"] * self.poblacion / self.tasa_por
+            forecast["yhat_lower"] = forecast["yhat_lower"] * self.poblacion / self.tasa_por
+            forecast["yhat_upper"] = forecast["yhat_upper"] * self.poblacion / self.tasa_por
 
         return forecast
 

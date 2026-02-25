@@ -8,11 +8,11 @@ Salida:
     forecast/reporte_resultados.html
 """
 
+from datetime import datetime
 import json
 import math
-import unicodedata
-from datetime import datetime
 from pathlib import Path
+import unicodedata
 
 import pandas as pd
 
@@ -36,19 +36,44 @@ MODO_LABELS = {"general": "General", "hombres": "Hombres", "mujeres": "Mujeres"}
 
 REGIONES_INEGI = {
     "Metropolitana alta": [
-        "Baja California", "Chihuahua", "Ciudad de México", "Coahuila",
-        "Jalisco", "México", "Nuevo León", "Sinaloa", "Sonora", "Tamaulipas",
+        "Baja California",
+        "Chihuahua",
+        "Ciudad de México",
+        "Coahuila",
+        "Jalisco",
+        "México",
+        "Nuevo León",
+        "Sinaloa",
+        "Sonora",
+        "Tamaulipas",
     ],
     "Urbana media": [
-        "Aguascalientes", "Baja California Sur", "Colima", "Durango",
-        "Guanajuato", "Morelos", "Querétaro", "San Luis Potosí", "Zacatecas",
+        "Aguascalientes",
+        "Baja California Sur",
+        "Colima",
+        "Durango",
+        "Guanajuato",
+        "Morelos",
+        "Querétaro",
+        "San Luis Potosí",
+        "Zacatecas",
     ],
     "Sur-Sureste vulnerable": [
-        "Campeche", "Chiapas", "Oaxaca", "Quintana Roo",
-        "Tabasco", "Veracruz", "Yucatán",
+        "Campeche",
+        "Chiapas",
+        "Oaxaca",
+        "Quintana Roo",
+        "Tabasco",
+        "Veracruz",
+        "Yucatán",
     ],
     "Rural / dispersa": [
-        "Guerrero", "Hidalgo", "Michoacán", "Nayarit", "Puebla", "Tlaxcala",
+        "Guerrero",
+        "Hidalgo",
+        "Michoacán",
+        "Nayarit",
+        "Puebla",
+        "Tlaxcala",
     ],
 }
 
@@ -83,8 +108,7 @@ def compute_stats(df: pd.DataFrame) -> dict:
     # --- Global ---
     stats["total_modelos"] = len(df)
     estados_df = df[
-        ~df["meta_entidad"].str.startswith("Region", na=False)
-        & (df["meta_entidad"] != "Nacional")
+        ~df["meta_entidad"].str.startswith("Region", na=False) & (df["meta_entidad"] != "Nacional")
     ]
     stats["cobertura_estatal"] = round(estados_df["meta_entidad"].nunique() / 32 * 100)
     stats["mase_global"] = _clean(round(df["mase_usado"].mean(), 2))
@@ -98,9 +122,7 @@ def compute_stats(df: pd.DataFrame) -> dict:
     n_nacional = len(df[df["meta_entidad"] == "Nacional"])
     n_regional = len(df[df["meta_entidad"].str.startswith("Region", na=False)])
     n_estatal = len(estados_df)
-    stats["conteo_tipo"] = {
-        "nacional": n_nacional, "regional": n_regional, "estatal": n_estatal
-    }
+    stats["conteo_tipo"] = {"nacional": n_nacional, "regional": n_regional, "estatal": n_estatal}
 
     # --- Por padecimiento ---
     pad_stats = []
@@ -110,22 +132,24 @@ def compute_stats(df: pd.DataFrame) -> dict:
         insuf = int((sub["confianza_original"] == "insuficiente").sum())
         fallback = int((sub["archivo_modelo_original"] != sub["archivo_modelo_usado"]).sum())
         n_reg = int(sub["meta_entidad"].str.startswith("Region", na=False).sum())
-        pad_stats.append({
-            "padecimiento": pad,
-            "total": len(sub),
-            "estatales": len(sub_est),
-            "nacionales": int((sub["meta_entidad"] == "Nacional").sum()),
-            "regionales": n_reg,
-            "mase": _clean(round(sub["mase_usado"].mean(), 2)),
-            "rmse": _clean(round(sub["rmse_usado"].mean(), 3)),
-            "mae": _clean(round(sub["mae_usado"].mean(), 3)),
-            "mape": _clean(round(sub["mape_usado"].mean(), 2)),
-            "insuficientes": insuf,
-            "fallback": fallback,
-            "mase_min": _clean(round(sub["mase_usado"].min(), 2)),
-            "mase_max": _clean(round(sub["mase_usado"].max(), 2)),
-            "mase_median": _clean(round(sub["mase_usado"].median(), 2)),
-        })
+        pad_stats.append(
+            {
+                "padecimiento": pad,
+                "total": len(sub),
+                "estatales": len(sub_est),
+                "nacionales": int((sub["meta_entidad"] == "Nacional").sum()),
+                "regionales": n_reg,
+                "mase": _clean(round(sub["mase_usado"].mean(), 2)),
+                "rmse": _clean(round(sub["rmse_usado"].mean(), 3)),
+                "mae": _clean(round(sub["mae_usado"].mean(), 3)),
+                "mape": _clean(round(sub["mape_usado"].mean(), 2)),
+                "insuficientes": insuf,
+                "fallback": fallback,
+                "mase_min": _clean(round(sub["mase_usado"].min(), 2)),
+                "mase_max": _clean(round(sub["mase_usado"].max(), 2)),
+                "mase_median": _clean(round(sub["mase_usado"].median(), 2)),
+            }
+        )
     stats["por_padecimiento"] = pad_stats
 
     # --- MASE histogram bins ---
@@ -135,10 +159,12 @@ def compute_stats(df: pd.DataFrame) -> dict:
     for pad in PAD_ORDER:
         sub = df[df["meta_padecimiento"] == pad]["mase_usado"].dropna()
         counts = pd.cut(sub, bins=bins, labels=bin_labels, right=False).value_counts()
-        histo.append({
-            "padecimiento": pad,
-            "bins": [int(counts.get(b, 0)) for b in bin_labels],
-        })
+        histo.append(
+            {
+                "padecimiento": pad,
+                "bins": [int(counts.get(b, 0)) for b in bin_labels],
+            }
+        )
     stats["mase_histo"] = histo
     stats["mase_bin_labels"] = bin_labels
 
@@ -149,14 +175,16 @@ def compute_stats(df: pd.DataFrame) -> dict:
             sub = df[(df["meta_padecimiento"] == pad) & (df["meta_modo"] == modo)]
             if len(sub) == 0:
                 continue
-            sexo_stats.append({
-                "padecimiento": pad,
-                "modo": modo,
-                "modo_label": MODO_LABELS[modo],
-                "count": len(sub),
-                "mase": _clean(round(sub["mase_usado"].mean(), 2)),
-                "rmse": _clean(round(sub["rmse_usado"].mean(), 3)),
-            })
+            sexo_stats.append(
+                {
+                    "padecimiento": pad,
+                    "modo": modo,
+                    "modo_label": MODO_LABELS[modo],
+                    "count": len(sub),
+                    "mase": _clean(round(sub["mase_usado"].mean(), 2)),
+                    "rmse": _clean(round(sub["rmse_usado"].mean(), 3)),
+                }
+            )
     stats["por_sexo"] = sexo_stats
 
     # --- Ranking (with group) ---
@@ -173,18 +201,24 @@ def compute_stats(df: pd.DataFrame) -> dict:
             grupo = "Estatal"
             orden = 2
         es_fallback = row["archivo_modelo_original"] != row["archivo_modelo_usado"]
-        ranking.append({
-            "entidad": ent,
-            "padecimiento": row["meta_padecimiento"],
-            "modo": MODO_LABELS.get(row["meta_modo"], row["meta_modo"]),
-            "mase": _clean(round(row["mase_usado"], 2)) if pd.notna(row["mase_usado"]) else None,
-            "rmse": _clean(round(row["rmse_usado"], 3)) if pd.notna(row["rmse_usado"]) else None,
-            "mae": _clean(round(row["mae_usado"], 3)) if pd.notna(row["mae_usado"]) else None,
-            "confianza": row.get("confianza_original", "normal"),
-            "tipo": "Regional (fallback)" if es_fallback else "Propio",
-            "grupo": grupo,
-            "orden": orden,
-        })
+        ranking.append(
+            {
+                "entidad": ent,
+                "padecimiento": row["meta_padecimiento"],
+                "modo": MODO_LABELS.get(row["meta_modo"], row["meta_modo"]),
+                "mase": _clean(round(row["mase_usado"], 2))
+                if pd.notna(row["mase_usado"])
+                else None,
+                "rmse": _clean(round(row["rmse_usado"], 3))
+                if pd.notna(row["rmse_usado"])
+                else None,
+                "mae": _clean(round(row["mae_usado"], 3)) if pd.notna(row["mae_usado"]) else None,
+                "confianza": row.get("confianza_original", "normal"),
+                "tipo": "Regional (fallback)" if es_fallback else "Propio",
+                "grupo": grupo,
+                "orden": orden,
+            }
+        )
     stats["ranking"] = ranking
 
     # --- Cobertura (estado × padecimiento) ---
@@ -193,14 +227,15 @@ def compute_stats(df: pd.DataFrame) -> dict:
         entry = {"estado": estado}
         for pad in PAD_ORDER:
             sub = estados_df[
-                (estados_df["meta_entidad"] == estado)
-                & (estados_df["meta_padecimiento"] == pad)
+                (estados_df["meta_entidad"] == estado) & (estados_df["meta_padecimiento"] == pad)
             ]
             key = _safe_key(pad)
             if len(sub) == 0:
                 entry[key] = "sin_modelo"
             else:
-                es_fb = sub.iloc[0]["archivo_modelo_original"] != sub.iloc[0]["archivo_modelo_usado"]
+                es_fb = (
+                    sub.iloc[0]["archivo_modelo_original"] != sub.iloc[0]["archivo_modelo_usado"]
+                )
                 entry[key] = "fallback" if es_fb else "propio"
         cobertura.append(entry)
 
@@ -216,8 +251,12 @@ def compute_stats(df: pd.DataFrame) -> dict:
     # --- Top / Bottom 10 ---
     valid = df[df["mase_usado"].notna()].copy()
     valid["_label"] = (
-        valid["meta_entidad"] + " — " + valid["meta_padecimiento"]
-        + " (" + valid["meta_modo"] + ")"
+        valid["meta_entidad"]
+        + " — "
+        + valid["meta_padecimiento"]
+        + " ("
+        + valid["meta_modo"]
+        + ")"
     )
     for name, method, n in [("top10", "nsmallest", 10), ("bottom10", "nlargest", 10)]:
         sel = getattr(valid, method)(n, "mase_usado")
@@ -232,14 +271,11 @@ def compute_stats(df: pd.DataFrame) -> dict:
 
     # --- Pad meta for JS ---
     stats["pad_meta"] = [
-        {"name": pad, "key": _safe_key(pad), **COLORS_BY_SAFE[_safe_key(pad)]}
-        for pad in PAD_ORDER
+        {"name": pad, "key": _safe_key(pad), **COLORS_BY_SAFE[_safe_key(pad)]} for pad in PAD_ORDER
     ]
 
     # --- Regiones INEGI info ---
-    stats["regiones_inegi"] = {
-        name: estados for name, estados in REGIONES_INEGI.items()
-    }
+    stats["regiones_inegi"] = {name: estados for name, estados in REGIONES_INEGI.items()}
 
     return stats
 

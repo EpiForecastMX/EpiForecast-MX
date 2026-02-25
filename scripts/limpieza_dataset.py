@@ -62,10 +62,12 @@ def main():
         ).run()
 
         if metricas_limpieza:
-            datos_reporte.secciones_notas.append(SeccionNota(
-                titulo="Resultado de la limpieza",
-                parametros=metricas_limpieza,
-            ))
+            datos_reporte.secciones_notas.append(
+                SeccionNota(
+                    titulo="Resultado de la limpieza",
+                    parametros=metricas_limpieza,
+                )
+            )
 
         PDFReportGenerator(
             datos_reporte,

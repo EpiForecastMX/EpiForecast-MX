@@ -1,6 +1,6 @@
 paths:
   data: "./data"
-  raw: "${paths.data}/raw" 
+  raw: "${paths.data}/raw"
   interim: "${paths.data}/interim"
   processed: "${paths.data}/processed"
   external: "${paths.data}/external"

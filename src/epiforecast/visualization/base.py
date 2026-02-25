@@ -106,7 +106,7 @@ class GraficosHelper:
 
         conteos = serie.value_counts().head(self.numero_top_columnas)
         top_real = len(conteos)
-        porcentajes = (conteos / conteos.sum() * 100).round(1)
+        porcentajes: pd.Series = (conteos / conteos.sum() * 100).round(1)
 
         etiquetas = [
             str(lbl)[:30] + ("…" if len(str(lbl)) > 30 else "") for lbl in porcentajes.index
