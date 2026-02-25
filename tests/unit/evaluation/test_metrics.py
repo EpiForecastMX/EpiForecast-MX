@@ -13,8 +13,8 @@ import pytest
 
 from epiforecast.evaluation.metrics import mae, mape, mase, rmse
 
-
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
 
 @pytest.fixture
 def perfect():
@@ -52,6 +52,7 @@ def seasonal_series():
 
 # ── RMSE Tests ────────────────────────────────────────────────────────────────
 
+
 class TestRMSE:
     def test_perfect_predictions(self, perfect):
         y_true, y_pred = perfect
@@ -74,6 +75,7 @@ class TestRMSE:
 
 # ── MAE Tests ─────────────────────────────────────────────────────────────────
 
+
 class TestMAE:
     def test_perfect_predictions(self, perfect):
         y_true, y_pred = perfect
@@ -91,6 +93,7 @@ class TestMAE:
 
 
 # ── MAPE Tests ────────────────────────────────────────────────────────────────
+
 
 class TestMAPE:
     def test_perfect_predictions(self, perfect):
@@ -113,6 +116,7 @@ class TestMAPE:
 
 
 # ── MASE Tests ────────────────────────────────────────────────────────────────
+
 
 class TestMASE:
     def test_perfect_predictions(self, seasonal_series):
