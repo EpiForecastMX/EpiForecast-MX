@@ -69,6 +69,7 @@ def main():
                 )
             )
 
+        directory_manager.asegurar_ruta(str(Path(opciones_reporte["ruta"]).parent))
         PDFReportGenerator(
             datos_reporte,
             archivo_salida=opciones_reporte["ruta"],
