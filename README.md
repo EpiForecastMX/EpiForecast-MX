@@ -475,7 +475,7 @@ This project is released under the [MIT License](LICENSE).
 ## Acknowledgments
 
 - **IMSS** — for data access, domain expertise, and real-world deployment context
-- **Tecnológico de Monterrey** — MAI program and capstone framework
+- **Tecnológico de Monterrey** — MNA (Master in Applied Artificial Intelligence) program and capstone framework
 - **SINAVE / DGAE** — for the epidemiological surveillance bulletins (2014–2026)
 - **INEGI** — for demographic data via PxWeb API
 - **Meta / Facebook** — for the [Prophet](https://github.com/facebook/prophet) forecasting library
