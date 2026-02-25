@@ -213,6 +213,34 @@ class ProphetForecaster(ForecastModel):
 
         return self._model, best_metrics, best_params
 
+    # ── Backward-compatible API (SerieTiempoProphet alias in scripts/) ────────
+
+    @property
+    def param_grid(self) -> dict:
+        """HP grid for this condition. Delegates to ProphetTuner."""
+        from epiforecast.models.prophet.tuner import ProphetTuner
+
+        return ProphetTuner(self).param_grid
+
+    def train(self, parametros: dict) -> Prophet:
+        """Train final model on full series with given HP dict.
+
+        Called by scripts/entrena.py after prophet_cross_val().
+        Trains on self.serie (full data, not just train split) and
+        returns the fitted Prophet object for pickling.
+        """
+        self.fit(self.serie, parametros)
+        return self._model  # type: ignore[return-value]
+
+    def prophet_cross_val(self) -> tuple[dict, dict]:
+        """Run HP search and return (best_params, best_metrics).
+
+        Delegates to ProphetTuner.run().
+        """
+        from epiforecast.models.prophet.tuner import ProphetTuner
+
+        return ProphetTuner(self).run()
+
     # ── Private Helpers ───────────────────────────────────────────────────────
 
     def _create_prophet(self, **hp_overrides) -> Prophet:
