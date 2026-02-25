@@ -5,10 +5,10 @@ import unicodedata
 
 import pandas as pd
 
-from src.epiforecast.utils.config import conf, logger
-from src.epiforecast.models.prediction import ForecastModelLoader
-from src.epiforecast.visualization.forecast_plots import generar_graficos_pronostico
-from src.epiforecast.utils import paths as directory_manager
+from epiforecast.models.prediction import ForecastModelLoader
+from epiforecast.utils import paths as directory_manager
+from epiforecast.utils.config import conf, logger
+from epiforecast.visualization.forecast_plots import generar_graficos_pronostico
 
 
 def _normalizar(s: str) -> str:

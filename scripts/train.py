@@ -10,9 +10,9 @@ import unicodedata
 from joblib import Parallel, delayed
 import pandas as pd
 
-from src.epiforecast.utils.config import conf, logger
-from src.epiforecast.models.prophet.model import ProphetForecaster as SerieTiempoProphet
-from src.epiforecast.utils import paths as directory_manager
+from epiforecast.models.prophet.model import ProphetForecaster as SerieTiempoProphet
+from epiforecast.utils import paths as directory_manager
+from epiforecast.utils.config import conf, logger
 
 
 def normalizar(region: str) -> str:
@@ -25,8 +25,8 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False,
     # Imports locales: evita que cloudpickle (loky) intente serializar estos objetos
     # como globals de __main__. OmegaConf y loguru no son pickle-safe.
     # Cada worker re-importa los módulos frescos.
-    from src.epiforecast.utils.config import conf, logger
-    from src.epiforecast.utils import paths as directory_manager
+    from epiforecast.utils import paths as directory_manager
+    from epiforecast.utils.config import conf, logger
 
     if progreso:
         i, total = progreso

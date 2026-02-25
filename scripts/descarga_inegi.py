@@ -1,6 +1,6 @@
 # scripts/descarga_inegi.py
-from src.epiforecast.utils.config import conf, logger
-from src.epiforecast.data.ingestion.inegi import GetInegi
+from epiforecast.data.ingestion.inegi import GetInegi
+from epiforecast.utils.config import conf, logger
 
 
 def main() -> None:

@@ -2,8 +2,8 @@
 import pandas as pd
 import requests
 
-from src.epiforecast.utils import paths as directory_manager
-from src.epiforecast.utils.config import conf, logger
+from epiforecast.utils import paths as directory_manager
+from epiforecast.utils.config import conf, logger
 
 
 class GetInegi:

@@ -5,9 +5,9 @@ from datetime import datetime
 from loguru import logger
 import pandas as pd
 
-from src.epiforecast.utils import paths as directory_manager
-from src.epiforecast.utils.config import conf
-from src.epiforecast.visualization.base import GraficosHelper
+from epiforecast.utils import paths as directory_manager
+from epiforecast.utils.config import conf
+from epiforecast.visualization.base import GraficosHelper
 
 
 @dataclass

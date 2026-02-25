@@ -4,8 +4,8 @@ from pathlib import Path
 import shutil
 import sys
 
-from src.epiforecast.utils.config import conf, logger
-from src.epiforecast.utils import paths as directory_manager
+from epiforecast.utils import paths as directory_manager
+from epiforecast.utils.config import conf, logger
 
 if __name__ == "__main__":
     raw_path = conf["paths"]["raw"]

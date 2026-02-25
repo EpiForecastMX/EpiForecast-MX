@@ -13,11 +13,11 @@ import itertools
 import time
 from typing import TYPE_CHECKING
 
-from src.epiforecast.models.prophet.cross_validator import ProphetCrossValidator
-from src.epiforecast.utils.config import conf, logger
+from epiforecast.models.prophet.cross_validator import ProphetCrossValidator
+from epiforecast.utils.config import conf, logger
 
 if TYPE_CHECKING:
-    from src.epiforecast.models.prophet.model import ProphetForecaster
+    from epiforecast.models.prophet.model import ProphetForecaster
 
 # Grid key mapping: Spanish condition name → YAML key
 _GRID_KEY_MAP: dict[str, str] = {

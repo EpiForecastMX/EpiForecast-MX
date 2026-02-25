@@ -20,7 +20,7 @@ from reportlab.platypus import (
     TableStyle,
 )
 
-from src.epiforecast.visualization.eda_plots import ReportData, SeccionNota
+from epiforecast.visualization.eda_plots import ReportData, SeccionNota
 
 # ---------- Helpers de tabla ---------- #
 

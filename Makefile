@@ -169,7 +169,7 @@ format:
 ## Type check con mypy
 .PHONY: typecheck
 typecheck:
-	mypy $(SRC)
+	mypy src/epiforecast/
 	@echo ">>> Type check passed."
 
 ## Ejecutar tests

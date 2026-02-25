@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.epiforecast.utils.config import conf, logger
-from src.epiforecast.utils import paths as directory_manager
+from epiforecast.utils import paths as directory_manager
+from epiforecast.utils.config import conf, logger
 
 
 def load_inputs(in_real: Path, in_fcst: Path) -> tuple[pd.DataFrame, pd.DataFrame]:

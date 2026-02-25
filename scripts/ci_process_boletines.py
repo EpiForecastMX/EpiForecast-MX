@@ -268,7 +268,7 @@ def main(explicit_files: list[str] | None = None) -> int:
 
     # 4. Ejecutar pipeline de extracción (camelot)
     log.info("Ejecutando pipeline de extracción...")
-    from src.epiforecast.data.extraction.pdf_extractor import run_pipeline
+    from epiforecast.data.extraction.pdf_extractor import run_pipeline
 
     try:
         run_pipeline(

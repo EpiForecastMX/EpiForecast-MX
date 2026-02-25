@@ -1,9 +1,9 @@
 # scripts/realiza_prep.py
 import pandas as pd
 
-from src.epiforecast.utils.config import conf, logger
-from src.epiforecast.data.preprocessing.transformer import dataTransformation
-from src.epiforecast.utils import paths as directory_manager
+from epiforecast.data.preprocessing.transformer import dataTransformation
+from epiforecast.utils import paths as directory_manager
+from epiforecast.utils.config import conf, logger
 
 
 def transforma_dataset() -> tuple[bool, pd.DataFrame | None]:

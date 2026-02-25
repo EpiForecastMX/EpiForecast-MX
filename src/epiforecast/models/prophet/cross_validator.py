@@ -22,10 +22,10 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import TimeSeriesSplit
 
-from src.epiforecast.utils.config import conf, logger
+from epiforecast.utils.config import conf, logger
 
 if TYPE_CHECKING:
-    from src.epiforecast.models.prophet.model import ProphetForecaster
+    from epiforecast.models.prophet.model import ProphetForecaster
 
 
 class ProphetCrossValidator:
@@ -47,7 +47,7 @@ class ProphetCrossValidator:
 
         This is called from ProphetForecaster.cross_validate().
         """
-        from src.epiforecast.models.prophet.tuner import ProphetTuner
+        from epiforecast.models.prophet.tuner import ProphetTuner
 
         tuner = ProphetTuner(self.forecaster)
         return tuner.run()

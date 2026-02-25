@@ -11,9 +11,9 @@ import unicodedata
 
 import pandas as pd
 
-from src.epiforecast.utils import paths as directory_manager
-from src.epiforecast.utils.config import conf, logger
-from src.epiforecast.visualization.base import GraficosHelper
+from epiforecast.utils import paths as directory_manager
+from epiforecast.utils.config import conf, logger
+from epiforecast.visualization.base import GraficosHelper
 
 
 def _normalizar_nombre(s: str) -> str:

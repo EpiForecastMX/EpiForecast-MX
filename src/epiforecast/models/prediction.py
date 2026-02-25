@@ -11,7 +11,7 @@ import pickle
 import numpy as np
 import pandas as pd
 
-from src.epiforecast.utils.config import conf
+from epiforecast.utils.config import conf
 
 
 class ForecastModelLoader:

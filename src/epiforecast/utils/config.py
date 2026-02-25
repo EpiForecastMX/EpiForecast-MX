@@ -2,7 +2,7 @@
 """Unified configuration loader for EpiForecast-MX.
 
 Merges all YAML files from config/ into a single `conf` dict.
-All modules access configuration via `from src.epiforecast.utils.config import conf, logger`.
+All modules access configuration via `from epiforecast.utils.config import conf, logger`.
 """
 
 from __future__ import annotations

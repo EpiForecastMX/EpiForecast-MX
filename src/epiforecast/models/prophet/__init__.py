@@ -7,6 +7,6 @@ Split into 3 modules following SRP:
 - cross_validator.py: ProphetCrossValidator (temporal CV + MASE)
 """
 
-from src.epiforecast.models.prophet.model import ProphetForecaster
+from epiforecast.models.prophet.model import ProphetForecaster
 
 __all__ = ["ProphetForecaster"]

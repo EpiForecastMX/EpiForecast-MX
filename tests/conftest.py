@@ -24,7 +24,7 @@ def pytest_configure(config):  # noqa: ARG001
     """
     from loguru import logger as _logger
 
-    _mock = types.ModuleType("src.epiforecast.utils.config")
+    _mock = types.ModuleType("epiforecast.utils.config")
     _mock.conf = {  # type: ignore[attr-defined]
         "paths": {
             "utils": "/tmp/epi_test/utils",
@@ -37,7 +37,7 @@ def pytest_configure(config):  # noqa: ARG001
         },
     }
     _mock.logger = _logger  # type: ignore[attr-defined]
-    sys.modules.setdefault("src.epiforecast.utils.config", _mock)
+    sys.modules.setdefault("epiforecast.utils.config", _mock)
 
 
 @pytest.fixture

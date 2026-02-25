@@ -117,7 +117,7 @@ ignore_missing_imports = true          # needed until all stubs exist
 exclude = ["notebooks/", "docs/"]
 
 [[tool.mypy.overrides]]
-module = "src.epiforecast.*"
+module = "epiforecast.*"
 disallow_untyped_defs = false          # flip to true per-module as you refactor
 
 # ─── Pytest ───────────────────────────────────────────────────────────────────

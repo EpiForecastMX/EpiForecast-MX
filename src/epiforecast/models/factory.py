@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from src.epiforecast.models.base import ForecastModel
+from epiforecast.models.base import ForecastModel
 
 # Registry of available models — add new models here without modifying existing code (OCP)
 _MODEL_REGISTRY: dict[str, type[ForecastModel]] = {}

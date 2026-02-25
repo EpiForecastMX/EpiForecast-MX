@@ -9,7 +9,7 @@ import pandas as pd
 from scipy.stats import gaussian_kde
 import seaborn as sns
 
-from src.epiforecast.utils.config import conf
+from epiforecast.utils.config import conf
 
 
 class GraficosHelper:

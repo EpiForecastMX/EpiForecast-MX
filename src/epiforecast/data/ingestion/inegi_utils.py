@@ -2,9 +2,9 @@ import pandas as pd
 import requests
 import typer
 
-from src.epiforecast.utils import paths as directory_manager
-from src.epiforecast.utils.config import conf
-from src.epiforecast.visualization.inegi_plots import eda_inegi
+from epiforecast.utils import paths as directory_manager
+from epiforecast.utils.config import conf
+from epiforecast.visualization.inegi_plots import eda_inegi
 
 # ========= Configuración =========
 BASE_PXWEB = "https://www.inegi.org.mx/app/tabulados/pxwebv2/api/v1/es"

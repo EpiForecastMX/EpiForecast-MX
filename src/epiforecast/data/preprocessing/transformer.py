@@ -3,8 +3,8 @@ from loguru import logger
 import numpy as np
 import pandas as pd
 
-from src.epiforecast.utils.config import conf
-from src.epiforecast.utils.dataframe_helpers import OperacionesDatos
+from epiforecast.utils.config import conf
+from epiforecast.utils.dataframe_helpers import OperacionesDatos
 
 
 class dataTransformation:

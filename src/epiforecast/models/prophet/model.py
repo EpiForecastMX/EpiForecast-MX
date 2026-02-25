@@ -14,8 +14,8 @@ import numpy as np
 import pandas as pd
 from prophet import Prophet
 
-from src.epiforecast.models.base import ForecastModel
-from src.epiforecast.utils.config import conf, logger
+from epiforecast.models.base import ForecastModel
+from epiforecast.utils.config import conf, logger
 
 logging.getLogger("cmdstanpy").disabled = True
 
@@ -158,7 +158,7 @@ class ProphetForecaster(ForecastModel):
 
     def cross_validate(self, data: pd.DataFrame) -> dict[str, float]:
         """Run cross-validation. Delegates to ProphetCrossValidator."""
-        from src.epiforecast.models.prophet.cross_validator import ProphetCrossValidator
+        from epiforecast.models.prophet.cross_validator import ProphetCrossValidator
 
         cv = ProphetCrossValidator(self)
         best_params, best_metrics = cv.run()
@@ -204,7 +204,7 @@ class ProphetForecaster(ForecastModel):
         self.agrupa()
         self.crea_train_test()
 
-        from src.epiforecast.models.prophet.tuner import ProphetTuner
+        from epiforecast.models.prophet.tuner import ProphetTuner
 
         tuner = ProphetTuner(self)
         best_params, best_metrics = tuner.run()

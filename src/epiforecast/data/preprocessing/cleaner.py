@@ -1,7 +1,7 @@
 # src/datos/clean_dataset.py
 import pandas as pd
 
-from src.epiforecast.utils.config import conf, logger
+from epiforecast.utils.config import conf, logger
 
 
 class CleanDataset:
