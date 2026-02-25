@@ -16,8 +16,8 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.12-blue?style=flat&logo=python&logoColor=white" alt="Python 3.12"/>
   <img src="https://img.shields.io/badge/Prophet-Meta%2FFacebook-0668E1?style=flat&logo=meta&logoColor=white" alt="Prophet"/>
-  <img src="https://img.shields.io/badge/Coverage-46%25-yellow?style=flat" alt="Coverage 46%"/>
-  <img src="https://img.shields.io/badge/Tests-333%20passing-brightgreen?style=flat" alt="333 Tests"/>
+  <img src="https://img.shields.io/badge/Coverage-82%25-brightgreen?style=flat" alt="Coverage 82%"/>
+  <img src="https://img.shields.io/badge/Tests-536%20passing-brightgreen?style=flat" alt="536 Tests"/>
   <img src="https://img.shields.io/badge/Compliance-A%2B%20(96%25)-brightgreen?style=flat" alt="Grade A+"/>
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat" alt="MIT License"/>
   <img src="https://img.shields.io/badge/DVC-S3-945DD6?style=flat&logo=dvc&logoColor=white" alt="DVC + S3"/>
@@ -125,8 +125,8 @@ EpiForecast-MX/
 │   ├── report.py / bitacora.py    #   make report / make bitacora
 │   └── ci_process.py              #   CI/CD: extract + merge new bulletins
 │
-├── tests/                         # 333 tests, 46% coverage
-│   ├── unit/                      #   Pure unit tests (no I/O)
+├── tests/                         # 536 tests, 82% coverage
+│   ├── unit/                      #   Pure unit tests (no I/O, mocked config)
 │   └── integration/               #   End-to-end pipeline smoke tests
 │
 ├── notebooks/                     # Exploratory analysis (read-only reference)
@@ -171,7 +171,7 @@ source integrador/bin/activate
 make data-pull
 
 # 5. Verify everything works
-make quality         # lint + typecheck + 333 tests
+make quality         # lint + typecheck + 536 tests
 ```
 
 ### Manual Installation
@@ -404,8 +404,8 @@ Current quality metrics:
 | Ruff linting | ✅ 0 errors |
 | Ruff formatting | ✅ 0 diffs |
 | Mypy (52 files) | ✅ 0 errors |
-| Tests | ✅ 333 passing |
-| Coverage | 46% |
+| Tests | ✅ 536 passing |
+| Coverage | ✅ 82% (1854/2258 statements) |
 | Compliance | 147/153 (96%) — Grade A+ |
 
 ### Pre-commit Hooks
@@ -446,7 +446,7 @@ Two GitHub Actions workflows run automatically:
 |----------|---------|-------------|
 | `scrape_boletines.yml` | Daily 2 PM CDMX | Selenium downloads new SINAVE PDFs → DVC push → SNS notification |
 | `process_boletines.yml` | Post-scrape | Camelot extraction → incremental merge → DVC push → SNS |
-| `ci.yml` | Pull request / push | `make quality` (lint + typecheck + 333 tests) |
+| `ci.yml` | Pull request / push | `make quality` (lint + typecheck + 536 tests) |
 
 The full data lineage is reproducible: `dvc repro` rebuilds all pipeline stages from raw PDFs to forecast CSVs.
 
