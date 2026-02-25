@@ -1,6 +1,7 @@
 """Base visualization helpers: charts, forecast plots, and IMSS styling."""
 
 # src/utils/graficos.py
+from abc import ABC
 import os
 
 import matplotlib as mpl
@@ -13,7 +14,7 @@ import seaborn as sns
 from epiforecast.utils.config import conf
 
 
-class GraficosHelper:
+class GraficosHelper(ABC):
     def __init__(self, carpeta_salida: str, numero_top_columnas: int) -> None:
         self.carpeta_salida = carpeta_salida
         self.numero_top_columnas = numero_top_columnas

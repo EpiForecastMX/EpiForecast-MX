@@ -11,7 +11,7 @@ import sys
 import pandas as pd
 import typer
 
-from epiforecast.data.extraction.pdf_extractor import run_pipeline
+from epiforecast.data.extraction.extraction_pipeline import run_pipeline
 
 app = typer.Typer(add_completion=False)
 

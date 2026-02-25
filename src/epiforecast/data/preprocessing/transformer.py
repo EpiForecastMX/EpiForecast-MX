@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 
 from epiforecast.utils.config import conf
-from epiforecast.utils.dataframe_helpers import OperacionesDatos
 
 
 class dataTransformation:
@@ -190,69 +189,16 @@ class dataTransformation:
             )
 
     def _ajusta_outliers(self, columnas: list, agrupacion: list):
-        for columna in columnas:
-            stats = (
-                self.df.groupby(agrupacion, sort=False)
-                .apply(  # type: ignore[call-overload]
-                    lambda g: pd.Series(
-                        (
-                            lambda met: {
-                                "q1": met[2],
-                                "q3": met[3],
-                                "iqr": met[4],
-                                "lim_inf": met[0],
-                                "lim_sup": met[1],
-                            }
-                        )(OperacionesDatos.outliers_iqr(g, columna)[1])
-                    ),
-                    include_groups=False,
-                )
-                .reset_index()
-            )
-            self.df = self.df.merge(
-                stats[["Padecimiento", "q1", "q3", "iqr", "lim_inf", "lim_sup"]],
-                on="Padecimiento",
-                how="left",
-            )
+        from epiforecast.data.preprocessing.imputation import ajusta_outliers
 
-            for pade, sub in self.df.groupby("Padecimiento", sort=False):
-                # Evita NaN al loggear
-                iqr = sub["iqr"].iloc[0]
-                q1 = sub["q1"].iloc[0]
-                q3 = sub["q3"].iloc[0]
-                lim_inf = sub["lim_inf"].iloc[0]
-                lim_sup = sub["lim_sup"].iloc[0]
-
-                mascara_inf = sub[columna] < lim_inf
-                mascara_sup = sub[columna] > lim_sup
-                total_inf = int(mascara_inf.sum())
-                total_sup = int(mascara_sup.sum())
-
-                logger.info(
-                    f"[{pade}] Rangos intercuartiles para '{columna}': IQR={iqr}, Q1={q1}, Q3={q3}"
-                )
-                logger.info(
-                    f"[{pade}] Límite inferior: {lim_inf} | Registros por debajo del límite: {total_inf}"
-                )
-                logger.info(
-                    f"[{pade}] Límite superior: {lim_sup} | Registros por encima del límite: {total_sup}"
-                )
-
-            x = self.df[columna].to_numpy()
-            lo = self.df["lim_inf"].to_numpy()
-            hi = self.df["lim_sup"].to_numpy()
-
-            x_clipped = np.clip(x, lo, hi)
-
-            self.df[columna] = pd.Series(x_clipped, index=self.df.index).round(0).astype("Int64")
-
-            self.df = self.df.drop(columns=["q1", "q3", "iqr", "lim_inf", "lim_sup"])
+        self.df = ajusta_outliers(self.df, columnas, agrupacion)
 
     def _ajusta_outliers_zscore(
         self, columnas: list, agrupacion: list, umbral: int, reemplazo: str
     ):
-        for col in columnas:
-            self.df = OperacionesDatos.zscore(self.df, col, agrupacion, umbral, reemplazo)
+        from epiforecast.data.preprocessing.imputation import ajusta_outliers_zscore
+
+        self.df = ajusta_outliers_zscore(self.df, columnas, agrupacion, umbral, reemplazo)
 
     def agrupar(self):
         logger.info("Aplicando agrupamiento")

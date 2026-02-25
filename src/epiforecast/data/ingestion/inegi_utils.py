@@ -4,9 +4,10 @@ import pandas as pd
 import requests
 import typer
 
+from epiforecast.data.ingestion.inegi_constants import ESTADOS_DICT, REGION_SALUD_MENTAL
 from epiforecast.utils import paths as directory_manager
 from epiforecast.utils.config import conf
-from epiforecast.visualization.inegi_plots import eda_inegi
+from epiforecast.visualization.inegi_tables import eda_inegi
 
 # ========= Configuración =========
 BASE_PXWEB = "https://www.inegi.org.mx/app/tabulados/pxwebv2/api/v1/es"
@@ -37,79 +38,6 @@ URL_SUPERFICIE = (
     "null/es/null/null/3/n/0/1/null/null/1/6/json/"
     "563cbaa8-58bb-fef8-6763-1f1dae318f99"
 )
-
-ESTADOS_DICT = {
-    "Ags.": "Aguascalientes",
-    "BC": "Baja California",
-    "BCS": "Baja California Sur",
-    "Camp.": "Campeche",
-    "Chih.": "Chihuahua",
-    "Chis.": "Chiapas",
-    "CDMX": "Ciudad de México",
-    "Coah.": "Coahuila de Zaragoza",
-    "Col.": "Colima",
-    "Dgo.": "Durango",
-    "Gto.": "Guanajuato",
-    "Gro.": "Guerrero",
-    "Hgo.": "Hidalgo",
-    "Jal.": "Jalisco",
-    "Mex.": "México",
-    "Mich.": "Michoacán de Ocampo",
-    "Mor.": "Morelos",
-    "Nay.": "Nayarit",
-    "NL": "Nuevo León",
-    "Oax.": "Oaxaca",
-    "Pue.": "Puebla",
-    "Qro.": "Querétaro",
-    "Q. Roo": "Quintana Roo",
-    "SLP": "San Luis Potosí",
-    "Sin.": "Sinaloa",
-    "Son.": "Sonora",
-    "Tab.": "Tabasco",
-    "Tamps.": "Tamaulipas",
-    "Tlax.": "Tlaxcala",
-    "Ver.": "Veracruz de Ignacio de la Llave",
-    "Yuc.": "Yucatán",
-    "Zac.": "Zacatecas",
-}
-REGION_SALUD_MENTAL = {
-    # Altamente urbanas / metropolitanas
-    "Ciudad de México": "Metropolitana alta",
-    "México": "Metropolitana alta",
-    "Nuevo León": "Metropolitana alta",
-    "Jalisco": "Metropolitana alta",
-    # Urbanas medias e industrializadas
-    "Aguascalientes": "Urbana media",
-    "Baja California": "Urbana media",
-    "Baja California Sur": "Urbana media",
-    "Chihuahua": "Urbana media",
-    "Coahuila de Zaragoza": "Urbana media",
-    "Colima": "Urbana media",
-    "Durango": "Urbana media",
-    "Guanajuato": "Urbana media",
-    "Morelos": "Urbana media",
-    "Querétaro": "Urbana media",
-    "San Luis Potosí": "Urbana media",
-    "Sinaloa": "Urbana media",
-    "Sonora": "Urbana media",
-    "Tamaulipas": "Urbana media",
-    "Zacatecas": "Urbana media",
-    # Rurales y dispersas
-    "Guerrero": "Rural / dispersa",
-    "Hidalgo": "Rural / dispersa",
-    "Michoacán de Ocampo": "Rural / dispersa",
-    "Nayarit": "Rural / dispersa",
-    "Puebla": "Rural / dispersa",
-    "Tlaxcala": "Rural / dispersa",
-    "Veracruz de Ignacio de la Llave": "Rural / dispersa",
-    # Sur-Sureste estructuralmente vulnerable
-    "Campeche": "Sur-Sureste vulnerable",
-    "Chiapas": "Sur-Sureste vulnerable",
-    "Oaxaca": "Sur-Sureste vulnerable",
-    "Tabasco": "Sur-Sureste vulnerable",
-    "Yucatán": "Sur-Sureste vulnerable",
-    "Quintana Roo": "Sur-Sureste vulnerable",
-}
 
 
 app = typer.Typer(add_completion=False)
