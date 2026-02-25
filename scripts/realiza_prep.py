@@ -27,6 +27,7 @@ def transforma_dataset() -> tuple[bool, pd.DataFrame | None]:
         return False, None
 
     directory_manager.asegurar_ruta(transform_path)
+    directory_manager.advertir_sobrescritura(transform_file)
     df_transformado.to_csv(transform_file, index=False)
     logger.success("Archivo procesado guardado: {}", transform_file)
 

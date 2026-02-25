@@ -261,8 +261,7 @@ class GetInegi:
 
         directory_manager.asegurar_ruta(self.utils_path)
 
-        if directory_manager.existe_archivo(self.inegi_path):
-            logger.warning("Archivo existente, será sobrescrito: {}", self.inegi_path)
+        directory_manager.advertir_sobrescritura(self.inegi_path)
 
         self.df.to_csv(self.inegi_path, index=False, encoding="utf-8")
         logger.success("Archivo INEGI guardado: {}", self.inegi_path)

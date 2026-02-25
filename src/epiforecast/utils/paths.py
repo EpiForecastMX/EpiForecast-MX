@@ -21,16 +21,23 @@ def asegurar_ruta(path_str: str | Path) -> Path:
 
 
 def existe_archivo(path_str: str | Path) -> bool:
-    path = Path(path_str)
+    path = Path(path_str).resolve()
 
     if path.is_file():
         logger.debug(f"Archivo encontrado: {path}")
-        resultado = True
-    else:
-        logger.error(f"Archivo no encontrado: {path}")
-        resultado = False
+        return True
 
-    return resultado
+    logger.debug(f"Archivo no encontrado: {path}")
+    return False
+
+
+def advertir_sobrescritura(path_str: str | Path) -> bool:
+    path = Path(path_str).resolve()
+    if path.is_file():
+        logger.warning(f"Archivo encontrado, será sobrescrito: {path}")
+        return True
+    logger.info(f"Archivo no encontrado, se creará: {path}")
+    return False
 
 
 def limpia_carpeta(path_str: str | Path) -> None:

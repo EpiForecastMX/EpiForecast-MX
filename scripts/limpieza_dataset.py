@@ -44,13 +44,9 @@ def main():
     configuracion_padecimiento = conf["padecimiento"]
 
     directory_manager.asegurar_ruta(str(Path(interim_file).parent))
-    ya_existe = directory_manager.existe_archivo(interim_file)
+    directory_manager.advertir_sobrescritura(interim_file)
     df_clean.to_csv(interim_file, index=False)
-
-    if ya_existe:
-        logger.warning("Archivo existente sobrescrito: {}", interim_file)
-    else:
-        logger.success("Archivo guardado: {}", interim_file)
+    logger.success("Archivo guardado: {}", interim_file)
 
     if configuracion_padecimiento["reporte_clean"]:
         opciones_reporte = conf["reporte_clean_dataset"]

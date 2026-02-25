@@ -52,10 +52,7 @@ class MapeaInegi:
             logger.error("El merge con INEGI produjo un DataFrame vacío. Abortando.")
             sys.exit(1)
 
-        if directory_manager.existe_archivo(self.final_path):
-            logger.warning("Archivo encontrado, será sobrescrito: {}", self.final_path)
-        else:
-            logger.info("Archivo no localizado, se creará: {}", self.final_path)
+        directory_manager.advertir_sobrescritura(self.final_path)
 
         self.df_merge.to_csv(self.final_path, index=False)
         logger.success("Archivo CSV guardado: {}", self.final_path)

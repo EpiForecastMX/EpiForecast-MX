@@ -43,6 +43,7 @@ def filtrar() -> tuple[bool, pd.DataFrame | None]:
 
     if df_filtrado is not None:
         df_filtrado.to_csv(raw_data_filter, index=False)
+        directory_manager.advertir_sobrescritura(raw_data_filter)
         logger.success("Archivo filtrado guardado | archivo={}", raw_data_filter)
         return True, df_filtrado
 
@@ -72,7 +73,6 @@ def main():
         PDFReportGenerator(
             datos_reporte, archivo_salida=opciones_reporte["ruta"], ancho_figura_cm=16
         ).build()
-        logger.success("Reporte PDF generado | archivo={}", opciones_reporte["ruta"])
 
 
 if __name__ == "__main__":
