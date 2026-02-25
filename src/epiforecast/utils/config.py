@@ -1,4 +1,12 @@
-# src/configuraciones/config_params.py
+# src/epiforecast/utils/config.py
+"""Unified configuration loader for EpiForecast-MX.
+
+Merges all YAML files from config/ into a single `conf` dict.
+All modules access configuration via `from src.epiforecast.utils.config import conf, logger`.
+"""
+
+from __future__ import annotations
+
 from datetime import datetime
 import os
 from pathlib import Path
@@ -10,21 +18,17 @@ from loguru import logger
 from omegaconf import OmegaConf
 
 try:
-    conf_params = OmegaConf.load("config/params.yaml")
-    conf_rutas = OmegaConf.load("config/rutas.yaml")
-    conf_logging = OmegaConf.load("config/logging.yaml")
-    conf_reportes = OmegaConf.load("config/reportes.yaml")
-    conf_limpieza = OmegaConf.load("config/limpieza.yaml")
-    conf_FE = OmegaConf.load("config/FE.yaml")
-    conf_train = OmegaConf.load("config/modelado.yaml")
+    conf_base = OmegaConf.load("config/base.yaml")
+    conf_data = OmegaConf.load("config/data/preprocessing.yaml")
+    conf_features = OmegaConf.load("config/features/feature_engineering.yaml")
+    conf_models = OmegaConf.load("config/models/prophet.yaml")
+    conf_viz = OmegaConf.load("config/visualization/plots.yaml")
+    conf_infra = OmegaConf.load("config/infrastructure/logging.yaml")
 except FileNotFoundError as e:
-    logger.error(f"Archivo de configuración no encontrado: {e}")
+    logger.error("Archivo de configuración no encontrado: {}", e)
     sys.exit(1)
 
-
-_merged = OmegaConf.merge(
-    conf_params, conf_rutas, conf_logging, conf_reportes, conf_limpieza, conf_FE, conf_train
-)
+_merged = OmegaConf.merge(conf_base, conf_data, conf_features, conf_models, conf_viz, conf_infra)
 conf: dict[str, Any] = cast(dict[str, Any], OmegaConf.to_container(_merged, resolve=True))
 
 # Configurar logger según YAML
@@ -57,7 +61,7 @@ if "logging" in conf:
                 diagnose=sink.get("diagnose", False),
             )
 
-    yaml_path = Path("config/logging.yaml").resolve()
+    yaml_path = Path("config/infrastructure/logging.yaml").resolve()
     env = os.getenv("APP_ENV", "local")
     cwd = Path.cwd()
     pyv = platform.python_version()
@@ -68,10 +72,21 @@ if "logging" in conf:
     sinks_types = ",".join(sorted({s.get("type", "stderr") for s in sinks_conf})) or "stderr"
 
     logger.info(
-        f"Logging inicializado | status=ok | env={env} | cwd={cwd} | python={pyv} | timestamp={datetime.now():%Y-%m-%d %H:%M:%S}"
+        "Logging inicializado | status=ok | env={} | cwd={} | python={} | timestamp={}",
+        env,
+        cwd,
+        pyv,
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     )
-
     logger.debug(
-        f"Logging inicializado | status=ok | env={env} | config={yaml_path} | sinks={sinks_count} ({sinks_types}) | "
-        f"cwd={cwd} | pid={pid} | python={pyv} | timestamp={datetime.now():%Y-%m-%d %H:%M:%S}"
+        "Logging inicializado | status=ok | env={} | config={} | sinks={} ({}) | "
+        "cwd={} | pid={} | python={} | timestamp={}",
+        env,
+        yaml_path,
+        sinks_count,
+        sinks_types,
+        cwd,
+        pid,
+        pyv,
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
     )
