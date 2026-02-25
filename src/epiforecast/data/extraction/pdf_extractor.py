@@ -1,3 +1,5 @@
+"""PDF table extractor: parse SINAVE epidemiological bulletins using Camelot."""
+
 import os
 import re
 from typing import Any

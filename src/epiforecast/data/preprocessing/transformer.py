@@ -1,3 +1,5 @@
+"""Data transformation pipeline: feature engineering, outlier correction, and INEGI demographic merge."""
+
 # src/datos/preparacion.py
 from loguru import logger
 import numpy as np

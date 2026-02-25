@@ -1,3 +1,5 @@
+"""Dataset merger: incremental merge of extracted bulletin data into the main CSV."""
+
 from __future__ import annotations
 
 from datetime import datetime

@@ -1,3 +1,5 @@
+"""Disease filter: select rows by ICD-10 code or condition name."""
+
 # src/datos/filtro_padecimiento.py
 from loguru import logger
 import pandas as pd
