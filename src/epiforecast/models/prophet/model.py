@@ -92,7 +92,7 @@ class ProphetForecaster(ForecastModel):
             self.serie["y_original"] = self.serie[self.sexo]
             self.serie["y"] = (self.serie[self.sexo] / self.poblacion_valor) * self.tasa_por  # type: ignore[operator]
             self.serie = self.serie.drop(columns=[self.sexo])
-            logger.info(
+            logger.debug(
                 "Normalizado a tasa por {:,.0f} hab. (población: {:,.0f})",
                 self.tasa_por,
                 self.poblacion_valor,
@@ -102,17 +102,17 @@ class ProphetForecaster(ForecastModel):
 
         if self.log_transform:
             self.serie["y"] = np.log1p(self.serie["y"])
-            logger.info("Log-transform aplicado: y = log(1 + y)")
+            logger.debug("Log-transform aplicado: y = log(1 + y)")
 
         self.train_data = self.serie[self.serie["ds"] < self.FECHA_CORTE_ENTRENAMIENTO]
         self.test_data = self.serie[self.serie["ds"] >= self.FECHA_CORTE_ENTRENAMIENTO]
 
-        logger.info(
+        logger.debug(
             "Train: {} semanas (hasta {})",
             len(self.train_data),
             self.train_data["ds"].max().date(),
         )
-        logger.info(
+        logger.debug(
             "Test: {} semanas (desde {})",
             len(self.test_data),
             self.test_data["ds"].min().date(),
@@ -172,7 +172,7 @@ class ProphetForecaster(ForecastModel):
         path.parent.mkdir(parents=True, exist_ok=True)
         with path.open("wb") as f:
             pickle.dump(self._model, f)
-        logger.info("Modelo guardado: {}", path)
+        logger.debug("Modelo guardado: {}", path)
 
     def load(self, path: Path) -> None:
         """Load model from pickle file."""
@@ -181,7 +181,7 @@ class ProphetForecaster(ForecastModel):
             raise FileNotFoundError(f"Modelo no encontrado: {path}")
         with path.open("rb") as f:
             self._model = pickle.load(f)
-        logger.info("Modelo cargado: {}", path)
+        logger.debug("Modelo cargado: {}", path)
 
     def get_params(self) -> dict[str, Any]:
         """Return current model parameters."""
@@ -289,7 +289,7 @@ class ProphetForecaster(ForecastModel):
                 df_cambios["ds"] = pd.to_datetime(df_cambios["ds"])
                 cols = ["holiday", "ds", "lower_window", "upper_window"]
                 holidays = pd.concat([holidays, df_cambios[cols]], ignore_index=True)
-                logger.info(
+                logger.debug(
                     "Cambios de régimen para {}: {}",
                     self.entidad,
                     [c["holiday"] for c in filtrados],

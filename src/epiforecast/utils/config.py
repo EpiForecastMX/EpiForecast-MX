@@ -71,13 +71,6 @@ if "logging" in conf:
     sinks_count = len(sinks_conf)
     sinks_types = ",".join(sorted({s.get("type", "stderr") for s in sinks_conf})) or "stderr"
 
-    logger.info(
-        "Logging inicializado | status=ok | env={} | cwd={} | python={} | timestamp={}",
-        env,
-        cwd,
-        pyv,
-        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-    )
     logger.debug(
         "Logging inicializado | status=ok | env={} | config={} | sinks={} ({}) | "
         "cwd={} | pid={} | python={} | timestamp={}",

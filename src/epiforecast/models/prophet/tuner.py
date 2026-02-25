@@ -13,6 +13,8 @@ import itertools
 import time
 from typing import TYPE_CHECKING
 
+from tqdm import tqdm
+
 from epiforecast.models.prophet.cross_validator import ProphetCrossValidator
 from epiforecast.utils.config import conf, logger
 
@@ -47,7 +49,7 @@ class ProphetTuner:
             best_metrics: dict with rmse, mae, mape, mase.
         """
         combos = self._build_sorted_combos()
-        logger.info(
+        logger.debug(
             "Se probarán {} combinaciones de HP (ordenadas por cp desc).",
             len(combos),
         )
@@ -60,13 +62,22 @@ class ProphetTuner:
         # skip combos with cp strictly less than X.
         newton_cp_threshold: float | None = None
 
-        for idx, params in enumerate(combos):
+        pbar = tqdm(
+            enumerate(combos),
+            total=len(combos),
+            desc="CV",
+            unit="combo",
+            leave=False,
+            dynamic_ncols=True,
+            position=1,
+        )
+        for idx, params in pbar:
             cp = params.get("changepoint_prior_scale", 0)
             resumen = ", ".join(f"{k}={v}" for k, v in params.items())
 
             # Layer 3: skip combos below Newton threshold
             if newton_cp_threshold is not None and cp < newton_cp_threshold:
-                logger.warning(
+                logger.debug(
                     "Skip combo (Newton-prone): cp={} < umbral {} | {}",
                     cp,
                     newton_cp_threshold,
@@ -86,7 +97,7 @@ class ProphetTuner:
 
             # Check combo-level timeout (backstop)
             if self.cv_timeout and elapsed > self.cv_timeout:
-                logger.warning(
+                logger.debug(
                     "Timeout CV combo: {:.0f}s > {}s | {}",
                     elapsed,
                     self.cv_timeout,
@@ -100,7 +111,8 @@ class ProphetTuner:
                 best_rmse = mean_rmse
                 best_params = params
                 best_metrics = metrics
-                logger.info(
+                pbar.set_postfix(rmse=f"{mean_rmse:.4f}", cp=cp)
+                logger.debug(
                     "[CV] Iter {}/{} – Nuevo mejor RMSE: {:.4f} | MAE: {:.4f} | MAPE: {:.2f}%",
                     idx + 1,
                     len(combos),
@@ -121,18 +133,18 @@ class ProphetTuner:
         if best_params is None:
             best_params = self._fallback_params()
             best_metrics = {"rmse": None, "mae": None, "mape": None, "mase": None}
-            logger.warning(
+            logger.debug(
                 "Todos los combos timeout (Newton). Params default: {}",
                 best_params,
             )
         else:
-            logger.success(
+            logger.debug(
                 "Mejor RMSE: {:.4f} | MAE: {:.4f} | MAPE: {:.2f}%",
                 best_metrics.get("rmse", 0),
                 best_metrics.get("mae", 0),
                 best_metrics.get("mape", 0),
             )
-            logger.success("Mejor conjunto de parámetros: {}", best_params)
+            logger.debug("Mejor conjunto de parámetros: {}", best_params)
 
         return best_params, best_metrics
 
@@ -148,7 +160,7 @@ class ProphetTuner:
                 f"param_grid_prophet no definido para padecimiento='{tipo}'. "
                 f"Valores válidos: {list(_GRID_KEY_MAP)}"
             )
-        logger.info("Grid de hiperparámetros: {} ({})", tipo, grid_key)
+        logger.debug("Grid de hiperparámetros: {} ({})", tipo, grid_key)
         return conf["param_grid_prophet"][grid_key]  # type: ignore[no-any-return]
 
     def _build_sorted_combos(self) -> list[dict]:

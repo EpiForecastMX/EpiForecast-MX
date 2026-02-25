@@ -1,18 +1,46 @@
 # scripts/entrena.py
 
 import os
+from contextlib import contextmanager
 from pathlib import Path
 import pickle
 import re
 import time
 import unicodedata
 
+import joblib
 from joblib import Parallel, delayed
+from loguru import logger as _logger_pre_import
 import pandas as pd
+from tqdm import tqdm
+
+# Silenciar "Logging inicializado" de config.py antes de que cualquier import
+# del paquete lo dispare (model.py también importa config transitivamente).
+_logger_pre_import.disable("epiforecast.utils.config")
 
 from epiforecast.models.prophet.model import ProphetForecaster as SerieTiempoProphet
 from epiforecast.utils import paths as directory_manager
 from epiforecast.utils.config import conf, logger
+
+_logger_pre_import.enable("epiforecast.utils.config")
+
+
+@contextmanager
+def _tqdm_joblib(tqdm_object):
+    """Permite que joblib.Parallel actualice una barra de tqdm."""
+
+    class _TqdmBatchCallback(joblib.parallel.BatchCompletionCallBack):
+        def __call__(self, *args, **kwargs):
+            tqdm_object.update(n=self.batch_size)
+            return super().__call__(*args, **kwargs)
+
+    old = joblib.parallel.BatchCompletionCallBack
+    joblib.parallel.BatchCompletionCallBack = _TqdmBatchCallback
+    try:
+        yield tqdm_object
+    finally:
+        joblib.parallel.BatchCompletionCallBack = old
+        tqdm_object.close()
 
 
 def normalizar(region: str) -> str:
@@ -21,24 +49,12 @@ def normalizar(region: str) -> str:
     return re.sub(r"\s+", "_", formato)
 
 
-def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False, progreso=None):
+def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False):
     # Imports locales: evita que cloudpickle (loky) intente serializar estos objetos
     # como globals de __main__. OmegaConf y loguru no son pickle-safe.
     # Cada worker re-importa los módulos frescos.
     from epiforecast.utils import paths as directory_manager
     from epiforecast.utils.config import conf, logger
-
-    if progreso:
-        i, total = progreso
-        logger.info(
-            "[{}/{}] {:.0f}% | {} | {} | {}",
-            i,
-            total,
-            i / total * 100,
-            padecimiento,
-            region or "Nacional",
-            mapeo.get(sexo, sexo),
-        )
 
     ruta_padecimiento = os.path.join(ruta_base, normalizar(padecimiento))
     directory_manager.asegurar_ruta(ruta_padecimiento)
@@ -49,7 +65,7 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False,
 
     if not force:
         if Path(ruta_modelo).exists():
-            logger.info("Modelo ya existe, omitiendo: {}", Path(ruta_modelo).name)
+            logger.debug("Modelo ya existe, omitiendo: {}", Path(ruta_modelo).name)
             return None
 
     t_start = time.time()
@@ -67,7 +83,7 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False,
         # Skip CV: usar primer combo del grid como default (serie casi plana, HP da igual)
         parametros = {k: v[0] for k, v in stp.param_grid.items()}
         metrics = {"rmse": None, "mae": None, "mape": None, "mase": None}
-        logger.warning(
+        logger.debug(
             "Baja confianza: skip CV, params default | {:.2f} casos/sem | {} | {} | {}",
             promedio,
             padecimiento,
@@ -116,7 +132,7 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False,
 
     fila["archivo_modelo"] = nombre_modelo
     mase_str = f"{metrics['mase']:.3f}" if metrics.get("mase") is not None else "N/A"
-    logger.info(
+    logger.debug(
         "Completado: {} | {} | {} | RMSE={} | MASE={} | CV={:.1f}s | Train={:.1f}s | {}",
         padecimiento,
         region or "Nacional",
@@ -151,7 +167,7 @@ def main():
 
     total = len(padecimientos) * len(valores_sexo) * (1 + len(regiones))
 
-    logger.info(
+    logger.debug(
         "Iniciando entrenamiento | padecimientos: {} | regiones: {} | sexo: {} | "
         "total modelos: {} | n_jobs: {} | solo_nacional: {}",
         len(padecimientos),
@@ -164,7 +180,7 @@ def main():
 
     for padecimiento in padecimientos:
         t_pad = time.time()
-        logger.info("═══ Padecimiento: {} ═══", padecimiento)
+        logger.debug("═══ Padecimiento: {} ═══", padecimiento)
         df_padecimiento = df_entrenamiento[df_entrenamiento["Padecimiento"] == padecimiento]
 
         ruta_padecimiento = os.path.join(model_path, normalizar(padecimiento))
@@ -183,18 +199,20 @@ def main():
             for sexo in valores_sexo:
                 jobs.append((df_region, padecimiento, sexo, model_path, mapeo, region, force))
 
-        # Agregar índice de progreso a cada job
         total_jobs = len(jobs)
-        jobs = [(*job, (i, total_jobs)) for i, job in enumerate(jobs, 1)]
+        logger.debug("{} modelos a procesar para {}", total_jobs, padecimiento)
 
-        logger.info("{} modelos a procesar para {}", total_jobs, padecimiento)
-
-        if n_jobs != 1:
-            resultados_raw = Parallel(n_jobs=n_jobs, backend="loky", verbose=10)(
-                delayed(entrenar)(*job) for job in jobs
-            )
-        else:
-            resultados_raw = [entrenar(*job) for job in jobs]
+        with tqdm(total=total_jobs, desc=padecimiento, unit="modelo", dynamic_ncols=True, position=0, leave=True) as pbar:
+            if n_jobs != 1:
+                with _tqdm_joblib(pbar):
+                    resultados_raw = Parallel(n_jobs=n_jobs, backend="loky", verbose=0)(
+                        delayed(entrenar)(*job) for job in jobs
+                    )
+            else:
+                resultados_raw = []
+                for job in jobs:
+                    resultados_raw.append(entrenar(*job))
+                    pbar.update(1)
 
         resultados = [f for f in resultados_raw if f is not None]
 
@@ -218,7 +236,7 @@ def main():
                 regiones_afectadas = sorted(
                     {mapa_region[f["Entidad"]] for f in insuf if f.get("Entidad") in mapa_region}
                 )
-                logger.info(
+                logger.debug(
                     "Modo híbrido: {} insuficientes en {} regiones → {}",
                     len(insuf),
                     len(regiones_afectadas),
@@ -244,19 +262,30 @@ def main():
                         )
 
                 total_reg = len(jobs_regional)
-                jobs_regional = [(*job, (i, total_reg)) for i, job in enumerate(jobs_regional, 1)]
-                logger.info(
+                logger.debug(
                     "Entrenando {} modelos regionales de fallback para {}",
                     total_reg,
                     padecimiento,
                 )
 
-                if n_jobs != 1:
-                    res_reg_raw = Parallel(n_jobs=n_jobs, backend="loky", verbose=10)(
-                        delayed(entrenar)(*job) for job in jobs_regional
-                    )
-                else:
-                    res_reg_raw = [entrenar(*job) for job in jobs_regional]
+                with tqdm(
+                    total=total_reg,
+                    desc=f"{padecimiento} fallback",
+                    unit="modelo",
+                    dynamic_ncols=True,
+                    position=0,
+                    leave=True,
+                ) as pbar_reg:
+                    if n_jobs != 1:
+                        with _tqdm_joblib(pbar_reg):
+                            res_reg_raw = Parallel(n_jobs=n_jobs, backend="loky", verbose=0)(
+                                delayed(entrenar)(*job) for job in jobs_regional
+                            )
+                    else:
+                        res_reg_raw = []
+                        for job in jobs_regional:
+                            res_reg_raw.append(entrenar(*job))
+                            pbar_reg.update(1)
 
                 res_regional = [f for f in res_reg_raw if f is not None]
                 resultados.extend(res_regional)
@@ -280,7 +309,7 @@ def main():
                     else:
                         fila.setdefault("usar_regional", None)
 
-                logger.success(
+                logger.debug(
                     "Modo híbrido: {} modelos regionales entrenados para {}",
                     len(res_regional),
                     padecimiento,
@@ -294,7 +323,7 @@ def main():
             entrenados = len(resultados)
             insuficientes = sum(1 for f in resultados if f.get("confianza") == "insuficiente")
             t_elapsed = time.time() - t_pad
-            logger.success(
+            logger.debug(
                 "{}: {} modelos en {:.1f} min ({} baja confianza)",
                 padecimiento,
                 entrenados,
@@ -303,7 +332,7 @@ def main():
             )
 
     t_total = time.time() - t_inicio_global
-    logger.success(
+    logger.debug(
         "Entrenamiento completado. {} modelos en {:.1f} min ({:.1f} h).",
         total,
         t_total / 60,

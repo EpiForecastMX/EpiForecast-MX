@@ -99,7 +99,7 @@ class ProphetCrossValidator:
                 if self.fold_timeout:
                     fit_ok = self._fit_with_timeout(model, train_fold, self.fold_timeout)
                     if not fit_ok:
-                        logger.warning(
+                        logger.debug(
                             "Timeout fold: >{:.0f}s en fold {}/{}. Newton → skip cp ≤ {}",
                             self.fold_timeout,
                             fold_idx + 1,
@@ -138,7 +138,7 @@ class ProphetCrossValidator:
                 fold_indices.append(fold_idx)
 
             except Exception as e:
-                logger.warning("Excepción en fold {}: {}", fold_idx + 1, e)
+                logger.debug("Excepción en fold {}: {}", fold_idx + 1, e)
                 continue
 
         # Aggregate fold metrics
