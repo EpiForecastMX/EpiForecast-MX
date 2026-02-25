@@ -1,414 +1,551 @@
-# CLAUDE.md
+# CLAUDE.md — EpiForecast-MX Project Instructions
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+> Last updated: 2026-02-25
+> Compliance: A+ (153/153 — 100%) | Coverage: 82% (536 tests) | Branch: main
+
+---
 
 ## Project Overview
 
-**EpiForecast-MX** es una plataforma de inteligencia epidemiológica desarrollada en colaboración con el **Instituto Mexicano del Seguro Social (IMSS)** como proyecto Capstone de la Maestría en Inteligencia Artificial Aplicada del Tecnológico de Monterrey.
+**EpiForecast-MX** is a production-grade epidemiological intelligence platform developed in partnership with the **Instituto Mexicano del Seguro Social (IMSS)** as a Capstone project for the Master's in Applied Artificial Intelligence (MNA) at Tecnológico de Monterrey.
 
-Predice la incidencia semanal de tres padecimientos neurológicos/salud mental:
-- **Depresión (CIE-10: F32)**
-- **Parkinson (CIE-10: G20)**
-- **Alzheimer (CIE-10: G30)**
+**What it does:** Forecasts weekly incidence of three neurological/mental-health conditions across all 32 Mexican states:
+- Depression (ICD-10: F32) — high baseline, seasonal, COVID-disrupted
+- Parkinson's disease (ICD-10: G20) — low incidence, volatile per-state series
+- Alzheimer's disease (ICD-10: G30) — aging-population trends, underreporting
 
-Utiliza Facebook Prophet para series de tiempo, con datos históricos (2014-2026) del SINAVE e indicadores demográficos del INEGI. Los modelos trabajan con **tasas por 100,000 habitantes** (no conteos absolutos) para normalizar la escala entre estados. Genera proyecciones a nivel **estatal** (32 entidades) o por **región INEGI de salud mental**, segmentadas por sexo.
+**Scale:** 297 Prophet models × 3 conditions × 3 gender categories (male/female/all) × 32 states + national + 4 INEGI mental-health regions = 312 forecast charts, 52-week horizon.
 
-## Convenciones del Proyecto
+**Data:** SINAVE epidemiological bulletins (PDF, 2014–2026, ~633 files) + INEGI demographic data. Target: **rates per 100,000 inhabitants** (not absolute counts) to normalize across states.
 
-- **Idioma de commits:** español (ej. `Feat: implementando imputación por zscore`)
-- **Branding IMSS:** paleta cromática institucional definida en `config/reportes.yaml` (`IMSS_COLORS`, `PALETTE_MAIN`, `PALETTE_PADECIMIENTO`, `PALETTE_SEXO`)
-- **Tasas:** los indicadores per cápita se expresan por **100,000 habitantes**
-- **Entorno virtual:** se llama `integrador/` (no `.venv`); activar con `source integrador/bin/activate`
-- **Configuración:** todos los parámetros en YAML (`config/`), cargados via OmegaConf en `src/configuraciones/config_params.py`
-- **Logging:** Loguru con dual-sink (consola + archivo rotativo) configurado en `config/logging.yaml`
-- **Versionado de datos:** archivos grandes (PDFs, datasets, modelos, forecast) trackeados por DVC en S3 (`s3://epiforecast-mx-data/`)
-- **Linter/formatter:** Ruff (line-length 99)
+---
 
-## Estructura de Directorios
+## Architecture
+
+### Design Principles (Cookiecutter Data Science v2 + SOLID)
+
+- **src-layout**: package installed as `epiforecast` via `pip install -e ".[dev]"` — no `sys.path` hacks
+- **SRP**: every file < 300 lines, single responsibility
+- **OCP**: `ModelFactory` in `models/factory.py` — add models without modifying core
+- **LSP**: `AbstractModel` base class; all models interchangeable
+- **DIP**: scripts depend on abstractions, not Prophet directly
+- **ISP**: Prophet split into `model.py` / `tuner.py` / `cross_validator.py`
+
+### Package Structure (`src/epiforecast/`)
 
 ```
-EpiForecast-MX/
-├── .github/workflows/              # Pipelines CI/CD
-│   ├── scrape_boletines.yml        #   Scraper diario SINAVE (2 PM CDMX)
-│   └── process_boletines.yml       #   Extracción y merge automático
-│
-├── config/                         # Configuración YAML
-│   ├── params.yaml                 #   Parámetros generales y rutas
-│   ├── modelado.yaml               #   Hiperparámetros Prophet, CV, periodos atípicos
-│   ├── limpieza.yaml               #   Reglas de limpieza (columnas a eliminar, sustituciones)
-│   ├── FE.yaml                     #   Feature engineering, regiones, outliers (IQR/Z-score)
-│   ├── reportes.yaml               #   Paleta IMSS, matplotlib rcParams, templates EDA
-│   └── logging.yaml                #   Loguru dual-sink (consola + archivo)
-│
+src/epiforecast/
+├── constants.py               # ICD-10 codes, 32 states, sex modes, RATE_PER=100_000
 ├── data/
-│   ├── raw_PDFs/                   # ~633 boletines epidemiológicos 2014-2026 (DVC)
-│   ├── raw/                        # CSVs crudos (data_raw.csv, data_raw_{padecimiento}.csv)
-│   ├── interim/                    # Datos intermedios (data_clean.csv)
-│   ├── processed/                  # Dataset final, data_prepare, data_inegi, .xlsx
-│   ├── utils/                      # Datos auxiliares (inegi.csv)
-│   └── registry.json               # Registro de boletines descargados (anti-duplicados)
-│
-├── src/
-│   ├── configuraciones/            # Carga de config YAML + logger (config_params.py)
-│   ├── datos/                      # Limpieza, filtrado, FE, EDA, descarga, INEGI
-│   │   ├── clean_dataset.py        #   Limpieza de datos
-│   │   ├── filtro_padecimiento.py  #   Filtrado por padecimiento
-│   │   ├── preparacion.py          #   Feature engineering (outliers, agrupación, regiones)
-│   │   ├── get_inegi.py            #   Descarga datos INEGI (PxWeb + superficie)
-│   │   ├── descarga_dataset.py     #   Copia dataset base
-│   │   └── EDA.py                  #   Análisis exploratorio (ReportData)
-│   ├── extraccion/                 # Pipeline de extracción PDF
-│   │   ├── pipeline.py             #   Extracción con Camelot (keywords F32, G20, G30)
-│   │   ├── merge_datasets.py       #   Merge incremental al dataset principal
-│   │   ├── cli.py / gui.py         #   Interfaces CLI y GUI
-│   │   └── inegi.py / inegi_eda.py #   Utilidades INEGI
-│   ├── modelado/                   # Modelos Prophet
-│   │   ├── prophet.py              #   SerieTiempoProphet (CV, train, eval por estado/región)
-│   │   ├── forecast.py             #   ForecastModelLoader + gráficos (estatal/Nacional/Regional)
-│   │   └── mapea_inegi.py          #   MapeaInegi (merge datos + INEGI + export xlsx)
-│   └── utils/                      # Utilidades compartidas
-│       ├── graficos.py             #   GraficosHelper (histogramas, violins, series, etc.)
-│       ├── reporte_PDF.py          #   PDFReportGenerator (reportes EDA con reportlab)
-│       ├── directory_manager.py    #   Gestión de carpetas y archivos
-│       └── datos.py                #   OperacionesDatos (helpers pandas)
-│
-├── scripts/                        # Entry points para Makefile y CI/CD
-│   ├── entrena.py                  #   make train
-│   ├── predice.py                  #   make predict
-│   ├── genera_reporte.py           #   make report (reporte HTML de resultados)
-│   ├── genera_bitacora.py          #   make bitacora (bitácora HTML del modelado v1-v6)
-│   ├── filtra_padecimiento.py      #   make filter
-│   ├── limpieza_dataset.py         #   make clean
-│   ├── realiza_prep.py             #   make transform
-│   ├── descarga_inegi.py           #   make get_inegi
-│   ├── mapea.py                    #   make mapper
-│   ├── get_dataset.py              #   make get_dataset
-│   ├── scrape_boletines.py         #   CI: scraper SINAVE
-│   ├── ci_process_boletines.py     #   CI: extracción + merge
-│   └── imss.sh                     #   Sincronización rápida (source scripts/imss.sh)
-│
-├── notebooks/                      # Libretas de análisis
-│   ├── Avance1.Equipo01.ipynb
-│   ├── Avance2_Equipo01.ipynb
-│   ├── Avance3.Equipo01.ipynb
-│   └── Data_Extract_ProyectoIntegrador_Equipo1.ipynb
-│
-├── outputs/                        # Visualizaciones generadas
-│   ├── eda/                        #   Gráficos EDA (21+ figuras)
-│   └── feature_engineering/        #   Gráficos FE (heatmaps, bump charts, series)
-│
-├── models/                         # Modelos entrenados Prophet (.pkl) (DVC)
-├── logs/                           # Logs rotativos (Loguru)
-├── reports/                        # Reportes PDF y figuras
-│   ├── docs/                       #   PDFs de EDA generados
-│   └── figures/                    #   Figuras de reportes
-│
-├── viz/                            # Dashboards Tableau
-│   └── viz_epiforecastmx.twb      #   Workbook principal (tooltips con métricas)
-│
-├── Makefile                        # Automatización de tareas
-├── requirements.txt                # Dependencias Python
-├── pyproject.toml                  # Metadatos del proyecto y config Ruff
-└── CLAUDE.md                       # Este archivo
+│   ├── extraction/
+│   │   ├── pdf_extractor.py   # Table detection + parsing (Camelot + regex)
+│   │   ├── extraction_pipeline.py  # Multi-PDF orchestration
+│   │   └── merger.py          # Incremental merge into master CSV
+│   ├── ingestion/
+│   │   ├── inegi.py           # PxWeb API client + surface area download
+│   │   ├── inegi_utils.py     # Parsing, validation helpers
+│   │   ├── inegi_constants.py # State abbreviations + mental-health region mapping
+│   │   └── base.py            # AbstractIngestion interface
+│   ├── preprocessing/
+│   │   ├── cleaner.py         # Column normalization, substitution, row deletion
+│   │   ├── filter.py          # ICD-10 / condition filtering (FiltraPadecimiento)
+│   │   ├── transformer.py     # Weekly aggregation, cumulative→weekly, FE
+│   │   ├── imputation.py      # IQR + Z-score outlier correction
+│   │   └── base.py            # AbstractPreprocessor interface
+│   └── loaders/               # (placeholder, future data loaders)
+├── models/
+│   ├── prophet/
+│   │   ├── model.py           # SerieTiempoProphet — CV + train + eval + hybrid fallback
+│   │   ├── tuner.py           # ProphetTuner — grid search over HP combos
+│   │   └── cross_validator.py # ProphetCrossValidator — weighted CV folds (RMSE/MAE/MASE)
+│   ├── deepar/                # (placeholder, future DeepAR)
+│   ├── ensemble/              # (placeholder, future ensemble)
+│   ├── factory.py             # ModelFactory — OCP-compliant model registry
+│   ├── prediction.py          # ForecastModelLoader — load .pkl + inverse transforms
+│   └── base.py                # AbstractModel ABC
+├── evaluation/
+│   └── metrics.py             # compute_rmse, compute_mae, compute_mape, compute_mase
+├── features/
+│   └── demographic.py         # MapeaInegi — merge state data + INEGI demographics
+├── visualization/
+│   ├── forecast_chart.py      # graficar_pronostico — Prophet forecast PNG (IMSS branding)
+│   ├── chart_annotations.py   # _anotar_divisores, _anotar_zona_cv, _render_ficha_tecnica
+│   ├── series_plots.py        # serie_tiempo — historical time-series plots
+│   ├── eda_plots.py           # ReportData, SeccionNota, EDA distributions
+│   ├── inegi_plots.py         # barras_inegi, boxplots_inegi — INEGI bar/box charts
+│   ├── inegi_tables.py        # Rich console tabular EDA (_fmt, _print_df, eda_inegi)
+│   ├── reporters.py           # PDFReportGenerator — reportlab PDF reports
+│   ├── report_tables.py       # crear_tabla, tabla_kv — IMSS-styled reportlab tables
+│   └── base.py                # GraficosHelper ABC + IMSS palette + matplotlib rcParams
+├── pipelines/
+│   └── base.py                # AbstractPipeline interface
+├── infrastructure/
+│   └── aws/                   # (placeholder, future SageMaker utilities)
+└── utils/
+    ├── config.py              # OmegaConf YAML loader + Loguru setup (loads config/base.yaml)
+    ├── paths.py               # asegurar_ruta, existe_archivo, limpia_carpeta
+    └── dataframe_helpers.py   # OperacionesDatos — IQR/Z-score stats + outlier detection
 ```
 
-## Stack Técnico
+### Scripts (`scripts/`)
 
-| Categoría | Tecnologías |
-|-----------|-------------|
-| Lenguaje | Python 3.12 |
-| Forecasting | Prophet 1.3, cmdstanpy |
-| ML / Stats | scikit-learn, xgboost, statsmodels, SciPy |
-| Datos | pandas, NumPy |
-| PDF Extraction | camelot-py (+ Ghostscript), pypdf |
-| Visualización | matplotlib, seaborn, plotly, kaleido |
-| Reportes | reportlab (PDF), rich (consola) |
-| Config / Logging | OmegaConf, Loguru |
-| Data Versioning | DVC + Amazon S3 |
-| CI/CD | GitHub Actions, Selenium (scraping) |
-| Cloud | AWS S3, AWS SNS |
-| Code Quality | Ruff |
+| Script | Makefile target | Purpose |
+|--------|----------------|---------|
+| `get_dataset.py` | `make get-dataset` | Copy/download raw master CSV |
+| `filter.py` | `make filter` | Filter by ICD-10 condition |
+| `clean.py` | `make clean` | Entity normalization, null handling |
+| `transform.py` | `make transform` | Weekly agg, cumulative→weekly, IQR/Z-score |
+| `ingest_inegi.py` | `make get-inegi` | Download INEGI demographic data |
+| `build_features.py` | `make mapper` | INEGI merge → data_inegi_*.csv + .xlsx |
+| `train.py` | `make train` | 297 Prophet models with CV (~45 min) |
+| `predict.py` | `make predict` | 52-week forecasts + 312 PNG charts |
+| `report.py` | `make report` | Interactive HTML results report |
+| `bitacora.py` | `make bitacora` | HTML modeling journal v1–v6 |
+| `build_tableau.py` | `make tableau` | Export Tableau-ready CSV |
+| `compliance_check.py` | — | Cookiecutter DS v2 compliance audit |
+| `scrape.py` | CI daily | Selenium SINAVE bulletin downloader |
+| `ci_process.py` | CI trigger | Extract + merge new bulletins |
 
-## Comandos Útiles
+---
 
-### Setup
+## Development Setup
+
 ```bash
-make setup              # macOS: Ghostscript + deps + DVC pull
-make setup-linux        # Linux/WSL equivalente
-make requirements       # Solo instalar dependencias Python
-make data-pull          # Descargar datos desde S3 via DVC
-source scripts/imss.sh  # Sync rápido: activa venv + git pull + dvc pull
+# 1. Clone
+git clone https://github.com/IntegradorIMSS2026Team01/EpiForecast-MX.git
+cd EpiForecast-MX
+
+# 2. Create virtual environment (called 'integrador', NOT .venv)
+python3.12 -m venv integrador
+source integrador/bin/activate       # macOS/Linux
+# OR
+make setup                           # macOS: also installs Ghostscript via brew
+
+# 3. Install package + dev deps
+pip install -e ".[dev]"
+
+# 4. Install pre-commit hooks
+pre-commit install                   # OR: make hooks
+
+# 5. Pull data/models from S3 (requires AWS credentials)
+make data-pull
+
+# 6. Verify everything works
+make quality                         # ruff + mypy + pytest — must all pass
+python scripts/compliance_check.py  # should be 153/153 A+
 ```
 
-### Pipeline de Preprocesamiento
-```bash
-make preprocess   # Pipeline completo (secuencial, NO usar -j):
-                  #   reset_logs → reset_interim → get_dataset → filter
-                  #   → clean → transform → get_inegi → mapper
-make filter       # Filtrar por padecimiento (config/params.yaml → padecimiento.tipo)
-make clean        # Limpiar dataset (nulos, duplicados, formato)
-make transform    # Feature engineering (outliers IQR/Z-score, regiones, agrupación)
-make get_inegi    # Descargar datos demográficos INEGI
-make mapper       # Mapear entidades con regiones INEGI → genera .csv y .xlsx
-```
+**Requirements:**
+- Python 3.12 exactly (`.python-version` file enforces this)
+- Ghostscript (for Camelot PDF parsing): `brew install ghostscript`
+- AWS credentials for DVC + S3 (`~/.aws/credentials` or env vars)
 
-### Modelado
-```bash
-make train          # Entrena Prophet con CV temporal (tasa por 100K, por estado o region)
-make models-push    # Versiona modelos con DVC y sube a S3
-make predict        # Genera predicciones (52 semanas), desnormaliza a conteos
-make report         # Genera reporte HTML interactivo (forecast/reporte_resultados.html)
-make bitacora       # Genera bitácora HTML del modelado Prophet v1-v6 (forecast/bitacora_modelado.html)
-make forecast-push  # Versiona forecast con DVC y sube a S3
-```
+---
 
-### Flujo completo de modelado
-```bash
-make train          # 1. Entrenar
-make models-push    # 2. Subir modelos a S3
-make predict        # 3. Predecir
-make report         # 4. Generar reporte HTML de resultados
-make forecast-push  # 5. Subir forecast a S3
-git add models.dvc forecast/all_forecast.csv.dvc
-git commit -m "feat: nuevos modelos y forecast"
-git push
-```
+## Configuration
 
-### DVC
-```bash
-make data-pull    # Descargar datos, modelos y forecast desde S3
-make data-push    # Subir datos a S3
-make data-status  # Estado de sincronizacion
-make data-add PDF=ruta/archivo.pdf   # Trackear nuevo PDF
-make data-commit  # Commitear datos + push a Git y S3
-```
+All parameters live in `config/` — no hardcoded values in source code. OmegaConf merges them into a single `conf` dict loaded by `src/epiforecast/utils/config.py`.
 
-### Code Quality
-```bash
-make lint         # Ruff check + format check
-make format       # Auto-format con Ruff
-```
+### Config files
 
-## Arquitectura
+| File | What it contains |
+|------|-----------------|
+| `config/base.yaml` | Entry point — defines `padecimiento`, `paths`, `data`, `download`, `prediccion`, `inegi` |
+| `config/data/preprocessing.yaml` | `columnas_eliminar`, `valores_sustituir`, `registros_eliminar` |
+| `config/models/prophet.yaml` | HP grids, CV params, seasonality, COVID period, `FECHA_CORTE_ENTRENAMIENTO` |
+| `config/features/feature_engineering.yaml` | `opciones_FE`, `regiones`, outlier config, INEGI region mapping |
+| `config/visualization/plots.yaml` | `IMSS_COLORS`, `PALETTE_MAIN`, `PALETTE_PADECIMIENTO`, `PALETTE_SEXO`, matplotlib rcParams |
+| `config/infrastructure/logging.yaml` | Loguru dual-sink config (console + rotating file) |
 
-### Flujo de Datos
-```
-SINAVE PDFs ──▶ Extracción (Camelot) ──▶ Merge ──▶ dataset_boletin_epidemiologico.csv
-                                                           │
-                      ┌────────────────────────────────────┘
-                      ▼
-              filter (por padecimiento)
-                      │
-                      ▼
-              clean (nulos, duplicados, formato)
-                      │
-                      ▼
-              transform (FE: outliers IQR/Z-score, agrupación por sexo, regiones)
-                      │
-                      ▼
-              mapper (merge con INEGI: población, superficie, región salud mental)
-                      │
-                      ▼
-              train (Prophet por estado o region x sexo, tasa por 100K)
-                      │
-                      ▼
-              models/*.pkl (DVC → S3)  +  predict (desnormaliza a conteos)
-                      │                     → forecast/all_forecast.csv (DVC → S3)
-                      │                     → forecast/{pad}/{Estado|Nacional|Region_*}/*.png
-```
-
-### Configuración Clave (`config/params.yaml`)
+### Key `conf` keys (real values)
 
 ```yaml
-padecimiento:
-  tipo: "General"           # General | Depresión | Parkinson | Alzheimer
-  modelado_estados: true    # true = modelos por estado, false = por región INEGI
-  modelado_hibrido: true    # fallback regional para estados insuficientes (v6)
-  modelado_region: "Metropolitana alta"  # región específica (si modelado_estados=false)
-  modelado_sexo: "todos"    # hombres | mujeres | todos
-  entrena_modelo: true      # entrenar modelo final con todo el dataset
+# Condition + modeling mode
+padecimiento.tipo: "General"        # General | Depresión | Parkinson | Alzheimer
+padecimiento.modelado_estados: true # true=state models, false=regional models
+padecimiento.modelado_hibrido: true # v6: auto-fallback to regional for low-incidence states
+padecimiento.entrena_modelo: true   # train final model on full series after CV
+padecimiento.solo_nacional: false   # true = national-only models
+
+# Paths (OmegaConf interpolation)
+paths.data: "./data"
+paths.models: "./models"
+paths.forecast: "./forecast"
+
+# Key data files
+data.boletin: "./data/processed/dataset_boletin_epidemiologico.csv"
+data.data_prepare: "./data/processed/data_prepare_${padecimiento.tipo}.csv"
+data.data_inegi: "./data/processed/data_inegi_${padecimiento.tipo}.csv"
+data.forecast: "./forecast/all_forecast.csv"
+
+# Model transforms
+normalizar_tasa: true               # model rate per 100K (not absolute counts)
+columna_poblacion: "Total"
+tasa_por: 100000
+log_transform: true                 # y = log(1 + y_rate) before Prophet
+umbral_minimo_semanal: 0.5          # < 0.5 cases/week → "insuficiente" (v5: lowered from 1.0)
+
+# Cross-validation
+TS_SPLITS: 4
+TEST_SIZE: 53                       # weeks (≈1 year)
+cv_weights: [0.5, 0.75, 1.0, 1.25] # progressive weights — recent folds matter more
+cv_timeout_por_fold: 35             # seconds; >35s = Newton → skip combo
+cv_timeout_por_combo: 90            # seconds total per HP combo
+FECHA_CORTE_ENTRENAMIENTO: "2025-01-01"  # used in forecast chart CV zone annotation
+
+# Parallelism
+n_jobs_train: -2                    # joblib: all cores minus one
 ```
 
-### Regiones INEGI de Salud Mental
-- Urbana media
-- Sur-Sureste vulnerable
-- Metropolitana alta
-- Rural / dispersa
+---
 
-### Transformaciones del Target (modelado.yaml)
+## Data Pipeline
 
-Prophet modela el target con tres transformaciones secuenciales:
-
-1. **Normalización a tasa por 100K:** `y_tasa = (incidencia / población) × 100,000`
-2. **Log-transform:** `y = log(1 + y_tasa)` — estabiliza varianza en series volátiles (especialmente Depresión)
-3. **Prophet entrena sobre `y`** (espacio log-tasa)
-
-Al predecir, `forecast.py` revierte ambas transformaciones: `exp(ŷ) - 1` → desnormaliza a conteos. El CSV de entrenamiento (sidecar del .pkl) guarda la columna `Total` y `y_original` (conteos crudos) para la desnormalización y gráficos.
-
-```yaml
-normalizar_tasa: true          # activar normalización
-columna_poblacion: "Total"     # columna de población en data_inegi
-tasa_por: 100000               # factor (per 100K hab.)
-log_transform: true            # log(1+y) para estabilizar varianza
+```
+make preprocess   ← runs steps 1–5 sequentially (do NOT use -j flag)
 ```
 
-### Grid de hiperparámetros (modelado.yaml)
-Grids v5 diferenciados por padecimiento (optimizados con datos de 297 modelos v4). CV elige automáticamente el mejor conjunto.
+| Step | Command | Input | Output |
+|------|---------|-------|--------|
+| 1. Get dataset | `make get-dataset` | Google Drive / S3 | `data/processed/dataset_boletin_epidemiologico.csv` |
+| 2. Filter | `make filter` | dataset_boletin... | `data/raw/data_raw_${tipo}.csv` |
+| 3. Clean | `make clean` | data_raw_*.csv | `data/interim/data_clean.csv` |
+| 4. Transform | `make transform` | data_clean.csv | `data/processed/data_prepare_*.csv` |
+| 5. INEGI | `make get-inegi && make mapper` | data_prepare_*.csv + INEGI API | `data/processed/data_inegi_*.csv` |
+| 6. Train | `make train` | data_inegi_*.csv | `models/*.pkl` + `models/*.csv` |
+| 7. Predict | `make predict` | models/*.pkl | `forecast/all_forecast.csv` + 312 PNGs |
+| 8. Report | `make report` | all_forecast.csv | `forecast/reporte_resultados.html` |
+| 9. Sync | `make s3-sync` | forecast/ + models/ | S3 `epiforecast-mx-data/latest/` |
+
+**Full automation:**
+```bash
+make model-pipeline   # train → predict → report → s3-sync
+```
+
+### Transform chain (steps 3–4)
+
+1. **Entity normalization** — standardize state names (e.g., "Distrito Federal" → "Ciudad de México")
+2. **Cumulative → weekly** — `Acumulado_año_anterior` removed; weekly increment computed
+3. **IQR outlier treatment** — configurable per column in `opciones_FE`
+4. **Population normalization** — `y_rate = (cases / population) × 100,000`
+5. **Log transform** — `y = log(1 + y_rate)` — stabilizes variance especially in Depression
+6. **Prophet trains on `y`** (log-rate space)
+
+**Inverse on prediction:** `exp(ŷ) − 1` → denormalize with state population → case counts in `all_forecast.csv`.
+
+---
+
+## Model Details
+
+### Prophet cross-validation protocol
+
+```
+Series: weekly incidence (log-rate, per 100K inhabitants), 2014–2026
+CV: 4 temporal folds, weights [0.5, 0.75, 1.0, 1.25]
+HP selection: weighted-average RMSE across 4 folds
+Final model: retrained on FULL series (no holdout leakage)
+Output: .pkl + .csv sidecar (for inverse transform and chart metadata)
+```
+
+### Hyperparameter grids (config/models/prophet.yaml)
 
 ```yaml
 param_grid_prophet:
-  alzheimer:
-    seasonality_mode: [multiplicative]              # additive eliminado (+51% RMSE)
+  alzheimer:     # 6 combos; multiplicative-only (additive +51% RMSE)
     changepoint_prior_scale: [0.01, 0.03]
-    seasonality_prior_scale: [0.05, 0.1, 0.5]      # 6 combinaciones. sp=0.05 nuevo (ganador 41%)
-  depresion:
+    seasonality_prior_scale: [0.05, 0.1, 0.5]
+  depresion:     # 24 combos; both modes competitive
     seasonality_mode: [additive, multiplicative]
     changepoint_prior_scale: [0.01, 0.03, 0.05]
-    seasonality_prior_scale: [0.025, 0.05, 0.1, 0.5] # 24 combos. sp=0.025 nuevo (ganador 29%)
-  parkinson:
+    seasonality_prior_scale: [0.025, 0.05, 0.1, 0.5]
+  parkinson:     # 18 combos; multiplicative dominant
     seasonality_mode: [multiplicative, additive]
-    changepoint_prior_scale: [0.03, 0.04, 0.05]    # 18 combos. cp=0.04 nuevo (ganador 20%)
-    seasonality_prior_scale: [0.1, 0.5, 1.0]       # cp=0.01/0.07 eliminados (Newton/nunca gana)
+    changepoint_prior_scale: [0.03, 0.04, 0.05]
+    seasonality_prior_scale: [0.1, 0.5, 1.0]
 ```
 
-La selección del grid se hace automáticamente en `SerieTiempoProphet.__init__` leyendo la columna `Padecimiento` del DataFrame.
+### Newton-optimizer protection (3 layers)
 
-### Parámetros regionales para modelos por estado
-Para series estatales (más cortas que las nacionales), se aplican automáticamente:
-- **`fourier_order_regional: 3`** — reduce overfitting vs fourier_order=5 nacional (especialmente Depresión)
-- **`n_changepoints_regional: 12`** — reduce overfitting en entidades < 1M hab. (vs 25 default de Prophet)
+Prophet falls back to Newton (~500× slower) when L-BFGS fails. Three layers prevent this:
 
-Ambos se aplican solo cuando `modelado_estados: true` en `params.yaml`.
+| Layer | Mechanism |
+|-------|-----------|
+| 1. Sort | Test high `changepoint_prior_scale` combos first (faster convergence) |
+| 2. Fold timeout | Each fold capped at 35 s via `ThreadPoolExecutor` |
+| 3. Newton threshold | If combo with `cp=X` times out, skip all combos with `cp < X` |
 
-### Cross-validation con pesos progresivos
-Los 4 folds de CV se ponderan con `cv_weights: [0.5, 0.75, 1.0, 1.25]`, dando más peso a los folds recientes (2023-2024) y menos al periodo post-COVID (2020-2021). Se usa `np.average()` en vez de `np.mean()`.
+**Result:** Chihuahua-Depression 39 min (v4) → 4 min (v5).
 
-### Protección anti-Newton (3 capas)
-Prophet puede caer a Newton optimizer (~100-500x más lento) cuando L-BFGS no converge. Tres mecanismos lo mitigan:
-1. **Sort cp descendente:** combos con cp alto (rápido) se prueban primero
-2. **Timeout por fold (35s):** `_fit_with_timeout()` con `ThreadPoolExecutor` corta un fold que exceda 35s
-3. **Newton-prone threshold:** si combo con cp=X timeout, skip combos con cp < X (estricto)
-4. **Fallback:** si todos los combos timeout, usar params default con cp más alto
+### Hybrid fallback (v6)
 
-Resultado: Chihuahua-Depresión pasó de 39 min (v4) a 4 min (v5).
+States with average incidence < `umbral_minimo_semanal` (0.5 cases/week) = `"insuficiente"`. With `modelado_hibrido: true`, these 41 state-models defer to the corresponding INEGI mental-health regional model at prediction time, while using individual state population for denormalization.
 
-### Métricas de CV
-`prophet_cross_val()` retorna RMSE, MAE, MAPE y **MASE** (v6). MASE = MAE_modelo / MAE_naive_seasonal (lag-52 semanas). MASE < 1 = mejor que baseline naive. El CSV de resultados incluye las cuatro métricas más `tiempo_cv_seg`, `tiempo_train_seg` y `tiempo_total_seg` por modelo.
+### Seasonality configuration
 
-### Clasificación de confianza y modo híbrido (v6)
-Series con promedio < `umbral_minimo_semanal` (default: 0.5 caso/semana) se marcan con `confianza: "insuficiente"`. Con `modelado_hibrido: true` (v6), se entrenan modelos regionales de fallback y el CSV incluye columna `usar_regional` que mapea cada modelo insuficiente a su .pkl regional. En predicción, se usa el modelo regional pero se desnormaliza con la población estatal individual.
-
-### Gráficos de pronóstico (`make predict`)
-`generar_graficos_pronostico()` en `forecast.py` genera un PNG por cada combinación única (padecimiento, entidad, modo) en `all_forecast.csv`. Estructura de salida:
-
-```
-forecast/{Padecimiento}/
-  ├── {Estado}/                        # 32 estados × 3 modos = 96 por padecimiento
-  ├── Nacional/                        # 3 modos (general, hombres, mujeres)
-  └── Region_{nombre}/                 # Por cada modelo regional standalone
-      └── {Padecimiento}_{nivel}_{modo}.png
+```yaml
+add_seasonality:
+  name: 'yearly_custom'
+  period: 52.18             # exact annual (365.25/7 weeks)
+  fourier_order: 5          # national/state models
+  fourier_order_regional: 3 # regional models (less overfitting on shorter series)
+n_changepoints_regional: 12 # vs Prophet default 25 (reduces overfitting < 1M states)
 ```
 
-- **Nacional**: modelos `Prophet_{pad}_{modo}.pkl` (sin entidad en el nombre). `predice.py` los parsea con `meta_entidad="Nacional"` y `forecast.py` construye el CSV sidecar como `Prophet_{pad}_{modo}.csv`.
-- **Regional standalone**: `predice.py` genera predicciones independientes para cada `region_*.pkl` con `meta_entidad="Region {nombre}"`. `forecast.py` construye el CSV sidecar como `Prophet_{pad}_region_{nombre_norm}_{modo}.csv` y guarda en `forecast/{pad}/Region_{nombre_norm}/`.
-- **Fallback estatal**: estados insuficientes usan el modelo regional pero se grafican en su propia carpeta estatal (con población individual).
+### Results (v6 — 2026-02-21)
 
-### Entrenamiento final con serie completa
-Después de CV, el modelo final (`.pkl`) se entrena con **toda la serie** (`self.serie`), no solo el split de entrenamiento. CV sigue usando splits para evaluar, pero el `.pkl` aprovecha todos los datos disponibles para máxima precisión en producción.
-
-### Periodos Atípicos Configurados (modelado.yaml)
-- **Pandemia COVID-19**: 2020-03-23, ventana de 913 días (~2.5 años)
-- ~~**Atípico 2016**: removido (sin mejora en RMSE)~~
-
-### Cambios de régimen por entidad (modelado.yaml)
-Se agregan como holidays a Prophet, filtrados por `entidad` y `padecimiento` en `SerieTiempoProphet.__init__`:
-- **Tabasco Depresión**: 2023-01-09, ventana 365 días (-6.2% RMSE)
-
-Nota: Solo se incluyen cambios temporales. Los step functions permanentes (Nayarit, Colima, Durango, BCS) empeoran el RMSE con holidays porque Prophet los trata como eventos temporales.
-
-## CI/CD (GitHub Actions)
-
-1. **`scrape_boletines.yml`** — Diario 2 PM CDMX: Selenium descarga nuevos boletines SINAVE → DVC push → git commit → SNS
-2. **`process_boletines.yml`** — Trigger post-scraping: extrae tablas (Camelot, keywords F32/G20/G30) → merge incremental → DVC push → SNS
-
-## Data Files (DVC-versioned en S3)
-
-- **`data/raw_PDFs/`** — ~633 boletines epidemiologicos 2014-2026 (~1GB)
-- **`data/processed/dataset_boletin_epidemiologico.csv`** — Dataset consolidado
-- **`models/`** — ~900 modelos Prophet .pkl + .csv de entrenamiento (~109 MB)
-- **`forecast/all_forecast.csv`** — Predicciones consolidadas (~180 MB). Incluye entradas estatales, nacionales y regionales, con columnas de métricas del modelo (rmse, mae, mape, mase, confianza) para modelo original y usado (Tableau tooltips)
-- **`forecast/index.html`** — Galería HTML interactiva para visualizar los 312 PNGs de pronóstico (filtros, lightbox, búsqueda). Abrir en navegador: `open forecast/index.html`
-- **`forecast/reporte_resultados.html`** — Reporte HTML interactivo de resultados del modelado (Chart.js, branding IMSS, 7 secciones). Generado con `make report`
-- **`forecast/bitacora_modelado.html`** — Bitácora HTML del recorrido completo del modelado Prophet v1-v6 (12 secciones, 11 charts Chart.js, timeline CSS, branding IMSS). Generado con `make bitacora`
-- **`forecast/comparacion_modelos.html`** — Reporte interactivo: comparación de 6 modelos (1,548 trials SageMaker). Generado externamente
-- **`data/registry.json`** — Registro de boletines procesados (anti-duplicados, Git)
-- **`data/utils/inegi.csv`** — Datos demograficos INEGI (poblacion, superficie, Git)
-
-## Resultados del Modelado (v6 — 2026-02-21)
-
-297 modelos estatales Prophet + 15 fallback regionales (modo híbrido) en ~45 minutos con `n_jobs=-2` (joblib).
-
-| Padecimiento | Modelos | Insuficientes | Fallback regional | RMSE medio | MASE medio | Tiempo |
-|-------------|---------|---------------|-------------------|------------|------------|--------|
+| Condition | Models | Insufficient | Fallback | Median RMSE | Median MASE | Training |
+|-----------|--------|-------------|---------|-------------|-------------|---------|
 | Alzheimer | 99 | 36 | 36 | 0.027 | 0.74 | ~2 min |
-| Depresión | 99 | 0 | 0 | 0.183 | 0.80 | ~28 min |
+| Depression | 99 | 0 | 0 | 0.183 | 0.80 | ~28 min |
 | Parkinson | 99 | 5 | 5 | 0.057 | 0.75 | ~14 min |
 
-- **100% cobertura estatal** con predicción informada (v5: 87%) gracias al modo híbrido
-- **MASE < 1** en los tres padecimientos → modelos superan baseline naive estacional (lag-52)
-- **41 modelos insuficientes** ahora usan fallback regional (predicción útil vs plana en v5)
-- Anti-Newton: Chihuahua-Depresión de 39 min (v4) a **4 min** (v5)
-- Forecast: 52 semanas a futuro, desnormalizado a conteos en `all_forecast.csv` (estatal + Nacional + Regional)
-- **312 gráficos** de pronóstico: 288 estatales + 9 nacionales + 15 regionales
-- **Galería HTML** interactiva: `forecast/index.html` (filtros por padecimiento/nivel/sexo, lightbox, búsqueda)
-- Hallazgos detallados en `REPORTE_HALLAZGOS_MODELADO_v3.md`
+**MASE < 1 across all three conditions** — every model outperforms seasonal naïve (lag-52).
 
-### Benchmark SageMaker v5-full (2026-02-22)
+---
 
-Comparación de 6 algoritmos en AWS SageMaker para validar Prophet como modelo de producción.
+## Code Quality
 
-| Métrica | Valor |
-|---------|-------|
-| Trials totales | 1,548 (6 modelos × 258 series) |
-| Duración | 9.8 horas (ml.m5.xlarge) |
-| Costo | ~$9.80 USD |
-| Series evaluadas | 258 de 297 (87%) — 39 omitidas por incidencia < 0.5/semana |
+### Commands
 
-| Modelo | Wins | % | MASE mediana |
-|--------|------|---|-------------|
-| **Prophet** | 61 | 23.6% | 0.745 |
-| DeepAR | 50 | 19.4% | 0.748 |
-| LightGBM+LSTM | 49 | 19.0% | 0.748 |
-| TFT | 37 | 14.3% | 0.773 |
-| Ridge | 33 | 12.8% | 0.822 |
-| XGBoost | 28 | 10.9% | 0.832 |
+```bash
+make quality         # full gate: ruff check + ruff format --check + mypy + pytest
+make lint            # ruff check + ruff format --check (no tests)
+make format          # ruff format --fix (auto-format)
+make typecheck       # mypy src/epiforecast/
+make test            # pytest --cov (full coverage report)
+make test-fast       # pytest -x -m "not slow and not integration"
+python scripts/compliance_check.py  # Cookiecutter DS v2 audit
+```
 
-**Hallazgos clave:**
-- Prophet consistente: 78% dentro del 20% del ganador, pero no dominante (23.6%)
-- Deep learning colectivamente gana 53% de series (DeepAR + LightGBM+LSTM + TFT)
-- Por padecimiento: Prophet domina Alzheimer (33%), empata en Depresión (26%), pierde en Parkinson (15% vs DeepAR 26%)
-- Prophet consume 68% del tiempo de cómputo (6.7h de 9.8h)
+### Tools
 
-**Archivos del benchmark:**
-- `Sagemaker results-v5-full/` — Excel, JSON HPs, CSV 1548 trials, reporte MD
-- `forecast/comparacion_modelos.html` — Reporte interactivo (19 charts Chart.js, tablas con filtros)
-- Fork SageMaker: `claude/EpiForecast-MX` con `aws/sagemaker_launcher.py`, Dockerfile, `config/experimentos.yaml`
+| Tool | Version | Config |
+|------|---------|--------|
+| ruff | 0.14.10 (pinned) | `[tool.ruff]` in pyproject.toml, line-length=99 |
+| mypy | 1.19.1 | `[tool.mypy]` in pyproject.toml, gradual typing |
+| pytest | 8.x | `[tool.pytest.ini_options]`, markers: `slow`, `integration` |
+| pre-commit | hooks on commit | `.pre-commit-config.yaml` |
 
-## Estado Actual del Pipeline
+### Pre-commit hooks (`.pre-commit-config.yaml`)
 
-### Funcional
-- Pipeline de preprocesamiento completo (`make preprocess`)
-- Scraping + procesamiento automatizado (CI/CD)
-- Entrenamiento Prophet con CV temporal por estado o región, normalizado a tasa por 100K + log-transform (`make train`)
-- **Modo híbrido** (v6): fallback regional automático para estados insuficientes
-- **MASE** (v6): métrica escala-independiente en CV (MAE_modelo / MAE_naive_lag52)
-- Predicción con inversión de log-transform y desnormalización automática a conteos (`make predict`)
-- Gráficos de pronóstico para modelos estatales, nacionales y regionales (312 PNGs)
-- Generación de reportes EDA en PDF
-- Detección de outliers parametrizada (IQR / Z-score)
-- Entrenamiento paralelo con joblib (`n_jobs=-2`, backend loky)
-- Progreso % visible en modo paralelo y secuencial
-- Protección anti-Newton de 3 capas (sort + fold timeout + threshold)
+```
+ruff check --fix          (src/epiforecast/ + tests/)
+ruff format               (src/epiforecast/ + tests/)
+mypy                      (src/epiforecast/ only)
+trailing-whitespace
+end-of-file-fixer
+check-yaml
+check-added-large-files   (max 500 KB)
+```
 
-### TODOs / Inconsistencias Conocidas
-- **Nayarit-Depresión**: RMSE=0.39 (peor modelo), cambio de régimen 2018 no absorbido completamente
+### Standards
+
+- Every file < 300 lines (SRP — enforced by compliance checker)
+- Every public module has a docstring
+- No `print()` in package — use `from loguru import logger`
+- No wildcard imports in `src/epiforecast/`
+- Canonical imports: `from epiforecast.X import Y` (not `from src.epiforecast`)
+- Spanish is intentional in: config keys, commit messages, some variable names (IMSS stakeholders)
+
+---
+
+## Testing
+
+### Structure
+
+```
+tests/
+├── conftest.py            # pytest_configure hook — mocks config module to prevent sys.exit
+├── unit/
+│   ├── data/              # cleaner, filter, transformer, imputation, extraction_pipeline, merger, pdf_extractor
+│   ├── evaluation/        # metrics (RMSE, MAE, MAPE, MASE)
+│   ├── features/          # demographic (MapeaInegi)
+│   ├── models/            # factory, prediction, prophet_model, tuner, cross_validator
+│   ├── utils/             # paths, dataframe_helpers
+│   ├── visualization/     # all 9 visualization modules
+│   ├── test_bases.py      # ABC interface tests
+│   └── test_constants.py  # constants validation
+└── integration/           # end-to-end smoke tests (manual trigger in CI)
+```
+
+### Coverage (82% — 1854/2258 statements)
+
+| Module | Coverage | Notes |
+|--------|---------|-------|
+| constants, filter, imputation, transformer | 100% | |
+| metrics, paths, dataframe_helpers | 100% | |
+| forecast_chart, inegi_plots, inegi_tables, report_tables | 100% | |
+| cleaner, reporters, tuner | 96–98% | |
+| extraction_pipeline, cross_validator, demographic | 94–97% | |
+| merger | 21% | I/O heavy — requires real PDF files |
+| forecast_plots | 28% | Requires real model CSV files to orchestrate |
+| config.py | 0% | sys.exit at module scope — untestable without real YAMLs |
+
+### Key testing patterns
+
+```python
+# 1. Inject mock conf (avoids sys.exit on missing YAML)
+with patch.object(module, "conf", {"key": "value"}):
+    obj = MyClass()
+
+# 2. conftest.py pytest_configure hook pre-injects mock at collection time
+# (protects all modules that import conf at module scope)
+
+# 3. Use tmp_path for real file I/O
+def test_creates_pdf(tmp_path):
+    gen = PDFReportGenerator(data, str(tmp_path / "out.pdf"))
+    gen.run()
+    assert (tmp_path / "out.pdf").exists()
+
+# 4. Prophet always mocked — never instantiate real Prophet in unit tests
+mock_model = MagicMock()
+forecaster._create_prophet.return_value = mock_model
+```
+
+### Running tests
+
+```bash
+pytest tests/                                               # all 536 tests
+pytest tests/ -m "not slow and not integration"            # fast only
+pytest tests/unit/models/ -v                               # specific module
+pytest tests/ --cov=src/epiforecast --cov-report=term-missing  # with coverage
+```
+
+---
+
+## CI/CD
+
+### GitHub Actions (`.github/workflows/ci.yml`)
+
+| Job | Trigger | Steps |
+|-----|---------|-------|
+| Code Quality | push to `main`/`refactor/*`, PR to `main` | ruff check + format + mypy |
+| Tests | after Quality passes | pytest (excludes slow + integration) + coverage artifact |
+| Integration | `workflow_dispatch` only | pytest -m integration (requires AWS) |
+
+### Scraping workflows
+
+| Workflow | Trigger | What it does |
+|----------|---------|-------------|
+| `scrape_boletines.yml` | Daily 2 PM CDMX | Selenium downloads new SINAVE PDFs → DVC push → SNS |
+| `process_boletines.yml` | Post-scrape | Camelot extraction → incremental merge → DVC push → SNS |
+
+---
+
+## Data Versioning (DVC + S3)
+
+```
+Remote: s3://epiforecast-mx-data  (default)
+
+Tracked artifacts:
+  data/raw_PDFs.dvc                                        # ~633 bulletins (~1 GB)
+  data/raw.dvc
+  data/processed/dataset_boletin_epidemiologico.csv.dvc   # master CSV
+  models.dvc                                               # 297 .pkl + .csv sidecars (~109 MB)
+  forecast/all_forecast.csv.dvc                            # 52-week forecasts (~180 MB)
+```
+
+```bash
+make data-pull      # dvc pull — download all artifacts from S3
+make data-push      # dvc push — upload local changes to S3
+make models-push    # version trained models: dvc add models/ + push
+make forecast-push  # version forecasts: dvc add forecast/ + push
+make s3-sync        # boto3 sync processed CSVs to s3://epiforecast-mx-data/latest/
+make data-status    # dvc status — check what's out of sync
+```
+
+---
+
+## Common Tasks
+
+### Run full pipeline from scratch
+
+```bash
+source integrador/bin/activate
+make preprocess           # steps 1–5, ~5 min
+make train                # 297 models, ~45 min (n_jobs=-2)
+make predict              # forecasts + 312 PNGs, ~2 min
+make s3-sync              # push to S3
+make report               # HTML report
+```
+
+### Check code quality before pushing
+
+```bash
+make quality                        # must exit 0
+python scripts/compliance_check.py  # target: A+ (153/153)
+```
+
+### Debug config loading
+
+```bash
+source integrador/bin/activate
+python -c "from epiforecast.utils.config import conf; print(list(conf.keys()))"
+```
+
+### Add a new condition
+
+1. Add ICD-10 code to `src/epiforecast/constants.py` (`CONDITIONS` dict)
+2. Add HP grid to `config/models/prophet.yaml` under `param_grid_prophet`
+3. Add key to `ProphetTuner._GRID_KEY_MAP` in `src/epiforecast/models/prophet/tuner.py`
+4. Run `make preprocess && make train`
+
+### Update hyperparameters
+
+Edit `config/models/prophet.yaml` → `param_grid_prophet.{alzheimer|depresion|parkinson}`. The grid is loaded at `ProphetTuner.__init__` time via `conf["param_grid_prophet"]`.
+
+---
+
+## Dependency Versions
+
+| Package | Version | Notes |
+|---------|---------|-------|
+| Python | 3.12.3 | `.python-version` enforces this |
+| prophet | 1.3.0 | cmdstanpy backend |
+| pandas | 2.3.0 | |
+| numpy | 2.0.0 | |
+| scikit-learn | 1.5.0 | TimeSeriesSplit for CV |
+| omegaconf | 2.3.0 | YAML config loader |
+| loguru | 0.7.3 | Logging (dual-sink: console + rotating file) |
+| ruff | 0.14.10 | Pinned — format consistency across environments |
+| mypy | 1.19.1 | |
+| reportlab | 4.x | PDF report generation |
+| camelot-py | 0.11+ | PDF table extraction (requires Ghostscript) |
+| rich | 13.7+ | Console EDA output (`inegi_tables.py`) |
+
+---
+
+## Team
+
+| Name | Role | Organization |
+|------|------|-------------|
+| **Javier Augusto Rebull Saucedo** | Lead Developer | Sr. Associate, Santander Bank US |
+| **Juan Carlos Pérez Nava** | ML Engineer | IT Professional, IMSS |
+| **Luis Gerardo Sánchez Salazar** | Data Engineer | Sr. Controls Engineer, Tesla |
+| **Dr. Grettel Barceló Alonso** | Academic Advisor | Tecnológico de Monterrey |
+| **Dr. Ruth Pérez** | IMSS Project Leader | IMSS |
+| **Dr. Lina Díaz Castro** | Psychiatry Researcher | IMSS |
+
+---
+
+## Critical Gotchas
+
+1. **Rates, not counts** — all Prophet models train on `log(1 + cases/population × 100,000)`. Never pass raw case counts. Inverse on prediction: `exp(ŷ) − 1` × population / 100,000.
+
+2. **`make preprocess` must run sequentially** — do NOT use `-j`. Steps depend on each other's output files.
+
+3. **COVID bias** — folds 1–2 (2020–2022) have systematically worse RMSE. CV weights `[0.5, 0.75, 1.0, 1.25]` mitigate this by down-weighting those folds.
+
+4. **Log-transform changes HP selection** — with log-transform, additive mode wins 67% of Alzheimer models (vs 6% without). This is expected behavior, not a bug.
+
+5. **`config.py` has module-level `sys.exit(1)`** — importing it without the YAML files crashes pytest collection. The `pytest_configure` hook in `tests/conftest.py` pre-injects a mock module to prevent this.
+
+6. **`FECHA_CORTE_ENTRENAMIENTO`** — required by `chart_annotations._anotar_zona_cv`. Tests for `forecast_chart.py` must patch `ca_mod.conf` with this key (see `test_forecast_chart.py::patch_ca_conf` autouse fixture).
+
+7. **Spanish naming is intentional** — commit messages, config keys, variable names in `data/` modules. Do not rename to English — IMSS stakeholders read the code.
+
+8. **Virtual env is `integrador/`**, not `.venv` or `venv`. Always activate with `source integrador/bin/activate`.
+
+9. **Tabasco-Depression regime change** (2023-01-09, 365-day window) is added as a Prophet holiday — gives −6.2% RMSE. Other step-change states (Nayarit, Colima, Durango, BCS) were tested and worsened RMSE; they are excluded.
+
+10. **`n_changepoints_regional: 12`** (vs Prophet default 25) reduces overfitting for states < 1M inhabitants. `fourier_order_regional: 3` (vs 5) serves the same purpose for regional models.
