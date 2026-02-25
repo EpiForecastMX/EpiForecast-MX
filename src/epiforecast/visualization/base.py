@@ -1,3 +1,5 @@
+"""Base visualization helpers: charts, forecast plots, and IMSS styling."""
+
 # src/utils/graficos.py
 import os
 

@@ -1,3 +1,5 @@
+"""INEGI API client: demographic and population data ingestion."""
+
 # src/datos/get_inegi.py
 import pandas as pd
 import requests

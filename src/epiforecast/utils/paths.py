@@ -1,3 +1,5 @@
+"""Path management utilities: directory creation and normalization."""
+
 # src/utils/directory_manager.py
 
 from pathlib import Path

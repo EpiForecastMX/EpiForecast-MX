@@ -1,3 +1,5 @@
+"""Demographic feature engineering: INEGI population merge and rate normalization."""
+
 # src/modelado/mapea_inegi.py
 import sys
 

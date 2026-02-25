@@ -1,3 +1,5 @@
+"""INEGI geographic and demographic visualization plots."""
+
 from typing import Literal
 
 import matplotlib.pyplot as plt

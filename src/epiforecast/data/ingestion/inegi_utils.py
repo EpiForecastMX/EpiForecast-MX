@@ -1,3 +1,5 @@
+"""INEGI API utility functions: URL construction, response parsing."""
+
 import pandas as pd
 import requests
 import typer

@@ -1,3 +1,5 @@
+"""PDF report generation with IMSS branding and forecast results."""
+
 # src/utils/reporte_PDF.py
 import os
 from typing import Any

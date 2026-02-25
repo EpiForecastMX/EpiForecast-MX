@@ -1,3 +1,5 @@
+"""Data cleaning: entity normalization, week-shift, outlier treatment."""
+
 # src/datos/clean_dataset.py
 import pandas as pd
 

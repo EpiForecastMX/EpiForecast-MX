@@ -1,3 +1,5 @@
+"""Exploratory Data Analysis plots and statistical summaries."""
+
 # src/datos/EDA.py
 from dataclasses import dataclass, field
 from datetime import datetime

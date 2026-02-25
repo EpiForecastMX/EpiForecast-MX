@@ -1,3 +1,5 @@
+"""DataFrame helper operations: IQR outliers, z-score, aggregation."""
+
 # src/utils/datos.py
 
 from typing import Literal
