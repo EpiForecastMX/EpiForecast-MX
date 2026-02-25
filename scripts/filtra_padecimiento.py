@@ -3,11 +3,11 @@ import sys
 
 import pandas as pd
 
-from src.configuraciones.config_params import conf, logger
-from src.datos.EDA import EDAReportBuilder
-from src.datos.filtro_padecimiento import FiltraPadecimiento
-from src.utils import directory_manager
-from src.utils.reporte_PDF import PDFReportGenerator
+from src.epiforecast.utils.config import conf, logger
+from src.epiforecast.visualization.eda_plots import EDAReportBuilder
+from src.epiforecast.data.preprocessing.filter import FiltraPadecimiento
+from src.epiforecast.utils import paths as directory_manager
+from src.epiforecast.visualization.reporters import PDFReportGenerator
 
 
 def filtrar() -> tuple[bool, pd.DataFrame | None]:

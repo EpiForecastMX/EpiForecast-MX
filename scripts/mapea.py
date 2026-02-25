@@ -3,9 +3,9 @@ import sys
 
 import pandas as pd
 
-from src.configuraciones.config_params import conf, logger
-from src.modelado.mapea_inegi import MapeaInegi
-from src.utils import directory_manager
+from src.epiforecast.utils.config import conf, logger
+from src.epiforecast.features.demographic import MapeaInegi
+from src.epiforecast.utils import paths as directory_manager
 
 
 def main():

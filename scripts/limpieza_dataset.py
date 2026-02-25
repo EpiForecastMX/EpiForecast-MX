@@ -3,11 +3,11 @@ from pathlib import Path
 
 import pandas as pd
 
-from src.configuraciones.config_params import conf, logger
-from src.datos.clean_dataset import CleanDataset
-from src.datos.EDA import EDAReportBuilder, SeccionNota
-from src.utils import directory_manager
-from src.utils.reporte_PDF import PDFReportGenerator
+from src.epiforecast.utils.config import conf, logger
+from src.epiforecast.data.preprocessing.cleaner import CleanDataset
+from src.epiforecast.visualization.eda_plots import EDAReportBuilder, SeccionNota
+from src.epiforecast.utils import paths as directory_manager
+from src.epiforecast.visualization.reporters import PDFReportGenerator
 
 
 def ejecuta_limpieza_raw() -> tuple[bool, pd.DataFrame | None, dict[str, str] | None]:
