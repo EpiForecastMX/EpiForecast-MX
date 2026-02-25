@@ -152,3 +152,24 @@ class TestMASE:
         y_pred = np.array([4.5, 5.5])
         result = mase(y_true, y_pred, y_train, season=52)
         assert result is None or np.isnan(result)
+
+    def test_constant_training_series_returns_none(self):
+        """MASE returns None when naive seasonal baseline is perfect (mae_naive=0)."""
+        # Constant series → naive baseline has zero error → division by zero → None
+        y_train = np.full(60, 500.0)
+        y_true = np.array([500.0, 500.0, 500.0])
+        y_pred = np.array([501.0, 499.0, 500.0])
+        result = mase(y_true, y_pred, y_train, season=52)
+        assert result is None
+
+
+# ── MAPE edge cases ───────────────────────────────────────────────────────────
+
+
+class TestMAPEEdgeCases:
+    def test_all_zero_actuals_returns_zero(self):
+        """When every y_true is 0, MAPE is defined as 0.0 (no valid terms)."""
+        y_true = np.array([0.0, 0.0, 0.0])
+        y_pred = np.array([1.0, 2.0, 3.0])
+        result = mape(y_true, y_pred)
+        assert result == 0.0
