@@ -218,3 +218,15 @@ viz/.~*.twbr
 # Notebooks: archivos grandes (>100MB)
 notebooks/data/all_forecast.csv
 notebooks/data/tableau.csv
+# SageMaker experiment results (large CSVs)
+Sagemaker results-v5-full/
+
+# Notebooks reference PDFs
+notebooks/ReferenciasNotebooks/
+
+# Notebook generated figures & zips
+notebooks/figuras_latex/
+notebooks/figuras_latex.zip
+
+# Migration script (one-time use)
+migrate_structure.sh

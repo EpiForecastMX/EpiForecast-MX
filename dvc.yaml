@@ -1,0 +1,152 @@
+# dvc.yaml
+# EpiForecast-MX — Reproducible ML Pipeline
+# Run: dvc repro (full) or dvc repro <stage> (single)
+# Visualize: dvc dag
+
+stages:
+  # ── Data Ingestion ──────────────────────────────────────────────────────
+  ingest-sinave:
+    cmd: python -m scripts.descarga
+    deps:
+      - src/epiforecast/data/ingestion/base.py
+      - scripts/descarga.py
+    outs:
+      - data/raw/boletines/:
+          persist: true
+    desc: "Download latest SINAVE epidemiological bulletins (PDF)"
+
+  ingest-inegi:
+    cmd: python -m scripts.get_inegi
+    deps:
+      - src/epiforecast/data/ingestion/inegi.py
+      - scripts/get_inegi.py
+    outs:
+      - data/raw/inegi/:
+          persist: true
+    desc: "Download INEGI demographic/population data"
+
+  # ── Data Extraction ─────────────────────────────────────────────────────
+  extract:
+    cmd: python -m scripts.get_dataset
+    deps:
+      - src/epiforecast/data/extraction/pdf_extractor.py
+      - src/epiforecast/data/extraction/merger.py
+      - data/raw/boletines/
+      - config/data/extraction.yaml
+    outs:
+      - data/interim/dataset_crudo.csv
+    desc: "Extract tables from bulletin PDFs → raw CSV"
+
+  # ── Preprocessing ───────────────────────────────────────────────────────
+  filter:
+    cmd: python -m scripts.filter
+    deps:
+      - src/epiforecast/data/preprocessing/filter.py
+      - data/interim/dataset_crudo.csv
+      - config/data/preprocessing.yaml
+    params:
+      - config/base.yaml:
+          - padecimiento.codigo_cie10
+    outs:
+      - data/interim/dataset_filtrado.csv
+    desc: "Filter by ICD-10 codes (F32, G20, G30)"
+
+  clean:
+    cmd: python -m scripts.clean
+    deps:
+      - src/epiforecast/data/preprocessing/cleaner.py
+      - data/interim/dataset_filtrado.csv
+      - config/data/preprocessing.yaml
+    outs:
+      - data/interim/dataset_limpio.csv
+    desc: "Entity normalization, week-shift, cumulative→weekly, outlier IQR"
+
+  transform:
+    cmd: python -m scripts.transform
+    deps:
+      - src/epiforecast/data/preprocessing/transformer.py
+      - src/epiforecast/features/demographic.py
+      - data/interim/dataset_limpio.csv
+      - data/raw/inegi/
+      - config/features/feature_engineering.yaml
+    params:
+      - config/base.yaml:
+          - normalizar_tasa
+          - log_transform
+    outs:
+      - data/processed/dataset_final.csv
+    desc: "INEGI merge, rate normalization, log-transform"
+
+  # ── Training ────────────────────────────────────────────────────────────
+  train:
+    cmd: python -m scripts.entrena
+    deps:
+      - src/epiforecast/models/prophet/model.py
+      - src/epiforecast/models/prophet/tuner.py
+      - src/epiforecast/models/prophet/cross_validator.py
+      - src/epiforecast/evaluation/metrics.py
+      - data/processed/dataset_final.csv
+      - config/models/prophet.yaml
+      - config/evaluation/metrics.yaml
+    params:
+      - config/base.yaml:
+          - padecimiento
+          - FECHA_CORTE_ENTRENAMIENTO
+          - TS_SPLITS
+          - TEST_SIZE
+    outs:
+      - models/:
+          persist: true
+    plots:
+      - outputs/reports/cv_results.csv:
+          x: fold
+          y: rmse
+    desc: "Cross-validate + train Prophet models (297 combinations)"
+
+  # ── Prediction ──────────────────────────────────────────────────────────
+  predict:
+    cmd: python -m scripts.predice
+    deps:
+      - src/epiforecast/models/prediction.py
+      - models/
+      - data/processed/dataset_final.csv
+    params:
+      - config/base.yaml:
+          - periodo_pronostico
+    outs:
+      - outputs/forecasts/all_forecast.csv
+    desc: "Generate forecasts with inverse transforms"
+
+  # ── Visualization ───────────────────────────────────────────────────────
+  visualize:
+    cmd: python -m scripts.genera_graficos
+    deps:
+      - src/epiforecast/visualization/forecast_plots.py
+      - outputs/forecasts/all_forecast.csv
+      - models/
+    outs:
+      - outputs/forecasts/graficos/:
+          persist: true
+    desc: "Generate forecast PNG charts per model"
+
+  # ── Reporting ───────────────────────────────────────────────────────────
+  report:
+    cmd: python -m scripts.genera_reporte
+    deps:
+      - src/epiforecast/visualization/reporters.py
+      - outputs/forecasts/all_forecast.csv
+    outs:
+      - outputs/reports/reporte_pronostico.pdf:
+          persist: true
+    desc: "Generate PDF report with metrics and charts"
+
+  # ── Tableau Export ──────────────────────────────────────────────────────
+  tableau:
+    cmd: python -m scripts.genera_tableau
+    deps:
+      - outputs/forecasts/all_forecast.csv
+      - data/processed/dataset_final.csv
+    outs:
+      - outputs/dashboards/tableau/tableau_export.csv:
+          persist: true
+    desc: "Export combined CSV for Tableau Public dashboard"

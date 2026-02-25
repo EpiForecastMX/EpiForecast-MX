@@ -1,0 +1,29 @@
+logging:
+  reset_handlers: true
+  custom_levels:
+    - name: "NOTICE"
+      number: 35
+      color: "<cyan>"
+
+  sinks:
+    # Consola (stderr)
+    - type: "stderr"
+      level: "INFO"
+      colorize: true
+      format: "<cyan>{time:YYYY-MM-DD HH:mm:ss}</cyan> | <level>{level: <8}</level> | <level>{message}</level>"
+      enqueue: true
+      backtrace: true
+      diagnose: false
+
+    # Archivo
+    - type: "file"
+      path: "./logs/{time}.log"
+      level: "DEBUG"
+      colorize: true
+      format: "{time:YYYY-MM-DD HH:mm:ss} | {level: <8} | {message} | {module}.{function}:{line}"
+      rotation: "00:00"
+      retention: "7 days"
+      compression: "zip"
+      enqueue: true
+      backtrace: false
+      diagnose: true

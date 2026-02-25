@@ -1,0 +1,92 @@
+# src/epiforecast/utils/config.py
+"""Unified configuration loader for EpiForecast-MX.
+
+Merges all YAML files from config/ into a single `conf` dict.
+All modules access configuration via `from epiforecast.utils.config import conf, logger`.
+"""
+
+from __future__ import annotations
+
+from datetime import datetime
+import os
+from pathlib import Path
+import platform
+import sys
+from typing import Any, cast
+
+from loguru import logger
+from omegaconf import OmegaConf
+
+try:
+    conf_base = OmegaConf.load("config/base.yaml")
+    conf_data = OmegaConf.load("config/data/preprocessing.yaml")
+    conf_features = OmegaConf.load("config/features/feature_engineering.yaml")
+    conf_models = OmegaConf.load("config/models/prophet.yaml")
+    conf_viz = OmegaConf.load("config/visualization/plots.yaml")
+    conf_infra = OmegaConf.load("config/infrastructure/logging.yaml")
+except FileNotFoundError as e:
+    logger.error("Archivo de configuración no encontrado: {}", e)
+    sys.exit(1)
+
+_merged = OmegaConf.merge(conf_base, conf_data, conf_features, conf_models, conf_viz, conf_infra)
+conf: dict[str, Any] = cast(dict[str, Any], OmegaConf.to_container(_merged, resolve=True))
+
+# Configurar logger según YAML
+if "logging" in conf:
+    sinks = conf["logging"].get("sinks", [])
+    logger.remove()
+
+    for sink in sinks:
+        if sink["type"] == "stderr":
+            logger.add(
+                sys.stderr,
+                level=sink.get("level", "INFO"),
+                colorize=sink.get("colorize", True),
+                format=sink.get("format"),
+                enqueue=sink.get("enqueue", True),
+                backtrace=sink.get("backtrace", True),
+                diagnose=sink.get("diagnose", False),
+            )
+        elif sink["type"] == "file":
+            logger.add(
+                sink.get("path", "./logs/app.log"),
+                level=sink.get("level", "DEBUG"),
+                colorize=sink.get("colorize", False),
+                format=sink.get("format"),
+                rotation=sink.get("rotation", "00:00"),
+                retention=sink.get("retention", "7 days"),
+                compression=sink.get("compression", "zip"),
+                enqueue=sink.get("enqueue", True),
+                backtrace=sink.get("backtrace", True),
+                diagnose=sink.get("diagnose", False),
+            )
+
+    yaml_path = Path("config/infrastructure/logging.yaml").resolve()
+    env = os.getenv("APP_ENV", "local")
+    cwd = Path.cwd()
+    pyv = platform.python_version()
+    pid = os.getpid()
+
+    sinks_conf = conf.get("logging", {}).get("sinks", [])
+    sinks_count = len(sinks_conf)
+    sinks_types = ",".join(sorted({s.get("type", "stderr") for s in sinks_conf})) or "stderr"
+
+    logger.info(
+        "Logging inicializado | status=ok | env={} | cwd={} | python={} | timestamp={}",
+        env,
+        cwd,
+        pyv,
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    )
+    logger.debug(
+        "Logging inicializado | status=ok | env={} | config={} | sinks={} ({}) | "
+        "cwd={} | pid={} | python={} | timestamp={}",
+        env,
+        yaml_path,
+        sinks_count,
+        sinks_types,
+        cwd,
+        pid,
+        pyv,
+        datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+    )

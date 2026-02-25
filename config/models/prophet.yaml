@@ -1,0 +1,117 @@
+normalizar_tasa: true          # modelar tasa por 100K en vez de conteos absolutos
+columna_poblacion: "Total"     # columna de población para normalizar
+tasa_por: 100000               # factor de normalización (per 100K hab.)
+log_transform: true            # log(1+y) para estabilizar varianza en series volátiles
+umbral_minimo_semanal: 0.5     # promedio mínimo de casos/semana para entrenar (< umbral → insuficiente). v5: 1.0→0.5 recupera ~40 modelos
+
+param_grid_prophet:
+  # Grids v5 — optimizados con datos de 297 modelos v4 (Feb 2026)
+  alzheimer:
+    seasonality_mode:
+      - multiplicative        # additive +51% RMSE; eliminado
+    changepoint_prior_scale:
+      - 0.01                  # ganador 85% top-20%
+      - 0.03
+    seasonality_prior_scale:
+      - 0.05                  # v5: agregado (patrón exitoso en Depresión)
+      - 0.1                   # mejores en top 20%
+      - 0.5                   # mejores en top 20%
+    # 6 combinaciones (v4: 4)
+
+  depresion:
+    seasonality_mode:
+      - additive              # mejor promedio (0.2017 vs 0.2183)
+      - multiplicative        # gap pequeño; depende de entidad
+    changepoint_prior_scale:
+      - 0.01                  # diferencias pequeñas entre valores; mantener los 3
+      - 0.03
+      - 0.05
+    seasonality_prior_scale:
+      - 0.025                 # v5: exploración de mayor regularización
+      - 0.05
+      - 0.1                   # ganador regional
+      - 0.5
+      # 1.0 eliminado v5: ganaba 29% pero RMSE medio peor que sp≤0.5
+    # 24 combinaciones (v4: 24)
+
+  parkinson:
+    seasonality_mode:
+      - multiplicative        # ganador dominante
+      - additive              # competitivo en algunas entidades
+    changepoint_prior_scale:
+      - 0.03                  # v5: poda cp=0.01 (Newton-prone) y cp=0.07 (nunca gana)
+      - 0.04                  # v5: interpolación fina en zona óptima
+      - 0.05                  # mejor RMSE promedio (0.0573)
+    seasonality_prior_scale:
+      - 0.1                   # zona óptima
+      - 0.5                   # ganador claro (RMSE 0.0461)
+      - 1.0
+    # 18 combinaciones (v4: 24)
+
+param_model:
+  yearly_seasonality: False  # reemplazado por add_seasonality con period exacto
+  weekly_seasonality: False  # sin sentido: 1 obs/semana, no hay variacion intra-semana
+  daily_seasonality: False
+
+add_seasonality:
+  name: 'yearly_custom'
+  period: 52.18             # 365.25/7 — anual exacto en semanas
+  fourier_order: 5          # reducido de 8: menos params = L-BFGS mas estable
+  fourier_order_regional: 3 # regional: fourier_order=5 sobreajusta en series cortas (Depresión)
+
+n_changepoints_regional: 12  # regional: reduce overfitting en entidades < 1M hab. (vs 25 global)
+
+n_jobs_train: -2               # paralelismo joblib: -1=todos los cores, -2=todos-1, 1=secuencial
+cv_timeout_por_combo: 90       # seg máx por combinación de HP en CV (0=sin límite). v5: 120→90 más agresivo
+cv_timeout_por_fold: 35        # seg máx por fold individual (>35s = Newton seguro → skip combo). v5: 45→35
+
+FECHA_CORTE_ENTRENAMIENTO: "2025-01-01"
+TS_SPLITS: 4
+TEST_SIZE: 53
+
+# Pesos progresivos para CV: folds recientes pesan más (corrida paralela validó beneficio)
+# Fold 1 (2020-2021, post-COVID): peso 0.5  — periodo atípico, menos relevante
+# Fold 2 (2021-2022, recuperación): peso 0.75
+# Fold 3 (2022-2023, estabilización): peso 1.0
+# Fold 4 (2023-2024, actual): peso 1.25 — más representativo del forecast
+cv_weights: [0.5, 0.75, 1.0, 1.25]
+
+peridos_atipicos:
+  - holiday: pandemia_covid
+    ds: "2020-03-23"
+    lower_window: 0
+    upper_window: 913  # dias impacto pandemia 2.5 * 365.25
+
+  #- holiday: atipico_2016
+  #  ds: "2016-05-16"
+  #  lower_window: 0
+  #  upper_window: 182
+
+mapeo_columnas:
+  incrementos_hombres: hombres
+  incrementos_mujeres: mujeres
+  incrementos_total: general
+
+regiones_INEGI:
+  - 'Urbana media'
+  - 'Sur-Sureste vulnerable'
+  - 'Metropolitana alta'
+  - 'Rural / dispersa'
+
+valores_sexo:
+  - incrementos_hombres
+  - incrementos_mujeres
+  - incrementos_total
+
+# Cambios de régimen por entidad/padecimiento (se agregan como holidays a Prophet)
+# NOTA: Solo incluir cambios temporales. Los cambios permanentes (step functions)
+# empeoran el RMSE con holidays porque Prophet los trata como eventos temporales.
+# Nayarit, Colima, Durango, BCS fueron probados y empeoraron (+5-10% RMSE).
+# Tabasco mejora -6.2% porque su cambio tiene un patrón más compatible con holidays.
+cambios_regimen:
+  - holiday: cambio_regimen_tabasco_2023
+    ds: "2023-01-09"
+    lower_window: 0
+    upper_window: 365
+    entidad: "Tabasco"
+    padecimiento: "Depresión"

@@ -1,118 +1,243 @@
 #################################################################################
-# GLOBALS                                                                       #
+# EpiForecast-MX — Makefile MLOps                                              #
 #################################################################################
 
 PROJECT_NAME = integrador
 PYTHON_VERSION = 3.12
-PYTHON_INTERPRETER = python
+PYTHON = python
 ACTIVATE := bin/activate
+SRC = src/epiforecast
+
+.DEFAULT_GOAL := help
 
 #################################################################################
-# COMMANDS                                                                      #
+# 🔧 SETUP & ENVIRONMENT                                                       #
 #################################################################################
 
-
-## Instalar dependencias
+## Instalar dependencias (editable + dev)
 .PHONY: requirements
 requirements:
-	$(PYTHON_INTERPRETER) -m pip install -U pip
-	$(PYTHON_INTERPRETER) -m pip install -r requirements.txt
-	
+	$(PYTHON) -m pip install -U pip
+	$(PYTHON) -m pip install -e ".[dev]"
 
-# Elimina archivos compilados de Python (*.pyc, *.pyo) y carpetas __pycache__
-.PHONY: clean_py
-clean_py:
-	find . -type f -name "*.py[co]" -delete
-	find . -type d -name "__pycache__" -delete
+## Setup completo macOS (Ghostscript + deps + data)
+.PHONY: setup
+setup: setup-mac requirements data-pull
+	@echo ">>> Setup completo. Proyecto listo."
 
+## Setup completo Linux/WSL
+.PHONY: setup-linux
+setup-linux: setup-linux-deps requirements data-pull
+	@echo ">>> Setup completo. Proyecto listo."
 
-# Analiza el código con Ruff para verificar formato y calidad del código
-.PHONY: lint
-lint:
-	ruff format --check
-	ruff check
+## Instalar dependencias sistema (macOS)
+.PHONY: setup-mac
+setup-mac:
+	brew install ghostscript
+	@echo ">>> Ghostscript instalado."
 
-# Format source code with ruff
-.PHONY: format
-format:
-	ruff check --fix
-	ruff format
+## Instalar dependencias sistema (Linux)
+.PHONY: setup-linux-deps
+setup-linux-deps:
+	sudo apt-get install -y ghostscript
+	@echo ">>> Ghostscript instalado."
 
-
-## Configurar el entorno con conda
-.PHONY: create_environment_conda
-create_environment_conda:
-	@echo ">>> Creando entorno conda..."
-	conda create --name $(PROJECT_NAME) python=$(PYTHON_VERSION) -c conda-forge --override-channels -y
-	@echo ">>> Entorno creado. Activando e instalando dependencias..."
-	conda run -n $(PROJECT_NAME) $(PYTHON_INTERPRETER) -m pip install -U pip
-	conda run -n $(PROJECT_NAME) $(PYTHON_INTERPRETER) -m pip install -r requirements.txt
-	@echo ">>> conda env created. Activate with:\nconda activate $(PROJECT_NAME)"
-
-## Configurar el entorno con venv
-.PHONY: create_environment
-create_environment:
-	@echo ">>> Creando entorno virtual con venv..."
-	$(PYTHON_INTERPRETER)$(PYTHON_VERSION) -m venv $(PROJECT_NAME)
-	@echo ">>> Entorno creado. Activando e instalando dependencias..."
-	. $(PROJECT_NAME)/$(ACTIVATE) && pip install --upgrade pip && pip install -r requirements.txt
+## Crear entorno virtual (venv)
+.PHONY: create-env
+create-env:
+	$(PYTHON)$(PYTHON_VERSION) -m venv $(PROJECT_NAME)
+	. $(PROJECT_NAME)/$(ACTIVATE) && pip install --upgrade pip && pip install -e ".[dev]"
 	@echo ">>> venv creado. Activa con: source $(PROJECT_NAME)/$(ACTIVATE)"
 
-## Reinicia la carpeta de registros (logs)
-.PHONY: reset_logs
-reset_logs:
-	@echo ">>> Reiniciando carpeta de logs..."
-	@rm -rf ./logs
-	@mkdir -p ./logs
-	@echo ">>> Carpeta de logs reiniciada."
-
-.PHONY: reset_interim
-reset_interim:
-	@echo ">>> Reiniciando carpeta interim"
-	@rm -rf ./data/interim
-	@mkdir -p ./data/interim
-	@echo ">>> Carpeta interim reiniciada."
+## Crear entorno virtual (conda)
+.PHONY: create-env-conda
+create-env-conda:
+	conda create --name $(PROJECT_NAME) python=$(PYTHON_VERSION) -c conda-forge --override-channels -y
+	conda run -n $(PROJECT_NAME) $(PYTHON) -m pip install -e ".[dev]"
+	@echo ">>> conda env creado. Activa con: conda activate $(PROJECT_NAME)"
 
 #################################################################################
-# DATA VERSION CONTROL (DVC)                                                    #
+# 📊 DATA PIPELINE                                                             #
 #################################################################################
 
-## Descargar datos desde S3 (para nuevos colaboradores o sync)
+## Reiniciar logs y carpetas temporales
+.PHONY: reset
+reset:
+	@rm -rf ./logs && mkdir -p ./logs
+	@rm -rf ./data/interim && mkdir -p ./data/interim
+	@echo ">>> Logs e interim reiniciados."
+
+## Obtener dataset base
+.PHONY: get-dataset
+get-dataset:
+	$(PYTHON) -m scripts.get_dataset
+
+## Filtrar por padecimiento (config/params.yaml)
+.PHONY: filter
+filter:
+	@echo ">>> Filtrando dataset..."
+	$(PYTHON) -m scripts.filtra_padecimiento
+
+## Limpiar dataset (nulos, duplicados, formato)
+.PHONY: clean
+clean:
+	@echo ">>> Limpiando dataset..."
+	$(PYTHON) -m scripts.limpieza_dataset
+
+## Feature engineering (outliers, regiones, agrupación)
+.PHONY: transform
+transform:
+	@echo ">>> Transformando dataset..."
+	$(PYTHON) -m scripts.realiza_prep
+
+## Descargar datos demográficos INEGI
+.PHONY: get-inegi
+get-inegi:
+	@echo ">>> Descargando datos INEGI..."
+	$(PYTHON) -m scripts.descarga_inegi
+
+## Mapear entidades con INEGI → CSV + XLSX
+.PHONY: mapper
+mapper:
+	@echo ">>> Mapeando entidades con INEGI..."
+	$(PYTHON) -m scripts.mapea
+
+## Pipeline completo de preprocesamiento (secuencial)
+.PHONY: preprocess
+preprocess: reset get-dataset filter clean transform get-inegi mapper
+	@echo ">>> Preprocesamiento completo."
+
+#################################################################################
+# 🤖 MODELING                                                                  #
+#################################################################################
+
+## Entrenar modelos Prophet (CV + train final)
+.PHONY: train
+train:
+	@echo ">>> Entrenando modelos..."
+	$(PYTHON) -m scripts.entrena
+
+## Generar predicciones (52 semanas, desnormalizadas)
+.PHONY: predict
+predict:
+	@echo ">>> Generando predicciones..."
+	$(PYTHON) -m scripts.predice
+
+## Construir dataset Tableau
+.PHONY: tableau
+tableau:
+	@echo ">>> Construyendo dataset Tableau..."
+	$(PYTHON) -m scripts.build_tableau
+
+## Generar reporte HTML de resultados
+.PHONY: report
+report:
+	@echo ">>> Generando reporte HTML..."
+	$(PYTHON) -m scripts.genera_reporte
+	@echo ">>> → forecast/reporte_resultados.html"
+
+## Generar bitácora HTML del modelado Prophet v1-v6
+.PHONY: bitacora
+bitacora:
+	@echo ">>> Generando bitácora..."
+	$(PYTHON) -m scripts.genera_bitacora
+	@echo ">>> → forecast/bitacora_modelado.html"
+
+## Flujo completo de modelado
+.PHONY: model-pipeline
+model-pipeline: train models-push predict report forecast-push
+	@echo ">>> Pipeline de modelado completo."
+
+#################################################################################
+# ✅ CODE QUALITY                                                               #
+#################################################################################
+
+## Lint: verificar formato y calidad
+.PHONY: lint
+lint:
+	ruff format --check src/epiforecast/ tests/
+	ruff check src/epiforecast/ tests/
+	@echo ">>> Lint passed."
+
+## Format: auto-formatear código
+.PHONY: format
+format:
+	ruff check --fix src/epiforecast/ tests/
+	ruff format src/epiforecast/ tests/
+	@echo ">>> Formatted."
+
+## Type check con mypy
+.PHONY: typecheck
+typecheck:
+	mypy src/epiforecast/
+	@echo ">>> Type check passed."
+
+## Ejecutar tests
+.PHONY: test
+test:
+	pytest tests/
+	@echo ">>> Tests passed."
+
+## Tests rápidos (sin slow/integration)
+.PHONY: test-fast
+test-fast:
+	pytest tests/ -m "not slow and not integration" -x
+	@echo ">>> Fast tests passed."
+
+## Quality gate completo (lint + typecheck + test)
+.PHONY: quality
+quality: lint typecheck test
+	@echo ">>> Quality gate passed."
+
+## Instalar pre-commit hooks
+.PHONY: hooks
+hooks:
+	pre-commit install
+	@echo ">>> Pre-commit hooks instalados."
+
+## Limpiar archivos compilados
+.PHONY: clean-py
+clean-py:
+	find . -type f -name "*.py[co]" -delete
+	find . -type d -name "__pycache__" -delete
+	@echo ">>> Python cache limpiado."
+
+#################################################################################
+# 📦 DATA VERSION CONTROL (DVC)                                                #
+#################################################################################
+
+## Descargar datos desde S3
 .PHONY: data-pull
 data-pull:
-	@echo ">>> Descargando datos desde S3..."
 	dvc pull
 	@echo ">>> Datos sincronizados."
 
-## Subir datos a S3 (después de agregar nuevos PDFs)
+## Subir datos a S3
 .PHONY: data-push
 data-push:
-	@echo ">>> Subiendo datos a S3..."
 	dvc push
 	@echo ">>> Datos subidos a S3."
 
-## Agregar nuevo PDF semanal y sincronizar (uso: make data-add PDF=path/to/file.pdf)
+## Agregar nuevo PDF semanal (uso: make data-add PDF=ruta/archivo.pdf)
 .PHONY: data-add
 data-add:
 ifndef PDF
 	$(error Uso: make data-add PDF=ruta/al/archivo.pdf)
 endif
-	@echo ">>> Agregando nuevo PDF: $(PDF)"
 	cp "$(PDF)" data/raw_PDFs/
 	dvc add data/raw_PDFs
-	@echo ">>> PDF agregado. Ejecuta 'make data-commit' para commitear."
+	@echo ">>> PDF agregado. Ejecuta 'make data-commit'."
 
-## Commitear cambios de datos y push a remotes
+## Commitear datos + push Git y S3
 .PHONY: data-commit
 data-commit:
-	@echo ">>> Commiteando cambios de datos..."
 	git add data/raw_PDFs.dvc data/.gitignore
 	git commit -m "data: add new weekly PDF $$(date +%Y-%W)"
 	dvc push
 	git push
 	@echo ">>> Datos commiteados y sincronizados."
 
-## Flujo completo semanal: agregar PDF, commitear y push (uso: make data-weekly PDF=path/to/file.pdf)
+## Flujo semanal completo (uso: make data-weekly PDF=ruta/archivo.pdf)
 .PHONY: data-weekly
 data-weekly: data-add data-commit
 	@echo ">>> Flujo semanal completado."
@@ -120,162 +245,42 @@ data-weekly: data-add data-commit
 ## Ver estado de DVC
 .PHONY: data-status
 data-status:
-	@echo ">>> Estado de DVC:"
 	dvc status
-	@echo ""
-	@echo ">>> Archivos trackeados:"
 	dvc list . --dvc-only
 
-#################################################################################
-# PROJECT RULES                                                                 #
-#################################################################################
-
-# Obtiene el dataset original para iniciar el flujo de análisis.
-.PHONY: get_dataset
-get_dataset: 
-	$(PYTHON_INTERPRETER) -m scripts.get_dataset
-
-# Filtrar dataset con el padecimiento configurado
-.PHONY: filter
-filter:
-	@echo ">>> Filtrando dataset con el padecimiento configurado..."
-	$(PYTHON_INTERPRETER) -m scripts.filtra_padecimiento
-	@echo ">>> Filtrado completado."
-
-# Limpia y prepara el dataset eliminando valores nulos, duplicados y formateando columnas.
-.PHONY: clean
-clean:
-	@echo ">>> Iniciando limpieza del dataset"
-	$(PYTHON_INTERPRETER) -m scripts.limpieza_dataset
-	@echo ">>> Limpieza del dataset completada."
-
-# Aplica las conversiones requeridas y acondiciona la información para su procesamiento posterior.
-.PHONY: transform
-transform:
-	@echo ">>> Iniciando extracción y transformación de características..."
-	$(PYTHON_INTERPRETER) -m scripts.realiza_prep
-	@echo ">>> Preparación completada."
-
-.PHONY: get_inegi
-get_inegi:
-	@echo ">>> Extrayendo datos de INEGI..."
-	$(PYTHON_INTERPRETER) -m scripts.descarga_inegi
-	@echo ">>> Preparación completada."
-
-.PHONY: mapper
-mapper:
-	@echo ">>> Iniciando mapeando entidades con INEGI..."
-	$(PYTHON_INTERPRETER) -m scripts.mapea
-	@echo ">>> Preparación completada."
-
-## Ejecuta el flujo completo: filtrar, limpiar y transformar dataset
-.PHONY: preprocess
-preprocess: reset_logs reset_interim get_dataset filter clean transform get_inegi mapper
-	@echo ">>> Flujo completo ejecutado."
-
-.PHONY: train
-train:
-	@echo ">>> Iniciando entrenamiento"
-	$(PYTHON_INTERPRETER) -m scripts.entrena
-	@echo ">>> Entrenamiento completado."
-
-## Generar predicciones con modelo entrenado
-.PHONY: predict
-predict:
-	@echo ">>> Generando predicciones..."
-	$(PYTHON_INTERPRETER) -m scripts.predice
-	@echo ">>> Predicciones generadas."
-
-.PHONY: tableau
-tableau:
-	@echo ">>> Construyendo dataset final para Tableau..."
-	$(PYTHON_INTERPRETER) -m scripts.build_tableau
-	@echo ">>> Listo."
-
-## Versionar modelos entrenados con DVC y subir a S3
+## Versionar modelos y subir a S3
 .PHONY: models-push
 models-push:
 	dvc add models/
 	dvc push
-	@echo ">>> Modelos versionados y subidos a S3."
+	@echo ">>> Modelos versionados y subidos."
 
-## Generar reporte HTML de resultados del modelado
-.PHONY: report
-report:
-	@echo ">>> Generando reporte HTML..."
-	$(PYTHON_INTERPRETER) -m scripts.genera_reporte
-	@echo ">>> Reporte disponible en forecast/reporte_resultados.html"
-
-## Generar bitacora HTML del modelado Prophet v1-v6
-.PHONY: bitacora
-bitacora:
-	@echo ">>> Generando bitacora del modelado..."
-	$(PYTHON_INTERPRETER) -m scripts.genera_bitacora
-	@echo ">>> Bitacora disponible en forecast/bitacora_modelado.html"
-
-## Versionar forecast con DVC y subir a S3
+## Versionar forecast y subir a S3
 .PHONY: forecast-push
 forecast-push:
 	dvc add forecast/all_forecast.csv
 	dvc push
-	@echo ">>> Forecast versionado y subido a S3."
+	@echo ">>> Forecast versionado y subido."
 
-## Subir CSVs de datos y forecast directamente a S3 (acceso directo, sin DVC)
+## Sync CSVs directo a S3 (sin DVC, acceso rápido)
 .PHONY: s3-sync
 s3-sync:
-	@echo ">>> Subiendo CSVs a s3://epiforecast-mx-data/latest/ ..."
-	aws s3 cp data/processed/data_inegi_General.csv s3://epiforecast-mx-data/latest/data_inegi_General.csv
-	aws s3 cp forecast/all_forecast.csv s3://epiforecast-mx-data/latest/all_forecast.csv
+	aws s3 cp data/processed/data_inegi_General.csv s3://epiforecast-mx-data/latest/
+	aws s3 cp forecast/all_forecast.csv s3://epiforecast-mx-data/latest/
 	@echo ">>> CSVs disponibles en s3://epiforecast-mx-data/latest/"
 
 #################################################################################
-# Self Documenting Commands                                                     #
+# 📖 HELP                                                                      #
 #################################################################################
-
-.DEFAULT_GOAL := help
 
 define PRINT_HELP_PYSCRIPT
 import re, sys; \
 lines = '\n'.join([line for line in sys.stdin]); \
 matches = re.findall(r'\n## (.*)\n[\s\S]+?\n([a-zA-Z_-]+):', lines); \
-print('Available rules:\n'); \
+print('EpiForecast-MX — Available commands:\n'); \
 print('\n'.join(['{:25}{}'.format(*reversed(match)) for match in matches]))
 endef
 export PRINT_HELP_PYSCRIPT
 
 help:
-	@$(PYTHON_INTERPRETER) -c "${PRINT_HELP_PYSCRIPT}" < $(MAKEFILE_LIST)
-
-## Instalar dependencias del sistema (macOS)
-.PHONY: setup_mac
-setup_mac:
-	brew install ghostscript
-	@echo ">>> Dependencias del sistema instaladas."
-
-## Instalar dependencias del sistema (Linux)
-.PHONY: setup_linux
-setup_linux:
-	sudo apt-get install -y ghostscript
-	@echo ">>> Dependencias del sistema instaladas."
-
-## Setup completo para nuevos colaboradores (macOS)
-.PHONY: setup
-setup: setup_mac requirements data-pull
-	@echo ">>> Setup completo. Proyecto listo para trabajar."
-
-## Setup completo para nuevos colaboradores (Linux)
-.PHONY: setup-linux
-setup-linux: setup_linux requirements data-pull
-	@echo ">>> Setup completo. Proyecto listo para trabajar."
-
-## Sincronización rápida IMSS: activa entorno, pull código y datos
-## Uso: source scripts/imss.sh (no usar make imss directamente)
-.PHONY: imss
-imss:
-	@echo "══════════════════════════════════════════════════════════"
-	@echo ">>> Para sincronizar Y activar el entorno, ejecuta:"
-	@echo ""
-	@echo "    source scripts/imss.sh"
-	@echo ""
-	@echo ">>> (make no puede modificar tu shell actual)"
-	@echo "══════════════════════════════════════════════════════════"
+	@$(PYTHON) -c "${PRINT_HELP_PYSCRIPT}" < $(MAKEFILE_LIST)

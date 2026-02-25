@@ -114,28 +114,28 @@ jobs:
         run: |
           git config user.name "Javier Rebull"
           git config user.email "168046724+jrebull@users.noreply.github.com"
-          
+
           # Debug: mostrar estado de archivos
           echo "=== Git status ==="
           git status --short
-          
+
           # Agregar archivos explícitamente
           git add -f data/registry.json
-          
+
           # Agregar .dvc solo si existe
           if [ -f data/raw_PDFs.dvc ]; then
             echo "Adding raw_PDFs.dvc"
             git add data/raw_PDFs.dvc
           fi
-          
+
           # Agregar .gitignore de data si existe
           if [ -f data/.gitignore ]; then
             echo "Adding data/.gitignore"
             git add data/.gitignore
           fi
-          
+
           echo "=== Staged files ==="
           git diff --staged --name-only
-          
+
           git diff --staged --quiet || git commit -m "chore(data): actualizado $(date +%Y-%m-%d)"
           git push
