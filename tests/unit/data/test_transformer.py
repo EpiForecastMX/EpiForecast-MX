@@ -279,3 +279,154 @@ class TestGeneraTodos:
         )
         obj.genera_todos()
         assert obj.df_agrupado["incrementos_total"].iloc[0] == 25
+
+
+# ── _ajusta_incrementos ───────────────────────────────────────────────────────
+
+
+class TestAjustaIncrementos:
+    def _make_df_with_incrementos(self):
+        return pd.DataFrame(
+            {
+                "Padecimiento": ["D"] * 8,
+                "Entidad": ["Jalisco"] * 8,
+                "Anio": [2022] * 8,
+                "Semana": [1, 2, 3, 4, 5, 6, 7, 8],
+                "Acumulado_hombres": [10, 25, 40, 60, 80, 100, 115, 135],
+                "Acumulado_mujeres": [15, 35, 55, 80, 100, 125, 145, 170],
+                "Incremento_hombres": [10, 15, 15, 20, 20, 20, 15, 20],
+                "Incremento_mujeres": [15, 20, 20, 25, 20, 25, 20, 25],
+            }
+        )
+
+    def test_runs_without_error(self):
+        df = self._make_df_with_incrementos()
+        with patch.object(transformer_mod, "conf", MOCK_CONF):
+            obj = dataTransformation(df)
+        obj.df = df.copy()
+        obj._ajusta_incrementos()  # should not raise
+
+    def test_columns_remain_integer(self):
+        df = self._make_df_with_incrementos()
+        with patch.object(transformer_mod, "conf", MOCK_CONF):
+            obj = dataTransformation(df)
+        obj.df = df.copy()
+        obj._ajusta_incrementos()
+        assert obj.df["Incremento_hombres"].dtype in (int, "int64", "Int64", "int32")
+
+    def test_negative_value_corrected(self):
+        df = self._make_df_with_incrementos()
+        df.loc[3, "Incremento_hombres"] = -10  # force negative
+        with patch.object(transformer_mod, "conf", MOCK_CONF):
+            obj = dataTransformation(df)
+        obj.df = df.copy()
+        obj._ajusta_incrementos()
+        # After adjustment the negative should be corrected
+        assert obj.df["Incremento_hombres"].iloc[3] >= 0
+
+
+# ── run() — delegation via IQR / zscore config ───────────────────────────────
+
+_CONF_IQR_ENABLED = {
+    "opciones_FE": [
+        {"agrupa": {"valor": "sexo"}},
+        {
+            "tratamiento_outliers": {
+                "IQR": True,
+                "metodo": "iqr",
+                "columnas": ["Incremento_hombres"],
+                "agrupacion": ["Padecimiento"],
+                "umbral": 1.5,
+                "reemplazo": "mediana",
+            }
+        },
+    ],
+    "regiones": [
+        {"nombre": "Metropolitana alta", "estados": ["Jalisco"]},
+    ],
+    "data": {"data_prepare": "data/interim/data_clean.csv"},
+}
+
+_CONF_ZSCORE_ENABLED = {
+    "opciones_FE": [
+        {"agrupa": {"valor": "sexo"}},
+        {
+            "tratamiento_outliers": {
+                "IQR": True,
+                "metodo": "zscore",
+                "columnas": ["Incremento_hombres"],
+                "agrupacion": ["Padecimiento"],
+                "umbral": 3,
+                "reemplazo": "media",
+            }
+        },
+    ],
+    "regiones": [
+        {"nombre": "Metropolitana alta", "estados": ["Jalisco"]},
+    ],
+    "data": {"data_prepare": "data/interim/data_clean.csv"},
+}
+
+_CONF_INVALID_METHOD = {
+    "opciones_FE": [
+        {"agrupa": {"valor": "sexo"}},
+        {
+            "tratamiento_outliers": {
+                "IQR": True,
+                "metodo": "invalido",
+                "columnas": ["Incremento_hombres"],
+                "agrupacion": ["Padecimiento"],
+                "umbral": 1.5,
+                "reemplazo": "media",
+            }
+        },
+    ],
+    "regiones": [{"nombre": "Metropolitana alta", "estados": ["Jalisco"]}],
+    "data": {"data_prepare": "data/interim/data_clean.csv"},
+}
+
+
+class TestRunWithOutliers:
+    def test_run_iqr_enabled_returns_df(self):
+        with patch.object(transformer_mod, "conf", _CONF_IQR_ENABLED):
+            obj = dataTransformation(_sample_df())
+        result = obj.run()
+        assert isinstance(result, pd.DataFrame)
+        assert not result.empty
+
+    def test_run_zscore_enabled_returns_df(self):
+        with patch.object(transformer_mod, "conf", _CONF_ZSCORE_ENABLED):
+            obj = dataTransformation(_sample_df())
+        result = obj.run()
+        assert isinstance(result, pd.DataFrame)
+        assert not result.empty
+
+    def test_run_iqr_disabled_returns_df(self):
+        with patch.object(transformer_mod, "conf", MOCK_CONF):
+            obj = dataTransformation(_sample_df())
+        result = obj.run()
+        assert isinstance(result, pd.DataFrame)
+
+    def test_run_invalid_method_raises(self):
+        with patch.object(transformer_mod, "conf", _CONF_INVALID_METHOD):
+            obj = dataTransformation(_sample_df())
+        with pytest.raises(ValueError, match="Opcion no válida"):
+            obj.run()
+
+    def test_delegation_iqr_calls_ajusta_outliers(self):
+        from unittest.mock import MagicMock
+
+        with patch.object(transformer_mod, "conf", _CONF_IQR_ENABLED):
+            obj = dataTransformation(_sample_df())
+        obj._ajusta_outliers = MagicMock()
+        obj.run()
+        obj._ajusta_outliers.assert_called_once()
+
+    def test_delegation_zscore_calls_ajusta_outliers_zscore(self):
+        from unittest.mock import MagicMock
+
+        with patch.object(transformer_mod, "conf", _CONF_ZSCORE_ENABLED):
+            obj = dataTransformation(_sample_df())
+        obj._ajusta_outliers_zscore = MagicMock()
+        obj.run()
+        obj._ajusta_outliers_zscore.assert_called_once()
