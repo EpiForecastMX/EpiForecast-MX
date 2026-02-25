@@ -8,6 +8,39 @@ import pandas as pd
 from epiforecast.utils import paths as directory_manager
 from epiforecast.utils.config import conf, logger
 
+KEEP_COLS_TWB = [
+    "ds",
+    "entidad",
+    "padecimiento",
+    "meta_modo",
+    "Region",
+    "Region Socio-Urbana",
+    "Superficie_km2",
+    "densidad_poblacion",
+    "densidad_poblacional_percentil",
+    "extension_territorial_percentil",
+    "tamano_poblacional_predefinido",
+    "tamano_poblacional_grupo_percentil",
+    "ratio_h_m_cat",
+    "Poblacion Hombres",
+    "Poblacion Mujeres",
+    "incrementos_total",
+    "incrementos_hombres",
+    "incrementos_mujeres",
+    "yhat",
+    "yhat_lower",
+    "yhat_upper",
+    "trend",
+    "yearly_custom",
+    "mase_usado",
+    "mae_usado",
+    "mape_usado",
+    "rmse_usado",
+    "archivo_modelo_original",
+    "archivo_modelo_usado",
+    "confianza_original",
+]
+
 
 def load_inputs(in_real: Path, in_fcst: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
     if not in_real.exists():
@@ -84,6 +117,14 @@ def expand_real_by_modo(real: pd.DataFrame) -> pd.DataFrame:
 
     return pd.concat([g, h, m], ignore_index=True)
 
+def keep_only_columns(df: pd.DataFrame, keep_cols: list[str]) -> pd.DataFrame:
+    missing = [c for c in keep_cols if c not in df.columns]
+    extra = [c for c in df.columns if c not in keep_cols]
+    if missing:
+        raise ValueError(f"Faltan columnas requeridas por TWB: {missing}")
+    if extra:
+        logger.info("Se eliminarán columnas no usadas por TWB: {}", len(extra))
+    return df.loc[:, keep_cols]
 
 def build_and_save_tableau(real_long: pd.DataFrame, fcst: pd.DataFrame, out_file: Path) -> None:
     join_cols = ["ds", "padecimiento", "entidad", "meta_modo"]
@@ -137,6 +178,14 @@ def build_and_save_tableau(real_long: pd.DataFrame, fcst: pd.DataFrame, out_file
         raise ValueError(f"Dataset final con NaN en llaves críticas. Detalle -> {detail}")
 
     out = out.sort_values(["padecimiento", "entidad", "ds", "meta_modo"]).reset_index(drop=True)
+    
+    rows_full, cols_full = out.shape; cells_full = rows_full * cols_full
+    logger.info("Dataset completo -> filas: {} | columnas: {} | celdas totales: {}", rows_full, cols_full, cells_full)
+    out = keep_only_columns(out, KEEP_COLS_TWB)
+    rows_opt, cols_opt = out.shape; cells_opt = rows_opt * cols_opt
+    logger.info("Dataset optimizado -> filas: {} | columnas: {} | celdas totales: {}", rows_opt, cols_opt, cells_opt)
+    logger.info("Mejora vs dataset completo: {:.2f}%", 100 * (1 - (cells_opt / cells_full)))
+
     out.to_csv(out_file, index=False)
     logger.success(
         "tableau.csv generado: {} | filas: {} | cols: {}", out_file, len(out), out.shape[1]
