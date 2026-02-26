@@ -17,20 +17,22 @@ from epiforecast.utils.config import conf
 class ForecastModelLoader:
     """Load a serialized Prophet model and generate desnormalized predictions."""
 
-    def __init__(self, periodo: int, model_path: Path):
+    def __init__(self, periodo: int, model_path: Path, config: dict | None = None):
         """Inicializa el cargador de modelos con horizonte y ruta del pickle.
 
         Args:
             periodo:    Horizonte de predicción en semanas.
             model_path: Ruta al archivo .pkl del modelo serializado.
+            config:     Dict de configuración (default: conf global de YAML).
         """
+        _conf = config if config is not None else conf
         self.model_path = Path(model_path)
         self.model = None
         self.periodo = periodo
         self.poblacion: float | None = None
-        self.normalizar_tasa: bool = conf.get("normalizar_tasa", False)
-        self.tasa_por: int = conf.get("tasa_por", 100000)
-        self.log_transform: bool = conf.get("log_transform", False)
+        self.normalizar_tasa: bool = _conf.get("normalizar_tasa", False)
+        self.tasa_por: int = _conf.get("tasa_por", 100000)
+        self.log_transform: bool = _conf.get("log_transform", False)
 
     def load(self) -> None:
         """Load model from .pkl and read population from sidecar CSV."""

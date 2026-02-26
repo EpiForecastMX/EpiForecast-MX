@@ -11,19 +11,21 @@ from epiforecast.utils.config import conf
 class dataTransformation:
     """Pipeline de transformación de datos: ajuste de semanas, incrementos y outliers."""
 
-    def __init__(self, df: pd.DataFrame):
+    def __init__(self, df: pd.DataFrame, config: dict | None = None):
         """Inicializa el transformador con el DataFrame preprocesado.
 
         Args:
             df: DataFrame con columnas Anio, Semana, Entidad, Padecimiento,
                 Acumulado_hombres, Acumulado_mujeres.
+            config: Dict de configuración (default: conf global de YAML).
         """
+        _conf = config if config is not None else conf
         self.df = df.copy()
         self.df_agrupado: pd.DataFrame = pd.DataFrame()
-        self.opciones = conf.get("opciones_FE", [])
-        self.regiones = conf.get("regiones", [])
+        self.opciones = _conf.get("opciones_FE", [])
+        self.regiones = _conf.get("regiones", [])
 
-        self.raw_data_filter = conf.get("data", {}).get("data_prepare")
+        self.raw_data_filter = _conf.get("data", {}).get("data_prepare")
         self.agrupamiento = str(self.get_opcion("agrupa").get("valor", "")).strip().lower()
 
     def get_opcion(self, nombre: str):

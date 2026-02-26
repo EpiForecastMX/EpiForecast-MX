@@ -15,26 +15,28 @@ from epiforecast.utils.config import conf
 
 
 class GraficosHelper(ABC):
-    def __init__(self, carpeta_salida: str, numero_top_columnas: int) -> None:
+    def __init__(self, carpeta_salida: str, numero_top_columnas: int, config: dict | None = None) -> None:
         """Inicializa el helper de gráficos con directorio de salida y paleta IMSS.
 
         Args:
             carpeta_salida:       Directorio donde se guardan las figuras PNG.
             numero_top_columnas:  Máximo de categorías a mostrar en gráficos de barras.
+            config:               Dict de configuración (default: conf global de YAML).
         """
+        _conf = config if config is not None else conf
         self.carpeta_salida = carpeta_salida
         self.numero_top_columnas = numero_top_columnas
-        self.conf_paleta = conf["IMSS_COLORS"]
-        self.conf_paleta_secuencial = conf["PALETTE_MAIN"]
-        self.conf_paleta_sexo = conf["PALETTE_SEXO"]
-        self.conf_paleta_padecimiento = conf["PALETTE_PADECIMIENTO"]
-        self.conf_covid = conf["COVID"]
+        self.conf_paleta = _conf["IMSS_COLORS"]
+        self.conf_paleta_secuencial = _conf["PALETTE_MAIN"]
+        self.conf_paleta_sexo = _conf["PALETTE_SEXO"]
+        self.conf_paleta_padecimiento = _conf["PALETTE_PADECIMIENTO"]
+        self.conf_covid = _conf["COVID"]
 
         # Aplicar rcParams IMSS globalmente (excluye savefig.* — se manejan en _guardar_figura)
-        self._dpi: int = int(conf.get("matplotlib_rcParams", {}).get("savefig.dpi", 150))
+        self._dpi: int = int(_conf.get("matplotlib_rcParams", {}).get("savefig.dpi", 150))
         _rc = {
             k: v
-            for k, v in conf.get("matplotlib_rcParams", {}).items()
+            for k, v in _conf.get("matplotlib_rcParams", {}).items()
             if not k.startswith("savefig.")
         }
         mpl.rcParams.update(_rc)

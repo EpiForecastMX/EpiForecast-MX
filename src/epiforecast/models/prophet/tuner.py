@@ -36,15 +36,17 @@ class ProphetTuner:
     cross-validation, with Newton optimizer fallback protection.
     """
 
-    def __init__(self, forecaster: ProphetForecaster):
+    def __init__(self, forecaster: ProphetForecaster, config: dict | None = None):
         """Inicializa el tuner con un forecaster y carga el grid de hiperparámetros.
 
         Args:
             forecaster: Instancia de ProphetForecaster con datos y configuración.
+            config:     Dict de configuración (default: conf global de YAML).
         """
+        self._conf = config if config is not None else conf
         self.forecaster = forecaster
         self.param_grid = self._load_grid()
-        self.cv_timeout = conf.get("cv_timeout_por_combo", 0)
+        self.cv_timeout = self._conf.get("cv_timeout_por_combo", 0)
 
     def run(self) -> tuple[dict, dict]:
         """Execute HP search and return (best_params, best_metrics).
@@ -165,7 +167,7 @@ class ProphetTuner:
                 f"Valores válidos: {list(_GRID_KEY_MAP)}"
             )
         logger.debug("Grid de hiperparámetros: {} ({})", tipo, grid_key)
-        return conf["param_grid_prophet"][grid_key]  # type: ignore[no-any-return]
+        return self._conf["param_grid_prophet"][grid_key]  # type: ignore[no-any-return]
 
     def _build_sorted_combos(self) -> list[dict]:
         """Build all HP combinations, sorted by cp descending (Layer 1)."""

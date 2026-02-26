@@ -12,20 +12,22 @@ class CleanDataset:
     Expone `resumen()` con las métricas del proceso para construir SeccionNota en reportes.
     """
 
-    def __init__(self, df: pd.DataFrame) -> None:
+    def __init__(self, df: pd.DataFrame, config: dict | None = None) -> None:
         """Inicializa el limpiador con el DataFrame y reglas de configuración.
 
         Args:
             df: DataFrame de datos epidemiológicos crudos.
+            config: Dict de configuración (default: conf global de YAML).
         """
+        _conf = config if config is not None else conf
         self.df = df.copy()
         self._filas_inicial: int = len(df)
         self._cols_inicial: int = df.shape[1]
 
         # Reglas de limpieza definidas en limpieza.yaml
-        self.columnas_a_eliminar: list = conf["columnas_eliminar"]
-        self.valores_a_sustituir: list = conf["valores_sustituir"]
-        self.registros_a_eliminar: list = conf["registros_eliminar"]
+        self.columnas_a_eliminar: list = _conf["columnas_eliminar"]
+        self.valores_a_sustituir: list = _conf["valores_sustituir"]
+        self.registros_a_eliminar: list = _conf["registros_eliminar"]
 
         # Métricas acumuladas durante la limpieza
         self._columnas_eliminadas: list[str] = []

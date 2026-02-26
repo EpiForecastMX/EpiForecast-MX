@@ -33,6 +33,7 @@ class ProphetForecaster(ForecastModel):
         sexo: str | None = None,
         entidad: str | None = None,
         padecimiento: str | None = None,
+        config: dict | None = None,
     ):
         """Inicializa el forecaster Prophet con datos, filtros y configuración.
 
@@ -41,7 +42,9 @@ class ProphetForecaster(ForecastModel):
             sexo:          Columna de sexo a modelar (``general``, ``hombres``, ``mujeres``).
             entidad:       Nombre del estado, o None para nivel nacional.
             padecimiento:  Nombre del padecimiento (Depresión, Parkinson, Alzheimer).
+            config:        Dict de configuración (default: conf global de YAML).
         """
+        self._conf = config if config is not None else conf
         self.df = df.copy()
         self.df["Fecha"] = pd.to_datetime(self.df["Fecha"])
         self.sexo = sexo
@@ -49,20 +52,20 @@ class ProphetForecaster(ForecastModel):
         self.padecimiento = padecimiento
 
         # Config values
-        self.modelado_estados: bool = conf["padecimiento"]["modelado_estados"]
-        self.entrena: bool = conf["padecimiento"]["entrena_modelo"]
-        self.model_path: str = conf["paths"]["models"]
-        self.model_save: str = conf["data"]["model_train"]
+        self.modelado_estados: bool = self._conf["padecimiento"]["modelado_estados"]
+        self.entrena: bool = self._conf["padecimiento"]["entrena_modelo"]
+        self.model_path: str = self._conf["paths"]["models"]
+        self.model_save: str = self._conf["data"]["model_train"]
 
         # Rate normalization
-        self.normalizar_tasa: bool = conf.get("normalizar_tasa", False)
-        self.col_poblacion: str = conf.get("columna_poblacion", "Total")
-        self.tasa_por: int = conf.get("tasa_por", 100000)
-        self.log_transform: bool = conf.get("log_transform", False)
+        self.normalizar_tasa: bool = self._conf.get("normalizar_tasa", False)
+        self.col_poblacion: str = self._conf.get("columna_poblacion", "Total")
+        self.tasa_por: int = self._conf.get("tasa_por", 100000)
+        self.log_transform: bool = self._conf.get("log_transform", False)
         self.poblacion_valor: float | None = None
 
         # Prophet model params
-        self.param_model: dict = dict(conf["param_model"])
+        self.param_model: dict = dict(self._conf["param_model"])
         self._apply_regional_params()
 
         # Seasonality params
@@ -77,7 +80,7 @@ class ProphetForecaster(ForecastModel):
         self.test_data: pd.DataFrame = pd.DataFrame()
 
         # Train/test config
-        self.FECHA_CORTE_ENTRENAMIENTO: str = conf["FECHA_CORTE_ENTRENAMIENTO"]
+        self.FECHA_CORTE_ENTRENAMIENTO: str = self._conf["FECHA_CORTE_ENTRENAMIENTO"]
 
         # Internal model reference
         self._model: Prophet | None = None
@@ -263,14 +266,14 @@ class ProphetForecaster(ForecastModel):
 
     def _apply_regional_params(self) -> None:
         """Apply regional overrides for state-level models (shorter series)."""
-        n_cp_regional = conf.get("n_changepoints_regional", None)
+        n_cp_regional = self._conf.get("n_changepoints_regional", None)
         if self.modelado_estados and n_cp_regional is not None:
             self.param_model["n_changepoints"] = n_cp_regional
             logger.debug("n_changepoints_regional={} aplicado", n_cp_regional)
 
     def _build_seasonality_params(self) -> dict:
         """Build seasonality params, applying regional fourier_order if needed."""
-        raw = dict(conf["add_seasonality"])
+        raw = dict(self._conf["add_seasonality"])
         fourier_regional = raw.pop("fourier_order_regional", None)
         if self.modelado_estados and fourier_regional is not None:
             raw["fourier_order"] = fourier_regional
@@ -279,12 +282,12 @@ class ProphetForecaster(ForecastModel):
 
     def _build_holidays(self) -> pd.DataFrame:
         """Build holidays DataFrame from atypical periods + regime changes."""
-        periodos = conf["peridos_atipicos"]
+        periodos = self._conf["peridos_atipicos"]
         holidays = pd.DataFrame(periodos)
         holidays["ds"] = pd.to_datetime(holidays["ds"])
 
         # Add entity-specific regime changes
-        cambios = conf.get("cambios_regimen", [])
+        cambios = self._conf.get("cambios_regimen", [])
         if cambios and self.entidad:
             filtrados = [
                 c

@@ -10,15 +10,17 @@ from epiforecast.utils.config import conf, logger
 
 
 class GetInegi:
-    def __init__(self, forzar=False):
+    def __init__(self, forzar=False, config: dict | None = None):
         """Inicializa el cliente INEGI con URLs de API y catálogos de estados.
 
         Args:
             forzar: Si True, regenera el archivo aunque ya exista.
+            config: Dict de configuración (default: conf global de YAML).
         """
+        _conf = config if config is not None else conf
         self.sobreescribe = forzar
-        self.utils_path = conf["paths"]["utils"]
-        self.inegi_path = conf["data"]["inegi"]
+        self.utils_path = _conf["paths"]["utils"]
+        self.inegi_path = _conf["data"]["inegi"]
 
         self.BASE_PXWEB = "https://www.inegi.org.mx/app/tabulados/pxwebv2/api/v1/es"
         self.DB = "Poblacion"

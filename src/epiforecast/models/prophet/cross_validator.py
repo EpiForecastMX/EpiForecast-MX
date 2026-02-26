@@ -36,17 +36,19 @@ class ProphetCrossValidator:
     optional progressive weighting and Newton timeout protection.
     """
 
-    def __init__(self, forecaster: ProphetForecaster):
+    def __init__(self, forecaster: ProphetForecaster, config: dict | None = None):
         """Inicializa el cross-validator con configuración de folds y timeouts.
 
         Args:
             forecaster: Instancia de ProphetForecaster con datos de entrenamiento.
+            config:     Dict de configuración (default: conf global de YAML).
         """
+        _conf = config if config is not None else conf
         self.forecaster = forecaster
-        self.n_splits: int = conf["TS_SPLITS"]
-        self.test_size: int = conf["TEST_SIZE"]
-        self.cv_weights: list[float] | None = conf.get("cv_weights", None)
-        self.fold_timeout: int = conf.get("cv_timeout_por_fold", 0)
+        self.n_splits: int = _conf["TS_SPLITS"]
+        self.test_size: int = _conf["TEST_SIZE"]
+        self.cv_weights: list[float] | None = _conf.get("cv_weights", None)
+        self.fold_timeout: int = _conf.get("cv_timeout_por_fold", 0)
 
     def run(self) -> tuple[dict, dict]:
         """Run full CV by delegating to ProphetTuner.

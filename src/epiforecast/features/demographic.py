@@ -12,14 +12,16 @@ from epiforecast.utils.config import conf, logger
 class MapeaInegi:
     """Combina datos epidemiológicos con datos demográficos INEGI por entidad federativa."""
 
-    def __init__(self, df: pd.DataFrame):
+    def __init__(self, df: pd.DataFrame, config: dict | None = None):
         """Inicializa con el DataFrame epidemiológico y rutas de configuración.
 
         Args:
             df: DataFrame con columna ``Entidad`` para el merge con INEGI.
+            config: Dict de configuración (default: conf global de YAML).
         """
+        _conf = config if config is not None else conf
         self.df = df.copy()
-        conf_paths = conf["data"]
+        conf_paths = _conf["data"]
         self.inegi_path = conf_paths["inegi"]
         self.final_path = conf_paths["data_inegi"]
         self.xlsx_path = conf_paths["xlsx_inegi"]
