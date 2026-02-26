@@ -1,26 +1,46 @@
+# .pre-commit-config.yaml
+# EpiForecast-MX — Pre-commit hooks
+#
+# Install: make hooks  (o pre-commit install)
+# Run all:  pre-commit run --all-files
+
 repos:
+  # ── Ruff: lint + format ──────────────────────────────────────────
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.8.6
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
-        files: ^(src/epiforecast/|tests/)
       - id: ruff-format
-        files: ^(src/epiforecast/|tests/)
 
+  # ── Mypy: type checking ─────────────────────────────────────────
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.14.1
     hooks:
       - id: mypy
-        additional_dependencies: [pandas-stubs, types-PyYAML, types-requests]
-        args: [--ignore-missing-imports]
+        additional_dependencies:
+          - types-requests
+        args: [--config-file=pyproject.toml]
+        pass_filenames: false
         files: ^src/epiforecast/
 
+  # ── General hooks ────────────────────────────────────────────────
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
       - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
       - id: check-added-large-files
         args: [--maxkb=500]
+      - id: debug-statements
+
+  # ── Commit message format ────────────────────────────────────────
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v4.0.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args: [feat, fix, docs, refactor, test, ci, data, chore]
