@@ -26,6 +26,23 @@ def run_pipeline(
     log_fn=print,
     on_file=None,
 ):
+    """Ejecuta el pipeline de extracción de tablas desde boletines PDF de SINAVE.
+
+    Procesa todos los PDF del directorio de entrada, extrae tablas con Camelot,
+    y genera un CSV consolidado con los datos epidemiológicos.
+
+    Args:
+        input_dir:            Directorio con los PDFs de entrada.
+        output_dir:           Directorio donde se guardan los resultados.
+        keywords:             Lista de padecimientos a buscar en las tablas.
+        save_matched_pages:   Si True, guarda las páginas PDF que contienen las tablas.
+        save_individual_tables: Si True, guarda CSVs individuales por boletín.
+        log_fn:               Función de logging (default: print).
+        on_file:              Callback invocado con el nombre de cada archivo procesado.
+
+    Raises:
+        ValueError: Si el directorio de entrada/salida no existe o keywords está vacío.
+    """
     if not os.path.isdir(input_dir):
         raise ValueError("Input dir inválido.")
     if not os.path.isdir(output_dir):

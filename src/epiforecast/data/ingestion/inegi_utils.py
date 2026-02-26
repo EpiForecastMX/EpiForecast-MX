@@ -118,6 +118,15 @@ def validar_hombres_mujeres_vs_total(df_wide: pd.DataFrame) -> None:
 
 
 def get_superficie_estados(url, catalogo):
+    """Descarga la superficie territorial de cada estado desde la API de INEGI.
+
+    Args:
+        url:      URL del endpoint de la API de indicadores INEGI.
+        catalogo: Dict de mapeo ``{abreviatura: nombre_completo}`` de estados.
+
+    Returns:
+        DataFrame con columnas ``Entidad federativa`` y ``Superficie_km2``.
+    """
     data = requests.get(url, timeout=30).json()
     return pd.DataFrame(
         {

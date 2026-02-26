@@ -12,6 +12,7 @@ def register_model(name: str):
     """Decorator to register a model class in the factory."""
 
     def decorator(cls: type[ForecastModel]):
+        """Registra la clase en el registry global de modelos."""
         _MODEL_REGISTRY[name] = cls
         return cls
 

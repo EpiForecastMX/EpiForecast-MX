@@ -13,6 +13,16 @@ SEMANA_REGEX_2 = re.compile(
 
 
 def build_column_map(keywords: list[str], start_col: int = 1, step: int = 4):
+    """Construye mapa de columnas por padecimiento para las tablas de boletines SINAVE.
+
+    Args:
+        keywords:  Lista de nombres de padecimiento.
+        start_col: Índice de la primera columna de datos (default 1, tras Entidad).
+        step:      Número de columnas por padecimiento (total, hombres, mujeres, año anterior).
+
+    Returns:
+        Dict ``{padecimiento: {total: idx, hombres: idx, mujeres: idx, total_prev: idx}}``.
+    """
     col_map = {}
     for i, disease in enumerate(keywords):
         base = start_col + i * step
@@ -49,6 +59,13 @@ def find_page_and_week(pdf_path, KEYWORDS):
 
 
 def extract_matched_page(pdf_path: str, page_index_0: int, out_pdf_path: str):
+    """Extrae una página específica de un PDF y la guarda en un nuevo archivo.
+
+    Args:
+        pdf_path:      Ruta del PDF fuente.
+        page_index_0:  Índice de la página (base 0).
+        out_pdf_path:  Ruta del PDF de salida.
+    """
     reader = PdfReader(pdf_path)
     writer = PdfWriter()
     writer.add_page(reader.pages[page_index_0])
@@ -57,6 +74,16 @@ def extract_matched_page(pdf_path: str, page_index_0: int, out_pdf_path: str):
 
 
 def eliminar_columnas_vacias(df, start_state="Aguascalientes", end_state="Zacatecas"):
+    """Elimina columnas vacías dentro del rango de filas de entidades federativas.
+
+    Args:
+        df:          DataFrame con columna 0 conteniendo nombres de estados.
+        start_state: Nombre del primer estado del rango (default Aguascalientes).
+        end_state:   Nombre del último estado del rango (default Zacatecas).
+
+    Returns:
+        DataFrame sin columnas que estén 100%% vacías en el rango indicado.
+    """
     """
     Elimina columnas que estén completamente vacías ("")  dentro del rango
     de filas entre start_state y end_state (incluyéndolos).
@@ -157,6 +184,17 @@ def clean_df(df, min_numeric_cells=2):
 
 
 def normalize_number(x):
+    """Normaliza un valor extraído de tabla PDF a entero o ``pd.NA``.
+
+    Interpreta guiones y cadenas vacías como 0, elimina separadores
+    de miles (espacios y comas), y retorna ``pd.NA`` para texto no numérico.
+
+    Args:
+        x: Valor crudo de celda (str, int, float o NA).
+
+    Returns:
+        Entero normalizado, 0 para valores vacíos, o ``pd.NA`` para texto.
+    """
     if pd.isna(x):
         return pd.NA
 
@@ -176,6 +214,17 @@ def normalize_number(x):
 
 
 def reshape(df: pd.DataFrame, year: int, week: int, col_map: dict) -> pd.DataFrame:
+    """Transforma tabla ancha extraída del boletín a formato largo (tidy).
+
+    Args:
+        df:      DataFrame limpio con una fila por entidad.
+        year:    Año epidemiológico del boletín.
+        week:    Semana epidemiológica del boletín.
+        col_map: Mapa de columnas por padecimiento (de ``build_column_map``).
+
+    Returns:
+        DataFrame en formato largo con columnas: Anio, Semana, Entidad, Padecimiento, etc.
+    """
     records = []
     for _, row in df.iterrows():
         estado = row[0]
@@ -218,6 +267,12 @@ def reshape_wide(df: pd.DataFrame, year: int, week: int, col_map: dict) -> pd.Da
 
 
 def print_run_summary(run_log, log_fn=print):
+    """Imprime tabla resumen del pipeline de extracción con estadísticas de éxito.
+
+    Args:
+        run_log: Lista de dicts con claves file, year, week, page, rows.
+        log_fn:  Función de logging (default: print).
+    """
     headers = ["Nombre del archivo", "Anio", "Semana", "Pagina match", "Filas"]
     rows = []
 
@@ -238,6 +293,7 @@ def print_run_summary(run_log, log_fn=print):
             widths[i] = max(widths[i], len(val))
 
     def fmt(row):
+        """Formatea una fila con anchos de columna alineados."""
         return " | ".join(val.ljust(widths[i]) for i, val in enumerate(row))
 
     log_fn(fmt(headers))

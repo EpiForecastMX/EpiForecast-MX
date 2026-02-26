@@ -11,6 +11,11 @@ from epiforecast.utils.config import conf, logger
 
 class GetInegi:
     def __init__(self, forzar=False):
+        """Inicializa el cliente INEGI con URLs de API y catálogos de estados.
+
+        Args:
+            forzar: Si True, regenera el archivo aunque ya exista.
+        """
         self.sobreescribe = forzar
         self.utils_path = conf["paths"]["utils"]
         self.inegi_path = conf["data"]["inegi"]
@@ -89,6 +94,8 @@ class GetInegi:
         return df
 
     def ajusta_dataframe(self) -> None:
+        """Pivotea y filtra el DataFrame: elimina grupos de edad, unstacks por sexo."""
+
         self.df["valor"] = pd.to_numeric(self.df["valor"], errors="coerce")
 
         if "Grupo quinquenal de edad" not in self.df.columns:
@@ -111,6 +118,8 @@ class GetInegi:
         logger.debug("Validación OK: Hombres + Mujeres = Total en todos los registros.")
 
     def filtra_periodo_max(self) -> None:
+        """Filtra el DataFrame para conservar solo el periodo censal más reciente."""
+
         periodo_max = self.df["Periodo"].max()
         self.df = (
             self.df[self.df["Periodo"] == periodo_max]
@@ -148,6 +157,8 @@ class GetInegi:
         logger.info("Superficie estatal obtenida | entidades={}", len(self.df_superficie))
 
     def clasificaciones(self) -> None:
+        """Agrega clasificaciones demográficas al DataFrame: región, ratio H/M, tamaño, densidad."""
+
         self.df["region_salud_mental"] = self.df["Entidad federativa"].map(
             self.REGION_SALUD_MENTAL
         )
@@ -190,6 +201,8 @@ class GetInegi:
         )
 
     def run(self) -> None:
+        """Pipeline completo INEGI: descarga, transforma, valida, clasifica y guarda CSV."""
+
         if directory_manager.existe_archivo(self.inegi_path) and not self.sobreescribe:
             logger.info("Archivo INEGI ya existe, omitiendo descarga: {}", self.inegi_path)
             return

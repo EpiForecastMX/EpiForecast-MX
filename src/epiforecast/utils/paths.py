@@ -8,6 +8,14 @@ from loguru import logger
 
 
 def asegurar_ruta(path_str: str | Path) -> Path:
+    """Crea el directorio si no existe y devuelve el Path resuelto.
+
+    Args:
+        path_str: Ruta del directorio a asegurar.
+
+    Returns:
+        Path del directorio (existente o recién creado).
+    """
     path = Path(path_str)
 
     if path.exists():
@@ -21,6 +29,14 @@ def asegurar_ruta(path_str: str | Path) -> Path:
 
 
 def existe_archivo(path_str: str | Path) -> bool:
+    """Verifica si un archivo existe en la ruta indicada.
+
+    Args:
+        path_str: Ruta del archivo a verificar.
+
+    Returns:
+        True si el archivo existe, False en caso contrario.
+    """
     path = Path(path_str).resolve()
 
     if path.is_file():
@@ -32,6 +48,14 @@ def existe_archivo(path_str: str | Path) -> bool:
 
 
 def advertir_sobrescritura(path_str: str | Path) -> bool:
+    """Registra una advertencia si el archivo ya existe y será sobrescrito.
+
+    Args:
+        path_str: Ruta del archivo a verificar.
+
+    Returns:
+        True si el archivo existe (será sobrescrito), False si no.
+    """
     path = Path(path_str).resolve()
     if path.is_file():
         logger.warning(f"Archivo encontrado, será sobrescrito: {path}")

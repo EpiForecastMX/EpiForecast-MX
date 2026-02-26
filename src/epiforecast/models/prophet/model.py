@@ -34,6 +34,14 @@ class ProphetForecaster(ForecastModel):
         entidad: str | None = None,
         padecimiento: str | None = None,
     ):
+        """Inicializa el forecaster Prophet con datos, filtros y configuración.
+
+        Args:
+            df:            DataFrame con datos epidemiológicos preprocesados.
+            sexo:          Columna de sexo a modelar (``general``, ``hombres``, ``mujeres``).
+            entidad:       Nombre del estado, o None para nivel nacional.
+            padecimiento:  Nombre del padecimiento (Depresión, Parkinson, Alzheimer).
+        """
         self.df = df.copy()
         self.df["Fecha"] = pd.to_datetime(self.df["Fecha"])
         self.sexo = sexo

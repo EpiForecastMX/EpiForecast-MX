@@ -9,7 +9,15 @@ from epiforecast.utils.config import conf
 
 
 class dataTransformation:
+    """Pipeline de transformación de datos: ajuste de semanas, incrementos y outliers."""
+
     def __init__(self, df: pd.DataFrame):
+        """Inicializa el transformador con el DataFrame preprocesado.
+
+        Args:
+            df: DataFrame con columnas Anio, Semana, Entidad, Padecimiento,
+                Acumulado_hombres, Acumulado_mujeres.
+        """
         self.df = df.copy()
         self.df_agrupado: pd.DataFrame = pd.DataFrame()
         self.opciones = conf.get("opciones_FE", [])
@@ -19,6 +27,14 @@ class dataTransformation:
         self.agrupamiento = str(self.get_opcion("agrupa").get("valor", "")).strip().lower()
 
     def get_opcion(self, nombre: str):
+        """Busca y retorna una opción de feature engineering por nombre.
+
+        Args:
+            nombre: Clave de la opción a buscar en ``opciones_FE``.
+
+        Returns:
+            Dict de la opción encontrada, o None si no existe.
+        """
         for item in self.opciones:
             if nombre in item:
                 return item[nombre]
@@ -201,6 +217,8 @@ class dataTransformation:
         self.df = ajusta_outliers_zscore(self.df, columnas, agrupacion, umbral, reemplazo)
 
     def agrupar(self):
+        """Agrupa incrementos por Padecimiento, Semana, Fecha y Entidad, y asigna regiones."""
+
         logger.info("Aplicando agrupamiento")
 
         self.df_agrupado = (
@@ -221,11 +239,18 @@ class dataTransformation:
         self.df_agrupado["Region"] = self.df_agrupado["Entidad"].map(mapa_regiones)
 
     def genera_todos(self):
+        """Calcula el total de incrementos (hombres + mujeres) como nueva columna."""
+
         self.df_agrupado["incrementos_total"] = (
             self.df_agrupado["incrementos_hombres"] + self.df_agrupado["incrementos_mujeres"]
         )
 
     def run(self) -> pd.DataFrame:
+        """Ejecuta el pipeline completo: ajuste de semanas, incrementos, outliers y agrupación.
+
+        Returns:
+            DataFrame agrupado con incrementos por sexo, totales y regiones.
+        """
         outlier_cfg = self.get_opcion("tratamiento_outliers")
 
         self._ajusta_semanas()

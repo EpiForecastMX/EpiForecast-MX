@@ -67,6 +67,8 @@ def _hacer_cabecera_pie(titulo_reporte: str):
     """Retorna el callback onPage con el título del reporte inyectado como closure."""
 
     def cabecera_pie(canv: canvas.Canvas, doc: SimpleDocTemplate) -> None:
+        """Callback onPage: dibuja marco IMSS, encabezado y número de página."""
+
         width, height = A4
         margen = 0.5 * cm
         canv.saveState()

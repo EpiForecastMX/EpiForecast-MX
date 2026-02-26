@@ -38,6 +38,13 @@ class PDFReportGenerator:
         archivo_salida: str | os.PathLike,
         ancho_figura_cm: float = 16.0,
     ) -> None:
+        """Inicializa el generador de reportes PDF con datos y ruta de salida.
+
+        Args:
+            datos_reporte:   Objeto ReportData con resúmenes, figuras y notas.
+            archivo_salida:  Ruta del archivo PDF a generar.
+            ancho_figura_cm: Ancho máximo de figuras en centímetros.
+        """
         self.datos = datos_reporte
         self.archivo_salida = archivo_salida
         self.ancho_figura_cm = ancho_figura_cm
@@ -222,6 +229,8 @@ class PDFReportGenerator:
     # ---------- Punto de entrada ---------- #
 
     def build(self) -> None:
+        """Construye y guarda el reporte PDF con portada, tablas, figuras y notas."""
+
         """Construye y guarda el reporte PDF."""
         doc = SimpleDocTemplate(
             self.archivo_salida,

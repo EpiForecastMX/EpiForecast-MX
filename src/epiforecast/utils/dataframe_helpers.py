@@ -11,6 +11,16 @@ import pandas as pd
 class OperacionesDatos:
     @staticmethod
     def _validar_columna(df: pd.DataFrame, col: str) -> None:
+        """Valida que la columna exista en el DataFrame y sea numérica.
+
+        Args:
+            df:  DataFrame a validar.
+            col: Nombre de la columna.
+
+        Raises:
+            KeyError:  Si la columna no existe.
+            TypeError: Si la columna no es numérica.
+        """
         if col not in df.columns:
             raise KeyError(f"La columna '{col}' no existe en el DataFrame.")
         if not pd.api.types.is_numeric_dtype(df[col]):
@@ -81,6 +91,21 @@ class OperacionesDatos:
     def zscore(
         df: pd.DataFrame, columna: str, agrupacion: list, umbral: float = 3, reemplazo="media"
     ):
+        """Detecta y reemplaza outliers por Z-score agrupado.
+
+        Args:
+            df:         DataFrame de entrada.
+            columna:    Nombre de la columna numérica a evaluar.
+            agrupacion: Lista de columnas de agrupación para calcular media/std.
+            umbral:     Número de desviaciones estándar para clasificar outlier.
+            reemplazo:  Estrategia: ``'media'``, ``'mediana'`` o ``'cercano'``.
+
+        Returns:
+            DataFrame con columnas adicionales ``Zscore_*`` y ``Outlier_*``, y valores corregidos.
+
+        Raises:
+            ValueError: Si ``reemplazo`` no es un valor válido.
+        """
         df = df.copy()
 
         # Calcular medias y desviaciones por grupo

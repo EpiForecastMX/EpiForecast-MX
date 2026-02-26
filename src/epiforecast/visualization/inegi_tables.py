@@ -45,6 +45,11 @@ def _print_series(s: pd.Series, title: str, nd: int = 2):
 
 
 def eda_inegi(df: pd.DataFrame):
+    """Ejecuta EDA interactivo de datos INEGI con tablas Rich y gráficos matplotlib.
+
+    Args:
+        df: DataFrame INEGI con datos demográficos y clasificaciones por estado.
+    """
     nan = df.isna().sum().sort_values(ascending=False)
     nan = nan[nan > 0]
     if len(nan) == 0:

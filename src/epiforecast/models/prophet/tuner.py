@@ -37,6 +37,11 @@ class ProphetTuner:
     """
 
     def __init__(self, forecaster: ProphetForecaster):
+        """Inicializa el tuner con un forecaster y carga el grid de hiperparámetros.
+
+        Args:
+            forecaster: Instancia de ProphetForecaster con datos y configuración.
+        """
         self.forecaster = forecaster
         self.param_grid = self._load_grid()
         self.cv_timeout = conf.get("cv_timeout_por_combo", 0)

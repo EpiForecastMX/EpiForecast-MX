@@ -6,7 +6,15 @@ import pandas as pd
 
 
 class FiltraPadecimiento:
+    """Filtra un DataFrame epidemiológico por tipo de padecimiento configurado."""
+
     def __init__(self, df: pd.DataFrame, padecimiento: dict):
+        """Inicializa el filtro con el DataFrame y configuración de padecimiento.
+
+        Args:
+            df:            DataFrame de datos epidemiológicos crudos.
+            padecimiento:  Dict con claves ``columna`` (nombre de columna) y ``tipo`` (valor a filtrar).
+        """
         self.df_raw = df.copy()
         self.columna = padecimiento.get("columna")
         self.padecimiento = padecimiento.get("tipo")
@@ -46,6 +54,8 @@ class FiltraPadecimiento:
         return True
 
     def run(self) -> pd.DataFrame | None:
+        """Ejecuta el filtrado y retorna el DataFrame filtrado, o None si falla."""
+
         if not self._filtrar_padecimiento():
             return None
 

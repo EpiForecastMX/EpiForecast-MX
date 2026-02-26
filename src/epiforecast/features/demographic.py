@@ -10,7 +10,14 @@ from epiforecast.utils.config import conf, logger
 
 
 class MapeaInegi:
+    """Combina datos epidemiológicos con datos demográficos INEGI por entidad federativa."""
+
     def __init__(self, df: pd.DataFrame):
+        """Inicializa con el DataFrame epidemiológico y rutas de configuración.
+
+        Args:
+            df: DataFrame con columna ``Entidad`` para el merge con INEGI.
+        """
         self.df = df.copy()
         conf_paths = conf["data"]
         self.inegi_path = conf_paths["inegi"]
@@ -20,6 +27,8 @@ class MapeaInegi:
         self.df_merge = pd.DataFrame()
 
     def renombra(self):
+        """Renombra entidades INEGI para alinear con nomenclatura del proyecto."""
+
         map_entidades = {
             "Coahuila de Zaragoza": "Coahuila",
             "Michoacán de Ocampo": "Michoacán",
@@ -30,6 +39,8 @@ class MapeaInegi:
         self.inegi["Entidad"] = self.inegi["Entidad"].replace(map_entidades)
 
     def combina(self):
+        """Ejecuta left join del DataFrame epidemiológico con datos INEGI por Entidad."""
+
         cols_extra = [c for c in self.inegi.columns if c != "Entidad"]
 
         self.df_merge = self.df.merge(
@@ -39,6 +50,8 @@ class MapeaInegi:
         )
 
     def run(self):
+        """Pipeline completo: carga INEGI, renombra, combina y guarda CSV + Excel."""
+
         if not directory_manager.existe_archivo(self.inegi_path):
             logger.error("No se pudo localizar el archivo de INEGI: {}", self.inegi_path)
             sys.exit(1)

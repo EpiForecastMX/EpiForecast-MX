@@ -55,6 +55,13 @@ class EDAReportBuilder:
     """Genera insumos de un reporte EDA a partir de un DataFrame."""
 
     def __init__(self, df: pd.DataFrame, fuente_datos: str, opciones: dict):
+        """Inicializa el constructor de reportes EDA.
+
+        Args:
+            df:           DataFrame de datos epidemiológicos a analizar.
+            fuente_datos: Descripción de la fuente de datos (para metadatos del reporte).
+            opciones:     Dict con configuración del reporte (titulo, max_cols, violin, etc.).
+        """
         self.df = df.copy()
         self.df_raw = df.copy()
         self.opciones_reporte = opciones
@@ -78,6 +85,7 @@ class EDAReportBuilder:
 
     # ------------------ Resúmenes ------------------
     def resumen_general(self) -> dict[str, str]:
+        """Genera diccionario con metadatos generales del DataFrame: filas, columnas, nulos."""
         logger.debug("Generando resumen general de los datos...")
 
         fecha_actual = datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -111,6 +119,8 @@ class EDAReportBuilder:
 
     # ------------------ Resumen de valores únicos ------------------
     def resumen_unicos(self) -> pd.DataFrame:
+        """Genera DataFrame con conteo de valores únicos y tipo por columna."""
+
         logger.debug("Generando resumen de valores únicos por columna...")
 
         df_unicos = (
@@ -128,6 +138,8 @@ class EDAReportBuilder:
 
     # ------------------ Resumen de valores nulos ------------------
     def resumen_nulos(self) -> pd.DataFrame | None:
+        """Genera DataFrame con conteo de valores nulos por columna, o None si no hay nulos."""
+
         logger.debug("Generando resumen de valores nulos por columna...")
 
         df_nulos = (
@@ -146,6 +158,7 @@ class EDAReportBuilder:
 
     # ------------------ Estadísticas de valores numéricos ------------------
     def estadisticas_numericas(self) -> pd.DataFrame | None:
+        """Genera tabla describe() transpuesta de columnas numéricas, o None si no hay."""
         logger.debug("Generando estadísticas de columnas numéricas...")
 
         # Seleccionar solo columnas numéricas
@@ -179,6 +192,7 @@ class EDAReportBuilder:
 
     # ------------------ Estadísticas de valores categoricos ------------------
     def estadisticas_categoricas(self) -> pd.DataFrame | None:
+        """Genera tabla con conteo, moda y frecuencia de columnas categóricas, o None."""
         logger.debug("Generando estadísticas de columnas categóricas...")
 
         # Seleccionar solo columnas categóricas de tipo object o category
@@ -209,6 +223,8 @@ class EDAReportBuilder:
         return pd.DataFrame(resumen).set_index("columna")
 
     def tablas_categoricas(self) -> dict[str, pd.DataFrame]:
+        """Genera tablas de frecuencia para cada columna categórica configurada."""
+
         logger.debug("Generando tablas de frecuencias para columnas categóricas...")
         cat = self.opciones_reporte["COLS_CATEGORICAS"]
         resultados = {}
@@ -231,21 +247,30 @@ class EDAReportBuilder:
 
     # ------------------ Gráficos ------------------
     def plot_histograma(self, col: str, tono: int) -> str | None:
+        """Genera histograma de densidad con KDE para una columna numérica."""
+
         return self.graficos_helper.plot_histograma(self.df[col], col, tono)
 
     def plot_categorica_barras(self, col: str) -> str | None:
+        """Genera gráfico de barras horizontales con porcentajes para una columna categórica."""
+
         return self.graficos_helper.plot_categorica_barras(self.df[col], col)
 
     def plot_violin(self, sexo, padecimiento) -> str | None:
+        """Genera gráfico de violín por año para una columna de sexo."""
+
         return self.graficos_helper.plot_violin(self.df, sexo, padecimiento)
 
     def plot_correlacion(self) -> str | None:
+        """Genera heatmap de correlación para columnas numéricas configuradas."""
+
         return self.graficos_helper.plot_correlacion(
             self.df[self.opciones_reporte["COLS_NUMERICAS"]]
         )
 
     # ------------------ Ejecución ------------------
     def run(self) -> ReportData:
+        """Ejecuta el pipeline completo de EDA y retorna un objeto ReportData."""
         figuras = []
 
         for tono, col in enumerate(self.opciones_reporte["COLS_NUMERICAS"]):

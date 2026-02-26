@@ -5,10 +5,17 @@ import pandas as pd
 
 
 def barras_inegi(df: pd.DataFrame):
+    """Genera panel de gráficos de barras demográficos INEGI por entidad federativa.
+
+    Args:
+        df: DataFrame INEGI con columnas de población, superficie, densidad y clasificaciones.
+    """
     dfp = df.sort_values("Entidad federativa").reset_index(drop=True)
 
     # helper colores
     def colors_for(series_cat):
+        """Asigna colores tab10 a una serie categórica y retorna handles para leyenda."""
+
         cats = pd.Series(series_cat).astype("category")
         codes = cats.cat.codes
         cmap = plt.get_cmap("tab10")
@@ -85,6 +92,8 @@ def barras_inegi(df: pd.DataFrame):
         fig, axes = plt.subplots(3, 2, figsize=(20, 14))
 
     def plot_bar(ax, dfx, ycol, catcol, title):
+        """Dibuja barras verticales coloreadas por categoría con leyenda."""
+
         x = list(range(len(dfx)))
         estados = dfx["Entidad federativa"]
         c, h, l = colors_for(dfx[catcol])
@@ -142,6 +151,11 @@ def barras_inegi(df: pd.DataFrame):
 
 
 def boxplots_inegi(df):
+    """Genera panel de boxplots demográficos INEGI por categoría de clasificación.
+
+    Args:
+        df: DataFrame INEGI con columnas de población, superficie, densidad y clasificaciones.
+    """
     import matplotlib.pyplot as plt
     import pandas as pd
 

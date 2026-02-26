@@ -13,6 +13,11 @@ class CleanDataset:
     """
 
     def __init__(self, df: pd.DataFrame) -> None:
+        """Inicializa el limpiador con el DataFrame y reglas de configuración.
+
+        Args:
+            df: DataFrame de datos epidemiológicos crudos.
+        """
         self.df = df.copy()
         self._filas_inicial: int = len(df)
         self._cols_inicial: int = df.shape[1]
@@ -127,6 +132,7 @@ class CleanDataset:
     # ---------- Punto de entrada ---------- #
 
     def run(self) -> pd.DataFrame:
+        """Ejecuta el pipeline de limpieza: normaliza, elimina, sustituye y retorna DataFrame limpio."""
         logger.info(
             "Iniciando limpieza | filas: {:,} | columnas: {}",
             self._filas_inicial,

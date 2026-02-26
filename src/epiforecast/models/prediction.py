@@ -18,6 +18,12 @@ class ForecastModelLoader:
     """Load a serialized Prophet model and generate desnormalized predictions."""
 
     def __init__(self, periodo: int, model_path: Path):
+        """Inicializa el cargador de modelos con horizonte y ruta del pickle.
+
+        Args:
+            periodo:    Horizonte de predicción en semanas.
+            model_path: Ruta al archivo .pkl del modelo serializado.
+        """
         self.model_path = Path(model_path)
         self.model = None
         self.periodo = periodo

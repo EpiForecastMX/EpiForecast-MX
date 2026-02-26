@@ -36,6 +36,11 @@ class ProphetCrossValidator:
     """
 
     def __init__(self, forecaster: ProphetForecaster):
+        """Inicializa el cross-validator con configuración de folds y timeouts.
+
+        Args:
+            forecaster: Instancia de ProphetForecaster con datos de entrenamiento.
+        """
         self.forecaster = forecaster
         self.n_splits: int = conf["TS_SPLITS"]
         self.test_size: int = conf["TEST_SIZE"]
