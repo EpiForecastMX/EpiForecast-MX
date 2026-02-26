@@ -77,8 +77,12 @@ def generar_graficos_pronostico() -> None:
         nombre_archivo = f"{padecimiento}_{nivel_dir}_{modo}"
 
         ruta = graficos.graficar_pronostico(
-            forecast=forecast, serie=serie, titulo=titulo,
-            padecimiento=padecimiento, nombre_archivo=nombre_archivo, metricas=metricas,
+            forecast=forecast,
+            serie=serie,
+            titulo=titulo,
+            padecimiento=padecimiento,
+            nombre_archivo=nombre_archivo,
+            metricas=metricas,
         )
         logger.info("[{}/{}] Guardado: {}", i + 1, total, Path(ruta).name)  # type: ignore[operator]
 
@@ -93,15 +97,21 @@ def _load_hp_data(models_root: Path) -> pd.DataFrame:
             df_hp = pd.read_csv(
                 csv_hp,
                 usecols=[
-                    "archivo_modelo", "seasonality_mode",
-                    "changepoint_prior_scale", "seasonality_prior_scale",
+                    "archivo_modelo",
+                    "seasonality_mode",
+                    "changepoint_prior_scale",
+                    "seasonality_prior_scale",
                 ],
             )
             hp_frames.append(df_hp)
         except (KeyError, ValueError, FileNotFoundError):
             pass
     if hp_frames:
-        return pd.concat(hp_frames, ignore_index=True).drop_duplicates("archivo_modelo").set_index("archivo_modelo")
+        return (
+            pd.concat(hp_frames, ignore_index=True)
+            .drop_duplicates("archivo_modelo")
+            .set_index("archivo_modelo")
+        )
     return pd.DataFrame()
 
 
@@ -111,7 +121,7 @@ def _build_csv_path(padecimiento: str, entidad: str, modo: str, models_root: Pat
     if not entidad or entidad.lower() == "nacional":
         csv_name = f"Prophet_{pad_norm}_{modo}.csv"
     elif entidad.startswith("Region "):
-        region_norm = _normalizar_nombre(entidad[len("Region "):])
+        region_norm = _normalizar_nombre(entidad[len("Region ") :])
         csv_name = f"Prophet_{pad_norm}_region_{region_norm}_{modo}.csv"
     else:
         entidad_norm = _normalizar_nombre(entidad)
@@ -120,7 +130,10 @@ def _build_csv_path(padecimiento: str, entidad: str, modo: str, models_root: Pat
 
 
 def _load_training_series(
-    padecimiento: str, entidad: str, modo: str, models_root: Path,
+    padecimiento: str,
+    entidad: str,
+    modo: str,
+    models_root: Path,
 ) -> pd.DataFrame | None:
     """Carga y prepara la serie de entrenamiento desde CSV."""
     csv_path = _build_csv_path(padecimiento, entidad, modo, models_root)

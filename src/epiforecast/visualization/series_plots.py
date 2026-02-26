@@ -60,10 +60,22 @@ def serie_tiempo(
 def _plot_by_sex(ax: plt.Axes, df: pd.DataFrame, paleta_sexo: dict) -> str:
     """Dibuja líneas de serie de tiempo separadas por sexo."""
     st = df.groupby("Fecha")[["incrementos_hombres", "incrementos_mujeres"]].sum()
-    ax.plot(st.index, st["incrementos_hombres"], linewidth=1.2, alpha=0.8,
-            color=paleta_sexo["Hombres"], label="Hombres")
-    ax.plot(st.index, st["incrementos_mujeres"], linewidth=1.2, alpha=0.8,
-            color=paleta_sexo["Mujeres"], label="Mujeres")
+    ax.plot(
+        st.index,
+        st["incrementos_hombres"],
+        linewidth=1.2,
+        alpha=0.8,
+        color=paleta_sexo["Hombres"],
+        label="Hombres",
+    )
+    ax.plot(
+        st.index,
+        st["incrementos_mujeres"],
+        linewidth=1.2,
+        alpha=0.8,
+        color=paleta_sexo["Mujeres"],
+        label="Mujeres",
+    )
     return "por sexo"
 
 
@@ -77,15 +89,22 @@ def _plot_by_region(ax: plt.Axes, df: pd.DataFrame) -> str:
         .reset_index()
     )
     for region, datos in st.groupby(col_region):
-        ax.plot(datos["Fecha"], datos["incrementos_totales"], linewidth=1.2, alpha=0.8, label=region)
+        ax.plot(
+            datos["Fecha"], datos["incrementos_totales"], linewidth=1.2, alpha=0.8, label=region
+        )
     return f"por {col_region}"
 
 
 def _add_covid_band(ax: plt.Axes) -> None:
     """Agrega franja semitransparente del periodo COVID-19."""
     with contextlib.suppress(ValueError, TypeError):
-        ax.axvspan(pd.Timestamp(COVID_START), pd.Timestamp(COVID_END),
-                    alpha=0.1, color="red", label="Covid")  # type: ignore[arg-type]
+        ax.axvspan(
+            pd.Timestamp(COVID_START),
+            pd.Timestamp(COVID_END),
+            alpha=0.1,
+            color="red",
+            label="Covid",
+        )  # type: ignore[arg-type]
 
 
 def _apply_imss_style(ax: plt.Axes, c_gray: str) -> None:

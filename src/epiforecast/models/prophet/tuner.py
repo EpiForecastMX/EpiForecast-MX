@@ -67,12 +67,21 @@ class ProphetTuner:
         newton_cp_threshold: float | None = None
 
         pbar = tqdm(
-            enumerate(combos), total=len(combos),
-            desc="CV", unit="combo", leave=False, dynamic_ncols=True, position=1,
+            enumerate(combos),
+            total=len(combos),
+            desc="CV",
+            unit="combo",
+            leave=False,
+            dynamic_ncols=True,
+            position=1,
         )
         for idx, params in pbar:
             result = self._evaluate_single_combo(
-                idx, params, len(combos), newton_cp_threshold, pbar,
+                idx,
+                params,
+                len(combos),
+                newton_cp_threshold,
+                pbar,
             )
 
             if result is None:
@@ -110,7 +119,9 @@ class ProphetTuner:
         if newton_cp_threshold is not None and cp < newton_cp_threshold:
             logger.debug(
                 "Skip combo (Newton-prone): cp={} < umbral {} | {}",
-                cp, newton_cp_threshold, resumen,
+                cp,
+                newton_cp_threshold,
+                resumen,
             )
             return None
 
@@ -124,7 +135,10 @@ class ProphetTuner:
 
         if self.cv_timeout and elapsed > self.cv_timeout:
             logger.debug(
-                "Timeout CV combo: {:.0f}s > {}s | {}", elapsed, self.cv_timeout, resumen,
+                "Timeout CV combo: {:.0f}s > {}s | {}",
+                elapsed,
+                self.cv_timeout,
+                resumen,
             )
             return metrics, cp
 
@@ -132,7 +146,10 @@ class ProphetTuner:
         pbar.set_postfix(rmse=f"{mean_rmse:.4f}", cp=cp)
         logger.debug(
             "[CV] Iter {}/{} – RMSE={:.4f} | {}",
-            idx + 1, total, mean_rmse, resumen,
+            idx + 1,
+            total,
+            mean_rmse,
+            resumen,
         )
 
         return metrics, None
@@ -143,7 +160,8 @@ class ProphetTuner:
             best_params = self._fallback_params()
             best_metrics = {"rmse": None, "mae": None, "mape": None, "mase": None}
             logger.debug(
-                "Todos los combos timeout (Newton). Params default: {}", best_params,
+                "Todos los combos timeout (Newton). Params default: {}",
+                best_params,
             )
         else:
             logger.debug(

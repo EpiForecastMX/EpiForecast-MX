@@ -19,63 +19,59 @@ def ajusta_outliers(df: pd.DataFrame, columnas: list, agrupacion: list) -> pd.Da
         DataFrame with outlier values clipped to IQR bounds.
     """
     for columna in columnas:
-        stats = (
-            df.groupby(agrupacion, sort=False)
-            .apply(  # type: ignore[call-overload]
-                lambda g: pd.Series(
-                    (
-                        lambda met: {
-                            "q1": met[2],
-                            "q3": met[3],
-                            "iqr": met[4],
-                            "lim_inf": met[0],
-                            "lim_sup": met[1],
-                        }
-                    )(OperacionesDatos.outliers_iqr(g, columna)[1])
-                ),
-                include_groups=False,
-            )
-            .reset_index()
-        )
+        stats = _compute_iqr_stats(df, columna, agrupacion)
         df = df.merge(
             stats[["Padecimiento", "q1", "q3", "iqr", "lim_inf", "lim_sup"]],
             on="Padecimiento",
             how="left",
         )
 
-        for pade, sub in df.groupby("Padecimiento", sort=False):
-            iqr = sub["iqr"].iloc[0]
-            q1 = sub["q1"].iloc[0]
-            q3 = sub["q3"].iloc[0]
-            lim_inf = sub["lim_inf"].iloc[0]
-            lim_sup = sub["lim_sup"].iloc[0]
+        _log_iqr_stats(df, columna)
 
-            mascara_inf = sub[columna] < lim_inf
-            mascara_sup = sub[columna] > lim_sup
-            total_inf = int(mascara_inf.sum())
-            total_sup = int(mascara_sup.sum())
-
-            logger.info(
-                f"[{pade}] Rangos intercuartiles para '{columna}': IQR={iqr}, Q1={q1}, Q3={q3}"
-            )
-            logger.info(
-                f"[{pade}] Límite inferior: {lim_inf} | Registros por debajo del límite: {total_inf}"
-            )
-            logger.info(
-                f"[{pade}] Límite superior: {lim_sup} | Registros por encima del límite: {total_sup}"
-            )
-
-        x = df[columna].to_numpy()
-        lo = df["lim_inf"].to_numpy()
-        hi = df["lim_sup"].to_numpy()
-
-        x_clipped = np.clip(x, lo, hi)
-
+        x_clipped = np.clip(
+            df[columna].to_numpy(), df["lim_inf"].to_numpy(), df["lim_sup"].to_numpy()
+        )
         df[columna] = pd.Series(x_clipped, index=df.index).round(0).astype("Int64")
-
         df = df.drop(columns=["q1", "q3", "iqr", "lim_inf", "lim_sup"])
 
     return df
+
+
+def _compute_iqr_stats(df: pd.DataFrame, columna: str, agrupacion: list) -> pd.DataFrame:
+    """Calcula estadísticas IQR por grupo de agrupación."""
+    return (
+        df.groupby(agrupacion, sort=False)
+        .apply(  # type: ignore[call-overload]
+            lambda g: pd.Series(
+                (
+                    lambda met: {
+                        "q1": met[2],
+                        "q3": met[3],
+                        "iqr": met[4],
+                        "lim_inf": met[0],
+                        "lim_sup": met[1],
+                    }
+                )(OperacionesDatos.outliers_iqr(g, columna)[1])
+            ),
+            include_groups=False,
+        )
+        .reset_index()
+    )
+
+
+def _log_iqr_stats(df: pd.DataFrame, columna: str) -> None:
+    """Loggea estadísticas IQR y conteo de outliers por padecimiento."""
+    for pade, sub in df.groupby("Padecimiento", sort=False):
+        iqr, q1, q3 = sub["iqr"].iloc[0], sub["q1"].iloc[0], sub["q3"].iloc[0]
+        lim_inf, lim_sup = sub["lim_inf"].iloc[0], sub["lim_sup"].iloc[0]
+        total_inf = int((sub[columna] < lim_inf).sum())
+        total_sup = int((sub[columna] > lim_sup).sum())
+
+        logger.info(
+            f"[{pade}] Rangos intercuartiles para '{columna}': IQR={iqr}, Q1={q1}, Q3={q3}"
+        )
+        logger.info(f"[{pade}] Límite inferior: {lim_inf} | Registros por debajo: {total_inf}")
+        logger.info(f"[{pade}] Límite superior: {lim_sup} | Registros por encima: {total_sup}")
 
 
 def ajusta_outliers_zscore(

@@ -50,6 +50,20 @@ def eda_inegi(df: pd.DataFrame):
     Args:
         df: DataFrame INEGI con datos demográficos y clasificaciones por estado.
     """
+    dfp = df.sort_values("Entidad federativa").reset_index(drop=True)
+
+    _report_nan(df)
+    _print_df(dfp, "Vista general (head)", max_rows=8, nd=2)
+    _report_descriptives(dfp)
+    _report_top_n(dfp)
+    _report_classifications(dfp)
+
+    barras_inegi(dfp)
+    boxplots_inegi(dfp)
+
+
+def _report_nan(df: pd.DataFrame) -> None:
+    """Muestra resumen de valores NaN y estados sin región de salud mental."""
     nan = df.isna().sum().sort_values(ascending=False)
     nan = nan[nan > 0]
     if len(nan) == 0:
@@ -68,43 +82,34 @@ def eda_inegi(df: pd.DataFrame):
                 )
             )
 
-    dfp = df.sort_values("Entidad federativa").reset_index(drop=True)
 
-    _print_df(dfp, "Vista general (head)", max_rows=8, nd=2)
-
+def _report_descriptives(dfp: pd.DataFrame) -> None:
+    """Muestra estadísticas descriptivas de columnas numéricas."""
     cols_num = ["Hombres", "Mujeres", "Total", "Superficie_km2", "densidad_poblacion", "ratio_h_m"]
     cols_num = [c for c in cols_num if c in dfp.columns]
     desc = dfp[cols_num].describe().T.reset_index().rename(columns={"index": "variable"})
     _print_df(desc, "Descriptivos numéricos", max_rows=50, nd=2)
 
-    if "Total" in dfp.columns:
-        _print_df(
-            dfp.sort_values("Total", ascending=False)[["Entidad federativa", "Total"]],
-            "Top 5: Población total",
-            max_rows=5,
-            nd=0,
-        )
 
-    if "densidad_poblacion" in dfp.columns:
-        _print_df(
-            dfp.sort_values("densidad_poblacion", ascending=False)[
-                ["Entidad federativa", "densidad_poblacion"]
-            ],
-            "Top 5: Densidad poblacional (hab/km²)",
-            max_rows=5,
-            nd=2,
-        )
+def _report_top_n(dfp: pd.DataFrame) -> None:
+    """Muestra tablas Top-5 de población, densidad y superficie."""
+    _top_configs = [
+        ("Total", "Top 5: Población total", 0),
+        ("densidad_poblacion", "Top 5: Densidad poblacional (hab/km²)", 2),
+        ("Superficie_km2", "Top 5: Superficie (km²)", 0),
+    ]
+    for col, title, nd in _top_configs:
+        if col in dfp.columns:
+            _print_df(
+                dfp.sort_values(col, ascending=False)[["Entidad federativa", col]],
+                title,
+                max_rows=5,
+                nd=nd,
+            )
 
-    if "Superficie_km2" in dfp.columns:
-        _print_df(
-            dfp.sort_values("Superficie_km2", ascending=False)[
-                ["Entidad federativa", "Superficie_km2"]
-            ],
-            "Top 5: Superficie (km²)",
-            max_rows=5,
-            nd=0,
-        )
 
+def _report_classifications(dfp: pd.DataFrame) -> None:
+    """Muestra conteos de cada clasificación categórica INEGI."""
     if "region_salud_mental" in dfp.columns:
         _print_series(
             dfp["region_salud_mental"].value_counts(dropna=False),
@@ -121,6 +126,3 @@ def eda_inegi(df: pd.DataFrame):
     ]:
         if col in dfp.columns:
             _print_series(dfp[col].value_counts(dropna=False), title, nd=0)
-
-    barras_inegi(dfp)
-    boxplots_inegi(dfp)

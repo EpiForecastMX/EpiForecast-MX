@@ -108,12 +108,17 @@ def _setup_figure(title_parts: dict, colors: dict) -> tuple[plt.Figure, plt.Axes
     fig.subplots_adjust(bottom=0.13, top=0.89, left=0.055, right=0.975)
     fig.suptitle(
         f"{title_parts['pad_display']} — Pronóstico Semanal",
-        fontsize=16, fontweight="bold", color=colors["text"], y=0.96,
+        fontsize=16,
+        fontweight="bold",
+        color=colors["text"],
+        y=0.96,
     )
     ax.set_title(
         f"{title_parts['nivel']}  ·  {title_parts['modo']}  ·  "
         f"{title_parts['anio_ini']}–{title_parts['anio_fin']}",
-        fontsize=11, color=colors["gray"], pad=10,
+        fontsize=11,
+        color=colors["gray"],
+        pad=10,
     )
     return fig, ax
 
@@ -138,35 +143,61 @@ def _plot_series(
     ax.axvspan(covid_ini, covid_fin, alpha=0.07, color="#E53935", zorder=0)  # type: ignore[arg-type]
     mid_covid = covid_ini + (covid_fin - covid_ini) / 2
     ax.annotate(
-        "COVID-19", xy=(mid_covid, 1.0), xycoords=("data", "axes fraction"),  # type: ignore[arg-type]
-        fontsize=7, fontweight="bold", color="#C62828", ha="center", va="top",
+        "COVID-19",
+        xy=(mid_covid, 1.0),
+        xycoords=("data", "axes fraction"),  # type: ignore[arg-type]
+        fontsize=7,
+        fontweight="bold",
+        color="#C62828",
+        ha="center",
+        va="top",
         bbox=dict(boxstyle="round,pad=0.25", fc="#FFEBEE", ec="#EF9A9A", alpha=0.85, lw=0.6),
     )
 
     # Banda de predicción
     ax.fill_between(
-        forecast["ds"], forecast["yhat_lower"], forecast["yhat_upper"],
-        alpha=0.20, color=colors["band"], zorder=1, label="Intervalo 80 %",
+        forecast["ds"],
+        forecast["yhat_lower"],
+        forecast["yhat_upper"],
+        alpha=0.20,
+        color=colors["band"],
+        zorder=1,
+        label="Intervalo 80 %",
     )
 
     # Observaciones reales
     ax.scatter(
-        serie["ds"], serie["y"], s=15, color=colors["obs"],
-        alpha=0.45, zorder=3, label="Observaciones reales",
+        serie["ds"],
+        serie["y"],
+        s=15,
+        color=colors["obs"],
+        alpha=0.45,
+        zorder=3,
+        label="Observaciones reales",
     )
 
     # Línea de pronóstico
     ax.plot(
-        forecast["ds"], forecast["yhat"], color=colors["fc"],
-        linewidth=2.2, zorder=4, label="Pronóstico Prophet",
+        forecast["ds"],
+        forecast["yhat"],
+        color=colors["fc"],
+        linewidth=2.2,
+        zorder=4,
+        label="Pronóstico Prophet",
     )
 
     # Outliers
     if len(outliers) > 0:
         ax.scatter(
-            outliers["ds"], outliers["y"], marker="^", s=45,
-            color=colors["outlier"], edgecolors="white", linewidths=0.8,
-            zorder=5, label=f"Outliers IQR (n = {len(outliers)})",
+            outliers["ds"],
+            outliers["y"],
+            marker="^",
+            s=45,
+            color=colors["outlier"],
+            edgecolors="white",
+            linewidths=0.8,
+            zorder=5,
+            label=f"Outliers IQR (n = {len(outliers)})",
         )
 
 
@@ -191,9 +222,16 @@ def _add_legend_and_ficha(fig: plt.Figure, ax: plt.Axes, metricas: dict | None) 
     """Agrega leyenda compacta y ficha técnica al pie del gráfico."""
     handles, labels = ax.get_legend_handles_labels()
     fig.legend(
-        handles, labels, loc="lower center", bbox_to_anchor=(0.515, 0.04),
-        ncol=len(handles), fontsize=9.5, frameon=False,
-        handlelength=1.8, handletextpad=0.4, columnspacing=2.0,
+        handles,
+        labels,
+        loc="lower center",
+        bbox_to_anchor=(0.515, 0.04),
+        ncol=len(handles),
+        fontsize=9.5,
+        frameon=False,
+        handlelength=1.8,
+        handletextpad=0.4,
+        columnspacing=2.0,
     )
     if metricas:
         _render_ficha_tecnica(fig, metricas)

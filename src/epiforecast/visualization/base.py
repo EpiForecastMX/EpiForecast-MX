@@ -15,7 +15,9 @@ from epiforecast.utils.config import conf
 
 
 class GraficosHelper(ABC):
-    def __init__(self, carpeta_salida: str, numero_top_columnas: int, config: dict | None = None) -> None:
+    def __init__(
+        self, carpeta_salida: str, numero_top_columnas: int, config: dict | None = None
+    ) -> None:
         """Inicializa el helper de gráficos con directorio de salida y paleta IMSS.
 
         Args:

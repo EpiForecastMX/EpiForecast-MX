@@ -188,7 +188,9 @@ def _find_source_csv(input_dir: Path, log_fn) -> Path:
 
 
 def _read_and_validate(
-    source_csv: Path, target_csv: Path, log_fn,
+    source_csv: Path,
+    target_csv: Path,
+    log_fn,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Lee source y target CSV y valida que tengan las mismas columnas."""
     if not target_csv.exists():
@@ -213,7 +215,8 @@ def _read_and_validate(
 
 
 def _find_missing_rows(
-    df_source: pd.DataFrame, df_target: pd.DataFrame,
+    df_source: pd.DataFrame,
+    df_target: pd.DataFrame,
 ) -> tuple[pd.DataFrame, int]:
     """Identifica filas en source que no existen en target (comparación normalizada)."""
     # Copias para comparar con semana normalizada
@@ -226,14 +229,20 @@ def _find_missing_rows(
         pd.to_numeric(df_target_cmp["Semana"], errors="coerce").astype("Int64").astype("string")
     )
     merged_check = df_source_cmp.merge(
-        df_target_cmp, how="left", on=list(df_source_cmp.columns), indicator=True,
+        df_target_cmp,
+        how="left",
+        on=list(df_source_cmp.columns),
+        indicator=True,
     )
     missing_mask = merged_check["_merge"] == "left_only"
     missing_rows = df_source.loc[missing_mask]
 
     # Comparar fila completa (sin normalización)
     merged_check = df_source.merge(
-        df_target, how="left", on=list(df_source.columns), indicator=True,
+        df_target,
+        how="left",
+        on=list(df_source.columns),
+        indicator=True,
     )
     missing_mask = merged_check["_merge"] == "left_only"
     missing_rows = df_source.loc[missing_mask]
@@ -253,24 +262,33 @@ def main(
     save_individual_tables: bool = typer.Option(False, "--save-individual-tables"),
 ):
     """CLI principal: extrae tablas de boletines PDF, renombra y hace merge incremental."""
-    # "Smart": solo pregunta si hay terminal interactiva
-    if _has_tty():
-        if typer.confirm(f"¿Deseas cambiar la carpeta por defecto? ({input_dir})", default=False):
-            picked = _pick_directory_gui()
-            if picked:
-                input_dir = picked
-            else:
-                typer.echo(
-                    "⚠️ No se pudo abrir el selector o no se eligió carpeta. Se usa la carpeta actual."
-                )
-    # Si no hay TTY, no preguntamos nada y usamos defaults o flags
+    input_dir = _resolve_input_dir(input_dir)
 
     if not input_dir.exists():
         typer.echo(f"❌ Directorio de entrada no existe: {input_dir}", err=True)
         raise typer.Exit(1)
 
     output_dir.mkdir(parents=True, exist_ok=True)
+    _print_banner(input_dir, output_dir, keywords)
+    _run_extraction(input_dir, output_dir, keywords, save_matched_pages, save_individual_tables)
+    _rename_and_merge()
 
+
+def _resolve_input_dir(input_dir: Path) -> Path:
+    """Pregunta al usuario si desea cambiar la carpeta (solo con TTY interactiva)."""
+    if _has_tty():
+        if typer.confirm(f"¿Deseas cambiar la carpeta por defecto? ({input_dir})", default=False):
+            picked = _pick_directory_gui()
+            if picked:
+                return picked
+            typer.echo(
+                "⚠️ No se pudo abrir el selector o no se eligió carpeta. Se usa la carpeta actual."
+            )
+    return input_dir
+
+
+def _print_banner(input_dir: Path, output_dir: Path, keywords: list[str]) -> None:
+    """Imprime encabezado del pipeline de extracción."""
     typer.echo("\n" + "=" * 60)
     typer.echo("🚀 Iniciando pipeline de extracción")
     typer.echo("=" * 60)
@@ -279,8 +297,10 @@ def main(
     typer.echo(f"🔑 Keywords: {keywords}")
     typer.echo("=" * 60 + "\n")
 
+
+def _run_extraction(input_dir, output_dir, keywords, save_matched_pages, save_individual_tables):
+    """Ejecuta el pipeline de extracción con manejo de errores."""
     try:
-        # ensure_empty_dir_or_exit(output_dir) for debugging, deshabilitado por el momento
         run_pipeline(
             input_dir=str(input_dir),
             output_dir=str(output_dir),
@@ -290,13 +310,15 @@ def main(
             log_fn=typer.echo,
         )
         typer.echo("\n✅ Pipeline completado exitosamente.")
-
     except Exception as e:
         typer.echo(f"\n❌ Error en pipeline: {e}", err=True)
         raise typer.Exit(1)
 
+
+def _rename_and_merge():
+    """Renombra CSV de salida con timestamp y ejecuta merge incremental."""
     output_file = str(DEFAULT_OUTPUT_DIR) + "/" + DEFAULT_FILENAME
-    typer.echo("\n>> Renombrando archivo de salida: {output_file}")
+    typer.echo(f"\n>> Renombrando archivo de salida: {output_file}")
 
     try:
         rename_csv_with_timestamp(output_file)

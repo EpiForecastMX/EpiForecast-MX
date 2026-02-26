@@ -62,8 +62,16 @@ def run_pipeline(
             on_file(file)
 
         result = _process_single_pdf(
-            file, idx, total_pdfs, input_dir, keywords, col_map, dirs, log_fn,
-            save_matched_pages, save_individual_tables,
+            file,
+            idx,
+            total_pdfs,
+            input_dir,
+            keywords,
+            col_map,
+            dirs,
+            log_fn,
+            save_matched_pages,
+            save_individual_tables,
         )
 
         run_log.append(result["log_entry"])
@@ -73,8 +81,13 @@ def run_pipeline(
             failed_files.append(file)
 
     _write_results(
-        all_rows, failed_files, run_log, output_dir, dirs["output_csv"],
-        total_pdfs, log_fn,
+        all_rows,
+        failed_files,
+        run_log,
+        output_dir,
+        dirs["output_csv"],
+        total_pdfs,
+        log_fn,
     )
 
 
@@ -92,8 +105,16 @@ def _setup_directories(output_dir, save_matched_pages, save_individual_tables):
 
 
 def _process_single_pdf(
-    file, idx, total_pdfs, input_dir, keywords, col_map, dirs, log_fn,
-    save_matched_pages, save_individual_tables,
+    file,
+    idx,
+    total_pdfs,
+    input_dir,
+    keywords,
+    col_map,
+    dirs,
+    log_fn,
+    save_matched_pages,
+    save_individual_tables,
 ):
     """Procesa un PDF individual: busca página, extrae tabla, genera registros."""
     pct = (idx / total_pdfs * 100) if total_pdfs else 100.0
@@ -142,8 +163,7 @@ def _process_single_pdf(
 
     except Exception as e:
         log_fn(
-            f"{idx:>3}/{total_pdfs:<3} | {pct:>6.1f}% | {file} | "
-            f"ERROR ({type(e).__name__}): {e}"
+            f"{idx:>3}/{total_pdfs:<3} | {pct:>6.1f}% | {file} | ERROR ({type(e).__name__}): {e}"
         )
         return {"log_entry": log_entry, "df": None, "failed": True}
 

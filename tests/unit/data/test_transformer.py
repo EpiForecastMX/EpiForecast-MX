@@ -1,5 +1,5 @@
 # tests/unit/data/test_transformer.py
-"""Unit tests for dataTransformation (src/epiforecast/data/preprocessing/transformer.py).
+"""Unit tests for DataTransformation (src/epiforecast/data/preprocessing/transformer.py).
 
 Patches conf so the class can be instantiated without real YAML files.
 """
@@ -10,7 +10,7 @@ import pandas as pd
 import pytest
 
 import epiforecast.data.preprocessing.transformer as transformer_mod
-from epiforecast.data.preprocessing.transformer import dataTransformation
+from epiforecast.data.preprocessing.transformer import DataTransformation
 
 # ── Mock conf ─────────────────────────────────────────────────────────────────
 
@@ -42,7 +42,7 @@ MOCK_CONF = {
 
 
 def _sample_df() -> pd.DataFrame:
-    """Minimal valid DataFrame for dataTransformation."""
+    """Minimal valid DataFrame for DataTransformation."""
     return pd.DataFrame(
         {
             "Padecimiento": ["Depresión"] * 8,
@@ -58,7 +58,7 @@ def _sample_df() -> pd.DataFrame:
 @pytest.fixture
 def transformer():
     with patch.object(transformer_mod, "conf", MOCK_CONF):
-        return dataTransformation(_sample_df())
+        return DataTransformation(_sample_df())
 
 
 # ── __init__ ──────────────────────────────────────────────────────────────────
@@ -68,29 +68,29 @@ class TestDataTransformationInit:
     def test_df_is_copied(self):
         original = _sample_df()
         with patch.object(transformer_mod, "conf", MOCK_CONF):
-            obj = dataTransformation(original)
+            obj = DataTransformation(original)
         original["Semana"] = 999  # Mutate original
         assert (obj.df["Semana"] != 999).all()
 
     def test_opciones_loaded_from_conf(self):
         with patch.object(transformer_mod, "conf", MOCK_CONF):
-            obj = dataTransformation(_sample_df())
+            obj = DataTransformation(_sample_df())
         assert isinstance(obj.opciones, list)
         assert len(obj.opciones) == 2
 
     def test_regiones_loaded_from_conf(self):
         with patch.object(transformer_mod, "conf", MOCK_CONF):
-            obj = dataTransformation(_sample_df())
+            obj = DataTransformation(_sample_df())
         assert len(obj.regiones) == 2
 
     def test_agrupamiento_value(self):
         with patch.object(transformer_mod, "conf", MOCK_CONF):
-            obj = dataTransformation(_sample_df())
+            obj = DataTransformation(_sample_df())
         assert obj.agrupamiento == "sexo"
 
     def test_df_agrupado_starts_empty(self):
         with patch.object(transformer_mod, "conf", MOCK_CONF):
-            obj = dataTransformation(_sample_df())
+            obj = DataTransformation(_sample_df())
         assert obj.df_agrupado.empty
 
 
@@ -129,7 +129,7 @@ class TestAjustaSemanas:
         bad_df = _sample_df()
         bad_df.loc[0, "Semana"] = 99
         with patch.object(transformer_mod, "conf", MOCK_CONF):
-            obj = dataTransformation(bad_df)
+            obj = DataTransformation(bad_df)
         with pytest.raises(ValueError, match="rango"):
             obj._ajusta_semanas()
 
@@ -199,7 +199,7 @@ class TestAjustaNegativos:
             }
         )
         with patch.object(transformer_mod, "conf", MOCK_CONF):
-            obj = dataTransformation(df)
+            obj = DataTransformation(df)
         obj.df = df.copy()
         obj._ajusta_negativos()
         assert (obj.df["Incremento_hombres"] >= 0).all()
@@ -212,7 +212,7 @@ class TestAjustaNegativos:
 class TestAgrupar:
     def _prepared_transformer(self):
         with patch.object(transformer_mod, "conf", MOCK_CONF):
-            obj = dataTransformation(_sample_df())
+            obj = DataTransformation(_sample_df())
         obj._ajusta_semanas()
         obj._prepara_series_tiempo()
         obj._ajusta_negativos()
@@ -248,7 +248,7 @@ class TestAgrupar:
 class TestGeneraTodos:
     def test_adds_total_column(self):
         with patch.object(transformer_mod, "conf", MOCK_CONF):
-            obj = dataTransformation(_sample_df())
+            obj = DataTransformation(_sample_df())
         obj.df_agrupado = pd.DataFrame(
             {
                 "Padecimiento": ["D"],
@@ -265,7 +265,7 @@ class TestGeneraTodos:
 
     def test_total_equals_sum(self):
         with patch.object(transformer_mod, "conf", MOCK_CONF):
-            obj = dataTransformation(_sample_df())
+            obj = DataTransformation(_sample_df())
         obj.df_agrupado = pd.DataFrame(
             {
                 "Padecimiento": ["D"],
@@ -302,14 +302,14 @@ class TestAjustaIncrementos:
     def test_runs_without_error(self):
         df = self._make_df_with_incrementos()
         with patch.object(transformer_mod, "conf", MOCK_CONF):
-            obj = dataTransformation(df)
+            obj = DataTransformation(df)
         obj.df = df.copy()
         obj._ajusta_incrementos()  # should not raise
 
     def test_columns_remain_integer(self):
         df = self._make_df_with_incrementos()
         with patch.object(transformer_mod, "conf", MOCK_CONF):
-            obj = dataTransformation(df)
+            obj = DataTransformation(df)
         obj.df = df.copy()
         obj._ajusta_incrementos()
         assert obj.df["Incremento_hombres"].dtype in (int, "int64", "Int64", "int32")
@@ -318,7 +318,7 @@ class TestAjustaIncrementos:
         df = self._make_df_with_incrementos()
         df.loc[3, "Incremento_hombres"] = -10  # force negative
         with patch.object(transformer_mod, "conf", MOCK_CONF):
-            obj = dataTransformation(df)
+            obj = DataTransformation(df)
         obj.df = df.copy()
         obj._ajusta_incrementos()
         # After adjustment the negative should be corrected
@@ -389,27 +389,27 @@ _CONF_INVALID_METHOD = {
 class TestRunWithOutliers:
     def test_run_iqr_enabled_returns_df(self):
         with patch.object(transformer_mod, "conf", _CONF_IQR_ENABLED):
-            obj = dataTransformation(_sample_df())
+            obj = DataTransformation(_sample_df())
         result = obj.run()
         assert isinstance(result, pd.DataFrame)
         assert not result.empty
 
     def test_run_zscore_enabled_returns_df(self):
         with patch.object(transformer_mod, "conf", _CONF_ZSCORE_ENABLED):
-            obj = dataTransformation(_sample_df())
+            obj = DataTransformation(_sample_df())
         result = obj.run()
         assert isinstance(result, pd.DataFrame)
         assert not result.empty
 
     def test_run_iqr_disabled_returns_df(self):
         with patch.object(transformer_mod, "conf", MOCK_CONF):
-            obj = dataTransformation(_sample_df())
+            obj = DataTransformation(_sample_df())
         result = obj.run()
         assert isinstance(result, pd.DataFrame)
 
     def test_run_invalid_method_raises(self):
         with patch.object(transformer_mod, "conf", _CONF_INVALID_METHOD):
-            obj = dataTransformation(_sample_df())
+            obj = DataTransformation(_sample_df())
         with pytest.raises(ValueError, match="Opcion no válida"):
             obj.run()
 
@@ -417,7 +417,7 @@ class TestRunWithOutliers:
         from unittest.mock import MagicMock
 
         with patch.object(transformer_mod, "conf", _CONF_IQR_ENABLED):
-            obj = dataTransformation(_sample_df())
+            obj = DataTransformation(_sample_df())
         obj._ajusta_outliers = MagicMock()
         obj.run()
         obj._ajusta_outliers.assert_called_once()
@@ -426,7 +426,7 @@ class TestRunWithOutliers:
         from unittest.mock import MagicMock
 
         with patch.object(transformer_mod, "conf", _CONF_ZSCORE_ENABLED):
-            obj = dataTransformation(_sample_df())
+            obj = DataTransformation(_sample_df())
         obj._ajusta_outliers_zscore = MagicMock()
         obj.run()
         obj._ajusta_outliers_zscore.assert_called_once()

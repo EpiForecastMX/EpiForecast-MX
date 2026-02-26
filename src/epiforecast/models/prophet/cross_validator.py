@@ -96,7 +96,12 @@ class ProphetCrossValidator:
             )
 
             timed_out, newton_cp = self._run_single_fold(
-                params, train_fold, val_fold, fold_idx, cp, fold_results,
+                params,
+                train_fold,
+                val_fold,
+                fold_idx,
+                cp,
+                fold_results,
             )
             if timed_out:
                 break
@@ -109,8 +114,11 @@ class ProphetCrossValidator:
             )
 
         metrics = self._aggregate_folds(
-            fold_results.rmse, fold_results.mae, fold_results.mape,
-            fold_results.mase, fold_results.indices,
+            fold_results.rmse,
+            fold_results.mae,
+            fold_results.mape,
+            fold_results.mase,
+            fold_results.indices,
         )
 
         logger.debug(
@@ -143,7 +151,10 @@ class ProphetCrossValidator:
                 if not fit_ok:
                     logger.debug(
                         "Timeout fold: >{:.0f}s en fold {}/{}. Newton → skip cp ≤ {}",
-                        self.fold_timeout, fold_idx + 1, self.n_splits, cp,
+                        self.fold_timeout,
+                        fold_idx + 1,
+                        self.n_splits,
+                        cp,
                     )
                     return True, cp
             else:
@@ -238,7 +249,9 @@ class _FoldCollector:
 
 
 def _compute_fold_metrics(
-    model: Prophet, train_fold: pd.DataFrame, val_fold: pd.DataFrame,
+    model: Prophet,
+    train_fold: pd.DataFrame,
+    val_fold: pd.DataFrame,
 ) -> dict:
     """Calcula RMSE, MAE, MAPE y MASE para un fold de CV."""
     forecast = model.predict(val_fold[["ds"]])

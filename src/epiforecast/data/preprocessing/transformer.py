@@ -8,7 +8,7 @@ import pandas as pd
 from epiforecast.utils.config import conf
 
 
-class dataTransformation:
+class DataTransformation:
     """Pipeline de transformación de datos: ajuste de semanas, incrementos y outliers."""
 
     def __init__(self, df: pd.DataFrame, config: dict | None = None):
