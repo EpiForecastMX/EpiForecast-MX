@@ -55,7 +55,7 @@ param_model:
 
 add_seasonality:
   name: 'yearly_custom'
-  period: 52.18             # 365.25/7 — anual exacto en semanas
+  period: 365.25            # Prophet period siempre en DÍAS, no semanas
   fourier_order: 10          # Prophet default; era 5 (demasiado restrictivo)
   fourier_order_regional: 5 # era 3; series cortas necesitan menos pero 3 es insuficiente
 
