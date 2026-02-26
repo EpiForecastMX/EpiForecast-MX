@@ -37,6 +37,7 @@ _ALPHA_FORECAST_ZONE = 0.04
 _ALPHA_COVID = 0.07
 _ALPHA_GRID = 0.25
 _SIZE_OBS = 15
+_ROLLING_OBS = 4  # ventana de suavizado para observaciones (semanas)
 _SIZE_OUTLIER = 45
 
 # ── COVID badge colors ───────────────────────────────────────────────
@@ -205,13 +206,15 @@ def _plot_series(
         label="Intervalo 80 %",
     )
 
-    # Observaciones reales
-    ax.scatter(
-        serie["ds"],
-        serie["y"],
-        s=_SIZE_OBS,
+    # Observaciones reales (línea suavizada)
+    serie_sorted = serie.sort_values("ds")
+    y_smooth = serie_sorted["y"].rolling(_ROLLING_OBS, min_periods=1, center=True).mean()
+    ax.plot(
+        serie_sorted["ds"],
+        y_smooth,
         color=colors["obs"],
-        alpha=_ALPHA_OBS,
+        alpha=0.7,
+        linewidth=1.2,
         zorder=3,
         label="Observaciones reales",
     )
