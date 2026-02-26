@@ -1,7 +1,7 @@
 # scripts/realiza_prep.py
 import pandas as pd
 
-from epiforecast.data.preprocessing.transformer import dataTransformation
+from epiforecast.data.preprocessing.transformer import DataTransformation
 from epiforecast.utils import paths as directory_manager
 from epiforecast.utils.config import conf, logger
 
@@ -18,7 +18,7 @@ def transforma_dataset() -> tuple[bool, pd.DataFrame | None]:
         return False, None
 
     df = pd.read_csv(interim_file)
-    df_transformado = dataTransformation(df).run()
+    df_transformado = DataTransformation(df).run()
 
     if df_transformado.empty:
         logger.error(
