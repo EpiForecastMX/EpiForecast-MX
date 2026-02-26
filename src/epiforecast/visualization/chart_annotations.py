@@ -47,9 +47,18 @@ def _anotar_zona_cv(
     ax: plt.Axes,
     fecha_max_datos,
     c_gray: str,
+    config: dict | None = None,
 ) -> None:
-    """Añade la franja sombreada del periodo de prueba CV con etiquetas."""
-    fecha_corte = pd.Timestamp(conf["FECHA_CORTE_ENTRENAMIENTO"])
+    """Añade la franja sombreada del periodo de prueba CV con etiquetas.
+
+    Args:
+        ax:             Axes de matplotlib sobre el que se dibuja.
+        fecha_max_datos: Fecha máxima de datos históricos.
+        c_gray:         Color para la franja y líneas.
+        config:         Dict de configuración (default: conf global de YAML).
+    """
+    _conf = config if config is not None else conf
+    fecha_corte = pd.Timestamp(_conf["FECHA_CORTE_ENTRENAMIENTO"])
 
     ax.axvspan(
         fecha_corte,  # type: ignore[arg-type]

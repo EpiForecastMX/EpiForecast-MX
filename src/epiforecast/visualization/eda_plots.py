@@ -54,18 +54,22 @@ class ReportData:
 class EDAReportBuilder:
     """Genera insumos de un reporte EDA a partir de un DataFrame."""
 
-    def __init__(self, df: pd.DataFrame, fuente_datos: str, opciones: dict):
+    def __init__(
+        self, df: pd.DataFrame, fuente_datos: str, opciones: dict, config: dict | None = None
+    ):
         """Inicializa el constructor de reportes EDA.
 
         Args:
             df:           DataFrame de datos epidemiológicos a analizar.
             fuente_datos: Descripción de la fuente de datos (para metadatos del reporte).
             opciones:     Dict con configuración del reporte (titulo, max_cols, violin, etc.).
+            config:       Dict de configuración (default: conf global de YAML).
         """
+        _conf = config if config is not None else conf
         self.df = df.copy()
         self.df_raw = df.copy()
         self.opciones_reporte = opciones
-        self.carpeta_salida = conf["paths"]["figures"]
+        self.carpeta_salida = _conf["paths"]["figures"]
         self.fuente_datos = fuente_datos
         self.numero_top_columnas = opciones["max_cols"]
         self.genera_violin = opciones["violin"]

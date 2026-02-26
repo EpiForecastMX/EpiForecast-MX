@@ -26,15 +26,19 @@ def _normalizar_nombre(s: str) -> str:
     return re.sub(r"\s+", "_", sin_acento)
 
 
-def generar_graficos_pronostico() -> None:
+def generar_graficos_pronostico(config: dict | None = None) -> None:
     """Generate one forecast chart per model from all_forecast.csv.
+
+    Args:
+        config: Dict de configuración (default: conf global de YAML).
 
     Output structure:
         forecast/{padecimiento}/{entidad|Nacional}/{nombre}.png
     """
-    forecast_file = Path(conf["data"]["forecast"])
-    models_root = Path(conf["paths"]["models"])
-    forecast_root = Path(conf["paths"]["forecast"])
+    _conf = config if config is not None else conf
+    forecast_file = Path(_conf["data"]["forecast"])
+    models_root = Path(_conf["paths"]["models"])
+    forecast_root = Path(_conf["paths"]["forecast"])
 
     df_forecast = pd.read_csv(forecast_file)
     df_forecast["ds"] = pd.to_datetime(df_forecast["ds"], errors="coerce")
