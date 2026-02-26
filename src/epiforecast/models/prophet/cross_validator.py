@@ -23,6 +23,7 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import TimeSeriesSplit
 
+from epiforecast.constants import RANDOM_SEED
 from epiforecast.utils.config import conf, logger
 
 if TYPE_CHECKING:
@@ -147,6 +148,7 @@ class ProphetCrossValidator:
             model = self.forecaster._create_prophet(**params)
 
             if self.fold_timeout:
+                np.random.seed(RANDOM_SEED)
                 fit_ok = self._fit_with_timeout(model, train_fold, self.fold_timeout)
                 if not fit_ok:
                     logger.debug(
@@ -158,6 +160,7 @@ class ProphetCrossValidator:
                     )
                     return True, cp
             else:
+                np.random.seed(RANDOM_SEED)
                 model.fit(train_fold)
 
             metrics = _compute_fold_metrics(model, train_fold, val_fold)
@@ -229,6 +232,7 @@ class _FoldCollector:
     """Acumula métricas de cada fold de CV."""
 
     def __init__(self) -> None:
+        """Inicializa las listas vacías para acumular métricas por fold."""
         self.rmse: list[float] = []
         self.mae: list[float] = []
         self.mape: list[float] = []

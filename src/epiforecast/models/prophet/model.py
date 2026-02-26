@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 from prophet import Prophet
 
+from epiforecast.constants import RANDOM_SEED
 from epiforecast.models.base import ForecastModel
 from epiforecast.utils.config import conf, logger
 
@@ -148,11 +149,13 @@ class ProphetForecaster(ForecastModel):
         self._model = self._create_prophet(**parametros)
 
         try:
+            np.random.seed(RANDOM_SEED)
             self._model.fit(train_data)
         except Exception as e:
             logger.warning("L-BFGS falló, reintentando con cp=0.05: {}", e)
             fallback_params = {**parametros, "changepoint_prior_scale": 0.05}
             self._model = self._create_prophet(**fallback_params)
+            np.random.seed(RANDOM_SEED)
             self._model.fit(train_data)
 
     def predict(self, horizon: int = 52) -> pd.DataFrame:
