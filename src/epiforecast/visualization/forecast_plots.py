@@ -41,30 +41,7 @@ def generar_graficos_pronostico() -> None:
     df_forecast = df_forecast.dropna(subset=["ds"])
 
     graficos = GraficosHelper(carpeta_salida="", numero_top_columnas=10)
-
-    # Load hyperparameters from complete CSVs
-    hp_frames = []
-    for csv_hp in models_root.rglob("*_completo.csv"):
-        try:
-            df_hp = pd.read_csv(
-                csv_hp,
-                usecols=[
-                    "archivo_modelo",
-                    "seasonality_mode",
-                    "changepoint_prior_scale",
-                    "seasonality_prior_scale",
-                ],
-            )
-            hp_frames.append(df_hp)
-        except (KeyError, ValueError, FileNotFoundError):
-            pass  # CSV incompleto o con columnas faltantes; se omite
-    df_hp_all = (
-        pd.concat(hp_frames, ignore_index=True)
-        .drop_duplicates("archivo_modelo")
-        .set_index("archivo_modelo")
-        if hp_frames
-        else pd.DataFrame()
-    )
+    df_hp_all = _load_hp_data(models_root)
 
     modelos = (
         df_forecast[["meta_padecimiento", "meta_entidad", "meta_modo"]]
@@ -79,70 +56,92 @@ def generar_graficos_pronostico() -> None:
         entidad = "" if pd.isna(row["meta_entidad"]) else str(row["meta_entidad"])
         modo = str(row["meta_modo"])
 
-        # Build CSV path for training data (sidecar of .pkl)
-        pad_norm = _normalizar_nombre(padecimiento)
-
-        if not entidad or entidad.lower() == "nacional":
-            csv_name = f"Prophet_{pad_norm}_{modo}.csv"
-            entidad_norm = ""
-        elif entidad.startswith("Region "):
-            region_part = entidad[len("Region ") :]
-            region_norm = _normalizar_nombre(region_part)
-            csv_name = f"Prophet_{pad_norm}_region_{region_norm}_{modo}.csv"
-            entidad_norm = _normalizar_nombre(entidad)
-        else:
-            entidad_norm = _normalizar_nombre(entidad)
-            csv_name = f"Prophet_{pad_norm}_{entidad_norm}_{modo}.csv"
-
-        csv_path = models_root / pad_norm / csv_name
-        if not csv_path.exists():
-            logger.warning("CSV de entrenamiento no encontrado: {}", csv_path)
+        serie = _load_training_series(padecimiento, entidad, modo, models_root)
+        if serie is None:
             continue
 
-        serie = pd.read_csv(csv_path)
-        serie["ds"] = pd.to_datetime(serie["ds"], errors="coerce")
-        serie = serie.dropna(subset=["ds"])
-
-        if "y_original" in serie.columns:
-            serie = serie[["ds", "y_original"]].rename(columns={"y_original": "y"})
-        else:
-            serie = serie[["ds", "y"]]
-
-        # Output directory
-        if not entidad or entidad.lower() == "nacional":
-            nivel_dir = "Nacional"
-        else:
-            nivel_dir = entidad.replace("/", "-").replace(" ", "_")
+        nivel_dir = _nivel_directory(entidad)
         carpeta = forecast_root / padecimiento / nivel_dir
         directory_manager.asegurar_ruta(carpeta)
         graficos.carpeta_salida = str(carpeta)
 
-        # Filter forecast rows for this model
         mask_fc = (
             (df_forecast["meta_padecimiento"] == padecimiento)
             & (df_forecast["meta_entidad"].fillna("") == entidad)
             & (df_forecast["meta_modo"] == modo)
         )
         forecast = df_forecast[mask_fc][["ds", "yhat", "yhat_lower", "yhat_upper"]].copy()
-
-        # Extract metrics for chart annotation
         metricas = _extract_metricas(df_forecast, mask_fc, df_hp_all)
 
-        nivel_label = entidad if entidad else "Nacional"
-        titulo = f"{padecimiento} · {nivel_label} · {modo}"
+        titulo = f"{padecimiento} · {entidad or 'Nacional'} · {modo}"
         nombre_archivo = f"{padecimiento}_{nivel_dir}_{modo}"
 
         ruta = graficos.graficar_pronostico(
-            forecast=forecast,
-            serie=serie,
-            titulo=titulo,
-            padecimiento=padecimiento,
-            nombre_archivo=nombre_archivo,
-            metricas=metricas,
+            forecast=forecast, serie=serie, titulo=titulo,
+            padecimiento=padecimiento, nombre_archivo=nombre_archivo, metricas=metricas,
         )
         logger.info("[{}/{}] Guardado: {}", i + 1, total, Path(ruta).name)  # type: ignore[operator]
 
     logger.success("Gráficos generados: {} → {}", total, forecast_root)
+
+
+def _load_hp_data(models_root: Path) -> pd.DataFrame:
+    """Carga hiperparámetros desde CSVs *_completo.csv."""
+    hp_frames = []
+    for csv_hp in models_root.rglob("*_completo.csv"):
+        try:
+            df_hp = pd.read_csv(
+                csv_hp,
+                usecols=[
+                    "archivo_modelo", "seasonality_mode",
+                    "changepoint_prior_scale", "seasonality_prior_scale",
+                ],
+            )
+            hp_frames.append(df_hp)
+        except (KeyError, ValueError, FileNotFoundError):
+            pass
+    if hp_frames:
+        return pd.concat(hp_frames, ignore_index=True).drop_duplicates("archivo_modelo").set_index("archivo_modelo")
+    return pd.DataFrame()
+
+
+def _build_csv_path(padecimiento: str, entidad: str, modo: str, models_root: Path) -> Path:
+    """Construye la ruta del CSV de entrenamiento (sidecar del .pkl)."""
+    pad_norm = _normalizar_nombre(padecimiento)
+    if not entidad or entidad.lower() == "nacional":
+        csv_name = f"Prophet_{pad_norm}_{modo}.csv"
+    elif entidad.startswith("Region "):
+        region_norm = _normalizar_nombre(entidad[len("Region "):])
+        csv_name = f"Prophet_{pad_norm}_region_{region_norm}_{modo}.csv"
+    else:
+        entidad_norm = _normalizar_nombre(entidad)
+        csv_name = f"Prophet_{pad_norm}_{entidad_norm}_{modo}.csv"
+    return models_root / pad_norm / csv_name
+
+
+def _load_training_series(
+    padecimiento: str, entidad: str, modo: str, models_root: Path,
+) -> pd.DataFrame | None:
+    """Carga y prepara la serie de entrenamiento desde CSV."""
+    csv_path = _build_csv_path(padecimiento, entidad, modo, models_root)
+    if not csv_path.exists():
+        logger.warning("CSV de entrenamiento no encontrado: {}", csv_path)
+        return None
+
+    serie = pd.read_csv(csv_path)
+    serie["ds"] = pd.to_datetime(serie["ds"], errors="coerce")
+    serie = serie.dropna(subset=["ds"])
+
+    if "y_original" in serie.columns:
+        return serie[["ds", "y_original"]].rename(columns={"y_original": "y"})
+    return serie[["ds", "y"]]
+
+
+def _nivel_directory(entidad: str) -> str:
+    """Determina el nombre del subdirectorio según nivel geográfico."""
+    if not entidad or entidad.lower() == "nacional":
+        return "Nacional"
+    return entidad.replace("/", "-").replace(" ", "_")
 
 
 def _extract_metricas(

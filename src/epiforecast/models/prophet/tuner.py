@@ -62,53 +62,24 @@ class ProphetTuner:
         best_rmse = float("inf")
         best_params: dict | None = None
         best_metrics: dict = {}
-
-        # Newton-prone threshold: if combo with cp=X times out,
-        # skip combos with cp strictly less than X.
         newton_cp_threshold: float | None = None
 
         pbar = tqdm(
-            enumerate(combos),
-            total=len(combos),
-            desc="CV",
-            unit="combo",
-            leave=False,
-            dynamic_ncols=True,
-            position=1,
+            enumerate(combos), total=len(combos),
+            desc="CV", unit="combo", leave=False, dynamic_ncols=True, position=1,
         )
         for idx, params in pbar:
-            cp = params.get("changepoint_prior_scale", 0)
-            resumen = ", ".join(f"{k}={v}" for k, v in params.items())
+            result = self._evaluate_single_combo(
+                idx, params, len(combos), newton_cp_threshold, pbar,
+            )
 
-            # Layer 3: skip combos below Newton threshold
-            if newton_cp_threshold is not None and cp < newton_cp_threshold:
-                logger.debug(
-                    "Skip combo (Newton-prone): cp={} < umbral {} | {}",
-                    cp,
-                    newton_cp_threshold,
-                    resumen,
-                )
+            if result is None:
                 continue
 
-            # Run cross-validation for this HP combo
-            t_start = time.time()
-            cv = ProphetCrossValidator(self.forecaster)
-            metrics, timed_out, timeout_cp = cv.evaluate_combo(params)
-            elapsed = time.time() - t_start
+            metrics, new_threshold = result
 
-            # Update Newton threshold if timeout occurred
-            if timed_out and timeout_cp is not None:
-                newton_cp_threshold = timeout_cp
-
-            # Check combo-level timeout (backstop)
-            if self.cv_timeout and elapsed > self.cv_timeout:
-                logger.debug(
-                    "Timeout CV combo: {:.0f}s > {}s | {}",
-                    elapsed,
-                    self.cv_timeout,
-                    resumen,
-                )
-                newton_cp_threshold = cp
+            if new_threshold is not None:
+                newton_cp_threshold = new_threshold
                 continue
 
             mean_rmse = metrics.get("rmse", float("inf"))
@@ -116,31 +87,61 @@ class ProphetTuner:
                 best_rmse = mean_rmse
                 best_params = params
                 best_metrics = metrics
-                pbar.set_postfix(rmse=f"{mean_rmse:.4f}", cp=cp)
-                logger.debug(
-                    "[CV] Iter {}/{} – Nuevo mejor RMSE: {:.4f} | MAE: {:.4f} | MAPE: {:.2f}%",
-                    idx + 1,
-                    len(combos),
-                    mean_rmse,
-                    metrics.get("mae", 0),
-                    metrics.get("mape", 0),
-                )
-            else:
-                logger.debug(
-                    "[CV] Iter {}/{} – RMSE={:.4f} (no mejora) | {}",
-                    idx + 1,
-                    len(combos),
-                    mean_rmse,
-                    resumen,
-                )
 
-        # Fallback: if ALL combos timed out, use defaults with highest cp
+        return self._finalize(best_params, best_metrics)
+
+    # ── Private Helpers ───────────────────────────────────────────────────────
+
+    def _evaluate_single_combo(
+        self,
+        idx: int,
+        params: dict,
+        total: int,
+        newton_cp_threshold: float | None,
+        pbar: tqdm,
+    ) -> tuple[dict, float | None] | None:
+        """Evalúa una combinación de HP. Retorna (metrics, new_threshold) o None si skip."""
+        cp = params.get("changepoint_prior_scale", 0)
+        resumen = ", ".join(f"{k}={v}" for k, v in params.items())
+
+        # Layer 3: skip combos below Newton threshold
+        if newton_cp_threshold is not None and cp < newton_cp_threshold:
+            logger.debug(
+                "Skip combo (Newton-prone): cp={} < umbral {} | {}",
+                cp, newton_cp_threshold, resumen,
+            )
+            return None
+
+        t_start = time.time()
+        cv = ProphetCrossValidator(self.forecaster)
+        metrics, timed_out, timeout_cp = cv.evaluate_combo(params)
+        elapsed = time.time() - t_start
+
+        if timed_out and timeout_cp is not None:
+            return metrics, timeout_cp
+
+        if self.cv_timeout and elapsed > self.cv_timeout:
+            logger.debug(
+                "Timeout CV combo: {:.0f}s > {}s | {}", elapsed, self.cv_timeout, resumen,
+            )
+            return metrics, cp
+
+        mean_rmse = metrics.get("rmse", float("inf"))
+        pbar.set_postfix(rmse=f"{mean_rmse:.4f}", cp=cp)
+        logger.debug(
+            "[CV] Iter {}/{} – RMSE={:.4f} | {}",
+            idx + 1, total, mean_rmse, resumen,
+        )
+
+        return metrics, None
+
+    def _finalize(self, best_params: dict | None, best_metrics: dict) -> tuple[dict, dict]:
+        """Finaliza la búsqueda: aplica fallback si todos los combos fallaron."""
         if best_params is None:
             best_params = self._fallback_params()
             best_metrics = {"rmse": None, "mae": None, "mape": None, "mase": None}
             logger.debug(
-                "Todos los combos timeout (Newton). Params default: {}",
-                best_params,
+                "Todos los combos timeout (Newton). Params default: {}", best_params,
             )
         else:
             logger.debug(
@@ -152,8 +153,6 @@ class ProphetTuner:
             logger.debug("Mejor conjunto de parámetros: {}", best_params)
 
         return best_params, best_metrics
-
-    # ── Private Helpers ───────────────────────────────────────────────────────
 
     def _load_grid(self) -> dict:
         """Load condition-specific HP grid from config."""

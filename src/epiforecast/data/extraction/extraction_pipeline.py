@@ -28,9 +28,6 @@ def run_pipeline(
 ):
     """Ejecuta el pipeline de extracción de tablas desde boletines PDF de SINAVE.
 
-    Procesa todos los PDF del directorio de entrada, extrae tablas con Camelot,
-    y genera un CSV consolidado con los datos epidemiológicos.
-
     Args:
         input_dir:            Directorio con los PDFs de entrada.
         output_dir:           Directorio donde se guardan los resultados.
@@ -50,102 +47,116 @@ def run_pipeline(
     if not keywords:
         raise ValueError("KEYWORDS vacías.")
 
-    os.makedirs(output_dir, exist_ok=True)
-
-    output_csv = os.path.join(output_dir, "dataset_boletin_epidemiologico.csv")
-    pages_dir = os.path.join(output_dir, "pdf_matched_pages")
-    tablas_dir = os.path.join(output_dir, "csv_tablas_individuales")
-
-    if save_matched_pages:
-        os.makedirs(pages_dir, exist_ok=True)
-
-    if save_individual_tables:
-        os.makedirs(tablas_dir, exist_ok=True)
-
+    dirs = _setup_directories(output_dir, save_matched_pages, save_individual_tables)
     pdf_files = sorted(f for f in os.listdir(input_dir) if f.lower().endswith(".pdf"))
     total_pdfs = len(pdf_files)
-
     log_fn(f"PDFs detectados: {total_pdfs}")
 
     col_map = build_column_map(keywords)
-
     all_rows = []
-    page_found = 0
     run_log = []
     failed_files = []
 
     for idx, file in enumerate(pdf_files, start=1):
         if on_file:
             on_file(file)
-        pct = (idx / total_pdfs * 100) if total_pdfs else 100.0
-        pdf_path = os.path.join(input_dir, file)
-        try:
-            page, year, week = find_page_and_week(pdf_path, keywords)
-            filas_base = None
-            status = "‼️"
 
-            if not page:
-                log_fn("  ‼️ No se encontró página válida")
-                run_log.append(
-                    {"file": file, "year": year, "week": week, "page": page, "rows": filas_base}
-                )
-                log_fn(f"{idx:>3}/{total_pdfs:<3} | {pct:>6.1f}% | {file} | - | - | {status}")
-                continue
+        result = _process_single_pdf(
+            file, idx, total_pdfs, input_dir, keywords, col_map, dirs, log_fn,
+            save_matched_pages, save_individual_tables,
+        )
 
-            page_found += 1
-
-            if save_matched_pages:
-                out_pdf = os.path.join(pages_dir, f"{os.path.splitext(file)[0]}_p{page}.pdf")
-                extract_matched_page(pdf_path, page - 1, out_pdf)
-
-            tables = camelot.read_pdf(pdf_path, pages=str(page), flavor="stream")
-
-            if tables.n == 0:
-                log_fn("  ⚠️ Camelot no detectó tablas")
-                status = "⚠️"
-                run_log.append(
-                    {"file": file, "year": year, "week": week, "page": page, "rows": filas_base}
-                )
-                log_fn(
-                    f"{idx:>3}/{total_pdfs:<3} | {pct:>6.1f}% | {file} | p{page} | {year} W{week:02d} | sin tabla {status} "
-                )
-                continue
-
-            df_raw = tables[0].df
-            df_clean = clean_df(df_raw)
-            df_clean = pad_prev_year_cols(df_clean, keywords)
-            filas_base = len(df_clean)
-            status = "✅" if filas_base == 32 else "⚠️"
-
-            if save_individual_tables:
-                wide_df = reshape_wide(df_clean, year, week, col_map)
-                per_page_csv = os.path.join(tablas_dir, f"{year}_W{week:02d}_P{page}.csv")
-                wide_df.to_csv(per_page_csv, index=False, encoding="utf-8")
-
-            df_long = reshape(df_clean, year, week, col_map)
-            all_rows.append(df_long)
-
-            run_log.append(
-                {"file": file, "year": year, "week": week, "page": page, "rows": filas_base}
-            )
-            log_fn(
-                f"{idx:>3}/{total_pdfs:<3} | {pct:>6.1f}% | {file} | p{page} | {year} W{week:02d} | filas={filas_base} {status}"
-            )
-
-        except Exception as e:
+        run_log.append(result["log_entry"])
+        if result.get("df") is not None:
+            all_rows.append(result["df"])
+        if result.get("failed"):
             failed_files.append(file)
-            run_log.append({"file": file, "year": None, "week": None, "page": None, "rows": None})
-            log_fn(
-                f"{idx:>3}/{total_pdfs:<3} | {pct:>6.1f}% | {file} | ERROR ({type(e).__name__}): {e}"
-            )
-            continue
 
+    _write_results(
+        all_rows, failed_files, run_log, output_dir, dirs["output_csv"],
+        total_pdfs, log_fn,
+    )
+
+
+def _setup_directories(output_dir, save_matched_pages, save_individual_tables):
+    """Crea subdirectorios necesarios y retorna dict de rutas."""
+    os.makedirs(output_dir, exist_ok=True)
+    output_csv = os.path.join(output_dir, "dataset_boletin_epidemiologico.csv")
+    pages_dir = os.path.join(output_dir, "pdf_matched_pages")
+    tablas_dir = os.path.join(output_dir, "csv_tablas_individuales")
+    if save_matched_pages:
+        os.makedirs(pages_dir, exist_ok=True)
+    if save_individual_tables:
+        os.makedirs(tablas_dir, exist_ok=True)
+    return {"output_csv": output_csv, "pages_dir": pages_dir, "tablas_dir": tablas_dir}
+
+
+def _process_single_pdf(
+    file, idx, total_pdfs, input_dir, keywords, col_map, dirs, log_fn,
+    save_matched_pages, save_individual_tables,
+):
+    """Procesa un PDF individual: busca página, extrae tabla, genera registros."""
+    pct = (idx / total_pdfs * 100) if total_pdfs else 100.0
+    pdf_path = os.path.join(input_dir, file)
+    log_entry = {"file": file, "year": None, "week": None, "page": None, "rows": None}
+
+    try:
+        page, year, week = find_page_and_week(pdf_path, keywords)
+        log_entry.update(year=year, week=week, page=page)
+
+        if not page:
+            log_fn("  ‼️ No se encontró página válida")
+            log_fn(f"{idx:>3}/{total_pdfs:<3} | {pct:>6.1f}% | {file} | - | - | ‼️")
+            return {"log_entry": log_entry, "df": None}
+
+        if save_matched_pages:
+            out_pdf = os.path.join(dirs["pages_dir"], f"{os.path.splitext(file)[0]}_p{page}.pdf")
+            extract_matched_page(pdf_path, page - 1, out_pdf)
+
+        tables = camelot.read_pdf(pdf_path, pages=str(page), flavor="stream")
+        if tables.n == 0:
+            log_fn(
+                f"{idx:>3}/{total_pdfs:<3} | {pct:>6.1f}% | {file} | p{page} | "
+                f"{year} W{week:02d} | sin tabla ⚠️ "
+            )
+            return {"log_entry": log_entry, "df": None}
+
+        df_raw = tables[0].df
+        df_clean = clean_df(df_raw)
+        df_clean = pad_prev_year_cols(df_clean, keywords)
+        filas_base = len(df_clean)
+        log_entry["rows"] = filas_base
+        status = "✅" if filas_base == 32 else "⚠️"
+
+        if save_individual_tables:
+            wide_df = reshape_wide(df_clean, year, week, col_map)
+            per_page_csv = os.path.join(dirs["tablas_dir"], f"{year}_W{week:02d}_P{page}.csv")
+            wide_df.to_csv(per_page_csv, index=False, encoding="utf-8")
+
+        df_long = reshape(df_clean, year, week, col_map)
+        log_fn(
+            f"{idx:>3}/{total_pdfs:<3} | {pct:>6.1f}% | {file} | p{page} | "
+            f"{year} W{week:02d} | filas={filas_base} {status}"
+        )
+        return {"log_entry": log_entry, "df": df_long}
+
+    except Exception as e:
+        log_fn(
+            f"{idx:>3}/{total_pdfs:<3} | {pct:>6.1f}% | {file} | "
+            f"ERROR ({type(e).__name__}): {e}"
+        )
+        return {"log_entry": log_entry, "df": None, "failed": True}
+
+
+def _write_results(all_rows, failed_files, run_log, output_dir, output_csv, total_pdfs, log_fn):
+    """Escribe CSV final, lista de fallidos y resumen del pipeline."""
     if failed_files:
         failed_txt = os.path.join(output_dir, "failed_files.txt")
         with open(failed_txt, "w", encoding="utf-8") as f:
             for name in failed_files:
                 f.write(name + "\n")
 
+    page_found = sum(1 for r in run_log if r.get("page") is not None)
     log_fn("\n=== Resumen ===")
     log_fn(f"PDFs procesados: {total_pdfs}")
     log_fn(f"PDFs con página válida: {page_found}")
@@ -158,6 +169,5 @@ def run_pipeline(
 
     final_df = pd.concat(all_rows, ignore_index=True)
     final_df.to_csv(output_csv, index=False, encoding="utf-8")
-
     log_fn(f"Archivo final generado: {output_csv}")
     log_fn(f"Total de filas: {len(final_df)}")

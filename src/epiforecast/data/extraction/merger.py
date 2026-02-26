@@ -124,92 +124,9 @@ def merge_csv(
     output_dir = Path(output_dir)
     output_csv = output_dir / output_filename
 
-    # --- Validaciones de input ---
-    if not input_dir.exists():
-        log_fn(f"❌ Directorio de entrada no existe: {input_dir}", err=True)
-        raise typer.Exit(1)
-
-    csv_candidates = [
-        p
-        for p in input_dir.iterdir()
-        if p.is_file() and p.suffix.lower() == ".csv" and _TIMESTAMP_RE.match(p.name)
-    ]
-
-    if len(csv_candidates) == 0:
-        log_fn(
-            f"❌ No se encontró ningún CSV con formato *_YYYYMMDD_HHMMSS.csv en {input_dir}",
-            err=True,
-        )
-        raise typer.Exit(1)
-
-    if len(csv_candidates) > 1:
-        log_fn(
-            f"❌ Se encontró más de un CSV válido en {input_dir}. Debe existir solo uno.",
-            err=True,
-        )
-        for p in csv_candidates:
-            log_fn(f"   - {p.name}", err=True)
-        raise typer.Exit(1)
-
-    source_csv = csv_candidates[0]
-    log_fn(f"📄 CSV de entrada detectado: {source_csv.name}")
-
-    if not target_csv.exists():
-        log_fn(f"❌ No existe el CSV target: {target_csv}", err=True)
-        raise typer.Exit(1)
-
-    # --- Leer CSV ---
-    try:
-        df_source = pd.read_csv(source_csv, encoding="utf-8")
-        df_target = pd.read_csv(target_csv, encoding="utf-8")
-    except Exception as e:
-        log_fn(f"❌ Error leyendo CSV: {e}", err=True)
-        raise typer.Exit(1)
-
-    # --- Verificar formato ---
-    if list(df_source.columns) != list(df_target.columns):
-        log_fn("❌ Formato de tabla diferente: columnas u orden no coincide.", err=True)
-        log_fn(f"   Source: {list(df_source.columns)}", err=True)
-        log_fn(f"   Target: {list(df_target.columns)}", err=True)
-        raise typer.Exit(1)
-
-    log_fn("✅ Formato de tabla verificado.")
-
-    # Copias SOLO para comparar (no cambian lo que guardas)
-    df_source_cmp = df_source.copy()
-    df_target_cmp = df_target.copy()
-
-    # Semana: igualar "02" y "2" solo para la comparación
-    # (convierte a número y regresa como string sin ceros a la izquierda)
-    df_source_cmp["Semana"] = (
-        pd.to_numeric(df_source_cmp["Semana"], errors="coerce").astype("Int64").astype("string")
-    )
-    df_target_cmp["Semana"] = (
-        pd.to_numeric(df_target_cmp["Semana"], errors="coerce").astype("Int64").astype("string")
-    )
-
-    # IMPORTANTE: no hagas astype(str) a todo el DF
-    merged_check = df_source_cmp.merge(
-        df_target_cmp,
-        how="left",
-        on=list(df_source_cmp.columns),
-        indicator=True,
-    )
-
-    missing_mask = merged_check["_merge"] == "left_only"
-    missing_rows = df_source.loc[missing_mask]  # agregas las filas originales, intactas
-
-    # --- Comparar fila completa ---
-    merged_check = df_source.merge(
-        df_target,
-        how="left",
-        on=list(df_source.columns),
-        indicator=True,
-    )
-
-    missing_mask = merged_check["_merge"] == "left_only"
-    missing_rows = df_source.loc[missing_mask]
-    missing_count = int(missing_mask.sum())
+    source_csv = _find_source_csv(input_dir, log_fn)
+    df_source, df_target = _read_and_validate(source_csv, target_csv, log_fn)
+    missing_rows, missing_count = _find_missing_rows(df_source, df_target)
 
     if missing_count == 0:
         log_fn("✅ No se encontraron diferencias en los archivos.")
@@ -236,6 +153,91 @@ def merge_csv(
         f"Total final: {len(df_final)}. "
         f"Archivo: {output_csv}"
     )
+
+
+def _find_source_csv(input_dir: Path, log_fn) -> Path:
+    """Busca exactamente un CSV con timestamp en el directorio de entrada."""
+    if not input_dir.exists():
+        log_fn(f"❌ Directorio de entrada no existe: {input_dir}", err=True)
+        raise typer.Exit(1)
+
+    csv_candidates = [
+        p
+        for p in input_dir.iterdir()
+        if p.is_file() and p.suffix.lower() == ".csv" and _TIMESTAMP_RE.match(p.name)
+    ]
+
+    if len(csv_candidates) == 0:
+        log_fn(
+            f"❌ No se encontró ningún CSV con formato *_YYYYMMDD_HHMMSS.csv en {input_dir}",
+            err=True,
+        )
+        raise typer.Exit(1)
+
+    if len(csv_candidates) > 1:
+        log_fn(
+            f"❌ Se encontró más de un CSV válido en {input_dir}. Debe existir solo uno.",
+            err=True,
+        )
+        for p in csv_candidates:
+            log_fn(f"   - {p.name}", err=True)
+        raise typer.Exit(1)
+
+    log_fn(f"📄 CSV de entrada detectado: {csv_candidates[0].name}")
+    return csv_candidates[0]
+
+
+def _read_and_validate(
+    source_csv: Path, target_csv: Path, log_fn,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Lee source y target CSV y valida que tengan las mismas columnas."""
+    if not target_csv.exists():
+        log_fn(f"❌ No existe el CSV target: {target_csv}", err=True)
+        raise typer.Exit(1)
+
+    try:
+        df_source = pd.read_csv(source_csv, encoding="utf-8")
+        df_target = pd.read_csv(target_csv, encoding="utf-8")
+    except Exception as e:
+        log_fn(f"❌ Error leyendo CSV: {e}", err=True)
+        raise typer.Exit(1)
+
+    if list(df_source.columns) != list(df_target.columns):
+        log_fn("❌ Formato de tabla diferente: columnas u orden no coincide.", err=True)
+        log_fn(f"   Source: {list(df_source.columns)}", err=True)
+        log_fn(f"   Target: {list(df_target.columns)}", err=True)
+        raise typer.Exit(1)
+
+    log_fn("✅ Formato de tabla verificado.")
+    return df_source, df_target
+
+
+def _find_missing_rows(
+    df_source: pd.DataFrame, df_target: pd.DataFrame,
+) -> tuple[pd.DataFrame, int]:
+    """Identifica filas en source que no existen en target (comparación normalizada)."""
+    # Copias para comparar con semana normalizada
+    df_source_cmp = df_source.copy()
+    df_target_cmp = df_target.copy()
+    df_source_cmp["Semana"] = (
+        pd.to_numeric(df_source_cmp["Semana"], errors="coerce").astype("Int64").astype("string")
+    )
+    df_target_cmp["Semana"] = (
+        pd.to_numeric(df_target_cmp["Semana"], errors="coerce").astype("Int64").astype("string")
+    )
+    merged_check = df_source_cmp.merge(
+        df_target_cmp, how="left", on=list(df_source_cmp.columns), indicator=True,
+    )
+    missing_mask = merged_check["_merge"] == "left_only"
+    missing_rows = df_source.loc[missing_mask]
+
+    # Comparar fila completa (sin normalización)
+    merged_check = df_source.merge(
+        df_target, how="left", on=list(df_source.columns), indicator=True,
+    )
+    missing_mask = merged_check["_merge"] == "left_only"
+    missing_rows = df_source.loc[missing_mask]
+    return missing_rows, int(missing_mask.sum())
 
 
 @app.command()
