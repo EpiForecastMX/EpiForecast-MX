@@ -1,21 +1,13 @@
 """INEGI API utility functions: URL construction, response parsing."""
 
+from loguru import logger
 import pandas as pd
 import requests
-import typer
-
-from epiforecast.data.ingestion.inegi_constants import ESTADOS_DICT, REGION_SALUD_MENTAL
-from epiforecast.utils import paths as directory_manager
-from epiforecast.utils.config import conf
-from epiforecast.visualization.inegi_tables import eda_inegi
 
 # ========= Configuración =========
 BASE_PXWEB = "https://www.inegi.org.mx/app/tabulados/pxwebv2/api/v1/es"
 DB = "Poblacion"
 TABLA_PX = "Poblacion_01.px"
-conf_paths = conf.get("data")
-utils_path = conf["paths"]["utils"]
-inegi_path = conf["data"]["inegi"]
 
 
 QUERY = {
@@ -38,10 +30,6 @@ URL_SUPERFICIE = (
     "null/es/null/null/3/n/0/1/null/null/1/6/json/"
     "563cbaa8-58bb-fef8-6763-1f1dae318f99"
 )
-
-
-app = typer.Typer(add_completion=False)
-log = typer.echo
 
 
 # ========= Descarga en memoria =========
@@ -123,11 +111,9 @@ def validar_hombres_mujeres_vs_total(df_wide: pd.DataFrame) -> None:
             .head(5)
             .to_string(index=False)
         )
-
-        log(
-            "⚠️ Inconsistencias detectadas: Hombres + Mujeres ≠ Total.\n"
-            "Revisa estos registros:\n"
-            f"{ejemplos}"
+        logger.warning(
+            "Inconsistencias detectadas: Hombres + Mujeres != Total.\nRevisa estos registros:\n{}",
+            ejemplos,
         )
 
 
@@ -141,97 +127,3 @@ def get_superficie_estados(url, catalogo):
             "Superficie_km2": data["value"],
         }
     )
-
-
-def run():
-    log(">>>🚀 Consultando PxWeb (INEGI)...")
-    data = descargar_jsonstat_pxweb(DB, TABLA_PX, QUERY)
-
-    log(">>>🔄 Convirtiendo JSON-STAT a DataFrame (formato long)...")
-    df = jsonstat_a_dataframe(data)
-
-    log(">>>🧮 Ajustando DataFrame")
-    df["valor"] = pd.to_numeric(df["valor"], errors="coerce")  # Convirtiendo a numéricos
-    if "Grupo quinquenal de edad" not in df.columns:  # Eliminando Grupo quinquenal de edad
-        df["Grupo quinquenal de edad"] = "Total"
-    df = df[df["Grupo quinquenal de edad"] == "Total"].copy()
-    df = df.drop(columns=["Grupo quinquenal de edad"])
-    df = df.set_index(
-        ["Entidad federativa", "Periodo", "Sexo"]
-    )  # Convirtiendo a formato wide (Sexo → columnas)
-    df = df["valor"].unstack("Sexo").reset_index()
-
-    log(">>>✅ Validando Hombres + Mujeres = Total...")
-    validar_hombres_mujeres_vs_total(df)
-
-    log(">>>🎯 Filtrando solo el periodo 2020")
-    df_2020 = df[df["Periodo"] == "2020"].copy()  # Filtrando por 2020 solamente
-    df_2020 = df_2020.reset_index(drop=True)  # Reset al indice
-    df_2020 = df_2020.drop(columns=["Periodo"])  # Se hace drop a periodo (ya no se ocupa)
-    df_2020.columns.name = None  # Se quita el nombre al indice
-
-    log(">>>🚀 Descargabndo datos de extensión territorial")
-    df_superficie = get_superficie_estados(url=URL_SUPERFICIE, catalogo=ESTADOS_DICT)
-    df_superficie["Superficie_km2"] = pd.to_numeric(
-        df_superficie["Superficie_km2"].str.replace(",", "", regex=False), errors="coerce"
-    )
-
-    log(">>>🎯 Combinando DataFrames")
-    df_2020 = df_superficie.merge(df_2020, on="Entidad federativa", how="inner")
-    df_2020 = df_2020.sort_values("Entidad federativa").reset_index(drop=True)
-
-    log(">>>🎯 Calculando clasificaciones")
-    df_cat = df_2020.copy()
-    df_cat["region_salud_mental"] = df_cat["Entidad federativa"].map(REGION_SALUD_MENTAL)
-    faltantes = df_cat[df_cat["region_salud_mental"].isna()]["Entidad federativa"].unique()
-    if len(faltantes) > 0:
-        log(f"⚠️ Estados sin REGION_SALUD_MENTAL: {', '.join(sorted(faltantes))}")
-
-    df_cat["ratio_h_m"] = (
-        df_cat["Hombres"] / df_cat["Mujeres"]
-    )  # Se calcula la proporción hombres / mujeres
-    df_cat["ratio_h_m_cat"] = pd.cut(  # Se categoriza el ratio en 3 grupos interpretables
-        df_cat["ratio_h_m"],
-        bins=[-float("inf"), 0.99, 1.01, float("inf")],
-        labels=["Mayormente mujeres", "Balanceado", "Mayormente hombres"],
-    )
-
-    df_cat["tamano_poblacional_predefinido"] = (
-        pd.cut(  # Se clasifica el tamaño poblacional por rangos fijos
-            df_cat["Total"],
-            bins=[0, 1_000_000, 3_000_000, 6_000_000, df_cat["Total"].max()],
-            labels=["0-1M", "1-3M", "3-6M", "6M+"],
-        )
-    )
-    df_cat["tamano_poblacional_grupo_percentil"] = (
-        pd.qcut(  # Se agrupa el tamaño poblacional por cuartiles
-            df_cat["Total"], q=4, labels=["Población baja", "Media-baja", "Media-alta", "Alta"]
-        )
-    )
-    df_cat["densidad_poblacion"] = df_cat["Total"] / df_cat["Superficie_km2"]
-
-    df_cat["extension_territorial_percentil"] = pd.qcut(
-        df_cat["Superficie_km2"],
-        q=4,
-        labels=["Territorio pequeño", "Medio-pequeño", "Medio-grande", "Grande"],
-    )
-
-    df_cat["densidad_poblacional_percentil"] = pd.qcut(
-        df_cat["densidad_poblacion"], q=4, labels=["Baja", "Media-baja", "Media-alta", "Alta"]
-    )
-
-    log(">>>✅ DataFrame Finalizado con éxito")
-    directory_manager.asegurar_ruta(utils_path)
-    df_cat.to_csv(inegi_path, index=False, encoding="utf-8")
-    log(">>>✅ Iniciando EDA")
-
-    eda_inegi(df_cat)
-
-
-@app.command()
-def main():
-    run()
-
-
-if __name__ == "__main__":
-    app()
