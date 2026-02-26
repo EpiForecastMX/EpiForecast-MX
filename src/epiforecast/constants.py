@@ -2,6 +2,20 @@
 
 from typing import Final
 
+# Reproducibility
+RANDOM_SEED: Final[int] = 42
+
+# COVID-19 pandemic period (used for visualization bands and CV bias analysis)
+COVID_START: Final[str] = "2020-03-01"
+COVID_END: Final[str] = "2021-06-01"
+
+# Default visualization DPI
+VIZ_DPI_SCREEN: Final[int] = 150
+VIZ_DPI_PRINT: Final[int] = 300
+
+# Percentage multiplier (avoids magic `* 100` scattered in code)
+PCT_MULTIPLIER: Final[int] = 100
+
 # ICD-10 condition codes
 CONDITIONS: Final[dict[str, str]] = {
     "F32": "Depresión",
