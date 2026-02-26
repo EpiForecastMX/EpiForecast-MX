@@ -135,11 +135,16 @@ addopts = [
     "--strict-markers",
     "--cov=src/epiforecast",
     "--cov-report=term-missing",
-    "--cov-fail-under=0",              # start at 0, increase as you add tests
+    "--cov-fail-under=0",
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks integration tests",
+]
+filterwarnings = [
+    "ignore::pyparsing.PyparsingDeprecationWarning",
+    "ignore::DeprecationWarning:matplotlib",
+    "ignore::pandas.errors.SettingWithCopyWarning",
 ]
 
 # ─── Coverage ─────────────────────────────────────────────────────────────────

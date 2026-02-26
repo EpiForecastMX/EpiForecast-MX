@@ -1,6 +1,5 @@
 """Base visualization helpers: charts, forecast plots, and IMSS styling."""
 
-# src/utils/graficos.py
 from abc import ABC
 import os
 
@@ -194,15 +193,7 @@ class GraficosHelper(ABC):
         return self._guardar_figura(fig, f"violin_{col}.png")
 
     def plot_correlacion(self, df: pd.DataFrame) -> str | None:
-        """Genera heatmap triangular inferior de correlación de Pearson.
-
-        Args:
-            df: DataFrame con columnas numéricas para calcular correlación.
-
-        Returns:
-            Ruta del PNG generado, o None si hay menos de 2 columnas.
-        """
-        """Heatmap triangular inferior de correlación de Pearson."""
+        """Genera heatmap triangular inferior de correlación de Pearson."""
         num = df.dropna()
         if num.shape[1] < 2:
             return None
@@ -235,16 +226,7 @@ class GraficosHelper(ABC):
     # ---------- Gráficos de análisis complementarios ---------- #
 
     def plot_box(self, serie: pd.DataFrame, col: str, col_comparativa: str) -> str | None:
-        """Genera boxplot de una variable numérica agrupada por una categórica.
-
-        Args:
-            serie:           DataFrame con ambas columnas.
-            col:             Nombre de la columna categórica (eje X).
-            col_comparativa: Nombre de la columna numérica (eje Y).
-
-        Returns:
-            Ruta del PNG generado, o None si ambas columnas son iguales.
-        """
+        """Genera boxplot de una variable numérica agrupada por una categórica."""
         if col == col_comparativa:
             return None
 
@@ -275,17 +257,7 @@ class GraficosHelper(ABC):
         agrupamiento_sexo: bool = True,
         agrupamiento_entidad: bool = False,
     ) -> str | None:
-        """Genera serie de tiempo delegando a ``series_plots.serie_tiempo``.
-
-        Args:
-            df:                   DataFrame con Fecha e incrementos.
-            padecimiento:         Nombre del padecimiento.
-            agrupamiento_sexo:    Si True, separa por sexo.
-            agrupamiento_entidad: Si True, separa por región de salud mental.
-
-        Returns:
-            Ruta del PNG generado, o None.
-        """
+        """Genera serie de tiempo delegando a ``series_plots.serie_tiempo``."""
         from epiforecast.visualization.series_plots import serie_tiempo as _serie_tiempo
 
         return _serie_tiempo(
