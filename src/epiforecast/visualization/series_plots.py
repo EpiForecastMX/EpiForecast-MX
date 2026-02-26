@@ -5,6 +5,8 @@ import os
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from epiforecast.constants import COVID_END, COVID_START
+
 
 def serie_tiempo(
     df: pd.DataFrame,
@@ -16,17 +18,20 @@ def serie_tiempo(
     agrupamiento_sexo: bool = True,
     agrupamiento_entidad: bool = False,
 ) -> str | None:
-    """Serie de tiempo semanal nacional agrupada por sexo o región de salud mental.
+    """Genera gráfico de serie de tiempo semanal nacional agrupada por sexo o región.
 
     Args:
         df:                   DataFrame con columnas Fecha, incrementos_hombres, incrementos_mujeres.
         padecimiento:         Nombre del padecimiento para el título y nombre de archivo.
         carpeta_salida:       Directorio donde se guarda el PNG.
         dpi:                  Resolución de guardado en puntos por pulgada.
-        conf_paleta:          Dict de colores IMSS_COLORS (usa clave "cool_gray").
-        conf_paleta_sexo:     Dict de colores por sexo (claves "Hombres", "Mujeres").
+        conf_paleta:          Dict de colores IMSS_COLORS (usa clave ``cool_gray``).
+        conf_paleta_sexo:     Dict de colores por sexo (claves ``Hombres``, ``Mujeres``).
         agrupamiento_sexo:    Si True, grafica líneas separadas por sexo.
         agrupamiento_entidad: Si True, grafica líneas separadas por región de salud mental.
+
+    Returns:
+        Ruta del archivo PNG generado, o ``None`` si no se pudo crear.
     """
     fig, ax = plt.subplots(figsize=(16, 4))
     subtitulo = ""
@@ -72,10 +77,10 @@ def serie_tiempo(
         subtitulo = f"por {col_region}"
 
     try:
-        covid_start = pd.Timestamp("2020-03-01")
-        covid_end = pd.Timestamp("2021-06-01")
+        covid_start = pd.Timestamp(COVID_START)
+        covid_end = pd.Timestamp(COVID_END)
         ax.axvspan(covid_start, covid_end, alpha=0.1, color="red", label="Covid")  # type: ignore[arg-type]
-    except Exception:
+    except (ValueError, TypeError):
         pass
 
     ax.set_xlabel("Fecha", fontsize=11)

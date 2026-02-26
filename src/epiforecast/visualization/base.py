@@ -16,6 +16,12 @@ from epiforecast.utils.config import conf
 
 class GraficosHelper(ABC):
     def __init__(self, carpeta_salida: str, numero_top_columnas: int) -> None:
+        """Inicializa el helper de gráficos con directorio de salida y paleta IMSS.
+
+        Args:
+            carpeta_salida:       Directorio donde se guardan las figuras PNG.
+            numero_top_columnas:  Máximo de categorías a mostrar en gráficos de barras.
+        """
         self.carpeta_salida = carpeta_salida
         self.numero_top_columnas = numero_top_columnas
         self.conf_paleta = conf["IMSS_COLORS"]
@@ -74,8 +80,8 @@ class GraficosHelper(ABC):
             kde = gaussian_kde(serie)
             x_vals = np.linspace(serie.min(), serie.max(), 300)
             ax.plot(x_vals, kde(x_vals), color=self.conf_paleta["neutral_black"], linewidth=2)
-        except Exception:
-            pass
+        except (np.linalg.LinAlgError, ValueError):
+            pass  # KDE puede fallar con datos degenerados (varianza cero, muestras insuficientes)
 
         ax.axvline(
             serie.mean(),
@@ -184,6 +190,14 @@ class GraficosHelper(ABC):
         return self._guardar_figura(fig, f"violin_{col}.png")
 
     def plot_correlacion(self, df: pd.DataFrame) -> str | None:
+        """Genera heatmap triangular inferior de correlación de Pearson.
+
+        Args:
+            df: DataFrame con columnas numéricas para calcular correlación.
+
+        Returns:
+            Ruta del PNG generado, o None si hay menos de 2 columnas.
+        """
         """Heatmap triangular inferior de correlación de Pearson."""
         num = df.dropna()
         if num.shape[1] < 2:
@@ -217,6 +231,16 @@ class GraficosHelper(ABC):
     # ---------- Gráficos de análisis complementarios ---------- #
 
     def plot_box(self, serie: pd.DataFrame, col: str, col_comparativa: str) -> str | None:
+        """Genera boxplot de una variable numérica agrupada por una categórica.
+
+        Args:
+            serie:           DataFrame con ambas columnas.
+            col:             Nombre de la columna categórica (eje X).
+            col_comparativa: Nombre de la columna numérica (eje Y).
+
+        Returns:
+            Ruta del PNG generado, o None si ambas columnas son iguales.
+        """
         if col == col_comparativa:
             return None
 
@@ -247,6 +271,17 @@ class GraficosHelper(ABC):
         agrupamiento_sexo: bool = True,
         agrupamiento_entidad: bool = False,
     ) -> str | None:
+        """Genera serie de tiempo delegando a ``series_plots.serie_tiempo``.
+
+        Args:
+            df:                   DataFrame con Fecha e incrementos.
+            padecimiento:         Nombre del padecimiento.
+            agrupamiento_sexo:    Si True, separa por sexo.
+            agrupamiento_entidad: Si True, separa por región de salud mental.
+
+        Returns:
+            Ruta del PNG generado, o None.
+        """
         from epiforecast.visualization.series_plots import serie_tiempo as _serie_tiempo
 
         return _serie_tiempo(

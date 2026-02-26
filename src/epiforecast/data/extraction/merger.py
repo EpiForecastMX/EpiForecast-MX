@@ -23,14 +23,14 @@ _TIMESTAMP_RE = re.compile(r".*_\d{8}_\d{6}\.csv$")
 
 
 def _has_tty() -> bool:
-    # True si stdin y stdout son interactivos (terminal real)
+    """Detecta si la sesión tiene una terminal interactiva (TTY) disponible."""
     return sys.stdin.isatty() and sys.stdout.isatty()
 
 
 def _pick_directory_gui() -> Path | None:
     try:
         from tkinter import Tk, filedialog
-    except Exception:
+    except ImportError:
         return None
 
     try:
@@ -41,11 +41,20 @@ def _pick_directory_gui() -> Path | None:
         folder = filedialog.askdirectory()
         root.destroy()
         return Path(folder) if folder else None
-    except Exception:
-        return None
+    except (RuntimeError, OSError):
+        return None  # Falla si no hay display gráfico disponible
 
 
 def ensure_empty_dir_or_exit(path: Path, *, interactive: bool = True) -> None:
+    """Verifica que el directorio esté vacío; solicita confirmación o aborta.
+
+    Args:
+        path:        Directorio a verificar.
+        interactive: Si True y hay TTY, solicita confirmación al usuario.
+
+    Raises:
+        typer.Exit: Si el usuario cancela o no hay TTY y el directorio no está vacío.
+    """
     path.mkdir(parents=True, exist_ok=True)
     has_contents = any(path.iterdir())
     if not has_contents:
@@ -72,6 +81,18 @@ def ensure_empty_dir_or_exit(path: Path, *, interactive: bool = True) -> None:
 
 
 def rename_csv_with_timestamp(csv_path: str | Path) -> Path:
+    """Renombra un archivo CSV agregando timestamp ``_YYYYMMDD_HHMMSS`` al nombre.
+
+    Args:
+        csv_path: Ruta del archivo CSV a renombrar.
+
+    Returns:
+        Nuevo Path con el timestamp incorporado.
+
+    Raises:
+        FileNotFoundError: Si el archivo no existe.
+        ValueError:        Si el archivo no es ``.csv``.
+    """
     csv_path = Path(csv_path)
     if not csv_path.exists():
         raise FileNotFoundError(f"No existe el archivo: {csv_path}")
@@ -229,6 +250,7 @@ def main(
     save_matched_pages: bool = typer.Option(False, "--save-matched-pages"),
     save_individual_tables: bool = typer.Option(False, "--save-individual-tables"),
 ):
+    """CLI principal: extrae tablas de boletines PDF, renombra y hace merge incremental."""
     # "Smart": solo pregunta si hay terminal interactiva
     if _has_tty():
         if typer.confirm(f"¿Deseas cambiar la carpeta por defecto? ({input_dir})", default=False):

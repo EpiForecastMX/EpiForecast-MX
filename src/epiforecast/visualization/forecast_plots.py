@@ -56,8 +56,8 @@ def generar_graficos_pronostico() -> None:
                 ],
             )
             hp_frames.append(df_hp)
-        except Exception:
-            pass
+        except (KeyError, ValueError, FileNotFoundError):
+            pass  # CSV incompleto o con columnas faltantes; se omite
     df_hp_all = (
         pd.concat(hp_frames, ignore_index=True)
         .drop_duplicates("archivo_modelo")
