@@ -51,31 +51,22 @@ class GetInegi:
     def descargar_jsonstat_pxweb(
         self, db: str, tabla_px: str, consulta: dict, timeout: int = 60
     ) -> dict:
+        """Delegate to inegi_utils.descargar_jsonstat_pxweb with error handling."""
+        from epiforecast.data.ingestion.inegi_utils import (
+            descargar_jsonstat_pxweb as _descargar,
+        )
+
         url = f"{self.BASE_PXWEB.rstrip('/')}/{db.strip('/')}/{tabla_px.lstrip('/')}"
-        headers = {
-            "User-Agent": "Mozilla/5.0 (compatible; PxWebClient/1.0)",
-            "Accept": "application/json",
-            "Content-Type": "application/json",
-            "Origin": "https://www.inegi.org.mx",
-            "Referer": "https://www.inegi.org.mx/",
-        }
         logger.info(
             "PxWeb POST | url={} | db={} | tabla={} | timeout={}s", url, db, tabla_px, timeout
         )
-
         try:
-            resp = requests.post(url, headers=headers, json=consulta, timeout=timeout)
-            resp.raise_for_status()
-            data = resp.json()
-            logger.info(
-                "PxWeb OK | status={} | bytes={}", resp.status_code, len(resp.content or b"")
-            )
-            return data  # type: ignore[no-any-return]
-
+            data = _descargar(db, tabla_px, consulta, timeout)
+            logger.info("PxWeb OK")
+            return data
         except requests.RequestException as ex:
             logger.exception("PxWeb error HTTP/red: {}", ex)
             raise RuntimeError(f"Falla al consultar PxWeb: {ex}") from ex
-
         except ValueError as ex:
             logger.exception("PxWeb respuesta no-JSON: {}", ex)
             raise RuntimeError("La respuesta de PxWeb no es JSON válido.") from ex
@@ -83,46 +74,17 @@ class GetInegi:
     # ========= Conversión JSON-STAT v2 -> DataFrame =========
 
     def _codigos_en_orden(self, indice_categoria, n: int) -> list:
-        """Normaliza category['index'] a lista [pos -> codigo]."""
-        if isinstance(indice_categoria, list):
-            return indice_categoria
+        """Delegate to inegi_utils._codigos_en_orden."""
+        from epiforecast.data.ingestion.inegi_utils import _codigos_en_orden
 
-        if isinstance(indice_categoria, dict):
-            codigos = [None] * n
-            for codigo, pos in indice_categoria.items():
-                codigos[int(pos)] = codigo
-            return codigos
-
-        raise TypeError(f"Tipo inesperado para category['index']: {type(indice_categoria)}")
+        return _codigos_en_orden(indice_categoria, n)
 
     def jsonstat_a_dataframe(self, data: dict) -> pd.DataFrame:
+        """Delegate to inegi_utils.jsonstat_a_dataframe."""
+        from epiforecast.data.ingestion.inegi_utils import jsonstat_a_dataframe
+
         logger.info("Convirtiendo JSON-stat a DataFrame...")
-
-        ds = data["dataset"]
-        dims = ds["dimension"]
-        ids = dims["id"]
-        size = dims["size"]
-
-        logger.debug("Dimensiones | ids={} | size={}", ids, size)
-
-        tabla_dim = pd.MultiIndex.from_product(
-            [range(s) for s in size],
-            names=ids,
-        ).to_frame(index=False)
-
-        for dim, n in zip(ids, size):
-            logger.debug("Procesando dimensión '{}' ({} elementos)", dim, n)
-            cat = dims[dim]["category"]
-            codigos = self._codigos_en_orden(cat["index"], n)
-            etiquetas = cat.get("label", {})
-
-            tabla_dim[dim] = tabla_dim[dim].map(lambda i: codigos[int(i)])
-            if etiquetas:
-                tabla_dim[dim] = tabla_dim[dim].map(lambda x: etiquetas.get(x, x))
-
-        df = tabla_dim.copy()
-        df["valor"] = ds["value"]
-
+        df = jsonstat_a_dataframe(data)
         logger.info("JSON-stat convertido | filas={}", len(df))
         return df
 
@@ -142,18 +104,11 @@ class GetInegi:
         )
 
     def validar_hombres_mujeres_vs_total(self) -> None:
-        diff = self.df["Total"] - (self.df["Hombres"] + self.df["Mujeres"])
-        errores = self.df[diff != 0]
+        """Delegate to inegi_utils.validar_hombres_mujeres_vs_total."""
+        from epiforecast.data.ingestion.inegi_utils import validar_hombres_mujeres_vs_total
 
-        if not errores.empty:
-            ejemplos = (
-                errores[["Entidad federativa", "Hombres", "Mujeres", "Total"]]
-                .head(5)
-                .to_string(index=False)
-            )
-            logger.error("Inconsistencias detectadas: Hombres + Mujeres ≠ Total\n{}", ejemplos)
-        else:
-            logger.debug("Validación OK: Hombres + Mujeres = Total en todos los registros.")
+        validar_hombres_mujeres_vs_total(self.df)
+        logger.debug("Validación OK: Hombres + Mujeres = Total en todos los registros.")
 
     def filtra_periodo_max(self) -> None:
         periodo_max = self.df["Periodo"].max()
@@ -169,25 +124,15 @@ class GetInegi:
         )
 
     def get_superficie_estados(self) -> None:
-        logger.info("Descargando superficies estatales desde API INEGI...")
+        """Delegate HTTP + DataFrame creation to inegi_utils; handle merge locally."""
+        from epiforecast.data.ingestion.inegi_utils import get_superficie_estados as _get_sup
 
+        logger.info("Descargando superficies estatales desde API INEGI...")
         try:
-            resp = requests.get(self.URL_SUPERFICIE, timeout=30)
-            resp.raise_for_status()
-            data = resp.json()
+            self.df_superficie = _get_sup(self.URL_SUPERFICIE, self.ESTADOS_DICT)
         except requests.RequestException as ex:
             logger.exception("Error al descargar superficie estatal: {}", ex)
             raise RuntimeError(f"Falla al descargar superficie estatal: {ex}") from ex
-
-        self.df_superficie = pd.DataFrame(
-            {
-                "Entidad federativa": [
-                    self.ESTADOS_DICT[e]
-                    for e in data["dimension"]["municipality"]["category"]["index"]
-                ],
-                "Superficie_km2": data["value"],
-            }
-        )
 
         self.df_superficie["Superficie_km2"] = pd.to_numeric(
             self.df_superficie["Superficie_km2"].str.replace(",", "", regex=False),
