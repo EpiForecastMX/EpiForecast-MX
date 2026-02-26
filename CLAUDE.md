@@ -1,7 +1,7 @@
 # CLAUDE.md — EpiForecast-MX Project Instructions
 
 > Last updated: 2026-02-25
-> Compliance: A+ (153/153 — 100%) | Coverage: 82% (536 tests) | Branch: main
+> Compliance: A+ (153/153 — 100%) | Coverage: 84% (536 tests) | Branch: main
 
 ---
 
@@ -35,7 +35,7 @@
 
 ```
 src/epiforecast/
-├── constants.py               # ICD-10 codes, 32 states, sex modes, RATE_PER=100_000
+├── constants.py               # ICD-10 codes, 32 states, sex modes, RATE_PER=100_000, RANDOM_SEED, COVID_START/END, VIZ_DPI
 ├── data/
 │   ├── extraction/
 │   │   ├── pdf_extractor.py   # Table detection + parsing (Camelot + regex)
@@ -368,17 +368,18 @@ tests/
 └── integration/           # end-to-end smoke tests (manual trigger in CI)
 ```
 
-### Coverage (82% — 1854/2258 statements)
+### Coverage (84% — 1871/2232 statements)
 
 | Module | Coverage | Notes |
 |--------|---------|-------|
 | constants, filter, imputation, transformer | 100% | |
 | metrics, paths, dataframe_helpers | 100% | |
 | forecast_chart, inegi_plots, inegi_tables, report_tables | 100% | |
+| demographic, factory, prediction, base modules | 100% | |
 | cleaner, reporters, tuner | 96–98% | |
-| extraction_pipeline, cross_validator, demographic | 94–97% | |
-| merger | 21% | I/O heavy — requires real PDF files |
-| forecast_plots | 28% | Requires real model CSV files to orchestrate |
+| extraction_pipeline, cross_validator, chart_annotations | 94–95% | |
+| merger | 23% | I/O heavy — requires real PDF files |
+| forecast_plots | 30% | Requires real model CSV files to orchestrate |
 | config.py | 0% | sys.exit at module scope — untestable without real YAMLs |
 
 ### Key testing patterns
