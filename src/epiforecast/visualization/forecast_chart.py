@@ -82,7 +82,7 @@ def graficar_pronostico(
     title_parts = _parse_title(titulo, padecimiento, serie, fecha_max_fc)
 
     fig, ax = _setup_figure(title_parts, colors)
-    _plot_series(ax, forecast, serie, outliers, fecha_max_datos, fecha_max_fc, colors, conf_covid)
+    _plot_series(ax, forecast, serie, outliers, fecha_max_datos, fecha_max_fc, colors, conf_covid)  # type: ignore[arg-type]
     _anotar_divisores(ax, fecha_max_datos, colors["div"], colors["fc"])
     _anotar_zona_cv(ax, fecha_max_datos, colors["gray"])
     _format_axes(ax, colors)
@@ -168,7 +168,11 @@ def _plot_series(
     """Dibuja todas las capas de datos: zona pronóstico, COVID, banda, observaciones, línea, outliers."""
     # Zona pronóstico
     ax.axvspan(
-        fecha_max_datos, fecha_max_fc, alpha=_ALPHA_FORECAST_ZONE, color=colors["fc"], zorder=0
+        fecha_max_datos,  # type: ignore[arg-type]
+        fecha_max_fc,  # type: ignore[arg-type]
+        alpha=_ALPHA_FORECAST_ZONE,
+        color=colors["fc"],
+        zorder=0,  # type: ignore[arg-type]
     )
 
     # COVID-19
@@ -178,7 +182,7 @@ def _plot_series(
     mid_covid = covid_ini + (covid_fin - covid_ini) / 2
     ax.annotate(
         "COVID-19",
-        xy=(mid_covid, 1.0),
+        xy=(mid_covid, 1.0),  # type: ignore[arg-type]
         xycoords=("data", "axes fraction"),  # type: ignore[arg-type]
         fontsize=_FS_COVID,
         fontweight="bold",

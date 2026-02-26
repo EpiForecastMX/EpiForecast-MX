@@ -100,6 +100,7 @@ force-sort-within-sections = true
 "src/epiforecast/data/extraction/*" = ["PTH103", "PTH110", "PTH112", "PTH118", "PTH122", "PTH123", "PTH208", "B007", "B018", "B904", "F841", "N803", "SIM102"]
 "src/epiforecast/data/ingestion/*" = ["B023", "B905"]
 "src/epiforecast/data/preprocessing/transformer.py" = ["B023", "B905", "ERA001", "N801"]
+"scripts/*" = ["PTH118", "PTH123", "SIM102"]
 "src/epiforecast/data/preprocessing/imputation.py" = ["B023", "B905", "ERA001", "N801"]
 "src/epiforecast/visualization/base.py" = ["PTH118", "B905", "N806", "B024"]
 "src/epiforecast/visualization/forecast_chart.py" = ["PTH118", "N806"]

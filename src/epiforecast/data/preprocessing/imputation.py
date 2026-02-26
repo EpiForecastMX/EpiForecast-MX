@@ -39,7 +39,7 @@ def ajusta_outliers(df: pd.DataFrame, columnas: list, agrupacion: list) -> pd.Da
 
 def _compute_iqr_stats(df: pd.DataFrame, columna: str, agrupacion: list) -> pd.DataFrame:
     """Calcula estadísticas IQR por grupo de agrupación."""
-    return (
+    return (  # type: ignore[no-any-return]
         df.groupby(agrupacion, sort=False)
         .apply(  # type: ignore[call-overload]
             lambda g: pd.Series(

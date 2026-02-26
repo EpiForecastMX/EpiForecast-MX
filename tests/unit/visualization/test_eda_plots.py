@@ -2,6 +2,7 @@
 """Unit tests for EDAReportBuilder and dataclasses in eda_plots.py.
 
 Mocks conf, filesystem helpers, and GraficosHelper to avoid side effects.
+Summary functions are tested against the standalone ``eda_summaries`` module.
 """
 
 from unittest.mock import MagicMock, patch
@@ -14,6 +15,14 @@ from epiforecast.visualization.eda_plots import (
     EDAReportBuilder,
     ReportData,
     SeccionNota,
+)
+from epiforecast.visualization.eda_summaries import (
+    estadisticas_categoricas,
+    estadisticas_numericas,
+    resumen_general,
+    resumen_nulos,
+    resumen_unicos,
+    tablas_categoricas,
 )
 
 # ── Shared fixtures ───────────────────────────────────────────────────────────
@@ -121,123 +130,102 @@ class TestReportData:
         assert rd.titulo == "Mi Reporte"
 
 
-# ── EDAReportBuilder.resumen_general ─────────────────────────────────────────
+# ── resumen_general (standalone) ─────────────────────────────────────────────
 
 
 class TestResumenGeneral:
-    def test_returns_dict(self, builder):
-        result = builder.resumen_general()
+    def test_returns_dict(self, sample_df):
+        result = resumen_general(sample_df, "test_source", OPCIONES)
         assert isinstance(result, dict)
 
-    def test_has_expected_keys(self, builder):
-        result = builder.resumen_general()
+    def test_has_expected_keys(self, sample_df):
+        result = resumen_general(sample_df, "test_source", OPCIONES)
         expected = {"Fecha de EDA", "Filas", "Columnas", "Fuente", "Porcentaje de nulos"}
         assert expected.issubset(set(result.keys()))
 
-    def test_filas_matches_df(self, builder, sample_df):
-        result = builder.resumen_general()
+    def test_filas_matches_df(self, sample_df):
+        result = resumen_general(sample_df, "test_source", OPCIONES)
         assert result["Filas"] == f"{len(sample_df):,}"
 
-    def test_padecimiento_from_opciones(self, builder):
-        result = builder.resumen_general()
+    def test_padecimiento_from_opciones(self, sample_df):
+        result = resumen_general(sample_df, "test_source", OPCIONES)
         assert result["Padecimiento"] == "Depresión"
 
 
-# ── EDAReportBuilder.resumen_unicos ──────────────────────────────────────────
+# ── resumen_unicos (standalone) ──────────────────────────────────────────────
 
 
 class TestResumenUnicos:
-    def test_returns_dataframe(self, builder):
-        result = builder.resumen_unicos()
+    def test_returns_dataframe(self, sample_df):
+        result = resumen_unicos(sample_df)
         assert isinstance(result, pd.DataFrame)
 
-    def test_has_valores_unicos_column(self, builder):
-        result = builder.resumen_unicos()
+    def test_has_valores_unicos_column(self, sample_df):
+        result = resumen_unicos(sample_df)
         assert "Valores únicos" in result.columns
 
-    def test_has_tipo_column(self, builder):
-        result = builder.resumen_unicos()
+    def test_has_tipo_column(self, sample_df):
+        result = resumen_unicos(sample_df)
         assert "Tipo" in result.columns
 
 
-# ── EDAReportBuilder.resumen_nulos ────────────────────────────────────────────
+# ── resumen_nulos (standalone) ────────────────────────────────────────────────
 
 
 class TestResumenNulos:
-    def test_returns_none_when_no_nulls(self, builder):
-        result = builder.resumen_nulos()
-        assert result is None  # sample_df has no nulls
+    def test_returns_none_when_no_nulls(self, sample_df):
+        result = resumen_nulos(sample_df)
+        assert result is None
 
-    def test_returns_df_when_nulls_present(self, sample_df, mock_dir):  # noqa: ARG002
+    def test_returns_df_when_nulls_present(self, sample_df):
         sample_df_with_na = sample_df.copy()
         sample_df_with_na.loc[0, "Casos"] = None
-        with (
-            patch.object(eda_mod, "conf", MOCK_CONF),
-            patch("epiforecast.visualization.eda_plots.GraficosHelper"),
-        ):
-            obj = EDAReportBuilder(sample_df_with_na, "src", OPCIONES)
-        result = obj.resumen_nulos()
+        result = resumen_nulos(sample_df_with_na)
         assert result is not None
         assert "Nulos" in result.columns
 
 
-# ── EDAReportBuilder.estadisticas_numericas ───────────────────────────────────
+# ── estadisticas_numericas (standalone) ───────────────────────────────────────
 
 
 class TestEstadisticasNumericas:
-    def test_returns_dataframe(self, builder):
-        result = builder.estadisticas_numericas()
+    def test_returns_dataframe(self, sample_df):
+        result = estadisticas_numericas(sample_df)
         assert isinstance(result, pd.DataFrame)
 
-    def test_returns_none_for_non_numeric_df(self, mock_dir):  # noqa: ARG002
+    def test_returns_none_for_non_numeric_df(self):
         df_str = pd.DataFrame({"col": ["a", "b"]})
-        with (
-            patch.object(eda_mod, "conf", MOCK_CONF),
-            patch("epiforecast.visualization.eda_plots.GraficosHelper"),
-        ):
-            obj = EDAReportBuilder(df_str, "src", {**OPCIONES, "COLS_NUMERICAS": []})
-        result = obj.estadisticas_numericas()
+        result = estadisticas_numericas(df_str)
         assert result is None
 
-    def test_has_media_column(self, builder):
-        result = builder.estadisticas_numericas()
+    def test_has_media_column(self, sample_df):
+        result = estadisticas_numericas(sample_df)
         assert "media" in result.columns
 
 
-# ── EDAReportBuilder.estadisticas_categoricas ─────────────────────────────────
+# ── estadisticas_categoricas (standalone) ─────────────────────────────────────
 
 
 class TestEstadisticasCategoricas:
-    def test_returns_none_when_no_cat_cols(self, mock_dir):  # noqa: ARG002
-        with (
-            patch.object(eda_mod, "conf", MOCK_CONF),
-            patch("epiforecast.visualization.eda_plots.GraficosHelper"),
-        ):
-            obj = EDAReportBuilder(
-                pd.DataFrame({"x": [1, 2]}), "src", {**OPCIONES, "COLS_CATEGORICAS": []}
-            )
-        result = obj.estadisticas_categoricas()
+    def test_returns_none_when_no_cat_cols(self):
+        result = estadisticas_categoricas({**OPCIONES, "COLS_CATEGORICAS": []})
         assert result is None
 
-    def test_returns_dataframe_with_cat_cols(self, builder):
-        # OPCIONES has COLS_CATEGORICAS = ["Entidad"] — but note the implementation
-        # treats each element of COLS_CATEGORICAS as a list, not a column name.
-        # With ["Entidad"] it will try to wrap it in pd.Series.
-        result = builder.estadisticas_categoricas()
-        # Just verify it doesn't crash and returns something
+    def test_returns_dataframe_with_cat_cols(self):
+        result = estadisticas_categoricas(OPCIONES)
         assert result is None or isinstance(result, pd.DataFrame)
 
 
-# ── EDAReportBuilder.tablas_categoricas ──────────────────────────────────────
+# ── tablas_categoricas (standalone) ──────────────────────────────────────────
 
 
 class TestTablasCategoricas:
-    def test_returns_dict(self, builder):
-        result = builder.tablas_categoricas()
+    def test_returns_dict(self, sample_df):
+        result = tablas_categoricas(sample_df, OPCIONES)
         assert isinstance(result, dict)
 
-    def test_key_per_col_category(self, builder):
-        result = builder.tablas_categoricas()
+    def test_key_per_col_category(self, sample_df):
+        result = tablas_categoricas(sample_df, OPCIONES)
         for key in OPCIONES["COLS_CATEGORICAS"]:
             assert key in result
 
@@ -252,7 +240,6 @@ class TestEDAReportBuilderRun:
 
     def test_figuras_populated(self, builder):
         result = builder.run()
-        # graficos_helper methods are mocked to return paths
         assert isinstance(result.figuras, list)
 
     def test_titulo_in_report(self, builder):

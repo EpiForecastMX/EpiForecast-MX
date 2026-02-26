@@ -270,7 +270,7 @@ def _compute_fold_metrics(
 
     y_train = train_fold["y"].values
     if len(y_train) > 52:
-        mae_naive = float(np.mean(np.abs(y_train[52:] - y_train[:-52])))
+        mae_naive = float(np.mean(np.abs(y_train[52:] - y_train[:-52])))  # type: ignore[operator]
         mase = mae / mae_naive if mae_naive > 0 else None
     else:
         mase = None

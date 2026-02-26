@@ -114,8 +114,8 @@ def _add_covid_band(ax: plt.Axes) -> None:
     """Agrega franja semitransparente del periodo COVID-19."""
     with contextlib.suppress(ValueError, TypeError):
         ax.axvspan(
-            pd.Timestamp(COVID_START),
-            pd.Timestamp(COVID_END),
+            pd.Timestamp(COVID_START),  # type: ignore[arg-type]
+            pd.Timestamp(COVID_END),  # type: ignore[arg-type]
             alpha=_ALPHA_COVID,
             color="red",
             label="Covid",

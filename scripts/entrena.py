@@ -1,7 +1,7 @@
 # scripts/entrena.py
 
-import os
 from contextlib import contextmanager
+import os
 from pathlib import Path
 import pickle
 import re
@@ -18,9 +18,14 @@ from tqdm import tqdm
 # del paquete lo dispare (model.py también importa config transitivamente).
 _logger_pre_import.disable("epiforecast.utils.config")
 
-from epiforecast.models.prophet.model import ProphetForecaster as SerieTiempoProphet
-from epiforecast.utils import paths as directory_manager
-from epiforecast.utils.config import conf, logger
+from epiforecast.models.prophet.model import ProphetForecaster as SerieTiempoProphet  # noqa: E402
+from epiforecast.models.prophet.prophet_compat import (  # noqa: E402
+    get_param_grid,
+    prophet_cross_val,
+    train_on_full_series,
+)
+from epiforecast.utils import paths as directory_manager  # noqa: E402
+from epiforecast.utils.config import conf, logger  # noqa: E402
 
 _logger_pre_import.enable("epiforecast.utils.config")
 
@@ -81,7 +86,7 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False)
 
     if es_insuficiente:
         # Skip CV: usar primer combo del grid como default (serie casi plana, HP da igual)
-        parametros = {k: v[0] for k, v in stp.param_grid.items()}
+        parametros = {k: v[0] for k, v in get_param_grid(stp).items()}
         metrics = {"rmse": None, "mae": None, "mape": None, "mase": None}
         logger.debug(
             "Baja confianza: skip CV, params default | {:.2f} casos/sem | {} | {} | {}",
@@ -91,12 +96,12 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False)
             sexo,
         )
         t_cv = time.time()
-        modelo = stp.train(parametros)
+        modelo = train_on_full_series(stp, parametros)
         t_train = time.time()
     else:
-        parametros, metrics = stp.prophet_cross_val()
+        parametros, metrics = prophet_cross_val(stp)
         t_cv = time.time()
-        modelo = stp.train(parametros)
+        modelo = train_on_full_series(stp, parametros)
         t_train = time.time()
 
     mape_raw = metrics["mape"]
@@ -202,7 +207,14 @@ def main():
         total_jobs = len(jobs)
         logger.debug("{} modelos a procesar para {}", total_jobs, padecimiento)
 
-        with tqdm(total=total_jobs, desc=padecimiento, unit="modelo", dynamic_ncols=True, position=0, leave=True) as pbar:
+        with tqdm(
+            total=total_jobs,
+            desc=padecimiento,
+            unit="modelo",
+            dynamic_ncols=True,
+            position=0,
+            leave=True,
+        ) as pbar:
             if n_jobs != 1:
                 with _tqdm_joblib(pbar):
                     resultados_raw = Parallel(n_jobs=n_jobs, backend="loky", verbose=0)(

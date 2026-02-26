@@ -2,7 +2,8 @@
 """Prophet forecasting model implementation (SRP: model lifecycle only).
 
 Handles: data preparation, training, prediction, serialization.
-Delegates: cross-validation to cross_validator.py, HP tuning to tuner.py.
+Delegates: cross-validation to cross_validator.py, HP tuning to tuner.py,
+           backward-compatible API to prophet_compat.py.
 """
 
 import logging
@@ -226,34 +227,6 @@ class ProphetForecaster(ForecastModel):
         self.fit(self.serie, best_params)
 
         return self._model, best_metrics, best_params
-
-    # ── Backward-compatible API (SerieTiempoProphet alias in scripts/) ────────
-
-    @property
-    def param_grid(self) -> dict:
-        """HP grid for this condition. Delegates to ProphetTuner."""
-        from epiforecast.models.prophet.tuner import ProphetTuner
-
-        return ProphetTuner(self).param_grid
-
-    def train(self, parametros: dict) -> Prophet:
-        """Train final model on full series with given HP dict.
-
-        Called by scripts/entrena.py after prophet_cross_val().
-        Trains on self.serie (full data, not just train split) and
-        returns the fitted Prophet object for pickling.
-        """
-        self.fit(self.serie, parametros)
-        return self._model  # type: ignore[return-value]
-
-    def prophet_cross_val(self) -> tuple[dict, dict]:
-        """Run HP search and return (best_params, best_metrics).
-
-        Delegates to ProphetTuner.run().
-        """
-        from epiforecast.models.prophet.tuner import ProphetTuner
-
-        return ProphetTuner(self).run()
 
     # ── Private Helpers ───────────────────────────────────────────────────────
 
