@@ -12,6 +12,15 @@ import seaborn as sns
 
 from epiforecast.utils.config import conf
 
+# ── Shared styling constants ─────────────────────────────────────────
+_LW_SPINE = 0.6
+_LW_GRID = 0.5
+_ALPHA_GRID = 0.25
+_KDE_SAMPLES = 300
+_HIST_BINS = 50
+_BAR_HEIGHT = 0.65
+_BAR_MIN_HEIGHT_PER_CAT = 0.45
+
 
 class GraficosHelper(ABC):
     def __init__(
@@ -58,9 +67,13 @@ class GraficosHelper(ABC):
             ax.spines[spine].set_visible(False)
         for spine in ("left", "bottom"):
             ax.spines[spine].set_color(self.conf_paleta["cool_gray"])
-            ax.spines[spine].set_linewidth(0.6)
+            ax.spines[spine].set_linewidth(_LW_SPINE)
         ax.yaxis.grid(
-            True, alpha=0.25, color=self.conf_paleta["cool_gray"], linestyle="--", linewidth=0.5
+            True,
+            alpha=_ALPHA_GRID,
+            color=self.conf_paleta["cool_gray"],
+            linestyle="--",
+            linewidth=_LW_GRID,
         )
         ax.xaxis.grid(False)
 
@@ -76,12 +89,18 @@ class GraficosHelper(ABC):
         fig, ax = plt.subplots(figsize=(10, 5))
 
         ax.hist(
-            serie, bins=50, density=True, alpha=0.65, color=color, edgecolor="white", linewidth=0.5
+            serie,
+            bins=_HIST_BINS,
+            density=True,
+            alpha=0.65,
+            color=color,
+            edgecolor="white",
+            linewidth=0.5,
         )
 
         try:
             kde = gaussian_kde(serie)
-            x_vals = np.linspace(serie.min(), serie.max(), 300)
+            x_vals = np.linspace(serie.min(), serie.max(), _KDE_SAMPLES)
             ax.plot(x_vals, kde(x_vals), color=self.conf_paleta["neutral_black"], linewidth=2)
         except (np.linalg.LinAlgError, ValueError):
             pass  # KDE puede fallar con datos degenerados (varianza cero, muestras insuficientes)
@@ -123,7 +142,7 @@ class GraficosHelper(ABC):
             str(lbl)[:30] + ("…" if len(str(lbl)) > 30 else "") for lbl in porcentajes.index
         ]
 
-        fig, ax = plt.subplots(figsize=(10, max(4, top_real * 0.45)))
+        fig, ax = plt.subplots(figsize=(10, max(4, top_real * _BAR_MIN_HEIGHT_PER_CAT)))
 
         n_paleta = len(self.conf_paleta_secuencial)
         colores = (self.conf_paleta_secuencial * -(-top_real // n_paleta))[:top_real]
@@ -132,7 +151,7 @@ class GraficosHelper(ABC):
             porcentajes.values,  # type: ignore[arg-type]
             color=colores,
             edgecolor="white",
-            height=0.65,
+            height=_BAR_HEIGHT,
         )
 
         for bar, v in zip(bars, porcentajes.values):
@@ -152,7 +171,7 @@ class GraficosHelper(ABC):
         self._aplicar_estilo_ax(ax)
         # Para barras horizontales: grid vertical, no horizontal
         ax.yaxis.grid(False)
-        ax.xaxis.grid(True, alpha=0.25, linestyle="--", color=self.conf_paleta["cool_gray"])
+        ax.xaxis.grid(True, alpha=_ALPHA_GRID, linestyle="--", color=self.conf_paleta["cool_gray"])
 
         return self._guardar_figura(fig, f"barras_{col}.png")
 

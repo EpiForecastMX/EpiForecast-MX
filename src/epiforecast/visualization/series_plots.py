@@ -8,6 +8,17 @@ import pandas as pd
 
 from epiforecast.constants import COVID_END, COVID_START
 
+# ── Layout & styling constants ───────────────────────────────────────
+_FIGSIZE = (16, 4)
+_FS_LABEL = 11
+_FS_LEGEND = 10
+_LW_SERIES = 1.2
+_ALPHA_SERIES = 0.8
+_ALPHA_COVID = 0.1
+_LW_SPINE = 0.6
+_ALPHA_GRID = 0.3
+_LW_GRID = 0.5
+
 
 def serie_tiempo(
     df: pd.DataFrame,
@@ -34,7 +45,7 @@ def serie_tiempo(
     Returns:
         Ruta del archivo PNG generado, o ``None`` si no se pudo crear.
     """
-    fig, ax = plt.subplots(figsize=(16, 4))
+    fig, ax = plt.subplots(figsize=_FIGSIZE)
     subtitulo = ""
 
     if agrupamiento_sexo and not agrupamiento_entidad:
@@ -43,10 +54,10 @@ def serie_tiempo(
         subtitulo = _plot_by_region(ax, df)
 
     _add_covid_band(ax)
-    ax.set_xlabel("Fecha", fontsize=11)
-    ax.set_ylabel("Incrementos semanales", fontsize=11)
+    ax.set_xlabel("Fecha", fontsize=_FS_LABEL)
+    ax.set_ylabel("Incrementos semanales", fontsize=_FS_LABEL)
     ax.set_title(f"Evolución semanal nacional de {padecimiento} {subtitulo}".strip())
-    ax.legend(fontsize=10)
+    ax.legend(fontsize=_FS_LEGEND)
     _apply_imss_style(ax, conf_paleta["cool_gray"])
 
     nombre = f"serie_tiempo_{padecimiento}.png"
@@ -63,16 +74,16 @@ def _plot_by_sex(ax: plt.Axes, df: pd.DataFrame, paleta_sexo: dict) -> str:
     ax.plot(
         st.index,
         st["incrementos_hombres"],
-        linewidth=1.2,
-        alpha=0.8,
+        linewidth=_LW_SERIES,
+        alpha=_ALPHA_SERIES,
         color=paleta_sexo["Hombres"],
         label="Hombres",
     )
     ax.plot(
         st.index,
         st["incrementos_mujeres"],
-        linewidth=1.2,
-        alpha=0.8,
+        linewidth=_LW_SERIES,
+        alpha=_ALPHA_SERIES,
         color=paleta_sexo["Mujeres"],
         label="Mujeres",
     )
@@ -90,7 +101,11 @@ def _plot_by_region(ax: plt.Axes, df: pd.DataFrame) -> str:
     )
     for region, datos in st.groupby(col_region):
         ax.plot(
-            datos["Fecha"], datos["incrementos_totales"], linewidth=1.2, alpha=0.8, label=region
+            datos["Fecha"],
+            datos["incrementos_totales"],
+            linewidth=_LW_SERIES,
+            alpha=_ALPHA_SERIES,
+            label=region,
         )
     return f"por {col_region}"
 
@@ -101,7 +116,7 @@ def _add_covid_band(ax: plt.Axes) -> None:
         ax.axvspan(
             pd.Timestamp(COVID_START),
             pd.Timestamp(COVID_END),
-            alpha=0.1,
+            alpha=_ALPHA_COVID,
             color="red",
             label="Covid",
         )  # type: ignore[arg-type]
@@ -113,6 +128,6 @@ def _apply_imss_style(ax: plt.Axes, c_gray: str) -> None:
         ax.spines[spine].set_visible(False)
     for spine in ("left", "bottom"):
         ax.spines[spine].set_color(c_gray)
-        ax.spines[spine].set_linewidth(0.6)
-    ax.yaxis.grid(True, alpha=0.3, color="gray", linestyle="--", linewidth=0.5)
+        ax.spines[spine].set_linewidth(_LW_SPINE)
+    ax.yaxis.grid(True, alpha=_ALPHA_GRID, color="gray", linestyle="--", linewidth=_LW_GRID)
     ax.xaxis.grid(False)

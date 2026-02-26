@@ -13,6 +13,38 @@ from epiforecast.visualization.chart_annotations import (
     _render_ficha_tecnica,
 )
 
+# ── Layout constants ─────────────────────────────────────────────────
+_FIGSIZE = (18, 7.5)
+_MARGINS = {"bottom": 0.13, "top": 0.89, "left": 0.055, "right": 0.975}
+_SUPTITLE_Y = 0.96
+_LEGEND_ANCHOR = (0.515, 0.04)
+
+# ── Font sizes ───────────────────────────────────────────────────────
+_FS_SUPTITLE = 16
+_FS_SUBTITLE = 11
+_FS_LABEL = 11
+_FS_LEGEND = 9.5
+_FS_COVID = 7
+_FS_TICK = 10
+
+# ── Line / marker styling ───────────────────────────────────────────
+_LW_FORECAST = 2.2
+_LW_SPINE = 0.5
+_LW_OUTLIER_EDGE = 0.8
+_ALPHA_BAND = 0.20
+_ALPHA_OBS = 0.45
+_ALPHA_FORECAST_ZONE = 0.04
+_ALPHA_COVID = 0.07
+_ALPHA_GRID = 0.25
+_SIZE_OBS = 15
+_SIZE_OUTLIER = 45
+
+# ── COVID badge colors ───────────────────────────────────────────────
+_COVID_SPAN_COLOR = "#E53935"
+_COVID_TEXT_COLOR = "#C62828"
+_COVID_BADGE_FC = "#FFEBEE"
+_COVID_BADGE_EC = "#EF9A9A"
+
 
 def graficar_pronostico(
     forecast: pd.DataFrame,
@@ -104,19 +136,19 @@ def _parse_title(
 
 def _setup_figure(title_parts: dict, colors: dict) -> tuple[plt.Figure, plt.Axes]:
     """Crea la figura con títulos y márgenes IMSS."""
-    fig, ax = plt.subplots(figsize=(18, 7.5))
-    fig.subplots_adjust(bottom=0.13, top=0.89, left=0.055, right=0.975)
+    fig, ax = plt.subplots(figsize=_FIGSIZE)
+    fig.subplots_adjust(**_MARGINS)
     fig.suptitle(
         f"{title_parts['pad_display']} — Pronóstico Semanal",
-        fontsize=16,
+        fontsize=_FS_SUPTITLE,
         fontweight="bold",
         color=colors["text"],
-        y=0.96,
+        y=_SUPTITLE_Y,
     )
     ax.set_title(
         f"{title_parts['nivel']}  ·  {title_parts['modo']}  ·  "
         f"{title_parts['anio_ini']}–{title_parts['anio_fin']}",
-        fontsize=11,
+        fontsize=_FS_SUBTITLE,
         color=colors["gray"],
         pad=10,
     )
@@ -135,23 +167,27 @@ def _plot_series(
 ) -> None:
     """Dibuja todas las capas de datos: zona pronóstico, COVID, banda, observaciones, línea, outliers."""
     # Zona pronóstico
-    ax.axvspan(fecha_max_datos, fecha_max_fc, alpha=0.04, color=colors["fc"], zorder=0)
+    ax.axvspan(
+        fecha_max_datos, fecha_max_fc, alpha=_ALPHA_FORECAST_ZONE, color=colors["fc"], zorder=0
+    )
 
     # COVID-19
     covid_ini = pd.Timestamp(conf_covid["inicio"])
     covid_fin = pd.Timestamp(conf_covid["fin"])
-    ax.axvspan(covid_ini, covid_fin, alpha=0.07, color="#E53935", zorder=0)  # type: ignore[arg-type]
+    ax.axvspan(covid_ini, covid_fin, alpha=_ALPHA_COVID, color=_COVID_SPAN_COLOR, zorder=0)  # type: ignore[arg-type]
     mid_covid = covid_ini + (covid_fin - covid_ini) / 2
     ax.annotate(
         "COVID-19",
         xy=(mid_covid, 1.0),
         xycoords=("data", "axes fraction"),  # type: ignore[arg-type]
-        fontsize=7,
+        fontsize=_FS_COVID,
         fontweight="bold",
-        color="#C62828",
+        color=_COVID_TEXT_COLOR,
         ha="center",
         va="top",
-        bbox=dict(boxstyle="round,pad=0.25", fc="#FFEBEE", ec="#EF9A9A", alpha=0.85, lw=0.6),
+        bbox=dict(
+            boxstyle="round,pad=0.25", fc=_COVID_BADGE_FC, ec=_COVID_BADGE_EC, alpha=0.85, lw=0.6
+        ),
     )
 
     # Banda de predicción
@@ -159,7 +195,7 @@ def _plot_series(
         forecast["ds"],
         forecast["yhat_lower"],
         forecast["yhat_upper"],
-        alpha=0.20,
+        alpha=_ALPHA_BAND,
         color=colors["band"],
         zorder=1,
         label="Intervalo 80 %",
@@ -169,9 +205,9 @@ def _plot_series(
     ax.scatter(
         serie["ds"],
         serie["y"],
-        s=15,
+        s=_SIZE_OBS,
         color=colors["obs"],
-        alpha=0.45,
+        alpha=_ALPHA_OBS,
         zorder=3,
         label="Observaciones reales",
     )
@@ -181,7 +217,7 @@ def _plot_series(
         forecast["ds"],
         forecast["yhat"],
         color=colors["fc"],
-        linewidth=2.2,
+        linewidth=_LW_FORECAST,
         zorder=4,
         label="Pronóstico Prophet",
     )
@@ -192,10 +228,10 @@ def _plot_series(
             outliers["ds"],
             outliers["y"],
             marker="^",
-            s=45,
+            s=_SIZE_OUTLIER,
             color=colors["outlier"],
             edgecolors="white",
-            linewidths=0.8,
+            linewidths=_LW_OUTLIER_EDGE,
             zorder=5,
             label=f"Outliers IQR (n = {len(outliers)})",
         )
@@ -204,18 +240,18 @@ def _plot_series(
 def _format_axes(ax: plt.Axes, colors: dict) -> None:
     """Aplica formato de ejes estilo IMSS."""
     ax.set_xlabel("")
-    ax.set_ylabel("Incrementos semanales", fontsize=11, color=colors["text"])
+    ax.set_ylabel("Incrementos semanales", fontsize=_FS_LABEL, color=colors["text"])
     ax.set_ylim(bottom=0)
-    ax.yaxis.grid(True, alpha=0.25, color=colors["gray"], linestyle="-", linewidth=0.5)
+    ax.yaxis.grid(True, alpha=_ALPHA_GRID, color=colors["gray"], linestyle="-", linewidth=0.5)
     ax.xaxis.grid(False)
     ax.xaxis.set_major_locator(mdates.YearLocator())
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
-    ax.tick_params(axis="both", labelsize=10, colors=colors["text"])
+    ax.tick_params(axis="both", labelsize=_FS_TICK, colors=colors["text"])
     for spine in ("top", "right"):
         ax.spines[spine].set_visible(False)
     for spine in ("left", "bottom"):
         ax.spines[spine].set_color(colors["gray"])
-        ax.spines[spine].set_linewidth(0.5)
+        ax.spines[spine].set_linewidth(_LW_SPINE)
 
 
 def _add_legend_and_ficha(fig: plt.Figure, ax: plt.Axes, metricas: dict | None) -> None:
@@ -225,9 +261,9 @@ def _add_legend_and_ficha(fig: plt.Figure, ax: plt.Axes, metricas: dict | None) 
         handles,
         labels,
         loc="lower center",
-        bbox_to_anchor=(0.515, 0.04),
+        bbox_to_anchor=_LEGEND_ANCHOR,
         ncol=len(handles),
-        fontsize=9.5,
+        fontsize=_FS_LEGEND,
         frameon=False,
         handlelength=1.8,
         handletextpad=0.4,

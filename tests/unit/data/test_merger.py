@@ -22,10 +22,10 @@ from epiforecast.data.extraction.merger import (
     _rename_and_merge,
     _resolve_input_dir,
     _run_extraction,
-    ensure_empty_dir_or_exit,
     merge_csv,
     rename_csv_with_timestamp,
 )
+from epiforecast.data.extraction.merger_interactive import ensure_empty_dir_or_exit
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 

@@ -13,7 +13,6 @@ from epiforecast.data.extraction.extraction_pipeline import run_pipeline
 from epiforecast.data.extraction.merger_interactive import (
     _has_tty,
     _pick_directory_gui,
-    ensure_empty_dir_or_exit,  # noqa: F401 (re-export)
 )
 
 app = typer.Typer(add_completion=False)

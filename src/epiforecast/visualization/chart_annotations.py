@@ -5,6 +5,22 @@ import pandas as pd
 
 from epiforecast.utils.config import conf
 
+# ── Annotation styling ───────────────────────────────────────────────
+_LW_DIVIDER = 1.5
+_ALPHA_DIVIDER = 0.7
+_FS_DIVIDER = 9.5
+_Y_DIVIDER = 0.96
+
+_ALPHA_CV_ZONE = 0.06
+_LW_CV_LINE = 1.2
+_ALPHA_CV_LINE = 0.6
+_FS_CV_LABEL = 7.5
+_Y_CV_LABEL = 0.88
+
+_FS_FICHA = 8.5
+_FICHA_X = 0.515
+_FICHA_Y = 0.008
+
 
 def _anotar_divisores(
     ax: plt.Axes,
@@ -17,15 +33,15 @@ def _anotar_divisores(
         fecha_max_datos,
         color=c_div,
         ls="--",
-        lw=1.5,
-        alpha=0.7,
+        lw=_LW_DIVIDER,
+        alpha=_ALPHA_DIVIDER,
         zorder=6,
     )
     ax.annotate(
         "← Datos históricos ",
-        xy=(fecha_max_datos, 0.96),
+        xy=(fecha_max_datos, _Y_DIVIDER),
         xycoords=("data", "axes fraction"),
-        fontsize=9.5,
+        fontsize=_FS_DIVIDER,
         fontweight="semibold",
         color=c_div,
         ha="right",
@@ -33,9 +49,9 @@ def _anotar_divisores(
     )
     ax.annotate(
         " Pronóstico →",
-        xy=(fecha_max_datos, 0.96),
+        xy=(fecha_max_datos, _Y_DIVIDER),
         xycoords=("data", "axes fraction"),
-        fontsize=9.5,
+        fontsize=_FS_DIVIDER,
         fontweight="semibold",
         color=c_fc,
         ha="left",
@@ -63,7 +79,7 @@ def _anotar_zona_cv(
     ax.axvspan(
         fecha_corte,  # type: ignore[arg-type]
         fecha_max_datos,
-        alpha=0.06,
+        alpha=_ALPHA_CV_ZONE,
         color=c_gray,
         zorder=0,
     )
@@ -71,24 +87,24 @@ def _anotar_zona_cv(
         fecha_corte,  # type: ignore[arg-type]
         color=c_gray,
         ls=":",
-        lw=1.2,
-        alpha=0.6,
+        lw=_LW_CV_LINE,
+        alpha=_ALPHA_CV_LINE,
         zorder=6,
     )
     ax.annotate(
         "Entrenamiento",
-        xy=(fecha_corte, 0.88),  # type: ignore[arg-type]
+        xy=(fecha_corte, _Y_CV_LABEL),  # type: ignore[arg-type]
         xycoords=("data", "axes fraction"),
-        fontsize=7.5,
+        fontsize=_FS_CV_LABEL,
         color=c_gray,
         ha="right",
         va="top",
     )
     ax.annotate(
         "Prueba CV",
-        xy=(fecha_corte, 0.88),  # type: ignore[arg-type]
+        xy=(fecha_corte, _Y_CV_LABEL),  # type: ignore[arg-type]
         xycoords=("data", "axes fraction"),
-        fontsize=7.5,
+        fontsize=_FS_CV_LABEL,
         color=c_gray,
         ha="left",
         va="top",
@@ -129,12 +145,12 @@ def _render_ficha_tecnica(fig: plt.Figure, metricas: dict) -> None:
 
     ficha = "  |  ".join(tokens)
     fig.text(
-        0.515,
-        0.008,
+        _FICHA_X,
+        _FICHA_Y,
         ficha,
         ha="center",
         va="bottom",
-        fontsize=8.5,
+        fontsize=_FS_FICHA,
         family="sans-serif",
         color="#999",
     )
