@@ -6,6 +6,7 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from epiforecast.constants import VIZ_DPI_SCREEN
 from epiforecast.visualization.chart_annotations import (
     _anotar_divisores,
     _anotar_zona_cv,
@@ -211,6 +212,6 @@ def graficar_pronostico(
 
     # ── Guardar ──────────────────────────────────────────────────────
     ruta = os.path.join(carpeta_salida, f"{nombre_archivo}.png")
-    fig.savefig(ruta, dpi=150, facecolor="white", edgecolor="none")
+    fig.savefig(ruta, dpi=VIZ_DPI_SCREEN, facecolor="white", edgecolor="none")
     plt.close(fig)
     return ruta
