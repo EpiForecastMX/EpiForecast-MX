@@ -83,14 +83,14 @@ def _anotar_zona_cv(
     fecha_corte = pd.Timestamp(_conf["FECHA_CORTE_ENTRENAMIENTO"]).to_pydatetime()
 
     ax.axvspan(
-        fecha_corte,
+        fecha_corte,  # type: ignore[arg-type]  # matplotlib accepts datetime
         fecha_max_datos,
         alpha=_ALPHA_CV_ZONE,
         color=c_gray,
         zorder=0,
     )
     ax.axvline(
-        fecha_corte,
+        fecha_corte,  # type: ignore[arg-type]  # matplotlib accepts datetime
         color=c_gray,
         ls=":",
         lw=_LW_CV_LINE,
@@ -99,7 +99,7 @@ def _anotar_zona_cv(
     )
     ax.annotate(
         "Entrenamiento",
-        xy=(fecha_corte, _Y_CV_LABEL),
+        xy=(fecha_corte, _Y_CV_LABEL),  # type: ignore[arg-type]
         xycoords=("data", "axes fraction"),
         fontsize=_FS_CV_LABEL,
         color=c_gray,
@@ -108,7 +108,7 @@ def _anotar_zona_cv(
     )
     ax.annotate(
         "Prueba CV",
-        xy=(fecha_corte, _Y_CV_LABEL),
+        xy=(fecha_corte, _Y_CV_LABEL),  # type: ignore[arg-type]
         xycoords=("data", "axes fraction"),
         fontsize=_FS_CV_LABEL,
         color=c_gray,

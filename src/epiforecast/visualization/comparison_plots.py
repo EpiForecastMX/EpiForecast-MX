@@ -68,8 +68,11 @@ def generar_graficos_comparativos(config: dict | None = None) -> None:
     grupos = df_p.groupby(["meta_padecimiento", "meta_entidad", "meta_modo"])
 
     count = 0
-    for (pad, ent, modo), group_p in grupos:
-        ent_val = ent if pd.notna(ent) else ""
+    for (pad_, ent_, modo_), group_p in grupos:
+        pad = str(pad_)
+        ent = "" if ent_ is None or (isinstance(ent_, float) and np.isnan(ent_)) else str(ent_)
+        modo = str(modo_)
+        ent_val = ent
 
         mask_d = (
             (df_d["meta_padecimiento"] == pad)
@@ -158,9 +161,9 @@ def _render_comparison(
     ax.axvline(fecha_max_real, color=_COLOR_DIVIDER, linestyle=":", alpha=0.4, zorder=2)
 
     # Limites dinamicos de Eje Y
-    y_real_vals = np.ravel(target_y.dropna().values)
-    y_p_vals = np.ravel(group_p["yhat"].dropna().values)
-    y_d_vals = np.ravel(group_d["yhat"].dropna().values)
+    y_real_vals = np.asarray(target_y.dropna().values).ravel()
+    y_p_vals = np.asarray(group_p["yhat"].dropna().values).ravel()
+    y_d_vals = np.asarray(group_d["yhat"].dropna().values).ravel()
     all_y = np.concatenate([y_real_vals, y_p_vals, y_d_vals])
     if len(all_y) > 0:
         ax.set_ylim(bottom=np.min(all_y) * _Y_MARGIN_BOTTOM, top=np.max(all_y) * _Y_MARGIN_TOP)

@@ -180,9 +180,9 @@ def _plot_series(
     # COVID-19
     covid_ini = pd.Timestamp(conf_covid["inicio"])
     covid_fin = pd.Timestamp(conf_covid["fin"])
-    ax.axvspan(  # type: ignore[arg-type]
-        covid_ini,
-        covid_fin,
+    ax.axvspan(
+        covid_ini,  # type: ignore[arg-type]  # matplotlib accepts Timestamp
+        covid_fin,  # type: ignore[arg-type]
         alpha=_ALPHA_COVID,
         color=_COVID_SPAN_COLOR,
         zorder=0,
