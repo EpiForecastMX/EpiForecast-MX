@@ -196,7 +196,7 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
-integrador/
+.venv/
 !data/*.dvc
 !data/.gitignore
 
