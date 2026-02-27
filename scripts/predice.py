@@ -47,18 +47,17 @@ def estandarizar_valores(df: pd.DataFrame) -> pd.DataFrame:
         s = "" if x is None else str(x).strip().lower()
         s = unicodedata.normalize("NFKD", s)
         s = "".join(c for c in s if not unicodedata.combining(c))
-        s = " ".join(s.split())
-        return s
+        return " ".join(s.split())
 
     # Diccionario de estandarización de padecimientos
     # clave: forma normalizada
     # valor: forma final deseada
-    PADECIMIENTOS = {
+    padecimientos_map = {
         "depresion": "Depresión",
     }
 
     # Diccionario de estandarización de entidades
-    ENTIDADES = {
+    entidades_map = {
         "ciudad de mexico": "Ciudad de México",
         "mexico": "México",
         "michoacan": "Michoacán",
@@ -71,13 +70,13 @@ def estandarizar_valores(df: pd.DataFrame) -> pd.DataFrame:
     # Aplica la estandarización a las columnas relevantes
     # Solo modifica el valor si existe en el diccionario
     for col, mapping in [
-        ("meta_padecimiento", PADECIMIENTOS),
-        ("Padecimiento", PADECIMIENTOS),
-        ("meta_entidad", ENTIDADES),
-        ("Entidad", ENTIDADES),
+        ("meta_padecimiento", padecimientos_map),
+        ("Padecimiento", padecimientos_map),
+        ("meta_entidad", entidades_map),
+        ("Entidad", entidades_map),
     ]:
         if col in df.columns:
-            df[col] = df[col].map(lambda v: mapping.get(key(v), v))
+            df[col] = df[col].map(lambda v, m=mapping: m.get(key(v), v))
 
     return df
 
@@ -103,7 +102,7 @@ def _parse_regional(stem: str) -> dict:
     }
 
 
-def _cargar_mapeo_hibrido(base_models: Path) -> dict:
+def _cargar_mapeo_hibrido(base_models: Path, padecimiento_sin_acento: str = "") -> dict:
     """Lee _completo.csv de cada padecimiento y construye mapeo hibrido.
 
     Returns:
@@ -111,7 +110,13 @@ def _cargar_mapeo_hibrido(base_models: Path) -> dict:
               Solo incluye modelos insuficientes que tienen usar_regional asignado.
     """
     mapeo = {}
-    for csv_path in sorted(base_models.rglob("*_completo.csv")):
+    folder_pad = (
+        base_models / padecimiento_sin_acento
+        if padecimiento_sin_acento and (base_models / padecimiento_sin_acento).exists()
+        else base_models
+    )
+
+    for csv_path in sorted(folder_pad.rglob("*_completo.csv")):
         try:
             df = pd.read_csv(csv_path)
         except Exception:
@@ -131,9 +136,17 @@ def _cargar_mapeo_hibrido(base_models: Path) -> dict:
     return mapeo
 
 
-def _cargar_metricas_completos(base_models: Path) -> pd.DataFrame:
+def _cargar_metricas_completos(
+    base_models: Path, padecimiento_sin_acento: str = ""
+) -> pd.DataFrame:
     frames = []
-    for csv_path in sorted(base_models.rglob("*_completo.csv")):
+    folder_pad = (
+        base_models / padecimiento_sin_acento
+        if padecimiento_sin_acento and (base_models / padecimiento_sin_acento).exists()
+        else base_models
+    )
+
+    for csv_path in sorted(folder_pad.rglob("*_completo.csv")):
         try:
             df = pd.read_csv(csv_path)
         except Exception:
@@ -161,8 +174,7 @@ def _cargar_metricas_completos(base_models: Path) -> pd.DataFrame:
     if not frames:
         return pd.DataFrame(columns=["archivo_modelo"])
 
-    met = pd.concat(frames, ignore_index=True).drop_duplicates("archivo_modelo")
-    return met
+    return pd.concat(frames, ignore_index=True).drop_duplicates("archivo_modelo")
 
 
 def main():
@@ -173,13 +185,45 @@ def main():
 
     directory_manager.asegurar_ruta(out_file.parent)
 
-    modelos = sorted(base_models.rglob("*.pkl"))
+    # Filtrar por padecimiento si no es General
+    padecimiento_tipo = str(conf["padecimiento"]["tipo"]).replace(" ", "_")
+    padecimiento_sin_acento = "".join(
+        c
+        for c in unicodedata.normalize("NFD", padecimiento_tipo)
+        if unicodedata.category(c) != "Mn"
+    )
+
+    if padecimiento_tipo == "General":
+        modelos = sorted(base_models.rglob("*.pkl"))
+    else:
+        # En caso de estar particionado por directorios
+        folder_pad = base_models / padecimiento_sin_acento
+        if folder_pad.exists():
+            modelos = sorted(folder_pad.rglob("*.pkl"))
+        else:
+            # Fallback en caso de que estén en la raíz (ej. Prophet_Depresión_...)
+            modelos = [
+                p
+                for p in base_models.rglob("*.pkl")
+                if padecimiento_sin_acento
+                in "".join(
+                    c
+                    for c in unicodedata.normalize("NFD", p.stem)
+                    if unicodedata.category(c) != "Mn"
+                )
+            ]
     total = len(modelos)
     if total == 0:
         raise FileNotFoundError(f"No se encontraron modelos .pkl en: {base_models}")
 
     # Cargar mapeo híbrido si aplica
-    mapeo_hibrido = _cargar_mapeo_hibrido(base_models) if modelado_hibrido else {}
+    mapeo_hibrido = (
+        _cargar_mapeo_hibrido(
+            base_models, padecimiento_sin_acento if padecimiento_tipo != "General" else ""
+        )
+        if modelado_hibrido
+        else {}
+    )
     stems_insuf = set(mapeo_hibrido.keys())
     # Modelos region_* — se identifican para predicción standalone
     pkls_regional = [
@@ -298,7 +342,9 @@ def main():
     logger.info(
         ">>> Forecast: Cargando métricas del modelo desde *_completo.csv (rmse, mae, mape, mase, confianza, normalizado, población)"
     )
-    met = _cargar_metricas_completos(base_models)
+    met = _cargar_metricas_completos(
+        base_models, padecimiento_sin_acento if padecimiento_tipo != "General" else ""
+    )
 
     logger.info(">>> Forecast: Seccionando métricas en ORIGINAL y USADO")
     # 1) Trae valores del modelo ORIGINAL

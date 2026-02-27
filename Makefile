@@ -76,19 +76,19 @@ get-dataset:
 .PHONY: filter
 filter:
 	@echo ">>> Filtrando dataset..."
-	$(PYTHON) -m scripts.filtra_padecimiento
+	$(PYTHON) -m scripts.filtra_padecimiento $(ARGS)
 
 ## Limpiar dataset (nulos, duplicados, formato)
 .PHONY: clean
 clean:
 	@echo ">>> Limpiando dataset..."
-	$(PYTHON) -m scripts.limpieza_dataset
+	$(PYTHON) -m scripts.limpieza_dataset $(ARGS)
 
 ## Feature engineering (outliers, regiones, agrupación)
 .PHONY: transform
 transform:
 	@echo ">>> Transformando dataset..."
-	$(PYTHON) -m scripts.realiza_prep
+	$(PYTHON) -m scripts.realiza_prep $(ARGS)
 
 ## Descargar datos demográficos INEGI
 .PHONY: get-inegi
@@ -100,7 +100,7 @@ get-inegi:
 .PHONY: mapper
 mapper:
 	@echo ">>> Mapeando entidades con INEGI..."
-	$(PYTHON) -m scripts.mapea
+	$(PYTHON) -m scripts.mapea $(ARGS)
 
 ## Pipeline completo de preprocesamiento (secuencial)
 .PHONY: preprocess
