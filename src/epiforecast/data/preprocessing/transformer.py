@@ -106,23 +106,12 @@ class DataTransformation:
         self.df.loc[semana_1, "Incremento_mujeres"] = self.df.loc[semana_1, "Acumulado_mujeres"]
 
         # incluye fecha para poder realizar serie de tiempo
-        # Cálculo robusto ISO-8601 (el primer jueves del año determina la semana 1).
-        # Evita bugs en el parseador C-strtime de MacOS/Windows con '%G%V%u'.
-        self.df["Fecha"] = pd.to_datetime(
-            self.df["Anio"].astype(str) + "0" + self.df["Semana"].astype(str) + "1",
-            format="%Y%W%w",
-            errors="coerce",
-        )
+        # Cálculo robusto ISO-8601 (semana 1 inicia el lunes que contiene el primer jueves).
+        # Evita bugs en el parseador C-strtime de MacOS/Windows con semanas 53.
+        from datetime import date
 
-        # Corrección manual exacta estilo ISO para fechas fallidas o extremas (fallback 100% OS-agnostic)
-        anios_dt = pd.to_datetime(self.df["Anio"].astype(str) + "-01-01")
-        # Ajustamos al lunes de esa semana.
-        fechas_calculadas = (
-            anios_dt
-            + pd.to_timedelta((self.df["Semana"] - 1) * 7, unit="D")
-            - pd.to_timedelta(anios_dt.dt.weekday, unit="D")
-        )
-        self.df["Fecha"] = self.df["Fecha"].fillna(fechas_calculadas)
+        fechas_base = pd.to_datetime([date.fromisocalendar(y, 1, 1) for y in self.df["Anio"]])
+        self.df["Fecha"] = fechas_base + pd.to_timedelta(self.df["Semana"] - 1, unit="W")
 
         # Ajusta el año a aquellas fechas de la semana 1 que caen en año anterior
         # filas_anio = (self.df['Semana'] == 1) & (self.df['Fecha'].dt.year < self.df['Anio'])
