@@ -20,8 +20,8 @@ if [ -n "$VIRTUAL_ENV" ]; then
     deactivate 2>/dev/null
 fi
 
-echo ">>> [2/4] Activando entorno del proyecto (integrador)..."
-source integrador/bin/activate
+echo ">>> [2/4] Activando entorno del proyecto (.venv)..."
+source .venv/bin/activate
 
 echo ">>> [3/4] Sincronizando código desde GitHub..."
 git pull origin main
