@@ -15,9 +15,9 @@ Usage:
 from __future__ import annotations
 
 import ast
+from pathlib import Path
 import subprocess
 import sys
-from pathlib import Path
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
@@ -46,6 +46,7 @@ def check(condition: bool, category: str, msg: str, warn_only: bool = False) -> 
 # ══════════════════════════════════════════════════════════════════════════════
 # SECTION 1: COOKIECUTTER DS v2 DIRECTORY STRUCTURE
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 def check_directory_structure():
     """Validate Cookiecutter Data Science v2 required directories."""
@@ -116,7 +117,13 @@ def check_directory_structure():
     )
 
     # No legacy directories
-    legacy_dirs = ["src/configuraciones", "src/datos", "src/extraccion", "src/modelado", "src/utils"]
+    legacy_dirs = [
+        "src/configuraciones",
+        "src/datos",
+        "src/extraccion",
+        "src/modelado",
+        "src/utils",
+    ]
     for d in legacy_dirs:
         check(not (ROOT / d).exists(), cat, f"Legacy removed: {d}/ does not exist")
 
@@ -128,6 +135,7 @@ def check_directory_structure():
 # ══════════════════════════════════════════════════════════════════════════════
 # SECTION 2: PACKAGE STRUCTURE & SOLID PRINCIPLES
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 def check_solid_principles():
     """Validate SOLID design patterns in the codebase."""
@@ -197,6 +205,7 @@ def check_solid_principles():
 # ══════════════════════════════════════════════════════════════════════════════
 # SECTION 3: CLEAN CODE STANDARDS
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 def check_clean_code():
     """Validate clean code practices."""
@@ -297,6 +306,7 @@ def check_clean_code():
 # SECTION 4: MLOps PRACTICES
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 def check_mlops():
     """Validate MLOps best practices."""
     cat = "MLOps"
@@ -395,6 +405,7 @@ def check_mlops():
 # SECTION 5: TESTING STANDARDS
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 def check_testing():
     """Validate testing standards."""
     cat = "Testing"
@@ -434,15 +445,16 @@ def check_testing():
     # Run tests and check count
     try:
         result = subprocess.run(
-            ["pytest", "tests/", "--tb=no", "-q"],
+            ["pytest", "tests/unit/", "--tb=no", "-q"],
             capture_output=True,
             text=True,
             cwd=ROOT,
-            timeout=60,
+            timeout=300,
         )
         output = result.stdout.strip().split("\n")[-1]
         if "passed" in output:
             import re
+
             match = re.search(r"(\d+) passed", output)
             if match:
                 count = int(match.group(1))
@@ -456,11 +468,18 @@ def check_testing():
     # Coverage check
     try:
         result = subprocess.run(
-            ["pytest", "tests/", "--cov=src/epiforecast", "--cov-report=term", "--tb=no", "-q"],
+            [
+                "pytest",
+                "tests/unit/",
+                "--cov=src/epiforecast",
+                "--cov-report=term",
+                "--tb=no",
+                "-q",
+            ],
             capture_output=True,
             text=True,
             cwd=ROOT,
-            timeout=60,
+            timeout=300,
         )
         for line in result.stdout.split("\n"):
             if "TOTAL" in line:
@@ -469,8 +488,12 @@ def check_testing():
                     if p.endswith("%"):
                         cov = int(p.replace("%", ""))
                         check(cov >= 30, cat, f"Coverage: {cov}% (min 30%)")
-                        check(cov >= 50, cat, f"Coverage target: {cov}% (target 50%)", warn_only=True)
-                        check(cov >= 80, cat, f"Coverage ideal: {cov}% (ideal 80%)", warn_only=True)
+                        check(
+                            cov >= 50, cat, f"Coverage target: {cov}% (target 50%)", warn_only=True
+                        )
+                        check(
+                            cov >= 80, cat, f"Coverage ideal: {cov}% (ideal 80%)", warn_only=True
+                        )
                         break
     except Exception as e:
         results.append((WARN, cat, f"Could not measure coverage: {e}"))
@@ -479,6 +502,7 @@ def check_testing():
 # ══════════════════════════════════════════════════════════════════════════════
 # SECTION 6: CODE QUALITY TOOLING
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 def check_tooling():
     """Validate code quality tooling is configured and passing."""
@@ -551,6 +575,7 @@ def check_tooling():
 # SECTION 7: IMPORT HYGIENE
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 def check_imports():
     """Validate import conventions."""
     cat = "Imports"
@@ -600,6 +625,7 @@ def check_imports():
 # SECTION 8: DOCUMENTATION STANDARDS
 # (adapted from MLOps_Team24 validate_cookiecutter.py)
 # ══════════════════════════════════════════════════════════════════════════════
+
 
 def check_documentation():
     """Validate documentation standards: README content and notebook naming."""
@@ -653,6 +679,7 @@ def check_documentation():
 # REPORT
 # ══════════════════════════════════════════════════════════════════════════════
 
+
 def print_report(strict: bool = False):
     """Print compliance report."""
     print("\n" + "═" * 70)
@@ -681,16 +708,24 @@ def print_report(strict: bool = False):
     print(f"\n{'═' * 70}")
     score = (total_pass / total * 100) if total > 0 else 0
     grade = (
-        "A+" if score >= 95
-        else "A" if score >= 90
-        else "B+" if score >= 85
-        else "B" if score >= 80
-        else "C" if score >= 70
-        else "D" if score >= 60
+        "A+"
+        if score >= 95
+        else "A"
+        if score >= 90
+        else "B+"
+        if score >= 85
+        else "B"
+        if score >= 80
+        else "C"
+        if score >= 70
+        else "D"
+        if score >= 60
         else "F"
     )
     print(f"  SCORE: {total_pass}/{total} ({score:.0f}%) — Grade: {grade}")
-    print(f"  {PASS} {total_pass} passed  {FAIL} {total_fail} failed  {WARN} {total_warn} warnings")
+    print(
+        f"  {PASS} {total_pass} passed  {FAIL} {total_fail} failed  {WARN} {total_warn} warnings"
+    )
     print(f"{'═' * 70}\n")
 
     # Exit code

@@ -64,7 +64,8 @@ class TestForecastModelLoaderInit:
 
     def test_default_flags_from_empty_conf(self, pkl_path: Path):
         """With empty conf mock, all boolean flags default to False."""
-        loader = ForecastModelLoader(52, pkl_path)
+        with patch.object(prediction_mod, "conf", {}):
+            loader = ForecastModelLoader(52, pkl_path)
         assert loader.normalizar_tasa is False
         assert loader.log_transform is False
 
