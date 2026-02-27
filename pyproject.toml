@@ -156,6 +156,7 @@ markers = [
 filterwarnings = [
     "ignore::pyparsing.PyparsingDeprecationWarning",
     "ignore::DeprecationWarning:matplotlib",
+    "ignore::urllib3.exceptions.RequestsDependencyWarning",
 ]
 
 # ─── Coverage ─────────────────────────────────────────────────────────────────
