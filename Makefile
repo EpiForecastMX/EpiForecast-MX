@@ -134,14 +134,14 @@ tableau:
 report:
 	@echo ">>> Generando reporte HTML..."
 	$(PYTHON) -m scripts.genera_reporte
-	@echo ">>> → forecast/reporte_resultados.html"
+	@echo ">>> → reports/forecasts/reporte_resultados.html"
 
 ## Generar bitácora HTML del modelado Prophet v1-v6
 .PHONY: bitacora
 bitacora:
 	@echo ">>> Generando bitácora..."
 	$(PYTHON) -m scripts.genera_bitacora
-	@echo ">>> → forecast/bitacora_modelado.html"
+	@echo ">>> → reports/forecasts/bitacora_modelado.html"
 
 ## Flujo completo de modelado
 .PHONY: model-pipeline
@@ -258,7 +258,7 @@ models-push:
 ## Versionar forecast y subir a S3
 .PHONY: forecast-push
 forecast-push:
-	dvc add forecast/all_forecast.csv
+	dvc add reports/forecasts/all_forecast.csv
 	dvc push
 	@echo ">>> Forecast versionado y subido."
 
@@ -266,7 +266,7 @@ forecast-push:
 .PHONY: s3-sync
 s3-sync:
 	aws s3 cp data/processed/data_inegi_General.csv s3://epiforecast-mx-data/latest/
-	aws s3 cp forecast/all_forecast.csv s3://epiforecast-mx-data/latest/
+	aws s3 cp reports/forecasts/all_forecast.csv s3://epiforecast-mx-data/latest/
 	@echo ">>> CSVs disponibles en s3://epiforecast-mx-data/latest/"
 
 #################################################################################

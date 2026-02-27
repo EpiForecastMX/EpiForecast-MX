@@ -5,7 +5,11 @@
 /logs
 
 # imagenes
-/reports
+# (Permitir reports/, ignorar archivos generados pesados)
+/reports/forecasts/*
+!/reports/forecasts/.gitkeep
+/reports/figures/*
+!/reports/figures/.gitkeep
 
 # Mac OS-specific storage files
 .DS_Store

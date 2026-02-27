@@ -29,9 +29,9 @@ paths:
   models: "./models"
   reports: "./reports"
   figures: "${paths.reports}/figures"
+  forecast: "${paths.reports}/forecasts"
   docs: "${paths.reports}/docs"
   utils: "${paths.data}/utils"
-  forecast: "./forecast"
 
 download:
   dataset_id: "1zFpeQewhh-otoCSMo0OoTc5yGzQlCxRv?"

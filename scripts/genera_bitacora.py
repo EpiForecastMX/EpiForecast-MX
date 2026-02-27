@@ -6,7 +6,7 @@ Uso:
     python -m scripts.genera_bitacora
 
 Salida:
-    forecast/bitacora_modelado.html
+    reports/forecasts/bitacora_modelado.html
 """
 
 from datetime import datetime
@@ -15,7 +15,7 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 # Rutas
 # ---------------------------------------------------------------------------
-OUTPUT_HTML = Path("forecast/bitacora_modelado.html")
+OUTPUT_HTML = Path("reports/forecasts/bitacora_modelado.html")
 
 
 # ---------------------------------------------------------------------------

@@ -33,7 +33,7 @@ def generar_graficos_pronostico(config: dict | None = None) -> None:
         config: Dict de configuración (default: conf global de YAML).
 
     Output structure:
-        forecast/{padecimiento}/{entidad|Nacional}/{nombre}.png
+        reports/forecasts/{padecimiento}/{entidad|Nacional}/{nombre}.png
     """
     _conf = config if config is not None else conf
     forecast_file = Path(_conf["data"]["forecast"])

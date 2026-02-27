@@ -5,7 +5,7 @@ Uso:
     python -m scripts.genera_reporte
 
 Salida:
-    forecast/reporte_resultados.html
+    reports/forecasts/reporte_resultados.html
 """
 
 from datetime import datetime
@@ -19,8 +19,8 @@ import pandas as pd
 # ---------------------------------------------------------------------------
 # Rutas
 # ---------------------------------------------------------------------------
-FORECAST_CSV = Path("forecast/all_forecast.csv")
-OUTPUT_HTML = Path("forecast/reporte_resultados.html")
+FORECAST_CSV = Path("reports/forecasts/all_forecast.csv")
+OUTPUT_HTML = Path("reports/forecasts/reporte_resultados.html")
 
 # ---------------------------------------------------------------------------
 # Constantes
