@@ -1,6 +1,11 @@
 # .github/workflows/ci.yml
 # EpiForecast-MX — Continuous Integration
+#
 # Triggers: push to main/refactor/*, PR to main
+# Jobs: quality → test → integration (manual only)
+#
+# Uses a venv to isolate from runner pre-installed packages,
+# avoiding version mismatches (e.g. urllib3/requests).
 
 name: CI
 
@@ -30,6 +35,11 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
 
+      - name: Create isolated venv
+        run: |
+          python -m venv .venv
+          echo "$PWD/.venv/bin" >> $GITHUB_PATH
+
       - name: Install dependencies
         run: |
           pip install --upgrade pip
@@ -57,18 +67,21 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
 
+      - name: Install system deps
+        run: sudo apt-get install -y ghostscript
+
+      - name: Create isolated venv
+        run: |
+          python -m venv .venv
+          echo "$PWD/.venv/bin" >> $GITHUB_PATH
+
       - name: Install dependencies
         run: |
           pip install --upgrade pip
           pip install -e ".[dev]"
 
-      - name: Run tests
-        run: pytest tests/ -v --tb=short -m "not slow and not integration"
-
-      - name: Run tests with coverage
-        run: |
-          pytest tests/ --cov=src/epiforecast --cov-report=term-missing --cov-report=xml
-        continue-on-error: true  # Coverage threshold starts at 0%
+      - name: Tests + coverage
+        run: pytest tests/ -v --tb=short -m "not slow and not integration" --cov-fail-under=80
 
       - name: Upload coverage
         if: always()
@@ -77,7 +90,6 @@ jobs:
           name: coverage-report
           path: coverage.xml
 
-  # Integration tests (manual trigger or weekly)
   integration:
     name: "Integration Tests"
     runs-on: ubuntu-latest
@@ -91,6 +103,14 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
+
+      - name: Install system deps
+        run: sudo apt-get install -y ghostscript
+
+      - name: Create isolated venv
+        run: |
+          python -m venv .venv
+          echo "$PWD/.venv/bin" >> $GITHUB_PATH
 
       - name: Install dependencies
         run: |
