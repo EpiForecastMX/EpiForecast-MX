@@ -29,7 +29,7 @@ git pull origin main
 echo ">>> [4/4] Sincronizando datos desde S3..."
 # Limpiar .DS_Store antes de dvc pull (macOS los genera y bloquean DVC)
 find . -name ".DS_Store" -delete 2>/dev/null
-dvc pull
+dvc pull --force
 
 echo "══════════════════════════════════════════════════════════"
 echo ">>> ✅ Sincronización IMSS completada."
