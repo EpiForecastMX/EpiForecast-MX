@@ -259,7 +259,13 @@ class ProphetForecaster(ForecastModel):
             from epiforecast.models.prophet.prophet_compat import get_param_grid
 
             best_params = {k: v[0] for k, v in get_param_grid(self).items()}
-            best_metrics: dict[str, Any] = {"rmse": None, "mae": None, "mape": None, "mase": None}
+            best_metrics: dict[str, Any] = {
+                "rmse": None,
+                "mae": None,
+                "mape": None,
+                "smape": None,
+                "mase": None,
+            }
             confianza = "insuficiente"
             logger.debug(
                 "Baja confianza: skip CV, params default | {:.2f} casos/sem | {} | {} | {}",

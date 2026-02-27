@@ -44,7 +44,7 @@ class _ConcreteModel(ForecastModel):
 
     def cross_validate(self, data: pd.DataFrame) -> dict[str, float]:
         super().cross_validate(data)
-        return {"rmse": 0.0, "mae": 0.0, "mape": 0.0, "mase": 0.0}
+        return {"rmse": 0.0, "mae": 0.0, "mape": 0.0, "smape": 0.0, "mase": 0.0}
 
     def save(self, path: Path) -> None:
         super().save(path)
@@ -152,7 +152,7 @@ class TestForecastModel:
         """cross_validate() must return a dict with the four metric keys."""
         result = _ConcreteModel().cross_validate(pd.DataFrame({"y": [1, 2, 3]}))
         assert isinstance(result, dict)
-        assert {"rmse", "mae", "mape", "mase"} == set(result.keys())
+        assert {"rmse", "mae", "mape", "smape", "mase"} == set(result.keys())
 
     def test_save_callable(self, tmp_path: Path):
         """save() must be callable without error."""

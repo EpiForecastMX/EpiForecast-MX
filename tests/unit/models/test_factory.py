@@ -30,7 +30,7 @@ class _DummyModel(ForecastModel):
         return pd.DataFrame()
 
     def cross_validate(self, data: pd.DataFrame) -> dict[str, float]:
-        return {"rmse": 0.0, "mae": 0.0, "mape": 0.0, "mase": 0.0}
+        return {"rmse": 0.0, "mae": 0.0, "mape": 0.0, "smape": 0.0, "mase": 0.0}
 
     def save(self, path: Path) -> None:
         pass

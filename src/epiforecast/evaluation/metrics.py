@@ -36,6 +36,23 @@ def mape(y_true: ArrayLike, y_pred: ArrayLike) -> float:
     return float(np.mean(np.abs((y_true[mask] - y_pred[mask]) / y_true[mask])) * 100)
 
 
+def smape(y_true: ArrayLike, y_pred: ArrayLike) -> float:
+    """Symmetric Mean Absolute Percentage Error (%).
+
+    SMAPE = 100/n * sum(2|y-ŷ| / (|y|+|ŷ|))
+
+    Más robusto que MAPE cuando y_true tiene valores cercanos a cero
+    (e.g., Alzheimer, Parkinson con pocos casos). Rango: [0, 200].
+    Pares donde ambos son cero se excluyen.
+    """
+    y_true, y_pred = np.asarray(y_true, dtype=float), np.asarray(y_pred, dtype=float)
+    denom = np.abs(y_true) + np.abs(y_pred)
+    mask = denom > 0
+    if not mask.any():
+        return 0.0
+    return float(np.mean(2.0 * np.abs(y_true[mask] - y_pred[mask]) / denom[mask]) * 100)
+
+
 def mase(
     y_true: ArrayLike,
     y_pred: ArrayLike,

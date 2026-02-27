@@ -131,7 +131,7 @@ class TestFallbackParams:
 class TestRun:
     def test_returns_params_and_metrics(self):
         tuner = _make_tuner("Alzheimer")
-        mock_metrics = {"rmse": 0.1, "mae": 0.05, "mape": 10.0, "mase": 0.8}
+        mock_metrics = {"rmse": 0.1, "mae": 0.05, "mape": 10.0, "smape": 9.0, "mase": 0.8}
         with patch.object(tuner_mod, "ProphetCrossValidator") as MockCV:
             mock_cv = MagicMock()
             mock_cv.evaluate_combo.return_value = (mock_metrics, False, None)
@@ -144,10 +144,10 @@ class TestRun:
         tuner = _make_tuner("Alzheimer")
         call_count = 0
         responses = [
-            ({"rmse": 0.5, "mae": 0.3, "mape": 30.0, "mase": 1.2}, False, None),
-            ({"rmse": 0.1, "mae": 0.05, "mape": 5.0, "mase": 0.8}, False, None),
-            ({"rmse": 0.3, "mae": 0.2, "mape": 20.0, "mase": 1.0}, False, None),
-            ({"rmse": 0.2, "mae": 0.1, "mape": 10.0, "mase": 0.9}, False, None),
+            ({"rmse": 0.5, "mae": 0.3, "mape": 30.0, "smape": 25.0, "mase": 1.2}, False, None),
+            ({"rmse": 0.1, "mae": 0.05, "mape": 5.0, "smape": 4.5, "mase": 0.8}, False, None),
+            ({"rmse": 0.3, "mae": 0.2, "mape": 20.0, "smape": 17.0, "mase": 1.0}, False, None),
+            ({"rmse": 0.2, "mae": 0.1, "mape": 10.0, "smape": 9.0, "mase": 0.9}, False, None),
         ]
 
         def side_effect(params):
@@ -169,7 +169,13 @@ class TestRun:
         with patch.object(tuner_mod, "ProphetCrossValidator") as MockCV:
             mock_cv = MagicMock()
             mock_cv.evaluate_combo.return_value = (
-                {"rmse": float("inf"), "mae": float("inf"), "mape": float("inf"), "mase": None},
+                {
+                    "rmse": float("inf"),
+                    "mae": float("inf"),
+                    "mape": float("inf"),
+                    "smape": float("inf"),
+                    "mase": None,
+                },
                 True,
                 0.03,
             )
@@ -193,12 +199,17 @@ class TestRun:
                         "rmse": float("inf"),
                         "mae": float("inf"),
                         "mape": float("inf"),
+                        "smape": float("inf"),
                         "mase": None,
                     },
                     True,
                     0.03,
                 )
-            return ({"rmse": 0.1, "mae": 0.05, "mape": 5.0, "mase": 0.8}, False, None)
+            return (
+                {"rmse": 0.1, "mae": 0.05, "mape": 5.0, "smape": 4.5, "mase": 0.8},
+                False,
+                None,
+            )
 
         with patch.object(tuner_mod, "ProphetCrossValidator") as MockCV:
             mock_cv = MagicMock()

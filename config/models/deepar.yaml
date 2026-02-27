@@ -1,21 +1,20 @@
-# Configuración para AWS DeepAR (SageMaker / GluonTS)
-# Estos parámetros controlan el comportamiento del modelo de Deep Learning
+# Configuración para DeepAR (GluonTS + PyTorch, entrenamiento local en CPU)
 
-# Configuración del modelo
-epochs: 100
-context_length: 52             # Un año de historia para el contexto
-prediction_length: 52          # Un año de predicción (horizonte)
-num_layers: 2                  # Número de capas recurrentes
-num_cells: 40                  # Celdas por capa (RNN)
-dropout_rate: 0.1              # Regularización
-learning_rate: 1e-3
-batch_size: 32
+deepar:
+  epochs: 100
+  context_length: 52             # Un año de historia para el contexto
+  prediction_length: 52          # Un año de predicción (horizonte)
+  num_layers: 2                  # Número de capas recurrentes
+  num_cells: 40                  # Celdas por capa (RNN)
+  dropout_rate: 0.1              # Regularización
+  learning_rate: 1e-3
+  batch_size: 32
+  scaling: true                  # Normalización interna de GluonTS
+  distr_output: "negative-binomial"  # Distribución para datos de conteo
+  num_samples: 200               # Muestras Monte Carlo para intervalos de confianza
+  freq: "W-MON"                  # Frecuencia de la serie temporal
 
-# Configuración del entrenamiento en AWS (si se usa SageMaker)
-instance_type: "ml.m5.xlarge"
-instance_count: 1
-
-# Hiperparámetros específicos por padecimiento (similar a prophet.yaml)
+# Hiperparámetros específicos por padecimiento
 param_grid_deepar:
   alzheimer:
     epochs: [50, 100]

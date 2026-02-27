@@ -109,7 +109,13 @@ class ProphetCrossValidator:
 
         if timed_out or fold_results.is_empty():
             return (
-                {"rmse": float("inf"), "mae": float("inf"), "mape": float("inf"), "mase": None},
+                {
+                    "rmse": float("inf"),
+                    "mae": float("inf"),
+                    "mape": float("inf"),
+                    "smape": float("inf"),
+                    "mase": None,
+                },
                 timed_out,
                 newton_cp,
             )
@@ -118,15 +124,17 @@ class ProphetCrossValidator:
             fold_results.rmse,
             fold_results.mae,
             fold_results.mape,
+            fold_results.smape,
             fold_results.mase,
             fold_results.indices,
         )
 
         logger.debug(
-            "Métricas CV: RMSE={:.4f}, MAE={:.4f}, MAPE={:.2f}%{}",
+            "Métricas CV: RMSE={:.4f}, MAE={:.4f}, MAPE={:.2f}%, SMAPE={:.2f}%{}",
             metrics["rmse"],
             metrics["mae"],
             metrics["mape"],
+            metrics["smape"],
             f", MASE={metrics['mase']:.3f}" if metrics["mase"] is not None else ", MASE=N/A",
         )
 
@@ -188,6 +196,7 @@ class ProphetCrossValidator:
         rmse_folds: list[float],
         mae_folds: list[float],
         mape_folds: list[float],
+        smape_folds: list[float],
         mase_folds: list[float | None],
         fold_indices: list[int],
     ) -> dict:
@@ -197,10 +206,12 @@ class ProphetCrossValidator:
             mean_rmse = float(np.average(rmse_folds, weights=weights))
             mean_mae = float(np.average(mae_folds, weights=weights))
             mean_mape = float(np.average(mape_folds, weights=weights))
+            mean_smape = float(np.average(smape_folds, weights=weights))
         else:
             mean_rmse = float(np.mean(rmse_folds))
             mean_mae = float(np.mean(mae_folds))
             mean_mape = float(np.mean(mape_folds))
+            mean_smape = float(np.mean(smape_folds))
 
         # MASE: average excluding None values
         valid_mase = [m for m in mase_folds if m is not None]
@@ -221,6 +232,7 @@ class ProphetCrossValidator:
             "rmse": mean_rmse,
             "mae": mean_mae,
             "mape": mean_mape,
+            "smape": mean_smape,
             "mase": mean_mase,
         }
 
@@ -236,6 +248,7 @@ class _FoldCollector:
         self.rmse: list[float] = []
         self.mae: list[float] = []
         self.mape: list[float] = []
+        self.smape: list[float] = []
         self.mase: list[float | None] = []
         self.indices: list[int] = []
 
@@ -244,6 +257,7 @@ class _FoldCollector:
         self.rmse.append(metrics["rmse"])
         self.mae.append(metrics["mae"])
         self.mape.append(metrics["mape"])
+        self.smape.append(metrics["smape"])
         self.mase.append(metrics["mase"])
         self.indices.append(fold_idx)
 
@@ -257,16 +271,22 @@ def _compute_fold_metrics(
     train_fold: pd.DataFrame,
     val_fold: pd.DataFrame,
 ) -> dict:
-    """Calcula RMSE, MAE, MAPE y MASE para un fold de CV."""
+    """Calcula RMSE, MAE, MAPE, SMAPE y MASE para un fold de CV."""
+    from epiforecast.evaluation.metrics import smape as _smape
+
     forecast = model.predict(val_fold[["ds"]])
     merged = val_fold[["ds", "y"]].merge(forecast[["ds", "yhat"]], on="ds")
 
-    rmse = float(np.sqrt(mean_squared_error(merged["y"], merged["yhat"])))
-    mae = float(mean_absolute_error(merged["y"], merged["yhat"]))
+    y_true = merged["y"].to_numpy()
+    y_pred = merged["yhat"].to_numpy()
+
+    rmse = float(np.sqrt(mean_squared_error(y_true, y_pred)))
+    mae = float(mean_absolute_error(y_true, y_pred))
     mape = min(
-        float(mean_absolute_percentage_error(merged["y"], merged["yhat"]) * 100),
+        float(mean_absolute_percentage_error(y_true, y_pred) * 100),
         999.0,
     )
+    smape = _smape(y_true, y_pred)
 
     y_train = train_fold["y"].values
     if len(y_train) > 52:
@@ -275,4 +295,4 @@ def _compute_fold_metrics(
     else:
         mase = None
 
-    return {"rmse": rmse, "mae": mae, "mape": mape, "mase": mase}
+    return {"rmse": rmse, "mae": mae, "mape": mape, "smape": smape, "mase": mase}

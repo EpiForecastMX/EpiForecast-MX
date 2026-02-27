@@ -99,6 +99,7 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False)
         "rmse": metrics.get("rmse"),
         "mae": metrics.get("mae"),
         "mape": mape_raw,
+        "smape": metrics.get("smape"),
         "mase": metrics.get("mase"),
         "mape_confiable": not mape_clipped,
         **parametros,

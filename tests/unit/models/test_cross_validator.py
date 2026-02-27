@@ -57,26 +57,37 @@ class TestAggregateFolds:
         cv = _make_cv()
         cv.cv_weights = None
         metrics = cv._aggregate_folds(
-            [0.1, 0.2, 0.3], [0.05, 0.1, 0.15], [10.0, 20.0, 30.0], [None, 0.8, 0.9], [0, 1, 2]
+            [0.1, 0.2, 0.3],
+            [0.05, 0.1, 0.15],
+            [10.0, 20.0, 30.0],
+            [8.0, 16.0, 24.0],
+            [None, 0.8, 0.9],
+            [0, 1, 2],
         )
         assert abs(metrics["rmse"] - 0.2) < 1e-9
 
     def test_simple_mean_mae(self):
         cv = _make_cv()
         cv.cv_weights = None
-        metrics = cv._aggregate_folds([0.1, 0.2], [0.04, 0.06], [5.0, 15.0], [0.9, 0.8], [0, 1])
+        metrics = cv._aggregate_folds(
+            [0.1, 0.2], [0.04, 0.06], [5.0, 15.0], [4.0, 12.0], [0.9, 0.8], [0, 1]
+        )
         assert abs(metrics["mae"] - 0.05) < 1e-9
 
     def test_all_none_mase_returns_none(self):
         cv = _make_cv()
         cv.cv_weights = None
-        metrics = cv._aggregate_folds([0.1, 0.2], [0.05, 0.1], [10.0, 20.0], [None, None], [0, 1])
+        metrics = cv._aggregate_folds(
+            [0.1, 0.2], [0.05, 0.1], [10.0, 20.0], [8.0, 16.0], [None, None], [0, 1]
+        )
         assert metrics["mase"] is None
 
     def test_mase_excludes_none(self):
         cv = _make_cv()
         cv.cv_weights = None
-        metrics = cv._aggregate_folds([0.1, 0.2], [0.05, 0.1], [10.0, 20.0], [None, 0.8], [0, 1])
+        metrics = cv._aggregate_folds(
+            [0.1, 0.2], [0.05, 0.1], [10.0, 20.0], [8.0, 16.0], [None, 0.8], [0, 1]
+        )
         assert abs(metrics["mase"] - 0.8) < 1e-9
 
     def test_weighted_rmse(self):
@@ -85,20 +96,25 @@ class TestAggregateFolds:
         cv.n_splits = 4
         # weights for folds [0, 1, 2] = [1, 2, 3] → weighted avg = (0+0+3)/6 = 0.5
         metrics = cv._aggregate_folds(
-            [0.0, 0.0, 1.0], [0.0, 0.0, 0.6], [0.0, 0.0, 60.0], [None, None, None], [0, 1, 2]
+            [0.0, 0.0, 1.0],
+            [0.0, 0.0, 0.6],
+            [0.0, 0.0, 60.0],
+            [0.0, 0.0, 50.0],
+            [None, None, None],
+            [0, 1, 2],
         )
         assert abs(metrics["rmse"] - 0.5) < 1e-9
 
     def test_returns_all_required_keys(self):
         cv = _make_cv()
         cv.cv_weights = None
-        metrics = cv._aggregate_folds([0.1], [0.05], [10.0], [0.8], [0])
-        assert set(metrics.keys()) == {"rmse", "mae", "mape", "mase"}
+        metrics = cv._aggregate_folds([0.1], [0.05], [10.0], [8.0], [0.8], [0])
+        assert set(metrics.keys()) == {"rmse", "mae", "mape", "smape", "mase"}
 
     def test_single_fold(self):
         cv = _make_cv()
         cv.cv_weights = None
-        metrics = cv._aggregate_folds([0.42], [0.21], [5.0], [0.9], [0])
+        metrics = cv._aggregate_folds([0.42], [0.21], [5.0], [4.0], [0.9], [0])
         assert abs(metrics["rmse"] - 0.42) < 1e-9
 
 
