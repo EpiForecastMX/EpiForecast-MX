@@ -1,15 +1,15 @@
 # scripts/publish_gsheets.py
 from __future__ import annotations
 
+from datetime import datetime
 import json
 import os
-from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from google.oauth2.service_account import Credentials
 import gspread
 import pandas as pd
-from google.oauth2.service_account import Credentials
 
 from epiforecast.utils.config import conf, logger
 
@@ -94,12 +94,7 @@ def main() -> int:
     for start in range(0, total_rows, chunk_size):
         end = min(start + chunk_size, total_rows)
 
-        block = (
-            df.iloc[start:end]
-            .astype(object)
-            .where(pd.notnull(df), "")
-            .values.tolist()
-        )
+        block = df.iloc[start:end].astype(object).where(pd.notnull(df), "").values.tolist()
 
         # fila 1 es header
         row1 = start + 2
