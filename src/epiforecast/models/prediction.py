@@ -1,74 +1,45 @@
 # src/epiforecast/models/prediction.py
-"""Model loader and predictor with inverse transforms (SRP: load + predict only).
+"""Model loader and predictor (Polymorphic via ModelFactory).
 
-Handles: loading .pkl models, reversing log-transform, desnormalizing rates to counts.
-Does NOT handle: visualization (see visualization/forecast_plots.py).
+Delegates loading and prediction to the specific model implementation.
 """
 
 from pathlib import Path
-import pickle
 
-import numpy as np
 import pandas as pd
 
+from epiforecast.models import create_model
 from epiforecast.utils.config import conf
 
 
 class ForecastModelLoader:
-    """Load a serialized Prophet model and generate desnormalized predictions."""
+    """Unified model loader that works with any registered model type."""
 
     def __init__(self, periodo: int, model_path: Path, config: dict | None = None):
-        """Inicializa el cargador de modelos con horizonte y ruta del pickle.
+        """Inicializa el cargador de modelos.
 
         Args:
             periodo:    Horizonte de predicción en semanas.
-            model_path: Ruta al archivo .pkl del modelo serializado.
+            model_path: Ruta al archivo del modelo serializado.
             config:     Dict de configuración (default: conf global de YAML).
         """
-        _conf = config if config is not None else conf
+        self._conf = config if config is not None else conf
         self.model_path = Path(model_path)
-        self.model = None
         self.periodo = periodo
-        self.poblacion: float | None = None
-        self.normalizar_tasa: bool = _conf.get("normalizar_tasa", False)
-        self.tasa_por: int = _conf.get("tasa_por", 100000)
-        self.log_transform: bool = _conf.get("log_transform", False)
+
+        # Determinar modelo_activo de la configuración
+        self.modelo_activo = self._conf.get("modelo_activo", "prophet")
+
+        # Instanciar el forecaster correspondiente
+        self.forecaster = create_model(self.modelo_activo, config=self._conf)
 
     def load(self) -> None:
-        """Load model from .pkl and read population from sidecar CSV."""
-        if not self.model_path.exists():
-            raise FileNotFoundError(f"Modelo no encontrado: {self.model_path}")
-
-        with self.model_path.open("rb") as f:
-            self.model = pickle.load(f)
-
-        # Read population from training CSV (sidecar of .pkl)
-        csv_path = self.model_path.with_suffix(".csv")
-        if self.normalizar_tasa and csv_path.exists():
-            train_csv = pd.read_csv(csv_path, nrows=1)
-            if "Total" in train_csv.columns:
-                self.poblacion = train_csv["Total"].iloc[0]
+        """Delegate loading to the forecaster implementation."""
+        self.forecaster.load(self.model_path)
 
     def predict(self) -> pd.DataFrame:
-        """Generate predictions, reversing log-transform and rate normalization."""
-        if self.model is None:
-            raise RuntimeError("Model not loaded. Call load() first.")
-
-        future = self.model.make_future_dataframe(periods=self.periodo, freq="W-MON")
-        forecast = self.model.predict(future)
-
-        # Reverse log-transform: exp(yhat) - 1
-        if self.log_transform:
-            for col in ["yhat", "yhat_lower", "yhat_upper"]:
-                forecast[col] = np.expm1(forecast[col])
-
-        # Desnormalize rate to counts
-        if self.normalizar_tasa and self.poblacion:
-            forecast["yhat_tasa"] = forecast["yhat"]
-            for col in ["yhat", "yhat_lower", "yhat_upper"]:
-                forecast[col] = forecast[col] * self.poblacion / self.tasa_por
-
-        return forecast
+        """Delegate prediction to the forecaster implementation."""
+        return self.forecaster.predict(self.periodo)
 
     def run(self) -> pd.DataFrame:
         """Load model and generate predictions in one call."""

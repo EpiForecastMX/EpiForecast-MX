@@ -1,3 +1,5 @@
+modelo_activo: "prophet"           # Opciones: prophet, deepar, ensemble
+
 padecimiento:
   columna: "Padecimiento"
   tipo: "General"                  # General, Depresión, Parkinson, Alzheimer
@@ -26,10 +28,10 @@ paths:
   external: "${paths.data}/external"
   prediction: "${paths.data}/prediction"
   synthetic: "${paths.data}/synthetic"
-  models: "./models"
+  models: "./models/${modelo_activo}"
   reports: "./reports"
   figures: "${paths.reports}/figures"
-  forecast: "${paths.reports}/forecasts"
+  forecast: "${paths.reports}/forecasts/${modelo_activo}"
   docs: "${paths.reports}/docs"
   utils: "${paths.data}/utils"
 
@@ -49,5 +51,5 @@ data:
   data_inegi: "${paths.processed}/data_inegi_${padecimiento.tipo}.csv"
   xlsx_inegi: "${paths.processed}/EpiForecast-MX.xlsx"
   model_train: "${paths.models}/"
-  forecast: "${paths.forecast}/all_forecast.csv"
+  forecast: "${paths.forecast}/all_forecast_${modelo_activo}.csv"
   tableau: "${paths.processed}/tableau.csv"

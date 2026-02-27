@@ -111,11 +111,27 @@ preprocess: reset get-dataset filter clean transform get-inegi mapper
 # 🤖 MODELING                                                                  #
 #################################################################################
 
-## Entrenar modelos Prophet (CV + train final)
+## Entrenar modelos según config (CV + train final)
 .PHONY: train
 train:
 	@echo ">>> Entrenando modelos..."
 	$(PYTHON) -m scripts.entrena $(ARGS)
+
+## Entrenar modelos Prophet
+.PHONY: train-prophet
+train-prophet:
+	@echo ">>> Entrenando modelos Prophet..."
+	$(PYTHON) -m scripts.entrena modelo_activo='prophet' $(ARGS)
+
+## Entrenar modelos DeepAR
+.PHONY: train-deepar
+train-deepar:
+	@echo ">>> Entrenando modelos DeepAR..."
+	$(PYTHON) -m scripts.entrena modelo_activo='deepar' $(ARGS)
+
+## Entrenar todos los modelos (secuencial)
+.PHONY: train-all
+train-all: train-prophet train-deepar
 
 ## Generar predicciones (52 semanas, desnormalizadas)
 .PHONY: predict
@@ -142,6 +158,13 @@ bitacora:
 	@echo ">>> Generando bitácora..."
 	$(PYTHON) -m scripts.genera_bitacora
 	@echo ">>> → reports/forecasts/bitacora_modelado.html"
+
+## Comparar modelos (Real vs Prophet vs DeepAR)
+.PHONY: compare
+compare:
+	@echo ">>> Generando comparativa de modelos..."
+	$(PYTHON) -m scripts.compara_modelos
+	@echo ">>> → reports/forecasts/comparacion_modelos/"
 
 ## Flujo completo de modelado
 .PHONY: model-pipeline
@@ -258,9 +281,10 @@ models-push:
 ## Versionar forecast y subir a S3
 .PHONY: forecast-push
 forecast-push:
-	dvc add reports/forecasts/all_forecast.csv
+	@echo ">>> Versionando archivos de forecast..."
+	@find reports/forecasts -name "all_forecast_*.csv" | xargs -I {} dvc add {}
 	dvc push
-	@echo ">>> Forecast versionado y subido."
+	@echo ">>> Forecasts versionados y subidos."
 
 ## Sync CSVs directo a S3 (sin DVC, acceso rápido)
 .PHONY: s3-sync

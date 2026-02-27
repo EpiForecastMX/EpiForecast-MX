@@ -121,15 +121,17 @@ def _load_hp_data(models_root: Path) -> pd.DataFrame:
 
 def _build_csv_path(padecimiento: str, entidad: str, modo: str, models_root: Path) -> Path:
     """Construye la ruta del CSV de entrenamiento (sidecar del .pkl)."""
+    modelo_activo = conf.get("modelo_activo", "prophet").capitalize()
     pad_norm = _normalizar_nombre(padecimiento)
+
     if not entidad or entidad.lower() == "nacional":
-        csv_name = f"Prophet_{pad_norm}_{modo}.csv"
+        csv_name = f"{modelo_activo}_{pad_norm}_{modo}.csv"
     elif entidad.startswith("Region "):
         region_norm = _normalizar_nombre(entidad[len("Region ") :])
-        csv_name = f"Prophet_{pad_norm}_region_{region_norm}_{modo}.csv"
+        csv_name = f"{modelo_activo}_{pad_norm}_region_{region_norm}_{modo}.csv"
     else:
         entidad_norm = _normalizar_nombre(entidad)
-        csv_name = f"Prophet_{pad_norm}_{entidad_norm}_{modo}.csv"
+        csv_name = f"{modelo_activo}_{pad_norm}_{entidad_norm}_{modo}.csv"
     return models_root / pad_norm / csv_name
 
 
@@ -167,31 +169,40 @@ def _extract_metricas(
     df_hp_all: pd.DataFrame,
 ) -> dict:
     """Extract model metrics and HP for chart annotation."""
-    row = df_forecast.loc[
-        mask,
-        [
-            "mase_usado",
-            "rmse_usado",
-            "confianza_original",
-            "archivo_modelo_original",
-            "archivo_modelo_usado",
-        ],
-    ].iloc[0]
+    # Extraer la primera fila que coincide con la máscara
+    subset = df_forecast.loc[mask]
+    if subset.empty:
+        return {
+            "mase": None,
+            "rmse": None,
+            "confianza": "normal",
+            "es_fallback": False,
+            "modelo_usado": "N/A",
+        }
 
-    es_fallback = str(row["archivo_modelo_original"]) != str(row["archivo_modelo_usado"])
+    row = subset.iloc[0]
+
+    # Extraer valores con seguridad (maneja columnas faltantes)
+    m_orig = row.get("archivo_modelo_original", "N/A")
+    m_used = row.get("archivo_modelo_usado", "N/A")
+    es_fallback = str(m_orig) != str(m_used)
 
     metricas = {
-        "mase": float(row["mase_usado"]) if pd.notna(row["mase_usado"]) else None,
-        "rmse": float(row["rmse_usado"]) if pd.notna(row["rmse_usado"]) else None,
+        "mase": float(row["mase_usado"])
+        if "mase_usado" in row and pd.notna(row["mase_usado"])
+        else None,
+        "rmse": float(row["rmse_usado"])
+        if "rmse_usado" in row and pd.notna(row["rmse_usado"])
+        else None,
         "confianza": str(row["confianza_original"])
-        if pd.notna(row["confianza_original"])
+        if "confianza_original" in row and pd.notna(row["confianza_original"])
         else "normal",
         "es_fallback": es_fallback,
-        "modelo_usado": str(row["archivo_modelo_usado"]),
+        "modelo_usado": str(m_used),
     }
 
     # Add HP from complete CSV
-    modelo_key = str(row["archivo_modelo_usado"])
+    modelo_key = str(m_used)
     if not df_hp_all.empty and modelo_key in df_hp_all.index:
         hp = df_hp_all.loc[modelo_key]
         metricas["seasonality_mode"] = str(hp["seasonality_mode"])

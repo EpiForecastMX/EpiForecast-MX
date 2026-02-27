@@ -126,7 +126,7 @@ def test_pipeline_end_to_end(mock_conf, synthetic_data, monkeypatch):
     df_tableau = pd.read_csv(tableau_file)
     assert not df_tableau.empty, "El dataset de Tableau está vacío"
 
-    expected_cols = ["ds", "entidad", "padecimiento", "yhat", "incrementos_total"]
+    expected_cols = ["ds", "entidad", "padecimiento", "yhat_prophet", "incrementos_total"]
     for col in expected_cols:
         assert col in df_tableau.columns, f"Falta la columna esperada: {col}"
 

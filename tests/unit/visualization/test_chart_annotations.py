@@ -83,47 +83,47 @@ class TestAnotarZonaCV:
 
 
 class TestRenderFichaTecnica:
-    def test_fig_text_called_once(self, mock_fig):
+    """fig.text is called twice: ficha tecnica (1st) + timestamp CDMX (2nd)."""
+
+    @staticmethod
+    def _ficha_text(mock_fig: MagicMock) -> str:
+        """Extract the ficha tecnica text (first fig.text call)."""
+        return mock_fig.text.call_args_list[0][0][2]
+
+    def test_fig_text_called_twice(self, mock_fig):
         _render_ficha_tecnica(mock_fig, {"mase": 0.8, "rmse": 0.5})
-        mock_fig.text.assert_called_once()
+        assert mock_fig.text.call_count == 2
 
     def test_mase_label_in_text(self, mock_fig):
         _render_ficha_tecnica(mock_fig, {"mase": 0.75, "rmse": 0.1})
-        text = mock_fig.text.call_args[0][2]
-        assert "MASE" in text
+        assert "MASE" in self._ficha_text(mock_fig)
 
     def test_rmse_label_in_text(self, mock_fig):
         _render_ficha_tecnica(mock_fig, {"mase": 0.75, "rmse": 0.1})
-        text = mock_fig.text.call_args[0][2]
-        assert "RMSE" in text
+        assert "RMSE" in self._ficha_text(mock_fig)
 
     def test_fallback_regional_in_text(self, mock_fig):
         _render_ficha_tecnica(
             mock_fig, {"es_fallback": True, "modelo_usado": "region_metropolitana_alta_hombres"}
         )
-        text = mock_fig.text.call_args[0][2]
-        assert "Regional" in text
+        assert "Regional" in self._ficha_text(mock_fig)
 
     def test_estatal_label_when_confianza_normal(self, mock_fig):
         _render_ficha_tecnica(mock_fig, {"confianza": "normal", "es_fallback": False})
-        text = mock_fig.text.call_args[0][2]
-        assert "Estatal" in text
+        assert "Estatal" in self._ficha_text(mock_fig)
 
     def test_mase_above_threshold_no_supera(self, mock_fig):
         _render_ficha_tecnica(mock_fig, {"mase": 1.5})
-        text = mock_fig.text.call_args[0][2]
-        assert "no supera" in text
+        assert "no supera" in self._ficha_text(mock_fig)
 
     def test_mase_below_threshold_supera(self, mock_fig):
         _render_ficha_tecnica(mock_fig, {"mase": 0.5})
-        text = mock_fig.text.call_args[0][2]
-        assert "supera" in text
+        assert "supera" in self._ficha_text(mock_fig)
 
     def test_seasonality_mode_in_text(self, mock_fig):
         _render_ficha_tecnica(mock_fig, {"seasonality_mode": "multiplicative"})
-        text = mock_fig.text.call_args[0][2]
-        assert "multiplicative" in text
+        assert "multiplicative" in self._ficha_text(mock_fig)
 
     def test_empty_metrics_still_calls_text(self, mock_fig):
         _render_ficha_tecnica(mock_fig, {})
-        mock_fig.text.assert_called_once()
+        assert mock_fig.text.call_count == 2

@@ -9,7 +9,7 @@ Delegates: cross-validation to cross_validator.py, HP tuning to tuner.py,
 import logging
 from pathlib import Path
 import pickle
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -17,11 +17,13 @@ from prophet import Prophet
 
 from epiforecast.constants import RANDOM_SEED
 from epiforecast.models.base import ForecastModel
+from epiforecast.models.factory import register_model
 from epiforecast.utils.config import conf, logger
 
 logging.getLogger("cmdstanpy").disabled = True
 
 
+@register_model("prophet")
 class ProphetForecaster(ForecastModel):
     """Prophet-based time series forecaster.
 
@@ -31,7 +33,7 @@ class ProphetForecaster(ForecastModel):
 
     def __init__(
         self,
-        df: pd.DataFrame,
+        df: pd.DataFrame | None = None,
         sexo: str | None = None,
         entidad: str | None = None,
         padecimiento: str | None = None,
@@ -40,15 +42,16 @@ class ProphetForecaster(ForecastModel):
         """Inicializa el forecaster Prophet con datos, filtros y configuración.
 
         Args:
-            df:            DataFrame con datos epidemiológicos preprocesados.
+            df:            DataFrame con datos epidemiológicos preprocesados (opcional en carga).
             sexo:          Columna de sexo a modelar (``general``, ``hombres``, ``mujeres``).
             entidad:       Nombre del estado, o None para nivel nacional.
             padecimiento:  Nombre del padecimiento (Depresión, Parkinson, Alzheimer).
             config:        Dict de configuración (default: conf global de YAML).
         """
         self._conf = config if config is not None else conf
-        self.df = df.copy()
-        self.df["Fecha"] = pd.to_datetime(self.df["Fecha"])
+        self.df = df.copy() if df is not None else pd.DataFrame()
+        if not self.df.empty:
+            self.df["Fecha"] = pd.to_datetime(self.df["Fecha"])
         self.sexo = sexo
         self.entidad = entidad
         self.padecimiento = padecimiento
@@ -163,13 +166,30 @@ class ProphetForecaster(ForecastModel):
         """Generate predictions for given horizon (weeks).
 
         Returns DataFrame with: ds, yhat, yhat_lower, yhat_upper.
+        Handles inverse log-transform and rate desnormalization.
         """
         if self._model is None:
             raise RuntimeError("Model not fitted. Call fit() first.")
 
         future = self._model.make_future_dataframe(periods=horizon, freq="W-MON")
         forecast = self._model.predict(future)
-        return forecast[["ds", "yhat", "yhat_lower", "yhat_upper"]]  # type: ignore[no-any-return]
+        cols = ["ds", "yhat", "yhat_lower", "yhat_upper"]
+        out = forecast[cols].copy()
+
+        # Reversar log-transform: exp(yhat) - 1
+        if self.log_transform:
+            for col in ["yhat", "yhat_lower", "yhat_upper"]:
+                out[col] = np.expm1(out[col])
+            logger.debug("Inversa de log-transform aplicada")
+
+        # Desnormalizar tasa a conteos
+        if self.normalizar_tasa and self.poblacion_valor:
+            out["yhat_tasa"] = out["yhat"]
+            for col in ["yhat", "yhat_lower", "yhat_upper"]:
+                out[col] = out[col] * self.poblacion_valor / self.tasa_por
+            logger.debug("Desnormalización de tasa aplicada (pob={:,.0f})", self.poblacion_valor)
+
+        return out  # type: ignore[no-any-return]
 
     def cross_validate(self, data: pd.DataFrame) -> dict[str, float]:
         """Run cross-validation. Delegates to ProphetCrossValidator."""
@@ -190,13 +210,23 @@ class ProphetForecaster(ForecastModel):
         logger.debug("Modelo guardado: {}", path)
 
     def load(self, path: Path) -> None:
-        """Load model from pickle file."""
+        """Load model from pickle file and population from sidecar CSV."""
         path = Path(path)
         if not path.exists():
             raise FileNotFoundError(f"Modelo no encontrado: {path}")
         with path.open("rb") as f:
             self._model = pickle.load(f)
         logger.debug("Modelo cargado: {}", path)
+
+        # Cargar población del CSV sidecar si es necesario para desnormalización
+        csv_path = path.with_suffix(".csv")
+        if self.normalizar_tasa and csv_path.exists():
+            train_csv = pd.read_csv(csv_path, nrows=1)
+            # Intentar con nombre de columna configurado o default 'Total'
+            col_pob = self.col_poblacion if self.col_poblacion in train_csv.columns else "Total"
+            if col_pob in train_csv.columns:
+                self.poblacion_valor = float(train_csv[col_pob].iloc[0])
+                logger.debug("Población cargada desde sidecar: {:,.0f}", self.poblacion_valor)
 
     def get_params(self) -> dict[str, Any]:
         """Return current model parameters."""
@@ -219,12 +249,38 @@ class ProphetForecaster(ForecastModel):
         self.agrupa()
         self.crea_train_test()
 
-        from epiforecast.models.prophet.tuner import ProphetTuner
+        # Verificar umbral mínimo de casos por semana para decidir si hacer CV
+        umbral = self._conf.get("umbral_minimo_semanal", 0)
+        promedio = self.promedio_semanal()
+        es_insuficiente = umbral and promedio < umbral
 
-        tuner = ProphetTuner(self)
-        best_params, best_metrics = tuner.run()
+        if es_insuficiente:
+            # Skip CV: usar primer combo del grid como default (serie casi plana, HP da igual)
+            from epiforecast.models.prophet.prophet_compat import get_param_grid
+
+            best_params = {k: v[0] for k, v in get_param_grid(self).items()}
+            best_metrics: dict[str, Any] = {"rmse": None, "mae": None, "mape": None, "mase": None}
+            confianza = "insuficiente"
+            logger.debug(
+                "Baja confianza: skip CV, params default | {:.2f} casos/sem | {} | {} | {}",
+                promedio,
+                self.padecimiento,
+                self.entidad or "Nacional",
+                self.sexo,
+            )
+        else:
+            from epiforecast.models.prophet.tuner import ProphetTuner
+
+            tuner = ProphetTuner(self)
+            best_params, best_metrics = tuner.run()
+            best_metrics = cast(dict[str, Any], best_metrics)
+            confianza = "normal"
 
         self.fit(self.serie, best_params)
+
+        # Enriquecer métricas con info de confianza para el script
+        best_metrics["confianza"] = confianza
+        best_metrics["promedio_semanal"] = promedio
 
         return self._model, best_metrics, best_params
 

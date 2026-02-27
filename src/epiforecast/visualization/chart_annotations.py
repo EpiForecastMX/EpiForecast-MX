@@ -1,9 +1,14 @@
 """Forecast chart annotation helpers: divisors, CV zones, and model metrics card."""
 
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
 import matplotlib.pyplot as plt
 import pandas as pd
 
 from epiforecast.utils.config import conf
+
+_TZ_CDMX = ZoneInfo("America/Mexico_City")
 
 # ── Annotation styling ───────────────────────────────────────────────
 _LW_DIVIDER = 1.5
@@ -74,17 +79,18 @@ def _anotar_zona_cv(
         config:         Dict de configuración (default: conf global de YAML).
     """
     _conf = config if config is not None else conf
-    fecha_corte = pd.Timestamp(_conf["FECHA_CORTE_ENTRENAMIENTO"])
+    # pd.Timestamp → matplotlib: stubs incompletos, funciona en runtime
+    fecha_corte = pd.Timestamp(_conf["FECHA_CORTE_ENTRENAMIENTO"]).to_pydatetime()
 
     ax.axvspan(
-        fecha_corte,  # type: ignore[arg-type]
+        fecha_corte,
         fecha_max_datos,
         alpha=_ALPHA_CV_ZONE,
         color=c_gray,
         zorder=0,
     )
     ax.axvline(
-        fecha_corte,  # type: ignore[arg-type]
+        fecha_corte,
         color=c_gray,
         ls=":",
         lw=_LW_CV_LINE,
@@ -93,7 +99,7 @@ def _anotar_zona_cv(
     )
     ax.annotate(
         "Entrenamiento",
-        xy=(fecha_corte, _Y_CV_LABEL),  # type: ignore[arg-type]
+        xy=(fecha_corte, _Y_CV_LABEL),
         xycoords=("data", "axes fraction"),
         fontsize=_FS_CV_LABEL,
         color=c_gray,
@@ -102,7 +108,7 @@ def _anotar_zona_cv(
     )
     ax.annotate(
         "Prueba CV",
-        xy=(fecha_corte, _Y_CV_LABEL),  # type: ignore[arg-type]
+        xy=(fecha_corte, _Y_CV_LABEL),
         xycoords=("data", "axes fraction"),
         fontsize=_FS_CV_LABEL,
         color=c_gray,
@@ -113,13 +119,17 @@ def _anotar_zona_cv(
 
 def _render_ficha_tecnica(fig: plt.Figure, metricas: dict) -> None:
     """Renderiza la ficha técnica del modelo al pie del gráfico."""
+    modelo_activo = conf.get("modelo_activo", "prophet").lower()
     mase_v = metricas.get("mase")
     rmse_v = metricas.get("rmse")
     confianza = metricas.get("confianza", "normal")
     es_fallback = metricas.get("es_fallback", False)
     modelo_usado = metricas.get("modelo_usado", "")
 
-    tokens = ["Prophet (Meta/Facebook)", "IC 80 %"]
+    if modelo_activo == "deepar":
+        tokens = ["DeepAR (AWS SageMaker)", "IC 80 %"]
+    else:
+        tokens = ["Prophet (Meta/Facebook)", "IC 80 %"]
 
     if mase_v is not None and mase_v < 100:
         tag = "supera naive" if mase_v < 1 else "no supera naive"
@@ -134,14 +144,27 @@ def _render_ficha_tecnica(fig: plt.Figure, metricas: dict) -> None:
             region = region.replace("_", " ").replace("-", "/")
         tokens.append(f"Modelo: Regional ({region})" if region else "Modelo: Regional (respaldo)")
     elif confianza == "normal":
-        tokens.append("Modelo: Estatal propio")
+        nivel = (
+            "Nacional" if "Nacional" in modelo_usado or "_general" in modelo_usado else "Estatal"
+        )
+        tokens.append(f"Modelo: {nivel} propio")
 
+    # Prophet specific HP
     if metricas.get("seasonality_mode"):
         tokens.append(f"Estac: {metricas['seasonality_mode']}")
     if metricas.get("changepoint_prior_scale") is not None:
         tokens.append(f"CP: {metricas['changepoint_prior_scale']}")
     if metricas.get("seasonality_prior_scale") is not None:
         tokens.append(f"SP: {metricas['seasonality_prior_scale']}")
+
+    # DeepAR specific HP (from config)
+    if modelo_activo == "deepar":
+        epochs = conf.get("epochs")
+        layers = conf.get("num_layers")
+        if epochs:
+            tokens.append(f"Epochs: {epochs}")
+        if layers:
+            tokens.append(f"Layers: {layers}")
 
     ficha = "  |  ".join(tokens)
     fig.text(
@@ -155,14 +178,12 @@ def _render_ficha_tecnica(fig: plt.Figure, metricas: dict) -> None:
         color="#999",
     )
 
-    # Marca de tiempo discreta
-    from datetime import datetime
-
-    ahora = datetime.now().strftime("%Y-%m-%d %H:%M")
+    # Marca de tiempo discreta (Hora CDMX)
+    ahora = datetime.now(_TZ_CDMX).strftime("%Y-%m-%d %H:%M")
     fig.text(
         0.99,
         0.015,
-        f"Generado: {ahora}",
+        f"Generado: {ahora} CDMX",
         ha="right",
         va="bottom",
         fontsize=6.5,

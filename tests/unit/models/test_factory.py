@@ -41,6 +41,9 @@ class _DummyModel(ForecastModel):
     def get_params(self) -> dict[str, Any]:
         return {}
 
+    def run(self) -> tuple[Any, dict, dict]:
+        return None, {}, {}
+
 
 # ── Tests ──────────────────────────────────────────────────────────────────────
 

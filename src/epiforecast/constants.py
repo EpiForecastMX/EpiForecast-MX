@@ -5,9 +5,9 @@ from typing import Final
 # Reproducibility
 RANDOM_SEED: Final[int] = 42
 
-# COVID-19 pandemic period (used for visualization bands and CV bias analysis)
-COVID_START: Final[str] = "2020-03-01"
-COVID_END: Final[str] = "2021-06-01"
+# COVID-19 pandemic period (aligned with config/visualization/plots.yaml)
+COVID_START: Final[str] = "2020-03-15"
+COVID_END: Final[str] = "2022-09-22"
 
 # Default visualization DPI
 VIZ_DPI_SCREEN: Final[int] = 150

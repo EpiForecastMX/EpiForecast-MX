@@ -21,7 +21,12 @@ try:
     conf_base = OmegaConf.load("config/base.yaml")
     conf_data = OmegaConf.load("config/data/preprocessing.yaml")
     conf_features = OmegaConf.load("config/features/feature_engineering.yaml")
-    conf_models = OmegaConf.load("config/models/prophet.yaml")
+
+    # Cargar todos los modelos disponibles en config/models/
+    conf_models = cast(Any, OmegaConf.create())
+    for model_cfg in Path("config/models").glob("*.yaml"):
+        conf_models = OmegaConf.merge(conf_models, OmegaConf.load(model_cfg))
+
     conf_viz = OmegaConf.load("config/visualization/plots.yaml")
     conf_infra = OmegaConf.load("config/infrastructure/logging.yaml")
 except FileNotFoundError as e:

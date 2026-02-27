@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from epiforecast.constants import VIZ_DPI_SCREEN
+from epiforecast.utils.config import conf
 from epiforecast.visualization.chart_annotations import (
     _anotar_divisores,
     _anotar_zona_cv,
@@ -167,24 +168,30 @@ def _plot_series(
     conf_covid: dict,
 ) -> None:
     """Dibuja todas las capas de datos: zona pronóstico, COVID, banda, observaciones, línea, outliers."""
-    # Zona pronóstico
+    # Zona pronóstico (matplotlib acepta pd.Timestamp; type: ignore por stubs incompletos)
     ax.axvspan(
         fecha_max_datos,  # type: ignore[arg-type]
         fecha_max_fc,  # type: ignore[arg-type]
         alpha=_ALPHA_FORECAST_ZONE,
         color=colors["fc"],
-        zorder=0,  # type: ignore[arg-type]
+        zorder=0,
     )
 
     # COVID-19
     covid_ini = pd.Timestamp(conf_covid["inicio"])
     covid_fin = pd.Timestamp(conf_covid["fin"])
-    ax.axvspan(covid_ini, covid_fin, alpha=_ALPHA_COVID, color=_COVID_SPAN_COLOR, zorder=0)  # type: ignore[arg-type]
+    ax.axvspan(  # type: ignore[arg-type]
+        covid_ini,
+        covid_fin,
+        alpha=_ALPHA_COVID,
+        color=_COVID_SPAN_COLOR,
+        zorder=0,
+    )
     mid_covid = covid_ini + (covid_fin - covid_ini) / 2
     ax.annotate(
         "COVID-19",
         xy=(mid_covid, 1.0),  # type: ignore[arg-type]
-        xycoords=("data", "axes fraction"),  # type: ignore[arg-type]
+        xycoords=("data", "axes fraction"),
         fontsize=_FS_COVID,
         fontweight="bold",
         color=_COVID_TEXT_COLOR,
@@ -220,13 +227,17 @@ def _plot_series(
     )
 
     # Línea de pronóstico
+    _model_display = {"prophet": "Prophet", "deepar": "DeepAR"}
+    modelo_activo = _model_display.get(
+        conf.get("modelo_activo", "prophet"), conf.get("modelo_activo", "prophet")
+    )
     ax.plot(
         forecast["ds"],
         forecast["yhat"],
         color=colors["fc"],
         linewidth=_LW_FORECAST,
         zorder=4,
-        label="Pronóstico Prophet",
+        label=f"Pronóstico {modelo_activo}",
     )
 
     # Outliers

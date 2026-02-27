@@ -56,6 +56,10 @@ class _ConcreteModel(ForecastModel):
         super().get_params()
         return {}
 
+    def run(self) -> tuple[Any, dict, dict]:
+        super().run()
+        return None, {}, {}
+
 
 class _ConcretePipeline(Pipeline):
     """Minimal concrete Pipeline that delegates to super()."""

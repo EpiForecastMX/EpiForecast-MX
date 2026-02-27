@@ -27,7 +27,9 @@ KEEP_COLS_TWB = [
     "incrementos_total",
     "incrementos_hombres",
     "incrementos_mujeres",
-    "yhat",
+    "yhat_prophet",
+    "yhat_deepar",
+    "yhat_ensemble",
     "yhat_lower",
     "yhat_upper",
     "trend",
@@ -42,19 +44,44 @@ KEEP_COLS_TWB = [
 ]
 
 
-def load_inputs(in_real: Path, in_fcst: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
+def load_inputs(in_real: Path, forecast_base: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
     if not in_real.exists():
         raise FileNotFoundError(f"No se encontró histórico: {in_real}")
-    if not in_fcst.exists():
-        raise FileNotFoundError(f"No se encontró forecast: {in_fcst}")
 
     logger.info("Leyendo histórico: {}", in_real)
     real = pd.read_csv(in_real)
 
-    logger.info("Leyendo forecast: {}", in_fcst)
-    fcst = pd.read_csv(in_fcst)
+    # Buscar todos los archivos de forecast disponibles
+    forecast_files = list(forecast_base.rglob("all_forecast_*.csv"))
+    if not forecast_files:
+        raise FileNotFoundError(f"No se encontraron archivos de forecast en: {forecast_base}")
 
-    return real, fcst
+    all_fcst_df: pd.DataFrame = pd.DataFrame()
+    join_cols = ["ds", "meta_padecimiento", "meta_entidad", "meta_modo"]
+
+    for fcst_path in sorted(forecast_files):
+        # Extraer nombre del modelo del nombre del archivo: all_forecast_{modelo}.csv
+        model_name = fcst_path.stem.replace("all_forecast_", "")
+        logger.info("Leyendo forecast ({}): {}", model_name, fcst_path)
+        df = pd.read_csv(fcst_path)
+
+        # Renombrar yhat para evitar colisiones
+        rename_dict = {"yhat": f"yhat_{model_name}"}
+        df = df.rename(columns=rename_dict)
+
+        if all_fcst_df.empty:
+            all_fcst_df = df
+        else:
+            # Join con los anteriores
+            # Solo nos interesan las columnas de predicción del nuevo modelo (yhat)
+            # y las llaves de join.
+            # NOTA: yhat_lower/upper se quedan con los del PRIMER modelo cargado
+            # a menos que los renombraremos también. Por simplicidad el plan pide yhat_*.
+            cols_to_keep = join_cols + [f"yhat_{model_name}"]
+            df_to_merge = df[cols_to_keep]
+            all_fcst_df = all_fcst_df.merge(df_to_merge, on=join_cols, how="outer")
+
+    return real, all_fcst_df
 
 
 def prepare_inputs(real: pd.DataFrame, fcst: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -113,13 +140,14 @@ def expand_real_by_modo(real: pd.DataFrame) -> pd.DataFrame:
 
 
 def keep_only_columns(df: pd.DataFrame, keep_cols: list[str]) -> pd.DataFrame:
+    present = [c for c in keep_cols if c in df.columns]
     missing = [c for c in keep_cols if c not in df.columns]
     extra = [c for c in df.columns if c not in keep_cols]
     if missing:
-        raise ValueError(f"Faltan columnas requeridas por TWB: {missing}")
+        logger.warning("Columnas TWB ausentes (se omiten): {}", missing)
     if extra:
         logger.info("Se eliminarán columnas no usadas por TWB: {}", len(extra))
-    return df.loc[:, keep_cols]
+    return df.loc[:, present]
 
 
 def build_and_save_tableau(real_long: pd.DataFrame, fcst: pd.DataFrame, out_file: Path) -> None:
@@ -135,20 +163,28 @@ def build_and_save_tableau(real_long: pd.DataFrame, fcst: pd.DataFrame, out_file
 
     # RMSE por modelo (solo donde hay dato real y forecast)
     grp = ["padecimiento", "entidad", "meta_modo"]
-    tmp = out[grp + ["y_real", "yhat"]].copy()
-    tmp = tmp[tmp["y_real"].notna() & tmp["yhat"].notna()]
-    tmp["y_real"] = pd.to_numeric(tmp["y_real"], errors="coerce")
-    tmp["yhat"] = pd.to_numeric(tmp["yhat"], errors="coerce")
-    tmp = tmp.dropna(subset=["y_real", "yhat"])
+    yhat_cols = [
+        c
+        for c in out.columns
+        if c.startswith("yhat_") and c not in ("yhat_lower", "yhat_upper", "yhat_ensemble")
+    ]
+    yhat_col = yhat_cols[0] if yhat_cols else None
 
-    rmse_df = (
-        tmp.assign(se=(tmp["y_real"] - tmp["yhat"]) ** 2)
-        .groupby(grp, as_index=False)["se"]
-        .mean()
-        .assign(rmse_modelo=lambda d: d["se"] ** 0.5)
-        .drop(columns=["se"])
-    )
-    out = out.merge(rmse_df, how="left", on=grp)
+    if yhat_col and "y_real" in out.columns:
+        tmp = out[grp + ["y_real", yhat_col]].copy()
+        tmp = tmp[tmp["y_real"].notna() & tmp[yhat_col].notna()]
+        tmp["y_real"] = pd.to_numeric(tmp["y_real"], errors="coerce")
+        tmp[yhat_col] = pd.to_numeric(tmp[yhat_col], errors="coerce")
+        tmp = tmp.dropna(subset=["y_real", yhat_col])
+
+        rmse_df = (
+            tmp.assign(se=(tmp["y_real"] - tmp[yhat_col]) ** 2)
+            .groupby(grp, as_index=False)["se"]
+            .mean()
+            .assign(rmse_modelo=lambda d: d["se"] ** 0.5)
+            .drop(columns=["se"])
+        )
+        out = out.merge(rmse_df, how="left", on=grp)
 
     # Renombres mínimos
     rename_map = {
@@ -202,11 +238,11 @@ def build_and_save_tableau(real_long: pd.DataFrame, fcst: pd.DataFrame, out_file
 
 def main() -> None:
     in_real = Path(conf["data"]["data_inegi"])
-    in_fcst = Path(conf["data"]["forecast"])
+    forecast_base = Path(conf["paths"]["reports"]) / "forecasts"
     out_file = Path(conf["data"]["tableau"])
 
     directory_manager.asegurar_ruta(out_file.parent)
-    real, fcst = load_inputs(in_real, in_fcst)
+    real, fcst = load_inputs(in_real, forecast_base)
     real, fcst = prepare_inputs(real, fcst)
     real_long = expand_real_by_modo(real)
     build_and_save_tableau(real_long, fcst, out_file)

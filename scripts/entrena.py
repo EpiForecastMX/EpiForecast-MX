@@ -3,7 +3,6 @@
 from contextlib import contextmanager
 import os
 from pathlib import Path
-import pickle
 import re
 import time
 import unicodedata
@@ -18,12 +17,7 @@ from tqdm import tqdm
 # del paquete lo dispare (model.py también importa config transitivamente).
 _logger_pre_import.disable("epiforecast.utils.config")
 
-from epiforecast.models.prophet.model import ProphetForecaster as SerieTiempoProphet  # noqa: E402
-from epiforecast.models.prophet.prophet_compat import (  # noqa: E402
-    get_param_grid,
-    prophet_cross_val,
-    train_on_full_series,
-)
+from epiforecast.models import create_model  # noqa: E402
 from epiforecast.utils import paths as directory_manager  # noqa: E402
 from epiforecast.utils.config import conf, logger  # noqa: E402
 
@@ -56,16 +50,17 @@ def normalizar(region: str) -> str:
 
 def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False):
     # Imports locales: evita que cloudpickle (loky) intente serializar estos objetos
-    # como globals de __main__. OmegaConf y loguru no son pickle-safe.
-    # Cada worker re-importa los módulos frescos.
+    # cada worker re-importa los módulos frescos.
     from epiforecast.utils import paths as directory_manager
     from epiforecast.utils.config import conf, logger
 
+    modelo_activo = conf.get("modelo_activo", "prophet")
     ruta_padecimiento = os.path.join(ruta_base, normalizar(padecimiento))
     directory_manager.asegurar_ruta(ruta_padecimiento)
 
     nombre_extra = f"_{normalizar(region)}" if region else ""
-    nombre_modelo = f"Prophet_{normalizar(padecimiento)}{nombre_extra}_{mapeo.get(sexo, sexo)}.pkl"
+    # El nombre del archivo ahora incluye el prefijo del modelo activo
+    nombre_modelo = f"{modelo_activo.capitalize()}_{normalizar(padecimiento)}{nombre_extra}_{mapeo.get(sexo, sexo)}.pkl"
     ruta_modelo = os.path.join(ruta_padecimiento, nombre_modelo)
 
     if not force:
@@ -75,77 +70,69 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False)
 
     t_start = time.time()
 
-    stp = SerieTiempoProphet(df, sexo=sexo, entidad=region, padecimiento=padecimiento)
-    stp.agrupa()
-    stp.crea_train_test()
+    # Instanciar modelo vía Factory
+    forecaster = create_model(
+        modelo_activo, df=df, sexo=sexo, entidad=region, padecimiento=padecimiento
+    )
 
-    # Verificar umbral mínimo de casos por semana
-    umbral = conf.get("umbral_minimo_semanal", 0)
-    promedio = stp.promedio_semanal()
-    es_insuficiente = umbral and promedio < umbral
+    # Ejecutar pipeline completo del modelo
+    # Se espera que todos los modelos implementen .run() que retorna (model_obj, metrics, params)
+    # Si no tiene .run(), fallará, lo cual es correcto bajo este nuevo contrato.
+    try:
+        _, metrics, parametros = forecaster.run()
+    except Exception as e:
+        logger.error("Error ejecutando pipeline para {}: {}", nombre_modelo, e)
+        return None
 
-    if es_insuficiente:
-        # Skip CV: usar primer combo del grid como default (serie casi plana, HP da igual)
-        parametros = {k: v[0] for k, v in get_param_grid(stp).items()}
-        metrics = {"rmse": None, "mae": None, "mape": None, "mase": None}
-        logger.debug(
-            "Baja confianza: skip CV, params default | {:.2f} casos/sem | {} | {} | {}",
-            promedio,
-            padecimiento,
-            region or "Nacional",
-            sexo,
-        )
-        t_cv = time.time()
-        modelo = train_on_full_series(stp, parametros)
-        t_train = time.time()
-    else:
-        parametros, metrics = prophet_cross_val(stp)
-        t_cv = time.time()
-        modelo = train_on_full_series(stp, parametros)
-        t_train = time.time()
+    t_end = time.time()
 
-    mape_raw = metrics["mape"]
+    mape_raw = metrics.get("mape")
     mape_clipped = mape_raw is not None and mape_raw >= 999.0
+
+    # Determinar si es insuficiente (Prophet lo reporta en metrics o podemos inferirlo)
+    confianza = metrics.get("confianza", "normal")
+    promedio = metrics.get("promedio_semanal", 0)
 
     fila = {
         "padecimiento": padecimiento,
         "sexo": sexo,
-        "rmse": metrics["rmse"],
-        "mae": metrics["mae"],
+        "rmse": metrics.get("rmse"),
+        "mae": metrics.get("mae"),
         "mape": mape_raw,
         "mase": metrics.get("mase"),
         "mape_confiable": not mape_clipped,
         **parametros,
     }
     fila["nivel"] = "nacional" if region is None else "regional"
-    fila["confianza"] = "insuficiente" if es_insuficiente else "normal"
+    fila["confianza"] = confianza
     fila["promedio_semanal"] = round(promedio, 2)
-    fila["tiempo_cv_seg"] = round(t_cv - t_start, 1)
-    fila["tiempo_train_seg"] = round(t_train - t_cv, 1)
-    fila["tiempo_total_seg"] = round(t_train - t_start, 1)
+    fila["tiempo_total_seg"] = round(t_end - t_start, 1)
+
     if region:
         fila["Entidad"] = region
-    if stp.normalizar_tasa and stp.poblacion_valor:
-        fila["poblacion"] = stp.poblacion_valor
+    if hasattr(forecaster, "poblacion_valor") and forecaster.poblacion_valor:
+        fila["poblacion"] = forecaster.poblacion_valor
         fila["normalizado"] = True
 
-    with open(ruta_modelo, "wb") as f:
-        pickle.dump(modelo, f)
+    # Guardar modelo
+    forecaster.save(Path(ruta_modelo))
 
-    ruta_csv = os.path.join(ruta_padecimiento, nombre_modelo.replace(".pkl", ".csv"))
-    stp.serie.to_csv(ruta_csv, index=False, encoding="utf-8")
-
-    fila["archivo_modelo"] = nombre_modelo
+    # Guardar serie de tiempo procesada (sidecar para desnormalización)
+    if hasattr(forecaster, "serie") and not forecaster.serie.empty:
+        ruta_csv = os.path.join(ruta_padecimiento, nombre_modelo.replace(".pkl", ".csv"))
+        forecaster.serie.to_csv(ruta_csv, index=False, encoding="utf-8")
+        logger.debug("Serie histórica guardada: {}", Path(ruta_csv).name)
+    else:
+        logger.warning("No se pudo guardar la serie histórica para {}", nombre_modelo)
     mase_str = f"{metrics['mase']:.3f}" if metrics.get("mase") is not None else "N/A"
     logger.debug(
-        "Completado: {} | {} | {} | RMSE={} | MASE={} | CV={:.1f}s | Train={:.1f}s | {}",
+        "Completado: {} | {} | {} | RMSE={} | MASE={} | Total={:.1f}s | {}",
         padecimiento,
         region or "Nacional",
         mapeo.get(sexo, sexo),
-        f"{metrics['rmse']:.4f}" if metrics["rmse"] is not None else "N/A",
+        f"{metrics['rmse']:.4f}" if metrics.get("rmse") is not None else "N/A",
         mase_str,
-        fila["tiempo_cv_seg"],
-        fila["tiempo_train_seg"],
+        fila["tiempo_total_seg"],
         fila["confianza"],
     )
 
@@ -170,11 +157,21 @@ def main():
     regiones = [] if solo_nacional else sorted(df_entrenamiento[agrupador].unique())
     padecimientos = sorted(df_entrenamiento["Padecimiento"].unique())
 
+    # Filtrar padecimientos según configuración si no es "General"
+    tipo_pad = str(conf["padecimiento"].get("tipo", "General"))
+    if tipo_pad != "General":
+        padecimientos = [p for p in padecimientos if p == tipo_pad]
+        if not padecimientos:
+            logger.warning("Padecimiento '{}' no encontrado en el dataset.", tipo_pad)
+            return
+
     total = len(padecimientos) * len(valores_sexo) * (1 + len(regiones))
+    modelo_activo = conf.get("modelo_activo", "prophet")
 
     logger.debug(
-        "Iniciando entrenamiento | padecimientos: {} | regiones: {} | sexo: {} | "
+        "Iniciando entrenamiento | modelo: {} | padecimientos: {} | regiones: {} | sexo: {} | "
         "total modelos: {} | n_jobs: {} | solo_nacional: {}",
+        modelo_activo,
         len(padecimientos),
         len(regiones),
         len(valores_sexo),
@@ -313,7 +310,7 @@ def main():
                         region_tag = f"region_{region}"
                         sexo = fila["sexo"]
                         pkl_regional = (
-                            f"Prophet_{normalizar(padecimiento)}"
+                            f"{modelo_activo.capitalize()}_{normalizar(padecimiento)}"
                             f"_{normalizar(region_tag)}"
                             f"_{mapeo.get(sexo, sexo)}.pkl"
                         )
@@ -329,7 +326,8 @@ def main():
 
         if resultados:
             ruta_rmse = os.path.join(
-                ruta_padecimiento, f"Prophet_{normalizar(padecimiento)}_completo.csv"
+                ruta_padecimiento,
+                f"{modelo_activo.capitalize()}_{normalizar(padecimiento)}_completo.csv",
             )
             pd.DataFrame(resultados).to_csv(ruta_rmse, index=False, encoding="utf-8")
             entrenados = len(resultados)

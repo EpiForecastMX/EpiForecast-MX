@@ -21,18 +21,20 @@ def _normalizar(s: str) -> str:
 def parse_nombre_modelo(stem: str) -> dict:
     """Extrae metadatos del nombre del archivo .pkl.
 
-    Formato esperado: Prophet_{padecimiento}[_{entidad}]_{modo}
+    Formato esperado: {Modelo}_{padecimiento}[_{entidad}]_{modo}
     Ejemplo: Prophet_Alzheimer_Nuevo_Leon_hombres
     """
     parts = stem.split("_")
     if len(parts) < 3:
         raise ValueError(f"Nombre de modelo inesperado: {stem!r}")
 
+    modelo = parts[0]
     padecimiento = parts[1]
     modo = parts[-1]
     entidad = " ".join(parts[2:-1]) if len(parts) > 3 else "Nacional"
 
     return {
+        "meta_modelo": modelo,
         "meta_padecimiento": padecimiento,
         "meta_entidad": entidad,
         "meta_modo": modo,
@@ -84,7 +86,7 @@ def estandarizar_valores(df: pd.DataFrame) -> pd.DataFrame:
 def _parse_regional(stem: str) -> dict:
     """Extrae metadatos de un modelo regional.
 
-    Formato: Prophet_{padecimiento}_region_{region_parts}_{modo}
+    Formato: {Modelo}_{padecimiento}_region_{region_parts}_{modo}
     Ejemplo: Prophet_Alzheimer_region_Sur-Sureste_vulnerable_general
     Returns: {"meta_padecimiento": ..., "meta_entidad": "Region ...", "meta_modo": ...}
     """
@@ -226,8 +228,11 @@ def main():
     )
     stems_insuf = set(mapeo_hibrido.keys())
     # Modelos region_* — se identifican para predicción standalone
+    modelo_activo = conf.get("modelo_activo", "prophet").capitalize()
     pkls_regional = [
-        pkl for pkl in modelos if pkl.stem.startswith("Prophet_") and "_region_" in pkl.stem
+        pkl
+        for pkl in modelos
+        if pkl.stem.startswith(f"{modelo_activo}_") and "_region_" in pkl.stem
     ]
     stems_regional = {pkl.stem for pkl in pkls_regional}
 
@@ -295,8 +300,8 @@ def main():
                 loader = ForecastModelLoader(periodo=periodo, model_path=pkl_regional)
                 loader.load()
                 # Reemplazar población regional por la del estado individual
-                if info.get("poblacion"):
-                    loader.poblacion = info["poblacion"]
+                if info.get("poblacion") and hasattr(loader.forecaster, "poblacion_valor"):
+                    loader.forecaster.poblacion_valor = info["poblacion"]
                 df = loader.predict()
 
                 # Metadatos del estado (no de la región)
@@ -396,13 +401,13 @@ def main():
         ">>> Forecast: Detalles | filas={} | columnas={} | yhat={} | rmse_usado={} | mae_usado={} | mape_usado={} | mase_usado={} | conf_orig_nulls={} | conf_usado_nulls={}",
         len(out),
         out.shape[1],
-        out["yhat"].notna().sum(),
-        out["rmse_usado"].notna().sum(),
-        out["mae_usado"].notna().sum(),
-        out["mape_usado"].notna().sum(),
-        out["mase_usado"].notna().sum(),
-        out["confianza_original"].isna().sum(),
-        out["confianza_usado"].isna().sum(),
+        out["yhat"].notna().sum() if "yhat" in out.columns else 0,
+        out["rmse_usado"].notna().sum() if "rmse_usado" in out.columns else 0,
+        out["mae_usado"].notna().sum() if "mae_usado" in out.columns else 0,
+        out["mape_usado"].notna().sum() if "mape_usado" in out.columns else 0,
+        out["mase_usado"].notna().sum() if "mase_usado" in out.columns else 0,
+        out["confianza_original"].isna().sum() if "confianza_original" in out.columns else 0,
+        out["confianza_usado"].isna().sum() if "confianza_usado" in out.columns else 0,
     )
 
     out.to_csv(out_file, index=False)
