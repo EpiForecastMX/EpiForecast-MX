@@ -65,7 +65,9 @@ def check_directory_structure():
         "scripts": "Pipeline scripts",
         "config": "Configuration files",
         "docs": "Documentation",
-        "outputs": "Generated outputs (reports, forecasts)",
+        "reports": "Generated outputs (reports, forecasts)",
+        "reports/figures": "Generated graphics and figures",
+        "reports/forecasts": "Generated forecast data and model summaries",
         "models": "Trained model artifacts",
     }
 
