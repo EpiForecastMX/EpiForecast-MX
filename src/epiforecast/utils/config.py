@@ -29,6 +29,11 @@ except FileNotFoundError as e:
     sys.exit(1)
 
 _merged = OmegaConf.merge(conf_base, conf_data, conf_features, conf_models, conf_viz, conf_infra)
+
+# Allow CLI overrides via dotlist (e.g. python script.py padecimiento.solo_nacional=True)
+cli_conf = OmegaConf.from_cli()
+_merged = OmegaConf.merge(_merged, cli_conf)
+
 conf: dict[str, Any] = cast(dict[str, Any], OmegaConf.to_container(_merged, resolve=True))
 
 # Configurar logger según YAML

@@ -115,13 +115,13 @@ preprocess: reset get-dataset filter clean transform get-inegi mapper
 .PHONY: train
 train:
 	@echo ">>> Entrenando modelos..."
-	$(PYTHON) -m scripts.entrena
+	$(PYTHON) -m scripts.entrena $(ARGS)
 
 ## Generar predicciones (52 semanas, desnormalizadas)
 .PHONY: predict
 predict:
 	@echo ">>> Generando predicciones..."
-	$(PYTHON) -m scripts.predice
+	$(PYTHON) -m scripts.predice $(ARGS)
 
 ## Construir dataset Tableau
 .PHONY: tableau
