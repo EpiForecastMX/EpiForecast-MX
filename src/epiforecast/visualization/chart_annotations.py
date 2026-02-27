@@ -154,3 +154,19 @@ def _render_ficha_tecnica(fig: plt.Figure, metricas: dict) -> None:
         family="sans-serif",
         color="#999",
     )
+
+    # Marca de tiempo discreta
+    from datetime import datetime
+
+    ahora = datetime.now().strftime("%Y-%m-%d %H:%M")
+    fig.text(
+        0.99,
+        0.015,
+        f"Generado: {ahora}",
+        ha="right",
+        va="bottom",
+        fontsize=6.5,
+        family="sans-serif",
+        color="#b0b0b0",
+        style="italic",
+    )
