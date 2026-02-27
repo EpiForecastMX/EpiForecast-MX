@@ -1,0 +1,543 @@
+% =============================================================================
+% De los datos a la predicción: un marco metodológico para la salud digital
+% basado en la inteligencia artificial
+% =============================================================================
+\documentclass[12pt,a4paper]{article}
+
+% --- Paquetes ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage{times}                    % Fuente Times New Roman
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{setspace}                 % Interlineado
+\usepackage[skip=10pt plus1pt]{parskip} % Espacio entre párrafos
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{soul}                     % Para resaltar texto (marcas)
+\usepackage{graphicx}                 % Figuras
+\usepackage{booktabs}                 % Tablas profesionales
+\usepackage{amsmath}                  % Ecuaciones
+\usepackage{multirow}                 % Celdas combinadas en tablas
+\graphicspath{{figures/}}
+
+% --- Configuración de hyperref ---
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    citecolor=blue,
+    urlcolor=blue
+}
+
+% --- Interlineado ---
+\onehalfspacing
+
+% =============================================================================
+\begin{document}
+
+% --- Título ---
+\begin{center}
+    {\Large\bfseries De los datos a la predicción: un marco metodológico para la salud digital basado en la inteligencia artificial}
+
+    \vspace{0.8cm}
+
+    {\large\bfseries Modelado predictivo basado en inteligencia artificial en salud digital: un marco metodológico con aplicaciones clínicas}
+
+    \vspace{0.8cm}
+
+    {\large\itshape A methodological framework for artificial intelligence--based predictive modelling in digital health}
+\end{center}
+
+\vspace{1cm}
+
+% --- Autores ---
+\noindent\textbf{Autores}
+
+\vspace{0.5cm}
+
+\noindent\textbf{Ruth Pérez-Hernández, PhD}\\
+Mexican Social Security Institute (IMSS)\\
+Av.\ Ruiz Cortines S/N, Col.\ Alta Infonavit, C.P.\ 39610\\
+Acapulco, Guerrero, Mexico\\
+ORCID iD: \url{https://orcid.org/0000-0003-3261-1220}
+
+\vspace{0.4cm}
+
+\noindent\textbf{Grettel Barceló Alonso, PhD}\\
+Associate National Director\\
+Master's Program in Applied Artificial Intelligence\\
+Tecnológico de Monterrey (ITESM -- Hidalgo)\\
+Mexico\\
+Tel: +52 771 717 1814 \textbar{} Intercampus: 80 446 1814\\
+Email: \href{mailto:gbarcelo@tec.mx}{gbarcelo@tec.mx}
+
+\vspace{0.4cm}
+
+\noindent\textbf{Lina Díaz-Castro, PhD}\\
+Research Psychiatrist, Medical Sciences ``D''\\
+Directorate of Epidemiological and Psychosocial Research\\
+National Institute of Psychiatry Ramón de la Fuente Muñiz\\
+Mexico\\
+Tel: +52 55 4160 5165 \textbar{} Mobile: +52 55 2300 5632\\
+Email: \href{mailto:dralina@inprf.gob.mx}{dralina@inprf.gob.mx}; \href{mailto:dralaindiaz.ld@gmail.com}{dralaindiaz.ld@gmail.com}
+
+\vspace{0.4cm}
+
+\noindent\textbf{María Jesús Ríos Blancas, PhD}
+
+\vspace{0.4cm}
+
+\noindent\textbf{Javier Augusto Rebull Saucedo}\\
+Sr.\ Associate Application Development\\
+Santander Bank US\\
+Massachusetts, USA\\
+Email: \href{mailto:rebull@outlook.com}{rebull@outlook.com}
+
+\vspace{0.4cm}
+
+\noindent\textbf{Juan Carlos Pérez Nava}\\
+Head of Area, Enrollment Process Support Division\\
+Mexican Social Security Institute (IMSS)\\
+Mexico City, Mexico\\
+Email: \href{mailto:jcpn@me.com}{jcpn@me.com}
+
+\vspace{0.4cm}
+
+\noindent\textbf{Luis Gerardo Sánchez Salazar}\\
+Sr.\ Automation Controls Engineer\\
+Tesla, Inc.\\
+California, USA\\
+Email: \href{mailto:luisgss10@hotmail.com}{luisgss10@hotmail.com}
+
+\vspace{0.4cm}
+
+\noindent Naomi Fabiola Tokunaga Nuñez\\
+Salvador Mendoza Pérez\\
+Stephanie Fortiz de Ita\\
+Alan Jasso Arenas\\
+Oscar Mauricio Becerra Alegría\\
+Víctor Daniel Bohórquez Toribio\\
+Jorge Steven Reyes Londono\\
+Pablo Yamamoto Magaña\\
+Aarón Cortés García
+
+\vspace{1cm}
+
+% =============================================================================
+% RESUMEN
+% =============================================================================
+\section*{Resumen}
+
+% (Contenido pendiente)
+
+% =============================================================================
+% INTRODUCCIÓN
+% =============================================================================
+\section*{Introducción}
+
+La expansión de los sistemas digitales ha dado lugar a la generación de grandes volúmenes de datos clínicos y epidemiológicos, cuya complejidad supera las capacidades de los enfoques analíticos tradicionales. Este contexto ha impulsado el uso de herramientas basadas en inteligencia artificial (IA) para la extracción, análisis y predicción de patrones relevantes. Evidencia reciente indica que los modelos de IA aplicados a la predicción clínica muestran un desempeño sobresaliente y un alto potencial; en particular, los modelos basados en series de tiempo han demostrado una elevada capacidad para predecir eventos clínicos, la progresión de enfermedades y diversos desenlaces en el ámbito de la salud digital.~\cite{harutyunyan2019,shickel2018}
+
+No obstante, que existe un gran volumen de modelos predictivos publicados y en desarrollo, muchos adolecen de falta de validación externa, inconsistencias en la práctica y riesgo de sesgos que limitan su utilidad aplicada en áreas de salud.~\cite{abdulazeem2023} Lo anterior subraya la necesidad de desarrollar un marco metodológico robusto y reproducible que facilite la construcción y evaluación de modelos, así como su adecuada aplicación en contextos reales.
+
+El desarrollo de modelos predictivos basados en IA y series de tiempo es esencial para anticipar escenarios en salud mental, en el presente artículo se presentan particularmente las incidencias de trastornos como la depresión y las enfermedades de Parkinson y Alzheimer.~\cite{livingston2020} La depresión se asocia con un mayor riesgo de deterioro cognitivo y demencia, mientras que las enfermedades de Parkinson y Alzheimer constituyen causas principales de discapacidad progresiva, dependencia y mortalidad.~\cite{nickson2023,tabashum2024,aslan2025}
+
+Los modelos predictivos permiten caracterizar las tendencias temporales en la incidencia de los padecimientos, facilitando la identificación temprana de trayectorias poblacionales. La relevancia de este enfoque radica en la creciente contribución de los trastornos mentales y neurológicos a la carga global de enfermedad, así como en el riesgo sustancial que representan para las generaciones futuras, especialmente en el contexto del envejecimiento poblacional.~\cite{shatte2019} Lo cual se traduce en aumentos en la demanda de psicoterapia y psiquiatría, consumo de psicofármacos, tiempos de espera, saturación en urgencias, incapacidades laborales y planificación del personal de servicios médicos de salud mental.
+
+Los modelos desarrollados integran información demográfica y temporal. En particular, los modelos de series de tiempo aplicados a la incidencia de estos padecimientos, apoyados en técnicas de inteligencia artificial, constituyen una herramienta estratégica para la planeación de intervenciones preventivas, la asignación eficiente de recursos en salud y el diseño de políticas públicas orientadas a mitigar, a largo plazo, las consecuencias sociales, económicas y sanitarias asociadas al deterioro cognitivo.
+
+En este contexto, el objetivo del presente artículo es presentar una propuesta metodológica para el desarrollo de modelos predictivos basados en métodos de aprendizaje automático (\textit{machine learning}) y análisis de series de tiempo, construidos a partir de información pública del sistema de salud mexicano, específicamente de datos históricos de vigilancia epidemiológica.~\cite{sinave} Con el objetivo de construir modelos que generen proyecciones epidemiológicas precisas, con el mayor alcance, robustas, replicables y operacionalmente útiles, con aplicación en la información relativa a la incidencia de la Depresión, Enfermedades de Parkinson y Alzheimer.
+
+% =============================================================================
+% NOTA: AQUÍ EMPIEZA LA SECCIÓN ASIGNADA
+% =============================================================================
+\begin{center}
+    \hl{AQUÍ EMPIEZAS}
+\end{center}
+
+% =============================================================================
+% METODOLOGÍA
+% =============================================================================
+\section*{Metodología}
+
+\subsection*{Diseño metodológico}
+
+Se realizó un estudio observacional retrospectivo basado en análisis de series de tiempo, enmarcado en la metodología CRISP-ML(Q).~\cite{studer2021} El objetivo fue construir modelos predictivos para pronosticar la incidencia semanal de depresión (CIE-10: F32), enfermedad de Parkinson (G20) y enfermedad de Alzheimer (G30) a nivel estatal en México, con un horizonte de 120~semanas (~2.3~años).
+
+El diseño contempló la comparación sistemática de seis algoritmos de pronóstico de series de tiempo, evaluados mediante validación cruzada temporal sobre 258~series independientes (3~padecimientos $\times$ 33~niveles geográficos $\times$ 3~segmentaciones por sexo), con el fin de identificar el modelo con mayor consistencia, robustez y utilidad operacional para el IMSS.
+
+\subsection*{Fuentes de información}
+
+Los datos provienen de dos fuentes públicas:
+
+\begin{enumerate}[nosep]
+    \item \textbf{Boletín Epidemiológico del SINAVE.}~\cite{sinave} Se procesaron 633~boletines semanales (enero~2014 -- febrero~2026) mediante extracción automatizada de tablas con la biblioteca Camelot, identificando las claves CIE-10 F32, G20 y G30 en cada publicación. El resultado es un registro de incidencia acumulada por entidad federativa, sexo y padecimiento con frecuencia semanal.
+
+    \item \textbf{Censo de Población y Vivienda del INEGI.}~\cite{inegi2020} Poblaciones estatales por sexo, utilizadas para normalizar los conteos en tasas por 100,000~habitantes, habilitando la comparabilidad entre entidades con poblaciones dispares (ej.\ Ciudad de México: 9.2~millones vs.\ Colima: 731~mil).
+\end{enumerate}
+
+\subsection*{Definición de variables}
+
+La variable objetivo ($y$) se construyó mediante una transformación en dos etapas a partir de los conteos semanales de incidencia:
+
+\begin{equation}
+y_{\text{tasa}} = \frac{\text{incidencia semanal}}{\text{población}} \times 100{,}000
+\label{eq:tasa}
+\end{equation}
+
+\begin{equation}
+y = \ln(1 + y_{\text{tasa}})
+\label{eq:log}
+\end{equation}
+
+La normalización por tasa (Ec.~\ref{eq:tasa}) permite la comparabilidad interestatal; la transformación logarítmica (Ec.~\ref{eq:log}) estabiliza la varianza y comprime la escala en series con comportamiento multiplicativo ---particularmente beneficioso para depresión, cuyo rango de incidencia semanal varía de 0 a 1,500~casos por estado.~\cite{tokunaga2025} Las predicciones se invierten mediante $\hat{y}_{\text{tasa}} = e^{\hat{y}} - 1$ para su interpretación en escala original.
+
+Como covariables se configuró un periodo atípico de 913~días a partir del 23~de~marzo~de~2020 (pandemia de COVID-19), modelado como efecto de feriado en Prophet~\cite{taylor2018} para evitar que el algoritmo ajuste la tendencia al descenso pandémico. La estacionalidad anual se especificó con periodo de 52.18~semanas ($= 365.25 / 7$) y orden de Fourier $k = 5$.
+
+\subsection*{Procedimiento metodológico}
+
+El procedimiento siguió seis fases secuenciales:
+
+\begin{enumerate}
+    \item \textbf{Extracción automatizada.} Se procesaron 633~boletines epidemiológicos en formato PDF. Mediante Camelot se identificaron las páginas con tablas de los códigos F32, G20 y G30, extrayendo incidencia acumulada por entidad y sexo.
+
+    \item \textbf{Limpieza.} Se normalizaron nombres de entidades (ej.\ ``Distrito Federal'' $\rightarrow$ ``Ciudad de México''), se convirtieron acumulados a incrementos semanales ($\Delta_t = A_t - A_{t-1}$), y se corrigieron valores negativos ---producto de ajustes retrospectivos del SINAVE--- mediante imputación por promedio de vecinos.
+
+    \item \textbf{Detección de atípicos.} Se aplicó el método de puntuación~$z$ con umbral $|z| > 3$, agrupado por padecimiento y entidad, con reemplazo por la mediana del grupo.
+
+    \item \textbf{Normalización.} Se aplicaron las transformaciones de las Ecuaciones~\ref{eq:tasa} y~\ref{eq:log} utilizando las poblaciones del Censo INEGI 2020.~\cite{inegi2020}
+
+    \item \textbf{Selección de modelo por validación cruzada.} Se evaluaron seis algoritmos (Tabla~\ref{tab:modelos}) mediante CV temporal con cuatro pliegues. Prophet empleó búsqueda exhaustiva con grillas diferenciadas por padecimiento; los modelos restantes utilizaron configuraciones fijas optimizadas.
+
+    \item \textbf{Entrenamiento final y pronóstico.} Para cada serie se entrenó el modelo con mejores hiperparámetros sobre la totalidad de los datos (hasta el 1~de~enero~de~2025) y se generaron pronósticos a 120~semanas.
+\end{enumerate}
+
+% --- TABLA: Modelos evaluados ---
+\begin{table}[ht]
+\centering
+\caption{Modelos de pronóstico evaluados.}
+\label{tab:modelos}
+\begin{tabular}{@{}llp{6cm}@{}}
+\toprule
+\textbf{Modelo} & \textbf{Tipo} & \textbf{Referencia} \\
+\midrule
+Prophet        & Descomposición aditiva/multiplicativa   & Taylor y Letham~\cite{taylor2018} \\
+TFT            & \textit{Temporal Fusion Transformer}     & Lim et~al.~\cite{lim2021} \\
+DeepAR         & Red recurrente probabilística            & Salinas et~al.~\cite{salinas2020} \\
+LightGBM+LSTM  & Ensamble híbrido                        & Ke et~al.~\cite{ke2017}; Hochreiter y Schmidhuber~\cite{hochreiter1997} \\
+XGBoost        & \textit{Gradient boosting}               & Chen y Guestrin~\cite{chen2016} \\
+Ridge          & Regresión lineal regularizada (baseline) & Hoerl y Kennard~\cite{hoerl1970} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection*{Análisis estadístico}
+
+\noindent\textbf{Métrica principal: MASE.}
+Se adoptó el error absoluto escalado medio (MASE, \textit{Mean Absolute Scaled Error})~\cite{hyndman2006} como métrica principal de evaluación:
+
+\begin{equation}
+\text{MASE} = \frac{\displaystyle\frac{1}{H}\sum_{t=1}^{H}\bigl|y_t - \hat{y}_t\bigr|}{\displaystyle\frac{1}{T-m}\sum_{t=m+1}^{T}\bigl|y_t - y_{t-m}\bigr|}
+\label{eq:mase}
+\end{equation}
+
+\noindent donde $H$ es el horizonte de evaluación, $T$ el tamaño de la serie de entrenamiento y $m = 52$~semanas (baseline naive estacional). Un MASE $< 1.0$ indica que el modelo supera al pronóstico ingenuo que repite el valor observado un año antes. Se reportan adicionalmente RMSE, MAE y MAPE como métricas complementarias.
+
+\noindent\textbf{Validación cruzada temporal.}
+Se implementó una CV temporal expansiva con cuatro pliegues de 52~semanas cada uno (Tabla~\ref{tab:cv}). Los pesos asignados penalizan al Pliegue~1 (pandemia) y privilegian al Pliegue~4 (periodo reciente), mitigando el sesgo que COVID-19 introduce en la selección de hiperparámetros.
+
+\begin{table}[ht]
+\centering
+\caption{Pliegues de validación cruzada temporal y ponderación.}
+\label{tab:cv}
+\begin{tabular}{@{}cllc@{}}
+\toprule
+\textbf{Pliegue} & \textbf{Periodo de prueba} & \textbf{Contexto} & \textbf{Peso} \\
+\midrule
+1 & dic.\ 2020 -- dic.\ 2021 & Pandemia COVID-19 & 0.50 \\
+2 & dic.\ 2021 -- dic.\ 2022 & Recuperación       & 0.75 \\
+3 & dic.\ 2022 -- dic.\ 2023 & Estabilización     & 1.00 \\
+4 & ene.\ 2024 -- dic.\ 2024 & Periodo reciente   & 1.25 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\textbf{Grillas de hiperparámetros de Prophet.}
+Se emplearon grillas diferenciadas por padecimiento (Tabla~\ref{tab:grids}) para adaptar la búsqueda a la complejidad de cada serie. Depresión requiere el mayor espacio de exploración por su cambio estructural post-COVID; Alzheimer, el menor, por la estabilidad de sus patrones.
+
+\begin{table}[ht]
+\centering
+\caption{Grillas de hiperparámetros de Prophet por padecimiento. \textit{cp}~= \texttt{changepoint\_prior\_scale}; \textit{sp}~= \texttt{seasonality\_prior\_scale}.}
+\label{tab:grids}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Padecimiento} & \textbf{Modo estacional} & \textbf{cp} & \textbf{sp} & \textbf{Comb.} \\
+\midrule
+Depresión  & \{add, mult\} & \{0.01, 0.03, 0.05\} & \{0.025, 0.05, 0.1, 0.5\} & 24 \\
+Parkinson  & \{add, mult\} & \{0.03, 0.04, 0.05\} & \{0.1, 0.5, 1.0\}         & 18 \\
+Alzheimer  & \{mult\}      & \{0.01, 0.03\}        & \{0.05, 0.1, 0.5\}        & 6  \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\textbf{Criterio de exclusión.}
+Se excluyeron 39~series (13.1\%) cuya varianza sobre $y$ (Ec.~\ref{eq:log}) fue inferior a~0.5, correspondientes a series con incidencia prácticamente nula donde las métricas de error carecen de interpretabilidad clínica.
+
+\noindent\textbf{Plataforma de cómputo.}
+Los 1,548~entrenamientos (258~series $\times$ 6~modelos) se ejecutaron en AWS SageMaker sobre una instancia ml.m5.xlarge (4~vCPU, 16~GB~RAM) durante 9.8~horas, con un costo total de~\$9.80~USD.
+
+% =============================================================================
+% RESULTADOS METODOLÓGICOS
+% =============================================================================
+\subsection*{Resultados metodológicos}
+
+El marco metodológico demostró tres ventajas principales frente al enfoque de modelo único:
+
+\begin{enumerate}[nosep]
+    \item \textbf{Reproducibilidad.} La configuración declarativa en YAML, el versionado de datos con DVC + S3 y la automatización CI/CD permiten replicar el pipeline completo desde la extracción de boletines hasta la generación de pronósticos.
+
+    \item \textbf{Adaptabilidad.} Las grillas diferenciadas por padecimiento (Tabla~\ref{tab:grids}) permitieron mayor exploración para depresión (24~combinaciones) y menor para Alzheimer (6~combinaciones), acorde a la complejidad inherente de cada serie.
+
+    \item \textbf{Robustez ante perturbaciones.} La ponderación de pliegues (Tabla~\ref{tab:cv}) resultó necesaria: el Pliegue~1 presentó RMSE 56\% superior al Pliegue~4 para depresión y 28\% para Alzheimer. Sin ponderación, la selección sesga hacia rigidez excesiva, perjudicando la captura de cambios post-pandémicos.
+\end{enumerate}
+
+% =============================================================================
+% RESULTADOS
+% =============================================================================
+\section*{Resultados}
+
+Se evaluaron 258~series de tiempo sobre seis modelos, generando 1,548~entrenamientos. La Tabla~\ref{tab:global} presenta el rendimiento global.
+
+% --- TABLA: Rendimiento global ---
+\begin{table}[ht]
+\centering
+\caption{Rendimiento global por modelo (258~series). Victorias = número de series donde el modelo obtuvo el mejor MASE.}
+\label{tab:global}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+\textbf{Modelo} & \textbf{Mediana MASE} & \textbf{MASE $<$ 1.0} & \textbf{Victorias} & \textbf{Últimos} \\
+\midrule
+Prophet        & \textbf{0.745} & 201 (77.9\%) & 60 (23.3\%) & 33 (12.8\%) \\
+DeepAR         & 0.748          & 199 (77.1\%) & 40 (15.5\%) & 34 (13.2\%) \\
+LightGBM+LSTM  & 0.748          & 191 (74.0\%) & 48 (18.6\%) & \textbf{14 (5.4\%)} \\
+TFT            & 0.773          & 195 (75.6\%) & \textbf{68 (26.4\%)} & 37 (14.3\%) \\
+Ridge          & 0.822          & 166 (64.3\%) & 20 (7.8\%)  & 67 (26.0\%) \\
+XGBoost        & 0.832          & 172 (66.7\%) & 22 (8.5\%)  & 73 (28.3\%) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Prophet obtuvo la mejor mediana MASE (0.745) y el mayor porcentaje de series que superan al baseline naive estacional (77.9\%). Si bien TFT obtuvo más victorias individuales (68 vs.\ 60), Prophet demostró mayor consistencia: en el 78\% de los casos en que no fue el ganador, su MASE se ubicó a menos del 20\% del mejor modelo. XGBoost y Ridge concentraron el 54\% de los últimos lugares, indicando que los enfoques tabulares son insuficientes para horizontes largos de predicción en series epidemiológicas.
+
+% --- FIGURA: Comparación MASE por modelo ---
+% IMAGEN REQUERIDA: figures/fig_mase_modelos.png
+% FUENTE: Captura de forecast/comparacion_modelos.html → sección "La Batalla" → gráfico "Mediana MASE"
+\begin{figure}[ht]
+\centering
+\includegraphics[width=0.75\textwidth]{fig_mase_modelos.png}
+\caption{Mediana del MASE por modelo sobre 258~series. La línea punteada indica MASE~$= 1.0$ (umbral del baseline naive estacional con rezago de 52~semanas).}
+\label{fig:mase_modelos}
+\end{figure}
+
+\subsection*{Resultados por padecimiento}
+
+La Tabla~\ref{tab:padecimiento} desglosa el rendimiento por padecimiento y sexo.
+
+\begin{table}[ht]
+\centering
+\caption{Rendimiento por padecimiento y sexo (mejor modelo por serie). $n$ = series evaluadas.}
+\label{tab:padecimiento}
+\begin{tabular}{@{}llcccc@{}}
+\toprule
+\textbf{Padecimiento} & \textbf{Sexo} & $n$ & \textbf{MASE} & \textbf{MAPE (\%)} & \textbf{Dominante} \\
+\midrule
+\multirow{3}{*}{Depresión (F32)}
+  & General  & 33 & 0.810 & 25.9 & Prophet (29\%) \\
+  & Hombres  & 33 & 0.858 & 36.6 & LightGBM+LSTM \\
+  & Mujeres  & 33 & 0.782 & 27.9 & Prophet \\
+\midrule
+\multirow{3}{*}{Parkinson (G20)}
+  & General  & 33 & 0.693 & 52.0 & TFT (26\%) \\
+  & Hombres  & 32 & 0.737 & 54.1 & DeepAR \\
+  & Mujeres  & 30 & 0.714 & 51.5 & Prophet \\
+\midrule
+\multirow{3}{*}{Alzheimer (G30)}
+  & General  & 27 & 0.689 & 46.4 & TFT (45\%) \\
+  & Hombres  & 14 & 0.690 & 46.4 & TFT \\
+  & Mujeres  & 23 & 0.698 & 48.9 & TFT \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent\textbf{Depresión (F32).}
+Constituyó el padecimiento más difícil de predecir (MASE mediano: 0.817), concentrando el 100\% de las peores series del estudio. El cambio estructural post-COVID-19 modificó permanentemente el nivel de incidencia de este trastorno. Prophet fue el modelo dominante (29 de 99~victorias), aprovechando la grilla amplia de 24~combinaciones. El modo aditivo prevaleció en el 69\% de las series ---efecto de la transformación logarítmica que linealiza la estacionalidad--- y valores de \textit{cp}~$\geq 0.03$ fueron necesarios para capturar los cambios post-pandémicos.
+
+\noindent\textbf{Parkinson (G20).}
+Presentó desempeño equilibrado (MASE: 0.714, 86.3\% de series superando al baseline). La competencia entre modelos fue cerrada; TFT lideró con 25~victorias (26.3\%), pero ningún modelo dominó claramente. El MAPE elevado (52\%) refleja los denominadores pequeños inherentes a un padecimiento de baja prevalencia, no predicción deficiente ---como argumentan Hyndman y Koehler, el MAPE presenta sesgo cuando la serie contiene valores cercanos a cero.~\cite{hyndman2006}
+
+\noindent\textbf{Alzheimer (G30).}
+Fue el padecimiento más predecible (MASE: 0.689, 90.6\% de series con MASE~$< 1.0$). TFT dominó ampliamente (29~victorias, 45\%), capitalizando el mecanismo de atención temporal sobre tendencias suaves. No obstante, 35 de las 39~series omitidas (89.7\%) corresponden a Alzheimer ---particularmente hombres (19 de 33~estados)---, evidenciando su baja incidencia en entidades de población reducida.
+
+\subsection*{Hiperparámetros óptimos de Prophet}
+
+El análisis de los hiperparámetros seleccionados por CV reveló patrones diferenciados (Tabla~\ref{tab:hp_optimos}).
+
+\begin{table}[ht]
+\centering
+\caption{Distribución de hiperparámetros óptimos de Prophet sobre 258~series.}
+\label{tab:hp_optimos}
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Hiperparámetro} & \textbf{Valor dominante} & \textbf{Frecuencia} \\
+\midrule
+Modo estacional       & Multiplicativo & 62\% \\
+                      & Aditivo        & 38\% \\
+\midrule
+\textit{Changepoint prior} (cp)
+                      & 0.03 & 39\% \\
+                      & 0.01 & 31\% \\
+                      & 0.05 & 20\% \\
+\midrule
+\textit{Seasonality prior} (sp)
+                      & 0.5  & 30\% \\
+                      & 0.05 & 25\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+El modo multiplicativo fue exclusivo para Alzheimer (100\%) y predominante en Parkinson (60\%), mientras que el modo aditivo prevaleció en depresión (69\%). El \textit{cp}~= 0.03 emergió como valor óptimo global (39\%), balanceando flexibilidad y estabilidad; valores más rígidos (0.01) dominaron en Alzheimer y más flexibles (0.05) en depresión, confirmando la necesidad de grillas adaptadas por padecimiento.
+
+% =============================================================================
+% NOTA: AQUÍ TERMINA LA SECCIÓN ASIGNADA
+% =============================================================================
+\begin{center}
+    \hl{AQUÍ TERMINAS}
+\end{center}
+
+% =============================================================================
+% DISCUSIÓN
+% =============================================================================
+\section*{Discusión}
+
+\textbf{Elementos clave:}
+
+\begin{enumerate}[nosep]
+    \item Aporte metodológico principal
+    \item Ventajas
+    \item Limitaciones del método
+    \item Comparación con literatura
+\end{enumerate}
+
+% =============================================================================
+% CONCLUSIÓN
+% =============================================================================
+\section*{Conclusión}
+
+% (Contenido pendiente)
+
+% =============================================================================
+% REFERENCIAS
+% =============================================================================
+\begin{thebibliography}{99}
+
+\bibitem{harutyunyan2019}
+Harutyunyan H, Khachatrian H, Kale DC, Ver Steeg G, Galstyan A.
+Multitask learning and benchmarking with clinical time series data.
+\textit{Sci Data}. 17 de junio de 2019;6(1):96.
+
+\bibitem{shickel2018}
+Shickel B, Tighe PJ, Bihorac A, Rashidi P.
+Deep EHR: A Survey of Recent Advances in Deep Learning Techniques for Electronic Health Record (EHR) Analysis.
+\textit{IEEE J Biomed Health Inform}. septiembre de 2018;22(5):1589--604.
+
+\bibitem{abdulazeem2023}
+Abdulazeem H, Whitelaw S, Schauberger G, Klug SJ.
+A systematic review of clinical health conditions predicted by machine learning diagnostic and prognostic models trained or validated using real-world primary health care data.
+\textit{PLoS One}. 2023;18(9):e0274276.
+
+\bibitem{livingston2020}
+Livingston G, Huntley J, Sommerlad A, Ames D, Ballard C, Banerjee S, et~al.
+Dementia prevention, intervention, and care: 2020 report of the Lancet Commission.
+\textit{Lancet}. 8 de agosto de 2020;396(10248):413--46.
+
+\bibitem{nickson2023}
+Nickson D, Meyer C, Walasek L, Toro C.
+Prediction and diagnosis of depression using machine learning with electronic health records data: a systematic review.
+\textit{BMC Med Inform Decis Mak}. 27 de noviembre de 2023;23(1):271.
+
+\bibitem{tabashum2024}
+Tabashum T, Snyder RC, O'Brien MK, Albert MV.
+Machine Learning Models for Parkinson Disease: Systematic Review.
+\textit{JMIR Med Inform}. 17 de mayo de 2024;12:e50117.
+
+\bibitem{aslan2025}
+Aslan E, Özüpak Y.
+Comparison of machine learning algorithms for automatic prediction of Alzheimer disease.
+\textit{J Chin Med Assoc}. 1 de febrero de 2025;88(2):98--107.
+
+\bibitem{shatte2019}
+Shatte ABR, Hutchinson DM, Teague SJ.
+Machine learning in mental health: a scoping review of methods and applications.
+\textit{Psychol Med}. julio de 2019;49(9):1426--48.
+
+\bibitem{sinave}
+Boletín Epidemiológico, Sistema Nacional de Vigilancia Epidemiológica, Sistema Único de Información. Secretaría de Salud. Gobierno de México [Internet]. [citado 19 de diciembre de 2025]. Disponible en: \url{https://www.gob.mx/salud/acciones-y-programas/direccion-general-de-epidemiologia-boletin-epidemiologico}
+
+\bibitem{taylor2018}
+Taylor SJ, Letham B.
+Forecasting at scale.
+\textit{Am Stat}. 2018;72(1):37--45.
+
+\bibitem{hyndman2006}
+Hyndman RJ, Koehler AB.
+Another look at measures of forecast accuracy.
+\textit{Int J Forecast}. 2006;22(4):679--88.
+
+\bibitem{lim2021}
+Lim B, Arık SÖ, Loeff N, Pfister T.
+Temporal Fusion Transformers for interpretable multi-horizon time series forecasting.
+\textit{Int J Forecast}. 2021;37(4):1748--64.
+
+\bibitem{salinas2020}
+Salinas D, Flunkert V, Gasthaus J, Januschowski T.
+DeepAR: Probabilistic forecasting with autoregressive recurrent networks.
+\textit{Int J Forecast}. 2020;36(3):1181--91.
+
+\bibitem{chen2016}
+Chen T, Guestrin C.
+XGBoost: A scalable tree boosting system.
+En: Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining. 2016. p.~785--94.
+
+\bibitem{ke2017}
+Ke G, Meng Q, Finley T, Wang T, Chen W, Ma W, et~al.
+LightGBM: A highly efficient gradient boosting decision tree.
+\textit{Adv Neural Inf Process Syst}. 2017;30:3146--54.
+
+\bibitem{hochreiter1997}
+Hochreiter S, Schmidhuber J.
+Long short-term memory.
+\textit{Neural Comput}. 1997;9(8):1735--80.
+
+\bibitem{hoerl1970}
+Hoerl AE, Kennard RW.
+Ridge regression: Biased estimation for nonorthogonal problems.
+\textit{Technometrics}. 1970;12(1):55--67.
+
+\bibitem{inegi2020}
+Instituto Nacional de Estadística y Geografía (INEGI).
+Censo de Población y Vivienda 2020 [Internet]. México: INEGI; 2021 [citado 15 de febrero de 2026]. Disponible en: \url{https://www.inegi.org.mx/programas/ccpv/2020/}
+
+\bibitem{studer2021}
+Studer S, Bui TB, Drescher C, Hanuschkin A, Winkler L, Peters S, et~al.
+Towards CRISP-ML(Q): A machine learning process model with quality assurance methodology.
+\textit{Mach Learn Knowl Extr}. 2021;3(2):392--413.
+
+\bibitem{tokunaga2025}
+Tokunaga Nuñez NF, Mendoza Pérez S, Fortiz de Ita S.
+Análisis y pronóstico de la depresión en México: de la evidencia epidemiológica a la inteligencia predictiva [reporte de proyecto integrador no publicado].
+Tecnológico de Monterrey; 2025.
+
+\end{thebibliography}
+
+\end{document}
