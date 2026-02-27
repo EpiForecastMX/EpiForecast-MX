@@ -156,9 +156,8 @@ markers = [
 filterwarnings = [
     "ignore::pyparsing.PyparsingDeprecationWarning",
     "ignore::DeprecationWarning:matplotlib",
-    # requests 2.32 no reconoce urllib3 2.6 en su version check (cosmético)
-    "ignore::requests.packages.urllib3.exceptions.RequestsDependencyWarning",
-    "ignore::urllib3.exceptions.RequestsDependencyWarning:requests",
+    # requests 2.32 no reconoce urllib3 2.6 en su version check (cosmético, terceros)
+    "ignore:urllib3.*or chardet.*doesn.t match a supported version:Warning",
 ]
 
 # ─── Coverage ─────────────────────────────────────────────────────────────────
