@@ -110,7 +110,6 @@ jobs:
 
           # Agregar archivos solo si existen
           [ -f data/processed/dataset_boletin_epidemiologico.csv.dvc ] && git add data/processed/dataset_boletin_epidemiologico.csv.dvc
-          [ -f data/processed/.gitignore ] && git add data/processed/.gitignore
 
           if git diff --cached --quiet; then
             echo "No hay cambios en el .dvc. Nada que commitear."
