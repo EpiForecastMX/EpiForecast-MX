@@ -21,8 +21,8 @@ El proyecto sigue una estructura modular orientada a producción y MLOps:
 - `config/`: Archivos YAML que controlan todo el comportamiento del proyecto (rutas, hiperparámetros, configuración visual, flags del pipeline), evitando valores en duro (hardcoded) en el código.
 - `data/`: Artefactos de datos gestionados por DVC (raw_PDFs, raw, interim, processed).
 - `models/`: Modelos entrenados (archivos `.pkl`) y sus resultados de validación, versionados con DVC y almacenados en AWS S3.
-- `tests/`: Pruebas unitarias y de integración robustas (+500 pruebas) que aseguran la fiabilidad del pipeline.
-- `forecast/` y `outputs/`: Resultados de predicciones, gráficos de series temporales, reportes (PNG, HTML, PDF) y bitácoras del modelado.
+- `tests/`: Pruebas unitarias y de integración robustas (+600 pruebas) que aseguran la fiabilidad del pipeline.
+- `reports/`: Resultados de predicciones (`reports/forecasts/`), gráficos exploratorios (`reports/figures/`), reportes en PDF y tableros de control (`reports/dashboards/`). Se eliminaron las carpetas obsoletas `forecast/`, `viz/` y `outputs/` en favor de este estándar unificado.
 
 ## 3. Stack Tecnológico
 - **Lenguaje Principal:** Python 3.12
@@ -57,4 +57,5 @@ Para mantener la consistencia y la integridad del repositorio, adhiérete a esta
   - **Pruebas:** Escribe tests (pytest) al añadir características y asegúrate de no romper las pruebas existentes.
 - **Versionado Dual:** El código fuente va en Git. Los artefactos pesados (`data/`, `models/`, y ciertos outputs en `forecast/`) **SIEMPRE** se versionan con **DVC** (`dvc add`, `dvc push`). No intentes comitear PDFs, modelos `.pkl` ni grandes CSVs a Git.
 - **Commits Convencionales:** El repositorio usa *pre-commit hooks* y sigue la especificación de *Conventional Commits* (ej. `feat: ...`, `fix: ...`, `docs: ...`, `refactor: ...`).
-- **Uso de Makefile:** Emplea los comandos y targets del `Makefile` para ejecutar cualquier parte del pipeline (ej. `make train`, `make filter`, `make test-fast`).
+- **Uso de Makefile:** Emplea los comandos y targets del `Makefile` para ejecutar cualquier parte del pipeline (ej. `make train`, `make filter`, `make test-fast`). Puedes inyectar configuración dinámica mediante `ARGS` (ej. `make train ARGS="padecimiento.tipo='Depresión'"`).
+- **Entorno Virtual:** Siempre utilizar y activar el entorno estándar `.venv` (creado vía `make setup`).

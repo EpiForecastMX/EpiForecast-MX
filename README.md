@@ -16,8 +16,8 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.12-blue?style=flat&logo=python&logoColor=white" alt="Python 3.12"/>
   <img src="https://img.shields.io/badge/Prophet-Meta%2FFacebook-0668E1?style=flat&logo=meta&logoColor=white" alt="Prophet"/>
-  <img src="https://img.shields.io/badge/Coverage-84%25-brightgreen?style=flat" alt="Coverage 84%"/>
-  <img src="https://img.shields.io/badge/Tests-536%20passing-brightgreen?style=flat" alt="536 Tests"/>
+  <img src="https://img.shields.io/badge/Coverage-93%25-brightgreen?style=flat" alt="Coverage 93%"/>
+  <img src="https://img.shields.io/badge/Tests-610%20passing-brightgreen?style=flat" alt="610 Tests"/>
   <img src="https://img.shields.io/badge/Compliance-A%2B%20(96%25)-brightgreen?style=flat" alt="Grade A+"/>
   <img src="https://img.shields.io/badge/License-MIT-green?style=flat" alt="MIT License"/>
   <img src="https://img.shields.io/badge/DVC-S3-945DD6?style=flat&logo=dvc&logoColor=white" alt="DVC + S3"/>
@@ -135,8 +135,10 @@ EpiForecast-MX/
 │   ├── raw/ interim/ processed/   #   Pipeline stages
 │   └── utils/inegi.csv            #   Demographic lookup table
 ├── models/                        # 297 Prophet .pkl + CSV sidecars (DVC → S3)
-├── outputs/                       # EDA figures (21+ charts)
-├── forecast/                      # 312 forecast PNGs + HTML gallery + reports
+├── reports/                       # Generated outputs (Cookiecutter v2 standard)
+│   ├── forecasts/                 #   312 forecast PNGs + HTML gallery + reports
+│   ├── figures/                   #   EDA figures (21+ charts)
+│   └── dashboards/                #   Tableau .twb files
 ├── Makefile                       # All workflow targets
 └── pyproject.toml                 # Dependencies, Ruff, Mypy, Pytest config
 ```
@@ -165,7 +167,7 @@ make setup           # macOS: brew install ghostscript + pip install -e ".[dev]"
 make setup-linux
 
 # 3. Activate the virtual environment
-source integrador/bin/activate
+source .venv/bin/activate
 
 # 4. Pull data, models, and forecasts from S3 via DVC
 make data-pull
@@ -178,8 +180,8 @@ make quality         # lint + typecheck + 536 tests
 
 ```bash
 # Create virtual environment
-python3.12 -m venv integrador
-source integrador/bin/activate
+python3.12 -m venv .venv
+source .venv/bin/activate
 
 # Install package with development dependencies
 pip install -e ".[dev]"

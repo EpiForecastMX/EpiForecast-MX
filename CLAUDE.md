@@ -1,7 +1,7 @@
 # CLAUDE.md — EpiForecast-MX Project Instructions
 
 > Last updated: 2026-02-25
-> Compliance: A+ (153/153 — 100%) | Coverage: 84% (536 tests) | Branch: main
+> Compliance: A+ (143/145 — 99%) | Coverage: 93% (610 tests) | Branch: main
 
 ---
 
@@ -31,10 +31,10 @@
 - **DIP**: scripts depend on abstractions, not Prophet directly
 - **ISP**: Prophet split into `model.py` / `tuner.py` / `cross_validator.py`
 
-### Package Structure (`src/epiforecast/`)
+### Package Structure (`src/epireports/forecasts/`)
 
 ```
-src/epiforecast/
+src/epireports/forecasts/
 ├── constants.py               # ICD-10 codes, 32 states, sex modes, RATE_PER=100_000, RANDOM_SEED, COVID_START/END, VIZ_DPI
 ├── data/
 │   ├── extraction/
@@ -117,7 +117,7 @@ cd EpiForecast-MX
 
 # 2. Create virtual environment (called 'integrador', NOT .venv)
 python3.12 -m venv integrador
-source integrador/bin/activate       # macOS/Linux
+source .venv/bin/activate       # macOS/Linux
 # OR
 make setup                           # macOS: also installs Ghostscript via brew
 
@@ -144,7 +144,7 @@ python scripts/compliance_check.py  # should be 153/153 A+
 
 ## Configuration
 
-All parameters live in `config/` — no hardcoded values in source code. OmegaConf merges them into a single `conf` dict loaded by `src/epiforecast/utils/config.py`.
+All parameters live in `config/` — no hardcoded values in source code. OmegaConf merges them into a single `conf` dict loaded by `src/epireports/forecasts/utils/config.py`.
 
 ### Config files
 
@@ -176,7 +176,7 @@ paths.forecast: "./forecast"
 data.boletin: "./data/processed/dataset_boletin_epidemiologico.csv"
 data.data_prepare: "./data/processed/data_prepare_${padecimiento.tipo}.csv"
 data.data_inegi: "./data/processed/data_inegi_${padecimiento.tipo}.csv"
-data.forecast: "./forecast/all_forecast.csv"
+data.forecast: "./reports/forecasts/all_forecast.csv"
 
 # Model transforms
 normalizar_tasa: true               # model rate per 100K (not absolute counts)
@@ -213,9 +213,9 @@ make preprocess   ← runs steps 1–5 sequentially (do NOT use -j flag)
 | 4. Transform | `make transform` | data_clean.csv | `data/processed/data_prepare_*.csv` |
 | 5. INEGI | `make get-inegi && make mapper` | data_prepare_*.csv + INEGI API | `data/processed/data_inegi_*.csv` |
 | 6. Train | `make train` | data_inegi_*.csv | `models/*.pkl` + `models/*.csv` |
-| 7. Predict | `make predict` | models/*.pkl | `forecast/all_forecast.csv` + 312 PNGs |
-| 8. Report | `make report` | all_forecast.csv | `forecast/reporte_resultados.html` |
-| 9. Sync | `make s3-sync` | forecast/ + models/ | S3 `epiforecast-mx-data/latest/` |
+| 7. Predict | `make predict` | models/*.pkl | `reports/forecasts/all_forecast.csv` + 312 PNGs |
+| 8. Report | `make report` | all_forecast.csv | `reports/forecasts/reporte_resultados.html` |
+| 9. Sync | `make s3-sync` | reports/forecasts/ + models/ | S3 `epiforecast-mx-data/latest/` |
 
 **Full automation:**
 ```bash
@@ -311,7 +311,7 @@ n_changepoints_regional: 12 # vs Prophet default 25 (reduces overfitting < 1M st
 make quality         # full gate: ruff check + ruff format --check + mypy + pytest
 make lint            # ruff check + ruff format --check (no tests)
 make format          # ruff format --fix (auto-format)
-make typecheck       # mypy src/epiforecast/
+make typecheck       # mypy src/epireports/forecasts/
 make test            # pytest --cov (full coverage report)
 make test-fast       # pytest -x -m "not slow and not integration"
 python scripts/compliance_check.py  # Cookiecutter DS v2 audit
@@ -329,9 +329,9 @@ python scripts/compliance_check.py  # Cookiecutter DS v2 audit
 ### Pre-commit hooks (`.pre-commit-config.yaml`)
 
 ```
-ruff check --fix          (src/epiforecast/ + tests/)
-ruff format               (src/epiforecast/ + tests/)
-mypy                      (src/epiforecast/ only)
+ruff check --fix          (src/epireports/forecasts/ + tests/)
+ruff format               (src/epireports/forecasts/ + tests/)
+mypy                      (src/epireports/forecasts/ only)
 trailing-whitespace
 end-of-file-fixer
 check-yaml
@@ -343,7 +343,7 @@ check-added-large-files   (max 500 KB)
 - Every file < 300 lines (SRP — enforced by compliance checker)
 - Every public module has a docstring
 - No `print()` in package — use `from loguru import logger`
-- No wildcard imports in `src/epiforecast/`
+- No wildcard imports in `src/epireports/forecasts/`
 - Canonical imports: `from epiforecast.X import Y` (not `from src.epiforecast`)
 - Spanish is intentional in: config keys, commit messages, some variable names (IMSS stakeholders)
 
@@ -406,7 +406,7 @@ forecaster._create_prophet.return_value = mock_model
 ### Running tests
 
 ```bash
-pytest tests/                                               # all 536 tests
+pytest tests/                                               # all 610 tests
 pytest tests/ -m "not slow and not integration"            # fast only
 pytest tests/unit/models/ -v                               # specific module
 pytest tests/ --cov=src/epiforecast --cov-report=term-missing  # with coverage
@@ -443,14 +443,14 @@ Tracked artifacts:
   data/raw.dvc
   data/processed/dataset_boletin_epidemiologico.csv.dvc   # master CSV
   models.dvc                                               # 297 .pkl + .csv sidecars (~109 MB)
-  forecast/all_forecast.csv.dvc                            # 52-week forecasts (~180 MB)
+  reports/forecasts/all_forecast.csv.dvc                            # 52-week forecasts (~180 MB)
 ```
 
 ```bash
 make data-pull      # dvc pull — download all artifacts from S3
 make data-push      # dvc push — upload local changes to S3
 make models-push    # version trained models: dvc add models/ + push
-make forecast-push  # version forecasts: dvc add forecast/ + push
+make forecast-push  # version forecasts: dvc add reports/forecasts/ + push
 make s3-sync        # boto3 sync processed CSVs to s3://epiforecast-mx-data/latest/
 make data-status    # dvc status — check what's out of sync
 ```
@@ -462,10 +462,11 @@ make data-status    # dvc status — check what's out of sync
 ### Run full pipeline from scratch
 
 ```bash
-source integrador/bin/activate
+source .venv/bin/activate
 make preprocess           # steps 1–5, ~5 min
 make train                # 297 models, ~45 min (n_jobs=-2)
 make predict              # forecasts + 312 PNGs, ~2 min
+make s3-sync              # push to S3
 make s3-sync              # push to S3
 make report               # HTML report
 ```
@@ -480,15 +481,15 @@ python scripts/compliance_check.py  # target: A+ (153/153)
 ### Debug config loading
 
 ```bash
-source integrador/bin/activate
+source .venv/bin/activate
 python -c "from epiforecast.utils.config import conf; print(list(conf.keys()))"
 ```
 
 ### Add a new condition
 
-1. Add ICD-10 code to `src/epiforecast/constants.py` (`CONDITIONS` dict)
+1. Add ICD-10 code to `src/epireports/forecasts/constants.py` (`CONDITIONS` dict)
 2. Add HP grid to `config/models/prophet.yaml` under `param_grid_prophet`
-3. Add key to `ProphetTuner._GRID_KEY_MAP` in `src/epiforecast/models/prophet/tuner.py`
+3. Add key to `ProphetTuner._GRID_KEY_MAP` in `src/epireports/forecasts/models/prophet/tuner.py`
 4. Run `make preprocess && make train`
 
 ### Update hyperparameters
@@ -545,7 +546,7 @@ Edit `config/models/prophet.yaml` → `param_grid_prophet.{alzheimer|depresion|p
 
 7. **Spanish naming is intentional** — commit messages, config keys, variable names in `data/` modules. Do not rename to English — IMSS stakeholders read the code.
 
-8. **Virtual env is `integrador/`**, not `.venv` or `venv`. Always activate with `source integrador/bin/activate`.
+8. **Virtual env is `.venv/`**, not `.venv` or `venv`. Always activate with `source .venv/bin/activate`.
 
 9. **Tabasco-Depression regime change** (2023-01-09, 365-day window) is added as a Prophet holiday — gives −6.2% RMSE. Other step-change states (Nayarit, Colima, Durango, BCS) were tested and worsened RMSE; they are excluded.
 
