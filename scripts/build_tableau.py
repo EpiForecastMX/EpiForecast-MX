@@ -76,25 +76,19 @@ def prepare_inputs(real: pd.DataFrame, fcst: pd.DataFrame) -> tuple[pd.DataFrame
     fcst["padecimiento"] = fcst["meta_padecimiento"]
     fcst["entidad"] = fcst["meta_entidad"]
 
-    # Fix crítico: 2014-12-29 y 2025-12-29 (Semana 53 vs 1)
+    # Fix crítico general: Si hay fechas duplicadas en la serie de tiempo de una entidad/padecimiento
+    # (ej. porque el calendario ISO choca semanas 1 y 53 de años contiguos en el mismo lunes),
+    # resolvemos el empate prefiriendo la semana 53, que suele contener el acumulado final del año.
     if "Semana" in real.columns:
-        special_ds = pd.to_datetime(["2014-12-29", "2025-12-29"])
-        is_special = real["ds"].isin(special_ds)
-
-        if is_special.any():
-            a = real.loc[~is_special].copy()
-            b = real.loc[is_special].copy()
-
-            b["_wk_pref"] = (b["Semana"] == 53).astype(int)
-            b = (
-                b.sort_values(
-                    ["padecimiento", "entidad", "ds", "_wk_pref"],
-                    ascending=[True, True, True, False],
-                )
-                .drop_duplicates(["padecimiento", "entidad", "ds"], keep="first")
-                .drop(columns=["_wk_pref"])
+        real["_wk_pref"] = (real["Semana"] == 53).astype(int)
+        real = (
+            real.sort_values(
+                ["padecimiento", "entidad", "ds", "_wk_pref"],
+                ascending=[True, True, True, False],
             )
-            real = pd.concat([a, b], ignore_index=True)
+            .drop_duplicates(["padecimiento", "entidad", "ds"], keep="first")
+            .drop(columns=["_wk_pref"])
+        )
 
     return real.reset_index(drop=True), fcst.reset_index(drop=True)
 
@@ -117,6 +111,7 @@ def expand_real_by_modo(real: pd.DataFrame) -> pd.DataFrame:
 
     return pd.concat([g, h, m], ignore_index=True)
 
+
 def keep_only_columns(df: pd.DataFrame, keep_cols: list[str]) -> pd.DataFrame:
     missing = [c for c in keep_cols if c not in df.columns]
     extra = [c for c in df.columns if c not in keep_cols]
@@ -125,6 +120,7 @@ def keep_only_columns(df: pd.DataFrame, keep_cols: list[str]) -> pd.DataFrame:
     if extra:
         logger.info("Se eliminarán columnas no usadas por TWB: {}", len(extra))
     return df.loc[:, keep_cols]
+
 
 def build_and_save_tableau(real_long: pd.DataFrame, fcst: pd.DataFrame, out_file: Path) -> None:
     join_cols = ["ds", "padecimiento", "entidad", "meta_modo"]
@@ -178,12 +174,24 @@ def build_and_save_tableau(real_long: pd.DataFrame, fcst: pd.DataFrame, out_file
         raise ValueError(f"Dataset final con NaN en llaves críticas. Detalle -> {detail}")
 
     out = out.sort_values(["padecimiento", "entidad", "ds", "meta_modo"]).reset_index(drop=True)
-    
-    rows_full, cols_full = out.shape; cells_full = rows_full * cols_full
-    logger.info("Dataset completo -> filas: {} | columnas: {} | celdas totales: {}", rows_full, cols_full, cells_full)
+
+    rows_full, cols_full = out.shape
+    cells_full = rows_full * cols_full
+    logger.info(
+        "Dataset completo -> filas: {} | columnas: {} | celdas totales: {}",
+        rows_full,
+        cols_full,
+        cells_full,
+    )
     out = keep_only_columns(out, KEEP_COLS_TWB)
-    rows_opt, cols_opt = out.shape; cells_opt = rows_opt * cols_opt
-    logger.info("Dataset optimizado -> filas: {} | columnas: {} | celdas totales: {}", rows_opt, cols_opt, cells_opt)
+    rows_opt, cols_opt = out.shape
+    cells_opt = rows_opt * cols_opt
+    logger.info(
+        "Dataset optimizado -> filas: {} | columnas: {} | celdas totales: {}",
+        rows_opt,
+        cols_opt,
+        cells_opt,
+    )
     logger.info("Mejora vs dataset completo: {:.2f}%", 100 * (1 - (cells_opt / cells_full)))
 
     out.to_csv(out_file, index=False)
