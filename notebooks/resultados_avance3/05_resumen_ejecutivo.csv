@@ -1,4 +1,0 @@
-Padecimiento,MAPE_Nacional,RMSE_Nacional,MAPE_Train_Nacional,MAPE_Hombres,MAPE_Mujeres,Diff_Sexo_pp,Mejor_Sexo,Mediana_MAPE_Estatal,Media_MAPE_Estatal,Std_MAPE_Estatal,Min_MAPE_Estatal,Max_MAPE_Estatal,Mejor_Estado,Peor_Estado,N_Excelente,N_Aceptable,N_Requiere_Mejora,N_Insuficiente,Total_Modelos,Outliers_Totales
-Depresión,14.6,396.68,9.37,13.8,15.21,1.41,Hombres,37.79,39.22,15.8,4.79,77.43,Ciudad de México,Guerrero,2,8,15,7,99,143
-Parkinson,27.76,39.07,20.37,28.04,30.64,2.6,Hombres,65.62,66.32,15.95,36.04,102.27,Jalisco,Puebla,0,0,5,27,99,36
-Alzheimer,28.3,11.55,23.41,34.03,31.18,-2.85,Mujeres,47.48,50.05,8.6,38.69,74.74,San Luis Potosí,Baja California Sur,0,0,21,11,99,0
