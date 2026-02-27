@@ -41,7 +41,6 @@ import pandas as pd
 # Paths
 # ──────────────────────────────────────────────────
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(PROJECT_ROOT))
 
 RAW_PDFS_DIR = PROJECT_ROOT / "data" / "raw_PDFs"
 DATASET_PATH = PROJECT_ROOT / "data" / "processed" / "dataset_boletin_epidemiologico.csv"

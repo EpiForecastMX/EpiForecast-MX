@@ -3,6 +3,9 @@
 #
 # Triggers: push/PR to main and develop
 # Jobs: lint → typecheck → test (Python 3.12)
+#
+# Coverage threshold (--cov-fail-under) is defined HERE only,
+# not in pyproject.toml, to keep a single source of truth.
 
 name: CI
 

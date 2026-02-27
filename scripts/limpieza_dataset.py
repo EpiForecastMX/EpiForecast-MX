@@ -6,7 +6,8 @@ import pandas as pd
 from epiforecast.data.preprocessing.cleaner import CleanDataset
 from epiforecast.utils import paths as directory_manager
 from epiforecast.utils.config import conf, logger
-from epiforecast.visualization.eda_plots import EDAReportBuilder, SeccionNota
+from epiforecast.visualization.eda_plots import EDAReportBuilder
+from epiforecast.visualization.eda_types import SeccionNota
 from epiforecast.visualization.reporters import PDFReportGenerator
 
 

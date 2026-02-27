@@ -57,6 +57,18 @@ dev = [
     "pre-commit>=3.6",
     "ipykernel>=6.29",
 ]
+extraction = [
+    "camelot-py[cv]>=0.11",
+    "opencv-python-headless>=4.9",
+    "pypdf>=4.0",
+    "pandas>=2.2",
+    "boto3>=1.34",
+]
+gsheets = [
+    "gspread>=6.0",
+    "google-auth>=2.0",
+    "pandas>=2.2",
+]
 sagemaker = [
     "sagemaker>=2.200",
     "xgboost>=2.0",
@@ -136,7 +148,6 @@ addopts = [
     "--strict-markers",
     "--cov=src/epiforecast",
     "--cov-report=term-missing",
-    "--cov-fail-under=0",
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
