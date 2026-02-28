@@ -102,7 +102,9 @@ def generar_graficos_comparativos(config: dict | None = None) -> None:
 
         safe_ent = _normalizar_nombre(ent_val if ent_val else "Nacional")
         nombre = f"CMP_{pad}_{safe_ent}_{modo}.png"
-        plt.savefig(output_dir / nombre, dpi=VIZ_DPI_SCREEN, bbox_inches="tight")
+        pad_dir = output_dir / pad_norm
+        directory_manager.asegurar_ruta(pad_dir)
+        plt.savefig(pad_dir / nombre, dpi=VIZ_DPI_SCREEN, bbox_inches="tight")
         plt.close(fig)
         count += 1
 
