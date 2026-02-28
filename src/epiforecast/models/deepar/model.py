@@ -616,6 +616,8 @@ class DeepARForecaster(ForecastModel):
 
     def load(self, path: Path) -> None:
         """Load predictor from pickle and sidecar CSVs for historical series."""
+        import torch
+
         path = Path(path)
         if not path.exists():
             raise FileNotFoundError(f"Modelo no encontrado: {path}")
@@ -634,6 +636,19 @@ class DeepARForecaster(ForecastModel):
             self._predictor = None
         else:
             self._predictor = payload
+
+        # Remap predictor device: CUDA → CPU/MPS (modelos de otra máquina)
+        if self._predictor is not None and hasattr(self._predictor, "device"):
+            cur = str(self._predictor.device)
+            if "cuda" in cur and not torch.cuda.is_available():
+                if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+                    self._predictor.device = torch.device("mps")
+                else:
+                    self._predictor.device = torch.device("cpu")
+                # Mover pesos del modelo a CPU/MPS
+                if hasattr(self._predictor, "prediction_net"):
+                    self._predictor.prediction_net.to(self._predictor.device)
+                logger.debug("Predictor remapeado: {} → {}", cur, self._predictor.device)
 
         # Load sidecar CSV for historical context (needed for predict)
         csv_path = path.with_suffix(".csv")
