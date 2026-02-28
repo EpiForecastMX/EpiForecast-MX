@@ -560,6 +560,8 @@ class DeepARForecaster(ForecastModel):
 
     def save(self, path: Path) -> None:
         """Serialize predictor to disk as pickle + sidecar CSVs."""
+        import torch
+
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         payload = {
@@ -569,8 +571,7 @@ class DeepARForecaster(ForecastModel):
             "prediction_length": self.prediction_length,
             "multi_series": self._is_multi_series,
         }
-        with path.open("wb") as f:
-            pickle.dump(payload, f)
+        torch.save(payload, path)
 
         # Save multi-series sidecar (needed for predict at load time)
         if self._is_multi_series and not self.serie_multi.empty:
@@ -580,17 +581,37 @@ class DeepARForecaster(ForecastModel):
 
         logger.debug("Modelo DeepAR guardado: {}", path)
 
-    def load(self, path: Path) -> None:
-        """Load predictor from pickle and sidecar CSVs for historical series."""
+    @staticmethod
+    def _load_pickle_cpu(path: Path) -> Any:
+        """Load a pickle file, remapping any CUDA tensors to CPU.
+
+        Files saved with ``pickle.dump`` store PyTorch tensors inline via
+        ``torch.storage._load_from_bytes``.  We intercept that call and route
+        through ``torch.load(map_location='cpu')`` so CUDA-trained models can
+        be loaded on machines without a GPU.
+        """
+        import io
+
         import torch
 
+        class _CpuUnpickler(pickle.Unpickler):
+            def find_class(self, module: str, name: str) -> Any:
+                if module == "torch.storage" and name == "_load_from_bytes":
+                    return lambda b: torch.load(
+                        io.BytesIO(b), map_location="cpu", weights_only=False
+                    )
+                return super().find_class(module, name)
+
+        with path.open("rb") as f:
+            return _CpuUnpickler(f).load()
+
+    def load(self, path: Path) -> None:
+        """Load predictor from pickle and sidecar CSVs for historical series."""
         path = Path(path)
         if not path.exists():
             raise FileNotFoundError(f"Modelo no encontrado: {path}")
 
-        # map_location="cpu" permite cargar modelos entrenados en CUDA desde CPU/MPS
-        with path.open("rb") as f:
-            payload = torch.load(f, map_location="cpu", weights_only=False)
+        payload = self._load_pickle_cpu(path)
 
         # Backward-compatible: old stub format was {"config": {...}}
         if isinstance(payload, dict) and "predictor" in payload:
