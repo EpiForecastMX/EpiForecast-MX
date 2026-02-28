@@ -19,6 +19,7 @@ El proyecto utiliza un patron **Factory** para gestionar multiples motores de pr
 - **ForecastModel** (`src/epiforecast/models/base.py`): Clase base abstracta. Interfaz: `fit()`, `predict()`, `cross_validate()`, `save()`, `load()`, `get_params()`, `run()`.
 - **ProphetForecaster** (`src/epiforecast/models/prophet/model.py`): Meta Prophet con CV ponderado, grid search por padecimiento, periodos atipicos (COVID) y estacionalidad personalizada.
 - **DeepARForecaster** (`src/epiforecast/models/deepar/model.py`): GluonTS + PyTorch. Multi-series (32 estados simultaneos), distribucion Student-t, early stopping.
+- **EnsembleForecaster** (`src/epiforecast/models/ensemble/model.py`): Prophet base + XGBoost residual. Opera sobre conteos absolutos. Features: lags, rolling means, calendario.
 - **ModelFactory** (`src/epiforecast/models/factory.py`): Punto unico de instanciacion via `create_model(name, **kwargs)`. Registra modelos con `@register_model("nombre")`.
 
 **Regla critica**: No importar clases de modelos directamente en scripts; siempre usar `create_model` de la fabrica.
@@ -33,13 +34,14 @@ El proyecto utiliza un patron **Factory** para gestionar multiples motores de pr
 ### Pipeline de modelado
 1. **Entrenamiento local**: `make train-prophet` (CPU, joblib paralelo), `make train-deepar` (CPU/MPS local).
 2. **Entrenamiento GPU**: `make train-sagemaker` (DeepAR en AWS SageMaker, `ml.g4dn.xlarge` con NVIDIA T4 + CUDA 12.4).
-3. **Prediccion**: `make predict ARGS="modelo_activo='deepar'"` (52 semanas, desnormalizadas).
-4. **Comparacion**: `make compare` (graficos Real vs Prophet vs DeepAR).
+3. **Entrenamiento Ensemble**: `make avance5` (Prophet + XGBoost, conteos absolutos).
+4. **Prediccion**: `make predict ARGS="modelo_activo='deepar'"` (52 semanas, desnormalizadas).
+5. **Comparacion**: `make compare` (graficos Real vs Prophet vs DeepAR).
 
 ### Aislamiento de outputs
 Los artefactos se guardan en subcarpetas dinamicas basadas en el `modelo_activo`:
-- Modelos: `models/prophet/`, `models/deepar/`
-- Forecasts: `reports/forecasts/prophet/`, `reports/forecasts/deepar/`
+- Modelos: `models/prophet/`, `models/deepar/`, `models/ensemble/`
+- Forecasts: `reports/forecasts/prophet/`, `reports/forecasts/deepar/`, `reports/forecasts/ensemble/`
 - Comparacion: `reports/forecasts/comparacion_modelos/`
 
 ## 4. Configuracion
@@ -93,7 +95,7 @@ EpiForecast-MX/
 │   │   ├── factory.py            #     create_model() + @register_model
 │   │   ├── prophet/              #     ProphetForecaster + CV + tuner
 │   │   ├── deepar/               #     DeepARForecaster + CV
-│   │   └── ensemble/             #     (futuro)
+│   │   └── ensemble/             #     EnsembleForecaster + helpers
 │   ├── data/                     #   Extraccion PDF, ingestion INEGI, preprocesamiento
 │   ├── evaluation/               #   Metricas (RMSE, MAE, MAPE, SMAPE, MASE)
 │   ├── visualization/            #   Graficos estilo IMSS 2026
@@ -108,7 +110,7 @@ EpiForecast-MX/
 │   └── ...                       #   Preprocesamiento, reportes, etc.
 ├── tests/                        # unit/ + integration/ (~43 archivos, coverage 80%+)
 ├── data/                         # raw/ -> interim/ -> processed/ (DVC)
-├── models/                       # Artefactos .pkl por modelo/padecimiento (DVC)
+├── models/                       # Artefactos .pkl por modelo/padecimiento (DVC, prophet/deepar/ensemble)
 ├── reports/                      # Graficos, reportes HTML, forecasts CSV
 ├── .github/workflows/            # CI (quality + tests), scraping, gsheets
 ├── Makefile                      # Orquestacion MLOps
@@ -118,7 +120,8 @@ EpiForecast-MX/
 ## 7. Estandares de Calidad
 
 - **Lint**: Ruff (line-length=99, Python 3.12, isort, bugbear, simplify, pathlib).
-- **Tipado**: mypy estricto. Retornos de funciones deben estar tipados.
+- **SRP**: Maximo 300 lineas por modulo (excepto deepar/model.py por complejidad inherente).
+- **Tipado**: mypy estricto. Retornos de funciones deben estar tipados. Usar `.to_numpy()` en vez de `.values` para compatibilidad mypy.
 - **Tests**: Pytest con marcadores `slow` e `integration`. Coverage minimo 80%.
 - **Logging**: loguru exclusivamente (`from epiforecast.utils.config import logger`).
 - **Imports**: stdlib → terceros → locales (enforced por Ruff isort).
@@ -134,4 +137,15 @@ EpiForecast-MX/
 - **Consistencia**: Al anadir modelos, asegurar que implementen la interfaz `ForecastModel` y retornen tanto el historial como el pronostico en `.predict()`.
 - **Validacion**: Antes de finalizar tareas, ejecutar `make quality` y verificar la generacion de imagenes en `reports/forecasts/`.
 - **Dependencias**: `pip install -e ".[dev]"` para desarrollo. DVC opcional: `pip install -e ".[dvc]"`.
-- **SageMaker**: Solo se usa para DeepAR. Prophet corre rapido en CPU local.
+- **SageMaker**: Solo se usa para DeepAR. Prophet y Ensemble corren rapido en CPU local.
+- **Ensemble**: Opera sobre conteos absolutos (no tasas). Pipeline: `make avance5`.
+
+## 9. Modulos SRP (archivos extraidos)
+
+Para cumplir con el limite de 300 lineas por modulo (SRP), se extrajeron funciones auxiliares:
+
+| Modulo original | Modulo extraido | Contenido |
+|----------------|-----------------|-----------|
+| `prophet/model.py` | `prophet/data_prep.py` | `agrupa()`, `crea_train_test()`, `promedio_semanal()`, `eval_rapida()`, `build_holidays()`, `build_seasonality_params()`, `apply_regional_params()` |
+| `ensemble/model.py` | `ensemble/helpers.py` | `construir_features_xgb()`, `construir_holidays()`, `preparar_datos_ensemble()`, `generar_predicciones_insample()`, `calcular_metricas_ensemble()`, `calcular_metricas_prophet_base()` |
+| `visualization/comparison_plots.py` | `visualization/comparison_report.py` | `generar_reporte_html()` + funciones HTML auxiliares |

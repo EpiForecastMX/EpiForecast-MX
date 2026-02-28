@@ -43,6 +43,7 @@ dependencies = [
     "typer>=0.9",
     "pydantic>=2.6",
     "gluonts[torch]>=0.15",
+    "xgboost>=2.0",
 ]
 
 [project.optional-dependencies]

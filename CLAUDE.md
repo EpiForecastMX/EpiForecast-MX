@@ -2,7 +2,7 @@
 
 ## Resumen del Proyecto
 
-**EpiForecast-MX** es una plataforma de inteligencia epidemiologica multi-modelo para el **IMSS**. Pronostica la incidencia semanal de Depresion (F32), Parkinson (G20) y Alzheimer (G30) en las 32 entidades federativas de Mexico con un horizonte de 52 semanas. Utiliza **Prophet** y **DeepAR** (GluonTS + PyTorch) como motores de pronostico.
+**EpiForecast-MX** es una plataforma de inteligencia epidemiologica multi-modelo para el **IMSS**. Pronostica la incidencia semanal de Depresion (F32), Parkinson (G20) y Alzheimer (G30) en las 32 entidades federativas de Mexico con un horizonte de 52 semanas. Utiliza **Prophet**, **DeepAR** (GluonTS + PyTorch) y **Ensemble** (Prophet + XGBoost) como motores de pronostico.
 
 ## Comandos de Ejecucion (Makefile)
 
@@ -20,6 +20,8 @@
 - `make train-prophet`: Fuerza entrenamiento con Prophet (CPU, paralelo con joblib).
 - `make train-deepar`: Fuerza entrenamiento con DeepAR (local, CPU/MPS).
 - `make train-all`: Entrena ambos modelos secuencialmente.
+- `make avance5`: Entrena el Ensemble (Prophet + XGBoost) para los 3 padecimientos.
+- `make avance5 ARGS="padecimiento.tipo='Alzheimer'"`: Ensemble para un solo padecimiento.
 - `make train-sagemaker`: Build imagen Docker + lanzar entrenamiento DeepAR en AWS SageMaker (GPU).
 - `make train-sagemaker-build`: Solo build + push imagen Docker a ECR.
 - `make train-sagemaker-local`: Build imagen + test local con Docker.
@@ -51,7 +53,7 @@
 - Interfaz: `fit()`, `predict()`, `cross_validate()`, `save()`, `load()`, `get_params()`, `run()`.
 - Se registran mediante el decorador `@register_model("nombre")`.
 - Se instancian via `epiforecast.models.factory.create_model(name, **kwargs)`.
-- Implementaciones: `ProphetForecaster` (Prophet), `DeepARForecaster` (GluonTS + PyTorch).
+- Implementaciones: `ProphetForecaster` (Prophet), `DeepARForecaster` (GluonTS + PyTorch), `EnsembleForecaster` (Prophet + XGBoost).
 - No importar clases de modelos directamente en scripts; siempre usar `create_model`.
 
 ### Configuracion Dinamica
@@ -84,7 +86,7 @@ EpiForecast-MX/
 │   ├── visualization/            #   Estilos de graficos
 │   └── infrastructure/           #   Logging
 ├── src/epiforecast/              # Paquete Python principal
-│   ├── models/                   #   Factory + Prophet + DeepAR + base
+│   ├── models/                   #   Factory + Prophet + DeepAR + Ensemble + base
 │   ├── data/                     #   Extraccion PDF, ingestion INEGI, preprocesamiento
 │   ├── evaluation/               #   Metricas (RMSE, MAE, MAPE, SMAPE, MASE)
 │   ├── visualization/            #   Graficos estilo IMSS
@@ -110,6 +112,7 @@ EpiForecast-MX/
 - **Tipado**: Uso estricto de `mypy`. Retornos de funciones deben estar tipados.
 - **Logging**: Usar `loguru.logger` para trazas de depuracion y errores.
 - **Lint**: Ruff con line-length=99, target Python 3.12.
+- **SRP**: Maximo 300 lineas por modulo (excepcion: deepar/model.py por complejidad inherente).
 - **Tests**: Pytest con marcadores `slow` e `integration`. Coverage minimo 80%.
 - **Pre-commit**: Ruff check + format, mypy, trailing whitespace, YAML/TOML check.
 
@@ -120,5 +123,11 @@ EpiForecast-MX/
 - **Visualizacion**: matplotlib, seaborn, plotly, kaleido.
 - **Datos**: camelot-py, pypdf, reportlab, openpyxl.
 - **Infraestructura**: boto3, sagemaker (opcional), dvc[s3] (opcional).
+- **Ensemble**: xgboost.
 - **Dev**: pytest, ruff, mypy, pre-commit.
 - Instalar: `pip install -e ".[dev]"`. DVC opcional: `pip install -e ".[dvc]"`.
+
+### Modulos SRP (archivos extraidos para cumplir limite de 300 lineas)
+- `prophet/data_prep.py`: Funciones de preparacion de datos extraidas de `prophet/model.py`.
+- `ensemble/helpers.py`: Feature engineering, preparacion de datos y metricas extraidas de `ensemble/model.py`.
+- `visualization/comparison_report.py`: Generacion de reporte HTML extraida de `comparison_plots.py`.

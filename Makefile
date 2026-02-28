@@ -204,6 +204,13 @@ compare-metrics:
 	$(PYTHON) -m scripts.compara_metricas
 	@echo ">>> → reports/forecasts/comparacion_modelos/comparacion_metricas.xlsx"
 
+## Avance 5: Prophet Base vs Ensemble (Prophet + XGBoost)
+.PHONY: avance5
+avance5:
+	@echo ">>> Avance 5 — Modelo Final..."
+	$(PYTHON) -m scripts.avance5_modelo_final $(ARGS)
+	@echo ">>> → reports/forecasts/{prophet,ensemble,comparacion_modelos}/"
+
 ## Flujo completo de modelado
 .PHONY: model-pipeline
 model-pipeline: train models-push predict report forecast-push

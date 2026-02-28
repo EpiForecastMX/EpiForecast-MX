@@ -15,7 +15,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.12-blue?style=flat&logo=python&logoColor=white" alt="Python 3.12"/>
-  <img src="https://img.shields.io/badge/Models-Prophet_%2B_DeepAR-orange?style=flat" alt="Multi-Model"/>
+  <img src="https://img.shields.io/badge/Models-Prophet_%2B_DeepAR_%2B_Ensemble-orange?style=flat" alt="Multi-Model"/>
   <img src="https://img.shields.io/badge/GPU-SageMaker_T4-76b900?style=flat&logo=nvidia&logoColor=white" alt="GPU SageMaker"/>
   <img src="https://img.shields.io/badge/Coverage-93%25-brightgreen?style=flat" alt="Coverage 93%"/>
   <img src="https://img.shields.io/badge/DVC-S3-945DD6?style=flat&logo=dvc&logoColor=white" alt="DVC + S3"/>
@@ -27,7 +27,7 @@
 
 **EpiForecast-MX** is a production-grade epidemiological intelligence platform developed in partnership with the **Instituto Mexicano del Seguro Social (IMSS)** to forecast the weekly incidence of neurological and mental-health conditions across Mexico's 32 states with a 52-week horizon.
 
-The platform uses a **polymorphic Factory pattern** to support multiple forecasting engines (**Prophet** and **DeepAR**), ensuring scalability and ease of integration for future algorithms. DeepAR training runs on AWS SageMaker with NVIDIA T4 GPUs for fast iteration.
+The platform uses a **polymorphic Factory pattern** to support multiple forecasting engines (**Prophet**, **DeepAR**, and **Ensemble**), ensuring scalability and ease of integration for future algorithms. DeepAR training runs on AWS SageMaker with NVIDIA T4 GPUs for fast iteration. The Ensemble model combines Prophet as a base with XGBoost residual correction for improved accuracy on volatile series.
 
 | Condition | ICD-10 | Challenge |
 |-----------|--------|-----------|
@@ -39,10 +39,10 @@ The platform uses a **polymorphic Factory pattern** to support multiple forecast
 
 ## Key Features
 
-- **Multi-Model Orchestration** -- Seamlessly switch between Prophet and DeepAR via central configuration (`config/base.yaml`) or CLI arguments.
+- **Multi-Model Orchestration** -- Seamlessly switch between Prophet, DeepAR, and Ensemble via central configuration (`config/base.yaml`) or CLI arguments.
 - **GPU Training on SageMaker** -- DeepAR trains on `ml.g4dn.xlarge` (NVIDIA T4, CUDA 12.4) via a single `make train-sagemaker` command. Local CPU/MPS training also supported.
 - **End-to-End ML Pipeline** -- Automated from PDF scraping (SINAVE bulletins) through INEGI demographic mapping to forecast charts and HTML reports.
-- **Model Comparison Engine** -- High-contrast professional charts comparing Real vs. Prophet vs. DeepAR performance across all states and conditions.
+- **Model Comparison Engine** -- High-contrast professional charts comparing Real vs. Prophet vs. DeepAR vs. Ensemble performance across all states and conditions.
 - **Hybrid Fallback** -- Low-incidence state models automatically defer to regional aggregates to ensure 100% forecast coverage.
 - **Cross-Validation** -- Prophet uses weighted time-series CV (4 folds, progressive weights). DeepAR uses multi-series CV with early stopping.
 - **IMSS Institutional Branding** -- All visualizations and reports follow official IMSS 2026 chromatic and styling guidelines.
@@ -72,9 +72,9 @@ EpiForecast-MX/
 |   |-- models/                   #   Factory pattern + model implementations
 |   |   |-- base.py               #     Abstract ForecastModel interface
 |   |   |-- factory.py            #     create_model() + @register_model decorator
-|   |   |-- prophet/              #     ProphetForecaster + cross-validator + tuner
+|   |   |-- prophet/              #     ProphetForecaster + cross-validator + tuner + data_prep
 |   |   |-- deepar/               #     DeepARForecaster + cross-validator
-|   |   +-- ensemble/             #     (future)
+|   |   +-- ensemble/             #     EnsembleForecaster (Prophet + XGBoost) + helpers
 |   |-- data/                     #   PDF extraction, INEGI ingestion, preprocessing
 |   |-- evaluation/               #   Metrics (RMSE, MAE, MAPE, SMAPE, MASE)
 |   |-- visualization/            #   IMSS publication-quality charts and reports
@@ -87,6 +87,7 @@ EpiForecast-MX/
 |   |-- entrena_sagemaker.py      #   SageMaker entry point (adapts /opt/ml/ environment)
 |   |-- predice.py                #   Forecast generation (52 weeks, denormalized)
 |   |-- compara_modelos.py        #   Visual model comparison
+|   |-- avance5_modelo_final.py    #   Ensemble training + visualization
 |   |-- compara_metricas.py       #   Metrics comparison (Excel)
 |   |-- genera_reporte.py         #   HTML results report
 |   |-- genera_bitacora.py        #   Modeling log (Prophet v1-v6)
@@ -110,7 +111,8 @@ EpiForecast-MX/
 |
 |-- models/                       # Trained model artifacts (.pkl, managed by DVC)
 |   |-- prophet/                  #   Prophet models per disease/state/sex
-|   +-- deepar/                   #   DeepAR models per disease/state/sex
+|   |-- deepar/                   #   DeepAR models per disease/state/sex
+|   +-- ensemble/                 #   Ensemble (Prophet+XGBoost) models per disease
 |
 |-- reports/                      # Generated outputs
 |   |-- forecasts/                #   Forecast CSVs and comparison charts
@@ -193,6 +195,10 @@ make train-prophet    # Prophet (CPU, parallel with joblib)
 make train-deepar     # DeepAR (local CPU/MPS)
 make train-all        # Both models sequentially
 
+# Train Ensemble (Prophet + XGBoost residual correction)
+make avance5                                              # All conditions
+make avance5 ARGS="padecimiento.tipo='Alzheimer'"         # Single condition
+
 # Train DeepAR on AWS SageMaker with GPU (recommended for speed)
 make train-sagemaker          # Build Docker image + launch on ml.g4dn.xlarge
 make train-sagemaker-build    # Only build + push image to ECR
@@ -271,7 +277,7 @@ class ForecastModel(ABC):
     def run(self) -> tuple[Any, dict, dict]: ...
 ```
 
-Models register themselves with `@register_model("name")` and are instantiated via `create_model(name, **kwargs)`. This allows transparent switching between algorithms without modifying pipeline code.
+Models register themselves with `@register_model("name")` and are instantiated via `create_model(name, **kwargs)`. This allows transparent switching between algorithms without modifying pipeline code. Currently registered models: `prophet`, `deepar`, `ensemble`.
 
 ### Prophet
 
@@ -289,6 +295,15 @@ Models register themselves with `@register_model("name")` and are instantiated v
 - Context length: 104 weeks (2 years), prediction length: 52 weeks.
 - Population-normalized rates (per 100K inhabitants).
 - Trains on AWS SageMaker `ml.g4dn.xlarge` (NVIDIA T4, CUDA 12.4) or locally on CPU/MPS.
+
+### Ensemble (Prophet + XGBoost)
+
+- Hybrid approach: Prophet captures trend and seasonality, XGBoost corrects residuals.
+- XGBoost features: lag (1, 2, 4 weeks), rolling means (4, 8, 12 weeks), month, week of year.
+- Operates on absolute counts (not population-normalized rates).
+- Iterative future prediction: XGBoost feeds back its own predictions for multi-step horizons.
+- Serialization: single pickle with both Prophet and XGBoost models + hyperparameters.
+- National-level forecasting for the three target conditions.
 
 ### Configuration
 
