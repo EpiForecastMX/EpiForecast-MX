@@ -373,7 +373,12 @@ class DeepARForecaster(ForecastModel):
         self._silence_lightning()
 
         # Rich progress bar per training run
-        label = self.padecimiento or "DeepAR"
+        entity_label = self.entidad or "Nacional"
+        phase = overrides.pop("phase", "")
+        parts = [self.padecimiento or "DeepAR", entity_label]
+        if phase:
+            parts.append(phase)
+        label = " | ".join(parts)
         callbacks.append(_make_progress_callback(epochs, description=label))
 
         return DeepAREstimator(
@@ -429,7 +434,7 @@ class DeepARForecaster(ForecastModel):
         else:
             dataset = self._build_dataset(train_data)
 
-        estimator = self._create_estimator()
+        estimator = self._create_estimator(phase="Final")
         self._predictor = estimator.train(dataset)
 
     def predict(self, horizon: int = 52) -> pd.DataFrame:

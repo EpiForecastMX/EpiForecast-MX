@@ -85,7 +85,7 @@ class DeepARCrossValidator:
             )
 
             try:
-                metrics = self._evaluate_fold(train_fold, val_fold)
+                metrics = self._evaluate_fold(train_fold, val_fold, fold_idx)
                 rmse_folds.append(metrics["rmse"])
                 mae_folds.append(metrics["mae"])
                 mape_folds.append(metrics["mape"])
@@ -154,7 +154,11 @@ class DeepARCrossValidator:
 
             try:
                 metrics = self._evaluate_fold_multi(
-                    train_fold_multi, val_fold_national, train_fold_national, len(val_idx)
+                    train_fold_multi,
+                    val_fold_national,
+                    train_fold_national,
+                    len(val_idx),
+                    fold_idx,
                 )
                 rmse_folds.append(metrics["rmse"])
                 mae_folds.append(metrics["mae"])
@@ -182,6 +186,7 @@ class DeepARCrossValidator:
         self,
         train_fold: pd.DataFrame,
         val_fold: pd.DataFrame,
+        fold_idx: int = 0,
     ) -> dict[str, Any]:
         """Train single-series DeepAR on a fold and compute metrics."""
         import torch
@@ -195,6 +200,7 @@ class DeepARCrossValidator:
             epochs=self.cv_epochs,
             prediction_length=len(val_fold),
             early_stopping=False,
+            phase=f"CV {fold_idx + 1}/{self.n_splits}",
         )
         predictor = estimator.train(dataset)
 
@@ -211,6 +217,7 @@ class DeepARCrossValidator:
         val_fold_national: pd.DataFrame,
         train_fold_national: pd.DataFrame,
         n_val_weeks: int,
+        fold_idx: int = 0,
     ) -> dict[str, Any]:
         """Train multi-series DeepAR on a fold, aggregate, compute metrics."""
         import torch
@@ -224,6 +231,7 @@ class DeepARCrossValidator:
             epochs=self.cv_epochs,
             prediction_length=n_val_weeks,
             early_stopping=False,
+            phase=f"CV {fold_idx + 1}/{self.n_splits}",
         )
         predictor = estimator.train(dataset)
 
