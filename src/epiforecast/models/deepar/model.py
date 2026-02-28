@@ -690,6 +690,84 @@ class DeepARForecaster(ForecastModel):
             "multi_series": self._is_multi_series,
         }
 
+    # ── Quick evaluation ────────────────────────────────────────────────────
+
+    def _eval_rapida(self) -> dict[str, Any]:
+        """Evaluacion rapida post-entrenamiento (sin reentrenar).
+
+        Usa el predictor ya entrenado para predecir desde train_data como contexto
+        y compara contra los datos reales post-cutoff.  Las metricas son ligeramente
+        optimistas (el modelo vio test durante training), pero el sesgo es consistente
+        para todos los modelos estatales, permitiendo comparacion valida entre ellos.
+        """
+        cutoff = pd.Timestamp(self.FECHA_CORTE_ENTRENAMIENTO)
+        test_data = self.serie[self.serie["ds"] >= cutoff]
+        null_metrics: dict[str, Any] = {
+            "rmse": None,
+            "mae": None,
+            "mape": None,
+            "smape": None,
+            "mase": None,
+        }
+
+        if test_data.empty or len(test_data) < 4:
+            logger.debug("eval_rapida: test_data insuficiente ({} filas), skip", len(test_data))
+            return null_metrics
+
+        if self._predictor is None:
+            return null_metrics
+
+        # Contexto = datos pre-cutoff (train_data)
+        context = self.train_data
+        if context.empty:
+            return null_metrics
+
+        try:
+            dataset = self._build_dataset(context)
+            forecasts = list(self._predictor.predict(dataset, num_samples=self.num_samples))
+            fc = forecasts[0]
+            yhat = fc.mean[: len(test_data)]
+
+            # Desnormalizar si aplica (tasa -> conteo)
+            normalizar = self._conf.get("normalizar_tasa", True)
+            if normalizar and "Total" in context.columns:
+                pob = context["Total"].iloc[-1]
+                tasa_por = self._conf.get("tasa_por", 100000)
+                if pob > 0:
+                    yhat = (yhat * pob) / tasa_por
+
+            # y_true en escala original (conteo)
+            if "y_original" in test_data.columns:
+                y_true = test_data["y_original"].to_numpy()[: len(yhat)]
+            else:
+                y_true = test_data["y"].to_numpy()[: len(yhat)]
+
+            # y_train para MASE (naive baseline)
+            if "y_original" in self.train_data.columns:
+                y_train = self.train_data["y_original"].to_numpy()
+            else:
+                y_train = self.train_data["y"].to_numpy()
+
+            from epiforecast.models.deepar.cross_validator import DeepARCrossValidator
+
+            cv = DeepARCrossValidator(self, config=self._conf)
+            metrics = cv._compute_metrics(y_true, yhat, y_train)
+
+            logger.info(
+                "eval_rapida {} | {} | RMSE={:.4f} MAE={:.4f} MAPE={:.2f}%{}",
+                self.entidad or "Nacional",
+                self.sexo,
+                metrics["rmse"],
+                metrics["mae"],
+                metrics["mape"],
+                f" MASE={metrics['mase']:.3f}" if metrics.get("mase") is not None else "",
+            )
+            return metrics
+
+        except Exception as e:
+            logger.warning("eval_rapida fallo para {}: {}", self.entidad, e)
+            return null_metrics
+
     # ── Orchestration ─────────────────────────────────────────────────────────
 
     def run(self) -> tuple[Any, dict, dict]:
@@ -760,6 +838,11 @@ class DeepARForecaster(ForecastModel):
 
         # Train on full series
         self.fit(self.serie)
+
+        # Evaluacion rapida post-entrenamiento para modelos que no hicieron CV completo
+        if skip_cv or es_insuficiente:
+            eval_metrics = self._eval_rapida()
+            best_metrics.update(eval_metrics)
 
         best_metrics["confianza"] = confianza
         best_metrics["promedio_semanal"] = promedio

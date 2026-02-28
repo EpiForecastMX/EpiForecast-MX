@@ -227,104 +227,103 @@ def main():
 
         resultados = [f for f in resultados_raw if f is not None]
 
-        # --- Modo híbrido: fallback regional para modelos insuficientes ---
+        # --- Modo híbrido: entrenar regionales siempre + fallback insuficientes ---
         modelado_hibrido = bool(conf["padecimiento"].get("modelado_hibrido", False))
-        if modelado_hibrido and modelado_estados and resultados:
-            insuf = [
-                f
-                for f in resultados
-                if f.get("confianza") == "insuficiente" and f.get("nivel") == "regional"
-            ]
-            if insuf:
-                # Mapear estado → región INEGI
-                mapa_region = (
-                    df_padecimiento[["Entidad", "region_salud_mental"]]
-                    .drop_duplicates()
-                    .set_index("Entidad")["region_salud_mental"]
-                    .to_dict()
-                )
-                # Regiones que tienen al menos 1 estado insuficiente
-                regiones_afectadas = sorted(
-                    {mapa_region[f["Entidad"]] for f in insuf if f.get("Entidad") in mapa_region}
-                )
-                logger.debug(
-                    "Modo híbrido: {} insuficientes en {} regiones → {}",
-                    len(insuf),
-                    len(regiones_afectadas),
-                    regiones_afectadas,
-                )
+        if modelado_hibrido and modelado_estados:
+            # Mapear estado → región INEGI
+            mapa_region = (
+                df_padecimiento[["Entidad", "region_salud_mental"]]
+                .drop_duplicates()
+                .set_index("Entidad")["region_salud_mental"]
+                .to_dict()
+            )
+            todas_las_regiones = sorted(set(mapa_region.values()))
 
-                # Entrenar modelos regionales de fallback
-                jobs_regional = []
-                for region in regiones_afectadas:
-                    df_region = df_padecimiento[df_padecimiento["region_salud_mental"] == region]
-                    for sexo in valores_sexo:
-                        region_tag = f"region_{region}"
-                        jobs_regional.append(
-                            (
-                                df_region,
-                                padecimiento,
-                                sexo,
-                                model_path,
-                                mapeo,
-                                region_tag,
-                                force,
-                            )
+            # 1) Entrenar modelos regionales para TODAS las regiones (incondicional)
+            jobs_regional = []
+            for region in todas_las_regiones:
+                df_region = df_padecimiento[df_padecimiento["region_salud_mental"] == region]
+                for sexo in valores_sexo:
+                    region_tag = f"region_{region}"
+                    jobs_regional.append(
+                        (
+                            df_region,
+                            padecimiento,
+                            sexo,
+                            model_path,
+                            mapeo,
+                            region_tag,
+                            force,
                         )
+                    )
 
-                total_reg = len(jobs_regional)
-                logger.debug(
-                    "Entrenando {} modelos regionales de fallback para {}",
-                    total_reg,
-                    padecimiento,
-                )
+            total_reg = len(jobs_regional)
+            logger.debug(
+                "Entrenando {} modelos regionales para {} ({} regiones)",
+                total_reg,
+                padecimiento,
+                len(todas_las_regiones),
+            )
 
-                with tqdm(
-                    total=total_reg,
-                    desc=f"{padecimiento} fallback",
-                    unit="modelo",
-                    dynamic_ncols=True,
-                    position=0,
-                    leave=True,
-                ) as pbar_reg:
-                    if n_jobs != 1:
-                        with _tqdm_joblib(pbar_reg):
-                            res_reg_raw = Parallel(n_jobs=n_jobs, backend="loky", verbose=0)(
-                                delayed(entrenar)(*job) for job in jobs_regional
-                            )
-                    else:
-                        res_reg_raw = []
-                        for job in jobs_regional:
-                            res_reg_raw.append(entrenar(*job))
-                            pbar_reg.update(1)
-
-                res_regional = [f for f in res_reg_raw if f is not None]
-                resultados.extend(res_regional)
-
-                # Agregar columna usar_regional: mapea cada modelo insuficiente a su .pkl regional
-                for fila in resultados:
-                    if (
-                        fila.get("confianza") == "insuficiente"
-                        and fila.get("nivel") == "regional"
-                        and fila.get("Entidad") in mapa_region
-                    ):
-                        region = mapa_region[fila["Entidad"]]
-                        region_tag = f"region_{region}"
-                        sexo = fila["sexo"]
-                        pkl_regional = (
-                            f"{modelo_activo.capitalize()}_{normalizar(padecimiento)}"
-                            f"_{normalizar(region_tag)}"
-                            f"_{mapeo.get(sexo, sexo)}.pkl"
+            with tqdm(
+                total=total_reg,
+                desc=f"{padecimiento} regional",
+                unit="modelo",
+                dynamic_ncols=True,
+                position=0,
+                leave=True,
+            ) as pbar_reg:
+                if n_jobs != 1:
+                    with _tqdm_joblib(pbar_reg):
+                        res_reg_raw = Parallel(n_jobs=n_jobs, backend="loky", verbose=0)(
+                            delayed(entrenar)(*job) for job in jobs_regional
                         )
-                        fila["usar_regional"] = pkl_regional
-                    else:
-                        fila.setdefault("usar_regional", None)
+                else:
+                    res_reg_raw = []
+                    for job in jobs_regional:
+                        res_reg_raw.append(entrenar(*job))
+                        pbar_reg.update(1)
 
-                logger.debug(
-                    "Modo híbrido: {} modelos regionales entrenados para {}",
-                    len(res_regional),
-                    padecimiento,
-                )
+            res_regional = [f for f in res_reg_raw if f is not None]
+            resultados.extend(res_regional)
+
+            # 2) Si hay insuficientes, mapear usar_regional
+            if resultados:
+                insuf = [
+                    f
+                    for f in resultados
+                    if f.get("confianza") == "insuficiente" and f.get("nivel") == "regional"
+                ]
+                if insuf:
+                    for fila in resultados:
+                        if (
+                            fila.get("confianza") == "insuficiente"
+                            and fila.get("nivel") == "regional"
+                            and fila.get("Entidad") in mapa_region
+                        ):
+                            region = mapa_region[fila["Entidad"]]
+                            region_tag = f"region_{region}"
+                            sexo = fila["sexo"]
+                            pkl_regional = (
+                                f"{modelo_activo.capitalize()}_{normalizar(padecimiento)}"
+                                f"_{normalizar(region_tag)}"
+                                f"_{mapeo.get(sexo, sexo)}.pkl"
+                            )
+                            fila["usar_regional"] = pkl_regional
+                        else:
+                            fila.setdefault("usar_regional", None)
+
+                    logger.debug(
+                        "Modo hibrido: {} insuficientes mapeados a regional en {}",
+                        len(insuf),
+                        padecimiento,
+                    )
+
+            logger.debug(
+                "Modo hibrido: {} modelos regionales entrenados para {}",
+                len(res_regional),
+                padecimiento,
+            )
 
         if resultados:
             ruta_rmse = os.path.join(
