@@ -48,6 +48,7 @@ warnings.filterwarnings("ignore", message=".*Tensor Cores.*", category=UserWarni
 warnings.filterwarnings("ignore", message=".*float32_matmul_precision.*", category=UserWarning)
 warnings.filterwarnings("ignore", message=".*LeafSpec.*")
 warnings.filterwarnings("ignore", message=".*Checkpoint directory.*exists and is not empty.*")
+warnings.filterwarnings("ignore", message=".*not currently supported on the MPS backend.*")
 
 from epiforecast.constants import RANDOM_SEED  # noqa: E402
 from epiforecast.models.base import ForecastModel  # noqa: E402
