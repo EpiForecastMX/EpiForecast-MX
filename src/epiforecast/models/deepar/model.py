@@ -10,11 +10,16 @@ side effects and allow the module to load even without GluonTS installed.
 from __future__ import annotations
 
 import logging
+import os
 from pathlib import Path
 import pickle
 import tempfile
 from typing import Any
 import warnings
+
+# MPS (Apple Silicon) no soporta todos los ops de PyTorch (e.g. _standard_gamma
+# para Student-t).  Con este flag, las ops faltantes caen a CPU automáticamente.
+os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
 
 import numpy as np
 import pandas as pd
