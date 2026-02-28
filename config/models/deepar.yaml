@@ -1,6 +1,7 @@
 # Configuración para DeepAR (GluonTS + PyTorch, entrenamiento local en CPU)
 
 deepar:
+  multi_series: true                   # Entrenar con 32 series estatales (solo nivel nacional)
   epochs: 300                        # Early stopping frena si converge antes
   context_length: 104                # 2 años de historia (captura ciclos anuales completos)
   prediction_length: 52              # Un año de predicción (horizonte)

@@ -3,7 +3,9 @@
 
 Uses TimeSeriesSplit for temporal cross-validation.
 Trains with reduced epochs per fold for speed.
-Computes RMSE, MAE, MAPE, MASE (same metrics as Prophet CV).
+Computes RMSE, MAE, MAPE, SMAPE, MASE (same metrics as Prophet CV).
+
+Supports both single-series and multi-series (32 states) modes.
 """
 
 from __future__ import annotations
@@ -45,12 +47,22 @@ class DeepARCrossValidator:
 
     def run(self) -> dict[str, Any]:
         """Run temporal CV across all folds and return averaged metrics."""
-        tscv = TimeSeriesSplit(n_splits=self.n_splits, test_size=self.test_size)
         train_data = self.forecaster.train_data
 
         if train_data.empty or len(train_data) < self.test_size + 52:
             logger.warning("Datos insuficientes para CV DeepAR ({} filas)", len(train_data))
             return {"rmse": None, "mae": None, "mape": None, "smape": None, "mase": None}
+
+        if self.forecaster._is_multi_series and not self.forecaster.train_data_multi.empty:
+            return self._run_multi_series()
+        return self._run_single_series()
+
+    # ── Single-series CV ─────────────────────────────────────────────────────
+
+    def _run_single_series(self) -> dict[str, Any]:
+        """Original single-series CV using row-index splits."""
+        tscv = TimeSeriesSplit(n_splits=self.n_splits, test_size=self.test_size)
+        train_data = self.forecaster.train_data
 
         rmse_folds: list[float] = []
         mae_folds: list[float] = []
@@ -63,7 +75,7 @@ class DeepARCrossValidator:
             val_fold = train_data.iloc[val_idx]
 
             logger.debug(
-                "DeepAR CV Fold {}/{}: Train {} → {}, Val {} → {}",
+                "DeepAR CV Fold {}/{}: Train {} -> {}, Val {} -> {}",
                 fold_idx + 1,
                 self.n_splits,
                 train_fold["ds"].min().date(),
@@ -90,10 +102,188 @@ class DeepARCrossValidator:
             except Exception as e:
                 logger.warning("Error en fold {}: {}", fold_idx + 1, e)
 
+        return self._aggregate_fold_metrics(
+            rmse_folds, mae_folds, mape_folds, smape_folds, mase_folds
+        )
+
+    # ── Multi-series CV ──────────────────────────────────────────────────────
+
+    def _run_multi_series(self) -> dict[str, Any]:
+        """Multi-series CV: date-based splits across all 32 states.
+
+        Uses the aggregated national series to determine fold date boundaries,
+        then applies them to all 32 states.  Metrics are evaluated on the
+        aggregated national forecast (sum of state forecasts).
+        """
+        train_national = self.forecaster.train_data
+        train_multi = self.forecaster.train_data_multi
+
+        # Split on unique dates of the national series
+        tscv = TimeSeriesSplit(n_splits=self.n_splits, test_size=self.test_size)
+        unique_dates = sorted(train_national["ds"].unique())
+
+        rmse_folds: list[float] = []
+        mae_folds: list[float] = []
+        mape_folds: list[float] = []
+        smape_folds: list[float] = []
+        mase_folds: list[float | None] = []
+
+        for fold_idx, (train_idx, val_idx) in enumerate(tscv.split(unique_dates)):
+            train_cutoff = unique_dates[train_idx[-1]]
+            val_start = unique_dates[val_idx[0]]
+            val_end = unique_dates[val_idx[-1]]
+
+            # Split multi-series by date
+            train_fold_multi = train_multi[train_multi["ds"] <= train_cutoff]
+
+            # National series for metric evaluation
+            train_fold_national = train_national[train_national["ds"] <= train_cutoff]
+            val_fold_national = train_national[
+                (train_national["ds"] >= val_start) & (train_national["ds"] <= val_end)
+            ]
+
+            logger.debug(
+                "DeepAR Multi-CV Fold {}/{}: Train -> {}, Val {} -> {} ({} semanas)",
+                fold_idx + 1,
+                self.n_splits,
+                train_cutoff.date(),
+                val_start.date(),
+                val_end.date(),
+                len(val_idx),
+            )
+
+            try:
+                metrics = self._evaluate_fold_multi(
+                    train_fold_multi, val_fold_national, train_fold_national, len(val_idx)
+                )
+                rmse_folds.append(metrics["rmse"])
+                mae_folds.append(metrics["mae"])
+                mape_folds.append(metrics["mape"])
+                smape_folds.append(metrics["smape"])
+                mase_folds.append(metrics["mase"])
+
+                logger.debug(
+                    "Multi-CV Fold {}: RMSE={:.4f} MAE={:.4f} MAPE={:.2f}%",
+                    fold_idx + 1,
+                    metrics["rmse"],
+                    metrics["mae"],
+                    metrics["mape"],
+                )
+            except Exception as e:
+                logger.warning("Error en multi-CV fold {}: {}", fold_idx + 1, e)
+
+        return self._aggregate_fold_metrics(
+            rmse_folds, mae_folds, mape_folds, smape_folds, mase_folds
+        )
+
+    # ── Fold evaluators ──────────────────────────────────────────────────────
+
+    def _evaluate_fold(
+        self,
+        train_fold: pd.DataFrame,
+        val_fold: pd.DataFrame,
+    ) -> dict[str, Any]:
+        """Train single-series DeepAR on a fold and compute metrics."""
+        import torch
+
+        torch.manual_seed(RANDOM_SEED)
+        np.random.seed(RANDOM_SEED)
+
+        dataset = self.forecaster._build_dataset(train_fold)
+
+        estimator = self.forecaster._create_estimator(
+            epochs=self.cv_epochs,
+            prediction_length=len(val_fold),
+            early_stopping=False,
+        )
+        predictor = estimator.train(dataset)
+
+        forecasts = list(predictor.predict(dataset, num_samples=self.forecaster.num_samples))
+        fc = forecasts[0]
+        yhat = fc.mean[: len(val_fold)]
+        y_true = val_fold["y"].to_numpy()[: len(yhat)]
+
+        return self._compute_metrics(y_true, yhat, train_fold["y"].to_numpy())
+
+    def _evaluate_fold_multi(
+        self,
+        train_fold_multi: pd.DataFrame,
+        val_fold_national: pd.DataFrame,
+        train_fold_national: pd.DataFrame,
+        n_val_weeks: int,
+    ) -> dict[str, Any]:
+        """Train multi-series DeepAR on a fold, aggregate, compute metrics."""
+        import torch
+
+        torch.manual_seed(RANDOM_SEED)
+        np.random.seed(RANDOM_SEED)
+
+        dataset = self.forecaster._build_multi_dataset(train_fold_multi)
+
+        estimator = self.forecaster._create_estimator(
+            epochs=self.cv_epochs,
+            prediction_length=n_val_weeks,
+            early_stopping=False,
+        )
+        predictor = estimator.train(dataset)
+
+        forecasts = list(predictor.predict(dataset, num_samples=self.forecaster.num_samples))
+
+        # Aggregate: sum MC samples across all states -> shape (n_states, N, H)
+        all_samples = np.stack([fc.samples for fc in forecasts], axis=0)
+        national_samples = all_samples.sum(axis=0)  # shape (N, H)
+
+        yhat = national_samples.mean(axis=0)[:n_val_weeks]
+        y_true = val_fold_national["y"].to_numpy()[: len(yhat)]
+
+        return self._compute_metrics(y_true, yhat, train_fold_national["y"].to_numpy())
+
+    # ── Shared helpers ───────────────────────────────────────────────────────
+
+    def _compute_metrics(
+        self,
+        y_true: np.ndarray,
+        yhat: np.ndarray,
+        y_train: np.ndarray,
+    ) -> dict[str, Any]:
+        """Compute RMSE, MAE, MAPE, SMAPE, MASE from arrays."""
+        from epiforecast.evaluation.metrics import smape as _smape
+
+        rmse = float(np.sqrt(mean_squared_error(y_true, yhat)))
+        mae_val = float(mean_absolute_error(y_true, yhat))
+        mape_val = min(
+            float(mean_absolute_percentage_error(y_true, yhat) * 100),
+            999.0,
+        )
+        smape_val = _smape(y_true, yhat)
+
+        # MASE: naive seasonal baseline (lag-52)
+        mase_val: float | None = None
+        if len(y_train) > 52:
+            mae_naive = float(np.mean(np.abs(y_train[52:] - y_train[:-52])))
+            if mae_naive > 0:
+                mase_val = mae_val / mae_naive
+
+        return {
+            "rmse": rmse,
+            "mae": mae_val,
+            "mape": mape_val,
+            "smape": smape_val,
+            "mase": mase_val,
+        }
+
+    def _aggregate_fold_metrics(
+        self,
+        rmse_folds: list[float],
+        mae_folds: list[float],
+        mape_folds: list[float],
+        smape_folds: list[float],
+        mase_folds: list[float | None],
+    ) -> dict[str, Any]:
+        """Average metrics across CV folds."""
         if not rmse_folds:
             return {"rmse": None, "mae": None, "mape": None, "smape": None, "mase": None}
 
-        # Average metrics across folds
         valid_mase = [m for m in mase_folds if m is not None]
         result: dict[str, Any] = {
             "rmse": float(np.mean(rmse_folds)),
@@ -113,54 +303,3 @@ class DeepARCrossValidator:
         )
 
         return result
-
-    def _evaluate_fold(
-        self,
-        train_fold: pd.DataFrame,
-        val_fold: pd.DataFrame,
-    ) -> dict[str, Any]:
-        """Train DeepAR on a fold and compute metrics against validation set."""
-        import torch
-
-        # Fix seeds
-        torch.manual_seed(RANDOM_SEED)
-        np.random.seed(RANDOM_SEED)
-
-        # Build dataset from train fold
-        dataset = self.forecaster._build_dataset(train_fold)
-
-        # Create estimator with reduced epochs (no early stopping in CV)
-        estimator = self.forecaster._create_estimator(
-            epochs=self.cv_epochs,
-            prediction_length=len(val_fold),
-            early_stopping=False,
-        )
-        predictor = estimator.train(dataset)
-
-        # Generate forecasts
-        forecasts = list(predictor.predict(dataset, num_samples=self.forecaster.num_samples))
-        fc = forecasts[0]
-        yhat = fc.mean[: len(val_fold)]
-
-        y_true = val_fold["y"].to_numpy()[: len(yhat)]
-
-        # Compute metrics
-        from epiforecast.evaluation.metrics import smape as _smape
-
-        rmse = float(np.sqrt(mean_squared_error(y_true, yhat)))
-        mae = float(mean_absolute_error(y_true, yhat))
-        mape = min(
-            float(mean_absolute_percentage_error(y_true, yhat) * 100),
-            999.0,
-        )
-        smape = _smape(y_true, yhat)
-
-        # MASE: naive seasonal baseline (lag-52)
-        y_train: np.ndarray = train_fold["y"].to_numpy()
-        if len(y_train) > 52:
-            mae_naive = float(np.mean(np.abs(y_train[52:] - y_train[:-52])))
-            mase: float | None = mae / mae_naive if mae_naive > 0 else None
-        else:
-            mase = None
-
-        return {"rmse": rmse, "mae": mae, "mape": mape, "smape": smape, "mase": mase}
