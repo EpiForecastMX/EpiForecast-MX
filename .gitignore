@@ -5,9 +5,7 @@
 /logs
 
 # imagenes
-# (Permitir reports/, ignorar archivos generados pesados)
-/reports/forecasts/*
-!/reports/forecasts/.gitkeep
+# (reports/forecasts/ trackeado por DVC — ver reports/forecasts.dvc)
 /reports/figures/*
 !/reports/figures/.gitkeep
 
