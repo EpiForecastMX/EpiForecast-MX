@@ -582,12 +582,15 @@ class DeepARForecaster(ForecastModel):
 
     def load(self, path: Path) -> None:
         """Load predictor from pickle and sidecar CSVs for historical series."""
+        import torch
+
         path = Path(path)
         if not path.exists():
             raise FileNotFoundError(f"Modelo no encontrado: {path}")
 
+        # map_location="cpu" permite cargar modelos entrenados en CUDA desde CPU/MPS
         with path.open("rb") as f:
-            payload = pickle.load(f)
+            payload = torch.load(f, map_location="cpu", weights_only=False)
 
         # Backward-compatible: old stub format was {"config": {...}}
         if isinstance(payload, dict) and "predictor" in payload:
