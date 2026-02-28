@@ -276,7 +276,7 @@ def _plot_series(
     # ── Marcador de transicion (fin de datos reales) ───────────────────
     last_y = y_smooth.iloc[-1]
     ax.plot(
-        fecha_max_datos,
+        fecha_max_datos,  # type: ignore[arg-type]
         last_y,
         marker="o",
         markersize=8,
@@ -293,7 +293,7 @@ def _plot_series(
         pico_y = fc_future.loc[idx_max, "yhat"]
         ax.annotate(
             f"Pico proyectado\n{pico_y:,.0f}",
-            xy=(pico_x, pico_y),
+            xy=(pico_x, pico_y),  # type: ignore[arg-type]
             xytext=(0, 25),
             textcoords="offset points",
             fontsize=8,
