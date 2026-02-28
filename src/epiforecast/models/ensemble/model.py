@@ -6,15 +6,17 @@ import logging
 from pathlib import Path
 import pickle
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pandas as pd
-from prophet import Prophet
-from xgboost import XGBRegressor
 
 from epiforecast.constants import RANDOM_SEED
 from epiforecast.evaluation.metrics import compute_forecast_metrics
+
+if TYPE_CHECKING:
+    from prophet import Prophet
+    from xgboost import XGBRegressor
 from epiforecast.models.base import ForecastModel
 from epiforecast.models.ensemble.helpers import (
     FEATURE_NAMES,
@@ -81,8 +83,8 @@ class EnsembleForecaster(ForecastModel):
         self._holidays: pd.DataFrame = construir_holidays(self._conf)
 
         # Internal state
-        self._prophet: Prophet | None = None
-        self._xgb: XGBRegressor | None = None
+        self._prophet: Prophet | None = None  # lazy import
+        self._xgb: XGBRegressor | None = None  # lazy import
         self._feature_names: list[str] = list(FEATURE_NAMES)
 
         # Data placeholders (set during run())
@@ -98,11 +100,14 @@ class EnsembleForecaster(ForecastModel):
 
     def fit(self, train_data: pd.DataFrame) -> None:
         """Entrena Prophet base + XGBoost sobre residuos."""
+        from prophet import Prophet as _Prophet
+        from xgboost import XGBRegressor as _XGBRegressor
+
         t0 = time.perf_counter()
         np.random.seed(RANDOM_SEED)
 
         # 1) Prophet base
-        self._prophet = Prophet(
+        self._prophet = _Prophet(
             yearly_seasonality=False,
             weekly_seasonality=False,
             daily_seasonality=False,
@@ -129,7 +134,7 @@ class EnsembleForecaster(ForecastModel):
         )
         valid_mask = feats_train.notna().all(axis=1)
 
-        self._xgb = XGBRegressor(**self._xgb_hp, n_jobs=-1, random_state=RANDOM_SEED)
+        self._xgb = _XGBRegressor(**self._xgb_hp, n_jobs=-1, random_state=RANDOM_SEED)
         self._xgb.fit(feats_train[valid_mask], residuos[valid_mask.values])
         self._t_ensemble = time.perf_counter() - t1
         logger.info("  XGBoost residual entrenado en {:.1f}s", self._t_ensemble)
