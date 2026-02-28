@@ -137,7 +137,7 @@ def _render_ficha_tecnica(fig: plt.Figure, metricas: dict) -> None:
     # Todas las metricas disponibles
     if smape_v is not None and smape_v < 999:
         tokens.append(f"SMAPE: {smape_v:.2f}%")
-    if mase_v is not None and mase_v < 100:
+    if mase_v is not None:
         tag = "supera naive" if mase_v < 1 else "no supera naive"
         tokens.append(f"MASE: {mase_v:.2f} ({tag})")
     if rmse_v is not None and rmse_v < 1e6:
