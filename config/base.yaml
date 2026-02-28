@@ -1,4 +1,4 @@
-modelo_activo: "prophet"           # Opciones: prophet, deepar, ensemble
+modelo_activo: "deepar"           # Opciones: prophet, deepar, ensemble
 
 padecimiento:
   columna: "Padecimiento"
