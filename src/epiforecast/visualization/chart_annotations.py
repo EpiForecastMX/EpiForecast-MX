@@ -53,7 +53,7 @@ def _anotar_divisores(
         va="top",
     )
     ax.annotate(
-        " Pronóstico →",
+        " Inicio pronostico →",
         xy=(fecha_max_datos, _Y_DIVIDER),
         xycoords=("data", "axes fraction"),
         fontsize=_FS_DIVIDER,
@@ -118,24 +118,34 @@ def _anotar_zona_cv(
 
 
 def _render_ficha_tecnica(fig: plt.Figure, metricas: dict) -> None:
-    """Renderiza la ficha técnica del modelo al pie del gráfico."""
+    """Renderiza la ficha tecnica del modelo al pie del grafico."""
     modelo_activo = conf.get("modelo_activo", "prophet").lower()
     mase_v = metricas.get("mase")
     rmse_v = metricas.get("rmse")
+    smape_v = metricas.get("smape")
+    mae_v = metricas.get("mae")
+    mape_v = metricas.get("mape")
     confianza = metricas.get("confianza", "normal")
     es_fallback = metricas.get("es_fallback", False)
     modelo_usado = metricas.get("modelo_usado", "")
 
     if modelo_activo == "deepar":
-        tokens = ["DeepAR (AWS SageMaker)", "IC 80 %"]
+        tokens = ["DeepAR (Amazon)", "IC 80 %"]
     else:
         tokens = ["Prophet (Meta/Facebook)", "IC 80 %"]
 
+    # Todas las metricas disponibles
+    if smape_v is not None and smape_v < 999:
+        tokens.append(f"SMAPE: {smape_v:.2f}%")
     if mase_v is not None and mase_v < 100:
         tag = "supera naive" if mase_v < 1 else "no supera naive"
         tokens.append(f"MASE: {mase_v:.2f} ({tag})")
-    if rmse_v is not None and rmse_v < 100:
+    if rmse_v is not None and rmse_v < 1e6:
         tokens.append(f"RMSE: {rmse_v:.4f}")
+    if mae_v is not None and mae_v < 1e6:
+        tokens.append(f"MAE: {mae_v:.4f}")
+    if mape_v is not None and mape_v < 999:
+        tokens.append(f"MAPE: {mape_v:.2f}%")
 
     if es_fallback:
         region = ""

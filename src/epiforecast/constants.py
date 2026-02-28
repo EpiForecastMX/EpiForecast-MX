@@ -10,7 +10,7 @@ COVID_START: Final[str] = "2020-03-15"
 COVID_END: Final[str] = "2022-09-22"
 
 # Default visualization DPI
-VIZ_DPI_SCREEN: Final[int] = 150
+VIZ_DPI_SCREEN: Final[int] = 200
 VIZ_DPI_PRINT: Final[int] = 300
 
 # Percentage multiplier (avoids magic `* 100` scattered in code)

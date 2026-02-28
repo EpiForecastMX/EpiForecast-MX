@@ -15,8 +15,8 @@ from epiforecast.visualization.chart_annotations import (
 )
 
 # ── Layout constants ─────────────────────────────────────────────────
-_FIGSIZE = (18, 7.5)
-_MARGINS = {"bottom": 0.13, "top": 0.89, "left": 0.055, "right": 0.975}
+_FIGSIZE = (20, 8)
+_MARGINS = {"bottom": 0.13, "top": 0.89, "left": 0.05, "right": 0.975}
 _SUPTITLE_Y = 0.96
 _LEGEND_ANCHOR = (0.515, 0.04)
 
@@ -25,21 +25,21 @@ _FS_SUPTITLE = 16
 _FS_SUBTITLE = 11
 _FS_LABEL = 11
 _FS_LEGEND = 9.5
-_FS_COVID = 7
+_FS_COVID = 6.5
 _FS_TICK = 10
 
 # ── Line / marker styling ───────────────────────────────────────────
 _LW_FORECAST = 2.2
 _LW_SPINE = 0.5
-_LW_OUTLIER_EDGE = 0.8
+_LW_OUTLIER_EDGE = 1.0
 _ALPHA_BAND = 0.20
 _ALPHA_OBS = 0.45
 _ALPHA_FORECAST_ZONE = 0.04
-_ALPHA_COVID = 0.07
+_ALPHA_COVID = 0.05
 _ALPHA_GRID = 0.25
 _SIZE_OBS = 15
 _ROLLING_OBS = 4  # ventana de suavizado para observaciones (semanas)
-_SIZE_OUTLIER = 45
+_SIZE_OUTLIER = 70
 
 # ── COVID badge colors ───────────────────────────────────────────────
 _COVID_SPAN_COLOR = "#E53935"
@@ -109,12 +109,11 @@ def _prepare_data(serie: pd.DataFrame) -> tuple[pd.DataFrame, pd.Timestamp]:
 
 
 def _build_palette(padecimiento: str, conf_paleta: dict, conf_pad: dict) -> dict:
-    """Construye diccionario de colores a partir de la paleta IMSS."""
-    pal = conf_pad.get(padecimiento, {"c1": conf_paleta["burgundy"], "cl": "#D4758B"})
+    """Construye diccionario de colores: azul (historial) / rojo (pronostico)."""
     return {
-        "obs": conf_paleta["teal"],
-        "fc": pal["c1"],
-        "band": pal["cl"],
+        "obs": "#1565C0",
+        "fc": "#C62828",
+        "band": "#EF9A9A",
         "outlier": "#D84315",
         "div": "#555555",
         "gray": conf_paleta["cool_gray"],
@@ -213,7 +212,7 @@ def _plot_series(
         label="Intervalo 80 %",
     )
 
-    # Observaciones reales (línea suavizada)
+    # Observaciones reales (linea solida azul)
     serie_sorted = serie.sort_values("ds")
     y_smooth = serie_sorted["y"].rolling(_ROLLING_OBS, min_periods=1, center=True).mean()
     ax.plot(
@@ -221,12 +220,13 @@ def _plot_series(
         y_smooth,
         color=colors["obs"],
         alpha=0.7,
-        linewidth=1.2,
+        linewidth=1.5,
+        linestyle="-",
         zorder=3,
-        label="Observaciones reales",
+        label="Datos historicos",
     )
 
-    # Línea de pronóstico
+    # Linea de pronostico (discontinua roja)
     _model_display = {"prophet": "Prophet", "deepar": "DeepAR"}
     modelo_activo = _model_display.get(
         conf.get("modelo_activo", "prophet"), conf.get("modelo_activo", "prophet")
@@ -236,9 +236,28 @@ def _plot_series(
         forecast["yhat"],
         color=colors["fc"],
         linewidth=_LW_FORECAST,
+        linestyle="--",
         zorder=4,
-        label=f"Pronóstico {modelo_activo}",
+        label=f"Pronostico {modelo_activo}",
     )
+
+    # Pico proyectado
+    if not forecast["yhat"].empty:
+        idx_max = forecast["yhat"].idxmax()
+        pico_x = forecast.loc[idx_max, "ds"]
+        pico_y = forecast.loc[idx_max, "yhat"]
+        ax.annotate(
+            f"Pico proyectado\n{pico_y:,.0f}",
+            xy=(pico_x, pico_y),
+            xytext=(0, 25),
+            textcoords="offset points",
+            fontsize=8,
+            fontweight="bold",
+            color=colors["fc"],
+            ha="center",
+            arrowprops=dict(arrowstyle="->", color=colors["fc"], lw=1.2),
+            zorder=7,
+        )
 
     # Outliers
     if len(outliers) > 0:
@@ -282,7 +301,10 @@ def _add_legend_and_ficha(fig: plt.Figure, ax: plt.Axes, metricas: dict | None) 
         bbox_to_anchor=_LEGEND_ANCHOR,
         ncol=len(handles),
         fontsize=_FS_LEGEND,
-        frameon=False,
+        frameon=True,
+        facecolor="white",
+        edgecolor="#cccccc",
+        framealpha=0.9,
         handlelength=1.8,
         handletextpad=0.4,
         columnspacing=2.0,

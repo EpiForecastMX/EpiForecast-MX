@@ -194,6 +194,15 @@ def _extract_metricas(
         "rmse": float(row["rmse_usado"])
         if "rmse_usado" in row and pd.notna(row["rmse_usado"])
         else None,
+        "smape": float(row["smape_usado"])
+        if "smape_usado" in row and pd.notna(row["smape_usado"])
+        else None,
+        "mae": float(row["mae_usado"])
+        if "mae_usado" in row and pd.notna(row["mae_usado"])
+        else None,
+        "mape": float(row["mape_usado"])
+        if "mape_usado" in row and pd.notna(row["mape_usado"])
+        else None,
         "confianza": str(row["confianza_original"])
         if "confianza_original" in row and pd.notna(row["confianza_original"])
         else "normal",
