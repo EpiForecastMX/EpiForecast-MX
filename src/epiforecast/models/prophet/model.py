@@ -238,6 +238,67 @@ class ProphetForecaster(ForecastModel):
             "tasa_por": self.tasa_por,
         }
 
+    # ── Quick evaluation ────────────────────────────────────────────────────
+
+    def _eval_rapida(self) -> dict[str, Any]:
+        """Evaluacion rapida post-entrenamiento (sin reentrenar).
+
+        Predice sobre test_data con el modelo ya entrenado en serie completa
+        y compara contra valores reales.  Metricas en espacio tasa (como CV).
+        """
+        from sklearn.metrics import (
+            mean_absolute_error,
+            mean_absolute_percentage_error,
+            mean_squared_error,
+        )
+
+        from epiforecast.evaluation.metrics import smape as _smape
+
+        null_metrics: dict[str, Any] = {
+            "rmse": None,
+            "mae": None,
+            "mape": None,
+            "smape": None,
+            "mase": None,
+        }
+
+        if self._model is None or self.test_data.empty or len(self.test_data) < 4:
+            return null_metrics
+
+        try:
+            forecast = self._model.predict(self.test_data[["ds"]])
+            merged = self.test_data[["ds", "y"]].merge(forecast[["ds", "yhat"]], on="ds")
+
+            y_true = merged["y"].to_numpy()
+            y_pred = merged["yhat"].to_numpy()
+
+            rmse = float(np.sqrt(mean_squared_error(y_true, y_pred)))
+            mae = float(mean_absolute_error(y_true, y_pred))
+            mape = min(float(mean_absolute_percentage_error(y_true, y_pred) * 100), 999.0)
+            smape_val = _smape(y_true, y_pred)
+
+            y_train = self.train_data["y"].to_numpy()
+            mase: float | None = None
+            if len(y_train) > 52:
+                mae_naive = float(np.mean(np.abs(y_train[52:] - y_train[:-52])))
+                if mae_naive > 0:
+                    mase = mae / mae_naive
+
+            logger.info(
+                "eval_rapida {} | {} | RMSE={:.4f} MAE={:.4f} SMAPE={:.2f}%{}",
+                self.entidad or "Nacional",
+                self.sexo,
+                rmse,
+                mae,
+                smape_val,
+                f" MASE={mase:.3f}" if mase is not None else "",
+            )
+            return {"rmse": rmse, "mae": mae, "mape": mape, "smape": smape_val, "mase": mase}
+
+        except Exception as e:
+            logger.warning("eval_rapida fallo para {}: {}", self.entidad, e)
+            return null_metrics
+
     # ── Orchestration ─────────────────────────────────────────────────────────
 
     def run(self) -> tuple[Prophet, dict, dict]:
@@ -283,6 +344,11 @@ class ProphetForecaster(ForecastModel):
             confianza = "normal"
 
         self.fit(self.serie, best_params)
+
+        # Evaluacion rapida post-entrenamiento para modelos que no hicieron CV
+        if es_insuficiente:
+            eval_metrics = self._eval_rapida()
+            best_metrics.update(eval_metrics)
 
         # Enriquecer métricas con info de confianza para el script
         best_metrics["confianza"] = confianza
