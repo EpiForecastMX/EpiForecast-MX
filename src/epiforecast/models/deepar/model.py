@@ -622,13 +622,11 @@ class DeepARForecaster(ForecastModel):
         if not path.exists():
             raise FileNotFoundError(f"Modelo no encontrado: {path}")
 
-        # Siempre cargar a CPU: evita device mismatch de GluonTS en predict.
-        # (GluonTS no mueve todos los tensores de entrada al device CUDA
-        #  durante predict, causando "index on cuda:0, other on cpu".)
-        if torch.cuda.is_available():
-            payload = torch.load(path, map_location="cpu", weights_only=False)
-        else:
-            payload = self._load_pickle_cpu(path)
+        # Siempre cargar a CPU via _load_pickle_cpu.  Soporta archivos guardados
+        # con pickle.dump (version anterior) y torch.save (version actual).
+        # Evita device mismatch de GluonTS en predict (bug: no mueve todos los
+        # tensores de entrada al device CUDA).
+        payload = self._load_pickle_cpu(path)
 
         # Backward-compatible: old stub format was {"config": {...}}
         if isinstance(payload, dict) and "predictor" in payload:
