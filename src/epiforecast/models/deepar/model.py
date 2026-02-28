@@ -622,10 +622,11 @@ class DeepARForecaster(ForecastModel):
         if not path.exists():
             raise FileNotFoundError(f"Modelo no encontrado: {path}")
 
-        # En maquinas con CUDA: torch.load directo (tensores quedan en su device original).
-        # Sin CUDA (macOS): _load_pickle_cpu redirige torch.cuda.* a CPU.
+        # Siempre cargar a CPU: evita device mismatch de GluonTS en predict.
+        # (GluonTS no mueve todos los tensores de entrada al device CUDA
+        #  durante predict, causando "index on cuda:0, other on cpu".)
         if torch.cuda.is_available():
-            payload = torch.load(path, weights_only=False)
+            payload = torch.load(path, map_location="cpu", weights_only=False)
         else:
             payload = self._load_pickle_cpu(path)
 
@@ -642,17 +643,17 @@ class DeepARForecaster(ForecastModel):
         else:
             self._predictor = payload
 
-        # Remap predictor device: CUDA → CPU/MPS (modelos de otra maquina)
+        # Predict siempre en CPU/MPS (entrenamiento usa CUDA via _create_estimator).
+        # GluonTS tiene un bug donde no mueve todos los inputs al device CUDA,
+        # pero inferencia en CPU es rapida (< 1s por modelo).
         if self._predictor is not None and hasattr(self._predictor, "device"):
-            cur = str(self._predictor.device)
-            if "cuda" in cur and not torch.cuda.is_available():
-                if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
-                    self._predictor.device = torch.device("mps")
-                else:
-                    self._predictor.device = torch.device("cpu")
-                if hasattr(self._predictor, "prediction_net"):
-                    self._predictor.prediction_net.to(self._predictor.device)
-                logger.debug("Predictor remapeado: {} → {}", cur, self._predictor.device)
+            if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+                target = torch.device("mps")
+            else:
+                target = torch.device("cpu")
+            self._predictor.device = target
+            if hasattr(self._predictor, "prediction_net"):
+                self._predictor.prediction_net.to(target)
 
         # Load sidecar CSV for historical context (needed for predict)
         csv_path = path.with_suffix(".csv")
