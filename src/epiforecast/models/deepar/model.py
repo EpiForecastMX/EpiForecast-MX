@@ -585,21 +585,28 @@ class DeepARForecaster(ForecastModel):
     def _load_pickle_cpu(path: Path) -> Any:
         """Load a pickle file, remapping any CUDA tensors to CPU.
 
-        macOS torch is NOT compiled with CUDA, so even ``torch.load`` with
-        ``map_location='cpu'`` can fail when the pickle references
-        ``torch.cuda.*`` storage classes.  This unpickler redirects those
-        classes to their CPU equivalents at the pickle protocol level.
+        Intenta primero torch.load (maneja persistent IDs de PyTorch
+        correctamente en todos los entornos, incluyendo CUDA).
+        Si falla (e.g. macOS sin CUDA intentando leer un .pkl CUDA),
+        usa un unpickler custom que redirige torch.cuda.* a CPU.
         """
         import io
 
         import torch
 
+        # Intento 1: torch.load nativo (funciona en CUDA y CPU)
+        try:
+            return torch.load(path, map_location="cpu", weights_only=False)
+        except (RuntimeError, pickle.UnpicklingError):
+            pass
+
+        # Intento 2: unpickler custom para macOS sin CUDA
         class _CpuUnpickler(pickle.Unpickler):
             def find_class(self, module: str, name: str) -> Any:
-                # Intercept _load_from_bytes → nested CPU-safe load
+                # Intercept _load_from_bytes -> nested CPU-safe load
                 if module == "torch.storage" and name == "_load_from_bytes":
                     return _CpuUnpickler._load_bytes_cpu
-                # Redirect torch.cuda.* → torch.* (CPU storage)
+                # Redirect torch.cuda.* -> torch.* (CPU storage)
                 if "cuda" in module:
                     module = module.replace(".cuda", "").replace("cuda.", "")
                 return super().find_class(module, name)
