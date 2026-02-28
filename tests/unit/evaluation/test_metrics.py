@@ -11,7 +11,7 @@ the testing pyramid. Each metric is tested with:
 import numpy as np
 import pytest
 
-from epiforecast.evaluation.metrics import mae, mape, mase, rmse
+from epiforecast.evaluation.metrics import compute_forecast_metrics, mae, mape, mase, rmse, smape
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
 
@@ -161,6 +161,98 @@ class TestMASE:
         y_pred = np.array([501.0, 499.0, 500.0])
         result = mase(y_true, y_pred, y_train, season=52)
         assert result is None
+
+
+# ── SMAPE Tests ──────────────────────────────────────────────────────────────
+
+
+class TestSMAPE:
+    def test_perfect_predictions(self, perfect):
+        y_true, y_pred = perfect
+        assert smape(y_true, y_pred) == 0.0
+
+    def test_known_error(self, known_error):
+        y_true, y_pred = known_error
+        # SMAPE = 100/n * sum(2*|y-yhat| / (|y|+|yhat|))
+        # Pair 1: 2*10/(100+110) = 20/210
+        # Pair 2: 2*10/(200+190) = 20/390
+        # Pair 3: 2*10/(300+310) = 20/610
+        expected = (20 / 210 + 20 / 390 + 20 / 610) / 3 * 100
+        assert smape(y_true, y_pred) == pytest.approx(expected, rel=1e-3)
+
+    def test_symmetric(self, known_error):
+        """SMAPE should be symmetric: smape(y, yhat) == smape(yhat, y)."""
+        y_true, y_pred = known_error
+        assert smape(y_true, y_pred) == pytest.approx(smape(y_pred, y_true))
+
+    def test_both_zero_excluded(self):
+        """Pairs where both y_true and y_pred are 0 should be excluded."""
+        y_true = np.array([0.0, 0.0, 100.0])
+        y_pred = np.array([0.0, 0.0, 100.0])
+        assert smape(y_true, y_pred) == 0.0
+
+    def test_all_zero_returns_zero(self):
+        """When all pairs are (0,0), SMAPE is 0.0 (no valid terms)."""
+        y_true = np.array([0.0, 0.0])
+        y_pred = np.array([0.0, 0.0])
+        assert smape(y_true, y_pred) == 0.0
+
+    def test_max_smape(self):
+        """When y_pred is opposite sign, SMAPE approaches 200."""
+        y_true = np.array([100.0])
+        y_pred = np.array([-100.0])
+        assert smape(y_true, y_pred) == pytest.approx(200.0)
+
+    def test_range_zero_to_200(self):
+        """SMAPE should always be in [0, 200]."""
+        rng = np.random.default_rng(42)
+        y_true = rng.uniform(0, 100, 50)
+        y_pred = rng.uniform(0, 100, 50)
+        result = smape(y_true, y_pred)
+        assert 0.0 <= result <= 200.0
+
+
+# ── compute_forecast_metrics Tests ───────────────────────────────────────────
+
+
+class TestComputeForecastMetrics:
+    def test_returns_all_keys(self, perfect):
+        y_true, y_pred = perfect
+        y_train = np.tile(y_true, 20)
+        result = compute_forecast_metrics(y_true, y_pred, y_train)
+        assert set(result.keys()) == {"rmse", "mae", "mape", "smape", "mase"}
+
+    def test_perfect_predictions_all_zero(self, perfect):
+        y_true, y_pred = perfect
+        y_train = np.tile(y_true, 20)
+        result = compute_forecast_metrics(y_true, y_pred, y_train)
+        assert result["rmse"] == 0.0
+        assert result["mae"] == 0.0
+        assert result["smape"] == 0.0
+
+    def test_mape_capped_at_999(self):
+        """MAPE should be capped at 999.0."""
+        y_true = np.array([0.001, 0.001])
+        y_pred = np.array([100.0, 100.0])
+        y_train = np.ones(100)
+        result = compute_forecast_metrics(y_true, y_pred, y_train)
+        assert result["mape"] == 999.0
+
+    def test_handles_nan_in_inputs(self):
+        """NaN values should be filtered out before computing metrics."""
+        y_true = np.array([100.0, np.nan, 300.0])
+        y_pred = np.array([110.0, 200.0, 310.0])
+        y_train = np.ones(100)
+        result = compute_forecast_metrics(y_true, y_pred, y_train)
+        assert np.isfinite(result["rmse"])
+
+    def test_short_train_mase_none(self):
+        """MASE should be None if y_train is too short."""
+        y_true = np.array([100.0, 200.0])
+        y_pred = np.array([110.0, 190.0])
+        y_train = np.ones(10)
+        result = compute_forecast_metrics(y_true, y_pred, y_train)
+        assert result["mase"] is None
 
 
 # ── MAPE edge cases ───────────────────────────────────────────────────────────

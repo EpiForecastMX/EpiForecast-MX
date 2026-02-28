@@ -14,11 +14,6 @@ from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pandas as pd
-from sklearn.metrics import (
-    mean_absolute_error,
-    mean_absolute_percentage_error,
-    mean_squared_error,
-)
 from sklearn.model_selection import TimeSeriesSplit
 
 from epiforecast.constants import RANDOM_SEED
@@ -99,7 +94,7 @@ class DeepARCrossValidator:
                     metrics["mae"],
                     metrics["mape"],
                 )
-            except Exception as e:
+            except (RuntimeError, ValueError) as e:
                 logger.warning("Error en fold {}: {}", fold_idx + 1, e)
 
         return self._aggregate_fold_metrics(
@@ -173,7 +168,7 @@ class DeepARCrossValidator:
                     metrics["mae"],
                     metrics["mape"],
                 )
-            except Exception as e:
+            except (RuntimeError, ValueError) as e:
                 logger.warning("Error en multi-CV fold {}: {}", fold_idx + 1, e)
 
         return self._aggregate_fold_metrics(
@@ -206,11 +201,20 @@ class DeepARCrossValidator:
 
         forecasts = list(predictor.predict(dataset, num_samples=self.forecaster.num_samples))
         fc = forecasts[0]
-        yhat = fc.mean[: len(val_fold)]
+        yhat_raw = fc.mean[: len(val_fold)]
 
-        # Metricas en espacio tasa (por 100k) para ser comparables con Prophet
-        y_true = val_fold["y"].to_numpy()[: len(yhat)]
-        y_train = train_fold["y"].to_numpy()
+        # Metricas en espacio de conteos reales (desnormalizar tasa)
+        normalizar = self.forecaster._conf.get("normalizar_tasa", True)
+        if normalizar and "y_original" in val_fold.columns and "Total" in val_fold.columns:
+            pob = val_fold["Total"].iloc[0]
+            tasa_por = self.forecaster._conf.get("tasa_por", 100000)
+            y_true = val_fold["y_original"].to_numpy()[: len(yhat_raw)]
+            yhat = (yhat_raw * pob) / tasa_por
+            y_train = train_fold["y_original"].to_numpy()
+        else:
+            y_true = val_fold["y"].to_numpy()[: len(yhat_raw)]
+            yhat = yhat_raw
+            y_train = train_fold["y"].to_numpy()
 
         return self._compute_metrics(y_true, yhat, y_train)
 
@@ -240,9 +244,7 @@ class DeepARCrossValidator:
 
         forecasts = list(predictor.predict(dataset, num_samples=self.forecaster.num_samples))
 
-        # Aggregate: promedio ponderado en espacio tasa para nacional
-        # Cada serie ya esta en tasa (por 100k), no desnormalizar.
-        # Sumamos samples y recalculamos tasa nacional = sum(casos) / sum(pob) * tasa_por
+        # Aggregate: convertir tasa->conteo por estado, sumar a nacional
         all_samples = np.stack([fc.samples for fc in forecasts], axis=0)
 
         normalizar = self.forecaster._conf.get("normalizar_tasa", True)
@@ -250,23 +252,24 @@ class DeepARCrossValidator:
             tasa_por = self.forecaster._conf.get("tasa_por", 100000)
             mapa_pob = train_fold_multi.groupby("item_id")["Total"].last().to_dict()
             items = [fc.item_id for fc in forecasts]
-            # Convertir tasa->conteo, sumar, reconvertir a tasa nacional
+            # Convertir tasa->conteo, sumar (quedarse en conteos nacionales)
             for i, item_id in enumerate(items):
                 pob = mapa_pob.get(item_id, 0)
                 if pob > 0:
                     all_samples[i] = (all_samples[i] * pob) / tasa_por
             national_samples = all_samples.sum(axis=0)  # conteo nacional
-            pob_total = sum(mapa_pob.values())
-            if pob_total > 0:
-                national_samples = (national_samples / pob_total) * tasa_por
         else:
             national_samples = all_samples.sum(axis=0)
 
         yhat = national_samples.mean(axis=0)[:n_val_weeks]
 
-        # Metricas en espacio tasa (por 100k) para ser comparables con Prophet
-        y_true = val_fold_national["y"].to_numpy()[: len(yhat)]
-        y_train = train_fold_national["y"].to_numpy()
+        # Metricas en espacio de conteos reales
+        if "y_original" in val_fold_national.columns:
+            y_true = val_fold_national["y_original"].to_numpy()[: len(yhat)]
+            y_train = train_fold_national["y_original"].to_numpy()
+        else:
+            y_true = val_fold_national["y"].to_numpy()[: len(yhat)]
+            y_train = train_fold_national["y"].to_numpy()
 
         return self._compute_metrics(y_true, yhat, y_train)
 
@@ -279,30 +282,9 @@ class DeepARCrossValidator:
         y_train: np.ndarray,
     ) -> dict[str, Any]:
         """Compute RMSE, MAE, MAPE, SMAPE, MASE from arrays."""
-        from epiforecast.evaluation.metrics import smape as _smape
+        from epiforecast.evaluation.metrics import compute_forecast_metrics
 
-        rmse = float(np.sqrt(mean_squared_error(y_true, yhat)))
-        mae_val = float(mean_absolute_error(y_true, yhat))
-        mape_val = min(
-            float(mean_absolute_percentage_error(y_true, yhat) * 100),
-            999.0,
-        )
-        smape_val = _smape(y_true, yhat)
-
-        # MASE: naive seasonal baseline (lag-52)
-        mase_val: float | None = None
-        if len(y_train) > 52:
-            mae_naive = float(np.mean(np.abs(y_train[52:] - y_train[:-52])))
-            if mae_naive > 0:
-                mase_val = mae_val / mae_naive
-
-        return {
-            "rmse": rmse,
-            "mae": mae_val,
-            "mape": mape_val,
-            "smape": smape_val,
-            "mase": mase_val,
-        }
+        return compute_forecast_metrics(y_true, yhat, y_train)
 
     def _aggregate_fold_metrics(
         self,

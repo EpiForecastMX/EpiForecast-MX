@@ -6,7 +6,13 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from epiforecast.constants import VIZ_DPI_SCREEN
+from epiforecast.constants import (
+    COVID_BADGE_EC,
+    COVID_BADGE_FC,
+    COVID_SPAN_COLOR,
+    COVID_TEXT_COLOR,
+    VIZ_DPI_SCREEN,
+)
 from epiforecast.visualization.chart_annotations import (
     _anotar_divisores,
     _anotar_zona_cv,
@@ -39,12 +45,6 @@ _ALPHA_GRID = 0.25
 _SIZE_OBS = 15
 _ROLLING_OBS = 4  # ventana de suavizado para observaciones (semanas)
 _SIZE_OUTLIER = 70
-
-# ── COVID badge colors ───────────────────────────────────────────────
-_COVID_SPAN_COLOR = "#E53935"
-_COVID_TEXT_COLOR = "#C62828"
-_COVID_BADGE_FC = "#FFEBEE"
-_COVID_BADGE_EC = "#EF9A9A"
 
 
 def graficar_pronostico(
@@ -90,7 +90,7 @@ def graficar_pronostico(
     _add_legend_and_ficha(fig, ax, metricas)
 
     ruta = os.path.join(carpeta_salida, f"{nombre_archivo}.png")
-    fig.savefig(ruta, dpi=VIZ_DPI_SCREEN, facecolor="white", edgecolor="none")
+    fig.savefig(ruta, dpi=VIZ_DPI_SCREEN, facecolor="white", edgecolor="none", bbox_inches="tight")
     plt.close(fig)
     return ruta
 
@@ -182,7 +182,7 @@ def _plot_series(
         covid_ini,  # type: ignore[arg-type]  # matplotlib accepts Timestamp
         covid_fin,  # type: ignore[arg-type]
         alpha=_ALPHA_COVID,
-        color=_COVID_SPAN_COLOR,
+        color=COVID_SPAN_COLOR,
         zorder=0,
     )
     mid_covid = covid_ini + (covid_fin - covid_ini) / 2
@@ -192,11 +192,11 @@ def _plot_series(
         xycoords=("data", "axes fraction"),
         fontsize=_FS_COVID,
         fontweight="bold",
-        color=_COVID_TEXT_COLOR,
+        color=COVID_TEXT_COLOR,
         ha="center",
         va="top",
         bbox=dict(
-            boxstyle="round,pad=0.25", fc=_COVID_BADGE_FC, ec=_COVID_BADGE_EC, alpha=0.85, lw=0.6
+            boxstyle="round,pad=0.25", fc=COVID_BADGE_FC, ec=COVID_BADGE_EC, alpha=0.85, lw=0.6
         ),
     )
 

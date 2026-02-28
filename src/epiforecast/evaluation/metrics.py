@@ -53,6 +53,37 @@ def smape(y_true: ArrayLike, y_pred: ArrayLike) -> float:
     return float(np.mean(2.0 * np.abs(y_true[mask] - y_pred[mask]) / denom[mask]) * 100)
 
 
+def compute_forecast_metrics(
+    y_true: ArrayLike,
+    y_pred: ArrayLike,
+    y_train: ArrayLike,
+    season: int = 52,
+) -> dict[str, float | None]:
+    """Compute standard forecast metrics (RMSE, MAE, MAPE, SMAPE, MASE).
+
+    Convenience function that bundles all individual metrics into a single
+    dict, used across Prophet CV, DeepAR CV, and eval_rapida pipelines.
+
+    Returns:
+        Dict with keys: rmse, mae, mape, smape, mase.
+    """
+    y_true_a = np.asarray(y_true, dtype=float)
+    y_pred_a = np.asarray(y_pred, dtype=float)
+
+    # Clean inf/nan before computing
+    mask = np.isfinite(y_true_a) & np.isfinite(y_pred_a)
+    if not mask.all():
+        y_true_a, y_pred_a = y_true_a[mask], y_pred_a[mask]
+
+    return {
+        "rmse": rmse(y_true_a, y_pred_a),
+        "mae": mae(y_true_a, y_pred_a),
+        "mape": min(mape(y_true_a, y_pred_a), 999.0),
+        "smape": smape(y_true_a, y_pred_a),
+        "mase": mase(y_true_a, y_pred_a, y_train, season=season),
+    }
+
+
 def mase(
     y_true: ArrayLike,
     y_pred: ArrayLike,

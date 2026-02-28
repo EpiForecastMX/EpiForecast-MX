@@ -1,8 +1,6 @@
 """Demographic feature engineering: INEGI population merge and rate normalization."""
 
 # src/modelado/mapea_inegi.py
-import sys
-
 import pandas as pd
 
 from epiforecast.utils import paths as directory_manager
@@ -55,8 +53,7 @@ class MapeaInegi:
         """Pipeline completo: carga INEGI, renombra, combina y guarda CSV + Excel."""
 
         if not directory_manager.existe_archivo(self.inegi_path):
-            logger.error("No se pudo localizar el archivo de INEGI: {}", self.inegi_path)
-            sys.exit(1)
+            raise FileNotFoundError(f"No se pudo localizar el archivo de INEGI: {self.inegi_path}")
 
         self.inegi = pd.read_csv(self.inegi_path)
 
@@ -64,8 +61,7 @@ class MapeaInegi:
         self.combina()
 
         if self.df_merge.empty:
-            logger.error("El merge con INEGI produjo un DataFrame vacío. Abortando.")
-            sys.exit(1)
+            raise RuntimeError("El merge con INEGI produjo un DataFrame vacío.")
 
         directory_manager.advertir_sobrescritura(self.final_path)
 

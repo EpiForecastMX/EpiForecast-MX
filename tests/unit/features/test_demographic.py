@@ -114,10 +114,10 @@ class TestCombina:
 
 
 class TestRun:
-    def test_exits_if_inegi_file_missing(self):
+    def test_raises_if_inegi_file_missing(self):
         mapea = _make_mapea()
         with patch.object(dem_mod.directory_manager, "existe_archivo", return_value=False):
-            with pytest.raises(SystemExit):
+            with pytest.raises(FileNotFoundError):
                 mapea.run()
 
     def test_exits_if_merge_is_empty(self):
@@ -137,7 +137,7 @@ class TestRun:
                 mapea.df_merge = pd.DataFrame()
 
             mapea.combina = patched_combina
-            with pytest.raises(SystemExit):
+            with pytest.raises(RuntimeError):
                 mapea.run()
 
     def test_run_saves_csv_when_successful(self, tmp_path):

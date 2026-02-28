@@ -161,7 +161,7 @@ def _process_single_pdf(
         )
         return {"log_entry": log_entry, "df": df_long}
 
-    except Exception as e:
+    except (OSError, RuntimeError, ValueError, KeyError, IndexError, pd.errors.ParserError) as e:
         log_fn(
             f"{idx:>3}/{total_pdfs:<3} | {pct:>6.1f}% | {file} | ERROR ({type(e).__name__}): {e}"
         )

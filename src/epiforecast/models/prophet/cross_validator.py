@@ -16,11 +16,6 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 from prophet import Prophet
-from sklearn.metrics import (
-    mean_absolute_error,
-    mean_absolute_percentage_error,
-    mean_squared_error,
-)
 from sklearn.model_selection import TimeSeriesSplit
 
 from epiforecast.constants import RANDOM_SEED
@@ -171,10 +166,17 @@ class ProphetCrossValidator:
                 np.random.seed(RANDOM_SEED)
                 model.fit(train_fold)
 
-            metrics = _compute_fold_metrics(model, train_fold, val_fold)
+            metrics = _compute_fold_metrics(
+                model,
+                train_fold,
+                val_fold,
+                poblacion=self.forecaster.poblacion_valor,
+                tasa_por=self.forecaster.tasa_por,
+                log_transform=self.forecaster.log_transform,
+            )
             collector.append(fold_idx, metrics)
 
-        except Exception as e:
+        except (RuntimeError, ValueError) as e:
             logger.debug("Excepción en fold {}: {}", fold_idx + 1, e)
 
         return False, None
@@ -270,29 +272,32 @@ def _compute_fold_metrics(
     model: Prophet,
     train_fold: pd.DataFrame,
     val_fold: pd.DataFrame,
+    poblacion: float | None = None,
+    tasa_por: int = 100000,
+    log_transform: bool = False,
 ) -> dict:
-    """Calcula RMSE, MAE, MAPE, SMAPE y MASE para un fold de CV."""
-    from epiforecast.evaluation.metrics import smape as _smape
+    """Calcula RMSE, MAE, MAPE, SMAPE y MASE para un fold de CV.
+
+    Si ``poblacion`` es proporcionada, convierte predicciones y reales a
+    espacio de conteos para metricas significativas en enfermedades raras.
+    """
+    from epiforecast.evaluation.metrics import compute_forecast_metrics
 
     forecast = model.predict(val_fold[["ds"]])
     merged = val_fold[["ds", "y"]].merge(forecast[["ds", "yhat"]], on="ds")
 
-    y_true = merged["y"].to_numpy()
-    y_pred = merged["yhat"].to_numpy()
-
-    rmse = float(np.sqrt(mean_squared_error(y_true, y_pred)))
-    mae = float(mean_absolute_error(y_true, y_pred))
-    mape = min(
-        float(mean_absolute_percentage_error(y_true, y_pred) * 100),
-        999.0,
-    )
-    smape = _smape(y_true, y_pred)
-
-    y_train = train_fold["y"].values
-    if len(y_train) > 52:
-        mae_naive = float(np.mean(np.abs(y_train[52:] - y_train[:-52])))  # type: ignore[operator]
-        mase = mae / mae_naive if mae_naive > 0 else None
+    if poblacion is not None and "y_original" in val_fold.columns:
+        # Metricas en espacio de conteos reales
+        merged_orig = val_fold[["ds", "y_original"]].merge(forecast[["ds", "yhat"]], on="ds")
+        y_true = merged_orig["y_original"].to_numpy()
+        yhat_tasa = merged_orig["yhat"].to_numpy()
+        if log_transform:
+            yhat_tasa = np.expm1(yhat_tasa)
+        y_pred = (yhat_tasa * poblacion) / tasa_por
+        y_train = train_fold["y_original"].values
     else:
-        mase = None
+        y_true = merged["y"].to_numpy()
+        y_pred = merged["yhat"].to_numpy()
+        y_train = train_fold["y"].values
 
-    return {"rmse": rmse, "mae": mae, "mape": mape, "smape": smape, "mase": mase}
+    return compute_forecast_metrics(y_true, y_pred, y_train)

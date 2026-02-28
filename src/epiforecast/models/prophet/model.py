@@ -155,7 +155,7 @@ class ProphetForecaster(ForecastModel):
         try:
             np.random.seed(RANDOM_SEED)
             self._model.fit(train_data)
-        except Exception as e:
+        except (RuntimeError, ValueError) as e:
             logger.warning("L-BFGS falló, reintentando con cp=0.05: {}", e)
             fallback_params = {**parametros, "changepoint_prior_scale": 0.05}
             self._model = self._create_prophet(**fallback_params)
@@ -246,13 +246,7 @@ class ProphetForecaster(ForecastModel):
         Predice sobre test_data con el modelo ya entrenado en serie completa
         y compara contra valores reales.  Metricas en espacio tasa (como CV).
         """
-        from sklearn.metrics import (
-            mean_absolute_error,
-            mean_absolute_percentage_error,
-            mean_squared_error,
-        )
-
-        from epiforecast.evaluation.metrics import smape as _smape
+        from epiforecast.evaluation.metrics import compute_forecast_metrics
 
         null_metrics: dict[str, Any] = {
             "rmse": None,
@@ -269,33 +263,40 @@ class ProphetForecaster(ForecastModel):
             forecast = self._model.predict(self.test_data[["ds"]])
             merged = self.test_data[["ds", "y"]].merge(forecast[["ds", "yhat"]], on="ds")
 
-            y_true = merged["y"].to_numpy()
-            y_pred = merged["yhat"].to_numpy()
+            # Metricas en espacio de conteos reales (desnormalizar tasa)
+            if (
+                self.normalizar_tasa
+                and self.poblacion_valor
+                and "y_original" in self.test_data.columns
+            ):
+                merged_orig = self.test_data[["ds", "y_original"]].merge(
+                    forecast[["ds", "yhat"]], on="ds"
+                )
+                y_true = merged_orig["y_original"].to_numpy()
+                yhat_tasa = merged_orig["yhat"].to_numpy()
+                if self.log_transform:
+                    yhat_tasa = np.expm1(yhat_tasa)
+                y_pred = (yhat_tasa * self.poblacion_valor) / self.tasa_por
+                y_train = self.train_data["y_original"].to_numpy()
+            else:
+                y_true = merged["y"].to_numpy()
+                y_pred = merged["yhat"].to_numpy()
+                y_train = self.train_data["y"].to_numpy()
 
-            rmse = float(np.sqrt(mean_squared_error(y_true, y_pred)))
-            mae = float(mean_absolute_error(y_true, y_pred))
-            mape = min(float(mean_absolute_percentage_error(y_true, y_pred) * 100), 999.0)
-            smape_val = _smape(y_true, y_pred)
-
-            y_train = self.train_data["y"].to_numpy()
-            mase: float | None = None
-            if len(y_train) > 52:
-                mae_naive = float(np.mean(np.abs(y_train[52:] - y_train[:-52])))
-                if mae_naive > 0:
-                    mase = mae / mae_naive
+            metrics = compute_forecast_metrics(y_true, y_pred, y_train)
 
             logger.info(
                 "eval_rapida {} | {} | RMSE={:.4f} MAE={:.4f} SMAPE={:.2f}%{}",
                 self.entidad or "Nacional",
                 self.sexo,
-                rmse,
-                mae,
-                smape_val,
-                f" MASE={mase:.3f}" if mase is not None else "",
+                metrics["rmse"],
+                metrics["mae"],
+                metrics["smape"],
+                f" MASE={metrics['mase']:.3f}" if metrics["mase"] is not None else "",
             )
-            return {"rmse": rmse, "mae": mae, "mape": mape, "smape": smape_val, "mase": mase}
+            return metrics
 
-        except Exception as e:
+        except (RuntimeError, ValueError, KeyError) as e:
             logger.warning("eval_rapida fallo para {}: {}", self.entidad, e)
             return null_metrics
 

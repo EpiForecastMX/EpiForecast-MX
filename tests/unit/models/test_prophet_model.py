@@ -73,14 +73,15 @@ MOCK_CONF = {
 
 
 def _make_df(n_weeks: int = 60, padecimiento: str = "Depresión") -> pd.DataFrame:
+    rng = np.random.default_rng(42)
     dates = pd.date_range("2021-01-04", periods=n_weeks, freq="W-MON")
     return pd.DataFrame(
         {
             "Fecha": dates,
             "Padecimiento": [padecimiento] * n_weeks,
             "Entidad": ["Jalisco"] * n_weeks,
-            "incrementos_hombres": np.random.randint(10, 50, n_weeks),
-            "incrementos_mujeres": np.random.randint(15, 60, n_weeks),
+            "incrementos_hombres": rng.integers(10, 50, n_weeks),
+            "incrementos_mujeres": rng.integers(15, 60, n_weeks),
         }
     )
 

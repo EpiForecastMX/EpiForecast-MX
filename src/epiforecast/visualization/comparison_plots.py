@@ -192,7 +192,7 @@ def _render_comparison(
     # Titulos
     ent_display = ent_val if ent_val else "Nacional"
     ax.set_title(
-        f"Diferenciacion de Modelos: {pad} - {ent_display} ({modo})",
+        f"Diferenciación de Modelos: {pad} - {ent_display} ({modo})",
         fontsize=_FS_TITLE,
         fontweight="bold",
         pad=20,
@@ -318,7 +318,7 @@ def _html_head(ahora: str) -> str:
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Comparacion de Modelos - EpiForecast-MX</title>
+<title>Comparación de Modelos - EpiForecast-MX</title>
 <style>
   :root {{
     --teal: #004d40;
@@ -387,7 +387,7 @@ def _html_head(ahora: str) -> str:
 </head>
 <body>
 <header>
-  <h1>Comparacion de Modelos: Prophet vs DeepAR</h1>
+  <h1>Comparación de Modelos: Prophet vs DeepAR</h1>
   <p>EpiForecast-MX | IMSS | Generado: {ahora} CDMX</p>
 </header>
 <div class="container">
@@ -423,7 +423,7 @@ def _html_resumen(
     return f"""<div class="card">
 <h2>Resumen por Padecimiento</h2>
 <p style="color:var(--text-light);font-size:13px;margin-bottom:12px">
-Promedio de metricas. Menor es mejor. Celda verde = ganador.</p>
+Promedio de métricas. Menor es mejor. Celda verde = ganador.</p>
 <div class="scroll-wrap">
 <table>
 <thead><tr>{header_cells}</tr></thead>
@@ -457,7 +457,7 @@ def _html_detalle_padecimiento(
         parts.append(_html_metric_table(est, metrics))
 
     # Thumbnails
-    parts.append("<h3>Graficos Comparativos</h3>")
+    parts.append("<h3>Gráficos Comparativos</h3>")
     parts.append('<div class="thumbs">')
     pngs = sorted((Path("reports/forecasts/comparacion_modelos") / pad_norm).glob("CMP_*.png"))
     for png in pngs:

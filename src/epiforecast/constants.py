@@ -9,6 +9,12 @@ RANDOM_SEED: Final[int] = 42
 COVID_START: Final[str] = "2020-03-15"
 COVID_END: Final[str] = "2022-09-22"
 
+# COVID-19 visualization colors
+COVID_SPAN_COLOR: Final[str] = "#E53935"
+COVID_TEXT_COLOR: Final[str] = "#C62828"
+COVID_BADGE_FC: Final[str] = "#FFEBEE"
+COVID_BADGE_EC: Final[str] = "#EF9A9A"
+
 # Default visualization DPI
 VIZ_DPI_SCREEN: Final[int] = 200
 VIZ_DPI_PRINT: Final[int] = 300

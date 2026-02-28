@@ -132,7 +132,7 @@ def barras_inegi(df: pd.DataFrame):
         _plot_bar(axes[row, col], dfx, ycol, catcol, title)
 
     plt.tight_layout()
-    plt.show()
+    plt.close(fig)
 
 
 def boxplots_inegi(df):
@@ -210,4 +210,4 @@ def boxplots_inegi(df):
 
     plt.suptitle("")
     plt.tight_layout()
-    plt.show()
+    plt.close(fig)

@@ -6,7 +6,7 @@ import os
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from epiforecast.constants import COVID_END, COVID_START
+from epiforecast.constants import COVID_END, COVID_SPAN_COLOR, COVID_START
 
 # ── Layout & styling constants ───────────────────────────────────────
 _FIGSIZE = (16, 4)
@@ -117,7 +117,7 @@ def _add_covid_band(ax: plt.Axes) -> None:
             pd.Timestamp(COVID_START),  # type: ignore[arg-type]
             pd.Timestamp(COVID_END),  # type: ignore[arg-type]
             alpha=_ALPHA_COVID,
-            color="red",
+            color=COVID_SPAN_COLOR,
             label="Covid",
         )  # type: ignore[arg-type]
 

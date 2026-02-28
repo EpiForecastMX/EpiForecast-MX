@@ -726,16 +726,24 @@ class DeepARForecaster(ForecastModel):
             dataset = self._build_dataset(context)
             forecasts = list(self._predictor.predict(dataset, num_samples=self.num_samples))
             fc = forecasts[0]
-            yhat = fc.mean[: len(test_data)]
+            yhat_raw = fc.mean[: len(test_data)]
 
-            # Metricas en espacio tasa (por 100k) para ser comparables con Prophet
-            y_true = test_data["y"].to_numpy()[: len(yhat)]
-            y_train = self.train_data["y"].to_numpy()
+            # Metricas en espacio de conteos reales (desnormalizar tasa)
+            normalizar = self._conf.get("normalizar_tasa", True)
+            if normalizar and "y_original" in test_data.columns and "Total" in self.serie.columns:
+                pob = self.serie["Total"].iloc[-1]
+                tasa_por = self._conf.get("tasa_por", 100000)
+                y_true = test_data["y_original"].to_numpy()[: len(yhat_raw)]
+                yhat = (yhat_raw * pob) / tasa_por
+                y_train = self.train_data["y_original"].to_numpy()
+            else:
+                y_true = test_data["y"].to_numpy()[: len(yhat_raw)]
+                yhat = yhat_raw
+                y_train = self.train_data["y"].to_numpy()
 
-            from epiforecast.models.deepar.cross_validator import DeepARCrossValidator
+            from epiforecast.evaluation.metrics import compute_forecast_metrics
 
-            cv = DeepARCrossValidator(self, config=self._conf)
-            metrics = cv._compute_metrics(y_true, yhat, y_train)
+            metrics = compute_forecast_metrics(y_true, yhat, y_train)
 
             logger.info(
                 "eval_rapida {} | {} | RMSE={:.4f} MAE={:.4f} MAPE={:.2f}%{}",
@@ -748,7 +756,7 @@ class DeepARForecaster(ForecastModel):
             )
             return metrics
 
-        except Exception as e:
+        except (RuntimeError, ValueError, KeyError) as e:
             logger.warning("eval_rapida fallo para {}: {}", self.entidad, e)
             return null_metrics
 
