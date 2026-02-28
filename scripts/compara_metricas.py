@@ -29,7 +29,7 @@ GREEN_BG = "C8E6C9"
 RED_BG = "FFCDD2"
 WHITE_FG = "FFFFFF"
 
-METRIC_COLS = ["rmse", "mae", "mape", "mase"]
+METRIC_COLS = ["rmse", "mae", "mape", "smape", "mase"]
 PROPHET_HYPERPARAMS = ["seasonality_mode", "changepoint_prior_scale", "seasonality_prior_scale"]
 DEEPAR_HYPERPARAMS = [
     "epochs",
@@ -70,6 +70,10 @@ _COL_DISPLAY: dict[str, str] = {
     "mape_deepar": "MAPE DeepAR",
     "delta_mape": "Delta MAPE",
     "pct_mape": "% Diferencia MAPE",
+    "smape_prophet": "SMAPE Prophet",
+    "smape_deepar": "SMAPE DeepAR",
+    "delta_smape": "Delta SMAPE",
+    "pct_smape": "% Diferencia SMAPE",
     "mase_prophet": "MASE Prophet",
     "mase_deepar": "MASE DeepAR",
     "delta_mase": "Delta MASE",
@@ -77,6 +81,7 @@ _COL_DISPLAY: dict[str, str] = {
     "ganador_rmse": "Ganador RMSE",
     "ganador_mae": "Ganador MAE",
     "ganador_mape": "Ganador MAPE",
+    "ganador_smape": "Ganador SMAPE",
     "ganador_mase": "Ganador MASE",
     "confianza_prophet": "Confianza Prophet",
     "confianza_deepar": "Confianza DeepAR",
@@ -271,7 +276,7 @@ def _aplicar_formato_numerico(ws, df: pd.DataFrame, start_row: int = 2) -> None:
             fmt = "0.00"
         elif any(k in col_lower for k in ("rmse", "mae", "mase")) and "%" not in col_lower:
             fmt = "0.0000"
-        elif "mape" in col_lower:
+        elif "mape" in col_lower or "smape" in col_lower:
             fmt = "0.00"
         elif "tiempo" in col_lower:
             fmt = "0.1"
