@@ -585,10 +585,10 @@ class DeepARForecaster(ForecastModel):
     def _load_pickle_cpu(path: Path) -> Any:
         """Load a pickle file, remapping any CUDA tensors to CPU.
 
-        Files saved with ``pickle.dump`` store PyTorch tensors inline via
-        ``torch.storage._load_from_bytes``.  We intercept that call and route
-        through ``torch.load(map_location='cpu')`` so CUDA-trained models can
-        be loaded on machines without a GPU.
+        macOS torch is NOT compiled with CUDA, so even ``torch.load`` with
+        ``map_location='cpu'`` can fail when the pickle references
+        ``torch.cuda.*`` storage classes.  This unpickler redirects those
+        classes to their CPU equivalents at the pickle protocol level.
         """
         import io
 
@@ -596,11 +596,20 @@ class DeepARForecaster(ForecastModel):
 
         class _CpuUnpickler(pickle.Unpickler):
             def find_class(self, module: str, name: str) -> Any:
+                # Intercept _load_from_bytes → nested CPU-safe load
                 if module == "torch.storage" and name == "_load_from_bytes":
-                    return lambda b: torch.load(
-                        io.BytesIO(b), map_location="cpu", weights_only=False
-                    )
+                    return _CpuUnpickler._load_bytes_cpu
+                # Redirect torch.cuda.* → torch.* (CPU storage)
+                if "cuda" in module:
+                    module = module.replace(".cuda", "").replace("cuda.", "")
                 return super().find_class(module, name)
+
+            @staticmethod
+            def _load_bytes_cpu(b: bytes) -> Any:
+                try:
+                    return torch.load(io.BytesIO(b), map_location="cpu", weights_only=False)
+                except RuntimeError:
+                    return _CpuUnpickler(io.BytesIO(b)).load()
 
         with path.open("rb") as f:
             return _CpuUnpickler(f).load()
