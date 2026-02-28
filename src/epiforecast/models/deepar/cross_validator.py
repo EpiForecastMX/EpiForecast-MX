@@ -39,9 +39,9 @@ class DeepARCrossValidator:
         self.n_splits: int = _conf.get("TS_SPLITS", 4)
         self.test_size: int = _conf.get("TEST_SIZE", 53)
 
-        # Reduced epochs for CV folds (at least 10)
+        # Reduced epochs for CV folds (at least 25 for convergence)
         full_epochs = forecaster.epochs
-        self.cv_epochs: int = max(10, full_epochs // 4)
+        self.cv_epochs: int = max(25, full_epochs // 4)
 
     def run(self) -> dict[str, Any]:
         """Run temporal CV across all folds and return averaged metrics."""
@@ -129,10 +129,11 @@ class DeepARCrossValidator:
         # Build dataset from train fold
         dataset = self.forecaster._build_dataset(train_fold)
 
-        # Create estimator with reduced epochs
+        # Create estimator with reduced epochs (no early stopping in CV)
         estimator = self.forecaster._create_estimator(
             epochs=self.cv_epochs,
             prediction_length=len(val_fold),
+            early_stopping=False,
         )
         predictor = estimator.train(dataset)
 

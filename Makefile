@@ -166,6 +166,13 @@ compare:
 	$(PYTHON) -m scripts.compara_modelos
 	@echo ">>> → reports/forecasts/comparacion_modelos/"
 
+## Comparar métricas entre modelos (Excel)
+.PHONY: compare-metrics
+compare-metrics:
+	@echo ">>> Generando comparativa de métricas..."
+	$(PYTHON) -m scripts.compara_metricas
+	@echo ">>> → reports/forecasts/comparacion_modelos/comparacion_metricas.xlsx"
+
 ## Flujo completo de modelado
 .PHONY: model-pipeline
 model-pipeline: train models-push predict report forecast-push

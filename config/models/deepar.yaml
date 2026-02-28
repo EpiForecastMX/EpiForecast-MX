@@ -1,18 +1,22 @@
 # Configuración para DeepAR (GluonTS + PyTorch, entrenamiento local en CPU)
 
 deepar:
-  epochs: 100
-  context_length: 52             # Un año de historia para el contexto
-  prediction_length: 52          # Un año de predicción (horizonte)
-  num_layers: 2                  # Número de capas recurrentes
-  num_cells: 40                  # Celdas por capa (RNN)
-  dropout_rate: 0.1              # Regularización
-  learning_rate: 1e-3
+  epochs: 300                        # Early stopping frena si converge antes
+  context_length: 104                # 2 años de historia (captura ciclos anuales completos)
+  prediction_length: 52              # Un año de predicción (horizonte)
+  num_layers: 2                      # Número de capas recurrentes
+  num_cells: 80                      # Celdas por capa (más capacidad para patrones complejos)
+  dropout_rate: 0.15                 # Regularización (mayor con 1 sola serie)
+  learning_rate: 5e-4                # Convergencia más estable
+  weight_decay: 1e-6                 # Regularización L2
   batch_size: 32
-  scaling: true                  # Normalización interna de GluonTS
-  distr_output: "negative-binomial"  # Distribución para datos de conteo
-  num_samples: 200               # Muestras Monte Carlo para intervalos de confianza
-  freq: "W-MON"                  # Frecuencia de la serie temporal
+  scaling: true                      # Normalización interna de GluonTS (mean scaling)
+  distr_output: "student-t"          # Robusto a outliers, default de GluonTS
+  num_samples: 200                   # Muestras Monte Carlo para intervalos de confianza
+  freq: "W-MON"                      # Frecuencia de la serie temporal
+  nonnegative_pred_samples: true     # Predicciones siempre >= 0
+  num_batches_per_epoch: 50          # Default de GluonTS (antes calculado ~20)
+  early_stopping_patience: 15        # Detener si train_loss no mejora en 15 epochs
 
 # Hiperparámetros específicos por padecimiento
 param_grid_deepar:

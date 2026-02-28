@@ -60,18 +60,24 @@ class DeepARForecaster(ForecastModel):
 
         # DeepAR hyperparameters (from config/models/deepar.yaml → deepar: key)
         self.deepar_conf: dict = self._conf.get("deepar", {})
-        self.epochs: int = self.deepar_conf.get("epochs", 100)
-        self.context_length: int = self.deepar_conf.get("context_length", 52)
+        self.epochs: int = self.deepar_conf.get("epochs", 300)
+        self.context_length: int = self.deepar_conf.get("context_length", 104)
         self.prediction_length: int = self.deepar_conf.get("prediction_length", 52)
         self.num_layers: int = self.deepar_conf.get("num_layers", 2)
-        self.num_cells: int = self.deepar_conf.get("num_cells", 40)
-        self.dropout_rate: float = self.deepar_conf.get("dropout_rate", 0.1)
-        self.learning_rate: float = self.deepar_conf.get("learning_rate", 1e-3)
+        self.num_cells: int = self.deepar_conf.get("num_cells", 80)
+        self.dropout_rate: float = self.deepar_conf.get("dropout_rate", 0.15)
+        self.learning_rate: float = self.deepar_conf.get("learning_rate", 5e-4)
+        self.weight_decay: float = self.deepar_conf.get("weight_decay", 1e-6)
         self.batch_size: int = self.deepar_conf.get("batch_size", 32)
         self.scaling: bool = self.deepar_conf.get("scaling", True)
-        self.distr_output: str = self.deepar_conf.get("distr_output", "negative-binomial")
+        self.distr_output: str = self.deepar_conf.get("distr_output", "student-t")
         self.num_samples: int = self.deepar_conf.get("num_samples", 200)
         self.freq: str = self.deepar_conf.get("freq", "W-MON")
+        self.nonnegative_pred_samples: bool = self.deepar_conf.get(
+            "nonnegative_pred_samples", True
+        )
+        self.num_batches_per_epoch: int = self.deepar_conf.get("num_batches_per_epoch", 50)
+        self.early_stopping_patience: int = self.deepar_conf.get("early_stopping_patience", 15)
 
         # Train/test config
         self.FECHA_CORTE_ENTRENAMIENTO: str = self._conf.get(
@@ -136,10 +142,20 @@ class DeepARForecaster(ForecastModel):
         epochs = overrides.pop("epochs", self.epochs)
         context_length = overrides.pop("context_length", self.context_length)
         prediction_length = overrides.pop("prediction_length", self.prediction_length)
+        use_early_stopping = overrides.pop("early_stopping", True)
 
-        # Compute reasonable num_batches_per_epoch
-        train_len = max(len(self.train_data), len(self.serie))
-        num_batches = max(1, train_len // self.batch_size)
+        # Callbacks: early stopping (skip for CV folds with few epochs)
+        callbacks: list[Any] = []
+        if use_early_stopping and self.early_stopping_patience > 0:
+            from lightning.pytorch.callbacks import EarlyStopping
+
+            callbacks.append(
+                EarlyStopping(
+                    monitor="train_loss",
+                    patience=self.early_stopping_patience,
+                    mode="min",
+                )
+            )
 
         return DeepAREstimator(
             freq=self.freq,
@@ -149,14 +165,21 @@ class DeepARForecaster(ForecastModel):
             hidden_size=overrides.pop("num_cells", self.num_cells),
             dropout_rate=overrides.pop("dropout_rate", self.dropout_rate),
             lr=overrides.pop("learning_rate", self.learning_rate),
+            weight_decay=overrides.pop("weight_decay", self.weight_decay),
             batch_size=self.batch_size,
             scaling=overrides.pop("scaling", self.scaling),
             distr_output=_resolve_distr_output(overrides.pop("distr_output", self.distr_output)),
-            num_batches_per_epoch=num_batches,
+            nonnegative_pred_samples=overrides.pop(
+                "nonnegative_pred_samples", self.nonnegative_pred_samples
+            ),
+            num_batches_per_epoch=overrides.pop(
+                "num_batches_per_epoch", self.num_batches_per_epoch
+            ),
             trainer_kwargs={
                 "max_epochs": epochs,
                 "accelerator": "cpu",
                 "enable_progress_bar": False,
+                "callbacks": callbacks,
             },
         )
 
@@ -167,11 +190,12 @@ class DeepARForecaster(ForecastModel):
         import torch
 
         logger.info(
-            "DeepAR fit() | Epochs: {} | Context: {} | Layers: {} | Distr: {}",
+            "DeepAR fit() | Epochs: {} | Context: {} | Hidden: {} | Distr: {} | ES patience: {}",
             self.epochs,
             self.context_length,
-            self.num_layers,
+            self.num_cells,
             self.distr_output,
+            self.early_stopping_patience,
         )
 
         # Fix seeds for reproducibility
@@ -285,9 +309,11 @@ class DeepARForecaster(ForecastModel):
             "num_cells": self.num_cells,
             "dropout_rate": self.dropout_rate,
             "learning_rate": self.learning_rate,
+            "weight_decay": self.weight_decay,
             "batch_size": self.batch_size,
             "scaling": self.scaling,
             "distr_output": self.distr_output,
+            "nonnegative_pred_samples": self.nonnegative_pred_samples,
         }
 
     # ── Orchestration ─────────────────────────────────────────────────────────
