@@ -208,24 +208,9 @@ class DeepARCrossValidator:
         fc = forecasts[0]
         yhat = fc.mean[: len(val_fold)]
 
-        # Desnormalizar si aplica (escala tasa -> conteo real)
-        normalizar = self.forecaster._conf.get("normalizar_tasa", True)
-        if normalizar and "Total" in train_fold.columns:
-            pob = train_fold["Total"].iloc[-1]
-            tasa_por = self.forecaster._conf.get("tasa_por", 100000)
-            if pob > 0:
-                yhat = (yhat * pob) / tasa_por
-
-        # Usar y_original (conteo real) para evaluacion coherente
-        if "y_original" in val_fold.columns:
-            y_true = val_fold["y_original"].to_numpy()[: len(yhat)]
-        else:
-            y_true = val_fold["y"].to_numpy()[: len(yhat)]
-
-        if "y_original" in train_fold.columns:
-            y_train = train_fold["y_original"].to_numpy()
-        else:
-            y_train = train_fold["y"].to_numpy()
+        # Metricas en espacio tasa (por 100k) para ser comparables con Prophet
+        y_true = val_fold["y"].to_numpy()[: len(yhat)]
+        y_train = train_fold["y"].to_numpy()
 
         return self._compute_metrics(y_true, yhat, y_train)
 
@@ -255,34 +240,33 @@ class DeepARCrossValidator:
 
         forecasts = list(predictor.predict(dataset, num_samples=self.forecaster.num_samples))
 
-        # Aggregate: sum MC samples across all states -> shape (n_states, N, H)
+        # Aggregate: promedio ponderado en espacio tasa para nacional
+        # Cada serie ya esta en tasa (por 100k), no desnormalizar.
+        # Sumamos samples y recalculamos tasa nacional = sum(casos) / sum(pob) * tasa_por
         all_samples = np.stack([fc.samples for fc in forecasts], axis=0)
 
-        # Desnormalizar cada estado ANTES de sumar (replica model.py:_predict_multi)
         normalizar = self.forecaster._conf.get("normalizar_tasa", True)
         if normalizar and "Total" in train_fold_multi.columns:
             tasa_por = self.forecaster._conf.get("tasa_por", 100000)
             mapa_pob = train_fold_multi.groupby("item_id")["Total"].last().to_dict()
             items = [fc.item_id for fc in forecasts]
+            # Convertir tasa->conteo, sumar, reconvertir a tasa nacional
             for i, item_id in enumerate(items):
                 pob = mapa_pob.get(item_id, 0)
                 if pob > 0:
                     all_samples[i] = (all_samples[i] * pob) / tasa_por
-
-        national_samples = all_samples.sum(axis=0)  # shape (N, H)
+            national_samples = all_samples.sum(axis=0)  # conteo nacional
+            pob_total = sum(mapa_pob.values())
+            if pob_total > 0:
+                national_samples = (national_samples / pob_total) * tasa_por
+        else:
+            national_samples = all_samples.sum(axis=0)
 
         yhat = national_samples.mean(axis=0)[:n_val_weeks]
 
-        # Usar y_original (conteo real) para evaluacion coherente
-        if "y_original" in val_fold_national.columns:
-            y_true = val_fold_national["y_original"].to_numpy()[: len(yhat)]
-        else:
-            y_true = val_fold_national["y"].to_numpy()[: len(yhat)]
-
-        if "y_original" in train_fold_national.columns:
-            y_train = train_fold_national["y_original"].to_numpy()
-        else:
-            y_train = train_fold_national["y"].to_numpy()
+        # Metricas en espacio tasa (por 100k) para ser comparables con Prophet
+        y_true = val_fold_national["y"].to_numpy()[: len(yhat)]
+        y_train = train_fold_national["y"].to_numpy()
 
         return self._compute_metrics(y_true, yhat, y_train)
 

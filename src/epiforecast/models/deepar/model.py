@@ -728,25 +728,9 @@ class DeepARForecaster(ForecastModel):
             fc = forecasts[0]
             yhat = fc.mean[: len(test_data)]
 
-            # Desnormalizar si aplica (tasa -> conteo)
-            normalizar = self._conf.get("normalizar_tasa", True)
-            if normalizar and "Total" in context.columns:
-                pob = context["Total"].iloc[-1]
-                tasa_por = self._conf.get("tasa_por", 100000)
-                if pob > 0:
-                    yhat = (yhat * pob) / tasa_por
-
-            # y_true en escala original (conteo)
-            if "y_original" in test_data.columns:
-                y_true = test_data["y_original"].to_numpy()[: len(yhat)]
-            else:
-                y_true = test_data["y"].to_numpy()[: len(yhat)]
-
-            # y_train para MASE (naive baseline)
-            if "y_original" in self.train_data.columns:
-                y_train = self.train_data["y_original"].to_numpy()
-            else:
-                y_train = self.train_data["y"].to_numpy()
+            # Metricas en espacio tasa (por 100k) para ser comparables con Prophet
+            y_true = test_data["y"].to_numpy()[: len(yhat)]
+            y_train = self.train_data["y"].to_numpy()
 
             from epiforecast.models.deepar.cross_validator import DeepARCrossValidator
 
