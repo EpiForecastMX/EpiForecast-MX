@@ -188,36 +188,73 @@ class DeepARForecaster(ForecastModel):
         national ``self.serie`` for compatibility (promedio_semanal, sidecar CSV).
         """
         col: str = self.sexo or "general"
+        normalizar = self._conf.get("normalizar_tasa", True)
+        col_pob = self._conf.get("columna_poblacion", "Total")
+        tasa_por = self._conf.get("tasa_por", 100000)
 
         if self._is_multi_series and "Entidad" in self.df.columns:
             # Multi-series: one series per state
+            agg_dict = {col: "sum"}
+            if normalizar and col_pob in self.df.columns:
+                agg_dict[col_pob] = "sum"
+
             self.serie_multi = (
-                self.df.groupby(["Fecha", "Entidad"])[col]
-                .sum()
+                self.df.groupby(["Fecha", "Entidad"])
+                .agg(agg_dict)
                 .reset_index()
-                .rename(columns={"Fecha": "ds", col: "y", "Entidad": "item_id"})
-                .sort_values(["item_id", "ds"])
-                .reset_index(drop=True)
+                .rename(columns={"Fecha": "ds", "Entidad": "item_id"})
             )
-            # Aggregated national series (backward compat)
-            self.serie = (
-                self.serie_multi.groupby("ds")["y"]
-                .sum()
-                .reset_index()
-                .sort_values("ds")
-                .reset_index(drop=True)
+
+            if normalizar and col_pob in self.serie_multi.columns:
+                self.serie_multi["y_original"] = self.serie_multi[col]
+                self.serie_multi["y"] = (
+                    self.serie_multi[col] / self.serie_multi[col_pob]
+                ) * tasa_por
+                if col_pob != "Total":
+                    self.serie_multi = self.serie_multi.rename(columns={col_pob: "Total"})
+            else:
+                self.serie_multi = self.serie_multi.rename(columns={col: "y"})
+
+            self.serie_multi = self.serie_multi.sort_values(["item_id", "ds"]).reset_index(
+                drop=True
             )
+
+            # Aggregated national series (sum of originals, then re-calculate rate)
+            agg_cols = (
+                ["y_original", "Total"] if "y_original" in self.serie_multi.columns else ["y"]
+            )
+            self.serie = self.serie_multi.groupby("ds")[agg_cols].sum().reset_index()
+
+            if "y_original" in self.serie.columns:
+                self.serie["y"] = (self.serie["y_original"] / self.serie["Total"]) * tasa_por
+
+            self.serie = self.serie.sort_values("ds").reset_index(drop=True)
+
             n_states = self.serie_multi["item_id"].nunique()
             logger.info(
-                "Multi-series: {} estados, {} fechas, {} puntos totales",
+                "Multi-series: {} estados, {} fechas, {} puntos totales (normalizado: {})",
                 n_states,
                 self.serie_multi["ds"].nunique(),
                 len(self.serie_multi),
+                normalizar,
             )
         else:
             # Single-series: original behavior
-            self.serie = self.df.groupby("Fecha")[col].sum().reset_index()
-            self.serie = self.serie.rename(columns={"Fecha": "ds", col: "y"})
+            agg_dict = {col: "sum"}
+            if normalizar and col_pob in self.df.columns:
+                agg_dict[col_pob] = "sum"
+
+            self.serie = self.df.groupby("Fecha").agg(agg_dict).reset_index()
+            self.serie = self.serie.rename(columns={"Fecha": "ds"})
+
+            if normalizar and col_pob in self.serie.columns:
+                self.serie["y_original"] = self.serie[col]
+                self.serie["y"] = (self.serie[col] / self.serie[col_pob]) * tasa_por
+                if col_pob != "Total":
+                    self.serie = self.serie.rename(columns={col_pob: "Total"})
+            else:
+                self.serie = self.serie.rename(columns={col: "y"})
+
             self.serie = self.serie.sort_values("ds").reset_index(drop=True)
 
     def crea_train_test(self) -> None:
@@ -234,8 +271,12 @@ class DeepARForecaster(ForecastModel):
             ].reset_index(drop=True)
 
     def promedio_semanal(self) -> float:
-        """Return weekly average of counts."""
-        return float(self.train_data["y"].mean()) if not self.train_data.empty else 0.0
+        """Return weekly average of counts (y_original if exists)."""
+        if self.train_data.empty:
+            return 0.0
+        if "y_original" in self.train_data.columns:
+            return float(self.train_data["y_original"].mean())
+        return float(self.train_data["y"].mean())
 
     # ── Private Helpers ───────────────────────────────────────────────────────
 
@@ -408,6 +449,15 @@ class DeepARForecaster(ForecastModel):
         yhat_lower = fc.quantile(0.05)
         yhat_upper = fc.quantile(0.95)
 
+        # Desnormalizar si aplica (tasa -> conteo)
+        normalizar = self._conf.get("normalizar_tasa", True)
+        if normalizar and "Total" in self.serie.columns:
+            pob = self.serie["Total"].iloc[-1]
+            tasa_por = self._conf.get("tasa_por", 100000)
+            yhat = (yhat * pob) / tasa_por
+            yhat_lower = (yhat_lower * pob) / tasa_por
+            yhat_upper = (yhat_upper * pob) / tasa_por
+
         last_date = context_data["ds"].max()
         dates_future = pd.date_range(
             start=last_date + pd.Timedelta(weeks=1),
@@ -425,8 +475,9 @@ class DeepARForecaster(ForecastModel):
         )
 
         if not self.serie.empty:
-            df_history = self.serie[["ds", "y"]].copy()
-            df_history = df_history.rename(columns={"y": "yhat"})
+            target_col = "y_original" if "y_original" in self.serie.columns else "y"
+            df_history = self.serie[["ds", target_col]].copy()
+            df_history = df_history.rename(columns={target_col: "yhat"})
             df_history["yhat_lower"] = df_history["yhat"]
             df_history["yhat_upper"] = df_history["yhat"]
             return pd.concat([df_history, df_future], ignore_index=True)
@@ -434,11 +485,7 @@ class DeepARForecaster(ForecastModel):
         return df_future
 
     def _predict_multi(self, horizon: int) -> pd.DataFrame:
-        """Multi-series prediction: forecast 32 states, sum to national.
-
-        Sums Monte Carlo samples across states before computing quantiles,
-        preserving cross-series correlation in the uncertainty estimate.
-        """
+        """Multi-series prediction: forecast 32 states, sum to national."""
         context_data = self.serie_multi
         dataset = self._build_multi_dataset(context_data)
         forecasts = list(self._predictor.predict(dataset, num_samples=self.num_samples))
@@ -446,9 +493,21 @@ class DeepARForecaster(ForecastModel):
         if not forecasts:
             raise RuntimeError("DeepAR no genero pronosticos para ninguna serie.")
 
-        # Stack all state samples and sum per sample to preserve correlation
-        # Shape: (n_states, num_samples, prediction_length) -> sum -> (num_samples, H)
         all_samples = np.stack([fc.samples for fc in forecasts], axis=0)
+
+        # Desnormalizar cada estado ANTES de sumar para el nacional real
+        normalizar = self._conf.get("normalizar_tasa", True)
+        if normalizar and "Total" in self.serie_multi.columns:
+            tasa_por = self._conf.get("tasa_por", 100000)
+            # Mapa de poblacion por item_id (estado)
+            mapa_pob = self.serie_multi.groupby("item_id")["Total"].last().to_dict()
+            items = [fc.item_id for fc in forecasts]
+
+            for i, item_id in enumerate(items):
+                pob = mapa_pob.get(item_id, 0)
+                if pob > 0:
+                    all_samples[i] = (all_samples[i] * pob) / tasa_por
+
         national_samples = all_samples.sum(axis=0)
 
         yhat = national_samples.mean(axis=0)
@@ -471,10 +530,10 @@ class DeepARForecaster(ForecastModel):
             }
         )
 
-        # Prepend historical data (aggregated national)
         if not self.serie.empty:
-            df_history = self.serie[["ds", "y"]].copy()
-            df_history = df_history.rename(columns={"y": "yhat"})
+            target_col = "y_original" if "y_original" in self.serie.columns else "y"
+            df_history = self.serie[["ds", target_col]].copy()
+            df_history = df_history.rename(columns={target_col: "yhat"})
             df_history["yhat_lower"] = df_history["yhat"]
             df_history["yhat_upper"] = df_history["yhat"]
             return pd.concat([df_history, df_future], ignore_index=True)
