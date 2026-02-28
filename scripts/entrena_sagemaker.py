@@ -12,6 +12,7 @@ Adapta el entorno SageMaker (/opt/ml/) al pipeline existente de scripts.entrena:
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 import shutil
 import sys
@@ -95,6 +96,12 @@ def main() -> None:
     if "modelo_activo=deepar" not in sys.argv:
         sys.argv.append("modelo_activo=deepar")
 
+    # PADECIMIENTO_TIPO env var tiene prioridad (jobs paralelos por padecimiento)
+    pad_env = os.environ.get("PADECIMIENTO_TIPO")
+    if pad_env:
+        tipo_padecimiento = pad_env
+        logger.debug("PADECIMIENTO_TIPO desde env: {}", pad_env)
+
     # Forzar padecimiento.tipo para que coincida con el CSV subido
     if tipo_padecimiento:
         override = f"padecimiento.tipo={tipo_padecimiento}"
@@ -102,9 +109,11 @@ def main() -> None:
             sys.argv.append(override)
             logger.debug("Override padecimiento.tipo={}", tipo_padecimiento)
 
-    # Paralelizar entrenamiento en SageMaker (4 vCPUs en ml.g4dn.xlarge)
     if entorno == "sagemaker":
-        sys.argv.append("n_jobs_train=3")
+        # Paralelizar entrenamiento (4 vCPUs en ml.g4dn.xlarge)
+        sys.argv.append("n_jobs_train=4")
+        # Skip CV para modelos estatales (DeepAR no hace HP tuning en CV)
+        sys.argv.append("deepar.skip_cv_estatal=true")
 
     from scripts.entrena import main as entrena_main
 

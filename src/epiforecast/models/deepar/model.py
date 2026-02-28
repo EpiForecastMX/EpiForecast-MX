@@ -720,6 +720,9 @@ class DeepARForecaster(ForecastModel):
         umbral = self._conf.get("umbral_minimo_semanal", 0)
         es_insuficiente = umbral and promedio < umbral
 
+        # skip_cv_estatal: en SageMaker, CV estatal no aporta (DeepAR no hace HP tuning)
+        skip_cv = self.deepar_conf.get("skip_cv_estatal", False) and self.entidad is not None
+
         if es_insuficiente:
             confianza = "insuficiente"
             best_metrics: dict[str, Any] = {
@@ -734,6 +737,21 @@ class DeepARForecaster(ForecastModel):
                 promedio,
                 self.padecimiento,
                 self.entidad or "Nacional",
+                self.sexo,
+            )
+        elif skip_cv:
+            confianza = "normal"
+            best_metrics = {
+                "rmse": None,
+                "mae": None,
+                "mape": None,
+                "smape": None,
+                "mase": None,
+            }
+            logger.debug(
+                "skip_cv_estatal: omitiendo CV para {} | {} | {}",
+                self.padecimiento,
+                self.entidad,
                 self.sexo,
             )
         else:

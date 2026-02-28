@@ -145,6 +145,18 @@ train-sagemaker-build:
 	@echo ">>> Build imagen Docker..."
 	$(PYTHON) aws/sagemaker_launcher.py --build
 
+## 3 jobs paralelos en SageMaker (1 por padecimiento, ~15 min total)
+.PHONY: train-sagemaker-parallel
+train-sagemaker-parallel:
+	@echo ">>> Lanzando 3 jobs en paralelo (Alzheimer, Depresion, Parkinson)..."
+	$(PYTHON) aws/sagemaker_launcher.py --parallel
+
+## Build + 3 jobs paralelos en SageMaker
+.PHONY: train-sagemaker-fast
+train-sagemaker-fast:
+	@echo ">>> Build + 3 jobs paralelos en SageMaker..."
+	$(PYTHON) aws/sagemaker_launcher.py --build --parallel
+
 ## Test local con Docker (simula SageMaker)
 .PHONY: train-sagemaker-local
 train-sagemaker-local:
