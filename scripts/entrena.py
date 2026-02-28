@@ -104,6 +104,7 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False)
         "mape_confiable": not mape_clipped,
         **parametros,
     }
+    fila["archivo_modelo"] = nombre_modelo
     fila["nivel"] = "nacional" if region is None else "regional"
     fila["confianza"] = confianza
     fila["promedio_semanal"] = round(promedio, 2)
