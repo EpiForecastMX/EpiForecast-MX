@@ -312,9 +312,14 @@ class DeepARForecaster(ForecastModel):
             )
 
         # CUDA auto-detection (Windows GPU) or CPU fallback (macOS)
-        accelerator = "cuda" if torch.cuda.is_available() else "cpu"
-        if accelerator == "cuda":
+        # CUDA (Windows/Linux GPU) > MPS (Apple Silicon) > CPU
+        if torch.cuda.is_available():
+            accelerator = "cuda"
             torch.set_float32_matmul_precision("high")
+        elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            accelerator = "mps"
+        else:
+            accelerator = "cpu"
         logger.debug("DeepAR accelerator: {}", accelerator)
 
         # Silence Lightning sub-loggers created during import
