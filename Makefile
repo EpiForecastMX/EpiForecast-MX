@@ -133,6 +133,25 @@ train-deepar:
 .PHONY: train-all
 train-all: train-prophet train-deepar
 
+## Entrenar DeepAR en SageMaker (build + launch)
+.PHONY: train-sagemaker
+train-sagemaker:
+	@echo ">>> Build imagen Docker + lanzar en SageMaker..."
+	$(PYTHON) aws/sagemaker_launcher.py --build --launch
+
+## Solo build imagen Docker para SageMaker
+.PHONY: train-sagemaker-build
+train-sagemaker-build:
+	@echo ">>> Build imagen Docker..."
+	$(PYTHON) aws/sagemaker_launcher.py --build
+
+## Test local con Docker (simula SageMaker)
+.PHONY: train-sagemaker-local
+train-sagemaker-local:
+	@echo ">>> Build + test local con Docker..."
+	docker build -t epiforecast-mx-deepar -f aws/Dockerfile .
+	$(PYTHON) aws/sagemaker_launcher.py --local
+
 ## Generar predicciones (52 semanas, desnormalizadas)
 .PHONY: predict
 predict:
