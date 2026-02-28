@@ -1,9 +1,9 @@
-# src/epiforecast/models/prophet/model.py
 """Prophet forecasting model implementation (SRP: model lifecycle only).
 
 Handles: data preparation, training, prediction, serialization.
 Delegates: cross-validation to cross_validator.py, HP tuning to tuner.py,
-           backward-compatible API to prophet_compat.py.
+           backward-compatible API to prophet_compat.py,
+           data prep helpers to data_prep.py.
 """
 
 import logging
@@ -18,6 +18,15 @@ from prophet import Prophet
 from epiforecast.constants import RANDOM_SEED
 from epiforecast.models.base import ForecastModel
 from epiforecast.models.factory import register_model
+from epiforecast.models.prophet.data_prep import (
+    agrupa,
+    apply_regional_params,
+    build_holidays,
+    build_seasonality_params,
+    crea_train_test,
+    eval_rapida,
+    promedio_semanal,
+)
 from epiforecast.utils.config import conf, logger
 
 logging.getLogger("cmdstanpy").disabled = True
@@ -25,11 +34,7 @@ logging.getLogger("cmdstanpy").disabled = True
 
 @register_model("prophet")
 class ProphetForecaster(ForecastModel):
-    """Prophet-based time series forecaster.
-
-    Implements ForecastModel interface (LSP). Can be swapped with
-    DeepARForecaster, etc. via ModelFactory (OCP).
-    """
+    """Prophet-based time series forecaster (ForecastModel/LSP)."""
 
     def __init__(
         self,
@@ -39,15 +44,6 @@ class ProphetForecaster(ForecastModel):
         padecimiento: str | None = None,
         config: dict | None = None,
     ):
-        """Inicializa el forecaster Prophet con datos, filtros y configuración.
-
-        Args:
-            df:            DataFrame con datos epidemiológicos preprocesados (opcional en carga).
-            sexo:          Columna de sexo a modelar (``general``, ``hombres``, ``mujeres``).
-            entidad:       Nombre del estado, o None para nivel nacional.
-            padecimiento:  Nombre del padecimiento (Depresión, Parkinson, Alzheimer).
-            config:        Dict de configuración (default: conf global de YAML).
-        """
         self._conf = config if config is not None else conf
         self.df = df.copy() if df is not None else pd.DataFrame()
         if not self.df.empty:
@@ -71,13 +67,17 @@ class ProphetForecaster(ForecastModel):
 
         # Prophet model params
         self.param_model: dict = dict(self._conf["param_model"])
-        self._apply_regional_params()
+        apply_regional_params(self.param_model, self._conf, self.modelado_estados)
 
         # Seasonality params
-        self.add_seasonality_params: dict = self._build_seasonality_params()
+        self.add_seasonality_params: dict = build_seasonality_params(
+            self._conf, self.modelado_estados
+        )
 
         # Atypical periods (holidays for Prophet)
-        self.fechas_atipicas: pd.DataFrame = self._build_holidays()
+        self.fechas_atipicas: pd.DataFrame = build_holidays(
+            self._conf, self.entidad, self.padecimiento
+        )
 
         # Data placeholders
         self.serie: pd.DataFrame = pd.DataFrame()
@@ -94,61 +94,30 @@ class ProphetForecaster(ForecastModel):
 
     def agrupa(self) -> None:
         """Aggregate data by date, summing target column and optionally population."""
-        agg_dict = {self.sexo: "sum"}
-        if self.normalizar_tasa and self.col_poblacion in self.df.columns:
-            agg_dict[self.col_poblacion] = "sum"
-        self.serie = self.df.groupby("Fecha").agg(agg_dict)
+        self.serie = agrupa(self.df, self.sexo, self.normalizar_tasa, self.col_poblacion)
 
     def crea_train_test(self) -> None:
         """Create train/test split with rate normalization and log-transform."""
-        self.serie = self.serie.rename_axis("ds").reset_index()
-
-        if self.normalizar_tasa and self.col_poblacion in self.serie.columns:
-            self.poblacion_valor = self.serie[self.col_poblacion].iloc[0]
-            self.serie["y_original"] = self.serie[self.sexo]
-            self.serie["y"] = (self.serie[self.sexo] / self.poblacion_valor) * self.tasa_por  # type: ignore[operator]
-            self.serie = self.serie.drop(columns=[self.sexo])
-            logger.debug(
-                "Normalizado a tasa por {:,.0f} hab. (población: {:,.0f})",
-                self.tasa_por,
-                self.poblacion_valor,
-            )
-        else:
-            self.serie = self.serie.rename(columns={self.sexo: "y"})
-
-        if self.log_transform:
-            self.serie["y"] = np.log1p(self.serie["y"])
-            logger.debug("Log-transform aplicado: y = log(1 + y)")
-
-        self.train_data = self.serie[self.serie["ds"] < self.FECHA_CORTE_ENTRENAMIENTO]
-        self.test_data = self.serie[self.serie["ds"] >= self.FECHA_CORTE_ENTRENAMIENTO]
-
-        logger.debug(
-            "Train: {} semanas (hasta {})",
-            len(self.train_data),
-            self.train_data["ds"].max().date(),
+        self.serie, self.train_data, self.test_data, pob = crea_train_test(
+            self.serie,
+            self.sexo,
+            self.normalizar_tasa,
+            self.col_poblacion,
+            self.log_transform,
+            self.tasa_por,
+            self.FECHA_CORTE_ENTRENAMIENTO,
         )
-        logger.debug(
-            "Test: {} semanas (desde {})",
-            len(self.test_data),
-            self.test_data["ds"].min().date(),
-        )
+        if pob is not None:
+            self.poblacion_valor = pob
 
     def promedio_semanal(self) -> float:
         """Return weekly average of original count (before transforms)."""
-        if "y_original" in self.train_data.columns:
-            return float(self.train_data["y_original"].mean())
-        return float(self.train_data["y"].mean())
+        return promedio_semanal(self.train_data)
 
     # ── ForecastModel Interface ───────────────────────────────────────────────
 
     def fit(self, train_data: pd.DataFrame, parametros: dict | None = None) -> None:
-        """Train Prophet model on provided data.
-
-        Args:
-            train_data: DataFrame with 'ds' and 'y' columns.
-            parametros: HP dict (seasonality_mode, changepoint_prior_scale, etc.)
-        """
+        """Train Prophet model on provided data."""
         parametros = parametros or {}
         self._model = self._create_prophet(**parametros)
 
@@ -156,18 +125,14 @@ class ProphetForecaster(ForecastModel):
             np.random.seed(RANDOM_SEED)
             self._model.fit(train_data)
         except (RuntimeError, ValueError) as e:
-            logger.warning("L-BFGS falló, reintentando con cp=0.05: {}", e)
+            logger.warning("L-BFGS fall\u00f3, reintentando con cp=0.05: {}", e)
             fallback_params = {**parametros, "changepoint_prior_scale": 0.05}
             self._model = self._create_prophet(**fallback_params)
             np.random.seed(RANDOM_SEED)
             self._model.fit(train_data)
 
     def predict(self, horizon: int = 52) -> pd.DataFrame:
-        """Generate predictions for given horizon (weeks).
-
-        Returns DataFrame with: ds, yhat, yhat_lower, yhat_upper.
-        Handles inverse log-transform and rate desnormalization.
-        """
+        """Generate predictions for given horizon (weeks)."""
         if self._model is None:
             raise RuntimeError("Model not fitted. Call fit() first.")
 
@@ -176,18 +141,18 @@ class ProphetForecaster(ForecastModel):
         cols = ["ds", "yhat", "yhat_lower", "yhat_upper"]
         out = forecast[cols].copy()
 
-        # Reversar log-transform: exp(yhat) - 1
         if self.log_transform:
             for col in ["yhat", "yhat_lower", "yhat_upper"]:
                 out[col] = np.expm1(out[col])
             logger.debug("Inversa de log-transform aplicada")
 
-        # Desnormalizar tasa a conteos
         if self.normalizar_tasa and self.poblacion_valor:
             out["yhat_tasa"] = out["yhat"]
             for col in ["yhat", "yhat_lower", "yhat_upper"]:
                 out[col] = out[col] * self.poblacion_valor / self.tasa_por
-            logger.debug("Desnormalización de tasa aplicada (pob={:,.0f})", self.poblacion_valor)
+            logger.debug(
+                "Desnormalizaci\u00f3n de tasa aplicada (pob={:,.0f})", self.poblacion_valor
+            )
 
         return out  # type: ignore[no-any-return]
 
@@ -218,15 +183,13 @@ class ProphetForecaster(ForecastModel):
             self._model = pickle.load(f)
         logger.debug("Modelo cargado: {}", path)
 
-        # Cargar población del CSV sidecar si es necesario para desnormalización
         csv_path = path.with_suffix(".csv")
         if self.normalizar_tasa and csv_path.exists():
             train_csv = pd.read_csv(csv_path, nrows=1)
-            # Intentar con nombre de columna configurado o default 'Total'
             col_pob = self.col_poblacion if self.col_poblacion in train_csv.columns else "Total"
             if col_pob in train_csv.columns:
                 self.poblacion_valor = float(train_csv[col_pob].iloc[0])
-                logger.debug("Población cargada desde sidecar: {:,.0f}", self.poblacion_valor)
+                logger.debug("Poblaci\u00f3n cargada desde sidecar: {:,.0f}", self.poblacion_valor)
 
     def get_params(self) -> dict[str, Any]:
         """Return current model parameters."""
@@ -238,86 +201,18 @@ class ProphetForecaster(ForecastModel):
             "tasa_por": self.tasa_por,
         }
 
-    # ── Quick evaluation ────────────────────────────────────────────────────
-
-    def _eval_rapida(self) -> dict[str, Any]:
-        """Evaluacion rapida post-entrenamiento (sin reentrenar).
-
-        Predice sobre test_data con el modelo ya entrenado en serie completa
-        y compara contra valores reales.  Metricas en espacio tasa (como CV).
-        """
-        from epiforecast.evaluation.metrics import compute_forecast_metrics
-
-        null_metrics: dict[str, Any] = {
-            "rmse": None,
-            "mae": None,
-            "mape": None,
-            "smape": None,
-            "mase": None,
-        }
-
-        if self._model is None or self.test_data.empty or len(self.test_data) < 4:
-            return null_metrics
-
-        try:
-            forecast = self._model.predict(self.test_data[["ds"]])
-            merged = self.test_data[["ds", "y"]].merge(forecast[["ds", "yhat"]], on="ds")
-
-            # Metricas en espacio de conteos reales (desnormalizar tasa)
-            if (
-                self.normalizar_tasa
-                and self.poblacion_valor
-                and "y_original" in self.test_data.columns
-            ):
-                merged_orig = self.test_data[["ds", "y_original"]].merge(
-                    forecast[["ds", "yhat"]], on="ds"
-                )
-                y_true = merged_orig["y_original"].to_numpy()
-                yhat_tasa = merged_orig["yhat"].to_numpy()
-                if self.log_transform:
-                    yhat_tasa = np.expm1(yhat_tasa)
-                y_pred = (yhat_tasa * self.poblacion_valor) / self.tasa_por
-                y_train = self.train_data["y_original"].to_numpy()
-            else:
-                y_true = merged["y"].to_numpy()
-                y_pred = merged["yhat"].to_numpy()
-                y_train = self.train_data["y"].to_numpy()
-
-            metrics = compute_forecast_metrics(y_true, y_pred, y_train)
-
-            logger.info(
-                "eval_rapida {} | {} | RMSE={:.4f} MAE={:.4f} SMAPE={:.2f}%{}",
-                self.entidad or "Nacional",
-                self.sexo,
-                metrics["rmse"],
-                metrics["mae"],
-                metrics["smape"],
-                f" MASE={metrics['mase']:.3f}" if metrics["mase"] is not None else "",
-            )
-            return metrics
-
-        except (RuntimeError, ValueError, KeyError) as e:
-            logger.warning("eval_rapida fallo para {}: {}", self.entidad, e)
-            return null_metrics
-
     # ── Orchestration ─────────────────────────────────────────────────────────
 
     def run(self) -> tuple[Prophet, dict, dict]:
-        """Full pipeline: prepare data → cross-validate → train final model.
-
-        Returns:
-            (trained_model, best_metrics, best_params)
-        """
+        """Full pipeline: prepare data -> cross-validate -> train final model."""
         self.agrupa()
         self.crea_train_test()
 
-        # Verificar umbral mínimo de casos por semana para decidir si hacer CV
         umbral = self._conf.get("umbral_minimo_semanal", 0)
         promedio = self.promedio_semanal()
         es_insuficiente = umbral and promedio < umbral
 
         if es_insuficiente:
-            # Skip CV: usar primer combo del grid como default (serie casi plana, HP da igual)
             from epiforecast.models.prophet.prophet_compat import get_param_grid
 
             best_params = {k: v[0] for k, v in get_param_grid(self).items()}
@@ -346,12 +241,20 @@ class ProphetForecaster(ForecastModel):
 
         self.fit(self.serie, best_params)
 
-        # Evaluacion rapida post-entrenamiento para modelos que no hicieron CV
         if es_insuficiente:
-            eval_metrics = self._eval_rapida()
+            eval_metrics = eval_rapida(
+                self._model,
+                self.test_data,
+                self.train_data,
+                self.normalizar_tasa,
+                self.poblacion_valor,
+                self.log_transform,
+                self.tasa_por,
+                self.entidad,
+                self.sexo,
+            )
             best_metrics.update(eval_metrics)
 
-        # Enriquecer métricas con info de confianza para el script
         best_metrics["confianza"] = confianza
         best_metrics["promedio_semanal"] = promedio
 
@@ -361,54 +264,6 @@ class ProphetForecaster(ForecastModel):
 
     def _create_prophet(self, **hp_overrides) -> Prophet:
         """Create a Prophet instance with configured params + HP overrides."""
-        model = Prophet(
-            holidays=self.fechas_atipicas,
-            **self.param_model,
-            **hp_overrides,
-        )
+        model = Prophet(holidays=self.fechas_atipicas, **self.param_model, **hp_overrides)
         model.add_seasonality(**self.add_seasonality_params)
         return model
-
-    def _apply_regional_params(self) -> None:
-        """Apply regional overrides for state-level models (shorter series)."""
-        n_cp_regional = self._conf.get("n_changepoints_regional", None)
-        if self.modelado_estados and n_cp_regional is not None:
-            self.param_model["n_changepoints"] = n_cp_regional
-            logger.debug("n_changepoints_regional={} aplicado", n_cp_regional)
-
-    def _build_seasonality_params(self) -> dict:
-        """Build seasonality params, applying regional fourier_order if needed."""
-        raw = dict(self._conf["add_seasonality"])
-        fourier_regional = raw.pop("fourier_order_regional", None)
-        if self.modelado_estados and fourier_regional is not None:
-            raw["fourier_order"] = fourier_regional
-            logger.debug("fourier_order_regional={} aplicado", fourier_regional)
-        return raw
-
-    def _build_holidays(self) -> pd.DataFrame:
-        """Build holidays DataFrame from atypical periods + regime changes."""
-        periodos = self._conf["peridos_atipicos"]
-        holidays = pd.DataFrame(periodos)
-        holidays["ds"] = pd.to_datetime(holidays["ds"])
-
-        # Add entity-specific regime changes
-        cambios = self._conf.get("cambios_regimen", [])
-        if cambios and self.entidad:
-            filtrados = [
-                c
-                for c in cambios
-                if c.get("entidad") == self.entidad
-                and (not c.get("padecimiento") or c.get("padecimiento") == self.padecimiento)
-            ]
-            if filtrados:
-                df_cambios = pd.DataFrame(filtrados)
-                df_cambios["ds"] = pd.to_datetime(df_cambios["ds"])
-                cols = ["holiday", "ds", "lower_window", "upper_window"]
-                holidays = pd.concat([holidays, df_cambios[cols]], ignore_index=True)
-                logger.debug(
-                    "Cambios de régimen para {}: {}",
-                    self.entidad,
-                    [c["holiday"] for c in filtrados],
-                )
-
-        return holidays

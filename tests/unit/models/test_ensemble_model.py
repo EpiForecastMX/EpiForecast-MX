@@ -11,12 +11,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from epiforecast.models.ensemble.helpers import construir_features_xgb, construir_holidays
 import epiforecast.models.ensemble.model as ensemble_mod
-from epiforecast.models.ensemble.model import (
-    EnsembleForecaster,
-    _construir_features_xgb,
-    _construir_holidays,
-)
+from epiforecast.models.ensemble.model import EnsembleForecaster
 
 # ── Mock conf ─────────────────────────────────────────────────────────────────
 
@@ -106,7 +103,7 @@ class TestEnsembleInit:
         assert forecaster.horizon == 52
 
 
-# ── _construir_features_xgb ──────────────────────────────────────────────────
+# ── construir_features_xgb ──────────────────────────────────────────────────
 
 
 class TestConstruirFeaturesXgb:
@@ -114,7 +111,7 @@ class TestConstruirFeaturesXgb:
         rng = np.random.default_rng(42)
         y = pd.Series(rng.integers(10, 50, 100))
         dates = pd.Series(pd.date_range("2020-01-06", periods=100, freq="W-MON"))
-        feats = _construir_features_xgb(y, dates)
+        feats = construir_features_xgb(y, dates)
         expected = {
             "lag_1",
             "lag_2",
@@ -130,33 +127,33 @@ class TestConstruirFeaturesXgb:
     def test_lag_values_correct(self):
         y = pd.Series([10, 20, 30, 40, 50])
         dates = pd.Series(pd.date_range("2020-01-06", periods=5, freq="W-MON"))
-        feats = _construir_features_xgb(y, dates)
+        feats = construir_features_xgb(y, dates)
         assert feats["lag_1"].iloc[1] == 10.0
         assert feats["lag_2"].iloc[2] == 10.0
 
     def test_rolling_mean_computed(self):
         y = pd.Series([10.0] * 20)
         dates = pd.Series(pd.date_range("2020-01-06", periods=20, freq="W-MON"))
-        feats = _construir_features_xgb(y, dates)
+        feats = construir_features_xgb(y, dates)
         # Rolling mean of constant series should be constant
         assert feats["roll_4"].iloc[5] == pytest.approx(10.0)
 
 
-# ── _construir_holidays ──────────────────────────────────────────────────────
+# ── construir_holidays ──────────────────────────────────────────────────────
 
 
 class TestConstruirHolidays:
     def test_returns_dataframe(self):
-        result = _construir_holidays(MOCK_CONF)
+        result = construir_holidays(MOCK_CONF)
         assert isinstance(result, pd.DataFrame)
         assert "holiday" in result.columns
 
     def test_covid_present(self):
-        result = _construir_holidays(MOCK_CONF)
+        result = construir_holidays(MOCK_CONF)
         assert "COVID" in result["holiday"].values
 
     def test_empty_config(self):
-        result = _construir_holidays({})
+        result = construir_holidays({})
         assert len(result) == 0
 
 

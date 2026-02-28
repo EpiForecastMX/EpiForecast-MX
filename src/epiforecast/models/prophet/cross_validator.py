@@ -294,10 +294,10 @@ def _compute_fold_metrics(
         if log_transform:
             yhat_tasa = np.expm1(yhat_tasa)
         y_pred = (yhat_tasa * poblacion) / tasa_por
-        y_train = train_fold["y_original"].values
+        y_train = train_fold["y_original"].to_numpy()
     else:
         y_true = merged["y"].to_numpy()
         y_pred = merged["yhat"].to_numpy()
-        y_train = train_fold["y"].values
+        y_train = train_fold["y"].to_numpy()
 
     return compute_forecast_metrics(y_true, y_pred, y_train)

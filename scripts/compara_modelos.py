@@ -2,10 +2,8 @@
 """CLI script to generate model comparison charts."""
 
 from epiforecast.utils.config import logger
-from epiforecast.visualization.comparison_plots import (
-    generar_graficos_comparativos,
-    generar_reporte_html,
-)
+from epiforecast.visualization.comparison_plots import generar_graficos_comparativos
+from epiforecast.visualization.comparison_report import generar_reporte_html
 
 
 def main():
