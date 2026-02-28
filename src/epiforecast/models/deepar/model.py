@@ -622,7 +622,12 @@ class DeepARForecaster(ForecastModel):
         if not path.exists():
             raise FileNotFoundError(f"Modelo no encontrado: {path}")
 
-        payload = self._load_pickle_cpu(path)
+        # En maquinas con CUDA: torch.load directo (tensores quedan en su device original).
+        # Sin CUDA (macOS): _load_pickle_cpu redirige torch.cuda.* a CPU.
+        if torch.cuda.is_available():
+            payload = torch.load(path, weights_only=False)
+        else:
+            payload = self._load_pickle_cpu(path)
 
         # Backward-compatible: old stub format was {"config": {...}}
         if isinstance(payload, dict) and "predictor" in payload:
@@ -637,7 +642,7 @@ class DeepARForecaster(ForecastModel):
         else:
             self._predictor = payload
 
-        # Remap predictor device si es necesario y sincronizar pesos
+        # Remap predictor device: CUDA → CPU/MPS (modelos de otra maquina)
         if self._predictor is not None and hasattr(self._predictor, "device"):
             cur = str(self._predictor.device)
             if "cuda" in cur and not torch.cuda.is_available():
@@ -645,11 +650,9 @@ class DeepARForecaster(ForecastModel):
                     self._predictor.device = torch.device("mps")
                 else:
                     self._predictor.device = torch.device("cpu")
+                if hasattr(self._predictor, "prediction_net"):
+                    self._predictor.prediction_net.to(self._predictor.device)
                 logger.debug("Predictor remapeado: {} → {}", cur, self._predictor.device)
-            # Siempre sincronizar pesos con el device del predictor
-            # (_load_pickle_cpu carga en CPU; si device=cuda hay que mover)
-            if hasattr(self._predictor, "prediction_net"):
-                self._predictor.prediction_net.to(self._predictor.device)
 
         # Load sidecar CSV for historical context (needed for predict)
         csv_path = path.with_suffix(".csv")
