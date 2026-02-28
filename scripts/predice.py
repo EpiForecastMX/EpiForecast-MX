@@ -316,7 +316,7 @@ def main():
                     "Fallback regional: {} → {} (pob={:,.0f})",
                     stem_insuf,
                     pkl_regional_name,
-                    info.get("poblacion", 0),
+                    info.get("poblacion") or 0,
                 )
             except Exception as e:
                 logger.warning("Error en fallback {}: {}", stem_insuf, e)
