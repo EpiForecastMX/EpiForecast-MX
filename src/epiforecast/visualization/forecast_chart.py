@@ -109,11 +109,11 @@ def _prepare_data(serie: pd.DataFrame) -> tuple[pd.DataFrame, pd.Timestamp]:
 
 
 def _build_palette(padecimiento: str, conf_paleta: dict, conf_pad: dict) -> dict:
-    """Construye diccionario de colores: azul (historial) / rojo (pronostico)."""
+    """Construye diccionario de colores: azul oscuro (historial) / rojo (pronostico)."""
     return {
-        "obs": "#1565C0",
-        "fc": "#C62828",
-        "band": "#EF9A9A",
+        "obs": "#1B2A4A",
+        "fc": "#E74C3C",
+        "band": "#F5B7B1",
         "outlier": "#D84315",
         "div": "#555555",
         "gray": conf_paleta["cool_gray"],
@@ -201,51 +201,101 @@ def _plot_series(
         ),
     )
 
-    # Banda de predicción
-    ax.fill_between(
-        forecast["ds"],
-        forecast["yhat_lower"],
-        forecast["yhat_upper"],
-        alpha=_ALPHA_BAND,
-        color=colors["band"],
-        zorder=1,
-        label="Intervalo 80 %",
-    )
+    # ── Dividir pronostico en zona solapada vs zona futura ────────────
+    fc_overlap = forecast[forecast["ds"] <= fecha_max_datos]
+    fc_future = forecast[forecast["ds"] > fecha_max_datos]
 
-    # Observaciones reales (linea solida azul)
+    # Banda de confianza SOLO en zona futura
+    if not fc_future.empty:
+        ax.fill_between(
+            fc_future["ds"],
+            fc_future["yhat_lower"],
+            fc_future["yhat_upper"],
+            alpha=0.15,
+            color=colors["band"],
+            zorder=1,
+            label="Intervalo 80 %",
+        )
+        # Bordes del intervalo
+        ax.plot(
+            fc_future["ds"],
+            fc_future["yhat_lower"],
+            color=colors["band"],
+            alpha=0.2,
+            lw=0.5,
+            zorder=1,
+        )
+        ax.plot(
+            fc_future["ds"],
+            fc_future["yhat_upper"],
+            color=colors["band"],
+            alpha=0.2,
+            lw=0.5,
+            zorder=1,
+        )
+
+    # ── Pronostico zona solapada (sombra transparente detras de datos reales) ──
+    if not fc_overlap.empty:
+        ax.plot(
+            fc_overlap["ds"],
+            fc_overlap["yhat"],
+            color=colors["fc"],
+            alpha=0.35,
+            linewidth=0.8,
+            linestyle="-",
+            zorder=3,
+            label="Pronostico (solapado)",
+        )
+
+    # ── Pronostico zona futura (visible, es el forecast real) ──────────
+    _model_display = {"prophet": "Prophet", "deepar": "DeepAR"}
+    modelo_activo = _model_display.get(
+        conf.get("modelo_activo", "prophet"), conf.get("modelo_activo", "prophet")
+    )
+    if not fc_future.empty:
+        ax.plot(
+            fc_future["ds"],
+            fc_future["yhat"],
+            color=colors["fc"],
+            alpha=0.85,
+            linewidth=1.8,
+            linestyle="-",
+            zorder=3,
+            label=f"Pronostico {modelo_activo}",
+        )
+
+    # ── Observaciones reales (linea DOMINANTE) ─────────────────────────
     serie_sorted = serie.sort_values("ds")
     y_smooth = serie_sorted["y"].rolling(_ROLLING_OBS, min_periods=1, center=True).mean()
     ax.plot(
         serie_sorted["ds"],
         y_smooth,
         color=colors["obs"],
-        alpha=0.7,
-        linewidth=1.5,
+        alpha=1.0,
+        linewidth=2.0,
         linestyle="-",
-        zorder=3,
-        label="Datos historicos",
+        zorder=5,
+        label="Datos reales",
     )
 
-    # Linea de pronostico (discontinua roja)
-    _model_display = {"prophet": "Prophet", "deepar": "DeepAR"}
-    modelo_activo = _model_display.get(
-        conf.get("modelo_activo", "prophet"), conf.get("modelo_activo", "prophet")
-    )
+    # ── Marcador de transicion (fin de datos reales) ───────────────────
+    last_y = y_smooth.iloc[-1]
     ax.plot(
-        forecast["ds"],
-        forecast["yhat"],
-        color=colors["fc"],
-        linewidth=_LW_FORECAST,
-        linestyle="--",
-        zorder=4,
-        label=f"Pronostico {modelo_activo}",
+        fecha_max_datos,
+        last_y,
+        marker="o",
+        markersize=8,
+        color=colors["obs"],
+        markeredgecolor="white",
+        markeredgewidth=1.5,
+        zorder=6,
     )
 
-    # Pico proyectado
-    if not forecast["yhat"].empty:
-        idx_max = forecast["yhat"].idxmax()
-        pico_x = forecast.loc[idx_max, "ds"]
-        pico_y = forecast.loc[idx_max, "yhat"]
+    # ── Pico proyectado (solo en zona futura) ──────────────────────────
+    if not fc_future.empty:
+        idx_max = fc_future["yhat"].idxmax()
+        pico_x = fc_future.loc[idx_max, "ds"]
+        pico_y = fc_future.loc[idx_max, "yhat"]
         ax.annotate(
             f"Pico proyectado\n{pico_y:,.0f}",
             xy=(pico_x, pico_y),
@@ -259,7 +309,7 @@ def _plot_series(
             zorder=7,
         )
 
-    # Outliers
+    # ── Outliers ───────────────────────────────────────────────────────
     if len(outliers) > 0:
         ax.scatter(
             outliers["ds"],
