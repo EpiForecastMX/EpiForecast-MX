@@ -53,7 +53,7 @@ def _anotar_divisores(
         va="top",
     )
     ax.annotate(
-        " Inicio pronostico →",
+        " Inicio pronóstico →",
         xy=(fecha_max_datos, _Y_DIVIDER),
         xycoords=("data", "axes fraction"),
         fontsize=_FS_DIVIDER,

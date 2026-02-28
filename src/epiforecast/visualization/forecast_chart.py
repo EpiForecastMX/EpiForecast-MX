@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 from epiforecast.constants import VIZ_DPI_SCREEN
-from epiforecast.utils.config import conf
 from epiforecast.visualization.chart_annotations import (
     _anotar_divisores,
     _anotar_zona_cv,
@@ -244,14 +243,10 @@ def _plot_series(
             linewidth=0.8,
             linestyle="-",
             zorder=3,
-            label="Pronostico (solapado)",
+            label="Ajuste del Modelo (Backtesting)",
         )
 
     # ── Pronostico zona futura (visible, es el forecast real) ──────────
-    _model_display = {"prophet": "Prophet", "deepar": "DeepAR"}
-    modelo_activo = _model_display.get(
-        conf.get("modelo_activo", "prophet"), conf.get("modelo_activo", "prophet")
-    )
     if not fc_future.empty:
         ax.plot(
             fc_future["ds"],
@@ -261,7 +256,7 @@ def _plot_series(
             linewidth=1.8,
             linestyle="-",
             zorder=3,
-            label=f"Pronostico {modelo_activo}",
+            label="Predicción de Casos",
         )
 
     # ── Observaciones reales (linea DOMINANTE) ─────────────────────────
