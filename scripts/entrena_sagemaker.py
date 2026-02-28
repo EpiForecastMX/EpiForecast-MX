@@ -102,6 +102,10 @@ def main() -> None:
             sys.argv.append(override)
             logger.debug("Override padecimiento.tipo={}", tipo_padecimiento)
 
+    # Paralelizar entrenamiento en SageMaker (4 vCPUs en ml.g4dn.xlarge)
+    if entorno == "sagemaker":
+        sys.argv.append("n_jobs_train=3")
+
     from scripts.entrena import main as entrena_main
 
     entrena_main()
