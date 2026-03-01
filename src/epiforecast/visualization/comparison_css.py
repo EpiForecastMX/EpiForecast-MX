@@ -94,7 +94,7 @@ tbody tr:hover{background:var(--cream-pale)}
 .thumbs .caption{padding:.5rem .75rem;font-size:.78rem;color:var(--cool-gray);
   text-align:center;background:#fff;font-weight:500}
 
-.reveal{opacity:0;transform:translateY(30px);transition:opacity .6s ease,transform .6s ease}
+.reveal.animate{opacity:0;transform:translateY(30px);transition:opacity .6s ease,transform .6s ease}
 .reveal.visible{opacity:1;transform:translateY(0)}
 
 footer{background:var(--dark-teal);color:rgba(232,213,181,.7);padding:3rem 2rem;

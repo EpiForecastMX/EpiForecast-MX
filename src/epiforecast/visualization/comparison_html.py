@@ -22,10 +22,15 @@ _MODELS: dict[str, dict[str, str]] = {
 
 _REVEAL_JS = """\
 <script>
+document.querySelectorAll('.reveal').forEach(el=>{
+const r=el.getBoundingClientRect();
+if(r.top>window.innerHeight){el.classList.add('animate')}
+else{el.classList.add('visible')}
+});
 const obs=new IntersectionObserver(es=>{
 es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target)}})
 },{threshold:.1});
-document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+document.querySelectorAll('.reveal.animate').forEach(el=>obs.observe(el));
 </script>"""
 
 
