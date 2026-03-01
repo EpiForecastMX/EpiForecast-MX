@@ -1,18 +1,23 @@
 # Reporte Detallado: Ensemble (Prophet + XGBoost)
 
-## EpiForecast-MX | IMSS | Febrero 2026
+## EpiForecast-MX | IMSS | Marzo 2026
 
 ---
 
 ## 1. Resumen ejecutivo
 
-El modelo Ensemble es el tercer motor de pronostico de EpiForecast-MX. Combina
-Prophet como modelo base (captura tendencia y estacionalidad) con XGBoost como
-corrector de residuos (captura volatilidad y patrones no lineales que Prophet pierde).
+El modelo Ensemble es el tercer motor de pronostico de EpiForecast-MX. Opera en dos
+modos: **paralelo** (default) y **secuencial** (legacy).
 
-Este enfoque hibrido fue desarrollado como Avance 5 del proyecto integrador. Opera
-sobre conteos absolutos (no tasas por 100k), lo que facilita la interpretacion directa
-de las predicciones.
+- **Modo paralelo** (v2, marzo 2026): Prophet y XGBDirect predicen independientemente.
+  Los pesos `[w_prophet, w_xgb]` se aprenden via Ridge OOF (out-of-fold).
+  `yhat = w_prophet * prophet + w_xgb * xgb_direct`.
+
+- **Modo secuencial** (v1): Prophet como modelo base + XGBoost como corrector de
+  residuos. `yhat = prophet + xgb(residuos)`.
+
+Opera sobre conteos absolutos (no tasas por 100k). Genera 333 modelos (3 padecimientos
+x 111 combinaciones entidad/sexo).
 
 ---
 
@@ -20,66 +25,79 @@ de las predicciones.
 
 ### 2.1 Clase principal: `EnsembleForecaster`
 
-**Archivo**: `src/epiforecast/models/ensemble/model.py` (300 lineas)
+**Archivo**: `src/epiforecast/models/ensemble/model.py` (547 lineas)
 
 Implementa la interfaz `ForecastModel` (patron Factory/SOLID):
 
 | Metodo | Descripcion |
 |--------|-------------|
-| `fit(train_data)` | Entrena Prophet base + XGBoost sobre residuos |
-| `predict(horizon)` | Prophet futuro + XGBoost iterativo |
+| `fit(train_data)` | Paralelo: XGBDirect + Ridge OOF. Secuencial: Prophet + XGBoost residuos |
+| `predict(horizon)` | Combinacion ponderada (paralelo) o Prophet + XGBoost iterativo (secuencial) |
 | `cross_validate(data)` | Evalua en hold-out temporal (test set) |
-| `save(path)` | Serializa Prophet + XGBoost + params a pickle |
-| `load(path)` | Restaura ambos modelos desde pickle |
-| `get_params()` | Retorna HP de ambos sub-modelos |
+| `save(path)` | Serializa modelos + pesos + modo a pickle |
+| `load(path)` | Restaura desde pickle (backward compatible con v1) |
+| `get_params()` | Retorna HP, modo y pesos |
 | `run()` | Pipeline completo: datos -> fit -> evaluar |
 
 Registrado en la factory con `@register_model("ensemble")`.
 
-### 2.2 Funciones auxiliares: `helpers.py`
+### 2.2 Modulos auxiliares
 
-**Archivo**: `src/epiforecast/models/ensemble/helpers.py` (251 lineas)
+| Archivo | Lineas | Descripcion |
+|---------|--------|-------------|
+| `feature_builder.py` | 105 | 20 features temporales y exogenos para XGBoost |
+| `helpers.py` | 329 | Preparacion de datos, predicciones insample, metricas |
+| `xgb_direct.py` | 84 | XGBDirectForecaster: predice y directamente (no residuos) |
+| `weight_optimizer.py` | 120 | EnsembleWeightOptimizer: Ridge OOF para aprender pesos |
+| `xgb_tuner.py` | 253 | Grid search CV temporal para XGBoost |
+| `oof_residuals.py` | — | Residuos OOF para modo secuencial |
 
-Extraido de `model.py` para cumplir con SRP (max 300 lineas por modulo):
-
-| Funcion | Descripcion |
-|---------|-------------|
-| `construir_features_xgb(y, dates)` | Lags (1, 2, 4) + rolling means (4, 8, 12) + month + week |
-| `construir_holidays(config)` | DataFrame de periodos atipicos para Prophet |
-| `preparar_datos_ensemble(df, pad, sexo, cutoff)` | Filtrar, agregar, train/test split |
-| `generar_predicciones_insample(prophet, xgb, train, test)` | Predicciones para graficos |
-| `calcular_metricas_ensemble(test, pred, train, nombre, t)` | Metricas del ensemble |
-| `calcular_metricas_prophet_base(test, pred, train, t)` | Metricas del Prophet solo |
-
-### 2.3 Flujo de entrenamiento
+### 2.3 Flujo de entrenamiento: modo paralelo (default)
 
 ```
 1. Prophet base:
-   - yearly_seasonality=False (se agrega custom con period=365.25, fourier_order=10)
-   - weekly_seasonality=False
-   - Holidays: periodos atipicos desde config (COVID, etc.)
-   - Hiperparametros: changepoint_prior_scale=0.05, seasonality_prior_scale=0.1,
-     seasonality_mode=additive
+   - yearly_seasonality custom (period=365.25, fourier_order=10)
+   - Holidays: periodos atipicos desde config
+   - HP: changepoint_prior_scale=0.05, seasonality_prior_scale=0.1, additive
 
-2. Calcular residuos:
+2. XGBDirect (independiente, NO sobre residuos):
+   - 20 features de construir_features_xgb()
+   - Predice y directamente con early stopping (20% eval set)
+   - HP: max_depth=3, learning_rate=0.03, min_child_weight=5
+
+3. EnsembleWeightOptimizer (expanding-window OOF):
+   - 4 folds, cutoff 2024-01-01, min 104 semanas train
+   - Ridge(positive=True, fit_intercept=False)
+   - Normaliza pesos a sum=1. Fallback [0.5, 0.5]
+
+4. Prediccion final:
+   yhat = w_prophet * prophet(dates) + w_xgb * xgb_direct(features)
+```
+
+### 2.4 Flujo de entrenamiento: modo secuencial (legacy)
+
+```
+1. Prophet base (identico)
+
+2. Calcular residuos OOF:
    residuos = y_train - prophet.predict(train)["yhat"]
 
 3. XGBoost sobre residuos:
-   Features: lag_1, lag_2, lag_4, roll_4, roll_8, roll_12, month, week_of_year
-   HP: n_estimators=200, max_depth=4, learning_rate=0.05, subsample=0.8
+   Features: 20 features de construir_features_xgb()
+   HP optimizados por grid search (36 combinaciones)
 
 4. Prediccion final:
-   yhat_ensemble = prophet.predict(future)["yhat"] + xgb.predict(features_future)
+   yhat = prophet.predict(future)["yhat"] + xgb.predict(features)
 ```
 
-### 2.4 Prediccion iterativa a futuro
+### 2.5 Prediccion iterativa a futuro
 
-Para generar pronosticos mas alla de los datos disponibles, XGBoost opera de forma
-iterativa:
+Para ambos modos, la prediccion mas alla de datos disponibles opera de forma
+iterativa (recursiva):
 
 1. Se construyen features con toda la serie historica
-2. XGBoost predice el ajuste residual del siguiente paso
-3. Se agrega la prediccion combinada (Prophet + XGBoost) a la serie extendida
+2. Se predice el siguiente paso
+3. Se agrega la prediccion a la serie extendida
 4. Se repite para las siguientes `horizon` semanas
 
 ---
@@ -98,26 +116,65 @@ iterativa:
 
 ### 3.2 XGBoost
 
+| Parametro | Valor | Nota |
+|-----------|-------|------|
+| `n_estimators` | 200 | Max 500 con early stopping |
+| `max_depth` | 3 | Reducido de 4 para evitar overfitting |
+| `learning_rate` | 0.03 | Reducido de 0.05 |
+| `subsample` | 0.8 | |
+| `colsample_bytree` | 0.7 | Reducido de 0.8 |
+| `min_child_weight` | 5 | Nuevo: regularizacion para series cortas |
+| `reg_alpha` | 0.1 | Nuevo: L1 regularization |
+| `reg_lambda` | 1.0 | Nuevo: L2 regularization |
+
+### 3.3 Modo paralelo
+
 | Parametro | Valor |
 |-----------|-------|
-| `n_estimators` | 200 |
-| `max_depth` | 4 |
-| `learning_rate` | 0.05 |
-| `subsample` | 0.8 |
-| `colsample_bytree` | 0.8 |
+| `ensemble_mode` | parallel |
+| `parallel_alpha` | 1.0 |
+| `parallel_oof_folds` | 4 |
+| `parallel_oof_cutoff` | 2024-01-01 |
+| `parallel_min_train_weeks` | 104 |
 
-### 3.3 Features de XGBoost
+### 3.4 Features de XGBoost (20 total)
 
 | Feature | Descripcion |
 |---------|-------------|
 | `lag_1` | Valor de y en t-1 |
 | `lag_2` | Valor de y en t-2 |
 | `lag_4` | Valor de y en t-4 |
-| `roll_4` | Media movil de 4 semanas |
-| `roll_8` | Media movil de 8 semanas |
-| `roll_12` | Media movil de 12 semanas |
+| `lag_8` | Valor de y en t-8 |
+| `lag_13` | Valor de y en t-13 (trimestral) |
+| `lag_26` | Valor de y en t-26 (semestral) |
+| `lag_52` | Valor de y en t-52 (anual) |
+| `roll_4` | Media movil 4 sem (shifted) |
+| `roll_8` | Media movil 8 sem (shifted) |
+| `roll_12` | Media movil 12 sem (shifted) |
+| `roll_26` | Media movil 26 sem (shifted) |
+| `roll_52` | Media movil 52 sem (shifted) |
+| `roll_std_13` | Volatilidad trimestral (std shifted) |
 | `month` | Mes del anio (1-12) |
 | `week_of_year` | Semana ISO del anio (1-53) |
+| `sin_week` | Codificacion ciclica seno (semana) |
+| `cos_week` | Codificacion ciclica coseno (semana) |
+| `roc_4` | Tasa de cambio 4 semanas (pct_change) |
+| `roc_52` | Tasa de cambio 52 semanas (pct_change) |
+| `covid_flag` | Binario: 1 durante COVID (2020-03 a 2023-05) |
+
+Las rolling means usan `shift(1)` para evitar data leakage. Los `roc_*` reemplazan
+`inf` por `NaN` para evitar crash de XGBoost en series con semanas de cero incidencia.
+
+### 3.5 Grid search (modo secuencial)
+
+36 combinaciones (3x3x2x2):
+
+| Parametro | Valores |
+|-----------|---------|
+| `max_depth` | [3, 4, 5] |
+| `learning_rate` | [0.01, 0.03, 0.05] |
+| `subsample` | [0.7, 0.8] |
+| `min_child_weight` | [5, 10] |
 
 ---
 
@@ -125,242 +182,178 @@ iterativa:
 
 ### 4.1 Metodo de evaluacion
 
-El ensemble usa hold-out temporal (no CV con folds) para evaluar rendimiento:
-
 1. **Train**: Datos anteriores a `FECHA_CORTE_ENTRENAMIENTO` (2025-01-01)
 2. **Test**: Datos posteriores al corte
 3. **Metricas**: RMSE, MAE, SMAPE, MASE via `compute_forecast_metrics()`
 
-Se comparan las metricas del ensemble completo contra las del Prophet base solo
-para cuantificar la mejora que aporta XGBoost.
+### 4.2 Resultados (promedio sobre 111 series por padecimiento)
 
-### 4.2 Metricas Prophet base vs Ensemble
+| Padecimiento | RMSE | MAE | SMAPE | MASE |
+|-------------|------|-----|-------|------|
+| Alzheimer | 1.414 | 1.079 | 125.3% | 0.739 |
+| Depresion | 29.42 | 21.40 | 27.2% | 0.887 |
+| Parkinson | 3.766 | 2.807 | 81.1% | 0.775 |
 
-Las metricas se calculan sobre el test set. El script `avance5_modelo_final.py` imprime
-una tabla Rich en consola mostrando la comparacion lado a lado para cada padecimiento.
+### 4.3 Comparacion vs Prophet (mejora del Ensemble)
 
----
+| Padecimiento | Metrica | Prophet | Ensemble | Mejora |
+|-------------|---------|---------|----------|--------|
+| Alzheimer | RMSE | 1.424 | 1.414 | -0.7% |
+| Alzheimer | MAE | 1.145 | 1.079 | -5.8% |
+| Alzheimer | MASE | 0.776 | 0.739 | -4.8% |
+| Depresion | RMSE | 31.22 | 29.42 | -5.8% |
+| Depresion | MAE | 25.68 | 21.40 | -16.7% |
+| Depresion | SMAPE | 29.26 | 27.19 | -7.1% |
+| Parkinson | RMSE | 4.082 | 3.766 | -7.7% |
+| Parkinson | MAE | 3.186 | 2.807 | -11.9% |
+| Parkinson | MASE | 0.796 | 0.775 | -2.6% |
 
-## 5. Script de ejecucion: `avance5_modelo_final.py`
-
-**Archivo**: `scripts/avance5_modelo_final.py` (542 lineas)
-
-### 5.1 Flujo principal
-
-```python
-for padecimiento in ["Alzheimer", "Depresion", "Parkinson"]:
-    df = _cargar_datos()
-
-    # Factory pattern (SOLID)
-    forecaster = EnsembleForecaster(df=df, padecimiento=pad, sexo="incrementos_total")
-    _, metrics_ensemble, params = forecaster.run()
-
-    # Guardar modelo (MLOps)
-    forecaster.save(models_dir / pad / f"Ensemble_{pad}_general.pkl")
-
-    # Guardar serie sidecar + metadata CSV
-    forecaster.serie.to_csv(ruta_csv, index=False)
-    pd.DataFrame([metrics_ensemble]).to_csv(ruta_completo, index=False)
-
-    # Metricas Prophet base
-    metrics_prophet = forecaster.get_prophet_metrics()
-
-    # Tabla Rich + graficos
-    _imprimir_tabla_rich([metrics_prophet, metrics_ensemble], pad)
-    _graficar_individual(...)        # Prophet solo
-    _graficar_individual(...)        # Ensemble solo
-    _graficar_importancia(...)       # Feature importance XGBoost
-    _graficar_comparativa(...)       # Prophet vs Ensemble
-    _graficar_comparativa(...)       # Zoom 2020-2027
-```
-
-### 5.2 Visualizaciones generadas
-
-| Grafico | Ruta |
-|---------|------|
-| Prophet individual | `reports/forecasts/prophet/{pad}/pronostico_{pad}.png` |
-| Ensemble individual | `reports/forecasts/ensemble/{pad}/pronostico_{pad}.png` |
-| Importancia features | `reports/forecasts/ensemble/{pad}/importancia_features_{pad}.png` |
-| Comparativa completa | `reports/forecasts/comparacion_modelos/{pad}/comparativa_{pad}.png` |
-| Comparativa reciente | `reports/forecasts/comparacion_modelos/{pad}/comparativa_{pad}_reciente.png` |
-
-### 5.3 Estilo visual
-
-- **Paleta IMSS**: Colores leidos de `conf["IMSS_COLORS"]` (plots.yaml)
-  - Real: neutral_black (#231F20)
-  - Prophet: teal (#00524E) con linestyle dashdot
-  - Ensemble: burgundy (#9B2242) con linestyle solid
-  - XGBoost importancia: gold (#B58500)
-  - Cutoff: cool_gray (#97999B)
-- **Franja COVID**: Desde `conf["COVID"]["inicio"]` hasta `conf["COVID"]["fin"]`
-- **Divisores**: Reutiliza `_anotar_divisores()` de `chart_annotations.py`
-- **Timestamp**: Zona horaria CDMX (`America/Mexico_City`)
-- **DPI**: `VIZ_DPI_SCREEN` (200) de `constants.py`
+El Ensemble mejora consistentemente en RMSE, MAE y MASE. SMAPE es mixto en
+padecimientos de baja incidencia (Alzheimer, Parkinson) donde la division por
+valores cercanos a cero infla la metrica.
 
 ---
 
-## 6. Serializacion y artefactos
+## 5. Serializacion y artefactos
 
-### 6.1 Formato de guardado
+### 5.1 Formato de guardado
 
 ```python
+# Modo paralelo
 payload = {
-    "prophet": self._prophet,           # Modelo Prophet entrenado
-    "xgb": self._xgb,                   # XGBRegressor entrenado
-    "params": self.get_params(),         # Hiperparametros
-    "features": self._feature_names,     # Nombres de features XGBoost
+    "prophet": self._prophet,
+    "xgb_direct": self._xgb_direct,
+    "ensemble_weights": self._ensemble_weights,
+    "ensemble_mode": self._ensemble_mode,
+    "params": self.get_params(),
+    "features": self._feature_names,
 }
-pickle.dump(payload, path)
+
+# Modo secuencial (legacy)
+payload = {
+    "prophet": self._prophet,
+    "xgb": self._xgb,
+    "params": self.get_params(),
+    "features": self._feature_names,
+}
 ```
 
-### 6.2 Artefactos generados
+### 5.2 Artefactos generados
 
 ```
 models/ensemble/
   Alzheimer/
-    Ensemble_Alzheimer_general.pkl       # Prophet + XGBoost serializados
+    Ensemble_Alzheimer_general.pkl       # Modelos serializados
     Ensemble_Alzheimer_general.csv       # Serie historica (sidecar)
-    Ensemble_Alzheimer_completo.csv      # Metadata: metricas, HP, tiempo
-  Depresion/
-    ...
-  Parkinson/
-    ...
+    Ensemble_Alzheimer_completo.csv      # Metadata: metricas, HP, pesos, tiempo
+    ... (111 series total: 3 nacional + 96 regional + 12 por region salud mental)
+  Depresion/ ...
+  Parkinson/ ...
 ```
 
 ---
 
-## 7. Estructura de archivos
+## 6. Estructura de archivos
 
 ```
 src/epiforecast/models/ensemble/
   __init__.py              # Import para registro en factory
-  model.py                 # EnsembleForecaster (300 lineas)
-  helpers.py               # Feature engineering, datos, metricas (251 lineas)
+  model.py                 # EnsembleForecaster (547 lineas)
+  feature_builder.py       # 20 features temporales y exogenos (105 lineas)
+  helpers.py               # Preparacion datos, predicciones, metricas (329 lineas)
+  xgb_direct.py            # XGBDirectForecaster para modo paralelo (84 lineas)
+  weight_optimizer.py      # Ridge OOF para aprender pesos (120 lineas)
+  xgb_tuner.py             # Grid search CV temporal (253 lineas)
+  oof_residuals.py         # Residuos OOF para modo secuencial
 
-scripts/
-  avance5_modelo_final.py  # CLI script para entrenamiento y graficos (542 lineas)
+config/models/ensemble.yaml   # Hiperparametros, grid, modo
 
-models/ensemble/           # Artefactos serializados (por padecimiento)
+models/ensemble/               # Artefactos serializados (333 modelos)
 
-reports/forecasts/
-  prophet/{pad}/           # Graficos Prophet individual
-  ensemble/{pad}/          # Graficos Ensemble individual + feature importance
-  comparacion_modelos/{pad}/  # Graficos comparativos
+reports/forecasts/ensemble/    # 333 graficos de pronostico
 ```
 
 ---
 
-## 8. Tests unitarios
+## 7. Tests unitarios
 
-**Archivo**: `tests/unit/models/test_ensemble_model.py`
+**Archivos**:
+- `tests/unit/models/test_ensemble_model.py`
+- `tests/unit/models/test_xgb_direct.py`
+- `tests/unit/models/test_weight_optimizer.py`
 
 | Clase de test | Cobertura |
 |---------------|-----------|
-| `TestEnsembleInit` | Constructor, df copied, config keys loaded |
-| `TestConstruirFeaturesXgb` | Columnas esperadas, lags correctos, rolling mean |
+| `TestEnsembleInit` | Constructor, config keys, modo paralelo/secuencial |
+| `TestConstruirFeaturesXgb` | 20 columnas, lags, rolling, ciclicos, COVID flag, ROC |
 | `TestConstruirHolidays` | DataFrame valido, COVID presente, config vacia |
-| `TestGetParams` | Retorna dict con claves prophet y xgboost |
-| `TestSaveLoad` | RuntimeError sin modelo, crea archivo, restaura modelos |
+| `TestGetParams` | Dict con claves prophet, xgboost, modo, pesos |
+| `TestSaveLoad` | RuntimeError sin modelo, crea archivo, restaura, backward compat |
 | `TestFactoryRegistration` | Registrado en factory, create_model retorna EnsembleForecaster |
+| `TestOOFResiduals` | Residuos out-of-fold con mock XGBoost |
+| `TestParallelMode` | Fit paralelo, predict, CV, save/load, pesos, get_params |
+| `TestXGBDirect` | Fit, predict_insample, predict_recursive, features, early stopping |
+| `TestWeightOptimizer` | Expanding-window OOF, fallback pesos iguales, normalizacion |
 
 Todos los tests usan mocks de Prophet y XGBoost para evitar entrenamiento real.
 
 ---
 
-## 9. Integracion con el ecosistema
+## 8. Integracion con el ecosistema
 
-### 9.1 Factory pattern
+### 8.1 Factory pattern
 
-El modelo se registra automaticamente al importar el modulo:
-
-```python
-# src/epiforecast/models/__init__.py
-from epiforecast.models.ensemble import model as _ensemble  # noqa: F401
-```
-
-Esto permite instanciar via:
 ```python
 from epiforecast.models.factory import create_model
 model = create_model("ensemble", df=df, sexo="incrementos_total", padecimiento="Alzheimer")
 ```
 
-### 9.2 Makefile
+### 8.2 Makefile
 
 ```bash
-make avance5                                              # Todos los padecimientos
-make avance5 ARGS="padecimiento.tipo='Alzheimer'"         # Solo Alzheimer
+make train-ensemble                                    # 297 jobs -> 333 modelos
+make predict ARGS="modelo_activo='ensemble'"           # 333 graficos
+make compare                                           # Comparativas 4 modelos
 ```
 
 ---
 
-## 10. Decisiones de diseno y trade-offs
+## 9. Decisiones de diseno y trade-offs
 
-### 10.1 Conteos absolutos vs tasas
+### 9.1 Modo paralelo vs secuencial
 
-- **Decision**: El ensemble trabaja con conteos absolutos (incrementos), no tasas.
-- **Razon**: Para el Avance 5, el objetivo es predecir directamente el numero de casos.
-  La normalizacion a tasas es relevante para comparaciones inter-estatales pero el
-  ensemble opera solo a nivel nacional.
+- **Decision**: Modo paralelo como default (v2).
+- **Razon**: En modo secuencial, si Prophet falla en capturar un patron, XGBoost
+  hereda el sesgo al operar sobre residuos. En modo paralelo, ambos modelos predicen
+  independientemente y los pesos se optimizan via Ridge OOF.
+- **Resultado**: Mejora de hasta 16.7% en MAE (Depresion) respecto a Prophet solo.
 
-### 10.2 Hold-out vs CV con folds
+### 9.2 20 features vs 8 originales
 
-- **Decision**: Evaluacion por hold-out temporal simple en vez de CV con multiples folds.
-- **Razon**: XGBoost se entrena sobre residuos de Prophet. Hacer CV con folds requeriria
-  reentrenar Prophet en cada fold (costoso) sin beneficio claro dado que los HP son fijos.
+- **Decision**: Expandir de 8 a 20 features (lags estacionales, volatilidad, ciclicos,
+  ROC, COVID flag).
+- **Razon**: Los lags cortos (1, 2, 4) no capturan patrones estacionales. Agregar
+  lag_52, roll_52, sin/cos_week permite a XGBoost capturar estacionalidad anual.
+  covid_flag evita que el modelo interprete la pandemia como patron recurrente.
 
-### 10.3 Prediccion iterativa de XGBoost
+### 9.3 Regularizacion reforzada
 
-- **Decision**: Para el futuro (mas alla de datos reales), XGBoost predice de forma
-  iterativa (un paso a la vez, alimentandose de sus propias predicciones).
-- **Trade-off**: Propagacion de errores en horizontes largos. Mitigado porque Prophet
-  aporta la tendencia principal y XGBoost solo ajusta residuos pequenios.
+- **Decision**: min_child_weight=5, reg_alpha=0.1, reg_lambda=1.0, max_depth=3.
+- **Razon**: Con ~300 puntos de entrenamiento y 20 features, el riesgo de overfitting
+  es alto. La regularizacion adicional previene que XGBoost memorice ruido.
 
-### 10.4 Features simples
+### 9.4 Backward compatibility
 
-- **Decision**: Solo 8 features (lags + rolling means + calendario).
-- **Razon**: Con datos semanales y ~300 puntos de entrenamiento, mas features llevan a
-  overfitting. Los lags y rolling means capturan la autocorrelacion que Prophet pierde.
-
----
-
-## 11. Refactorizaciones aplicadas
-
-### 11.1 SRP compliance (max 300 lineas)
-
-El `model.py` original tenia 537 lineas. Se extrajo a `helpers.py`:
-- `construir_features_xgb()`, `construir_holidays()`
-- `preparar_datos_ensemble()`, `generar_predicciones_insample()`
-- `calcular_metricas_ensemble()`, `calcular_metricas_prophet_base()`
-
-Resultado: `model.py` = 300 lineas, `helpers.py` = 251 lineas.
-
-### 11.2 Script avance5 refactorizado
-
-El script original (~800 lineas) se redujo a 542 lineas:
-- Colores: De hardcoded a `conf["IMSS_COLORS"]`
-- COVID: De hardcoded a `conf["COVID"]`
-- Constantes: `RANDOM_SEED` y `VIZ_DPI_SCREEN` de `epiforecast.constants`
-- Annotations: Reutiliza `_anotar_divisores()` y `_TZ_CDMX` de `chart_annotations`
-- Modelo: Toda la logica de entrenamiento encapsulada en `EnsembleForecaster`
-
-### 11.3 Correccion mypy
-
-Se corrigieron 24 errores de tipo en `model.py`:
-- `.values` -> `.to_numpy()` para compatibilidad con `ArrayLike`
-- `compute_forecast_metrics()` en vez de calculo manual
-- `dict[str, float]` con `or 0.0` para valores `float | None`
+- **Decision**: `load()` detecta automaticamente si el pickle es v1 (secuencial) o v2
+  (paralelo) y restaura correctamente.
+- **Razon**: Modelos entrenados con la version anterior siguen siendo usables.
 
 ---
 
-## 12. Comando de ejecucion
+## 10. Comando de ejecucion
 
 ```bash
-# Ejecutar Avance 5 completo
-make avance5
-
-# Solo un padecimiento
-make avance5 ARGS="padecimiento.tipo='Alzheimer'"
-
-# Tests
-make test-fast
+make train-ensemble    # Entrena 333 modelos (modo paralelo, ~3.5 min)
+make predict ARGS="modelo_activo='ensemble'"   # Genera 333 graficos
+make compare-metrics   # Excel comparativo 4 modelos
 ```
