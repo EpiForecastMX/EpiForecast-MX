@@ -116,13 +116,32 @@ class TestConstruirFeaturesXgb:
             "lag_1",
             "lag_2",
             "lag_4",
+            "lag_8",
+            "lag_13",
+            "lag_26",
+            "lag_52",
             "roll_4",
             "roll_8",
             "roll_12",
+            "roll_26",
+            "roll_52",
+            "roll_std_13",
             "month",
             "week_of_year",
+            "sin_week",
+            "cos_week",
+            "roc_4",
+            "roc_52",
+            "covid_flag",
         }
         assert set(feats.columns) == expected
+
+    def test_returns_19_features(self):
+        rng = np.random.default_rng(42)
+        y = pd.Series(rng.integers(10, 50, 100))
+        dates = pd.Series(pd.date_range("2020-01-06", periods=100, freq="W-MON"))
+        feats = construir_features_xgb(y, dates)
+        assert feats.shape[1] == 20
 
     def test_lag_values_correct(self):
         y = pd.Series([10, 20, 30, 40, 50])
@@ -137,6 +156,32 @@ class TestConstruirFeaturesXgb:
         feats = construir_features_xgb(y, dates)
         # Rolling mean of constant series should be constant
         assert feats["roll_4"].iloc[5] == pytest.approx(10.0)
+
+    def test_covid_flag_values(self):
+        dates = pd.Series(pd.to_datetime(["2019-01-07", "2020-06-01", "2021-03-15", "2023-01-02"]))
+        y = pd.Series([10, 20, 30, 40])
+        feats = construir_features_xgb(y, dates)
+        assert feats["covid_flag"].iloc[0] == 0  # before COVID
+        assert feats["covid_flag"].iloc[1] == 1  # during COVID
+        assert feats["covid_flag"].iloc[2] == 1  # during COVID
+        assert feats["covid_flag"].iloc[3] == 0  # after COVID
+
+    def test_cyclic_encoding_range(self):
+        rng = np.random.default_rng(42)
+        y = pd.Series(rng.integers(10, 50, 60))
+        dates = pd.Series(pd.date_range("2020-01-06", periods=60, freq="W-MON"))
+        feats = construir_features_xgb(y, dates)
+        assert feats["sin_week"].min() >= -1.0
+        assert feats["sin_week"].max() <= 1.0
+        assert feats["cos_week"].min() >= -1.0
+        assert feats["cos_week"].max() <= 1.0
+
+    def test_rate_of_change_computed(self):
+        y = pd.Series([10.0, 10.0, 10.0, 10.0, 20.0])
+        dates = pd.Series(pd.date_range("2020-01-06", periods=5, freq="W-MON"))
+        feats = construir_features_xgb(y, dates)
+        # roc_4 at index 4: (20 - 10) / 10 = 1.0
+        assert feats["roc_4"].iloc[4] == pytest.approx(1.0)
 
 
 # ── construir_holidays ──────────────────────────────────────────────────────
@@ -248,18 +293,9 @@ class TestOOFResiduals:
                 "y": np.random.default_rng(42).integers(5, 30, 200).astype(float),
             }
         )
-        feats = pd.DataFrame(
-            {
-                "lag_1": np.ones(100),
-                "lag_2": np.ones(100),
-                "lag_4": np.ones(100),
-                "roll_4": np.ones(100),
-                "roll_8": np.ones(100),
-                "roll_12": np.ones(100),
-                "month": np.ones(100),
-                "week_of_year": np.ones(100),
-            }
-        )
+        from epiforecast.models.ensemble.feature_builder import FEATURE_NAMES
+
+        feats = pd.DataFrame({name: np.ones(100) for name in FEATURE_NAMES})
         residuos = np.random.default_rng(42).normal(0, 5, 100)
 
         with (
