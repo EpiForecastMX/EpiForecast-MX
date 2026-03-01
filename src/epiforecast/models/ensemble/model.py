@@ -17,6 +17,8 @@ from epiforecast.evaluation.metrics import compute_forecast_metrics
 if TYPE_CHECKING:
     from prophet import Prophet
     from xgboost import XGBRegressor
+
+    from epiforecast.models.ensemble.xgb_direct import XGBDirectForecaster
 from epiforecast.models.base import ForecastModel
 from epiforecast.models.ensemble.helpers import (
     FEATURE_NAMES,
@@ -30,8 +32,6 @@ from epiforecast.models.ensemble.helpers import (
     preparar_datos_ensemble,
 )
 from epiforecast.models.ensemble.oof_residuals import generate_oof_residuals
-from epiforecast.models.ensemble.weight_optimizer import EnsembleWeightOptimizer
-from epiforecast.models.ensemble.xgb_direct import XGBDirectForecaster
 from epiforecast.models.factory import register_model
 from epiforecast.utils.config import conf, logger
 
@@ -210,6 +210,9 @@ class EnsembleForecaster(ForecastModel):
 
     def _fit_parallel(self, train_data: pd.DataFrame) -> None:
         """Entrena XGBDirect + aprende pesos [w_prophet, w_xgb] via OOF."""
+        from epiforecast.models.ensemble.weight_optimizer import EnsembleWeightOptimizer
+        from epiforecast.models.ensemble.xgb_direct import XGBDirectForecaster
+
         t1 = time.perf_counter()
 
         # XGBDirect sobre y directamente
@@ -253,6 +256,8 @@ class EnsembleForecaster(ForecastModel):
 
     def _build_xgb_direct_temp(self, train_df: pd.DataFrame) -> XGBDirectForecaster:
         """Construye un XGBDirect temporal para OOF."""
+        from epiforecast.models.ensemble.xgb_direct import XGBDirectForecaster
+
         xgb = XGBDirectForecaster(self._xgb_hp)
         xgb.fit(train_df)
         return xgb
@@ -341,13 +346,13 @@ class EnsembleForecaster(ForecastModel):
         }
 
     def _cv_parallel(self, test_df: pd.DataFrame) -> dict[str, float]:
-        """Evalua modo paralelo sobre test_df."""
+        """Evalua modo paralelo sobre test_df (prediccion recursiva)."""
         if self._prophet is None or self._xgb_direct is None or self._ensemble_weights is None:
             return {"rmse": 0.0, "mae": 0.0, "smape": 0.0, "mase": 0.0}
 
         w = self._ensemble_weights
         prophet_pred = self._prophet.predict(test_df[["ds"]])["yhat"].values
-        xgb_pred = self._xgb_direct.predict_insample(test_df)
+        xgb_pred = self._xgb_direct.predict_recursive(self.train_data, test_df["ds"].values)
         y_pred = np.clip(w[0] * prophet_pred + w[1] * xgb_pred, 0, None)
 
         y_train = self.train_data["y"].to_numpy() if not self.train_data.empty else np.array([0.0])
@@ -497,12 +502,14 @@ class EnsembleForecaster(ForecastModel):
             }
         )
 
-        # Test
+        # Test (recursivo: no usa y real del test)
         pred_test = pd.DataFrame()
         if not self.test_data.empty:
             prophet_test = self._prophet.predict(self.test_data[["ds"]])
             yhat_p_t = prophet_test["yhat"].values
-            yhat_x_t = self._xgb_direct.predict_insample(self.test_data)
+            yhat_x_t = self._xgb_direct.predict_recursive(
+                self.train_data, self.test_data["ds"].values
+            )
             ensemble_test = np.clip(w[0] * yhat_p_t + w[1] * yhat_x_t, 0, None)
             pred_test = pd.DataFrame(
                 {

@@ -23,14 +23,12 @@ class TestEnsembleWeightOptimizer:
 
         def mock_prophet_builder(df):
             m = MagicMock()
-            m.predict.return_value = pd.DataFrame({"yhat": rng.normal(15, 2, len(df))})
-            # Workaround: predict receives fold_val[["ds"]] which has len(fold_val)
             m.predict.side_effect = lambda x: pd.DataFrame({"yhat": rng.normal(15, 2, len(x))})
             return m
 
         def mock_xgb_builder(df):
             xgb = MagicMock()
-            xgb.predict_insample.side_effect = lambda x: rng.normal(15, 2, len(x))
+            xgb.predict_recursive.side_effect = lambda hist, dates: rng.normal(15, 2, len(dates))
             return xgb
 
         opt = EnsembleWeightOptimizer(alpha=1.0, n_folds=3, min_train_weeks=100)
@@ -66,7 +64,7 @@ class TestEnsembleWeightOptimizer:
 
         def mock_xgb_builder(df):
             xgb = MagicMock()
-            xgb.predict_insample.side_effect = lambda x: rng.normal(15, 2, len(x))
+            xgb.predict_recursive.side_effect = lambda hist, dates: rng.normal(15, 2, len(dates))
             return xgb
 
         opt = EnsembleWeightOptimizer(alpha=1.0, n_folds=2, min_train_weeks=80)

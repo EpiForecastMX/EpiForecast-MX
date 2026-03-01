@@ -180,11 +180,19 @@ class TestConstruirFeaturesXgb:
         assert feats["cos_week"].max() <= 1.0
 
     def test_rate_of_change_computed(self):
-        y = pd.Series([10.0, 10.0, 10.0, 10.0, 20.0])
-        dates = pd.Series(pd.date_range("2020-01-06", periods=5, freq="W-MON"))
+        """roc_4 usa shifted (y_series.shift(1)) para evitar leakage."""
+        y = pd.Series([10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0])
+        dates = pd.Series(pd.date_range("2020-01-06", periods=8, freq="W-MON"))
         feats = construir_features_xgb(y, dates)
-        # roc_4 at index 4: (20 - 10) / 10 = 1.0
-        assert feats["roc_4"].iloc[4] == pytest.approx(1.0)
+        assert feats["roc_4"].iloc[5] == pytest.approx(1.5)
+
+    def test_roc_no_leakage(self):
+        """Verifica que roc_4 no usa y[t] (el target actual)."""
+        y = pd.Series([10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0])
+        dates = pd.Series(pd.date_range("2020-01-06", periods=8, freq="W-MON"))
+        feats = construir_features_xgb(y, dates)
+        assert feats["roc_4"].iloc[5] != pytest.approx(2.0)
+        assert feats["roc_4"].iloc[5] == pytest.approx(1.5)
 
 
 # ── construir_holidays ──────────────────────────────────────────────────────

@@ -74,9 +74,9 @@ class EnsembleWeightOptimizer:
             prophet_temp = prophet_builder(fold_train)
             pred_prophet = prophet_temp.predict(fold_val[["ds"]])["yhat"].values
 
-            # XGBDirect temporal
+            # XGBDirect temporal (recursivo: no usa y real del val)
             xgb_temp = xgb_builder(fold_train)
-            pred_xgb = xgb_temp.predict_insample(fold_val)
+            pred_xgb = xgb_temp.predict_recursive(fold_train, fold_val["ds"].values)
 
             all_preds_prophet.append(pred_prophet)
             all_preds_xgb.append(pred_xgb)

@@ -70,9 +70,9 @@ def construir_features_xgb(y_series: pd.Series, dates: pd.Series) -> pd.DataFram
     feats["sin_week"] = np.sin(2 * np.pi * week_vals / 52)
     feats["cos_week"] = np.cos(2 * np.pi * week_vals / 52)
 
-    # Tasa de cambio (reemplazar inf por NaN para evitar crash de XGBoost)
-    feats["roc_4"] = y_series.pct_change(4).replace([np.inf, -np.inf], np.nan)
-    feats["roc_52"] = y_series.pct_change(52).replace([np.inf, -np.inf], np.nan)
+    # Tasa de cambio sobre shifted (evitar leakage: no usar y[t] como feature)
+    feats["roc_4"] = shifted.pct_change(3).replace([np.inf, -np.inf], np.nan)
+    feats["roc_52"] = shifted.pct_change(51).replace([np.inf, -np.inf], np.nan)
 
     # COVID flag
     covid_start = pd.Timestamp(COVID_START)

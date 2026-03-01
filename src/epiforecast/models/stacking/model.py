@@ -105,13 +105,15 @@ class StackingForecaster(ForecastModel):
         logger.debug("  Stacking entrenado en {:.1f}s", self._t_total)
 
     def _predict_combined(self, x_stack: np.ndarray, dates: pd.Series) -> np.ndarray:
-        """Combinacion ponderada con augmentacion temporal si corresponde."""
-        if self._add_temporal_features and self._ridge is not None:
-            x_aug = StackingMetaLearner._augment_with_temporal(x_stack, dates)
-            yhat: np.ndarray = np.asarray(np.clip(self._ridge.predict(x_aug), 0, None))
-        else:
-            yhat = np.asarray(np.clip(x_stack @ self._weights, 0, None))
-        return yhat
+        """Combinacion ponderada: siempre via modelo cuando esta disponible."""
+        if self._ridge is not None:
+            if self._add_temporal_features:
+                x_input = StackingMetaLearner._augment_with_temporal(x_stack, dates)
+            else:
+                x_input = x_stack
+            return np.asarray(np.clip(self._ridge.predict(x_input), 0, None))
+        # Fallback: pesos manuales (solo si ridge es None, i.e. OOF fallo)
+        return np.asarray(np.clip(x_stack @ self._weights, 0, None))
 
     def predict(self, horizon: int = 52) -> pd.DataFrame:
         """Genera prediccion historica (in-sample) + futura."""
