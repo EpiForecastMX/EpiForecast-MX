@@ -334,7 +334,7 @@ def main():
             entrenados = len(resultados)
             insuficientes = sum(1 for f in resultados if f.get("confianza") == "insuficiente")
             t_elapsed = time.time() - t_pad
-            logger.debug(
+            logger.info(
                 "{}: {} modelos en {:.1f} min ({} baja confianza)",
                 padecimiento,
                 entrenados,
@@ -343,7 +343,7 @@ def main():
             )
 
     t_total = time.time() - t_inicio_global
-    logger.debug(
+    logger.info(
         "Entrenamiento completado. {} modelos en {:.1f} min ({:.1f} h).",
         total,
         t_total / 60,

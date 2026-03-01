@@ -6,45 +6,14 @@ import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from epiforecast.constants import (
-    COVID_BADGE_EC,
-    COVID_BADGE_FC,
-    COVID_SPAN_COLOR,
-    COVID_TEXT_COLOR,
-    VIZ_DPI_SCREEN,
-)
+from epiforecast.constants import VIZ_DPI_SCREEN
+from epiforecast.visualization import chart_constants as cc
 from epiforecast.visualization.chart_annotations import (
     _anotar_divisores,
     _anotar_zona_cv,
     _render_ficha_tecnica,
 )
-
-# ── Layout constants ─────────────────────────────────────────────────
-_FIGSIZE = (20, 8)
-_MARGINS = {"bottom": 0.13, "top": 0.89, "left": 0.05, "right": 0.975}
-_SUPTITLE_Y = 0.96
-_LEGEND_ANCHOR = (0.515, 0.04)
-
-# ── Font sizes ───────────────────────────────────────────────────────
-_FS_SUPTITLE = 16
-_FS_SUBTITLE = 11
-_FS_LABEL = 11
-_FS_LEGEND = 9.5
-_FS_COVID = 6.5
-_FS_TICK = 10
-
-# ── Line / marker styling ───────────────────────────────────────────
-_LW_FORECAST = 2.2
-_LW_SPINE = 0.5
-_LW_OUTLIER_EDGE = 1.0
-_ALPHA_BAND = 0.20
-_ALPHA_OBS = 0.45
-_ALPHA_FORECAST_ZONE = 0.04
-_ALPHA_COVID = 0.05
-_ALPHA_GRID = 0.25
-_SIZE_OBS = 15
-_ROLLING_OBS = 4  # ventana de suavizado para observaciones (semanas)
-_SIZE_OUTLIER = 70
+from epiforecast.visualization.chart_renderer import plot_series as _plot_series
 
 
 def graficar_pronostico(
@@ -136,204 +105,40 @@ def _parse_title(
 
 def _setup_figure(title_parts: dict, colors: dict) -> tuple[plt.Figure, plt.Axes]:
     """Crea la figura con títulos y márgenes IMSS."""
-    fig, ax = plt.subplots(figsize=_FIGSIZE)
-    fig.subplots_adjust(**_MARGINS)
+    fig, ax = plt.subplots(figsize=cc.FIGSIZE)
+    fig.subplots_adjust(**cc.MARGINS)
     fig.suptitle(
         f"{title_parts['pad_display']} — Pronóstico Semanal",
-        fontsize=_FS_SUPTITLE,
+        fontsize=cc.FS_SUPTITLE,
         fontweight="bold",
         color=colors["text"],
-        y=_SUPTITLE_Y,
+        y=cc.SUPTITLE_Y,
     )
     ax.set_title(
         f"{title_parts['nivel']}  ·  {title_parts['modo']}  ·  "
         f"{title_parts['anio_ini']}–{title_parts['anio_fin']}",
-        fontsize=_FS_SUBTITLE,
+        fontsize=cc.FS_SUBTITLE,
         color=colors["gray"],
         pad=10,
     )
     return fig, ax
 
 
-def _plot_series(
-    ax: plt.Axes,
-    forecast: pd.DataFrame,
-    serie: pd.DataFrame,
-    outliers: pd.DataFrame,
-    fecha_max_datos: pd.Timestamp,
-    fecha_max_fc: pd.Timestamp,
-    colors: dict,
-    conf_covid: dict,
-) -> None:
-    """Dibuja todas las capas de datos: zona pronóstico, COVID, banda, observaciones, línea, outliers."""
-    # Zona pronóstico (matplotlib acepta pd.Timestamp; type: ignore por stubs incompletos)
-    ax.axvspan(
-        fecha_max_datos,  # type: ignore[arg-type]
-        fecha_max_fc,  # type: ignore[arg-type]
-        alpha=_ALPHA_FORECAST_ZONE,
-        color=colors["fc"],
-        zorder=0,
-    )
-
-    # COVID-19
-    covid_ini = pd.Timestamp(conf_covid["inicio"])
-    covid_fin = pd.Timestamp(conf_covid["fin"])
-    ax.axvspan(
-        covid_ini,  # type: ignore[arg-type]  # matplotlib accepts Timestamp
-        covid_fin,  # type: ignore[arg-type]
-        alpha=_ALPHA_COVID,
-        color=COVID_SPAN_COLOR,
-        zorder=0,
-    )
-    mid_covid = covid_ini + (covid_fin - covid_ini) / 2
-    ax.annotate(
-        "COVID-19",
-        xy=(mid_covid, 1.0),  # type: ignore[arg-type]
-        xycoords=("data", "axes fraction"),
-        fontsize=_FS_COVID,
-        fontweight="bold",
-        color=COVID_TEXT_COLOR,
-        ha="center",
-        va="top",
-        bbox=dict(
-            boxstyle="round,pad=0.25", fc=COVID_BADGE_FC, ec=COVID_BADGE_EC, alpha=0.85, lw=0.6
-        ),
-    )
-
-    # ── Dividir pronostico en zona solapada vs zona futura ────────────
-    fc_overlap = forecast[forecast["ds"] <= fecha_max_datos]
-    fc_future = forecast[forecast["ds"] > fecha_max_datos]
-
-    # Banda de confianza SOLO en zona futura
-    if not fc_future.empty:
-        ax.fill_between(
-            fc_future["ds"],
-            fc_future["yhat_lower"],
-            fc_future["yhat_upper"],
-            alpha=0.15,
-            color=colors["band"],
-            zorder=1,
-            label="Intervalo 80 %",
-        )
-        # Bordes del intervalo
-        ax.plot(
-            fc_future["ds"],
-            fc_future["yhat_lower"],
-            color=colors["band"],
-            alpha=0.2,
-            lw=0.5,
-            zorder=1,
-        )
-        ax.plot(
-            fc_future["ds"],
-            fc_future["yhat_upper"],
-            color=colors["band"],
-            alpha=0.2,
-            lw=0.5,
-            zorder=1,
-        )
-
-    # ── Pronostico zona solapada (sombra transparente detras de datos reales) ──
-    if not fc_overlap.empty:
-        ax.plot(
-            fc_overlap["ds"],
-            fc_overlap["yhat"],
-            color=colors["fc"],
-            alpha=0.35,
-            linewidth=0.8,
-            linestyle="-",
-            zorder=3,
-            label="Ajuste del Modelo (Backtesting)",
-        )
-
-    # ── Pronostico zona futura (visible, es el forecast real) ──────────
-    if not fc_future.empty:
-        ax.plot(
-            fc_future["ds"],
-            fc_future["yhat"],
-            color=colors["fc"],
-            alpha=0.85,
-            linewidth=1.8,
-            linestyle="-",
-            zorder=3,
-            label="Predicción de Casos",
-        )
-
-    # ── Observaciones reales (linea DOMINANTE) ─────────────────────────
-    serie_sorted = serie.sort_values("ds")
-    y_smooth = serie_sorted["y"].rolling(_ROLLING_OBS, min_periods=1, center=True).mean()
-    ax.plot(
-        serie_sorted["ds"],
-        y_smooth,
-        color=colors["obs"],
-        alpha=1.0,
-        linewidth=2.0,
-        linestyle="-",
-        zorder=5,
-        label="Datos reales",
-    )
-
-    # ── Marcador de transicion (fin de datos reales) ───────────────────
-    last_y = y_smooth.iloc[-1]
-    ax.plot(
-        fecha_max_datos,  # type: ignore[arg-type]
-        last_y,
-        marker="o",
-        markersize=8,
-        color=colors["obs"],
-        markeredgecolor="white",
-        markeredgewidth=1.5,
-        zorder=6,
-    )
-
-    # ── Pico proyectado (solo en zona futura) ──────────────────────────
-    if not fc_future.empty:
-        idx_max = fc_future["yhat"].idxmax()
-        pico_x = fc_future.loc[idx_max, "ds"]
-        pico_y = fc_future.loc[idx_max, "yhat"]
-        ax.annotate(
-            f"Pico proyectado\n{pico_y:,.0f}",
-            xy=(pico_x, pico_y),  # type: ignore[arg-type]
-            xytext=(0, 25),
-            textcoords="offset points",
-            fontsize=8,
-            fontweight="bold",
-            color=colors["fc"],
-            ha="center",
-            arrowprops=dict(arrowstyle="->", color=colors["fc"], lw=1.2),
-            zorder=7,
-        )
-
-    # ── Outliers ───────────────────────────────────────────────────────
-    if len(outliers) > 0:
-        ax.scatter(
-            outliers["ds"],
-            outliers["y"],
-            marker="^",
-            s=_SIZE_OUTLIER,
-            color=colors["outlier"],
-            edgecolors="white",
-            linewidths=_LW_OUTLIER_EDGE,
-            zorder=5,
-            label=f"Outliers IQR (n = {len(outliers)})",
-        )
-
-
 def _format_axes(ax: plt.Axes, colors: dict) -> None:
     """Aplica formato de ejes estilo IMSS."""
     ax.set_xlabel("")
-    ax.set_ylabel("Incrementos semanales", fontsize=_FS_LABEL, color=colors["text"])
+    ax.set_ylabel("Incrementos semanales", fontsize=cc.FS_LABEL, color=colors["text"])
     ax.set_ylim(bottom=0)
-    ax.yaxis.grid(True, alpha=_ALPHA_GRID, color=colors["gray"], linestyle="-", linewidth=0.5)
+    ax.yaxis.grid(True, alpha=cc.ALPHA_GRID, color=colors["gray"], linestyle="-", linewidth=0.5)
     ax.xaxis.grid(False)
     ax.xaxis.set_major_locator(mdates.YearLocator())
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
-    ax.tick_params(axis="both", labelsize=_FS_TICK, colors=colors["text"])
+    ax.tick_params(axis="both", labelsize=cc.FS_TICK, colors=colors["text"])
     for spine in ("top", "right"):
         ax.spines[spine].set_visible(False)
     for spine in ("left", "bottom"):
         ax.spines[spine].set_color(colors["gray"])
-        ax.spines[spine].set_linewidth(_LW_SPINE)
+        ax.spines[spine].set_linewidth(cc.LW_SPINE)
 
 
 def _add_legend_and_ficha(fig: plt.Figure, ax: plt.Axes, metricas: dict | None) -> None:
@@ -343,9 +148,9 @@ def _add_legend_and_ficha(fig: plt.Figure, ax: plt.Axes, metricas: dict | None) 
         handles,
         labels,
         loc="lower center",
-        bbox_to_anchor=_LEGEND_ANCHOR,
+        bbox_to_anchor=cc.LEGEND_ANCHOR,
         ncol=len(handles),
-        fontsize=_FS_LEGEND,
+        fontsize=cc.FS_LEGEND,
         frameon=True,
         facecolor="white",
         edgecolor="#cccccc",

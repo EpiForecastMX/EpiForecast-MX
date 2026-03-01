@@ -129,9 +129,21 @@ train-deepar:
 	@echo ">>> Entrenando modelos DeepAR..."
 	$(PYTHON) -m scripts.entrena modelo_activo='deepar' $(ARGS)
 
+## Entrenar modelos Stacking (Prophet + ETS + LightGBM)
+.PHONY: train-stacking
+train-stacking:
+	@echo ">>> Entrenando modelos Stacking..."
+	$(PYTHON) -m scripts.entrena modelo_activo='stacking' $(ARGS)
+
+## Entrenar modelos Ensemble (Prophet + XGBoost)
+.PHONY: train-ensemble
+train-ensemble:
+	@echo ">>> Entrenando modelos Ensemble..."
+	$(PYTHON) -m scripts.entrena modelo_activo='ensemble' $(ARGS)
+
 ## Entrenar todos los modelos (secuencial)
 .PHONY: train-all
-train-all: train-prophet train-deepar
+train-all: train-prophet train-deepar train-ensemble train-stacking
 
 ## Entrenar DeepAR en SageMaker (build + launch)
 .PHONY: train-sagemaker

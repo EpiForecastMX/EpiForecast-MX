@@ -1,0 +1,32 @@
+# config/models/stacking.yaml
+# Hiperparametros del modelo Stacking (Prophet + ETS + LightGBM + Ridge meta-learner).
+# Target: conteos absolutos (incrementos), NO tasa por 100k.
+
+stacking:
+  prophet:
+    changepoint_prior_scale: 0.05
+    seasonality_prior_scale: 0.1
+    seasonality_mode: additive
+    yearly_custom:
+      period: 365.25
+      fourier_order: 10
+
+  ets:
+    seasonal_periods: 52
+    trend: "add"
+    seasonal: "add"
+
+  lgbm:
+    n_estimators: 300
+    max_depth: 4
+    learning_rate: 0.05
+    subsample: 0.8
+    num_leaves: 31
+
+  meta_learner:
+    alpha: 1.0
+
+  oof_cutoff: "2024-01-01"
+
+FECHA_CORTE_ENTRENAMIENTO_STACKING: "2025-01-01"
+HORIZON_STACKING: 52

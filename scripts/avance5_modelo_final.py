@@ -22,7 +22,7 @@ from rich.table import Table
 from xgboost import XGBRegressor
 
 from epiforecast.constants import VIZ_DPI_SCREEN
-from epiforecast.models.ensemble.model import EnsembleForecaster
+from epiforecast.models.factory import create_model
 from epiforecast.utils.config import conf, logger
 from epiforecast.visualization.chart_annotations import (
     _TZ_CDMX,
@@ -430,7 +430,8 @@ def main() -> None:
         df = _cargar_datos()
 
         # 2. Factory pattern (SOLID) — entrena Prophet base + XGBoost
-        forecaster = EnsembleForecaster(
+        forecaster = create_model(
+            "ensemble",
             df=df,
             padecimiento=padecimiento,
             sexo="incrementos_total",
@@ -458,7 +459,13 @@ def main() -> None:
         _imprimir_tabla_rich([metrics_prophet, metrics_ensemble], pad)
 
         # 7. Generar futuro
-        futuro_df = forecaster.generar_futuro()
+        full = forecaster.predict(forecaster.horizon)
+        cutoff_ts = (
+            forecaster.serie["ds"].max()
+            if not forecaster.serie.empty
+            else pd.Timestamp(forecaster.prophet_model.history["ds"].max())
+        )
+        futuro_df = full[full["ds"] > cutoff_ts].reset_index(drop=True)
 
         # 8. Acceso a datos internos para graficos
         train_df = forecaster.train_data

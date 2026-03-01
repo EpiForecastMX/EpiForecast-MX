@@ -27,7 +27,7 @@ import sys
 import requests
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import WebDriverWait
 
 # ──────────────────────────────────────────────
@@ -112,7 +112,7 @@ def scrape_bulletins() -> list[dict]:
         driver.get(TARGET_URL)
 
         WebDriverWait(driver, 30).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, "li.clearfix.documents"))
+            ec.presence_of_element_located((By.CSS_SELECTOR, "li.clearfix.documents"))
         )
 
         items = driver.find_elements(By.CSS_SELECTOR, "li.clearfix.documents")
@@ -129,10 +129,7 @@ def scrape_bulletins() -> list[dict]:
             except Exception:
                 href = ""
 
-            if href.startswith("/"):
-                full_url = BASE_URL + href
-            else:
-                full_url = href
+            full_url = BASE_URL + href if href.startswith("/") else href
 
             year = datetime.now().year
             filename = f"{year}_sem{semana}.pdf" if semana else None
@@ -152,9 +149,6 @@ def scrape_bulletins() -> list[dict]:
     return bulletins
 
 
-# ──────────────────────────────────────────────
-# Download (local)
-# ──────────────────────────────────────────────
 def download_pdf(url: str, dest: Path) -> None:
     log.info("Descargando: %s", url)
     r = requests.get(url, stream=True, timeout=60)

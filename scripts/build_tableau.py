@@ -30,6 +30,7 @@ KEEP_COLS_TWB = [
     "yhat_prophet",
     "yhat_deepar",
     "yhat_ensemble",
+    "yhat_stacking",
     "yhat_lower",
     "yhat_upper",
     "trend",
@@ -65,18 +66,22 @@ def load_inputs(in_real: Path, forecast_base: Path) -> tuple[pd.DataFrame, pd.Da
         logger.info("Leyendo forecast ({}): {}", model_name, fcst_path)
         df = pd.read_csv(fcst_path)
 
+        # Eliminar columnas internas yhat_* del modelo (ej. yhat_prophet, yhat_tasa
+        # dentro del CSV de ensemble/prophet) para evitar duplicados al renombrar.
+        internal_yhat = [
+            c
+            for c in df.columns
+            if c.startswith("yhat_") and c not in ("yhat_lower", "yhat_upper")
+        ]
+        if internal_yhat:
+            df = df.drop(columns=internal_yhat)
+
         # Renombrar yhat para evitar colisiones
-        rename_dict = {"yhat": f"yhat_{model_name}"}
-        df = df.rename(columns=rename_dict)
+        df = df.rename(columns={"yhat": f"yhat_{model_name}"})
 
         if all_fcst_df.empty:
             all_fcst_df = df
         else:
-            # Join con los anteriores
-            # Solo nos interesan las columnas de predicción del nuevo modelo (yhat)
-            # y las llaves de join.
-            # NOTA: yhat_lower/upper se quedan con los del PRIMER modelo cargado
-            # a menos que los renombraremos también. Por simplicidad el plan pide yhat_*.
             cols_to_keep = join_cols + [f"yhat_{model_name}"]
             df_to_merge = df[cols_to_keep]
             all_fcst_df = all_fcst_df.merge(df_to_merge, on=join_cols, how="outer")

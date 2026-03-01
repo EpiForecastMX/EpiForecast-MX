@@ -319,14 +319,3 @@ class EnsembleForecaster(ForecastModel):
         return calcular_metricas_prophet_base(
             self.test_data, self.pred_test, self.train_data, self._t_prophet
         )
-
-    def generar_futuro(self) -> pd.DataFrame:
-        """Pronostico solo futuro (post-serie). Compatible con avance5."""
-        full = self.predict(self.horizon)
-        if not self.serie.empty:
-            cutoff = self.serie["ds"].max()
-        elif self._prophet is not None:
-            cutoff = pd.Timestamp(self._prophet.history["ds"].max())
-        else:
-            raise RuntimeError("No hay serie ni modelo para determinar cutoff.")
-        return pd.DataFrame(full[full["ds"] > cutoff]).reset_index(drop=True)
