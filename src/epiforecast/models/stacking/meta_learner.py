@@ -1,4 +1,4 @@
-"""Meta-learner para Stacking: OOF validation + Ridge(positive=True)."""
+"""Meta-learner para Stacking: OOF validation + Ridge/ElasticNet."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import Ridge
+from sklearn.linear_model import ElasticNet, Ridge
 
 from epiforecast.utils.config import logger
 
@@ -21,11 +21,17 @@ class StackingMetaLearner:
         alpha: float = 1.0,
         n_folds: int = 4,
         min_train_weeks: int = 104,
+        meta_type: str = "ridge",
+        l1_ratio: float = 0.5,
+        add_temporal_features: bool = False,
     ):
         self._experts = experts
         self._alpha = alpha
         self._n_folds = n_folds
         self._min_train_weeks = min_train_weeks
+        self._meta_type = meta_type
+        self._l1_ratio = l1_ratio
+        self._add_temporal_features = add_temporal_features
 
     def _compute_oof_folds(
         self,
@@ -59,15 +65,23 @@ class StackingMetaLearner:
 
         return folds
 
+    @staticmethod
+    def _augment_with_temporal(x: np.ndarray, dates: pd.Series) -> np.ndarray:
+        """Agrega sin_week y cos_week al stack de predicciones."""
+        week_vals = dates.dt.isocalendar().week.astype(int).values
+        sin_week = np.sin(2 * np.pi * week_vals / 52).reshape(-1, 1)
+        cos_week = np.cos(2 * np.pi * week_vals / 52).reshape(-1, 1)
+        return np.hstack([x, sin_week, cos_week])
+
     def fit_oof(
         self,
         train_data: pd.DataFrame,
         oof_cutoff: str,
-    ) -> tuple[np.ndarray, Ridge | None]:
-        """Expanding-window OOF: multiples folds para pesos Ridge robustos.
+    ) -> tuple[np.ndarray, Ridge | ElasticNet | None]:
+        """Expanding-window OOF: multiples folds para pesos robustos.
 
         Returns:
-            (weights, ridge_model) — coeficientes Ridge y modelo (None si fallback).
+            (weights, model) — coeficientes normalizados y modelo (None si fallback).
         """
         n_experts = len(self._experts)
 
@@ -82,6 +96,7 @@ class StackingMetaLearner:
             return np.ones(n_experts) / n_experts, None
 
         all_preds: list[np.ndarray] = []
+        all_dates: list[pd.Series] = []
         all_y: list[np.ndarray] = []
 
         for fold_idx, (fold_train, fold_val) in enumerate(folds):
@@ -94,6 +109,7 @@ class StackingMetaLearner:
 
             x_fold = np.column_stack(fold_preds)
             all_preds.append(x_fold)
+            all_dates.append(fold_val["ds"].reset_index(drop=True))
             all_y.append(fold_val["y"].to_numpy(dtype=float))
             logger.debug(
                 "  OOF fold {}/{}: train={}, val={} filas",
@@ -106,15 +122,32 @@ class StackingMetaLearner:
         x_oof = np.vstack(all_preds)
         y_oof = np.concatenate(all_y)
 
-        ridge = Ridge(positive=True, fit_intercept=False, alpha=self._alpha)
-        ridge.fit(x_oof, y_oof)
+        if self._add_temporal_features:
+            dates_oof = pd.concat(all_dates, ignore_index=True)
+            x_oof = self._augment_with_temporal(x_oof, dates_oof)
 
-        weights = ridge.coef_
+        model: Ridge | ElasticNet
+        if self._meta_type == "elasticnet":
+            model = ElasticNet(
+                positive=True,
+                fit_intercept=False,
+                alpha=self._alpha,
+                l1_ratio=self._l1_ratio,
+            )
+        else:
+            model = Ridge(positive=True, fit_intercept=False, alpha=self._alpha)
+
+        model.fit(x_oof, y_oof)
+
+        # Normalizar solo los coeficientes de expertos (primeros n_experts)
+        weights = model.coef_[:n_experts].copy()
         w_sum = weights.sum()
         if w_sum > 0:
             weights = weights / w_sum
+
         logger.debug(
-            "  OOF Ridge: pesos = [{:.4f}, {:.4f}, {:.4f}] (alpha={}, {} filas OOF, {} folds)",
+            "  OOF {}: pesos = [{:.4f}, {:.4f}, {:.4f}] (alpha={}, {} filas OOF, {} folds)",
+            self._meta_type,
             weights[0],
             weights[1],
             weights[2],
@@ -122,4 +155,4 @@ class StackingMetaLearner:
             len(y_oof),
             len(folds),
         )
-        return weights, ridge
+        return weights, model

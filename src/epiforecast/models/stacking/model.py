@@ -48,7 +48,11 @@ class StackingForecaster(ForecastModel):
         )
         self.horizon: int = int(self._conf.get("HORIZON_STACKING", 52))
         self._oof_cutoff: str = stk.get("oof_cutoff", "2024-01-01")
-        self._meta_alpha: float = float(stk.get("meta_learner", {}).get("alpha", 1.0))
+        ml_cfg = stk.get("meta_learner", {})
+        self._meta_alpha: float = float(ml_cfg.get("alpha", 1.0))
+        self._meta_type: str = str(ml_cfg.get("type", "ridge"))
+        self._l1_ratio: float = float(ml_cfg.get("l1_ratio", 0.5))
+        self._add_temporal_features: bool = bool(ml_cfg.get("add_temporal_features", False))
         self._oof_n_folds: int = int(stk.get("oof_n_folds", 4))
         self._oof_min_train_weeks: int = int(stk.get("oof_min_train_weeks", 104))
 
@@ -85,6 +89,9 @@ class StackingForecaster(ForecastModel):
             self._meta_alpha,
             n_folds=self._oof_n_folds,
             min_train_weeks=self._oof_min_train_weeks,
+            meta_type=self._meta_type,
+            l1_ratio=self._l1_ratio,
+            add_temporal_features=self._add_temporal_features,
         )
         self._weights, self._ridge = meta.fit_oof(train_data, self._oof_cutoff)
 
@@ -96,6 +103,15 @@ class StackingForecaster(ForecastModel):
         self._n_train = len(train_data)
         self._t_total = time.perf_counter() - t0
         logger.debug("  Stacking entrenado en {:.1f}s", self._t_total)
+
+    def _predict_combined(self, x_stack: np.ndarray, dates: pd.Series) -> np.ndarray:
+        """Combinacion ponderada con augmentacion temporal si corresponde."""
+        if self._add_temporal_features and self._ridge is not None:
+            x_aug = StackingMetaLearner._augment_with_temporal(x_stack, dates)
+            yhat: np.ndarray = np.asarray(np.clip(self._ridge.predict(x_aug), 0, None))
+        else:
+            yhat = np.asarray(np.clip(x_stack @ self._weights, 0, None))
+        return yhat
 
     def predict(self, horizon: int = 52) -> pd.DataFrame:
         """Genera prediccion historica (in-sample) + futura."""
@@ -127,9 +143,8 @@ class StackingForecaster(ForecastModel):
         # LightGBM: continuous trend from 0
         pred_lgbm = self._experts[2].predict(all_dates_df, trend_start=0)
 
-        # Weighted combination
         x_stack = np.column_stack([pred_prophet, pred_ets, pred_lgbm])
-        yhat = np.clip(x_stack @ self._weights, 0, None)
+        yhat = self._predict_combined(x_stack, pd.Series(pd.to_datetime(all_dates)))
 
         return pd.DataFrame(
             {"ds": all_dates, "yhat": yhat, "yhat_lower": yhat, "yhat_upper": yhat}
@@ -142,7 +157,7 @@ class StackingForecaster(ForecastModel):
 
         preds = [e.predict(data[["ds"]]) for e in self._experts]
         x_stack = np.column_stack(preds)
-        yhat = np.clip(x_stack @ self._weights, 0, None)
+        yhat = self._predict_combined(x_stack, data["ds"])
 
         y_train = (
             self.train_data["y"].to_numpy(dtype=float)
@@ -158,7 +173,7 @@ class StackingForecaster(ForecastModel):
         }
 
     def save(self, path: Path) -> None:
-        """Serializa expertos + ridge + pesos a pickle."""
+        """Serializa expertos + modelo meta-learner + pesos a pickle."""
         if self._weights is None:
             raise RuntimeError("No hay modelo para guardar. Ejecutar fit() primero.")
         path = Path(path)
@@ -170,6 +185,8 @@ class StackingForecaster(ForecastModel):
             "params": self.get_params(),
             "serie": self.serie,
             "n_train": self._n_train,
+            "meta_type": self._meta_type,
+            "add_temporal_features": self._add_temporal_features,
         }
         with path.open("wb") as f:
             pickle.dump(payload, f)
@@ -193,6 +210,8 @@ class StackingForecaster(ForecastModel):
         self._ridge = payload.get("ridge")
         self._weights = payload["weights"]
         self._n_train = payload.get("n_train", 0)
+        self._meta_type = payload.get("meta_type", "ridge")
+        self._add_temporal_features = payload.get("add_temporal_features", False)
 
         # Restaurar serie: sidecar CSV (fresco) > pickle (fallback)
         csv_path = path.with_suffix(".csv")
@@ -213,7 +232,10 @@ class StackingForecaster(ForecastModel):
             "cutoff": self.cutoff,
             "horizon": self.horizon,
             "oof_cutoff": self._oof_cutoff,
-            "alpha_ridge": self._meta_alpha,
+            "meta_type": self._meta_type,
+            "alpha": self._meta_alpha,
+            "l1_ratio": self._l1_ratio,
+            "add_temporal_features": self._add_temporal_features,
             "peso_prophet": round(float(w[0]), 4) if w is not None else None,
             "peso_ets": round(float(w[1]), 4) if w is not None else None,
             "peso_lgbm": round(float(w[2]), 4) if w is not None else None,
@@ -242,7 +264,7 @@ class StackingForecaster(ForecastModel):
         if not self.test_data.empty:
             preds = [e.predict(self.test_data[["ds"]]) for e in self._experts]
             x_test = np.column_stack(preds)
-            yhat_test = np.clip(x_test @ self._weights, 0, None)
+            yhat_test = self._predict_combined(x_test, self.test_data["ds"])
             raw = compute_forecast_metrics(
                 self.test_data["y"].to_numpy(dtype=float),
                 yhat_test,

@@ -24,7 +24,10 @@ stacking:
     num_leaves: 31
 
   meta_learner:
+    type: "elasticnet"
     alpha: 1.0
+    l1_ratio: 0.5
+    add_temporal_features: true
 
   oof_cutoff: "2024-01-01"
   oof_n_folds: 4

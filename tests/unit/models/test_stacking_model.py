@@ -40,7 +40,12 @@ MOCK_CONF = {
         },
         "ets": {"seasonal_periods": 52, "trend": "add", "seasonal": "add"},
         "lgbm": {"n_estimators": 50, "max_depth": 3, "learning_rate": 0.05},
-        "meta_learner": {"alpha": 1.0},
+        "meta_learner": {
+            "type": "elasticnet",
+            "alpha": 1.0,
+            "l1_ratio": 0.5,
+            "add_temporal_features": True,
+        },
     },
 }
 
@@ -128,7 +133,10 @@ class TestGetParams:
         assert "cutoff" in result
         assert "horizon" in result
         assert "oof_cutoff" in result
-        assert "alpha_ridge" in result
+        assert "meta_type" in result
+        assert "alpha" in result
+        assert "l1_ratio" in result
+        assert "add_temporal_features" in result
         assert "peso_prophet" in result
 
     def test_weights_none_before_fit(self, forecaster):
@@ -522,6 +530,63 @@ class TestStackingMetaLearner:
         assert ridge is None
         assert len(weights) == 3
         assert weights.sum() == pytest.approx(1.0)
+
+
+# ── ElasticNet + Temporal Features ────────────────────────────────────────
+
+
+class TestElasticNetMetaLearner:
+    def test_elasticnet_config_loaded(self, forecaster):
+        assert forecaster._meta_type == "elasticnet"
+        assert forecaster._l1_ratio == 0.5
+        assert forecaster._add_temporal_features is True
+
+    def test_ridge_backward_compat(self):
+        """meta_type='ridge' still works."""
+        conf_ridge = {
+            **MOCK_CONF,
+            "stacking": {
+                **MOCK_CONF["stacking"],
+                "meta_learner": {"type": "ridge", "alpha": 1.0, "add_temporal_features": False},
+            },
+        }
+        df = _make_df()
+        with (
+            patch.object(stacking_mod, "conf", conf_ridge),
+            patch.object(stacking_mod, "logger", MagicMock()),
+        ):
+            f = StackingForecaster(
+                df=df, sexo="incrementos_total", padecimiento="Alzheimer", config=conf_ridge
+            )
+        assert f._meta_type == "ridge"
+        assert f._add_temporal_features is False
+
+    def test_temporal_augmentation(self):
+        """_augment_with_temporal adds 2 columns."""
+        x = np.ones((10, 3))
+        dates = pd.Series(pd.date_range("2024-01-01", periods=10, freq="W-MON"))
+        result = StackingMetaLearner._augment_with_temporal(x, dates)
+        assert result.shape == (10, 5)
+
+    def test_load_backward_compat_defaults(self, forecaster, tmp_path):
+        """Load old pickle without meta_type defaults to ridge."""
+        import pickle
+
+        path = tmp_path / "model.pkl"
+        payload = {
+            "experts": [{"m": 1}, {"m": 2}, {"m": 3}],
+            "ridge": None,
+            "weights": np.array([0.5, 0.3, 0.2]),
+            "params": {},
+            "n_train": 100,
+        }
+        with path.open("wb") as f:
+            pickle.dump(payload, f)
+
+        with patch.object(stacking_mod, "logger", MagicMock()):
+            forecaster.load(path)
+        assert forecaster._meta_type == "ridge"
+        assert forecaster._add_temporal_features is False
 
 
 # ── prophet/data_prep ─────────────────────────────────────────────────────────
