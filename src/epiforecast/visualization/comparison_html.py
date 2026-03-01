@@ -1,5 +1,6 @@
 """HTML template functions for the model comparison report.
 
+Matches the IMSS 2026 design system (DM Serif Display, Source Sans 3, etc.).
 Extracted from comparison_report.py for SRP compliance (max 300 lines).
 """
 
@@ -7,6 +8,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
+from epiforecast.visualization.comparison_css import CSS
 
 _METRICS = ["rmse", "mae", "smape", "mase"]
 
@@ -16,6 +19,14 @@ _MODELS: dict[str, dict[str, str]] = {
     "ensemble": {"label": "Ensemble", "color": "#FF6F00", "css": "ensemble"},
     "stacking": {"label": "Stacking", "color": "#1A237E", "css": "stacking"},
 }
+
+_REVEAL_JS = """\
+<script>
+const obs=new IntersectionObserver(es=>{
+es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target)}})
+},{threshold:.1});
+document.querySelectorAll('.reveal').forEach(el=>obs.observe(el));
+</script>"""
 
 
 def fmt(val: object, decimals: int = 4) -> str:
@@ -46,73 +57,65 @@ def winner_among(row: pd.Series, metric: str, model_keys: list[str]) -> str:  # 
     return best_key
 
 
-def html_head(ahora: str, model_keys: list[str]) -> str:
-    """Genera el <head> y header del reporte HTML."""
-    model_css = "\n".join(
-        f"  .{_MODELS[mk]['css']} {{ color: {_MODELS[mk]['color']}; font-weight: 600; }}"
-        for mk in model_keys
+# ---------------------------------------------------------------------------
+# HTML sections
+# ---------------------------------------------------------------------------
+
+_FONTS_LINK = (
+    '<link rel="preconnect" href="https://fonts.googleapis.com">\n'
+    '<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n'
+    '<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display'
+    "&family=JetBrains+Mono:wght@400;600"
+    '&family=Source+Sans+3:wght@300;400;600;700&display=swap" rel="stylesheet">'
+)
+
+
+def html_head(
+    ahora: str,
+    model_keys: list[str],
+    *,
+    n_series: int = 0,
+    best_smape: float = 0.0,
+    best_model: str = "",
+    n_padecimientos: int = 0,
+) -> str:
+    """Genera <head>, hero con KPI cards y apertura del container."""
+    n = len(model_keys)
+    labels = " / ".join(_MODELS[mk]["label"] for mk in model_keys)
+
+    kpi = (
+        f'<div class="hero-kpi"><span class="value">{n}</span>'
+        f'<span class="label">Modelos</span></div>'
+        f'<div class="hero-kpi"><span class="value">{n_padecimientos or "\u2014"}</span>'
+        f'<span class="label">Padecimientos</span></div>'
     )
-    n_models = len(model_keys)
-    labels = ", ".join(_MODELS[mk]["label"] for mk in model_keys)
+    if n_series:
+        kpi += (
+            f'<div class="hero-kpi"><span class="value">{n_series:,}</span>'
+            f'<span class="label">Series evaluadas</span></div>'
+        )
+    if best_smape > 0 and best_model:
+        bl = _MODELS.get(best_model, {}).get("label", best_model)
+        kpi += (
+            f'<div class="hero-kpi"><span class="value">{best_smape:.1f}%</span>'
+            f'<span class="label">Mejor SMAPE ({bl})</span></div>'
+        )
 
     return f"""<!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Comparaci\u00f3n de Modelos - EpiForecast-MX</title>
-<style>
-  :root {{
-    --teal: #004d40; --vino: #880e4f; --orange: #FF6F00; --indigo: #1A237E;
-    --bg: #fafafa; --card-bg: #ffffff; --border: #e0e0e0;
-    --text: #212121; --text-light: #757575; --green: #c8e6c9; --red: #ffcdd2;
-  }}
-  * {{ margin: 0; padding: 0; box-sizing: border-box; }}
-  body {{
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background: var(--bg); color: var(--text); line-height: 1.5;
-  }}
-  .container {{ max-width: 1400px; margin: 0 auto; padding: 24px; }}
-  header {{
-    background: linear-gradient(135deg, var(--teal), var(--vino));
-    color: white; padding: 32px 24px; text-align: center; margin-bottom: 24px;
-  }}
-  header h1 {{ font-size: 28px; font-weight: 700; margin-bottom: 4px; }}
-  header p {{ font-size: 14px; opacity: 0.85; }}
-  .card {{
-    background: var(--card-bg); border: 1px solid var(--border);
-    border-radius: 8px; padding: 20px; margin-bottom: 20px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-  }}
-  .card h2 {{ font-size: 20px; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }}
-  .card h3 {{ font-size: 16px; margin: 16px 0 8px; color: var(--text-light); }}
-  table {{ width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 12px; }}
-  th, td {{ padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--border); }}
-  th {{ background: #f5f5f5; font-weight: 600; text-align: center; position: sticky; top: 0; }}
-  td:first-child, th:first-child {{ text-align: left; }}
-  tr:hover td {{ background: #f9f9f9; }}
-{model_css}
-  .winner {{ background: var(--green) !important; font-weight: 700; }}
-  .insuf {{ background: var(--red); }}
-  .prod-badge {{ display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 700; color: white; }}
-  .prod-prophet {{ background: var(--teal); }}
-  .prod-deepar {{ background: var(--vino); }}
-  .prod-ensemble {{ background: var(--orange); }}
-  .prod-stacking {{ background: var(--indigo); }}
-  .thumbs {{ display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin-top: 12px; }}
-  .thumbs a {{ display: block; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; transition: box-shadow 0.2s; }}
-  .thumbs a:hover {{ box-shadow: 0 4px 12px rgba(0,0,0,0.15); }}
-  .thumbs img {{ width: 100%; height: auto; display: block; }}
-  .thumbs .caption {{ padding: 6px 8px; font-size: 11px; color: var(--text-light); text-align: center; background: #fafafa; }}
-  footer {{ text-align: center; padding: 16px; color: var(--text-light); font-size: 12px; border-top: 1px solid var(--border); margin-top: 24px; }}
-  .scroll-wrap {{ overflow-x: auto; }}
-</style>
+<title>Comparaci\u00f3n de Modelos \u2014 EpiForecast-MX</title>
+{_FONTS_LINK}
+<style>{CSS}</style>
 </head>
 <body>
-<header>
-  <h1>Comparaci\u00f3n de Modelos: {labels}</h1>
-  <p>EpiForecast-MX | IMSS | {n_models} modelos | Generado: {ahora} CDMX</p>
-</header>
+<div class="hero">
+  <h1>{labels}</h1>
+  <p class="subtitle">Comparativa de {n} modelos | EpiForecast-MX | IMSS 2026 | {ahora} CDMX</p>
+  <div class="hero-kpis">{kpi}</div>
+</div>
 <div class="container">
 """
 
@@ -149,27 +152,24 @@ def html_resumen(
         cells.append(f'<td><span class="prod-badge {prod_css}">{prod_label}</span></td>')
         rows.append(f"<tr>{''.join(cells)}</tr>")
 
-    header_cells = "<th>Padecimiento</th>"
+    hdr = "<th>Padecimiento</th>"
     for m in _METRICS:
-        label = m.upper()
         for mk in model_keys:
-            css = _MODELS[mk]["css"]
-            short = _MODELS[mk]["label"]
-            header_cells += f'<th class="{css}">{label} {short}</th>'
-    header_cells += "<th>Productivo</th>"
+            hdr += f'<th class="c-{mk}">{m.upper()} {_MODELS[mk]["label"]}</th>'
+    hdr += "<th>Productivo</th>"
 
-    return f"""<div class="card">
-<h2>Resumen por Padecimiento</h2>
-<p style="color:var(--text-light);font-size:13px;margin-bottom:12px">
-Promedio de m\u00e9tricas. Menor es mejor. Celda verde = ganador.
-Modelo productivo = mayor\u00eda de series ganadas por SMAPE.</p>
-<div class="scroll-wrap">
+    return f"""<section class="reveal">
+<h2 class="section-title">Resumen por Padecimiento</h2>
+<p class="section-sub">Promedio de m\u00e9tricas. Menor es mejor. Celda verde = ganador.</p>
+<div class="card">
+<div class="table-wrapper">
 <table>
-<thead><tr>{header_cells}</tr></thead>
+<thead><tr>{hdr}</tr></thead>
 <tbody>{"".join(rows)}</tbody>
 </table>
 </div>
 </div>
+</section>
 """
 
 
@@ -179,78 +179,84 @@ def html_detalle_padecimiento(
     data: pd.DataFrame,
     model_keys: list[str],
 ) -> str:
-    """Seccion de detalle por padecimiento: tablas nacionales/estatales + thumbnails."""
+    """Secci\u00f3n de detalle: tablas nacionales/estatales + miniaturas de gr\u00e1ficos."""
     nac = data[data["nivel"] == "nacional"].sort_values("sexo")
     est = data[data["nivel"] == "regional"].sort_values(["Entidad", "sexo"])
 
-    parts: list[str] = [f'<div class="card"><h2>{pad}</h2>']
+    parts: list[str] = [
+        '<section class="reveal">',
+        f'<h2 class="section-title">{pad}</h2>',
+        '<p class="section-sub">Detalle de m\u00e9tricas a nivel nacional y estatal</p>',
+    ]
 
     if not nac.empty:
-        parts.append("<h3>Nacional</h3>")
+        parts.append('<div class="card"><h2>Nacional</h2>')
         parts.append(_html_metric_table(nac, model_keys))
+        parts.append("</div>")
 
     if not est.empty:
-        parts.append(f"<h3>Estatal ({len(est)} modelos)</h3>")
+        parts.append(f'<div class="card"><h2>Estatal ({len(est)} series)</h2>')
         parts.append(_html_metric_table(est, model_keys))
+        parts.append("</div>")
 
-    parts.append("<h3>Gr\u00e1ficos Comparativos</h3>")
-    parts.append('<div class="thumbs">')
     pngs = sorted((Path("reports/forecasts/comparacion_modelos") / pad_norm).glob("CMP_*.png"))
-    for png in pngs:
-        rel = f"{pad_norm}/{png.name}"
-        caption = png.stem.replace("CMP_", "").replace("_", " ")
-        parts.append(
-            f'<a href="{rel}" target="_blank">'
-            f'<img src="{rel}" alt="{caption}" loading="lazy">'
-            f'<div class="caption">{caption}</div></a>'
-        )
-    parts.append("</div></div>")
+    if pngs:
+        parts.append('<div class="card"><h2>Gr\u00e1ficos Comparativos</h2>')
+        parts.append('<div class="thumbs">')
+        for png in pngs:
+            rel = f"{pad_norm}/{png.name}"
+            caption = png.stem.replace("CMP_", "").replace("_", " ")
+            parts.append(
+                f'<a href="{rel}" target="_blank">'
+                f'<img src="{rel}" alt="{caption}" loading="lazy">'
+                f'<div class="caption">{caption}</div></a>'
+            )
+        parts.append("</div></div>")
+
+    parts.append("</section>")
     return "\n".join(parts)
 
 
 def _html_metric_table(data: pd.DataFrame, model_keys: list[str]) -> str:
-    """Genera tabla HTML de metricas por fila con colores de ganador."""
-    header = "<th>Entidad</th><th>Sexo</th>"
+    """Genera tabla HTML de m\u00e9tricas por fila con colores de ganador."""
+    hdr = "<th>Entidad</th><th>Sexo</th>"
     for m in _METRICS:
-        label = m.upper()
         for mk in model_keys:
-            css = _MODELS[mk]["css"]
-            short = _MODELS[mk]["label"][0]
-            header += f'<th class="{css}">{label} {short}</th>'
-    header += "<th>Productivo</th>"
+            hdr += f'<th class="c-{mk}">{m.upper()} {_MODELS[mk]["label"][0]}</th>'
+    hdr += "<th>Productivo</th>"
 
     rows: list[str] = []
     for _, row in data.iterrows():
         ent = row.get("Entidad", "") or "Nacional"
         sexo = str(row.get("sexo", "")).replace("incrementos_", "")
-
         cells = [f"<td>{ent}</td>", f"<td>{sexo}</td>"]
         for m in _METRICS:
             dec = 2 if m in ("smape", "mape") else 4
-            winner_mk = winner_among(row, m, model_keys)
+            w_mk = winner_among(row, m, model_keys)
             for mk in model_keys:
-                col = f"{m}_{mk}"
-                v = row.get(col)
-                cls = "winner" if mk == winner_mk and v is not None else ""
+                v = row.get(f"{m}_{mk}")
+                cls = "winner" if mk == w_mk and v is not None else ""
                 cells.append(f'<td class="{cls}">{fmt(v, dec)}</td>')
-
         prod = row.get("modelo_productivo", "")
         prod_label = _MODELS.get(prod, {}).get("label", prod) if prod else ""
         prod_css = f"prod-{prod}" if prod else ""
         cells.append(f'<td><span class="prod-badge {prod_css}">{prod_label}</span></td>')
         rows.append(f"<tr>{''.join(cells)}</tr>")
 
-    return f"""<div class="scroll-wrap"><table>
-<thead><tr>{header}</tr></thead>
+    return f"""<div class="table-wrapper"><table>
+<thead><tr>{hdr}</tr></thead>
 <tbody>{"".join(rows)}</tbody>
 </table></div>"""
 
 
 def html_footer(ahora: str) -> str:
-    """Genera el footer del reporte HTML."""
+    """Genera el footer con animaciones de scroll."""
     return f"""</div>
 <footer>
-Generado: {ahora} CDMX | EpiForecast-MX v2.0 | IMSS 2026
+<p class="footer-title">EpiForecast-MX</p>
+<p>Inteligencia Epidemiol\u00f3gica Multi-Modelo | IMSS 2026</p>
+<p style="margin-top:.5rem">Generado: {ahora} CDMX</p>
 </footer>
+{_REVEAL_JS}
 </body>
 </html>"""

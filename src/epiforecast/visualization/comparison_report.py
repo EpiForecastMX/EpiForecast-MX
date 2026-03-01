@@ -65,7 +65,24 @@ def generar_reporte_html(config: dict | None = None) -> Path | None:
     padecimientos = sorted(merged["padecimiento"].dropna().unique())
     model_keys = list(available.keys())
 
-    html_parts: list[str] = [html_head(ahora, model_keys)]
+    # KPI stats para el hero
+    smape_cols = [f"smape_{mk}" for mk in model_keys if f"smape_{mk}" in merged.columns]
+    best_smape, best_model = 0.0, ""
+    if smape_cols:
+        means = {c.replace("smape_", ""): merged[c].mean(skipna=True) for c in smape_cols}
+        best_model = min(means, key=lambda k: means[k])
+        best_smape = means[best_model]
+
+    html_parts: list[str] = [
+        html_head(
+            ahora,
+            model_keys,
+            n_series=len(merged),
+            best_smape=best_smape,
+            best_model=best_model,
+            n_padecimientos=len(padecimientos),
+        )
+    ]
     html_parts.append(html_resumen(merged, padecimientos, model_keys))
 
     for pad in padecimientos:
