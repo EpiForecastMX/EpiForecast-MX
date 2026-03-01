@@ -97,21 +97,39 @@ def preparar_datos_ensemble(
     col_fecha = "Fecha" if "Fecha" in df_filtrado.columns else "ds"
 
     # Agregar a nivel nacional si hay columna de sexo
+    col_poblacion = "Total"
     if sexo in df_filtrado.columns:
+        agg_cols = [sexo]
+        if col_poblacion in df_filtrado.columns:
+            agg_cols.append(col_poblacion)
         serie = (
-            df_filtrado.groupby(col_fecha, as_index=False)[[sexo]]
+            df_filtrado.groupby(col_fecha, as_index=False)[agg_cols]
             .sum()
             .rename(columns={col_fecha: "ds", sexo: "y"})
             .sort_values("ds")
             .reset_index(drop=True)
         )
+        serie["y_original"] = serie["y"]
     elif "y" in df_filtrado.columns and "ds" in df_filtrado.columns:
-        serie = df_filtrado[["ds", "y"]].copy().sort_values("ds").reset_index(drop=True)
+        cols = ["ds", "y"]
+        if col_poblacion in df_filtrado.columns:
+            cols.append(col_poblacion)
+        serie = df_filtrado[cols].copy().sort_values("ds").reset_index(drop=True)
+        if "y_original" not in serie.columns:
+            serie["y_original"] = serie["y"]
     else:
         raise ValueError(
             f"No se encontro columna '{sexo}' ni 'y' en el DataFrame. "
             f"Columnas: {list(df_filtrado.columns)}"
         )
+
+    # Reordenar columnas para consistencia con Prophet: ds, Total, y_original, y
+    col_order = ["ds"]
+    if col_poblacion in serie.columns:
+        col_order.append(col_poblacion)
+    col_order.append("y_original")
+    col_order.append("y")
+    serie = serie[col_order]
 
     # Train/test split
     cutoff_ts = pd.Timestamp(cutoff)
