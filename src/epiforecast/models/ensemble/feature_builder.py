@@ -28,9 +28,10 @@ def construir_features_xgb(y_series: pd.Series, dates: pd.Series) -> pd.DataFram
     feats["lag_1"] = y_series.shift(1)
     feats["lag_2"] = y_series.shift(2)
     feats["lag_4"] = y_series.shift(4)
-    feats["roll_4"] = y_series.rolling(4).mean()
-    feats["roll_8"] = y_series.rolling(8).mean()
-    feats["roll_12"] = y_series.rolling(12).mean()
+    shifted = y_series.shift(1)
+    feats["roll_4"] = shifted.rolling(4).mean()
+    feats["roll_8"] = shifted.rolling(8).mean()
+    feats["roll_12"] = shifted.rolling(12).mean()
     feats["month"] = dates.dt.month
     feats["week_of_year"] = dates.dt.isocalendar().week.astype(int).values
     return feats

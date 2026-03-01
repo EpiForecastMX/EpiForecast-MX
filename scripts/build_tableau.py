@@ -298,8 +298,8 @@ def _calcular_metricas_por_modelo(
         tmp["_mae"] = err
         tmp["_mape"] = (err / denom_mape) * 100
         tmp["_smape"] = (2 * err / denom_smape) * 100
-        # MASE: |error| / mean(|diff(y_real)|) — naive seasonal
-        tmp["_naive_diff"] = tmp.groupby(grp)["y_real"].diff().abs()
+        # MASE: |error| / mean(|y - y_{t-52}|) — naive estacional (lag-52)
+        tmp["_naive_diff"] = tmp.groupby(grp)["y_real"].diff(52).abs()
 
         grp_metrics = tmp.groupby(grp, as_index=False).agg(
             _rmse_sq=("_rmse_sq", "mean"),
