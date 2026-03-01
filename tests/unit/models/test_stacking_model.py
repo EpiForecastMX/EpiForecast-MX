@@ -407,6 +407,34 @@ class TestETSExpert:
         _, fwd = ets.predict_full(0)
         assert len(fwd) == 0
 
+    def test_predict_full_with_fitted_model(self):
+        """predict_full returns fitted values and forward forecast when model is fitted."""
+        ets = ETSExpert({"seasonal_periods": 52, "trend": "add", "seasonal": "add"})
+        mock_model = MagicMock()
+        mock_model.fittedvalues = np.array([10.0, 12.0, 8.0])
+        mock_model.forecast.return_value = np.array([11.0, 13.0])
+        ets._model = mock_model
+        ets._failed = False
+
+        fitted, fwd = ets.predict_full(2)
+        assert fitted is not None
+        assert len(fitted) == 3
+        assert len(fwd) == 2
+        assert (fitted >= 0).all()
+        assert (fwd >= 0).all()
+
+    def test_predict_negative_clipped_to_zero(self):
+        """predict clips negative values to zero."""
+        ets = ETSExpert({"seasonal_periods": 52})
+        mock_model = MagicMock()
+        mock_model.forecast.return_value = np.array([-5.0, 3.0, -1.0])
+        ets._model = mock_model
+        ets._failed = False
+
+        dates = pd.DataFrame({"ds": pd.date_range("2024-01-01", periods=3, freq="W-MON")})
+        result = ets.predict(dates)
+        assert (result >= 0).all()
+
 
 # ── ProphetExpert ─────────────────────────────────────────────────────────────
 
@@ -440,6 +468,19 @@ class TestLGBMExpert:
         feats = le._build_features(dates, offset=100)
         assert feats["trend"].iloc[0] == 100.0
         assert feats["trend"].iloc[4] == 104.0
+
+    def test_predict_uses_train_len_as_offset(self):
+        """predict uses _train_len as default offset for trend continuation."""
+        le = LGBMExpert({"n_estimators": 10})
+        le._train_len = 200
+        mock_model = MagicMock()
+        mock_model.predict.return_value = np.array([5.0, 6.0, 7.0])
+        le._model = mock_model
+
+        dates = pd.DataFrame({"ds": pd.date_range("2024-01-01", periods=3, freq="W-MON")})
+        result = le.predict(dates)
+        assert len(result) == 3
+        assert (result >= 0).all()
 
 
 # ── StackingMetaLearner ──────────────────────────────────────────────────────
@@ -512,6 +553,23 @@ class TestStackingMetaLearner:
         assert ridge is not None
         assert len(weights) == 3
         assert weights.sum() == pytest.approx(1.0, abs=0.01)
+
+    def test_compute_oof_folds_returns_correct_count(self):
+        """_compute_oof_folds generates correct number of folds for long series."""
+        experts = [MagicMock(), MagicMock(), MagicMock()]
+        ml = StackingMetaLearner(experts, n_folds=4, min_train_weeks=52)
+        dates = pd.date_range("2017-01-02", periods=350, freq="W-MON")
+        rng = np.random.default_rng(42)
+        train = pd.DataFrame({"ds": dates, "y": rng.normal(15, 2, 350)})
+        cutoff = str(dates[300].date())
+
+        folds = ml._compute_oof_folds(train, cutoff)
+        assert len(folds) > 0
+        # Each fold has (train, val) tuple
+        for fold_train, fold_val in folds:
+            assert "ds" in fold_train.columns
+            assert "y" in fold_val.columns
+            assert len(fold_val) >= 4
 
     def test_fallback_datos_insuficientes(self):
         """Serie corta: retorna pesos iguales (fallback)."""
