@@ -163,7 +163,7 @@ markers = [
     "integration: marks integration tests",
 ]
 filterwarnings = [
-    "ignore::pyparsing.PyparsingDeprecationWarning",
+    "ignore::DeprecationWarning:pyparsing",
     "ignore::DeprecationWarning:matplotlib",
     # requests 2.32 no reconoce urllib3 2.6 en su version check (cosmético, terceros)
     "ignore:urllib3.*or chardet.*doesn.t match a supported version:Warning",

@@ -4,6 +4,7 @@
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
+import pytest
 
 import epiforecast.visualization.forecast_plots as fp_mod
 from epiforecast.visualization.forecast_plots import (
@@ -72,6 +73,11 @@ class TestNivelDirectory:
 
 
 class TestBuildCsvPath:
+    @pytest.fixture(autouse=True)
+    def _set_modelo_activo(self):
+        with patch.object(fp_mod, "conf", {"modelo_activo": "prophet"}):
+            yield
+
     def test_nacional_path(self, tmp_path):
         result = _build_csv_path("Depresión", "", "hombres", tmp_path)
         assert result == tmp_path / "Depresion" / "Prophet_Depresion_hombres.csv"
@@ -103,6 +109,11 @@ class TestBuildCsvPath:
 
 
 class TestLoadTrainingSeries:
+    @pytest.fixture(autouse=True)
+    def _set_modelo_activo(self):
+        with patch.object(fp_mod, "conf", {"modelo_activo": "prophet"}):
+            yield
+
     def test_returns_none_when_csv_missing(self, tmp_path):
         with patch.object(fp_mod, "logger"):
             result = _load_training_series("Depresión", "Jalisco", "hombres", tmp_path)
