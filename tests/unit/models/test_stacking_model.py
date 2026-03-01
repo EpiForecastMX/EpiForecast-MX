@@ -466,17 +466,62 @@ class TestStackingMetaLearner:
         mock_experts = []
         for _i in range(3):
             exp = MagicMock()
-            # Return noisy predictions for OOF validation
-            exp.predict.return_value = y_values[n_train:] + rng.normal(0, 1, n_val)
+            exp.predict.side_effect = lambda df: rng.normal(15, 2, len(df))
             mock_experts.append(exp)
 
-        ml = StackingMetaLearner(mock_experts, alpha=1.0)
+        ml = StackingMetaLearner(mock_experts, alpha=1.0, n_folds=2, min_train_weeks=50)
         with patch("epiforecast.models.stacking.meta_learner.logger", MagicMock()):
             weights, ridge = ml.fit_oof(train, cutoff)
 
         assert ridge is not None
         assert len(weights) == 3
         assert (weights >= 0).all()  # Ridge(positive=True)
+
+    def test_expanding_window_multiple_folds(self):
+        """Serie larga: expertos se entrenan multiples veces, pesos suman ~1.0."""
+        import copy
+
+        n = 350
+        rng = np.random.default_rng(42)
+        dates = pd.date_range("2017-01-02", periods=n, freq="W-MON")
+        y_values = rng.integers(5, 30, n).astype(float)
+        train = pd.DataFrame({"ds": dates, "y": y_values})
+        cutoff = str(dates[n - 50].date())
+
+        mock_experts = []
+        for _i in range(3):
+            exp = MagicMock()
+            exp.predict.side_effect = lambda df: rng.normal(15, 2, len(df))
+            mock_experts.append(exp)
+
+        # deepcopy must work on mocks
+        with patch("epiforecast.models.stacking.meta_learner.copy") as mock_copy:
+            mock_copy.deepcopy = copy.deepcopy
+            ml = StackingMetaLearner(mock_experts, alpha=1.0, n_folds=4, min_train_weeks=104)
+            with patch("epiforecast.models.stacking.meta_learner.logger", MagicMock()):
+                weights, ridge = ml.fit_oof(train, cutoff)
+
+        assert ridge is not None
+        assert len(weights) == 3
+        assert weights.sum() == pytest.approx(1.0, abs=0.01)
+
+    def test_fallback_datos_insuficientes(self):
+        """Serie corta: retorna pesos iguales (fallback)."""
+        n = 50
+        rng = np.random.default_rng(42)
+        dates = pd.date_range("2023-01-02", periods=n, freq="W-MON")
+        y_values = rng.integers(5, 30, n).astype(float)
+        train = pd.DataFrame({"ds": dates, "y": y_values})
+        cutoff = str(dates[n - 5].date())
+
+        mock_experts = [MagicMock() for _ in range(3)]
+        ml = StackingMetaLearner(mock_experts, alpha=1.0, n_folds=4, min_train_weeks=104)
+        with patch("epiforecast.models.stacking.meta_learner.logger", MagicMock()):
+            weights, ridge = ml.fit_oof(train, cutoff)
+
+        assert ridge is None
+        assert len(weights) == 3
+        assert weights.sum() == pytest.approx(1.0)
 
 
 # ── prophet/data_prep ─────────────────────────────────────────────────────────

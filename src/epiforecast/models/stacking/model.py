@@ -49,6 +49,8 @@ class StackingForecaster(ForecastModel):
         self.horizon: int = int(self._conf.get("HORIZON_STACKING", 52))
         self._oof_cutoff: str = stk.get("oof_cutoff", "2024-01-01")
         self._meta_alpha: float = float(stk.get("meta_learner", {}).get("alpha", 1.0))
+        self._oof_n_folds: int = int(stk.get("oof_n_folds", 4))
+        self._oof_min_train_weeks: int = int(stk.get("oof_min_train_weeks", 104))
 
         # Build holidays (reuse ensemble helper)
         holidays = construir_holidays(self._conf)
@@ -78,7 +80,12 @@ class StackingForecaster(ForecastModel):
         t0 = time.perf_counter()
 
         # 1) OOF: obtener pesos
-        meta = StackingMetaLearner(self._experts, self._meta_alpha)
+        meta = StackingMetaLearner(
+            self._experts,
+            self._meta_alpha,
+            n_folds=self._oof_n_folds,
+            min_train_weeks=self._oof_min_train_weeks,
+        )
         self._weights, self._ridge = meta.fit_oof(train_data, self._oof_cutoff)
 
         # 2) Re-entrenar expertos en train completo

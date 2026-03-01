@@ -27,6 +27,8 @@ stacking:
     alpha: 1.0
 
   oof_cutoff: "2024-01-01"
+  oof_n_folds: 4
+  oof_min_train_weeks: 104
 
 FECHA_CORTE_ENTRENAMIENTO_STACKING: "2025-01-01"
 HORIZON_STACKING: 52
