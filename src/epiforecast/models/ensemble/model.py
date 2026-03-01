@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 from epiforecast.models.base import ForecastModel
 from epiforecast.models.ensemble.helpers import (
     FEATURE_NAMES,
+    _predecir_test_recursivo,
     calcular_metricas_ensemble,
     calcular_metricas_prophet_base,
     construir_features_xgb,
@@ -180,10 +181,10 @@ class EnsembleForecaster(ForecastModel):
             return {"rmse": 0.0, "mae": 0.0, "smape": 0.0, "mase": 0.0}
 
         prophet_pred = self._prophet.predict(test_df[["ds"]])
-        full_y = pd.concat([self.train_data["y"], test_df["y"]], ignore_index=True)
-        full_ds = pd.concat([self.train_data["ds"], test_df["ds"]], ignore_index=True)
-        feats_test = construir_features_xgb(full_y, full_ds).iloc[len(self.train_data) :].fillna(0)
-        y_pred = prophet_pred["yhat"].values + self._xgb.predict(feats_test)
+        xgb_adj = _predecir_test_recursivo(
+            self._xgb, prophet_pred["yhat"].values, self.train_data, test_df
+        )
+        y_pred = prophet_pred["yhat"].values + xgb_adj
 
         metrics = compute_forecast_metrics(
             test_df["y"].to_numpy(), y_pred, self.train_data["y"].to_numpy()

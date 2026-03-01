@@ -54,6 +54,10 @@ class StackingMetaLearner:
         ridge.fit(x_oof, y)
 
         weights = ridge.coef_
+        # Normalizar para que sumen 1.0 (Ridge shrinkage los reduce)
+        w_sum = weights.sum()
+        if w_sum > 0:
+            weights = weights / w_sum
         logger.debug(
             "  OOF Ridge: pesos = [{:.4f}, {:.4f}, {:.4f}] (alpha={}, {} filas OOF)",
             weights[0],

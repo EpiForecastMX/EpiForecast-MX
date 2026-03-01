@@ -107,6 +107,28 @@ def preparar_datos_ensemble(
     return serie, train_data, test_data
 
 
+def _predecir_test_recursivo(
+    xgb: Any,
+    yhat_test_prophet: np.ndarray,
+    train_data: pd.DataFrame,
+    test_data: pd.DataFrame,
+) -> np.ndarray:
+    """Prediccion recursiva XGBoost sobre test sin usar y real del test."""
+    y_ext = train_data["y"].values.tolist()
+    d_ext = train_data["ds"].values.tolist()
+    xgb_adj: list[float] = []
+
+    for i in range(len(test_data)):
+        feats = construir_features_xgb(pd.Series(y_ext), pd.Series(pd.to_datetime(d_ext)))
+        adj = float(xgb.predict(feats.iloc[[-1]].fillna(0))[0])
+        xgb_adj.append(adj)
+        # Usar prediccion ensemble como proxy (no el y real del test)
+        y_ext.append(float(yhat_test_prophet[i] + adj))
+        d_ext.append(test_data["ds"].iloc[i])
+
+    return np.array(xgb_adj)
+
+
 def generar_predicciones_insample(
     prophet: Any,
     xgb: Any,
@@ -146,12 +168,7 @@ def generar_predicciones_insample(
         prophet_test = prophet.predict(test_data[["ds"]])
         yhat_test_prophet = prophet_test["yhat"].values
 
-        full_y = pd.concat([train_data["y"], test_data["y"]], ignore_index=True)
-        full_dates = pd.concat([train_data["ds"], test_data["ds"]], ignore_index=True)
-        feats_full = construir_features_xgb(full_y, full_dates)
-        feats_test = feats_full.iloc[len(train_data) :].fillna(0)
-
-        xgb_adj_test = xgb.predict(feats_test)
+        xgb_adj_test = _predecir_test_recursivo(xgb, yhat_test_prophet, train_data, test_data)
         ensemble_test = yhat_test_prophet + xgb_adj_test
 
         pred_test = pd.DataFrame(
