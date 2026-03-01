@@ -388,6 +388,16 @@ def build_and_save_tableau(real_long: pd.DataFrame, fcst: pd.DataFrame, out_file
         detail = ", ".join(f"{c}: {n}" for c, n in bad_keys.items())
         raise ValueError(f"Dataset final con NaN en llaves críticas. Detalle -> {detail}")
 
+    # Validar completitud: alertar si algun modelo tiene >50% filas sin prediccion
+    for modelo in ("prophet", "deepar", "ensemble", "stacking"):
+        col = f"yhat_{modelo}"
+        if col in out.columns:
+            n_missing = int(out[col].isna().sum())
+            n_total = len(out)
+            pct = 100 * n_missing / n_total if n_total > 0 else 0
+            if pct > 50:
+                logger.warning("Modelo {} tiene {:.0f}% filas sin prediccion", modelo, pct)
+
     out = out.sort_values(["padecimiento", "entidad", "ds", "meta_modo"]).reset_index(drop=True)
 
     rows_full, cols_full = out.shape

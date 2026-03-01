@@ -16,6 +16,8 @@ import unicodedata
 
 import pandas as pd
 
+from epiforecast.utils.config import logger
+
 # ---------------------------------------------------------------------------
 # Rutas
 # ---------------------------------------------------------------------------
@@ -933,20 +935,20 @@ document.querySelectorAll('nav a[href^="#"]').forEach(a => {{
 # Main
 # ---------------------------------------------------------------------------
 def main():
-    print(f">>> Leyendo {FORECAST_CSV}...")
+    logger.info("Leyendo {}...", FORECAST_CSV)
     df = load_and_deduplicate(FORECAST_CSV)
-    print(f"    {len(df)} modelos unicos encontrados.")
+    logger.info("{} modelos unicos encontrados.", len(df))
 
-    print(">>> Calculando estadisticas...")
+    logger.info("Calculando estadisticas...")
     stats = compute_stats(df)
 
-    print(">>> Generando reporte HTML...")
+    logger.info("Generando reporte HTML...")
     html = build_html(stats)
 
     OUTPUT_HTML.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_HTML.write_text(html, encoding="utf-8")
-    print(f">>> Reporte generado: {OUTPUT_HTML}")
-    print(f"    Abrir con: open {OUTPUT_HTML}")
+    logger.info("Reporte generado: {}", OUTPUT_HTML)
+    logger.info("Abrir con: open {}", OUTPUT_HTML)
 
 
 if __name__ == "__main__":

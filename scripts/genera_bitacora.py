@@ -12,6 +12,8 @@ Salida:
 from datetime import datetime
 from pathlib import Path
 
+from epiforecast.utils.config import logger
+
 # ---------------------------------------------------------------------------
 # Rutas
 # ---------------------------------------------------------------------------
@@ -1244,13 +1246,13 @@ try {{
 # Main
 # ---------------------------------------------------------------------------
 def main():
-    print(">>> Generando bitacora del modelado Prophet...")
+    logger.info("Generando bitacora del modelado Prophet...")
     html = build_html()
 
     OUTPUT_HTML.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT_HTML.write_text(html, encoding="utf-8")
-    print(f">>> Bitácora generada: {OUTPUT_HTML}")
-    print(f"    Abrir con: open {OUTPUT_HTML}")
+    logger.info("Bitacora generada: {}", OUTPUT_HTML)
+    logger.info("Abrir con: open {}", OUTPUT_HTML)
 
 
 if __name__ == "__main__":
