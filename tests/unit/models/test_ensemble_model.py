@@ -210,6 +210,102 @@ class TestSaveLoad:
         assert forecaster._xgb is not None
 
 
+# ── OOF Residuals ────────────────────────────────────────────────────────────
+
+
+class TestOOFResiduals:
+    def test_oof_residuals_backward_compatible(self, forecaster):
+        """Con oof_residual_folds=0, comportamiento identico al actual (in-sample)."""
+        forecaster._oof_residual_folds = 0
+        mock_prophet = MagicMock()
+        mock_prophet.predict.return_value = pd.DataFrame({"yhat": np.ones(100)})
+        forecaster._prophet = mock_prophet
+
+        train = pd.DataFrame(
+            {
+                "ds": pd.date_range("2020-01-06", periods=100, freq="W-MON"),
+                "y": np.random.default_rng(42).integers(5, 30, 100).astype(float),
+            }
+        )
+        with (
+            patch.object(ensemble_mod, "logger", MagicMock()),
+            patch("xgboost.XGBRegressor") as mock_xgb_cls,
+        ):
+            mock_xgb_inst = MagicMock()
+            mock_xgb_cls.return_value = mock_xgb_inst
+            forecaster._fit_xgboost(train)
+
+        mock_xgb_inst.fit.assert_called_once()
+
+    def test_oof_residuals_uses_oof_when_enabled(self, forecaster):
+        """Con oof_residual_folds > 0, llama a generate_oof_residuals."""
+        forecaster._oof_residual_folds = 3
+        forecaster._prophet = MagicMock()
+
+        train = pd.DataFrame(
+            {
+                "ds": pd.date_range("2020-01-06", periods=200, freq="W-MON"),
+                "y": np.random.default_rng(42).integers(5, 30, 200).astype(float),
+            }
+        )
+        feats = pd.DataFrame(
+            {
+                "lag_1": np.ones(100),
+                "lag_2": np.ones(100),
+                "lag_4": np.ones(100),
+                "roll_4": np.ones(100),
+                "roll_8": np.ones(100),
+                "roll_12": np.ones(100),
+                "month": np.ones(100),
+                "week_of_year": np.ones(100),
+            }
+        )
+        residuos = np.random.default_rng(42).normal(0, 5, 100)
+
+        with (
+            patch.object(ensemble_mod, "logger", MagicMock()),
+            patch(
+                "epiforecast.models.ensemble.model.generate_oof_residuals",
+                return_value=(feats, residuos),
+            ) as mock_oof,
+            patch("xgboost.XGBRegressor") as mock_xgb_cls,
+        ):
+            mock_xgb_inst = MagicMock()
+            mock_xgb_cls.return_value = mock_xgb_inst
+            forecaster._fit_xgboost(train)
+
+        mock_oof.assert_called_once()
+        mock_xgb_inst.fit.assert_called_once()
+
+    def test_oof_residuals_empty_fallback(self, forecaster):
+        """Datos insuficientes -> fallback a in-sample."""
+        forecaster._oof_residual_folds = 3
+        mock_prophet = MagicMock()
+        mock_prophet.predict.return_value = pd.DataFrame({"yhat": np.ones(50)})
+        forecaster._prophet = mock_prophet
+
+        train = pd.DataFrame(
+            {
+                "ds": pd.date_range("2020-01-06", periods=50, freq="W-MON"),
+                "y": np.random.default_rng(42).integers(5, 30, 50).astype(float),
+            }
+        )
+        with (
+            patch.object(ensemble_mod, "logger", MagicMock()),
+            patch(
+                "epiforecast.models.ensemble.model.generate_oof_residuals",
+                return_value=(pd.DataFrame(), np.array([])),
+            ),
+            patch("xgboost.XGBRegressor") as mock_xgb_cls,
+        ):
+            mock_xgb_inst = MagicMock()
+            mock_xgb_cls.return_value = mock_xgb_inst
+            forecaster._fit_xgboost(train)
+
+        mock_prophet.predict.assert_called_once()
+        mock_xgb_inst.fit.assert_called_once()
+
+
 # ── Factory registration ─────────────────────────────────────────────────────
 
 

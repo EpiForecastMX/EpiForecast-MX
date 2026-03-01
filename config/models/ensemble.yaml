@@ -17,6 +17,8 @@ xgboost:
   subsample: 0.8
   colsample_bytree: 0.8
 
+oof_residual_folds: 3  # 0 = legacy in-sample
+
 FECHA_CORTE_ENTRENAMIENTO_ENSEMBLE: "2025-01-01"
 HORIZON_ENSEMBLE: 52
 

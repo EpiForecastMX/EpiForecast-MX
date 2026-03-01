@@ -29,6 +29,7 @@ from epiforecast.models.ensemble.helpers import (
     generar_predicciones_insample,
     preparar_datos_ensemble,
 )
+from epiforecast.models.ensemble.oof_residuals import generate_oof_residuals
 from epiforecast.models.factory import register_model
 from epiforecast.utils.config import conf, logger
 
@@ -70,6 +71,9 @@ class EnsembleForecaster(ForecastModel):
         yc = pb.get("yearly_custom", {})
         self._yearly_period: float = yc.get("period", 365.25)
         self._yearly_fourier: int = yc.get("fourier_order", 10)
+
+        # OOF residual folds (0 = legacy in-sample)
+        self._oof_residual_folds: int = int(self._conf.get("oof_residual_folds", 0))
 
         # XGBoost HP
         xgb_hp = self._conf.get("xgboost", {})
@@ -128,6 +132,16 @@ class EnsembleForecaster(ForecastModel):
         self._t_prophet = time.perf_counter() - t0
         logger.debug("  Prophet base entrenado en {:.1f}s", self._t_prophet)
 
+    def _insample_residuals(self, train_data: pd.DataFrame) -> tuple[pd.DataFrame, np.ndarray]:
+        """Calcula residuos in-sample de Prophet (legacy)."""
+        prophet_train = self._prophet.predict(train_data[["ds"]])  # type: ignore[union-attr]
+        residuos = train_data["y"].values - prophet_train["yhat"].values
+        feats = construir_features_xgb(
+            train_data["y"].reset_index(drop=True),
+            train_data["ds"].reset_index(drop=True),
+        )
+        return feats, residuos
+
     def _fit_xgboost(self, train_data: pd.DataFrame) -> None:
         """Entrena XGBoost sobre residuos de Prophet con early stopping."""
         from xgboost import XGBRegressor as _XGBRegressor
@@ -136,13 +150,25 @@ class EnsembleForecaster(ForecastModel):
             raise RuntimeError("Prophet debe entrenarse antes de XGBoost.")
 
         t1 = time.perf_counter()
-        prophet_train = self._prophet.predict(train_data[["ds"]])
-        residuos = train_data["y"].values - prophet_train["yhat"].values
 
-        feats_train = construir_features_xgb(
-            train_data["y"].reset_index(drop=True),
-            train_data["ds"].reset_index(drop=True),
-        )
+        feats_train: pd.DataFrame
+        residuos: np.ndarray
+
+        if self._oof_residual_folds > 0:
+            feats_train, residuos = generate_oof_residuals(
+                train_data,
+                self._prophet_hp,
+                self._yearly_period,
+                self._yearly_fourier,
+                self._holidays,
+                n_folds=self._oof_residual_folds,
+            )
+            if feats_train.empty:
+                logger.warning("OOF residuos vacio, fallback a in-sample")
+                feats_train, residuos = self._insample_residuals(train_data)
+        else:
+            feats_train, residuos = self._insample_residuals(train_data)
+
         valid_mask = feats_train.notna().all(axis=1)
         feats_valid = feats_train[valid_mask]
         residuos_valid = residuos[valid_mask.values]
@@ -252,6 +278,7 @@ class EnsembleForecaster(ForecastModel):
             "yearly_fourier": self._yearly_fourier,
             "cutoff": self.cutoff,
             "horizon": self.horizon,
+            "oof_residual_folds": self._oof_residual_folds,
         }
 
     # ── Orchestration ──────────────────────────────────────────────────
