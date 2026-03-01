@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from epiforecast.utils import paths as directory_manager
@@ -28,6 +29,7 @@ KEEP_COLS_TWB = [
     "incrementos_hombres",
     "incrementos_mujeres",
     "yhat",
+    "modelo_productivo",
     "yhat_prophet",
     "yhat_deepar",
     "yhat_ensemble",
@@ -156,6 +158,99 @@ def keep_only_columns(df: pd.DataFrame, keep_cols: list[str]) -> pd.DataFrame:
     return df.loc[:, present]
 
 
+def _seleccionar_modelo_productivo(
+    df: pd.DataFrame,
+    grp: list[str],
+    yhat_model_cols: list[str],
+) -> pd.DataFrame:
+    """Asigna yhat y modelo_productivo por mejor SMAPE por grupo.
+
+    Para cada (padecimiento, entidad, meta_modo), calcula SMAPE de cada modelo
+    donde hay dato real, y elige el modelo con menor SMAPE. Si no hay datos
+    reales para comparar, usa fallback: ensemble > stacking > prophet > deepar.
+    """
+    if not yhat_model_cols:
+        df["yhat"] = np.nan
+        df["modelo_productivo"] = ""
+        return df
+
+    # Calcular SMAPE por grupo y modelo (solo filas con y_real)
+    fallback_order = ["yhat_ensemble", "yhat_stacking", "yhat_prophet", "yhat_deepar"]
+    fallback_col = next((c for c in fallback_order if c in yhat_model_cols), yhat_model_cols[0])
+
+    mask_real = (
+        df["y_real"].notna() if "y_real" in df.columns else pd.Series(False, index=df.index)
+    )
+    rows_with_real = df[mask_real]
+
+    if rows_with_real.empty:
+        # Sin datos reales: fallback fijo
+        df["yhat"] = df[fallback_col]
+        df["modelo_productivo"] = fallback_col.replace("yhat_", "")
+        for col in yhat_model_cols:
+            if col != fallback_col:
+                df["yhat"] = df["yhat"].fillna(df[col])
+        logger.warning("Sin datos reales para SMAPE; fallback a {}", fallback_col)
+        return df
+
+    # SMAPE por grupo y modelo
+    smape_records = []
+    for col in yhat_model_cols:
+        modelo = col.replace("yhat_", "")
+        tmp = rows_with_real[grp + ["y_real", col]].copy()
+        tmp = tmp.dropna(subset=["y_real", col])
+        tmp["y_real"] = pd.to_numeric(tmp["y_real"], errors="coerce")
+        tmp[col] = pd.to_numeric(tmp[col], errors="coerce")
+        tmp = tmp.dropna(subset=["y_real", col])
+        if tmp.empty:
+            continue
+        denom = (tmp["y_real"].abs() + tmp[col].abs()).replace(0, np.nan)
+        tmp["_smape"] = (2 * (tmp["y_real"] - tmp[col]).abs() / denom) * 100
+        grp_smape = tmp.groupby(grp, as_index=False)["_smape"].mean()
+        grp_smape = grp_smape.rename(columns={"_smape": "smape"})
+        grp_smape["modelo"] = modelo
+        grp_smape["yhat_col"] = col
+        smape_records.append(grp_smape)
+
+    if not smape_records:
+        df["yhat"] = df[fallback_col]
+        df["modelo_productivo"] = fallback_col.replace("yhat_", "")
+        logger.warning("No se pudo calcular SMAPE; fallback a {}", fallback_col)
+        return df
+
+    all_smape = pd.concat(smape_records, ignore_index=True)
+    # Mejor modelo = menor SMAPE por grupo
+    best = all_smape.loc[all_smape.groupby(grp)["smape"].idxmin()]
+    best_map = best[grp + ["modelo", "yhat_col"]].copy()
+
+    df = df.merge(best_map, on=grp, how="left")
+    df = df.rename(columns={"modelo": "modelo_productivo"})
+
+    # Asignar yhat fila a fila segun el modelo ganador
+    df["yhat"] = np.nan
+    for col in yhat_model_cols:
+        modelo = col.replace("yhat_", "")
+        mask = df["yhat_col"] == col
+        df.loc[mask, "yhat"] = df.loc[mask, col]
+
+    # Fallback para filas sin modelo asignado (ej. entidades sin datos reales)
+    no_model = df["yhat"].isna() & df["modelo_productivo"].isna()
+    if no_model.any():
+        df.loc[no_model, "modelo_productivo"] = fallback_col.replace("yhat_", "")
+        df.loc[no_model, "yhat"] = df.loc[no_model, fallback_col]
+        for col in yhat_model_cols:
+            if col != fallback_col:
+                still_na = df["yhat"].isna() & no_model
+                df.loc[still_na, "yhat"] = df.loc[still_na, col]
+
+    df = df.drop(columns=["yhat_col"], errors="ignore")
+
+    # Log resumen
+    winners = best_map["modelo"].value_counts()
+    logger.info("Modelo productivo por SMAPE -> {}", dict(winners))
+    return df
+
+
 def build_and_save_tableau(real_long: pd.DataFrame, fcst: pd.DataFrame, out_file: Path) -> None:
     join_cols = ["ds", "padecimiento", "entidad", "meta_modo"]
     logger.info("Join por: {}", join_cols)
@@ -192,14 +287,11 @@ def build_and_save_tableau(real_long: pd.DataFrame, fcst: pd.DataFrame, out_file
         )
         out = out.merge(rmse_df, how="left", on=grp)
 
-    # Columna yhat unificada: prioridad ensemble > stacking > prophet > deepar
-    yhat_priority = ["yhat_ensemble", "yhat_stacking", "yhat_prophet", "yhat_deepar"]
-    available = [c for c in yhat_priority if c in out.columns]
-    if available:
-        out["yhat"] = out[available[0]]
-        for col in available[1:]:
-            out["yhat"] = out["yhat"].fillna(out[col])
-        logger.info("Columna yhat unificada creada (prioridad: {})", " > ".join(available))
+    # Columna yhat + modelo_productivo: seleccion por mejor SMAPE por grupo
+    yhat_model_cols = [
+        c for c in out.columns if c.startswith("yhat_") and c not in ("yhat_lower", "yhat_upper")
+    ]
+    out = _seleccionar_modelo_productivo(out, grp, yhat_model_cols)
 
     # Renombres mínimos
     rename_map = {
