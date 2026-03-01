@@ -9,6 +9,9 @@ import pandas as pd
 from epiforecast.utils import paths as directory_manager
 from epiforecast.utils.config import conf, logger
 
+_METRICS = ["rmse", "mae", "mape", "smape", "mase"]
+_MODELS = ["prophet", "deepar", "ensemble", "stacking"]
+
 KEEP_COLS_TWB = [
     "ds",
     "entidad",
@@ -36,12 +39,16 @@ KEEP_COLS_TWB = [
     "yhat_stacking",
     "yhat_lower",
     "yhat_upper",
+    # Metricas del modelo productivo (sin sufijo)
+    "rmse",
+    "mae",
+    "mape",
+    "smape",
+    "mase",
+    # Metricas por modelo (con sufijo _modelo)
+    *[f"{m}_{mod}" for m in _METRICS for mod in _MODELS],
     "trend",
     "yearly_custom",
-    "mase_usado",
-    "mae_usado",
-    "mape_usado",
-    "rmse_usado",
     "archivo_modelo_original",
     "archivo_modelo_usado",
     "confianza_original",
@@ -251,6 +258,91 @@ def _seleccionar_modelo_productivo(
     return df
 
 
+def _calcular_metricas_por_modelo(
+    df: pd.DataFrame,
+    grp: list[str],
+    yhat_model_cols: list[str],
+) -> pd.DataFrame:
+    """Calcula RMSE, MAE, MAPE, SMAPE, MASE por grupo para cada modelo.
+
+    Agrega columnas {metrica}_{modelo} y {metrica} (del modelo productivo).
+    """
+    if "y_real" not in df.columns or not yhat_model_cols:
+        return df
+
+    mask_real = df["y_real"].notna()
+    rows = df[mask_real].copy()
+    rows["y_real"] = pd.to_numeric(rows["y_real"], errors="coerce")
+    rows = rows.dropna(subset=["y_real"])
+
+    if rows.empty:
+        return df
+
+    all_model_metrics: list[pd.DataFrame] = []
+
+    for col in yhat_model_cols:
+        modelo = col.replace("yhat_", "")
+        tmp = rows[grp + ["y_real", col]].copy()
+        tmp[col] = pd.to_numeric(tmp[col], errors="coerce")
+        tmp = tmp.dropna(subset=[col])
+        if tmp.empty:
+            continue
+
+        y = tmp["y_real"]
+        yh = tmp[col]
+        err = (y - yh).abs()
+        denom_smape = (y.abs() + yh.abs()).replace(0, np.nan)
+        denom_mape = y.abs().replace(0, np.nan)
+
+        tmp["_rmse_sq"] = (y - yh) ** 2
+        tmp["_mae"] = err
+        tmp["_mape"] = (err / denom_mape) * 100
+        tmp["_smape"] = (2 * err / denom_smape) * 100
+        # MASE: |error| / mean(|diff(y_real)|) — naive seasonal
+        tmp["_naive_diff"] = tmp.groupby(grp)["y_real"].diff().abs()
+
+        grp_metrics = tmp.groupby(grp, as_index=False).agg(
+            _rmse_sq=("_rmse_sq", "mean"),
+            _mae=("_mae", "mean"),
+            _mape=("_mape", "mean"),
+            _smape=("_smape", "mean"),
+            _naive_mean=("_naive_diff", "mean"),
+            _mae_raw=("_mae", "mean"),
+        )
+        grp_metrics[f"rmse_{modelo}"] = grp_metrics["_rmse_sq"] ** 0.5
+        grp_metrics[f"mae_{modelo}"] = grp_metrics["_mae"]
+        grp_metrics[f"mape_{modelo}"] = grp_metrics["_mape"]
+        grp_metrics[f"smape_{modelo}"] = grp_metrics["_smape"]
+        naive = grp_metrics["_naive_mean"].replace(0, np.nan)
+        grp_metrics[f"mase_{modelo}"] = grp_metrics["_mae_raw"] / naive
+
+        keep = grp + [f"{m}_{modelo}" for m in _METRICS]
+        all_model_metrics.append(grp_metrics[keep])
+
+    if not all_model_metrics:
+        return df
+
+    # Merge todas las metricas por modelo
+    merged = all_model_metrics[0]
+    for other in all_model_metrics[1:]:
+        merged = merged.merge(other, on=grp, how="outer")
+
+    df = df.merge(merged, on=grp, how="left")
+
+    # Columnas del modelo productivo (sin sufijo)
+    for m in _METRICS:
+        df[m] = np.nan
+        for mod in _MODELS:
+            col = f"{m}_{mod}"
+            if col in df.columns:
+                mask = df["modelo_productivo"] == mod
+                df.loc[mask, m] = df.loc[mask, col]
+
+    n_metric_cols = sum(1 for c in df.columns if any(c.startswith(f"{m}_") for m in _METRICS))
+    logger.info("Metricas calculadas: {} columnas por modelo + 5 del productivo", n_metric_cols)
+    return df
+
+
 def build_and_save_tableau(real_long: pd.DataFrame, fcst: pd.DataFrame, out_file: Path) -> None:
     join_cols = ["ds", "padecimiento", "entidad", "meta_modo"]
     logger.info("Join por: {}", join_cols)
@@ -262,36 +354,16 @@ def build_and_save_tableau(real_long: pd.DataFrame, fcst: pd.DataFrame, out_file
 
     out = real_long.merge(fcst, how="outer", on=join_cols, validate="m:1")
 
-    # RMSE por modelo (solo donde hay dato real y forecast)
     grp = ["padecimiento", "entidad", "meta_modo"]
-    yhat_cols = [
-        c
-        for c in out.columns
-        if c.startswith("yhat_") and c not in ("yhat_lower", "yhat_upper", "yhat_ensemble")
-    ]
-    yhat_col = yhat_cols[0] if yhat_cols else None
-
-    if yhat_col and "y_real" in out.columns:
-        tmp = out[grp + ["y_real", yhat_col]].copy()
-        tmp = tmp[tmp["y_real"].notna() & tmp[yhat_col].notna()]
-        tmp["y_real"] = pd.to_numeric(tmp["y_real"], errors="coerce")
-        tmp[yhat_col] = pd.to_numeric(tmp[yhat_col], errors="coerce")
-        tmp = tmp.dropna(subset=["y_real", yhat_col])
-
-        rmse_df = (
-            tmp.assign(se=(tmp["y_real"] - tmp[yhat_col]) ** 2)
-            .groupby(grp, as_index=False)["se"]
-            .mean()
-            .assign(rmse_modelo=lambda d: d["se"] ** 0.5)
-            .drop(columns=["se"])
-        )
-        out = out.merge(rmse_df, how="left", on=grp)
 
     # Columna yhat + modelo_productivo: seleccion por mejor SMAPE por grupo
     yhat_model_cols = [
         c for c in out.columns if c.startswith("yhat_") and c not in ("yhat_lower", "yhat_upper")
     ]
     out = _seleccionar_modelo_productivo(out, grp, yhat_model_cols)
+
+    # Metricas por modelo: calculadas desde y_real vs yhat_{modelo}
+    out = _calcular_metricas_por_modelo(out, grp, yhat_model_cols)
 
     # Renombres mínimos
     rename_map = {
