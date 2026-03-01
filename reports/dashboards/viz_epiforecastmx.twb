@@ -6147,9 +6147,15 @@
         <devicelayout auto-generated='true' name='Phone'>
           <size maxheight='800' minheight='800' sizing-mode='vscroll' />
           <zones>
+<<<<<<< Updated upstream
             <zone h='100000' id='317' type-v2='layout-basic' w='100000' x='0' y='0'>
               <zone h='98526' id='316' param='vert' type-v2='layout-flow' w='99156' x='422' y='737'>
                 <zone h='7465' id='8' name='Desempeño del modelo' param='[federated.13xqsv00m8lbbq1am9y6v0etlxi0].[yr:ds:qk]' show-domain='false' show-null-ctrls='false' type-v2='filter' w='8712' x='90866' y='737'>
+=======
+            <zone h='100000' id='355' type-v2='layout-basic' w='100000' x='0' y='0'>
+              <zone h='98526' id='354' param='vert' type-v2='layout-flow' w='99020' x='490' y='737'>
+                <zone h='7465' id='8' name='Desempeño del modelo' param='[federated.13xqsv00m8lbbq1am9y6v0etlxi0].[yr:ds:qk]' show-domain='false' show-null-ctrls='false' type-v2='filter' w='10116' x='89394' y='737'>
+>>>>>>> Stashed changes
                   <zone-style>
                     <format attr='border-color' value='#000000' />
                     <format attr='border-style' value='none' />
@@ -6352,8 +6358,13 @@
         <devicelayout auto-generated='true' name='Phone'>
           <size maxheight='1600' minheight='1600' sizing-mode='vscroll' />
           <zones>
+<<<<<<< Updated upstream
             <zone h='100000' id='87' type-v2='layout-basic' w='100000' x='0' y='0'>
               <zone h='97916' id='86' param='vert' type-v2='layout-flow' w='98438' x='781' y='1042'>
+=======
+            <zone h='100000' id='125' type-v2='layout-basic' w='100000' x='0' y='0'>
+              <zone h='97916' id='124' param='vert' type-v2='layout-flow' w='98438' x='781' y='1042'>
+>>>>>>> Stashed changes
                 <zone fixed-size='130' h='17968' id='3' is-fixed='true' name='KPIsGenerales' show-title='false' w='98438' x='781' y='1042'>
                   <zone-style>
                     <format attr='border-color' value='#000000' />
@@ -6602,9 +6613,15 @@
         <devicelayout auto-generated='true' name='Phone'>
           <size maxheight='1200' minheight='1200' sizing-mode='vscroll' />
           <zones>
+<<<<<<< Updated upstream
             <zone h='100000' id='317' type-v2='layout-basic' w='100000' x='0' y='0'>
               <zone h='98526' id='316' param='vert' type-v2='layout-flow' w='99156' x='422' y='737'>
                 <zone h='7465' id='8' name='Predicciones' param='[federated.13xqsv00m8lbbq1am9y6v0etlxi0].[yr:ds:qk]' show-domain='false' show-null-ctrls='false' type-v2='filter' w='8712' x='90866' y='737'>
+=======
+            <zone h='100000' id='355' type-v2='layout-basic' w='100000' x='0' y='0'>
+              <zone h='98526' id='354' param='vert' type-v2='layout-flow' w='99020' x='490' y='737'>
+                <zone h='7465' id='8' name='Predicciones' param='[federated.13xqsv00m8lbbq1am9y6v0etlxi0].[yr:ds:qk]' show-domain='false' show-null-ctrls='false' type-v2='filter' w='10116' x='89394' y='737'>
+>>>>>>> Stashed changes
                   <zone-style>
                     <format attr='border-color' value='#000000' />
                     <format attr='border-style' value='none' />
@@ -6832,10 +6849,17 @@
         <devicelayout auto-generated='true' name='Phone'>
           <size maxheight='1200' minheight='1200' sizing-mode='vscroll' />
           <zones>
+<<<<<<< Updated upstream
             <zone h='100000' id='323' type-v2='layout-basic' w='100000' x='0' y='0'>
               <zone h='98526' id='322' param='vert' type-v2='layout-flow' w='99156' x='422' y='737'>
                 <zone fixed-size='280' h='48019' id='172' is-fixed='true' name='Últimas 52 semanas' w='90444' x='422' y='737'>
                   <layout-cache minheight='174' minwidth='165' type-h='scalable' type-w='scalable' />
+=======
+            <zone h='100000' id='361' type-v2='layout-basic' w='100000' x='0' y='0'>
+              <zone h='98526' id='360' param='vert' type-v2='layout-flow' w='99020' x='490' y='737'>
+                <zone fixed-size='280' h='98526' id='172' is-fixed='true' name='Últimas 52 semanas' w='88904' x='490' y='737'>
+                  <layout-cache minheight='174' minwidth='154' type-h='scalable' type-w='scalable' />
+>>>>>>> Stashed changes
                   <zone-style>
                     <format attr='border-color' value='#000000' />
                     <format attr='border-style' value='none' />
