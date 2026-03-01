@@ -23,9 +23,10 @@ if TYPE_CHECKING:
 
 # Default grid (overridden by config)
 _DEFAULT_GRID: dict[str, list[Any]] = {
-    "max_depth": [3, 4, 5, 6],
-    "learning_rate": [0.01, 0.05, 0.1],
-    "subsample": [0.7, 0.8, 0.9],
+    "max_depth": [3, 4, 5],
+    "learning_rate": [0.01, 0.03, 0.05],
+    "subsample": [0.7, 0.8],
+    "min_child_weight": [5, 10],
 }
 
 _DEFAULT_CV_SPLITS = 4
@@ -144,6 +145,12 @@ class EnsembleXGBTuner:
         yc = pb.get("yearly_custom", {})
         self._yearly_period: float = yc.get("period", 365.25)
         self._yearly_fourier: int = yc.get("fourier_order", 10)
+        # Fixed HP from config (not in grid)
+        xgb_cfg = config.get("xgboost", {})
+        self._colsample_bytree: float = float(xgb_cfg.get("colsample_bytree", 0.7))
+        self._reg_alpha: float = float(xgb_cfg.get("reg_alpha", 0.1))
+        self._reg_lambda: float = float(xgb_cfg.get("reg_lambda", 1.0))
+
         self._holidays: pd.DataFrame = pd.DataFrame()
         periodos = config.get("peridos_atipicos", [])
         if periodos:
@@ -211,7 +218,9 @@ class EnsembleXGBTuner:
                 model = XGBRegressor(
                     **hp,
                     n_estimators=self._n_estimators_max,
-                    colsample_bytree=0.8,
+                    colsample_bytree=self._colsample_bytree,
+                    reg_alpha=self._reg_alpha,
+                    reg_lambda=self._reg_lambda,
                     n_jobs=-1,
                     random_state=RANDOM_SEED,
                 )

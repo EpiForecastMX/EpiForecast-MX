@@ -79,10 +79,13 @@ class EnsembleForecaster(ForecastModel):
         xgb_hp = self._conf.get("xgboost", {})
         self._xgb_hp: dict[str, Any] = {
             "n_estimators": xgb_hp.get("n_estimators", 200),
-            "max_depth": xgb_hp.get("max_depth", 4),
-            "learning_rate": xgb_hp.get("learning_rate", 0.05),
+            "max_depth": xgb_hp.get("max_depth", 3),
+            "learning_rate": xgb_hp.get("learning_rate", 0.03),
             "subsample": xgb_hp.get("subsample", 0.8),
-            "colsample_bytree": xgb_hp.get("colsample_bytree", 0.8),
+            "colsample_bytree": xgb_hp.get("colsample_bytree", 0.7),
+            "min_child_weight": xgb_hp.get("min_child_weight", 5),
+            "reg_alpha": xgb_hp.get("reg_alpha", 0.1),
+            "reg_lambda": xgb_hp.get("reg_lambda", 1.0),
         }
 
         # Holidays

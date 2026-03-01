@@ -38,9 +38,12 @@ MOCK_CONF = {
     "xgboost": {
         "n_estimators": 50,
         "max_depth": 3,
-        "learning_rate": 0.05,
+        "learning_rate": 0.03,
         "subsample": 0.8,
-        "colsample_bytree": 0.8,
+        "colsample_bytree": 0.7,
+        "min_child_weight": 5,
+        "reg_alpha": 0.1,
+        "reg_lambda": 1.0,
     },
 }
 
