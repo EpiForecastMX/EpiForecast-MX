@@ -347,7 +347,8 @@ forecast-push:
 .PHONY: s3-sync
 s3-sync:
 	aws s3 cp data/processed/data_inegi_General.csv s3://epiforecast-mx-data/latest/
-	aws s3 cp reports/forecasts/all_forecast.csv s3://epiforecast-mx-data/latest/
+	aws s3 cp data/processed/tableau.csv s3://epiforecast-mx-data/latest/
+	aws s3 sync reports/forecasts/ s3://epiforecast-mx-data/latest/forecasts/ --exclude "*.png"
 	@echo ">>> CSVs disponibles en s3://epiforecast-mx-data/latest/"
 
 #################################################################################
