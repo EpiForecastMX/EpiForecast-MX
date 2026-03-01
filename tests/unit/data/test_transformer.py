@@ -205,6 +205,59 @@ class TestAjustaNegativos:
         assert (obj.df["Incremento_hombres"] >= 0).all()
         assert (obj.df["Incremento_mujeres"] >= 0).all()
 
+    def test_ajusta_negativos_no_usa_futuro(self):
+        """Cambiar el valor DESPUES de un negativo no debe afectar la correccion."""
+        base = {
+            "Padecimiento": ["D"] * 6,
+            "Entidad": ["X"] * 6,
+            "Anio": [2022] * 6,
+            "Semana": [1, 2, 3, 4, 5, 6],
+            "Acumulado_hombres": [10, 25, 40, 60, 80, 100],
+            "Acumulado_mujeres": [15, 35, 55, 80, 100, 120],
+            "Incremento_hombres": [10, 15, 20, -5, 99, 99],
+            "Incremento_mujeres": [15, 20, 25, 30, 35, 40],
+        }
+        df1 = pd.DataFrame(base)
+
+        df2 = df1.copy()
+        df2.loc[4, "Incremento_hombres"] = 1  # valor diferente despues del negativo
+
+        with patch.object(transformer_mod, "conf", MOCK_CONF):
+            obj1 = DataTransformation(df1)
+            obj2 = DataTransformation(df2)
+        obj1.df = df1.copy()
+        obj2.df = df2.copy()
+        obj1._ajusta_negativos()
+        obj2._ajusta_negativos()
+
+        # La correccion del negativo en fila 3 debe ser identica
+        assert obj1.df["Incremento_hombres"].iloc[3] == obj2.df["Incremento_hombres"].iloc[3]
+
+    def test_ajusta_negativos_respeta_grupos(self):
+        """Un negativo en entidad B no usa valores de entidad A."""
+        df = pd.DataFrame(
+            {
+                "Padecimiento": ["D"] * 6,
+                "Entidad": ["A", "A", "A", "B", "B", "B"],
+                "Anio": [2022] * 6,
+                "Semana": [1, 2, 3, 1, 2, 3],
+                "Acumulado_hombres": [10, 25, 40, 5, 12, 20],
+                "Acumulado_mujeres": [15, 35, 55, 8, 18, 30],
+                "Incremento_hombres": [100, 200, 300, 1, 2, -5],
+                "Incremento_mujeres": [15, 20, 25, 8, 10, 12],
+            }
+        )
+        with patch.object(transformer_mod, "conf", MOCK_CONF):
+            obj = DataTransformation(df)
+        obj.df = df.copy()
+        obj._ajusta_negativos()
+
+        # Entidad B negativo corregido usando solo datos de B (media de [1, 2] = 1.5 -> 2)
+        val_b = obj.df[obj.df["Entidad"] == "B"]["Incremento_hombres"].iloc[2]
+        assert val_b >= 0
+        # Should NOT be influenced by A's large values (100, 200, 300)
+        assert val_b < 10
+
 
 # ── agrupar ───────────────────────────────────────────────────────────────────
 

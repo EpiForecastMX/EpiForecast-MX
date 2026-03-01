@@ -170,36 +170,19 @@ class DataTransformation:
 
     def _ajusta_negativos(self):
         for columna in ["Incremento_hombres", "Incremento_mujeres"]:
-            # 1) Máscara de negativos
             neg = self.df[columna] < 0
 
-            # 2) Vecinos anterior y siguiente
-            prev_val = self.df[columna].shift(1)
-            next_val = self.df[columna].shift(-1)
+            # Retrospectiva: media movil de 3 semanas previas (sin mirar futuro)
+            prev3_mean = self.df.groupby(["Padecimiento", "Entidad"])[columna].transform(
+                lambda s: s.shift(1).rolling(window=3, min_periods=1).mean()
+            )
 
-            # 3) Tratar NaN/inf como 0 en vecinos
-            prev_val = prev_val.replace([np.inf, -np.inf], np.nan).fillna(0)
-            next_val = next_val.replace([np.inf, -np.inf], np.nan).fillna(0)
-
-            # 4) Candidatos: cuando el actual sea negativo (si quieres exigir que existan ambos vecinos,
-            #    puedes usar: neg & prev_val.notna() & next_val.notna() ; pero aquí ya tratamos NaN como 0)
-            candidatos = neg
-
-            # 5) Extrapolado = promedio simple (t-1, t+1), con manejo robusto de NaN/inf
-            extrap = (prev_val + next_val) / 2.0
-
-            # Si hay valores negativos, se ponen en cero
-            extrap = extrap.clip(lower=0)
-
-            # 6) Tratar NaN/inf del extrapolado como 0, redondear y castear a entero
+            extrap = prev3_mean.clip(lower=0)
             extrap = extrap.replace([np.inf, -np.inf], np.nan).fillna(0)
             extrap = np.rint(extrap).astype(int)
 
-            # 7) Sustituir SOLO el valor negativo actual por el extrapolado
-            self.df.loc[candidatos, columna] = extrap[candidatos].values
+            self.df.loc[neg, columna] = extrap[neg].values
 
-            # 8) Como toque final, asegurar que la columna quede en enteros,
-            #    tratando cualquier NaN/inf residual como 0 antes de castear
             self.df[columna] = (
                 pd.Series(self.df[columna], index=self.df.index)
                 .replace([np.inf, -np.inf], np.nan)
