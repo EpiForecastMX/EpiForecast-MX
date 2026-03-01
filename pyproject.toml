@@ -45,6 +45,7 @@ dependencies = [
     "gluonts[torch]>=0.15",
     "xgboost>=2.0",
     "lightgbm>=4.3",
+    "statsmodels>=0.14",
 ]
 
 [project.optional-dependencies]
@@ -171,6 +172,7 @@ source = ["src/epiforecast"]
 omit = [
     "*/tests/*",
     "*/__init__.py",
+    "*/visualization/comparison_css.py",
 ]
 
 [tool.coverage.report]

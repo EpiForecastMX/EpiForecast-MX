@@ -11,6 +11,10 @@ from epiforecast.visualization.comparison_html import (
     html_resumen,
     winner_among,
 )
+from epiforecast.visualization.comparison_report import (
+    _assign_modelo_productivo,
+    _merge_all_models,
+)
 
 # -- fmt ----------------------------------------------------------------------
 
@@ -203,3 +207,88 @@ class TestHtmlMetricTable:
         assert "Sonora" in result
         assert "winner" in result
         assert "prod-ensemble" in result
+
+
+# -- _merge_all_models -------------------------------------------------------
+
+
+class TestMergeAllModels:
+    def test_two_models(self) -> None:
+        df_p = pd.DataFrame(
+            {
+                "padecimiento": ["Alz"],
+                "sexo": ["total"],
+                "nivel": ["nacional"],
+                "Entidad": [""],
+                "rmse": [1.0],
+                "smape": [10.0],
+            }
+        )
+        df_d = pd.DataFrame(
+            {
+                "padecimiento": ["Alz"],
+                "sexo": ["total"],
+                "nivel": ["nacional"],
+                "Entidad": [""],
+                "rmse": [2.0],
+                "smape": [15.0],
+            }
+        )
+        merged = _merge_all_models({"prophet": df_p, "deepar": df_d})
+        assert "rmse_prophet" in merged.columns
+        assert "rmse_deepar" in merged.columns
+        assert len(merged) == 1
+        assert merged["rmse_prophet"].iloc[0] == 1.0
+        assert merged["smape_deepar"].iloc[0] == 15.0
+
+    def test_empty_dict(self) -> None:
+        merged = _merge_all_models({})
+        assert merged.empty
+
+    def test_single_model(self) -> None:
+        df = pd.DataFrame(
+            {
+                "padecimiento": ["Alz"],
+                "sexo": ["total"],
+                "nivel": ["nacional"],
+                "Entidad": [""],
+                "rmse": [3.0],
+                "mae": [2.0],
+            }
+        )
+        merged = _merge_all_models({"ensemble": df})
+        assert "rmse_ensemble" in merged.columns
+        assert "mae_ensemble" in merged.columns
+
+
+# -- _assign_modelo_productivo -----------------------------------------------
+
+
+class TestAssignModeloProductivo:
+    def test_assigns_by_smape(self) -> None:
+        df = pd.DataFrame(
+            {
+                "smape_prophet": [10.0, 20.0],
+                "smape_deepar": [15.0, 5.0],
+            }
+        )
+        result = _assign_modelo_productivo(df, ["prophet", "deepar"])
+        assert result["modelo_productivo"].iloc[0] == "prophet"
+        assert result["modelo_productivo"].iloc[1] == "deepar"
+
+    def test_no_smape_cols(self) -> None:
+        df = pd.DataFrame({"rmse_prophet": [1.0]})
+        result = _assign_modelo_productivo(df, ["prophet"])
+        assert result["modelo_productivo"].iloc[0] == ""
+
+    def test_four_models(self) -> None:
+        df = pd.DataFrame(
+            {
+                "smape_prophet": [10.0],
+                "smape_deepar": [12.0],
+                "smape_ensemble": [8.0],
+                "smape_stacking": [9.0],
+            }
+        )
+        result = _assign_modelo_productivo(df, ["prophet", "deepar", "ensemble", "stacking"])
+        assert result["modelo_productivo"].iloc[0] == "ensemble"
