@@ -176,6 +176,8 @@ class StackingForecaster(ForecastModel):
 
     def save(self, path: Path) -> None:
         """Serializa expertos + modelo meta-learner + pesos a pickle."""
+        from epiforecast.utils.model_metadata import build_model_metadata
+
         if self._weights is None:
             raise RuntimeError("No hay modelo para guardar. Ejecutar fit() primero.")
         path = Path(path)
@@ -189,6 +191,7 @@ class StackingForecaster(ForecastModel):
             "n_train": self._n_train,
             "meta_type": self._meta_type,
             "add_temporal_features": self._add_temporal_features,
+            "_metadata": build_model_metadata(),
         }
         with path.open("wb") as f:
             pickle.dump(payload, f)

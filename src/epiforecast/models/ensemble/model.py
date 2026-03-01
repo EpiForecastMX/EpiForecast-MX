@@ -213,6 +213,8 @@ class EnsembleForecaster(ForecastModel):
         }
 
     def save(self, path: Path) -> None:
+        from epiforecast.utils.model_metadata import build_model_metadata
+
         if self._ensemble_mode == "parallel":
             if self._prophet is None or self._parallel_engine is None:
                 raise RuntimeError("No hay modelo para guardar. Ejecutar fit() primero.")
@@ -230,6 +232,7 @@ class EnsembleForecaster(ForecastModel):
                     "serie": self.serie,
                     "ensemble_mode": self._ensemble_mode,
                     "parallel_engine": self._parallel_engine,
+                    "_metadata": build_model_metadata(),
                 },
                 f,
             )

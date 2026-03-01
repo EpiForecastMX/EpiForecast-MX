@@ -166,12 +166,15 @@ class ProphetForecaster(ForecastModel):
 
     def save(self, path: Path) -> None:
         """Serialize trained model to pickle file."""
+        from epiforecast.utils.model_metadata import build_model_metadata
+
         if self._model is None:
             raise RuntimeError("No model to save. Call fit() first.")
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
+        payload = {"model": self._model, "_metadata": build_model_metadata()}
         with path.open("wb") as f:
-            pickle.dump(self._model, f)
+            pickle.dump(payload, f)
         logger.debug("Modelo guardado: {}", path)
 
     def load(self, path: Path) -> None:
@@ -180,7 +183,12 @@ class ProphetForecaster(ForecastModel):
         if not path.exists():
             raise FileNotFoundError(f"Modelo no encontrado: {path}")
         with path.open("rb") as f:
-            self._model = pickle.load(f)
+            payload = pickle.load(f)  # noqa: S301
+        # Nuevo formato: dict con "model" + "_metadata"; legacy: Prophet object directo
+        if isinstance(payload, dict) and "model" in payload:
+            self._model = payload["model"]
+        else:
+            self._model = payload
         logger.debug("Modelo cargado: {}", path)
 
         csv_path = path.with_suffix(".csv")
