@@ -138,6 +138,18 @@ def entrenar(df, padecimiento, sexo, ruta_base, mapeo, region=None, force=False)
         fila["confianza"],
     )
 
+    # MLflow (no-op si no esta instalado)
+    from epiforecast.utils.mlflow_logger import log_training_run
+
+    log_training_run(
+        model_name=modelo_activo,
+        entity=region,
+        disease=padecimiento,
+        params=parametros,
+        metrics=metrics,
+        elapsed=t_end - t_start,
+    )
+
     return fila
 
 

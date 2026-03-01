@@ -61,6 +61,9 @@ dev = [
     "pre-commit>=3.6",
     "ipykernel>=6.29",
 ]
+mlflow = [
+    "mlflow>=2.10",
+]
 dvc = [
     "dvc[s3]>=3.40",
 ]
