@@ -30,6 +30,8 @@ from epiforecast.models.ensemble.helpers import (
     preparar_datos_ensemble,
 )
 from epiforecast.models.ensemble.oof_residuals import generate_oof_residuals
+from epiforecast.models.ensemble.weight_optimizer import EnsembleWeightOptimizer
+from epiforecast.models.ensemble.xgb_direct import XGBDirectForecaster
 from epiforecast.models.factory import register_model
 from epiforecast.utils.config import conf, logger
 
@@ -88,13 +90,26 @@ class EnsembleForecaster(ForecastModel):
             "reg_lambda": xgb_hp.get("reg_lambda", 1.0),
         }
 
+        # Ensemble mode: "parallel" (Prophet + XGBDirect con pesos) o "sequential" (legacy)
+        self._ensemble_mode: str = str(self._conf.get("ensemble_mode", "parallel"))
+
+        # Parallel config
+        self._parallel_alpha: float = float(self._conf.get("parallel_alpha", 1.0))
+        self._parallel_oof_folds: int = int(self._conf.get("parallel_oof_folds", 4))
+        self._parallel_oof_cutoff: str = str(self._conf.get("parallel_oof_cutoff", "2024-01-01"))
+        self._parallel_min_train_weeks: int = int(self._conf.get("parallel_min_train_weeks", 104))
+
         # Holidays
         self._holidays: pd.DataFrame = construir_holidays(self._conf)
 
-        # Internal state
+        # Internal state — sequential mode
         self._prophet: Prophet | None = None  # lazy import
         self._xgb: XGBRegressor | None = None  # lazy import
         self._feature_names: list[str] = list(FEATURE_NAMES)
+
+        # Internal state — parallel mode
+        self._xgb_direct: XGBDirectForecaster | None = None
+        self._ensemble_weights: np.ndarray | None = None
 
         # Data placeholders (set during run())
         self.serie: pd.DataFrame = pd.DataFrame()
@@ -108,9 +123,12 @@ class EnsembleForecaster(ForecastModel):
     # ── ForecastModel Interface ────────────────────────────────────────
 
     def fit(self, train_data: pd.DataFrame) -> None:
-        """Entrena Prophet base + XGBoost sobre residuos."""
+        """Entrena Prophet base + XGBoost (sequential o parallel segun modo)."""
         self._fit_prophet(train_data)
-        self._fit_xgboost(train_data)
+        if self._ensemble_mode == "parallel":
+            self._fit_parallel(train_data)
+        else:
+            self._fit_xgboost(train_data)
 
     def _fit_prophet(self, train_data: pd.DataFrame) -> None:
         """Entrena el modelo Prophet base."""
@@ -190,21 +208,118 @@ class EnsembleForecaster(ForecastModel):
         self._t_ensemble = time.perf_counter() - t1
         logger.debug("  XGBoost residual entrenado en {:.1f}s", self._t_ensemble)
 
+    def _fit_parallel(self, train_data: pd.DataFrame) -> None:
+        """Entrena XGBDirect + aprende pesos [w_prophet, w_xgb] via OOF."""
+        t1 = time.perf_counter()
+
+        # XGBDirect sobre y directamente
+        self._xgb_direct = XGBDirectForecaster(self._xgb_hp)
+        self._xgb_direct.fit(train_data)
+
+        # Pesos via expanding-window OOF
+        optimizer = EnsembleWeightOptimizer(
+            alpha=self._parallel_alpha,
+            n_folds=self._parallel_oof_folds,
+            min_train_weeks=self._parallel_min_train_weeks,
+        )
+        self._ensemble_weights = optimizer.fit_oof(
+            train_data,
+            prophet_builder=self._build_prophet_temp,
+            xgb_builder=self._build_xgb_direct_temp,
+            oof_cutoff=self._parallel_oof_cutoff,
+        )
+        self._t_ensemble = time.perf_counter() - t1
+        logger.debug("  Parallel ensemble entrenado en {:.1f}s", self._t_ensemble)
+
+    def _build_prophet_temp(self, train_df: pd.DataFrame) -> Any:
+        """Construye un Prophet temporal para OOF (no modifica self._prophet)."""
+        from prophet import Prophet as _Prophet
+
+        np.random.seed(RANDOM_SEED)
+        m = _Prophet(
+            yearly_seasonality=False,
+            weekly_seasonality=False,
+            daily_seasonality=False,
+            holidays=self._holidays if not self._holidays.empty else None,
+            **self._prophet_hp,
+        )
+        m.add_seasonality(
+            name="yearly_custom",
+            period=self._yearly_period,
+            fourier_order=self._yearly_fourier,
+        )
+        m.fit(train_df)
+        return m
+
+    def _build_xgb_direct_temp(self, train_df: pd.DataFrame) -> XGBDirectForecaster:
+        """Construye un XGBDirect temporal para OOF."""
+        xgb = XGBDirectForecaster(self._xgb_hp)
+        xgb.fit(train_df)
+        return xgb
+
     def predict(self, horizon: int = 52) -> pd.DataFrame:
-        """Genera prediccion historica (in-sample) + futura (LSP con Prophet)."""
+        """Genera prediccion historica (in-sample) + futura."""
+        if self._ensemble_mode == "parallel":
+            return self._predict_parallel(horizon)
         if self._prophet is None or self._xgb is None:
             raise RuntimeError("Modelo no entrenado. Ejecutar fit() primero.")
         serie = self.serie if not self.serie.empty else self._prophet.history[["ds", "y"]]
         return generar_prediccion_completa(self._prophet, self._xgb, serie, horizon)
 
+    def _predict_parallel(self, horizon: int = 52) -> pd.DataFrame:
+        """Prediccion paralela: w[0]*prophet + w[1]*xgb_direct."""
+        if self._prophet is None or self._xgb_direct is None or self._ensemble_weights is None:
+            raise RuntimeError("Modelo no entrenado. Ejecutar fit() primero.")
+
+        serie = self.serie if not self.serie.empty else self._prophet.history[["ds", "y"]]
+        w = self._ensemble_weights
+
+        last_train = pd.Timestamp(self._prophet.history["ds"].max())
+        last_real = serie["ds"].max() if not serie.empty else last_train
+        weeks_beyond = max(int(np.ceil((last_real - last_train).days / 7)), 0)
+
+        future_df = self._prophet.make_future_dataframe(
+            periods=weeks_beyond + horizon, freq="W-MON"
+        )
+        prophet_full = self._prophet.predict(future_df)
+
+        # In-sample
+        xgb_insample = self._xgb_direct.predict_insample(serie)
+        prophet_in = prophet_full[prophet_full["ds"].isin(serie["ds"].values)]
+        yhat_prophet_in = prophet_in["yhat"].values[: len(serie)]
+        yhat_in = np.clip(w[0] * yhat_prophet_in + w[1] * xgb_insample, 0, None)
+
+        # Out-of-sample
+        mask_futuro = prophet_full["ds"] > last_real
+        future_dates = prophet_full.loc[mask_futuro, "ds"].values
+        yhat_prophet_future = prophet_full.loc[mask_futuro, "yhat"].values
+        xgb_future = self._xgb_direct.predict_recursive(serie, future_dates)
+        yhat_future = np.clip(w[0] * yhat_prophet_future + w[1] * xgb_future, 0, None)
+
+        all_ds = np.concatenate([serie["ds"].values, future_dates])
+        all_yhat = np.concatenate([yhat_in, yhat_future])
+        return pd.DataFrame(
+            {
+                "ds": all_ds,
+                "yhat": all_yhat,
+                "yhat_lower": all_yhat,
+                "yhat_upper": all_yhat,
+                "yhat_prophet": np.concatenate([yhat_prophet_in, yhat_prophet_future]),
+                "yhat_ensemble": all_yhat,
+            }
+        )
+
     def cross_validate(self, data: pd.DataFrame) -> dict[str, float]:
-        """Evalua Prophet+XGB sobre ``data`` (hold-out temporal)."""
+        """Evalua ensemble sobre ``data`` (hold-out temporal)."""
         if "y" in data.columns and not data.empty:
             test_df = data
         elif not self.test_data.empty:
             test_df = self.test_data
         else:
             return {"rmse": 0.0, "mae": 0.0, "smape": 0.0, "mase": 0.0}
+
+        if self._ensemble_mode == "parallel":
+            return self._cv_parallel(test_df)
 
         if self._prophet is None or self._xgb is None:
             return {"rmse": 0.0, "mae": 0.0, "smape": 0.0, "mase": 0.0}
@@ -225,23 +340,48 @@ class EnsembleForecaster(ForecastModel):
             "mase": metrics["mase"] if metrics["mase"] is not None else 0.0,
         }
 
+    def _cv_parallel(self, test_df: pd.DataFrame) -> dict[str, float]:
+        """Evalua modo paralelo sobre test_df."""
+        if self._prophet is None or self._xgb_direct is None or self._ensemble_weights is None:
+            return {"rmse": 0.0, "mae": 0.0, "smape": 0.0, "mase": 0.0}
+
+        w = self._ensemble_weights
+        prophet_pred = self._prophet.predict(test_df[["ds"]])["yhat"].values
+        xgb_pred = self._xgb_direct.predict_insample(test_df)
+        y_pred = np.clip(w[0] * prophet_pred + w[1] * xgb_pred, 0, None)
+
+        y_train = self.train_data["y"].to_numpy() if not self.train_data.empty else np.array([0.0])
+        metrics = compute_forecast_metrics(test_df["y"].to_numpy(), y_pred, y_train)
+        return {
+            "rmse": metrics["rmse"] or 0.0,
+            "mae": metrics["mae"] or 0.0,
+            "smape": metrics["smape"] or 0.0,
+            "mase": metrics["mase"] if metrics["mase"] is not None else 0.0,
+        }
+
     def save(self, path: Path) -> None:
-        """Serializa Prophet + XGBoost + params a pickle."""
-        if self._prophet is None or self._xgb is None:
+        """Serializa modelos a pickle."""
+        if self._ensemble_mode == "parallel":
+            if self._prophet is None or self._xgb_direct is None:
+                raise RuntimeError("No hay modelo para guardar. Ejecutar fit() primero.")
+        elif self._prophet is None or self._xgb is None:
             raise RuntimeError("No hay modelo para guardar. Ejecutar fit() primero.")
+
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        payload = {
+        payload: dict[str, Any] = {
             "prophet": self._prophet,
             "xgb": self._xgb,
             "params": self.get_params(),
             "features": self._feature_names,
             "serie": self.serie,
+            "ensemble_mode": self._ensemble_mode,
+            "xgb_direct": self._xgb_direct,
+            "ensemble_weights": self._ensemble_weights,
         }
         with path.open("wb") as f:
             pickle.dump(payload, f)
 
-        # Sidecar CSV (patron DeepAR: datos frescos sin pickle)
         if not self.serie.empty:
             csv_path = path.with_suffix(".csv")
             self.serie.to_csv(csv_path, index=False, encoding="utf-8")
@@ -250,15 +390,21 @@ class EnsembleForecaster(ForecastModel):
         logger.debug("Modelo ensemble guardado: {}", path)
 
     def load(self, path: Path) -> None:
-        """Restaura Prophet + XGBoost desde pickle."""
+        """Restaura modelos desde pickle."""
         path = Path(path)
         if not path.exists():
             raise FileNotFoundError(f"Modelo no encontrado: {path}")
         with path.open("rb") as f:
             payload = pickle.load(f)  # noqa: S301
+
         self._prophet = payload["prophet"]
-        self._xgb = payload["xgb"]
+        self._xgb = payload.get("xgb")
         self._feature_names = payload.get("features", list(FEATURE_NAMES))
+
+        # Parallel mode fields (backward compat: default to sequential)
+        self._ensemble_mode = payload.get("ensemble_mode", "sequential")
+        self._xgb_direct = payload.get("xgb_direct")
+        self._ensemble_weights = payload.get("ensemble_weights")
 
         # Restaurar serie: sidecar CSV (fresco) > pickle (fallback)
         csv_path = path.with_suffix(".csv")
@@ -274,7 +420,7 @@ class EnsembleForecaster(ForecastModel):
 
     def get_params(self) -> dict[str, Any]:
         """Retorna hiperparametros de ambos sub-modelos."""
-        return {
+        params: dict[str, Any] = {
             "prophet": self._prophet_hp,
             "xgboost": self._xgb_hp,
             "yearly_period": self._yearly_period,
@@ -282,14 +428,17 @@ class EnsembleForecaster(ForecastModel):
             "cutoff": self.cutoff,
             "horizon": self.horizon,
             "oof_residual_folds": self._oof_residual_folds,
+            "ensemble_mode": self._ensemble_mode,
         }
+        if self._ensemble_weights is not None:
+            params["w_prophet"] = round(float(self._ensemble_weights[0]), 4)
+            params["w_xgb"] = round(float(self._ensemble_weights[1]), 4)
+        return params
 
     # ── Orchestration ──────────────────────────────────────────────────
 
     def run(self) -> tuple[Any, dict, dict]:
         """Pipeline completo: preparar datos -> fit (con tuning) -> evaluar."""
-        from epiforecast.models.ensemble.xgb_tuner import EnsembleXGBTuner
-
         self.serie, self.train_data, self.test_data = preparar_datos_ensemble(
             self.df, self.padecimiento, self.sexo, self.cutoff
         )
@@ -297,19 +446,29 @@ class EnsembleForecaster(ForecastModel):
         # 1) Prophet base
         self._fit_prophet(self.train_data)
 
-        # 2) Tunar XGBoost con CV temporal sobre residuos Prophet
-        tuner = EnsembleXGBTuner(self._prophet, self.train_data, self._conf)
-        best_params, _ = tuner.run()
-        if best_params:
-            self._xgb_hp.update(best_params)
-            # Early stopping decide cuantos arboles usar
-            self._xgb_hp["n_estimators"] = int(self._conf.get("xgb_n_estimators_max", 500))
+        if self._ensemble_mode == "parallel":
+            # 2) Parallel: XGBDirect + pesos OOF (skip tuner)
+            self._fit_parallel(self.train_data)
+        else:
+            # 2) Sequential: Tunar XGBoost sobre residuos Prophet
+            from epiforecast.models.ensemble.xgb_tuner import EnsembleXGBTuner
 
-        # 3) XGBoost con HP optimos + early stopping
-        self._fit_xgboost(self.train_data)
-        self.pred_train, self.pred_test = generar_predicciones_insample(
-            self._prophet, self._xgb, self.train_data, self.test_data
-        )
+            tuner = EnsembleXGBTuner(self._prophet, self.train_data, self._conf)
+            best_params, _ = tuner.run()
+            if best_params:
+                self._xgb_hp.update(best_params)
+                self._xgb_hp["n_estimators"] = int(self._conf.get("xgb_n_estimators_max", 500))
+            # 3) XGBoost con HP optimos
+            self._fit_xgboost(self.train_data)
+
+        # Generar predicciones in-sample para graficos y metricas
+        if self._ensemble_mode == "parallel":
+            self.pred_train, self.pred_test = self._gen_parallel_insample()
+        else:
+            self.pred_train, self.pred_test = generar_predicciones_insample(
+                self._prophet, self._xgb, self.train_data, self.test_data
+            )
+
         metrics = calcular_metricas_ensemble(
             self.test_data,
             self.pred_test,
@@ -318,6 +477,42 @@ class EnsembleForecaster(ForecastModel):
             self.tiempo_total,
         )
         return self._prophet, metrics, self.get_params()
+
+    def _gen_parallel_insample(self) -> tuple[pd.DataFrame, pd.DataFrame]:
+        """Genera pred_train y pred_test para modo paralelo."""
+        w = self._ensemble_weights
+        if w is None or self._prophet is None or self._xgb_direct is None:
+            return pd.DataFrame(), pd.DataFrame()
+
+        # Train
+        prophet_train = self._prophet.predict(self.train_data[["ds"]])
+        yhat_p = prophet_train["yhat"].values
+        yhat_x = self._xgb_direct.predict_insample(self.train_data)
+        ensemble_train = np.clip(w[0] * yhat_p + w[1] * yhat_x, 0, None)
+        pred_train = pd.DataFrame(
+            {
+                "ds": self.train_data["ds"].values,
+                "yhat_prophet": yhat_p,
+                "yhat_ensemble": ensemble_train,
+            }
+        )
+
+        # Test
+        pred_test = pd.DataFrame()
+        if not self.test_data.empty:
+            prophet_test = self._prophet.predict(self.test_data[["ds"]])
+            yhat_p_t = prophet_test["yhat"].values
+            yhat_x_t = self._xgb_direct.predict_insample(self.test_data)
+            ensemble_test = np.clip(w[0] * yhat_p_t + w[1] * yhat_x_t, 0, None)
+            pred_test = pd.DataFrame(
+                {
+                    "ds": self.test_data["ds"].values,
+                    "yhat_prophet": yhat_p_t,
+                    "yhat_ensemble": ensemble_test,
+                }
+            )
+
+        return pred_train, pred_test
 
     # ── Accessors ──────────────────────────────────────────────────────
 

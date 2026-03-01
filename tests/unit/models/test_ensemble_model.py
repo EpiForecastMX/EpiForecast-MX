@@ -229,7 +229,8 @@ class TestSaveLoad:
 
     def test_save_creates_file(self, forecaster, tmp_path):
         forecaster._prophet = {"mock": "prophet"}
-        forecaster._xgb = {"mock": "xgb"}
+        forecaster._xgb_direct = {"mock": "xgb_direct"}
+        forecaster._ensemble_weights = np.array([0.6, 0.4])
         path = tmp_path / "model.pkl"
         with patch.object(ensemble_mod, "logger", MagicMock()):
             forecaster.save(path)
@@ -343,6 +344,74 @@ class TestOOFResiduals:
 
         mock_prophet.predict.assert_called_once()
         mock_xgb_inst.fit.assert_called_once()
+
+
+# ── Parallel Mode ────────────────────────────────────────────────────────────
+
+MOCK_CONF_PARALLEL = {
+    **MOCK_CONF,
+    "ensemble_mode": "parallel",
+    "parallel_alpha": 1.0,
+    "parallel_oof_folds": 2,
+    "parallel_oof_cutoff": "2022-06-01",
+    "parallel_min_train_weeks": 50,
+}
+
+
+@pytest.fixture
+def forecaster_parallel():
+    """EnsembleForecaster in parallel mode."""
+    df = _make_df()
+    with (
+        patch.object(ensemble_mod, "conf", MOCK_CONF_PARALLEL),
+        patch.object(ensemble_mod, "logger", MagicMock()),
+    ):
+        return EnsembleForecaster(
+            df=df,
+            sexo="incrementos_total",
+            padecimiento="Alzheimer",
+            config=MOCK_CONF_PARALLEL,
+        )
+
+
+class TestParallelMode:
+    def test_parallel_mode_stored(self, forecaster_parallel):
+        assert forecaster_parallel._ensemble_mode == "parallel"
+
+    def test_parallel_weights_start_none(self, forecaster_parallel):
+        assert forecaster_parallel._ensemble_weights is None
+
+    def test_parallel_xgb_direct_start_none(self, forecaster_parallel):
+        assert forecaster_parallel._xgb_direct is None
+
+    def test_get_params_includes_mode(self, forecaster_parallel):
+        params = forecaster_parallel.get_params()
+        assert params["ensemble_mode"] == "parallel"
+
+    def test_sequential_backward_compat(self):
+        conf_seq = {**MOCK_CONF, "ensemble_mode": "sequential"}
+        df = _make_df()
+        with (
+            patch.object(ensemble_mod, "conf", conf_seq),
+            patch.object(ensemble_mod, "logger", MagicMock()),
+        ):
+            f = EnsembleForecaster(
+                df=df, sexo="incrementos_total", padecimiento="Alzheimer", config=conf_seq
+            )
+        assert f._ensemble_mode == "sequential"
+
+    def test_default_mode_is_parallel(self):
+        """No ensemble_mode in config -> defaults to parallel."""
+        conf_no_mode = {k: v for k, v in MOCK_CONF.items() if k != "ensemble_mode"}
+        df = _make_df()
+        with (
+            patch.object(ensemble_mod, "conf", conf_no_mode),
+            patch.object(ensemble_mod, "logger", MagicMock()),
+        ):
+            f = EnsembleForecaster(
+                df=df, sexo="incrementos_total", padecimiento="Alzheimer", config=conf_no_mode
+            )
+        assert f._ensemble_mode == "parallel"
 
 
 # ── Factory registration ─────────────────────────────────────────────────────

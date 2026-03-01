@@ -22,6 +22,13 @@ xgboost:
 
 oof_residual_folds: 3  # 0 = legacy in-sample
 
+# Modo: "parallel" (Prophet + XGBDirect con pesos) o "sequential" (legacy residual)
+ensemble_mode: "parallel"
+parallel_alpha: 1.0
+parallel_oof_folds: 4
+parallel_oof_cutoff: "2024-01-01"
+parallel_min_train_weeks: 104
+
 FECHA_CORTE_ENTRENAMIENTO_ENSEMBLE: "2025-01-01"
 HORIZON_ENSEMBLE: 52
 
