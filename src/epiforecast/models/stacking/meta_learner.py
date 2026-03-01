@@ -94,7 +94,7 @@ class StackingMetaLearner:
 
             x_fold = np.column_stack(fold_preds)
             all_preds.append(x_fold)
-            all_y.append(fold_val["y"].values.astype(float))
+            all_y.append(fold_val["y"].to_numpy(dtype=float))
             logger.debug(
                 "  OOF fold {}/{}: train={}, val={} filas",
                 fold_idx + 1,

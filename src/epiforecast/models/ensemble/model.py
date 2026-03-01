@@ -171,7 +171,7 @@ class EnsembleForecaster(ForecastModel):
 
         valid_mask = feats_train.notna().all(axis=1)
         feats_valid = feats_train[valid_mask]
-        residuos_valid = residuos[valid_mask.values]
+        residuos_valid = residuos[valid_mask.to_numpy()]
 
         # Early stopping: ultimo 20% como eval_set
         n_val = max(int(len(feats_valid) * 0.2), 1)

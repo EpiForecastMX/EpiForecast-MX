@@ -60,10 +60,12 @@ def _compute_oof_residuals_for_cv(
     all_residuos: list[np.ndarray] = []
     fold_splits: list[tuple[np.ndarray, np.ndarray]] = []
 
+    valid_indices = np.flatnonzero(valid_mask.to_numpy())
+
     offset = 0
     for train_idx, val_idx in tscv.split(feats_full[valid_mask].values):
-        fold_train_data = train_data.iloc[valid_mask.values.nonzero()[0][train_idx]].copy()
-        fold_val_data = train_data.iloc[valid_mask.values.nonzero()[0][val_idx]].copy()
+        fold_train_data: pd.DataFrame = train_data.iloc[valid_indices[train_idx]].copy()
+        fold_val_data: pd.DataFrame = train_data.iloc[valid_indices[val_idx]].copy()
 
         # Re-entrenar Prophet temporal para este fold
         m = _Prophet(
