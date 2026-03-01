@@ -118,7 +118,7 @@ def preparar_datos_ensemble(
     train_data = serie[serie["ds"] < cutoff_ts].copy().reset_index(drop=True)
     test_data = serie[serie["ds"] >= cutoff_ts].copy().reset_index(drop=True)
 
-    logger.info(
+    logger.debug(
         "  {} — Train: {} filas | Test: {} filas",
         padecimiento_tipo,
         len(train_data),
@@ -184,6 +184,88 @@ def generar_predicciones_insample(
         )
 
     return pred_train, pred_test
+
+
+def generar_prediccion_completa(
+    prophet: Any,
+    xgb: Any,
+    serie: pd.DataFrame,
+    horizon: int = 52,
+) -> pd.DataFrame:
+    """Genera prediccion historica (in-sample) + futura (out-of-sample).
+
+    Retorna un DataFrame con columnas ds, yhat, yhat_lower, yhat_upper,
+    yhat_prophet, yhat_ensemble cubriendo todo el rango de la serie mas
+    ``horizon`` semanas adicionales — comportamiento LSP con Prophet.
+
+    Args:
+        prophet: Modelo Prophet entrenado.
+        xgb: Modelo XGBRegressor entrenado sobre residuos.
+        serie: Serie completa (train + test) con columnas ds, y.
+        horizon: Semanas de pronostico mas alla de la serie.
+    """
+    last_train = pd.Timestamp(prophet.history["ds"].max())
+    last_real = serie["ds"].max() if not serie.empty else last_train
+    weeks_beyond = max(int(np.ceil((last_real - last_train).days / 7)), 0)
+
+    # Prophet sobre todo el rango: historico + test + futuro
+    future_df = prophet.make_future_dataframe(periods=weeks_beyond + horizon, freq="W-MON")
+    prophet_full = prophet.predict(future_df)
+
+    # --- In-sample (batch): features XGBoost con datos reales ---
+    y_series = serie["y"].reset_index(drop=True)
+    d_series = serie["ds"].reset_index(drop=True)
+    feats_all = construir_features_xgb(y_series, d_series)
+    valid = feats_all.notna().all(axis=1)
+    xgb_adj_insample = np.zeros(len(serie))
+    xgb_adj_insample[valid.values] = xgb.predict(feats_all[valid])
+
+    # Merge con Prophet in-sample
+    insample_dates = serie["ds"].values
+    prophet_insample = prophet_full[prophet_full["ds"].isin(insample_dates)]
+    yhat_prophet_in = prophet_insample["yhat"].values[: len(serie)]
+    ensemble_in = yhat_prophet_in + xgb_adj_insample
+
+    rows_insample = pd.DataFrame(
+        {
+            "ds": insample_dates,
+            "yhat": ensemble_in,
+            "yhat_lower": ensemble_in,
+            "yhat_upper": ensemble_in,
+            "yhat_prophet": yhat_prophet_in,
+            "yhat_ensemble": ensemble_in,
+        }
+    )
+
+    # --- Out-of-sample (iterativo): extender con yhat_prophet como proxy ---
+    mask_futuro = prophet_full["ds"] > last_real
+    future_dates = prophet_full.loc[mask_futuro, "ds"].values
+    future_yhat_prophet = prophet_full.loc[mask_futuro, "yhat"].values
+
+    y_ext = serie["y"].values.tolist()
+    d_ext = serie["ds"].values.tolist()
+    xgb_adj_future: list[float] = []
+
+    for i in range(len(future_dates)):
+        feats = construir_features_xgb(pd.Series(y_ext), pd.Series(pd.to_datetime(d_ext)))
+        adj = float(xgb.predict(feats.iloc[[-1]].fillna(0))[0])
+        xgb_adj_future.append(adj)
+        y_ext.append(float(future_yhat_prophet[i]))
+        d_ext.append(future_dates[i])
+
+    ensemble_future = future_yhat_prophet + np.array(xgb_adj_future)
+    rows_future = pd.DataFrame(
+        {
+            "ds": future_dates,
+            "yhat": ensemble_future,
+            "yhat_lower": ensemble_future,
+            "yhat_upper": ensemble_future,
+            "yhat_prophet": future_yhat_prophet,
+            "yhat_ensemble": ensemble_future,
+        }
+    )
+
+    return pd.concat([rows_insample, rows_future], ignore_index=True)
 
 
 def calcular_metricas_ensemble(

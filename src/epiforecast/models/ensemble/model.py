@@ -24,6 +24,7 @@ from epiforecast.models.ensemble.helpers import (
     calcular_metricas_prophet_base,
     construir_features_xgb,
     construir_holidays,
+    generar_prediccion_completa,
     generar_predicciones_insample,
     preparar_datos_ensemble,
 )
@@ -100,13 +101,16 @@ class EnsembleForecaster(ForecastModel):
 
     def fit(self, train_data: pd.DataFrame) -> None:
         """Entrena Prophet base + XGBoost sobre residuos."""
+        self._fit_prophet(train_data)
+        self._fit_xgboost(train_data)
+
+    def _fit_prophet(self, train_data: pd.DataFrame) -> None:
+        """Entrena el modelo Prophet base."""
         from prophet import Prophet as _Prophet
-        from xgboost import XGBRegressor as _XGBRegressor
 
         t0 = time.perf_counter()
         np.random.seed(RANDOM_SEED)
 
-        # 1) Prophet base
         self._prophet = _Prophet(
             yearly_seasonality=False,
             weekly_seasonality=False,
@@ -121,9 +125,15 @@ class EnsembleForecaster(ForecastModel):
         )
         self._prophet.fit(train_data)
         self._t_prophet = time.perf_counter() - t0
-        logger.info("  Prophet base entrenado en {:.1f}s", self._t_prophet)
+        logger.debug("  Prophet base entrenado en {:.1f}s", self._t_prophet)
 
-        # 2) XGBoost sobre residuos
+    def _fit_xgboost(self, train_data: pd.DataFrame) -> None:
+        """Entrena XGBoost sobre residuos de Prophet con early stopping."""
+        from xgboost import XGBRegressor as _XGBRegressor
+
+        if self._prophet is None:
+            raise RuntimeError("Prophet debe entrenarse antes de XGBoost.")
+
         t1 = time.perf_counter()
         prophet_train = self._prophet.predict(train_data[["ds"]])
         residuos = train_data["y"].values - prophet_train["yhat"].values
@@ -133,54 +143,29 @@ class EnsembleForecaster(ForecastModel):
             train_data["ds"].reset_index(drop=True),
         )
         valid_mask = feats_train.notna().all(axis=1)
+        feats_valid = feats_train[valid_mask]
+        residuos_valid = residuos[valid_mask.values]
+
+        # Early stopping: ultimo 20% como eval_set
+        n_val = max(int(len(feats_valid) * 0.2), 1)
+        n_train = len(feats_valid) - n_val
 
         self._xgb = _XGBRegressor(**self._xgb_hp, n_jobs=-1, random_state=RANDOM_SEED)
-        self._xgb.fit(feats_train[valid_mask], residuos[valid_mask.values])
+        self._xgb.fit(
+            feats_valid.iloc[:n_train],
+            residuos_valid[:n_train],
+            eval_set=[(feats_valid.iloc[n_train:], residuos_valid[n_train:])],
+            verbose=False,
+        )
         self._t_ensemble = time.perf_counter() - t1
-        logger.info("  XGBoost residual entrenado en {:.1f}s", self._t_ensemble)
+        logger.debug("  XGBoost residual entrenado en {:.1f}s", self._t_ensemble)
 
     def predict(self, horizon: int = 52) -> pd.DataFrame:
-        """Genera pronostico a futuro (Prophet + XGBoost iterativo)."""
+        """Genera prediccion historica (in-sample) + futura (LSP con Prophet)."""
         if self._prophet is None or self._xgb is None:
             raise RuntimeError("Modelo no entrenado. Ejecutar fit() primero.")
-
-        last_train = pd.Timestamp(self._prophet.history["ds"].max())
-        last_real = self.serie["ds"].max() if not self.serie.empty else last_train
-        weeks_test = max(int(np.ceil((last_real - last_train).days / 7)), 0)
-
-        future = self._prophet.make_future_dataframe(periods=weeks_test + horizon, freq="W-MON")
-        prophet_future = self._prophet.predict(future)
-        mask_futuro = prophet_future["ds"] > last_real
-        future_dates = prophet_future.loc[mask_futuro, "ds"].values
-        future_yhat_prophet = prophet_future.loc[mask_futuro, "yhat"].values
-
-        # XGBoost iterativo
-        if not self.serie.empty:
-            y_ext = self.serie["y"].values.tolist()
-            d_ext = self.serie["ds"].values.tolist()
-        else:
-            y_ext = self._prophet.history["y"].values.tolist()
-            d_ext = self._prophet.history["ds"].values.tolist()
-
-        xgb_adj: list[float] = []
-        for i in range(len(future_dates)):
-            feats = construir_features_xgb(pd.Series(y_ext), pd.Series(pd.to_datetime(d_ext)))
-            adj = float(self._xgb.predict(feats.iloc[[-1]].fillna(0))[0])
-            xgb_adj.append(adj)
-            y_ext.append(float(future_yhat_prophet[i]))
-            d_ext.append(future_dates[i])
-
-        ensemble_future = future_yhat_prophet + np.array(xgb_adj)
-        return pd.DataFrame(
-            {
-                "ds": future_dates,
-                "yhat": ensemble_future,
-                "yhat_lower": ensemble_future,
-                "yhat_upper": ensemble_future,
-                "yhat_prophet": future_yhat_prophet,
-                "yhat_ensemble": ensemble_future,
-            }
-        )
+        serie = self.serie if not self.serie.empty else self._prophet.history[["ds", "y"]]
+        return generar_prediccion_completa(self._prophet, self._xgb, serie, horizon)
 
     def cross_validate(self, data: pd.DataFrame) -> dict[str, float]:
         """Evalua Prophet+XGB sobre ``data`` (hold-out temporal)."""
@@ -221,10 +206,18 @@ class EnsembleForecaster(ForecastModel):
             "xgb": self._xgb,
             "params": self.get_params(),
             "features": self._feature_names,
+            "serie": self.serie,
         }
         with path.open("wb") as f:
             pickle.dump(payload, f)
-        logger.info("Modelo ensemble guardado: {}", path)
+
+        # Sidecar CSV (patron DeepAR: datos frescos sin pickle)
+        if not self.serie.empty:
+            csv_path = path.with_suffix(".csv")
+            self.serie.to_csv(csv_path, index=False, encoding="utf-8")
+            logger.debug("Serie sidecar guardada: {}", csv_path.name)
+
+        logger.debug("Modelo ensemble guardado: {}", path)
 
     def load(self, path: Path) -> None:
         """Restaura Prophet + XGBoost desde pickle."""
@@ -236,6 +229,17 @@ class EnsembleForecaster(ForecastModel):
         self._prophet = payload["prophet"]
         self._xgb = payload["xgb"]
         self._feature_names = payload.get("features", list(FEATURE_NAMES))
+
+        # Restaurar serie: sidecar CSV (fresco) > pickle (fallback)
+        csv_path = path.with_suffix(".csv")
+        if csv_path.exists():
+            self.serie = pd.read_csv(csv_path)
+            self.serie["ds"] = pd.to_datetime(self.serie["ds"])
+        else:
+            self.serie = payload.get("serie", pd.DataFrame())
+            if not self.serie.empty:
+                self.serie["ds"] = pd.to_datetime(self.serie["ds"])
+
         logger.info("Modelo ensemble cargado: {}", path)
 
     def get_params(self) -> dict[str, Any]:
@@ -252,11 +256,26 @@ class EnsembleForecaster(ForecastModel):
     # ── Orchestration ──────────────────────────────────────────────────
 
     def run(self) -> tuple[Any, dict, dict]:
-        """Pipeline completo: preparar datos -> fit -> evaluar."""
+        """Pipeline completo: preparar datos -> fit (con tuning) -> evaluar."""
+        from epiforecast.models.ensemble.xgb_tuner import EnsembleXGBTuner
+
         self.serie, self.train_data, self.test_data = preparar_datos_ensemble(
             self.df, self.padecimiento, self.sexo, self.cutoff
         )
-        self.fit(self.train_data)
+
+        # 1) Prophet base
+        self._fit_prophet(self.train_data)
+
+        # 2) Tunar XGBoost con CV temporal sobre residuos Prophet
+        tuner = EnsembleXGBTuner(self._prophet, self.train_data, self._conf)
+        best_params, _ = tuner.run()
+        if best_params:
+            self._xgb_hp.update(best_params)
+            # Early stopping decide cuantos arboles usar
+            self._xgb_hp["n_estimators"] = int(self._conf.get("xgb_n_estimators_max", 500))
+
+        # 3) XGBoost con HP optimos + early stopping
+        self._fit_xgboost(self.train_data)
         self.pred_train, self.pred_test = generar_predicciones_insample(
             self._prophet, self._xgb, self.train_data, self.test_data
         )
@@ -302,4 +321,12 @@ class EnsembleForecaster(ForecastModel):
         )
 
     def generar_futuro(self) -> pd.DataFrame:
-        return self.predict(self.horizon)
+        """Pronostico solo futuro (post-serie). Compatible con avance5."""
+        full = self.predict(self.horizon)
+        if not self.serie.empty:
+            cutoff = self.serie["ds"].max()
+        elif self._prophet is not None:
+            cutoff = pd.Timestamp(self._prophet.history["ds"].max())
+        else:
+            raise RuntimeError("No hay serie ni modelo para determinar cutoff.")
+        return pd.DataFrame(full[full["ds"] > cutoff]).reset_index(drop=True)
