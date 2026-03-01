@@ -5,13 +5,25 @@ Aprende pesos [w_prophet, w_xgb] via expanding-window cross-validation.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Protocol
 
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import Ridge
 
 from epiforecast.utils.config import logger
+
+
+class ProphetBuilder(Protocol):
+    """Callable that builds a fitted Prophet model from training data."""
+
+    def __call__(self, train_df: pd.DataFrame) -> Any: ...
+
+
+class XGBBuilder(Protocol):
+    """Callable that builds a fitted XGBDirect model from training data."""
+
+    def __call__(self, train_df: pd.DataFrame) -> Any: ...
 
 
 class EnsembleWeightOptimizer:
@@ -31,8 +43,8 @@ class EnsembleWeightOptimizer:
     def fit_oof(
         self,
         train_data: pd.DataFrame,
-        prophet_builder: Any,
-        xgb_builder: Any,
+        prophet_builder: ProphetBuilder,
+        xgb_builder: XGBBuilder,
         oof_cutoff: str,
     ) -> np.ndarray:
         """Expanding-window OOF para aprender pesos [w_prophet, w_xgb].
