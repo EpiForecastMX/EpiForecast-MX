@@ -27,6 +27,7 @@ KEEP_COLS_TWB = [
     "incrementos_total",
     "incrementos_hombres",
     "incrementos_mujeres",
+    "yhat",
     "yhat_prophet",
     "yhat_deepar",
     "yhat_ensemble",
@@ -190,6 +191,15 @@ def build_and_save_tableau(real_long: pd.DataFrame, fcst: pd.DataFrame, out_file
             .drop(columns=["se"])
         )
         out = out.merge(rmse_df, how="left", on=grp)
+
+    # Columna yhat unificada: prioridad ensemble > stacking > prophet > deepar
+    yhat_priority = ["yhat_ensemble", "yhat_stacking", "yhat_prophet", "yhat_deepar"]
+    available = [c for c in yhat_priority if c in out.columns]
+    if available:
+        out["yhat"] = out[available[0]]
+        for col in available[1:]:
+            out["yhat"] = out["yhat"].fillna(out[col])
+        logger.info("Columna yhat unificada creada (prioridad: {})", " > ".join(available))
 
     # Renombres mínimos
     rename_map = {
