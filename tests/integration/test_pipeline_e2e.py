@@ -90,6 +90,7 @@ def synthetic_data(mock_conf):
 
 
 @pytest.mark.integration
+@pytest.mark.slow
 def test_pipeline_end_to_end(mock_conf, synthetic_data, monkeypatch):
     """
     Smoke test para el pipeline de MLOps:

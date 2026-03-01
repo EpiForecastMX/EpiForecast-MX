@@ -1,17 +1,11 @@
 # tests/unit/models/test_xgb_direct.py
 """Unit tests for XGBDirectForecaster."""
 
-import numpy as np
 import pandas as pd
 import pytest
 
 from epiforecast.models.ensemble.xgb_direct import XGBDirectForecaster
-
-
-def _make_train(n: int = 200) -> pd.DataFrame:
-    rng = np.random.default_rng(42)
-    dates = pd.date_range("2019-01-07", periods=n, freq="W-MON")
-    return pd.DataFrame({"ds": dates, "y": rng.integers(5, 30, n).astype(float)})
+from tests.unit.models.conftest import make_train_series as _make_train
 
 
 class TestXGBDirectFit:

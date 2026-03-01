@@ -15,6 +15,8 @@ from epiforecast.models.stacking.experts import ETSExpert, LGBMExpert, ProphetEx
 from epiforecast.models.stacking.meta_learner import StackingMetaLearner
 import epiforecast.models.stacking.model as stacking_mod
 from epiforecast.models.stacking.model import StackingForecaster
+from tests.unit.models.conftest import make_epi_df as _make_df
+from tests.unit.models.conftest import make_train_series as _make_series
 
 # ── Mock conf ─────────────────────────────────────────────────────────────────
 
@@ -51,25 +53,6 @@ MOCK_CONF = {
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
-
-
-def _make_df(n_weeks: int = 200) -> pd.DataFrame:
-    rng = np.random.default_rng(42)
-    dates = pd.date_range("2019-01-07", periods=n_weeks, freq="W-MON")
-    return pd.DataFrame(
-        {
-            "Fecha": dates,
-            "Padecimiento": ["Alzheimer"] * n_weeks,
-            "Entidad": ["Nacional"] * n_weeks,
-            "incrementos_total": rng.integers(5, 30, n_weeks),
-        }
-    )
-
-
-def _make_series(n: int = 200) -> pd.DataFrame:
-    rng = np.random.default_rng(42)
-    dates = pd.date_range("2019-01-07", periods=n, freq="W-MON")
-    return pd.DataFrame({"ds": dates, "y": rng.integers(5, 30, n).astype(float)})
 
 
 @pytest.fixture

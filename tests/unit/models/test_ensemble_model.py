@@ -14,6 +14,7 @@ import pytest
 from epiforecast.models.ensemble.helpers import construir_features_xgb, construir_holidays
 import epiforecast.models.ensemble.model as ensemble_mod
 from epiforecast.models.ensemble.model import EnsembleForecaster
+from tests.unit.models.conftest import make_epi_df as _make_df
 
 # ── Mock conf ─────────────────────────────────────────────────────────────────
 
@@ -49,19 +50,6 @@ MOCK_CONF = {
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
-
-
-def _make_df(n_weeks: int = 200) -> pd.DataFrame:
-    rng = np.random.default_rng(42)
-    dates = pd.date_range("2019-01-07", periods=n_weeks, freq="W-MON")
-    return pd.DataFrame(
-        {
-            "Fecha": dates,
-            "Padecimiento": ["Alzheimer"] * n_weeks,
-            "Entidad": ["Nacional"] * n_weeks,
-            "incrementos_total": rng.integers(5, 30, n_weeks),
-        }
-    )
 
 
 @pytest.fixture
