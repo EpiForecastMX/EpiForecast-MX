@@ -15,9 +15,9 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.12-blue?style=flat&logo=python&logoColor=white" alt="Python 3.12"/>
-  <img src="https://img.shields.io/badge/Models-Prophet_%2B_DeepAR_%2B_Ensemble-orange?style=flat" alt="Multi-Model"/>
+  <img src="https://img.shields.io/badge/Models-Prophet_%2B_DeepAR_%2B_Ensemble_%2B_Stacking-orange?style=flat" alt="Multi-Model"/>
   <img src="https://img.shields.io/badge/GPU-SageMaker_T4-76b900?style=flat&logo=nvidia&logoColor=white" alt="GPU SageMaker"/>
-  <img src="https://img.shields.io/badge/Coverage-93%25-brightgreen?style=flat" alt="Coverage 93%"/>
+  <img src="https://img.shields.io/badge/Coverage-70%25-brightgreen?style=flat" alt="Coverage 70%"/>
   <img src="https://img.shields.io/badge/DVC-S3-945DD6?style=flat&logo=dvc&logoColor=white" alt="DVC + S3"/>
 </p>
 
@@ -27,7 +27,7 @@
 
 **EpiForecast-MX** is a production-grade epidemiological intelligence platform developed in partnership with the **Instituto Mexicano del Seguro Social (IMSS)** to forecast the weekly incidence of neurological and mental-health conditions across Mexico's 32 states with a 52-week horizon.
 
-The platform uses a **polymorphic Factory pattern** to support multiple forecasting engines (**Prophet**, **DeepAR**, and **Ensemble**), ensuring scalability and ease of integration for future algorithms. DeepAR training runs on AWS SageMaker with NVIDIA T4 GPUs for fast iteration. The Ensemble model combines Prophet as a base with XGBoost residual correction for improved accuracy on volatile series.
+The platform uses a **polymorphic Factory pattern** to support multiple forecasting engines (**Prophet**, **DeepAR**, **Ensemble**, and **Stacking**), ensuring scalability and ease of integration for future algorithms. DeepAR training runs on AWS SageMaker with NVIDIA T4 GPUs for fast iteration. The Ensemble model combines Prophet with XGBoost residual correction, while the Stacking model uses Prophet + ETS + LightGBM experts with a Ridge meta-learner for optimal weight combination.
 
 | Condition | ICD-10 | Challenge |
 |-----------|--------|-----------|
@@ -39,10 +39,11 @@ The platform uses a **polymorphic Factory pattern** to support multiple forecast
 
 ## Key Features
 
-- **Multi-Model Orchestration** -- Seamlessly switch between Prophet, DeepAR, and Ensemble via central configuration (`config/base.yaml`) or CLI arguments.
+- **Multi-Model Orchestration** -- Seamlessly switch between Prophet, DeepAR, Ensemble, and Stacking via central configuration (`config/base.yaml`) or CLI arguments.
 - **GPU Training on SageMaker** -- DeepAR trains on `ml.g4dn.xlarge` (NVIDIA T4, CUDA 12.4) via a single `make train-sagemaker` command. Local CPU/MPS training also supported.
 - **End-to-End ML Pipeline** -- Automated from PDF scraping (SINAVE bulletins) through INEGI demographic mapping to forecast charts and HTML reports.
-- **Model Comparison Engine** -- High-contrast professional charts comparing Real vs. Prophet vs. DeepAR vs. Ensemble performance across all states and conditions.
+- **Model Comparison Engine** -- High-contrast professional charts comparing Real vs. Prophet vs. DeepAR vs. Ensemble vs. Stacking performance across all states and conditions.
+- **SMAPE-Based Model Selection** -- The Tableau dataset automatically selects the best-performing model per group (condition, state, mode) based on SMAPE, exposing a `modelo_productivo` column.
 - **Hybrid Fallback** -- Low-incidence state models automatically defer to regional aggregates to ensure 100% forecast coverage.
 - **Cross-Validation** -- Prophet uses weighted time-series CV (4 folds, progressive weights). DeepAR uses multi-series CV with early stopping.
 - **IMSS Institutional Branding** -- All visualizations and reports follow official IMSS 2026 chromatic and styling guidelines.
@@ -63,7 +64,9 @@ EpiForecast-MX/
 |   |-- base.yaml                 #   Active model, paths, disease settings
 |   |-- models/                   #   Per-algorithm hyperparameters
 |   |   |-- prophet.yaml          #     Prophet HP grids, seasonality, regime changes
-|   |   +-- deepar.yaml           #     DeepAR epochs, layers, dropout, context length
+|   |   |-- deepar.yaml           #     DeepAR epochs, layers, dropout, context length
+|   |   |-- ensemble.yaml         #     Ensemble (Prophet + XGBoost) hyperparameters
+|   |   +-- stacking.yaml         #     Stacking experts + meta-learner hyperparameters
 |   |-- data/                     #   Preprocessing parameters
 |   |-- visualization/            #   Plot styling (IMSS palette)
 |   +-- infrastructure/           #   Logging configuration
@@ -74,7 +77,8 @@ EpiForecast-MX/
 |   |   |-- factory.py            #     create_model() + @register_model decorator
 |   |   |-- prophet/              #     ProphetForecaster + cross-validator + tuner + data_prep
 |   |   |-- deepar/               #     DeepARForecaster + cross-validator
-|   |   +-- ensemble/             #     EnsembleForecaster (Prophet + XGBoost) + helpers
+|   |   |-- ensemble/             #     EnsembleForecaster (Prophet + XGBoost) + helpers
+|   |   +-- stacking/             #     StackingForecaster (Prophet + ETS + LightGBM + Ridge)
 |   |-- data/                     #   PDF extraction, INEGI ingestion, preprocessing
 |   |-- evaluation/               #   Metrics (RMSE, MAE, MAPE, SMAPE, MASE)
 |   |-- visualization/            #   IMSS publication-quality charts and reports
@@ -100,7 +104,7 @@ EpiForecast-MX/
 |   |-- mapea.py                  #   State-INEGI mapping
 |   +-- scrape_boletines.py       #   SINAVE bulletin scraper
 |
-|-- tests/                        # Test suite (~43 files, 80%+ coverage)
+|-- tests/                        # Test suite (~34 files, 70%+ coverage, 693 tests)
 |   |-- unit/                     #   Unit tests for all modules
 |   +-- integration/              #   End-to-end pipeline tests
 |
@@ -110,9 +114,10 @@ EpiForecast-MX/
 |   +-- processed/                #   Final datasets (data_inegi_*.csv)
 |
 |-- models/                       # Trained model artifacts (.pkl, managed by DVC)
-|   |-- prophet/                  #   Prophet models per disease/state/sex
-|   |-- deepar/                   #   DeepAR models per disease/state/sex
-|   +-- ensemble/                 #   Ensemble (Prophet+XGBoost) models per disease
+|   |-- prophet/                  #   Prophet models per disease/state/sex (333 models)
+|   |-- deepar/                   #   DeepAR models per disease/state/sex (333 models)
+|   |-- ensemble/                 #   Ensemble (Prophet+XGBoost) models (333 models)
+|   +-- stacking/                 #   Stacking (Prophet+ETS+LightGBM+Ridge) models (333 models)
 |
 |-- reports/                      # Generated outputs
 |   |-- forecasts/                #   Forecast CSVs and comparison charts
@@ -193,9 +198,11 @@ make train
 # Train specific models
 make train-prophet    # Prophet (CPU, parallel with joblib)
 make train-deepar     # DeepAR (local CPU/MPS)
-make train-all        # Both models sequentially
+make train-ensemble   # Ensemble (Prophet + XGBoost)
+make train-stacking   # Stacking (Prophet + ETS + LightGBM + Ridge)
+make train-all        # All 4 models sequentially
 
-# Train Ensemble (Prophet + XGBoost residual correction)
+# Train Ensemble with comparison visualizations
 make avance5                                              # All conditions
 make avance5 ARGS="padecimiento.tipo='Alzheimer'"         # Single condition
 
@@ -203,6 +210,8 @@ make avance5 ARGS="padecimiento.tipo='Alzheimer'"         # Single condition
 make train-sagemaker          # Build Docker image + launch on ml.g4dn.xlarge
 make train-sagemaker-build    # Only build + push image to ECR
 make train-sagemaker-local    # Test locally with Docker
+make train-sagemaker-parallel # 3 parallel jobs (1 per condition)
+make train-sagemaker-fast     # Build + 3 parallel jobs
 ```
 
 After SageMaker training completes, download the trained models:
@@ -210,21 +219,33 @@ After SageMaker training completes, download the trained models:
 aws s3 sync s3://epiforecast-mx-data/training/<JOB_NAME>/output/ ./models/deepar/
 ```
 
-### 3. Prediction
+### 3. Prediction and Tableau
 
 ```bash
 # Generate 52-week forecasts (denormalized to original scale)
 make predict ARGS="modelo_activo='deepar'"
 make predict ARGS="modelo_activo='prophet'"
+make predict ARGS="modelo_activo='ensemble'"
+make predict ARGS="modelo_activo='stacking'"
+
+# Build Tableau dataset (SMAPE-based model selection + per-model metrics)
+make tableau
 ```
+
+The Tableau dataset (`data/processed/tableau.csv`) includes:
+- `yhat`: Best prediction (selected by lowest SMAPE per group)
+- `modelo_productivo`: Name of the winning model per (condition, state, mode)
+- Per-model predictions: `yhat_prophet`, `yhat_deepar`, `yhat_ensemble`, `yhat_stacking`
+- Per-model metrics: `rmse_{model}`, `mae_{model}`, `mape_{model}`, `smape_{model}`, `mase_{model}`
+- Productive model metrics: `rmse`, `mae`, `mape`, `smape`, `mase`
 
 ### 4. Comparison and Reports
 
 ```bash
-# Generate high-contrast comparison charts (Real vs Prophet vs DeepAR)
+# Generate high-contrast comparison charts (Real vs all 4 models)
 make compare
 
-# Generate metrics comparison spreadsheet
+# Generate metrics comparison spreadsheet (4-model comparison)
 make compare-metrics
 
 # Generate HTML results report
@@ -255,7 +276,7 @@ make test-fast     # Fast unit tests only
 make data-pull       # Download data from S3
 make data-push       # Upload data to S3
 make models-push     # Version and upload trained models
-make s3-sync         # Quick sync CSVs to S3 (no DVC)
+make s3-sync         # Quick sync CSVs + forecasts to S3 (no DVC)
 ```
 
 ---
@@ -277,7 +298,7 @@ class ForecastModel(ABC):
     def run(self) -> tuple[Any, dict, dict]: ...
 ```
 
-Models register themselves with `@register_model("name")` and are instantiated via `create_model(name, **kwargs)`. This allows transparent switching between algorithms without modifying pipeline code. Currently registered models: `prophet`, `deepar`, `ensemble`.
+Models register themselves with `@register_model("name")` and are instantiated via `create_model(name, **kwargs)`. This allows transparent switching between algorithms without modifying pipeline code. Currently registered models: `prophet`, `deepar`, `ensemble`, `stacking`.
 
 ### Prophet
 
@@ -300,10 +321,21 @@ Models register themselves with `@register_model("name")` and are instantiated v
 
 - Hybrid approach: Prophet captures trend and seasonality, XGBoost corrects residuals.
 - XGBoost features: lag (1, 2, 4 weeks), rolling means (4, 8, 12 weeks), month, week of year.
+- XGBoost hyperparameters tuned via temporal cross-validation on Prophet residuals.
 - Operates on absolute counts (not population-normalized rates).
 - Iterative future prediction: XGBoost feeds back its own predictions for multi-step horizons.
 - Serialization: single pickle with both Prophet and XGBoost models + hyperparameters.
-- National-level forecasting for the three target conditions.
+
+### Stacking (Prophet + ETS + LightGBM + Ridge)
+
+- Three expert models generate out-of-fold (OOF) predictions independently:
+  - **ProphetExpert**: Prophet with custom seasonality and COVID holidays.
+  - **ETSExpert**: Exponential Smoothing (statsmodels) with additive trend and seasonality.
+  - **LGBMExpert**: LightGBM with lag features (1-4 weeks) and rolling statistics.
+- **Ridge meta-learner** learns optimal expert weights from OOF predictions (regularized, non-negative).
+- Confidence intervals derived from expert prediction spread.
+- Operates on absolute counts (not population-normalized rates).
+- Configuration: `config/models/stacking.yaml`.
 
 ### Configuration
 
@@ -320,7 +352,7 @@ python -m scripts.entrena modelo_activo='deepar' padecimiento.tipo='Alzheimer'
 GitHub Actions runs on every push to `main` and on pull requests:
 
 1. **Code Quality**: Ruff lint + format check + mypy type checking.
-2. **Tests**: Pytest with coverage (minimum 80%), excluding slow and integration tests.
+2. **Tests**: Pytest with 693 tests, coverage minimum 70%, excluding slow and integration tests.
 3. **Integration Tests**: Manual trigger only (`workflow_dispatch`).
 
 Additional workflows automate SINAVE bulletin scraping and Google Sheets publishing.
