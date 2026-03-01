@@ -1,5 +1,5 @@
 # src/epiforecast/visualization/comparison_plots.py
-"""Comparison visualization: Real vs Prophet vs DeepAR.
+"""Comparison visualization: Real vs Prophet vs DeepAR vs Ensemble vs Stacking.
 
 Professional styling with high-contrast line differentiation.
 """
@@ -18,89 +18,120 @@ from epiforecast.utils import paths as directory_manager
 from epiforecast.utils.config import conf, logger
 from epiforecast.visualization.forecast_plots import _normalizar_nombre
 
-# ── Layout constants ─────────────────────────────────────────────────
+# -- Layout constants ---------------------------------------------------------
 _FIGSIZE = (16, 8)
 _Y_MARGIN_BOTTOM = 0.85
 _Y_MARGIN_TOP = 1.15
 
-# ── Colors ───────────────────────────────────────────────────────────
+# -- Model visual config (order matters for legend) --------------------------
+_MODELS: dict[str, dict[str, object]] = {
+    "prophet": {
+        "color": "#004d40",
+        "linestyle": "-.",
+        "linewidth": 1.5,
+        "label": "Prophet",
+        "zorder": 3,
+    },
+    "deepar": {
+        "color": "#880e4f",
+        "linestyle": "--",
+        "linewidth": 1.2,
+        "label": "DeepAR",
+        "zorder": 4,
+    },
+    "ensemble": {
+        "color": "#FF6F00",
+        "linestyle": "-",
+        "linewidth": 1.2,
+        "label": "Ensemble",
+        "zorder": 5,
+    },
+    "stacking": {
+        "color": "#1A237E",
+        "linestyle": (0, (3, 1, 1, 1)),
+        "linewidth": 1.2,
+        "label": "Stacking",
+        "zorder": 6,
+    },
+}
+
 _COLOR_REAL = "lightgray"
-_COLOR_PROPHET = "#004d40"  # teal
-_COLOR_DEEPAR = "#880e4f"  # vino / burgundy
 _COLOR_DIVIDER = "#555555"
 
-# ── Font sizes ───────────────────────────────────────────────────────
+# -- Font sizes ---------------------------------------------------------------
 _FS_TITLE = 16
 _FS_YLABEL = 12
 _FS_LEGEND = 10
 _FS_TIMESTAMP = 8.5
 
-# ── Model display names ─────────────────────────────────────────────
-_MODEL_DISPLAY = {"prophet": "Prophet", "deepar": "DeepAR"}
-
-# ── Timezone ─────────────────────────────────────────────────────────
+# -- Timezone -----------------------------------------------------------------
 _TZ_CDMX = ZoneInfo("America/Mexico_City")
 
 
 def generar_graficos_comparativos(config: dict | None = None) -> None:
-    """Genera graficos con alta diferenciacion visual entre modelos."""
+    """Genera graficos con alta diferenciacion visual entre los 4 modelos."""
     _conf = config if config is not None else conf
 
     forecast_base = Path(_conf["paths"]["reports"]) / "forecasts"
     output_dir = forecast_base / "comparacion_modelos"
     directory_manager.asegurar_ruta(output_dir)
 
-    path_prophet = forecast_base / "prophet" / "all_forecast_prophet.csv"
-    path_deepar = forecast_base / "deepar" / "all_forecast_deepar.csv"
+    # Cargar todos los modelos disponibles
+    model_dfs: dict[str, pd.DataFrame] = {}
+    for model_key in _MODELS:
+        csv_path = forecast_base / model_key / f"all_forecast_{model_key}.csv"
+        if csv_path.exists():
+            df = pd.read_csv(csv_path, low_memory=False)
+            df["ds"] = pd.to_datetime(df["ds"])
+            model_dfs[model_key] = df
+            logger.info("  Cargado {}: {:,} filas", model_key, len(df))
 
-    if not path_prophet.exists() or not path_deepar.exists():
-        logger.error("No se pueden comparar modelos: faltan archivos CSV.")
+    if not model_dfs:
+        logger.error("No se pueden comparar modelos: no hay archivos CSV de forecast.")
         return
 
-    df_p = pd.read_csv(path_prophet, low_memory=False)
-    df_d = pd.read_csv(path_deepar, low_memory=False)
-
-    df_p["ds"] = pd.to_datetime(df_p["ds"])
-    df_d["ds"] = pd.to_datetime(df_d["ds"])
+    # Usar el primer modelo disponible como referencia para los grupos
+    ref_key = next(iter(model_dfs))
+    ref_df = model_dfs[ref_key]
 
     logger.info("Generando comparativas de alto contraste en {}...", output_dir)
 
-    grupos = df_p.groupby(["meta_padecimiento", "meta_entidad", "meta_modo"])
+    grupos = ref_df.groupby(["meta_padecimiento", "meta_entidad", "meta_modo"])
 
     count = 0
-    for (pad_, ent_, modo_), group_p in grupos:
+    for (pad_, ent_, modo_), _group_ref in grupos:
         pad = str(pad_)
         ent = "" if ent_ is None or (isinstance(ent_, float) and np.isnan(ent_)) else str(ent_)
         modo = str(modo_)
-        ent_val = ent
 
-        mask_d = (
-            (df_d["meta_padecimiento"] == pad)
-            & (df_d["meta_entidad"].fillna("") == ent_val)
-            & (df_d["meta_modo"] == modo)
-        )
-        group_d = df_d[mask_d]
+        # Obtener grupo de cada modelo
+        groups: dict[str, pd.DataFrame] = {}
+        for mk, mdf in model_dfs.items():
+            mask = (
+                (mdf["meta_padecimiento"] == pad)
+                & (mdf["meta_entidad"].fillna("") == ent)
+                & (mdf["meta_modo"] == modo)
+            )
+            grp = mdf[mask]
+            if not grp.empty:
+                groups[mk] = grp
 
-        if group_d.empty:
+        if len(groups) < 2:
             continue
 
-        pad_norm = _normalizar_nombre(pad)
-        ent_norm = _normalizar_nombre(ent_val if ent_val and ent_val.lower() != "nacional" else "")
-        csv_name = f"Prophet_{pad_norm}_{ent_norm + '_' if ent_norm else ''}{modo}.csv"
-        csv_path = Path(_conf["paths"]["models"]).parent / "prophet" / pad_norm / csv_name
-
-        if not csv_path.exists():
+        # Obtener serie real desde CSV de Prophet (o el primer modelo disponible)
+        serie_real = _load_serie_real(_conf, pad, ent, modo)
+        if serie_real is None:
             continue
 
-        serie_real = pd.read_csv(csv_path)
-        serie_real["ds"] = pd.to_datetime(serie_real["ds"])
         target_y = (
             serie_real["y_original"] if "y_original" in serie_real.columns else serie_real["y"]
         )
 
-        fig, ax = _render_comparison(serie_real, target_y, group_p, group_d, pad, ent_val, modo)
+        fig, ax = _render_comparison(serie_real, target_y, groups, pad, ent, modo)
 
-        safe_ent = _normalizar_nombre(ent_val if ent_val else "Nacional")
+        safe_ent = _normalizar_nombre(ent if ent else "Nacional")
+        pad_norm = _normalizar_nombre(pad)
         nombre = f"CMP_{pad}_{safe_ent}_{modo}.png"
         pad_dir = output_dir / pad_norm
         directory_manager.asegurar_ruta(pad_dir)
@@ -111,16 +142,35 @@ def generar_graficos_comparativos(config: dict | None = None) -> None:
     logger.success("Se generaron {} comparativas de alto contraste en: {}", count, output_dir)
 
 
+def _load_serie_real(_conf: dict, pad: str, ent: str, modo: str) -> pd.DataFrame | None:
+    """Busca CSV de serie real en cualquier directorio de modelo disponible."""
+    pad_norm = _normalizar_nombre(pad)
+    ent_norm = _normalizar_nombre(ent if ent and ent.lower() != "nacional" else "")
+
+    for model_key, prefix in [
+        ("prophet", "Prophet"),
+        ("ensemble", "Ensemble"),
+        ("stacking", "Stacking"),
+        ("deepar", "Deepar"),
+    ]:
+        csv_name = f"{prefix}_{pad_norm}_{ent_norm + '_' if ent_norm else ''}{modo}.csv"
+        csv_path = Path(_conf["paths"]["models"]).parent / model_key / pad_norm / csv_name
+        if csv_path.exists():
+            df = pd.read_csv(csv_path)
+            df["ds"] = pd.to_datetime(df["ds"])
+            return df
+    return None
+
+
 def _render_comparison(
     serie_real: pd.DataFrame,
-    target_y: pd.Series,
-    group_p: pd.DataFrame,
-    group_d: pd.DataFrame,
+    target_y: pd.Series,  # type: ignore[type-arg]
+    groups: dict[str, pd.DataFrame],
     pad: str,
     ent_val: str,
     modo: str,
 ) -> tuple[plt.Figure, plt.Axes]:
-    """Renderiza un grafico comparativo individual."""
+    """Renderiza un grafico comparativo individual con N modelos."""
     fig, ax = plt.subplots(figsize=_FIGSIZE)
 
     # 1. Historial Real
@@ -134,29 +184,23 @@ def _render_comparison(
         zorder=1,
     )
 
-    # 2. Prophet
-    ax.plot(
-        group_p["ds"],
-        group_p["yhat"],
-        color=_COLOR_PROPHET,
-        linestyle="-.",
-        linewidth=1.5,
-        alpha=0.8,
-        label="Prophet",
-        zorder=3,
-    )
-
-    # 3. DeepAR
-    ax.plot(
-        group_d["ds"],
-        group_d["yhat"],
-        color=_COLOR_DEEPAR,
-        linestyle="--",
-        linewidth=1.0,
-        alpha=0.8,
-        label="DeepAR",
-        zorder=4,
-    )
+    # 2. Cada modelo
+    all_yhat: list[np.ndarray] = []
+    for model_key, style in _MODELS.items():
+        if model_key not in groups:
+            continue
+        grp = groups[model_key]
+        ax.plot(
+            grp["ds"],
+            grp["yhat"],
+            color=style["color"],
+            linestyle=style["linestyle"],
+            linewidth=style["linewidth"],
+            alpha=0.8,
+            label=style["label"],
+            zorder=style["zorder"],
+        )
+        all_yhat.append(np.asarray(grp["yhat"].dropna().values).ravel())
 
     # Linea divisoria de inicio de pronostico
     fecha_max_real = serie_real["ds"].max()
@@ -164,9 +208,7 @@ def _render_comparison(
 
     # Limites dinamicos de Eje Y
     y_real_vals = np.asarray(target_y.dropna().values).ravel()
-    y_p_vals = np.asarray(group_p["yhat"].dropna().values).ravel()
-    y_d_vals = np.asarray(group_d["yhat"].dropna().values).ravel()
-    all_y = np.concatenate([y_real_vals, y_p_vals, y_d_vals])
+    all_y = np.concatenate([y_real_vals] + all_yhat) if all_yhat else y_real_vals
     if len(all_y) > 0:
         ax.set_ylim(bottom=np.min(all_y) * _Y_MARGIN_BOTTOM, top=np.max(all_y) * _Y_MARGIN_TOP)
 
