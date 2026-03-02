@@ -119,18 +119,20 @@ EpiForecast-MX/
 - Todos los reportes siguen la paleta IMSS 2026.
 
 ### Seleccion de Modelo de Produccion
-- `scripts/genera_tabla_produccion.py` genera `reports/reports/tabla_333_modelos_produccion.csv` (333 filas, 30 columnas).
+- `scripts/genera_tabla_produccion.py` genera `reports/reports/tabla_333_modelos_produccion.xlsx` (Excel con formato IMSS, 2 hojas).
 - Criterio: SMAPE primario, MASE como desempate (umbral 5%), RMSE como segundo desempate.
-- Columnas: metricas por modelo, mejor por metrica, victorias, modelo_produccion, tipo_modelo (propio/regional), region_asignada, casos_52_semanas_futuro, smape_prod, mase_prod, rmse_prod, mae_prod, overfitting, leakage, casos_prev_52_semanas_real, casos_prev_52_semanas_pronos, justificacion.
-- `casos_52_semanas_futuro`: suma de yhat de las proximas 52 semanas del forecast del modelo ganador (entero).
-- `smape_prod/mase_prod/rmse_prod/mae_prod`: metricas CV del modelo de produccion seleccionado.
-- `overfitting`: ratio smape_test/smape_train — Alto (>2x), Moderado (>1.3x), OK.
-- `leakage`: smape_train < 0.5% = Sospechoso, else OK.
-- `casos_prev_52_semanas_real`: incidencia real en las ultimas 52 semanas historicas (entero).
-- `casos_prev_52_semanas_pronos`: yhat del modelo para esas mismas 52 semanas (backtest, entero).
-- Series con incidencia cero se asignan al modelo regional correspondiente (via `region_salud_mental` de `data_inegi_General.csv`).
-- Series con baja confianza (<5 casos proyectados en 52 semanas) tambien se reasignan al modelo regional.
-- Predicciones redondeadas a enteros (no existen fracciones de caso epidemiologico).
+- **Hoja 1 (Produccion)**: 333 filas x 41 columnas. Metricas por modelo, diagnosticos, comparativa historica.
+  - `casos_52_semanas_futuro`: suma de yhat del horizonte futuro (entero).
+  - `smape_prod/mase_prod/rmse_prod/mae_prod`: metricas CV del modelo seleccionado.
+  - `overfitting`: ratio smape_test/smape_train — Alto (>2x), Moderado (>1.3x), OK.
+  - `leakage`: smape_train < 0.5% = Sospechoso, else OK.
+  - `casos_prev_52_semanas_real / _pronos`: comparativa historica (enteros).
+  - `precision_historica`: ratio pronos/real como porcentaje.
+  - `pron_sem_previa / realidad_sem_previa`: ultima semana para validar con boletin nuevo.
+  - `modelo_produccion`, `tipo_modelo`, `region_asignada` (n/a si propio), `justificacion`.
+- **Hoja 2 (Detalle Semanal)**: 333 filas x 163 columnas. 52 semanas de realidad, pronostico y % acierto por semana.
+- Series con incidencia cero o baja confianza (<5 casos/52sem) se reasignan al modelo regional.
+- Predicciones redondeadas a enteros. Formato Excel con paleta IMSS 2026, filtros y paneles congelados.
 
 ### Tableau y Modelo Productivo
 - `scripts/build_tableau.py` genera `data/processed/tableau.csv` con datos de los 4 modelos.

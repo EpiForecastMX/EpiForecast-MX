@@ -1,8 +1,12 @@
-"""Genera CSV con la tabla completa de modelos y seleccion de produccion.
+"""Genera Excel con la tabla completa de modelos y seleccion de produccion.
 
 Compara los 4 algoritmos (Prophet, DeepAR, Ensemble, Stacking) para cada
 combinacion (padecimiento x entidad x sexo) y selecciona el modelo de
 produccion con justificacion automatica.
+
+Hojas:
+  - Produccion: 333 filas, metricas, diagnosticos, comparativa historica.
+  - Detalle Semanal: 52 semanas de realidad vs pronostico + % acierto.
 
 Uso:
     python -m scripts.genera_tabla_produccion
@@ -13,6 +17,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import numpy as np
+from openpyxl.utils.dataframe import dataframe_to_rows
 import pandas as pd
 
 from epiforecast.utils.config import logger
@@ -45,7 +50,27 @@ _OVERFIT_ALTO = 2.0
 _OVERFIT_MODERADO = 1.3
 _LEAKAGE_THRESHOLD = 0.5
 
-_OUTPUT = Path("reports") / "reports" / "tabla_333_modelos_produccion.csv"
+_OUTPUT = Path("reports") / "reports" / "tabla_333_modelos_produccion.xlsx"
+
+_MODEL_KEY_MAP: dict[str, str] = {
+    "Prophet": "prophet",
+    "DeepAR": "deepar",
+    "Ensemble": "ensemble",
+    "Stacking": "stacking",
+}
+
+_SEXO_TO_MODO: dict[str, str] = {
+    "general": "general",
+    "hombres": "hombres",
+    "mujeres": "mujeres",
+}
+
+_ZERO_THRESHOLD = 1e-6
+
+
+# ---------------------------------------------------------------------------
+# Funciones auxiliares de seleccion
+# ---------------------------------------------------------------------------
 
 
 def _best_model_for_metric(
@@ -53,11 +78,9 @@ def _best_model_for_metric(
     metric: str,
     model_keys: list[str],
 ) -> str:
-    """Retorna el nombre del modelo con menor valor en la metrica dada."""
     vals: dict[str, float] = {}
     for mk in model_keys:
-        col = f"{metric}_{mk}"
-        v = row.get(col)
+        v = row.get(f"{metric}_{mk}")
         if pd.notna(v):
             vals[mk] = float(v)
     if not vals:
@@ -67,13 +90,11 @@ def _best_model_for_metric(
 
 
 def _count_wins(row: pd.Series, model_keys: list[str]) -> dict[str, int]:  # type: ignore[type-arg]
-    """Cuenta en cuantas metricas gana cada modelo."""
     wins: dict[str, int] = {mk: 0 for mk in model_keys}
     for metric in _METRICS:
         vals: dict[str, float] = {}
         for mk in model_keys:
-            col = f"{metric}_{mk}"
-            v = row.get(col)
+            v = row.get(f"{metric}_{mk}")
             if pd.notna(v):
                 vals[mk] = float(v)
         if vals:
@@ -87,7 +108,6 @@ def _get_metric_vals(
     metric: str,
     available: list[str],
 ) -> dict[str, float]:
-    """Extrae valores de una metrica para los modelos disponibles."""
     vals: dict[str, float] = {}
     for mk in available:
         v = row.get(f"{metric}_{mk}")
@@ -100,13 +120,7 @@ def _select_production(
     row: pd.Series,  # type: ignore[type-arg]
     model_keys: list[str],
 ) -> tuple[str, int, str]:
-    """Selecciona modelo de produccion con justificacion.
-
-    Criterio: SMAPE primario → desempate por MASE → desempate por RMSE.
-
-    Returns:
-        (modelo_key, n_victorias, justificacion)
-    """
+    """SMAPE primario, MASE desempate, RMSE segundo desempate."""
     available = [mk for mk in model_keys if pd.notna(row.get(f"smape_{mk}"))]
     if not available:
         return ("", 0, "Sin datos disponibles.")
@@ -115,47 +129,37 @@ def _select_production(
     mase_vals = _get_metric_vals(row, "mase", available)
     rmse_vals = _get_metric_vals(row, "rmse", available)
 
-    # 1. Ganador por SMAPE (menor es mejor)
     smape_winner = min(smape_vals, key=lambda k: smape_vals[k])
     smape_best = smape_vals[smape_winner]
 
-    # 2. Desempate si diferencia < 5%
     ganador = smape_winner
     for mk in available:
         if mk == smape_winner:
             continue
         if smape_vals[mk] > 0 and abs(smape_vals[mk] - smape_best) / smape_vals[mk] < _EMPATE_PCT:
-            # Desempate por MASE
             mase_w = mase_vals.get(smape_winner)
             mase_c = mase_vals.get(mk)
             if mase_w is not None and mase_c is not None and mase_c < mase_w:
                 ganador = mk
                 break
-            # Desempate por RMSE
             rmse_w = rmse_vals.get(smape_winner)
             rmse_c = rmse_vals.get(mk)
             if rmse_w is not None and rmse_c is not None and rmse_c < rmse_w:
                 ganador = mk
                 break
 
-    # Contar victorias del ganador
     wins = _count_wins(row, available)
     n_wins = wins.get(ganador, 0)
     total_metrics = sum(
         1 for m in _METRICS if any(pd.notna(row.get(f"{m}_{mk}")) for mk in available)
     )
 
-    # --- Construir justificacion centrada en SMAPE / MASE ---
     ganador_label = _MODEL_LABELS.get(ganador, ganador)
     smape_ganador = smape_vals[ganador]
     mase_ganador = mase_vals.get(ganador)
     parts: list[str] = []
 
-    # Comparacion SMAPE con segundo lugar
-    otros = sorted(
-        [(mk, v) for mk, v in smape_vals.items() if mk != ganador],
-        key=lambda x: x[1],
-    )
+    otros = sorted([(mk, v) for mk, v in smape_vals.items() if mk != ganador], key=lambda x: x[1])
     if otros:
         segundo_key, smape_segundo = otros[0]
         segundo_label = _MODEL_LABELS.get(segundo_key, segundo_key)
@@ -180,7 +184,6 @@ def _select_production(
     else:
         parts.append(f"{ganador_label} único modelo disponible (SMAPE {smape_ganador:.1f}%).")
 
-    # MASE: interpretacion relativa al naive seasonal
     if mase_ganador is not None:
         if mase_ganador < 0.5:
             parts.append(f"MASE={mase_ganador:.2f}, muy superior al naive seasonal.")
@@ -188,16 +191,10 @@ def _select_production(
             parts.append(f"MASE={mase_ganador:.2f}, supera naive seasonal.")
         else:
             parts.append(f"MASE={mase_ganador:.2f}, no supera naive seasonal.")
-
-    # Victorias
     if n_wins > 1:
         parts.append(f"Gana en {n_wins}/{total_metrics} métricas.")
-
-    # SMAPE > 150% = serie de bajo volumen
     if smape_ganador > 150:
         parts.append("Serie de bajo volumen.")
-
-    # RMSE como dato complementario
     rmse_ganador = rmse_vals.get(ganador)
     if rmse_ganador is not None:
         parts.append(f"RMSE={rmse_ganador:.2f}.")
@@ -205,19 +202,19 @@ def _select_production(
     return (ganador, n_wins, " ".join(parts))
 
 
+# ---------------------------------------------------------------------------
+# Funciones auxiliares de datos
+# ---------------------------------------------------------------------------
+
+
 def _display_entidad(row: pd.Series) -> str:  # type: ignore[type-arg]
-    """Nombre de entidad legible."""
     ent = row.get("Entidad", "")
     if not ent or ent == "":
-        nivel = row.get("nivel", "")
-        if nivel == "nacional":
-            return "Nacional"
         return "Nacional"
     return str(ent)
 
 
 def _build_region_map() -> dict[str, str]:
-    """Construye mapa entidad -> region desde data_inegi_General.csv."""
     real_path = Path("data") / "processed" / "data_inegi_General.csv"
     if not real_path.exists():
         return {}
@@ -227,22 +224,7 @@ def _build_region_map() -> dict[str, str]:
     return dict(real.groupby("Entidad")["region_salud_mental"].first().items())
 
 
-_MODEL_KEY_MAP: dict[str, str] = {
-    "Prophet": "prophet",
-    "DeepAR": "deepar",
-    "Ensemble": "ensemble",
-    "Stacking": "stacking",
-}
-
-_SEXO_TO_MODO: dict[str, str] = {
-    "general": "general",
-    "hombres": "hombres",
-    "mujeres": "mujeres",
-}
-
-
 def _load_forecasts() -> dict[str, pd.DataFrame]:
-    """Carga los CSVs de forecast de cada modelo (ultimas _HORIZON filas por serie)."""
     forecasts: dict[str, pd.DataFrame] = {}
     base = Path("reports") / "forecasts"
     for mk in _MODELS:
@@ -257,6 +239,23 @@ def _load_forecasts() -> dict[str, pd.DataFrame]:
     return forecasts
 
 
+def _load_real_data() -> pd.DataFrame:
+    path = Path("data") / "processed" / "data_inegi_General.csv"
+    if not path.exists():
+        logger.warning("No se encontró datos reales: {}", path)
+        return pd.DataFrame()
+    df = pd.read_csv(path)
+    df["Fecha"] = pd.to_datetime(df["Fecha"], errors="coerce")
+    return df
+
+
+def _normalize_entidad(entidad: str) -> str:
+    """Convierte region_X a Region X para match con forecast."""
+    if entidad.startswith("region_"):
+        return "Region " + entidad[len("region_") :]
+    return entidad
+
+
 def _sum_forecast_52(
     forecasts: dict[str, pd.DataFrame],
     modelo_key: str,
@@ -264,16 +263,11 @@ def _sum_forecast_52(
     entidad: str,
     sexo: str,
 ) -> float:
-    """Suma las ultimas 52 semanas de yhat para una combinacion dada."""
     if modelo_key not in forecasts:
         return np.nan
     df = forecasts[modelo_key]
     modo = _SEXO_TO_MODO.get(sexo, sexo)
-    # Normalizar: production usa "region_X", forecast usa "Region X"
-    meta_ent = entidad
-    if meta_ent.startswith("region_"):
-        meta_ent = "Region " + meta_ent[len("region_") :]
-
+    meta_ent = _normalize_entidad(entidad)
     mask = (
         (df["meta_padecimiento"] == padecimiento)
         & (df["meta_entidad"] == meta_ent)
@@ -287,8 +281,12 @@ def _sum_forecast_52(
     return int(round(max(total, 0.0)))
 
 
+# ---------------------------------------------------------------------------
+# Diagnosticos
+# ---------------------------------------------------------------------------
+
+
 def _overfitting_label(smape_test: float | None, smape_train: float | None) -> str:
-    """Devuelve etiqueta de overfitting (texto plano, sin HTML)."""
     if (
         smape_test is None
         or smape_train is None
@@ -306,7 +304,6 @@ def _overfitting_label(smape_test: float | None, smape_train: float | None) -> s
 
 
 def _leakage_label(smape_train: float | None) -> str:
-    """Devuelve etiqueta de leakage (texto plano, sin HTML)."""
     if smape_train is None or (isinstance(smape_train, float) and np.isnan(smape_train)):
         return "N/D"
     if smape_train < _LEAKAGE_THRESHOLD:
@@ -314,124 +311,82 @@ def _leakage_label(smape_train: float | None) -> str:
     return f"OK ({smape_train:.1f}%)"
 
 
-def _load_real_data() -> pd.DataFrame:
-    """Carga datos reales de data_inegi_General.csv para calcular casos historicos."""
-    path = Path("data") / "processed" / "data_inegi_General.csv"
-    if not path.exists():
-        logger.warning("No se encontró datos reales: {}", path)
-        return pd.DataFrame()
-    df = pd.read_csv(path)
-    df["Fecha"] = pd.to_datetime(df["Fecha"], errors="coerce")
-    return df
+# ---------------------------------------------------------------------------
+# Series semanales (52 semanas previas)
+# ---------------------------------------------------------------------------
 
 
-def _prev_52_real(
-    real_df: pd.DataFrame,
-    padecimiento: str,
-    entidad: str,
-    sexo: str,
-) -> float:
-    """Suma las ultimas 52 semanas de incidencia real para la combinacion dada."""
+def _get_real_series(
+    real_df: pd.DataFrame, padecimiento: str, entidad: str, sexo: str
+) -> pd.Series:  # type: ignore[type-arg]
+    """Retorna serie de las ultimas 52 semanas reales (indexada por Fecha)."""
     if real_df.empty:
-        return np.nan
+        return pd.Series(dtype=float)
     col_inc = _MODO_TO_INCREMENTO.get(sexo, "incrementos_total")
     if col_inc not in real_df.columns:
-        return np.nan
+        return pd.Series(dtype=float)
 
-    # Normalizar nombre de entidad para match con real data
-    meta_ent = entidad
-    if meta_ent.startswith("region_"):
-        meta_ent = "Region " + meta_ent[len("region_") :]
+    meta_ent = _normalize_entidad(entidad)
 
-    # Agregados: Nacional o Region -> sumar estados constituyentes
     if entidad == "Nacional":
         mask_n = real_df["Padecimiento"] == padecimiento
         agg = real_df.loc[mask_n].groupby("Fecha")[col_inc].sum().reset_index()
         agg = agg.sort_values("Fecha")
-        if len(agg) < _HORIZON:
-            return np.nan
-        total = agg.tail(_HORIZON)[col_inc].sum()
-        return int(round(max(total, 0.0)))
-
-    if entidad.startswith("region_"):
+    elif entidad.startswith("region_"):
         region_name = entidad[len("region_") :]
-        if "region_salud_mental" in real_df.columns:
-            mask_r = (real_df["Padecimiento"] == padecimiento) & (
-                real_df["region_salud_mental"] == region_name
-            )
-            agg = real_df.loc[mask_r].groupby("Fecha")[col_inc].sum().reset_index()
-            agg = agg.sort_values("Fecha")
-            if len(agg) >= _HORIZON:
-                total = agg.tail(_HORIZON)[col_inc].sum()
-                return int(round(max(total, 0.0)))
-        return np.nan
-
-    mask = (real_df["Padecimiento"] == padecimiento) & (real_df["Entidad"] == meta_ent)
-    serie = real_df.loc[mask].sort_values("Fecha")
-    if serie.empty or len(serie) < _HORIZON:
-        return np.nan
-    total = serie.tail(_HORIZON)[col_inc].sum()
-    return int(round(max(total, 0.0)))
+        if "region_salud_mental" not in real_df.columns:
+            return pd.Series(dtype=float)
+        mask_r = (real_df["Padecimiento"] == padecimiento) & (
+            real_df["region_salud_mental"] == region_name
+        )
+        agg = real_df.loc[mask_r].groupby("Fecha")[col_inc].sum().reset_index()
+        agg = agg.sort_values("Fecha")
+    else:
+        mask = (real_df["Padecimiento"] == padecimiento) & (real_df["Entidad"] == meta_ent)
+        agg = real_df.loc[mask].sort_values("Fecha").rename(columns={col_inc: col_inc})
+    if len(agg) < _HORIZON:
+        return pd.Series(dtype=float)
+    last_52 = agg.tail(_HORIZON)
+    return last_52.set_index("Fecha")[col_inc]
 
 
-def _prev_52_pronos(
+def _get_forecast_series(
     forecasts: dict[str, pd.DataFrame],
     modelo_key: str,
     padecimiento: str,
     entidad: str,
     sexo: str,
-    real_df: pd.DataFrame,
-) -> float:
-    """Suma el yhat del modelo para las mismas 52 semanas que cubren los datos reales."""
+    dates: pd.Index | None = None,
+) -> pd.Series:  # type: ignore[type-arg]
+    """Retorna serie de yhat del modelo para las fechas dadas (52 semanas)."""
     if modelo_key not in forecasts:
-        return np.nan
+        return pd.Series(dtype=float)
     df = forecasts[modelo_key]
     modo = _SEXO_TO_MODO.get(sexo, sexo)
-    meta_ent = entidad
-    if meta_ent.startswith("region_"):
-        meta_ent = "Region " + meta_ent[len("region_") :]
-
-    mask_fc = (
+    meta_ent = _normalize_entidad(entidad)
+    mask = (
         (df["meta_padecimiento"] == padecimiento)
         & (df["meta_entidad"] == meta_ent)
         & (df["meta_modo"] == modo)
     )
-    serie_fc = df.loc[mask_fc].sort_values("ds")
-    if serie_fc.empty:
-        return np.nan
-
-    # Determinar rango de las ultimas 52 semanas reales
-    col_inc = _MODO_TO_INCREMENTO.get(sexo, "incrementos_total")
-    if not real_df.empty and col_inc in real_df.columns:
-        if entidad == "Nacional":
-            mask_r = real_df["Padecimiento"] == padecimiento
-            fechas = real_df.loc[mask_r, "Fecha"].sort_values().unique()
-        else:
-            mask_r = (real_df["Padecimiento"] == padecimiento) & (real_df["Entidad"] == meta_ent)
-            fechas = real_df.loc[mask_r, "Fecha"].sort_values()
-        if len(fechas) >= _HORIZON:
-            last_52_dates = pd.to_datetime(pd.Series(fechas)).sort_values().tail(_HORIZON)
-            date_min = last_52_dates.iloc[0]
-            date_max = last_52_dates.iloc[-1]
-            in_range = serie_fc[(serie_fc["ds"] >= date_min) & (serie_fc["ds"] <= date_max)]
-            if len(in_range) >= _HORIZON - 2:  # tolerancia de +-2 semanas
-                total = in_range["yhat"].sum()
-                return int(round(max(total, 0.0)))
-
-    # Fallback: tomar las 52 semanas anteriores a las ultimas 52 (horizonte futuro)
-    n = len(serie_fc)
+    serie = df.loc[mask].sort_values("ds")
+    if serie.empty:
+        return pd.Series(dtype=float)
+    if dates is not None and len(dates) > 0:
+        date_min = pd.Timestamp(dates.min())
+        date_max = pd.Timestamp(dates.max())
+        in_range = serie[(serie["ds"] >= date_min) & (serie["ds"] <= date_max)]
+        if len(in_range) >= _HORIZON - 2:
+            return in_range.set_index("ds")["yhat"]
+    # Fallback: 52 semanas antes de las ultimas 52
+    n = len(serie)
     if n < _HORIZON * 2:
-        return np.nan
-    prev_block = serie_fc.iloc[-(2 * _HORIZON) : -_HORIZON]
-    total = prev_block["yhat"].sum()
-    return int(round(max(total, 0.0)))
-
-
-_ZERO_THRESHOLD = 1e-6
+        return pd.Series(dtype=float)
+    prev_block = serie.iloc[-(2 * _HORIZON) : -_HORIZON]
+    return prev_block.set_index("ds")["yhat"]
 
 
 def _is_zero_row(row: pd.Series, model_keys: list[str]) -> bool:  # type: ignore[type-arg]
-    """True si todas las metricas RMSE son ~0 o NaN (serie sin incidencia)."""
     for mk in model_keys:
         v = row.get(f"rmse_{mk}")
         if pd.notna(v) and float(v) > _ZERO_THRESHOLD:
@@ -439,35 +394,23 @@ def _is_zero_row(row: pd.Series, model_keys: list[str]) -> bool:  # type: ignore
     return True
 
 
-def main() -> None:
-    """Genera la tabla de 333 modelos de produccion."""
-    logger.info("=== Tabla de modelos de produccion ===")
+# ---------------------------------------------------------------------------
+# Construccion de la tabla principal (Hoja 1)
+# ---------------------------------------------------------------------------
 
-    # 1. Cargar y merge
-    data = cargar_completos()
-    if not data:
-        logger.error("No se encontraron CSVs. Ejecute 'make train-all' primero.")
-        return
 
-    model_keys = [mk for mk in _MODELS if mk in data]
-    merged = merge_all_models(data)
-    logger.info("Merge: {} filas, modelos: {}", len(merged), model_keys)
-
-    # Mapa entidad -> region para asignar modelo regional
-    region_map = _build_region_map()
-
-    # Cargar forecasts para sumar las 52 semanas proyectadas
-    forecasts = _load_forecasts()
-
-    # Cargar datos reales para calcular casos historicos
-    real_df = _load_real_data()
-
-    # 2. Construir tabla de salida
+def _build_production_table(
+    merged: pd.DataFrame,
+    model_keys: list[str],
+    region_map: dict[str, str],
+    forecasts: dict[str, pd.DataFrame],
+    real_df: pd.DataFrame,
+) -> pd.DataFrame:
+    """Construye DataFrame de 333 filas con todas las columnas."""
     rows_out: list[dict[str, object]] = []
 
     for idx, (_, row) in enumerate(
-        merged.sort_values(["padecimiento", "Entidad", "sexo"]).iterrows(),
-        start=1,
+        merged.sort_values(["padecimiento", "Entidad", "sexo"]).iterrows(), start=1
     ):
         ganador_key, n_wins, justificacion = _select_production(row, model_keys)
         total_metrics = sum(
@@ -484,36 +427,22 @@ def main() -> None:
         # Metricas por modelo
         for mk in _MODELS:
             for metric in _METRICS:
-                col = f"{metric}_{mk}"
-                val = row.get(col)
+                val = row.get(f"{metric}_{mk}")
                 out[f"{mk}_{metric}"] = round(float(val), 4) if pd.notna(val) else np.nan
 
         # Mejor por metrica
         for metric in _METRICS:
             out[f"mejor_{metric}"] = _best_model_for_metric(row, metric, model_keys)
 
-        # Produccion
         out["victorias"] = f"{n_wins}/{total_metrics}" if total_metrics > 0 else "0/0"
-        out["modelo_produccion"] = _MODEL_LABELS.get(ganador_key, ganador_key)
 
-        # Tipo de modelo: propio vs regional (antes de justificacion)
+        # Casos proyectados 52 semanas
+        modelo_fc_key = _MODEL_KEY_MAP.get(
+            _MODEL_LABELS.get(ganador_key, ganador_key), ganador_key
+        )
         entidad = str(out["entidad"])
-        if _is_zero_row(row, model_keys) and entidad in region_map:
-            region = region_map[entidad]
-            out["tipo_modelo"] = "regional"
-            out["region_asignada"] = f"region_{region}"
-        else:
-            out["tipo_modelo"] = "propio"
-            out["region_asignada"] = ""
-
-        # Casos proyectados 52 semanas del modelo de produccion
-        modelo_fc_key = _MODEL_KEY_MAP.get(str(out["modelo_produccion"]), ganador_key)
         out["casos_52_semanas_futuro"] = _sum_forecast_52(
-            forecasts,
-            modelo_fc_key,
-            str(out["padecimiento"]),
-            str(out["entidad"]),
-            str(out["sexo"]),
+            forecasts, modelo_fc_key, str(out["padecimiento"]), entidad, str(out["sexo"])
         )
 
         # Metricas del modelo de produccion
@@ -528,40 +457,87 @@ def main() -> None:
         out["rmse_prod"] = round(float(rmse_prod), 4) if pd.notna(rmse_prod) else np.nan
         out["mae_prod"] = round(float(mae_prod), 4) if pd.notna(mae_prod) else np.nan
 
-        # Diagnosticos: overfitting y leakage
-        _smape_test = float(smape_prod) if pd.notna(smape_prod) else None
-        _smape_tr = float(smape_train_prod) if pd.notna(smape_train_prod) else None
-        out["overfitting"] = _overfitting_label(_smape_test, _smape_tr)
-        out["leakage"] = _leakage_label(_smape_tr)
+        # Diagnosticos
+        _st = float(smape_prod) if pd.notna(smape_prod) else None
+        _str = float(smape_train_prod) if pd.notna(smape_train_prod) else None
+        out["overfitting"] = _overfitting_label(_st, _str)
+        out["leakage"] = _leakage_label(_str)
 
-        # Casos historicos: ultimas 52 semanas reales y pronosticadas por el modelo
-        out["casos_prev_52_semanas_real"] = _prev_52_real(
-            real_df, str(out["padecimiento"]), str(out["entidad"]), str(out["sexo"])
+        # Historico 52 semanas
+        real_series = _get_real_series(
+            real_df, str(out["padecimiento"]), entidad, str(out["sexo"])
         )
-        out["casos_prev_52_semanas_pronos"] = _prev_52_pronos(
+        real_sum = int(round(max(real_series.sum(), 0.0))) if len(real_series) > 0 else np.nan
+        out["casos_prev_52_semanas_real"] = real_sum
+
+        fc_series = _get_forecast_series(
             forecasts,
             modelo_fc_key,
             str(out["padecimiento"]),
-            str(out["entidad"]),
+            entidad,
             str(out["sexo"]),
-            real_df,
+            dates=real_series.index if len(real_series) > 0 else None,
         )
+        fc_sum = int(round(max(fc_series.sum(), 0.0))) if len(fc_series) > 0 else np.nan
+        out["casos_prev_52_semanas_pronos"] = fc_sum
 
+        # Precision historica (pronos / real)
+        if pd.notna(real_sum) and pd.notna(fc_sum) and real_sum > 0:
+            out["precision_historica"] = f"{fc_sum / real_sum * 100:.1f}%"
+        else:
+            out["precision_historica"] = "0%"
+
+        # Semana previa: ultimo dato real y su pronostico
+        if len(real_series) > 0:
+            out["realidad_sem_previa"] = int(round(max(float(real_series.iloc[-1]), 0.0)))
+        else:
+            out["realidad_sem_previa"] = np.nan
+        if len(fc_series) > 0 and len(real_series) > 0:
+            last_date = real_series.index[-1]
+            closest = fc_series.index.get_indexer([last_date], method="nearest")
+            if closest[0] >= 0:
+                out["pron_sem_previa"] = int(round(max(float(fc_series.iloc[closest[0]]), 0.0)))
+            else:
+                out["pron_sem_previa"] = int(round(max(float(fc_series.iloc[-1]), 0.0)))
+        else:
+            out["pron_sem_previa"] = np.nan
+
+        # Tipo de modelo
+        if _is_zero_row(row, model_keys) and entidad in region_map:
+            region = region_map[entidad]
+            out["tipo_modelo"] = "regional"
+            out["region_asignada"] = f"region_{region}"
+        else:
+            out["tipo_modelo"] = "propio"
+            out["region_asignada"] = "n/a"
+
+        out["modelo_produccion"] = _MODEL_LABELS.get(ganador_key, ganador_key)
         out["justificacion"] = justificacion
+        # Guardar el key del modelo para la hoja 2
+        out["_ganador_key"] = ganador_key
+        out["_modelo_fc_key"] = modelo_fc_key
 
         rows_out.append(out)
 
-    df_out = pd.DataFrame(rows_out)
+    return pd.DataFrame(rows_out)
 
-    # Asignar modelo regional a filas con metricas en cero:
-    # buscar la fila de la region correspondiente (mismo padecimiento y sexo)
+
+# ---------------------------------------------------------------------------
+# Post-procesamiento: reasignaciones regionales
+# ---------------------------------------------------------------------------
+
+
+def _apply_regional_reassignments(
+    df_out: pd.DataFrame, region_map: dict[str, str]
+) -> pd.DataFrame:
+    """Reasigna modelo regional a filas sin incidencia o con baja confianza."""
+    # 1. Sin incidencia
     zero_mask = df_out["tipo_modelo"] == "regional"
     if zero_mask.any():
         for idx_z in df_out[zero_mask].index:
             pad = df_out.at[idx_z, "padecimiento"]
             sexo = df_out.at[idx_z, "sexo"]
             region = df_out.at[idx_z, "region_asignada"]
-            # Buscar la fila regional
             region_row = df_out[
                 (df_out["entidad"] == region)
                 & (df_out["padecimiento"] == pad)
@@ -585,19 +561,18 @@ def main() -> None:
                     region,
                 )
 
-    # Reasignar modelo regional a filas con baja confianza (<5 casos en 52 semanas)
-    # Solo aplica a entidades estatales (no Nacional, no regiones)
-    _entidades_no_reasignables = {"Nacional"} | {
+    # 2. Baja confianza
+    _no_reasignable = {"Nacional"} | {
         e for e in df_out["entidad"].unique() if str(e).startswith("region_")
     }
     low_mask = (
         (df_out["casos_52_semanas_futuro"] < _LOW_VOLUME_THRESHOLD)
         & (df_out["tipo_modelo"] == "propio")
-        & (~df_out["entidad"].isin(_entidades_no_reasignables))
+        & (~df_out["entidad"].isin(_no_reasignable))
     )
     if low_mask.any():
         logger.info(
-            "--- Reasignacion por baja confianza (<{} casos/52sem) ---", _LOW_VOLUME_THRESHOLD
+            "--- Reasignación por baja confianza (<{} casos/52sem) ---", _LOW_VOLUME_THRESHOLD
         )
         for idx_l in df_out[low_mask].index:
             ent = df_out.at[idx_l, "entidad"]
@@ -636,19 +611,202 @@ def main() -> None:
                     region_key,
                 )
 
-    # 3. Guardar CSV
-    _OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    df_out.to_csv(_OUTPUT, index=False, encoding="utf-8-sig")
-    logger.success("CSV generado: {} ({} filas)", _OUTPUT, len(df_out))
+    return df_out
 
-    # 4. Resumen
-    logger.info("--- Distribucion de modelos de produccion ---")
+
+# ---------------------------------------------------------------------------
+# Construccion de la hoja de detalle semanal (Hoja 2)
+# ---------------------------------------------------------------------------
+
+
+def _build_weekly_detail(
+    df_prod: pd.DataFrame,
+    forecasts: dict[str, pd.DataFrame],
+    real_df: pd.DataFrame,
+) -> pd.DataFrame:
+    """Construye DataFrame con 52 semanas de realidad, pronostico y % acierto."""
+    rows: list[dict[str, object]] = []
+
+    for _, row in df_prod.iterrows():
+        pad = str(row["padecimiento"])
+        ent = str(row["entidad"])
+        sexo = str(row["sexo"])
+        modelo_fc_key = str(row.get("_modelo_fc_key", ""))
+
+        base: dict[str, object] = {
+            "numero": row["numero"],
+            "padecimiento": pad,
+            "entidad": ent,
+            "sexo": sexo,
+            "modelo_produccion": row["modelo_produccion"],
+            "tipo_modelo": row["tipo_modelo"],
+            "region_asignada": row["region_asignada"],
+        }
+
+        real_series = _get_real_series(real_df, pad, ent, sexo)
+        fc_series = _get_forecast_series(
+            forecasts,
+            modelo_fc_key,
+            pad,
+            ent,
+            sexo,
+            dates=real_series.index if len(real_series) > 0 else None,
+        )
+
+        # Rellenar las 52 columnas
+        for i in range(1, _HORIZON + 1):
+            # Real
+            if len(real_series) >= i:
+                val_r = float(real_series.iloc[i - 1])
+                base[f"real_sem_{i}"] = int(round(max(val_r, 0.0)))
+            else:
+                base[f"real_sem_{i}"] = np.nan
+
+            # Pronostico
+            if len(fc_series) >= i:
+                val_p = float(fc_series.iloc[i - 1])
+                base[f"pron_sem_{i}"] = int(round(max(val_p, 0.0)))
+            else:
+                base[f"pron_sem_{i}"] = np.nan
+
+            # % acierto
+            r_val = base[f"real_sem_{i}"]
+            p_val = base[f"pron_sem_{i}"]
+            if (
+                pd.notna(r_val)
+                and pd.notna(p_val)
+                and isinstance(r_val, int | float)
+                and isinstance(p_val, int | float)
+                and r_val > 0
+            ):
+                base[f"acierto_sem_{i}"] = f"{p_val / r_val * 100:.0f}%"
+            else:
+                base[f"acierto_sem_{i}"] = "0%"
+
+        rows.append(base)
+
+    return pd.DataFrame(rows)
+
+
+# ---------------------------------------------------------------------------
+# Escritura Excel con formato
+# ---------------------------------------------------------------------------
+
+
+def _write_excel(df_prod: pd.DataFrame, df_detail: pd.DataFrame, output: Path) -> None:
+    """Escribe ambas hojas en un workbook con formato IMSS."""
+    from openpyxl import Workbook
+    from scripts.excel_produccion_fmt import format_detail_header, format_sheet
+
+    wb = Workbook()
+
+    # --- Hoja 1: Produccion ---
+    ws1 = wb.active
+    ws1.title = "Producción"
+
+    # Orden final de columnas para Hoja 1
+    col_order = [
+        "numero",
+        "padecimiento",
+        "entidad",
+        "sexo",
+        # Metricas por modelo
+        *[f"{mk}_{m}" for mk in _MODELS for m in _METRICS],
+        # Mejor por metrica
+        *[f"mejor_{m}" for m in _METRICS],
+        "victorias",
+        # Proyeccion y diagnostico
+        "casos_52_semanas_futuro",
+        "smape_prod",
+        "mase_prod",
+        "rmse_prod",
+        "mae_prod",
+        "overfitting",
+        "leakage",
+        "casos_prev_52_semanas_real",
+        "casos_prev_52_semanas_pronos",
+        "precision_historica",
+        "pron_sem_previa",
+        "realidad_sem_previa",
+        # Seleccion
+        "modelo_produccion",
+        "tipo_modelo",
+        "region_asignada",
+        "justificacion",
+    ]
+    df_write = df_prod[[c for c in col_order if c in df_prod.columns]]
+
+    for r_idx, row_data in enumerate(dataframe_to_rows(df_write, index=False, header=True), 1):
+        for c_idx, value in enumerate(row_data, 1):
+            ws1.cell(row=r_idx, column=c_idx, value=value)
+
+    format_sheet(ws1, freeze_col=4)
+
+    # --- Hoja 2: Detalle Semanal ---
+    ws2 = wb.create_sheet("Detalle Semanal")
+
+    for r_idx, row_data in enumerate(dataframe_to_rows(df_detail, index=False, header=True), 1):
+        for c_idx, value in enumerate(row_data, 1):
+            ws2.cell(row=r_idx, column=c_idx, value=value)
+
+    format_sheet(ws2, freeze_col=5)
+    format_detail_header(ws2)
+
+    # Guardar
+    output.parent.mkdir(parents=True, exist_ok=True)
+    wb.save(str(output))
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+
+def main() -> None:
+    """Genera el Excel de 333 modelos de produccion."""
+    logger.info("=== Tabla de modelos de producción ===")
+
+    # 1. Cargar y merge
+    data = cargar_completos()
+    if not data:
+        logger.error("No se encontraron CSVs. Ejecute 'make train-all' primero.")
+        return
+
+    model_keys = [mk for mk in _MODELS if mk in data]
+    merged = merge_all_models(data)
+    logger.info("Merge: {} filas, modelos: {}", len(merged), model_keys)
+
+    region_map = _build_region_map()
+    forecasts = _load_forecasts()
+    real_df = _load_real_data()
+
+    # 2. Construir tabla principal
+    df_out = _build_production_table(merged, model_keys, region_map, forecasts, real_df)
+
+    # 3. Reasignaciones regionales
+    df_out = _apply_regional_reassignments(df_out, region_map)
+
+    # 4. Construir detalle semanal (Hoja 2)
+    logger.info("Construyendo detalle semanal (52 semanas x 333 series)...")
+    df_detail = _build_weekly_detail(df_out, forecasts, real_df)
+
+    # 5. Limpiar columnas internas
+    internal_cols = [c for c in df_out.columns if c.startswith("_")]
+    df_out = df_out.drop(columns=internal_cols)
+    if "_modelo_fc_key" in df_detail.columns:
+        df_detail = df_detail.drop(columns=["_modelo_fc_key"])
+
+    # 6. Escribir Excel
+    logger.info("Escribiendo Excel con formato IMSS...")
+    _write_excel(df_out, df_detail, _OUTPUT)
+    logger.success("Excel generado: {} ({} filas)", _OUTPUT, len(df_out))
+
+    # 7. Resumen
+    logger.info("--- Distribución de modelos de producción ---")
     counts = df_out["modelo_produccion"].value_counts()
     total = len(df_out)
     for modelo, n in counts.items():
         logger.info("  {}: {}/{} ({:.1f}%)", modelo, n, total, n / total * 100)
-
-    # Resumen por padecimiento
     for pad in sorted(df_out["padecimiento"].unique()):
         sub = df_out[df_out["padecimiento"] == pad]
         pad_counts = sub["modelo_produccion"].value_counts()

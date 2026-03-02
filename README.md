@@ -43,8 +43,8 @@ The platform uses a **polymorphic Factory pattern** to support multiple forecast
 - **GPU Training on SageMaker** -- DeepAR trains on `ml.g4dn.xlarge` (NVIDIA T4, CUDA 12.4) via a single `make train-sagemaker` command. Local CPU/MPS training also supported.
 - **End-to-End ML Pipeline** -- Automated from PDF scraping (SINAVE bulletins) through INEGI demographic mapping to forecast charts and HTML reports.
 - **Model Comparison Engine** -- High-contrast professional charts comparing Real vs. Prophet vs. DeepAR vs. Ensemble vs. Stacking performance across all states and conditions.
-- **SMAPE-Based Model Selection** -- The Tableau dataset automatically selects the best-performing model per group (condition, state, mode) based on SMAPE, exposing a `modelo_productivo` column. Production CSV (`tabla_333_modelos_produccion.csv`) uses SMAPE-primary selection with MASE/RMSE tiebreakers.
-- **Production Model Table** -- 333 production models with SMAPE-based selection, 52-week projections (`casos_52_semanas_futuro`), diagnostics (overfitting/leakage), historical comparison (`casos_prev_52_semanas_real` vs `_pronos`), and automated justification.
+- **SMAPE-Based Model Selection** -- The Tableau dataset automatically selects the best-performing model per group (condition, state, mode) based on SMAPE, exposing a `modelo_productivo` column. Production Excel (`tabla_333_modelos_produccion.xlsx`) uses SMAPE-primary selection with MASE/RMSE tiebreakers.
+- **Production Model Table** -- Excel with 2 sheets: (1) 333 production models with diagnostics, overfitting/leakage, precision historica, and weekly validation columns; (2) 52-week detail with real vs forecast vs % accuracy per week. IMSS 2026 styling.
 - **Overfitting and Data Leakage Detection** -- Train metrics (RMSE, SMAPE) computed in-sample for all 4 models. HTML report shows diagnostic badges: Overfitting (test/train SMAPE ratio) and Leakage (suspiciously low train SMAPE).
 - **Hybrid Fallback** -- Zero-incidence and low-confidence (<5 cases/52 weeks) state models automatically defer to regional aggregates to ensure 100% forecast coverage. Integer-rounded predictions (no fractional cases).
 - **MLflow Experiment Tracking** -- Optional integration logs all training runs (metrics, hyperparameters, elapsed time) to MLflow. Non-intrusive: no-op when not installed. Install with `pip install -e ".[mlflow]"`, browse with `mlflow server --backend-store-uri ./mlruns`.
@@ -252,17 +252,23 @@ The Tableau dataset (`data/processed/tableau.csv`) includes:
 - Per-model metrics: `rmse_{model}`, `mae_{model}`, `mape_{model}`, `smape_{model}`, `mase_{model}`
 - Productive model metrics: `rmse`, `mae`, `mape`, `smape`, `mase`
 
-The production table (`reports/reports/tabla_333_modelos_produccion.csv`) includes:
+The production Excel (`reports/reports/tabla_333_modelos_produccion.xlsx`) has 2 sheets:
+
+**Sheet 1 - Produccion** (333 rows x 41 columns):
 - Per-model metrics (RMSE, MAE, SMAPE, MASE) for all 4 algorithms
-- `modelo_produccion`: Best model per series (SMAPE-primary, MASE/RMSE tiebreaker)
 - `casos_52_semanas_futuro`: Total projected cases for 52-week horizon (integer)
-- `smape_prod`, `mase_prod`, `rmse_prod`, `mae_prod`: Metrics of the selected production model
-- `overfitting`: Diagnostic badge (Alto >2x, Moderado >1.3x, OK) based on smape_test/smape_train ratio
-- `leakage`: Diagnostic badge (Sospechoso if smape_train < 0.5%, else OK)
-- `casos_prev_52_semanas_real`: Actual incidence in the last 52 historical weeks (integer)
-- `casos_prev_52_semanas_pronos`: Model backtest prediction for those same 52 weeks (integer)
-- `tipo_modelo`: `propio` (state-level) or `regional` (fallback for zero/low-incidence)
-- `justificacion`: Automated reasoning for model selection
+- `smape_prod`, `mase_prod`, `rmse_prod`, `mae_prod`: Metrics of the selected model
+- `overfitting`: Diagnostic (Alto >2x, Moderado >1.3x, OK) based on smape_test/smape_train
+- `leakage`: Diagnostic (Sospechoso if smape_train < 0.5%, else OK)
+- `casos_prev_52_semanas_real / _pronos`: Historical 52-week comparison (integer)
+- `precision_historica`: Forecast/real ratio as percentage
+- `pron_sem_previa / realidad_sem_previa`: Last week values for live validation
+- `modelo_produccion`, `tipo_modelo`, `region_asignada`, `justificacion`
+
+**Sheet 2 - Detalle Semanal** (333 rows x 163 columns):
+- 52 columns `real_sem_N`: Actual weekly incidence
+- 52 columns `pron_sem_N`: Model backtest prediction per week
+- 52 columns `acierto_sem_N`: Forecast accuracy percentage per week
 
 ### 4. Comparison and Reports
 
@@ -283,7 +289,7 @@ make bitacora
 make reporte-avance5
 ```
 
-Comparison charts are saved in `reports/forecasts/comparacion_modelos/` using CDMX timezone (UTC-6) for audit logs. The Avance 5 report generates `reports/reports/avance5_modelo_final.md`, `reports/reports/tabla_333_modelos_produccion.csv` (333 production models with SMAPE-based selection), and 18 analysis charts in `reports/figures/ModeloFinal/`.
+Comparison charts are saved in `reports/forecasts/comparacion_modelos/` using CDMX timezone (UTC-6) for audit logs. The Avance 5 report generates `reports/reports/avance5_modelo_final.md`, `reports/reports/tabla_333_modelos_produccion.xlsx` (Excel with 2 sheets: production summary + 52-week detail), and 18 analysis charts in `reports/figures/ModeloFinal/`.
 
 ### 5. Code Quality
 
