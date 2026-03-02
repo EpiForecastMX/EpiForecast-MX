@@ -76,6 +76,17 @@ class StackingMetaLearner:
         return folds
 
     @staticmethod
+    def _clone_expert(expert: Any) -> Any:
+        """Crea instancia fresca de un experto sin deepcopy (evita leaked semaphores)."""
+        try:
+            cls = type(expert)
+            if hasattr(expert, "_holidays"):
+                return cls(expert._config, expert._holidays)
+            return cls(expert._config)
+        except Exception:
+            return copy.deepcopy(expert)
+
+    @staticmethod
     def _augment_with_temporal(x: np.ndarray, dates: pd.Series) -> np.ndarray:
         """Agrega sin_week y cos_week al stack de predicciones."""
         week_vals = dates.dt.isocalendar().week.astype(int).values
@@ -122,13 +133,12 @@ class StackingMetaLearner:
 
             fold_preds: list[np.ndarray] = []
             for expert in self._experts:
-                expert_copy = copy.deepcopy(expert)
-                expert_copy.fit(fold_train)
-                pred = expert_copy.predict(fold_val[["ds"]])
+                fresh = self._clone_expert(expert)
+                fresh.fit(fold_train)
+                pred = fresh.predict(fold_val[["ds"]])
                 fold_preds.append(pred)
-                # Liberar modelo ajustado para evitar leaked semaphores (Windows)
-                expert_copy._model = None
-                del expert_copy
+                fresh._model = None
+                del fresh
             gc.collect()
 
             x_fold = np.column_stack(fold_preds)
