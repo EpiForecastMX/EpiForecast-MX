@@ -1,83 +1,49 @@
-# =========================================
-# Logging & Configuration
-# =========================================
-loguru==0.7.3        # Logging avanzado y sencillo
-omegaconf==2.3.0     # Manejo flexible de configuraciones
+# =====================================================================
+# EpiForecast-MX: Dependencias directas (generado desde pyproject.toml)
+# Fuente de verdad: pyproject.toml  |  Instalar: pip install -e ".[dev]"
+# =====================================================================
 
-# =========================================
-# Visualization
-# =========================================
-matplotlib==3.10.0   # Gráficos y visualización
-seaborn==0.13.2      # Visualización estadística
-plotly==5.24.0       # Visualizaciones interactivas
-kaleido==0.2.1       # Exportar Plotly a imágenes estáticas
-rich>=13.0           # Imprimir tablas en formato legible en consola
+# Core
+pandas==2.3.0
+numpy==2.0.0
+scikit-learn==1.5.0
+scipy==1.14.1
+omegaconf==2.3.0
+loguru==0.7.3
+rich==13.9.4
+requests==2.32.5
+boto3==1.42.30
+typer==0.20.1
+openpyxl==3.1.5
 
-# =========================================
-# Numerical Computing
-# =========================================
-numpy==2.0.0         # Computación numérica
-scipy==1.14.1        # Funciones científicas y estadísticas
-
-# =========================================
-# Data Manipulation
-# =========================================
-pandas==2.3.0        # Manipulación y análisis de datos
-
-# =========================================
-# Machine Learning
-# =========================================
-scikit-learn==1.5.0  # Algoritmos de ML y herramientas
-xgboost>=2.0.0       # Gradient boosting (usado en notebooks de entrenamiento)
-
-# =========================================
-# Project Scaffolding
-# =========================================
-cookiecutter-data-science==2.3.0  # Plantillas para proyectos
-
-# =========================================
-# Jupyter & Development
-# =========================================
-ipykernel==6.29.0    # Kernel para notebooks
-nbformat>=4.2.0      # Formato de notebooks (requerido por Plotly)
-
-# =========================================
-# Utilities
-# =========================================
-gdown==5.2.0         # Descarga desde Google Drive
-typer==0.20.1        # CLI para scripts
-tabulate==0.9.0      # Tablas en consola
-reportlab==4.4.7     # Generación de PDFs
-ruff==0.14.10        # Linter y formateador para Python
-gspread>=6.1.0                 # Escritura y lectura de Google Sheets vía API
-google-auth>=2.28.0            # Autenticación con Service Accounts
-google-auth-oauthlib>=1.2.0    # Flujos OAuth (dependencia estándar de Google APIs)
-google-auth-httplib2>=0.2.0    # Transporte HTTP para Google Auth
-
-# =========================================
-# Statistical Modeling & Time Series
-# =========================================
-statsmodels==0.14.4  # Modelos estadísticos y series de tiempo
-
-# =========================================
-# PDF Processing
-# =========================================
-camelot-py[cv]==0.11.0  # Extracción de tablas de PDFs (incluye OpenCV)
-pypdf==4.3.1            # Manipulación de PDFs
-ghostscript==0.7        # Wrapper de Ghostscript para Python
-
-# =========================================
-# Data Version Control & Cloud Storage
-# =========================================
-dvc[s3]>=3.50.0      # Versionado de datos con soporte S3
-
-# =========================================
 # Time Series Forecasting
-# =========================================
-prophet==1.3.0       # Modelado de series de tiempo con Prophet (Meta/Facebook)
-cmdstanpy>=1.2.0     # Backend de Stan para Prophet (requerido para configuración)
+prophet==1.3.0
+cmdstanpy==1.3.0
+gluonts[torch]==0.16.2
+xgboost==3.2.0
+lightgbm==4.6.0
+statsmodels==0.14.4
 
-# Web Scraping (Boletines SINAVE)
-selenium>=4.20.0
-requests>=2.31.0
-boto3>=1.34.0
+# Visualization
+matplotlib==3.10.0
+seaborn==0.13.2
+
+# PDF Processing
+camelot-py[cv]==0.11.0
+pypdf==4.3.1
+reportlab==4.4.7
+
+# --------------- Optional (pip install -e ".[group]") ----------------
+
+# Dev: pip install -e ".[dev]"
+# pytest==9.0.2  pytest-cov==7.0.0  pytest-xdist==3.8.0
+# ruff==0.14.10  mypy==1.19.1  pre-commit==4.5.1  ipykernel==6.29.0
+
+# MLflow: pip install -e ".[mlflow]"
+# mlflow==3.10.0
+
+# DVC: pip install -e ".[dvc]"
+# dvc[s3]==3.66.1
+
+# Scraping: pip install -e ".[scraping]"
+# selenium==4.40.0
