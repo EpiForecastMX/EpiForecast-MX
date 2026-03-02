@@ -140,7 +140,7 @@ def build_trend_prediction(
     _cutoff_line(ax, cutoff)
 
     ax.set_title(
-        f"Tendencia y prediccion: {padecimiento} (modelo: {ganador_style.label})",
+        f"Tendencia y predicción: {padecimiento} (modelo: {ganador_style.label})",
         fontsize=13,
         fontweight="bold",
     )
@@ -206,13 +206,13 @@ def build_residual_analysis(
     # (d) ACF
     ax = axes[1, 1]
     _plot_acf_manual(residuals, ax, color, n_lags=40)
-    ax.set_title("(d) Autocorrelacion (ACF)", fontweight="bold")
+    ax.set_title("(d) Autocorrelación (ACF)", fontweight="bold")
     ax.set_xlabel("Lag")
     ax.set_ylabel("ACF")
     _clean_spines(ax)
 
     fig.suptitle(
-        f"Analisis de residuales: {padecimiento} ({model_name})",
+        f"Análisis de residuales: {padecimiento} ({model_name})",
         fontsize=13,
         fontweight="bold",
         y=0.98,
@@ -388,7 +388,7 @@ def build_metric_bars(
     # Suptitle
     title_suffix = f": {padecimiento}" if padecimiento else " (global)"
     fig.suptitle(
-        f"Comparacion de metricas{title_suffix}",
+        f"Comparación de métricas{title_suffix}",
         fontweight="bold",
         fontsize=14,
         y=0.98,
@@ -475,7 +475,7 @@ def build_error_boxplots(
 
     title_suffix = f": {padecimiento}" if padecimiento else " (global)"
     ax.set_title(
-        f"Distribucion de errores RMSE{title_suffix}",
+        f"Distribución de errores RMSE{title_suffix}",
         fontweight="bold",
         fontsize=13,
     )

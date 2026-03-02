@@ -150,7 +150,7 @@ def _select_production(
             pct_diff = (smape_segundo - smape_ganador) / smape_segundo * 100
             if pct_diff < 5:
                 parts.append(
-                    f"{ganador_label} gana por margen minimo "
+                    f"{ganador_label} gana por margen mínimo "
                     f"(SMAPE {smape_ganador:.1f}% vs {segundo_label} {smape_segundo:.1f}%, "
                     f"-{pct_diff:.1f}%)."
                 )
@@ -165,7 +165,7 @@ def _select_production(
                 f"(SMAPE {smape_ganador:.1f}% vs {segundo_label} {smape_segundo:.1f}%)."
             )
     else:
-        parts.append(f"{ganador_label} unico modelo disponible (SMAPE {smape_ganador:.1f}%).")
+        parts.append(f"{ganador_label} único modelo disponible (SMAPE {smape_ganador:.1f}%).")
 
     # MASE: interpretacion relativa al naive seasonal
     if mase_ganador is not None:
@@ -178,7 +178,7 @@ def _select_production(
 
     # Victorias
     if n_wins > 1:
-        parts.append(f"Gana en {n_wins}/{total_metrics} metricas.")
+        parts.append(f"Gana en {n_wins}/{total_metrics} métricas.")
 
     # SMAPE > 150% = serie de bajo volumen
     if smape_ganador > 150:
@@ -276,9 +276,8 @@ def main() -> None:
         # Produccion
         out["victorias"] = f"{n_wins}/{total_metrics}" if total_metrics > 0 else "0/0"
         out["modelo_produccion"] = _MODEL_LABELS.get(ganador_key, ganador_key)
-        out["justificacion"] = justificacion
 
-        # Tipo de modelo: propio vs regional
+        # Tipo de modelo: propio vs regional (antes de justificacion)
         entidad = str(out["entidad"])
         if _is_zero_row(row, model_keys) and entidad in region_map:
             region = region_map[entidad]
@@ -287,6 +286,8 @@ def main() -> None:
         else:
             out["tipo_modelo"] = "propio"
             out["region_asignada"] = ""
+
+        out["justificacion"] = justificacion
 
         rows_out.append(out)
 
@@ -310,7 +311,7 @@ def main() -> None:
                 modelo_regional = region_row.iloc[0]["modelo_produccion"]
                 df_out.at[idx_z, "modelo_produccion"] = modelo_regional
                 df_out.at[idx_z, "justificacion"] = (
-                    f"Sin incidencia local. Se asigna modelo regional "
+                    f"Sin incidencia local. Se asigna modelo de la región "
                     f"({region}): {modelo_regional}."
                 )
                 logger.info(

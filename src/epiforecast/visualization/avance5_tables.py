@@ -300,7 +300,7 @@ def win_rate_by_state(merged: pd.DataFrame, model_keys: list[str]) -> dict[str, 
 
 def _tabla_agregada(merged: pd.DataFrame, model_keys: list[str]) -> str:
     """Tabla resumen global: media de cada metrica por modelo."""
-    lines = ["| Metrica |"]
+    lines = ["| Métrica |"]
     sep = ["| --- |"]
     for mk in model_keys:
         lines[0] += f" {_MODEL_LABELS.get(mk, mk)} |"
@@ -383,40 +383,40 @@ def generar_markdown(
 El modelo **{ganador_label}** es seleccionado como modelo productivo para EpiForecast-MX.
 Sobre las 333 combinaciones evaluadas (3 padecimientos x ~111 series por padecimiento),
 {ganador_label} obtiene un **SMAPE promedio de {smape_avg:.2f}%** y un **RMSE promedio
-de {rmse_avg:.2f}**, superando consistentemente a los demas modelos en la mayoria
+de {rmse_avg:.2f}**, superando consistentemente a los demás modelos en la mayoría
 de series y padecimientos.
 
 ---
 
 ## 2. Estrategias de ensamble
 
-### 2.1 Ensamble homogeneo: Ensemble (Prophet + XGBoost)
+### 2.1 Ensamble homogéneo: Ensemble (Prophet + XGBoost)
 
 El modelo **Ensemble** combina dos componentes del mismo paradigma supervisado:
 
 - **Prophet** captura tendencia y estacionalidad mediante un modelo aditivo bayesiano.
-- **XGBoost** aprende patrones residuales con 20 features de ingenieria
-  (lags, rolling means, variables trigonometricas, indicador COVID).
-- La prediccion final es un promedio ponderado optimizado via grid search.
-- Este enfoque es **homogeneo** porque ambos componentes predicen la misma
+- **XGBoost** aprende patrones residuales con 20 features de ingeniería
+  (lags, rolling means, variables trigonométricas, indicador COVID).
+- La predicción final es un promedio ponderado optimizado vía grid search.
+- Este enfoque es **homogéneo** porque ambos componentes predicen la misma
   variable objetivo y se combinan linealmente.
 
-### 2.2 Ensamble heterogeneo: Stacking (Prophet + ETS + LightGBM + Ridge)
+### 2.2 Ensamble heterogéneo: Stacking (Prophet + ETS + LightGBM + Ridge)
 
 El modelo **Stacking** emplea un esquema de meta-aprendizaje en dos niveles:
 
 - **Nivel 1 (Expertos):** Prophet (tendencia + estacionalidad), ETS (suavizamiento
   exponencial), LightGBM (patrones no lineales).  Cada experto genera predicciones
   out-of-fold (OOF) mediante ventana expansiva.
-- **Nivel 2 (Meta-learner):** Un regresor Ridge/ElasticNet con restriccion de
-  pesos no negativos aprende la combinacion optima de los 3 expertos.
-- Este enfoque es **heterogeneo** porque integra familias de modelos distintas
-  (bayesiano, estadistico clasico, gradient boosting) y delega la combinacion
+- **Nivel 2 (Meta-learner):** Un regresor Ridge/ElasticNet con restricción de
+  pesos no negativos aprende la combinación óptima de los 3 expertos.
+- Este enfoque es **heterogéneo** porque integra familias de modelos distintas
+  (bayesiano, estadístico clásico, gradient boosting) y delega la combinación
   a un meta-learner entrenado.
 
 ---
 
-## 3. Comparativa de metricas
+## 3. Comparativa de métricas
 
 ### 3.1 Tabla agregada global
 
@@ -432,33 +432,33 @@ El modelo **Stacking** emplea un esquema de meta-aprendizaje en dos niveles:
 
 ---
 
-## 4. Seleccion del modelo final
+## 4. Selección del modelo final
 
 Se selecciona **{ganador_label}** como modelo productivo con base en los siguientes argumentos:
 
-1. **Menor RMSE promedio global:** {ganador_label} obtiene el RMSE mas bajo
-   ({rmse_avg:.2f}) sobre las 333 series, indicando menor error absoluto en prediccion.
+1. **Menor RMSE promedio global:** {ganador_label} obtiene el RMSE más bajo
+   ({rmse_avg:.2f}) sobre las 333 series, indicando menor error absoluto en predicción.
 
-2. **Mayor win rate:** {ganador_label} gana en la mayoria de las combinaciones
+2. **Mayor win rate:** {ganador_label} gana en la mayoría de las combinaciones
    individuales (padecimiento x entidad x sexo), demostrando robustez generalizada.
 
-3. **Balance sesgo-varianza:** La combinacion de multiples expertos (o componentes)
-   reduce la varianza del pronostico sin incrementar significativamente el sesgo,
-   como se observa en los boxplots de distribucion de errores.
+3. **Balance sesgo-varianza:** La combinación de múltiples expertos (o componentes)
+   reduce la varianza del pronóstico sin incrementar significativamente el sesgo,
+   como se observa en los boxplots de distribución de errores.
 
 4. **Estabilidad por padecimiento:** {ganador_label} no solo domina en el agregado
    global, sino que mantiene ventaja consistente en los tres padecimientos
-   (Depresion, Parkinson, Alzheimer), evitando la especializacion excesiva en uno solo.
+   (Depresión, Parkinson, Alzheimer), evitando la especialización excesiva en uno solo.
 
-5. **Comportamiento de residuales:** El analisis de residuales muestra que
-   {ganador_label} produce errores mas simetricos y con menor autocorrelacion,
+5. **Comportamiento de residuales:** El análisis de residuales muestra que
+   {ganador_label} produce errores más simétricos y con menor autocorrelación,
    indicando que captura mejor la estructura temporal de las series.
 
 ---
 
-## 5. Graficos e interpretacion
+## 5. Gráficos e interpretación
 
-### 5.1 Tendencia y prediccion
+### 5.1 Tendencia y predicción
 
 """
     for pad in _PADECIMIENTOS:
@@ -467,17 +467,17 @@ Se selecciona **{ganador_label}** como modelo productivo con base en los siguien
 
 ![Tendencia {pad}]({fig_rel}/tendencia_prediccion_{pad_lower}.png)
 
-El grafico muestra la serie historica real (gris) junto con las predicciones
-del modelo ganador ({ganador_label}, color solido) y Prophet como linea base
+El gráfico muestra la serie histórica real (gris) junto con las predicciones
+del modelo ganador ({ganador_label}, color sólido) y Prophet como línea base
 (punteado).  La banda de confianza del modelo ganador se muestra sombreada.
-La linea vertical roja marca el punto de corte (cutoff) a partir del cual
+La línea vertical roja marca el punto de corte (cutoff) a partir del cual
 las predicciones son out-of-sample.  La zona gris clara indica el periodo
-COVID-19 (marzo 2020 - septiembre 2022), donde se observa una caida abrupta
-seguida de una recuperacion gradual que los modelos deben capturar.
+COVID-19 (marzo 2020 - septiembre 2022), donde se observa una caída abrupta
+seguida de una recuperación gradual que los modelos deben capturar.
 
 """
 
-    md += """### 5.2 Analisis de residuales
+    md += """### 5.2 Análisis de residuales
 
 """
     for pad in _PADECIMIENTOS:
@@ -487,11 +487,11 @@ seguida de una recuperacion gradual que los modelos deben capturar.
 ![Residuales {pad}]({fig_rel}/residuos_{pad_lower}.png)
 
 Se presentan cuatro paneles: (a) residuales vs tiempo, donde se espera
-ausencia de patron sistematico; (b) histograma con curva normal superpuesta,
-verificando la distribucion aproximadamente gaussiana de los errores;
-(c) QQ-plot contra la distribucion normal, donde los puntos deben seguir
-la diagonal; (d) funcion de autocorrelacion (ACF), donde los valores deben
-caer dentro de las bandas de confianza si no hay autocorrelacion residual.
+ausencia de patrón sistemático; (b) histograma con curva normal superpuesta,
+verificando la distribución aproximadamente gaussiana de los errores;
+(c) QQ-plot contra la distribución normal, donde los puntos deben seguir
+la diagonal; (d) función de autocorrelación (ACF), donde los valores deben
+caer dentro de las bandas de confianza si no hay autocorrelación residual.
 Los resultados para {pad} muestran que el modelo captura adecuadamente
 la estructura temporal, con residuales centrados en cero.
 
@@ -503,45 +503,45 @@ la estructura temporal, con residuales centrados en cero.
 
 El panel izquierdo muestra las 20 features del componente XGBoost del Ensemble
 ordenadas por importancia (gain).  Los lags recientes (lag_1, lag_2) y las
-medias moviles (roll_4, roll_8) dominan, reflejando la fuerte autocorrelacion
-de las series epidemiologicas.  El panel derecho muestra los pesos normalizados
+medias móviles (roll_4, roll_8) dominan, reflejando la fuerte autocorrelación
+de las series epidemiológicas.  El panel derecho muestra los pesos normalizados
 de los tres expertos del Stacking (Prophet, ETS, LightGBM), asignados por el
-meta-learner Ridge.  La distribucion de pesos revela que componente aporta mas
-informacion predictiva al ensamble heterogeneo.
+meta-learner Ridge.  La distribución de pesos revela qué componente aporta más
+información predictiva al ensamble heterogéneo.
 
-### 5.4 Comparacion de metricas por modelo
+### 5.4 Comparación de métricas por modelo
 
-![Metricas global]({fig_rel}/comparacion_metricas_global.png)
+![Métricas global]({fig_rel}/comparacion_metricas_global.png)
 
 Las barras agrupadas comparan RMSE, MAE, SMAPE y MASE de los 4 modelos.
-{ganador_label} muestra ventaja consistente en las metricas de error absoluto
+{ganador_label} muestra ventaja consistente en las métricas de error absoluto
 (RMSE, MAE) y relativo (SMAPE, MASE).  La tabla inferior resume los valores
-numericos exactos para facilitar la comparacion cuantitativa.
+numéricos exactos para facilitar la comparación cuantitativa.
 
 """
     for pad in _PADECIMIENTOS:
         pad_lower = _pad_filename(pad)
         md += f"""#### {pad}
 
-![Metricas {pad}]({fig_rel}/comparacion_metricas_{pad_lower}.png)
+![Métricas {pad}]({fig_rel}/comparacion_metricas_{pad_lower}.png)
 
 Para {pad}, la tendencia global se mantiene: {ganador_label} obtiene los
-menores valores en la mayoria de metricas, confirmando su superioridad
-especifica para este padecimiento.
+menores valores en la mayoría de métricas, confirmando su superioridad
+específica para este padecimiento.
 
 """
 
     md += (
-        """### 5.5 Distribucion de errores (boxplots)
+        """### 5.5 Distribución de errores (boxplots)
 
 ![Boxplots global]("""
         + fig_rel
         + """/distribucion_errores_global.png)
 
-Los boxplots muestran la dispersion del RMSE por modelo sobre las 333 series.
-Una mediana mas baja con menor rango intercuartilico (IQR) indica un modelo
-mas preciso y estable.  Los outliers (puntos fuera de los bigotes) representan
-series particularmente dificiles donde el modelo tiene dificultades, tipicamente
+Los boxplots muestran la dispersión del RMSE por modelo sobre las 333 series.
+Una mediana más baja con menor rango intercuartílico (IQR) indica un modelo
+más preciso y estable.  Los outliers (puntos fuera de los bigotes) representan
+series particularmente difíciles donde el modelo tiene dificultades, típicamente
 estados con baja incidencia o alta volatilidad.
 
 """
@@ -552,9 +552,9 @@ estados con baja incidencia o alta volatilidad.
 
 ![Boxplots {pad}]({fig_rel}/distribucion_errores_{pad_lower}.png)
 
-La distribucion de errores para {pad} confirma la tendencia global.
-Los modelos de ensamble muestran menor dispersion que los modelos base,
-validando el beneficio de combinar multiples predictores.
+La distribución de errores para {pad} confirma la tendencia global.
+Los modelos de ensamble muestran menor dispersión que los modelos base,
+validando el beneficio de combinar múltiples predictores.
 
 """
 
@@ -568,9 +568,9 @@ validando el beneficio de combinar multiples predictores.
 ![Heatmap {pad}]({fig_rel}/heatmap_winrate_{pad_lower}.png)
 
 El heatmap muestra el porcentaje de victorias (RMSE) de cada modelo en las
-32 entidades federativas para {pad}.  Los colores mas intensos indican mayor
-dominancia.  Este grafico permite identificar si algun modelo es particularmente
-fuerte en ciertas regiones geograficas o si el modelo ganador domina de forma
+32 entidades federativas para {pad}.  Los colores más intensos indican mayor
+dominancia.  Este gráfico permite identificar si algún modelo es particularmente
+fuerte en ciertas regiones geográficas o si el modelo ganador domina de forma
 uniforme en todo el territorio nacional.
 
 """
@@ -579,24 +579,24 @@ uniforme en todo el territorio nacional.
 
 ## 6. Conclusiones
 
-1. El modelo **{ganador_label}** es el mejor candidato para produccion,
+1. El modelo **{ganador_label}** es el mejor candidato para producción,
    con el menor error promedio y la mayor tasa de victoria sobre las 333 series evaluadas.
 
 2. Los ensambles (Ensemble y Stacking) superan consistentemente a los modelos
-   individuales (Prophet y DeepAR), validando la hipotesis de que combinar
-   multiples predictores reduce la varianza del pronostico.
+   individuales (Prophet y DeepAR), validando la hipótesis de que combinar
+   múltiples predictores reduce la varianza del pronóstico.
 
-3. El enfoque heterogeneo (Stacking) y el homogeneo (Ensemble) muestran
-   rendimiento competitivo entre si; la diferencia clave radica en la
-   flexibilidad del meta-learner para adaptarse a patrones especificos
-   por padecimiento y region.
+3. El enfoque heterogéneo (Stacking) y el homogéneo (Ensemble) muestran
+   rendimiento competitivo entre sí; la diferencia clave radica en la
+   flexibilidad del meta-learner para adaptarse a patrones específicos
+   por padecimiento y región.
 
-4. El analisis de residuales confirma que {ganador_label} no presenta sesgos
-   sistematicos significativos, y la autocorrelacion residual es minima,
+4. El análisis de residuales confirma que {ganador_label} no presenta sesgos
+   sistemáticos significativos, y la autocorrelación residual es mínima,
    indicando un buen ajuste temporal.
 
-5. La plataforma EpiForecast-MX queda habilitada para generar pronosticos
-   semanales de incidencia para Depresion (F32), Parkinson (G20) y
+5. La plataforma EpiForecast-MX queda habilitada para generar pronósticos
+   semanales de incidencia para Depresión (F32), Parkinson (G20) y
    Alzheimer (G30) en las 32 entidades federativas con un horizonte de
    52 semanas.
 """
