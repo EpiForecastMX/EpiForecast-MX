@@ -194,18 +194,38 @@ def _build_region_pop(real: pd.DataFrame) -> dict[tuple[str, str], float]:
 
 
 def merge_all_models(data: dict[str, pd.DataFrame]) -> pd.DataFrame:
-    """Merge N-way por claves comunes.  Renombra metricas a ``{metric}_{model}``."""
+    """Merge N-way por claves comunes.  Renombra metricas a ``{metric}_{model}``.
+
+    Normaliza nombres de entidad (quita acentos) antes del merge para evitar
+    que DeepAR ("Mexico") y Prophet ("México") generen filas duplicadas.
+    """
     base_cols = _MERGE_KEYS + [
         c
         for c in ("confianza", "promedio_semanal")
         if any(c in df.columns for df in data.values())
     ]
 
+    # Construir lookup normalizado -> nombre con acentos (preferir la version
+    # acentuada que viene de Prophet/Ensemble/Stacking).
+    ent_display: dict[str, str] = {}
+    for df in data.values():
+        if "Entidad" in df.columns:
+            for name in df["Entidad"].dropna().unique():
+                norm = _normalizar_entidad(str(name))
+                # Preferir la version mas larga (con acentos)
+                if norm not in ent_display or len(str(name)) > len(ent_display[norm]):
+                    ent_display[norm] = str(name)
+
     merged: pd.DataFrame | None = None
     for model_key, df in data.items():
         keep = [c for c in base_cols if c in df.columns]
         metric_cols = [c for c in _METRICS_MERGE if c in df.columns]
         subset = df[keep + metric_cols].copy()
+        # Normalizar entidad para merge robusto
+        if "Entidad" in subset.columns:
+            subset["Entidad"] = subset["Entidad"].map(
+                lambda x: _normalizar_entidad(str(x)) if pd.notna(x) else ""
+            )
         subset = subset.rename(columns={m: f"{m}_{model_key}" for m in metric_cols})
         if merged is None:
             merged = subset
@@ -216,6 +236,10 @@ def merge_all_models(data: dict[str, pd.DataFrame]) -> pd.DataFrame:
 
     if merged is None:
         return pd.DataFrame()
+
+    # Restaurar nombres de entidad con acentos para display
+    if "Entidad" in merged.columns:
+        merged["Entidad"] = merged["Entidad"].map(lambda x: ent_display.get(x, x) if x else "")
 
     # Columna ganador por RMSE
     model_keys = list(data.keys())
