@@ -305,18 +305,16 @@ def build_metric_bars(
     model_keys: list[str],
     padecimiento: str | None = None,
 ) -> Figure:
-    """Barras agrupadas: 4 modelos x 4 metricas + tabla resumen."""
+    """Grid 2x2: una metrica por panel (escala Y independiente) + tabla resumen."""
     data = merged.copy()
     if padecimiento:
         data = data[data["padecimiento"] == padecimiento]
 
-    metric_names = ["RMSE", "MAE", "SMAPE", "MASE"]
+    metric_names = ["RMSE", "MAE", "SMAPE (%)", "MASE (vs naive)"]
     metric_keys = ["rmse", "mae", "smape", "mase"]
+    grid_pos = [(0, 0), (0, 1), (1, 0), (1, 1)]
 
-    fig, (ax_bar, ax_tbl) = plt.subplots(
-        2, 1, figsize=(12, 8), gridspec_kw={"height_ratios": [3, 1]}
-    )
-
+    # Recopilar valores por modelo
     rows: list[dict[str, object]] = []
     for mk in model_keys:
         style = MODEL_STYLES.get(mk)
@@ -329,49 +327,78 @@ def build_metric_bars(
             vals.append(v)
         rows.append({"model": style.label, "color": style.color, "values": vals})
 
-    n_models = len(rows)
-    n_metrics = len(metric_names)
-    x = np.arange(n_metrics)
-    width = 0.8 / max(n_models, 1)
+    fig = plt.figure(figsize=(14, 12))
+    gs = fig.add_gridspec(3, 2, height_ratios=[5, 5, 2], hspace=0.35, wspace=0.3)
 
-    for i, row in enumerate(rows):
-        offset = (i - n_models / 2 + 0.5) * width
-        ax_bar.bar(
-            x + offset,
-            row["values"],  # type: ignore[arg-type]
-            width,
-            label=str(row["model"]),
-            color=str(row["color"]),
-            alpha=0.85,
-        )
+    # 2x2 grid de barras horizontales
+    for m_idx, (metric_label, (r, c)) in enumerate(zip(metric_names, grid_pos, strict=True)):
+        ax = fig.add_subplot(gs[r, c])
+        model_labels = [str(row["model"]) for row in rows]
+        values = [cast(list[float], row["values"])[m_idx] for row in rows]
+        colors = [str(row["color"]) for row in rows]
 
-    ax_bar.set_xticks(x)
-    ax_bar.set_xticklabels(metric_names, fontsize=11)
-    ax_bar.set_ylabel("Valor", fontsize=11)
-    ax_bar.legend(fontsize=9)
-    _clean_spines(ax_bar)
+        best_idx = int(np.nanargmin(values)) if values else -1
+        y_pos = np.arange(len(rows))
 
+        for i, (val, color) in enumerate(zip(values, colors, strict=True)):
+            edgecolor = "black" if i == best_idx else "white"
+            lw = 2.0 if i == best_idx else 0.8
+            ax.barh(
+                i,
+                val,
+                color=color,
+                alpha=0.85,
+                edgecolor=edgecolor,
+                linewidth=lw,
+            )
+            # Anotacion al final de la barra
+            star = " *" if i == best_idx else ""
+            offset = ax.get_xlim()[1] * 0.01 if ax.get_xlim()[1] > 0 else 0.01
+            ax.text(
+                val + offset,
+                i,
+                f"{val:.2f}{star}",
+                va="center",
+                fontsize=9,
+                fontweight="bold",
+            )
+
+        ax.set_yticks(y_pos)
+        ax.set_yticklabels(model_labels, fontsize=10)
+        ax.set_title(metric_label, fontweight="bold", fontsize=12)
+        ax.invert_yaxis()
+        # Extender xlim para que quepan las anotaciones
+        xmax = max(values) if values else 1
+        ax.set_xlim(0, xmax * 1.25)
+        _clean_spines(ax)
+
+    # Suptitle
     title_suffix = f": {padecimiento}" if padecimiento else " (global)"
-    ax_bar.set_title(
+    fig.suptitle(
         f"Comparacion de metricas{title_suffix}",
         fontweight="bold",
-        fontsize=13,
+        fontsize=14,
+        y=0.98,
     )
 
-    # Tabla
+    # Tabla resumen en el area inferior (spanning 2 columnas)
+    ax_tbl = fig.add_subplot(gs[2, :])
+    ax_tbl.axis("off")
+
+    col_labels = ["RMSE", "MAE", "SMAPE", "MASE"]
     cell_text = []
     row_labels = []
+    row_colors = []
     for row in rows:
         row_labels.append(str(row["model"]))
+        row_colors.append(str(row["color"]))
         cell_text.append([f"{v:.2f}" for v in cast(list[float], row["values"])])
-    row_colors = [str(r["color"]) for r in rows]
 
-    ax_tbl.axis("off")
     if cell_text:
         table = ax_tbl.table(
             cellText=cell_text,
             rowLabels=row_labels,
-            colLabels=metric_names,
+            colLabels=col_labels,
             loc="center",
             cellLoc="center",
         )
@@ -383,7 +410,6 @@ def build_metric_bars(
             table[i + 1, -1].set_text_props(color="white", fontweight="bold")  # type: ignore[index]
 
     _stamp(fig)
-    fig.tight_layout(rect=[0, 0.03, 1, 0.97])
     return fig
 
 
