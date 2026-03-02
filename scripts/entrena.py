@@ -3,6 +3,7 @@
 from contextlib import contextmanager
 import os
 from pathlib import Path
+import platform
 import re
 import time
 import unicodedata
@@ -165,6 +166,11 @@ def main():
     valores_sexo = [str(s) for s in conf["valores_sexo"]]
     mapeo = {str(k): str(v) for k, v in conf["mapeo_columnas"].items()}
     n_jobs = int(conf.get("n_jobs_train", 1))
+    # Stacking + Windows/Linux: forzar secuencial para evitar deadlocks
+    # por multiprocessing anidado (loky + cmdstanpy/statsmodels en OOF)
+    if conf.get("modelo_activo") == "stacking" and n_jobs != 1 and platform.system() != "Darwin":
+        logger.info("Stacking: forzando n_jobs=1 (evita deadlock en {})", platform.system())
+        n_jobs = 1
 
     ruta_datos = conf["data"]["data_inegi"]
     df_entrenamiento = pd.read_csv(ruta_datos)
