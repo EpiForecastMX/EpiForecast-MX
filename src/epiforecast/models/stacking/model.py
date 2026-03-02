@@ -279,4 +279,17 @@ class StackingForecaster(ForecastModel):
             metrics["modelo"] = "Stacking (Prophet + ETS + LightGBM)"
             metrics["tiempo"] = self._t_total
 
+        # Metricas in-sample (train) para deteccion de overfitting/leakage
+        if not self.train_data.empty and self._weights is not None:
+            try:
+                preds_tr = [e.predict(self.train_data[["ds"]]) for e in self._experts]
+                x_train = np.column_stack(preds_tr)
+                yhat_train = self._predict_combined(x_train, self.train_data["ds"])
+                y_tr = self.train_data["y"].to_numpy(dtype=float)
+                train_m = compute_forecast_metrics(y_tr, yhat_train, y_tr)
+                metrics["rmse_train"] = train_m.get("rmse")
+                metrics["smape_train"] = train_m.get("smape")
+            except Exception:
+                logger.debug("No se pudieron calcular metricas train (Stacking)")
+
         return self, metrics, self.get_params()

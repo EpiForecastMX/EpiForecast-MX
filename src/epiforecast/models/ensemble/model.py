@@ -309,17 +309,23 @@ class EnsembleForecaster(ForecastModel):
             self.pred_train, self.pred_test = generar_predicciones_insample(
                 self._prophet, self._xgb, self.train_data, self.test_data
             )
-        return (
-            self._prophet,
-            calcular_metricas_ensemble(
-                self.test_data,
-                self.pred_test,
-                self.train_data,
-                "Ensemble (Prophet + XGBoost)",
-                self.tiempo_total,
-            ),
-            self.get_params(),
+        metrics = calcular_metricas_ensemble(
+            self.test_data,
+            self.pred_test,
+            self.train_data,
+            "Ensemble (Prophet + XGBoost)",
+            self.tiempo_total,
         )
+
+        # Metricas in-sample (train) para deteccion de overfitting/leakage
+        if not self.pred_train.empty and "yhat_ensemble" in self.pred_train.columns:
+            y_tr = self.train_data["y"].to_numpy(dtype=float)
+            yhat_tr = self.pred_train["yhat_ensemble"].to_numpy(dtype=float)
+            train_m = compute_forecast_metrics(y_tr, yhat_tr, y_tr)
+            metrics["rmse_train"] = train_m.get("rmse")
+            metrics["smape_train"] = train_m.get("smape")
+
+        return self._prophet, metrics, self.get_params()
 
     @property
     def prophet_model(self) -> Prophet:

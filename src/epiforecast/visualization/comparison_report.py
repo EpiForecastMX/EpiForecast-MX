@@ -23,6 +23,7 @@ from epiforecast.visualization.forecast_plots import _normalizar_nombre
 _TZ_CDMX = ZoneInfo("America/Mexico_City")
 
 _METRICS = ["rmse", "mae", "smape", "mase"]
+_METRICS_MERGE = ["rmse", "mae", "smape", "mase", "smape_train"]
 
 _MERGE_KEYS = ["padecimiento", "sexo", "nivel", "Entidad"]
 
@@ -111,7 +112,7 @@ def _merge_all_models(available: dict[str, pd.DataFrame]) -> pd.DataFrame:
     merged: pd.DataFrame | None = None
     for model_key, df in available.items():
         keep = [c for c in base_cols if c in df.columns]
-        metric_cols = [c for c in _METRICS if c in df.columns]
+        metric_cols = [c for c in _METRICS_MERGE if c in df.columns]
         subset = df[keep + metric_cols].copy()
         subset = subset.rename(columns={m: f"{m}_{model_key}" for m in metric_cols})
         if merged is None:

@@ -34,6 +34,54 @@ document.querySelectorAll('.reveal.animate').forEach(el=>obs.observe(el));
 </script>"""
 
 
+def _overfitting_badge(smape_test: float | None, smape_train: float | None) -> str:
+    """Ratio smape_test/smape_train > 2 = Alto, > 1.3 = Moderado, else OK."""
+    if (
+        smape_test is None
+        or smape_train is None
+        or (isinstance(smape_test, float) and np.isnan(smape_test))
+        or (isinstance(smape_train, float) and np.isnan(smape_train))
+        or smape_train == 0
+    ):
+        return '<span class="diag-badge badge-green">N/D</span>'
+    ratio = smape_test / smape_train
+    if ratio > 2:
+        return f'<span class="diag-badge badge-red">Alto ({ratio:.1f}x)</span>'
+    if ratio > 1.3:
+        return f'<span class="diag-badge badge-yellow">Moderado ({ratio:.1f}x)</span>'
+    return f'<span class="diag-badge badge-green">OK ({ratio:.1f}x)</span>'
+
+
+def _leakage_badge(smape_train: float | None) -> str:
+    """smape_train < 0.5 = Sospechoso (fit casi perfecto), else OK."""
+    if smape_train is None or (isinstance(smape_train, float) and np.isnan(smape_train)):
+        return '<span class="diag-badge badge-green">N/D</span>'
+    if smape_train < 0.5:
+        return f'<span class="diag-badge badge-red">Sospechoso ({smape_train:.2f}%)</span>'
+    return f'<span class="diag-badge badge-green">OK ({smape_train:.1f}%)</span>'
+
+
+def _get_prod_metrics(
+    row: pd.Series,
+    model_keys: list[str],  # type: ignore[type-arg]
+) -> tuple[float | None, float | None]:
+    """Obtiene smape test y smape_train del modelo productivo de la fila."""
+    prod = row.get("modelo_productivo", "")
+    if not prod:
+        return None, None
+    smape_test = row.get(f"smape_{prod}")
+    smape_train = row.get(f"smape_train_{prod}")
+    try:
+        st = float(smape_test) if smape_test is not None else None
+    except (ValueError, TypeError):
+        st = None
+    try:
+        str_val = float(smape_train) if smape_train is not None else None
+    except (ValueError, TypeError):
+        str_val = None
+    return st, str_val
+
+
 def fmt(val: object, decimals: int = 4) -> str:
     """Formatea un valor numerico o devuelve N/A."""
     if val is None or (isinstance(val, float) and np.isnan(val)):
@@ -155,13 +203,24 @@ def html_resumen(
         prod_label = _MODELS.get(prod_winner, {}).get("label", prod_winner)
         prod_css = f"prod-{prod_winner}" if prod_winner else ""
         cells.append(f'<td><span class="prod-badge {prod_css}">{prod_label}</span></td>')
+        # Overfitting/Leakage promedio del modelo productivo
+        smape_test_col = f"smape_{prod_winner}" if prod_winner else ""
+        smape_train_col = f"smape_train_{prod_winner}" if prod_winner else ""
+        avg_smape_test = (
+            grp[smape_test_col].mean(skipna=True) if smape_test_col in grp.columns else None
+        )
+        avg_smape_train = (
+            grp[smape_train_col].mean(skipna=True) if smape_train_col in grp.columns else None
+        )
+        cells.append(f"<td>{_overfitting_badge(avg_smape_test, avg_smape_train)}</td>")
+        cells.append(f"<td>{_leakage_badge(avg_smape_train)}</td>")
         rows.append(f"<tr>{''.join(cells)}</tr>")
 
     hdr = "<th>Padecimiento</th>"
     for m in _METRICS:
         for mk in model_keys:
             hdr += f'<th class="c-{mk}">{m.upper()} {_MODELS[mk]["label"]}</th>'
-    hdr += "<th>Productivo</th>"
+    hdr += "<th>Productivo</th><th>Overfitting</th><th>Leakage</th>"
 
     return f"""<section class="reveal">
 <h2 class="section-title">Resumen por Padecimiento</h2>
@@ -228,7 +287,7 @@ def _html_metric_table(data: pd.DataFrame, model_keys: list[str]) -> str:
     for m in _METRICS:
         for mk in model_keys:
             hdr += f'<th class="c-{mk}">{m.upper()} {_MODELS[mk]["label"][0]}</th>'
-    hdr += "<th>Productivo</th>"
+    hdr += "<th>Productivo</th><th>Overfitting</th><th>Leakage</th>"
 
     rows: list[str] = []
     for _, row in data.iterrows():
@@ -246,6 +305,9 @@ def _html_metric_table(data: pd.DataFrame, model_keys: list[str]) -> str:
         prod_label = _MODELS.get(prod, {}).get("label", prod) if prod else ""
         prod_css = f"prod-{prod}" if prod else ""
         cells.append(f'<td><span class="prod-badge {prod_css}">{prod_label}</span></td>')
+        smape_t, smape_tr = _get_prod_metrics(row, model_keys)
+        cells.append(f"<td>{_overfitting_badge(smape_t, smape_tr)}</td>")
+        cells.append(f"<td>{_leakage_badge(smape_tr)}</td>")
         rows.append(f"<tr>{''.join(cells)}</tr>")
 
     return f"""<div class="table-wrapper"><table>

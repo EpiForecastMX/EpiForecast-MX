@@ -19,6 +19,7 @@ from openpyxl.utils import get_column_letter
 import pandas as pd
 
 from epiforecast.utils.config import logger
+from epiforecast.visualization.comparison_report import generar_reporte_html
 
 # ---------------------------------------------------------------------------
 # Constantes
@@ -395,6 +396,7 @@ def generar_excel_comparativo() -> Path:
 def main() -> None:
     logger.info("Iniciando comparacion de metricas multi-modelo...")
     generar_excel_comparativo()
+    generar_reporte_html()
     logger.success("Proceso de comparacion de metricas finalizado.")
 
 

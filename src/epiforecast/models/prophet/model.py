@@ -16,6 +16,7 @@ import pandas as pd
 from prophet import Prophet
 
 from epiforecast.constants import RANDOM_SEED
+from epiforecast.evaluation.metrics import compute_forecast_metrics
 from epiforecast.models.base import ForecastModel
 from epiforecast.models.factory import register_model
 from epiforecast.models.prophet.data_prep import (
@@ -265,6 +266,21 @@ class ProphetForecaster(ForecastModel):
 
         best_metrics["confianza"] = confianza
         best_metrics["promedio_semanal"] = promedio
+
+        # Metricas in-sample (train) para deteccion de overfitting/leakage
+        if self._model is not None and not self.train_data.empty:
+            try:
+                fc_train = self._model.predict(self.train_data[["ds"]])
+                yhat_tr = fc_train["yhat"].to_numpy(dtype=float)
+                y_tr = self.train_data["y"].to_numpy(dtype=float)
+                if self.log_transform:
+                    yhat_tr = np.expm1(yhat_tr)
+                    y_tr = np.expm1(y_tr)
+                train_m = compute_forecast_metrics(y_tr, yhat_tr, y_tr)
+                best_metrics["rmse_train"] = train_m.get("rmse")
+                best_metrics["smape_train"] = train_m.get("smape")
+            except Exception:
+                logger.debug("No se pudieron calcular metricas train (Prophet)")
 
         return self._model, best_metrics, best_params
 

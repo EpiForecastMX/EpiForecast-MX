@@ -839,4 +839,19 @@ class DeepARForecaster(ForecastModel):
         best_metrics["confianza"] = confianza
         best_metrics["promedio_semanal"] = promedio
 
+        # Metricas in-sample (train) para deteccion de overfitting/leakage
+        if self._predictor is not None and not self.train_data.empty:
+            try:
+                from epiforecast.evaluation.metrics import compute_forecast_metrics
+
+                ds_train = self._build_dataset(self.train_data)
+                fc_train = list(self._predictor.predict(ds_train, num_samples=self.num_samples))
+                yhat_tr = fc_train[0].mean[: len(self.train_data)]
+                y_tr = self.train_data["y"].to_numpy(dtype=float)[: len(yhat_tr)]
+                train_m = compute_forecast_metrics(y_tr, yhat_tr, y_tr)
+                best_metrics["rmse_train"] = train_m.get("rmse")
+                best_metrics["smape_train"] = train_m.get("smape")
+            except Exception:
+                logger.debug("No se pudieron calcular metricas train (DeepAR)")
+
         return self._predictor, best_metrics, self.get_params()

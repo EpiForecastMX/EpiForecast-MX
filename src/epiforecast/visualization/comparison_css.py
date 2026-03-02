@@ -78,8 +78,11 @@ tbody tr:hover{background:var(--cream-pale)}
 
 .winner{background:#e6f4ea !important;font-weight:700}
 
-.prod-badge{display:inline-flex;align-items:center;gap:.35rem;padding:.25rem .85rem;
+.prod-badge,.diag-badge{display:inline-flex;align-items:center;gap:.35rem;padding:.25rem .85rem;
   border-radius:100px;font-family:var(--font-body);font-size:.78rem;font-weight:700;color:#fff}
+.badge-green{background:#2e7d32}
+.badge-yellow{background:#f9a825;color:#333}
+.badge-red{background:#c62828}
 .prod-prophet{background:var(--teal)}
 .prod-deepar{background:var(--burgundy)}
 .prod-ensemble{background:var(--orange)}
