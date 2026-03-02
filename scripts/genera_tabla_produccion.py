@@ -752,6 +752,26 @@ def _write_excel(df_prod: pd.DataFrame, df_detail: pd.DataFrame, output: Path) -
     format_sheet(ws2, freeze_col=5)
     format_detail_header(ws2)
 
+    # --- Hoja 3: Analisis Visual ---
+    logger.info("Generando graficos para hoja Análisis Visual...")
+    from openpyxl.drawing.image import Image as XlImage
+    from scripts.excel_produccion_charts import generate_all_charts
+
+    ws3 = wb.create_sheet("Análisis Visual")
+    ws3.sheet_properties.tabColor = "006847"
+
+    charts = generate_all_charts(df_prod)
+    row_cursor = 1
+    for name, buf in charts:
+        img = XlImage(buf)
+        img.width = int(img.width * 0.75)
+        img.height = int(img.height * 0.75)
+        ws3.add_image(img, f"A{row_cursor}")
+        # Estimar filas que ocupa la imagen (~20px por fila)
+        rows_needed = max(int(img.height / 20) + 2, 20)
+        row_cursor += rows_needed
+        logger.info("  Grafico embebido: {}", name)
+
     # Guardar
     output.parent.mkdir(parents=True, exist_ok=True)
     wb.save(str(output))
