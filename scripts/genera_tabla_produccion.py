@@ -24,7 +24,7 @@ from epiforecast.visualization.avance5_tables import (
 
 _MODELS = ["prophet", "deepar", "ensemble", "stacking"]
 _METRICS = ["rmse", "mae", "smape", "mase"]
-_EMPATE_PCT = 0.05  # 5% para considerar empate en RMSE
+_EMPATE_PCT = 0.05  # 5% para considerar empate en SMAPE
 
 _SEXO_DISPLAY = {
     "incrementos_total": "general",
@@ -69,40 +69,59 @@ def _count_wins(row: pd.Series, model_keys: list[str]) -> dict[str, int]:  # typ
     return wins
 
 
+def _get_metric_vals(
+    row: pd.Series,  # type: ignore[type-arg]
+    metric: str,
+    available: list[str],
+) -> dict[str, float]:
+    """Extrae valores de una metrica para los modelos disponibles."""
+    vals: dict[str, float] = {}
+    for mk in available:
+        v = row.get(f"{metric}_{mk}")
+        if pd.notna(v):
+            vals[mk] = float(v)
+    return vals
+
+
 def _select_production(
     row: pd.Series,  # type: ignore[type-arg]
     model_keys: list[str],
 ) -> tuple[str, int, str]:
     """Selecciona modelo de produccion con justificacion.
 
+    Criterio: SMAPE primario → desempate por MASE → desempate por RMSE.
+
     Returns:
         (modelo_key, n_victorias, justificacion)
     """
-    available = [mk for mk in model_keys if pd.notna(row.get(f"rmse_{mk}"))]
+    available = [mk for mk in model_keys if pd.notna(row.get(f"smape_{mk}"))]
     if not available:
         return ("", 0, "Sin datos disponibles.")
 
-    # 1. Ganador por RMSE
-    rmse_vals = {mk: float(row[f"rmse_{mk}"]) for mk in available}
-    rmse_winner = min(rmse_vals, key=lambda k: rmse_vals[k])
-    rmse_best = rmse_vals[rmse_winner]
+    smape_vals = _get_metric_vals(row, "smape", available)
+    mase_vals = _get_metric_vals(row, "mase", available)
+    rmse_vals = _get_metric_vals(row, "rmse", available)
+
+    # 1. Ganador por SMAPE (menor es mejor)
+    smape_winner = min(smape_vals, key=lambda k: smape_vals[k])
+    smape_best = smape_vals[smape_winner]
 
     # 2. Desempate si diferencia < 5%
-    ganador = rmse_winner
+    ganador = smape_winner
     for mk in available:
-        if mk == rmse_winner:
+        if mk == smape_winner:
             continue
-        if rmse_vals[mk] > 0 and abs(rmse_vals[mk] - rmse_best) / rmse_vals[mk] < _EMPATE_PCT:
+        if smape_vals[mk] > 0 and abs(smape_vals[mk] - smape_best) / smape_vals[mk] < _EMPATE_PCT:
             # Desempate por MASE
-            mase_w = row.get(f"mase_{rmse_winner}")
-            mase_c = row.get(f"mase_{mk}")
-            if pd.notna(mase_w) and pd.notna(mase_c) and float(mase_c) < float(mase_w):
+            mase_w = mase_vals.get(smape_winner)
+            mase_c = mase_vals.get(mk)
+            if mase_w is not None and mase_c is not None and mase_c < mase_w:
                 ganador = mk
                 break
-            # Desempate por MAE
-            mae_w = row.get(f"mae_{rmse_winner}")
-            mae_c = row.get(f"mae_{mk}")
-            if pd.notna(mae_w) and pd.notna(mae_c) and float(mae_c) < float(mae_w):
+            # Desempate por RMSE
+            rmse_w = rmse_vals.get(smape_winner)
+            rmse_c = rmse_vals.get(mk)
+            if rmse_w is not None and rmse_c is not None and rmse_c < rmse_w:
                 ganador = mk
                 break
 
@@ -113,58 +132,64 @@ def _select_production(
         1 for m in _METRICS if any(pd.notna(row.get(f"{m}_{mk}")) for mk in available)
     )
 
-    # Construir justificacion
+    # --- Construir justificacion centrada en SMAPE / MASE ---
     ganador_label = _MODEL_LABELS.get(ganador, ganador)
-    rmse_ganador = rmse_vals[ganador]
+    smape_ganador = smape_vals[ganador]
+    mase_ganador = mase_vals.get(ganador)
     parts: list[str] = []
 
-    # Comparacion con segundo lugar (excluir al ganador, tomar el mejor de los demas)
+    # Comparacion SMAPE con segundo lugar
     otros = sorted(
-        [(mk, v) for mk, v in rmse_vals.items() if mk != ganador],
+        [(mk, v) for mk, v in smape_vals.items() if mk != ganador],
         key=lambda x: x[1],
     )
     if otros:
-        segundo_key, rmse_segundo = otros[0]
+        segundo_key, smape_segundo = otros[0]
         segundo_label = _MODEL_LABELS.get(segundo_key, segundo_key)
-        # Si ganador fue elegido por desempate, puede tener RMSE >= segundo
-        if rmse_ganador <= rmse_segundo and rmse_segundo > 0:
-            pct_diff = (rmse_segundo - rmse_ganador) / rmse_segundo * 100
+        if smape_ganador <= smape_segundo and smape_segundo > 0:
+            pct_diff = (smape_segundo - smape_ganador) / smape_segundo * 100
             if pct_diff < 5:
                 parts.append(
                     f"{ganador_label} gana por margen minimo "
-                    f"(RMSE {rmse_ganador:.2f} vs {segundo_label} {rmse_segundo:.2f}, "
+                    f"(SMAPE {smape_ganador:.1f}% vs {segundo_label} {smape_segundo:.1f}%, "
                     f"-{pct_diff:.1f}%)."
                 )
             else:
                 parts.append(
-                    f"{ganador_label} domina con RMSE {rmse_ganador:.2f} "
-                    f"(vs {segundo_label} {rmse_segundo:.2f})."
+                    f"{ganador_label} domina con SMAPE {smape_ganador:.1f}% "
+                    f"(vs {segundo_label} {smape_segundo:.1f}%)."
                 )
         else:
-            # Ganador elegido por desempate (MASE/MAE), no por RMSE
             parts.append(
-                f"{ganador_label} elegido por desempate MASE/MAE "
-                f"(RMSE {rmse_ganador:.2f} vs {segundo_label} {rmse_segundo:.2f})."
+                f"{ganador_label} elegido por desempate MASE/RMSE "
+                f"(SMAPE {smape_ganador:.1f}% vs {segundo_label} {smape_segundo:.1f}%)."
             )
     else:
-        parts.append(f"{ganador_label} unico modelo disponible (RMSE {rmse_ganador:.2f}).")
+        parts.append(f"{ganador_label} unico modelo disponible (SMAPE {smape_ganador:.1f}%).")
+
+    # MASE: interpretacion relativa al naive seasonal
+    if mase_ganador is not None:
+        if mase_ganador < 0.5:
+            parts.append(f"MASE={mase_ganador:.2f}, muy superior al naive seasonal.")
+        elif mase_ganador < 1.0:
+            parts.append(f"MASE={mase_ganador:.2f}, supera naive seasonal.")
+        else:
+            parts.append(f"MASE={mase_ganador:.2f}, no supera naive seasonal.")
 
     # Victorias
     if n_wins > 1:
         parts.append(f"Gana en {n_wins}/{total_metrics} metricas.")
 
-    # MASE < 1
-    mase_val = row.get(f"mase_{ganador}")
-    if pd.notna(mase_val) and float(mase_val) < 1.0:
-        parts.append(f"MASE={float(mase_val):.2f} supera naive seasonal.")
-
     # SMAPE > 150% = serie de bajo volumen
-    smape_val = row.get(f"smape_{ganador}")
-    if pd.notna(smape_val) and float(smape_val) > 150:
+    if smape_ganador > 150:
         parts.append("Serie de bajo volumen.")
 
-    justificacion = " ".join(parts)
-    return (ganador, n_wins, justificacion)
+    # RMSE como dato complementario
+    rmse_ganador = rmse_vals.get(ganador)
+    if rmse_ganador is not None:
+        parts.append(f"RMSE={rmse_ganador:.2f}.")
+
+    return (ganador, n_wins, " ".join(parts))
 
 
 def _display_entidad(row: pd.Series) -> str:  # type: ignore[type-arg]
