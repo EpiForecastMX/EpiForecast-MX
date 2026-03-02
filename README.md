@@ -46,6 +46,7 @@ The platform uses a **polymorphic Factory pattern** to support multiple forecast
 - **SMAPE-Based Model Selection** -- The Tableau dataset automatically selects the best-performing model per group (condition, state, mode) based on SMAPE, exposing a `modelo_productivo` column.
 - **Overfitting and Data Leakage Detection** -- Train metrics (RMSE, SMAPE) computed in-sample for all 4 models. HTML report shows diagnostic badges: Overfitting (test/train SMAPE ratio) and Leakage (suspiciously low train SMAPE).
 - **Hybrid Fallback** -- Low-incidence state models automatically defer to regional aggregates to ensure 100% forecast coverage.
+- **MLflow Experiment Tracking** -- Optional integration logs all training runs (metrics, hyperparameters, elapsed time) to MLflow. Non-intrusive: no-op when not installed. Install with `pip install -e ".[mlflow]"`, browse with `mlflow server --backend-store-uri ./mlruns`.
 - **Cross-Validation** -- Prophet uses weighted time-series CV (4 folds, progressive weights). DeepAR uses multi-series CV with early stopping.
 - **IMSS Institutional Branding** -- All visualizations and reports follow official IMSS 2026 chromatic and styling guidelines.
 
@@ -161,6 +162,9 @@ pip install -e ".[dev]"
 
 # Optional: install DVC for data versioning
 pip install -e ".[dvc]"
+
+# Optional: install MLflow for experiment tracking
+pip install -e ".[mlflow]"
 
 # Pull data from S3 (requires AWS credentials)
 make data-pull

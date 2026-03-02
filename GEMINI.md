@@ -153,6 +153,7 @@ EpiForecast-MX/
 - **Stacking**: Opera sobre conteos absolutos. Pipeline: `make train-stacking`. Config: `config/models/stacking.yaml`.
 - **Tableau**: `make tableau` genera `data/processed/tableau.csv` con `modelo_productivo` (SMAPE) y metricas por modelo.
 - **Diagnosticos**: Cada `run()` de los 4 modelos computa `rmse_train` y `smape_train` (metricas in-sample). El reporte HTML muestra badges de Overfitting (ratio smape_test/smape_train > 2 = Alto, > 1.3 = Moderado) y Leakage (smape_train < 0.5% = Sospechoso).
+- **MLflow**: Integracion opcional (`pip install -e ".[mlflow]"`). Registra automaticamente cada run de entrenamiento en `mlruns/` con metricas (rmse, mae, smape, mase, elapsed_seconds) y parametros. No-op si no esta instalado. Visualizar: `mlflow server --backend-store-uri ./mlruns`.
 
 ## 9. Modulos SRP (archivos extraidos)
 
@@ -170,3 +171,4 @@ Para cumplir con el limite de 300 lineas por modulo (SRP), se extrajeron funcion
 | `visualization/forecast_chart.py` | `visualization/chart_constants.py` | Constantes de estilo (FIGSIZE, MARGINS, font sizes, alphas) |
 | `visualization/forecast_chart.py` | `visualization/chart_renderer.py` | `plot_series()` — renderizado de capas, bandas, COVID, outliers |
 | `visualization/forecast_chart.py` | `visualization/chart_annotations.py` | `_anotar_divisores()`, `_anotar_zona_cv()`, `_render_ficha_tecnica()` |
+| — | `utils/mlflow_logger.py` | Wrapper opcional MLflow: `log_training_run()` (no-op sin mlflow) |

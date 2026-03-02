@@ -120,6 +120,14 @@ EpiForecast-MX/
 - Columnas: `yhat` (mejor prediccion), `modelo_productivo`, `yhat_{modelo}`, `{metrica}_{modelo}`, metricas standalone.
 - Metricas calculadas in-situ desde `y_real` vs `yhat_{modelo}` (no depende de `*_completo.csv`).
 
+### MLflow (Experiment Tracking)
+- Integracion opcional: `pip install -e ".[mlflow]"`. No-op si no esta instalado.
+- `epiforecast/utils/mlflow_logger.py`: wrapper que registra cada run de entrenamiento (metricas, parametros, tiempo).
+- Se invoca automaticamente en `scripts/entrena.py` despues de cada modelo entrenado.
+- Runs almacenados en `mlruns/` (local, no requiere servidor). Visualizar con `mlflow server --backend-store-uri ./mlruns`.
+- Naming: `{modelo}_{padecimiento}_{entidad}` (ej: `stacking_Depresion_Baja California`).
+- Metricas registradas: rmse, mae, mape, smape, mase, elapsed_seconds.
+
 ### Convenciones de Codigo
 - **Imports**: Agrupar stdlib, luego terceros, luego locales (isort via Ruff).
 - **Tipado**: Uso estricto de `mypy`. Retornos de funciones deben estar tipados.
@@ -135,11 +143,11 @@ EpiForecast-MX/
 - **DeepAR**: gluonts[torch], torch (PyTorch).
 - **Visualizacion**: matplotlib, seaborn, plotly, kaleido.
 - **Datos**: camelot-py, pypdf, reportlab, openpyxl.
-- **Infraestructura**: boto3, sagemaker (opcional), dvc[s3] (opcional).
+- **Infraestructura**: boto3, sagemaker (opcional), dvc[s3] (opcional), mlflow (opcional).
 - **Ensemble**: xgboost.
 - **Stacking**: lightgbm, statsmodels.
 - **Dev**: pytest, ruff, mypy, pre-commit.
-- Instalar: `pip install -e ".[dev]"`. DVC opcional: `pip install -e ".[dvc]"`.
+- Instalar: `pip install -e ".[dev]"`. DVC opcional: `pip install -e ".[dvc]"`. MLflow opcional: `pip install -e ".[mlflow]"`.
 
 ### Modulos SRP (archivos extraidos para cumplir limite de 300 lineas)
 - `prophet/data_prep.py`: Funciones de preparacion de datos extraidas de `prophet/model.py`.
@@ -153,3 +161,4 @@ EpiForecast-MX/
 - `visualization/chart_renderer.py`: Renderizado de series (capas, bandas, COVID, outliers) extraido de `forecast_chart.py`.
 - `visualization/chart_annotations.py`: Anotaciones (divisores, zona CV, ficha tecnica) extraidas de `forecast_chart.py`.
 - `features/demographic.py`: Feature builder demografico extraido para SRP.
+- `utils/mlflow_logger.py`: Wrapper opcional de MLflow para tracking de experimentos (no-op sin mlflow).
