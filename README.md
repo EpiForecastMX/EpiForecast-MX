@@ -43,9 +43,10 @@ The platform uses a **polymorphic Factory pattern** to support multiple forecast
 - **GPU Training on SageMaker** -- DeepAR trains on `ml.g4dn.xlarge` (NVIDIA T4, CUDA 12.4) via a single `make train-sagemaker` command. Local CPU/MPS training also supported.
 - **End-to-End ML Pipeline** -- Automated from PDF scraping (SINAVE bulletins) through INEGI demographic mapping to forecast charts and HTML reports.
 - **Model Comparison Engine** -- High-contrast professional charts comparing Real vs. Prophet vs. DeepAR vs. Ensemble vs. Stacking performance across all states and conditions.
-- **SMAPE-Based Model Selection** -- The Tableau dataset automatically selects the best-performing model per group (condition, state, mode) based on SMAPE, exposing a `modelo_productivo` column.
+- **SMAPE-Based Model Selection** -- The Tableau dataset automatically selects the best-performing model per group (condition, state, mode) based on SMAPE, exposing a `modelo_productivo` column. Production CSV (`tabla_333_modelos_produccion.csv`) uses SMAPE-primary selection with MASE/RMSE tiebreakers.
+- **Production Model Table** -- 333 production models with SMAPE-based selection, 52-week case projections (`casos_52_semanas`), confidence classification (propio/regional), and automated justification text.
 - **Overfitting and Data Leakage Detection** -- Train metrics (RMSE, SMAPE) computed in-sample for all 4 models. HTML report shows diagnostic badges: Overfitting (test/train SMAPE ratio) and Leakage (suspiciously low train SMAPE).
-- **Hybrid Fallback** -- Low-incidence state models automatically defer to regional aggregates to ensure 100% forecast coverage.
+- **Hybrid Fallback** -- Zero-incidence and low-confidence (<5 cases/52 weeks) state models automatically defer to regional aggregates to ensure 100% forecast coverage. Integer-rounded predictions (no fractional cases).
 - **MLflow Experiment Tracking** -- Optional integration logs all training runs (metrics, hyperparameters, elapsed time) to MLflow. Non-intrusive: no-op when not installed. Install with `pip install -e ".[mlflow]"`, browse with `mlflow server --backend-store-uri ./mlruns`.
 - **Cross-Validation** -- Prophet uses weighted time-series CV (4 folds, progressive weights). DeepAR uses multi-series CV with early stopping.
 - **IMSS Institutional Branding** -- All visualizations and reports follow official IMSS 2026 chromatic and styling guidelines.
@@ -245,11 +246,18 @@ make tableau
 ```
 
 The Tableau dataset (`data/processed/tableau.csv`) includes:
-- `yhat`: Best prediction (selected by lowest SMAPE per group)
+- `yhat`: Best prediction (integer-rounded, selected by lowest SMAPE per group)
 - `modelo_productivo`: Name of the winning model per (condition, state, mode)
-- Per-model predictions: `yhat_prophet`, `yhat_deepar`, `yhat_ensemble`, `yhat_stacking`
+- Per-model predictions: `yhat_prophet`, `yhat_deepar`, `yhat_ensemble`, `yhat_stacking` (integer-rounded)
 - Per-model metrics: `rmse_{model}`, `mae_{model}`, `mape_{model}`, `smape_{model}`, `mase_{model}`
 - Productive model metrics: `rmse`, `mae`, `mape`, `smape`, `mase`
+
+The production table (`reports/reports/tabla_333_modelos_produccion.csv`) includes:
+- Per-model metrics (RMSE, MAE, SMAPE, MASE) for all 4 algorithms
+- `modelo_produccion`: Best model per series (SMAPE-primary, MASE/RMSE tiebreaker)
+- `casos_52_semanas`: Total projected cases for 52-week horizon (integer)
+- `tipo_modelo`: `propio` (state-level) or `regional` (fallback for zero/low-incidence)
+- `justificacion`: Automated reasoning for model selection
 
 ### 4. Comparison and Reports
 
