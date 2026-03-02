@@ -16,6 +16,12 @@ import pandas as pd
 from epiforecast.constants import VIZ_DPI_SCREEN
 from epiforecast.utils import paths as directory_manager
 from epiforecast.utils.config import conf, logger
+from epiforecast.visualization.comparison_builders import (
+    build_metrics_bars,
+    build_overlay,
+    build_residuals,
+    build_small_multiples,
+)
 from epiforecast.visualization.forecast_plots import _normalizar_nombre
 
 # -- Layout constants ---------------------------------------------------------
@@ -138,6 +144,21 @@ def generar_graficos_comparativos(config: dict | None = None) -> None:
         plt.savefig(pad_dir / nombre, dpi=VIZ_DPI_SCREEN, bbox_inches="tight")
         plt.close(fig)
         count += 1
+
+        # -- 4 graficos adicionales ------------------------------------------
+        builder_args = (serie_real, target_y, groups, pad, ent, modo)
+        extras: list[tuple[str, plt.Figure | None]] = [
+            ("SM", build_small_multiples(*builder_args)),
+            ("OVR", build_overlay(*builder_args)),
+            ("MET", build_metrics_bars(*builder_args)),
+            ("RES", build_residuals(*builder_args)),
+        ]
+        for prefix, extra_fig in extras:
+            if extra_fig is None:
+                continue
+            fname = f"{prefix}_{pad}_{safe_ent}_{modo}.png"
+            extra_fig.savefig(pad_dir / fname, dpi=VIZ_DPI_SCREEN, bbox_inches="tight")
+            plt.close(extra_fig)
 
     logger.success("Se generaron {} comparativas de alto contraste en: {}", count, output_dir)
 

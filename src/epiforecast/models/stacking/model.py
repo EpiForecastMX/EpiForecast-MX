@@ -53,6 +53,8 @@ class StackingForecaster(ForecastModel):
         self._meta_type: str = str(ml_cfg.get("type", "ridge"))
         self._l1_ratio: float = float(ml_cfg.get("l1_ratio", 0.5))
         self._add_temporal_features: bool = bool(ml_cfg.get("add_temporal_features", False))
+        self._max_iter: int = int(ml_cfg.get("max_iter", 10_000))
+        self._tol: float = float(ml_cfg.get("tol", 1e-4))
         self._oof_n_folds: int = int(stk.get("oof_n_folds", 4))
         self._oof_min_train_weeks: int = int(stk.get("oof_min_train_weeks", 104))
 
@@ -92,6 +94,8 @@ class StackingForecaster(ForecastModel):
             meta_type=self._meta_type,
             l1_ratio=self._l1_ratio,
             add_temporal_features=self._add_temporal_features,
+            max_iter=self._max_iter,
+            tol=self._tol,
         )
         self._weights, self._ridge = meta.fit_oof(train_data, self._oof_cutoff)
 

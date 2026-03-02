@@ -4,12 +4,17 @@ from __future__ import annotations
 
 import copy
 from typing import Any
+import warnings
 
 import numpy as np
 import pandas as pd
+from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import ElasticNet, Ridge
 
 from epiforecast.utils.config import logger
+
+# Umbral minimo de variabilidad en target OOF para que el meta-learner converja
+_MIN_TARGET_STD: float = 1e-8
 
 
 class StackingMetaLearner:
@@ -24,6 +29,8 @@ class StackingMetaLearner:
         meta_type: str = "ridge",
         l1_ratio: float = 0.5,
         add_temporal_features: bool = False,
+        max_iter: int = 10_000,
+        tol: float = 1e-4,
     ):
         self._experts = experts
         self._alpha = alpha
@@ -32,6 +39,8 @@ class StackingMetaLearner:
         self._meta_type = meta_type
         self._l1_ratio = l1_ratio
         self._add_temporal_features = add_temporal_features
+        self._max_iter = max_iter
+        self._tol = tol
 
     def _compute_oof_folds(
         self,
@@ -100,6 +109,16 @@ class StackingMetaLearner:
         all_y: list[np.ndarray] = []
 
         for fold_idx, (fold_train, fold_val) in enumerate(folds):
+            # Fix 3: descartar folds con target casi constante
+            if np.std(fold_val["y"].values) < _MIN_TARGET_STD:
+                logger.debug(
+                    "  OOF fold {}/{}: val casi constante (std={:.2e}), skip",
+                    fold_idx + 1,
+                    len(folds),
+                    np.std(fold_val["y"].values),
+                )
+                continue
+
             fold_preds: list[np.ndarray] = []
             for expert in self._experts:
                 expert_copy = copy.deepcopy(expert)
@@ -119,13 +138,29 @@ class StackingMetaLearner:
                 len(fold_val),
             )
 
+        if not all_preds:
+            logger.warning(
+                "OOF: todos los folds descartados (target constante), usando pesos iguales",
+            )
+            return np.ones(n_experts) / n_experts, None
+
         x_oof = np.vstack(all_preds)
         y_oof = np.concatenate(all_y)
+
+        # Fix 1: guard de varianza minima antes de fit
+        if np.std(y_oof) < _MIN_TARGET_STD:
+            logger.warning(
+                "  OOF target casi constante (std={:.2e}, {} filas), fallback a pesos iguales",
+                np.std(y_oof),
+                len(y_oof),
+            )
+            return np.ones(n_experts) / n_experts, None
 
         if self._add_temporal_features:
             dates_oof = pd.concat(all_dates, ignore_index=True)
             x_oof = self._augment_with_temporal(x_oof, dates_oof)
 
+        # Fix 2: max_iter y tol explicitos
         model: Ridge | ElasticNet
         if self._meta_type == "elasticnet":
             model = ElasticNet(
@@ -133,11 +168,31 @@ class StackingMetaLearner:
                 fit_intercept=False,
                 alpha=self._alpha,
                 l1_ratio=self._l1_ratio,
+                max_iter=self._max_iter,
+                tol=self._tol,
             )
         else:
-            model = Ridge(positive=True, fit_intercept=False, alpha=self._alpha)
+            model = Ridge(
+                positive=True,
+                fit_intercept=False,
+                alpha=self._alpha,
+                max_iter=self._max_iter,
+                tol=self._tol,
+            )
 
-        model.fit(x_oof, y_oof)
+        # Fix 4: capturar ConvergenceWarning sin contaminar stdout
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always", ConvergenceWarning)
+            model.fit(x_oof, y_oof)
+
+        for w in caught:
+            if issubclass(w.category, ConvergenceWarning):
+                logger.warning(
+                    "  Meta-learner ConvergenceWarning: {} (alpha={}, {} filas OOF)",
+                    str(w.message)[:100],
+                    self._alpha,
+                    len(y_oof),
+                )
 
         # Normalizar solo los coeficientes de expertos (primeros n_experts)
         weights = model.coef_[:n_experts].copy()
