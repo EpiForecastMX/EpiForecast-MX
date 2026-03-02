@@ -252,7 +252,7 @@ The Tableau dataset (`data/processed/tableau.csv`) includes:
 - Per-model metrics: `rmse_{model}`, `mae_{model}`, `mape_{model}`, `smape_{model}`, `mase_{model}`
 - Productive model metrics: `rmse`, `mae`, `mape`, `smape`, `mase`
 
-The production Excel (`reports/reports/tabla_333_modelos_produccion.xlsx`) has 2 sheets:
+The production Excel (`reports/ProdDetails/tabla_333_modelos_produccion.xlsx`) has 2 sheets:
 
 **Sheet 1 - Produccion** (333 rows x 41 columns):
 - Per-model metrics (RMSE, MAE, SMAPE, MASE) for all 4 algorithms
@@ -289,7 +289,7 @@ make bitacora
 make reporte-avance5
 ```
 
-Comparison charts are saved in `reports/forecasts/comparacion_modelos/` using CDMX timezone (UTC-6) for audit logs. The Avance 5 report generates `reports/reports/avance5_modelo_final.md`, `reports/reports/tabla_333_modelos_produccion.xlsx` (Excel with 2 sheets: production summary + 52-week detail), and 18 analysis charts in `reports/figures/ModeloFinal/`.
+Comparison charts are saved in `reports/forecasts/comparacion_modelos/` using CDMX timezone (UTC-6) for audit logs. The Avance 5 report generates `reports/ProdDetails/avance5_modelo_final.md`, `reports/ProdDetails/tabla_333_modelos_produccion.xlsx` (Excel with 2 sheets: production summary + 52-week detail), and 18 analysis charts in `reports/figures/ModeloFinal/`.
 
 ### 5. Code Quality
 

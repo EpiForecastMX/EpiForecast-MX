@@ -242,7 +242,7 @@ avance5:
 reporte-avance5:
 	@echo ">>> Reporte Avance 5 — Modelo Final..."
 	$(PYTHON) -m scripts.genera_reporte_avance5 $(ARGS)
-	@echo ">>> → reports/reports/avance5_modelo_final.md"
+	@echo ">>> → reports/ProdDetails/avance5_modelo_final.md"
 	@echo ">>> → reports/figures/ModeloFinal/"
 
 ## Flujo completo de modelado

@@ -50,7 +50,7 @@ _OVERFIT_ALTO = 2.0
 _OVERFIT_MODERADO = 1.3
 _LEAKAGE_THRESHOLD = 0.5
 
-_OUTPUT = Path("reports") / "reports" / "tabla_333_modelos_produccion.xlsx"
+_OUTPUT = Path("reports") / "ProdDetails" / "tabla_333_modelos_produccion.xlsx"
 
 _MODEL_KEY_MAP: dict[str, str] = {
     "Prophet": "prophet",

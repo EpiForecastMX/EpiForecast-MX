@@ -119,7 +119,7 @@ EpiForecast-MX/
 - Todos los reportes siguen la paleta IMSS 2026.
 
 ### Seleccion de Modelo de Produccion
-- `scripts/genera_tabla_produccion.py` genera `reports/reports/tabla_333_modelos_produccion.xlsx` (Excel con formato IMSS, 2 hojas).
+- `scripts/genera_tabla_produccion.py` genera `reports/ProdDetails/tabla_333_modelos_produccion.xlsx` (Excel con formato IMSS, 2 hojas).
 - Criterio: SMAPE primario, MASE como desempate (umbral 5%), RMSE como segundo desempate.
 - **Hoja 1 (Produccion)**: 333 filas x 41 columnas. Metricas por modelo, diagnosticos, comparativa historica.
   - `casos_52_semanas_futuro`: suma de yhat del horizonte futuro (entero).

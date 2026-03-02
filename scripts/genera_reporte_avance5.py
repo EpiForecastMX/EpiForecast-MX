@@ -169,7 +169,7 @@ def main() -> None:
     logger.info("=== Reporte Avance 5: Modelo Final ===")
 
     fig_dir = Path("reports") / "figures" / "ModeloFinal"
-    report_dir = Path("reports") / "reports"
+    report_dir = Path("reports") / "ProdDetails"
     directory_manager.asegurar_ruta(fig_dir)
     directory_manager.asegurar_ruta(report_dir)
 
