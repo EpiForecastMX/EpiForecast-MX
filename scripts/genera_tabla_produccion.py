@@ -203,6 +203,29 @@ def _display_entidad(row: pd.Series) -> str:  # type: ignore[type-arg]
     return str(ent)
 
 
+def _build_region_map() -> dict[str, str]:
+    """Construye mapa entidad -> region desde data_inegi_General.csv."""
+    real_path = Path("data") / "processed" / "data_inegi_General.csv"
+    if not real_path.exists():
+        return {}
+    real = pd.read_csv(real_path)
+    if "region_salud_mental" not in real.columns:
+        return {}
+    return dict(real.groupby("Entidad")["region_salud_mental"].first().items())
+
+
+_ZERO_THRESHOLD = 1e-6
+
+
+def _is_zero_row(row: pd.Series, model_keys: list[str]) -> bool:  # type: ignore[type-arg]
+    """True si todas las metricas RMSE son ~0 o NaN (serie sin incidencia)."""
+    for mk in model_keys:
+        v = row.get(f"rmse_{mk}")
+        if pd.notna(v) and float(v) > _ZERO_THRESHOLD:
+            return False
+    return True
+
+
 def main() -> None:
     """Genera la tabla de 333 modelos de produccion."""
     logger.info("=== Tabla de modelos de produccion ===")
@@ -216,6 +239,9 @@ def main() -> None:
     model_keys = [mk for mk in _MODELS if mk in data]
     merged = merge_all_models(data)
     logger.info("Merge: {} filas, modelos: {}", len(merged), model_keys)
+
+    # Mapa entidad -> region para asignar modelo regional
+    region_map = _build_region_map()
 
     # 2. Construir tabla de salida
     rows_out: list[dict[str, object]] = []
@@ -252,9 +278,49 @@ def main() -> None:
         out["modelo_produccion"] = _MODEL_LABELS.get(ganador_key, ganador_key)
         out["justificacion"] = justificacion
 
+        # Tipo de modelo: propio vs regional
+        entidad = str(out["entidad"])
+        if _is_zero_row(row, model_keys) and entidad in region_map:
+            region = region_map[entidad]
+            out["tipo_modelo"] = "regional"
+            out["region_asignada"] = f"region_{region}"
+        else:
+            out["tipo_modelo"] = "propio"
+            out["region_asignada"] = ""
+
         rows_out.append(out)
 
     df_out = pd.DataFrame(rows_out)
+
+    # Asignar modelo regional a filas con metricas en cero:
+    # buscar la fila de la region correspondiente (mismo padecimiento y sexo)
+    zero_mask = df_out["tipo_modelo"] == "regional"
+    if zero_mask.any():
+        for idx_z in df_out[zero_mask].index:
+            pad = df_out.at[idx_z, "padecimiento"]
+            sexo = df_out.at[idx_z, "sexo"]
+            region = df_out.at[idx_z, "region_asignada"]
+            # Buscar la fila regional
+            region_row = df_out[
+                (df_out["entidad"] == region)
+                & (df_out["padecimiento"] == pad)
+                & (df_out["sexo"] == sexo)
+            ]
+            if not region_row.empty:
+                modelo_regional = region_row.iloc[0]["modelo_produccion"]
+                df_out.at[idx_z, "modelo_produccion"] = modelo_regional
+                df_out.at[idx_z, "justificacion"] = (
+                    f"Sin incidencia local. Se asigna modelo regional "
+                    f"({region}): {modelo_regional}."
+                )
+                logger.info(
+                    "  {} {} {}: sin incidencia -> {} ({})",
+                    pad,
+                    df_out.at[idx_z, "entidad"],
+                    sexo,
+                    modelo_regional,
+                    region,
+                )
 
     # 3. Guardar CSV
     _OUTPUT.parent.mkdir(parents=True, exist_ok=True)
