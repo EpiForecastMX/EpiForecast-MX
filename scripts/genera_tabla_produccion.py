@@ -26,6 +26,7 @@ _MODELS = ["prophet", "deepar", "ensemble", "stacking"]
 _METRICS = ["rmse", "mae", "smape", "mase"]
 _EMPATE_PCT = 0.05  # 5% para considerar empate en SMAPE
 _HORIZON = 52  # semanas de pronostico
+_LOW_VOLUME_THRESHOLD = 5  # casos/52sem para considerar baja confianza
 
 _SEXO_DISPLAY = {
     "incrementos_total": "general",
@@ -397,6 +398,57 @@ def main() -> None:
                     sexo,
                     modelo_regional,
                     region,
+                )
+
+    # Reasignar modelo regional a filas con baja confianza (<5 casos en 52 semanas)
+    # Solo aplica a entidades estatales (no Nacional, no regiones)
+    _entidades_no_reasignables = {"Nacional"} | {
+        e for e in df_out["entidad"].unique() if str(e).startswith("region_")
+    }
+    low_mask = (
+        (df_out["casos_52_semanas"] < _LOW_VOLUME_THRESHOLD)
+        & (df_out["tipo_modelo"] == "propio")
+        & (~df_out["entidad"].isin(_entidades_no_reasignables))
+    )
+    if low_mask.any():
+        logger.info(
+            "--- Reasignacion por baja confianza (<{} casos/52sem) ---", _LOW_VOLUME_THRESHOLD
+        )
+        for idx_l in df_out[low_mask].index:
+            ent = df_out.at[idx_l, "entidad"]
+            if ent not in region_map:
+                continue
+            pad = df_out.at[idx_l, "padecimiento"]
+            sexo = df_out.at[idx_l, "sexo"]
+            casos_orig = df_out.at[idx_l, "casos_52_semanas"]
+            modelo_orig = df_out.at[idx_l, "modelo_produccion"]
+            region = region_map[ent]
+            region_key = f"region_{region}"
+            region_row = df_out[
+                (df_out["entidad"] == region_key)
+                & (df_out["padecimiento"] == pad)
+                & (df_out["sexo"] == sexo)
+            ]
+            if not region_row.empty:
+                modelo_regional = region_row.iloc[0]["modelo_produccion"]
+                casos_regional = region_row.iloc[0]["casos_52_semanas"]
+                df_out.at[idx_l, "modelo_produccion"] = modelo_regional
+                df_out.at[idx_l, "casos_52_semanas"] = casos_regional
+                df_out.at[idx_l, "tipo_modelo"] = "regional"
+                df_out.at[idx_l, "region_asignada"] = region_key
+                df_out.at[idx_l, "justificacion"] = (
+                    f"Baja confianza: {casos_orig} casos proyectados en 52 semanas "
+                    f"(modelo local: {modelo_orig}). "
+                    f"Se asigna modelo de la región ({region_key}): {modelo_regional}."
+                )
+                logger.info(
+                    "  {} {} {}: {} casos -> {} ({})",
+                    pad,
+                    ent,
+                    sexo,
+                    casos_orig,
+                    modelo_regional,
+                    region_key,
                 )
 
     # 3. Guardar CSV
