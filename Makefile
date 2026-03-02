@@ -182,6 +182,19 @@ predict:
 	@echo ">>> Generando predicciones..."
 	$(PYTHON) -m scripts.predice $(ARGS)
 
+## Generar predicciones de los 4 modelos (Prophet, DeepAR, Ensemble, Stacking)
+.PHONY: predict-all
+predict-all:
+	@echo ">>> Predicciones Prophet..."
+	$(PYTHON) -m scripts.predice modelo_activo='prophet' $(ARGS)
+	@echo ">>> Predicciones DeepAR..."
+	$(PYTHON) -m scripts.predice modelo_activo='deepar' $(ARGS)
+	@echo ">>> Predicciones Ensemble..."
+	$(PYTHON) -m scripts.predice modelo_activo='ensemble' $(ARGS)
+	@echo ">>> Predicciones Stacking..."
+	$(PYTHON) -m scripts.predice modelo_activo='stacking' $(ARGS)
+	@echo ">>> Predicciones completas para los 4 modelos."
+
 ## Construir dataset Tableau
 .PHONY: tableau
 tableau:
