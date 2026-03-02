@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
+from epiforecast.constants import RATE_PER
 from epiforecast.utils.config import logger
 
 _MODEL_KEYS = ["prophet", "deepar", "ensemble", "stacking"]
@@ -41,7 +43,12 @@ def _pad_filename(pad: str) -> str:
 
 
 def cargar_completos(models_dir: Path | None = None) -> dict[str, pd.DataFrame]:
-    """Lee ``models/{model}/**/*_completo.csv`` de cada modelo disponible."""
+    """Lee ``models/{model}/**/*_completo.csv`` de cada modelo disponible.
+
+    Si DeepAR reporta metricas en escala de tasa (por 100k habitantes), las
+    rescala automaticamente a casos absolutos usando la poblacion de
+    ``data/processed/data_inegi_General.csv``.
+    """
     base = models_dir or Path("models")
     result: dict[str, pd.DataFrame] = {}
     for key in _MODEL_KEYS:
@@ -58,6 +65,126 @@ def cargar_completos(models_dir: Path | None = None) -> dict[str, pd.DataFrame]:
             df["Entidad"] = df["Entidad"].fillna("")
             result[key] = df
             logger.info("  Cargado {}: {} filas", key, len(df))
+
+    # Rescalar DeepAR si sus metricas estan en escala de tasa
+    if "deepar" in result and len(result) >= 2:
+        result["deepar"] = _rescalar_deepar(result)
+
+    return result
+
+
+_METRICS_SCALE = ["rmse", "mae", "rmse_train"]
+
+
+def _rescalar_deepar(data: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """Rescala RMSE/MAE de DeepAR de tasa-por-100k a casos absolutos.
+
+    DeepAR (GluonTS con ``scaling=True``) computa metricas de CV en la escala
+    normalizada internamente (tasa por 100k habitantes).  Los demas modelos
+    las computan en casos absolutos.  Multiplicamos por ``Poblacion / RATE_PER``
+    para cada serie, usando la poblacion de ``data_inegi_General.csv``.
+    """
+    deepar_df = data["deepar"].copy()
+
+    # Detectar si realmente necesita rescale: comparar mediana con otro modelo
+    ref_key = next((k for k in ("prophet", "ensemble", "stacking") if k in data), None)
+    if ref_key is None:
+        return deepar_df
+    ref_median = data[ref_key]["rmse"].median(skipna=True)
+    deepar_median = deepar_df["rmse"].median(skipna=True)
+    if deepar_median == 0 or ref_median / deepar_median < 5:
+        logger.info("  DeepAR metricas ya estan en escala comparable, sin rescale.")
+        return deepar_df
+
+    # Cargar poblacion por (padecimiento, Entidad)
+    real_path = Path("data") / "processed" / "data_inegi_General.csv"
+    if not real_path.exists():
+        logger.warning("No se encontro {} para rescalar DeepAR.", real_path)
+        return deepar_df
+
+    real = pd.read_csv(real_path)
+    pop_map = real.groupby(["Padecimiento", "Entidad"])["Total"].last().reset_index()
+    pop_map = pop_map.rename(columns={"Padecimiento": "padecimiento"})
+
+    # Normalizar nombres de entidad (quitar acentos) para el join
+    deepar_df["_ent_norm"] = deepar_df["Entidad"].map(_normalizar_entidad)
+    pop_map["_ent_norm"] = pop_map["Entidad"].map(_normalizar_entidad)
+
+    # Poblacion nacional por padecimiento (suma de 32 estados)
+    nacional_pop = pop_map.groupby("padecimiento")["Total"].sum().to_dict()
+
+    # Poblacion regional (suma de estados en la region) — extraer region del nombre
+    region_pop = _build_region_pop(real)
+
+    # Construir lookup de poblacion
+    pop_lookup: dict[tuple[str, str], float] = {}
+    for _, row in pop_map.iterrows():
+        pop_lookup[(row["padecimiento"], row["_ent_norm"])] = float(row["Total"])
+
+    # Asignar poblacion a cada fila de DeepAR
+    totals: list[float] = []
+    for _, row in deepar_df.iterrows():
+        pad = row["padecimiento"]
+        ent_norm = row["_ent_norm"]
+        # 1. Match exacto por estado
+        pop = pop_lookup.get((pad, ent_norm))
+        if pop is not None:
+            totals.append(pop)
+            continue
+        # 2. Nacional (general, hombres, mujeres)
+        if ent_norm in ("general", "hombres", "mujeres"):
+            totals.append(float(nacional_pop.get(pad, 0)))
+            continue
+        # 3. Regional
+        if ent_norm.startswith("region "):
+            region_name = ent_norm.replace("region ", "")
+            totals.append(float(region_pop.get((pad, region_name), 0)))
+            continue
+        # 4. Sin match
+        totals.append(0.0)
+
+    deepar_df["_pop"] = totals
+
+    n_matched = sum(1 for t in totals if t > 0)
+    logger.info(
+        "  DeepAR: {} / {} series con poblacion asignada.",
+        n_matched,
+        len(deepar_df),
+    )
+
+    # Aplicar factor: metrica_abs = metrica_tasa * (Total / RATE_PER)
+    scale = deepar_df["_pop"] / RATE_PER
+    scale = scale.replace(0, np.nan)
+    for metric in _METRICS_SCALE:
+        if metric in deepar_df.columns:
+            deepar_df[metric] = deepar_df[metric] * scale
+
+    deepar_df = deepar_df.drop(columns=["_ent_norm", "_pop"], errors="ignore")
+    logger.info("  DeepAR metricas rescaladas a casos absolutos (x Poblacion/100k).")
+    return deepar_df
+
+
+def _normalizar_entidad(nombre: str) -> str:
+    """Quita acentos y pasa a minusculas para matching robusto."""
+    import unicodedata
+
+    if not isinstance(nombre, str):
+        return ""
+    nfkd = unicodedata.normalize("NFKD", nombre)
+    return "".join(c for c in nfkd if not unicodedata.combining(c)).lower().strip()
+
+
+def _build_region_pop(real: pd.DataFrame) -> dict[tuple[str, str], float]:
+    """Suma de poblacion por (padecimiento, region) para series regionales."""
+    if "Region" not in real.columns or "region_salud_mental" not in real.columns:
+        return {}
+    result: dict[tuple[str, str], float] = {}
+    # Usar region_salud_mental como agrupador
+    for (pad, region), grp in real.groupby(["Padecimiento", "region_salud_mental"]):
+        # Ultima poblacion por entidad, luego sumar
+        pop = grp.groupby("Entidad")["Total"].last().sum()
+        region_norm = _normalizar_entidad(str(region))
+        result[(str(pad), region_norm)] = float(pop)
     return result
 
 
