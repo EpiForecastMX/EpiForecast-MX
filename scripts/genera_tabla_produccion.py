@@ -25,6 +25,7 @@ from epiforecast.visualization.avance5_tables import (
 _MODELS = ["prophet", "deepar", "ensemble", "stacking"]
 _METRICS = ["rmse", "mae", "smape", "mase"]
 _EMPATE_PCT = 0.05  # 5% para considerar empate en SMAPE
+_HORIZON = 52  # semanas de pronostico
 
 _SEXO_DISPLAY = {
     "incrementos_total": "general",
@@ -214,6 +215,66 @@ def _build_region_map() -> dict[str, str]:
     return dict(real.groupby("Entidad")["region_salud_mental"].first().items())
 
 
+_MODEL_KEY_MAP: dict[str, str] = {
+    "Prophet": "prophet",
+    "DeepAR": "deepar",
+    "Ensemble": "ensemble",
+    "Stacking": "stacking",
+}
+
+_SEXO_TO_MODO: dict[str, str] = {
+    "general": "general",
+    "hombres": "hombres",
+    "mujeres": "mujeres",
+}
+
+
+def _load_forecasts() -> dict[str, pd.DataFrame]:
+    """Carga los CSVs de forecast de cada modelo (ultimas _HORIZON filas por serie)."""
+    forecasts: dict[str, pd.DataFrame] = {}
+    base = Path("reports") / "forecasts"
+    for mk in _MODELS:
+        csv_path = base / mk / f"all_forecast_{mk}.csv"
+        if not csv_path.exists():
+            logger.warning("Forecast no encontrado: {}", csv_path)
+            continue
+        df = pd.read_csv(csv_path)
+        df["ds"] = pd.to_datetime(df["ds"], errors="coerce")
+        forecasts[mk] = df
+        logger.info("  Forecast cargado {}: {} filas", mk, len(df))
+    return forecasts
+
+
+def _sum_forecast_52(
+    forecasts: dict[str, pd.DataFrame],
+    modelo_key: str,
+    padecimiento: str,
+    entidad: str,
+    sexo: str,
+) -> float:
+    """Suma las ultimas 52 semanas de yhat para una combinacion dada."""
+    if modelo_key not in forecasts:
+        return np.nan
+    df = forecasts[modelo_key]
+    modo = _SEXO_TO_MODO.get(sexo, sexo)
+    # Normalizar: production usa "region_X", forecast usa "Region X"
+    meta_ent = entidad
+    if meta_ent.startswith("region_"):
+        meta_ent = "Region " + meta_ent[len("region_") :]
+
+    mask = (
+        (df["meta_padecimiento"] == padecimiento)
+        & (df["meta_entidad"] == meta_ent)
+        & (df["meta_modo"] == modo)
+    )
+    serie = df.loc[mask].sort_values("ds")
+    if serie.empty:
+        return np.nan
+    last_52 = serie.tail(_HORIZON)
+    total = last_52["yhat"].sum()
+    return round(max(total, 0.0), 1)
+
+
 _ZERO_THRESHOLD = 1e-6
 
 
@@ -242,6 +303,9 @@ def main() -> None:
 
     # Mapa entidad -> region para asignar modelo regional
     region_map = _build_region_map()
+
+    # Cargar forecasts para sumar las 52 semanas proyectadas
+    forecasts = _load_forecasts()
 
     # 2. Construir tabla de salida
     rows_out: list[dict[str, object]] = []
@@ -287,6 +351,16 @@ def main() -> None:
             out["tipo_modelo"] = "propio"
             out["region_asignada"] = ""
 
+        # Casos proyectados 52 semanas del modelo de produccion
+        modelo_fc_key = _MODEL_KEY_MAP.get(str(out["modelo_produccion"]), ganador_key)
+        out["casos_52_semanas"] = _sum_forecast_52(
+            forecasts,
+            modelo_fc_key,
+            str(out["padecimiento"]),
+            str(out["entidad"]),
+            str(out["sexo"]),
+        )
+
         out["justificacion"] = justificacion
 
         rows_out.append(out)
@@ -309,7 +383,9 @@ def main() -> None:
             ]
             if not region_row.empty:
                 modelo_regional = region_row.iloc[0]["modelo_produccion"]
+                casos_regional = region_row.iloc[0]["casos_52_semanas"]
                 df_out.at[idx_z, "modelo_produccion"] = modelo_regional
+                df_out.at[idx_z, "casos_52_semanas"] = casos_regional
                 df_out.at[idx_z, "justificacion"] = (
                     f"Sin incidencia local. Se asigna modelo de la región "
                     f"({region}): {modelo_regional}."
