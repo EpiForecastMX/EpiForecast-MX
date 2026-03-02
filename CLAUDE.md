@@ -32,11 +32,13 @@
 
 ### Prediccion y Comparacion
 - `make predict ARGS="modelo_activo='deepar'"`: Genera pronosticos para un modelo especifico.
+- `make predict-all`: Genera pronosticos de los 4 modelos secuencialmente (Prophet, DeepAR, Ensemble, Stacking).
 - `make tableau`: Construye dataset Tableau con seleccion automatica de modelo productivo (SMAPE).
 - `make compare`: Genera graficos de alta calidad comparando Real vs los 4 modelos.
 - `make compare-metrics`: Genera comparativa de metricas (Excel + HTML con badges Overfitting/Leakage).
 - `make report`: Genera reporte HTML de resultados.
 - `make bitacora`: Genera bitacora HTML del modelado Prophet v1-v6.
+- `make reporte-avance5`: Genera reporte Avance 5 (Markdown + 18 graficos + CSV de 333 modelos de produccion).
 
 ### Calidad y Pruebas
 - `make quality`: Ejecuta lint (Ruff), typecheck (Mypy) y tests (Pytest).
@@ -110,9 +112,17 @@ EpiForecast-MX/
 
 ### Visualizacion
 - Los graficos comparativos se guardan en `reports/forecasts/comparacion_modelos/`.
+- Los graficos del Avance 5 (18 PNGs) se guardan en `reports/figures/ModeloFinal/`.
 - Usan la zona horaria `America/Mexico_City` (UTC-6) para las marcas de tiempo.
 - Estilo: Historial Real (Gris grueso), Prophet (Teal #004d40 dash-dot), DeepAR (Vino #880e4f dashed), Ensemble (Naranja #FF6F00), Stacking (Indigo #1A237E).
+- La ficha tecnica al pie de cada grafico forecast muestra el nombre real del modelo (detectado desde `meta_modelo` del CSV).
 - Todos los reportes siguen la paleta IMSS 2026.
+
+### Seleccion de Modelo de Produccion
+- `scripts/genera_tabla_produccion.py` genera `reports/reports/tabla_333_modelos_produccion.csv` (333 filas).
+- Criterio: SMAPE primario, MASE como desempate (umbral 5%), RMSE como segundo desempate.
+- Columnas: metricas por modelo, mejor por metrica, victorias, modelo_produccion, tipo_modelo (propio/regional), region_asignada, justificacion.
+- Series con incidencia cero se asignan al modelo regional correspondiente (via `region_salud_mental` de `data_inegi_General.csv`).
 
 ### Tableau y Modelo Productivo
 - `scripts/build_tableau.py` genera `data/processed/tableau.csv` con datos de los 4 modelos.
@@ -153,12 +163,14 @@ EpiForecast-MX/
 - `prophet/data_prep.py`: Funciones de preparacion de datos extraidas de `prophet/model.py`.
 - `ensemble/helpers.py`: Feature engineering, preparacion de datos y metricas extraidas de `ensemble/model.py`.
 - `stacking/experts.py`: Expertos individuales (ProphetExpert, ETSExpert, LGBMExpert) extraidos de `stacking/model.py`.
-- `stacking/meta_learner.py`: Meta-learner Ridge con pesos no negativos extraido de `stacking/model.py`.
+- `stacking/meta_learner.py`: Meta-learner Ridge/ElasticNet con pesos no negativos extraido de `stacking/model.py`.
 - `visualization/comparison_report.py`: Generacion de reporte HTML extraida de `comparison_plots.py`.
 - `visualization/comparison_html.py`: Templates HTML del reporte comparativo (tablas, badges, hero, footer).
 - `visualization/comparison_css.py`: Estilos CSS del reporte comparativo (paleta IMSS 2026, badges diagnosticos).
 - `visualization/chart_constants.py`: Constantes de estilo (tamaños, margenes, alphas) extraidas de `forecast_chart.py`.
 - `visualization/chart_renderer.py`: Renderizado de series (capas, bandas, COVID, outliers) extraido de `forecast_chart.py`.
-- `visualization/chart_annotations.py`: Anotaciones (divisores, zona CV, ficha tecnica) extraidas de `forecast_chart.py`.
+- `visualization/chart_annotations.py`: Anotaciones (divisores, zona CV, ficha tecnica con deteccion automatica de modelo) extraidas de `forecast_chart.py`.
+- `visualization/avance5_tables.py`: Carga de metricas, merge N-way de 4 modelos, generacion de tablas y reporte Markdown del Avance 5.
+- `visualization/avance5_charts.py`: 6 builders puros de graficos para el Avance 5 (tendencia, residuales, importancia, barras, boxplots, heatmap).
 - `features/demographic.py`: Feature builder demografico extraido para SRP.
 - `utils/mlflow_logger.py`: Wrapper opcional de MLflow para tracking de experimentos (no-op sin mlflow).

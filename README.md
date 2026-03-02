@@ -97,6 +97,8 @@ EpiForecast-MX/
 |   |-- compara_metricas.py       #   Metrics comparison (Excel + HTML with diagnostics)
 |   |-- genera_reporte.py         #   HTML results report
 |   |-- genera_bitacora.py        #   Modeling log (Prophet v1-v6)
+|   |-- genera_reporte_avance5.py #   Avance 5 report (Markdown + 18 charts)
+|   |-- genera_tabla_produccion.py#   Production model table (333 models, SMAPE selection)
 |   |-- build_tableau.py          #   Tableau dataset builder
 |   |-- patch_train_metrics.py    #   Patch CSVs with train metrics (no retraining)
 |   |-- get_dataset.py            #   RAW data download (SINAVE)
@@ -124,7 +126,8 @@ EpiForecast-MX/
 |
 |-- reports/                      # Generated outputs
 |   |-- forecasts/                #   Forecast CSVs and comparison charts
-|   |-- figures/                  #   EDA and analysis plots
+|   |-- figures/                  #   EDA and analysis plots (ModeloFinal/ for Avance 5)
+|   |-- reports/                  #   Markdown reports and production CSV
 |   +-- docs/                     #   PDF reports
 |
 |-- .github/workflows/            # CI/CD
@@ -228,9 +231,12 @@ aws s3 sync s3://epiforecast-mx-data/training/<JOB_NAME>/output/ ./models/deepar
 ### 3. Prediction and Tableau
 
 ```bash
-# Generate 52-week forecasts (denormalized to original scale)
-make predict ARGS="modelo_activo='deepar'"
+# Generate 52-week forecasts for all 4 models
+make predict-all
+
+# Or generate forecasts for a single model
 make predict ARGS="modelo_activo='prophet'"
+make predict ARGS="modelo_activo='deepar'"
 make predict ARGS="modelo_activo='ensemble'"
 make predict ARGS="modelo_activo='stacking'"
 
@@ -259,9 +265,12 @@ make report
 
 # Generate modeling log (Prophet iterations v1-v6)
 make bitacora
+
+# Generate Avance 5 report (Markdown + 18 charts + production CSV with 333 models)
+make reporte-avance5
 ```
 
-Comparison charts are saved in `reports/forecasts/comparacion_modelos/` using CDMX timezone (UTC-6) for audit logs.
+Comparison charts are saved in `reports/forecasts/comparacion_modelos/` using CDMX timezone (UTC-6) for audit logs. The Avance 5 report generates `reports/reports/avance5_modelo_final.md`, `reports/reports/tabla_333_modelos_produccion.csv` (333 production models with SMAPE-based selection), and 18 analysis charts in `reports/figures/ModeloFinal/`.
 
 ### 5. Code Quality
 

@@ -40,9 +40,11 @@ El proyecto utiliza un patron **Factory** para gestionar multiples motores de pr
 3. **Entrenamiento completo**: `make train-all` (4 modelos secuencialmente).
 4. **Entrenamiento Ensemble con visualizaciones**: `make avance5` (Prophet + XGBoost, conteos absolutos).
 5. **Prediccion**: `make predict ARGS="modelo_activo='deepar'"` (52 semanas, desnormalizadas).
-6. **Tableau**: `make tableau` (seleccion SMAPE del modelo productivo + metricas por modelo).
-7. **Comparacion**: `make compare` (graficos Real vs 4 modelos), `make compare-metrics` (Excel + HTML con badges Overfitting/Leakage).
-8. **Patch metricas train**: `python -m scripts.patch_train_metrics` (parchea CSVs existentes con rmse_train/smape_train sin re-entrenar).
+6. **Prediccion completa**: `make predict-all` (4 modelos secuencialmente: Prophet, DeepAR, Ensemble, Stacking).
+7. **Tableau**: `make tableau` (seleccion SMAPE del modelo productivo + metricas por modelo).
+8. **Comparacion**: `make compare` (graficos Real vs 4 modelos), `make compare-metrics` (Excel + HTML con badges Overfitting/Leakage).
+9. **Reporte Avance 5**: `make reporte-avance5` (Markdown + 18 graficos + CSV de 333 modelos de produccion).
+10. **Patch metricas train**: `python -m scripts.patch_train_metrics` (parchea CSVs existentes con rmse_train/smape_train sin re-entrenar).
 
 ### Aislamiento de outputs
 Los artefactos se guardan en subcarpetas dinamicas basadas en el `modelo_activo`:
@@ -111,18 +113,20 @@ EpiForecast-MX/
 │   ├── features/                 #   Feature engineering demografico
 │   ├── utils/                    #   Config, paths, helpers
 │   └── pipelines/                #   Pipeline base
-├── scripts/                      # Entry points CLI (~15 scripts)
+├── scripts/                      # Entry points CLI (~18 scripts)
 │   ├── entrena.py                #   Entrenamiento principal
 │   ├── entrena_sagemaker.py      #   Entry point SageMaker
 │   ├── predice.py                #   Generacion de pronosticos
 │   ├── compara_modelos.py        #   Comparacion visual
 │   ├── compara_metricas.py       #   Comparacion metricas (Excel + HTML)
+│   ├── genera_reporte_avance5.py #   Reporte Avance 5 (Markdown + 18 graficos)
+│   ├── genera_tabla_produccion.py#   Tabla 333 modelos de produccion (SMAPE)
 │   ├── patch_train_metrics.py    #   Parche metricas train sin re-entrenar
 │   └── ...                       #   Preprocesamiento, reportes, etc.
 ├── tests/                        # unit/ + integration/ (~34 archivos, 761 tests, coverage 70%+)
 ├── data/                         # raw/ -> interim/ -> processed/ (DVC)
 ├── models/                       # Artefactos .pkl por modelo/padecimiento (DVC, 4x333 modelos)
-├── reports/                      # Graficos, reportes HTML, forecasts CSV
+├── reports/                      # Graficos, reportes HTML/Markdown, forecasts CSV, figures/
 ├── .github/workflows/            # CI (quality + tests), scraping, gsheets
 ├── Makefile                      # Orquestacion MLOps
 └── pyproject.toml                # Dependencias, Ruff, Mypy, Pytest
@@ -151,7 +155,9 @@ EpiForecast-MX/
 - **SageMaker**: Solo se usa para DeepAR. Prophet y Ensemble corren rapido en CPU local.
 - **Ensemble**: Opera sobre conteos absolutos (no tasas). Pipeline: `make train-ensemble` o `make avance5`.
 - **Stacking**: Opera sobre conteos absolutos. Pipeline: `make train-stacking`. Config: `config/models/stacking.yaml`.
+- **Prediccion**: `make predict-all` genera pronosticos de los 4 modelos secuencialmente. La ficha tecnica al pie de cada grafico detecta automaticamente el modelo real (Prophet, DeepAR, Ensemble, Stacking).
 - **Tableau**: `make tableau` genera `data/processed/tableau.csv` con `modelo_productivo` (SMAPE) y metricas por modelo.
+- **Reporte Avance 5**: `make reporte-avance5` genera Markdown + 18 graficos + CSV de 333 modelos de produccion. Seleccion SMAPE-primario con desempate MASE/RMSE.
 - **Diagnosticos**: Cada `run()` de los 4 modelos computa `rmse_train` y `smape_train` (metricas in-sample). El reporte HTML muestra badges de Overfitting (ratio smape_test/smape_train > 2 = Alto, > 1.3 = Moderado) y Leakage (smape_train < 0.5% = Sospechoso).
 - **MLflow**: Integracion opcional (`pip install -e ".[mlflow]"`). Registra automaticamente cada run de entrenamiento en `mlruns/` con metricas (rmse, mae, smape, mase, elapsed_seconds) y parametros. No-op si no esta instalado. Visualizar: `mlflow server --backend-store-uri ./mlruns`.
 
@@ -170,5 +176,7 @@ Para cumplir con el limite de 300 lineas por modulo (SRP), se extrajeron funcion
 | `visualization/comparison_report.py` | `visualization/comparison_css.py` | Estilos CSS (paleta IMSS 2026, badges diagnosticos) |
 | `visualization/forecast_chart.py` | `visualization/chart_constants.py` | Constantes de estilo (FIGSIZE, MARGINS, font sizes, alphas) |
 | `visualization/forecast_chart.py` | `visualization/chart_renderer.py` | `plot_series()` — renderizado de capas, bandas, COVID, outliers |
-| `visualization/forecast_chart.py` | `visualization/chart_annotations.py` | `_anotar_divisores()`, `_anotar_zona_cv()`, `_render_ficha_tecnica()` |
+| `visualization/forecast_chart.py` | `visualization/chart_annotations.py` | `_anotar_divisores()`, `_anotar_zona_cv()`, `_render_ficha_tecnica()` (deteccion automatica de modelo) |
+| — | `visualization/avance5_tables.py` | Carga metricas, merge N-way 4 modelos, generacion Markdown Avance 5 |
+| — | `visualization/avance5_charts.py` | 6 builders puros: tendencia, residuales, importancia, barras, boxplots, heatmap |
 | — | `utils/mlflow_logger.py` | Wrapper opcional MLflow: `log_training_run()` (no-op sin mlflow) |
