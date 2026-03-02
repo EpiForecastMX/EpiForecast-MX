@@ -16,12 +16,20 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from epiforecast.constants import COVID_END, COVID_START, RATE_PER
+from epiforecast.constants import (
+    COVID_BADGE_EC,
+    COVID_BADGE_FC,
+    COVID_END,
+    COVID_SPAN_COLOR,
+    COVID_START,
+    COVID_TEXT_COLOR,
+    RATE_PER,
+)
+from epiforecast.utils.config import conf
+from epiforecast.visualization import chart_constants as cc
 from epiforecast.visualization.comparison_config import (
     COLOR_CUTOFF,
-    COLOR_REAL,
     COLOR_REAL_OVERLAY,
-    COVID_FILL,
     MODEL_STYLES,
 )
 
@@ -35,19 +43,38 @@ _COVID_END = pd.Timestamp(COVID_END)
 # ---------------------------------------------------------------------------
 
 
-def _add_covid_band(ax: plt.Axes) -> None:
-    """Add a shaded COVID-19 band to an axes."""
+def _add_covid_band(ax: plt.Axes, *, compact: bool = False) -> None:
+    """Add a shaded COVID-19 band with optional badge label."""
     ax.axvspan(
         _COVID_START,  # type: ignore[arg-type]
         _COVID_END,  # type: ignore[arg-type]
-        color=COVID_FILL,
-        alpha=0.5,
+        alpha=cc.ALPHA_COVID,
+        color=COVID_SPAN_COLOR,
         zorder=0,
+    )
+    mid_covid = _COVID_START + (_COVID_END - _COVID_START) / 2
+    fs = 5.5 if compact else cc.FS_COVID
+    ax.annotate(
+        "COVID-19",
+        xy=(mid_covid, 1.0),  # type: ignore[arg-type]
+        xycoords=("data", "axes fraction"),
+        fontsize=fs,
+        fontweight="bold",
+        color=COVID_TEXT_COLOR,
+        ha="center",
+        va="top",
+        bbox=dict(
+            boxstyle="round,pad=0.2",
+            fc=COVID_BADGE_FC,
+            ec=COVID_BADGE_EC,
+            alpha=0.85,
+            lw=0.5,
+        ),
     )
 
 
-def _add_cutoff_line(ax: plt.Axes, cutoff: pd.Timestamp) -> None:
-    """Add a dashed red vertical cutoff line."""
+def _add_cutoff_line(ax: plt.Axes, cutoff: pd.Timestamp, *, compact: bool = False) -> None:
+    """Add dashed cutoff line with labels."""
     ax.axvline(
         cutoff,  # type: ignore[arg-type]
         color=COLOR_CUTOFF,
@@ -55,6 +82,84 @@ def _add_cutoff_line(ax: plt.Axes, cutoff: pd.Timestamp) -> None:
         linewidth=1,
         alpha=0.7,
         zorder=7,
+    )
+    if not compact:
+        return
+    fs = 6
+    ax.annotate(
+        "Hist.",
+        xy=(cutoff, 0.96),  # type: ignore[arg-type]
+        xycoords=("data", "axes fraction"),
+        fontsize=fs,
+        color="#555555",
+        ha="right",
+        va="top",
+    )
+    ax.annotate(
+        "Pron.",
+        xy=(cutoff, 0.96),  # type: ignore[arg-type]
+        xycoords=("data", "axes fraction"),
+        fontsize=fs,
+        color=COLOR_CUTOFF,
+        ha="left",
+        va="top",
+    )
+
+
+def _add_cv_zone(ax: plt.Axes, cutoff: pd.Timestamp, *, compact: bool = False) -> None:
+    """Add shaded train/test CV zone."""
+    fecha_corte = pd.Timestamp(conf.get("FECHA_CORTE_ENTRENAMIENTO", "2025-01-01"))
+    ax.axvspan(
+        fecha_corte,  # type: ignore[arg-type]
+        cutoff,  # type: ignore[arg-type]
+        alpha=0.06,
+        color="#888888",
+        zorder=0,
+    )
+    ax.axvline(
+        fecha_corte,  # type: ignore[arg-type]
+        color="#888888",
+        ls=":",
+        lw=0.8,
+        alpha=0.6,
+        zorder=6,
+    )
+    if compact:
+        fs = 5.5
+        ax.annotate(
+            "Entren.",
+            xy=(fecha_corte, 0.88),  # type: ignore[arg-type]
+            xycoords=("data", "axes fraction"),
+            fontsize=fs,
+            color="#888888",
+            ha="right",
+            va="top",
+        )
+        ax.annotate(
+            "Prueba CV",
+            xy=(fecha_corte, 0.88),  # type: ignore[arg-type]
+            xycoords=("data", "axes fraction"),
+            fontsize=fs,
+            color="#888888",
+            ha="left",
+            va="top",
+        )
+
+
+def _add_forecast_band(ax: plt.Axes, grp: pd.DataFrame, cutoff: pd.Timestamp, color: str) -> None:
+    """Add 80% confidence band in the forecast zone."""
+    if "yhat_lower" not in grp.columns or "yhat_upper" not in grp.columns:
+        return
+    future = grp[grp["ds"] > cutoff]
+    if future.empty:
+        return
+    ax.fill_between(
+        future["ds"],
+        future["yhat_lower"],
+        future["yhat_upper"],
+        alpha=0.15,
+        color=color,
+        zorder=1,
     )
 
 
@@ -107,50 +212,126 @@ def build_small_multiples(
     ent: str,
     modo: str,
 ) -> Figure:
-    """2x2 grid: each model in its own subplot with real data as background."""
+    """2x2 grid: each model in its own subplot matching individual panel styling."""
     fig, axes = plt.subplots(2, 2, figsize=(16, 10), sharex=True, sharey=True)
     cutoff = serie_real["ds"].max()
+
+    # Smoothed real data (same rolling window as individual panels)
+    serie_sorted = serie_real.sort_values("ds")
+    y_smooth = (
+        target_y.iloc[serie_sorted.index]
+        .rolling(cc.ROLLING_OBS, min_periods=1, center=True)
+        .mean()
+    )
+
+    # IQR outlier detection (same as individual panels)
+    q1 = target_y.quantile(0.25)
+    q3 = target_y.quantile(0.75)
+    iqr = q3 - q1
+    outlier_mask = (target_y < q1 - 1.5 * iqr) | (target_y > q3 + 1.5 * iqr)
+    outlier_ds = serie_real.loc[outlier_mask, "ds"]
+    outlier_y = target_y[outlier_mask]
 
     for model_key, style in MODEL_STYLES.items():
         r, c = style.grid_pos
         ax = axes[r, c]
 
-        # Real as background
-        ax.plot(
-            serie_real["ds"],
-            target_y,
-            color=COLOR_REAL,
-            linewidth=1.2,
-            alpha=0.7,
-            label="Real",
-        )
-
+        # Forecast zone background
         if model_key in predictions:
             grp = predictions[model_key]
-            ax.plot(
-                grp["ds"],
-                grp["yhat"],
+            fecha_max_fc = grp["ds"].max()
+            ax.axvspan(
+                cutoff,  # type: ignore[arg-type]
+                fecha_max_fc,  # type: ignore[arg-type]
+                alpha=cc.ALPHA_FORECAST_ZONE,
                 color=style.color,
-                linewidth=2,
-                label=style.label,
+                zorder=0,
             )
 
-        _add_covid_band(ax)
-        _add_cutoff_line(ax, cutoff)
+        # Contextual layers
+        _add_covid_band(ax, compact=True)
+        _add_cv_zone(ax, cutoff, compact=True)
+
+        # Smoothed real data
+        ax.plot(
+            serie_sorted["ds"],
+            y_smooth,
+            color="#2C2C2C",
+            linewidth=1.5,
+            alpha=1.0,
+            label="Real",
+            zorder=5,
+        )
+
+        # Outlier markers
+        if len(outlier_ds) > 0:
+            ax.scatter(
+                outlier_ds,
+                outlier_y,
+                marker="^",
+                s=30,
+                color=COLOR_CUTOFF,
+                edgecolors="white",
+                linewidths=0.5,
+                zorder=5,
+            )
+
+        # Model: backtesting (historical) + future split
+        if model_key in predictions:
+            grp = predictions[model_key]
+            overlap = grp[grp["ds"] <= cutoff]
+            future = grp[grp["ds"] > cutoff]
+
+            if not overlap.empty:
+                ax.plot(
+                    overlap["ds"],
+                    overlap["yhat"],
+                    color=style.color,
+                    linewidth=1.2,
+                    alpha=0.50,
+                    zorder=3,
+                    label="Ajuste",
+                )
+            if not future.empty:
+                ax.plot(
+                    future["ds"],
+                    future["yhat"],
+                    color=style.color,
+                    linewidth=1.8,
+                    alpha=0.85,
+                    zorder=3,
+                    label="Pronostico",
+                )
+
+            # 80% confidence band
+            _add_forecast_band(ax, grp, cutoff, style.color)
+
+        _add_cutoff_line(ax, cutoff, compact=True)
 
         ax.set_title(style.label, fontweight="bold", fontsize=11)
-        ax.legend(fontsize=8, loc="upper left")
-        ax.grid(True, color="lightgrey", linestyle="--", linewidth=0.5, alpha=0.5)
+        ax.legend(fontsize=7, loc="upper left", framealpha=0.8)
+        ax.grid(
+            True,
+            color="lightgrey",
+            linestyle="--",
+            linewidth=0.5,
+            alpha=cc.ALPHA_GRID,
+        )
         for spine in ("top", "right"):
             ax.spines[spine].set_visible(False)
 
-        # Labels only on edges
         if r == 1:
             ax.set_xlabel("Fecha", fontsize=10)
         if c == 0:
             ax.set_ylabel("Casos Semanales", fontsize=10)
 
-    _suptitle(fig, "Small Multiples", pad, ent, modo)
+    ent_display = ent if ent else "Nacional"
+    fig.suptitle(
+        f"Paneles Individuales: {pad} - {ent_display} ({modo})",
+        fontsize=14,
+        fontweight="bold",
+        y=0.98,
+    )
     _stamp(fig)
     fig.tight_layout(rect=(0, 0.03, 1, 0.95))
     return fig
@@ -173,10 +354,17 @@ def build_overlay(
     fig, ax = plt.subplots(figsize=(14, 6))
     cutoff = serie_real["ds"].max()
 
-    # Real — prominent
+    # Smoothed real data
+    serie_sorted = serie_real.sort_values("ds")
+    y_smooth = (
+        target_y.iloc[serie_sorted.index]
+        .rolling(cc.ROLLING_OBS, min_periods=1, center=True)
+        .mean()
+    )
+
     ax.plot(
-        serie_real["ds"],
-        target_y,
+        serie_sorted["ds"],
+        y_smooth,
         color=COLOR_REAL_OVERLAY,
         linewidth=2,
         label="Historial Real",
@@ -198,6 +386,7 @@ def build_overlay(
         )
 
     _add_covid_band(ax)
+    _add_cv_zone(ax, cutoff)
     _add_cutoff_line(ax, cutoff)
 
     ax.legend(
@@ -207,7 +396,7 @@ def build_overlay(
         frameon=True,
     )
     ax.set_ylabel("Casos Semanales", fontsize=11)
-    ax.grid(True, color="lightgrey", linestyle="--", linewidth=0.5, alpha=0.5)
+    ax.grid(True, color="lightgrey", linestyle="--", linewidth=0.5, alpha=cc.ALPHA_GRID)
     for spine in ("top", "right"):
         ax.spines[spine].set_visible(False)
 
@@ -404,10 +593,10 @@ def build_residuals(
                     ax.fill_between(ds, 0, pos, color=style.color, alpha=0.3, zorder=1)
                     ax.fill_between(ds, 0, neg, color=style.color, alpha=0.15, zorder=1)
 
-                _add_covid_band(ax)
+                _add_covid_band(ax, compact=True)
 
         ax.set_title(style.label, fontweight="bold", fontsize=11)
-        ax.grid(True, color="lightgrey", linestyle="--", linewidth=0.5, alpha=0.5)
+        ax.grid(True, color="lightgrey", linestyle="--", linewidth=0.5, alpha=cc.ALPHA_GRID)
         for spine in ("top", "right"):
             ax.spines[spine].set_visible(False)
 

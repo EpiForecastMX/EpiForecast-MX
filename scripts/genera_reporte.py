@@ -21,7 +21,7 @@ from epiforecast.utils.config import logger
 # ---------------------------------------------------------------------------
 # Rutas
 # ---------------------------------------------------------------------------
-FORECAST_CSV = Path("reports/forecasts/all_forecast.csv")
+FORECAST_CSV = Path("reports/forecasts/prophet/all_forecast_prophet.csv")
 OUTPUT_HTML = Path("reports/forecasts/reporte_resultados.html")
 
 # ---------------------------------------------------------------------------

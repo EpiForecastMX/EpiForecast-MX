@@ -446,6 +446,130 @@ class DeepARForecaster(ForecastModel):
             return self._predict_multi(horizon)
         return self._predict_single(horizon)
 
+    def _backtest_fitted(self, context_data: pd.DataFrame, horizon: int) -> pd.DataFrame:
+        """Fitted values via expanding-window backtest (single series).
+
+        Generates honest historical predictions by sliding a window:
+        - First ``prediction_length`` points: copy ``y_original`` (no backtest)
+        - Remaining points: predict in ``prediction_length``-sized chunks
+        """
+        pred_len = self.prediction_length
+        n = len(context_data)
+        target_col = "y_original" if "y_original" in context_data.columns else "y"
+
+        # Start with real y as fallback (first pred_len points stay as-is)
+        yhat_arr = context_data[target_col].to_numpy(dtype=float).copy()
+        yhat_lower = yhat_arr.copy()
+        yhat_upper = yhat_arr.copy()
+
+        # Denormalization params
+        normalizar = self._conf.get("normalizar_tasa", True)
+        has_pop = normalizar and "Total" in self.serie.columns
+        if has_pop:
+            pob = float(self.serie["Total"].iloc[-1])
+            tasa_por = float(self._conf.get("tasa_por", 100000))
+
+        logger.debug("Backtest fitted: {} semanas historicas", n)
+
+        # Expanding-window: predict from pred_len onwards in chunks
+        cursor = pred_len
+        while cursor < n:
+            end = min(cursor + pred_len, n)
+            window = context_data.iloc[:cursor]
+
+            try:
+                dataset = self._build_dataset(window)
+                forecasts = list(self._predictor.predict(dataset, num_samples=self.num_samples))
+                fc = forecasts[0]
+                length = end - cursor
+                raw_mean = fc.mean[:length]
+                raw_lower = fc.quantile(0.05)[:length]
+                raw_upper = fc.quantile(0.95)[:length]
+
+                if has_pop:
+                    raw_mean = (raw_mean * pob) / tasa_por
+                    raw_lower = (raw_lower * pob) / tasa_por
+                    raw_upper = (raw_upper * pob) / tasa_por
+
+                yhat_arr[cursor:end] = raw_mean
+                yhat_lower[cursor:end] = raw_lower
+                yhat_upper[cursor:end] = raw_upper
+            except Exception:
+                logger.debug(
+                    "Backtest window [{}-{}] failed, keeping y",
+                    cursor,
+                    end,
+                )
+
+            cursor = end
+
+        return pd.DataFrame(
+            {
+                "ds": context_data["ds"].values,
+                "yhat": yhat_arr,
+                "yhat_lower": yhat_lower,
+                "yhat_upper": yhat_upper,
+            }
+        )
+
+    def _backtest_fitted_multi(self, horizon: int) -> pd.DataFrame:
+        """Fitted values for multi-series: backtest last prediction_length weeks.
+
+        Full expanding-window backtest for 32 states is too expensive.
+        Instead, copy real ``y`` for most of the history and run a single
+        backtest pass for the last ``prediction_length`` weeks.
+        """
+        pred_len = self.prediction_length
+        target_col = "y_original" if "y_original" in self.serie.columns else "y"
+        n = len(self.serie)
+
+        yhat_arr = self.serie[target_col].to_numpy(dtype=float).copy()
+        yhat_lower = yhat_arr.copy()
+        yhat_upper = yhat_arr.copy()
+
+        if n > pred_len:
+            cutoff_date = self.serie["ds"].iloc[n - pred_len]
+            context_multi = self.serie_multi[self.serie_multi["ds"] < cutoff_date]
+
+            if not context_multi.empty:
+                try:
+                    dataset = self._build_multi_dataset(context_multi)
+                    forecasts = list(
+                        self._predictor.predict(dataset, num_samples=self.num_samples)
+                    )
+                    all_samples = np.stack([fc.samples for fc in forecasts], axis=0)
+
+                    normalizar = self._conf.get("normalizar_tasa", True)
+                    if normalizar and "Total" in self.serie_multi.columns:
+                        tasa_por = float(self._conf.get("tasa_por", 100000))
+                        mapa_pob = self.serie_multi.groupby("item_id")["Total"].last().to_dict()
+                        items = [fc.item_id for fc in forecasts]
+                        for i, item_id in enumerate(items):
+                            pob = mapa_pob.get(item_id, 0)
+                            if pob > 0:
+                                all_samples[i] = (all_samples[i] * pob) / tasa_por
+
+                    national_samples = all_samples.sum(axis=0)
+                    raw_mean = national_samples.mean(axis=0)
+                    raw_lower = np.quantile(national_samples, 0.05, axis=0)
+                    raw_upper = np.quantile(national_samples, 0.95, axis=0)
+
+                    length = min(len(raw_mean), pred_len)
+                    yhat_arr[n - length :] = raw_mean[:length]
+                    yhat_lower[n - length :] = raw_lower[:length]
+                    yhat_upper[n - length :] = raw_upper[:length]
+                except Exception:
+                    logger.debug("Multi-series backtest failed, keeping y")
+
+        return pd.DataFrame(
+            {
+                "ds": self.serie["ds"].values,
+                "yhat": yhat_arr,
+                "yhat_lower": yhat_lower,
+                "yhat_upper": yhat_upper,
+            }
+        )
+
     def _predict_single(self, horizon: int) -> pd.DataFrame:
         """Single-series prediction (original behavior)."""
         context_data = self.serie if not self.serie.empty else self.train_data
@@ -486,11 +610,7 @@ class DeepARForecaster(ForecastModel):
         )
 
         if not self.serie.empty:
-            target_col = "y_original" if "y_original" in self.serie.columns else "y"
-            df_history = self.serie[["ds", target_col]].copy()
-            df_history = df_history.rename(columns={target_col: "yhat"})
-            df_history["yhat_lower"] = df_history["yhat"]
-            df_history["yhat_upper"] = df_history["yhat"]
+            df_history = self._backtest_fitted(context_data, horizon)
             return pd.concat([df_history, df_future], ignore_index=True)
 
         return df_future
@@ -542,11 +662,7 @@ class DeepARForecaster(ForecastModel):
         )
 
         if not self.serie.empty:
-            target_col = "y_original" if "y_original" in self.serie.columns else "y"
-            df_history = self.serie[["ds", target_col]].copy()
-            df_history = df_history.rename(columns={target_col: "yhat"})
-            df_history["yhat_lower"] = df_history["yhat"]
-            df_history["yhat_upper"] = df_history["yhat"]
+            df_history = self._backtest_fitted_multi(horizon)
             return pd.concat([df_history, df_future], ignore_index=True)
 
         return df_future

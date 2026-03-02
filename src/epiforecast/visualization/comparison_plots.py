@@ -138,26 +138,30 @@ def generar_graficos_comparativos(config: dict | None = None) -> None:
 
         safe_ent = _normalizar_nombre(ent if ent else "Nacional")
         pad_norm = _normalizar_nombre(pad)
-        nombre = f"CMP_{pad}_{safe_ent}_{modo}.png"
+        base_name = f"{pad}_{safe_ent}_{modo}.png"
         pad_dir = output_dir / pad_norm
-        directory_manager.asegurar_ruta(pad_dir)
-        plt.savefig(pad_dir / nombre, dpi=VIZ_DPI_SCREEN, bbox_inches="tight")
+
+        # Grafico principal → subcarpeta "comparativa"
+        cmp_dir = pad_dir / "comparativa"
+        directory_manager.asegurar_ruta(cmp_dir)
+        plt.savefig(cmp_dir / base_name, dpi=VIZ_DPI_SCREEN, bbox_inches="tight")
         plt.close(fig)
         count += 1
 
-        # -- 4 graficos adicionales ------------------------------------------
+        # -- 4 graficos adicionales → subcarpetas descriptivas ---------------
         builder_args = (serie_real, target_y, groups, pad, ent, modo)
         extras: list[tuple[str, plt.Figure | None]] = [
-            ("SM", build_small_multiples(*builder_args)),
-            ("OVR", build_overlay(*builder_args)),
-            ("MET", build_metrics_bars(*builder_args)),
-            ("RES", build_residuals(*builder_args)),
+            ("paneles_individuales", build_small_multiples(*builder_args)),
+            ("overlay", build_overlay(*builder_args)),
+            ("metricas", build_metrics_bars(*builder_args)),
+            ("residuales", build_residuals(*builder_args)),
         ]
-        for prefix, extra_fig in extras:
+        for subdir_name, extra_fig in extras:
             if extra_fig is None:
                 continue
-            fname = f"{prefix}_{pad}_{safe_ent}_{modo}.png"
-            extra_fig.savefig(pad_dir / fname, dpi=VIZ_DPI_SCREEN, bbox_inches="tight")
+            sub_dir = pad_dir / subdir_name
+            directory_manager.asegurar_ruta(sub_dir)
+            extra_fig.savefig(sub_dir / base_name, dpi=VIZ_DPI_SCREEN, bbox_inches="tight")
             plt.close(extra_fig)
 
     logger.success("Se generaron {} comparativas de alto contraste en: {}", count, output_dir)
