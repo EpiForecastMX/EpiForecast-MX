@@ -77,11 +77,12 @@ def _prepare_data(serie: pd.DataFrame) -> tuple[pd.DataFrame, pd.Timestamp]:
 
 
 def _build_palette(padecimiento: str, conf_paleta: dict, conf_pad: dict) -> dict:
-    """Construye diccionario de colores: azul oscuro (historial) / rojo (pronostico)."""
+    """Construye diccionario de colores usando la paleta IMSS por padecimiento."""
+    pad_colors = conf_pad.get(padecimiento, {"c1": "#E74C3C", "cl": "#F5B7B1"})
     return {
         "obs": "#1B2A4A",
-        "fc": "#E74C3C",
-        "band": "#F5B7B1",
+        "fc": pad_colors["c1"],
+        "band": pad_colors["cl"],
         "outlier": "#D84315",
         "div": "#555555",
         "gray": conf_paleta["cool_gray"],

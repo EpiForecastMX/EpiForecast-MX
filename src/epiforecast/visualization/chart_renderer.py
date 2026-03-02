@@ -125,6 +125,16 @@ def plot_series(
         zorder=5,
         label="Datos reales",
     )
+    ax.scatter(
+        serie_sorted["ds"],
+        serie_sorted["y"],
+        s=cc.SIZE_OBS,
+        color=colors["obs"],
+        alpha=cc.ALPHA_OBS,
+        edgecolors="white",
+        linewidths=0.3,
+        zorder=4,
+    )
 
     last_y = y_smooth.iloc[-1]
     ax.plot(
