@@ -44,6 +44,7 @@ The platform uses a **polymorphic Factory pattern** to support multiple forecast
 - **End-to-End ML Pipeline** -- Automated from PDF scraping (SINAVE bulletins) through INEGI demographic mapping to forecast charts and HTML reports.
 - **Model Comparison Engine** -- High-contrast professional charts comparing Real vs. Prophet vs. DeepAR vs. Ensemble vs. Stacking performance across all states and conditions.
 - **SMAPE-Based Model Selection** -- The Tableau dataset automatically selects the best-performing model per group (condition, state, mode) based on SMAPE, exposing a `modelo_productivo` column.
+- **Overfitting and Data Leakage Detection** -- Train metrics (RMSE, SMAPE) computed in-sample for all 4 models. HTML report shows diagnostic badges: Overfitting (test/train SMAPE ratio) and Leakage (suspiciously low train SMAPE).
 - **Hybrid Fallback** -- Low-incidence state models automatically defer to regional aggregates to ensure 100% forecast coverage.
 - **Cross-Validation** -- Prophet uses weighted time-series CV (4 folds, progressive weights). DeepAR uses multi-series CV with early stopping.
 - **IMSS Institutional Branding** -- All visualizations and reports follow official IMSS 2026 chromatic and styling guidelines.
@@ -92,10 +93,11 @@ EpiForecast-MX/
 |   |-- predice.py                #   Forecast generation (52 weeks, denormalized)
 |   |-- compara_modelos.py        #   Visual model comparison
 |   |-- avance5_modelo_final.py    #   Ensemble training + visualization
-|   |-- compara_metricas.py       #   Metrics comparison (Excel)
+|   |-- compara_metricas.py       #   Metrics comparison (Excel + HTML with diagnostics)
 |   |-- genera_reporte.py         #   HTML results report
 |   |-- genera_bitacora.py        #   Modeling log (Prophet v1-v6)
 |   |-- build_tableau.py          #   Tableau dataset builder
+|   |-- patch_train_metrics.py    #   Patch CSVs with train metrics (no retraining)
 |   |-- get_dataset.py            #   RAW data download (SINAVE)
 |   |-- filtra_padecimiento.py    #   Disease filter
 |   |-- limpieza_dataset.py       #   Data cleaning
@@ -104,7 +106,7 @@ EpiForecast-MX/
 |   |-- mapea.py                  #   State-INEGI mapping
 |   +-- scrape_boletines.py       #   SINAVE bulletin scraper
 |
-|-- tests/                        # Test suite (~34 files, 70%+ coverage, 693 tests)
+|-- tests/                        # Test suite (~34 files, 70%+ coverage, 761 tests)
 |   |-- unit/                     #   Unit tests for all modules
 |   +-- integration/              #   End-to-end pipeline tests
 |
@@ -245,7 +247,7 @@ The Tableau dataset (`data/processed/tableau.csv`) includes:
 # Generate high-contrast comparison charts (Real vs all 4 models)
 make compare
 
-# Generate metrics comparison spreadsheet (4-model comparison)
+# Generate metrics comparison (Excel + HTML report with Overfitting/Leakage badges)
 make compare-metrics
 
 # Generate HTML results report
@@ -352,7 +354,7 @@ python -m scripts.entrena modelo_activo='deepar' padecimiento.tipo='Alzheimer'
 GitHub Actions runs on every push to `main` and on pull requests:
 
 1. **Code Quality**: Ruff lint + format check + mypy type checking.
-2. **Tests**: Pytest with 693 tests, coverage minimum 70%, excluding slow and integration tests.
+2. **Tests**: Pytest with 761 tests, coverage minimum 70%, excluding slow and integration tests.
 3. **Integration Tests**: Manual trigger only (`workflow_dispatch`).
 
 Additional workflows automate SINAVE bulletin scraping and Google Sheets publishing.

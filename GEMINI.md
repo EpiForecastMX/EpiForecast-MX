@@ -41,7 +41,8 @@ El proyecto utiliza un patron **Factory** para gestionar multiples motores de pr
 4. **Entrenamiento Ensemble con visualizaciones**: `make avance5` (Prophet + XGBoost, conteos absolutos).
 5. **Prediccion**: `make predict ARGS="modelo_activo='deepar'"` (52 semanas, desnormalizadas).
 6. **Tableau**: `make tableau` (seleccion SMAPE del modelo productivo + metricas por modelo).
-7. **Comparacion**: `make compare` (graficos Real vs 4 modelos), `make compare-metrics` (Excel 4 modelos).
+7. **Comparacion**: `make compare` (graficos Real vs 4 modelos), `make compare-metrics` (Excel + HTML con badges Overfitting/Leakage).
+8. **Patch metricas train**: `python -m scripts.patch_train_metrics` (parchea CSVs existentes con rmse_train/smape_train sin re-entrenar).
 
 ### Aislamiento de outputs
 Los artefactos se guardan en subcarpetas dinamicas basadas en el `modelo_activo`:
@@ -115,8 +116,10 @@ EpiForecast-MX/
 │   ├── entrena_sagemaker.py      #   Entry point SageMaker
 │   ├── predice.py                #   Generacion de pronosticos
 │   ├── compara_modelos.py        #   Comparacion visual
+│   ├── compara_metricas.py       #   Comparacion metricas (Excel + HTML)
+│   ├── patch_train_metrics.py    #   Parche metricas train sin re-entrenar
 │   └── ...                       #   Preprocesamiento, reportes, etc.
-├── tests/                        # unit/ + integration/ (~34 archivos, 693 tests, coverage 70%+)
+├── tests/                        # unit/ + integration/ (~34 archivos, 761 tests, coverage 70%+)
 ├── data/                         # raw/ -> interim/ -> processed/ (DVC)
 ├── models/                       # Artefactos .pkl por modelo/padecimiento (DVC, 4x333 modelos)
 ├── reports/                      # Graficos, reportes HTML, forecasts CSV
@@ -130,7 +133,7 @@ EpiForecast-MX/
 - **Lint**: Ruff (line-length=99, Python 3.12, isort, bugbear, simplify, pathlib).
 - **SRP**: Maximo 300 lineas por modulo (excepto deepar/model.py por complejidad inherente).
 - **Tipado**: mypy estricto. Retornos de funciones deben estar tipados. Usar `.to_numpy()` en vez de `.values` para compatibilidad mypy.
-- **Tests**: Pytest con marcadores `slow` e `integration`. Coverage minimo 70%. Actualmente 693 tests.
+- **Tests**: Pytest con marcadores `slow` e `integration`. Coverage minimo 70%. Actualmente 761 tests.
 - **Logging**: loguru exclusivamente (`from epiforecast.utils.config import logger`).
 - **Imports**: stdlib → terceros → locales (enforced por Ruff isort).
 - **Pre-commit**: Ruff check + format, mypy, trailing whitespace, YAML/TOML check.
@@ -149,6 +152,7 @@ EpiForecast-MX/
 - **Ensemble**: Opera sobre conteos absolutos (no tasas). Pipeline: `make train-ensemble` o `make avance5`.
 - **Stacking**: Opera sobre conteos absolutos. Pipeline: `make train-stacking`. Config: `config/models/stacking.yaml`.
 - **Tableau**: `make tableau` genera `data/processed/tableau.csv` con `modelo_productivo` (SMAPE) y metricas por modelo.
+- **Diagnosticos**: Cada `run()` de los 4 modelos computa `rmse_train` y `smape_train` (metricas in-sample). El reporte HTML muestra badges de Overfitting (ratio smape_test/smape_train > 2 = Alto, > 1.3 = Moderado) y Leakage (smape_train < 0.5% = Sospechoso).
 
 ## 9. Modulos SRP (archivos extraidos)
 
@@ -161,6 +165,8 @@ Para cumplir con el limite de 300 lineas por modulo (SRP), se extrajeron funcion
 | `stacking/model.py` | `stacking/experts.py` | `ProphetExpert`, `ETSExpert`, `LGBMExpert` — expertos individuales del stacking |
 | `stacking/model.py` | `stacking/meta_learner.py` | `StackingMetaLearner` — Ridge meta-learner con pesos no negativos |
 | `visualization/comparison_plots.py` | `visualization/comparison_report.py` | `generar_reporte_html()` + funciones HTML auxiliares |
+| `visualization/comparison_report.py` | `visualization/comparison_html.py` | Templates HTML (tablas, badges Overfitting/Leakage, hero, footer) |
+| `visualization/comparison_report.py` | `visualization/comparison_css.py` | Estilos CSS (paleta IMSS 2026, badges diagnosticos) |
 | `visualization/forecast_chart.py` | `visualization/chart_constants.py` | Constantes de estilo (FIGSIZE, MARGINS, font sizes, alphas) |
 | `visualization/forecast_chart.py` | `visualization/chart_renderer.py` | `plot_series()` — renderizado de capas, bandas, COVID, outliers |
 | `visualization/forecast_chart.py` | `visualization/chart_annotations.py` | `_anotar_divisores()`, `_anotar_zona_cv()`, `_render_ficha_tecnica()` |

@@ -34,7 +34,7 @@
 - `make predict ARGS="modelo_activo='deepar'"`: Genera pronosticos para un modelo especifico.
 - `make tableau`: Construye dataset Tableau con seleccion automatica de modelo productivo (SMAPE).
 - `make compare`: Genera graficos de alta calidad comparando Real vs los 4 modelos.
-- `make compare-metrics`: Genera comparativa de metricas (Excel, 4 modelos).
+- `make compare-metrics`: Genera comparativa de metricas (Excel + HTML con badges Overfitting/Leakage).
 - `make report`: Genera reporte HTML de resultados.
 - `make bitacora`: Genera bitacora HTML del modelado Prophet v1-v6.
 
@@ -101,7 +101,7 @@ EpiForecast-MX/
 │   ├── utils/                    #   Config, paths, helpers
 │   └── pipelines/                #   Pipeline base
 ├── scripts/                      # Entry points CLI
-├── tests/                        #   unit/ + integration/ (~34 archivos, 693 tests)
+├── tests/                        #   unit/ + integration/ (~34 archivos, 761 tests)
 ├── data/                         # raw/ → interim/ → processed/ (DVC)
 ├── models/                       # Artefactos .pkl (DVC, 4x333 = 1332 modelos)
 ├── reports/                      # Graficos, reportes HTML, forecasts
@@ -126,7 +126,7 @@ EpiForecast-MX/
 - **Logging**: Usar `loguru.logger` para trazas de depuracion y errores.
 - **Lint**: Ruff con line-length=99, target Python 3.12.
 - **SRP**: Maximo 300 lineas por modulo (excepcion: deepar/model.py por complejidad inherente).
-- **Tests**: Pytest con marcadores `slow` e `integration`. Coverage minimo 70%. Actualmente 693 tests.
+- **Tests**: Pytest con marcadores `slow` e `integration`. Coverage minimo 70%. Actualmente 761 tests.
 - **Pre-commit**: Ruff check + format, mypy, trailing whitespace, YAML/TOML check.
 
 ### Dependencias Clave
@@ -147,6 +147,8 @@ EpiForecast-MX/
 - `stacking/experts.py`: Expertos individuales (ProphetExpert, ETSExpert, LGBMExpert) extraidos de `stacking/model.py`.
 - `stacking/meta_learner.py`: Meta-learner Ridge con pesos no negativos extraido de `stacking/model.py`.
 - `visualization/comparison_report.py`: Generacion de reporte HTML extraida de `comparison_plots.py`.
+- `visualization/comparison_html.py`: Templates HTML del reporte comparativo (tablas, badges, hero, footer).
+- `visualization/comparison_css.py`: Estilos CSS del reporte comparativo (paleta IMSS 2026, badges diagnosticos).
 - `visualization/chart_constants.py`: Constantes de estilo (tamaños, margenes, alphas) extraidas de `forecast_chart.py`.
 - `visualization/chart_renderer.py`: Renderizado de series (capas, bandas, COVID, outliers) extraido de `forecast_chart.py`.
 - `visualization/chart_annotations.py`: Anotaciones (divisores, zona CV, ficha tecnica) extraidas de `forecast_chart.py`.
