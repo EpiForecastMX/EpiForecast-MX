@@ -272,7 +272,7 @@ def _sum_forecast_52(
         return np.nan
     last_52 = serie.tail(_HORIZON)
     total = last_52["yhat"].sum()
-    return round(max(total, 0.0), 1)
+    return int(round(max(total, 0.0)))
 
 
 _ZERO_THRESHOLD = 1e-6

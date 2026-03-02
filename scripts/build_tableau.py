@@ -419,6 +419,11 @@ def build_and_save_tableau(real_long: pd.DataFrame, fcst: pd.DataFrame, out_file
     )
     logger.info("Mejora vs dataset completo: {:.2f}%", 100 * (1 - (cells_opt / cells_full)))
 
+    # Redondear predicciones a enteros (no existen fracciones de caso)
+    yhat_cols = [c for c in out.columns if c.startswith("yhat")]
+    for col in yhat_cols:
+        out[col] = out[col].round(0).astype("Int64")
+
     out.to_csv(out_file, index=False)
     logger.success(
         "tableau.csv generado: {} | filas: {} | cols: {}", out_file, len(out), out.shape[1]
