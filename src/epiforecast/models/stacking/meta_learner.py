@@ -122,12 +122,12 @@ class StackingMetaLearner:
 
         for fold_idx, (fold_train, fold_val) in enumerate(folds):
             # Fix 3: descartar folds con target casi constante
-            if np.std(fold_val["y"].values) < _MIN_TARGET_STD:
+            if np.std(fold_val["y"].to_numpy()) < _MIN_TARGET_STD:
                 logger.debug(
                     "  OOF fold {}/{}: val casi constante (std={:.2e}), skip",
                     fold_idx + 1,
                     len(folds),
-                    np.std(fold_val["y"].values),
+                    np.std(fold_val["y"].to_numpy()),
                 )
                 continue
 

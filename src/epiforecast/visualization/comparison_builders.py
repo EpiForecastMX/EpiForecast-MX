@@ -37,12 +37,25 @@ _COVID_END = pd.Timestamp(COVID_END)
 
 def _add_covid_band(ax: plt.Axes) -> None:
     """Add a shaded COVID-19 band to an axes."""
-    ax.axvspan(_COVID_START, _COVID_END, color=COVID_FILL, alpha=0.5, zorder=0)
+    ax.axvspan(
+        _COVID_START,  # type: ignore[arg-type]
+        _COVID_END,  # type: ignore[arg-type]
+        color=COVID_FILL,
+        alpha=0.5,
+        zorder=0,
+    )
 
 
 def _add_cutoff_line(ax: plt.Axes, cutoff: pd.Timestamp) -> None:
     """Add a dashed red vertical cutoff line."""
-    ax.axvline(cutoff, color=COLOR_CUTOFF, linestyle="--", linewidth=1, alpha=0.7, zorder=7)
+    ax.axvline(
+        cutoff,  # type: ignore[arg-type]
+        color=COLOR_CUTOFF,
+        linestyle="--",
+        linewidth=1,
+        alpha=0.7,
+        zorder=7,
+    )
 
 
 def _stamp(fig: Figure) -> None:
@@ -139,7 +152,7 @@ def build_small_multiples(
 
     _suptitle(fig, "Small Multiples", pad, ent, modo)
     _stamp(fig)
-    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    fig.tight_layout(rect=(0, 0.03, 1, 0.95))
     return fig
 
 
@@ -200,7 +213,7 @@ def build_overlay(
 
     _suptitle(fig, "Overlay Completo", pad, ent, modo)
     _stamp(fig)
-    fig.tight_layout(rect=[0, 0.03, 0.85, 0.95])
+    fig.tight_layout(rect=(0, 0.03, 0.85, 0.95))
     return fig
 
 
@@ -230,7 +243,7 @@ def _needs_metric_scaling(
     merged = _merge_real_pred(serie_real, target_y, pred_df)
     if merged.empty:
         return False
-    residual = merged["y_real"].values - merged["yhat"].values
+    residual = merged["y_real"].to_numpy() - merged["yhat"].to_numpy()
     return bool(np.allclose(residual, 0, atol=1e-6))
 
 
@@ -339,7 +352,7 @@ def build_metrics_bars(
 
     _suptitle(fig, "Metricas de Validacion Cruzada", pad, ent, modo)
     _stamp(fig)
-    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    fig.tight_layout(rect=(0, 0.03, 1, 0.95))
     return fig
 
 
@@ -366,7 +379,7 @@ def build_residuals(
         if model_key in predictions:
             merged = _merge_real_pred(serie_real, target_y, predictions[model_key])
             if not merged.empty:
-                residual = merged["y_real"].values - merged["yhat"].values
+                residual = merged["y_real"].to_numpy() - merged["yhat"].to_numpy()
                 ds = merged["ds"]
 
                 ax.axhline(0, color="black", linewidth=0.8, zorder=2)
@@ -405,5 +418,5 @@ def build_residuals(
 
     _suptitle(fig, "Residuales por Modelo", pad, ent, modo)
     _stamp(fig)
-    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    fig.tight_layout(rect=(0, 0.03, 1, 0.95))
     return fig

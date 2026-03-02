@@ -37,11 +37,24 @@ DPI = VIZ_DPI_PRINT
 
 
 def _covid_band(ax: plt.Axes) -> None:
-    ax.axvspan(_COVID_START, _COVID_END, color=COVID_FILL, alpha=0.5, zorder=0)
+    ax.axvspan(
+        _COVID_START.to_pydatetime(),  # type: ignore[arg-type]
+        _COVID_END.to_pydatetime(),  # type: ignore[arg-type]
+        color=COVID_FILL,
+        alpha=0.5,
+        zorder=0,
+    )
 
 
 def _cutoff_line(ax: plt.Axes, cutoff: pd.Timestamp) -> None:
-    ax.axvline(cutoff, color=COLOR_CUTOFF, linestyle="--", linewidth=1, alpha=0.7, zorder=7)
+    ax.axvline(
+        cutoff.to_pydatetime(),  # type: ignore[arg-type]
+        color=COLOR_CUTOFF,
+        linestyle="--",
+        linewidth=1,
+        alpha=0.7,
+        zorder=7,
+    )
 
 
 def _clean_spines(ax: plt.Axes) -> None:
@@ -136,7 +149,7 @@ def build_trend_prediction(
     ax.legend(loc="upper left", fontsize=9)
     _clean_spines(ax)
     _stamp(fig)
-    fig.tight_layout(rect=[0, 0.03, 1, 0.97])
+    fig.tight_layout(rect=(0, 0.03, 1, 0.97))
     return fig
 
 
@@ -205,7 +218,7 @@ def build_residual_analysis(
         y=0.98,
     )
     _stamp(fig)
-    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    fig.tight_layout(rect=(0, 0.03, 1, 0.95))
     return fig
 
 
@@ -291,7 +304,7 @@ def build_feature_importance(
         y=0.98,
     )
     _stamp(fig)
-    fig.tight_layout(rect=[0, 0.03, 1, 0.95])
+    fig.tight_layout(rect=(0, 0.03, 1, 0.95))
     return fig
 
 
@@ -437,7 +450,7 @@ def build_error_boxplots(
         col = f"rmse_{mk}"
         if col not in data.columns:
             continue
-        vals = data[col].dropna().values
+        vals = data[col].dropna().to_numpy()
         if len(vals) == 0:
             continue
         box_data.append(vals)
@@ -448,7 +461,7 @@ def build_error_boxplots(
     if box_data:
         bp = ax.boxplot(
             box_data,
-            labels=labels,
+            tick_labels=labels,
             patch_artist=True,
             showfliers=True,
             flierprops={"markersize": 3, "alpha": 0.5},
@@ -469,7 +482,7 @@ def build_error_boxplots(
     ax.set_ylabel("RMSE", fontsize=11)
     _clean_spines(ax)
     _stamp(fig)
-    fig.tight_layout(rect=[0, 0.03, 1, 0.97])
+    fig.tight_layout(rect=(0, 0.03, 1, 0.97))
     return fig
 
 
@@ -519,5 +532,5 @@ def build_win_rate_heatmap(
         pad=12,
     )
     _stamp(fig)
-    fig.tight_layout(rect=[0, 0.03, 1, 0.97])
+    fig.tight_layout(rect=(0, 0.03, 1, 0.97))
     return fig
