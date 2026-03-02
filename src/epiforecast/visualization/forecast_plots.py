@@ -208,6 +208,7 @@ def _extract_metricas(
         else "normal",
         "es_fallback": es_fallback,
         "modelo_usado": str(m_used),
+        "meta_modelo": str(row.get("meta_modelo", "")),
     }
 
     # Add HP from complete CSV

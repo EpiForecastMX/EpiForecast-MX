@@ -26,6 +26,13 @@ _FS_FICHA = 8.5
 _FICHA_X = 0.515
 _FICHA_Y = 0.008
 
+_MODEL_DISPLAY: dict[str, str] = {
+    "prophet": "Prophet (Meta/Facebook)",
+    "deepar": "DeepAR (Amazon)",
+    "ensemble": "Ensemble (Prophet + XGBoost)",
+    "stacking": "Stacking (Prophet + ETS + LightGBM)",
+}
+
 
 def _anotar_divisores(
     ax: plt.Axes,
@@ -119,7 +126,6 @@ def _anotar_zona_cv(
 
 def _render_ficha_tecnica(fig: plt.Figure, metricas: dict) -> None:
     """Renderiza la ficha tecnica del modelo al pie del grafico."""
-    modelo_activo = conf.get("modelo_activo", "prophet").lower()
     mase_v = metricas.get("mase")
     rmse_v = metricas.get("rmse")
     smape_v = metricas.get("smape")
@@ -129,10 +135,15 @@ def _render_ficha_tecnica(fig: plt.Figure, metricas: dict) -> None:
     es_fallback = metricas.get("es_fallback", False)
     modelo_usado = metricas.get("modelo_usado", "")
 
-    if modelo_activo == "deepar":
-        tokens = ["DeepAR (Amazon)", "IC 80 %"]
-    else:
-        tokens = ["Prophet (Meta/Facebook)", "IC 80 %"]
+    # Detectar modelo real: meta_modelo > filename > config fallback
+    meta_modelo = str(metricas.get("meta_modelo", "")).lower()
+    if not meta_modelo and modelo_usado and "_" in modelo_usado:
+        meta_modelo = modelo_usado.split("_")[0].lower()
+    if not meta_modelo:
+        meta_modelo = conf.get("modelo_activo", "prophet").lower()
+
+    display_name = _MODEL_DISPLAY.get(meta_modelo, meta_modelo.capitalize())
+    tokens = [display_name, "IC 80 %"]
 
     # Todas las metricas disponibles
     if smape_v is not None and smape_v < 999:
@@ -160,15 +171,16 @@ def _render_ficha_tecnica(fig: plt.Figure, metricas: dict) -> None:
         tokens.append(f"Modelo: {nivel} propio")
 
     # Prophet specific HP
-    if metricas.get("seasonality_mode"):
-        tokens.append(f"Estac: {metricas['seasonality_mode']}")
-    if metricas.get("changepoint_prior_scale") is not None:
-        tokens.append(f"CP: {metricas['changepoint_prior_scale']}")
-    if metricas.get("seasonality_prior_scale") is not None:
-        tokens.append(f"SP: {metricas['seasonality_prior_scale']}")
+    if meta_modelo == "prophet":
+        if metricas.get("seasonality_mode"):
+            tokens.append(f"Estac: {metricas['seasonality_mode']}")
+        if metricas.get("changepoint_prior_scale") is not None:
+            tokens.append(f"CP: {metricas['changepoint_prior_scale']}")
+        if metricas.get("seasonality_prior_scale") is not None:
+            tokens.append(f"SP: {metricas['seasonality_prior_scale']}")
 
     # DeepAR specific HP (from config)
-    if modelo_activo == "deepar":
+    if meta_modelo == "deepar":
         epochs = conf.get("epochs")
         layers = conf.get("num_layers")
         if epochs:
