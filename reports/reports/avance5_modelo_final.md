@@ -83,10 +83,10 @@ El modelo **Stacking** emplea un esquema de meta-aprendizaje en dos niveles:
 
 | Modelo | Victorias (%) | N |
 | --- | ---: | ---: |
-| Prophet | 17.2% | 65 |
-| DeepAR | 73.3% | 277 |
-| Ensemble | 4.2% | 16 |
-| Stacking | 5.3% | 20 |
+| Prophet | 15.9% | 53 |
+| DeepAR | 80.8% | 269 |
+| Ensemble | 1.8% | 6 |
+| Stacking | 1.5% | 5 |
 
 ---
 

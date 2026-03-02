@@ -165,13 +165,15 @@ def _rescalar_deepar(data: dict[str, pd.DataFrame]) -> pd.DataFrame:
 
 
 def _normalizar_entidad(nombre: str) -> str:
-    """Quita acentos y pasa a minusculas para matching robusto."""
+    """Quita acentos, unifica separadores y pasa a minusculas para matching robusto."""
     import unicodedata
 
     if not isinstance(nombre, str):
         return ""
     nfkd = unicodedata.normalize("NFKD", nombre)
-    return "".join(c for c in nfkd if not unicodedata.combining(c)).lower().strip()
+    result = "".join(c for c in nfkd if not unicodedata.combining(c)).lower().strip()
+    # Unificar region_X → region X (Prophet usa guion bajo, DeepAR usa espacio)
+    return result.replace("region_", "region ")
 
 
 def _build_region_pop(real: pd.DataFrame) -> dict[tuple[str, str], float]:
@@ -221,6 +223,24 @@ def merge_all_models(data: dict[str, pd.DataFrame]) -> pd.DataFrame:
         keep = [c for c in base_cols if c in df.columns]
         metric_cols = [c for c in _METRICS_MERGE if c in df.columns]
         subset = df[keep + metric_cols].copy()
+        # DeepAR almacena nacionales como Entidad='general'/'hombres'/'mujeres'
+        # con nivel='regional' y sexo='incrementos_total'.  En realidad el
+        # Entidad codifica el sexo.  Normalizar: mover Entidad→sexo, vaciar
+        # Entidad, cambiar nivel a 'nacional' para que haga match con
+        # Prophet/Ensemble/Stacking.
+        if "Entidad" in subset.columns and "nivel" in subset.columns and "sexo" in subset.columns:
+            _sexo_map = {
+                "general": "incrementos_total",
+                "hombres": "incrementos_hombres",
+                "mujeres": "incrementos_mujeres",
+            }
+            mask_nacional = subset["Entidad"].isin(_sexo_map)
+            if mask_nacional.any():
+                subset.loc[mask_nacional, "sexo"] = subset.loc[mask_nacional, "Entidad"].map(
+                    _sexo_map
+                )
+                subset.loc[mask_nacional, "nivel"] = "nacional"
+                subset.loc[mask_nacional, "Entidad"] = ""
         # Normalizar entidad para merge robusto
         if "Entidad" in subset.columns:
             subset["Entidad"] = subset["Entidad"].map(
