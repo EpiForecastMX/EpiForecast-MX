@@ -44,7 +44,7 @@ The platform uses a **polymorphic Factory pattern** to support multiple forecast
 - **End-to-End ML Pipeline** -- Automated from PDF scraping (SINAVE bulletins) through INEGI demographic mapping to forecast charts and HTML reports.
 - **Model Comparison Engine** -- High-contrast professional charts comparing Real vs. Prophet vs. DeepAR vs. Ensemble vs. Stacking performance across all states and conditions.
 - **SMAPE-Based Model Selection** -- The Tableau dataset automatically selects the best-performing model per group (condition, state, mode) based on SMAPE, exposing a `modelo_productivo` column. Production CSV (`tabla_333_modelos_produccion.csv`) uses SMAPE-primary selection with MASE/RMSE tiebreakers.
-- **Production Model Table** -- 333 production models with SMAPE-based selection, 52-week case projections (`casos_52_semanas`), confidence classification (propio/regional), and automated justification text.
+- **Production Model Table** -- 333 production models with SMAPE-based selection, 52-week projections (`casos_52_semanas_futuro`), diagnostics (overfitting/leakage), historical comparison (`casos_prev_52_semanas_real` vs `_pronos`), and automated justification.
 - **Overfitting and Data Leakage Detection** -- Train metrics (RMSE, SMAPE) computed in-sample for all 4 models. HTML report shows diagnostic badges: Overfitting (test/train SMAPE ratio) and Leakage (suspiciously low train SMAPE).
 - **Hybrid Fallback** -- Zero-incidence and low-confidence (<5 cases/52 weeks) state models automatically defer to regional aggregates to ensure 100% forecast coverage. Integer-rounded predictions (no fractional cases).
 - **MLflow Experiment Tracking** -- Optional integration logs all training runs (metrics, hyperparameters, elapsed time) to MLflow. Non-intrusive: no-op when not installed. Install with `pip install -e ".[mlflow]"`, browse with `mlflow server --backend-store-uri ./mlruns`.
@@ -255,7 +255,12 @@ The Tableau dataset (`data/processed/tableau.csv`) includes:
 The production table (`reports/reports/tabla_333_modelos_produccion.csv`) includes:
 - Per-model metrics (RMSE, MAE, SMAPE, MASE) for all 4 algorithms
 - `modelo_produccion`: Best model per series (SMAPE-primary, MASE/RMSE tiebreaker)
-- `casos_52_semanas`: Total projected cases for 52-week horizon (integer)
+- `casos_52_semanas_futuro`: Total projected cases for 52-week horizon (integer)
+- `smape_prod`, `mase_prod`, `rmse_prod`, `mae_prod`: Metrics of the selected production model
+- `overfitting`: Diagnostic badge (Alto >2x, Moderado >1.3x, OK) based on smape_test/smape_train ratio
+- `leakage`: Diagnostic badge (Sospechoso if smape_train < 0.5%, else OK)
+- `casos_prev_52_semanas_real`: Actual incidence in the last 52 historical weeks (integer)
+- `casos_prev_52_semanas_pronos`: Model backtest prediction for those same 52 weeks (integer)
 - `tipo_modelo`: `propio` (state-level) or `regional` (fallback for zero/low-incidence)
 - `justificacion`: Automated reasoning for model selection
 

@@ -34,6 +34,17 @@ _SEXO_DISPLAY = {
     "incrementos_mujeres": "mujeres",
 }
 
+_MODO_TO_INCREMENTO = {
+    "general": "incrementos_total",
+    "hombres": "incrementos_hombres",
+    "mujeres": "incrementos_mujeres",
+}
+
+# Umbrales diagnosticos (mismos que comparison_html.py)
+_OVERFIT_ALTO = 2.0
+_OVERFIT_MODERADO = 1.3
+_LEAKAGE_THRESHOLD = 0.5
+
 _OUTPUT = Path("reports") / "reports" / "tabla_333_modelos_produccion.csv"
 
 
@@ -276,6 +287,146 @@ def _sum_forecast_52(
     return int(round(max(total, 0.0)))
 
 
+def _overfitting_label(smape_test: float | None, smape_train: float | None) -> str:
+    """Devuelve etiqueta de overfitting (texto plano, sin HTML)."""
+    if (
+        smape_test is None
+        or smape_train is None
+        or (isinstance(smape_test, float) and np.isnan(smape_test))
+        or (isinstance(smape_train, float) and np.isnan(smape_train))
+        or smape_train == 0
+    ):
+        return "N/D"
+    ratio = smape_test / smape_train
+    if ratio > _OVERFIT_ALTO:
+        return f"Alto ({ratio:.1f}x)"
+    if ratio > _OVERFIT_MODERADO:
+        return f"Moderado ({ratio:.1f}x)"
+    return f"OK ({ratio:.1f}x)"
+
+
+def _leakage_label(smape_train: float | None) -> str:
+    """Devuelve etiqueta de leakage (texto plano, sin HTML)."""
+    if smape_train is None or (isinstance(smape_train, float) and np.isnan(smape_train)):
+        return "N/D"
+    if smape_train < _LEAKAGE_THRESHOLD:
+        return f"Sospechoso ({smape_train:.2f}%)"
+    return f"OK ({smape_train:.1f}%)"
+
+
+def _load_real_data() -> pd.DataFrame:
+    """Carga datos reales de data_inegi_General.csv para calcular casos historicos."""
+    path = Path("data") / "processed" / "data_inegi_General.csv"
+    if not path.exists():
+        logger.warning("No se encontró datos reales: {}", path)
+        return pd.DataFrame()
+    df = pd.read_csv(path)
+    df["Fecha"] = pd.to_datetime(df["Fecha"], errors="coerce")
+    return df
+
+
+def _prev_52_real(
+    real_df: pd.DataFrame,
+    padecimiento: str,
+    entidad: str,
+    sexo: str,
+) -> float:
+    """Suma las ultimas 52 semanas de incidencia real para la combinacion dada."""
+    if real_df.empty:
+        return np.nan
+    col_inc = _MODO_TO_INCREMENTO.get(sexo, "incrementos_total")
+    if col_inc not in real_df.columns:
+        return np.nan
+
+    # Normalizar nombre de entidad para match con real data
+    meta_ent = entidad
+    if meta_ent.startswith("region_"):
+        meta_ent = "Region " + meta_ent[len("region_") :]
+
+    # Agregados: Nacional o Region -> sumar estados constituyentes
+    if entidad == "Nacional":
+        mask_n = real_df["Padecimiento"] == padecimiento
+        agg = real_df.loc[mask_n].groupby("Fecha")[col_inc].sum().reset_index()
+        agg = agg.sort_values("Fecha")
+        if len(agg) < _HORIZON:
+            return np.nan
+        total = agg.tail(_HORIZON)[col_inc].sum()
+        return int(round(max(total, 0.0)))
+
+    if entidad.startswith("region_"):
+        region_name = entidad[len("region_") :]
+        if "region_salud_mental" in real_df.columns:
+            mask_r = (real_df["Padecimiento"] == padecimiento) & (
+                real_df["region_salud_mental"] == region_name
+            )
+            agg = real_df.loc[mask_r].groupby("Fecha")[col_inc].sum().reset_index()
+            agg = agg.sort_values("Fecha")
+            if len(agg) >= _HORIZON:
+                total = agg.tail(_HORIZON)[col_inc].sum()
+                return int(round(max(total, 0.0)))
+        return np.nan
+
+    mask = (real_df["Padecimiento"] == padecimiento) & (real_df["Entidad"] == meta_ent)
+    serie = real_df.loc[mask].sort_values("Fecha")
+    if serie.empty or len(serie) < _HORIZON:
+        return np.nan
+    total = serie.tail(_HORIZON)[col_inc].sum()
+    return int(round(max(total, 0.0)))
+
+
+def _prev_52_pronos(
+    forecasts: dict[str, pd.DataFrame],
+    modelo_key: str,
+    padecimiento: str,
+    entidad: str,
+    sexo: str,
+    real_df: pd.DataFrame,
+) -> float:
+    """Suma el yhat del modelo para las mismas 52 semanas que cubren los datos reales."""
+    if modelo_key not in forecasts:
+        return np.nan
+    df = forecasts[modelo_key]
+    modo = _SEXO_TO_MODO.get(sexo, sexo)
+    meta_ent = entidad
+    if meta_ent.startswith("region_"):
+        meta_ent = "Region " + meta_ent[len("region_") :]
+
+    mask_fc = (
+        (df["meta_padecimiento"] == padecimiento)
+        & (df["meta_entidad"] == meta_ent)
+        & (df["meta_modo"] == modo)
+    )
+    serie_fc = df.loc[mask_fc].sort_values("ds")
+    if serie_fc.empty:
+        return np.nan
+
+    # Determinar rango de las ultimas 52 semanas reales
+    col_inc = _MODO_TO_INCREMENTO.get(sexo, "incrementos_total")
+    if not real_df.empty and col_inc in real_df.columns:
+        if entidad == "Nacional":
+            mask_r = real_df["Padecimiento"] == padecimiento
+            fechas = real_df.loc[mask_r, "Fecha"].sort_values().unique()
+        else:
+            mask_r = (real_df["Padecimiento"] == padecimiento) & (real_df["Entidad"] == meta_ent)
+            fechas = real_df.loc[mask_r, "Fecha"].sort_values()
+        if len(fechas) >= _HORIZON:
+            last_52_dates = pd.to_datetime(pd.Series(fechas)).sort_values().tail(_HORIZON)
+            date_min = last_52_dates.iloc[0]
+            date_max = last_52_dates.iloc[-1]
+            in_range = serie_fc[(serie_fc["ds"] >= date_min) & (serie_fc["ds"] <= date_max)]
+            if len(in_range) >= _HORIZON - 2:  # tolerancia de +-2 semanas
+                total = in_range["yhat"].sum()
+                return int(round(max(total, 0.0)))
+
+    # Fallback: tomar las 52 semanas anteriores a las ultimas 52 (horizonte futuro)
+    n = len(serie_fc)
+    if n < _HORIZON * 2:
+        return np.nan
+    prev_block = serie_fc.iloc[-(2 * _HORIZON) : -_HORIZON]
+    total = prev_block["yhat"].sum()
+    return int(round(max(total, 0.0)))
+
+
 _ZERO_THRESHOLD = 1e-6
 
 
@@ -307,6 +458,9 @@ def main() -> None:
 
     # Cargar forecasts para sumar las 52 semanas proyectadas
     forecasts = _load_forecasts()
+
+    # Cargar datos reales para calcular casos historicos
+    real_df = _load_real_data()
 
     # 2. Construir tabla de salida
     rows_out: list[dict[str, object]] = []
@@ -354,12 +508,43 @@ def main() -> None:
 
         # Casos proyectados 52 semanas del modelo de produccion
         modelo_fc_key = _MODEL_KEY_MAP.get(str(out["modelo_produccion"]), ganador_key)
-        out["casos_52_semanas"] = _sum_forecast_52(
+        out["casos_52_semanas_futuro"] = _sum_forecast_52(
             forecasts,
             modelo_fc_key,
             str(out["padecimiento"]),
             str(out["entidad"]),
             str(out["sexo"]),
+        )
+
+        # Metricas del modelo de produccion
+        smape_prod = row.get(f"smape_{ganador_key}") if ganador_key else None
+        mase_prod = row.get(f"mase_{ganador_key}") if ganador_key else None
+        rmse_prod = row.get(f"rmse_{ganador_key}") if ganador_key else None
+        mae_prod = row.get(f"mae_{ganador_key}") if ganador_key else None
+        smape_train_prod = row.get(f"smape_train_{ganador_key}") if ganador_key else None
+
+        out["smape_prod"] = round(float(smape_prod), 4) if pd.notna(smape_prod) else np.nan
+        out["mase_prod"] = round(float(mase_prod), 4) if pd.notna(mase_prod) else np.nan
+        out["rmse_prod"] = round(float(rmse_prod), 4) if pd.notna(rmse_prod) else np.nan
+        out["mae_prod"] = round(float(mae_prod), 4) if pd.notna(mae_prod) else np.nan
+
+        # Diagnosticos: overfitting y leakage
+        _smape_test = float(smape_prod) if pd.notna(smape_prod) else None
+        _smape_tr = float(smape_train_prod) if pd.notna(smape_train_prod) else None
+        out["overfitting"] = _overfitting_label(_smape_test, _smape_tr)
+        out["leakage"] = _leakage_label(_smape_tr)
+
+        # Casos historicos: ultimas 52 semanas reales y pronosticadas por el modelo
+        out["casos_prev_52_semanas_real"] = _prev_52_real(
+            real_df, str(out["padecimiento"]), str(out["entidad"]), str(out["sexo"])
+        )
+        out["casos_prev_52_semanas_pronos"] = _prev_52_pronos(
+            forecasts,
+            modelo_fc_key,
+            str(out["padecimiento"]),
+            str(out["entidad"]),
+            str(out["sexo"]),
+            real_df,
         )
 
         out["justificacion"] = justificacion
@@ -384,9 +569,9 @@ def main() -> None:
             ]
             if not region_row.empty:
                 modelo_regional = region_row.iloc[0]["modelo_produccion"]
-                casos_regional = region_row.iloc[0]["casos_52_semanas"]
+                casos_regional = region_row.iloc[0]["casos_52_semanas_futuro"]
                 df_out.at[idx_z, "modelo_produccion"] = modelo_regional
-                df_out.at[idx_z, "casos_52_semanas"] = casos_regional
+                df_out.at[idx_z, "casos_52_semanas_futuro"] = casos_regional
                 df_out.at[idx_z, "justificacion"] = (
                     f"Sin incidencia local. Se asigna modelo de la región "
                     f"({region}): {modelo_regional}."
@@ -406,7 +591,7 @@ def main() -> None:
         e for e in df_out["entidad"].unique() if str(e).startswith("region_")
     }
     low_mask = (
-        (df_out["casos_52_semanas"] < _LOW_VOLUME_THRESHOLD)
+        (df_out["casos_52_semanas_futuro"] < _LOW_VOLUME_THRESHOLD)
         & (df_out["tipo_modelo"] == "propio")
         & (~df_out["entidad"].isin(_entidades_no_reasignables))
     )
@@ -420,7 +605,7 @@ def main() -> None:
                 continue
             pad = df_out.at[idx_l, "padecimiento"]
             sexo = df_out.at[idx_l, "sexo"]
-            casos_orig = df_out.at[idx_l, "casos_52_semanas"]
+            casos_orig = df_out.at[idx_l, "casos_52_semanas_futuro"]
             modelo_orig = df_out.at[idx_l, "modelo_produccion"]
             region = region_map[ent]
             region_key = f"region_{region}"
@@ -431,9 +616,9 @@ def main() -> None:
             ]
             if not region_row.empty:
                 modelo_regional = region_row.iloc[0]["modelo_produccion"]
-                casos_regional = region_row.iloc[0]["casos_52_semanas"]
+                casos_regional = region_row.iloc[0]["casos_52_semanas_futuro"]
                 df_out.at[idx_l, "modelo_produccion"] = modelo_regional
-                df_out.at[idx_l, "casos_52_semanas"] = casos_regional
+                df_out.at[idx_l, "casos_52_semanas_futuro"] = casos_regional
                 df_out.at[idx_l, "tipo_modelo"] = "regional"
                 df_out.at[idx_l, "region_asignada"] = region_key
                 df_out.at[idx_l, "justificacion"] = (

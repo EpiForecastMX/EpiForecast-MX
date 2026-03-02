@@ -157,8 +157,9 @@ EpiForecast-MX/
 - **Stacking**: Opera sobre conteos absolutos. Pipeline: `make train-stacking`. Config: `config/models/stacking.yaml`.
 - **Prediccion**: `make predict-all` genera pronosticos de los 4 modelos secuencialmente. La ficha tecnica al pie de cada grafico detecta automaticamente el modelo real (Prophet, DeepAR, Ensemble, Stacking).
 - **Tableau**: `make tableau` genera `data/processed/tableau.csv` con `modelo_productivo` (SMAPE) y metricas por modelo.
-- **Reporte Avance 5**: `make reporte-avance5` genera Markdown + 18 graficos + CSV de 333 modelos de produccion. Seleccion SMAPE-primario con desempate MASE/RMSE. Incluye `casos_52_semanas` (entero) y reasignacion regional para baja confianza (<5 casos).
-- **Predicciones enteras**: Todas las columnas `yhat*` en Tableau y `casos_52_semanas` en produccion se redondean a enteros (no existen fracciones de caso epidemiologico).
+- **Reporte Avance 5**: `make reporte-avance5` genera Markdown + 18 graficos + CSV de 333 modelos de produccion. Seleccion SMAPE-primario con desempate MASE/RMSE. Incluye `casos_52_semanas_futuro` (entero) y reasignacion regional para baja confianza (<5 casos).
+- **Predicciones enteras**: Todas las columnas `yhat*` en Tableau y `casos_52_semanas_futuro` en produccion se redondean a enteros (no existen fracciones de caso epidemiologico).
+- **Diagnosticos en produccion**: La tabla incluye `overfitting` (ratio smape_test/smape_train: Alto >2x, Moderado >1.3x, OK), `leakage` (smape_train <0.5% = Sospechoso), metricas del modelo seleccionado (`smape_prod`, `mase_prod`, `rmse_prod`, `mae_prod`) y comparativa historica (`casos_prev_52_semanas_real`, `casos_prev_52_semanas_pronos`).
 - **Diagnosticos**: Cada `run()` de los 4 modelos computa `rmse_train` y `smape_train` (metricas in-sample). El reporte HTML muestra badges de Overfitting (ratio smape_test/smape_train > 2 = Alto, > 1.3 = Moderado) y Leakage (smape_train < 0.5% = Sospechoso).
 - **MLflow**: Integracion opcional (`pip install -e ".[mlflow]"`). Registra automaticamente cada run de entrenamiento en `mlruns/` con metricas (rmse, mae, smape, mase, elapsed_seconds) y parametros. No-op si no esta instalado. Visualizar: `mlflow server --backend-store-uri ./mlruns`.
 
