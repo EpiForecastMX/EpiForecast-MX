@@ -235,3 +235,6 @@ notebooks/figuras_latex.zip
 
 # Migration script (one-time use)
 migrate_structure.sh
+
+# MLflow local tracking
+mlruns/
