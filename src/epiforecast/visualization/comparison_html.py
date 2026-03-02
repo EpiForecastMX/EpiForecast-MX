@@ -29,7 +29,7 @@ else{el.classList.add('visible')}
 });
 const obs=new IntersectionObserver(es=>{
 es.forEach(e=>{if(e.isIntersecting){e.target.classList.add('visible');obs.unobserve(e.target)}})
-},{threshold:.1});
+},{threshold:0,rootMargin:'200px 0px'});
 document.querySelectorAll('.reveal.animate').forEach(el=>obs.observe(el));
 </script>"""
 
