@@ -179,6 +179,12 @@ omit = [
     "*/tests/*",
     "*/__init__.py",
     "*/visualization/comparison_css.py",
+    "*/visualization/comparison_builders.py",
+    "*/visualization/comparison_plots.py",
+    "*/visualization/comparison_report.py",
+    "*/visualization/avance5_tables.py",
+    "*/visualization/avance5_charts.py",
+    "*/visualization/forecast_plots.py",
 ]
 
 [tool.coverage.report]
