@@ -19,8 +19,8 @@ from loguru import logger
 from omegaconf import OmegaConf
 
 # Suprimir warnings ruidosos de leaked semaphores (joblib/loky en Windows/Linux)
-_warnings.filterwarnings("ignore", message="resource_tracker")
-_warnings.filterwarnings("ignore", message="leaked semaphore")
+_warnings.filterwarnings("ignore", message=".*resource_tracker.*")
+_warnings.filterwarnings("ignore", message=".*leaked.*")
 
 try:
     conf_base = OmegaConf.load("config/base.yaml")

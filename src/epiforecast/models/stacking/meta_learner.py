@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import copy
+import gc
 from typing import Any
 import warnings
 
@@ -125,6 +126,10 @@ class StackingMetaLearner:
                 expert_copy.fit(fold_train)
                 pred = expert_copy.predict(fold_val[["ds"]])
                 fold_preds.append(pred)
+                # Liberar modelo ajustado para evitar leaked semaphores (Windows)
+                expert_copy._model = None
+                del expert_copy
+            gc.collect()
 
             x_fold = np.column_stack(fold_preds)
             all_preds.append(x_fold)
