@@ -224,6 +224,14 @@ avance5:
 	$(PYTHON) -m scripts.avance5_modelo_final $(ARGS)
 	@echo ">>> → reports/forecasts/{prophet,ensemble,comparacion_modelos}/"
 
+## Reporte Avance 5: Modelo Final (tablas + 18 graficos + Markdown)
+.PHONY: reporte-avance5
+reporte-avance5:
+	@echo ">>> Reporte Avance 5 — Modelo Final..."
+	$(PYTHON) -m scripts.genera_reporte_avance5 $(ARGS)
+	@echo ">>> → reports/reports/avance5_modelo_final.md"
+	@echo ">>> → reports/figures/ModeloFinal/"
+
 ## Flujo completo de modelado
 .PHONY: model-pipeline
 model-pipeline: train models-push predict report forecast-push
