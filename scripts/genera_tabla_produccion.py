@@ -67,6 +67,96 @@ _SEXO_TO_MODO: dict[str, str] = {
 
 _ZERO_THRESHOLD = 1e-6
 
+# Cache de backtest DeepAR (se llena una vez con _build_deepar_backtest_cache)
+_deepar_backtest: dict[tuple[str, str, str], pd.Series] = {}  # type: ignore[type-arg]
+
+
+# ---------------------------------------------------------------------------
+# Backtest DeepAR (resuelve fitted values reales, no copias del historico)
+# ---------------------------------------------------------------------------
+
+
+def _build_deepar_backtest_cache() -> dict[tuple[str, str, str], pd.Series]:  # type: ignore[type-arg]
+    """Carga cada pkl DeepAR, recorta 52 sem, predice y retorna cache.
+
+    Returns dict[(padecimiento, entidad, modo)] -> pd.Series[ds -> yhat].
+    """
+    from epiforecast.models.factory import create_model
+    from epiforecast.utils.config import conf
+
+    cache: dict[tuple[str, str, str], pd.Series] = {}  # type: ignore[type-arg]
+    base = Path("models") / "deepar"
+    if not base.exists():
+        return cache
+
+    pkls = sorted(base.rglob("*.pkl"))
+    logger.info("DeepAR backtest: cargando {} modelos...", len(pkls))
+    ok = 0
+    fail = 0
+    for pkl_path in pkls:
+        try:
+            model = create_model("deepar", config=conf)
+            model.load(pkl_path)
+            serie_full = model.serie.copy()
+            if len(serie_full) < _HORIZON * 2:
+                continue
+            # Recortar ultimas 52 semanas
+            model.serie = serie_full.iloc[:-_HORIZON].copy()
+            forecast_df = model.predict(horizon=_HORIZON)
+            # Las ultimas 52 filas del forecast son la prediccion real
+            pred_52 = forecast_df.tail(_HORIZON).copy()
+            pred_52["ds"] = pd.to_datetime(pred_52["ds"])
+
+            # Extraer metadata del nombre: Deepar_{Pad}_{Entidad}_{modo}.pkl
+            parts = pkl_path.stem.split("_")
+            # parts[0] = "Deepar", parts[1] = padecimiento, parts[-1] = modo
+            modo = parts[-1]  # general / hombres / mujeres
+            pad = parts[1]  # Depresion / Alzheimer / Parkinson
+            entidad_parts = parts[2:-1]
+            entidad = " ".join(entidad_parts) if entidad_parts else "Nacional"
+
+            cache[(pad, entidad, modo)] = pred_52.set_index("ds")["yhat"]
+            ok += 1
+        except Exception as exc:  # noqa: BLE001
+            fail += 1
+            logger.debug("  Backtest fallo {}: {}", pkl_path.name, exc)
+
+    logger.info("DeepAR backtest completado: {}/{} exitosos, {} fallos", ok, ok + fail, fail)
+    return cache
+
+
+def _strip_accents(s: str) -> str:
+    """Quita acentos comunes del español."""
+    return (
+        s.replace("ó", "o")
+        .replace("á", "a")
+        .replace("é", "e")
+        .replace("í", "i")
+        .replace("ú", "u")
+        .replace("ñ", "n")
+    )
+
+
+def _get_deepar_backtest(padecimiento: str, entidad: str, sexo: str) -> pd.Series:  # type: ignore[type-arg]
+    """Busca la serie de backtest DeepAR en el cache global."""
+    modo = _SEXO_TO_MODO.get(sexo, sexo)
+    pad_key = _strip_accents(padecimiento)
+    # Normalizar entidad: quitar acentos y adaptar regiones
+    ent_key = _strip_accents(entidad)
+    # Regiones: "region_Urbana media" -> "region Urbana media" (pkl usa espacio)
+    # "region_Rural / dispersa" -> "region Rural - dispersa" (pkl usa "-")
+    if ent_key.startswith("region_"):
+        ent_key = "region " + ent_key[len("region_") :].replace(" / ", " - ")
+
+    key = (pad_key, ent_key, modo)
+    if key in _deepar_backtest:
+        return _deepar_backtest[key]
+    # Busqueda fuzzy por si hay diferencias menores
+    for (p, e, m), serie in _deepar_backtest.items():
+        if p.lower() == pad_key.lower() and e.lower() == ent_key.lower() and m == modo:
+            return serie
+    return pd.Series(dtype=float)
+
 
 # ---------------------------------------------------------------------------
 # Funciones auxiliares de seleccion
@@ -470,14 +560,18 @@ def _build_production_table(
         real_sum = int(round(max(real_series.sum(), 0.0))) if len(real_series) > 0 else np.nan
         out["casos_prev_52_semanas_real"] = real_sum
 
-        fc_series = _get_forecast_series(
-            forecasts,
-            modelo_fc_key,
-            str(out["padecimiento"]),
-            entidad,
-            str(out["sexo"]),
-            dates=real_series.index if len(real_series) > 0 else None,
-        )
+        # Para DeepAR usar backtest real; para otros usar forecast CSV
+        if modelo_fc_key == "deepar" and _deepar_backtest:
+            fc_series = _get_deepar_backtest(str(out["padecimiento"]), entidad, str(out["sexo"]))
+        else:
+            fc_series = _get_forecast_series(
+                forecasts,
+                modelo_fc_key,
+                str(out["padecimiento"]),
+                entidad,
+                str(out["sexo"]),
+                dates=real_series.index if len(real_series) > 0 else None,
+            )
         fc_sum = int(round(max(fc_series.sum(), 0.0))) if len(fc_series) > 0 else np.nan
         out["casos_prev_52_semanas_pronos"] = fc_sum
 
@@ -644,14 +738,18 @@ def _build_weekly_detail(
         }
 
         real_series = _get_real_series(real_df, pad, ent, sexo)
-        fc_series = _get_forecast_series(
-            forecasts,
-            modelo_fc_key,
-            pad,
-            ent,
-            sexo,
-            dates=real_series.index if len(real_series) > 0 else None,
-        )
+        # Para DeepAR usar backtest real; para otros usar forecast CSV
+        if modelo_fc_key == "deepar" and _deepar_backtest:
+            fc_series = _get_deepar_backtest(pad, ent, sexo)
+        else:
+            fc_series = _get_forecast_series(
+                forecasts,
+                modelo_fc_key,
+                pad,
+                ent,
+                sexo,
+                dates=real_series.index if len(real_series) > 0 else None,
+            )
 
         # Rellenar las 52 columnas
         for i in range(1, _HORIZON + 1):
@@ -799,6 +897,10 @@ def main() -> None:
     region_map = _build_region_map()
     forecasts = _load_forecasts()
     real_df = _load_real_data()
+
+    # 1b. Backtest DeepAR (fitted values reales, no copias del historico)
+    global _deepar_backtest  # noqa: PLW0603
+    _deepar_backtest = _build_deepar_backtest_cache()
 
     # 2. Construir tabla principal
     df_out = _build_production_table(merged, model_keys, region_map, forecasts, real_df)
