@@ -39,6 +39,7 @@ KEEP_COLS_TWB = [
     "yhat_stacking",
     "yhat_lower",
     "yhat_upper",
+    "y_real",
     # Metricas del modelo productivo (sin sufijo)
     "rmse",
     "mae",
@@ -99,6 +100,35 @@ def load_inputs(in_real: Path, forecast_base: Path) -> tuple[pd.DataFrame, pd.Da
     return real, all_fcst_df
 
 
+def agregar_agregados_geograficos(real: pd.DataFrame) -> pd.DataFrame:
+    """Agrega Nacional y Region Socio-Urbana sumando incrementos."""
+    sum_cols = [
+        c
+        for c in ["incrementos_total", "incrementos_hombres", "incrementos_mujeres"]
+        if c in real.columns
+    ]
+    nacional = (
+        real.groupby(["ds", "padecimiento"], as_index=False)[sum_cols]
+        .sum()
+        .assign(entidad="Nacional", **{"Region Socio-Urbana": "Nacional"})
+    )
+    regional = (
+        real.groupby(["ds", "padecimiento", "Region Socio-Urbana"], as_index=False)[sum_cols]
+        .sum()
+        .assign(entidad=lambda x: x["Region Socio-Urbana"])
+        if "Region Socio-Urbana" in real.columns
+        else pd.DataFrame()
+    )
+    return pd.concat(
+        [
+            real,
+            nacional.reindex(columns=real.columns, fill_value=pd.NA),
+            regional.reindex(columns=real.columns, fill_value=pd.NA),
+        ],
+        ignore_index=True,
+    )
+
+
 def prepare_inputs(real: pd.DataFrame, fcst: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     # Parse fechas + limpia inválidas
     real["Fecha"] = pd.to_datetime(real["Fecha"], errors="coerce")
@@ -112,17 +142,26 @@ def prepare_inputs(real: pd.DataFrame, fcst: pd.DataFrame) -> tuple[pd.DataFrame
         logger.warning("Fechas inválidas en forecast (ds): {}. Se eliminan.", n_bad_fcst)
 
     real = real.dropna(subset=["Fecha"]).rename(
-        columns={"Fecha": "ds", "Padecimiento": "padecimiento", "Entidad": "entidad"}
+        columns={
+            "Fecha": "ds",
+            "Padecimiento": "padecimiento",
+            "Entidad": "entidad",
+            "region_salud_mental": "Region Socio-Urbana",
+        }
     )
+    if "Region Socio-Urbana" in real.columns:
+        real["Region Socio-Urbana"] = (
+            "Region " + real["Region Socio-Urbana"].astype(str).str.strip()
+        )
     fcst = fcst.dropna(subset=["ds"]).copy()
     fcst["padecimiento"] = fcst["meta_padecimiento"]
     fcst["entidad"] = fcst["meta_entidad"]
 
     # Fix crítico general: Si hay fechas duplicadas en la serie de tiempo de una entidad/padecimiento
     # (ej. porque el calendario ISO choca semanas 1 y 53 de años contiguos en el mismo lunes),
-    # resolvemos el empate prefiriendo la semana 53, que suele contener el acumulado final del año.
+    # resolvemos el empate prefiriendo la semana 1.
     if "Semana" in real.columns:
-        real["_wk_pref"] = (real["Semana"] == 53).astype(int)
+        real["_wk_pref"] = (real["Semana"] == 1).astype(int)
         real = (
             real.sort_values(
                 ["padecimiento", "entidad", "ds", "_wk_pref"],
@@ -374,12 +413,6 @@ def build_and_save_tableau(real_long: pd.DataFrame, fcst: pd.DataFrame, out_file
     }
     out = out.rename(columns={k: v for k, v in rename_map.items() if k in out.columns})
 
-    # solo numéricas generales, NO incrementos
-    block_fill = {"incrementos_total", "incrementos_hombres", "incrementos_mujeres"}
-    num_cols = [c for c in out.select_dtypes(include=["number"]).columns if c not in block_fill]
-    if num_cols:
-        out[num_cols] = out[num_cols].fillna(0)
-
     # Validación llaves críticas sin NaN
     key_cols = ["ds", "padecimiento", "entidad", "meta_modo"]
     bad_keys = out[key_cols].isna().sum()
@@ -438,6 +471,7 @@ def main() -> None:
     directory_manager.asegurar_ruta(out_file.parent)
     real, fcst = load_inputs(in_real, forecast_base)
     real, fcst = prepare_inputs(real, fcst)
+    real = agregar_agregados_geograficos(real)
     real_long = expand_real_by_modo(real)
     build_and_save_tableau(real_long, fcst, out_file)
 
