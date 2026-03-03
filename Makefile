@@ -27,7 +27,10 @@ setup: setup-mac requirements data-pull
 
 ## Setup completo Linux/WSL
 .PHONY: setup-linux
-setup-linux: setup-linux-deps requirements data-pull
+setup-linux: setup-linux-deps requirements
+	@echo ">>> Instalando DVC[s3]..."
+	. $(PROJECT_NAME)/$(ACTIVATE) && pip install "dvc[s3]"
+	$(MAKE) data-pull
 	@echo ">>> Setup completo. Proyecto listo."
 
 ## Instalar dependencias sistema (macOS)
@@ -49,12 +52,7 @@ create-env:
 	. $(PROJECT_NAME)/$(ACTIVATE) && pip install --upgrade pip && pip install -e ".[dev]"
 	@echo ">>> venv creado. Activa con: source $(PROJECT_NAME)/$(ACTIVATE)"
 
-## Crear entorno virtual (conda)
-.PHONY: create-env-conda
-create-env-conda:
-	conda create --name $(PROJECT_NAME) python=$(PYTHON_VERSION) -c conda-forge --override-channels -y
-	conda run -n $(PROJECT_NAME) $(PYTHON) -m pip install -e ".[dev]"
-	@echo ">>> conda env creado. Activa con: conda activate $(PROJECT_NAME)"
+
 
 #################################################################################
 # 📊 DATA PIPELINE                                                             #
