@@ -279,8 +279,8 @@ class ProphetForecaster(ForecastModel):
                 train_m = compute_forecast_metrics(y_tr, yhat_tr, y_tr)
                 best_metrics["rmse_train"] = train_m.get("rmse")
                 best_metrics["smape_train"] = train_m.get("smape")
-            except Exception:
-                logger.debug("No se pudieron calcular metricas train (Prophet)")
+            except (ValueError, KeyError) as e:
+                logger.warning("No se pudieron calcular metricas train (Prophet): {}", e)
 
         return self._model, best_metrics, best_params
 

@@ -293,7 +293,7 @@ class StackingForecaster(ForecastModel):
                 train_m = compute_forecast_metrics(y_tr, yhat_train, y_tr)
                 metrics["rmse_train"] = train_m.get("rmse")
                 metrics["smape_train"] = train_m.get("smape")
-            except Exception:
-                logger.debug("No se pudieron calcular metricas train (Stacking)")
+            except (ValueError, KeyError) as e:
+                logger.warning("No se pudieron calcular metricas train (Stacking): {}", e)
 
         return self, metrics, self.get_params()

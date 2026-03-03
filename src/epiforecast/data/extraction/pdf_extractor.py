@@ -12,7 +12,9 @@ SEMANA_REGEX_2 = re.compile(
 )
 
 
-def build_column_map(keywords: list[str], start_col: int = 1, step: int = 4):
+def build_column_map(
+    keywords: list[str], start_col: int = 1, step: int = 4
+) -> dict[str, dict[str, int]]:
     """Construye mapa de columnas por padecimiento para las tablas de boletines SINAVE.
 
     Args:
@@ -35,7 +37,9 @@ def build_column_map(keywords: list[str], start_col: int = 1, step: int = 4):
     return col_map
 
 
-def find_page_and_week(pdf_path, KEYWORDS):
+def find_page_and_week(
+    pdf_path: str, KEYWORDS: list[str]
+) -> tuple[int | None, int | None, int | None]:
     """
     Busca la página del PDF que contiene todas las keywords
     y extrae el año y la semana epidemiológica.
@@ -73,7 +77,9 @@ def extract_matched_page(pdf_path: str, page_index_0: int, out_pdf_path: str):
         writer.write(f)
 
 
-def eliminar_columnas_vacias(df, start_state="Aguascalientes", end_state="Zacatecas"):
+def eliminar_columnas_vacias(
+    df: pd.DataFrame, start_state: str = "Aguascalientes", end_state: str = "Zacatecas"
+) -> pd.DataFrame:
     """Elimina columnas vacías dentro del rango de filas de entidades federativas.
 
     Args:
@@ -89,7 +95,7 @@ def eliminar_columnas_vacias(df, start_state="Aguascalientes", end_state="Zacate
     de filas entre start_state y end_state (incluyéndolos).
     """
     df = df.copy()
-    df.columns = range(df.shape[1])  # columnas 0..N-1
+    df.columns = range(df.shape[1])  # type: ignore[assignment]  # columnas 0..N-1
 
     col0 = df[0].astype(str).str.strip()
 
@@ -112,7 +118,7 @@ def eliminar_columnas_vacias(df, start_state="Aguascalientes", end_state="Zacate
         is_blank.mean(axis=0) < 1.0
     )  # conserva columnas que no son 100% vacías en ese rango
 
-    return df.loc[:, keep_cols]
+    return df.loc[:, keep_cols]  # type: ignore[no-any-return]
 
 
 def pad_prev_year_cols(df: pd.DataFrame, keywords: list[str]) -> pd.DataFrame:
@@ -143,7 +149,7 @@ def pad_prev_year_cols(df: pd.DataFrame, keywords: list[str]) -> pd.DataFrame:
     return pd.DataFrame(out)
 
 
-def clean_df(df, min_numeric_cells=2):
+def clean_df(df: pd.DataFrame, min_numeric_cells: int = 2) -> pd.DataFrame:
     """
     Limpia la tabla extraída por Camelot dejando solo filas que parecen "estado + datos".
 
@@ -155,7 +161,7 @@ def clean_df(df, min_numeric_cells=2):
     df = eliminar_columnas_vacias(df)
 
     # 2) Normaliza primera columna (estado)
-    df.columns = range(df.shape[1])
+    df.columns = range(df.shape[1])  # type: ignore[assignment]
     df[0] = df[0].astype(str).str.strip()
 
     # 3) Quita filas basura
@@ -183,7 +189,7 @@ def clean_df(df, min_numeric_cells=2):
     return df.reset_index(drop=True)
 
 
-def normalize_number(x):
+def normalize_number(x: Any) -> Any:
     """Normaliza un valor extraído de tabla PDF a entero o ``pd.NA``.
 
     Interpreta guiones y cadenas vacías como 0, elimina separadores
@@ -266,7 +272,7 @@ def reshape_wide(df: pd.DataFrame, year: int, week: int, col_map: dict) -> pd.Da
     return pd.DataFrame(records)
 
 
-def print_run_summary(run_log, log_fn=print):
+def print_run_summary(run_log: list[dict[str, Any]], log_fn: Any = print) -> None:
     """Imprime tabla resumen del pipeline de extracción con estadísticas de éxito.
 
     Args:
@@ -281,7 +287,7 @@ def print_run_summary(run_log, log_fn=print):
             [
                 str(r.get("file", "")),
                 "" if r.get("year") is None else str(r.get("year")),
-                "" if r.get("week") is None else f"{int(r.get('week')):02d}",
+                "" if r.get("week") is None else f"{int(r['week']):02d}",
                 "" if r.get("page") is None else str(r.get("page")),
                 "" if r.get("rows") is None else str(r.get("rows")),
             ]

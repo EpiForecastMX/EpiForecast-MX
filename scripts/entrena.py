@@ -4,6 +4,7 @@ from contextlib import contextmanager
 import os
 from pathlib import Path
 import platform
+import random
 import re
 import time
 import unicodedata
@@ -18,11 +19,16 @@ from tqdm import tqdm
 # del paquete lo dispare (model.py también importa config transitivamente).
 _logger_pre_import.disable("epiforecast.utils.config")
 
+from epiforecast.constants import RANDOM_SEED  # noqa: E402
 from epiforecast.models import create_model  # noqa: E402
 from epiforecast.utils import paths as directory_manager  # noqa: E402
 from epiforecast.utils.config import conf, logger  # noqa: E402
 
 _logger_pre_import.enable("epiforecast.utils.config")
+
+# Reproducibilidad: fijar semillas de todos los generadores
+os.environ.setdefault("PYTHONHASHSEED", str(RANDOM_SEED))
+random.seed(RANDOM_SEED)
 
 
 @contextmanager

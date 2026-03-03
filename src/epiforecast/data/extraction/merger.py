@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 import re
@@ -99,7 +100,7 @@ def merge_csv(
     )
 
 
-def _find_source_csv(input_dir: Path, log_fn) -> Path:
+def _find_source_csv(input_dir: Path, log_fn: Callable[..., None]) -> Path:
     """Busca exactamente un CSV con timestamp en el directorio de entrada."""
     if not input_dir.exists():
         log_fn(f"❌ Directorio de entrada no existe: {input_dir}", err=True)
@@ -134,7 +135,7 @@ def _find_source_csv(input_dir: Path, log_fn) -> Path:
 def _read_and_validate(
     source_csv: Path,
     target_csv: Path,
-    log_fn,
+    log_fn: Callable[..., None],
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Lee source y target CSV y valida que tengan las mismas columnas."""
     if not target_csv.exists():
@@ -242,7 +243,13 @@ def _print_banner(input_dir: Path, output_dir: Path, keywords: list[str]) -> Non
     typer.echo("=" * 60 + "\n")
 
 
-def _run_extraction(input_dir, output_dir, keywords, save_matched_pages, save_individual_tables):
+def _run_extraction(
+    input_dir: Path,
+    output_dir: Path,
+    keywords: list[str],
+    save_matched_pages: bool,
+    save_individual_tables: bool,
+) -> None:
     """Ejecuta el pipeline de extracción con manejo de errores."""
     try:
         run_pipeline(

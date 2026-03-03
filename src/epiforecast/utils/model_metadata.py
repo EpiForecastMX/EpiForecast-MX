@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import datetime
-from importlib.metadata import version
+from importlib.metadata import PackageNotFoundError, version
 import subprocess
 import sys
+
+from loguru import logger
 
 
 def build_model_metadata() -> dict[str, str]:
@@ -16,12 +18,14 @@ def build_model_metadata() -> dict[str, str]:
             text=True,
             stderr=subprocess.DEVNULL,
         ).strip()
-    except Exception:
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        logger.debug("No se pudo obtener git hash (entorno sin git)")
         git_hash = "unknown"
 
     try:
         pkg_version = version("epiforecast-mx")
-    except Exception:
+    except PackageNotFoundError:
+        logger.debug("Paquete epiforecast-mx no instalado (modo desarrollo)")
         pkg_version = "unknown"
 
     return {

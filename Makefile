@@ -222,6 +222,13 @@ compare:
 	$(PYTHON) -m scripts.compara_modelos
 	@echo ">>> → reports/forecasts/comparacion_modelos/"
 
+## Generar tabla de 333 modelos de producción (Excel IMSS)
+.PHONY: tabla-produccion
+tabla-produccion:
+	@echo ">>> Generando tabla de producción (333 modelos)..."
+	$(PYTHON) -m scripts.genera_tabla_produccion
+	@echo ">>> → reports/ProdDetails/tabla_333_modelos_produccion.xlsx"
+
 ## Comparar métricas entre modelos (Excel + HTML)
 .PHONY: compare-metrics
 compare-metrics:

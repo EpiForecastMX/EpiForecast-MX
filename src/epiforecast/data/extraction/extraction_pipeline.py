@@ -1,6 +1,8 @@
 """Extraction pipeline: orchestrate multi-PDF processing and emit combined CSV."""
 
+from collections.abc import Callable
 import os
+from typing import Any
 
 import camelot
 import pandas as pd
@@ -18,14 +20,14 @@ from epiforecast.data.extraction.pdf_extractor import (
 
 
 def run_pipeline(
-    input_dir,
-    output_dir,
-    keywords,
-    save_matched_pages=False,
-    save_individual_tables=False,
-    log_fn=print,
-    on_file=None,
-):
+    input_dir: str,
+    output_dir: str,
+    keywords: list[str],
+    save_matched_pages: bool = False,
+    save_individual_tables: bool = False,
+    log_fn: Callable[..., None] = print,
+    on_file: Callable[[str], None] | None = None,
+) -> None:
     """Ejecuta el pipeline de extracción de tablas desde boletines PDF de SINAVE.
 
     Args:
@@ -91,7 +93,9 @@ def run_pipeline(
     )
 
 
-def _setup_directories(output_dir, save_matched_pages, save_individual_tables):
+def _setup_directories(
+    output_dir: str, save_matched_pages: bool, save_individual_tables: bool
+) -> dict[str, str]:
     """Crea subdirectorios necesarios y retorna dict de rutas."""
     os.makedirs(output_dir, exist_ok=True)
     output_csv = os.path.join(output_dir, "dataset_boletin_epidemiologico.csv")
@@ -105,21 +109,27 @@ def _setup_directories(output_dir, save_matched_pages, save_individual_tables):
 
 
 def _process_single_pdf(
-    file,
-    idx,
-    total_pdfs,
-    input_dir,
-    keywords,
-    col_map,
-    dirs,
-    log_fn,
-    save_matched_pages,
-    save_individual_tables,
-):
+    file: str,
+    idx: int,
+    total_pdfs: int,
+    input_dir: str,
+    keywords: list[str],
+    col_map: dict[str, dict[str, int]],
+    dirs: dict[str, str],
+    log_fn: Callable[..., None],
+    save_matched_pages: bool,
+    save_individual_tables: bool,
+) -> dict[str, Any]:
     """Procesa un PDF individual: busca página, extrae tabla, genera registros."""
     pct = (idx / total_pdfs * 100) if total_pdfs else 100.0
     pdf_path = os.path.join(input_dir, file)
-    log_entry = {"file": file, "year": None, "week": None, "page": None, "rows": None}
+    log_entry: dict[str, Any] = {
+        "file": file,
+        "year": None,
+        "week": None,
+        "page": None,
+        "rows": None,
+    }
 
     try:
         page, year, week = find_page_and_week(pdf_path, keywords)
@@ -129,6 +139,8 @@ def _process_single_pdf(
             log_fn("  ‼️ No se encontró página válida")
             log_fn(f"{idx:>3}/{total_pdfs:<3} | {pct:>6.1f}% | {file} | - | - | ‼️")
             return {"log_entry": log_entry, "df": None}
+
+        assert year is not None and week is not None  # guaranteed by find_page_and_week
 
         if save_matched_pages:
             out_pdf = os.path.join(dirs["pages_dir"], f"{os.path.splitext(file)[0]}_p{page}.pdf")
@@ -168,7 +180,15 @@ def _process_single_pdf(
         return {"log_entry": log_entry, "df": None, "failed": True}
 
 
-def _write_results(all_rows, failed_files, run_log, output_dir, output_csv, total_pdfs, log_fn):
+def _write_results(
+    all_rows: list[pd.DataFrame],
+    failed_files: list[str],
+    run_log: list[dict[str, Any]],
+    output_dir: str,
+    output_csv: str,
+    total_pdfs: int,
+    log_fn: Callable[..., None],
+) -> None:
     """Escribe CSV final, lista de fallidos y resumen del pipeline."""
     if failed_files:
         failed_txt = os.path.join(output_dir, "failed_files.txt")

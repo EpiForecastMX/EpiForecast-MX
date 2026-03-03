@@ -83,7 +83,8 @@ class StackingMetaLearner:
             if hasattr(expert, "_holidays"):
                 return cls(expert._config, expert._holidays)
             return cls(expert._config)
-        except Exception:
+        except Exception:  # noqa: BLE001 — deliberate fallback pattern
+            logger.debug("fresh_expert: fallback a deepcopy para {}", type(expert).__name__)
             return copy.deepcopy(expert)
 
     @staticmethod

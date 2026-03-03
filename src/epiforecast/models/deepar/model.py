@@ -494,11 +494,12 @@ class DeepARForecaster(ForecastModel):
                 yhat_arr[cursor:end] = raw_mean
                 yhat_lower[cursor:end] = raw_lower
                 yhat_upper[cursor:end] = raw_upper
-            except Exception:
-                logger.debug(
-                    "Backtest window [{}-{}] failed, keeping y",
+            except (RuntimeError, ValueError, IndexError) as e:
+                logger.warning(
+                    "Backtest window [{}-{}] failed ({}), keeping y",
                     cursor,
                     end,
+                    e,
                 )
 
             cursor = end
@@ -558,8 +559,8 @@ class DeepARForecaster(ForecastModel):
                     yhat_arr[n - length :] = raw_mean[:length]
                     yhat_lower[n - length :] = raw_lower[:length]
                     yhat_upper[n - length :] = raw_upper[:length]
-                except Exception:
-                    logger.debug("Multi-series backtest failed, keeping y")
+                except (RuntimeError, ValueError, IndexError) as e:
+                    logger.warning("Multi-series backtest failed ({}), keeping y", e)
 
         return pd.DataFrame(
             {
@@ -967,7 +968,7 @@ class DeepARForecaster(ForecastModel):
                 train_m = compute_forecast_metrics(y_tr, yhat_tr, y_tr)
                 best_metrics["rmse_train"] = train_m.get("rmse")
                 best_metrics["smape_train"] = train_m.get("smape")
-            except Exception:
-                logger.debug("No se pudieron calcular metricas train (DeepAR)")
+            except (ValueError, KeyError, RuntimeError) as e:
+                logger.warning("No se pudieron calcular metricas train (DeepAR): {}", e)
 
         return self._predictor, best_metrics, self.get_params()

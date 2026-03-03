@@ -89,8 +89,8 @@ class ETSExpert:
             ).fit(optimized=True)
             self._failed = False
             logger.debug("  ETSExpert entrenado ({} filas)", len(train_data))
-        except Exception as e:
-            logger.debug("  ETSExpert: no convergio ({}), fallback", e)
+        except (ValueError, np.linalg.LinAlgError) as e:
+            logger.warning("  ETSExpert: no convergio ({}), fallback", e)
             self._failed = True
 
     def predict(self, dates: pd.DataFrame) -> np.ndarray:
@@ -100,7 +100,8 @@ class ETSExpert:
         try:
             pred = self._model.forecast(n)
             return np.clip(np.asarray(pred, dtype=float), 0, None)
-        except Exception:
+        except (ValueError, IndexError) as e:
+            logger.debug("  ETSExpert: prediccion fallida ({})", e)
             return np.zeros(n)
 
     def predict_full(self, n_forward: int) -> tuple[np.ndarray | None, np.ndarray]:
