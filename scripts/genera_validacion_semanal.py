@@ -285,13 +285,13 @@ def _load_forecasts(target_date: str) -> pd.DataFrame:
 
 
 def _load_production() -> pd.DataFrame:
-    """Lee Excel de produccion, retorna motor ganador para todas las combinaciones."""
+    """Lee Excel de produccion, retorna motor ganador y MASE para todas las combinaciones."""
     df = pd.read_excel(PROD_EXCEL, sheet_name=0)
-    df = df[["padecimiento", "entidad", "sexo", "modelo_produccion"]].copy()
+    df = df[["padecimiento", "entidad", "sexo", "modelo_produccion", "mase_prod"]].copy()
     df["entidad_norm"] = df["entidad"].apply(_norm_prod_entidad)
     df["pad_norm"] = df["padecimiento"].apply(_normalize)
     df["motor"] = df["modelo_produccion"]
-    return df[["entidad_norm", "pad_norm", "sexo", "motor"]]
+    return df[["entidad_norm", "pad_norm", "sexo", "motor", "mase_prod"]]
 
 
 # ---------------------------------------------------------------------------
@@ -423,6 +423,9 @@ def _build_comparison(
 
         error_pct, veredicto = _verdict(real_val, yhat)
 
+        mase_val = row.get("mase_prod")
+        mase_val = mase_val if pd.notna(mase_val) else None
+
         results.append(
             {
                 "entidad_norm": row["entidad_norm"],
@@ -433,6 +436,7 @@ def _build_comparison(
                 "error_pct": error_pct,
                 "veredicto": veredicto,
                 "motor": motor_lower,
+                "mase": mase_val,
                 "nivel": row["nivel"],
             }
         )
@@ -518,6 +522,20 @@ def _err_class(error_pct: float | None) -> str:
     return "err-bad"
 
 
+def _fmt_mase(val: Any) -> str:
+    if val is None or (isinstance(val, float) and math.isnan(val)):
+        return "N/A"
+    return f"{val:.2f}"
+
+
+def _mase_class(val: Any) -> str:
+    if val is None or (isinstance(val, float) and math.isnan(val)):
+        return ""
+    if val < 1.0:
+        return "mase-good"
+    return "mase-warn"
+
+
 # ---------------------------------------------------------------------------
 # Tabla reutilizable con desglose por sexo
 # ---------------------------------------------------------------------------
@@ -555,6 +573,7 @@ def _build_sexo_table(data: pd.DataFrame) -> str:
                 f"  <td>{_fmt_int(r['pronostico'])}</td>"
                 f'  <td class="{_err_class(r["error_pct"])}">'
                 f"{_fmt_error(r['error_pct'])}</td>"
+                f'  <td class="{_mase_class(r["mase"])}">{_fmt_mase(r["mase"])}</td>'
                 f"  <td>{_motor_badge(r['motor'])}</td>"
                 f"  <td>{_veredicto_badge(r['veredicto'])}</td>"
                 f"</tr>\n"
@@ -564,7 +583,7 @@ def _build_sexo_table(data: pd.DataFrame) -> str:
   <table>
     <thead><tr>
       <th>Padecimiento</th><th>Sexo</th><th>Real</th><th>Pronostico</th>
-      <th>SMAPE</th><th>Motor</th><th>Veredicto</th>
+      <th>SMAPE</th><th>MASE</th><th>Motor</th><th>Veredicto</th>
     </tr></thead>
     <tbody>{rows_html}</tbody>
   </table>
@@ -805,6 +824,7 @@ def _section_detalle(comp: pd.DataFrame) -> str:
                 f"  <td>{_fmt_int(r['pronostico'])}</td>"
                 f'  <td class="{_err_class(r["error_pct"])}">'
                 f"{_fmt_error(r['error_pct'])}</td>"
+                f'  <td class="{_mase_class(r["mase"])}">{_fmt_mase(r["mase"])}</td>'
                 f"  <td>{_motor_badge(r['motor'])}</td>"
                 f"  <td>{_veredicto_badge(r['veredicto'])}</td>"
                 f"</tr>\n"
@@ -828,7 +848,7 @@ def _section_detalle(comp: pd.DataFrame) -> str:
     <div class="table-wrapper">
       <table><thead><tr>
         <th>Entidad</th><th>Real</th><th>Pronostico</th>
-        <th>SMAPE</th><th>Motor</th><th>Veredicto</th>
+        <th>SMAPE</th><th>MASE</th><th>Motor</th><th>Veredicto</th>
       </tr></thead>
       <tbody>{rows_html}</tbody></table>
     </div>
@@ -929,6 +949,13 @@ def _generate_html(comp: pd.DataFrame, anio: int, semana: int) -> str:
     nac_err = nac_gen["error_pct"].dropna()
     nac_mean = f"{nac_err.mean():.1f}%" if len(nac_err) > 0 else "N/A"
 
+    # MASE medio nacional (CV del modelo ganador)
+    prod_df = pd.read_excel(PROD_EXCEL, sheet_name=0)
+    nac_mase = prod_df[(prod_df["entidad"] == "Nacional") & (prod_df["sexo"] == "general")][
+        "mase_prod"
+    ]
+    mase_mean = f"{nac_mase.mean():.2f}" if len(nac_mase) > 0 else "N/A"
+
     css = _build_css()
     parts: list[str] = []
     parts.append(f"""<!DOCTYPE html>
@@ -952,6 +979,10 @@ def _generate_html(comp: pd.DataFrame, anio: int, semana: int) -> str:
     <div class="hero-kpi">
       <span class="value">{nac_mean}</span>
       <span class="label">SMAPE nacional medio</span>
+    </div>
+    <div class="hero-kpi">
+      <span class="value">{mase_mean}</span>
+      <span class="label">MASE nacional medio</span>
     </div>
     <div class="hero-kpi">
       <span class="value">{n_good}/{n_valid}</span>
@@ -1065,6 +1096,8 @@ tbody tr:hover{background:var(--cream-pale)}
 .row-group-last td{border-bottom:2px solid var(--cream)}
 .err-good{color:#2e7d32;font-weight:600}
 .err-bad{color:#c62828;font-weight:600}
+.mase-good{color:#2e7d32;font-weight:600}
+.mase-warn{color:#c62828;font-weight:600}
 .table-semaforo td{text-align:center;padding:.5rem .75rem}
 .table-semaforo th{min-width:140px}
 .leyenda{display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:1.5rem;
