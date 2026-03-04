@@ -505,8 +505,8 @@ def _semaforo_dot(v: str) -> str:
 
 
 def _fmt_error(val: float | None) -> str:
-    if val is None:
-        return "N/A"
+    if val is None or (isinstance(val, float) and math.isnan(val)):
+        return "—"
     return f"{val:.1f}%"
 
 
@@ -517,7 +517,9 @@ def _fmt_int(val: Any) -> str:
 
 
 def _err_class(error_pct: float | None) -> str:
-    if error_pct is not None and error_pct <= 25:
+    if error_pct is None or (isinstance(error_pct, float) and math.isnan(error_pct)):
+        return ""
+    if error_pct <= 25:
         return "err-good"
     return "err-bad"
 
