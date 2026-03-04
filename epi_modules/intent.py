@@ -61,7 +61,27 @@ GREETINGS = {
     "como estas",
 }
 
-EXIT_WORDS = {"salir", "exit", "quit", "q", "bye", "adios", "chao"}
+EXIT_WORDS = {
+    "salir",
+    "exit",
+    "quit",
+    "q",
+    "bye",
+    "adios",
+    "chao",
+    "fuera",
+    "cerrar",
+    "terminar",
+    "fin",
+    "reset",
+    "reiniciar",
+    "reinicia",
+    "apagar",
+    "off",
+    "me voy",
+    "nos vemos",
+    "vamonos",
+}
 CLEAR_WORDS = {"limpia", "clear", "cls", "limpiar"}
 
 
