@@ -238,9 +238,9 @@ def build_weekly_bars(
 
         # -- Future bars: single with whiskers --
         if not future_df.empty:
-            yhat_vals = future_df["yhat"].values
-            lower = future_df["yhat_lower"].values
-            upper = future_df["yhat_upper"].values
+            yhat_vals = np.asarray(future_df["yhat"].values)
+            lower = np.asarray(future_df["yhat_lower"].values)
+            upper = np.asarray(future_df["yhat_upper"].values)
             yerr_lo = np.maximum(yhat_vals - lower, 0)
             yerr_hi = np.maximum(upper - yhat_vals, 0)
             ax.bar(
@@ -426,7 +426,7 @@ def build_single_prod_bars(
     bar_w = 0.38
     ax.bar(
         x_hist - bar_w / 2,
-        hist_df["y_real"].values,
+        np.asarray(hist_df["y_real"].values),
         width=bar_w,
         color="#616161",
         alpha=0.85,
@@ -436,7 +436,7 @@ def build_single_prod_bars(
     if not hist_df["yhat"].isna().all():
         ax.bar(
             x_hist + bar_w / 2,
-            hist_df["yhat"].values,
+            np.asarray(hist_df["yhat"].values),
             width=bar_w,
             color=style.color,
             alpha=0.55,
@@ -446,9 +446,9 @@ def build_single_prod_bars(
 
     # Future bars with whiskers
     if not future_df.empty:
-        yhat_vals = future_df["yhat"].values
-        lower = future_df["yhat_lower"].values
-        upper = future_df["yhat_upper"].values
+        yhat_vals = np.asarray(future_df["yhat"].values)
+        lower = np.asarray(future_df["yhat_lower"].values)
+        upper = np.asarray(future_df["yhat_upper"].values)
         yerr_lo = np.maximum(yhat_vals - lower, 0)
         yerr_hi = np.maximum(upper - yhat_vals, 0)
         ax.bar(
