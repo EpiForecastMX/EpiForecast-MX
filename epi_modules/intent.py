@@ -131,6 +131,18 @@ def classify_intent(cmd: str) -> str | None:
     if stripped in ("dashboard", "panel", "tablero", "resumen general"):
         return "dashboard"
 
+    # Targets (antes de chat, para capturar "que comandos make hay?")
+    if _match("make", "target") and _match(
+        "comando",
+        "disponible",
+        "ejecutar",
+        "cuales",
+        "que hay",
+        "puedo",
+        "lista",
+    ):
+        return "targets"
+
     # Chat / pregunta IA
     if (
         cmd.endswith("?")
@@ -141,6 +153,13 @@ def classify_intent(cmd: str) -> str | None:
         or cmd.startswith("cuantas ")
         or cmd.startswith("por que ")
         or cmd.startswith("como funciona ")
+        or cmd.startswith("dame ")
+        or cmd.startswith("dime ")
+        or cmd.startswith("muestrame ")
+        or cmd.startswith("comparame ")
+        or cmd.startswith("que tan ")
+        or cmd.startswith("resumeme ")
+        or _match("metricas de", "metrica de", "smape de", "mase de", "rmse de")
     ):
         return "chat"
 
