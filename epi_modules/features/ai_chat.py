@@ -140,17 +140,19 @@ def _enrich_from_history(query: str, history: list[dict[str, str]]) -> str:
 
     Si la pregunta es ambigua (muy corta, sin entidades claras), inyecta
     entidades del ultimo turno para que KnowledgeBase las detecte.
+    Tambien propaga semanas epidemiologicas mencionadas en turnos previos.
     """
     if not history:
         return query
 
-    from .knowledge_base import _detect_entities
+    from .knowledge_base import _detect_entities, _extract_weeks
 
     current = _detect_entities(query)
     has_pad = current.get("padecimiento") is not None
     has_est = current.get("estado") is not None
+    has_week = bool(current.get("_weeks"))
 
-    if has_pad and has_est:
+    if has_pad and has_est and has_week:
         return query
 
     # Buscar en los ultimos 4 turnos del usuario
@@ -158,15 +160,34 @@ def _enrich_from_history(query: str, history: list[dict[str, str]]) -> str:
     if not recent_user:
         return query
 
+    parts: list[str] = []
     for prev_q in reversed(recent_user):
         prev_ent = _detect_entities(prev_q)
-        parts = []
         if not has_pad and prev_ent.get("padecimiento"):
             parts.append(prev_ent["padecimiento"])
+            has_pad = True
         if not has_est and prev_ent.get("estado"):
             parts.append(prev_ent["estado"])
+            has_est = True
+        if not has_week:
+            prev_weeks = _extract_weeks(prev_q.lower())
+            if prev_weeks:
+                parts.append(f"semana {prev_weeks[0]}")
+                has_week = True
         if parts:
-            return f"{query} {' '.join(parts)}"
+            break
+
+    # Tambien check assistant responses for week mentions (KB may have said "semana 7")
+    if not has_week:
+        recent_asst = [h["text"] for h in history[-6:] if h["role"] == "assistant"]
+        for prev_a in reversed(recent_asst):
+            prev_weeks = _extract_weeks(prev_a.lower())
+            if prev_weeks:
+                parts.append(f"semana {prev_weeks[0]}")
+                break
+
+    if parts:
+        return f"{query} {' '.join(parts)}"
 
     return query
 

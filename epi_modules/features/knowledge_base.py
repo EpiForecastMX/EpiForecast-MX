@@ -1679,7 +1679,7 @@ class KnowledgeBase:
         return "\n".join(lines)
 
     def _answer_validacion(self, q: str, ent: dict, s: dict) -> str | None:
-        """Responde sobre validacion semanal y precision historica."""
+        """Responde sobre validacion semanal, precision historica y pronostico vs real."""
         triggers = [
             "validacion",
             "semanal",
@@ -1687,10 +1687,104 @@ class KnowledgeBase:
             "predicho vs real",
             "precision historica",
             "acierto",
+            "pronosticado",
+            "pronosticamos",
+            "pronosticaste",
+            "predijimos",
+            "predijeron",
+            "habiamos pronosticado",
+            "habias pronosticado",
+            "pronostico vs",
+            "vs realidad",
+            "vs real",
+            "acertamos",
+            "acertaron",
+            "le atinamos",
+            "atinamos",
+            "fallamos",
         ]
         if not any(t in q for t in triggers):
             return None
 
+        prod = self.cache.prod_models
+        pad = ent.get("padecimiento")
+        estado = ent.get("estado")
+        sexo = ent.get("sexo")
+
+        # Si preguntan cuanto pronosticamos, mostrar pron_sem_previa vs realidad
+        is_forecast_q = any(
+            t in q
+            for t in [
+                "pronosticado",
+                "pronosticamos",
+                "pronosticaste",
+                "predijimos",
+                "predijeron",
+                "habiamos pronosticado",
+                "habias pronosticado",
+                "acertamos",
+                "acertaron",
+                "le atinamos",
+                "atinamos",
+                "fallamos",
+            ]
+        )
+
+        if is_forecast_q and prod is not None and not prod.empty:
+            df = prod.copy()
+            # Filtrar por entidades detectadas
+            if pad:
+                pad_n = _norm(pad)
+                df = df[df["padecimiento"].apply(lambda x: _norm(str(x)) == pad_n)]
+            if estado and estado != "Nacional":
+                est_n = _norm(estado)
+                df = df[df["entidad"].apply(lambda x: est_n in _norm(str(x)))]
+            if sexo:
+                df = df[df["sexo"].str.lower() == sexo.lower()]
+
+            if "pron_sem_previa" in df.columns and "realidad_sem_previa" in df.columns:
+                pron_total = int(df["pron_sem_previa"].fillna(0).sum())
+                real_total = int(df["realidad_sem_previa"].fillna(0).sum())
+
+                # Detectar cual semana es
+                sem_label = "la semana previa"
+                weeks = ent.get("_weeks", [])
+                if weeks:
+                    sem_label = f"la semana {weeks[0]}"
+
+                lines = [f"**Pronostico vs realidad ({sem_label})**\n"]
+                lines.append(f"- Casos pronosticados: **{pron_total:,}**")
+                lines.append(f"- Casos reales: **{real_total:,}**")
+                diff = pron_total - real_total
+                if real_total > 0:
+                    error_pct = abs(diff) / real_total * 100
+                    direction = "sobreestimamos" if diff > 0 else "subestimamos"
+                    lines.append(f"- Diferencia: {diff:+,} ({direction} por {error_pct:.1f}%)")
+
+                # Desglose por padecimiento si no se filtro
+                if not pad and "padecimiento" in df.columns:
+                    lines.append("\n**Desglose por padecimiento**:")
+                    for p in sorted(df["padecimiento"].unique()):
+                        sub = df[df["padecimiento"] == p]
+                        p_pron = int(sub["pron_sem_previa"].fillna(0).sum())
+                        p_real = int(sub["realidad_sem_previa"].fillna(0).sum())
+                        p_diff = p_pron - p_real
+                        lines.append(
+                            f"- {p}: pronostico {p_pron:,} vs real {p_real:,} ({p_diff:+,})"
+                        )
+
+                # Desglose por sexo si se filtro por padecimiento pero no por sexo
+                if pad and not sexo and "sexo" in df.columns:
+                    lines.append(f"\n**Desglose por sexo ({pad})**:")
+                    for sx in sorted(df["sexo"].unique()):
+                        sub = df[df["sexo"] == sx]
+                        s_pron = int(sub["pron_sem_previa"].fillna(0).sum())
+                        s_real = int(sub["realidad_sem_previa"].fillna(0).sum())
+                        lines.append(f"- {sx}: pronostico {s_pron:,} vs real {s_real:,}")
+
+                return "\n".join(lines)
+
+        # Respuesta generica de validacion
         lines = ["**Validacion**:\n"]
         vs = s.get("validacion_semanal")
         if vs:
