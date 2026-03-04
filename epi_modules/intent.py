@@ -181,6 +181,8 @@ def classify_intent(cmd: str) -> str | None:
         or cmd.startswith("que es ")
         or cmd.startswith("qual es ")
         or cmd.startswith("cual es ")
+        or cmd.startswith("quien ")
+        or cmd.startswith("quienes ")
         or cmd.startswith("cuantos ")
         or cmd.startswith("cuantas ")
         or cmd.startswith("cuanto ")
@@ -208,6 +210,7 @@ def classify_intent(cmd: str) -> str | None:
         or cmd.startswith("y entonces ")
         or cmd.startswith("y cual ")
         or _match("metricas de", "metrica de", "smape de", "mase de", "rmse de")
+        or _match("equipo", "integrantes", "autores", "creadores")
     ):
         return "chat"
 

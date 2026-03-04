@@ -422,6 +422,8 @@ class KnowledgeBase:
 
         # Intentar cada handler en orden de especificidad
         handlers: list[tuple[str, ...]] = [
+            # Equipo / integrantes del proyecto
+            ("_answer_equipo",),
             # Contexto temporal (fecha, semana epi, cobertura datos)
             ("_answer_temporal",),
             # Semana actual / siguiente / casos nuevos
@@ -469,6 +471,146 @@ class KnowledgeBase:
     # ------------------------------------------------------------------
     # Handlers individuales
     # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    # Equipo / integrantes del proyecto
+    # ------------------------------------------------------------------
+
+    _EQUIPO = {
+        "javier": {
+            "nombre": "Javier Augusto Rebull Saucedo",
+            "apodo": "JAR",
+            "matricula": "A01795838",
+            "rol": "Líder técnico y arquitecto principal del pipeline MLOps",
+            "empleo": "Senior Associate Developer en Santander Bank US",
+            "commits": 820,
+            "desc": (
+                "Diseñó la arquitectura completa del proyecto: factory de modelos, "
+                "configuración dinámica con OmegaConf, pipeline de datos, sistema de "
+                "evaluación multi-métrica y la consola interactiva EPI. Responsable "
+                "de la integración de Prophet, DeepAR, Ensemble y Stacking."
+            ),
+            "aliases": [
+                "javier",
+                "jar",
+                "rebull",
+                "rebull saucedo",
+                "javier rebull",
+                "javier augusto",
+            ],
+        },
+        "juan": {
+            "nombre": "Juan Carlos Pérez Nava",
+            "apodo": "Jarcos",
+            "matricula": "A01795941",
+            "rol": "Desarrollador e integrador de datos IMSS",
+            "empleo": "Jefe de Área en el Instituto Mexicano del Seguro Social (IMSS)",
+            "commits": 288,
+            "desc": (
+                "Responsable de la integración con los sistemas de datos del IMSS, "
+                "validación de datos del boletín epidemiológico y aseguramiento de "
+                "calidad. Su conocimiento institucional del IMSS fue clave para el "
+                "diseño del pipeline de extracción y las reglas de negocio."
+            ),
+            "aliases": [
+                "juan",
+                "juan carlos",
+                "jarcos",
+                "perez nava",
+                "perez",
+                "nava",
+                "juan perez",
+            ],
+        },
+        "luis": {
+            "nombre": "Luis Gerardo Sánchez Salazar",
+            "apodo": "Jerry",
+            "matricula": "A01232963",
+            "rol": "Desarrollador y especialista en modelado",
+            "empleo": "Senior Controls Engineer en Tesla",
+            "commits": 201,
+            "desc": (
+                "Contribuyó al desarrollo de modelos de pronóstico, experimentación "
+                "con hiperparámetros y validación cruzada. Su experiencia en "
+                "ingeniería de control aportó rigor analítico al diseño de los "
+                "sistemas de evaluación y diagnóstico de overfitting."
+            ),
+            "aliases": [
+                "luis",
+                "luis gerardo",
+                "jerry",
+                "sanchez salazar",
+                "sanchez",
+                "salazar",
+                "luis sanchez",
+                "gerardo",
+            ],
+        },
+    }
+
+    def _answer_equipo(self, q: str, ent: dict, s: dict) -> str | None:
+        """Responde sobre los integrantes del equipo EpiForecast-MX."""
+        # Preguntar por el equipo completo
+        equipo_triggers = [
+            "equipo",
+            "integrantes",
+            "miembros",
+            "quienes son",
+            "quienes hicieron",
+            "quienes crearon",
+            "quienes desarrollaron",
+            "autores",
+            "creadores",
+        ]
+        if any(t in q for t in equipo_triggers):
+            lines = [
+                "**Equipo EpiForecast-MX (Equipo 01)**\n",
+                "Maestría en Inteligencia Artificial Aplicada · Tecnológico de Monterrey\n",
+            ]
+            for info in self._EQUIPO.values():
+                lines.append(
+                    f"- **{info['nombre']}** ({info['apodo']}) · {info['matricula']}\n"
+                    f"  {info['rol']} · {info['empleo']}\n"
+                    f"  {info['commits']} commits"
+                )
+            lines.append(
+                "\nProyecto integrador para el IMSS: pronóstico epidemiológico "
+                "multi-modelo de Depresión (F32), Parkinson (G20) y Alzheimer (G30)."
+            )
+            return "\n".join(lines)
+
+        # Preguntar por un integrante específico
+        person_triggers = [
+            "quien es",
+            "quien fue",
+            "que hace",
+            "que hizo",
+            "conoces a",
+            "dime de",
+            "dime sobre",
+            "hablame de",
+            "cuentame de",
+            "cuentame sobre",
+        ]
+        is_person_q = any(t in q for t in person_triggers)
+
+        # También detectar nombre/apodo directo en preguntas cortas
+        if not is_person_q and len(q.split()) > 3:
+            return None
+
+        for info in self._EQUIPO.values():
+            if any(alias in q for alias in info["aliases"]):
+                return (
+                    f"**{info['nombre']}**\n\n"
+                    f"- **Apodo:** {info['apodo']}\n"
+                    f"- **Matrícula:** {info['matricula']}\n"
+                    f"- **Rol:** {info['rol']}\n"
+                    f"- **Empleo actual:** {info['empleo']}\n"
+                    f"- **Commits:** {info['commits']}\n\n"
+                    f"{info['desc']}"
+                )
+
+        return None
 
     # ------------------------------------------------------------------
     # Contexto temporal (fecha, semana epi, cobertura de datos)
