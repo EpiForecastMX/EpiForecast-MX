@@ -63,6 +63,11 @@ GREETINGS = {
 
 EXIT_WORDS = {
     "salir",
+    "sal",
+    "salte",
+    "salirse",
+    "salme",
+    "salgase",
     "exit",
     "quit",
     "q",
@@ -81,7 +86,13 @@ EXIT_WORDS = {
     "me voy",
     "nos vemos",
     "vamonos",
+    "ya me voy",
+    "me salgo",
+    "cierrate",
+    "cierra",
 }
+# Prefijos que implican salir (captura "salte de aqui", "cerrar sesion", etc.)
+_EXIT_PREFIXES = ("sal ", "salte ", "salirse ", "fuera ", "cerrar ", "me salgo ", "ya ", "cierr")
 CLEAR_WORDS = {"limpia", "clear", "cls", "limpiar"}
 
 
@@ -136,7 +147,7 @@ def classify_intent(cmd: str) -> str | None:
         return "saludo"
 
     # Salir
-    if stripped in EXIT_WORDS:
+    if stripped in EXIT_WORDS or cmd.startswith(_EXIT_PREFIXES):
         return "salir"
 
     # Limpiar pantalla
