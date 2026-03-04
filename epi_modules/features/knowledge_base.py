@@ -408,6 +408,10 @@ class KnowledgeBase:
 
         # Intentar cada handler en orden de especificidad
         handlers: list[tuple[str, ...]] = [
+            # Semana actual / siguiente / casos nuevos
+            ("_answer_semana_actual",),
+            # Que es un padecimiento (descripcion medica)
+            ("_answer_que_es_padecimiento",),
             # Consultas historicas al boletin epidemiologico
             ("_answer_boletin",),
             # Consultas especificas (padecimiento + estado + metrica)
@@ -449,6 +453,392 @@ class KnowledgeBase:
     # ------------------------------------------------------------------
     # Handlers individuales
     # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    # Semana actual / siguiente / casos nuevos
+    # ------------------------------------------------------------------
+
+    def _answer_semana_actual(self, q: str, ent: dict, s: dict) -> str | None:
+        """Responde preguntas sobre la semana actual, siguiente o casos recientes."""
+        triggers = [
+            "esta semana",
+            "semana actual",
+            "semana pasada",
+            "semana anterior",
+            "semana previa",
+            "semana siguiente",
+            "proxima semana",
+            "siguiente semana",
+            "casos nuevos",
+            "llegaron caso",
+            "nuevos caso",
+            "ultimo dato",
+            "ultimos dato",
+            "dato reciente",
+            "datos reciente",
+            "dato mas reciente",
+            "ultimo reporte",
+            "ultimo boletin",
+            "mas reciente",
+            "hoy",
+            "proyectado",
+            "proyeccion semana",
+            "pronostico semana",
+            "cuantos caso.*semana",
+        ]
+        if not any(t in q for t in triggers) and not re.search(r"cuantos?\s+caso.*semana", q):
+            return None
+
+        import pandas as pd
+
+        pad = ent.get("padecimiento")
+        estado = ent.get("estado")
+        sexo = ent.get("sexo")
+
+        lines: list[str] = []
+
+        # --- Parte 1: Datos reales mas recientes (boletin) ---
+        is_past = any(
+            t in q
+            for t in [
+                "esta semana",
+                "semana actual",
+                "semana pasada",
+                "semana anterior",
+                "semana previa",
+                "casos nuevos",
+                "llegaron caso",
+                "nuevos caso",
+                "ultimo dato",
+                "ultimos dato",
+                "dato reciente",
+                "datos reciente",
+                "dato mas reciente",
+                "mas reciente",
+                "ultimo reporte",
+                "ultimo boletin",
+                "hoy",
+            ]
+        )
+
+        if is_past:
+            df_bol = self.cache.boletin
+            if df_bol is not None and not df_bol.empty:
+                latest_year = int(df_bol["Anio"].max())
+                latest_week = int(df_bol[df_bol["Anio"] == latest_year]["Semana"].max())
+                latest = df_bol[
+                    (df_bol["Anio"] == latest_year) & (df_bol["Semana"] == latest_week)
+                ]
+
+                lines.append(
+                    f"**Ultimo boletin disponible: semana epidemiologica "
+                    f"{latest_week} de {latest_year}**\n"
+                )
+
+                # Filtrar por padecimiento si se especifica
+                sub = latest
+                if pad:
+                    pad_n = _norm(pad)
+                    sub = sub[sub["Padecimiento"].apply(lambda x: _norm(str(x)) == pad_n)]
+                if estado:
+                    est_n = _norm(estado)
+                    if est_n in (
+                        "ciudad de mexico",
+                        "distrito federal",
+                        "cdmx",
+                    ):
+                        sub = sub[
+                            sub["Entidad"].apply(
+                                lambda x: _norm(str(x))
+                                in (
+                                    "ciudad de mexico",
+                                    "distrito federal",
+                                )
+                            )
+                        ]
+                    else:
+                        sub = sub[sub["Entidad"].apply(lambda x: est_n in _norm(str(x)))]
+
+                if sub.empty:
+                    lines.append("No se encontraron datos con esos filtros.")
+                else:
+                    total = int(sub["Casos_semana"].sum())
+                    lines.append(f"Casos reportados en semana {latest_week}: **{total:,}**\n")
+
+                    by_pad = (
+                        sub.groupby("Padecimiento")["Casos_semana"]
+                        .sum()
+                        .sort_values(ascending=False)
+                    )
+                    for p, c in by_pad.items():
+                        if not pd.isna(c):
+                            lines.append(f"- {p}: {int(c):,}")
+
+                    # Top 5 estados si no se filtro por estado
+                    if not estado and len(sub["Entidad"].unique()) > 5:
+                        top5 = (
+                            sub.groupby("Entidad")["Casos_semana"]
+                            .sum()
+                            .sort_values(ascending=False)
+                            .head(5)
+                        )
+                        lines.append("\nTop 5 entidades esta semana:")
+                        for e, c in top5.items():
+                            if not pd.isna(c):
+                                lines.append(f"  - {e}: {int(c):,}")
+
+                # Comparar con semana anterior
+                prev_week = latest_week - 1
+                prev_year = latest_year
+                if prev_week < 1:
+                    prev_week = 52
+                    prev_year -= 1
+                prev = df_bol[(df_bol["Anio"] == prev_year) & (df_bol["Semana"] == prev_week)]
+                if not prev.empty:
+                    prev_total = int(prev["Casos_semana"].sum())
+                    curr_total = int(latest["Casos_semana"].sum())
+                    if prev_total > 0:
+                        cambio = (curr_total - prev_total) / prev_total * 100
+                        arrow = "+" if cambio >= 0 else ""
+                        lines.append(
+                            f"\nCambio vs semana {prev_week}: "
+                            f"{arrow}{cambio:.1f}% ({prev_total:,} -> {curr_total:,})"
+                        )
+
+        # --- Parte 2: Proyeccion de la semana siguiente (tableau) ---
+        is_future = any(
+            t in q
+            for t in [
+                "semana siguiente",
+                "proxima semana",
+                "siguiente semana",
+                "proyectado",
+                "proyeccion semana",
+                "pronostico semana",
+            ]
+        ) or re.search(r"cuantos?\s+caso.*semana\s+siguiente", q)
+
+        if is_future or (sexo and any(t in q for t in ["semana", "proyectado"])):
+            tab = self.cache.tableau
+            if tab is not None:
+                tab_df = tab.copy()
+                tab_df["ds"] = pd.to_datetime(tab_df["ds"])
+
+                # Encontrar la semana mas cercana al futuro inmediato
+                from datetime import datetime, timedelta
+
+                today = datetime.now().date()
+                # Buscar lunes de la proxima semana
+                days_to_monday = (7 - today.weekday()) % 7
+                if days_to_monday == 0:
+                    days_to_monday = 7
+                next_monday = today + timedelta(days=days_to_monday)
+
+                # Buscar la fecha mas cercana en tableau
+                all_dates = sorted(tab_df["ds"].unique())
+                target_ts = pd.Timestamp(next_monday)
+                closest = min(all_dates, key=lambda d: abs(d - target_ts))
+
+                week_data = tab_df[tab_df["ds"] == closest]
+                if not week_data.empty:
+                    if lines:
+                        lines.append("")
+                    lines.append(
+                        f"**Proyeccion para semana del {closest.strftime('%d/%m/%Y')}**\n"
+                    )
+
+                    sub_w = week_data
+                    if pad:
+                        pad_n = _norm(pad)
+                        sub_w = sub_w[
+                            sub_w["padecimiento"].apply(lambda x: _norm(str(x)) == pad_n)
+                        ]
+                    if estado and estado != "Nacional":
+                        est_n = _norm(estado)
+                        sub_w = sub_w[sub_w["entidad"].apply(lambda x: est_n in _norm(str(x)))]
+                    if sexo and "meta_modo" in sub_w.columns:
+                        sub_w = sub_w[sub_w["meta_modo"] == sexo]
+
+                    if sub_w.empty:
+                        lines.append("No se encontraron proyecciones con esos filtros.")
+                    else:
+                        total_yhat = int(sub_w["yhat"].sum())
+                        lines.append(f"Casos proyectados: **{total_yhat:,}**\n")
+
+                        # Desglose por padecimiento
+                        by_p = (
+                            sub_w.groupby("padecimiento")["yhat"]
+                            .sum()
+                            .sort_values(ascending=False)
+                        )
+                        for p, c in by_p.items():
+                            lines.append(f"- {p}: {int(c):,}")
+
+                        # Desglose por sexo si no se filtro
+                        if not sexo and "meta_modo" in sub_w.columns:
+                            lines.append("\nPor grupo:")
+                            by_modo = (
+                                sub_w.groupby("meta_modo")["yhat"]
+                                .sum()
+                                .sort_values(ascending=False)
+                            )
+                            for m, c in by_modo.items():
+                                lines.append(f"  - {m}: {int(c):,}")
+
+        # --- Parte 3: Validacion semana previa (prod_models) ---
+        if is_past and not lines:
+            # Fallback: usar pron_sem_previa y realidad_sem_previa
+            prod = self.cache.prod_models
+            if prod is not None:
+                sub_p = prod
+                if pad:
+                    pad_n = _norm(pad)
+                    sub_p = sub_p[sub_p["padecimiento"].apply(lambda x: _norm(str(x)) == pad_n)]
+                if sexo:
+                    sub_p = sub_p[sub_p["sexo"].str.lower() == sexo.lower()]
+
+                pron = int(sub_p["pron_sem_previa"].sum())
+                real = int(sub_p["realidad_sem_previa"].sum())
+                lines.append("**Validacion de la semana previa**:\n")
+                lines.append(f"- Casos pronosticados: {pron:,}")
+                lines.append(f"- Casos reales: {real:,}")
+                if pron > 0:
+                    error_pct = abs(real - pron) / real * 100 if real > 0 else 0
+                    lines.append(f"- Error: {error_pct:.1f}%")
+
+        return "\n".join(lines) if lines else None
+
+    # ------------------------------------------------------------------
+    # Descripcion medica de padecimientos
+    # ------------------------------------------------------------------
+
+    _PADECIMIENTO_INFO: dict[str, str] = {
+        "depresion": (
+            "**Depresion (CIE-10: F32)**\n\n"
+            "La depresion es un trastorno del estado de animo caracterizado por "
+            "tristeza persistente, perdida de interes en actividades cotidianas, "
+            "fatiga, alteraciones del sueno y dificultad para concentrarse. Es una "
+            "de las principales causas de discapacidad a nivel mundial segun la OMS.\n\n"
+            "**Efectos en la salud**:\n"
+            "- Deterioro cognitivo y dificultad para tomar decisiones\n"
+            "- Alteraciones del apetito y peso corporal\n"
+            "- Insomnio o hipersomnia cronica\n"
+            "- Mayor riesgo cardiovascular\n"
+            "- Debilitamiento del sistema inmunologico\n"
+            "- Aislamiento social y deterioro de relaciones\n"
+            "- Reduccion significativa de la productividad laboral\n\n"
+            "**En Mexico (IMSS)**: es el padecimiento con mayor incidencia de los "
+            "tres que monitoreamos. Afecta predominantemente a mujeres (proporcion "
+            "~3:1) y presenta estacionalidad marcada con picos en periodos post-vacacionales.\n\n"
+            "*Esta informacion es de caracter general y no constituye consejo medico.*"
+        ),
+        "parkinson": (
+            "**Enfermedad de Parkinson (CIE-10: G20)**\n\n"
+            "El Parkinson es un trastorno neurodegenerativo progresivo que afecta "
+            "el sistema nervioso central, causado por la perdida de neuronas "
+            "dopaminergicas en la sustancia negra del cerebro. Se manifiesta "
+            "principalmente con temblor en reposo, rigidez muscular, lentitud "
+            "de movimiento (bradicinesia) e inestabilidad postural.\n\n"
+            "**Efectos en la salud**:\n"
+            "- Temblores involuntarios que dificultan actividades diarias\n"
+            "- Rigidez muscular y dolor articular\n"
+            "- Dificultad progresiva para caminar y mantener el equilibrio\n"
+            "- Problemas de deglucion y habla\n"
+            "- Trastornos del sueno (movimientos oculares rapidos)\n"
+            "- Deterioro cognitivo en etapas avanzadas\n"
+            "- Depresion y ansiedad como comorbilidades frecuentes\n\n"
+            "**En Mexico (IMSS)**: la incidencia es moderada comparada con la "
+            "depresion. Afecta ligeramente mas a hombres y su prevalencia crece "
+            "con la edad. Los estados del norte presentan tasas mas elevadas.\n\n"
+            "*Esta informacion es de caracter general y no constituye consejo medico.*"
+        ),
+        "alzheimer": (
+            "**Enfermedad de Alzheimer (CIE-10: G30)**\n\n"
+            "El Alzheimer es la forma mas comun de demencia. Es una enfermedad "
+            "neurodegenerativa progresiva que destruye neuronas y conexiones "
+            "cerebrales, afectando memoria, pensamiento y comportamiento. "
+            "Comienza con olvidos leves y progresa hasta la perdida de capacidad "
+            "para conversar y responder al entorno.\n\n"
+            "**Efectos en la salud**:\n"
+            "- Perdida progresiva de memoria (primero reciente, luego remota)\n"
+            "- Desorientacion temporal y espacial\n"
+            "- Dificultad para planificar y resolver problemas\n"
+            "- Cambios de personalidad y comportamiento\n"
+            "- Perdida de autonomia para actividades basicas\n"
+            "- Deterioro del lenguaje y la comunicacion\n"
+            "- Carga significativa para cuidadores y familiares\n\n"
+            "**En Mexico (IMSS)**: es el padecimiento con menor incidencia de los "
+            "tres, pero con tendencia creciente vinculada al envejecimiento "
+            "poblacional. Jalisco, Chihuahua y Sinaloa reportan las tasas mas altas. "
+            "Su SMAPE de prediccion es el mas elevado (>100%) debido a la baja "
+            "frecuencia y alta variabilidad entre entidades.\n\n"
+            "*Esta informacion es de caracter general y no constituye consejo medico.*"
+        ),
+    }
+
+    def _answer_que_es_padecimiento(self, q: str, ent: dict, s: dict) -> str | None:
+        """Responde que es un padecimiento con descripcion medica general."""
+        # Triggers exactos con word boundary para evitar false positives
+        regex_triggers = [
+            r"\bque es\b",
+            r"\bque significa\b",
+            r"\bdime sobre\b",
+            r"\bcuentame sobre\b",
+            r"\bexplicame\b",
+            r"\binformacion sobre\b",
+            r"\bhablame de\b",
+            r"\bdescribe\b",
+            r"\bsintoma",
+            r"\befecto",
+            r"\bconsecuencia",
+            r"\bcausa\b",
+            r"\briesgo",
+            r"\bimpacto en la salud\b",
+            r"\bafecta\b",
+            r"\bprovoca\b",
+            r"\benfermedad\b",
+            r"\btrastorno\b",
+            r"padecimiento.*\bes\b",
+        ]
+        has_trigger = any(re.search(pat, q) for pat in regex_triggers)
+        if not has_trigger:
+            return None
+
+        pad = ent.get("padecimiento")
+        if not pad:
+            # Intentar detectar sin alias standard
+            if any(t in q for t in ["los tres", "los 3", "tres padecimiento"]):
+                # Devolver los tres
+                parts = []
+                for key in ["depresion", "parkinson", "alzheimer"]:
+                    parts.append(self._PADECIMIENTO_INFO[key])
+                return "\n\n---\n\n".join(parts)
+            return None
+
+        key = _norm(pad)
+        info = self._PADECIMIENTO_INFO.get(key)
+        if not info:
+            return None
+
+        # Agregar datos del proyecto si estan disponibles
+        pad_stats = s.get("por_pad", {}).get(pad)
+        if pad_stats:
+            cas = pad_stats.get("casos_futuro_total")
+            sm = pad_stats.get("smape_prod_mean")
+            extra = "\n\n**Datos del proyecto EpiForecast-MX**:\n"
+            if cas:
+                extra += f"- Pronostico 52 semanas: {cas:,} casos\n"
+            if sm:
+                extra += f"- SMAPE promedio: {sm}%\n"
+            ganador = pad_stats.get("motor_ganador")
+            if ganador:
+                extra += f"- Motor ganador: {ganador}\n"
+            n = pad_stats.get("n")
+            if n:
+                extra += f"- Modelos de produccion: {n}"
+            info += extra
+
+        return info
 
     # ------------------------------------------------------------------
     # Boletin epidemiologico (datos historicos 2014-2026)
