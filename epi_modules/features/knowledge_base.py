@@ -408,6 +408,8 @@ class KnowledgeBase:
 
         # Intentar cada handler en orden de especificidad
         handlers: list[tuple[str, ...]] = [
+            # Contexto temporal (fecha, semana epi, cobertura datos)
+            ("_answer_temporal",),
             # Semana actual / siguiente / casos nuevos
             ("_answer_semana_actual",),
             # Que es un padecimiento (descripcion medica)
@@ -453,6 +455,176 @@ class KnowledgeBase:
     # ------------------------------------------------------------------
     # Handlers individuales
     # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    # Contexto temporal (fecha, semana epi, cobertura de datos)
+    # ------------------------------------------------------------------
+
+    def _answer_temporal(self, q: str, ent: dict, s: dict) -> str | None:
+        """Responde preguntas sobre fecha, semana epidemiologica y cobertura temporal."""
+        triggers = [
+            "que dia",
+            "que fecha",
+            "fecha de hoy",
+            "dia de hoy",
+            "fecha actual",
+            "semana epidemiologica",
+            "semana epi",
+            "en que semana",
+            "que semana es",
+            "que semana estamos",
+            "semana estamos",
+            "ultima semana",
+            "ultimo dato",
+            "hasta cuando",
+            "hasta que fecha",
+            "hasta que semana",
+            "cobertura temporal",
+            "rango de fecha",
+            "periodo de dato",
+            "desde cuando",
+            "cuando inicia",
+            "cuando empieza",
+            "horizonte",
+        ]
+        if not any(t in q for t in triggers):
+            return None
+
+        from datetime import datetime, timedelta
+
+        now = datetime.now()
+        today = now.date()
+
+        # Calcular semana epidemiologica (ISO week ~= epi week para Mexico)
+        iso_year, iso_week, _ = today.isocalendar()
+
+        lines: list[str] = []
+
+        # --- Fecha actual ---
+        is_date_q = any(
+            t in q for t in ["que dia", "que fecha", "fecha de hoy", "dia de hoy", "fecha actual"]
+        )
+        if is_date_q:
+            dias = [
+                "lunes",
+                "martes",
+                "miercoles",
+                "jueves",
+                "viernes",
+                "sabado",
+                "domingo",
+            ]
+            meses = [
+                "enero",
+                "febrero",
+                "marzo",
+                "abril",
+                "mayo",
+                "junio",
+                "julio",
+                "agosto",
+                "septiembre",
+                "octubre",
+                "noviembre",
+                "diciembre",
+            ]
+            dia_sem = dias[today.weekday()]
+            mes = meses[today.month - 1]
+            lines.append(f"Hoy es **{dia_sem} {today.day} de {mes} de {today.year}**")
+            lines.append(f"Semana epidemiologica: **{iso_week}** de {iso_year}")
+
+        # --- Semana epidemiologica ---
+        is_week_q = any(
+            t in q
+            for t in [
+                "semana epidemiologica",
+                "semana epi",
+                "en que semana",
+                "que semana es",
+                "que semana estamos",
+                "semana estamos",
+            ]
+        )
+        if is_week_q and not is_date_q:
+            lines.append(f"Estamos en la **semana epidemiologica {iso_week}** de {iso_year}")
+            # Rango de la semana (lunes a domingo)
+            lunes = today - timedelta(days=today.weekday())
+            domingo = lunes + timedelta(days=6)
+            lines.append(f"Del {lunes.strftime('%d/%m/%Y')} al {domingo.strftime('%d/%m/%Y')}")
+
+        # --- Cobertura temporal de los datos ---
+        is_coverage_q = any(
+            t in q
+            for t in [
+                "ultima semana",
+                "ultimo dato",
+                "hasta cuando",
+                "hasta que fecha",
+                "hasta que semana",
+                "cobertura temporal",
+                "rango de fecha",
+                "periodo de dato",
+                "desde cuando",
+                "cuando inicia",
+                "cuando empieza",
+            ]
+        )
+        if is_coverage_q:
+            df_bol = self.cache.boletin
+            if df_bol is not None and not df_bol.empty:
+                min_year = int(df_bol["Anio"].min())
+                max_year = int(df_bol["Anio"].max())
+                max_week = int(df_bol[df_bol["Anio"] == max_year]["Semana"].max())
+                min_week = int(df_bol[df_bol["Anio"] == min_year]["Semana"].min())
+                total_rows = len(df_bol)
+
+                if lines:
+                    lines.append("")
+                lines.append("**Cobertura del boletin epidemiologico**:")
+                lines.append(f"- Desde: semana {min_week} de {min_year}")
+                lines.append(f"- Hasta: **semana {max_week} de {max_year}**")
+                lines.append(f"- Registros totales: {total_rows:,}")
+                lines.append("- Padecimientos: Depresion (F32), Parkinson (G20), Alzheimer (G30)")
+                lines.append("- Entidades: 32 estados + Nacional")
+
+                # Rezago
+                rezago = (
+                    iso_week - max_week if max_year == iso_year else iso_week + (52 - max_week)
+                )
+                if rezago > 0:
+                    lines.append(
+                        f"- Rezago: ~{rezago} semana(s) respecto a la semana actual ({iso_week})"
+                    )
+
+            # Horizonte de pronostico
+            tab = self.cache.tableau
+            if tab is not None:
+                import pandas as pd
+
+                tab_ds = pd.to_datetime(tab["ds"])
+                min_ds = tab_ds.min()
+                max_ds = tab_ds.max()
+                lines.append("\n**Cobertura del pronostico (tableau)**:")
+                lines.append(f"- Desde: {min_ds.strftime('%d/%m/%Y')}")
+                lines.append(f"- Hasta: {max_ds.strftime('%d/%m/%Y')}")
+                lines.append("- Horizonte: 52 semanas hacia adelante")
+                lines.append("- Series: 333 (37 geo x 3 pad x 3 sexo)")
+
+        # --- Horizonte ---
+        if "horizonte" in q and not lines:
+            lines.append(
+                f"El horizonte de pronostico es de **52 semanas** "
+                f"(hasta enero {iso_year + 1} aproximadamente)."
+            )
+
+        # Siempre agregar contexto de semana epi si hay cualquier respuesta
+        if lines and not is_date_q and not is_week_q:
+            lines.insert(
+                0,
+                f"Fecha actual: {today.strftime('%d/%m/%Y')} (semana epidemiologica {iso_week})\n",
+            )
+
+        return "\n".join(lines) if lines else None
 
     # ------------------------------------------------------------------
     # Semana actual / siguiente / casos nuevos
