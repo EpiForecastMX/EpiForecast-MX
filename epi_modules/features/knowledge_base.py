@@ -100,6 +100,21 @@ def _match_entidad(search: str, entidad: str) -> bool:
     return _norm(search) in _norm(entidad)
 
 
+def _extract_years(q: str) -> list[int]:
+    """Extrae anos mencionados en la pregunta (2014-2026)."""
+    return sorted({int(m) for m in re.findall(r"\b(20[12]\d)\b", q) if 2014 <= int(m) <= 2026})
+
+
+def _extract_weeks(q: str) -> list[int]:
+    """Extrae semanas epidemiologicas (1-53) mencionadas en la pregunta."""
+    weeks: list[int] = []
+    for m in re.finditer(r"semana\s+(\d{1,2})", q):
+        w = int(m.group(1))
+        if 1 <= w <= 53:
+            weeks.append(w)
+    return sorted(set(weeks))
+
+
 def _detect_entities(q: str) -> dict[str, str | None]:
     """Detecta padecimiento, estado, sexo y modelo en la pregunta."""
     qn = _norm(q)
@@ -109,6 +124,8 @@ def _detect_entities(q: str) -> dict[str, str | None]:
         "sexo": None,
         "modelo": None,
     }
+    result["_years"] = _extract_years(qn)  # type: ignore[assignment]
+    result["_weeks"] = _extract_weeks(qn)  # type: ignore[assignment]
     for alias, canon in _PADECIMIENTO_ALIAS.items():
         if alias in qn:
             result["padecimiento"] = canon
@@ -391,6 +408,8 @@ class KnowledgeBase:
 
         # Intentar cada handler en orden de especificidad
         handlers: list[tuple[str, ...]] = [
+            # Consultas historicas al boletin epidemiologico
+            ("_answer_boletin",),
             # Consultas especificas (padecimiento + estado + metrica)
             ("_answer_specific_series",),
             # Consultas por estado
@@ -430,6 +449,295 @@ class KnowledgeBase:
     # ------------------------------------------------------------------
     # Handlers individuales
     # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    # Boletin epidemiologico (datos historicos 2014-2026)
+    # ------------------------------------------------------------------
+
+    def _query_boletin(
+        self,
+        padecimiento: str | None = None,
+        estado: str | None = None,
+        years: list[int] | None = None,
+        weeks: list[int] | None = None,
+    ):
+        """Filtra el boletin epidemiologico y retorna el subset."""
+        df = self.cache.boletin
+        if df is None or df.empty:
+            return None
+
+        if padecimiento:
+            pad_n = _norm(padecimiento)
+            df = df[df["Padecimiento"].apply(lambda x: _norm(str(x)) == pad_n)]
+        if estado:
+            est_n = _norm(estado)
+            # Manejo especial: "Ciudad de Mexico" y "Distrito Federal" son la misma entidad
+            if est_n in ("ciudad de mexico", "distrito federal", "cdmx"):
+                df = df[
+                    df["Entidad"].apply(
+                        lambda x: _norm(str(x)) in ("ciudad de mexico", "distrito federal")
+                    )
+                ]
+            else:
+                df = df[df["Entidad"].apply(lambda x: est_n in _norm(str(x)))]
+        if years:
+            df = df[df["Anio"].isin(years)]
+        if weeks:
+            df = df[df["Semana"].isin(weeks)]
+        return df if not df.empty else None
+
+    def _answer_boletin(self, q: str, ent: dict, s: dict) -> str | None:
+        """Responde preguntas sobre datos historicos del boletin epidemiologico."""
+        years: list[int] = ent.get("_years", [])  # type: ignore[assignment]
+        weeks: list[int] = ent.get("_weeks", [])  # type: ignore[assignment]
+
+        # Trigger: necesita al menos un ano, o keywords de datos historicos
+        hist_triggers = [
+            "caso",
+            "incidencia",
+            "registro",
+            "hubo",
+            "reporto",
+            "reportaron",
+            "historico",
+            "historica",
+            "tendencia",
+            "evolucion",
+            "serie de tiempo",
+            "serie temporal",
+            "boletin",
+            "sinave",
+            "acumulado",
+            "anual",
+            "semanal",
+            "covid",
+            "pandemia",
+            "comparar ano",
+            "comparar anio",
+            "crecio",
+            "crecimiento",
+            "bajo",
+            "subio",
+            "aumento",
+            "disminuyo",
+            "maximo",
+            "minimo",
+            "pico",
+            "record",
+        ]
+        has_year = bool(years)
+        has_hist_trigger = any(t in q for t in hist_triggers)
+        ranking_kw = [
+            "mas caso",
+            "mas incidencia",
+            "ranking",
+            "top ",
+            "mayor incidencia",
+            "mas reporta",
+            "menos caso",
+            "menor incidencia",
+            "que entidad",
+            "que estado",
+            "donde hay mas",
+            "cual tiene mas",
+        ]
+        is_ranking_q = any(t in q for t in ranking_kw)
+
+        if not has_year and not has_hist_trigger and not is_ranking_q:
+            return None
+
+        import pandas as pd
+
+        pad = ent.get("padecimiento")
+        estado = ent.get("estado")
+
+        # --- Caso 1: Consulta muy especifica (ano + estado + padecimiento) ---
+        if years and (pad or estado):
+            sub = self._query_boletin(pad, estado, years, weeks)
+            if sub is None or sub.empty:
+                return None
+
+            total_casos = sub["Casos_semana"].sum()
+            lines = []
+
+            # Titulo
+            parts_title = []
+            if pad:
+                parts_title.append(f"**{pad}**")
+            if estado:
+                parts_title.append(f"en **{estado}**")
+            yr_str = ", ".join(str(y) for y in years)
+            parts_title.append(f"({yr_str})")
+            if weeks:
+                wk_str = ", ".join(str(w) for w in weeks)
+                parts_title.append(f"semana(s) {wk_str}")
+            lines.append(" ".join(parts_title) + ":\n")
+
+            if not pd.isna(total_casos):
+                lines.append(f"- **Casos totales: {int(total_casos):,}**")
+
+            # Desglose por ano si multiples
+            if len(years) > 1:
+                lines.append("\nPor ano:")
+                for y in years:
+                    yr_sub = sub[sub["Anio"] == y]
+                    c = yr_sub["Casos_semana"].sum()
+                    if not pd.isna(c):
+                        lines.append(f"  - {y}: {int(c):,} casos")
+
+            # Si hay multiples entidades (estado no especificado)
+            if not estado and "Entidad" in sub.columns:
+                top_ent = sub.groupby("Entidad")["Casos_semana"].sum().sort_values(ascending=False)
+                if len(top_ent) > 1:
+                    lines.append("\nTop 10 entidades:")
+                    for e, c in top_ent.head(10).items():
+                        if not pd.isna(c):
+                            lines.append(f"  - {e}: {int(c):,}")
+
+            # Si hay estado pero no padecimiento, desglosar por padecimiento
+            if estado and not pad and "Padecimiento" in sub.columns:
+                by_pad = sub.groupby("Padecimiento")["Casos_semana"].sum()
+                lines.append("\nPor padecimiento:")
+                for p, c in by_pad.sort_values(ascending=False).items():
+                    if not pd.isna(c):
+                        lines.append(f"  - {p}: {int(c):,} casos")
+
+            # Acumulados hombre/mujer si disponibles
+            if estado and pad and len(years) == 1:
+                last_week = sub.sort_values("Semana").iloc[-1]
+                h = last_week.get("Acumulado_hombres")
+                m = last_week.get("Acumulado_mujeres")
+                if pd.notna(h) and pd.notna(m):
+                    lines.append(
+                        f"\nAcumulado {years[0]} (hasta semana {int(last_week['Semana'])}):"
+                    )
+                    lines.append(f"  - Hombres: {int(h):,}")
+                    lines.append(f"  - Mujeres: {int(m):,}")
+                    lines.append(f"  - Total: {int(h + m):,}")
+
+            return "\n".join(lines) if len(lines) > 1 else None
+
+        # --- Caso 2: Solo ano (resumen anual completo) ---
+        if years and not pad and not estado:
+            sub = self._query_boletin(years=years)
+            if sub is None:
+                return None
+            yr_str = ", ".join(str(y) for y in years)
+            lines = [f"**Resumen epidemiologico {yr_str}**:\n"]
+            for y in years:
+                yr_sub = sub[sub["Anio"] == y]
+                total = yr_sub["Casos_semana"].sum()
+                lines.append(f"**{y}**: {int(total):,} casos totales")
+                by_pad = yr_sub.groupby("Padecimiento")["Casos_semana"].sum()
+                for p, c in by_pad.sort_values(ascending=False).items():
+                    if not pd.isna(c):
+                        lines.append(f"  - {p}: {int(c):,}")
+                if len(years) > 1:
+                    lines.append("")
+            return "\n".join(lines)
+
+        # --- Caso 3: Ranking de entidades por casos (sin ano especifico) ---
+        if is_ranking_q:
+            df = self.cache.boletin
+            if df is None:
+                return None
+            sub = df.copy()
+            if pad:
+                pad_n = _norm(pad)
+                sub = sub[sub["Padecimiento"].apply(lambda x: _norm(str(x)) == pad_n)]
+            top_ent = sub.groupby("Entidad")["Casos_semana"].sum().sort_values(ascending=False)
+            pad_label = f" de {pad}" if pad else ""
+            lines = [f"**Top entidades por incidencia{pad_label}** (2014-2026):\n"]
+            for i, (e, c) in enumerate(top_ent.head(15).items(), 1):
+                if not pd.isna(c):
+                    lines.append(f"{i}. {e}: {int(c):,} casos")
+            return "\n".join(lines)
+
+        # --- Caso 4: Padecimiento (+ estado opcional) con trigger historico ---
+        if pad and not years and has_hist_trigger:
+            sub = self._query_boletin(padecimiento=pad, estado=estado)
+            if sub is None:
+                return None
+
+            by_year = sub.groupby("Anio")["Casos_semana"].sum().sort_index()
+            loc_label = f" en {estado}" if estado else ""
+            lines = [f"**{pad}{loc_label} - Evolucion historica** (2014-2026):\n"]
+            prev = None
+            for y, c in by_year.items():
+                if pd.isna(c):
+                    continue
+                c_int = int(c)
+                change = ""
+                if prev is not None and prev > 0:
+                    pct = (c_int - prev) / prev * 100
+                    arrow = "+" if pct >= 0 else ""
+                    change = f" ({arrow}{pct:.1f}%)"
+                lines.append(f"  - {y}: {c_int:,} casos{change}")
+                prev = c_int
+
+            # Pico y valle
+            max_y = by_year.idxmax()
+            min_y = by_year.idxmin()
+            lines.append(f"\nPico: {max_y} ({int(by_year[max_y]):,} casos)")
+            lines.append(f"Valle: {min_y} ({int(by_year[min_y]):,} casos)")
+
+            return "\n".join(lines)
+
+        # --- Caso 5: Solo estado con trigger historico (resumen por estado) ---
+        if estado and not years and has_hist_trigger:
+            df = self.cache.boletin
+            if df is None:
+                return None
+            est_n = _norm(estado)
+            if est_n in ("ciudad de mexico", "distrito federal", "cdmx"):
+                sub = df[
+                    df["Entidad"].apply(
+                        lambda x: _norm(str(x)) in ("ciudad de mexico", "distrito federal")
+                    )
+                ]
+            else:
+                sub = df[df["Entidad"].apply(lambda x: est_n in _norm(str(x)))]
+            if sub.empty:
+                return None
+
+            by_year = sub.groupby("Anio")["Casos_semana"].sum().sort_index()
+            lines = [f"**{estado} - Evolucion historica**:\n"]
+            lines.append(f"Total historico: {int(by_year.sum()):,} casos\n")
+            for y, c in by_year.items():
+                if not pd.isna(c):
+                    lines.append(f"  - {y}: {int(c):,}")
+
+            # Desglose por padecimiento
+            by_pad = sub.groupby("Padecimiento")["Casos_semana"].sum()
+            lines.append("\nPor padecimiento (historico total):")
+            for p, c in by_pad.sort_values(ascending=False).items():
+                if not pd.isna(c):
+                    lines.append(f"  - {p}: {int(c):,}")
+
+            return "\n".join(lines)
+
+        # --- Caso 6: Preguntas sobre COVID / pandemia ---
+        if any(t in q for t in ["covid", "pandemia"]):
+            df = self.cache.boletin
+            if df is None:
+                return None
+            lines = ["**Impacto COVID-19 en la incidencia**:\n"]
+            for pad_name in ["Depresion", "Parkinson", "Alzheimer"]:
+                pad_n = _norm(pad_name)
+                p_sub = df[df["Padecimiento"].apply(lambda x, pn=pad_n: _norm(str(x)) == pn)]
+                c19 = int(p_sub[p_sub["Anio"] == 2019]["Casos_semana"].sum())
+                c20 = int(p_sub[p_sub["Anio"] == 2020]["Casos_semana"].sum())
+                c21 = int(p_sub[p_sub["Anio"] == 2021]["Casos_semana"].sum())
+                drop = round((c20 - c19) / c19 * 100, 1) if c19 > 0 else 0
+                recov = round((c21 - c20) / c20 * 100, 1) if c20 > 0 else 0
+                lines.append(f"**{pad_name}**:")
+                lines.append(f"  - 2019 (pre-COVID): {c19:,}")
+                lines.append(f"  - 2020 (pandemia): {c20:,} ({drop:+.1f}%)")
+                lines.append(f"  - 2021 (recuperacion): {c21:,} ({recov:+.1f}%)")
+                lines.append("")
+            return "\n".join(lines)
+
+        return None
 
     def _answer_specific_series(
         self,
@@ -1141,6 +1449,66 @@ class KnowledgeBase:
         ph = s.get("precision_historica_mean")
         if ph:
             parts.append(f"Precision historica media: {ph}%")
+
+        # --- Datos historicos del boletin (si la pregunta lo requiere) ---
+        years: list[int] = entities.get("_years", [])  # type: ignore[assignment]
+        hist_kw = any(
+            t in _norm(query)
+            for t in [
+                "caso",
+                "historico",
+                "tendencia",
+                "hubo",
+                "boletin",
+                "anual",
+                "covid",
+                "pandemia",
+                "incidencia",
+                "registro",
+            ]
+        )
+        if years or hist_kw:
+            df_bol = self.cache.boletin
+            if df_bol is not None:
+                parts.append("\n=== BOLETIN EPIDEMIOLOGICO (datos historicos) ===")
+                parts.append(f"Registros totales: {len(df_bol):,} (2014-2026)")
+                parts.append(
+                    "Columnas: Anio, Semana, Entidad, Padecimiento, Casos_semana, "
+                    "Acumulado_hombres, Acumulado_mujeres, Acumulado_anio_anterior"
+                )
+
+                # Resumen por padecimiento y ano
+                by_yp = (
+                    df_bol.groupby(["Anio", "Padecimiento"])["Casos_semana"]
+                    .sum()
+                    .unstack(fill_value=0)
+                )
+                parts.append("\nCasos anuales por padecimiento:")
+                for y in by_yp.index:
+                    vals = [f"{p}={int(by_yp.loc[y, p]):,}" for p in by_yp.columns]
+                    parts.append(f"  {y}: {', '.join(vals)}")
+
+                # Filtro especifico si hay estado
+                if estado:
+                    est_n = _norm(estado)
+                    if est_n in ("ciudad de mexico", "distrito federal", "cdmx"):
+                        sub_e = df_bol[
+                            df_bol["Entidad"].apply(
+                                lambda x: _norm(str(x)) in ("ciudad de mexico", "distrito federal")
+                            )
+                        ]
+                    else:
+                        sub_e = df_bol[df_bol["Entidad"].apply(lambda x: est_n in _norm(str(x)))]
+                    if not sub_e.empty:
+                        by_yp2 = (
+                            sub_e.groupby(["Anio", "Padecimiento"])["Casos_semana"]
+                            .sum()
+                            .unstack(fill_value=0)
+                        )
+                        parts.append(f"\nCasos anuales en {estado}:")
+                        for y in by_yp2.index:
+                            vals = [f"{p}={int(by_yp2.loc[y, p]):,}" for p in by_yp2.columns]
+                            parts.append(f"  {y}: {', '.join(vals)}")
 
         # Infraestructura
         parts.append(
