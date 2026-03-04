@@ -42,6 +42,19 @@ TYPO_MAP = {
     "carepeta": "carpeta",
     "arhcivo": "archivo",
     "archvio": "archivo",
+    "buenaaas": "buenas",
+    "buenaas": "buenas",
+    "holaa": "hola",
+    "holaaa": "hola",
+    "holaaaa": "hola",
+    "hooola": "hola",
+    "buenass": "buenas",
+    "buenso": "buenos",
+    "benas": "buenas",
+    "beunas": "buenas",
+    "nches": "noches",
+    "tardes": "tardes",
+    "diass": "dias",
 }
 
 GREETINGS = {
@@ -142,8 +155,8 @@ def classify_intent(cmd: str) -> str | None:
     def _match(*keywords: str) -> bool:
         return any(kw in cmd for kw in keywords)
 
-    # Saludos
-    if stripped in GREETINGS:
+    # Saludos (exacto o inicio con saludo conocido)
+    if stripped in GREETINGS or any(cmd.startswith(g + " ") or cmd == g for g in GREETINGS):
         return "saludo"
 
     # Salir
