@@ -598,17 +598,26 @@ class KnowledgeBase:
         if not is_person_q and len(q.split()) > 3:
             return None
 
+        # Buscar el match más largo para evitar colisiones (ej: "jar" vs "jarcos")
+        best_info = None
+        best_len = 0
         for info in self._EQUIPO.values():
-            if any(alias in q for alias in info["aliases"]):
-                return (
-                    f"**{info['nombre']}**\n\n"
-                    f"- **Apodo:** {info['apodo']}\n"
-                    f"- **Matrícula:** {info['matricula']}\n"
-                    f"- **Rol:** {info['rol']}\n"
-                    f"- **Empleo actual:** {info['empleo']}\n"
-                    f"- **Commits:** {info['commits']}\n\n"
-                    f"{info['desc']}"
-                )
+            for alias in info["aliases"]:
+                if alias in q and len(alias) > best_len:
+                    best_len = len(alias)
+                    best_info = info
+
+        if best_info:
+            info = best_info
+            return (
+                f"**{info['nombre']}**\n\n"
+                f"- **Apodo:** {info['apodo']}\n"
+                f"- **Matrícula:** {info['matricula']}\n"
+                f"- **Rol:** {info['rol']}\n"
+                f"- **Empleo actual:** {info['empleo']}\n"
+                f"- **Commits:** {info['commits']}\n\n"
+                f"{info['desc']}"
+            )
 
         return None
 
