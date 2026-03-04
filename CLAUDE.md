@@ -36,6 +36,7 @@
 - `make tableau`: Construye dataset Tableau con seleccion automatica de modelo productivo (SMAPE).
 - `make compare`: Genera graficos de alta calidad comparando Real vs los 4 modelos.
 - `make compare-metrics`: Genera comparativa de metricas (Excel + HTML con badges Overfitting/Leakage).
+- `make tabla-produccion`: Genera tabla de 333 modelos de produccion (SMAPE, validacion semanal).
 - `make report`: Genera reporte HTML de resultados.
 - `make bitacora`: Genera bitacora HTML del modelado Prophet v1-v6.
 - `make reporte-avance5`: Genera reporte Avance 5 (Markdown + 18 graficos + CSV de 333 modelos de produccion).
@@ -52,6 +53,10 @@
 - `make data-push`: Sube datos a S3 via DVC.
 - `make models-push`: Versiona modelos y sube a S3.
 - `make s3-sync`: Sync CSVs + forecasts directo a S3 (sin DVC, acceso rapido para Tableau/dashboard).
+- `make data-weekly`: Agrega y versiona nuevos datos semanales del boletin.
+
+### Pipeline Compuesto
+- `make model-pipeline`: Pipeline completo (train -> models-push -> predict -> report -> forecast-push).
 
 ## Arquitectura y Estandares
 
@@ -70,6 +75,7 @@
 - `config/models/ensemble.yaml`: Hiperparametros Ensemble (Prophet + XGBoost).
 - `config/models/stacking.yaml`: Hiperparametros Stacking (Prophet, ETS, LightGBM, Ridge meta-learner).
 - `config/data/preprocessing.yaml`: Parametros de preprocesamiento.
+- `config/features/feature_engineering.yaml`: Parametros de feature engineering.
 - `config/visualization/plots.yaml`: Estilos de graficos.
 - `config/infrastructure/logging.yaml`: Configuracion de loguru.
 - Las rutas en `config/base.yaml` usan interpolacion OmegaConf: `./models/${modelo_activo}`.
@@ -92,6 +98,7 @@ EpiForecast-MX/
 │   ├── base.yaml                 #   Modelo activo, rutas, padecimiento
 │   ├── models/                   #   Hiperparametros por algoritmo
 │   ├── data/                     #   Preprocesamiento
+│   ├── features/                 #   Feature engineering
 │   ├── visualization/            #   Estilos de graficos
 │   └── infrastructure/           #   Logging
 ├── src/epiforecast/              # Paquete Python principal
@@ -102,17 +109,52 @@ EpiForecast-MX/
 │   ├── features/                 #   Feature engineering demografico
 │   ├── utils/                    #   Config, paths, helpers
 │   └── pipelines/                #   Pipeline base
-├── scripts/                      # Entry points CLI
-├── tests/                        #   unit/ + integration/ (~34 archivos, 761 tests)
+├── epi_modules/                  # Consola interactiva EPI
+│   ├── engine.py                 #   EpiEngine (Makefile, traduccion Gemini, ejecucion)
+│   ├── intent.py                 #   Clasificador de intents, typos, fuzzy matching
+│   ├── theme.py                  #   Tema Rich IMSS (PANTONE verde, dorado, guinda)
+│   ├── features/                 #   Modulos de funcionalidad
+│   │   ├── ai_chat.py            #     Chat con KnowledgeBase local + Gemini fallback
+│   │   ├── dashboard.py          #     Dashboard multi-panel Rich Layout
+│   │   ├── data_cache.py         #     Cache lazy-loading de datos del proyecto
+│   │   ├── data_explorer.py      #     Explorador interactivo del boletin
+│   │   ├── forecast_viewer.py    #     Visor de pronosticos con sparklines
+│   │   ├── knowledge_base.py     #     Base de conocimiento local (sin IA externa)
+│   │   └── model_browser.py      #     Navegador paginado de 333 modelos
+│   └── views/                    #   Modulos de presentacion
+│       ├── approval.py           #     Gate de aprobacion por nivel de riesgo
+│       ├── banner.py             #     Banner ASCII de bienvenida
+│       ├── common.py             #     Logs, pipeline, stats, scripts, historial
+│       ├── health.py             #     Dashboard de salud del sistema
+│       ├── help_menu.py          #     Menu de ayuda multi-seccion
+│       └── targets.py            #     Navegador de targets Makefile
+├── scripts/                      # Entry points CLI (~24 scripts)
+├── tests/                        #   unit/ + integration/ (~46 archivos, 849 tests)
 ├── data/                         # raw/ → interim/ → processed/ (DVC)
 ├── models/                       # Artefactos .pkl (DVC, 4x333 = 1332 modelos)
-├── reports/                      # Graficos, reportes HTML, forecasts
-└── Makefile                      # Orquestacion MLOps
+├── reports/                      # Graficos, reportes HTML, forecasts, ProdDetails/
+├── epi.py                        # Entry point de la consola interactiva EPI
+└── Makefile                      # Orquestacion MLOps (~55 targets)
 ```
+
+### Consola Interactiva EPI
+- Entry point: `python epi.py`. REPL con Rich TUI y tema IMSS 2026.
+- Flujo: entrada → `normalize_typos()` → `classify_intent()` → router a handler o `engine.translate()`.
+- **Intent classifier** (`epi_modules/intent.py`): 17+ intents (saludo, salir, limpiar, banner, dashboard, chat, datos, modelos, pronostico, scripts, ayuda, targets, stats, logs, pipeline, salud, historial).
+- **KnowledgeBase** (`epi_modules/features/knowledge_base.py`): Responde con datos reales del proyecto (metricas, boletin, modelos, equipo, semanas epidemiologicas). 18+ handlers en cadena de prioridad.
+- **Chat IA** (`epi_modules/features/ai_chat.py`): KnowledgeBase local primero, Gemini como fallback con contexto enriquecido e historial conversacional.
+- **Dashboard** (`epi_modules/features/dashboard.py`): Panel multi-seccion con datos del boletin, inventario de modelos, metricas forecast, stats de sesion.
+- **Data explorer** (`epi_modules/features/data_explorer.py`): Navegador del boletin con filtros y barras Unicode.
+- **Model browser** (`epi_modules/features/model_browser.py`): Tabla paginada de 333 modelos con SMAPE color-coded y badges diagnosticos.
+- **Forecast viewer** (`epi_modules/features/forecast_viewer.py`): Sparklines de pronosticos a 52 semanas.
+- **Aprobacion** (`epi_modules/views/approval.py`): Gate de confirmacion con clasificacion de riesgo (safe/modify/destructive).
+- **Historial persistente**: Ultimos 100 comandos en `.epi_history.json`.
+- **Logging**: `logs/epi.log` con timestamps ISO.
 
 ### Visualizacion
 - Los graficos comparativos se guardan en `reports/forecasts/comparacion_modelos/`.
 - Los graficos del Avance 5 (18 PNGs) se guardan en `reports/figures/ModeloFinal/`.
+- Paneles individuales (barras, zoom, produccion) en subcarpetas de `comparacion_modelos/`.
 - Usan la zona horaria `America/Mexico_City` (UTC-6) para las marcas de tiempo.
 - Estilo: Historial Real (Gris grueso), Prophet (Teal #004d40 dash-dot), DeepAR (Vino #880e4f dashed), Ensemble (Naranja #FF6F00), Stacking (Indigo #1A237E).
 - La ficha tecnica al pie de cada grafico forecast muestra el nombre real del modelo (detectado desde `meta_modelo` del CSV).
@@ -133,6 +175,14 @@ EpiForecast-MX/
 - **Hoja 2 (Detalle Semanal)**: 333 filas x 163 columnas. 52 semanas de realidad, pronostico y % acierto por semana.
 - Series con incidencia cero o baja confianza (<5 casos/52sem) se reasignan al modelo regional.
 - Predicciones redondeadas a enteros. Formato Excel con paleta IMSS 2026, filtros y paneles congelados.
+- Graficos embebidos: `scripts/excel_produccion_charts.py` genera 6 PNGs con paleta IMSS.
+- Formateo: `scripts/excel_produccion_fmt.py` aplica estilos institucionales.
+
+### Validacion Semanal
+- `scripts/genera_validacion_semanal.py` genera `reports/ProdDetails/validacion_semanal.html`.
+- Compara pronosticos de los 4 modelos vs datos reales del boletin SINAVE mas reciente.
+- Desglose por sexo (Nacional y Regional) para cada padecimiento.
+- Actualiza columna `realidad_sem_previa` en el Excel de produccion.
 
 ### Tableau y Modelo Productivo
 - `scripts/build_tableau.py` genera `data/processed/tableau.csv` con datos de los 4 modelos.
@@ -149,13 +199,19 @@ EpiForecast-MX/
 - Naming: `{modelo}_{padecimiento}_{entidad}` (ej: `stacking_Depresion_Baja California`).
 - Metricas registradas: rmse, mae, mape, smape, mase, elapsed_seconds.
 
+### CI/CD (GitHub Actions)
+- `ci.yml`: Quality gate (lint + typecheck + tests). Push a main, PRs, weekly Monday 06:00 UTC.
+- `scrape_boletines.yml`: Scraping diario automatizado de boletines SINAVE (Selenium + Chrome).
+- `process_boletines.yml`: Procesamiento de PDFs con Camelot, merge al dataset consolidado.
+- `gsheets.yml`: Publicacion de datos Tableau a Google Sheets (service account).
+
 ### Convenciones de Codigo
 - **Imports**: Agrupar stdlib, luego terceros, luego locales (isort via Ruff).
 - **Tipado**: Uso estricto de `mypy`. Retornos de funciones deben estar tipados.
 - **Logging**: Usar `loguru.logger` para trazas de depuracion y errores.
 - **Lint**: Ruff con line-length=99, target Python 3.12.
 - **SRP**: Maximo 300 lineas por modulo (excepcion: deepar/model.py por complejidad inherente).
-- **Tests**: Pytest con marcadores `slow` e `integration`. Coverage minimo 70%. Actualmente 761 tests.
+- **Tests**: Pytest con marcadores `slow` e `integration`. Coverage minimo 70%. Actualmente 849 tests en ~46 archivos.
 - **Pre-commit**: Ruff check + format, mypy, trailing whitespace, YAML/TOML check.
 
 ### Dependencias Clave
@@ -167,8 +223,22 @@ EpiForecast-MX/
 - **Infraestructura**: boto3, sagemaker (opcional), dvc[s3] (opcional), mlflow (opcional).
 - **Ensemble**: xgboost.
 - **Stacking**: lightgbm, statsmodels.
+- **EPI Console**: rich, google-generativeai.
 - **Dev**: pytest, ruff, mypy, pre-commit.
 - Instalar: `pip install -e ".[dev]"`. DVC opcional: `pip install -e ".[dvc]"`. MLflow opcional: `pip install -e ".[mlflow]"`.
+
+### Scripts Adicionales
+- `scripts/compliance_check.py`: Auditoria de calidad (Cookiecutter DS + SOLID + MLOps).
+- `scripts/excel_produccion_charts.py`: Graficos embebidos para Excel de produccion (6 PNGs).
+- `scripts/excel_produccion_fmt.py`: Formateo IMSS 2026 para workbook de produccion.
+- `scripts/genera_paneles_barras_prod.py`: Barras individuales del modelo productivo ganador.
+- `scripts/genera_paneles_barras_semana.py`: Paneles de barras semanales (2x2 grids).
+- `scripts/genera_paneles_zoom.py`: Paneles con zoom desde 2020.
+- `scripts/genera_validacion_semanal.py`: Validacion semanal Real vs Forecast (HTML).
+- `scripts/patch_train_metrics.py`: Parche metricas train en CSVs sin re-entrenar.
+- `scripts/scrape_boletines.py`: Scraper SINAVE (Selenium).
+- `scripts/ci_process_boletines.py`: Procesamiento CI/CD de boletines (Camelot).
+- `scripts/publish_gsheets.py`: Publicacion a Google Sheets.
 
 ### Modulos SRP (archivos extraidos para cumplir limite de 300 lineas)
 - `prophet/data_prep.py`: Funciones de preparacion de datos extraidas de `prophet/model.py`.

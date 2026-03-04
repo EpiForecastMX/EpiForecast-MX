@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/Python-3.12-blue?style=flat&logo=python&logoColor=white" alt="Python 3.12"/>
   <img src="https://img.shields.io/badge/Models-Prophet_%2B_DeepAR_%2B_Ensemble_%2B_Stacking-orange?style=flat" alt="Multi-Model"/>
   <img src="https://img.shields.io/badge/GPU-SageMaker_T4-76b900?style=flat&logo=nvidia&logoColor=white" alt="GPU SageMaker"/>
-  <img src="https://img.shields.io/badge/Coverage-70%25-brightgreen?style=flat" alt="Coverage 70%"/>
+  <img src="https://img.shields.io/badge/Tests-849-brightgreen?style=flat" alt="849 Tests"/>
   <img src="https://img.shields.io/badge/DVC-S3-945DD6?style=flat&logo=dvc&logoColor=white" alt="DVC + S3"/>
 </p>
 
@@ -41,15 +41,41 @@ The platform uses a **polymorphic Factory pattern** to support multiple forecast
 
 - **Multi-Model Orchestration** -- Seamlessly switch between Prophet, DeepAR, Ensemble, and Stacking via central configuration (`config/base.yaml`) or CLI arguments.
 - **GPU Training on SageMaker** -- DeepAR trains on `ml.g4dn.xlarge` (NVIDIA T4, CUDA 12.4) via a single `make train-sagemaker` command. Local CPU/MPS training also supported.
+- **EPI Interactive Console** -- AI-powered CLI (`python epi.py`) with natural-language command translation (Gemini), local KnowledgeBase for data queries, Rich TUI with IMSS institutional branding, risk-based command approval, session statistics, and persistent command history.
 - **End-to-End ML Pipeline** -- Automated from PDF scraping (SINAVE bulletins) through INEGI demographic mapping to forecast charts and HTML reports.
 - **Model Comparison Engine** -- High-contrast professional charts comparing Real vs. Prophet vs. DeepAR vs. Ensemble vs. Stacking performance across all states and conditions.
+- **Weekly Validation** -- Automated comparison of model forecasts against real SINAVE bulletin data for the most recent epidemiological week (`make tabla-produccion`).
 - **SMAPE-Based Model Selection** -- The Tableau dataset automatically selects the best-performing model per group (condition, state, mode) based on SMAPE, exposing a `modelo_productivo` column. Production Excel (`tabla_333_modelos_produccion.xlsx`) uses SMAPE-primary selection with MASE/RMSE tiebreakers.
 - **Production Model Table** -- Excel with 2 sheets: (1) 333 production models with diagnostics, overfitting/leakage, precision historica, and weekly validation columns; (2) 52-week detail with real vs forecast vs % accuracy per week. IMSS 2026 styling.
 - **Overfitting and Data Leakage Detection** -- Train metrics (RMSE, SMAPE) computed in-sample for all 4 models. HTML report shows diagnostic badges: Overfitting (test/train SMAPE ratio) and Leakage (suspiciously low train SMAPE).
 - **Hybrid Fallback** -- Zero-incidence and low-confidence (<5 cases/52 weeks) state models automatically defer to regional aggregates to ensure 100% forecast coverage. Integer-rounded predictions (no fractional cases).
 - **MLflow Experiment Tracking** -- Optional integration logs all training runs (metrics, hyperparameters, elapsed time) to MLflow. Non-intrusive: no-op when not installed. Install with `pip install -e ".[mlflow]"`, browse with `mlflow server --backend-store-uri ./mlruns`.
+- **Automated Bulletin Pipeline** -- GitHub Actions scrapes new SINAVE bulletins daily, processes PDFs with Camelot, and merges into the consolidated dataset.
 - **Cross-Validation** -- Prophet uses weighted time-series CV (4 folds, progressive weights). DeepAR uses multi-series CV with early stopping.
 - **IMSS Institutional Branding** -- All visualizations and reports follow official IMSS 2026 chromatic and styling guidelines.
+
+---
+
+## EPI Interactive Console
+
+The project includes a full-featured interactive CLI (`python epi.py`) built with Rich for terminal UI and Gemini for natural language understanding:
+
+```
+$ python epi.py
+```
+
+**Capabilities:**
+- **Natural language commands** -- Type "entrena los modelos" or "dame las metricas de depresion" instead of remembering Makefile targets.
+- **Local KnowledgeBase** -- Answers questions about the project data (cases, states, weeks, models, team members) using real cached data, without calling any external API.
+- **Gemini fallback** -- When the local KB can't answer, queries the Gemini API with enriched project context.
+- **Dashboard** -- Real-time overview panel with data stats, model inventory, forecast metrics, and session health.
+- **Data explorer** -- Browse boletin data filtered by padecimiento, entidad, or sexo with inline Unicode bar charts.
+- **Model browser** -- Paginated view of all 333 production models with SMAPE color coding and diagnostic badges.
+- **Forecast viewer** -- Sparkline visualizations of 52-week forecast horizons per model.
+- **Risk-based approval** -- Commands are color-coded by risk level (safe/modify/destructive) and require confirmation before execution.
+- **Typo correction and fuzzy matching** -- Handles common Spanish misspellings and suggests the closest valid command.
+- **Session statistics** -- Tracks commands run, success/failure rate, total duration, and uptime.
+- **Persistent history** -- Last 100 commands saved in `.epi_history.json`.
 
 ---
 
@@ -71,6 +97,7 @@ EpiForecast-MX/
 |   |   |-- ensemble.yaml         #     Ensemble (Prophet + XGBoost) hyperparameters
 |   |   +-- stacking.yaml         #     Stacking experts + meta-learner hyperparameters
 |   |-- data/                     #   Preprocessing parameters
+|   |-- features/                 #   Feature engineering parameters
 |   |-- visualization/            #   Plot styling (IMSS palette)
 |   +-- infrastructure/           #   Logging configuration
 |
@@ -89,28 +116,57 @@ EpiForecast-MX/
 |   |-- utils/                    #   Configuration loader, path management, helpers
 |   +-- pipelines/                #   Pipeline base
 |
+|-- epi_modules/                  # EPI interactive console modules
+|   |-- engine.py                 #   EpiEngine (Makefile parsing, Gemini translation, execution)
+|   |-- intent.py                 #   Intent classifier, typo correction, fuzzy matching
+|   |-- theme.py                  #   IMSS Rich theme (PANTONE verde, dorado, guinda)
+|   |-- features/                 #   Console feature modules
+|   |   |-- ai_chat.py            #     KnowledgeBase local + Gemini fallback chat
+|   |   |-- dashboard.py          #     Multi-panel Rich Layout dashboard
+|   |   |-- data_cache.py         #     Lazy-loading project data cache
+|   |   |-- data_explorer.py      #     Interactive boletin data browser
+|   |   |-- forecast_viewer.py    #     Forecast sparkline viewer
+|   |   |-- knowledge_base.py     #     Local fact database (no external AI)
+|   |   +-- model_browser.py      #     333-model paginated browser
+|   +-- views/                    #   Console view modules
+|       |-- approval.py           #     Risk-based command approval gate
+|       |-- banner.py             #     ASCII art welcome banner
+|       |-- common.py             #     Logs, pipeline status, session stats, scripts listing
+|       |-- health.py             #     System health dashboard
+|       |-- help_menu.py          #     Multi-section help menu
+|       +-- targets.py            #     Makefile target browser with risk categorization
+|
 |-- scripts/                      # CLI entry points
 |   |-- entrena.py                #   Main training orchestrator
 |   |-- entrena_sagemaker.py      #   SageMaker entry point (adapts /opt/ml/ environment)
 |   |-- predice.py                #   Forecast generation (52 weeks, denormalized)
 |   |-- compara_modelos.py        #   Visual model comparison
-|   |-- avance5_modelo_final.py    #   Ensemble training + visualization
 |   |-- compara_metricas.py       #   Metrics comparison (Excel + HTML with diagnostics)
+|   |-- avance5_modelo_final.py   #   Ensemble training + visualization
 |   |-- genera_reporte.py         #   HTML results report
 |   |-- genera_bitacora.py        #   Modeling log (Prophet v1-v6)
 |   |-- genera_reporte_avance5.py #   Avance 5 report (Markdown + 18 charts)
 |   |-- genera_tabla_produccion.py#   Production model table (333 models, SMAPE selection)
+|   |-- genera_validacion_semanal.py#  Weekly validation: Real vs Forecast (HTML report)
+|   |-- compliance_check.py       #   Code quality audit (Cookiecutter DS + SOLID + MLOps)
 |   |-- build_tableau.py          #   Tableau dataset builder
 |   |-- patch_train_metrics.py    #   Patch CSVs with train metrics (no retraining)
+|   |-- excel_produccion_charts.py#   Embedded charts for production Excel
+|   |-- excel_produccion_fmt.py   #   IMSS 2026 Excel formatting
+|   |-- genera_paneles_barras_prod.py   # Individual bar charts for production model
+|   |-- genera_paneles_barras_semana.py # Weekly bar pair charts (2x2 grids)
+|   |-- genera_paneles_zoom.py    #   Zoomed panel charts from 2020
 |   |-- get_dataset.py            #   RAW data download (SINAVE)
 |   |-- filtra_padecimiento.py    #   Disease filter
 |   |-- limpieza_dataset.py       #   Data cleaning
 |   |-- realiza_prep.py           #   Feature engineering
 |   |-- descarga_inegi.py         #   INEGI demographic download
 |   |-- mapea.py                  #   State-INEGI mapping
-|   +-- scrape_boletines.py       #   SINAVE bulletin scraper
+|   |-- scrape_boletines.py       #   SINAVE bulletin scraper (Selenium)
+|   |-- ci_process_boletines.py   #   CI/CD bulletin processing (Camelot)
+|   +-- publish_gsheets.py        #   Google Sheets publisher
 |
-|-- tests/                        # Test suite (~34 files, 70%+ coverage, 761 tests)
+|-- tests/                        # Test suite (~46 files, 849 tests, 70%+ coverage)
 |   |-- unit/                     #   Unit tests for all modules
 |   +-- integration/              #   End-to-end pipeline tests
 |
@@ -126,18 +182,20 @@ EpiForecast-MX/
 |   +-- stacking/                 #   Stacking (Prophet+ETS+LightGBM+Ridge) models (333 models)
 |
 |-- reports/                      # Generated outputs
-|   |-- forecasts/                #   Forecast CSVs and comparison charts
+|   |-- forecasts/                #   Forecast CSVs, comparison charts, ensemble PNGs
 |   |-- figures/                  #   EDA and analysis plots (ModeloFinal/ for Avance 5)
+|   |-- ProdDetails/              #   Production Excel, weekly validation HTML
 |   |-- reports/                  #   Markdown reports and production CSV
 |   +-- docs/                     #   PDF reports
 |
 |-- .github/workflows/            # CI/CD
 |   |-- ci.yml                    #   Quality gate (lint + typecheck + tests)
-|   |-- scrape_boletines.yml      #   Automated bulletin scraping
-|   |-- process_boletines.yml     #   Bulletin processing
+|   |-- scrape_boletines.yml      #   Daily automated bulletin scraping
+|   |-- process_boletines.yml     #   Bulletin PDF processing (Camelot)
 |   +-- gsheets.yml               #   Google Sheets publishing
 |
-|-- Makefile                      # MLOps orchestration
+|-- epi.py                        # EPI interactive console entry point
+|-- Makefile                      # MLOps orchestration (~55 targets)
 +-- pyproject.toml                # Dependencies, Ruff, Mypy, Pytest config
 ```
 
@@ -184,7 +242,26 @@ make setup-linux  # Linux/WSL
 
 ## Usage
 
-### 1. Data Preprocessing
+### 1. EPI Interactive Console
+
+```bash
+python epi.py
+```
+
+The EPI console accepts natural language in Spanish or English and translates it to Makefile targets. Examples:
+
+```
+epi > entrena todos los modelos     # -> make train-all
+epi > dame las metricas de depresion # -> answers from local KnowledgeBase
+epi > que semana epidemiologica es?  # -> current epi week from real data
+epi > quien es Jarcos?               # -> team member info
+epi > dashboard                      # -> real-time project overview
+epi > datos alzheimer                # -> boletin data filtered by condition
+epi > modelos                        # -> browse 333 production models
+epi > ayuda                          # -> full help menu
+```
+
+### 2. Data Preprocessing
 
 ```bash
 # Full preprocessing pipeline (download, filter, clean, transform, INEGI mapping)
@@ -199,7 +276,7 @@ make get-inegi                                       # Download INEGI demographi
 make mapper                                          # Map states to INEGI
 ```
 
-### 2. Training
+### 3. Training
 
 ```bash
 # Train using active model from config/base.yaml
@@ -229,7 +306,7 @@ After SageMaker training completes, download the trained models:
 aws s3 sync s3://epiforecast-mx-data/training/<JOB_NAME>/output/ ./models/deepar/
 ```
 
-### 3. Prediction and Tableau
+### 4. Prediction and Tableau
 
 ```bash
 # Generate 52-week forecasts for all 4 models
@@ -270,7 +347,7 @@ The production Excel (`reports/ProdDetails/tabla_333_modelos_produccion.xlsx`) h
 - 52 columns `pron_sem_N`: Model backtest prediction per week
 - 52 columns `acierto_sem_N`: Forecast accuracy percentage per week
 
-### 4. Comparison and Reports
+### 5. Comparison, Reports, and Validation
 
 ```bash
 # Generate high-contrast comparison charts (Real vs all 4 models)
@@ -278,6 +355,9 @@ make compare
 
 # Generate metrics comparison (Excel + HTML report with Overfitting/Leakage badges)
 make compare-metrics
+
+# Generate production model table (333 models, SMAPE selection, weekly validation)
+make tabla-produccion
 
 # Generate HTML results report
 make report
@@ -287,11 +367,14 @@ make bitacora
 
 # Generate Avance 5 report (Markdown + 18 charts + production CSV with 333 models)
 make reporte-avance5
+
+# Code quality audit (Cookiecutter DS structure + SOLID + MLOps compliance)
+python scripts/compliance_check.py
 ```
 
 Comparison charts are saved in `reports/forecasts/comparacion_modelos/` using CDMX timezone (UTC-6) for audit logs. The Avance 5 report generates `reports/ProdDetails/avance5_modelo_final.md`, `reports/ProdDetails/tabla_333_modelos_produccion.xlsx` (Excel with 2 sheets: production summary + 52-week detail), and 18 analysis charts in `reports/figures/ModeloFinal/`.
 
-### 5. Code Quality
+### 6. Code Quality
 
 ```bash
 # Full quality gate (lint + typecheck + tests)
@@ -304,13 +387,14 @@ make typecheck     # mypy strict type checking
 make test-fast     # Fast unit tests only
 ```
 
-### 6. Data Versioning (DVC)
+### 7. Data Versioning (DVC)
 
 ```bash
 make data-pull       # Download data from S3
 make data-push       # Upload data to S3
 make models-push     # Version and upload trained models
 make s3-sync         # Quick sync CSVs + forecasts to S3 (no DVC)
+make data-weekly     # Add + commit new weekly bulletin data
 ```
 
 ---
@@ -385,21 +469,22 @@ python -m scripts.entrena modelo_activo='deepar' padecimiento.tipo='Alzheimer'
 
 GitHub Actions runs on every push to `main` and on pull requests:
 
-1. **Code Quality**: Ruff lint + format check + mypy type checking.
-2. **Tests**: Pytest with 761 tests, coverage minimum 70%, excluding slow and integration tests.
-3. **Integration Tests**: Manual trigger only (`workflow_dispatch`).
-
-Additional workflows automate SINAVE bulletin scraping and Google Sheets publishing.
+1. **Code Quality** (`ci.yml`): Ruff lint + format check + mypy type checking.
+2. **Tests** (`ci.yml`): Pytest with 849 tests, coverage minimum 70%, excluding slow and integration tests.
+3. **Integration Tests** (`ci.yml`): Manual trigger only (`workflow_dispatch`).
+4. **Bulletin Scraping** (`scrape_boletines.yml`): Daily automated SINAVE bulletin download via Selenium.
+5. **Bulletin Processing** (`process_boletines.yml`): Camelot PDF extraction and dataset consolidation.
+6. **Google Sheets** (`gsheets.yml`): Publishes Tableau data to shared spreadsheet.
 
 ---
 
 ## Team
 
-| Name | Role |
-|------|------|
-| Javier Augusto Rebull Saucedo | Developer |
-| Juan Carlos Perez Nava | Developer |
-| Luis Gerardo Sanchez Salazar | Developer |
+| Name | Role | Organization |
+|------|------|--------------|
+| Javier Augusto Rebull Saucedo | Technical lead and MLOps pipeline architect | Santander Bank US |
+| Juan Carlos Perez Nava | EDA, feature engineering, and Prophet base model | Instituto Mexicano del Seguro Social (IMSS) |
+| Luis Gerardo Sanchez Salazar | Dashboard design, development, and optimization | Tesla |
 
 ---
 
