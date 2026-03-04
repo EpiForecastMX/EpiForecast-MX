@@ -1,0 +1,337 @@
+"""Clasificador de intents y fuzzy matching."""
+
+import re
+
+# Mapa de typos comunes
+TYPO_MAP = {
+    "scritps": "scripts",
+    "srcripts": "scripts",
+    "scrips": "scripts",
+    "sripts": "scripts",
+    "scirpts": "scripts",
+    "sciprt": "script",
+    "scirpt": "script",
+    "scritpt": "script",
+    "sript": "script",
+    "scrpt": "script",
+    "diem": "dime",
+    "dieme": "dime",
+    "porfavor": "por favor",
+    "ejeuctar": "ejecutar",
+    "ejecutra": "ejecutar",
+    "ejecurar": "ejecutar",
+    "entreanr": "entrenar",
+    "entrenra": "entrenar",
+    "proonstico": "pronostico",
+    "targest": "targets",
+    "tragets": "targets",
+    "taragets": "targets",
+    "aydua": "ayuda",
+    "ayuad": "ayuda",
+    "auuda": "ayuda",
+    "comados": "comandos",
+    "coamndos": "comandos",
+    "piepline": "pipeline",
+    "pipelien": "pipeline",
+    "estadsiticas": "estadisticas",
+    "estadisitcas": "estadisticas",
+    "hsitorial": "historial",
+    "hisotrial": "historial",
+    "carptea": "carpeta",
+    "crapta": "carpeta",
+    "carepeta": "carpeta",
+    "arhcivo": "archivo",
+    "archvio": "archivo",
+}
+
+GREETINGS = {
+    "hola",
+    "hey",
+    "hi",
+    "hello",
+    "buenas",
+    "buenos dias",
+    "buenas tardes",
+    "buenas noches",
+    "que onda",
+    "sup",
+    "ey",
+    "saludos",
+    "que tal",
+    "como estas",
+}
+
+EXIT_WORDS = {"salir", "exit", "quit", "q", "bye", "adios", "chao"}
+CLEAR_WORDS = {"limpia", "clear", "cls", "limpiar"}
+
+
+def normalize_typos(text: str) -> str:
+    """Corrige typos comunes en la entrada."""
+    result = text
+    for typo, fix in TYPO_MAP.items():
+        if typo in result:
+            result = result.replace(typo, fix)
+    return result
+
+
+def _levenshtein(s1: str, s2: str) -> int:
+    """Distancia de Levenshtein entre dos cadenas."""
+    if len(s1) < len(s2):
+        return _levenshtein(s2, s1)
+    if len(s2) == 0:
+        return len(s1)
+    prev_row = list(range(len(s2) + 1))
+    for i, c1 in enumerate(s1):
+        curr_row = [i + 1]
+        for j, c2 in enumerate(s2):
+            insertions = prev_row[j + 1] + 1
+            deletions = curr_row[j] + 1
+            substitutions = prev_row[j] + (c1 != c2)
+            curr_row.append(min(insertions, deletions, substitutions))
+        prev_row = curr_row
+    return prev_row[-1]
+
+
+def fuzzy_suggest(word: str, candidates: list[str], max_dist: int = 2) -> str | None:
+    """Sugiere el candidato mas cercano por distancia Levenshtein."""
+    best = None
+    best_dist = max_dist + 1
+    for c in candidates:
+        d = _levenshtein(word.lower(), c.lower())
+        if d < best_dist:
+            best_dist = d
+            best = c
+    return best if best_dist <= max_dist else None
+
+
+def classify_intent(cmd: str) -> str | None:
+    """Clasifica la intencion del usuario. Retorna nombre de intent o None."""
+    stripped = cmd.rstrip("!.?\u00bf\u00a1 ")
+
+    def _match(*keywords: str) -> bool:
+        return any(kw in cmd for kw in keywords)
+
+    # Saludos
+    if stripped in GREETINGS:
+        return "saludo"
+
+    # Salir
+    if stripped in EXIT_WORDS:
+        return "salir"
+
+    # Limpiar pantalla
+    if stripped in CLEAR_WORDS:
+        return "limpiar"
+
+    # Banner
+    if stripped in ("banner", "inicio"):
+        return "banner"
+
+    # Dashboard / panel
+    if stripped in ("dashboard", "panel", "tablero", "resumen general"):
+        return "dashboard"
+
+    # Chat / pregunta IA
+    if (
+        cmd.endswith("?")
+        or _match("pregunta", "chat", "explica")
+        or cmd.startswith("que es ")
+        or cmd.startswith("cual es ")
+        or cmd.startswith("cuantos ")
+        or cmd.startswith("cuantas ")
+        or cmd.startswith("por que ")
+        or cmd.startswith("como funciona ")
+    ):
+        return "chat"
+
+    # Datos / explorador
+    if stripped.startswith("datos") or _match(
+        "explorador de datos", "resumen datos", "resumen boletin", "boletin"
+    ):
+        return "datos"
+
+    # Modelos / navegador
+    if (
+        stripped.startswith("modelos")
+        or stripped.startswith("modelo ")
+        or _match("navegador de modelos", "modelos produccion")
+    ):
+        return "modelos"
+
+    # Pronostico / visor
+    if (
+        stripped.startswith("pronostico ")
+        or stripped.startswith("forecast ")
+        or _match("visor de pronostico")
+    ):
+        return "pronostico"
+
+    # Scripts / archivos .py
+    execution_verbs = (
+        "corre",
+        "ejecuta",
+        "lanza",
+        "run",
+        "corriendo",
+        "arranca",
+        "inicia",
+        "activa",
+    )
+    wants_to_run = any(cmd.startswith(v) or f" {v} " in f" {cmd} " for v in execution_verbs)
+    if not wants_to_run and (
+        _match(".py")
+        or (
+            _match("script")
+            and _match(
+                "lista",
+                "ver",
+                "muestra",
+                "cual",
+                "que",
+                "hay",
+                "tiene",
+                "disponible",
+                "dime",
+                "dame",
+                "carpeta",
+                "cuanto",
+            )
+        )
+        or (
+            _match("archivo", "python")
+            and _match(
+                "lista",
+                "ver",
+                "muestra",
+                "cual",
+                "que",
+                "dime",
+                "dame",
+            )
+        )
+        or (_match("carpeta") and _match("script"))
+    ):
+        return "scripts"
+
+    # Ayuda
+    if _match("ayuda", "help") or stripped in ("?", "h"):
+        return "ayuda"
+    if _match(
+        "puedo hacer",
+        "podemos hacer",
+        "puedes hacer",
+        "como funciona",
+        "que hago",
+        "para que sirve",
+        "como te uso",
+        "que sabes hacer",
+        "que sabes",
+        "que ofreces",
+        "funciones",
+        "funcionalidades",
+        "capacidades",
+        "instrucciones",
+        "como empiezo",
+        "por donde empiezo",
+        "que haces",
+        "como opero",
+        "menu",
+    ):
+        return "ayuda"
+
+    # Targets
+    if _match(
+        "target",
+        "comando",
+        "command",
+        "disponible",
+        "puedo ejecutar",
+        "que hay",
+        "opciones",
+        "make disponible",
+        "que make",
+    ):
+        return "targets"
+
+    # Estadisticas
+    if _match("stats", "estadistica", "estadisticas", "status", "metricas de sesion", "como voy"):
+        return "stats"
+
+    # Logs
+    if _match("log", "bitacora", "registros"):
+        return "logs"
+
+    # Pipeline
+    if _match("pipeline", "pipe", "flujo", "etapas", "fases"):
+        return "pipeline"
+
+    # Salud
+    if _match("salud", "health", "diagnostico", "verificar", "chequeo"):
+        return "salud"
+
+    # Historial
+    if _match("historial", "history", "hist"):
+        return "historial"
+
+    return None
+
+
+def extract_folder_filter(cmd: str) -> str | None:
+    """Extrae filtro de carpeta de un comando de scripts."""
+    noise = {
+        "carpeta",
+        "folder",
+        "directorio",
+        "la",
+        "el",
+        "los",
+        "las",
+        "de",
+        "del",
+        "hay",
+        "que",
+    }
+
+    # "en scripts", "de src", "dentro de tests", "carpeta scripts"
+    prep_match = re.search(
+        r"(?:en|dentro de|carpeta|folder|directorio)\s+(?:la\s+)?(?:carpeta\s+)?"
+        r"['\"]?([a-zA-Z0-9_/.:-]+)",
+        cmd,
+    )
+    if prep_match:
+        candidate = prep_match.group(1).strip("'\"?!. /")
+        if candidate and candidate not in noise and len(candidate) > 1:
+            return candidate
+
+    # "los de scripts", "solo de src"
+    de_match = re.search(
+        r"(?:los\s+de|solo\s+de|solo\s+los\s+de|carpetas\s+de)\s+"
+        r"['\"]?([a-zA-Z0-9_/.:-]+)",
+        cmd,
+    )
+    if de_match:
+        candidate = de_match.group(1).strip("'\"?!. /")
+        if candidate and len(candidate) > 1:
+            return candidate
+
+    # "solo <carpeta>"
+    solo_match = re.search(r"solo\s+['\"]?([a-zA-Z0-9_/.:-]+)", cmd)
+    if solo_match:
+        candidate = solo_match.group(1).strip("'\"?!. /")
+        script_noise = {
+            "scripts",
+            "script",
+            ".py",
+            "py",
+            "python",
+            "archivos",
+            "archivo",
+            "que",
+            "los",
+            "las",
+            "del",
+        }
+        if candidate and candidate not in script_noise and len(candidate) > 1:
+            return candidate
+
+    return None
