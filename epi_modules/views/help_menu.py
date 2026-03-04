@@ -12,8 +12,8 @@ def show_help_menu(console: Console) -> None:
             "COMANDOS DIRECTOS",
             [
                 ("make <target>", "Ejecuta un target directamente"),
-                ("<target>", "Atajo — se antepone 'make' automaticamente"),
-                ("ayuda / help", "Muestra este menu"),
+                ("<target>", "Atajo — se antepone 'make' automáticamente"),
+                ("ayuda / help", "Muestra este menú"),
                 ("targets", "Lista todos los targets disponibles"),
             ],
         ),
@@ -21,27 +21,27 @@ def show_help_menu(console: Console) -> None:
             "INTELIGENCIA ARTIFICIAL",
             [
                 ("pregunta <texto>", "Pregunta a la IA sobre el proyecto"),
-                ("chat <texto>", "Conversacion libre con IA + contexto"),
-                ("<cualquier texto>?", "Pregunta detectada automaticamente"),
+                ("chat <texto>", "Conversación libre con IA + contexto"),
+                ("<cualquier texto>?", "Pregunta detectada automáticamente"),
                 ("'ejecuta las pruebas'", "--> make test (lenguaje natural)"),
             ],
         ),
         (
-            "EXPLORACION DE DATOS",
+            "EXPLORACIÓN DE DATOS",
             [
                 ("dashboard / panel", "Panel multipanel del sistema"),
-                ("datos [filtro]", "Explorador del boletin epidemiologico"),
-                ("modelos [filtro]", "Navegador de 333 modelos de produccion"),
-                ("pronostico <estado> <pad>", "Visor de pronosticos con sparklines"),
+                ("datos [filtro]", "Explorador del boletín epidemiológico"),
+                ("modelos [filtro]", "Navegador de 333 modelos de producción"),
+                ("pronostico <estado> <pad>", "Visor de pronósticos con sparklines"),
             ],
         ),
         (
             "MONITOREO",
             [
-                ("stats", "Dashboard de estadisticas de sesion"),
-                ("log / bitacora", "Visor de log reciente"),
+                ("stats", "Dashboard de estadísticas de sesión"),
+                ("log / bitácora", "Visor de log reciente"),
                 ("pipeline", "Estado del pipeline MLOps"),
-                ("salud / health", "Diagnostico del sistema"),
+                ("salud / health", "Diagnóstico del sistema"),
                 ("scripts / .py", "Lista scripts Python del proyecto"),
             ],
         ),
@@ -51,7 +51,7 @@ def show_help_menu(console: Console) -> None:
                 ("limpia / clear", "Limpia pantalla"),
                 ("banner", "Redibuja el banner"),
                 ("historial", "Muestra historial de comandos"),
-                ("salir / exit", "Cierra la sesion"),
+                ("salir / exit", "Cierra la sesión"),
             ],
         ),
     ]
@@ -65,7 +65,7 @@ def show_help_menu(console: Console) -> None:
             expand=True,
         )
         table.add_column("Comando", style="exito", min_width=30)
-        table.add_column("Descripcion", style="blanco")
+        table.add_column("Descripción", style="blanco")
         for cmd, desc in items:
             table.add_row(cmd, desc)
         console.print(

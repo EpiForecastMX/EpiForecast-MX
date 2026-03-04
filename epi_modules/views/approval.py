@@ -22,7 +22,7 @@ def show_approval_gate(
 ) -> bool:
     """Gate de aprobacion visual con analisis de riesgo."""
     console.print()
-    console.print(Rule("[dorado]SOLICITUD DE APROBACION[/dorado]", style="dorado"))
+    console.print(Rule("[dorado]SOLICITUD DE APROBACIÓN[/dorado]", style="dorado"))
     console.print()
 
     if explanation:
@@ -39,7 +39,7 @@ def show_approval_gate(
     table.add_column("#", width=3, justify="center", style="gris")
     table.add_column("Comando", style="blanco")
     table.add_column("Riesgo", justify="center", width=10)
-    table.add_column("Categoria", width=14, style="gris")
+    table.add_column("Categoría", width=14, style="gris")
 
     overall_risk = "low"
     for i, cmd in enumerate(commands, 1):
@@ -70,7 +70,7 @@ def show_approval_gate(
         console.print(
             Panel(
                 "[guinda]Este plan incluye operaciones destructivas.\n"
-                "   Los datos eliminados podrian no ser recuperables.[/guinda]",
+                "   Los datos eliminados podrían no ser recuperables.[/guinda]",
                 border_style="guinda",
                 padding=(0, 2),
             )
@@ -80,13 +80,13 @@ def show_approval_gate(
 
     if overall_risk == "high":
         confirm_text = Text(
-            "Confirmar ejecucion? Escribe 'EJECUTAR' para proceder: ",
+            "Confirmar ejecución? Escribe 'EJECUTAR' para proceder: ",
             style="guinda",
         )
         response = Prompt.ask(confirm_text)
         return response.strip().upper() == "EJECUTAR"
     return Confirm.ask(
-        Text("Aprobar ejecucion?", style="dorado"),
+        Text("Aprobar ejecución?", style="dorado"),
         default=False,
     )
 
@@ -120,7 +120,7 @@ def show_result_card(
         border = "verde"
         max_lines = 8
     else:
-        header = f"[guinda]\u2716 ERROR (codigo {returncode})[/guinda] [sutil]({dur_str})[/sutil]"
+        header = f"[guinda]\u2716 ERROR (código {returncode})[/guinda] [sutil]({dur_str})[/sutil]"
         border = "guinda"
         max_lines = 30
 
@@ -135,7 +135,7 @@ def show_result_card(
         shown = lines[-limit:] if truncated else lines
         if truncated:
             parts.append(
-                f"  [sutil]... {len(lines) - limit} lineas anteriores ocultas[/sutil]",
+                f"  [sutil]... {len(lines) - limit} líneas anteriores ocultas[/sutil]",
             )
         for line in shown:
             display = line[:120] + "..." if len(line) > 120 else line

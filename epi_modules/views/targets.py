@@ -25,7 +25,7 @@ def show_targets(console: Console, engine: EpiEngine) -> None:
     )
     table.add_column("", width=3, justify="center")
     table.add_column("Target", style="exito", min_width=20)
-    table.add_column("Descripcion", style="blanco")
+    table.add_column("Descripción", style="blanco")
     table.add_column("Riesgo", justify="center", width=8)
 
     for name, desc in sorted(engine.targets.items()):

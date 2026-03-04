@@ -366,7 +366,7 @@ def main() -> None:
 
                 if not success and i < len(commands):
                     console.print(
-                        "\n  [guinda]Abortando cadena de ejecucion por fallo.[/guinda]\n",
+                        "\n  [guinda]Abortando cadena de ejecución por fallo.[/guinda]\n",
                     )
                     for _ in commands[i:]:
                         engine.stats.cancel()
@@ -377,7 +377,7 @@ def main() -> None:
 
         except KeyboardInterrupt:
             console.print("\n")
-            if Confirm.ask(Text("Cerrar sesion?", style="dorado"), default=False):
+            if Confirm.ask(Text("Cerrar sesión?", style="dorado"), default=False):
                 break
             continue
         except EOFError:
@@ -389,14 +389,14 @@ def main() -> None:
     # Cierre
     _save_history(engine.history)
     console.print()
-    console.print(Rule("[dorado]FIN DE SESION[/dorado]", style="dorado"))
+    console.print(Rule("[dorado]FIN DE SESIÓN[/dorado]", style="dorado"))
     console.print()
     if engine.stats.total > 0:
         show_session_stats(console, engine)
     console.print(
         Align.center(
-            f"[verde]Sesion cerrada · {datetime.now().strftime('%d/%m/%Y %H:%M:%S')} · "
-            f"Bitacora: {LOG_FILE}[/verde]",
+            f"[verde]Sesión cerrada · {datetime.now().strftime('%d/%m/%Y %H:%M:%S')} · "
+            f"Bitácora: {LOG_FILE}[/verde]",
         )
     )
     console.print()

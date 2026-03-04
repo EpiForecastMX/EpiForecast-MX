@@ -522,10 +522,10 @@ class KnowledgeBase:
             dias = [
                 "lunes",
                 "martes",
-                "miercoles",
+                "miércoles",
                 "jueves",
                 "viernes",
-                "sabado",
+                "sábado",
                 "domingo",
             ]
             meses = [
@@ -545,7 +545,7 @@ class KnowledgeBase:
             dia_sem = dias[today.weekday()]
             mes = meses[today.month - 1]
             lines.append(f"Hoy es **{dia_sem} {today.day} de {mes} de {today.year}**")
-            lines.append(f"Semana epidemiologica: **{iso_week}** de {iso_year}")
+            lines.append(f"Semana epidemiológica: **{iso_week}** de {iso_year}")
 
         # --- Semana epidemiologica ---
         is_week_q = any(
@@ -560,7 +560,7 @@ class KnowledgeBase:
             ]
         )
         if is_week_q and not is_date_q:
-            lines.append(f"Estamos en la **semana epidemiologica {iso_week}** de {iso_year}")
+            lines.append(f"Estamos en la **semana epidemiológica {iso_week}** de {iso_year}")
             # Rango de la semana (lunes a domingo)
             lunes = today - timedelta(days=today.weekday())
             domingo = lunes + timedelta(days=6)
@@ -594,11 +594,11 @@ class KnowledgeBase:
 
                 if lines:
                     lines.append("")
-                lines.append("**Cobertura del boletin epidemiologico**:")
+                lines.append("**Cobertura del boletín epidemiológico**:")
                 lines.append(f"- Desde: semana {min_week} de {min_year}")
                 lines.append(f"- Hasta: **semana {max_week} de {max_year}**")
                 lines.append(f"- Registros totales: {total_rows:,}")
-                lines.append("- Padecimientos: Depresion (F32), Parkinson (G20), Alzheimer (G30)")
+                lines.append("- Padecimientos: Depresión (F32), Parkinson (G20), Alzheimer (G30)")
                 lines.append("- Entidades: 32 estados + Nacional")
 
                 # Rezago
@@ -618,7 +618,7 @@ class KnowledgeBase:
                 tab_ds = pd.to_datetime(tab["ds"])
                 min_ds = tab_ds.min()
                 max_ds = tab_ds.max()
-                lines.append("\n**Cobertura del pronostico (tableau)**:")
+                lines.append("\n**Cobertura del pronóstico (tableau)**:")
                 lines.append(f"- Desde: {min_ds.strftime('%d/%m/%Y')}")
                 lines.append(f"- Hasta: {max_ds.strftime('%d/%m/%Y')}")
                 lines.append("- Horizonte: 52 semanas hacia adelante")
@@ -627,7 +627,7 @@ class KnowledgeBase:
         # --- Horizonte ---
         if "horizonte" in q and not lines:
             lines.append(
-                f"El horizonte de pronostico es de **52 semanas** "
+                f"El horizonte de pronóstico es de **52 semanas** "
                 f"(hasta enero {iso_year + 1} aproximadamente)."
             )
 
@@ -635,7 +635,7 @@ class KnowledgeBase:
         if lines and not is_date_q and not is_week_q:
             lines.insert(
                 0,
-                f"Fecha actual: {today.strftime('%d/%m/%Y')} (semana epidemiologica {iso_week})\n",
+                f"Fecha actual: {today.strftime('%d/%m/%Y')} (semana epidemiológica {iso_week})\n",
             )
 
         return "\n".join(lines) if lines else None
@@ -717,7 +717,7 @@ class KnowledgeBase:
                 ]
 
                 lines.append(
-                    f"**Ultimo boletin disponible: semana epidemiologica "
+                    f"**Último boletín disponible: semana epidemiológica "
                     f"{latest_week} de {latest_year}**\n"
                 )
 
@@ -830,7 +830,7 @@ class KnowledgeBase:
                     if lines:
                         lines.append("")
                     lines.append(
-                        f"**Proyeccion para semana del {closest.strftime('%d/%m/%Y')}**\n"
+                        f"**Proyección para semana del {closest.strftime('%d/%m/%Y')}**\n"
                     )
 
                     sub_w = week_data
@@ -885,7 +885,7 @@ class KnowledgeBase:
 
                 pron = int(sub_p["pron_sem_previa"].sum())
                 real = int(sub_p["realidad_sem_previa"].sum())
-                lines.append("**Validacion de la semana previa**:\n")
+                lines.append("**Validación de la semana previa**:\n")
                 lines.append(f"- Casos pronosticados: {pron:,}")
                 lines.append(f"- Casos reales: {real:,}")
                 if pron > 0:
@@ -900,65 +900,65 @@ class KnowledgeBase:
 
     _PADECIMIENTO_INFO: dict[str, str] = {
         "depresion": (
-            "**Depresion (CIE-10: F32)**\n\n"
-            "La depresion es un trastorno del estado de animo caracterizado por "
-            "tristeza persistente, perdida de interes en actividades cotidianas, "
-            "fatiga, alteraciones del sueno y dificultad para concentrarse. Es una "
-            "de las principales causas de discapacidad a nivel mundial segun la OMS.\n\n"
+            "**Depresión (CIE-10: F32)**\n\n"
+            "La depresión es un trastorno del estado de ánimo caracterizado por "
+            "tristeza persistente, pérdida de interés en actividades cotidianas, "
+            "fatiga, alteraciones del sueño y dificultad para concentrarse. Es una "
+            "de las principales causas de discapacidad a nivel mundial según la OMS.\n\n"
             "**Efectos en la salud**:\n"
             "- Deterioro cognitivo y dificultad para tomar decisiones\n"
             "- Alteraciones del apetito y peso corporal\n"
-            "- Insomnio o hipersomnia cronica\n"
+            "- Insomnio o hipersomnia crónica\n"
             "- Mayor riesgo cardiovascular\n"
-            "- Debilitamiento del sistema inmunologico\n"
+            "- Debilitamiento del sistema inmunológico\n"
             "- Aislamiento social y deterioro de relaciones\n"
-            "- Reduccion significativa de la productividad laboral\n\n"
-            "**En Mexico (IMSS)**: es el padecimiento con mayor incidencia de los "
-            "tres que monitoreamos. Afecta predominantemente a mujeres (proporcion "
+            "- Reducción significativa de la productividad laboral\n\n"
+            "**En México (IMSS)**: es el padecimiento con mayor incidencia de los "
+            "tres que monitoreamos. Afecta predominantemente a mujeres (proporción "
             "~3:1) y presenta estacionalidad marcada con picos en periodos post-vacacionales.\n\n"
-            "*Esta informacion es de caracter general y no constituye consejo medico.*"
+            "*Esta información es de carácter general y no constituye consejo médico.*"
         ),
         "parkinson": (
             "**Enfermedad de Parkinson (CIE-10: G20)**\n\n"
             "El Parkinson es un trastorno neurodegenerativo progresivo que afecta "
-            "el sistema nervioso central, causado por la perdida de neuronas "
-            "dopaminergicas en la sustancia negra del cerebro. Se manifiesta "
+            "el sistema nervioso central, causado por la pérdida de neuronas "
+            "dopaminérgicas en la sustancia negra del cerebro. Se manifiesta "
             "principalmente con temblor en reposo, rigidez muscular, lentitud "
             "de movimiento (bradicinesia) e inestabilidad postural.\n\n"
             "**Efectos en la salud**:\n"
             "- Temblores involuntarios que dificultan actividades diarias\n"
             "- Rigidez muscular y dolor articular\n"
             "- Dificultad progresiva para caminar y mantener el equilibrio\n"
-            "- Problemas de deglucion y habla\n"
-            "- Trastornos del sueno (movimientos oculares rapidos)\n"
+            "- Problemas de deglución y habla\n"
+            "- Trastornos del sueño (movimientos oculares rápidos)\n"
             "- Deterioro cognitivo en etapas avanzadas\n"
-            "- Depresion y ansiedad como comorbilidades frecuentes\n\n"
-            "**En Mexico (IMSS)**: la incidencia es moderada comparada con la "
-            "depresion. Afecta ligeramente mas a hombres y su prevalencia crece "
-            "con la edad. Los estados del norte presentan tasas mas elevadas.\n\n"
-            "*Esta informacion es de caracter general y no constituye consejo medico.*"
+            "- Depresión y ansiedad como comorbilidades frecuentes\n\n"
+            "**En México (IMSS)**: la incidencia es moderada comparada con la "
+            "depresión. Afecta ligeramente más a hombres y su prevalencia crece "
+            "con la edad. Los estados del norte presentan tasas más elevadas.\n\n"
+            "*Esta información es de carácter general y no constituye consejo médico.*"
         ),
         "alzheimer": (
             "**Enfermedad de Alzheimer (CIE-10: G30)**\n\n"
-            "El Alzheimer es la forma mas comun de demencia. Es una enfermedad "
+            "El Alzheimer es la forma más común de demencia. Es una enfermedad "
             "neurodegenerativa progresiva que destruye neuronas y conexiones "
             "cerebrales, afectando memoria, pensamiento y comportamiento. "
-            "Comienza con olvidos leves y progresa hasta la perdida de capacidad "
+            "Comienza con olvidos leves y progresa hasta la pérdida de capacidad "
             "para conversar y responder al entorno.\n\n"
             "**Efectos en la salud**:\n"
-            "- Perdida progresiva de memoria (primero reciente, luego remota)\n"
-            "- Desorientacion temporal y espacial\n"
+            "- Pérdida progresiva de memoria (primero reciente, luego remota)\n"
+            "- Desorientación temporal y espacial\n"
             "- Dificultad para planificar y resolver problemas\n"
             "- Cambios de personalidad y comportamiento\n"
-            "- Perdida de autonomia para actividades basicas\n"
-            "- Deterioro del lenguaje y la comunicacion\n"
+            "- Pérdida de autonomía para actividades básicas\n"
+            "- Deterioro del lenguaje y la comunicación\n"
             "- Carga significativa para cuidadores y familiares\n\n"
-            "**En Mexico (IMSS)**: es el padecimiento con menor incidencia de los "
+            "**En México (IMSS)**: es el padecimiento con menor incidencia de los "
             "tres, pero con tendencia creciente vinculada al envejecimiento "
-            "poblacional. Jalisco, Chihuahua y Sinaloa reportan las tasas mas altas. "
-            "Su SMAPE de prediccion es el mas elevado (>100%) debido a la baja "
+            "poblacional. Jalisco, Chihuahua y Sinaloa reportan las tasas más altas. "
+            "Su SMAPE de predicción es el más elevado (>100%) debido a la baja "
             "frecuencia y alta variabilidad entre entidades.\n\n"
-            "*Esta informacion es de caracter general y no constituye consejo medico.*"
+            "*Esta información es de carácter general y no constituye consejo médico.*"
         ),
     }
 
@@ -1013,7 +1013,7 @@ class KnowledgeBase:
             sm = pad_stats.get("smape_prod_mean")
             extra = "\n\n**Datos del proyecto EpiForecast-MX**:\n"
             if cas:
-                extra += f"- Pronostico 52 semanas: {cas:,} casos\n"
+                extra += f"- Pronóstico 52 semanas: {cas:,} casos\n"
             if sm:
                 extra += f"- SMAPE promedio: {sm}%\n"
             ganador = pad_stats.get("motor_ganador")
@@ -1021,7 +1021,7 @@ class KnowledgeBase:
                 extra += f"- Motor ganador: {ganador}\n"
             n = pad_stats.get("n")
             if n:
-                extra += f"- Modelos de produccion: {n}"
+                extra += f"- Modelos de producción: {n}"
             info += extra
 
         return info
@@ -1199,7 +1199,7 @@ class KnowledgeBase:
             if sub is None:
                 return None
             yr_str = ", ".join(str(y) for y in years)
-            lines = [f"**Resumen epidemiologico {yr_str}**:\n"]
+            lines = [f"**Resumen epidemiológico {yr_str}**:\n"]
             for y in years:
                 yr_sub = sub[sub["Anio"] == y]
                 total = yr_sub["Casos_semana"].sum()
@@ -1237,7 +1237,7 @@ class KnowledgeBase:
 
             by_year = sub.groupby("Anio")["Casos_semana"].sum().sort_index()
             loc_label = f" en {estado}" if estado else ""
-            lines = [f"**{pad}{loc_label} - Evolucion historica** (2014-2026):\n"]
+            lines = [f"**{pad}{loc_label} - Evolución histórica** (2014-2026):\n"]
             prev = None
             for y, c in by_year.items():
                 if pd.isna(c):
@@ -1277,15 +1277,15 @@ class KnowledgeBase:
                 return None
 
             by_year = sub.groupby("Anio")["Casos_semana"].sum().sort_index()
-            lines = [f"**{estado} - Evolucion historica**:\n"]
-            lines.append(f"Total historico: {int(by_year.sum()):,} casos\n")
+            lines = [f"**{estado} - Evolución histórica**:\n"]
+            lines.append(f"Total histórico: {int(by_year.sum()):,} casos\n")
             for y, c in by_year.items():
                 if not pd.isna(c):
                     lines.append(f"  - {y}: {int(c):,}")
 
             # Desglose por padecimiento
             by_pad = sub.groupby("Padecimiento")["Casos_semana"].sum()
-            lines.append("\nPor padecimiento (historico total):")
+            lines.append("\nPor padecimiento (histórico total):")
             for p, c in by_pad.sort_values(ascending=False).items():
                 if not pd.isna(c):
                     lines.append(f"  - {p}: {int(c):,}")
@@ -1298,7 +1298,7 @@ class KnowledgeBase:
             if df is None:
                 return None
             lines = ["**Impacto COVID-19 en la incidencia**:\n"]
-            for pad_name in ["Depresion", "Parkinson", "Alzheimer"]:
+            for pad_name in ["Depresión", "Parkinson", "Alzheimer"]:
                 pad_n = _norm(pad_name)
                 p_sub = df[df["Padecimiento"].apply(lambda x, pn=pad_n: _norm(str(x)) == pn)]
                 c19 = int(p_sub[p_sub["Anio"] == 2019]["Casos_semana"].sum())
@@ -1309,7 +1309,7 @@ class KnowledgeBase:
                 lines.append(f"**{pad_name}**:")
                 lines.append(f"  - 2019 (pre-COVID): {c19:,}")
                 lines.append(f"  - 2020 (pandemia): {c20:,} ({drop:+.1f}%)")
-                lines.append(f"  - 2021 (recuperacion): {c21:,} ({recov:+.1f}%)")
+                lines.append(f"  - 2021 (recuperación): {c21:,} ({recov:+.1f}%)")
                 lines.append("")
             return "\n".join(lines)
 
@@ -1357,9 +1357,9 @@ class KnowledgeBase:
             lines.append(
                 f"- **{sex_label}**: motor={motor}, SMAPE={smape:.1f}%, MASE={mase:.2f}, RMSE={rmse:.1f}"
             )
-            lines.append(f"  Pronostico 52 sem: {casos:,} casos | Overfitting: {ov}")
+            lines.append(f"  Pronóstico 52 sem: {casos:,} casos | Overfitting: {ov}")
             if just:
-                lines.append(f"  Justificacion: {just}")
+                lines.append(f"  Justificación: {just}")
 
         pron = sub.get("pron_sem_previa")
         real = sub.get("realidad_sem_previa")
@@ -1367,7 +1367,7 @@ class KnowledgeBase:
             for _, r in sub.iterrows():
                 p = r.get("pron_sem_previa", "?")
                 re_ = r.get("realidad_sem_previa", "?")
-                lines.append(f"  Semana previa: pronostico={p}, real={re_}")
+                lines.append(f"  Semana previa: pronóstico={p}, real={re_}")
 
         return "\n".join(lines)
 
@@ -1390,7 +1390,7 @@ class KnowledgeBase:
         if not info:
             return None
 
-        lines = [f"**{estado}** ({info['n']} modelos de produccion):\n"]
+        lines = [f"**{estado}** ({info['n']} modelos de producción):\n"]
         sm = info.get("smape_prod_mean")
         ms = info.get("mase_prod_mean")
         if sm:
@@ -1404,7 +1404,7 @@ class KnowledgeBase:
                 lines.append(f"  - {m}: {c}")
         cas = info.get("casos_futuro")
         if cas:
-            lines.append(f"- Pronostico total 52 sem: {cas:,} casos")
+            lines.append(f"- Pronóstico total 52 sem: {cas:,} casos")
 
         # Agregar detalle por padecimiento desde datos originales
         prod = self.cache.prod_models
@@ -1433,7 +1433,7 @@ class KnowledgeBase:
         if not info:
             return None
 
-        lines = [f"**{pad}** ({info['n']} modelos de produccion):\n"]
+        lines = [f"**{pad}** ({info['n']} modelos de producción):\n"]
         for met, label in [
             ("smape_prod_mean", "SMAPE medio"),
             ("smape_prod_median", "SMAPE mediano"),
@@ -1452,14 +1452,14 @@ class KnowledgeBase:
 
         dist = info.get("dist_motor", {})
         if dist and len(dist) > 1:
-            lines.append("- Distribucion de motores:")
+            lines.append("- Distribución de motores:")
             for m, c in sorted(dist.items(), key=lambda x: -x[1]):
                 pct = round(c / info["n"] * 100, 1)
                 lines.append(f"  - {m}: {c} ({pct}%)")
 
         cas = info.get("casos_futuro_total")
         if cas:
-            lines.append(f"- Pronostico acumulado 52 sem: **{cas:,} casos**")
+            lines.append(f"- Pronóstico acumulado 52 sem: **{cas:,} casos**")
 
         return "\n".join(lines)
 
@@ -1471,12 +1471,12 @@ class KnowledgeBase:
         if not modelo and any(t in q for t in ["gana", "ganador", "campeon", "winner", "domina"]):
             dist = s.get("dist_motor", {})
             total = s.get("total_modelos", 333)
-            lines = [f"**Distribucion de modelos ganadores** ({total} series):\n"]
+            lines = [f"**Distribución de modelos ganadores** ({total} series):\n"]
             for m, c in sorted(dist.items(), key=lambda x: -x[1]):
                 pct = round(c / total * 100, 1)
                 lines.append(f"- **{m}**: {c} series ({pct}%)")
             lines.append(
-                f"\nMotor campeon global: **{s.get('motor_ganador')}** "
+                f"\nMotor campeón global: **{s.get('motor_ganador')}** "
                 f"con {s.get('motor_ganador_pct')}% de las series."
             )
             return "\n".join(lines)
@@ -1539,7 +1539,7 @@ class KnowledgeBase:
             return "\n".join(lines)
 
         # Comparativa completa
-        lines = ["**Analisis por sexo**:\n"]
+        lines = ["**Análisis por sexo**:\n"]
         for sx, info in por_sexo.items():
             sm = info.get("smape_mean", "?")
             ms = info.get("mase_mean", "?")
@@ -1563,7 +1563,7 @@ class KnowledgeBase:
         if not found_metric:
             # Busca "metrica" o "metricas" generico
             if any(t in q for t in ["metrica", "rendimiento", "performance", "como va"]):
-                lines = ["**Metricas globales de produccion** (333 modelos):\n"]
+                lines = ["**Métricas globales de producción** (333 modelos):\n"]
                 for prefix, label in [
                     ("smape_prod", "SMAPE"),
                     ("mase_prod", "MASE"),
@@ -1590,12 +1590,12 @@ class KnowledgeBase:
         if mean is None:
             return None
 
-        lines = [f"**{label} global** (333 modelos de produccion):\n"]
+        lines = [f"**{label} global** (333 modelos de producción):\n"]
         lines.append(f"- Media: **{mean}{unit}**")
         lines.append(f"- Mediana: **{med}{unit}**")
-        lines.append(f"- Minimo: {mn}{unit}")
-        lines.append(f"- Maximo: {mx}{unit}")
-        lines.append(f"- Desv. estandar: {std}{unit}")
+        lines.append(f"- Mínimo: {mn}{unit}")
+        lines.append(f"- Máximo: {mx}{unit}")
+        lines.append(f"- Desv. estándar: {std}{unit}")
 
         # Desglose por padecimiento
         lines.append("\nPor padecimiento:")
@@ -1659,7 +1659,7 @@ class KnowledgeBase:
         if not any(t in q for t in triggers):
             return None
 
-        lines = ["**Diagnosticos de los 333 modelos**:\n"]
+        lines = ["**Diagnósticos de los 333 modelos**:\n"]
         lines.append("Overfitting (ratio SMAPE test/train):")
         lines.append(f"  - OK: {s.get('overfitting_ok', '?')}")
         lines.append(f"  - Moderado: {s.get('overfitting_moderado', '?')}")
@@ -1752,7 +1752,7 @@ class KnowledgeBase:
                 if weeks:
                     sem_label = f"la semana {weeks[0]}"
 
-                lines = [f"**Pronostico vs realidad ({sem_label})**\n"]
+                lines = [f"**Pronóstico vs realidad ({sem_label})**\n"]
                 lines.append(f"- Casos pronosticados: **{pron_total:,}**")
                 lines.append(f"- Casos reales: **{real_total:,}**")
                 diff = pron_total - real_total
@@ -1770,7 +1770,7 @@ class KnowledgeBase:
                         p_real = int(sub["realidad_sem_previa"].fillna(0).sum())
                         p_diff = p_pron - p_real
                         lines.append(
-                            f"- {p}: pronostico {p_pron:,} vs real {p_real:,} ({p_diff:+,})"
+                            f"- {p}: pronóstico {p_pron:,} vs real {p_real:,} ({p_diff:+,})"
                         )
 
                 # Desglose por sexo si se filtro por padecimiento pero no por sexo
@@ -1780,21 +1780,21 @@ class KnowledgeBase:
                         sub = df[df["sexo"] == sx]
                         s_pron = int(sub["pron_sem_previa"].fillna(0).sum())
                         s_real = int(sub["realidad_sem_previa"].fillna(0).sum())
-                        lines.append(f"- {sx}: pronostico {s_pron:,} vs real {s_real:,}")
+                        lines.append(f"- {sx}: pronóstico {s_pron:,} vs real {s_real:,}")
 
                 return "\n".join(lines)
 
         # Respuesta generica de validacion
-        lines = ["**Validacion**:\n"]
+        lines = ["**Validación**:\n"]
         vs = s.get("validacion_semanal")
         if vs:
-            lines.append("Semana previa (pronostico vs real):")
+            lines.append("Semana previa (pronóstico vs real):")
             lines.append(f"  - Error absoluto medio: {vs['error_abs_medio']}")
             lines.append(f"  - Error absoluto mediano: {vs['error_abs_mediano']}")
         ph_mean = s.get("precision_historica_mean")
         ph_med = s.get("precision_historica_median")
         if ph_mean:
-            lines.append("\nPrecision historica (52 semanas pronos/real):")
+            lines.append("\nPrecisión histórica (52 semanas pronos/real):")
             lines.append(f"  - Media: {ph_mean}%")
             lines.append(f"  - Mediana: {ph_med}%")
 
@@ -1833,14 +1833,14 @@ class KnowledgeBase:
 
         if any(t in q for t in ["linea", "codigo"]):
             return (
-                f"**Codigo fuente**:\n"
-                f"- Lineas de codigo (src/epiforecast/): ~{s.get('lineas_codigo', 13000):,}\n"
+                f"**Código fuente**:\n"
+                f"- Líneas de código (src/epiforecast/): ~{s.get('lineas_codigo', 13000):,}\n"
                 f"- Modelos evaluados: {s.get('evaluaciones_totales', 1332):,} "
                 f"(4 motores x {s.get('total_modelos', 333)} series)"
             )
 
         if "horizonte" in q:
-            return f"El horizonte de pronostico es de **{s.get('horizonte', 52)} semanas**."
+            return f"El horizonte de pronóstico es de **{s.get('horizonte', 52)} semanas**."
 
         return None
 
@@ -1863,7 +1863,7 @@ class KnowledgeBase:
             dist = s.get("dist_motor", {})
             total = s.get("total_modelos", 333)
             lines = [
-                f"**{total} modelos de produccion** (3 padecimientos x 37 geografias x 3 sexos):\n"
+                f"**{total} modelos de producción** (3 padecimientos x 37 geografías x 3 sexos):\n"
             ]
             for m, c in sorted(dist.items(), key=lambda x: -x[1]):
                 pct = round(c / total * 100, 1)
@@ -1871,12 +1871,12 @@ class KnowledgeBase:
             return "\n".join(lines)
 
         if any(t in q for t in ["estado", "entidad"]):
-            return "**37 geografias**: 32 entidades federativas + 4 regiones INEGI + 1 nacional."
+            return "**37 geografías**: 32 entidades federativas + 4 regiones INEGI + 1 nacional."
 
         if any(t in q for t in ["padecimiento", "enfermedad"]):
             return (
                 "**3 padecimientos**:\n"
-                "- Depresion (F32): ~111 modelos\n"
+                "- Depresión (F32): ~111 modelos\n"
                 "- Parkinson (G20): ~111 modelos\n"
                 "- Alzheimer (G30): ~111 modelos"
             )
@@ -1901,10 +1901,10 @@ class KnowledgeBase:
             if info:
                 cas = info.get("casos_futuro_total")
                 if cas:
-                    return f"Pronostico acumulado de **{pad}** para 52 semanas: **{cas:,} casos**."
+                    return f"Pronóstico acumulado de **{pad}** para 52 semanas: **{cas:,} casos**."
 
         total = s.get("pronostico_total")
-        lines = [f"**Pronostico acumulado 52 semanas**: {total:,} casos totales\n"]
+        lines = [f"**Pronóstico acumulado 52 semanas**: {total:,} casos totales\n"]
         for pad_name, pinfo in s.get("por_pad", {}).items():
             cas = pinfo.get("casos_futuro_total", 0)
             lines.append(f"- {pad_name}: {cas:,} casos")
@@ -1915,14 +1915,14 @@ class KnowledgeBase:
         defs: dict[str, str] = {
             "smape": (
                 "**SMAPE** (Symmetric Mean Absolute Percentage Error) mide el error "
-                "porcentual simetrico entre prediccion y realidad. Rango [0%, 200%]. "
-                "Es la metrica **primaria** de seleccion de modelos en EpiForecast-MX.\n\n"
+                "porcentual simétrico entre predicción y realidad. Rango [0%, 200%]. "
+                "Es la métrica **primaria** de selección de modelos en EpiForecast-MX.\n\n"
                 f"SMAPE global actual: media={s.get('smape_prod_mean', '?')}%, "
                 f"mediana={s.get('smape_prod_median', '?')}%"
             ),
             "mase": (
                 "**MASE** (Mean Absolute Scaled Error) compara el error del modelo "
-                "contra un pronostico naive estacional (lag-52 semanas). MASE < 1 "
+                "contra un pronóstico naive estacional (lag-52 semanas). MASE < 1 "
                 "significa que el modelo supera al baseline naive. Se usa como "
                 "**desempate** (umbral 5%) cuando dos motores tienen SMAPE similar.\n\n"
                 f"MASE global actual: media={s.get('mase_prod_mean', '?')}, "
@@ -1930,9 +1930,9 @@ class KnowledgeBase:
             ),
             "rmse": (
                 "**RMSE** (Root Mean Squared Error) penaliza errores grandes al "
-                "elevar al cuadrado antes de promediar. Esta en las mismas unidades "
+                "elevar al cuadrado antes de promediar. Está en las mismas unidades "
                 "que la variable objetivo (casos/semana). Se usa como segundo "
-                "desempate en la seleccion de modelos.\n\n"
+                "desempate en la selección de modelos.\n\n"
                 f"RMSE global actual: media={s.get('rmse_prod_mean', '?')}, "
                 f"mediana={s.get('rmse_prod_median', '?')}"
             ),
@@ -1949,8 +1949,8 @@ class KnowledgeBase:
                 f"{s.get('total_modelos', 333)} series."
             ),
             "deepar": (
-                "**DeepAR** es una red neuronal autoregresiva probabilistica (Amazon, 2020) "
-                "que aprende la distribucion conjunta de multiples series de tiempo "
+                "**DeepAR** es una red neuronal autoregresiva probabilística (Amazon, 2020) "
+                "que aprende la distribución conjunta de múltiples series de tiempo "
                 "(cross-learning). Usa LSTM + PyTorch via GluonTS. "
                 f"En EpiForecast-MX gana **{s.get('dist_motor', {}).get('DeepAR', 0)}** de "
                 f"{s.get('total_modelos', 333)} series ({s.get('motor_ganador_pct', '?')}%)."
@@ -1976,15 +1976,15 @@ class KnowledgeBase:
             ),
             "leakage": (
                 "**Leakage** (fuga de datos) se sospecha cuando SMAPE de train es "
-                "anormalmente bajo (<0.5%). Significa que informacion del test "
-                "se filtro al entrenamiento.\n\n"
+                "anormalmente bajo (<0.5%). Significa que información del test "
+                "se filtró al entrenamiento.\n\n"
                 f"Estado actual: OK={s.get('leakage_ok', '?')}, "
                 f"Sospechoso={s.get('leakage_sospechoso', '?')}"
             ),
             "fallback": (
                 "**Fallback regional**: cuando una serie estatal tiene incidencia "
                 "demasiado baja (<5 casos en 52 sem), se usa el modelo de la "
-                f"region INEGI correspondiente. Actualmente {s.get('fallback_n', 0)} "
+                f"región INEGI correspondiente. Actualmente {s.get('fallback_n', 0)} "
                 "series usan fallback."
             ),
         }
@@ -2009,7 +2009,7 @@ class KnowledgeBase:
 
         parts.append("=== BASE DE CONOCIMIENTO EpiForecast-MX ===\n")
         parts.append(f"Modelo activo: {s.get('modelo_activo', '?')}")
-        parts.append(f"Total modelos produccion: {s.get('total_modelos', 333)}")
+        parts.append(f"Total modelos producción: {s.get('total_modelos', 333)}")
         parts.append(f"Horizonte: {s.get('horizonte', 52)} semanas")
         parts.append(
             f"Evaluaciones totales: {s.get('evaluaciones_totales', 1332)} (4 motores x 333 series)"
@@ -2024,7 +2024,7 @@ class KnowledgeBase:
                 parts.append(f"  {m}: {c} series ({pct}%)")
 
         # Metricas globales
-        parts.append("\nMetricas globales de produccion:")
+        parts.append("\nMétricas globales de producción:")
         for prefix, label in [
             ("smape_prod", "SMAPE"),
             ("mase_prod", "MASE"),
@@ -2049,13 +2049,13 @@ class KnowledgeBase:
                 parts.append(f"  MASE: media={ms}, mediana={pinfo.get('mase_prod_median')}")
             cas = pinfo.get("casos_futuro_total")
             if cas:
-                parts.append(f"  Pronostico 52 sem: {cas:,} casos")
+                parts.append(f"  Pronóstico 52 sem: {cas:,} casos")
             pd_dist = pinfo.get("dist_motor", {})
             for m, c in sorted(pd_dist.items(), key=lambda x: -x[1]):
                 parts.append(f"  {m}: {c} series")
 
         # Diagnosticos
-        parts.append("\nDiagnosticos:")
+        parts.append("\nDiagnósticos:")
         parts.append(
             f"  Overfitting: OK={s.get('overfitting_ok')}, Mod={s.get('overfitting_moderado')}, Alto={s.get('overfitting_alto')}"
         )
@@ -2113,12 +2113,12 @@ class KnowledgeBase:
         # Pronostico total
         total = s.get("pronostico_total")
         if total:
-            parts.append(f"\nPronostico total 52 sem: {total:,} casos")
+            parts.append(f"\nPronóstico total 52 sem: {total:,} casos")
 
         # Precision historica
         ph = s.get("precision_historica_mean")
         if ph:
-            parts.append(f"Precision historica media: {ph}%")
+            parts.append(f"Precisión histórica media: {ph}%")
 
         # --- Datos historicos del boletin (si la pregunta lo requiere) ---
         years: list[int] = entities.get("_years", [])  # type: ignore[assignment]
@@ -2140,7 +2140,7 @@ class KnowledgeBase:
         if years or hist_kw:
             df_bol = self.cache.boletin
             if df_bol is not None:
-                parts.append("\n=== BOLETIN EPIDEMIOLOGICO (datos historicos) ===")
+                parts.append("\n=== BOLETÍN EPIDEMIOLÓGICO (datos históricos) ===")
                 parts.append(f"Registros totales: {len(df_bol):,} (2014-2026)")
                 parts.append(
                     "Columnas: Anio, Semana, Entidad, Padecimiento, Casos_semana, "
@@ -2182,7 +2182,7 @@ class KnowledgeBase:
 
         # Infraestructura
         parts.append(
-            f"\nInfraestructura: {s.get('tests')} tests, ~{s.get('lineas_codigo'):,} lineas, >{s.get('cobertura')}% cobertura"
+            f"\nInfraestructura: {s.get('tests')} tests, ~{s.get('lineas_codigo'):,} líneas, >{s.get('cobertura')}% cobertura"
         )
 
         return "\n".join(parts)

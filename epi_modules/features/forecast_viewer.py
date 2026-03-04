@@ -105,7 +105,7 @@ def _show_forecast(
 
     # Tabla de comparacion de modelos
     model_table = Table(
-        title=f"[dorado]PRONOSTICO: {estado.title()} · {padecimiento.title()}[/dorado]",
+        title=f"[dorado]PRONÓSTICO: {estado.title()} · {padecimiento.title()}[/dorado]",
         show_header=True,
         header_style="dorado",
         box=box.SIMPLE,
@@ -148,7 +148,7 @@ def _show_forecast(
             expand=True,
         )
         hist_table.add_column("Tipo", style="blanco", width=12)
-        hist_table.add_column("Valores (ultimas 10 semanas)", style="gris")
+        hist_table.add_column("Valores (últimas 10 semanas)", style="gris")
         hist_table.add_column("Total", justify="right", style="dorado", width=10)
 
         real_vals = df[y_real_col].dropna().tail(10).tolist()
@@ -159,7 +159,7 @@ def _show_forecast(
         pred_vals = df[yhat_col].dropna().tail(10).tolist()
         if pred_vals:
             pred_str = "  ".join(f"{int(v):>4}" for v in pred_vals)
-            hist_table.add_row("Pronostico", pred_str, f"{int(sum(pred_vals)):,}")
+            hist_table.add_row("Pronóstico", pred_str, f"{int(sum(pred_vals)):,}")
 
         console.print(hist_table)
 
@@ -186,7 +186,7 @@ def _show_forecast(
                 m_parts.append(f"{label}: {float(val):.2f}")
             except (ValueError, TypeError):
                 m_parts.append(f"{label}: {val}")
-        console.print(f"\n  [sutil]Metricas: {' · '.join(m_parts)}[/sutil]")
+        console.print(f"\n  [sutil]Métricas: {' · '.join(m_parts)}[/sutil]")
 
     console.print()
 
@@ -200,8 +200,8 @@ def show_forecast_viewer(
     parts = args.strip().split()
     if len(parts) < 2:
         console.print(
-            "[alerta]Uso: pronostico <estado> <padecimiento>[/alerta]\n"
-            "[sutil]  Ejemplo: pronostico jalisco depresion[/sutil]",
+            "[alerta]Uso: pronóstico <estado> <padecimiento>[/alerta]\n"
+            "[sutil]  Ejemplo: pronóstico jalisco depresión[/sutil]",
         )
         return
 
@@ -211,13 +211,13 @@ def show_forecast_viewer(
 
     tableau = cache.tableau
     if tableau is None:
-        console.print("[gris]  No se encontro tableau.csv[/gris]")
+        console.print("[gris]  No se encontró tableau.csv[/gris]")
         return
 
     series = _find_series(tableau, estado, padecimiento)
     if series is None:
         console.print(
-            f"[alerta]No se encontro serie para '{estado}' + '{padecimiento}'.[/alerta]",
+            f"[alerta]No se encontró serie para '{estado}' + '{padecimiento}'.[/alerta]",
         )
         return
 

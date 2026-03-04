@@ -24,7 +24,7 @@ def _build_data_panel(cache: ProjectDataCache) -> Panel:
         date_cols = [c for c in df.columns if "semana" in c.lower() or "fecha" in c.lower()]
         if date_cols:
             col = date_cols[0]
-            table.add_row("Ultima", str(df[col].max()))
+            table.add_row("Última", str(df[col].max()))
     else:
         table.add_row("[gris]Sin datos[/gris]", "")
 
@@ -56,7 +56,7 @@ def _build_models_panel(cache: ProjectDataCache) -> Panel:
 
     return Panel(
         table,
-        title="[verde]MODELOS PRODUCCION[/verde]",
+        title="[verde]MODELOS PRODUCCIÓN[/verde]",
         border_style="verde.dim",
         padding=(0, 1),
     )
@@ -80,11 +80,11 @@ def _build_metrics_panel(cache: ProjectDataCache) -> Panel:
         table.add_row("", "")
         table.add_row("Promedio", f"[dorado]{smape_all:.1f}%[/dorado]")
     else:
-        table.add_row("[gris]Sin metricas[/gris]", "")
+        table.add_row("[gris]Sin métricas[/gris]", "")
 
     return Panel(
         table,
-        title="[verde]METRICAS (SMAPE)[/verde]",
+        title="[verde]MÉTRICAS (SMAPE)[/verde]",
         border_style="verde.dim",
         padding=(0, 1),
     )
@@ -112,7 +112,7 @@ def _build_config_panel(cache: ProjectDataCache) -> Panel:
 
     return Panel(
         table,
-        title="[verde]CONFIGURACION[/verde]",
+        title="[verde]CONFIGURACIÓN[/verde]",
         border_style="verde.dim",
         padding=(0, 1),
     )
@@ -151,7 +151,7 @@ def _build_alerts_panel(cache: ProjectDataCache) -> Panel:
             else:
                 alerts.append("[verde][OK] Sin sospecha de leakage[/verde]")
     else:
-        alerts.append("[gris]Sin datos de produccion para diagnosticar[/gris]")
+        alerts.append("[gris]Sin datos de producción para diagnosticar[/gris]")
 
     content = "\n".join(alerts) if alerts else "[gris]Sin alertas[/gris]"
     return Panel(

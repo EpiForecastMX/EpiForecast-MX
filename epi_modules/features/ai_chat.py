@@ -37,7 +37,7 @@ def handle_chat(
     # Limpiar prefijo
     clean = re.sub(r"^(pregunta|chat)\s+", "", query, flags=re.IGNORECASE).strip()
     if not clean:
-        console.print("[gris]  Escribe tu pregunta despues del comando.[/gris]")
+        console.print("[gris]  Escribe tu pregunta después del comando.[/gris]")
         return model_name
 
     if chat_history is None:
@@ -67,7 +67,7 @@ def handle_chat(
     # 2) Fallback a Gemini con contexto enriquecido
     if not api_key:
         console.print(
-            "[alerta]No pude responder localmente y GEMINI_API_KEY no esta "
+            "[alerta]No pude responder localmente y GEMINI_API_KEY no está "
             "configurada. Intenta reformular la pregunta o configura la API.[/alerta]",
         )
         return model_name

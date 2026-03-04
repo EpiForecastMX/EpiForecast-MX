@@ -66,7 +66,7 @@ def _show_table(
     table.add_column("Motor", style="info", width=10)
     table.add_column("SMAPE", justify="right", width=9)
     table.add_column("MASE", justify="right", width=7)
-    table.add_column("Diagnostico", width=12)
+    table.add_column("Diagnóstico", width=12)
 
     for idx, row in page_df.iterrows():
         num = start + page_df.index.get_loc(idx) + 1
@@ -89,7 +89,7 @@ def _show_table(
 
     total_pages = (len(df) - 1) // PAGE_SIZE + 1
     console.print(
-        f"\n  [sutil]Pagina {page + 1}/{total_pages} · {len(df)} modelos totales[/sutil]\n",
+        f"\n  [sutil]Página {page + 1}/{total_pages} · {len(df)} modelos totales[/sutil]\n",
     )
 
 
@@ -135,7 +135,7 @@ def _show_model_card(console: Console, row: pd.Series) -> None:
         ("Modo", "modo"),
         ("Motor", "modelo_produccion"),
         ("Modelo", "modelo_produccion"),
-        ("Region", "region_asignada"),
+        ("Región", "region_asignada"),
         ("SMAPE", "smape_prod"),
         ("MASE", "mase_prod"),
         ("RMSE", "rmse_prod"),
@@ -144,8 +144,8 @@ def _show_model_card(console: Console, row: pd.Series) -> None:
         ("Leakage", "leakage"),
         ("Casos 52 sem futuro", "casos_52_semanas_futuro"),
         ("Casos 52 sem real", "casos_prev_52_semanas_real"),
-        ("Precision historica", "precision_historica"),
-        ("Justificacion", "justificacion"),
+        ("Precisión histórica", "precision_historica"),
+        ("Justificación", "justificacion"),
     ]
 
     for label, key in fields:
@@ -187,14 +187,14 @@ def show_model_browser(
     prod = cache.prod_models
     if prod is None:
         console.print(
-            "[gris]  No se encontro tabla_333_modelos_produccion.xlsx[/gris]",
+            "[gris]  No se encontró tabla_333_modelos_produccion.xlsx[/gris]",
         )
         return
 
     filtro = args.strip().lower()
 
     if not filtro:
-        _show_table(console, prod, "333 MODELOS DE PRODUCCION")
+        _show_table(console, prod, "333 MODELOS DE PRODUCCIÓN")
         return
 
     # Filtros especiales

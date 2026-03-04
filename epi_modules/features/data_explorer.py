@@ -34,7 +34,7 @@ def _show_full_summary(console: Console, cache: ProjectDataCache) -> None:
     """Muestra resumen completo del boletin."""
     df = cache.boletin
     if df is None:
-        console.print("[gris]  No se encontro el boletin epidemiologico.[/gris]")
+        console.print("[gris]  No se encontró el boletín epidemiológico.[/gris]")
         return
 
     console.print()
@@ -59,7 +59,7 @@ def _show_full_summary(console: Console, cache: ProjectDataCache) -> None:
     console.print(
         Panel(
             info_table,
-            title="[dorado]BOLETIN EPIDEMIOLOGICO[/dorado]",
+            title="[dorado]BOLETÍN EPIDEMIOLÓGICO[/dorado]",
             border_style="verde.dim",
             padding=(1, 2),
         )
@@ -78,7 +78,7 @@ def _show_full_summary(console: Console, cache: ProjectDataCache) -> None:
         pad_table.add_column("Padecimiento", style="blanco", min_width=15)
         pad_table.add_column("Registros", justify="right", style="dorado")
         pad_table.add_column("Porcentaje", justify="right", style="gris")
-        pad_table.add_column("Distribucion", min_width=22)
+        pad_table.add_column("Distribución", min_width=22)
 
         counts = df["Padecimiento"].value_counts()
         max_count = counts.max()
@@ -129,7 +129,7 @@ def _show_filtered(
     """Muestra datos filtrados por padecimiento o estado."""
     df = cache.boletin
     if df is None:
-        console.print("[gris]  No se encontro el boletin epidemiologico.[/gris]")
+        console.print("[gris]  No se encontró el boletín epidemiológico.[/gris]")
         return
 
     filtro_norm = _strip_accents(filtro.lower())

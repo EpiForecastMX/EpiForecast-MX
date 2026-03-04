@@ -45,7 +45,7 @@ def show_health_dashboard(
 
     health_panel = Panel(
         table,
-        title="[dorado]DIAGNOSTICO DEL SISTEMA[/dorado]",
+        title="[dorado]DIAGNÓSTICO DEL SISTEMA[/dorado]",
         subtitle=targets_text,
         border_style="verde",
         padding=(1, 2),

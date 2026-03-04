@@ -20,7 +20,7 @@ BANNER_ART = r"""
 """
 
 TAGLINE = (
-    "[gris]Instituto Tecnologico de Monterrey · Maestria en Inteligencia Artificial Aplicada\n"
+    "[gris]Instituto Tecnológico de Monterrey · Maestría en Inteligencia Artificial Aplicada\n"
     "Proyecto Integrador · Instituto Mexicano del Seguro Social[/gris]"
 )
 

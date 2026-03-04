@@ -70,17 +70,17 @@ class EpiEngine:
         # Mapeo de frases en espanol -> targets
         self.phrase_map: list[tuple[list[str], str, str]] = [
             # keywords_requeridos, target, explicacion
-            (["compliance"], "quality", "Verificacion de calidad y compliance del codigo."),
-            (["calidad"], "quality", "Verificacion de calidad del codigo."),
-            (["quality"], "quality", "Verificacion de calidad del codigo."),
-            (["lint"], "lint", "Analisis estatico del codigo."),
-            (["format"], "format", "Formateo automatico del codigo."),
-            (["tipo", "check"], "typecheck", "Verificacion de tipos con mypy."),
-            (["typecheck"], "typecheck", "Verificacion de tipos con mypy."),
-            (["mypy"], "typecheck", "Verificacion de tipos con mypy."),
+            (["compliance"], "quality", "Verificación de calidad y compliance del código."),
+            (["calidad"], "quality", "Verificación de calidad del código."),
+            (["quality"], "quality", "Verificación de calidad del código."),
+            (["lint"], "lint", "Análisis estático del código."),
+            (["format"], "format", "Formateo automático del código."),
+            (["tipo", "check"], "typecheck", "Verificación de tipos con mypy."),
+            (["typecheck"], "typecheck", "Verificación de tipos con mypy."),
+            (["mypy"], "typecheck", "Verificación de tipos con mypy."),
             (["prueba"], "test", "Ejecuta la suite de pruebas completa."),
             (["test"], "test", "Ejecuta la suite de pruebas."),
-            (["test", "rapid"], "test-fast", "Ejecuta pruebas rapidas (sin lentas)."),
+            (["test", "rapid"], "test-fast", "Ejecuta pruebas rápidas (sin lentas)."),
             (["cobertura"], "coverage", "Reporte de cobertura de pruebas."),
             (["coverage"], "coverage", "Reporte de cobertura de pruebas."),
             (["entren", "todo"], "train-all", "Entrena todos los modelos."),
@@ -90,10 +90,10 @@ class EpiEngine:
             (["entren", "stacking"], "train-stacking", "Entrena modelo Stacking."),
             (["entren"], "train", "Entrena los modelos."),
             (["train"], "train", "Entrena los modelos."),
-            (["pronostic"], "predict", "Genera pronosticos."),
+            (["pronostic"], "predict", "Genera pronósticos."),
             (["predic"], "predict", "Genera predicciones."),
             (["predict"], "predict", "Genera predicciones."),
-            (["forecast"], "predict", "Genera pronosticos."),
+            (["forecast"], "predict", "Genera pronósticos."),
             (["extrae", "dato"], "get-dataset", "Extrae el dataset."),
             (["descarg", "dato"], "get-dataset", "Descarga el dataset."),
             (["dataset"], "get-dataset", "Obtiene el dataset."),
@@ -112,8 +112,8 @@ class EpiEngine:
             (["reporte"], "report", "Genera reporte HTML."),
             (["report"], "report", "Genera reporte HTML."),
             (["tableau"], "tableau", "Genera datos para Tableau."),
-            (["bitacora"], "bitacora", "Genera bitacora del proyecto."),
-            (["compar", "metric"], "compare-metrics", "Compara metricas entre modelos."),
+            (["bitacora"], "bitacora", "Genera bitácora del proyecto."),
+            (["compar", "metric"], "compare-metrics", "Compara métricas entre modelos."),
             (["compar", "modelo"], "compare", "Compara modelos."),
             (["compar"], "compare", "Compara modelos."),
             (["setup", "mac"], "setup-mac", "Configura entorno en macOS."),
@@ -164,7 +164,7 @@ class EpiEngine:
                 re.MULTILINE,
             ):
                 name = m.group(1).strip()
-                desc = (m.group(2) or "").strip() or "Sin descripcion"
+                desc = (m.group(2) or "").strip() or "Sin descripción"
                 skip = {"PHONY", ".PHONY", ".DEFAULT_GOAL", "all", "help", ".ONESHELL"}
                 if name not in skip and not name.startswith("."):
                     self.targets[name] = desc
@@ -217,14 +217,14 @@ class EpiEngine:
                     "commands": [f"make {target_name}"],
                     "is_valid": True,
                     "error": None,
-                    "explanation": f"Target '{target_name}' detectado en la instruccion.",
+                    "explanation": f"Target '{target_name}' detectado en la instrucción.",
                 }
 
         # 3. Fallback a Gemini
         if not self.api_key:
             return {
                 "is_valid": False,
-                "error": "No pude mapear esa instruccion a un target conocido.",
+                "error": "No pude mapear esa instrucción a un target conocido.",
                 "suggestion": "Escribe 'targets' para ver los comandos disponibles.",
             }
 
@@ -285,7 +285,7 @@ class EpiEngine:
             return result.returncode, result.stdout, result.stderr, duration
         except subprocess.TimeoutExpired:
             duration = datetime.now() - start
-            return -1, "", "Timeout: el comando excedio 10 minutos.", duration
+            return -1, "", "Timeout: el comando excedió 10 minutos.", duration
         except Exception as e:
             duration = datetime.now() - start
             return -1, "", str(e), duration

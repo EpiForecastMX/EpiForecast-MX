@@ -22,7 +22,7 @@ def show_log_viewer(console: Console, log_file: Path, n: int = 20) -> None:
         lines = log_file.read_text().strip().split("\n")
         recent = lines[-n:]
         table = Table(
-            title=f"[dorado]ULTIMAS {len(recent)} ENTRADAS DEL LOG[/dorado]",
+            title=f"[dorado]ÚLTIMAS {len(recent)} ENTRADAS DEL LOG[/dorado]",
             show_header=True,
             header_style="dorado",
             box=box.SIMPLE,
@@ -54,13 +54,13 @@ def show_log_viewer(console: Console, log_file: Path, n: int = 20) -> None:
 def show_pipeline_status(console: Console, engine: EpiEngine) -> None:
     """Visualizacion del estado del pipeline MLOps."""
     stages = [
-        ("1. Extraccion", "SINAVE PDF --> CSV", "extract"),
-        ("2. Validacion", "Calidad de datos", "validate"),
-        ("3. Transformacion", "Feature engineering", "transform"),
+        ("1. Extracción", "SINAVE PDF --> CSV", "extract"),
+        ("2. Validación", "Calidad de datos", "validate"),
+        ("3. Transformación", "Feature engineering", "transform"),
         ("4. Entrenamiento", "Prophet x 297 modelos", "train"),
-        ("5. Evaluacion", "MAPE / RMSE / MAE", "evaluate"),
-        ("6. Pronostico", "Prediccion semanal", "forecast"),
-        ("7. Visualizacion", "Graficas + Tableau", "report"),
+        ("5. Evaluación", "MAPE / RMSE / MAE", "evaluate"),
+        ("6. Pronóstico", "Predicción semanal", "forecast"),
+        ("7. Visualización", "Gráficas + Tableau", "report"),
     ]
     console.print()
     console.print(Align.center("[dorado]PIPELINE MLOps · EpiForecast-MX[/dorado]"))
@@ -79,7 +79,7 @@ def show_session_stats(console: Console, engine: EpiEngine) -> None:
     """Dashboard de estadisticas de la sesion activa."""
     s = engine.stats
     table = Table(show_header=False, box=None, padding=(0, 3))
-    table.add_column("Metrica", style="gris")
+    table.add_column("Métrica", style="gris")
     table.add_column("Valor", style="blanco")
     table.add_row("Tiempo activo", f"[dorado]{s.uptime}[/dorado]")
     table.add_row("Comandos ejecutados", f"[blanco]{s.total}[/blanco]")
@@ -89,12 +89,12 @@ def show_session_stats(console: Console, engine: EpiEngine) -> None:
     if s.total > 0:
         rate = (s.successes / s.total) * 100
         rate_color = "verde" if rate >= 80 else "dorado" if rate >= 50 else "guinda"
-        table.add_row("Tasa de exito", f"[{rate_color}]{rate:.0f}%[/{rate_color}]")
+        table.add_row("Tasa de éxito", f"[{rate_color}]{rate:.0f}%[/{rate_color}]")
         avg = s.total_duration / s.total
-        table.add_row("Duracion promedio", f"[blanco]{avg.total_seconds():.1f}s[/blanco]")
+        table.add_row("Duración promedio", f"[blanco]{avg.total_seconds():.1f}s[/blanco]")
     if s.commands_run:
         table.add_row("", "")
-        table.add_row("[dorado]Ultimos comandos[/dorado]", "")
+        table.add_row("[dorado]Últimos comandos[/dorado]", "")
         for entry in s.commands_run[-5:]:
             icon = "[verde]\u2714[/verde]" if entry["success"] else "[guinda]\u2716[/guinda]"
             ts = entry["timestamp"].strftime("%H:%M:%S")
@@ -104,7 +104,7 @@ def show_session_stats(console: Console, engine: EpiEngine) -> None:
             )
     panel = Panel(
         table,
-        title="[dorado]ESTADISTICAS DE SESION[/dorado]",
+        title="[dorado]ESTADÍSTICAS DE SESIÓN[/dorado]",
         border_style="verde.dim",
         padding=(1, 2),
     )
@@ -116,10 +116,10 @@ def show_session_stats(console: Console, engine: EpiEngine) -> None:
 def show_history(console: Console, engine: EpiEngine) -> None:
     """Muestra historial de comandos de la sesion."""
     if not engine.history:
-        console.print("[gris]  Sin historial en esta sesion.[/gris]")
+        console.print("[gris]  Sin historial en esta sesión.[/gris]")
         return
     console.print()
-    console.print("[dorado]HISTORIAL DE LA SESION[/dorado]")
+    console.print("[dorado]HISTORIAL DE LA SESIÓN[/dorado]")
     console.print()
     for i, cmd in enumerate(engine.history, 1):
         console.print(f"  [gris]{i:>3}.[/gris] [blanco]{cmd}[/blanco]")
@@ -170,7 +170,7 @@ def show_python_scripts(
                 first_line = doc_match.group(1).strip().split("\n")[0].strip()
                 if len(first_line) < 80:
                     desc = first_line
-            folder = str(py_file.parent) if str(py_file.parent) != "." else "raiz"
+            folder = str(py_file.parent) if str(py_file.parent) != "." else "raíz"
             all_scripts[folder].append((str(py_file), lines, desc, is_entry))
         except Exception:
             continue
@@ -188,7 +188,7 @@ def show_python_scripts(
         if not filtered:
             available = sorted(all_scripts.keys())
             console.print(
-                f"\n  [alerta]No se encontro la carpeta "
+                f"\n  [alerta]No se encontró la carpeta "
                 f"'[blanco]{folder_filter}[/blanco]'.[/alerta]",
             )
             console.print("  [sutil]Carpetas disponibles:[/sutil]")
@@ -215,8 +215,8 @@ def show_python_scripts(
     )
     table.add_column("", width=3, justify="center")
     table.add_column("Archivo", style="blanco", min_width=35)
-    table.add_column("Lineas", justify="right", width=7, style="gris")
-    table.add_column("Descripcion", style="sutil")
+    table.add_column("Líneas", justify="right", width=7, style="gris")
+    table.add_column("Descripción", style="sutil")
 
     for folder in sorted(scripts.keys()):
         table.add_row("", f"[dorado]{folder}/[/dorado]", "", "")
@@ -234,5 +234,5 @@ def show_python_scripts(
     console.print(table)
     console.print(
         f"\n  [sutil]{total_files} archivos · [verde]\u25b6[/verde] {total_entry} "
-        f"ejecutables · [gris]\u00b7[/gris] {total_files - total_entry} modulos[/sutil]\n",
+        f"ejecutables · [gris]\u00b7[/gris] {total_files - total_entry} módulos[/sutil]\n",
     )
