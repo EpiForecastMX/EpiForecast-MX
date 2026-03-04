@@ -90,6 +90,7 @@ sagemaker = [
 
 [project.scripts]
 epiforecast = "scripts.train:main"
+epi = "epiforecast.cli:main"
 
 # ─── Ruff ─────────────────────────────────────────────────────────────────────
 [tool.ruff]
