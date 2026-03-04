@@ -538,6 +538,46 @@ def _mase_class(val: Any) -> str:
     return "mase-warn"
 
 
+MASE_VERDICT_COLORS: dict[str, str] = {
+    "EXCELENTE": "#2e7d32",
+    "BUENO": "#00524E",
+    "REGULAR": "#f9a825",
+    "FALLO": "#c62828",
+    "—": "#97999B",
+}
+MASE_VERDICT_TEXT: dict[str, str] = {
+    "EXCELENTE": "#fff",
+    "BUENO": "#fff",
+    "REGULAR": "#333",
+    "FALLO": "#fff",
+    "—": "#fff",
+}
+
+
+def _mase_verdict(val: Any) -> str:
+    """Veredicto basado en MASE: < 1 supera al naive."""
+    if val is None or (isinstance(val, float) and math.isnan(val)):
+        return "—"
+    if val < 0.5:
+        return "EXCELENTE"
+    if val < 1.0:
+        return "BUENO"
+    if val < 1.5:
+        return "REGULAR"
+    return "FALLO"
+
+
+def _mase_dot(val: Any) -> str:
+    """Dot de color segun veredicto MASE, sin etiqueta."""
+    v = _mase_verdict(val)
+    color = MASE_VERDICT_COLORS.get(v, "#97999B")
+    return (
+        f'<span title="MASE {v}" style="display:inline-block;width:10px;height:10px;'
+        f"border-radius:50%;background:{color};vertical-align:middle;"
+        f'margin-left:.4rem"></span>'
+    )
+
+
 # ---------------------------------------------------------------------------
 # Tabla reutilizable con desglose por sexo
 # ---------------------------------------------------------------------------
@@ -575,7 +615,8 @@ def _build_sexo_table(data: pd.DataFrame) -> str:
                 f"  <td>{_fmt_int(r['pronostico'])}</td>"
                 f'  <td class="{_err_class(r["error_pct"])}">'
                 f"{_fmt_error(r['error_pct'])}</td>"
-                f'  <td class="{_mase_class(r["mase"])}">{_fmt_mase(r["mase"])}</td>'
+                f'  <td class="{_mase_class(r["mase"])}">'
+                f"{_fmt_mase(r['mase'])} {_mase_dot(r['mase'])}</td>"
                 f"  <td>{_motor_badge(r['motor'])}</td>"
                 f"  <td>{_veredicto_badge(r['veredicto'])}</td>"
                 f"</tr>\n"
@@ -826,7 +867,8 @@ def _section_detalle(comp: pd.DataFrame) -> str:
                 f"  <td>{_fmt_int(r['pronostico'])}</td>"
                 f'  <td class="{_err_class(r["error_pct"])}">'
                 f"{_fmt_error(r['error_pct'])}</td>"
-                f'  <td class="{_mase_class(r["mase"])}">{_fmt_mase(r["mase"])}</td>'
+                f'  <td class="{_mase_class(r["mase"])}">'
+                f"{_fmt_mase(r['mase'])} {_mase_dot(r['mase'])}</td>"
                 f"  <td>{_motor_badge(r['motor'])}</td>"
                 f"  <td>{_veredicto_badge(r['veredicto'])}</td>"
                 f"</tr>\n"
