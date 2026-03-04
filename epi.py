@@ -153,6 +153,9 @@ def main() -> None:
     console.print()
     logging.info("=== Sesion de epi v3.0 iniciada ===")
 
+    # Historial conversacional para contexto en preguntas anidadas
+    chat_history: list[dict[str, str]] = []
+
     # REPL
     while True:
         try:
@@ -206,6 +209,7 @@ def main() -> None:
                     cache,
                     engine.api_key,
                     engine.model_name,
+                    chat_history=chat_history,
                 )
                 continue
 

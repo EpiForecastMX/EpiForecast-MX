@@ -62,6 +62,20 @@ _ESTADOS_ALIAS: dict[str, str] = {
     "baja california sur": "Baja California Sur",
     "baja california": "Baja California",
     "quintana roo": "Quintana Roo",
+    # Regiones
+    "region metropolitana alta": "Region Metropolitana alta",
+    "metropolitana alta": "Region Metropolitana alta",
+    "metropolitana": "Region Metropolitana alta",
+    "region rural dispersa": "Region Rural - dispersa",
+    "region rural": "Region Rural - dispersa",
+    "rural dispersa": "Region Rural - dispersa",
+    "region sur sureste vulnerable": "Region Sur-Sureste vulnerable",
+    "region sur sureste": "Region Sur-Sureste vulnerable",
+    "region sur": "Region Sur-Sureste vulnerable",
+    "sur sureste": "Region Sur-Sureste vulnerable",
+    "sureste vulnerable": "Region Sur-Sureste vulnerable",
+    "region urbana media": "Region Urbana media",
+    "urbana media": "Region Urbana media",
 }
 
 _PADECIMIENTO_ALIAS: dict[str, str] = {
