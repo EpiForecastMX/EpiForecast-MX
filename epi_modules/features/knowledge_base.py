@@ -492,6 +492,7 @@ class KnowledgeBase:
             ),
             "aliases": [
                 "javier",
+                "javi",
                 "jar",
                 "rebull",
                 "rebull saucedo",
@@ -503,14 +504,14 @@ class KnowledgeBase:
             "nombre": "Juan Carlos Pérez Nava",
             "apodo": "Jarcos",
             "matricula": "A01795941",
-            "rol": "Desarrollador e integrador de datos IMSS",
+            "rol": "EDA, feature engineering y modelo Prophet base",
             "empleo": "Jefe de Área en el Instituto Mexicano del Seguro Social (IMSS)",
             "commits": 288,
             "desc": (
-                "Responsable de la integración con los sistemas de datos del IMSS, "
-                "validación de datos del boletín epidemiológico y aseguramiento de "
-                "calidad. Su conocimiento institucional del IMSS fue clave para el "
-                "diseño del pipeline de extracción y las reglas de negocio."
+                "Responsable del análisis exploratorio de datos (EDA), feature "
+                "engineering y el modelo Prophet base. Su conocimiento institucional "
+                "del IMSS fue clave para el diseño del pipeline de extracción, las "
+                "reglas de negocio y la validación del boletín epidemiológico."
             ),
             "aliases": [
                 "juan",
@@ -526,14 +527,15 @@ class KnowledgeBase:
             "nombre": "Luis Gerardo Sánchez Salazar",
             "apodo": "Jerry",
             "matricula": "A01232963",
-            "rol": "Desarrollador y especialista en modelado",
+            "rol": "Diseño, desarrollo y optimización del dashboard",
             "empleo": "Senior Controls Engineer en Tesla",
             "commits": 201,
             "desc": (
-                "Contribuyó al desarrollo de modelos de pronóstico, experimentación "
-                "con hiperparámetros y validación cruzada. Su experiencia en "
-                "ingeniería de control aportó rigor analítico al diseño de los "
-                "sistemas de evaluación y diagnóstico de overfitting."
+                "Responsable del diseño, desarrollo y optimización del dashboard "
+                "interactivo (EpiForecast-IMSS-Dashboard). Modelado y transformación "
+                "de datos para visualización en el dashboard. Su experiencia en "
+                "ingeniería de control aportó rigor analítico al diseño de las "
+                "visualizaciones y la presentación de resultados."
             ),
             "aliases": [
                 "luis",
