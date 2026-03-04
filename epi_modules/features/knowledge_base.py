@@ -426,6 +426,8 @@ class KnowledgeBase:
             ("_answer_equipo",),
             # Contexto temporal (fecha, semana epi, cobertura datos)
             ("_answer_temporal",),
+            # Configuracion de entrenamiento, hiperparametros, fechas de corte
+            ("_answer_training_config",),
             # Semana actual / siguiente / casos nuevos
             ("_answer_semana_actual",),
             # Que es un padecimiento (descripcion medica)
@@ -792,6 +794,308 @@ class KnowledgeBase:
             )
 
         return "\n".join(lines) if lines else None
+
+    # ------------------------------------------------------------------
+    # Configuracion de entrenamiento, hiperparametros, fechas de corte
+    # ------------------------------------------------------------------
+
+    def _answer_training_config(self, q: str, ent: dict, s: dict) -> str | None:
+        """Responde sobre fechas de corte, hiperparametros, CV y eventos especiales."""
+        triggers = [
+            "fecha de corte",
+            "fecha corte",
+            "corte de entrenamiento",
+            "corte entrenamiento",
+            "train test",
+            "train/test",
+            "hiperparametro",
+            "hyperparametr",
+            "hiper parametro",
+            "cross validation",
+            "validacion cruzada",
+            "cv fold",
+            "fold",
+            "test size",
+            "tamano de test",
+            "tamano de prueba",
+            "tamano test",
+            "tamano prueba",
+            "periodo de prueba",
+            "oof",
+            "out of fold",
+            "ventana covid",
+            "ventana de covid",
+            "impacto covid",
+            "covid en el modelo",
+            "covid modelo",
+            "regimen",
+            "cambio de regimen",
+            "change point",
+            "changepoint",
+            "epoch",
+            "learning rate",
+            "tasa de aprendizaje",
+            "capas",
+            "layers",
+            "dropout",
+            "context length",
+            "prediction length",
+            "early stopping",
+            "patience",
+            "configuracion del modelo",
+            "configuracion de entrenamiento",
+            "config del modelo",
+            "config entrenamiento",
+            "parametros del modelo",
+            "parametros de entrenamiento",
+            "como se entreno",
+            "como se entrenaron",
+            "con que parametros",
+            "con que configuracion",
+            "grid search",
+            "busqueda de hiperparametro",
+            "xgboost parametro",
+            "lightgbm parametro",
+            "prophet parametro",
+            "deepar parametro",
+            "stacking parametro",
+            "ensemble parametro",
+            "meta learner",
+            "metalearner",
+            "ridge",
+            "elasticnet",
+            "peso",
+            "weight",
+            "cv_weight",
+            "estacionalidad",
+            "seasonality",
+        ]
+        # Tambien activar si mencionan un modelo + palabra de config
+        _config_words = (
+            "configuracion",
+            "config",
+            "parametro",
+            "parametros",
+            "hiperparametro",
+            "como se entreno",
+            "como entrena",
+            "como funciona",
+        )
+        _model_words = (
+            "prophet",
+            "deepar",
+            "deep ar",
+            "ensemble",
+            "stacking",
+            "xgboost",
+            "lightgbm",
+        )
+        has_model_config = any(m in q for m in _model_words) and any(c in q for c in _config_words)
+
+        if not any(t in q for t in triggers) and not has_model_config:
+            return None
+
+        modelo = ent.get("modelo")
+        lines: list[str] = []
+
+        # --- Fechas de corte (siempre mostrar si preguntan por corte/train/test) ---
+        corte_kw = any(
+            t in q
+            for t in [
+                "fecha de corte",
+                "fecha corte",
+                "corte de entrenamiento",
+                "corte entrenamiento",
+                "train test",
+                "train/test",
+                "como se entreno",
+                "como se entrenaron",
+            ]
+        )
+        if corte_kw or not modelo:
+            lines.append("**Fechas de corte de entrenamiento**\n")
+            lines.append("Todos los modelos usan la misma fecha de corte:")
+            lines.append("- **FECHA_CORTE_ENTRENAMIENTO: 2025-01-01**")
+            lines.append("- Datos de entrenamiento: semana 1/2014 hasta semana 52/2024")
+            lines.append("- Datos de prueba (CV): semana 1/2025 en adelante")
+            lines.append("- Horizonte de pronóstico: **52 semanas** (hasta enero 2027)")
+            lines.append("")
+
+        # --- Prophet ---
+        show_prophet = modelo == "Prophet" or (
+            not modelo
+            and any(
+                t in q
+                for t in [
+                    "prophet",
+                    "fold",
+                    "cv_weight",
+                    "peso",
+                    "weight",
+                    "estacionalidad",
+                    "seasonality",
+                    "changepoint",
+                    "change point",
+                    "grid",
+                ]
+            )
+        )
+        if show_prophet or (corte_kw and not modelo):
+            lines.append("**Prophet**")
+            lines.append("- Validación cruzada: **4 folds** (TS_SPLITS)")
+            lines.append("- Tamaño de prueba por fold: **53 semanas** (TEST_SIZE)")
+            lines.append("- Pesos de CV: [0.5, 0.75, 1.0, 1.25] (más peso a folds recientes)")
+            lines.append(
+                "- Estacionalidad: multiplicativa (Depresión, Parkinson), aditiva (Alzheimer)"
+            )
+            lines.append("- Grid de hiperparámetros por padecimiento:")
+            lines.append(
+                "  - Depresión: changepoint_prior_scale=[0.05, 0.1, 0.5], "
+                "seasonality_prior_scale=[1, 5, 10]"
+            )
+            lines.append(
+                "  - Parkinson: changepoint_prior_scale=[0.01, 0.05, 0.1], "
+                "seasonality_prior_scale=[0.5, 1, 5]"
+            )
+            lines.append(
+                "  - Alzheimer: changepoint_prior_scale=[0.01, 0.05, 0.1], "
+                "seasonality_prior_scale=[0.5, 1, 5]"
+            )
+            lines.append("")
+
+        # --- Ensemble ---
+        show_ensemble = modelo == "Ensemble" or (
+            not modelo
+            and any(
+                t in q
+                for t in [
+                    "ensemble",
+                    "xgboost",
+                    "oof",
+                    "out of fold",
+                ]
+            )
+        )
+        if show_ensemble or (corte_kw and not modelo):
+            lines.append("**Ensemble (Prophet + XGBoost)**")
+            lines.append("- Horizonte: **52 semanas** (HORIZON_ENSEMBLE)")
+            lines.append("- OOF cutoff: **2024-01-01** (parallel_oof_cutoff)")
+            lines.append("- XGBoost CV: **4 splits**, test_size=**26 semanas**")
+            lines.append(
+                "- XGBoost hiperparámetros: n_estimators=500, max_depth=4, "
+                "learning_rate=0.05, subsample=0.8, colsample_bytree=0.8"
+            )
+            lines.append(
+                "- Features: Prophet yhat, residuos, mes, semana, rolling means (4/12/26 sem)"
+            )
+            lines.append("")
+
+        # --- Stacking ---
+        show_stacking = modelo == "Stacking" or (
+            not modelo
+            and any(
+                t in q
+                for t in [
+                    "stacking",
+                    "lightgbm",
+                    "meta learner",
+                    "metalearner",
+                    "ridge",
+                    "elasticnet",
+                    "ets",
+                ]
+            )
+        )
+        if show_stacking or (corte_kw and not modelo):
+            lines.append("**Stacking (Prophet + ETS + LightGBM + Ridge)**")
+            lines.append("- Horizonte: **52 semanas** (HORIZON_STACKING)")
+            lines.append("- OOF cutoff: **2024-01-01**")
+            lines.append("- OOF folds: **4**, mínimo de entrenamiento: **104 semanas** (2 años)")
+            lines.append("- Meta-learner: Ridge con pesos no negativos")
+            lines.append("- Expertos: ProphetExpert, ETSExpert, LGBMExpert")
+            lines.append("")
+
+        # --- DeepAR ---
+        show_deepar = modelo == "DeepAR" or (
+            not modelo
+            and any(
+                t in q
+                for t in [
+                    "deepar",
+                    "deep ar",
+                    "epoch",
+                    "capas",
+                    "layers",
+                    "dropout",
+                    "context length",
+                    "prediction length",
+                    "early stopping",
+                    "patience",
+                    "learning rate",
+                    "tasa de aprendizaje",
+                ]
+            )
+        )
+        if show_deepar or (corte_kw and not modelo):
+            lines.append("**DeepAR (GluonTS + PyTorch)**")
+            lines.append("- Context length: **104 semanas** (2 años de historia)")
+            lines.append("- Prediction length: **52 semanas**")
+            lines.append("- Epochs: **300** (max)")
+            lines.append("- Early stopping patience: **15 epochs**")
+            lines.append("- Arquitectura: 2 capas LSTM, 40 celdas, dropout=0.1")
+            lines.append("- Learning rate: 1e-3")
+            lines.append("- Batch size: 32")
+            lines.append("- Entrenamiento: CPU local o GPU en AWS SageMaker (ml.g4dn.xlarge)")
+            lines.append("")
+
+        # --- Eventos especiales (COVID, cambios de regimen) ---
+        event_kw = any(
+            t in q
+            for t in [
+                "covid",
+                "pandemia",
+                "regimen",
+                "cambio de regimen",
+                "change point",
+                "changepoint",
+                "evento especial",
+                "tabasco",
+            ]
+        )
+        if event_kw:
+            lines.append("**Eventos especiales en el modelado**\n")
+            lines.append("*COVID-19 (afecta los 3 padecimientos):*")
+            lines.append("- Fecha de inicio: **2020-03-23** (semana epidemiológica 13/2020)")
+            lines.append("- Ventana de impacto: **913 días** (~2.5 años, hasta sep 2022)")
+            lines.append(
+                "- Tratamiento: Prophet usa changepoint + holiday effect; "
+                "Ensemble y Stacking capturan el efecto vía features temporales"
+            )
+            lines.append("")
+            lines.append("*Cambio de régimen — Tabasco (solo Depresión):*")
+            lines.append("- Fecha: **2023-01-09** (semana 2/2023)")
+            lines.append("- Ventana: **365 días** (1 año)")
+            lines.append(
+                "- Motivo: cambio abrupto en el patrón de reporte de Depresión en Tabasco"
+            )
+
+        # Si no se activó ninguna sección específica, dar resumen general
+        if not lines:
+            lines.append("**Configuración general de entrenamiento**\n")
+            lines.append("- Fecha de corte: **2025-01-01** (todos los modelos)")
+            lines.append("- Horizonte: **52 semanas**")
+            lines.append("- Modelos: Prophet, DeepAR, Ensemble, Stacking")
+            lines.append("- Series: 333 (3 padecimientos x 37 geo x 3 sexo)")
+            lines.append(
+                "- Selección de producción: SMAPE primario, MASE desempate (5%), "
+                "RMSE segundo desempate"
+            )
+            lines.append(
+                "\nPregunta por un modelo específico para ver sus hiperparámetros: "
+                '"hiperparámetros de Prophet", "configuración de DeepAR", etc.'
+            )
+
+        return "\n".join(lines)
 
     # ------------------------------------------------------------------
     # Semana actual / siguiente / casos nuevos
