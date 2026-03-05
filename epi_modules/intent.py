@@ -256,6 +256,10 @@ def classify_intent(cmd: str) -> str | None:
     ):
         return "pronostico"
 
+    # Comparar modelos (tabla rapida)
+    if stripped.startswith("compara ") or stripped.startswith("comparar "):
+        return "comparar_modelos"
+
     # Scripts / archivos .py
     execution_verbs = (
         "corre",

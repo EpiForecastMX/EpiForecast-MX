@@ -26,6 +26,7 @@ from epi_modules.features.data_cache import ProjectDataCache
 from epi_modules.features.data_explorer import show_data_explorer
 from epi_modules.features.forecast_viewer import show_forecast_viewer
 from epi_modules.features.model_browser import show_model_browser
+from epi_modules.features.model_comparison import show_model_comparison
 from epi_modules.intent import (
     classify_intent,
     extract_folder_filter,
@@ -109,6 +110,170 @@ def build_prompt(engine: EpiEngine, cache: ProjectDataCache) -> Text:
     return parts
 
 
+# -- Autocomplete con Tab ----------------------------------------------
+# -- Sugerencia de siguiente paso --------------------------------------
+_NEXT_STEP: dict[str, tuple[str, str]] = {
+    "preprocess": ("make train", "Entrenar modelos con los datos preparados"),
+    "reset": ("make preprocess", "Ejecutar el pipeline de datos"),
+    "train": ("make predict", "Generar pronosticos con el modelo entrenado"),
+    "train-prophet": ("make predict", "Generar pronosticos Prophet"),
+    "train-deepar": ("make predict", "Generar pronosticos DeepAR"),
+    "train-ensemble": ("make predict", "Generar pronosticos Ensemble"),
+    "train-stacking": ("make predict", "Generar pronosticos Stacking"),
+    "train-all": ("make predict-all", "Generar pronosticos de los 4 modelos"),
+    "predict": ("make report", "Generar reporte HTML de resultados"),
+    "predict-all": ("make tableau", "Construir dataset para Tableau"),
+    "tableau": ("make compare-metrics", "Comparar metricas entre modelos"),
+    "report": ("make compare", "Comparar modelos visualmente"),
+    "compare": ("make compare-metrics", "Generar comparativa de metricas"),
+    "compare-metrics": ("make tabla-produccion", "Generar tabla de produccion"),
+    "data-pull": ("make preprocess", "Preprocesar los datos descargados"),
+}
+
+
+def _offer_error_analysis(console: Console, engine: EpiEngine, cmd: str, stderr: str) -> None:
+    """Ofrece analizar el error con IA."""
+    try:
+        import google.generativeai as genai
+
+        console.print(
+            "\n  [dorado]Analizando error con IA...[/dorado]",
+        )
+        model_name = engine.find_model()
+        genai.configure(api_key=engine.api_key)
+        model = genai.GenerativeModel(model_name)
+
+        # Limitar stderr a 1500 chars para no exceder tokens
+        err_snippet = stderr[-1500:] if len(stderr) > 1500 else stderr
+        prompt = (
+            "Eres el asistente tecnico de EpiForecast-MX (IMSS). "
+            "Un comando fallo. Analiza el error y da:\n"
+            "1. Diagnostico breve (1-2 lineas)\n"
+            "2. Solucion sugerida (comando o accion concreta)\n"
+            "Responde en espanol, conciso, formato Markdown.\n\n"
+            f"Comando: {cmd}\n"
+            f"Error:\n```\n{err_snippet}\n```"
+        )
+        response = model.generate_content(prompt)
+        if response.text:
+            from rich.markdown import Markdown
+
+            console.print(
+                Panel(
+                    Markdown(response.text),
+                    title="[dorado]Diagnostico IA[/dorado]",
+                    border_style="dorado.dim",
+                    padding=(1, 2),
+                )
+            )
+    except Exception as e:
+        logging.error(f"Error en analisis IA: {e}")
+
+
+def _suggest_next(console: Console, cmd: str, success: bool) -> None:
+    """Muestra sugerencia de siguiente paso si aplica."""
+    if not success:
+        return
+    # Extraer target del comando (ej: "make train-prophet" -> "train-prophet")
+    target = cmd.replace("make ", "").strip()
+    hint = _NEXT_STEP.get(target)
+    if hint:
+        next_cmd, desc = hint
+        console.print(
+            f"  [sutil]Siguiente paso: [dorado]{next_cmd}[/dorado] \u2014 {desc}[/sutil]",
+        )
+
+
+_INTERNAL_CMDS = [
+    "ayuda",
+    "help",
+    "targets",
+    "dashboard",
+    "panel",
+    "datos",
+    "modelos",
+    "pronostico",
+    "forecast",
+    "stats",
+    "pipeline",
+    "historial",
+    "salud",
+    "scripts",
+    "banner",
+    "salir",
+    "limpiar",
+    "clear",
+]
+
+_PADECIMIENTOS = ["depresion", "alzheimer", "parkinson"]
+
+_ESTADOS = [
+    "aguascalientes",
+    "baja california",
+    "baja california sur",
+    "campeche",
+    "chiapas",
+    "chihuahua",
+    "ciudad de mexico",
+    "coahuila",
+    "colima",
+    "durango",
+    "guanajuato",
+    "guerrero",
+    "hidalgo",
+    "jalisco",
+    "michoacan",
+    "morelos",
+    "mexico",
+    "nayarit",
+    "nuevo leon",
+    "oaxaca",
+    "puebla",
+    "queretaro",
+    "quintana roo",
+    "san luis potosi",
+    "sinaloa",
+    "sonora",
+    "tabasco",
+    "tamaulipas",
+    "tlaxcala",
+    "veracruz",
+    "yucatan",
+    "zacatecas",
+    "nacional",
+]
+
+
+def _setup_completer(engine: EpiEngine, cache: ProjectDataCache) -> None:
+    """Configura autocompletado con Tab."""
+    targets = [f"make {t}" for t in engine.targets]
+    all_words = _INTERNAL_CMDS + targets + _PADECIMIENTOS + _ESTADOS
+
+    def completer(text: str, state: int) -> str | None:
+        # Completar sobre la linea completa
+        buf = readline.get_line_buffer().lstrip()
+        if buf.startswith("make "):
+            # Completar solo targets despues de "make "
+            prefix = buf[5:]
+            options = [t for t in engine.targets if t.startswith(prefix)]
+        elif buf.startswith("pronostico ") or buf.startswith("forecast "):
+            # Completar estados y padecimientos
+            parts = buf.split()
+            prefix = parts[-1] if len(parts) > 1 else ""
+            options = [w for w in _ESTADOS + _PADECIMIENTOS if w.startswith(prefix)]
+        else:
+            options = [w for w in all_words if w.startswith(text.lower())]
+        return options[state] if state < len(options) else None
+
+    readline.set_completer(completer)
+    readline.set_completer_delims(" \t")
+    # Compatible con macOS libedit y GNU readline
+    if "libedit" in readline.__doc__:
+        readline.parse_and_bind("bind ^I rl_complete")
+    else:
+        readline.parse_and_bind("tab: complete")
+
+
 # -- REPL principal ----------------------------------------------------
 @app.command()
 def main() -> None:
@@ -139,6 +304,9 @@ def main() -> None:
     # Cargar historial en readline para flecha arriba/abajo
     for entry in engine.history:
         readline.add_history(entry)
+
+    # Tab autocomplete
+    _setup_completer(engine, cache)
 
     # Bienvenida
     show_banner(console)
@@ -231,6 +399,11 @@ def main() -> None:
             if intent == "pronostico":
                 args = re.sub(r"^(pronostico|forecast)\s*", "", cmd_normalized).strip()
                 show_forecast_viewer(console, cache, args)
+                continue
+
+            if intent == "comparar_modelos":
+                args = re.sub(r"^(compara|comparar)\s*", "", cmd_normalized).strip()
+                show_model_comparison(console, args)
                 continue
 
             if intent == "scripts":
@@ -353,13 +526,12 @@ def main() -> None:
             for i, cmd in enumerate(commands, 1):
                 show_execution_progress(console, cmd, i, len(commands))
 
-                with Status(
-                    "[verde]  Procesando...[/verde]",
-                    spinner="dots2",
-                    spinner_style="verde",
-                    console=console,
-                ):
-                    returncode, stdout, stderr, duration = engine.execute_with_output(cmd)
+                def _live_line(line: str) -> None:
+                    console.print(f"  [gris]{line}[/gris]")
+
+                returncode, stdout, stderr, duration = engine.execute_with_output(
+                    cmd, live_callback=_live_line
+                )
 
                 success = returncode == 0
                 engine.stats.record(cmd, success, duration)
@@ -368,6 +540,15 @@ def main() -> None:
                     f"Codigo: {returncode} | Duracion: {duration.total_seconds():.1f}s",
                 )
                 show_result_card(console, cmd, returncode, stdout, stderr, duration)
+
+                # Alerta sonora si tardo mas de 30 segundos
+                if duration.total_seconds() > 30:
+                    print("\a", end="", flush=True)
+
+                if success:
+                    _suggest_next(console, cmd, success)
+                elif stderr and engine.api_key:
+                    _offer_error_analysis(console, engine, cmd, stderr)
 
                 if not success and i < len(commands):
                     console.print(

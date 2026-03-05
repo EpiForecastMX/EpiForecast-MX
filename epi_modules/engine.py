@@ -1,5 +1,6 @@
 """Motor principal de ejecucion: EpiEngine y SessionStats."""
 
+from collections.abc import Callable
 from datetime import datetime, timedelta
 import json
 import logging
@@ -340,19 +341,50 @@ class EpiEngine:
         return "low"
 
     # -- Ejecucion ----------------------------------------------------
-    def execute_with_output(self, cmd: str) -> tuple[int, str, str, timedelta]:
-        """Ejecuta un comando capturando stdout/stderr y duracion."""
+    def execute_with_output(
+        self,
+        cmd: str,
+        live_callback: "Callable[[str], None] | None" = None,
+    ) -> tuple[int, str, str, timedelta]:
+        """Ejecuta un comando con streaming opcional de salida.
+
+        Args:
+            cmd: Comando a ejecutar.
+            live_callback: Si se provee, se llama con cada linea de stdout
+                           en tiempo real. La salida completa se acumula
+                           igualmente para el result card.
+        """
         start = datetime.now()
         try:
-            result = subprocess.run(
+            if live_callback is None:
+                result = subprocess.run(
+                    cmd,
+                    shell=True,
+                    capture_output=True,
+                    text=True,
+                    timeout=72000,
+                )
+                duration = datetime.now() - start
+                return result.returncode, result.stdout, result.stderr, duration
+
+            # Streaming: leer stdout linea a linea
+            proc = subprocess.Popen(
                 cmd,
                 shell=True,
-                capture_output=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
                 text=True,
-                timeout=72000,
+                bufsize=1,
             )
+            stdout_lines: list[str] = []
+            assert proc.stdout is not None  # noqa: S101
+            for line in proc.stdout:
+                stdout_lines.append(line)
+                live_callback(line.rstrip("\n"))
+            proc.wait(timeout=72000)
+            stderr = proc.stderr.read() if proc.stderr else ""
             duration = datetime.now() - start
-            return result.returncode, result.stdout, result.stderr, duration
+            return proc.returncode or 0, "".join(stdout_lines), stderr, duration
         except subprocess.TimeoutExpired:
             duration = datetime.now() - start
             return -1, "", "Timeout: el comando excedió 20 horas.", duration
