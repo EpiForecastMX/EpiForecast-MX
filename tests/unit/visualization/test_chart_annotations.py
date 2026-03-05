@@ -121,7 +121,9 @@ class TestRenderFichaTecnica:
         assert "supera" in self._ficha_text(mock_fig)
 
     def test_seasonality_mode_in_text(self, mock_fig):
-        _render_ficha_tecnica(mock_fig, {"seasonality_mode": "multiplicative"})
+        _render_ficha_tecnica(
+            mock_fig, {"seasonality_mode": "multiplicative", "meta_modelo": "prophet"}
+        )
         assert "multiplicative" in self._ficha_text(mock_fig)
 
     def test_empty_metrics_still_calls_text(self, mock_fig):

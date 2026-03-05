@@ -4,7 +4,7 @@
 
 PROJECT_NAME = integrador
 PYTHON_VERSION = 3.12
-PYTHON = python
+PYTHON = python3
 ACTIVATE := bin/activate
 SRC = src/epiforecast
 
