@@ -14,6 +14,7 @@ import json
 import logging
 from pathlib import Path
 import re
+import readline
 import warnings
 
 warnings.filterwarnings("ignore", category=FutureWarning)
@@ -134,6 +135,10 @@ def main() -> None:
 
     engine.parse_makefile()
     engine.history = _load_history()
+
+    # Cargar historial en readline para flecha arriba/abajo
+    for entry in engine.history:
+        readline.add_history(entry)
 
     # Bienvenida
     show_banner(console)
