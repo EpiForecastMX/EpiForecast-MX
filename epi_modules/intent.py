@@ -92,6 +92,8 @@ EXIT_WORDS = {
     "terminar",
     "fin",
     "reset",
+    "restart",
+    "re-start",
     "reiniciar",
     "reinicia",
     "apagar",
