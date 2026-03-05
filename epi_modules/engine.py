@@ -165,9 +165,47 @@ class EpiEngine:
             ):
                 name = m.group(1).strip()
                 desc = (m.group(2) or "").strip() or "Sin descripción"
-                skip = {"PHONY", ".PHONY", ".DEFAULT_GOAL", "all", "help", ".ONESHELL"}
+                skip = {
+                    "PHONY",
+                    ".PHONY",
+                    ".DEFAULT_GOAL",
+                    "all",
+                    "help",
+                    ".ONESHELL",
+                    "ACTIVATE",
+                    # Setup (ya configurado antes de usar EPI)
+                    "requirements",
+                    "setup",
+                    "setup-linux",
+                    "setup-mac",
+                    "setup-linux-deps",
+                    "create-env",
+                    # Sub-etapas de preprocess (se ejecutan via make preprocess)
+                    "get-dataset",
+                    "filter",
+                    "clean",
+                    "transform",
+                    "get-inegi",
+                    "mapper",
+                    # Calidad (herramientas de desarrollo, no operativas)
+                    "lint",
+                    "format",
+                    "typecheck",
+                    "test",
+                    "test-fast",
+                    "quality",
+                    "hooks",
+                    "clean-py",
+                }
                 if name not in skip and not name.startswith("."):
                     self.targets[name] = desc
+            # Descripciones amigables para el operador
+            desc_override = {
+                "preprocess": "Flujo de preparación y estructuración de datos",
+            }
+            for t, d in desc_override.items():
+                if t in self.targets:
+                    self.targets[t] = d
         except Exception as e:
             logging.error(f"Error parseando Makefile: {e}")
 
