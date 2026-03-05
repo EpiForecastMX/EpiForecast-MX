@@ -177,16 +177,21 @@ def classify_intent(cmd: str) -> str | None:
     if stripped in ("dashboard", "panel", "tablero", "resumen general"):
         return "dashboard"
 
-    # Targets (antes de chat, para capturar "que comandos make hay?")
-    if _match("make", "target") and _match(
-        "comando",
+    # Targets (antes de chat, para capturar "que make hay?", "comandos disponibles", etc.)
+    has_make_or_target = _match("make", "target", "comando")
+    has_list_intent = _match(
         "disponible",
         "ejecutar",
         "cuales",
         "que hay",
+        "hay",
         "puedo",
         "lista",
-    ):
+        "muestra",
+        "dime",
+        "cuantos",
+    )
+    if has_make_or_target and has_list_intent:
         return "targets"
 
     # Chat / pregunta IA
