@@ -349,13 +349,13 @@ class EpiEngine:
                 shell=True,
                 capture_output=True,
                 text=True,
-                timeout=600,
+                timeout=72000,
             )
             duration = datetime.now() - start
             return result.returncode, result.stdout, result.stderr, duration
         except subprocess.TimeoutExpired:
             duration = datetime.now() - start
-            return -1, "", "Timeout: el comando excedió 10 minutos.", duration
+            return -1, "", "Timeout: el comando excedió 20 horas.", duration
         except Exception as e:
             duration = datetime.now() - start
             return -1, "", str(e), duration
