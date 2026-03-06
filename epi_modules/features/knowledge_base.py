@@ -1593,6 +1593,20 @@ class KnowledgeBase:
         if not has_year and not has_hist_trigger and not is_ranking_q:
             return None
 
+        # Si la pregunta es sobre proyecciones futuras, dejar para _answer_pronostico
+        future_kw = [
+            "proyect",
+            "pronostic",
+            "forecast",
+            "prediccion",
+            "predice",
+            "predecir",
+            "futuro",
+            "se espera",
+        ]
+        if any(t in q for t in future_kw) and not has_year:
+            return None
+
         import pandas as pd
 
         pad = ent.get("padecimiento")
@@ -2377,8 +2391,25 @@ class KnowledgeBase:
 
     def _answer_pronostico(self, q: str, ent: dict, s: dict) -> str | None:
         """Responde sobre pronosticos acumulados."""
-        triggers = ["pronostico", "forecast", "caso", "incidencia", "prediccion", "proyeccion"]
-        if not any(t in q for t in triggers):
+        triggers = [
+            "pronostico",
+            "forecast",
+            "prediccion",
+            "proyeccion",
+            "proyect",
+            "se espera",
+            "futuro",
+            "predice",
+        ]
+        # "caso" e "incidencia" solo cuentan si hay contexto de futuro
+        future_ctx = any(t in q for t in triggers)
+        general_triggers = ["caso", "incidencia"]
+        has_general = any(t in q for t in general_triggers)
+
+        if not future_ctx and not has_general:
+            return None
+        # Si solo tiene triggers generales sin contexto de futuro, no capturar
+        if has_general and not future_ctx:
             return None
 
         pad = ent.get("padecimiento")
