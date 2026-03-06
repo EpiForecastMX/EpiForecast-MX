@@ -32,27 +32,14 @@ KEEP_COLS_TWB = [
     "incrementos_hombres",
     "incrementos_mujeres",
     "yhat",
+    "archivo_modelo_usado",
     "modelo_productivo",
-    "yhat_prophet",
-    "yhat_deepar",
-    "yhat_ensemble",
-    "yhat_stacking",
-    "yhat_lower",
-    "yhat_upper",
     "y_real",
-    # Metricas del modelo productivo (sin sufijo)
     "rmse",
     "mae",
     "mape",
     "smape",
     "mase",
-    # Metricas por modelo (con sufijo _modelo)
-    *[f"{m}_{mod}" for m in _METRICS for mod in _MODELS],
-    "trend",
-    "yearly_custom",
-    "archivo_modelo_original",
-    "archivo_modelo_usado",
-    "confianza_original",
 ]
 
 
