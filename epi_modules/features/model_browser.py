@@ -1,5 +1,7 @@
 """Navegador de 333 modelos de produccion."""
 
+import re
+
 import pandas as pd
 from rich import box
 from rich.console import Console
@@ -89,8 +91,16 @@ def _show_table(
 
     total_pages = (len(df) - 1) // PAGE_SIZE + 1
     console.print(
-        f"\n  [sutil]Página {page + 1}/{total_pages} · {len(df)} modelos totales[/sutil]\n",
+        f"\n  [sutil]Página {page + 1}/{total_pages} · {len(df)} modelos totales[/sutil]",
     )
+    if total_pages > 1:
+        hints = []
+        if page + 1 < total_pages:
+            hints.append(f"[dorado]modelos {page + 2}[/dorado]")
+        if page > 0:
+            hints.append(f"[dorado]modelos {page}[/dorado]")
+        console.print(f"  [sutil]Navega con {' · '.join(hints)}[/sutil]")
+    console.print()
 
 
 def _show_detail(
@@ -193,8 +203,13 @@ def show_model_browser(
 
     filtro = args.strip().lower()
 
-    if not filtro:
-        _show_table(console, prod, "333 MODELOS DE PRODUCCIÓN")
+    # Detectar número de página: "2", "p3", "pag 5", "pagina 4"
+    page_match = re.match(r"^(?:p(?:ag(?:ina)?)?\s*)?(\d+)$", filtro)
+    if not filtro or page_match:
+        page = (int(page_match.group(1)) - 1) if page_match else 0
+        total_pages = (len(prod) - 1) // PAGE_SIZE + 1
+        page = max(0, min(page, total_pages - 1))
+        _show_table(console, prod, f"{len(prod)} MODELOS DE PRODUCCIÓN", page)
         return
 
     # Filtros especiales
@@ -210,6 +225,13 @@ def show_model_browser(
             _show_table(console, best, "20 MEJORES MODELOS (SMAPE)")
         return
 
+    # Extraer número de página del final del filtro: "alzheimer 3" → page 3
+    filter_page = 0
+    page_suffix = re.search(r"\s+(?:p(?:ag(?:ina)?)?\s*)?(\d+)$", filtro)
+    if page_suffix:
+        filter_page = int(page_suffix.group(1)) - 1
+        filtro = filtro[: page_suffix.start()].strip()
+
     # Filtro por motor
     motors = ["ensemble", "stacking", "prophet", "deepar"]
     motor_col = "modelo_produccion" if "modelo_produccion" in prod.columns else "tipo_modelo"
@@ -217,7 +239,9 @@ def show_model_browser(
         if motor in filtro and motor_col in prod.columns:
             subset = prod[prod[motor_col].str.lower().str.contains(motor, na=False)]
             if not subset.empty:
-                _show_table(console, subset, f"MODELOS {motor.upper()}")
+                total_p = (len(subset) - 1) // PAGE_SIZE + 1
+                pg = max(0, min(filter_page, total_p - 1))
+                _show_table(console, subset, f"MODELOS {motor.upper()}", pg)
                 return
 
     # Filtro por padecimiento
@@ -226,7 +250,9 @@ def show_model_browser(
         if key in filtro and "padecimiento" in prod.columns:
             subset = prod[prod["padecimiento"].str.lower().str.contains(key, na=False)]
             if not subset.empty:
-                _show_table(console, subset, f"MODELOS: {pad}")
+                total_p = (len(subset) - 1) // PAGE_SIZE + 1
+                pg = max(0, min(filter_page, total_p - 1))
+                _show_table(console, subset, f"MODELOS: {pad}", pg)
                 return
 
     # Filtro generico
