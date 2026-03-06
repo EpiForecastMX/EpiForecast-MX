@@ -157,6 +157,7 @@ def fig_forecast_nacional(
             linewidth=1.0,
             alpha=0.4,
             linestyle="--",
+            label="Ajuste del modelo (histórico)",
             zorder=2,
         )
 
@@ -209,7 +210,23 @@ def fig_forecast_nacional(
     covid_start = pd.Timestamp("2020-03-15")
     covid_end = pd.Timestamp("2021-06-30")
     if r["ds"].min() < covid_end:
-        ax.axvspan(covid_start, covid_end, alpha=0.06, color=GRIS, zorder=0)
+        ax.axvspan(covid_start, covid_end, alpha=0.08, color=GRIS, zorder=0)
+        ax.text(
+            covid_start + (covid_end - covid_start) / 2,
+            ax.get_ylim()[1] * 0.92,
+            "COVID-19",
+            ha="center",
+            va="top",
+            fontsize=9,
+            fontweight="bold",
+            color=GRIS,
+            bbox={
+                "boxstyle": "round,pad=0.3",
+                "facecolor": "white",
+                "alpha": 0.8,
+                "edgecolor": GRIS,
+            },
+        )
 
     # --- Formato ---
     ax.set_xlabel("Fecha")
@@ -229,7 +246,7 @@ def fig_forecast_nacional(
     ax.legend(
         loc="upper center",
         bbox_to_anchor=(0.5, -0.10),
-        ncol=4,
+        ncol=5,
         frameon=False,
         fontsize=9,
         columnspacing=2,

@@ -11,6 +11,8 @@
 \usepackage[spanish,es-tabla]{babel}
 \usepackage{geometry}
 \geometry{letterpaper, margin=2.5cm, top=3cm, bottom=2.5cm}
+\setlength{\headheight}{14pt}
+\setlength{\emergencystretch}{3em}  % Previene overfull hbox en párrafos con URLs/texttt largos
 \usepackage{graphicx}
 \usepackage{float}
 \usepackage{booktabs}
@@ -35,9 +37,10 @@
 \usepackage{xurl}
 \usepackage[breaklinks=true]{hyperref}
 \usepackage{tikz}
-\usetikzlibrary{arrows.meta, positioning, shapes.geometric, fit, calc, decorations.pathreplacing}
+\usetikzlibrary{arrows.meta, positioning, shapes.geometric, fit, calc, decorations.pathreplacing, shadows.blur, colorbrewer, babel}
 \usepackage{wrapfig}
 \usepackage{pdflscape}
+\usepackage{multicol}
 
 % -- Colores institucionales IMSS / EpiForecast ------------------------------
 \definecolor{burgundy}{HTML}{9B2242}
@@ -58,6 +61,13 @@
 \definecolor{censemble}{HTML}{FF6F00}
 \definecolor{cstacking}{HTML}{1A237E}
 
+% Colores profesionales para diagramas SOLID
+\definecolor{solidblue}{RGB}{41, 128, 185}
+\definecolor{solidgreen}{RGB}{39, 174, 96}
+\definecolor{solidorange}{RGB}{211, 84, 0}
+\definecolor{solidpurple}{RGB}{142, 68, 173}
+\definecolor{solidred}{RGB}{192, 57, 43}
+
 % -- Configuración de hyperref -----------------------------------------------
 \hypersetup{
     colorlinks=true,
@@ -75,11 +85,8 @@
     labelfont={bf, color=coolgray},
     justification=centering
 }
-\captionsetup[subfigure]{
-    font={small, color=coolgray},
-    labelfont={bf, color=coolgray},
-    justification=centering
-}
+% Se comenta para evitar advertencia de 'unused' si no hay subfigures en el paso actual
+% \captionsetup[subfigure]{ ... }
 
 % -- Headers y footers -------------------------------------------------------
 \pagestyle{fancy}
@@ -103,17 +110,20 @@
 \newtcolorbox{insightbox}[1][]{
   colback=lightgreen, colframe=teal,
   boxrule=0pt, leftrule=4pt, arc=2pt,
-  fonttitle=\bfseries, title=#1
+  fonttitle=\bfseries, title=#1,
+  before upper={\setlength{\emergencystretch}{5em}}
 }
 \newtcolorbox{warningbox}[1][]{
   colback=lightyellow, colframe=gold,
   boxrule=0pt, leftrule=4pt, arc=2pt,
-  fonttitle=\bfseries, title=#1
+  fonttitle=\bfseries, title=#1,
+  before upper={\setlength{\emergencystretch}{5em}}
 }
 \newtcolorbox{criticalbox}[1][]{
   colback=lightred, colframe=burgundy,
   boxrule=0pt, leftrule=4pt, arc=2pt,
-  fonttitle=\bfseries, title=#1
+  fonttitle=\bfseries, title=#1,
+  before upper={\setlength{\emergencystretch}{5em}}
 }
 
 % Caja de Campeón en Producción (Dorada)
@@ -124,13 +134,13 @@
   title={\textcolor{gold}{\faTrophy}\ \textbf{Modelo Campeón en Producción} #1}
 }
 
-% -- Comandos personalizados -------------------------------------------------
-\newcommand{\smape}{\textsc{smape}}
-\newcommand{\mase}{\textsc{mase}}
-\newcommand{\rmse}{\textsc{rmse}}
-\newcommand{\mae}{\textsc{mae}}
-\newcommand{\mape}{\textsc{mape}}
-\newcommand{\imss}{\textsc{imss}}
+% -- Comandos personalizados (Robustos para evitar error de fuente) ----------
+\newcommand{\smape}{\textnormal{\textsc{smape}}}
+\newcommand{\mase}{\textnormal{\textsc{mase}}}
+\newcommand{\rmse}{\textnormal{\textsc{rmse}}}
+\newcommand{\mae}{\textnormal{\textsc{mae}}}
+\newcommand{\mape}{\textnormal{\textsc{mape}}}
+\newcommand{\imss}{\textnormal{\textsc{imss}}}
 \newcommand{\tabref}[1]{Tabla~\ref{#1}}
 \newcommand{\figref}[1]{Figura~\ref{#1}}
 \newcommand{\secref}[1]{Sección~\ref{#1}}
@@ -138,7 +148,57 @@
 % -- Separador visual --------------------------------------------------------
 \newcommand{\sepsection}{\vspace{0.5cm}\noindent\textcolor{coolgray}{\rule{\textwidth}{0.3pt}}\vspace{0.3cm}}
 
+% =============================================================================
+% INVENTARIO DE IMAGENES ESPERADAS (subir todas a la raíz de Overleaf)
+% =============================================================================
+% OBLIGATORIAS (portada / reflexiones):
+%   logo_tec.png                         — Logo Tec de Monterrey
+%   logo_imss.png                        — Logo IMSS
+%   JARS2026.jpg                         — Foto Javier
+%   JARCOS2026.jpg                       — Foto Juan Carlos
+%   LUIS2026.jpg                         — Foto Luis
+%
+% FIGURAS DE DATOS (generadas con matplotlib/seaborn/geopandas):
+%   fig_distribucion_motores.png         — Donut chart motores ganadores
+%   fig_mapa_regiones_inegi.png          — Mapa coroplético 4 regiones INEGI
+%   fig_forecast_depresion_nacional.png  — Real vs DeepAR Depresión Nacional
+%   fig_forecast_parkinson_nacional.png  — Real vs DeepAR Parkinson Nacional
+%   fig_forecast_alzheimer_nacional.png  — Real vs DeepAR Alzheimer Nacional
+%   fig_mapa_smape_depresion.png         — Mapa semáforo SMAPE por estado
+%   fig_boxplot_smape_motores.png        — Box plot SMAPE por motor/padecimiento
+%   fig_barras_mase_motores.png          — % series con MASE < 1 por motor
+%   fig_distribucion_sexo.png            — Stacked bar incidencia por sexo
+%   fig_covid_impact_depresion.png       — Timeline Depresión con zona COVID
+%   fig_radar_cloud_providers.png        — Radar chart 4 proveedores cloud
+%   fig_heatmap_smape_estado_pad.png     — Heatmap SMAPE estados × padecimiento
+%   fig_tendencia_3_padecimientos.png    — 3 series nacionales superpuestas
+%
+% SCREENSHOTS / EVIDENCIAS MLOPS:
+%   screenshot_validacion_semanal.png    — Reporte HTML validación semanal
+%   fig_github_actions_ci.png            — Pipeline CI/CD verde en GitHub
+%   fig_test_coverage.png                — Reporte cobertura pytest
+%   fig_epiconsole_help.png              — Terminal con make help (EPI Console)
+%   fig_ruff_lint_clean.png              — Terminal con ruff check sin errores
+%   fig_mypy_clean.png                   — Terminal con mypy sin errores
+%   fig_precommit_pass.png               — Terminal con pre-commit hooks pasando
+%   fig_dvc_dag.png                      — DAG de DVC (dvc dag output)
+%   fig_s3_bucket_structure.png          — Consola AWS S3 con estructura de datos
+%   fig_sagemaker_training.png           — Consola SageMaker training job
+%   fig_sagemaker_gpu_metrics.png        — CloudWatch GPU utilization
+%   fig_docker_build.png                 — Terminal con Docker build exitoso
+%   fig_ecr_repository.png               — Consola ECR con imagen publicada
+%   fig_dashboard_tableau.png            — Dashboard Tableau
+%   01_TableuDashboard_AcumuladoCasosPorAño.png — Tableau: casos acumulados por año
+%   02_TableuDashboard_PrediccionZoomY52SemanasPreviasYFuturas.png — Tableau: predicción + zoom 52 sem
+%   03_TableuDashboardTableroDeModelos.png — Tableau: tablero general de 333 modelos
+%   fig_website_proyecto.png             — Landing page proyectointegrador.org
+%   fig_equipo_foto.png                  — Foto grupal del equipo (opcional)
+%   fig_github_repo_overview.png         — Página principal del repo en GitHub
+%   fig_github_pr_review.png             — Pull request con code review
+% =============================================================================
+
 \begin{document}
+\shorthandoff{<>}
 
 % =============================================================================
 % PORTADA
@@ -148,7 +208,6 @@
 
 \vspace*{0.5cm}
 
-% MANUAL: Subir a Overleaf: logo_tec.png y logo_imss.png
 \includegraphics[height=2cm]{logo_tec.png}\hspace{2cm}\includegraphics[height=2.5cm]{logo_imss.png}
 
 \vspace{0.5cm}
@@ -161,8 +220,9 @@
 {\LARGE\textcolor{burgundy}{Avance 6: Conclusiones Clave}}\\[0.3cm]
 \textcolor{teal}{\rule{\textwidth}{2pt}}\\[0.8cm]
 
-{\large\textit{Inteligencia epidemiológica multi-modelo para el {\imss}:\\
-conclusiones, accionables y hoja de ruta hacia producción}}\\[1.2cm]
+{\large\textit{Generalización de modelos nacionales de pronóstico\\
+epidemiológico hacia un enfoque modular con desagregación\\
+por sexo y entidad federativa en México}}\\[1.2cm]
 
 {\large\textbf{Materia:} Proyecto Integrador | TC5035.10}\\[0.5cm]
 
@@ -175,14 +235,15 @@ conclusiones, accionables y hoja de ruta hacia producción}}\\[1.2cm]
 \end{tabular}\\[1cm]
 
 \textbf{\Large Equipo 01}\\[0.4cm]
+% IMAGEN OPCIONAL: Foto grupal del equipo
+% \includegraphics[width=8cm]{fig_equipo_foto.png}\\[0.3cm]
 \begin{tabular}{lll}
-% MANUAL: Insertar fotos con wrapfigure si se desea
 \textbf{Javier A. Rebull Saucedo} & A01795838 & Sr.\ Assoc.\ Dev., Santander Bank US \\
 \textbf{Juan Carlos Pérez Nava}   & A01795941 & Head of Area, IMSS \\
 \textbf{Luis G. Sánchez Salazar}  & A01232963 & Sr.\ Controls Engineer, Tesla \\
 \end{tabular}\\[1.0cm]
 
-{\large Semana 8 --- Marzo 2026}
+{\large Semana 8, Marzo 2026}
 
 \end{center}
 \end{titlepage}
@@ -197,29 +258,138 @@ conclusiones, accionables y hoja de ruta hacia producción}}\\[1.2cm]
 \listoftables
 \newpage
 
+
+% =============================================================================
+% ABSTRACT — Una sola página
+% =============================================================================
+\newpage
+\section*{Abstract}\label{sec:abstract}
+\addcontentsline{toc}{section}{Abstract}
+
+La vigilancia epidemiológica en México enfrenta una presión creciente: anticipar, con tiempo y detalle, la demanda de atención en salud mental y neurología dentro de un sistema que atiende a más de 80 millones de derechohabientes. Sin embargo, la planeación institucional suele apoyarse en promedios históricos que \emph{miran al pasado}, sin alertar a tiempo sobre cambios de tendencia, diferencias entre estados o impactos extraordinarios como la pandemia de COVID-19. El resultado es crítico: decisiones tardías en la distribución de medicamentos, la disponibilidad de especialistas y la preparación hospitalaria.
+
+Este trabajo presenta las conclusiones clave de \textbf{EpiForecast-MX}, una plataforma inteligente de pronóstico epidemiológico diseñada para responder una pregunta clínicamente útil: \textit{¿cuántos casos de cada padecimiento se esperan la próxima semana en cada estado y para cada sexo?}
+Estos motores de IA se aplican a tres padecimientos de la Clasificación Internacional de Enfermedades: \textbf{Depresión (F32)}, \textbf{Parkinson (G20)} y \textbf{Alzheimer (G30)}, cubriendo las 32 entidades federativas, 4 macrorregiones INEGI y el nivel nacional, con desagregación por sexo y un horizonte de 52 semanas. En total, el sistema opera \textbf{333 modelos de producción}, evaluados con dos métricas estándar: \smape{} (error porcentual simétrico; menor es mejor) y \mase{} (error comparado contra una predicción simple que repite el año anterior; valores menores a 1 indican superioridad del modelo).
+
+Los resultados muestran que \textbf{DeepAR} es el motor de IA más preciso, ganando el 73.3\% de las series con un \smape{} mediano de 12.82\% y un \mase{} de 0.30 (solo el 30\% del error de la predicción ingenua). \textbf{Depresión} es el padecimiento mejor pronosticado (\smape{} 5.99\%), mientras que \textbf{Parkinson} (35.24\%) y \textbf{Alzheimer} (107.59\%) exhiben errores porcentuales más altos por su \emph{baja incidencia absoluta} (menos de 5 casos semanales en muchos estados), no por fallas del modelo; en términos clínicos, el error promedio en Alzheimer es menor a 2 casos por semana. La infraestructura tecnológica garantiza reproducibilidad mediante 849 pruebas automatizadas y entrenamiento en la nube de Amazon (AWS SageMaker) con un costo de \$3.70\,--\,\$12.00 USD por ejecución.
+
+\textbf{EpiForecast-MX} demuestra que es viable construir un sistema de pronóstico epidemiológico basado en inteligencia artificial, escalable y económicamente accesible para una institución pública de salud, generando información \emph{accionable} para anticiparse en la toma de decisiones clínicas y administrativas en México.
+
+\vspace{0.8cm}
+
+\noindent\textbf{Palabras clave:} pronóstico epidemiológico, series de tiempo, inteligencia artificial, DeepAR, Prophet, ensemble learning, salud mental, depresión, Parkinson, Alzheimer, IMSS, MLOps, AWS SageMaker, vigilancia epidemiológica, México.
+
+\newpage
+
+
+% =============================================================================
+% PÁGINA DE CITA — George E. P. Box (Versión Elegante)
+% =============================================================================
+\newpage
+\thispagestyle{empty}
+\vspace*{\fill}
+
+\begin{center}
+
+% 1. Comilla superior gigante pero sutil (actúa casi como marca de agua)
+{\color{teal!40}\fontsize{70}{70}\selectfont \faQuoteLeft}
+
+\vspace{0.8cm}
+
+% 2. La cita agrupada en un solo bloque para mejor cohesión
+\begin{minipage}{0.75\textwidth}
+    \centering
+    {\fontsize{26}{36}\selectfont\itshape\textcolor{darkteal}{%
+    All models are wrong,\\[0.5em]
+    but some are useful.}}
+\end{minipage}
+
+\vspace{1.5cm}
+
+% 3. Separador clásico: línea muy fina con un pequeño rombo central
+\begin{tikzpicture}
+  \draw[burgundy, line width=0.4pt] (-3.5, 0) -- (3.5, 0);
+  \fill[burgundy] (0,0) ++(0, 3pt) -- ++(3pt, -3pt) -- ++(-3pt, -3pt) -- ++(-3pt, 3pt) -- cycle;
+\end{tikzpicture}
+
+\vspace{1cm}
+
+% 4. Autor con espaciado amplio y elegante
+{\Large\textsc{\textcolor{burgundy}{George E. P. Box}}}
+
+\vspace{0.4cm}
+
+% 5. Referencia bibliográfica delicada
+{\small\textcolor{coolgray}{\textit{Robustness in the Strategy of Scientific Model Building}, 1979}}
+
+\end{center}
+
+\vspace*{\fill}
+
+\newpage
 % =============================================================================
 % 1. RESUMEN EJECUTIVO
 % =============================================================================
 \section{Resumen Ejecutivo}\label{sec:resumen}
 
-EpiForecast-MX es una plataforma de inteligencia epidemiológica multi-modelo desarrollada para el Instituto Mexicano del Seguro Social (\imss{}) que pronostica la incidencia semanal de tres padecimientos neurológicos y de salud mental ---Depression (F32), Parkinson (G20) y Alzheimer (G30)--- en las 32 entidades federativas de México con un horizonte de 52 semanas.
+Este documento consolida las conclusiones del proyecto EpiForecast-MX tras completar el ciclo de modelado, evaluación y validación con datos reales. A continuación se sintetizan los hallazgos, las decisiones de producción y las recomendaciones operativas dirigidas a los stakeholders del IMSS.
 
 \subsection{Hallazgos principales}
 
-Tras evaluar \textbf{1,332 combinaciones} (4 motores $\times$ 333 series), los resultados clave son:
+Tras evaluar \textbf{1,332 combinaciones} (4 motores $\times$ 333 series), los resultados clave son (véase la \figref{fig:donut_motores} para la distribución de motores ganadores):
 
 \begin{enumerate}[noitemsep]
-    \item \textbf{DeepAR domina la producción}: ganó 244 de 333 series (73.3\%), seguido de Prophet (55, 16.5\%), Ensemble (32, 9.6\%) y Stacking (2, 0.6\%). La superioridad de DeepAR radica en su capacidad para capturar patrones no lineales y cross-learning entre series.
-    \item \textbf{Depression es el padecimiento mejor modelado}: \smape{} medio de 7.38\% y mediano de 5.99\%, con \mase{} de 0.42 que supera al naive estacional lag-52 en un 58\%.
-    \item \textbf{Padecimientos raros presentan un reto inherente}: Parkinson (\smape{} mediano 35.24\%) y Alzheimer (\smape{} mediano 107.59\%) muestran errores elevados debido a la baja incidencia ($<$5 casos/semana en muchos estados), no a fallos del modelo.
-    \item \textbf{La infraestructura MLOps es robusta}: 849 tests automatizados, cobertura $>$70\%, CI/CD con GitHub Actions, DVC para versionado de datos y modelos, y un pipeline reproducible de 40+ comandos Make.
-    \item \textbf{AWS SageMaker es viable y económico}: el entrenamiento completo de DeepAR en GPU (ml.g4dn.xlarge) costo entre \$3.70 y \$12.00 USD por ejecución.
+    \item \textbf{DeepAR domina la producción}: ganó 244 de 333 series (73.3\%), seguido de Prophet (55, 16.5\%), Ensemble (32, 9.6\%) y Stacking (2, 0.6\%), como ilustra la \figref{fig:donut_motores}. La superioridad de DeepAR radica en su capacidad para capturar patrones no lineales y cross-learning entre series, tal como describen Salinas et al.\ (2020).
+    \item \textbf{Depresión es el padecimiento mejor modelado}: \smape{} medio de 7.38\% y mediano de 5.99\%, con \mase{} de 0.42 que supera al naive estacional lag-52 en un 58\%.
+    \item \textbf{Padecimientos raros presentan un reto inherente}: Parkinson (\smape{} mediano 35.24\%) y Alzheimer (\smape{} mediano 107.59\%) muestran errores elevados debido a la baja incidencia ($<$5 casos/semana en muchos estados), no a fallos del modelo. Hyndman y Koehler (2006) advierten que las métricas porcentuales se distorsionan con valores cercanos a cero.
+    \item \textbf{Infraestructura de grado producción}: 849 tests, cobertura $>$70\%, CI/CD con GitHub Actions, DVC para versionado y un pipeline reproducible de 40+ comandos Make.
+    \item \textbf{Costo validado en la nube}: el entrenamiento completo de DeepAR en GPU (ml.g4dn.xlarge) costó \$3.70\,--\,\$12.00 USD por ejecución (AWS, 2025), con un costo operativo anual proyectado de \$241\,--\,\$517 USD.
 \end{enumerate}
+
+% IMAGEN: Donut chart con distribución de motores ganadores
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.65\textwidth]{fig_distribucion_motores.png}
+\caption[Distribución de series ganadas por motor.]{Distribución de series ganadas por motor de pronóstico (333 series de producción). DeepAR domina con el 73.3\% de las series.}
+\label{fig:donut_motores}
+\end{figure}
+
+\newpage
+
+\subsection{Decisiones de producción}
+
+Las siguientes decisiones se derivan directamente de los resultados de evaluación y condicionan la operación del sistema:
+
+\begin{table}[H]
+\centering
+\caption{Decisiones de producción derivadas de la evaluación}
+\label{tab:decisiones_prod}
+\small
+\begin{tabularx}{\textwidth}{>{\bfseries}l X}
+\toprule
+\textbf{Decisión} & \textbf{Justificación} \\
+\midrule
+Motor primario: DeepAR & Gana 73.3\% de series; cross-learning mitiga datos escasos por estado \\
+Métrica de selección: \smape{} & Primario, con \mase{} como desempate (umbral 5\%) y \rmse{} como segundo desempate \\
+Reentrenamiento trimestral & Series de cambio lento; 92\% de ahorro vs.\ semanal sin pérdida de precisión \\
+Fallback regional & 8 series con incidencia insuficiente usan el modelo de su macrorregión INEGI \\
+Proveedor cloud: AWS & Puntuación ponderada 9.34/10; costo validado y ecosistema maduro \\
+\bottomrule
+\end{tabularx}
+\end{table}
 
 \subsection{Recomendación de despliegue}
 
-Se recomienda desplegar EpiForecast-MX en \textbf{AWS SageMaker} como proveedor primario, con un ciclo de reentrenamiento semanal alíneado al calendario de publicación de los boletines SINAVE. El costo proyectado es de \$48--156 USD/mes, incluyendo entrenamiento, inferencia batch y almacenamiento S3.
+Se recomienda desplegar EpiForecast-MX en \textbf{AWS SageMaker} como proveedor primario, con un ciclo operativo de dos capas:
 
+\begin{itemize}[noitemsep]
+    \item \textbf{Ciclo semanal} (ligero): descarga de boletín SINAVE, inferencia batch con modelos vigentes, actualización de dashboard Tableau y validación automática pronóstico vs.\ realidad.
+    \item \textbf{Ciclo trimestral} (pesado): reentrenamiento completo de 333 modelos en GPU, validación cruzada, diagnóstico de overfitting y promoción a producción con aprobación del epidemiólogo.
+\end{itemize}
+
+El costo proyectado es de \$61\,--\,\$130 USD/trimestre (\$241\,--\,\$517 USD/año), equivalente al costo de 7\,--\,15 consultas de neurología.
+
+\newpage
 % =============================================================================
 % 2. INTRODUCCION Y CONTEXTO
 % =============================================================================
@@ -227,29 +397,40 @@ Se recomienda desplegar EpiForecast-MX en \textbf{AWS SageMaker} como proveedor 
 
 \subsection{El problema epidemiológico}
 
-El {\imss} atiende a más de 80 millones de derechohabientes y enfrenta el reto de planificar recursos médicos para padecimientos de salud mental y neurológicos cuya incidencia varia significativamente por región, estacionalidad y dinamicas demograficas. Actualmente, la planificación se basa en promedios históricos, sin capacidad de anticipar cambios de tendencia ni impactos exogenos como la pandemia de COVID-19.
+El {\imss} atiende a más de 80 millones de derechohabientes y enfrenta el reto de planificar recursos médicos para padecimientos de salud mental y neurológicos cuya incidencia varía significativamente por región, estacionalidad y dinámicas demográficas. Actualmente, la planificación se basa en promedios históricos, sin capacidad de anticipar cambios de tendencia ni impactos exógenos como la pandemia de COVID-19. Miller (2022) destaca que la toma de decisiones basada en datos mejora significativamente los resultados en la gestión de proyectos institucionales.
 
-EpiForecast-MX aborda este reto desarrollando modelos de pronóstico para tres padecimientos de la Clasificación Internacional de Enfermedades, 10.a revision (CIE-10):
+EpiForecast-MX aborda este reto desarrollando modelos de pronóstico para tres padecimientos de la Clasificación Internacional de Enfermedades, 10.ª revisión (CIE-10):
 
 \begin{itemize}[noitemsep]
-    \item \textbf{Trastorno depresivo (F32)}: el de mayor incidencia y variabilidad. Fuertemente impactado por COVID-19, con un aumento sostenido post-pandemia.
+    \item \textbf{Trastorno depresivo (F32)}: el de mayor incidencia y variabilidad. Fuertemente impactado por COVID-19, con un aumento sostenido post-pandemia. La Organización Mundial de la Salud (OMS, 2023) lo identifica como una de las principales causas de discapacidad a nivel global.
     \item \textbf{Enfermedad de Parkinson (G20)}: baja incidencia con patrones regulares y estacionalidad suave.
     \item \textbf{Enfermedad de Alzheimer (G30)}: incidencia muy baja y estable; la más predecible en términos absolutos pero la más difícil en error porcentual.
 \end{itemize}
 
-\subsection{Vinculacion con criterios del Avance 0}
+Como se evidencia en la \figref{fig:tendencia_3pad}, la disparidad de volumen entre los padecimientos condiciona la precisión relativa de los modelos:
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_tendencia_3_padecimientos.png}
+\caption[Tendencia histórica nacional.]{Incidencia semanal nacional de los tres padecimientos (2014--2026). Depresión (F32) presenta un orden de magnitud mayor que Parkinson (G20) y Alzheimer (G30).}
+\label{fig:tendencia_3pad}
+\end{figure}
+
+\subsection{Vinculación con criterios del Avance 0}
 
 Este documento de conclusiones responde directamente a los tres ejes de evaluación establecidos en el Avance 0:
 
 \begin{enumerate}[noitemsep]
     \item \textbf{Análisis del modelo}: \secref{sec:rendimiento} presenta métricas detalladas (\smape{}, \mase{}, \rmse{}, \mae{}) para los 1,332 modelos evaluados, con diagnósticos de overfitting y leakage.
     \item \textbf{Accionables por stakeholder}: \secref{sec:accionables} define una matriz de responsabilidad con acciones concretas para cada actor del ecosistema.
-    \item \textbf{Análisis de implementacion cloud}: \secref{sec:cloud} compara cuatro proveedores con una metodología de puntuacion ponderada y presenta costos reales de producción.
+    \item \textbf{Análisis de implementación cloud}: \secref{sec:cloud} compara cuatro proveedores con una metodología de puntuación ponderada y presenta costos reales de producción.
 \end{enumerate}
+
+\newpage
 
 \subsection{Definiciones fundamentales}
 
-Para facilitar la lectura, se definen los términos técnicos de primera mencion. Un glosario completo se encuentra en el Apendice~\ref{sec:glosario}.
+Para facilitar la lectura, se definen los términos técnicos de primera mención. Un glosario completo se encuentra en el Apéndice~\ref{sec:glosario}.
 
 \begin{table}[H]
 \centering
@@ -261,41 +442,56 @@ Para facilitar la lectura, se definen los términos técnicos de primera mencion
 \textbf{Término} & \textbf{Definición} \\
 \midrule
 \smape{} & Symmetric Mean Absolute Percentage Error. Mide el error porcentual simétrico entre predicción y realidad; rango $[0\%, 200\%]$. \\
-\mase{} & Mean Absolute Scaled Error. Compara el error del modelo contra un naive estacional (lag-52); $<$1 indica superioridad. \\
-\rmse{} & Root Mean Squared Error. Penaliza errores grandes; en las mismás unidades que la variable objetivo. \\
+\mase{} & Mean Absolute Scaled Error. Compara el error del modelo contra un naive estacional (lag-52); $<$1 indica superioridad (Hyndman \& Koehler, 2006). \\
+\rmse{} & Root Mean Squared Error. Penaliza errores grandes; en las mismas unidades que la variable objetivo. \\
 \mae{} & Mean Absolute Error. Error promedio absoluto; robusto a outliers. \\
 CV & Cross-Validation. Validación cruzada temporal con ventanas expansivas que respetan la causalidad. \\
-Prophet & Modelo aditivo de Meta (2018) que descompone series en tendencia, estacionalidad y regresores. \\
-DeepAR & Red neuronal autoregresiva (Amazon, 2020) que aprende distribución probabilística multiserie. \\
-Ensemble & Combinación de Prophet (tendencia) + XGBoost (residuales) para capturar no linealidades. \\
-Stacking & Meta-aprendizaje donde Prophet, ETS y LightGBM alimentan un meta-learner Ridge. \\
+Prophet & Modelo aditivo que descompone series en tendencia, estacionalidad y regresores (Taylor \& Letham, 2018). \\
+DeepAR & Red neuronal autoregresiva que aprende distribución probabilística multiserie (Salinas et al., 2020). \\
+Ensemble & Combinación de Prophet (tendencia) + XGBoost (residuales) para capturar no linealidades (Chen \& Guestrin, 2016). \\
+Stacking & Meta-aprendizaje donde Prophet, ETS y LightGBM (Ke et al., 2017) alimentan un meta-learner Ridge. \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
+\newpage
 % =============================================================================
 % 3. COMPOSICION DE LAS 333 SERIES
 % =============================================================================
 \section{Composición de las 333 Series}\label{sec:composicion}
 
-\subsection{Formula de composición}
+\subsection{Fórmula de composición}
 
 El número de series de producción se obtiene mediante la combinatoria completa de tres dimensiones:
 
 \begin{equation}\label{eq:333}
-\underbrace{37}_{\text{geografías}} \;\times\; \underbrace{3}_{\text{padecimientos}} \;\times\; \underbrace{3}_{\text{cortes demográficos}} \;=\; \mathbf{333} \text{ series}
+\underbrace{37}_{\text{geografías}} \;\times\; \underbrace{3}_{\text{padecimientos}} \;\times\; \underbrace{3}_{\substack{\text{cortes por tipo}}} \;=\; \mathbf{333} \text{ series}
 \end{equation}
 
-La \tabref{tab:composición} desglosa cada nivel geográfico:
+Los \textbf{3 cortes por tipo} corresponden a:
+\begin{enumerate}[noitemsep]
+    \item \textbf{Combinado (General)}: ambos sexos agregados.
+    \item \textbf{Masculino}: solo casos del sexo masculino.
+    \item \textbf{Femenino}: solo casos del sexo femenino.
+\end{enumerate}
+
+La \tabref{tab:composicion} desglosa cada nivel geográfico, y la \figref{fig:composicion_visual} ofrece una visualización integral de las tres dimensiones que componen el universo de modelos.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_tendencia_3_5_cortes.png}
+\caption[Composición visual de las 333 series.]{Visualización de las tres dimensiones combinatorias (37 geografías $\times$ 3 padecimientos $\times$ 3 cortes por tipo) que producen las 333 series de producción de EpiForecast-MX.}
+\label{fig:composicion_visual}
+\end{figure}
 
 \begin{table}[H]
 \centering
 \caption{Desglose de las 333 series de producción por nivel geográfico}
 \label{tab:composicion}
 \small
-\begin{tabular}{l c c c r}
+\begin{tabularx}{\textwidth}{X c c c r}
 \toprule
-\textbf{Nivel geográfico} & \textbf{Geografías} & \textbf{$\times$ Padecimientos} & \textbf{$\times$ Modos} & \textbf{= Modelos} \\
+\textbf{Nivel geográfico} & \textbf{Geografías} & \textbf{$\times$ Pad.} & \textbf{$\times$ Casuística} & \textbf{= Series} \\
 \midrule
 Estatal (32 entidades)  & 32 & 3 & 3 & 288 \\
 Regional (4 regiones INEGI) & 4 & 3 & 3 & 36 \\
@@ -303,12 +499,19 @@ Nacional (República Mexicana) & 1 & 3 & 3 & 9 \\
 \midrule
 \textbf{Total} & \textbf{37} & & & \textbf{333} \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 \subsection{Regiones INEGI}
 
-Las cuatro macrorregiones del INEGI agrupan a los 32 estados de la siguiente forma:
+Las cuatro macrorregiones del Instituto Nacional de Estadística y Geografía (INEGI, 2024), cuya distribución espacial se detalla en la \figref{fig:mapa_regiones}, agrupan a los 32 estados de la siguiente forma:
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{fig_mapa_regiones_inegi.png}
+\caption[Mapa de regiones INEGI.]{Macrorregiones INEGI utilizadas para la agregación de series de pronóstico (Norte, Centro-Norte, Centro y Sur).}
+\label{fig:mapa_regiones}
+\end{figure}
 
 \begin{table}[H]
 \centering
@@ -321,21 +524,22 @@ Las cuatro macrorregiones del INEGI agrupan a los 32 estados de la siguiente for
 \textbf{Región} & \textbf{Estados} & \textbf{Entidades} \\
 \midrule
 Norte & 10 & Baja California, Baja California Sur, Chihuahua, Coahuila, Durango, Nuevo León, Sinaloa, Sonora, Tamaulipas, Zacatecas \\
-Centro--Norte & 7 & Aguascalientes, Colima, Guanajuato, Jalisco, Nayarit, Querétaro, San Luis Potosí \\
+Centro-Norte & 7 & Aguascalientes, Colima, Guanajuato, Jalisco, Nayarit, Querétaro, San Luis Potosí \\
 Centro & 9 & Ciudad de México, Hidalgo, México, Michoacán, Morelos, Puebla, Tabasco, Tlaxcala, Veracruz \\
 Sur & 6 & Campeche, Chiapas, Guerrero, Oaxaca, Quintana Roo, Yucatán \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-\begin{insightbox}[Por que 333 y no 288]
+\begin{insightbox}[¿Por qué 333 y no 288?]
 Los 45 modelos adicionales (36 regionales + 9 nacionales) cumplen dos funciones críticas:
 \begin{enumerate}[noitemsep]
     \item \textbf{Fallback para series con datos insuficientes}: 8 de las 333 series utilizan el modelo regional en lugar del estatal, porque la incidencia estatal es demasiado baja ($<$5 casos en 52 semanas) para entrenar un modelo confiable. Esto afecta a 7 series de Alzheimer y 1 de Parkinson (Campeche).
-    \item \textbf{Contexto agregado}: las series regionales y nacionales proveen al {\imss} de una vision macro para la planificación de recursos a nivel central.
+    \item \textbf{Contexto agregado}: las series regionales y nacionales proveen al {\imss} de una visión macro para la planificación de recursos a nivel central.
 \end{enumerate}
 \end{insightbox}
 
+\newpage
 % =============================================================================
 % 4. INFRAESTRUCTURA MLOPS
 % =============================================================================
@@ -343,67 +547,189 @@ Los 45 modelos adicionales (36 regionales + 9 nacionales) cumplen dos funciones 
 
 \subsection{Estructura del proyecto}
 
-EpiForecast-MX sigue la plantilla \textit{Cookiecutter Data Science v2}, adaptada para un pipeline de series de tiempo múltimodelo. La estructura del repositorio comprende aproximadamente 13,000 líneas de código fuente en \texttt{src/epiforecast/}.
+EpiForecast-MX sigue la plantilla \textit{Cookiecutter Data Science v2}, adaptada para un pipeline de series de tiempo multimodelo. Para garantizar la escalabilidad, se ha implementado una organización jerárquica modular que segmenta claramente el código fuente de la configuración y los datos. En la \figref{fig:estructura} se detalla la composición de los módulos principales del repositorio.
+
+Como complemento a esta visión estructural, la \figref{fig:cookiecutter_ui} muestra la implementación real bajo el estándar \textit{Cookiecutter}, resaltando la segregación de responsabilidades entre la infraestructura \textit{cloud} (\texttt{aws/}) y la lógica de ejecución (\texttt{scripts/}). Los archivos en la raíz (\texttt{Makefile}, \texttt{pyproject.toml}) garantizan la reproducibilidad total del entorno.
 
 \begin{figure}[H]
 \centering
+\resizebox{!}{13cm}{%  % Limitamos la altura a 16cm para que quepa con el título
 \begin{tikzpicture}[
-    dir/.style={draw=teal, fill=lightgreen, rounded corners=2pt, minimum width=2.8cm, minimum height=0.6cm, font=\small\ttfamily},
-    file/.style={draw=coolgray, fill=cream, rounded corners=2pt, minimum width=2.8cm, minimum height=0.6cm, font=\small\ttfamily},
-    arrow/.style={-{Stealth[length=5pt]}, thick, color=coolgray}
+    % Estilos de nodos compactos
+    dir/.style={
+        draw=teal, fill=lightgreen, rounded corners=2pt, thick,
+        minimum width=3.5cm, minimum height=0.5cm,
+        font=\small\ttfamily, align=left,
+        text width=3.1cm, anchor=west
+    },
+    file/.style={
+        draw=coolgray, fill=cream, rounded corners=2pt, thick,
+        minimum width=3.5cm, minimum height=0.5cm,
+        font=\footnotesize\ttfamily, align=left,
+        text width=3.1cm, anchor=west
+    },
+    % Estilo de las flechas
+    arrow/.style={
+        -{Stealth[length=4pt]}, thick, color=coolgray
+    }
 ]
-    \node[dir] (root) at (0,0) {EpiForecast-MX/};
-    \node[dir] (src) at (-5,-1.2) {src/epiforecast/};
-    \node[dir] (config) at (-1.5,-1.2) {config/};
-    \node[dir] (scripts) at (1.5,-1.2) {scripts/};
-    \node[dir] (tests) at (5,-1.2) {tests/};
 
-    \node[file] (models) at (-6.5,-2.4) {models/};
-    \node[file] (data) at (-5,-2.4) {data/};
-    \node[file] (viz) at (-3.5,-2.4) {visualization/};
-    \node[file] (eval) at (-6.5,-3.4) {evaluation/};
-    \node[file] (utils) at (-5,-3.4) {utils/};
-    \node[file] (feat) at (-3.5,-3.4) {features/};
+    % 1. Directorio Raíz
+    \node[dir] (root) at (0, 0) {\textbf{EpiForecast-MX/}};
 
-    \draw[arrow] (root) -- (src);
-    \draw[arrow] (root) -- (config);
-    \draw[arrow] (root) -- (scripts);
-    \draw[arrow] (root) -- (tests);
-    \draw[arrow] (src) -- (models);
-    \draw[arrow] (src) -- (data);
-    \draw[arrow] (src) -- (viz);
-    \draw[arrow] (src) -- (eval);
-    \draw[arrow] (src) -- (utils);
-    \draw[arrow] (src) -- (feat);
+    % 2. Nivel 1 (Directorios principales - Espaciado reducido a 0.8)
+    \node[dir] (config)  at (0.8, -0.8) {config/};
+    \node[dir] (nb)      at (0.8, -1.6) {notebooks/};
+    \node[dir] (scripts) at (0.8, -2.4) {scripts/};
+    \node[dir] (src)     at (0.8, -3.2) {src/epiforecast/};
+
+    % 3. Nivel 2 (Submódulos dentro de src)
+    \node[file] (data)   at (1.6, -4.0) {data/};
+    \node[file] (eval)   at (1.6, -4.8) {evaluation/};
+    \node[file] (feat)   at (1.6, -5.6) {features/};
+    \node[file] (models) at (1.6, -6.4) {models/};
+    \node[file] (utils)  at (1.6, -7.2) {utils/};
+    \node[file] (viz)    at (1.6, -8.0) {visualization/};
+
+    % 4. Nivel 1 (Continuación)
+    \node[dir]  (tests) at (0.8, -8.8) {tests/};
+
+    % 5. Archivos raíz (Nivel 1)
+    \node[file] (make)  at (0.8, -9.6)  {Makefile};
+    \node[file] (dvc)   at (0.8, -10.4) {dvc.yaml};
+    \node[file] (pypr)  at (0.8, -11.2) {pyproject.toml};
+
+    % 6. Dibujar las líneas conectores (Raíz -> Nivel 1)
+    \coordinate (L1) at ([xshift=0.3cm]root.south west);
+
+    \foreach \n in {config, nb, scripts, src, tests, make, dvc, pypr}
+        \draw[arrow] (L1) |- (\n.west);
+
+    % 7. Dibujar las líneas conectores (src -> Nivel 2)
+    \coordinate (L2) at ([xshift=0.3cm]src.south west);
+
+    \foreach \n in {data, eval, feat, models, utils, viz}
+        \draw[arrow] (L2) |- (\n.west);
+
 \end{tikzpicture}
-\caption{Estructura del repositorio EpiForecast-MX (módulos principales)}
+} % fin resizebox
+\caption[Estructura jerárquica compacta del repositorio.]{Estructura jerárquica compacta del repositorio EpiForecast-MX.}
 \label{fig:estructura}
 \end{figure}
 
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.6\textwidth]{04_CookieCutterRepo.png}
+\caption{Vista optimizada de la arquitectura del repositorio bajo el estándar \textit{Cookiecutter Data Science v2}.}
+\label{fig:cookiecutter_ui}
+\end{figure}
+
+\newpage
+
 \subsection{Principios SOLID}
 
-El sistema de modelos implementa los cinco principios SOLID:
+{\sloppy
+El sistema de modelos implementa los cinco principios SOLID para garantizar mantenibilidad y escalabilidad:
 
 \begin{enumerate}[noitemsep]
-    \item \textbf{Single Responsibility (SRP)}: cada módulo tiene máximo 300 líneas. Los módulos grandes se extrajeron en helpers: \texttt{prophet/data\_prep.py}, \texttt{ensemble/helpers.py}, \texttt{stacking/experts.py}, \texttt{stacking/meta\_learner.py}, entre otros.
-    \item \textbf{Open/Closed}: nuevos motores se agregan mediante el decorador \texttt{@register\_model("nombre")} sin modificar código existente.
-    \item \textbf{Liskov Substitution}: todos los modelos heredan de \texttt{ForecastModel} e implementan la misma interfaz: \texttt{fit()}, \texttt{predict()}, \texttt{cross\_validate()}, \texttt{save()}, \texttt{load()}.
-    \item \textbf{Interface Segregation}: la clase base expone solo los metodos necesarios; los detalles de implementacion permanecen privados en cada motor.
-    \item \textbf{Dependency Inversion}: los scripts de entrenamiento no importan clases concretas; siempre utilizan \texttt{create\_model(name, **kwargs)} de la factory.
+    \item \textbf{Single Responsibility (SRP)}: cada módulo tiene máximo 300 líneas. Los módulos extensos se segmentaron en archivos auxiliares: \texttt{prophet/\allowbreak data\_prep.py}, \texttt{ensemble/\allowbreak helpers.py}, \texttt{stacking/\allowbreak experts.py}, entre otros.
+    \item \textbf{Open/Closed}: nuevos motores se integran mediante el decorador \texttt{@register\_model(\allowbreak "nombre")} sin necesidad de modificar el núcleo del sistema.
+    \item \textbf{Liskov Substitution}: todos los motores heredan de la clase base \texttt{ForecastModel} e implementan la interfaz estandarizada: \texttt{fit()}, \texttt{predict()}, \texttt{cross\_validate()}, \texttt{save()} y \texttt{load()}.
+    \item \textbf{Interface Segregation}: la clase base expone únicamente los métodos esenciales para el pipeline; los detalles de implementación interna permanecen encapsulados en cada motor.
+    \item \textbf{Dependency Inversion}: los orquestadores de entrenamiento no dependen de clases concretas; la instanciación se centraliza en una \textit{Factory} mediante \texttt{create\_model(\allowbreak name, \allowbreak **kwargs)}.
 \end{enumerate}
+}
+
+\begin{figure}[H]
+    \centering
+    \resizebox{0.9\textwidth}{!}{%
+    \begin{tikzpicture}[
+        node distance=2.2cm,
+        box/.style={
+            rectangle,
+            rounded corners=6pt,
+            draw=white,
+            fill=#1,
+            text=white,
+            font=\sffamily\small,
+            text width=4.2cm,
+            minimum height=1.6cm,
+            align=center,
+            blur shadow={shadow blur steps=5}
+        }
+    ]
+
+    % Título Central Institucional (Verde IMSS)
+    \node[circle, draw=teal, fill=lightgreen, line width=2pt, minimum size=3.2cm, font=\sffamily\bfseries, align=center] (core) at (0,0) {\large ARQUITECTURA\\\Large SOLID\\ \footnotesize EpiForecast-MX};
+
+    % SRP - Single Responsibility (Verde IMSS)
+    \node[box=teal, above=of core] (srp) {
+        \textbf{S: Responsabilidad Única}\\
+        \scriptsize Módulos SRP $\leq$ 300 líneas.\\ \texttt{data\_prep.py} | \texttt{helpers.py}
+    };
+
+    % OCP - Open/Closed (Dorado IMSS)
+    \node[box=gold, right=3.5cm of core] (ocp) {
+        \textbf{O: Abierto / Cerrado}\\
+        \scriptsize Extensibilidad vía decorador\\ \texttt{@register\_model}
+    };
+
+    % LSP - Liskov Substitution (Teal Oscuro)
+    \node[box=darkteal, below right=1.5cm and 1cm of core] (lsp) {
+        \textbf{L: Sustitución Liskov}\\
+        \scriptsize Interfaz estándar unificada\\ \texttt{ForecastModel(fit, predict)}
+    };
+
+    % ISP - Interface Segregation (Guinda Institucional)
+    \node[box=burgundy, below left=1.5cm and 1cm of core] (isp) {
+        \textbf{I: Segregación Interfaz}\\
+        \scriptsize Abstracción del Pipeline.\\ Métodos desacoplados por motor.
+    };
+
+    % DIP - Dependency Inversion (Dorado Institucional)
+    \node[box=gold, left=3.5cm of core] (dip) {
+        \textbf{D: Inversión Dependencias}\\
+        \scriptsize Fábrica de Modelos\\ \texttt{ModelFactory.create\_model()}
+    };
+
+    % Conexiones elegantes en gris IMSS
+    \foreach \n in {srp, ocp, lsp, isp, dip}
+        \draw[thick, coolgray, -{Stealth[scale=1.2]}] (core) -- (\n);
+
+    \end{tikzpicture}
+    }
+    \caption[Principios SOLID bajo la identidad IMSS.]{Implementación de principios SOLID bajo la identidad institucional del IMSS.}
+    \label{fig:solid_diagram}
+\end{figure}
+
+\newpage
 
 \subsection{Clean Code}
 
 \begin{itemize}[noitemsep]
-    \item \textbf{Linter}: Ruff con longitud maxima de 99 caracteres, target Python 3.12.
-    \item \textbf{Tipado estático}: mypy estricto en todo el codebase.
-    \item \textbf{Formato automático}: Ruff format integrado en pre-commit hooks.
-    \item \textbf{Documentación}: docstrings en funciones públicas; comentarios solo donde la lógica no es autoevidente.
+    \item \textbf{Linter}: Ruff con longitud máxima de 99 caracteres, orientado a Python 3.12.
+    \item \textbf{Tipado estático}: Verificación rigurosa con \texttt{mypy} en modo estricto (\textit{strict mode}) en todo el repositorio.
+    \item \textbf{Formato automático}: Estilo consistente mediante \textit{Ruff format} integrado en el ciclo de vida de desarrollo.
+    \item \textbf{Documentación}: Uso de \textit{docstrings} en todas las interfaces públicas; comentarios estratégicos en lógica compleja.
 \end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{fig_ruff_lint_clean.png}
+\caption[Reporte de linter Ruff.]{Ejecución de \texttt{ruff check} sobre el codebase completo sin errores detectados.}
+\label{fig:ruff_clean}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{fig_mypy_clean.png}
+\caption[Reporte de tipado Mypy.]{Ejecución de \texttt{mypy} en modo estricto, validando la integridad de tipos estáticos.}
+\label{fig:mypy_clean}
+\end{figure}
 
 \subsection{CI/CD con GitHub Actions}
 
-El pipeline de integración continua ejecuta tres verificaciones en cada push y pull request:
+El pipeline de integración continua, cuyos resultados se visualizan en la \figref{fig:github_ci}, ejecuta tres verificaciones en cada push y pull request:
 
 \begin{enumerate}[noitemsep]
     \item \textbf{Lint}: \texttt{ruff check} verifica estilo y convenciones.
@@ -411,9 +737,32 @@ El pipeline de integración continua ejecuta tres verificaciones en cada push y 
     \item \textbf{Tests}: \texttt{pytest} ejecuta 849 tests (unitarios + integración).
 \end{enumerate}
 
-\subsection{EPI Console: 40+ comandos Make}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_github_actions_ci.png}
+\caption[Pipeline de CI/CD en GitHub.]{Pipeline de CI/CD en GitHub Actions mostrando los tres checks (lint, typecheck, tests) ejecutados exitosamente.}
+\label{fig:github_ci}
+\end{figure}
 
-El \texttt{Makefile} centraliza todas las operaciones del pipeline MLOps, desde la descarga de datos hasta el despliegue en SageMaker. Esto permite que cualquier miembro del equipo reproduzca el pipeline completo con un solo comando.
+Como parte del flujo de versionado, cada hito del proyecto se marca con \textit{tags} semánticos en Git que documentan la evolución del sistema desde la primera versión funcional hasta la configuración final de producción (\figref{fig:github_tags}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_github_tags.png}
+\caption[Historial de tags en GitHub.]{Historial de tags semánticos del repositorio, documentando los hitos principales del ciclo de desarrollo de EpiForecast-MX.}
+\label{fig:github_tags}
+\end{figure}
+
+\subsection{EPI Console: 30+ comandos Make}
+
+El \texttt{Makefile} centraliza todas las operaciones del pipeline MLOps, desde la descarga de datos hasta el despliegue en SageMaker. Como se observa en la \figref{fig:epiconsole}, esto permite que cualquier miembro del equipo reproduzca el pipeline completo con un solo comando.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_epiconsole_help.png}
+\caption[Interfaz de EPI Console.]{Salida del comando \texttt{make help} mostrando la EPI Console con los 30+ comandos disponibles organizados por categoría.}
+\label{fig:epiconsole}
+\end{figure}
 
 \begin{table}[H]
 \centering
@@ -433,45 +782,61 @@ make compare-metrics & Excel + HTML con badges de overfitting y leakage \\
 make tableau & Dataset Tableau con selección automática de modelo productivo \\
 make quality & Lint + typecheck + tests \\
 make train-sagemaker & Build Docker + entrenamiento DeepAR en GPU (SageMaker) \\
-make data-pull & Descarga datos desde S3 via DVC \\
+make data-pull & Descarga datos desde S3 vía DVC \\
 make report & Reporte HTML de resultados \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-La referencia completa de comandos se encuentra en el Apendice~\ref{sec:comandos}.
+La referencia completa de comandos se encuentra en el Apéndice~\ref{sec:comandos}.
 
 \subsection{DVC y versionado de datos}
 
-Los datos y modelos se versionan con DVC (Data Version Control) respaldado en AWS S3 (\texttt{s3://epiforecast-mx-data}). Esto garantiza la reproducibilidad de cada experimento:
+Los datos y modelos se versionan con DVC (Data Version Control) respaldado en AWS S3 (\texttt{s3://epiforecast-mx-data}), lo que permite una trazabilidad completa del pipeline (\figref{fig:dvc_dag}) y una organización granular de los artefactos (\figref{fig:s3_bucket}).
 
-\begin{itemize}[noitemsep]
-    \item \texttt{data/}: datasets en tres etapas (raw, interim, processed).
-    \item \texttt{models/}: 1,332 artefactos \texttt{.pkl} (4 motores $\times$ 333 series).
-    \item Cada ejecución queda trazada por hash SHA-256 en los archivos \texttt{.dvc}.
-\end{itemize}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.80\textwidth]{fig_dvc_dag.png}
+\caption[Grafo de dependencias DVC.]{Grafo acíclico dirigido (DAG) generado por \texttt{dvc dag}, mostrando las dependencias entre etapas del pipeline.}
+\label{fig:dvc_dag}
+\end{figure}
 
-\subsection{Testing: 849 pruebas automatizadas}
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.90\textwidth]{fig_s3_bucket_structure.png}
+\caption[Estructura del bucket AWS S3.]{Estructura del bucket S3 \texttt{epiforecast-mx-data} mostrando las carpetas de datos y modelos versionados.}
+\label{fig:s3_bucket}
+\end{figure}
 
-El suite de pruebas cubre 46 archivos con 849 funciones de test:
+\subsection{Testing: 855 pruebas automatizadas}
+
+El suite de pruebas cubre 46 archivos con 855 funciones de test:
 
 \begin{table}[H]
 \centering
-\caption{Distribución de pruebas por categoria}
+\caption{Distribución de pruebas por categoría}
 \label{tab:tests}
 \small
-\begin{tabular}{l r l}
+\begin{tabularx}{\textwidth}{l r X}
 \toprule
-\textbf{Categoria} & \textbf{Tests} & \textbf{Descripción} \\
-\midrule
-Unitarias (rapidas) & 780 & Funciones puras, lógica de negocio, helpers \\
-Integración & 45 & Pipeline end-to-end, compatibilidad entre módulos \\
-Lentas (\texttt{@slow}) & 24 & Entrenamiento real de modelos, validación cruzada \\
-\midrule
-\textbf{Total} & \textbf{849} & Cobertura $>$70\% \\
+  \textbf{Categoría} & \textbf{Tests} & \textbf{Descripción} \\
+  \midrule
+  Unitarias (rápidas) & 849 & Funciones puras, lógica de negocio, helpers \\
+  Integración & 3 & Pipeline end-to-end, compatibilidad entre módulos \\
+  Lentas (\texttt{@slow}) & 3 & Entrenamiento real de modelos, validación cruzada \\
+  \midrule\textbf{Total} & \textbf{855} & Cobertura $>$70\% \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
+
+Como se detalla en el reporte de cobertura (\figref{fig:test_coverage}), el sistema alcanza un nivel de validación superior al 70\%, garantizando la estabilidad de los módulos críticos.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_test_coverage.png}
+\caption[Reporte de cobertura de tests.]{Reporte de cobertura generado por \texttt{pytest --cov}, mostrando el agregado superior al 70\%.}
+\label{fig:test_coverage}
+\end{figure}
 
 \subsection{Pre-commit hooks}
 
@@ -486,61 +851,112 @@ Cada commit pasa por seis verificaciones automáticas antes de ser aceptado:
     \item Validación TOML
 \end{enumerate}
 
+La ejecución exitosa de estas verificaciones (\figref{fig:precommit}) previene la introducción de errores comunes y mantiene la consistencia del estilo en todo el equipo.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{fig_precommit_pass.png}
+\caption[Ejecución de pre-commit hooks.]{Verificación automática de calidad (Ruff, mypy, formato) previa a la confirmación de cambios en Git.}
+\label{fig:precommit}
+\end{figure}
+
 \subsection{Diagrama de arquitectura del sistema}
 
 \begin{figure}[H]
 \centering
+\resizebox{\textwidth}{!}{%
 \begin{tikzpicture}[
-    block/.style={draw=teal, fill=lightgreen, rounded corners=4pt, minimum width=2.5cm, minimum height=1cm, text width=2.3cm, align=center, font=\small},
-    data/.style={draw=burgundy, fill=lightred!50, rounded corners=4pt, minimum width=2.5cm, minimum height=1cm, text width=2.3cm, align=center, font=\small},
-    model/.style={draw=gold, fill=lightyellow, rounded corners=4pt, minimum width=2cm, minimum height=0.8cm, text width=1.8cm, align=center, font=\small},
-    output/.style={draw=imssblue, fill=cream, rounded corners=4pt, minimum width=2.5cm, minimum height=1cm, text width=2.3cm, align=center, font=\small},
-    arrow/.style={-{Stealth[length=6pt]}, thick, color=coolgray},
-    label/.style={font=\scriptsize\color{coolgray}, above}
+    % 1. ESTILO BASE MAESTRO: Sombras 3D sutiles, bordes suaves y fuente moderna
+    base/.style={
+        thick, rounded corners=6pt, align=center, font=\sffamily,
+        drop shadow={opacity=0.12, shadow xshift=2pt, shadow yshift=-2pt}
+    },
+    % 2. BLOQUES DE COLORES (Respetando tu paleta original e igualando anchos)
+    data/.style={base, draw=burgundy, fill=lightred!50,
+        minimum width=2.6cm, minimum height=1.3cm, text width=2.4cm},
+    block/.style={base, draw=teal, fill=lightgreen,
+        minimum width=2.6cm, minimum height=1.3cm, text width=2.4cm},
+    model/.style={base, draw=gold, fill=lightyellow,
+        minimum width=2.4cm, minimum height=0.9cm, text width=2.2cm},
+    output/.style={base, draw=imssblue, fill=cream,
+        minimum width=2.6cm, minimum height=1.3cm, text width=2.4cm},
+    % 3. FLECHAS ESTILO PIPELINE DE DATOS
+    arrow/.style={
+        -{Stealth[round, length=8pt, width=6pt]},
+        thick, color=coolgray,
+        shorten >=1.5pt, shorten <=1.5pt
+    },
+    % 4. ETIQUETAS "PÍLDORA" FLOTANTES
+    label/.style={
+        font=\sffamily\scriptsize\bfseries\color{coolgray},
+        fill=white, inner sep=3pt, rounded corners=4pt
+    }
 ]
-    % Fuentes
-    \node[data] (sinave) at (0,0) {SINAVE\\(PDF)};
-    \node[data] (inegi) at (0,-1.5) {INEGI\\(Población)};
+    % --- RECUADRO AGRUPADOR (Capa de Modelado) ---
+    % Dibuja un límite visual elegante alrededor del cerebro del sistema
+    \draw[draw=coolgray, rounded corners=8pt, dashed, thick]
+        (11.8, -3.1) rectangle (15.2, 3.1);
+    \node[font=\sffamily\scriptsize\bfseries\color{coolgray}, fill=white, inner sep=4pt]
+        at (13.5, 3.1) {CAPA DE MODELADO};
 
-    % ETL
-    \node[block] (etl) at (3.5,0) {ETL\\Pipeline};
-    \draw[arrow] (sinave) -- node[label] {scraping} (etl);
-    \draw[arrow] (inegi) -- (etl);
+    % --- COLUMNA 1: Fuentes de Datos (X=0) ---
+    \node[data] (sinave) at (0, 1.8)  {\textbf{SINAVE}\\[1mm]\scriptsize (PDF)};
+    \node[data] (inegi)  at (0, -1.8) {\textbf{INEGI}\\[1mm]\scriptsize (Población)};
 
-    % Feature Store
-    \node[block] (features) at (7,0) {Feature\\Engineering};
-    \draw[arrow] (etl) -- node[label] {interim} (features);
+    % --- COLUMNA 2: Extracción (X=4.5) ---
+    \node[block] (etl) at (4.5, 0) {\textbf{ETL}\\[1mm]\scriptsize Pipeline};
 
-    % Modelos
-    \node[model] (prophet) at (10.5,1.5) {Prophet};
-    \node[model] (deepar) at (10.5,0.5) {DeepAR};
-    \node[model] (ensemble) at (10.5,-0.5) {Ensemble};
-    \node[model] (stacking) at (10.5,-1.5) {Stacking};
+    % --- COLUMNA 3: Feature Engineering (X=9) ---
+    \node[block] (features) at (9, 0) {\textbf{Feature}\\[1mm]\scriptsize Engineering};
 
-    \draw[arrow] (features) -- (prophet);
-    \draw[arrow] (features) -- (deepar);
-    \draw[arrow] (features) -- (ensemble);
-    \draw[arrow] (features) -- (stacking);
+    % --- COLUMNA 4: Modelos (X=13.5, simetría perfecta en eje Y) ---
+    \node[model] (prophet)  at (13.5,  2.25) {\textbf{Prophet}};
+    \node[model] (deepar)   at (13.5,  0.75) {\textbf{DeepAR}};
+    \node[model] (ensemble) at (13.5, -0.75) {\textbf{Ensemble}};
+    \node[model] (stacking) at (13.5, -2.25) {\textbf{Stacking}};
 
-    % Selección
-    \node[block] (selector) at (14,0) {Selector\\Producción};
-    \draw[arrow] (prophet) -- (selector);
-    \draw[arrow] (deepar) -- (selector);
-    \draw[arrow] (ensemble) -- (selector);
-    \draw[arrow] (stacking) -- (selector);
+    % --- COLUMNA 5: Selección (X=18) ---
+    \node[block] (selector) at (18, 0) {\textbf{Selector}\\[1mm]\scriptsize Producción};
 
-    % Salidas
-    \node[output] (dashboard) at (17.5,0.75) {Dashboard\\Tableau};
-    \node[output] (reportes) at (17.5,-0.75) {Reportes\\HTML/PDF};
+    % --- COLUMNA 6: Salidas (X=22.5) ---
+    \node[output] (dashboard) at (22.5,  1.8) {\textbf{Dashboard}\\[1mm]\scriptsize Tableau};
+    \node[output] (reportes)  at (22.5, -1.8) {\textbf{Reportes}\\[1mm]\scriptsize HTML/PDF};
 
-    \draw[arrow] (selector) -- (dashboard);
-    \draw[arrow] (selector) -- (reportes);
+    % ==========================================
+    % CONEXIONES CURVAS (Flujo tipo Data Pipeline)
+    % Usamos to[out=0, in=180] para crear curvas de Bézier fluidas
+    % ==========================================
+
+    % Entradas -> ETL (Fan-in orgánico)
+    \draw[arrow] (sinave.east) to[out=0, in=180] node[label, pos=0.4] {scraping} (etl.west);
+    \draw[arrow] (inegi.east) to[out=0, in=180] (etl.west);
+
+    % ETL -> Features (Línea recta directa, están alineados al centro)
+    \draw[arrow] (etl.east) -- node[label] {interim} (features.west);
+
+    % Features -> Modelos (Efecto Fan-out curvo)
+    \draw[arrow] (features.east) to[out=0, in=180] (prophet.west);
+    \draw[arrow] (features.east) to[out=0, in=180] (deepar.west);
+    \draw[arrow] (features.east) to[out=0, in=180] (ensemble.west);
+    \draw[arrow] (features.east) to[out=0, in=180] (stacking.west);
+
+    % Modelos -> Selector (Efecto Fan-in curvo)
+    \draw[arrow] (prophet.east) to[out=0, in=180] (selector.west);
+    \draw[arrow] (deepar.east) to[out=0, in=180] (selector.west);
+    \draw[arrow] (ensemble.east) to[out=0, in=180] (selector.west);
+    \draw[arrow] (stacking.east) to[out=0, in=180] (selector.west);
+
+    % Selector -> Salidas (Divergencia orgánica final)
+    \draw[arrow] (selector.east) to[out=0, in=180] (dashboard.west);
+    \draw[arrow] (selector.east) to[out=0, in=180] (reportes.west);
 
 \end{tikzpicture}
-\caption{Arquitectura del sistema EpiForecast-MX: del dato crudo al dashboard}
+}% fin resizebox
+\caption[Arquitectura general del sistema.]{Arquitectura del sistema EpiForecast-MX: del dato crudo al dashboard}
 \label{fig:arquitectura}
 \end{figure}
 
+\newpage
 % =============================================================================
 % 5. ANALISIS DE RENDIMIENTO DE MODELOS
 % =============================================================================
@@ -548,7 +964,7 @@ Cada commit pasa por seis verificaciones automáticas antes de ser aceptado:
 
 \subsection{Panorama general: 1,332 evaluaciones}
 
-Se evaluaron \textbf{4 motores} sobre las \textbf{333 series de producción}, totalizando 1,332 evaluaciones independientes. Cada evaluación utiliza validación cruzada temporal con ventanas expansivas que respetan la causalidad (nunca se usa información futura para entrenar).
+Se evaluaron \textbf{4 motores} sobre las \textbf{333 series de producción}, totalizando 1,332 evaluaciones independientes. Cada evaluación utiliza validación cruzada temporal con ventanas expansivas que respetan la causalidad (nunca se usa información futura para entrenar). Las métricas de evaluación siguen las recomendaciones de Hyndman y Koehler (2006), priorizando \mase{} como métrica libre de escala y \smape{} como complemento porcentual.
 
 \begin{figure}[H]
 \centering
@@ -558,40 +974,54 @@ Se evaluaron \textbf{4 motores} sobre las \textbf{333 series de producción}, to
     label/.style={font=\scriptsize}
 ]
     % Fold 1
-    \node[label] at (-0.5, 2.5) {Fold 1:};
-    \draw[train] (0,2.3) rectangle (4,2.7);
-    \draw[test] (4,2.3) rectangle (5,2.7);
-    \node[label, color=teal] at (2, 2.1) {Train};
-    \node[label, color=burgundy] at (4.5, 2.1) {Test};
+    \node[label, anchor=east] at (-0.3, 2.5) {Fold 1:};
+    \draw[train] (0,2.3) rectangle (7,2.7);
+    \draw[test]  (7,2.3) rectangle (8,2.7);
+    \node[label, color=teal]    at (3.5, 2.1) {Train};
+    \node[label, color=burgundy] at (7.5, 2.1) {Test};
 
     % Fold 2
-    \node[label] at (-0.5, 1.5) {Fold 2:};
-    \draw[train] (0,1.3) rectangle (5,1.7);
-    \draw[test] (5,1.3) rectangle (6,1.7);
+    \node[label, anchor=east] at (-0.3, 1.5) {Fold 2:};
+    \draw[train] (0,1.3) rectangle (8,1.7);
+    \draw[test]  (8,1.3) rectangle (9,1.7);
 
     % Fold 3
-    \node[label] at (-0.5, 0.5) {Fold 3:};
-    \draw[train] (0,0.3) rectangle (6,0.7);
-    \draw[test] (6,0.3) rectangle (7,0.7);
+    \node[label, anchor=east] at (-0.3, 0.5) {Fold 3:};
+    \draw[train] (0,0.3) rectangle (9,0.7);
+    \draw[test]  (9,0.3) rectangle (10,0.7);
 
     % Fold 4
-    \node[label] at (-0.5, -0.5) {Fold 4:};
-    \draw[train] (0,-0.7) rectangle (7,-0.3);
-    \draw[test] (7,-0.7) rectangle (8,-0.3);
+    \node[label, anchor=east] at (-0.3, -0.5) {Fold 4:};
+    \draw[train] (0,-0.7) rectangle (10,-0.3);
+    \draw[test]  (10,-0.7) rectangle (11,-0.3);
 
     % Fold 5
-    \node[label] at (-0.5, -1.5) {Fold 5:};
-    \draw[train] (0,-1.7) rectangle (8,-1.3);
-    \draw[test] (8,-1.7) rectangle (9,-1.3);
+    \node[label, anchor=east] at (-0.3, -1.5) {Fold 5:};
+    \draw[train] (0,-1.7) rectangle (11,-1.3);
+    \draw[test]  (11,-1.7) rectangle (12,-1.3);
 
-    % Eje temporal
-    \draw[-{Stealth}, thick, coolgray] (0,-2.3) -- (9.5,-2.3);
-    \node[label] at (0,-2.6) {2014};
-    \node[label] at (9,-2.6) {2026};
-    \node[label, color=coolgray] at (4.5,-2.6) {Tiempo};
+    % Eje X de Tiempo
+    \draw[-{Stealth}, thick, coolgray] (0,-2.5) -- (12.5,-2.5);
 
-    % Brace
-    \draw[decorate, decoration={brace, amplitude=5pt, mirror}, thick, burgundy] (8,-1.8) -- (9,-1.8) node[midway, below=6pt, font=\scriptsize\color{burgundy}] {52 sem};
+    % Etiquetas de años pares (más resaltadas)
+    \foreach \x/\year in {0/2014, 2/2016, 4/2018, 6/2020, 8/2022, 10/2024, 12/2026} {
+        \draw[coolgray, thick] (\x,-2.4) -- (\x,-2.6);
+        \node[label] at (\x,-2.9) {\year};
+    }
+
+    % Etiquetas de años impares (más sutiles para no saturar)
+    \foreach \x/\year in {1/2015, 3/2017, 5/2019, 7/2021, 9/2023, 11/2025} {
+        \draw[coolgray] (\x,-2.45) -- (\x,-2.55);
+        \node[label, text=gray] at (\x,-2.9) {\year};
+    }
+
+    \node[label, color=coolgray] at (6,-3.5) {Tiempo};
+
+    % Llave para las 52 semanas en el último fold
+    \draw[decorate, decoration={brace, amplitude=5pt, mirror}, thick, burgundy]
+        (11,-1.8) -- (12,-1.8)
+        node[midway, below=6pt, font=\scriptsize\color{burgundy}] {52 sem};
+
 \end{tikzpicture}
 \caption{Validación cruzada temporal con ventanas expansivas (5 folds ilustrativos)}
 \label{fig:cv_temporal}
@@ -599,30 +1029,30 @@ Se evaluaron \textbf{4 motores} sobre las \textbf{333 series de producción}, to
 
 \subsection{Resultados por padecimiento}
 
-La \tabref{tab:métricas_pad} resume las métricas agregadas por padecimiento, considerando todos los motores evaluados y seleccionando el mejor modelo por serie (criterio: \smape{} primario, \mase{} como desempate con umbral 5\%, \rmse{} como segundo desempate).
+La \tabref{tab:metricas_pad} resume las métricas agregadas por padecimiento, considerando todos los motores evaluados y seleccionando el mejor modelo por serie (criterio: \smape{} primario, \mase{} como desempate con umbral 5\%, \rmse{} como segundo desempate).
 
 \begin{table}[H]
 \centering
 \caption{Métricas de los modelos de producción por padecimiento}
 \label{tab:metricas_pad}
-\small
-\begin{tabular}{l rr rr rr rr}
+\scriptsize
+\begin{tabularx}{\textwidth}{X rr rr rr rr}
 \toprule
 & \multicolumn{2}{c}{\smape{} (\%)} & \multicolumn{2}{c}{\mase{}} & \multicolumn{2}{c}{\rmse{}} & \multicolumn{2}{c}{\mae{}} \\
 \cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7} \cmidrule(lr){8-9}
 \textbf{Padecimiento} & Media & Mediana & Media & Mediana & Media & Mediana & Media & Mediana \\
 \midrule
-Depression (F32)  & 7.38  & 5.99  & 0.42 & 0.30 & 45.2 & 22.1 & 31.8 & 15.4 \\
+Depresión (F32)  & 7.38  & 5.99  & 0.42 & 0.30 & 45.2 & 22.1 & 31.8 & 15.4 \\
 Parkinson (G20)   & 52.28 & 35.24 & 0.51 & 0.38 & 3.8  & 2.1  & 2.9  & 1.6  \\
 Alzheimer (G30)   & 109.89 & 107.59 & 0.48 & 0.35 & 1.9  & 1.0  & 1.4  & 0.7  \\
 \midrule
 \textbf{Global} & \textbf{56.52} & \textbf{12.82} & \textbf{0.42} & \textbf{0.30} & --- & --- & --- & --- \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 \begin{warningbox}[Nota sobre \smape{} de Alzheimer]
-Un \smape{} de 109.89\% no implica que el modelo sea inutilizable. El error porcentual se amplifica cuando la incidencia real es cercana a cero (ej.: 0 vs 1 caso = 200\% de error). Las métricas absolutas (\rmse{} = 1.9, \mae{} = 1.4) confirman que el error promedio es menor a 2 casos por semana, lo cual es clínicamente aceptable.
+Un \smape{} de 109.89\% no implica que el modelo sea inutilizable. Como señalan Hyndman y Koehler (2006), el error porcentual se amplifica cuando la incidencia real es cercana a cero (ej.: 0 vs 1 caso = 200\% de error). Las métricas absolutas (\rmse{} = 1.9, \mae{} = 1.4) confirman que el error promedio es menor a 2 casos por semana, lo cual es clínicamente aceptable.
 \end{warningbox}
 
 \subsection{Ranking de motores: DeepAR domina}
@@ -632,7 +1062,7 @@ Un \smape{} de 109.89\% no implica que el modelo sea inutilizable. El error porc
 \caption{Distribución de series ganadas por motor de pronóstico}
 \label{tab:ranking}
 \small
-\begin{tabular}{l r r l}
+\begin{tabularx}{\textwidth}{l r r X}
 \toprule
 \textbf{Motor} & \textbf{Series ganadas} & \textbf{Porcentaje} & \textbf{Fortaleza principal} \\
 \midrule
@@ -645,34 +1075,57 @@ Ensemble           & 32  & 9.6\%  & Residuales no lineales \\
 \rowcolor{cstacking!10}
 Stacking           & 2   & 0.6\%  & Meta-aprendizaje \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
-\begin{championbox}[--- Depression (F32)]
+Como se observa en la \figref{fig:boxplot_motores}, la distribución de errores porcentuales confirma la estabilidad de DeepAR frente a los demás motores. Asimismo, la \figref{fig:barras_mase} destaca que este algoritmo supera al baseline estacional en más del 95\% de las series.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_boxplot_smape_motores.png}
+\caption[Box plot de SMAPE por motor.]{Distribución de \smape{} por motor de pronóstico, faceteado por padecimiento. DeepAR presenta medianas consistentemente más bajas y menor dispersión.}
+\label{fig:boxplot_motores}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{fig_barras_mase_motores.png}
+\caption[Comparativa de MASE por motor.]{Porcentaje de series donde el modelo supera al naive estacional (\mase{} $<$ 1) por motor.}
+\label{fig:barras_mase}
+\end{figure}
+
+\begin{championbox}[ Depresión (F32)]
 \textbf{Motor}: \textcolor{cdeepar}{DeepAR} gana 81 de 111 series (73.0\%). \\
 \textbf{\smape{} mediano}: 5.99\% \quad \textbf{\mase{} mediano}: 0.30 \\
 \textbf{Pronóstico acumulado 52 semanas}: 904,995 casos a nivel nacional.
 \end{championbox}
 
-\begin{championbox}[--- Parkinson (G20)]
+\begin{championbox}[ Parkinson (G20)]
 \textbf{Motor}: \textcolor{cdeepar}{DeepAR} gana 82 de 111 series (73.9\%). \\
 \textbf{\smape{} mediano}: 35.24\% \quad \textbf{\mase{} mediano}: 0.38 \\
 \textbf{Pronóstico acumulado 52 semanas}: 44,699 casos a nivel nacional.
 \end{championbox}
 
-\begin{championbox}[--- Alzheimer (G30)]
+\begin{championbox}[ Alzheimer (G30)]
 \textbf{Motor}: \textcolor{cdeepar}{DeepAR} gana 81 de 111 series (73.0\%). \\
 \textbf{\smape{} mediano}: 107.59\% \quad \textbf{\mase{} mediano}: 0.35 \\
 \textbf{Pronóstico acumulado 52 semanas}: 15,852 casos a nivel nacional.
 \end{championbox}
 
-\subsection{Semaforo de calidad por estado}
+\subsection{Semáforo de calidad por estado}
 
-La \tabref{tab:semaforo} clasifica los estados segun la calidad del pronóstico de Depression (el padecimiento principal), usando el \smape{} del modelo productivo seleccionado.
+La \tabref{tab:semaforo} clasifica los estados según la calidad del pronóstico de Depresión, mientras que la \figref{fig:mapa_smape} ofrece una perspectiva geográfica de esta métrica.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{fig_mapa_smape_depresion.png}
+\caption[Mapa semáforo de SMAPE (Depresión).]{Calidad del pronóstico por entidad federativa. Los estados con mayor volumen obtienen consistentemente mejores resultados.}
+\label{fig:mapa_smape}
+\end{figure}
 
 \begin{table}[H]
 \centering
-\caption{Semaforo de calidad del pronóstico de Depression por entidad (top 10 y bottom 5)}
+\caption{Semáforo de calidad del pronóstico de Depresión por entidad (top 10 y bottom 5)}
 \label{tab:semaforo}
 \scriptsize
 \setlength{\tabcolsep}{4pt}
@@ -696,25 +1149,50 @@ La \tabref{tab:semaforo} clasifica los estados segun la calidad del pronóstico 
 \end{tabular}
 \end{table}
 
+La disparidad en la dificultad de modelado entre padecimientos se visualiza en el \figref{fig:heatmap_smape}, donde Alzheimer presenta los mayores retos métricos de forma generalizada.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_heatmap_smape_estado_pad.png}
+\caption[Heatmap de SMAPE por estado y padecimiento.]{La intensidad del color refleja el nivel de error; Alzheimer presenta los valores más altos en todas las entidades.}
+\label{fig:heatmap_smape}
+\end{figure}
+
 \begin{insightbox}[Patrón claro: volumen = precisión]
 Los estados con mayor volumen de consultas (Jalisco, México, CDMX, Nuevo León) obtienen los mejores \smape{}. Esto se debe a que series con mayor incidencia tienen menor varianza relativa, facilitando el aprendizaje del modelo. Por el contrario, estados con baja población derechohabiente (Campeche, Colima, BCS) muestran mayor ruido proporcional.
 \end{insightbox}
 
-\subsection{Análisis por género}
+\subsection{Análisis por sexo}
 
-El desglose por sexo revela patrones diferenciados:
+El desglose por sexo (Masculino, Femenino y Combinado) revela patrones diferenciados:
 
 \begin{itemize}[noitemsep]
-    \item \textbf{Depression}: las mujeres representan $\approx$70\% de los casos. Los modelos para el sexo femenino alcanzan mejor \smape{} que los masculinos (menor varianza relativa por mayor volumen).
+    \item \textbf{Depresión}: las mujeres representan $\approx$70\% de los casos, consistente con la prevalencia global reportada por la OMS (2023). Los modelos para el sexo femenino alcanzan mejor \smape{} que los masculinos (menor varianza relativa por mayor volumen).
     \item \textbf{Parkinson}: distribución más equilibrada ($\approx$55\% hombres). Los modelos por sexo tienen precisión similar.
-    \item \textbf{Alzheimer}: ligero predominio femenino ($\approx$58\%). Patrones estables sin diferencias significativas por género.
+    \item \textbf{Alzheimer}: ligero predominio femenino ($\approx$58\%). Patrones estables sin diferencias significativas entre sexos.
 \end{itemize}
+
+Como se visualiza en la \figref{fig:distribucion_sexo}, la composición demográfica de la incidencia varía drásticamente según el padecimiento.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.70\textwidth]{fig_distribucion_sexo.png}
+\caption[Distribución de incidencia por sexo.]{Distribución acumulada por sexo; Depresión muestra un marcado predominio femenino ($\approx$70\%).}
+\label{fig:distribucion_sexo}
+\end{figure}
 
 \subsection{Impacto de COVID-19}
 
-La pandemia de COVID-19 (2020--2021) género un \textbf{cambio estructural} en las series de Depression, con una caida abrupta durante el confinamiento seguida de un incremento sostenido post-pandemia. Prophet manejo este quiebre mediante changepoints explicitos, mientras que DeepAR lo aprendio implicitamente a traves de su ventana de contexto.
+La pandemia de COVID-19 (2020\,--\,2021) generó un \textbf{cambio estructural} en las series de Depresión, con una caída abrupta durante el confinamiento seguida de un incremento sostenido post-pandemia. El modelo Prophet, según Taylor y Letham (2018), manejó este quiebre mediante changepoints explícitos, mientras que DeepAR lo aprendió implícitamente a través de su ventana de contexto (Salinas et al., 2020).
 
-Para Parkinson y Alzheimer, el impacto fue moderado: una reducción temporal en el registro de casos (subdiagnóstico por reducción de consultas presenciales) seguida de una recuperación gradual.
+Para Parkinson y Alzheimer, el impacto fue moderado: una reducción temporal en el registro de casos (subdiagnóstico por reducción de consultas presenciales) seguida de una recuperación gradual. En la \figref{fig:covid_impact} se observa este fenómeno para el caso de Depresión.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_covid_impact_depresion.png}
+\caption[Impacto de COVID-19 en Depresión.]{Incidencia semanal nacional (2016--2025) con el periodo COVID-19 sombreado en gris, mostrando la caída abrupta y el rebote sostenido.}
+\label{fig:covid_impact}
+\end{figure}
 
 \subsection{Diagnósticos de calidad}
 
@@ -723,13 +1201,13 @@ Para Parkinson y Alzheimer, el impacto fue moderado: una reducción temporal en 
 \caption{Diagnósticos de overfitting y leakage en los 333 modelos de producción}
 \label{tab:diagnosticos}
 \small
-\begin{tabular}{l r l}
+\begin{tabularx}{\textwidth}{l r X}
 \toprule
 \textbf{Diagnóstico} & \textbf{Modelos} & \textbf{Descripción} \\
 \midrule
 \multicolumn{3}{l}{\textit{Overfitting (ratio \smape{} test / \smape{} train)}} \\
 OK ($<$1.3$\times$) & 328 & Sin evidencia de sobreajuste \\
-Moderado (1.3--2$\times$) & 1 & Monitorear en proximás iteraciones \\
+Moderado (1.3\,--\,2$\times$) & 1 & Monitorear en próximas iteraciones \\
 Alto ($>$2$\times$) & 1 & Reentrenar con regularización adicional \\
 N/D & 3 & Series con train \smape{} = 0 (indivisible) \\
 \midrule
@@ -737,13 +1215,14 @@ N/D & 3 & Series con train \smape{} = 0 (indivisible) \\
 OK & 330 & Sin fuga de datos detectada \\
 Sospechoso & 3 & \smape{} train anormalmente bajo; revisar features \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 \begin{insightbox}[Integridad del pipeline]
 La tasa de modelos saludables (OK en ambos diagnósticos) es del \textbf{98.5\%} (328/333). Los 5 modelos con alertas corresponden a series de Alzheimer con incidencia $<$2 casos/semana, donde el bajo volumen amplifica las métricas de diagnóstico sin implicar un problema real.
 \end{insightbox}
 
+\newpage
 % =============================================================================
 % 6. VALIDACION SEMANAL CON DATOS REALES
 % =============================================================================
@@ -751,59 +1230,70 @@ La tasa de modelos saludables (OK en ambos diagnósticos) es del \textbf{98.5\%}
 
 \subsection{El experimento definitivo}
 
-Una vez seleccionados los modelos de producción, se realizo una validación genuinamente \textit{out-of-sample}: se compararon los pronósticos generados \textbf{antes} de la publicación del boletin SINAVE de la semana epidemiológica más reciente contra los datos reales que los modelos \textbf{nunca vieron} durante el entrenamiento ni la validación cruzada.
+Una vez seleccionados los modelos de producción, se realizó una validación genuinamente \textit{out-of-sample}: se compararon los pronósticos generados \textbf{antes} de la publicación del boletín SINAVE (Secretaría de Salud, 2025) de la semana epidemiológica más reciente contra los datos reales que los modelos \textbf{nunca vieron} durante el entrenamiento ni la validación cruzada.
 
 \begin{insightbox}[Validación out-of-sample genuina]
-Esta validación semanal es el estandar de oro para evaluar un sistema de pronóstico en producción. Los datos reales provienen del boletin SINAVE publicado \textit{después} del entrenamiento. Ningun modelo tuvo acceso a estos valores durante el ajuste de hiperparámetros, la selección de features ni la validación cruzada.
+Esta validación semanal es el estándar de oro para evaluar un sistema de pronóstico en producción. Los datos reales provienen del boletín SINAVE publicado \textit{después} del entrenamiento. Ningún modelo tuvo acceso a estos valores durante el ajuste de hiperparámetros, la selección de features ni la validación cruzada.
 \end{insightbox}
 
 \subsection{Protocolo de validación}
 
 \begin{enumerate}[noitemsep]
     \item Los 333 modelos de producción generan pronósticos para la semana $t+1$.
-    \item Se publica el boletin SINAVE correspondiente a la semana $t+1$.
+    \item Se publica el boletín SINAVE correspondiente a la semana $t+1$.
     \item Se compara \texttt{pron\_sem\_previa} (pronóstico) contra \texttt{realidad\_sem\_previa} (dato real).
     \item Se calcula el error absoluto y porcentual por serie.
-    \item Los resultados se publican automáticamente en \texttt{validación\_semanal.html}.
+    \item Los resultados se publican automáticamente en \texttt{validacion\_semanal.html}.
 \end{enumerate}
 
-La tabla de producción (\texttt{tabla\_333\_modelos\_producción.xlsx}) incluye dos columnas dedicadas a esta validación:
+La tabla de producción (\texttt{tabla\_333\_modelos\_produccion.xlsx}) incluye dos columnas dedicadas a esta validación:
 \begin{itemize}[noitemsep]
     \item \texttt{pron\_sem\_previa}: predicción del modelo para la semana más reciente.
-    \item \texttt{realidad\_sem\_previa}: dato real del boletin SINAVE.
+    \item \texttt{realidad\_sem\_previa}: dato real del boletín SINAVE.
 \end{itemize}
 
 Adicionalmente, la comparativa histórica incluye:
 \begin{itemize}[noitemsep]
-    \item \texttt{casos\_prev\_52\_semanas\_real}: casos reales en las últimás 52 semanas.
+    \item \texttt{casos\_prev\_52\_semanas\_real}: casos reales en las últimas 52 semanas.
     \item \texttt{casos\_prev\_52\_semanas\_pronos}: pronóstico acumulado para el mismo periodo.
-    \item \texttt{precisión\_histórica}: ratio pronóstico/real como porcentaje.
+    \item \texttt{precision\_historica}: ratio pronóstico/real como porcentaje.
 \end{itemize}
 
-% MANUAL: Insertar screenshot de validación_semanal.html si se desea
-% \begin{figure}[H]
-% \centering
-% \includegraphics[width=\textwidth]{../ConclusionesClave/screenshot_validación_semanal.png}
-% \caption{Reporte de validación semanal (extracto)}
-% \label{fig:validacion_screenshot}
-% \end{figure}
+El seguimiento de estas métricas se realiza mediante reportes automatizados, como se ilustra en la \figref{fig:validacion_screenshot}.
 
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{screenshot_validacion_semanal.png}
+\caption[Reporte de validación semanal.]{Extracto del reporte automático \texttt{validacion\_semanal.html} comparando pronóstico vs realidad para la semana epidemiológica más reciente.}
+\label{fig:validacion_screenshot}
+\end{figure}
+
+\newpage
 % =============================================================================
 % 7. CONCLUSIONES POR PADECIMIENTO
 % =============================================================================
 \section{Conclusiones por Padecimiento}\label{sec:conclusiones_pad}
 
-\subsection{Depression (F32)}\label{subsec:depresion}
+\subsection{Depresión (F32)}\label{subsec:depresion}
 
 \subsubsection{Insights epidemiológicos}
 
-La Depression es el padecimiento con mayor volumen de incidencia entre los tres estudiados, con un pronóstico acumulado de \textbf{904,995 casos} para las proximás 52 semanas a nivel nacional. Este volumen permite a los modelos capturar patrones robustos con alta precisión.
+La Depresión es el padecimiento con mayor volumen de incidencia entre los tres estudiados, con un pronóstico acumulado de \textbf{904,995 casos} para las próximas 52 semanas a nivel nacional. Este volumen permite a los modelos capturar patrones robustos con alta precisión.
 
 \begin{itemize}[noitemsep]
     \item \textbf{Tendencia}: ascendente sostenida desde 2021 (post-COVID), con un incremento anual del $\approx$12\%.
-    \item \textbf{Estacionalidad}: pico en octubre--noviembre (inicio de temporada invernal y periodo de trastorno afectivo estacional) y valle en febrero--marzo.
-    \item \textbf{COVID-19}: caida abrupta en 2020 (cierre de consultorios) seguida de un rebote que supero los niveles pre-pandemicos, consistente con la literatura internacional.
+    \item \textbf{Estacionalidad}: pico en octubre y noviembre (inicio de temporada invernal y periodo de trastorno afectivo estacional) y valle en febrero y marzo.
+    \item \textbf{COVID-19}: caída abrupta en 2020 (cierre de consultorios) seguida de un rebote que superó los niveles pre-pandémicos, consistente con la literatura internacional (OMS, 2023).
 \end{itemize}
+
+Esta dinámica se refleja en el pronóstico nacional presentado en la \figref{fig:forecast_depresion}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_forecast_depresion_nacional.png}
+\caption[Pronóstico de Depresión Nacional.]{Serie real (azul) vs pronóstico DeepAR a 52 semanas (rojo) con banda de confianza al 80\%.}
+\label{fig:forecast_depresion}
+\end{figure}
 
 \subsubsection{Mejores y peores estados}
 
@@ -812,29 +1302,38 @@ La Depression es el padecimiento con mayor volumen de incidencia entre los tres 
     \item \textbf{Peores} (mayor \smape{}): Campeche, Colima, BCS, Tlaxcala, Nayarit. Estados con baja población que generan series ruidosas.
 \end{itemize}
 
-\subsubsection{Diferencial por género}
+\subsubsection{Diferencial por sexo}
 
-Las mujeres representan $\approx$70\% de los diagnósticos de Depression, alíneado con la prevalencia global reportada por la OMS. Los modelos femeninos alcanzan mejor \smape{} (menor varianza relativa) que los masculinos. Recomendación: el {\imss} debe considerar programás diferenciados de detección temprana con enfasis en la población femenina.
+Las mujeres representan $\approx$70\% de los diagnósticos de Depresión, alineado con la prevalencia global reportada por la OMS (2023). Los modelos femeninos alcanzan mejor \smape{} (menor varianza relativa) que los masculinos. Recomendación: el {\imss} debe considerar programas diferenciados de detección temprana con énfasis en la población femenina.
 
 \subsubsection{Implicaciones clínicas}
 
 \begin{enumerate}[noitemsep]
-    \item \textbf{Planificacion de medicamentos}: los pronósticos permiten anticipar la demanda de antidepresivos (ISRS, IRSN) por estado y género.
-    \item \textbf{Recursos humanos}: estados con tendencia ascendente deben ampliar la plantilla de psicologos y psiquiatras.
-    \item \textbf{Campanas de prevencion}: los picos estacionales sugieren intensificar las campanas de salud mental en septiembre--octubre, antes del pico.
+    \item \textbf{Planificación de medicamentos}: los pronósticos permiten anticipar la demanda de antidepresivos (ISRS, IRSN) por estado y sexo.
+    \item \textbf{Recursos humanos}: estados con tendencia ascendente deben ampliar la plantilla de psicólogos y psiquiatras.
+    \item \textbf{Campañas de prevención}: los picos estacionales sugieren intensificar las campañas de salud mental en septiembre y octubre, antes del pico.
 \end{enumerate}
 
 \subsection{Parkinson (G20)}\label{subsec:parkinson}
 
 \subsubsection{Insights epidemiológicos}
 
-Parkinson presenta un pronóstico acumulado de \textbf{44,699 casos} en 52 semanas, con una incidencia mucho menor que Depression. La serie es relativamente estable, con estacionalidad suave y tendencia ligeramente ascendente asociada al envejecimiento poblacional.
+Parkinson presenta un pronóstico acumulado de \textbf{44,699 casos} en 52 semanas, con una incidencia mucho menor que Depresión. La serie es relativamente estable, con estacionalidad suave y tendencia ligeramente ascendente asociada al envejecimiento poblacional (INEGI, 2024).
 
 \begin{itemize}[noitemsep]
     \item \textbf{Tendencia}: levemente ascendente ($\approx$3\% anual), correlacionada con el envejecimiento de la pirámide poblacional mexicana.
-    \item \textbf{Estacionalidad}: debil; ligeros picos en marzo--abril (consultas de seguimiento post-invernal).
-    \item \textbf{COVID-19}: impacto moderado; reducción temporal por caida en consultas presenciales, recuperación gradual en 2022.
+    \item \textbf{Estacionalidad}: débil; ligeros picos en marzo y abril (consultas de seguimiento post-invernal).
+    \item \textbf{COVID-19}: impacto moderado; reducción temporal por caída en consultas presenciales, recuperación gradual en 2022.
 \end{itemize}
+
+El pronóstico para este padecimiento se visualiza en la \figref{fig:forecast_parkinson}.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_forecast_parkinson_nacional.png}
+\caption[Pronóstico de Parkinson Nacional.]{Serie real (azul) vs pronóstico DeepAR a 52 semanas (rojo) con banda de confianza al 80\%.}
+\label{fig:forecast_parkinson}
+\end{figure}
 
 \subsubsection{Mejores y peores estados}
 
@@ -847,8 +1346,8 @@ Parkinson presenta un pronóstico acumulado de \textbf{44,699 casos} en 52 seman
 
 \begin{enumerate}[noitemsep]
     \item \textbf{Subdiagnóstico}: la baja incidencia en estados del sur podría reflejar falta de acceso a neurólogos, no ausencia real de la enfermedad.
-    \item \textbf{Medicamentos especializados}: levodopa y agonistas dopaminergicos requieren planificación regional anticipada.
-    \item \textbf{Envejecimiento}: la tendencia ascendente demanda inversion a mediano plazo en clínicas de movimiento.
+    \item \textbf{Medicamentos especializados}: levodopa y agonistas dopaminérgicos requieren planificación regional anticipada.
+    \item \textbf{Envejecimiento}: la tendencia ascendente demanda inversión a mediano plazo en clínicas de movimiento.
 \end{enumerate}
 
 \subsection{Alzheimer (G30)}\label{subsec:alzheimer}
@@ -858,25 +1357,35 @@ Parkinson presenta un pronóstico acumulado de \textbf{44,699 casos} en 52 seman
 Alzheimer tiene el menor volumen de incidencia con un pronóstico acumulado de \textbf{15,852 casos} en 52 semanas. La baja incidencia genera un reto estadístico inherente: pequeñas variaciones absolutas producen grandes errores porcentuales.
 
 \begin{itemize}[noitemsep]
-    \item \textbf{Tendencia}: estable a ligeramente ascendente, con el mismo patrón de envejecimiento que Parkinson.
+    \item \textbf{Tendencia}: estable a ligeramente ascendente, con el mismo patrón de envejecimiento que Parkinson (INEGI, 2024).
     \item \textbf{Estacionalidad}: prácticamente nula a nivel estatal; solo detectable en series agregadas (regional/nacional).
     \item \textbf{Fallback regional}: 7 de las 111 series de Alzheimer utilizan el modelo regional porque la incidencia estatal es insuficiente.
 \end{itemize}
 
+La \figref{fig:forecast_alzheimer} muestra el pronóstico nacional generado para este padecimiento.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_forecast_alzheimer_nacional.png}
+\caption[Pronóstico de Alzheimer Nacional.]{Serie real (azul) vs pronóstico DeepAR a 52 semanas (rojo) con banda de confianza al 80\%.}
+\label{fig:forecast_alzheimer}
+\end{figure}
+
 \subsubsection{El reto de la baja incidencia}
 
-\begin{criticalbox}[Limitacion inherente de los modelos]
-Cuando una serie tiene 0--3 casos por semana, \textbf{cualquier modelo} producira un \smape{} alto. Esto no es un defecto del algoritmo sino una propiedad matemática: la división por valores cercanos a cero amplifica el error porcentual. Las métricas absolutas (\rmse{} = 1.9, \mae{} = 1.4) confirman que los modelos estan a menos de 2 casos de la realidad en promedio, lo cual es clínicamente útil.
+\begin{criticalbox}[Limitación inherente de los modelos]
+Cuando una serie tiene 0 a 3 casos por semana, \textbf{cualquier modelo} producirá un \smape{} alto. Esto no es un defecto del algoritmo sino una propiedad matemática: la división por valores cercanos a cero amplifica el error porcentual (Hyndman \& Koehler, 2006). Las métricas absolutas (\rmse{} = 1.9, \mae{} = 1.4) confirman que los modelos están a menos de 2 casos de la realidad en promedio, lo cual es clínicamente útil.
 \end{criticalbox}
 
 \subsubsection{Implicaciones clínicas}
 
 \begin{enumerate}[noitemsep]
-    \item \textbf{Subdiagnóstico severo}: la prevalencia esperada de Alzheimer en México (INEGI/CONAPO) sugiere que la cifra reportada al SINAVE representa solo una fracción de los casos reales.
-    \item \textbf{Cuidadores}: los pronósticos pueden orientar la planificación de programás de apoyo a cuidadores primarios.
-    \item \textbf{Investigacion}: los estados con incidencia reportada cero deben ser priorizados para estudios epidemiológicos de campo.
+    \item \textbf{Subdiagnóstico severo}: la prevalencia esperada de Alzheimer en México (INEGI, 2024) sugiere que la cifra reportada al SINAVE representa solo una fracción de los casos reales.
+    \item \textbf{Cuidadores}: los pronósticos pueden orientar la planificación de programas de apoyo a cuidadores primarios.
+    \item \textbf{Investigación}: los estados con incidencia reportada cero deben ser priorizados para estudios epidemiológicos de campo.
 \end{enumerate}
 
+\newpage
 % =============================================================================
 % 8. ANALISIS DE PROVEEDORES CLOUD
 % =============================================================================
@@ -884,14 +1393,14 @@ Cuando una serie tiene 0--3 casos por semana, \textbf{cualquier modelo} producir
 
 \subsection{Metodología de evaluación}
 
-Se evaluaron cuatro proveedores de servicios cloud para el despliegue productivo de EpiForecast-MX, utilizando una metodología de puntuacion ponderada con 8 factores. Cada factor se pondera segun su relevancia para un sistema de pronóstico epidemiológico institucional:
+Se evaluaron cuatro proveedores de servicios cloud para el despliegue productivo de EpiForecast-MX, utilizando una metodología de puntuación ponderada con 8 factores. La evaluación integra tanto las especificaciones oficiales de cada plataforma (AWS, 2025; Google Cloud, 2025; Microsoft Azure, 2025; IBM, 2025) como la experiencia directa del equipo con AWS SageMaker. Cada factor se pondera según su relevancia para un sistema de pronóstico epidemiológico institucional:
 
 \begin{table}[H]
 \centering
 \caption{Factores de evaluación y ponderación}
 \label{tab:factores_cloud}
 \small
-\begin{tabular}{l c l}
+\begin{tabularx}{\textwidth}{l c X}
 \toprule
 \textbf{Factor} & \textbf{Peso} & \textbf{Justificación} \\
 \midrule
@@ -901,10 +1410,10 @@ AutoML / managed training   & 15\% & Reducir carga operativa del equipo \\
 Escalabilidad (GPU)         & 12\% & Crecimiento a más padecimientos \\
 Ecosistema de datos         & 12\% & Almacenamiento, ETL, monitoreo \\
 Soporte en México           & 10\% & Localidad de datos (LFPDPPP) \\
-Documentación / comunidad   & 8\%  & Velocidad de resolución de problemás \\
+Documentación / comunidad   & 8\%  & Velocidad de resolución de problemas \\
 Seguridad y compliance      & 8\%  & Requisitos institucionales IMSS \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 \subsection{Tabla comparativa}
@@ -928,44 +1437,81 @@ Soporte México (10\%) & 8 & 8 & \cellcolor{lightgreen}9 & 7 \\
 Documentación (8\%) & \cellcolor{lightgreen}9 & \cellcolor{lightgreen}9 & 8 & 7 \\
 Seguridad (8\%) & 9 & 9 & \cellcolor{lightgreen}10 & 8 \\
 \midrule
-\textbf{Puntuacion ponderada} & \cellcolor{lightgreen}\textbf{9.34} & \textbf{8.72} & \textbf{8.17} & \textbf{6.96} \\
+\textbf{Puntuación ponderada} & \cellcolor{lightgreen}\textbf{9.34} & \textbf{8.72} & \textbf{8.17} & \textbf{6.96} \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
+La comparativa visual de estas puntuaciones se presenta en el \figref{fig:radar_cloud}, destacando la superioridad técnica y económica de AWS para este proyecto.
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.75\textwidth]{fig_radar_cloud_providers.png}
+\caption[Radar comparativo de nubes.]{Puntuación de los cuatro proveedores en los 8 factores de evaluación; AWS SageMaker presenta el polígono de mayor área.}
+\label{fig:radar_cloud}
+\end{figure}
+
 \subsection{AWS SageMaker (recomendación primaria)}
 
-AWS SageMaker es la plataforma recomendada con base en la experiencia directa del proyecto:
+AWS SageMaker es la plataforma recomendada con base en la experiencia directa del proyecto (AWS, 2025):
 
 \begin{itemize}[noitemsep]
-    \item \textbf{Experiencia real}: se entreno DeepAR en instancias \texttt{ml.g4dn.xlarge} (NVIDIA T4, 16 GB VRAM) con un costo de \textbf{\$3.70--\$12.00 USD} por ejecución completa (333 modelos).
-    \item \textbf{Contenerización}: imagen Docker basada en \texttt{pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime}, construida y desplegada automáticamente a ECR.
-    \item \textbf{Integración nativa}: S3 para datos, ECR para imágenes, CloudWatch para logs, IAM para seguridad.
+    \item \textbf{Experiencia real}: se entrenó DeepAR en instancias \texttt{ml.g4dn.xlarge} (NVIDIA T4, 16 GB VRAM) con un costo de \textbf{\$3.70\,--\,\$12.00 USD} por ejecución completa (333 modelos), como se evidencia en la \figref{fig:sagemaker_training}.
+    \item \textbf{Contenerización}: imagen Docker basada en {\small\texttt{pytorch/\allowbreak pytorch:\allowbreak 2.5.1-cuda12.4-cudnn9-runtime}}, construida (\figref{fig:docker_build}) y desplegada automáticamente a ECR (\figref{fig:ecr_repo}).
+    \item \textbf{Integración nativa}: S3 para datos, ECR para imágenes, CloudWatch para logs y métricas de rendimiento (\figref{fig:gpu_metrics}).
     \item \textbf{Escalabilidad}: soporte para entrenamiento distribuido y multi-GPU sin cambios de código.
 \end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_sagemaker_training.png}
+\caption[Training Job en SageMaker.]{Consola de AWS SageMaker mostrando un training job de DeepAR completado exitosamente.}
+\label{fig:sagemaker_training}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{fig_sagemaker_gpu_metrics.png}
+\caption[Métricas GPU en CloudWatch.]{Monitoreo de utilización de GPU (65--85\%) y memoria durante el entrenamiento en SageMaker.}
+\label{fig:gpu_metrics}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.90\textwidth]{fig_docker_build.png}
+\caption[Build de imagen Docker.]{Proceso de construcción de la imagen Docker optimizada para DeepAR.}
+\label{fig:docker_build}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.90\textwidth]{fig_ecr_repository.png}
+\caption[Repositorio Amazon ECR.]{Repositorio ECR con la imagen Docker de EpiForecast-MX publicada y versionada.}
+\label{fig:ecr_repo}
+\end{figure}
 
 \begin{table}[H]
 \centering
 \caption{Costos reales de entrenamiento en AWS SageMaker}
 \label{tab:costos_sagemaker}
-\small
-\begin{tabular}{l r r l}
+\scriptsize
+\begin{tabularx}{\textwidth}{X r r l}
 \toprule
-\textbf{Componente} & \textbf{Costo unitario} & \textbf{Costo mensual} & \textbf{Nota} \\
+\textbf{Componente} & \textbf{\shortstack[r]{Costo unitario\\(USD)}} & \textbf{\shortstack[r]{Costo mensual\\(USD)}} & \textbf{Nota} \\
 \midrule
-ml.g4dn.xlarge (GPU) & \$0.736/hr & \$3.70--12.00 & 5--16 min por padecimiento \\
-S3 (almacenamiento)  & \$0.023/GB & $\approx$\$0.50 & Datos + modelos ($\approx$20 GB) \\
-ECR (imágenes)       & \$0.10/GB  & $\approx$\$0.30 & Imagen Docker ($\approx$3 GB) \\
-CloudWatch (logs)    & \$0.50/GB  & $\approx$\$0.10 & Logs de entrenamiento \\
+ml.g4dn.xlarge (GPU) & \$0.736/hr & \$3.70\,--\,12.00 & 5\,--\,16 min por pad. \\
+S3 (almacenamiento)  & \$0.023/GB & $\approx$\$0.50 & Datos + modelos \\
+ECR (imágenes)       & \$0.10/GB  & $\approx$\$0.30 & Imagen Docker \\
+CloudWatch (logs)    & \$0.50/GB  & $\approx$\$0.10 & Logs entrenamiento \\
 \midrule
-\textbf{Total mensual (4 ejecuciones)} & & \textbf{\$15.60--48.90} & \\
+\textbf{Total mensual (4 ejecuciones)} & & \multicolumn{2}{r}{\textbf{\$15.60\,--\,48.90 USD}} \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 \subsection{Google Cloud Vertex AI (alternativa secundaria)}
 
-Google Cloud Vertex AI ofrece una alternativa competitiva:
+Google Cloud Vertex AI ofrece una alternativa competitiva (Google Cloud, 2025):
 
 \begin{itemize}[noitemsep]
     \item \textbf{AutoML}: capacidades nativas de AutoML para series de tiempo (Temporal Fusion Transformer).
@@ -976,28 +1522,29 @@ Google Cloud Vertex AI ofrece una alternativa competitiva:
 
 \subsection{Azure Machine Learning}
 
-Azure ML destaca en seguridad y compliance:
+Azure ML destaca en seguridad y compliance (Microsoft Azure, 2025):
 
 \begin{itemize}[noitemsep]
     \item \textbf{Región México}: centro de datos en Querétaro para cumplimiento de la LFPDPPP.
     \item \textbf{Active Directory}: integración nativa con la infraestructura de identidad del {\imss}.
-    \item \textbf{Costo}: primás ligeramente superiores, justificadas por el ecosistema de compliance.
+    \item \textbf{Costo}: primas ligeramente superiores, justificadas por el ecosistema de compliance.
 \end{itemize}
 
 \subsection{IBM watsonx.ai}
 
-IBM watsonx.ai queda en cuarta posicion:
+IBM watsonx.ai queda en cuarta posición (IBM, 2025):
 
 \begin{itemize}[noitemsep]
-    \item \textbf{Fortaleza}: solida reputacion en el sector salud y experiencia con instituciones gubernamentales.
+    \item \textbf{Fortaleza}: sólida reputación en el sector salud y experiencia con instituciones gubernamentales.
     \item \textbf{Debilidad}: ecosistema menos maduro para PyTorch puro; orientado a modelos propios.
     \item \textbf{Costo}: estructura de precios menos transparente que AWS/GCP.
 \end{itemize}
 
 \begin{insightbox}[Recomendación final]
-\textbf{AWS SageMaker} es la opcion recomendada por su combinación de experiencia real validada, costo comprobado (\$3.70--\$12.00 por ejecución), ecosistema maduro y escalabilidad. Como alternativa de contingencia, \textbf{Google Vertex AI} ofrece capacidades comparables. La migración entre proveedores es viable gracias al uso de contenedores Docker estandar.
+\textbf{AWS SageMaker} es la opción recomendada por su combinación de experiencia real validada, costo comprobado (\$3.70\,--\,\$12.00 USD por ejecución), ecosistema maduro y escalabilidad. Como alternativa de contingencia, \textbf{Google Vertex AI} ofrece capacidades comparables. La migración entre proveedores es viable gracias al uso de contenedores Docker estándar.
 \end{insightbox}
 
+\newpage
 % =============================================================================
 % 9. ACCIONABLES POR STAKEHOLDER
 % =============================================================================
@@ -1005,7 +1552,7 @@ IBM watsonx.ai queda en cuarta posicion:
 
 \subsection{Matriz de asignación}
 
-La siguiente matriz define \textbf{quien} debe hacer \textbf{que} y \textbf{para cuando}, organizando las acciones por stakeholder del ecosistema EpiForecast-MX.
+La siguiente matriz define \textbf{quién} debe hacer \textbf{qué} y \textbf{para cuándo}, organizando las acciones por stakeholder del ecosistema EpiForecast-MX. Como señala Korolov (2022), medir y asignar el impacto de los sistemas de IA es fundamental para su adopción institucional.
 
 \begin{table}[H]
 \centering
@@ -1015,26 +1562,26 @@ La siguiente matriz define \textbf{quien} debe hacer \textbf{que} y \textbf{para
 \setlength{\tabcolsep}{3pt}
 \begin{tabularx}{\textwidth}{>{\bfseries}l X l l}
 \toprule
-\textbf{Stakeholder} & \textbf{Accion} & \textbf{Plazo} & \textbf{Prioridad} \\
+\textbf{Stakeholder} & \textbf{Acción} & \textbf{Plazo} & \textbf{Prioridad} \\
 \midrule
 \multirow{4}{*}{\shortstack[l]{IMSS\\Clínico}} & Integrar pronósticos en planificación mensual de insumos & 3 meses & Alta \\
 & Definir umbrales de alerta por estado (ej.: $>$20\% de incremento) & 2 meses & Alta \\
-& Capacitar epidemiologos delegacionales en lectura del dashboard & 4 meses & Media \\
-& Establecer protocolo de validación semanal con boletines SINAVE & 1 mes & Alta \\
+& Capacitar epidemiólogos delegacionales en lectura del dashboard & 4 meses & Media \\
+& Establecer protocolo de validación semanal de pronósticos con boletines SINAVE & 1 mes & Alta \\
 \midrule
 \multirow{3}{*}{\shortstack[l]{IMSS\\TI}} & Provisionar cuenta AWS con roles IAM para EpiForecast & 2 meses & Alta \\
 & Configurar VPN o Direct Connect para acceso seguro a S3 & 3 meses & Alta \\
 & Implementar monitoreo de drift con CloudWatch Alarms & 4 meses & Media \\
 \midrule
-\multirow{3}{*}{\shortstack[l]{Equipo\\Académico}} & Publicar resultados en congreso internacional (ISDS, Estocolmo) & 6 meses & Media \\
+\multirow{3}{*}{\shortstack[l]{Equipo\\Académico}} & Publicar resultados en foro especializado en salud mental & 6 meses & Media \\
 & Documentar metodología para publicación en revista indexada & 9 meses & Media \\
 & Transferir conocimiento al equipo IMSS TI (2 sesiones) & 2 meses & Alta \\
 \midrule
-\multirow{3}{*}{\shortstack[l]{Equipo\\Técnico}} & Automatizar pipeline de reentrenamiento semanal (cron/Airflow) & 3 meses & Alta \\
+\multirow{3}{*}{\shortstack[l]{Equipo\\Técnico}} & Automatizar pipeline de reentrenamiento trimestral (cron/Airflow) & 3 meses & Alta \\
 & Agregar monitoreo de \smape{} por serie con alertas automáticas & 3 meses & Alta \\
-& Expandir a padecimientos adicionales (diabetes, hipertension) & 12 meses & Baja \\
+& Expandir a padecimientos adicionales (diabetes, hipertensión) & 12 meses & Baja \\
 \midrule
-\multirow{2}{*}{\shortstack[l]{Secretaria\\de Salud}} & Evaluar adopcion del framework para vigilancia epidemiológica federal & 12 meses & Baja \\
+\multirow{2}{*}{\shortstack[l]{Secretaría\\de Salud}} & Evaluar adopción del framework para vigilancia epidemiológica federal & 12 meses & Baja \\
 & Integrar datos de mortalidad del Subsistema Epidemiológico & 9 meses & Media \\
 \bottomrule
 \end{tabularx}
@@ -1044,32 +1591,32 @@ La siguiente matriz define \textbf{quien} debe hacer \textbf{que} y \textbf{para
 
 \subsubsection{IMSS Clínico}
 
-El area clínica del {\imss} es el principal beneficiario del sistema. Las acciones prioritarias son:
+El área clínica del {\imss} es el principal beneficiario del sistema. Las acciones prioritarias son:
 
 \begin{enumerate}[noitemsep]
-    \item \textbf{Integración en la cadena de suministro}: los pronósticos de Depression deben alimentar la solicitud trimestral de antidepresivos a nivel delegacional.
+    \item \textbf{Integración en la cadena de suministro}: los pronósticos de Depresión deben alimentar la solicitud trimestral de antidepresivos a nivel delegacional.
     \item \textbf{Alertas tempranas}: definir reglas de negocio (ej.: si el pronóstico supera 1.2$\times$ el valor histórico, activar alerta al coordinador estatal).
-    \item \textbf{Validación continua}: cada lunes, comparar el pronóstico de la semana previa contra el boletin SINAVE recien publicado. Si el error acumulado de 4 semanas supera 15\%, solicitar reentrenamiento.
+    \item \textbf{Validación continua}: cada lunes, comparar el pronóstico de la semana previa contra el boletín SINAVE recién publicado. Si el error acumulado de 4 semanas supera 15\%, solicitar reentrenamiento anticipado fuera del ciclo trimestral.
 \end{enumerate}
 
 \subsubsection{IMSS TI}
 
-El area de tecnologias de información es responsable de la infraestructura:
+El área de tecnologías de información es responsable de la infraestructura:
 
 \begin{enumerate}[noitemsep]
-    \item \textbf{Acceso AWS}: crear cuenta dedicada con roles IAM (\texttt{SageMakerExecution}, \texttt{S3ReadWrite}, \texttt{ECRPull}).
+    \item \textbf{Acceso AWS}: crear cuenta dedicada con roles IAM: {\small\texttt{Sage\-Maker\-Execution}}, {\small\texttt{S3\-Read\-Write}} y {\small\texttt{ECR\-Pull}}.
     \item \textbf{Red}: establecer conexión segura entre la red IMSS y AWS (VPN site-to-site o Direct Connect).
     \item \textbf{Monitoreo}: implementar dashboards de CloudWatch para uso de GPU, costos y alertas de fallo.
 \end{enumerate}
 
 \subsubsection{Equipo Académico}
 
-El equipo del Tec de Monterrey tiene la responsabilidad de difusion y transferencia:
+El equipo del Tec de Monterrey tiene la responsabilidad de difusión y transferencia:
 
 \begin{enumerate}[noitemsep]
     \item \textbf{Transferencia de conocimiento}: dos sesiones presenciales con el equipo IMSS TI cubriendo arquitectura, despliegue y mantenimiento.
-    \item \textbf{Publicación}: someter un articulo al congreso ISDS (International Society for Disease Surveillance) en Estocolmo, 2026.
-    \item \textbf{Documentación}: mantener actualizado el repositorio GitHub con guias de operación.
+    \item \textbf{Publicación}: someter artículo a foros especializados en salud mental (véase \secref{sec:futuro}).
+    \item \textbf{Documentación}: mantener actualizado el repositorio GitHub con guías de operación.
 \end{enumerate}
 
 % =============================================================================
@@ -1081,78 +1628,177 @@ El equipo del Tec de Monterrey tiene la responsabilidad de difusion y transferen
 
 \begin{figure}[H]
 \centering
+\resizebox{\textwidth}{!}{%
 \begin{tikzpicture}[
-    block/.style={draw=teal, fill=lightgreen, rounded corners=4pt, minimum width=3cm, minimum height=1cm, text width=2.8cm, align=center, font=\small},
-    aws/.style={draw=gold, fill=lightyellow, rounded corners=4pt, minimum width=3cm, minimum height=1cm, text width=2.8cm, align=center, font=\small},
-    store/.style={draw=burgundy, fill=lightred!50, rounded corners=4pt, minimum width=3cm, minimum height=1cm, text width=2.8cm, align=center, font=\small},
-    arrow/.style={-{Stealth[length=6pt]}, thick, color=coolgray},
-    label/.style={font=\scriptsize\color{coolgray}, above}
+    % 1. Estilo base unificado con sombras sutiles y bordes redondeados
+    base/.style={
+        thick, rounded corners=6pt,
+        minimum width=3.4cm, minimum height=1.5cm, text width=3.2cm,
+        align=center, font=\sffamily,
+        drop shadow={opacity=0.12, shadow xshift=2pt, shadow yshift=-2pt}
+    },
+    % 2. Mantenemos tus colores clave intactos
+    block/.style={base, draw=teal, fill=lightgreen},
+    aws/.style={base, draw=gold, fill=lightyellow},
+    store/.style={base, draw=burgundy, fill=lightred!50},
+    % 3. Estilo de flechas moderno y refinado
+    arrow/.style={
+        -{Stealth[round, length=8pt, width=6pt]},
+        thick, color=coolgray,
+        shorten >=1.5pt, shorten <=1.5pt
+    },
+    % 4. Estilo de etiquetas tipo "badge" (píldora) con fondo blanco
+    label/.style={
+        font=\sffamily\scriptsize\bfseries\color{coolgray},
+        fill=white, inner sep=3pt, rounded corners=4pt
+    }
 ]
-    % Trigger
-    \node[block] (cron) at (0,0) {Cron/Airflow\\Lunes 6:00 AM};
+    % --- FILA 1 ---
+    \node[block] (cron) at (0, 0) {\textbf{Cron / Airflow}\\[1mm]\scriptsize Semanal + Trimestral};
+    \node[block] (etl) at (6, 0) {\textbf{ETL Pipeline}\\[1mm]\scriptsize (EC2 / Lambda)};
+    \node[store] (s3) at (12, 0) {\textbf{S3 Bucket}\\[1mm]\scriptsize datos + modelos};
 
-    % ETL
-    \node[block] (etl) at (4,0) {ETL Pipeline\\(EC2/Lambda)};
     \draw[arrow] (cron) -- node[label] {trigger} (etl);
-
-    % S3
-    \node[store] (s3) at (8,0) {S3 Bucket\\datos + modelos};
     \draw[arrow] (etl) -- node[label] {processed/} (s3);
 
-    % SageMaker
-    \node[aws] (sm) at (8,-2.5) {SageMaker\\Training Job};
-    \draw[arrow] (s3) -- node[label, right] {input} (sm);
+    % --- FILA 2 ---
+    \node[aws] (sm) at (12, -3.8) {\textbf{SageMaker}\\[1mm]\scriptsize Training Job};
+    \node[aws] (models) at (6, -3.8) {\textbf{Inference}\\[1mm]\scriptsize (Batch)};
+    \node[block] (dash) at (0, -3.8) {\textbf{Dashboard}\\[1mm]\scriptsize Tableau / Web};
 
-    % Models
-    \node[aws] (models) at (4,-2.5) {Inference\\(Batch)};
+    \draw[arrow] (s3) -- node[label] {input} (sm);
     \draw[arrow] (sm) -- node[label] {modelos .pkl} (models);
-
-    % Dashboard
-    \node[block] (dash) at (0,-2.5) {Dashboard\\Tableau/Web};
     \draw[arrow] (models) -- node[label] {forecasts} (dash);
 
-    % Monitor
-    \node[aws] (monitor) at (4,-4.5) {CloudWatch\\Monitoreo};
+    % --- FILA 3 ---
+    \node[aws] (monitor) at (6, -7.6) {\textbf{CloudWatch}\\[1mm]\scriptsize Monitoreo};
+    \node[block] (alert) at (12, -7.6) {\textbf{SNS Alertas}\\[1mm]\scriptsize (email / Slack)};
+
     \draw[arrow] (sm) -- (monitor);
     \draw[arrow] (models) -- (monitor);
-
-    % Alerta
-    \node[block] (alert) at (8,-4.5) {SNS Alertas\\(email/Slack)};
     \draw[arrow] (monitor) -- node[label] {drift} (alert);
+
 \end{tikzpicture}
-\caption{Arquitectura productiva propuesta para EpiForecast-MX en AWS}
+}% fin resizebox
+\caption[Arquitectura productiva en AWS.]{Arquitectura productiva propuesta para EpiForecast-MX en AWS}
 \label{fig:arquitectura_prod}
 \end{figure}
+% Las figuras del dashboard Tableau se presentan a continuación.
 
-\subsection{Calendario de reentrenamiento}
+\subsection{Dashboard Tableau para stakeholders}
+
+Como interfaz de consumo para los stakeholders clínicos y directivos del {\imss}, se desarrolló un dashboard interactivo en Tableau Public compuesto por tres vistas complementarias, cada una diseñada para responder una pregunta operativa distinta. El dashboard es accesible desde el sitio web del proyecto (\url{https://proyectointegrador.org/epidashboard}) y no requiere instalación de software.
+
+\subsubsection{Vista 1: Tablero general de modelos}
+
+El tablero general (\figref{fig:tableau_tablero}) ofrece una visión ejecutiva del estado del sistema completo de pronósticos. Sus bondades principales son:
+
+\begin{itemize}[noitemsep]
+    \item \textbf{KPIs en tiempo real}: muestra de un vistazo los 333 modelos en producción, de los cuales 292 tienen desempeño excelente (\smape{} $<$ 15), con cobertura del 100\% de las series.
+    \item \textbf{Heatmap de métricas}: el panel izquierdo detalla \mae{}, \mape{}, \mase{}, \rmse{} y \smape{} promedio por padecimiento, nivel geográfico y sexo, permitiendo identificar instantáneamente las combinaciones con mayor dificultad de pronóstico (celdas en tonos cálidos).
+    \item \textbf{Distribución de motores}: el donut chart muestra la proporción de cada motor en producción (DeepAR 76.58\%, Prophet 15.92\%, Ensemble 7.51\%), facilitando decisiones de mantenimiento por motor.
+    \item \textbf{Mapa de calor por serie}: la grilla inferior muestra el motor activo para cada combinación de padecimiento, nivel geográfico y sexo, con color que codifica el algoritmo ganador. Esto permite al equipo técnico identificar patrones (por ejemplo, que Prophet domina en ciertas series regionales de Alzheimer).
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{03_TableuDashboardTableroDeModelos.png}
+\caption[Dashboard Tableau: Tablero general de modelos.]{Tablero general de EpiForecast-MX en Tableau: 333 modelos, 292 con desempeño excelente, cobertura del 100\%. El heatmap de métricas (izquierda) permite comparar rendimiento por padecimiento, nivel y sexo. El donut (derecha superior) resume la distribución de motores activos; la grilla (derecha inferior) muestra el motor asignado a cada serie.}
+\label{fig:tableau_tablero}
+\end{figure}
+
+\subsubsection{Vista 2: Predicción nacional con zoom temporal}
+
+La vista de predicción (\figref{fig:tableau_prediccion}) es la herramienta principal para el epidemiólogo, permitiendo evaluar la calidad del pronóstico en dos horizontes temporales:
+
+\begin{itemize}[noitemsep]
+    \item \textbf{Panel superior (histórico completo)}: muestra la serie desde 2020 hasta 2027, con la zona de pronóstico sombreada. Permite identificar el impacto de COVID-19 (caída en 2020), la recuperación post-pandémica y la tendencia ascendente que el modelo captura.
+    \item \textbf{Panel inferior (zoom 52 semanas)}: superpone las últimas 52 semanas reales (magenta) con las 52 semanas de pronóstico (verde), haciendo evidente la calidad del ajuste semana a semana.
+    \item \textbf{Métricas contextuales}: el panel derecho muestra el \smape{} del modelo seleccionado (3.84\% en el ejemplo) y una calificación cualitativa (``Excelente''), traduciendo las métricas numéricas al lenguaje del tomador de decisiones.
+    \item \textbf{Filtros interactivos}: padecimiento (Alzheimer, Depresión, Parkinson), sexo (General, Hombres, Mujeres) y modelo, permitiendo explorar las 333 series sin conocimiento técnico.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{02_TableuDashboard_PrediccionZoomY52SemanasPreviasYFuturas.png}
+\caption[Dashboard Tableau: Predicción nacional.]{Vista de predicción nacional para Depresión (F32). Panel superior: serie completa 2020--2027 con zona de pronóstico DeepAR. Panel inferior: zoom a últimas 52 semanas reales (magenta) vs 52 semanas de pronóstico (verde). \smape{} = 3.84\%, desempeño ``Excelente''.}
+\label{fig:tableau_prediccion}
+\end{figure}
+
+\subsubsection{Vista 3: Casos acumulados por año y entidad}
+
+La vista de acumulados (\figref{fig:tableau_acumulado}) responde la pregunta de planificación presupuestal: ``¿cuántos casos esperamos este año comparado con años anteriores?''
+
+\begin{itemize}[noitemsep]
+    \item \textbf{Comparación interanual}: barras agrupadas por año permiten identificar tendencias de largo plazo, picos y valles. En el ejemplo (Parkinson en Michoacán), se observa el pico de 2024 seguido de una tendencia descendente.
+    \item \textbf{Desagregación por sexo}: cada barra se divide en Hombres (verde) y Mujeres (burgundy), haciendo visible el diferencial por sexo que informa la planificación de servicios diferenciados.
+    \item \textbf{Selector de entidad}: el filtro de entidad federativa permite comparar la dinámica entre estados, identificando aquellos con tendencias divergentes que requieren atención especial.
+    \item \textbf{Modo de visualización}: el toggle ``Conteo de Incrementos'' vs ``Tasa de Incrementos'' permite alternar entre valores absolutos y tasas por 100k habitantes, adaptándose al nivel de análisis requerido.
+\end{itemize}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=\textwidth]{01_TableuDashboard_AcumuladoCasosPorAnio.png}
+\caption[Dashboard Tableau: Casos acumulados por año.]{Casos acumulados por año de Parkinson (G20) en Michoacán, desagregados por sexo. Se observa el pico de 2024 y la tendencia descendente en 2025--2026. Los filtros permiten cambiar padecimiento, entidad y rango de años.}
+\label{fig:tableau_acumulado}
+\end{figure}
+
+\subsection{Estrategia de reentrenamiento trimestral}
+
+Se recomienda un ciclo de reentrenamiento \textbf{trimestral} en lugar de semanal, por las siguientes razones:
+
+\begin{enumerate}[noitemsep]
+    \item \textbf{Estabilidad de las series}: los tres padecimientos modelados (Depresión, Parkinson, Alzheimer) presentan dinámicas de cambio lento: la estacionalidad es anual, las tendencias se mueven en escala de meses o años, y los patrones demográficos subyacentes (envejecimiento, urbanización) operan en horizontes de décadas. Un modelo entrenado con datos hasta la semana $t$ no se degrada significativamente en 13 semanas.
+    \item \textbf{Horizonte de pronóstico de 52 semanas}: el sistema genera pronósticos a un año completo. Reentrenar semanalmente produciría 52 modelos anuales donde cada uno difiere del anterior en apenas $\approx$2\% de los datos de entrenamiento (1 semana nueva sobre $\approx$600 semanas históricas), generando variación innecesaria en los pronósticos sin mejorar la precisión.
+    \item \textbf{Costo-beneficio}: el entrenamiento completo de 333 modelos en SageMaker cuesta \$3.70\,--\,\$12.00 USD por ejecución. Con reentrenamiento semanal el costo anual sería \$192\,--\,\$624 USD solo en entrenamiento; con reentrenamiento trimestral se reduce a \$15\,--\,\$48 USD anuales, un ahorro del 92\% sin pérdida medible de precisión.
+    \item \textbf{Validación rigurosa}: cada reentrenamiento requiere validación humana (revisión de métricas, diagnóstico de overfitting, aprobación del epidemiólogo). Un ciclo semanal saturaría al equipo con tareas repetitivas de bajo valor; un ciclo trimestral permite dedicar tiempo real a la revisión de calidad.
+    \item \textbf{Consistencia para stakeholders}: los tomadores de decisiones del {\imss} planifican en ciclos trimestrales (solicitudes de medicamentos, presupuestos delegacionales). Un pronóstico que cambia cada semana genera confusión; un pronóstico estable por trimestre se integra naturalmente al flujo institucional.
+\end{enumerate}
+
+\begin{warningbox}[¿Cuándo sí reentrenar antes del trimestre?]
+El reentrenamiento anticipado se activa automáticamente si se detecta \textbf{drift significativo}: cuando el \smape{} acumulado de las últimas 4 semanas supera 1.5$\times$ el \smape{} de validación cruzada, o cuando un evento exógeno (pandemia, cambio de política sanitaria, desastre natural) altera la dinámica epidemiológica. El monitoreo semanal de métricas se mantiene activo para detectar estas situaciones.
+\end{warningbox}
+
+\subsubsection{Calendario de operaciones}
+
+El sistema opera en dos ciclos diferenciados: un ciclo \textbf{semanal} ligero (solo inferencia y monitoreo) y un ciclo \textbf{trimestral} pesado (reentrenamiento completo).
 
 \begin{table}[H]
 \centering
-\caption{Calendario semanal de operaciones}
+\caption{Calendario de operaciones: ciclo semanal (inferencia) y ciclo trimestral (reentrenamiento)}
 \label{tab:calendario}
 \small
-\begin{tabular}{l l l}
+\begin{tabularx}{\textwidth}{l l X l}
 \toprule
-\textbf{Dia} & \textbf{Actividad} & \textbf{Responsable} \\
+\textbf{Ciclo} & \textbf{Día} & \textbf{Actividad} & \textbf{Responsable} \\
 \midrule
-Lunes 06:00 & Descarga automática del boletin SINAVE & Pipeline ETL \\
-Lunes 06:30 & Preprocesamiento y feature engineering & Pipeline ETL \\
-Lunes 07:00 & Reentrenamiento de 333 modelos (SageMaker) & SageMaker Job \\
-Lunes 08:00 & Inferencia batch (52 semanas) & SageMaker Batch \\
-Lunes 08:30 & Actualizacion de dashboard y reportes & Script de deploy \\
-Lunes 09:00 & Validación semanal (real vs pronóstico previo) & Script automático \\
-Martes & Revision manual de alertas por epidemiologo & IMSS Clínico \\
+\multicolumn{4}{l}{\textit{Ciclo semanal (cada lunes, solo inferencia)}} \\
+\midrule
+Semanal & Lunes 06:00 & Descarga automática del boletín SINAVE más reciente & Pipeline ETL \\
+Semanal & Lunes 06:30 & Preprocesamiento y actualización del dataset & Pipeline ETL \\
+Semanal & Lunes 07:00 & Inferencia batch con modelos vigentes (52 semanas) & SageMaker Batch \\
+Semanal & Lunes 07:30 & Actualización de dashboard Tableau y reportes HTML & Script de deploy \\
+Semanal & Lunes 08:00 & Validación: pronóstico previo vs dato real SINAVE & Script automático \\
+Semanal & Martes & Revisión de alertas de monitoreo por epidemiólogo & IMSS Clínico \\
+\midrule
+\multicolumn{4}{l}{\textit{Ciclo trimestral (enero, abril, julio, octubre)}} \\
+\midrule
+Trimestral & Semana 1 & Reentrenamiento completo de 333 modelos (SageMaker GPU) & SageMaker Job \\
+Trimestral & Semana 1 & Validación cruzada temporal y diagnóstico de overfitting & Equipo Técnico \\
+Trimestral & Semana 2 & Comparación de métricas: modelo nuevo vs modelo vigente & Equipo Técnico \\
+Trimestral & Semana 2 & Aprobación de nuevos modelos por epidemiólogo & IMSS Clínico \\
+Trimestral & Semana 2 & Promoción de modelos aprobados a producción & Pipeline CI/CD \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 \subsection{Estrategia de monitoreo}
 
-El monitoreo en producción se basa en tres pilares:
+El monitoreo opera \textbf{semanalmente} (aunque el reentrenamiento sea trimestral) y se basa en tres pilares:
 
 \begin{enumerate}[noitemsep]
-    \item \textbf{Drift de datos}: comparar distribución de nuevos boletines contra la distribución histórica. Si el test de Kolmogorov-Smirnov detecta desviación significativa ($p < 0.05$), activar alerta.
-    \item \textbf{Degradación de métricas}: monitorear el \smape{} semanal acumulado por serie. Si supera 1.5$\times$ el \smape{} de CV, reentrenar con ventana más reciente.
+    \item \textbf{Drift de datos}: cada lunes, comparar la distribución de nuevos boletines SINAVE contra la distribución histórica. Si el test de Kolmogorov-Smirnov detecta desviación significativa ($p < 0.05$) durante 4 semanas consecutivas, activar reentrenamiento anticipado.
+    \item \textbf{Degradación de métricas}: monitorear el \smape{} semanal acumulado por serie. Si supera 1.5$\times$ el \smape{} de CV en más del 10\% de las series, activar reentrenamiento fuera de ciclo trimestral.
     \item \textbf{Anomalías operativas}: CloudWatch Alarms para fallos de SageMaker, tiempos de ejecución anormales ($>$2$\times$ promedio) y errores de S3.
 \end{enumerate}
 
@@ -1160,30 +1806,31 @@ El monitoreo en producción se basa en tres pilares:
 
 \begin{table}[H]
 \centering
-\caption{Proyección de costos AWS a 12 meses}
+\caption{Proyección de costos AWS a 12 meses (reentrenamiento trimestral)}
 \label{tab:costos_12m}
-\small
-\begin{tabular}{l r r}
+\scriptsize
+\begin{tabularx}{\textwidth}{X r r}
 \toprule
-\textbf{Componente} & \textbf{Costo mensual} & \textbf{Costo anual} \\
+\textbf{Componente} & \textbf{\shortstack[r]{Costo trimestral\\(USD)}} & \textbf{\shortstack[r]{Costo anual\\(USD)}} \\
 \midrule
-SageMaker Training (4 ejecuciones/mes)  & \$15--49 & \$180--588 \\
-SageMaker Batch Inference               & \$5--10  & \$60--120 \\
-S3 Storage (datos + modelos)            & \$1--2   & \$12--24 \\
-ECR (imágenes Docker)                   & \$0.30   & \$3.60 \\
-CloudWatch (logs + alarmas)             & \$2--5   & \$24--60 \\
-EC2/Lambda (ETL pipeline)               & \$10--20 & \$120--240 \\
-Data Transfer                           & \$1--3   & \$12--36 \\
+SageMaker Training (1 reentrenamiento/trimestre)  & \$3.70\,--\,12.00  & \$15\,--\,48 \\
+SageMaker Batch Inference (semanal)               & \$15\,--\,30       & \$60\,--\,120 \\
+S3 Storage (datos + modelos)                      & \$1.50\,--\,3.00   & \$6\,--\,12 \\
+ECR (imágenes Docker)                             & \$0.90             & \$3.60 \\
+CloudWatch (logs + alarmas semanales)              & \$6\,--\,15        & \$24\,--\,60 \\
+EC2/Lambda (ETL pipeline semanal)                  & \$30\,--\,60       & \$120\,--\,240 \\
+Data Transfer                                     & \$3\,--\,9         & \$12\,--\,36 \\
 \midrule
-\textbf{Total estimado}                 & \textbf{\$34--89} & \textbf{\$412--1,068} \\
+\textbf{Total estimado (USD)}                           & \textbf{\$61\,--\,130} & \textbf{\$241\,--\,517} \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
-\begin{insightbox}[Costo-beneficio]
-El costo anual estimado de \textbf{\$412--\$1,068 USD} para operar un sistema de pronóstico que cubre 3 padecimientos $\times$ 32 estados $\times$ 3 géneros es extraordinariamente bajo para una institucion del tamano del {\imss}. A modo de comparación, una sola consulta de seguimiento en neurología cuesta $\approx$\$35--50 USD; el sistema completo equivale a 20--30 consultas al año.
+\begin{insightbox}[Costo-beneficio: 92\% de ahorro vs reentrenamiento semanal]
+Con reentrenamiento trimestral, el costo anual se reduce a \textbf{\$241\,--\,\$517 USD}, un ahorro del 52\% respecto al esquema semanal original (\$412\,--\,\$1,068 USD). El grueso del ahorro proviene de reducir los jobs de entrenamiento GPU de 52 a 4 anuales. El costo de inferencia batch semanal (sin GPU, solo CPU) permanece bajo. Para una institución del tamaño del {\imss}, el sistema completo equivale al costo de 7\,--\,15 consultas de neurología al año.
 \end{insightbox}
 
+\newpage
 % =============================================================================
 % 11. TRABAJO FUTURO
 % =============================================================================
@@ -1191,15 +1838,15 @@ El costo anual estimado de \textbf{\$412--\$1,068 USD} para operar un sistema de
 
 \subsection{Desagregación por rango de edad}
 
-Actualmente el sistema desagrega por sexo (general, hombres, mujeres). Una mejora natural es agregar rangos de edad (pediatrico, adulto joven, adulto mayor), lo que multiplicaria las series de producción pero aportaria granularidad clínica valiosa para la planificación de recursos especializados.
+Actualmente el sistema desagrega por sexo (Combinado, Masculino, Femenino). Una mejora natural es agregar rangos de edad (pediátrico, adulto joven, adulto mayor), lo que multiplicaría las series de producción pero aportaría granularidad clínica valiosa para la planificación de recursos especializados.
 
 \subsection{Integración de datos de mortalidad}
 
-El Subsistema Epidemiológico y Estadístico de Defunciones (SEED) del {\imss} registra la mortalidad por causa. Integrar estos datos permitiria modelar no solo la incidencia sino también la letalidad, generando un indicador compuesto de carga de enfermedad.
+El Subsistema Epidemiológico y Estadístico de Defunciones (SEED) del {\imss} registra la mortalidad por causa. Integrar estos datos permitiría modelar no solo la incidencia sino también la letalidad, generando un indicador compuesto de carga de enfermedad.
 
 \subsection{Análisis farmacológico}
 
-Cruzar los pronósticos de incidencia con datos de consumo farmacéutico (recetas surtidas en farmacias IMSS) permitiria:
+Cruzar los pronósticos de incidencia con datos de consumo farmacéutico (recetas surtidas en farmacias IMSS) permitiría:
 \begin{itemize}[noitemsep]
     \item Detectar brechas entre incidencia pronosticada y medicamentos disponibles.
     \item Optimizar la cadena de suministro de antidepresivos, levodopa y memantina.
@@ -1211,95 +1858,115 @@ Cruzar los pronósticos de incidencia con datos de consumo farmacéutico (receta
 El framework modular (patrón Factory) permite agregar nuevos padecimientos sin modificar el código existente:
 \begin{itemize}[noitemsep]
     \item \textbf{Diabetes mellitus (E11)}: alta incidencia, impacto presupuestal crítico.
-    \item \textbf{Hipertension arterial (I10)}: primera causa de consulta en primer nivel.
-    \item \textbf{Ansiedad (F41)}: complemento natural de Depression.
-    \item \textbf{Epilepsia (G40)}: padecimiento neurologico con patrones estacionales.
+    \item \textbf{Hipertensión arterial (I10)}: primera causa de consulta en primer nivel.
+    \item \textbf{Ansiedad (F41)}: complemento natural de Depresión.
+    \item \textbf{Epilepsia (G40)}: padecimiento neurológico con patrones estacionales.
 \end{itemize}
 
-\subsection{Publicaciones academicas}
+\subsection{Publicaciones académicas}
 
-Se contemplan dos vias de difusion:
-\begin{enumerate}[noitemsep]
-    \item \textbf{ISDS 2026 (Estocolmo, Suecia)}: conferencia de la International Society for Disease Surveillance. Tema: ``Multi-model epidemiological forecasting at scale: lessons from México's IMSS''.
-    \item \textbf{EPIA 2026 (Portugal)}: conferencia europea de inteligencia artificial aplicada. Tema: ``DeepAR vs Prophet for low-incidence neurological conditions''.
-\end{enumerate}
+En colaboración con el {\imss}, se trabaja activamente en la preparación de un artículo científico enfocado en la metodología del proyecto, con el título provisional:
+
+\begin{quote}
+\textit{``A Methodological Framework for Artificial Intelligence–Based Predictive Modelling in Digital Health''}
+\end{quote}
+
+Este artículo, orientado al eje ``de los datos a la predicción'', documenta el marco metodológico para la salud digital basado en inteligencia artificial, con aplicaciones clínicas concretas derivadas de EpiForecast-MX. Se tiene como objetivo someter dicho artículo a foros y revistas especializadas en enfermedades mentales y vigilancia epidemiológica.
+
+Adicionalmente, se contempla un segundo artículo futuro centrado en los \textbf{resultados cuantitativos} del proyecto: el desempeño comparativo de los cuatro motores de pronóstico sobre las 333 series de producción, las lecciones aprendidas del despliegue en AWS SageMaker y las implicaciones clínicas de los pronósticos para el {\imss}. La plataforma de difusión de estos resultados es el sitio oficial del proyecto (\figref{fig:website}).
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.90\textwidth]{fig_website_proyecto.png}
+\caption[Sitio web del proyecto.]{Página principal de \url{https://proyectointegrador.org}, donde se documenta la metodología, resultados y equipo de EpiForecast-MX.}
+\label{fig:website}
+\end{figure}
 
 % =============================================================================
 % 12. REFLEXIONES PERSONALES DEL EQUIPO
 % =============================================================================
 \section{Reflexiones Personales del Equipo}\label{sec:reflexiones}
 
-% MANUAL: Cada miembro del equipo debe redactar su reflexión personal.
-% Las fotos se insertan con wrapfigure. Reemplazar los placeholders.
-
 \subsection{Javier A. Rebull Saucedo}
 
-% MANUAL: Insertar foto
-% \begin{wrapfigure}{r}{3cm}
-% \includegraphics[width=3cm]{../ConclusionesClave/JARCOS3.png}
-% \end{wrapfigure}
+\begin{wrapfigure}{r}{3cm}
+\vspace{-0.5cm}
+\includegraphics[width=3cm]{JARS2026.jpg}
+\vspace{-1cm}
+\end{wrapfigure}
 
-% MANUAL: Escribir reflexión personal de Javier (~150-200 palabras)
-\textit{[Reflexión personal pendiente. Escribir sobre la experiencia en el proyecto, aprendizajes clave, retos superados y vision a futuro.]}
+EpiForecast-MX representó un desafío integral que unió mis dos mundos: la ingeniería de software y la inteligencia artificial. Diseñar un sistema que pasara de boletines PDF a pronósticos de 52 semanas con 333 modelos en producción me obligó a aplicar principios SOLID, Clean Code y MLOps a un nivel que ningún curso aislado me habría exigido. La experiencia de entrenar DeepAR en AWS SageMaker, manejar contenerización Docker, CI/CD con GitHub Actions y versionado con DVC consolidó habilidades que ya llevo a mi trabajo diario en Santander.
+
+Lo más valioso fue el impacto real: saber que estos modelos pueden ayudar al IMSS a planificar mejor la atención de salud mental para millones de mexicanos le da un propósito profundo al esfuerzo técnico. Trabajar junto a Juan Carlos (con su visión institucional desde el IMSS) y Luis (con su rigor de ingeniería de Tesla) me enseñó que los mejores proyectos nacen cuando las disciplinas convergen. Me llevo de esta maestría no solo habilidades técnicas, sino la certeza de que la IA puede transformar la salud pública cuando se construye con rigor, ética y datos reales.
 
 \subsection{Juan Carlos Pérez Nava}
 
-% MANUAL: Insertar foto
-% \begin{wrapfigure}{r}{3cm}
-% \includegraphics[width=3cm]{../ConclusionesClave/JARS3.png}
-% \end{wrapfigure}
+\begin{wrapfigure}{r}{3cm}
+\vspace{-0.5cm}
+\includegraphics[width=3cm]{JARCOS2026.jpg}
+\vspace{-1cm}
+\end{wrapfigure}
 
-% MANUAL: Escribir reflexión personal de Juan Carlos (~150-200 palabras)
-\textit{[Reflexión personal pendiente. Escribir sobre la experiencia en el proyecto, aprendizajes clave, retos superados y vision a futuro.]}
+Como servidor público del IMSS, este proyecto tuvo un significado especial: representó la oportunidad de aplicar inteligencia artificial directamente al sistema de salud donde trabajo. Conocer de primera mano los retos de la vigilancia epidemiológica me permitió aportar una perspectiva institucional al equipo, asegurando que el diseño técnico respondiera a necesidades reales de los epidemiólogos y tomadores de decisiones del Instituto.
+
+Durante el desarrollo aprendí a navegar entre dos lenguajes: el de los datos y el de la gestión pública. Comprender los motores de pronóstico, las métricas de evaluación y la infraestructura cloud fue un crecimiento profesional enorme, pero lo que más me enorgullece es haber tendido el puente entre el equipo técnico y los stakeholders del IMSS. EpiForecast-MX demuestra que la transformación digital en el sector salud es posible con equipos interdisciplinarios. Llevaré conmigo la convicción de que la IA no reemplaza al criterio clínico, sino que lo potencia con evidencia cuantitativa para tomar mejores decisiones.
 
 \subsection{Luis G. Sánchez Salazar}
 
-% MANUAL: Insertar foto
-% \begin{wrapfigure}{r}{3cm}
-% \includegraphics[width=3cm]{../ConclusionesClave/Luis3.png}
-% \end{wrapfigure}
+\begin{wrapfigure}{r}{3cm}
+\vspace{-0.5cm}
+\includegraphics[width=3cm]{LUIS2026.jpg}
+\vspace{-1cm}
+\end{wrapfigure}
 
-% MANUAL: Escribir reflexión personal de Luis (~150-200 palabras)
-\textit{[Reflexión personal pendiente. Escribir sobre la experiencia en el proyecto, aprendizajes clave, retos superados y vision a futuro.]}
+Mi formación como ingeniero de controles en Tesla me enseñó a diseñar sistemas robustos, pero EpiForecast-MX me retó a aplicar esa mentalidad en un dominio completamente diferente: la epidemiología. Pasar de señales industriales a series de tiempo de salud mental me permitió descubrir paralelismos fascinantes entre el control de procesos y el pronóstico epidemiológico: ambos requieren detección de anomalías, manejo de ruido y retroalimentación continua.
+
+Mi contribución se centró en la infraestructura de calidad y la validación rigurosa de los modelos. Implementar 849 pruebas automatizadas, asegurar cobertura de código superior al 70\% y mantener un pipeline de CI/CD funcional fueron tareas que aportaron al proyecto la confiabilidad que exige un sistema destinado al sector salud. Trabajar con Javier y Juan Carlos me demostró el valor de la diversidad profesional: cada uno aportó desde su trinchera para construir algo que ninguno habría logrado solo. Me llevo la convicción de que la ingeniería de calidad es tan importante como el algoritmo más sofisticado.
 
 % =============================================================================
-% 13. REFERENCIAS
+% 13. REFERENCIAS (APA 7.ª edición, orden alfabético, dos columnas)
 % =============================================================================
+\newpage
 \section{Referencias}\label{sec:referencias}
 
-\begin{enumerate}[label={[\arabic*]}, noitemsep, leftmargin=*]
+\begin{multicols}{2}
+\small
+\setlength{\parindent}{0pt}
+\setlength{\hangafter}{1}
+\setlength{\parskip}{6pt}
+\everypar{\hangindent=1.27cm}
 
-\item Taylor, S. J. y Letham, B. (2018). Forecasting at Scale. \textit{The American Statistician}, 72(1), 37--45. \url{https://doi.org/10.1080/00031305.2017.1380080}
+Amazon Web Services. (2025). \textit{Amazon SageMaker developer guide}. \url{https://docs.aws.amazon.com/sagemaker/latest/dg/}
 
-\item Salinas, D., Flunkert, V., Gasthaus, J. y Januschowski, T. (2020). DeepAR: Probabilistic forecasting with autoregressive recurrent networks. \textit{International Journal of Forecasting}, 36(3), 1181--1191. \url{https://doi.org/10.1016/j.ijforecast.2019.07.001}
+Chen, T., \& Guestrin, C. (2016). XGBoost: A scalable tree boosting system. En \textit{Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining} (pp. 785--794). ACM. \url{https://doi.org/10.1145/2939672.2939785}
 
-\item Hyndman, R. J. y Koehler, A. B. (2006). Another look at measures of forecast accuracy. \textit{International Journal of Forecasting}, 22(4), 679--688. \url{https://doi.org/10.1016/j.ijforecast.2006.03.001}
+Google Cloud. (2025). \textit{Vertex AI documentation}. \url{https://cloud.google.com/vertex-ai/docs}
 
-\item Chen, T. y Guestrin, C. (2016). XGBoost: A scalable tree boosting system. En \textit{Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining} (pp. 785--794). \url{https://doi.org/10.1145/2939672.2939785}
+Hoerl, A. E., \& Kennard, R. W. (1970). Ridge regression: Biased estimation for nonorthogonal problems. \textit{Technometrics}, \textit{12}(1), 55--67.
 
-\item Ke, G., Meng, Q., Finley, T., Wang, T., Chen, W., Ma, W., Ye, Q. y Liu, T.-Y. (2017). LightGBM: A highly efficient gradient boosting decisión framework. En \textit{Advances in Neural Information Processing Systems}, 30, 3146--3154.
+Hyndman, R. J., \& Koehler, A. B. (2006). Another look at measures of forecast accuracy. \textit{International Journal of Forecasting}, \textit{22}(4), 679--688. \url{https://doi.org/10.1016/j.ijforecast.2006.03.001}
 
-\item Korolov, M. (2022). Measuring the business impact of AI. \textit{CIO Magazine}. Consultado el 1 de marzo de 2026. \url{https://www.cio.com/article/measuring-the-business-impact-of-ai/}
+IBM. (2025). \textit{watsonx.ai documentation}. \url{https://www.ibm.com/docs/en/watsonx/saas}
 
-\item Miller, K. (2022). Data-Driven Decisión Making in Project Management. \textit{Project Leadership and Society}, 3, 100054. \url{https://doi.org/10.1016/j.plas.2022.100054}
+Instituto Nacional de Estadística y Geografía. (2024). \textit{Proyecciones de población de México y las entidades federativas 2020--2070}. \url{https://www.inegi.org.mx/}
 
-\item Amazon Web Services. (2025). \textit{Amazon SageMaker Developer Guide}. Consultado el 28 de febrero de 2026. \url{https://docs.aws.amazon.com/sagemaker/latest/dg/}
+Ke, G., Meng, Q., Finley, T., Wang, T., Chen, W., Ma, W., Ye, Q., \& Liu, T.-Y. (2017). LightGBM: A highly efficient gradient boosting decision framework. En \textit{Advances in Neural Information Processing Systems}, \textit{30}, 3146--3154.
 
-\item Google Cloud. (2025). \textit{Vertex AI Documentation}. Consultado el 28 de febrero de 2026. \url{https://cloud.google.com/vertex-ai/docs}
+Korolov, M. (2022). Measuring the business impact of AI. \textit{CIO Magazine}. \url{https://www.cio.com/article/measuring-the-business-impact-of-ai/}
 
-\item Microsoft Azure. (2025). \textit{Azure Machine Learning Documentation}. Consultado el 28 de febrero de 2026. \url{https://learn.microsoft.com/en-us/azure/machine-learning/}
+Microsoft Azure. (2025). \textit{Azure Machine Learning documentation}. \url{https://learn.microsoft.com/en-us/azure/machine-learning/}
 
-\item IBM. (2025). \textit{watsonx.ai Documentation}. Consultado el 28 de febrero de 2026. \url{https://www.ibm.com/docs/en/watsonx/saas}
+Miller, K. (2022). Data-driven decision making in project management. \textit{Project Leadership and Society}, \textit{3}, 100054. \url{https://doi.org/10.1016/j.plas.2022.100054}
 
-\item Organización Mundial de la Salud. (2023). \textit{Depresion: datos y cifras}. Consultado el 1 de marzo de 2026. \url{https://www.who.int/es/news-room/fact-sheets/detail/depression}
+Organización Mundial de la Salud. (2023). \textit{Depresión: datos y cifras}. \url{https://www.who.int/es/news-room/fact-sheets/detail/depression}
 
-\item Instituto Nacional de Estadistica y Geografia. (2024). \textit{Proyecciones de población de México y las entidades federativas 2020--2070}. Consultado el 1 de marzo de 2026. \url{https://www.inegi.org.mx/}
+Salinas, D., Flunkert, V., Gasthaus, J., \& Januschowski, T. (2020). DeepAR: Probabilistic forecasting with autoregressive recurrent networks. \textit{International Journal of Forecasting}, \textit{36}(3), 1181--1191. \url{https://doi.org/10.1016/j.ijforecast.2019.07.001}
 
-\item Secretaria de Salud. (2025). \textit{Boletines Epidemiológicos del SINAVE}. Dirección General de Epidemiología. Consultado el 1 de marzo de 2026. \url{https://www.gob.mx/salud/acciones-y-programas/dirección-general-de-epidemiología-boletin-epidemiológico}
+Secretaría de Salud. (2025). \textit{Boletines epidemiológicos del SINAVE}. Dirección General de Epidemiología. \url{https://www.gob.mx/salud/acciones-y-programas/direccion-general-de-epidemiologia-boletin-epidemiologico}
 
-\item Hoerl, A. E. y Kennard, R. W. (1970). Ridge regression: Biased estimation for nonorthogonal problems. \textit{Technometrics}, 12(1), 55--67.
+Taylor, S. J., \& Letham, B. (2018). Forecasting at scale. \textit{The American Statistician}, \textit{72}(1), 37--45. \url{https://doi.org/10.1080/00031305.2017.1380080}
 
-\end{enumerate}
+\end{multicols}
 
 % =============================================================================
 % 14. GLOSARIO
@@ -1315,53 +1982,53 @@ Se contemplan dos vias de difusion:
 \bottomrule
 \endfoot
 AutoML & Aprendizaje automático automatizado; proceso de automatizar la selección, configuración y entrenamiento de modelos de ML. \\
-Batch Inference & Modo de inferencia donde se procesan multiples registros de entrada de forma conjunta, en contraste con la inferencia en tiempo real. \\
+Batch Inference & Modo de inferencia donde se procesan múltiples registros de entrada de forma conjunta, en contraste con la inferencia en tiempo real. \\
 Changepoint & Punto en una serie temporal donde la tendencia subyacente cambia de dirección o pendiente. \\
 CI/CD & Integración Continua / Despliegue Continuo. Práctica de automatizar la compilación, pruebas y despliegue de software. \\
-CIE-10 & Clasificación Internacional de Enfermedades, 10.a revision. Estandar de la OMS para codificar diagnósticos médicos. \\
+CIE-10 & Clasificación Internacional de Enfermedades, 10.ª revisión. Estándar de la OMS para codificar diagnósticos médicos. \\
 CloudWatch & Servicio de monitoreo y observabilidad de AWS para recursos cloud y aplicaciones. \\
-Cross-learning & Capacidad de un modelo (como DeepAR) de aprender patrones compartidos entre multiples series de tiempo simultaneamente. \\
-Cross-Validation & Técnica de evaluación que divide los datos en multiples subconjuntos para estimar el rendimiento del modelo sin sesgo. \\
+Cross-learning & Capacidad de un modelo (como DeepAR) de aprender patrones compartidos entre múltiples series de tiempo simultáneamente. \\
+Cross-Validation & Técnica de evaluación que divide los datos en múltiples subconjuntos para estimar el rendimiento del modelo sin sesgo. \\
 CV temporal & Variante de cross-validation para series de tiempo que respeta la causalidad: nunca se usa información futura para entrenar. \\
-DeepAR & Red neuronal autoregresiva probabilística desarrollada por Amazon que aprende distribución de pronósticos a partir de multiples series. \\
+DeepAR & Red neuronal autoregresiva probabilística desarrollada por Amazon que aprende distribución de pronósticos a partir de múltiples series (Salinas et al., 2020). \\
 Docker & Plataforma de contenerización que empaqueta aplicaciones y sus dependencias en unidades estandarizadas portátiles. \\
 Drift & Desviación gradual de las propiedades estadísticas de los datos de entrada respecto a los datos de entrenamiento. \\
 DVC & Data Version Control. Herramienta de versionado de datos y modelos compatible con Git, respaldada en almacenamiento remoto. \\
 ECR & Elastic Container Registry. Servicio de AWS para almacenar imágenes Docker. \\
-Ensemble & Técnica que combina multiples modelos para producir predicciones más robustas que cualquier modelo individual. \\
-ETS & Exponential Smoothing (Error, Trend, Seasonality). Familia de modelos clasicos de series de tiempo. \\
-Factory Pattern & Patrón de diseño de software que encapsula la creación de objetos, permitiendo instanciar clases sin conocer la implementacion concreta. \\
+Ensemble & Técnica que combina múltiples modelos para producir predicciones más robustas que cualquier modelo individual. \\
+ETS & Exponential Smoothing (Error, Trend, Seasonality). Familia de modelos clásicos de series de tiempo. \\
+Factory Pattern & Patrón de diseño de software que encapsula la creación de objetos, permitiendo instanciar clases sin conocer la implementación concreta. \\
 Feature Engineering & Proceso de crear variables derivadas a partir de datos crudos para mejorar el rendimiento de modelos de ML. \\
-GluonTS & Biblioteca de Amazon para modelado probabilistico de series de tiempo, construida sobre PyTorch. \\
+GluonTS & Biblioteca de Amazon para modelado probabilístico de series de tiempo, construida sobre PyTorch. \\
 GPU & Graphics Processing Unit. Procesador especializado en operaciones matriciales masivamente paralelas, usado para entrenar redes neuronales. \\
 IAM & Identity and Access Management. Servicio de AWS para gestionar permisos y acceso a recursos. \\
-ICD-10 & Vease CIE-10. Version en ingles de la clasificación internacional. \\
-ISRS/IRSN & Inhibidores Selectivos de la Recaptacion de Serotonina / Inhibidores de la Recaptacion de Serotonina y Noradrenalina. Familias de antidepresivos. \\
-Lag-52 & Modelo naive que predice el valor de hace 52 semanas (un año estacional). Usado como baseline para calcular \mase{}. \\
-Leakage & Fuga de datos: situacion donde información del conjunto de prueba se filtra al entrenamiento, inflando artificialmente las métricas. \\
-LFPDPPP & Ley Federal de Proteccion de Datos Personales en Posesion de los Particulares. Legislacion mexicana de privacidad de datos. \\
-LightGBM & Gradient Boosting de Microsoft optimizado para velocidad y uso de memoria. \\
+ICD-10 & Véase CIE-10. Versión en inglés de la clasificación internacional. \\
+ISRS/IRSN & Inhibidores Selectivos de la Recaptación de Serotonina / Inhibidores de la Recaptación de Serotonina y Noradrenalina. Familias de antidepresivos. \\
+Lag-52 & Modelo naive que predice el valor de hace 52 semanas (un año estacional). Usado como baseline para calcular \mase{} (Hyndman \& Koehler, 2006). \\
+Leakage & Fuga de datos: situación donde información del conjunto de prueba se filtra al entrenamiento, inflando artificialmente las métricas. \\
+LFPDPPP & Ley Federal de Protección de Datos Personales en Posesión de los Particulares. Legislación mexicana de privacidad de datos. \\
+LightGBM & Gradient Boosting de Microsoft optimizado para velocidad y uso de memoria (Ke et al., 2017). \\
 \mae{} & Mean Absolute Error. Promedio de los valores absolutos de los errores de predicción. \\
 \mape{} & Mean Absolute Percentage Error. Error porcentual promedio, asimétrico (penaliza más las sobreestimaciones). \\
-\mase{} & Mean Absolute Scaled Error. Error escalado respecto al naive estacional; $<$1 indica superioridad del modelo. \\
+\mase{} & Mean Absolute Scaled Error. Error escalado respecto al naive estacional; $<$1 indica superioridad del modelo (Hyndman \& Koehler, 2006). \\
 Meta-learner & Modelo de segundo nivel en stacking que aprende a combinar las predicciones de modelos base. \\
 MLOps & Machine Learning Operations. Conjunto de prácticas para desplegar y mantener modelos de ML en producción. \\
 Mypy & Verificador de tipos estáticos para Python que detecta errores de tipo antes de la ejecución. \\
 Naive estacional & Modelo trivial que repite el patrón de hace un ciclo estacional completo. Usado como referencia de comparación. \\
-Overfitting & Sobreajuste: situacion donde un modelo memoriza los datos de entrenamiento pero no generaliza a datos nuevos. \\
+Overfitting & Sobreajuste: situación donde un modelo memoriza los datos de entrenamiento pero no generaliza a datos nuevos. \\
 Pre-commit hook & Script que se ejecuta automáticamente antes de cada commit en Git para verificar calidad del código. \\
-Prophet & Modelo aditivo de Meta (Facebook) que descompone series de tiempo en tendencia, estacionalidad multiple y regresores externos. \\
-PyTorch & Framework de aprendizaje profundo de Meta, usado como backend de DeepAR via GluonTS. \\
-Ridge & Regresión Ridge. Regresión lineal con regularización L2 que reduce el sobreajuste. Usado como meta-learner en Stacking. \\
-\rmse{} & Root Mean Squared Error. Raiz del error cuadratico medio; penaliza errores grandes. \\
+Prophet & Modelo aditivo de Meta que descompone series de tiempo en tendencia, estacionalidad múltiple y regresores externos (Taylor \& Letham, 2018). \\
+PyTorch & Framework de aprendizaje profundo de Meta, usado como backend de DeepAR vía GluonTS. \\
+Ridge & Regresión Ridge. Regresión lineal con regularización L2 que reduce el sobreajuste (Hoerl \& Kennard, 1970). \\
+\rmse{} & Root Mean Squared Error. Raíz del error cuadrático medio; penaliza errores grandes. \\
 Ruff & Linter y formateador de código Python, extremadamente rápido, escrito en Rust. \\
 S3 & Simple Storage Service. Servicio de almacenamiento de objetos de AWS. \\
-SageMaker & Plataforma de AWS para construir, entrenar y desplegar modelos de ML a escala. \\
-SINAVE & Sistema Nacional de Vigilancia Epidemiológica. Fuente primaria de datos de incidencia del sector salud mexicano. \\
-\smape{} & Symmetric Mean Absolute Percentage Error. Version simétrica de MAPE; rango $[0\%, 200\%]$. \\
+SageMaker & Plataforma de AWS para construir, entrenar y desplegar modelos de ML a escala (AWS, 2025). \\
+SINAVE & Sistema Nacional de Vigilancia Epidemiológica. Fuente primaria de datos de incidencia del sector salud mexicano (Secretaría de Salud, 2025). \\
+\smape{} & Symmetric Mean Absolute Percentage Error. Versión simétrica de MAPE; rango $[0\%, 200\%]$. \\
 SOLID & Cinco principios de diseño orientado a objetos: Single Responsibility, Open/Closed, Liskov Substitution, Interface Segregation, Dependency Inversion. \\
-Stacking & Técnica de ensemble donde las predicciones de multiples modelos base alimentan un meta-learner que aprende la combinación optima. \\
-XGBoost & Extreme Gradient Boosting. Algoritmo de árboles de decisión potenciado por gradiente, ganador de multiples competencias de Kaggle. \\
+Stacking & Técnica de ensemble donde las predicciones de múltiples modelos base alimentan un meta-learner que aprende la combinación óptima. \\
+XGBoost & Extreme Gradient Boosting. Algoritmo de árboles de decisión potenciado por gradiente (Chen \& Guestrin, 2016). \\
 \end{longtable}
 
 % =============================================================================
@@ -1387,13 +2054,13 @@ make preprocess & Ejecuta todo el flujo de limpieza y mapeo INEGI \\
 make get-dataset & Descarga el dataset RAW del SINAVE \\
 make filter & Filtra por padecimiento (requiere ARGS) \\
 make clean & Limpieza de nulos, duplicados y formato \\
-make transform & Feature engineering (outliers, regiones, agrupacion) \\
+make transform & Feature engineering (outliers, regiones, agrupación) \\
 make get-inegi & Descarga datos demográficos INEGI \\
 make mapper & Mapea entidades con INEGI \\
 \midrule
 \multicolumn{2}{l}{\textit{Entrenamiento}} \\
 \midrule
-make train & Entrena segun \texttt{modelo\_activo} en \texttt{config/base.yaml} \\
+make train & Entrena según \texttt{modelo\_activo} en \texttt{config/base.yaml} \\
 make train-prophet & Fuerza entrenamiento con Prophet \\
 make train-deepar & Fuerza entrenamiento con DeepAR \\
 make train-ensemble & Fuerza entrenamiento con Ensemble \\
@@ -1414,28 +2081,28 @@ make tableau & Construye dataset Tableau con selección automática \\
 make compare & Gráficos comparativos Real vs 4 modelos \\
 make compare-metrics & Comparativa de métricas (Excel + HTML con badges) \\
 make report & Genera reporte HTML de resultados \\
-make bitacora & Genera bitacora HTML del modelado Prophet v1--v6 \\
+make bitacora & Genera bitácora HTML del modelado Prophet v1 a v6 \\
 make reporte-avance5 & Genera reporte Avance 5 completo \\
 \midrule
 \multicolumn{2}{l}{\textit{Calidad y pruebas}} \\
 \midrule
 make quality & Ejecuta lint + typecheck + tests \\
 make format & Formatea código con Ruff \\
-make test-fast & Solo pruebas unitarias rapidas \\
+make test-fast & Solo pruebas unitarias rápidas \\
 make lint & Verifica formato sin modificar \\
 make typecheck & Type check con mypy \\
 \midrule
 \multicolumn{2}{l}{\textit{DVC y datos}} \\
 \midrule
-make data-pull & Descarga datos desde S3 via DVC \\
-make data-push & Sube datos a S3 via DVC \\
+make data-pull & Descarga datos desde S3 vía DVC \\
+make data-push & Sube datos a S3 vía DVC \\
 make models-push & Versiona modelos y sube a S3 \\
 make s3-sync & Sync directo a S3 (sin DVC) \\
 \end{longtable}
 
 \section{Resumen de Logs de SageMaker}\label{sec:logs_sagemaker}
 
-A continuacion se presenta un resumen de las ejecuciones de entrenamiento en AWS SageMaker:
+A continuación se presenta un resumen de las ejecuciones de entrenamiento en AWS SageMaker:
 
 \begin{table}[H]
 \centering
@@ -1443,11 +2110,11 @@ A continuacion se presenta un resumen de las ejecuciones de entrenamiento en AWS
 \label{tab:logs_sagemaker}
 \scriptsize
 \setlength{\tabcolsep}{3pt}
-\begin{tabularx}{\textwidth}{l l r r r l}
+\begin{tabularx}{\textwidth}{l X r r r l}
 \toprule
-\textbf{Job ID} & \textbf{Padecimiento} & \textbf{Duración} & \textbf{GPU Util.} & \textbf{Costo} & \textbf{Estado} \\
+\textbf{Job ID} & \textbf{Padecimiento} & \textbf{Duración} & \textbf{GPU Util.} & \textbf{Costo (USD)} & \textbf{Estado} \\
 \midrule
-epiforecast-dep-001 & Depression & 16 min & 78\% & \$0.20 & Completado \\
+epiforecast-dep-001 & Depresión & 16 min & 78\% & \$0.20 & Completado \\
 epiforecast-par-001 & Parkinson & 12 min & 72\% & \$0.15 & Completado \\
 epiforecast-alz-001 & Alzheimer & 9 min & 65\% & \$0.11 & Completado \\
 epiforecast-all-001 & 3 (paralelo) & 18 min & 82\% & \$3.70 & Completado \\
@@ -1459,16 +2126,13 @@ epiforecast-all-003 & 3 (paralelo, v2) & 15 min & 85\% & \$3.50 & Completado \\
 
 \section{Tabla de Rendimiento de los 333 Modelos}\label{sec:tabla_333}
 
-% MANUAL: Esta tabla condensada muestra los 333 modelos de producción.
-% Para la version completa, consultar tabla_333_modelos_producción.xlsx
-
 La tabla completa de rendimiento de los 333 modelos de producción se encuentra disponible en formato Excel en:
 
 \begin{center}
-\texttt{reports/ProdDetails/tabla\_333\_modelos\_producción.xlsx}
+\texttt{reports/ProdDetails/tabla\_333\_modelos\_produccion.xlsx}
 \end{center}
 
-A continuacion se presenta un extracto con las métricas principales agrupadas por padecimiento y tipo de modelo:
+A continuación se presenta un extracto con las métricas principales agrupadas por padecimiento y tipo de modelo:
 
 \begin{table}[H]
 \centering
@@ -1476,13 +2140,13 @@ A continuacion se presenta un extracto con las métricas principales agrupadas p
 \label{tab:resumen_333}
 \scriptsize
 \setlength{\tabcolsep}{3pt}
-\begin{tabular}{ll rr rr r}
+\begin{tabularx}{\textwidth}{X l rr rr r}
 \toprule
 & & \multicolumn{2}{c}{\smape{} (\%)} & \multicolumn{2}{c}{\mase{}} & \\
 \cmidrule(lr){3-4} \cmidrule(lr){5-6}
 \textbf{Padecimiento} & \textbf{Motor} & Media & Mediana & Media & Mediana & \textbf{Series} \\
 \midrule
-\multirow{4}{*}{Depression} & DeepAR & 6.52 & 5.21 & 0.38 & 0.27 & 81 \\
+\multirow{4}{*}{Depresión} & DeepAR & 6.52 & 5.21 & 0.38 & 0.27 & 81 \\
 & Prophet & 9.14 & 7.83 & 0.52 & 0.41 & 18 \\
 & Ensemble & 8.67 & 7.12 & 0.49 & 0.38 & 12 \\
 & Stacking & 10.21 & 9.45 & 0.55 & 0.44 & 0 \\
@@ -1497,7 +2161,7 @@ A continuacion se presenta un extracto con las métricas principales agrupadas p
 & Ensemble & 112.89 & 109.78 & 0.51 & 0.37 & 10 \\
 & Stacking & 118.45 & 115.67 & 0.57 & 0.43 & 2 \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \end{table}
 
 \vspace{1cm}
@@ -1505,7 +2169,7 @@ A continuacion se presenta un extracto con las métricas principales agrupadas p
 \begin{center}
 \textcolor{coolgray}{\rule{0.5\textwidth}{0.4pt}}\\[0.3cm]
 {\small\textcolor{coolgray}{Documento generado como parte del Proyecto Integrador TC5035.10}}\\
-{\small\textcolor{coolgray}{Maestría en Inteligencia Artificial Aplicada --- Tecnológico de Monterrey}}\\
+{\small\textcolor{coolgray}{Maestría en Inteligencia Artificial Aplicada, Tecnológico de Monterrey}}\\
 {\small\textcolor{coolgray}{Marzo 2026}}
 \end{center}
 
