@@ -472,6 +472,18 @@ def main() -> None:
                 commands = [f"make {cmd_normalized}"]
                 explanation = f"Target '{cmd_normalized}' detectado directamente."
 
+            # -- Frases cortas sin intent = probable follow-up conversacional --
+            elif len(cmd_normalized.split()) <= 5 and intent is None:
+                engine.model_name = handle_chat(
+                    console,
+                    user_input,
+                    cache,
+                    engine.api_key,
+                    engine.model_name,
+                    chat_history=chat_history,
+                )
+                continue
+
             # -- Procesamiento con IA --
             else:
                 with Status(
