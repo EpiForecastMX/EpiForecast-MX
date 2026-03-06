@@ -23,6 +23,10 @@ PAD_COLORS = {
     "Alzheimer": "#B58500",
 }
 REAL_COLOR = "#1B2A4A"  # azul oscuro para datos reales
+COVID_SPAN = "#E53935"
+COVID_TEXT = "#C62828"
+COVID_BADGE_FC = "#FFEBEE"
+COVID_BADGE_EC = "#EF9A9A"
 VERDE_IMSS = "#00524E"
 GRIS = "#97999B"
 NEGRO = "#231F20"
@@ -206,11 +210,11 @@ def fig_forecast_nacional(
         va="top",
     )
 
-    # --- Zona COVID (solo si visible) ---
+    # --- Zona COVID (alineada con constants.py) ---
     covid_start = pd.Timestamp("2020-03-15")
-    covid_end = pd.Timestamp("2021-06-30")
+    covid_end = pd.Timestamp("2022-09-22")
     if r["ds"].min() < covid_end:
-        ax.axvspan(covid_start, covid_end, alpha=0.08, color=GRIS, zorder=0)
+        ax.axvspan(covid_start, covid_end, alpha=0.05, color=COVID_SPAN, zorder=0)
         ax.text(
             covid_start + (covid_end - covid_start) / 2,
             ax.get_ylim()[1] * 0.92,
@@ -219,12 +223,13 @@ def fig_forecast_nacional(
             va="top",
             fontsize=9,
             fontweight="bold",
-            color=GRIS,
+            color=COVID_TEXT,
             bbox={
-                "boxstyle": "round,pad=0.3",
-                "facecolor": "white",
-                "alpha": 0.8,
-                "edgecolor": GRIS,
+                "boxstyle": "round,pad=0.25",
+                "facecolor": COVID_BADGE_FC,
+                "alpha": 0.85,
+                "edgecolor": COVID_BADGE_EC,
+                "lw": 0.6,
             },
         )
 

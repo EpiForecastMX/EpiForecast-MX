@@ -28,6 +28,11 @@ NEGRO = "#231F20"
 BG_COLOR = "#FAFAFA"
 
 # Colores por sexo (paleta IMSS)
+COVID_SPAN = "#E53935"
+COVID_TEXT = "#C62828"
+COVID_BADGE_FC = "#FFEBEE"
+COVID_BADGE_EC = "#EF9A9A"
+
 COLOR_HOMBRES = "#00524E"  # verde/teal IMSS
 COLOR_MUJERES = "#9B2242"  # guinda IMSS
 
@@ -268,10 +273,10 @@ def fig_covid_impact(df: pd.DataFrame) -> None:
 
     fig, ax = plt.subplots(figsize=(14, 5))
 
-    # Zona COVID sombreada
+    # Zona COVID sombreada (alineada con constants.py)
     covid_start = pd.Timestamp("2020-03-15")
-    covid_end = pd.Timestamp("2021-06-30")
-    ax.axvspan(covid_start, covid_end, alpha=0.12, color=GRIS, zorder=0)
+    covid_end = pd.Timestamp("2022-09-22")
+    ax.axvspan(covid_start, covid_end, alpha=0.05, color=COVID_SPAN, zorder=0)
     ax.text(
         covid_start + (covid_end - covid_start) / 2,
         ts["casos"].max() * 0.95,
@@ -280,8 +285,14 @@ def fig_covid_impact(df: pd.DataFrame) -> None:
         va="top",
         fontsize=10,
         fontweight="bold",
-        color=GRIS,
-        bbox={"boxstyle": "round,pad=0.3", "facecolor": "white", "alpha": 0.8, "edgecolor": GRIS},
+        color=COVID_TEXT,
+        bbox={
+            "boxstyle": "round,pad=0.25",
+            "facecolor": COVID_BADGE_FC,
+            "alpha": 0.85,
+            "edgecolor": COVID_BADGE_EC,
+            "lw": 0.6,
+        },
     )
 
     # Serie principal
