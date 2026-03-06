@@ -137,8 +137,8 @@ def _format_axes(ax: Axes, colors: dict[str, str]) -> None:
     ax.set_ylim(bottom=0)
     ax.yaxis.grid(True, alpha=cc.ALPHA_GRID, color=colors["gray"], linestyle="-", linewidth=0.5)
     ax.xaxis.grid(False)
-    ax.xaxis.set_major_locator(mdates.YearLocator())
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+    ax.xaxis.set_major_locator(mdates.YearLocator())  # type: ignore[no-untyped-call]
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))  # type: ignore[no-untyped-call]
     ax.tick_params(axis="both", labelsize=cc.FS_TICK, colors=colors["text"])
     for spine in ("top", "right"):
         ax.spines[spine].set_visible(False)

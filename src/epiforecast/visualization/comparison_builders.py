@@ -360,8 +360,8 @@ def build_small_multiples(
         _add_cutoff_line(ax, cutoff, compact=True)
 
         # -- Year ticks on all 4 subplots --
-        ax.xaxis.set_major_locator(mdates.YearLocator())
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+        ax.xaxis.set_major_locator(mdates.YearLocator())  # type: ignore[no-untyped-call]
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))  # type: ignore[no-untyped-call]
         ax.tick_params(axis="x", labelsize=8, rotation=0)
 
         # -- Title with PROD tag for production model --

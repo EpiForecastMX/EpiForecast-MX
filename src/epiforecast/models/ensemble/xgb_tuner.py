@@ -64,7 +64,7 @@ def _compute_oof_residuals_for_cv(
 
     all_feats: list[npt.NDArray[np.floating[Any]]] = []
     all_residuos: list[npt.NDArray[np.floating[Any]]] = []
-    fold_splits: list[tuple[npt.NDArray[np.floating[Any]], npt.NDArray[np.floating[Any]]]] = []
+    fold_splits: list[tuple[npt.NDArray[Any], npt.NDArray[Any]]] = []
 
     valid_indices = np.flatnonzero(valid_mask.to_numpy())
 

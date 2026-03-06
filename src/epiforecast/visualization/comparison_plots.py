@@ -242,8 +242,8 @@ def _render_comparison(
         ax.set_ylim(bottom=np.min(all_y) * _Y_MARGIN_BOTTOM, top=np.max(all_y) * _Y_MARGIN_TOP)
 
     # Estetica
-    ax.xaxis.set_major_locator(mdates.YearLocator())
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+    ax.xaxis.set_major_locator(mdates.YearLocator())  # type: ignore[no-untyped-call]
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))  # type: ignore[no-untyped-call]
     ax.grid(True, color="lightgrey", linestyle="--", linewidth=0.5, alpha=0.5)
     for spine in ("top", "right"):
         ax.spines[spine].set_visible(False)
