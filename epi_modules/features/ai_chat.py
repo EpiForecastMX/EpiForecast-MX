@@ -135,14 +135,49 @@ def handle_chat(
     return model_name
 
 
-def _enrich_from_history(query: str, history: list[dict[str, str]]) -> str:
-    """Enriquece una pregunta corta con contexto del historial reciente.
+_FOLLOWUP_PREFIXES = (
+    "y ",
+    "y el ",
+    "y la ",
+    "y los ",
+    "y las ",
+    "y que ",
+    "y como ",
+    "y cuanto",
+    "y en ",
+    "pero ",
+    "tambien ",
+    "que tal ",
+    "de esos",
+    "de esas",
+    "esos mismo",
+    "el mismo",
+    "la misma",
+)
 
-    Si la pregunta es ambigua (muy corta, sin entidades claras), inyecta
-    entidades del ultimo turno para que KnowledgeBase las detecte.
-    Tambien propaga semanas epidemiologicas mencionadas en turnos previos.
+
+def _is_followup(query: str) -> bool:
+    """Detecta si la pregunta es una continuacion del tema anterior."""
+    q = query.lower().strip()
+    # Prefijos de continuacion explicitos
+    if any(q.startswith(p) for p in _FOLLOWUP_PREFIXES):
+        return True
+    # Preguntas muy cortas sin sujeto propio (1-2 palabras): "hombres?", "jalisco?"
+    words = q.rstrip("?!. ").split()
+    return len(words) <= 2
+
+
+def _enrich_from_history(query: str, history: list[dict[str, str]]) -> str:
+    """Enriquece una pregunta de seguimiento con contexto del historial reciente.
+
+    Solo inyecta entidades del historial cuando la pregunta es claramente una
+    continuacion del tema anterior (comienza con "y", "pero", "tambien", etc.
+    o es muy corta). Preguntas con tema propio no se enriquecen.
     """
     if not history:
+        return query
+
+    if not _is_followup(query):
         return query
 
     from .knowledge_base import _detect_entities, _extract_weeks
