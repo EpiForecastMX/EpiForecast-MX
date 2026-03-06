@@ -95,10 +95,6 @@ EXIT_WORDS = {
     "terminar",
     "fin",
     "reset",
-    "restart",
-    "re-start",
-    "reiniciar",
-    "reinicia",
     "apagar",
     "off",
     "me voy",
@@ -111,6 +107,7 @@ EXIT_WORDS = {
 }
 # Prefijos que implican salir (captura "salte de aqui", "cerrar sesion", etc.)
 _EXIT_PREFIXES = ("sal ", "salte ", "salirse ", "fuera ", "cerrar ", "me salgo ", "ya ", "cierr")
+RESTART_WORDS = {"restart", "re-start", "reiniciar", "reinicia"}
 CLEAR_WORDS = {"limpia", "clear", "cls", "limpiar"}
 
 
@@ -209,6 +206,10 @@ def classify_intent(cmd: str) -> str | None:
     # Saludos (exacto o inicio con saludo conocido)
     if stripped in GREETINGS or any(cmd.startswith(g + " ") or cmd == g for g in GREETINGS):
         return "saludo"
+
+    # Reiniciar (antes de salir, para no capturar restart como exit)
+    if stripped in RESTART_WORDS:
+        return "reiniciar"
 
     # Salir
     if stripped in EXIT_WORDS or cmd.startswith(_EXIT_PREFIXES):

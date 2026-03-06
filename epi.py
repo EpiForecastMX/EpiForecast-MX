@@ -20,7 +20,7 @@ import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 from epi_modules.engine import EpiEngine
-from epi_modules.features.ai_chat import handle_chat
+from epi_modules.features.ai_chat import handle_chat, invalidate_kb
 from epi_modules.features.dashboard import show_dashboard
 from epi_modules.features.data_cache import ProjectDataCache
 from epi_modules.features.data_explorer import show_data_explorer
@@ -374,6 +374,15 @@ def main() -> None:
 
             if intent == "salir":
                 break
+
+            if intent == "reiniciar":
+                console.print("\n  [dorado]Reiniciando EPI...[/dorado]\n")
+                cache.invalidate()
+                invalidate_kb()
+                chat_history.clear()
+                engine.cmd_count = 0
+                show_banner(console)
+                continue
 
             if intent == "limpiar":
                 show_banner(console)
