@@ -143,7 +143,7 @@ force-sort-within-sections = true
 [tool.mypy]
 python_version = "3.12"
 strict = true
-warn_unused_ignores = false            # avoid cache-dependent flip-flops
+warn_unused_ignores = false            # pre-commit mypy (v1.14, sin matplotlib) vs local (v1.19)
 ignore_missing_imports = true          # needed until all stubs exist
 exclude = ["notebooks/", "docs/"]
 
