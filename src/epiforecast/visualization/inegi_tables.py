@@ -2,6 +2,7 @@
 
 from typing import Literal
 
+import numpy as np
 import pandas as pd
 from rich.console import Console
 from rich.panel import Panel
@@ -13,7 +14,7 @@ console = Console()
 
 
 def _fmt(v: object, nd: int = 2) -> str:
-    if pd.isna(v):
+    if v is None or v is pd.NA or (isinstance(v, float) and np.isnan(v)):
         return ""
     if isinstance(v, int | float) and float(v).is_integer():
         return f"{int(v):,}"

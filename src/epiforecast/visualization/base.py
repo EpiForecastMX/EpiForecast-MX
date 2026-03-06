@@ -149,15 +149,16 @@ class GraficosHelper(ABC):
 
         n_paleta = len(self.conf_paleta_secuencial)
         colores = (self.conf_paleta_secuencial * -(-top_real // n_paleta))[:top_real]
+        pct_vals = np.asarray(porcentajes.values)
         bars = ax.barh(
             etiquetas,
-            porcentajes.values,
+            pct_vals,
             color=colores,
             edgecolor="white",
             height=_BAR_HEIGHT,
         )
 
-        for bar, v in zip(bars, porcentajes.values):
+        for bar, v in zip(bars, pct_vals):
             ax.text(
                 v + 0.3,
                 bar.get_y() + bar.get_height() / 2,

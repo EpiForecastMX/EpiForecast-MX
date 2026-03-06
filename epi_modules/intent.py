@@ -310,6 +310,12 @@ def classify_intent(cmd: str) -> str | None:
     ):
         return "scripts"
 
+    # Calidad / Quality
+    if stripped in ("calidad", "quality", "limpieza", "clean-py") or _match(
+        "make lint", "make format", "make typecheck", "make quality", "make test-fast"
+    ):
+        return "calidad"
+
     # Ayuda
     if _match("ayuda", "help") or stripped in ("?", "h"):
         return "ayuda"

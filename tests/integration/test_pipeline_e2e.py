@@ -34,9 +34,12 @@ def mock_conf(tmp_path, monkeypatch):
 
     # Now we safely monkeypatch the required paths
     monkeypatch.setitem(conf["data"], "data_inegi", str(tmp_path / "data_inegi_General.csv"))
-    monkeypatch.setitem(conf["data"], "forecast", str(tmp_path / "forecast.csv"))
+    forecasts_dir = tmp_path / "reports" / "forecasts" / "prophet"
+    forecasts_dir.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setitem(conf["data"], "forecast", str(forecasts_dir / "all_forecast_prophet.csv"))
     monkeypatch.setitem(conf["data"], "tableau", str(tmp_path / "tableau.csv"))
     monkeypatch.setitem(conf["paths"], "models", str(tmp_path / "models"))
+    monkeypatch.setitem(conf["paths"], "reports", str(tmp_path / "reports"))
 
     # Configure minimal run
     monkeypatch.setitem(conf["padecimiento"], "modelado_estados", True)
@@ -118,21 +121,23 @@ def test_pipeline_end_to_end(mock_conf, synthetic_data, monkeypatch):
     df_forecast = pd.read_csv(forecast_file)
     assert not df_forecast.empty, "El forecast está vacío"
 
-    # 3. Build Tableau
+    # 3. Build Tableau (genera tableau_model.xlsx con 5 hojas)
     build_tableau.main()
 
-    tableau_file = Path(conf["data"]["tableau"])
+    tableau_file = Path(conf["data"]["tableau"]).parent / "tableau_model.xlsx"
     assert tableau_file.exists(), "No se generó el archivo de Tableau"
 
-    df_tableau = pd.read_csv(tableau_file)
-    assert not df_tableau.empty, "El dataset de Tableau está vacío"
+    df_forecast_sheet = pd.read_excel(tableau_file, sheet_name="forecast")
+    assert not df_forecast_sheet.empty, "La hoja 'forecast' está vacía"
 
-    expected_cols = ["ds", "entidad", "padecimiento", "yhat_prophet", "incrementos_total"]
+    expected_cols = ["ds", "entidad", "padecimiento", "meta_modo", "yhat"]
     for col in expected_cols:
-        assert col in df_tableau.columns, f"Falta la columna esperada: {col}"
+        assert col in df_forecast_sheet.columns, f"Falta la columna esperada: {col}"
 
-    # Validate successful run
-    assert len(df_tableau) > 0, "Deberían haber filas en el resultado"
+    # Validate all sheets exist
+    sheets = pd.ExcelFile(tableau_file).sheet_names
+    for sheet in ["scaffold", "real", "forecast", "metricas", "entidades"]:
+        assert sheet in sheets, f"Falta la hoja esperada: {sheet}"
 
 
 # ── Ensemble / Stacking standalone smoke tests ───────────────────────────────

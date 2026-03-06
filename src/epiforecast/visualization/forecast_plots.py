@@ -56,7 +56,7 @@ def generar_graficos_pronostico(config: dict[str, Any] | None = None) -> None:
     total = len(modelos)
     logger.info("Generando {} gráficos de pronóstico...", total)
 
-    for i, row in modelos.iterrows():
+    for i, (_, row) in enumerate(modelos.iterrows()):
         padecimiento = str(row["meta_padecimiento"])
         entidad = "" if pd.isna(row["meta_entidad"]) else str(row["meta_entidad"])
         modo = str(row["meta_modo"])

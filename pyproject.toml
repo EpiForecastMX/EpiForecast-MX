@@ -147,6 +147,26 @@ warn_unused_ignores = false            # pre-commit mypy (v1.14, sin matplotlib)
 ignore_missing_imports = true          # needed until all stubs exist
 exclude = ["notebooks/", "docs/"]
 
+# matplotlib stubs declaran float donde aceptan Timestamp/datetime en runtime
+[[tool.mypy.overrides]]
+module = [
+    "epiforecast.visualization.chart_renderer",
+    "epiforecast.visualization.chart_annotations",
+    "epiforecast.visualization.comparison_builders",
+    "epiforecast.visualization.series_plots",
+    "epiforecast.visualization.avance5_charts",
+]
+disable_error_code = ["arg-type"]
+
+# pandas-stubs overloads estrictos en groupby.apply / DataFrame.concat
+[[tool.mypy.overrides]]
+module = [
+    "epiforecast.data.preprocessing.imputation",
+    "epiforecast.data.extraction.pdf_extractor",
+    "epiforecast.models.prophet.model",
+]
+disable_error_code = ["no-any-return", "call-overload", "comparison-overlap"]
+
 # ─── Pytest ───────────────────────────────────────────────────────────────────
 [tool.pytest.ini_options]
 testpaths = ["tests"]

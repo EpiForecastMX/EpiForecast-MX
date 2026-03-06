@@ -5,6 +5,7 @@ from typing import Any
 from matplotlib.axes import Axes
 from matplotlib.lines import Line2D
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
 # ── Category orderings for INEGI demographic classifications ─────────
@@ -205,7 +206,7 @@ def boxplots_inegi(df: pd.DataFrame) -> None:
 
     # Ensure ratio exists
     if "ratio_h_m" not in dfp.columns and {"Hombres", "Mujeres"}.issubset(dfp.columns):
-        dfp["ratio_h_m"] = dfp["Hombres"] / dfp["Mujeres"].replace({0: pd.NA})
+        dfp["ratio_h_m"] = dfp["Hombres"] / dfp["Mujeres"].replace(0, np.nan)
 
     for idx, (col, by_col, title, ylabel, use_log) in enumerate(_boxplot_panel):
         row, c = divmod(idx, 2)

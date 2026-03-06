@@ -48,7 +48,7 @@ from epi_modules.views.common import (
     show_session_stats,
 )
 from epi_modules.views.health import show_health_dashboard
-from epi_modules.views.help_menu import show_help_menu
+from epi_modules.views.help_menu import show_help_menu, show_quality_menu
 from epi_modules.views.targets import show_targets
 from rich.align import Align
 from rich.console import Console
@@ -200,6 +200,8 @@ _INTERNAL_CMDS = [
     "salud",
     "scripts",
     "banner",
+    "calidad",
+    "quality",
     "salir",
     "limpiar",
     "clear",
@@ -409,6 +411,10 @@ def main() -> None:
             if intent == "scripts":
                 folder = extract_folder_filter(cmd_normalized)
                 show_python_scripts(console, folder)
+                continue
+
+            if intent == "calidad":
+                show_quality_menu(console)
                 continue
 
             if intent == "ayuda":
