@@ -344,6 +344,16 @@ def main() -> None:
             cmd_normalized = normalize_typos(user_input.lower().strip())
             intent = classify_intent(cmd_normalized)
 
+            # -- Comando shell directo (no soportado) --
+            if intent == "shell_command":
+                console.print(
+                    "\n  [alerta]EPI no ejecuta comandos de shell directamente.[/alerta]\n"
+                    "  [sutil]Usa tu terminal para comandos como cd, pytest, git, etc.\n"
+                    "  EPI trabaja con targets de Make y consultas del proyecto.\n"
+                    "  Escribe [dorado]ayuda[/dorado] para ver lo que puedo hacer.[/sutil]\n",
+                )
+                continue
+
             # -- Intents directos (sin ejecucion Make) --
             if intent == "saludo":
                 hour = datetime.now().hour

@@ -153,12 +153,58 @@ def fuzzy_suggest(word: str, candidates: list[str], max_dist: int = 2) -> str | 
     return best if best_dist <= max_dist else None
 
 
+_SHELL_INDICATORS = ("&&", "||", " | ", " > ", " >> ", " 2>", " < ", "$(", "`")
+_SHELL_PREFIXES = (
+    "cd ",
+    "ls ",
+    "cat ",
+    "echo ",
+    "grep ",
+    "find ",
+    "rm ",
+    "cp ",
+    "mv ",
+    "mkdir ",
+    "touch ",
+    "chmod ",
+    "chown ",
+    "curl ",
+    "wget ",
+    "ssh ",
+    "docker ",
+    "git ",
+    "pip ",
+    "npm ",
+    "node ",
+    "python ",
+    "python3 ",
+    "pytest ",
+    "bash ",
+    "sh ",
+    "zsh ",
+    "sudo ",
+    "export ",
+    "source ",
+    "tail ",
+    "head ",
+    "sed ",
+    "awk ",
+    "sort ",
+    "uniq ",
+    "wc ",
+)
+
+
 def classify_intent(cmd: str) -> str | None:
     """Clasifica la intencion del usuario. Retorna nombre de intent o None."""
     stripped = cmd.rstrip("!.?\u00bf\u00a1 ")
 
     def _match(*keywords: str) -> bool:
         return any(kw in cmd for kw in keywords)
+
+    # Comandos shell directos (no son intents de EPI)
+    if any(ind in cmd for ind in _SHELL_INDICATORS) or cmd.startswith(_SHELL_PREFIXES):
+        return "shell_command"
 
     # Saludos (exacto o inicio con saludo conocido)
     if stripped in GREETINGS or any(cmd.startswith(g + " ") or cmd == g for g in GREETINGS):
