@@ -12,6 +12,8 @@ import pandas as pd
 
 from epiforecast.constants import COVID_END, COVID_START
 
+__all__ = ["FEATURE_NAMES", "construir_features_xgb", "construir_holidays"]
+
 # Features que construye XGBoost (20 total)
 FEATURE_NAMES: list[str] = [
     "lag_1",

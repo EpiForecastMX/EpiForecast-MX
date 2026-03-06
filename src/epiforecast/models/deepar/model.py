@@ -87,7 +87,7 @@ def _make_progress_callback(total_epochs: int, description: str = "DeepAR") -> A
         TimeRemainingColumn,
     )
 
-    class _RichEpochProgress(Callback):
+    class _RichEpochProgress(Callback):  # type: ignore[misc]
         def __init__(self) -> None:
             self._progress: Progress | None = None
             self._task: Any = None
@@ -129,7 +129,7 @@ class DeepARForecaster(ForecastModel):
         sexo: str | None = None,
         entidad: str | None = None,
         padecimiento: str | None = None,
-        config: dict | None = None,
+        config: dict[str, Any] | None = None,
     ):
         self._conf = config if config is not None else conf
         self.df = df.copy() if df is not None else pd.DataFrame()
@@ -138,7 +138,7 @@ class DeepARForecaster(ForecastModel):
         self.padecimiento = padecimiento
 
         # DeepAR hyperparameters (from config/models/deepar.yaml → deepar: key)
-        self.deepar_conf: dict = self._conf.get("deepar", {})
+        self.deepar_conf: dict[str, Any] = self._conf.get("deepar", {})
         self.epochs: int = self.deepar_conf.get("epochs", 300)
         self.context_length: int = self.deepar_conf.get("context_length", 104)
         self.prediction_length: int = self.deepar_conf.get("prediction_length", 52)
@@ -879,7 +879,7 @@ class DeepARForecaster(ForecastModel):
 
     # ── Orchestration ─────────────────────────────────────────────────────────
 
-    def run(self) -> tuple[Any, dict, dict]:
+    def run(self) -> tuple[Any, dict[str, Any], dict[str, Any]]:
         """Full pipeline: prepare data, cross-validate (optional), train final model.
 
         Returns:

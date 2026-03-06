@@ -44,7 +44,7 @@ def crea_train_test(
     if normalizar_tasa and col_poblacion in serie.columns:
         poblacion_valor = serie[col_poblacion].iloc[0]
         serie["y_original"] = serie[sexo]
-        serie["y"] = (serie[sexo] / poblacion_valor) * tasa_por  # type: ignore[operator]
+        serie["y"] = (serie[sexo] / poblacion_valor) * tasa_por
         serie = serie.drop(columns=[sexo])
         logger.debug(
             "Normalizado a tasa por {:,.0f} hab. (poblaci\u00f3n: {:,.0f})",
@@ -137,7 +137,7 @@ def eval_rapida(
 
 
 def build_holidays(
-    conf: dict,
+    conf: dict[str, Any],
     entidad: str | None,
     padecimiento: str | None,
 ) -> pd.DataFrame:
@@ -168,7 +168,7 @@ def build_holidays(
     return holidays
 
 
-def build_seasonality_params(conf: dict, modelado_estados: bool) -> dict:
+def build_seasonality_params(conf: dict[str, Any], modelado_estados: bool) -> dict[str, Any]:
     """Build seasonality params, applying regional fourier_order if needed."""
     raw = dict(conf["add_seasonality"])
     fourier_regional = raw.pop("fourier_order_regional", None)
@@ -179,8 +179,8 @@ def build_seasonality_params(conf: dict, modelado_estados: bool) -> dict:
 
 
 def apply_regional_params(
-    param_model: dict,
-    conf: dict,
+    param_model: dict[str, Any],
+    conf: dict[str, Any],
     modelado_estados: bool,
 ) -> None:
     """Apply regional overrides for state-level models (shorter series)."""

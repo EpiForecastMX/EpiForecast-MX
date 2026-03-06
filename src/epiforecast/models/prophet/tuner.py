@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import itertools
 import time
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from tqdm import tqdm
 
@@ -36,7 +36,7 @@ class ProphetTuner:
     cross-validation, with Newton optimizer fallback protection.
     """
 
-    def __init__(self, forecaster: ProphetForecaster, config: dict | None = None):
+    def __init__(self, forecaster: ProphetForecaster, config: dict[str, Any] | None = None):
         """Inicializa el tuner con un forecaster y carga el grid de hiperparámetros.
 
         Args:
@@ -48,7 +48,7 @@ class ProphetTuner:
         self.param_grid = self._load_grid()
         self.cv_timeout = self._conf.get("cv_timeout_por_combo", 0)
 
-    def run(self) -> tuple[dict, dict]:
+    def run(self) -> tuple[dict[str, Any], dict[str, Any]]:
         """Execute HP search and return (best_params, best_metrics).
 
         Returns:
@@ -62,8 +62,8 @@ class ProphetTuner:
         )
 
         best_rmse = float("inf")
-        best_params: dict | None = None
-        best_metrics: dict = {}
+        best_params: dict[str, Any] | None = None
+        best_metrics: dict[str, Any] = {}
         newton_cp_threshold: float | None = None
 
         pbar = tqdm(
@@ -106,11 +106,11 @@ class ProphetTuner:
     def _evaluate_single_combo(
         self,
         idx: int,
-        params: dict,
+        params: dict[str, Any],
         total: int,
         newton_cp_threshold: float | None,
-        pbar: tqdm,
-    ) -> tuple[dict, float | None] | None:
+        pbar: tqdm[Any],
+    ) -> tuple[dict[str, Any], float | None] | None:
         """Evalúa una combinación de HP. Retorna (metrics, new_threshold) o None si skip."""
         cp = params.get("changepoint_prior_scale", 0)
         resumen = ", ".join(f"{k}={v}" for k, v in params.items())
@@ -154,7 +154,9 @@ class ProphetTuner:
 
         return metrics, None
 
-    def _finalize(self, best_params: dict | None, best_metrics: dict) -> tuple[dict, dict]:
+    def _finalize(
+        self, best_params: dict[str, Any] | None, best_metrics: dict[str, Any]
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
         """Finaliza la búsqueda: aplica fallback si todos los combos fallaron."""
         if best_params is None:
             best_params = self._fallback_params()
@@ -174,7 +176,7 @@ class ProphetTuner:
 
         return best_params, best_metrics
 
-    def _load_grid(self) -> dict:
+    def _load_grid(self) -> dict[str, Any]:
         """Load condition-specific HP grid from config."""
         df = self.forecaster.df
         tipo = df["Padecimiento"].iloc[0] if "Padecimiento" in df.columns else None
@@ -187,7 +189,7 @@ class ProphetTuner:
         logger.debug("Grid de hiperparámetros: {} ({})", tipo, grid_key)
         return self._conf["param_grid_prophet"][grid_key]  # type: ignore[no-any-return]
 
-    def _build_sorted_combos(self) -> list[dict]:
+    def _build_sorted_combos(self) -> list[dict[str, Any]]:
         """Build all HP combinations, sorted by cp descending (Layer 1)."""
         keys = self.param_grid.keys()
         combos = [
@@ -196,7 +198,7 @@ class ProphetTuner:
         combos.sort(key=lambda p: p.get("changepoint_prior_scale", 0), reverse=True)
         return combos
 
-    def _fallback_params(self) -> dict:
+    def _fallback_params(self) -> dict[str, Any]:
         """Generate fallback params: defaults with highest cp."""
         params = {k: v[0] for k, v in self.param_grid.items()}
         if "changepoint_prior_scale" in self.param_grid:

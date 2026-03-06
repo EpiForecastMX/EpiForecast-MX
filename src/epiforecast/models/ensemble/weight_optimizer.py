@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import Any, Protocol
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 from sklearn.linear_model import Ridge
 
@@ -46,7 +47,7 @@ class EnsembleWeightOptimizer:
         prophet_builder: ProphetBuilder,
         xgb_builder: XGBBuilder,
         oof_cutoff: str,
-    ) -> np.ndarray:
+    ) -> npt.NDArray[np.floating[Any]]:
         """Expanding-window OOF para aprender pesos [w_prophet, w_xgb].
 
         Args:
@@ -64,9 +65,9 @@ class EnsembleWeightOptimizer:
         cutoff_range = pd.date_range(earliest, cutoff_ts, periods=self._n_folds + 1)
         fold_cutoffs = cutoff_range[1:]
 
-        all_preds_prophet: list[np.ndarray] = []
-        all_preds_xgb: list[np.ndarray] = []
-        all_y: list[np.ndarray] = []
+        all_preds_prophet: list[npt.NDArray[np.floating[Any]]] = []
+        all_preds_xgb: list[npt.NDArray[np.floating[Any]]] = []
+        all_y: list[npt.NDArray[np.floating[Any]]] = []
 
         for fold_idx, fc in enumerate(fold_cutoffs):
             fold_train = train_data[train_data["ds"] < fc].copy().reset_index(drop=True)

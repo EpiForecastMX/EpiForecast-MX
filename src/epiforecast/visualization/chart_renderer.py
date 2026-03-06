@@ -3,7 +3,9 @@
 Extracted from forecast_chart.py for SRP compliance (max 300 lines per module).
 """
 
-import matplotlib.pyplot as plt
+from typing import Any
+
+from matplotlib.axes import Axes
 import pandas as pd
 
 from epiforecast.constants import (
@@ -16,19 +18,19 @@ from epiforecast.visualization import chart_constants as cc
 
 
 def plot_series(
-    ax: plt.Axes,
+    ax: Axes,
     forecast: pd.DataFrame,
     serie: pd.DataFrame,
     outliers: pd.DataFrame,
     fecha_max_datos: pd.Timestamp,
     fecha_max_fc: pd.Timestamp,
-    colors: dict,
-    conf_covid: dict,
+    colors: dict[str, Any],
+    conf_covid: dict[str, Any],
 ) -> None:
     """Dibuja todas las capas: zona pronostico, COVID, banda, observaciones, outliers."""
     ax.axvspan(
-        fecha_max_datos,  # type: ignore[arg-type]
-        fecha_max_fc,  # type: ignore[arg-type]
+        fecha_max_datos,
+        fecha_max_fc,
         alpha=cc.ALPHA_FORECAST_ZONE,
         color=colors["fc"],
         zorder=0,
@@ -38,8 +40,8 @@ def plot_series(
     covid_ini = pd.Timestamp(conf_covid["inicio"])
     covid_fin = pd.Timestamp(conf_covid["fin"])
     ax.axvspan(
-        covid_ini,  # type: ignore[arg-type]
-        covid_fin,  # type: ignore[arg-type]
+        covid_ini,
+        covid_fin,
         alpha=cc.ALPHA_COVID,
         color=COVID_SPAN_COLOR,
         zorder=0,
@@ -47,7 +49,7 @@ def plot_series(
     mid_covid = covid_ini + (covid_fin - covid_ini) / 2
     ax.annotate(
         "COVID-19",
-        xy=(mid_covid, 1.0),  # type: ignore[arg-type]
+        xy=(mid_covid, 1.0),
         xycoords=("data", "axes fraction"),
         fontsize=cc.FS_COVID,
         fontweight="bold",
@@ -127,7 +129,7 @@ def plot_series(
     )
     last_y = y_smooth.iloc[-1]
     ax.plot(
-        fecha_max_datos,  # type: ignore[arg-type]
+        fecha_max_datos,
         last_y,
         marker="o",
         markersize=8,
@@ -143,7 +145,7 @@ def plot_series(
         pico_y = fc_future.loc[idx_max, "yhat"]
         ax.annotate(
             f"Pico proyectado\n{pico_y:,.0f}",
-            xy=(pico_x, pico_y),  # type: ignore[arg-type]
+            xy=(pico_x, pico_y),
             xytext=(0, 25),
             textcoords="offset points",
             fontsize=8,

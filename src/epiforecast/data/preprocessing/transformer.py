@@ -1,6 +1,8 @@
 """Data transformation pipeline: feature engineering, outlier correction, and INEGI demographic merge."""
 
 # src/datos/preparacion.py
+from typing import Any
+
 from loguru import logger
 import numpy as np
 import pandas as pd
@@ -11,7 +13,7 @@ from epiforecast.utils.config import conf
 class DataTransformation:
     """Pipeline de transformación de datos: ajuste de semanas, incrementos y outliers."""
 
-    def __init__(self, df: pd.DataFrame, config: dict | None = None):
+    def __init__(self, df: pd.DataFrame, config: dict[str, Any] | None = None):
         """Inicializa el transformador con el DataFrame preprocesado.
 
         Args:
@@ -26,9 +28,10 @@ class DataTransformation:
         self.regiones = _conf.get("regiones", [])
 
         self.raw_data_filter = _conf.get("data", {}).get("data_prepare")
-        self.agrupamiento = str(self.get_opcion("agrupa").get("valor", "")).strip().lower()
+        _agrupa = self.get_opcion("agrupa")
+        self.agrupamiento = str(_agrupa.get("valor", "")).strip().lower() if _agrupa else ""
 
-    def get_opcion(self, nombre: str):
+    def get_opcion(self, nombre: str) -> dict[str, Any] | None:
         """Busca y retorna una opción de feature engineering por nombre.
 
         Args:
@@ -39,10 +42,10 @@ class DataTransformation:
         """
         for item in self.opciones:
             if nombre in item:
-                return item[nombre]
+                return item[nombre]  # type: ignore[no-any-return]
         return None
 
-    def _ajusta_semanas(self):
+    def _ajusta_semanas(self) -> None:
         if not self.df["Semana"].between(1, 53).all():
             raise ValueError("Se encontraron semanas fuera del rango")
 
@@ -86,7 +89,7 @@ class DataTransformation:
 
         logger.info("Ordenando el dataset.")
 
-    def _prepara_series_tiempo(self):
+    def _prepara_series_tiempo(self) -> None:
         logger.info("Inicializando preparación de series temporales.")
 
         self.df["Prev_hombres"] = self.df.groupby(["Padecimiento", "Entidad"])[
@@ -118,7 +121,7 @@ class DataTransformation:
         # self.df.loc[filas_anio, 'Fecha'] = pd.to_datetime(self.df.loc[filas_anio, 'Anio'].astype(str) + '-01-01')
         # self.df.loc[filas_anio, 'Fecha'] = (pd.to_datetime(self.df.loc[filas_anio, 'Anio'].astype(str) + '-01-01')+ pd.offsets.Week(weekday=0))  # primer lunes
 
-    def _ajusta_incrementos(self):
+    def _ajusta_incrementos(self) -> None:
         for columna in ["Incremento_hombres", "Incremento_mujeres"]:
             # 1) Identificar negativos
             mascara_neg = self.df[columna] < 0
@@ -168,7 +171,7 @@ class DataTransformation:
             # 6) Asegurar que TODA la columna quede en enteros (por si quedan floats por mezclas pandas)
             self.df[columna] = np.rint(self.df[columna]).astype(int)
 
-    def _ajusta_negativos(self):
+    def _ajusta_negativos(self) -> None:
         for columna in ["Incremento_hombres", "Incremento_mujeres"]:
             neg = self.df[columna] < 0
 
@@ -191,19 +194,19 @@ class DataTransformation:
                 .astype(int)
             )
 
-    def _ajusta_outliers(self, columnas: list, agrupacion: list):
+    def _ajusta_outliers(self, columnas: list[str], agrupacion: list[str]) -> None:
         from epiforecast.data.preprocessing.imputation import ajusta_outliers
 
         self.df = ajusta_outliers(self.df, columnas, agrupacion)
 
     def _ajusta_outliers_zscore(
-        self, columnas: list, agrupacion: list, umbral: int, reemplazo: str
-    ):
+        self, columnas: list[str], agrupacion: list[str], umbral: int, reemplazo: str
+    ) -> None:
         from epiforecast.data.preprocessing.imputation import ajusta_outliers_zscore
 
         self.df = ajusta_outliers_zscore(self.df, columnas, agrupacion, umbral, reemplazo)
 
-    def agrupar(self):
+    def agrupar(self) -> None:
         """Agrupa incrementos por Padecimiento, Semana, Fecha y Entidad, y asigna regiones."""
 
         logger.info("Aplicando agrupamiento")
@@ -225,7 +228,7 @@ class DataTransformation:
 
         self.df_agrupado["Region"] = self.df_agrupado["Entidad"].map(mapa_regiones)
 
-    def genera_todos(self):
+    def genera_todos(self) -> None:
         """Calcula el total de incrementos (hombres + mujeres) como nueva columna."""
 
         self.df_agrupado["incrementos_total"] = (
@@ -246,7 +249,7 @@ class DataTransformation:
         #                            Se retira este ajuste
         self._ajusta_negativos()
 
-        if outlier_cfg["IQR"]:
+        if outlier_cfg and outlier_cfg["IQR"]:
             if (
                 outlier_cfg["metodo"].lower() == "iqr"
             ):  # Se recomienda no usar este metodo, agrega muchos datos no validos

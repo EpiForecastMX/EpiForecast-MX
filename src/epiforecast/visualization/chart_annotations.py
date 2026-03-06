@@ -1,9 +1,11 @@
 """Forecast chart annotation helpers: divisors, CV zones, and model metrics card."""
 
 from datetime import datetime
+from typing import Any
 from zoneinfo import ZoneInfo
 
-import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 import pandas as pd
 
 from epiforecast.utils.config import conf
@@ -35,8 +37,8 @@ _MODEL_DISPLAY: dict[str, str] = {
 
 
 def _anotar_divisores(
-    ax: plt.Axes,
-    fecha_max_datos,
+    ax: Axes,
+    fecha_max_datos: pd.Timestamp,
     c_div: str,
     c_fc: str,
 ) -> None:
@@ -72,10 +74,10 @@ def _anotar_divisores(
 
 
 def _anotar_zona_cv(
-    ax: plt.Axes,
-    fecha_max_datos,
+    ax: Axes,
+    fecha_max_datos: pd.Timestamp,
     c_gray: str,
-    config: dict | None = None,
+    config: dict[str, Any] | None = None,
 ) -> None:
     """Añade la franja sombreada del periodo de prueba CV con etiquetas.
 
@@ -90,14 +92,14 @@ def _anotar_zona_cv(
     fecha_corte = pd.Timestamp(_conf["FECHA_CORTE_ENTRENAMIENTO"]).to_pydatetime()
 
     ax.axvspan(
-        fecha_corte,  # type: ignore[arg-type]  # matplotlib accepts datetime
+        fecha_corte,
         fecha_max_datos,
         alpha=_ALPHA_CV_ZONE,
         color=c_gray,
         zorder=0,
     )
     ax.axvline(
-        fecha_corte,  # type: ignore[arg-type]  # matplotlib accepts datetime
+        fecha_corte,
         color=c_gray,
         ls=":",
         lw=_LW_CV_LINE,
@@ -106,7 +108,7 @@ def _anotar_zona_cv(
     )
     ax.annotate(
         "Entrenamiento",
-        xy=(fecha_corte, _Y_CV_LABEL),  # type: ignore[arg-type]
+        xy=(fecha_corte, _Y_CV_LABEL),
         xycoords=("data", "axes fraction"),
         fontsize=_FS_CV_LABEL,
         color=c_gray,
@@ -115,7 +117,7 @@ def _anotar_zona_cv(
     )
     ax.annotate(
         "Prueba CV",
-        xy=(fecha_corte, _Y_CV_LABEL),  # type: ignore[arg-type]
+        xy=(fecha_corte, _Y_CV_LABEL),
         xycoords=("data", "axes fraction"),
         fontsize=_FS_CV_LABEL,
         color=c_gray,
@@ -124,7 +126,7 @@ def _anotar_zona_cv(
     )
 
 
-def _render_ficha_tecnica(fig: plt.Figure, metricas: dict) -> None:
+def _render_ficha_tecnica(fig: Figure, metricas: dict[str, Any]) -> None:
     """Renderiza la ficha tecnica del modelo al pie del grafico."""
     mase_v = metricas.get("mase")
     rmse_v = metricas.get("rmse")

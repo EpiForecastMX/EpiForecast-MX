@@ -7,6 +7,7 @@ Reads all_forecast.csv + training CSVs, generates one PNG per
 
 from pathlib import Path
 import re
+from typing import Any
 import unicodedata
 
 import pandas as pd
@@ -26,7 +27,7 @@ def _normalizar_nombre(s: str) -> str:
     return re.sub(r"\s+", "_", sin_acento)
 
 
-def generar_graficos_pronostico(config: dict | None = None) -> None:
+def generar_graficos_pronostico(config: dict[str, Any] | None = None) -> None:
     """Generate one forecast chart per model from all_forecast.csv.
 
     Args:
@@ -88,7 +89,7 @@ def generar_graficos_pronostico(config: dict | None = None) -> None:
             nombre_archivo=nombre_archivo,
             metricas=metricas,
         )
-        logger.info("[{}/{}] Guardado: {}", i + 1, total, Path(ruta).name)  # type: ignore[operator]
+        logger.info("[{}/{}] Guardado: {}", i + 1, total, Path(ruta).name)
 
     logger.success("Gráficos generados: {} → {}", total, forecast_root)
 
@@ -167,7 +168,7 @@ def _extract_metricas(
     df_forecast: pd.DataFrame,
     mask: pd.Series,
     df_hp_all: pd.DataFrame,
-) -> dict:
+) -> dict[str, Any]:
     """Extract model metrics and HP for chart annotation."""
     # Extraer la primera fila que coincide con la máscara
     subset = df_forecast.loc[mask]

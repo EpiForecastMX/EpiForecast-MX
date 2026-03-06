@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from epiforecast.constants import RANDOM_SEED
@@ -40,7 +41,7 @@ class ParallelEngine:
         self._parallel_oof_cutoff = parallel_oof_cutoff
         self._parallel_min_train_weeks = parallel_min_train_weeks
         self._xgb_direct: Any = None
-        self._ensemble_weights: np.ndarray | None = None
+        self._ensemble_weights: npt.NDArray[np.floating[Any]] | None = None
         self._t_ensemble: float = 0.0
 
     def fit(self, prophet: Any, train_data: pd.DataFrame) -> None:
@@ -186,7 +187,7 @@ class ParallelEngine:
         return self._xgb_direct
 
     @property
-    def weights(self) -> np.ndarray | None:
+    def weights(self) -> npt.NDArray[np.floating[Any]] | None:
         return self._ensemble_weights
 
     @property

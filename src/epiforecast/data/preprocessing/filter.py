@@ -8,7 +8,7 @@ import pandas as pd
 class FiltraPadecimiento:
     """Filtra un DataFrame epidemiológico por tipo de padecimiento configurado."""
 
-    def __init__(self, df: pd.DataFrame, padecimiento: dict):
+    def __init__(self, df: pd.DataFrame, padecimiento: dict[str, str]):
         """Inicializa el filtro con el DataFrame y configuración de padecimiento.
 
         Args:

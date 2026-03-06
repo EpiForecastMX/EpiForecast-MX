@@ -63,7 +63,7 @@ def _leakage_badge(smape_train: float | None) -> str:
 
 def _get_prod_metrics(
     row: pd.Series,
-    model_keys: list[str],  # type: ignore[type-arg]
+    model_keys: list[str],
 ) -> tuple[float | None, float | None]:
     """Obtiene smape test y smape_train del modelo productivo de la fila."""
     prod = row.get("modelo_productivo", "")
@@ -92,7 +92,7 @@ def fmt(val: object, decimals: int = 4) -> str:
         return "N/A"
 
 
-def winner_among(row: pd.Series, metric: str, model_keys: list[str]) -> str:  # type: ignore[type-arg]
+def winner_among(row: pd.Series, metric: str, model_keys: list[str]) -> str:
     """Devuelve el model_key con el menor valor para la metrica dada."""
     best_key = ""
     best_val = float("inf")

@@ -10,11 +10,12 @@ import itertools
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 from sklearn.model_selection import TimeSeriesSplit
 
 from epiforecast.constants import RANDOM_SEED
-from epiforecast.models.ensemble.helpers import construir_features_xgb
+from epiforecast.models.ensemble.feature_builder import construir_features_xgb
 from epiforecast.utils.config import logger
 
 if TYPE_CHECKING:
@@ -43,7 +44,11 @@ def _compute_oof_residuals_for_cv(
     yearly_period: float,
     yearly_fourier: int,
     holidays: pd.DataFrame,
-) -> tuple[np.ndarray, np.ndarray, list[tuple[np.ndarray, np.ndarray]]]:
+) -> tuple[
+    npt.NDArray[np.floating[Any]],
+    npt.NDArray[np.floating[Any]],
+    list[tuple[npt.NDArray[Any], npt.NDArray[Any]]],
+]:
     """Calcula residuos OOF por fold: cada fold re-entrena Prophet temporal.
 
     Returns:
@@ -57,9 +62,9 @@ def _compute_oof_residuals_for_cv(
     feats_full = construir_features_xgb(y_reset, ds_reset)
     valid_mask = feats_full.notna().all(axis=1)
 
-    all_feats: list[np.ndarray] = []
-    all_residuos: list[np.ndarray] = []
-    fold_splits: list[tuple[np.ndarray, np.ndarray]] = []
+    all_feats: list[npt.NDArray[np.floating[Any]]] = []
+    all_residuos: list[npt.NDArray[np.floating[Any]]] = []
+    fold_splits: list[tuple[npt.NDArray[np.floating[Any]], npt.NDArray[np.floating[Any]]]] = []
 
     valid_indices = np.flatnonzero(valid_mask.to_numpy())
 
@@ -154,7 +159,7 @@ class EnsembleXGBTuner:
         self._holidays: pd.DataFrame = pd.DataFrame()
         periodos = config.get("peridos_atipicos", [])
         if periodos:
-            from epiforecast.models.ensemble.helpers import construir_holidays
+            from epiforecast.models.ensemble.feature_builder import construir_holidays
 
             self._holidays = construir_holidays(config)
 

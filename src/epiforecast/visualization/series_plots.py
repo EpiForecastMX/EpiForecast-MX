@@ -2,7 +2,9 @@
 
 import contextlib
 import os
+from typing import Any
 
+from matplotlib.axes import Axes
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -25,8 +27,8 @@ def serie_tiempo(
     padecimiento: str,
     carpeta_salida: str,
     dpi: int,
-    conf_paleta: dict,
-    conf_paleta_sexo: dict,
+    conf_paleta: dict[str, Any],
+    conf_paleta_sexo: dict[str, Any],
     agrupamiento_sexo: bool = True,
     agrupamiento_entidad: bool = False,
 ) -> str | None:
@@ -68,7 +70,7 @@ def serie_tiempo(
     return ruta
 
 
-def _plot_by_sex(ax: plt.Axes, df: pd.DataFrame, paleta_sexo: dict) -> str:
+def _plot_by_sex(ax: Axes, df: pd.DataFrame, paleta_sexo: dict[str, Any]) -> str:
     """Dibuja líneas de serie de tiempo separadas por sexo."""
     st = df.groupby("Fecha")[["incrementos_hombres", "incrementos_mujeres"]].sum()
     ax.plot(
@@ -90,7 +92,7 @@ def _plot_by_sex(ax: plt.Axes, df: pd.DataFrame, paleta_sexo: dict) -> str:
     return "por sexo"
 
 
-def _plot_by_region(ax: plt.Axes, df: pd.DataFrame) -> str:
+def _plot_by_region(ax: Axes, df: pd.DataFrame) -> str:
     """Dibuja líneas de serie de tiempo separadas por región de salud mental."""
     col_region = "region_salud_mental"
     st = (
@@ -110,19 +112,19 @@ def _plot_by_region(ax: plt.Axes, df: pd.DataFrame) -> str:
     return f"por {col_region}"
 
 
-def _add_covid_band(ax: plt.Axes) -> None:
+def _add_covid_band(ax: Axes) -> None:
     """Agrega franja semitransparente del periodo COVID-19."""
     with contextlib.suppress(ValueError, TypeError):
         ax.axvspan(
-            pd.Timestamp(COVID_START),  # type: ignore[arg-type]
-            pd.Timestamp(COVID_END),  # type: ignore[arg-type]
+            pd.Timestamp(COVID_START),
+            pd.Timestamp(COVID_END),
             alpha=_ALPHA_COVID,
             color=COVID_SPAN_COLOR,
             label="Covid",
-        )  # type: ignore[arg-type]
+        )
 
 
-def _apply_imss_style(ax: plt.Axes, c_gray: str) -> None:
+def _apply_imss_style(ax: Axes, c_gray: str) -> None:
     """Aplica estilo minimalista IMSS a los ejes."""
     for spine in ("top", "right"):
         ax.spines[spine].set_visible(False)

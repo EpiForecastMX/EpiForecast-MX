@@ -2,7 +2,7 @@
 
 # src/utils/datos.py
 
-from typing import Literal
+from typing import Any, Literal
 
 import numpy as np
 import pandas as pd
@@ -70,7 +70,7 @@ class OperacionesDatos:
         col: str,
         factor: float = 1.5,
         interpolation: Literal["linear", "lower", "higher", "midpoint", "nearest"] = "linear",
-    ) -> tuple[pd.DataFrame, list]:
+    ) -> tuple[pd.DataFrame, list[Any]]:
         """
         Devuelve un DataFrame con las filas que son outliers por IQR en la columna 'col'.
         metadatos: lim_inf, lim_sup, q1, q3, iqr, col_origen.
@@ -89,8 +89,12 @@ class OperacionesDatos:
 
     @staticmethod
     def zscore(
-        df: pd.DataFrame, columna: str, agrupacion: list, umbral: float = 3, reemplazo="media"
-    ):
+        df: pd.DataFrame,
+        columna: str,
+        agrupacion: list[str],
+        umbral: float = 3,
+        reemplazo: str = "media",
+    ) -> pd.DataFrame:
         """Detecta y reemplaza outliers por Z-score agrupado.
 
         Args:

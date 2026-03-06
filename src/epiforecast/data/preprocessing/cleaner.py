@@ -1,6 +1,8 @@
 """Data cleaning: entity normalization, week-shift, outlier treatment."""
 
 # src/datos/clean_dataset.py
+from typing import Any
+
 import pandas as pd
 
 from epiforecast.utils.config import conf, logger
@@ -12,7 +14,7 @@ class CleanDataset:
     Expone `resumen()` con las métricas del proceso para construir SeccionNota en reportes.
     """
 
-    def __init__(self, df: pd.DataFrame, config: dict | None = None) -> None:
+    def __init__(self, df: pd.DataFrame, config: dict[str, Any] | None = None) -> None:
         """Inicializa el limpiador con el DataFrame y reglas de configuración.
 
         Args:
@@ -25,9 +27,9 @@ class CleanDataset:
         self._cols_inicial: int = df.shape[1]
 
         # Reglas de limpieza definidas en limpieza.yaml
-        self.columnas_a_eliminar: list = _conf["columnas_eliminar"]
-        self.valores_a_sustituir: list = _conf["valores_sustituir"]
-        self.registros_a_eliminar: list = _conf["registros_eliminar"]
+        self.columnas_a_eliminar: list[str] = _conf["columnas_eliminar"]
+        self.valores_a_sustituir: list[dict[str, str]] = _conf["valores_sustituir"]
+        self.registros_a_eliminar: list[dict[str, Any]] = _conf["registros_eliminar"]
 
         # Métricas acumuladas durante la limpieza
         self._columnas_eliminadas: list[str] = []
@@ -52,7 +54,7 @@ class CleanDataset:
 
     def _normalizar_columnas(self) -> None:
         """Elimina espacios en blanco de los nombres de todas las columnas."""
-        self.df.columns = [col.strip() for col in self.df.columns]  # type: ignore[assignment]
+        self.df.columns = pd.Index([col.strip() for col in self.df.columns])
 
     def _elimina_columnas(self) -> None:
         """Elimina las columnas indicadas en la configuración."""

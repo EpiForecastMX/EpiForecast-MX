@@ -10,6 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from epiforecast.evaluation.metrics import compute_forecast_metrics
@@ -19,6 +20,18 @@ from epiforecast.models.ensemble.feature_builder import (  # noqa: F401 – re-e
     construir_holidays,
 )
 from epiforecast.utils.config import logger
+
+__all__ = [
+    "FEATURE_NAMES",
+    "construir_features_xgb",
+    "construir_holidays",
+    "preparar_datos_ensemble",
+    "_predecir_test_recursivo",
+    "generar_predicciones_insample",
+    "generar_prediccion_completa",
+    "calcular_metricas_ensemble",
+    "calcular_metricas_prophet_base",
+]
 
 
 def preparar_datos_ensemble(
@@ -109,10 +122,10 @@ def preparar_datos_ensemble(
 
 def _predecir_test_recursivo(
     xgb: Any,
-    yhat_test_prophet: np.ndarray,
+    yhat_test_prophet: npt.NDArray[np.floating[Any]],
     train_data: pd.DataFrame,
     test_data: pd.DataFrame,
-) -> np.ndarray:
+) -> npt.NDArray[np.floating[Any]]:
     """Prediccion recursiva XGBoost sobre test sin usar y real del test."""
     y_ext = train_data["y"].values.tolist()
     d_ext = train_data["ds"].values.tolist()

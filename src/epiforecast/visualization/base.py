@@ -2,8 +2,11 @@
 
 from abc import ABC
 import os
+from typing import Any
 
 import matplotlib as mpl
+from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -24,7 +27,7 @@ _BAR_MIN_HEIGHT_PER_CAT = 0.45
 
 class GraficosHelper(ABC):
     def __init__(
-        self, carpeta_salida: str, numero_top_columnas: int, config: dict | None = None
+        self, carpeta_salida: str, numero_top_columnas: int, config: dict[str, Any] | None = None
     ) -> None:
         """Inicializa el helper de gráficos con directorio de salida y paleta IMSS.
 
@@ -53,7 +56,7 @@ class GraficosHelper(ABC):
 
     # ---------- Helpers internos ---------- #
 
-    def _guardar_figura(self, fig: plt.Figure, nombre: str) -> str:
+    def _guardar_figura(self, fig: Figure, nombre: str) -> str:
         """Guarda la figura con configuración IMSS y cierra el objeto."""
         ruta = os.path.join(self.carpeta_salida, nombre)
         fig.tight_layout()
@@ -61,7 +64,7 @@ class GraficosHelper(ABC):
         plt.close(fig)
         return ruta
 
-    def _aplicar_estilo_ax(self, ax: plt.Axes) -> None:
+    def _aplicar_estilo_ax(self, ax: Axes) -> None:
         """Estilo minimalista IMSS: sin espinas sup/der, grid horizontal suave."""
         for spine in ("top", "right"):
             ax.spines[spine].set_visible(False)
@@ -148,7 +151,7 @@ class GraficosHelper(ABC):
         colores = (self.conf_paleta_secuencial * -(-top_real // n_paleta))[:top_real]
         bars = ax.barh(
             etiquetas,
-            porcentajes.values,  # type: ignore[arg-type]
+            porcentajes.values,
             color=colores,
             edgecolor="white",
             height=_BAR_HEIGHT,
@@ -297,7 +300,7 @@ class GraficosHelper(ABC):
         titulo: str,
         padecimiento: str,
         nombre_archivo: str,
-        metricas: dict | None = None,
+        metricas: dict[str, Any] | None = None,
     ) -> str:
         """Gráfico de pronóstico IMSS. Delegado a forecast_chart.graficar_pronostico."""
         from epiforecast.visualization.forecast_chart import (

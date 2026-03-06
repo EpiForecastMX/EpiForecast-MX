@@ -1,6 +1,8 @@
 """Demographic feature engineering: INEGI population merge and rate normalization."""
 
 # src/modelado/mapea_inegi.py
+from typing import Any
+
 import pandas as pd
 
 from epiforecast.utils import paths as directory_manager
@@ -10,7 +12,7 @@ from epiforecast.utils.config import conf, logger
 class MapeaInegi:
     """Combina datos epidemiológicos con datos demográficos INEGI por entidad federativa."""
 
-    def __init__(self, df: pd.DataFrame, config: dict | None = None):
+    def __init__(self, df: pd.DataFrame, config: dict[str, Any] | None = None):
         """Inicializa con el DataFrame epidemiológico y rutas de configuración.
 
         Args:
@@ -26,7 +28,7 @@ class MapeaInegi:
         self.inegi = pd.DataFrame()
         self.df_merge = pd.DataFrame()
 
-    def renombra(self):
+    def renombra(self) -> None:
         """Renombra entidades INEGI para alinear con nomenclatura del proyecto."""
 
         map_entidades = {
@@ -38,7 +40,7 @@ class MapeaInegi:
         self.inegi = self.inegi.rename(columns={"Entidad federativa": "Entidad"})
         self.inegi["Entidad"] = self.inegi["Entidad"].replace(map_entidades)
 
-    def combina(self):
+    def combina(self) -> None:
         """Ejecuta left join del DataFrame epidemiológico con datos INEGI por Entidad."""
 
         cols_extra = [c for c in self.inegi.columns if c != "Entidad"]
@@ -49,7 +51,7 @@ class MapeaInegi:
             how="left",
         )
 
-    def run(self):
+    def run(self) -> None:
         """Pipeline completo: carga INEGI, renombra, combina y guarda CSV + Excel."""
 
         if not directory_manager.existe_archivo(self.inegi_path):

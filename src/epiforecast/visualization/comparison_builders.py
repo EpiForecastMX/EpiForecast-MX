@@ -11,6 +11,7 @@ from datetime import datetime
 from typing import cast
 from zoneinfo import ZoneInfo
 
+from matplotlib.axes import Axes
 import matplotlib.dates as mdates
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
@@ -44,11 +45,11 @@ _COVID_END = pd.Timestamp(COVID_END)
 # ---------------------------------------------------------------------------
 
 
-def _add_covid_band(ax: plt.Axes, *, compact: bool = False) -> None:
+def _add_covid_band(ax: Axes, *, compact: bool = False) -> None:
     """Add a shaded COVID-19 band with optional badge label."""
     ax.axvspan(
-        _COVID_START,  # type: ignore[arg-type]
-        _COVID_END,  # type: ignore[arg-type]
+        _COVID_START,
+        _COVID_END,
         alpha=cc.ALPHA_COVID,
         color=COVID_SPAN_COLOR,
         zorder=0,
@@ -57,7 +58,7 @@ def _add_covid_band(ax: plt.Axes, *, compact: bool = False) -> None:
     fs = 5.5 if compact else cc.FS_COVID
     ax.annotate(
         "COVID-19",
-        xy=(mid_covid, 1.0),  # type: ignore[arg-type]
+        xy=(mid_covid, 1.0),
         xycoords=("data", "axes fraction"),
         fontsize=fs,
         fontweight="bold",
@@ -74,10 +75,10 @@ def _add_covid_band(ax: plt.Axes, *, compact: bool = False) -> None:
     )
 
 
-def _add_cutoff_line(ax: plt.Axes, cutoff: pd.Timestamp, *, compact: bool = False) -> None:
+def _add_cutoff_line(ax: Axes, cutoff: pd.Timestamp, *, compact: bool = False) -> None:
     """Add dashed cutoff line with labels."""
     ax.axvline(
-        cutoff,  # type: ignore[arg-type]
+        cutoff,
         color=COLOR_CUTOFF,
         linestyle="--",
         linewidth=1,
@@ -89,7 +90,7 @@ def _add_cutoff_line(ax: plt.Axes, cutoff: pd.Timestamp, *, compact: bool = Fals
     fs = 6
     ax.annotate(
         "Hist.",
-        xy=(cutoff, 0.96),  # type: ignore[arg-type]
+        xy=(cutoff, 0.96),
         xycoords=("data", "axes fraction"),
         fontsize=fs,
         color="#555555",
@@ -98,7 +99,7 @@ def _add_cutoff_line(ax: plt.Axes, cutoff: pd.Timestamp, *, compact: bool = Fals
     )
     ax.annotate(
         "Pron.",
-        xy=(cutoff, 0.96),  # type: ignore[arg-type]
+        xy=(cutoff, 0.96),
         xycoords=("data", "axes fraction"),
         fontsize=fs,
         color=COLOR_CUTOFF,
@@ -107,18 +108,18 @@ def _add_cutoff_line(ax: plt.Axes, cutoff: pd.Timestamp, *, compact: bool = Fals
     )
 
 
-def _add_cv_zone(ax: plt.Axes, cutoff: pd.Timestamp, *, compact: bool = False) -> None:
+def _add_cv_zone(ax: Axes, cutoff: pd.Timestamp, *, compact: bool = False) -> None:
     """Add shaded train/test CV zone."""
     fecha_corte = pd.Timestamp(conf.get("FECHA_CORTE_ENTRENAMIENTO", "2025-01-01"))
     ax.axvspan(
-        fecha_corte,  # type: ignore[arg-type]
-        cutoff,  # type: ignore[arg-type]
+        fecha_corte,
+        cutoff,
         alpha=0.06,
         color="#888888",
         zorder=0,
     )
     ax.axvline(
-        fecha_corte,  # type: ignore[arg-type]
+        fecha_corte,
         color="#888888",
         ls=":",
         lw=0.8,
@@ -129,7 +130,7 @@ def _add_cv_zone(ax: plt.Axes, cutoff: pd.Timestamp, *, compact: bool = False) -
         fs = 5.5
         ax.annotate(
             "Entren.",
-            xy=(fecha_corte, 0.88),  # type: ignore[arg-type]
+            xy=(fecha_corte, 0.88),
             xycoords=("data", "axes fraction"),
             fontsize=fs,
             color="#888888",
@@ -138,7 +139,7 @@ def _add_cv_zone(ax: plt.Axes, cutoff: pd.Timestamp, *, compact: bool = False) -
         )
         ax.annotate(
             "Prueba CV",
-            xy=(fecha_corte, 0.88),  # type: ignore[arg-type]
+            xy=(fecha_corte, 0.88),
             xycoords=("data", "axes fraction"),
             fontsize=fs,
             color="#888888",
@@ -147,7 +148,7 @@ def _add_cv_zone(ax: plt.Axes, cutoff: pd.Timestamp, *, compact: bool = False) -
         )
 
 
-def _add_forecast_band(ax: plt.Axes, grp: pd.DataFrame, cutoff: pd.Timestamp, color: str) -> None:
+def _add_forecast_band(ax: Axes, grp: pd.DataFrame, cutoff: pd.Timestamp, color: str) -> None:
     """Add 80% confidence band in the forecast zone."""
     if "yhat_lower" not in grp.columns or "yhat_upper" not in grp.columns:
         return
@@ -191,7 +192,7 @@ def _suptitle(fig: Figure, chart_type: str, pad: str, ent: str, modo: str) -> No
 
 def _merge_real_pred(
     serie_real: pd.DataFrame,
-    target_y: pd.Series,  # type: ignore[type-arg]
+    target_y: pd.Series,
     pred: pd.DataFrame,
 ) -> pd.DataFrame:
     """Merge real and predicted values on date, returning aligned rows."""
@@ -247,7 +248,7 @@ def _prod_justification(prod_key: str, metrics_by_model: dict[str, dict[str, flo
 
 def build_small_multiples(
     serie_real: pd.DataFrame,
-    target_y: pd.Series,  # type: ignore[type-arg]
+    target_y: pd.Series,
     predictions: dict[str, pd.DataFrame],
     pad: str,
     ent: str,
@@ -291,8 +292,8 @@ def build_small_multiples(
             grp = predictions[model_key]
             fecha_max_fc = grp["ds"].max()
             ax.axvspan(
-                cutoff,  # type: ignore[arg-type]
-                fecha_max_fc,  # type: ignore[arg-type]
+                cutoff,
+                fecha_max_fc,
                 alpha=cc.ALPHA_FORECAST_ZONE,
                 color=style.color,
                 zorder=0,
@@ -461,7 +462,7 @@ def build_small_multiples(
 
 def build_overlay(
     serie_real: pd.DataFrame,
-    target_y: pd.Series,  # type: ignore[type-arg]
+    target_y: pd.Series,
     predictions: dict[str, pd.DataFrame],
     pad: str,
     ent: str,
@@ -542,7 +543,7 @@ def _extract_cv_metrics(pred_df: pd.DataFrame) -> tuple[float, float, float] | N
 
 def _needs_metric_scaling(
     serie_real: pd.DataFrame,
-    target_y: pd.Series,  # type: ignore[type-arg]
+    target_y: pd.Series,
     pred_df: pd.DataFrame,
 ) -> bool:
     """Detect models whose CV metrics are on a normalized scale (yhat == y_real in-sample)."""
@@ -555,7 +556,7 @@ def _needs_metric_scaling(
 
 def build_metrics_bars(
     serie_real: pd.DataFrame,
-    target_y: pd.Series,  # type: ignore[type-arg]
+    target_y: pd.Series,
     predictions: dict[str, pd.DataFrame],
     pad: str,
     ent: str,
@@ -615,7 +616,7 @@ def build_metrics_bars(
         offset = (i - n_models / 2 + 0.5) * width
         ax_bar.bar(
             x + offset,
-            row["values"],  # type: ignore[arg-type]
+            row["values"],
             width,
             label=row["model"],
             color=row["color"],
@@ -653,9 +654,8 @@ def build_metrics_bars(
 
     # Color row labels
     for i, color in enumerate(row_colors):
-        table[i + 1, -1].set_facecolor(color)  # type: ignore[index]
-        table[i + 1, -1].set_text_props(color="white", fontweight="bold")  # type: ignore[index]
-
+        table[i + 1, -1].set_facecolor(color)
+        table[i + 1, -1].set_text_props(color="white", fontweight="bold")
     _suptitle(fig, "Metricas de Validacion Cruzada", pad, ent, modo)
     _stamp(fig)
     fig.tight_layout(rect=(0, 0.03, 1, 0.95))
@@ -669,7 +669,7 @@ def build_metrics_bars(
 
 def build_residuals(
     serie_real: pd.DataFrame,
-    target_y: pd.Series,  # type: ignore[type-arg]
+    target_y: pd.Series,
     predictions: dict[str, pd.DataFrame],
     pad: str,
     ent: str,

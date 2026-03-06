@@ -1,6 +1,7 @@
 """Standalone EDA summary functions (extracted from EDAReportBuilder — SRP)."""
 
 from datetime import datetime
+from typing import Any
 
 from loguru import logger
 import pandas as pd
@@ -11,7 +12,9 @@ _PCT = 100
 # ── Resúmenes ─────────────────────────────────────────────────────────────────
 
 
-def resumen_general(df: pd.DataFrame, fuente_datos: str, opciones: dict) -> dict[str, str]:
+def resumen_general(
+    df: pd.DataFrame, fuente_datos: str, opciones: dict[str, Any]
+) -> dict[str, str]:
     """Genera diccionario con metadatos generales del DataFrame: filas, columnas, nulos."""
     logger.debug("Generando resumen general de los datos...")
 
@@ -120,7 +123,7 @@ def estadisticas_numericas(df: pd.DataFrame) -> pd.DataFrame | None:
     return stats
 
 
-def estadisticas_categoricas(opciones: dict) -> pd.DataFrame | None:
+def estadisticas_categoricas(opciones: dict[str, Any]) -> pd.DataFrame | None:
     """Genera tabla con conteo, moda y frecuencia de columnas categóricas, o None."""
     logger.debug("Generando estadísticas de columnas categóricas...")
 
@@ -150,7 +153,7 @@ def estadisticas_categoricas(opciones: dict) -> pd.DataFrame | None:
 
 
 def tablas_categoricas(
-    df: pd.DataFrame, opciones: dict, n_top: int = 10
+    df: pd.DataFrame, opciones: dict[str, Any], n_top: int = 10
 ) -> dict[str, pd.DataFrame]:
     """Genera tablas de frecuencia para cada columna categórica configurada."""
     logger.debug("Generando tablas de frecuencias para columnas categóricas...")

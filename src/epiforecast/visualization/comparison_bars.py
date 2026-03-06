@@ -104,8 +104,8 @@ def _prepare_bars(
 
 
 def _month_ticks(
-    dates_hist: pd.Series,  # type: ignore[type-arg]
-    dates_future: pd.Series,  # type: ignore[type-arg]
+    dates_hist: pd.Series,
+    dates_future: pd.Series,
 ) -> tuple[list[float], list[str]]:
     """Generate monthly tick positions and Spanish labels for 104 bars."""
     all_dates = pd.concat([dates_hist, dates_future], ignore_index=True)

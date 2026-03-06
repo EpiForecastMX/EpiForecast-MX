@@ -1,5 +1,6 @@
 """PDF table helpers and page decorators for IMSS-branded reports."""
 
+from collections.abc import Callable
 from typing import Any
 
 import pandas as pd
@@ -63,7 +64,9 @@ def tabla_kv(dic: dict[str, str] | None) -> LongTable:
     return crear_tabla(data, col_widths=[7 * cm, 9 * cm])
 
 
-def _hacer_cabecera_pie(titulo_reporte: str):
+def _hacer_cabecera_pie(
+    titulo_reporte: str,
+) -> Callable[[canvas.Canvas, SimpleDocTemplate], None]:
     """Retorna el callback onPage con el título del reporte inyectado como closure."""
 
     def cabecera_pie(canv: canvas.Canvas, doc: SimpleDocTemplate) -> None:

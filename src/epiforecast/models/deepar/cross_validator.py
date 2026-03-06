@@ -13,6 +13,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 from sklearn.model_selection import TimeSeriesSplit
 
@@ -30,7 +31,7 @@ class DeepARCrossValidator:
     reduced training epochs for speed.
     """
 
-    def __init__(self, forecaster: DeepARForecaster, config: dict | None = None):
+    def __init__(self, forecaster: DeepARForecaster, config: dict[str, Any] | None = None):
         _conf = config if config is not None else conf
         self.forecaster = forecaster
         self.n_splits: int = _conf.get("TS_SPLITS", 4)
@@ -277,9 +278,9 @@ class DeepARCrossValidator:
 
     def _compute_metrics(
         self,
-        y_true: np.ndarray,
-        yhat: np.ndarray,
-        y_train: np.ndarray,
+        y_true: npt.NDArray[np.floating[Any]],
+        yhat: npt.NDArray[np.floating[Any]],
+        y_train: npt.NDArray[np.floating[Any]],
     ) -> dict[str, Any]:
         """Compute RMSE, MAE, MAPE, SMAPE, MASE from arrays."""
         from epiforecast.evaluation.metrics import compute_forecast_metrics

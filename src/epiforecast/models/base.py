@@ -45,7 +45,7 @@ class ForecastModel(ABC):
         """Return current model parameters."""
 
     @abstractmethod
-    def run(self) -> tuple[Any, dict, dict]:
+    def run(self) -> tuple[Any, dict[str, Any], dict[str, Any]]:
         """Execute the full model pipeline: prepare data, cross-validate, train.
 
         Returns:

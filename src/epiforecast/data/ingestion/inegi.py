@@ -1,6 +1,8 @@
 """INEGI API client: demographic and population data ingestion."""
 
 # src/datos/get_inegi.py
+from typing import Any
+
 import pandas as pd
 import requests
 
@@ -10,7 +12,7 @@ from epiforecast.utils.config import conf, logger
 
 
 class GetInegi:
-    def __init__(self, forzar=False, config: dict | None = None):
+    def __init__(self, forzar: bool = False, config: dict[str, Any] | None = None):
         """Inicializa el cliente INEGI con URLs de API y catálogos de estados.
 
         Args:
@@ -56,8 +58,8 @@ class GetInegi:
     # ========= Descarga en memoria =========
 
     def descargar_jsonstat_pxweb(
-        self, db: str, tabla_px: str, consulta: dict, timeout: int = 60
-    ) -> dict:
+        self, db: str, tabla_px: str, consulta: dict[str, Any], timeout: int = 60
+    ) -> dict[str, Any]:
         """Delegate to inegi_utils.descargar_jsonstat_pxweb with error handling."""
         from epiforecast.data.ingestion.inegi_utils import (
             descargar_jsonstat_pxweb as _descargar,
@@ -80,13 +82,13 @@ class GetInegi:
 
     # ========= Conversión JSON-STAT v2 -> DataFrame =========
 
-    def _codigos_en_orden(self, indice_categoria, n: int) -> list:
+    def _codigos_en_orden(self, indice_categoria: Any, n: int) -> list[Any]:
         """Delegate to inegi_utils._codigos_en_orden."""
         from epiforecast.data.ingestion.inegi_utils import _codigos_en_orden
 
         return _codigos_en_orden(indice_categoria, n)
 
-    def jsonstat_a_dataframe(self, data: dict) -> pd.DataFrame:
+    def jsonstat_a_dataframe(self, data: dict[str, Any]) -> pd.DataFrame:
         """Delegate to inegi_utils.jsonstat_a_dataframe."""
         from epiforecast.data.ingestion.inegi_utils import jsonstat_a_dataframe
 

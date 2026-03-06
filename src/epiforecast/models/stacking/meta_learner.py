@@ -8,6 +8,7 @@ from typing import Any
 import warnings
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import ElasticNet, Ridge
@@ -88,7 +89,9 @@ class StackingMetaLearner:
             return copy.deepcopy(expert)
 
     @staticmethod
-    def _augment_with_temporal(x: np.ndarray, dates: pd.Series) -> np.ndarray:
+    def _augment_with_temporal(
+        x: npt.NDArray[np.floating[Any]], dates: pd.Series
+    ) -> npt.NDArray[np.floating[Any]]:
         """Agrega sin_week y cos_week al stack de predicciones."""
         week_vals = dates.dt.isocalendar().week.astype(int).values
         sin_week = np.sin(2 * np.pi * week_vals / 52).reshape(-1, 1)
@@ -99,7 +102,7 @@ class StackingMetaLearner:
         self,
         train_data: pd.DataFrame,
         oof_cutoff: str,
-    ) -> tuple[np.ndarray, Ridge | ElasticNet | None]:
+    ) -> tuple[npt.NDArray[np.floating[Any]], Ridge | ElasticNet | None]:
         """Expanding-window OOF: multiples folds para pesos robustos.
 
         Returns:
@@ -117,9 +120,9 @@ class StackingMetaLearner:
             )
             return np.ones(n_experts) / n_experts, None
 
-        all_preds: list[np.ndarray] = []
+        all_preds: list[npt.NDArray[np.floating[Any]]] = []
         all_dates: list[pd.Series] = []
-        all_y: list[np.ndarray] = []
+        all_y: list[npt.NDArray[np.floating[Any]]] = []
 
         for fold_idx, (fold_train, fold_val) in enumerate(folds):
             # Fix 3: descartar folds con target casi constante
@@ -132,7 +135,7 @@ class StackingMetaLearner:
                 )
                 continue
 
-            fold_preds: list[np.ndarray] = []
+            fold_preds: list[npt.NDArray[np.floating[Any]]] = []
             for expert in self._experts:
                 fresh = self._clone_expert(expert)
                 fresh.fit(fold_train)

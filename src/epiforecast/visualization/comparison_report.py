@@ -5,6 +5,7 @@ HTML template functions extracted to comparison_html.py for SRP compliance.
 
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 from zoneinfo import ZoneInfo
 
 import pandas as pd
@@ -28,7 +29,7 @@ _METRICS_MERGE = ["rmse", "mae", "smape", "mase", "smape_train"]
 _MERGE_KEYS = ["padecimiento", "sexo", "nivel", "Entidad"]
 
 
-def generar_reporte_html(config: dict | None = None) -> Path | None:
+def generar_reporte_html(config: dict[str, Any] | None = None) -> Path | None:
     """Genera un reporte HTML comparativo entre todos los modelos disponibles."""
     _conf = config if config is not None else conf
     models_dir = Path("models")

@@ -142,15 +142,9 @@ force-sort-within-sections = true
 # ─── Mypy ─────────────────────────────────────────────────────────────────────
 [tool.mypy]
 python_version = "3.12"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = false          # gradual — flip to true once migrated
+strict = true
 ignore_missing_imports = true          # needed until all stubs exist
 exclude = ["notebooks/", "docs/"]
-
-[[tool.mypy.overrides]]
-module = "epiforecast.*"
-disallow_untyped_defs = false          # flip to true per-module as you refactor
 
 # ─── Pytest ───────────────────────────────────────────────────────────────────
 [tool.pytest.ini_options]

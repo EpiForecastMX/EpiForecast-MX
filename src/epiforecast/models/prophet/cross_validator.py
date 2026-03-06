@@ -11,7 +11,7 @@ Features:
 from __future__ import annotations
 
 import concurrent.futures
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pandas as pd
@@ -32,7 +32,7 @@ class ProphetCrossValidator:
     optional progressive weighting and Newton timeout protection.
     """
 
-    def __init__(self, forecaster: ProphetForecaster, config: dict | None = None):
+    def __init__(self, forecaster: ProphetForecaster, config: dict[str, Any] | None = None):
         """Inicializa el cross-validator con configuración de folds y timeouts.
 
         Args:
@@ -46,7 +46,7 @@ class ProphetCrossValidator:
         self.cv_weights: list[float] | None = _conf.get("cv_weights", None)
         self.fold_timeout: int = _conf.get("cv_timeout_por_fold", 0)
 
-    def run(self) -> tuple[dict, dict]:
+    def run(self) -> tuple[dict[str, Any], dict[str, Any]]:
         """Run full CV by delegating to ProphetTuner.
 
         This is called from ProphetForecaster.cross_validate().
@@ -58,8 +58,8 @@ class ProphetCrossValidator:
 
     def evaluate_combo(
         self,
-        params: dict,
-    ) -> tuple[dict, bool, float | None]:
+        params: dict[str, Any],
+    ) -> tuple[dict[str, Any], bool, float | None]:
         """Evaluate a single HP combination across all CV folds.
 
         Args:
@@ -139,7 +139,7 @@ class ProphetCrossValidator:
 
     def _run_single_fold(
         self,
-        params: dict,
+        params: dict[str, Any],
         train_fold: pd.DataFrame,
         val_fold: pd.DataFrame,
         fold_idx: int,
@@ -201,7 +201,7 @@ class ProphetCrossValidator:
         smape_folds: list[float],
         mase_folds: list[float | None],
         fold_indices: list[int],
-    ) -> dict:
+    ) -> dict[str, Any]:
         """Aggregate fold metrics with optional progressive weighting."""
         if self.cv_weights and len(self.cv_weights) >= self.n_splits:
             weights = [self.cv_weights[i] for i in fold_indices]
@@ -254,7 +254,7 @@ class _FoldCollector:
         self.mase: list[float | None] = []
         self.indices: list[int] = []
 
-    def append(self, fold_idx: int, metrics: dict) -> None:
+    def append(self, fold_idx: int, metrics: dict[str, Any]) -> None:
         """Agrega las métricas de un fold."""
         self.rmse.append(metrics["rmse"])
         self.mae.append(metrics["mae"])
@@ -275,7 +275,7 @@ def _compute_fold_metrics(
     poblacion: float | None = None,
     tasa_por: int = 100000,
     log_transform: bool = False,
-) -> dict:
+) -> dict[str, Any]:
     """Calcula RMSE, MAE, MAPE, SMAPE y MASE para un fold de CV.
 
     Si ``poblacion`` es proporcionada, convierte predicciones y reales a

@@ -62,7 +62,7 @@ def find_page_and_week(
     return None, None, None
 
 
-def extract_matched_page(pdf_path: str, page_index_0: int, out_pdf_path: str):
+def extract_matched_page(pdf_path: str, page_index_0: int, out_pdf_path: str) -> None:
     """Extrae una página específica de un PDF y la guarda en un nuevo archivo.
 
     Args:
@@ -95,7 +95,7 @@ def eliminar_columnas_vacias(
     de filas entre start_state y end_state (incluyéndolos).
     """
     df = df.copy()
-    df.columns = range(df.shape[1])  # type: ignore[assignment]  # columnas 0..N-1
+    df.columns = pd.RangeIndex(df.shape[1])  # columnas 0..N-1
 
     col0 = df[0].astype(str).str.strip()
 
@@ -118,7 +118,7 @@ def eliminar_columnas_vacias(
         is_blank.mean(axis=0) < 1.0
     )  # conserva columnas que no son 100% vacías en ese rango
 
-    return df.loc[:, keep_cols]  # type: ignore[no-any-return]
+    return df.loc[:, keep_cols]
 
 
 def pad_prev_year_cols(df: pd.DataFrame, keywords: list[str]) -> pd.DataFrame:
@@ -161,7 +161,7 @@ def clean_df(df: pd.DataFrame, min_numeric_cells: int = 2) -> pd.DataFrame:
     df = eliminar_columnas_vacias(df)
 
     # 2) Normaliza primera columna (estado)
-    df.columns = range(df.shape[1])  # type: ignore[assignment]
+    df.columns = pd.RangeIndex(df.shape[1])
     df[0] = df[0].astype(str).str.strip()
 
     # 3) Quita filas basura
@@ -219,7 +219,9 @@ def normalize_number(x: Any) -> Any:
     return pd.NA
 
 
-def reshape(df: pd.DataFrame, year: int, week: int, col_map: dict) -> pd.DataFrame:
+def reshape(
+    df: pd.DataFrame, year: int, week: int, col_map: dict[str, dict[str, int]]
+) -> pd.DataFrame:
     """Transforma tabla ancha extraída del boletín a formato largo (tidy).
 
     Args:
@@ -250,7 +252,9 @@ def reshape(df: pd.DataFrame, year: int, week: int, col_map: dict) -> pd.DataFra
     return pd.DataFrame(records)
 
 
-def reshape_wide(df: pd.DataFrame, year: int, week: int, col_map: dict) -> pd.DataFrame:
+def reshape_wide(
+    df: pd.DataFrame, year: int, week: int, col_map: dict[str, dict[str, int]]
+) -> pd.DataFrame:
     """
     Devuelve un DF "ancho":
     1 fila por entidad y 4 columnas por keyword (semana, hombres, mujeres, año anterior).
@@ -298,7 +302,7 @@ def print_run_summary(run_log: list[dict[str, Any]], log_fn: Any = print) -> Non
         for i, val in enumerate(row):
             widths[i] = max(widths[i], len(val))
 
-    def fmt(row):
+    def fmt(row: list[str]) -> str:
         """Formatea una fila con anchos de columna alineados."""
         return " | ".join(val.ljust(widths[i]) for i, val in enumerate(row))
 

@@ -18,6 +18,8 @@ import warnings as _warnings
 from loguru import logger
 from omegaconf import OmegaConf
 
+__all__ = ["conf", "logger"]
+
 # Suprimir warnings ruidosos de leaked semaphores (joblib/loky en Windows/Linux)
 _warnings.filterwarnings("ignore", message=".*resource_tracker.*")
 _warnings.filterwarnings("ignore", message=".*leaked.*")

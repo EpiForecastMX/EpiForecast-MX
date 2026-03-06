@@ -1,5 +1,7 @@
 """INEGI API utility functions: URL construction, response parsing."""
 
+from typing import Any
+
 from loguru import logger
 import pandas as pd
 import requests
@@ -33,7 +35,9 @@ URL_SUPERFICIE = (
 
 
 # ========= Descarga en memoria =========
-def descargar_jsonstat_pxweb(db: str, tabla_px: str, consulta: dict, timeout: int = 60) -> dict:
+def descargar_jsonstat_pxweb(
+    db: str, tabla_px: str, consulta: dict[str, Any], timeout: int = 60
+) -> dict[str, Any]:
     """
     Consulta PxWeb (INEGI) y regresa el JSON-STAT como dict en memoria.
     """
@@ -52,7 +56,7 @@ def descargar_jsonstat_pxweb(db: str, tabla_px: str, consulta: dict, timeout: in
 
 
 # ========= Conversión JSON-STAT v2 -> DataFrame =========
-def _codigos_en_orden(indice_categoria, n: int) -> list:
+def _codigos_en_orden(indice_categoria: Any, n: int) -> list[Any]:
     """
     Normaliza category['index'] a lista [pos -> codigo].
     """
@@ -68,7 +72,7 @@ def _codigos_en_orden(indice_categoria, n: int) -> list:
     raise TypeError(f"Tipo inesperado para category['index']: {type(indice_categoria)}")
 
 
-def jsonstat_a_dataframe(data: dict) -> pd.DataFrame:
+def jsonstat_a_dataframe(data: dict[str, Any]) -> pd.DataFrame:
     """
     Convierte un JSON-STAT v2 (PxWeb) a DataFrame tabular.
     """
@@ -117,7 +121,7 @@ def validar_hombres_mujeres_vs_total(df_wide: pd.DataFrame) -> None:
         )
 
 
-def get_superficie_estados(url, catalogo):
+def get_superficie_estados(url: str, catalogo: dict[str, str]) -> pd.DataFrame:
     """Descarga la superficie territorial de cada estado desde la API de INEGI.
 
     Args:

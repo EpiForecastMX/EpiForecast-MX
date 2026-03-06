@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from epiforecast.models.ensemble.feature_builder import construir_features_xgb
@@ -22,7 +23,7 @@ def generate_oof_residuals(
     yearly_fourier: int,
     holidays: pd.DataFrame,
     n_folds: int = 3,
-) -> tuple[pd.DataFrame, np.ndarray]:
+) -> tuple[pd.DataFrame, npt.NDArray[np.floating[Any]]]:
     """Genera residuos OOF via expanding-window CV con Prophet temporal.
 
     Args:
@@ -47,7 +48,7 @@ def generate_oof_residuals(
         return pd.DataFrame(), np.array([])
 
     all_feats: list[pd.DataFrame] = []
-    all_residuos: list[np.ndarray] = []
+    all_residuos: list[npt.NDArray[np.floating[Any]]] = []
 
     for fold_idx in range(n_folds):
         train_end = min_train + fold_idx * fold_size

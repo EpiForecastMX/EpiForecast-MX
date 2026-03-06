@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from epiforecast.constants import RANDOM_SEED
@@ -46,7 +47,7 @@ class XGBDirectForecaster:
             verbose=False,
         )
 
-    def predict_insample(self, data: pd.DataFrame) -> np.ndarray:
+    def predict_insample(self, data: pd.DataFrame) -> npt.NDArray[np.floating[Any]]:
         """Prediccion batch sobre datos con y conocido."""
         if self._model is None:
             raise RuntimeError("XGBDirect no entrenado.")
@@ -64,8 +65,8 @@ class XGBDirectForecaster:
     def predict_recursive(
         self,
         train_data: pd.DataFrame,
-        future_dates: np.ndarray | pd.DatetimeIndex,
-    ) -> np.ndarray:
+        future_dates: npt.NDArray[Any] | pd.DatetimeIndex,
+    ) -> npt.NDArray[np.floating[Any]]:
         """Prediccion recursiva extendiendo y_ext con predicciones."""
         if self._model is None:
             raise RuntimeError("XGBDirect no entrenado.")

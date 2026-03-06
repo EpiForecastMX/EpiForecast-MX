@@ -9,6 +9,7 @@ import time
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from epiforecast.constants import RANDOM_SEED
@@ -19,13 +20,15 @@ if TYPE_CHECKING:
     from xgboost import XGBRegressor
 
 from epiforecast.models.base import ForecastModel
-from epiforecast.models.ensemble.helpers import (
+from epiforecast.models.ensemble.feature_builder import (
     FEATURE_NAMES,
+    construir_features_xgb,
+    construir_holidays,
+)
+from epiforecast.models.ensemble.helpers import (
     _predecir_test_recursivo,
     calcular_metricas_ensemble,
     calcular_metricas_prophet_base,
-    construir_features_xgb,
-    construir_holidays,
     generar_prediccion_completa,
     generar_predicciones_insample,
     preparar_datos_ensemble,
@@ -137,7 +140,9 @@ class EnsembleForecaster(ForecastModel):
         self._t_prophet = time.perf_counter() - t0
         logger.debug("  Prophet base entrenado en {:.1f}s", self._t_prophet)
 
-    def _insample_residuals(self, train_data: pd.DataFrame) -> tuple[pd.DataFrame, np.ndarray]:
+    def _insample_residuals(
+        self, train_data: pd.DataFrame
+    ) -> tuple[pd.DataFrame, npt.NDArray[np.floating[Any]]]:
         phat = self._prophet.predict(train_data[["ds"]])["yhat"].values  # type: ignore[union-attr]
         feats = construir_features_xgb(
             train_data["y"].reset_index(drop=True), train_data["ds"].reset_index(drop=True)
@@ -284,7 +289,7 @@ class EnsembleForecaster(ForecastModel):
             params.update(self._parallel_engine.get_params())
         return params
 
-    def run(self) -> tuple[Any, dict, dict]:
+    def run(self) -> tuple[Any, dict[str, Any], dict[str, Any]]:
         self.serie, self.train_data, self.test_data = preparar_datos_ensemble(
             self.df, self.padecimiento, self.sexo, self.cutoff
         )
@@ -366,10 +371,10 @@ class EnsembleForecaster(ForecastModel):
             self._parallel_engine._xgb_direct = value
 
     @property
-    def _ensemble_weights(self) -> np.ndarray | None:
+    def _ensemble_weights(self) -> npt.NDArray[np.floating[Any]] | None:
         return self._parallel_engine.weights if self._parallel_engine else None
 
     @_ensemble_weights.setter
-    def _ensemble_weights(self, value: np.ndarray | None) -> None:
+    def _ensemble_weights(self, value: npt.NDArray[np.floating[Any]] | None) -> None:
         if self._parallel_engine is not None:
             self._parallel_engine._ensemble_weights = value

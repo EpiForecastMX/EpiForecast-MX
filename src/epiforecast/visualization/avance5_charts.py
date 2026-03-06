@@ -6,14 +6,16 @@ Each builder receives DataFrames and returns a matplotlib Figure.  No I/O.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import cast
+from typing import Any, cast
 from zoneinfo import ZoneInfo
 
+from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
-from scipy import stats  # type: ignore[import-untyped]
+from scipy import stats
 
 from epiforecast.constants import COVID_END, COVID_START, VIZ_DPI_PRINT
 from epiforecast.visualization.comparison_config import (
@@ -36,19 +38,19 @@ DPI = VIZ_DPI_PRINT
 # ---------------------------------------------------------------------------
 
 
-def _covid_band(ax: plt.Axes) -> None:
+def _covid_band(ax: Axes) -> None:
     ax.axvspan(
-        _COVID_START.to_pydatetime(),  # type: ignore[arg-type]
-        _COVID_END.to_pydatetime(),  # type: ignore[arg-type]
+        _COVID_START.to_pydatetime(),
+        _COVID_END.to_pydatetime(),
         color=COVID_FILL,
         alpha=0.5,
         zorder=0,
     )
 
 
-def _cutoff_line(ax: plt.Axes, cutoff: pd.Timestamp) -> None:
+def _cutoff_line(ax: Axes, cutoff: pd.Timestamp) -> None:
     ax.axvline(
-        cutoff.to_pydatetime(),  # type: ignore[arg-type]
+        cutoff.to_pydatetime(),
         color=COLOR_CUTOFF,
         linestyle="--",
         linewidth=1,
@@ -57,7 +59,7 @@ def _cutoff_line(ax: plt.Axes, cutoff: pd.Timestamp) -> None:
     )
 
 
-def _clean_spines(ax: plt.Axes) -> None:
+def _clean_spines(ax: Axes) -> None:
     for spine in ("top", "right"):
         ax.spines[spine].set_visible(False)
     ax.grid(True, color="lightgrey", linestyle="--", linewidth=0.5, alpha=0.5)
@@ -159,8 +161,8 @@ def build_trend_prediction(
 
 
 def build_residual_analysis(
-    residuals: np.ndarray,
-    dates: pd.Series,  # type: ignore[type-arg]
+    residuals: npt.NDArray[Any],
+    dates: pd.Series,
     model_name: str,
     color: str,
     padecimiento: str,
@@ -222,7 +224,7 @@ def build_residual_analysis(
     return fig
 
 
-def _plot_acf_manual(residuals: np.ndarray, ax: plt.Axes, color: str, n_lags: int = 40) -> None:
+def _plot_acf_manual(residuals: npt.NDArray[Any], ax: Axes, color: str, n_lags: int = 40) -> None:
     """Plot ACF without statsmodels dependency (manual implementation)."""
     n = len(residuals)
     mean = np.mean(residuals)
@@ -249,9 +251,9 @@ def _plot_acf_manual(residuals: np.ndarray, ax: plt.Axes, color: str, n_lags: in
 
 
 def build_feature_importance(
-    importances_xgb: np.ndarray,
+    importances_xgb: npt.NDArray[Any],
     feature_names_xgb: list[str],
-    weights_stacking: np.ndarray,
+    weights_stacking: npt.NDArray[Any],
     expert_names: list[str],
 ) -> Figure:
     """2 paneles: barras XGBoost (izq) + pesos expertos Stacking (der)."""
@@ -419,9 +421,8 @@ def build_metric_bars(
         table.set_fontsize(10)
         table.scale(1, 1.4)
         for i, color in enumerate(row_colors):
-            table[i + 1, -1].set_facecolor(color)  # type: ignore[index]
-            table[i + 1, -1].set_text_props(color="white", fontweight="bold")  # type: ignore[index]
-
+            table[i + 1, -1].set_facecolor(color)
+            table[i + 1, -1].set_text_props(color="white", fontweight="bold")
     _stamp(fig)
     return fig
 
@@ -443,7 +444,7 @@ def build_error_boxplots(
 
     fig, ax = plt.subplots(figsize=(10, 7))
 
-    box_data: list[np.ndarray] = []
+    box_data: list[npt.NDArray[Any]] = []
     labels: list[str] = []
     colors: list[str] = []
     for mk in model_keys:

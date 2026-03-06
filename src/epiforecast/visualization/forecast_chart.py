@@ -1,8 +1,11 @@
 """Forecast chart renderer: publication-quality Prophet forecast visualizations."""
 
 import os
+from typing import Any
 
+from matplotlib.axes import Axes
 import matplotlib.dates as mdates
+from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import pandas as pd
 
@@ -23,10 +26,10 @@ def graficar_pronostico(
     padecimiento: str,
     nombre_archivo: str,
     carpeta_salida: str,
-    conf_paleta: dict,
-    conf_paleta_padecimiento: dict,
-    conf_covid: dict,
-    metricas: dict | None = None,
+    conf_paleta: dict[str, Any],
+    conf_paleta_padecimiento: dict[str, Any],
+    conf_covid: dict[str, Any],
+    metricas: dict[str, Any] | None = None,
 ) -> str:
     """Gráfico de pronóstico estilo publicación IMSS con observaciones reales,
     banda de intervalo, franja COVID-19, outliers IQR y ficha técnica.
@@ -52,7 +55,7 @@ def graficar_pronostico(
     title_parts = _parse_title(titulo, padecimiento, serie, fecha_max_fc)
 
     fig, ax = _setup_figure(title_parts, colors)
-    _plot_series(ax, forecast, serie, outliers, fecha_max_datos, fecha_max_fc, colors, conf_covid)  # type: ignore[arg-type]
+    _plot_series(ax, forecast, serie, outliers, fecha_max_datos, fecha_max_fc, colors, conf_covid)
     _anotar_divisores(ax, fecha_max_datos, colors["div"], colors["fc"])
     _anotar_zona_cv(ax, fecha_max_datos, colors["gray"])
     _format_axes(ax, colors)
@@ -76,7 +79,9 @@ def _prepare_data(serie: pd.DataFrame) -> tuple[pd.DataFrame, pd.Timestamp]:
     return serie[out_mask], serie["ds"].max()
 
 
-def _build_palette(padecimiento: str, conf_paleta: dict, conf_pad: dict) -> dict:
+def _build_palette(
+    padecimiento: str, conf_paleta: dict[str, Any], conf_pad: dict[str, Any]
+) -> dict[str, str]:
     """Construye diccionario de colores usando la paleta IMSS por padecimiento."""
     pad_colors = conf_pad.get(padecimiento, {"c1": "#E74C3C", "cl": "#F5B7B1"})
     return {
@@ -92,7 +97,7 @@ def _build_palette(padecimiento: str, conf_paleta: dict, conf_pad: dict) -> dict
 
 def _parse_title(
     titulo: str, padecimiento: str, serie: pd.DataFrame, fecha_max_fc: pd.Timestamp
-) -> dict:
+) -> dict[str, Any]:
     """Parsea el título compuesto en componentes para suptitle y subtitle."""
     parts = titulo.split(" · ")
     return {
@@ -104,7 +109,7 @@ def _parse_title(
     }
 
 
-def _setup_figure(title_parts: dict, colors: dict) -> tuple[plt.Figure, plt.Axes]:
+def _setup_figure(title_parts: dict[str, Any], colors: dict[str, str]) -> tuple[Figure, Axes]:
     """Crea la figura con títulos y márgenes IMSS."""
     fig, ax = plt.subplots(figsize=cc.FIGSIZE)
     fig.subplots_adjust(**cc.MARGINS)
@@ -125,7 +130,7 @@ def _setup_figure(title_parts: dict, colors: dict) -> tuple[plt.Figure, plt.Axes
     return fig, ax
 
 
-def _format_axes(ax: plt.Axes, colors: dict) -> None:
+def _format_axes(ax: Axes, colors: dict[str, str]) -> None:
     """Aplica formato de ejes estilo IMSS."""
     ax.set_xlabel("")
     ax.set_ylabel("Incrementos semanales", fontsize=cc.FS_LABEL, color=colors["text"])
@@ -142,7 +147,7 @@ def _format_axes(ax: plt.Axes, colors: dict) -> None:
         ax.spines[spine].set_linewidth(cc.LW_SPINE)
 
 
-def _add_legend_and_ficha(fig: plt.Figure, ax: plt.Axes, metricas: dict | None) -> None:
+def _add_legend_and_ficha(fig: Figure, ax: Axes, metricas: dict[str, Any] | None) -> None:
     """Agrega leyenda compacta y ficha técnica al pie del gráfico."""
     handles, labels = ax.get_legend_handles_labels()
     fig.legend(

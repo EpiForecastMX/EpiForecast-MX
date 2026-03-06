@@ -1,6 +1,8 @@
 """Exploratory Data Analysis plots and statistical summaries."""
 
 # src/datos/EDA.py
+from typing import Any
+
 from loguru import logger
 import pandas as pd
 
@@ -28,7 +30,11 @@ class EDAReportBuilder:
     """
 
     def __init__(
-        self, df: pd.DataFrame, fuente_datos: str, opciones: dict, config: dict | None = None
+        self,
+        df: pd.DataFrame,
+        fuente_datos: str,
+        opciones: dict[str, Any],
+        config: dict[str, Any] | None = None,
     ):
         """Inicializa el constructor de reportes EDA.
 
@@ -70,7 +76,7 @@ class EDAReportBuilder:
         """Genera gráfico de barras horizontales con porcentajes para una columna categórica."""
         return self.graficos_helper.plot_categorica_barras(self.df[col], col)
 
-    def plot_violin(self, sexo, padecimiento) -> str | None:
+    def plot_violin(self, sexo: str, padecimiento: str) -> str | None:
         """Genera gráfico de violín por año para una columna de sexo."""
         return self.graficos_helper.plot_violin(self.df, sexo, padecimiento)
 

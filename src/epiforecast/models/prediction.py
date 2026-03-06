@@ -5,6 +5,7 @@ Delegates loading and prediction to the specific model implementation.
 """
 
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -15,7 +16,7 @@ from epiforecast.utils.config import conf
 class ForecastModelLoader:
     """Unified model loader that works with any registered model type."""
 
-    def __init__(self, periodo: int, model_path: Path, config: dict | None = None):
+    def __init__(self, periodo: int, model_path: Path, config: dict[str, Any] | None = None):
         """Inicializa el cargador de modelos.
 
         Args:

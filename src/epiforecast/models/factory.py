@@ -1,5 +1,6 @@
 """Model factory: instantiate models from config (Open/Closed + Dependency Inversion)."""
 
+from collections.abc import Callable
 from typing import Any
 
 from epiforecast.models.base import ForecastModel
@@ -8,10 +9,10 @@ from epiforecast.models.base import ForecastModel
 _MODEL_REGISTRY: dict[str, type[ForecastModel]] = {}
 
 
-def register_model(name: str):
+def register_model(name: str) -> Callable[[type[ForecastModel]], type[ForecastModel]]:
     """Decorator to register a model class in the factory."""
 
-    def decorator(cls: type[ForecastModel]):
+    def decorator(cls: type[ForecastModel]) -> type[ForecastModel]:
         """Registra la clase en el registry global de modelos."""
         _MODEL_REGISTRY[name] = cls
         return cls

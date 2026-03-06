@@ -7,7 +7,7 @@ import pandas as pd
 from epiforecast.utils.dataframe_helpers import OperacionesDatos
 
 
-def ajusta_outliers(df: pd.DataFrame, columnas: list, agrupacion: list) -> pd.DataFrame:
+def ajusta_outliers(df: pd.DataFrame, columnas: list[str], agrupacion: list[str]) -> pd.DataFrame:
     """Detect and clip IQR-based outliers per padecimiento group.
 
     Args:
@@ -37,11 +37,11 @@ def ajusta_outliers(df: pd.DataFrame, columnas: list, agrupacion: list) -> pd.Da
     return df
 
 
-def _compute_iqr_stats(df: pd.DataFrame, columna: str, agrupacion: list) -> pd.DataFrame:
+def _compute_iqr_stats(df: pd.DataFrame, columna: str, agrupacion: list[str]) -> pd.DataFrame:
     """Calcula estadísticas IQR por grupo de agrupación."""
-    return (  # type: ignore[no-any-return]
+    return (
         df.groupby(agrupacion, sort=False)
-        .apply(  # type: ignore[call-overload]
+        .apply(
             lambda g: pd.Series(
                 (
                     lambda met: {
@@ -76,8 +76,8 @@ def _log_iqr_stats(df: pd.DataFrame, columna: str) -> None:
 
 def ajusta_outliers_zscore(
     df: pd.DataFrame,
-    columnas: list,
-    agrupacion: list,
+    columnas: list[str],
+    agrupacion: list[str],
     umbral: int,
     reemplazo: str,
 ) -> pd.DataFrame:

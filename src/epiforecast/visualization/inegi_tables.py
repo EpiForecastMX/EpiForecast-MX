@@ -12,7 +12,7 @@ from epiforecast.visualization.inegi_plots import barras_inegi, boxplots_inegi
 console = Console()
 
 
-def _fmt(v, nd=2):
+def _fmt(v: object, nd: int = 2) -> str:
     if pd.isna(v):
         return ""
     if isinstance(v, int | float) and float(v).is_integer():
@@ -22,7 +22,7 @@ def _fmt(v, nd=2):
     return str(v)
 
 
-def _print_df(df: pd.DataFrame, title: str, max_rows: int = 10, nd: int = 2):
+def _print_df(df: pd.DataFrame, title: str, max_rows: int = 10, nd: int = 2) -> None:
     dfx = df.head(max_rows).copy()
     t = Table(title=title, show_lines=False)
     for c in dfx.columns:
@@ -35,7 +35,7 @@ def _print_df(df: pd.DataFrame, title: str, max_rows: int = 10, nd: int = 2):
     console.print(t)
 
 
-def _print_series(s: pd.Series, title: str, nd: int = 2):
+def _print_series(s: pd.Series, title: str, nd: int = 2) -> None:
     t = Table(title=title)
     t.add_column("Categoría", justify="left", overflow="fold")
     t.add_column("Conteo", justify="right")
@@ -44,7 +44,7 @@ def _print_series(s: pd.Series, title: str, nd: int = 2):
     console.print(t)
 
 
-def eda_inegi(df: pd.DataFrame):
+def eda_inegi(df: pd.DataFrame) -> None:
     """Ejecuta EDA interactivo de datos INEGI con tablas Rich y gráficos matplotlib.
 
     Args:

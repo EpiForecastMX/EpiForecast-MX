@@ -6,11 +6,15 @@ Professional styling with high-contrast line differentiation.
 
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 from zoneinfo import ZoneInfo
 
+from matplotlib.axes import Axes
 import matplotlib.dates as mdates
+from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from epiforecast.constants import VIZ_DPI_SCREEN
@@ -74,7 +78,7 @@ _FS_TIMESTAMP = 8.5
 _TZ_CDMX = ZoneInfo("America/Mexico_City")
 
 
-def generar_graficos_comparativos(config: dict | None = None) -> None:
+def generar_graficos_comparativos(config: dict[str, Any] | None = None) -> None:
     """Genera graficos con alta diferenciacion visual entre los 4 modelos."""
     _conf = config if config is not None else conf
 
@@ -150,7 +154,7 @@ def generar_graficos_comparativos(config: dict | None = None) -> None:
 
         # -- 4 graficos adicionales → subcarpetas descriptivas ---------------
         builder_args = (serie_real, target_y, groups, pad, ent, modo)
-        extras: list[tuple[str, plt.Figure | None]] = [
+        extras: list[tuple[str, Figure | None]] = [
             ("paneles_individuales", build_small_multiples(*builder_args)),
             ("overlay", build_overlay(*builder_args)),
             ("metricas", build_metrics_bars(*builder_args)),
@@ -167,7 +171,7 @@ def generar_graficos_comparativos(config: dict | None = None) -> None:
     logger.success("Se generaron {} comparativas de alto contraste en: {}", count, output_dir)
 
 
-def _load_serie_real(_conf: dict, pad: str, ent: str, modo: str) -> pd.DataFrame | None:
+def _load_serie_real(_conf: dict[str, Any], pad: str, ent: str, modo: str) -> pd.DataFrame | None:
     """Busca CSV de serie real en cualquier directorio de modelo disponible."""
     pad_norm = _normalizar_nombre(pad)
     ent_norm = _normalizar_nombre(ent if ent and ent.lower() != "nacional" else "")
@@ -189,12 +193,12 @@ def _load_serie_real(_conf: dict, pad: str, ent: str, modo: str) -> pd.DataFrame
 
 def _render_comparison(
     serie_real: pd.DataFrame,
-    target_y: pd.Series,  # type: ignore[type-arg]
+    target_y: pd.Series,
     groups: dict[str, pd.DataFrame],
     pad: str,
     ent_val: str,
     modo: str,
-) -> tuple[plt.Figure, plt.Axes]:
+) -> tuple[Figure, Axes]:
     """Renderiza un grafico comparativo individual con N modelos."""
     fig, ax = plt.subplots(figsize=_FIGSIZE)
 
@@ -210,7 +214,7 @@ def _render_comparison(
     )
 
     # 2. Cada modelo
-    all_yhat: list[np.ndarray] = []
+    all_yhat: list[npt.NDArray[Any]] = []
     for model_key, style in _MODELS.items():
         if model_key not in groups:
             continue

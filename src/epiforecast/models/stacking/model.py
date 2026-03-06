@@ -9,11 +9,13 @@ import time
 from typing import Any
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from epiforecast.evaluation.metrics import compute_forecast_metrics
 from epiforecast.models.base import ForecastModel
-from epiforecast.models.ensemble.helpers import construir_holidays, preparar_datos_ensemble
+from epiforecast.models.ensemble.feature_builder import construir_holidays
+from epiforecast.models.ensemble.helpers import preparar_datos_ensemble
 from epiforecast.models.factory import register_model
 from epiforecast.models.stacking.experts import ETSExpert, LGBMExpert, ProphetExpert
 from epiforecast.models.stacking.meta_learner import StackingMetaLearner
@@ -69,7 +71,7 @@ class StackingForecaster(ForecastModel):
         ]
 
         # Meta-learner state
-        self._weights: np.ndarray | None = None
+        self._weights: npt.NDArray[np.floating[Any]] | None = None
         self._ridge: Any = None
         self._n_train: int = 0
 
@@ -108,7 +110,9 @@ class StackingForecaster(ForecastModel):
         self._t_total = time.perf_counter() - t0
         logger.debug("  Stacking entrenado en {:.1f}s", self._t_total)
 
-    def _predict_combined(self, x_stack: np.ndarray, dates: pd.Series) -> np.ndarray:
+    def _predict_combined(
+        self, x_stack: npt.NDArray[np.floating[Any]], dates: pd.Series
+    ) -> npt.NDArray[np.floating[Any]]:
         """Combinacion ponderada: siempre via modelo cuando esta disponible."""
         if self._ridge is not None:
             if self._add_temporal_features:
@@ -117,6 +121,7 @@ class StackingForecaster(ForecastModel):
                 x_input = x_stack
             return np.asarray(np.clip(self._ridge.predict(x_input), 0, None))
         # Fallback: pesos manuales (solo si ridge es None, i.e. OOF fallo)
+        assert self._weights is not None
         return np.asarray(np.clip(x_stack @ self._weights, 0, None))
 
     def predict(self, horizon: int = 52) -> pd.DataFrame:
@@ -252,7 +257,7 @@ class StackingForecaster(ForecastModel):
 
     # -- Orchestration ----------------------------------------------------------
 
-    def run(self) -> tuple[Any, dict, dict]:
+    def run(self) -> tuple[Any, dict[str, Any], dict[str, Any]]:
         """Pipeline completo: preparar datos -> fit -> evaluar."""
         self.serie, self.train_data, self.test_data = preparar_datos_ensemble(
             self.df, self.padecimiento, self.sexo, self.cutoff

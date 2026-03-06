@@ -9,7 +9,7 @@ Delegates: cross-validation to cross_validator.py, HP tuning to tuner.py,
 import logging
 from pathlib import Path
 import pickle
-from typing import Any, cast
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -43,7 +43,7 @@ class ProphetForecaster(ForecastModel):
         sexo: str | None = None,
         entidad: str | None = None,
         padecimiento: str | None = None,
-        config: dict | None = None,
+        config: dict[str, Any] | None = None,
     ):
         self._conf = config if config is not None else conf
         self.df = df.copy() if df is not None else pd.DataFrame()
@@ -67,11 +67,11 @@ class ProphetForecaster(ForecastModel):
         self.poblacion_valor: float | None = None
 
         # Prophet model params
-        self.param_model: dict = dict(self._conf["param_model"])
+        self.param_model: dict[str, Any] = dict(self._conf["param_model"])
         apply_regional_params(self.param_model, self._conf, self.modelado_estados)
 
         # Seasonality params
-        self.add_seasonality_params: dict = build_seasonality_params(
+        self.add_seasonality_params: dict[str, Any] = build_seasonality_params(
             self._conf, self.modelado_estados
         )
 
@@ -117,7 +117,7 @@ class ProphetForecaster(ForecastModel):
 
     # ── ForecastModel Interface ───────────────────────────────────────────────
 
-    def fit(self, train_data: pd.DataFrame, parametros: dict | None = None) -> None:
+    def fit(self, train_data: pd.DataFrame, parametros: dict[str, Any] | None = None) -> None:
         """Train Prophet model on provided data."""
         parametros = parametros or {}
         self._model = self._create_prophet(**parametros)
@@ -155,7 +155,7 @@ class ProphetForecaster(ForecastModel):
                 "Desnormalizaci\u00f3n de tasa aplicada (pob={:,.0f})", self.poblacion_valor
             )
 
-        return out  # type: ignore[no-any-return]
+        return out
 
     def cross_validate(self, data: pd.DataFrame) -> dict[str, float]:
         """Run cross-validation. Delegates to ProphetCrossValidator."""
@@ -212,7 +212,7 @@ class ProphetForecaster(ForecastModel):
 
     # ── Orchestration ─────────────────────────────────────────────────────────
 
-    def run(self) -> tuple[Prophet, dict, dict]:
+    def run(self) -> tuple[Prophet, dict[str, Any], dict[str, Any]]:
         """Full pipeline: prepare data -> cross-validate -> train final model."""
         self.agrupa()
         self.crea_train_test()
@@ -245,7 +245,6 @@ class ProphetForecaster(ForecastModel):
 
             tuner = ProphetTuner(self)
             best_params, best_metrics = tuner.run()
-            best_metrics = cast(dict[str, Any], best_metrics)
             confianza = "normal"
 
         self.fit(self.serie, best_params)
@@ -286,7 +285,7 @@ class ProphetForecaster(ForecastModel):
 
     # ── Private Helpers ───────────────────────────────────────────────────────
 
-    def _create_prophet(self, **hp_overrides) -> Prophet:
+    def _create_prophet(self, **hp_overrides: Any) -> Prophet:
         """Create a Prophet instance with configured params + HP overrides."""
         model = Prophet(holidays=self.fechas_atipicas, **self.param_model, **hp_overrides)
         model.add_seasonality(**self.add_seasonality_params)

@@ -35,7 +35,7 @@ class PDFReportGenerator:
     def __init__(
         self,
         datos_reporte: ReportData,
-        archivo_salida: str | os.PathLike,
+        archivo_salida: str | os.PathLike[str],
         ancho_figura_cm: float = 16.0,
     ) -> None:
         """Inicializa el generador de reportes PDF con datos y ruta de salida.
@@ -52,7 +52,7 @@ class PDFReportGenerator:
 
     # ---------- Estilos ---------- #
 
-    def _crear_estilos(self):
+    def _crear_estilos(self) -> Any:
         styles = getSampleStyleSheet()
         styles.add(
             ParagraphStyle(

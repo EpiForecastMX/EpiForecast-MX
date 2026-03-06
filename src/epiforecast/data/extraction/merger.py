@@ -55,7 +55,7 @@ def merge_csv(
     output_dir: str | Path,
     output_filename: str,
     preview_rows: int = 8,
-    log_fn=typer.echo,
+    log_fn: Callable[..., None] = typer.echo,
 ) -> None:
     """
     - Busca EXACTAMENTE un CSV en input_dir con nombre *_YYYYMMDD_HHMMSS.csv
@@ -194,7 +194,7 @@ def _find_missing_rows(
     return missing_rows, int(missing_mask.sum())
 
 
-@app.command()
+@app.command()  # type: ignore[misc]
 def main(
     input_dir: Path = typer.Option(
         DEFAULT_INPUT_DIR, "--input", "-i", file_okay=False, dir_okay=True
@@ -205,7 +205,7 @@ def main(
     keywords: list[str] = typer.Option(DEFAULT_KEYWORDS, "--kw"),
     save_matched_pages: bool = typer.Option(False, "--save-matched-pages"),
     save_individual_tables: bool = typer.Option(False, "--save-individual-tables"),
-):
+) -> None:
     """CLI principal: extrae tablas de boletines PDF, renombra y hace merge incremental."""
     input_dir = _resolve_input_dir(input_dir)
 
@@ -266,7 +266,7 @@ def _run_extraction(
         raise typer.Exit(1)
 
 
-def _rename_and_merge():
+def _rename_and_merge() -> None:
     """Renombra CSV de salida con timestamp y ejecuta merge incremental."""
     output_file = str(DEFAULT_OUTPUT_DIR) + "/" + DEFAULT_FILENAME
     typer.echo(f"\n>> Renombrando archivo de salida: {output_file}")

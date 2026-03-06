@@ -6,6 +6,7 @@ import logging
 from typing import Any
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from epiforecast.constants import RANDOM_SEED
@@ -46,12 +47,12 @@ class ProphetExpert:
         self._model.fit(train_data[["ds", "y"]])
         logger.debug("  ProphetExpert entrenado ({} filas)", len(train_data))
 
-    def predict(self, dates: pd.DataFrame) -> np.ndarray:
+    def predict(self, dates: pd.DataFrame) -> npt.NDArray[np.floating[Any]]:
         if self._model is None:
             raise RuntimeError("ProphetExpert no entrenado.")
         future = dates[["ds"]] if "ds" in dates.columns else dates
         pred = self._model.predict(future)
-        yhat: np.ndarray = np.clip(pred["yhat"].to_numpy(dtype=float), 0, None)
+        yhat: npt.NDArray[np.floating[Any]] = np.clip(pred["yhat"].to_numpy(dtype=float), 0, None)
         return yhat
 
 
@@ -93,7 +94,7 @@ class ETSExpert:
             logger.warning("  ETSExpert: no convergio ({}), fallback", e)
             self._failed = True
 
-    def predict(self, dates: pd.DataFrame) -> np.ndarray:
+    def predict(self, dates: pd.DataFrame) -> npt.NDArray[np.floating[Any]]:
         n = len(dates)
         if self._failed or self._model is None:
             return np.zeros(n)
@@ -104,7 +105,9 @@ class ETSExpert:
             logger.debug("  ETSExpert: prediccion fallida ({})", e)
             return np.zeros(n)
 
-    def predict_full(self, n_forward: int) -> tuple[np.ndarray | None, np.ndarray]:
+    def predict_full(
+        self, n_forward: int
+    ) -> tuple[npt.NDArray[np.floating[Any]] | None, npt.NDArray[np.floating[Any]]]:
         """Retorna (fitted_values, forecast) para in-sample + forward."""
         if self._failed or self._model is None:
             return None, np.zeros(max(n_forward, 0))
@@ -155,7 +158,9 @@ class LGBMExpert:
         self._model.fit(feats, y)
         logger.debug("  LGBMExpert entrenado ({} filas)", len(train_data))
 
-    def predict(self, dates: pd.DataFrame, *, trend_start: int | None = None) -> np.ndarray:
+    def predict(
+        self, dates: pd.DataFrame, *, trend_start: int | None = None
+    ) -> npt.NDArray[np.floating[Any]]:
         if self._model is None:
             raise RuntimeError("LGBMExpert no entrenado.")
         ds = dates["ds"] if "ds" in dates.columns else dates.iloc[:, 0]
