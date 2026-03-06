@@ -197,6 +197,10 @@ def classify_intent(cmd: str) -> str | None:
     if has_make_or_target and has_list_intent:
         return "targets"
 
+    # Ayuda (capturar antes de chat para que "muestrame la ayuda" no vaya a IA)
+    if _match("ayuda", "help") or stripped in ("?", "h"):
+        return "ayuda"
+
     # Chat / pregunta IA
     if (
         cmd.endswith("?")
@@ -316,14 +320,11 @@ def classify_intent(cmd: str) -> str | None:
     ):
         return "calidad"
 
-    # Ayuda
-    if _match("ayuda", "help") or stripped in ("?", "h"):
-        return "ayuda"
+    # Ayuda (frases largas — el check basico ya esta arriba, antes de chat)
     if _match(
         "puedo hacer",
         "podemos hacer",
         "puedes hacer",
-        "como funciona",
         "que hago",
         "para que sirve",
         "como te uso",
