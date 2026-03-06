@@ -241,9 +241,22 @@ def show_forecast_viewer(
         )
         return
 
-    # El ultimo token es el padecimiento, el resto es el estado
-    padecimiento = parts[-1]
-    estado = " ".join(parts[:-1])
+    # Detectar padecimiento en cualquier posicion
+    padecimientos = {"depresion", "alzheimer", "parkinson"}
+    padecimiento = None
+    estado_parts = []
+    for p in parts:
+        if _strip_accents(p) in padecimientos and padecimiento is None:
+            padecimiento = p
+        else:
+            estado_parts.append(p)
+
+    if not padecimiento:
+        # Fallback: ultimo token es padecimiento
+        padecimiento = parts[-1]
+        estado_parts = parts[:-1]
+
+    estado = " ".join(estado_parts)
 
     tableau = cache.tableau
     if tableau is None:
