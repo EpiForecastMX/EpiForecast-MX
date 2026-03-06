@@ -31,15 +31,33 @@ class ProjectDataCache:
 
     @property
     def tableau(self) -> pd.DataFrame | None:
-        """Carga lazy de tableau.csv."""
+        """Carga lazy de tableau_model.xlsx (relacional) o tableau.csv (legacy)."""
         if self._tableau is None:
-            path = Path("data/processed/tableau.csv")
-            if path.exists():
-                try:
-                    self._tableau = pd.read_csv(path, low_memory=False)
-                except Exception:
-                    return None
+            xlsx_path = Path("data/processed/tableau_model.xlsx")
+            csv_path = Path("data/processed/tableau.csv")
+            try:
+                if xlsx_path.exists():
+                    self._tableau = self._load_tableau_xlsx(xlsx_path)
+                elif csv_path.exists():
+                    self._tableau = pd.read_csv(csv_path, low_memory=False)
+            except Exception:
+                return None
         return self._tableau
+
+    @staticmethod
+    def _load_tableau_xlsx(path: Path) -> pd.DataFrame:
+        """Lee tableau_model.xlsx y une las hojas en un DataFrame plano."""
+        forecast = pd.read_excel(path, sheet_name="forecast")
+        metricas = pd.read_excel(path, sheet_name="metricas")
+        real = pd.read_excel(path, sheet_name="real")
+
+        # Unir forecast + metricas (por entidad, padecimiento, meta_modo)
+        join_keys = ["entidad", "padecimiento", "meta_modo"]
+        df = forecast.merge(metricas, on=join_keys, how="left")
+
+        # Unir con real (por ds, entidad, padecimiento — sin meta_modo)
+        real_keys = ["ds", "entidad", "padecimiento"]
+        return df.merge(real, on=real_keys, how="left")
 
     @property
     def prod_models(self) -> pd.DataFrame | None:

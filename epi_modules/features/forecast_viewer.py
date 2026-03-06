@@ -42,7 +42,7 @@ def _find_series(
     estado: str,
     padecimiento: str,
 ) -> pd.DataFrame | None:
-    """Busca una serie en tableau.csv y la devuelve ordenada por fecha."""
+    """Busca una serie en tableau y la devuelve ordenada por fecha."""
     mask = pd.Series([True] * len(df), index=df.index)
 
     estado_norm = _strip_accents(estado)
@@ -81,16 +81,12 @@ def _find_series(
     # Ordenar por fecha
     for ds_col in ["ds", "fecha", "Fecha", "date"]:
         if ds_col in result.columns:
+            result = result.copy()
+            result[ds_col] = pd.to_datetime(result[ds_col], errors="coerce")
             result = result.sort_values(ds_col).reset_index(drop=True)
             break
 
     return result
-
-
-def _week_labels_from_dates(dates: pd.Series, n: int = 10) -> list[int]:
-    """Extrae numeros de semana ISO de las ultimas n fechas."""
-    parsed = pd.to_datetime(dates, errors="coerce").dropna().tail(n)
-    return [d.isocalendar()[1] for d in parsed]
 
 
 def _show_forecast(
@@ -102,68 +98,89 @@ def _show_forecast(
     """Muestra pronostico de una serie."""
     console.print()
 
+    # Detectar columna de fecha
+    ds_col = next((c for c in ["ds", "fecha", "Fecha", "date"] if c in df.columns), None)
+
+    # Detectar columna de yhat (productivo)
+    yhat_col = next((c for c in ["yhat", "yhat_prod"] if c in df.columns), None)
+
+    # Detectar columnas de modelos individuales (legacy tableau.csv)
     model_cols = {
         "Prophet": "yhat_prophet",
         "DeepAR": "yhat_deepar",
         "Ensemble": "yhat_ensemble",
         "Stacking": "yhat_stacking",
     }
+    has_model_cols = any(c in df.columns for c in model_cols.values())
 
-    yhat_col = None
-    for col in ["yhat", "yhat_prod"]:
-        if col in df.columns:
-            yhat_col = col
-            break
+    # Separar datos reales vs pronostico
+    incr_col = "incrementos_total"
+    has_real = incr_col in df.columns
 
-    # Tabla de comparacion de modelos (ultimas 52 semanas = pronostico)
-    model_table = Table(
-        title=f"[dorado]PRONOSTICO: {estado.title()} \u00b7 {padecimiento.title()}[/dorado]",
+    # Identificar filas con datos reales vs solo pronostico
+    if has_real and yhat_col:
+        real_mask = df[incr_col].notna()
+        forecast_only = df[~real_mask] if real_mask.any() else df
+    else:
+        forecast_only = df
+
+    # --- Sparkline del pronostico productivo ---
+    spark_table = Table(
+        title=f"[dorado]PRONOSTICO: {padecimiento.title()} · {estado.title()}[/dorado]",
         show_header=True,
         header_style="dorado",
         box=box.SIMPLE,
         padding=(0, 1),
         expand=True,
     )
-    model_table.add_column("Modelo", style="blanco", min_width=12)
-    model_table.add_column("Sparkline (52 sem)", min_width=54)
-    model_table.add_column("Total", justify="right", style="dorado", width=12)
+    spark_table.add_column("Serie", style="blanco", min_width=16)
+    spark_table.add_column("Sparkline (52 sem)", min_width=54)
+    spark_table.add_column("Total", justify="right", style="dorado", width=12)
 
-    for model_name, col_name in model_cols.items():
-        if col_name in df.columns:
-            vals = df[col_name].dropna().tolist()
-            if vals:
-                last52 = vals[-52:]
-                spark = _sparkline(last52)
-                total = int(sum(last52))
-                model_table.add_row(model_name, spark, f"{total:,}")
+    if has_model_cols:
+        # Legacy: mostrar sparkline por cada modelo
+        for model_name, col_name in model_cols.items():
+            if col_name in df.columns:
+                vals = df[col_name].dropna().tolist()
+                if vals:
+                    last52 = vals[-52:]
+                    spark = _sparkline(last52)
+                    total = int(sum(last52))
+                    spark_table.add_row(model_name, spark, f"{total:,}")
 
-    # Modelo productivo
     if yhat_col and yhat_col in df.columns:
-        vals = df[yhat_col].dropna().tolist()
-        if vals:
-            last52 = vals[-52:]
+        forecast_vals = forecast_only[yhat_col].dropna().tolist()
+        if forecast_vals:
+            last52 = forecast_vals[-52:]
             spark = _sparkline(last52)
             total = int(sum(last52))
-            model_table.add_row(
-                "[verde]Productivo[/verde]",
-                spark,
-                f"[verde]{total:,}[/verde]",
+            label = "[verde]Productivo[/verde]" if has_model_cols else "Pronostico"
+            total_fmt = f"[verde]{total:,}[/verde]" if has_model_cols else f"{total:,}"
+            spark_table.add_row(label, spark, total_fmt)
+
+    # Sparkline de datos reales historicos
+    if has_real:
+        real_vals = df.loc[df[incr_col].notna(), incr_col].tolist()
+        if real_vals:
+            last52_real = real_vals[-52:]
+            spark_real = _sparkline(last52_real)
+            total_real = int(sum(last52_real))
+            spark_table.add_row(
+                "[gris]Historico (52 sem)[/gris]",
+                spark_real,
+                f"[gris]{total_real:,}[/gris]",
             )
 
-    console.print(model_table)
+    console.print(spark_table)
 
-    # Detalle semanal: ultimas 10 semanas del pronostico productivo
-    if yhat_col and yhat_col in df.columns:
-        tail10 = df.tail(10)
+    # --- Detalle semanal: ultimas 10 semanas del pronostico ---
+    if yhat_col and yhat_col in df.columns and ds_col:
+        tail10 = forecast_only.tail(10)
         pred_vals = tail10[yhat_col].tolist()
 
-        # Semanas epidemiologicas
-        ds_col = None
-        for col in ["ds", "fecha", "Fecha", "date"]:
-            if col in tail10.columns:
-                ds_col = col
-                break
-        week_labels = _week_labels_from_dates(tail10[ds_col], 10) if ds_col else []
+        # Semanas epidemiologicas desde fechas
+        parsed = pd.to_datetime(tail10[ds_col], errors="coerce").dropna()
+        week_labels = [d.isocalendar()[1] for d in parsed]
 
         detail_table = Table(
             show_header=True,
@@ -172,23 +189,21 @@ def _show_forecast(
             padding=(0, 1),
             expand=True,
         )
-        detail_table.add_column("", style="blanco", width=12)
+        detail_table.add_column("", style="blanco", width=16)
         detail_table.add_column("Detalle semanal (ultimas 10)", style="gris")
         detail_table.add_column("Total", justify="right", style="dorado", width=12)
 
-        # Fila de semanas
         if week_labels:
             week_str = "  ".join(f"{'S' + str(w):>5}" for w in week_labels)
             detail_table.add_row("[sutil]Semana[/sutil]", f"[sutil]{week_str}[/sutil]", "")
 
-        # Fila de pronostico
         if pred_vals:
             pred_str = "  ".join(f"{int(v):>5}" for v in pred_vals)
             detail_table.add_row("Pronostico", pred_str, f"{int(sum(pred_vals)):,}")
 
         console.print(detail_table)
 
-    # Metricas del modelo productivo
+    # --- Metricas del modelo productivo ---
     metric_names = {"SMAPE": "smape", "MASE": "mase", "RMSE": "rmse", "MAE": "mae"}
     metrics_found = {}
     for label, col_name in metric_names.items():
@@ -207,7 +222,7 @@ def _show_forecast(
     if "modelo_productivo" in df.columns:
         prod = df["modelo_productivo"].dropna()
         if not prod.empty:
-            console.print(f"  [sutil]Modelo seleccionado: {prod.iloc[0]}[/sutil]")
+            console.print(f"  [sutil]Modelo seleccionado: [dorado]{prod.iloc[0]}[/dorado][/sutil]")
 
     console.print()
 
@@ -232,7 +247,7 @@ def show_forecast_viewer(
 
     tableau = cache.tableau
     if tableau is None:
-        console.print("[gris]  No se encontro tableau.csv[/gris]")
+        console.print("[gris]  No se encontro tableau_model.xlsx ni tableau.csv[/gris]")
         return
 
     series = _find_series(tableau, estado, padecimiento)
