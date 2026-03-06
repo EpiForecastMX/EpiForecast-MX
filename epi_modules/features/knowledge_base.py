@@ -4,6 +4,7 @@ Pre-computa estadisticas profundas desde los datos reales del proyecto
 y responde preguntas con precision sin necesidad de IA externa.
 """
 
+import contextlib
 import logging
 import re
 from typing import Any
@@ -1814,30 +1815,45 @@ class KnowledgeBase:
         if sub.empty:
             return None
 
-        lines = [f"**{pad} en {estado}**" + (f" ({sexo})" if sexo else "") + ":\n"]
-        for _, r in sub.iterrows():
-            sex_label = r.get("sexo", "")
+        titulo = f"## {pad} en {estado}" + (f" ({sexo})" if sexo else "")
+        lines = [titulo, ""]
+
+        total_casos = 0
+        for i, (_, r) in enumerate(sub.iterrows()):
+            sex_label = str(r.get("sexo", "")).capitalize()
             motor = r.get("modelo_produccion", "?")
             smape = r.get("smape_prod", 0)
             mase = r.get("mase_prod", 0)
             rmse = r.get("rmse_prod", 0)
-            casos = r.get("casos_52_semanas_futuro", 0)
+            casos = int(r.get("casos_52_semanas_futuro", 0) or 0)
+            total_casos += casos
             ov = r.get("overfitting", "?")
             just = r.get("justificacion", "")
-            lines.append(
-                f"- **{sex_label}**: motor={motor}, SMAPE={smape:.1f}%, MASE={mase:.2f}, RMSE={rmse:.1f}"
-            )
-            lines.append(f"  Pronóstico 52 sem: {casos:,} casos | Overfitting: {ov}")
-            if just:
-                lines.append(f"  Justificación: {just}")
+            pron = r.get("pron_sem_previa")
+            real = r.get("realidad_sem_previa")
 
-        pron = sub.get("pron_sem_previa")
-        real = sub.get("realidad_sem_previa")
-        if pron is not None and real is not None:
-            for _, r in sub.iterrows():
-                p = r.get("pron_sem_previa", "?")
-                re_ = r.get("realidad_sem_previa", "?")
-                lines.append(f"  Semana previa: pronóstico={p}, real={re_}")
+            if i > 0:
+                lines.append("---")
+                lines.append("")
+
+            lines.append(f"### {sex_label} — {motor}")
+            lines.append("")
+            lines.append(
+                f"- SMAPE: **{smape:.1f}%** | MASE: **{mase:.2f}** | RMSE: **{rmse:.1f}**"
+            )
+            lines.append(f"- Casos proyectados (52 sem): **{casos:,}**")
+            lines.append(f"- Overfitting: {ov}")
+            if pron is not None and real is not None:
+                with contextlib.suppress(ValueError, TypeError):
+                    lines.append(
+                        f"- Semana previa: pronostico **{int(pron)}** vs real **{int(real)}**"
+                    )
+            if just:
+                lines.append(f"\n> {just}")
+            lines.append("")
+
+        if len(sub) > 1 and total_casos > 0:
+            lines.append(f"**Total proyectado 52 semanas: {total_casos:,} casos**")
 
         return "\n".join(lines)
 
