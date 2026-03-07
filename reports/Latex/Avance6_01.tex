@@ -1141,7 +1141,7 @@ La \tabref{tab:semaforo} clasifica los estados según la calidad del pronóstico
 \cellcolor{lightgreen} & Morelos & 1.4\% & 0.04 & \cellcolor{lightred} & Durango & 12.9\% & 0.41 \\
 \cellcolor{lightgreen} & Guanajuato & 1.9\% & 0.08 & \cellcolor{lightred} & Reg.\ Sur-Sureste & 11.5\% & 0.69 \\
 \cellcolor{lightgreen} & Baja California & 2.1\% & 0.09 & \cellcolor{lightred} & Tlaxcala & 11.5\% & 0.37 \\
-\cellcolor{lightgreen} & Coahuila & 2.2\% & 0.05 & \cellcolor{lightred} & Querétaro & 9.8\% & 0.30 \\
+\cellcolor{lightgreen} & Coahuila & 2.1\% & 0.05 & \cellcolor{lightred} & Querétaro & 9.7\% & 0.30 \\
 \cellcolor{lightgreen} & Veracruz & 2.3\% & 0.08 & & & & \\
 \cellcolor{lightgreen} & México & 2.5\% & 0.09 & & & & \\
 \cellcolor{lightgreen} & Hidalgo & 2.8\% & 0.11 & & & & \\
@@ -1221,7 +1221,7 @@ Sospechoso & 3 & \smape{} train anormalmente bajo; revisar features \\
 \end{table}
 
 \begin{insightbox}[Integridad del pipeline]
-La tasa de modelos saludables (OK en ambos diagnósticos) es del \textbf{98.5\%} (328/333). Los 5 modelos con alertas corresponden a series de Alzheimer con incidencia $<$2 casos/semana, donde el bajo volumen amplifica las métricas de diagnóstico sin implicar un problema real.
+La tasa de modelos saludables (OK en ambos diagnósticos) es del \textbf{98.5\%} (328/333). Los 5 modelos con alertas incluyen 4 series de Alzheimer con incidencia $<$2 casos/semana (3 de BCS con overfitting N/D y leakage sospechoso, 1 de CDMX con overfitting moderado) y 1 serie de Depresión Nacional hombres con overfitting alto (2.0$\times$).
 \end{insightbox}
 
 \newpage
