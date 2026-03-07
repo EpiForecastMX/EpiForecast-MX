@@ -264,6 +264,29 @@ class KnowledgeBase:
                     ps["motor_ganador_n"] = int(mc.iloc[0])
                 if "casos_52_semanas_futuro" in sub.columns:
                     ps["casos_futuro_total"] = int(sub["casos_52_semanas_futuro"].sum())
+                # Desglose por sexo dentro del padecimiento
+                if "sexo" in sub.columns and "casos_52_semanas_futuro" in sub.columns:
+                    pad_sexo: dict[str, Any] = {}
+                    for sx in ("general", "hombres", "mujeres"):
+                        sx_sub = sub[sub["sexo"] == sx]
+                        if sx_sub.empty:
+                            continue
+                        sx_info: dict[str, Any] = {"n": len(sx_sub)}
+                        sx_info["casos_total"] = int(sx_sub["casos_52_semanas_futuro"].sum())
+                        # Casos a nivel nacional (la serie mas representativa)
+                        nac = sx_sub[sx_sub["entidad"] == "Nacional"]
+                        if not nac.empty:
+                            sx_info["casos_nacional"] = int(nac["casos_52_semanas_futuro"].iloc[0])
+                        for met in ("smape_prod", "mase_prod"):
+                            if met in sx_sub.columns:
+                                col = sx_sub[met].dropna()
+                                if not col.empty:
+                                    sx_info[f"{met}_mean"] = round(col.mean(), 2)
+                                    sx_info[f"{met}_median"] = round(col.median(), 2)
+                        pad_sexo[sx] = sx_info
+                    if pad_sexo:
+                        ps["por_sexo"] = pad_sexo
+
                 stats["por_pad"][str(pad)] = ps
 
         # --- POR ESTADO ---
@@ -396,7 +419,7 @@ class KnowledgeBase:
         # --- INFRAESTRUCTURA ---
         stats["tests"] = 849
         stats["lineas_codigo"] = 13000
-        stats["cobertura"] = 70
+        stats["cobertura"] = 92
         stats["archivos_test"] = 46
         stats["horizonte"] = 52
         stats["evaluaciones_totales"] = 1332
@@ -445,6 +468,8 @@ class KnowledgeBase:
             ("_answer_padecimiento",),
             # Consultas por modelo/motor
             ("_answer_motor",),
+            # Composicion demografica por padecimiento
+            ("_answer_demografica",),
             # Consultas por sexo/genero
             ("_answer_sexo",),
             # Metricas globales
@@ -2239,6 +2264,98 @@ class KnowledgeBase:
             sm = info.get("smape_mean", "?")
             ms = info.get("mase_mean", "?")
             lines.append(f"- **{sx}**: {info['n']} modelos, SMAPE={sm}%, MASE={ms}")
+        return "\n".join(lines) if len(lines) > 1 else None
+
+    def _answer_demografica(self, q: str, ent: dict, s: dict) -> str | None:
+        """Responde sobre composicion demografica por padecimiento."""
+        triggers = [
+            "composicion demografica",
+            "composicion por sexo",
+            "distribucion demografica",
+            "distribucion por sexo",
+            "demografia",
+            "demografico",
+            "demografica",
+            "hombres.*mujeres",
+            "mujeres.*hombres",
+            "proporcion.*sexo",
+            "ratio.*sexo",
+            "desglose.*sexo",
+        ]
+        if not any(t in q for t in triggers):
+            # Tambien detectar "sexo" + "padecimiento" en combinacion
+            has_sex = any(t in q for t in ["sexo", "genero"])
+            has_pad = any(
+                t in q for t in ["padecimiento", "enfermedad", "diagnostico", "segun", "por cada"]
+            )
+            if not (has_sex and has_pad):
+                return None
+
+        por_pad = s.get("por_pad", {})
+        if not por_pad:
+            return None
+
+        # Si hay un padecimiento especifico detectado, solo mostrar ese
+        pad_filtro = ent.get("padecimiento")
+        # Normalizar para buscar (ej: "Depresion" vs "Depresión")
+        pad_key = None
+        if pad_filtro:
+            pf = _norm(pad_filtro)
+            for k in por_pad:
+                if _norm(k) == pf:
+                    pad_key = k
+                    break
+
+        lines = ["**Composicion demografica por padecimiento**\n"]
+        pads_to_show = {pad_key: por_pad[pad_key]} if pad_key else por_pad
+
+        for pad, pinfo in pads_to_show.items():
+            pad_sexo = pinfo.get("por_sexo", {})
+            if not pad_sexo:
+                continue
+
+            lines.append(f"**{pad}** ({pinfo['n']} modelos):")
+
+            # Casos a nivel nacional (la referencia mas clara)
+            nac_h = pad_sexo.get("hombres", {}).get("casos_nacional")
+            nac_m = pad_sexo.get("mujeres", {}).get("casos_nacional")
+            nac_g = pad_sexo.get("general", {}).get("casos_nacional")
+
+            if nac_g:
+                lines.append(f"  Casos pronosticados Nacional (52 sem): **{nac_g:,}**")
+            if nac_h is not None and nac_m is not None:
+                total_hm = nac_h + nac_m
+                if total_hm > 0:
+                    pct_h = round(nac_h / total_hm * 100, 1)
+                    pct_m = round(nac_m / total_hm * 100, 1)
+                    lines.append(
+                        f"  Hombres: {nac_h:,} ({pct_h}%)  |  Mujeres: {nac_m:,} ({pct_m}%)"
+                    )
+                    ratio = round(nac_m / nac_h, 2) if nac_h > 0 else 0
+                    if ratio >= 1.1:
+                        lines.append(
+                            f"  Ratio mujeres/hombres: {ratio}:1 (predominancia femenina)"
+                        )
+                    elif ratio <= 0.9:
+                        lines.append(
+                            f"  Ratio mujeres/hombres: {ratio}:1 (predominancia masculina)"
+                        )
+                    else:
+                        lines.append(f"  Ratio mujeres/hombres: {ratio}:1 (equilibrado)")
+
+            # SMAPE por sexo
+            for sx_key, sx_label in [
+                ("general", "General"),
+                ("hombres", "Hombres"),
+                ("mujeres", "Mujeres"),
+            ]:
+                sx_data = pad_sexo.get(sx_key, {})
+                sm = sx_data.get("smape_prod_median")
+                if sm is not None:
+                    lines.append(f"  SMAPE mediano {sx_label}: {sm}%")
+
+            lines.append("")  # linea en blanco entre padecimientos
+
         return "\n".join(lines) if len(lines) > 1 else None
 
     def _answer_metrica_global(self, q: str, ent: dict, s: dict) -> str | None:
