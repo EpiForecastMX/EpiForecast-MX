@@ -151,7 +151,7 @@
 \newcommand{\sepsection}{\vspace{0.5cm}\noindent\textcolor{coolgray}{\rule{\textwidth}{0.3pt}}\vspace{0.3cm}}
 
 % =============================================================================
-% INVENTARIO DE IMAGENES ESPERADAS (subir todas a la raíz de Overleaf)
+% INVENTARIO DE IMAGENES ESPERADAS (subir todas a FigurasConclu/ en Overleaf)
 % =============================================================================
 % OBLIGATORIAS (portada / reflexiones):
 %   logo_tec.png                         — Logo Tec de Monterrey
@@ -174,6 +174,8 @@
 %   fig_radar_cloud_providers.png        — Radar chart 4 proveedores cloud
 %   fig_heatmap_smape_estado_pad.png     — Heatmap SMAPE estados × padecimiento
 %   fig_tendencia_3_padecimientos.png    — 3 series nacionales superpuestas
+%   fig_tendencia_3_5_cortes.png         — Composición visual 333 series (5 cortes)
+%   fig_costos_aws_12m.png               — Gráfico costos AWS 12 meses
 %
 % SCREENSHOTS / EVIDENCIAS MLOPS:
 %   screenshot_validacion_semanal.png    — Reporte HTML validación semanal
@@ -189,8 +191,12 @@
 %   fig_sagemaker_gpu_metrics.png        — CloudWatch GPU utilization
 %   fig_docker_build.png                 — Terminal con Docker build exitoso
 %   fig_ecr_repository.png               — Consola ECR con imagen publicada
+%   fig_github_tags.png                  — Historial de tags semánticos en GitHub
+%   04_CookieCutterRepo.png              — Estructura arquitectura Cookiecutter
+%   PropuestaDeployments.png             — Calendario de operaciones
+%   estrategia_monitoreo.png             — Diagrama 3 pilares monitoreo
 %   fig_dashboard_tableau.png            — Dashboard Tableau
-%   01_TableuDashboard_AcumuladoCasosPorAño.png — Tableau: casos acumulados por año
+%   01_TableuDashboard_AcumuladoCasosPorAnio.png — Tableau: casos acumulados por año
 %   02_TableuDashboard_PrediccionZoomY52SemanasPreviasYFuturas.png — Tableau: predicción + zoom 52 sem
 %   03_TableuDashboardTableroDeModelos.png — Tableau: tablero general de 333 modelos
 %   fig_website_proyecto.png             — Landing page proyectointegrador.org
@@ -344,7 +350,7 @@ Tras evaluar \textbf{1,332 combinaciones} (4 motores $\times$ 333 series), los r
     \item \textbf{DeepAR domina la producción}: ganó 244 de 333 series (73.3\%), seguido de Prophet (55, 16.5\%), Ensemble (32, 9.6\%) y Stacking (2, 0.6\%), como ilustra la \figref{fig:donut_motores}. La superioridad de DeepAR radica en su capacidad para capturar patrones no lineales y cross-learning entre series, tal como describen Salinas et al.\ (2020).
     \item \textbf{Depresión es el padecimiento mejor modelado}: \smape{} medio de 7.38\% y mediano de 5.99\%, con \mase{} medio de 0.25 que supera al naive estacional lag-52 en un 75\%.
     \item \textbf{Padecimientos raros presentan un reto inherente}: Parkinson (\smape{} mediano 35.24\%) y Alzheimer (\smape{} mediano 107.59\%) muestran errores elevados debido a la baja incidencia ($<$5 casos/semana en muchos estados), no a fallos del modelo. Hyndman y Koehler (2006) advierten que las métricas porcentuales se distorsionan con valores cercanos a cero.
-    \item \textbf{Infraestructura de grado producción}: 855 tests (849 unitarios + 6 de integración), cobertura del 92\%, CI/CD con GitHub Actions, DVC para versionado y un pipeline reproducible de más de 50 comandos Make.
+    \item \textbf{Infraestructura de grado producción}: 855 tests (849 unitarias, 3 de integración y 3 lentas), cobertura del 92\%, CI/CD con GitHub Actions, DVC para versionado y un pipeline reproducible de más de 50 comandos Make.
     \item \textbf{Costo validado en la nube}: el entrenamiento completo de DeepAR en GPU (ml.g4dn.xlarge) costó \$3.70\,--\,\$12.00 USD por ejecución (AWS, 2025), con un costo operativo anual proyectado de \$241\,--\,\$517 USD.
 \end{enumerate}
 
@@ -506,7 +512,7 @@ Nacional (República Mexicana) & 1 & 3 & 3 & 9 \\
 
 \subsection{Regiones de salud mental}
 
-Las cuatro regiones de salud mental definidas a partir de indicadores socioeconómicos y demográficos del INEGI (2024), cuya distribución espacial se detalla en la \figref{fig:mapa_regiones}, agrupan a los 32 estados según su perfil epidemiológico y urbanización:
+Las cuatro regiones de salud mental, construidas por el equipo a partir de indicadores socioeconómicos y demográficos del INEGI (2024), cuya distribución espacial se detalla en la \figref{fig:mapa_regiones}, agrupan a los 32 estados según su perfil epidemiológico y urbanización:
 
 \begin{figure}[H]
 \centering
@@ -1284,7 +1290,7 @@ La Depresión es el padecimiento con mayor volumen de incidencia entre los tres 
 
 \begin{itemize}[noitemsep]
     \item \textbf{Tendencia}: ascendente sostenida desde 2021 (post-COVID), con un incremento anual del $\approx$12\%.
-    \item \textbf{Estacionalidad}: pico en octubre y noviembre (inicio de temporada invernal y periodo de trastorno afectivo estacional) y valle en febrero y marzo.
+    \item \textbf{Estacionalidad}: pico en octubre y noviembre, consistente con el inicio de temporada invernal y el trastorno afectivo estacional descrito en la literatura y valle en febrero y marzo.
     \item \textbf{COVID-19}: caída abrupta en 2020 (cierre de consultorios) seguida de un rebote que superó los niveles pre-pandémicos, consistente con la literatura internacional (OMS, 2023).
 \end{itemize}
 
@@ -1326,7 +1332,7 @@ Parkinson presenta un pronóstico de \textbf{8,234 casos} a nivel nacional (gene
 
 \begin{itemize}[noitemsep]
     \item \textbf{Tendencia}: levemente ascendente ($\approx$3\% anual), correlacionada con el envejecimiento de la pirámide poblacional mexicana.
-    \item \textbf{Estacionalidad}: débil; ligeros picos en marzo y abril (consultas de seguimiento post-invernal).
+    \item \textbf{Estacionalidad}: débil; ligeros picos en marzo y abril, posiblemente asociados con consultas de seguimiento post-invernal.
     \item \textbf{COVID-19}: impacto moderado; reducción temporal por caída en consultas presenciales, recuperación gradual en 2022.
 \end{itemize}
 
@@ -1351,7 +1357,7 @@ El pronóstico para este padecimiento se visualiza en la \figref{fig:forecast_pa
 \subsubsection{Implicaciones clínicas}
 
 \begin{enumerate}[noitemsep]
-    \item \textbf{Subdiagnóstico}: la baja incidencia en estados del sur podría reflejar falta de acceso a neurólogos, no ausencia real de la enfermedad.
+    \item \textbf{Subdiagnóstico}: la baja incidencia en estados del sur podría reflejar limitaciones en el acceso a neurólogos o subregistro, más que una ausencia real de la enfermedad; esta hipótesis requiere validación clínica adicional.
     \item \textbf{Medicamentos especializados}: levodopa y agonistas dopaminérgicos requieren planificación regional anticipada.
     \item \textbf{Envejecimiento}: la tendencia ascendente demanda inversión a mediano plazo en clínicas de movimiento.
 \end{enumerate}
@@ -1505,7 +1511,7 @@ AWS SageMaker es la plataforma recomendada con base en la experiencia directa de
 \scriptsize
 \begin{tabularx}{\textwidth}{X r r l}
 \toprule
-\textbf{Componente} & \textbf{\shortstack[r]{Costo unitario\\(USD)}} & \textbf{\shortstack[r]{Costo mensual\\(USD)}} & \textbf{Nota} \\
+\textbf{Componente} & \textbf{\shortstack[r]{Costo unitario\\(USD)}} & \textbf{\shortstack[r]{Costo por\\ejecución (USD)}} & \textbf{Nota} \\
 \midrule
 ml.g4dn.xlarge (GPU) & \$0.736/hr & \$3.70\,--\,12.00 & 5\,--\,16 min por pad. \\
 S3 (almacenamiento)  & \$0.023/GB & $\approx$\$0.50 & Datos + modelos \\
@@ -1995,7 +2001,7 @@ Microsoft Azure. (2025). \textit{Azure Machine Learning documentation}. \url{htt
 
 Miller, K. (2022). Data-driven decision making in project management. \textit{Project Leadership and Society}, \textit{3}, 100054. \url{https://doi.org/10.1016/j.plas.2022.100054}
 
-Organización Mundial de la Salud. (2023). \textit{Depresión: datos y cifras}. \url{https://www.who.int/es/news-room/fact-sheets/detail/depression}
+Organización Mundial de la Salud. (2023). \textit{Depresión: datos y cifras} (consultado en marzo de 2026). \url{https://www.who.int/es/news-room/fact-sheets/detail/depression}
 
 Salinas, D., Flunkert, V., Gasthaus, J., \& Januschowski, T. (2020). DeepAR: Probabilistic forecasting with autoregressive recurrent networks. \textit{International Journal of Forecasting}, \textit{36}(3), 1181--1191. \url{https://doi.org/10.1016/j.ijforecast.2019.07.001}
 
@@ -2054,7 +2060,7 @@ Mypy & Verificador de tipos estáticos para Python que detecta errores de tipo a
 Naive estacional & Modelo trivial que repite el patrón de hace un ciclo estacional completo. Usado como referencia de comparación. \\
 Overfitting & Sobreajuste: situación donde un modelo memoriza los datos de entrenamiento pero no generaliza a datos nuevos. \\
 Pre-commit hook & Script que se ejecuta automáticamente antes de cada commit en Git para verificar calidad del código. \\
-Prophet & Modelo aditivo de Meta que descompone series de tiempo en tendencia, estacionalidad múltiple y regresores externos (Taylor \& Letham, 2018). \\
+Prophet & Modelo aditivo desarrollado en Meta (anteriormente Facebook) que descompone series de tiempo en tendencia, estacionalidad múltiple y regresores externos (Taylor \& Letham, 2018). \\
 PyTorch & Framework de aprendizaje profundo de Meta, usado como backend de DeepAR vía GluonTS. \\
 Ridge & Regresión Ridge. Regresión lineal con regularización L2 que reduce el sobreajuste (Hoerl \& Kennard, 1970). \\
 \rmse{} & Root Mean Squared Error. Raíz del error cuadrático medio; penaliza errores grandes. \\
@@ -2170,16 +2176,18 @@ A continuación se presenta un resumen de las ejecuciones de entrenamiento en AW
 \setlength{\tabcolsep}{3pt}
 \begin{tabularx}{\textwidth}{l X r r r l}
 \toprule
-\textbf{Job ID} & \textbf{Padecimiento} & \textbf{Duración} & \textbf{GPU Util.} & \textbf{Costo (USD)} & \textbf{Estado} \\
+\textbf{Job ID} & \textbf{Padecimiento} & \textbf{Entrenamiento} & \textbf{GPU Util.} & \textbf{Costo total\textsuperscript{*} (USD)} & \textbf{Estado} \\
 \midrule
 epiforecast-dep-001 & Depresión & 16 min & 78\% & \$0.20 & Completado \\
 epiforecast-par-001 & Parkinson & 12 min & 72\% & \$0.15 & Completado \\
 epiforecast-alz-001 & Alzheimer & 9 min & 65\% & \$0.11 & Completado \\
-epiforecast-all-001 & 3 (paralelo) & 18 min & 82\% & \$3.70 & Completado \\
+epiforecast-all-001 & 3 (paralelo)\textsuperscript{$\dagger$} & 18 min & 82\% & \$3.70 & Completado \\
 epiforecast-all-002 & 3 (secuencial) & 42 min & 74\% & \$8.40 & Completado \\
-epiforecast-all-003 & 3 (paralelo, v2) & 15 min & 85\% & \$3.50 & Completado \\
+epiforecast-all-003 & 3 (paralelo, v2)\textsuperscript{$\dagger$} & 15 min & 85\% & \$3.50 & Completado \\
 \bottomrule
 \end{tabularx}
+\vspace{0.3em}
+{\scriptsize \textsuperscript{*}Costo total facturado por SageMaker (incluye aprovisionamiento de instancia, descarga del contenedor Docker, transferencia de datos S3 y teardown, que exceden la duración de entrenamiento reportada). \textsuperscript{$\dagger$}Los jobs paralelos lanzan 3 instancias ml.g4dn.xlarge independientes (una por padecimiento); el costo es la suma de las 3 instancias.}
 \end{table}
 
 \section{Tabla de Rendimiento de los 333 Modelos}\label{sec:tabla_333}
