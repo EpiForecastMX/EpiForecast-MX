@@ -240,18 +240,89 @@ def expand_real_by_modo(real: pd.DataFrame) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 
 
+def _load_prod_assignments() -> pd.DataFrame | None:
+    """Lee asignaciones de modelo del Excel de producción si existe."""
+    prod_path = Path("reports/ProdDetails/tabla_333_modelos_produccion.xlsx")
+    if not prod_path.exists():
+        return None
+    try:
+        prod = pd.read_excel(prod_path, sheet_name="Producción")
+        # Normalizar nombre de entidad: region_ -> Region
+        prod["entidad"] = prod["entidad"].str.replace(r"^region_", "Region ", regex=True)
+        # Normalizar nombre de modelo a minúsculas (Tableau usa lowercase)
+        prod["modelo_produccion"] = prod["modelo_produccion"].str.lower()
+        return prod[["padecimiento", "entidad", "sexo", "modelo_produccion"]].rename(
+            columns={"sexo": "meta_modo", "modelo_produccion": "_prod_modelo"}
+        )
+    except Exception as e:
+        logger.warning("No se pudo leer Excel de producción: {}", e)
+        return None
+
+
 def _seleccionar_modelo_productivo(
     df: pd.DataFrame,
     grp: list[str],
     yhat_model_cols: list[str],
 ) -> pd.DataFrame:
-    """Elige el modelo con menor SMAPE por grupo como modelo productivo."""
+    """Elige el modelo productivo por grupo.
+
+    Si existe el Excel de producción (tabla_333_modelos_produccion.xlsx),
+    usa sus asignaciones para garantizar consistencia. Si no, calcula
+    por SMAPE menor (fallback).
+    """
     if not yhat_model_cols:
         df["yhat"] = np.nan
         df["modelo_productivo"] = pd.NA
         return df
 
-    # Orden de preferencia cuando no hay datos reales para calcular SMAPE
+    # --- Intentar leer asignaciones del Excel de producción ---
+    prod_assign = _load_prod_assignments()
+    if prod_assign is not None:
+        df = df.merge(prod_assign, on=grp, how="left")
+        df["modelo_productivo"] = df["_prod_modelo"]
+        df = df.drop(columns="_prod_modelo")
+
+        # Asignar yhat según el modelo ganador
+        df["yhat"] = np.nan
+        for col in yhat_model_cols:
+            modelo = col.replace("yhat_", "")
+            mask = df["modelo_productivo"].eq(modelo)
+            df.loc[mask, "yhat"] = df.loc[mask, col]
+
+        # Fallback para series sin asignación en el Excel
+        no_model = df["modelo_productivo"].isna()
+        if no_model.any():
+            fallback_col = next(
+                (
+                    c
+                    for c in ["yhat_deepar", "yhat_ensemble", "yhat_prophet"]
+                    if c in yhat_model_cols
+                ),
+                yhat_model_cols[0],
+            )
+            df.loc[no_model, "modelo_productivo"] = fallback_col.replace("yhat_", "")
+            df.loc[no_model, "yhat"] = df.loc[no_model, fallback_col]
+            logger.warning(
+                "Series sin asignación en Excel de producción: {}. Fallback a {}.",
+                int(no_model.sum() / max(1, len(df[df["y_real"].notna()]))),
+                fallback_col,
+            )
+
+        # Rellenar yhat faltantes con cualquier modelo disponible
+        still_na = df["yhat"].isna()
+        for col in yhat_model_cols:
+            df.loc[still_na, "yhat"] = df.loc[still_na, col]
+            still_na = df["yhat"].isna()
+
+        winners = (
+            df[grp + ["modelo_productivo"]].drop_duplicates()["modelo_productivo"].value_counts()
+        )
+        logger.info("Modelo productivo (desde Excel producción) -> {}", dict(winners))
+        return df
+
+    # --- Fallback: selección por SMAPE calculado ---
+    logger.warning("Excel de producción no encontrado; selección por SMAPE calculado.")
+
     fallback_order = ["yhat_ensemble", "yhat_stacking", "yhat_prophet", "yhat_deepar"]
     fallback_col = next((c for c in fallback_order if c in yhat_model_cols), yhat_model_cols[0])
 
@@ -388,6 +459,45 @@ def _calcular_metricas(
             if col in df.columns:
                 mask = df["modelo_productivo"].eq(mod)
                 df.loc[mask, m] = df.loc[mask, col]
+
+    # Overlay: si existe el Excel de producción, usar sus métricas CV como canónicas
+    prod_path = Path("reports/ProdDetails/tabla_333_modelos_produccion.xlsx")
+    if prod_path.exists():
+        try:
+            prod = pd.read_excel(prod_path, sheet_name="Producción")
+            prod["entidad"] = prod["entidad"].str.replace(r"^region_", "Region ", regex=True)
+            prod_metrics = prod[
+                [
+                    "padecimiento",
+                    "entidad",
+                    "sexo",
+                    "smape_prod",
+                    "mase_prod",
+                    "rmse_prod",
+                    "mae_prod",
+                ]
+            ].rename(
+                columns={
+                    "sexo": "meta_modo",
+                    "smape_prod": "_p_smape",
+                    "mase_prod": "_p_mase",
+                    "rmse_prod": "_p_rmse",
+                    "mae_prod": "_p_mae",
+                }
+            )
+            df = df.merge(prod_metrics, on=grp, how="left")
+            for canon, src in [
+                ("smape", "_p_smape"),
+                ("mase", "_p_mase"),
+                ("rmse", "_p_rmse"),
+                ("mae", "_p_mae"),
+            ]:
+                mask = df[src].notna()
+                df.loc[mask, canon] = df.loc[mask, src]
+            df = df.drop(columns=["_p_smape", "_p_mase", "_p_rmse", "_p_mae"])
+            logger.info("Métricas canónicas alineadas con Excel de producción.")
+        except Exception as e:
+            logger.warning("No se pudieron leer métricas de producción: {}", e)
 
     return df
 
