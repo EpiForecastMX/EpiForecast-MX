@@ -1,6 +1,7 @@
 """Genera figuras de ranking de motores para el reporte LaTeX.
 
 Figuras generadas:
+  0. fig_distribucion_motores.png   — Donut chart de distribucion de motores ganadores
   1. fig_boxplot_smape_motores.png  — Box plot SMAPE por motor, faceteado por padecimiento
   2. fig_barras_mase_motores.png    — % series con MASE < 1 por motor
   3. fig_mapa_smape_depresion.png   — Mapa coroplético SMAPE Depresión por estado
@@ -63,6 +64,80 @@ def load_data() -> pd.DataFrame:
 
 def _motor_order_color(motors: list[str]) -> list[str]:
     return [COLORS.get(m, GRIS) for m in motors]
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Figura 0: Donut chart de distribución de motores ganadores
+# ═══════════════════════════════════════════════════════════════════════════
+def fig_distribucion_motores(df: pd.DataFrame) -> None:
+    """Donut chart con la distribucion de motores ganadores (333 series)."""
+    if "modelo_produccion" not in df.columns:
+        print("  [SKIP] fig_distribucion_motores.png — columna modelo_produccion no encontrada")
+        return
+
+    mc = df["modelo_produccion"].value_counts()
+    # Ordenar segun MOTORS para consistencia visual
+    labels = [m for m in MOTORS if m in mc.index]
+    sizes = [mc[m] for m in labels]
+    colors = [COLORS.get(m, GRIS) for m in labels]
+    total = sum(sizes)
+
+    fig, ax = plt.subplots(figsize=(7, 7))
+    fig.patch.set_facecolor(BG_COLOR)
+
+    wedges, texts, autotexts = ax.pie(
+        sizes,
+        labels=None,
+        colors=colors,
+        autopct=lambda pct: f"{pct:.1f}%\n({int(round(pct * total / 100))})",
+        startangle=90,
+        pctdistance=0.78,
+        wedgeprops={"width": 0.45, "edgecolor": "white", "linewidth": 2},
+    )
+
+    for at in autotexts:
+        at.set_fontsize(10)
+        at.set_fontweight("bold")
+        at.set_color("white")
+
+    # Centro del donut
+    ax.text(
+        0,
+        0,
+        f"{total}\nmodelos",
+        ha="center",
+        va="center",
+        fontsize=18,
+        fontweight="bold",
+        color=NEGRO,
+    )
+
+    # Leyenda
+    legend_labels = [f"{m} ({mc[m]})" for m in labels]
+    ax.legend(
+        wedges,
+        legend_labels,
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.02),
+        ncol=2,
+        frameon=False,
+        fontsize=11,
+        handlelength=1.5,
+        columnspacing=2,
+    )
+
+    ax.set_title(
+        "Distribucion de series ganadas por motor\nSeleccion automatica por SMAPE + MASE + RMSE",
+        fontweight="bold",
+        color=VERDE_IMSS,
+        fontsize=13,
+        pad=15,
+    )
+
+    fig.tight_layout()
+    fig.savefig(OUT_DIR / "fig_distribucion_motores.png", dpi=200, bbox_inches="tight")
+    plt.close(fig)
+    print("  [OK] fig_distribucion_motores.png")
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -424,6 +499,7 @@ if __name__ == "__main__":
     df = load_data()
     print(f"  Datos: {len(df)} modelos cargados")
 
+    fig_distribucion_motores(df)
     fig_boxplot_smape(df)
     fig_barras_mase(df)
     fig_mapa_smape(df)
