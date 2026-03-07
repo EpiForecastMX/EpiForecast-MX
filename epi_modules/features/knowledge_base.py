@@ -427,6 +427,8 @@ class KnowledgeBase:
             ("_answer_equipo",),
             # Contexto temporal (fecha, semana epi, cobertura datos)
             ("_answer_temporal",),
+            # Meta del proyecto (padecimientos, regiones, franja COVID, alcance)
+            ("_answer_proyecto_meta",),
             # Configuracion de entrenamiento, hiperparametros, fechas de corte
             ("_answer_training_config",),
             # Semana actual / siguiente / casos nuevos
@@ -795,6 +797,199 @@ class KnowledgeBase:
             )
 
         return "\n".join(lines) if lines else None
+
+    # ------------------------------------------------------------------
+    # Meta del proyecto: padecimientos, regiones, franja COVID, alcance
+    # ------------------------------------------------------------------
+
+    def _answer_proyecto_meta(self, q: str, ent: dict, s: dict) -> str | None:
+        """Responde sobre alcance del proyecto: padecimientos, regiones, COVID."""
+        # --- Padecimientos ---
+        pad_triggers = [
+            "que padecimiento",
+            "cuales padecimiento",
+            "de que padecimiento",
+            "padecimiento sabes",
+            "padecimiento manejas",
+            "padecimiento modela",
+            "padecimiento pronostic",
+            "padecimiento cubre",
+            "padecimiento tiene",
+            "que enfermedad",
+            "cuales enfermedad",
+            "enfermedad modela",
+            "enfermedad cubre",
+            "que diagnostico",
+            "que cie",
+            "codigos cie",
+            "clasificacion internacional",
+        ]
+        if any(t in q for t in pad_triggers):
+            por_pad = s.get("por_pad", {})
+            lines = [
+                "**EpiForecast-MX modela 3 padecimientos** de la "
+                "Clasificación Internacional de Enfermedades (CIE-10):\n"
+            ]
+            pads = [
+                ("Depresión", "F32", "Depresión"),
+                ("Parkinson", "G20", "Parkinson"),
+                ("Alzheimer", "G30", "Alzheimer"),
+            ]
+            for nombre, cie, key in pads:
+                ps = por_pad.get(key, {})
+                sm = ps.get("smape_prod_median")
+                motor = ps.get("motor_ganador")
+                extra = ""
+                if sm is not None:
+                    extra += f" | SMAPE mediano: {sm}%"
+                if motor:
+                    extra += f" | Motor ganador: {motor}"
+                lines.append(f"- **{nombre} ({cie})**{extra}")
+            lines.append(
+                f"\nCada padecimiento genera **111 modelos** "
+                f"(37 geografías x 3 modos de sexo) = **{s.get('total_modelos', 333)} "
+                f"modelos totales**."
+            )
+            return "\n".join(lines)
+
+        # --- Regiones ---
+        region_triggers = [
+            "region",
+            "macroregion",
+            "macro region",
+            "zona geografica",
+            "zonas del pais",
+            "division geografica",
+            "cuantas region",
+            "cuales region",
+            "que region",
+            "las region",
+        ]
+        if any(t in q for t in region_triggers):
+            lines = [
+                "**EpiForecast-MX usa 4 macrorregiones INEGI** "
+                "de salud mental como geografías adicionales:\n"
+            ]
+            # Regiones INEGI de salud mental (usadas en los modelos)
+            regiones_inegi = {
+                "Metropolitana alta": [
+                    "CDMX",
+                    "Jalisco",
+                    "México",
+                    "Nuevo León",
+                    "Guanajuato",
+                    "Veracruz",
+                    "Puebla",
+                    "Chihuahua",
+                    "Tamaulipas",
+                    "Baja California",
+                ],
+                "Urbana media": [
+                    "Coahuila",
+                    "Sonora",
+                    "San Luis Potosí",
+                    "Michoacán",
+                    "Sinaloa",
+                    "Hidalgo",
+                    "Querétaro",
+                    "Morelos",
+                    "Aguascalientes",
+                    "Durango",
+                    "Colima",
+                    "Tlaxcala",
+                    "Nayarit",
+                ],
+                "Rural / dispersa": [
+                    "Tabasco",
+                    "Yucatán",
+                    "Quintana Roo",
+                    "Zacatecas",
+                    "Baja California Sur",
+                ],
+                "Sur-Sureste vulnerable": [
+                    "Oaxaca",
+                    "Chiapas",
+                    "Guerrero",
+                    "Campeche",
+                ],
+            }
+            for nombre, estados in regiones_inegi.items():
+                lines.append(f"- **{nombre}** ({len(estados)} entidades): {', '.join(estados)}")
+            lines.append(
+                "\nEstas regiones se modelan como series independientes "
+                "y sirven de **fallback** para entidades con incidencia "
+                f"insuficiente ({s.get('fallback_n', 8)} series usan fallback)."
+            )
+            lines.append(
+                "\n**37 geografías totales**: 32 entidades + 4 regiones INEGI + Nacional."
+            )
+            return "\n".join(lines)
+
+        # --- Franja COVID ---
+        covid_triggers = [
+            "covid",
+            "pandemia",
+            "franja covid",
+            "periodo covid",
+            "periodo pandem",
+            "confinamiento",
+            "cuarentena",
+            "cambio estructural",
+        ]
+        if any(t in q for t in covid_triggers):
+            from epiforecast.constants import (
+                COVID_END,
+                COVID_START,
+            )
+
+            return (
+                f"**Periodo COVID-19 en EpiForecast-MX**:\n\n"
+                f"- **Inicio**: {COVID_START} (15 de marzo de 2020)\n"
+                f"- **Fin**: {COVID_END} (22 de septiembre de 2022)\n"
+                f"- **Duración**: ~2.5 años (130 semanas)\n\n"
+                f"Definido en `src/epiforecast/constants.py`. "
+                f"Esta franja se usa en todas las visualizaciones del proyecto "
+                f"(sombreado rojo) y en los changepoints de Prophet.\n\n"
+                f"**Impacto por padecimiento**:\n"
+                f"- **Depresión**: caída abrupta en 2020 seguida de rebote "
+                f"sostenido post-pandemia (superó niveles pre-COVID)\n"
+                f"- **Parkinson**: reducción moderada por caída en consultas "
+                f"presenciales, recuperación gradual en 2022\n"
+                f"- **Alzheimer**: impacto similar a Parkinson, con potencial "
+                f"subdiagnóstico durante el confinamiento"
+            )
+
+        # --- Alcance general ---
+        alcance_triggers = [
+            "que sabe",
+            "que puede",
+            "de que sabe",
+            "que conoce",
+            "que informacion tiene",
+            "que datos tiene",
+            "que cubre",
+            "alcance",
+            "capacidad",
+            "sobre que me puede",
+        ]
+        if any(t in q for t in alcance_triggers):
+            return (
+                "**Puedo responder sobre el proyecto EpiForecast-MX**:\n\n"
+                "- **Padecimientos**: Depresión (F32), Parkinson (G20), "
+                "Alzheimer (G30)\n"
+                "- **Geografías**: 32 entidades + 4 regiones INEGI + Nacional\n"
+                "- **Modelos**: Prophet, DeepAR, Ensemble, Stacking "
+                f"({s.get('total_modelos', 333)} en producción)\n"
+                "- **Métricas**: SMAPE, MASE, RMSE, MAE por serie\n"
+                "- **Boletín epidemiológico**: datos históricos 2014-2026\n"
+                "- **Equipo**: integrantes, roles, contribuciones\n"
+                "- **Infraestructura**: tests, CI/CD, SageMaker, costos\n"
+                "- **Franja COVID**: periodo, impacto, changepoints\n"
+                "- **Pronósticos**: acumulados a 52 semanas por serie\n\n"
+                "Pregúntame lo que quieras sobre cualquiera de estos temas."
+            )
+
+        return None
 
     # ------------------------------------------------------------------
     # Configuracion de entrenamiento, hiperparametros, fechas de corte

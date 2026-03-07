@@ -54,6 +54,13 @@
     "dime la media de depresion por padecimiento de smape",
     "solo la media",
     "re-start",
-    "salir"
+    "salir",
+    "dime la media y la mediana de smape de depresion",
+    "restart",
+    "dime nuestra franja covid",
+    "que fechas tenemos el rango?",
+    "el rango del covid",
+    "restart",
+    "exit"
   ]
 }

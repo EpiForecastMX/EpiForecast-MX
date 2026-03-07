@@ -8,12 +8,14 @@
 % -- Paquetes ----------------------------------------------------------------
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
+\usepackage{lmodern}        % Latin Modern: soporta tamaños arbitrarios (70pt, 26pt, etc.)
 \usepackage[spanish,es-tabla]{babel}
 \usepackage{geometry}
 \geometry{letterpaper, margin=2.5cm, top=3cm, bottom=2.5cm}
 \setlength{\headheight}{14pt}
 \setlength{\emergencystretch}{3em}  % Previene overfull hbox en párrafos con URLs/texttt largos
 \usepackage{graphicx}
+\graphicspath{{FigurasConclu/}}
 \usepackage{float}
 \usepackage{booktabs}
 \usepackage{tabularx}
@@ -230,7 +232,7 @@ por sexo y entidad federativa en México}}\\[1.2cm]
 \textbf{Asesora:}     & Dra.\ Grettel Barceló Alonso \\
 \textbf{Director MNA:}& Dr.\ Luis Eduardo Falcón Morales \\
 \textbf{Profesora:}   & Mtra.\ Verónica Sandra Guzmán de Valle \\
-\textbf{IMSS:}        & Dra.\ Ruth Pérez-Hernandez (Líder de Proyecto) \\
+\textbf{IMSS:}        & Dra.\ Ruth Pérez-Hernández (Líder de Proyecto) \\
                       & Dra.\ Lina Díaz Castro (Investigadora en Psiquiatría) \\
 \end{tabular}\\[1cm]
 
@@ -271,7 +273,7 @@ La vigilancia epidemiológica en México enfrenta una presión creciente: antici
 Este trabajo presenta las conclusiones clave de \textbf{EpiForecast-MX}, una plataforma inteligente de pronóstico epidemiológico diseñada para responder una pregunta clínicamente útil: \textit{¿cuántos casos de cada padecimiento se esperan la próxima semana en cada estado y para cada sexo?}
 Estos motores de IA se aplican a tres padecimientos de la Clasificación Internacional de Enfermedades: \textbf{Depresión (F32)}, \textbf{Parkinson (G20)} y \textbf{Alzheimer (G30)}, cubriendo las 32 entidades federativas, 4 macrorregiones INEGI y el nivel nacional, con desagregación por sexo y un horizonte de 52 semanas. En total, el sistema opera \textbf{333 modelos de producción}, evaluados con dos métricas estándar: \smape{} (error porcentual simétrico; menor es mejor) y \mase{} (error comparado contra una predicción simple que repite el año anterior; valores menores a 1 indican superioridad del modelo).
 
-Los resultados muestran que \textbf{DeepAR} es el motor de IA más preciso, ganando el 73.3\% de las series con un \smape{} mediano de 12.82\% y un \mase{} de 0.30 (solo el 30\% del error de la predicción ingenua). \textbf{Depresión} es el padecimiento mejor pronosticado (\smape{} 5.99\%), mientras que \textbf{Parkinson} (35.24\%) y \textbf{Alzheimer} (107.59\%) exhiben errores porcentuales más altos por su \emph{baja incidencia absoluta} (menos de 5 casos semanales en muchos estados), no por fallas del modelo; en términos clínicos, el error promedio en Alzheimer es menor a 2 casos por semana. La infraestructura tecnológica garantiza reproducibilidad mediante 849 pruebas automatizadas y entrenamiento en la nube de Amazon (AWS SageMaker) con un costo de \$3.70\,--\,\$12.00 USD por ejecución.
+Los resultados muestran que \textbf{DeepAR} es el motor de IA más preciso, ganando el 73.3\% de las series con un \smape{} mediano de 11.68\% y un \mase{} de 0.20 (solo el 20\% del error de la predicción ingenua). \textbf{Depresión} es el padecimiento mejor pronosticado (\smape{} mediano 5.99\%), mientras que \textbf{Parkinson} (35.24\%) y \textbf{Alzheimer} (107.59\%) exhiben errores porcentuales más altos por su \emph{baja incidencia absoluta} (menos de 5 casos semanales en muchos estados), no por fallas del modelo; en términos clínicos, el error promedio en Alzheimer es menor a 1 caso por semana. La infraestructura tecnológica garantiza reproducibilidad mediante 855 pruebas automatizadas y entrenamiento en la nube de Amazon (AWS SageMaker) con un costo de \$3.70\,--\,\$12.00 USD por ejecución.
 
 \textbf{EpiForecast-MX} demuestra que es viable construir un sistema de pronóstico epidemiológico basado en inteligencia artificial, escalable y económicamente accesible para una institución pública de salud, generando información \emph{accionable} para anticiparse en la toma de decisiones clínicas y administrativas en México.
 
@@ -340,9 +342,9 @@ Tras evaluar \textbf{1,332 combinaciones} (4 motores $\times$ 333 series), los r
 
 \begin{enumerate}[noitemsep]
     \item \textbf{DeepAR domina la producción}: ganó 244 de 333 series (73.3\%), seguido de Prophet (55, 16.5\%), Ensemble (32, 9.6\%) y Stacking (2, 0.6\%), como ilustra la \figref{fig:donut_motores}. La superioridad de DeepAR radica en su capacidad para capturar patrones no lineales y cross-learning entre series, tal como describen Salinas et al.\ (2020).
-    \item \textbf{Depresión es el padecimiento mejor modelado}: \smape{} medio de 7.38\% y mediano de 5.99\%, con \mase{} de 0.42 que supera al naive estacional lag-52 en un 58\%.
+    \item \textbf{Depresión es el padecimiento mejor modelado}: \smape{} medio de 7.38\% y mediano de 5.99\%, con \mase{} medio de 0.25 que supera al naive estacional lag-52 en un 75\%.
     \item \textbf{Padecimientos raros presentan un reto inherente}: Parkinson (\smape{} mediano 35.24\%) y Alzheimer (\smape{} mediano 107.59\%) muestran errores elevados debido a la baja incidencia ($<$5 casos/semana en muchos estados), no a fallos del modelo. Hyndman y Koehler (2006) advierten que las métricas porcentuales se distorsionan con valores cercanos a cero.
-    \item \textbf{Infraestructura de grado producción}: 849 tests, cobertura $>$70\%, CI/CD con GitHub Actions, DVC para versionado y un pipeline reproducible de 40+ comandos Make.
+    \item \textbf{Infraestructura de grado producción}: 855 tests (849 unitarios + 6 de integración), cobertura $>$70\%, CI/CD con GitHub Actions, DVC para versionado y un pipeline reproducible de 50+ comandos Make.
     \item \textbf{Costo validado en la nube}: el entrenamiento completo de DeepAR en GPU (ml.g4dn.xlarge) costó \$3.70\,--\,\$12.00 USD por ejecución (AWS, 2025), con un costo operativo anual proyectado de \$241\,--\,\$517 USD.
 \end{enumerate}
 
@@ -371,9 +373,9 @@ Las siguientes decisiones se derivan directamente de los resultados de evaluaci�
 \midrule
 Motor primario: DeepAR & Gana 73.3\% de series; cross-learning mitiga datos escasos por estado \\
 Métrica de selección: \smape{} & Primario, con \mase{} como desempate (umbral 5\%) y \rmse{} como segundo desempate \\
-Reentrenamiento trimestral & Series de cambio lento; 92\% de ahorro vs.\ semanal sin pérdida de precisión \\
+Reentrenamiento trimestral & Series de cambio lento; 92\% de ahorro en entrenamiento GPU vs.\ semanal sin pérdida de precisión \\
 Fallback regional & 8 series con incidencia insuficiente usan el modelo de su macrorregión INEGI \\
-Proveedor cloud: AWS & Puntuación ponderada 9.34/10; costo validado y ecosistema maduro \\
+Proveedor cloud: AWS & Puntuación ponderada 9.29/10; costo validado y ecosistema maduro \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -553,7 +555,7 @@ Como complemento a esta visión estructural, la \figref{fig:cookiecutter_ui} mue
 
 \begin{figure}[H]
 \centering
-\resizebox{!}{13cm}{%  % Limitamos la altura a 16cm para que quepa con el título
+\resizebox{\dimexpr\textwidth-2pt\relax}{!}{%  % Ajustamos al ancho de texto
 \begin{tikzpicture}[
     % Estilos de nodos compactos
     dir/.style={
@@ -734,7 +736,7 @@ El pipeline de integración continua, cuyos resultados se visualizan en la \figr
 \begin{enumerate}[noitemsep]
     \item \textbf{Lint}: \texttt{ruff check} verifica estilo y convenciones.
     \item \textbf{Typecheck}: \texttt{mypy} valida tipos estáticos.
-    \item \textbf{Tests}: \texttt{pytest} ejecuta 849 tests (unitarios + integración).
+    \item \textbf{Tests}: \texttt{pytest} ejecuta 855 tests (unitarios + integración).
 \end{enumerate}
 
 \begin{figure}[H]
@@ -753,14 +755,14 @@ Como parte del flujo de versionado, cada hito del proyecto se marca con \textit{
 \label{fig:github_tags}
 \end{figure}
 
-\subsection{EPI Console: 30+ comandos Make}
+\subsection{EPI Console: 50+ comandos Make}
 
 El \texttt{Makefile} centraliza todas las operaciones del pipeline MLOps, desde la descarga de datos hasta el despliegue en SageMaker. Como se observa en la \figref{fig:epiconsole}, esto permite que cualquier miembro del equipo reproduzca el pipeline completo con un solo comando.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{fig_epiconsole_help.png}
-\caption[Interfaz de EPI Console.]{Salida del comando \texttt{make help} mostrando la EPI Console con los 30+ comandos disponibles organizados por categoría.}
+\caption[Interfaz de EPI Console.]{Salida del comando \texttt{make help} mostrando la EPI Console con los 50+ comandos disponibles organizados por categoría.}
 \label{fig:epiconsole}
 \end{figure}
 
@@ -1042,17 +1044,17 @@ La \tabref{tab:metricas_pad} resume las métricas agregadas por padecimiento, co
 \cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7} \cmidrule(lr){8-9}
 \textbf{Padecimiento} & Media & Mediana & Media & Mediana & Media & Mediana & Media & Mediana \\
 \midrule
-Depresión (F32)  & 7.38  & 5.99  & 0.42 & 0.30 & 45.2 & 22.1 & 31.8 & 15.4 \\
-Parkinson (G20)   & 52.28 & 35.24 & 0.51 & 0.38 & 3.8  & 2.1  & 2.9  & 1.6  \\
-Alzheimer (G30)   & 109.89 & 107.59 & 0.48 & 0.35 & 1.9  & 1.0  & 1.4  & 0.7  \\
+Depresión (F32)  & 7.38  & 5.99  & 0.25 & 0.17 & 17.2 & 4.8 & 11.5 & 2.2 \\
+Parkinson (G20)   & 52.28 & 35.24 & 0.40 & 0.26 & 2.3  & 1.0  & 1.4  & 0.6  \\
+Alzheimer (G30)   & 109.89 & 107.59 & 0.61 & 0.63 & 1.0  & 0.8  & 0.7  & 0.6  \\
 \midrule
-\textbf{Global} & \textbf{56.52} & \textbf{12.82} & \textbf{0.42} & \textbf{0.30} & --- & --- & --- & --- \\
+\textbf{Global} & \textbf{56.52} & \textbf{23.66} & \textbf{0.42} & \textbf{0.30} & --- & --- & --- & --- \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
 \begin{warningbox}[Nota sobre \smape{} de Alzheimer]
-Un \smape{} de 109.89\% no implica que el modelo sea inutilizable. Como señalan Hyndman y Koehler (2006), el error porcentual se amplifica cuando la incidencia real es cercana a cero (ej.: 0 vs 1 caso = 200\% de error). Las métricas absolutas (\rmse{} = 1.9, \mae{} = 1.4) confirman que el error promedio es menor a 2 casos por semana, lo cual es clínicamente aceptable.
+Un \smape{} de 109.89\% no implica que el modelo sea inutilizable. Como señalan Hyndman y Koehler (2006), el error porcentual se amplifica cuando la incidencia real es cercana a cero (ej.: 0 vs 1 caso = 200\% de error). Las métricas absolutas (\rmse{} = 1.0, \mae{} = 0.7) confirman que el error promedio es menor a 1 caso por semana, lo cual es clínicamente aceptable.
 \end{warningbox}
 
 \subsection{Ranking de motores: DeepAR domina}
@@ -1078,7 +1080,7 @@ Stacking           & 2   & 0.6\%  & Meta-aprendizaje \\
 \end{tabularx}
 \end{table}
 
-Como se observa en la \figref{fig:boxplot_motores}, la distribución de errores porcentuales confirma la estabilidad de DeepAR frente a los demás motores. Asimismo, la \figref{fig:barras_mase} destaca que este algoritmo supera al baseline estacional en más del 95\% de las series.
+Como se observa en la \figref{fig:boxplot_motores}, la distribución de errores porcentuales confirma la estabilidad de DeepAR frente a los demás motores. Asimismo, la \figref{fig:barras_mase} destaca que este algoritmo supera al baseline estacional en más del 97\% de las series (238 de 244).
 
 \begin{figure}[H]
 \centering
@@ -1095,21 +1097,21 @@ Como se observa en la \figref{fig:boxplot_motores}, la distribución de errores 
 \end{figure}
 
 \begin{championbox}[ Depresión (F32)]
-\textbf{Motor}: \textcolor{cdeepar}{DeepAR} gana 81 de 111 series (73.0\%). \\
-\textbf{\smape{} mediano}: 5.99\% \quad \textbf{\mase{} mediano}: 0.30 \\
-\textbf{Pronóstico acumulado 52 semanas}: 904,995 casos a nivel nacional.
+\textbf{Motor}: \textcolor{cdeepar}{DeepAR} gana 108 de 111 series (97.3\%). \\
+\textbf{\smape{} mediano}: 5.99\% \quad \textbf{\mase{} mediano}: 0.17 \\
+\textbf{Pronóstico Nacional (general) a 52 semanas}: 155,966 casos.
 \end{championbox}
 
 \begin{championbox}[ Parkinson (G20)]
-\textbf{Motor}: \textcolor{cdeepar}{DeepAR} gana 82 de 111 series (73.9\%). \\
-\textbf{\smape{} mediano}: 35.24\% \quad \textbf{\mase{} mediano}: 0.38 \\
-\textbf{Pronóstico acumulado 52 semanas}: 44,699 casos a nivel nacional.
+\textbf{Motor}: \textcolor{cdeepar}{DeepAR} gana 89 de 111 series (80.2\%). \\
+\textbf{\smape{} mediano}: 35.24\% \quad \textbf{\mase{} mediano}: 0.26 \\
+\textbf{Pronóstico Nacional (general) a 52 semanas}: 8,234 casos.
 \end{championbox}
 
 \begin{championbox}[ Alzheimer (G30)]
-\textbf{Motor}: \textcolor{cdeepar}{DeepAR} gana 81 de 111 series (73.0\%). \\
-\textbf{\smape{} mediano}: 107.59\% \quad \textbf{\mase{} mediano}: 0.35 \\
-\textbf{Pronóstico acumulado 52 semanas}: 15,852 casos a nivel nacional.
+\textbf{Motor}: \textcolor{cdeepar}{DeepAR} gana 47 de 111 series (42.3\%). \\
+\textbf{\smape{} mediano}: 107.59\% \quad \textbf{\mase{} mediano}: 0.63 \\
+\textbf{Pronóstico Nacional (general) a 52 semanas}: 1,249 casos.
 \end{championbox}
 
 \subsection{Semáforo de calidad por estado}
@@ -1135,16 +1137,16 @@ La \tabref{tab:semaforo} clasifica los estados según la calidad del pronóstico
 \cmidrule(lr){2-4} \cmidrule(lr){6-8}
 & \textbf{Entidad} & \smape{} & \mase{} & & \textbf{Entidad} & \smape{} & \mase{} \\
 \midrule
-\cellcolor{lightgreen} & Nacional (General) & 2.1\% & 0.12 & \cellcolor{lightred} & Campeche & 18.4\% & 0.89 \\
-\cellcolor{lightgreen} & Jalisco & 2.8\% & 0.15 & \cellcolor{lightred} & Colima & 16.7\% & 0.82 \\
-\cellcolor{lightgreen} & México & 3.1\% & 0.18 & \cellcolor{lightred} & Baja California Sur & 15.9\% & 0.78 \\
-\cellcolor{lightgreen} & Ciudad de México & 3.3\% & 0.19 & \cellcolor{lightred} & Tlaxcala & 14.5\% & 0.71 \\
-\cellcolor{lightgreen} & Nuevo León & 3.5\% & 0.20 & \cellcolor{lightred} & Nayarit & 13.8\% & 0.68 \\
-\cellcolor{lightgreen} & Guanajuato & 3.8\% & 0.22 & & & & \\
-\cellcolor{lightgreen} & Veracruz & 4.0\% & 0.23 & & & & \\
-\cellcolor{lightgreen} & Puebla & 4.2\% & 0.24 & & & & \\
-\cellcolor{lightgreen} & Chihuahua & 4.5\% & 0.26 & & & & \\
-\cellcolor{lightgreen} & Sonora & 4.7\% & 0.27 & & & & \\
+\cellcolor{lightgreen} & Michoacán & 1.0\% & 0.05 & \cellcolor{lightred} & Puebla & 16.3\% & 0.42 \\
+\cellcolor{lightgreen} & Morelos & 1.4\% & 0.04 & \cellcolor{lightred} & Durango & 12.9\% & 0.41 \\
+\cellcolor{lightgreen} & Guanajuato & 1.9\% & 0.08 & \cellcolor{lightred} & Reg.\ Sur-Sureste & 11.5\% & 0.69 \\
+\cellcolor{lightgreen} & Baja California & 2.1\% & 0.09 & \cellcolor{lightred} & Tlaxcala & 11.5\% & 0.37 \\
+\cellcolor{lightgreen} & Coahuila & 2.2\% & 0.05 & \cellcolor{lightred} & Querétaro & 9.8\% & 0.30 \\
+\cellcolor{lightgreen} & Veracruz & 2.3\% & 0.08 & & & & \\
+\cellcolor{lightgreen} & México & 2.5\% & 0.09 & & & & \\
+\cellcolor{lightgreen} & Hidalgo & 2.8\% & 0.11 & & & & \\
+\cellcolor{lightgreen} & San Luis Potosí & 3.3\% & 0.09 & & & & \\
+\cellcolor{lightgreen} & Ciudad de México & 3.5\% & 0.16 & & & & \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1159,7 +1161,7 @@ La disparidad en la dificultad de modelado entre padecimientos se visualiza en e
 \end{figure}
 
 \begin{insightbox}[Patrón claro: volumen = precisión]
-Los estados con mayor volumen de consultas (Jalisco, México, CDMX, Nuevo León) obtienen los mejores \smape{}. Esto se debe a que series con mayor incidencia tienen menor varianza relativa, facilitando el aprendizaje del modelo. Por el contrario, estados con baja población derechohabiente (Campeche, Colima, BCS) muestran mayor ruido proporcional.
+Los estados con mayor y más estable volumen de consultas (Michoacán, Morelos, Guanajuato, Baja California, Coahuila) obtienen los mejores \smape{}. Esto se debe a que series con mayor incidencia tienen menor varianza relativa, facilitando el aprendizaje del modelo. Por el contrario, estados con menor volumen o alta variabilidad (Puebla, Durango, Tlaxcala) muestran mayor ruido proporcional.
 \end{insightbox}
 
 \subsection{Análisis por sexo}
@@ -1183,14 +1185,14 @@ Como se visualiza en la \figref{fig:distribucion_sexo}, la composición demográ
 
 \subsection{Impacto de COVID-19}
 
-La pandemia de COVID-19 (2020\,--\,2021) generó un \textbf{cambio estructural} en las series de Depresión, con una caída abrupta durante el confinamiento seguida de un incremento sostenido post-pandemia. El modelo Prophet, según Taylor y Letham (2018), manejó este quiebre mediante changepoints explícitos, mientras que DeepAR lo aprendió implícitamente a través de su ventana de contexto (Salinas et al., 2020).
+La pandemia de COVID-19 (2020\,--\,2022) generó un \textbf{cambio estructural} en las series de Depresión, con una caída abrupta durante el confinamiento seguida de un incremento sostenido post-pandemia. El modelo Prophet, según Taylor y Letham (2018), manejó este quiebre mediante changepoints explícitos, mientras que DeepAR lo aprendió implícitamente a través de su ventana de contexto (Salinas et al., 2020).
 
 Para Parkinson y Alzheimer, el impacto fue moderado: una reducción temporal en el registro de casos (subdiagnóstico por reducción de consultas presenciales) seguida de una recuperación gradual. En la \figref{fig:covid_impact} se observa este fenómeno para el caso de Depresión.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{fig_covid_impact_depresion.png}
-\caption[Impacto de COVID-19 en Depresión.]{Incidencia semanal nacional (2016--2025) con el periodo COVID-19 sombreado en gris, mostrando la caída abrupta y el rebote sostenido.}
+\caption[Impacto de COVID-19 en Depresión.]{Incidencia semanal nacional (2016--2026) con el periodo COVID-19 (marzo 2020 -- septiembre 2022) sombreado en rojo, mostrando la caída abrupta y el rebote sostenido.}
 \label{fig:covid_impact}
 \end{figure}
 
@@ -1259,12 +1261,12 @@ Adicionalmente, la comparativa histórica incluye:
     \item \texttt{precision\_historica}: ratio pronóstico/real como porcentaje.
 \end{itemize}
 
-El seguimiento de estas métricas se realiza mediante reportes automatizados, como se ilustra en la \figref{fig:validacion_screenshot}.
+El seguimiento de estas métricas se realiza mediante reportes automatizados publicados en el sitio web del proyecto, como se ilustra en la \figref{fig:validacion_screenshot}. El reporte completo está disponible en \url{https://proyectointegrador.org/validacion_semanal}.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{screenshot_validacion_semanal.png}
-\caption[Reporte de validación semanal.]{Extracto del reporte automático \texttt{validacion\_semanal.html} comparando pronóstico vs realidad para la semana epidemiológica más reciente.}
+\makebox[\textwidth][c]{\includegraphics[width=1.15\textwidth]{screenshot_validacion_semanal.png}}
+\caption[Reporte de validación semanal.]{Extracto del reporte de validación semanal publicado en \url{https://proyectointegrador.org/validacion_semanal}, comparando pronóstico vs realidad para la semana epidemiológica más reciente.}
 \label{fig:validacion_screenshot}
 \end{figure}
 
@@ -1278,7 +1280,7 @@ El seguimiento de estas métricas se realiza mediante reportes automatizados, co
 
 \subsubsection{Insights epidemiológicos}
 
-La Depresión es el padecimiento con mayor volumen de incidencia entre los tres estudiados, con un pronóstico acumulado de \textbf{904,995 casos} para las próximas 52 semanas a nivel nacional. Este volumen permite a los modelos capturar patrones robustos con alta precisión.
+La Depresión es el padecimiento con mayor volumen de incidencia entre los tres estudiados, con un pronóstico de \textbf{155,966 casos} a nivel nacional (general) para las próximas 52 semanas. Este volumen permite a los modelos capturar patrones robustos con alta precisión.
 
 \begin{itemize}[noitemsep]
     \item \textbf{Tendencia}: ascendente sostenida desde 2021 (post-COVID), con un incremento anual del $\approx$12\%.
@@ -1291,15 +1293,17 @@ Esta dinámica se refleja en el pronóstico nacional presentado en la \figref{fi
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{fig_forecast_depresion_nacional.png}
-\caption[Pronóstico de Depresión Nacional.]{Serie real (azul) vs pronóstico DeepAR a 52 semanas (rojo) con banda de confianza al 80\%.}
+\caption[Pronóstico de Depresión Nacional.]{Serie real (azul oscuro) vs pronóstico del modelo de producción (Ensemble) a 52 semanas (guinda) con banda
+   de confianza al $\sim$80\%. La línea punteada muestra el ajuste histórico del modelo. Franja roja: periodo COVID-19 (marzo 2020 -- septiembre 2022).}
+
 \label{fig:forecast_depresion}
 \end{figure}
 
 \subsubsection{Mejores y peores estados}
 
 \begin{itemize}[noitemsep]
-    \item \textbf{Mejores} (menor \smape{}): Nacional, Jalisco, Estado de México, CDMX, Nuevo León. Todos con población derechohabiente alta y series estables.
-    \item \textbf{Peores} (mayor \smape{}): Campeche, Colima, BCS, Tlaxcala, Nayarit. Estados con baja población que generan series ruidosas.
+    \item \textbf{Mejores} (menor \smape{}): Michoacán, Morelos, Guanajuato, Baja California, Coahuila. Estados con series estables y volumen suficiente.
+    \item \textbf{Peores} (mayor \smape{}): Puebla, Durango, Tlaxcala, Querétaro. Estados con alta variabilidad relativa en sus series.
 \end{itemize}
 
 \subsubsection{Diferencial por sexo}
@@ -1318,7 +1322,7 @@ Las mujeres representan $\approx$70\% de los diagnósticos de Depresión, alinea
 
 \subsubsection{Insights epidemiológicos}
 
-Parkinson presenta un pronóstico acumulado de \textbf{44,699 casos} en 52 semanas, con una incidencia mucho menor que Depresión. La serie es relativamente estable, con estacionalidad suave y tendencia ligeramente ascendente asociada al envejecimiento poblacional (INEGI, 2024).
+Parkinson presenta un pronóstico de \textbf{8,234 casos} a nivel nacional (general) en 52 semanas, con una incidencia mucho menor que Depresión. La serie es relativamente estable, con estacionalidad suave y tendencia ligeramente ascendente asociada al envejecimiento poblacional (INEGI, 2024).
 
 \begin{itemize}[noitemsep]
     \item \textbf{Tendencia}: levemente ascendente ($\approx$3\% anual), correlacionada con el envejecimiento de la pirámide poblacional mexicana.
@@ -1331,15 +1335,17 @@ El pronóstico para este padecimiento se visualiza en la \figref{fig:forecast_pa
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{fig_forecast_parkinson_nacional.png}
-\caption[Pronóstico de Parkinson Nacional.]{Serie real (azul) vs pronóstico DeepAR a 52 semanas (rojo) con banda de confianza al 80\%.}
+  \caption[Pronóstico de Parkinson Nacional.]{Serie real (azul oscuro) vs pronóstico del modelo de producción (Ensemble) a 52 semanas (verde teal) con
+  banda de confianza al $\sim$80\%. La línea punteada muestra el ajuste histórico del modelo. Franja roja: periodo COVID-19 (marzo 2020 -- septiembre
+  2022).}
 \label{fig:forecast_parkinson}
 \end{figure}
 
 \subsubsection{Mejores y peores estados}
 
 \begin{itemize}[noitemsep]
-    \item \textbf{Mejores}: estados del centro y norte con alta densidad de servicios neurológicos (CDMX, Jalisco, Nuevo León).
-    \item \textbf{Peores}: estados del sureste con infraestructura médica limitada y baja incidencia reportada (potencial subdiagnóstico).
+    \item \textbf{Mejores}: Sinaloa, Veracruz, Guanajuato y Chiapas, con series estables y suficiente volumen de consultas neurológicas.
+    \item \textbf{Peores}: Zacatecas, Tlaxcala, Querétaro, Baja California Sur y Nayarit, con baja incidencia y alta variabilidad relativa (potencial subdiagnóstico).
 \end{itemize}
 
 \subsubsection{Implicaciones clínicas}
@@ -1354,7 +1360,7 @@ El pronóstico para este padecimiento se visualiza en la \figref{fig:forecast_pa
 
 \subsubsection{Insights epidemiológicos}
 
-Alzheimer tiene el menor volumen de incidencia con un pronóstico acumulado de \textbf{15,852 casos} en 52 semanas. La baja incidencia genera un reto estadístico inherente: pequeñas variaciones absolutas producen grandes errores porcentuales.
+Alzheimer tiene el menor volumen de incidencia con un pronóstico de \textbf{1,249 casos} a nivel nacional (general) en 52 semanas. La baja incidencia genera un reto estadístico inherente: pequeñas variaciones absolutas producen grandes errores porcentuales.
 
 \begin{itemize}[noitemsep]
     \item \textbf{Tendencia}: estable a ligeramente ascendente, con el mismo patrón de envejecimiento que Parkinson (INEGI, 2024).
@@ -1367,14 +1373,16 @@ La \figref{fig:forecast_alzheimer} muestra el pronóstico nacional generado para
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{fig_forecast_alzheimer_nacional.png}
-\caption[Pronóstico de Alzheimer Nacional.]{Serie real (azul) vs pronóstico DeepAR a 52 semanas (rojo) con banda de confianza al 80\%.}
+
+  \caption[Pronóstico de Alzheimer Nacional.]{Serie real (azul oscuro) vs pronóstico del modelo de producción (DeepAR) a 52 semanas (dorado) con banda
+  de confianza al $\sim$80\%. La línea punteada muestra el ajuste histórico del modelo. Franja roja: periodo COVID-19 (marzo 2020 -- septiembre 2022).}
 \label{fig:forecast_alzheimer}
 \end{figure}
 
 \subsubsection{El reto de la baja incidencia}
 
 \begin{criticalbox}[Limitación inherente de los modelos]
-Cuando una serie tiene 0 a 3 casos por semana, \textbf{cualquier modelo} producirá un \smape{} alto. Esto no es un defecto del algoritmo sino una propiedad matemática: la división por valores cercanos a cero amplifica el error porcentual (Hyndman \& Koehler, 2006). Las métricas absolutas (\rmse{} = 1.9, \mae{} = 1.4) confirman que los modelos están a menos de 2 casos de la realidad en promedio, lo cual es clínicamente útil.
+Cuando una serie tiene 0 a 3 casos por semana, \textbf{cualquier modelo} producirá un \smape{} alto. Esto no es un defecto del algoritmo sino una propiedad matemática: la división por valores cercanos a cero amplifica el error porcentual (Hyndman \& Koehler, 2006). Las métricas absolutas (\rmse{} = 1.0, \mae{} = 0.7) confirman que los modelos están a menos de 1 caso de la realidad en promedio, lo cual es clínicamente útil.
 \end{criticalbox}
 
 \subsubsection{Implicaciones clínicas}
@@ -1437,7 +1445,7 @@ Soporte México (10\%) & 8 & 8 & \cellcolor{lightgreen}9 & 7 \\
 Documentación (8\%) & \cellcolor{lightgreen}9 & \cellcolor{lightgreen}9 & 8 & 7 \\
 Seguridad (8\%) & 9 & 9 & \cellcolor{lightgreen}10 & 8 \\
 \midrule
-\textbf{Puntuación ponderada} & \cellcolor{lightgreen}\textbf{9.34} & \textbf{8.72} & \textbf{8.17} & \textbf{6.96} \\
+\textbf{Puntuación ponderada} & \cellcolor{lightgreen}\textbf{9.29} & \textbf{8.70} & \textbf{8.18} & \textbf{6.88} \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -1457,7 +1465,7 @@ AWS SageMaker es la plataforma recomendada con base en la experiencia directa de
 
 \begin{itemize}[noitemsep]
     \item \textbf{Experiencia real}: se entrenó DeepAR en instancias \texttt{ml.g4dn.xlarge} (NVIDIA T4, 16 GB VRAM) con un costo de \textbf{\$3.70\,--\,\$12.00 USD} por ejecución completa (333 modelos), como se evidencia en la \figref{fig:sagemaker_training}.
-    \item \textbf{Contenerización}: imagen Docker basada en {\small\texttt{pytorch/\allowbreak pytorch:\allowbreak 2.5.1-cuda12.4-cudnn9-runtime}}, construida (\figref{fig:docker_build}) y desplegada automáticamente a ECR (\figref{fig:ecr_repo}).
+    \item \textbf{Contenerización}: imagen Docker basada en {\small\texttt{pytorch/\allowbreak pytorch:\allowbreak 2.5.1-\allowbreak cuda12.4-\allowbreak cudnn9-\allowbreak runtime}}, construida (\figref{fig:docker_build}) y desplegada automáticamente a ECR (\figref{fig:ecr_repo}).
     \item \textbf{Integración nativa}: S3 para datos, ECR para imágenes, CloudWatch para logs y métricas de rendimiento (\figref{fig:gpu_metrics}).
     \item \textbf{Escalabilidad}: soporte para entrenamiento distribuido y multi-GPU sin cambios de código.
 \end{itemize}
@@ -1504,7 +1512,7 @@ S3 (almacenamiento)  & \$0.023/GB & $\approx$\$0.50 & Datos + modelos \\
 ECR (imágenes)       & \$0.10/GB  & $\approx$\$0.30 & Imagen Docker \\
 CloudWatch (logs)    & \$0.50/GB  & $\approx$\$0.10 & Logs entrenamiento \\
 \midrule
-\textbf{Total mensual (4 ejecuciones)} & & \multicolumn{2}{r}{\textbf{\$15.60\,--\,48.90 USD}} \\
+\textbf{Total por ejecución (trimestral)} & & \multicolumn{2}{r}{\textbf{\$4.60\,--\,12.90 USD}} \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -1619,6 +1627,8 @@ El equipo del Tec de Monterrey tiene la responsabilidad de difusión y transfere
     \item \textbf{Documentación}: mantener actualizado el repositorio GitHub con guías de operación.
 \end{enumerate}
 
+\newpage
+
 % =============================================================================
 % 10. PROPUESTA DE DESPLIEGUE EN PRODUCCION
 % =============================================================================
@@ -1694,16 +1704,16 @@ Como interfaz de consumo para los stakeholders clínicos y directivos del {\imss
 El tablero general (\figref{fig:tableau_tablero}) ofrece una visión ejecutiva del estado del sistema completo de pronósticos. Sus bondades principales son:
 
 \begin{itemize}[noitemsep]
-    \item \textbf{KPIs en tiempo real}: muestra de un vistazo los 333 modelos en producción, de los cuales 292 tienen desempeño excelente (\smape{} $<$ 15), con cobertura del 100\% de las series.
+    \item \textbf{KPIs en tiempo real}: muestra de un vistazo los 333 modelos en producción, de los cuales 137 tienen desempeño excelente (\smape{} $<$ 15\%), con cobertura del 100\% de las series.
     \item \textbf{Heatmap de métricas}: el panel izquierdo detalla \mae{}, \mape{}, \mase{}, \rmse{} y \smape{} promedio por padecimiento, nivel geográfico y sexo, permitiendo identificar instantáneamente las combinaciones con mayor dificultad de pronóstico (celdas en tonos cálidos).
-    \item \textbf{Distribución de motores}: el donut chart muestra la proporción de cada motor en producción (DeepAR 76.58\%, Prophet 15.92\%, Ensemble 7.51\%), facilitando decisiones de mantenimiento por motor.
+    \item \textbf{Distribución de motores}: el donut chart muestra la proporción de cada motor en producción (DeepAR 73.3\%, Prophet 16.5\%, Ensemble 9.6\%, Stacking 0.6\%), facilitando decisiones de mantenimiento por motor.
     \item \textbf{Mapa de calor por serie}: la grilla inferior muestra el motor activo para cada combinación de padecimiento, nivel geográfico y sexo, con color que codifica el algoritmo ganador. Esto permite al equipo técnico identificar patrones (por ejemplo, que Prophet domina en ciertas series regionales de Alzheimer).
 \end{itemize}
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=\textwidth]{03_TableuDashboardTableroDeModelos.png}
-\caption[Dashboard Tableau: Tablero general de modelos.]{Tablero general de EpiForecast-MX en Tableau: 333 modelos, 292 con desempeño excelente, cobertura del 100\%. El heatmap de métricas (izquierda) permite comparar rendimiento por padecimiento, nivel y sexo. El donut (derecha superior) resume la distribución de motores activos; la grilla (derecha inferior) muestra el motor asignado a cada serie.}
+\caption[Dashboard Tableau: Tablero general de modelos.]{Tablero general de EpiForecast-MX en Tableau: 333 modelos, 137 con desempeño excelente (\smape{} $<$ 15\%), cobertura del 100\%. El heatmap de métricas (izquierda) permite comparar rendimiento por padecimiento, nivel y sexo. El donut (derecha superior) resume la distribución de motores activos; la grilla (derecha inferior) muestra el motor asignado a cada serie.}
 \label{fig:tableau_tablero}
 \end{figure}
 
@@ -1738,7 +1748,7 @@ La vista de acumulados (\figref{fig:tableau_acumulado}) responde la pregunta de 
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=\textwidth]{01_TableuDashboard_AcumuladoCasosPorAnio.png}
+\includegraphics[width=0.85\textwidth]{01_TableuDashboard_AcumuladoCasosPorAnio.png}
 \caption[Dashboard Tableau: Casos acumulados por año.]{Casos acumulados por año de Parkinson (G20) en Michoacán, desagregados por sexo. Se observa el pico de 2024 y la tendencia descendente en 2025--2026. Los filtros permiten cambiar padecimiento, entidad y rango de años.}
 \label{fig:tableau_acumulado}
 \end{figure}
@@ -1761,7 +1771,14 @@ El reentrenamiento anticipado se activa automáticamente si se detecta \textbf{d
 
 \subsubsection{Calendario de operaciones}
 
-El sistema opera en dos ciclos diferenciados: un ciclo \textbf{semanal} ligero (solo inferencia y monitoreo) y un ciclo \textbf{trimestral} pesado (reentrenamiento completo).
+El sistema opera en dos ciclos diferenciados: un ciclo \textbf{semanal} ligero (solo inferencia y monitoreo) y un ciclo \textbf{trimestral} pesado (reentrenamiento completo), cuya secuencia visual se presenta en la \figref{fig:calendario_ops} y cuyo detalle técnico se desglosa en la \tabref{tab:calendario}.
+
+\begin{figure}[H]
+\centering
+\makebox[\textwidth][c]{\includegraphics[width=0.9\textwidth]{PropuestaDeployments.png}}
+\caption[Calendario de operaciones.]{Calendario de operaciones de EpiForecast-MX: ciclo semanal (inferencia cada lunes) y ciclo trimestral (reentrenamiento completo en enero, abril, julio y octubre). El costo operativo anual es de \$241\,--\,\$517 USD.}
+\label{fig:calendario_ops}
+\end{figure}
 
 \begin{table}[H]
 \centering
@@ -1794,7 +1811,14 @@ Trimestral & Semana 2 & Promoción de modelos aprobados a producción & Pipeline
 
 \subsection{Estrategia de monitoreo}
 
-El monitoreo opera \textbf{semanalmente} (aunque el reentrenamiento sea trimestral) y se basa en tres pilares:
+El monitoreo opera \textbf{semanalmente} (aunque el reentrenamiento sea trimestral) y se basa en tres pilares, cuya estructura se visualiza en la \figref{fig:estrategia_monitoreo}:
+
+\begin{figure}[H]
+\centering
+\makebox[\textwidth][c]{\includegraphics[width=1.15\textwidth]{estrategia_monitoreo.png}}
+\caption[Estrategia de monitoreo.]{Los tres pilares del monitoreo semanal: drift de datos (Kolmogorov-Smirnov), degradación de métricas (\smape{} vs CV) y anomalías operativas (CloudWatch Alarms), con sus umbrales de activación y flujo de respuesta.}
+\label{fig:estrategia_monitoreo}
+\end{figure}
 
 \begin{enumerate}[noitemsep]
     \item \textbf{Drift de datos}: cada lunes, comparar la distribución de nuevos boletines SINAVE contra la distribución histórica. Si el test de Kolmogorov-Smirnov detecta desviación significativa ($p < 0.05$) durante 4 semanas consecutivas, activar reentrenamiento anticipado.
@@ -1803,6 +1827,15 @@ El monitoreo opera \textbf{semanalmente} (aunque el reentrenamiento sea trimestr
 \end{enumerate}
 
 \subsection{Proyección de costos a 12 meses}
+
+La \figref{fig:costos_aws} presenta el desglose visual de costos anuales por componente AWS, incluyendo la comparativa de ahorro entre reentrenamiento trimestral y semanal.
+
+\begin{figure}[H]
+\centering
+\makebox[\textwidth][c]{\includegraphics[width=1.15\textwidth]{fig_costos_aws_12m.png}}
+\caption[Proyección de costos AWS a 12 meses.]{Desglose de costos anuales por componente AWS con reentrenamiento trimestral (\$241\,--\,\$517 USD), equivalente a 7\,--\,15 consultas de neurología. El esquema trimestral representa un ahorro del 52\% respecto al semanal.}
+\label{fig:costos_aws}
+\end{figure}
 
 \begin{table}[H]
 \centering
@@ -1826,8 +1859,8 @@ Data Transfer                                     & \$3\,--\,9         & \$12\,-
 \end{tabularx}
 \end{table}
 
-\begin{insightbox}[Costo-beneficio: 92\% de ahorro vs reentrenamiento semanal]
-Con reentrenamiento trimestral, el costo anual se reduce a \textbf{\$241\,--\,\$517 USD}, un ahorro del 52\% respecto al esquema semanal original (\$412\,--\,\$1,068 USD). El grueso del ahorro proviene de reducir los jobs de entrenamiento GPU de 52 a 4 anuales. El costo de inferencia batch semanal (sin GPU, solo CPU) permanece bajo. Para una institución del tamaño del {\imss}, el sistema completo equivale al costo de 7\,--\,15 consultas de neurología al año.
+\begin{insightbox}[Costo-beneficio: 52\% de ahorro en costo operativo total]
+Con reentrenamiento trimestral, el costo anual se reduce a \textbf{\$241\,--\,\$517 USD}, un ahorro del 52\% respecto al esquema semanal original (\$412\,--\,\$1,068 USD). El grueso del ahorro proviene de reducir los jobs de entrenamiento GPU de 52 a 4 anuales (92\% de ahorro solo en entrenamiento). El costo de inferencia batch semanal (sin GPU, solo CPU) permanece bajo. Para una institución del tamaño del {\imss}, el sistema completo equivale al costo de 7\,--\,15 consultas de neurología al año.
 \end{insightbox}
 
 \newpage
@@ -1877,10 +1910,12 @@ Adicionalmente, se contempla un segundo artículo futuro centrado en los \textbf
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.90\textwidth]{fig_website_proyecto.png}
+\includegraphics[width=0.85\textwidth]{fig_website_proyecto.png}
 \caption[Sitio web del proyecto.]{Página principal de \url{https://proyectointegrador.org}, donde se documenta la metodología, resultados y equipo de EpiForecast-MX.}
 \label{fig:website}
 \end{figure}
+
+\newpage
 
 % =============================================================================
 % 12. REFLEXIONES PERSONALES DEL EQUIPO
@@ -1911,6 +1946,8 @@ Como servidor público del IMSS, este proyecto tuvo un significado especial: rep
 
 Durante el desarrollo aprendí a navegar entre dos lenguajes: el de los datos y el de la gestión pública. Comprender los motores de pronóstico, las métricas de evaluación y la infraestructura cloud fue un crecimiento profesional enorme, pero lo que más me enorgullece es haber tendido el puente entre el equipo técnico y los stakeholders del IMSS. EpiForecast-MX demuestra que la transformación digital en el sector salud es posible con equipos interdisciplinarios. Llevaré conmigo la convicción de que la IA no reemplaza al criterio clínico, sino que lo potencia con evidencia cuantitativa para tomar mejores decisiones.
 
+\newpage
+
 \subsection{Luis G. Sánchez Salazar}
 
 \begin{wrapfigure}{r}{3cm}
@@ -1921,7 +1958,7 @@ Durante el desarrollo aprendí a navegar entre dos lenguajes: el de los datos y 
 
 Mi formación como ingeniero de controles en Tesla me enseñó a diseñar sistemas robustos, pero EpiForecast-MX me retó a aplicar esa mentalidad en un dominio completamente diferente: la epidemiología. Pasar de señales industriales a series de tiempo de salud mental me permitió descubrir paralelismos fascinantes entre el control de procesos y el pronóstico epidemiológico: ambos requieren detección de anomalías, manejo de ruido y retroalimentación continua.
 
-Mi contribución se centró en la infraestructura de calidad y la validación rigurosa de los modelos. Implementar 849 pruebas automatizadas, asegurar cobertura de código superior al 70\% y mantener un pipeline de CI/CD funcional fueron tareas que aportaron al proyecto la confiabilidad que exige un sistema destinado al sector salud. Trabajar con Javier y Juan Carlos me demostró el valor de la diversidad profesional: cada uno aportó desde su trinchera para construir algo que ninguno habría logrado solo. Me llevo la convicción de que la ingeniería de calidad es tan importante como el algoritmo más sofisticado.
+Mi contribución abarcó dos frentes complementarios. Por un lado, me encargué de construir el Dashboard Tableau que consume los resultados de los 333 modelos de producción: diseñé las tres vistas (tablero general, predicción con zoom temporal y casos acumulados por año), automaticé la ingesta de datos desde el pipeline hacia Tableau y configuré los filtros interactivos que permiten a los epidemiólogos del {\imss} explorar cualquier combinación de padecimiento, entidad y sexo sin conocimiento técnico. Por otro lado, aporté a la infraestructura de calidad del proyecto: 855 pruebas automatizadas, cobertura de código superior al 70\% y un pipeline de CI/CD funcional que garantiza la confiabilidad que exige un sistema destinado al sector salud. Trabajar con Javier y Juan Carlos me demostró el valor de la diversidad profesional: cada uno aportó desde su trinchera para construir algo que ninguno habría logrado solo. Me llevo la convicción de que un buen dashboard es tan importante como el mejor algoritmo, porque un modelo que nadie puede interpretar no transforma ninguna decisión.
 
 % =============================================================================
 % 13. REFERENCIAS (APA 7.ª edición, orden alfabético, dos columnas)
@@ -2041,7 +2078,7 @@ XGBoost & Extreme Gradient Boosting. Algoritmo de árboles de decisión potencia
 
 La siguiente tabla lista todos los comandos del \texttt{Makefile} disponibles para operar el pipeline EpiForecast-MX:
 
-\begin{longtable}{>{\ttfamily\scriptsize}l p{8cm}}
+\begin{longtable}{>{\ttfamily\scriptsize}l >{\raggedright\arraybackslash}p{8cm}}
 \toprule
 \textbf{Comando} & \textbf{Descripción} \\
 \midrule
@@ -2146,20 +2183,20 @@ A continuación se presenta un extracto con las métricas principales agrupadas 
 \cmidrule(lr){3-4} \cmidrule(lr){5-6}
 \textbf{Padecimiento} & \textbf{Motor} & Media & Mediana & Media & Mediana & \textbf{Series} \\
 \midrule
-\multirow{4}{*}{Depresión} & DeepAR & 6.52 & 5.21 & 0.38 & 0.27 & 81 \\
-& Prophet & 9.14 & 7.83 & 0.52 & 0.41 & 18 \\
-& Ensemble & 8.67 & 7.12 & 0.49 & 0.38 & 12 \\
-& Stacking & 10.21 & 9.45 & 0.55 & 0.44 & 0 \\
+\multirow{4}{*}{Depresión} & DeepAR & 7.32 & 5.88 & 0.24 & 0.17 & 108 \\
+& Prophet & 12.64 & 12.64 & 0.76 & 0.76 & 1 \\
+& Ensemble & 7.93 & 7.93 & 0.53 & 0.53 & 2 \\
+& Stacking & --- & --- & --- & --- & 0 \\
 \midrule
-\multirow{4}{*}{Parkinson} & DeepAR & 48.12 & 32.15 & 0.47 & 0.35 & 82 \\
-& Prophet & 58.34 & 41.28 & 0.58 & 0.43 & 19 \\
-& Ensemble & 55.67 & 38.92 & 0.54 & 0.40 & 10 \\
-& Stacking & 62.45 & 44.18 & 0.61 & 0.46 & 0 \\
+\multirow{4}{*}{Parkinson} & DeepAR & 36.54 & 26.45 & 0.29 & 0.19 & 89 \\
+& Prophet & 125.45 & 134.46 & 0.80 & 0.77 & 10 \\
+& Ensemble & 108.04 & 118.75 & 0.85 & 0.81 & 12 \\
+& Stacking & --- & --- & --- & --- & 0 \\
 \midrule
-\multirow{4}{*}{Alzheimer} & DeepAR & 105.23 & 103.45 & 0.44 & 0.32 & 81 \\
-& Prophet & 115.67 & 112.34 & 0.54 & 0.40 & 18 \\
-& Ensemble & 112.89 & 109.78 & 0.51 & 0.37 & 10 \\
-& Stacking & 118.45 & 115.67 & 0.57 & 0.43 & 2 \\
+\multirow{4}{*}{Alzheimer} & DeepAR & 71.28 & 59.25 & 0.31 & 0.27 & 47 \\
+& Prophet & 140.05 & 136.66 & 0.78 & 0.79 & 44 \\
+& Ensemble & 145.53 & 152.83 & 0.93 & 0.91 & 18 \\
+& Stacking & 33.05 & 33.05 & 0.54 & 0.54 & 2 \\
 \bottomrule
 \end{tabularx}
 \end{table}
