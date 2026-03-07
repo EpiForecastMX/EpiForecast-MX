@@ -271,7 +271,7 @@ por sexo y entidad federativa en México}}\\[1.2cm]
 La vigilancia epidemiológica en México enfrenta una presión creciente: anticipar, con tiempo y detalle, la demanda de atención en salud mental y neurología dentro de un sistema que atiende a más de 80 millones de derechohabientes. Sin embargo, la planeación institucional suele apoyarse en promedios históricos que \emph{miran al pasado}, sin alertar a tiempo sobre cambios de tendencia, diferencias entre estados o impactos extraordinarios como la pandemia de COVID-19. El resultado es crítico: decisiones tardías en la distribución de medicamentos, la disponibilidad de especialistas y la preparación hospitalaria.
 
 Este trabajo presenta las conclusiones clave de \textbf{EpiForecast-MX}, una plataforma inteligente de pronóstico epidemiológico diseñada para responder una pregunta clínicamente útil: \textit{¿cuántos casos de cada padecimiento se esperan la próxima semana en cada estado y para cada sexo?}
-Estos motores de IA se aplican a tres padecimientos de la Clasificación Internacional de Enfermedades: \textbf{Depresión (F32)}, \textbf{Parkinson (G20)} y \textbf{Alzheimer (G30)}, cubriendo las 32 entidades federativas, 4 macrorregiones INEGI y el nivel nacional, con desagregación por sexo y un horizonte de 52 semanas. En total, el sistema opera \textbf{333 modelos de producción}, evaluados con dos métricas estándar: \smape{} (error porcentual simétrico; menor es mejor) y \mase{} (error comparado contra una predicción simple que repite el año anterior; valores menores a 1 indican superioridad del modelo).
+Estos motores de IA se aplican a tres padecimientos de la Clasificación Internacional de Enfermedades: \textbf{Depresión (F32)}, \textbf{Parkinson (G20)} y \textbf{Alzheimer (G30)}, cubriendo las 32 entidades federativas, 4 regiones de salud mental y el nivel nacional, con desagregación por sexo y un horizonte de 52 semanas. En total, el sistema opera \textbf{333 modelos de producción}, evaluados con dos métricas estándar: \smape{} (error porcentual simétrico; menor es mejor) y \mase{} (error comparado contra una predicción simple que repite el año anterior; valores menores a 1 indican superioridad del modelo).
 
 Los resultados muestran que \textbf{DeepAR} es el motor de IA más preciso, ganando el 73.3\% de las 333 series. El sistema de selección automática alcanza un \smape{} mediano de producción de 23.66\% y un \mase{} de 0.30 (solo el 30\% del error de la predicción ingenua). \textbf{Depresión} es el padecimiento mejor pronosticado (\smape{} mediano 5.99\%), mientras que \textbf{Parkinson} (35.24\%) y \textbf{Alzheimer} (107.59\%) exhiben errores porcentuales más altos por su \emph{baja incidencia absoluta} (menos de 5 casos semanales en muchos estados), no por fallas del modelo; en términos clínicos, el error promedio en Alzheimer es menor a 1 caso por semana. La infraestructura tecnológica garantiza reproducibilidad mediante 855 pruebas automatizadas y entrenamiento en la nube de Amazon (AWS SageMaker) con un costo de \$3.70\,--\,\$12.00 USD por ejecución.
 
@@ -344,7 +344,7 @@ Tras evaluar \textbf{1,332 combinaciones} (4 motores $\times$ 333 series), los r
     \item \textbf{DeepAR domina la producción}: ganó 244 de 333 series (73.3\%), seguido de Prophet (55, 16.5\%), Ensemble (32, 9.6\%) y Stacking (2, 0.6\%), como ilustra la \figref{fig:donut_motores}. La superioridad de DeepAR radica en su capacidad para capturar patrones no lineales y cross-learning entre series, tal como describen Salinas et al.\ (2020).
     \item \textbf{Depresión es el padecimiento mejor modelado}: \smape{} medio de 7.38\% y mediano de 5.99\%, con \mase{} medio de 0.25 que supera al naive estacional lag-52 en un 75\%.
     \item \textbf{Padecimientos raros presentan un reto inherente}: Parkinson (\smape{} mediano 35.24\%) y Alzheimer (\smape{} mediano 107.59\%) muestran errores elevados debido a la baja incidencia ($<$5 casos/semana en muchos estados), no a fallos del modelo. Hyndman y Koehler (2006) advierten que las métricas porcentuales se distorsionan con valores cercanos a cero.
-    \item \textbf{Infraestructura de grado producción}: 855 tests (849 unitarios + 6 de integración), cobertura $>$70\%, CI/CD con GitHub Actions, DVC para versionado y un pipeline reproducible de 50+ comandos Make.
+    \item \textbf{Infraestructura de grado producción}: 855 tests (849 unitarios + 6 de integración), cobertura del 92\%, CI/CD con GitHub Actions, DVC para versionado y un pipeline reproducible de más de 50 comandos Make.
     \item \textbf{Costo validado en la nube}: el entrenamiento completo de DeepAR en GPU (ml.g4dn.xlarge) costó \$3.70\,--\,\$12.00 USD por ejecución (AWS, 2025), con un costo operativo anual proyectado de \$241\,--\,\$517 USD.
 \end{enumerate}
 
@@ -374,7 +374,7 @@ Las siguientes decisiones se derivan directamente de los resultados de evaluaci�
 Motor primario: DeepAR & Gana 73.3\% de series; cross-learning mitiga datos escasos por estado \\
 Métrica de selección: \smape{} & Primario, con \mase{} como desempate (umbral 5\%) y \rmse{} como segundo desempate \\
 Reentrenamiento trimestral & Series de cambio lento; 92\% de ahorro en entrenamiento GPU vs.\ semanal sin pérdida de precisión \\
-Fallback regional & 8 series con incidencia insuficiente usan el modelo de su macrorregión INEGI \\
+Fallback regional & 8 series con incidencia insuficiente usan el modelo de su región de salud mental \\
 Proveedor cloud: AWS & Puntuación ponderada 9.29/10; costo validado y ecosistema maduro \\
 \bottomrule
 \end{tabularx}
@@ -504,20 +504,20 @@ Nacional (República Mexicana) & 1 & 3 & 3 & 9 \\
 \end{tabularx}
 \end{table}
 
-\subsection{Regiones INEGI}
+\subsection{Regiones de salud mental}
 
-Las cuatro macrorregiones del Instituto Nacional de Estadística y Geografía (INEGI, 2024), cuya distribución espacial se detalla en la \figref{fig:mapa_regiones}, agrupan a los 32 estados de la siguiente forma:
+Las cuatro regiones de salud mental definidas a partir de indicadores socioeconómicos y demográficos del INEGI (2024), cuya distribución espacial se detalla en la \figref{fig:mapa_regiones}, agrupan a los 32 estados según su perfil epidemiológico y urbanización:
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.85\textwidth]{fig_mapa_regiones_inegi.png}
-\caption[Mapa de regiones INEGI.]{Macrorregiones INEGI utilizadas para la agregación de series de pronóstico (Norte, Centro-Norte, Centro y Sur).}
+\caption[Mapa de regiones de salud mental.]{Regiones de salud mental utilizadas para la agregación de series de pronóstico (Metropolitana alta, Urbana media, Rural/dispersa y Sur-Sureste vulnerable).}
 \label{fig:mapa_regiones}
 \end{figure}
 
 \begin{table}[H]
 \centering
-\caption{Regiones INEGI con entidades federativas}
+\caption{Regiones de salud mental con entidades federativas}
 \label{tab:regiones}
 \scriptsize
 \setlength{\tabcolsep}{3pt}
@@ -525,10 +525,10 @@ Las cuatro macrorregiones del Instituto Nacional de Estadística y Geografía (I
 \toprule
 \textbf{Región} & \textbf{Estados} & \textbf{Entidades} \\
 \midrule
-Norte & 10 & Baja California, Baja California Sur, Chihuahua, Coahuila, Durango, Nuevo León, Sinaloa, Sonora, Tamaulipas, Zacatecas \\
-Centro-Norte & 7 & Aguascalientes, Colima, Guanajuato, Jalisco, Nayarit, Querétaro, San Luis Potosí \\
-Centro & 9 & Ciudad de México, Hidalgo, México, Michoacán, Morelos, Puebla, Tabasco, Tlaxcala, Veracruz \\
-Sur & 6 & Campeche, Chiapas, Guerrero, Oaxaca, Quintana Roo, Yucatán \\
+Metropolitana alta & 4 & Ciudad de México, Jalisco, México, Nuevo León \\
+Urbana media & 15 & Aguascalientes, Baja California, Baja California Sur, Chihuahua, Coahuila, Colima, Durango, Guanajuato, Morelos, Querétaro, San Luis Potosí, Sinaloa, Sonora, Tamaulipas, Zacatecas \\
+Rural / dispersa & 7 & Guerrero, Hidalgo, Michoacán, Nayarit, Puebla, Tlaxcala, Veracruz \\
+Sur-Sureste vulnerable & 6 & Campeche, Chiapas, Oaxaca, Quintana Roo, Tabasco, Yucatán \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -755,14 +755,14 @@ Como parte del flujo de versionado, cada hito del proyecto se marca con \textit{
 \label{fig:github_tags}
 \end{figure}
 
-\subsection{EPI Console: 50+ comandos Make}
+\subsection{EPI Console: más de 50 comandos Make}
 
 El \texttt{Makefile} centraliza todas las operaciones del pipeline MLOps, desde la descarga de datos hasta el despliegue en SageMaker. Como se observa en la \figref{fig:epiconsole}, esto permite que cualquier miembro del equipo reproduzca el pipeline completo con un solo comando.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{fig_epiconsole_help.png}
-\caption[Interfaz de EPI Console.]{Salida del comando \texttt{make help} mostrando la EPI Console con los 50+ comandos disponibles organizados por categoría.}
+\caption[Interfaz de EPI Console.]{Salida del comando \texttt{make help} mostrando la EPI Console con los más de 50 comandos disponibles organizados por categoría.}
 \label{fig:epiconsole}
 \end{figure}
 
@@ -826,17 +826,17 @@ El suite de pruebas cubre 46 archivos con 855 funciones de test:
   Unitarias (rápidas) & 849 & Funciones puras, lógica de negocio, helpers \\
   Integración & 3 & Pipeline end-to-end, compatibilidad entre módulos \\
   Lentas (\texttt{@slow}) & 3 & Entrenamiento real de modelos, validación cruzada \\
-  \midrule\textbf{Total} & \textbf{855} & Cobertura $>$70\% \\
+  \midrule\textbf{Total} & \textbf{855} & Cobertura 92\% \\
 \bottomrule
 \end{tabularx}
 \end{table}
 
-Como se detalla en el reporte de cobertura (\figref{fig:test_coverage}), el sistema alcanza un nivel de validación superior al 70\%, garantizando la estabilidad de los módulos críticos.
+Como se detalla en el reporte de cobertura (\figref{fig:test_coverage}), el sistema alcanza una cobertura del 92\%, garantizando la estabilidad de los módulos críticos.
 
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.95\textwidth]{fig_test_coverage.png}
-\caption[Reporte de cobertura de tests.]{Reporte de cobertura generado por \texttt{pytest --cov}, mostrando el agregado superior al 70\%.}
+\caption[Reporte de cobertura de tests.]{Reporte de cobertura generado por \texttt{pytest --cov}, mostrando una cobertura del 92\%.}
 \label{fig:test_coverage}
 \end{figure}
 
@@ -1958,7 +1958,7 @@ Durante el desarrollo aprendí a navegar entre dos lenguajes: el de los datos y 
 
 Mi formación como ingeniero de controles en Tesla me enseñó a diseñar sistemas robustos, pero EpiForecast-MX me retó a aplicar esa mentalidad en un dominio completamente diferente: la epidemiología. Pasar de señales industriales a series de tiempo de salud mental me permitió descubrir paralelismos fascinantes entre el control de procesos y el pronóstico epidemiológico: ambos requieren detección de anomalías, manejo de ruido y retroalimentación continua.
 
-Mi contribución abarcó dos frentes complementarios. Por un lado, me encargué de construir el Dashboard Tableau que consume los resultados de los 333 modelos de producción: diseñé las tres vistas (tablero general, predicción con zoom temporal y casos acumulados por año), automaticé la ingesta de datos desde el pipeline hacia Tableau y configuré los filtros interactivos que permiten a los epidemiólogos del {\imss} explorar cualquier combinación de padecimiento, entidad y sexo sin conocimiento técnico. Por otro lado, aporté a la infraestructura de calidad del proyecto: 855 pruebas automatizadas, cobertura de código superior al 70\% y un pipeline de CI/CD funcional que garantiza la confiabilidad que exige un sistema destinado al sector salud. Trabajar con Javier y Juan Carlos me demostró el valor de la diversidad profesional: cada uno aportó desde su trinchera para construir algo que ninguno habría logrado solo. Me llevo la convicción de que un buen dashboard es tan importante como el mejor algoritmo, porque un modelo que nadie puede interpretar no transforma ninguna decisión.
+Mi contribución abarcó dos frentes complementarios. Por un lado, me encargué de construir el Dashboard Tableau que consume los resultados de los 333 modelos de producción: diseñé las tres vistas (tablero general, predicción con zoom temporal y casos acumulados por año), automaticé la ingesta de datos desde el pipeline hacia Tableau y configuré los filtros interactivos que permiten a los epidemiólogos del {\imss} explorar cualquier combinación de padecimiento, entidad y sexo sin conocimiento técnico. Por otro lado, aporté a la infraestructura de calidad del proyecto: 855 pruebas automatizadas, cobertura de código del 92\% y un pipeline de CI/CD funcional que garantiza la confiabilidad que exige un sistema destinado al sector salud. Trabajar con Javier y Juan Carlos me demostró el valor de la diversidad profesional: cada uno aportó desde su trinchera para construir algo que ninguno habría logrado solo. Me llevo la convicción de que un buen dashboard es tan importante como el mejor algoritmo, porque un modelo que nadie puede interpretar no transforma ninguna decisión.
 
 % =============================================================================
 % 13. REFERENCIAS (APA 7.ª edición, orden alfabético, dos columnas)
@@ -2094,6 +2094,7 @@ make clean & Limpieza de nulos, duplicados y formato \\
 make transform & Feature engineering (outliers, regiones, agrupación) \\
 make get-inegi & Descarga datos demográficos INEGI \\
 make mapper & Mapea entidades con INEGI \\
+make data-weekly & Agrega y versiona datos semanales del boletín \\
 \midrule
 \multicolumn{2}{l}{\textit{Entrenamiento}} \\
 \midrule
@@ -2120,6 +2121,8 @@ make compare-metrics & Comparativa de métricas (Excel + HTML con badges) \\
 make report & Genera reporte HTML de resultados \\
 make bitacora & Genera bitácora HTML del modelado Prophet v1 a v6 \\
 make reporte-avance5 & Genera reporte Avance 5 completo \\
+make tabla-produccion & Genera tabla de 333 modelos de producción (Excel) \\
+make model-pipeline & Pipeline completo: train $\to$ predict $\to$ report $\to$ push \\
 \midrule
 \multicolumn{2}{l}{\textit{Calidad y pruebas}} \\
 \midrule
@@ -2128,6 +2131,7 @@ make format & Formatea código con Ruff \\
 make test-fast & Solo pruebas unitarias rápidas \\
 make lint & Verifica formato sin modificar \\
 make typecheck & Type check con mypy \\
+make test & Ejecuta todas las pruebas (unitarias + integración + lentas) \\
 \midrule
 \multicolumn{2}{l}{\textit{DVC y datos}} \\
 \midrule
@@ -2135,6 +2139,23 @@ make data-pull & Descarga datos desde S3 vía DVC \\
 make data-push & Sube datos a S3 vía DVC \\
 make models-push & Versiona modelos y sube a S3 \\
 make s3-sync & Sync directo a S3 (sin DVC) \\
+make data-add & Agrega archivos al tracking DVC \\
+make data-commit & Commit de cambios en archivos DVC \\
+make data-status & Muestra estado de archivos DVC \\
+make forecast-push & Sube pronósticos a S3 vía DVC \\
+\midrule
+\multicolumn{2}{l}{\textit{Setup e infraestructura}} \\
+\midrule
+make help & Muestra todos los comandos disponibles \\
+make create-env & Crea entorno virtual Python \\
+make setup & Instala dependencias y configura el proyecto \\
+make setup-mac & Setup específico para macOS \\
+make setup-linux & Setup específico para Linux \\
+make setup-linux-deps & Instala dependencias de sistema en Linux \\
+make requirements & Genera archivo de requerimientos \\
+make hooks & Configura pre-commit hooks \\
+make reset & Reinicia entorno (limpia caché y artefactos) \\
+make clean-py & Limpia archivos compilados de Python \\
 \end{longtable}
 
 \section{Resumen de Logs de SageMaker}\label{sec:logs_sagemaker}
