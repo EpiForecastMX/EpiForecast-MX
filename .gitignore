@@ -239,3 +239,14 @@ migrate_structure.sh
 # MLflow local tracking
 mlruns/
 reports/ProdDetails/~$*
+
+# Archivos grandes (>5 MB)
+notebooks/figuras_avance5.zip
+references/Avance0.#Equipo01_vFinal.pdf
+reports/ConclusionesClave/fig_website_proyecto.png
+
+# Scripts temporales / rotos
+generate_fig3.py
+
+# Notebooks descartados
+notebooks/bad *
