@@ -416,6 +416,34 @@ class KnowledgeBase:
         if "casos_52_semanas_futuro" in df.columns:
             stats["pronostico_total"] = int(df["casos_52_semanas_futuro"].sum())
 
+        # --- DEMOGRAFICA HISTORICA (boletin) ---
+        bol = self.cache.boletin
+        if bol is not None and not bol.empty:
+            demo_hist: dict[str, dict[str, Any]] = {}
+            pad_col = "Padecimiento" if "Padecimiento" in bol.columns else None
+            ah_col = "Acumulado_hombres" if "Acumulado_hombres" in bol.columns else None
+            am_col = "Acumulado_mujeres" if "Acumulado_mujeres" in bol.columns else None
+            if pad_col and ah_col and am_col:
+                for pad in bol[pad_col].dropna().unique():
+                    sub = bol[bol[pad_col] == pad]
+                    if sub.empty:
+                        continue
+                    idx = sub.groupby(["Anio", "Entidad"])["Semana"].idxmax()
+                    last = sub.loc[idx]
+                    h_total = int(last[ah_col].sum())
+                    m_total = int(last[am_col].sum())
+                    total = h_total + m_total
+                    if total > 0:
+                        demo_hist[str(pad)] = {
+                            "hombres": h_total,
+                            "mujeres": m_total,
+                            "total": total,
+                            "pct_h": round(h_total / total * 100, 1),
+                            "pct_m": round(m_total / total * 100, 1),
+                            "ratio_mh": round(m_total / h_total, 2) if h_total > 0 else 0,
+                        }
+            stats["demo_historica"] = demo_hist
+
         # --- INFRAESTRUCTURA ---
         stats["tests"] = 849
         stats["lineas_codigo"] = 13000
@@ -2308,51 +2336,60 @@ class KnowledgeBase:
 
         lines = ["**Composicion demografica por padecimiento**\n"]
         pads_to_show = {pad_key: por_pad[pad_key]} if pad_key else por_pad
+        demo_hist = s.get("demo_historica", {})
 
         for pad, pinfo in pads_to_show.items():
             pad_sexo = pinfo.get("por_sexo", {})
-            if not pad_sexo:
-                continue
-
             lines.append(f"**{pad}** ({pinfo['n']} modelos):")
 
-            # Casos a nivel nacional (la referencia mas clara)
-            nac_h = pad_sexo.get("hombres", {}).get("casos_nacional")
-            nac_m = pad_sexo.get("mujeres", {}).get("casos_nacional")
-            nac_g = pad_sexo.get("general", {}).get("casos_nacional")
+            # --- Historico (boletin, datos reales acumulados) ---
+            hist = demo_hist.get(pad)
+            if hist:
+                lines.append(f"  Historico acumulado (2014-2026): **{hist['total']:,} casos**")
+                ratio_h = hist["ratio_mh"]
+                if ratio_h >= 1.1:
+                    predom = "predominancia femenina"
+                elif ratio_h <= 0.9:
+                    predom = "predominancia masculina"
+                else:
+                    predom = "equilibrado"
+                lines.append(
+                    f"  Hombres: {hist['hombres']:,} ({hist['pct_h']}%)  |  "
+                    f"Mujeres: {hist['mujeres']:,} ({hist['pct_m']}%)"
+                )
+                lines.append(f"  Ratio M/H: {ratio_h}:1 ({predom})")
 
-            if nac_g:
-                lines.append(f"  Casos pronosticados Nacional (52 sem): **{nac_g:,}**")
-            if nac_h is not None and nac_m is not None:
-                total_hm = nac_h + nac_m
-                if total_hm > 0:
-                    pct_h = round(nac_h / total_hm * 100, 1)
-                    pct_m = round(nac_m / total_hm * 100, 1)
-                    lines.append(
-                        f"  Hombres: {nac_h:,} ({pct_h}%)  |  Mujeres: {nac_m:,} ({pct_m}%)"
-                    )
-                    ratio = round(nac_m / nac_h, 2) if nac_h > 0 else 0
-                    if ratio >= 1.1:
+            # --- Pronostico (modelos de produccion, 52 sem futuras) ---
+            if pad_sexo:
+                nac_h = pad_sexo.get("hombres", {}).get("casos_nacional")
+                nac_m = pad_sexo.get("mujeres", {}).get("casos_nacional")
+                nac_g = pad_sexo.get("general", {}).get("casos_nacional")
+
+                if nac_g:
+                    lines.append(f"  Pronostico 52 sem: **{nac_g:,} casos** (Nacional)")
+                if nac_h is not None and nac_m is not None:
+                    total_hm = nac_h + nac_m
+                    if total_hm > 0:
+                        pct_h = round(nac_h / total_hm * 100, 1)
+                        pct_m = round(nac_m / total_hm * 100, 1)
                         lines.append(
-                            f"  Ratio mujeres/hombres: {ratio}:1 (predominancia femenina)"
+                            f"  Pron. H: {nac_h:,} ({pct_h}%)  |  Pron. M: {nac_m:,} ({pct_m}%)"
                         )
-                    elif ratio <= 0.9:
-                        lines.append(
-                            f"  Ratio mujeres/hombres: {ratio}:1 (predominancia masculina)"
-                        )
-                    else:
-                        lines.append(f"  Ratio mujeres/hombres: {ratio}:1 (equilibrado)")
 
             # SMAPE por sexo
-            for sx_key, sx_label in [
-                ("general", "General"),
-                ("hombres", "Hombres"),
-                ("mujeres", "Mujeres"),
-            ]:
-                sx_data = pad_sexo.get(sx_key, {})
-                sm = sx_data.get("smape_prod_median")
-                if sm is not None:
-                    lines.append(f"  SMAPE mediano {sx_label}: {sm}%")
+            if pad_sexo:
+                smape_parts = []
+                for sx_key, sx_label in [
+                    ("general", "Gral"),
+                    ("hombres", "H"),
+                    ("mujeres", "M"),
+                ]:
+                    sx_data = pad_sexo.get(sx_key, {})
+                    sm = sx_data.get("smape_prod_median")
+                    if sm is not None:
+                        smape_parts.append(f"{sx_label}={sm}%")
+                if smape_parts:
+                    lines.append(f"  SMAPE mediano: {', '.join(smape_parts)}")
 
             lines.append("")  # linea en blanco entre padecimientos
 
