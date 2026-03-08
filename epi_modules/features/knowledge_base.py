@@ -263,7 +263,16 @@ class KnowledgeBase:
                     ps["motor_ganador"] = str(mc.index[0])
                     ps["motor_ganador_n"] = int(mc.iloc[0])
                 if "casos_52_semanas_futuro" in sub.columns:
-                    ps["casos_futuro_total"] = int(sub["casos_52_semanas_futuro"].sum())
+                    # Solo sumar 32 estados con sexo=general (sin Nacional ni regiones)
+                    _gen = sub[(sub["sexo"] == "general") & (sub["entidad"] != "Nacional")]
+                    if "entidad" in sub.columns:
+                        _gen = _gen[
+                            ~_gen["entidad"].str.startswith("Region", na=False)
+                            & ~_gen["entidad"].str.startswith("region", na=False)
+                        ]
+                    ps["casos_futuro_total"] = (
+                        int(_gen["casos_52_semanas_futuro"].sum()) if not _gen.empty else 0
+                    )
                 # Desglose por sexo dentro del padecimiento
                 if "sexo" in sub.columns and "casos_52_semanas_futuro" in sub.columns:
                     pad_sexo: dict[str, Any] = {}
@@ -414,7 +423,16 @@ class KnowledgeBase:
 
         # --- PRONOSTICO ACUMULADO ---
         if "casos_52_semanas_futuro" in df.columns:
-            stats["pronostico_total"] = int(df["casos_52_semanas_futuro"].sum())
+            # Solo sumar 32 estados con sexo=general (sin Nacional ni regiones)
+            _gen = df[(df["sexo"] == "general") & (df["entidad"] != "Nacional")]
+            if "entidad" in df.columns:
+                _gen = _gen[
+                    ~_gen["entidad"].str.startswith("Region", na=False)
+                    & ~_gen["entidad"].str.startswith("region", na=False)
+                ]
+            stats["pronostico_total"] = (
+                int(_gen["casos_52_semanas_futuro"].sum()) if not _gen.empty else 0
+            )
 
         # --- DEMOGRAFICA HISTORICA (boletin) ---
         bol = self.cache.boletin
@@ -445,7 +463,7 @@ class KnowledgeBase:
             stats["demo_historica"] = demo_hist
 
         # --- INFRAESTRUCTURA ---
-        stats["tests"] = 849
+        stats["tests"] = 855
         stats["lineas_codigo"] = 13000
         stats["cobertura"] = 92
         stats["archivos_test"] = 46
