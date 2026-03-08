@@ -449,6 +449,96 @@ def build_static_data() -> dict[str, Any]:
     }
 
 
+def build_weekly_comparison(cache: ProjectDataCache) -> dict[str, list[dict]]:
+    """Genera comparacion semanal Real vs Pronostico para 2026.
+
+    Para cada padecimiento (Nacional, general), alinea semanas del boletin
+    con el pronostico del modelo productivo (tableau.csv).
+    """
+    result: dict[str, list[dict]] = {}
+
+    # Boletin: actual cases
+    bol = cache.boletin
+    if bol is None or bol.empty:
+        return result
+
+    max_year = int(bol["Anio"].max())
+    bol_year = bol[bol["Anio"] == max_year]
+    if bol_year.empty:
+        return result
+
+    # Aggregate Nacional by week + padecimiento
+    nac_actual = bol_year.groupby(["Semana", "Padecimiento"])["Casos_semana"].sum().reset_index()
+
+    # Tableau: forecast data (winning model per series)
+    tableau_path = Path("data/processed/tableau.csv")
+    if not tableau_path.exists():
+        return result
+    tab = pd.read_csv(tableau_path)
+    tab["ds"] = pd.to_datetime(tab["ds"])
+    tab["iso_week"] = tab["ds"].dt.isocalendar().week.astype(int)
+    tab["iso_year"] = tab["ds"].dt.isocalendar().year.astype(int)
+
+    for pad_raw in nac_actual["Padecimiento"].unique():
+        pad = strip_accents(str(pad_raw))
+
+        # Actual weeks
+        actual_weeks = (
+            nac_actual[nac_actual["Padecimiento"] == pad_raw]
+            .set_index("Semana")["Casos_semana"]
+            .to_dict()
+        )
+
+        # Forecast: Nacional, general, this padecimiento
+        fc = tab[
+            (tab["entidad"] == "Nacional")
+            & (tab["padecimiento"] == pad_raw)
+            & (tab["meta_modo"] == "general")
+            & (tab["iso_year"] == max_year)
+        ].sort_values("ds")
+
+        if fc.empty:
+            continue
+
+        # Build per-week comparison (up to 52 weeks)
+        weeks: list[dict] = []
+        modelo_prod = fc["modelo_productivo"].iloc[0] if "modelo_productivo" in fc.columns else "?"
+
+        for _, row in fc.iterrows():
+            w = int(row["iso_week"])
+            forecast = int(round(row["yhat"]))
+            actual = int(actual_weeks.get(w, 0)) if w in actual_weeks else None
+
+            entry: dict[str, Any] = {
+                "semana": w,
+                "fecha": row["ds"].strftime("%Y-%m-%d"),
+                "pronostico": forecast,
+            }
+            if actual is not None:
+                entry["real"] = actual
+                if actual > 0:
+                    error_pct = round(abs(forecast - actual) / actual * 100, 1)
+                    entry["error_pct"] = error_pct
+
+            # Add per-model forecasts
+            for motor in ("prophet", "deepar", "ensemble", "stacking"):
+                col = f"yhat_{motor}"
+                if col in row.index and pd.notna(row[col]):
+                    entry[motor] = int(round(row[col]))
+
+            weeks.append(entry)
+
+        result[pad] = {
+            "modelo_productivo": strip_accents(str(modelo_prod)),
+            "anio": max_year,
+            "semanas_reales": len(actual_weeks),
+            "semanas_pronostico": len(weeks),
+            "semanas": weeks,
+        }
+
+    return result
+
+
 def main() -> None:
     """Entry point: genera knowledge.json."""
     print("Cargando datos del proyecto...")
@@ -464,6 +554,7 @@ def main() -> None:
         "stats": _normalize_keys(stats),
         "prod_models": _normalize_keys(build_prod_models(cache)),
         "boletin": _normalize_keys(build_boletin(cache)),
+        "weekly_comparison": _normalize_keys(build_weekly_comparison(cache)),
         **build_static_data(),
     }
 
