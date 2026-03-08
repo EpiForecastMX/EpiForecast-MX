@@ -1,6 +1,9 @@
 # Data
 /data/*
 
+# Web dashboard (deployado en repo separado EpiForecast-IMSS-Dashboard)
+web_dashboard/
+
 # Log File
 /logs
 
