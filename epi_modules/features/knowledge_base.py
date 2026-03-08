@@ -555,7 +555,7 @@ class KnowledgeBase:
     _EQUIPO = {
         "javier": {
             "nombre": "Javier Augusto Rebull Saucedo",
-            "apodo": "JAR",
+            "apodo": "JARS",
             "matricula": "A01795838",
             "rol": "Líder técnico y arquitecto principal del pipeline MLOps",
             "empleo": "Senior Associate Developer en Santander Bank US",
@@ -570,6 +570,7 @@ class KnowledgeBase:
                 "javier",
                 "javi",
                 "jar",
+                "jars",
                 "rebull",
                 "rebull saucedo",
                 "javier rebull",

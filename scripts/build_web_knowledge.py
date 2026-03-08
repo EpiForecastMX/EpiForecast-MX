@@ -198,7 +198,7 @@ def build_static_data() -> dict[str, Any]:
     equipo = [
         {
             "nombre": "Javier Augusto Rebull Saucedo",
-            "apodo": "JAR",
+            "apodo": "JARS",
             "matricula": "A01795838",
             "rol": "Líder técnico y arquitecto principal del pipeline MLOps",
             "empleo": "Senior Associate Developer en Santander Bank US",
@@ -207,6 +207,7 @@ def build_static_data() -> dict[str, Any]:
                 "javier",
                 "javi",
                 "jar",
+                "jars",
                 "rebull",
                 "rebull saucedo",
                 "javier rebull",
