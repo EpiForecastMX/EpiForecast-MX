@@ -233,111 +233,589 @@ def fig2_mase():
 # ============================================================================
 # FIGURE 3: Serie temporal emblemática -- Depresión Nacional
 # ============================================================================
-def fig3_time_series():
+def _eda_large(padecimiento_raw, padecimiento_tableau, title, out_name):
+    """Genera una figura EDA grande con leyenda al pie (fuera del area de datos)."""
     boletin_path = os.path.join(PROJECT, "data/processed/dataset_boletin_epidemiologico.csv")
     boletin = pd.read_csv(boletin_path)
 
-    # Agregar a nivel nacional
-    dep = boletin[boletin["Padecimiento"] == "Depresion"]
-    if len(dep) == 0:
-        dep = boletin[boletin["Padecimiento"] == "Depresión"]
-    dep_nac = dep.groupby(["Anio", "Semana"])["Casos_semana"].sum().reset_index()
-    dep_nac = dep_nac.sort_values(["Anio", "Semana"])
-
-    # Crear fecha a partir de año y semana
-    dep_nac["ds"] = pd.to_datetime(
-        dep_nac["Anio"].astype(str) + "-W" + dep_nac["Semana"].astype(str).str.zfill(2) + "-1",
+    sub = boletin[boletin["Padecimiento"] == padecimiento_raw]
+    if len(sub) == 0:
+        sub = boletin[
+            boletin["Padecimiento"].str.contains(padecimiento_raw[:5], case=False, na=False)
+        ]
+    nac = sub.groupby(["Anio", "Semana"])["Casos_semana"].sum().reset_index()
+    nac = nac.sort_values(["Anio", "Semana"])
+    nac["ds"] = pd.to_datetime(
+        nac["Anio"].astype(str) + "-W" + nac["Semana"].astype(str).str.zfill(2) + "-1",
         format="%G-W%V-%u",
     )
-    dep_nac = dep_nac.sort_values("ds")
+    nac = nac.sort_values("ds")
 
-    # También leer forecast del tableau
     tableau = pd.read_csv(os.path.join(PROJECT, "data/processed/tableau.csv"))
-    forecast = tableau[
-        (tableau["padecimiento"] == "Depresión")
+    fc = tableau[
+        (tableau["padecimiento"] == padecimiento_tableau)
         & (tableau["meta_modo"] == "general")
         & (tableau["entidad"] == "Nacional")
     ].sort_values("ds")
-    forecast["ds"] = pd.to_datetime(forecast["ds"])
-    # Last 52 rows are the actual forecast
-    forecast_portion = forecast.tail(52)
+    fc["ds"] = pd.to_datetime(fc["ds"])
+    fc_tail = fc.tail(52)
 
-    fig, ax = plt.subplots(figsize=(12, 5), dpi=300)
-
-    # Datos reales
+    fig, ax = plt.subplots(figsize=(12, 6), dpi=300)
     ax.plot(
-        dep_nac["ds"],
-        dep_nac["Casos_semana"],
+        nac["ds"],
+        nac["Casos_semana"],
         color=BURGUNDY,
         linewidth=1.0,
         alpha=0.85,
         label="Incidencia real (SINAVE)",
     )
-
-    # Media móvil (gold)
-    if len(dep_nac) > 12:
-        ma = dep_nac["Casos_semana"].rolling(window=12, center=True).mean()
+    if len(nac) > 12:
+        ma = nac["Casos_semana"].rolling(window=12, center=True).mean()
         ax.plot(
-            dep_nac["ds"],
-            ma,
-            color=GOLD,
-            linewidth=2.0,
-            alpha=0.8,
-            label="Media móvil (12 semanas)",
+            nac["ds"], ma, color=GOLD, linewidth=2.0, alpha=0.8, label="Media movil (12 semanas)"
         )
-
-    # Forecast
     ax.plot(
-        forecast_portion["ds"],
-        forecast_portion["yhat"],
+        fc_tail["ds"],
+        fc_tail["yhat"],
         color=TEAL,
         linewidth=2.0,
         linestyle="--",
         alpha=0.9,
-        label="Pronóstico (modelo productivo)",
+        label="Pronostico (modelo productivo)",
     )
 
-    # COVID band
-    covid_start = pd.Timestamp("2020-03-01")
-    covid_end = pd.Timestamp("2021-12-31")
+    covid_start = pd.Timestamp("2020-03-15")
+    covid_end = pd.Timestamp("2022-09-22")
     ax.axvspan(covid_start, covid_end, alpha=0.10, color=COOL_GRAY, label="Periodo COVID-19")
 
-    ax.set_title(
-        "Incidencia semanal de Depresión (F32) -- Serie Nacional",
-        fontsize=14,
-        fontweight="bold",
-        color=TEAL_DARK,
-        pad=12,
-    )
-    ax.set_xlabel("Fecha", fontsize=11)
+    ax.set_title(title, fontsize=14, fontweight="bold", color=TEAL_DARK, pad=12)
+    ax.set_xlabel("")
     ax.set_ylabel("Casos semanales", fontsize=11)
-    ax.legend(fontsize=9, loc="upper left", frameon=True, fancybox=True)
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f"{int(x):,}"))
+
+    # Legend well below the plot area — no overlap with axis
+    ax.legend(
+        fontsize=9,
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.10),
+        ncol=4,
+        frameon=True,
+        fancybox=True,
+        shadow=False,
+    )
+    fig.subplots_adjust(bottom=0.20)
+    path = os.path.join(OUT_DIR, out_name)
+    fig.savefig(path, dpi=300, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+    print(f"  [OK] {path}")
+
+
+def fig3_time_series():
+    _eda_large(
+        "Depresión",
+        "Depresión",
+        "Incidencia semanal de Depresion (F32) -- Serie Nacional",
+        "eda_serie_temporal.png",
+    )
+
+
+def fig3b_parkinson():
+    _eda_large(
+        "Parkinson",
+        "Parkinson",
+        "Incidencia semanal de Parkinson (G20) -- Serie Nacional",
+        "eda_serie_parkinson.png",
+    )
+
+
+def fig3c_alzheimer():
+    _eda_large(
+        "Alzheimer",
+        "Alzheimer",
+        "Incidencia semanal de Alzheimer (G30) -- Serie Nacional",
+        "eda_serie_alzheimer.png",
+    )
+
+
+# ============================================================================
+# HELPER: Serie temporal compacta (para layout horizontal 1/3 de pagina)
+# ============================================================================
+def _eda_compact(padecimiento_raw, padecimiento_tableau, code, color_accent, out_name):
+    """Genera una figura EDA compacta para un padecimiento."""
+    boletin_path = os.path.join(PROJECT, "data/processed/dataset_boletin_epidemiologico.csv")
+    boletin = pd.read_csv(boletin_path)
+
+    sub = boletin[boletin["Padecimiento"] == padecimiento_raw]
+    if len(sub) == 0:
+        sub = boletin[
+            boletin["Padecimiento"].str.contains(padecimiento_raw[:5], case=False, na=False)
+        ]
+    nac = sub.groupby(["Anio", "Semana"])["Casos_semana"].sum().reset_index()
+    nac = nac.sort_values(["Anio", "Semana"])
+    nac["ds"] = pd.to_datetime(
+        nac["Anio"].astype(str) + "-W" + nac["Semana"].astype(str).str.zfill(2) + "-1",
+        format="%G-W%V-%u",
+    )
+    nac = nac.sort_values("ds")
+
+    tableau = pd.read_csv(os.path.join(PROJECT, "data/processed/tableau.csv"))
+    fc = tableau[
+        (tableau["padecimiento"] == padecimiento_tableau)
+        & (tableau["meta_modo"] == "general")
+        & (tableau["entidad"] == "Nacional")
+    ].sort_values("ds")
+    fc["ds"] = pd.to_datetime(fc["ds"])
+    fc_tail = fc.tail(52)
+
+    fig, ax = plt.subplots(figsize=(6, 4), dpi=300)
+    ax.plot(nac["ds"], nac["Casos_semana"], color=BURGUNDY, linewidth=0.8, alpha=0.8)
+    if len(nac) > 12:
+        ma = nac["Casos_semana"].rolling(window=12, center=True).mean()
+        ax.plot(nac["ds"], ma, color=GOLD, linewidth=1.8, alpha=0.8)
+    ax.plot(fc_tail["ds"], fc_tail["yhat"], color=TEAL, linewidth=1.8, linestyle="--", alpha=0.9)
+
+    covid_start = pd.Timestamp("2020-03-15")
+    covid_end = pd.Timestamp("2022-09-22")
+    ax.axvspan(covid_start, covid_end, alpha=0.08, color=COOL_GRAY)
+
+    ax.set_title(
+        f"{padecimiento_tableau} ({code})",
+        fontsize=12,
+        fontweight="bold",
+        color=color_accent,
+        pad=8,
+    )
+    ax.set_xlabel("")
+    ax.set_ylabel("Casos/semana", fontsize=9)
+    ax.tick_params(axis="both", labelsize=8)
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f"{int(x):,}"))
+
+    # Leyenda compacta solo en la primera figura
+    if "epresi" in padecimiento_raw:
+        from matplotlib.lines import Line2D
+
+        handles = [
+            Line2D([0], [0], color=BURGUNDY, lw=1, label="Real"),
+            Line2D([0], [0], color=GOLD, lw=1.8, label="Media movil"),
+            Line2D([0], [0], color=TEAL, lw=1.8, ls="--", label="Pronostico"),
+            mpatches.Patch(color=COOL_GRAY, alpha=0.15, label="COVID-19"),
+        ]
+        ax.legend(
+            handles=handles, fontsize=7, loc="upper left", frameon=True, fancybox=True, ncol=2
+        )
+
     fig.tight_layout()
-    path = os.path.join(OUT_DIR, "eda_serie_temporal.png")
+    path = os.path.join(OUT_DIR, out_name)
+    fig.savefig(path, dpi=300, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+    print(f"  [OK] {path}")
+
+
+def fig3_eda_compact():
+    """Genera las 3 figuras EDA compactas para layout horizontal."""
+    _eda_compact("Depresión", "Depresión", "F32", BURGUNDY, "eda_compact_depresion.png")
+    _eda_compact("Parkinson", "Parkinson", "G20", TEAL_DARK, "eda_compact_parkinson.png")
+    _eda_compact("Alzheimer", "Alzheimer", "G30", GOLD, "eda_compact_alzheimer.png")
+
+
+# ============================================================================
+# FIGURE EDA-GENERO: Distribucion por sexo -- datos reales del boletin SINAVE
+# ============================================================================
+def fig_eda_genero():
+    """Butterfly chart con datos REALES del boletin (Acumulado_hombres/mujeres 2025)."""
+    boletin_path = os.path.join(PROJECT, "data/processed/dataset_boletin_epidemiologico.csv")
+    df = pd.read_csv(boletin_path)
+
+    pads = ["Depresion", "Parkinson", "Alzheimer"]
+    codes = ["F32", "G20", "G30"]
+    pad_names_raw = ["Depresion", "Parkinson", "Alzheimer"]
+    hombres = []
+    mujeres = []
+    pct_mujeres = []
+
+    anio = 2025
+    for pad in pad_names_raw:
+        sub = df[(df["Padecimiento"] == pad) & (df["Anio"] == anio)]
+        if len(sub) == 0:
+            sub = df[
+                df["Padecimiento"].str.contains(pad[:5], case=False, na=False)
+                & (df["Anio"] == anio)
+            ]
+        # Acumulado is cumulative — max per state = annual total
+        by_state = sub.groupby("Entidad")[["Acumulado_hombres", "Acumulado_mujeres"]].max()
+        h = by_state["Acumulado_hombres"].sum()
+        m = by_state["Acumulado_mujeres"].sum()
+        hombres.append(h)
+        mujeres.append(m)
+        pct_mujeres.append(m / (h + m) * 100 if (h + m) > 0 else 50)
+
+    fig, ax = plt.subplots(figsize=(10, 5.5), dpi=300)
+    y = np.arange(len(pads))
+    bar_h = 0.35
+
+    bars_h = ax.barh(
+        y + bar_h / 2,
+        [-v for v in hombres],
+        bar_h,
+        color=TEAL,
+        edgecolor="white",
+        linewidth=0.5,
+        label="Hombres",
+    )
+    bars_m = ax.barh(
+        y - bar_h / 2,
+        mujeres,
+        bar_h,
+        color=BURGUNDY,
+        edgecolor="white",
+        linewidth=0.5,
+        label="Mujeres",
+    )
+
+    for i, (h, m, pct) in enumerate(zip(hombres, mujeres, pct_mujeres)):
+        ax.text(
+            -h - max(hombres) * 0.02,
+            i + bar_h / 2,
+            f"{int(h):,}",
+            ha="right",
+            va="center",
+            fontsize=10,
+            fontweight="bold",
+            color=TEAL_DARK,
+        )
+        ax.text(
+            m + max(mujeres) * 0.02,
+            i - bar_h / 2,
+            f"{int(m):,}  ({pct:.0f}%)",
+            ha="left",
+            va="center",
+            fontsize=10,
+            fontweight="bold",
+            color=BURGUNDY,
+        )
+
+    ax.axvline(0, color="#333333", linewidth=1.2)
+    ax.set_yticks(y)
+    ax.set_yticklabels(
+        [f"{p}\n({c})" for p, c in zip(pads, codes)], fontsize=11, fontweight="bold"
+    )
+    ax.set_title(
+        f"Distribucion de casos por sexo -- Datos reales del boletin SINAVE ({anio})",
+        fontsize=13,
+        fontweight="bold",
+        color=TEAL_DARK,
+        pad=15,
+    )
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["left"].set_visible(False)
+    ax.tick_params(left=False)
+    ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f"{abs(int(x)):,}"))
+    ax.set_xlabel("")
+
+    ax.legend(
+        fontsize=10,
+        loc="upper center",
+        bbox_to_anchor=(0.5, -0.08),
+        ncol=2,
+        frameon=True,
+        fancybox=True,
+    )
+    fig.subplots_adjust(bottom=0.18)
+    path = os.path.join(OUT_DIR, "eda_genero_butterfly.png")
     fig.savefig(path, dpi=300, bbox_inches="tight", facecolor="white")
     plt.close(fig)
     print(f"  [OK] {path}")
 
 
 # ============================================================================
-# FIGURE 4: Barras horizontales -- Pronóstico por entidad
+# FIGURE EDA-MAPA: Mapa coropletico de Mexico -- datos reales del boletin
+# ============================================================================
+def fig_eda_mapa():
+    """Mapa de la Republica Mexicana con incidencia real por entidad (boletin 2025)."""
+    import geopandas as gpd
+    from matplotlib.colors import LinearSegmentedColormap
+
+    boletin_path = os.path.join(PROJECT, "data/processed/dataset_boletin_epidemiologico.csv")
+    df = pd.read_csv(boletin_path)
+    geojson_path = os.path.join(PROJECT, "data/utils/mexico_states.geojson")
+    gdf = gpd.read_file(geojson_path)
+
+    # Map: "Distrito Federal" -> "Ciudad de México" in boletin data
+    df["Entidad"] = df["Entidad"].replace({"Distrito Federal": "Ciudad de Mexico"})
+
+    # Aggregate the 3 diseases for 2025 (annual total = max of cumulative per state)
+    anio = 2025
+    sub = df[df["Anio"] == anio]
+    by_state = sub.groupby("Entidad")[["Acumulado_hombres", "Acumulado_mujeres"]].max()
+    by_state["total"] = by_state.sum(axis=1)
+    state_totals = by_state["total"].to_dict()
+
+    # Match GeoJSON names to boletin — "Ciudad de México" matches both
+    gdf["casos"] = gdf["name"].map(state_totals).fillna(0)
+
+    vmin = gdf["casos"].min()
+    vmax = gdf["casos"].max()
+    cmap = LinearSegmentedColormap.from_list("imss", ["#E6F4EA", "#8DC9C3", TEAL, GOLD, BURGUNDY])
+
+    fig, ax = plt.subplots(figsize=(14, 9), dpi=300)
+    gdf.plot(
+        column="casos",
+        cmap=cmap,
+        edgecolor="#FFFFFF",
+        linewidth=0.6,
+        ax=ax,
+        legend=False,
+        vmin=vmin,
+        vmax=vmax,
+    )
+
+    # State labels with abbreviations
+    abbrevs = {
+        "Baja California": "BC",
+        "Baja California Sur": "BCS",
+        "Ciudad de Mexico": "CDMX",
+        "San Luis Potosi": "SLP",
+        "Nuevo Leon": "NL",
+        "Quintana Roo": "QR",
+        "Aguascalientes": "AGS",
+        "Chihuahua": "CHIH",
+        "Coahuila": "COAH",
+        "Tamaulipas": "TAM",
+        "Guanajuato": "GTO",
+        "Michoacan": "MICH",
+        "Queretaro": "QRO",
+        "Veracruz": "VER",
+        "Guerrero": "GRO",
+        "Mexico": "MEX",
+        "Tlaxcala": "TLAX",
+        "Morelos": "MOR",
+        "Tabasco": "TAB",
+        "Campeche": "CAM",
+        "Yucatan": "YUC",
+        "Chiapas": "CHIS",
+        "Oaxaca": "OAX",
+        "Puebla": "PUE",
+        "Hidalgo": "HGO",
+        "Colima": "COL",
+        "Nayarit": "NAY",
+        "Sinaloa": "SIN",
+        "Sonora": "SON",
+        "Durango": "DGO",
+        "Zacatecas": "ZAC",
+        "Jalisco": "JAL",
+        "Durango": "DGO",
+    }
+
+    for _, row in gdf.iterrows():
+        name = row["name"]
+        # Normalize name for abbreviation lookup (strip accents)
+        import unicodedata
+
+        name_norm = unicodedata.normalize("NFD", name)
+        name_norm = "".join(c for c in name_norm if unicodedata.category(c) != "Mn")
+        ab = abbrevs.get(name_norm, name[:3].upper())
+        centroid = row.geometry.centroid
+        val = int(row["casos"])
+        # Only label states large enough
+        ax.annotate(
+            f"{ab}\n{val:,}",
+            xy=(centroid.x, centroid.y),
+            ha="center",
+            va="center",
+            fontsize=5.5,
+            fontweight="bold",
+            color="#222222",
+            path_effects=[
+                __import__("matplotlib.patheffects", fromlist=["withStroke"]).withStroke(
+                    linewidth=2, foreground="white"
+                )
+            ],
+        )
+
+    ax.axis("off")
+    ax.set_title(
+        "Incidencia acumulada por entidad federativa (3 padecimientos)\n"
+        f"Datos reales del boletin SINAVE -- {anio}",
+        fontsize=14,
+        fontweight="bold",
+        color=TEAL_DARK,
+        pad=15,
+    )
+
+    # Colorbar
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=vmin, vmax=vmax))
+    sm.set_array([])
+    cbar = fig.colorbar(sm, ax=ax, orientation="horizontal", fraction=0.035, pad=0.02, aspect=45)
+    cbar.set_label("Casos acumulados anuales (todos los padecimientos)", fontsize=10)
+    cbar.ax.tick_params(labelsize=8)
+    cbar.ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f"{int(x):,}"))
+
+    path = os.path.join(OUT_DIR, "eda_mapa_mexico.png")
+    fig.savefig(path, dpi=300, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+    print(f"  [OK] {path}")
+
+
+# ============================================================================
+# FIGURE EDA-ALERTA: Estados con reporte intermitente (semanas en cero)
+# ============================================================================
+def fig_eda_alerta_ceros():
+    """Tabla visual de estados con reporte intermitente o bajo volumen."""
+    boletin_path = os.path.join(PROJECT, "data/processed/dataset_boletin_epidemiologico.csv")
+    df = pd.read_csv(boletin_path)
+    df["Entidad"] = df["Entidad"].replace({"Distrito Federal": "Ciudad de Mexico"})
+
+    anio = 2025
+    max_sem = df[df["Anio"] == anio]["Semana"].max()
+
+    rows = []
+    for pad in ["Parkinson", "Alzheimer"]:
+        sub = df[
+            (df["Padecimiento"].str.contains(pad[:5], case=False, na=False)) & (df["Anio"] == anio)
+        ]
+        by_ent = sub.groupby("Entidad").agg(
+            total=("Casos_semana", "sum"),
+            semanas_cero=("Casos_semana", lambda x: (x == 0).sum()),
+        )
+        by_ent["pct_cero"] = (by_ent["semanas_cero"] / max_sem * 100).round(1)
+        # Flag states with >50% zero-weeks
+        alertas = by_ent[by_ent["pct_cero"] > 50].sort_values("pct_cero", ascending=False)
+        for ent, row in alertas.iterrows():
+            rows.append(
+                {
+                    "Padecimiento": pad,
+                    "Entidad": ent,
+                    "Casos anuales": int(row["total"]),
+                    "Semanas en cero": int(row["semanas_cero"]),
+                    "% semanas sin reporte": row["pct_cero"],
+                }
+            )
+
+    if not rows:
+        print("  [SKIP] No hay alertas de reporte intermitente")
+        return
+
+    alert_df = pd.DataFrame(rows)
+
+    fig, ax = plt.subplots(figsize=(12, max(4, 0.5 * len(rows) + 2.5)), dpi=300)
+    ax.axis("off")
+
+    # Title
+    ax.set_title(
+        f"Alerta de calidad: entidades con reporte intermitente ({anio})\n"
+        f"Estados con mas del 50% de semanas sin casos reportados ({max_sem} semanas epidemiologicas)",
+        fontsize=13,
+        fontweight="bold",
+        color=BURGUNDY,
+        pad=20,
+        loc="left",
+    )
+
+    col_labels = [
+        "Padecimiento",
+        "Entidad",
+        "Casos\nanuales",
+        "Semanas\nen cero",
+        f"% sin reporte\n(de {max_sem} sem.)",
+    ]
+    col_widths = [0.15, 0.25, 0.15, 0.15, 0.20]
+
+    # Build cell text
+    cell_text = []
+    cell_colors = []
+    for _, r in alert_df.iterrows():
+        pct = r["% semanas sin reporte"]
+        if pct >= 80:
+            bg = LIGHT_RED
+        elif pct >= 65:
+            bg = LIGHT_YELLOW
+        else:
+            bg = "#FFF8E1"
+        cell_text.append(
+            [
+                r["Padecimiento"],
+                r["Entidad"],
+                f"{r['Casos anuales']:,}",
+                f"{r['Semanas en cero']}/{max_sem}",
+                f"{pct:.0f}%",
+            ]
+        )
+        cell_colors.append([bg] * 5)
+
+    table = ax.table(
+        cellText=cell_text,
+        colLabels=col_labels,
+        colWidths=col_widths,
+        cellColours=cell_colors,
+        loc="center",
+        cellLoc="center",
+    )
+    table.auto_set_font_size(False)
+    table.set_fontsize(9)
+    table.scale(1.0, 1.6)
+
+    # Style header
+    for j in range(len(col_labels)):
+        cell = table[0, j]
+        cell.set_facecolor(TEAL_DARK)
+        cell.set_text_props(color="white", fontweight="bold", fontsize=9)
+        cell.set_edgecolor("white")
+
+    # Style body cells
+    for i in range(1, len(cell_text) + 1):
+        for j in range(len(col_labels)):
+            cell = table[i, j]
+            cell.set_edgecolor("#E0E0E0")
+            if j == 4:  # % column — bold red for high values
+                pct_val = alert_df.iloc[i - 1]["% semanas sin reporte"]
+                if pct_val >= 80:
+                    cell.set_text_props(fontweight="bold", color=BURGUNDY)
+                elif pct_val >= 65:
+                    cell.set_text_props(fontweight="bold", color="#B8860B")
+
+    # Footer note
+    fig.text(
+        0.05,
+        0.02,
+        "Fuente: Boletin Epidemiologico SINAVE. El reporte intermitente puede indicar "
+        "subregistro o baja prevalencia real en la entidad.",
+        fontsize=8,
+        color=COOL_GRAY,
+        style="italic",
+    )
+
+    path = os.path.join(OUT_DIR, "eda_alerta_ceros.png")
+    fig.savefig(path, dpi=300, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+    print(f"  [OK] {path}")
+
+
+# ============================================================================
+# FIGURE 4: Barras horizontales -- Incidencia real por entidad (boletin)
 # ============================================================================
 def fig4_geo_bars():
-    excel_path = os.path.join(PROJECT, "reports/ProdDetails/tabla_333_modelos_produccion.xlsx")
-    df = pd.read_excel(excel_path, sheet_name=0)
-    dep = df[(df["padecimiento"] == "Depresión") & (df["sexo"] == "general")]
-    dep_states = dep[~dep["entidad"].str.contains("Nacional|region_", case=False, na=False)]
-    by_state = (
-        dep_states.groupby("entidad")["casos_52_semanas_futuro"].sum().sort_values(ascending=True)
-    )
+    """Top 15 entidades por incidencia real de Depresion (boletin SINAVE 2025)."""
+    boletin_path = os.path.join(PROJECT, "data/processed/dataset_boletin_epidemiologico.csv")
+    df = pd.read_csv(boletin_path)
+    df["Entidad"] = df["Entidad"].replace({"Distrito Federal": "Ciudad de Mexico"})
+
+    anio = 2025
+    dep = df[
+        (df["Padecimiento"].str.contains("epresi", case=False, na=False)) & (df["Anio"] == anio)
+    ]
+    # Acumulado is cumulative — max per state = annual total
+    by_state = dep.groupby("Entidad")[["Acumulado_hombres", "Acumulado_mujeres"]].max()
+    by_state["total"] = by_state.sum(axis=1)
+    by_state = by_state["total"].sort_values(ascending=True)
     top15 = by_state.tail(15)
 
     fig, ax = plt.subplots(figsize=(10, 7), dpi=300)
 
-    # Gradient from teal to burgundy
     n = len(top15)
     cmap_colors = []
     for i in range(n):
@@ -349,8 +827,7 @@ def fig4_geo_bars():
 
     bars = ax.barh(range(n), top15.values, color=cmap_colors, edgecolor="white", height=0.7)
     ax.set_yticks(range(n))
-    # Renombrar "México" a "Estado de México" para evitar confusión
-    ylabels = [e if e != "México" else "Estado de México" for e in top15.index]
+    ylabels = [e if e != "Mexico" else "Estado de Mexico" for e in top15.index]
     ax.set_yticklabels(ylabels, fontsize=10)
 
     for bar, val in zip(bars, top15.values):
@@ -365,13 +842,13 @@ def fig4_geo_bars():
         )
 
     ax.set_title(
-        "Pronóstico de casos a 52 semanas por entidad -- Depresión (F32)",
+        f"Top 15 entidades por incidencia de Depresion (F32) -- Boletin SINAVE {anio}",
         fontsize=13,
         fontweight="bold",
         color=TEAL_DARK,
         pad=12,
     )
-    ax.set_xlabel("Casos pronosticados (52 semanas)", fontsize=11)
+    ax.set_xlabel("Casos acumulados anuales", fontsize=11)
     ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f"{int(x):,}"))
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
@@ -1127,6 +1604,385 @@ def fig10_consola():
 
 
 # ============================================================================
+# FIGURE 11: Feature Engineering Pipeline Diagram
+# ============================================================================
+def fig_feature_pipeline():
+    fig, ax = plt.subplots(figsize=(14, 6), dpi=300)
+    ax.set_xlim(0, 14)
+    ax.set_ylim(0, 6)
+    ax.axis("off")
+
+    # ---- Main flow (top row) ----
+    main_boxes = [
+        (0.3, 4.2, "Serie Temporal\nCruda", BURGUNDY),
+        (3.6, 4.2, "Limpieza\ny Outliers", TEAL),
+        (6.9, 4.2, "Features\nTemporales", GOLD),
+        (10.8, 4.2, "20 Features\n(conteos)", TEAL_DARK),
+    ]
+    box_w, box_h = 2.4, 1.2
+
+    for x, y, label, color in main_boxes:
+        rect = FancyBboxPatch(
+            (x, y - box_h / 2),
+            box_w,
+            box_h,
+            boxstyle="round,pad=0.15",
+            facecolor=color,
+            edgecolor="white",
+            linewidth=2,
+            alpha=0.92,
+        )
+        ax.add_patch(rect)
+        ax.text(
+            x + box_w / 2,
+            y,
+            label,
+            ha="center",
+            va="center",
+            fontsize=11,
+            fontweight="bold",
+            color="white",
+            linespacing=1.3,
+        )
+
+    # Arrows between main boxes
+    arrow_props = dict(
+        arrowstyle="-|>",
+        color=COOL_GRAY,
+        linewidth=2.0,
+        mutation_scale=18,
+    )
+    for i in range(len(main_boxes) - 1):
+        x1 = main_boxes[i][0] + box_w
+        x2 = main_boxes[i + 1][0]
+        y = main_boxes[i][1]
+        ax.annotate("", xy=(x2, y), xytext=(x1, y), arrowprops=arrow_props)
+
+    # Sub-items below "Features Temporales"
+    sub_text = "7 lags, 5 rolling means, volatilidad,\ncalendario, ciclicos, COVID flag"
+    ax.text(
+        6.9 + box_w / 2,
+        4.2 - box_h / 2 - 0.2,
+        sub_text,
+        ha="center",
+        va="top",
+        fontsize=8,
+        color=GOLD,
+        style="italic",
+        linespacing=1.4,
+    )
+
+    # ---- Second row ----
+    # Box A: INEGI Demograficos
+    bx_a = (1.5, 2.0)
+    rect_a = FancyBboxPatch(
+        (bx_a[0], bx_a[1] - 0.6),
+        2.4,
+        1.2,
+        boxstyle="round,pad=0.15",
+        facecolor=IMSS_BLUE,
+        edgecolor="white",
+        linewidth=2,
+        alpha=0.92,
+    )
+    ax.add_patch(rect_a)
+    ax.text(
+        bx_a[0] + 1.2,
+        bx_a[1],
+        "INEGI\nDemograficos",
+        ha="center",
+        va="center",
+        fontsize=11,
+        fontweight="bold",
+        color="white",
+        linespacing=1.3,
+    )
+
+    # Arrow from INEGI up to "Limpieza y Outliers"
+    ax.annotate(
+        "",
+        xy=(3.6 + box_w / 2, 4.2 - box_h / 2),
+        xytext=(bx_a[0] + 1.2, bx_a[1] + 0.6),
+        arrowprops=dict(
+            arrowstyle="-|>",
+            color=IMSS_BLUE,
+            linewidth=1.8,
+            mutation_scale=16,
+            connectionstyle="arc3,rad=-0.15",
+        ),
+    )
+    ax.text(
+        bx_a[0] + 1.2,
+        bx_a[1] - 0.6 - 0.15,
+        "Contexto demografico por entidad",
+        ha="center",
+        va="top",
+        fontsize=7.5,
+        color=IMSS_BLUE,
+        style="italic",
+    )
+
+    # Box B: 4 Regiones Geograficas
+    bx_b_x, bx_b_y = 6.0, 2.0
+    rect_b = FancyBboxPatch(
+        (bx_b_x, bx_b_y - 0.6),
+        2.4,
+        1.2,
+        boxstyle="round,pad=0.15",
+        facecolor=BURGUNDY,
+        edgecolor="white",
+        linewidth=2,
+        alpha=0.85,
+    )
+    ax.add_patch(rect_b)
+    ax.text(
+        bx_b_x + 1.2,
+        bx_b_y,
+        "4 Regiones\nGeograficas",
+        ha="center",
+        va="center",
+        fontsize=11,
+        fontweight="bold",
+        color="white",
+        linespacing=1.3,
+    )
+    ax.text(
+        bx_b_x + 1.2,
+        bx_b_y - 0.6 - 0.15,
+        "Norte, Occidente, Centro, Sureste",
+        ha="center",
+        va="top",
+        fontsize=7.5,
+        color=BURGUNDY,
+        style="italic",
+    )
+
+    # Box C: Agrupacion Regional
+    bx_c_x, bx_c_y = 9.8, 2.0
+    rect_c = FancyBboxPatch(
+        (bx_c_x, bx_c_y - 0.6),
+        2.8,
+        1.2,
+        boxstyle="round,pad=0.15",
+        facecolor=TEAL_DARK,
+        edgecolor="white",
+        linewidth=2,
+        alpha=0.85,
+    )
+    ax.add_patch(rect_c)
+    ax.text(
+        bx_c_x + 1.4,
+        bx_c_y,
+        "Agrupacion\nRegional",
+        ha="center",
+        va="center",
+        fontsize=11,
+        fontweight="bold",
+        color="white",
+        linespacing=1.3,
+    )
+
+    # Arrow from Regiones to Agrupacion Regional
+    ax.annotate(
+        "",
+        xy=(bx_c_x, bx_c_y),
+        xytext=(bx_b_x + 2.4, bx_b_y),
+        arrowprops=dict(
+            arrowstyle="-|>",
+            color=COOL_GRAY,
+            linewidth=1.8,
+            mutation_scale=16,
+        ),
+    )
+
+    # Arrow from Agrupacion Regional up to "20 Features XGBoost"
+    ax.annotate(
+        "",
+        xy=(10.8 + box_w / 2, 4.2 - box_h / 2),
+        xytext=(bx_c_x + 1.4, bx_c_y + 0.6),
+        arrowprops=dict(
+            arrowstyle="-|>",
+            color=TEAL_DARK,
+            linewidth=1.8,
+            mutation_scale=16,
+            connectionstyle="arc3,rad=-0.15",
+        ),
+    )
+
+    ax.set_title(
+        "Pipeline de Feature Engineering -- EpiForecast-MX",
+        fontsize=14,
+        fontweight="bold",
+        color=TEAL_DARK,
+        pad=15,
+    )
+    fig.tight_layout()
+    path = os.path.join(OUT_DIR, "feature_engineering_pipeline.png")
+    fig.savefig(path, dpi=300, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+    print(f"  [OK] {path}")
+
+
+# ============================================================================
+# FIGURE 12: 4-Model Architecture Comparison (2x2 grid)
+# ============================================================================
+def fig_model_comparison():
+    fig, axes = plt.subplots(2, 2, figsize=(14, 8), dpi=300)
+    fig.patch.set_facecolor("white")
+
+    panels = [
+        {
+            "ax": axes[0, 0],
+            "name": "Prophet",
+            "color": MODEL_COLORS["Prophet"],
+            "formula": "y(t) = g(t) + s(t) + h(t) + e(t)",
+            "desc": "Tendencia + Estacionalidad\n+ Regimen COVID",
+            "tag": "Estadistico | CPU",
+        },
+        {
+            "ax": axes[0, 1],
+            "name": "DeepAR",
+            "color": MODEL_COLORS["DeepAR"],
+            "formula": "LSTM Autoregresivo",
+            "desc": "Entrenamiento global\nsobre 333 series",
+            "tag": "Deep Learning | GPU",
+        },
+        {
+            "ax": axes[1, 0],
+            "name": "Ensemble",
+            "color": MODEL_COLORS["Ensemble"],
+            "formula": "Prophet -> Residuos -> XGBoost",
+            "desc": "20 features +\ncorreccion no lineal",
+            "tag": "Hibrido | CPU",
+        },
+        {
+            "ax": axes[1, 1],
+            "name": "Stacking",
+            "color": MODEL_COLORS["Stacking"],
+            "formula": "Prophet + ETS + LightGBM -> Ridge",
+            "desc": "3 expertos +\nmeta-learner",
+            "tag": "Meta-learning | CPU",
+        },
+    ]
+
+    for p in panels:
+        ax = p["ax"]
+        color = p["color"]
+        ax.set_xlim(0, 10)
+        ax.set_ylim(0, 8)
+        ax.axis("off")
+
+        # Background card
+        card = FancyBboxPatch(
+            (0.3, 0.3),
+            9.4,
+            7.4,
+            boxstyle="round,pad=0.25",
+            facecolor="white",
+            edgecolor=color,
+            linewidth=2.5,
+        )
+        ax.add_patch(card)
+
+        # Colored header band
+        header = FancyBboxPatch(
+            (0.3, 5.8),
+            9.4,
+            1.9,
+            boxstyle="round,pad=0.15",
+            facecolor=color,
+            edgecolor=color,
+            linewidth=0,
+            alpha=0.92,
+        )
+        ax.add_patch(header)
+
+        # Model name
+        ax.text(
+            5.0,
+            6.75,
+            p["name"],
+            ha="center",
+            va="center",
+            fontsize=18,
+            fontweight="bold",
+            color="white",
+        )
+
+        # Formula box
+        formula_box = FancyBboxPatch(
+            (1.0, 3.8),
+            8.0,
+            1.5,
+            boxstyle="round,pad=0.2",
+            facecolor="#F5F5F5",
+            edgecolor=color,
+            linewidth=1.5,
+            alpha=0.8,
+        )
+        ax.add_patch(formula_box)
+        ax.text(
+            5.0,
+            4.55,
+            p["formula"],
+            ha="center",
+            va="center",
+            fontsize=13,
+            fontweight="bold",
+            color=color,
+            family="monospace",
+        )
+
+        # Description
+        ax.text(
+            5.0,
+            2.8,
+            p["desc"],
+            ha="center",
+            va="center",
+            fontsize=10.5,
+            color="#444444",
+            linespacing=1.5,
+        )
+
+        # Tag badge
+        tag_box = FancyBboxPatch(
+            (2.5, 0.7),
+            5.0,
+            0.8,
+            boxstyle="round,pad=0.15",
+            facecolor=color,
+            edgecolor="white",
+            linewidth=0,
+            alpha=0.15,
+        )
+        ax.add_patch(tag_box)
+        ax.text(
+            5.0,
+            1.1,
+            p["tag"],
+            ha="center",
+            va="center",
+            fontsize=10,
+            fontweight="bold",
+            color=color,
+        )
+
+    fig.suptitle(
+        "Comparativa de Arquitecturas -- 4 Motores de Pronostico",
+        fontsize=15,
+        fontweight="bold",
+        color=TEAL_DARK,
+        y=0.98,
+    )
+    fig.tight_layout(rect=[0, 0, 1, 0.95])
+    path = os.path.join(OUT_DIR, "model_comparison_4panel.png")
+    fig.savefig(path, dpi=300, bbox_inches="tight", facecolor="white")
+    plt.close(fig)
+    print(f"  [OK] {path}")
+
+
+# ============================================================================
 # COPIES: Screenshots existentes
 # ============================================================================
 def copy_screenshots():
@@ -1152,46 +2008,66 @@ def copy_screenshots():
 if __name__ == "__main__":
     print("Generando figuras para Resumen Ejecutivo - Avance 7\n")
 
-    print("[1/9] Distribución de motores (donut)...")
+    print("[1/15] Distribucion de motores (donut)...")
     fig1_donut()
 
-    print("[2/9] Comparativo MASE por motor...")
+    print("[2/15] Comparativo MASE por motor...")
     fig2_mase()
 
-    print("[3/9] Serie temporal Depresión Nacional...")
+    print("[3/15] Serie temporal Depresion Nacional...")
     fig3_time_series()
 
-    print("[4/9] Pronóstico por entidad (barras)...")
+    print("[4/15] Serie temporal Parkinson Nacional...")
+    fig3b_parkinson()
+
+    print("[5/15] Serie temporal Alzheimer Nacional...")
+    fig3c_alzheimer()
+
+    print("[6/15] Distribucion por sexo (boletin real)...")
+    fig_eda_genero()
+
+    print("[7/15] Mapa coropletico de Mexico (boletin real)...")
+    fig_eda_mapa()
+
+    print("[8/15] Alerta de reporte intermitente...")
+    fig_eda_alerta_ceros()
+
+    print("[9/15] Pronostico por entidad (barras)...")
     fig4_geo_bars()
 
-    print("[5/9] Waterfall CRISP-ML(Q)...")
+    print("[10/15] Waterfall CRISP-ML(Q)...")
     fig5_waterfall()
 
-    print("[6/9] Costos vs Beneficios...")
+    print("[11/15] Costos vs Beneficios...")
     fig6_cost_benefit()
 
-    print("[7/9] Matriz de riesgos...")
+    print("[12/15] Matriz de riesgos...")
     fig7_risk_heatmap()
 
-    print("[8/9] Arquitectura simplificada...")
+    print("[13/15] Arquitectura simplificada...")
     fig8_architecture()
 
-    print("[9/10] EpiBot showcase (mockup)...")
+    print("[14/15] EpiBot showcase (mockup)...")
     fig9_epibot()
 
-    print("[10/10] Consola showcase (mockup)...")
+    print("[15/15] Consola showcase (mockup)...")
     fig10_consola()
 
-    print("\n[11] Copiando screenshots existentes...")
+    print("\n[+] Copiando screenshots existentes...")
     copy_screenshots()
 
     print("\n" + "=" * 60)
-    print("Verificación final de archivos:")
+    print("Verificacion final de archivos:")
     print("=" * 60)
     expected = [
         "modelos_distribucion_motores.png",
         "modelos_comparativo_mase.png",
         "eda_serie_temporal.png",
+        "eda_serie_parkinson.png",
+        "eda_serie_alzheimer.png",
+        "eda_genero_butterfly.png",
+        "eda_mapa_mexico.png",
+        "eda_alerta_ceros.png",
         "eda_heatmap_geografico.png",
         "costos_waterfall_crispml.png",
         "costos_vs_beneficios.png",

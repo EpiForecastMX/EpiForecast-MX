@@ -199,19 +199,21 @@
 \begin{tikzpicture}[remember picture, overlay]
   % Franja superior blanca para logos (1.8cm)
   \fill[white] (current page.north west) rectangle ([yshift=-1.8cm]current page.north east);
+  % Linea gold de transicion entre zona blanca y burgundy
+  \fill[gold] ([yshift=-1.8cm]current page.north west) rectangle ([yshift=-1.95cm]current page.north east);
   % Bloque burgundy con degradado (9cm)
   \shade[top color=burgundy, bottom color=darkburgundy]
-    ([yshift=-1.8cm]current page.north west) rectangle ([yshift=-11.5cm]current page.north east);
+    ([yshift=-1.95cm]current page.north west) rectangle ([yshift=-11.5cm]current page.north east);
   % Patron de puntos decorativo (watermark sutil)
   \foreach \x in {-8,-7,...,8} {
     \foreach \y in {0,1,...,5} {
       \fill[white, opacity=0.03] ([yshift=-2.5cm-\y*1.5cm, xshift=\x*2.2cm]current page.north) circle (0.8pt);
     }
   }
-  % Franja teal
-  \fill[teal] ([yshift=-11.5cm]current page.north west) rectangle ([yshift=-12.0cm]current page.north east);
-  % Franja gold delgada
-  \fill[gold] ([yshift=-12.0cm]current page.north west) rectangle ([yshift=-12.2cm]current page.north east);
+  % Franja teal (0.8cm)
+  \fill[teal] ([yshift=-11.5cm]current page.north west) rectangle ([yshift=-12.3cm]current page.north east);
+  % Franja gold (0.4cm)
+  \fill[gold] ([yshift=-12.3cm]current page.north west) rectangle ([yshift=-12.7cm]current page.north east);
   % Franja inferior burgundy
   \fill[burgundy] ([yshift=1.2cm]current page.south west) rectangle (current page.south east);
 \end{tikzpicture}
@@ -221,12 +223,14 @@
 \noindent
 \begin{minipage}{0.3\textwidth}
 \raggedright
-\includegraphics[height=1.2cm]{logo_imss.png}
+\setlength{\fboxsep}{4pt}\setlength{\fboxrule}{0pt}%
+\fcolorbox{white}{white}{\includegraphics[height=1.2cm]{logo_imss.png}}
 \end{minipage}%
 \hfill
 \begin{minipage}{0.3\textwidth}
 \raggedleft
-\includegraphics[height=1.2cm]{logo_tec.png}
+\setlength{\fboxsep}{4pt}\setlength{\fboxrule}{0pt}%
+\fcolorbox{white}{white}{\includegraphics[height=1.2cm]{logo_tec.png}}
 \end{minipage}
 
 % --- Titulo principal (dentro del bloque burgundy) ---
@@ -236,13 +240,13 @@
 {\color{white}\fontsize{12}{16}\selectfont\textsc{Instituto Mexicano del Seguro Social $\bullet$ Tecnológico de Monterrey}}\\[0.2cm]
 {\color{white!70}\fontsize{10}{14}\selectfont Maestría en Inteligencia Artificial Aplicada | Proyecto Integrador | Equipo 01}\\[1.2cm]
 {\color{white}\fontsize{30}{36}\selectfont\bfseries E\kern0.5pt p\kern0.5pt i\kern0.5pt F\kern0.5pt o\kern0.5pt r\kern0.5pt e\kern0.5pt c\kern0.5pt a\kern0.5pt s\kern0.5pt t\kern0.5pt -\kern0.5pt M\kern0.5pt X}\\[0.5cm]
-{\color{gold}\large\itshape Generalización de modelos nacionales de pronóstico\\
+{\color{gold}\fontsize{14}{20}\selectfont\bfseries\itshape Generalización de modelos nacionales de pronóstico\\
 epidemiológico hacia un enfoque modular con desagregación\\
 por sexo y entidad federativa en México}\\[1.0cm]
 \end{center}
 
 % --- Avance~7 (debajo de franjas) ---
-\vspace{0.8cm}
+\vspace{1.3cm}
 
 \begin{center}
 {\color{teal}\fontsize{20}{26}\selectfont\bfseries AVANCE 7: RESUMEN EJECUTIVO}\\[1.0cm]
@@ -261,7 +265,7 @@ por sexo y entidad federativa en México}\\[1.0cm]
 \end{tabular}
 \end{center}
 
-\vfill
+\vspace{2.5cm}
 
 % --- Bloque de autores ---
 \begin{center}
@@ -280,7 +284,11 @@ por sexo y entidad federativa en México}\\[1.0cm]
 
 % --- URL en franja inferior ---
 \begin{tikzpicture}[remember picture, overlay]
-  \node[anchor=south, yshift=0.3cm] at (current page.south) {\color{white}\small\texttt{proyectointegrador.org}};
+  \node[anchor=south, yshift=0.3cm] at (current page.south) {%
+    \color{white}\normalsize\texttt{proyectointegrador.org} \quad
+    {\color{gold}\small|}  \quad
+    {\color{white!80}\small EpiForecast-MX \textbar{} Equipo 01}%
+  };
 \end{tikzpicture}
 
 \newpage
@@ -328,7 +336,7 @@ por sexo y entidad federativa en México}\\[1.0cm]
 \centering
 {\color{teal}\fontsize{36}{40}\selectfont\bfseries 94.9\%}\\[0.3cm]
 {\small\bfseries Superan Línea Base}\\[0.15cm]
-{\scriptsize\color{coolgray} \mase{} mediana: 0.30 (70\% mejor que naive)}
+{\scriptsize\color{coolgray} \smape{} mediana: 23.66\% | \mase{}: 0.30}
 \end{minipage}}
 \end{minipage}\hfill
 \begin{minipage}[t]{0.31\textwidth}
@@ -361,7 +369,7 @@ por sexo y entidad federativa en México}\\[1.0cm]
 \colorbox{lightgreen}{%
 \begin{minipage}[c][3.5cm]{\dimexpr\textwidth-30pt}
 \centering
-{\color{teal}\fontsize{30}{36}\selectfont\bfseries 240--506}\\[0.3cm]
+{\color{teal}\fontsize{30}{36}\selectfont\bfseries \$240\,--\,\$506}\\[0.3cm]
 {\small\bfseries USD Costo Anual}\\[0.15cm]
 {\scriptsize\color{coolgray} Equivale a 4~consultas de especialidad}
 \end{minipage}}
@@ -412,7 +420,7 @@ por sexo y entidad federativa en México}\\[1.0cm]
 
 EpiForecast-MX es una plataforma de inteligencia epidemiológica desarrollada en colaboración con el Instituto Mexicano del Seguro Social (\imss{}) para pronosticar la incidencia semanal de tres condiciones neurológicas y de salud mental: Depresión (F32), Parkinson (G20) y Alzheimer (G30). El sistema abarca las 32~entidades federativas de México, desagregado por sexo, con un horizonte de predicción de 52~semanas.
 
-La arquitectura multi-motor evalúa cuatro algoritmos de aprendizaje automático --DeepAR, Prophet, Ensemble (Prophet + XGBoost) y Stacking (Prophet + ETS + LightGBM + Ridge)-- sobre 1,332 combinaciones, seleccionando automáticamente el mejor modelo para cada una de las 333~series de producción. DeepAR domina con el 73.3\% de las selecciones, seguido por Prophet (16.5\%), Ensemble (9.6\%) y Stacking (0.6\%). El sistema alcanza una mediana global de \mase{} de 0.30, superando la línea base naive en el 94.9\% de las series.
+La arquitectura multi-motor evalúa cuatro algoritmos de aprendizaje automático (DeepAR, Prophet, Ensemble (Prophet + XGBoost) y Stacking (Prophet + ETS + LightGBM + Ridge)) sobre 1,332 combinaciones, seleccionando automáticamente el mejor modelo para cada una de las 333~series de producción. DeepAR domina con el 73.3\% de las selecciones, seguido por Prophet (16.5\%), Ensemble (9.6\%) y Stacking (0.6\%). El sistema alcanza una mediana global de \smape{} de 23.66\% y un \mase{} de 0.30, superando la línea base naive en el 94.9\% de las series.
 
 La plataforma opera sobre infraestructura MLOps completa (AWS SageMaker, DVC, GitHub Actions) con un costo operativo anual proyectado de 240--506~USD. El ecosistema incluye un dashboard interactivo Tableau para tomadores de decisiones, una consola CLI para el equipo técnico y un asistente conversacional web para médicos y público general. Este documento sintetiza los hallazgos de siete avances de desarrollo, presenta un análisis costo--beneficio por fase CRISP-ML(Q) y mapea los riesgos asociados al despliegue de modelos de aprendizaje automático en el sector salud.
 
@@ -432,8 +440,8 @@ La plataforma opera sobre infraestructura MLOps completa (AWS SageMaker, DVC, Gi
 \begin{center}
 {\color{burgundy}\fontsize{70}{70}\selectfont\textbf{``}}\\[0.5cm]
 {\color{darkteal}\fontsize{18}{26}\selectfont\itshape
-Cada tres segundos, alguien en el mundo recibe un diagnóstico de demencia. Detrás de cada dato epidemiológico hay una familia que necesita que el sistema de salud esté preparado.}\\[0.8cm]
-{\color{coolgray}\normalsize -- Adaptado de Alzheimer's Disease International, 2015}
+Si la causa latente de las epidemias no puede descubrirse, el modo en que opera puede investigarse. Las leyes de su acción pueden determinarse por observación, así como las circunstancias en que las epidemias surgen o por las cuales pueden ser controladas.}\\[0.8cm]
+{\color{coolgray}\normalsize --- William Farr, 1840}
 \end{center}
 \end{minipage}
 \end{center}
@@ -445,7 +453,7 @@ Cada tres segundos, alguien en el mundo recibe un diagnóstico de demencia. Detr
 % ============================================================
 \section{Introducción}\label{sec:introduccion}
 
-Pronosticar el clima a siete días cuesta miles de millones de dólares en supercomputadoras. Pronosticar la demanda de atención en salud mental para 80~millones de mexicanos, con 52~semanas de anticipación y cobertura en las 32~entidades federativas, cuesta menos que cuatro consultas de neurología al año. Esa es la promesa --y la realidad operativa-- de EpiForecast-MX.
+Pronosticar el clima a siete días cuesta miles de millones de dólares en supercomputadoras. Pronosticar la demanda de atención en salud mental para 80~millones de mexicanos, con 52~semanas de anticipación y cobertura en las 32~entidades federativas, cuesta menos que cuatro consultas de neurología al año. Esa es la promesa, y la realidad operativa, de EpiForecast-MX.
 
 Para el \imss{}, anticipar la demanda de atención médica no es un ejercicio académico: es la diferencia entre tener suficientes consultorios de psiquiatría en Jalisco la próxima primavera o dejar a cientos de pacientes con depresión en lista de espera; entre distribuir medicamento antiparkinsoniano a tiempo en Nuevo León o enfrentar desabastos que afectan la calidad de vida de miles de personas.
 
@@ -454,12 +462,12 @@ Hasta ahora, el \imss{} ha operado de manera \textbf{reactiva} frente a las enfe
 EpiForecast-MX nace para cerrar esa brecha. Es la primera plataforma de pronóstico epidemiológico multi-modelo del \imss{} que predice, con un horizonte de 52~semanas, la incidencia semanal de tres condiciones del sistema nervioso clasificadas en la CIE-10:
 
 \begin{itemize}
-  \item \textbf{Depresión (F32):} el padecimiento con mayor volumen --más de 155,000~casos pronosticados al año a nivel nacional--, con un diferencial de género marcado donde las mujeres representan aproximadamente el 70\% de los casos.
+  \item \textbf{Depresión (F32):} el padecimiento con mayor volumen (más de 155,000~casos pronosticados al año a nivel nacional), con un diferencial de género marcado donde las mujeres representan aproximadamente el 70\% de los casos.
   \item \textbf{Parkinson (G20):} la segunda enfermedad neurodegenerativa más común a nivel mundial, con impacto creciente por el envejecimiento poblacional en México.
   \item \textbf{Alzheimer (G30):} condición de baja incidencia registrada pero con enorme carga económica y social, donde el subregistro es un desafío conocido.
 \end{itemize}
 
-El proyecto fue desarrollado por un equipo interdisciplinario de la Maestría en Inteligencia Artificial Aplicada (MNA) del Tecnológico de Monterrey, en colaboración directa con investigadoras del \imss{} --la Dra.~Ruth Perez-Hernandez y la Dra.~Lina Diaz Castro-- quienes aportaron la visión clínica y el contexto institucional indispensable para que los modelos tengan relevancia práctica.
+El proyecto fue desarrollado por un equipo interdisciplinario de la Maestría en Inteligencia Artificial Aplicada (MNA) del Tecnológico de Monterrey, en colaboración directa con investigadoras del \imss{}, la Dra.~Ruth Perez-Hernandez y la Dra.~Lina Diaz Castro, quienes aportaron la visión clínica y el contexto institucional indispensable para que los modelos tengan relevancia práctica.
 
 Este resumen ejecutivo sintetiza siete meses de trabajo intensivo, desde la comprensión del problema hasta la propuesta de despliegue en producción, con el objetivo de presentar a los tomadores de decisiones del \imss{} una visión clara del \textbf{valor entregado}, los \textbf{costos asociados} y los \textbf{riesgos a considerar}.
 
@@ -471,19 +479,19 @@ Este resumen ejecutivo sintetiza siete meses de trabajo intensivo, desde la comp
 
 \subsection{El contexto epidemiológico}
 
-Las enfermedades neurológicas representan la principal causa de discapacidad a nivel mundial (IHME, 2021). En México, la transición demográfica --con una población que envejece rápidamente-- intensifica la presión sobre los servicios de neurología y psiquiatría del \imss{}, que atiende a más del 50\% de la población asegurada del país (IMSS, 2024).
+Las enfermedades neurológicas representan la principal causa de discapacidad a nivel mundial (IHME, 2021). En México, la transición demográfica, con una población que envejece rápidamente, intensifica la presión sobre los servicios de neurología y psiquiatría del \imss{}, que atiende a más del 50\% de la población asegurada del país (IMSS, 2024).
 
-La Organización Mundial de la Salud estima que 55~millones de personas viven con demencia globalmente, cifra que se triplicará para 2050 (OMS, 2023). En México, se estiman entre 1.3 y 1.8~millones de personas con Alzheimer, con un costo anual que supera los 115,000~millones de pesos por familia (ADI, 2015). La depresión afecta a entre 8 y 10~millones de mexicanos, y la OMS ha demostrado que cada dólar invertido en tratamiento de depresión y ansiedad genera un retorno de 4~dólares en salud y productividad (OMS, 2016).
+La Organización Mundial de la Salud estima que más de 8.5~millones de personas viven con Parkinson globalmente, cifra que se ha duplicado en los últimos 25~años; la discapacidad y mortalidad por esta enfermedad crecen más rápido que las de cualquier otro trastorno neurológico (OMS, 2022). Para Alzheimer, se estiman entre 1.3 y 1.8~millones de personas afectadas en México, con un costo anual que supera los 115,000~millones de pesos por familia (ADI, 2015). La depresión afecta a entre 8 y 10~millones de mexicanos, y la OMS ha demostrado que cada dólar invertido en tratamiento de depresión y ansiedad genera un retorno de 4~dólares en salud y productividad (OMS, 2016).
 
 \subsection{La brecha operativa}
 
-El \imss{} recopila datos epidemiológicos semanales a través del SINAVE desde 2012, generando un acervo histórico de más de una década. Sin embargo, estos datos se han utilizado principalmente de forma \textbf{descriptiva}: reportes sobre lo que \emph{ya ocurrió}, no sobre lo que \emph{está por ocurrir}. Las limitaciones identificadas al inicio del proyecto incluyen:
+El \imss{} recopila datos epidemiológicos semanales a través del SINAVE desde 2014, generando un acervo histórico de más de una década. Sin embargo, estos datos se han utilizado principalmente de forma \textbf{descriptiva}: reportes sobre lo que \emph{ya ocurrió}, no sobre lo que \emph{está por ocurrir}. Las limitaciones identificadas al inicio del proyecto incluyen:
 
 \begin{enumerate}
   \item \textbf{Ausencia de capacidad predictiva:} no existía un sistema que generara pronósticos de incidencia a mediano o largo plazo para estas tres condiciones.
   \item \textbf{Datos en formato PDF:} los boletines SINAVE se publican como documentos PDF, requiriendo un pipeline de extracción automatizada.
   \item \textbf{Complejidad geográfica:} 32~entidades federativas con patrones epidemiológicos heterogéneos, donde un modelo único no puede capturar todas las dinámicas locales.
-  \item \textbf{Anomalías COVID-19:} el periodo 2020--2021 introdujo disrupciones severas en los patrones de reporte epidemiológico, exigiendo estrategias específicas de tratamiento de datos.
+  \item \textbf{Anomalías COVID-19:} el periodo 2020--2022 introdujo disrupciones severas en los patrones de reporte epidemiológico, exigiendo estrategias específicas de tratamiento de datos.
 \end{enumerate}
 
 \subsection{El impacto potencial}
@@ -503,11 +511,11 @@ Un sistema de pronóstico confiable permite al \imss{}:
 \newpage
 \section{Hallazgos clave del análisis exploratorio}\label{sec:eda}
 
-El análisis exploratorio de datos (EDA) --presentado en detalle en el Avance~1 (Rebull et al., 2026a)-- reveló patrones epidemiológicos fundamentales que guiaron toda la estrategia de modelado. A continuación se sintetizan los hallazgos más significativos.
+El análisis exploratorio de datos (EDA), presentado en detalle en el Avance~1 (Rebull et al., 2026a), reveló patrones epidemiológicos fundamentales que guiaron toda la estrategia de modelado. A continuación se sintetizan los hallazgos más significativos.
 
 \subsection{Depresión domina en volumen; Alzheimer en complejidad}
 
-La depresión (F32) representa el 94.3\% del volumen total de casos pronosticados a nivel nacional (155,966 de 165,449~casos anuales), lo que refleja tanto la alta prevalencia del padecimiento como la solidez de los datos disponibles. En contraste, el Alzheimer (G30) registra una incidencia semanal extremadamente baja en muchos estados --frecuentemente menor a 5~casos por semana--, lo que genera un desafío estadístico: las métricas porcentuales como \smape{} se inflan artificialmente ante valores cercanos a cero, aunque el error absoluto real sea inferior a un caso.
+La depresión (F32) representa el 94.3\% del volumen total de casos pronosticados a nivel nacional (155,966 de 165,449~casos para el horizonte 2026--2027), lo que refleja tanto la alta prevalencia del padecimiento como la solidez de los datos disponibles. En contraste, el Alzheimer (G30) registra una incidencia semanal extremadamente baja en muchos estados (frecuentemente menor a 5~casos por semana), lo que genera un desafío estadístico: las métricas porcentuales como \smape{} se inflan artificialmente ante valores cercanos a cero, aunque el error absoluto real sea inferior a un caso.
 
 \subsection{Estacionalidad y tendencias diferenciadas}
 
@@ -515,61 +523,260 @@ La depresión (F32) representa el 94.3\% del volumen total de casos pronosticado
 \centering
 \makebox[\textwidth][c]{%
 \includegraphics[width=1.15\textwidth]{eda_serie_temporal.png}}
-\caption[Serie temporal de Depresión (F32) -- Nacional.]{Incidencia semanal de Depresión (F32) a nivel nacional, 2012--2025. Se observa una tendencia creciente pre-pandemia, la disrupción COVID-19 (franja sombreada) y la recuperación posterior con un nuevo régimen de crecimiento.}
+\caption[Serie temporal de Depresión (F32) -- Nacional.]{Incidencia semanal de Depresión (F32) a nivel nacional, 2014--2025. Se observa una tendencia creciente pre-pandemia, la disrupción COVID-19 (franja sombreada, 2020--2022) y la recuperación posterior con un nuevo régimen de crecimiento.}
 \label{fig:eda_serie}
 \end{figure}
 
-Como se observa en la \figref{fig:eda_serie}, el EDA identificó patrones estacionales consistentes: la depresión presenta picos entre febrero y mayo, coincidiendo con el inicio del año escolar y laboral. El Parkinson muestra una estacionalidad menos marcada pero con incrementos sostenidos año tras año, consistente con el envejecimiento poblacional. El Alzheimer exhibe volatilidad alta debido a la baja incidencia, con un punto de cambio estructural durante la pandemia.
+Como se observa en la \figref{fig:eda_serie}, la depresión presenta picos estacionales entre febrero y mayo, coincidiendo con el inicio del año escolar y laboral. La caída durante el periodo COVID-19 refleja una disminución en el reporte, no en la incidencia real. La recuperación post-pandemia muestra un nuevo régimen de crecimiento que supera los niveles pre-pandemia.
+
+\begin{figure}[H]
+\centering
+\makebox[\textwidth][c]{%
+\includegraphics[width=1.15\textwidth]{eda_serie_parkinson.png}}
+\caption[Serie temporal de Parkinson (G20) -- Nacional.]{Incidencia semanal de Parkinson (G20) a nivel nacional, 2014--2025. Se observa una tendencia de crecimiento sostenido consistente con el envejecimiento poblacional, con una estacionalidad menos marcada que la depresión.}
+\label{fig:eda_parkinson}
+\end{figure}
+
+El Parkinson (\figref{fig:eda_parkinson}) muestra una estacionalidad menos marcada pero con incrementos sostenidos año tras año, consistente con el envejecimiento poblacional en México. La disrupción COVID-19 también afectó el reporte, aunque la recuperación fue más gradual.
+
+\begin{figure}[H]
+\centering
+\makebox[\textwidth][c]{%
+\includegraphics[width=1.15\textwidth]{eda_serie_alzheimer.png}}
+\caption[Serie temporal de Alzheimer (G30) -- Nacional.]{Incidencia semanal de Alzheimer (G30) a nivel nacional, 2014--2025. La baja incidencia registrada genera alta volatilidad, con un punto de cambio estructural durante la pandemia.}
+\label{fig:eda_alzheimer}
+\end{figure}
+
+El Alzheimer (\figref{fig:eda_alzheimer}) exhibe la mayor volatilidad de los tres padecimientos debido a su baja incidencia registrada (frecuentemente menor a 5~casos semanales en muchos estados). Esta característica genera un desafío estadístico particular para los modelos de pronóstico y explica la inflación del \smape{} en este padecimiento.
 
 \subsection{El efecto COVID-19: disrupción, no desaparición}
 
-El periodo 2020--2021 no refleja una disminución real en la incidencia de estas enfermedades, sino una \textbf{caída en el reporte} provocada por la centralización de los servicios de salud en la atención de la emergencia sanitaria. La Dra.~Ruth Perez-Hernandez confirmó que los patrones post-pandemia muestran una recuperación hacia las tendencias pre-pandemia, sin evidencia de un cambio epidemiológico permanente en la depresión y el Parkinson. Para Alzheimer, se adoptó una postura prudente al no concluir cambio de tendencia definitivo.
+El periodo 2020--2022 no refleja una disminución real en la incidencia de estas enfermedades, sino una \textbf{caída en el reporte} provocada por la centralización de los servicios de salud en la atención de la emergencia sanitaria. La Dra.~Ruth Perez-Hernandez confirmó que los patrones post-pandemia muestran una recuperación hacia las tendencias pre-pandemia, sin evidencia de un cambio epidemiológico permanente en la depresión y el Parkinson. Para Alzheimer, se adoptó una postura prudente al no concluir cambio de tendencia definitivo.
 
 \subsection{Diferencial por género}
 
-Las mujeres representan aproximadamente el 70\% de los casos de depresión a nivel nacional, un hallazgo consistente con la literatura internacional. En Parkinson, la distribución es más equilibrada, con una ligera predominancia masculina. Estas diferencias justificaron la desagregación por sexo en las 333~series de producción.
+\begin{figure}[H]
+\centering
+\makebox[\textwidth][c]{%
+\includegraphics[width=1.05\textwidth]{eda_genero_butterfly.png}}
+\caption[Distribución de casos por sexo (datos reales 2025).]{Distribución de casos acumulados por sexo y padecimiento según el boletín SINAVE 2025. En depresión, las mujeres representan el 73\% de los casos; en Alzheimer, el 61\%. Solo en Parkinson la distribución es prácticamente paritaria con ligera predominancia masculina (53\%).}
+\label{fig:eda_genero}
+\end{figure}
+
+La \figref{fig:eda_genero} muestra la distribución real por sexo registrada en el boletín SINAVE durante 2025. Las mujeres representan el 73.1\% de los casos de depresión (116,284 vs.\ 42,829~casos acumulados), un diferencial que se mantiene en todas las entidades federativas y que la OMS atribuye a factores biológicos, hormonales y de acceso al diagnóstico. En Alzheimer, las mujeres también predominan con el 60.9\% de los casos (1,473 vs.\ 947), consistente con su mayor esperanza de vida. Solo en Parkinson la distribución es prácticamente paritaria: 53.4\% masculina (4,446 vs.\ 3,886), alineado con los factores de riesgo ocupacional y ambiental descritos en la literatura (OMS, 2022). Estos patrones, observados consistentemente en los datos históricos, justificaron la desagregación por sexo en las 333~series de producción: un modelo que ignore el género produciría pronósticos sesgados que no reflejan la realidad clínica.
 
 \subsection{Heterogeneidad geográfica}
 
 \begin{figure}[H]
 \centering
 \makebox[\textwidth][c]{%
+\includegraphics[width=1.05\textwidth]{eda_mapa_mexico.png}}
+\caption[Mapa coroplético: incidencia por entidad federativa (2025).]{Distribución geográfica de la incidencia acumulada de los tres padecimientos por entidad federativa, según datos reales del boletín SINAVE 2025. La intensidad del color refleja el volumen total de casos reportados. Se observa una concentración marcada en el centro y occidente del país.}
+\label{fig:eda_mapa}
+\end{figure}
+
+La \figref{fig:eda_mapa} revela que la carga de enfermedad no se distribuye uniformemente en el territorio nacional. Jalisco (10,824~casos), Estado de México (10,243), Chihuahua (7,954) y Michoacán (7,508) concentran los mayores volúmenes, mientras que estados como Baja California Sur (831), Querétaro (1,318) y Campeche (1,672) presentan cifras significativamente menores. Esta heterogeneidad responde a factores como densidad poblacional, capacidad de detección del sistema de salud y disponibilidad de especialistas.
+
+Un hallazgo relevante del EDA es el \textbf{reporte intermitente} en estados de baja incidencia. La Tabla~\ref{tab:alerta_ceros} identifica las entidades con más del 50\% de semanas epidemiológicas sin casos reportados durante 2025.
+
+\begin{table}[H]
+\centering
+\caption{Alerta de calidad: entidades con reporte intermitente (2025)}
+\label{tab:alerta_ceros}
+\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{l l r r r}
+\toprule
+\rowcolor{teal!90} \textcolor{white}{\textbf{Padecimiento}} & \textcolor{white}{\textbf{Entidad}} & \textcolor{white}{\textbf{Casos anuales}} & \textcolor{white}{\textbf{Sem. en cero}} & \textcolor{white}{\textbf{\% sin reporte}} \\
+\midrule
+\rowcolor{lightred} Alzheimer & Tlaxcala          &   5 & 48/53 & \textbf{\textcolor{burgundy}{91\%}} \\
+\rowcolor{lightred} Alzheimer & Querétaro         &  10 & 45/53 & \textbf{\textcolor{burgundy}{85\%}} \\
+\rowcolor{lightred} Alzheimer & San Luis Potosí   &  10 & 43/53 & \textbf{\textcolor{burgundy}{81\%}} \\
+\rowcolor{lightred} Alzheimer & Zacatecas         &  12 & 42/53 & \textbf{\textcolor{burgundy}{79\%}} \\
+\rowcolor{lightyellow} Alzheimer & Aguascalientes  &  15 & 39/53 & \textbf{\textcolor{gold}{74\%}} \\
+\rowcolor{lightyellow} Alzheimer & Baja California Sur & 18 & 38/53 & \textbf{\textcolor{gold}{72\%}} \\
+\rowcolor{lightyellow} Alzheimer & Campeche        &  19 & 38/53 & \textbf{\textcolor{gold}{72\%}} \\
+\rowcolor{lightyellow} Alzheimer & Quintana Roo    &  18 & 38/53 & \textbf{\textcolor{gold}{72\%}} \\
+\rowcolor{lightyellow} Alzheimer & Yucatán         &  19 & 37/53 & \textbf{\textcolor{gold}{70\%}} \\
+Alzheimer & Tabasco            &  25 & 33/53 & 62\% \\
+Alzheimer & Guerrero           &  37 & 30/53 & 57\% \\
+Alzheimer & Hidalgo            &  36 & 30/53 & 57\% \\
+Alzheimer & Chiapas            &  41 & 27/53 & 51\% \\
+\midrule
+Parkinson & Tlaxcala           &  31 & 30/53 & 57\% \\
+Parkinson & Nayarit            &  39 & 29/53 & 55\% \\
+\bottomrule
+\end{tabularx}
+\vspace{0.2cm}
+\begin{flushleft}
+\footnotesize\textit{Fuente: Boletín Epidemiológico SINAVE, 53~semanas epidemiológicas de 2025.
+Las filas en \colorbox{lightred}{\scriptsize rojo} indican estados con $\geq$79\% de semanas sin reporte;
+en \colorbox{lightyellow}{\scriptsize amarillo}, entre 70\% y 74\%.
+El reporte intermitente puede reflejar subregistro, falta de especialistas o baja prevalencia real.}
+\end{flushleft}
+\end{table}
+
+Para Alzheimer, 13~entidades reportan cero casos en más del 50\% de las semanas epidemiológicas; Tlaxcala alcanza el 91\% de semanas sin reporte (solo 5~casos anuales). En Parkinson, Tlaxcala y Nayarit superan el 50\% de semanas en cero. Este patrón constituye una señal de alerta para la calidad del dato que el sistema debe manejar con robustez.
+
+\begin{figure}[H]
+\centering
+\makebox[\textwidth][c]{%
 \includegraphics[width=1.15\textwidth]{eda_heatmap_geografico.png}}
-\caption[Pronóstico por entidad -- Depresión (F32).]{Las 15~entidades con mayor pronóstico de casos de Depresión (F32) a 52~semanas. La concentración en estados del centro y norte del país refleja tanto la distribución poblacional como la capacidad de detección del sistema de salud.}
+\caption[Top 15 entidades por incidencia de Depresión (F32).]{Las 15~entidades con mayor incidencia acumulada de Depresión (F32) según el boletín SINAVE 2025. Ciudad de México lidera con 24,202~casos, seguida por Jalisco (10,824) y Estado de México (10,720). La concentración en el centro y norte del país refleja tanto la distribución poblacional como la capacidad de detección del sistema de salud.}
 \label{fig:eda_geografico}
 \end{figure}
 
-La \figref{fig:eda_geografico} muestra que estados como Jalisco, Estado de México, Ciudad de México y Nuevo León concentran la mayor incidencia de depresión, mientras que estados con menor población presentan series de muy baja incidencia que requieren estrategias de modelado especiales (agrupación regional).
+Para las entidades con series de muy baja incidencia (menos de 5~casos semanales) o reporte intermitente, el sistema implementa una estrategia de \textbf{agrupación regional}: en lugar de entrenar un modelo individual que carecería de datos suficientes, se asigna el modelo de la región geográfica correspondiente, garantizando pronósticos estables aun en las series más desafiantes.
 
 % ============================================================
-% 4. MODELOS Y ELECCION DEL MODELO FINAL
+% 4. INGENIERIA DE CARACTERISTICAS
+% ============================================================
+\newpage
+\section{Ingeniería de características}\label{sec:features}
+
+Antes de alimentar cualquier motor de pronóstico, las series temporales crudas del boletín SINAVE atraviesan un pipeline de ingeniería de características diseñado para maximizar la señal predictiva y minimizar el ruido. Este proceso transforma los conteos semanales brutos en un espacio de features rico que captura la dinámica temporal, la estacionalidad, la volatilidad y el contexto demográfico de cada serie.
+
+\begin{figure}[H]
+\centering
+\makebox[\textwidth][c]{%
+\includegraphics[width=1.15\textwidth]{feature_engineering_pipeline.png}}
+\caption[Pipeline de ingeniería de características.]{Pipeline de transformación de datos: desde la serie temporal cruda hasta las 20~features que alimentan los modelos de machine learning. Los datos demográficos del INEGI enriquecen el contexto, y la agrupación regional proporciona series robustas para entidades de baja incidencia.}
+\label{fig:feature_pipeline}
+\end{figure}
+
+\subsection{Target: conteos absolutos, no tasas}
+
+Una decisión de diseño fundamental fue definir el target como \textbf{conteos absolutos de casos} (número entero de incidentes semanales), no como tasa por 100,000~habitantes. En versiones previas del sistema se experimentó con normalización por tasa poblacional utilizando datos del INEGI, pero el análisis posterior reveló que los conteos absolutos producían pronósticos más estables y directamente interpretables para la planificación operativa. La Dra.~Grettel Barcelo validó esta decisión: \textit{``Usar los casos directamente puede ser más conveniente, especialmente si el objetivo es asociarlo con la planeación operativa. Además, la población es constante y los modelos son independientes por entidad.''} Las visualizaciones del dashboard sí incluyen una vista normalizada por 100,000~habitantes (a solicitud de la Dra.~Ruth Pérez Hernández), pero el modelado y la selección de motor operan sobre conteos absolutos.
+
+Los motores Ensemble y Stacking operan nativamente sobre conteos absolutos. Prophet y DeepAR aplican internamente una normalización temporal (escalamiento por media en el caso de GluonTS), pero sus predicciones finales se desnormalizan y redondean a enteros antes de entrar al sistema de selección, garantizando que todas las comparaciones entre motores se realizan en la misma escala: \textbf{casos enteros por semana}.
+
+\subsection{Features temporales y de autocorrelación}
+
+El motor Ensemble construye un espacio de 20~features explícitas a partir de cada serie, organizadas en seis familias:
+
+\begin{table}[H]
+\centering
+\caption{Catálogo de features del motor Ensemble (Prophet + XGBoost)}
+\label{tab:features_catalogo}
+\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{l l X}
+\toprule
+\rowcolor{teal!90} \textcolor{white}{\textbf{Familia}} & \textcolor{white}{\textbf{Features}} & \textcolor{white}{\textbf{Descripción}} \\
+\midrule
+Lags & \texttt{lag\_\{1,2,4,8,13,26,52\}} & Autocorrelación a 1~semana, 1~mes, trimestre, semestre y año \\
+\rowcolor{lightgreen} Medias móviles & \texttt{roll\_\{4,8,12,26,52\}} & Tendencia suavizada a distintas escalas temporales \\
+Volatilidad & \texttt{roll\_std\_13} & Desviación estándar trimestral; mide la estabilidad de la serie \\
+\rowcolor{lightgreen} Calendario & \texttt{month}, \texttt{week\_of\_year} & Componentes discretos del calendario \\
+Cíclicos & \texttt{sin\_week}, \texttt{cos\_week} & Codificación trigonométrica: $\sin(2\pi \cdot \text{sem}/52)$, $\cos(2\pi \cdot \text{sem}/52)$ \\
+\rowcolor{lightgreen} Tasa de cambio & \texttt{roc\_4}, \texttt{roc\_52} & Momentum a 1~mes y 1~año \\
+Régimen & \texttt{covid\_flag} & Indicador binario del periodo pandémico (mar-2020 a sep-2022) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+Todas las features de ventana deslizante se calculan sobre datos desplazados un periodo (\texttt{shift(1)}) para evitar fuga de información (data leakage), garantizando que el modelo nunca observe la semana que intenta predecir.
+
+\subsection{Tratamiento de outliers y agrupación regional}
+
+Los valores atípicos se detectan mediante z-score (umbral de 3$\sigma$) aplicado por grupo de padecimiento y entidad, y se reemplazan por la mediana del grupo. Para entidades con incidencia demasiado baja para entrenar modelos individuales robustos, el sistema agrupa las 32~entidades en cuatro regiones geográficas (Norte, Occidente, Centro y Sureste) y entrena un modelo regional que sirve como respaldo.
+
+\subsection{Adaptaciones por motor}
+
+No todos los modelos consumen las mismas features ni procesan los datos de la misma manera:
+
+\begin{itemize}
+  \item \textbf{Prophet} genera internamente su descomposición aditiva (tendencia, estacionalidad Fourier de orden~10, régimen COVID) sin features explícitas. No requiere el espacio de 20~features.
+  \item \textbf{DeepAR} aprende representaciones latentes a través de sus capas LSTM sobre las 333~series simultáneamente. GluonTS aplica un escalamiento interno por media (\textit{mean scaling}) que normaliza cada serie a su propia escala, facilitando el aprendizaje cruzado entre series de magnitudes dispares.
+  \item \textbf{Ensemble} consume las 20~features completas de la Tabla~\ref{tab:features_catalogo} directamente sobre conteos absolutos, permitiendo que XGBoost capture interacciones no lineales entre lags, momentum y volatilidad.
+  \item \textbf{Stacking} utiliza un subconjunto compacto de 3~features trigonométricas ($\sin_{\text{sem}}$, $\cos_{\text{sem}}$, tendencia lineal) para su experto LightGBM, mientras Prophet y ETS operan con sus propias descomposiciones internas.
+\end{itemize}
+
+% ============================================================
+% 5. MODELOS Y ELECCION DEL MODELO FINAL
 % ============================================================
 \newpage
 \section{Estrategia multi-motor y selección del modelo}\label{sec:modelos}
 
 \subsection{Por qué cuatro motores en lugar de uno}
 
-La decisión de implementar una arquitectura multi-motor no fue una elección de complejidad gratuita, sino una respuesta directa a la \textbf{heterogeneidad de las 333~series}. Un análisis preliminar demostró que ningún motor individual domina consistentemente en todas las combinaciones de padecimiento, entidad y sexo. Mientras DeepAR aprovecha el aprendizaje cruzado entre series para capturar patrones globales, Prophet destaca en series con estacionalidad fuerte y pocos datos, y los modelos Ensemble y Stacking complementan en casos específicos donde los enfoques híbridos capturan dinámicas no lineales (Rebull et al., 2026b).
+La decisión de implementar una arquitectura multi-motor responde tanto a la evidencia empírica acumulada en más de cinco décadas de investigación en pronósticos como a la experiencia directa del proyecto. Durante la Fase~I, el equipo anterior evaluó modelos de machine learning (en particular ensambles basados en árboles de decisión como Random Forest y XGBoost), incorporando ingeniería de características orientada a capturar dependencias temporales (variables de rezago, componentes de tendencia y estacionalidad). Sin embargo, estos enfoques mostraron una \textbf{acumulación progresiva del error bajo un esquema de pronóstico recursivo} a múltiples pasos: a medida que el horizonte avanzaba, los lags pasaban de ser valores reales a predicciones, degradando la calidad exponencialmente. También se probaron redes LSTM, que sufrieron sobreajuste por la cantidad limitada de datos disponibles. La conclusión de la Fase~I fue que \textit{``ningún enfoque de machine learning resultó conveniente; los mejores resultados se obtuvieron con modelos clásicos de series de tiempo''} (Prophet como ganador).
+
+La Fase~II parte de esta lección, pero no la repite: nuestro motor Ensemble \textbf{no} utiliza XGBoost como modelo recursivo autónomo, sino como corrector de residuos de Prophet (véase \S\ref{sec:ensemble}), eliminando la acumulación de error que plagó la Fase~I.
+
+A nivel teórico, el principio está formalizado por Wolpert (1997) como el \textit{No Free Lunch Theorem}: no existe un algoritmo universalmente superior; el rendimiento depende de la estructura particular de cada problema. Las competencias M de Makridakis lo han confirmado de manera contundente:
+
+\begin{itemize}
+  \item En la \textbf{competencia M4} (100,000~series, 61~métodos), 12 de los 17~métodos más precisos fueron combinaciones de modelos. Ningún método puro de machine learning superó siquiera la línea base de combinación simple (Makridakis, Spiliotis y Assimakopoulos, 2020).
+  \item En la \textbf{competencia M5} (Walmart, 42,840~series), los tres equipos ganadores emplearon ensambles de modelos heterogéneos. El mejor método ML fue 22.4\% más preciso que el benchmark estadístico, pero solo cuando se combinaban múltiples enfoques (Makridakis, Spiliotis y Assimakopoulos, 2022).
+  \item El \textbf{ganador de la M4}, el ES-RNN de Smyl (2020), fue precisamente un \textit{híbrido} que combinó suavizamiento exponencial con redes neuronales recurrentes.
+\end{itemize}
+
+Bates y Granger (1969) demostraron que la combinación de pronósticos reduce la varianza del error incluso cuando los modelos individuales no son óptimos, un resultado que Timmermann (2006) confirmó como robusto a lo largo de más de 50~años de literatura. Nuestro sistema aplica este principio: en lugar de apostar por un solo algoritmo, entrenamos cuatro motores complementarios y seleccionamos automáticamente el ganador para cada una de las 333~series.
 
 \subsection{Los cuatro motores de pronóstico}
 
+\begin{figure}[H]
+\centering
+\makebox[\textwidth][c]{%
+\includegraphics[width=1.05\textwidth]{model_comparison_4panel.png}}
+\caption[Comparativa de arquitecturas de los 4 motores.]{Arquitectura de los cuatro motores de pronóstico. Cada motor aborda el problema desde un paradigma distinto: estadístico, deep learning, híbrido y meta-learning.}
+\label{fig:model_comparison}
+\end{figure}
+
+\subsubsection{Prophet: descomposición aditiva interpretable}
+
+Prophet (Taylor y Letham, 2018) es un modelo de series de tiempo desarrollado por Meta que descompone la señal en componentes aditivos interpretables:
+\[
+y(t) = g(t) + s(t) + h(t) + \varepsilon_t
+\]
+donde $g(t)$ es la tendencia (lineal por tramos con detección automática de puntos de cambio), $s(t)$ la estacionalidad (modelada con series de Fourier de orden~10 para el ciclo anual de 365.25~días), $h(t)$ los efectos de régimen (como el periodo COVID-19, mar-2020 a sep-2022) y $\varepsilon_t$ el residuo. En nuestro sistema, Prophet se entrena con 25~changepoints a nivel nacional y 12 a nivel estatal (para evitar sobreajuste en series cortas). La estacionalidad semanal y diaria se desactiva porque los datos tienen granularidad semanal. Prophet destaca en series con estacionalidad fuerte y cambios de régimen conocidos, lo que lo hace especialmente apto para la depresión, que presenta picos estacionales marcados entre febrero y mayo.
+
+\subsubsection{DeepAR: aprendizaje cruzado entre 333~series}
+
+DeepAR (Salinas, Flunkert, Gasthaus y Januschowski, 2020), incorporado por sugerencia de la Dra.~Grettel Barcelo como alternativa de deep learning capaz de aprovechar las 333~series simultáneamente, es una red neuronal recurrente autoregresiva que, a diferencia de los métodos clásicos que ajustan un modelo individual por serie, \textbf{entrena un único modelo global sobre múltiples series simultáneamente}. Esta arquitectura de \textit{cross-learning} permite que el modelo aprenda patrones compartidos entre las 32~entidades (por ejemplo, que la depresión tiene estacionalidad similar en Jalisco y Nuevo León), sin perder la capacidad de capturar particularidades locales.
+
+La red utiliza celdas LSTM con 2--3~capas de 80~unidades cada una, dropout de 0.15, y genera pronósticos probabilísticos muestreando de una distribución Student-t (robusta ante outliers). El contexto de entrada es de 104~semanas (2~años) y el horizonte de predicción de 52~semanas. Se entrena en GPU (NVIDIA T4) vía AWS SageMaker con hasta 300~épocas y early stopping (paciencia de 15~épocas). DeepAR domina en el 73.3\% de las 333~series de producción, confirmando la ventaja del aprendizaje cruzado para datos epidemiológicos de panel.
+
+\subsubsection{Ensemble: corrección de residuos no lineales}\label{sec:ensemble}
+
+El motor Ensemble combina Prophet con XGBoost (Chen y Guestrin, 2016) en una arquitectura de dos etapas:
+
 \begin{enumerate}
-  \item \textbf{DeepAR} (Salinas et al., 2020): red neuronal recurrente que aprende simultáneamente de las 333~series, capturando patrones compartidos entre entidades y padecimientos. Entrenado en GPU (NVIDIA T4) vía AWS SageMaker.
-
-  \item \textbf{Prophet} (Taylor \& Letham, 2018): modelo de series de tiempo de Meta que descompone la señal en tendencia, estacionalidad y efectos de régimen (como COVID-19). Entrenado en CPU con paralelismo vía \texttt{joblib}.
-
-  \item \textbf{Ensemble} (Prophet + XGBoost) (Chen \& Guestrin, 2016): utiliza las predicciones de Prophet como feature base para un modelo de gradient boosting que captura residuales no lineales.
-
-  \item \textbf{Stacking} (Prophet + ETS + LightGBM + Ridge) (Ke et al., 2017): combina tres expertos (Prophet, ETS, LightGBM) mediante un meta-learner Ridge con pesos no negativos.
+  \item \textbf{Primera etapa:} Prophet captura tendencia, estacionalidad y régimen COVID.
+  \item \textbf{Segunda etapa:} XGBoost (200~árboles, profundidad~3, learning rate 0.03) recibe las 20~features de la Tabla~\ref{tab:features_catalogo} y aprende a corregir los residuos que Prophet no capturó, incluyendo interacciones no lineales entre lags, momentum y volatilidad.
 \end{enumerate}
+
+XGBoost es un sistema de gradient boosting basado en árboles de decisión que ajusta secuencialmente árboles a los residuos del modelo previo, con regularización L1 y L2 para prevenir sobreajuste. A diferencia de la Fase~I, donde XGBoost se utilizó como modelo recursivo autónomo y sufrió acumulación de error, aquí XGBoost \textbf{no} genera predicciones directas de la serie: solo corrige los residuos de Prophet sobre features pre-calculadas, eliminando el problema de la retroalimentación recursiva. La combinación es poderosa porque Prophet aporta la estructura temporal interpretable y XGBoost aporta la capacidad de capturar dinámicas complejas que la descomposición aditiva no modela. El Ensemble entrena 4~folds con ventana expandible (OOF) para calibrar los pesos.
+
+\subsubsection{Stacking: meta-aprendizaje con tres expertos}
+
+El motor Stacking implementa la técnica de \textit{generalización apilada} propuesta por Wolpert (1992) y formalizada por Breiman (1996). Su diseño se inspiró inicialmente en la arquitectura AutoGluon-TimeSeries de Amazon, pero los resultados preliminares con AutoGluon fueron deficientes para nuestras series de baja incidencia, por lo que se desarrolló una implementación propia con tres modelos ``expertos'' que generan predicciones independientes y un meta-learner de segundo nivel que aprende a combinarlas de manera óptima.
+
+\begin{itemize}
+  \item \textbf{Experto 1 -- Prophet:} descomposición aditiva (tendencia + estacionalidad Fourier).
+  \item \textbf{Experto 2 -- ETS} (Hyndman, Koehler, Snyder y Grose, 2002): suavizamiento exponencial con tendencia y estacionalidad aditivas (periodo de 52~semanas). ETS captura patrones locales de nivel con ponderaciones exponencialmente decrecientes, complementando a Prophet en series con dinámicas más suaves.
+  \item \textbf{Experto 3 -- LightGBM} (Ke et al., 2017): gradient boosting con 300~árboles que recibe features trigonométricas ($\sin$, $\cos$ de la semana) y una tendencia lineal. LightGBM utiliza GOSS (muestreo selectivo por gradiente) para acelerar el entrenamiento más de 20$\times$ sin perder precisión.
+  \item \textbf{Meta-learner -- Ridge:} regresión Ridge con coeficientes no negativos que aprende los pesos óptimos de cada experto. La restricción de no-negatividad garantiza que las contribuciones sean interpretables y que ningún experto reciba un peso negativo (que equivaldría a ``apostar en contra'' de su predicción).
+\end{itemize}
+
+Las predicciones de los expertos se generan mediante validación cruzada out-of-fold (4~folds con ventana expandible), de modo que el meta-learner nunca ve predicciones generadas sobre datos de entrenamiento, evitando sobreajuste.
+
+\subsection{El camino a cuatro motores: experimentación exhaustiva}
+
+La selección de estos cuatro motores no fue arbitraria, sino el resultado de un proceso evolutivo guiado por la retroalimentación de la Dra.~Grettel Barcelo. El punto de partida fue Prophet (heredado de la Fase~I como único motor viable). DeepAR fue incorporado por sugerencia de la asesora como alternativa de deep learning capaz de explotar el aprendizaje cruzado entre series. El motor Ensemble surgió al observar que XGBoost compensaba las debilidades de Prophet en patrones no lineales, pero a diferencia de la Fase~I, como corrector de residuos y no como modelo recursivo. Finalmente, para el Stacking se partió de la arquitectura AutoGluon-TimeSeries de Amazon, pero los resultados iniciales fueron deficientes; se rediseñó con una implementación propia de tres expertos (Prophet, ETS, LightGBM) y un meta-learner Ridge.
+
+En términos de hiperparámetros, el equipo evaluó más de 48~combinaciones solo para Prophet (6~para Alzheimer, 24~para Depresión, 18~para Parkinson), cada una validada en 4~folds temporales con horizonte de 53~semanas. Para DeepAR, se exploraron variantes con 2 y 3~capas LSTM, distribuciones Student-t y Negative-Binomial, y modos single-series vs.\ multi-series (32~estados co-entrenados). La validación cruzada temporal con \textbf{pesos progresivos} (0.5 para el fold más antiguo, 1.25 para el más reciente) refleja que los patrones post-pandemia son más relevantes que los pre-pandemia.
+
+En total, el sistema ejecuta más de \textbf{5,300~entrenamientos individuales} para producir los 333~modelos de producción (333~series $\times$ 4~motores $\times$ 4~folds de validación), un volumen que justifica la infraestructura GPU en AWS SageMaker para DeepAR y el paralelismo con \texttt{joblib} para Prophet.
 
 \subsection{Selección automática del mejor modelo por serie}
 
-Para cada una de las 333~series, el sistema evalúa los cuatro motores mediante validación cruzada con horizonte de 52~semanas --alineado al horizonte de pronóstico real, según retroalimentación de la Dra.~Grettel Barcelo-- y selecciona automáticamente el motor ganador con el siguiente criterio jerárquico:
+Para cada una de las 333~series, el sistema evalúa los cuatro motores mediante validación cruzada con horizonte de 52~semanas (alineado al horizonte de pronóstico real según retroalimentación de la Dra.~Grettel Barcelo, quien señaló que un horizonte de CV menor producía estimaciones demasiado optimistas) y selecciona automáticamente el motor ganador con el siguiente criterio jerárquico:
 
 \begin{enumerate}
-  \item \textbf{\smape{}} como métrica primaria (error porcentual simétrico).
-  \item \textbf{\mase{}} como desempate cuando la diferencia de \smape{} es menor al 5\%.
+  \item \textbf{\smape{}} como métrica primaria (error porcentual simétrico, robusto ante valores cercanos a cero), adoptado por recomendación de la Dra.~Grettel Barcelo en sustitución del MAPE, que se inflaba artificialmente en series de baja incidencia como Alzheimer y Parkinson.
+  \item \textbf{\mase{}} como desempate cuando la diferencia de \smape{} es menor al 5\%. El \mase{} compara contra una línea base naive estacional (repetir el valor de hace 52~semanas); un \mase{} < 1 significa que el modelo supera esta referencia.
   \item \textbf{\rmse{}} como segundo desempate.
 \end{enumerate}
 
@@ -577,7 +784,7 @@ Series con incidencia extremadamente baja (menos de 5~casos acumulados en 52~sem
 
 \subsection{Lección aprendida: detección y corrección de data leakage}
 
-Durante el desarrollo del motor Ensemble, el equipo detectó un incidente de \textbf{data leakage} (fuga de datos) en las features de ventana deslizante: los valores de la semana actual se incluían como entrada del modelo, lo que inflaba artificialmente las métricas de entrenamiento. La corrección --aplicar un desplazamiento \texttt{shift(1)} para excluir la observación presente-- redujo el \smape{} de entrenamiento pero mejoró significativamente la capacidad de generalización del modelo en datos no vistos. Este incidente subraya la importancia de los diagnósticos automatizados de leakage implementados en el sistema (actualmente, 330 de 333~modelos pasan el chequeo de leakage) y fue destacado por la Dra.~Grettel Barcelo como un ejemplo de rigurosidad metodológica.
+Durante el desarrollo del motor Ensemble, el equipo detectó un incidente de \textbf{data leakage} (fuga de datos) en las features de ventana deslizante: los valores de la semana actual se incluían como entrada del modelo, lo que inflaba artificialmente las métricas de entrenamiento. La corrección (aplicar un desplazamiento \texttt{shift(1)} para excluir la observación presente) redujo el \smape{} de entrenamiento pero mejoró significativamente la capacidad de generalización del modelo en datos no vistos. Este incidente subraya la importancia de los diagnósticos automatizados de leakage implementados en el sistema (actualmente, 330 de 333~modelos pasan el chequeo) y fue destacado por la Dra.~Grettel Barcelo como un ejemplo de rigurosidad metodológica.
 
 \subsection{Resultados: DeepAR domina}
 
@@ -718,7 +925,7 @@ El pipeline de datos que alimenta el dashboard opera de manera automatizada:
 \texttt{build\_tableau.py} $\rightarrow$ \texttt{GitHub Actions} $\rightarrow$ \texttt{Google Sheets} $\rightarrow$ \texttt{Tableau Public} $\rightarrow$ \texttt{proyectointegrador.org}
 \end{center}
 
-Este flujo garantiza que el dashboard se actualice automáticamente cada vez que se ejecuta el pipeline de inferencia, sin intervención manual. La arquitectura relacional del dataset --compuesta por 5~tablas normalizadas-- redujo el volumen de datos en un 84.9\% respecto al diseño original de tabla plana, optimizando el rendimiento de Tableau Public.
+Este flujo garantiza que el dashboard se actualice automáticamente cada vez que se ejecuta el pipeline de inferencia, sin intervención manual. La arquitectura relacional del dataset, compuesta por 5~tablas normalizadas, redujo el volumen de datos en un 84.9\% respecto al diseño original de tabla plana, optimizando el rendimiento de Tableau Public.
 
 % ============================================================
 % 6. SHOWCASE: EPI CONSOLA
@@ -787,7 +994,7 @@ El EPI Web Bot es un asistente conversacional web que permite consultar pronóst
 \subsection{Capacidades principales}
 
 \begin{itemize}
-  \item \textbf{Consultas en lenguaje natural:} el médico no necesita conocer la estructura de datos ni las métricas --solo formula su pregunta como lo haría con un colega.
+  \item \textbf{Consultas en lenguaje natural:} el médico no necesita conocer la estructura de datos ni las métricas; solo formula su pregunta como lo haría con un colega.
   \item \textbf{Respuestas contextualizadas:} cada respuesta incluye el dato solicitado, el nivel de confianza del modelo, y una recomendación práctica.
   \item \textbf{Base de conocimiento local:} 18+~handlers especializados que responden con datos reales del proyecto (métricas, boletín, modelos, semanas epidemiológicas) sin depender de servicios externos.
   \item \textbf{Explicaciones accesibles:} tendencias y alertas presentadas en lenguaje clínico, no estadístico.
@@ -827,7 +1034,7 @@ Público general & Información epidemiológica accesible, concientización & De
 El bot se sustenta en la base de conocimiento del proyecto (Knowledge Base), que contiene datos reales de las 333~series de producción, métricas de rendimiento y contexto epidemiológico. Para consultas que exceden el ámbito de la base local, utiliza un modelo de lenguaje (Gemini) como fallback, enriquecido con el contexto del proyecto para mantener la precisión y relevancia de las respuestas.
 
 \begin{insightbox}
-\textbf{Diferenciador clave:} EpiForecast-MX no solo construyó modelos de pronóstico --construyó un \textbf{ecosistema completo de herramientas} para tres audiencias distintas: directivos (Dashboard), equipo técnico (Consola) y personal clínico (Web Bot). Este enfoque de ``último metro'' asegura que la inteligencia epidemiológica genere valor real en cada nivel de la organización.
+\textbf{Diferenciador clave:} EpiForecast-MX no solo construyó modelos de pronóstico, sino un \textbf{ecosistema completo de herramientas} para tres audiencias distintas: directivos (Dashboard), equipo técnico (Consola) y personal clínico (Web Bot). Este enfoque de ``último metro'' asegura que la inteligencia epidemiológica genere valor real en cada nivel de la organización.
 \end{insightbox}
 
 Presentado el ecosistema de herramientas que entrega los pronósticos a cada audiencia, las siguientes secciones abordan cómo operar, financiar y gobernar este sistema en un entorno institucional real.
@@ -951,7 +1158,7 @@ La \figref{fig:costos_waterfall} desglosa la inversión por fase. La estrategia 
 
 \vspace{0.3cm}
 
-El ahorro operativo total --considerando S3, ECR, CloudWatch y transferencia de datos-- supera el 40\% respecto a un esquema de reentrenamiento semanal, resultando en un costo operativo anual proyectado de \textbf{240 -- 506~USD} (4,265 -- 8,990~MXN) (AWS, 2025). La \figref{fig:costos_vs_beneficios} muestra la asimetría entre costos e impacto.
+El ahorro operativo total (considerando S3, ECR, CloudWatch y transferencia de datos) supera el 40\% respecto a un esquema de reentrenamiento semanal, resultando en un costo operativo anual proyectado de \textbf{240 -- 506~USD} (4,265 -- 8,990~MXN) (AWS, 2025). La \figref{fig:costos_vs_beneficios} muestra la asimetría entre costos e impacto.
 
 \subsection{Beneficios cuantificables}
 
@@ -1015,7 +1222,7 @@ Más allá de los ahorros cuantificables, EpiForecast-MX genera beneficios de \t
 \end{enumerate}
 
 \begin{insightbox}
-\textbf{Relación costo--impacto:} El costo operativo anual del sistema (240--506~USD) equivale a 4~consultas de especialidad al costo unitario \imss{} 2026. A cambio, el \imss{} obtiene pronósticos para 333~series, cubriendo 3~padecimientos en 32~estados con desagregación por género --un sistema que monitorea más de 165,000~casos pronosticados al año a nivel nacional.
+\textbf{Relación costo--impacto:} El costo operativo anual del sistema (240--506~USD) equivale a 4~consultas de especialidad al costo unitario \imss{} 2026. A cambio, el \imss{} obtiene pronósticos para 333~series, cubriendo 3~padecimientos en 32~estados con desagregación por género: un sistema que monitorea más de 165,000~casos pronosticados al año a nivel nacional.
 \end{insightbox}
 
 Si bien el análisis de costos confirma la viabilidad económica del sistema, toda implementación en el sector salud conlleva riesgos que deben identificarse y mitigarse de forma proactiva.
@@ -1046,7 +1253,7 @@ Discontinuidad de boletines o cambios de formato en SINAVE & \riskMed & \riskHig
 \addlinespace
 Calidad variable entre estados: algunos estados reportan con menor rigurosidad & \riskHigh & \riskMed & Fallback regional para series con menos de 5~casos/52~semanas; monitoreo de completitud \\
 \addlinespace
-Sesgo temporal por COVID-19: patrones 2020--2021 no representativos & \riskLow & \riskMed & Marcadores de régimen en Prophet; ventana de entrenamiento post-pandemia ponderada \\
+Sesgo temporal por COVID-19: patrones 2020--2022 no representativos & \riskLow & \riskMed & Marcadores de régimen en Prophet; ventana de entrenamiento post-pandemia ponderada \\
 \bottomrule
 \end{tabularx}
 \end{table}
@@ -1139,11 +1346,11 @@ EpiForecast-MX demuestra que es posible construir un sistema de pronóstico epid
 \begin{enumerate}
   \item \textbf{333~modelos de producción} que cubren tres padecimientos neurológicos en las 32~entidades federativas de México, desagregados por sexo, con un horizonte de 52~semanas.
 
-  \item \textbf{Precisión superior a la línea base} en el 94.9\% de las series (\mase{} < 1), con una mediana global de \mase{} de 0.30 --un 70\% mejor que el pronóstico naive estacional.
+  \item \textbf{Precisión superior a la línea base} en el 94.9\% de las series (\mase{} < 1), con una mediana global de \mase{} de 0.30, un 70\% mejor que el pronóstico naive estacional.
 
   \item \textbf{Arquitectura multi-motor} que selecciona automáticamente el mejor algoritmo para cada serie, eliminando el sesgo de un enfoque único y maximizando la precisión agregada.
 
-  \item \textbf{Ecosistema completo de herramientas} --Dashboard, Consola y Web Bot-- que lleva la inteligencia epidemiológica desde el modelo hasta el punto de decisión, cubriendo tres audiencias distintas.
+  \item \textbf{Ecosistema completo de herramientas} (Dashboard, Consola y Web Bot) que lleva la inteligencia epidemiológica desde el modelo hasta el punto de decisión, cubriendo tres audiencias distintas.
 
   \item \textbf{Infraestructura MLOps productiva} con reentrenamiento trimestral automatizado, inferencia semanal, monitoreo de drift y un costo operativo anual de 240--506~USD.
 
@@ -1194,12 +1401,12 @@ El proyecto sienta las bases para tres líneas de desarrollo:
 
 \begin{itemize}
   \item \textbf{Expansión a otras condiciones CIE-10:} la arquitectura está lista para incorporar nuevas enfermedades sin rediseñar el sistema.
-  \item \textbf{Publicaciones científicas:} dos artículos en desarrollo --uno metodológico y otro de hallazgos clínicos-- en coordinación con las investigadoras del \imss{}.
+  \item \textbf{Publicaciones científicas:} dos artículos en desarrollo, uno metodológico y otro de hallazgos clínicos, en coordinación con las investigadoras del \imss{}.
   \item \textbf{Reunión con la Secretaría de Salud:} la Dra.~Ruth Perez-Hernandez ha propuesto presentar el proyecto ante la Secretaría de Salud para explorar la incorporación de variables adicionales (edad, mortalidad, datos farmacológicos) y la posible adopción institucional.
 \end{itemize}
 
 \begin{insightbox}
-\textbf{Reflexión final:} EpiForecast-MX no es solo un proyecto académico --es un prototipo funcional de lo que la inteligencia artificial puede hacer por la salud pública en México. Con un costo equivalente a 4~consultas de especialidad al año, el sistema monitorea más de 165,000~casos pronosticados a nivel nacional, cubriendo tres padecimientos en 32~estados. La pregunta ya no es \emph{si} la inteligencia epidemiológica basada en ML es viable, sino \emph{cuándo} el \imss{} decide escalarla.
+\textbf{Reflexión final:} EpiForecast-MX no es solo un proyecto académico; es un prototipo funcional de lo que la inteligencia artificial puede hacer por la salud pública en México. Con un costo equivalente a 4~consultas de especialidad al año, el sistema monitorea más de 165,000~casos pronosticados a nivel nacional, cubriendo tres padecimientos en 32~estados. La pregunta ya no es \emph{si} la inteligencia epidemiológica basada en ML es viable, sino \emph{cuándo} el \imss{} decide escalarla.
 \end{insightbox}
 
 % ============================================================
@@ -1213,7 +1420,7 @@ El proyecto sienta las bases para tres líneas de desarrollo:
 
 Este proyecto ha sido una de las experiencias más retadoras y gratificantes de mi trayectoria profesional. Liderar el diseño e implementación de EpiForecast-MX me obligó a integrar conocimientos de ingeniería de software, ciencia de datos y gestión de proyectos en un contexto donde los errores tienen consecuencias reales: estamos hablando de la salud de millones de personas.
 
-El mayor aprendizaje fue entender que construir modelos de alta precisión es solo una parte del desafío. La verdadera complejidad está en crear un \textbf{ecosistema operable}: desde el pipeline de datos hasta el dashboard que un director del \imss{} puede consultar en su teléfono. La arquitectura MLOps --con DVC, SageMaker, GitHub Actions y la EPI Consola-- representa mi convicción de que la ciencia de datos sin ingeniería de producción es un ejercicio académico incompleto.
+El mayor aprendizaje fue entender que construir modelos de alta precisión es solo una parte del desafío. La verdadera complejidad está en crear un \textbf{ecosistema operable}: desde el pipeline de datos hasta el dashboard que un director del \imss{} puede consultar en su teléfono. La arquitectura MLOps (con DVC, SageMaker, GitHub Actions y la EPI Consola) representa mi convicción de que la ciencia de datos sin ingeniería de producción es un ejercicio académico incompleto.
 
 Trabajar con las Dras.~Ruth y Lina del \imss{} me enseñó que los datos solo tienen valor cuando se traducen en decisiones que mejoran la vida de las personas. Esa perspectiva cambió fundamentalmente cómo abordo cada problema técnico.
 
@@ -1224,14 +1431,14 @@ Como Jefe de Área en el \imss{}, he vivido de primera mano las limitaciones de 
 
 Mi mayor contribución fue aportar la perspectiva institucional: entender cómo se toman las decisiones en el \imss{}, qué información necesitan los coordinadores estatales, y cuáles son las restricciones reales de implementación. Esa conexión entre datos e impacto real es lo que hace a este proyecto diferente de un ejercicio puramente técnico.
 
-La colaboración con el equipo me deja la certeza de que el \imss{} puede --y debe-- adoptar herramientas de inteligencia epidemiológica para mejorar la atención de sus más de 80~millones de derechohabientes.
+La colaboración con el equipo me deja la certeza de que el \imss{} puede, y debe, adoptar herramientas de inteligencia epidemiológica para mejorar la atención de sus más de 80~millones de derechohabientes.
 
 \subsection{Luis G. Sanchez Salazar}
 % TODO: PERSONALIZAR — Este es un borrador que debe ser revisado y adaptado por Luis.
 
 Venir del mundo de la ingeniería de controles en Tesla y aplicar principios similares a la salud pública ha sido una transición fascinante. En ambos dominios, la clave es el mismo concepto: \textbf{monitorear, predecir y actuar antes de que el problema escale}.
 
-Mi contribución principal fue el EpiDashboard en Tableau, donde apliqué principios de diseño centrado en el usuario para crear una interfaz que directivos del \imss{} pueden usar sin capacitación técnica. El desafío más grande fue optimizar el dataset relacional para que Tableau Public --con sus limitaciones de rendimiento-- pudiera manejar 333~series de producción de manera fluida.
+Mi contribución principal fue el EpiDashboard en Tableau, donde apliqué principios de diseño centrado en el usuario para crear una interfaz que directivos del \imss{} pueden usar sin capacitación técnica. El desafío más grande fue optimizar el dataset relacional para que Tableau Public, con sus limitaciones de rendimiento, pudiera manejar 333~series de producción de manera fluida.
 
 Este proyecto me convenció de que las habilidades de ingeniería son transferibles: los mismos principios de sistemas de control, monitoreo y automatización que aplico en manufactura pueden transformar la operación de instituciones de salud pública.
 
@@ -1332,6 +1539,10 @@ Extreme Gradient Boosting. Algoritmo de gradient boosting altamente eficiente pa
 
 Alzheimer's Disease International. (2015). \textit{World Alzheimer Report 2015: The Global Impact of Dementia}. ADI.
 
+Bates, J. M. \& Granger, C. W. J. (1969). The combination of forecasts. \textit{Journal of the Operational Research Society, 20}(4), 451--468.
+
+Breiman, L. (1996). Stacked regressions. \textit{Machine Learning, 24}(1), 49--64.
+
 Amazon Web Services. (2025). \textit{Amazon SageMaker Pricing}. \url{https://aws.amazon.com/sagemaker/pricing/}
 
 Auditoría Superior de la Federación. (2024). \textit{Cuenta Pública 2024: Informe del Resultado de la Fiscalización del IMSS}. ASF.
@@ -1360,6 +1571,10 @@ Equipo 20, MNA Tec de Monterrey. (2025). \textit{Resumen Ejecutivo: Pronóstico 
 
 Equipo 22, MNA Tec de Monterrey. (2025). \textit{Resumen Ejecutivo: Pronóstico de Alzheimer (G30) mediante Aprendizaje Automático}. Proyecto Integrador MNA.
 
+Farr, W. (1840). Causes of death in England and Wales [Carta al Registrar General]. En \textit{Second Annual Report of the Registrar General of Births, Deaths, and Marriages in England} (pp. 69--96). Her Majesty's Stationery Office.
+
+Hyndman, R. J., Koehler, A. B., Snyder, R. D. \& Grose, S. (2002). A state space framework for automatic forecasting using exponential smoothing methods. \textit{International Journal of Forecasting, 18}(3), 439--454.
+
 Institute for Health Metrics and Evaluation. (2021). \textit{Global Burden of Disease Study 2021: Nervous System Disorders}. University of Washington.
 
 Instituto Mexicano del Seguro Social. (2024). \textit{Informe al Ejecutivo Federal y al Congreso de la Unión 2023--2024}. IMSS.
@@ -1368,7 +1583,11 @@ Instituto Nacional de Estadística y Geografía. (2024). \textit{Encuesta Nacion
 
 ISO. (2018). \textit{ISO 31000:2018 -- Risk Management Guidelines}. International Organization for Standardization.
 
-Ke, G., Meng, Q., Finley, T., Wang, T., Chen, W., Ma, W., Ye, Q. \& Liu, T.-Y. (2017). LightGBM: A highly efficient gradient boosting decision tree. \textit{Advances in Neural Information Processing Systems, 30}.
+Ke, G., Meng, Q., Finley, T., Wang, T., Chen, W., Ma, W., Ye, Q. \& Liu, T.-Y. (2017). LightGBM: A highly efficient gradient boosting decision tree. \textit{Advances in Neural Information Processing Systems, 30}, 3149--3157.
+
+Makridakis, S., Spiliotis, E. \& Assimakopoulos, V. (2020). The M4 Competition: 100,000 time series and 61 forecasting methods. \textit{International Journal of Forecasting, 36}(1), 54--74.
+
+Makridakis, S., Spiliotis, E. \& Assimakopoulos, V. (2022). M5 accuracy competition: Results, findings, and conclusions. \textit{International Journal of Forecasting, 38}(4), 1346--1364.
 
 McKinsey \& Company. (2024). \textit{The potential of AI in pharmaceutical supply chain optimization}. McKinsey Global Institute.
 
@@ -1390,9 +1609,11 @@ Rebull Saucedo, J. A., Perez Nava, J. C. \& Sanchez Salazar, L. G. (2026c). \tex
 
 Salinas, D., Flunkert, V., Gasthaus, J. \& Januschowski, T. (2020). DeepAR: Probabilistic forecasting with autoregressive recurrent networks. \textit{International Journal of Forecasting, 36}(3), 1181--1191.
 
+Smyl, S. (2020). A hybrid method of exponential smoothing and recurrent neural networks for time series forecasting. \textit{International Journal of Forecasting, 36}(1), 75--85.
+
 Secretaría de Salud. (2012). \textit{NOM-024-SSA3-2012: Sistemas de Información de Registro Electrónico para la Salud}. DOF.
 
-Sistema Nacional de Vigilancia Epidemiológica. (2025). \textit{Boletines Epidemiológicos Semanales 2012--2025}. Secretaría de Salud.
+Sistema Nacional de Vigilancia Epidemiológica. (2025). \textit{Boletines Epidemiológicos Semanales 2014--2025}. Secretaría de Salud.
 
 Statista. (2024). \textit{Revenue of the antidepressants market in Mexico from 2019 to 2029}. Statista Market Insights.
 
@@ -1400,7 +1621,13 @@ Studer, S., Bui, T. B., Drescher, C., Hanuschkin, A., Winkler, L., Peters, S. \&
 
 Taylor, S. J. \& Letham, B. (2018). Forecasting at scale. \textit{The American Statistician, 72}(1), 37--45.
 
+Timmermann, A. (2006). Forecast combinations. En G. Elliott, C. W. J. Granger \& A. Timmermann (Eds.), \textit{Handbook of Economic Forecasting} (Vol.~1, pp. 135--196). Elsevier.
+
 Wharton AI and Robotics Symposium. (2023). \textit{Artificial Intelligence Risk and Governance}. University of Pennsylvania.
+
+Wolpert, D. H. (1992). Stacked generalization. \textit{Neural Networks, 5}(2), 241--259.
+
+Wolpert, D. H. \& Macready, W. G. (1997). No free lunch theorems for optimization. \textit{IEEE Transactions on Evolutionary Computation, 1}(1), 67--82.
 
 Zuniga-Ramirez, C. et al. (2025). Deep brain stimulation costs for Parkinson's disease in Mexico. \textit{Movement Disorders Clinical Practice}.
 

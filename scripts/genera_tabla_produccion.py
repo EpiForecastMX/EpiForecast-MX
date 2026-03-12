@@ -800,7 +800,7 @@ def _write_excel(df_prod: pd.DataFrame, df_detail: pd.DataFrame, output: Path) -
 
     # --- Hoja 1: Produccion ---
     ws1 = wb.active
-    ws1.title = "Producción"
+    ws1.title = "Produccion"
 
     # Orden final de columnas para Hoja 1
     col_order = [

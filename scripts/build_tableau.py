@@ -246,7 +246,7 @@ def _load_prod_assignments() -> pd.DataFrame | None:
     if not prod_path.exists():
         return None
     try:
-        prod = pd.read_excel(prod_path, sheet_name="Producción")
+        prod = pd.read_excel(prod_path, sheet_name="Produccion")
         # Normalizar nombre de entidad: region_ -> Region
         prod["entidad"] = prod["entidad"].str.replace(r"^region_", "Region ", regex=True)
         # Normalizar nombre de modelo a minúsculas (Tableau usa lowercase)
@@ -464,7 +464,7 @@ def _calcular_metricas(
     prod_path = Path("reports/ProdDetails/tabla_333_modelos_produccion.xlsx")
     if prod_path.exists():
         try:
-            prod = pd.read_excel(prod_path, sheet_name="Producción")
+            prod = pd.read_excel(prod_path, sheet_name="Produccion")
             prod["entidad"] = prod["entidad"].str.replace(r"^region_", "Region ", regex=True)
             prod_metrics = prod[
                 [
