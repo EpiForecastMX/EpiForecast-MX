@@ -1,0 +1,17 @@
+{
+  "name": "epiforecast-mx-kb",
+  "version": "1.0.0",
+  "private": true,
+  "description": "EpiForecast-MX Knowledge Base - Sitio estatico con Netlify Functions",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0"
+  },
+  "devDependencies": {
+    "vitest": "^3.1.1"
+  }
+}
