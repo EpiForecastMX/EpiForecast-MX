@@ -1,0 +1,168 @@
+\documentclass[11pt, letterpaper]{article}
+
+% ── Paquetes ──────────────────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{parskip}
+
+% ── Configuración de página ───────────────────────────────────────────────────
+\geometry{margin=2.5cm}
+
+% ── Colores institucionales IMSS ──────────────────────────────────────────────
+\definecolor{imssgreen}{HTML}{006847}
+\definecolor{imssgray}{HTML}{4A4A4A}
+\definecolor{alertorange}{HTML}{D4760A}
+\definecolor{lightgreen}{HTML}{E8F5E9}
+\definecolor{lightgray}{HTML}{F5F5F5}
+
+% ── Configuración de hyperref ─────────────────────────────────────────────────
+\hypersetup{
+    colorlinks=true,
+    linkcolor=imssgreen,
+    urlcolor=imssgreen
+}
+
+% ── Estilos de sección ────────────────────────────────────────────────────────
+\titleformat{\section}
+    {\large\bfseries\color{imssgreen}}{\thesection.}{0.5em}{}
+    [\vspace{-0.5em}\textcolor{imssgreen}{\rule{\textwidth}{0.4pt}}]
+
+% ── Encabezado y pie de página ────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{imssgray}EpiForecast-MX}
+\fancyhead[R]{\small\color{imssgray}Avance 3 --- Retroalimentación}
+\fancyfoot[C]{\small\color{imssgray}\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ── Comando para caja de comentario ──────────────────────────────────────────
+\newcommand{\comentario}[2]{%
+    \vspace{0.5em}
+    \noindent
+    \fcolorbox{alertorange!40}{lightgray}{%
+        \begin{minipage}[t]{0.95\textwidth}
+            \textbf{\color{alertorange}Comentario #1.}~#2
+        \end{minipage}
+    }
+    \vspace{0.5em}
+}
+
+% ── Comando para reconocimiento positivo ──────────────────────────────────────
+\newcommand{\felicitacion}[1]{%
+    \vspace{0.5em}
+    \noindent
+    \fcolorbox{imssgreen!40}{lightgreen}{%
+        \begin{minipage}[t]{0.95\textwidth}
+            \textbf{\color{imssgreen}Reconocimiento.}~#1
+        \end{minipage}
+    }
+    \vspace{0.5em}
+}
+
+% ══════════════════════════════════════════════════════════════════════════════
+\begin{document}
+
+% ── Título ────────────────────────────────────────────────────────────────────
+\begin{center}
+    {\Large\bfseries\color{imssgreen} Retroalimentación del Avance~3 --- Baseline}\\[0.4em]
+    {\large EpiForecast-MX: Pronóstico Epidemiológico para el IMSS}\\[1.2em]
+    \begin{tabular}{rl}
+        \textbf{Asesora:}          & Dra.\ Grettel Barceló Alonso \\
+        \textbf{Fecha:}            & 19 de febrero de 2026 \\
+        \textbf{Intento:}          & 1 \\
+    \end{tabular}
+\end{center}
+
+\vspace{1em}
+
+% ── Reconocimiento general ────────────────────────────────────────────────────
+\section{Reconocimiento General}
+
+\felicitacion{%
+Es excelente ver que, además del análisis de los modelos, hayan implementado un
+dashboard de métricas, lo que aporta un valor significativo a la presentación y
+comprensión de los resultados. Como en cada entrega, ustedes van más allá de lo
+solicitado. ¡Felicitaciones!}
+
+% ── Comentarios detallados ────────────────────────────────────────────────────
+\section{Comentarios Detallados}
+
+\comentario{1}{%
+\textbf{Horizonte de validación cruzada vs.\ horizonte de pronóstico.}
+¿Por qué el horizonte de la validación cruzada no coincide con el horizonte del
+pronóstico (52 semanas)? Con esto las métricas pueden dar una estimación
+demasiado optimista.}
+
+\comentario{2}{%
+\textbf{Proximidad entre métricas y umbrales aceptables.}
+Presentar las métricas del modelo (Sección~3) separadas de los umbrales
+aceptables (Sección~7) dificulta que el lector pueda evaluar rápidamente si los
+resultados son buenos o malos. Recomiendo mover ``Desempeño mínimo aceptable''
+justo después de \emph{Resultados}.}
+
+\comentario{3}{%
+\textbf{Especificación de la columna de brecha.}
+Cuando incluyan la brecha deben especificar con qué métrica se está calculando.
+Usar \texttt{Brecha (MAPE pp)}. Mi recomendación es que omitan esta columna
+porque ya la incluyen en la Sección~5 \emph{Análisis de Sub/Sobreajuste}. La
+tabla de métricas muestra datos objetivos, mientras que la brecha es
+interpretación.}
+
+\comentario{4}{%
+\textbf{Pie de figura incorrecto (Figura~10).}
+No es correcto el pie de figura. Sería bueno incluir a qué estado se refieren
+los atípicos.}
+
+\comentario{5}{%
+\textbf{Reportar parámetros del modelo Prophet.}
+Al usar Prophet, es importante reportar los parámetros del modelo
+(\texttt{changepoint\_prior\_scale}, \texttt{seasonality\_prior\_scale},
+\texttt{seasonality\_mode}, \ldots), incluso si son los predeterminados.}
+
+\comentario{6}{%
+\textbf{Horizonte de predicción vs.\ estacionalidad anual.}
+Dado que el horizonte de predicción utilizado (24 semanas) es más corto que la
+periodicidad de la estacionalidad principal (anual), la evaluación del modelo no
+refleja completamente la capacidad de capturar la estacionalidad anual.}
+
+\comentario{7}{%
+\textbf{Acentos en títulos de gráficos.}
+Asegúrense de poner acentos en los títulos de los gráficos, no sólo en el
+reporte, sino también en el dashboard.}
+
+% ── Resumen de acciones ──────────────────────────────────────────────────────
+\section{Resumen de Acciones Requeridas}
+
+\begin{enumerate}[label=\textbf{A\arabic*.}, leftmargin=2em, itemsep=0.4em]
+    \item Alinear el horizonte de validación cruzada con el horizonte de
+          pronóstico de 52 semanas.
+    \item Reorganizar el reporte: mover la sección de desempeño mínimo aceptable
+          inmediatamente después de los resultados.
+    \item Eliminar la columna de brecha de la tabla de métricas (o, en su
+          defecto, especificar \texttt{Brecha (MAPE pp)}).
+    \item Corregir el pie de la Figura~10 e indicar el estado al que
+          corresponden los valores atípicos.
+    \item Incluir una tabla con los hiperparámetros de Prophet utilizados.
+    \item Evaluar la extensión del horizonte de predicción a 52 semanas para
+          capturar la estacionalidad anual completa.
+    \item Revisar y corregir los acentos en todos los títulos de gráficos del
+          reporte y del dashboard.
+\end{enumerate}
+
+\vspace{2em}
+\noindent\textcolor{imssgray}{\rule{\textwidth}{0.4pt}}
+\begin{center}
+    \small\color{imssgray}
+    Documento generado para seguimiento interno del equipo EpiForecast-MX.
+\end{center}
+
+\end{document}

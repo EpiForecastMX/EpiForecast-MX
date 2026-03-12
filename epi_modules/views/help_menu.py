@@ -65,8 +65,8 @@ def show_help_menu(console: Console) -> None:
             padding=(0, 2),
             expand=True,
         )
-        table.add_column("Comando", style="exito", min_width=30)
-        table.add_column("Descripción", style="blanco")
+        table.add_column("Comando", style="exito", ratio=1, no_wrap=True)
+        table.add_column("Descripción", style="blanco", ratio=2)
         for cmd, desc in items:
             table.add_row(cmd, desc)
         console.print(
@@ -99,8 +99,8 @@ def show_quality_menu(console: Console) -> None:
         padding=(0, 2),
         expand=True,
     )
-    table.add_column("Comando", style="exito", min_width=30)
-    table.add_column("Descripción", style="blanco")
+    table.add_column("Comando", style="exito", ratio=1, no_wrap=True)
+    table.add_column("Descripción", style="blanco", ratio=2)
     for cmd, desc in targets:
         table.add_row(cmd, desc)
 

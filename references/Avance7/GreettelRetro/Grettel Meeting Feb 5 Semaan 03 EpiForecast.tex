@@ -1,0 +1,176 @@
+\documentclass[11pt, a4paper]{article}
+
+% ── Paquetes ──────────────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{parskip}
+
+% ── Colores IMSS ──────────────────────────────────────────────────────────
+\definecolor{imssgreen}{HTML}{006847}
+\definecolor{imssgray}{HTML}{4A4A4A}
+
+% ── Formato de secciones ─────────────────────────────────────────────────
+\titleformat{\section}{\Large\bfseries\color{imssgreen}}{}{0em}{}[\titlerule]
+\titleformat{\subsection}{\large\bfseries\color{imssgray}}{}{0em}{}
+
+% ── Encabezado / pie ─────────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{imssgray}EpiForecast-MX --- Proyecto Integrador}
+\fancyhead[R]{\small\color{imssgray}Maestría en Inteligencia Artificial Aplicada}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% ══════════════════════════════════════════════════════════════════════════
+\begin{document}
+
+% ── Portada ───────────────────────────────────────────────────────────────
+\begin{center}
+    {\LARGE\bfseries\color{imssgreen} Minuta de Retroalimentación}\\[6pt]
+    {\large Reunión con Asesora --- Dra.\ Grettel Barceló Alonso}\\[16pt]
+    \begin{tabular}{@{}ll@{}}
+        \textbf{Fecha:}          & 5 de febrero de 2026 \\
+        \textbf{Proyecto:}       & EpiForecast-MX (Fase~II) \\
+        \textbf{Participantes:}  & Javier Augusto Rebull Saucedo \\
+                                 & Luis Gerardo Sánchez Salazar \\
+                                 & Juan Carlos Pérez Nava \\
+                                 & Dra.\ Grettel Barceló Alonso (Asesora) \\
+    \end{tabular}
+\end{center}
+
+\vspace{1em}
+\hrule
+\vspace{1.2em}
+
+% ═══════════════════════════════════════════════════════════════════════════
+\section{Contexto General de la Reunión}
+
+La sesión tuvo como objetivo revisar el avance del entregable de Análisis Exploratorio de Datos (EDA) y alinear prioridades para las próximas semanas. La Dra.\ Grettel enfatizó la importancia de no duplicar esfuerzos entre programación y documentación, y de enfocar el trabajo en lo que realmente aportará valor al modelado con Prophet.
+
+% ═══════════════════════════════════════════════════════════════════════════
+\section{Observaciones Clave de la Asesora}
+
+\subsection{Sobre el alcance del EDA y la documentación}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{No sobredocumentar la limpieza de datos.} La Fase~I ya cubrió estos aspectos; no se espera un nivel de detalle exhaustivo en el documento de esta entrega sobre lo que ya hicieron equipos anteriores.
+    \item \textbf{El análisis de datos acumulados no aporta al modelado.} Los gráficos de acumulados (correlaciones, distribuciones) no son relevantes para la construcción de los modelos Prophet. La correlación alta entre variables acumuladas es un artefacto de la acumulación, no una relación significativa.
+    \item \textbf{El contenido relevante comienza en el análisis de series de tiempo} (aproximadamente página~20 del documento), donde se trabajan los \textbf{incrementos semanales}. Ese es el insumo real para el modelado.
+    \item \textbf{Quitar año y semana del diagrama de correlación}, ya que distorsionan la interpretación.
+\end{itemize}
+
+\subsection{Sobre el análisis por entidad federativa (estados)}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item El análisis por estados es \textbf{lo que más esperaba la asesora} de esta entrega.
+    \item La sección de datos geográficos y categorización por estados (página~34 en adelante) no fue alcanzada en la revisión inicial de la Dra.\ Grettel; se comprometió a revisarla y dejar comentarios.
+    \item Se reconoció el trabajo de investigación sobre criterios de agrupación: densidad poblacional, tamaño poblacional, percentiles, y zonas urbanas/rurales.
+    \item Para la \textbf{siguiente entrega} se espera profundizar significativamente en el análisis por estados.
+\end{itemize}
+
+\subsection{Sobre el tratamiento de valores atípicos}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Unificar el tratamiento de outliers.} Se observó que el equipo aplicó procedimientos diferentes para los negativos aislados (interpolación con semana anterior y siguiente) y para el pico anómalo de 2016 (extrapolación con 3 semanas previas). La recomendación es homogeneizar el método.
+    \item \textbf{Marcar los valores atípicos en los gráficos de series de tiempo.} Incluir anotaciones o marcas visuales que identifiquen claramente los puntos tratados.
+    \item \textbf{Evaluar si es mejor interpolar con el valor previo y el siguiente} en lugar de solo los tres previos. El equipo se comprometió a analizar ambas opciones y reportar.
+    \item El efecto COVID (caída abrupta en consultas durante la pandemia) se reconoció como una fractura estructural ya identificada en la Fase~I.
+\end{itemize}
+
+\subsection{Sobre visualizaciones}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item Los \textbf{boxplots} son preferibles a los violin plots para mostrar dispersión y outliers.
+    \item Algunos gráficos de distribución transformada por sexo no resultaron claros para la asesora; se requiere mejorar la interpretabilidad o replantear la visualización.
+    \item La descomposición de tendencia/estacionalidad ya fue realizada por equipos anteriores; \textbf{no es necesario repetirla}, dado que ya se decidió usar Prophet.
+\end{itemize}
+
+\subsection{Sobre el ajuste de semana epidemiológica}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item Se validó el hallazgo del equipo: la Semana~1 de cada año reporta datos correspondientes a la última semana del año anterior. El conteo real del año inicia en la Semana~2.
+    \item \textbf{Ningún equipo previo había reportado este desfase}, lo cual llamó la atención de la asesora.
+    \item Se confirmó que el equipo desea trabajar con la semana epidemiológica real (corregida), no con la semana de reporte.
+\end{itemize}
+
+% ═══════════════════════════════════════════════════════════════════════════
+\section{Revisión de Avances Adicionales}
+
+\subsection{Dashboard en Tableau}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item Se presentó un prototipo funcional en Tableau Public con vistas de:
+        densidad poblacional, datos sociourbanos, distribución por sexo, tamaño poblacional (buckets y percentiles), extensión territorial, casos por año/semana, y predicciones simuladas.
+    \item La asesora calificó el avance como \textbf{``excelente''} y \textbf{``espectacular''}.
+    \item \textbf{Limitante:} Tableau Public no permite conexión a DVC ni a S3, lo que impide la automatización completa del pipeline de datos hasta la visualización.
+    \item La Dra.\ Grettel se comprometió a investigar la disponibilidad de licencias institucionales de Tableau en el Tec de Monterrey.
+\end{itemize}
+
+\subsection{Automatización del pipeline}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item Se implementó un \textbf{GitHub Action} que ejecuta diariamente a las 2:00~p.m.\ un script de web scraping sobre la página de boletines epidemiológicos del SINAVE.
+    \item Si detecta un boletín nuevo: lo descarga, lo sube a S3, y ejecuta el proceso incremental (acumula sobre el dato anterior sin reprocesar todo).
+    \item El objetivo final es que este pipeline dispare automáticamente el EDA, el modelado y la actualización del dashboard.
+\end{itemize}
+
+\subsection{Primeras pruebas de modelado}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item Se realizaron pruebas preliminares \textbf{sin} categorización poblacional.
+    \item Se implementó el modelo de Alzheimer (G30) del equipo previo basado en XGBoost; los resultados visualmente se ven bien, pero la asesora advirtió verificar posible \textbf{data leakage} en el uso de lags.
+    \item Los modelos de Machine Learning (XGBoost, Random Forest) presentan \textbf{acumulación progresiva de error} en horizontes largos (52~semanas), lo cual reafirma la decisión de usar Prophet.
+    \item Prophet mostró buen desempeño en semanas cercanas, con degradación esperada a mayor horizonte.
+    \item La asesora pidió que se le indique vía Teams \textbf{qué equipo} generó el modelo XGBoost para revisarlo a detalle.
+\end{itemize}
+
+% ═══════════════════════════════════════════════════════════════════════════
+\section{Acuerdos y Próximos Pasos}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{@{} >{\raggedright}p{0.55\textwidth} >{\raggedright\arraybackslash}p{0.35\textwidth} @{}}
+    \toprule
+    \textbf{Acción} & \textbf{Responsable / Fecha} \\
+    \midrule
+    Unificar tratamiento de valores atípicos y evaluar método de interpolación (previo+siguiente vs.\ 3~previos) & Equipo / próxima reunión \\
+    Marcar valores atípicos en gráficos de series de tiempo & Equipo / próxima entrega \\
+    Profundizar el análisis por entidad federativa (estados) & Equipo / siguiente entrega \\
+    Conformar dataset limpio y definitivo con campos calculados, integrando datos INEGI + boletín epidemiológico & Equipo / domingo próximo \\
+    Aplicar correcciones indicadas en los comentarios de Canvas & Equipo / próxima entrega \\
+    Revisar sección de estados (pág.~34+) y dejar retroalimentación & Dra.\ Grettel \\
+    Investigar licencias institucionales de Tableau & Dra.\ Grettel \\
+    Indicar vía Teams qué equipo implementó el modelo XGBoost & Equipo \\
+    Presentar el dashboard a las Dras.\ Ruth Pérez y Lina Díaz & Equipo / próxima reunión con IMSS \\
+    \bottomrule
+\end{tabular}
+\end{center}
+
+% ═══════════════════════════════════════════════════════════════════════════
+\section{Notas Generales de la Asesora}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textit{``No pueden hacer cuatro proyectos en un trimestre [\ldots] es muy poco tiempo.''} --- Enfoque en lo esencial: análisis por estados y modelado con Prophet.
+    \item \textit{``No quiero que hagan un esfuerzo en programación y además un esfuerzo en documentación.''} --- Priorizar la ejecución técnica; la documentación debe ser concisa.
+    \item Los entregables del curso pueden adaptarse a la naturaleza del proyecto; no es obligatorio seguir estrictamente la estructura de la plataforma. Es un \textbf{acuerdo entre asesor y equipo}.
+    \item La asesora expresó preocupación genuina por el bienestar del equipo y la carga de trabajo.
+\end{itemize}
+
+\vfill
+\begin{center}
+    \small\color{imssgray}
+    --- Fin de la minuta ---\\
+    Documento generado el 5 de febrero de 2026.
+\end{center}
+
+\end{document}

@@ -1,0 +1,158 @@
+\documentclass[11pt,letterpaper]{article}
+
+% --- Paquetes ---
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{parskip}
+
+% --- Colores IMSS ---
+\definecolor{imssgreen}{HTML}{006847}
+\definecolor{imssgray}{HTML}{4A4A4A}
+
+% --- Formato de secciones ---
+\titleformat{\section}{\large\bfseries\color{imssgreen}}{}{0em}{}[\vspace{-0.5em}\textcolor{imssgreen}{\rule{\textwidth}{0.8pt}}]
+\titleformat{\subsection}{\normalsize\bfseries\color{imssgray}}{}{0em}{}
+
+% --- Encabezado y pie ---
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\small\textcolor{imssgreen}{\textbf{EpiForecast-MX}} \textcolor{imssgray}{| Maestría en Inteligencia Artificial Aplicada}}
+\rhead{\small\textcolor{imssgray}{Tecnológico de Monterrey}}
+\rfoot{\small\textcolor{imssgray}{\thepage}}
+\renewcommand{\headrulewidth}{0pt}
+
+\begin{document}
+
+% --- Título ---
+\begin{center}
+    {\LARGE\bfseries\textcolor{imssgreen}{Minuta de Reunión Semanal}}\\[0.3em]
+    {\large\textcolor{imssgray}{Proyecto EpiForecast-MX}}\\[1.5em]
+\end{center}
+
+% --- Datos generales ---
+\noindent
+\begin{tabular}{@{}ll}
+    \textbf{Fecha:}       & Jueves 19 de febrero de 2026 \\
+    \textbf{Modalidad:}   & Virtual (videollamada) \\
+    \textbf{Asesora:}     & Dra.\ Grettel Barceló Alonso \\
+    \textbf{Participantes:} & Javier (Sr.\ Associate Development Application, Santander Bank US) \\
+                          & Luis Gerardo Sánchez Salazar (Sr.\ Controls Engineer, Tesla) \\
+                          & Juan Carlos Pérez Nava (IT Professional, IMSS) \\
+\end{tabular}
+
+\vspace{1em}
+
+% =============================================================================
+\section{Revisión de Resultados de Modelos}
+% =============================================================================
+
+Se revisaron los resultados de los modelos Prophet generados durante la semana. Se confirmó lo que el equipo anticipaba desde el trimestre pasado: varios estados presentan métricas de desempeño muy bajas, particularmente aquellos con registros de ceros consecutivos en los boletines epidemiológicos.
+
+Actualmente se están ejecutando pruebas con las 18 combinaciones de hiperparámetros configuradas en el \textit{grid search} para los \textbf{297 modelos} (32 estados $\times$ 3 padecimientos $\times$ género + niveles nacionales). Se observó que la optimización de hiperparámetros es un proceso individual por serie, por lo que no todos los parámetros funcionan bien para todos los estados.
+
+% =============================================================================
+\section{Validación Cruzada: Cambio de Horizonte a 52 Semanas}
+% =============================================================================
+
+La Dra.\ Grettel señaló como \textbf{comentario principal de la semana} la necesidad de ajustar el horizonte de validación cruzada. Se identificaron dos problemas con el horizonte de 24 semanas utilizado anteriormente:
+
+\begin{enumerate}[leftmargin=2em]
+    \item Las métricas con un horizonte de 24 semanas pueden resultar demasiado optimistas y no reflejar el desempeño real del pronóstico.
+    \item El \textbf{segundo componente más importante} identificado en la descomposición de Prophet es la \textbf{estacionalidad anual}, la cual no se captura completamente con solo 24 semanas.
+\end{enumerate}
+
+\textbf{Acuerdo:} Se establece un horizonte de validación cruzada de \textbf{52 semanas}, consistente con el ciclo de planeación anual del IMSS. Se reconoce que las métricas probablemente empeorarán con un horizonte mayor, pero es fundamental que el horizonte de validación coincida con el horizonte de pronóstico real. Este cambio impactará toda la información actualmente reportada, por lo que se actualizará el reporte tras la nueva corrida.
+
+% =============================================================================
+\section{Dashboard y Visualización de Confiabilidad}
+% =============================================================================
+
+Se discutió cómo representar en el dashboard definitivo el \textbf{nivel de confianza} de los pronósticos por estado. Se plantearon varias alternativas:
+
+\begin{itemize}[leftmargin=2em]
+    \item Incorporar la clasificación por colores ya utilizada en los reportes (verde, naranja, rojo) según el desempeño del modelo.
+    \item Incluir una tabla resumen con el porcentaje de confiabilidad por estado.
+    \item Mostrar la información de confiabilidad en el \textit{tooltip} al pasar el cursor sobre cada estado.
+\end{itemize}
+
+Se enfatizó que es crítico comunicar al usuario final que los pronósticos de estados con métricas deficientes \textbf{no deben usarse como insumo para la planeación de recursos}.
+
+\subsection{Estados con Reporte de Ceros}
+
+Se identificó que algunos estados reportan consistentemente ceros en los boletines epidemiológicos y luego presentan incrementos abruptos. No es posible determinar si esto refleja la realidad epidemiológica o una falta de reporte por parte del estado.
+
+\textbf{Acuerdo:} Se incluirán todos los 297 modelos en el dashboard, pero se agregarán notas aclaratorias. Un posible KPI será alertar cuando un estado no ha reportado casos en las últimas 20 semanas, señalando una anomalía en el registro.
+
+% =============================================================================
+\section{Licencias de Tableau}
+% =============================================================================
+
+La Dra.\ Grettel informó que aún no han llegado las licencias de Tableau solicitadas (una por integrante). Se identificó que la licencia de tipo \textit{Creator} incluye acceso a Tableau Desktop pero requiere una URI institucional para acceder a \textbf{Tableau Cloud}, la cual no se tiene actualmente.
+
+\textbf{Acuerdo:} La Dra.\ Grettel preguntará si es posible obtener acceso a Tableau Cloud para habilitar la actualización de dashboards en tiempo real.
+
+% =============================================================================
+\section{Algoritmo DeepAR+ de AWS}
+% =============================================================================
+
+La Dra.\ Grettel mencionó durante la sesión un algoritmo alternativo que no logró recordar en el momento. Posteriormente confirmó que se trata de \textbf{DeepAR+} de Amazon Web Services.
+
+Características relevantes del algoritmo:
+\begin{itemize}[leftmargin=2em]
+    \item Permite entrenar un \textbf{modelo global único} utilizando todas las series de tiempo simultáneamente.
+    \item Genera un pronóstico individual para cada serie.
+    \item Está basado en redes LSTM, y al entrenarse con múltiples series aprovecha la información conjunta, lo que \textbf{mitiga la limitación de tener pocas observaciones por serie individual}.
+\end{itemize}
+
+\textbf{Acuerdo:} El equipo explorará DeepAR+ en función de los resultados de la optimización de esta semana, evaluando si conviene migrar algunos de los modelos con peor desempeño. Sin embargo, la prioridad sigue siendo consolidar los resultados con Prophet.
+
+% =============================================================================
+\section{Artículos Científicos y Metodología}
+% =============================================================================
+
+Se mencionó que ya se tuvo una conversación con la Dra.\ Ruth Pérez sobre los lineamientos para los artículos científicos. Se tiene claridad sobre lo que hay que hacer para la sección de metodología, aunque falta complementar con insumos de las doctoras del IMSS.
+
+La Dra.\ Grettel sugirió no dedicar tiempo excesivo al resumen ejecutivo, dado que el equipo ha generado resúmenes detallados semana a semana. Se priorizará avanzar en la metodología si el tiempo lo permite.
+
+\subsection{Parámetros de Baseline}
+
+Se solicitó que en la documentación de la primera aproximación de \textit{baseline}, aunque se utilicen hiperparámetros por defecto de Prophet, estos se listen \textbf{explícitamente} en el reporte.
+
+% =============================================================================
+\section{Acuerdos y Siguientes Pasos}
+% =============================================================================
+
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{@{}p{0.65\textwidth}p{0.30\textwidth}@{}}
+    \toprule
+    \textbf{Acuerdo / Tarea} & \textbf{Responsable} \\
+    \midrule
+    Cambiar horizonte de validación cruzada a 52 semanas y ejecutar nueva corrida completa. & Javier, Luis, Juan Carlos \\
+    Presentar la siguiente semana los mejores hiperparámetros optimizados por estado para los 297 modelos. & Javier, Luis, Juan Carlos \\
+    Actualizar el reporte con las nuevas métricas derivadas del horizonte de 52 semanas. & Javier, Luis, Juan Carlos \\
+    Explorar el algoritmo DeepAR+ de AWS como alternativa para estados con bajo desempeño. & Javier, Luis, Juan Carlos \\
+    Diseñar la representación visual de confiabilidad por estado en el dashboard. & Javier, Luis, Juan Carlos \\
+    Consultar sobre acceso a Tableau Cloud (URI institucional). & Dra.\ Grettel \\
+    Documentar explícitamente los hiperparámetros por defecto del baseline en el reporte. & Javier, Luis, Juan Carlos \\
+    Avanzar en la sección de metodología de los artículos científicos, si el tiempo lo permite. & Javier, Luis, Juan Carlos \\
+    \bottomrule
+\end{tabular}
+
+\vspace{1.5em}
+
+% =============================================================================
+\section{Próxima Reunión}
+% =============================================================================
+
+\textbf{Fecha tentativa:} Jueves 26 de febrero de 2026.
+
+\textbf{Agenda esperada:} Revisión de resultados con hiperparámetros optimizados y horizonte de 52 semanas. Discusión sobre estrategia para estados con bajo desempeño. Avances en diseño de dashboard.
+
+\end{document}

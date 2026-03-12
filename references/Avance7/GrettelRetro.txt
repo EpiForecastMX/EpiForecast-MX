@@ -1,0 +1,254 @@
+Conformación de equipos y planteamiento del proyecto
+Comentarios
+
+Comentarios del intento 1:
+23 de ene en 11:16
+¡Excelente trabajo equipo! El análisis va más allá de lo solicitado en la entrega, lo cual habla muy bien de su compromiso, rigor y nivel de profundidad en el abordaje del proyecto.
+
+
+
+Les comparto algunas reflexiones:
+
+
+
+En la visión general comentan que se utilizarán modelos de machine learning aplicados a series de tiempo.
+
+
+
+Existen dos enfoques principales para pronosticar series de tiempo usando ML: pronóstico directo a múltiples pasos (se entrenan modelos separados para cada paso futuro de la serie) y pronóstico recursivo a múltiples pasos (se utiliza un único modelo de manera recursiva, alimentando sus predicciones anteriores como entradas para los pasos siguientes)
+
+
+
+El trimestre pasado se decidió que el horizonte de pronóstico deseado era un año (supongo que ahora se mantendrá el mismo), así que el enfoque directo requería construir 52 modelos diferentes, por tanto optamos por forecasting recursivo en las pruebas. Sin embargo, la acumulación de error era grande porque a medida que se avanza los lags pasan de ser valores reales a predicciones.
+
+
+
+Se probó también con LSTM, pero como era de esperarse tuvimos problemas de sobreajuste, ya que este tipo de redes recurrentes requieren muchos más datos para aprender patrones secuenciales de manera estable.
+
+
+
+Habiendo dicho esto, ningún enfoque de machine learning resultó conveniente; los mejores resultados se obtuvieron con modelos clásicos de series de tiempo, de naturaleza estadística, como el suavizado exponencial, ARIMA/SARIMA y Prophet, siendo este último el que presentó el mejor desempeño.
+
+
+
+Como les comenté en la sesión, no es necesario retrabajar. Realicemos las pruebas por sexo y estado utilizando este algoritmo, ya que profundizar en comparaciones adicionales podría estancarnos en el análisis y comprometer el alcance planteado.
+
+
+
+El título no comunica con claridad el aporte del proyecto, como bien ustedes señalan, hace énfasis en el contexto temporal. Debería incluir: la unificación en un diseño modular que permita aplicar los mismos flujos a las tres enfermedades, dividir la predicción por sexo y estado. Una propuesta podría ser: “Generalización de modelos nacionales de pronóstico epidemiológico hacia un enfoque modular con desagregación por sexo y entidad federativa en México”
+
+
+
+Me gustó mucho que incluyeran sus motivaciones para sumarse al proyecto. Es una práctica que definitivamente me gustaría replicar en la MNA :)
+
+- Grettel Barceló Alonso
+
+
+Avance 0. Propuesta de proyecto y firma de convenios
+Comentarios
+
+Comentarios del intento 1:
+27 de ene en 18:00
+Excelente trabajo, equipo. El análisis es muy exhaustivo en términos de antecedentes, metodología y nivel de avance alcanzado. Me entusiasma continuar con el desarrollo del proyecto.
+
+
+
+Una de las limitaciones habituales del curso es la ventana de tiempo disponible, que normalmente no nos permite abordar la fase de despliegue con el nivel de detalle y cuidado que requiere. En la mayoría de los casos, los proyectos se quedan en la etapa de evaluación de los modelos. En este caso en particular, considerando que las doctoras difícilmente interactuarán directamente con una libreta de código, la provisión de una interfaz simple y funcional permitirá abstraer la complejidad técnica y guiarlas de manera estructurada en el uso de los resultados de los modelos.
+
+
+
+Sólo dos comentarios del documento:
+
+
+
+- El pie o descripción de la Figura 1 no corresponde con lo observado en la imagen. Se esperarían los factores listados. Cambiar por “Ejemplo de material gráfico de una campaña preventiva” o algo equivalente.
+
+
+
+- En la Selección del Algoritmo: Justificación Basada en Evidencia (Fase I), es necesario precisar que también se descartaron modelos de Machine Learning, en particular ensambles basados en árboles de decisión (como Random Forest y XGBoost), aun incorporando ingeniería de características orientada a capturar dependencias temporales (variables de rezago, componentes de tendencia y estacionalidad) porque estos enfoques mostraron una acumulación progresiva del error bajo un esquema de pronóstico recursivo a múltiples pasos.
+
+- Grettel Barceló Alonso
+
+
+
+Avance 1. Análisis exploratorio de datos
+Comentarios
+
+Comentarios del intento 1:
+5 de feb en 16:23
+Chicos, veo que han hecho un trabajo muy detallado y quiero reconocer su dedicación y el tiempo que han invertido. ¡Eso es muy valioso!
+
+
+
+Les dejo algunos comentarios de esta entrega:
+
+
+
+Cuando se está haciendo analítica predictiva, hay dos tipos de exploración:
+1.    EDA rápido o preliminar: se hace antes de la limpieza completa para identificar errores o inconsistencias en los datos -> No es necesario tanto nivel de detalle
+2.    EDA completo: se realiza una vez que los datos están limpios y su objetivo es explorar tendencias, dispersión, patrones y relaciones que sean relevantes para el problema que estamos analizando -> Este es el más importante porque nos permitirá tomar decisiones para la etapa de modelado
+
+
+
+En su caso, como el conjunto inicial tiene valores acumulados, muchos de los gráficos y análisis no aportarán información relevante para las siguientes fases.
+
+
+
+De cualquier modo, les comparto algunos comentarios del EDA preliminar:
+
+
+
+Desde el principio omitiría la columna Acumulado_anio_anterior, ya que se cuenta con la serie histórica completa.
+
+
+
+En los Registros por año, sería pertinente  incluir cómo se obtienen esos 4992 = ¿52 semanas * 32 entidades * 2..? ¿Saben por qué 2025 tiene más? Supongo que el 2020 fue por ser bisiesto. Como el horizonte de planeación es siempre 52 semanas, podrían unir los datos de la semana 53 y 52 o “prorratear” la semana 53 (mitad a la 52 del año, mitad a la 1 del año siguiente)
+
+
+
+Tampoco queda claro como se determinan los registros por semana y por qué en la semana 2 aparecen más.
+
+
+
+Asegúrense de incluir los acentos en los títulos de los gráficos: DistribuciÓn, epidemiolÓgica, numÉricas,…
+
+
+
+Aunque mi recomendación sería no incluirlos, los histogramas de las variables numéricas podrían tener sentido para resumir la distribución total de los valores, es decir en ellos se ve si la mayoría de los valores están concentrados en rangos bajos, medios o altos (siempre aclarando que es sobre los valores acumulados). Sin embargo, no es necesariamente recomendable mezclar las tres enfermedades en un mismo histograma, ya que cada una puede presentar comportamientos muy diferentes y esto podría dificultar la interpretación.
+
+
+
+En la sección “Año” mencionan una línea KDE que no encuentro. Lo mismo en Semana.
+
+
+
+No tiene sentido incluir en el análisis de correlación Año y Semana porque Pearson asume variables numéricas continuas. Para el resto, eviten usar los casos acumulados, porque siempre tienden a dar valores altos debido a que los acumulados crecen con el tiempo y no  capturan la relación real entre las series.
+
+
+
+Para comparar la dispersión y los outliers por año los boxplots son más claros. Los violines muestran la distribución de los valores, es decir, cómo se concentran en rangos bajos, medios o altos. Pero si usan valores acumulados, la distribución deja de reflejar la variabilidad semanal.
+
+
+
+En la sección de ajustes de valores negativos, ¿qué tan diferente es el procedimiento para el año 2016 del resto de las anomalías? Mejor reportar un procedimiento unificado
+
+
+
+Para el análisis de atípicos, inicien con visualizarlos. Queda claro que usaron el método del IQR para su detección, pero el tratamiento sí sería importante detallarlo porque solo mencionan ajustes controlados.
+
+
+
+No me queda muy claro la interpretación de las imágenes 19 y 20
+
+
+
+Para los gráficos de series de tiempo, comentar explícitamente que la franja marcada se refiere al período COVID.
+
+
+
+El análisis de clasificación territorial que presentan es muy pertinente como caracterización estructural del territorio; sin embargo, hay que vincularlo con el comportamiento de las series de tiempo. Esto fue lo que acordamos en la sesión para la entrega del domingo :)
+
+- Grettel Barceló Alonso
+
+
+Avance 2. Ingeniería de características
+Comentarios
+
+Comentarios del intento 1:
+12 de feb en 16:20
+Excelente trabajo equipo. Les dejo mínimos comentarios de esta entrega:
+
+En la figura 44 (Tabla de datos) aparece NULL en la primera Fecha, entiendo que son los casos de Dic 2013, pero dejarlo como NULL puede resultar incomprensible para algunos lectores -> Ya vi que en el dashboard en vivo no aparece ;)
+
+
+
+La escala de color de los mapas utilizada no permite distinguir claramente las diferencias entre estados (Figura 45). Les recomiendo usar una paleta con mayor contraste
+
+
+
+En la Figura 47, no creo que sea conveniente combinar los tres padecimientos porque tienen dinámicas epidemiológicas diferentes, es mejor usar un botón de selección única (radio button o dropdown) para ver una a la vez. Mismo comentario para los siguientes gráficos.
+
+- Grettel Barceló Alonso
+
+Avance 3. Baseline
+Comentarios
+
+Comentarios del intento 1:
+19 de feb en 14:08
+Es excelente ver que, además del análisis de los modelos, hayan implementado un dashboard de métricas, lo que aporta un valor significativo a la presentación y comprensión de los resultados. Como en cada entrega, ustedes van más allá de lo solicitado. ¡Felicitaciones!
+
+
+
+Les dejo algunos comentarios:
+
+
+
+¿Por qué el horizonte de la validación cruzada no coincide con el horizonte del pronóstico (52 semanas)? Con esto las métricas pueden dar una estimación demasiado optimista.
+
+
+
+Presentar las métricas del modelo (Sección 3) separadas de los umbrales aceptables (Sección 7) dificulta que el lector pueda evaluar rápidamente si los resultados son buenos o malos. Recomiendo mover “Desempeño mínimo aceptable” justo después de Resultados.
+
+
+
+Cuando incluyan la brecha deben especificar con qué métrica se está calculando. Usar Brecha (MAPE pp) Aunque mi recomendación es que omitan esta columna porque ya la incluyen en la sección 5 Análisis de Sub/Sobreajuste. La tabla de métricas muestra datos objetivos, mientras que la brecha es interpretación.
+
+
+
+En la Figura 10 no es correcto el pie de figura. Sería bueno incluir a qué estado se refieren los atípicos.
+
+
+
+Al usar Prophet, es importante reportar los parámetros del modelo (changepoint_prior_scale, seasonality_prior_scale, seasonality_mode,...), incluso si son los predeterminados.
+
+
+
+Dado que el horizonte de predicción utilizado (24 semanas) es más corto que la periodicidad de la estacionalidad principal (anual), la evaluación del modelo no refleja completamente la capacidad de capturar la estacionalidad anual.
+
+
+
+Asegúrense de poner acentos en los títulos de los gráficos, no sólo en el reporte, sino también en el dashboard.
+
+- Grettel Barceló Alonso
+
+
+Avance 4. Modelos alternativos
+Comentarios
+
+Comentarios del intento 1:
+25 de feb en 15:26
+Chicos, mis felicitaciones por la exhaustividad en la prueba de modelos. Mientras que muchos equipos se enfocan en optimizar uno solo, ustedes están avanzando con más de 300. Eso es un esfuerzo realmente impresionante.
+
+Les dejo algunos comentarios de esta entrega:
+
+En el documento del Avance 4:
+
+
+5. Resultados de Producción: 312 Modelos Prophet
+
+Describir cómo se llega a los 312 modelos Prophet, los cálculo indicados no suman esta cantidad. Recordar las regiones que se están usando para fallback
+
+
+Dado que los valores de Alzheimer/Parkinson son muy bajos y el MAPE se infla, podrían reportar el SMAPE, que mitiga este efecto, porque normaliza el error entre el valor real y el predicho. Además, es más interpretable que el MASE.
+
+
+Revisen los pronósticos de Prophet (Figura 6) porque carecen de sensibilidad a los cambios reales de la serie en períodos fuera de pandemia.
+
+
+En la Figura 10 no se muestra que TFT tenga 68 ganadas como se comenta en el texto.
+
+
+En el Dashboard de Visualización:
+
+Sugiero reorganizar el flujo del dashboard para que primero se presente la exploración de los datos. Esto permite contextualizar la elección de los modelos y facilita la interpretación de las métricas y predicciones posteriores.
+
+
+En Predicciones no es lo ideal mezclar en un mismo combo “entidades” niveles territoriales distintos (estado, región y nacional)
+
+
+Veo que en el dashboard las predicciones se presentan como número de casos, no como tasas. ¿Hay alguna razón por la que modelaron por tasa y los estoy pasando por alto?
+
+
+Desde mi perspectiva, usar los casos directamente puede ser más conveniente, especialmente si el objetivo es asociarlo con la planeación operativa. Además, la población es constante y los modelos son independientes por entidad.
+
+- Grettel Barceló Alonso

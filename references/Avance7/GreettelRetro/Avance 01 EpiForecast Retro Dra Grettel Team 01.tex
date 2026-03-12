@@ -1,0 +1,70 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{parskip}
+
+\geometry{margin=2.5cm}
+
+\title{Avance 1. Análisis exploratorio de datos}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\noindent\textbf{Fecha de entrega:} dom 1 de feb de 2026 23:59
+
+\bigskip
+
+\noindent\textbf{EpiForecast}
+
+\bigskip
+
+\noindent\textbf{Grettel Barceló Alonso} en jue 5 de feb de 2026 16:23
+
+\bigskip
+
+Chicos, veo que han hecho un trabajo muy detallado y quiero reconocer su dedicación y el tiempo que han invertido. ¡Eso es muy valioso!
+
+Les dejo algunos comentarios de esta entrega:
+
+Cuando se está haciendo analítica predictiva, hay dos tipos de exploración:
+\begin{enumerate}
+    \item EDA rápido o preliminar: se hace antes de la limpieza completa para identificar errores o inconsistencias en los datos $\rightarrow$ No es necesario tanto nivel de detalle
+    \item EDA completo: se realiza una vez que los datos están limpios y su objetivo es explorar tendencias, dispersión, patrones y relaciones que sean relevantes para el problema que estamos analizando $\rightarrow$ Este es el más importante porque nos permitirá tomar decisiones para la etapa de modelado
+\end{enumerate}
+
+En su caso, como el conjunto inicial tiene valores acumulados, muchos de los gráficos y análisis no aportarán información relevante para las siguientes fases.
+
+De cualquier modo, les comparto algunos comentarios del EDA preliminar:
+
+Desde el principio omitiría la columna Acumulado\_anio\_anterior, ya que se cuenta con la serie histórica completa.
+
+En los Registros por año, sería pertinente incluir cómo se obtienen esos 4992 = ¿52 semanas * 32 entidades * 2..? ¿Saben por qué 2025 tiene más? Supongo que el 2020 fue por ser bisiesto. Como el horizonte de planeación es siempre 52 semanas, podrían unir los datos de la semana 53 y 52 o ``prorratear'' la semana 53 (mitad a la 52 del año, mitad a la 1 del año siguiente)
+
+Tampoco queda claro como se determinan los registros por semana y por qué en la semana 2 aparecen más.
+
+Asegúrense de incluir los acentos en los títulos de los gráficos: DistribuciÓn, epidemiolÓgica, numÉricas,\ldots
+
+Aunque mi recomendación sería no incluirlos, los histogramas de las variables numéricas podrían tener sentido para resumir la distribución total de los valores, es decir en ellos se ve si la mayoría de los valores están concentrados en rangos bajos, medios o altos (siempre aclarando que es sobre los valores acumulados). Sin embargo, no es necesariamente recomendable mezclar las tres enfermedades en un mismo histograma, ya que cada una puede presentar comportamientos muy diferentes y esto podría dificultar la interpretación.
+
+En la sección ``Año'' mencionan una línea KDE que no encuentro. Lo mismo en Semana.
+
+No tiene sentido incluir en el análisis de correlación Año y Semana porque Pearson asume variables numéricas continuas. Para el resto, eviten usar los casos acumulados, porque siempre tienden a dar valores altos debido a que los acumulados crecen con el tiempo y no capturan la relación real entre las series.
+
+Para comparar la dispersión y los outliers por año los boxplots son más claros. Los violines muestran la distribución de los valores, es decir, cómo se concentran en rangos bajos, medios o altos. Pero si usan valores acumulados, la distribución deja de reflejar la variabilidad semanal.
+
+En la sección de ajustes de valores negativos, ¿qué tan diferente es el procedimiento para el año 2016 del resto de las anomalías? Mejor reportar un procedimiento unificado
+
+Para el análisis de atípicos, inicien con visualizarlos. Queda claro que usaron el método del IQR para su detección, pero el tratamiento sí sería importante detallarlo porque solo mencionan ajustes controlados.
+
+No me queda muy claro la interpretación de las imágenes 19 y 20
+
+Para los gráficos de series de tiempo, comentar explícitamente que la franja marcada se refiere al período COVID.
+
+El análisis de clasificación territorial que presentan es muy pertinente como caracterización estructural del territorio; sin embargo, hay que vincularlo con el comportamiento de las series de tiempo. Esto fue lo que acordamos en la sesión para la entrega del domingo :)
+
+\end{document}

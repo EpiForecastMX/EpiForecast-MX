@@ -1,0 +1,37 @@
+\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{graphicx}
+\usepackage{parskip}
+
+\begin{document}
+
+\section*{Comentarios de Avance 0. Propuesta de proyecto y firma de convenios}
+
+\textbf{Grettel Barceló Alonso}\\
+\textbf{Fecha de entrega:} dom 25 de ene de 2026 23:59\\
+\textbf{Fecha del comentario:} 27 de ene en 18:00
+
+\bigskip
+
+Excelente trabajo, equipo. El análisis es muy exhaustivo en términos de antecedentes, metodología y nivel de avance alcanzado. Me entusiasma continuar con el desarrollo del proyecto.
+
+Una de las limitaciones habituales del curso es la ventana de tiempo disponible, que normalmente no nos permite abordar la fase de despliegue con el nivel de detalle y cuidado que requiere. En la mayoría de los casos, los proyectos se quedan en la etapa de evaluación de los modelos. En este caso en particular, considerando que las doctoras difícilmente interactuarán directamente con una libreta de código, la provisión de una interfaz simple y funcional permitirá abstraer la complejidad técnica y guiarlas de manera estructurada en el uso de los resultados de los modelos.
+
+Sólo dos comentarios del documento:
+
+\begin{itemize}
+    \item El pie o descripción de la Figura 1 no corresponde con lo observado en la imagen. Se esperarían los factores listados. Cambiar por ``Ejemplo de material gráfico de una campaña preventiva'' o algo equivalente.
+
+    \item En la Selección del Algoritmo: Justificación Basada en Evidencia (Fase I), es necesario precisar que también se descartaron modelos de Machine Learning, en particular ensambles basados en árboles de decisión (como Random Forest y XGBoost), aun incorporando ingeniería de características orientada a capturar dependencias temporales (variables de rezago, componentes de tendencia y estacionalidad) porque estos enfoques mostraron una acumulación progresiva del error bajo un esquema de pronóstico recursivo a múltiples pasos.
+\end{itemize}
+
+\bigskip
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\textwidth]{Nota.jpg}
+\end{figure}
+
+\end{document}

@@ -1,0 +1,390 @@
+\documentclass[11pt, a4paper]{article}
+
+% ============================================================
+% PAQUETES
+% ============================================================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{parskip}
+\usepackage{graphicx}
+\usepackage{multicol}
+\usepackage{colortbl}
+\usepackage{longtable}
+
+% ============================================================
+% COLORES INSTITUCIONALES IMSS
+% ============================================================
+\definecolor{imssgreen}{HTML}{006847}
+\definecolor{imssred}{HTML}{CE1126}
+\definecolor{imssgray}{HTML}{58595B}
+\definecolor{lightgray}{HTML}{F2F2F2}
+\definecolor{mediumgray}{HTML}{D9D9D9}
+
+% ============================================================
+% CONFIGURACIÓN DE PÁGINA
+% ============================================================
+\geometry{
+    top=2.5cm,
+    bottom=2.5cm,
+    left=2.5cm,
+    right=2.5cm
+}
+
+% ============================================================
+% ENCABEZADO Y PIE DE PÁGINA
+% ============================================================
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{2pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{imssgreen}\leaders\hrule height \headrulewidth\hfill}}
+\renewcommand{\footrulewidth}{0.5pt}
+\renewcommand{\footrule}{\hbox to\headwidth{\color{imssgray}\leaders\hrule height \footrulewidth\hfill}}
+\fancyhead[L]{\small\color{imssgray}\textbf{EpiForecast-MX}}
+\fancyhead[R]{\small\color{imssgray}Minuta de Seguimiento}
+\fancyfoot[C]{\small\color{imssgray}Página \thepage}
+\fancyfoot[R]{\small\color{imssgray}11 de febrero de 2026}
+
+% ============================================================
+% FORMATO DE SECCIONES
+% ============================================================
+\titleformat{\section}
+    {\large\bfseries\color{imssgreen}}
+    {\thesection.}{0.5em}{}
+    [\vspace{-0.5em}\textcolor{imssgreen}{\rule{\textwidth}{1pt}}]
+
+\titleformat{\subsection}
+    {\normalsize\bfseries\color{imssgray}}
+    {\thesubsection.}{0.5em}{}
+
+% ============================================================
+% HIPERVÍNCULOS
+% ============================================================
+\hypersetup{
+    colorlinks=true,
+    linkcolor=imssgreen,
+    urlcolor=imssgreen,
+    citecolor=imssgreen
+}
+
+% ============================================================
+% DOCUMENTO
+% ============================================================
+\begin{document}
+
+% ------------------------------------------------------------
+% PORTADA / ENCABEZADO PRINCIPAL
+% ------------------------------------------------------------
+\begin{center}
+    {\color{imssgreen}\rule{\textwidth}{3pt}}\\[0.8cm]
+    {\Huge\bfseries\color{imssgreen} Minuta de Seguimiento}\\[0.4cm]
+    {\Large\color{imssgray} Reunión con Sponsor del Proyecto}\\[0.3cm]
+    {\color{imssgreen}\rule{0.6\textwidth}{1.5pt}}\\[0.6cm]
+    {\LARGE\bfseries\color{imssgreen} EpiForecast-MX}\\[0.2cm]
+    {\large\color{imssgray} Pronóstico Epidemiológico de Padecimientos Neurológicos\\
+    y de Salud Mental en México}\\[0.6cm]
+    {\color{imssgreen}\rule{\textwidth}{3pt}}
+\end{center}
+
+\vspace{0.8cm}
+
+% ------------------------------------------------------------
+% DATOS GENERALES DE LA REUNIÓN
+% ------------------------------------------------------------
+\noindent
+\begin{tabularx}{\textwidth}{>{\bfseries\color{imssgreen}}l X}
+    \toprule
+    \rowcolor{lightgray}
+    \multicolumn{2}{l}{\textbf{\color{imssgreen}\large Datos Generales de la Reunión}} \\
+    \midrule
+    Fecha:              & Miércoles, 11 de febrero de 2026 \\
+    \rowcolor{lightgray}
+    Modalidad:          & Virtual (videoconferencia) \\
+    Proyecto:           & EpiForecast-MX --- Fase 2 \\
+    \rowcolor{lightgray}
+    Institución marco:  & Instituto Mexicano del Seguro Social (IMSS) / Tecnológico de Monterrey \\
+    Objetivo:           & Revisión de avances del dashboard, documento técnico (Avance~2) y planificación de siguientes etapas \\
+    \bottomrule
+\end{tabularx}
+
+\vspace{0.6cm}
+
+% ------------------------------------------------------------
+% ASISTENTES
+% ------------------------------------------------------------
+\noindent
+\begin{tabularx}{\textwidth}{l l X}
+    \toprule
+    \rowcolor{lightgray}
+    \textbf{\color{imssgreen}Nombre} & \textbf{\color{imssgreen}Rol} & \textbf{\color{imssgreen}Institución} \\
+    \midrule
+    Dra. Ruth Pérez             & Sponsor / Líder de Proyecto     & IMSS \\
+    \rowcolor{lightgray}
+    Javier Rebull          & Estudiante -- Desarrollo     & Tec de Monterrey / Santander US \\
+    Juan Carlos Pérez Nava      & Estudiante -- Desarrollo        & Tec de Monterrey / IMSS \\
+    \rowcolor{lightgray}
+    Luis G. Sánchez Salazar     & Estudiante -- Desarrollo        & Tec de Monterrey / Tesla \\
+    \bottomrule
+\end{tabularx}
+
+\vspace{0.3cm}
+\noindent
+{\small\color{imssgray}\textit{Nota: La Dra. Lina Díaz Castro (IMSS) no asistió a la sesión pero envió comentarios por escrito previamente. La Dra. Grettel Barceló Alonso (Tec de Monterrey) da seguimiento semanal por separado.}}
+
+\vspace{0.8cm}
+
+% ============================================================
+\section{Revisión del Dashboard Epidemiológico}
+% ============================================================
+
+\subsection{Observación crítica: Normalización por población}
+
+La Dra. Ruth señaló como observación de \textbf{fondo} (no de forma) que las cifras presentadas en el dashboard corresponden a \textbf{datos absolutos} y no a tasas de incidencia normalizadas por cada 100,000 habitantes. En epidemiología, las incidencias se interpretan como proporciones respecto a la población, no como conteos crudos.
+
+\textbf{Impacto esperado del cambio:}
+\begin{itemize}[leftmargin=1.5cm]
+    \item Los mapas coropléticos y las visualizaciones cambiarán significativamente; actualmente la Ciudad de México concentra las cifras más altas por ser la entidad más poblada, pero al normalizar es probable que otros estados emerjan con tasas de incidencia superiores.
+    \item Los gradientes de color, rankings por entidad y heatmaps se verán afectados.
+    \item El propósito interpretativo del dashboard se pierde si solo se muestran datos absolutos, ya que no se refleja una proporción real de la carga de enfermedad.
+\end{itemize}
+
+\textbf{Resolución:} El equipo se compromete a integrar datos poblacionales (INEGI/CONAPO) para calcular tasas por cada 100,000 habitantes en todas las visualizaciones del dashboard antes de la entrega final.
+
+\subsection{Valoración visual y de usabilidad}
+
+La Dra. Ruth destacó que el dashboard es \textbf{visualmente limpio y claro}, accesible para usuarios no técnicos, y representa una mejora notable en claridad respecto a entregas de equipos anteriores. Salvo la normalización poblacional, no hubo observaciones adicionales sobre el dashboard.
+
+\vspace{0.5cm}
+
+% ============================================================
+\section{Revisión del Trabajo Escrito (Avance 2)}
+% ============================================================
+
+\subsection{Evaluación general}
+
+La Dra. Ruth calificó el documento técnico como \textbf{``espectacular''}, destacando el nivel de detalle, claridad en la descripción e integración de imágenes y evidencia. Se reconoce el esfuerzo de documentación extensiva orientada a facilitar la reproducibilidad del proyecto.
+
+\subsection{Observación sobre estructura metodológica}
+
+Se identificó que actualmente la metodología y los resultados están \textbf{entrelazados}: se describe un procedimiento y enseguida su resultado. Si bien esta estructura es aceptable para la evaluación académica del Tecnológico de Monterrey, \textbf{no cumple con el estándar de reporte científico} requerido para publicación en revistas indexadas.
+
+\textbf{Estructura requerida para publicación:}
+\begin{enumerate}[leftmargin=1.5cm]
+    \item \textbf{Diseño del estudio} --- Tipo y alcance de la investigación
+    \item \textbf{Fuente de información} --- Origen y características de los datos
+    \item \textbf{Exploración de datos} --- Descripción del preprocesamiento y análisis exploratorio
+    \item \textbf{Métodos de análisis} --- Modelos y técnicas aplicadas
+    \item \textbf{Validación} --- Métricas y estrategias de evaluación
+    \item \textbf{Software utilizado} --- Herramientas, librerías y versiones
+\end{enumerate}
+
+\textbf{Resolución:} Este ajuste \textbf{no se realizará en esta entrega} para no interferir con los criterios de evaluación académica. Se aplicará en la fase de publicación científica.
+
+\vspace{0.5cm}
+
+% ============================================================
+\section{Análisis de Tendencias Post-COVID}
+% ============================================================
+
+\subsection{Alzheimer (G30)}
+
+El equipo de la fase anterior reportó un cambio en la tendencia de incidencia de Alzheimer post-pandemia. Tras revisar las gráficas actualizadas, la Dra. Ruth indicó que:
+
+\begin{itemize}[leftmargin=1.5cm]
+    \item Se observa la caída esperada en 2020 atribuible a la concentración de servicios de salud en la emergencia sanitaria.
+    \item Posterior a la caída, el patrón \textbf{se asemeja visualmente al comportamiento pre-pandémico} (2017--2018), incluso con una ligera disminución discreta.
+    \item No se aprecia un cambio de patrón contundente ni evidente a simple vista.
+    \item La aparente disminución podría atribuirse a la reorientación de servicios diagnósticos, no necesariamente a un fenómeno epidemiológico real.
+\end{itemize}
+
+\subsection{Parkinson (G20) y Depresión (F32)}
+
+Ambos padecimientos muestran una \textbf{continuación de la tendencia de crecimiento previa} a la pandemia, sin alteraciones visibles en el patrón.
+
+\subsection{Directriz de prudencia}
+
+La Dra. Ruth enfatizó la necesidad de ser \textbf{muy prudentes} en la interpretación:
+
+\begin{itemize}[leftmargin=1.5cm]
+    \item No se debe afirmar un cambio de tendencia post-pandémico sin respaldo estadístico (pruebas de cambio estructural).
+    \item Cualquier hallazgo en este sentido solo será reportable si resulta \textbf{estadísticamente significativo}.
+    \item Se esperará a la conclusión del estudio y la normalización poblacional para emitir conclusiones.
+\end{itemize}
+
+\vspace{0.5cm}
+
+% ============================================================
+\section{Análisis por Sexo}
+% ============================================================
+
+Se confirmó que existe una mayor proporción de casos en mujeres que en hombres en los padecimientos analizados. La Dra. Ruth solicitó que esta \textbf{diferenciación por sexo} sea integrada como parte del análisis una vez completada la normalización poblacional, para poder evaluar si la distinción es significativa a nivel estatal.
+
+\vspace{0.5cm}
+
+% ============================================================
+\section{Artículos Científicos en Desarrollo}
+% ============================================================
+
+La Dra. Ruth compartió los bosquejos de \textbf{dos artículos científicos} que el equipo IMSS está desarrollando en paralelo:
+
+\begin{tabularx}{\textwidth}{>{\bfseries}l X}
+    \toprule
+    \rowcolor{lightgray}
+    \textbf{\color{imssgreen}Artículo} & \textbf{\color{imssgreen}Descripción} \\
+    \midrule
+    Artículo 1: Metodológico & Consolida las metodologías de las tres fases del proyecto, con ejemplos de los resultados más relevantes por padecimiento. Se solicitará apoyo de la Dra. Grettel Barceló para la sección de discusión. \\
+    \rowcolor{lightgray}
+    Artículo 2: Hallazgos & Presenta los resultados y hallazgos principales del estudio, incluyendo análisis por entidad, sexo y tendencias temporales. \\
+    \bottomrule
+\end{tabularx}
+
+\vspace{0.3cm}
+Ambos artículos se encuentran ya en fase de desarrollo por parte del equipo IMSS. Los bosquejos fueron compartidos con los estudiantes para su conocimiento.
+
+\vspace{0.5cm}
+
+% ============================================================
+\section{Reunión con la Secretaría de Salud}
+% ============================================================
+
+La Dra. Lina Díaz Castro gestionó exitosamente un acercamiento con los responsables de las áreas de \textbf{vigilancia epidemiológica y sistemas de información} de la Secretaría de Salud. Se espera una reunión en un plazo máximo de \textbf{dos semanas}.
+
+\textbf{Objetivo de la reunión:}
+\begin{itemize}[leftmargin=1.5cm]
+    \item Presentar el proyecto EpiForecast-MX y sus avances actuales.
+    \item Explorar la disponibilidad de \textbf{variables adicionales} no publicadas en el Boletín Epidemiológico pero existentes en las bases de datos de la Secretaría.
+\end{itemize}
+
+\textbf{Variables de interés para una posible Fase 3:}
+\begin{itemize}[leftmargin=1.5cm]
+    \item \textbf{Rangos de edad} de los pacientes
+    \item \textbf{Ocupación}
+    \item \textbf{Defunciones} (especialmente relevante para Alzheimer y Parkinson)
+\end{itemize}
+
+La Dra. Ruth invitó al equipo de estudiantes a participar en esta reunión para presentar la dimensión técnica del proyecto.
+
+\vspace{0.5cm}
+
+% ============================================================
+\section{Dimensión de Costos}
+% ============================================================
+
+Se discutió la posibilidad de integrar una \textbf{dimensión económica} al proyecto, alineada con los comentarios previos de la Dra. Lina Díaz Castro. El equipo IMSS tiene en desarrollo (ya en fase editorial) un artículo que contiene:
+
+\begin{itemize}[leftmargin=1.5cm]
+    \item Costo del \textbf{tratamiento farmacológico recomendado} (protocolo ideal) por padecimiento.
+    \item Costo del \textbf{tratamiento realmente suministrado} (gasto real).
+    \item Análisis de la \textbf{brecha de atención médica} entre ambos escenarios.
+\end{itemize}
+
+Estos datos provienen de fuentes públicas (claves de medicamento del sector salud --- CompraNet/IMSS). La Dra. Ruth enviará el artículo al equipo para su integración en el reporte ejecutivo final, que incluye una sección obligatoria de análisis de costos.
+
+Las proyecciones del modelo de pronóstico podrán combinarse con los costos unitarios para generar \textbf{proyecciones presupuestarias} (budget forecasting).
+
+\vspace{0.5cm}
+
+% ============================================================
+\section{Participación en Congresos Internacionales}
+% ============================================================
+
+La Dra. Lina Díaz Castro compartió convocatorias de congresos internacionales de interés, incluyendo eventos en \textbf{Estocolmo} y \textbf{Portugal}. El equipo está evaluando las opciones de participación.
+
+\textbf{Plan de acción para carteles (pósters):}
+\begin{itemize}[leftmargin=1.5cm]
+    \item La Dra. Ruth desarrollará un borrador del \textbf{cartel/abstract} (máximo 250 palabras) basado en el artículo metodológico.
+    \item Solicitará apoyo del equipo técnico para validar la precisión metodológica del contenido.
+    \item Se priorizará la concreción y el rigor en la descripción.
+\end{itemize}
+
+\vspace{0.5cm}
+
+% ============================================================
+\section{Cronograma y Próximos Pasos}
+% ============================================================
+
+\renewcommand{\arraystretch}{1.4}
+\noindent
+\begin{tabularx}{\textwidth}{>{\centering\arraybackslash}p{0.8cm} X >{\centering\arraybackslash}p{3cm} >{\centering\arraybackslash}p{2.5cm}}
+    \toprule
+    \rowcolor{lightgray}
+    \textbf{\color{imssgreen}\#} & \textbf{\color{imssgreen}Acción} & \textbf{\color{imssgreen}Responsable} & \textbf{\color{imssgreen}Fecha} \\
+    \midrule
+    1 & Normalizar todas las visualizaciones del dashboard a tasas por cada 100,000 habitantes & Equipo técnico & Antes de entrega final \\
+    \rowcolor{lightgray}
+    2 & Integrar análisis por sexo una vez completada la normalización poblacional & Equipo técnico & Antes de entrega final \\
+    3 & Enviar artículo de costos farmacológicos al equipo de estudiantes & Dra. Ruth Pérez & Próximos días \\
+    \rowcolor{lightgray}
+    4 & Integrar sección de análisis de costos en el reporte ejecutivo & Equipo técnico & Última semana de marzo \\
+    5 & Desarrollar borrador del cartel/abstract para congresos & Dra. Ruth Pérez & 2--3 semanas \\
+    \rowcolor{lightgray}
+    6 & Revisar y validar contenido metodológico del cartel & Equipo técnico & Post-borrador \\
+    7 & Coordinar y asistir a reunión con Secretaría de Salud & Dra. Ruth / Dra. Lina & $\sim$2 semanas \\
+    \rowcolor{lightgray}
+    8 & Entrega final académica (Avance 2 y dashboard) & Equipo técnico & Última semana de marzo \\
+    9 & Checkpoint de seguimiento intermedio & Todos & 1--2 semanas \\
+    \bottomrule
+\end{tabularx}
+
+\vspace{0.5cm}
+
+% ============================================================
+\section{Visión Estratégica del Proyecto}
+% ============================================================
+
+La Dra. Ruth reiteró los \textbf{tres objetivos estratégicos} del proyecto:
+
+\begin{enumerate}[leftmargin=1.5cm]
+    \item \textbf{Académico:} Que los estudiantes obtengan su grado de Maestría cumpliendo con los requisitos del Tecnológico de Monterrey.
+    \item \textbf{Científico:} Generación de nuevo conocimiento, propuestas metodológicas inéditas y publicación de resultados en revistas indexadas y congresos internacionales.
+    \item \textbf{Operativo:} Que el sistema sea adoptado a nivel institucional para enriquecer los sistemas de información en salud de México, más allá del ámbito académico.
+\end{enumerate}
+
+\vspace{0.5cm}
+
+% ============================================================
+\section{Observaciones Finales}
+% ============================================================
+
+La Dra. Ruth expresó alta satisfacción con el avance del equipo, reconociendo la evolución del proyecto desde una idea inicial hasta un nivel de interlocución directa con directivos de la Secretaría de Salud. Se reconoció el seguimiento constante de la Dra. Grettel Barceló en la dirección académica del proyecto y las aportaciones escritas de la Dra. Lina Díaz Castro.
+
+Se acordó mantener comunicación continua y programar un nuevo checkpoint de seguimiento en una a dos semanas.
+
+\vspace{1.5cm}
+
+% ------------------------------------------------------------
+% FIRMAS
+% ------------------------------------------------------------
+\begin{center}
+    {\color{imssgreen}\rule{0.9\textwidth}{1pt}}
+\end{center}
+
+\vspace{0.5cm}
+
+\noindent
+\begin{tabularx}{\textwidth}{XX}
+    \centering\textbf{Dra. Ruth Pérez} & \centering\textbf{Javier Rebull} \tabularnewline
+    \centering\small\color{imssgray} Sponsor del Proyecto --- IMSS & \centering\small\color{imssgray} Desarollo --- Equipo Estudiantil \tabularnewline
+    & \tabularnewline
+    & \tabularnewline
+    \centering\textbf{Juan Carlos Pérez Nava} & \centering\textbf{Luis G. Sánchez Salazar} \tabularnewline
+    \centering\small\color{imssgray} Desarrollo --- Equipo Estudiantil & \centering\small\color{imssgray} Desarrollo --- Equipo Estudiantil \tabularnewline
+\end{tabularx}
+
+\vspace{1cm}
+
+\begin{center}
+    {\small\color{imssgray}\textit{Minuta elaborada el 11 de febrero de 2026.}}\\
+    {\small\color{imssgray}\textit{Proyecto EpiForecast-MX --- IMSS $\times$ Tecnológico de Monterrey}}
+\end{center}
+
+\end{document}

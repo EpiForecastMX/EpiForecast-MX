@@ -1,0 +1,20 @@
+Lee el capítulo 9, Model Management, del libro:
+
+Costa, R. (2022). The CRISP-ML Methodology: A Step-by-Step Approach to Real-World Machine Learning Projects. Edición propia.
+
+
+
+
+9. MODEL MANAGEMENT
+
+In the final chapter of our book, we will discuss the role of model management and monitoring in the CRISP-ML methodology. Model management and monitoring are important considerations throughout the lifecycle of a machine learning model, from development to deployment and beyond.
+
+One key aspect of model management is version control. In the CRISP-ML methodology, we prioritize the use of version control systems, such as Git, to track the changes made to a model over time. This allows us to revert to previous versions of the model if necessary, and it also enables collaboration among multiple developers working on the same model.
+
+Another important aspect of model management is the use of automated model management pipelines, such as continuous integration/continuous deployment (CI/CD) pipelines. These pipelines automate the process of building, testing, and deploying models, making it easier to update and maintain the model in a production environment. In the CRISP-ML methodology, we place a strong emphasis on the use of automated pipelines to streamline the model management process.
+
+In addition to model management, it is also important to monitor the performance of the model in a production environment. This may involve the use of logging and exception-handling systems to detect and diagnose issues with the model, as well as the use of monitoring tools to track the model’s performance over time. In the CRISP-ML methodology, we prioritize the development of robust monitoring systems to ensure that the deployed model is performing as expected.
+
+Another key aspect of model management and monitoring is the ability to update the model as new data becomes available or the requirements of the application change. This may involve retraining the model on new data or fine-tuning the model to better fit the specific requirements of the application. In the CRISP-ML methodology, we use automated model management pipelines and monitoring systems to streamline the process of updating and maintaining the model in a production environment.
+
+In conclusion, model management and monitoring are essential components of the CRISP-ML methodology. By utilizing version control systems, automated pipelines, and robust monitoring systems, we can ensure that our machine-learning models are developed, deployed, and maintained reliably and efficiently.

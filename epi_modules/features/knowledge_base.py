@@ -2570,6 +2570,14 @@ class KnowledgeBase:
             "le atinamos",
             "atinamos",
             "fallamos",
+            "comparar",
+            "compara",
+            "comparacion",
+            "que tan bien",
+            "que tan preciso",
+            "como le fue",
+            "como nos fue",
+            "como le atino",
         ]
         if not any(t in q for t in triggers):
             return None
@@ -2595,6 +2603,19 @@ class KnowledgeBase:
                 "le atinamos",
                 "atinamos",
                 "fallamos",
+                "comparar",
+                "compara",
+                "comparacion",
+                "que tan bien",
+                "que tan preciso",
+                "como le fue",
+                "como nos fue",
+                "como le atino",
+                "vs real",
+                "vs realidad",
+                "pronostico vs",
+                "real vs",
+                "validacion",
             ]
         )
 

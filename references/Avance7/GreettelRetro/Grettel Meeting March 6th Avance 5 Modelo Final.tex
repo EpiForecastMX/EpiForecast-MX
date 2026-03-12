@@ -1,0 +1,169 @@
+\documentclass[11pt,letterpaper]{article}
+
+% --- Paquetes ---
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+
+% --- Colores institucionales ---
+\definecolor{burgundy}{HTML}{800020}
+\definecolor{teal}{HTML}{007B7F}
+\definecolor{coolgray}{HTML}{6B7280}
+
+% --- Formato de secciones ---
+\titleformat{\section}{\large\bfseries\color{burgundy}}{}{0em}{}[\vspace{-0.5em}\color{burgundy}\rule{\textwidth}{0.4pt}]
+\titleformat{\subsection}{\normalsize\bfseries\color{teal}}{}{0em}{}
+
+% --- Encabezado y pie ---
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\headrule}{\hbox to\headwidth{\color{burgundy}\leaders\hrule height \headrulewidth\hfill}}
+\fancyhead[L]{\small\color{coolgray}EpiForecast-MX}
+\fancyhead[R]{\small\color{coolgray}Minuta de Reunión}
+\fancyfoot[C]{\small\color{coolgray}\thepage}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=teal,
+    urlcolor=teal
+}
+
+\begin{document}
+
+% --- Título ---
+\begin{center}
+    {\Large\bfseries\color{burgundy} Minuta de Reunión}\\[0.3em]
+    {\large Revisión de Avance 5: Modelo Final}\\[0.8em]
+\end{center}
+
+% --- Datos generales ---
+\noindent
+\begin{tabular}{@{}ll}
+    \textbf{Proyecto:}      & EpiForecast-MX \\
+    \textbf{Fecha:}         & 8 de marzo de 2026 \\
+    \textbf{Modalidad:}     & Videoconferencia \\
+    \textbf{Duración aprox.:} & 40 minutos \\
+\end{tabular}
+
+\vspace{0.8em}
+
+\noindent
+\begin{tabular}{@{}lll}
+    \toprule
+    \textbf{Participante} & \textbf{Rol} & \textbf{Institución} \\
+    \midrule
+    Dra.\ Grettel Barceló Alonso & Asesora académica & Tecnológico de Monterrey \\
+    Javier Rebull (Sly)           & Líder de proyecto / MLOps & Tecnológico de Monterrey \\
+    Luis Gerardo Sánchez Salazar  & Ingeniería de modelos      & Tecnológico de Monterrey \\
+    Juan Carlos Pérez Nava        & Enlace IMSS / datos        & IMSS \\
+    \bottomrule
+\end{tabular}
+
+% ================================================================
+\section{Revisión de calidad de código}
+
+Se presentaron los resultados de las verificaciones de calidad con \texttt{ruff} y \texttt{mypy} en modo estricto. Todos los módulos reportaron cumplimiento completo (indicadores en verde), confirmando el nivel de \textasciitilde98\,\% de conformidad del pipeline.
+
+% ================================================================
+\section{Resultados del modelo final}
+
+La Dra.\ Barceló expresó estar muy satisfecha con los resultados obtenidos, señalando que el equipo superó sus expectativas. El equipo coincidió en que el proyecto integró conocimientos de múltiples materias de la maestría.
+
+\subsection{Arquitecturas de ensamble}
+
+Se explicó el origen de las dos arquitecturas de ensamble implementadas:
+
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Ensamble XGBoost + Prophet (meta-modelo Ridge):} se observó que XGBoost compensaba las debilidades de Prophet en ciertos intervalos temporales de la regresión, por lo que se combinaron ambos motores mediante un meta-modelo Ridge.
+    \item \textbf{Stacking (Prophet + LightGBM + ElasticNet):} se partió de la arquitectura AutoGluon de Amazon, pero los resultados iniciales fueron deficientes. Al incorporar Prophet como componente adicional y ajustar la configuración, se obtuvo un ensamble propio que el equipo denominó \emph{stacking}.
+\end{itemize}
+
+DeepAR resultó ganador en la mayoría de las 333 series de producción, tal como se anticipaba.
+
+\subsection{Incidente de data leakage}
+
+Durante la semana previa se detectó un problema de fuga de datos (\emph{data leakage}) al observar métricas sospechosamente perfectas (100\,\% en todos los indicadores). La investigación reveló que datos ya vistos por el modelo se estaban filtrando en el conjunto de validación a través de los lags utilizados en los modelos de árbol. Se implementaron banderas de validación y se reentrenaron todos los modelos afectados, lo cual demandó un esfuerzo considerable en horas de trabajo.
+
+\subsection{Validación con datos no vistos}
+
+Se realizó una prueba con el boletín epidemiológico publicado el martes de esa semana. Sin que el modelo hubiera visto previamente esos datos, los pronósticos resultaron impresionantes. La Dra.\ Barceló destacó que este tipo de validación con datos reales no vistos es evidencia sólida del desempeño del sistema.
+
+% ================================================================
+\section{Demostración del chatbot EpiForecast}
+
+Se presentó brevemente un prototipo de interfaz conversacional que permite realizar consultas en lenguaje natural sobre los pronósticos (por ejemplo: ``¿Cuántos casos de depresión se proyectan para enero?''). El equipo señaló que una implementación completa con RAG queda fuera del alcance temporal del proyecto actual, pero podría ser retomada por un equipo futuro.
+
+% ================================================================
+\section{Actualización del dashboard en Tableau}
+
+Luis reportó los avances en la conexión de Tableau con Google Sheets como fuente de datos:
+
+\begin{itemize}[leftmargin=1.5em]
+    \item Se identificó una limitante de aproximadamente 10 millones de celdas en Tableau Public; el dataset original contenía alrededor de 16 millones de celdas.
+    \item Se aplicaron optimizaciones que redujeron el volumen a 6 millones de celdas, pero Tableau seguía presentando problemas de rendimiento.
+    \item Se implementó un esquema por \emph{relationships} (múltiples pestañas relacionadas en lugar de un solo archivo plano), lo que redujo el conteo efectivo a aproximadamente 2 millones de celdas.
+    \item Con este enfoque la conexión con Google Drive funciona correctamente. Se terminaron de ajustar los estilos de color horas antes de la reunión.
+\end{itemize}
+
+% ================================================================
+\section{Próximos pasos y entregables}
+
+\subsection{Resumen ejecutivo}
+
+Se acordó enfocar el resumen ejecutivo con un tono orientado a venta y toma de decisiones, menos técnico que los avances anteriores, siguiendo las indicaciones de la rúbrica. El reto principal es sintetizar el volumen de trabajo acumulado en las entregas previas.
+
+\subsection{Artículo científico}
+
+La Dra.\ Barceló indicó que presionará a las autoras del IMSS (Dra.\ Ruth Pérez-Hernández y Dra.\ Lina Díaz Castro) para avanzar en la actualización del artículo, dado que los resultados finales del modelo requieren una revisión sustancial del manuscrito.
+
+\subsection{Presentación final (PPP)}
+
+\begin{itemize}[leftmargin=1.5em]
+    \item La ventana de presentaciones quedó establecida del 16 al 22 de marzo de 2026.
+    \item La Dra.\ Barceló enviará la plantilla de presentación y las instrucciones a todos los equipos la semana siguiente.
+    \item Se solicitó a los integrantes confirmar disponibilidad en esa semana. Luis indicó preferencia por el martes 17 en cualquier horario; los demás días tiene restricciones por trabajo nocturno.
+    \item La Dra.\ Barceló mencionó su intención de invitar a otros profesores y alumnos de la maestría a la presentación.
+\end{itemize}
+
+% ================================================================
+\section{Acuerdos y compromisos}
+
+\noindent
+\begin{tabular}{@{}p{0.55\textwidth}p{0.25\textwidth}p{0.15\textwidth}@{}}
+    \toprule
+    \textbf{Acuerdo} & \textbf{Responsable(s)} & \textbf{Fecha} \\
+    \midrule
+    Especificar en el documento los lags utilizados y las medias móviles empleadas en los modelos de árbol &
+    Javier, Luis &
+    Próxima semana \\
+    \addlinespace
+    Elaborar resumen ejecutivo orientado a tomadores de decisión &
+    Javier, Luis, Juan Carlos &
+    Próxima semana \\
+    \addlinespace
+    Enviar plantilla de presentación e instrucciones a todos los equipos &
+    Dra.\ Barceló &
+    Próxima semana \\
+    \addlinespace
+    Confirmar disponibilidad para presentación (semana del 16 al 22 de marzo) &
+    Todos &
+    Próxima semana \\
+    \addlinespace
+    Presionar a autoras IMSS para avanzar en el artículo científico &
+    Dra.\ Barceló &
+    En curso \\
+    \bottomrule
+\end{tabular}
+
+\vspace{2em}
+
+\noindent\textcolor{coolgray}{\small Minuta elaborada por Javier Rebull. Proyecto EpiForecast-MX, Maestría en Inteligencia Artificial Aplicada, Tecnológico de Monterrey.}
+
+\end{document}
