@@ -395,6 +395,7 @@ make data-push       # Upload data to S3
 make models-push     # Version and upload trained models
 make s3-sync         # Quick sync CSVs + forecasts to S3 (no DVC)
 make data-weekly     # Add + commit new weekly bulletin data
+make update-week     # Pull CI data + regenerate knowledge.json + update dashboard
 ```
 
 ---

@@ -349,6 +349,11 @@ data-commit:
 data-weekly: data-add data-commit
 	@echo ">>> Flujo semanal completado."
 
+## Actualizar semana: pull CI + DVC + knowledge.json + dashboard
+.PHONY: update-week
+update-week:
+	bash scripts/actualiza_semanal.sh
+
 ## Ver estado de DVC
 .PHONY: data-status
 data-status:
