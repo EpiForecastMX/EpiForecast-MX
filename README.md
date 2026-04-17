@@ -395,8 +395,45 @@ make data-push       # Upload data to S3
 make models-push     # Version and upload trained models
 make s3-sync         # Quick sync CSVs + forecasts to S3 (no DVC)
 make data-weekly     # Add + commit new weekly bulletin data
-make update-week     # Pull CI data + regenerate knowledge.json + update dashboard
+make update-week     # End-to-end weekly sync (see section 8)
 ```
+
+### 8. Weekly Update Flow (`make update-week`)
+
+One-command orchestration that keeps the working copy, DVC artifacts and the
+public dashboard in lockstep with the latest SINAVE bulletin ingested by the
+CI scraper. Delegates to `scripts/actualiza_semanal.sh` and runs 5 steps:
+
+1. **Git pull** on `main` to pick up commits pushed by the `scrape_boletines` /
+   `process_boletines` workflows (updates `data/processed/*.dvc`, `data/raw_PDFs.dvc`,
+   `data/registry.json`).
+2. **`dvc pull --force`** to materialize the new raw PDFs and the refreshed
+   consolidated dataset (`dataset_boletin_epidemiologico.csv`). Prints total
+   rows and the latest epidemiological week detected.
+3. **Regenerate** `web_dashboard/knowledge.json` via `scripts/build_web_knowledge.py`
+   (333 production models, boletin stats, weekly comparisons).
+4. **Copy** `knowledge.json` into the sibling `EpiForecast-IMSS-Dashboard/kb/`
+   folder.
+5. **Commit + push** the dashboard repo if `knowledge.json` changed
+   (`data: actualizar knowledge.json con datos semana <N>/<YYYY>`).
+
+Run it after a CI boletin lands (or any time new forecasts are generated) to
+propagate data to stakeholders without manual intervention:
+
+```bash
+make update-week
+```
+
+Requires: local `.venv` with project installed, AWS credentials for DVC/S3 pull,
+and a clone of `EpiForecast-IMSS-Dashboard` at the expected sibling path with
+push permission to `main`.
+
+### Current Data Snapshot
+
+- **Latest epidemiological week:** 13/2026
+- **Consolidated dataset:** 61,345 rows (`data/processed/dataset_boletin_epidemiologico.csv`)
+- **Knowledge base:** 172 KB — 333 production models, 51 stats keys, 6 boletin sections
+- **Forecast horizon:** 52 weeks ahead (rolling, regenerated per weekly update)
 
 ---
 
