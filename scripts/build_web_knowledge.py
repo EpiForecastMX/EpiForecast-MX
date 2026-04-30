@@ -471,17 +471,46 @@ def build_weekly_comparison(cache: ProjectDataCache) -> dict[str, list[dict]]:
     # Aggregate Nacional by week + padecimiento
     nac_actual = bol_year.groupby(["Semana", "Padecimiento"])["Casos_semana"].sum().reset_index()
 
-    # Tableau: forecast data (winning model per series)
-    tableau_path = Path("data/processed/tableau.csv")
-    if not tableau_path.exists():
+    # Modelo productivo canónico desde la tabla productiva (no desde tableau.csv,
+    # que puede quedar stale). Usa el motor productivo del par (Nacional, general).
+    prod = cache.prod_models
+    if prod is None or prod.empty:
         return result
-    tab = pd.read_csv(tableau_path)
-    tab["ds"] = pd.to_datetime(tab["ds"])
-    tab["iso_week"] = tab["ds"].dt.isocalendar().week.astype(int)
-    tab["iso_year"] = tab["ds"].dt.isocalendar().year.astype(int)
+    prod_lookup: dict[str, str] = {}
+    nac_general = prod[(prod["entidad"] == "Nacional") & (prod["sexo"] == "general")]
+    for _, r in nac_general.iterrows():
+        pad_key = strip_accents(str(r["padecimiento"]))
+        prod_lookup[pad_key] = str(r.get("modelo_produccion") or "?")
+
+    # Cargar los 4 forecasts directamente para construir las series semanales
+    forecast_paths = {
+        "prophet": Path("reports/forecasts/prophet/all_forecast_prophet.csv"),
+        "deepar": Path("reports/forecasts/deepar/all_forecast_deepar.csv"),
+        "ensemble": Path("reports/forecasts/ensemble/all_forecast_ensemble.csv"),
+        "stacking": Path("reports/forecasts/stacking/all_forecast_stacking.csv"),
+    }
+    fc_per_motor: dict[str, pd.DataFrame] = {}
+    for motor, p in forecast_paths.items():
+        if not p.exists():
+            continue
+        df = pd.read_csv(
+            p,
+            usecols=["ds", "yhat", "meta_padecimiento", "meta_entidad", "meta_modo"],
+            low_memory=False,
+        )
+        df["ds"] = pd.to_datetime(df["ds"])
+        df = df[
+            (df["meta_entidad"] == "Nacional")
+            & (df["meta_modo"] == "general")
+            & (df["ds"].dt.year == max_year)
+        ].copy()
+        df["iso_week"] = df["ds"].dt.isocalendar().week.astype(int)
+        fc_per_motor[motor] = df.rename(columns={"meta_padecimiento": "padecimiento"})
 
     for pad_raw in nac_actual["Padecimiento"].unique():
         pad = strip_accents(str(pad_raw))
+        modelo_prod_raw = prod_lookup.get(pad, "?")
+        modelo_prod = strip_accents(str(modelo_prod_raw)).lower()
 
         # Actual weeks
         actual_weeks = (
@@ -490,26 +519,23 @@ def build_weekly_comparison(cache: ProjectDataCache) -> dict[str, list[dict]]:
             .to_dict()
         )
 
-        # Forecast: Nacional, general, this padecimiento
-        fc = tab[
-            (tab["entidad"] == "Nacional")
-            & (tab["padecimiento"] == pad_raw)
-            & (tab["meta_modo"] == "general")
-            & (tab["iso_year"] == max_year)
-        ].sort_values("ds")
-
-        if fc.empty:
+        # Tomar las semanas del motor productivo como base
+        base_motor = modelo_prod if modelo_prod in fc_per_motor else next(iter(fc_per_motor))
+        base_df = fc_per_motor[base_motor]
+        base_df = base_df[base_df["padecimiento"] == pad_raw].sort_values("ds")
+        if base_df.empty:
+            # Algunos forecasts usan padecimientos sin acentos
+            alt = strip_accents(str(pad_raw))
+            base_df = fc_per_motor[base_motor]
+            base_df = base_df[base_df["padecimiento"] == alt].sort_values("ds")
+        if base_df.empty:
             continue
 
-        # Build per-week comparison (up to 52 weeks)
         weeks: list[dict] = []
-        modelo_prod = fc["modelo_productivo"].iloc[0] if "modelo_productivo" in fc.columns else "?"
-
-        for _, row in fc.iterrows():
+        for _, row in base_df.iterrows():
             w = int(row["iso_week"])
             forecast = int(round(row["yhat"]))
             actual = int(actual_weeks.get(w, 0)) if w in actual_weeks else None
-
             entry: dict[str, Any] = {
                 "semana": w,
                 "fecha": row["ds"].strftime("%Y-%m-%d"),
@@ -520,17 +546,15 @@ def build_weekly_comparison(cache: ProjectDataCache) -> dict[str, list[dict]]:
                 if actual > 0:
                     error_pct = round(abs(forecast - actual) / actual * 100, 1)
                     entry["error_pct"] = error_pct
-
-            # Add per-model forecasts
-            for motor in ("prophet", "deepar", "ensemble", "stacking"):
-                col = f"yhat_{motor}"
-                if col in row.index and pd.notna(row[col]):
-                    entry[motor] = int(round(row[col]))
-
+            # Forecast de cada motor para esa semana (mismo padecimiento, Nacional, general)
+            for motor, mdf in fc_per_motor.items():
+                m_pad = mdf[(mdf["padecimiento"].isin([pad_raw, pad])) & (mdf["iso_week"] == w)]
+                if not m_pad.empty:
+                    entry[motor] = int(round(m_pad["yhat"].iloc[0]))
             weeks.append(entry)
 
         result[pad] = {
-            "modelo_productivo": strip_accents(str(modelo_prod)),
+            "modelo_productivo": modelo_prod,
             "anio": max_year,
             "semanas_reales": len(actual_weeks),
             "semanas_pronostico": len(weeks),
