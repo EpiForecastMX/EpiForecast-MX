@@ -161,22 +161,28 @@ EpiForecast-MX/
 - Todos los reportes siguen la paleta IMSS 2026.
 
 ### Seleccion de Modelo de Produccion
-- `scripts/genera_tabla_produccion.py` genera `reports/ProdDetails/tabla_333_modelos_produccion.xlsx` (Excel con formato IMSS, 2 hojas).
-- Criterio: SMAPE primario, MASE como desempate (umbral 5%), RMSE como segundo desempate.
-- **Hoja 1 (Produccion)**: 333 filas x 41 columnas. Metricas por modelo, diagnosticos, comparativa historica.
+- `scripts/genera_tabla_produccion.py` genera la base inicial de `reports/ProdDetails/tabla_333_modelos_produccion.xlsx` por SMAPE de validacion cruzada.
+- **`scripts/reselect_motor_2026.py` (canónico desde 2026-04-30)**: re-selecciona el motor productivo usando SMAPE sobre realidad reciente del Boletin SINAVE 2026.
+  - Regla 1: serie con >=10 sem reales 2026 y total >=10 casos -> SMAPE 2026 real es criterio primario; MASE como desempate.
+  - Regla 2: serie con >=10 sem pero <10 casos (ruidosa, divisiones cercanas a cero infladas) -> forzar Ensemble como default seguro.
+  - Regla 3: serie con <10 sem reales (4 regiones agregadas y huecos puntuales) -> respetar asignacion CV anterior.
+  - Genera `reports/ProdDetails/auditoria_motores_2026.xlsx` con auditoria de los 333 combos: motor anterior, motor nuevo, SMAPE de los 4 motores en 2026 real, criterio de seleccion.
+  - Distribucion productiva actual (post 2026-04-30, 227 cambios sobre los 333): Prophet 126, Ensemble 95, DeepAR 78, Stacking 34. `motor_ganador` global = Prophet.
+- **Hoja 1 (Produccion)**: 333 filas x ~50 columnas. Metricas por modelo, diagnosticos, comparativa historica + 9 columnas de auditoria 2026.
   - `casos_52_semanas_futuro`: suma de yhat del horizonte futuro (entero).
-  - `smape_prod/mase_prod/rmse_prod/mae_prod`: metricas CV del modelo seleccionado.
+  - `smape_prod/mase_prod/rmse_prod/mae_prod`: metricas CV del modelo seleccionado (recalculadas tras la re-asignacion).
   - `overfitting`: ratio smape_test/smape_train — Alto (>2x), Moderado (>1.3x), OK.
   - `leakage`: smape_train < 0.5% = Sospechoso, else OK.
   - `casos_prev_52_semanas_real / _pronos`: comparativa historica (enteros).
   - `precision_historica`: ratio pronos/real como porcentaje.
   - `pron_sem_previa / realidad_sem_previa`: ultima semana para validar con boletin nuevo.
   - `modelo_produccion`, `tipo_modelo`, `region_asignada` (n/a si propio), `justificacion`.
-- **Hoja 2 (Detalle Semanal)**: 333 filas x 163 columnas. 52 semanas de realidad, pronostico y % acierto por semana.
+  - `n_semanas_real_2026`, `total_real_2026`, `smape_2026_{prophet,deepar,ensemble,stacking}`, `smape_real_2026_ganador`, `motor_anterior`, `criterio_seleccion`.
 - Series con incidencia cero o baja confianza (<5 casos/52sem) se reasignan al modelo regional.
 - Predicciones redondeadas a enteros. Formato Excel con paleta IMSS 2026, filtros y paneles congelados.
 - Graficos embebidos: `scripts/excel_produccion_charts.py` genera 6 PNGs con paleta IMSS.
 - Formateo: `scripts/excel_produccion_fmt.py` aplica estilos institucionales.
+- **Pipeline canonico tras nuevo boletin**: `make tabla-produccion` -> `python3 scripts/reselect_motor_2026.py` -> `python3 scripts/build_tableau.py` -> `python3 scripts/build_web_knowledge.py` -> `python3 scripts/genera_validacion_semanal.py` -> `make compare` (PNGs).
 
 ### Validacion Semanal
 - `scripts/genera_validacion_semanal.py` genera `reports/ProdDetails/validacion_semanal.html`.

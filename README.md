@@ -45,7 +45,7 @@ The platform uses a **polymorphic Factory pattern** to support multiple forecast
 - **End-to-End ML Pipeline** -- Automated from PDF scraping (SINAVE bulletins) through INEGI demographic mapping to forecast charts and HTML reports.
 - **Model Comparison Engine** -- High-contrast professional charts comparing Real vs. Prophet vs. DeepAR vs. Ensemble vs. Stacking performance across all states and conditions.
 - **Weekly Validation** -- Automated comparison of model forecasts against real SINAVE bulletin data for the most recent epidemiological week (`make tabla-produccion`).
-- **SMAPE-Based Model Selection** -- The Tableau dataset automatically selects the best-performing model per group (condition, state, mode) based on SMAPE, exposing a `modelo_productivo` column. Production Excel (`tabla_333_modelos_produccion.xlsx`) uses SMAPE-primary selection with MASE/RMSE tiebreakers.
+- **Reality-Calibrated Model Selection** -- Production engine selection uses SMAPE on the most recent SINAVE Boletin weeks (canonical since 2026-04-30 via `scripts/reselect_motor_2026.py`): series with >=10 real 2026 weeks and >=10 cases pick the engine with lowest 2026 SMAPE; noisy series (<10 cases) default to Ensemble; series without recent reality keep the CV assignment. The Tableau dataset exposes `modelo_productivo`. Current distribution: Prophet 126, Ensemble 95, DeepAR 78, Stacking 34. Audit trail in `reports/ProdDetails/auditoria_motores_2026.xlsx`.
 - **Production Model Table** -- Excel with 2 sheets: (1) 333 production models with diagnostics, overfitting/leakage, precision historica, and weekly validation columns; (2) 52-week detail with real vs forecast vs % accuracy per week. IMSS 2026 styling.
 - **Overfitting and Data Leakage Detection** -- Train metrics (RMSE, SMAPE) computed in-sample for all 4 models. HTML report shows diagnostic badges: Overfitting (test/train SMAPE ratio) and Leakage (suspiciously low train SMAPE).
 - **Hybrid Fallback** -- Zero-incidence and low-confidence (<5 cases/52 weeks) state models automatically defer to regional aggregates to ensure 100% forecast coverage. Integer-rounded predictions (no fractional cases).
@@ -331,16 +331,17 @@ The Tableau dataset (`data/processed/tableau.csv`) includes:
 
 The production Excel (`reports/ProdDetails/tabla_333_modelos_produccion.xlsx`) has 2 sheets:
 
-**Sheet 1 - Produccion** (333 rows x 41 columns):
+**Sheet 1 - Produccion** (333 rows x ~50 columns):
 - Per-model metrics (RMSE, MAE, SMAPE, MASE) for all 4 algorithms
 - `casos_52_semanas_futuro`: Total projected cases for 52-week horizon (integer)
-- `smape_prod`, `mase_prod`, `rmse_prod`, `mae_prod`: Metrics of the selected model
+- `smape_prod`, `mase_prod`, `rmse_prod`, `mae_prod`: Metrics of the selected model (recomputed after re-selection)
 - `overfitting`: Diagnostic (Alto >2x, Moderado >1.3x, OK) based on smape_test/smape_train
 - `leakage`: Diagnostic (Sospechoso if smape_train < 0.5%, else OK)
 - `casos_prev_52_semanas_real / _pronos`: Historical 52-week comparison (integer)
 - `precision_historica`: Forecast/real ratio as percentage
 - `pron_sem_previa / realidad_sem_previa`: Last week values for live validation
 - `modelo_produccion`, `tipo_modelo`, `region_asignada`, `justificacion`
+- **2026 reality audit columns** (added by `reselect_motor_2026.py`): `n_semanas_real_2026`, `total_real_2026`, `smape_2026_{prophet,deepar,ensemble,stacking}`, `smape_real_2026_ganador`, `motor_anterior`, `criterio_seleccion`
 
 **Sheet 2 - Detalle Semanal** (333 rows x 163 columns):
 - 52 columns `real_sem_N`: Actual weekly incidence
@@ -356,8 +357,11 @@ make compare
 # Generate metrics comparison (Excel + HTML report with Overfitting/Leakage badges)
 make compare-metrics
 
-# Generate production model table (333 models, SMAPE selection, weekly validation)
+# Generate production model table (333 models, CV-based first-pass selection)
 make tabla-produccion
+
+# Re-select productive engine using 2026 SINAVE Boletin reality (canonical)
+python3 scripts/reselect_motor_2026.py
 
 # Generate HTML results report
 make report
