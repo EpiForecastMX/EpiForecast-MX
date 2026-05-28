@@ -408,7 +408,11 @@ def main() -> None:
                 continue
 
             if intent == "datos":
-                args = re.sub(r"^datos?\s*", "", cmd_normalized).strip()
+                args = re.sub(
+                    r"^(datos?|resumen\s+(del\s+)?boletin|explorador\s+de\s+datos|boletin)\s*",
+                    "",
+                    cmd_normalized,
+                ).strip()
                 show_data_explorer(console, cache, args)
                 continue
 

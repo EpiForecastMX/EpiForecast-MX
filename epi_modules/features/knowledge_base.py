@@ -2234,6 +2234,30 @@ class KnowledgeBase:
         """Responde sobre un motor/modelo especifico."""
         modelo = ent.get("modelo")
 
+        # Preguntas conceptuales ("que es", "como funciona", "explica") → dejar a Gemini
+        _conceptual = [
+            "que es",
+            "qué es",
+            "como funciona",
+            "cómo funciona",
+            "explica",
+            "explicame",
+            "explícame",
+            "describe",
+            "para que sirve",
+            "para qué sirve",
+            "en que consiste",
+            "como opera",
+            "cómo opera",
+            "que hace",
+            "qué hace",
+            "definicion",
+            "definición",
+            "diferencia entre",
+        ]
+        if modelo and any(t in q for t in _conceptual):
+            return None
+
         # Detectar preguntas sobre "quien gana" sin modelo especifico
         if not modelo and any(t in q for t in ["gana", "ganador", "campeon", "winner", "domina"]):
             dist = s.get("dist_motor", {})
