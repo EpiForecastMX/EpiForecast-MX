@@ -49,7 +49,30 @@ def handle_chat(
     # Enriquecer pregunta con contexto del historial reciente
     enriched = _enrich_from_history(clean, chat_history)
     local = kb.answer(enriched)
-    if local:
+
+    # Detectar preguntas conceptuales que se benefician de Gemini
+    _conceptual_triggers = [
+        "que es",
+        "qué es",
+        "como funciona",
+        "cómo funciona",
+        "explica",
+        "explicame",
+        "explícame",
+        "describe",
+        "para que sirve",
+        "para qué sirve",
+        "en que consiste",
+        "como opera",
+        "cómo opera",
+        "que hace",
+        "qué hace",
+        "diferencia entre",
+    ]
+    q_lower = clean.lower()
+    is_conceptual = any(t in q_lower for t in _conceptual_triggers)
+
+    if local and not (is_conceptual and api_key):
         console.print()
         console.print(
             Panel(
@@ -64,16 +87,40 @@ def handle_chat(
         chat_history.append({"role": "assistant", "text": local})
         return model_name
 
-    # 2) Fallback a Gemini con contexto enriquecido
+    # 2) Gemini (fallback o complemento para preguntas conceptuales)
     if not api_key:
-        console.print(
-            "[alerta]No pude responder localmente y GEMINI_API_KEY no está "
-            "configurada. Intenta reformular la pregunta o configura la API.[/alerta]",
-        )
+        if local:
+            # Mostrar respuesta local si existe pero no hay API key para complementar
+            console.print()
+            console.print(
+                Panel(
+                    Markdown(local),
+                    title="[dorado]Respuesta (datos reales)[/dorado]",
+                    border_style="verde.dim",
+                    padding=(1, 2),
+                )
+            )
+            console.print()
+            chat_history.append({"role": "user", "text": clean})
+            chat_history.append({"role": "assistant", "text": local})
+        else:
+            console.print(
+                "[alerta]No pude responder localmente y GEMINI_API_KEY no está "
+                "configurada. Intenta reformular la pregunta o configura la API.[/alerta]",
+            )
         return model_name
 
     # Construir contexto ultra-detallado desde KnowledgeBase
     rich_context = kb.build_rich_context(enriched)
+
+    # Si hay respuesta local, incluirla como contexto adicional para Gemini
+    local_context = ""
+    if local:
+        local_context = (
+            f"\n\n--- Datos del proyecto (respuesta local) ---\n{local}\n"
+            "Complementa esta informacion con una explicacion conceptual detallada. "
+            "Incluye los datos del proyecto en tu respuesta.\n"
+        )
 
     system_msg = (
         "Eres el asistente de inteligencia del proyecto EpiForecast-MX del IMSS.\n"
@@ -82,7 +129,7 @@ def handle_chat(
         "Siempre que cites metricas, usa los valores exactos del contexto.\n"
         "Si no tienes suficiente informacion, dilo claramente.\n"
         "No inventes datos; usa solo lo que aparece en el contexto.\n\n"
-        f"{rich_context}"
+        f"{rich_context}{local_context}"
     )
 
     # Agregar historial conversacional reciente para contexto
@@ -131,6 +178,20 @@ def handle_chat(
     except Exception as e:
         logging.error(f"Error en chat IA: {e}")
         console.print(f"[error]Error consultando IA: {e}[/error]")
+        # Fallback: si habia respuesta local disponible, mostrarla en lugar de perderla
+        if local:
+            console.print()
+            console.print(
+                Panel(
+                    Markdown(local),
+                    title="[dorado]Respuesta (datos reales)[/dorado]",
+                    border_style="verde.dim",
+                    padding=(1, 2),
+                )
+            )
+            console.print()
+            chat_history.append({"role": "user", "text": clean})
+            chat_history.append({"role": "assistant", "text": local})
 
     return model_name
 
