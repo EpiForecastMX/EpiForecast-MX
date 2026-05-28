@@ -499,10 +499,11 @@ def build_weekly_comparison(cache: ProjectDataCache) -> dict[str, list[dict]]:
             low_memory=False,
         )
         df["ds"] = pd.to_datetime(df["ds"])
+        iso_cal = df["ds"].dt.isocalendar()
         df = df[
             (df["meta_entidad"] == "Nacional")
             & (df["meta_modo"] == "general")
-            & (df["ds"].dt.year == max_year)
+            & (iso_cal.year == max_year)
         ].copy()
         df["iso_week"] = df["ds"].dt.isocalendar().week.astype(int)
         fc_per_motor[motor] = df.rename(columns={"meta_padecimiento": "padecimiento"})
