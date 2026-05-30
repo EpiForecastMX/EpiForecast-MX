@@ -34,11 +34,11 @@ echo ">>> [3/5] Regenerar knowledge.json..."
 $PYTHON scripts/build_web_knowledge.py
 
 echo ">>> [4/5] Copiar knowledge.json al dashboard..."
-cp web_dashboard/knowledge.json "${DASHBOARD_ROOT}/kb/knowledge.json"
+cp web_dashboard/knowledge.json "${DASHBOARD_ROOT}/epibot/knowledge.json"
 
 echo ">>> [5/5] Commit y push en dashboard..."
 cd "$DASHBOARD_ROOT"
-git add kb/knowledge.json
+git add epibot/knowledge.json
 if git diff --cached --quiet; then
     echo "    Sin cambios en knowledge.json, nada que commitear."
 else
