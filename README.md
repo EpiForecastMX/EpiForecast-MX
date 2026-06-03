@@ -527,9 +527,11 @@ python scripts/extrae_dengue.py
 python scripts/extrae_dengue.py --pattern "202[3-6]_*.pdf"
 ```
 
-Each bulletin is validated against its printed `TOTAL` row, and a guard rejects bulletins exhibiting a column-duplication artifact. The resulting series (`data/interim/dengue_boletin.csv`, regenerable, not versioned) covers **2020 to 2026 across the 32 states**, audited cell-by-cell against the source PDFs. Bulletins before 2020 use the older WHO 1997 scheme (`A90/A91`) and are not yet supported.
+Each bulletin is validated against its printed `TOTAL` row, and a guard rejects bulletins exhibiting a column-duplication artifact. The resulting series (`data/interim/dengue_boletin.csv`) covers **2020 to 2026 across the 32 states**, audited cell-by-cell against the source PDFs. Bulletins before 2020 use the older WHO 1997 scheme (`A90/A91`) and are not yet supported. A documented source correction (`_SOURCE_CORRECTIONS`) fixes a known bulletin typo (Zacatecas 2024-W41).
 
-**Next phases.** Merge into the production dataset, seasonality configuration tuned for the strong annual cycle of dengue, training and validation of the four engines, and 52-week forecasts.
+**Phase 2 (in progress): analysis and preparation.** The series was merged into the consolidated dataset (`scripts/merge_dengue.py`, idempotent; DVC-versioned, 72,256 rows). EDA confirmed strong seasonality and autocorrelation (see `docs/research/hallazgos/EDA_DENGUE_FASE2.md`). Feature engineering is made per-disease: outlier clipping is **disabled for Dengue** (the epidemic peak is the signal, not noise to median-replace). Because the consolidated now contains Dengue, the neuro pipeline is made Dengue-aware via `constants.NEURO_CONDITIONS`: `filter` ("General" mode), `entrena`, `reselect_motor_2026`, `genera_validacion_semanal`, and `build_web_knowledge` all restrict to the neuro production cohort, so Dengue is trained only when requested explicitly (`padecimiento.tipo='Dengue'`).
+
+**Next phases.** Dengue-specific model configuration (seasonality, changepoints, no COVID regime, `_GRID_KEY_MAP` entry), training and validation of the four engines (no regional fallback: a state with no transmission forecasts zero), and 52-week forecasts.
 
 ---
 
