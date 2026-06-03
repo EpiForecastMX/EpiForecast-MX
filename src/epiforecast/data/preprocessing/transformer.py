@@ -1,6 +1,7 @@
 """Data transformation pipeline: feature engineering, outlier correction, and INEGI demographic merge."""
 
 # src/datos/preparacion.py
+from collections.abc import Callable
 from typing import Any
 
 from loguru import logger
@@ -194,17 +195,47 @@ class DataTransformation:
                 .astype(int)
             )
 
+    def _padecimientos_excluidos_outliers(self) -> list[str]:
+        """Padecimientos exentos del tratamiento de outliers (config)."""
+        cfg = self.get_opcion("tratamiento_outliers") or {}
+        return list(cfg.get("excluir_padecimientos", []) or [])
+
+    def _tratar_outliers(self, func: "Callable[[pd.DataFrame], pd.DataFrame]") -> pd.DataFrame:
+        """Aplica el tratamiento de outliers ``func`` preservando intactos los
+        padecimientos excluidos (p. ej. Dengue: el pico epidémico ES la señal a
+        pronosticar, no ruido a recortar). Funciona en modo General (mixto) y por
+        padecimiento."""
+        excluir = self._padecimientos_excluidos_outliers()
+        if not excluir or "Padecimiento" not in self.df.columns:
+            return func(self.df)
+        mask = self.df["Padecimiento"].isin(excluir)
+        if not mask.any():
+            return func(self.df)
+        preservados = self.df[mask].copy()
+        tratados = func(self.df[~mask].copy())
+        logger.info(
+            "Outliers: se preservan {} fila(s) de padecimientos excluidos {} (sin recorte)",
+            int(mask.sum()),
+            excluir,
+        )
+        combinado = pd.concat([tratados, preservados], ignore_index=True)
+        return combinado.sort_values(["Padecimiento", "Anio", "Entidad", "Semana"]).reset_index(
+            drop=True
+        )
+
     def _ajusta_outliers(self, columnas: list[str], agrupacion: list[str]) -> None:
         from epiforecast.data.preprocessing.imputation import ajusta_outliers
 
-        self.df = ajusta_outliers(self.df, columnas, agrupacion)
+        self.df = self._tratar_outliers(lambda d: ajusta_outliers(d, columnas, agrupacion))
 
     def _ajusta_outliers_zscore(
         self, columnas: list[str], agrupacion: list[str], umbral: int, reemplazo: str
     ) -> None:
         from epiforecast.data.preprocessing.imputation import ajusta_outliers_zscore
 
-        self.df = ajusta_outliers_zscore(self.df, columnas, agrupacion, umbral, reemplazo)
+        self.df = self._tratar_outliers(
+            lambda d: ajusta_outliers_zscore(d, columnas, agrupacion, umbral, reemplazo)
+        )
 
     def agrupar(self) -> None:
         """Agrupa incrementos por Padecimiento, Semana, Fecha y Entidad, y asigna regiones."""

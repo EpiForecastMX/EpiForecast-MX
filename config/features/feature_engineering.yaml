@@ -10,6 +10,10 @@ opciones_FE:
       agrupacion:
         - Padecimiento
         - Entidad
+      # Padecimientos exentos del recorte de outliers: en una arbovirosis como el
+      # Dengue, el pico epidemico ES la senal a pronosticar, no ruido a medianizar.
+      excluir_padecimientos:
+        - Dengue
 
   - agrupa:
       valor: Sexo
