@@ -83,7 +83,7 @@ class EnsembleForecaster(ForecastModel):
             "reg_lambda": xgb_hp.get("reg_lambda", 1.0),
         }
         self._ensemble_mode: str = str(self._conf.get("ensemble_mode", "parallel"))
-        self._holidays: pd.DataFrame = construir_holidays(self._conf)
+        self._holidays: pd.DataFrame = construir_holidays(self._conf, self.padecimiento)
         self._prophet: Prophet | None = None
         self._xgb: XGBRegressor | None = None
         self._feature_names: list[str] = list(FEATURE_NAMES)
@@ -300,7 +300,7 @@ class EnsembleForecaster(ForecastModel):
         else:
             from epiforecast.models.ensemble.xgb_tuner import EnsembleXGBTuner
 
-            tuner = EnsembleXGBTuner(self._prophet, self.train_data, self._conf)
+            tuner = EnsembleXGBTuner(self._prophet, self.train_data, self._conf, self.padecimiento)
             best_params, _ = tuner.run()
             if best_params:
                 self._xgb_hp.update(best_params)

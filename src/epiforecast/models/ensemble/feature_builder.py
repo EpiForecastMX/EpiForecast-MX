@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 
 from epiforecast.constants import COVID_END, COVID_START
+from epiforecast.utils.cohorts import is_neuro
 
 __all__ = ["FEATURE_NAMES", "construir_features_xgb", "construir_holidays"]
 
@@ -88,11 +89,19 @@ def construir_features_xgb(y_series: pd.Series, dates: pd.Series) -> pd.DataFram
     return feats
 
 
-def construir_holidays(config: dict[str, Any]) -> pd.DataFrame:
-    """Construye DataFrame de holidays desde config (periodos atipicos)."""
+def construir_holidays(config: dict[str, Any], padecimiento: str | None = None) -> pd.DataFrame:
+    """Construye DataFrame de holidays desde config (periodos atipicos).
+
+    Cohort-aware: los padecimientos fuera de la cohorte neuro (p.ej. Dengue) NO usan los
+    periodos atípicos (holiday COVID), igual que en el motor Prophet. Si ``padecimiento``
+    es ``None`` (desconocido) se mantiene el comportamiento histórico (incluye COVID).
+    """
+    empty = pd.DataFrame(columns=["holiday", "ds", "lower_window", "upper_window"])
+    if padecimiento is not None and not is_neuro(padecimiento):
+        return empty
     periodos = config.get("peridos_atipicos", [])
     if not periodos:
-        return pd.DataFrame(columns=["holiday", "ds", "lower_window", "upper_window"])
+        return empty
 
     rows = []
     for p in periodos:

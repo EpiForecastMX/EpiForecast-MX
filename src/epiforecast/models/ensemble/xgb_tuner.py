@@ -121,10 +121,12 @@ class EnsembleXGBTuner:
         prophet: Prophet,
         train_data: pd.DataFrame,
         config: dict[str, Any],
+        padecimiento: str | None = None,
     ) -> None:
         self._prophet = prophet
         self._train_data = train_data
         self._conf = config
+        self._padecimiento = padecimiento
 
         # Grid from config
         grid_cfg = config.get("param_grid_xgboost", _DEFAULT_GRID)
@@ -161,7 +163,7 @@ class EnsembleXGBTuner:
         if periodos:
             from epiforecast.models.ensemble.feature_builder import construir_holidays
 
-            self._holidays = construir_holidays(config)
+            self._holidays = construir_holidays(config, self._padecimiento)
 
     def run(self) -> tuple[dict[str, Any], float]:
         """Ejecuta grid search con CV temporal sobre residuos OOF.

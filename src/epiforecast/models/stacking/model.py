@@ -60,8 +60,8 @@ class StackingForecaster(ForecastModel):
         self._oof_n_folds: int = int(stk.get("oof_n_folds", 4))
         self._oof_min_train_weeks: int = int(stk.get("oof_min_train_weeks", 104))
 
-        # Build holidays (reuse ensemble helper)
-        holidays = construir_holidays(self._conf)
+        # Build holidays (reuse ensemble helper; cohort-aware: Dengue sin COVID)
+        holidays = construir_holidays(self._conf, self.padecimiento)
 
         # Create experts
         self._experts: list[Any] = [
