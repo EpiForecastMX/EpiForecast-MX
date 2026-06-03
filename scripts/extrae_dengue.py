@@ -109,6 +109,7 @@ def main() -> int:
         return 0
 
     final = pd.concat(frames, ignore_index=True)
+    final = _apply_source_corrections(final)
     final = final.sort_values(["Anio", "Semana", "Entidad"]).reset_index(drop=True)
     final.to_csv(out_path, index=False, encoding="utf-8")
     log.info("Serie Dengue generada: %s (%d filas)", out_path, len(final))
@@ -116,6 +117,36 @@ def main() -> int:
     _print_summary(manifest)
     _audit_series(final)
     return 0
+
+
+# Correcciones de errores de fuente conocidos del boletín SINAVE (typos imposibles).
+# Keyed por (Anio, Semana, Entidad) → columnas a corregir. Documentar SIEMPRE el porqué.
+#   Zacatecas 2024-W41: el boletín imprime A97.1 acumulado H=14,522 / M=17,657 (imposible
+#   para un estado de incidencia casi nula). El acumulado correcto, consistente con el
+#   Casos_semana validado (W41=19, W42=10) y monótono con los vecinos (W40 33/31, W42 46/47),
+#   es H=42 / M=41 (incremento W41 = 9+10 = 19; W42 = 4+6 = 10).
+_SOURCE_CORRECTIONS: dict[tuple[int, int, str], dict[str, int]] = {
+    (2024, 41, "Zacatecas"): {"Acumulado_hombres": 42, "Acumulado_mujeres": 41},
+}
+
+
+def _apply_source_corrections(df: pd.DataFrame) -> pd.DataFrame:
+    """Aplica correcciones puntuales de errores de fuente del boletín (ver dict)."""
+    df = df.copy()
+    for (anio, semana, entidad), cols in _SOURCE_CORRECTIONS.items():
+        mask = (
+            (df["Anio"] == anio)
+            & (df["Semana"].astype(int) == semana)
+            & (df["Entidad"] == entidad)
+        )
+        n = int(mask.sum())
+        if n:
+            for col, val in cols.items():
+                df.loc[mask, col] = val
+            log.info(
+                "Corrección de fuente aplicada: %s %d-W%02d -> %s", entidad, anio, semana, cols
+            )
+    return df
 
 
 def _audit_series(df: pd.DataFrame) -> None:
