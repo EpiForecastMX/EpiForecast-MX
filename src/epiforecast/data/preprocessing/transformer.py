@@ -93,18 +93,26 @@ class DataTransformation:
     def _prepara_series_tiempo(self) -> None:
         logger.info("Inicializando preparación de series temporales.")
 
-        self.df["Prev_hombres"] = self.df.groupby(["Padecimiento", "Entidad"])[
-            "Acumulado_hombres"
-        ].shift()
-        self.df["Prev_mujeres"] = self.df.groupby(["Padecimiento", "Entidad"])[
-            "Acumulado_mujeres"
-        ].shift()
+        # El acumulado se reinicia cada año, por lo que el "previo" debe agruparse también
+        # por Anio: si no, el incremento de la primera semana presente de un año se calcula
+        # contra el acumulado (grande) del año anterior, generando un negativo que
+        # `_ajusta_negativos` tendría que parchear con una media móvil (fabricando casos).
+        # En series completas (neuro) la regla "Semana 1 = acumulado" de abajo YA cubría la
+        # frontera, así que agrupar por Anio da un resultado idéntico; en series parciales
+        # (p.ej. Dengue: empieza a mitad de año o tiene huecos) evita el cruce de año.
+        grupo = ["Padecimiento", "Entidad", "Anio"]
+        self.df["Prev_hombres"] = self.df.groupby(grupo)["Acumulado_hombres"].shift()
+        self.df["Prev_mujeres"] = self.df.groupby(grupo)["Acumulado_mujeres"].shift()
 
         # Calcular incrementos usando el valor anterior
         self.df["Incremento_hombres"] = self.df["Acumulado_hombres"] - self.df["Prev_hombres"]
         self.df["Incremento_mujeres"] = self.df["Acumulado_mujeres"] - self.df["Prev_mujeres"]
 
-        # Regla especial: Semana 1 diferencia = valor acumulado
+        # Regla especial: SOLO la verdadera Semana 1 (acumulado ≈ casos de esa semana) toma
+        # el acumulado como incremento. NO se aplica a la primera semana presente de un año
+        # que empieza a mitad (p.ej. Dengue 2018 desde W27): ahí el acumulado es la suma de
+        # muchas semanas y volcarlo sería un pico falso; esas filas quedan en NaN -> 0 vía
+        # `_ajusta_negativos` (no se fabrica el incremento que no se puede medir).
         semana_1 = self.df["Semana"] == 1
         self.df.loc[semana_1, "Incremento_hombres"] = self.df.loc[semana_1, "Acumulado_hombres"]
         self.df.loc[semana_1, "Incremento_mujeres"] = self.df.loc[semana_1, "Acumulado_mujeres"]

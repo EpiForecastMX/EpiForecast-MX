@@ -181,6 +181,58 @@ class TestPreparaSeriesTiempo:
         )  # pandas nullable integer types
 
 
+# ── Incrementos en fronteras de año (shift agrupado por Anio) ──────────────────
+
+
+class TestIncrementosFronteraAnio:
+    def _build(self, df: pd.DataFrame) -> DataTransformation:
+        with patch.object(transformer_mod, "conf", MOCK_CONF):
+            obj = DataTransformation(df)
+        obj._ajusta_semanas()
+        obj._prepara_series_tiempo()
+        return obj
+
+    def test_inicio_a_mitad_de_anio_no_genera_pico(self):
+        """Una serie que empieza a mitad de año (Semana != 1) NO vuelca el acumulado como
+        incremento: la primera semana presente queda NaN (luego 0), sin pico falso."""
+        df = pd.DataFrame(
+            {
+                "Padecimiento": ["Dengue"] * 3,
+                "Entidad": ["Jalisco"] * 3,
+                "Anio": [2022, 2022, 2022],
+                "Semana": [10, 11, 12],
+                "Acumulado_hombres": [100, 110, 125],
+                "Acumulado_mujeres": [200, 215, 235],
+            }
+        )
+        obj = self._build(df).df.sort_values("Semana").reset_index(drop=True)
+        # Primera semana presente: NaN (no el acumulado 100) -> sin pico
+        assert pd.isna(obj["Incremento_hombres"].iloc[0])
+        # Diferencias intra-año correctas
+        assert obj["Incremento_hombres"].iloc[1] == 10
+        assert obj["Incremento_hombres"].iloc[2] == 15
+
+    def test_frontera_de_anio_no_cruza_acumulados(self):
+        """El incremento de la primera semana de un año NO se calcula contra el acumulado
+        (mayor) del año anterior; al agrupar por Anio queda NaN, no un valor cruzado."""
+        df = pd.DataFrame(
+            {
+                "Padecimiento": ["Dengue"] * 6,
+                "Entidad": ["Jalisco"] * 6,
+                "Anio": [2021, 2021, 2021, 2022, 2022, 2022],
+                "Semana": [5, 6, 7, 5, 6, 7],
+                "Acumulado_hombres": [10, 15, 22, 100, 105, 113],
+                "Acumulado_mujeres": [20, 30, 44, 200, 210, 226],
+            }
+        )
+        obj = self._build(df).df.sort_values(["Anio", "Semana"]).reset_index(drop=True)
+        y2022 = obj[obj["Anio"] == 2022].reset_index(drop=True)
+        # Primera semana de 2022 (Semana != 1) NO es 100-22=78 (cruce), sino NaN
+        assert pd.isna(y2022["Incremento_hombres"].iloc[0])
+        assert y2022["Incremento_hombres"].iloc[1] == 5  # 105-100
+        assert y2022["Incremento_hombres"].iloc[2] == 8  # 113-105
+
+
 # ── _ajusta_negativos ─────────────────────────────────────────────────────────
 
 

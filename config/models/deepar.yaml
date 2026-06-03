@@ -34,6 +34,8 @@ deepar:
     cv_n_splits: 2                    # CV ligera: fold-1 ~270 sem >= past_length (105), sin padding
     cv_test_size: 26                  # Ventana de validacion de medio año por fold
     gap_fill: "interpolate"           # Semanas faltantes (boletin ausente) se interpolan, no se ponen en 0
+    multi_series: false               # Nacional sobre serie AGREGADA (no 32 estados casi-cero):
+                                      #   metricas comparables con Prophet/Ensemble/Stacking
 
 # Hiperparámetros específicos por padecimiento
 param_grid_deepar:

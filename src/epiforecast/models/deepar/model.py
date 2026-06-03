@@ -180,6 +180,11 @@ class DeepARForecaster(ForecastModel):
             self.gap_fill = str(short_cfg.get("gap_fill", "interpolate"))
             self.cv_n_splits_override = int(short_cfg.get("cv_n_splits", 2))
             self.cv_test_size_override = int(short_cfg.get("cv_test_size", 26))
+            # Cohortes no-neuro (p.ej. Dengue) entrenan a nivel nacional sobre la serie
+            # AGREGADA, no multi-series por 32 estados: muchos estados tienen incidencia
+            # casi-cero y su CV multi-series promedia/escala ruido, dando métricas no
+            # comparables con los otros 3 motores (que corren single-series nacional).
+            self.multi_series = bool(short_cfg.get("multi_series", False))
 
         # Train/test config
         self.FECHA_CORTE_ENTRENAMIENTO: str = self._conf.get(
@@ -860,12 +865,14 @@ class DeepARForecaster(ForecastModel):
     # ── Quick evaluation ────────────────────────────────────────────────────
 
     def _eval_rapida(self) -> dict[str, Any]:
-        """Evaluacion rapida post-entrenamiento (sin reentrenar).
+        """Evaluacion honesta por hold-out (un solo split).
 
-        Usa el predictor ya entrenado para predecir desde train_data como contexto
-        y compara contra los datos reales post-cutoff.  Las metricas son ligeramente
-        optimistas (el modelo vio test durante training), pero el sesgo es consistente
-        para todos los modelos estatales, permitiendo comparacion valida entre ellos.
+        Entrena un modelo SOLO con ``train_data`` (pre-cutoff, epochs reducidas) y lo evalua
+        contra el tramo post-cutoff que NO vio. Antes se reusaba ``self._predictor`` (entrenado
+        sobre la serie completa, incluido el test), lo que daba metricas optimistas in-sample;
+        al compararlas con la CV honesta de Prophet/Ensemble/Stacking, ``reselect_motor_2026``
+        favorecia injustamente a DeepAR. Esta version produce una metrica out-of-sample
+        comparable. Es mas barata que la CV multi-fold (que ``skip_cv_estatal`` omite).
         """
         cutoff = pd.Timestamp(self.FECHA_CORTE_ENTRENAMIENTO)
         test_data = self.serie[self.serie["ds"] >= cutoff]
@@ -881,17 +888,27 @@ class DeepARForecaster(ForecastModel):
             logger.debug("eval_rapida: test_data insuficiente ({} filas), skip", len(test_data))
             return null_metrics
 
-        if self._predictor is None:
-            return null_metrics
-
-        # Contexto = datos pre-cutoff (train_data)
+        # Contexto = datos pre-cutoff (train_data); se entrena un modelo hold-out con ellos.
         context = self.train_data
         if context.empty:
             return null_metrics
 
         try:
+            import numpy as np
+            import torch
+
+            torch.manual_seed(RANDOM_SEED)
+            np.random.seed(RANDOM_SEED)
+            eval_epochs = max(25, self.epochs // 4)
+            estimator = self._create_estimator(
+                epochs=eval_epochs,
+                prediction_length=len(test_data),
+                early_stopping=False,
+                phase="hold-out",
+            )
             dataset = self._build_dataset(context)
-            forecasts = list(self._predictor.predict(dataset, num_samples=self.num_samples))
+            predictor = estimator.train(dataset)
+            forecasts = list(predictor.predict(dataset, num_samples=self.num_samples))
             fc = forecasts[0]
             yhat_raw = fc.mean[: len(test_data)]
 
@@ -923,8 +940,10 @@ class DeepARForecaster(ForecastModel):
             )
             return metrics
 
-        except (RuntimeError, ValueError, KeyError) as e:
-            logger.warning("eval_rapida fallo para {}: {}", self.entidad, e)
+        except Exception as e:  # noqa: BLE001 — eval opcional, nunca debe romper run()
+            # Series estatales muy cortas/casi-cero pueden no entrenar (idle transformation
+            # de GluonTS); se reporta métrica nula sin abortar el combo.
+            logger.warning("eval_rapida (hold-out) fallo para {}: {}", self.entidad, e)
             return null_metrics
 
     # ── Orchestration ─────────────────────────────────────────────────────────
