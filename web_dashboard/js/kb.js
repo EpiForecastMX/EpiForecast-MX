@@ -173,6 +173,46 @@ function needsGeminiReasoning(q) {
 }
 
 // ---------------------------------------------------------------------------
+// Detecta consejo clinico / recomendacion DIRIGIDA a una persona
+// ("que le recomiendas a un depresivo", "como curar la depresion").
+// EPI no es asesor medico: estas preguntas se ceden a Gemini.
+// Regla: termino_clinico AND verbo_de_consejo AND NOT vocabulario_de_datos.
+// ---------------------------------------------------------------------------
+
+function needsMedicalAdvice(q) {
+  // Vocabulario de DATOS / proyecto INEQUIVOCO: si aparece, es consulta sobre
+  // los modelos/series, no consejo clinico. Protege "que modelo me recomiendas
+  // para depresion". Se omiten ambiguos como 'tendencia' ("tendencias a la
+  // psicosis" es clinico). Solo aplica junto a un verbo de consejo.
+  const dataIntent = [
+    'modelo', 'motor', 'pronostic', 'forecast', 'prediccion', 'smape', 'mase',
+    'rmse', 'metrica', 'grafic', 'ranking', 'validacion', 'heatmap', 'dataset',
+    'sinave', 'mapa de calor', 'serie de tiempo', 'entrena', 'hiperparametr',
+    'overfitting', 'tableau',
+  ];
+  if (any(q, dataIntent)) return false;
+
+  const clinical = [
+    'depresi', 'depre', 'deprim', 'parkinson', 'alzheimer', 'psicosis',
+    'psicotic', 'psicos', 'psiquiatr', 'narcis', 'narcic', 'suicid', 'ansiedad',
+    'ansios', 'bipolar', 'esquizofren', 'demencia', 'salud mental', 'trastorno',
+    'sintoma', 'temblor', 'rigidez', 'olvido', 'perdida de memoria', 'animo',
+    'autoestima', 'emocional', 'panico', 'angustia', 'estres', 'insomnio',
+    'enfermo', 'enferma', 'paciente', 'diagnostic',
+  ];
+  const advice = [
+    'recomend', 'recomien', 'aconsej', 'consejo', 'consejos', 'ayud', 'curar',
+    'curo', 'curacion', 'tiene cura', 'hay cura', 'cura para', 'se puede curar',
+    'tratar', 'tratamiento', 'terapia', 'pastilla', 'medicament', 'medicina',
+    'remedio', 'farmac', 'sobrellev', 'superar', 'salir de', 'lidiar',
+    'manejar la', 'manejar el', 'prevenir', 'que hago', 'que le doy', 'que doy',
+    'que tomo', 'que debo', 'deberia', 'me siento', 'que hacer', 'doctor',
+    'medico', 'mejorar', 'aliviar', 'calmar', 'combatir',
+  ];
+  return any(q, clinical) && any(q, advice);
+}
+
+// ---------------------------------------------------------------------------
 // Guard: padecimiento no modelado → retorna null para caer a Gemini
 // ---------------------------------------------------------------------------
 
@@ -543,6 +583,41 @@ function answerSemanaActual(q, ent, s, d) {
     for (const [p, c] of Object.entries(porPad)) lines.push(`- **${p}**: ${fmt(c)} casos`);
   }
 
+  return lines.join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// Cuantas semanas epidemiologicas / boletines del anio en curso van cargados.
+// Debe ir ANTES de answerBoletin (resumen del anio) y answerConteo (modelos).
+// ---------------------------------------------------------------------------
+
+function answerSemanasBoletin(q, ent, s, d) {
+  const triggers = [
+    'cuantas semana', 'cuantos semana', 'cuantos boletin', 'cuantas boletin',
+    'cuanto boletin', 'semanas van', 'semanas llevan', 'semanas llevamos',
+    'semanas hay', 'semanas computad', 'semanas cargad', 'semanas registrad',
+    'semanas procesad', 'semanas transcurrid', 'semanas disponible',
+    'semanas reportad', 'semanas capturad', 'semanas acumulad', 'semanas tienen',
+    'semanas tenemos', 'semanas de boletin', 'semanas del boletin',
+    'semanas de boletines', 'boletines van', 'boletines llevan', 'boletines hay',
+    'boletines cargad', 'que semana va el boletin', 'en que semana va el',
+  ];
+  if (!any(q, triggers)) return null;
+
+  // Preguntas sobre el horizonte FUTURO de pronostico -> otros handlers
+  if (any(q, ['faltan', 'restan', 'quedan', 'horizonte', 'pronostic', 'forecast', 'futur'])) return null;
+
+  const meta = d.boletin?.meta || {};
+  const ult = d.boletin?.ultima_semana;
+  const maxSem = meta.max_semana ?? ult?.semana;
+  const maxAnio = meta.max_anio ?? ult?.anio;
+  if (!maxSem) return null;
+
+  const lines = [];
+  lines.push(`Van **${maxSem} semanas epidemiológicas de ${maxAnio}** cargadas del boletín SINAVE (hasta la **semana ${maxSem} de ${maxAnio}**, de 52 posibles en el año).`);
+  if (ult && ult.anio === maxAnio && ult.total != null) {
+    lines.push(`\nEl dato más reciente es la **semana ${ult.semana} de ${ult.anio}**, con **${fmt(ult.total)} casos** reportados esa semana.`);
+  }
   return lines.join('\n');
 }
 
@@ -1685,6 +1760,10 @@ const STOP_WORDS = new Set([
   'padecimientos', 'padecimiento', 'casos', 'datos', 'numero',
   'anos', 'anno', 'meses', 'semanas', 'dias',
   'mas', 'menos', 'preciso', 'precisos', 'distribucion',
+  // Adjetivos/sustantivos validos que NO deben corregirse a un padecimiento:
+  // "depresivo" (adjetivo) != "depresion" (la enfermedad modelada).
+  'depresivo', 'depresiva', 'depresivos', 'depresivas', 'deprimido', 'deprimida',
+  'narcisista', 'narcicista', 'narcisistas', 'psicotico', 'psicotica',
 ]);
 
 function fuzzyCorrect(q) {
@@ -1718,7 +1797,7 @@ function fuzzyCorrect(q) {
 
 const HANDLERS = [
   answerSaludo, answerPadecimientoNoModelado, answerEquipo, answerTemporal, answerProyectoMeta,
-  answerTrainingConfig, answerSemanaActual, answerQueEsPadecimiento,
+  answerTrainingConfig, answerSemanaActual, answerSemanasBoletin, answerQueEsPadecimiento,
   answerBoletin, answerHistorico, answerSpecificSeries, answerEstado, answerPadecimiento,
   answerMotor, answerDemografica, answerSexo, answerMetricaGlobal,
   answerRanking, answerDiagnosticos, answerComparacion, answerValidacion, answerInfra,
@@ -1811,6 +1890,10 @@ export async function answer(query) {
 
   // Si requiere razonamiento temporal fino (diario), ceder a Gemini
   if (needsGeminiReasoning(q)) return null;
+
+  // Guard: consejo clinico / recomendacion para una persona → ceder a Gemini.
+  // Va ANTES del fuzzy para que "depresivo" no se autocorrija a "depresion".
+  if (needsMedicalAdvice(q)) return null;
 
   // Guard: tema fuera de alcance → ceder a Gemini
   if (isOffTopic(q, ent)) return null;
