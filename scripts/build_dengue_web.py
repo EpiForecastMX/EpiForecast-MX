@@ -161,6 +161,47 @@ def chart_outliers(df: pd.DataFrame, out: Path, entidad: str = "Veracruz") -> No
     plt.close(fig)
 
 
+def chart_fe_comparacion(df: pd.DataFrame, out: Path, entidad: str = "Veracruz") -> None:
+    """Gráfico del feature engineering: muestra el efecto de NUESTRA decisión vs el
+    tratamiento estándar. Superpone la serie real (picos preservados, lo que hace el FE
+    de Dengue) contra la serie que dejaría el recorte de outliers estándar (picos
+    aplanados a la mediana). Ilustrativo, sobre casos semanales de una entidad de carga."""
+    g = (
+        df[df["Entidad"] == entidad]
+        .assign(t=lambda d: d.Anio + (d.Semana.astype(int) - 1) / MESES_SEM)
+        .sort_values("t")
+    )
+    real = g["Casos_semana"].to_numpy(dtype=float)
+    mu, sd = real.mean(), real.std(ddof=0)
+    med = float(pd.Series(real).median())
+    clipped = real.copy()
+    clipped[(real - mu) / (sd if sd > 0 else 1) > 3] = med  # FE estándar: z>3 -> mediana
+    fig, ax = _fig((11, 4.2))
+    ax.plot(
+        g["t"],
+        clipped,
+        color=MUTED,
+        linewidth=1.6,
+        linestyle="--",
+        label="FE estándar: picos recortados a la mediana",
+    )
+    ax.plot(
+        g["t"],
+        real,
+        color=AMBER,
+        linewidth=1.8,
+        label="FE de Dengue: serie real, picos preservados",
+    )
+    ax.fill_between(g["t"], clipped, real, where=(real > clipped), color=AMBER, alpha=0.12)
+    ax.set_title(f"Efecto del feature engineering en Dengue — {entidad}", fontsize=12, pad=12)
+    ax.set_ylabel("Casos por semana")
+    ax.set_xlabel("Año epidemiológico")
+    ax.legend(facecolor=BG, edgecolor=GRID, labelcolor=TEXT, fontsize=8.5, loc="upper left")
+    fig.tight_layout()
+    fig.savefig(out / "dengue_fe_comparacion.png", facecolor=BG)
+    plt.close(fig)
+
+
 def build_json(df: pd.DataFrame, out: Path, generado: str) -> dict:
     """Construye el JSON para la tabla en vivo y las cifras de la página."""
     max_anio = int(df.Anio.max())
@@ -225,6 +266,7 @@ def main() -> int:
     chart_totales_anuales(df, out)
     chart_estacionalidad(df, out)
     chart_outliers(df, out)
+    chart_fe_comparacion(df, out)
     data = build_json(df, out, args.generado)
 
     print(f"Artefactos en {out}")
