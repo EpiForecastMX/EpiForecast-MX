@@ -19,7 +19,7 @@ from tqdm import tqdm
 # del paquete lo dispare (model.py también importa config transitivamente).
 _logger_pre_import.disable("epiforecast.utils.config")
 
-from epiforecast.constants import RANDOM_SEED  # noqa: E402
+from epiforecast.constants import NEURO_CONDITIONS, RANDOM_SEED  # noqa: E402
 from epiforecast.models import create_model  # noqa: E402
 from epiforecast.utils import paths as directory_manager  # noqa: E402
 from epiforecast.utils.config import conf, logger  # noqa: E402
@@ -192,6 +192,17 @@ def main():
         if not padecimientos:
             logger.warning("Padecimiento '{}' no encontrado en el dataset.", tipo_pad)
             return
+    else:
+        # Guard: el modo "General" entrena solo la cohorte neurológica de producción.
+        # Dengue (y otros padecimientos no productizados) NO deben entrenarse aquí con la
+        # configuración neuro; se entrenan explícitamente con padecimiento.tipo='Dengue',
+        # con su propia config. Evita generar artefactos .pkl espurios desde el consolidado.
+        omitidos = [p for p in padecimientos if p not in NEURO_CONDITIONS]
+        if omitidos:
+            logger.info(
+                "Modo General: se omiten padecimientos fuera de la cohorte neuro: {}", omitidos
+            )
+        padecimientos = [p for p in padecimientos if p in NEURO_CONDITIONS]
 
     total = len(padecimientos) * len(valores_sexo) * (1 + len(regiones))
     modelo_activo = conf.get("modelo_activo", "prophet")

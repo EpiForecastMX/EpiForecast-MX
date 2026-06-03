@@ -29,6 +29,12 @@ CONDITIONS: Final[dict[str, str]] = {
     "G30": "Alzheimer",
 }
 
+# Cohorte neurológica / salud mental en producción (333 modelos). Distinta de Dengue,
+# que se incorpora con su propio pipeline. Los flujos neuro (entrenamiento en modo
+# "General", re-selección de motor) deben filtrar a esta lista para NO procesar Dengue
+# antes de que tenga su configuración, modelos y forecasts propios.
+NEURO_CONDITIONS: Final[list[str]] = ["Depresión", "Parkinson", "Alzheimer"]
+
 # Mexican states (32 entities)
 STATES: Final[list[str]] = [
     "Aguascalientes",
