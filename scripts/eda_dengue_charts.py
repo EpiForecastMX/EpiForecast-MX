@@ -32,6 +32,8 @@ import pandas as pd  # noqa: E402
 import seaborn as sns  # noqa: E402
 from statsmodels.tsa.stattools import acf  # noqa: E402
 
+from epiforecast.constants import ENTIDAD_DISPLAY  # noqa: E402
+
 BG = "#131C30"
 GRID = "#243150"
 TEXT = "#E7ECF5"
@@ -230,6 +232,7 @@ def main() -> int:
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
     df = pd.read_csv(args.csv)
+    df["Entidad"] = df["Entidad"].replace(ENTIDAD_DISPLAY)  # display: México -> Estado de México
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     sns.set_theme(style="dark")

@@ -35,6 +35,11 @@ CONDITIONS: Final[dict[str, str]] = {
 # antes de que tenga su configuración, modelos y forecasts propios.
 NEURO_CONDITIONS: Final[list[str]] = ["Depresión", "Parkinson", "Alzheimer"]
 
+# Nombres de entidad para DISPLAY (gráficos, tablas, reportes). El dato se almacena con
+# el nombre canónico INEGI ("México"), pero al mostrarse debe distinguirse del país:
+# "México" (entidad) → "Estado de México".
+ENTIDAD_DISPLAY: Final[dict[str, str]] = {"México": "Estado de México"}
+
 # Mexican states (32 entities)
 STATES: Final[list[str]] = [
     "Aguascalientes",

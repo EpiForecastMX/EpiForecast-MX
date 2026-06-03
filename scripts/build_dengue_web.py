@@ -29,6 +29,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import pandas as pd  # noqa: E402
 
+from epiforecast.constants import ENTIDAD_DISPLAY  # noqa: E402
+
 # Paleta Clinical Indigo (alineada con el landing / EpiBot).
 BG = "#131C30"
 GRID = "#243150"
@@ -171,7 +173,7 @@ def build_json(df: pd.DataFrame, out: Path, generado: str) -> dict:
     )
     tabla = [
         {
-            "entidad": r.Entidad,
+            "entidad": ENTIDAD_DISPLAY.get(r.Entidad, r.Entidad),
             "casos_semana": int(r.Casos_semana),
             "acum_hombres": int(r.Acumulado_hombres),
             "acum_mujeres": int(r.Acumulado_mujeres),
