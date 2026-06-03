@@ -120,6 +120,12 @@ dengue-extract:
 	@echo ">>> Extrayendo Dengue de los boletines..."
 	$(PYTHON) -m scripts.extrae_dengue
 
+## Serie historica A90/A91 (OMS 1997, 2014->2018-W26) SEPARADA para contexto/EDA (no entrena)
+.PHONY: dengue-historico-a9091
+dengue-historico-a9091:
+	@echo ">>> Extrayendo serie historica Dengue A90/A91 (contexto, no se mergea)..."
+	$(PYTHON) -m scripts.extrae_dengue_a9091
+
 ## Integrar la serie de Dengue al dataset consolidado (idempotente)
 .PHONY: dengue-merge
 dengue-merge:
