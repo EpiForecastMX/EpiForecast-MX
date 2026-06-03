@@ -4,6 +4,8 @@
 from loguru import logger
 import pandas as pd
 
+from epiforecast.constants import NEURO_CONDITIONS
+
 
 class FiltraPadecimiento:
     """Filtra un DataFrame epidemiológico por tipo de padecimiento configurado."""
@@ -36,11 +38,18 @@ class FiltraPadecimiento:
             return False
 
         if self.padecimiento.lower() == "general":
+            # Guard: 'General' = cohorte neurológica de producción (Depresión/Parkinson/
+            # Alzheimer). Excluye Dengue (presente en el consolidado pero con su propio
+            # pipeline); evita contaminar data_inegi_General/tableau/tabla_produccion.
+            self.df_raw_filtrado = self.df_raw[
+                self.df_raw[self.columna].isin(NEURO_CONDITIONS)
+            ].copy()
             logger.info(
-                "Tipo 'General' configurado: se retornan todos los registros sin filtrar | total={}",
+                "Tipo 'General': cohorte neuro {} | retenidos={} de {} (no-neuro excluidos)",
+                NEURO_CONDITIONS,
+                len(self.df_raw_filtrado),
                 len(self.df_raw),
             )
-            self.df_raw_filtrado = self.df_raw.copy()
             return True
 
         logger.info("Filtrando por '{}' en columna '{}'", self.padecimiento, self.columna)

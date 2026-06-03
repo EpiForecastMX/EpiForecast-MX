@@ -18,6 +18,8 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
+from epiforecast.constants import NEURO_CONDITIONS
+
 # ---------------------------------------------------------------------------
 # Rutas y constantes
 # ---------------------------------------------------------------------------
@@ -196,6 +198,9 @@ def _load_boletin_full() -> tuple[pd.DataFrame, int, int]:
     Solo filas a nivel estado (32 entidades).
     """
     df = pd.read_csv(BOLETIN)
+    # Guard: la validación semanal es solo de la cohorte neuro de producción.
+    # Excluye Dengue (en el consolidado pero sin forecasts) para no generar filas fantasma.
+    df = df[df["Padecimiento"].isin(NEURO_CONDITIONS)]
     anio = int(df["Anio"].max())
     semana = int(df.loc[df["Anio"] == anio, "Semana"].max())
 
