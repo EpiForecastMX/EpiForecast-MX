@@ -265,8 +265,10 @@ def main():
         resultados = [f for f in resultados_raw if f is not None]
 
         # --- Modo híbrido: entrenar regionales siempre + fallback insuficientes ---
+        # Solo para la cohorte neuro. Dengue NO usa fallback regional (decisión: "si es 0,
+        # es 0"; una entidad sin transmisión no hereda la curva de un estado tropical).
         modelado_hibrido = bool(conf["padecimiento"].get("modelado_hibrido", False))
-        if modelado_hibrido and modelado_estados:
+        if modelado_hibrido and modelado_estados and padecimiento in NEURO_CONDITIONS:
             # Mapear estado → región INEGI
             mapa_region = (
                 df_padecimiento[["Entidad", "region_salud_mental"]]
