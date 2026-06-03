@@ -21,6 +21,7 @@ def _make_forecaster(n_points: int = 60) -> MagicMock:
     """Minimal mock forecaster with sensible train_data."""
     dates = pd.date_range("2018-01-01", periods=n_points, freq="W")
     forecaster = MagicMock()
+    forecaster.padecimiento = "Depresión"  # cohorte neuro: cv_weights aplican
     forecaster.train_data = pd.DataFrame({"ds": dates, "y": np.ones(n_points) * 5})
     forecaster._create_prophet.return_value = MagicMock()
     return forecaster

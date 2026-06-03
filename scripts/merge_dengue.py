@@ -26,19 +26,17 @@ Uso:
 from __future__ import annotations
 
 import argparse
-import logging
 from pathlib import Path
 
 import pandas as pd
+
+from epiforecast.utils.config import logger as log
 
 ROOT = Path(__file__).resolve().parent.parent
 DENGUE = ROOT / "data" / "interim" / "dengue_boletin.csv"
 CONSOLIDADO = ROOT / "data" / "processed" / "dataset_boletin_epidemiologico.csv"
 PADECIMIENTO = "Dengue"
 KEY = ["Anio", "Semana", "Entidad", "Padecimiento"]
-
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-log = logging.getLogger("merge_dengue")
 
 
 def main() -> int:
@@ -68,7 +66,7 @@ def main() -> int:
     merged.to_csv(args.consolidado, index=False, encoding="utf-8")
 
     log.info(
-        "Merge Dengue: consolidado %d -> %d filas | neuro=%d (intacto) | dengue=%d | dups_clave=%d",
+        "Merge Dengue: consolidado {} -> {} filas | neuro={} (intacto) | dengue={} | dups_clave={}",
         n0,
         len(merged),
         n_neuro,

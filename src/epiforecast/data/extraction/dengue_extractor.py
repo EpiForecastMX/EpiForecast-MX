@@ -29,26 +29,24 @@ import pandas as pd
 from pypdf import PdfReader
 
 from epiforecast.constants import STATES
+from epiforecast.data.extraction.dengue_validation import (
+    COLS_PER_SEVERITY,
+    N_DATA_COLS,
+    N_SEVERITIES,
+    N_STATES_EXPECTED,
+    TOTAL_ABS_TOLERANCE,
+    as_int,
+    duplicated_adjacent_column,
+    total_discrepancy,
+)
 from epiforecast.data.extraction.pdf_extractor import (
     SEMANA_REGEX,
     SEMANA_REGEX_2,
     clean_df,
-    normalize_number,
 )
 
 # Códigos CIE-10 de las tres categorías de severidad (esquema OMS 2009).
 DENGUE_CIE_CODES = ("a97.0", "a97.1", "a97.2")
-
-# Categorías por severidad y columnas por categoría (idéntico a la tabla neuro).
-N_SEVERITIES = 3
-COLS_PER_SEVERITY = 4  # Sem, Acum_hombres, Acum_mujeres, Acum_anio_anterior
-N_DATA_COLS = N_SEVERITIES * COLS_PER_SEVERITY  # 12
-N_STATES_EXPECTED = 32
-
-# Tolerancia de validación: discrepancia absoluta total admisible entre la suma de
-# las 32 entidades y el renglón TOTAL impreso. Cubre erratas tipográficas del boletín
-# y lecturas de una sola celda; rechaza desalineaciones estructurales (miles de casos).
-TOTAL_ABS_TOLERANCE = 10
 
 # Alias de entidades hacia el nombre canónico de ``STATES``.
 _ENTITY_ALIASES = {
@@ -168,10 +166,10 @@ def reshape_dengue_aggregated(df_clean: pd.DataFrame, year: int, week: int) -> p
         sem = hombres = mujeres = prev = 0
         for s in range(N_SEVERITIES):
             base = 1 + s * COLS_PER_SEVERITY
-            sem += _as_int(row[base + 0])
-            hombres += _as_int(row[base + 1])
-            mujeres += _as_int(row[base + 2])
-            prev += _as_int(row[base + 3])
+            sem += as_int(row[base + 0])
+            hombres += as_int(row[base + 1])
+            mujeres += as_int(row[base + 2])
+            prev += as_int(row[base + 3])
         records.append(
             {
                 "Anio": year,
@@ -185,37 +183,6 @@ def reshape_dengue_aggregated(df_clean: pd.DataFrame, year: int, week: int) -> p
             }
         )
     return pd.DataFrame(records)
-
-
-def _as_int(value: object) -> int:
-    """Normaliza una celda a entero, tratando ``-``/vacío/NA como 0."""
-    norm = normalize_number(value)
-    return 0 if pd.isna(norm) else int(norm)
-
-
-def _parse_total_row(page_text: str) -> list[int] | None:
-    """Extrae los 12 valores del renglón ``TOTAL`` desde el texto de la página.
-
-    El renglón TOTAL del boletín usa el espacio como separador de miles (``1 582``),
-    que se colapsa a ``1582`` antes de tokenizar. Los guiones cuentan como 0.
-    """
-    for line in page_text.splitlines():
-        if not line.strip().upper().startswith("TOTAL"):
-            continue
-        body = line.strip()[len("TOTAL") :]
-        # SINAVE mezcla separadores de miles: coma ("1,332") y espacio ("7 655"),
-        # a veces en el mismo renglón. Se eliminan comas y se colapsan espacios de
-        # miles (un solo espacio + grupo de 3 dígitos); las columnas van separadas
-        # por 2+ espacios, que no se colapsan.
-        body = body.replace(",", "")
-        prev = None
-        while prev != body:
-            prev = body
-            body = re.sub(r"(\d) (\d{3})(?!\d)", r"\1\2", body)
-        tokens = re.findall(r"-|\d+", body)
-        vals = [0 if t == "-" else int(t) for t in tokens]
-        return vals if len(vals) >= N_DATA_COLS else None
-    return None
 
 
 def extract_dengue_from_pdf(pdf_path: str) -> dict[str, object]:
@@ -276,7 +243,7 @@ def extract_dengue_from_pdf(pdf_path: str) -> dict[str, object]:
             f"parse incompleto: {len(df_states)} entidades (esperado {N_STATES_EXPECTED})"
         )
         return out
-    dup_col = _duplicated_adjacent_column(df_states)
+    dup_col = duplicated_adjacent_column(df_states)
     if dup_col is not None:
         out["reason"] = f"artefacto de columna duplicada (col {dup_col}); extraccion no confiable"
         return out
@@ -287,7 +254,7 @@ def extract_dengue_from_pdf(pdf_path: str) -> dict[str, object]:
 
     # Validación: suma por categoría de las 32 entidades vs renglón TOTAL del boletín.
     page_text = PdfReader(pdf_path).pages[int(page) - 1].extract_text() or ""
-    absdiff = _total_discrepancy(df_states, page_text)
+    absdiff = total_discrepancy(df_states, page_text)
     out["absdiff"] = absdiff
     if absdiff is None:
         out["reason"] = "no se hallo renglon TOTAL para validar"
@@ -298,40 +265,3 @@ def extract_dengue_from_pdf(pdf_path: str) -> dict[str, object]:
     elif absdiff > 0:
         out["reason"] = f"validado con tolerancia (absdiff={absdiff})"
     return out
-
-
-def _duplicated_adjacent_column(df_states: pd.DataFrame, min_states: int = 16) -> int | None:
-    """Detecta el artefacto de Camelot donde una columna duplica a su vecina.
-
-    En algunos boletines (p.ej. 2024_sem29) Camelot copia el valor de una columna en
-    la celda adyacente vacía, desalineando la fila. Si dos columnas de datos contiguas
-    son idénticas (con valor no trivial) en al menos ``min_states`` entidades, la
-    extracción no es confiable y el boletín debe descartarse.
-
-    Returns:
-        Índice (1-based, en el espacio de columnas de datos) de la primera columna
-        duplicada, o ``None`` si no se detecta el artefacto.
-    """
-    df = df_states.copy()
-    df.columns = pd.RangeIndex(df.shape[1])
-    for col in range(1, N_DATA_COLS):
-        left = df[col].astype(str).str.strip()
-        right = df[col + 1].astype(str).str.strip()
-        equal_nonblank = (left == right) & left.ne("-") & left.ne("")
-        if int(equal_nonblank.sum()) >= min_states:
-            return col
-    return None
-
-
-def _total_discrepancy(df_states: pd.DataFrame, page_text: str) -> int | None:
-    """Discrepancia absoluta total entre la suma de las 12 columnas y el renglón TOTAL.
-
-    Retorna ``None`` si no se puede parsear el renglón TOTAL.
-    """
-    total = _parse_total_row(page_text)
-    if total is None:
-        return None
-    df = df_states.copy()
-    df.columns = pd.RangeIndex(df.shape[1])
-    sums = [int(df[c].map(_as_int).sum()) for c in range(1, 1 + N_DATA_COLS)]
-    return sum(abs(a - b) for a, b in zip(sums, total[:N_DATA_COLS], strict=True))

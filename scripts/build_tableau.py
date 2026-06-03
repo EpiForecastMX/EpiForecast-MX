@@ -32,6 +32,7 @@ import numpy as np
 import pandas as pd
 
 from epiforecast.utils import paths as directory_manager
+from epiforecast.utils.cohorts import filter_neuro
 from epiforecast.utils.config import conf, logger
 
 _METRICS = ["rmse", "mae", "mape", "smape", "mase"]
@@ -99,6 +100,8 @@ def load_inputs(in_real: Path, forecast_base: Path) -> tuple[pd.DataFrame, pd.Da
 
     logger.info("Leyendo histórico: {}", in_real)
     real = pd.read_csv(in_real)
+    # Guard: Tableau es solo de la cohorte neuro de producción (Dengue tiene su pipeline).
+    real = filter_neuro(real)
 
     forecast_files = sorted(forecast_base.rglob("all_forecast_*.csv"))
     if not forecast_files:
@@ -113,6 +116,7 @@ def load_inputs(in_real: Path, forecast_base: Path) -> tuple[pd.DataFrame, pd.Da
         logger.info("Leyendo forecast ({}): {}", model_name, fcst_path)
 
         df = pd.read_csv(fcst_path)
+        df = filter_neuro(df, col="meta_padecimiento")  # defensivo: excluye forecasts no-neuro
 
         # Elimina columnas yhat_ internas del modelo (bandas de incertidumbre, etc.)
         internal_yhat = [

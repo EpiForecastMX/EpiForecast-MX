@@ -30,35 +30,26 @@ import matplotlib.pyplot as plt  # noqa: E402
 import pandas as pd  # noqa: E402
 
 from epiforecast.constants import ENTIDAD_DISPLAY  # noqa: E402
+from epiforecast.utils.config import logger  # noqa: E402
+from epiforecast.visualization.web_theme import (  # noqa: E402
+    AMBER,
+    BG,
+    GRID,
+    MINT,
+    MUTED,
+    PINK,
+    SEMANAS_ANIO,
+    TEXT,
+    dark_fig,
+)
 
-# Paleta Clinical Indigo (alineada con el landing / EpiBot).
-BG = "#131C30"
-GRID = "#243150"
-TEXT = "#E7ECF5"
-MUTED = "#9DB0D0"
-AMBER = "#F59E0B"  # acento Dengue
-MINT = "#2DD4BF"
-PINK = "#F472B6"
-
-MESES_SEM = 52
-
-
-def _style_ax(ax: plt.Axes) -> None:
-    ax.set_facecolor(BG)
-    for spine in ax.spines.values():
-        spine.set_color(GRID)
-    ax.tick_params(colors=MUTED, labelsize=9)
-    ax.grid(True, color=GRID, linewidth=0.6, alpha=0.6)
-    ax.xaxis.label.set_color(MUTED)
-    ax.yaxis.label.set_color(MUTED)
-    ax.title.set_color(TEXT)
+MESES_SEM = SEMANAS_ANIO
+_Z_OUTLIER = 3  # umbral z-score del tratamiento estándar de outliers (ilustrativo en charts)
 
 
 def _fig(figsize: tuple[float, float]) -> tuple[plt.Figure, plt.Axes]:
-    fig, ax = plt.subplots(figsize=figsize, dpi=150)
-    fig.patch.set_facecolor(BG)
-    _style_ax(ax)
-    return fig, ax
+    """Atajo: figura con tema Clinical Indigo y grid (convención de estos charts)."""
+    return dark_fig(figsize, grid=True)
 
 
 def chart_nacional_semanal(df: pd.DataFrame, out: Path) -> None:
@@ -138,7 +129,7 @@ def chart_outliers(df: pd.DataFrame, out: Path, entidad: str = "Veracruz") -> No
     v = g["Casos_semana"].to_numpy(dtype=float)
     mu, sd = v.mean(), v.std(ddof=0)
     z = (v - mu) / (sd if sd > 0 else 1)
-    mask = z > 3
+    mask = z > _Z_OUTLIER
     fig, ax = _fig((11, 4.2))
     ax.plot(g["t"], v, color=MINT, linewidth=1.5, alpha=0.9)
     ax.scatter(
@@ -175,7 +166,7 @@ def chart_fe_comparacion(df: pd.DataFrame, out: Path, entidad: str = "Veracruz")
     mu, sd = real.mean(), real.std(ddof=0)
     med = float(pd.Series(real).median())
     clipped = real.copy()
-    clipped[(real - mu) / (sd if sd > 0 else 1) > 3] = med  # FE estándar: z>3 -> mediana
+    clipped[(real - mu) / (sd if sd > 0 else 1) > _Z_OUTLIER] = med  # FE estándar: z>3 -> mediana
     fig, ax = _fig((11, 4.2))
     ax.plot(
         g["t"],
@@ -269,11 +260,12 @@ def main() -> int:
     chart_fe_comparacion(df, out)
     data = build_json(df, out, args.generado)
 
-    print(f"Artefactos en {out}")
-    print(
-        f"  última semana: {data['meta']['ultima_semana']} | "
-        f"casos nacionales esa semana: {data['meta']['casos_semana_nacional']:,} | "
-        f"entidades: {len(data['cuadro_ultima_semana'])}"
+    logger.success("Artefactos web de Dengue en {}", out)
+    logger.info(
+        "última semana: {} | casos nacionales esa semana: {:,} | entidades: {}",
+        data["meta"]["ultima_semana"],
+        data["meta"]["casos_semana_nacional"],
+        len(data["cuadro_ultima_semana"]),
     )
     return 0
 

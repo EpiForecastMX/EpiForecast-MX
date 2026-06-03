@@ -96,7 +96,9 @@ def forecaster():
         patch("epiforecast.models.prophet.model.Prophet") as mock_prophet_cls,
     ):
         mock_prophet_cls.return_value = MagicMock()
-        return ProphetForecaster(df, sexo="incrementos_hombres", entidad="Jalisco")
+        return ProphetForecaster(
+            df, sexo="incrementos_hombres", entidad="Jalisco", padecimiento="Depresión"
+        )
 
 
 # ── __init__ ──────────────────────────────────────────────────────────────────

@@ -752,9 +752,21 @@ class TestProphetDataPrep:
                 {"holiday": "COVID", "ds": "2020-03-23", "lower_window": 0, "upper_window": 913}
             ],
         }
-        result = build_holidays(conf, entidad=None, padecimiento=None)
+        result = build_holidays(conf, entidad=None, padecimiento="Depresión")
         assert isinstance(result, pd.DataFrame)
         assert "COVID" in result["holiday"].values
+
+    def test_build_holidays_no_neuro_sin_covid(self):
+        """Padecimientos fuera de la cohorte neuro (Dengue) no usan el holiday COVID."""
+        from epiforecast.models.prophet.data_prep import build_holidays
+
+        conf = {
+            "peridos_atipicos": [
+                {"holiday": "COVID", "ds": "2020-03-23", "lower_window": 0, "upper_window": 913}
+            ],
+        }
+        result = build_holidays(conf, entidad=None, padecimiento="Dengue")
+        assert result.empty
 
     def test_build_holidays_with_regime_changes(self):
         from epiforecast.models.prophet.data_prep import build_holidays
@@ -770,12 +782,12 @@ class TestProphetDataPrep:
                     "lower_window": -2,
                     "upper_window": 2,
                     "entidad": "Ciudad de Mexico",
-                    "padecimiento": "Depresion",
+                    "padecimiento": "Depresión",
                 }
             ],
         }
         with patch("epiforecast.models.prophet.data_prep.logger", MagicMock()):
-            result = build_holidays(conf, entidad="Ciudad de Mexico", padecimiento="Depresion")
+            result = build_holidays(conf, entidad="Ciudad de Mexico", padecimiento="Depresión")
         assert len(result) == 2
         assert "cambio_CDMX" in result["holiday"].values
 

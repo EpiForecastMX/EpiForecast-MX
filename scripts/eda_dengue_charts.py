@@ -33,28 +33,21 @@ import seaborn as sns  # noqa: E402
 from statsmodels.tsa.stattools import acf  # noqa: E402
 
 from epiforecast.constants import ENTIDAD_DISPLAY  # noqa: E402
+from epiforecast.utils.config import logger  # noqa: E402
+from epiforecast.visualization.web_theme import (  # noqa: E402
+    AMBER,
+    BG,
+    GRID,
+    MINT,
+    MUTED,
+    PINK,
+    SEMANAS_ANIO,
+    TEXT,
+    dark_fig,
+)
 
-BG = "#131C30"
-GRID = "#243150"
-TEXT = "#E7ECF5"
-MUTED = "#9DB0D0"
-AMBER = "#F59E0B"
-MINT = "#2DD4BF"
-PINK = "#F472B6"
-WEEKS = 52
-
-
-def _new(figsize: tuple[float, float]) -> tuple[plt.Figure, plt.Axes]:
-    fig, ax = plt.subplots(figsize=figsize, dpi=150)
-    fig.patch.set_facecolor(BG)
-    ax.set_facecolor(BG)
-    for s in ax.spines.values():
-        s.set_color(GRID)
-    ax.tick_params(colors=MUTED, labelsize=8.5)
-    ax.title.set_color(TEXT)
-    ax.xaxis.label.set_color(MUTED)
-    ax.yaxis.label.set_color(MUTED)
-    return fig, ax
+WEEKS = SEMANAS_ANIO
+_new = dark_fig  # alias: figura con tema Clinical Indigo (sin grid; seaborn lo maneja)
 
 
 def _save(fig: plt.Figure, ax: plt.Axes, out: Path, name: str, title: str) -> None:
@@ -242,7 +235,7 @@ def main() -> int:
     violin_estado(df, out)
     correlacion(df, out)
     acf_nacional(df, out)
-    print(f"Galería EDA generada en {out} (6 gráficos)")
+    logger.success("Galería EDA de Dengue generada en {} (6 gráficos)", out)
     return 0
 
 

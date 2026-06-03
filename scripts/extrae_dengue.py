@@ -24,7 +24,6 @@ Salidas:
 from __future__ import annotations
 
 import argparse
-import logging
 from pathlib import Path
 import warnings
 
@@ -33,14 +32,16 @@ import pandas as pd
 warnings.filterwarnings("ignore")
 
 from epiforecast.data.extraction.dengue_extractor import extract_dengue_from_pdf  # noqa: E402
+from epiforecast.utils.config import logger as log  # noqa: E402
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 RAW_PDFS_DIR = PROJECT_ROOT / "data" / "raw_PDFs"
 DEFAULT_OUT = PROJECT_ROOT / "data" / "interim" / "dengue_boletin.csv"
 DEFAULT_MANIFEST = PROJECT_ROOT / "data" / "interim" / "dengue_extraccion_manifest.csv"
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
-log = logging.getLogger("extrae_dengue")
+# Acumulado mínimo (H+M) de una serie Anio×Entidad para evaluar el ratio cumsum/acumulado
+# en la auditoría (por debajo, las series casi-cero dan ratios inestables y ruidosos).
+_MIN_ACUM_CONSISTENCIA = 50
 
 
 def main() -> int:
@@ -52,9 +53,9 @@ def main() -> int:
 
     pdfs = sorted(str(p) for p in RAW_PDFS_DIR.glob(args.pattern))
     if not pdfs:
-        log.error("No se hallaron PDFs con patron %s en %s", args.pattern, RAW_PDFS_DIR)
+        log.error("No se hallaron PDFs con patron {} en {}", args.pattern, RAW_PDFS_DIR)
         return 1
-    log.info("Boletines a procesar: %d", len(pdfs))
+    log.info("Boletines a procesar: {}", len(pdfs))
 
     frames: list[pd.DataFrame] = []
     manifest_rows: list[dict[str, object]] = []
@@ -65,7 +66,7 @@ def main() -> int:
             res = extract_dengue_from_pdf(path)
         except Exception as exc:  # noqa: BLE001 — auditoría: nunca abortar el lote
             manifest_rows.append({"file": name, "status": "ERROR", "reason": str(exc)})
-            log.warning("%3d/%d %s ERROR: %s", idx, len(pdfs), name, exc)
+            log.warning("{:>3}/{} {} ERROR: {}", idx, len(pdfs), name, exc)
             continue
 
         df = res["df"]
@@ -87,7 +88,7 @@ def main() -> int:
         if df is not None and valid:
             frames.append(df)
         log.info(
-            "%3d/%d %s | p%s | %s W%s | estados=%s | %s",
+            "{:>3}/{} {} | p{} | {} W{} | estados={} | {}",
             idx,
             len(pdfs),
             name,
@@ -112,8 +113,8 @@ def main() -> int:
     final = _apply_source_corrections(final)
     final = final.sort_values(["Anio", "Semana", "Entidad"]).reset_index(drop=True)
     final.to_csv(out_path, index=False, encoding="utf-8")
-    log.info("Serie Dengue generada: %s (%d filas)", out_path, len(final))
-    log.info("Manifiesto: %s", args.manifest)
+    log.info("Serie Dengue generada: {} ({} filas)", out_path, len(final))
+    log.info("Manifiesto: {}", args.manifest)
     _print_summary(manifest)
     _audit_series(final)
     return 0
@@ -144,7 +145,7 @@ def _apply_source_corrections(df: pd.DataFrame) -> pd.DataFrame:
             for col, val in cols.items():
                 df.loc[mask, col] = val
             log.info(
-                "Corrección de fuente aplicada: %s %d-W%02d -> %s", entidad, anio, semana, cols
+                "Corrección de fuente aplicada: {} {}-W{:02d} -> {}", entidad, anio, semana, cols
             )
     return df
 
@@ -160,28 +161,28 @@ def _audit_series(df: pd.DataFrame) -> None:
     log.info("=== Auditoría de la serie ===")
     dups = df.groupby(["Anio", "Semana", "Entidad"]).size()
     n_dups = int((dups > 1).sum())
-    log.info("  Duplicados (Anio,Semana,Entidad): %d", n_dups)
+    log.info("  Duplicados (Anio,Semana,Entidad): {}", n_dups)
     if n_dups:
-        log.warning("  ¡DUPLICADOS! %s", dups[dups > 1].head(10).to_dict())
+        log.warning("  ¡DUPLICADOS! {}", dups[dups > 1].head(10).to_dict())
 
     counts = df.groupby(["Anio", "Semana"]).Entidad.nunique()
     incompletas = counts[counts != 32]
-    log.info("  Semanas con != 32 entidades: %d", len(incompletas))
+    log.info("  Semanas con != 32 entidades: {}", len(incompletas))
     if len(incompletas):
-        log.warning("  Semanas incompletas: %s", incompletas.head(10).to_dict())
+        log.warning("  Semanas incompletas: {}", incompletas.head(10).to_dict())
 
     # Consistencia cumsum vs acumulado final (muestra de hasta 200 series Anio×Entidad).
     ratios = []
     for (_, _), g in df.groupby(["Anio", "Entidad"]):
         g = g.sort_values("Semana")
         acum = g.iloc[-1].Acumulado_hombres + g.iloc[-1].Acumulado_mujeres
-        if acum > 50:  # evita ratios inestables en series casi-cero
+        if acum > _MIN_ACUM_CONSISTENCIA:  # evita ratios inestables en series casi-cero
             ratios.append(g.Casos_semana.sum() / acum)
     if ratios:
         sr = pd.Series(ratios)
         fuera = int(((sr < 0.95) | (sr > 1.05)).sum())
         log.info(
-            "  Consistencia cumsum/acumulado: mediana ratio=%.3f | fuera de [0.95,1.05]: %d/%d",
+            "  Consistencia cumsum/acumulado: mediana ratio={:.3f} | fuera de [0.95,1.05]: {}/{}",
             sr.median(),
             fuera,
             len(sr),
@@ -192,11 +193,11 @@ def _print_summary(manifest: pd.DataFrame) -> None:
     n = len(manifest)
     ok = int((manifest["status"] == "OK").sum()) if "status" in manifest else 0
     log.info(
-        "=== Resumen: %d/%d boletines validados (%.1f%%) ===", ok, n, 100 * ok / n if n else 0
+        "=== Resumen: {}/{} boletines validados ({:.1f}%) ===", ok, n, 100 * ok / n if n else 0
     )
     if "status" in manifest:
         for status, grp in manifest.groupby("status"):
-            log.info("  %-5s: %d", status, len(grp))
+            log.info("  {:<5}: {}", status, len(grp))
 
 
 if __name__ == "__main__":
