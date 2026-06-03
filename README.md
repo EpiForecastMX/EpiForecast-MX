@@ -517,6 +517,7 @@ EpiForecast-MX is extending its multi-model pipeline to **Dengue (ICD-10 A97)**,
 
 - `src/epiforecast/data/extraction/dengue_extractor.py` — locates the per-entity table by ICD codes (`A97.0/A97.1/A97.2`), aggregates the three severity tiers per state and sex, and emits the same schema as the consolidated bulletin dataset.
 - `scripts/extrae_dengue.py` — batch entry point over `data/raw_PDFs/`, with a dataset-level audit (duplicate, completeness, and weekly-vs-accumulated consistency checks).
+- `scripts/build_dengue_web.py` — generates the public Phase 1 page artifacts (preliminary charts plus `dengue_serie.json`, which the website fetches so the live table refreshes whenever the series is regenerated).
 
 ```bash
 # Extract the validated Dengue series from all bulletins
