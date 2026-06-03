@@ -507,6 +507,31 @@ python -m scripts.entrena modelo_activo='deepar' padecimiento.tipo='Alzheimer'
 
 ---
 
+## Dengue Expansion (In Progress)
+
+EpiForecast-MX is extending its multi-model pipeline to **Dengue (ICD-10 A97)**, the platform's first vector-borne disease and one of Mexico's highest-impact arboviral threats. This broadens the project beyond its three neurological and mental-health conditions.
+
+**Modeling decision (evidence-based).** Dengue is reported under the WHO 2009 classification across three severity tiers: non-severe (`A97.0`), with warning signs (`A97.1`), and severe (`A97.2`). A literature review of dengue forecasting concluded that incidence should be modeled as **total dengue (the three tiers aggregated)**, not as separate severity series. Severe dengue is a very small fraction of cases (roughly 0.1 to 0.2 percent in the Americas), producing sparse, near-zero per-state weekly series that are intrinsically hard to forecast; predictive skill comes from the autocorrelation and seasonality of the aggregate series. Forecasting severity strata is a clinical classification problem, distinct from incidence forecasting.
+
+**Phase 1 (complete): extraction and validation.** A dedicated extractor parses the per-entity Dengue table from SINAVE bulletins, which lives on a separate page from the neurological table and carries a different layout.
+
+- `src/epiforecast/data/extraction/dengue_extractor.py` — locates the per-entity table by ICD codes (`A97.0/A97.1/A97.2`), aggregates the three severity tiers per state and sex, and emits the same schema as the consolidated bulletin dataset.
+- `scripts/extrae_dengue.py` — batch entry point over `data/raw_PDFs/`, with a dataset-level audit (duplicate, completeness, and weekly-vs-accumulated consistency checks).
+
+```bash
+# Extract the validated Dengue series from all bulletins
+python scripts/extrae_dengue.py
+
+# Or a subset by glob
+python scripts/extrae_dengue.py --pattern "202[3-6]_*.pdf"
+```
+
+Each bulletin is validated against its printed `TOTAL` row, and a guard rejects bulletins exhibiting a column-duplication artifact. The resulting series (`data/interim/dengue_boletin.csv`, regenerable, not versioned) covers **2020 to 2026 across the 32 states**, audited cell-by-cell against the source PDFs. Bulletins before 2020 use the older WHO 1997 scheme (`A90/A91`) and are not yet supported.
+
+**Next phases.** Merge into the production dataset, seasonality configuration tuned for the strong annual cycle of dengue, training and validation of the four engines, and 52-week forecasts.
+
+---
+
 ## CI/CD
 
 GitHub Actions runs on every push to `main` and on pull requests:
