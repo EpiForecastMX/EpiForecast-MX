@@ -48,6 +48,25 @@ param_grid_prophet:
       - 1.0
     # 18 combinaciones (v4: 24)
 
+  dengue:
+    # Dengue: arbovirosis con estacionalidad anual climática y brotes abruptos (no la
+    # dinámica suave/baja incidencia de neuro). Estacionalidad multiplicativa (la amplitud
+    # crece con el nivel) y changepoints MÁS flexibles que neuro (que usa cp<=0.05) para
+    # captar el arranque de las epidemias. NOTA: los padecimientos fuera de NEURO_CONDITIONS
+    # (Dengue) se entrenan SIN log_transform, SIN holiday COVID y con cv_weights uniformes
+    # (ver model.py / data_prep.build_holidays / cross_validator).
+    seasonality_mode:
+      - multiplicative
+    changepoint_prior_scale:
+      - 0.05
+      - 0.1
+      - 0.5
+    seasonality_prior_scale:
+      - 1.0
+      - 5.0
+      - 10.0
+    # 9 combinaciones
+
 param_model:
   yearly_seasonality: False  # reemplazado por add_seasonality con period exacto
   weekly_seasonality: False  # sin sentido: 1 obs/semana, no hay variacion intra-semana

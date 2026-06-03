@@ -31,3 +31,7 @@ param_grid_deepar:
   parkinson:
     epochs: [50, 100]
     num_layers: [2]
+  dengue:
+    # Arbovirosis con ciclo anual marcado y picos; más épocas para captar la estacionalidad.
+    epochs: [100, 150]
+    num_layers: [2, 3]

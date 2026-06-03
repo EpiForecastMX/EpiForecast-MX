@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 from prophet import Prophet
 
-from epiforecast.constants import RANDOM_SEED
+from epiforecast.constants import NEURO_CONDITIONS, RANDOM_SEED
 from epiforecast.evaluation.metrics import compute_forecast_metrics
 from epiforecast.models.base import ForecastModel
 from epiforecast.models.factory import register_model
@@ -63,7 +63,12 @@ class ProphetForecaster(ForecastModel):
         self.normalizar_tasa: bool = self._conf.get("normalizar_tasa", False)
         self.col_poblacion: str = self._conf.get("columna_poblacion", "Total")
         self.tasa_por: int = self._conf.get("tasa_por", 100000)
-        self.log_transform: bool = self._conf.get("log_transform", False)
+        # log_transform solo para la cohorte neuro. Padecimientos fuera de NEURO_CONDITIONS
+        # (Dengue) se modelan sin log: comprime los picos epidémicos y es inconsistente con
+        # la estacionalidad multiplicativa que usa Dengue.
+        self.log_transform: bool = (
+            self._conf.get("log_transform", False) and self.padecimiento in NEURO_CONDITIONS
+        )
         self.poblacion_valor: float | None = None
 
         # Prophet model params
@@ -287,6 +292,7 @@ class ProphetForecaster(ForecastModel):
 
     def _create_prophet(self, **hp_overrides: Any) -> Prophet:
         """Create a Prophet instance with configured params + HP overrides."""
-        model = Prophet(holidays=self.fechas_atipicas, **self.param_model, **hp_overrides)
+        holidays = self.fechas_atipicas if not self.fechas_atipicas.empty else None
+        model = Prophet(holidays=holidays, **self.param_model, **hp_overrides)
         model.add_seasonality(**self.add_seasonality_params)
         return model

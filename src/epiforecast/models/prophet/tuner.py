@@ -26,6 +26,7 @@ _GRID_KEY_MAP: dict[str, str] = {
     "Alzheimer": "alzheimer",
     "Depresión": "depresion",
     "Parkinson": "parkinson",
+    "Dengue": "dengue",
 }
 
 

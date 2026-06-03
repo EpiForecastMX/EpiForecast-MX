@@ -48,8 +48,10 @@ class TestGridKeyMap:
     def test_parkinson_key(self):
         assert _GRID_KEY_MAP["Parkinson"] == "parkinson"
 
-    def test_all_three_diseases_mapped(self):
-        assert len(_GRID_KEY_MAP) == 3
+    def test_all_diseases_mapped(self):
+        # 3 neurológicos + Dengue
+        assert len(_GRID_KEY_MAP) == 4
+        assert _GRID_KEY_MAP["Dengue"] == "dengue"
 
 
 class TestLoadGrid:

@@ -18,7 +18,7 @@ import pandas as pd
 from prophet import Prophet
 from sklearn.model_selection import TimeSeriesSplit
 
-from epiforecast.constants import RANDOM_SEED
+from epiforecast.constants import NEURO_CONDITIONS, RANDOM_SEED
 from epiforecast.utils.config import conf, logger
 
 if TYPE_CHECKING:
@@ -43,7 +43,13 @@ class ProphetCrossValidator:
         self.forecaster = forecaster
         self.n_splits: int = _conf["TS_SPLITS"]
         self.test_size: int = _conf["TEST_SIZE"]
-        self.cv_weights: list[float] | None = _conf.get("cv_weights", None)
+        # cv_weights despenaliza el fold COVID (0.5); solo aplica a la cohorte neuro.
+        # Padecimientos fuera de NEURO_CONDITIONS (Dengue) usan pesos uniformes (None):
+        # 2020-2022 no fue un periodo atípico para una arbovirosis.
+        _cv_weights = _conf.get("cv_weights", None)
+        if getattr(forecaster, "padecimiento", None) not in NEURO_CONDITIONS:
+            _cv_weights = None
+        self.cv_weights: list[float] | None = _cv_weights
         self.fold_timeout: int = _conf.get("cv_timeout_por_fold", 0)
 
     def run(self) -> tuple[dict[str, Any], dict[str, Any]]:
