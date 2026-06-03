@@ -18,7 +18,8 @@ import pandas as pd
 from prophet import Prophet
 from sklearn.model_selection import TimeSeriesSplit
 
-from epiforecast.constants import NEURO_CONDITIONS, RANDOM_SEED
+from epiforecast.constants import RANDOM_SEED
+from epiforecast.utils.cohorts import is_neuro
 from epiforecast.utils.config import conf, logger
 
 if TYPE_CHECKING:
@@ -47,7 +48,7 @@ class ProphetCrossValidator:
         # Padecimientos fuera de NEURO_CONDITIONS (Dengue) usan pesos uniformes (None):
         # 2020-2022 no fue un periodo atípico para una arbovirosis.
         _cv_weights = _conf.get("cv_weights", None)
-        if getattr(forecaster, "padecimiento", None) not in NEURO_CONDITIONS:
+        if not is_neuro(getattr(forecaster, "padecimiento", None)):
             _cv_weights = None
         self.cv_weights: list[float] | None = _cv_weights
         self.fold_timeout: int = _conf.get("cv_timeout_por_fold", 0)

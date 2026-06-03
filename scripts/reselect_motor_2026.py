@@ -32,7 +32,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from epiforecast.constants import NEURO_CONDITIONS
+from epiforecast.utils.cohorts import filter_neuro
 
 ROOT = Path(__file__).resolve().parent.parent
 PROD_TABLE = ROOT / "reports/ProdDetails/tabla_333_modelos_produccion.xlsx"
@@ -66,7 +66,7 @@ def build_real_2026(weeks_limit: int) -> pd.DataFrame:
     df = pd.read_csv(BOLETIN)
     # Guard: la re-selección de motor es solo para la cohorte neuro de producción.
     # Excluye Dengue (presente en el consolidado pero sin forecasts/modelos propios aún).
-    df = df[df["Padecimiento"].isin(NEURO_CONDITIONS)]
+    df = filter_neuro(df)
     sub = df[(df["Anio"] == 2026) & (df["Semana"] <= weeks_limit)].copy()
     sub = sub.sort_values(["Padecimiento", "Entidad", "Semana"])
 

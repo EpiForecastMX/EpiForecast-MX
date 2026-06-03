@@ -7,8 +7,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from epiforecast.constants import NEURO_CONDITIONS
 from epiforecast.evaluation.metrics import compute_forecast_metrics
+from epiforecast.utils.cohorts import is_neuro
 from epiforecast.utils.config import logger
 
 
@@ -145,7 +145,7 @@ def build_holidays(
     """Build holidays DataFrame from atypical periods + regime changes."""
     # Padecimientos fuera de la cohorte neuro (p.ej. Dengue) NO usan los periodos atípicos
     # (holiday COVID): 2020-2022 no fue una disrupción para una arbovirosis, siguió su ciclo.
-    periodos = conf["peridos_atipicos"] if padecimiento in NEURO_CONDITIONS else []
+    periodos = conf["peridos_atipicos"] if is_neuro(padecimiento) else []
     holidays = pd.DataFrame(periodos, columns=["holiday", "ds", "lower_window", "upper_window"])
     if not holidays.empty:
         holidays["ds"] = pd.to_datetime(holidays["ds"])

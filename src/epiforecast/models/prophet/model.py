@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 from prophet import Prophet
 
-from epiforecast.constants import NEURO_CONDITIONS, RANDOM_SEED
+from epiforecast.constants import RANDOM_SEED
 from epiforecast.evaluation.metrics import compute_forecast_metrics
 from epiforecast.models.base import ForecastModel
 from epiforecast.models.factory import register_model
@@ -28,6 +28,7 @@ from epiforecast.models.prophet.data_prep import (
     eval_rapida,
     promedio_semanal,
 )
+from epiforecast.utils.cohorts import is_neuro
 from epiforecast.utils.config import conf, logger
 
 logging.getLogger("cmdstanpy").disabled = True
@@ -66,8 +67,8 @@ class ProphetForecaster(ForecastModel):
         # log_transform solo para la cohorte neuro. Padecimientos fuera de NEURO_CONDITIONS
         # (Dengue) se modelan sin log: comprime los picos epidémicos y es inconsistente con
         # la estacionalidad multiplicativa que usa Dengue.
-        self.log_transform: bool = (
-            self._conf.get("log_transform", False) and self.padecimiento in NEURO_CONDITIONS
+        self.log_transform: bool = self._conf.get("log_transform", False) and is_neuro(
+            self.padecimiento
         )
         self.poblacion_valor: float | None = None
 

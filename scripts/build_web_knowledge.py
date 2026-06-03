@@ -30,7 +30,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from epi_modules.features.data_cache import ProjectDataCache  # noqa: E402
 from epi_modules.features.knowledge_base import KnowledgeBase  # noqa: E402
 
-from epiforecast.constants import NEURO_CONDITIONS  # noqa: E402
+from epiforecast.utils.cohorts import filter_neuro  # noqa: E402
 
 OUTPUT = Path("web_dashboard/knowledge.json")
 
@@ -117,10 +117,10 @@ def build_prod_models(cache: ProjectDataCache) -> list[dict]:
 def build_boletin(cache: ProjectDataCache) -> dict:
     """Pre-agrega datos del boletin para el frontend."""
     df = cache.boletin
-    if df is not None and not df.empty and "Padecimiento" in df.columns:
-        # Guard: el EpiBot público solo conoce la cohorte neuro de producción.
-        # Excluye Dengue (en el consolidado pero sin respuestas/forecasts en el bot).
-        df = df[df["Padecimiento"].isin(NEURO_CONDITIONS)]
+    # Guard: el EpiBot público solo conoce la cohorte neuro de producción.
+    # Excluye Dengue (en el consolidado pero sin respuestas/forecasts en el bot).
+    if df is not None:
+        df = filter_neuro(df)
     if df is None or df.empty:
         return {}
 
@@ -466,8 +466,8 @@ def build_weekly_comparison(cache: ProjectDataCache) -> dict[str, list[dict]]:
 
     # Boletin: actual cases (solo cohorte neuro; Dengue tiene su propio pipeline)
     bol = cache.boletin
-    if bol is not None and not bol.empty and "Padecimiento" in bol.columns:
-        bol = bol[bol["Padecimiento"].isin(NEURO_CONDITIONS)]
+    if bol is not None:
+        bol = filter_neuro(bol)
     if bol is None or bol.empty:
         return result
 

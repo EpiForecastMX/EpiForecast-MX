@@ -211,6 +211,12 @@ EpiForecast-MX/
 - `process_boletines.yml`: Procesamiento de PDFs con Camelot, merge al dataset consolidado.
 - `gsheets.yml`: Publicacion de datos Tableau a Google Sheets (service account).
 
+### Dengue (4.o padecimiento, en preparacion)
+- **Cohorte:** `epiforecast.constants.NEURO_CONDITIONS` = [Depresion, Parkinson, Alzheimer] es la cohorte neurologica de produccion (333 modelos). Dengue se incorpora con pipeline propio. Usar `epiforecast.utils.cohorts.is_neuro(pad)` / `filter_neuro(df)` para distinguir (NO repetir `df.isin(NEURO_CONDITIONS)`). Los flujos neuro (filter modo "General", entrena, reselect_motor_2026, genera_validacion_semanal, build_web_knowledge, build_tableau) filtran a la cohorte neuro; Dengue se entrena solo con `padecimiento.tipo='Dengue'` explicito.
+- **Extraccion:** Dengue vive en una tabla aparte del boletin (Cuadro 7.2, 3 severidades A97.0/A97.1/A97.2) que `dengue_extractor.py` agrega en un solo "Dengue". Soporte 2020-2026 (esquema OMS 2009); pre-2019 (A90/A91) no soportado. `_SOURCE_CORRECTIONS` corrige erratas de fuente conocidas (Zacatecas 2024-W41).
+- **Pipeline Dengue (Makefile):** `make dengue-extract` -> `make dengue-merge` (+ dvc add/push del consolidado + commit .dvc) -> `make dengue-prep` (lee del CONSOLIDADO via override `data.raw_data_file`, NO del data_raw.csv neuro) -> `make dengue-train-nacional ARGS="modelo_activo=prophet"` -> `make dengue-web`. O `make dengue-pipeline` (extract+merge+prep).
+- **Modelado Dengue (per-cohorte, neuro intacto):** grid `dengue` en `prophet.yaml` (multiplicativo, changepoints flexibles) + `_GRID_KEY_MAP`. Los no-neuro entrenan SIN log_transform, SIN holiday COVID, con cv_weights uniformes y SIN fallback regional ("si es 0, es 0").
+
 ### Convenciones de Codigo
 - **Imports**: Agrupar stdlib, luego terceros, luego locales (isort via Ruff).
 - **Tipado**: Uso estricto de `mypy`. Retornos de funciones deben estar tipados.

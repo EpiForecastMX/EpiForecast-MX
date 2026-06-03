@@ -106,6 +106,55 @@ preprocess: reset get-dataset filter clean transform get-inegi mapper
 	@echo ">>> Preprocesamiento completo."
 
 #################################################################################
+# DENGUE (en preparacion — pipeline propio, separado del neuro)                 #
+#################################################################################
+# El Dengue vive en una tabla aparte del boletin SINAVE (3 severidades A97.x) y se
+# incorpora con su propio flujo. El prep lee del CONSOLIDADO (que ya contiene Dengue),
+# NO del data_raw.csv neuro; por eso el override de data.raw_data_file.
+DENGUE_CONSOLIDADO := data/processed/dataset_boletin_epidemiologico.csv
+DASHBOARD_DENGUE   := ../EpiForecast-IMSS-Dashboard/Reports/dengue
+
+## Extraer la serie de Dengue (agregada A97.0+A97.1+A97.2) de los boletines SINAVE
+.PHONY: dengue-extract
+dengue-extract:
+	@echo ">>> Extrayendo Dengue de los boletines..."
+	$(PYTHON) -m scripts.extrae_dengue
+
+## Integrar la serie de Dengue al dataset consolidado (idempotente)
+.PHONY: dengue-merge
+dengue-merge:
+	@echo ">>> Integrando Dengue al consolidado..."
+	$(PYTHON) -m scripts.merge_dengue
+	@echo ">>> Recuerda versionar: dvc add + dvc push del consolidado, luego commit del .dvc (push ANTES del commit)"
+
+## Prep de Dengue (filter->clean->transform->mapper) desde el consolidado -> data_inegi_Dengue.csv
+.PHONY: dengue-prep
+dengue-prep:
+	@echo ">>> Preprocesando Dengue (outliers off, INEGI)..."
+	$(PYTHON) -m scripts.filtra_padecimiento padecimiento.tipo='Dengue' data.raw_data_file='$(DENGUE_CONSOLIDADO)'
+	$(PYTHON) -m scripts.limpieza_dataset padecimiento.tipo='Dengue'
+	$(PYTHON) -m scripts.realiza_prep padecimiento.tipo='Dengue'
+	$(PYTHON) -m scripts.mapea padecimiento.tipo='Dengue'
+
+## Entrenar Dengue NACIONAL para un motor (ARGS, p.ej. ARGS="modelo_activo=prophet")
+.PHONY: dengue-train-nacional
+dengue-train-nacional:
+	@echo ">>> Entrenando Dengue nacional..."
+	$(PYTHON) -m scripts.entrena padecimiento.tipo='Dengue' padecimiento.solo_nacional=True $(ARGS)
+
+## Regenerar artefactos web de Dengue (charts + JSON tabla en vivo + galeria EDA)
+.PHONY: dengue-web
+dengue-web:
+	@echo ">>> Regenerando web de Dengue..."
+	$(PYTHON) -m scripts.build_dengue_web --out $(DASHBOARD_DENGUE) --generado $$(date +%Y-%m-%d)
+	$(PYTHON) -m scripts.eda_dengue_charts --out $(DASHBOARD_DENGUE)
+
+## Pipeline Dengue: extract -> merge -> prep (luego: dvc push, dengue-train-nacional, dengue-web)
+.PHONY: dengue-pipeline
+dengue-pipeline: dengue-extract dengue-merge dengue-prep
+	@echo ">>> Pipeline Dengue (extract+merge+prep) completo. Falta: dvc push, entrenamiento y web."
+
+#################################################################################
 # 🤖 MODELING                                                                  #
 #################################################################################
 

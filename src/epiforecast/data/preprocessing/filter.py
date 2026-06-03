@@ -5,6 +5,7 @@ from loguru import logger
 import pandas as pd
 
 from epiforecast.constants import NEURO_CONDITIONS
+from epiforecast.utils.cohorts import filter_neuro
 
 
 class FiltraPadecimiento:
@@ -41,9 +42,7 @@ class FiltraPadecimiento:
             # Guard: 'General' = cohorte neurológica de producción (Depresión/Parkinson/
             # Alzheimer). Excluye Dengue (presente en el consolidado pero con su propio
             # pipeline); evita contaminar data_inegi_General/tableau/tabla_produccion.
-            self.df_raw_filtrado = self.df_raw[
-                self.df_raw[self.columna].isin(NEURO_CONDITIONS)
-            ].copy()
+            self.df_raw_filtrado = filter_neuro(self.df_raw, self.columna or "Padecimiento").copy()
             logger.info(
                 "Tipo 'General': cohorte neuro {} | retenidos={} de {} (no-neuro excluidos)",
                 NEURO_CONDITIONS,
