@@ -53,6 +53,7 @@ warnings.filterwarnings("ignore", message=".*not currently supported on the MPS 
 from epiforecast.constants import RANDOM_SEED  # noqa: E402
 from epiforecast.models.base import ForecastModel  # noqa: E402
 from epiforecast.models.factory import register_model  # noqa: E402
+from epiforecast.utils.cohorts import is_neuro  # noqa: E402
 from epiforecast.utils.config import conf, logger  # noqa: E402
 
 
@@ -158,6 +159,27 @@ class DeepARForecaster(ForecastModel):
         self.num_batches_per_epoch: int = self.deepar_conf.get("num_batches_per_epoch", 50)
         self.early_stopping_patience: int = self.deepar_conf.get("early_stopping_patience", 15)
         self.multi_series: bool = self.deepar_conf.get("multi_series", True)
+
+        # Cohort-aware short-series overrides (p.ej. Dengue: historia desde 2020).
+        # Las series cortas no admiten la memoria/lags de la config neuro; ver deepar.yaml.
+        # No se fabrica historia: solo se acorta el contexto del modelo y se aligera la CV.
+        self.short_max_lag: int | None = None  # None => lags por defecto de la frecuencia
+        self.gap_fill: str = (
+            "zero"  # "zero" (neuro, conteos reales) | "interpolate" (huecos de boletin)
+        )
+        self.cv_n_splits_override: int | None = None
+        self.cv_test_size_override: int | None = None
+        short_cfg: dict[str, Any] = self.deepar_conf.get("short_series", {})
+        if (
+            short_cfg.get("enabled", False)
+            and self.padecimiento
+            and not is_neuro(self.padecimiento)
+        ):
+            self.context_length = int(short_cfg.get("context_length", self.context_length))
+            self.short_max_lag = int(short_cfg.get("max_lag", 53))
+            self.gap_fill = str(short_cfg.get("gap_fill", "interpolate"))
+            self.cv_n_splits_override = int(short_cfg.get("cv_n_splits", 2))
+            self.cv_test_size_override = int(short_cfg.get("cv_test_size", 26))
 
         # Train/test config
         self.FECHA_CORTE_ENTRENAMIENTO: str = self._conf.get(
@@ -286,19 +308,30 @@ class DeepARForecaster(ForecastModel):
 
     # ── Private Helpers ───────────────────────────────────────────────────────
 
+    def _resample_fill(self, ts: pd.Series) -> pd.Series:
+        """Reindexa a la frecuencia ``self.freq`` y rellena semanas faltantes.
+
+        - ``gap_fill="zero"`` (neuro): comportamiento historico, huecos → 0.
+        - ``gap_fill="interpolate"`` (cohortes de historia corta, p.ej. Dengue): los
+          huecos son semanas sin boletin, no semanas con cero casos, por lo que se
+          interpolan linealmente. ``min_count=1`` distingue el hueco real (→ NaN) de
+          una semana presente con valor 0; el NaN inicial restante se fija en 0.
+        """
+        ts.index = pd.DatetimeIndex(ts.index)
+        if self.gap_fill == "interpolate":
+            ts = ts.resample(self.freq).sum(min_count=1)
+            return ts.interpolate(method="linear", limit_direction="both").fillna(0)
+        return ts.resample(self.freq).sum().fillna(0)
+
     def _build_dataset(self, df: pd.DataFrame) -> Any:
         """Convert a [ds, y] DataFrame to a GluonTS PandasDataset.
 
-        Resamples to fill any gaps (missing weeks → 0) so the DatetimeIndex
+        Resamples to fill any gaps (missing weeks) so the DatetimeIndex
         has a consistent frequency that GluonTS requires.
         """
         from gluonts.dataset.pandas import PandasDataset
 
-        ts = df.set_index("ds")["y"].copy()
-        ts.index = pd.DatetimeIndex(ts.index)
-        # Fill gaps (missing weeks) with 0 and enforce freq
-        ts = ts.resample(self.freq).sum()
-        ts = ts.fillna(0)
+        ts = self._resample_fill(df.set_index("ds")["y"].copy())
         return PandasDataset.from_long_dataframe(
             pd.DataFrame({"target": ts, "item_id": 0}),
             target="target",
@@ -315,9 +348,7 @@ class DeepARForecaster(ForecastModel):
 
         frames: list[pd.DataFrame] = []
         for item_id, group in df.groupby("item_id"):
-            ts = group.set_index("ds")["y"].copy()
-            ts.index = pd.DatetimeIndex(ts.index)
-            ts = ts.resample(self.freq).sum().fillna(0)
+            ts = self._resample_fill(group.set_index("ds")["y"].copy())
             frames.append(pd.DataFrame({"target": ts, "item_id": item_id}))
 
         long_df = pd.concat(frames)
@@ -358,12 +389,20 @@ class DeepARForecaster(ForecastModel):
                 )
             )
 
-        # CUDA auto-detection (Windows GPU) or CPU fallback (macOS)
-        # CUDA (Windows/Linux GPU) > MPS (Apple Silicon) > CPU
+        # Selección de acelerador: CUDA (SageMaker/GPU) > CPU. MPS (Apple Silicon) queda
+        # DESHABILITADO por defecto: PyTorch no implementa varios ops de muestreo de
+        # distribuciones en MPS (p.ej. ``aten::_standard_gamma`` que usa la salida StudentT),
+        # lo que aborta el entrenamiento local con NotImplementedError; además dos procesos
+        # DeepAR concurrentes sobre el mismo dispositivo MPS pueden bloquearse (deadlock).
+        # CPU es determinista y suficiente para el entrenamiento local (producción usa CUDA
+        # en SageMaker). Se puede forzar MPS con ``deepar.allow_mps: true`` (activa también el
+        # fallback de ops no soportados a CPU).
+        allow_mps = bool(self.deepar_conf.get("allow_mps", False))
         if torch.cuda.is_available():
             accelerator = "cuda"
             torch.set_float32_matmul_precision("high")
-        elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+        elif allow_mps and hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
             accelerator = "mps"
         else:
             accelerator = "cpu"
@@ -371,6 +410,16 @@ class DeepARForecaster(ForecastModel):
 
         # Silence Lightning sub-loggers created during import
         self._silence_lightning()
+
+        # Cohort-aware: cohortes de historia corta usan lags acotados (1 año) para que
+        # past_length (context_length + max_lag) quepa en la serie disponible.
+        extra: dict[str, Any] = {}
+        if self.short_max_lag is not None:
+            from gluonts.time_feature.lag import get_lags_for_frequency
+
+            extra["lags_seq"] = [
+                lag for lag in get_lags_for_frequency(self.freq) if lag <= self.short_max_lag
+            ]
 
         # Rich progress bar per training run
         entity_label = self.entidad or "Nacional"
@@ -399,6 +448,7 @@ class DeepARForecaster(ForecastModel):
             num_batches_per_epoch=overrides.pop(
                 "num_batches_per_epoch", self.num_batches_per_epoch
             ),
+            **extra,
             trainer_kwargs={
                 "max_epochs": epochs,
                 "accelerator": accelerator,

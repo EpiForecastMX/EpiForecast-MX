@@ -20,6 +20,21 @@ deepar:
   early_stopping_patience: 15        # Detener si train_loss no mejora en 15 epochs
   skip_cv_estatal: true               # false: CV completo por estado (lento, metricas por fold)
 
+  # Overrides para cohortes de menor historia que la neuro (p.ej. Dengue, A97.x desde
+  # 2018-W27 ~ 322 sem de entrenamiento vs ~500+ de neuro). GluonTS entrena sobre ventanas
+  # de (context_length + max_lag), y para una CV honesta (sin padding de ceros) cada fold
+  # necesita >= esa longitud de datos reales. Con 322 sem cabe un contexto de 2 años, pero
+  # NO la CV completa neuro (4x53) ni los lags de 3 años. Estos overrides ajustan memoria,
+  # lags y CV a la historia disponible sin fabricar datos (la serie es la real).
+  short_series:
+    enabled: true
+    context_length: 104               # 2 ciclos anuales completos (clave para estacionalidad dengue)
+    max_lag: 53                       # Capar lags a 1 año + 1: conserva el lag anual (52 sem),
+                                      #   descarta los de 2-3 años (mantiene folds de CV sanos)
+    cv_n_splits: 2                    # CV ligera: fold-1 ~270 sem >= past_length (105), sin padding
+    cv_test_size: 26                  # Ventana de validacion de medio año por fold
+    gap_fill: "interpolate"           # Semanas faltantes (boletin ausente) se interpolan, no se ponen en 0
+
 # Hiperparámetros específicos por padecimiento
 param_grid_deepar:
   alzheimer:

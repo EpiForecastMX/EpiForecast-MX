@@ -34,8 +34,10 @@ class DeepARCrossValidator:
     def __init__(self, forecaster: DeepARForecaster, config: dict[str, Any] | None = None):
         _conf = config if config is not None else conf
         self.forecaster = forecaster
-        self.n_splits: int = _conf.get("TS_SPLITS", 4)
-        self.test_size: int = _conf.get("TEST_SIZE", 53)
+        # Cohortes de historia corta (p.ej. Dengue) usan CV mas ligera para que los folds
+        # sigan siendo lo bastante largos para entrenar DeepAR (ver deepar.yaml short_series).
+        self.n_splits: int = forecaster.cv_n_splits_override or _conf.get("TS_SPLITS", 4)
+        self.test_size: int = forecaster.cv_test_size_override or _conf.get("TEST_SIZE", 53)
 
         # Reduced epochs for CV folds (at least 25 for convergence)
         full_epochs = forecaster.epochs

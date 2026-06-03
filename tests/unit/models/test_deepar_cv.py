@@ -14,6 +14,8 @@ from epiforecast.models.deepar.cross_validator import DeepARCrossValidator
 def mock_forecaster() -> MagicMock:
     f = MagicMock()
     f.epochs = 100
+    f.cv_n_splits_override = None
+    f.cv_test_size_override = None
     f.train_data = MagicMock()
     f.train_data.empty = True
     f._is_multi_series = False
@@ -29,6 +31,17 @@ class TestDeepARCVInit:
         assert cv.n_splits == 3
         assert cv.test_size == 26
         assert cv.cv_epochs == max(25, 100 // 4)
+
+    def test_short_series_cohort_overrides_cv(self) -> None:
+        """Cohortes de historia corta (p.ej. Dengue) imponen CV mas ligera."""
+        f = MagicMock()
+        f.epochs = 100
+        f.cv_n_splits_override = 2
+        f.cv_test_size_override = 26
+        config = {"TS_SPLITS": 4, "TEST_SIZE": 53}
+        cv = DeepARCrossValidator(f, config=config)
+        assert cv.n_splits == 2
+        assert cv.test_size == 26
 
     def test_cv_epochs_at_least_25(self) -> None:
         f = MagicMock()
@@ -119,6 +132,8 @@ class TestRunInsufficient:
 
         f = MagicMock()
         f.epochs = 100
+        f.cv_n_splits_override = None
+        f.cv_test_size_override = None
         f.train_data = pd.DataFrame(
             {"ds": pd.Series(dtype="datetime64[ns]"), "y": pd.Series(dtype=float)}
         )
@@ -135,6 +150,8 @@ class TestRunInsufficient:
         dates = pd.date_range("2024-01-01", periods=10, freq="W-MON")
         f = MagicMock()
         f.epochs = 100
+        f.cv_n_splits_override = None
+        f.cv_test_size_override = None
         f.train_data = pd.DataFrame({"ds": dates, "y": range(10)})
         f._is_multi_series = False
         f.train_data_multi = pd.DataFrame()

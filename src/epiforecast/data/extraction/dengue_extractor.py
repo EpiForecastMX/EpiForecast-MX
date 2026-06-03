@@ -16,8 +16,16 @@ categorías en un único padecimiento ``"Dengue"``, sumando columna por columna.
 
 El localizador de página se ancla en los **códigos CIE A97.0/A97.1/A97.2** (más estables
 entre semanas/años que la redacción, que varía: "sin/con datos de alarma" vs
-"no grave/con signos de alarma", "severo" vs "grave"). El esquema OMS 1997 (A90/A91,
-boletines pre-2019) NO es soportado por este extractor y se reporta como no extraído.
+"no grave/con signos de alarma", "severo" vs "grave").
+
+Layouts soportados (misma taxonomía A97.x):
+  - **Producción (2020+):** 12 columnas de datos (acum. año anterior por severidad).
+  - **Histórico (2018 sem 27+ y 2019):** 10 columnas (ver ``dengue_historico``); SINAVE
+    adoptó A97.x desde la sem 27 de 2018. El branch por año conmuta el reshape/validación.
+
+El esquema OMS 1997 (A90/A91, boletines 2014 → 2018 sem 26) usa otra tabla (por estatus
+de caso, SIN desglose por sexo) y NO es soportado por este extractor; se reporta como no
+extraído. Su serie TOTAL nacional se maneja aparte (ver ``dengue_historico_a9091``).
 """
 
 from pathlib import Path
@@ -29,6 +37,11 @@ import pandas as pd
 from pypdf import PdfReader
 
 from epiforecast.constants import STATES
+from epiforecast.data.extraction.dengue_historico import (
+    N_DATA_COLS_HIST,
+    reshape_dengue_hist,
+    total_discrepancy_hist,
+)
 from epiforecast.data.extraction.dengue_validation import (
     COLS_PER_SEVERITY,
     N_DATA_COLS,
@@ -235,26 +248,41 @@ def extract_dengue_from_pdf(pdf_path: str) -> dict[str, object]:
     df_states = _restrict_to_states(clean_df(tables[0].df))
     out["n_states"] = len(df_states)
 
-    if df_states.shape[1] - 1 != N_DATA_COLS:
-        out["reason"] = f"columnas inesperadas: {df_states.shape[1] - 1} (esperado {N_DATA_COLS})"
+    # Layout histórico (2018 sem 27+ y 2019): misma taxonomía A97.x que producción pero
+    # tabla de 10 columnas de datos (el "acum. año anterior" solo aparece en la 1ª
+    # severidad). Producción (2020+) conserva el layout de 12 columnas intacto.
+    is_hist = int(year) < 2020
+    expected_cols = N_DATA_COLS_HIST if is_hist else N_DATA_COLS
+
+    if df_states.shape[1] - 1 != expected_cols:
+        out["reason"] = (
+            f"columnas inesperadas: {df_states.shape[1] - 1} (esperado {expected_cols})"
+        )
         return out
     if len(df_states) != N_STATES_EXPECTED:
         out["reason"] = (
             f"parse incompleto: {len(df_states)} entidades (esperado {N_STATES_EXPECTED})"
         )
         return out
-    dup_col = duplicated_adjacent_column(df_states)
+    dup_col = duplicated_adjacent_column(df_states, n_data_cols=expected_cols)
     if dup_col is not None:
         out["reason"] = f"artefacto de columna duplicada (col {dup_col}); extraccion no confiable"
         return out
 
     assert year is not None and week is not None  # garantizado por los guards previos
-    df_long = reshape_dengue_aggregated(df_states, int(year), int(week))
+    if is_hist:
+        df_long = reshape_dengue_hist(df_states, int(year), int(week))
+    else:
+        df_long = reshape_dengue_aggregated(df_states, int(year), int(week))
     out["df"] = df_long
 
     # Validación: suma por categoría de las 32 entidades vs renglón TOTAL del boletín.
     page_text = PdfReader(pdf_path).pages[int(page) - 1].extract_text() or ""
-    absdiff = total_discrepancy(df_states, page_text)
+    absdiff = (
+        total_discrepancy_hist(df_states, page_text)
+        if is_hist
+        else total_discrepancy(df_states, page_text)
+    )
     out["absdiff"] = absdiff
     if absdiff is None:
         out["reason"] = "no se hallo renglon TOTAL para validar"
