@@ -123,6 +123,42 @@ def chart_estacionalidad(df: pd.DataFrame, out: Path) -> None:
     plt.close(fig)
 
 
+def chart_outliers(df: pd.DataFrame, out: Path, entidad: str = "Veracruz") -> None:
+    """Ilustra por qué se desactivan los outliers para Dengue: marca las semanas que
+    el tratamiento estándar (z-score > 3) recortaría/medianizaría, que son picos
+    epidémicos reales (la señal a pronosticar), no ruido. Ejemplo: una entidad de
+    alta carga."""
+    g = (
+        df[df["Entidad"] == entidad]
+        .assign(t=lambda d: d.Anio + (d.Semana.astype(int) - 1) / MESES_SEM)
+        .sort_values("t")
+    )
+    v = g["Casos_semana"].to_numpy(dtype=float)
+    mu, sd = v.mean(), v.std(ddof=0)
+    z = (v - mu) / (sd if sd > 0 else 1)
+    mask = z > 3
+    fig, ax = _fig((11, 4.2))
+    ax.plot(g["t"], v, color=MINT, linewidth=1.5, alpha=0.9)
+    ax.scatter(
+        g["t"][mask],
+        v[mask],
+        color=PINK,
+        s=42,
+        zorder=5,
+        label=f"{int(mask.sum())} picos que el FE estándar borraría (z>3)",
+    )
+    ax.axhline(mu + 3 * sd, color=PINK, linestyle="--", linewidth=1, alpha=0.6)
+    ax.set_title(
+        f"Por qué desactivamos el recorte de outliers en Dengue — {entidad}", fontsize=12, pad=12
+    )
+    ax.set_ylabel("Casos por semana")
+    ax.set_xlabel("Año epidemiológico")
+    ax.legend(facecolor=BG, edgecolor=GRID, labelcolor=TEXT, fontsize=8.5, loc="upper left")
+    fig.tight_layout()
+    fig.savefig(out / "dengue_outliers.png", facecolor=BG)
+    plt.close(fig)
+
+
 def build_json(df: pd.DataFrame, out: Path, generado: str) -> dict:
     """Construye el JSON para la tabla en vivo y las cifras de la página."""
     max_anio = int(df.Anio.max())
@@ -186,6 +222,7 @@ def main() -> int:
     chart_nacional_semanal(df, out)
     chart_totales_anuales(df, out)
     chart_estacionalidad(df, out)
+    chart_outliers(df, out)
     data = build_json(df, out, args.generado)
 
     print(f"Artefactos en {out}")
