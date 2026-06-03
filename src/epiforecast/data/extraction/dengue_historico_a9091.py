@@ -227,6 +227,14 @@ def extract_a9091_from_pdf(pdf_path: str) -> dict[str, object]:
         if not sex_idx:
             out["reason"] = "no se hallaron columnas de sexo (M/F)"
             return out
+        # Las bandas de sexo deben venir en pares (M,F) por severidad: 2 bloques (variante A,
+        # 2014-2015) o 3 (variante B, 2016-2018H1). Un número impar o inesperado significa que
+        # _sex_bands detectó una M/F espuria o perdió una, lo que desfasaría el emparejamiento
+        # por paridad ([0::2]/[1::2]) y CRUZARÍA hombres/mujeres en silencio (la validación
+        # contra TOTAL no lo cacha porque reusa el mismo mapeo). Mejor rechazar el boletín.
+        if len(sex_idx) not in (4, 6):
+            out["reason"] = f"bandas de sexo inesperadas: {len(sex_idx)} (esperado 4 o 6)"
+            return out
 
         import pandas as pd
 

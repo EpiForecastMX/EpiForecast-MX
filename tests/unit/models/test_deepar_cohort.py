@@ -75,3 +75,21 @@ def test_interpolate_rellena_huecos_sin_inventar_ceros() -> None:
     assert out.loc["2024-01-08"] > 0
     # 2024-01-22 era un 0 real y se conserva
     assert out.loc["2024-01-22"] == 0
+
+
+def test_gap_fill_zero_neuro_rellena_huecos_con_cero() -> None:
+    """Cohorte neuro (gap_fill='zero'): los huecos se rellenan con 0, sin interpolar."""
+    m = create_model(
+        "deepar",
+        df=pd.DataFrame(),
+        sexo=None,
+        entidad=None,
+        padecimiento="Depresión",
+        config=_SHORT_CFG,
+    )
+    assert m.gap_fill == "zero"
+    idx = pd.to_datetime(["2024-01-01", "2024-01-15", "2024-01-22"])
+    ts = pd.Series([10.0, 30.0, 5.0], index=idx)
+    out = m._resample_fill(ts)
+    # 2024-01-08 (hueco) se rellena con 0 (comportamiento neuro historico), no interpola
+    assert out.loc["2024-01-08"] == 0
