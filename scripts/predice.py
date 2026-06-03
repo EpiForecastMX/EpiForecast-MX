@@ -413,6 +413,14 @@ def main():
         out["confianza_usado"].isna().sum() if "confianza_usado" in out.columns else 0,
     )
 
+    # Los conteos de casos no pueden ser negativos. Prophet sin log_transform (cohortes
+    # no-neuro, p.ej. Dengue) puede producir yhat negativo en temporada baja; se recorta a
+    # >= 0. Es no-op para neuro (positivo por log_transform) y para los motores que ya
+    # acotan a 0 (DeepAR nonnegative_pred_samples, Ensemble, Stacking).
+    yhat_cols = [c for c in out.columns if c == "yhat" or c.startswith("yhat_")]
+    for col in yhat_cols:
+        out[col] = pd.to_numeric(out[col], errors="coerce").clip(lower=0)
+
     out.to_csv(out_file, index=False)
 
     logger.success(
