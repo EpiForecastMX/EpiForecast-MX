@@ -20,6 +20,7 @@ Uso:
 from __future__ import annotations
 
 import argparse
+from datetime import date
 import json
 import logging
 from pathlib import Path
@@ -28,28 +29,40 @@ import warnings
 import numpy as np
 import pandas as pd
 
+from epiforecast.constants import RANDOM_SEED
+
 warnings.filterwarnings("ignore")
 logging.getLogger("cmdstanpy").disabled = True
 
 ROOT = Path(__file__).resolve().parent.parent
 BOLETIN = ROOT / "data/processed/dataset_boletin_epidemiologico.csv"
 PROD = ROOT / "reports/ProdDetails/produccion_dengue.csv"
+# Forecast de los 4 motores: el motor productivo nacional puede ser cualquiera; sin las 4
+# rutas, un motor no listado caería silenciosamente a Prophet y meta.motor_nacional mentiría.
 FORECAST = {
     "Prophet": ROOT / "reports/forecasts/prophet/all_forecast_prophet.csv",
     "DeepAR": ROOT / "reports/forecasts/deepar/all_forecast_deepar.csv",
+    "Ensemble": ROOT / "reports/forecasts/ensemble/all_forecast_ensemble.csv",
+    "Stacking": ROOT / "reports/forecasts/stacking/all_forecast_stacking.csv",
 }
 ANIOS_PROYECCION = 5
 
 
 def serie_nacional() -> pd.DataFrame:
-    """Serie nacional general semanal (conteos) con ds = lunes de cada semana epi."""
+    """Serie nacional general semanal (conteos) con ds = lunes de la semana ISO.
+
+    Usa el lunes de la semana ISO (``date.fromisocalendar``) para que el histórico quede
+    en la MISMA rejilla de fechas (W-MON) que el pronóstico de los modelos y empalme sin
+    corrimiento.
+    """
     df = pd.read_csv(BOLETIN)
     df = df[df["Padecimiento"] == "Dengue"]
     g = df.groupby(["Anio", "Semana"])["Casos_semana"].sum().reset_index()
     g = g.sort_values(["Anio", "Semana"])
-    g["ds"] = pd.to_datetime(g["Anio"].astype(str) + "-01-01") + pd.to_timedelta(
-        (g["Semana"] - 1) * 7, unit="D"
-    )
+    g["ds"] = [
+        pd.Timestamp(date.fromisocalendar(int(a), min(int(s), 52), 1))
+        for a, s in zip(g["Anio"], g["Semana"], strict=False)
+    ]
     return g.rename(columns={"Casos_semana": "y"})[["ds", "y"]].reset_index(drop=True)
 
 
@@ -92,7 +105,7 @@ def proyeccion_estacional(serie: pd.DataFrame, anios: int) -> pd.DataFrame:
         seasonality_prior_scale=10.0,
     )
     m.add_seasonality(name="yearly_custom", period=365.25, fourier_order=10)
-    np.random.seed(42)
+    np.random.seed(RANDOM_SEED)
     m.fit(t)
     fut = m.make_future_dataframe(periods=anios * 52, freq="W-MON")
     fc = m.predict(fut)
