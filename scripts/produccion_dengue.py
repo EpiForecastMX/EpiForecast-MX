@@ -4,23 +4,23 @@ Análogo a ``reselect_motor_2026.py`` pero autónomo para Dengue: el padecimient
 no está en la tabla de 333 modelos neuro ni en su pipeline de re-selección
 (esos scripts filtran a ``NEURO_CONDITIONS``). Aquí elegimos, por cada serie
 (entidad × sexo), cuál de los 4 motores (Prophet, DeepAR, Ensemble, Stacking)
-es el productivo, usando el SMAPE sobre la realidad 2026 ya publicada en el
-boletín.
+es el productivo, usando el SMAPE sobre la realidad del año de evaluación (el
+último año con datos en el boletín, derivado, no hardcodeado).
 
 Reglas (adaptadas a la naturaleza del Dengue, NO se reusan las de baja
 incidencia de neuro):
-1. Serie con >= MIN_WEEKS_REAL semanas reales 2026 y total >= MIN_TOTAL_CASOS:
-   criterio primario = SMAPE 2026 real (MAE como desempate). criterio="smape_real_2026".
+1. Serie con >= MIN_WEEKS_REAL semanas reales y total >= MIN_TOTAL_CASOS:
+   criterio primario = SMAPE real (MAE como desempate). criterio="smape_real".
 2. Serie casi-cero (>= MIN_WEEKS_REAL semanas pero total < MIN_TOTAL_CASOS):
-   se honra "si es 0, es 0" -> se elige el motor con MENOR MAE 2026 (el que
-   pronostica más cerca de cero), NO se fuerza Ensemble. criterio="mae_real_2026_casi_cero".
+   se honra "si es 0, es 0" -> se elige el motor con MENOR MAE real (el que
+   pronostica más cerca de cero), NO se fuerza Ensemble. criterio="mae_real_casi_cero".
 3. Serie sin realidad reciente suficiente (< MIN_WEEKS_REAL semanas):
    se cae al SMAPE de validación cruzada del propio modelo (``smape_usado``
    embebido en el forecast). criterio="cv_smape".
 
 Salidas (``reports/ProdDetails/``):
-- ``produccion_dengue.csv``  — 1 fila por serie (entidad × sexo) con SMAPE/MAE
-  2026 y CV de los 4 motores, motor ganador, criterio y justificación.
+- ``produccion_dengue.csv``  — 1 fila por serie (entidad × sexo) con ``anio_eval``,
+  SMAPE/MAE reales y CV de los 4 motores, motor ganador, criterio y justificación.
 - ``produccion_dengue.xlsx`` — misma tabla, legible.
 """
 
@@ -31,27 +31,34 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from epiforecast.utils.config import logger
-
-ROOT = Path(__file__).resolve().parent.parent
-BOLETIN = ROOT / "data/processed/dataset_boletin_epidemiologico.csv"
-FORECAST_PATHS = {
-    "Prophet": ROOT / "reports/forecasts/prophet/all_forecast_prophet.csv",
-    "DeepAR": ROOT / "reports/forecasts/deepar/all_forecast_deepar.csv",
-    "Ensemble": ROOT / "reports/forecasts/ensemble/all_forecast_ensemble.csv",
-    "Stacking": ROOT / "reports/forecasts/stacking/all_forecast_stacking.csv",
-}
-OUT_CSV = ROOT / "reports/ProdDetails/produccion_dengue.csv"
-OUT_XLSX = ROOT / "reports/ProdDetails/produccion_dengue.xlsx"
+from epiforecast.utils.config import conf, logger
 
 PADECIMIENTO = "Dengue"
 MOTORES = ["Prophet", "DeepAR", "Ensemble", "Stacking"]
+
+
+# Rutas derivadas de config (no hardcodeadas) en acceso lazy: evita leer conf en import-time
+# (frágil bajo pytest) y mantiene el módulo importable para tests de las funciones puras.
+def _boletin() -> Path:
+    return Path(conf["data"]["boletin"])
+
+
+def _forecast_paths() -> dict[str, Path]:
+    base = Path(conf["paths"]["reports"]) / "forecasts"
+    return {m: base / m.lower() / f"all_forecast_{m.lower()}.csv" for m in MOTORES}
+
+
+def _out_paths() -> tuple[Path, Path]:
+    prod = Path(conf["paths"]["reports"]) / "ProdDetails"
+    return prod / "produccion_dengue.csv", prod / "produccion_dengue.xlsx"
+
+
 # Solo DeepAR y Prophet son productivos para Dengue. Ensemble (Prophet+XGBoost) y Stacking
 # (Prophet+ETS+LightGBM) divergen ~33x/99x: los modelos de árboles no extrapolan la dinámica
 # epidémica del dengue a 52 semanas (y el log1p amplifica el overshoot exponencialmente).
 # Se reportan sus métricas para auditoría pero NO se eligen como motor productivo.
 MOTORES_ELEGIBLES = ["Prophet", "DeepAR"]
-MIN_WEEKS_REAL = 10  # mínimo de semanas reales 2026 para usar criterio real
+MIN_WEEKS_REAL = 10  # mínimo de semanas reales del año de eval. para usar criterio real
 MIN_TOTAL_CASOS = 10  # por debajo: serie casi-cero ("si es 0, es 0")
 
 
@@ -73,11 +80,17 @@ def mae(y: np.ndarray, yhat: np.ndarray) -> float:
     return float(np.mean(np.abs(y - yhat)))
 
 
-def build_real_2026(weeks_limit: int) -> pd.DataFrame:
-    """Real semanal 2026 de Dengue por (entidad, sexo, semana)."""
-    df = pd.read_csv(BOLETIN)
+def anio_evaluacion() -> int:
+    """Año de evaluación = último año con datos de Dengue en el boletín (no hardcodeado)."""
+    cols = pd.read_csv(_boletin(), usecols=["Padecimiento", "Anio"])
+    return int(cols[cols["Padecimiento"] == PADECIMIENTO]["Anio"].max())
+
+
+def build_real(anio: int, weeks_limit: int) -> pd.DataFrame:
+    """Real semanal del año de evaluación de Dengue por (entidad, sexo, semana)."""
+    df = pd.read_csv(_boletin())
     df = df[df["Padecimiento"] == PADECIMIENTO].copy()
-    sub = df[(df["Anio"] == 2026) & (df["Semana"] <= weeks_limit)].copy()
+    sub = df[(df["Anio"] == anio) & (df["Semana"] <= weeks_limit)].copy()
     sub = sub.sort_values(["Entidad", "Semana"])
 
     gen = sub.groupby(["Entidad", "Semana"])["Casos_semana"].sum().reset_index()
@@ -110,11 +123,11 @@ def build_real_2026(weeks_limit: int) -> pd.DataFrame:
     return full.rename(columns={"Entidad": "entidad"})[["entidad", "sexo", "Semana", "real"]]
 
 
-def build_forecasts_2026(weeks_limit: int) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Devuelve (yhat semanal 2026, cv_smape por serie/motor) para Dengue."""
+def build_forecasts(anio: int, weeks_limit: int) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Devuelve (yhat semanal del año, cv_smape por serie/motor) para Dengue."""
     pieces = []
     cv_rows = []
-    for motor, path in FORECAST_PATHS.items():
+    for motor, path in _forecast_paths().items():
         raw = pd.read_csv(path, low_memory=False)
         raw = raw[raw["meta_padecimiento"] == PADECIMIENTO].copy()
         # CV SMAPE por serie (constante por entidad/sexo en el forecast)
@@ -127,11 +140,11 @@ def build_forecasts_2026(weeks_limit: int) -> tuple[pd.DataFrame, pd.DataFrame]:
 
         df = raw[["ds", "yhat", "meta_entidad", "meta_modo"]].copy()
         df["ds"] = pd.to_datetime(df["ds"])
-        df = df[df["ds"].dt.year == 2026]
+        df = df[df["ds"].dt.year == anio]
         df = df.sort_values(["meta_entidad", "meta_modo", "ds"])
         # Alinear por semana epidemiológica (ISO) derivada de la fecha, NO por posición:
-        # el forecast 2026 puede arrancar en la semana 2 (2026-01-05), y `cumcount` lo
-        # etiquetaría como semana 1 → desalineación de 1 semana contra el real del boletín.
+        # el forecast del año puede arrancar en la semana 2 (p.ej. 2026-01-05), y `cumcount`
+        # lo etiquetaría como semana 1 → desalineación de 1 semana contra el real del boletín.
         df["Semana"] = df["ds"].dt.isocalendar().week.astype(int)
         df = df[df["Semana"] <= weeks_limit]
         df = df.rename(columns={"meta_entidad": "entidad", "meta_modo": "sexo"})
@@ -141,7 +154,7 @@ def build_forecasts_2026(weeks_limit: int) -> tuple[pd.DataFrame, pd.DataFrame]:
 
 
 def metrics_per_motor(real: pd.DataFrame, fc: pd.DataFrame, cv: pd.DataFrame) -> pd.DataFrame:
-    """Por (entidad, sexo) calcula SMAPE/MAE 2026 y CV-SMAPE de cada motor."""
+    """Por (entidad, sexo) calcula SMAPE/MAE reales y CV-SMAPE de cada motor."""
     fc_wide = fc.pivot_table(
         index=["entidad", "sexo", "Semana"], columns="motor", values="yhat"
     ).reset_index()
@@ -154,16 +167,16 @@ def metrics_per_motor(real: pd.DataFrame, fc: pd.DataFrame, cv: pd.DataFrame) ->
             "padecimiento": PADECIMIENTO,
             "entidad": ent,
             "sexo": sx,
-            "n_semanas_real_2026": int(len(grp)),
-            "total_real_2026": float(grp["real"].sum()),
+            "n_semanas_real": int(len(grp)),
+            "total_real": float(grp["real"].sum()),
         }
         for m in MOTORES:
             if m in grp.columns and grp[m].notna().sum() >= 1:
-                row[f"smape_2026_{m.lower()}"] = smape(grp["real"], grp[m])
-                row[f"mae_2026_{m.lower()}"] = mae(grp["real"], grp[m])
+                row[f"smape_real_{m.lower()}"] = smape(grp["real"], grp[m])
+                row[f"mae_real_{m.lower()}"] = mae(grp["real"], grp[m])
             else:
-                row[f"smape_2026_{m.lower()}"] = np.nan
-                row[f"mae_2026_{m.lower()}"] = np.nan
+                row[f"smape_real_{m.lower()}"] = np.nan
+                row[f"mae_real_{m.lower()}"] = np.nan
             cvv = (
                 cv_wide.loc[(ent, sx), m]
                 if (ent, sx) in cv_wide.index and m in cv_wide.columns
@@ -175,12 +188,12 @@ def metrics_per_motor(real: pd.DataFrame, fc: pd.DataFrame, cv: pd.DataFrame) ->
 
 
 def _pick(row: pd.Series) -> tuple[str, str, float | None]:
-    n = row["n_semanas_real_2026"]
-    total = row["total_real_2026"]
+    n = row["n_semanas_real"]
+    total = row["total_real"]
     # Selección solo entre motores elegibles (DeepAR/Prophet); Ensemble/Stacking divergen.
-    smapes = {m: row[f"smape_2026_{m.lower()}"] for m in MOTORES_ELEGIBLES}
+    smapes = {m: row[f"smape_real_{m.lower()}"] for m in MOTORES_ELEGIBLES}
     smapes = {m: v for m, v in smapes.items() if pd.notna(v)}
-    maes = {m: row[f"mae_2026_{m.lower()}"] for m in MOTORES_ELEGIBLES}
+    maes = {m: row[f"mae_real_{m.lower()}"] for m in MOTORES_ELEGIBLES}
     maes = {m: v for m, v in maes.items() if pd.notna(v)}
     cvs = {m: row[f"cv_smape_{m.lower()}"] for m in MOTORES_ELEGIBLES}
     cvs = {m: v for m, v in cvs.items() if pd.notna(v)}
@@ -188,11 +201,11 @@ def _pick(row: pd.Series) -> tuple[str, str, float | None]:
     # Regla 1: realidad suficiente + casos suficientes -> SMAPE real (MAE desempate)
     if n >= MIN_WEEKS_REAL and total >= MIN_TOTAL_CASOS and smapes:
         winner = min(smapes, key=lambda m: (round(smapes[m], 4), maes.get(m, np.inf)))
-        return winner, "smape_real_2026", smapes[winner]
+        return winner, "smape_real", smapes[winner]
     # Regla 2: serie casi-cero -> menor MAE (más cercano a cero), "si es 0, es 0"
     if n >= MIN_WEEKS_REAL and total < MIN_TOTAL_CASOS and maes:
         winner = min(maes, key=lambda m: maes[m])
-        return winner, "mae_real_2026_casi_cero", None
+        return winner, "mae_real_casi_cero", None
     # Regla 3: sin realidad reciente -> CV SMAPE
     if cvs:
         winner = min(cvs, key=lambda m: cvs[m])
@@ -211,14 +224,12 @@ def select(metrics: pd.DataFrame) -> pd.DataFrame:
     def _just(r: pd.Series) -> str:
         m = r["motor_productivo"]
         crit = r["criterio_seleccion"]
-        if crit == "smape_real_2026":
-            return f"{m}: menor SMAPE 2026 real={r['smape_ganador']:.2f}% sobre {int(r['n_semanas_real_2026'])} sem"
-        if crit == "mae_real_2026_casi_cero":
-            return (
-                f"{m}: serie casi-cero (total {int(r['total_real_2026'])} casos), menor MAE 2026"
-            )
+        if crit == "smape_real":
+            return f"{m}: menor SMAPE real={r['smape_ganador']:.2f}% sobre {int(r['n_semanas_real'])} sem"
+        if crit == "mae_real_casi_cero":
+            return f"{m}: serie casi-cero (total {int(r['total_real'])} casos), menor MAE real"
         if crit == "cv_smape":
-            return f"{m}: sin realidad 2026 suficiente, menor SMAPE de validación cruzada"
+            return f"{m}: sin realidad reciente suficiente, menor SMAPE de validación cruzada"
         return f"{m}: default"
 
     out["justificacion"] = out.apply(_just, axis=1)
@@ -226,21 +237,21 @@ def select(metrics: pd.DataFrame) -> pd.DataFrame:
 
 
 def main() -> None:
-    weeks_limit = int(
-        pd.read_csv(BOLETIN, usecols=["Padecimiento", "Anio", "Semana"])
-        .query("Padecimiento == @PADECIMIENTO and Anio == 2026")["Semana"]
-        .max()
-    )
-    logger.info("Dengue 2026: usando semanas 1..{}", weeks_limit)
+    anio = anio_evaluacion()
+    bol = pd.read_csv(_boletin(), usecols=["Padecimiento", "Anio", "Semana"])
+    weeks_limit = int(bol.query("Padecimiento == @PADECIMIENTO and Anio == @anio")["Semana"].max())
+    logger.info("Dengue {}: usando semanas 1..{}", anio, weeks_limit)
 
-    real = build_real_2026(weeks_limit)
-    fc, cv = build_forecasts_2026(weeks_limit)
+    real = build_real(anio, weeks_limit)
+    fc, cv = build_forecasts(anio, weeks_limit)
     metrics = metrics_per_motor(real, fc, cv)
     result = select(metrics)
+    result.insert(3, "anio_eval", anio)
 
-    OUT_CSV.parent.mkdir(parents=True, exist_ok=True)
-    result.to_csv(OUT_CSV, index=False)
-    result.to_excel(OUT_XLSX, index=False)
+    out_csv, out_xlsx = _out_paths()
+    out_csv.parent.mkdir(parents=True, exist_ok=True)
+    result.to_csv(out_csv, index=False)
+    result.to_excel(out_xlsx, index=False)
 
     dist = result["motor_productivo"].value_counts().to_dict()
     crit = result["criterio_seleccion"].value_counts().to_dict()
@@ -253,8 +264,8 @@ def main() -> None:
         crit,
         motor_nac,
     )
-    logger.info("→ {}", OUT_CSV)
-    logger.info("→ {}", OUT_XLSX)
+    logger.info("→ {}", out_csv)
+    logger.info("→ {}", out_xlsx)
 
 
 if __name__ == "__main__":

@@ -18,6 +18,8 @@ deepar:
   nonnegative_pred_samples: true     # Predicciones siempre >= 0
   num_batches_per_epoch: 50          # Default de GluonTS (antes calculado ~20)
   early_stopping_patience: 15        # Detener si train_loss no mejora en 15 epochs
+  eval_epochs_min: 25                # _eval_rapida: piso de epochs del hold-out
+  eval_epochs_divisor: 4             # _eval_rapida: epochs = max(min, epochs // divisor)
   skip_cv_estatal: true               # false: CV completo por estado (lento, metricas por fold)
 
   # Overrides para cohortes de menor historia que la neuro (p.ej. Dengue, A97.x desde

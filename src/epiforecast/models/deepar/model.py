@@ -899,7 +899,9 @@ class DeepARForecaster(ForecastModel):
 
             torch.manual_seed(RANDOM_SEED)
             np.random.seed(RANDOM_SEED)
-            eval_epochs = max(25, self.epochs // 4)
+            eval_min = int(self.deepar_conf.get("eval_epochs_min", 25))
+            eval_div = int(self.deepar_conf.get("eval_epochs_divisor", 4))
+            eval_epochs = max(eval_min, self.epochs // eval_div)
             estimator = self._create_estimator(
                 epochs=eval_epochs,
                 prediction_length=len(test_data),
