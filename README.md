@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/Python-3.12-blue?style=flat&logo=python&logoColor=white" alt="Python 3.12"/>
   <img src="https://img.shields.io/badge/Models-Prophet_%2B_DeepAR_%2B_Ensemble_%2B_Stacking-orange?style=flat" alt="Multi-Model"/>
   <img src="https://img.shields.io/badge/GPU-SageMaker_T4-76b900?style=flat&logo=nvidia&logoColor=white" alt="GPU SageMaker"/>
-  <img src="https://img.shields.io/badge/Tests-849-brightgreen?style=flat" alt="849 Tests"/>
+  <img src="https://img.shields.io/badge/Tests-907-brightgreen?style=flat" alt="907 Tests"/>
   <img src="https://img.shields.io/badge/DVC-S3-945DD6?style=flat&logo=dvc&logoColor=white" alt="DVC + S3"/>
 </p>
 
@@ -34,6 +34,9 @@ The platform uses a **polymorphic Factory pattern** to support multiple forecast
 | Depression | F32 | High baseline, seasonal patterns, COVID disruption |
 | Parkinson's disease | G20 | Low incidence, volatile per-state series |
 | Alzheimer's disease | G30 | Aging-population trends, underreporting |
+| Dengue *(extra deliverable)* | A97 | Vector-borne, ~4-5 year epidemic cycle, near-zero off-season series |
+
+The three neurological/mental-health conditions are the core production cohort (333 models). **Dengue** was incorporated as a fourth, vector-borne condition with its own count-based pipeline — see [Dengue (Fourth Condition)](#dengue-fourth-condition--extra-deliverable).
 
 ---
 
@@ -166,7 +169,7 @@ EpiForecast-MX/
 |   |-- ci_process_boletines.py   #   CI/CD bulletin processing (Camelot)
 |   +-- publish_gsheets.py        #   Google Sheets publisher
 |
-|-- tests/                        # Test suite (~46 files, 849 tests, 70%+ coverage)
+|-- tests/                        # Test suite (55 files, 907 tests, 70%+ coverage)
 |   |-- unit/                     #   Unit tests for all modules
 |   +-- integration/              #   End-to-end pipeline tests
 |
@@ -415,9 +418,10 @@ CI scraper. Delegates to `scripts/actualiza_semanal.sh` and runs 5 steps:
    consolidated dataset (`dataset_boletin_epidemiologico.csv`). Prints total
    rows and the latest epidemiological week detected.
 3. **Regenerate** `web_dashboard/knowledge.json` via `scripts/build_web_knowledge.py`
-   (333 production models, boletin stats, weekly comparisons).
-4. **Copy** `knowledge.json` into the sibling `EpiForecast-IMSS-Dashboard/kb/`
-   folder.
+   (333 production models, boletin stats, weekly comparisons, and the `dengue` section
+   that powers the EpiBot's Dengue answers).
+4. **Copy** `knowledge.json` into the sibling `EpiForecast-IMSS-Dashboard/epibot/`
+   folder (the live EpiBot assistant).
 5. **Commit + push** the dashboard repo if `knowledge.json` changed
    (`data: actualizar knowledge.json con datos semana <N>/<YYYY>`).
 
@@ -434,10 +438,10 @@ push permission to `main`.
 
 ### Current Data Snapshot
 
-- **Latest epidemiological week:** 13/2026
-- **Consolidated dataset:** 61,345 rows (`data/processed/dataset_boletin_epidemiologico.csv`)
-- **Knowledge base:** 172 KB — 333 production models, 51 stats keys, 6 boletin sections
-- **Forecast horizon:** 52 weeks ahead (rolling, regenerated per weekly update)
+- **Latest epidemiological week:** 20/2026
+- **Consolidated dataset:** 74,560 rows (`data/processed/dataset_boletin_epidemiologico.csv`) — 62,016 neuro (3 × 20,672) + 12,544 Dengue
+- **Knowledge base:** 175 KB — 333 neuro production models + a `dengue` section, 51 stats keys, 6 boletin sections
+- **Forecast horizon:** 52 weeks ahead (rolling, regenerated per weekly update); Dengue adds a 5-year illustrative seasonal projection
 
 ---
 
@@ -507,31 +511,36 @@ python -m scripts.entrena modelo_activo='deepar' padecimiento.tipo='Alzheimer'
 
 ---
 
-## Dengue Expansion (In Progress)
+## Dengue (Fourth Condition — Extra Deliverable)
 
-EpiForecast-MX is extending its multi-model pipeline to **Dengue (ICD-10 A97)**, the platform's first vector-borne disease and one of Mexico's highest-impact arboviral threats. This broadens the project beyond its three neurological and mental-health conditions.
+Beyond the three neurological/mental-health conditions, EpiForecast-MX incorporates **Dengue (ICD-10 A97)** as a fourth, vector-borne condition — an extra deliverable that exercises the platform's extensibility on a disease with fundamentally different dynamics (climate-driven seasonality, multi-year epidemic cycles, near-zero off-season series). Dengue is **fully in production**: trained, model-selected, served on the public site, and answered by the EpiBot assistant.
 
-**Modeling decision (evidence-based).** Dengue is reported under the WHO 2009 classification across three severity tiers: non-severe (`A97.0`), with warning signs (`A97.1`), and severe (`A97.2`). A literature review of dengue forecasting concluded that incidence should be modeled as **total dengue (the three tiers aggregated)**, not as separate severity series. Severe dengue is a very small fraction of cases (roughly 0.1 to 0.2 percent in the Americas), producing sparse, near-zero per-state weekly series that are intrinsically hard to forecast; predictive skill comes from the autocorrelation and seasonality of the aggregate series. Forecasting severity strata is a clinical classification problem, distinct from incidence forecasting.
+**Modeling decision (evidence-based).** Dengue is reported under the WHO 2009 classification across three severity tiers: non-severe (`A97.0`), with warning signs (`A97.1`), and severe (`A97.2`). A literature review concluded that incidence should be modeled as **total dengue (the three tiers aggregated)**, not as separate severity series: severe dengue is a tiny fraction of cases (~0.1-0.2% in the Americas), so per-severity series are sparse and near-zero; predictive skill comes from the autocorrelation and seasonality of the aggregate. Dengue is modeled as **absolute counts** (not population-normalized rates).
 
-**Phase 1 (complete): extraction and validation.** A dedicated extractor parses the per-entity Dengue table from SINAVE bulletins, which lives on a separate page from the neurological table and carries a different layout.
+**Data — series 2018-2026 (~392 national weeks).** A dedicated extractor parses the per-entity Dengue table from SINAVE bulletins (a separate page with its own layout), validated cell-by-cell against the printed `TOTAL` row:
 
-- `src/epiforecast/data/extraction/dengue_extractor.py` — locates the per-entity table by ICD codes (`A97.0/A97.1/A97.2`), aggregates the three severity tiers per state and sex, and emits the same schema as the consolidated bulletin dataset.
-- `scripts/extrae_dengue.py` — batch entry point over `data/raw_PDFs/`, with a dataset-level audit (duplicate, completeness, and weekly-vs-accumulated consistency checks).
-- `scripts/build_dengue_web.py` — generates the public Phase 1 page artifacts (preliminary charts plus `dengue_serie.json`, which the website fetches so the live table refreshes whenever the series is regenerated).
+- `src/epiforecast/data/extraction/dengue_extractor.py` — locates the table by ICD codes (`A97.0/A97.1/A97.2`), aggregates the three tiers per state and sex. Supports two WHO-2009 layouts: production 2020+ (12 columns) and historical 2018-W27..2019 (10 columns, `dengue_historico.py`).
+- `scripts/extrae_dengue.py` / `scripts/merge_dengue.py` — batch extraction with a dataset-level audit, then an idempotent merge into the DVC-versioned consolidated dataset (**74,560 rows = 62,016 neuro + 12,544 Dengue**).
+- A separate WHO-1997 `A90/A91` series (2014-2018, confirmed-by-sex) is extracted for **context/EDA only** (`dengue_historico_a9091.py`) and does not feed the production pipeline.
+
+**Cohort-aware modeling (neuro path untouched).** Dengue belongs to a "count-log" cohort (`utils.cohorts.is_count_log_cohort`): Prophet runs **with** `log_transform` and **without** rate normalization (the multiplicative trend otherwise collapses to ~0 when extrapolated), with a fixed `changepoint_prior_scale=0.05`, no COVID holiday, uniform CV weights, and **no regional fallback** (if a state has no transmission, it forecasts zero). The neurological flows stay byte-identical via `constants.NEURO_CONDITIONS` / `filter_neuro`.
+
+**Production = DeepAR + Prophet only.** All four engines are trained per series (33 geographies × 3 sexes = 99 series), but the productive selector (`scripts/produccion_dengue.py`, by SMAPE on 2026 reality) keeps **only DeepAR and Prophet** (distribution **DeepAR 54 / Prophet 45**; national = Prophet, SMAPE ~20% on 2026 reality). Ensemble and Stacking are excluded because their tree learners do not extrapolate the epidemic dynamic to 52 weeks (a seasonal-envelope guard, `models/forecast_guards.py`, caps them but they are never chosen).
+
+**Horizon: 1-year precise + 5-year illustrative.** The accurate forecast is 52 weeks. A 5-year band (flat-growth Prophet on `log1p`) is **illustrative**: with only two epidemic cycles in the data the ~4-5 year cycle is not learnable, so it shows the expected seasonal pattern, not the magnitude of the next epidemic.
+
+**Live.** Public forecast page at **epiforecast.mx/dengue** (`dengue_forecast.json` + `dengue_serie.json` + showcase/EDA charts), and the **EpiBot** assistant answers Dengue questions (`answerDengue` handler, fed by a `dengue` section in `knowledge.json` generated from the production artifacts).
 
 ```bash
-# Extract the validated Dengue series from all bulletins
-python scripts/extrae_dengue.py
-
-# Or a subset by glob
-python scripts/extrae_dengue.py --pattern "202[3-6]_*.pdf"
+# End-to-end Dengue pipeline
+make dengue-extract            # parse A97.x tables from bulletins
+make dengue-merge              # idempotent merge into the consolidated (+ DVC)
+make dengue-prep               # filter -> clean -> transform -> INEGI map
+make dengue-train-estatal MODELO=prophet   # (and deepar / ensemble / stacking)
+make predict-all ARGS="padecimiento.tipo='Dengue' padecimiento.modelado_hibrido=False"
+make dengue-produccion         # DeepAR/Prophet per-series selector
+make dengue-web                # public charts + JSON + EpiBot knowledge.json
 ```
-
-Each bulletin is validated against its printed `TOTAL` row, and a guard rejects bulletins exhibiting a column-duplication artifact. The resulting series (`data/interim/dengue_boletin.csv`) covers **2020 to 2026 across the 32 states**, audited cell-by-cell against the source PDFs. Bulletins before 2020 use the older WHO 1997 scheme (`A90/A91`) and are not yet supported. A documented source correction (`_SOURCE_CORRECTIONS`) fixes a known bulletin typo (Zacatecas 2024-W41).
-
-**Phase 2 (in progress): analysis and preparation.** The series was merged into the consolidated dataset (`scripts/merge_dengue.py`, idempotent; DVC-versioned, 72,256 rows). EDA confirmed strong seasonality and autocorrelation (see `docs/research/hallazgos/EDA_DENGUE_FASE2.md`). Feature engineering is made per-disease: outlier clipping is **disabled for Dengue** (the epidemic peak is the signal, not noise to median-replace). Because the consolidated now contains Dengue, the neuro pipeline is made Dengue-aware via `constants.NEURO_CONDITIONS`: `filter` ("General" mode), `entrena`, `reselect_motor_2026`, `genera_validacion_semanal`, and `build_web_knowledge` all restrict to the neuro production cohort, so Dengue is trained only when requested explicitly (`padecimiento.tipo='Dengue'`).
-
-**Next phases.** Dengue-specific model configuration (seasonality, changepoints, no COVID regime, `_GRID_KEY_MAP` entry), training and validation of the four engines (no regional fallback: a state with no transmission forecasts zero), and 52-week forecasts.
 
 ---
 
@@ -540,7 +549,7 @@ Each bulletin is validated against its printed `TOTAL` row, and a guard rejects 
 GitHub Actions runs on every push to `main` and on pull requests:
 
 1. **Code Quality** (`ci.yml`): Ruff lint + format check + mypy type checking.
-2. **Tests** (`ci.yml`): Pytest with 849 tests, coverage minimum 70%, excluding slow and integration tests.
+2. **Tests** (`ci.yml`): Pytest with 907 tests, coverage minimum 70%, excluding slow and integration tests.
 3. **Integration Tests** (`ci.yml`): Manual trigger only (`workflow_dispatch`).
 4. **Bulletin Scraping** (`scrape_boletines.yml`): Daily automated SINAVE bulletin download via Selenium.
 5. **Bulletin Processing** (`process_boletines.yml`): Camelot PDF extraction and dataset consolidation.
