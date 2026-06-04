@@ -31,6 +31,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from epiforecast.evaluation.real_eval import build_forecasts, build_real, eval_year, smape
 from epiforecast.utils.config import conf, logger
 
 PADECIMIENTO = "Dengue"
@@ -62,95 +63,13 @@ MIN_WEEKS_REAL = 10  # mínimo de semanas reales del año de eval. para usar cri
 MIN_TOTAL_CASOS = 10  # por debajo: serie casi-cero ("si es 0, es 0")
 
 
-def smape(y: np.ndarray, yhat: np.ndarray) -> float:
-    y = np.asarray(y, dtype=float)
-    yhat = np.asarray(yhat, dtype=float)
-    denom = (np.abs(y) + np.abs(yhat)) / 2
-    mask = denom > 0
-    if mask.sum() == 0:
-        return np.nan
-    return float(np.mean(np.abs(y[mask] - yhat[mask]) / denom[mask]) * 100)
-
-
 def mae(y: np.ndarray, yhat: np.ndarray) -> float:
+    """MAE; NaN ante arreglo vacío (criterio de las series casi-cero, no usado en neuro)."""
     y = np.asarray(y, dtype=float)
     yhat = np.asarray(yhat, dtype=float)
     if y.size == 0:
         return np.nan
     return float(np.mean(np.abs(y - yhat)))
-
-
-def anio_evaluacion() -> int:
-    """Año de evaluación = último año con datos de Dengue en el boletín (no hardcodeado)."""
-    cols = pd.read_csv(_boletin(), usecols=["Padecimiento", "Anio"])
-    return int(cols[cols["Padecimiento"] == PADECIMIENTO]["Anio"].max())
-
-
-def build_real(anio: int, weeks_limit: int) -> pd.DataFrame:
-    """Real semanal del año de evaluación de Dengue por (entidad, sexo, semana)."""
-    df = pd.read_csv(_boletin())
-    df = df[df["Padecimiento"] == PADECIMIENTO].copy()
-    sub = df[(df["Anio"] == anio) & (df["Semana"] <= weeks_limit)].copy()
-    sub = sub.sort_values(["Entidad", "Semana"])
-
-    gen = sub.groupby(["Entidad", "Semana"])["Casos_semana"].sum().reset_index()
-    gen["sexo"] = "general"
-    gen = gen.rename(columns={"Casos_semana": "real"})
-
-    def _diff(col: str, sexo: str) -> pd.DataFrame:
-        rows = []
-        for ent, grp in sub.groupby("Entidad"):
-            grp = grp.sort_values("Semana")
-            diffs = grp[col].diff().fillna(grp[col]).clip(lower=0)
-            for sem, val in zip(grp["Semana"], diffs, strict=False):
-                rows.append({"Entidad": ent, "Semana": int(sem), "real": float(val), "sexo": sexo})
-        return pd.DataFrame(rows)
-
-    hom = _diff("Acumulado_hombres", "hombres")
-    muj = _diff("Acumulado_mujeres", "mujeres")
-    long_df = pd.concat(
-        [
-            gen.rename(columns={"Entidad": "Entidad"})[["Entidad", "Semana", "sexo", "real"]],
-            hom,
-            muj,
-        ],
-        ignore_index=True,
-    )
-
-    nac = long_df.groupby(["Semana", "sexo"])["real"].sum().reset_index()
-    nac["Entidad"] = "Nacional"
-    full = pd.concat([long_df, nac[["Entidad", "Semana", "sexo", "real"]]], ignore_index=True)
-    return full.rename(columns={"Entidad": "entidad"})[["entidad", "sexo", "Semana", "real"]]
-
-
-def build_forecasts(anio: int, weeks_limit: int) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Devuelve (yhat semanal del año, cv_smape por serie/motor) para Dengue."""
-    pieces = []
-    cv_rows = []
-    for motor, path in _forecast_paths().items():
-        raw = pd.read_csv(path, low_memory=False)
-        raw = raw[raw["meta_padecimiento"] == PADECIMIENTO].copy()
-        # CV SMAPE por serie (constante por entidad/sexo en el forecast)
-        cv = raw.groupby(["meta_entidad", "meta_modo"])["smape_usado"].first().reset_index()
-        cv = cv.rename(
-            columns={"meta_entidad": "entidad", "meta_modo": "sexo", "smape_usado": "cv_smape"}
-        )
-        cv["motor"] = motor
-        cv_rows.append(cv)
-
-        df = raw[["ds", "yhat", "meta_entidad", "meta_modo"]].copy()
-        df["ds"] = pd.to_datetime(df["ds"])
-        df = df[df["ds"].dt.year == anio]
-        df = df.sort_values(["meta_entidad", "meta_modo", "ds"])
-        # Alinear por semana epidemiológica (ISO) derivada de la fecha, NO por posición:
-        # el forecast del año puede arrancar en la semana 2 (p.ej. 2026-01-05), y `cumcount`
-        # lo etiquetaría como semana 1 → desalineación de 1 semana contra el real del boletín.
-        df["Semana"] = df["ds"].dt.isocalendar().week.astype(int)
-        df = df[df["Semana"] <= weeks_limit]
-        df = df.rename(columns={"meta_entidad": "entidad", "meta_modo": "sexo"})
-        df["motor"] = motor
-        pieces.append(df[["motor", "entidad", "sexo", "Semana", "yhat"]])
-    return pd.concat(pieces, ignore_index=True), pd.concat(cv_rows, ignore_index=True)
 
 
 def metrics_per_motor(real: pd.DataFrame, fc: pd.DataFrame, cv: pd.DataFrame) -> pd.DataFrame:
@@ -237,13 +156,17 @@ def select(metrics: pd.DataFrame) -> pd.DataFrame:
 
 
 def main() -> None:
-    anio = anio_evaluacion()
+    pads = [PADECIMIENTO]
+    anio = eval_year(_boletin(), pads)
     bol = pd.read_csv(_boletin(), usecols=["Padecimiento", "Anio", "Semana"])
     weeks_limit = int(bol.query("Padecimiento == @PADECIMIENTO and Anio == @anio")["Semana"].max())
     logger.info("Dengue {}: usando semanas 1..{}", anio, weeks_limit)
 
-    real = build_real(anio, weeks_limit)
-    fc, cv = build_forecasts(anio, weeks_limit)
+    # Cohorte de un solo padecimiento: se descarta la columna padecimiento del módulo común.
+    real = build_real(_boletin(), pads, anio, weeks_limit).drop(columns=["padecimiento"])
+    fc, cv = build_forecasts(_forecast_paths(), pads, anio, weeks_limit)
+    fc = fc.drop(columns=["padecimiento"])
+    cv = cv.drop(columns=["padecimiento"])
     metrics = metrics_per_motor(real, fc, cv)
     result = select(metrics)
     result.insert(3, "anio_eval", anio)

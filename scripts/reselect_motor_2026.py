@@ -32,7 +32,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from epiforecast.utils.cohorts import filter_neuro
+from epiforecast.constants import NEURO_CONDITIONS
+from epiforecast.evaluation.real_eval import build_forecasts, build_real, eval_year, smape
 
 ROOT = Path(__file__).resolve().parent.parent
 PROD_TABLE = ROOT / "reports/ProdDetails/tabla_333_modelos_produccion.xlsx"
@@ -51,87 +52,18 @@ NOISY_FALLBACK = "Ensemble"
 MOTORES = ["Prophet", "DeepAR", "Ensemble", "Stacking"]
 
 
-def smape(y: np.ndarray, yhat: np.ndarray) -> float:
-    y = np.asarray(y, dtype=float)
-    yhat = np.asarray(yhat, dtype=float)
-    denom = (np.abs(y) + np.abs(yhat)) / 2
-    mask = denom > 0
-    if mask.sum() == 0:
-        return np.nan
-    return float(np.mean(np.abs(y[mask] - yhat[mask]) / denom[mask]) * 100)
+def _real_neuro(anio: int, weeks_limit: int) -> pd.DataFrame:
+    """Real neuro (módulo común) con el nombre de Depresión normalizado para el merge."""
+    real = build_real(BOLETIN, NEURO_CONDITIONS, anio, weeks_limit)
+    real["padecimiento"] = real["padecimiento"].replace({"Depresión": "Depresion"})
+    return real
 
 
-def build_real_2026(weeks_limit: int) -> pd.DataFrame:
-    """Devuelve real semanal 2026 por (padecimiento, entidad, sexo, semana)."""
-    df = pd.read_csv(BOLETIN)
-    # Guard: la re-selección de motor es solo para la cohorte neuro de producción.
-    # Excluye Dengue (presente en el consolidado pero sin forecasts/modelos propios aún).
-    df = filter_neuro(df)
-    sub = df[(df["Anio"] == 2026) & (df["Semana"] <= weeks_limit)].copy()
-    sub = sub.sort_values(["Padecimiento", "Entidad", "Semana"])
-
-    gen = sub.groupby(["Padecimiento", "Entidad", "Semana"])["Casos_semana"].sum().reset_index()
-    gen["sexo"] = "general"
-    gen = gen.rename(columns={"Casos_semana": "real"})
-
-    def _diff(col: str, sexo: str) -> pd.DataFrame:
-        rows = []
-        for (pad, ent), grp in sub.groupby(["Padecimiento", "Entidad"]):
-            grp = grp.sort_values("Semana")
-            diffs = grp[col].diff().fillna(grp[col]).clip(lower=0)
-            for sem, val in zip(grp["Semana"], diffs, strict=False):
-                rows.append(
-                    {
-                        "Padecimiento": pad,
-                        "Entidad": ent,
-                        "Semana": int(sem),
-                        "real": float(val),
-                        "sexo": sexo,
-                    }
-                )
-        return pd.DataFrame(rows)
-
-    hom = _diff("Acumulado_hombres", "hombres")
-    muj = _diff("Acumulado_mujeres", "mujeres")
-    long_df = pd.concat([gen, hom, muj], ignore_index=True)
-
-    nac = long_df.groupby(["Padecimiento", "Semana", "sexo"])["real"].sum().reset_index()
-    nac["Entidad"] = "Nacional"
-    full = pd.concat(
-        [long_df, nac[["Padecimiento", "Entidad", "Semana", "sexo", "real"]]],
-        ignore_index=True,
-    )
-    full["padecimiento"] = full["Padecimiento"].replace({"Depresión": "Depresion"})
-    return full.rename(columns={"Entidad": "entidad"})[
-        ["padecimiento", "entidad", "sexo", "Semana", "real"]
-    ]
-
-
-def build_forecasts_2026(weeks_limit: int) -> pd.DataFrame:
-    """Devuelve yhat semanal 2026 por (motor, padecimiento, entidad, sexo, semana)."""
-    pieces = []
-    for motor, path in FORECAST_PATHS.items():
-        df = pd.read_csv(path, low_memory=False)[
-            ["ds", "yhat", "meta_padecimiento", "meta_entidad", "meta_modo"]
-        ]
-        df["ds"] = pd.to_datetime(df["ds"])
-        df = df[df["ds"].dt.year == 2026].copy()
-        df = df.sort_values(["meta_padecimiento", "meta_entidad", "meta_modo", "ds"])
-        df["Semana"] = (
-            df.groupby(["meta_padecimiento", "meta_entidad", "meta_modo"]).cumcount() + 1
-        )
-        df = df[df["Semana"] <= weeks_limit]
-        df = df.rename(
-            columns={
-                "meta_padecimiento": "padecimiento",
-                "meta_entidad": "entidad",
-                "meta_modo": "sexo",
-            }
-        )
-        df["motor"] = motor
-        df["padecimiento"] = df["padecimiento"].replace({"Depresión": "Depresion"})
-        pieces.append(df[["motor", "padecimiento", "entidad", "sexo", "Semana", "yhat"]])
-    return pd.concat(pieces, ignore_index=True)
+def _forecasts_neuro(anio: int, weeks_limit: int) -> pd.DataFrame:
+    """Forecast neuro (módulo común, alineado por semana ISO) con Depresión normalizada."""
+    fc, _cv = build_forecasts(FORECAST_PATHS, NEURO_CONDITIONS, anio, weeks_limit)
+    fc["padecimiento"] = fc["padecimiento"].replace({"Depresión": "Depresion"})
+    return fc
 
 
 def smape_per_motor(real: pd.DataFrame, fc: pd.DataFrame) -> pd.DataFrame:
@@ -226,13 +158,19 @@ def main() -> None:
     prod = pd.read_excel(PROD_TABLE, sheet_name=0)
     print(f"  {len(prod)} combinaciones")
 
-    print("Cargando boletín 2026 sem 1-15...")
-    real = build_real_2026(WEEKS_LIMIT)
+    anio = eval_year(BOLETIN, NEURO_CONDITIONS)  # último año con datos neuro (derivado)
+    print(f"Cargando boletín {anio} sem 1-{WEEKS_LIMIT}...")
+    real = _real_neuro(anio, WEEKS_LIMIT)
     print(f"  {len(real)} filas reales")
 
-    print("Cargando forecasts 4 motores 2026 sem 1-15...")
-    fc = build_forecasts_2026(WEEKS_LIMIT)
+    print(f"Cargando forecasts 4 motores {anio} sem 1-{WEEKS_LIMIT}...")
+    fc = _forecasts_neuro(anio, WEEKS_LIMIT)
     print(f"  {len(fc)} filas de forecast")
+    if fc.empty or real.empty:
+        raise SystemExit(
+            "Sin forecasts/real neuro en los all_forecast_*.csv (¿están en Dengue-only?). "
+            "Corre 'make predict-all' para la cohorte neuro antes de re-seleccionar."
+        )
 
     print("Calculando SMAPE 2026 por motor por combinación...")
     smape_df = smape_per_motor(real, fc)
