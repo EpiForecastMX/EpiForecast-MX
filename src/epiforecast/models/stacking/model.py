@@ -157,9 +157,14 @@ class StackingForecaster(ForecastModel):
         x_stack = np.column_stack([pred_prophet, pred_ets, pred_lgbm])
         yhat = self._predict_combined(x_stack, pd.Series(pd.to_datetime(all_dates)))
 
-        return pd.DataFrame(
-            {"ds": all_dates, "yhat": yhat, "yhat_lower": yhat, "yhat_upper": yhat}
-        )
+        out = pd.DataFrame({"ds": all_dates, "yhat": yhat, "yhat_lower": yhat, "yhat_upper": yhat})
+        # Guard de plausibilidad para Dengue: LightGBM diverge al extrapolar; se acota a la
+        # envolvente estacional histórica (no afecta neuro).
+        if self.padecimiento == "Dengue" and not self.serie.empty:
+            from epiforecast.models.forecast_guards import clamp_seasonal_envelope
+
+            out = clamp_seasonal_envelope(out, self.serie[["ds", "y"]])
+        return out
 
     def cross_validate(self, data: pd.DataFrame) -> dict[str, float]:
         """Evalua stacking sobre data (hold-out temporal)."""

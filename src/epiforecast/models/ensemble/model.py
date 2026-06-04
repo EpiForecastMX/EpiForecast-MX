@@ -187,11 +187,21 @@ class EnsembleForecaster(ForecastModel):
             if self._prophet is None:
                 raise RuntimeError("Modelo no entrenado. Ejecutar fit() primero.")
             serie = self.serie if not self.serie.empty else self._prophet.history[["ds", "y"]]
-            return self._parallel_engine.predict(self._prophet, serie, horizon)
-        if self._prophet is None or self._xgb is None:
-            raise RuntimeError("Modelo no entrenado. Ejecutar fit() primero.")
-        serie = self.serie if not self.serie.empty else self._prophet.history[["ds", "y"]]
-        return generar_prediccion_completa(self._prophet, self._xgb, serie, horizon)
+            out = self._parallel_engine.predict(self._prophet, serie, horizon)
+        else:
+            if self._prophet is None or self._xgb is None:
+                raise RuntimeError("Modelo no entrenado. Ejecutar fit() primero.")
+            serie = self.serie if not self.serie.empty else self._prophet.history[["ds", "y"]]
+            out = generar_prediccion_completa(self._prophet, self._xgb, serie, horizon)
+        # Guard de plausibilidad para Dengue: XGBoost diverge al extrapolar; se acota a la
+        # envolvente estacional histórica (no afecta neuro).
+        if self.padecimiento == "Dengue":
+            from epiforecast.models.forecast_guards import clamp_seasonal_envelope
+
+            out = clamp_seasonal_envelope(
+                out, serie[["ds", "y"]], cols=("yhat", "yhat_lower", "yhat_upper", "yhat_ensemble")
+            )
+        return out
 
     def cross_validate(self, data: pd.DataFrame) -> dict[str, float]:
         test_df = data if ("y" in data.columns and not data.empty) else self.test_data
