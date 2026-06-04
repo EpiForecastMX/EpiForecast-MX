@@ -4,7 +4,10 @@
 
 PROJECT_NAME = integrador
 PYTHON_VERSION = 3.12
-PYTHON = python3
+# Usar el venv del proyecto: el python3 del sistema (homebrew) no tiene epiforecast/joblib.
+# Override: make <target> PYTHON=python3 si tu entorno ya está activado.
+PYTHON ?= .venv/bin/python
+MODELO ?= prophet
 ACTIVATE := bin/activate
 SRC = src/epiforecast
 
@@ -147,6 +150,19 @@ dengue-prep:
 dengue-train-nacional:
 	@echo ">>> Entrenando Dengue nacional..."
 	$(PYTHON) -m scripts.entrena padecimiento.tipo='Dengue' padecimiento.solo_nacional=True $(ARGS)
+
+## Entrenar Dengue ESTATAL (los 4 motores; idempotente con entrena_modelo=False)
+.PHONY: dengue-train-estatal
+dengue-train-estatal:
+	@echo ">>> Entrenando Dengue estatal ($(MODELO))..."
+	$(PYTHON) -m scripts.entrena padecimiento.tipo='Dengue' padecimiento.solo_nacional=False modelo_activo=$(MODELO) $(ARGS)
+
+## Seleccionar motor productivo por serie (DeepAR/Prophet) via SMAPE 2026 real
+.PHONY: dengue-produccion
+dengue-produccion:
+	@echo ">>> Seleccionando motor productivo de Dengue..."
+	$(PYTHON) -m scripts.produccion_dengue
+	@echo ">>> -> reports/ProdDetails/produccion_dengue.{csv,xlsx}"
 
 ## Regenerar artefactos web de Dengue (charts + JSON tabla en vivo + galeria EDA)
 .PHONY: dengue-web

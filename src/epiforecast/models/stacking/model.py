@@ -19,6 +19,7 @@ from epiforecast.models.ensemble.helpers import preparar_datos_ensemble
 from epiforecast.models.factory import register_model
 from epiforecast.models.stacking.experts import ETSExpert, LGBMExpert, ProphetExpert
 from epiforecast.models.stacking.meta_learner import StackingMetaLearner
+from epiforecast.utils.cohorts import is_count_log_cohort
 from epiforecast.utils.config import conf, logger
 
 logging.getLogger("cmdstanpy").disabled = True
@@ -158,9 +159,9 @@ class StackingForecaster(ForecastModel):
         yhat = self._predict_combined(x_stack, pd.Series(pd.to_datetime(all_dates)))
 
         out = pd.DataFrame({"ds": all_dates, "yhat": yhat, "yhat_lower": yhat, "yhat_upper": yhat})
-        # Guard de plausibilidad para Dengue: LightGBM diverge al extrapolar; se acota a la
-        # envolvente estacional histórica (no afecta neuro).
-        if self.padecimiento == "Dengue" and not self.serie.empty:
+        # Guard de plausibilidad para la cohorte de conteos-log (Dengue): LightGBM diverge al
+        # extrapolar; se acota a la envolvente estacional histórica (no afecta neuro).
+        if is_count_log_cohort(self.padecimiento) and not self.serie.empty:
             from epiforecast.models.forecast_guards import clamp_seasonal_envelope
 
             out = clamp_seasonal_envelope(out, self.serie[["ds", "y"]])

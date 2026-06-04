@@ -14,6 +14,7 @@ import pandas as pd
 
 from epiforecast.constants import RANDOM_SEED
 from epiforecast.evaluation.metrics import compute_forecast_metrics
+from epiforecast.utils.cohorts import is_count_log_cohort
 
 if TYPE_CHECKING:
     from prophet import Prophet
@@ -193,9 +194,9 @@ class EnsembleForecaster(ForecastModel):
                 raise RuntimeError("Modelo no entrenado. Ejecutar fit() primero.")
             serie = self.serie if not self.serie.empty else self._prophet.history[["ds", "y"]]
             out = generar_prediccion_completa(self._prophet, self._xgb, serie, horizon)
-        # Guard de plausibilidad para Dengue: XGBoost diverge al extrapolar; se acota a la
-        # envolvente estacional histórica (no afecta neuro).
-        if self.padecimiento == "Dengue":
+        # Guard de plausibilidad para la cohorte de conteos-log (Dengue): XGBoost diverge al
+        # extrapolar; se acota a la envolvente estacional histórica (no afecta neuro).
+        if is_count_log_cohort(self.padecimiento):
             from epiforecast.models.forecast_guards import clamp_seasonal_envelope
 
             out = clamp_seasonal_envelope(

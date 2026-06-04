@@ -17,6 +17,21 @@ def is_neuro(padecimiento: str | None) -> bool:
     return padecimiento in NEURO_CONDITIONS
 
 
+# Cohorte no-neuro modelada en log1p de CONTEOS crudos (hoy: Dengue). Centraliza el literal
+# para no repetirlo en los motores: Prophet (log on / tasa off), Ensemble/Stacking (clamp
+# estacional), y la inversión del log en predict (ForecastModelLoader). Un padecimiento
+# futuro con la misma naturaleza se agrega aquí, en un solo lugar.
+_COUNT_LOG_COHORT = frozenset({"Dengue"})
+
+
+def is_count_log_cohort(padecimiento: str | None) -> bool:
+    """``True`` si el padecimiento se modela en log1p de conteos crudos (sin normalizar a
+    tasa). Implica: activar log_transform, desactivar normalizar_tasa, acotar la
+    extrapolación de árboles con la envolvente estacional, e invertir el log (expm1) en
+    predict. Hoy aplica solo a Dengue."""
+    return padecimiento in _COUNT_LOG_COHORT
+
+
 def filter_neuro(df: pd.DataFrame, col: str = "Padecimiento") -> pd.DataFrame:
     """Restringe el DataFrame a la cohorte neuro de producción.
 

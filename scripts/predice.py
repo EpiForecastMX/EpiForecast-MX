@@ -7,6 +7,7 @@ import pandas as pd
 
 from epiforecast.models.prediction import ForecastModelLoader
 from epiforecast.utils import paths as directory_manager
+from epiforecast.utils.cohorts import is_count_log_cohort
 from epiforecast.utils.config import conf, logger
 from epiforecast.visualization.forecast_plots import generar_graficos_pronostico
 
@@ -273,10 +274,11 @@ def main():
 
         try:
             meta = parse_nombre_modelo(pkl.stem)
-            # Dengue entrena en log1p de conteos: el forecaster debe conocer el padecimiento
-            # para invertir (expm1) en predict. La cohorte neuro conserva su path histórico
-            # (padecimiento=None), cuya salida productiva está validada/publicada.
-            pad_loader = "Dengue" if meta.get("meta_padecimiento") == "Dengue" else None
+            # La cohorte de conteos-log (Dengue) entrena en log1p: el forecaster debe conocer
+            # el padecimiento para invertir (expm1) en predict. La cohorte neuro conserva su
+            # path histórico (padecimiento=None), cuya salida productiva está validada.
+            pad_meta = meta.get("meta_padecimiento")
+            pad_loader = pad_meta if is_count_log_cohort(pad_meta) else None
             df = ForecastModelLoader(
                 periodo=periodo, model_path=pkl, padecimiento=pad_loader
             ).run()

@@ -28,7 +28,7 @@ from epiforecast.models.prophet.data_prep import (
     eval_rapida,
     promedio_semanal,
 )
-from epiforecast.utils.cohorts import is_neuro
+from epiforecast.utils.cohorts import is_count_log_cohort, is_neuro
 from epiforecast.utils.config import conf, logger
 
 logging.getLogger("cmdstanpy").disabled = True
@@ -60,21 +60,16 @@ class ProphetForecaster(ForecastModel):
         self.model_path: str = self._conf["paths"]["models"]
         self.model_save: str = self._conf["data"]["model_train"]
 
-        # Rate normalization: la cohorte neuro modela tasa/100k; Dengue modela CONTEOS
-        # crudos (con log1p). La tasa nacional de Dengue es ~0.15/100k: en log1p comprime
-        # la señal cerca de 0 y el forecast colapsa (ratio yhat/real 0.29 con tasa vs 0.98
-        # sin tasa, verificado). Dengue sin normalizar_tasa.
-        self.normalizar_tasa: bool = self._conf.get("normalizar_tasa", False) and (
-            is_neuro(self.padecimiento) or self.padecimiento != "Dengue"
-        )
+        # Rate normalization: neuro modela tasa/100k; la cohorte de conteos-log no (la tasa
+        # comprime la señal en log y colapsa el forecast). Ver utils.cohorts.
+        self.normalizar_tasa: bool = self._conf.get(
+            "normalizar_tasa", False
+        ) and not is_count_log_cohort(self.padecimiento)
         self.col_poblacion: str = self._conf.get("columna_poblacion", "Total")
         self.tasa_por: int = self._conf.get("tasa_por", 100000)
-        # log_transform: cohorte neuro y Dengue. Sin log, la tendencia multiplicativa de
-        # Dengue colapsa a ~0 al extrapolar el forecast (yhat/real nacional 0.00); con log1p
-        # el forecast es sano (ratio 0.98) y se garantiza positividad. Otros no-neuro futuros
-        # quedan sin log por defecto.
+        # log_transform: neuro y conteos-log (sin log la tendencia colapsa). Ver utils.cohorts.
         self.log_transform: bool = self._conf.get("log_transform", False) and (
-            is_neuro(self.padecimiento) or self.padecimiento == "Dengue"
+            is_neuro(self.padecimiento) or is_count_log_cohort(self.padecimiento)
         )
         self.poblacion_valor: float | None = None
 
