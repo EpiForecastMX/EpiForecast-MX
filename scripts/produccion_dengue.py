@@ -68,6 +68,8 @@ def smape(y: np.ndarray, yhat: np.ndarray) -> float:
 def mae(y: np.ndarray, yhat: np.ndarray) -> float:
     y = np.asarray(y, dtype=float)
     yhat = np.asarray(yhat, dtype=float)
+    if y.size == 0:
+        return np.nan
     return float(np.mean(np.abs(y - yhat)))
 
 
@@ -127,7 +129,10 @@ def build_forecasts_2026(weeks_limit: int) -> tuple[pd.DataFrame, pd.DataFrame]:
         df["ds"] = pd.to_datetime(df["ds"])
         df = df[df["ds"].dt.year == 2026]
         df = df.sort_values(["meta_entidad", "meta_modo", "ds"])
-        df["Semana"] = df.groupby(["meta_entidad", "meta_modo"]).cumcount() + 1
+        # Alinear por semana epidemiológica (ISO) derivada de la fecha, NO por posición:
+        # el forecast 2026 puede arrancar en la semana 2 (2026-01-05), y `cumcount` lo
+        # etiquetaría como semana 1 → desalineación de 1 semana contra el real del boletín.
+        df["Semana"] = df["ds"].dt.isocalendar().week.astype(int)
         df = df[df["Semana"] <= weeks_limit]
         df = df.rename(columns={"meta_entidad": "entidad", "meta_modo": "sexo"})
         df["motor"] = motor
@@ -192,7 +197,9 @@ def _pick(row: pd.Series) -> tuple[str, str, float | None]:
     if cvs:
         winner = min(cvs, key=lambda m: cvs[m])
         return winner, "cv_smape", cvs[winner]
-    return "Ensemble", "default", None
+    # Default seguro: Prophet es motor ELEGIBLE (DeepAR/Prophet). Rama casi inalcanzable
+    # (requiere sin SMAPE, sin MAE y sin CV simultáneamente).
+    return "Prophet", "default", None
 
 
 def select(metrics: pd.DataFrame) -> pd.DataFrame:
