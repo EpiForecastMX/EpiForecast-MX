@@ -7,7 +7,7 @@ Uso:
     python scripts/build_web_knowledge.py
 """
 
-from datetime import datetime
+from datetime import date, datetime
 import json
 from pathlib import Path
 import sys
@@ -30,6 +30,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from epi_modules.features.data_cache import ProjectDataCache  # noqa: E402
 from epi_modules.features.knowledge_base import KnowledgeBase  # noqa: E402
 
+from epiforecast.constants import ENTIDAD_DISPLAY  # noqa: E402
+from epiforecast.data.boletin import cargar_boletin_dengue  # noqa: E402
 from epiforecast.utils.cohorts import filter_neuro  # noqa: E402
 
 OUTPUT = Path("web_dashboard/knowledge.json")
@@ -199,6 +201,89 @@ def build_boletin(cache: ProjectDataCache) -> dict:
     return result
 
 
+def build_dengue_section() -> dict[str, Any]:
+    """Sección de Dengue para el EpiBot, derivada de los artefactos de producción.
+
+    Dengue es el 4.o padecimiento con pipeline propio (cohorte de conteos-log, no neuro):
+    sus métricas y selección de motor NO comparten estructura con la neuro (333 modelos por
+    tasa). Por eso se expone en su propia sección y NO se mezcla en ``stats.por_pad`` (evita
+    que los handlers de comparación neuro la incluyan con métricas incompatibles).
+    Fuente: ``produccion_dengue.csv`` (selector DeepAR/Prophet) + boletín consolidado + forecast.
+    """
+    prod_path = Path("reports/ProdDetails/produccion_dengue.csv")
+    if not prod_path.exists():
+        return {}
+    prod = pd.read_csv(prod_path)
+    dist = {str(k): int(v) for k, v in prod["motor_productivo"].value_counts().items()}
+    nac = prod[(prod["entidad"] == "Nacional") & (prod["sexo"] == "general")]
+    motor_nac = str(nac["motor_productivo"].iloc[0]) if len(nac) else "Prophet"
+    smape_nac = round(float(nac["smape_ganador"].iloc[0]), 2) if len(nac) else None
+
+    df = cargar_boletin_dengue()
+    ann = df.groupby("Anio")["Casos_semana"].sum()
+    anual = {str(int(y)): int(c) for y, c in ann.items()}
+    pico_anio, pico_casos = int(ann.idxmax()), int(ann.max())
+    total = df.groupby("Entidad")["Casos_semana"].sum().sort_values(ascending=False)
+    top_ent = [
+        {"entidad": ENTIDAD_DISPLAY.get(str(e), str(e)), "casos": int(c)}
+        for e, c in total.head(6).items()
+        if c > 0
+    ]
+    sin_casos = [ENTIDAD_DISPLAY.get(str(e), str(e)) for e, c in total.items() if c == 0]
+
+    # Última semana real + pronóstico productivo nacional a 52 sem (motor productivo nacional).
+    last = df[df["Anio"] == df["Anio"].max()]
+    last_sem = int(last["Semana"].astype(int).max())
+    last_real = pd.Timestamp(date.fromisocalendar(int(df["Anio"].max()), min(last_sem, 52), 1))
+    casos_fut: int | None = None
+    fc_path = Path(f"reports/forecasts/{motor_nac.lower()}/all_forecast_{motor_nac.lower()}.csv")
+    if fc_path.exists():
+        fc = pd.read_csv(fc_path, low_memory=False)
+        d = fc[
+            (fc["meta_padecimiento"] == "Dengue")
+            & (fc["meta_entidad"] == "Nacional")
+            & (fc["meta_modo"] == "general")
+        ].copy()
+        d["ds"] = pd.to_datetime(d["ds"])
+        fut = d[d["ds"] > last_real].sort_values("ds").head(52)
+        casos_fut = int(fut["yhat"].clip(lower=0).sum())
+
+    return {
+        "cie": "A97",
+        "cobertura": f"{int(df['Anio'].min())}-{int(df['Anio'].max())}",
+        "n_boletines": int(df.groupby(["Anio", "Semana"]).ngroups),
+        "n_entidades": int(df["Entidad"].nunique()),
+        "n_series": int(len(prod)),
+        "horizonte_semanas": 52,
+        "proyeccion_anios": 5,
+        "motores_entrenados": ["Prophet", "DeepAR", "Ensemble", "Stacking"],
+        "motores_productivos": ["DeepAR", "Prophet"],
+        "dist_motor": dist,
+        "motor_nacional": motor_nac,
+        "smape_nacional": smape_nac,
+        "casos_futuro_nacional_52sem": casos_fut,
+        "ultima_real": last_real.strftime("%Y-%m-%d"),
+        "anual": anual,
+        "anio_pico": pico_anio,
+        "casos_pico": pico_casos,
+        "anios_epidemicos": [2014, 2019, 2024],
+        "ciclo_anios": "cuatro a cinco",
+        "top_entidades": top_ent,
+        "sin_casos": sin_casos,
+        "unidad": "conteos absolutos (no tasa por 100 mil)",
+        "notas": [
+            "Serie de producción 2018-2026 (Cuadro 7.2 SINAVE, dengue confirmado A97.x agregado).",
+            "La serie histórica 2014-2017 (taxonomía vieja A90/A91) es solo contexto/EDA, no entrena.",
+            "4 motores entrenados; solo DeepAR y Prophet son productivos (los árboles, Ensemble y "
+            "Stacking, no extrapolan la dinámica epidémica y quedan fuera de producción).",
+            "Pronóstico preciso a 1 año (52 sem); además una proyección a 5 años ILUSTRATIVA que "
+            "muestra el patrón estacional esperado, no la magnitud de la próxima epidemia.",
+            "Los picos (2014, 2019, 2024) coinciden con años de El Niño; 2024 fue la mayor "
+            "epidemia de dengue registrada en las Américas.",
+        ],
+    }
+
+
 def build_static_data() -> dict[str, Any]:
     """Datos estaticos del proyecto."""
     equipo = [
@@ -318,6 +403,29 @@ def build_static_data() -> dict[str, Any]:
                 "Menor incidencia de los tres, tendencia creciente por envejecimiento "
                 "poblacional. Jalisco, Chihuahua y Sinaloa con tasas más altas. "
                 "SMAPE de predicción más elevado (>100%) por baja frecuencia."
+            ),
+        },
+        "Dengue": {
+            "cie": "A97",
+            "nombre_completo": "Dengue",
+            "descripcion": (
+                "Arbovirosis transmitida por el mosquito Aedes aegypti, con estacionalidad "
+                "climática anual (la carga vive en las semanas 27-52, época de lluvias) y "
+                "grandes brotes epidémicos cada cuatro a cinco años. Puede evolucionar a "
+                "dengue grave (hemorrágico)."
+            ),
+            "efectos": [
+                "Fiebre alta súbita",
+                "Dolor articular y muscular intenso",
+                "Cefalea y dolor retroocular",
+                "Erupción cutánea",
+                "Hemorragias y choque en el dengue grave",
+            ],
+            "nota_mexico": (
+                "Endémico en el sureste tropical y las costas (Jalisco, Veracruz, Chiapas y "
+                "Guerrero concentran la carga); el centro-altiplano (Ciudad de México, Tlaxcala) "
+                "no registra transmisión confirmada. 2024 fue la mayor epidemia en las Américas. "
+                "Se modela como conteos absolutos (no tasa), con DeepAR y Prophet en producción."
             ),
         },
     }
@@ -589,6 +697,8 @@ def main() -> None:
         "prod_models": _normalize_keys(build_prod_models(cache)),
         "boletin": _normalize_keys(build_boletin(cache)),
         "weekly_comparison": _normalize_keys(build_weekly_comparison(cache)),
+        # Dengue: sección propia SIN normalizar (preserva tildes/eñes en estados y notas).
+        "dengue": build_dengue_section(),
         **build_static_data(),
     }
 
