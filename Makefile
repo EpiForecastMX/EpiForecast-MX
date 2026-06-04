@@ -116,6 +116,7 @@ preprocess: reset get-dataset filter clean transform get-inegi mapper
 # NO del data_raw.csv neuro; por eso el override de data.raw_data_file=${data.boletin}
 # (interpolacion OmegaConf -> fuente unica, sin duplicar la ruta del consolidado).
 DASHBOARD_DENGUE   := ../EpiForecast-IMSS-Dashboard/Reports/dengue
+DASHBOARD_EPIBOT   := ../EpiForecast-IMSS-Dashboard/epibot
 
 ## Extraer la serie de Dengue (agregada A97.0+A97.1+A97.2) de los boletines SINAVE
 .PHONY: dengue-extract
@@ -172,6 +173,10 @@ dengue-web:
 	$(PYTHON) -m scripts.build_dengue_forecast_web --out $(DASHBOARD_DENGUE) --generado $$(date +%Y-%m-%d)
 	$(PYTHON) -m scripts.eda_dengue_charts --out $(DASHBOARD_DENGUE)
 	$(PYTHON) -m scripts.dengue_showcase_charts --out $(DASHBOARD_DENGUE)
+	@echo ">>> Regenerando knowledge.json del EpiBot (incluye la seccion 'dengue')..."
+	$(PYTHON) scripts/build_web_knowledge.py
+	cp web_dashboard/knowledge.json $(DASHBOARD_EPIBOT)/knowledge.json
+	@echo ">>> EpiBot knowledge.json actualizado. Si tocaste kb.js/entities.js, sube el cache-bust (?v=N)."
 
 ## Pipeline Dengue: extract -> merge -> prep (luego: dvc push, dengue-train-nacional, dengue-web)
 .PHONY: dengue-pipeline

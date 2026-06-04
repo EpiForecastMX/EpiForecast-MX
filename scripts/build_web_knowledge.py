@@ -33,6 +33,7 @@ from epi_modules.features.knowledge_base import KnowledgeBase  # noqa: E402
 from epiforecast.constants import ENTIDAD_DISPLAY  # noqa: E402
 from epiforecast.data.boletin import cargar_boletin_dengue  # noqa: E402
 from epiforecast.utils.cohorts import filter_neuro  # noqa: E402
+from epiforecast.utils.config import conf  # noqa: E402
 
 OUTPUT = Path("web_dashboard/knowledge.json")
 
@@ -210,14 +211,21 @@ def build_dengue_section() -> dict[str, Any]:
     que los handlers de comparación neuro la incluyan con métricas incompatibles).
     Fuente: ``produccion_dengue.csv`` (selector DeepAR/Prophet) + boletín consolidado + forecast.
     """
-    prod_path = Path("reports/ProdDetails/produccion_dengue.csv")
+    reports = Path(conf["paths"]["reports"])
+    prod_path = reports / "ProdDetails" / "produccion_dengue.csv"
     if not prod_path.exists():
         return {}
     prod = pd.read_csv(prod_path)
     dist = {str(k): int(v) for k, v in prod["motor_productivo"].value_counts().items()}
     nac = prod[(prod["entidad"] == "Nacional") & (prod["sexo"] == "general")]
     motor_nac = str(nac["motor_productivo"].iloc[0]) if len(nac) else "Prophet"
-    smape_nac = round(float(nac["smape_ganador"].iloc[0]), 2) if len(nac) else None
+    # smape_ganador puede ser NaN si la serie cayó al criterio mae_real_casi_cero (imposible
+    # para Nacional, pero el guard evita un TypeError si algún día ocurre).
+    smape_nac = (
+        round(float(nac["smape_ganador"].iloc[0]), 2)
+        if len(nac) and pd.notna(nac["smape_ganador"].iloc[0])
+        else None
+    )
 
     df = cargar_boletin_dengue()
     ann = df.groupby("Anio")["Casos_semana"].sum()
@@ -236,7 +244,7 @@ def build_dengue_section() -> dict[str, Any]:
     last_sem = int(last["Semana"].astype(int).max())
     last_real = pd.Timestamp(date.fromisocalendar(int(df["Anio"].max()), min(last_sem, 52), 1))
     casos_fut: int | None = None
-    fc_path = Path(f"reports/forecasts/{motor_nac.lower()}/all_forecast_{motor_nac.lower()}.csv")
+    fc_path = reports / "forecasts" / motor_nac.lower() / f"all_forecast_{motor_nac.lower()}.csv"
     if fc_path.exists():
         fc = pd.read_csv(fc_path, low_memory=False)
         d = fc[

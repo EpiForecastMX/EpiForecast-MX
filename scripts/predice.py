@@ -429,10 +429,10 @@ def main():
         out["confianza_usado"].isna().sum() if "confianza_usado" in out.columns else 0,
     )
 
-    # Los conteos de casos no pueden ser negativos. Prophet sin log_transform (cohortes
-    # no-neuro, p.ej. Dengue) puede producir yhat negativo en temporada baja; se recorta a
-    # >= 0. Es no-op para neuro (positivo por log_transform) y para los motores que ya
-    # acotan a 0 (DeepAR nonnegative_pred_samples, Ensemble, Stacking).
+    # Los conteos de casos no pueden ser negativos: recorte defensivo a >= 0. En la práctica
+    # es no-op (Prophet usa log_transform tanto en neuro como en Dengue -> expm1 >= 0; DeepAR
+    # acota con nonnegative_pred_samples; Ensemble/Stacking operan sobre conteos clip>=0). Se
+    # mantiene como red de seguridad ante cualquier motor que llegara a emitir negativos.
     yhat_cols = [c for c in out.columns if c == "yhat" or c.startswith("yhat_")]
     for col in yhat_cols:
         out[col] = pd.to_numeric(out[col], errors="coerce").clip(lower=0)
