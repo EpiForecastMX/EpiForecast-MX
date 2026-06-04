@@ -154,6 +154,7 @@ dengue-web:
 	@echo ">>> Regenerando web de Dengue..."
 	$(PYTHON) -m scripts.build_dengue_web --out $(DASHBOARD_DENGUE) --generado $$(date +%Y-%m-%d)
 	$(PYTHON) -m scripts.eda_dengue_charts --out $(DASHBOARD_DENGUE)
+	$(PYTHON) -m scripts.dengue_showcase_charts --out $(DASHBOARD_DENGUE)
 
 ## Pipeline Dengue: extract -> merge -> prep (luego: dvc push, dengue-train-nacional, dengue-web)
 .PHONY: dengue-pipeline
