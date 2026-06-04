@@ -60,15 +60,21 @@ class ProphetForecaster(ForecastModel):
         self.model_path: str = self._conf["paths"]["models"]
         self.model_save: str = self._conf["data"]["model_train"]
 
-        # Rate normalization
-        self.normalizar_tasa: bool = self._conf.get("normalizar_tasa", False)
+        # Rate normalization: la cohorte neuro modela tasa/100k; Dengue modela CONTEOS
+        # crudos (con log1p). La tasa nacional de Dengue es ~0.15/100k: en log1p comprime
+        # la señal cerca de 0 y el forecast colapsa (ratio yhat/real 0.29 con tasa vs 0.98
+        # sin tasa, verificado). Dengue sin normalizar_tasa.
+        self.normalizar_tasa: bool = self._conf.get("normalizar_tasa", False) and (
+            is_neuro(self.padecimiento) or self.padecimiento != "Dengue"
+        )
         self.col_poblacion: str = self._conf.get("columna_poblacion", "Total")
         self.tasa_por: int = self._conf.get("tasa_por", 100000)
-        # log_transform solo para la cohorte neuro. Padecimientos fuera de NEURO_CONDITIONS
-        # (Dengue) se modelan sin log: comprime los picos epidémicos y es inconsistente con
-        # la estacionalidad multiplicativa que usa Dengue.
-        self.log_transform: bool = self._conf.get("log_transform", False) and is_neuro(
-            self.padecimiento
+        # log_transform: cohorte neuro y Dengue. Sin log, la tendencia multiplicativa de
+        # Dengue colapsa a ~0 al extrapolar el forecast (yhat/real nacional 0.00); con log1p
+        # el forecast es sano (ratio 0.98) y se garantiza positividad. Otros no-neuro futuros
+        # quedan sin log por defecto.
+        self.log_transform: bool = self._conf.get("log_transform", False) and (
+            is_neuro(self.padecimiento) or self.padecimiento == "Dengue"
         )
         self.poblacion_valor: float | None = None
 

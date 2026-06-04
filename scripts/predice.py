@@ -273,7 +273,13 @@ def main():
 
         try:
             meta = parse_nombre_modelo(pkl.stem)
-            df = ForecastModelLoader(periodo=periodo, model_path=pkl).run()
+            # Dengue entrena en log1p de conteos: el forecaster debe conocer el padecimiento
+            # para invertir (expm1) en predict. La cohorte neuro conserva su path histórico
+            # (padecimiento=None), cuya salida productiva está validada/publicada.
+            pad_loader = "Dengue" if meta.get("meta_padecimiento") == "Dengue" else None
+            df = ForecastModelLoader(
+                periodo=periodo, model_path=pkl, padecimiento=pad_loader
+            ).run()
             for k, v in meta.items():
                 df[k] = v
             df["archivo_modelo_usado"] = pkl.name
