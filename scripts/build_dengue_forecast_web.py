@@ -89,10 +89,17 @@ def pronostico_productivo(motor: str, last_real: pd.Timestamp) -> pd.DataFrame:
     return d
 
 
-def proyeccion_estacional(serie: pd.DataFrame, anios: int) -> pd.DataFrame:
-    """Banda estacional ilustrativa a N años: Prophet log1p + tendencia plana."""
+def proyeccion_estacional(serie: pd.DataFrame, anios: int, after: pd.Timestamp) -> pd.DataFrame:
+    """Banda estacional ilustrativa: Prophet log1p + tendencia plana.
+
+    Se ajusta sobre toda la serie real, pero solo se DEVUELVE el tramo posterior a ``after``
+    (el fin del pronóstico productivo de 1 año) para que las dos capas del gráfico —pronóstico
+    preciso y proyección ilustrativa— sean secuenciales y no se dibujen encimadas el 1er año.
+    Estacionalidad anual desde config (``add_seasonality``), única fuente con el Prophet productivo.
+    """
     from prophet import Prophet
 
+    season = conf["add_seasonality"]
     t = serie.copy()
     t["y"] = np.log1p(t["y"].clip(lower=0))
     m = Prophet(
@@ -101,16 +108,20 @@ def proyeccion_estacional(serie: pd.DataFrame, anios: int) -> pd.DataFrame:
         weekly_seasonality=False,
         daily_seasonality=False,
         seasonality_mode="multiplicative",
-        seasonality_prior_scale=10.0,
+        seasonality_prior_scale=10.0,  # estacionalidad fuerte: banda ILUSTRATIVA, no productiva
     )
-    m.add_seasonality(name="yearly_custom", period=365.25, fourier_order=10)
+    m.add_seasonality(
+        name="yearly_custom",
+        period=float(season["period"]),
+        fourier_order=int(season["fourier_order"]),
+    )
     np.random.seed(RANDOM_SEED)
     m.fit(t)
+    horizonte = serie["ds"].max() + pd.Timedelta(weeks=anios * 52)
     fut = m.make_future_dataframe(periods=anios * 52, freq="W-MON")
     fc = m.predict(fut)
     fc["yhat"] = np.expm1(fc["yhat"]).clip(lower=0)
-    last_real = serie["ds"].max()
-    return fc[fc["ds"] > last_real][["ds", "yhat"]].sort_values("ds")
+    return fc[(fc["ds"] > after) & (fc["ds"] <= horizonte)][["ds", "yhat"]].sort_values("ds")
 
 
 def main() -> int:
@@ -125,7 +136,9 @@ def main() -> int:
     last_real = serie["ds"].max()
     motor, dist = motor_nacional()
     pron = pronostico_productivo(motor, last_real)
-    proy = proyeccion_estacional(serie, ANIOS_PROYECCION)
+    # La proyección ilustrativa arranca donde TERMINA el pronóstico productivo (sin solaparse).
+    horizonte_productivo = pron["ds"].max() if len(pron) else last_real
+    proy = proyeccion_estacional(serie, ANIOS_PROYECCION, horizonte_productivo)
 
     def _pts(df: pd.DataFrame, *cols: str) -> list[dict[str, object]]:
         rows = []

@@ -113,8 +113,8 @@ preprocess: reset get-dataset filter clean transform get-inegi mapper
 #################################################################################
 # El Dengue vive en una tabla aparte del boletin SINAVE (3 severidades A97.x) y se
 # incorpora con su propio flujo. El prep lee del CONSOLIDADO (que ya contiene Dengue),
-# NO del data_raw.csv neuro; por eso el override de data.raw_data_file.
-DENGUE_CONSOLIDADO := data/processed/dataset_boletin_epidemiologico.csv
+# NO del data_raw.csv neuro; por eso el override de data.raw_data_file=${data.boletin}
+# (interpolacion OmegaConf -> fuente unica, sin duplicar la ruta del consolidado).
 DASHBOARD_DENGUE   := ../EpiForecast-IMSS-Dashboard/Reports/dengue
 
 ## Extraer la serie de Dengue (agregada A97.0+A97.1+A97.2) de los boletines SINAVE
@@ -140,7 +140,7 @@ dengue-merge:
 .PHONY: dengue-prep
 dengue-prep:
 	@echo ">>> Preprocesando Dengue (outliers off, INEGI)..."
-	$(PYTHON) -m scripts.filtra_padecimiento padecimiento.tipo='Dengue' data.raw_data_file='$(DENGUE_CONSOLIDADO)'
+	$(PYTHON) -m scripts.filtra_padecimiento padecimiento.tipo='Dengue' data.raw_data_file='$${data.boletin}'
 	$(PYTHON) -m scripts.limpieza_dataset padecimiento.tipo='Dengue'
 	$(PYTHON) -m scripts.realiza_prep padecimiento.tipo='Dengue'
 	$(PYTHON) -m scripts.mapea padecimiento.tipo='Dengue'

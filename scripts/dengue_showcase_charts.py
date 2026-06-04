@@ -25,6 +25,7 @@ import pandas as pd
 
 warnings.filterwarnings("ignore")
 
+from epiforecast.constants import COVID_END, COVID_START  # noqa: E402
 from epiforecast.data.boletin import cargar_boletin_dengue  # noqa: E402
 from epiforecast.visualization.web_theme import (  # noqa: E402
     AMBER,
@@ -45,6 +46,12 @@ A9091 = ROOT / "data" / "interim" / "dengue_a90a91_nacional.csv"
 DENGUE_CMAP = LinearSegmentedColormap.from_list("dengue", ["#1B2742", MINT, AMBER, PINK])
 _SIN_CASOS = "#2A3550"  # estados sin transmisión confirmada
 _PEAK_YEARS = {2014, 2019, 2024}
+
+
+def _year_frac(iso: str) -> float:
+    """Fecha ISO -> año fraccional (para alinear con un eje de años)."""
+    d = pd.Timestamp(iso)
+    return d.year + (d.dayofyear - 1) / 365
 
 
 def _norm(s: str) -> str:
@@ -158,7 +165,8 @@ def chart_historico_ciclo(out: Path) -> None:
     old_y = old.groupby("Anio")["tot"].max()  # acumulado de fin de año
     new = cargar_boletin_dengue().groupby("Anio")["Casos_semana"].sum()
 
-    years = list(range(2014, 2027))
+    last_year = int(max(new.index.max(), old_y.index.max()))
+    years = list(range(2014, last_year + 1))  # 2014 = inicio A90/A91; tope desde el dato
     vals = [int(new[y]) if y in new.index else int(old_y.get(y, 0)) for y in years]
     colors = [PINK if y in _PEAK_YEARS else MINT for y in years]
     ymax = max(vals)
@@ -166,9 +174,9 @@ def chart_historico_ciclo(out: Path) -> None:
     fig, ax = plt.subplots(figsize=(11.5, 5.4), dpi=DPI)
     fig.patch.set_facecolor(BG)
     ax.set_facecolor(BG)
-    # Franja COVID-19 (fechas oficiales del proyecto: 2020-03-15 a 2022-09-22), en
+    # Franja COVID-19 (fechas oficiales del proyecto, COVID_START/COVID_END en constants), en
     # fracción de año para alinear con el eje. El dengue siguió su ciclo natural pese a ella.
-    covid_ini, covid_fin = 2020 + 73 / 365, 2022 + 265 / 365
+    covid_ini, covid_fin = _year_frac(COVID_START), _year_frac(COVID_END)
     ax.axvspan(covid_ini, covid_fin, color="#5B8DEF", alpha=0.10, zorder=1)
     ax.text(
         (covid_ini + covid_fin) / 2,
