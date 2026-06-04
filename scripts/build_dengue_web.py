@@ -56,11 +56,12 @@ def chart_nacional_semanal(df: pd.DataFrame, out: Path) -> None:
     """Serie de tiempo: casos confirmados de Dengue por semana, nacional."""
     g = df.groupby(["Anio", "Semana"], as_index=False).Casos_semana.sum()
     g["t"] = g.Anio + (g.Semana.astype(int) - 1) / MESES_SEM
+    rango = f"{int(df.Anio.min())}-{int(df.Anio.max())}"
     fig, ax = _fig((11, 4.2))
     ax.plot(g.t, g.Casos_semana, color=AMBER, linewidth=1.8)
     ax.fill_between(g.t, g.Casos_semana, color=AMBER, alpha=0.12)
     ax.set_title(
-        "Incidencia semanal nacional de Dengue confirmado (2020-2026)", fontsize=12, pad=12
+        f"Incidencia semanal nacional de Dengue confirmado ({rango})", fontsize=12, pad=12
     )
     ax.set_ylabel("Casos por semana")
     ax.set_xlabel("Año epidemiológico")
@@ -100,11 +101,12 @@ def chart_estacionalidad(df: pd.DataFrame, out: Path) -> None:
     nac = df.groupby(["Anio", "Semana"])["Casos_semana"].sum().reset_index()
     nac["wk"] = nac["Semana"].astype(int)
     clim = nac.groupby("wk")["Casos_semana"].mean().reset_index()
+    rango = f"{int(df.Anio.min())}-{int(df.Anio.max())}"
     fig, ax = _fig((11, 4.0))
     ax.plot(clim["wk"], clim["Casos_semana"], color=MINT, linewidth=2.0, marker="o", markersize=3)
     ax.fill_between(clim["wk"], clim["Casos_semana"], color=MINT, alpha=0.10)
     ax.set_title(
-        "Estacionalidad del Dengue — promedio por semana epidemiológica (2020-2026)",
+        f"Estacionalidad del Dengue — promedio por semana epidemiológica ({rango})",
         fontsize=12,
         pad=12,
     )
