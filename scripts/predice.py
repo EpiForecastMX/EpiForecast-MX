@@ -306,7 +306,11 @@ def main():
                 continue
 
             try:
-                loader = ForecastModelLoader(periodo=periodo, model_path=pkl_regional)
+                # Inversión de log solo para la cohorte de conteos-log; neuro -> None (legacy).
+                pad_fb = padecimiento if is_count_log_cohort(padecimiento) else None
+                loader = ForecastModelLoader(
+                    periodo=periodo, model_path=pkl_regional, padecimiento=pad_fb
+                )
                 loader.load()
                 # Reemplazar población regional por la del estado individual
                 if info.get("poblacion") and hasattr(loader.forecaster, "poblacion_valor"):
@@ -336,7 +340,11 @@ def main():
         for pkl in pkls_regional:
             try:
                 meta = _parse_regional(pkl.stem)
-                df = ForecastModelLoader(periodo=periodo, model_path=pkl).run()
+                pad_reg = meta.get("meta_padecimiento")
+                pad_reg = pad_reg if is_count_log_cohort(pad_reg) else None
+                df = ForecastModelLoader(
+                    periodo=periodo, model_path=pkl, padecimiento=pad_reg
+                ).run()
                 for k, v in meta.items():
                     df[k] = v
                 df["archivo_modelo_usado"] = pkl.name
