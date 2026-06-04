@@ -30,6 +30,7 @@ import matplotlib.pyplot as plt  # noqa: E402
 import pandas as pd  # noqa: E402
 
 from epiforecast.constants import ENTIDAD_DISPLAY  # noqa: E402
+from epiforecast.data.boletin import cargar_boletin_dengue  # noqa: E402
 from epiforecast.utils.config import logger  # noqa: E402
 from epiforecast.visualization.web_theme import (  # noqa: E402
     AMBER,
@@ -244,14 +245,14 @@ def build_json(df: pd.DataFrame, out: Path, generado: str) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--csv", default="data/interim/dengue_boletin.csv")
+    parser.add_argument("--csv", default=None, help="Override del CSV; por defecto el consolidado")
     parser.add_argument("--out", required=True, help="Directorio de salida (Reports/dengue)")
     parser.add_argument(
         "--generado", default="", help="Fecha de generación (ISO); vacío = no estampar"
     )
     args = parser.parse_args()
 
-    df = pd.read_csv(args.csv)
+    df = cargar_boletin_dengue(args.csv)
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
 

@@ -33,6 +33,7 @@ import seaborn as sns  # noqa: E402
 from statsmodels.tsa.stattools import acf  # noqa: E402
 
 from epiforecast.constants import ENTIDAD_DISPLAY  # noqa: E402
+from epiforecast.data.boletin import cargar_boletin_dengue  # noqa: E402
 from epiforecast.utils.config import logger  # noqa: E402
 from epiforecast.visualization.web_theme import (  # noqa: E402
     AMBER,
@@ -221,10 +222,10 @@ def acf_nacional(df: pd.DataFrame, out: Path, nlags: int = 60) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--csv", default="data/interim/dengue_boletin.csv")
+    parser.add_argument("--csv", default=None, help="Override del CSV; por defecto el consolidado")
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
-    df = pd.read_csv(args.csv)
+    df = cargar_boletin_dengue(args.csv)
     df["Entidad"] = df["Entidad"].replace(ENTIDAD_DISPLAY)  # display: México -> Estado de México
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)

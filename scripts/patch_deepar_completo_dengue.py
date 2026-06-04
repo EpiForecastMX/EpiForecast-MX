@@ -29,10 +29,6 @@ from scripts.entrena import normalizar
 from epiforecast.models import create_model
 from epiforecast.utils.config import conf, logger
 
-ROOT = Path(__file__).resolve().parent.parent
-COMPLETO = ROOT / "models/deepar/Dengue/Deepar_Dengue_completo.csv"
-DATA = ROOT / "data/processed/data_inegi_Dengue.csv"
-
 
 def main() -> int:
     ap = argparse.ArgumentParser()
@@ -42,13 +38,16 @@ def main() -> int:
     c = OmegaConf.merge(
         conf, OmegaConf.create({"modelo_activo": "deepar", "padecimiento": {"tipo": "Dengue"}})
     )
-    df = pd.read_csv(DATA)
+    # Rutas derivadas de config (no hardcodeadas): models/<modelo_activo>/Dengue y data_inegi.
+    completo = Path(c["paths"]["models"]) / "Dengue" / "Deepar_Dengue_completo.csv"
+    data = Path(c["data"]["data_inegi"])
+    df = pd.read_csv(data)
     dfp = df[df["Padecimiento"] == "Dengue"]
     valores_sexo = [str(s) for s in c["valores_sexo"]]
     mapeo = {str(k): str(v) for k, v in c["mapeo_columnas"].items()}
     entidades = sorted(dfp["Entidad"].unique())
 
-    existing = pd.read_csv(COMPLETO)
+    existing = pd.read_csv(completo)
     have = set(existing["archivo_modelo"].astype(str))
     logger.info("_completo actual: {} filas", len(existing))
 
@@ -107,7 +106,7 @@ def main() -> int:
         # parche resumible (re-correr salta las ya presentes vía `have`).
         merged = pd.concat([existing, pd.DataFrame(nuevas)], ignore_index=True)
         merged = merged.drop_duplicates("archivo_modelo", keep="last").reset_index(drop=True)
-        merged.to_csv(COMPLETO, index=False, encoding="utf-8")
+        merged.to_csv(completo, index=False, encoding="utf-8")
         logger.info(
             "[{}/{}] {} | {} | SMAPE={} ({:.0f}s) → _completo {} filas",
             i,
@@ -122,7 +121,9 @@ def main() -> int:
     if not nuevas:
         logger.info("Nada que agregar.")
         return 0
-    logger.success("_completo actualizado: +{} filas ({} total)", len(nuevas), 35 + len(nuevas))
+    logger.success(
+        "_completo actualizado: +{} filas ({} total)", len(nuevas), len(existing) + len(nuevas)
+    )
     return 0
 
 

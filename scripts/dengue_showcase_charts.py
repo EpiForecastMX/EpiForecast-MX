@@ -4,7 +4,7 @@
 Genera dos figuras (tema Clinical Indigo) para la web:
   - ``dengue_mapa_mexico.png``     mapa coroplético: carga de dengue por entidad (2018-2026).
   - ``dengue_historico_ciclo.png`` total anual confirmado 2014-2026 (A90/A91 + A97.x),
-                                   marcando el ciclo epidémico (~5 años: 2014, 2019, 2024).
+                                   marcando el ciclo epidémico (cuatro a cinco años: 2014, 2019, 2024).
 
 Uso:
     python scripts/dengue_showcase_charts.py --out ../EpiForecast-IMSS-Dashboard/Reports/dengue
@@ -25,9 +25,11 @@ import pandas as pd
 
 warnings.filterwarnings("ignore")
 
+from epiforecast.data.boletin import cargar_boletin_dengue  # noqa: E402
 from epiforecast.visualization.web_theme import (  # noqa: E402
     AMBER,
     BG,
+    DPI,
     GRID,
     MINT,
     MUTED,
@@ -37,7 +39,6 @@ from epiforecast.visualization.web_theme import (  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 GEOJSON = ROOT / "data" / "utils" / "mexico_states.geojson"
-BOLETIN = ROOT / "data" / "interim" / "dengue_boletin.csv"
 A9091 = ROOT / "data" / "interim" / "dengue_a90a91_nacional.csv"
 
 # Colormap de marca: pocos casos (índigo) -> mint -> ámbar -> rosa caliente (brote).
@@ -56,7 +57,7 @@ def _norm(s: str) -> str:
 
 def chart_mapa_mexico(out: Path) -> None:
     """Mapa coroplético: total de dengue confirmado por entidad (2018-2026)."""
-    df = pd.read_csv(BOLETIN)
+    df = cargar_boletin_dengue()
     tot = df.groupby("Entidad")["Casos_semana"].sum().reset_index()
     tot["k"] = tot["Entidad"].map(_norm)
 
@@ -69,7 +70,7 @@ def chart_mapa_mexico(out: Path) -> None:
     vmax = float(gdf["casos"].max())
     vmin = float(gdf.loc[gdf["casos"] > 0, "casos"].min())
 
-    fig, ax = plt.subplots(figsize=(10.5, 8), dpi=150)
+    fig, ax = plt.subplots(figsize=(10.5, 8), dpi=DPI)
     fig.patch.set_facecolor(BG)
     ax.set_facecolor(BG)
     norm = LogNorm(vmin=vmin, vmax=vmax)
@@ -151,18 +152,18 @@ def chart_mapa_mexico(out: Path) -> None:
 
 
 def chart_historico_ciclo(out: Path) -> None:
-    """Total anual confirmado 2014-2026 marcando el ciclo epidémico (~5 años)."""
+    """Total anual confirmado 2014-2026 marcando el ciclo epidémico (cuatro a cinco años)."""
     old = pd.read_csv(A9091)
     old["tot"] = old["Acumulado_hombres"] + old["Acumulado_mujeres"]
     old_y = old.groupby("Anio")["tot"].max()  # acumulado de fin de año
-    new = pd.read_csv(BOLETIN).groupby("Anio")["Casos_semana"].sum()
+    new = cargar_boletin_dengue().groupby("Anio")["Casos_semana"].sum()
 
     years = list(range(2014, 2027))
     vals = [int(new[y]) if y in new.index else int(old_y.get(y, 0)) for y in years]
     colors = [PINK if y in _PEAK_YEARS else MINT for y in years]
     ymax = max(vals)
 
-    fig, ax = plt.subplots(figsize=(11.5, 5.4), dpi=150)
+    fig, ax = plt.subplots(figsize=(11.5, 5.4), dpi=DPI)
     fig.patch.set_facecolor(BG)
     ax.set_facecolor(BG)
     # Franja COVID-19 (fechas oficiales del proyecto: 2020-03-15 a 2022-09-22), en
@@ -201,7 +202,7 @@ def chart_historico_ciclo(out: Path) -> None:
         )
 
     ax.set_title(
-        "El dengue vuelve en olas: grandes brotes cada ~5 años (2014 · 2019 · 2024)",
+        "El dengue vuelve en olas: grandes brotes cada cuatro a cinco años (2014 · 2019 · 2024)",
         color=TEXT,
         fontsize=13.5,
         pad=14,

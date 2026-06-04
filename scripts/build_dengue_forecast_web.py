@@ -30,20 +30,20 @@ import numpy as np
 import pandas as pd
 
 from epiforecast.constants import RANDOM_SEED
+from epiforecast.data.boletin import cargar_boletin_dengue
+from epiforecast.utils.config import conf
 
 warnings.filterwarnings("ignore")
 logging.getLogger("cmdstanpy").disabled = True
 
-ROOT = Path(__file__).resolve().parent.parent
-BOLETIN = ROOT / "data/processed/dataset_boletin_epidemiologico.csv"
-PROD = ROOT / "reports/ProdDetails/produccion_dengue.csv"
+# Rutas derivadas de config (no hardcodeadas).
+_REPORTS = Path(conf["paths"]["reports"])
+PROD = _REPORTS / "ProdDetails" / "produccion_dengue.csv"
 # Forecast de los 4 motores: el motor productivo nacional puede ser cualquiera; sin las 4
 # rutas, un motor no listado caería silenciosamente a Prophet y meta.motor_nacional mentiría.
+MOTORES = ["Prophet", "DeepAR", "Ensemble", "Stacking"]
 FORECAST = {
-    "Prophet": ROOT / "reports/forecasts/prophet/all_forecast_prophet.csv",
-    "DeepAR": ROOT / "reports/forecasts/deepar/all_forecast_deepar.csv",
-    "Ensemble": ROOT / "reports/forecasts/ensemble/all_forecast_ensemble.csv",
-    "Stacking": ROOT / "reports/forecasts/stacking/all_forecast_stacking.csv",
+    m: _REPORTS / "forecasts" / m.lower() / f"all_forecast_{m.lower()}.csv" for m in MOTORES
 }
 ANIOS_PROYECCION = 5
 
@@ -53,10 +53,9 @@ def serie_nacional() -> pd.DataFrame:
 
     Usa el lunes de la semana ISO (``date.fromisocalendar``) para que el histórico quede
     en la MISMA rejilla de fechas (W-MON) que el pronóstico de los modelos y empalme sin
-    corrimiento.
+    corrimiento. Fuente única: el consolidado de producción (``cargar_boletin_dengue``).
     """
-    df = pd.read_csv(BOLETIN)
-    df = df[df["Padecimiento"] == "Dengue"]
+    df = cargar_boletin_dengue()
     g = df.groupby(["Anio", "Semana"])["Casos_semana"].sum().reset_index()
     g = g.sort_values(["Anio", "Semana"])
     g["ds"] = [
@@ -145,6 +144,8 @@ def main() -> int:
             "motor_nacional": motor,
             "distribucion": dist,
             "anios_proyeccion": ANIOS_PROYECCION,
+            # Inicio del eje del gráfico: ~4 años de detalle reciente antes del horizonte.
+            "chart_from_year": int(last_real.year) - 4,
         },
         "historico": _pts(serie, "y"),
         "pronostico": _pts(pron, "yhat", "yhat_lower", "yhat_upper"),

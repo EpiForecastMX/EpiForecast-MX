@@ -20,10 +20,11 @@ MINT = "#2DD4BF"
 PINK = "#F472B6"
 
 SEMANAS_ANIO = 52
+DPI = 150  # resolución estándar de los charts web (fuente única; usar en plt.subplots directos)
 
 
 def dark_fig(
-    figsize: tuple[float, float], dpi: int = 150, grid: bool = False
+    figsize: tuple[float, float], dpi: int = DPI, grid: bool = False
 ) -> tuple[Figure, Axes]:
     """Crea (fig, ax) con fondo índigo y ejes/etiquetas en la paleta Clinical Indigo."""
     fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
