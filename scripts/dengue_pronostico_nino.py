@@ -48,12 +48,15 @@ from epiforecast.visualization.web_theme import (  # noqa: E402
 
 A9091 = Path(conf["paths"]["interim"]) / "dengue_a90a91_nacional.csv"
 WARM, COLD, FC = "#E8553A", MINT, "#5B8DEF"  # El Niño / La Niña / pronóstico
-HORIZON_WEEKS = 180  # ~3.4 años: un ciclo ENSO (próximo El Niño + descenso), no jorobas repetidas
-# Escenario ENSO futuro: próximo El Niño (moderado) hacia 2027.7; ciclo ~3.8 años.
-_ENSO_AMP, _ENSO_CENTER, _ENSO_PEAK, _ENSO_PERIOD = 0.7, 0.05, 2027.7, 3.8
+HORIZON_WEEKS = 235  # ~4.5 años: cubre el próximo ciclo completo (brote ~2029 + años bajos)
+# Escenario ENSO futuro. El ciclo epidémico del dengue es de ~5 años (brotes 2014, 2019, 2024),
+# así que el PRÓXIMO gran brote se espera hacia 2029 (2024 + 5), con El Niño desarrollándose en
+# 2028-2029. Periodo 5 años, pico ONI ~2028.9 (fin de 2028, ~16 sem antes del brote dengue).
+_ENSO_AMP, _ENSO_CENTER, _ENSO_PEAK, _ENSO_PERIOD = 1.4, 0.0, 2029.0, 5.0
+_BROTE_ANIO = 2029
 # Ancla la tendencia a una semana previa a la epidemia de 2024: baja el piso para que los años
-# SIN El Niño queden bajos (~1k/sem, como 2025) y solo el clima eleve el brote (2027 ~3.3k/sem).
-_TREND_ANCHOR = 230
+# SIN El Niño queden bajos (~1.2k/sem, como 2025) y solo el clima eleve el brote (2029 ~4k/sem).
+_TREND_ANCHOR = 180
 
 
 def _yf(t: pd.Timestamp) -> float:
@@ -198,7 +201,7 @@ def main() -> int:
             )
     pk_f = fut.loc[fut["yhat"].idxmax()]
     ax.annotate(
-        f"Próximo brote esperado\n(El Niño ~{int(_ENSO_PEAK)})",
+        f"Próximo brote esperado\n(El Niño ~{_BROTE_ANIO})",
         xy=(_yf(pk_f["ds"]), pk_f["yhat"]),
         xytext=(0, 12),
         textcoords="offset points",
@@ -247,10 +250,10 @@ def main() -> int:
     fig.text(
         0.5,
         0.005,
-        "Los grandes brotes (2014, 2019, 2024) caen en años de El Niño. El pronóstico proyecta el "
-        "próximo El Niño climatológico (~2027-2028) y lo alimenta al modelo NB-GLM: anticipa otro "
-        "brote mayor entonces. La magnitud exacta es incierta (ENSO no se pronostica a años); es un "
-        "escenario de planeación, no una certeza.",
+        "Los grandes brotes ocurren cada ~5 años en años de El Niño (2014, 2019, 2024). Por eso el "
+        "próximo se espera hacia 2029: el pronóstico proyecta el siguiente El Niño (2028-2029) y lo "
+        "alimenta al modelo NB-GLM, con años bajos en medio. La magnitud exacta es incierta (ENSO no "
+        "se pronostica a años); es un escenario de planeación, no una certeza.",
         ha="center",
         va="bottom",
         color=MUTED,
