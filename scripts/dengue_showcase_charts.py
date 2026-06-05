@@ -347,6 +347,60 @@ def chart_enso_ciclo(out: Path) -> None:
     plt.close(fig)
 
 
+def chart_motores_dona(out: Path) -> None:
+    """Dona de la distribución de motores productivos de Dengue (DeepAR/NBGLM/Prophet)."""
+    prod_path = ROOT / "reports" / "ProdDetails" / "produccion_dengue.csv"
+    if not prod_path.exists():
+        return
+    dist = pd.read_csv(prod_path)["motor_productivo"].value_counts()
+    cmap = {"DeepAR": PINK, "NBGLM": AMBER, "Prophet": MINT}
+    labels, vals, colors = [], [], []
+    for m in ["DeepAR", "NBGLM", "Prophet"]:  # solo productivos, en orden de carga
+        if m in dist:
+            labels.append(m)
+            vals.append(int(dist[m]))
+            colors.append(cmap[m])
+    total = sum(vals)
+    if not total:
+        return
+
+    fig, ax = plt.subplots(figsize=(7.2, 4.6), dpi=DPI)
+    fig.patch.set_facecolor(BG)
+    ax.set_facecolor(BG)
+    wedges, _ = ax.pie(
+        vals,
+        colors=colors,
+        startangle=90,
+        counterclock=False,
+        wedgeprops={"width": 0.42, "edgecolor": BG, "linewidth": 2.5},
+    )
+    ax.text(
+        0, 0.10, str(total), ha="center", va="center", color=TEXT, fontsize=30, fontweight="bold"
+    )
+    ax.text(0, -0.18, "series", ha="center", va="center", color=MUTED, fontsize=11)
+    leyenda = [f"{m}  ·  {v} ({v / total * 100:.0f}%)" for m, v in zip(labels, vals, strict=False)]
+    ax.legend(
+        wedges,
+        leyenda,
+        loc="center left",
+        bbox_to_anchor=(1.0, 0.5),
+        facecolor=BG,
+        edgecolor=GRID,
+        labelcolor=TEXT,
+        fontsize=11.5,
+        handlelength=1.1,
+    )
+    ax.set_title(
+        "Motores productivos de Dengue (por serie)",
+        color=TEXT,
+        fontsize=13,
+        fontweight="bold",
+        pad=14,
+    )
+    fig.savefig(out / "dengue_motores_dona.png", facecolor=BG, bbox_inches="tight", pad_inches=0.2)
+    plt.close(fig)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", required=True, help="Directorio de salida (Reports/dengue)")
@@ -356,6 +410,7 @@ def main() -> int:
     chart_mapa_mexico(out)
     chart_historico_ciclo(out)
     chart_enso_ciclo(out)
+    chart_motores_dona(out)
     print(f"Showcase charts de Dengue generados en {out}")
     return 0
 

@@ -117,6 +117,14 @@ preprocess: reset get-dataset filter clean transform get-inegi mapper
 # (interpolacion OmegaConf -> fuente unica, sin duplicar la ruta del consolidado).
 DASHBOARD_DENGUE   := ../EpiForecast-IMSS-Dashboard/Reports/dengue
 DASHBOARD_EPIBOT   := ../EpiForecast-IMSS-Dashboard/epibot
+DASHBOARD_MOTORES  := ../EpiForecast-IMSS-Dashboard/Reports/motores
+
+## Donas de distribucion de motores por padecimiento neuro (EpiBot)
+.PHONY: donas-motores
+donas-motores:
+	@echo ">>> Generando donas de motores (Depresion/Parkinson/Alzheimer)..."
+	$(PYTHON) scripts/genera_donas_motores.py --out $(DASHBOARD_MOTORES)
+	@echo ">>> → Reports/motores/*_motores_dona.png"
 
 ## Extraer la serie de Dengue (agregada A97.0+A97.1+A97.2) de los boletines SINAVE
 .PHONY: dengue-extract
