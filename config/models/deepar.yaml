@@ -38,10 +38,11 @@ deepar:
     gap_fill: "interpolate"           # Semanas faltantes (boletin ausente) se interpolan, no se ponen en 0
     multi_series: false               # Nacional sobre serie AGREGADA (no 32 estados casi-cero):
                                       #   metricas comparables con Prophet/Ensemble/Stacking
-    # NOTA: se probó distr_output=negative-binomial (conteos enteros, sin tasa). Aunque es la
-    # verosimilitud "correcta" para conteos, en backtest 2026 real EMPEORÓ el nacional
-    # (smape_real 20.4 student-t -> 28.3 NegBin). Se conserva student-t + tasa. Ver
-    # docs/research/hallazgos/DENGUE_MEJORAS_FASE4.md.
+    # NOTA: se probó distr_output=negative-binomial (conteos enteros, sin tasa). Con una métrica
+    # consistente NO mostró mejora clara sobre student-t (~28 ambos en el nacional; DeepAR es
+    # estocástico y la comparación inicial mezcló métodos de eval). Dado que no mejora y añade
+    # restricciones (target entero), se conserva student-t + tasa, la config desplegada y validada.
+    # Ver docs/research/hallazgos/DENGUE_MEJORAS_FASE4.md.
 
 # Hiperparámetros específicos por padecimiento
 param_grid_deepar:
