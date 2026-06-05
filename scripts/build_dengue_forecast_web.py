@@ -67,6 +67,30 @@ def serie_nacional() -> pd.DataFrame:
     return g.rename(columns={"Casos_semana": "y"})[["ds", "y"]].reset_index(drop=True)
 
 
+def serie_contexto_a9091() -> pd.DataFrame:
+    """Serie nacional semanal 2014-2018W26 del esquema viejo A90/A91 (CONTEXTO, no modelado).
+
+    Otra clasificación y definición de caso; se muestra solo como contexto histórico en el
+    gráfico (segmento atenuado) para que la vista de pronóstico arranque desde 2014. Cuentas
+    semanales = diff del acumulado nacional dentro de cada año.
+    """
+    path = Path(conf["paths"]["interim"]) / "dengue_a90a91_nacional.csv"
+    if not path.exists():
+        return pd.DataFrame(columns=["ds", "y"])
+    old = pd.read_csv(path).sort_values(["Anio", "Semana"])
+    old["y"] = (
+        old.groupby("Anio")["confirmado_acum_nacional"]
+        .diff()
+        .fillna(old["confirmado_acum_nacional"])
+        .clip(lower=0)
+    )
+    old["ds"] = [
+        pd.Timestamp(date.fromisocalendar(int(a), min(int(s), 52), 1))
+        for a, s in zip(old["Anio"], old["Semana"], strict=False)
+    ]
+    return old[["ds", "y"]].reset_index(drop=True)
+
+
 def motor_nacional() -> tuple[str, dict[str, int]]:
     """Motor productivo de la serie nacional general + distribución global."""
     prod = pd.read_csv(PROD)
@@ -125,6 +149,7 @@ def main() -> int:
     out.mkdir(parents=True, exist_ok=True)
 
     serie = serie_nacional()
+    contexto = serie_contexto_a9091()
     last_real = serie["ds"].max()
     motor, dist = motor_nacional()
     pron = pronostico_productivo(motor, last_real)
@@ -150,11 +175,13 @@ def main() -> int:
             "motor_proyeccion": "NBGLM",
             "distribucion": dist,
             "anios_proyeccion": ANIOS_PROYECCION,
-            # Eje del gráfico: arranca el año previo al último real para que la escala la fije
-            # el pronóstico (~miles/sem) y no el pico epidémico de 2024 (~10 mil/sem), que dejaba
-            # todo aplastado contra el piso. El contexto 2024 vive en las barras anuales de arriba.
-            "chart_from_year": int(last_real.year) - 1,
+            # Eje del gráfico: desde 2014 (historia completa con los ciclos epidémicos reales).
+            # El chart usa escala logarítmica para que el pico de 2024 (~10 mil/sem) y los años
+            # bajos + el pronóstico (~cientos-miles/sem) sean todos visibles y proporcionados.
+            "chart_from_year": 2014,
+            "escala": "log",
         },
+        "historico_contexto": _pts(contexto, "y"),
         "historico": _pts(serie, "y"),
         "pronostico": _pts(pron, "yhat", "yhat_lower", "yhat_upper"),
         "proyeccion": _pts(proy, "yhat", "yhat_lower", "yhat_upper"),
