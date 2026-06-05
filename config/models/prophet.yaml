@@ -2,6 +2,8 @@ normalizar_tasa: true          # modelar tasa por 100K en vez de conteos absolut
 columna_poblacion: "Total"     # columna de población para normalizar
 tasa_por: 100000               # factor de normalización (per 100K hab.)
 log_transform: true            # log(1+y) para estabilizar varianza en series volátiles
+enso_regressor: true           # regresor El Niño/ONI — SOLO cohorte de conteos (Dengue); neuro lo ignora (is_count_log_cohort). El ciclo inter-anual del dengue sigue a ENSO.
+enso_lag_weeks: 16             # el clima precede al dengue ~3-6 meses; rezago del ONI (semanas)
 umbral_minimo_semanal: 0.5     # promedio mínimo de casos/semana para entrenar (< umbral → insuficiente). v5: 1.0→0.5 recupera ~40 modelos
 
 param_grid_prophet:

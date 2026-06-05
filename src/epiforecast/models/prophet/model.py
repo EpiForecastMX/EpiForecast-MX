@@ -73,6 +73,16 @@ class ProphetForecaster(ForecastModel):
         )
         self.poblacion_valor: float | None = None
 
+        # Regresor ENSO/El Niño (índice ONI): solo cohorte de conteos (Dengue). El ciclo
+        # inter-anual del dengue sigue a El Niño, señal que NO está en los conteos recientes.
+        # Cohort-gated: neuro nunca activa esto -> serie sin columna 'oni', add_regressor no
+        # se llama, predicción byte-idéntica. Ver epiforecast.data.enso.
+        self.enso_regressor: bool = bool(
+            self._conf.get("enso_regressor", False)
+        ) and is_count_log_cohort(self.padecimiento)
+        self.enso_lag_weeks: int = int(self._conf.get("enso_lag_weeks", 16))
+        self._train_max_ds: pd.Timestamp | None = None
+
         # Prophet model params
         self.param_model: dict[str, Any] = dict(self._conf["param_model"])
         apply_regional_params(self.param_model, self._conf, self.modelado_estados)
@@ -117,6 +127,19 @@ class ProphetForecaster(ForecastModel):
         )
         if pob is not None:
             self.poblacion_valor = pob
+        self._train_max_ds = self.serie["ds"].max() if not self.serie.empty else None
+        self._attach_enso()
+
+    def _attach_enso(self) -> None:
+        """Adjunta la columna 'oni' (rezagada) a serie/train/test si el regresor ENSO está
+        activo (solo cohorte de conteos). El ONI histórico es observado (as_of=None)."""
+        if not self.enso_regressor:
+            return
+        from epiforecast.data import enso
+
+        for frame in (self.serie, self.train_data, self.test_data):
+            if not frame.empty:
+                frame["oni"] = enso.oni_for_dates(frame["ds"], lag_weeks=self.enso_lag_weeks)
 
     def promedio_semanal(self) -> float:
         """Return weekly average of original count (before transforms)."""
@@ -145,6 +168,14 @@ class ProphetForecaster(ForecastModel):
             raise RuntimeError("Model not fitted. Call fit() first.")
 
         future = self._model.make_future_dataframe(periods=horizon, freq="W-MON")
+        if self.enso_regressor:
+            # ONI del horizonte futuro: observado donde el rezago ya lo entrega +
+            # persistencia amortiguada hacia neutral para la cola (estrategia desplegable).
+            from epiforecast.data import enso
+
+            future["oni"] = enso.oni_for_dates(
+                future["ds"], lag_weeks=self.enso_lag_weeks, as_of=self._train_max_ds
+            )
         forecast = self._model.predict(future)
         cols = ["ds", "yhat", "yhat_lower", "yhat_upper"]
         out = forecast[cols].copy()
@@ -214,6 +245,7 @@ class ProphetForecaster(ForecastModel):
             "add_seasonality": self.add_seasonality_params,
             "normalizar_tasa": self.normalizar_tasa,
             "log_transform": self.log_transform,
+            "enso_regressor": self.enso_regressor,
             "tasa_por": self.tasa_por,
         }
 
@@ -276,7 +308,8 @@ class ProphetForecaster(ForecastModel):
         # Metricas in-sample (train) para deteccion de overfitting/leakage
         if self._model is not None and not self.train_data.empty:
             try:
-                fc_train = self._model.predict(self.train_data[["ds"]])
+                tr_cols = ["ds", "oni"] if self.enso_regressor else ["ds"]
+                fc_train = self._model.predict(self.train_data[tr_cols])
                 yhat_tr = fc_train["yhat"].to_numpy(dtype=float)
                 y_tr = self.train_data["y"].to_numpy(dtype=float)
                 if self.log_transform:
@@ -297,4 +330,6 @@ class ProphetForecaster(ForecastModel):
         holidays = self.fechas_atipicas if not self.fechas_atipicas.empty else None
         model = Prophet(holidays=holidays, **self.param_model, **hp_overrides)
         model.add_seasonality(**self.add_seasonality_params)
+        if self.enso_regressor:
+            model.add_regressor("oni")
         return model

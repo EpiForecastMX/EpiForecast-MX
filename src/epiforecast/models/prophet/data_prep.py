@@ -103,7 +103,8 @@ def eval_rapida(
         return null_metrics
 
     try:
-        forecast = model.predict(test_data[["ds"]])
+        pred_cols = ["ds", "oni"] if "oni" in test_data.columns else ["ds"]
+        forecast = model.predict(test_data[pred_cols])
         merged = test_data[["ds", "y"]].merge(forecast[["ds", "yhat"]], on="ds")
 
         if normalizar_tasa and poblacion_valor and "y_original" in test_data.columns:

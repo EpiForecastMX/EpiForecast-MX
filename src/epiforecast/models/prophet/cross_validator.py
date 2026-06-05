@@ -290,7 +290,8 @@ def _compute_fold_metrics(
     """
     from epiforecast.evaluation.metrics import compute_forecast_metrics
 
-    forecast = model.predict(val_fold[["ds"]])
+    pred_cols = ["ds", "oni"] if "oni" in val_fold.columns else ["ds"]
+    forecast = model.predict(val_fold[pred_cols])
     merged = val_fold[["ds", "y"]].merge(forecast[["ds", "yhat"]], on="ds")
 
     if poblacion is not None and "y_original" in val_fold.columns:

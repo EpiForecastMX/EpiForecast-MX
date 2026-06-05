@@ -144,6 +144,37 @@ def fit_prophet(
     return fc[["ds", "yhat"]].tail(periods).reset_index(drop=True)
 
 
+def fit_prophet_enso_deploy(train: pd.DataFrame, periods: int):
+    """Prophet + ONI usando el módulo de producción enso.py (estrategia DESPLEGABLE:
+    ONI observado hasta el cutoff + persistencia amortiguada para la cola futura)."""
+    from prophet import Prophet
+
+    from epiforecast.data import enso
+
+    cutoff = train["ds"].max()
+    t = train.copy()
+    t["y"] = np.log1p(t["y"].clip(lower=0))
+    t["oni"] = enso.oni_for_dates(t["ds"], as_of=cutoff)
+    m = Prophet(
+        growth="linear",
+        yearly_seasonality=False,
+        weekly_seasonality=False,
+        daily_seasonality=False,
+        seasonality_mode="multiplicative",
+        changepoint_prior_scale=0.05,
+        seasonality_prior_scale=10.0,
+    )
+    m.add_seasonality(name="yearly", period=365.25, fourier_order=10)
+    m.add_regressor("oni")
+    np.random.seed(42)
+    m.fit(t[["ds", "y", "oni"]])
+    fut = m.make_future_dataframe(periods=periods, freq="W-MON")
+    fut["oni"] = enso.oni_for_dates(fut["ds"], as_of=cutoff)
+    fc = m.predict(fut)
+    fc["yhat"] = np.expm1(fc["yhat"]).clip(lower=0)
+    return fc[["ds", "yhat"]].tail(periods).reset_index(drop=True)
+
+
 def _fourier(ds: pd.Series, k: int) -> np.ndarray:
     """Términos de Fourier para el ciclo anual (semana ISO)."""
     wk = ds.dt.isocalendar().week.astype(float).to_numpy()
@@ -237,6 +268,7 @@ def main() -> int:
             ("Prophet (actual)", fit_prophet(train, 52)),
             ("Prophet+ONI perfect", fit_prophet(train_oni, 52, "oni", "perfect")),
             ("Prophet+ONI realista", fit_prophet(train_oni, 52, "oni", "realista")),
+            ("Prophet+ENSO deploy", fit_prophet_enso_deploy(train, 52)),
             ("NB-GLM Fourier", fit_nbglm(train, 52)),
         ]:
             res = evaluar(real, pred, etiqueta)
