@@ -381,6 +381,36 @@ python scripts/compliance_check.py
 
 Comparison charts are saved in `reports/forecasts/comparacion_modelos/` using CDMX timezone (UTC-6) for audit logs. The Avance 5 report generates `reports/ProdDetails/avance5_modelo_final.md`, `reports/ProdDetails/tabla_333_modelos_produccion.xlsx` (Excel with 2 sheets: production summary + 52-week detail), and 18 analysis charts in `reports/figures/ModeloFinal/`.
 
+#### Prospective Out-of-Sample Validation (frozen forecast)
+
+> **Read this before trusting `smape_real_2026`.** The engine-selection metric is
+> **in-sample**: production models are refit on the full series (2026 H1 included)
+> and scored on their own in-sample fit. To measure honest out-of-sample skill we
+> freeze today's forecast and compare it against bulletins that arrive **later**.
+> Full audit: `docs/research/hallazgos/DENGUE_AUDITORIA_LEAKAGE.md`.
+
+```bash
+# Freeze the current productive forecast (future tail only, ds > cutoff = unseen).
+# Covers all 4 conditions (neuro via tabla_333 + Dengue via produccion_dengue.csv).
+make congela-pronostico
+
+# Validate the frozen forecast against the current bulletin (honest OOS SMAPE/MAE).
+# Only scores weeks AFTER the freeze cutoff (genuinely unseen when frozen).
+make valida-prospectivo
+```
+
+`freeze` writes `reports/ProdDetails/congelado/forecast_congelado_<YYYYMMDD>.csv`
+plus the `forecast_congelado_latest.txt` pointer; `validar` writes
+`reports/ProdDetails/validacion_prospectiva.html` (+ `.csv`).
+
+**Golden rule (do not forget):** after each new bulletin, run `make valida-prospectivo`
+**before** retraining. The weekly pipeline retrains on the new data, so if you retrain
+first, the newly arrived week becomes in-sample again and the test is lost. **Do not
+re-freeze every week** (that resets the experiment); re-freeze only to set a new
+baseline. Decision rule: if OOS SMAPE stays close to in-sample, the selection is sound;
+if OOS exceeds ~2x in-sample, switch selection to `smape_prod` (rolling CV) or to a
+locked forecast trained through end-2025.
+
 ### 6. Code Quality
 
 ```bash
@@ -431,6 +461,11 @@ propagate data to stakeholders without manual intervention:
 ```bash
 make update-week
 ```
+
+> **Before retraining on a new bulletin, run `make valida-prospectivo`** to score
+> the frozen forecast against the just-arrived weeks while they are still genuinely
+> out-of-sample. Retraining first turns those weeks into in-sample data and the
+> honest OOS check is lost. See section 5 ("Prospective Out-of-Sample Validation").
 
 Requires: local `.venv` with project installed, AWS credentials for DVC/S3 pull,
 and a clone of `EpiForecast-IMSS-Dashboard` at the expected sibling path with
