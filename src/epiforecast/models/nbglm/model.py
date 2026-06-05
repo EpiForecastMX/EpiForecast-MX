@@ -137,12 +137,21 @@ class NBGLMForecaster(ForecastModel):
             }
         )
 
-    def predict(self, horizon: int = 52, freeze_trend: bool = False) -> pd.DataFrame:
+    def predict(
+        self,
+        horizon: int = 52,
+        freeze_trend: bool = False,
+        future_oni: np.ndarray[Any, Any] | None = None,
+    ) -> pd.DataFrame:
         """Ajuste in-sample + futuro. ``freeze_trend=True`` congela la tendencia lineal en su
         último nivel observado para el tramo futuro: útil en proyecciones ilustrativas de varios
         años, donde extrapolar la tendencia (inflada por la epidemia de 2024) sobreestimaría los
         años no epidémicos. Muestra el patrón estacional + ENSO a nivel estable, no la magnitud
         de la próxima gran epidemia. El default (False) conserva el comportamiento productivo.
+
+        ``future_oni`` (longitud ``horizon``) inyecta un ESCENARIO de ONI futuro ya rezagado por
+        semana (p.ej. el próximo El Niño climatológico) en lugar de la persistencia amortiguada
+        hacia neutral. Permite pronosticar el próximo brote condicionado a un El Niño esperado.
         """
         if self._last_ds is None:
             raise RuntimeError("Modelo no entrenado. Llama fit() primero.")
@@ -162,11 +171,14 @@ class NBGLMForecaster(ForecastModel):
         four_f = _fourier(pd.Series(fut_ds), self.fourier_k)
         oni_f = None
         if self.enso_regressor:
-            from epiforecast.data import enso
+            if future_oni is not None:
+                oni_f = np.asarray(future_oni, dtype=float)[:horizon]
+            else:
+                from epiforecast.data import enso
 
-            oni_f = enso.oni_for_dates(
-                pd.Series(fut_ds), lag_weeks=self.enso_lag_weeks, as_of=self._last_ds
-            )
+                oni_f = enso.oni_for_dates(
+                    pd.Series(fut_ds), lag_weeks=self.enso_lag_weeks, as_of=self._last_ds
+                )
         hist = list(self._y_hist)
         n0 = len(self._y_hist)
         preds = []
