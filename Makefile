@@ -307,6 +307,20 @@ tabla-produccion:
 	$(PYTHON) -m scripts.genera_tabla_produccion
 	@echo ">>> → reports/ProdDetails/tabla_333_modelos_produccion.xlsx"
 
+## Congela el pronóstico productivo vigente (snapshot OOS, 4 padecimientos)
+.PHONY: congela-pronostico
+congela-pronostico:
+	@echo ">>> Congelando pronóstico productivo (cola futura, ds > corte)..."
+	$(PYTHON) scripts/pronostico_congelado.py freeze
+	@echo ">>> → reports/ProdDetails/congelado/"
+
+## Valida el congelado contra boletines posteriores al corte (desempeño honesto OOS)
+.PHONY: valida-prospectivo
+valida-prospectivo:
+	@echo ">>> Validando pronóstico congelado vs realidad no vista..."
+	$(PYTHON) scripts/pronostico_congelado.py validar
+	@echo ">>> → reports/ProdDetails/validacion_prospectiva.html"
+
 ## Comparar métricas entre modelos (Excel + HTML)
 .PHONY: compare-metrics
 compare-metrics:

@@ -190,6 +190,13 @@ EpiForecast-MX/
 - Desglose por sexo (Nacional y Regional) para cada padecimiento.
 - Actualiza columna `realidad_sem_previa` en el Excel de produccion.
 
+### Validacion Prospectiva OOS (pronostico congelado)
+- `scripts/pronostico_congelado.py` (`make congela-pronostico` / `make valida-prospectivo`), cubre los 4 padecimientos (neuro via tabla_333 + Dengue via produccion_dengue.csv).
+- Existe porque `smape_real_2026` (la metrica de seleccion de motor) es IN-SAMPLE: el modelo se entrena sobre la serie completa incluyendo 2026 H1 y se puntua su ajuste in-sample. Ver `docs/research/hallazgos/DENGUE_AUDITORIA_LEAKAGE.md`.
+- `freeze`: guarda el pronostico del motor productivo por serie SOLO para la cola futura (ds > corte = no vista) en `reports/ProdDetails/congelado/forecast_congelado_<fecha>.csv` + puntero `forecast_congelado_latest.txt`. Snapshot inicial (2026-06-05): corte W20, 396 series, 16,032 filas.
+- `validar`: confronta el congelado vs el boletin vigente, reporta SMAPE/MAE OOS por serie y nacional en `reports/ProdDetails/validacion_prospectiva.html` (+ `.csv`). Solo puntua semanas posteriores al corte (genuinamente no vistas).
+- **Operacion:** correr `make valida-prospectivo` tras cada boletin nuevo ANTES de re-entrenar, para acumular desempeno OOS honesto. NO re-congelar cada semana (reiniciaria la prueba); re-congelar solo para fijar un nuevo punto de partida. Criterio: si OOS se mantiene ~ in-sample, la seleccion es valida; si OOS > 2x in-sample, migrar la seleccion a `smape_prod` (CV rolling) o a forecast bloqueado corte fin-2025.
+
 ### Tableau y Modelo Productivo
 - `scripts/build_tableau.py` genera `data/processed/tableau.csv` con datos de los 4 modelos.
 - Seleccion automatica de `modelo_productivo` basada en SMAPE por grupo (padecimiento, entidad, modo).

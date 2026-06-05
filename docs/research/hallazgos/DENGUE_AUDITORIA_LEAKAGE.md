@@ -87,6 +87,22 @@ entrantes contra ese forecast congelado durante 4-8 semanas ANTES de dejar que e
 re-entrenamiento lo sobreescriba. (Es la disciplina del "forecast bloqueado" de
 MICAI, aplicada hacia adelante.)
 
+**HECHO (2026-06-05): la herramienta de congelado ya existe.**
+`scripts/pronostico_congelado.py` (targets `make congela-pronostico` /
+`make valida-prospectivo`), cubre los 4 padecimientos:
+- `freeze`: guarda el pronóstico del motor productivo por serie SOLO para la cola
+  futura (ds > corte = no vista) en `reports/ProdDetails/congelado/forecast_congelado_<fecha>.csv`
+  (+ puntero `forecast_congelado_latest.txt`). Snapshot inicial: corte 2026-W20
+  (2026-05-11), 396 series, 16,032 filas futuras (W21+).
+- `validar`: confronta el congelado contra el boletín vigente y reporta SMAPE/MAE
+  OOS por serie y nacional (`validacion_prospectiva.html` + `.csv`). Solo puntúa
+  semanas posteriores al corte. Hoy reporta 0 (aún no llega boletín > W20): correcto.
+
+**Operación semanal:** tras el próximo boletín, correr `make valida-prospectivo`
+ANTES de re-entrenar para acumular el desempeño OOS. NO re-congelar cada semana
+(eso reiniciaría la prueba); re-congelar solo cuando se quiera fijar un nuevo punto
+de partida.
+
 **Criterio de decisión:**
 - Si en 4-8 semanas no vistas el SMAPE OOS se mantiene cerca del in-sample
   (p.ej. DeepAR nacional ~10 in-sample → OOS < 15): nos quedamos así.
