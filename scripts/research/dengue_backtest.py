@@ -185,36 +185,44 @@ def _fourier(ds: pd.Series, k: int) -> np.ndarray:
     return np.column_stack(feats)
 
 
-def fit_nbglm(train: pd.DataFrame, periods: int, k: int = 4):
-    """GLM Negative-Binomial con Fourier(annual) + lag1 + lag52 + tendencia.
+def fit_nbglm(train: pd.DataFrame, periods: int, k: int = 4, use_oni: bool = False):
+    """GLM Negative-Binomial con Fourier(annual) + lag1 + lag52 + tendencia [+ ONI].
 
-    Pronóstico iterativo: realimenta sus propias predicciones para los lags.
+    Pronóstico iterativo: realimenta sus propias predicciones para los lags. Con use_oni,
+    agrega el índice El Niño rezagado (estrategia desplegable de enso.py) como covariable.
     """
     import statsmodels.api as sm
 
+    from epiforecast.data import enso
+
     t = train.reset_index(drop=True).copy()
+    cutoff = t["ds"].max()
     y = t["y"].clip(lower=0).to_numpy(dtype=float)
     n = len(y)
     four = _fourier(t["ds"], k)
     trend = (np.arange(n) / 52.0).reshape(-1, 1)
     lag1 = np.log1p(np.concatenate([[y[0]], y[:-1]]))
     lag52 = np.log1p(np.concatenate([np.full(min(52, n), y[0]), y[:-52]])[:n])
-    xmat = np.column_stack([np.ones(n), four, trend, lag1, lag52])
-    model = sm.GLM(y, xmat, family=sm.families.NegativeBinomial(alpha=1.0))
-    res = model.fit()
+    feats = [np.ones(n), four, trend, lag1, lag52]
+    fut_ds = pd.date_range(t["ds"].iloc[-1] + pd.Timedelta(weeks=1), periods=periods, freq="W-MON")
+    if use_oni:
+        oni_hist = enso.oni_for_dates(t["ds"], as_of=cutoff)
+        oni_fut = enso.oni_for_dates(pd.Series(fut_ds), as_of=cutoff)
+        feats.append(oni_hist.reshape(-1, 1))
+    xmat = np.column_stack(feats)
+    res = sm.GLM(y, xmat, family=sm.families.NegativeBinomial(alpha=1.0)).fit()
 
-    # Forecast iterativo
     hist = list(y)
-    last_ds = t["ds"].iloc[-1]
-    fut_ds = pd.date_range(last_ds + pd.Timedelta(weeks=1), periods=periods, freq="W-MON")
     four_f = _fourier(pd.Series(fut_ds), k)
     preds = []
     for i in range(periods):
         tr = (n + i) / 52.0
         l1 = np.log1p(hist[-1])
         l52 = np.log1p(hist[-52]) if len(hist) >= 52 else np.log1p(hist[0])
-        xrow = np.concatenate([[1.0], four_f[i], [tr], [l1], [l52]])
-        yhat = float(res.predict(xrow.reshape(1, -1))[0])
+        row = [1.0, *four_f[i], tr, l1, l52]
+        if use_oni:
+            row.append(float(oni_fut[i]))
+        yhat = float(res.predict(np.array(row).reshape(1, -1))[0])
         yhat = max(0.0, min(yhat, 50000.0))  # acota explosiones del lag
         preds.append(yhat)
         hist.append(yhat)
@@ -270,6 +278,7 @@ def main() -> int:
             ("Prophet+ONI realista", fit_prophet(train_oni, 52, "oni", "realista")),
             ("Prophet+ENSO deploy", fit_prophet_enso_deploy(train, 52)),
             ("NB-GLM Fourier", fit_nbglm(train, 52)),
+            ("NB-GLM + ONI", fit_nbglm(train, 52, use_oni=True)),
         ]:
             res = evaluar(real, pred, etiqueta)
             res["corte"] = nombre
