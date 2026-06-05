@@ -278,6 +278,10 @@ def build_dengue_section() -> dict[str, Any]:
         "ciclo_anios": "cuatro a cinco",
         "top_entidades": top_ent,
         "sin_casos": sin_casos,
+        # Total confirmado por entidad (toda la serie) para el mapa coroplético del EpiBot.
+        "por_entidad": {
+            ENTIDAD_DISPLAY.get(str(e), str(e)): int(c) for e, c in total.items() if c > 0
+        },
         "unidad": "conteos absolutos (no tasa por 100 mil)",
         "notas": [
             "Serie de producción 2018-2026 (Cuadro 7.2 SINAVE, dengue confirmado A97.x agregado).",
