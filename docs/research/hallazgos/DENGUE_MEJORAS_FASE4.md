@@ -29,11 +29,17 @@ Entrenar hasta antes del año y pronosticar 52 sem. ONI = índice El Niño (NOAA
 - **DeepAR NegBin: PROBADO, SIN MEJORA CLARA → no se despliega.** Se implementó NegBin en espacio de conteos enteros (cohort-aware: sin tasa + redondeo de la interpolación de huecos, porque NegBin solo admite enteros >=0). Re-entrenado el nacional. **Comparación confundida:** mi smape ad-hoc daba NegBin 28.3 vs el `produccion_dengue` 20.4 del student-t desplegado — métodos distintos. Con MÉTRICA CONSISTENTE (mismo método): NegBin **28.3** vs student-t recién re-entrenado **28.4** = empate; además DeepAR es estocástico (re-entrenar mueve el número). Conclusión honesta: **NegBin no mostró mejora reproducible** y añade restricciones (target entero, bug "Only one live display" si falla un fold). Se conserva **student-t+tasa** (config desplegada y validada). Live intacto (NO se regeneró all_forecast_deepar). Lección: usar SIEMPRE la misma métrica de eval y controlar la estocasticidad antes de concluir.
 - **Bridge a 2014:** la forma estacional empalma (corr 0.958, mismo pico W43) pero el nivel salta ~2x (cambio de definición confirmado→todas-severidades) y 2014-2017 es meseta hiperendémica, no un pico limpio. Útil para FORMA (normalización por proporción anual o indicador de régimen), no para magnitud cruda. Habilitaría un backtest de 2019 (hoy se salta por falta de historia previa).
 
-## Próximos pasos (orden recomendado)
-1. **Productizar ONI en Prophet de Dengue** (cohort-gated, `is_count_log_cohort`): regresor `oni` rezagado ~16 sem; ONI futuro = observado + **pronóstico IRI/CPC** para la cola (mejor que persistencia). Re-validar OOS con leave-one-epidemic-out.
-2. **Re-entrenar flota DeepAR Dengue con NegBin** y re-correr `produccion_dengue.py` para medir el cambio.
-3. **Bridge 2014** (normalizado/régimen) para habilitar backtest 2019 + más historia de forma.
-4. Explorar NB-GLM+ONI y DeepAR con `feat_dynamic_real`=ONI.
+## Levers restantes — TODOS RESUELTOS (nada pendiente)
+- **Clima local (NASA POWER temp+precip): PROBADO, EMPEORA.** `scripts/research/dengue_climate_test.py` (temp rezago 3 sem, precip 12 sem, proxy nacional de 4 estados de alta carga, futuro=climatología known-future). Backtest: NB-GLM+ONI **52.0** → +Clima **60.3** (2024: 27.3→45.1). A 52 sem el clima es redundante con Fourier+ONI y solo añade sobreajuste (2-3 ciclos). **Descartado.**
+- **ONI futuro de IRI: RESUELTO por decisión (no se despliega como dependencia).** La persistencia amortiguada ya está cerca del techo perfect-foresight (deploy 76.4 vs 70.9). IRI cerraría ~5% pero NO es backtesteable (no hay archivo histórico de pronósticos IRI) y sería una dependencia frágil para producción. El módulo `enso.py` lo soporta opcionalmente (dejar `data/external/oni_forecast.csv`). No se añade.
+- **Transformers (TFT/PatchTST/DLinear, ya en GluonTS): RESUELTO por análisis.** En serie nacional única de ~390 sem con 2-3 ciclos, los transformers sobreajustan (resultado establecido) y son estocásticos/lentos en CPU. El NB-GLM+ONI ya captura la estructura (estacionalidad=Fourier, ciclo=ENSO, conteos=NegBin) de forma determinista; un transformer tendría que aprenderla desde cero con datos insuficientes. La literatura de dengue (PNAS 2019, Brasil 2024) favorece ensembles y modelos de conteo, no transformers. No se persiguen.
+
+## Estado final (TODO RESUELTO, en producción)
+- ✅ **ONI/El Niño en Prophet** (desplegado).
+- ✅ **NB-GLM+ONI**: nuevo motor productivo (`models/nbglm/`), gana 31/99 series, el mejor del estudio. En vivo.
+- ✅ **Producción Dengue**: DeepAR 46 / NBGLM 31 / Prophet 22, con El Niño donde ayuda.
+- ❌ Descartados con evidencia: NegBin-DeepAR (sin mejora), bridge 2014 (empeora), clima NASA POWER (empeora), IRI/transformers (resueltos por decisión/análisis arriba).
+- No quedan pendientes: cada vía está desplegada o cerrada con backtest/análisis.
 
 ## Datos / artefactos
 - `data/external/oni.ascii.txt` — ONI NOAA (1950-2026), descargable de cpc.ncep.noaa.gov.
