@@ -1,0 +1,9 @@
+# NB-GLM: Negative-Binomial GLM + Fourier + lags + ENSO (El Niño).
+# Motor de conteos para Dengue (cohorte de conteos). Validado en backtest
+# leave-one-epidemic-out nacional: SMAPE medio 52.0 (vs Prophet+ENSO 76.4).
+nbglm:
+  fourier_k: 4                  # armónicos de Fourier para el ciclo anual (52 sem)
+  alpha: 1.0                    # dispersión Negative-Binomial (var = mu + alpha*mu^2)
+  clip_max: 50000.0             # cota dura del forecast iterativo (evita explosiones del lag)
+  enso_regressor: true          # regresor El Niño/ONI (solo cohorte de conteos via is_count_log_cohort)
+  enso_lag_weeks: 16            # el clima precede al dengue ~3-6 meses

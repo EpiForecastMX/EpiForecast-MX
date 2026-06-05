@@ -35,7 +35,7 @@ from epiforecast.evaluation.real_eval import build_forecasts, build_real, eval_y
 from epiforecast.utils.config import conf, logger
 
 PADECIMIENTO = "Dengue"
-MOTORES = ["Prophet", "DeepAR", "Ensemble", "Stacking"]
+MOTORES = ["Prophet", "DeepAR", "Ensemble", "Stacking", "NBGLM"]
 
 
 # Rutas derivadas de config (no hardcodeadas) en acceso lazy: evita leer conf en import-time
@@ -54,11 +54,12 @@ def _out_paths() -> tuple[Path, Path]:
     return prod / "produccion_dengue.csv", prod / "produccion_dengue.xlsx"
 
 
-# Solo DeepAR y Prophet son productivos para Dengue. Ensemble (Prophet+XGBoost) y Stacking
-# (Prophet+ETS+LightGBM) divergen ~33x/99x: los modelos de árboles no extrapolan la dinámica
-# epidémica del dengue a 52 semanas (y el log1p amplifica el overshoot exponencialmente).
-# Se reportan sus métricas para auditoría pero NO se eligen como motor productivo.
-MOTORES_ELEGIBLES = ["Prophet", "DeepAR"]
+# Productivos: DeepAR, Prophet y NBGLM. Ensemble (Prophet+XGBoost) y Stacking
+# (Prophet+ETS+LightGBM) divergen ~33x/99x: los árboles no extrapolan la dinámica epidémica
+# a 52 sem. NBGLM (Negative-Binomial GLM + Fourier + ENSO) sí extrapola (estacionalidad
+# paramétrica) y es count-correcto; validado en backtest leave-one-epidemic-out (SMAPE 52 vs
+# Prophet+ENSO 76). Se reportan las métricas de los árboles para auditoría pero NO se eligen.
+MOTORES_ELEGIBLES = ["Prophet", "DeepAR", "NBGLM"]
 MIN_WEEKS_REAL = 10  # mínimo de semanas reales del año de eval. para usar criterio real
 MIN_TOTAL_CASOS = 10  # por debajo: serie casi-cero ("si es 0, es 0")
 

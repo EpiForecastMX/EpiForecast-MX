@@ -264,8 +264,8 @@ def build_dengue_section() -> dict[str, Any]:
         "n_series": int(len(prod)),
         "horizonte_semanas": 52,
         "proyeccion_anios": 5,
-        "motores_entrenados": ["Prophet", "DeepAR", "Ensemble", "Stacking"],
-        "motores_productivos": ["DeepAR", "Prophet"],
+        "motores_entrenados": ["Prophet", "DeepAR", "Ensemble", "Stacking", "NBGLM"],
+        "motores_productivos": ["DeepAR", "Prophet", "NBGLM"],
         "dist_motor": dist,
         "motor_nacional": motor_nac,
         "smape_nacional": smape_nac,
@@ -282,8 +282,9 @@ def build_dengue_section() -> dict[str, Any]:
         "notas": [
             "Serie de producción 2018-2026 (Cuadro 7.2 SINAVE, dengue confirmado A97.x agregado).",
             "La serie histórica 2014-2017 (taxonomía vieja A90/A91) es solo contexto/EDA, no entrena.",
-            "4 motores entrenados; solo DeepAR y Prophet son productivos (los árboles, Ensemble y "
-            "Stacking, no extrapolan la dinámica epidémica y quedan fuera de producción).",
+            "5 motores entrenados; productivos DeepAR, Prophet y NBGLM (Negative-Binomial GLM "
+            "con estacionalidad de Fourier y regresor El Niño/ONI). Los árboles (Ensemble, "
+            "Stacking) no extrapolan la dinámica epidémica y quedan fuera de producción.",
             "Pronóstico preciso a 1 año (52 sem); además una proyección a 5 años ILUSTRATIVA que "
             "muestra el patrón estacional esperado, no la magnitud de la próxima epidemia.",
             "Los picos (2014, 2019, 2024) coinciden con años de El Niño; 2024 fue la mayor "

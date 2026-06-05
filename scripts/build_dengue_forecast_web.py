@@ -41,7 +41,7 @@ _REPORTS = Path(conf["paths"]["reports"])
 PROD = _REPORTS / "ProdDetails" / "produccion_dengue.csv"
 # Forecast de los 4 motores: el motor productivo nacional puede ser cualquiera; sin las 4
 # rutas, un motor no listado caería silenciosamente a Prophet y meta.motor_nacional mentiría.
-MOTORES = ["Prophet", "DeepAR", "Ensemble", "Stacking"]
+MOTORES = ["Prophet", "DeepAR", "Ensemble", "Stacking", "NBGLM"]
 FORECAST = {
     m: _REPORTS / "forecasts" / m.lower() / f"all_forecast_{m.lower()}.csv" for m in MOTORES
 }

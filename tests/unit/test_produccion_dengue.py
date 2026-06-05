@@ -13,10 +13,13 @@ def _row(**kw) -> pd.Series:
         "total_real": 1000.0,
         "smape_real_prophet": np.nan,
         "smape_real_deepar": np.nan,
+        "smape_real_nbglm": np.nan,
         "mae_real_prophet": np.nan,
         "mae_real_deepar": np.nan,
+        "mae_real_nbglm": np.nan,
         "cv_smape_prophet": np.nan,
         "cv_smape_deepar": np.nan,
+        "cv_smape_nbglm": np.nan,
     }
     base.update(kw)
     return pd.Series(base)
