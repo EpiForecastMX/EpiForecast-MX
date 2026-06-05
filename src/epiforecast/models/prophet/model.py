@@ -137,9 +137,12 @@ class ProphetForecaster(ForecastModel):
             return
         from epiforecast.data import enso
 
-        for frame in (self.serie, self.train_data, self.test_data):
+        for attr in ("serie", "train_data", "test_data"):
+            frame = getattr(self, attr)
             if not frame.empty:
+                frame = frame.copy()  # train/test son slices de serie -> evitar SettingWithCopy
                 frame["oni"] = enso.oni_for_dates(frame["ds"], lag_weeks=self.enso_lag_weeks)
+                setattr(self, attr, frame)
 
     def promedio_semanal(self) -> float:
         """Return weekly average of original count (before transforms)."""
