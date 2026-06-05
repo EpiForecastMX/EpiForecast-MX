@@ -5,8 +5,11 @@ Los gráficos neuro originales superponen los 4 motores (Prophet/DeepAR/Ensemble
 lo que se ve ruidoso. Este script los reemplaza con el mismo estilo de la galería de Dengue:
 serie real (gris) + pronóstico del SOLO motor productivo (con su banda), tema Clinical Indigo.
 
-Sobrescribe los PNG existentes en sus rutas exactas (no toca index.html). Estados + Nacional;
-las 4 regiones agregadas se dejan como están.
+Por cada serie genera DOS PNG: el histórico completo (``X.png``) y la vista de acercamiento
+``X_zoom.png`` (últimas 52 semanas reales + las 52 del pronóstico), que la galería alterna con
+el toggle de vista. Cubre Nacional, las 32 entidades y las 4 regiones agregadas.
+
+Sobrescribe los PNG existentes en sus rutas exactas (no toca index.html).
 
 Uso:
     python scripts/build_neuro_gallery.py --out ../EpiForecast-IMSS-Dashboard/Reports
@@ -25,7 +28,7 @@ import pandas as pd  # noqa: E402
 
 warnings.filterwarnings("ignore")
 
-from scripts.build_dengue_gallery import _chart  # noqa: E402
+from scripts.build_dengue_gallery import _chart, _chart_zoom, _zoom_path  # noqa: E402
 
 from epiforecast.utils.config import conf, logger  # noqa: E402
 from epiforecast.visualization.comparison_plots import _load_serie_real  # noqa: E402
@@ -37,6 +40,23 @@ PADS = ["Depresion", "Parkinson", "Alzheimer"]
 FC_PAD = {"Depresion": "Depresión", "Parkinson": "Parkinson", "Alzheimer": "Alzheimer"}
 SEXOS = {"general": "General", "hombres": "Hombres", "mujeres": "Mujeres"}
 ENT_DISPLAY = {"México": "Estado de México"}  # homologado en la galería
+
+# Las 4 regiones agregadas se nombran distinto en cada capa: carpeta (índice de DATA),
+# meta_entidad del forecast y entidad de tabla_333. Este mapa concilia las tres.
+REGIONS = {
+    "Region_Metropolitana_alta": ("Region Metropolitana alta", "region_Metropolitana alta"),
+    "Region_Rural_-_dispersa": ("Region Rural / dispersa", "region_Rural / dispersa"),
+    "Region_Sur-Sureste_vulnerable": (
+        "Region Sur-Sureste vulnerable",
+        "region_Sur-Sureste vulnerable",
+    ),
+    "Region_Urbana_media": ("Region Urbana media", "region_Urbana media"),
+}
+
+
+def _region_display(ent: str) -> str:
+    """``Region Metropolitana alta`` -> ``Región Metropolitana alta`` para el título."""
+    return ent.replace("Region ", "Región ", 1)
 
 
 def _real(pad: str, ent: str, modo: str) -> pd.DataFrame:
@@ -85,25 +105,29 @@ def main() -> int:
             continue
         for folder in sorted(p for p in pad_dir.iterdir() if p.is_dir()):
             fname = folder.name
-            if fname.startswith("Region_"):  # regiones agregadas: se dejan como están
-                continue
-            ent = fname.replace("_", " ")  # carpeta -> entidad (estados/Nacional)
+            if fname in REGIONS:  # región agregada: concilia los 3 nombres
+                real_ent, tabla_ent = REGIONS[fname]
+                ent_label = _region_display(real_ent)
+            else:  # estado o Nacional: carpeta -> entidad directa
+                real_ent = tabla_ent = fname.replace("_", " ")
+                ent_label = ENT_DISPLAY.get(real_ent, real_ent)
             for sexo in ("general", "hombres", "mujeres"):
                 img = folder / f"{pad_disp}_{fname}_{sexo}.png"
                 if not img.exists():
                     continue
-                motor = motor_map.get((pad, ent, sexo))
+                motor = motor_map.get((pad, tabla_ent, sexo))
                 if not motor:
                     skip += 1
                     continue
-                real = _real(pad, ent, sexo)
+                real = _real(pad, real_ent, sexo)
                 if real.empty:
                     skip += 1
                     continue
                 last_real = real["ds"].max()
-                fc = _forecast(motor, FC_PAD[pad], ent, sexo, last_real)
-                titulo = f"{FC_PAD[pad]} — {ENT_DISPLAY.get(ent, ent)} ({SEXOS[sexo]})"
+                fc = _forecast(motor, FC_PAD[pad], real_ent, sexo, last_real)
+                titulo = f"{FC_PAD[pad]} — {ent_label} ({SEXOS[sexo]})"
                 _chart(real, fc, motor, titulo, img)  # sobrescribe en su ruta exacta
+                _chart_zoom(real, fc, motor, titulo, _zoom_path(img))
                 n += 1
     logger.success("Galería neuro (estilo limpio): {} gráficos regenerados | {} omitidos", n, skip)
     return 0

@@ -22,6 +22,7 @@ import warnings
 import matplotlib
 
 matplotlib.use("Agg")
+import matplotlib.dates as mdates  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 import pandas as pd  # noqa: E402
 
@@ -126,6 +127,90 @@ def _chart(real: pd.DataFrame, fc: pd.DataFrame, motor: str, titulo: str, out: P
     plt.close(fig)
 
 
+def _zoom_path(out: Path) -> Path:
+    """Ruta del PNG zoom: inserta ``_zoom`` antes de la extensión (misma carpeta)."""
+    return out.with_name(f"{out.stem}_zoom{out.suffix}")
+
+
+def _chart_zoom(
+    real: pd.DataFrame, fc: pd.DataFrame, motor: str, titulo: str, out: Path, weeks_back: int = 52
+) -> None:
+    """Vista de acercamiento: últimas ``weeks_back`` semanas reales + las 52 del pronóstico.
+
+    Separa el presente con un divisor punteado, sombrea la zona de pronóstico y empalma el
+    último real con la primera predicción para que la transición se lea continua. Pensado para
+    que el horizonte (que en el histórico completo de 12 años queda como una astilla) sea visible.
+    """
+    r = real.dropna().sort_values("ds").tail(weeks_back)
+    if r.empty:
+        return
+    fig, ax = plt.subplots(figsize=(10, 4.2), dpi=130)
+    fig.patch.set_facecolor(BG)
+    ax.set_facecolor(BG)
+    color = MOTOR_COLOR.get(motor, AMBER)
+    last_real = pd.Timestamp(r["ds"].max())
+
+    if not fc.empty:
+        ax.axvspan(last_real, pd.Timestamp(fc["ds"].max()), color=color, alpha=0.06, zorder=0)
+    ax.plot(
+        r["ds"],
+        r["y"].clip(lower=0),
+        color=MUTED,
+        linewidth=2.0,
+        marker="o",
+        markersize=2.6,
+        markerfacecolor=MUTED,
+        markeredgecolor="none",
+        label="Real (boletín SINAVE)",
+    )
+    if not fc.empty:
+        last_pt = r.tail(1)[["ds", "y"]].rename(columns={"y": "yhat"})
+        bridge = pd.concat([last_pt, fc[["ds", "yhat"]]], ignore_index=True)
+        if {"yhat_lower", "yhat_upper"} <= set(fc.columns):
+            ax.fill_between(
+                fc["ds"], fc["yhat_lower"].clip(lower=0), fc["yhat_upper"], color=color, alpha=0.16
+            )
+        ax.plot(
+            bridge["ds"],
+            bridge["yhat"].clip(lower=0),
+            color=color,
+            linewidth=2.4,
+            label=f"Pronóstico 52 sem ({motor})",
+        )
+        ax.axvline(last_real, color=TEXT, linewidth=1.0, linestyle=(0, (4, 3)), alpha=0.55)
+        ax.annotate(
+            "Presente",
+            xy=(last_real, 1.0),
+            xycoords=("data", "axes fraction"),
+            xytext=(4, -12),
+            textcoords="offset points",
+            color=TEXT,
+            fontsize=8,
+            fontweight="bold",
+            ha="left",
+            va="top",
+            alpha=0.85,
+        )
+
+    for sp in ax.spines.values():
+        sp.set_color(GRID)
+    ax.tick_params(colors=MUTED, labelsize=8)
+    ax.grid(True, color=GRID, linewidth=0.5, alpha=0.4)
+    ax.set_ylim(bottom=0)
+    ax.set_ylabel("Casos por semana", color=MUTED, fontsize=9)
+    ax.set_title(titulo, color=TEXT, fontsize=12, pad=10, fontweight="bold")
+    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=2))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %Y"))
+    for lbl in ax.get_xticklabels():
+        lbl.set_rotation(0)
+        lbl.set_fontsize(7.5)
+    ax.legend(facecolor=BG, edgecolor=GRID, labelcolor=TEXT, fontsize=8.5, loc="upper left")
+    fig.tight_layout()
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out, facecolor=BG, bbox_inches="tight")
+    plt.close(fig)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--out", required=True, help="Directorio de salida (Reports/dengue)")
@@ -168,6 +253,7 @@ def main() -> int:
         rel = f"dengue/{safe_ent}/Dengue_{safe_ent}_{sexo}.png"
         titulo = f"Dengue — {ent_disp} ({SEXOS[sexo]})"
         _chart(real, fc, motor, titulo, out_base.parent / rel)
+        _chart_zoom(real, fc, motor, titulo, _zoom_path(out_base.parent / rel))
         items.append(
             {
                 "p": "Dengue",
