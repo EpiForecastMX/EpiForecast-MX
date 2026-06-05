@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 """dengue_showcase_charts.py — Gráficos de alto impacto para la página de Dengue.
 
-Genera dos figuras (tema Clinical Indigo) para la web:
+Genera cuatro figuras (tema Clinical Indigo) para la web:
   - ``dengue_mapa_mexico.png``     mapa coroplético: carga de dengue por entidad (2018-2026).
   - ``dengue_historico_ciclo.png`` total anual confirmado 2014-2026 (A90/A91 + A97.x),
                                    marcando el ciclo epidémico (cuatro a cinco años: 2014, 2019, 2024).
+  - ``dengue_enso_ciclo.png``      índice ONI (El Niño/La Niña) vs casos de dengue por año.
+  - ``dengue_motores_dona.png``    distribución de motores productivos (DeepAR/Prophet/NB-GLM).
 
 Uso:
     python scripts/dengue_showcase_charts.py --out ../EpiForecast-IMSS-Dashboard/Reports/dengue
@@ -27,6 +29,7 @@ warnings.filterwarnings("ignore")
 
 from epiforecast.constants import COVID_END, COVID_START  # noqa: E402
 from epiforecast.data.boletin import cargar_boletin_dengue  # noqa: E402
+from epiforecast.utils.config import logger  # noqa: E402
 from epiforecast.visualization.web_theme import (  # noqa: E402
     AMBER,
     BG,
@@ -411,7 +414,7 @@ def main() -> int:
     chart_historico_ciclo(out)
     chart_enso_ciclo(out)
     chart_motores_dona(out)
-    print(f"Showcase charts de Dengue generados en {out}")
+    logger.success("Showcase charts de Dengue generados en {}", out)
     return 0
 
 

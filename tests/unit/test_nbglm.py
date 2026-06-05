@@ -82,5 +82,63 @@ def test_date_fromisocalendar_grid():
     assert fut["ds"].iloc[0] > pd.Timestamp(serie["ds"].iloc[-1])
 
 
+def test_default_preserva_comportamiento_productivo():
+    """Los nuevos parámetros tienen defaults que NO alteran el path productivo."""
+    serie = _serie()
+    m = _fit_model(serie)
+    base = m.predict(52)
+    explicito = m.predict(52, freeze_trend=False, future_oni=None, trend_anchor_weeks=None)
+    np.testing.assert_allclose(base["yhat"].to_numpy(), explicito["yhat"].to_numpy(), rtol=1e-12)
+
+
+def test_freeze_trend_modifica_futuro_y_es_valido():
+    """freeze_trend congela la tendencia: cambia el tramo futuro pero deja un pronóstico válido.
+
+    No asumimos el signo del coeficiente de tendencia (en la serie sintética es arbitrario);
+    solo que congelar la deriva produce un futuro DISTINTO, finito y no negativo.
+    """
+    serie = _serie(n=260, amp=80.0, base=30.0)
+    m = _fit_model(serie)
+    h = 156
+    libre = m.predict(h).tail(h)["yhat"].to_numpy()
+    congelado = m.predict(h, freeze_trend=True).tail(h)["yhat"].to_numpy()
+    assert not np.allclose(libre, congelado)  # la tendencia sí mueve el horizonte lejano
+    assert np.isfinite(congelado).all()
+    assert (congelado >= 0).all()
+    # el in-sample no cambia (freeze solo afecta el futuro)
+    n0 = len(serie)
+    in_libre = m.predict(h).head(n0)["yhat"].to_numpy()
+    in_congelado = m.predict(h, freeze_trend=True).head(n0)["yhat"].to_numpy()
+    np.testing.assert_allclose(in_libre, in_congelado, rtol=1e-12)
+
+
+def test_trend_anchor_en_n0_equivale_a_freeze():
+    """trend_anchor_weeks=n0 es idéntico a freeze_trend=True (anchor default == n0)."""
+    serie = _serie(n=260, amp=80.0, base=30.0)
+    m = _fit_model(serie)
+    n0 = len(serie)
+    h = 104
+    congelado = m.predict(h, freeze_trend=True)["yhat"].to_numpy()
+    anclado_n0 = m.predict(h, trend_anchor_weeks=float(n0))["yhat"].to_numpy()
+    np.testing.assert_allclose(congelado, anclado_n0, rtol=1e-12)
+    # anclar a otra semana sí cambia el futuro (y respeta freeze implícito)
+    anclado_bajo = m.predict(h, trend_anchor_weeks=20.0).tail(h)["yhat"].to_numpy()
+    assert not np.allclose(congelado[-h:], anclado_bajo)
+    assert np.isfinite(anclado_bajo).all()
+    assert (anclado_bajo >= 0).all()
+
+
+def test_future_oni_inyecta_escenario():
+    """future_oni reemplaza la persistencia ONI por el escenario provisto (cambia el futuro)."""
+    serie = _serie()
+    m = _fit_model(serie)
+    h = 52
+    base = m.predict(h).tail(h)["yhat"].to_numpy()
+    nino_fuerte = m.predict(h, future_oni=np.full(h, 2.5)).tail(h)["yhat"].to_numpy()
+    assert not np.allclose(base, nino_fuerte)
+    assert np.isfinite(nino_fuerte).all()
+    assert (nino_fuerte >= 0).all()
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
