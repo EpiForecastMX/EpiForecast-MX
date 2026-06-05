@@ -173,6 +173,8 @@ dengue-web:
 	$(PYTHON) -m scripts.build_dengue_forecast_web --out $(DASHBOARD_DENGUE) --generado $$(date +%Y-%m-%d)
 	$(PYTHON) -m scripts.eda_dengue_charts --out $(DASHBOARD_DENGUE)
 	$(PYTHON) -m scripts.dengue_showcase_charts --out $(DASHBOARD_DENGUE)
+	$(PYTHON) scripts/build_dengue_gallery.py --out $(DASHBOARD_DENGUE)
+	@echo ">>> Galeria por entidad generada. Inyecta los items en Reports/index.html (ver _gallery_items.json)."
 	@echo ">>> Regenerando knowledge.json del EpiBot (incluye la seccion 'dengue')..."
 	$(PYTHON) scripts/build_web_knowledge.py
 	cp web_dashboard/knowledge.json $(DASHBOARD_EPIBOT)/knowledge.json
