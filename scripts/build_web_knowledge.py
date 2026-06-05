@@ -243,18 +243,44 @@ def build_dengue_section() -> dict[str, Any]:
     last = df[df["Anio"] == df["Anio"].max()]
     last_sem = int(last["Semana"].astype(int).max())
     last_real = pd.Timestamp(date.fromisocalendar(int(df["Anio"].max()), min(last_sem, 52), 1))
-    casos_fut: int | None = None
-    fc_path = reports / "forecasts" / motor_nac.lower() / f"all_forecast_{motor_nac.lower()}.csv"
-    if fc_path.exists():
-        fc = pd.read_csv(fc_path, low_memory=False)
+
+    # Forecast CSV por motor (cache) -> pronóstico 52 sem de una serie (entidad, general).
+    _fc_cache: dict[str, pd.DataFrame] = {}
+
+    def _fc_52sem(entidad: str, motor: str) -> int:
+        key = motor.lower()
+        if key not in _fc_cache:
+            p = reports / "forecasts" / key / f"all_forecast_{key}.csv"
+            _fc_cache[key] = pd.read_csv(p, low_memory=False) if p.exists() else pd.DataFrame()
+        fc = _fc_cache[key]
+        if fc.empty:
+            return 0
         d = fc[
             (fc["meta_padecimiento"] == "Dengue")
-            & (fc["meta_entidad"] == "Nacional")
+            & (fc["meta_entidad"] == entidad)
             & (fc["meta_modo"] == "general")
         ].copy()
+        if d.empty:
+            return 0
         d["ds"] = pd.to_datetime(d["ds"])
         fut = d[d["ds"] > last_real].sort_values("ds").head(52)
-        casos_fut = int(fut["yhat"].clip(lower=0).sum())
+        return int(fut["yhat"].clip(lower=0).sum())
+
+    casos_fut: int | None = _fc_52sem("Nacional", motor_nac) or None
+
+    # Pronóstico 52 sem POR ENTIDAD (motor productivo de cada serie general) — consistente con
+    # el mapa neuro, que muestra casos pronosticados a 52 sem (no histórico).
+    prod_gen = prod[
+        (prod["sexo"] == "general")
+        & (~prod["entidad"].isin(["Nacional"]))
+        & (~prod["entidad"].astype(str).str.startswith("Region"))
+    ]
+    por_entidad_fc: dict[str, int] = {}
+    for _, r in prod_gen.iterrows():
+        ent_raw = str(r["entidad"])
+        val = _fc_52sem(ent_raw, str(r["motor_productivo"]))
+        if val > 0:
+            por_entidad_fc[ENTIDAD_DISPLAY.get(ent_raw, ent_raw)] = val
 
     return {
         "cie": "A97",
@@ -278,10 +304,9 @@ def build_dengue_section() -> dict[str, Any]:
         "ciclo_anios": "cuatro a cinco",
         "top_entidades": top_ent,
         "sin_casos": sin_casos,
-        # Total confirmado por entidad (toda la serie) para el mapa coroplético del EpiBot.
-        "por_entidad": {
-            ENTIDAD_DISPLAY.get(str(e), str(e)): int(c) for e, c in total.items() if c > 0
-        },
+        # Pronóstico 52 sem por entidad (motor productivo) para el mapa coroplético del EpiBot,
+        # consistente con el mapa neuro (casos pronosticados a 52 sem, NO histórico).
+        "por_entidad": por_entidad_fc,
         "unidad": "conteos absolutos (no tasa por 100 mil)",
         "notas": [
             "Serie de producción 2018-2026 (Cuadro 7.2 SINAVE, dengue confirmado A97.x agregado).",
