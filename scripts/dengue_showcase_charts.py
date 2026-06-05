@@ -153,8 +153,10 @@ def chart_mapa_mexico(out: Path) -> None:
         color=MUTED,
         fontsize=9,
     )
-    fig.subplots_adjust(top=0.93, bottom=0.09, left=0.02, right=0.98)
-    fig.savefig(out / "dengue_mapa_mexico.png", facecolor=BG)
+    # right=0.95 deja aire para las etiquetas del colorbar; bbox_inches="tight" garantiza
+    # que no se recorte el "10^x" del borde derecho (antes right=0.98 las cortaba).
+    fig.subplots_adjust(top=0.93, bottom=0.09, left=0.02, right=0.95)
+    fig.savefig(out / "dengue_mapa_mexico.png", facecolor=BG, bbox_inches="tight", pad_inches=0.2)
     plt.close(fig)
 
 
