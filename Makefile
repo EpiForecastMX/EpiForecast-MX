@@ -126,6 +126,13 @@ donas-motores:
 	$(PYTHON) scripts/genera_donas_motores.py --out $(DASHBOARD_MOTORES)
 	@echo ">>> → Reports/motores/*_motores_dona.png"
 
+## Regenera la galeria neuro en estilo LIMPIO (real + motor productivo, como Dengue)
+.PHONY: neuro-gallery
+neuro-gallery:
+	@echo ">>> Regenerando galeria neuro (estilo limpio, real + motor productivo)..."
+	$(PYTHON) -m scripts.build_neuro_gallery --out ../EpiForecast-IMSS-Dashboard/Reports
+	@echo ">>> → Reports/{Depresión,Parkinson,Alzheimer}/*/ (sobrescritos)"
+
 ## Extraer la serie de Dengue (agregada A97.0+A97.1+A97.2) de los boletines SINAVE
 .PHONY: dengue-extract
 dengue-extract:
