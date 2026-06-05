@@ -142,6 +142,7 @@ class NBGLMForecaster(ForecastModel):
         horizon: int = 52,
         freeze_trend: bool = False,
         future_oni: np.ndarray[Any, Any] | None = None,
+        trend_anchor_weeks: float | None = None,
     ) -> pd.DataFrame:
         """Ajuste in-sample + futuro. ``freeze_trend=True`` congela la tendencia lineal en su
         último nivel observado para el tramo futuro: útil en proyecciones ilustrativas de varios
@@ -152,6 +153,10 @@ class NBGLMForecaster(ForecastModel):
         ``future_oni`` (longitud ``horizon``) inyecta un ESCENARIO de ONI futuro ya rezagado por
         semana (p.ej. el próximo El Niño climatológico) en lugar de la persistencia amortiguada
         hacia neutral. Permite pronosticar el próximo brote condicionado a un El Niño esperado.
+
+        ``trend_anchor_weeks`` (implica ``freeze_trend``) fija el nivel base de la tendencia en
+        ese índice semanal en vez del último (``n0``): anclar a una semana anterior a la epidemia
+        de 2024 baja el piso para que los años SIN El Niño queden bajos y solo el clima los suba.
         """
         if self._last_ds is None:
             raise RuntimeError("Modelo no entrenado. Llama fit() primero.")
@@ -181,9 +186,12 @@ class NBGLMForecaster(ForecastModel):
                 )
         hist = list(self._y_hist)
         n0 = len(self._y_hist)
+        if trend_anchor_weeks is not None:
+            freeze_trend = True
+        anchor = trend_anchor_weeks if trend_anchor_weeks is not None else n0
         preds = []
         for i in range(horizon):
-            tr = (n0 if freeze_trend else n0 + i) / 52.0
+            tr = (anchor if freeze_trend else n0 + i) / 52.0
             l1 = np.log1p(hist[-1])
             l52 = np.log1p(hist[-52]) if len(hist) >= 52 else np.log1p(hist[0])
             row = [1.0, *four_f[i], tr, l1, l52]

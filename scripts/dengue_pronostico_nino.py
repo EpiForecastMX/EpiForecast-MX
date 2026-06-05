@@ -48,9 +48,12 @@ from epiforecast.visualization.web_theme import (  # noqa: E402
 
 A9091 = Path(conf["paths"]["interim"]) / "dengue_a90a91_nacional.csv"
 WARM, COLD, FC = "#E8553A", MINT, "#5B8DEF"  # El Niño / La Niña / pronóstico
-HORIZON_WEEKS = 235  # ~4.5 años de pronóstico (hasta ~2030.7)
+HORIZON_WEEKS = 180  # ~3.4 años: un ciclo ENSO (próximo El Niño + descenso), no jorobas repetidas
 # Escenario ENSO futuro: próximo El Niño (moderado) hacia 2027.7; ciclo ~3.8 años.
 _ENSO_AMP, _ENSO_CENTER, _ENSO_PEAK, _ENSO_PERIOD = 0.7, 0.05, 2027.7, 3.8
+# Ancla la tendencia a una semana previa a la epidemia de 2024: baja el piso para que los años
+# SIN El Niño queden bajos (~1k/sem, como 2025) y solo el clima eleve el brote (2027 ~3.3k/sem).
+_TREND_ANCHOR = 230
 
 
 def _yf(t: pd.Timestamp) -> float:
@@ -128,7 +131,7 @@ def main() -> int:
 
     model = NBGLMForecaster(padecimiento="Dengue")
     model.fit(serie[["ds", "y"]])
-    fc = model.predict(horizon=HORIZON_WEEKS, freeze_trend=True, future_oni=oni_reg)
+    fc = model.predict(horizon=HORIZON_WEEKS, future_oni=oni_reg, trend_anchor_weeks=_TREND_ANCHOR)
     fut = fc[fc["ds"] > last].copy()
 
     ymax = max(float(serie["y"].max()), float(fut["yhat"].max())) * 1.1
@@ -137,12 +140,31 @@ def main() -> int:
     fig.patch.set_facecolor(BG)
     ax.set_facecolor(BG)
 
-    # Bandas ENSO (observado + escenario), El Niño cálido / La Niña frío.
+    # Sombreado ENSO SUAVE: opacidad proporcional a la intensidad del ONI (sin bordes duros);
+    # el color se desvanece al acercarse al umbral, dando bandas difuminadas en vez de líneas.
     ox = oni_full.reset_index()
     ox["x"] = ox["ds"].map(_yf)
-    xx, oo = ox["x"].to_numpy(), ox["oni"].to_numpy()
-    ax.fill_between(xx, 0, ymax, where=oo > 0.5, color=WARM, alpha=0.13, zorder=0)
-    ax.fill_between(xx, 0, ymax, where=oo < -0.5, color=COLD, alpha=0.10, zorder=0)
+    xs, ov = ox["x"].to_numpy(), ox["oni"].to_numpy()
+    dx = float(xs[1] - xs[0]) if len(xs) > 1 else 0.02
+    for xi, oi in zip(xs, ov, strict=False):
+        if oi > 0.5:
+            ax.axvspan(
+                xi - dx / 2,
+                xi + dx / 2,
+                color=WARM,
+                alpha=min((oi - 0.5) / 1.5, 1.0) * 0.16,
+                zorder=0,
+                linewidth=0,
+            )
+        elif oi < -0.5:
+            ax.axvspan(
+                xi - dx / 2,
+                xi + dx / 2,
+                color=COLD,
+                alpha=min((-oi - 0.5) / 1.5, 1.0) * 0.14,
+                zorder=0,
+                linewidth=0,
+            )
 
     # Líneas: contexto (2014-2018), histórico (2018-2026), pronóstico.
     if not ctx.empty:
@@ -199,24 +221,28 @@ def main() -> int:
         "Pronóstico de dengue al ritmo de El Niño: el próximo gran brote llega con el próximo El Niño",
         color=TEXT,
         fontsize=12.5,
-        pad=12,
+        pad=40,  # deja sitio a la leyenda, que va FUERA del área de datos (arriba)
         fontweight="bold",
     )
     handles = [
         plt.Line2D([], [], color=TEXT, lw=1.4, label="Histórico real (2018-2026)"),
         plt.Line2D([], [], color=MUTED, lw=1.0, alpha=0.7, label="Contexto 2014-2018 (A90/A91)"),
         plt.Line2D([], [], color=FC, lw=2.0, ls="--", label="Pronóstico NB-GLM (próximo El Niño)"),
-        Patch(facecolor=WARM, alpha=0.25, label="El Niño (ONI > +0.5 °C)"),
-        Patch(facecolor=COLD, alpha=0.25, label="La Niña (ONI < -0.5 °C)"),
+        Patch(facecolor=WARM, alpha=0.5, label="El Niño (ONI > +0.5 °C)"),
+        Patch(facecolor=COLD, alpha=0.5, label="La Niña (ONI < -0.5 °C)"),
     ]
     ax.legend(
         handles=handles,
         facecolor=BG,
         edgecolor=GRID,
         labelcolor=TEXT,
-        fontsize=8.5,
-        loc="upper left",
-        ncol=2,
+        fontsize=8.3,
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.005),  # arriba del eje, sin encimar los datos
+        ncol=5,
+        columnspacing=1.3,
+        handlelength=1.6,
+        frameon=False,
     )
     fig.text(
         0.5,
@@ -231,7 +257,7 @@ def main() -> int:
         fontsize=8,
         wrap=True,
     )
-    fig.subplots_adjust(top=0.92, bottom=0.13, left=0.06, right=0.98)
+    fig.subplots_adjust(top=0.82, bottom=0.14, left=0.06, right=0.98)
     fig.savefig(
         out / "dengue_pronostico_nino.png", facecolor=BG, bbox_inches="tight", pad_inches=0.2
     )
