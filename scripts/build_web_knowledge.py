@@ -293,6 +293,65 @@ def build_dengue_section() -> dict[str, Any]:
     }
 
 
+def build_dengue_weekly() -> dict[str, Any]:
+    """Comparación semanal Real vs Pronóstico para Dengue (Nacional, general), para el
+    'zoom semanal' del EpiBot. Misma forma que build_weekly_comparison (clave 'Dengue')."""
+    prod_path = Path(conf["paths"]["reports"]) / "ProdDetails" / "produccion_dengue.csv"
+    if not prod_path.exists():
+        return {}
+    prod = pd.read_csv(prod_path)
+    nac = prod[(prod["entidad"] == "Nacional") & (prod["sexo"] == "general")]
+    motor = str(nac["motor_productivo"].iloc[0]) if len(nac) else "DeepAR"
+
+    df = cargar_boletin_dengue()
+    anio = int(df["Anio"].max())
+    real = df[df["Anio"] == anio].groupby("Semana")["Casos_semana"].sum().to_dict()
+
+    base = Path(conf["paths"]["reports"]) / "forecasts"
+    fc_motor: dict[str, dict[int, int]] = {}
+    for m in ["Prophet", "DeepAR", "NBGLM"]:
+        p = base / m.lower() / f"all_forecast_{m.lower()}.csv"
+        if not p.exists():
+            continue
+        fdf = pd.read_csv(p, low_memory=False)
+        fdf = fdf[
+            (fdf["meta_padecimiento"] == "Dengue")
+            & (fdf["meta_entidad"].fillna("Nacional") == "Nacional")
+            & (fdf["meta_modo"] == "general")
+        ].copy()
+        fdf["ds"] = pd.to_datetime(fdf["ds"])
+        fdf = fdf[fdf["ds"].dt.isocalendar().year == anio]
+        fdf["wk"] = fdf["ds"].dt.isocalendar().week.astype(int)
+        fc_motor[m.lower()] = {
+            int(w): int(round(y)) for w, y in zip(fdf["wk"], fdf["yhat"], strict=False)
+        }
+
+    base_motor = motor.lower()
+    semanas = []
+    for wk in sorted(fc_motor.get(base_motor, {})):
+        fecha = date.fromisocalendar(anio, min(wk, 52), 1).isoformat()
+        entry: dict[str, Any] = {
+            "semana": wk,
+            "fecha": fecha,
+            "pronostico": fc_motor[base_motor].get(wk),
+        }
+        if wk in real:
+            entry["real"] = int(real[wk])
+        for m, vals in fc_motor.items():
+            if wk in vals:
+                entry[m] = vals[wk]
+        semanas.append(entry)
+    return {
+        "Dengue": {
+            "modelo_productivo": base_motor,
+            "anio": anio,
+            "semanas_reales": len(real),
+            "semanas_pronostico": len(semanas),
+            "semanas": semanas,
+        }
+    }
+
+
 def build_static_data() -> dict[str, Any]:
     """Datos estaticos del proyecto."""
     equipo = [
@@ -705,7 +764,9 @@ def main() -> None:
         "stats": _normalize_keys(stats),
         "prod_models": _normalize_keys(build_prod_models(cache)),
         "boletin": _normalize_keys(build_boletin(cache)),
-        "weekly_comparison": _normalize_keys(build_weekly_comparison(cache)),
+        "weekly_comparison": _normalize_keys(
+            {**build_weekly_comparison(cache), **build_dengue_weekly()}
+        ),
         # Dengue: sección propia SIN normalizar (preserva tildes/eñes en estados y notas).
         "dengue": build_dengue_section(),
         **build_static_data(),
