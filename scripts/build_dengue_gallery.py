@@ -50,24 +50,34 @@ def _safe(s: str) -> str:
     return s.replace(" ", "_").replace("/", "_")
 
 
-def _real_semanal(df: pd.DataFrame, sexo: str) -> pd.DataFrame:
-    """Serie real semanal (ds, y) para un sexo. general=Casos_semana; H/M=diff acumulado."""
-    g = df.groupby(["Anio", "Semana"], as_index=False).agg(
-        Casos_semana=("Casos_semana", "sum"),
-        ah=("Acumulado_hombres", "sum"),
-        am=("Acumulado_mujeres", "sum"),
-    )
+def _real_general(df: pd.DataFrame) -> pd.DataFrame:
+    """Serie real general (ds, y) = Casos_semana (la cantidad que modela el motor general)."""
+    g = df.groupby(["Anio", "Semana"], as_index=False).agg(Casos_semana=("Casos_semana", "sum"))
     g = g.sort_values(["Anio", "Semana"])
-    if sexo == "general":
-        g["y"] = g["Casos_semana"]
-    else:
-        col = "ah" if sexo == "hombres" else "am"
-        g["y"] = g.groupby("Anio")[col].diff().fillna(g[col]).clip(lower=0)
+    g["y"] = g["Casos_semana"]
     g["ds"] = [
         pd.Timestamp(date.fromisocalendar(int(a), min(int(s), 52), 1))
         for a, s in zip(g["Anio"], g["Semana"], strict=False)
     ]
     return g[["ds", "y"]].reset_index(drop=True)
+
+
+def _sex_prop(df: pd.DataFrame) -> tuple[float, float]:
+    """Proporción (hombres, mujeres) de la entidad, del acumulado por sexo.
+
+    El boletín reporta el total semanal (``Casos_semana``) y el acumulado por sexo en columnas
+    distintas que NO reconcilian (sumar H+M del acumulado no da el total). Para que la galería sea
+    consistente, hombres/mujeres se muestran como un REPARTO proporcional del total general por la
+    razón de sexo observada: así H + M = general, exacto, en realidad y pronóstico.
+    """
+    g = df.groupby(["Anio", "Semana"], as_index=False).agg(
+        ah=("Acumulado_hombres", "sum"), am=("Acumulado_mujeres", "sum")
+    )
+    g = g.sort_values(["Anio", "Semana"])
+    h = float(g.groupby("Anio")["ah"].diff().fillna(g["ah"]).clip(lower=0).sum())
+    m = float(g.groupby("Anio")["am"].diff().fillna(g["am"]).clip(lower=0).sum())
+    tot = h + m
+    return (0.5, 0.5) if tot <= 0 else (h / tot, m / tot)
 
 
 def _forecast(motor: str, entidad: str, sexo: str, last_real: pd.Timestamp) -> pd.DataFrame:
@@ -125,17 +135,33 @@ def main() -> int:
     prod = pd.read_csv(PROD)
     bol = cargar_boletin_dengue()
     bol["Entidad"] = bol["Entidad"].replace(ENTIDAD_DISPLAY)
+    # Motor productivo de la serie GENERAL por entidad (hombres/mujeres se derivan del general).
+    gen_motor = {
+        str(row["entidad"]): str(row["motor_productivo"])
+        for _, row in prod[prod["sexo"] == "general"].iterrows()
+    }
     items = []
     n = 0
     for _, r in prod.iterrows():
-        ent, sexo, motor = str(r["entidad"]), str(r["sexo"]), str(r["motor_productivo"])
+        ent, sexo = str(r["entidad"]), str(r["sexo"])
         ent_disp = ENTIDAD_DISPLAY.get(ent, ent)
         sub = bol if ent == "Nacional" else bol[bol["Entidad"] == ent_disp]
         if sub.empty:
             continue
-        real = _real_semanal(sub, sexo)
+        # General real (Casos_semana) + su pronóstico; hombres/mujeres = general × proporción de
+        # sexo, para que H + M = general (exacto) en realidad y pronóstico.
+        motor = gen_motor.get(ent, str(r["motor_productivo"]))
+        real = _real_general(sub)
         last_real = real["ds"].max()
-        fc = _forecast(motor, ent, sexo, last_real)
+        fc = _forecast(motor, ent, "general", last_real)
+        if sexo != "general":
+            p_h, p_m = _sex_prop(sub)
+            p = p_h if sexo == "hombres" else p_m
+            real = real.assign(y=real["y"] * p)
+            fc = fc.copy()
+            for c in ("yhat", "yhat_lower", "yhat_upper"):
+                if c in fc.columns:
+                    fc[c] = fc[c] * p
         safe_ent = _safe(ent_disp)
         # Carpeta en MINÚSCULA 'dengue/' (coincide con los assets de dengue.html ya
         # committeados; Netlify es case-sensitive, no usar 'Dengue/').
