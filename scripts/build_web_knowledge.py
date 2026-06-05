@@ -230,6 +230,15 @@ def build_dengue_section() -> dict[str, Any]:
     df = cargar_boletin_dengue()
     ann = df.groupby("Anio")["Casos_semana"].sum()
     anual = {str(int(y)): int(c) for y, c in ann.items()}
+    # Contexto 2014-2017 (esquema viejo A90/A91) para la gráfica de evolución del EpiBot:
+    # prepende los años previos a la serie de modelado (otra clasificación, solo display).
+    a9091 = Path(conf["paths"]["interim"]) / "dengue_a90a91_nacional.csv"
+    if a9091.exists():
+        old = pd.read_csv(a9091)
+        old["tot"] = old["Acumulado_hombres"] + old["Acumulado_mujeres"]
+        for y, c in old.groupby("Anio")["tot"].max().items():
+            anual.setdefault(str(int(y)), int(c))
+        anual = {y: anual[y] for y in sorted(anual)}
     pico_anio, pico_casos = int(ann.idxmax()), int(ann.max())
     total = df.groupby("Entidad")["Casos_semana"].sum().sort_values(ascending=False)
     top_ent = [
