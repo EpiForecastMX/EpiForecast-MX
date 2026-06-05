@@ -259,6 +259,94 @@ def chart_historico_ciclo(out: Path) -> None:
     plt.close(fig)
 
 
+def chart_enso_ciclo(out: Path) -> None:
+    """El Niño (índice ONI) vs ciclos de dengue: los grandes brotes caen en años cálidos.
+
+    Eje izquierdo: ONI semanal 2014-2026, relleno cálido (>+0.5, El Niño) / frío (<-0.5, La Niña).
+    Eje derecho: total anual de dengue (barras tenues). Muestra por qué el modelo NB-GLM lleva
+    el regresor de El Niño: el pulso inter-anual del dengue sigue al ONI.
+    """
+    from epiforecast.data import enso
+
+    oni = enso.load_oni_weekly()
+    oni = oni[(oni["ds"].dt.year >= 2014) & (oni["ds"].dt.year <= 2026)].copy()
+    oni["x"] = oni["ds"].dt.year + (oni["ds"].dt.dayofyear - 1) / 365.0
+    x, y = oni["x"].to_numpy(), oni["oni"].to_numpy()
+
+    old = pd.read_csv(A9091)
+    old["tot"] = old["Acumulado_hombres"] + old["Acumulado_mujeres"]
+    old_y = old.groupby("Anio")["tot"].max()
+    new = cargar_boletin_dengue().groupby("Anio")["Casos_semana"].sum()
+    last_year = int(max(new.index.max(), old_y.index.max()))
+    years = list(range(2014, last_year + 1))
+    casos = [int(new[a]) if a in new.index else int(old_y.get(a, 0)) for a in years]
+
+    warm, cold = "#E8553A", MINT  # El Niño (cálido) / La Niña (frío)
+    fig, ax = plt.subplots(figsize=(11.5, 5.4), dpi=DPI)
+    fig.patch.set_facecolor(BG)
+    ax.set_facecolor(BG)
+
+    ax2 = ax.twinx()  # barras de dengue al fondo
+    ax2.bar(years, casos, width=0.7, color=PINK, alpha=0.16, zorder=1)
+    ax2.set_ylabel("Casos de dengue por año (barras)", color=MUTED, fontsize=9)
+    ax2.tick_params(colors=MUTED, labelsize=8)
+    ax2.set_ylim(0, max(casos) * 1.15)
+
+    ax.axhline(0, color=GRID, linewidth=0.8, zorder=2)
+    ax.fill_between(x, y, 0.5, where=(y > 0.5), color=warm, alpha=0.55, zorder=3, interpolate=True)
+    ax.fill_between(
+        x, y, -0.5, where=(y < -0.5), color=cold, alpha=0.45, zorder=3, interpolate=True
+    )
+    ax.plot(x, y, color=TEXT, linewidth=1.3, zorder=4)
+    ax.axhline(0.5, color=warm, linewidth=0.6, linestyle=":", alpha=0.7, zorder=2)
+    ax.axhline(-0.5, color=cold, linewidth=0.6, linestyle=":", alpha=0.7, zorder=2)
+
+    for a in _PEAK_YEARS:
+        if a in years:
+            ax.annotate(
+                f"Brote {a}",
+                xy=(a + 0.5, max(y) * 0.92),
+                ha="center",
+                color=PINK,
+                fontsize=8.5,
+                fontweight="bold",
+                zorder=5,
+            )
+
+    ax.set_zorder(ax2.get_zorder() + 1)  # línea ONI por encima de las barras
+    ax.patch.set_visible(False)
+    for sp in ax.spines.values():
+        sp.set_color(GRID)
+    for sp in ax2.spines.values():
+        sp.set_color(GRID)
+    ax.tick_params(colors=MUTED, labelsize=8)
+    ax.set_ylabel("Índice ONI de El Niño (°C)", color=MUTED, fontsize=9)
+    ax.set_xlim(2014, last_year + 1)
+    ax.set_title(
+        "El Niño marca el pulso del dengue: los grandes brotes caen en años cálidos",
+        color=TEXT,
+        fontsize=12.5,
+        pad=12,
+        fontweight="bold",
+    )
+    ax.text(
+        0.5,
+        -0.16,
+        "Relleno rojo = El Niño (ONI > +0.5 °C); verde = La Niña (< -0.5 °C). Las barras rosas son el "
+        "total anual de dengue. Los picos (2014, 2019, 2024) coinciden con El Niño; por eso el modelo "
+        "NB-GLM usa el ONI para anticipar la magnitud del próximo brote.",
+        transform=ax.transAxes,
+        ha="center",
+        va="top",
+        color=MUTED,
+        fontsize=8.2,
+        wrap=True,
+    )
+    fig.subplots_adjust(top=0.91, bottom=0.18, left=0.07, right=0.92)
+    fig.savefig(out / "dengue_enso_ciclo.png", facecolor=BG, bbox_inches="tight", pad_inches=0.2)
+    plt.close(fig)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", required=True, help="Directorio de salida (Reports/dengue)")
@@ -267,6 +355,7 @@ def main() -> int:
     out.mkdir(parents=True, exist_ok=True)
     chart_mapa_mexico(out)
     chart_historico_ciclo(out)
+    chart_enso_ciclo(out)
     print(f"Showcase charts de Dengue generados en {out}")
     return 0
 

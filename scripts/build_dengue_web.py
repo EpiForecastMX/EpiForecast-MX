@@ -46,6 +46,9 @@ from epiforecast.visualization.web_theme import (  # noqa: E402
 
 MESES_SEM = SEMANAS_ANIO
 _Z_OUTLIER = 3  # umbral z-score del tratamiento estándar de outliers (ilustrativo en charts)
+# Serie histórica A90/A91 (2014-2017, esquema OMS 1997) para extender los totales anuales como
+# CONTEXTO (no entra al modelado). Regenerable con `make dengue-historico-a9091`.
+A9091 = Path(__file__).resolve().parent.parent / "data" / "interim" / "dengue_a90a91_nacional.csv"
 
 
 def _fig(figsize: tuple[float, float]) -> tuple[plt.Figure, plt.Axes]:
@@ -72,20 +75,67 @@ def chart_nacional_semanal(df: pd.DataFrame, out: Path) -> None:
 
 
 def chart_totales_anuales(df: pd.DataFrame, out: Path) -> None:
-    """Barras: casos confirmados por año (resalta el pico epidémico 2024)."""
+    """Barras: casos confirmados por año, 2014-2026.
+
+    2018-2026 es la serie de modelado (A97.x). 2014-2017 se agrega como CONTEXTO en estilo
+    atenuado (esquema viejo A90/A91, otra clasificación, NO entra al entrenamiento), con un
+    divisor que marca el cambio. Resalta el pico epidémico 2024.
+    """
     g = df.groupby("Anio", as_index=False).Casos_semana.sum()
-    colors = [AMBER if a == g.loc[g.Casos_semana.idxmax(), "Anio"] else MINT for a in g.Anio]
-    fig, ax = _fig((9, 4.0))
-    bars = ax.bar(g.Anio.astype(str), g.Casos_semana, color=colors, width=0.62)
-    for b, v in zip(bars, g.Casos_semana, strict=True):
+    nuevos = {int(a): int(v) for a, v in zip(g.Anio, g.Casos_semana, strict=True)}
+
+    contexto: dict[int, int] = {}
+    if A9091.exists():
+        old = pd.read_csv(A9091)
+        old["tot"] = old["Acumulado_hombres"] + old["Acumulado_mujeres"]
+        contexto = {int(a): int(v) for a, v in old.groupby("Anio")["tot"].max().items()}
+
+    ini = min([*contexto, *nuevos]) if contexto else int(g.Anio.min())
+    fin = int(g.Anio.max())
+    years = list(range(ini, fin + 1))
+    vals = [nuevos.get(a, contexto.get(a, 0)) for a in years]
+    pico = max(years, key=lambda a: nuevos.get(a, 0))  # pico solo entre años de modelado
+
+    def _color(a: int) -> str:
+        if a not in nuevos:
+            return GRID  # contexto A90/A91 atenuado
+        return AMBER if a == pico else MINT
+
+    colors = [_color(a) for a in years]
+    fig, ax = _fig((10.5, 4.2))
+    bars = ax.bar([str(a) for a in years], vals, color=colors, width=0.66)
+    for b, v, a in zip(bars, vals, years, strict=True):
         ax.text(
             b.get_x() + b.get_width() / 2,
             v,
-            f"{int(v):,}",
+            f"{v:,}",
             ha="center",
             va="bottom",
-            color=TEXT,
-            fontsize=8.5,
+            color=MUTED if a not in nuevos else TEXT,
+            fontsize=8,
+        )
+    # Divisor entre el contexto (A90/A91) y la serie de modelado (A97.x).
+    primer_modelo = min(nuevos)
+    if primer_modelo in years and contexto:
+        xdiv = years.index(primer_modelo) - 0.5
+        ax.axvline(xdiv, color=MUTED, linewidth=0.9, linestyle=":", alpha=0.7)
+        ax.text(
+            xdiv - 0.1,
+            max(vals) * 0.92,
+            "contexto · OMS 1997 (A90/A91)",
+            ha="right",
+            color=MUTED,
+            fontsize=7.8,
+            style="italic",
+        )
+        ax.text(
+            xdiv + 0.1,
+            max(vals) * 0.92,
+            "serie de modelado · OMS 2009 (A97.x)",
+            ha="left",
+            color=MUTED,
+            fontsize=7.8,
+            style="italic",
         )
     ax.set_title(
         "Casos confirmados de Dengue por año (suma semanal nacional)", fontsize=12, pad=12

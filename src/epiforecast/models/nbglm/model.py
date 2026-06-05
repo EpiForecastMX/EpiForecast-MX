@@ -137,7 +137,13 @@ class NBGLMForecaster(ForecastModel):
             }
         )
 
-    def predict(self, horizon: int = 52) -> pd.DataFrame:
+    def predict(self, horizon: int = 52, freeze_trend: bool = False) -> pd.DataFrame:
+        """Ajuste in-sample + futuro. ``freeze_trend=True`` congela la tendencia lineal en su
+        último nivel observado para el tramo futuro: útil en proyecciones ilustrativas de varios
+        años, donde extrapolar la tendencia (inflada por la epidemia de 2024) sobreestimaría los
+        años no epidémicos. Muestra el patrón estacional + ENSO a nivel estable, no la magnitud
+        de la próxima gran epidemia. El default (False) conserva el comportamiento productivo.
+        """
         if self._last_ds is None:
             raise RuntimeError("Modelo no entrenado. Llama fit() primero.")
         fut_ds = pd.date_range(
@@ -165,7 +171,7 @@ class NBGLMForecaster(ForecastModel):
         n0 = len(self._y_hist)
         preds = []
         for i in range(horizon):
-            tr = (n0 + i) / 52.0
+            tr = (n0 if freeze_trend else n0 + i) / 52.0
             l1 = np.log1p(hist[-1])
             l52 = np.log1p(hist[-52]) if len(hist) >= 52 else np.log1p(hist[0])
             row = [1.0, *four_f[i], tr, l1, l52]

@@ -6,10 +6,12 @@ Emite ``dengue_forecast.json`` con tres capas para el gráfico nacional:
 2. ``pronostico`` — pronóstico PRODUCTIVO a 1 año (52 sem) del motor ganador para la
    serie nacional general (DeepAR o Prophet, según el selector). Es el horizonte que
    los datos soportan con precisión.
-3. ``proyeccion`` — proyección estacional ILUSTRATIVA a 5 años (Prophet con tendencia
-   plana sobre log1p). NO predice la magnitud de la próxima epidemia: solo extiende el
-   patrón estacional esperado (con solo 2 ciclos epidémicos en los datos, el ciclo de
-   ~4 años no es aprendible).
+3. ``proyeccion`` — proyección estacional multi-año del motor NB-GLM (conteos + Fourier +
+   El Niño), con la tendencia congelada (``freeze_trend``). Extiende el horizonte MUCHO más
+   allá de las 52 semanas que soporta DeepAR, mostrando el patrón estacional esperado a un
+   nivel estable. NO predice la magnitud de la próxima gran epidemia (con solo 2 ciclos en
+   los datos, el ciclo de ~4 años no es aprendible), pero al venir del mejor modelo del
+   estudio es más principista que la antigua banda plana de Prophet.
 
 Más metadatos de producción: motor nacional y distribución de motores (DeepAR/Prophet).
 
@@ -89,39 +91,29 @@ def pronostico_productivo(motor: str, last_real: pd.Timestamp) -> pd.DataFrame:
     return d
 
 
-def proyeccion_estacional(serie: pd.DataFrame, anios: int, after: pd.Timestamp) -> pd.DataFrame:
-    """Banda estacional ilustrativa: Prophet log1p + tendencia plana.
+def proyeccion_nbglm(serie: pd.DataFrame, anios: int, after: pd.Timestamp) -> pd.DataFrame:
+    """Proyección estacional multi-año con NB-GLM (mejor modelo del estudio), tendencia congelada.
 
-    Se ajusta sobre toda la serie real, pero solo se DEVUELVE el tramo posterior a ``after``
-    (el fin del pronóstico productivo de 1 año) para que las dos capas del gráfico —pronóstico
-    preciso y proyección ilustrativa— sean secuenciales y no se dibujen encimadas el 1er año.
-    Estacionalidad anual desde config (``add_seasonality``), única fuente con el Prophet productivo.
+    Se ajusta sobre toda la serie real y se predice ``anios * 52`` semanas, devolviendo solo el
+    tramo posterior a ``after`` (el fin del pronóstico productivo de 1 año) para que las dos capas
+    del gráfico —pronóstico preciso y proyección— sean secuenciales y no se encimen el 1er año.
+
+    ``freeze_trend=True`` mantiene la tendencia en su último nivel observado: extrapolar la
+    pendiente (inflada por la epidemia de 2024) sobreestimaría los años no epidémicos. El ONI
+    futuro se proyecta con persistencia amortiguada hacia neutral (sin filtrar clima del futuro).
     """
-    from prophet import Prophet
+    from epiforecast.models.nbglm.model import NBGLMForecaster
 
-    season = conf["add_seasonality"]
-    t = serie.copy()
-    t["y"] = np.log1p(t["y"].clip(lower=0))
-    m = Prophet(
-        growth="flat",
-        yearly_seasonality=False,
-        weekly_seasonality=False,
-        daily_seasonality=False,
-        seasonality_mode="multiplicative",
-        seasonality_prior_scale=10.0,  # estacionalidad fuerte: banda ILUSTRATIVA, no productiva
-    )
-    m.add_seasonality(
-        name="yearly_custom",
-        period=float(season["period"]),
-        fourier_order=int(season["fourier_order"]),
-    )
+    # NB-GLM exige ds únicos; el mapeo W53->W52 del histórico genera duplicados -> agregamos.
+    t = serie[["ds", "y"]].groupby("ds", as_index=False)["y"].sum().sort_values("ds")
     np.random.seed(RANDOM_SEED)
-    m.fit(t)
-    horizonte = serie["ds"].max() + pd.Timedelta(weeks=anios * 52)
-    fut = m.make_future_dataframe(periods=anios * 52, freq="W-MON")
-    fc = m.predict(fut)
-    fc["yhat"] = np.expm1(fc["yhat"]).clip(lower=0)
-    return fc[(fc["ds"] > after) & (fc["ds"] <= horizonte)][["ds", "yhat"]].sort_values("ds")
+    model = NBGLMForecaster(padecimiento="Dengue")
+    model.fit(t)
+    fc = model.predict(horizon=anios * 52, freeze_trend=True)
+    fc["ds"] = pd.to_datetime(fc["ds"])
+    horizonte = t["ds"].max() + pd.Timedelta(weeks=anios * 52)
+    cols = [c for c in ["ds", "yhat", "yhat_lower", "yhat_upper"] if c in fc.columns]
+    return fc[(fc["ds"] > after) & (fc["ds"] <= horizonte)][cols].sort_values("ds")
 
 
 def main() -> int:
@@ -136,9 +128,9 @@ def main() -> int:
     last_real = serie["ds"].max()
     motor, dist = motor_nacional()
     pron = pronostico_productivo(motor, last_real)
-    # La proyección ilustrativa arranca donde TERMINA el pronóstico productivo (sin solaparse).
+    # La proyección arranca donde TERMINA el pronóstico productivo de 1 año (sin solaparse).
     horizonte_productivo = pron["ds"].max() if len(pron) else last_real
-    proy = proyeccion_estacional(serie, ANIOS_PROYECCION, horizonte_productivo)
+    proy = proyeccion_nbglm(serie, ANIOS_PROYECCION, horizonte_productivo)
 
     def _pts(df: pd.DataFrame, *cols: str) -> list[dict[str, object]]:
         rows = []
@@ -155,14 +147,17 @@ def main() -> int:
             "generado": args.generado,
             "ultima_real": last_real.strftime("%Y-%m-%d"),
             "motor_nacional": motor,
+            "motor_proyeccion": "NBGLM",
             "distribucion": dist,
             "anios_proyeccion": ANIOS_PROYECCION,
-            # Inicio del eje del gráfico: ~4 años de detalle reciente antes del horizonte.
-            "chart_from_year": int(last_real.year) - 4,
+            # Eje del gráfico: arranca el año previo al último real para que la escala la fije
+            # el pronóstico (~miles/sem) y no el pico epidémico de 2024 (~10 mil/sem), que dejaba
+            # todo aplastado contra el piso. El contexto 2024 vive en las barras anuales de arriba.
+            "chart_from_year": int(last_real.year) - 1,
         },
         "historico": _pts(serie, "y"),
         "pronostico": _pts(pron, "yhat", "yhat_lower", "yhat_upper"),
-        "proyeccion": _pts(proy, "yhat"),
+        "proyeccion": _pts(proy, "yhat", "yhat_lower", "yhat_upper"),
     }
     (out / "dengue_forecast.json").write_text(
         json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
