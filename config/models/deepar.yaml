@@ -38,6 +38,8 @@ deepar:
     gap_fill: "interpolate"           # Semanas faltantes (boletin ausente) se interpolan, no se ponen en 0
     multi_series: false               # Nacional sobre serie AGREGADA (no 32 estados casi-cero):
                                       #   metricas comparables con Prophet/Ensemble/Stacking
+    distr_output: "negative-binomial" # Conteos sobredispersos con ~44% ceros: NegBin es la
+                                      #   verosimilitud correcta (no student-t). Solo cohorte conteos.
 
 # Hiperparámetros específicos por padecimiento
 param_grid_deepar:

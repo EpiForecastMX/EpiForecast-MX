@@ -180,6 +180,11 @@ class DeepARForecaster(ForecastModel):
             self.gap_fill = str(short_cfg.get("gap_fill", "interpolate"))
             self.cv_n_splits_override = int(short_cfg.get("cv_n_splits", 2))
             self.cv_test_size_override = int(short_cfg.get("cv_test_size", 26))
+            # Conteos sobredispersos con ~44% de ceros (Dengue): la verosimilitud StudentT
+            # (continua, simétrica, con masa en negativos) es la distribución equivocada.
+            # Negative Binomial es la correcta para conteos y da intervalos calibrados.
+            # Cohort-gated: neuro nunca entra aquí, conserva student-t byte-idéntico.
+            self.distr_output = str(short_cfg.get("distr_output", "negative-binomial"))
             # Cohortes no-neuro (p.ej. Dengue) entrenan a nivel nacional sobre la serie
             # AGREGADA, no multi-series por 32 estados: muchos estados tienen incidencia
             # casi-cero y su CV multi-series promedia/escala ruido, dando métricas no
