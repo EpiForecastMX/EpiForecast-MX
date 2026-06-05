@@ -25,7 +25,7 @@ Entrenar hasta antes del año y pronosticar 52 sem. ONI = índice El Niño (NOAA
 ### Hallazgos
 - **El Niño (ONI) es el lever.** Aun con ONI *realista* (observado donde el rezago ya lo entrega + persistencia para la cola, sin trampa) baja el SMAPE 102 → 91. Con pronósticos ENSO de IRI (mejores que persistencia) el número real queda entre 71 y 91. La ganancia se concentra en los años de *build-up* epidémico — el punto débil exacto.
 - **NB-GLM Fourier NO gana** con lags iterativos (se desinflan). Descartado como motor productivo tal cual; podría reintentarse con ONI como covariable.
-- **DeepAR NegBin:** cambio hecho (cohort-gated en `deepar.yaml`/`model.py`, neuro intacto); falta el A/B con re-entrenamiento de flota para medir la ganancia empírica.
+- **DeepAR NegBin: PROBADO y DESCARTADO.** Se hizo NegBin en espacio de conteos enteros (cohort-aware: sin tasa + redondeo de la interpolación de huecos, porque NegBin solo admite enteros >=0). Re-entrenado el nacional: **`smape_real_2026` 20.4 (student-t) -> 28.3 (NegBin), EMPEORÓ.** A pesar de ser la verosimilitud "correcta" para conteos, el StudentT+tasa con escalado interno de GluonTS predice mejor el nacional suave. **Revertido** (se conserva student-t+tasa). CV SMAPE NegBin alto (75-85%). Lección: validar antes de desplegar; la teoría no garantizó la mejora.
 - **Bridge a 2014:** la forma estacional empalma (corr 0.958, mismo pico W43) pero el nivel salta ~2x (cambio de definición confirmado→todas-severidades) y 2014-2017 es meseta hiperendémica, no un pico limpio. Útil para FORMA (normalización por proporción anual o indicador de régimen), no para magnitud cruda. Habilitaría un backtest de 2019 (hoy se salta por falta de historia previa).
 
 ## Próximos pasos (orden recomendado)

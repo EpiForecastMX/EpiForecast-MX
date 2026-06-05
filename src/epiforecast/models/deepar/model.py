@@ -159,6 +159,9 @@ class DeepARForecaster(ForecastModel):
         self.num_batches_per_epoch: int = self.deepar_conf.get("num_batches_per_epoch", 50)
         self.early_stopping_patience: int = self.deepar_conf.get("early_stopping_patience", 15)
         self.multi_series: bool = self.deepar_conf.get("multi_series", True)
+        # Flag de normalización a tasa centralizado (predict/CV usan el mismo). Dengue conserva
+        # tasa+student-t: se probó NegBin en conteos enteros y empeoró (ver deepar.yaml).
+        self.normalizar: bool = bool(self._conf.get("normalizar_tasa", True))
 
         # Cohort-aware short-series overrides (p.ej. Dengue: historia desde 2020).
         # Las series cortas no admiten la memoria/lags de la config neuro; ver deepar.yaml.
@@ -180,11 +183,6 @@ class DeepARForecaster(ForecastModel):
             self.gap_fill = str(short_cfg.get("gap_fill", "interpolate"))
             self.cv_n_splits_override = int(short_cfg.get("cv_n_splits", 2))
             self.cv_test_size_override = int(short_cfg.get("cv_test_size", 26))
-            # Conteos sobredispersos con ~44% de ceros (Dengue): la verosimilitud StudentT
-            # (continua, simétrica, con masa en negativos) es la distribución equivocada.
-            # Negative Binomial es la correcta para conteos y da intervalos calibrados.
-            # Cohort-gated: neuro nunca entra aquí, conserva student-t byte-idéntico.
-            self.distr_output = str(short_cfg.get("distr_output", "negative-binomial"))
             # Cohortes no-neuro (p.ej. Dengue) entrenan a nivel nacional sobre la serie
             # AGREGADA, no multi-series por 32 estados: muchos estados tienen incidencia
             # casi-cero y su CV multi-series promedia/escala ruido, dando métricas no
@@ -226,7 +224,7 @@ class DeepARForecaster(ForecastModel):
         national ``self.serie`` for compatibility (promedio_semanal, sidecar CSV).
         """
         col: str = self.sexo or "general"
-        normalizar = self._conf.get("normalizar_tasa", True)
+        normalizar = self.normalizar
         col_pob = self._conf.get("columna_poblacion", "Total")
         tasa_por = self._conf.get("tasa_por", 100000)
 
@@ -523,7 +521,7 @@ class DeepARForecaster(ForecastModel):
         yhat_upper = yhat_arr.copy()
 
         # Denormalization params
-        normalizar = self._conf.get("normalizar_tasa", True)
+        normalizar = self.normalizar
         has_pop = normalizar and "Total" in self.serie.columns
         if has_pop:
             pob = float(self.serie["Total"].iloc[-1])
@@ -600,7 +598,7 @@ class DeepARForecaster(ForecastModel):
                     )
                     all_samples = np.stack([fc.samples for fc in forecasts], axis=0)
 
-                    normalizar = self._conf.get("normalizar_tasa", True)
+                    normalizar = self.normalizar
                     if normalizar and "Total" in self.serie_multi.columns:
                         tasa_por = float(self._conf.get("tasa_por", 100000))
                         mapa_pob = self.serie_multi.groupby("item_id")["Total"].last().to_dict()
@@ -646,7 +644,7 @@ class DeepARForecaster(ForecastModel):
         yhat_upper = fc.quantile(0.95)
 
         # Desnormalizar si aplica (tasa -> conteo)
-        normalizar = self._conf.get("normalizar_tasa", True)
+        normalizar = self.normalizar
         if normalizar and "Total" in self.serie.columns:
             pob = self.serie["Total"].iloc[-1]
             tasa_por = self._conf.get("tasa_por", 100000)
@@ -688,7 +686,7 @@ class DeepARForecaster(ForecastModel):
         all_samples = np.stack([fc.samples for fc in forecasts], axis=0)
 
         # Desnormalizar cada estado ANTES de sumar para el nacional real
-        normalizar = self._conf.get("normalizar_tasa", True)
+        normalizar = self.normalizar
         if normalizar and "Total" in self.serie_multi.columns:
             tasa_por = self._conf.get("tasa_por", 100000)
             # Mapa de poblacion por item_id (estado)
@@ -920,7 +918,7 @@ class DeepARForecaster(ForecastModel):
             yhat_raw = fc.mean[: len(test_data)]
 
             # Metricas en espacio de conteos reales (desnormalizar tasa)
-            normalizar = self._conf.get("normalizar_tasa", True)
+            normalizar = self.normalizar
             if normalizar and "y_original" in test_data.columns and "Total" in self.serie.columns:
                 pob = self.serie["Total"].iloc[-1]
                 tasa_por = self._conf.get("tasa_por", 100000)
