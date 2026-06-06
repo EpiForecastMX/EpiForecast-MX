@@ -41,6 +41,7 @@ from scripts.build_dengue_gallery import (  # noqa: E402
     ensure_band,
     forecast_future,
     forecast_window,
+    series_metrics,
     zoom_payload,
 )
 
@@ -125,10 +126,9 @@ def main() -> int:
                 # zoom: banda empírica uniforme, SOLO sobre el futuro (no sobre lo real)
                 fc_zoom = empirical_band(fc_zoom, std, last_real=last_real)
                 titulo = f"{FC_PAD[pad]} — {ent_label} ({SEXOS[sexo]})"
-                _chart(real, fc, motor, titulo, img)  # histórico completo (sobrescribe)
-                _chart_zoom(
-                    real, fc_zoom, motor, titulo, _zoom_path(img)
-                )  # zoom real vs pronóstico
+                met = series_metrics(real, fc_zoom)  # SMAPE/MASE del solape reciente
+                _chart(real, fc, motor, titulo, img, metrics=met)  # histórico (COVID auto)
+                _chart_zoom(real, fc_zoom, motor, titulo, _zoom_path(img), metrics=met)
                 rel = f"{pad_disp}/{fname}/{pad_disp}_{fname}_{sexo}.png"
                 zp = zoom_payload(real, fc_zoom, motor)
                 if zp:

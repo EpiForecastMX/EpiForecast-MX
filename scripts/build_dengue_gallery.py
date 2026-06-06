@@ -17,6 +17,7 @@ import argparse
 from datetime import date
 import json
 from pathlib import Path
+from typing import Any
 import warnings
 
 import matplotlib
@@ -29,9 +30,11 @@ import pandas as pd  # noqa: E402
 
 warnings.filterwarnings("ignore")
 
-from epiforecast.constants import ENTIDAD_DISPLAY  # noqa: E402
+from epiforecast.constants import COVID_END, COVID_START, ENTIDAD_DISPLAY  # noqa: E402
+from epiforecast.data import enso  # noqa: E402
 from epiforecast.data.boletin import cargar_boletin_dengue  # noqa: E402
 from epiforecast.data.ingestion.inegi_constants import REGION_SALUD_MENTAL  # noqa: E402
+from epiforecast.evaluation.metrics import compute_forecast_metrics  # noqa: E402
 from epiforecast.utils.config import conf, logger  # noqa: E402
 from epiforecast.visualization.web_theme import (  # noqa: E402
     AMBER,
@@ -43,6 +46,10 @@ from epiforecast.visualization.web_theme import (  # noqa: E402
     TEXT,
 )
 
+_NINO = "#E0833B"  # cálido: El Niño
+_NINA = "#4F9BD9"  # frío: La Niña
+_COVID = "#8892B0"
+
 PROD = Path(conf["paths"]["reports"]) / "ProdDetails" / "produccion_dengue.csv"
 FC_BASE = Path(conf["paths"]["reports"]) / "forecasts"
 NEURO_BOLETIN = Path("data/processed/dataset_boletin_epidemiologico.csv")
@@ -50,6 +57,15 @@ SEXOS = {"general": "General", "hombres": "Hombres", "mujeres": "Mujeres"}
 MOTOR_COLOR = {"DeepAR": PINK, "Prophet": MINT, "NBGLM": AMBER}
 ZOOM_BACK = 52  # semanas reales hacia atrás en la vista zoom
 ZOOM_FWD = 52  # semanas de pronóstico hacia adelante (más allá de la última real)
+
+# Dengue no tiene modelo regional: las 4 regiones se agregan desde sus estados.
+# (carpeta, nombre en la galería = igual que neuro, region_short de REGION_SALUD_MENTAL)
+DENGUE_REGIONES = [
+    ("Region_Metropolitana_alta", "Region Metropolitana alta", "Metropolitana alta"),
+    ("Region_Rural_-_dispersa", "Region Rural - dispersa", "Rural / dispersa"),
+    ("Region_Sur-Sureste_vulnerable", "Region Sur-Sureste vulnerable", "Sur-Sureste vulnerable"),
+    ("Region_Urbana_media", "Region Urbana media", "Urbana media"),
+]
 
 # El boletín usa nombres cortos de entidad; REGION_SALUD_MENTAL usa los largos del INEGI.
 _REGION_ENT_FIX = {
@@ -116,6 +132,108 @@ def _band_degenerate(fc: pd.DataFrame) -> bool:
     if fc.empty or not {"yhat_lower", "yhat_upper"} <= set(fc.columns):
         return True
     return float((fc["yhat_upper"] - fc["yhat_lower"]).abs().max()) < 1e-6
+
+
+def _overlay_covid(ax: object) -> None:
+    """Banda COVID super suavizada: sombra muy tenue del periodo COVID (si cae en el rango)."""
+    import matplotlib.dates as _md
+
+    x0, x1 = ax.get_xlim()  # type: ignore[attr-defined]
+    cs, ce = _md.date2num(pd.Timestamp(COVID_START)), _md.date2num(pd.Timestamp(COVID_END))
+    if ce < x0 or cs > x1:
+        return
+    a, b = max(cs, x0), min(ce, x1)
+    ax.axvspan(a, b, color=_COVID, alpha=0.06, lw=0, zorder=0)  # type: ignore[attr-defined]
+    ax.annotate(  # type: ignore[attr-defined]
+        "COVID-19",
+        xy=((a + b) / 2, 0.985),
+        xycoords=("data", "axes fraction"),
+        ha="center",
+        va="top",
+        color=MUTED,
+        fontsize=6.5,
+        alpha=0.45,
+    )
+    ax.set_xlim(x0, x1)  # type: ignore[attr-defined]
+
+
+def _shade_runs(ax: object, dates: list, mask: np.ndarray[Any, Any], color: str) -> None:
+    """Sombrea tramos contiguos donde ``mask`` es True (para bandas ENSO suaves)."""
+    import matplotlib.dates as _md
+
+    start = None
+    for i, on in enumerate([*list(mask), False]):
+        if on and start is None:
+            start = dates[i]
+        elif not on and start is not None:
+            ax.axvspan(  # type: ignore[attr-defined]
+                _md.date2num(start),
+                _md.date2num(dates[i - 1]),
+                color=color,
+                alpha=0.07,
+                lw=0,
+                zorder=0,
+            )
+            start = None
+
+
+def _overlay_enso(ax: object, dates: list) -> None:
+    """Bandas El Niño/La Niña super suavizadas (ONI rezagado, media móvil 15 sem)."""
+    if not dates:
+        return
+    uniq = sorted(pd.unique(pd.to_datetime(pd.Series(dates))))  # ONI no admite fechas duplicadas
+    if not uniq:
+        return
+    x0, x1 = ax.get_xlim()  # type: ignore[attr-defined]
+    oni = enso.oni_for_dates(pd.Series(uniq), lag_weeks=0)
+    s = pd.Series(oni).rolling(15, center=True, min_periods=1).mean().to_numpy()
+    _shade_runs(ax, uniq, s >= 0.5, _NINO)
+    _shade_runs(ax, uniq, s <= -0.5, _NINA)
+    ax.set_xlim(x0, x1)  # type: ignore[attr-defined]
+
+
+def _metric_tag(ax: object, smape: float | None, mase: float | None) -> None:
+    """Etiqueta discreta y elegante con SMAPE y MASE (abajo a la derecha)."""
+    parts = []
+    if smape is not None and np.isfinite(smape):
+        parts.append(f"SMAPE {smape:.1f}%")
+    if mase is not None and np.isfinite(mase):
+        parts.append(f"MASE {mase:.2f}")
+    if not parts:
+        return
+    ax.text(  # type: ignore[attr-defined]
+        0.987,
+        0.05,
+        "   ·   ".join(parts),
+        transform=ax.transAxes,  # type: ignore[attr-defined]
+        ha="right",
+        va="bottom",
+        color=MUTED,
+        fontsize=7.5,
+        fontweight="bold",
+        alpha=0.9,
+        bbox={"boxstyle": "round,pad=0.32", "fc": BG, "ec": GRID, "lw": 0.6, "alpha": 0.85},
+    )
+
+
+def series_metrics(real: pd.DataFrame, fc: pd.DataFrame) -> tuple[float | None, float | None]:
+    """SMAPE y MASE del solape reciente (real vs pronóstico), homogéneo para toda serie."""
+    if real.empty or fc.empty:
+        return (None, None)
+    j = real.set_index("ds")[["y"]].join(fc.set_index("ds")[["yhat"]], how="inner").dropna()
+    if len(j) < 4:
+        return (None, None)
+    train = real[real["ds"] < j.index.min()]["y"].to_numpy(dtype=float)
+    if len(train) < 10:
+        train = real["y"].to_numpy(dtype=float)
+    m = compute_forecast_metrics(
+        j["y"].to_numpy(dtype=float), j["yhat"].to_numpy(dtype=float), train
+    )
+    sm, ma = m.get("smape"), m.get("mase")
+    return (
+        float(sm) if sm is not None else None,
+        float(ma) if ma is not None else None,
+    )
 
 
 def _resid_std(real: pd.DataFrame, fc: pd.DataFrame) -> float | None:
@@ -267,7 +385,15 @@ def _forecast(motor: str, entidad: str, sexo: str, last_real: pd.Timestamp) -> p
     return d[d["ds"] > last_real][cols].sort_values("ds").head(52)
 
 
-def _chart(real: pd.DataFrame, fc: pd.DataFrame, motor: str, titulo: str, out: Path) -> None:
+def _chart(
+    real: pd.DataFrame,
+    fc: pd.DataFrame,
+    motor: str,
+    titulo: str,
+    out: Path,
+    metrics: tuple[float | None, float | None] = (None, None),
+    enso_overlay: bool = False,
+) -> None:
     fig, ax = plt.subplots(figsize=(10, 4.2), dpi=130)
     fig.patch.set_facecolor(BG)
     ax.set_facecolor(BG)
@@ -285,6 +411,9 @@ def _chart(real: pd.DataFrame, fc: pd.DataFrame, motor: str, titulo: str, out: P
             linewidth=2.2,
             label=f"Pronóstico ({motor})",
         )
+    if enso_overlay:  # Dengue: bandas El Niño/La Niña super suavizadas
+        _overlay_enso(ax, list(real["ds"]))
+    _overlay_covid(ax)  # banda COVID super suavizada (si cae en el rango)
     for sp in ax.spines.values():
         sp.set_color(GRID)
     ax.tick_params(colors=MUTED, labelsize=8)
@@ -292,6 +421,7 @@ def _chart(real: pd.DataFrame, fc: pd.DataFrame, motor: str, titulo: str, out: P
     ax.set_ylabel("Casos por semana", color=MUTED, fontsize=9)
     ax.set_title(titulo, color=TEXT, fontsize=12, pad=10, fontweight="bold")
     ax.legend(facecolor=BG, edgecolor=GRID, labelcolor=TEXT, fontsize=8.5, loc="upper left")
+    _metric_tag(ax, metrics[0], metrics[1])
     fig.tight_layout()
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, facecolor=BG, bbox_inches="tight")
@@ -304,7 +434,14 @@ def _zoom_path(out: Path) -> Path:
 
 
 def _chart_zoom(
-    real: pd.DataFrame, fc: pd.DataFrame, motor: str, titulo: str, out: Path, weeks_back: int = 52
+    real: pd.DataFrame,
+    fc: pd.DataFrame,
+    motor: str,
+    titulo: str,
+    out: Path,
+    weeks_back: int = 52,
+    metrics: tuple[float | None, float | None] = (None, None),
+    enso_overlay: bool = False,
 ) -> None:
     """Zoom 'real vs pronóstico' (estilo EpiBot): últimas ``weeks_back`` semanas de realidad
     (hasta la semana vigente del boletín) con el pronóstico SOLAPADO sobre esas mismas semanas
@@ -364,6 +501,10 @@ def _chart_zoom(
             alpha=0.85,
         )
 
+    if enso_overlay:  # Dengue: bandas El Niño/La Niña super suavizadas
+        win_dates = sorted({*list(r["ds"]), *(list(fc["ds"]) if not fc.empty else [])})
+        _overlay_enso(ax, win_dates)
+    _overlay_covid(ax)  # banda COVID (fuera de rango en el zoom reciente, se omite sola)
     for sp in ax.spines.values():
         sp.set_color(GRID)
     ax.tick_params(colors=MUTED, labelsize=8)
@@ -377,6 +518,7 @@ def _chart_zoom(
         lbl.set_rotation(0)
         lbl.set_fontsize(7.5)
     ax.legend(facecolor=BG, edgecolor=GRID, labelcolor=TEXT, fontsize=8.5, loc="upper left")
+    _metric_tag(ax, metrics[0], metrics[1])
     fig.tight_layout()
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, facecolor=BG, bbox_inches="tight")
@@ -423,6 +565,98 @@ def zoom_payload(
         "hi": [himap.get(k) for k in dates],
         "last_real": max(rmap),  # semana vigente del boletín (presente)
     }
+
+
+def _sum_member_forecast(
+    short_members: list[str],
+    gen_motor: dict[str, str],
+    kind: str,
+    last_real: pd.Timestamp | None = None,
+    ds_min: pd.Timestamp | None = None,
+    ds_max: pd.Timestamp | None = None,
+) -> pd.DataFrame:
+    """Suma el pronóstico productivo (general) de los estados de una región, alineado por semana."""
+    frames = []
+    for m in short_members:
+        motor = gen_motor.get(m)
+        if not motor:
+            continue
+        if kind == "future":
+            d = forecast_future(motor, "Dengue", m, "general", last_real)  # type: ignore[arg-type]
+        else:
+            d = forecast_window(motor, "Dengue", m, "general", ds_min, ds_max)  # type: ignore[arg-type]
+        if not d.empty:
+            frames.append(d[["ds", "yhat"]])
+    if not frames:
+        return pd.DataFrame(columns=["ds", "yhat"])
+    return pd.concat(frames).groupby("ds", as_index=False)["yhat"].sum()
+
+
+def _dengue_regiones(
+    bol: pd.DataFrame,
+    gen_motor: dict[str, str],
+    out_base: Path,
+    items: list[dict[str, str]],
+    zoom: dict[str, object],
+) -> int:
+    """Calcula las 4 regiones de Dengue agregando sus estados (Dengue no tiene modelo regional):
+    real = suma del boletín de los miembros; pronóstico = suma del pronóstico productivo de cada
+    estado. Misma estética que el resto (banda futura, COVID/ENSO, SMAPE/MASE)."""
+    made = 0
+    for folder, data_n, region_short in DENGUE_REGIONES:
+        members = {ENTIDAD_DISPLAY.get(x, x): x for x in _region_members(region_short)}
+        sub = bol[bol["Entidad"].isin(members.keys())]
+        if sub.empty:
+            continue
+        short_members = list(members.values())
+        real_gen = _real_general(sub)
+        last_real = real_gen["ds"].max()
+        win_start = pd.Timestamp(real_gen.sort_values("ds").tail(ZOOM_BACK)["ds"].min())
+        ds_max = pd.Timestamp(last_real) + pd.Timedelta(weeks=ZOOM_FWD)
+        fc_gen = _sum_member_forecast(short_members, gen_motor, "future", last_real=last_real)
+        fcz_gen = _sum_member_forecast(
+            short_members, gen_motor, "window", ds_min=win_start, ds_max=ds_max
+        )
+        region_disp = data_n.replace("Region ", "Región ")
+        for sexo in ("general", "hombres", "mujeres"):
+            real, fc, fc_zoom = real_gen, fc_gen.copy(), fcz_gen.copy()
+            if sexo != "general":
+                p_h, p_m = _sex_prop(sub)
+                p = p_h if sexo == "hombres" else p_m
+                real = real_gen.assign(y=real_gen["y"] * p)
+                for d in (fc, fc_zoom):
+                    if "yhat" in d.columns:
+                        d["yhat"] = d["yhat"] * p
+            std = _resid_std(real, fc_zoom)
+            fc = ensure_band(fc, std)  # sumado: sin banda nativa -> empírica (futuro)
+            fc_zoom = empirical_band(fc_zoom, std, last_real=last_real)
+            rel = f"dengue/{folder}/Dengue_{folder}_{sexo}.png"
+            titulo = f"Dengue — {region_disp} ({SEXOS[sexo]})"
+            met = series_metrics(real, fc_zoom)
+            _chart(
+                real,
+                fc,
+                "Agregado estatal",
+                titulo,
+                out_base.parent / rel,
+                metrics=met,
+                enso_overlay=True,
+            )
+            _chart_zoom(
+                real,
+                fc_zoom,
+                "Agregado estatal",
+                titulo,
+                _zoom_path(out_base.parent / rel),
+                metrics=met,
+                enso_overlay=True,
+            )
+            zp = zoom_payload(real, fc_zoom, "Agregado estatal")
+            if zp:
+                zoom[rel] = zp
+            items.append({"p": "Dengue", "n": data_n, "c": "Regional", "s": SEXOS[sexo], "f": rel})
+            made += 1
+    return made
 
 
 def main() -> int:
@@ -475,8 +709,17 @@ def main() -> int:
         # committeados; Netlify es case-sensitive, no usar 'Dengue/').
         rel = f"dengue/{safe_ent}/Dengue_{safe_ent}_{sexo}.png"
         titulo = f"Dengue — {ent_disp} ({SEXOS[sexo]})"
-        _chart(real, fc, motor, titulo, out_base.parent / rel)
-        _chart_zoom(real, fc_zoom, motor, titulo, _zoom_path(out_base.parent / rel))
+        met = series_metrics(real, fc_zoom)
+        _chart(real, fc, motor, titulo, out_base.parent / rel, metrics=met, enso_overlay=True)
+        _chart_zoom(
+            real,
+            fc_zoom,
+            motor,
+            titulo,
+            _zoom_path(out_base.parent / rel),
+            metrics=met,
+            enso_overlay=True,
+        )
         zp = zoom_payload(real, fc_zoom, motor)
         if zp:
             zoom[rel] = zp
@@ -490,6 +733,8 @@ def main() -> int:
             }
         )
         n += 1
+
+    n += _dengue_regiones(bol, gen_motor, out_base, items, zoom)
     (out_base / "_gallery_items.json").write_text(
         json.dumps(items, ensure_ascii=False), encoding="utf-8"
     )
