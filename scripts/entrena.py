@@ -268,6 +268,11 @@ def main():
         # --- Modo híbrido: entrenar regionales siempre + fallback insuficientes ---
         # Solo para la cohorte neuro. Dengue NO usa fallback regional (decisión: "si es 0,
         # es 0"; una entidad sin transmisión no hereda la curva de un estado tropical).
+        # NOTA (auditoría 2026-06-06): se probó entrenar modelos regionales NATIVOS de Dengue
+        # (Prophet/NBGLM por region_salud_mental) y se comparó vs la agregación bottom-up (suma
+        # de estados). La agregación ganó en las 4 regiones (SMAPE ~35-45 vs 52-86). Por eso la
+        # galería sigue agregando estados y NO se entrenan regionales nativos de Dengue.
+        # Ver docs/research/hallazgos/DENGUE_REGIONALES_NATIVOS_AUDITORIA.md.
         modelado_hibrido = bool(conf["padecimiento"].get("modelado_hibrido", False))
         if modelado_hibrido and modelado_estados and is_neuro(padecimiento):
             # Mapear estado → región INEGI
