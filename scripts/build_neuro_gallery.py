@@ -30,14 +30,18 @@ import pandas as pd  # noqa: E402
 warnings.filterwarnings("ignore")
 
 from scripts.build_dengue_gallery import (  # noqa: E402
+    ZOOM_BACK,
+    ZOOM_FWD,
     _chart,
     _chart_zoom,
     _zoom_path,
+    boletin_real,
+    forecast_future,
+    forecast_window,
     zoom_payload,
 )
 
 from epiforecast.utils.config import conf, logger  # noqa: E402
-from epiforecast.visualization.comparison_plots import _load_serie_real  # noqa: E402
 
 REPORTS = Path(conf["paths"]["reports"])
 TABLA = REPORTS / "ProdDetails" / "tabla_333_modelos_produccion.xlsx"
@@ -65,32 +69,6 @@ def _region_display(ent: str) -> str:
     return ent.replace("Region ", "Región ", 1)
 
 
-def _real(pad: str, ent: str, modo: str) -> pd.DataFrame:
-    df = _load_serie_real(conf, pad, ent, modo)
-    if df is None or "y_original" not in df.columns:
-        return pd.DataFrame(columns=["ds", "y"])
-    out = df[["ds"]].copy()
-    out["y"] = pd.to_numeric(df["y_original"], errors="coerce").clip(lower=0)
-    return out.dropna().reset_index(drop=True)
-
-
-def _forecast(
-    motor: str, pad_fc: str, ent: str, modo: str, last_real: pd.Timestamp
-) -> pd.DataFrame:
-    path = FC_BASE / motor.lower() / f"all_forecast_{motor.lower()}.csv"
-    if not path.exists():
-        return pd.DataFrame()
-    df = pd.read_csv(path, low_memory=False)
-    d = df[
-        (df["meta_padecimiento"] == pad_fc)
-        & (df["meta_entidad"].fillna("Nacional") == ent)
-        & (df["meta_modo"] == modo)
-    ].copy()
-    d["ds"] = pd.to_datetime(d["ds"])
-    cols = [c for c in ["ds", "yhat", "yhat_lower", "yhat_upper"] if c in d.columns]
-    return d[d["ds"] > last_real][cols].sort_values("ds").head(52)
-
-
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--out", required=True, help="Directorio Reports/ del dashboard")
@@ -112,8 +90,10 @@ def main() -> int:
             continue
         for folder in sorted(p for p in pad_dir.iterdir() if p.is_dir()):
             fname = folder.name
+            region_short: str | None = None
             if fname in REGIONS:  # región agregada: concilia los 3 nombres
                 real_ent, tabla_ent = REGIONS[fname]
+                region_short = real_ent.replace("Region ", "", 1)
                 ent_label = _region_display(real_ent)
             else:  # estado o Nacional: carpeta -> entidad directa
                 real_ent = tabla_ent = fname.replace("_", " ")
@@ -126,17 +106,24 @@ def main() -> int:
                 if not motor:
                     skip += 1
                     continue
-                real = _real(pad, real_ent, sexo)
+                # Realidad CURRENTE (boletín consolidado, hasta W20 2026), no el extracto de
+                # entrenamiento (que está congelado en enero): así el zoom llega a la semana vigente.
+                real = boletin_real(FC_PAD[pad], real_ent, sexo, region_short)
                 if real.empty:
                     skip += 1
                     continue
-                last_real = real["ds"].max()
-                fc = _forecast(motor, FC_PAD[pad], real_ent, sexo, last_real)
+                last_real = pd.Timestamp(real["ds"].max())
+                win_start = pd.Timestamp(real.sort_values("ds").tail(ZOOM_BACK)["ds"].min())
+                ds_max = last_real + pd.Timedelta(weeks=ZOOM_FWD)
+                fc = forecast_future(motor, FC_PAD[pad], real_ent, sexo, last_real)
+                fc_zoom = forecast_window(motor, FC_PAD[pad], real_ent, sexo, win_start, ds_max)
                 titulo = f"{FC_PAD[pad]} — {ent_label} ({SEXOS[sexo]})"
-                _chart(real, fc, motor, titulo, img)  # sobrescribe en su ruta exacta
-                _chart_zoom(real, fc, motor, titulo, _zoom_path(img))
+                _chart(real, fc, motor, titulo, img)  # histórico completo (sobrescribe)
+                _chart_zoom(
+                    real, fc_zoom, motor, titulo, _zoom_path(img)
+                )  # zoom real vs pronóstico
                 rel = f"{pad_disp}/{fname}/{pad_disp}_{fname}_{sexo}.png"
-                zp = zoom_payload(real, fc, motor)
+                zp = zoom_payload(real, fc_zoom, motor)
                 if zp:
                     zoom[rel] = zp
                 n += 1
