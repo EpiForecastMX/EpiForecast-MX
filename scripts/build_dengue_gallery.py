@@ -35,6 +35,7 @@ from epiforecast.data import enso  # noqa: E402
 from epiforecast.data.boletin import cargar_boletin_dengue  # noqa: E402
 from epiforecast.data.ingestion.inegi_constants import REGION_SALUD_MENTAL  # noqa: E402
 from epiforecast.evaluation.metrics import compute_forecast_metrics  # noqa: E402
+from epiforecast.models.forecast_guards import clamp_seasonal_envelope  # noqa: E402
 from epiforecast.utils.config import conf, logger  # noqa: E402
 from epiforecast.visualization.web_theme import (  # noqa: E402
     AMBER,
@@ -617,6 +618,14 @@ def _dengue_regiones(
         fcz_gen = _sum_member_forecast(
             short_members, gen_motor, "window", ds_min=win_start, ds_max=ds_max
         )
+        # Clamp anti-explosión (backtest leave-one-epidemic-out 2024): sumar 6-15 pronósticos
+        # estatales COMPONE los sobre-tiros (picos 5x-157x el real). Se acota la agregación a la
+        # envolvente estacional histórica de la región (máx por semana ISO × factor) para matar la
+        # explosión sin tocar los años calmos. La realidad incluye la epidemia 2024, así que el
+        # techo deja pasar una epidemia real pero no el sobre-tiro compuesto.
+        hist = real_gen[["ds", "y"]]
+        fc_gen = clamp_seasonal_envelope(fc_gen, hist)
+        fcz_gen = clamp_seasonal_envelope(fcz_gen, hist)
         region_disp = data_n.replace("Region ", "Región ")
         for sexo in ("general", "hombres", "mujeres"):
             real, fc, fc_zoom = real_gen, fc_gen.copy(), fcz_gen.copy()
