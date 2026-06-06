@@ -37,6 +37,7 @@ from scripts.build_dengue_gallery import (  # noqa: E402
     _resid_std,
     _zoom_path,
     boletin_real,
+    empirical_band,
     ensure_band,
     forecast_future,
     forecast_window,
@@ -120,7 +121,8 @@ def main() -> int:
                 fc = forecast_future(motor, FC_PAD[pad], real_ent, sexo, last_real)
                 fc_zoom = forecast_window(motor, FC_PAD[pad], real_ent, sexo, win_start, ds_max)
                 std = _resid_std(real, fc_zoom)  # banda homogénea: error reciente del motor
-                fc, fc_zoom = ensure_band(fc, std), ensure_band(fc_zoom, std)
+                fc = ensure_band(fc, std)  # histórico: respeta banda nativa
+                fc_zoom = empirical_band(fc_zoom, std)  # zoom: banda empírica uniforme
                 titulo = f"{FC_PAD[pad]} — {ent_label} ({SEXOS[sexo]})"
                 _chart(real, fc, motor, titulo, img)  # histórico completo (sobrescribe)
                 _chart_zoom(

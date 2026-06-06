@@ -129,23 +129,32 @@ def _resid_std(real: pd.DataFrame, fc: pd.DataFrame) -> float | None:
     return s if np.isfinite(s) and s > 0 else None
 
 
-def ensure_band(fc: pd.DataFrame, std: float | None) -> pd.DataFrame:
-    """Garantiza una banda de confianza visible y homogénea en TODA la galería.
+def empirical_band(fc: pd.DataFrame, std: float | None) -> pd.DataFrame:
+    """Banda empírica de incertidumbre, SIEMPRE (ignora el intervalo nativo del motor).
 
-    Los motores con intervalo propio (Prophet/DeepAR/NB-GLM) se respetan; los que dan banda
-    degenerada (Ensemble/Stacking: lower=upper=yhat) reciben una banda derivada del ERROR real
-    reciente del modelo (±1.96·σ de los residuales del solape); si no hay solape suficiente, se
-    usa un respaldo tipo Poisson (±1.96·√yhat), apropiado para conteos. Así ninguna serie queda
-    sin banda y la incertidumbre que se muestra es honesta (el error observado del propio motor).
+    ±1.96·σ de los residuales recientes (real - yhat del solape); si no hay solape, respaldo
+    tipo Poisson (±1.96·√yhat), apropiado para conteos. Se usa en el ZOOM para uniformar el ancho
+    entre motores: todas las series muestran la misma clase de banda (el error observado), sin que
+    Prophet/DeepAR/NB-GLM se vean distintos de Ensemble/Stacking.
     """
-    if fc.empty or not _band_degenerate(fc):
+    if fc.empty:
         return fc
     fc = fc.copy()
     yhat = fc["yhat"].clip(lower=0)
-    half = 1.96 * std if std is not None else 1.96 * np.sqrt(yhat)
+    half = 1.96 * std if (std is not None and std > 0) else 1.96 * np.sqrt(yhat)
     fc["yhat_lower"] = (yhat - half).clip(lower=0)
     fc["yhat_upper"] = yhat + half
     return fc
+
+
+def ensure_band(fc: pd.DataFrame, std: float | None) -> pd.DataFrame:
+    """Banda SOLO si el motor da intervalo degenerado (Ensemble/Stacking: lower=upper=yhat).
+
+    Respeta el intervalo nativo de Prophet/DeepAR/NB-GLM. Para el histórico completo, donde
+    conviene conservar el intervalo de predicción propio del modelo."""
+    if fc.empty or not _band_degenerate(fc):
+        return fc
+    return empirical_band(fc, std)
 
 
 def _boletin_neuro() -> pd.DataFrame:
@@ -445,7 +454,8 @@ def main() -> int:
                     if c in d.columns:
                         d[c] = d[c] * p
         std = _resid_std(real, fc_zoom)  # error reciente del motor (banda homogénea)
-        fc, fc_zoom = ensure_band(fc, std), ensure_band(fc_zoom, std)
+        fc = ensure_band(fc, std)  # histórico: respeta banda nativa
+        fc_zoom = empirical_band(fc_zoom, std)  # zoom: banda empírica uniforme entre motores
         safe_ent = _safe(ent_disp)
         # Carpeta en MINÚSCULA 'dengue/' (coincide con los assets de dengue.html ya
         # committeados; Netlify es case-sensitive, no usar 'Dengue/').
