@@ -131,7 +131,14 @@ donas-motores:
 neuro-gallery:
 	@echo ">>> Regenerando galeria neuro (estilo limpio, real + motor productivo)..."
 	$(PYTHON) -m scripts.build_neuro_gallery --out ../EpiForecast-IMSS-Dashboard/Reports
-	@echo ">>> → Reports/{Depresión,Parkinson,Alzheimer}/*/ (sobrescritos)"
+	@echo ">>> Re-llaveando zoom por serie para el EpiBot (estado x sexo)..."
+	$(PYTHON) scripts/build_epibot_zoom.py --reports ../EpiForecast-IMSS-Dashboard/Reports --out $(DASHBOARD_EPIBOT)
+	@echo ">>> → Reports/{Depresión,Parkinson,Alzheimer}/*/ (sobrescritos) + epibot/zoom_series.json"
+
+## Re-llave los zoom_data_*.json de la galeria a epibot/zoom_series.json (zoom del bot por estado/sexo)
+.PHONY: epibot-zoom
+epibot-zoom:
+	$(PYTHON) scripts/build_epibot_zoom.py --reports ../EpiForecast-IMSS-Dashboard/Reports --out $(DASHBOARD_EPIBOT)
 
 ## Extraer la serie de Dengue (agregada A97.0+A97.1+A97.2) de los boletines SINAVE
 .PHONY: dengue-extract
