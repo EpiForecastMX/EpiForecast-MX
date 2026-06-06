@@ -1,0 +1,17 @@
+region,corte,modelo,n,SMAPE,MAE,pico_real,pico_pred,ratio_pico
+Region Metropolitana alta,2024 (pico mayor),nativo Prophet,51,173.8,647.0,3068,19,0.01
+Region Metropolitana alta,2024 (pico mayor),nativo NB-GLM,51,169.2,638.9,3068,40,0.01
+Region Metropolitana alta,2024 (pico mayor),agg-Prophet,51,131.0,544.2,3068,489,0.16
+Region Metropolitana alta,2024 (pico mayor),agg-NBGLM,51,135.1,618.5,3068,111,0.04
+Region Rural - dispersa,2024 (pico mayor),nativo Prophet,51,97.9,1498.8,1918,7546,3.93
+Region Rural - dispersa,2024 (pico mayor),nativo NB-GLM,51,105.3,410.8,1918,918,0.48
+Region Rural - dispersa,2024 (pico mayor),agg-Prophet,51,104.0,1468.1,1918,10015,5.22
+Region Rural - dispersa,2024 (pico mayor),agg-NBGLM,51,88.8,285.6,1918,1480,0.77
+Region Sur-Sureste vulnerable,2024 (pico mayor),nativo Prophet,51,107.2,2248.8,526,9083,17.27
+Region Sur-Sureste vulnerable,2024 (pico mayor),nativo NB-GLM,51,101.3,1556.4,526,6759,12.85
+Region Sur-Sureste vulnerable,2024 (pico mayor),agg-Prophet,51,117.8,12097.5,526,82693,157.21
+Region Sur-Sureste vulnerable,2024 (pico mayor),agg-NBGLM,51,106.1,4710.2,526,45341,86.2
+Region Urbana media,2024 (pico mayor),nativo Prophet,51,141.0,640.3,3017,862,0.29
+Region Urbana media,2024 (pico mayor),nativo NB-GLM,51,137.3,673.0,3017,495,0.16
+Region Urbana media,2024 (pico mayor),agg-Prophet,51,105.2,902.6,3017,9386,3.11
+Region Urbana media,2024 (pico mayor),agg-NBGLM,51,141.8,34945.5,3017,150718,49.96
