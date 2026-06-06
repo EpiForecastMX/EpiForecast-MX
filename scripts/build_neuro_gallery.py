@@ -34,8 +34,10 @@ from scripts.build_dengue_gallery import (  # noqa: E402
     ZOOM_FWD,
     _chart,
     _chart_zoom,
+    _resid_std,
     _zoom_path,
     boletin_real,
+    ensure_band,
     forecast_future,
     forecast_window,
     zoom_payload,
@@ -117,6 +119,8 @@ def main() -> int:
                 ds_max = last_real + pd.Timedelta(weeks=ZOOM_FWD)
                 fc = forecast_future(motor, FC_PAD[pad], real_ent, sexo, last_real)
                 fc_zoom = forecast_window(motor, FC_PAD[pad], real_ent, sexo, win_start, ds_max)
+                std = _resid_std(real, fc_zoom)  # banda homogénea: error reciente del motor
+                fc, fc_zoom = ensure_band(fc, std), ensure_band(fc_zoom, std)
                 titulo = f"{FC_PAD[pad]} — {ent_label} ({SEXOS[sexo]})"
                 _chart(real, fc, motor, titulo, img)  # histórico completo (sobrescribe)
                 _chart_zoom(

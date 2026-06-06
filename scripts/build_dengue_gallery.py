@@ -24,6 +24,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.dates as mdates  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
+import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
 warnings.filterwarnings("ignore")
@@ -108,6 +109,43 @@ def forecast_window(
     return (
         d[(d["ds"] >= ds_min) & (d["ds"] <= ds_max)].reset_index(drop=True) if not d.empty else d
     )
+
+
+def _band_degenerate(fc: pd.DataFrame) -> bool:
+    """True si el motor no aporta intervalo real (Ensemble/Stacking dan lower=upper=yhat)."""
+    if fc.empty or not {"yhat_lower", "yhat_upper"} <= set(fc.columns):
+        return True
+    return float((fc["yhat_upper"] - fc["yhat_lower"]).abs().max()) < 1e-6
+
+
+def _resid_std(real: pd.DataFrame, fc: pd.DataFrame) -> float | None:
+    """Desviación de los residuales (real - yhat) en las semanas que real y pronóstico comparten."""
+    if real.empty or fc.empty:
+        return None
+    j = real.set_index("ds")[["y"]].join(fc.set_index("ds")[["yhat"]], how="inner").dropna()
+    if len(j) < 4:
+        return None
+    s = float((j["y"] - j["yhat"]).std())
+    return s if np.isfinite(s) and s > 0 else None
+
+
+def ensure_band(fc: pd.DataFrame, std: float | None) -> pd.DataFrame:
+    """Garantiza una banda de confianza visible y homogénea en TODA la galería.
+
+    Los motores con intervalo propio (Prophet/DeepAR/NB-GLM) se respetan; los que dan banda
+    degenerada (Ensemble/Stacking: lower=upper=yhat) reciben una banda derivada del ERROR real
+    reciente del modelo (±1.96·σ de los residuales del solape); si no hay solape suficiente, se
+    usa un respaldo tipo Poisson (±1.96·√yhat), apropiado para conteos. Así ninguna serie queda
+    sin banda y la incertidumbre que se muestra es honesta (el error observado del propio motor).
+    """
+    if fc.empty or not _band_degenerate(fc):
+        return fc
+    fc = fc.copy()
+    yhat = fc["yhat"].clip(lower=0)
+    half = 1.96 * std if std is not None else 1.96 * np.sqrt(yhat)
+    fc["yhat_lower"] = (yhat - half).clip(lower=0)
+    fc["yhat_upper"] = yhat + half
+    return fc
 
 
 def _boletin_neuro() -> pd.DataFrame:
@@ -406,6 +444,8 @@ def main() -> int:
                 for c in ("yhat", "yhat_lower", "yhat_upper"):
                     if c in d.columns:
                         d[c] = d[c] * p
+        std = _resid_std(real, fc_zoom)  # error reciente del motor (banda homogénea)
+        fc, fc_zoom = ensure_band(fc, std), ensure_band(fc_zoom, std)
         safe_ent = _safe(ent_disp)
         # Carpeta en MINÚSCULA 'dengue/' (coincide con los assets de dengue.html ya
         # committeados; Netlify es case-sensitive, no usar 'Dengue/').
