@@ -122,7 +122,8 @@ def main() -> int:
                 fc_zoom = forecast_window(motor, FC_PAD[pad], real_ent, sexo, win_start, ds_max)
                 std = _resid_std(real, fc_zoom)  # banda homogénea: error reciente del motor
                 fc = ensure_band(fc, std)  # histórico: respeta banda nativa
-                fc_zoom = empirical_band(fc_zoom, std)  # zoom: banda empírica uniforme
+                # zoom: banda empírica uniforme, SOLO sobre el futuro (no sobre lo real)
+                fc_zoom = empirical_band(fc_zoom, std, last_real=last_real)
                 titulo = f"{FC_PAD[pad]} — {ent_label} ({SEXOS[sexo]})"
                 _chart(real, fc, motor, titulo, img)  # histórico completo (sobrescribe)
                 _chart_zoom(

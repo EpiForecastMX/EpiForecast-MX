@@ -129,21 +129,33 @@ def _resid_std(real: pd.DataFrame, fc: pd.DataFrame) -> float | None:
     return s if np.isfinite(s) and s > 0 else None
 
 
-def empirical_band(fc: pd.DataFrame, std: float | None) -> pd.DataFrame:
+def empirical_band(
+    fc: pd.DataFrame, std: float | None, last_real: pd.Timestamp | None = None
+) -> pd.DataFrame:
     """Banda empírica de incertidumbre, SIEMPRE (ignora el intervalo nativo del motor).
 
     ±1.96·σ de los residuales recientes (real - yhat del solape); si no hay solape, respaldo
     tipo Poisson (±1.96·√yhat), apropiado para conteos. Se usa en el ZOOM para uniformar el ancho
     entre motores: todas las series muestran la misma clase de banda (el error observado), sin que
     Prophet/DeepAR/NB-GLM se vean distintos de Ensemble/Stacking.
+
+    Si se pasa ``last_real``, la banda SOLO se dibuja sobre el tramo futuro (ds > última real):
+    sobre las semanas ya observadas no hay incertidumbre que mostrar (ahí va la realidad), así que
+    la banda quedaría redundante. La línea de pronóstico sí se conserva sobre el solape (comparar).
     """
     if fc.empty:
         return fc
     fc = fc.copy()
     yhat = fc["yhat"].clip(lower=0)
     half = 1.96 * std if (std is not None and std > 0) else 1.96 * np.sqrt(yhat)
-    fc["yhat_lower"] = (yhat - half).clip(lower=0)
-    fc["yhat_upper"] = yhat + half
+    lower = (yhat - half).clip(lower=0)
+    upper = yhat + half
+    if last_real is not None:
+        observado = fc["ds"] <= pd.Timestamp(last_real)  # zona ya vista: sin banda
+        lower = lower.mask(observado)
+        upper = upper.mask(observado)
+    fc["yhat_lower"] = lower
+    fc["yhat_upper"] = upper
     return fc
 
 
@@ -397,7 +409,8 @@ def zoom_payload(
         for row in fc.sort_values("ds").itertuples(index=False):
             k = pd.Timestamp(row.ds).strftime("%Y-%m-%d")
             ymap[k] = int(round(max(0.0, float(row.yhat))))
-            if band:
+            # banda solo donde existe (tramo futuro; sobre lo observado va enmascarada a NaN)
+            if band and pd.notna(row.yhat_lower) and pd.notna(row.yhat_upper):
                 lomap[k] = int(round(max(0.0, float(row.yhat_lower))))
                 himap[k] = int(round(max(0.0, float(row.yhat_upper))))
     dates = sorted(set(rmap) | set(ymap))
@@ -455,7 +468,8 @@ def main() -> int:
                         d[c] = d[c] * p
         std = _resid_std(real, fc_zoom)  # error reciente del motor (banda homogénea)
         fc = ensure_band(fc, std)  # histórico: respeta banda nativa
-        fc_zoom = empirical_band(fc_zoom, std)  # zoom: banda empírica uniforme entre motores
+        # zoom: banda empírica uniforme entre motores, SOLO sobre el futuro (no sobre lo real)
+        fc_zoom = empirical_band(fc_zoom, std, last_real=last_real)
         safe_ent = _safe(ent_disp)
         # Carpeta en MINÚSCULA 'dengue/' (coincide con los assets de dengue.html ya
         # committeados; Netlify es case-sensitive, no usar 'Dengue/').
