@@ -211,6 +211,49 @@ def _chart_zoom(
     plt.close(fig)
 
 
+def zoom_payload(
+    real: pd.DataFrame, fc: pd.DataFrame, motor: str, weeks_back: int = 52
+) -> dict[str, object] | None:
+    """Datos compactos para el zoom interactivo (Chart.js) de la galería.
+
+    Espeja la vista ``_chart_zoom`` pero en JSON: fechas ISO, real (nulls en el futuro),
+    pronóstico empalmado desde el último real y banda. Valores en enteros. ``None`` si no hay
+    realidad. La galería lo dibuja vivo en el lightbox (hover semana por semana, como el EpiBot).
+    """
+    r = real.dropna().sort_values("ds").tail(weeks_back)
+    if r.empty:
+        return None
+    ds = [pd.Timestamp(d).strftime("%Y-%m-%d") for d in r["ds"]]
+    rv: list[int | None] = [int(round(max(0.0, float(v)))) for v in r["y"]]
+    n = len(rv)
+    payload: dict[str, object] = {
+        "motor": motor,
+        "d": ds,
+        "r": rv,
+        "y": [None] * n,
+        "lo": [None] * n,
+        "hi": [None] * n,
+    }
+    if not fc.empty:
+        f = fc.sort_values("ds")
+        fd = [pd.Timestamp(d).strftime("%Y-%m-%d") for d in f["ds"]]
+        fy = [int(round(max(0.0, float(v)))) for v in f["yhat"]]
+        band = {"yhat_lower", "yhat_upper"} <= set(f.columns)
+        flo = (
+            [int(round(max(0.0, float(v)))) for v in f["yhat_lower"]] if band else [None] * len(fy)
+        )
+        fhi = (
+            [int(round(max(0.0, float(v)))) for v in f["yhat_upper"]] if band else [None] * len(fy)
+        )
+        payload["d"] = ds + fd
+        payload["r"] = rv + [None] * len(fd)
+        # el pronóstico arranca en el último real (puente) para que la línea sea continua
+        payload["y"] = [None] * (n - 1) + [rv[-1]] + fy
+        payload["lo"] = [None] * n + flo
+        payload["hi"] = [None] * n + fhi
+    return payload
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--out", required=True, help="Directorio de salida (Reports/dengue)")
@@ -226,6 +269,7 @@ def main() -> int:
         for _, row in prod[prod["sexo"] == "general"].iterrows()
     }
     items = []
+    zoom: dict[str, object] = {}
     n = 0
     for _, r in prod.iterrows():
         ent, sexo = str(r["entidad"]), str(r["sexo"])
@@ -254,6 +298,9 @@ def main() -> int:
         titulo = f"Dengue — {ent_disp} ({SEXOS[sexo]})"
         _chart(real, fc, motor, titulo, out_base.parent / rel)
         _chart_zoom(real, fc, motor, titulo, _zoom_path(out_base.parent / rel))
+        zp = zoom_payload(real, fc, motor)
+        if zp:
+            zoom[rel] = zp
         items.append(
             {
                 "p": "Dengue",
@@ -267,7 +314,12 @@ def main() -> int:
     (out_base / "_gallery_items.json").write_text(
         json.dumps(items, ensure_ascii=False), encoding="utf-8"
     )
-    logger.success("Galería Dengue: {} gráficos en {} | items en _gallery_items.json", n, out_base)
+    (out_base.parent / "zoom_data_dengue.json").write_text(
+        json.dumps(zoom, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
+    )
+    logger.success(
+        "Galería Dengue: {} gráficos en {} | items + zoom_data_dengue.json", n, out_base
+    )
     return 0
 
 

@@ -18,6 +18,7 @@ Uso:
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 import warnings
 
@@ -28,7 +29,12 @@ import pandas as pd  # noqa: E402
 
 warnings.filterwarnings("ignore")
 
-from scripts.build_dengue_gallery import _chart, _chart_zoom, _zoom_path  # noqa: E402
+from scripts.build_dengue_gallery import (  # noqa: E402
+    _chart,
+    _chart_zoom,
+    _zoom_path,
+    zoom_payload,
+)
 
 from epiforecast.utils.config import conf, logger  # noqa: E402
 from epiforecast.visualization.comparison_plots import _load_serie_real  # noqa: E402
@@ -98,6 +104,7 @@ def main() -> int:
     }
 
     n = skip = 0
+    zoom: dict[str, object] = {}
     for pad in PADS:
         pad_disp = FC_PAD[pad]  # nombre en carpeta/archivo (con acento: 'Depresión')
         pad_dir = out_base / pad_disp
@@ -128,8 +135,20 @@ def main() -> int:
                 titulo = f"{FC_PAD[pad]} — {ent_label} ({SEXOS[sexo]})"
                 _chart(real, fc, motor, titulo, img)  # sobrescribe en su ruta exacta
                 _chart_zoom(real, fc, motor, titulo, _zoom_path(img))
+                rel = f"{pad_disp}/{fname}/{pad_disp}_{fname}_{sexo}.png"
+                zp = zoom_payload(real, fc, motor)
+                if zp:
+                    zoom[rel] = zp
                 n += 1
-    logger.success("Galería neuro (estilo limpio): {} gráficos regenerados | {} omitidos", n, skip)
+    (out_base / "zoom_data_neuro.json").write_text(
+        json.dumps(zoom, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"
+    )
+    logger.success(
+        "Galería neuro (estilo limpio): {} gráficos ({} series con zoom) | {} omitidos",
+        n,
+        len(zoom),
+        skip,
+    )
     return 0
 
 
