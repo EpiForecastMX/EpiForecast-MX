@@ -24,6 +24,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.dates as mdates  # noqa: E402
+from matplotlib.patches import Patch  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
@@ -193,28 +194,62 @@ def _overlay_enso(ax: object, dates: list) -> None:
     ax.set_xlim(x0, x1)  # type: ignore[attr-defined]
 
 
-def _metric_tag(ax: object, smape: float | None, mase: float | None) -> None:
-    """Etiqueta discreta y elegante con SMAPE y MASE (abajo a la derecha)."""
-    parts = []
-    if smape is not None and np.isfinite(smape):
-        parts.append(f"SMAPE {smape:.1f}%")
-    if mase is not None and np.isfinite(mase):
-        parts.append(f"MASE {mase:.2f}")
-    if not parts:
-        return
-    ax.text(  # type: ignore[attr-defined]
-        0.987,
-        0.05,
-        "   ·   ".join(parts),
-        transform=ax.transAxes,  # type: ignore[attr-defined]
-        ha="right",
-        va="bottom",
-        color=MUTED,
-        fontsize=7.5,
-        fontweight="bold",
-        alpha=0.9,
-        bbox={"boxstyle": "round,pad=0.32", "fc": BG, "ec": GRID, "lw": 0.6, "alpha": 0.85},
+def _finish_axes(
+    fig: object,
+    ax: object,
+    titulo: str,
+    metrics: tuple[float | None, float | None] = (None, None),
+    enso_overlay: bool = False,
+) -> None:
+    """Cierra el gráfico con una FRANJA SUPERIOR limpia (fuera de los datos): título arriba,
+    leyenda horizontal a la izquierda (Real / Pronóstico [+ El Niño / La Niña]) y las métricas
+    SMAPE·MASE a la derecha como badge. Nada se encima sobre la serie."""
+    for sp in ax.spines.values():  # type: ignore[attr-defined]
+        sp.set_color(GRID)
+    ax.tick_params(colors=MUTED, labelsize=8)  # type: ignore[attr-defined]
+    ax.grid(True, color=GRID, linewidth=0.5, alpha=0.4)  # type: ignore[attr-defined]
+    ax.set_ylim(bottom=0)  # type: ignore[attr-defined]
+    ax.set_ylabel("Casos por semana", color=MUTED, fontsize=9)  # type: ignore[attr-defined]
+
+    handles, labels = ax.get_legend_handles_labels()  # type: ignore[attr-defined]
+    if enso_overlay:
+        handles += [
+            Patch(facecolor=_NINO, alpha=0.55, edgecolor="none"),
+            Patch(facecolor=_NINA, alpha=0.55, edgecolor="none"),
+        ]
+        labels += ["El Niño", "La Niña"]
+    ax.legend(  # type: ignore[attr-defined]
+        handles,
+        labels,
+        loc="lower left",
+        bbox_to_anchor=(0.0, 1.005),
+        ncol=len(labels),
+        frameon=False,
+        fontsize=8.5,
+        labelcolor=TEXT,
+        handlelength=1.4,
+        handletextpad=0.5,
+        columnspacing=1.4,
     )
+    sm, ma = metrics
+    parts = []
+    if sm is not None and np.isfinite(sm):
+        parts.append(f"SMAPE {sm:.1f}%")
+    if ma is not None and np.isfinite(ma):
+        parts.append(f"MASE {ma:.2f}")
+    if parts:
+        ax.text(  # type: ignore[attr-defined]
+            1.0,
+            1.03,
+            "   ·   ".join(parts),
+            transform=ax.transAxes,  # type: ignore[attr-defined]
+            ha="right",
+            va="bottom",
+            color=MINT,
+            fontsize=8.5,
+            fontweight="bold",
+        )
+    ax.set_title(titulo, color=TEXT, fontsize=12.5, pad=30, fontweight="bold")  # type: ignore[attr-defined]
 
 
 def series_metrics(real: pd.DataFrame, fc: pd.DataFrame) -> tuple[float | None, float | None]:
@@ -415,14 +450,7 @@ def _chart(
     if enso_overlay:  # Dengue: bandas El Niño/La Niña super suavizadas
         _overlay_enso(ax, list(real["ds"]))
     _overlay_covid(ax)  # banda COVID super suavizada (si cae en el rango)
-    for sp in ax.spines.values():
-        sp.set_color(GRID)
-    ax.tick_params(colors=MUTED, labelsize=8)
-    ax.grid(True, color=GRID, linewidth=0.5, alpha=0.4)
-    ax.set_ylabel("Casos por semana", color=MUTED, fontsize=9)
-    ax.set_title(titulo, color=TEXT, fontsize=12, pad=10, fontweight="bold")
-    ax.legend(facecolor=BG, edgecolor=GRID, labelcolor=TEXT, fontsize=8.5, loc="upper left")
-    _metric_tag(ax, metrics[0], metrics[1])
+    _finish_axes(fig, ax, titulo, metrics, enso_overlay)
     fig.tight_layout()
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, facecolor=BG, bbox_inches="tight")
@@ -506,20 +534,12 @@ def _chart_zoom(
         win_dates = sorted({*list(r["ds"]), *(list(fc["ds"]) if not fc.empty else [])})
         _overlay_enso(ax, win_dates)
     _overlay_covid(ax)  # banda COVID (fuera de rango en el zoom reciente, se omite sola)
-    for sp in ax.spines.values():
-        sp.set_color(GRID)
-    ax.tick_params(colors=MUTED, labelsize=8)
-    ax.grid(True, color=GRID, linewidth=0.5, alpha=0.4)
-    ax.set_ylim(bottom=0)
-    ax.set_ylabel("Casos por semana", color=MUTED, fontsize=9)
-    ax.set_title(titulo, color=TEXT, fontsize=12, pad=10, fontweight="bold")
+    _finish_axes(fig, ax, titulo, metrics, enso_overlay)
     ax.xaxis.set_major_locator(mdates.MonthLocator(interval=2))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %Y"))
     for lbl in ax.get_xticklabels():
         lbl.set_rotation(0)
         lbl.set_fontsize(7.5)
-    ax.legend(facecolor=BG, edgecolor=GRID, labelcolor=TEXT, fontsize=8.5, loc="upper left")
-    _metric_tag(ax, metrics[0], metrics[1])
     fig.tight_layout()
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, facecolor=BG, bbox_inches="tight")
