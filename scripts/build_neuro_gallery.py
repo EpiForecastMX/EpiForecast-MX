@@ -41,6 +41,7 @@ from scripts.build_dengue_gallery import (  # noqa: E402
     ensure_band,
     forecast_future,
     forecast_window,
+    render_extra_views,
     series_metrics,
     zoom_payload,
 )
@@ -133,6 +134,21 @@ def main() -> int:
                 zp = zoom_payload(real, fc_zoom, motor)
                 if zp:
                     zoom[rel] = zp
+                # Vistas extra: zoom 5 años + comparación de motores (neuro predice cada sexo
+                # nativo -> fetch_sexo=sexo, p=1.0; las regiones neuro sí tienen los 4 motores).
+                render_extra_views(
+                    real,
+                    FC_PAD[pad],
+                    real_ent,
+                    sexo,
+                    1.0,
+                    last_real,
+                    ds_max,
+                    motor,
+                    img,
+                    titulo,
+                    enso=False,
+                )
                 n += 1
     (out_base / "zoom_data_neuro.json").write_text(
         json.dumps(zoom, ensure_ascii=False, separators=(",", ":")), encoding="utf-8"

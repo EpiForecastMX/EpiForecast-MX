@@ -52,6 +52,17 @@ _NINO = "#E0833B"  # cálido: El Niño
 _NINA = "#4F9BD9"  # frío: La Niña
 _COVID = "#8892B0"
 
+# Colores por motor para la vista de COMPARACIÓN (distinguibles sobre fondo oscuro).
+COMPARE_COLOR = {
+    "Prophet": "#2DD4BF",
+    "DeepAR": "#F472B6",
+    "Ensemble": "#FF8C42",
+    "Stacking": "#8B9DFF",
+    "NBGLM": "#F59E0B",
+}
+COMPARE_MOTORS = ["Prophet", "DeepAR", "Ensemble", "Stacking", "NBGLM"]
+ZOOM5_BACK = 260  # 5 años de realidad hacia atrás en la vista "Zoom 5 años"
+
 PROD = Path(conf["paths"]["reports"]) / "ProdDetails" / "produccion_dengue.csv"
 FC_BASE = Path(conf["paths"]["reports"]) / "forecasts"
 NEURO_BOLETIN = Path("data/processed/dataset_boletin_epidemiologico.csv")
@@ -223,7 +234,7 @@ def _finish_axes(
         labels,
         loc="lower left",
         bbox_to_anchor=(0.0, 1.005),
-        ncol=len(labels),
+        ncol=min(len(labels), 6),
         frameon=False,
         fontsize=8.5,
         labelcolor=TEXT,
@@ -462,6 +473,95 @@ def _zoom_path(out: Path) -> Path:
     return out.with_name(f"{out.stem}_zoom{out.suffix}")
 
 
+def _zoom5_path(out: Path) -> Path:
+    return out.with_name(f"{out.stem}_zoom5{out.suffix}")
+
+
+def _compare_path(out: Path) -> Path:
+    return out.with_name(f"{out.stem}_compare{out.suffix}")
+
+
+def _chart_compare(
+    real: pd.DataFrame,
+    motor_fcs: dict[str, pd.DataFrame],
+    titulo: str,
+    out: Path,
+    weeks_back: int = 52,
+) -> None:
+    """Comparación de motores: últimas ``weeks_back`` semanas reales + el pronóstico de TODOS los
+    motores superpuestos (52 sem adelante), cada uno en su color, para compararlos en un vistazo.
+    Cada motor se acota a la envolvente estacional histórica para que un motor que diverja
+    (Ensemble/Stacking en Dengue) no rompa la escala. Sin banda (sería ilegible con 5 líneas)."""
+    r = real.dropna().sort_values("ds").tail(weeks_back)
+    if r.empty:
+        return
+    fig, ax = plt.subplots(figsize=(10, 4.2), dpi=130)
+    fig.patch.set_facecolor(BG)
+    ax.set_facecolor(BG)
+    last_real = pd.Timestamp(r["ds"].max())
+    hist = real[["ds", "y"]]
+    fut_max = last_real
+    clamped: dict[str, pd.DataFrame] = {}
+    for motor in COMPARE_MOTORS:
+        fc = motor_fcs.get(motor)
+        if fc is None or fc.empty:
+            continue
+        fc = clamp_seasonal_envelope(fc[["ds", "yhat"]].copy(), hist)
+        clamped[motor] = fc
+        fut_max = max(fut_max, pd.Timestamp(fc["ds"].max()))
+    if fut_max > last_real:
+        ax.axvspan(last_real, fut_max, color=_COVID, alpha=0.05, zorder=0)
+    ax.plot(
+        r["ds"],
+        r["y"].clip(lower=0),
+        color=MUTED,
+        linewidth=2.4,
+        marker="o",
+        markersize=2.4,
+        markerfacecolor=MUTED,
+        markeredgecolor="none",
+        label="Real (boletín SINAVE)",
+        zorder=6,
+    )
+    for motor, fc in clamped.items():
+        ax.plot(
+            fc["ds"],
+            fc["yhat"].clip(lower=0),
+            color=COMPARE_COLOR.get(motor, "#FFFFFF"),
+            linewidth=1.7,
+            label=motor,
+            alpha=0.92,
+            zorder=4,
+        )
+    if clamped:
+        wk = int(last_real.isocalendar().week)
+        ax.axvline(last_real, color=TEXT, linewidth=1.0, linestyle=(0, (4, 3)), alpha=0.5)
+        ax.annotate(
+            f"Semana {wk}",
+            xy=(last_real, 1.0),
+            xycoords=("data", "axes fraction"),
+            xytext=(4, -12),
+            textcoords="offset points",
+            color=TEXT,
+            fontsize=8,
+            fontweight="bold",
+            ha="left",
+            va="top",
+            alpha=0.85,
+        )
+    _overlay_covid(ax)
+    _finish_axes(fig, ax, titulo, metrics=(None, None), enso_overlay=False)
+    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=2))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %Y"))
+    for lbl in ax.get_xticklabels():
+        lbl.set_rotation(0)
+        lbl.set_fontsize(7.5)
+    fig.tight_layout()
+    out.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(out, facecolor=BG, bbox_inches="tight")
+    plt.close(fig)
+
+
 def _chart_zoom(
     real: pd.DataFrame,
     fc: pd.DataFrame,
@@ -535,7 +635,11 @@ def _chart_zoom(
         _overlay_enso(ax, win_dates)
     _overlay_covid(ax)  # banda COVID (fuera de rango en el zoom reciente, se omite sola)
     _finish_axes(fig, ax, titulo, metrics, enso_overlay)
-    ax.xaxis.set_major_locator(mdates.MonthLocator(interval=2))
+    # Densidad de ticks adaptativa: 2 meses para el zoom de 1 año, semestral para el de 5 años.
+    if weeks_back > 120:
+        ax.xaxis.set_major_locator(mdates.MonthLocator(bymonth=(1, 7)))
+    else:
+        ax.xaxis.set_major_locator(mdates.MonthLocator(interval=2))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %Y"))
     for lbl in ax.get_xticklabels():
         lbl.set_rotation(0)
@@ -586,6 +690,73 @@ def zoom_payload(
         "hi": [himap.get(k) for k in dates],
         "last_real": max(rmap),  # semana vigente del boletín (presente)
     }
+
+
+def render_extra_views(
+    real: pd.DataFrame,
+    pad_fc: str,
+    ent_fc: str,
+    fetch_sexo: str,
+    p: float,
+    last_real: pd.Timestamp,
+    ds_max: pd.Timestamp,
+    productive_motor: str,
+    out_png: Path,
+    titulo: str,
+    enso: bool,
+    region_cache: pd.DataFrame | None = None,
+) -> None:
+    """Genera las dos vistas extra de una serie:
+      - ``_zoom5``  : 5 años de realidad + 52 sem de pronóstico (motor productivo).
+      - ``_compare``: 52 + 52 con TODOS los motores superpuestos (no aplica a regiones Dengue,
+                      que solo tienen DeepAR nativo -> se omite y el toggle cae al PNG base).
+
+    ``fetch_sexo``/``p``: neuro predice cada sexo nativo (fetch_sexo=sexo, p=1.0); Dengue reparte
+    el general por proporción de sexo (fetch_sexo='general', p=razón). ``region_cache`` (Dengue
+    regional) trae el pronóstico DeepAR nativo ya calculado (con banda)."""
+    rsort = real.dropna().sort_values("ds")
+    if rsort.empty:
+        return
+    win5 = pd.Timestamp(rsort.tail(ZOOM5_BACK)["ds"].min())
+    win52 = pd.Timestamp(rsort.tail(ZOOM_BACK)["ds"].min())
+
+    def _scale(fc: pd.DataFrame) -> pd.DataFrame:
+        if p == 1.0 or fc.empty:
+            return fc
+        fc = fc.copy()
+        for c in ("yhat", "yhat_lower", "yhat_upper"):
+            if c in fc.columns:
+                fc[c] = fc[c] * p
+        return fc
+
+    # --- Zoom 5 años ---
+    if region_cache is not None:
+        fc5 = region_cache[(region_cache["ds"] >= win5) & (region_cache["ds"] <= ds_max)].copy()
+        fc5 = _mask_band_future(_scale(fc5), last_real)
+    else:
+        fc5 = _scale(forecast_window(productive_motor, pad_fc, ent_fc, fetch_sexo, win5, ds_max))
+        std = _resid_std(
+            real,
+            _scale(forecast_window(productive_motor, pad_fc, ent_fc, fetch_sexo, win52, ds_max)),
+        )
+        fc5 = empirical_band(fc5, std, last_real=last_real)
+    _chart_zoom(
+        real,
+        fc5,
+        productive_motor,
+        titulo,
+        _zoom5_path(out_png),
+        weeks_back=ZOOM5_BACK,
+        enso_overlay=enso,
+    )
+
+    # --- Comparación de modelos (solo donde hay pronóstico por motor) ---
+    if region_cache is None:
+        mfcs = {
+            m: _scale(forecast_window(m, pad_fc, ent_fc, fetch_sexo, win52, ds_max))
+            for m in COMPARE_MOTORS
+        }
+        _chart_compare(real, mfcs, titulo, _compare_path(out_png), weeks_back=ZOOM_BACK)
 
 
 def _sum_member_forecast(
@@ -692,6 +863,7 @@ def _dengue_regiones(
         region_disp = data_n.replace("Region ", "Región ")
         for sexo in ("general", "hombres", "mujeres"):
             real, fc, fc_zoom = real_gen, fc_gen.copy(), fcz_gen.copy()
+            p = 1.0
             if sexo != "general":
                 p_h, p_m = _sex_prop(sub)
                 p = p_h if sexo == "hombres" else p_m
@@ -730,6 +902,21 @@ def _dengue_regiones(
             zp = zoom_payload(real, fc_zoom, motor_label)
             if zp:
                 zoom[rel] = zp
+            # Zoom 5 años desde el cache DeepAR (compare se omite: regiones solo tienen DeepAR).
+            render_extra_views(
+                real,
+                "Dengue",
+                data_n,
+                "general",
+                p,
+                last_real,
+                ds_max,
+                motor_label,
+                out_base.parent / rel,
+                titulo,
+                enso=True,
+                region_cache=reg_fc if use_deepar else None,
+            )
             items.append({"p": "Dengue", "n": data_n, "c": "Regional", "s": SEXOS[sexo], "f": rel})
             made += 1
     return made
@@ -767,6 +954,7 @@ def main() -> int:
         ds_max = pd.Timestamp(last_real) + pd.Timedelta(weeks=ZOOM_FWD)
         fc = _forecast(motor, ent, "general", last_real)  # futuro: histórico completo
         fc_zoom = forecast_window(motor, "Dengue", ent, "general", win_start, ds_max)  # solapado
+        p = 1.0
         if sexo != "general":
             p_h, p_m = _sex_prop(sub)
             p = p_h if sexo == "hombres" else p_m
@@ -799,6 +987,19 @@ def main() -> int:
         zp = zoom_payload(real, fc_zoom, motor)
         if zp:
             zoom[rel] = zp
+        render_extra_views(
+            real,
+            "Dengue",
+            ent,
+            "general",
+            p,
+            last_real,
+            ds_max,
+            motor,
+            out_base.parent / rel,
+            titulo,
+            enso=True,
+        )
         items.append(
             {
                 "p": "Dengue",
