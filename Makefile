@@ -140,6 +140,13 @@ neuro-gallery:
 epibot-zoom:
 	$(PYTHON) scripts/build_epibot_zoom.py --reports ../EpiForecast-IMSS-Dashboard/Reports --out $(DASHBOARD_EPIBOT)
 
+## Entrena DeepAR nativo por region de Dengue (una a la vez, ~80 min) y cachea su pronostico.
+## El backtest OOS mostro que DeepAR nativo es el mejor para las regiones (MAE 460 vs 3.7k-10k de
+## la agregacion). Correr antes de build_dengue_gallery para que las regiones usen DeepAR nativo.
+.PHONY: dengue-deepar-regiones
+dengue-deepar-regiones:
+	$(PYTHON) -m scripts.build_dengue_deepar_regiones
+
 ## Extraer la serie de Dengue (agregada A97.0+A97.1+A97.2) de los boletines SINAVE
 .PHONY: dengue-extract
 dengue-extract:

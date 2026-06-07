@@ -613,6 +613,31 @@ def _sum_member_forecast(
     return pd.concat(frames).groupby("ds", as_index=False)["yhat"].sum()
 
 
+_DEEPAR_REG_CACHE: list[pd.DataFrame] = []
+
+
+def _deepar_regiones_cache() -> pd.DataFrame:
+    """Pronóstico DeepAR nativo por región (cache de build_dengue_deepar_regiones.py)."""
+    if not _DEEPAR_REG_CACHE:
+        p = Path(conf["paths"]["reports"]) / "ProdDetails" / "dengue_deepar_regiones.csv"
+        if p.exists():
+            df = pd.read_csv(p)
+            df["ds"] = pd.to_datetime(df["ds"])
+            _DEEPAR_REG_CACHE.append(df)
+        else:
+            _DEEPAR_REG_CACHE.append(pd.DataFrame())
+    return _DEEPAR_REG_CACHE[0]
+
+
+def _mask_band_future(fc: pd.DataFrame, last_real: pd.Timestamp) -> pd.DataFrame:
+    """Deja la banda nativa SOLO en el tramo futuro (sobre lo observado no hay incertidumbre)."""
+    fc = fc.copy()
+    if {"yhat_lower", "yhat_upper"} <= set(fc.columns):
+        obs = fc["ds"] <= pd.Timestamp(last_real)
+        fc.loc[obs, ["yhat_lower", "yhat_upper"]] = np.nan
+    return fc
+
+
 def _dengue_regiones(
     bol: pd.DataFrame,
     gen_motor: dict[str, str],
@@ -620,10 +645,13 @@ def _dengue_regiones(
     items: list[dict[str, str]],
     zoom: dict[str, object],
 ) -> int:
-    """Calcula las 4 regiones de Dengue agregando sus estados (Dengue no tiene modelo regional):
-    real = suma del boletín de los miembros; pronóstico = suma del pronóstico productivo de cada
-    estado. Misma estética que el resto (banda futura, COVID/ENSO, SMAPE/MASE)."""
+    """Genera las 4 regiones de Dengue. PRODUCTIVO: DeepAR nativo (el mejor en el backtest OOS,
+    MAE 460 vs 3.7k-10k de la agregación; ver dengue_backtest_regional). Si falta el cache de
+    DeepAR (build_dengue_deepar_regiones.py), cae a la agregación bottom-up de estados + clamp de
+    envolvente (que compone sobre-tiros en epidemias, por eso es solo fallback)."""
     made = 0
+    deepar_cache = _deepar_regiones_cache()
+    band = ("yhat", "yhat_lower", "yhat_upper")
     for folder, data_n, region_short in DENGUE_REGIONES:
         members = {ENTIDAD_DISPLAY.get(x, x): x for x in _region_members(region_short)}
         sub = bol[bol["Entidad"].isin(members.keys())]
@@ -634,18 +662,33 @@ def _dengue_regiones(
         last_real = real_gen["ds"].max()
         win_start = pd.Timestamp(real_gen.sort_values("ds").tail(ZOOM_BACK)["ds"].min())
         ds_max = pd.Timestamp(last_real) + pd.Timedelta(weeks=ZOOM_FWD)
-        fc_gen = _sum_member_forecast(short_members, gen_motor, "future", last_real=last_real)
-        fcz_gen = _sum_member_forecast(
-            short_members, gen_motor, "window", ds_min=win_start, ds_max=ds_max
-        )
-        # Clamp anti-explosión (backtest leave-one-epidemic-out 2024): sumar 6-15 pronósticos
-        # estatales COMPONE los sobre-tiros (picos 5x-157x el real). Se acota la agregación a la
-        # envolvente estacional histórica de la región (máx por semana ISO × factor) para matar la
-        # explosión sin tocar los años calmos. La realidad incluye la epidemia 2024, así que el
-        # techo deja pasar una epidemia real pero no el sobre-tiro compuesto.
-        hist = real_gen[["ds", "y"]]
-        fc_gen = clamp_seasonal_envelope(fc_gen, hist)
-        fcz_gen = clamp_seasonal_envelope(fcz_gen, hist)
+
+        reg_fc = deepar_cache[deepar_cache["region"] == data_n] if not deepar_cache.empty else None
+        use_deepar = reg_fc is not None and not reg_fc.empty
+        if use_deepar:
+            motor_label = "DeepAR"
+            cols = ["ds", *[c for c in band if c in reg_fc.columns]]
+            fc_gen = (
+                reg_fc[reg_fc["ds"] > last_real][cols].sort_values("ds").reset_index(drop=True)
+            )
+            fcz_gen = (
+                reg_fc[(reg_fc["ds"] >= win_start) & (reg_fc["ds"] <= ds_max)][cols]
+                .sort_values("ds")
+                .reset_index(drop=True)
+            )
+        else:
+            # Fallback: agregación + clamp de envolvente (anti-explosión por composición).
+            motor_label = "Agregado estatal"
+            hist = real_gen[["ds", "y"]]
+            fc_gen = clamp_seasonal_envelope(
+                _sum_member_forecast(short_members, gen_motor, "future", last_real=last_real), hist
+            )
+            fcz_gen = clamp_seasonal_envelope(
+                _sum_member_forecast(
+                    short_members, gen_motor, "window", ds_min=win_start, ds_max=ds_max
+                ),
+                hist,
+            )
         region_disp = data_n.replace("Region ", "Región ")
         for sexo in ("general", "hombres", "mujeres"):
             real, fc, fc_zoom = real_gen, fc_gen.copy(), fcz_gen.copy()
@@ -654,18 +697,22 @@ def _dengue_regiones(
                 p = p_h if sexo == "hombres" else p_m
                 real = real_gen.assign(y=real_gen["y"] * p)
                 for d in (fc, fc_zoom):
-                    if "yhat" in d.columns:
-                        d["yhat"] = d["yhat"] * p
-            std = _resid_std(real, fc_zoom)
-            fc = ensure_band(fc, std)  # sumado: sin banda nativa -> empírica (futuro)
-            fc_zoom = empirical_band(fc_zoom, std, last_real=last_real)
+                    for c in band:
+                        if c in d.columns:
+                            d[c] = d[c] * p
+            if use_deepar:
+                fc_zoom = _mask_band_future(fc_zoom, last_real)  # banda nativa solo a futuro
+            else:
+                std = _resid_std(real, fc_zoom)
+                fc = ensure_band(fc, std)
+                fc_zoom = empirical_band(fc_zoom, std, last_real=last_real)
             rel = f"dengue/{folder}/Dengue_{folder}_{sexo}.png"
             titulo = f"Dengue — {region_disp} ({SEXOS[sexo]})"
             met = series_metrics(real, fc_zoom)
             _chart(
                 real,
                 fc,
-                "Agregado estatal",
+                motor_label,
                 titulo,
                 out_base.parent / rel,
                 metrics=met,
@@ -674,13 +721,13 @@ def _dengue_regiones(
             _chart_zoom(
                 real,
                 fc_zoom,
-                "Agregado estatal",
+                motor_label,
                 titulo,
                 _zoom_path(out_base.parent / rel),
                 metrics=met,
                 enso_overlay=True,
             )
-            zp = zoom_payload(real, fc_zoom, "Agregado estatal")
+            zp = zoom_payload(real, fc_zoom, motor_label)
             if zp:
                 zoom[rel] = zp
             items.append({"p": "Dengue", "n": data_n, "c": "Regional", "s": SEXOS[sexo], "f": rel})
