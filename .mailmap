@@ -8,6 +8,9 @@ Javier Rebull <168046724+jrebull@users.noreply.github.com> jrebull <jrebull@user
 # Commits hechos con Claude como herramienta quedaron registrados con autor "Claude";
 # se reatribuyen al lead tecnico (MLOps/SageMaker) responsable de ese trabajo.
 Javier Rebull <168046724+jrebull@users.noreply.github.com> Claude <noreply@anthropic.com>
+# Bot de CI y commits hechos por edicion web (web-flow) -> se atribuyen al lead.
+Javier Rebull <168046724+jrebull@users.noreply.github.com> <github-actions[bot]@users.noreply.github.com>
+Javier Rebull <168046724+jrebull@users.noreply.github.com> <noreply@github.com>
 #
 # Juan Carlos Perez Nava (GitHub @Jarcos-nual)
 Jarcos-nual <jcpn@me.com> jarcos84 <carlos.perezn@imss.gob.mx>
