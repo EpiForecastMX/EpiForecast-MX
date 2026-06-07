@@ -312,9 +312,9 @@ tableau:
 ## Generar reporte HTML de resultados
 .PHONY: report
 report:
-	@echo ">>> Generando reporte HTML..."
+	@echo ">>> Generando reporte HTML (multi-modelo neuro + Dengue, desde tabla_333 + produccion_dengue)..."
 	$(PYTHON) -m scripts.genera_reporte
-	@echo ">>> → reports/forecasts/reporte_resultados.html"
+	@echo ">>> → reports/forecasts/reporte_resultados.html + ../EpiForecast-IMSS-Dashboard/reporte_resultados.html"
 
 ## Generar bitácora HTML del modelado Prophet v1-v6
 .PHONY: bitacora

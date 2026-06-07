@@ -1,0 +1,854 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resultados del Modelado — EpiForecast-MX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,700;0,800;1,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  /* Superficies — Clinical Indigo */
+  --bg-deep:        #0E1424;
+  --bg-base:        #131C30;
+  --bg-raised:      #18223A;
+  --bg-card:        #1C2740;
+  --bg-card-hover:  #243150;
+  /* Texto */
+  --text-primary:   #E7ECF5;
+  --text-secondary: #9FB0CE;
+  --text-muted:     #6E82A6;
+  --text-faint:     #44567A;
+  /* Acentos */
+  --burgundy:       #F472B6;
+  --dark-burgundy:  #8E2A63;
+  --teal:           #5B8DEF;
+  --gold:           #2DD4BF;
+  /* Aliases legacy */
+  --neutral-black:  #0B0F1A;
+  --cool-gray:      #9FB0CE;
+  --dark-teal:      #16203A;
+  --cream:          #E7ECF5;
+  --cream-light:    #1C2740;
+  --cream-pale:     #131C30;
+  --teal-glow:      rgba(91,141,239,0.15);
+  --burgundy-glow:  rgba(244,114,182,0.15);
+  --gold-glow:      rgba(45,212,191,0.15);
+  /* Extra legacy aliases */
+  --burgundy-light: #F472B6;
+  --teal-light:     #93C5FD;
+  --gold-light:     #2DD4BF;
+  /* Tipografía */
+  --font-display:   'Playfair Display', Georgia, serif;
+  --font-body:      'Outfit', system-ui, -apple-system, sans-serif;
+  --font-mono:      'JetBrains Mono', 'SF Mono', monospace;
+  --shadow-sm:      0 2px 8px rgba(0,0,0,.35);
+  --shadow-md:      0 8px 24px rgba(0,0,0,.40);
+  --shadow-lg:      0 16px 48px rgba(0,0,0,.45);
+  --radius:         16px;
+  --radius-sm:      10px;
+}
+body{font-family:var(--font-body);background:var(--bg-base);color:var(--text-primary);line-height:1.7;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.025;pointer-events:none;z-index:0}
+
+/* Nav */
+.nav{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(14,20,36,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid rgba(232,213,181,.08);transition:box-shadow .3s,background .3s}.nav.scrolled{box-shadow:0 4px 30px rgba(0,0,0,.18);background:rgba(14,20,36,.97)}.nav-inner{max-width:1200px;margin:0 auto;padding:0 2rem;display:flex;align-items:center;height:64px;gap:1rem}.nav-logo{font-family:var(--font-display);font-size:1.3rem;color:var(--cream);letter-spacing:.02em;flex-shrink:0;text-decoration:none}.nav-logo span{color:var(--gold)}.nav-menu{display:flex;align-items:center;gap:.25rem;list-style:none;flex:1;justify-content:center}.nav-group{position:relative}.nav-group-toggle{display:flex;align-items:center;gap:.3rem;color:rgba(232,213,181,.65);font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;padding:.5rem .85rem;border-radius:6px;cursor:pointer;transition:color .2s,background .2s;white-space:nowrap;border:none;background:none;font-family:inherit}.nav-group-toggle:hover,.nav-group:hover .nav-group-toggle{color:var(--cream);background:rgba(232,213,181,.06)}.nav-group-toggle svg{width:10px;height:10px;opacity:.5;transition:transform .2s}.nav-group:hover .nav-group-toggle svg{transform:rotate(180deg);opacity:.8}.nav-dropdown{position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(-4px);background:rgba(14,20,36,.98);backdrop-filter:blur(16px);border:1px solid rgba(232,213,181,.1);border-radius:12px;padding:.5rem;min-width:200px;opacity:0;visibility:hidden;transition:opacity .15s,transform .15s,visibility .15s;box-shadow:0 12px 40px rgba(0,0,0,.25)}.nav-group:hover .nav-dropdown{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}.nav-dropdown::before{content:'';position:absolute;top:-8px;left:0;right:0;height:8px}.nav-dropdown a{display:flex;align-items:center;gap:.75rem;padding:.6rem 1rem;color:rgba(232,213,181,.7);font-size:.82rem;font-weight:500;border-radius:8px;transition:background .15s,color .15s;text-decoration:none;white-space:nowrap}.nav-dropdown a:hover{background:rgba(232,213,181,.08);color:var(--cream)}.nav-dropdown a svg{width:16px;height:16px;opacity:.5;flex-shrink:0}.nav-dropdown a:hover svg{opacity:.8}.nav-ctas{display:flex;gap:.5rem;align-items:center;flex-shrink:0}.nav-cta{display:inline-flex;align-items:center;gap:.4rem;padding:.4rem 1rem;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;border-radius:100px;text-decoration:none;transition:transform .2s,box-shadow .2s,background .2s;white-space:nowrap}.nav-cta:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(45,212,191,.3)}.nav-cta--primary{background:var(--gold);color:var(--dark-teal)}.nav-cta--secondary{background:rgba(232,213,181,.1);color:var(--gold);border:1px solid rgba(45,212,191,.3)}.nav-cta--secondary:hover{background:rgba(45,212,191,.15);color:var(--gold)}.nav-cta svg{width:14px;height:14px}.nav-hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px}.nav-hamburger span{width:24px;height:2px;background:var(--cream);transition:transform .3s,opacity .3s}.nav-mobile{display:none;flex-direction:column;background:rgba(14,20,36,.98);backdrop-filter:blur(16px);padding:1rem 2rem 1.5rem;border-bottom:1px solid rgba(232,213,181,.1)}.nav-mobile.show{display:flex}.nav-mobile-group{border-bottom:1px solid rgba(232,213,181,.06)}.nav-mobile-heading{display:flex;align-items:center;justify-content:space-between;padding:.85rem 0;color:rgba(232,213,181,.7);font-size:.82rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em;cursor:pointer}.nav-mobile-heading svg{width:10px;height:10px;transition:transform .2s}.nav-mobile-group.open .nav-mobile-heading svg{transform:rotate(180deg)}.nav-mobile-items{display:none;flex-direction:column;padding-bottom:.5rem}.nav-mobile-group.open .nav-mobile-items{display:flex}.nav-mobile-items a{padding:.5rem 1rem;color:rgba(232,213,181,.55);font-size:.82rem;text-decoration:none;border-radius:6px;transition:background .15s,color .15s}.nav-mobile-items a:hover{background:rgba(232,213,181,.06);color:var(--cream)}.nav-mobile-ctas{display:flex;gap:.5rem;margin-top:1rem}@media(max-width:768px){.nav-menu,.nav-ctas{display:none}.nav-hamburger{display:flex}}
+
+.container{max-width:1200px;margin:0 auto;padding:0 2rem;position:relative;z-index:1}
+section{padding:4rem 0}
+.section-title{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.5rem);margin-bottom:.5rem;color:var(--cream)}
+.section-sub{color:var(--cool-gray);font-size:1rem;margin-bottom:2.5rem}
+
+.hero{padding:10rem 2rem 6rem;text-align:center;background:linear-gradient(170deg,var(--dark-teal) 0%,var(--teal) 60%,rgba(0,82,78,.85) 100%);color:var(--cream-pale);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 800px 600px at 30% 20%,rgba(45,212,191,.12),transparent),radial-gradient(ellipse 600px 500px at 70% 80%,rgba(244,114,182,.08),transparent);pointer-events:none}
+.hero h1{font-family:var(--font-display);font-size:clamp(2.5rem,6vw,4.5rem);line-height:1.1;margin-bottom:1rem;position:relative}
+.hero .subtitle{font-size:clamp(1rem,2vw,1.25rem);opacity:.8;font-weight:300;margin-bottom:3rem;position:relative}
+.hero-kpis{display:flex;justify-content:center;gap:2rem;flex-wrap:wrap;position:relative}
+.hero-kpi{background:rgba(91,141,239,.10);border:1px solid rgba(91,141,239,.20);border-radius:var(--radius);padding:2rem 2.5rem;backdrop-filter:blur(8px);min-width:180px;transition:transform .3s,box-shadow .3s}
+.hero-kpi:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.2)}
+.hero-kpi .value{font-family:var(--font-display);font-size:3rem;display:block;background:linear-gradient(135deg,var(--cream),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-kpi .label{font-size:.85rem;text-transform:uppercase;letter-spacing:1px;opacity:.7}
+
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:2rem}
+.card{background:var(--bg-card);border-radius:var(--radius);padding:2rem;box-shadow:var(--shadow-md);border:1px solid rgba(91,141,239,.12);transition:transform .3s,box-shadow .3s}
+.card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+.card-header{display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:2px solid rgba(91,141,239,.2)}
+.card-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;box-shadow:0 0 8px currentColor}
+.card-title{font-family:var(--font-display);font-size:1.4rem}
+.card-metrics{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.metric{background:var(--bg-raised);border-radius:var(--radius-sm);padding:.75rem 1rem}
+.metric-value{font-family:var(--font-mono);font-size:1.4rem;font-weight:500}
+.metric-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary)}
+
+.chart-wrap{background:var(--bg-card);border-radius:var(--radius);padding:2rem;box-shadow:var(--shadow-md);border:1px solid rgba(91,141,239,.12)}
+.chart-wrap canvas{max-height:400px}
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:2rem}
+
+/* guide cards */
+.guide-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.5rem;margin-top:1.5rem}
+.guide-card{background:var(--bg-card);border-radius:var(--radius);padding:1.5rem 1.75rem;box-shadow:var(--shadow-sm);border-left:4px solid var(--teal)}
+.guide-card h3{font-family:var(--font-display);font-size:1.15rem;margin-bottom:.5rem;color:var(--cream)}
+.guide-card p{font-size:.92rem;color:var(--text-secondary);line-height:1.7}
+.guide-card .badge{margin:0 2px}
+
+/* region map */
+.region-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem;margin-top:1rem}
+.region-card{background:var(--bg-raised);border-radius:var(--radius-sm);padding:1rem 1.25rem;border:1px solid rgba(91,141,239,.15)}
+.region-card h4{font-size:.95rem;font-weight:700;margin-bottom:.4rem;color:var(--cream)}
+.region-card p{font-size:.82rem;color:var(--text-secondary);line-height:1.5}
+
+/* table */
+.table-wrapper{background:var(--bg-card);border-radius:var(--radius);box-shadow:var(--shadow-md);border:1px solid rgba(91,141,239,.12);overflow:hidden}
+.table-controls{display:flex;gap:1rem;padding:1.5rem 2rem;flex-wrap:wrap;border-bottom:1px solid rgba(91,141,239,.15);align-items:center}
+.table-controls input,.table-controls select{font-family:var(--font-body);font-size:.9rem;padding:.5rem 1rem;border:1px solid rgba(91,141,239,.25);border-radius:6px;background:var(--bg-raised);color:var(--text-primary);outline:none;transition:border-color .2s}
+.table-controls input:focus,.table-controls select:focus{border-color:var(--teal)}
+.table-controls input{flex:1;min-width:180px}
+table{width:100%;border-collapse:collapse;font-size:.9rem}
+thead th{padding:1rem 1.25rem;text-align:left;font-weight:600;text-transform:uppercase;font-size:.75rem;letter-spacing:.5px;color:var(--text-secondary);border-bottom:2px solid rgba(91,141,239,.2);cursor:pointer;user-select:none;white-space:nowrap;transition:color .2s}
+thead th:hover{color:var(--teal)}
+thead th.sorted-asc::after{content:' \25B2';font-size:.65rem}
+thead th.sorted-desc::after{content:' \25BC';font-size:.65rem}
+tbody td{padding:.85rem 1.25rem;border-bottom:1px solid rgba(91,141,239,.10);vertical-align:middle}
+tbody tr{transition:background .15s}
+tbody tr:hover{background:var(--bg-card-hover)}
+.group-header td{background:var(--dark-teal);color:var(--cream);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:1px;padding:.6rem 1.25rem;border:none}
+
+.badge{display:inline-block;padding:.2rem .7rem;border-radius:100px;font-family:var(--font-mono);font-size:.8rem;font-weight:500}
+.badge-green{background:rgba(45,212,191,.15);color:#2DD4BF}
+.badge-yellow{background:rgba(251,191,36,.15);color:#FCD34D}
+.badge-red{background:rgba(244,114,182,.15);color:#F472B6}
+.badge-tipo{font-family:var(--font-body);font-size:.78rem;font-weight:600;padding:.25rem .8rem;border-radius:100px}
+.badge-propio{background:rgba(45,212,191,.15);color:#2DD4BF}
+.badge-fallback{background:rgba(251,146,60,.15);color:#FB923C}
+
+.cob-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.75rem}
+.cob-item{display:flex;align-items:center;gap:.75rem;background:var(--bg-card);border-radius:var(--radius-sm);padding:.6rem 1rem;box-shadow:var(--shadow-sm);border:1px solid rgba(91,141,239,.12);font-size:.88rem}
+.cob-item .estado-name{flex:1;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cob-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.cob-dot.propio{background:#2DD4BF;box-shadow:0 0 4px rgba(45,212,191,.4)}
+.cob-dot.fallback{background:#FB923C;box-shadow:0 0 4px rgba(251,146,60,.4)}
+.cob-dot.sin_modelo{background:var(--cool-gray);opacity:.4}
+.cob-summary{display:flex;gap:2rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.cob-summary-item{display:flex;align-items:center;gap:.5rem;font-size:.85rem}
+
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .6s ease,transform .6s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+footer{background:var(--dark-teal);color:rgba(232,213,181,.7);padding:3rem 2rem;text-align:center;font-size:.85rem;position:relative;z-index:1}
+footer a{color:var(--gold-light);text-decoration:none}
+footer a:hover{color:var(--cream)}
+footer .footer-title{font-family:var(--font-display);color:var(--cream);font-size:1.2rem;margin-bottom:.5rem}
+
+@media(max-width:768px){
+  .hero{padding:8rem 1.5rem 4rem}.hero-kpis{gap:1rem}.hero-kpi{min-width:140px;padding:1.25rem}.hero-kpi .value{font-size:2.2rem}
+  .card-grid,.charts-row,.guide-grid,.region-grid{grid-template-columns:1fr}
+  .table-controls{flex-direction:column}section{padding:2.5rem 0}.container{padding:0 1rem}
+}
+</style>
+</head>
+<body>
+
+<nav class="nav" id="nav">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-logo" style="text-decoration:none">EpiForecast<span>-MX</span></a>
+      <ul class="nav-menu">
+        <li class="nav-group">
+          <button class="nav-group-toggle">Proyecto <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg></button>
+          <div class="nav-dropdown">
+            <a href="index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>Inicio</a>
+            <a href="EpiDashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboard</a>
+            <a href="Reports/index.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Pronósticos</a>
+          </div>
+        </li>
+        <li class="nav-group">
+          <button class="nav-group-toggle">Metodología <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg></button>
+          <div class="nav-dropdown">
+            <a href="bitacora_modelado.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>Bitácora v1-v6</a>
+            <a href="ficha_tecnica_prophet.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Ficha Prophet</a>
+            <a href="hiperparametros_modelos.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>HPs SageMaker</a>
+            <a href="construccion_dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>Arquitectura Dashboard</a>
+          </div>
+        </li>
+        <li class="nav-group">
+          <button class="nav-group-toggle">Resultados <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg></button>
+          <div class="nav-dropdown">
+            <a href="reporte_resultados.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l2 2 4-4"/></svg>Resultados</a>
+            <a href="comparacion_modelos.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Comparación SageMaker</a>
+            <a href="validacion_semanal.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></svg>Validación Semanal</a>
+            <a href="auditoria_remediacion_2026.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/><path d="M9 14l2 2 4-4"/></svg>Auditoría</a>
+            <a href="conclusiones.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Conclusiones</a>
+            <a href="referencias.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>Referencias</a>
+          </div>
+        </li>
+      </ul>
+      <div class="nav-ctas">
+        <a href="EpiDashboard.html" class="nav-cta nav-cta--primary">Dashboard</a>
+        <a href="https://github.com/IntegradorIMSS2026Team01" target="_blank" rel="noopener" class="nav-cta nav-cta--secondary" style="padding:0.4rem 0.6rem" title="GitHub"><svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg></a>
+      </div>
+      <div class="nav-hamburger" onclick="document.getElementById('navMobile').classList.toggle('show')" aria-label="Menú"><span></span><span></span><span></span></div>
+    </div>
+    <div class="nav-mobile" id="navMobile">
+      <div class="nav-mobile-group">
+        <div class="nav-mobile-heading" onclick="this.parentElement.classList.toggle('open')">Proyecto <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg></div>
+        <div class="nav-mobile-items"><a href="index.html">Inicio</a><a href="EpiDashboard.html">Dashboard</a><a href="Reports/index.html">Pronósticos</a></div>
+      </div>
+      <div class="nav-mobile-group">
+        <div class="nav-mobile-heading" onclick="this.parentElement.classList.toggle('open')">Metodología <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg></div>
+        <div class="nav-mobile-items"><a href="bitacora_modelado.html">Bitácora v1-v6</a><a href="ficha_tecnica_prophet.html">Ficha Prophet</a><a href="hiperparametros_modelos.html">HPs SageMaker</a><a href="construccion_dashboard.html">Arquitectura Dashboard</a></div>
+      </div>
+      <div class="nav-mobile-group">
+        <div class="nav-mobile-heading" onclick="this.parentElement.classList.toggle('open')">Resultados <svg viewBox="0 0 10 6" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 1l4 4 4-4"/></svg></div>
+        <div class="nav-mobile-items"><a href="reporte_resultados.html">Resultados</a><a href="comparacion_modelos.html">Comparación SageMaker</a><a href="validacion_semanal.html">Validación Semanal</a><a href="auditoria_remediacion_2026.html">Auditoría</a><a href="conclusiones.html">Conclusiones</a><a href="referencias.html">Referencias</a></div>
+      </div>
+      <div class="nav-mobile-ctas"><a href="EpiDashboard.html" class="nav-cta nav-cta--primary" style="justify-content:center;padding:.6rem 1.5rem;flex:1">Dashboard</a></div>
+    </div>
+  </nav>
+
+<!-- ═══ HERO ═══ -->
+<section class="hero">
+  <h1>Resultados del Modelado</h1>
+  <p class="subtitle">EpiForecast-MX &middot; IMSS &times; Tec de Monterrey &middot; __FECHA__</p>
+  <div class="hero-kpis">
+    <div class="hero-kpi"><span class="value">4</span><span class="label">Padecimientos</span></div>
+    <div class="hero-kpi"><span class="value">432</span><span class="label">Series con pronóstico</span></div>
+    <div class="hero-kpi"><span class="value">5</span><span class="label">Motores compitiendo</span></div>
+    <div class="hero-kpi"><span class="value">52 sem</span><span class="label">Horizonte productivo</span></div>
+  </div>
+  <p style="max-width:760px;margin:1.5rem auto 0;color:var(--text-secondary);line-height:1.6;font-size:.97rem">
+    De un solo modelo Prophet por serie pasamos a <strong style="color:var(--cream)">selección de motor por serie</strong>:
+    cada combinación entidad × sexo elige, contra la realidad del Boletín SINAVE 2026, el mejor de
+    <strong style="color:var(--cream)">cinco motores</strong> (Prophet, DeepAR, Ensemble, Stacking y el nuevo NB-GLM).
+    Y se incorporó el <strong style="color:var(--gold)">Dengue</strong> como cuarto padecimiento.
+    <a href="#dengue" style="color:var(--teal)">Ver la sección de Dengue ↓</a>
+  </p>
+</section>
+
+<!-- ═══ NOVEDADES 2026 ═══ -->
+<section id="novedades" style="padding:3rem 0">
+  <div class="container">
+    <h2 class="section-title reveal">Lo nuevo en 2026</h2>
+    <p class="section-sub reveal">Cómo evolucionó el modelado desde el primer reporte (Prophet único) a hoy</p>
+    <div class="guide-grid">
+      <div class="guide-card reveal" style="border-left-color:var(--teal)">
+        <h3>Selección de motor por serie</h3>
+        <p>Ya no es «Prophet para todo». Las <strong>333 series neuronales</strong> se reasignan al motor que mejor
+        sigue la realidad 2026. Distribución productiva actual: __NEURO_DIST_BADGES__.</p>
+      </div>
+      <div class="guide-card reveal" style="border-left-color:var(--gold)">
+        <h3>Nuevo motor NB-GLM</h3>
+        <p>Un GLM Negative-Binomial con estacionalidad de Fourier y el índice <strong>El Niño (ONI)</strong>.
+        Es count-correcto y extrapola la dinámica epidémica sin divergir; el <strong>mejor del estudio</strong> para
+        Dengue en backtest leave-one-epidemic-out (SMAPE 52 vs Prophet 102).</p>
+      </div>
+      <div class="guide-card reveal" style="border-left-color:#F59E0B">
+        <h3>Dengue en producción</h3>
+        <p>Cuarto padecimiento y primera enfermedad por vector. Serie semanal <strong>2018–2026</strong> de las 32
+        entidades, modelada en conteos. Productivos <strong>DeepAR + Prophet + NB-GLM</strong>. En vivo en
+        <a href="dengue.html" style="color:var(--teal)">epiforecast.mx/dengue</a>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ GUIA ═══ -->
+<section id="guia" style="background:var(--bg-raised);padding:4rem 0">
+  <div class="container">
+    <h2 class="section-title reveal">Antes de empezar: guia rapida</h2>
+    <p class="section-sub reveal">Todo lo que necesitas saber para entender este reporte, explicado de forma sencilla</p>
+    <div class="guide-grid">
+      <div class="guide-card" style="border-left-color:var(--teal)">
+        <h3>Que mide el MASE</h3>
+        <p>El MASE es como una <strong>calificacion</strong> del modelo. Lo compara contra el metodo mas simple posible: repetir lo que paso hace exactamente un ano.
+        <br><br><span class="badge badge-green">&lt; 0.7 Excelente</span> <span class="badge badge-yellow">0.7 – 1.0 Bueno</span> <span class="badge badge-red">&gt; 1.0 Necesita mejora</span>
+        <br><br>Si el MASE es menor a 1, <strong>nuestro modelo es mejor que solo copiar el pasado</strong>. Entre mas bajo, mejor.</p>
+      </div>
+      <div class="guide-card" style="border-left-color:var(--gold)">
+        <h3>Las 4 regiones INEGI de salud mental</h3>
+        <p>El INEGI agrupa los 32 estados en <strong>4 zonas</strong> segun sus patrones de salud mental. Esto importa porque estados de la misma zona se comportan de forma similar:</p>
+        <div class="region-grid" style="margin-top:.75rem">
+          <div class="region-card"><h4>Metropolitana alta</h4><p>CDMX, Edo. Mex, Jalisco, Nuevo Leon, Chihuahua, Baja California, Coahuila, Sinaloa, Sonora, Tamaulipas</p></div>
+          <div class="region-card"><h4>Urbana media</h4><p>Aguascalientes, BCS, Colima, Durango, Guanajuato, Morelos, Queretaro, San Luis Potosi, Zacatecas</p></div>
+          <div class="region-card"><h4>Sur-Sureste vulnerable</h4><p>Campeche, Chiapas, Oaxaca, Quintana Roo, Tabasco, Veracruz, Yucatan</p></div>
+          <div class="region-card"><h4>Rural / dispersa</h4><p>Guerrero, Hidalgo, Michoacan, Nayarit, Puebla, Tlaxcala</p></div>
+        </div>
+      </div>
+      <div class="guide-card" style="border-left-color:var(--burgundy)">
+        <h3>Que es un modelo &laquo;fallback&raquo; regional</h3>
+        <p>Algunos estados tienen <strong>tan pocos casos</strong> (menos de 0.5 por semana) que no hay datos suficientes para entrenar un modelo confiable solo para ese estado.
+        <br><br>En lugar de dar un pronostico malo, <strong>usamos el modelo de toda su region INEGI</strong>, que tiene muchos mas datos. El pronostico final se ajusta con la poblacion individual de cada estado.
+        <br><br>Es como pedir prestada la experiencia de los vecinos para hacer una mejor prediccion.</p>
+      </div>
+      <div class="guide-card" style="border-left-color:var(--cool-gray)">
+        <h3>Por que hay diferente numero de modelos</h3>
+        <p>Cada padecimiento tiene una base de <strong>99 modelos</strong> (32 estados &times; 3 modos de sexo + 3 nacionales). La diferencia viene de cuantos modelos regionales de respaldo se necesitan:
+        <br><br>__PAD_EXPLAIN__</p>
+      </div>
+      <div class="guide-card" style="border-left-color:var(--teal)">
+        <h3>Las 4 metricas del modelo</h3>
+        <p>Cada modelo se evalua con cuatro metricas complementarias:
+        <br><br><strong>MASE</strong> &mdash; Compara el error del modelo contra un baseline naive (repetir el valor de hace 1 año). Menor a 1 = mejor que el baseline. <em>Metrica principal.</em>
+        <br><strong>SMAPE</strong> &mdash; Error porcentual simetrico, acotado entre 0% y 200%. Intuitivo y mas estable que el MAPE, aunque tambien se infla cuando la incidencia es cercana a cero.
+        <br><strong>RMSE</strong> &mdash; Error cuadratico medio. Penaliza errores grandes. Esta en casos por semana del motor productivo.
+        <br><strong>MAE</strong> &mdash; Error absoluto medio. Similar al RMSE pero sin penalizar extremos, tambien en casos por semana.
+        <br><br><em>Nota: MASE es adimensional (comparable entre padecimientos); SMAPE en %, y RMSE/MAE en casos del motor productivo de cada serie.</em></p>
+      </div>
+      <div class="guide-card" style="border-left-color:var(--burgundy)">
+        <h3>Por que el SMAPE es alto en baja incidencia</h3>
+        <p>El SMAPE promedia el error relativo semana a semana. Cuando la incidencia es cercana a cero (comun en <strong>Alzheimer y Parkinson</strong> estatales), una diferencia de uno o dos casos representa un error porcentual enorme, asi que el SMAPE sube hacia su tope de 200% aunque el pronostico siga el patron.
+        <br><br>Por eso en esos padecimientos veras SMAPE alto junto a un <strong>MASE bajo</strong>: el modelo si le gana al baseline, solo que la metrica porcentual castiga los ceros.
+        <br><br>Por esta razon <strong>MASE es la metrica principal</strong> de seleccion: compara contra un baseline en vez de dividir por el valor real.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ RESUMEN ═══ -->
+<section id="resumen">
+  <div class="container">
+    <h2 class="section-title reveal">Resumen por Padecimiento (neuro)</h2>
+    <p class="section-sub reveal">Desempeño agregado del motor productivo por serie en los 3 padecimientos neurológicos (Dengue tiene su propia sección abajo)</p>
+    <div class="card-grid" id="pad-cards"></div>
+    <div class="charts-row">
+      <div class="chart-wrap"><canvas id="maseCompareChart"></canvas></div>
+      <div class="chart-wrap"><canvas id="doughnutChart"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CALIDAD ═══ -->
+<section id="calidad" style="background:var(--bg-raised);padding:4rem 0">
+  <div class="container">
+    <h2 class="section-title reveal">Distribucion de Calidad</h2>
+    <p class="section-sub reveal">Como se distribuyen los modelos segun su MASE — la mayoria estan en rango bueno o excelente</p>
+    <div class="chart-wrap"><canvas id="histoChart"></canvas></div>
+  </div>
+</section>
+
+<!-- ═══ SEXO ═══ -->
+<section id="sexo">
+  <div class="container">
+    <h2 class="section-title reveal">Desglose por Sexo</h2>
+    <p class="section-sub reveal">Comparacion de MASE entre modelos generales, masculinos y femeninos. Los modelos &laquo;general&raquo; suelen ser mejores porque tienen mas datos.</p>
+    <div class="chart-wrap"><canvas id="sexoChart"></canvas></div>
+  </div>
+</section>
+
+<!-- ═══ TOP/BOTTOM ═══ -->
+<section id="topbottom" style="background:var(--bg-raised);padding:4rem 0">
+  <div class="container">
+    <h2 class="section-title reveal">Los 10 Mejores y 10 Peores</h2>
+    <p class="section-sub reveal">Modelos con el MASE mas bajo (mejor) y mas alto (peor). CDMX domina los mejores; Estado de Mexico domina los peores.</p>
+    <div class="charts-row">
+      <div class="chart-wrap"><canvas id="topChart"></canvas></div>
+      <div class="chart-wrap"><canvas id="bottomChart"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ RANKING ═══ -->
+<section id="ranking">
+  <div class="container">
+    <h2 class="section-title reveal">Ranking Completo</h2>
+    <p class="section-sub reveal">Los __TOTAL__ modelos agrupados por nivel: Nacional, Regional y Estatal</p>
+    <div class="table-wrapper">
+      <div class="table-controls">
+        <input type="text" id="searchBox" placeholder="Buscar estado...">
+        <select id="filterPad"><option value="">Todos los padecimientos</option></select>
+        <select id="filterModo">
+          <option value="">Todos los modos</option>
+          <option value="General">General</option>
+          <option value="Hombres">Hombres</option>
+          <option value="Mujeres">Mujeres</option>
+        </select>
+        <select id="filterGrupo">
+          <option value="">Todos los niveles</option>
+          <option value="Nacional">Nacional</option>
+          <option value="Regional">Regional</option>
+          <option value="Estatal">Estatal</option>
+        </select>
+      </div>
+      <div style="overflow-x:auto">
+        <table id="rankingTable">
+          <thead><tr>
+            <th data-col="entidad">Entidad</th>
+            <th data-col="padecimiento">Padecimiento</th>
+            <th data-col="modo">Modo</th>
+            <th data-col="mase">MASE</th>
+            <th data-col="rmse">RMSE</th>
+            <th data-col="mae">MAE</th>
+            <th data-col="smape">SMAPE</th>
+            <th data-col="tipo">Tipo</th>
+            <th data-col="confianza">Confianza</th>
+          </tr></thead>
+          <tbody id="rankingBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ COBERTURA ═══ -->
+<section id="cobertura" style="background:var(--bg-raised);padding:4rem 0">
+  <div class="container">
+    <h2 class="section-title reveal">Cobertura Geografica</h2>
+    <p class="section-sub reveal">Tipo de modelo por estado: <span class="cob-dot propio" style="display:inline-block;vertical-align:middle"></span> Propio (datos suficientes) &nbsp; <span class="cob-dot fallback" style="display:inline-block;vertical-align:middle"></span> Fallback regional (usa modelo de su zona). Orden: Alzheimer, Depresion, Parkinson.</p>
+    <div class="cob-summary" id="cobSummary"></div>
+    <div class="cob-grid" id="cobGrid"></div>
+  </div>
+</section>
+
+<!-- ═══ DENGUE ═══ -->
+<section id="dengue" style="background:linear-gradient(180deg,var(--bg-raised),var(--bg));padding:4.5rem 0;border-top:1px solid rgba(245,158,11,.18)">
+  <div class="container">
+    <h2 class="section-title reveal" style="color:#F59E0B">Dengue — 4.º padecimiento</h2>
+    <p class="section-sub reveal">Primera enfermedad transmitida por vector del proyecto. Serie semanal del dengue confirmado <strong>2018–2026</strong> de las 32 entidades, reconstruida desde los boletines del SINAVE y modelada en <strong>conteos absolutos</strong> (no en tasa, como neuro).</p>
+
+    <!-- Stats -->
+    <div class="region-grid reveal" style="grid-template-columns:repeat(auto-fill,minmax(190px,1fr))">
+      <div class="region-card"><h4 style="color:#F59E0B">392 sem</h4><p>Serie nacional 2018–2026 (≈8 años)</p></div>
+      <div class="region-card"><h4 style="color:#F59E0B">99 series</h4><p>Nacional + 32 entidades × 3 sexos</p></div>
+      <div class="region-card"><h4 style="color:#F59E0B">5 motores</h4><p>Prophet, DeepAR, Ensemble, Stacking, NB-GLM</p></div>
+      <div class="region-card"><h4 style="color:#F59E0B">DeepAR</h4><p>Motor nacional productivo</p></div>
+      <div class="region-card"><h4 style="color:#F59E0B">1 año + 5</h4><p>Pronóstico 52 sem + proyección 5 años ilustrativa</p></div>
+    </div>
+
+    <!-- Resultados de modelado (interactivos, propios de esta página) -->
+    <div class="charts-row" style="margin-top:2.5rem">
+      <div class="chart-wrap"><canvas id="dengueMotorChart"></canvas></div>
+      <div class="chart-wrap"><canvas id="dengueBacktestChart"></canvas></div>
+    </div>
+    <p style="text-align:center;color:var(--text-muted);font-size:.82rem;margin-top:.5rem">__DENGUE_CHART_CAP__</p>
+
+    <!-- Hallazgos -->
+    <h3 class="section-title reveal" style="font-size:1.5rem;margin-top:3rem">Hallazgos clave</h3>
+    <div class="guide-grid">
+      <div class="guide-card reveal" style="border-left-color:#F59E0B">
+        <h3>El Niño como regresor</h3>
+        <p>El dengue sigue el ciclo ENSO, pero esa señal no vive en los conteos recientes. Al agregar el índice
+        <strong>ONI rezagado 16 sem</strong> a Prophet, el backtest leave-one-epidemic-out mejora el nacional de
+        <span class="badge badge-red">SMAPE 102</span> a <span class="badge badge-yellow">76</span>, y el pico 2024
+        de ratio 1.61 a 0.87.</p>
+      </div>
+      <div class="guide-card reveal" style="border-left-color:var(--teal)">
+        <h3>NB-GLM, el mejor motor</h3>
+        <p>GLM Negative-Binomial + Fourier + El Niño: count-correcto y extrapola sin divergir. Es el mejor del
+        estudio (<span class="badge badge-green">SMAPE 52</span> vs Prophet+ENSO 76 vs Prophet 102). Ensemble y
+        Stacking quedan <strong>fuera</strong>: los árboles no extrapolan la dinámica epidémica a 52 sem.</p>
+      </div>
+      <div class="guide-card reveal" style="border-left-color:var(--burgundy)">
+        <h3>Regiones con DeepAR nativo</h3>
+        <p>Un backtest OOS sobre la epidemia 2024 mostró que <strong>agregar los estados</strong> compone los
+        sobre-tiros y explota (ratio de pico 34–157x). Las 4 regiones usan <strong>DeepAR nativo</strong>, el más
+        contenido y fiel en magnitud (<span class="badge badge-green">MAE 460</span> vs 3.7k–10k de la agregación).</p>
+      </div>
+      <div class="guide-card reveal" style="border-left-color:var(--cool-gray)">
+        <h3>Nota honesta de validación</h3>
+        <p>La métrica de selección de motor (SMAPE 2026) es <strong>in-sample</strong> (el modelo final ve 2026 H1).
+        El <strong>backtest</strong> de NB-GLM sí es limpio (leave-one-epidemic-out). Se valida prospectivo OOS en las
+        semanas no vistas antes de re-entrenar. Ver <a href="auditoria_remediacion_2026.html" style="color:var(--teal)">Auditoría</a>.</p>
+      </div>
+    </div>
+
+    <p style="text-align:center;color:var(--text-secondary);font-size:.92rem;margin-top:1.5rem">
+      El ciclo epidémico, el mapa de carga por entidad y la proyección multi-año guiada por El Niño se exploran
+      a fondo en la <a href="dengue.html" style="color:var(--teal)">página de Dengue en vivo</a>.</p>
+
+    <p style="text-align:center;margin-top:2.5rem">
+      <a href="dengue.html" class="nav-cta nav-cta--primary" style="display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.6rem">
+        Ver el pronóstico de Dengue en vivo →
+      </a>
+    </p>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<footer>
+  <div class="footer-title">EpiForecast-MX</div>
+  <p>Plataforma de inteligencia epidemiológica &middot; IMSS &times; Tec de Monterrey</p>
+  <p style="margin-top:.75rem">
+    <a href="index.html">Inicio</a> &middot;
+    <a href="EpiDashboard.html">Dashboard</a> &middot;
+    <a href="reporte_resultados.html">Resultados</a> &middot;
+    <a href="Reports/index.html">Pronósticos</a> &middot;
+    <a href="dengue.html">Dengue</a> &middot;
+    <a href="bitacora_modelado.html">Bitácora</a> &middot;
+    <a href="comparacion_modelos.html">Comparación</a> &middot;
+    <a href="ficha_tecnica_prophet.html">Ficha Prophet</a> &middot;
+    <a href="hiperparametros_modelos.html">HPs SageMaker</a> &middot;
+    <a href="construccion_dashboard.html">Arquitectura</a> &middot;
+    <a href="validacion_semanal.html">Validación</a> &middot;
+    <a href="auditoria_remediacion_2026.html">Auditoría</a> &middot;
+    <a href="conclusiones.html">Conclusiones</a> &middot;
+    <a href="referencias.html">Referencias</a>
+  </p>
+  <p style="margin-top:.5rem">Maestría en Inteligencia Artificial Aplicada &mdash; Proyecto Capstone 2026</p>
+  <p style="margin-top:.5rem;font-family:var(--font-mono);font-size:.75rem;opacity:.5">Actualizado: __FECHA__ &middot; neuro 2014–2026 + Dengue 2018–2026</p>
+</footer>
+
+<script>
+// Clinical Indigo: set Chart.js global defaults for dark theme
+Chart.defaults.color = '#9FB0CE';
+Chart.defaults.borderColor = 'rgba(91,141,239,0.12)';
+
+const D = __DATA_JSON__;
+
+const PC = {};
+D.pad_meta.forEach(p => { PC[p.name] = {main:p.main,light:p.light,glow:p.glow}; });
+const fmtSmape = v => v == null ? '—' : (Math.round(v) + '%');
+
+// Populate filter
+const fp = document.getElementById('filterPad');
+D.pad_meta.forEach(p => { const o=document.createElement('option');o.value=p.name;o.textContent=p.name;fp.appendChild(o); });
+
+// Reveal
+const obs = new IntersectionObserver(es => { es.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); }); }, {threshold:.08});
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+/* ── Pad cards ── */
+try {
+  const ct = document.getElementById('pad-cards');
+  D.por_padecimiento.forEach(p => {
+    const c = PC[p.padecimiento] || {main:'#9FB0CE',glow:'rgba(91,141,239,.10)'};
+    const card = document.createElement('div');
+    card.className = 'card reveal';
+    card.innerHTML = `
+      <div class="card-header">
+        <span class="card-dot" style="color:${c.main};background:${c.main}"></span>
+        <span class="card-title">${p.padecimiento}</span>
+      </div>
+      <div class="card-metrics">
+        <div class="metric"><div class="metric-value">${p.total}</div><div class="metric-label">Modelos</div></div>
+        <div class="metric" style="background:${c.glow}"><div class="metric-value" style="color:${c.main}">${p.mase}</div><div class="metric-label">MASE Medio</div></div>
+        <div class="metric"><div class="metric-value">${p.mase_min} – ${p.mase_max}</div><div class="metric-label">MASE Rango</div></div>
+        <div class="metric"><div class="metric-value">${p.rmse}</div><div class="metric-label">RMSE Medio</div></div>
+        <div class="metric"><div class="metric-value">${p.mae}</div><div class="metric-label">MAE Medio</div></div>
+        <div class="metric" style="background:${c.glow}"><div class="metric-value" style="color:${c.main}">${fmtSmape(p.smape)}</div><div class="metric-label">SMAPE Medio</div></div>
+        <div class="metric"><div class="metric-value">${p.insuficientes}</div><div class="metric-label">Insuficientes</div></div>
+        <div class="metric"><div class="metric-value">${p.fallback}</div><div class="metric-label">Fallback Regional</div></div>
+      </div>`;
+    ct.appendChild(card);
+    obs.observe(card);
+  });
+} catch(e) { console.warn('cards:', e); }
+
+/* ── MASE comparison bar ── */
+try {
+  const pads = D.por_padecimiento;
+  new Chart(document.getElementById('maseCompareChart'), {
+    type: 'bar',
+    data: {
+      labels: pads.map(p => p.padecimiento),
+      datasets: [
+        { label:'MASE Medio', data:pads.map(p=>p.mase), backgroundColor:pads.map(p=>PC[p.padecimiento].main), borderRadius:6, borderSkipped:false },
+        { label:'MASE Mediana', data:pads.map(p=>p.mase_median), backgroundColor:pads.map(p=>PC[p.padecimiento].light), borderRadius:6, borderSkipped:false }
+      ]
+    },
+    options: {
+      responsive:true, indexAxis:'y',
+      plugins: {
+        title: { display:true, text:'MASE por Padecimiento (media vs mediana)', font:{ family:"'Outfit'", size:14 } },
+        legend: { position:'bottom', labels:{ font:{ family:"'Outfit'" } } }
+      },
+      scales: {
+        x: { beginAtZero:true, max:1.2, grid:{ color:'rgba(91,141,239,.12)' },
+          title:{ display:true, text:'MASE (menor = mejor)', font:{ family:"'Outfit'" } } },
+        y: { grid:{ display:false } }
+      }
+    }
+  });
+} catch(e) { console.warn('maseCompare:', e); }
+
+/* ── Doughnut: propio vs fallback ── */
+try {
+  const pads = D.por_padecimiento;
+  const propios = pads.map(p => p.estatales - p.fallback);
+  const fallbacks = pads.map(p => p.fallback);
+  new Chart(document.getElementById('doughnutChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Modelo propio', 'Fallback regional'],
+      datasets: pads.map((p, i) => ({
+        label: p.padecimiento,
+        data: [propios[i], fallbacks[i]],
+        backgroundColor: ['#2DD4BF', '#FB923C'],
+        borderWidth: 2, borderColor: '#1C2740'
+      }))
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: { display:true, text:'Modelos Propios vs Fallback (estatales)', font:{ family:"'Outfit'", size:14 } },
+        legend: { position:'bottom', labels:{ font:{ family:"'Outfit'" } } },
+        tooltip: { callbacks: { label: ctx => {
+          const ds = ctx.dataset;
+          const total = ds.data.reduce((a,b)=>a+b,0);
+          const pct = total ? Math.round(ctx.parsed / total * 100) : 0;
+          return `${ctx.label}: ${ctx.parsed} (${pct}%)`;
+        } } }
+      }
+    }
+  });
+} catch(e) { console.warn('doughnut:', e); }
+
+/* ── MASE histogram ── */
+try {
+  const binColors = ['#1a7431','#4ade80','#facc15','#f97316','#b91c1c'];
+  new Chart(document.getElementById('histoChart'), {
+    type: 'bar',
+    data: {
+      labels: D.mase_bin_labels,
+      datasets: D.mase_histo.map(h => ({
+        label: h.padecimiento,
+        data: h.bins,
+        backgroundColor: PC[h.padecimiento].main,
+        borderRadius: 4, borderSkipped: false
+      }))
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: { display:true, text:'Cuantos modelos hay en cada rango de MASE', font:{ family:"'Outfit'", size:14 } },
+        legend: { position:'bottom', labels:{ font:{ family:"'Outfit'" } } }
+      },
+      scales: {
+        y: { beginAtZero:true, title:{ display:true, text:'Numero de modelos', font:{ family:"'Outfit'" } }, grid:{ color:'rgba(91,141,239,.12)' } },
+        x: { grid:{ display:false }, title:{ display:true, text:'Rango de MASE', font:{ family:"'Outfit'" } } }
+      }
+    }
+  });
+} catch(e) { console.warn('histo:', e); }
+
+/* ── Sexo chart ── */
+try {
+  const pads = D.pad_meta.map(p=>p.name);
+  const modos = ['general','hombres','mujeres'];
+  const ml = {general:'General',hombres:'Hombres',mujeres:'Mujeres'};
+  const mc = {general:'#97999B',hombres:'#00524E',mujeres:'#9B2242'};
+  const ds = modos.map(m => ({
+    label: ml[m],
+    data: pads.map(pad => { const f=D.por_sexo.find(s=>s.padecimiento===pad&&s.modo===m); return f?f.mase:0; }),
+    backgroundColor: mc[m], borderRadius:6, borderSkipped:false
+  }));
+  new Chart(document.getElementById('sexoChart'), {
+    type:'bar', data:{labels:pads,datasets:ds},
+    options: {
+      responsive:true,
+      plugins: {
+        title:{ display:true, text:'MASE por Sexo y Padecimiento', font:{ family:"'Outfit'", size:14 } },
+        legend:{ position:'bottom', labels:{ font:{ family:"'Outfit'" } } },
+        tooltip:{ callbacks:{ label: ctx=>`${ctx.dataset.label}: MASE ${ctx.parsed.y}` } }
+      },
+      scales: {
+        y:{ beginAtZero:true, title:{ display:true, text:'MASE', font:{ family:"'Outfit'" } }, grid:{ color:'rgba(91,141,239,.12)' } },
+        x:{ grid:{ display:false } }
+      }
+    }
+  });
+} catch(e) { console.warn('sexo:', e); }
+
+/* ── Top/Bottom horizontal bars ── */
+try {
+  function hbar(id, items, title, colorFn) {
+    const labels = items.map(i=>i.label.length>35 ? i.label.substring(0,35)+'...' : i.label);
+    new Chart(document.getElementById(id), {
+      type:'bar',
+      data: {
+        labels,
+        datasets: [{ data:items.map(i=>i.mase), backgroundColor:items.map(i => {
+          const c = PC[i.padecimiento]; return c ? c.main : '#999';
+        }), borderRadius:4, borderSkipped:false }]
+      },
+      options: {
+        indexAxis:'y', responsive:true,
+        plugins: {
+          title:{ display:true, text:title, font:{ family:"'Outfit'", size:14 } },
+          legend:{ display:false },
+          tooltip:{ callbacks:{ label:ctx=>'MASE: '+ctx.parsed.x } }
+        },
+        scales: {
+          x: { beginAtZero:true, grid:{ color:'rgba(91,141,239,.12)' } },
+          y: { grid:{ display:false }, ticks:{ font:{ size:11, family:"'Outfit'" } } }
+        }
+      }
+    });
+  }
+  hbar('topChart', D.top10, 'Top 10 — Mejor MASE');
+  hbar('bottomChart', D.bottom10, 'Bottom 10 — Mayor MASE');
+} catch(e) { console.warn('topbottom:', e); }
+
+/* ── Ranking table ── */
+try {
+  const tbody = document.getElementById('rankingBody');
+  let rows = D.ranking;
+  let sortCol = 'orden'; let sortAsc = true;
+
+  function maseBadge(v) {
+    if(v==null) return '<span class="badge badge-yellow">N/A</span>';
+    const cls = v<0.7?'badge-green':v<=1.0?'badge-yellow':'badge-red';
+    return `<span class="badge ${cls}">${v}</span>`;
+  }
+  function tipoBadge(t) {
+    return `<span class="badge-tipo ${t==='Propio'?'badge-propio':'badge-fallback'}">${t}</span>`;
+  }
+
+  function render(data) {
+    // Group by grupo
+    const groups = {};
+    const groupOrder = ['Nacional','Regional','Estatal'];
+    const groupLabels = {
+      'Nacional': 'Nacional (modelos con todos los datos del pais)',
+      'Regional': 'Regional (modelos por region INEGI de salud mental)',
+      'Estatal': 'Estatal (modelos por estado — 32 entidades)'
+    };
+    data.forEach(r => {
+      if(!groups[r.grupo]) groups[r.grupo] = [];
+      groups[r.grupo].push(r);
+    });
+
+    let html = '';
+    groupOrder.forEach(g => {
+      const items = groups[g];
+      if(!items || items.length===0) return;
+      html += `<tr class="group-header"><td colspan="9">${groupLabels[g] || g} (${items.length})</td></tr>`;
+      items.forEach(r => {
+        html += `<tr>
+          <td style="font-weight:600">${r.entidad}</td>
+          <td><span style="color:${PC[r.padecimiento]?.main||'#9FB0CE'}">${r.padecimiento}</span></td>
+          <td>${r.modo}</td>
+          <td>${maseBadge(r.mase)}</td>
+          <td style="font-family:var(--font-mono)">${r.rmse ?? '—'}</td>
+          <td style="font-family:var(--font-mono)">${r.mae ?? '—'}</td>
+          <td><span class="badge ${r.smape==null?'badge-yellow':r.smape<50?'badge-green':r.smape<100?'badge-yellow':'badge-red'}">${fmtSmape(r.smape)}</span></td>
+          <td>${tipoBadge(r.tipo)}</td>
+          <td>${r.confianza}</td>
+        </tr>`;
+      });
+    });
+    tbody.innerHTML = html;
+  }
+
+  function filterAndSort() {
+    const q = document.getElementById('searchBox').value.toLowerCase();
+    const padF = document.getElementById('filterPad').value;
+    const modoF = document.getElementById('filterModo').value;
+    const grupoF = document.getElementById('filterGrupo').value;
+    let filtered = rows.filter(r => {
+      if(q && !r.entidad.toLowerCase().includes(q)) return false;
+      if(padF && r.padecimiento!==padF) return false;
+      if(modoF && r.modo!==modoF) return false;
+      if(grupoF && r.grupo!==grupoF) return false;
+      return true;
+    });
+    filtered.sort((a,b) => {
+      let va=a[sortCol],vb=b[sortCol];
+      if(va==null)va=999;if(vb==null)vb=999;
+      if(typeof va==='string'){va=va.toLowerCase();vb=(vb||'').toLowerCase();}
+      return sortAsc?(va<vb?-1:va>vb?1:0):(va>vb?-1:va<vb?1:0);
+    });
+    render(filtered);
+  }
+
+  document.getElementById('searchBox').addEventListener('input', filterAndSort);
+  document.getElementById('filterPad').addEventListener('change', filterAndSort);
+  document.getElementById('filterModo').addEventListener('change', filterAndSort);
+  document.getElementById('filterGrupo').addEventListener('change', filterAndSort);
+
+  document.querySelectorAll('#rankingTable thead th').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.col;
+      if(sortCol===col) sortAsc=!sortAsc; else { sortCol=col; sortAsc=true; }
+      document.querySelectorAll('#rankingTable thead th').forEach(t=>t.classList.remove('sorted-asc','sorted-desc'));
+      th.classList.add(sortAsc?'sorted-asc':'sorted-desc');
+      filterAndSort();
+    });
+  });
+  filterAndSort();
+} catch(e) { console.warn('ranking:', e); }
+
+/* ── Cobertura ── */
+try {
+  const grid = document.getElementById('cobGrid');
+  const summary = document.getElementById('cobSummary');
+  const padKeys = D.pad_meta.map(p=>p.key);
+  const padLabels = {}; D.pad_meta.forEach(p=>{padLabels[p.key]=p.name;});
+
+  padKeys.forEach(pk => {
+    const res = D.cobertura_resumen[pk];
+    const c = PC[padLabels[pk]];
+    summary.innerHTML += `<div class="cob-summary-item">
+      <span class="cob-dot propio"></span>
+      <span style="color:${c.main};font-weight:600">${padLabels[pk]}</span>
+      ${res.propios} propios, ${res.fallback} fallback
+    </div>`;
+  });
+
+  D.cobertura.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'cob-item';
+    const dots = padKeys.map(pk=>`<span class="cob-dot ${item[pk]}" title="${padLabels[pk]}: ${item[pk]}"></span>`).join('');
+    div.innerHTML = `<span class="estado-name">${item.estado}</span>${dots}`;
+    grid.appendChild(div);
+  });
+} catch(e) { console.warn('cobertura:', e); }
+
+/* ── Dengue: motor productivo (doughnut) ── */
+try {
+  const dg = D.dengue;
+  const ent = Object.entries(dg.dist_all).sort((a,b)=>b[1]-a[1]);
+  const motorColors = {DeepAR:'#F472B6', NBGLM:'#F59E0B', Prophet:'#2DD4BF', Ensemble:'#FB923C', Stacking:'#8B9DFF'};
+  new Chart(document.getElementById('dengueMotorChart'), {
+    type:'doughnut',
+    data:{ labels:ent.map(e=>e[0]==='NBGLM'?'NB-GLM':e[0]),
+      datasets:[{ data:ent.map(e=>e[1]), backgroundColor:ent.map(e=>motorColors[e[0]]||'#9FB0CE'),
+        borderWidth:2, borderColor:'#1C2740' }] },
+    options:{ responsive:true, cutout:'58%',
+      plugins:{
+        title:{ display:true, text:`Motor productivo por serie de Dengue (${dg.n_series} series)`, font:{family:"'Outfit'",size:14} },
+        legend:{ position:'bottom', labels:{ font:{family:"'Outfit'"} } },
+        tooltip:{ callbacks:{ label: ctx => {
+          const total = ctx.dataset.data.reduce((a,b)=>a+b,0);
+          const pct = total ? Math.round(ctx.parsed/total*100) : 0;
+          return `${ctx.label}: ${ctx.parsed} series (${pct}%)`;
+        } } }
+      } }
+  });
+} catch(e) { console.warn('dengueMotor:', e); }
+
+/* ── Dengue: backtest leave-one-epidemic-out (bar) ── */
+try {
+  const bt = D.dengue.backtest;
+  new Chart(document.getElementById('dengueBacktestChart'), {
+    type:'bar',
+    data:{ labels:['Prophet','Prophet + El Niño','NB-GLM'],
+      datasets:[{ data:[bt.prophet, bt.prophet_enso, bt.nbglm],
+        backgroundColor:['#F472B6','#FCD34D','#2DD4BF'], borderRadius:6, borderSkipped:false }] },
+    options:{ responsive:true,
+      plugins:{
+        title:{ display:true, text:'Backtest fuera de muestra (SMAPE nacional, epidemia 2024)', font:{family:"'Outfit'",size:14} },
+        legend:{ display:false },
+        tooltip:{ callbacks:{ label: ctx => `SMAPE ${ctx.parsed.y}` } }
+      },
+      scales:{
+        y:{ beginAtZero:true, title:{ display:true, text:'SMAPE (menor = mejor)', font:{family:"'Outfit'"} }, grid:{ color:'rgba(91,141,239,.12)' } },
+        x:{ grid:{ display:false } }
+      } }
+  });
+} catch(e) { console.warn('dengueBacktest:', e); }
+
+/* ── Smooth scroll ── */
+document.querySelectorAll('nav a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const el = document.querySelector(a.getAttribute('href'));
+    if(el) el.scrollIntoView({ behavior:'smooth' });
+  });
+});
+</script>
+<script>
+window.addEventListener('scroll',function(){document.getElementById('nav').classList.toggle('scrolled',window.scrollY>20)});
+</script>
+</body>
+</html>
