@@ -58,40 +58,42 @@ mayor); 2019 no califica porque la serie arranca a mediados de 2018 (<60 sem de 
 
 Resultado OOS sobre la epidemia 2024 (lo que de verdad importa: pronosticar el pico):
 
+Resultado OOS (epidemia 2024), CON DeepAR (entrenado local, una región a la vez):
+
 | Método | SMAPE medio | MAE medio | ratio_pico medio |
 |---|---:|---:|---:|
-| agg-Prophet | **114.5** | 3753 | sobreestima fuerte |
-| agg-NBGLM | 118.0 | 10140 | sobreestima brutal |
-| nativo NB-GLM | 128.3 | **820** | contenido |
-| nativo Prophet | 130.0 | 1259 | contenido |
+| **nativo DeepAR** | 124.4 | **460** | **0.43** |
+| nativo NB-GLM | 128.3 | 820 | 3.38 |
+| nativo Prophet | 130.0 | 1259 | 5.38 |
+| agg-Prophet | 114.5 | 3753 | 41.4 |
+| agg-NBGLM | 118.0 | 10140 | 34.2 |
 
-**Veredicto dividido y revelador:** la agregación tiene SMAPE algo mejor, pero **sobreestima la
-epidemia de forma catastrófica** (picos pronosticados 5x-157x el real; MAE 3,700-10,000) porque
-sumar 6-15 pronósticos estatales independientes **compone los sobre-tiros**. Los modelos
-regionales **nativos** son mucho más contenidos (MAE 820-1,259, ~4-12x menor). O sea: en un año
-calmo (2026, in-sample) la agregación luce mejor, pero **en una epidemia (2024, OOS) explota**, y
-ahí el nativo es claramente más fiel en MAGNITUD.
+**Veredicto (con DeepAR): el regional NATIVO gana, y DeepAR es el mejor.** La agregación tiene
+SMAPE algo menor (artefacto del SMAPE, que satura a 200% por semana y no castiga la explosión)
+pero **sobreestima la epidemia de forma catastrófica** (picos 34-157x el real; MAE 3.7k-10k)
+porque sumar 6-15 pronósticos estatales **compone los sobre-tiros**. Los nativos son contenidos;
+**DeepAR nativo es el mejor en magnitud por amplio margen** (MAE 460 ≈ 8x mejor que la mejor
+agregación; ratio de pico 0.43, el más cercano a 1). En año calmo (2026, in-sample) la agregación
+lucía mejor, pero en epidemia (2024, OOS) el nativo —y sobre todo DeepAR— es claramente superior.
 
-DeepAR nativo regional: su backtest local resultó impracticable (>50 min de CPU para 4 fits,
-abortado) — es un trabajo a escala SageMaker, consistente con que el patrón "nativo = contenido"
-ya se ve en Prophet/NB-GLM.
+DeepAR local SÍ es viable entrenando **una región a la vez** (n_jobs=1, secuencial): ~15-20 min
+por región (4 fits ~80 min). El deadlock previo era por `n_jobs>1` (concurrencia). En el backtest
+hubo que reanclar las fechas de DeepAR (resamplea a W-MON de fin de periodo) al grid ISO de la
+serie real, o el merge daba n=0.
 
-## Decisión (matizada por el backtest OOS)
+## Decisión (con DeepAR: el nativo gana)
 
-- **No cambiar lo desplegado AHORA:** la galería conserva la agregación bottom-up. Estamos en un
-  año calmo (2026) donde la agregación NO explota; el riesgo de sobre-tiro compuesto solo aparece
-  en años epidémicos.
-- **Pendiente / mejora recomendada:** la agregación tiene un defecto real en epidemias (compone
-  los sobre-tiros estatales → picos 5x-157x). La mejor jugada NO es "agregación vs nativo" puro,
-  sino **acotar la agregación** (clamp a la envolvente histórica / al nivel del modelo regional
-  nativo) para matar la explosión sin perder su buen SMAPE en años calmos. Alternativa: usar el
-  regional **nativo** como pronóstico de magnitud en años epidémicos.
-- El experimento de entrenamiento se revirtió en el repo (gate `is_neuro` restaurado en
-  `entrena.py`, modelos `*_region_*` de Dengue borrados, `reports/forecasts` restaurado vía
-  `dvc checkout --force`; hubo que regenerar el `all_forecast_nbglm.csv`). El backtest
-  (`scripts/research/dengue_backtest_regional.py`) queda versionado para reproducir/extender.
-- Reintentar DeepAR regional: en SageMaker GPU (local es impracticable). Quitar el gate
-  `is_neuro` del paso 1 del bloque híbrido para entrenar.
+- **El backtest OOS recomienda regional NATIVO, idealmente DeepAR.** La agregación bottom-up está
+  rota en epidemias (compone sobre-tiros). DeepAR nativo regional es el mejor (MAE 460 vs 3.7k-10k).
+- **Galería desplegada HOY:** sigue con agregación + clamp de envolvente (2026 es año calmo, no
+  explota; el clamp protege ante un repunte). **Próximo paso recomendado: adoptar DeepAR nativo
+  para las regiones** — requiere (a) entrenar los 4 modelos finales DeepAR regional (una región a
+  la vez), (b) cablear su pronóstico en `build_dengue_gallery` (reemplazar la agregación en
+  regiones), (c) resolver el predict standalone de DeepAR regional en `predice` (hoy no emite las
+  filas region para DeepAR).
+- Backtest reproducible: `scripts/research/dengue_backtest_regional.py --deepar`.
+- El experimento de entrenamiento se revirtió en su momento; `entrena.py` gate `is_neuro` se
+  quita del paso 1 del bloque híbrido para entrenar regionales de Dengue.
 
 ## Gotcha registrado
 

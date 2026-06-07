@@ -86,7 +86,14 @@ def fit_deepar_region(rs: str, cutoff: pd.Timestamp, periods: int) -> pd.DataFra
     m.run()  # CV se omite (entidad != None -> skip_cv_estatal); fit final sobre la serie truncada
     fc = m.predict(periods)
     fc["ds"] = pd.to_datetime(fc["ds"])
-    return fc[["ds", "yhat"]].head(periods)
+    # DeepAR resamplea a W-MON (Lunes de FIN de periodo), desfasado del Lunes ISO de inicio que
+    # usa la serie real -> el merge fallaría (n=0). Reanclar al mismo grid ISO (Lunes de inicio).
+    iso = fc["ds"].dt.isocalendar()
+    fc["ds"] = [
+        pd.Timestamp(date.fromisocalendar(int(y), min(int(w), 52), 1))
+        for y, w in zip(iso["year"], iso["week"], strict=False)
+    ]
+    return fc.groupby("ds", as_index=False)["yhat"].mean()
 
 
 def agg_bracket(rs: str, cutoff: pd.Timestamp, periods: int, motor: str) -> pd.DataFrame:
