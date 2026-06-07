@@ -1,0 +1,15 @@
+# .mailmap — consolida identidades de commit para que la lista de contribuidores
+# (GitHub Insights -> Contributors y `git shortlog`) muestre solo a los 3 integrantes
+# del equipo. Formato: Nombre canonico <email canonico> <email a mapear>
+#
+# Javier Augusto Rebull Saucedo (GitHub @jrebull)
+Javier Rebull <168046724+jrebull@users.noreply.github.com> <jrebull@tec.mx>
+Javier Rebull <168046724+jrebull@users.noreply.github.com> jrebull <jrebull@users.noreply.github.com>
+# Commits hechos con Claude como herramienta quedaron registrados con autor "Claude";
+# se reatribuyen al lead tecnico (MLOps/SageMaker) responsable de ese trabajo.
+Javier Rebull <168046724+jrebull@users.noreply.github.com> Claude <noreply@anthropic.com>
+#
+# Juan Carlos Perez Nava (GitHub @Jarcos-nual)
+Jarcos-nual <jcpn@me.com> jarcos84 <carlos.perezn@imss.gob.mx>
+#
+# Luis Gerardo Sanchez Salazar (GitHub @luisgss10) — identidad unica, sin alias
