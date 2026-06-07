@@ -81,19 +81,23 @@ por región (4 fits ~80 min). El deadlock previo era por `n_jobs>1` (concurrenci
 hubo que reanclar las fechas de DeepAR (resamplea a W-MON de fin de periodo) al grid ISO de la
 serie real, o el merge daba n=0.
 
-## Decisión (con DeepAR: el nativo gana)
+## Decisión: ADOPTADO — DeepAR nativo en las regiones (en vivo)
 
-- **El backtest OOS recomienda regional NATIVO, idealmente DeepAR.** La agregación bottom-up está
-  rota en epidemias (compone sobre-tiros). DeepAR nativo regional es el mejor (MAE 460 vs 3.7k-10k).
-- **Galería desplegada HOY:** sigue con agregación + clamp de envolvente (2026 es año calmo, no
-  explota; el clamp protege ante un repunte). **Próximo paso recomendado: adoptar DeepAR nativo
-  para las regiones** — requiere (a) entrenar los 4 modelos finales DeepAR regional (una región a
-  la vez), (b) cablear su pronóstico en `build_dengue_gallery` (reemplazar la agregación en
-  regiones), (c) resolver el predict standalone de DeepAR regional en `predice` (hoy no emite las
-  filas region para DeepAR).
-- Backtest reproducible: `scripts/research/dengue_backtest_regional.py --deepar`.
-- El experimento de entrenamiento se revirtió en su momento; `entrena.py` gate `is_neuro` se
-  quita del paso 1 del bloque híbrido para entrenar regionales de Dengue.
+- Las 4 regiones de Dengue de la galería usan **DeepAR nativo** (el mejor del backtest OOS).
+  Ej.: Region Urbana media SMAPE 30.2→24.5, MASE 0.48→0.16; pronóstico contenido (pico ~756 vs
+  el sobre-tiro de la agregación ~2.9k). Pronóstico realista, sin explosión.
+- **Implementación (desacopla entrenamiento lento de generar galería rápida):**
+  1. `scripts/build_dengue_deepar_regiones.py` (`make dengue-deepar-regiones`): entrena DeepAR por
+     región **una a la vez** (n_jobs=1, ~20 min c/u sobre la serie completa; el deadlock previo era
+     por n_jobs>1) y cachea el pronóstico (con banda nativa de cuantiles) en
+     `reports/ProdDetails/dengue_deepar_regiones.csv`. Reancla fechas al grid ISO (W-MON de inicio).
+  2. `build_dengue_gallery._dengue_regiones` lee ese cache → DeepAR nativo (banda nativa solo a
+     futuro). Si el cache falta, cae a la agregación + clamp (fallback).
+- NO se usó `predice` para las regiones DeepAR (su path standalone no emite filas `Region` para
+  DeepAR, y correrlo arriesga sobre-escribir el `all_forecast` combinado). El cache evita ambos.
+- Mantenimiento: tras un boletín nuevo, re-correr `make dengue-deepar-regiones` (~80 min) antes de
+  `build_dengue_gallery` para refrescar las regiones. Backtest reproducible:
+  `scripts/research/dengue_backtest_regional.py --deepar`.
 
 ## Gotcha registrado
 
