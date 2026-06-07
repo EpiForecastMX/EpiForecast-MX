@@ -452,7 +452,58 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
       </div>
     </div>
 
-    <p style="text-align:center;color:var(--text-secondary);font-size:.92rem;margin-top:1.5rem">
+    <!-- Tabla de motores -->
+    <h3 class="section-title reveal" style="font-size:1.5rem;margin-top:3rem">Motores en competencia</h3>
+    <p class="section-sub reveal">Cuántas de las 99 series gana cada motor y cuáles quedan fuera de producción</p>
+    <div class="table-wrapper reveal">
+      <div style="overflow-x:auto">
+        <table id="dengueMotorTable">
+          <thead><tr>
+            <th>Motor</th>
+            <th>Series ganadas</th>
+            <th>En producción</th>
+            <th>Nota</th>
+          </tr></thead>
+          <tbody id="dengueMotorBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Ranking de series -->
+    <h3 class="section-title reveal" style="font-size:1.5rem;margin-top:3rem">Las 99 series de Dengue</h3>
+    <p class="section-sub reveal">Motor productivo, SMAPE (ajuste 2026) y casos por entidad y sexo. El SMAPE se infla en entidades de baja transmisión (mismo efecto que en neuro).</p>
+    <div class="table-wrapper reveal">
+      <div class="table-controls">
+        <input type="text" id="dengueSearch" placeholder="Buscar entidad...">
+        <select id="dengueModo">
+          <option value="">Todos los modos</option>
+          <option value="General">General</option>
+          <option value="Hombres">Hombres</option>
+          <option value="Mujeres">Mujeres</option>
+        </select>
+        <select id="dengueMotorF">
+          <option value="">Todos los motores</option>
+          <option value="DeepAR">DeepAR</option>
+          <option value="NB-GLM">NB-GLM</option>
+          <option value="Prophet">Prophet</option>
+        </select>
+      </div>
+      <div style="overflow-x:auto">
+        <table id="dengueTable">
+          <thead><tr>
+            <th data-col="entidad">Entidad</th>
+            <th data-col="modo">Modo</th>
+            <th data-col="motor">Motor productivo</th>
+            <th data-col="smape">SMAPE</th>
+            <th data-col="mae">MAE</th>
+            <th data-col="casos">Casos 2026</th>
+          </tr></thead>
+          <tbody id="dengueBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <p style="text-align:center;color:var(--text-secondary);font-size:.92rem;margin-top:2.5rem">
       El ciclo epidémico, el mapa de carga por entidad y la proyección multi-año guiada por El Niño se exploran
       a fondo en la <a href="dengue.html" style="color:var(--teal)">página de Dengue en vivo</a>.</p>
 
@@ -837,6 +888,83 @@ try {
       } }
   });
 } catch(e) { console.warn('dengueBacktest:', e); }
+
+/* ── Dengue: tabla de motores ── */
+try {
+  const mc = {DeepAR:'#F472B6','NB-GLM':'#F59E0B',Prophet:'#2DD4BF',Ensemble:'#FB923C',Stacking:'#8B9DFF'};
+  const tb = document.getElementById('dengueMotorBody');
+  tb.innerHTML = D.dengue.motor_table.map(m => `<tr>
+    <td style="font-weight:600;color:${mc[m.motor]||'#E7ECF5'}">${m.motor}</td>
+    <td style="font-family:var(--font-mono)">${m.ganadas}</td>
+    <td>${m.en_produccion?'<span class="badge-tipo badge-propio">Sí</span>':'<span class="badge-tipo badge-fallback">No</span>'}</td>
+    <td style="font-size:.85rem;color:var(--text-secondary)">${m.nota}</td>
+  </tr>`).join('');
+} catch(e) { console.warn('dengueMotorTable:', e); }
+
+/* ── Dengue: ranking de 99 series ── */
+try {
+  const rows = D.dengue.ranking;
+  const tbody = document.getElementById('dengueBody');
+  let sortCol = 'orden', sortAsc = true;
+  const motColor = {DeepAR:'#F472B6','NB-GLM':'#F59E0B',Prophet:'#2DD4BF'};
+  const smBadge = v => {
+    if(v==null) return '<span class="badge badge-yellow">N/A</span>';
+    const cls = v<50?'badge-green':v<100?'badge-yellow':'badge-red';
+    return `<span class="badge ${cls}">${Math.round(v)}%</span>`;
+  };
+  function render(data) {
+    const groups = {Nacional:[], Estatal:[]};
+    data.forEach(r => groups[r.grupo].push(r));
+    let html = '';
+    ['Nacional','Estatal'].forEach(g => {
+      const items = groups[g];
+      if(!items.length) return;
+      html += `<tr class="group-header"><td colspan="6">${g} (${items.length})</td></tr>`;
+      items.forEach(r => {
+        html += `<tr>
+          <td style="font-weight:600">${r.entidad}</td>
+          <td>${r.modo}</td>
+          <td><span style="color:${motColor[r.motor]||'#E7ECF5'};font-weight:600">${r.motor}</span></td>
+          <td>${smBadge(r.smape)}</td>
+          <td style="font-family:var(--font-mono)">${r.mae ?? '—'}</td>
+          <td style="font-family:var(--font-mono)">${r.casos ?? '—'}</td>
+        </tr>`;
+      });
+    });
+    tbody.innerHTML = html;
+  }
+  function apply() {
+    const q = document.getElementById('dengueSearch').value.toLowerCase();
+    const modoF = document.getElementById('dengueModo').value;
+    const motF = document.getElementById('dengueMotorF').value;
+    let f = rows.filter(r => {
+      if(q && !r.entidad.toLowerCase().includes(q)) return false;
+      if(modoF && r.modo!==modoF) return false;
+      if(motF && r.motor!==motF) return false;
+      return true;
+    });
+    f.sort((a,b) => {
+      let va=a[sortCol],vb=b[sortCol];
+      if(va==null)va=1e9; if(vb==null)vb=1e9;
+      if(typeof va==='string'){va=va.toLowerCase();vb=(vb||'').toLowerCase();}
+      return sortAsc?(va<vb?-1:va>vb?1:0):(va>vb?-1:va<vb?1:0);
+    });
+    render(f);
+  }
+  document.getElementById('dengueSearch').addEventListener('input', apply);
+  document.getElementById('dengueModo').addEventListener('change', apply);
+  document.getElementById('dengueMotorF').addEventListener('change', apply);
+  document.querySelectorAll('#dengueTable thead th').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.col; if(!col) return;
+      if(sortCol===col) sortAsc=!sortAsc; else { sortCol=col; sortAsc=true; }
+      document.querySelectorAll('#dengueTable thead th').forEach(t=>t.classList.remove('sorted-asc','sorted-desc'));
+      th.classList.add(sortAsc?'sorted-asc':'sorted-desc');
+      apply();
+    });
+  });
+  apply();
+} catch(e) { console.warn('dengueRanking:', e); }
 
 /* ── Smooth scroll ── */
 document.querySelectorAll('nav a[href^="#"]').forEach(a => {

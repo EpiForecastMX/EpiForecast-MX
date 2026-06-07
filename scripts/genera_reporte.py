@@ -315,6 +315,19 @@ def compute_neuro_stats(df: pd.DataFrame) -> dict:
 # ---------------------------------------------------------------------------
 # Dengue
 # ---------------------------------------------------------------------------
+DENGUE_MOTORS = [
+    ("deepar", "DeepAR", True),
+    ("nbglm", "NB-GLM", True),
+    ("prophet", "Prophet", True),
+    ("ensemble", "Ensemble", False),
+    ("stacking", "Stacking", False),
+]
+DENGUE_MOTOR_NOTE = {
+    "Ensemble": "Fuera: los árboles no extrapolan la dinámica epidémica a 52 sem.",
+    "Stacking": "Fuera: los árboles no extrapolan la dinámica epidémica a 52 sem.",
+}
+
+
 def compute_dengue_stats() -> dict:
     d = pd.read_csv(PROD_DENGUE)
     dist_all = d["motor_productivo"].value_counts().to_dict()
@@ -322,13 +335,52 @@ def compute_dengue_stats() -> dict:
     dist_general = dg["motor_productivo"].value_counts().to_dict()
     nac = d[(d["entidad"] == "Nacional") & (d["sexo"] == "general")]
     nacional_motor = str(nac["motor_productivo"].iloc[0]) if len(nac) else "DeepAR"
+
+    # --- Tabla de motores (honesta: series ganadas + en produccion) ---
+    motor_table = []
+    for key, label, in_prod in DENGUE_MOTORS:
+        ganadas = int((d["motor_productivo"].str.lower() == key).sum())
+        motor_table.append(
+            {
+                "motor": label,
+                "ganadas": ganadas,
+                "en_produccion": in_prod,
+                "nota": DENGUE_MOTOR_NOTE.get(label, "En producción"),
+            }
+        )
+
+    # --- Ranking de las 99 series (entidad x sexo) ---
+    ranking = []
+    for _, r in d.iterrows():
+        ent = str(r["entidad"])
+        motor = str(r["motor_productivo"])
+        mae_col = f"mae_real_{motor.lower().replace('-', '')}"
+        mae = _round(r[mae_col], 1) if mae_col in d.columns else None
+        ranking.append(
+            {
+                "entidad": ent,
+                "modo": MODO_LABELS.get(str(r["sexo"]), str(r["sexo"])),
+                "motor": "NB-GLM" if motor == "NBGLM" else motor,
+                "smape": _round(r["smape_ganador"], 1),
+                "mae": mae,
+                "casos": int(r["total_real"]) if pd.notna(r["total_real"]) else None,
+                "grupo": "Nacional" if ent == "Nacional" else "Estatal",
+                "orden": 0 if ent == "Nacional" else 1,
+            }
+        )
+
     return {
         "n_series": int(len(d)),
+        "n_semanas_real": int(nac["n_semanas_real"].iloc[0]) if len(nac) else None,
+        "casos_2026": int(nac["total_real"].iloc[0]) if len(nac) else None,
         "dist_all": {str(k): int(v) for k, v in dist_all.items()},
         "dist_general": {str(k): int(v) for k, v in dist_general.items()},
         "nacional_motor": nacional_motor,
+        "nacional_smape": _round(nac["smape_ganador"].iloc[0], 1) if len(nac) else None,
         "backtest": DENGUE_BACKTEST,
         "smape_ganador_median": _round(d["smape_ganador"].median(), 1),
+        "motor_table": motor_table,
+        "ranking": ranking,
     }
 
 
