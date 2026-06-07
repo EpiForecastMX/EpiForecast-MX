@@ -1,7 +1,7 @@
 # .github/workflows/scrape_boletines.yml
 #
 # Scraper automatizado de boletines SINAVE para EpiForecast-MX.
-# Corre diario a las 2 PM hora CDMX (20:00 UTC).
+# Corre martes a jueves a las 2 PM hora CDMX (20:00 UTC).
 # Tambien se puede correr manualmente desde Actions.
 #
 # Flujo:
@@ -20,7 +20,9 @@ name: Scrape Boletines SINAVE
 
 on:
   schedule:
-    - cron: "0 20 * * *"
+    # Martes a jueves, 20:00 UTC (2 PM CDMX). El boletin SINAVE se publica a mitad de semana,
+    # asi que no tiene sentido raspar los 7 dias. (cron dia-de-semana: 2=mar, 3=mie, 4=jue)
+    - cron: "0 20 * * 2-4"
   workflow_dispatch:
 
 permissions:
@@ -47,6 +49,9 @@ jobs:
       - name: Install dependencies
         run: pip install selenium requests boto3
 
+      - name: Install xvfb (display virtual para Chrome no-headless)
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -60,14 +65,26 @@ jobs:
         env:
           SNS_TOPIC_ARN: ${{ secrets.SNS_TOPIC_ARN }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
+          SCRAPER_HEADLESS: "0"   # Chrome no-headless bajo xvfb pasa mejor el muro anti-bot de gob.mx
         run: |
-          python scripts/scrape_boletines.py
+          xvfb-run -a python scripts/scrape_boletines.py
           if [ -f /tmp/sinave_new_files.txt ]; then
             NEW_COUNT=$(grep -c . /tmp/sinave_new_files.txt || echo "0")
             echo "new_count=$NEW_COUNT" >> $GITHUB_OUTPUT
           else
             echo "new_count=0" >> $GITHUB_OUTPUT
           fi
+
+      - name: Subir diagnostico si el scraper falla
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scraper-diagnostico
+          path: |
+            /tmp/sinave_page.html
+            /tmp/sinave_page.png
+          if-no-files-found: ignore
+          retention-days: 7
 
       # ── Fase 2: DVC (solo si hay boletines nuevos) ──
       - name: Install DVC

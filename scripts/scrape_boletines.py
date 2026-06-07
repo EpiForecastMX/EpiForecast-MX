@@ -23,12 +23,11 @@ import os
 from pathlib import Path
 import re
 import sys
+import time
 
 import requests
 from selenium import webdriver
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support import expected_conditions as ec
-from selenium.webdriver.support.ui import WebDriverWait
 
 # ──────────────────────────────────────────────
 # Config
@@ -81,6 +80,52 @@ def save_registry(registry: dict) -> None:
 # ──────────────────────────────────────────────
 # Scraper
 # ──────────────────────────────────────────────
+DOC_SELECTOR = "li.clearfix.documents"
+
+
+def _is_challenge(driver) -> bool:
+    """True si la pagina actual es el muro anti-bot (reto JS), no el contenido real."""
+    title = (driver.title or "").lower()
+    if "challenge" in title or "validation" in title or "just a moment" in title:
+        return True
+    # El reto de gob.mx usa estos contenedores.
+    return bool(driver.find_elements(By.CSS_SELECTOR, "#sec-container, #sec-cpt-if"))
+
+
+def _load_with_challenge(driver, attempts: int = 3, per_attempt: int = 75) -> list:
+    """Navega al TARGET_URL y espera a que el reto anti-bot se resuelva y aparezcan los
+    documentos. El reto se resuelve solo en JS y RECARGA la pagina; por eso sondeamos el
+    DOM en vez de un unico WebDriverWait. Reintenta si expira."""
+    for attempt in range(1, attempts + 1):
+        log.info("Navegando a %s (intento %d/%d)", TARGET_URL, attempt, attempts)
+        driver.get(TARGET_URL)
+        deadline = time.time() + per_attempt
+        challenge_logged = False
+        while time.time() < deadline:
+            items = driver.find_elements(By.CSS_SELECTOR, DOC_SELECTOR)
+            if items:
+                return items
+            if _is_challenge(driver):
+                if not challenge_logged:
+                    log.info("Muro anti-bot detectado; esperando a que el reto se resuelva...")
+                    challenge_logged = True
+            time.sleep(3)
+        log.warning(
+            "Intento %d expiro tras %ds (reto sin resolver o DOM cambiado)", attempt, per_attempt
+        )
+
+    # Diagnostico para depurar en CI.
+    try:
+        Path("/tmp/sinave_page.html").write_text(driver.page_source, encoding="utf-8")
+        driver.save_screenshot("/tmp/sinave_page.png")
+        log.error(
+            "Guardado /tmp/sinave_page.html y .png para diagnostico. Titulo: %r", driver.title
+        )
+    except Exception as e:  # noqa: BLE001
+        log.error("No se pudo guardar diagnostico: %s", e)
+    return []
+
+
 def scrape_bulletins() -> list[dict]:
     """
     Estructura real de la pagina:
@@ -93,11 +138,23 @@ def scrape_bulletins() -> list[dict]:
         </div>
       </li>
     """
+    # gob.mx agrego (jun 2026) un muro anti-bot con reto JavaScript de prueba-de-trabajo
+    # ("Challenge Validation"): la pagina carga un reto, lo resuelve en JS y se RECARGA sola
+    # con el contenido real. Selenium debe (1) parecer un navegador real (sin huellas de
+    # automatizacion) y (2) ESPERAR a que el reto se resuelva antes de buscar los documentos.
+    headless = os.getenv("SCRAPER_HEADLESS", "1") != "0"
     options = webdriver.ChromeOptions()
-    options.add_argument("--headless=new")
+    if headless:
+        options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
+    options.add_argument("--window-size=1920,1080")
+    options.add_argument("--lang=es-MX")
+    # Anti-deteccion: oculta las huellas tipicas de Selenium que dispara el muro anti-bot.
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option("useAutomationExtension", False)
     options.add_argument(
         "user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
         "AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -105,17 +162,15 @@ def scrape_bulletins() -> list[dict]:
     )
 
     driver = webdriver.Chrome(options=options)
+    # Borra navigator.webdriver antes de que cargue cualquier script de la pagina.
+    driver.execute_cdp_cmd(
+        "Page.addScriptToEvaluateOnNewDocument",
+        {"source": "Object.defineProperty(navigator, 'webdriver', {get: () => undefined});"},
+    )
     bulletins = []
 
     try:
-        log.info("Navegando a %s", TARGET_URL)
-        driver.get(TARGET_URL)
-
-        WebDriverWait(driver, 30).until(
-            ec.presence_of_element_located((By.CSS_SELECTOR, "li.clearfix.documents"))
-        )
-
-        items = driver.find_elements(By.CSS_SELECTOR, "li.clearfix.documents")
+        items = _load_with_challenge(driver)
         log.info("Encontrados %d boletines en la pagina", len(items))
 
         for item in items:

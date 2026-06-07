@@ -51,6 +51,12 @@ KEYWORDS = ["Depresión", "Parkinson", "Alzheimer"]
 # Regex para nombres de PDF del scraper: 2026_sem03.pdf
 PDF_NAME_RE = re.compile(r"(\d{4})_sem(\d{2})\.pdf", re.IGNORECASE)
 
+# Boletines que NUNCA producen filas procesables (formato/tabla distinta) y por eso el
+# autodetect los re-intenta en cada corrida sin agregar nada. Se omiten explicitamente.
+#   (2014, "01"): el boletin de la semana 1 de 2014 no trae la tabla de padecimientos neuro
+#                 en el formato esperado; el dataset arranca en la semana 2 de 2014.
+SKIP_YEAR_WEEKS: set[tuple[int, str]] = {(2014, "01")}
+
 # AWS (solo para SNS)
 SNS_TOPIC_ARN = os.getenv("SNS_TOPIC_ARN", "")
 AWS_REGION = os.getenv("AWS_REGION", "us-east-1")
@@ -109,6 +115,9 @@ def find_new_pdfs(
             continue
         year = int(match.group(1))
         week = match.group(2)
+        if (year, week) in SKIP_YEAR_WEEKS:
+            log.info("Omitido (lista de exclusión, nunca agrega filas): %s", pdf_path.name)
+            continue
         if (year, week) not in existing:
             new.append(pdf_path)
 
