@@ -681,6 +681,9 @@ def zoom_payload(
                 lomap[k] = int(round(max(0.0, float(row.yhat_lower))))
                 himap[k] = int(round(max(0.0, float(row.yhat_upper))))
     dates = sorted(set(rmap) | set(ymap))
+    # SMAPE/MASE del solape real-vs-pronóstico (mismo cálculo que la ficha de los PNG),
+    # para mostrarlos en el lightbox interactivo.
+    sm, ma = series_metrics(real, fc)
     return {
         "motor": motor,
         "d": dates,
@@ -689,6 +692,8 @@ def zoom_payload(
         "lo": [lomap.get(k) for k in dates],
         "hi": [himap.get(k) for k in dates],
         "last_real": max(rmap),  # semana vigente del boletín (presente)
+        "smape": round(sm, 1) if sm is not None else None,
+        "mase": round(ma, 2) if ma is not None else None,
     }
 
 
