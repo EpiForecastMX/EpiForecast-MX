@@ -162,6 +162,7 @@ def html_head(
 <title>Comparaci\u00f3n de Modelos \u2014 EpiForecast-MX</title>
 {_FONTS_LINK}
 <style>{CSS}</style>
+<link rel="stylesheet" href="editorial.css?v=1">
 </head>
 <body>
 <div class="hero">

@@ -1015,6 +1015,7 @@ def _generate_html(comp: pd.DataFrame, anio: int, semana: int) -> str:
 <title>Validacion Semanal - Semana {semana}/{anio}</title>
 {_FONTS_LINK}
 <style>{css}</style>
+<link rel="stylesheet" href="editorial.css?v=1">
 </head>
 <body>
 <div class="hero">

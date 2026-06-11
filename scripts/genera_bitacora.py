@@ -241,6 +241,7 @@ footer .footer-title{{font-family:var(--font-display);color:var(--cream);font-si
   .pipeline-arrow,.flow-arrow{{transform:rotate(90deg)}}
 }}
 </style>
+<link rel="stylesheet" href="editorial.css?v=1">
 </head>
 <body>
 
