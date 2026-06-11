@@ -473,7 +473,9 @@ data-commit:
 data-weekly: data-add data-commit
 	@echo ">>> Flujo semanal completado."
 
-## Actualizar semana: pull CI + DVC + knowledge.json + dashboard
+## Refresh semanal COMPLETO (sin retrain): pull CI+DVC, Dengue extract/merge,
+## reselect motor, tableau, validacion, galeria neuro+Dengue, zoom, knowledge,
+## barra de fechas (auto) y publish dashboard + versionado DVC/S3.
 .PHONY: update-week
 update-week:
 	bash scripts/actualiza_semanal.sh
