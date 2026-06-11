@@ -482,7 +482,7 @@ push permission to `main`.
 
 ### Current Data Snapshot
 
-- **Latest epidemiological week:** 21/2026 (neuro); Dengue tracks one bulletin behind (its Cuadro 7.2 table publishes a week later)
+- **Latest epidemiological week:** 21/2026 for all four conditions. Dengue lives in a separate bulletin table that the CI does not extract, so it only advances when `make update-week` runs its incremental Dengue extraction from the same bulletin PDF — after which it is current with neuro
 - **Consolidated dataset:** 74,688 rows (`data/processed/dataset_boletin_epidemiologico.csv`) — 62,112 neuro (3 × 20,704) + 12,576 Dengue
 - **Knowledge base:** ~220 KB — 333 neuro production models + a `dengue` section, 51 stats keys, 6 boletin sections
 - **Forecast horizon:** 52 weeks ahead (rolling, regenerated per weekly update); Dengue adds a 5-year illustrative seasonal projection
