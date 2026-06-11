@@ -76,6 +76,10 @@ $PYTHON scripts/reselect_motor_2026.py
 echo ">>> [5/11] Tableau + validacion semanal..."
 $PYTHON scripts/build_tableau.py
 $PYTHON scripts/genera_validacion_semanal.py
+# La validacion_semanal.html se enlaza desde el landing y varias paginas del sitio;
+# copiarla al Dashboard para que no quede stale (genera_validacion solo escribe en
+# reports/ProdDetails/). Es neuro-only por diseno.
+cp reports/ProdDetails/validacion_semanal.html "$DASHBOARD_ROOT/validacion_semanal.html"
 
 echo ">>> [6/11] Galeria neuro (333 graficos + zoom_data_neuro.json)..."
 $PYTHON -m scripts.build_neuro_gallery --out "$REPORTS"
@@ -105,7 +109,7 @@ $PYTHON scripts/actualiza_barra_fechas.py \
 echo ">>> [11/11] Publicar dashboard + versionar artefactos..."
 # --- Dashboard (galeria, zoom, knowledge, index.html) ---
 cd "$DASHBOARD_ROOT"
-git add Reports/ epibot/
+git add Reports/ epibot/ validacion_semanal.html
 if git diff --cached --quiet; then
   echo "    Dashboard sin cambios."
 else

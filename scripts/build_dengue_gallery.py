@@ -686,6 +686,9 @@ def zoom_payload(
     sm, ma = series_metrics(real, fc)
     return {
         "motor": motor,
+        # Color del motor (MISMA fuente que el PNG, MOTOR_COLOR), para que el lightbox
+        # interactivo coincida con la miniatura y no se desincronicen los colores.
+        "color": MOTOR_COLOR.get(motor, AMBER),
         "d": dates,
         "r": [rmap.get(k) for k in dates],
         "y": [ymap.get(k) for k in dates],
