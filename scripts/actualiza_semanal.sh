@@ -114,18 +114,24 @@ else
   echo "    Dashboard publicado."
 fi
 
-# --- Repo principal: versionar el consolidado (si Dengue lo cambio) + forecasts/models ---
+# --- Repo principal: versionar consolidado/forecasts (DVC) + tablas de produccion (git) ---
 cd "$REPO_ROOT"
-# nbglm/forecasts: re-add por si dengue regenero algo; push ANTES de commit.
-dvc add models reports/forecasts >/dev/null 2>&1 || true
+# Consolidado (Dengue lo cambia) + nbglm/forecasts; push ANTES de commit.
+dvc add "$CONSOLIDADO" models reports/forecasts >/dev/null 2>&1 || true
 dvc push
-git add "${CONSOLIDADO}.dvc" models.dvc reports/forecasts.dvc 2>/dev/null || true
+# Punteros .dvc + tablas de produccion TRACKED-EN-GIT que el refresh regenera
+# (tabla_333, produccion_dengue, validacion_semanal.html, auditoria_motores).
+git add "${CONSOLIDADO}.dvc" models.dvc reports/forecasts.dvc reports/ProdDetails/ 2>/dev/null || true
 if git diff --cached --quiet; then
-  echo "    Repo principal sin cambios en punteros DVC."
+  echo "    Repo principal sin cambios."
 else
-  git commit -q -m "data/dvc: refresh semanal sem ${SEM}/${ANIO} (consolidado + forecasts versionados)"
+  _msg="data/prod: refresh semanal sem ${SEM}/${ANIO} (consolidado, tablas, validacion)"
+  # pre-commit reformatea validacion_semanal.html (whitespace) y aborta el 1er intento;
+  # re-stage y reintenta una vez para incluir el archivo ya corregido por el hook.
+  git commit -q -m "$_msg" \
+    || { git add "${CONSOLIDADO}.dvc" reports/ProdDetails/; git commit -q -m "$_msg"; }
   git push origin main
-  echo "    Repo principal publicado (DVC versionado)."
+  echo "    Repo principal publicado."
 fi
 
 echo ""
