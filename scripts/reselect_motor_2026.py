@@ -98,6 +98,18 @@ def reselect(prod: pd.DataFrame, smape_df: pd.DataFrame) -> pd.DataFrame:
     """Aplica las reglas de re-selección y devuelve la tabla actualizada."""
     prod = prod.copy()
     prod["padecimiento"] = prod["padecimiento"].replace({"Depresión": "Depresion"})
+    # Idempotencia: si la tabla ya trae columnas de auditoría 2026 (de una reselección
+    # previa, p.ej. en el refresh semanal sin tabla-produccion), se eliminan para que el
+    # merge no las duplique con sufijos _x/_y ni el concat genere columnas repetidas.
+    _audit_prev = [
+        "n_semanas_real_2026",
+        "total_real_2026",
+        *[f"smape_2026_{m.lower()}" for m in MOTORES],
+        "criterio_seleccion",
+        "smape_real_2026_ganador",
+        "motor_anterior",
+    ]
+    prod = prod.drop(columns=[c for c in _audit_prev if c in prod.columns])
     prod = prod.merge(smape_df, on=["padecimiento", "entidad", "sexo"], how="left")
     prod["motor_anterior"] = prod["modelo_produccion"]
 

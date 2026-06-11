@@ -49,12 +49,41 @@ def main() -> int:
     parser.add_argument("--pattern", default="*.pdf", help="Glob de PDFs dentro de raw_PDFs/")
     parser.add_argument("--out", default=str(DEFAULT_OUT), help="CSV de salida (serie larga)")
     parser.add_argument("--manifest", default=str(DEFAULT_MANIFEST), help="CSV de auditoría")
+    parser.add_argument(
+        "--incremental",
+        action="store_true",
+        help="Solo parsea PDFs que aún no estén en el manifiesto y anexa a la serie "
+        "existente (refresh semanal). Sin la bandera, reconstruye todo desde cero.",
+    )
     args = parser.parse_args()
 
+    out_path = Path(args.out)
+    manifest_path = Path(args.manifest)
     pdfs = sorted(str(p) for p in RAW_PDFS_DIR.glob(args.pattern))
     if not pdfs:
         log.error("No se hallaron PDFs con patron {} en {}", args.pattern, RAW_PDFS_DIR)
         return 1
+
+    # Modo incremental: reutiliza la serie + manifiesto previos y parsea SOLO los PDFs
+    # que aún no figuran en el manifiesto (los boletines nuevos). Evita re-parsear ~648
+    # boletines (la mayoría del esquema viejo que igual se descarta) en cada refresh.
+    prev_serie: pd.DataFrame | None = None
+    prev_manifest: pd.DataFrame | None = None
+    if args.incremental and out_path.exists() and manifest_path.exists():
+        prev_serie = pd.read_csv(out_path)
+        prev_manifest = pd.read_csv(manifest_path)
+        ya_vistos = set(prev_manifest["file"].astype(str))
+        pdfs_nuevos = [p for p in pdfs if Path(p).name not in ya_vistos]
+        log.info(
+            "Incremental: {} PDFs nuevos de {} en disco ({} ya en el manifiesto).",
+            len(pdfs_nuevos),
+            len(pdfs),
+            len(ya_vistos),
+        )
+        if not pdfs_nuevos:
+            log.info("Sin boletines nuevos; serie Dengue sin cambios: {}", out_path)
+            return 0
+        pdfs = pdfs_nuevos
     log.info("Boletines a procesar: {}", len(pdfs))
 
     frames: list[pd.DataFrame] = []
@@ -99,17 +128,33 @@ def main() -> int:
             status,
         )
 
-    out_path = Path(args.out)
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    manifest = pd.DataFrame(manifest_rows)
-    manifest.to_csv(args.manifest, index=False, encoding="utf-8")
+    new_manifest = pd.DataFrame(manifest_rows)
+    # Fusiona el manifiesto previo (incremental) con el de los boletines nuevos.
+    if prev_manifest is not None:
+        manifest = pd.concat([prev_manifest, new_manifest], ignore_index=True)
+        manifest = manifest.drop_duplicates(subset=["file"], keep="last")
+    else:
+        manifest = new_manifest
+    manifest.to_csv(manifest_path, index=False, encoding="utf-8")
 
-    if not frames:
+    nuevos_df = pd.concat(frames, ignore_index=True) if frames else None
+    if prev_serie is not None:
+        # Anexa lo nuevo a la serie previa; (Anio,Semana,Entidad) repetidos -> gana lo nuevo.
+        partes = [prev_serie] + ([nuevos_df] if nuevos_df is not None else [])
+        final = pd.concat(partes, ignore_index=True)
+        final = final.drop_duplicates(subset=["Anio", "Semana", "Entidad"], keep="last")
+    elif nuevos_df is not None:
+        final = nuevos_df
+    else:
         log.warning("Ningun boletin paso la validacion. CSV de serie no generado.")
-        _print_summary(manifest)
+        _print_summary(new_manifest)
         return 0
 
-    final = pd.concat(frames, ignore_index=True)
+    # Normaliza tipos: la serie previa viene de CSV y los frames nuevos del parser; al
+    # concatenar, Anio/Semana pueden quedar como object y romper el sort/auditoría.
+    final["Anio"] = final["Anio"].astype(int)
+    final["Semana"] = final["Semana"].astype(int)
     final = _apply_source_corrections(final)
     final = final.sort_values(["Anio", "Semana", "Entidad"]).reset_index(drop=True)
     final.to_csv(out_path, index=False, encoding="utf-8")

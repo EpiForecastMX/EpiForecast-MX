@@ -150,8 +150,8 @@ dengue-deepar-regiones:
 ## Extraer la serie de Dengue (agregada A97.0+A97.1+A97.2) de los boletines SINAVE
 .PHONY: dengue-extract
 dengue-extract:
-	@echo ">>> Extrayendo Dengue de los boletines..."
-	$(PYTHON) -m scripts.extrae_dengue
+	@echo ">>> Extrayendo Dengue de los boletines... (ARGS='--incremental' para solo los nuevos)"
+	$(PYTHON) -m scripts.extrae_dengue $(ARGS)
 
 ## Serie historica A90/A91 (OMS 1997, 2014->2018-W26) SEPARADA para contexto/EDA (no entrena)
 .PHONY: dengue-historico-a9091

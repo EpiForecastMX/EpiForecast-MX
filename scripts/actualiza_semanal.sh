@@ -46,7 +46,7 @@ DENGUE_OK=1
 set +e
 (
   set -e
-  make dengue-extract
+  make dengue-extract ARGS="--incremental"
   make dengue-merge
   # El consolidado (DVC-tracked) cambio -> versionar ANTES de commitear (push primero).
   dvc add "$CONSOLIDADO"
@@ -59,8 +59,18 @@ if [ $? -ne 0 ]; then
 fi
 set -e
 
-echo ">>> [4/11] Tabla de produccion + reseleccion de motor (333 modelos)..."
-make tabla-produccion
+echo ">>> [4/11] Reseleccion de motor productivo en 2026 real..."
+# tabla-produccion (backtest CV de los 333 modelos, ~19 min) NO corre cada semana:
+# sus metricas CV dependen solo del historico 2014-2025 y de los modelos CONGELADOS,
+# no del boletin nuevo -> son identicas hasta el proximo RETRAIN. La tabla persiste y
+# reselect_motor_2026 la lee y re-scorea solo el 2026 real (barato). Para refrescar el
+# backtest tras reentrenar:  RETRAIN=1 make update-week  (o make tabla-produccion).
+if [ "${RETRAIN:-0}" = "1" ] || [ ! -f reports/ProdDetails/tabla_333_modelos_produccion.xlsx ]; then
+  echo "    (RETRAIN=1 o tabla ausente) -> regenerando backtest CV con make tabla-produccion..."
+  make tabla-produccion
+else
+  echo "    (refresh) se reutiliza el backtest CV existente; solo se re-scorea 2026."
+fi
 $PYTHON scripts/reselect_motor_2026.py
 
 echo ">>> [5/11] Tableau + validacion semanal..."
