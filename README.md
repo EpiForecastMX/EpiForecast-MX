@@ -48,7 +48,7 @@ The three neurological/mental-health conditions are the core production cohort (
 - **End-to-End ML Pipeline** -- Automated from PDF scraping (SINAVE bulletins) through INEGI demographic mapping to forecast charts and HTML reports.
 - **Model Comparison Engine** -- High-contrast professional charts comparing Real vs. Prophet vs. DeepAR vs. Ensemble vs. Stacking performance across all states and conditions.
 - **Weekly Validation** -- Automated comparison of model forecasts against real SINAVE bulletin data for the most recent epidemiological week (`make tabla-produccion`).
-- **Reality-Calibrated Model Selection** -- Production engine selection uses SMAPE on the most recent SINAVE Boletin weeks (canonical since 2026-04-30 via `scripts/reselect_motor_2026.py`): series with >=10 real 2026 weeks and >=10 cases pick the engine with lowest 2026 SMAPE; noisy series (<10 cases) default to Ensemble; series without recent reality keep the CV assignment. The Tableau dataset exposes `modelo_productivo`. Current distribution: Prophet 126, Ensemble 95, DeepAR 78, Stacking 34. Audit trail in `reports/ProdDetails/auditoria_motores_2026.xlsx`.
+- **Reality-Calibrated Model Selection** -- Production engine selection uses SMAPE on the most recent SINAVE Boletin weeks (canonical since 2026-04-30 via `scripts/reselect_motor_2026.py`): series with >=10 real 2026 weeks and >=10 cases pick the engine with lowest 2026 SMAPE; noisy series (<10 cases) default to Ensemble; series without recent reality keep the CV assignment. Engines within a 5% SMAPE band of the best are treated as tied and broken by MAE, so a noise-level margin does not flip the selection to an engine that tracks the signal worse. The Tableau dataset exposes `modelo_productivo`. Distribution shifts each bulletin (week 21: DeepAR 157, Prophet 124, Ensemble 90, Stacking 64). Audit trail in `reports/ProdDetails/auditoria_motores_2026.xlsx`.
 - **Production Model Table** -- Excel with 2 sheets: (1) 333 production models with diagnostics, overfitting/leakage, precision historica, and weekly validation columns; (2) 52-week detail with real vs forecast vs % accuracy per week. IMSS 2026 styling.
 - **Overfitting and Data Leakage Detection** -- Train metrics (RMSE, SMAPE) computed in-sample for all 4 models. HTML report shows diagnostic badges: Overfitting (test/train SMAPE ratio) and Leakage (suspiciously low train SMAPE).
 - **Hybrid Fallback** -- Zero-incidence and low-confidence (<5 cases/52 weeks) state models automatically defer to regional aggregates to ensure 100% forecast coverage. Integer-rounded predictions (no fractional cases).
@@ -437,29 +437,38 @@ make update-week     # End-to-end weekly sync (see section 8)
 
 ### 8. Weekly Update Flow (`make update-week`)
 
-One-command orchestration that keeps the working copy, DVC artifacts and the
-public dashboard in lockstep with the latest SINAVE bulletin ingested by the
-CI scraper. Delegates to `scripts/actualiza_semanal.sh` and runs 5 steps:
+One-command, end-to-end weekly refresh (~6 minutes, **no retraining**) that keeps
+the working copy, DVC artifacts and the public dashboard in lockstep with the
+latest SINAVE bulletin ingested by the CI scraper. Delegates to
+`scripts/actualiza_semanal.sh` and runs 11 ordered steps:
 
-1. **Git pull** on `main` to pick up commits pushed by the `scrape_boletines` /
-   `process_boletines` workflows (updates `data/processed/*.dvc`, `data/raw_PDFs.dvc`,
-   `data/registry.json`).
-2. **`dvc pull --force`** to materialize the new raw PDFs and the refreshed
-   consolidated dataset (`dataset_boletin_epidemiologico.csv`). Prints total
-   rows and the latest epidemiological week detected.
-3. **Regenerate** `web_dashboard/knowledge.json` via `scripts/build_web_knowledge.py`
-   (333 production models, boletin stats, weekly comparisons, and the `dengue` section
-   that powers the EpiBot's Dengue answers).
-4. **Copy** `knowledge.json` into the sibling `EpiForecast-IMSS-Dashboard/epibot/`
-   folder (the live EpiBot assistant).
-5. **Commit + push** the dashboard repo if `knowledge.json` changed
-   (`data: actualizar knowledge.json con datos semana <N>/<YYYY>`).
+1. **Git pull** on `main` to pick up commits from the `scrape_boletines` /
+   `process_boletines` workflows.
+2. **`dvc pull --force`** to materialize the new raw PDFs and the consolidated dataset.
+3. **Dengue extract (`--incremental`) → merge → prep** (best-effort). Incremental
+   extraction parses only the *new* bulletin PDF (it skips the ~648 already in the
+   manifest), so Dengue advances in seconds instead of re-parsing every PDF.
+4. **Re-select the productive engine** on the recent SINAVE reality
+   (`reselect_motor_2026.py`). The CV backtest table (`tabla-produccion`, ~19 min)
+   is **not** rebuilt here — its cross-validation metrics depend only on the frozen
+   models and the 2014-2025 history, not on the new bulletin. Pass
+   `RETRAIN=1 make update-week` to rebuild it after an actual retrain.
+5. **Rebuild** the Tableau dataset and the weekly validation HTML.
+6. **Regenerate the neuro gallery** (333 charts + `zoom_data_neuro.json`).
+7. **Dengue production + web** (gallery, forecast JSON, knowledge.json).
+8. **Rebuild the EpiBot zoom** — *after* the Dengue web, so it is not stale.
+9. **Regenerate** `knowledge.json` and copy it to `EpiForecast-IMSS-Dashboard/epibot/`.
+10. **Auto-update the dashboard date bar** (`actualiza_barra_fechas.py`) — derived
+    from the chart data, no hardcoded dates.
+11. **Publish**: commit + push the dashboard repo (gallery, zoom, knowledge, index)
+    and version the consolidated dataset + production tables in DVC/S3.
 
-Run it after a CI boletin lands (or any time new forecasts are generated) to
-propagate data to stakeholders without manual intervention:
+Run it after a CI boletin lands to propagate everything to stakeholders without
+manual intervention:
 
 ```bash
-make update-week
+make update-week              # weekly refresh (no retrain)
+RETRAIN=1 make update-week    # also rebuild the CV backtest table (after retraining)
 ```
 
 > **Before retraining on a new bulletin, run `make valida-prospectivo`** to score
@@ -473,9 +482,9 @@ push permission to `main`.
 
 ### Current Data Snapshot
 
-- **Latest epidemiological week:** 20/2026
-- **Consolidated dataset:** 74,560 rows (`data/processed/dataset_boletin_epidemiologico.csv`) — 62,016 neuro (3 × 20,672) + 12,544 Dengue
-- **Knowledge base:** 175 KB — 333 neuro production models + a `dengue` section, 51 stats keys, 6 boletin sections
+- **Latest epidemiological week:** 21/2026 (neuro); Dengue tracks one bulletin behind (its Cuadro 7.2 table publishes a week later)
+- **Consolidated dataset:** 74,688 rows (`data/processed/dataset_boletin_epidemiologico.csv`) — 62,112 neuro (3 × 20,704) + 12,576 Dengue
+- **Knowledge base:** ~220 KB — 333 neuro production models + a `dengue` section, 51 stats keys, 6 boletin sections
 - **Forecast horizon:** 52 weeks ahead (rolling, regenerated per weekly update); Dengue adds a 5-year illustrative seasonal projection
 
 ---
@@ -555,12 +564,12 @@ Beyond the three neurological/mental-health conditions, EpiForecast-MX incorpora
 **Data — series 2018-2026 (~392 national weeks).** A dedicated extractor parses the per-entity Dengue table from SINAVE bulletins (a separate page with its own layout), validated cell-by-cell against the printed `TOTAL` row:
 
 - `src/epiforecast/data/extraction/dengue_extractor.py` — locates the table by ICD codes (`A97.0/A97.1/A97.2`), aggregates the three tiers per state and sex. Supports two WHO-2009 layouts: production 2020+ (12 columns) and historical 2018-W27..2019 (10 columns, `dengue_historico.py`).
-- `scripts/extrae_dengue.py` / `scripts/merge_dengue.py` — batch extraction with a dataset-level audit, then an idempotent merge into the DVC-versioned consolidated dataset (**74,560 rows = 62,016 neuro + 12,544 Dengue**).
+- `scripts/extrae_dengue.py` / `scripts/merge_dengue.py` — batch extraction with a dataset-level audit, then an idempotent merge into the DVC-versioned consolidated dataset (**74,688 rows = 62,112 neuro + 12,576 Dengue**). `extrae_dengue --incremental` parses only bulletins not yet in the manifest (the weekly refresh path: seconds instead of re-reading every PDF).
 - A separate WHO-1997 `A90/A91` series (2014-2018, confirmed-by-sex) is extracted for **context/EDA only** (`dengue_historico_a9091.py`) and does not feed the production pipeline.
 
 **Cohort-aware modeling (neuro path untouched).** Dengue belongs to a "count-log" cohort (`utils.cohorts.is_count_log_cohort`): Prophet runs **with** `log_transform` and **without** rate normalization (the multiplicative trend otherwise collapses to ~0 when extrapolated), with a fixed `changepoint_prior_scale=0.05`, no COVID holiday, uniform CV weights, and **no regional fallback** (if a state has no transmission, it forecasts zero). The neurological flows stay byte-identical via `constants.NEURO_CONDITIONS` / `filter_neuro`.
 
-**Production = DeepAR + Prophet + NB-GLM.** Five engines are trained per series (33 geographies × 3 sexes = 99 series), and the productive selector (`scripts/produccion_dengue.py`, by SMAPE on 2026 reality) keeps **DeepAR, Prophet and NB-GLM** (distribution **DeepAR 46 / NB-GLM 31 / Prophet 22**; national = DeepAR). The **NB-GLM** engine (`models/nbglm/` — Negative-Binomial GLM + Fourier seasonality + lags + an **El Niño/ONI** regressor) is the best in leave-one-epidemic-out backtest (SMAPE 52 vs Prophet+ENSO 76 vs plain Prophet 102): it is count-correct, extrapolates without tree divergence, is deterministic, and carries the inter-annual epidemic signal (ENSO) that purely autoregressive models cannot see. Prophet (Dengue) also gained the ONI regressor. Ensemble and Stacking are excluded because their tree learners do not extrapolate the epidemic dynamic to 52 weeks (a seasonal-envelope guard, `models/forecast_guards.py`, caps them but they are never chosen).
+**Production = DeepAR + Prophet + NB-GLM.** Five engines are trained per series (33 geographies × 3 sexes = 99 series), and the productive selector (`scripts/produccion_dengue.py`, by SMAPE on 2026 reality with a 5% tie band broken by MAE) keeps **DeepAR, Prophet and NB-GLM** (week 21 distribution **DeepAR 45 / NB-GLM 33 / Prophet 21**; national = DeepAR). The tie band matters in a low-incidence year: without it, a 0.13-point SMAPE margin once flipped the national series to Prophet, which badly overshoots the epidemic peak (in-sample fit ~1,895 vs ~1,154 observed) while DeepAR tracks it (~1,125); MAE breaks the tie back to DeepAR. The **NB-GLM** engine (`models/nbglm/` — Negative-Binomial GLM + Fourier seasonality + lags + an **El Niño/ONI** regressor) is the best in leave-one-epidemic-out backtest (SMAPE 52 vs Prophet+ENSO 76 vs plain Prophet 102): it is count-correct, extrapolates without tree divergence, is deterministic, and carries the inter-annual epidemic signal (ENSO) that purely autoregressive models cannot see. Prophet (Dengue) also gained the ONI regressor. Ensemble and Stacking are excluded because their tree learners do not extrapolate the epidemic dynamic to 52 weeks (a seasonal-envelope guard, `models/forecast_guards.py`, caps them but they are never chosen).
 
 **Horizon: 1-year precise + 5-year illustrative.** The accurate forecast is 52 weeks. A 5-year band (flat-growth Prophet on `log1p`) is **illustrative**: with only two epidemic cycles in the data the ~4-5 year cycle is not learnable, so it shows the expected seasonal pattern, not the magnitude of the next epidemic.
 
