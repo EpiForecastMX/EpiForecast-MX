@@ -787,6 +787,38 @@ def build_weekly_comparison(cache: ProjectDataCache) -> dict[str, list[dict]]:
     return result
 
 
+def _fill_horizon_dates(knowledge: dict[str, Any], cache: ProjectDataCache) -> None:
+    """Rellena horizonte_inicio/horizonte_fin/ultimo_entrenamiento en training_config.
+
+    kb.js (forecastDateRange) los lee para mostrar las fechas reales del
+    horizonte de pronostico; sin ellos el bot degrada a "52 semanas" sin fechas.
+    """
+    tc = knowledge.get("training_config")
+    if not isinstance(tc, dict):
+        return
+    p = Path("reports/forecasts/prophet/all_forecast_prophet.csv")
+    if not p.exists():
+        return
+    df = pd.read_csv(p, usecols=["ds"], low_memory=False)
+    df["ds"] = pd.to_datetime(df["ds"])
+    fin = df["ds"].max()
+    inicio = None
+    bol = cache.boletin
+    if bol is not None and not bol.empty:
+        bol = filter_neuro(bol)
+        anio = int(bol["Anio"].max())
+        sem = int(bol.loc[bol["Anio"] == anio, "Semana"].max())
+        last_real = pd.Timestamp.fromisocalendar(anio, sem, 1)
+        fut = df.loc[df["ds"] > last_real, "ds"]
+        if not fut.empty:
+            inicio = fut.min()
+    if inicio is not None:
+        tc["horizonte_inicio"] = inicio.date().isoformat()
+    if pd.notna(fin):
+        tc["horizonte_fin"] = fin.date().isoformat()
+    tc["ultimo_entrenamiento"] = datetime.fromtimestamp(p.stat().st_mtime).date().isoformat()
+
+
 def main() -> None:
     """Entry point: genera knowledge.json."""
     print("Cargando datos del proyecto...")
@@ -809,6 +841,7 @@ def main() -> None:
         "dengue": build_dengue_section(),
         **build_static_data(),
     }
+    _fill_horizon_dates(knowledge, cache)
 
     # Serializar con NaN -> null
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
