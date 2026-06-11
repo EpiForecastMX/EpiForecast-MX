@@ -249,12 +249,12 @@ def _escribe_html(por_serie: pd.DataFrame, fname: str, snap: pd.DataFrame) -> No
     cortes = snap.groupby("padecimiento")["fecha_corte"].first().to_dict()
     cortes_txt = " · ".join(f"{p}: corte {c}" for p, c in cortes.items())
     css = (
-        "body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#0f172a;"
-        "color:#e2e8f0;margin:0;padding:24px}h1{color:#a7f3d0}table{border-collapse:collapse;"
+        "body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#131C30;"
+        "color:#E7ECF5;margin:0;padding:24px}h1{color:#2DD4BF}table{border-collapse:collapse;"
         "width:100%;margin-top:12px;font-size:13px}th,td{padding:6px 10px;border-bottom:"
-        "1px solid #334155;text-align:right}th{color:#94a3b8;text-align:right}td:first-child,"
-        "th:first-child,td:nth-child(2),td:nth-child(3){text-align:left}tr:hover{background:#1e293b}"
-        ".good{color:#34d399}.warn{color:#fbbf24}.bad{color:#f87171}.muted{color:#64748b}"
+        "1px solid #243150;text-align:right}th{color:#9FB0CE;text-align:right}td:first-child,"
+        "th:first-child,td:nth-child(2),td:nth-child(3){text-align:left}tr:hover{background:#1C2740}"
+        ".good{color:#2DD4BF}.warn{color:#F59E0B}.bad{color:#EF4444}.muted{color:#6E82A6}"
     )
     if por_serie.empty:
         body = (
@@ -270,7 +270,7 @@ def _escribe_html(por_serie: pd.DataFrame, fname: str, snap: pd.DataFrame) -> No
             cls = "good" if sm < 15 else "warn" if sm < 30 else "bad"
             cards += (
                 f"<div style='display:inline-block;margin:8px 16px 8px 0;padding:12px 18px;"
-                f"background:#1e293b;border-radius:10px'>"
+                f"background:#1C2740;border-radius:10px'>"
                 f"<div class='muted' style='font-size:12px'>{r['padecimiento']} Nacional "
                 f"({r['motor']})</div>"
                 f"<div class='{cls}' style='font-size:26px;font-weight:700'>{sm}%</div>"

@@ -779,7 +779,7 @@ try {
   const pads = D.pad_meta.map(p=>p.name);
   const modos = ['general','hombres','mujeres'];
   const ml = {general:'General',hombres:'Hombres',mujeres:'Mujeres'};
-  const mc = {general:'#97999B',hombres:'#00524E',mujeres:'#9B2242'};
+  const mc = {general:'#9FB0CE',hombres:'#5B8DEF',mujeres:'#BE185D'};
   const ds = modos.map(m => ({
     label: ml[m],
     data: pads.map(pad => { const f=D.por_sexo.find(s=>s.padecimiento===pad&&s.modo===m); return f?f.mase:0; }),

@@ -1,6 +1,6 @@
 """HTML template functions for the model comparison report.
 
-Matches the IMSS 2026 design system (DM Serif Display, Source Sans 3, etc.).
+Matches the Clinical Indigo design system (DM Serif Display, Source Sans 3, etc.).
 Extracted from comparison_report.py for SRP compliance (max 300 lines).
 """
 
@@ -14,8 +14,8 @@ from epiforecast.visualization.comparison_css import CSS
 _METRICS = ["rmse", "mae", "smape", "mase"]
 
 _MODELS: dict[str, dict[str, str]] = {
-    "prophet": {"label": "Prophet", "color": "#004d40", "css": "prophet"},
-    "deepar": {"label": "DeepAR", "color": "#880e4f", "css": "deepar"},
+    "prophet": {"label": "Prophet", "color": "#5B8DEF", "css": "prophet"},
+    "deepar": {"label": "DeepAR", "color": "#BE185D", "css": "deepar"},
     "ensemble": {"label": "Ensemble", "color": "#FF6F00", "css": "ensemble"},
     "stacking": {"label": "Stacking", "color": "#1A237E", "css": "stacking"},
 }

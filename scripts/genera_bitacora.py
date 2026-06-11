@@ -101,10 +101,10 @@ def build_html() -> str:
 <style>
 *,*::before,*::after{{box-sizing:border-box;margin:0;padding:0}}
 :root{{
-  --burgundy:#9B2242;--dark-burgundy:#6F1D46;--teal:#00524E;--dark-teal:#173F35;
-  --gold:#B58500;--cream:#E8D5B5;--cream-light:#F5EDE0;--cream-pale:#FAF6F0;
-  --cool-gray:#97999B;--neutral-black:#231F20;
-  --burgundy-light:#D4758B;--teal-light:#4A9E9A;--gold-light:#D4B24A;
+  --burgundy:#F472B6;--dark-burgundy:#8E2A63;--teal:#5B8DEF;--dark-teal:#16203A;
+  --gold:#2DD4BF;--cream:#E7ECF5;--cream-light:#1C2740;--cream-pale:#131C30;
+  --cool-gray:#9FB0CE;--neutral-black:#0B0F1A;
+  --burgundy-light:#F472B6;--teal-light:#5B8DEF;--gold-light:#2DD4BF;
   --font-display:'DM Serif Display',Georgia,serif;
   --font-body:'Source Sans 3','Source Sans Pro',sans-serif;
   --font-mono:'JetBrains Mono','Fira Code',monospace;
@@ -114,34 +114,34 @@ def build_html() -> str:
 body{{font-family:var(--font-body);background:var(--cream-pale);color:var(--neutral-black);line-height:1.7;-webkit-font-smoothing:antialiased}}
 body::before{{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.025;pointer-events:none;z-index:0}}
 
-nav{{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(23,63,53,.96);backdrop-filter:blur(16px);border-bottom:1px solid rgba(232,213,181,.1);padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between}}
+nav{{position:fixed;top:0;left:0;right:0;z-index:1000;background:rgba(22,32,58,.96);backdrop-filter:blur(16px);border-bottom:1px solid rgba(231,236,245,.1);padding:0 2rem;height:64px;display:flex;align-items:center;justify-content:space-between}}
 nav .logo{{color:var(--cream);font-family:var(--font-display);font-size:1.3rem;letter-spacing:.02em}}
 nav .nav-links{{display:flex;gap:1.5rem}}
-nav .nav-links a{{color:rgba(232,213,181,.7);text-decoration:none;font-size:.85rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;transition:color .2s}}
+nav .nav-links a{{color:rgba(231,236,245,.7);text-decoration:none;font-size:.85rem;font-weight:600;text-transform:uppercase;letter-spacing:.5px;transition:color .2s}}
 nav .nav-links a:hover{{color:var(--cream)}}
-nav .nav-links a.sep{{margin-left:1rem;padding-left:1.25rem;border-left:1px solid rgba(232,213,181,.25)}}
+nav .nav-links a.sep{{margin-left:1rem;padding-left:1.25rem;border-left:1px solid rgba(231,236,245,.25)}}
 nav .nav-links a.ext{{color:var(--gold-light)}}
 
 .container{{max-width:1200px;margin:0 auto;padding:0 2rem;position:relative;z-index:1}}
 section{{padding:4rem 0}}
-.section-title{{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.5rem);margin-bottom:.5rem;color:var(--dark-teal)}}
+.section-title{{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.5rem);margin-bottom:.5rem;color:var(--teal)}}
 .section-sub{{color:var(--cool-gray);font-size:1rem;margin-bottom:2.5rem}}
 
 /* Hero */
-.hero{{padding:10rem 2rem 6rem;text-align:center;background:linear-gradient(170deg,var(--dark-teal) 0%,var(--teal) 60%,rgba(0,82,78,.85) 100%);color:var(--cream-pale);position:relative;overflow:hidden}}
-.hero::before{{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 800px 600px at 30% 20%,rgba(181,133,0,.12),transparent),radial-gradient(ellipse 600px 500px at 70% 80%,rgba(155,34,66,.08),transparent);pointer-events:none}}
+.hero{{padding:10rem 2rem 6rem;text-align:center;background:linear-gradient(170deg,var(--dark-teal) 0%,#0E1424 60%,rgba(14,20,36,.85) 100%);color:var(--cream);position:relative;overflow:hidden}}
+.hero::before{{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 800px 600px at 30% 20%,rgba(45,212,191,.12),transparent),radial-gradient(ellipse 600px 500px at 70% 80%,rgba(91,141,239,.10),transparent);pointer-events:none}}
 .hero h1{{font-family:var(--font-display);font-size:clamp(2.5rem,6vw,4.5rem);line-height:1.1;margin-bottom:1rem;position:relative}}
 .hero .subtitle{{font-size:clamp(1rem,2vw,1.25rem);opacity:.8;font-weight:300;margin-bottom:3rem;position:relative}}
 .hero-kpis{{display:flex;justify-content:center;gap:2rem;flex-wrap:wrap;position:relative}}
-.hero-kpi{{background:rgba(255,255,255,.08);border:1px solid rgba(232,213,181,.15);border-radius:var(--radius);padding:2rem 2.5rem;backdrop-filter:blur(8px);min-width:180px;transition:transform .3s,box-shadow .3s}}
+.hero-kpi{{background:rgba(255,255,255,.06);border:1px solid rgba(231,236,245,.15);border-radius:var(--radius);padding:2rem 2.5rem;backdrop-filter:blur(8px);min-width:180px;transition:transform .3s,box-shadow .3s}}
 .hero-kpi:hover{{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.2)}}
 .hero-kpi .value{{font-family:var(--font-display);font-size:3rem;display:block;background:linear-gradient(135deg,var(--cream),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}}
 .hero-kpi .label{{font-size:.85rem;text-transform:uppercase;letter-spacing:1px;opacity:.7}}
 
 /* Cards */
-.card{{background:#fff;border-radius:var(--radius);padding:2rem;box-shadow:var(--shadow-md);border:1px solid rgba(0,0,0,.04);transition:transform .3s,box-shadow .3s;overflow-x:auto}}
+.card{{background:#1C2740;border-radius:var(--radius);padding:2rem;box-shadow:var(--shadow-md);border:1px solid #243150;transition:transform .3s,box-shadow .3s;overflow-x:auto}}
 .card:hover{{transform:translateY(-3px);box-shadow:var(--shadow-lg)}}
-.chart-wrap{{background:#fff;border-radius:var(--radius);padding:2rem;box-shadow:var(--shadow-md);border:1px solid rgba(0,0,0,.04);margin-top:2rem}}
+.chart-wrap{{background:#1C2740;border-radius:var(--radius);padding:2rem;box-shadow:var(--shadow-md);border:1px solid #243150;margin-top:2rem}}
 .chart-wrap canvas{{max-height:400px}}
 .charts-row{{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:2rem}}
 
@@ -151,15 +151,15 @@ section{{padding:4rem 0}}
 .tl-item{{position:relative;width:50%;padding:1.5rem 3rem 2.5rem;}}
 .tl-item:nth-child(odd){{margin-left:0;text-align:right;padding-right:3rem;padding-left:0}}
 .tl-item:nth-child(even){{margin-left:50%;text-align:left;padding-left:3rem;padding-right:0}}
-.tl-item::before{{content:'';position:absolute;top:2rem;width:16px;height:16px;border-radius:50%;background:var(--teal);border:3px solid #fff;box-shadow:0 0 0 3px var(--teal),var(--shadow-md);z-index:2}}
+.tl-item::before{{content:'';position:absolute;top:2rem;width:16px;height:16px;border-radius:50%;background:var(--teal);border:3px solid #131C30;box-shadow:0 0 0 3px var(--teal),var(--shadow-md);z-index:2}}
 .tl-item:nth-child(odd)::before{{right:-8px}}
 .tl-item:nth-child(even)::before{{left:-8px}}
-.tl-card{{background:#fff;border-radius:var(--radius);padding:1.5rem 2rem;box-shadow:var(--shadow-md);border:1px solid rgba(0,0,0,.04);text-align:left;transition:transform .3s,box-shadow .3s}}
+.tl-card{{background:#1C2740;border-radius:var(--radius);padding:1.5rem 2rem;box-shadow:var(--shadow-md);border:1px solid #243150;text-align:left;transition:transform .3s,box-shadow .3s}}
 .tl-card:hover{{transform:translateY(-3px);box-shadow:var(--shadow-lg)}}
 .tl-versión{{font-family:var(--font-mono);font-size:.85rem;font-weight:500;color:var(--burgundy);text-transform:uppercase;letter-spacing:1px;margin-bottom:.25rem}}
-.tl-title{{font-family:var(--font-display);font-size:1.3rem;color:var(--dark-teal);margin-bottom:.5rem}}
-.tl-desc{{font-size:.92rem;color:#555;line-height:1.7}}
-.tl-badge{{display:inline-block;margin-top:.75rem;padding:.25rem .75rem;border-radius:100px;font-family:var(--font-mono);font-size:.78rem;font-weight:500;background:rgba(0,82,78,.08);color:var(--teal)}}
+.tl-title{{font-family:var(--font-display);font-size:1.3rem;color:var(--cream);margin-bottom:.5rem}}
+.tl-desc{{font-size:.92rem;color:#9FB0CE;line-height:1.7}}
+.tl-badge{{display:inline-block;margin-top:.75rem;padding:.25rem .75rem;border-radius:100px;font-family:var(--font-mono);font-size:.78rem;font-weight:500;background:rgba(91,141,239,.14);color:var(--teal)}}
 
 /* Code blocks */
 .code-block{{background:var(--neutral-black);color:#e0e0e0;border-radius:var(--radius-sm);padding:1.25rem 1.5rem;font-family:var(--font-mono);font-size:.85rem;line-height:1.6;overflow-x:auto;margin:1.5rem 0;position:relative}}
@@ -182,48 +182,48 @@ section{{padding:4rem 0}}
 .compare-table thead th{{background:var(--dark-teal);color:var(--cream);padding:.75rem 1rem;text-align:left;font-weight:600;font-size:.8rem;text-transform:uppercase;letter-spacing:.5px}}
 .compare-table tbody td{{padding:.7rem 1rem;border-bottom:1px solid var(--cream-light)}}
 .compare-table tbody tr:hover{{background:var(--cream-light)}}
-.compare-table .better{{color:#1a7431;font-weight:600}}
-.compare-table .worse{{color:#b91c1c;font-weight:600}}
+.compare-table .better{{color:#2DD4BF;font-weight:600}}
+.compare-table .worse{{color:#EF4444;font-weight:600}}
 
 /* Pipeline diagram */
 .pipeline{{display:flex;align-items:center;gap:0;flex-wrap:wrap;margin:2rem 0;justify-content:center}}
-.pipeline-step{{background:#fff;border:2px solid var(--teal);border-radius:var(--radius-sm);padding:.75rem 1.25rem;font-size:.85rem;font-weight:600;color:var(--dark-teal);text-align:center;min-width:120px}}
+.pipeline-step{{background:#1C2740;border:2px solid var(--teal);border-radius:var(--radius-sm);padding:.75rem 1.25rem;font-size:.85rem;font-weight:600;color:var(--cream);text-align:center;min-width:120px}}
 .pipeline-arrow{{color:var(--teal);font-size:1.5rem;padding:0 .5rem;flex-shrink:0}}
 
 /* Lesson cards grid */
 .lessons-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.5rem}}
-.lesson-card{{background:#fff;border-radius:var(--radius);padding:1.5rem 1.75rem;box-shadow:var(--shadow-sm);border-left:4px solid var(--teal);transition:transform .3s,box-shadow .3s}}
+.lesson-card{{background:#1C2740;border-radius:var(--radius);padding:1.5rem 1.75rem;box-shadow:var(--shadow-sm);border-left:4px solid var(--teal);transition:transform .3s,box-shadow .3s}}
 .lesson-card:hover{{transform:translateY(-2px);box-shadow:var(--shadow-md)}}
 .lesson-card .lesson-num{{font-family:var(--font-mono);font-size:.75rem;color:var(--burgundy);text-transform:uppercase;letter-spacing:1px;margin-bottom:.25rem}}
-.lesson-card h3{{font-family:var(--font-display);font-size:1.1rem;color:var(--dark-teal);margin-bottom:.5rem}}
-.lesson-card p{{font-size:.9rem;color:#555;line-height:1.65}}
+.lesson-card h3{{font-family:var(--font-display);font-size:1.1rem;color:var(--cream);margin-bottom:.5rem}}
+.lesson-card p{{font-size:.9rem;color:#9FB0CE;line-height:1.65}}
 
 /* Layer cards for anti-newton */
 .layer-cards{{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1.5rem;margin:2rem 0}}
-.layer-card{{background:#fff;border-radius:var(--radius);padding:1.75rem;box-shadow:var(--shadow-md);border-top:4px solid var(--burgundy);text-align:center}}
+.layer-card{{background:#1C2740;border-radius:var(--radius);padding:1.75rem;box-shadow:var(--shadow-md);border-top:4px solid var(--burgundy);text-align:center}}
 .layer-card .layer-num{{font-family:var(--font-display);font-size:2.5rem;color:var(--burgundy);margin-bottom:.25rem}}
-.layer-card h3{{font-size:1.05rem;font-weight:700;color:var(--dark-teal);margin-bottom:.5rem}}
-.layer-card p{{font-size:.88rem;color:#555;line-height:1.6}}
+.layer-card h3{{font-size:1.05rem;font-weight:700;color:var(--cream);margin-bottom:.5rem}}
+.layer-card p{{font-size:.88rem;color:#9FB0CE;line-height:1.6}}
 
 /* Flow diagram for hybrid */
 .flow-diagram{{display:flex;align-items:stretch;gap:0;margin:2rem 0;flex-wrap:wrap;justify-content:center}}
-.flow-box{{background:#fff;border:2px solid var(--burgundy);border-radius:var(--radius-sm);padding:1rem 1.25rem;min-width:140px;text-align:center;display:flex;flex-direction:column;justify-content:center}}
-.flow-box h4{{font-size:.85rem;color:var(--dark-teal);margin-bottom:.25rem}}
-.flow-box p{{font-size:.8rem;color:#555}}
+.flow-box{{background:#1C2740;border:2px solid var(--burgundy);border-radius:var(--radius-sm);padding:1rem 1.25rem;min-width:140px;text-align:center;display:flex;flex-direction:column;justify-content:center}}
+.flow-box h4{{font-size:.85rem;color:var(--cream);margin-bottom:.25rem}}
+.flow-box p{{font-size:.8rem;color:#9FB0CE}}
 .flow-arrow{{display:flex;align-items:center;color:var(--burgundy);font-size:1.5rem;padding:0 .5rem}}
 
 /* Feature cards */
 .fe-grid{{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:2rem;margin-top:2rem}}
-.fe-card{{background:#fff;border-radius:var(--radius);padding:2rem;box-shadow:var(--shadow-md);border:1px solid rgba(0,0,0,.04);overflow-x:auto}}
-.fe-card h3{{font-family:var(--font-display);font-size:1.25rem;color:var(--dark-teal);margin-bottom:.75rem}}
-.fe-card p{{font-size:.92rem;color:#555;line-height:1.7}}
+.fe-card{{background:#1C2740;border-radius:var(--radius);padding:2rem;box-shadow:var(--shadow-md);border:1px solid #243150;overflow-x:auto}}
+.fe-card h3{{font-family:var(--font-display);font-size:1.25rem;color:var(--cream);margin-bottom:.75rem}}
+.fe-card p{{font-size:.92rem;color:#9FB0CE;line-height:1.7}}
 
 /* Reveal */
 .reveal{{opacity:0;transform:translateY(30px);transition:opacity .6s ease,transform .6s ease}}
 .reveal.visible{{opacity:1;transform:translateY(0)}}
 
 /* Footer */
-footer{{background:var(--dark-teal);color:rgba(232,213,181,.7);padding:3rem 2rem;text-align:center;font-size:.85rem;position:relative;z-index:1}}
+footer{{background:var(--dark-teal);color:rgba(231,236,245,.7);padding:3rem 2rem;text-align:center;font-size:.85rem;position:relative;z-index:1}}
 footer a{{color:var(--gold-light);text-decoration:none}}
 footer a:hover{{color:var(--cream)}}
 footer .footer-title{{font-family:var(--font-display);color:var(--cream);font-size:1.2rem;margin-bottom:.5rem}}
@@ -337,7 +337,7 @@ footer .footer-title{{font-family:var(--font-display);color:var(--cream);font-si
 </section>
 
 <!-- 3. FEATURE ENGINEERING -->
-<section id="fe" style="background:#fff;padding:4rem 0">
+<section id="fe" style="background:#0E1424;padding:4rem 0">
   <div class="container">
     <h2 class="section-title reveal">Feature Engineering</h2>
     <p class="section-sub reveal">Las transformaciones que convirtieron datos crudos en features modelables</p>
@@ -388,9 +388,9 @@ footer .footer-title{{font-family:var(--font-display);color:var(--cream);font-si
     <p class="section-sub reveal">El pipeline que transforma conteos crudos en el espacio óptimo para Prophet</p>
 
     <div class="card reveal" style="margin-bottom:2rem">
-      <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--dark-teal);margin-bottom:1rem">Tasa por 100K habitantes (v1)</h3>
-      <p style="font-size:.95rem;color:#555;line-height:1.7">El problema fundamental: CDMX reporta ~500 casos/semana de Depresión, Colima solo ~5. Esto no significa que CDMX tenga 100x más incidencia &mdash; tiene 12x más población. Sin normalizar, Prophet sobreajustaría en estados grandes y subajustaría en pequeños.</p>
-      <p style="margin-top:.75rem;font-size:.95rem;color:#555"><strong>La solución:</strong> dividir la incidencia semanal entre la población del estado y multiplicar por 100,000. Ahora la escala es comparable: ~5.5 por 100K en CDMX vs ~6.8 por 100K en Colima.</p>
+      <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--cream);margin-bottom:1rem">Tasa por 100K habitantes (v1)</h3>
+      <p style="font-size:.95rem;color:#9FB0CE;line-height:1.7">El problema fundamental: CDMX reporta ~500 casos/semana de Depresión, Colima solo ~5. Esto no significa que CDMX tenga 100x más incidencia &mdash; tiene 12x más población. Sin normalizar, Prophet sobreajustaría en estados grandes y subajustaría en pequeños.</p>
+      <p style="margin-top:.75rem;font-size:.95rem;color:#9FB0CE"><strong>La solución:</strong> dividir la incidencia semanal entre la población del estado y multiplicar por 100,000. Ahora la escala es comparable: ~5.5 por 100K en CDMX vs ~6.8 por 100K en Colima.</p>
       <div class="code-block">
 <span class="code-block-label">Python</span>
 <span class="cm"># Normalización a tasa por 100K</span>
@@ -399,8 +399,8 @@ footer .footer-title{{font-family:var(--font-display);color:var(--cream);font-si
     </div>
 
     <div class="card reveal" style="margin-bottom:2rem">
-      <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--dark-teal);margin-bottom:1rem">Log-transform (v2): el cambio que valió oro</h3>
-      <p style="font-size:.95rem;color:#555;line-height:1.7">Incluso después de normalizar, la varianza de Depresión era heterogénea: estados con tasas altas tenían fluctuaciones mucho más grandes. <code>log(1+y)</code> estabiliza la varianza y comprime los picos extremos. El <code>+1</code> evita <code>log(0)</code> cuando la incidencia es cero.</p>
+      <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--cream);margin-bottom:1rem">Log-transform (v2): el cambio que valió oro</h3>
+      <p style="font-size:.95rem;color:#9FB0CE;line-height:1.7">Incluso después de normalizar, la varianza de Depresión era heterogénea: estados con tasas altas tenían fluctuaciones mucho más grandes. <code>log(1+y)</code> estabiliza la varianza y comprime los picos extremos. El <code>+1</code> evita <code>log(0)</code> cuando la incidencia es cero.</p>
       <div class="code-block">
 <span class="code-block-label">Python</span>
 <span class="cm"># Log-transform para estabilizar varianza</span>
@@ -412,7 +412,7 @@ footer .footer-title{{font-family:var(--font-display);color:var(--cream);font-si
     </div>
 
     <div class="card reveal" style="margin-bottom:2rem">
-      <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--dark-teal);margin-bottom:1rem">Pipeline completo de transformación</h3>
+      <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--cream);margin-bottom:1rem">Pipeline completo de transformación</h3>
       <div class="pipeline">
         <div class="pipeline-step">Conteos<br><small>SINAVE</small></div>
         <div class="pipeline-arrow">&rarr;</div>
@@ -435,7 +435,7 @@ footer .footer-title{{font-family:var(--font-display);color:var(--cream);font-si
 </section>
 
 <!-- 5. CONFIGURACION PROPHET -->
-<section id="prophet" style="background:#fff;padding:4rem 0">
+<section id="prophet" style="background:#0E1424;padding:4rem 0">
   <div class="container">
     <h2 class="section-title reveal">Configuración Prophet</h2>
     <p class="section-sub reveal">Cada parámetro fue probado y justificado con datos</p>
@@ -452,7 +452,7 @@ footer .footer-title{{font-family:var(--font-display);color:var(--cream);font-si
             <tr><td>Justificación</td><td>Series largas, complejidad alta</td><td>Series cortas, evitar overfitting</td></tr>
           </tbody>
         </table>
-        <p style="margin-top:.75rem;font-size:.88rem;color:#555"><strong>¿Por qué order=3 regional?</strong> Con fourier_order=5 en series estatales cortas, Prophet sobreajustaba oscilaciones espurias &mdash; especialmente en Depresión estatal. Order=3 reduce los parámetros de estacionalidad de 10 a 6, produciendo curvas más suaves y generalizables.</p>
+        <p style="margin-top:.75rem;font-size:.88rem;color:#9FB0CE"><strong>¿Por qué order=3 regional?</strong> Con fourier_order=5 en series estatales cortas, Prophet sobreajustaba oscilaciones espurias &mdash; especialmente en Depresión estatal. Order=3 reduce los parámetros de estacionalidad de 10 a 6, produciendo curvas más suaves y generalizables.</p>
       </div>
 
       <div class="fe-card reveal">
@@ -487,14 +487,14 @@ footer .footer-title{{font-family:var(--font-display);color:var(--cream);font-si
             <tr><td>Baja California Sur</td><td>General</td><td class="worse">+4.7%</td><td class="worse">Rechazado</td></tr>
           </tbody>
         </table>
-        <p style="margin-top:.75rem;font-size:.88rem;color:#555"><strong>Lección clave:</strong> Prophet holidays modelan eventos <em>temporales</em>. Nayarit, Colima, Durango y BCS tienen cambios permanentes (step functions) que Prophet no puede absorber como holidays &mdash; los trata como eventos que eventualmente regresan al nivel anterior, empeorando el forecast.</p>
+        <p style="margin-top:.75rem;font-size:.88rem;color:#9FB0CE"><strong>Lección clave:</strong> Prophet holidays modelan eventos <em>temporales</em>. Nayarit, Colima, Durango y BCS tienen cambios permanentes (step functions) que Prophet no puede absorber como holidays &mdash; los trata como eventos que eventualmente regresan al nivel anterior, empeorando el forecast.</p>
       </div>
 
       <div class="fe-card reveal">
         <h3>n_changepoints regional: 12 vs 25</h3>
         <p>Prophet coloca 25 changepoints por default para detectar cambios de tendencia. En series estatales (mas cortas, menos datos), esto produce overfitting.</p>
         <p style="margin-top:.75rem">Con <strong>n_changepoints=12</strong>, los modelos regionales y estatales capturan los cambios de tendencia principales (COVID, recuperación post-pandemia) sin sobreajustar fluctuaciones menores.</p>
-        <p style="margin-top:.75rem;font-size:.88rem;color:#555">La lógica: 12 changepoints en ~500 observaciones (10 años semanales) = 1 changepoint cada ~10 meses. Suficiente para cambios anuales, no tanto como para capturar ruido.</p>
+        <p style="margin-top:.75rem;font-size:.88rem;color:#9FB0CE">La lógica: 12 changepoints en ~500 observaciones (10 años semanales) = 1 changepoint cada ~10 meses. Suficiente para cambios anuales, no tanto como para capturar ruido.</p>
       </div>
     </div>
   </div>
@@ -510,7 +510,7 @@ footer .footer-title{{font-family:var(--font-display);color:var(--cream);font-si
       <canvas id="gridEvolutionChart"></canvas>
     </div>
 
-    <h3 class="reveal" style="font-family:var(--font-display);font-size:1.5rem;color:var(--dark-teal);margin:3rem 0 1.5rem">Grids Actuales (v5+)</h3>
+    <h3 class="reveal" style="font-family:var(--font-display);font-size:1.5rem;color:var(--cream);margin:3rem 0 1.5rem">Grids Actuales (v5+)</h3>
 
     <div class="fe-grid">
       <div class="fe-card reveal" style="border-top:4px solid var(--gold)">
@@ -547,7 +547,7 @@ footer .footer-title{{font-family:var(--font-display);color:var(--cream);font-si
       </div>
     </div>
 
-    <h3 class="reveal" style="font-family:var(--font-display);font-size:1.5rem;color:var(--dark-teal);margin:3rem 0 1.5rem">Hiperparámetros Ganadores</h3>
+    <h3 class="reveal" style="font-family:var(--font-display);font-size:1.5rem;color:var(--cream);margin:3rem 0 1.5rem">Hiperparámetros Ganadores</h3>
 
     <div class="charts-row reveal">
       <div class="chart-wrap"><canvas id="seasonalityChart"></canvas></div>
@@ -558,10 +558,10 @@ footer .footer-title{{font-family:var(--font-display);color:var(--cream);font-si
       <div class="chart-wrap"><canvas id="maseChart"></canvas></div>
     </div>
 
-    <h3 class="reveal" style="font-family:var(--font-display);font-size:1.5rem;color:var(--dark-teal);margin:3rem 0 1.5rem">Cross-Validation Ponderada</h3>
+    <h3 class="reveal" style="font-family:var(--font-display);font-size:1.5rem;color:var(--cream);margin:3rem 0 1.5rem">Cross-Validation Ponderada</h3>
 
     <div class="card reveal" style="margin-bottom:2rem">
-      <p style="font-size:.95rem;color:#555;line-height:1.7">No todos los folds de CV son igual de relevantes. El fold post-COVID (2020-2021) es un periodo atípico que no representa el futuro. El fold más reciente (2023-2024) es el más representativo del forecast. Los pesos reflejan esta realidad:</p>
+      <p style="font-size:.95rem;color:#9FB0CE;line-height:1.7">No todos los folds de CV son igual de relevantes. El fold post-COVID (2020-2021) es un periodo atípico que no representa el futuro. El fold más reciente (2023-2024) es el más representativo del forecast. Los pesos reflejan esta realidad:</p>
       <table class="compare-table" style="margin-top:1.5rem">
         <thead><tr><th>Fold</th><th>Periodo</th><th>Peso</th><th>Justificación</th></tr></thead>
         <tbody>
@@ -582,8 +582,8 @@ footer .footer-title{{font-family:var(--font-display);color:var(--cream);font-si
     </div>
 
     <div class="card reveal">
-      <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--dark-teal);margin-bottom:1rem">MASE: Mean Absolute Scaled Error</h3>
-      <p style="font-size:.95rem;color:#555;line-height:1.7">Agregado en v6 como métrica principal. MAPE (porcentual) es problemático en epidemiología: cuando el denominador (casos reales) es pequeño, MAPE explota. MASE compara contra un <strong>baseline naive estacional</strong> (repetir lo de hace 52 semanas):</p>
+      <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--cream);margin-bottom:1rem">MASE: Mean Absolute Scaled Error</h3>
+      <p style="font-size:.95rem;color:#9FB0CE;line-height:1.7">Agregado en v6 como métrica principal. MAPE (porcentual) es problemático en epidemiología: cuando el denominador (casos reales) es pequeño, MAPE explota. MASE compara contra un <strong>baseline naive estacional</strong> (repetir lo de hace 52 semanas):</p>
       <div class="code-block" style="margin-top:1rem">
 <span class="code-block-label">Formula</span>
 <span class="fn">MASE</span> <span class="op">=</span> MAE_modelo <span class="op">/</span> MAE_naive(lag<span class="op">=</span><span class="num">52</span>)
@@ -596,15 +596,15 @@ footer .footer-title{{font-family:var(--font-display);color:var(--cream);font-si
 </section>
 
 <!-- 7. ANTI-NEWTON -->
-<section id="newton" style="background:#fff;padding:4rem 0">
+<section id="newton" style="background:#0E1424;padding:4rem 0">
   <div class="container">
     <h2 class="section-title reveal">Protección Anti-Newton</h2>
     <p class="section-sub reveal">Como evitamos que Prophet cayera al optimizador Newton (100-500x más lento que L-BFGS)</p>
 
     <div class="card reveal" style="margin-bottom:2rem">
-      <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--dark-teal);margin-bottom:1rem">El problema</h3>
-      <p style="font-size:.95rem;color:#555;line-height:1.7">Prophet usa Stan para optimizar. El optimizador default es <strong>L-BFGS</strong> (rápido, O(n) por iteración). Pero cuando L-BFGS no converge, Stan cae silenciosamente a <strong>Newton</strong> (O(n&sup3;) por iteración). En Chihuahua-Depresión, un solo fold tardaba hasta 25 minutos con Newton, acumulando <strong>39 minutos</strong> para los 3 modos de sexo.</p>
-      <p style="margin-top:.75rem;font-size:.95rem;color:#555">El trigger: <strong>changepoint_prior_scale bajo</strong> (0.01, 0.03) combinado con series volátiles. CP bajo = regularización fuerte de cambios de tendencia, lo que dificulta la convergencia de L-BFGS.</p>
+      <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--cream);margin-bottom:1rem">El problema</h3>
+      <p style="font-size:.95rem;color:#9FB0CE;line-height:1.7">Prophet usa Stan para optimizar. El optimizador default es <strong>L-BFGS</strong> (rápido, O(n) por iteración). Pero cuando L-BFGS no converge, Stan cae silenciosamente a <strong>Newton</strong> (O(n&sup3;) por iteración). En Chihuahua-Depresión, un solo fold tardaba hasta 25 minutos con Newton, acumulando <strong>39 minutos</strong> para los 3 modos de sexo.</p>
+      <p style="margin-top:.75rem;font-size:.95rem;color:#9FB0CE">El trigger: <strong>changepoint_prior_scale bajo</strong> (0.01, 0.03) combinado con series volátiles. CP bajo = regularización fuerte de cambios de tendencia, lo que dificulta la convergencia de L-BFGS.</p>
     </div>
 
     <div class="layer-cards reveal">
@@ -643,8 +643,8 @@ footer .footer-title{{font-family:var(--font-display);color:var(--cream);font-si
     </div>
 
     <div class="card reveal" style="margin-top:2rem">
-      <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--dark-teal);margin-bottom:1rem">Fallback final</h3>
-      <p style="font-size:.95rem;color:#555;line-height:1.7">Si <strong>todas</strong> las combinaciones hacen timeout (raro, pero posible), usamos parámetros default con el CP más alto del grid. Esto garantiza que siempre obtenemos un modelo, aunque no sea el óptimo de CV.</p>
+      <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--cream);margin-bottom:1rem">Fallback final</h3>
+      <p style="font-size:.95rem;color:#9FB0CE;line-height:1.7">Si <strong>todas</strong> las combinaciones hacen timeout (raro, pero posible), usamos parámetros default con el CP más alto del grid. Esto garantiza que siempre obtenemos un modelo, aunque no sea el óptimo de CV.</p>
     </div>
   </div>
 </section>
@@ -656,13 +656,13 @@ footer .footer-title{{font-family:var(--font-display);color:var(--cream);font-si
     <p class="section-sub reveal">De 72% cobertura a 100%: el fallback regional que cambió el juego</p>
 
     <div class="card reveal" style="margin-bottom:2rem">
-      <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--dark-teal);margin-bottom:1rem">El problema: 41 estados sin predicción útil</h3>
-      <p style="font-size:.95rem;color:#555;line-height:1.7">En v3-v5, 41 combinaciones estado-padecimiento-sexo tenían un promedio menor a 0.5 casos/semana. Sus modelos Prophet producían líneas planas &mdash; predicciones técnicamente válidas pero inservibles. Descartarlas significaba perder cobertura: solo el 72% de los estados tenían al menos un modelo usable en v3.</p>
+      <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--cream);margin-bottom:1rem">El problema: 41 estados sin predicción útil</h3>
+      <p style="font-size:.95rem;color:#9FB0CE;line-height:1.7">En v3-v5, 41 combinaciones estado-padecimiento-sexo tenían un promedio menor a 0.5 casos/semana. Sus modelos Prophet producían líneas planas &mdash; predicciones técnicamente válidas pero inservibles. Descartarlas significaba perder cobertura: solo el 72% de los estados tenían al menos un modelo usable en v3.</p>
     </div>
 
     <div class="card reveal" style="margin-bottom:2rem">
-      <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--dark-teal);margin-bottom:1rem">La solución: pedir prestado a los vecinos</h3>
-      <p style="font-size:.95rem;color:#555;line-height:1.7">Para cada región INEGI de salud mental, entrenamos un <strong>modelo regional</strong> que agrega datos de todos los estados de la zona. Estos modelos tienen muchos más datos y producen predicciones robustas. Cuando un estado es &laquo;insuficiente&raquo;, usamos el modelo de su región pero <strong>desnormalizamos con la población del estado individual</strong>.</p>
+      <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--cream);margin-bottom:1rem">La solución: pedir prestado a los vecinos</h3>
+      <p style="font-size:.95rem;color:#9FB0CE;line-height:1.7">Para cada región INEGI de salud mental, entrenamos un <strong>modelo regional</strong> que agrega datos de todos los estados de la zona. Estos modelos tienen muchos más datos y producen predicciones robustas. Cuando un estado es &laquo;insuficiente&raquo;, usamos el modelo de su región pero <strong>desnormalizamos con la población del estado individual</strong>.</p>
     </div>
 
     <div class="flow-diagram reveal">
@@ -695,7 +695,7 @@ footer .footer-title{{font-family:var(--font-display);color:var(--cream);font-si
 </section>
 
 <!-- 9. EVOLUCION DE RESULTADOS -->
-<section id="evolución" style="background:#fff;padding:4rem 0">
+<section id="evolución" style="background:#0E1424;padding:4rem 0">
   <div class="container">
     <h2 class="section-title reveal">Evolución de Resultados v1 &rarr; v6</h2>
     <p class="section-sub reveal">El progreso medido: cada versión mejoró al menos una métrica</p>
@@ -706,7 +706,7 @@ footer .footer-title{{font-family:var(--font-display);color:var(--cream);font-si
     </div>
 
     <div class="card reveal" style="margin-top:2rem">
-      <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--dark-teal);margin-bottom:1rem">Resumen por versión</h3>
+      <h3 style="font-family:var(--font-display);font-size:1.3rem;color:var(--cream);margin-bottom:1rem">Resumen por versión</h3>
       <table class="compare-table">
         <thead><tr><th>Versión</th><th>RMSE Dep.</th><th>RMSE Alz.</th><th>RMSE Park.</th><th>Cobertura</th><th>Modelos</th><th>Cambio principal</th></tr></thead>
         <tbody>
@@ -728,8 +728,8 @@ footer .footer-title{{font-family:var(--font-display);color:var(--cream);font-si
     <p class="section-sub reveal">CV evalúa, pero el modelo final usa todos los datos disponibles</p>
 
     <div class="card reveal">
-      <p style="font-size:.95rem;color:#555;line-height:1.7">Un error común es entrenar el modelo final solo con el split de entrenamiento de CV. Pero CV ya cumplió su función: <strong>seleccionar los mejores hiperparámetros</strong>. Una vez seleccionados, el modelo final debe aprovechar <em>todos</em> los datos disponibles para maximizar la precisión en producción.</p>
-      <p style="margin-top:.75rem;font-size:.95rem;color:#555">Nuestro flujo: CV usa 4 splits temporales para evaluar &rarr; selecciona los mejores HP &rarr; el <code>.pkl</code> final se entrena con <strong>toda la serie</strong> (2014-2025). Esto captura los patrones más recientes sin desperdiciar datos.</p>
+      <p style="font-size:.95rem;color:#9FB0CE;line-height:1.7">Un error común es entrenar el modelo final solo con el split de entrenamiento de CV. Pero CV ya cumplió su función: <strong>seleccionar los mejores hiperparámetros</strong>. Una vez seleccionados, el modelo final debe aprovechar <em>todos</em> los datos disponibles para maximizar la precisión en producción.</p>
+      <p style="margin-top:.75rem;font-size:.95rem;color:#9FB0CE">Nuestro flujo: CV usa 4 splits temporales para evaluar &rarr; selecciona los mejores HP &rarr; el <code>.pkl</code> final se entrena con <strong>toda la serie</strong> (2014-2025). Esto captura los patrones más recientes sin desperdiciar datos.</p>
       <div class="code-block" style="margin-top:1.5rem">
 <span class="code-block-label">Python</span>
 <span class="cm"># Después de CV (evaluación)</span>
@@ -747,7 +747,7 @@ modelo_final.<span class="fn">fit</span>(self.serie)  <span class="cm"># toda la
 </section>
 
 <!-- 11. LECCIONES APRENDIDAS -->
-<section id="lecciones" style="background:#fff;padding:4rem 0">
+<section id="lecciones" style="background:#0E1424;padding:4rem 0">
   <div class="container">
     <h2 class="section-title reveal">Lecciones Aprendidas</h2>
     <p class="section-sub reveal">10 takeaways de 6 versiones y 297+ modelos</p>
@@ -846,13 +846,13 @@ document.querySelectorAll('nav a[href^="#"]').forEach(a => {{
 
 /* ── Chart defaults ── */
 Chart.defaults.font.family = "'Source Sans 3', sans-serif";
-const BURGUNDY = '#9B2242';
-const TEAL = '#00524E';
-const GOLD = '#B58500';
-const TEAL_LIGHT = '#4A9E9A';
-const BURGUNDY_LIGHT = '#D4758B';
-const GOLD_LIGHT = '#D4B24A';
-const GRAY = '#97999B';
+const BURGUNDY = '#BE185D';
+const TEAL = '#5B8DEF';
+const GOLD = '#2DD4BF';
+const TEAL_LIGHT = '#5B8DEF';
+const BURGUNDY_LIGHT = '#F472B6';
+const GOLD_LIGHT = '#2DD4BF';
+const GRAY = '#9FB0CE';
 
 /* ── Chart 1: Log-transform impact (horizontal bar) ── */
 try {{
@@ -883,7 +883,7 @@ try {{
         legend: {{ position: 'bottom' }}
       }},
       scales: {{
-        x: {{ beginAtZero: true, grid: {{ color: 'rgba(0,0,0,.06)' }} }},
+        x: {{ beginAtZero: true, grid: {{ color: 'rgba(159,176,206,.15)' }} }},
         y: {{ grid: {{ display: false }} }}
       }}
     }}
@@ -910,7 +910,7 @@ try {{
         legend: {{ display: false }}
       }},
       scales: {{
-        y: {{ beginAtZero: true, title: {{ display: true, text: 'Número de combinaciones' }}, grid: {{ color: 'rgba(0,0,0,.06)' }} }},
+        y: {{ beginAtZero: true, title: {{ display: true, text: 'Número de combinaciones' }}, grid: {{ color: 'rgba(159,176,206,.15)' }} }},
         x: {{ grid: {{ display: false }} }}
       }}
     }}
@@ -946,7 +946,7 @@ try {{
         tooltip: {{ callbacks: {{ label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y + '%' }} }}
       }},
       scales: {{
-        y: {{ stacked: true, max: 100, title: {{ display: true, text: '% de modelos' }}, grid: {{ color: 'rgba(0,0,0,.06)' }} }},
+        y: {{ stacked: true, max: 100, title: {{ display: true, text: '% de modelos' }}, grid: {{ color: 'rgba(159,176,206,.15)' }} }},
         x: {{ stacked: true, grid: {{ display: false }} }}
       }}
     }}
@@ -972,7 +972,7 @@ try {{
         legend: {{ position: 'bottom' }}
       }},
       scales: {{
-        y: {{ beginAtZero: true, title: {{ display: true, text: '% de modelos' }}, grid: {{ color: 'rgba(0,0,0,.06)' }} }},
+        y: {{ beginAtZero: true, title: {{ display: true, text: '% de modelos' }}, grid: {{ color: 'rgba(159,176,206,.15)' }} }},
         x: {{ grid: {{ display: false }} }}
       }}
     }}
@@ -998,7 +998,7 @@ try {{
         legend: {{ position: 'bottom' }}
       }},
       scales: {{
-        y: {{ beginAtZero: true, title: {{ display: true, text: '% de modelos' }}, grid: {{ color: 'rgba(0,0,0,.06)' }} }},
+        y: {{ beginAtZero: true, title: {{ display: true, text: '% de modelos' }}, grid: {{ color: 'rgba(159,176,206,.15)' }} }},
         x: {{ grid: {{ display: false }} }}
       }}
     }}
@@ -1031,7 +1031,7 @@ try {{
         y: {{
           beginAtZero: true, max: 1.3,
           title: {{ display: true, text: 'MASE (< 1 = mejor que naive)' }},
-          grid: {{ color: 'rgba(0,0,0,.06)' }}
+          grid: {{ color: 'rgba(159,176,206,.15)' }}
         }},
         x: {{ grid: {{ display: false }} }}
       }}
@@ -1043,14 +1043,14 @@ try {{
         const ctx = chart.ctx;
         const y = yScale.getPixelForValue(1.0);
         ctx.save();
-        ctx.strokeStyle = '#b91c1c';
+        ctx.strokeStyle = '#EF4444';
         ctx.lineWidth = 2;
         ctx.setLineDash([6, 4]);
         ctx.beginPath();
         ctx.moveTo(chart.chartArea.left, y);
         ctx.lineTo(chart.chartArea.right, y);
         ctx.stroke();
-        ctx.fillStyle = '#b91c1c';
+        ctx.fillStyle = '#EF4444';
         ctx.font = '12px Source Sans 3';
         ctx.fillText('Baseline naive (1.0)', chart.chartArea.right - 140, y - 6);
         ctx.restore();
@@ -1089,7 +1089,7 @@ try {{
         tooltip: {{ callbacks: {{ label: ctx => ctx.dataset.label + ': ' + ctx.parsed.x + 's' }} }}
       }},
       scales: {{
-        x: {{ beginAtZero: true, title: {{ display: true, text: 'Segundos' }}, grid: {{ color: 'rgba(0,0,0,.06)' }} }},
+        x: {{ beginAtZero: true, title: {{ display: true, text: 'Segundos' }}, grid: {{ color: 'rgba(159,176,206,.15)' }} }},
         y: {{ grid: {{ display: false }} }}
       }}
     }}
@@ -1116,7 +1116,7 @@ try {{
         legend: {{ display: false }}
       }},
       scales: {{
-        y: {{ beginAtZero: true, max: 110, title: {{ display: true, text: '% cobertura' }}, grid: {{ color: 'rgba(0,0,0,.06)' }} }},
+        y: {{ beginAtZero: true, max: 110, title: {{ display: true, text: '% cobertura' }}, grid: {{ color: 'rgba(159,176,206,.15)' }} }},
         x: {{ grid: {{ display: false }} }}
       }}
     }}
@@ -1151,7 +1151,7 @@ try {{
         legend: {{ position: 'bottom' }}
       }},
       scales: {{
-        y: {{ stacked: true, beginAtZero: true, title: {{ display: true, text: 'Modelos' }}, grid: {{ color: 'rgba(0,0,0,.06)' }} }},
+        y: {{ stacked: true, beginAtZero: true, title: {{ display: true, text: 'Modelos' }}, grid: {{ color: 'rgba(159,176,206,.15)' }} }},
         x: {{ stacked: true, grid: {{ display: false }} }}
       }}
     }}
@@ -1192,7 +1192,7 @@ try {{
         legend: {{ position: 'bottom' }}
       }},
       scales: {{
-        y: {{ beginAtZero: true, title: {{ display: true, text: 'RMSE medio' }}, grid: {{ color: 'rgba(0,0,0,.06)' }} }},
+        y: {{ beginAtZero: true, title: {{ display: true, text: 'RMSE medio' }}, grid: {{ color: 'rgba(159,176,206,.15)' }} }},
         x: {{ grid: {{ display: false }} }}
       }}
     }}
@@ -1230,7 +1230,7 @@ try {{
         legend: {{ position: 'bottom' }}
       }},
       scales: {{
-        y: {{ beginAtZero: true, position: 'left', title: {{ display: true, text: 'Modelos' }}, grid: {{ color: 'rgba(0,0,0,.06)' }} }},
+        y: {{ beginAtZero: true, position: 'left', title: {{ display: true, text: 'Modelos' }}, grid: {{ color: 'rgba(159,176,206,.15)' }} }},
         y1: {{ beginAtZero: true, max: 110, position: 'right', title: {{ display: true, text: 'Cobertura (%)' }}, grid: {{ drawOnChartArea: false }} }},
         x: {{ grid: {{ display: false }} }}
       }}
