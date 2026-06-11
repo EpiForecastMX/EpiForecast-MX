@@ -62,6 +62,8 @@ def _out_paths() -> tuple[Path, Path]:
 MOTORES_ELEGIBLES = ["Prophet", "DeepAR", "NBGLM"]
 MIN_WEEKS_REAL = 10  # mínimo de semanas reales del año de eval. para usar criterio real
 MIN_TOTAL_CASOS = 10  # por debajo: serie casi-cero ("si es 0, es 0")
+SMAPE_TIE_BAND = 0.05  # motores dentro del 5% del mejor SMAPE se consideran empatados
+#                        y se desempatan por MAE (evita flips por ruido en año bajo).
 
 
 def mae(y: np.ndarray, yhat: np.ndarray) -> float:
@@ -118,9 +120,15 @@ def _pick(row: pd.Series) -> tuple[str, str, float | None]:
     cvs = {m: row[f"cv_smape_{m.lower()}"] for m in MOTORES_ELEGIBLES}
     cvs = {m: v for m, v in cvs.items() if pd.notna(v)}
 
-    # Regla 1: realidad suficiente + casos suficientes -> SMAPE real (MAE desempate)
+    # Regla 1: realidad suficiente + casos suficientes -> SMAPE real con BANDA de empate.
+    # Los motores dentro del 5% del mejor SMAPE se consideran empatados y se desempata por
+    # MAE. Sin la banda, un margen de ruido (p.ej. Nacional: Prophet 19.50 vs DeepAR 19.63)
+    # flipea a Prophet, que sobre-ajusta feo el pico epidémico; el MAE favorece a DeepAR,
+    # que sigue mejor la magnitud. Consistente con la banda 5% del reselect neuro.
     if n >= MIN_WEEKS_REAL and total >= MIN_TOTAL_CASOS and smapes:
-        winner = min(smapes, key=lambda m: (round(smapes[m], 4), maes.get(m, np.inf)))
+        best = min(smapes.values())
+        band = {m: v for m, v in smapes.items() if v <= best * (1 + SMAPE_TIE_BAND)}
+        winner = min(band, key=lambda m: maes.get(m, np.inf))
         return winner, "smape_real", smapes[winner]
     # Regla 2: serie casi-cero -> menor MAE (más cercano a cero), "si es 0, es 0"
     if n >= MIN_WEEKS_REAL and total < MIN_TOTAL_CASOS and maes:
