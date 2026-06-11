@@ -463,22 +463,22 @@ _FONTS_LINK = (
 )
 
 VEREDICTO_COLORS: dict[str, str] = {
-    "EXCELENTE": "#2e7d32",
-    "BUENO": "#00524E",
-    "REGULAR": "#f9a825",
-    "FALLO": "#c62828",
+    "EXCELENTE": "#2DD4BF",
+    "BUENO": "#0D9488",
+    "REGULAR": "#F59E0B",
+    "FALLO": "#EF4444",
     "N/A": "#97999B",
 }
 VEREDICTO_TEXT_COLOR: dict[str, str] = {
-    "EXCELENTE": "#fff",
+    "EXCELENTE": "#0B0F1A",
     "BUENO": "#fff",
-    "REGULAR": "#333",
+    "REGULAR": "#0B0F1A",
     "FALLO": "#fff",
     "N/A": "#fff",
 }
 MOTOR_COLORS: dict[str, str] = {
-    "prophet": "#00524E",
-    "deepar": "#9B2242",
+    "prophet": "#5B8DEF",
+    "deepar": "#BE185D",
     "ensemble": "#FF6F00",
     "stacking": "#1A237E",
 }
@@ -544,16 +544,16 @@ def _mase_class(val: Any) -> str:
 
 
 MASE_VERDICT_COLORS: dict[str, str] = {
-    "EXCELENTE": "#2e7d32",
-    "BUENO": "#00524E",
-    "REGULAR": "#f9a825",
-    "FALLO": "#c62828",
+    "EXCELENTE": "#2DD4BF",
+    "BUENO": "#0D9488",
+    "REGULAR": "#F59E0B",
+    "FALLO": "#EF4444",
     "—": "#97999B",
 }
 MASE_VERDICT_TEXT: dict[str, str] = {
-    "EXCELENTE": "#fff",
+    "EXCELENTE": "#0B0F1A",
     "BUENO": "#fff",
-    "REGULAR": "#333",
+    "REGULAR": "#0B0F1A",
     "FALLO": "#fff",
     "—": "#fff",
 }
@@ -707,13 +707,13 @@ def _dashboard_panel(
     if not math.isnan(mase):
         mase_pct = min(mase / 2 * 100, 100)
         if mase < 0.8:
-            mase_color, mase_lbl = "#2e7d32", "Excelente"
+            mase_color, mase_lbl = "#2DD4BF", "Excelente"
         elif mase < 1.0:
-            mase_color, mase_lbl = "#00524E", "Superior al naive"
+            mase_color, mase_lbl = "#0D9488", "Superior al naive"
         elif mase < 1.3:
-            mase_color, mase_lbl = "#f9a825", "Comparable al naive"
+            mase_color, mase_lbl = "#F59E0B", "Comparable al naive"
         else:
-            mase_color, mase_lbl = "#c62828", "Inferior al naive"
+            mase_color, mase_lbl = "#EF4444", "Inferior al naive"
         mase_html = f"""
       <div class="mase-box">
         <div class="mase-head">
@@ -1080,11 +1080,11 @@ def _build_css() -> str:
     return """
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --burgundy:#9B2242;--dark-burgundy:#6F1D46;--teal:#00524E;--dark-teal:#173F35;
-  --gold:#B58500;--cream:#E8D5B5;--cream-light:#F5EDE0;--cream-pale:#FAF6F0;
-  --cool-gray:#97999B;--neutral-black:#231F20;
-  --burgundy-light:#D4758B;--teal-light:#4A9E9A;--gold-light:#D4B24A;
-  --orange:#FF6F00;--indigo:#1A237E;
+  --burgundy:#F472B6;--dark-burgundy:#8E2A63;--teal:#5B8DEF;--dark-teal:#16203A;
+  --gold:#2DD4BF;--cream:#E7ECF5;--cream-light:#1C2740;--cream-pale:#131C30;
+  --cool-gray:#9FB0CE;--neutral-black:#0B0F1A;
+  --burgundy-light:#F472B6;--teal-light:#5B8DEF;--gold-light:#2DD4BF;
+  --orange:#FF6F00;--indigo:#5B8DEF;
   --font-display:'DM Serif Display',Georgia,serif;
   --font-body:'Source Sans 3','Source Sans Pro',sans-serif;
   --font-mono:'JetBrains Mono','Fira Code',monospace;
@@ -1143,10 +1143,10 @@ tbody tr:hover{background:var(--cream-pale)}
 .row-nacional{background:rgba(181,133,0,.06);font-weight:700}
 .row-nacional td{border-bottom:2px solid var(--gold)}
 .row-group-last td{border-bottom:2px solid var(--cream)}
-.err-good{color:#2e7d32;font-weight:600}
-.err-bad{color:#c62828;font-weight:600}
-.mase-good{color:#2e7d32;font-weight:600}
-.mase-warn{color:#c62828;font-weight:600}
+.err-good{color:#2DD4BF;font-weight:600}
+.err-bad{color:#EF4444;font-weight:600}
+.mase-good{color:#2DD4BF;font-weight:600}
+.mase-warn{color:#EF4444;font-weight:600}
 .table-semaforo td{text-align:center;padding:.5rem .75rem}
 .table-semaforo th{min-width:140px}
 .leyenda{display:flex;gap:1.5rem;flex-wrap:wrap;margin-bottom:1.5rem;
