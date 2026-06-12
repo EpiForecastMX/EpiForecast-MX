@@ -4,7 +4,7 @@ Este archivo actua como guia y contexto permanente para el agente Gemini CLI.
 
 ## 1. Proposito y Alcance
 
-**EpiForecast-MX** es una plataforma de inteligencia epidemiologica multi-modelo para el **IMSS**. Pronostica la incidencia semanal de Depresion (F32), Parkinson (G20) y Alzheimer (G30) en las 32 entidades federativas de Mexico con un horizonte de 52 semanas. Utiliza 4 motores de pronostico: **Prophet**, **DeepAR**, **Ensemble** (Prophet + XGBoost) y **Stacking** (Prophet + ETS + LightGBM + Ridge). Cada modelo genera 333 artefactos .pkl.
+**EpiForecast-MX** es una plataforma de inteligencia epidemiologica multi-modelo para el **IMSS**. Pronostica la incidencia semanal de Depresion (F32), Parkinson (G20) y Alzheimer (G30) en las 32 entidades federativas de Mexico con un horizonte de 52 semanas. Utiliza 5 motores de pronostico: **Prophet**, **DeepAR**, **Ensemble** (Prophet + XGBoost), **Stacking** (Prophet + ETS + LightGBM + Ridge) y **NBGLM** (Negative-Binomial GLM + Fourier + regresor El Nino/ONI, usado para Dengue). Cada motor neuro genera 333 artefactos .pkl.
 
 | Padecimiento | CIE-10 | Reto |
 |--------------|--------|------|
@@ -23,6 +23,7 @@ El proyecto utiliza un patron **Factory** para gestionar multiples motores de pr
 - **StackingForecaster** (`src/epiforecast/models/stacking/model.py`): 3 expertos (Prophet, ETS, LightGBM) + Ridge meta-learner. Pesos optimizados via OOF predictions. Opera sobre conteos absolutos.
   - `stacking/experts.py`: ProphetExpert, ETSExpert (statsmodels), LGBMExpert (lightgbm).
   - `stacking/meta_learner.py`: StackingMetaLearner con Ridge regularizado y pesos no negativos.
+- **NBGLMForecaster** (`src/epiforecast/models/nbglm/model.py`): Negative-Binomial GLM con estacionalidad de Fourier, lags y regresor El Nino/ONI (`src/epiforecast/data/enso.py`). Count-correcto, deterministico, extrapola sin divergencia. Es el motor productivo de Dengue (junto con DeepAR y Prophet) y el mejor en backtest leave-one-epidemic-out. No se usa en la cohorte neuro.
 - **ModelFactory** (`src/epiforecast/models/factory.py`): Punto unico de instanciacion via `create_model(name, **kwargs)`. Registra modelos con `@register_model("nombre")`.
 
 **Regla critica**: No importar clases de modelos directamente en scripts; siempre usar `create_model` de la fabrica.

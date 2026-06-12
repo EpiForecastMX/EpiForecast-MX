@@ -197,6 +197,15 @@ cython_debug/
 
 # PyTorch Lightning logs (checkpoints de entrenamiento DeepAR)
 lightning_logs/
+checkpoints/
+*.ckpt
+
+# Historial personal de la consola EPI (comandos/typos del usuario, no es codigo)
+.epi_history.json
+
+# Material en revision academica / doble-ciego (no va en entregables)
+Congresos/
+Stories/
 
 # Ruff stuff:
 .ruff_cache/
