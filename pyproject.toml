@@ -211,7 +211,6 @@ omit = [
     "*/visualization/comparison_css.py",
     "*/visualization/comparison_plots.py",
     "*/visualization/comparison_report.py",
-    "*/visualization/avance5_tables.py",
     "*/visualization/forecast_plots.py",
 ]
 
