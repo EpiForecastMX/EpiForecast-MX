@@ -151,7 +151,6 @@ def check_solid_principles():
     srp_exceptions = {
         "src/epiforecast/models/deepar/model.py",
         "src/epiforecast/visualization/avance5_tables.py",
-        "src/epiforecast/visualization/avance5_charts.py",
         "src/epiforecast/visualization/comparison_bars.py",
     }
     for py in SRC.rglob("*.py"):

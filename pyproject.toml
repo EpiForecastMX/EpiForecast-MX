@@ -164,6 +164,8 @@ module = [
     "epiforecast.visualization.comparison_metrics",
     "epiforecast.visualization.series_plots",
     "epiforecast.visualization.avance5_charts",
+    "epiforecast.visualization.avance5_panels",
+    "epiforecast.visualization.avance5_metric_charts",
 ]
 disable_error_code = ["arg-type"]
 
@@ -210,7 +212,6 @@ omit = [
     "*/visualization/comparison_plots.py",
     "*/visualization/comparison_report.py",
     "*/visualization/avance5_tables.py",
-    "*/visualization/avance5_charts.py",
     "*/visualization/forecast_plots.py",
 ]
 

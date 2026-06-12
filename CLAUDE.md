@@ -238,7 +238,7 @@ EpiForecast-MX/
 - **Tipado**: Uso estricto de `mypy`. Retornos de funciones deben estar tipados.
 - **Logging**: Usar `loguru.logger` para trazas de depuracion y errores.
 - **Lint**: Ruff con line-length=99, target Python 3.12.
-- **SRP**: Maximo 300 lineas por modulo. Excepciones documentadas: `models/deepar/model.py` (complejidad inherente de GluonTS) y los builders de visualizacion/reporte `visualization/{avance5_tables,avance5_charts,comparison_bars}.py` (codigo de figuras intensivo en layout, periferico a la logica de modelado; pendiente de particion incremental). `comparison_builders.py` se particiono en `comparison_panels.py` (primitivas de capa) + `comparison_metrics.py` (barras/residuales) + `comparison_builders.py` (small_multiples/overlay), con tests smoke/estructurales de red.
+- **SRP**: Maximo 300 lineas por modulo. Excepciones documentadas: `models/deepar/model.py` (complejidad inherente de GluonTS) y los builders de visualizacion/reporte `visualization/{avance5_tables,comparison_bars}.py` (codigo de figuras intensivo en layout, periferico a la logica de modelado; pendiente de particion incremental). Ya particionados (cubrir->partir, con tests smoke/estructurales de red): `comparison_builders.py` -> `comparison_panels` + `comparison_metrics` + `comparison_builders`; `avance5_charts.py` -> `avance5_panels` + `avance5_metric_charts` + `avance5_charts`.
 - **Tests**: Pytest con marcadores `slow` e `integration`. Coverage minimo 70%. Actualmente 849 tests en ~46 archivos.
 - **Pre-commit**: Ruff check + format, mypy, trailing whitespace, YAML/TOML check.
 
