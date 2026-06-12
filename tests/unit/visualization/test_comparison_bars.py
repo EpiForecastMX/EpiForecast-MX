@@ -186,3 +186,63 @@ class TestStamp:
         assert len(texts) >= 1
         assert "EpiForecast-MX" in texts[-1].get_text()
         plt.close(fig)
+
+
+# ---------------------------------------------------------------------------
+# Builders (smoke + estructural) — backend Agg, sin pixel-compare
+# ---------------------------------------------------------------------------
+
+import matplotlib  # noqa: E402
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # noqa: E402
+
+from epiforecast.visualization.comparison_bars import (  # noqa: E402
+    build_single_prod_bars,
+    build_weekly_bars,
+)
+from epiforecast.visualization.comparison_config import MODEL_STYLES  # noqa: E402
+
+_BAR_KEYS = list(MODEL_STYLES)
+
+
+def _bar_inputs(*, with_metrics: bool = True):
+    ds = pd.date_range("2022-01-03", periods=60, freq="W-MON")
+    wk = ds.isocalendar().week.to_numpy()
+    y = np.clip(50 + 20 * np.sin(2 * np.pi * wk / 52), 0, None).round()
+    serie_real = pd.DataFrame({"ds": ds, "y_original": y, "y": y, "Total": 1_000_000.0})
+    ds_fut = pd.date_range("2022-01-03", periods=68, freq="W-MON")
+    yhat = np.clip(
+        50 + 18 * np.sin(2 * np.pi * ds_fut.isocalendar().week.to_numpy() / 52), 0, None
+    )
+    preds = {}
+    for i, mk in enumerate(_BAR_KEYS):
+        df = pd.DataFrame(
+            {"ds": ds_fut, "yhat": yhat, "yhat_lower": yhat - 5, "yhat_upper": yhat + 5}
+        )
+        if with_metrics:
+            df["smape_usado"] = 12.0 + i
+            df["mase_usado"] = 0.8 + 0.05 * i
+            df["rmse_usado"] = 5.0 + i
+            df["mae_usado"] = 4.0 + i
+            df["mape_usado"] = 11.0 + i
+        preds[mk] = df
+    return serie_real, preds, "Depresion", "Jalisco", "General"
+
+
+class TestBarBuilders:
+    def teardown_method(self) -> None:
+        plt.close("all")
+
+    def test_build_weekly_bars_grid_2x2(self) -> None:
+        fig = build_weekly_bars(*_bar_inputs())
+        assert fig is not None
+        assert len(fig.axes) == 4
+
+    def test_build_single_prod_bars_devuelve_figura(self) -> None:
+        fig = build_single_prod_bars(*_bar_inputs(with_metrics=True))
+        assert fig is not None
+        assert len(fig.axes) >= 1
+
+    def test_build_single_prod_bars_sin_metricas_devuelve_none(self) -> None:
+        assert build_single_prod_bars(*_bar_inputs(with_metrics=False)) is None

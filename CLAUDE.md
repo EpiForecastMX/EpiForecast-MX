@@ -238,7 +238,7 @@ EpiForecast-MX/
 - **Tipado**: Uso estricto de `mypy`. Retornos de funciones deben estar tipados.
 - **Logging**: Usar `loguru.logger` para trazas de depuracion y errores.
 - **Lint**: Ruff con line-length=99, target Python 3.12.
-- **SRP**: Maximo 300 lineas por modulo. Excepciones documentadas: `models/deepar/model.py` (complejidad inherente de GluonTS) y `visualization/comparison_bars.py` (codigo de figuras intensivo en layout, periferico; pendiente de particion). Ya particionados (cubrir->partir, con tests smoke/estructurales de red): `comparison_builders.py` -> `comparison_panels` + `comparison_metrics` + `comparison_builders`; `avance5_charts.py` -> `avance5_panels` + `avance5_metric_charts` + `avance5_charts`; `avance5_tables.py` -> `avance5_data` (carga/merge/win-rate) + `avance5_tables` (markdown).
+- **SRP**: Maximo 300 lineas por modulo. Unica excepcion documentada: `models/deepar/model.py` (complejidad inherente de GluonTS). Los God-modules de visualizacion se particionaron (metodo cubrir->partir, con tests smoke/estructurales de red): `comparison_builders.py` -> `comparison_panels` + `comparison_metrics` + `comparison_builders`; `comparison_bars.py` -> `comparison_bars_helpers` + `comparison_prod_bars` + `comparison_bars`; `avance5_charts.py` -> `avance5_panels` + `avance5_metric_charts` + `avance5_charts`; `avance5_tables.py` -> `avance5_data` (carga/merge/win-rate) + `avance5_tables` (markdown).
 - **Tests**: Pytest con marcadores `slow` e `integration`. Coverage minimo 70%. Actualmente 849 tests en ~46 archivos.
 - **Pre-commit**: Ruff check + format, mypy, trailing whitespace, YAML/TOML check.
 
