@@ -169,7 +169,7 @@ EpiForecast-MX/
 |   |-- ci_process_boletines.py   #   CI/CD bulletin processing (Camelot)
 |   +-- publish_gsheets.py        #   Google Sheets publisher
 |
-|-- tests/                        # Test suite (55 files, 907 tests, 70%+ coverage)
+|-- tests/                        # Test suite (62 files, 945 tests, ~79% coverage, enforced gate)
 |   |-- unit/                     #   Unit tests for all modules
 |   +-- integration/              #   End-to-end pipeline tests
 |
@@ -593,7 +593,7 @@ make dengue-web                # public charts + JSON + EpiBot knowledge.json
 GitHub Actions runs on every push to `main` and on pull requests:
 
 1. **Code Quality** (`ci.yml`): Ruff lint + format check + mypy type checking.
-2. **Tests** (`ci.yml`): Pytest with 907 tests, coverage minimum 70%, excluding slow and integration tests.
+2. **Tests** (`ci.yml`): Pytest with 945 tests and an enforced coverage gate (`fail_under = 68`), excluding slow and integration tests.
 3. **Integration Tests** (`ci.yml`): Manual trigger only (`workflow_dispatch`).
 4. **Bulletin Scraping** (`scrape_boletines.yml`): Daily automated SINAVE bulletin download via Selenium.
 5. **Bulletin Processing** (`process_boletines.yml`): Camelot PDF extraction and dataset consolidation.

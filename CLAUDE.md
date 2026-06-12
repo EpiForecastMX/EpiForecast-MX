@@ -129,7 +129,7 @@ EpiForecast-MX/
 │       ├── help_menu.py          #     Menu de ayuda multi-seccion
 │       └── targets.py            #     Navegador de targets Makefile
 ├── scripts/                      # Entry points CLI (~24 scripts)
-├── tests/                        #   unit/ + integration/ (~46 archivos, 849 tests)
+├── tests/                        #   unit/ + integration/ (~62 archivos, 945 tests)
 ├── data/                         # raw/ → interim/ → processed/ (DVC)
 ├── models/                       # Artefactos .pkl (DVC, 4x333 = 1332 modelos)
 ├── reports/                      # Graficos, reportes HTML, forecasts, ProdDetails/
@@ -239,7 +239,7 @@ EpiForecast-MX/
 - **Logging**: Usar `loguru.logger` para trazas de depuracion y errores.
 - **Lint**: Ruff con line-length=99, target Python 3.12.
 - **SRP**: Maximo 300 lineas por modulo. Unica excepcion documentada: `models/deepar/model.py` (complejidad inherente de GluonTS). Los God-modules de visualizacion se particionaron (metodo cubrir->partir, con tests smoke/estructurales de red): `comparison_builders.py` -> `comparison_panels` + `comparison_metrics` + `comparison_builders`; `comparison_bars.py` -> `comparison_bars_helpers` + `comparison_prod_bars` + `comparison_bars`; `avance5_charts.py` -> `avance5_panels` + `avance5_metric_charts` + `avance5_charts`; `avance5_tables.py` -> `avance5_data` (carga/merge/win-rate) + `avance5_tables` (markdown).
-- **Tests**: Pytest con marcadores `slow` e `integration`. Coverage minimo 70%. Actualmente 849 tests en ~46 archivos.
+- **Tests**: Pytest con marcadores `slow` e `integration`. Gate de cobertura EJECUTABLE (`fail_under = 68` en pyproject); cobertura ~79% (suite completa). Actualmente 945 tests en ~62 archivos.
 - **Pre-commit**: Ruff check + format, mypy, trailing whitespace, YAML/TOML check.
 
 ### Dependencias Clave
@@ -279,7 +279,8 @@ EpiForecast-MX/
 - `visualization/chart_constants.py`: Constantes de estilo (tamaños, margenes, alphas) extraidas de `forecast_chart.py`.
 - `visualization/chart_renderer.py`: Renderizado de series (capas, bandas, COVID, outliers) extraido de `forecast_chart.py`.
 - `visualization/chart_annotations.py`: Anotaciones (divisores, zona CV, ficha tecnica con deteccion automatica de modelo) extraidas de `forecast_chart.py`.
-- `visualization/avance5_tables.py`: Carga de metricas, merge N-way de 4 modelos, generacion de tablas y reporte Markdown del Avance 5.
-- `visualization/avance5_charts.py`: 6 builders puros de graficos para el Avance 5 (tendencia, residuales, importancia, barras, boxplots, heatmap).
+- `visualization/avance5_data.py` + `avance5_tables.py`: carga de metricas + merge N-way + win-rate (data) y generacion de tablas/Markdown del Avance 5 (tables).
+- `visualization/avance5_charts.py` + `avance5_metric_charts.py` + `avance5_panels.py`: 6 builders puros de graficos del Avance 5 (tendencia/residuales en charts; importancia/barras/boxplots/heatmap en metric_charts; primitivas de capa en panels).
+- `visualization/comparison_{panels,metrics,builders}.py` y `comparison_{bars_helpers,prod_bars,bars}.py`: builders de comparacion multi-modelo particionados (capas, metricas/residuales, small-multiples/overlay, barras semanales y panel del ganador).
 - `features/demographic.py`: Feature builder demografico extraido para SRP.
 - `utils/mlflow_logger.py`: Wrapper opcional de MLflow para tracking de experimentos (no-op sin mlflow).

@@ -179,7 +179,7 @@ EpiForecast-MX/
 │   ├── ci_process_boletines.py   #   Procesamiento CI/CD de boletines
 │   ├── publish_gsheets.py        #   Publicacion a Google Sheets
 │   └── ...                       #   Preprocesamiento, reportes, paneles, etc.
-├── tests/                        # unit/ + integration/ (~46 archivos, 849 tests, coverage 70%+)
+├── tests/                        # unit/ + integration/ (~62 archivos, 945 tests, coverage ~79%, gate fail_under=68)
 ├── data/                         # raw/ -> interim/ -> processed/ (DVC)
 ├── models/                       # Artefactos .pkl por modelo/padecimiento (DVC, 4x333 modelos)
 ├── reports/                      # Graficos, reportes HTML/Markdown, forecasts CSV, ProdDetails/
@@ -194,7 +194,7 @@ EpiForecast-MX/
 - **Lint**: Ruff (line-length=99, Python 3.12, isort, bugbear, simplify, pathlib).
 - **SRP**: Maximo 300 lineas por modulo (excepto deepar/model.py por complejidad inherente).
 - **Tipado**: mypy estricto. Retornos de funciones deben estar tipados. Usar `.to_numpy()` en vez de `.values` para compatibilidad mypy.
-- **Tests**: Pytest con marcadores `slow` e `integration`. Coverage minimo 70%. Actualmente 849 tests en ~46 archivos.
+- **Tests**: Pytest con marcadores `slow` e `integration`. Gate de cobertura EJECUTABLE (`fail_under = 68`); cobertura ~79% (suite completa). Actualmente 945 tests en ~62 archivos.
 - **Logging**: loguru exclusivamente (`from epiforecast.utils.config import logger`).
 - **Imports**: stdlib → terceros → locales (enforced por Ruff isort).
 - **Pre-commit**: Ruff check + format, mypy, trailing whitespace, YAML/TOML check.
