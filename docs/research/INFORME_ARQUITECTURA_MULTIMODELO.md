@@ -1,9 +1,17 @@
-# Informe de Arquitectura: Ecosistema Multi-Modelo (Prophet + DeepAR)
+# Informe de Arquitectura: Ecosistema Multi-Modelo
 
-**Estado:** Implementado (Fases 1 y 2 completadas)
-**Fecha:** 2026-02-27
-**Autor:** Gemini CLI Agent
-**Versión:** 1.0 — Evolución Polimórfica
+> **DOCUMENTO HISTORICO (v1.0, 2026-02-27).** Describe la transicion inicial de
+> mono-modelo (Prophet) a la arquitectura polimorfica con DeepAR. La plataforma
+> evoluciono despues a **cinco motores** productivos — Prophet, DeepAR, Ensemble
+> (Prophet + XGBoost), Stacking (Prophet + ETS + LightGBM + Ridge) y **NB-GLM**
+> (Negative-Binomial + Fourier + ENSO, para Dengue). DeepAR, Ensemble y Stacking
+> estan **plenamente implementados y en produccion** (no son simulacion ni trabajo
+> futuro). Para el estado actual ver el **README, seccion Architecture**, las
+> **model cards** en `docs/model_cards/` y la guia `docs/PATENT_BUNDLE_README.md`.
+
+**Estado:** Historico — superado por la arquitectura de 5 motores en produccion.
+**Fecha original:** 2026-02-27
+**Versión:** 1.0 — Evolución Polimórfica (instantanea inicial)
 
 ## 1. Resumen Ejecutivo
 EpiForecast-MX ha evolucionado de una solución monomodelo basada en Prophet a una arquitectura **polimórfica y modular** basada en el patrón **Factory**. Esta evolución permite integrar cualquier algoritmo de pronóstico (como DeepAR de AWS SageMaker) sin alterar la lógica core del pipeline de datos ni los scripts de orquestación.

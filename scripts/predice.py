@@ -1,4 +1,10 @@
-# scripts/predice.py
+"""Entry point de prediccion.
+
+Carga los artefactos ``.pkl`` del motor seleccionado y genera el pronostico a 52
+semanas por serie, escribiendo el ``all_forecast_<motor>.csv`` correspondiente.
+Uso: ``python -m scripts.predice [modelo_activo=deepar]`` o ``make predict``.
+"""
+
 from pathlib import Path
 import re
 import unicodedata

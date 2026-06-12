@@ -4,11 +4,34 @@
 Fixtures here are available to all test files without explicit imports.
 """
 
+from pathlib import Path
 import sys
 import types
 
 import pandas as pd
 import pytest
+
+_ONI_FIXTURE = Path(__file__).parent / "fixtures" / "oni.ascii.txt"
+
+
+@pytest.fixture(autouse=True)
+def _hermetic_oni(monkeypatch):
+    """Hace la suite hermetica frente al regresor ENSO/ONI.
+
+    El motor NBGLM (y Prophet-Dengue) leen ONI de NOAA; sin esto, los tests
+    descargan ``oni.ascii.txt`` de la red (o caen a un fallback) cuando el
+    archivo de ``data/external/`` no esta presente (p. ej. en el bundle de
+    patente). Apuntamos ``ONI_PATH`` a un fixture versionado y desactivamos el
+    forecast externo opcional, de modo que ningun test toque la red.
+    """
+    if not _ONI_FIXTURE.exists():
+        return
+    import epiforecast.data.enso as enso
+
+    monkeypatch.setattr(enso, "ONI_PATH", _ONI_FIXTURE, raising=False)
+    monkeypatch.setattr(
+        enso, "ONI_FORECAST_PATH", _ONI_FIXTURE.with_name("__no_oni_forecast__.csv"), raising=False
+    )
 
 
 def pytest_configure(config):  # noqa: ARG001

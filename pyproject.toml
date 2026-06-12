@@ -216,6 +216,10 @@ omit = [
 [tool.coverage.report]
 show_missing = true
 skip_empty = true
+# Gate de cobertura EJECUTABLE (antes era solo aspiracional). Cobertura actual
+# ~70%; el piso se fija con margen para no romper CI ante churn menor, pero
+# bloquea la erosion por debajo del umbral.
+fail_under = 68
 
 # ─── Flit ─────────────────────────────────────────────────────────────────────
 [tool.flit.module]

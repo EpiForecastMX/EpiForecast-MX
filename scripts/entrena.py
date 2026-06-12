@@ -1,4 +1,11 @@
-# scripts/entrena.py
+"""Entry point de entrenamiento.
+
+Entrena el motor indicado por ``modelo_activo`` (o el override CLI) sobre todas
+las series del padecimiento configurado, fijando ``PYTHONHASHSEED`` para
+reproducibilidad y registrando cada run en MLflow si esta disponible. Uso:
+``python -m scripts.entrena [modelo_activo=deepar] [padecimiento.tipo=Dengue]``
+o via ``make train`` / ``make train-<motor>``.
+"""
 
 from contextlib import contextmanager
 import os

@@ -23,7 +23,7 @@
 
 ## 2. What is deliberately excluded / Qué se excluye a propósito
 
-`notebooks/` (~118 MB, base64-embedded outputs) · `references/` (~213 MB academic PDFs/photos) · `reports/` (~134 MB, except the audit report) · `data/` and `models/` (clinical IMSS data + `.pkl` binaries, private S3/DVC — **confidential, not claimable**) · `aws/` SageMaker infra (optional; contains a hardcoded AWS account id) · `CLAUDE.md`, `GEMINI.md`, `.epi_history.json` (internal AI config / personal history) · `Congresos/`, `Stories/` (papers under double-blind review) · `checkpoints/`, `mlruns/`, `lightning_logs/` (regenerable artifacts).
+`notebooks/` (~118 MB, base64-embedded outputs) · `references/` (~213 MB academic PDFs/photos) · `reports/` (~134 MB) · `data/` and `models/` (clinical IMSS data + `.pkl` binaries, private S3/DVC — **confidential, not claimable**) · `aws/` SageMaker infra (optional; contains a hardcoded AWS account id) · `.github/workflows/` CI/CD (the quality gate it runs is reproducible here via `make quality`) · `.dvc/` and `mlruns/` (data/model versioning + experiment tracking, parent-repo only) · `CLAUDE.md`, `GEMINI.md`, `.epi_history.json` (internal AI config / personal history) · `Congresos/`, `Stories/` (papers under double-blind review) · `checkpoints/`, `lightning_logs/` (regenerable artifacts).
 
 > The repository is ~5.5 GB on disk; **the invention is ~2.5 MB.** Excluding the documentary bloat is what makes the deliverable reviewable.
 
@@ -144,4 +144,4 @@ python -m scripts.predice        # forecast
 - **Coverage**: **70%** (at the gate; core `prophet/model.py` at 55% — raise before freezing the snapshot).
 - **SRP (≤300 lines/module):** 15 modules exceed it, concentrated in visualization/reporting (peripheral), not in the claimable logic; only `deepar/model.py` is the documented exception.
 
-Full detail, severities, and the remediation checklist: **`reports/AUDITORIA_PATENTE_CODIGO.md`**.
+Full detail, severities, and the remediation checklist live in the parent repository's `reports/` (`AUDITORIA_PATENTE_CODIGO.md` and `AUDITORIA_INGENIERIA_CODIGO.md`); they are internal governance documents and are not shipped in this bundle.
