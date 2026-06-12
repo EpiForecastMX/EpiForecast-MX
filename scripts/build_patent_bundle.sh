@@ -55,6 +55,9 @@ done
 
 # La documentacion del bundle (bilingue + diagrama) se versiona aparte y se copia.
 [ -f docs/PATENT_BUNDLE_README.md ] && cp docs/PATENT_BUNDLE_README.md "$OUT/README_BUNDLE.md"
+# Guia canonica en PDF (LaTeX/TikZ, diagrama vectorial) + su fuente reproducible.
+[ -f docs/Guia-Patente.pdf ] && cp docs/Guia-Patente.pdf "$OUT/Guia-Patente.pdf"
+[ -f docs/Guia-Patente.tex ] && cp docs/Guia-Patente.tex "$OUT/Guia-Patente.tex"
 
 # ── Manifiesto + checksum reproducible ────────────────────────────────────────
 echo "→ Generando MANIFEST.txt"
