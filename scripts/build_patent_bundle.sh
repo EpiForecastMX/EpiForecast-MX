@@ -48,7 +48,7 @@ rsync -a "${EXCLUDES[@]}" docs/model_cards/ "$OUT/docs/model_cards/"
 cp docs/research/INFORME_ARQUITECTURA_MULTIMODELO.md "$OUT/docs/research/" 2>/dev/null || true
 
 # ── Archivos raiz (build, dependencias, licencia, contrato de calidad) ────────
-for f in pyproject.toml requirements.txt Makefile README.md LICENSE \
+for f in pyproject.toml requirements.txt requirements.lock Makefile README.md LICENSE \
          .pre-commit-config.yaml .python-version epi.py; do
   [ -f "$f" ] && cp "$f" "$OUT/$f"
 done
