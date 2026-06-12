@@ -95,7 +95,9 @@ sagemaker = [
 ]
 
 [project.scripts]
-epiforecast = "scripts.train:main"
+# La CLI interactiva se instala como `epi` (consola EPI). El entrenamiento y la
+# orquestacion se ejecutan via `python -m scripts.<modulo>` o `make <target>`
+# (scripts/ no es un paquete instalable bajo flit, por eso no se expone aqui).
 epi = "epiforecast.cli:main"
 
 # ─── Ruff ─────────────────────────────────────────────────────────────────────

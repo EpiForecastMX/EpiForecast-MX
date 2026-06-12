@@ -130,56 +130,6 @@ class DataTransformation:
         # self.df.loc[filas_anio, 'Fecha'] = pd.to_datetime(self.df.loc[filas_anio, 'Anio'].astype(str) + '-01-01')
         # self.df.loc[filas_anio, 'Fecha'] = (pd.to_datetime(self.df.loc[filas_anio, 'Anio'].astype(str) + '-01-01')+ pd.offsets.Week(weekday=0))  # primer lunes
 
-    def _ajusta_incrementos(self) -> None:
-        for columna in ["Incremento_hombres", "Incremento_mujeres"]:
-            # 1) Identificar negativos
-            mascara_neg = self.df[columna] < 0
-
-            # 2) Consecutividad con la fila previa (misma Entidad, mismo Año, y Semana == Semana_prev + 1)
-            padecimiento = self.df["Padecimiento"].shift(1)
-            anio_prev = self.df["Anio"].shift(1)
-            semana_prev = self.df["Semana"].shift(1)
-            entidad_prev = self.df["Entidad"].shift(1)
-            valor_prev = self.df[columna].shift(1)
-
-            es_consec = (
-                (self.df["Padecimiento"] == padecimiento)
-                & (self.df["Entidad"] == entidad_prev)
-                & (self.df["Anio"] == anio_prev)
-                & (self.df["Semana"] == semana_prev + 1)
-            )
-
-            # Negativo actual + previo positivo + consecutivo
-            mascara_act = mascara_neg & es_consec & (valor_prev > 0)
-
-            # 3) AJUSTAR EL PREVIO (t-1) con "previo + actual_negativo"
-            #    - Recorte a >= 0
-            #    - Redondeo a entero
-            nuevo_prev = (valor_prev + self.df[columna]).where(mascara_act).clip(lower=0)
-
-            # Índices del previo (t-1) donde escribir
-            prev_index = self.df.index.to_series().shift(1)
-            targets_prev = prev_index[mascara_act].dropna().astype(int)
-
-            # Escribir en el PREVIO (solo en las filas válidas)
-            self.df.loc[targets_prev, columna] = nuevo_prev[mascara_act].astype(int).values
-
-            # 4) EXTRAPOLACIÓN CON 3 SEMANAS PREVIAS (t-1, t-2, t-3) usando la COLUMNA YA ACTUALIZADA
-            #    shift(1): excluye la semana actual
-            #    rolling(3): últimas 3 semanas previas dentro del mismo (Entidad, Anio)
-            prev3_mean = self.df.groupby(["Padecimiento", "Entidad", "Anio"])[columna].transform(
-                lambda s: s.shift(1).rolling(window=3, min_periods=1).mean()
-            )
-
-            # Redondear el promedio a entero y reemplazar NaN por 0 (si no hay historial)
-            prev3_mean = np.rint(prev3_mean).astype("Int64").fillna(0).astype(int)
-
-            # 5) Escribir la EXTRAPOLACIÓN en la fila ACTUAL (negativa + consecutiva + previo>0)
-            self.df.loc[mascara_act, columna] = prev3_mean[mascara_act].values
-
-            # 6) Asegurar que TODA la columna quede en enteros (por si quedan floats por mezclas pandas)
-            self.df[columna] = np.rint(self.df[columna]).astype(int)
-
     def _ajusta_negativos(self) -> None:
         for columna in ["Incremento_hombres", "Incremento_mujeres"]:
             neg = self.df[columna] < 0
@@ -284,8 +234,6 @@ class DataTransformation:
 
         self._ajusta_semanas()
         self._prepara_series_tiempo()
-        # self._ajusta_incrementos()  Procedimiento para el tratamiento de datos semana 20 2016
-        #                            Se retira este ajuste
         self._ajusta_negativos()
 
         if outlier_cfg and outlier_cfg["IQR"]:

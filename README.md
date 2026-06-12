@@ -506,7 +506,7 @@ class ForecastModel(ABC):
     def run(self) -> tuple[Any, dict, dict]: ...
 ```
 
-Models register themselves with `@register_model("name")` and are instantiated via `create_model(name, **kwargs)`. This allows transparent switching between algorithms without modifying pipeline code. Currently registered models: `prophet`, `deepar`, `ensemble`, `stacking`.
+Models register themselves with `@register_model("name")` and are instantiated via `create_model(name, **kwargs)`. This allows transparent switching between algorithms without modifying pipeline code. Currently registered models: `prophet`, `deepar`, `ensemble`, `stacking`, `nbglm` (the count-correct Negative-Binomial GLM + Fourier + El Niño/ONI engine used for Dengue; see the Dengue section below).
 
 ### Prophet
 

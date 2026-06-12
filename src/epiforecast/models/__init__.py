@@ -1,7 +1,7 @@
 """Models package for EpiForecast-MX.
 
-This package implements various forecasting algorithms (Prophet, DeepAR, Ensemble)
-following the Strategy and Factory patterns.
+This package implements five forecasting engines (Prophet, DeepAR, Ensemble,
+Stacking and NBGLM) following the Strategy and Factory patterns.
 """
 
 from epiforecast.models.base import ForecastModel
