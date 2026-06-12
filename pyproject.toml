@@ -160,6 +160,8 @@ module = [
     "epiforecast.visualization.chart_renderer",
     "epiforecast.visualization.chart_annotations",
     "epiforecast.visualization.comparison_builders",
+    "epiforecast.visualization.comparison_panels",
+    "epiforecast.visualization.comparison_metrics",
     "epiforecast.visualization.series_plots",
     "epiforecast.visualization.avance5_charts",
 ]

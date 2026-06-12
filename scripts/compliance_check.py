@@ -150,7 +150,6 @@ def check_solid_principles():
     # warning informativo en vez de fallo para no enmascarar deuda nueva.
     srp_exceptions = {
         "src/epiforecast/models/deepar/model.py",
-        "src/epiforecast/visualization/comparison_builders.py",
         "src/epiforecast/visualization/avance5_tables.py",
         "src/epiforecast/visualization/avance5_charts.py",
         "src/epiforecast/visualization/comparison_bars.py",
