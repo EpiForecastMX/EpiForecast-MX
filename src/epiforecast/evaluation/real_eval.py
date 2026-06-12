@@ -23,21 +23,20 @@ from __future__ import annotations
 from collections.abc import Iterable, Mapping
 from pathlib import Path
 
-import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
+from epiforecast.evaluation.metrics import smape as _smape
+
 
 def smape(y: npt.ArrayLike, yhat: npt.ArrayLike) -> float:
-    """SMAPE en %, seguro: devuelve NaN si todos los denominadores son 0."""
-    ya = np.asarray(y, dtype=float)
-    yha = np.asarray(yhat, dtype=float)
-    denom = (np.abs(ya) + np.abs(yha)) / 2
-    mask = denom > 0
-    if not bool(mask.any()):
-        return float("nan")
-    err = np.abs(ya[mask] - yha[mask]) / denom[mask]
-    return float(np.mean(err)) * 100
+    """SMAPE en %, seguro: devuelve NaN si todos los denominadores son 0.
+
+    Misma matemática que ``metrics.smape`` (única fuente de verdad); aquí el
+    borde "todo cero" devuelve ``NaN`` para distinguir una serie sin señal de un
+    ajuste perfecto en la selección de motor productivo.
+    """
+    return _smape(y, yhat, empty_value=float("nan"))
 
 
 def eval_year(boletin: Path | str, padecimientos: Iterable[str]) -> int:

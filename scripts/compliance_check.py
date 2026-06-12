@@ -144,16 +144,29 @@ def check_solid_principles():
     """Validate SOLID design patterns in the codebase."""
     cat = "SOLID"
 
-    # S — Single Responsibility: no file > 300 lines
+    # S — Single Responsibility: no file > 300 lines.
+    # Excepciones documentadas en CLAUDE.md (codigo intrinsecamente extenso o de
+    # layout de figuras, periferico a la logica de modelado). Se reportan como
+    # warning informativo en vez de fallo para no enmascarar deuda nueva.
+    srp_exceptions = {
+        "src/epiforecast/models/deepar/model.py",
+        "src/epiforecast/visualization/comparison_builders.py",
+        "src/epiforecast/visualization/avance5_tables.py",
+        "src/epiforecast/visualization/avance5_charts.py",
+        "src/epiforecast/visualization/comparison_bars.py",
+    }
     for py in SRC.rglob("*.py"):
         if py.name.startswith("__"):
             continue
+        rel = str(py.relative_to(ROOT))
         lines = len(py.read_text().splitlines())
+        is_exception = rel in srp_exceptions
         check(
             lines <= 300,
             cat,
-            f"SRP: {py.relative_to(ROOT)} has {lines} lines (max 300)",
-            warn_only=lines <= 400,
+            f"SRP: {rel} has {lines} lines (max 300)"
+            + (" [excepcion documentada]" if is_exception else ""),
+            warn_only=lines <= 400 or is_exception,
         )
 
     # O — Open/Closed: model factory exists

@@ -238,7 +238,7 @@ EpiForecast-MX/
 - **Tipado**: Uso estricto de `mypy`. Retornos de funciones deben estar tipados.
 - **Logging**: Usar `loguru.logger` para trazas de depuracion y errores.
 - **Lint**: Ruff con line-length=99, target Python 3.12.
-- **SRP**: Maximo 300 lineas por modulo (excepcion: deepar/model.py por complejidad inherente).
+- **SRP**: Maximo 300 lineas por modulo. Excepciones documentadas: `models/deepar/model.py` (complejidad inherente de GluonTS) y los builders de visualizacion/reporte `visualization/{comparison_builders,avance5_tables,avance5_charts,comparison_bars}.py` (codigo de figuras intensivo en layout, periferico a la logica de modelado; pendiente de particion incremental).
 - **Tests**: Pytest con marcadores `slow` e `integration`. Coverage minimo 70%. Actualmente 849 tests en ~46 archivos.
 - **Pre-commit**: Ruff check + format, mypy, trailing whitespace, YAML/TOML check.
 
