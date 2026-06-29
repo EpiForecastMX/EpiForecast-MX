@@ -164,7 +164,7 @@ def generar_predicciones_insample(
     )
     valid_mask = feats_train.notna().all(axis=1)
     xgb_adj_train = np.zeros(len(train_data))
-    xgb_adj_train[valid_mask.values] = xgb.predict(feats_train[valid_mask])
+    xgb_adj_train[valid_mask.to_numpy()] = xgb.predict(feats_train[valid_mask])
     ensemble_train = yhat_train_prophet + xgb_adj_train
 
     pred_train = pd.DataFrame(
@@ -227,7 +227,7 @@ def generar_prediccion_completa(
     feats_all = construir_features_xgb(y_series, d_series)
     valid = feats_all.notna().all(axis=1)
     xgb_adj_insample = np.zeros(len(serie))
-    xgb_adj_insample[valid.values] = xgb.predict(feats_all[valid])
+    xgb_adj_insample[valid.to_numpy()] = xgb.predict(feats_all[valid])
 
     # Merge con Prophet in-sample
     insample_dates = serie["ds"].values

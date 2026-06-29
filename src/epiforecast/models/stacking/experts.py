@@ -100,7 +100,7 @@ class ETSExpert:
             return np.zeros(n)
         try:
             pred = self._model.forecast(n)
-            return np.clip(np.asarray(pred, dtype=float), 0, None)
+            return np.asarray(np.clip(np.asarray(pred, dtype=float), 0, None), dtype=float)
         except (ValueError, IndexError) as e:
             logger.debug("  ETSExpert: prediccion fallida ({})", e)
             return np.zeros(n)

@@ -59,7 +59,7 @@ class XGBDirectForecaster:
         valid_mask = feats.notna().all(axis=1)
         result = np.zeros(len(data))
         if valid_mask.any():
-            result[valid_mask.values] = self._model.predict(feats[valid_mask])
+            result[valid_mask.to_numpy()] = self._model.predict(feats[valid_mask])
         return result
 
     def predict_recursive(

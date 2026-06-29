@@ -196,26 +196,31 @@ def notify_sns(new_files: list[str], rows_added: int) -> None:
         log.info("SNS_TOPIC_ARN no configurado, skip notificación.")
         return
 
-    import boto3
+    # ponytail: notificación best-effort — nunca tumbar el pipeline ya completado
+    # por un fallo de boto3 (p.ej. conflicto botocore<->boto3 de deps sin pin).
+    try:
+        import boto3
 
-    sns = boto3.client("sns", region_name=AWS_REGION)
-    file_list = "\n".join(f"  • {f}" for f in new_files)
+        sns = boto3.client("sns", region_name=AWS_REGION)
+        file_list = "\n".join(f"  • {f}" for f in new_files)
 
-    message = (
-        f"📊 Pipeline de extracción completado\n"
-        f"({datetime.now(UTC).strftime('%Y-%m-%d %H:%M UTC')})\n\n"
-        f"Boletines procesados:\n{file_list}\n\n"
-        f"Filas nuevas agregadas al dataset: {rows_added}\n"
-        f"Dataset: data/processed/dataset_boletin_epidemiologico.csv\n\n"
-        f"Versionado en EpiForecast-MX."
-    )
+        message = (
+            f"📊 Pipeline de extracción completado\n"
+            f"({datetime.now(UTC).strftime('%Y-%m-%d %H:%M UTC')})\n\n"
+            f"Boletines procesados:\n{file_list}\n\n"
+            f"Filas nuevas agregadas al dataset: {rows_added}\n"
+            f"Dataset: data/processed/dataset_boletin_epidemiologico.csv\n\n"
+            f"Versionado en EpiForecast-MX."
+        )
 
-    sns.publish(
-        TopicArn=SNS_TOPIC_ARN,
-        Subject=f"EpiForecast-MX: {len(new_files)} boletín(es) procesado(s) → {rows_added} filas nuevas",
-        Message=message,
-    )
-    log.info("Notificación SNS enviada.")
+        sns.publish(
+            TopicArn=SNS_TOPIC_ARN,
+            Subject=f"EpiForecast-MX: {len(new_files)} boletín(es) procesado(s) → {rows_added} filas nuevas",
+            Message=message,
+        )
+        log.info("Notificación SNS enviada.")
+    except Exception as e:  # noqa: BLE001
+        log.warning("Notificación SNS falló (no crítico): %s", e)
 
 
 # ──────────────────────────────────────────────────
