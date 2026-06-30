@@ -101,19 +101,21 @@ echo ">>> [9/11] Knowledge.json del EpiBot -> epibot/..."
 $PYTHON scripts/build_web_knowledge.py
 cp web_dashboard/knowledge.json "${EPIBOT}/knowledge.json"
 
-echo ">>> [10/11] Barra de fechas de Reports/index.html (auto, sin hardcodes)..."
+echo ">>> [10/11] Barra de fechas + Novedades de la landing (auto, sin hardcodes)..."
 $PYTHON scripts/actualiza_barra_fechas.py \
   --index "${REPORTS}/index.html" \
   --zoom  "${REPORTS}/zoom_data_neuro.json"
+# Novedades: refresca news.json (lead semanal con cifras frescas) + datelines del landing.
+$PYTHON scripts/build_news_weekly.py --dashboard "$DASHBOARD_ROOT"
 
 echo ">>> [11/11] Publicar dashboard + versionar artefactos..."
 # --- Dashboard (galeria, zoom, knowledge, index.html) ---
 cd "$DASHBOARD_ROOT"
-git add Reports/ epibot/ validacion_semanal.html
+git add Reports/ epibot/ validacion_semanal.html news.json index.html novedades.html
 if git diff --cached --quiet; then
   echo "    Dashboard sin cambios."
 else
-  git commit -q -m "reports+epibot: refresh semanal sem ${SEM}/${ANIO} (galeria, zoom, knowledge, barra de fechas)"
+  git commit -q -m "reports+epibot: refresh semanal sem ${SEM}/${ANIO} (galeria, zoom, knowledge, barra de fechas, novedades)"
   git push
   echo "    Dashboard publicado."
 fi
