@@ -1,0 +1,397 @@
+padecimiento,entidad,sexo,motor,n_sem_oos,smape_oos,mae_oos,real_acum,pron_acum
+Alzheimer,Aguascalientes,general,ensemble,4.0,120.8,0.5,2.0,3.0
+Alzheimer,Aguascalientes,hombres,ensemble,4.0,172.46,0.5,1.0,2.0
+Alzheimer,Aguascalientes,mujeres,ensemble,4.0,175.76,0.5,1.0,2.0
+Alzheimer,Baja California,general,stacking,4.0,124.57,0.8,3.0,4.0
+Alzheimer,Baja California,hombres,ensemble,4.0,200.0,0.4,0.0,2.0
+Alzheimer,Baja California,mujeres,ensemble,4.0,122.36,0.8,3.0,4.0
+Alzheimer,Baja California Sur,general,ensemble,4.0,200.0,0.2,0.0,1.0
+Alzheimer,Baja California Sur,hombres,ensemble,4.0,200.0,0.2,0.0,1.0
+Alzheimer,Baja California Sur,mujeres,ensemble,4.0,200.0,0.2,0.0,1.0
+Alzheimer,Campeche,general,ensemble,4.0,200.0,0.5,0.0,2.0
+Alzheimer,Campeche,hombres,ensemble,4.0,200.0,1.1,0.0,4.0
+Alzheimer,Campeche,mujeres,ensemble,4.0,200.0,0.3,0.0,1.0
+Alzheimer,Chiapas,general,prophet,4.0,86.31,0.8,5.0,4.0
+Alzheimer,Chiapas,hombres,ensemble,4.0,168.49,0.5,1.0,2.0
+Alzheimer,Chiapas,mujeres,prophet,4.0,113.34,0.8,4.0,2.0
+Alzheimer,Chihuahua,general,stacking,4.0,48.98,2.1,18.0,14.0
+Alzheimer,Chihuahua,hombres,prophet,4.0,93.93,1.2,7.0,5.0
+Alzheimer,Chihuahua,mujeres,deepar,4.0,66.15,1.7,10.0,10.0
+Alzheimer,Ciudad de México,general,prophet,4.0,91.72,1.1,7.0,5.0
+Alzheimer,Ciudad de México,hombres,ensemble,4.0,191.22,1.2,5.0,0.0
+Alzheimer,Ciudad de México,mujeres,prophet,4.0,78.09,0.8,5.0,5.0
+Alzheimer,Coahuila,general,deepar,4.0,79.35,2.4,14.0,7.0
+Alzheimer,Coahuila,hombres,prophet,4.0,39.47,0.6,6.0,4.0
+Alzheimer,Coahuila,mujeres,prophet,4.0,113.73,1.6,8.0,3.0
+Alzheimer,Colima,general,deepar,4.0,108.73,2.6,13.0,8.0
+Alzheimer,Colima,hombres,ensemble,4.0,166.16,1.2,5.0,1.0
+Alzheimer,Colima,mujeres,prophet,4.0,119.67,1.6,8.0,3.0
+Alzheimer,Durango,general,ensemble,4.0,171.26,1.4,3.0,5.0
+Alzheimer,Durango,hombres,deepar,4.0,190.91,1.1,3.0,2.0
+Alzheimer,Durango,mujeres,deepar,4.0,182.64,0.5,1.0,1.0
+Alzheimer,Guanajuato,general,prophet,4.0,69.06,1.3,10.0,5.0
+Alzheimer,Guanajuato,hombres,ensemble,4.0,200.0,0.2,0.0,1.0
+Alzheimer,Guanajuato,mujeres,prophet,4.0,99.2,1.7,10.0,3.0
+Alzheimer,Guerrero,general,prophet,4.0,140.62,0.7,3.0,2.0
+Alzheimer,Guerrero,hombres,ensemble,4.0,146.96,0.6,3.0,2.0
+Alzheimer,Guerrero,mujeres,prophet,4.0,200.0,0.7,0.0,3.0
+Alzheimer,Hidalgo,general,prophet,4.0,101.9,1.1,6.0,3.0
+Alzheimer,Hidalgo,hombres,ensemble,4.0,200.0,0.2,0.0,1.0
+Alzheimer,Hidalgo,mujeres,prophet,4.0,128.94,1.5,7.0,2.0
+Alzheimer,Jalisco,general,prophet,4.0,84.52,2.0,12.0,13.0
+Alzheimer,Jalisco,hombres,prophet,4.0,80.63,0.8,3.0,6.0
+Alzheimer,Jalisco,mujeres,prophet,4.0,98.48,1.8,9.0,9.0
+Alzheimer,Michoacán,general,stacking,4.0,157.49,1.5,6.0,3.0
+Alzheimer,Michoacán,hombres,ensemble,4.0,156.39,0.8,3.0,2.0
+Alzheimer,Michoacán,mujeres,ensemble,4.0,142.55,0.7,3.0,2.0
+Alzheimer,Morelos,general,prophet,4.0,152.04,1.3,5.0,3.0
+Alzheimer,Morelos,hombres,prophet,4.0,144.94,0.5,2.0,2.0
+Alzheimer,Morelos,mujeres,ensemble,4.0,164.65,0.8,3.0,1.0
+Alzheimer,México,general,stacking,4.0,70.3,1.3,9.0,6.0
+Alzheimer,México,hombres,ensemble,4.0,96.14,0.9,5.0,3.0
+Alzheimer,México,mujeres,prophet,4.0,77.43,0.8,4.0,6.0
+Alzheimer,Nacional,general,prophet,4.0,19.13,8.8,192.0,168.0
+Alzheimer,Nacional,hombres,prophet,4.0,14.66,2.8,74.0,69.0
+Alzheimer,Nacional,mujeres,prophet,4.0,23.09,6.9,126.0,110.0
+Alzheimer,Nayarit,general,prophet,4.0,154.95,0.7,1.0,3.0
+Alzheimer,Nayarit,hombres,ensemble,4.0,200.0,0.1,0.0,1.0
+Alzheimer,Nayarit,mujeres,deepar,4.0,156.5,0.5,1.0,2.0
+Alzheimer,Nuevo León,general,prophet,4.0,29.52,0.6,8.0,9.0
+Alzheimer,Nuevo León,hombres,ensemble,4.0,143.57,0.6,3.0,2.0
+Alzheimer,Nuevo León,mujeres,prophet,4.0,129.41,1.2,5.0,5.0
+Alzheimer,Oaxaca,general,prophet,4.0,75.39,2.0,13.0,6.0
+Alzheimer,Oaxaca,hombres,prophet,4.0,156.86,1.0,4.0,2.0
+Alzheimer,Oaxaca,mujeres,prophet,4.0,59.78,1.3,9.0,4.0
+Alzheimer,Puebla,general,ensemble,4.0,181.97,0.6,1.0,2.0
+Alzheimer,Puebla,hombres,ensemble,4.0,200.0,0.8,0.0,3.0
+Alzheimer,Puebla,mujeres,ensemble,4.0,134.39,0.7,2.0,3.0
+Alzheimer,Querétaro,general,ensemble,4.0,192.33,0.6,2.0,0.0
+Alzheimer,Querétaro,hombres,ensemble,4.0,172.46,0.4,1.0,2.0
+Alzheimer,Querétaro,mujeres,ensemble,4.0,194.04,0.9,3.0,1.0
+Alzheimer,Quintana Roo,general,ensemble,4.0,200.0,0.2,0.0,1.0
+Alzheimer,Quintana Roo,hombres,ensemble,4.0,200.0,0.1,0.0,0.0
+Alzheimer,Quintana Roo,mujeres,ensemble,4.0,200.0,0.2,0.0,1.0
+Alzheimer,San Luis Potosí,general,ensemble,4.0,109.07,0.7,2.0,5.0
+Alzheimer,San Luis Potosí,hombres,ensemble,4.0,160.71,0.5,2.0,1.0
+Alzheimer,San Luis Potosí,mujeres,ensemble,4.0,200.0,0.8,0.0,3.0
+Alzheimer,Sinaloa,general,prophet,4.0,84.85,2.4,15.0,11.0
+Alzheimer,Sinaloa,hombres,prophet,4.0,133.16,1.3,5.0,5.0
+Alzheimer,Sinaloa,mujeres,deepar,4.0,100.53,2.1,11.0,7.0
+Alzheimer,Sonora,general,prophet,4.0,78.45,0.7,5.0,5.0
+Alzheimer,Sonora,hombres,ensemble,4.0,132.14,0.6,3.0,1.0
+Alzheimer,Sonora,mujeres,deepar,4.0,113.36,1.2,2.0,6.0
+Alzheimer,Tabasco,general,ensemble,4.0,137.46,0.6,2.0,2.0
+Alzheimer,Tabasco,hombres,ensemble,4.0,155.7,0.6,2.0,2.0
+Alzheimer,Tabasco,mujeres,ensemble,4.0,200.0,0.4,0.0,1.0
+Alzheimer,Tamaulipas,general,prophet,4.0,81.8,1.3,6.0,10.0
+Alzheimer,Tamaulipas,hombres,ensemble,4.0,106.51,0.6,2.0,5.0
+Alzheimer,Tamaulipas,mujeres,stacking,4.0,83.29,0.9,4.0,7.0
+Alzheimer,Tlaxcala,general,ensemble,4.0,200.0,0.2,0.0,1.0
+Alzheimer,Tlaxcala,hombres,ensemble,4.0,200.0,0.5,0.0,2.0
+Alzheimer,Tlaxcala,mujeres,ensemble,4.0,200.0,0.3,0.0,1.0
+Alzheimer,Veracruz,general,stacking,4.0,64.58,2.2,15.0,9.0
+Alzheimer,Veracruz,hombres,prophet,4.0,32.46,0.8,7.0,4.0
+Alzheimer,Veracruz,mujeres,prophet,4.0,93.4,1.5,8.0,8.0
+Alzheimer,Yucatán,general,ensemble,4.0,127.41,0.5,2.0,2.0
+Alzheimer,Yucatán,hombres,ensemble,4.0,200.0,0.3,0.0,1.0
+Alzheimer,Yucatán,mujeres,ensemble,4.0,169.54,0.5,2.0,1.0
+Alzheimer,Zacatecas,general,ensemble,4.0,152.88,0.9,4.0,1.0
+Alzheimer,Zacatecas,hombres,ensemble,4.0,188.5,0.3,1.0,0.0
+Alzheimer,Zacatecas,mujeres,ensemble,4.0,157.05,0.7,3.0,1.0
+Dengue,Aguascalientes,general,deepar,4.0,196.08,0.5,2.0,0.0
+Dengue,Aguascalientes,hombres,prophet,4.0,197.39,0.3,1.0,0.0
+Dengue,Aguascalientes,mujeres,prophet,4.0,200.0,0.2,1.0,0.0
+Dengue,Baja California,general,prophet,4.0,200.0,0.5,2.0,0.0
+Dengue,Baja California,hombres,deepar,4.0,200.0,0.2,1.0,0.0
+Dengue,Baja California,mujeres,deepar,4.0,200.0,0.2,1.0,0.0
+Dengue,Baja California Sur,general,deepar,4.0,99.9,12.4,25.0,75.0
+Dengue,Baja California Sur,hombres,nbglm,4.0,43.74,1.2,13.0,8.0
+Dengue,Baja California Sur,mujeres,deepar,4.0,160.49,2.7,12.0,1.0
+Dengue,Campeche,general,nbglm,4.0,115.5,1.1,3.0,6.0
+Dengue,Campeche,hombres,deepar,4.0,200.0,0.5,2.0,0.0
+Dengue,Campeche,mujeres,deepar,4.0,200.0,0.2,1.0,0.0
+Dengue,Chiapas,general,prophet,4.0,30.01,2.3,31.0,26.0
+Dengue,Chiapas,hombres,prophet,4.0,45.48,1.3,13.0,12.0
+Dengue,Chiapas,mujeres,nbglm,4.0,83.67,7.8,18.0,49.0
+Dengue,Chihuahua,general,deepar,4.0,,0.0,0.0,0.0
+Dengue,Chihuahua,hombres,nbglm,4.0,,0.0,0.0,0.0
+Dengue,Chihuahua,mujeres,deepar,4.0,200.0,0.0,0.0,0.0
+Dengue,Ciudad de México,general,deepar,4.0,,0.0,0.0,0.0
+Dengue,Ciudad de México,hombres,deepar,4.0,200.0,0.0,0.0,0.0
+Dengue,Ciudad de México,mujeres,nbglm,4.0,,0.0,0.0,0.0
+Dengue,Coahuila,general,deepar,4.0,200.0,0.7,0.0,3.0
+Dengue,Coahuila,hombres,deepar,4.0,200.0,0.2,0.0,1.0
+Dengue,Coahuila,mujeres,deepar,4.0,200.0,0.0,0.0,0.0
+Dengue,Colima,general,prophet,4.0,,0.0,0.0,0.0
+Dengue,Colima,hombres,prophet,4.0,,0.0,0.0,0.0
+Dengue,Colima,mujeres,deepar,4.0,200.0,0.1,0.0,1.0
+Dengue,Durango,general,deepar,4.0,198.04,0.3,1.0,0.0
+Dengue,Durango,hombres,deepar,4.0,200.0,0.0,0.0,0.0
+Dengue,Durango,mujeres,deepar,4.0,199.01,0.3,1.0,0.0
+Dengue,Guanajuato,general,deepar,4.0,74.92,3.8,11.0,26.0
+Dengue,Guanajuato,hombres,prophet,4.0,85.7,0.9,6.0,6.0
+Dengue,Guanajuato,mujeres,prophet,4.0,68.06,1.4,5.0,11.0
+Dengue,Guerrero,general,prophet,4.0,118.97,1.1,3.0,6.0
+Dengue,Guerrero,hombres,deepar,4.0,137.76,1.1,3.0,4.0
+Dengue,Guerrero,mujeres,prophet,4.0,200.0,0.8,0.0,3.0
+Dengue,Hidalgo,general,deepar,4.0,200.0,1.8,0.0,7.0
+Dengue,Hidalgo,hombres,deepar,4.0,200.0,0.0,0.0,0.0
+Dengue,Hidalgo,mujeres,deepar,4.0,200.0,0.0,0.0,0.0
+Dengue,Jalisco,general,nbglm,4.0,48.05,4.3,31.0,48.0
+Dengue,Jalisco,hombres,nbglm,4.0,38.84,1.6,14.0,20.0
+Dengue,Jalisco,mujeres,nbglm,4.0,66.73,2.8,17.0,28.0
+Dengue,Michoacán,general,nbglm,4.0,129.6,12.5,10.0,60.0
+Dengue,Michoacán,hombres,nbglm,4.0,141.78,5.8,4.0,27.0
+Dengue,Michoacán,mujeres,nbglm,4.0,113.07,5.8,6.0,29.0
+Dengue,Morelos,general,prophet,4.0,200.0,0.5,2.0,0.0
+Dengue,Morelos,hombres,prophet,4.0,,0.0,0.0,0.0
+Dengue,Morelos,mujeres,prophet,4.0,200.0,0.5,2.0,0.0
+Dengue,México,general,deepar,4.0,183.77,1.2,5.0,0.0
+Dengue,México,hombres,deepar,4.0,115.12,0.5,2.0,3.0
+Dengue,México,mujeres,deepar,4.0,196.1,0.8,3.0,0.0
+Dengue,Nacional,general,deepar,4.0,5.32,7.4,568.0,561.0
+Dengue,Nacional,hombres,deepar,4.0,28.27,23.5,271.0,365.0
+Dengue,Nacional,mujeres,deepar,4.0,32.2,27.2,298.0,374.0
+Dengue,Nayarit,general,nbglm,4.0,109.53,3.4,19.0,5.0
+Dengue,Nayarit,hombres,prophet,4.0,29.3,0.6,8.0,7.0
+Dengue,Nayarit,mujeres,nbglm,4.0,92.46,1.8,11.0,4.0
+Dengue,Nuevo León,general,deepar,4.0,196.08,0.5,2.0,0.0
+Dengue,Nuevo León,hombres,deepar,4.0,198.68,0.3,1.0,0.0
+Dengue,Nuevo León,mujeres,prophet,4.0,200.0,0.3,1.0,0.0
+Dengue,Oaxaca,general,nbglm,4.0,140.84,7.5,5.0,35.0
+Dengue,Oaxaca,hombres,deepar,4.0,198.04,0.5,1.0,1.0
+Dengue,Oaxaca,mujeres,deepar,4.0,109.91,2.7,4.0,15.0
+Dengue,Puebla,general,deepar,4.0,89.52,1.4,7.0,5.0
+Dengue,Puebla,hombres,deepar,4.0,131.44,1.0,4.0,2.0
+Dengue,Puebla,mujeres,deepar,4.0,194.94,1.3,3.0,2.0
+Dengue,Querétaro,general,prophet,4.0,,0.0,0.0,0.0
+Dengue,Querétaro,hombres,deepar,4.0,200.0,0.0,0.0,0.0
+Dengue,Querétaro,mujeres,deepar,4.0,200.0,0.0,0.0,0.0
+Dengue,Quintana Roo,general,prophet,4.0,102.73,5.1,29.0,8.0
+Dengue,Quintana Roo,hombres,prophet,4.0,99.94,2.4,14.0,4.0
+Dengue,Quintana Roo,mujeres,nbglm,4.0,43.29,1.7,15.0,18.0
+Dengue,San Luis Potosí,general,deepar,4.0,194.19,0.5,2.0,0.0
+Dengue,San Luis Potosí,hombres,deepar,4.0,200.0,0.2,1.0,0.0
+Dengue,San Luis Potosí,mujeres,deepar,4.0,199.01,0.3,1.0,0.0
+Dengue,Sinaloa,general,nbglm,4.0,39.84,4.5,44.0,51.0
+Dengue,Sinaloa,hombres,nbglm,4.0,39.04,2.4,24.0,28.0
+Dengue,Sinaloa,mujeres,nbglm,4.0,41.08,2.1,20.0,27.0
+Dengue,Sonora,general,nbglm,4.0,44.26,18.1,199.0,126.0
+Dengue,Sonora,hombres,nbglm,4.0,61.69,11.4,95.0,49.0
+Dengue,Sonora,mujeres,nbglm,4.0,11.85,3.2,104.0,95.0
+Dengue,Tabasco,general,prophet,4.0,30.12,2.4,37.0,27.0
+Dengue,Tabasco,hombres,prophet,4.0,31.43,1.3,18.0,14.0
+Dengue,Tabasco,mujeres,nbglm,4.0,64.15,4.3,19.0,36.0
+Dengue,Tamaulipas,general,nbglm,4.0,136.85,1.8,5.0,10.0
+Dengue,Tamaulipas,hombres,nbglm,4.0,158.82,1.1,2.0,5.0
+Dengue,Tamaulipas,mujeres,nbglm,4.0,125.7,1.1,3.0,7.0
+Dengue,Tlaxcala,general,deepar,4.0,200.0,0.0,0.0,0.0
+Dengue,Tlaxcala,hombres,deepar,4.0,,0.0,0.0,0.0
+Dengue,Tlaxcala,mujeres,nbglm,4.0,,0.0,0.0,0.0
+Dengue,Veracruz,general,nbglm,4.0,36.3,8.2,92.0,109.0
+Dengue,Veracruz,hombres,nbglm,4.0,32.1,3.0,44.0,46.0
+Dengue,Veracruz,mujeres,nbglm,4.0,36.29,4.8,49.0,60.0
+Dengue,Yucatán,general,prophet,4.0,157.14,0.6,1.0,3.0
+Dengue,Yucatán,hombres,deepar,4.0,,0.0,0.0,0.0
+Dengue,Yucatán,mujeres,deepar,4.0,200.0,0.2,1.0,0.0
+Dengue,Zacatecas,general,deepar,4.0,,0.0,0.0,0.0
+Dengue,Zacatecas,hombres,nbglm,4.0,200.0,0.2,0.0,1.0
+Dengue,Zacatecas,mujeres,nbglm,4.0,200.0,0.1,0.0,0.0
+Depresion,Aguascalientes,general,stacking,4.0,18.24,6.2,147.0,122.0
+Depresion,Aguascalientes,hombres,stacking,4.0,35.69,3.9,48.0,33.0
+Depresion,Aguascalientes,mujeres,stacking,4.0,14.78,3.6,102.0,88.0
+Depresion,Baja California,general,stacking,4.0,6.64,7.5,458.0,475.0
+Depresion,Baja California,hombres,deepar,4.0,7.39,2.5,135.0,143.0
+Depresion,Baja California,mujeres,stacking,4.0,8.1,6.5,323.0,301.0
+Depresion,Baja California Sur,general,stacking,4.0,23.77,3.6,63.0,49.0
+Depresion,Baja California Sur,hombres,ensemble,4.0,43.58,1.7,15.0,14.0
+Depresion,Baja California Sur,mujeres,deepar,4.0,49.52,4.9,48.0,34.0
+Depresion,Campeche,general,stacking,4.0,19.59,6.7,138.0,124.0
+Depresion,Campeche,hombres,stacking,4.0,27.61,3.0,44.0,36.0
+Depresion,Campeche,mujeres,deepar,4.0,18.27,4.3,94.0,94.0
+Depresion,Chiapas,general,deepar,4.0,52.08,30.7,298.0,175.0
+Depresion,Chiapas,hombres,stacking,4.0,30.14,5.7,76.0,55.0
+Depresion,Chiapas,mujeres,deepar,4.0,31.56,16.8,248.0,181.0
+Depresion,Chihuahua,general,deepar,4.0,10.16,19.1,748.0,672.0
+Depresion,Chihuahua,hombres,deepar,4.0,30.83,15.5,223.0,177.0
+Depresion,Chihuahua,mujeres,deepar,4.0,22.76,29.8,559.0,458.0
+Depresion,Ciudad de México,general,deepar,4.0,27.67,165.4,2695.0,2034.0
+Depresion,Ciudad de México,hombres,deepar,4.0,28.18,48.1,762.0,570.0
+Depresion,Ciudad de México,mujeres,deepar,4.0,41.78,176.3,2014.0,1309.0
+Depresion,Coahuila,general,ensemble,4.0,11.94,7.5,263.0,235.0
+Depresion,Coahuila,hombres,ensemble,4.0,17.66,3.5,77.0,83.0
+Depresion,Coahuila,mujeres,deepar,4.0,18.88,8.2,200.0,167.0
+Depresion,Colima,general,deepar,4.0,71.32,22.9,175.0,83.0
+Depresion,Colima,hombres,deepar,4.0,33.26,3.8,52.0,37.0
+Depresion,Colima,mujeres,deepar,4.0,66.29,15.6,127.0,65.0
+Depresion,Durango,general,stacking,4.0,24.32,26.9,473.0,442.0
+Depresion,Durango,hombres,deepar,4.0,21.1,8.1,137.0,105.0
+Depresion,Durango,mujeres,stacking,4.0,41.19,44.1,444.0,343.0
+Depresion,Guanajuato,general,deepar,4.0,17.97,20.1,449.0,453.0
+Depresion,Guanajuato,hombres,prophet,4.0,20.57,4.5,85.0,103.0
+Depresion,Guanajuato,mujeres,deepar,4.0,20.86,20.0,364.0,400.0
+Depresion,Guerrero,general,stacking,4.0,19.26,15.4,338.0,276.0
+Depresion,Guerrero,hombres,deepar,4.0,26.46,6.1,97.0,76.0
+Depresion,Guerrero,mujeres,deepar,4.0,9.85,6.5,269.0,243.0
+Depresion,Hidalgo,general,stacking,4.0,7.46,5.2,275.0,278.0
+Depresion,Hidalgo,hombres,deepar,4.0,20.22,3.4,74.0,61.0
+Depresion,Hidalgo,mujeres,stacking,4.0,13.7,7.3,206.0,235.0
+Depresion,Jalisco,general,stacking,4.0,17.91,36.9,895.0,747.0
+Depresion,Jalisco,hombres,stacking,4.0,15.37,10.0,260.0,238.0
+Depresion,Jalisco,mujeres,stacking,4.0,13.62,20.9,638.0,555.0
+Depresion,Michoacán,general,prophet,4.0,57.23,62.1,547.0,298.0
+Depresion,Michoacán,hombres,deepar,4.0,51.72,14.0,134.0,78.0
+Depresion,Michoacán,mujeres,deepar,4.0,52.65,49.0,463.0,267.0
+Depresion,Morelos,general,deepar,4.0,24.9,18.7,325.0,277.0
+Depresion,Morelos,hombres,stacking,4.0,41.21,8.2,89.0,56.0
+Depresion,Morelos,mujeres,stacking,4.0,18.38,10.9,237.0,201.0
+Depresion,México,general,deepar,4.0,18.4,39.7,958.0,799.0
+Depresion,México,hombres,prophet,4.0,5.63,3.2,223.0,219.0
+Depresion,México,mujeres,stacking,4.0,30.77,49.9,746.0,546.0
+Depresion,Nacional,general,deepar,4.0,10.57,336.7,13352.0,12005.0
+Depresion,Nacional,hombres,deepar,4.0,13.26,114.4,3646.0,3188.0
+Depresion,Nacional,mujeres,stacking,4.0,9.59,235.9,10197.0,9253.0
+Depresion,Nayarit,general,deepar,4.0,31.07,23.5,305.0,292.0
+Depresion,Nayarit,hombres,deepar,4.0,23.63,5.5,81.0,103.0
+Depresion,Nayarit,mujeres,deepar,4.0,31.55,18.0,224.0,253.0
+Depresion,Nuevo León,general,deepar,4.0,42.27,29.3,329.0,218.0
+Depresion,Nuevo León,hombres,ensemble,4.0,15.49,2.9,77.0,81.0
+Depresion,Nuevo León,mujeres,ensemble,4.0,33.73,24.3,262.0,359.0
+Depresion,Oaxaca,general,deepar,4.0,18.35,11.4,274.0,228.0
+Depresion,Oaxaca,hombres,deepar,4.0,38.59,10.4,117.0,107.0
+Depresion,Oaxaca,mujeres,stacking,4.0,34.73,12.5,164.0,114.0
+Depresion,Puebla,general,prophet,4.0,24.29,16.0,294.0,230.0
+Depresion,Puebla,hombres,ensemble,4.0,60.52,12.2,100.0,51.0
+Depresion,Puebla,mujeres,prophet,4.0,28.53,17.4,251.0,181.0
+Depresion,Querétaro,general,stacking,4.0,38.28,10.1,90.0,131.0
+Depresion,Querétaro,hombres,stacking,4.0,45.85,2.0,21.0,29.0
+Depresion,Querétaro,mujeres,stacking,4.0,37.62,6.7,67.0,94.0
+Depresion,Quintana Roo,general,deepar,4.0,38.01,10.7,107.0,125.0
+Depresion,Quintana Roo,hombres,prophet,4.0,47.57,3.0,30.0,29.0
+Depresion,Quintana Roo,mujeres,prophet,4.0,20.17,4.1,81.0,65.0
+Depresion,San Luis Potosí,general,deepar,4.0,17.3,8.2,190.0,200.0
+Depresion,San Luis Potosí,hombres,prophet,4.0,33.68,3.6,40.0,52.0
+Depresion,San Luis Potosí,mujeres,deepar,4.0,42.35,13.8,150.0,95.0
+Depresion,Sinaloa,general,ensemble,4.0,12.46,13.0,416.0,407.0
+Depresion,Sinaloa,hombres,prophet,4.0,44.37,10.9,119.0,75.0
+Depresion,Sinaloa,mujeres,deepar,4.0,14.22,10.9,315.0,311.0
+Depresion,Sonora,general,stacking,4.0,7.6,5.6,295.0,274.0
+Depresion,Sonora,hombres,ensemble,4.0,11.91,1.9,65.0,63.0
+Depresion,Sonora,mujeres,stacking,4.0,11.16,6.4,235.0,212.0
+Depresion,Tabasco,general,ensemble,4.0,29.67,18.0,251.0,197.0
+Depresion,Tabasco,hombres,prophet,4.0,86.94,13.6,67.0,83.0
+Depresion,Tabasco,mujeres,prophet,4.0,68.49,26.5,184.0,133.0
+Depresion,Tamaulipas,general,ensemble,4.0,8.87,6.0,267.0,272.0
+Depresion,Tamaulipas,hombres,prophet,4.0,34.48,5.7,72.0,49.0
+Depresion,Tamaulipas,mujeres,deepar,4.0,2.48,1.2,202.0,207.0
+Depresion,Tlaxcala,general,ensemble,4.0,69.98,15.8,121.0,58.0
+Depresion,Tlaxcala,hombres,ensemble,4.0,43.55,2.7,30.0,19.0
+Depresion,Tlaxcala,mujeres,prophet,4.0,55.7,11.1,102.0,57.0
+Depresion,Veracruz,general,stacking,4.0,11.72,15.5,548.0,486.0
+Depresion,Veracruz,hombres,prophet,4.0,11.06,3.4,126.0,120.0
+Depresion,Veracruz,mujeres,stacking,4.0,13.87,13.9,422.0,366.0
+Depresion,Yucatán,general,stacking,4.0,10.7,10.7,388.0,431.0
+Depresion,Yucatán,hombres,deepar,4.0,32.54,10.1,105.0,145.0
+Depresion,Yucatán,mujeres,deepar,4.0,17.77,11.9,289.0,242.0
+Depresion,Zacatecas,general,deepar,4.0,12.32,7.0,232.0,250.0
+Depresion,Zacatecas,hombres,stacking,4.0,26.57,4.1,65.0,61.0
+Depresion,Zacatecas,mujeres,deepar,4.0,23.41,9.8,167.0,144.0
+Parkinson,Aguascalientes,general,prophet,4.0,109.7,0.7,2.0,5.0
+Parkinson,Aguascalientes,hombres,ensemble,4.0,154.95,0.7,1.0,3.0
+Parkinson,Aguascalientes,mujeres,ensemble,4.0,178.12,0.3,1.0,1.0
+Parkinson,Baja California,general,stacking,4.0,63.24,1.6,12.0,7.0
+Parkinson,Baja California,hombres,deepar,4.0,67.45,1.2,9.0,6.0
+Parkinson,Baja California,mujeres,ensemble,4.0,188.43,0.8,3.0,0.0
+Parkinson,Baja California Sur,general,prophet,4.0,91.76,1.0,6.0,5.0
+Parkinson,Baja California Sur,hombres,prophet,4.0,91.98,0.9,5.0,3.0
+Parkinson,Baja California Sur,mujeres,ensemble,4.0,164.52,0.5,1.0,2.0
+Parkinson,Campeche,general,ensemble,4.0,51.77,1.0,10.0,6.0
+Parkinson,Campeche,hombres,prophet,4.0,38.36,0.6,7.0,5.0
+Parkinson,Campeche,mujeres,ensemble,4.0,151.83,0.7,3.0,2.0
+Parkinson,Chiapas,general,stacking,4.0,19.1,0.7,16.0,14.0
+Parkinson,Chiapas,hombres,prophet,4.0,43.84,0.8,7.0,7.0
+Parkinson,Chiapas,mujeres,ensemble,4.0,48.79,1.1,10.0,7.0
+Parkinson,Chihuahua,general,prophet,4.0,39.43,2.8,28.0,31.0
+Parkinson,Chihuahua,hombres,deepar,4.0,55.62,2.3,19.0,12.0
+Parkinson,Chihuahua,mujeres,prophet,4.0,67.72,1.9,9.0,17.0
+Parkinson,Ciudad de México,general,stacking,4.0,63.45,3.2,21.0,25.0
+Parkinson,Ciudad de México,hombres,stacking,4.0,92.78,2.4,10.0,11.0
+Parkinson,Ciudad de México,mujeres,prophet,4.0,113.77,2.7,13.0,5.0
+Parkinson,Coahuila,general,prophet,4.0,80.53,7.4,44.0,17.0
+Parkinson,Coahuila,hombres,ensemble,4.0,71.88,3.3,22.0,10.0
+Parkinson,Coahuila,mujeres,deepar,4.0,70.91,3.6,22.0,11.0
+Parkinson,Colima,general,ensemble,4.0,30.69,1.9,25.0,23.0
+Parkinson,Colima,hombres,stacking,4.0,26.41,0.8,12.0,13.0
+Parkinson,Colima,mujeres,prophet,4.0,42.97,1.4,14.0,9.0
+Parkinson,Durango,general,prophet,4.0,46.42,2.3,19.0,25.0
+Parkinson,Durango,hombres,stacking,4.0,44.3,1.5,12.0,18.0
+Parkinson,Durango,mujeres,prophet,4.0,62.16,3.2,20.0,14.0
+Parkinson,Guanajuato,general,prophet,4.0,30.7,1.2,18.0,18.0
+Parkinson,Guanajuato,hombres,prophet,4.0,86.05,1.6,11.0,9.0
+Parkinson,Guanajuato,mujeres,prophet,4.0,25.87,0.5,7.0,9.0
+Parkinson,Guerrero,general,prophet,4.0,44.73,1.5,14.0,13.0
+Parkinson,Guerrero,hombres,prophet,4.0,52.81,1.3,12.0,7.0
+Parkinson,Guerrero,mujeres,prophet,4.0,116.15,0.9,3.0,6.0
+Parkinson,Hidalgo,general,stacking,4.0,42.99,0.8,7.0,4.0
+Parkinson,Hidalgo,hombres,prophet,4.0,149.54,1.0,4.0,3.0
+Parkinson,Hidalgo,mujeres,prophet,4.0,89.1,0.5,3.0,2.0
+Parkinson,Jalisco,general,stacking,4.0,31.75,4.2,54.0,64.0
+Parkinson,Jalisco,hombres,stacking,4.0,21.65,1.8,34.0,38.0
+Parkinson,Jalisco,mujeres,stacking,4.0,18.83,1.1,24.0,28.0
+Parkinson,Michoacán,general,deepar,4.0,78.5,5.5,37.0,15.0
+Parkinson,Michoacán,hombres,prophet,4.0,36.98,1.3,15.0,12.0
+Parkinson,Michoacán,mujeres,deepar,4.0,76.95,3.2,22.0,9.0
+Parkinson,Morelos,general,prophet,4.0,52.11,4.7,42.0,23.0
+Parkinson,Morelos,hombres,prophet,4.0,48.18,2.0,20.0,12.0
+Parkinson,Morelos,mujeres,prophet,4.0,75.59,3.4,22.0,12.0
+Parkinson,México,general,stacking,4.0,57.41,5.3,44.0,27.0
+Parkinson,México,hombres,deepar,4.0,32.09,1.3,21.0,16.0
+Parkinson,México,mujeres,stacking,4.0,78.54,3.8,24.0,15.0
+Parkinson,Nacional,general,prophet,4.0,15.03,24.4,654.0,616.0
+Parkinson,Nacional,hombres,stacking,4.0,16.54,15.2,373.0,351.0
+Parkinson,Nacional,mujeres,prophet,4.0,26.78,22.2,340.0,303.0
+Parkinson,Nayarit,general,prophet,4.0,102.42,0.6,2.0,4.0
+Parkinson,Nayarit,hombres,deepar,4.0,143.14,0.5,2.0,2.0
+Parkinson,Nayarit,mujeres,ensemble,4.0,200.0,0.8,0.0,3.0
+Parkinson,Nuevo León,general,deepar,4.0,55.32,2.3,17.0,19.0
+Parkinson,Nuevo León,hombres,stacking,4.0,54.4,1.1,9.0,12.0
+Parkinson,Nuevo León,mujeres,prophet,4.0,56.98,1.2,8.0,9.0
+Parkinson,Oaxaca,general,prophet,4.0,64.05,0.9,7.0,10.0
+Parkinson,Oaxaca,hombres,prophet,4.0,112.85,0.8,2.0,5.0
+Parkinson,Oaxaca,mujeres,prophet,4.0,81.58,0.7,5.0,4.0
+Parkinson,Puebla,general,prophet,4.0,120.32,7.9,11.0,43.0
+Parkinson,Puebla,hombres,ensemble,4.0,128.81,6.0,20.0,22.0
+Parkinson,Puebla,mujeres,prophet,4.0,107.33,5.9,23.0,22.0
+Parkinson,Querétaro,general,prophet,4.0,98.11,0.8,5.0,3.0
+Parkinson,Querétaro,hombres,ensemble,4.0,169.53,0.8,3.0,1.0
+Parkinson,Querétaro,mujeres,ensemble,4.0,143.45,0.5,2.0,2.0
+Parkinson,Quintana Roo,general,stacking,4.0,66.64,0.6,6.0,6.0
+Parkinson,Quintana Roo,hombres,prophet,4.0,102.9,0.6,2.0,4.0
+Parkinson,Quintana Roo,mujeres,ensemble,4.0,73.99,0.6,4.0,4.0
+Parkinson,San Luis Potosí,general,prophet,4.0,43.54,0.9,8.0,11.0
+Parkinson,San Luis Potosí,hombres,ensemble,4.0,78.48,1.2,5.0,9.0
+Parkinson,San Luis Potosí,mujeres,prophet,4.0,120.31,0.8,3.0,4.0
+Parkinson,Sinaloa,general,stacking,4.0,33.89,4.0,49.0,40.0
+Parkinson,Sinaloa,hombres,stacking,4.0,45.72,3.1,31.0,21.0
+Parkinson,Sinaloa,mujeres,prophet,4.0,30.04,1.5,20.0,19.0
+Parkinson,Sonora,general,prophet,4.0,65.71,3.3,26.0,13.0
+Parkinson,Sonora,hombres,deepar,4.0,73.67,2.1,13.0,10.0
+Parkinson,Sonora,mujeres,prophet,4.0,88.95,2.2,14.0,5.0
+Parkinson,Tabasco,general,prophet,4.0,93.52,1.9,7.0,14.0
+Parkinson,Tabasco,hombres,stacking,4.0,101.15,1.0,4.0,8.0
+Parkinson,Tabasco,mujeres,ensemble,4.0,121.24,1.1,3.0,6.0
+Parkinson,Tamaulipas,general,ensemble,4.0,44.58,3.0,30.0,23.0
+Parkinson,Tamaulipas,hombres,deepar,4.0,50.14,2.2,20.0,15.0
+Parkinson,Tamaulipas,mujeres,ensemble,4.0,71.02,1.8,10.0,10.0
+Parkinson,Tlaxcala,general,ensemble,4.0,151.69,0.8,1.0,4.0
+Parkinson,Tlaxcala,hombres,ensemble,4.0,200.0,0.9,0.0,4.0
+Parkinson,Tlaxcala,mujeres,ensemble,4.0,178.74,0.4,1.0,1.0
+Parkinson,Veracruz,general,deepar,4.0,11.35,1.8,64.0,61.0
+Parkinson,Veracruz,hombres,prophet,4.0,17.14,1.3,30.0,35.0
+Parkinson,Veracruz,mujeres,deepar,4.0,28.19,2.1,34.0,26.0
+Parkinson,Yucatán,general,deepar,4.0,104.28,3.2,16.0,11.0
+Parkinson,Yucatán,hombres,prophet,4.0,59.88,0.8,7.0,8.0
+Parkinson,Yucatán,mujeres,prophet,4.0,58.18,1.3,10.0,6.0
+Parkinson,Zacatecas,general,prophet,4.0,79.07,0.9,6.0,2.0
+Parkinson,Zacatecas,hombres,ensemble,4.0,157.74,0.9,4.0,1.0
+Parkinson,Zacatecas,mujeres,ensemble,4.0,198.03,0.6,2.0,0.0
