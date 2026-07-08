@@ -111,6 +111,14 @@ $PYTHON scripts/build_news_weekly.py --dashboard "$DASHBOARD_ROOT"
 echo ">>> [11/11] Publicar dashboard + versionar artefactos..."
 # --- Dashboard (galeria, zoom, knowledge, index.html) ---
 cd "$DASHBOARD_ROOT"
+# Cache-bust: el EpiBot (kb.js) carga knowledge.json con ?v=DATA_VERSION (constante estable).
+# Si no se sube, el navegador sirve el knowledge.json viejo tras cada refresh. Bump automatico
+# a la fecha de hoy para que el EpiBot siempre quede fresco. Solo cambia si hoy != version actual.
+_DV_TODAY="$(date +%Y%m%d)"
+if [ -f epibot/js/kb.js ]; then
+  perl -i -pe "s/const DATA_VERSION = '[0-9]+';/const DATA_VERSION = '${_DV_TODAY}';/" epibot/js/kb.js
+  echo "    cache-bust: DATA_VERSION -> ${_DV_TODAY}"
+fi
 git add Reports/ epibot/ validacion_semanal.html news.json index.html novedades.html
 if git diff --cached --quiet; then
   echo "    Dashboard sin cambios."
