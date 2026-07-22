@@ -1,0 +1,38 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Grupos de cuadro para extracción genérica (EPIC 2). SOLO describe layouts/bloques;
+# referencia el padecimiento por id del registry (config/padecimientos.yaml), sin
+# duplicar nombre ni CIE. Cargado por src/epiforecast/data/extraction/cuadro_registry.py
+# ─────────────────────────────────────────────────────────────────────────────
+version: 1
+
+cuadro_groups:
+  trastornos_nutricion:
+    # CUADRO 14.1 "Casos por entidad federativa de Trastornos de la Nutrición".
+    # Anclas de página (todas presentes) + marcadores de estado (distingue la tabla
+    # estatal del resumen nacional). Título NO se usa (typo "Transtornos" en la fuente).
+    page_anchors: ["e66", "obesidad"]
+    state_markers: ["aguascalientes", "zacatecas"]
+    year_week_source: filename
+    # Padecimientos co-ubicados (izq->der). onboard:false = extraíble pero no se emite.
+    diseases:
+      - id: obesidad
+        keyword: "Obesidad"
+        block_index: 0
+        onboard: true
+      - id: anorexia_f50
+        keyword: "Anorexia_F50"
+        block_index: 1
+        onboard: false
+    # Variantes de layout (columnas por padecimiento). Frontera verificada por discovery:
+    # 3col (Sem, H, M) hasta 2015_sem01; 4col (+ año anterior) desde 2015_sem02.
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "2015_sem02"   # >= esta clave -> 4 columnas
+        cols_per_disease: 4
+        has_prev_year: true
+      - id: v_3col_noprev
+        min_year_week: "0000_sem00"   # anterior -> 3 columnas (se rellena año anterior con NA)
+        cols_per_disease: 3
+        has_prev_year: false
+    n_states_expected: 32
+    backend: camelot_stream            # pdfplumber-por-posición aplazado (sin fixture que falle)
