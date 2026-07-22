@@ -1,6 +1,14 @@
 # Obesidad (E66) — Estado de cierre y pendientes
 
-## Estado: CERRADA con 3 motores (preliminar)
+## Estado: NO-GO / CONTENIDA (Fase 0) — NO cerrada
+
+> **CORRECCIÓN:** una auditoría posterior encontró regresiones graves (forecasts globales
+> sobrescritos, Prophet ~4.6× bajo por expm1, rolling_cv_v1 nunca corrió, exposición prematura
+> en el dashboard). Obesidad está **NO-GO** y se contuvo en Fase 0. Ver `FASE_0_CONTENCION.md`
+> y el plan `PLAN_BRUTAL_OBESIDAD_N_PLUS_1.md`. Lo de abajo describe el intento preliminar, NO
+> un cierre válido.
+
+## Intento preliminar (NO productivo)
 
 Obesidad quedó integrada end-to-end por la maquinaria genérica del registry (1 entrada +
 1 grupo de cuadro), **sin fork**:

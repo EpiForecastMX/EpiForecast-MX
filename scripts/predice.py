@@ -443,6 +443,29 @@ def main():
     for col in yhat_cols:
         out[col] = pd.to_numeric(out[col], errors="coerce").clip(lower=0)
 
+    # Guard temporal (Fase 0 de contención): un predice de padecimiento ÚNICO no debe
+    # SOBRESCRIBIR el agregado global multi-padecimiento (así se perdieron neuro+Dengue al
+    # correr predice para Obesidad). Aborta si el archivo destino ya contiene otros
+    # padecimientos. El flujo correcto (shards por enfermedad + upsert atómico) es de una
+    # fase posterior del plan; este guard solo previene la pérdida de datos.
+    tipo_raw = str(conf["padecimiento"]["tipo"])
+    if padecimiento_tipo != "General" and Path(out_file).exists():
+        try:
+            prev_pads = set(
+                pd.read_csv(out_file, usecols=["meta_padecimiento"])["meta_padecimiento"]
+                .astype(str)
+                .unique()
+            )
+        except (ValueError, KeyError):
+            prev_pads = set()
+        otras = {p for p in prev_pads if p not in ("", "nan", tipo_raw)}
+        if otras:
+            raise SystemExit(
+                f"GUARD (Fase 0): predice de '{tipo_raw}' sobrescribiría el agregado global "
+                f"{out_file} que contiene {sorted(otras)}. Prohibido para no perder esas series. "
+                "Usa el flujo de shards/upsert (pendiente) o corre General."
+            )
+
     out.to_csv(out_file, index=False)
 
     logger.success(
