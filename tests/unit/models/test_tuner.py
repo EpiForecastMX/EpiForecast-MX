@@ -49,9 +49,10 @@ class TestGridKeyMap:
         assert _GRID_KEY_MAP["Parkinson"] == "parkinson"
 
     def test_all_diseases_mapped(self):
-        # 3 neurológicos + Dengue
-        assert len(_GRID_KEY_MAP) == 4
+        # Derivado del registry: 3 neuro + Dengue + Obesidad (E66).
+        assert len(_GRID_KEY_MAP) == 5
         assert _GRID_KEY_MAP["Dengue"] == "dengue"
+        assert _GRID_KEY_MAP["Obesidad"] == "obesidad"
 
 
 class TestLoadGrid:

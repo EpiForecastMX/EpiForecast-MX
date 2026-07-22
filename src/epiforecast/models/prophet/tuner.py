@@ -15,18 +15,17 @@ from typing import TYPE_CHECKING, Any
 
 from tqdm import tqdm
 
+from epiforecast import registry
 from epiforecast.models.prophet.cross_validator import ProphetCrossValidator
 from epiforecast.utils.config import conf, logger
 
 if TYPE_CHECKING:
     from epiforecast.models.prophet.model import ProphetForecaster
 
-# Grid key mapping: Spanish condition name → YAML key
+# Grid key mapping: nombre canónico → clave del grid. DERIVADO del registry (de-hardcodeado);
+# incluye cualquier padecimiento con prophet_grid_key (p.ej. Obesidad).
 _GRID_KEY_MAP: dict[str, str] = {
-    "Alzheimer": "alzheimer",
-    "Depresión": "depresion",
-    "Parkinson": "parkinson",
-    "Dengue": "dengue",
+    d.data_name: d.prophet_grid_key for d in registry.get_registry().diseases if d.prophet_grid_key
 }
 
 
