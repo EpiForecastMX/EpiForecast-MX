@@ -1,0 +1,433 @@
+disease_id,data_name,cohorte,entidad,sexo,motor_productivo,source
+alzheimer,Alzheimer,neuro,Nacional,hombres,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Nacional,mujeres,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Nacional,general,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Aguascalientes,hombres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Aguascalientes,mujeres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Aguascalientes,general,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Baja California,hombres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Baja California,mujeres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Baja California,general,Stacking,tabla_333
+alzheimer,Alzheimer,neuro,Baja California Sur,hombres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Baja California Sur,mujeres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Baja California Sur,general,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Campeche,hombres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Campeche,mujeres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Campeche,general,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Chiapas,hombres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Chiapas,mujeres,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Chiapas,general,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Chihuahua,hombres,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Chihuahua,mujeres,DeepAR,tabla_333
+alzheimer,Alzheimer,neuro,Chihuahua,general,Stacking,tabla_333
+alzheimer,Alzheimer,neuro,Ciudad de México,hombres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Ciudad de México,mujeres,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Ciudad de México,general,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Coahuila,hombres,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Coahuila,mujeres,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Coahuila,general,DeepAR,tabla_333
+alzheimer,Alzheimer,neuro,Colima,hombres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Colima,mujeres,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Colima,general,DeepAR,tabla_333
+alzheimer,Alzheimer,neuro,Durango,hombres,DeepAR,tabla_333
+alzheimer,Alzheimer,neuro,Durango,mujeres,DeepAR,tabla_333
+alzheimer,Alzheimer,neuro,Durango,general,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Guanajuato,hombres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Guanajuato,mujeres,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Guanajuato,general,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Guerrero,hombres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Guerrero,mujeres,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Guerrero,general,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Hidalgo,hombres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Hidalgo,mujeres,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Hidalgo,general,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Jalisco,hombres,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Jalisco,mujeres,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Jalisco,general,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Michoacán,hombres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Michoacán,mujeres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Michoacán,general,Stacking,tabla_333
+alzheimer,Alzheimer,neuro,Morelos,hombres,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Morelos,mujeres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Morelos,general,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,México,hombres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,México,mujeres,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,México,general,Stacking,tabla_333
+alzheimer,Alzheimer,neuro,Nayarit,hombres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Nayarit,mujeres,DeepAR,tabla_333
+alzheimer,Alzheimer,neuro,Nayarit,general,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Nuevo León,hombres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Nuevo León,mujeres,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Nuevo León,general,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Oaxaca,hombres,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Oaxaca,mujeres,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Oaxaca,general,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Puebla,hombres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Puebla,mujeres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Puebla,general,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Querétaro,hombres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Querétaro,mujeres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Querétaro,general,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Quintana Roo,hombres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Quintana Roo,mujeres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Quintana Roo,general,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,San Luis Potosí,hombres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,San Luis Potosí,mujeres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,San Luis Potosí,general,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Sinaloa,hombres,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Sinaloa,mujeres,DeepAR,tabla_333
+alzheimer,Alzheimer,neuro,Sinaloa,general,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Sonora,hombres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Sonora,mujeres,DeepAR,tabla_333
+alzheimer,Alzheimer,neuro,Sonora,general,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Tabasco,hombres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Tabasco,mujeres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Tabasco,general,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Tamaulipas,hombres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Tamaulipas,mujeres,Stacking,tabla_333
+alzheimer,Alzheimer,neuro,Tamaulipas,general,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Tlaxcala,hombres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Tlaxcala,mujeres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Tlaxcala,general,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Veracruz,hombres,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Veracruz,mujeres,Prophet,tabla_333
+alzheimer,Alzheimer,neuro,Veracruz,general,Stacking,tabla_333
+alzheimer,Alzheimer,neuro,Yucatán,hombres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Yucatán,mujeres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Yucatán,general,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Zacatecas,hombres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Zacatecas,mujeres,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,Zacatecas,general,Ensemble,tabla_333
+alzheimer,Alzheimer,neuro,region_Metropolitana alta,hombres,DeepAR,tabla_333
+alzheimer,Alzheimer,neuro,region_Metropolitana alta,mujeres,Stacking,tabla_333
+alzheimer,Alzheimer,neuro,region_Metropolitana alta,general,DeepAR,tabla_333
+alzheimer,Alzheimer,neuro,region_Rural / dispersa,hombres,DeepAR,tabla_333
+alzheimer,Alzheimer,neuro,region_Rural / dispersa,mujeres,DeepAR,tabla_333
+alzheimer,Alzheimer,neuro,region_Rural / dispersa,general,DeepAR,tabla_333
+alzheimer,Alzheimer,neuro,region_Sur-Sureste vulnerable,hombres,DeepAR,tabla_333
+alzheimer,Alzheimer,neuro,region_Sur-Sureste vulnerable,mujeres,DeepAR,tabla_333
+alzheimer,Alzheimer,neuro,region_Sur-Sureste vulnerable,general,DeepAR,tabla_333
+alzheimer,Alzheimer,neuro,region_Urbana media,hombres,DeepAR,tabla_333
+alzheimer,Alzheimer,neuro,region_Urbana media,mujeres,DeepAR,tabla_333
+alzheimer,Alzheimer,neuro,region_Urbana media,general,DeepAR,tabla_333
+depresion,Depresion,neuro,Nacional,hombres,DeepAR,tabla_333
+depresion,Depresion,neuro,Nacional,mujeres,Stacking,tabla_333
+depresion,Depresion,neuro,Nacional,general,DeepAR,tabla_333
+depresion,Depresion,neuro,Aguascalientes,hombres,Stacking,tabla_333
+depresion,Depresion,neuro,Aguascalientes,mujeres,Stacking,tabla_333
+depresion,Depresion,neuro,Aguascalientes,general,Stacking,tabla_333
+depresion,Depresion,neuro,Baja California,hombres,DeepAR,tabla_333
+depresion,Depresion,neuro,Baja California,mujeres,Stacking,tabla_333
+depresion,Depresion,neuro,Baja California,general,Stacking,tabla_333
+depresion,Depresion,neuro,Baja California Sur,hombres,Ensemble,tabla_333
+depresion,Depresion,neuro,Baja California Sur,mujeres,DeepAR,tabla_333
+depresion,Depresion,neuro,Baja California Sur,general,Stacking,tabla_333
+depresion,Depresion,neuro,Campeche,hombres,Stacking,tabla_333
+depresion,Depresion,neuro,Campeche,mujeres,DeepAR,tabla_333
+depresion,Depresion,neuro,Campeche,general,Stacking,tabla_333
+depresion,Depresion,neuro,Chiapas,hombres,Stacking,tabla_333
+depresion,Depresion,neuro,Chiapas,mujeres,DeepAR,tabla_333
+depresion,Depresion,neuro,Chiapas,general,DeepAR,tabla_333
+depresion,Depresion,neuro,Chihuahua,hombres,DeepAR,tabla_333
+depresion,Depresion,neuro,Chihuahua,mujeres,DeepAR,tabla_333
+depresion,Depresion,neuro,Chihuahua,general,DeepAR,tabla_333
+depresion,Depresion,neuro,Ciudad de México,hombres,DeepAR,tabla_333
+depresion,Depresion,neuro,Ciudad de México,mujeres,DeepAR,tabla_333
+depresion,Depresion,neuro,Ciudad de México,general,DeepAR,tabla_333
+depresion,Depresion,neuro,Coahuila,hombres,Ensemble,tabla_333
+depresion,Depresion,neuro,Coahuila,mujeres,DeepAR,tabla_333
+depresion,Depresion,neuro,Coahuila,general,Ensemble,tabla_333
+depresion,Depresion,neuro,Colima,hombres,DeepAR,tabla_333
+depresion,Depresion,neuro,Colima,mujeres,DeepAR,tabla_333
+depresion,Depresion,neuro,Colima,general,DeepAR,tabla_333
+depresion,Depresion,neuro,Durango,hombres,DeepAR,tabla_333
+depresion,Depresion,neuro,Durango,mujeres,Stacking,tabla_333
+depresion,Depresion,neuro,Durango,general,Stacking,tabla_333
+depresion,Depresion,neuro,Guanajuato,hombres,Prophet,tabla_333
+depresion,Depresion,neuro,Guanajuato,mujeres,DeepAR,tabla_333
+depresion,Depresion,neuro,Guanajuato,general,DeepAR,tabla_333
+depresion,Depresion,neuro,Guerrero,hombres,DeepAR,tabla_333
+depresion,Depresion,neuro,Guerrero,mujeres,DeepAR,tabla_333
+depresion,Depresion,neuro,Guerrero,general,Stacking,tabla_333
+depresion,Depresion,neuro,Hidalgo,hombres,DeepAR,tabla_333
+depresion,Depresion,neuro,Hidalgo,mujeres,Stacking,tabla_333
+depresion,Depresion,neuro,Hidalgo,general,Stacking,tabla_333
+depresion,Depresion,neuro,Jalisco,hombres,Stacking,tabla_333
+depresion,Depresion,neuro,Jalisco,mujeres,Stacking,tabla_333
+depresion,Depresion,neuro,Jalisco,general,Stacking,tabla_333
+depresion,Depresion,neuro,Michoacán,hombres,DeepAR,tabla_333
+depresion,Depresion,neuro,Michoacán,mujeres,DeepAR,tabla_333
+depresion,Depresion,neuro,Michoacán,general,Prophet,tabla_333
+depresion,Depresion,neuro,Morelos,hombres,Stacking,tabla_333
+depresion,Depresion,neuro,Morelos,mujeres,Stacking,tabla_333
+depresion,Depresion,neuro,Morelos,general,DeepAR,tabla_333
+depresion,Depresion,neuro,México,hombres,Prophet,tabla_333
+depresion,Depresion,neuro,México,mujeres,Stacking,tabla_333
+depresion,Depresion,neuro,México,general,DeepAR,tabla_333
+depresion,Depresion,neuro,Nayarit,hombres,DeepAR,tabla_333
+depresion,Depresion,neuro,Nayarit,mujeres,DeepAR,tabla_333
+depresion,Depresion,neuro,Nayarit,general,DeepAR,tabla_333
+depresion,Depresion,neuro,Nuevo León,hombres,Ensemble,tabla_333
+depresion,Depresion,neuro,Nuevo León,mujeres,Ensemble,tabla_333
+depresion,Depresion,neuro,Nuevo León,general,DeepAR,tabla_333
+depresion,Depresion,neuro,Oaxaca,hombres,DeepAR,tabla_333
+depresion,Depresion,neuro,Oaxaca,mujeres,Stacking,tabla_333
+depresion,Depresion,neuro,Oaxaca,general,DeepAR,tabla_333
+depresion,Depresion,neuro,Puebla,hombres,Ensemble,tabla_333
+depresion,Depresion,neuro,Puebla,mujeres,Prophet,tabla_333
+depresion,Depresion,neuro,Puebla,general,Prophet,tabla_333
+depresion,Depresion,neuro,Querétaro,hombres,Stacking,tabla_333
+depresion,Depresion,neuro,Querétaro,mujeres,Stacking,tabla_333
+depresion,Depresion,neuro,Querétaro,general,Stacking,tabla_333
+depresion,Depresion,neuro,Quintana Roo,hombres,Prophet,tabla_333
+depresion,Depresion,neuro,Quintana Roo,mujeres,Prophet,tabla_333
+depresion,Depresion,neuro,Quintana Roo,general,DeepAR,tabla_333
+depresion,Depresion,neuro,San Luis Potosí,hombres,Prophet,tabla_333
+depresion,Depresion,neuro,San Luis Potosí,mujeres,DeepAR,tabla_333
+depresion,Depresion,neuro,San Luis Potosí,general,DeepAR,tabla_333
+depresion,Depresion,neuro,Sinaloa,hombres,Prophet,tabla_333
+depresion,Depresion,neuro,Sinaloa,mujeres,DeepAR,tabla_333
+depresion,Depresion,neuro,Sinaloa,general,Ensemble,tabla_333
+depresion,Depresion,neuro,Sonora,hombres,Ensemble,tabla_333
+depresion,Depresion,neuro,Sonora,mujeres,Stacking,tabla_333
+depresion,Depresion,neuro,Sonora,general,Stacking,tabla_333
+depresion,Depresion,neuro,Tabasco,hombres,Prophet,tabla_333
+depresion,Depresion,neuro,Tabasco,mujeres,Prophet,tabla_333
+depresion,Depresion,neuro,Tabasco,general,Ensemble,tabla_333
+depresion,Depresion,neuro,Tamaulipas,hombres,Prophet,tabla_333
+depresion,Depresion,neuro,Tamaulipas,mujeres,DeepAR,tabla_333
+depresion,Depresion,neuro,Tamaulipas,general,Ensemble,tabla_333
+depresion,Depresion,neuro,Tlaxcala,hombres,Ensemble,tabla_333
+depresion,Depresion,neuro,Tlaxcala,mujeres,Prophet,tabla_333
+depresion,Depresion,neuro,Tlaxcala,general,Ensemble,tabla_333
+depresion,Depresion,neuro,Veracruz,hombres,Prophet,tabla_333
+depresion,Depresion,neuro,Veracruz,mujeres,Stacking,tabla_333
+depresion,Depresion,neuro,Veracruz,general,Stacking,tabla_333
+depresion,Depresion,neuro,Yucatán,hombres,DeepAR,tabla_333
+depresion,Depresion,neuro,Yucatán,mujeres,DeepAR,tabla_333
+depresion,Depresion,neuro,Yucatán,general,Stacking,tabla_333
+depresion,Depresion,neuro,Zacatecas,hombres,Stacking,tabla_333
+depresion,Depresion,neuro,Zacatecas,mujeres,DeepAR,tabla_333
+depresion,Depresion,neuro,Zacatecas,general,DeepAR,tabla_333
+depresion,Depresion,neuro,region_Metropolitana alta,hombres,DeepAR,tabla_333
+depresion,Depresion,neuro,region_Metropolitana alta,mujeres,DeepAR,tabla_333
+depresion,Depresion,neuro,region_Metropolitana alta,general,DeepAR,tabla_333
+depresion,Depresion,neuro,region_Rural / dispersa,hombres,DeepAR,tabla_333
+depresion,Depresion,neuro,region_Rural / dispersa,mujeres,DeepAR,tabla_333
+depresion,Depresion,neuro,region_Rural / dispersa,general,DeepAR,tabla_333
+depresion,Depresion,neuro,region_Sur-Sureste vulnerable,hombres,DeepAR,tabla_333
+depresion,Depresion,neuro,region_Sur-Sureste vulnerable,mujeres,DeepAR,tabla_333
+depresion,Depresion,neuro,region_Sur-Sureste vulnerable,general,DeepAR,tabla_333
+depresion,Depresion,neuro,region_Urbana media,hombres,DeepAR,tabla_333
+depresion,Depresion,neuro,region_Urbana media,mujeres,DeepAR,tabla_333
+depresion,Depresion,neuro,region_Urbana media,general,DeepAR,tabla_333
+parkinson,Parkinson,neuro,Nacional,hombres,Stacking,tabla_333
+parkinson,Parkinson,neuro,Nacional,mujeres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Nacional,general,Prophet,tabla_333
+parkinson,Parkinson,neuro,Aguascalientes,hombres,Ensemble,tabla_333
+parkinson,Parkinson,neuro,Aguascalientes,mujeres,Ensemble,tabla_333
+parkinson,Parkinson,neuro,Aguascalientes,general,Prophet,tabla_333
+parkinson,Parkinson,neuro,Baja California,hombres,DeepAR,tabla_333
+parkinson,Parkinson,neuro,Baja California,mujeres,Ensemble,tabla_333
+parkinson,Parkinson,neuro,Baja California,general,Stacking,tabla_333
+parkinson,Parkinson,neuro,Baja California Sur,hombres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Baja California Sur,mujeres,Ensemble,tabla_333
+parkinson,Parkinson,neuro,Baja California Sur,general,Prophet,tabla_333
+parkinson,Parkinson,neuro,Campeche,hombres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Campeche,mujeres,Ensemble,tabla_333
+parkinson,Parkinson,neuro,Campeche,general,Ensemble,tabla_333
+parkinson,Parkinson,neuro,Chiapas,hombres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Chiapas,mujeres,Ensemble,tabla_333
+parkinson,Parkinson,neuro,Chiapas,general,Stacking,tabla_333
+parkinson,Parkinson,neuro,Chihuahua,hombres,DeepAR,tabla_333
+parkinson,Parkinson,neuro,Chihuahua,mujeres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Chihuahua,general,Prophet,tabla_333
+parkinson,Parkinson,neuro,Ciudad de México,hombres,Stacking,tabla_333
+parkinson,Parkinson,neuro,Ciudad de México,mujeres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Ciudad de México,general,Stacking,tabla_333
+parkinson,Parkinson,neuro,Coahuila,hombres,Ensemble,tabla_333
+parkinson,Parkinson,neuro,Coahuila,mujeres,DeepAR,tabla_333
+parkinson,Parkinson,neuro,Coahuila,general,Prophet,tabla_333
+parkinson,Parkinson,neuro,Colima,hombres,Stacking,tabla_333
+parkinson,Parkinson,neuro,Colima,mujeres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Colima,general,Ensemble,tabla_333
+parkinson,Parkinson,neuro,Durango,hombres,Stacking,tabla_333
+parkinson,Parkinson,neuro,Durango,mujeres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Durango,general,Prophet,tabla_333
+parkinson,Parkinson,neuro,Guanajuato,hombres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Guanajuato,mujeres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Guanajuato,general,Prophet,tabla_333
+parkinson,Parkinson,neuro,Guerrero,hombres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Guerrero,mujeres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Guerrero,general,Prophet,tabla_333
+parkinson,Parkinson,neuro,Hidalgo,hombres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Hidalgo,mujeres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Hidalgo,general,Stacking,tabla_333
+parkinson,Parkinson,neuro,Jalisco,hombres,Stacking,tabla_333
+parkinson,Parkinson,neuro,Jalisco,mujeres,Stacking,tabla_333
+parkinson,Parkinson,neuro,Jalisco,general,Stacking,tabla_333
+parkinson,Parkinson,neuro,Michoacán,hombres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Michoacán,mujeres,DeepAR,tabla_333
+parkinson,Parkinson,neuro,Michoacán,general,DeepAR,tabla_333
+parkinson,Parkinson,neuro,Morelos,hombres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Morelos,mujeres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Morelos,general,Prophet,tabla_333
+parkinson,Parkinson,neuro,México,hombres,DeepAR,tabla_333
+parkinson,Parkinson,neuro,México,mujeres,Stacking,tabla_333
+parkinson,Parkinson,neuro,México,general,Stacking,tabla_333
+parkinson,Parkinson,neuro,Nayarit,hombres,DeepAR,tabla_333
+parkinson,Parkinson,neuro,Nayarit,mujeres,Ensemble,tabla_333
+parkinson,Parkinson,neuro,Nayarit,general,Prophet,tabla_333
+parkinson,Parkinson,neuro,Nuevo León,hombres,Stacking,tabla_333
+parkinson,Parkinson,neuro,Nuevo León,mujeres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Nuevo León,general,DeepAR,tabla_333
+parkinson,Parkinson,neuro,Oaxaca,hombres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Oaxaca,mujeres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Oaxaca,general,Prophet,tabla_333
+parkinson,Parkinson,neuro,Puebla,hombres,Ensemble,tabla_333
+parkinson,Parkinson,neuro,Puebla,mujeres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Puebla,general,Prophet,tabla_333
+parkinson,Parkinson,neuro,Querétaro,hombres,Ensemble,tabla_333
+parkinson,Parkinson,neuro,Querétaro,mujeres,Ensemble,tabla_333
+parkinson,Parkinson,neuro,Querétaro,general,Prophet,tabla_333
+parkinson,Parkinson,neuro,Quintana Roo,hombres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Quintana Roo,mujeres,Ensemble,tabla_333
+parkinson,Parkinson,neuro,Quintana Roo,general,Stacking,tabla_333
+parkinson,Parkinson,neuro,San Luis Potosí,hombres,Ensemble,tabla_333
+parkinson,Parkinson,neuro,San Luis Potosí,mujeres,Prophet,tabla_333
+parkinson,Parkinson,neuro,San Luis Potosí,general,Prophet,tabla_333
+parkinson,Parkinson,neuro,Sinaloa,hombres,Stacking,tabla_333
+parkinson,Parkinson,neuro,Sinaloa,mujeres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Sinaloa,general,Stacking,tabla_333
+parkinson,Parkinson,neuro,Sonora,hombres,DeepAR,tabla_333
+parkinson,Parkinson,neuro,Sonora,mujeres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Sonora,general,Prophet,tabla_333
+parkinson,Parkinson,neuro,Tabasco,hombres,Stacking,tabla_333
+parkinson,Parkinson,neuro,Tabasco,mujeres,Ensemble,tabla_333
+parkinson,Parkinson,neuro,Tabasco,general,Prophet,tabla_333
+parkinson,Parkinson,neuro,Tamaulipas,hombres,DeepAR,tabla_333
+parkinson,Parkinson,neuro,Tamaulipas,mujeres,Ensemble,tabla_333
+parkinson,Parkinson,neuro,Tamaulipas,general,Ensemble,tabla_333
+parkinson,Parkinson,neuro,Tlaxcala,hombres,Ensemble,tabla_333
+parkinson,Parkinson,neuro,Tlaxcala,mujeres,Ensemble,tabla_333
+parkinson,Parkinson,neuro,Tlaxcala,general,Ensemble,tabla_333
+parkinson,Parkinson,neuro,Veracruz,hombres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Veracruz,mujeres,DeepAR,tabla_333
+parkinson,Parkinson,neuro,Veracruz,general,DeepAR,tabla_333
+parkinson,Parkinson,neuro,Yucatán,hombres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Yucatán,mujeres,Prophet,tabla_333
+parkinson,Parkinson,neuro,Yucatán,general,DeepAR,tabla_333
+parkinson,Parkinson,neuro,Zacatecas,hombres,Ensemble,tabla_333
+parkinson,Parkinson,neuro,Zacatecas,mujeres,Ensemble,tabla_333
+parkinson,Parkinson,neuro,Zacatecas,general,Prophet,tabla_333
+parkinson,Parkinson,neuro,region_Metropolitana alta,hombres,DeepAR,tabla_333
+parkinson,Parkinson,neuro,region_Metropolitana alta,mujeres,DeepAR,tabla_333
+parkinson,Parkinson,neuro,region_Metropolitana alta,general,DeepAR,tabla_333
+parkinson,Parkinson,neuro,region_Rural / dispersa,hombres,DeepAR,tabla_333
+parkinson,Parkinson,neuro,region_Rural / dispersa,mujeres,DeepAR,tabla_333
+parkinson,Parkinson,neuro,region_Rural / dispersa,general,DeepAR,tabla_333
+parkinson,Parkinson,neuro,region_Sur-Sureste vulnerable,hombres,DeepAR,tabla_333
+parkinson,Parkinson,neuro,region_Sur-Sureste vulnerable,mujeres,DeepAR,tabla_333
+parkinson,Parkinson,neuro,region_Sur-Sureste vulnerable,general,DeepAR,tabla_333
+parkinson,Parkinson,neuro,region_Urbana media,hombres,DeepAR,tabla_333
+parkinson,Parkinson,neuro,region_Urbana media,mujeres,DeepAR,tabla_333
+parkinson,Parkinson,neuro,region_Urbana media,general,DeepAR,tabla_333
+dengue,Dengue,dengue,Aguascalientes,general,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Aguascalientes,hombres,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Aguascalientes,mujeres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Baja California,general,Prophet,produccion_dengue
+dengue,Dengue,dengue,Baja California,hombres,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Baja California,mujeres,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Baja California Sur,general,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Baja California Sur,hombres,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Baja California Sur,mujeres,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Campeche,general,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Campeche,hombres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Campeche,mujeres,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Chiapas,general,Prophet,produccion_dengue
+dengue,Dengue,dengue,Chiapas,hombres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Chiapas,mujeres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Chihuahua,general,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Chihuahua,hombres,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Chihuahua,mujeres,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Ciudad de México,general,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Ciudad de México,hombres,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Ciudad de México,mujeres,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Coahuila,general,Prophet,produccion_dengue
+dengue,Dengue,dengue,Coahuila,hombres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Coahuila,mujeres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Colima,general,Prophet,produccion_dengue
+dengue,Dengue,dengue,Colima,hombres,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Colima,mujeres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Durango,general,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Durango,hombres,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Durango,mujeres,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Guanajuato,general,Prophet,produccion_dengue
+dengue,Dengue,dengue,Guanajuato,hombres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Guanajuato,mujeres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Guerrero,general,Prophet,produccion_dengue
+dengue,Dengue,dengue,Guerrero,hombres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Guerrero,mujeres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Hidalgo,general,Prophet,produccion_dengue
+dengue,Dengue,dengue,Hidalgo,hombres,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Hidalgo,mujeres,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Jalisco,general,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Jalisco,hombres,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Jalisco,mujeres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Michoacán,general,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Michoacán,hombres,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Michoacán,mujeres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Morelos,general,Prophet,produccion_dengue
+dengue,Dengue,dengue,Morelos,hombres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Morelos,mujeres,Prophet,produccion_dengue
+dengue,Dengue,dengue,México,general,DeepAR,produccion_dengue
+dengue,Dengue,dengue,México,hombres,DeepAR,produccion_dengue
+dengue,Dengue,dengue,México,mujeres,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Nacional,general,Prophet,produccion_dengue
+dengue,Dengue,dengue,Nacional,hombres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Nacional,mujeres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Nayarit,general,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Nayarit,hombres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Nayarit,mujeres,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Nuevo León,general,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Nuevo León,hombres,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Nuevo León,mujeres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Oaxaca,general,Prophet,produccion_dengue
+dengue,Dengue,dengue,Oaxaca,hombres,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Oaxaca,mujeres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Puebla,general,Prophet,produccion_dengue
+dengue,Dengue,dengue,Puebla,hombres,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Puebla,mujeres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Querétaro,general,Prophet,produccion_dengue
+dengue,Dengue,dengue,Querétaro,hombres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Querétaro,mujeres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Quintana Roo,general,Prophet,produccion_dengue
+dengue,Dengue,dengue,Quintana Roo,hombres,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Quintana Roo,mujeres,NBGLM,produccion_dengue
+dengue,Dengue,dengue,San Luis Potosí,general,NBGLM,produccion_dengue
+dengue,Dengue,dengue,San Luis Potosí,hombres,DeepAR,produccion_dengue
+dengue,Dengue,dengue,San Luis Potosí,mujeres,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Sinaloa,general,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Sinaloa,hombres,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Sinaloa,mujeres,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Sonora,general,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Sonora,hombres,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Sonora,mujeres,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Tabasco,general,Prophet,produccion_dengue
+dengue,Dengue,dengue,Tabasco,hombres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Tabasco,mujeres,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Tamaulipas,general,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Tamaulipas,hombres,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Tamaulipas,mujeres,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Tlaxcala,general,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Tlaxcala,hombres,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Tlaxcala,mujeres,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Veracruz,general,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Veracruz,hombres,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Veracruz,mujeres,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Yucatán,general,Prophet,produccion_dengue
+dengue,Dengue,dengue,Yucatán,hombres,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Yucatán,mujeres,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Zacatecas,general,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Zacatecas,hombres,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Zacatecas,mujeres,DeepAR,produccion_dengue

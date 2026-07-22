@@ -1,0 +1,38 @@
+{
+  "production_series_count": 432,
+  "gallery_item_count": 444,
+  "por_cohorte": {
+    "dengue": 99,
+    "neuro": 333
+  },
+  "por_padecimiento": {
+    "Alzheimer": 111,
+    "Dengue": 99,
+    "Depresion": 111,
+    "Parkinson": 111
+  },
+  "motor_dist": {
+    "dengue": {
+      "DeepAR": 30,
+      "NBGLM": 30,
+      "Prophet": 39
+    },
+    "neuro": {
+      "DeepAR": 98,
+      "Ensemble": 85,
+      "Prophet": 94,
+      "Stacking": 56
+    }
+  },
+  "nacional_por_cohorte": {
+    "dengue": 3,
+    "neuro": 9
+  },
+  "diagnostics": {
+    "dengue_en_tabla_333": 102,
+    "nacionales_duplicados": 3,
+    "selecciones_invalidas_ensemble_stacking": 13,
+    "tiene_nbglm": false,
+    "motivo_descartado": "Se usa produccion_dengue.csv (99, con NBGLM); el Dengue de tabla_333 es stale (dup nacionales + Ensemble/Stacking no elegibles, sin NBGLM)."
+  }
+}
