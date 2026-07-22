@@ -13,7 +13,7 @@
 | E2 — extracción E66 | ✅ DONE | backfill 653/20896 (contrato exacto); merge idempotente (neuro+Dengue byte-idéntico). Commit ccbfb557. |
 | E3 — selector unificado | ✅ núcleo + Obesidad | `selection.py` + `produccion_padecimiento.py`; produccion_obesidad.csv (3 motores). Commit c74e21be. |
 | E4 — web data-driven | 🟡 Python done | manifiesto `padecimientos` en knowledge.json (52d471fb). **JS refactor + 11 tests = gate de deploy/visual.** |
-| E5 — Obesidad train/publish | 🟡 3/4 motores | Prophet+Ensemble+Stacking (111 c/u) + selección hechos. **DeepAR (compute) + publish = gates.** |
+| E5 — Obesidad train/publish | 🟡 3/4 + DeepAR corriendo | Prophet+Ensemble+Stacking (111) + selección hechos. **DeepAR entrenando en background (nohup, overnight)** → si terminó, re-correr `produccion_padecimiento --disease Obesidad` para 4 motores. Publish = gate. |
 
 **Commits en la rama** (revisar por diff): E0 → E1 registry → E1 gates → E2 extracción → E4 manifiesto → E3 selector.
 
