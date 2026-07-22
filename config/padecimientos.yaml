@@ -1,0 +1,207 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Registry central de padecimientos — ÚNICA fuente de verdad de identidad, perfil
+# de modelado (traits POR MOTOR), extracción, selección y publicación.
+#
+# "Un padecimiento = una entrada" cuando reutiliza un perfil y grupo de extracción
+# existentes. Un perfil o cuadro nuevo requiere su propia sección.
+#
+# Semilla congelada para reproducir el golden (tests/unit/test_golden_cohortes.py):
+# neuro + Dengue quedan byte-idénticos. Cargado AISLADO (no se funde al conf global).
+# Cargador: src/epiforecast/registry.py
+# ─────────────────────────────────────────────────────────────────────────────
+version: 1
+
+# Motores conocidos del proyecto (factory @register_model).
+motores_conocidos: [prophet, deepar, ensemble, stacking, nbglm]
+
+# ── Perfiles de modelado (objetos nombrados; los padecimientos los referencian) ──
+# Cada trait documenta el gate que reemplaza. rate es POR MOTOR (Prophet-Dengue=conteos
+# vs DeepAR-Dengue=tasa). El resto son disease-level salvo nota.
+perfiles:
+  neuro:
+    cohorte_id: neuro                 # is_neuro(pad) == (cohorte_id == neuro)
+    unidad: tasa
+    prophet_log_transform: true       # prophet/model.py:71
+    prophet_covid_holidays: true      # prophet/data_prep.py:149
+    ensemble_covid_holidays: true     # ensemble/feature_builder.py:100
+    prophet_cv_weights: true          # prophet/cross_validator.py:51
+    prophet_enso: false               # prophet/model.py:80
+    nbglm_enso: false
+    ensemble_clamp: false             # ensemble/model.py:199
+    stacking_clamp: false             # stacking/model.py:164
+    deepar_short_series: false        # deepar/model.py:175-179
+    fallback_regional: true           # entrena.py:284
+    excluir_outliers: false           # feature_engineering.yaml
+    invert_log_predict: false         # predice.py:287
+    motor_rate:                       # rate POR MOTOR (efectivo = normalizar_tasa AND esto)
+      prophet: true
+      deepar: true
+      ensemble: true
+      stacking: true
+
+  dengue_conteos:
+    cohorte_id: conteos               # is_count_log_cohort(pad) == (cohorte_id == conteos)
+    unidad: conteos
+    prophet_log_transform: true
+    prophet_covid_holidays: false
+    ensemble_covid_holidays: false
+    prophet_cv_weights: false
+    prophet_enso: true
+    nbglm_enso: true
+    ensemble_clamp: true
+    stacking_clamp: true
+    deepar_short_series: true
+    fallback_regional: false
+    excluir_outliers: true
+    invert_log_predict: true
+    motor_rate:
+      prophet: false                  # Prophet-Dengue modela conteos (no tasa)
+      deepar: true                    # DeepAR-Dengue SÍ conserva tasa/100k (deepar/model.py:164)
+      ensemble: true
+      stacking: true
+      nbglm: false
+
+  # NUEVO (EPIC 5): crónico/prevalencia. Tasa, fallback regional, sin ENSO/COVID/clamp.
+  obesidad_cronica:
+    cohorte_id: obesidad              # ni neuro ni conteos
+    unidad: tasa
+    prophet_log_transform: true       # log1p (a tunear con política OOS de Obesidad)
+    prophet_covid_holidays: false
+    ensemble_covid_holidays: false
+    prophet_cv_weights: false
+    prophet_enso: false
+    nbglm_enso: false
+    ensemble_clamp: false
+    stacking_clamp: false
+    deepar_short_series: false        # serie larga (2014→): NO short_series
+    fallback_regional: true
+    excluir_outliers: false           # no epidémico: sí trata outliers
+    invert_log_predict: false
+    motor_rate:
+      prophet: true
+      deepar: true
+      ensemble: true
+      stacking: true
+
+# ── Padecimientos ──
+padecimientos:
+  - id: depresion
+    data_name: "Depresión"            # valor canónico en la columna Padecimiento
+    artifact_key: Depresion           # dir/stem en disco (models/<motor>/Depresion) — NFKD
+    slug: depresion                   # web/grid lowercase
+    display_name: "Depresión"
+    cie_codes: ["F32"]
+    aliases: ["depresion", "depression", "depre", "deprecion", "depresiva", "depresivo", "trastorno depresivo", "episodio depresivo"]
+    profile: neuro
+    batch: General                    # cohorte_lote: entra al lote neuro
+    extraction_group: neuro_boletin
+    lifecycle: published
+    channels: [web, epibot, reports, tableau, weekly_validation, prospective_validation]
+    training_engines: [prophet, deepar, ensemble, stacking]
+    eligible_engines: [prophet, deepar, ensemble, stacking]
+    selection_policy: legacy_neuro_2026
+    prophet_grid_key: depresion
+    deepar_grid_key: depresion
+    aggregate_national: true
+    gallery_enabled: true
+    web:
+      color: "#5B8DEF"
+      label: "Depresión"
+      nombre_completo: "Episodio depresivo"
+
+  - id: parkinson
+    data_name: "Parkinson"
+    artifact_key: Parkinson
+    slug: parkinson
+    display_name: "Parkinson"
+    cie_codes: ["G20"]
+    aliases: ["parkinson", "parkinsons", "mal de parkinson", "enfermedad de parkinson"]
+    profile: neuro
+    batch: General
+    extraction_group: neuro_boletin
+    lifecycle: published
+    channels: [web, epibot, reports, tableau, weekly_validation, prospective_validation]
+    training_engines: [prophet, deepar, ensemble, stacking]
+    eligible_engines: [prophet, deepar, ensemble, stacking]
+    selection_policy: legacy_neuro_2026
+    prophet_grid_key: parkinson
+    deepar_grid_key: parkinson
+    aggregate_national: true
+    gallery_enabled: true
+    web:
+      color: "#2DD4BF"
+      label: "Parkinson"
+      nombre_completo: "Enfermedad de Parkinson"
+
+  - id: alzheimer
+    data_name: "Alzheimer"
+    artifact_key: Alzheimer
+    slug: alzheimer
+    display_name: "Alzheimer"
+    cie_codes: ["G30"]
+    aliases: ["alzheimer", "alzheimers", "mal de alzheimer", "enfermedad de alzheimer", "demencia"]
+    profile: neuro
+    batch: General
+    extraction_group: neuro_boletin
+    lifecycle: published
+    channels: [web, epibot, reports, tableau, weekly_validation, prospective_validation]
+    training_engines: [prophet, deepar, ensemble, stacking]
+    eligible_engines: [prophet, deepar, ensemble, stacking]
+    selection_policy: legacy_neuro_2026
+    prophet_grid_key: alzheimer
+    deepar_grid_key: alzheimer
+    aggregate_national: true
+    gallery_enabled: true
+    web:
+      color: "#F472B6"
+      label: "Alzheimer"
+      nombre_completo: "Enfermedad de Alzheimer"
+
+  - id: dengue
+    data_name: "Dengue"
+    artifact_key: Dengue
+    slug: dengue
+    display_name: "Dengue"
+    cie_codes: ["A97", "A97.0", "A97.1", "A97.2"]
+    aliases: ["dengue", "dengues", "denge", "dengeu", "arbovirosis"]
+    profile: dengue_conteos
+    batch: standalone                 # NO entra a General (carril propio)
+    extraction_group: dengue_boletin
+    lifecycle: published
+    channels: [web, epibot, reports, tableau, weekly_validation, prospective_validation]
+    training_engines: [prophet, deepar, ensemble, stacking, nbglm]
+    eligible_engines: [prophet, deepar, nbglm]   # árboles NO productivos (no extrapolan)
+    selection_policy: legacy_dengue_2026
+    prophet_grid_key: dengue
+    deepar_grid_key: dengue
+    aggregate_national: false          # sección propia (no suma al 333)
+    gallery_enabled: true
+    web:
+      color: "#F59E0B"
+      label: "Dengue"
+      nombre_completo: "Dengue (arbovirosis)"
+
+  # ── NUEVO (EPIC 5): registrado pero INVISIBLE hasta lifecycle=published ──
+  - id: obesidad
+    data_name: "Obesidad"
+    artifact_key: Obesidad
+    slug: obesidad
+    display_name: "Obesidad"
+    cie_codes: ["E66"]
+    aliases: ["obesidad", "obeso", "obesa", "sobrepeso", "imc alto"]
+    profile: obesidad_cronica
+    batch: standalone
+    extraction_group: trastornos_nutricion
+    lifecycle: configured             # configured -> trained -> published (flip = gate)
+    channels: [web, epibot, reports, tableau, weekly_validation, prospective_validation]
+    training_engines: [prophet, deepar, ensemble, stacking]
+    eligible_engines: [prophet, deepar, ensemble, stacking]
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: obesidad
+    deepar_grid_key: null             # DeepAR-Obesidad usa escalares del bloque long-series (sin grid propio)
+    aggregate_national: false
+    gallery_enabled: true
+    web:
+      color: "#D97706"                # ámbar (texto oscuro)
+      label: "Obesidad"
+      nombre_completo: "Obesidad (E66)"

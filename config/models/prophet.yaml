@@ -68,6 +68,23 @@ param_grid_prophet:
       - 10.0
     # 3 combinaciones
 
+  obesidad:
+    # Obesidad (E66): crónica/prevalencia con tendencia secular y estacionalidad suave.
+    # Perfil obesidad_cronica: tasa/100k + log1p, SIN ENSO, SIN holiday COVID, SIN pesos CV
+    # neuro. Grid v1 (a re-tunear con la política OOS rolling_cv_v1, NO el RMSE legacy).
+    seasonality_mode:
+      - additive
+      - multiplicative
+    changepoint_prior_scale:
+      - 0.01
+      - 0.03
+      - 0.05
+    seasonality_prior_scale:
+      - 0.05
+      - 0.1
+      - 0.5
+    # 18 combinaciones
+
 param_model:
   yearly_seasonality: False  # reemplazado por add_seasonality con period exacto
   weekly_seasonality: False  # sin sentido: 1 obs/semana, no hay variacion intra-semana
