@@ -10,12 +10,12 @@
 |---|---|---|
 | E0 — baseline+golden | ✅ DONE | catálogo canónico 432, golden per-motor (17 gates × 5 pad), 15 tests. Commit c3784ddf. |
 | E1 — registry+migración | ✅ DONE | registry+loader+doctor (config-only verde todos); cohorts.py + 3 gates divergentes migrados a trait_or; **suite 970 verde = byte-idéntico**. Commits 960379db, 6eac84ae. |
-| E2 — extracción E66 | ⏳ backfill corriendo | extractor genérico validado en 6 muestras; backfill 654 PDFs (~99% ok); merge/validate pendiente. Commit ccbfb557. |
-| E3 — selector unificado | ⬜ bloqueado parcial | legacy_neuro/dengue reproducibles; rolling_cv_v1 de Obesidad necesita forecasts (training). |
-| E4 — web data-driven | ⬜ | manifiesto `padecimientos` (Python) testeable sin deploy; JS refactor + 11 tests = gate de deploy. |
-| E5 — Obesidad train/publish | ⬜ gate compute | registrado (configured, invisible); training DeepAR (horas) + publish = gates. |
+| E2 — extracción E66 | ✅ DONE | backfill 653/20896 (contrato exacto); merge idempotente (neuro+Dengue byte-idéntico). Commit ccbfb557. |
+| E3 — selector unificado | ✅ núcleo + Obesidad | `selection.py` + `produccion_padecimiento.py`; produccion_obesidad.csv (3 motores). Commit c74e21be. |
+| E4 — web data-driven | 🟡 Python done | manifiesto `padecimientos` en knowledge.json (52d471fb). **JS refactor + 11 tests = gate de deploy/visual.** |
+| E5 — Obesidad train/publish | 🟡 3/4 motores | Prophet+Ensemble+Stacking (111 c/u) + selección hechos. **DeepAR (compute) + publish = gates.** |
 
-**Commits en la rama** (revisar por diff): E0 → E1 registry → E1 gates → E2 extracción.
+**Commits en la rama** (revisar por diff): E0 → E1 registry → E1 gates → E2 extracción → E4 manifiesto → E3 selector.
 
 ## Gates que NO cruzo autónomamente (requieren tu OK en la mañana)
 - `git push` a remoto · deploy web (Netlify) · `dvc push` a S3 · flip de Obesidad a `lifecycle=published`.
@@ -27,7 +27,7 @@ Se completó el **núcleo del refactor "sin hard-codes"** (EPIC 0-1-2) y se **pr
 un padecimiento nuevo (Obesidad E66) fluye por todo el pipeline con solo 1 entrada de registry +
 1 grupo de cuadro. **Neuro + Dengue quedan byte-idénticos** (suite 970 verde en cada frontera).
 
-### Qué está HECHO y commiteado (5 commits, hooks verdes)
+### Qué está HECHO y commiteado (9 commits, hooks verdes; suite 980 verde)
 - **EPIC 0** (c3784ddf): catálogo canónico 432 (corrige el 435/102 inflado) + golden freeze per-motor.
 - **EPIC 1** (960379db, 6eac84ae, 38ddfc57): registry central + `cohorts.py` + 3 gates divergentes +
   `_GRID_KEY_MAP` migrados. Doctor + completeness. Obesidad registrada (lifecycle=configured, invisible).
@@ -35,8 +35,15 @@ un padecimiento nuevo (Obesidad E66) fluye por todo el pipeline con solo 1 entra
   filas, layouts 53/600, 1 NA Casos_semana (Querétaro 2016_sem50), 1696 NA año-anterior, 0 dups,
   32 estados/boletín** — coincide EXACTO con el contrato. Merge idempotente (neuro+Dengue byte-idéntico
   por hash).
-- **EPIC 5 (prueba de abstracción)**: Obesidad extraída→merge→prep→**Prophet 15 modelos**→predict
-  (10,545 filas de forecast, gráficos). El pipeline completo funciona para un padecimiento nuevo.
+- **EPIC 3** (c74e21be): `selection.py` (regla canónica sMAPE→MASE→RMSE, banda 5%, orden estable,
+  baja incidencia; 7 tests) + `produccion_padecimiento.py` (despacha por selection_policy del registry).
+- **EPIC 4 (Python)** (52d471fb): manifiesto `padecimientos` en knowledge.json desde el registry
+  (solo published → Obesidad invisible; conteos canónicos 432; 3 tests). El refactor JS + los 11 tests
+  del dashboard NO se tocaron (gate de deploy con verificación visual obligatoria).
+- **EPIC 5 (abstracción probada, 3/4 motores)**: Obesidad extraída→merge→prep→**train Prophet+Ensemble+
+  Stacking (111 c/u)**→predict→**selección** (`produccion_obesidad.csv`: 111 series, Ensemble 62 /
+  Prophet 26 / Stacking 23). **DeepAR pendiente = gate compute.** Un padecimiento nuevo fluyó por casi
+  todo el flujo con solo la entrada de registry + grupo de cuadro.
 
 ### Estado del working tree (NO commiteado — artefactos DVC/locales)
 - `data/processed/dataset_boletin_epidemiologico.csv`: **Obesidad mergeada** (75456→96352 filas).
