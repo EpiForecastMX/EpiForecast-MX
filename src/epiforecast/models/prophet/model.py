@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 from prophet import Prophet
 
+from epiforecast import registry
 from epiforecast.constants import RANDOM_SEED
 from epiforecast.evaluation.metrics import compute_forecast_metrics
 from epiforecast.models.base import ForecastModel
@@ -67,9 +68,14 @@ class ProphetForecaster(ForecastModel):
         ) and not is_count_log_cohort(self.padecimiento)
         self.col_poblacion: str = self._conf.get("columna_poblacion", "Total")
         self.tasa_por: int = self._conf.get("tasa_por", 100000)
-        # log_transform: neuro y conteos-log (sin log la tendencia colapsa). Ver utils.cohorts.
-        self.log_transform: bool = self._conf.get("log_transform", False) and (
-            is_neuro(self.padecimiento) or is_count_log_cohort(self.padecimiento)
+        # log_transform: trait per-motor del registry (neuro y conteos-log lo activan; un
+        # perfil crónico como Obesidad también). default = predicado de cohorte viejo ->
+        # byte-idéntico en los vigentes y desconocidos. Ver registry.trait_or.
+        self.log_transform: bool = self._conf.get("log_transform", False) and registry.trait_or(
+            self.padecimiento,
+            "prophet",
+            "log_transform",
+            default=is_neuro(self.padecimiento) or is_count_log_cohort(self.padecimiento),
         )
         self.poblacion_valor: float | None = None
 

@@ -26,6 +26,7 @@ from tqdm import tqdm
 # del paquete lo dispare (model.py también importa config transitivamente).
 _logger_pre_import.disable("epiforecast.utils.config")
 
+from epiforecast import registry  # noqa: E402
 from epiforecast.constants import RANDOM_SEED  # noqa: E402
 from epiforecast.models import create_model  # noqa: E402
 from epiforecast.utils import paths as directory_manager  # noqa: E402
@@ -281,7 +282,15 @@ def main():
         # galería sigue agregando estados y NO se entrenan regionales nativos de Dengue.
         # Ver docs/research/hallazgos/DENGUE_REGIONALES_NATIVOS_AUDITORIA.md.
         modelado_hibrido = bool(conf["padecimiento"].get("modelado_hibrido", False))
-        if modelado_hibrido and modelado_estados and is_neuro(padecimiento):
+        # fallback_regional: trait del registry (default = is_neuro viejo, byte-idéntico). Un
+        # perfil crónico como Obesidad lo activa aunque no sea neuro.
+        if (
+            modelado_hibrido
+            and modelado_estados
+            and registry.trait_or(
+                padecimiento, "prophet", "fallback_regional", default=is_neuro(padecimiento)
+            )
+        ):
             # Mapear estado → región INEGI
             mapa_region = (
                 df_padecimiento[["Entidad", "region_salud_mental"]]

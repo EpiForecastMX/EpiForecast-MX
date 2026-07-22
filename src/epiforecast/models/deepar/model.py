@@ -50,6 +50,7 @@ warnings.filterwarnings("ignore", message=".*LeafSpec.*")
 warnings.filterwarnings("ignore", message=".*Checkpoint directory.*exists and is not empty.*")
 warnings.filterwarnings("ignore", message=".*not currently supported on the MPS backend.*")
 
+from epiforecast import registry  # noqa: E402
 from epiforecast.constants import RANDOM_SEED  # noqa: E402
 from epiforecast.models.base import ForecastModel  # noqa: E402
 from epiforecast.models.factory import register_model  # noqa: E402
@@ -173,10 +174,17 @@ class DeepARForecaster(ForecastModel):
         self.cv_n_splits_override: int | None = None
         self.cv_test_size_override: int | None = None
         short_cfg: dict[str, Any] = self.deepar_conf.get("short_series", {})
+        # short_series: trait del registry (default = predicado viejo `not is_neuro`, byte-
+        # idéntico). Un perfil de serie larga como Obesidad lo pone en False explícitamente.
         if (
             short_cfg.get("enabled", False)
             and self.padecimiento
-            and not is_neuro(self.padecimiento)
+            and registry.trait_or(
+                self.padecimiento,
+                "deepar",
+                "short_series",
+                default=not is_neuro(self.padecimiento),
+            )
         ):
             self.context_length = int(short_cfg.get("context_length", self.context_length))
             self.short_max_lag = int(short_cfg.get("max_lag", 53))

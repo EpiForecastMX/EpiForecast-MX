@@ -41,6 +41,7 @@ __all__ = [
     "published_members",
     "profile",
     "trait",
+    "trait_or",
     "is_rate",
     "engines",
     "prophet_grid_key",
@@ -381,6 +382,18 @@ def trait(disease: str, engine: str, key: str, default: bool = False) -> bool:
         if candidate in raw:
             return bool(raw[candidate])
     return default
+
+
+def trait_or(disease: str | None, engine: str, key: str, default: bool = False) -> bool:
+    """Como ``trait`` pero seguro para ``None``/desconocido: devuelve ``default``.
+
+    Los gates de modelo lo usan con ``default`` = el predicado de cohorte viejo, para
+    quedar byte-idénticos en los padecimientos vigentes (y desconocidos) y respetar el
+    perfil de un padecimiento nuevo (p.ej. Obesidad: log on, short_series off)."""
+    d = get_registry().get(disease)
+    if d is None:
+        return default
+    return trait(d.data_name, engine, key, default)
 
 
 def is_rate(disease: str, engine: str) -> bool:
