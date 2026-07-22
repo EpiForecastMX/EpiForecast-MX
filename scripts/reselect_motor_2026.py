@@ -33,6 +33,7 @@ import numpy as np
 import pandas as pd
 
 from epiforecast.constants import NEURO_CONDITIONS
+from epiforecast.evaluation.metrics import mase
 from epiforecast.evaluation.real_eval import build_forecasts, build_real, eval_year, smape
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -66,8 +67,43 @@ def _forecasts_neuro(anio: int, weeks_limit: int) -> pd.DataFrame:
     return fc
 
 
-def smape_per_motor(real: pd.DataFrame, fc: pd.DataFrame) -> pd.DataFrame:
-    """Por (padecimiento, entidad, sexo) calcula SMAPE de cada motor en 2026 real."""
+def _train_neuro(anio: int) -> dict[tuple[str, str, str], np.ndarray]:
+    """Serie real histórica (años < ``anio``) por (padecimiento, entidad, sexo), ordenada
+    por (año, semana), para el denominador naive estacional (lag 52) del MASE 2026."""
+    years = pd.read_csv(BOLETIN, usecols=["Padecimiento", "Anio"])
+    years = years.loc[years["Padecimiento"].isin(NEURO_CONDITIONS), "Anio"]
+    if years.empty:
+        return {}
+    frames = []
+    for y in range(int(years.min()), anio):
+        r = build_real(BOLETIN, NEURO_CONDITIONS, y, 53)
+        if r.empty:
+            continue
+        r = r.copy()
+        r["Anio"] = y
+        frames.append(r)
+    if not frames:
+        return {}
+    hist = pd.concat(frames, ignore_index=True)
+    hist["padecimiento"] = hist["padecimiento"].replace({"Depresión": "Depresion"})
+    hist = hist.sort_values(["padecimiento", "entidad", "sexo", "Anio", "Semana"])
+    return {
+        key: grp["real"].to_numpy(dtype=float)
+        for key, grp in hist.groupby(["padecimiento", "entidad", "sexo"])
+    }
+
+
+def smape_per_motor(
+    real: pd.DataFrame,
+    fc: pd.DataFrame,
+    train: dict[tuple[str, str, str], np.ndarray] | None = None,
+) -> pd.DataFrame:
+    """Por (padecimiento, entidad, sexo) calcula SMAPE y MASE de cada motor en 2026 real.
+
+    El MASE usa el naive estacional (lag 52) sobre la historia previa (``train``); si no
+    hay suficiente historia devuelve NaN. Sin ``train`` solo se computa el SMAPE.
+    """
+    train = train or {}
     fc_wide = fc.pivot_table(
         index=["padecimiento", "entidad", "sexo", "Semana"],
         columns="motor",
@@ -78,6 +114,8 @@ def smape_per_motor(real: pd.DataFrame, fc: pd.DataFrame) -> pd.DataFrame:
     for (pad, ent, sx), grp in merged.groupby(["padecimiento", "entidad", "sexo"]):
         if len(grp) < MIN_WEEKS_REAL:
             continue
+        y_real = grp["real"].to_numpy(dtype=float)
+        y_train = train.get((pad, ent, sx))
         row = {
             "padecimiento": pad,
             "entidad": ent,
@@ -87,9 +125,17 @@ def smape_per_motor(real: pd.DataFrame, fc: pd.DataFrame) -> pd.DataFrame:
         }
         for m in MOTORES:
             if m in grp.columns and grp[m].notna().sum() >= MIN_WEEKS_REAL:
+                y_hat = grp[m].to_numpy(dtype=float)
                 row[f"smape_2026_{m.lower()}"] = smape(grp["real"], grp[m])
+                mask = ~(np.isnan(y_real) | np.isnan(y_hat))
+                if y_train is not None and len(y_train) > 52 and int(mask.sum()) >= MIN_WEEKS_REAL:
+                    mv = mase(y_real[mask], y_hat[mask], y_train, season=52)
+                    row[f"mase_2026_{m.lower()}"] = float(mv) if mv is not None else np.nan
+                else:
+                    row[f"mase_2026_{m.lower()}"] = np.nan
             else:
                 row[f"smape_2026_{m.lower()}"] = np.nan
+                row[f"mase_2026_{m.lower()}"] = np.nan
         rows.append(row)
     return pd.DataFrame(rows)
 
@@ -105,6 +151,7 @@ def reselect(prod: pd.DataFrame, smape_df: pd.DataFrame) -> pd.DataFrame:
         "n_semanas_real_2026",
         "total_real_2026",
         *[f"smape_2026_{m.lower()}" for m in MOTORES],
+        *[f"mase_2026_{m.lower()}" for m in MOTORES],
         "criterio_seleccion",
         "smape_real_2026_ganador",
         "motor_anterior",
@@ -184,8 +231,12 @@ def main() -> None:
             "Corre 'make predict-all' para la cohorte neuro antes de re-seleccionar."
         )
 
-    print("Calculando SMAPE 2026 por motor por combinación...")
-    smape_df = smape_per_motor(real, fc)
+    print("Cargando historia previa para el naive estacional del MASE...")
+    train = _train_neuro(anio)
+    print(f"  {len(train)} series con historia")
+
+    print("Calculando SMAPE y MASE 2026 por motor por combinación...")
+    smape_df = smape_per_motor(real, fc, train)
     print(f"  {len(smape_df)} combinaciones con datos suficientes")
 
     print("Aplicando reglas de re-selección...")
@@ -211,6 +262,10 @@ def main() -> None:
             "smape_2026_deepar",
             "smape_2026_ensemble",
             "smape_2026_stacking",
+            "mase_2026_prophet",
+            "mase_2026_deepar",
+            "mase_2026_ensemble",
+            "mase_2026_stacking",
             "smape_real_2026_ganador",
         ]
     ].copy()

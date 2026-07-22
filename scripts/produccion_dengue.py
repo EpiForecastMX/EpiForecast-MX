@@ -31,6 +31,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from epiforecast.evaluation.metrics import mase
 from epiforecast.evaluation.real_eval import build_forecasts, build_real, eval_year, smape
 from epiforecast.utils.config import conf, logger
 
@@ -75,8 +76,41 @@ def mae(y: np.ndarray, yhat: np.ndarray) -> float:
     return float(np.mean(np.abs(y - yhat)))
 
 
-def metrics_per_motor(real: pd.DataFrame, fc: pd.DataFrame, cv: pd.DataFrame) -> pd.DataFrame:
-    """Por (entidad, sexo) calcula SMAPE/MAE reales y CV-SMAPE de cada motor."""
+def _train_dengue(anio: int) -> dict[tuple[str, str], np.ndarray]:
+    """Historia Dengue (años < ``anio``) por (entidad, sexo), ordenada por (año, semana),
+    para el denominador naive estacional (lag 52) del MASE 2026."""
+    years = pd.read_csv(_boletin(), usecols=["Padecimiento", "Anio"])
+    years = years.loc[years["Padecimiento"] == PADECIMIENTO, "Anio"]
+    if years.empty:
+        return {}
+    frames = []
+    for y in range(int(years.min()), anio):
+        r = build_real(_boletin(), [PADECIMIENTO], y, 53)
+        if r.empty:
+            continue
+        r = r.drop(columns=["padecimiento"]).copy()
+        r["Anio"] = y
+        frames.append(r)
+    if not frames:
+        return {}
+    hist = pd.concat(frames, ignore_index=True).sort_values(["entidad", "sexo", "Anio", "Semana"])
+    return {
+        key: grp["real"].to_numpy(dtype=float) for key, grp in hist.groupby(["entidad", "sexo"])
+    }
+
+
+def metrics_per_motor(
+    real: pd.DataFrame,
+    fc: pd.DataFrame,
+    cv: pd.DataFrame,
+    train: dict[tuple[str, str], np.ndarray] | None = None,
+) -> pd.DataFrame:
+    """Por (entidad, sexo) calcula SMAPE/MAE/MASE reales y CV-SMAPE de cada motor.
+
+    El MASE usa el naive estacional (lag 52) sobre la historia previa (``train``); sin
+    historia suficiente devuelve NaN. Sin ``train`` no se computa MASE.
+    """
+    train = train or {}
     fc_wide = fc.pivot_table(
         index=["entidad", "sexo", "Semana"], columns="motor", values="yhat"
     ).reset_index()
@@ -85,6 +119,8 @@ def metrics_per_motor(real: pd.DataFrame, fc: pd.DataFrame, cv: pd.DataFrame) ->
 
     rows = []
     for (ent, sx), grp in merged.groupby(["entidad", "sexo"]):
+        y_real = grp["real"].to_numpy(dtype=float)
+        y_train = train.get((ent, sx))
         row = {
             "padecimiento": PADECIMIENTO,
             "entidad": ent,
@@ -96,9 +132,17 @@ def metrics_per_motor(real: pd.DataFrame, fc: pd.DataFrame, cv: pd.DataFrame) ->
             if m in grp.columns and grp[m].notna().sum() >= 1:
                 row[f"smape_real_{m.lower()}"] = smape(grp["real"], grp[m])
                 row[f"mae_real_{m.lower()}"] = mae(grp["real"], grp[m])
+                y_hat = grp[m].to_numpy(dtype=float)
+                mask = ~(np.isnan(y_real) | np.isnan(y_hat))
+                if y_train is not None and len(y_train) > 52 and int(mask.sum()) >= 1:
+                    mv = mase(y_real[mask], y_hat[mask], y_train, season=52)
+                    row[f"mase_real_{m.lower()}"] = float(mv) if mv is not None else np.nan
+                else:
+                    row[f"mase_real_{m.lower()}"] = np.nan
             else:
                 row[f"smape_real_{m.lower()}"] = np.nan
                 row[f"mae_real_{m.lower()}"] = np.nan
+                row[f"mase_real_{m.lower()}"] = np.nan
             cvv = (
                 cv_wide.loc[(ent, sx), m]
                 if (ent, sx) in cv_wide.index and m in cv_wide.columns
@@ -176,7 +220,8 @@ def main() -> None:
     fc, cv = build_forecasts(_forecast_paths(), pads, anio, weeks_limit)
     fc = fc.drop(columns=["padecimiento"])
     cv = cv.drop(columns=["padecimiento"])
-    metrics = metrics_per_motor(real, fc, cv)
+    train = _train_dengue(anio)
+    metrics = metrics_per_motor(real, fc, cv, train)
     result = select(metrics)
     result.insert(3, "anio_eval", anio)
 

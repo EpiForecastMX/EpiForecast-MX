@@ -390,6 +390,159 @@ def build_dengue_weekly() -> dict[str, Any]:
     }
 
 
+# MASE por encima de esto = denominador naive degenerado (serie casi-cero que diverge); se
+# excluye del resumen. El máximo legítimo observado es ~6 (neuro); en Dengue año-bajo una
+# serie casi-cero puede disparar el MASE a miles y contaminar el promedio.
+_MASE_CAP = 20.0
+
+
+def _metric_summary(sm: pd.Series, ma: pd.Series) -> dict[str, Any]:
+    """Resumen mediana/promedio de SMAPE y MASE, robusto a MASE degenerado (> ``_MASE_CAP``)."""
+    inf = float("inf")
+    sm = pd.to_numeric(sm, errors="coerce").replace([inf, -inf], float("nan")).dropna()
+    ma = pd.to_numeric(ma, errors="coerce").replace([inf, -inf], float("nan")).dropna()
+    ma = ma[ma <= _MASE_CAP]
+    return {
+        "smape_med": _safe_float(sm.median()) if len(sm) else None,
+        "smape_prom": _safe_float(sm.mean()) if len(sm) else None,
+        "mase_med": _safe_float(ma.median()) if len(ma) else None,
+        "mase_prom": _safe_float(ma.mean()) if len(ma) else None,
+    }
+
+
+def _rendimiento_dengue() -> dict[str, Any]:
+    """Rendimiento 2026 de Dengue por motor (cohorte propia: DeepAR / Prophet / NBGLM).
+
+    Fuente: ``produccion_dengue.csv`` (``smape_real_<motor>`` + ``mase_real_<motor>`` +
+    ``motor_productivo``). Dengue 2026 es un año bajo: casi todas las series estatales son
+    casi-cero, así que el SMAPE satura ~200% y la selección usa el MAE ("si es 0, es 0"); la
+    señal informativa es la nacional. El MASE mediano (~0.03) muestra que los motores superan
+    de sobra al naive estacional. Solo se muestran los motores elegibles/productivos.
+    """
+    reports = Path(conf["paths"]["reports"])
+    prod_path = reports / "ProdDetails" / "produccion_dengue.csv"
+    if not prod_path.exists():
+        return {}
+    df = pd.read_csv(prod_path)
+    motores = ["DeepAR", "Prophet", "NBGLM"]
+    smape_cols = [f"smape_real_{m.lower()}" for m in motores]
+    if not all(c in df.columns for c in smape_cols):
+        return {}
+    have_mase = all(f"mase_real_{m.lower()}" in df.columns for m in motores)
+
+    def _deployed(prefix: str) -> pd.Series:
+        vals = []
+        for _, row in df.iterrows():
+            motor = row.get("motor_productivo")
+            if pd.notna(motor):
+                vals.append(row.get(f"{prefix}_{str(motor).lower()}"))
+        return pd.Series(vals, dtype="float64") if vals else pd.Series(dtype="float64")
+
+    motores_out: dict[str, Any] = {}
+    for m in motores:
+        sc = f"smape_real_{m.lower()}"
+        mc = f"mase_real_{m.lower()}"
+        motores_out[m] = _metric_summary(
+            df[sc], df[mc] if (have_mase and mc in df.columns) else pd.Series(dtype=float)
+        )
+    motores_out["Productivo"] = _metric_summary(
+        _deployed("smape_real"), _deployed("mase_real") if have_mase else pd.Series(dtype=float)
+    )
+
+    nac = df[(df["entidad"] == "Nacional") & (df["sexo"] == "general")]
+    nacional: dict[str, Any] = {}
+    if len(nac):
+        r0 = nac.iloc[0]
+        nacional = {
+            "motor": _safe_str(r0.get("motor_productivo")),
+            "smape": {m: _safe_float(r0.get(f"smape_real_{m.lower()}")) for m in motores},
+        }
+
+    out: dict[str, Any] = {
+        "n": int(df[smape_cols].notna().any(axis=1).sum()),
+        "orden_motores": motores,
+        "tiene_mase": bool(have_mase),
+        "motores": motores_out,
+        "nacional": nacional,
+        "nota": (
+            "Dengue 2026 es un año bajo: la mayoría de las series estatales son casi-cero, "
+            "por eso el SMAPE satura ~200% y la selección usa el MAE. El MASE mediano (~0.03) "
+            "indica que los motores superan de sobra al naive estacional. La señal fiable es "
+            "la nacional."
+        ),
+    }
+    nsem = pd.to_numeric(df.get("n_semanas_real"), errors="coerce").dropna()
+    if len(nsem):
+        out["n_semanas"] = int(nsem.max())
+    return out
+
+
+def build_rendimiento_2026() -> dict[str, Any]:
+    """Rendimiento 2026 por padecimiento y motor: SMAPE y MASE (mediana y promedio) de
+    los motores + el motor productivo desplegado por serie.
+
+    Neuro (Alzheimer/Depresion/Parkinson): fuente ``auditoria_motores_2026.xlsx`` (generado
+    por ``reselect_motor_2026.py``). Dengue (cohorte propia): ``_rendimiento_dengue`` desde
+    ``produccion_dengue.csv``. Alimenta el handler ``answerRendimientoPorPadecimiento`` del
+    EpiBot. ``n`` = series con al menos un motor con dato 2026.
+    """
+    reports = Path(conf["paths"]["reports"])
+    audit_path = reports / "ProdDetails" / "auditoria_motores_2026.xlsx"
+    if not audit_path.exists():
+        return {}
+    df = pd.read_excel(audit_path)
+    motores = ["DeepAR", "Prophet", "Stacking", "Ensemble"]
+    smape_cols = [f"smape_2026_{m.lower()}" for m in motores]
+    if not all(c in df.columns for c in smape_cols):
+        return {}
+    have_mase = all(f"mase_2026_{m.lower()}" in df.columns for m in motores)
+
+    def _deployed(sub: pd.DataFrame, prefix: str) -> pd.Series:
+        vals = []
+        for _, row in sub.iterrows():
+            motor = row.get("modelo_produccion")
+            if pd.notna(motor):
+                vals.append(row.get(f"{prefix}_{str(motor).lower()}"))
+        return pd.Series(vals, dtype="float64") if vals else pd.Series(dtype="float64")
+
+    def _agg(sub: pd.DataFrame) -> dict[str, Any]:
+        n = int(sub[smape_cols].notna().any(axis=1).sum())
+        motores_out: dict[str, Any] = {}
+        for m in motores:
+            sc = f"smape_2026_{m.lower()}"
+            mc = f"mase_2026_{m.lower()}"
+            motores_out[m] = _metric_summary(
+                sub[sc], sub[mc] if (have_mase and mc in sub.columns) else pd.Series(dtype=float)
+            )
+        motores_out["Productivo"] = _metric_summary(
+            _deployed(sub, "smape_2026"),
+            _deployed(sub, "mase_2026") if have_mase else pd.Series(dtype=float),
+        )
+        return {"n": n, "motores": motores_out}
+
+    pads = ["Alzheimer", "Depresion", "Parkinson"]
+    neuro = df[df["padecimiento"].isin(pads)]
+    por_pad = {
+        pad: _agg(neuro[neuro["padecimiento"] == pad])
+        for pad in pads
+        if (neuro["padecimiento"] == pad).any()
+    }
+    result: dict[str, Any] = {
+        "anio": 2026,
+        "orden_motores": motores,
+        "tiene_mase": bool(have_mase),
+        "por_pad": por_pad,
+        "global": _agg(neuro),
+    }
+    nsem = pd.to_numeric(neuro.get("n_semanas_real_2026"), errors="coerce").dropna()
+    if len(nsem):
+        result["n_semanas"] = int(nsem.max())
+    dengue = _rendimiento_dengue()
+    if dengue:
+        result["dengue"] = dengue
+    return result
+
+
 def build_static_data() -> dict[str, Any]:
     """Datos estaticos del proyecto."""
     equipo = [
@@ -839,6 +992,8 @@ def main() -> None:
         ),
         # Dengue: sección propia SIN normalizar (preserva tildes/eñes en estados y notas).
         "dengue": build_dengue_section(),
+        # Rendimiento 2026 por padecimiento × motor (SMAPE + MASE). Claves ASCII, sin normalizar.
+        "rendimiento_2026": build_rendimiento_2026(),
         **build_static_data(),
     }
     _fill_horizon_dates(knowledge, cache)
