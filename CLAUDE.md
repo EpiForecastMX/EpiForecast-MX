@@ -166,9 +166,9 @@ EpiForecast-MX/
   - Regla 1: serie con >=10 sem reales 2026 y total >=10 casos -> SMAPE 2026 real es criterio primario; MASE como desempate.
   - Regla 2: serie con >=10 sem pero <10 casos (ruidosa, divisiones cercanas a cero infladas) -> forzar Ensemble como default seguro.
   - Regla 3: serie con <10 sem reales (4 regiones agregadas y huecos puntuales) -> respetar asignacion CV anterior.
-  - Genera `reports/ProdDetails/auditoria_motores_2026.xlsx` con auditoria de los 333 combos: motor anterior, motor nuevo, SMAPE de los 4 motores en 2026 real, criterio de seleccion.
+  - Genera `reports/ProdDetails/auditoria_motores_2026.xlsx` con auditoria de los 333 combos: motor anterior, motor nuevo, SMAPE **y MASE** de los 4 motores en 2026 real (MASE = naive estacional lag 52 sobre la historia previa), criterio de seleccion.
   - Distribucion productiva actual (post 2026-04-30, 227 cambios sobre los 333): Prophet 126, Ensemble 95, DeepAR 78, Stacking 34. `motor_ganador` global = Prophet.
-- **Hoja 1 (Produccion)**: 333 filas x ~50 columnas. Metricas por modelo, diagnosticos, comparativa historica + 9 columnas de auditoria 2026.
+- **Hoja 1 (Produccion)**: 333 filas x ~50 columnas. Metricas por modelo, diagnosticos, comparativa historica + 13 columnas de auditoria 2026 (9 originales + 4 `mase_2026_*`).
   - `casos_52_semanas_futuro`: suma de yhat del horizonte futuro (entero).
   - `smape_prod/mase_prod/rmse_prod/mae_prod`: metricas CV del modelo seleccionado (recalculadas tras la re-asignacion).
   - `overfitting`: ratio smape_test/smape_train — Alto (>2x), Moderado (>1.3x), OK.
@@ -177,12 +177,13 @@ EpiForecast-MX/
   - `precision_historica`: ratio pronos/real como porcentaje.
   - `pron_sem_previa / realidad_sem_previa`: ultima semana para validar con boletin nuevo.
   - `modelo_produccion`, `tipo_modelo`, `region_asignada` (n/a si propio), `justificacion`.
-  - `n_semanas_real_2026`, `total_real_2026`, `smape_2026_{prophet,deepar,ensemble,stacking}`, `smape_real_2026_ganador`, `motor_anterior`, `criterio_seleccion`.
+  - `n_semanas_real_2026`, `total_real_2026`, `smape_2026_{prophet,deepar,ensemble,stacking}`, `mase_2026_{prophet,deepar,ensemble,stacking}`, `smape_real_2026_ganador`, `motor_anterior`, `criterio_seleccion`.
 - Series con incidencia cero o baja confianza (<5 casos/52sem) se reasignan al modelo regional.
 - Predicciones redondeadas a enteros. Formato Excel con paleta IMSS 2026, filtros y paneles congelados.
 - Graficos embebidos: `scripts/excel_produccion_charts.py` genera 6 PNGs con paleta IMSS.
 - Formateo: `scripts/excel_produccion_fmt.py` aplica estilos institucionales.
 - **Pipeline canonico tras nuevo boletin**: `make tabla-produccion` -> `python3 scripts/reselect_motor_2026.py` -> `python3 scripts/build_tableau.py` -> `python3 scripts/build_web_knowledge.py` -> `python3 scripts/genera_validacion_semanal.py` -> `make compare` (PNGs).
+- **Cuadros de rendimiento 2026 en el EpiBot**: `build_web_knowledge.py` emite la seccion `rendimiento_2026` en `knowledge.json` (por padecimiento × motor: SMAPE y MASE mediana/promedio + fila Productivo). Neuro (Alzheimer/Depresion/Parkinson) desde `auditoria_motores_2026.xlsx`; **Dengue** (cohorte propia, motores DeepAR/Prophet/NBGLM) desde `produccion_dengue.csv`, que ahora guarda `mase_real_<motor>` (via `produccion_dengue.py`, mismo naive estacional lag 52). Agregacion robusta a MASE degenerado (`_MASE_CAP=20`: en Dengue año-bajo una serie casi-cero puede disparar el MASE a miles y contaminar el promedio). El EpiBot los dibuja con `answerRendimientoPorPadecimiento` (+ `_cuadroDengue`); disparadores: "rendimiento por padecimiento", "smape y mase por padecimiento", "cuadro de dengue". Se regenera solo en `make update-week` (paso 4 reselect, paso 7 dengue-produccion, paso 9 knowledge). Validado por recomputo independiente from-scratch (metricas propias) contra lo desplegado: 0 discrepancias.
 
 ### Validacion Semanal
 - `scripts/genera_validacion_semanal.py` genera `reports/ProdDetails/validacion_semanal.html`.
@@ -284,3 +285,8 @@ EpiForecast-MX/
 - `visualization/comparison_{panels,metrics,builders}.py` y `comparison_{bars_helpers,prod_bars,bars}.py`: builders de comparacion multi-modelo particionados (capas, metricas/residuales, small-multiples/overlay, barras semanales y panel del ganador).
 - `features/demographic.py`: Feature builder demografico extraido para SRP.
 - `utils/mlflow_logger.py`: Wrapper opcional de MLflow para tracking de experimentos (no-op sin mlflow).
+
+### Articulos y Congresos (`Congresos/`, gitignored)
+- Los papers del proyecto viven bajo `Congresos/` y **NO estan en git** (`.gitignore` excluye `Congresos/`). Cuatro tracks: **MICAI** (`Congresos/MICAI/`, metodologico, depresion sola, LNCS ingles), **PLOS ONE** (`Congresos/OnePlus/`, sistemas/utilidad, 3 padecimientos, espanol), **WCP/Mundial** (`Congresos/Mundial/`) e **IMSS/Protocolo**.
+- **PLOS ONE:** manuscrito en `Congresos/OnePlus/PLOS_build/latex/manuscrito_plos.tex`; envio generado con `scripts/build_submission.py`; guard de integridad cientifica `scripts/verify_ruta_b.py` (de-escalada Ruta B: la comparacion entre motores no es homogenea y las metricas CV de DeepAR son in-sample). Estado detallado, decisiones y pendientes: en la memoria del asistente (`project_plos_one_submission.md`), no aqui.
+- **No duplicar entre papers:** MICAI (depresion, metodo) y PLOS (3 padecimientos, sistema) comparten el hallazgo "el ganador in-sample no persiste OOS"; enmarcar distinto y declarar el relacionado en Editorial Manager (ver `Congresos/OnePlus/COMPARACION_MICAI_PLOS.md`).

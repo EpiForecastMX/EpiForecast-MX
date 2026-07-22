@@ -344,7 +344,7 @@ The production Excel (`reports/ProdDetails/tabla_333_modelos_produccion.xlsx`) h
 - `precision_historica`: Forecast/real ratio as percentage
 - `pron_sem_previa / realidad_sem_previa`: Last week values for live validation
 - `modelo_produccion`, `tipo_modelo`, `region_asignada`, `justificacion`
-- **2026 reality audit columns** (added by `reselect_motor_2026.py`): `n_semanas_real_2026`, `total_real_2026`, `smape_2026_{prophet,deepar,ensemble,stacking}`, `smape_real_2026_ganador`, `motor_anterior`, `criterio_seleccion`
+- **2026 reality audit columns** (added by `reselect_motor_2026.py`): `n_semanas_real_2026`, `total_real_2026`, `smape_2026_{prophet,deepar,ensemble,stacking}`, `mase_2026_{prophet,deepar,ensemble,stacking}` (seasonal-naive lag 52), `smape_real_2026_ganador`, `motor_anterior`, `criterio_seleccion`
 
 **Sheet 2 - Detalle Semanal** (333 rows x 163 columns):
 - 52 columns `real_sem_N`: Actual weekly incidence
@@ -457,7 +457,7 @@ latest SINAVE bulletin ingested by the CI scraper. Delegates to
 6. **Regenerate the neuro gallery** (333 charts + `zoom_data_neuro.json`).
 7. **Dengue production + web** (gallery, forecast JSON, knowledge.json).
 8. **Rebuild the EpiBot zoom** — *after* the Dengue web, so it is not stale.
-9. **Regenerate** `knowledge.json` and copy it to `EpiForecast-IMSS-Dashboard/epibot/`.
+9. **Regenerate** `knowledge.json` and copy it to `EpiForecast-IMSS-Dashboard/epibot/` — now including a `rendimiento_2026` section (per-condition × per-engine SMAPE + MASE tables, neuro + Dengue) that the EpiBot renders as on-demand tables ("rendimiento por padecimiento", "cuadro de dengue").
 10. **Auto-update the dashboard date bar** (`actualiza_barra_fechas.py`) — derived
     from the chart data, no hardcoded dates.
 11. **Publish**: commit + push the dashboard repo (gallery, zoom, knowledge, index)
@@ -573,7 +573,7 @@ Beyond the three neurological/mental-health conditions, EpiForecast-MX incorpora
 
 **Horizon: 1-year precise + 5-year illustrative.** The accurate forecast is 52 weeks. A 5-year band (flat-growth Prophet on `log1p`) is **illustrative**: with only two epidemic cycles in the data the ~4-5 year cycle is not learnable, so it shows the expected seasonal pattern, not the magnitude of the next epidemic.
 
-**Live.** Public forecast page at **epiforecast.mx/dengue** (`dengue_forecast.json` + `dengue_serie.json` + showcase/EDA charts), and the **EpiBot** assistant answers Dengue questions (`answerDengue` handler, fed by a `dengue` section in `knowledge.json` generated from the production artifacts).
+**Live.** Public forecast page at **epiforecast.mx/dengue** (`dengue_forecast.json` + `dengue_serie.json` + showcase/EDA charts), and the **EpiBot** assistant answers Dengue questions (`answerDengue` handler, fed by a `dengue` section in `knowledge.json` generated from the production artifacts). It also renders a per-engine SMAPE + MASE performance table for Dengue (`answerRendimientoPorPadecimiento` / `_cuadroDengue`, e.g. "cuadro de dengue"), computed on 2026 reality (`mase_real_<engine>` added to `produccion_dengue.csv`).
 
 ```bash
 # End-to-end Dengue pipeline
