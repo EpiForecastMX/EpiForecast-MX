@@ -972,6 +972,51 @@ def _fill_horizon_dates(knowledge: dict[str, Any], cache: ProjectDataCache) -> N
     tc["ultimo_entrenamiento"] = datetime.fromtimestamp(p.stat().st_mtime).date().isoformat()
 
 
+def build_padecimientos() -> dict[str, Any]:
+    """Manifiesto de roster para el front-end (EPIC 4), desde el registry central.
+
+    Solo emite padecimientos ``lifecycle=published`` (Obesidad ``configured`` queda
+    invisible). Los conteos salen del **catálogo canónico** (432, no el 435 inflado).
+    El JS construirá roster/colores/aliases/conteos desde aquí (refactor JS = gate de
+    deploy con verificación visual). Es aditivo: no cambia las secciones existentes.
+    """
+    from epiforecast import registry
+    from epiforecast.catalog import build_production_catalog
+
+    df, counts = build_production_catalog()
+    by_id = df.groupby("disease_id").size().to_dict()
+
+    pads: list[dict[str, Any]] = []
+    for d in registry.get_registry().diseases:
+        if d.lifecycle != "published":
+            continue
+        pads.append(
+            {
+                "id": d.id,
+                "pad_ascii": d.artifact_key,
+                "pad_display": d.display_name,
+                "cie": d.cie_codes[0] if d.cie_codes else None,
+                "color": d.web.get("color"),
+                "label": d.web.get("label"),
+                "cohorte": d.profile.cohorte_id,
+                "aggregate_national": d.aggregate_national,
+                "aliases": list(d.aliases),
+                "n_models": int(by_id.get(d.id, 0)),
+                "nombre_completo": d.web.get("nombre_completo"),
+            }
+        )
+    return {
+        "padecimientos": pads,
+        "rosters": {
+            "total_series": counts.production_series_count,
+            "gallery_items": counts.gallery_item_count,
+            "por_cohorte": counts.por_cohorte,
+            "national_aggregators": sum(p["n_models"] for p in pads if p["aggregate_national"]),
+            "n_padecimientos": len(pads),
+        },
+    }
+
+
 def main() -> None:
     """Entry point: genera knowledge.json."""
     print("Cargando datos del proyecto...")
@@ -994,6 +1039,8 @@ def main() -> None:
         "dengue": build_dengue_section(),
         # Rendimiento 2026 por padecimiento × motor (SMAPE + MASE). Claves ASCII, sin normalizar.
         "rendimiento_2026": build_rendimiento_2026(),
+        # Manifiesto de roster data-driven (EPIC 4): solo published, conteos canónicos.
+        **build_padecimientos(),
         **build_static_data(),
     }
     _fill_horizon_dates(knowledge, cache)
