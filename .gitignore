@@ -262,3 +262,7 @@ generate_fig3.py
 
 # Notebooks descartados
 notebooks/bad *
+
+# Evidencia forense Fase 0 (Obesidad NO-GO): forecasts grandes preservados en disco,
+# NO en git (usar SHA256SUMS.txt como manifiesto durable). Ver docs/FASE_0_CONTENCION.md
+reports/_evidencia_regresion_ab201731/*_OBESIDAD_ONLY.csv

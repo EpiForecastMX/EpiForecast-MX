@@ -16,23 +16,31 @@ Obesidad quedó integrada end-to-end por la maquinaria genérica del registry (1
 - **Datos:** extraída del Cuadro 14.1 (653 boletines, 20,896 filas, contrato exacto),
   mergeada al consolidado (neuro+Dengue byte-idénticos), prep INEGI (32 estados, 4 regiones).
 - **Modelos:** Prophet / Ensemble / Stacking **111 c/u** (Nacional + 32 estados + 4 regiones × 3 sexos).
-- **Selección** (`reports/ProdDetails/produccion_obesidad.csv`): 111 series →
-  **Ensemble 62 / Prophet 26 / Stacking 23**. Nacional = Ensemble (3 sexos).
+- **Selección** (preliminar, movida a `reports/ProdDetails/_preliminar_NO_GO/produccion_obesidad_PRELIMINAR.csv`):
+  111 series → **Ensemble 62 / Prophet 26 / Stacking 23**. Nacional = Ensemble (3 sexos).
+  ⚠️ El `criterio_seleccion` era `rolling_cv_v1` pero fue **CV in-sample**, no OOS real (relabelado
+  `insample_cv_PRELIMINAR_NO_GO`).
 - **Lectura preliminar (métricas CV, in-sample):** Ensemble el mejor motor (MASE mediana 0.87);
   77% de las series le ganan al naive estacional; **el nacional es el foco amarillo (MASE 1.07–1.23:
   ningún motor supera al naive a nivel país).**
 
-## PENDIENTE 1 — DeepAR en SageMaker GPU (no local)
+## PENDIENTE 1 — DeepAR (incompleto)
 
-**Por qué:** DeepAR local se **deadlockea intermitentemente en Apple Silicon** (sampling StudentT;
-limitación documentada en CLAUDE.md). Se probó secuencial (`n_jobs_train=1`, load bajo) y aun así
-cuelga el `fit()` de ciertos estados (Jalisco, Nayarit, Nuevo León). Se alcanzó **59/111** (Nacional
-3/3 completo) antes de abandonar el intento local.
+> ⚠️ **NO ejecutar los comandos de abajo como están.** Obesidad es **NO-GO** (ver
+> `FASE_0_CONTENCION.md`). Cualquier reentrenamiento/publicación va **solo** dentro del
+> re-onboarding por fases de `PLAN_BRUTAL_OBESIDAD_N_PLUS_1.md`, con contratos de artefactos
+> y upsert atómico — NO sobre los scripts actuales que sobrescriben agregados globales.
 
-**Cómo cerrarlo:** correr DeepAR en **SageMaker GPU** — el camino que el proyecto ya usa:
-`make train-sagemaker` (o `make dengue-train` como referencia) con `padecimiento.tipo='Obesidad'`.
-Ahí no hay deadlock (CUDA, no MPS). Luego `predice` + re-correr `produccion_padecimiento --disease
-Obesidad` para la selección de **4 motores** y ver si DeepAR mueve el nacional.
+**Diagnóstico corregido (auditoría):** el DeepAR de Obesidad NO se colgó por un "deadlock StudentT".
+Lo que ocurrió fue **sobre-paralelización**: `n_jobs_train=-2` lanzó ~11-22 procesos concurrentes y,
+además, corridas simultáneas, saturando la máquina. Se alcanzaron **59/111** artefactos antes de
+abortar. (El caveat de MPS/concurrencia en CLAUDE.md es real y se debe respetar, pero **no** fue la
+causa aquí.)
+
+**Cómo cerrarlo (cuando el plan lo autorice):** correr DeepAR en **SageMaker GPU** (CUDA, sin MPS),
+el camino que el proyecto ya usa: `make train-sagemaker` con `padecimiento.tipo='Obesidad'` y
+`n_jobs_train=1` local si se prueba en CPU. Luego `predice` (con el fix expm1 del loader) +
+selección OOS **real** de 4 motores. Ver el plan para el contrato exacto.
 
 **Caveat de comparación:** DeepAR es autorregresivo → su "ajuste" in-sample eco-a la realidad
 (sMAPE 0 trivial). Para compararlo justo NO usar el ajuste in-sample; usar **CV** o **pronóstico
@@ -49,8 +57,13 @@ congelado OOS** (entrenar hasta 2023, pronosticar 2024 a ciegas).
 - **Selección OOS honesta** (`rolling_cv_v1` real con 4 holdouts, o pronóstico congelado) en vez de
   las métricas CV in-sample actuales, antes de declarar números "sin asterisco".
 
-## PENDIENTE 3 — Publicación formal
+## PENDIENTE 3 — Publicación formal (BLOQUEADA)
 
-Obesidad se hace visible en el EpiBot para revisión (ver abajo), pero la publicación formal
-(`dvc add/push` del consolidado + modelos a S3, deploy productivo, refactor JS data-driven completo
-de EPIC 4) queda para cuando cierre DeepAR y la selección de 4 motores.
+> Obesidad estuvo brevemente visible en el EpiBot y **se revirtió en Fase 0** (NO-GO). Hoy es
+> **invisible** en toda superficie publicada.
+
+La publicación formal (`dvc add/push` del consolidado + modelos a S3, deploy productivo, refactor JS
+data-driven de EPIC 4, flip a `lifecycle=published`) queda **bloqueada** hasta completar el
+re-onboarding por fases del plan: baseline verde con tests que detecten producción rota, contratos de
+artefactos, shards + upsert atómico, evaluación OOS honesta y recién entonces re-modelar. El flip a
+`published` ocurre **dentro del mismo commit de deploy** que contiene todos los artefactos.

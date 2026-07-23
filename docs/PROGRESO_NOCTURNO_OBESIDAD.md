@@ -19,7 +19,9 @@
 
 ## Gates que NO cruzo autónomamente (requieren tu OK en la mañana)
 - `git push` a remoto · deploy web (Netlify) · `dvc push` a S3 · flip de Obesidad a `lifecycle=published`.
-- Entrenamiento DeepAR concurrente / MPS (riesgo de deadlock; CLAUDE.md).
+- Entrenamiento DeepAR: **NO** correr concurrente ni con `n_jobs_train` negativo. El fallo de Obesidad
+  NO fue "deadlock StudentT" sino **sobre-paralelización** (`n_jobs_train=-2` → ~11-22 procesos) +
+  corridas simultáneas. Usar `n_jobs_train=1` local o SageMaker GPU (CUDA). MPS sigue deshabilitado.
 
 ## RESUMEN EJECUTIVO (leer esto primero)
 
@@ -63,11 +65,19 @@ un padecimiento nuevo (Obesidad E66) fluye por todo el pipeline con solo 1 entra
 - **Publicación**: flip de Obesidad a `lifecycle=published` = gate (solo tras 4 motores + selección +
   revisión visual, dentro del commit de deploy). `git push` / deploy web / `dvc push` = gates.
 
-### Cómo continuar (orden sugerido cuando des el OK)
-1. `make train ARGS="padecimiento.tipo='Obesidad' modelo_activo=deepar"` (y ensemble, stacking).
-2. `predice` para los 4 motores → construir selector `rolling_cv_v1` (EPIC 3).
-3. EPIC 4 web (manifiesto + JS) — ver diseño en el plan.
-4. `dvc add/push` de consolidado + modelos; flip a published dentro del commit de deploy.
+### Cómo continuar
+
+> ⛔ **Obesidad es NO-GO.** NO ejecutar los comandos de esta sección tal cual — varios reproducen las
+> regresiones (p. ej. `predice padecimiento.tipo='Obesidad'` **sobrescribe** los agregados globales
+> `all_forecast_<motor>.csv`; ver `FASE_0_CONTENCION.md`). El re-onboarding va **solo** por las fases
+> de `PLAN_BRUTAL_OBESIDAD_N_PLUS_1.md` (baseline verde → contratos de artefactos → shards + upsert
+> atómico → evaluación OOS honesta → re-modelar → publicación atómica). Lo de abajo queda como
+> referencia histórica del intento preliminar, NO como receta a correr.
+
+1. ~~`make train ARGS="padecimiento.tipo='Obesidad' modelo_activo=deepar"`~~ → primero shards + contrato de artefacto (plan EPIC 2/5).
+2. ~~`predice` para los 4 motores~~ → **peligroso hoy**: sobrescribe agregados globales. Requiere upsert atómico por-enfermedad (plan).
+3. EPIC 4 web (manifiesto + JS) — solo tras selección OOS válida.
+4. `dvc add/push` + flip a published — solo dentro del commit de deploy con todos los artefactos.
 
 ### Verificación reproducible (cualquiera de estos):
 - `make test-fast` → 970 passed (byte-idéntico neuro+Dengue).

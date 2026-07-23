@@ -43,3 +43,44 @@
 - `produccion_obesidad.csv` y los modelos de Obesidad quedan como **PRELIMINAR / no productivo**.
 - Siguiente: fases del plan (baseline verde, contratos de artefactos, shards+upsert, evaluación
   común OOS, y recién entonces re-onboarding de Obesidad).
+
+## Cierre formal de Fase 0 (brechas de la re-auditoría)
+
+La re-auditoría confirmó la contención técnica en verde y señaló 4 brechas formales + 1 anomalía
+legacy. Cerradas así:
+
+1. ✅ **SHA256SUMS persistido.** `reports/_evidencia_regresion_ab201731/SHA256SUMS.txt` con los 4
+   artefactos de evidencia; `shasum -c` verde.
+2. ✅ **`produccion_obesidad.csv` fuera de la ruta canónica + estado honesto.** Movido a
+   `reports/ProdDetails/_preliminar_NO_GO/produccion_obesidad_PRELIMINAR.csv` (con `README.md`).
+   La etiqueta falsa `criterio_seleccion=rolling_cv_v1` se corrigió a
+   `insample_cv_PRELIMINAR_NO_GO` (era CV **in-sample**, no rolling-origin OOS). El original
+   byte-idéntico queda como evidencia forense. **Verificado que ningún código de producción lo
+   descubre por glob** (`catalog.py`/`build_web_knowledge.py` leen `produccion_dengue.csv` por
+   nombre exacto).
+3. ✅ **Diagnóstico falso de deadlock corregido.** `OBESIDAD_PENDIENTES.md` y
+   `PROGRESO_NOCTURNO_OBESIDAD.md`: se reemplazó "deadlock StudentT" por la causa real
+   (**sobre-paralelización** `n_jobs_train=-2` → ~11-22 procesos + corridas simultáneas). Las
+   instrucciones de entrenamiento/publicación de ambos docs quedaron marcadas **NO-GO / bloqueadas**
+   (el `predice Obesidad` de esas recetas es justo lo que sobrescribió los agregados globales).
+4. 🟡 **DVC global.** Se restauró la superficie **publicada** `data/processed/tableau_model.xlsx` a
+   su puntero (`dvc checkout`; contenía **cero Obesidad**). Queda intencionalmente sucio, como
+   **WIP aditivo de Obesidad NO pusheado y NO publicado**, lo siguiente:
+   - `data/processed/dataset_boletin_epidemiologico.csv` — Obesidad mergeada (neuro 20896 c/u +
+     Dengue 12768 **byte-idénticos**; Obesidad +20896). Es la extracción E66 (EPIC 2), la única
+     parte que la auditoría **no** marcó rota.
+   - `models/{prophet,deepar,ensemble,stacking}/Obesidad/` — modelos preliminares.
+   - `data/raw/data_raw_Obesidad.csv` · `reports/figures/*Obesidad*.png` — WIP local.
+   - `logs/` — efímero (se conserva por valor forense de esta sesión).
+
+   **No se revierte** para no destruir la extracción E66 válida (se reutiliza en el re-onboarding).
+   `reports/forecasts.dvc` y `tableau_model.xlsx.dvc` están **limpios**. Nada se `dvc push`eó.
+   Para dejar el árbol prístino (decisión del usuario, destructiva): `dvc checkout --force`.
+
+## Anomalía legacy pre-existente (NO tocar — no es de Fase 0)
+
+- **Stacking · Alzheimer termina una semana antes.** En `all_forecast_stacking.csv`, Alzheimer llega
+  a `2027-01-18` (75,591 filas), mientras Depresión/Parkinson llegan a `2027-01-25` (75,702) — faltan
+  **111 filas** (1 semana × 111 series) de Alzheimer. Está en el archivo **restaurado desde el puntero
+  DVC**, o sea **precede a Obesidad** y **coincide con producción**. **No se corrige** aquí: alterarlo
+  rompería la garantía byte-idéntico-al-puntero. Queda flageado para investigación en **Fase 1**.
