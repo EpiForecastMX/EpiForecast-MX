@@ -36,10 +36,11 @@
 > **Fase 0 CERRADA · Obesidad NO-GO.** Lo de abajo es el intento preliminar (invalidado). Siguiente:
 > Fase 1 (lifecycle gate del selector).
 
-Se completó el **núcleo del refactor "sin hard-codes"** (EPIC 0-1-2): la *maquinaria del registry*
-habilita el onboarding N+1 con ~1 entrada + 1 grupo de cuadro. Pero **los resultados de Obesidad NO
-son válidos** (NO-GO; ver `FASE_0_CONTENCION.md`): se demostró la *abstracción*, no un pronóstico
-productivo. **Neuro + Dengue quedan byte-idénticos** (suite 980 verde en cada frontera).
+Se avanzó el **núcleo del refactor "sin hard-codes"** (EPIC 0-1-2) como **intento parcial**: la
+*maquinaria del registry* existe, pero el onboarding **N+1 NO quedó demostrado** — Obesidad fluyó por
+la tubería y **falló** (resultados NO válidos, NO-GO; ver `FASE_0_CONTENCION.md`), así que "un
+padecimiento nuevo con ~1 entrada + 1 grupo de cuadro" queda como **hipótesis por validar**, no como
+hecho probado. **Neuro + Dengue quedan byte-idénticos** (suite 980 verde en cada frontera).
 
 ### Qué está HECHO y commiteado (9 commits, hooks verdes; suite 980 verde)
 - **EPIC 0** (c3784ddf): catálogo canónico 432 (corrige el 435/102 inflado) + golden freeze per-motor.
@@ -99,7 +100,7 @@ productivo. **Neuro + Dengue quedan byte-idénticos** (suite 980 verde en cada f
 4. `dvc add/push` + flip a published — solo dentro del commit de deploy con todos los artefactos.
 
 ### Verificación reproducible (cualquiera de estos):
-- `make test-fast` → 970 passed (byte-idéntico neuro+Dengue).
+- `make test-fast` → 980 passed (byte-idéntico neuro+Dengue).
 - `.venv/bin/python -m scripts.doctor_padecimiento --config-only` → todos completos.
 - `.venv/bin/python -m scripts.build_catalogo_canonico` → 432 (neuro 333 + Dengue 99).
 
@@ -109,4 +110,4 @@ productivo. **Neuro + Dengue quedan byte-idénticos** (suite 980 verde en cada f
 - E0: catálogo canónico (432 = 333 neuro + 99 Dengue), golden freeze per-motor, 15 tests verdes.
 - E1: registry + cohorts.py + gates (log/short_series/fallback) + tuner migrados a registry; suite 970 verde.
 - E2: extractor genérico + backfill E66 (653/20896, contrato exacto) + merge idempotente (no-Obesidad intacto).
-- E5 (prueba): Obesidad prep + Prophet train (15 modelos) + predict (10,545 forecasts). Abstracción demostrada.
+- E5 (prueba): Obesidad prep + Prophet train (15 modelos) + predict (10,545 forecasts). Intento parcial que FALLÓ (NO-GO); N+1 no demostrado.
