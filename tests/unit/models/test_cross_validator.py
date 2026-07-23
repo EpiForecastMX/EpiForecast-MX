@@ -23,6 +23,11 @@ def _make_forecaster(n_points: int = 60) -> MagicMock:
     forecaster = MagicMock()
     forecaster.padecimiento = "Depresión"  # cohorte neuro: cv_weights aplican
     forecaster.train_data = pd.DataFrame({"ds": dates, "y": np.ones(n_points) * 5})
+    forecaster.poblacion_valor = None
+    forecaster.tasa_por = 100_000.0
+    forecaster.log_transform = False
+    forecaster.col_poblacion = "Total"
+    forecaster.transform_contract = None
     forecaster._create_prophet.return_value = MagicMock()
     return forecaster
 

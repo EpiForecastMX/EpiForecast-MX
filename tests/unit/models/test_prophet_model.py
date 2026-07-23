@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from epiforecast.artifacts import resolve_transform_contract
 import epiforecast.models.prophet.model as model_mod
 from epiforecast.models.prophet.model import ProphetForecaster
 
@@ -82,6 +83,7 @@ def _make_df(n_weeks: int = 60, padecimiento: str = "Depresión") -> pd.DataFram
             "Entidad": ["Jalisco"] * n_weeks,
             "incrementos_hombres": rng.integers(10, 50, n_weeks),
             "incrementos_mujeres": rng.integers(15, 60, n_weeks),
+            "Total": [5_000_000] * n_weeks,
         }
     )
 
@@ -130,11 +132,44 @@ class TestProphetForecasterInit:
     def test_serie_starts_empty(self, forecaster):
         assert forecaster.serie.empty
 
-    def test_normalizar_tasa_from_conf(self, forecaster):
-        assert forecaster.normalizar_tasa is False
+    def test_obesidad_usa_contrato_tipado_aunque_config_plana_diga_lo_contrario(self):
+        config = {
+            **MOCK_CONF,
+            "normalizar_tasa": False,
+            "log_transform": False,
+            "tasa_por": 17,
+        }
+        with patch("epiforecast.models.prophet.model.Prophet"):
+            obj = ProphetForecaster(
+                _make_df(padecimiento="Obesidad"),
+                sexo="incrementos_hombres",
+                entidad="Jalisco",
+                padecimiento="Obesidad",
+                config=config,
+            )
+        assert obj.normalizar_tasa is True
+        assert obj.log_transform is True
+        assert obj.tasa_por == 100_000
 
-    def test_log_transform_from_conf(self, forecaster):
-        assert forecaster.log_transform is False
+    def test_padecimiento_desconocido_no_cae_al_adaptador_legacy(self):
+        with (
+            patch.object(model_mod, "logger", MagicMock()),
+            patch("epiforecast.models.prophet.model.Prophet"),
+            pytest.raises(ValueError, match="padecimiento desconocido"),
+        ):
+            ProphetForecaster(
+                _make_df(padecimiento="Obesdiad"),
+                sexo="incrementos_hombres",
+                entidad="Jalisco",
+                padecimiento="Obesdiad",
+                config=MOCK_CONF,
+            )
+
+    def test_normalizar_tasa_from_registered_contract(self, forecaster):
+        assert forecaster.normalizar_tasa is True
+
+    def test_log_transform_from_registered_contract(self, forecaster):
+        assert forecaster.log_transform is True
 
     def test_tasa_por_from_conf(self, forecaster):
         assert forecaster.tasa_por == 100_000
@@ -187,6 +222,19 @@ class TestAgrupa:
             obj = ProphetForecaster(df, sexo="incrementos_hombres")
         obj.agrupa()
         assert "Total" in obj.serie.columns
+
+    def test_registered_rate_rechaza_dataset_sin_exposure(self):
+        df = _make_df(padecimiento="Obesidad").drop(columns="Total")
+        with patch("epiforecast.models.prophet.model.Prophet"):
+            obj = ProphetForecaster(
+                df,
+                sexo="incrementos_hombres",
+                entidad="Jalisco",
+                padecimiento="Obesidad",
+                config=MOCK_CONF,
+            )
+        with pytest.raises(ValueError, match="exposición"):
+            obj.agrupa()
 
 
 # ── crea_train_test ───────────────────────────────────────────────────────────
@@ -302,8 +350,22 @@ class TestSaveLoad:
         path = tmp_path / "model.pkl"
         with path.open("wb") as f:
             pickle.dump({"mock": "model"}, f)
+        pd.DataFrame(
+            {
+                "ds": pd.date_range("2025-01-06", periods=2, freq="W-MON"),
+                "Total": [4_900_000, 5_000_000],
+            }
+        ).to_csv(path.with_suffix(".csv"), index=False)
         forecaster.load(path)
         assert forecaster._model is not None
+        assert forecaster.poblacion_valor == 5_000_000
+
+    def test_rate_model_rechaza_sidecar_ausente(self, forecaster, tmp_path):
+        path = tmp_path / "model.pkl"
+        with path.open("wb") as f:
+            pickle.dump({"mock": "model"}, f)
+        with pytest.raises(ValueError, match="sidecar de exposición"):
+            forecaster.load(path)
 
 
 # ── predict ───────────────────────────────────────────────────────────────────
@@ -313,6 +375,84 @@ class TestPredict:
     def test_raises_when_not_fitted(self, forecaster):
         with pytest.raises(RuntimeError, match="fit()"):
             forecaster.predict()
+
+    def test_obesidad_invierte_log_y_tasa_desde_contrato(self):
+        config = {
+            **MOCK_CONF,
+            "normalizar_tasa": False,
+            "log_transform": False,
+            "tasa_por": 17,
+        }
+        with patch("epiforecast.models.prophet.model.Prophet"):
+            obj = ProphetForecaster(
+                _make_df(padecimiento="Obesidad"),
+                sexo="incrementos_hombres",
+                entidad="Jalisco",
+                padecimiento="Obesidad",
+                config=config,
+            )
+        population = 126_014_024.0
+        cases = 496.0
+        model_value = np.log1p(cases / population * 100_000.0)
+        model = MagicMock()
+        dates = pd.date_range("2026-01-05", periods=1, freq="W-MON")
+        model.make_future_dataframe.return_value = pd.DataFrame({"ds": dates})
+        model.predict.return_value = pd.DataFrame(
+            {
+                "ds": dates,
+                "yhat": [model_value],
+                "yhat_lower": [model_value],
+                "yhat_upper": [model_value],
+            }
+        )
+        obj._model = model
+        obj.poblacion_valor = population
+
+        out = obj.predict(horizon=1)
+
+        assert out["yhat"].iloc[0] == pytest.approx(cases)
+
+    def test_obesidad_no_emite_tasa_como_casos_si_falta_exposure(self):
+        with patch("epiforecast.models.prophet.model.Prophet"):
+            obj = ProphetForecaster(
+                _make_df(padecimiento="Obesidad"),
+                sexo="incrementos_hombres",
+                entidad="Jalisco",
+                padecimiento="Obesidad",
+                config=MOCK_CONF,
+            )
+        obj._model = MagicMock()
+
+        with pytest.raises(ValueError, match="requiere exposición"):
+            obj.predict(horizon=1)
+
+    def test_obesidad_alinea_exposure_historica_y_futura_por_fecha(self):
+        with patch("epiforecast.models.prophet.model.Prophet"):
+            obj = ProphetForecaster(
+                _make_df(padecimiento="Obesidad"),
+                sexo="incrementos_hombres",
+                entidad="Jalisco",
+                padecimiento="Obesidad",
+                config=MOCK_CONF,
+            )
+        dates = pd.date_range("2025-01-06", periods=3, freq="W-MON")
+        obj._set_exposure_history(pd.DataFrame({"ds": dates[:2], "Total": [100_000.0, 200_000.0]}))
+        model_values = np.log1p([100.0, 50.0, 50.0])
+        model = MagicMock()
+        model.make_future_dataframe.return_value = pd.DataFrame({"ds": dates})
+        model.predict.return_value = pd.DataFrame(
+            {
+                "ds": dates,
+                "yhat": model_values,
+                "yhat_lower": model_values,
+                "yhat_upper": model_values,
+            }
+        )
+        obj._model = model
+
+        out = obj.predict(horizon=1)
+
+        np.testing.assert_allclose(out["yhat"], [100.0, 100.0, 100.0])
 
     def test_returns_dataframe_when_fitted(self, forecaster):
         mock_model = MagicMock()
@@ -329,11 +469,177 @@ class TestPredict:
         mock_model.make_future_dataframe.return_value = pd.DataFrame({"ds": dates})
         mock_model.predict.return_value = mock_fc
         forecaster._model = mock_model
+        forecaster.poblacion_valor = 5_000_000
 
         result = forecaster.predict(horizon=horizon)
         assert isinstance(result, pd.DataFrame)
         assert "yhat" in result.columns
         assert len(result) == horizon
+
+
+def test_cv_alinea_exposure_por_fecha_y_evalua_en_casos():
+    from epiforecast.models.prophet.cross_validator import _compute_fold_metrics
+
+    dates = pd.date_range("2025-01-06", periods=2, freq="W-MON")
+    exposure = np.array([100_000.0, 200_000.0])
+    counts = np.array([100.0, 100.0])
+    model_values = np.log1p(counts / exposure * 100_000.0)
+    fold = pd.DataFrame(
+        {
+            "ds": dates,
+            "y": model_values,
+            "y_original": counts,
+            "Total": exposure,
+        }
+    )
+    model = MagicMock()
+    model.predict.return_value = pd.DataFrame({"ds": dates, "yhat": model_values})
+
+    metrics = _compute_fold_metrics(
+        model,
+        fold,
+        fold,
+        poblacion=200_000.0,
+        tasa_por=100_000.0,
+        log_transform=True,
+        col_poblacion="Total",
+        transform_contract=resolve_transform_contract("Obesidad", "prophet"),
+    )
+
+    assert metrics["rmse"] == pytest.approx(0.0)
+    assert metrics["mae"] == pytest.approx(0.0)
+
+
+def test_cv_count_log_evalua_en_casos_absolutos():
+    from epiforecast.models.prophet.cross_validator import _compute_fold_metrics
+
+    dates = pd.date_range("2025-01-06", periods=2, freq="W-MON")
+    truth = np.array([0.0, 100.0])
+    prediction = np.array([0.0, 50.0])
+    fold = pd.DataFrame({"ds": dates, "y": np.log1p(truth)})
+    model = MagicMock()
+    model.predict.return_value = pd.DataFrame({"ds": dates, "yhat": np.log1p(prediction)})
+
+    metrics = _compute_fold_metrics(
+        model,
+        fold,
+        fold,
+        log_transform=True,
+        transform_contract=resolve_transform_contract("Dengue", "prophet"),
+    )
+
+    assert metrics["rmse"] == pytest.approx(np.sqrt(1_250.0))
+    assert metrics["mae"] == pytest.approx(25.0)
+
+
+def test_eval_rapida_count_log_evalua_en_casos_absolutos():
+    from epiforecast.models.prophet.data_prep import eval_rapida
+
+    dates = pd.date_range("2025-01-06", periods=4, freq="W-MON")
+    truth = np.array([0.0, 100.0, 0.0, 100.0])
+    prediction = np.array([0.0, 50.0, 0.0, 50.0])
+    fold = pd.DataFrame({"ds": dates, "y": np.log1p(truth)})
+    model = MagicMock()
+    model.predict.return_value = pd.DataFrame({"ds": dates, "yhat": np.log1p(prediction)})
+
+    metrics = eval_rapida(
+        model,
+        fold,
+        fold,
+        normalizar_tasa=False,
+        poblacion_valor=None,
+        log_transform=True,
+        tasa_por=100_000.0,
+        entidad="Nacional",
+        sexo="incrementos_hombres",
+        transform_contract=resolve_transform_contract("Dengue", "prophet"),
+    )
+
+    assert metrics["rmse"] == pytest.approx(np.sqrt(1_250.0))
+    assert metrics["mae"] == pytest.approx(25.0)
+
+
+def test_eval_rapida_alinea_exposure_y_evalua_obesidad_en_casos():
+    from epiforecast.models.prophet.data_prep import eval_rapida
+
+    dates = pd.date_range("2025-01-06", periods=4, freq="W-MON")
+    exposure = np.array([100_000.0, 200_000.0, 300_000.0, 400_000.0])
+    counts = np.full(4, 100.0)
+    model_values = np.log1p(counts / exposure * 100_000.0)
+    fold = pd.DataFrame(
+        {
+            "ds": dates,
+            "y": model_values,
+            "y_original": counts,
+            "Total": exposure,
+        }
+    )
+    model = MagicMock()
+    model.predict.return_value = pd.DataFrame({"ds": dates, "yhat": model_values})
+
+    metrics = eval_rapida(
+        model,
+        fold,
+        fold,
+        normalizar_tasa=True,
+        poblacion_valor=400_000.0,
+        log_transform=True,
+        tasa_por=100_000.0,
+        entidad="Nacional",
+        sexo="incrementos_hombres",
+        transform_contract=resolve_transform_contract("Obesidad", "prophet"),
+    )
+
+    assert metrics["rmse"] == pytest.approx(0.0, abs=1e-12)
+    assert metrics["mae"] == pytest.approx(0.0, abs=1e-12)
+
+
+def test_baja_confianza_evalua_holdout_antes_del_refit_final():
+    config = {**MOCK_CONF, "umbral_minimo_semanal": 100}
+    with patch("epiforecast.models.prophet.model.Prophet"):
+        obj = ProphetForecaster(
+            _make_df(),
+            sexo="incrementos_hombres",
+            entidad="Jalisco",
+            padecimiento=None,
+            config=config,
+        )
+
+    dates = pd.date_range("2025-01-06", periods=8, freq="W-MON")
+    obj.serie = pd.DataFrame({"ds": dates, "y": np.arange(8, dtype=float)})
+    obj.train_data = obj.serie.iloc[:4].copy()
+    obj.test_data = obj.serie.iloc[4:].copy()
+    obj.agrupa = MagicMock()
+    obj.crea_train_test = MagicMock()
+    obj.promedio_semanal = MagicMock(return_value=1.0)
+
+    events: list[str] = []
+    obj.fit = MagicMock(
+        side_effect=lambda data, _params: events.append(
+            "fit_train" if data is obj.train_data else "fit_full"
+        )
+    )
+    null_metrics = {
+        "rmse": None,
+        "mae": None,
+        "mape": None,
+        "smape": None,
+        "mase": None,
+    }
+    with (
+        patch(
+            "epiforecast.models.prophet.prophet_compat.get_param_grid",
+            return_value={"seasonality_mode": ["additive"]},
+        ),
+        patch.object(
+            model_mod,
+            "eval_rapida",
+            side_effect=lambda *_args, **_kwargs: (events.append("eval_holdout") or null_metrics),
+        ),
+    ):
+        obj.run()
+
+    assert events == ["fit_train", "eval_holdout", "fit_full"]
 
 
 # ── _build_holidays ───────────────────────────────────────────────────────────

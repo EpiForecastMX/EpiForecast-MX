@@ -18,6 +18,7 @@ import pandas as pd
 from prophet import Prophet
 from sklearn.model_selection import TimeSeriesSplit
 
+from epiforecast.artifacts import TransformContract
 from epiforecast.constants import RANDOM_SEED
 from epiforecast.utils.cohorts import is_neuro
 from epiforecast.utils.config import conf, logger
@@ -180,6 +181,8 @@ class ProphetCrossValidator:
                 poblacion=self.forecaster.poblacion_valor,
                 tasa_por=self.forecaster.tasa_por,
                 log_transform=self.forecaster.log_transform,
+                col_poblacion=self.forecaster.col_poblacion,
+                transform_contract=self.forecaster.transform_contract,
             )
             collector.append(fold_idx, metrics)
 
@@ -280,8 +283,10 @@ def _compute_fold_metrics(
     train_fold: pd.DataFrame,
     val_fold: pd.DataFrame,
     poblacion: float | None = None,
-    tasa_por: int = 100000,
+    tasa_por: float = 100000,
     log_transform: bool = False,
+    col_poblacion: str = "Total",
+    transform_contract: TransformContract | None = None,
 ) -> dict[str, Any]:
     """Calcula RMSE, MAE, MAPE, SMAPE y MASE para un fold de CV.
 
@@ -294,14 +299,43 @@ def _compute_fold_metrics(
     forecast = model.predict(val_fold[pred_cols])
     merged = val_fold[["ds", "y"]].merge(forecast[["ds", "yhat"]], on="ds")
 
-    if poblacion is not None and "y_original" in val_fold.columns:
+    if transform_contract is not None:
+        if transform_contract.requires_exposure:
+            if "y_original" not in val_fold.columns or "y_original" not in train_fold.columns:
+                raise ValueError("faltan conteos originales para evaluar un contrato de tasa")
+            merged_orig = val_fold[["ds", "y_original"]].merge(forecast[["ds", "yhat"]], on="ds")
+            y_true = merged_orig["y_original"].to_numpy(dtype=float)
+            if col_poblacion not in val_fold.columns:
+                raise ValueError("falta exposición por fecha en fold de validación")
+            exposure_by_date = val_fold[["ds", col_poblacion]].drop_duplicates("ds")
+            aligned = merged_orig[["ds"]].merge(exposure_by_date, on="ds", how="left")
+            exposure = pd.to_numeric(aligned[col_poblacion], errors="coerce").to_numpy(dtype=float)
+            y_pred = transform_contract.apply_inverse(
+                merged_orig["yhat"].to_numpy(dtype=float),
+                exposure=exposure,
+            )
+            y_train = train_fold["y_original"].to_numpy(dtype=float)
+        else:
+            y_true = transform_contract.apply_inverse(merged["y"].to_numpy(dtype=float))
+            y_pred = transform_contract.apply_inverse(merged["yhat"].to_numpy(dtype=float))
+            y_train = transform_contract.apply_inverse(train_fold["y"].to_numpy(dtype=float))
+    elif poblacion is not None and "y_original" in val_fold.columns:
         # Metricas en espacio de conteos reales
         merged_orig = val_fold[["ds", "y_original"]].merge(forecast[["ds", "yhat"]], on="ds")
         y_true = merged_orig["y_original"].to_numpy()
         yhat_tasa = merged_orig["yhat"].to_numpy()
         if log_transform:
             yhat_tasa = np.expm1(yhat_tasa)
-        y_pred = (yhat_tasa * poblacion) / tasa_por
+        exposure_factor: Any
+        if col_poblacion in val_fold.columns:
+            exposure_by_date = val_fold[["ds", col_poblacion]].drop_duplicates("ds")
+            aligned = merged_orig[["ds"]].merge(exposure_by_date, on="ds", how="left")
+            exposure_factor = pd.to_numeric(aligned[col_poblacion], errors="coerce").to_numpy()
+            if not np.isfinite(exposure_factor).all() or (exposure_factor <= 0).any():
+                raise ValueError("exposición inválida en fold de validación")
+        else:
+            exposure_factor = poblacion
+        y_pred = (yhat_tasa * exposure_factor) / tasa_por
         y_train = train_fold["y_original"].to_numpy()
     else:
         y_true = merged["y"].to_numpy()

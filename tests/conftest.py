@@ -4,9 +4,16 @@
 Fixtures here are available to all test files without explicit imports.
 """
 
+import os
 from pathlib import Path
 import sys
 import types
+
+# La suite ejercita varios motores nativos dentro del mismo proceso. En macOS arm64,
+# PyTorch, scikit-learn y XGBoost pueden cargar runtimes OpenMP distintos; limitar el
+# pool evita que sus workers colisionen. Los comandos productivos entrenan un motor
+# por proceso y no dependen de esta configuración exclusiva de pruebas.
+os.environ["OMP_NUM_THREADS"] = "1"
 
 import pandas as pd
 import pytest

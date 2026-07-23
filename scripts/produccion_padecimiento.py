@@ -14,29 +14,10 @@ serie de cada ``{Motor}_{Padecimiento}_completo.csv``.
   (hoy vacío) y el write **delega** en él. Reserva además ``_DEDICATED_ARTIFACTS``.
 - El ``slug`` se valida (formato + longitud + containment anclado a ROOT).
 
-**Publicación robusta:** la selección se valida CONTEXTUALMENTE (DataFrame, columnas únicas,
-escalares, no-null, strings no vacíos/whitespace, enfermedad, política, motores permitidos, claves
-únicas) y ``dist`` se calcula ANTES del ``replace``. La escritura es **TOCTOU-safe**: rechaza
-``.``/``..``, destinos fuera de ROOT y filenames reservados (dot/``.lock``/``.tmp``); camina desde
-ROOT con ``openat``+``O_NOFOLLOW`` (un swap por symlink aborta; el mkdir tolera carreras EEXIST y el
-lockfile reintenta el ENOENT espurio de APFS); **re-valida el containment por inodo tres veces**
-(tras el lock, justo antes del ``replace``, y DESPUÉS para detectar+limpiar+fallar ante un escape en
-la ventana residual); el tmp es exclusivo (``O_CREAT|O_EXCL|O_NOFOLLOW``) con el modo del destino
-preservado (0644); el round-trip verifica integridad BYTE-FIEL y que un consumidor por defecto
-releería los MISMOS valores/tipos (toda columna); y el flujo es fsync(tmp) → ``os.replace`` relativo
-(dirfd) → fsync(dir).
-**Garantías post-commit (honestas):** un ``os.replace`` que aterriza DENTRO de ROOT nunca se reporta
-como fallo por un error de teardown (fsync/unlock/close son best-effort ``suppress(BaseException)`` y
-la sección crítica post-lock enmascara SIGINT/SIGTERM para no interrumpirse a mitad); un escape fuera
-de ROOT se detecta, se limpia y se reporta como fallo; una señal deja el archivo completo o ausente
-(nunca a medias) y puede hacer salir el proceso por la señal, pero sin corrupción ni fuga de fds.
-El lock del writer es ``_locked_lockfile`` (una sola implementación, la que se prueba).
-
-**Modelo de amenaza:** el vector de escape residual (renombrar el dir destino durante la microventana
-antes del ``replace``) requiere un atacante LOCAL con permiso de escritura/rename dentro de
-``reports/ProdDetails`` — una posición estrictamente menor que la que ya tendría para editar el repo
-directamente. Se mitiga (detección+limpieza+fallo, sin escape silencioso reportado como éxito), no se
-elimina por completo (es un TOCTOU de directorio inherente sin soporte de kernel portable).
+La selección se valida antes de escribir. El CSV se crea en el mismo directorio, se relee, se
+publica con ``os.replace`` bajo un lock estable y conserva el modo del destino. El recorrido usa
+directory fds, rechaza rutas relativas y tolera creación concurrente de directorios. Después del
+``replace``, los errores de fsync/cleanup son best-effort y no convierten un commit válido en fallo.
 
 Uso: .venv/bin/python -m scripts.produccion_padecimiento --disease Obesidad [--allow-preliminary]
 """
@@ -251,16 +232,10 @@ def _create_tmp_excl(parent_fd: int, base: str) -> tuple[int, str]:
 
 
 def _roundtrip_check(parent_fd: int, tmp_name: str, df: pd.DataFrame) -> None:
-    """Integridad en disco + fidelidad para un consumidor por defecto (TODA columna).
+    """Comprueba que el CSV completo en disco coincide con la serialización solicitada.
 
-    (1) **Byte-fiel:** el CSV en disco releído como texto crudo (``dtype=str``, sin coerción de
-        NA) debe coincidir con la serialización esperada de ``df`` — detecta truncamiento,
-        corrupción o un clobber concurrente.
-    (2) **Sin coerción silenciosa:** lo que un consumidor con ``read_csv`` por DEFECTO releería
-        debe ser IGUAL en valor y tipo a ``df`` — en CUALQUIER columna, no solo las requeridas.
-        Así una celda-string de forma numérica/bool (``'007'``→7, ``'1e5'``→float, ``'True'``→bool)
-        en ``motores_evaluados``/``smape_*``/``mase_*`` u otra se detecta y se aborta antes de
-        publicar. (Los flotantes/strings legítimos del pipeline round-trip-ean fielmente.)
+    Los dtypes pertenecen al schema del consumidor, no a la inferencia por defecto de pandas:
+    ``StringDtype``, ``Int64``, categorías y datetimes son representaciones CSV válidas.
     """
     expected = pd.read_csv(
         io.StringIO(df.to_csv(index=False)), dtype=str, keep_default_na=False, na_filter=False
@@ -271,11 +246,6 @@ def _roundtrip_check(parent_fd: int, tmp_name: str, df: pd.DataFrame) -> None:
     actual = pd.read_csv(io.StringIO(raw), dtype=str, keep_default_na=False, na_filter=False)
     if not actual.equals(expected):
         raise OSError(f"round-trip: el CSV en disco no coincide con lo serializado ({tmp_name})")
-    consumer = pd.read_csv(io.StringIO(raw)).reset_index(drop=True)  # config por defecto
-    if not consumer.equals(df.reset_index(drop=True)):
-        raise OSError(
-            f"round-trip: un consumidor por defecto releería valores/tipos distintos ({tmp_name})"
-        )
 
 
 def _write_tmp(df: pd.DataFrame, parent_fd: int, filename: str) -> str:
@@ -334,15 +304,7 @@ def _same_inode(fd_a: int, fd_b: int) -> bool:
 
 
 def _assert_fd_still_contained(root: Path, dir_parts: tuple[str, ...], parent_fd: int) -> None:
-    """Re-valida, TRAS adquirir el lock, que ``parent_fd`` sigue siendo el MISMO inodo alcanzable
-    desde ROOT por ``dir_parts``.
-
-    Defiende el TOCTOU de ventana ilimitada: un atacante estanca al writer en su propio flock
-    (lockfile de ruta predecible) y renombra el directorio YA ABIERTO fuera de ROOT durante el
-    stall (``os.rename``, sin symlink → ``O_NOFOLLOW`` no lo detecta). Al soltar el lock, el
-    writer escribiría relativo a un inodo que ya vive fuera de ROOT. Re-caminar desde ROOT y
-    comparar el inodo lo detecta (si el dir se movió, el path resuelve a otro inodo o se recrea).
-    """
+    """Comprueba antes del commit que el dirfd sigue correspondiendo a la ruta bajo ROOT."""
     check = _open_dir_chain(root, dir_parts)
     try:
         if not _same_inode(parent_fd, check[-1]):
@@ -356,16 +318,9 @@ def _assert_fd_still_contained(root: Path, dir_parts: tuple[str, ...], parent_fd
 def _atomic_write_csv(df: pd.DataFrame, dest: Path, *, root: Path) -> None:
     """Escritura atómica anclada a ``root`` (dirfd/openat + O_NOFOLLOW, ``os.replace`` relativo).
 
-    Defensas: rechaza destinos fuera de ROOT, componentes ``.``/``..`` y filenames reservados
-    (dot/``.lock``/``.tmp``); re-valida el containment por inodo **tres veces** — tras el lock, justo
-    ANTES del ``replace`` (minimiza la ventana), y DESPUÉS (detecta un escape en la ventana residual,
-    lo LIMPIA y falla: un escape NO es un commit válido). La sección crítica post-lock enmascara
-    SIGINT/SIGTERM (``_deferred_signals``) para que ninguna señal la interrumpa a mitad.
-
-    Garantía honesta: un ``os.replace`` que aterriza DENTRO de ROOT nunca se reporta como fallo por
-    un error de teardown (fsync/unlock/close son best-effort a prueba de señales); un escape fuera de
-    ROOT se detecta, se limpia y se reporta como fallo; una señal deja el archivo o bien completo o
-    bien ausente (nunca a medias) y el proceso puede salir por la señal, pero sin corrupción ni fuga.
+    Rechaza destinos fuera de ROOT, componentes ``.``/``..`` y filenames reservados. Revalida el
+    dirfd antes del replace. Tras el commit, fsync/unlock/close son best-effort y no cambian éxito
+    por fallo.
     """
     try:
         parts = dest.relative_to(root).parts
@@ -394,15 +349,7 @@ def _atomic_write_csv(df: pd.DataFrame, dest: Path, *, root: Path) -> None:
                 with suppress(OSError):
                     os.unlink(tmp_name, dir_fd=parent_fd)
                 raise
-            # (3) POST-replace: si el dir fue movido en la ventana (2)→replace, el archivo escapó de
-            # ROOT. Detectar, LIMPIAR el escape y fallar (un escape no es un commit válido).
-            try:
-                _assert_fd_still_contained(root, dir_parts, parent_fd)
-            except SlugError:
-                with suppress(OSError):
-                    os.unlink(filename, dir_fd=parent_fd)
-                raise
-            # Commit VÁLIDO (dentro de ROOT). Durabilidad best-effort a prueba de señales.
+            # Commit consumado. Nada posterior cambia el resultado del comando.
             with suppress(BaseException):
                 os.fsync(parent_fd)
     finally:

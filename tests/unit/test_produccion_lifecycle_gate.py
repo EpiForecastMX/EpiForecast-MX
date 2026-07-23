@@ -20,8 +20,8 @@ from epiforecast.registry import load_registry
 _YAML = """
 version: 1
 perfiles:
-  neuro: {cohorte_id: neuro, motor_rate: {prophet: true}}
-  cronica: {cohorte_id: cronica, motor_rate: {prophet: true}}
+  neuro: {cohorte_id: neuro, rate_scale: 100000, motor_rate: {prophet: true}}
+  cronica: {cohorte_id: cronica, rate_scale: 100000, motor_rate: {prophet: true}}
 padecimientos:
   - id: pub
     data_name: Publicado

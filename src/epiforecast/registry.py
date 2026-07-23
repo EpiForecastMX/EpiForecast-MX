@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+import math
 from pathlib import Path
 from typing import Any, cast
 import unicodedata
@@ -74,6 +75,7 @@ _PROFILE_KEYS = frozenset(
         "excluir_outliers",
         "invert_log_predict",
         "motor_rate",
+        "rate_scale",
     }
 )
 _DISEASE_KEYS = frozenset(
@@ -101,6 +103,12 @@ _DISEASE_KEYS = frozenset(
     }
 )
 _LIFECYCLES = frozenset({"configured", "trained", "published"})
+_BOOL_PROFILE_KEYS = _PROFILE_KEYS - {
+    "cohorte_id",
+    "unidad",
+    "motor_rate",
+    "rate_scale",
+}
 
 
 def _fold(s: str) -> str:
@@ -112,6 +120,7 @@ def _fold(s: str) -> str:
 class Profile:
     cohorte_id: str
     unidad: str
+    rate_scale: float | None
     fallback_regional: bool
     excluir_outliers: bool
     invert_log_predict: bool
@@ -168,13 +177,47 @@ def _build_profiles(raw: Mapping[str, Any]) -> dict[str, Profile]:
         unknown = set(body) - _PROFILE_KEYS
         if unknown:
             raise RegistryError(f"perfil '{name}': claves desconocidas {sorted(unknown)}")
+        invalid_bools = sorted(
+            key for key in _BOOL_PROFILE_KEYS if key in body and type(body[key]) is not bool
+        )
+        if invalid_bools:
+            raise RegistryError(
+                f"perfil '{name}': traits booleanos con tipo inválido {invalid_bools}"
+            )
+        raw_motor_rate = body.get("motor_rate", {})
+        if not isinstance(raw_motor_rate, Mapping):
+            raise RegistryError(f"perfil '{name}': motor_rate debe ser un mapping")
+        invalid_motor_rate = sorted(
+            str(engine) for engine, enabled in raw_motor_rate.items() if type(enabled) is not bool
+        )
+        if invalid_motor_rate:
+            raise RegistryError(
+                f"perfil '{name}': motor_rate debe usar booleanos; motores inválidos "
+                f"{invalid_motor_rate}"
+            )
+        motor_rate = {str(engine): enabled for engine, enabled in raw_motor_rate.items()}
+        raw_rate_scale = body.get("rate_scale")
+        if isinstance(raw_rate_scale, bool):
+            raise RegistryError(f"perfil '{name}': rate_scale debe ser numérico")
+        try:
+            rate_scale = float(raw_rate_scale) if raw_rate_scale is not None else None
+        except (TypeError, ValueError) as exc:
+            raise RegistryError(f"perfil '{name}': rate_scale debe ser numérico") from exc
+        if rate_scale is not None and (not math.isfinite(rate_scale) or rate_scale <= 0):
+            raise RegistryError(f"perfil '{name}': rate_scale debe ser finito y positivo")
+        if any(motor_rate.values()) and rate_scale is None:
+            raise RegistryError(
+                f"perfil '{name}': rate_scale finito y positivo es obligatorio "
+                "cuando un motor usa tasa"
+            )
         profiles[name] = Profile(
             cohorte_id=str(body["cohorte_id"]),
             unidad=str(body.get("unidad", "tasa")),
+            rate_scale=rate_scale,
             fallback_regional=bool(body.get("fallback_regional", False)),
             excluir_outliers=bool(body.get("excluir_outliers", False)),
             invert_log_predict=bool(body.get("invert_log_predict", False)),
-            motor_rate=dict(body.get("motor_rate", {})),
+            motor_rate=motor_rate,
             _raw=dict(body),
         )
     return profiles

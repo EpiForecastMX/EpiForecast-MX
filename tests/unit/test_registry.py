@@ -92,9 +92,12 @@ def test_obesidad_configurada_perfil_propio():
     assert obe.batch == "standalone"
     assert set(obe.eligible_engines) == {"prophet", "deepar", "ensemble", "stacking"}
     assert "nbglm" not in obe.eligible_engines
-    # perfil crónico: tasa en todos los motores, sin ENSO/short_series
+    # perfil crónico: Prophet/DeepAR en tasa; Ensemble/Stacking conservan conteos.
+    assert obe.profile.rate_scale == 100_000
     assert registry.trait("Obesidad", "prophet", "rate") is True
     assert registry.trait("Obesidad", "deepar", "rate") is True
+    assert registry.trait("Obesidad", "ensemble", "rate") is False
+    assert registry.trait("Obesidad", "stacking", "rate") is False
     assert registry.trait("Obesidad", "prophet", "enso") is False
     assert registry.trait("Obesidad", "deepar", "short_series") is False
     assert registry.trait("Obesidad", "prophet", "fallback_regional") is True
@@ -112,7 +115,7 @@ def test_rechazo_id_duplicado(tmp_path):
         """
 version: 1
 perfiles:
-  p: {cohorte_id: x, motor_rate: {prophet: true}}
+  p: {cohorte_id: x, rate_scale: 100000, motor_rate: {prophet: true}}
 padecimientos:
   - {id: a, data_name: A, artifact_key: A, slug: a, cie_codes: [X1], profile: p}
   - {id: a, data_name: B, artifact_key: B, slug: b, cie_codes: [X2], profile: p}
@@ -129,7 +132,7 @@ def test_rechazo_alias_duplicado(tmp_path):
         """
 version: 1
 perfiles:
-  p: {cohorte_id: x, motor_rate: {prophet: true}}
+  p: {cohorte_id: x, rate_scale: 100000, motor_rate: {prophet: true}}
 padecimientos:
   - {id: a, data_name: A, artifact_key: A, slug: a, cie_codes: [X1], aliases: [comun], profile: p}
   - {id: b, data_name: B, artifact_key: B, slug: b, cie_codes: [X2], aliases: [comun], profile: p}
@@ -146,11 +149,63 @@ def test_rechazo_clave_desconocida(tmp_path):
         """
 version: 1
 perfiles:
-  p: {cohorte_id: x, motor_rate: {prophet: true}, clave_rara: 1}
+  p: {cohorte_id: x, rate_scale: 100000, motor_rate: {prophet: true}, clave_rara: 1}
 padecimientos:
   - {id: a, data_name: A, artifact_key: A, slug: a, cie_codes: [X1], profile: p}
 """,
         encoding="utf-8",
     )
     with pytest.raises(RegistryError, match="desconocidas"):
+        load_registry(bad)
+
+
+def test_rechazo_tasa_sin_escala_explicita(tmp_path):
+    bad = tmp_path / "rate_without_scale.yaml"
+    bad.write_text(
+        """
+version: 1
+perfiles:
+  p: {cohorte_id: x, motor_rate: {prophet: true}}
+padecimientos:
+  - {id: a, data_name: A, artifact_key: A, slug: a, cie_codes: [X1], profile: p}
+""",
+        encoding="utf-8",
+    )
+    with pytest.raises(RegistryError, match="rate_scale.*positivo"):
+        load_registry(bad)
+
+
+@pytest.mark.parametrize(
+    ("profile_body", "message"),
+    [
+        (
+            "{cohorte_id: x, rate_scale: 100000, motor_rate: {prophet: 'false'}}",
+            "motor_rate debe usar booleanos",
+        ),
+        (
+            "{cohorte_id: x, rate_scale: .nan, motor_rate: {prophet: true}}",
+            "rate_scale debe ser finito",
+        ),
+        (
+            "{cohorte_id: x, rate_scale: 100000, prophet_log_transform: 'false', "
+            "motor_rate: {prophet: true}}",
+            "traits booleanos",
+        ),
+    ],
+)
+def test_rechazo_tipos_ambiguos_en_contrato_de_transform(
+    tmp_path, profile_body: str, message: str
+):
+    bad = tmp_path / "ambiguous_transform.yaml"
+    bad.write_text(
+        f"""
+version: 1
+perfiles:
+  p: {profile_body}
+padecimientos:
+  - {{id: a, data_name: A, artifact_key: A, slug: a, cie_codes: [X1], profile: p}}
+""",
+        encoding="utf-8",
+    )
+    with pytest.raises(RegistryError, match=message):
         load_registry(bad)

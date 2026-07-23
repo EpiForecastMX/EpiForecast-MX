@@ -69,6 +69,7 @@ def _df(n_weeks: int = 150) -> pd.DataFrame:
             "Entidad": ["Jalisco"] * n_weeks,
             "incrementos_hombres": hombres,
             "incrementos_mujeres": hombres + 5,
+            "Total": [5_000_000] * n_weeks,
         }
     )
 

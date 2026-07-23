@@ -7,9 +7,21 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from epiforecast.artifacts import TransformContract
 from epiforecast.evaluation.metrics import compute_forecast_metrics
 from epiforecast.utils.cohorts import is_neuro
 from epiforecast.utils.config import logger
+
+
+def _positive_exposure(frame: pd.DataFrame, column: str) -> pd.Series:
+    """Return a finite, positive exposure column or fail before transforming counts."""
+    if column not in frame.columns:
+        raise ValueError(f"falta la columna de exposición requerida: {column}")
+    exposure = pd.to_numeric(frame[column], errors="coerce").astype(float)
+    values = exposure.to_numpy()
+    if values.size == 0 or not np.isfinite(values).all() or (values <= 0).any():
+        raise ValueError(f"la exposición '{column}' debe ser finita y estrictamente positiva")
+    return exposure
 
 
 def agrupa(
@@ -19,10 +31,13 @@ def agrupa(
     col_poblacion: str,
 ) -> pd.DataFrame:
     """Aggregate data by date, summing target column and optionally population."""
+    working = df
     agg_dict: dict[str | None, str] = {sexo: "sum"}
-    if normalizar_tasa and col_poblacion in df.columns:
+    if normalizar_tasa:
+        working = df.copy()
+        working[col_poblacion] = _positive_exposure(working, col_poblacion)
         agg_dict[col_poblacion] = "sum"
-    return df.groupby("Fecha").agg(agg_dict)
+    return working.groupby("Fecha").agg(agg_dict)
 
 
 def crea_train_test(
@@ -31,8 +46,9 @@ def crea_train_test(
     normalizar_tasa: bool,
     col_poblacion: str,
     log_transform: bool,
-    tasa_por: int,
+    tasa_por: float,
     fecha_corte: str,
+    transform_contract: TransformContract | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, float | None]:
     """Create train/test split with rate normalization and log-transform.
 
@@ -42,10 +58,29 @@ def crea_train_test(
     serie = serie.rename_axis("ds").reset_index()
     poblacion_valor: float | None = None
 
-    if normalizar_tasa and col_poblacion in serie.columns:
-        poblacion_valor = serie[col_poblacion].iloc[0]
+    if transform_contract is not None:
+        exposure: pd.Series | None = None
+        if transform_contract.requires_exposure:
+            exposure = _positive_exposure(serie, col_poblacion)
+            # El horizonte usa la exposición más reciente. El forward histórico sí usa
+            # la exposición correspondiente a cada fecha.
+            poblacion_valor = float(exposure.iloc[-1])
+            serie["y_original"] = serie[sexo]
+        serie["y"] = transform_contract.apply_forward(
+            serie[sexo],
+            exposure=None if exposure is None else exposure.to_numpy(),
+        )
+        serie = serie.drop(columns=[sexo])
+        logger.debug(
+            "TransformContract v{} aplicado: {}",
+            transform_contract.schema_version,
+            [step.value for step in transform_contract.forward_steps],
+        )
+    elif normalizar_tasa:
+        exposure = _positive_exposure(serie, col_poblacion)
+        poblacion_valor = float(exposure.iloc[-1])
         serie["y_original"] = serie[sexo]
-        serie["y"] = (serie[sexo] / poblacion_valor) * tasa_por
+        serie["y"] = (serie[sexo] / exposure) * tasa_por
         serie = serie.drop(columns=[sexo])
         logger.debug(
             "Normalizado a tasa por {:,.0f} hab. (poblaci\u00f3n: {:,.0f})",
@@ -55,7 +90,7 @@ def crea_train_test(
     else:
         serie = serie.rename(columns={sexo: "y"})
 
-    if log_transform:
+    if transform_contract is None and log_transform:
         serie["y"] = np.log1p(serie["y"])
         logger.debug("Log-transform aplicado: y = log(1 + y)")
 
@@ -82,14 +117,16 @@ def eval_rapida(
     normalizar_tasa: bool,
     poblacion_valor: float | None,
     log_transform: bool,
-    tasa_por: int,
+    tasa_por: float,
     entidad: str | None,
     sexo: str | None,
+    col_poblacion: str = "Total",
+    transform_contract: TransformContract | None = None,
 ) -> dict[str, Any]:
     """Evaluacion rapida post-entrenamiento (sin reentrenar).
 
-    Predice sobre test_data con el modelo ya entrenado en serie completa
-    y compara contra valores reales. Metricas en espacio tasa (como CV).
+    Predice sobre un holdout con el modelo ajustado solo en ``train_data`` y
+    compara en casos absolutos. El caller puede hacer el refit final después.
     """
     null_metrics: dict[str, Any] = {
         "rmse": None,
@@ -107,13 +144,46 @@ def eval_rapida(
         forecast = model.predict(test_data[pred_cols])
         merged = test_data[["ds", "y"]].merge(forecast[["ds", "yhat"]], on="ds")
 
-        if normalizar_tasa and poblacion_valor and "y_original" in test_data.columns:
+        if transform_contract is not None:
+            if transform_contract.requires_exposure:
+                if "y_original" not in test_data.columns or "y_original" not in train_data.columns:
+                    raise ValueError("faltan conteos originales para evaluar un contrato de tasa")
+                merged_orig = test_data[["ds", "y_original"]].merge(
+                    forecast[["ds", "yhat"]], on="ds"
+                )
+                y_true = merged_orig["y_original"].to_numpy(dtype=float)
+                if col_poblacion not in test_data.columns:
+                    raise ValueError("falta exposición por fecha en evaluación rápida")
+                exposure_by_date = test_data[["ds", col_poblacion]].drop_duplicates("ds")
+                aligned = merged_orig[["ds"]].merge(exposure_by_date, on="ds", how="left")
+                exposure = pd.to_numeric(aligned[col_poblacion], errors="coerce").to_numpy(
+                    dtype=float
+                )
+                y_pred = transform_contract.apply_inverse(
+                    merged_orig["yhat"].to_numpy(dtype=float),
+                    exposure=exposure,
+                )
+                y_train = train_data["y_original"].to_numpy(dtype=float)
+            else:
+                y_true = transform_contract.apply_inverse(merged["y"].to_numpy(dtype=float))
+                y_pred = transform_contract.apply_inverse(merged["yhat"].to_numpy(dtype=float))
+                y_train = transform_contract.apply_inverse(train_data["y"].to_numpy(dtype=float))
+        elif normalizar_tasa and poblacion_valor and "y_original" in test_data.columns:
             merged_orig = test_data[["ds", "y_original"]].merge(forecast[["ds", "yhat"]], on="ds")
             y_true = merged_orig["y_original"].to_numpy()
             yhat_tasa = merged_orig["yhat"].to_numpy()
             if log_transform:
                 yhat_tasa = np.expm1(yhat_tasa)
-            y_pred = (yhat_tasa * poblacion_valor) / tasa_por
+            exposure_factor: Any
+            if col_poblacion in test_data.columns:
+                exposure_by_date = test_data[["ds", col_poblacion]].drop_duplicates("ds")
+                aligned = merged_orig[["ds"]].merge(exposure_by_date, on="ds", how="left")
+                exposure_factor = pd.to_numeric(aligned[col_poblacion], errors="coerce").to_numpy()
+                if not np.isfinite(exposure_factor).all() or (exposure_factor <= 0).any():
+                    raise ValueError("exposición inválida en evaluación rápida")
+            else:
+                exposure_factor = poblacion_valor
+            y_pred = (yhat_tasa * exposure_factor) / tasa_por
             y_train = train_data["y_original"].to_numpy()
         else:
             y_true = merged["y"].to_numpy()

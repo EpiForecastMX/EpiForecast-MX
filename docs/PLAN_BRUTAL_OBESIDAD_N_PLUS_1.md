@@ -1,7 +1,7 @@
 # PLAN BRUTAL — Obesidad E66 y onboarding N+1 de padecimientos
 
-Estado: Fase 0 CERRADA (PASS material + documental). Siguiente: Fase 1 (lifecycle gate del selector). Obesidad permanece NO-GO.
-Fecha de auditoría: 2026-07-22
+Estado: Fase 1 EN PROGRESO. Lifecycle/ownership y TransformContract v1 cerrados; Obesidad permanece NO-GO.
+Fecha de auditoría: 2026-07-22. Última actualización funcional: 2026-07-23.
 Repositorio backend auditado: EpiForecast-MX
 Rama backend: feat/registry-padecimientos-obesidad
 HEAD backend auditado: 7798c0e7
@@ -1374,6 +1374,33 @@ Criterio de salida:
 
 ### Fase 1 — Baseline verde y tests que sí detectan producción rota
 
+Estado al 2026-07-23: **EN PROGRESO**.
+
+Completado en backend:
+
+- selector genérico fail-closed por lifecycle, ownership y adapter explícito;
+- escritura preliminar atómica bajo el threat model real de workspace mono-usuario;
+- `TransformContract` v1 inmutable y resuelto desde registry por padecimiento y motor;
+- matriz homogénea de targets: Prophet Obesidad tasa + `log1p`, DeepAR Obesidad tasa,
+  Ensemble/Stacking conteos y Dengue Prophet conteo + `log1p`;
+- exposición positiva obligatoria y alineada por fecha en entrenamiento, CV, evaluación
+  y predicción; el horizonte usa la última exposición observada;
+- inversión y métricas de todos los perfiles registrados en casos absolutos;
+- identidad desconocida falla antes de entrenar o predecir;
+- evaluación de baja confianza sobre holdout antes del refit final;
+- suite completa aislada por proceso para evitar la colisión nativa entre runtimes de
+  PyTorch/XGBoost/LightGBM: 1,119 tests, cobertura 81%, Ruff y mypy verdes.
+
+Límites honestos del checkpoint:
+
+- los PKL preliminares de Obesidad fueron entrenados con la política escalar anterior y
+  no son compatibles con la nueva exposición por fecha; no se migran ni se reutilizan;
+- `TransformContract` todavía se resuelve desde registry al cargar y no está persistido
+  en un envelope externo;
+- `predice.py` conserva `stem.split("_")` solo en el adaptador legacy;
+- faltan el golden real de artefactos, los contratos de calendario/dataset y el baseline
+  frontend/RAG para cerrar Fase 1.
+
 Objetivo:
 
 crear una red de seguridad antes de refactorizar.
@@ -2173,19 +2200,27 @@ Estas fuentes justifican disponibilidad y capacidades. No sustituyen el benchmar
 
 ## 17. Siguiente acción autorizable
 
-La primera acción de implementación no fue entrenar ni publicar.
+Fase 0 y el primer bloque backend de Fase 1 están cerrados. No seguir endureciendo el
+writer contra un atacante local: el trust boundary es un workspace mono-usuario y el
+objetivo vuelve a ser corrección, homogeneidad y entrenamiento reproducible.
 
-Fue cerrar el delta documental de Fase 0 — **✅ COMPLETADO en e1d77c4a**:
+Siguiente slice backend:
 
-1. ✅ retirado el `dvc checkout --force` global y todo checkout sin target explícito;
-2. ✅ bloqueadas/reescritas las recetas de train, SageMaker, predice y publicación de los
-   documentos históricos (banner NO-GO antes de su aparición);
-3. ✅ corregidos el encabezado ambiguo, los conteos de modelos/tests y las afirmaciones
-   end-to-end que la auditoría invalidó;
-4. ✅ este plan quedó **trackeado en git**;
-5. ✅ gate documental revalidado sin tocar datos, modelos ni DVC.
+1. implementar un `ArtifactEnvelopeV2` externo y estricto para un fixture Prophet en
+   `tmp_path`, con `SeriesKey`, `TransformContract`, digest del PKL y política de
+   exposición;
+2. hacer que el loader v2 obtenga motor, enfermedad, identidad y transformaciones del
+   envelope, sin depender del filename ni de la config activa;
+3. confinar `stem.split("_")` a un `LegacyArtifactAdapter` explícito; un envelope
+   presente pero inválido nunca puede caer a legacy;
+4. no emitir envelopes para modelos reales hasta que existan dataset/profile/run
+   manifests y digests verificables;
+5. después cerrar el contrato de calendario/dataset v2 y sus duplicados antes de
+   cualquier entrenamiento de Obesidad.
 
-**Fase 0 CERRADA.** Ahora sí puede iniciar **Fase 1** (con OK formal). El primer test debe demostrar
-que un padecimiento configured/preliminary **no** puede recrear una selección canónica — es decir, el
-**lifecycle gate del selector** (`produccion_padecimiento.py` ignora hoy `lifecycle`). No entrenar ni
-publicar durante ese trabajo.
+Gate del slice: el fixture con nombre arbitrario debe reconstruir aproximadamente 496
+casos desde el valor de modelo `0.33189533899263346`, aun si la config activa contradice
+el motor o la escala. Digest, identidad o exposición inválidos deben abortar antes de
+deserializar.
+
+No entrenar, publicar ni promover DVC durante este trabajo.

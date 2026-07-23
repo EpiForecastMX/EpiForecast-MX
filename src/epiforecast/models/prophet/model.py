@@ -12,10 +12,16 @@ import pickle
 from typing import Any
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 from prophet import Prophet
 
-from epiforecast import registry
+from epiforecast.artifacts import (
+    TransformContract,
+    TransformContractError,
+    TransformStep,
+    resolve_transform_contract,
+)
 from epiforecast.constants import RANDOM_SEED
 from epiforecast.evaluation.metrics import compute_forecast_metrics
 from epiforecast.models.base import ForecastModel
@@ -61,23 +67,28 @@ class ProphetForecaster(ForecastModel):
         self.model_path: str = self._conf["paths"]["models"]
         self.model_save: str = self._conf["data"]["model_train"]
 
-        # Rate normalization: neuro modela tasa/100k; la cohorte de conteos-log no (la tasa
-        # comprime la señal en log y colapsa el forecast). Ver utils.cohorts.
-        self.normalizar_tasa: bool = self._conf.get(
-            "normalizar_tasa", False
-        ) and not is_count_log_cohort(self.padecimiento)
         self.col_poblacion: str = self._conf.get("columna_poblacion", "Total")
-        self.tasa_por: int = self._conf.get("tasa_por", 100000)
-        # log_transform: trait per-motor del registry (neuro y conteos-log lo activan; un
-        # perfil crónico como Obesidad también). default = predicado de cohorte viejo ->
-        # byte-idéntico en los vigentes y desconocidos. Ver registry.trait_or.
-        self.log_transform: bool = self._conf.get("log_transform", False) and registry.trait_or(
-            self.padecimiento,
-            "prophet",
-            "log_transform",
-            default=is_neuro(self.padecimiento) or is_count_log_cohort(self.padecimiento),
-        )
+        self.tasa_por: float = float(self._conf.get("tasa_por", 100000))
+        self.transform_contract: TransformContract | None = None
+        if self.padecimiento is not None:
+            # Para padecimientos registrados, el contrato tipado gobierna la escala efectiva.
+            # La config plana actual no puede apagar/encender transforms de otro perfil.
+            self.transform_contract = resolve_transform_contract(self.padecimiento, "prophet")
+            self.normalizar_tasa = self.transform_contract.requires_exposure
+            self.log_transform = TransformStep.LOG1P in self.transform_contract.forward_steps
+            if self.transform_contract.rate_scale is not None:
+                self.tasa_por = self.transform_contract.rate_scale
+        else:
+            # Adaptador legacy para callers sin identidad. Se retira cuando todos los artefactos
+            # tengan ArtifactEnvelopeV2 externo.
+            self.normalizar_tasa = self._conf.get(
+                "normalizar_tasa", False
+            ) and not is_count_log_cohort(self.padecimiento)
+            self.log_transform = self._conf.get("log_transform", False) and (
+                is_neuro(self.padecimiento) or is_count_log_cohort(self.padecimiento)
+            )
         self.poblacion_valor: float | None = None
+        self.exposure_history = pd.Series(dtype=float)
 
         # Regresor ENSO/El Niño (índice ONI): solo cohorte de conteos (Dengue). El ciclo
         # inter-anual del dengue sigue a El Niño, señal que NO está en los conteos recientes.
@@ -130,9 +141,11 @@ class ProphetForecaster(ForecastModel):
             self.log_transform,
             self.tasa_por,
             self.FECHA_CORTE_ENTRENAMIENTO,
+            self.transform_contract,
         )
         if pob is not None:
             self.poblacion_valor = pob
+            self._set_exposure_history(self.serie)
         self._train_max_ds = self.serie["ds"].max() if not self.serie.empty else None
         self._attach_enso()
 
@@ -175,6 +188,7 @@ class ProphetForecaster(ForecastModel):
         """Generate predictions for given horizon (weeks)."""
         if self._model is None:
             raise RuntimeError("Model not fitted. Call fit() first.")
+        self._prediction_exposure()
 
         future = self._model.make_future_dataframe(periods=horizon, freq="W-MON")
         if self.enso_regressor:
@@ -188,19 +202,39 @@ class ProphetForecaster(ForecastModel):
         forecast = self._model.predict(future)
         cols = ["ds", "yhat", "yhat_lower", "yhat_upper"]
         out = forecast[cols].copy()
+        prediction_exposure = self._prediction_exposure(out["ds"])
 
-        if self.log_transform:
+        if self.transform_contract is not None:
             for col in ["yhat", "yhat_lower", "yhat_upper"]:
-                out[col] = np.expm1(out[col])
-            logger.debug("Inversa de log-transform aplicada")
-
-        if self.normalizar_tasa and self.poblacion_valor:
-            out["yhat_tasa"] = out["yhat"]
-            for col in ["yhat", "yhat_lower", "yhat_upper"]:
-                out[col] = out[col] * self.poblacion_valor / self.tasa_por
+                out[col] = self.transform_contract.apply_inverse(
+                    out[col].to_numpy(),
+                    exposure=prediction_exposure,
+                )
+            if self.transform_contract.requires_exposure:
+                assert prediction_exposure is not None
+                assert self.transform_contract.rate_scale is not None
+                out["yhat_tasa"] = (
+                    out["yhat"] / prediction_exposure * self.transform_contract.rate_scale
+                )
             logger.debug(
-                "Desnormalizaci\u00f3n de tasa aplicada (pob={:,.0f})", self.poblacion_valor
+                "Inversa TransformContract v{} aplicada",
+                self.transform_contract.schema_version,
             )
+        else:
+            if self.log_transform:
+                for col in ["yhat", "yhat_lower", "yhat_upper"]:
+                    out[col] = np.expm1(out[col])
+                logger.debug("Inversa de log-transform aplicada")
+
+            if self.normalizar_tasa:
+                assert prediction_exposure is not None
+                out["yhat_tasa"] = out["yhat"]
+                for col in ["yhat", "yhat_lower", "yhat_upper"]:
+                    out[col] = out[col] * prediction_exposure / self.tasa_por
+                logger.debug(
+                    "Desnormalizaci\u00f3n de tasa aplicada (pob={:,.0f})",
+                    prediction_exposure,
+                )
 
         return out
 
@@ -240,12 +274,21 @@ class ProphetForecaster(ForecastModel):
         logger.debug("Modelo cargado: {}", path)
 
         csv_path = path.with_suffix(".csv")
-        if self.normalizar_tasa and csv_path.exists():
-            train_csv = pd.read_csv(csv_path, nrows=1)
+        if self.normalizar_tasa:
+            if not csv_path.exists():
+                raise TransformContractError(
+                    f"el modelo de tasa requiere sidecar de exposición: {csv_path}"
+                )
+            train_csv = pd.read_csv(csv_path)
             col_pob = self.col_poblacion if self.col_poblacion in train_csv.columns else "Total"
-            if col_pob in train_csv.columns:
-                self.poblacion_valor = float(train_csv[col_pob].iloc[0])
-                logger.debug("Poblaci\u00f3n cargada desde sidecar: {:,.0f}", self.poblacion_valor)
+            if col_pob not in train_csv.columns:
+                raise TransformContractError(
+                    f"el sidecar {csv_path} no contiene exposición '{self.col_poblacion}'"
+                )
+            if col_pob != self.col_poblacion:
+                train_csv = train_csv.rename(columns={col_pob: self.col_poblacion})
+            self._set_exposure_history(train_csv)
+            logger.debug("Poblaci\u00f3n cargada desde sidecar: {:,.0f}", self.poblacion_valor)
 
     def get_params(self) -> dict[str, Any]:
         """Return current model parameters."""
@@ -295,21 +338,35 @@ class ProphetForecaster(ForecastModel):
             best_params, best_metrics = tuner.run()
             confianza = "normal"
 
-        self.fit(self.serie, best_params)
-
         if es_insuficiente:
-            eval_metrics = eval_rapida(
-                self._model,
-                self.test_data,
-                self.train_data,
-                self.normalizar_tasa,
-                self.poblacion_valor,
-                self.log_transform,
-                self.tasa_por,
-                self.entidad,
-                self.sexo,
-            )
+            if not self.train_data.empty and len(self.test_data) >= 4:
+                # El holdout debe evaluarse con un modelo que no haya visto test_data.
+                self.fit(self.train_data, best_params)
+                eval_metrics = eval_rapida(
+                    self._model,
+                    self.test_data,
+                    self.train_data,
+                    self.normalizar_tasa,
+                    self.poblacion_valor,
+                    self.log_transform,
+                    self.tasa_por,
+                    self.entidad,
+                    self.sexo,
+                    self.col_poblacion,
+                    self.transform_contract,
+                )
+            else:
+                eval_metrics = {
+                    "rmse": None,
+                    "mae": None,
+                    "mape": None,
+                    "smape": None,
+                    "mase": None,
+                }
             best_metrics.update(eval_metrics)
+
+        # Refit final con toda la historia solo después de cualquier evaluación OOS.
+        self.fit(self.serie, best_params)
 
         best_metrics["confianza"] = confianza
         best_metrics["promedio_semanal"] = promedio
@@ -321,7 +378,21 @@ class ProphetForecaster(ForecastModel):
                 fc_train = self._model.predict(self.train_data[tr_cols])
                 yhat_tr = fc_train["yhat"].to_numpy(dtype=float)
                 y_tr = self.train_data["y"].to_numpy(dtype=float)
-                if self.log_transform:
+                if self.transform_contract is not None:
+                    exposure = (
+                        self.train_data[self.col_poblacion].to_numpy(dtype=float)
+                        if self.transform_contract.requires_exposure
+                        else None
+                    )
+                    yhat_tr = self.transform_contract.apply_inverse(
+                        yhat_tr,
+                        exposure=exposure,
+                    )
+                    if self.transform_contract.requires_exposure:
+                        y_tr = self.train_data["y_original"].to_numpy(dtype=float)
+                    else:
+                        y_tr = self.transform_contract.apply_inverse(y_tr)
+                elif self.log_transform:
                     yhat_tr = np.expm1(yhat_tr)
                     y_tr = np.expm1(y_tr)
                 train_m = compute_forecast_metrics(y_tr, yhat_tr, y_tr)
@@ -333,6 +404,50 @@ class ProphetForecaster(ForecastModel):
         return self._model, best_metrics, best_params
 
     # ── Private Helpers ───────────────────────────────────────────────────────
+
+    def _set_exposure_history(self, frame: pd.DataFrame) -> None:
+        """Validate and index the exposure observed at each training date."""
+        if self.col_poblacion not in frame.columns:
+            raise TransformContractError(
+                f"falta la exposición '{self.col_poblacion}' en la serie del modelo"
+            )
+        date_col = "ds" if "ds" in frame.columns else "Fecha" if "Fecha" in frame.columns else None
+        if date_col is None:
+            raise TransformContractError("la serie de exposición requiere columna ds o Fecha")
+        dates = pd.to_datetime(frame[date_col], errors="coerce")
+        exposure = pd.to_numeric(frame[self.col_poblacion], errors="coerce").to_numpy(dtype=float)
+        if (
+            exposure.size == 0
+            or dates.isna().any()
+            or not np.isfinite(exposure).all()
+            or (exposure <= 0).any()
+        ):
+            raise TransformContractError("la historia de exposición contiene valores inválidos")
+        if dates.duplicated().any():
+            raise TransformContractError("la historia de exposición contiene fechas duplicadas")
+        self.exposure_history = pd.Series(exposure, index=pd.DatetimeIndex(dates), dtype=float)
+        self.poblacion_valor = float(exposure[-1])
+
+    def _prediction_exposure(
+        self, dates: pd.Series | None = None
+    ) -> float | npt.NDArray[np.float64] | None:
+        """Align historical exposure by date and use the latest value for the horizon."""
+        if not self.normalizar_tasa:
+            return None
+        exposure = self.poblacion_valor
+        if exposure is None or not np.isfinite(exposure) or exposure <= 0:
+            raise TransformContractError(
+                f"{self.padecimiento or 'modelo legacy'} requiere exposición positiva "
+                "para convertir la tasa pronosticada a casos"
+            )
+        if dates is None or self.exposure_history.empty or self.transform_contract is None:
+            return float(exposure)
+        target_dates = pd.DatetimeIndex(pd.to_datetime(dates, errors="coerce"))
+        if bool(pd.isna(target_dates).any()):
+            raise TransformContractError("el forecast contiene fechas inválidas")
+        aligned = self.exposure_history.reindex(target_dates).to_numpy(dtype=float)
+        aligned[np.isnan(aligned)] = float(exposure)
+        return aligned
 
     def _create_prophet(self, **hp_overrides: Any) -> Prophet:
         """Create a Prophet instance with configured params + HP overrides."""

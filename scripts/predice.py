@@ -11,9 +11,10 @@ import unicodedata
 
 import pandas as pd
 
+from epiforecast import registry
 from epiforecast.models.prediction import ForecastModelLoader
 from epiforecast.utils import paths as directory_manager
-from epiforecast.utils.cohorts import is_count_log_cohort
+from epiforecast.utils.cohorts import is_neuro
 from epiforecast.utils.config import conf, logger
 from epiforecast.visualization.forecast_plots import generar_graficos_pronostico
 
@@ -23,6 +24,24 @@ def _normalizar(s: str) -> str:
     out = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii")
     out = out.replace("/", "-")
     return re.sub(r"\s+", "_", out)
+
+
+def _loader_disease_context(name: object) -> str | None:
+    """Contexto de transforms para el loader legacy, resuelto desde el registry.
+
+    Neuro conserva temporalmente su caller histórico ``None`` para no alterar los artefactos
+    publicados. Todo padecimiento registrado fuera de ese perfil —incluidos perfiles nuevos—
+    recibe su identidad canónica. ArtifactEnvelopeV2 eliminará este adaptador.
+    """
+    if name is None:
+        return None
+    text = str(name).strip()
+    if not text:
+        raise registry.RegistryError("identidad de padecimiento vacía en artefacto legacy")
+    spec = registry.require(text)
+    if is_neuro(spec.data_name):
+        return None
+    return spec.data_name
 
 
 def parse_nombre_modelo(stem: str) -> dict:
@@ -280,11 +299,8 @@ def main():
 
         try:
             meta = parse_nombre_modelo(pkl.stem)
-            # La cohorte de conteos-log (Dengue) entrena en log1p: el forecaster debe conocer
-            # el padecimiento para invertir (expm1) en predict. La cohorte neuro conserva su
-            # path histórico (padecimiento=None), cuya salida productiva está validada.
             pad_meta = meta.get("meta_padecimiento")
-            pad_loader = pad_meta if is_count_log_cohort(pad_meta) else None
+            pad_loader = _loader_disease_context(pad_meta)
             df = ForecastModelLoader(
                 periodo=periodo, model_path=pkl, padecimiento=pad_loader
             ).run()
@@ -312,8 +328,7 @@ def main():
                 continue
 
             try:
-                # Inversión de log solo para la cohorte de conteos-log; neuro -> None (legacy).
-                pad_fb = padecimiento if is_count_log_cohort(padecimiento) else None
+                pad_fb = _loader_disease_context(padecimiento)
                 loader = ForecastModelLoader(
                     periodo=periodo, model_path=pkl_regional, padecimiento=pad_fb
                 )
@@ -346,8 +361,7 @@ def main():
         for pkl in pkls_regional:
             try:
                 meta = _parse_regional(pkl.stem)
-                pad_reg = meta.get("meta_padecimiento")
-                pad_reg = pad_reg if is_count_log_cohort(pad_reg) else None
+                pad_reg = _loader_disease_context(meta.get("meta_padecimiento"))
                 df = ForecastModelLoader(
                     periodo=periodo, model_path=pkl, padecimiento=pad_reg
                 ).run()

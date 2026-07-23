@@ -406,7 +406,33 @@ typecheck:
 ## Ejecutar tests
 .PHONY: test
 test:
-	$(PYTHON) -m pytest tests/
+	$(PYTHON) -m coverage erase
+	$(PYTHON) -m pytest -o addopts='' --strict-markers --tb=short -q tests/ \
+		-m "not slow and not integration" --cov=src/epiforecast --cov-report= --cov-fail-under=0
+	@set -eu; \
+	collected=$$(mktemp); \
+	trap 'rm -f "$$collected"' EXIT HUP INT TERM; \
+	if ! $(PYTHON) -m pytest -o addopts='' --collect-only -q tests/ \
+		-m "slow or integration" >"$$collected" 2>&1; then \
+		cat "$$collected"; \
+		exit 1; \
+	fi; \
+	count=0; \
+	while IFS= read -r node; do \
+		case "$$node" in \
+			*::*) \
+				count=$$((count + 1)); \
+				echo ">>> Test aislado: $$node"; \
+				$(PYTHON) -m pytest -o addopts='' --strict-markers --tb=short -q "$$node" \
+					--cov=src/epiforecast --cov-append --cov-report= --cov-fail-under=0; \
+				;; \
+		esac; \
+	done <"$$collected"; \
+	if [ "$$count" -eq 0 ]; then \
+		echo "No se recolectaron tests slow/integration"; \
+		exit 1; \
+	fi
+	$(PYTHON) -m coverage report --fail-under=68
 	@echo ">>> Tests passed."
 
 ## Tests rápidos (sin slow/integration)

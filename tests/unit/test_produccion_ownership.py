@@ -54,7 +54,7 @@ def _mode(p: Path) -> int:
 _YAML_DENGUE_SLUG = """
 version: 1
 perfiles:
-  conteos: {cohorte_id: conteos, motor_rate: {prophet: false, deepar: true}}
+  conteos: {cohorte_id: conteos, rate_scale: 100000, motor_rate: {prophet: false, deepar: true}}
 padecimientos:
   - {id: dengue_fake, data_name: DengueFake, artifact_key: DengueFake, slug: dengue,
      cie_codes: [Z9], profile: conteos, lifecycle: published,
@@ -64,7 +64,7 @@ padecimientos:
 _YAML_PUB_NEURO = """
 version: 1
 perfiles:
-  neuro: {cohorte_id: neuro, motor_rate: {prophet: true}}
+  neuro: {cohorte_id: neuro, rate_scale: 100000, motor_rate: {prophet: true}}
 padecimientos:
   - {id: pubneuro, data_name: PubNeuro, artifact_key: PubNeuro, slug: pubneuro,
      cie_codes: [N1], profile: neuro, lifecycle: published,
@@ -74,7 +74,7 @@ padecimientos:
 _YAML_CONFIGURED = """
 version: 1
 perfiles:
-  cronica: {cohorte_id: cronica, motor_rate: {prophet: true}}
+  cronica: {cohorte_id: cronica, rate_scale: 100000, motor_rate: {prophet: true}}
 padecimientos:
   - {id: cfg, data_name: Cfg, artifact_key: Cfg, slug: cfg, cie_codes: [C9],
      profile: cronica, lifecycle: configured, selection_policy: rolling_cv_v1,
@@ -84,7 +84,7 @@ padecimientos:
 _YAML_BAD_SLUG = """
 version: 1
 perfiles:
-  cronica: {cohorte_id: cronica, motor_rate: {prophet: true}}
+  cronica: {cohorte_id: cronica, rate_scale: 100000, motor_rate: {prophet: true}}
 padecimientos:
   - {id: evil, data_name: Evil, artifact_key: Evil, slug: "../escape", cie_codes: [E1],
      profile: cronica, lifecycle: configured, selection_policy: rolling_cv_v1,
@@ -350,24 +350,21 @@ def test_atomic_write_rechaza_destino_fuera_de_root(tmp_path):
     assert not (tmp_path / "fuera.csv").exists()
 
 
-# ── Round-trip por VALORES (no solo forma) ──
-def test_roundtrip_detecta_string_vacio_que_muta_a_nan(tmp_path):
-    """entidad="" se relee como NaN: el round-trip por valores lo detecta y NO publica."""
+# ── Round-trip de serialización; los dtypes pertenecen al schema consumidor ──
+def test_roundtrip_preserva_string_vacio_sin_imponer_inferencia_pandas(tmp_path):
     dest = tmp_path / "out.csv"
-    dest.write_text("SENTINEL\n", encoding="utf-8")
     df = pd.DataFrame(
         {
             "padecimiento": ["X"],
-            "entidad": [""],  # sobrevive isna() pero muta a NaN en CSV
+            "entidad": [""],
             "sexo": ["general"],
             "motor_productivo": ["Prophet"],
             "criterio_seleccion": ["c"],
         }
     )
-    with pytest.raises(OSError):
-        mod._atomic_write_csv(df, dest, root=tmp_path)
-    assert dest.read_text(encoding="utf-8") == "SENTINEL\n"  # preservado
-    assert _tmp_residuos(tmp_path) == []
+    mod._atomic_write_csv(df, dest, root=tmp_path)
+    out = pd.read_csv(dest, dtype=str, keep_default_na=False)
+    assert out["entidad"].tolist() == [""]
 
 
 # ── Invariante post-commit: un éxito jamás se reporta como fallo ──
@@ -463,13 +460,10 @@ def test_main_rc0_aunque_teardown_reciba_senal(tmp_path, monkeypatch):
     assert preliminar.exists()
 
 
-# ── Round-trip: coerción de tipos en columnas requeridas ──
+# ── Round-trip: valores CSV válidos no dependen de inferencia automática ──
 @pytest.mark.parametrize("val", ["True", "False", "1", "1.5", "inf", "nan"])
-def test_roundtrip_rechaza_coercion_de_columna_requerida(tmp_path, val):
-    """entidad='True'/'1'/'inf' pasa la validación (string no vacío) pero un consumidor por
-    defecto la relee como bool/int/float: el round-trip lo detecta y NO publica."""
+def test_roundtrip_acepta_string_con_forma_numerica_en_columna_texto(tmp_path, val):
     dest = tmp_path / "out.csv"
-    dest.write_text("SENTINEL\n", encoding="utf-8")
     df = pd.DataFrame(
         {
             "padecimiento": ["X"],
@@ -479,10 +473,9 @@ def test_roundtrip_rechaza_coercion_de_columna_requerida(tmp_path, val):
             "criterio_seleccion": ["c"],
         }
     )
-    with pytest.raises(OSError):
-        mod._atomic_write_csv(df, dest, root=tmp_path)
-    assert dest.read_text(encoding="utf-8") == "SENTINEL\n"  # NO publicó basura coercible
-    assert _tmp_residuos(tmp_path) == []
+    mod._atomic_write_csv(df, dest, root=tmp_path)
+    out = pd.read_csv(dest, dtype=str, keep_default_na=False)
+    assert out["entidad"].tolist() == [val]
 
 
 def test_roundtrip_acepta_nombres_reales_de_geografia(tmp_path):
@@ -505,11 +498,8 @@ def test_roundtrip_acepta_nombres_reales_de_geografia(tmp_path):
 
 
 @pytest.mark.parametrize("val", ["007", "1e5", "inf", "True"])
-def test_roundtrip_rechaza_coercion_en_columna_no_requerida(tmp_path, val):
-    """Un string de forma numérica/bool en una columna NO requerida (motores_evaluados) también
-    se coerciona para un consumidor por defecto: se detecta y NO publica."""
+def test_roundtrip_acepta_string_con_forma_numerica_en_columna_opcional(tmp_path, val):
     dest = tmp_path / "out.csv"
-    dest.write_text("SENTINEL\n", encoding="utf-8")
     df = pd.DataFrame(
         {
             "padecimiento": ["X"],
@@ -520,10 +510,24 @@ def test_roundtrip_rechaza_coercion_en_columna_no_requerida(tmp_path, val):
             "motores_evaluados": [val],
         }
     )
-    with pytest.raises(OSError):
-        mod._atomic_write_csv(df, dest, root=tmp_path)
-    assert dest.read_text(encoding="utf-8") == "SENTINEL\n"
-    assert _tmp_residuos(tmp_path) == []
+    mod._atomic_write_csv(df, dest, root=tmp_path)
+    out = pd.read_csv(dest, dtype=str, keep_default_na=False)
+    assert out["motores_evaluados"].tolist() == [val]
+
+
+def test_roundtrip_acepta_dtypes_csv_validos(tmp_path):
+    dest = tmp_path / "out.csv"
+    df = pd.DataFrame(
+        {
+            "texto": pd.Series(["007"], dtype="string"),
+            "entero_nullable": pd.Series([7], dtype="Int64"),
+            "entero_32": pd.Series([3], dtype="int32"),
+            "categoria": pd.Series(["x"], dtype="category"),
+            "fecha": pd.to_datetime(["2026-01-01"]),
+        }
+    )
+    mod._atomic_write_csv(df, dest, root=tmp_path)
+    assert dest.exists()
 
 
 # ── TOCTOU post-lock + filenames reservados ──
@@ -564,34 +568,21 @@ def test_atomic_write_rechaza_filename_reservado(tmp_path, bad):
         mod._atomic_write_csv(pd.DataFrame({"a": [1]}), tmp_path / bad, root=tmp_path)
 
 
-def test_escape_post_replace_detectado_limpiado_y_fallado(tmp_path, monkeypatch):
-    """El dir se mueve fuera de ROOT en la ventana justo-antes-del-replace: el post-check detecta
-    el escape, LIMPIA el archivo escapado y FALLA (no lo reporta como éxito)."""
-    root, external = tmp_path / "repo", tmp_path / "external"
-    external.mkdir()
-    prel = root / "reports" / "ProdDetails" / "_preliminar_NO_GO"
-    prel.mkdir(parents=True)
-    dest = prel / "produccion_x_PRELIMINAR.csv"
-    real_replace = mod.os.replace
+def test_no_hay_validacion_fallable_despues_del_replace(tmp_path, monkeypatch):
+    real_assert = mod._assert_fd_still_contained
+    calls = {"n": 0}
 
-    def replace_after_move(src, dst, *, src_dir_fd, dst_dir_fd):
-        prel.rename(external / "moved")  # atacante: mueve el dir ABIERTO fuera de ROOT
-        return real_replace(src, dst, src_dir_fd=src_dir_fd, dst_dir_fd=dst_dir_fd)
+    def fail_on_third(*args, **kwargs):
+        calls["n"] += 1
+        if calls["n"] > 2:
+            raise OSError("post-commit check")
+        return real_assert(*args, **kwargs)
 
-    monkeypatch.setattr(mod.os, "replace", replace_after_move)
-    df = pd.DataFrame(
-        {
-            "padecimiento": ["X"],
-            "entidad": ["Nacional"],
-            "sexo": ["g"],
-            "motor_productivo": ["Prophet"],
-            "criterio_seleccion": ["c"],
-        }
-    )
-    with pytest.raises(mod.SlugError):
-        mod._atomic_write_csv(df, dest, root=root)
-    # El archivo escapó momentáneamente pero fue LIMPIADO por la detección post-replace.
-    assert not (external / "moved" / "produccion_x_PRELIMINAR.csv").exists()
+    monkeypatch.setattr(mod, "_assert_fd_still_contained", fail_on_third)
+    dest = tmp_path / "out.csv"
+    mod._atomic_write_csv(pd.DataFrame({"a": [1]}), dest, root=tmp_path)
+    assert calls["n"] == 2
+    assert pd.read_csv(dest)["a"].tolist() == [1]
 
 
 def test_deferred_signals_enmascara_y_restaura():

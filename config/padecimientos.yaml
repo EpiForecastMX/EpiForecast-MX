@@ -21,6 +21,7 @@ perfiles:
   neuro:
     cohorte_id: neuro                 # is_neuro(pad) == (cohorte_id == neuro)
     unidad: tasa
+    rate_scale: 100000
     prophet_log_transform: true       # prophet/model.py:71
     prophet_covid_holidays: true      # prophet/data_prep.py:149
     ensemble_covid_holidays: true     # ensemble/feature_builder.py:100
@@ -36,12 +37,13 @@ perfiles:
     motor_rate:                       # rate POR MOTOR (efectivo = normalizar_tasa AND esto)
       prophet: true
       deepar: true
-      ensemble: true
-      stacking: true
+      ensemble: false                 # Ensemble opera sobre conteos absolutos
+      stacking: false                 # Stacking opera sobre conteos absolutos
 
   dengue_conteos:
     cohorte_id: conteos               # is_count_log_cohort(pad) == (cohorte_id == conteos)
     unidad: conteos
+    rate_scale: 100000
     prophet_log_transform: true
     prophet_covid_holidays: false
     ensemble_covid_holidays: false
@@ -57,14 +59,15 @@ perfiles:
     motor_rate:
       prophet: false                  # Prophet-Dengue modela conteos (no tasa)
       deepar: true                    # DeepAR-Dengue SÍ conserva tasa/100k (deepar/model.py:164)
-      ensemble: true
-      stacking: true
+      ensemble: false                 # Ensemble opera sobre conteos absolutos
+      stacking: false                 # Stacking opera sobre conteos absolutos
       nbglm: false
 
   # NUEVO (EPIC 5): crónico/prevalencia. Tasa, fallback regional, sin ENSO/COVID/clamp.
   obesidad_cronica:
     cohorte_id: obesidad              # ni neuro ni conteos
     unidad: tasa
+    rate_scale: 100000
     prophet_log_transform: true       # log1p (a tunear con política OOS de Obesidad)
     prophet_covid_holidays: false
     ensemble_covid_holidays: false
@@ -80,8 +83,8 @@ perfiles:
     motor_rate:
       prophet: true
       deepar: true
-      ensemble: true
-      stacking: true
+      ensemble: false                 # decisión vigente: conservar conteos
+      stacking: false                 # decisión vigente: conservar conteos
 
 # ── Padecimientos ──
 padecimientos:

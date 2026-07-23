@@ -44,8 +44,21 @@ def mock_conf(tmp_path, monkeypatch):
     # Configure minimal run
     monkeypatch.setitem(conf["padecimiento"], "modelado_estados", True)
     monkeypatch.setitem(conf["padecimiento"], "modelado_hibrido", False)
+    monkeypatch.setitem(conf["padecimiento"], "solo_nacional", True)
     monkeypatch.setitem(conf["padecimiento"], "entrena_modelo", True)
+    monkeypatch.setitem(conf, "modelo_activo", "prophet")
+    monkeypatch.setitem(conf, "valores_sexo", ["incrementos_total"])
     monkeypatch.setitem(conf, "n_jobs_train", 1)
+    monkeypatch.setitem(conf, "TS_SPLITS", 2)
+    monkeypatch.setitem(
+        conf["param_grid_prophet"],
+        "alzheimer",
+        {
+            "seasonality_mode": ["additive"],
+            "changepoint_prior_scale": [0.05],
+            "seasonality_prior_scale": [0.1],
+        },
+    )
     monkeypatch.setitem(conf["prediccion"], "periodo", 2)
     monkeypatch.setitem(conf, "umbral_minimo_semanal", 0)  # Forzar CV o run
 
@@ -108,6 +121,7 @@ def test_pipeline_end_to_end(mock_conf, synthetic_data, monkeypatch):
     assert models_dir.exists(), "El directorio de modelos no se creó"
     pkl_files = list(models_dir.glob("*.pkl"))
     assert len(pkl_files) > 0, "No se generaron modelos .pkl"
+    assert all(path.name.startswith("Prophet_") for path in pkl_files)
 
     # 2. Predict (evitamos generar gráficos reales)
     import epiforecast.visualization.forecast_plots as fp
