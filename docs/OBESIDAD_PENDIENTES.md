@@ -37,10 +37,13 @@ además, corridas simultáneas, saturando la máquina. Se alcanzaron **59/111** 
 abortar. (El caveat de MPS/concurrencia en CLAUDE.md es real y se debe respetar, pero **no** fue la
 causa aquí.)
 
-**Cómo cerrarlo (cuando el plan lo autorice):** correr DeepAR en **SageMaker GPU** (CUDA, sin MPS),
-el camino que el proyecto ya usa: `make train-sagemaker` con `padecimiento.tipo='Obesidad'` y
-`n_jobs_train=1` local si se prueba en CPU. Luego `predice` (con el fix expm1 del loader) +
-selección OOS **real** de 4 motores. Ver el plan para el contrato exacto.
+**Cómo cerrarlo:** NO es "correr SageMaker + `predice`". El camino autoritativo es el
+**protocolo D0–D3** de `PLAN_BRUTAL_OBESIDAD_N_PLUS_1.md` (§4.4–4.7): **D0** harness reproducible,
+**D1** matriz de dispositivo/distribución, **D2** tamaño/estabilidad, **D3** rediseño global — recién
+tras pasarlo se decide dispositivo (CPU `n_jobs_train=1` vs SageMaker GPU/CUDA). El `predice` posterior
+requiere primero el fix expm1 del loader **y** el upsert atómico por-enfermedad (no sobrescribir
+agregados globales). La selección de 4 motores debe ser OOS **real**, no in-sample. Todo esto queda
+tras el **OK formal de Fase 1**.
 
 **Caveat de comparación:** DeepAR es autorregresivo → su "ajuste" in-sample eco-a la realidad
 (sMAPE 0 trivial). Para compararlo justo NO usar el ajuste in-sample; usar **CV** o **pronóstico

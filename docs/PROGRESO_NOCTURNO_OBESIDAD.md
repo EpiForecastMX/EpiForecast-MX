@@ -4,6 +4,14 @@
 > Regla de integridad: neuro+Dengue byte-idénticos (golden verde en cada frontera);
 > commits locales por épica; **sin** push/deploy/dvc-push/flip-published (gates que requieren OK del usuario).
 
+> ## ⛔ AVISO: BITÁCORA HISTÓRICA — Obesidad es **NO-GO**
+> Una auditoría posterior invalidó el "cierre" de Obesidad. **TODO comando de `train`, `predice`,
+> SageMaker, `dvc add/push` o `dvc checkout` que aparezca más abajo está OBSOLETO y NO debe
+> ejecutarse** — varios reproducen las regresiones (`predice Obesidad` sobrescribe los agregados
+> globales). Las afirmaciones "end-to-end / completado" de abajo son del **intento preliminar**, no un
+> cierre válido. Las cifras de modelos/tests pueden estar desactualizadas. La secuencia autoritativa
+> es `docs/PLAN_BRUTAL_OBESIDAD_N_PLUS_1.md`; el estado de contención, `docs/FASE_0_CONTENCION.md`.
+
 ## Estado por épica
 
 | Épica | Estado | Notas |
@@ -42,23 +50,30 @@ un padecimiento nuevo (Obesidad E66) fluye por todo el pipeline con solo 1 entra
 - **EPIC 4 (Python)** (52d471fb): manifiesto `padecimientos` en knowledge.json desde el registry
   (solo published → Obesidad invisible; conteos canónicos 432; 3 tests). El refactor JS + los 11 tests
   del dashboard NO se tocaron (gate de deploy con verificación visual obligatoria).
-- **EPIC 5 (abstracción probada, 3/4 motores)**: Obesidad extraída→merge→prep→**train Prophet+Ensemble+
-  Stacking (111 c/u)**→predict→**selección** (`produccion_obesidad.csv`: 111 series, Ensemble 62 /
-  Prophet 26 / Stacking 23). **DeepAR pendiente = gate compute.** Un padecimiento nuevo fluyó por casi
-  todo el flujo con solo la entrada de registry + grupo de cuadro.
+- **EPIC 5 (intento preliminar, INVALIDADO por auditoría — NO-GO)**: Obesidad extraída→merge→prep→
+  train Prophet+Ensemble+Stacking (111 c/u)→predict→selección preliminar (movida a
+  `reports/ProdDetails/_preliminar_NO_GO/produccion_obesidad_PRELIMINAR.csv`). **La selección NO es
+  válida**: Prophet ~4.6× bajo (expm1), DeepAR incompleto (sobre-paralelización), `rolling_cv_v1`
+  nunca corrió OOS. La *maquinaria del registry* sí demostró que un padecimiento nuevo fluye con 1
+  entrada + 1 grupo de cuadro; los *resultados* de Obesidad, no. Ver `FASE_0_CONTENCION.md`.
 
 ### Estado del working tree (NO commiteado — artefactos DVC/locales)
+> Manejo autoritativo de este árbol: `docs/FASE_0_CONTENCION.md` (gap #4). NO `dvc add/push`
+> (persistiría Obesidad NO-GO) NI `dvc checkout` **global** (borraría la extracción E66 válida).
 - `data/processed/dataset_boletin_epidemiologico.csv`: **Obesidad mergeada** (75456→96352 filas).
-  Diverge del puntero DVC. Para persistir: `dvc add ...` + `dvc push` (GATE). Para revertir: `dvc checkout`.
+  Diverge del puntero DVC; **se conserva** como WIP aditivo (neuro+Dengue byte-idénticos).
 - `models/prophet/Obesidad/`: **15 pkl** entrenados (DVC-tracked dir).
 - `data/interim/obesidad_*.csv`, `data/processed/data_{raw,prepare,inegi}_Obesidad.csv`,
   `reports/forecasts/prophet/Obesidad/`, `reports/ProdDetails/catalogo_canonico.*`: locales/gitignored.
 
-### Qué FALTA y por qué (gates que requieren tu OK / compute)
-- **EPIC 5 full**: entrenar DeepAR + Ensemble + Stacking de Obesidad (DeepAR = horas, MPS deshabilitado,
-  sin concurrencia). Comando: `make train ARGS="padecimiento.tipo='Obesidad' modelo_activo=<motor>"` por motor.
-- **EPIC 3 selector**: `produccion_padecimiento.py` con 3 políticas (legacy_neuro/legacy_dengue/rolling_cv_v1).
-  El rolling_cv_v1 de Obesidad necesita los forecasts de los 4 motores (bloqueado por lo anterior).
+### Qué FALTA y por qué (BLOQUEADO — NO ejecutar los comandos; ver plan)
+> Ninguno de estos pasos se corre hoy. El re-onboarding va por las fases del plan (contratos de
+> artefactos + upsert atómico + OOS honesto). Los comandos históricos quedan bloqueados/reescritos.
+- **EPIC 5 full**: entrenar DeepAR + Ensemble + Stacking de Obesidad — bloqueado. DeepAR debe pasar el
+  **protocolo D0–D3** del plan (§4.4–4.7) y correr con `n_jobs_train=1`/SageMaker, no `make train` suelto.
+- **EPIC 3 selector**: `produccion_padecimiento.py` **ignora `lifecycle`** y recrearía el CSV canónico
+  con `rolling_cv_v1` (ver FASE_0_CONTENCION.md, "Primer contrato de Fase 1"). El `rolling_cv_v1` real
+  (OOS) no existe todavía.
 - **EPIC 4 web**: manifiesto `padecimientos` en `knowledge.json` + refactor JS (kb/app/entities) +
   green de 11 tests del dashboard + cache-bust por hash. NO se tocó (es gate de deploy; findings de los
   11 tests en `scratchpad/dashboard_11_fallos_findings.md`).

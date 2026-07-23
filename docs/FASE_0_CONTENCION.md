@@ -75,7 +75,11 @@ legacy. Cerradas así:
 
    **No se revierte** para no destruir la extracción E66 válida (se reutiliza en el re-onboarding).
    `reports/forecasts.dvc` y `tableau_model.xlsx.dvc` están **limpios**. Nada se `dvc push`eó.
-   Para dejar el árbol prístino (decisión del usuario, destructiva): `dvc checkout --force`.
+
+   > ⚠️ **No hay comando de reversión global aquí, a propósito.** Un `dvc checkout` **sin target**
+   > borraría la extracción E66 y los modelos WIP. Dejar el árbol prístino es una decisión
+   > **destructiva y explícita del usuario**, y debe hacerse **por target concreto** (p. ej. solo
+   > `dvc checkout models.dvc`), nunca en bloque.
 
 ## Anomalía legacy pre-existente (NO tocar — no es de Fase 0)
 
@@ -84,3 +88,16 @@ legacy. Cerradas así:
   **111 filas** (1 semana × 111 series) de Alzheimer. Está en el archivo **restaurado desde el puntero
   DVC**, o sea **precede a Obesidad** y **coincide con producción**. **No se corrige** aquí: alterarlo
   rompería la garantía byte-idéntico-al-puntero. Queda flageado para investigación en **Fase 1**.
+
+## Primer contrato de Fase 1 (identificado, NO implementado aquí)
+
+- **`scripts/produccion_padecimiento.py:104` ignora `lifecycle`.** Escribe
+  `criterio_seleccion = d.selection_policy` (para Obesidad = `rolling_cv_v1`) en la **ruta canónica**
+  `reports/ProdDetails/produccion_{slug}.csv` = `produccion_obesidad.csv`, sin verificar que el
+  padecimiento esté `published`. Correrlo para Obesidad **recrearía** el CSV canónico con la etiqueta
+  `rolling_cv_v1` (deshaciendo el fix de Fase 0).
+  - **Mitigación actual (no código):** solo se dispara con invocación **explícita** `--disease Obesidad`
+    (no está en ningún flujo neuro/Dengue automático) y la ruta canónica hoy está vacía.
+  - **Contrato Fase 1:** el selector debe (a) respetar `lifecycle` (abortar/escribir a `_preliminar/`
+    si no es `published`) y (b) no etiquetar `rolling_cv_v1` sin haber corrido un rolling-origin OOS
+    real. Es la primera historia de código de Fase 1; **requiere OK formal**.
