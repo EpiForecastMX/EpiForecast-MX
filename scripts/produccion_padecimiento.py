@@ -1,16 +1,21 @@
-"""Selector productivo genérico por padecimiento (EPIC 3 + gate lifecycle, Fase 1).
+"""Selector productivo genérico por padecimiento (EPIC 3 + gates Fase 1).
 
-Despacha por ``selection_policy`` del registry y aplica la regla canónica
-(``epiforecast.selection.select_engine``: sMAPE→MASE→RMSE + banda 5% + orden estable)
-sobre los motores ELEGIBLES del padecimiento, usando las métricas CV por serie de cada
-``{Motor}_{Padecimiento}_completo.csv``.
+Aplica la regla canónica (``epiforecast.selection.select_engine``: sMAPE→MASE→RMSE + banda
+5% + orden estable) sobre los motores ELEGIBLES del padecimiento, usando las métricas CV por
+serie de cada ``{Motor}_{Padecimiento}_completo.csv``.
 
-**Lifecycle gate (contrato Fase 1):** un padecimiento no ``published`` NO puede recrear una
-selección canónica. Solo ``lifecycle=published`` escribe ``reports/ProdDetails/produccion_<slug>.csv``
-etiquetado con su ``selection_policy``. Un padecimiento ``configured``/``trained`` aborta sin escribir,
-salvo ``--allow-preliminary``, que emite un CSV **PRELIMINAR** bajo ``_preliminar_NO_GO/`` con criterio
-``insample_cv_PRELIMINAR_NO_GO`` (nunca la etiqueta de la política: este selector usa métricas CV
-*in-sample*, no un rolling-origin OOS real). Ver ``resolve_destination``.
+**Gate de lifecycle + ownership (contrato Fase 1):** ``resolve_destination`` decide dónde (y si)
+puede escribir.
+
+- Un padecimiento NO ``published`` no puede recrear una selección canónica: aborta sin escribir,
+  salvo ``--allow-preliminary``, que emite un CSV **PRELIMINAR** bajo ``_preliminar_NO_GO/`` con
+  criterio ``insample_cv_PRELIMINAR_NO_GO`` (nunca la etiqueta de la política: este selector usa
+  métricas CV *in-sample*, no un rolling-origin OOS real).
+- Un padecimiento ``published`` es dominio de su selector DEDICADO (neuro: ``reselect_motor_2026``;
+  Dengue: ``produccion_dengue``). El genérico NO reproduce ``legacy_neuro_2026``/``legacy_dengue_2026``
+  (solo copiaría la etiqueta y emitiría un esquema distinto — ~16 vs 30 columnas, rompería
+  ``build_web_knowledge``), así que **rechaza** toda escritura canónica sin un adapter explícito
+  registrado en ``_GENERIC_CANONICAL_POLICIES`` y reserva los artefactos de ``_DEDICATED_ARTIFACTS``.
 
 Nota: los motores no entrenados se omiten (se registra cuáles se usaron).
 
@@ -30,6 +35,8 @@ from epiforecast.selection import Candidate, select_engine
 from epiforecast.utils.config import logger
 
 ROOT = Path(__file__).resolve().parent.parent
+# Etiqueta de DISPLAY para ``motor_productivo`` (convención del proyecto: DeepAR/NBGLM).
+# NO sirve para construir nombres de archivo — ver ``_engine_file_prefix``.
 _ENGINE_CAP = {
     "prophet": "Prophet",
     "deepar": "DeepAR",
@@ -43,9 +50,30 @@ _SEXO_MAP = {
     "incrementos_total": "general",
 }
 
+
+def _engine_file_prefix(engine: str) -> str:
+    """Prefijo REAL en disco del CSV de métricas (case-sensitive en Linux/CI).
+
+    Los archivos son ``Prophet_``/``Deepar_``/``Ensemble_``/``Stacking_``/``Nbglm_`` (title-case),
+    NO el display ``_ENGINE_CAP`` (``DeepAR``/``NBGLM``): usar ese mapa para el nombre de archivo
+    encuentra el CSV en macOS (FS case-insensitive) y FALLA en Linux.
+    """
+    return engine.capitalize()
+
+
 # ── Lifecycle gate (contrato Fase 1) ──
 _PRELIMINAR_DIRNAME = "_preliminar_NO_GO"
 _PRELIMINAR_CRITERIO = "insample_cv_PRELIMINAR_NO_GO"
+
+# ── Ownership / policy gate (contrato Fase 1, P0) ──
+# Políticas que el selector GENÉRICO reproduce de verdad para una escritura CANÓNICA. Vacío:
+# no reproduce legacy_neuro_2026 (reselect_motor_2026.py) ni legacy_dengue_2026
+# (produccion_dengue.py) ni un rolling_cv_v1 OOS real. Hasta que exista un adapter validado
+# fila-por-fila contra el selector dedicado, el genérico NO escribe artefactos canónicos.
+_GENERIC_CANONICAL_POLICIES: frozenset[str] = frozenset()
+
+# Artefactos canónicos con dueño DEDICADO — el genérico nunca los escribe, ni con adapter.
+_DEDICATED_ARTIFACTS: frozenset[str] = frozenset({"produccion_dengue.csv"})
 
 
 @dataclass(frozen=True)
@@ -60,20 +88,28 @@ class Destination:
 def resolve_destination(
     d: registry.Disease, root: Path, *, allow_preliminary: bool
 ) -> Destination | None:
-    """Lifecycle gate: decide DÓNDE (y SI) puede escribir el selector.
+    """Gate de lifecycle + ownership: decide DÓNDE (y SI) puede escribir el genérico.
 
-    - ``published``: ruta CANÓNICA ``reports/ProdDetails/produccion_<slug>.csv``; criterio =
-      ``selection_policy`` del registry (comportamiento legacy, sin cambios).
-    - ``configured``/``trained`` **sin** ``allow_preliminary``: ``None`` (GATED — no se permite
-      escribir nada; un padecimiento no publicado NO puede recrear una selección canónica).
+    - ``published`` con política en ``_GENERIC_CANONICAL_POLICIES`` y artefacto NO reservado:
+      ruta CANÓNICA ``reports/ProdDetails/produccion_<slug>.csv``; criterio = ``selection_policy``.
+    - ``published`` sin adapter registrado, o cuyo artefacto está en ``_DEDICATED_ARTIFACTS``:
+      ``None`` (dominio del selector dedicado; el genérico no reproduce esa política ni lo pisa).
+    - ``configured``/``trained`` **sin** ``allow_preliminary``: ``None`` (un padecimiento no
+      publicado NO puede recrear una selección canónica).
     - ``configured``/``trained`` **con** ``allow_preliminary``: ruta PRELIMINAR bajo
-      ``_preliminar_NO_GO/`` con sufijo ``_PRELIMINAR`` y criterio ``insample_cv_PRELIMINAR_NO_GO``
-      — NUNCA la etiqueta de la política, porque este selector usa métricas CV *in-sample*, no un
-      rolling-origin OOS real.
+      ``_preliminar_NO_GO/`` con criterio ``insample_cv_PRELIMINAR_NO_GO`` — NUNCA la política.
     """
     proddetails = root / "reports" / "ProdDetails"
+    canonical = proddetails / f"produccion_{d.slug}.csv"
+
     if d.lifecycle == "published":
-        return Destination(proddetails / f"produccion_{d.slug}.csv", d.selection_policy, True)
+        if (
+            d.selection_policy not in _GENERIC_CANONICAL_POLICIES
+            or canonical.name in _DEDICATED_ARTIFACTS
+        ):
+            return None
+        return Destination(canonical, d.selection_policy, True)
+
     if not allow_preliminary:
         return None
     return Destination(
@@ -84,8 +120,8 @@ def resolve_destination(
 
 
 def _load_engine_metrics(artifact_key: str, engine: str) -> pd.DataFrame | None:
-    cap = _ENGINE_CAP.get(engine, engine.capitalize())
-    path = ROOT / "models" / engine / artifact_key / f"{cap}_{artifact_key}_completo.csv"
+    prefix = _engine_file_prefix(engine)
+    path = ROOT / "models" / engine / artifact_key / f"{prefix}_{artifact_key}_completo.csv"
     if not path.exists():
         return None
     df = pd.read_csv(path)
@@ -118,17 +154,33 @@ def main(argv: list[str] | None = None) -> int:
         list(d.eligible_engines),
     )
 
+    if args.allow_preliminary and d.lifecycle == "published":
+        logger.error(
+            "--allow-preliminary no aplica a un padecimiento published ('{}'): su selección "
+            "canónica es dominio del selector dedicado, no un preliminar.",
+            d.data_name,
+        )
+        return 2
+
     dest = resolve_destination(d, ROOT, allow_preliminary=args.allow_preliminary)
     if dest is None:
-        logger.error(
-            "GATE lifecycle: '{}' está en lifecycle={} (no 'published'). El selector NO recrea la "
-            "ruta canónica produccion_{}.csv de un padecimiento no publicado. Usa "
-            "--allow-preliminary para emitir un CSV PRELIMINAR en reports/ProdDetails/{}/.",
-            d.data_name,
-            d.lifecycle,
-            d.slug,
-            _PRELIMINAR_DIRNAME,
-        )
+        if d.lifecycle == "published":
+            logger.error(
+                "GATE ownership: '{}' (published, política '{}') es dominio del selector DEDICADO "
+                "(reselect_motor_2026.py / produccion_dengue.py). El genérico no reproduce esa "
+                "política ni escribe su artefacto canónico produccion_{}.csv.",
+                d.data_name,
+                d.selection_policy,
+                d.slug,
+            )
+        else:
+            logger.error(
+                "GATE lifecycle: '{}' está en lifecycle={} (no 'published'). Usa --allow-preliminary "
+                "para emitir un CSV PRELIMINAR en reports/ProdDetails/{}/.",
+                d.data_name,
+                d.lifecycle,
+                _PRELIMINAR_DIRNAME,
+            )
         return 2
 
     metricas: dict[str, pd.DataFrame] = {}

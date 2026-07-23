@@ -63,13 +63,23 @@ def reg(tmp_path: Path):
     return load_registry(p)
 
 
-def test_published_escribe_canonico(reg, tmp_path):
+def test_published_sin_adapter_esta_gated(reg, tmp_path):
+    """Ownership: un published cuya política no tiene adapter en el genérico está gated."""
+    d = reg.get("Publicado")  # legacy_neuro_2026 no está en _GENERIC_CANONICAL_POLICIES (vacío)
+    assert resolve_destination(d, tmp_path, allow_preliminary=False) is None
+
+
+def test_published_con_adapter_registrado_escribe_canonico(reg, tmp_path, monkeypatch):
+    """Con un adapter explícito registrado, el published SÍ escribe el canónico."""
+    import scripts.produccion_padecimiento as mod
+
+    monkeypatch.setattr(mod, "_GENERIC_CANONICAL_POLICIES", frozenset({"legacy_neuro_2026"}))
     d = reg.get("Publicado")
-    dest = resolve_destination(d, tmp_path, allow_preliminary=False)
+    dest = mod.resolve_destination(d, tmp_path, allow_preliminary=False)
     assert dest is not None
     assert dest.canonical is True
     assert dest.path == tmp_path / "reports" / "ProdDetails" / "produccion_publicado.csv"
-    assert dest.criterio == "legacy_neuro_2026"  # la política real, sin cambios
+    assert dest.criterio == "legacy_neuro_2026"
 
 
 @pytest.mark.parametrize("name", ["Configurado", "Entrenado"])
