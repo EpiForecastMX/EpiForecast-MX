@@ -10,17 +10,19 @@ serie de cada ``{Motor}_{Padecimiento}_completo.csv``.
   salvo ``--allow-preliminary``, que emite un CSV **PRELIMINAR** bajo ``_preliminar_NO_GO/`` con
   criterio ``insample_cv_PRELIMINAR_NO_GO`` (nunca la etiqueta de la política: este selector usa
   métricas CV *in-sample*, no un rolling-origin OOS real).
-- Un padecimiento ``published`` es dominio de su selector DEDICADO (neuro: ``reselect_motor_2026``;
-  Dengue: ``produccion_dengue``). El genérico NO reproduce ``legacy_neuro_2026``/``legacy_dengue_2026``
-  (esquema distinto — ~16 vs 30 columnas, rompería ``build_web_knowledge``): rechaza toda escritura
-  canónica salvo que exista un **adapter callable** registrado en ``_CANONICAL_ADAPTERS`` (hoy vacío;
-  registrar exige una FUNCIÓN real que produzca el esquema, no una string), y el write canónico
-  **delega** en ese adapter. Reserva además ``_DEDICATED_ARTIFACTS``.
+- Un padecimiento ``published`` es dominio de su selector DEDICADO. El genérico NO reproduce
+  ``legacy_neuro_2026``/``legacy_dengue_2026`` (esquema distinto — rompería ``build_web_knowledge``):
+  rechaza toda escritura canónica salvo que exista un **adapter callable** registrado en
+  ``_CANONICAL_ADAPTERS`` (hoy vacío; registrar exige una FUNCIÓN real, verificada con ``callable``),
+  y el write canónico **delega** en ese adapter. Reserva además ``_DEDICATED_ARTIFACTS``.
 - ``--allow-preliminary`` sobre un ``published`` es contradicción → rechazado en el resolver.
-- El ``slug`` se valida (formato + containment) antes de construir rutas: ningún ``../`` escapa.
+- El ``slug`` se valida (formato + longitud + containment anclado a ROOT) antes de construir rutas.
 
-La escritura es **atómica**: tmp en el MISMO directorio → validación → ``os.replace``, con lock
-(``fcntl``) y limpieza del tmp ante fallo.
+Antes de publicar se valida el ESQUEMA de la selección (columnas requeridas): nada susceptible de
+fallar corre después del ``replace``. La escritura es **atómica y segura ante symlinks**: tmp
+exclusivo (``mkstemp``, O_EXCL) en el MISMO directorio → fsync(tmp) → validación → ``os.replace`` →
+fsync(dir), con lock ``fcntl`` **estable** (nunca se borra, evita split-brain) y limpieza del tmp
+ante fallo.
 
 Uso: .venv/bin/python -m scripts.produccion_padecimiento --disease Obesidad [--allow-preliminary]
 """
@@ -35,6 +37,7 @@ import fcntl
 import os
 from pathlib import Path
 import re
+import tempfile
 
 import pandas as pd
 
@@ -75,44 +78,63 @@ _PRELIMINAR_CRITERIO = "insample_cv_PRELIMINAR_NO_GO"
 
 # ── Ownership / policy gate (contrato Fase 1, P0) ──
 # Adapter = callable que produce el DataFrame canónico con el ESQUEMA EXACTO de esa política.
-# ``policy -> adapter``. VACÍO: no hay adapter validado (legacy_neuro_2026, legacy_dengue_2026,
-# rolling_cv_v1 OOS real). Registrar exige una FUNCIÓN real, no una string: así, añadir una cadena
-# NO rehabilita el writer genérico (que produce otro esquema). El write canónico DELEGA en el adapter.
+# ``policy -> adapter``. VACÍO: no hay adapter validado. Registrar exige una FUNCIÓN real
+# (verificada con ``callable``), no una string: así, añadir una cadena NO rehabilita el writer.
 CanonicalAdapter = Callable[["registry.Disease", Path], pd.DataFrame]
 _CANONICAL_ADAPTERS: dict[str, CanonicalAdapter] = {}
 
 # Artefactos canónicos con dueño DEDICADO — el genérico nunca los escribe, ni con adapter.
 _DEDICATED_ARTIFACTS: frozenset[str] = frozenset({"produccion_dengue.csv"})
 
+# Columnas mínimas que DEBE tener cualquier selección antes de publicarse (contrato de esquema).
+_REQUIRED_COLUMNS = ("padecimiento", "entidad", "sexo", "motor_productivo", "criterio_seleccion")
+
 # Slug seguro: minúsculas/dígitos/guion-bajo, sin puntos ni separadores (impide traversal ../).
 _SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9_]*$")
+_SLUG_MAX_LEN = 64  # límite portable de longitud (el filename queda muy por debajo de 255).
 
 
 class SlugError(ValueError):
-    """slug con formato inseguro o que escaparía del directorio destino."""
+    """slug con formato/longitud inseguros o ruta que escaparía de ROOT."""
+
+
+class SelectionSchemaError(ValueError):
+    """La selección a escribir no cumple el esquema mínimo (columnas requeridas / no vacía)."""
 
 
 def _validate_slug(slug: str) -> None:
-    if not _SLUG_RE.fullmatch(slug):
-        raise SlugError(f"slug inseguro: {slug!r} (esperado ^[a-z0-9][a-z0-9_]*$)")
+    if not _SLUG_RE.fullmatch(slug) or len(slug) > _SLUG_MAX_LEN:
+        raise SlugError(f"slug inseguro: {slug!r} (^[a-z0-9][a-z0-9_]*$, ≤{_SLUG_MAX_LEN})")
 
 
-def _safe_child(parent: Path, filename: str) -> Path:
-    """``parent/filename`` garantizando CONTAINMENT (el hijo queda dentro de parent).
-
-    Valida sobre las rutas resueltas pero devuelve la ruta SIN resolver (preserva el estilo
-    del caller para comparaciones/logs). Backstop de ``_validate_slug`` ante cualquier ``../``.
+def _safe_child(parent: Path, filename: str, *, anchor: Path) -> Path:
+    """``parent/filename`` ANCLADO a ``anchor`` (ROOT): la ruta RESUELTA debe quedar dentro de
+    ``anchor`` resuelto. Detecta symlinks en cualquier componente (incl. ``parent``) que escapen
+    de ROOT. Devuelve la ruta SIN resolver (preserva el estilo del caller para logs/comparaciones).
     """
     child = parent / filename
-    child_r, parent_r = child.resolve(), parent.resolve()
-    if parent_r != child_r.parent and parent_r not in child_r.parents:
-        raise SlugError(f"ruta '{child}' escaparía de '{parent_r}'")
+    child_r, anchor_r = child.resolve(), anchor.resolve()
+    if child_r != anchor_r and anchor_r not in child_r.parents:
+        raise SlugError(f"ruta '{child}' escaparía de ROOT '{anchor_r}'")
     return child
+
+
+def _validate_selection_schema(prod: pd.DataFrame) -> None:
+    """Contrato de esquema ANTES de publicar (evita publicar basura de un adapter roto)."""
+    missing = [c for c in _REQUIRED_COLUMNS if c not in prod.columns]
+    if missing:
+        raise SelectionSchemaError(f"faltan columnas requeridas: {missing}")
+    if len(prod) == 0:
+        raise SelectionSchemaError("selección vacía (0 filas)")
 
 
 @contextmanager
 def _file_lock(lock_path: Path) -> Iterator[None]:
-    """Lock exclusivo (``fcntl.flock``) sobre un archivo; se libera y limpia al salir."""
+    """Lock exclusivo (``fcntl.flock``) sobre un lockfile ESTABLE.
+
+    El lockfile NO se borra nunca: unlink tras liberar causa split-brain (un waiter conserva el
+    inode viejo mientras otro proceso crea uno nuevo → ambos entran a la sección crítica).
+    """
     lock_path.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(str(lock_path), os.O_CREAT | os.O_RDWR, 0o644)
     try:
@@ -121,29 +143,44 @@ def _file_lock(lock_path: Path) -> Iterator[None]:
     finally:
         fcntl.flock(fd, fcntl.LOCK_UN)
         os.close(fd)
-        with suppress(FileNotFoundError):
-            lock_path.unlink()
+
+
+def _fsync_dir(directory: Path) -> None:
+    fd = os.open(str(directory), os.O_RDONLY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
 
 
 def _atomic_write_csv(df: pd.DataFrame, dest: Path) -> None:
-    """Escritura atómica: tmp en el MISMO dir → validación → ``os.replace``.
+    """Escritura atómica y segura ante symlinks.
 
-    Serializa con lock; limpia el tmp ante fallo (el destino nunca queda a medias). ``os.replace``
-    es atómico en el mismo filesystem, así que un abort deja el destino previo intacto byte-a-byte.
+    tmp EXCLUSIVO (``mkstemp`` = O_CREAT|O_EXCL, no sigue symlinks) en el MISMO dir → fsync(tmp)
+    → validación round-trip → ``os.replace`` (atómico) → fsync(dir) best-effort. Lock estable;
+    el tmp se limpia ante cualquier fallo. Tras el ``replace`` no corre nada que pueda fallar.
     """
     dest.parent.mkdir(parents=True, exist_ok=True)
     lock = dest.parent / f".{dest.name}.lock"
-    tmp = dest.parent / f".{dest.name}.tmp.{os.getpid()}"
     with _file_lock(lock):
+        fd, tmp_name = tempfile.mkstemp(dir=dest.parent, prefix=f".{dest.name}.", suffix=".tmp")
+        tmp = Path(tmp_name)
         try:
-            df.to_csv(tmp, index=False, encoding="utf-8")
+            with os.fdopen(fd, "w", encoding="utf-8", newline="") as fh:
+                df.to_csv(fh, index=False)
+                fh.flush()
+                os.fsync(fh.fileno())
             check = pd.read_csv(tmp)
             if list(check.columns) != list(df.columns) or len(check) != len(df):
-                raise OSError(f"validación post-escritura falló para {dest.name}")
-            tmp.replace(dest)  # atómico (os.replace) en el mismo filesystem
-        finally:
+                raise OSError(f"validación round-trip falló para {dest.name}")
+            os.replace(tmp, dest)  # noqa: PTH105 — atómico; orden fsync(tmp)→replace→fsync(dir)
+        except BaseException:
             with suppress(FileNotFoundError):
                 tmp.unlink()
+            raise
+        # Publicado. Durabilidad del directorio: best-effort (no revierte ni falla la publicación).
+        with suppress(OSError):
+            _fsync_dir(dest.parent)
 
 
 @dataclass(frozen=True)
@@ -160,16 +197,15 @@ def resolve_destination(
 ) -> Destination | None:
     """Gate COMPLETO (lifecycle + ownership + slug), fail-closed. ``None`` = no escribir.
 
-    Valida el slug (formato + containment) SIEMPRE, antes de construir rutas, de modo que un
-    caller que salte ``main`` no pueda evadir ningún control.
+    Valida el slug SIEMPRE, antes de construir rutas, de modo que un caller que salte ``main``
+    no pueda evadir ningún control. El containment se ancla a ``root`` (ROOT).
 
-    - ``published`` + ``allow_preliminary``: ``None`` (contradicción; un published no admite preliminar).
-    - ``published`` con adapter en ``_CANONICAL_ADAPTERS`` y artefacto NO reservado: ruta CANÓNICA,
+    - ``published`` + ``allow_preliminary``: ``None`` (contradicción).
+    - ``published`` con adapter CALLABLE registrado y artefacto NO reservado: ruta CANÓNICA,
       criterio = ``selection_policy`` (el write DELEGA en el adapter).
-    - ``published`` sin adapter, o artefacto en ``_DEDICATED_ARTIFACTS``: ``None``.
+    - ``published`` sin adapter callable, o artefacto en ``_DEDICATED_ARTIFACTS``: ``None``.
     - no ``published`` sin ``allow_preliminary``: ``None``.
-    - no ``published`` con ``allow_preliminary``: ruta PRELIMINAR en ``_preliminar_NO_GO/``,
-      criterio ``insample_cv_PRELIMINAR_NO_GO``.
+    - no ``published`` con ``allow_preliminary``: ruta PRELIMINAR en ``_preliminar_NO_GO/``.
     """
     _validate_slug(d.slug)
     proddetails = root / "reports" / "ProdDetails"
@@ -177,16 +213,18 @@ def resolve_destination(
     if d.lifecycle == "published":
         if allow_preliminary:
             return None  # contradicción: un published no admite preliminar
-        if d.selection_policy not in _CANONICAL_ADAPTERS:
+        if not callable(_CANONICAL_ADAPTERS.get(d.selection_policy)):
             return None
-        canonical = _safe_child(proddetails, f"produccion_{d.slug}.csv")
+        canonical = _safe_child(proddetails, f"produccion_{d.slug}.csv", anchor=root)
         if canonical.name in _DEDICATED_ARTIFACTS:
             return None
         return Destination(canonical, d.selection_policy, True)
 
     if not allow_preliminary:
         return None
-    prelim = _safe_child(proddetails / _PRELIMINAR_DIRNAME, f"produccion_{d.slug}_PRELIMINAR.csv")
+    prelim = _safe_child(
+        proddetails / _PRELIMINAR_DIRNAME, f"produccion_{d.slug}_PRELIMINAR.csv", anchor=root
+    )
     return Destination(prelim, _PRELIMINAR_CRITERIO, False)
 
 
@@ -312,6 +350,13 @@ def main(argv: list[str] | None = None) -> int:
             logger.error("Ningún motor entrenado para {} — corre entrena primero.", d.data_name)
             return 1
         prod = seleccion
+
+    # Validar el ESQUEMA antes de publicar: nada susceptible de fallar corre tras el replace.
+    try:
+        _validate_selection_schema(prod)
+    except SelectionSchemaError as e:
+        logger.error("Esquema de selección inválido para {} (NO se publica): {}", d.data_name, e)
+        return 3
 
     _atomic_write_csv(prod, dest.path)
     dist = prod["motor_productivo"].value_counts().to_dict()
