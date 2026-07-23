@@ -8,6 +8,7 @@ preservado, lock estable con cierre garantizado.
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import multiprocessing as mp
 from pathlib import Path
@@ -155,6 +156,8 @@ _BAD_ADAPTERS = {
     "enfermedad_incorrecta": lambda: _adapter_bad({"padecimiento": ["Otra"]}),
     "criterio_incorrecto": lambda: _adapter_bad({"criterio_seleccion": ["mentira"]}),
     "motor_no_permitido": lambda: _adapter_bad({"motor_productivo": ["XGBoost"]}),
+    "entidad_vacia": lambda: _adapter_bad({"entidad": [""]}),
+    "sexo_whitespace": lambda: _adapter_bad({"sexo": ["   "]}),
     "claves_duplicadas": lambda: (
         lambda d, root: pd.DataFrame(
             {
@@ -329,38 +332,351 @@ def test_atomic_write_fsync_dir_falla_es_best_effort(tmp_path, monkeypatch):
     assert calls["n"] == 2  # orden: fsync(temp)=1 antes de replace, fsync(dir)=2 después
 
 
-# ── Lock: 3 procesos, sin split-brain, con terminación en timeout ──
-def _locked_incr_worker(root_str: str, iters: int) -> None:
+# ── Componentes relativos y destinos fuera de ROOT ──
+def test_atomic_write_rechaza_dotdot_no_escapa(tmp_path):
+    root = tmp_path / "repo"
+    root.mkdir()
+    dest = root / "sub" / ".." / ".." / "escape.csv"  # textual: relative_to(root) NO normaliza
+    with pytest.raises(mod.SlugError):
+        mod._atomic_write_csv(pd.DataFrame({"a": [1]}), dest, root=root)
+    assert not (tmp_path / "escape.csv").exists()  # nada fuera de ROOT
+
+
+def test_atomic_write_rechaza_destino_fuera_de_root(tmp_path):
+    root = tmp_path / "repo"
+    root.mkdir()
+    with pytest.raises(mod.SlugError):
+        mod._atomic_write_csv(pd.DataFrame({"a": [1]}), tmp_path / "fuera.csv", root=root)
+    assert not (tmp_path / "fuera.csv").exists()
+
+
+# ── Round-trip por VALORES (no solo forma) ──
+def test_roundtrip_detecta_string_vacio_que_muta_a_nan(tmp_path):
+    """entidad="" se relee como NaN: el round-trip por valores lo detecta y NO publica."""
+    dest = tmp_path / "out.csv"
+    dest.write_text("SENTINEL\n", encoding="utf-8")
+    df = pd.DataFrame(
+        {
+            "padecimiento": ["X"],
+            "entidad": [""],  # sobrevive isna() pero muta a NaN en CSV
+            "sexo": ["general"],
+            "motor_productivo": ["Prophet"],
+            "criterio_seleccion": ["c"],
+        }
+    )
+    with pytest.raises(OSError):
+        mod._atomic_write_csv(df, dest, root=tmp_path)
+    assert dest.read_text(encoding="utf-8") == "SENTINEL\n"  # preservado
+    assert _tmp_residuos(tmp_path) == []
+
+
+# ── Invariante post-commit: un éxito jamás se reporta como fallo ──
+def test_close_falla_post_commit_no_convierte_publicacion_en_error(tmp_path, monkeypatch):
+    """os.close que falla (pero cierra) en el teardown: la publicación NO se reporta como error."""
+    real_close = mod.os.close
+
+    def close_then_raise(fd):
+        real_close(fd)  # cierra de verdad (no filtra fds)
+        raise OSError("close boom")
+
+    monkeypatch.setattr(mod.os, "close", close_then_raise)
+    dest = tmp_path / "out.csv"
+    mod._atomic_write_csv(pd.DataFrame({"a": [1]}), dest, root=tmp_path)  # NO levanta
+    monkeypatch.setattr(mod.os, "close", real_close)
+    assert pd.read_csv(dest)["a"].tolist() == [1]
+
+
+def test_unlock_falla_post_commit_no_convierte_publicacion_en_error(tmp_path, monkeypatch):
+    real_flock = mod.fcntl.flock
+
+    def flock_unlock_boom(fd, op):
+        if op == mod.fcntl.LOCK_UN:
+            raise OSError("unlock boom")
+        return real_flock(fd, op)
+
+    monkeypatch.setattr(mod.fcntl, "flock", flock_unlock_boom)
+    dest = tmp_path / "out.csv"
+    mod._atomic_write_csv(pd.DataFrame({"a": [1]}), dest, root=tmp_path)  # NO levanta
+    assert dest.exists()
+
+
+def test_main_rc0_aunque_teardown_falle(tmp_path, monkeypatch):
+    """main jamás dice 'no publicado' (rc=4) cuando el replace SÍ ocurrió."""
+    monkeypatch.setattr(mod, "ROOT", tmp_path)
+    _write_completo(tmp_path, "Prophet", "Obesidad", "prophet")
+    real_close = mod.os.close
+
+    def close_then_raise(fd):
+        real_close(fd)
+        raise OSError("close boom")
+
+    monkeypatch.setattr(mod.os, "close", close_then_raise)
+    rc = mod.main(["--disease", "Obesidad", "--allow-preliminary"])
+    monkeypatch.setattr(mod.os, "close", real_close)
+    assert rc == 0
+    preliminar = (
+        tmp_path
+        / "reports"
+        / "ProdDetails"
+        / "_preliminar_NO_GO"
+        / "produccion_obesidad_PRELIMINAR.csv"
+    )
+    assert preliminar.exists()  # publicado y reportado como éxito
+
+
+def test_signal_post_commit_no_propaga(tmp_path, monkeypatch):
+    """KeyboardInterrupt durante el fsync(dir) POST-commit: no propaga; el commit queda."""
+    real_fsync, calls = mod.os.fsync, {"n": 0}
+
+    def fake(fd):
+        calls["n"] += 1
+        if calls["n"] == 2:  # fsync(dir), después del replace
+            raise KeyboardInterrupt
+        return real_fsync(fd)
+
+    monkeypatch.setattr(mod.os, "fsync", fake)
+    dest = tmp_path / "out.csv"
+    mod._atomic_write_csv(pd.DataFrame({"a": [1]}), dest, root=tmp_path)  # NO propaga la señal
+    assert dest.exists()  # commit consumado
+
+
+def test_main_rc0_aunque_teardown_reciba_senal(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "ROOT", tmp_path)
+    _write_completo(tmp_path, "Prophet", "Obesidad", "prophet")
+    real_fsync, calls = mod.os.fsync, {"n": 0}
+
+    def fake(fd):
+        calls["n"] += 1
+        if calls["n"] == 2:
+            raise KeyboardInterrupt
+        return real_fsync(fd)
+
+    monkeypatch.setattr(mod.os, "fsync", fake)
+    assert mod.main(["--disease", "Obesidad", "--allow-preliminary"]) == 0
+    preliminar = (
+        tmp_path
+        / "reports"
+        / "ProdDetails"
+        / "_preliminar_NO_GO"
+        / "produccion_obesidad_PRELIMINAR.csv"
+    )
+    assert preliminar.exists()
+
+
+# ── Round-trip: coerción de tipos en columnas requeridas ──
+@pytest.mark.parametrize("val", ["True", "False", "1", "1.5", "inf", "nan"])
+def test_roundtrip_rechaza_coercion_de_columna_requerida(tmp_path, val):
+    """entidad='True'/'1'/'inf' pasa la validación (string no vacío) pero un consumidor por
+    defecto la relee como bool/int/float: el round-trip lo detecta y NO publica."""
+    dest = tmp_path / "out.csv"
+    dest.write_text("SENTINEL\n", encoding="utf-8")
+    df = pd.DataFrame(
+        {
+            "padecimiento": ["X"],
+            "entidad": [val],
+            "sexo": ["general"],
+            "motor_productivo": ["Prophet"],
+            "criterio_seleccion": ["c"],
+        }
+    )
+    with pytest.raises(OSError):
+        mod._atomic_write_csv(df, dest, root=tmp_path)
+    assert dest.read_text(encoding="utf-8") == "SENTINEL\n"  # NO publicó basura coercible
+    assert _tmp_residuos(tmp_path) == []
+
+
+def test_roundtrip_acepta_nombres_reales_de_geografia(tmp_path):
+    """Los valores reales del pipeline (nombres de estado + floats) NO se coercionan: publica bien."""
+    dest = tmp_path / "out.csv"
+    df = pd.DataFrame(
+        {
+            "padecimiento": ["Obesidad", "Obesidad"],
+            "entidad": ["Nuevo León", "Nacional"],
+            "sexo": ["general", "hombres"],
+            "motor_productivo": ["Prophet", "Ensemble"],
+            "criterio_seleccion": ["insample_cv_PRELIMINAR_NO_GO", "insample_cv_PRELIMINAR_NO_GO"],
+            "motores_evaluados": ["deepar,prophet", "deepar,prophet"],
+            "smape_prophet": [10.0, 9.9],
+            "mase_prophet": [0.5, None],  # NaN legítimo en no-requerida
+        }
+    )
+    mod._atomic_write_csv(df, dest, root=tmp_path)  # publica sin falso positivo del round-trip
+    assert pd.read_csv(dest)["entidad"].tolist() == ["Nuevo León", "Nacional"]
+
+
+@pytest.mark.parametrize("val", ["007", "1e5", "inf", "True"])
+def test_roundtrip_rechaza_coercion_en_columna_no_requerida(tmp_path, val):
+    """Un string de forma numérica/bool en una columna NO requerida (motores_evaluados) también
+    se coerciona para un consumidor por defecto: se detecta y NO publica."""
+    dest = tmp_path / "out.csv"
+    dest.write_text("SENTINEL\n", encoding="utf-8")
+    df = pd.DataFrame(
+        {
+            "padecimiento": ["X"],
+            "entidad": ["Nacional"],
+            "sexo": ["general"],
+            "motor_productivo": ["Prophet"],
+            "criterio_seleccion": ["c"],
+            "motores_evaluados": [val],
+        }
+    )
+    with pytest.raises(OSError):
+        mod._atomic_write_csv(df, dest, root=tmp_path)
+    assert dest.read_text(encoding="utf-8") == "SENTINEL\n"
+    assert _tmp_residuos(tmp_path) == []
+
+
+# ── TOCTOU post-lock + filenames reservados ──
+def test_assert_fd_contained_detecta_dir_movido_fuera(tmp_path):
+    """El dir ABIERTO se renombra fuera de ROOT (sin symlink): la re-validación por inodo aborta."""
+    root = tmp_path / "repo"
+    prel = root / "reports" / "ProdDetails" / "_preliminar_NO_GO"
+    prel.mkdir(parents=True)
+    parts = ("reports", "ProdDetails", "_preliminar_NO_GO")
+    fds = mod._open_dir_chain(root, parts)
+    try:
+        (tmp_path / "outside").mkdir()
+        prel.rename(tmp_path / "outside" / "gone")  # mueve el inodo abierto fuera de ROOT
+        with pytest.raises(mod.SlugError):
+            mod._assert_fd_still_contained(root, parts, fds[-1])
+    finally:
+        for fd in reversed(fds):
+            with contextlib.suppress(OSError):
+                mod.os.close(fd)
+
+
+def test_assert_fd_contained_ok_dir_intacto(tmp_path):
+    root = tmp_path / "repo"
+    (root / "reports" / "ProdDetails").mkdir(parents=True)
+    parts = ("reports", "ProdDetails")
+    fds = mod._open_dir_chain(root, parts)
+    try:
+        mod._assert_fd_still_contained(root, parts, fds[-1])  # mismo inodo → no levanta
+    finally:
+        for fd in reversed(fds):
+            with contextlib.suppress(OSError):
+                mod.os.close(fd)
+
+
+@pytest.mark.parametrize("bad", ["x.lock", ".hidden", "x.tmp", "produccion_x.csv.lock"])
+def test_atomic_write_rechaza_filename_reservado(tmp_path, bad):
+    with pytest.raises(mod.SlugError):
+        mod._atomic_write_csv(pd.DataFrame({"a": [1]}), tmp_path / bad, root=tmp_path)
+
+
+def test_escape_post_replace_detectado_limpiado_y_fallado(tmp_path, monkeypatch):
+    """El dir se mueve fuera de ROOT en la ventana justo-antes-del-replace: el post-check detecta
+    el escape, LIMPIA el archivo escapado y FALLA (no lo reporta como éxito)."""
+    root, external = tmp_path / "repo", tmp_path / "external"
+    external.mkdir()
+    prel = root / "reports" / "ProdDetails" / "_preliminar_NO_GO"
+    prel.mkdir(parents=True)
+    dest = prel / "produccion_x_PRELIMINAR.csv"
+    real_replace = mod.os.replace
+
+    def replace_after_move(src, dst, *, src_dir_fd, dst_dir_fd):
+        prel.rename(external / "moved")  # atacante: mueve el dir ABIERTO fuera de ROOT
+        return real_replace(src, dst, src_dir_fd=src_dir_fd, dst_dir_fd=dst_dir_fd)
+
+    monkeypatch.setattr(mod.os, "replace", replace_after_move)
+    df = pd.DataFrame(
+        {
+            "padecimiento": ["X"],
+            "entidad": ["Nacional"],
+            "sexo": ["g"],
+            "motor_productivo": ["Prophet"],
+            "criterio_seleccion": ["c"],
+        }
+    )
+    with pytest.raises(mod.SlugError):
+        mod._atomic_write_csv(df, dest, root=root)
+    # El archivo escapó momentáneamente pero fue LIMPIADO por la detección post-replace.
+    assert not (external / "moved" / "produccion_x_PRELIMINAR.csv").exists()
+
+
+def test_deferred_signals_enmascara_y_restaura():
+    import signal as _sig
+
+    before = _sig.pthread_sigmask(_sig.SIG_BLOCK, set())
+    with mod._deferred_signals():
+        masked = _sig.pthread_sigmask(_sig.SIG_BLOCK, set())
+        assert _sig.SIGINT in masked and _sig.SIGTERM in masked
+    assert _sig.pthread_sigmask(_sig.SIG_BLOCK, set()) == before  # restaurado
+
+
+# ── Lock REAL del writer: exclusión mutua + carrera de mkdir, multi-proceso ──
+def _locked_counter_worker(root_str: str, iters: int) -> None:
+    """Ejercita _locked_lockfile — la ÚNICA implementación de lock, la que usa el writer."""
+    import os as _os
+
     import scripts.produccion_padecimiento as m
 
     root = Path(root_str)
-    lock, counter = root / "concur.lock", root / "counter.txt"
-    for _ in range(iters):
-        with m._file_lock(lock):
-            v = int(counter.read_text())
-            time.sleep(0.002)
-            counter.write_text(str(v + 1))
+    parent_fd = _os.open(str(root), _os.O_RDONLY | _os.O_DIRECTORY)
+    try:
+        counter = root / "counter.txt"
+        for _ in range(iters):
+            with m._locked_lockfile(parent_fd, ".concur.lock"):
+                v = int(counter.read_text())
+                time.sleep(0.002)
+                counter.write_text(str(v + 1))
+    finally:
+        _os.close(parent_fd)
 
 
-def test_file_lock_tres_procesos_sin_split_brain(tmp_path):
+def _concurrent_writer(root_str: str, idx: int) -> None:
+    """Writer completo (_atomic_write_csv) al MISMO destino en un dir anidado NUEVO:
+    ejercita a la vez la carrera de mkdir y el lock real de producción."""
+    import pandas as _pd
+    import scripts.produccion_padecimiento as m
+
+    root = Path(root_str)
+    dest = root / "reports" / "ProdDetails" / "carrera_nueva" / "out.csv"
+    m._atomic_write_csv(_pd.DataFrame({"a": [idx]}), dest, root=root)
+
+
+def _join_or_kill(procs) -> None:
+    """join con timeout; termina (y si hace falta mata) procesos vivos — nunca quedan colgados."""
+    try:
+        for p in procs:
+            p.join(timeout=60)
+    finally:
+        for p in procs:
+            if p.is_alive():
+                p.terminate()
+                p.join(timeout=10)
+            if p.is_alive():
+                p.kill()
+                p.join(timeout=10)
+
+
+def test_locked_lockfile_tres_procesos_sin_split_brain(tmp_path):
     (tmp_path / "counter.txt").write_text("0", encoding="utf-8")
     ctx = mp.get_context("spawn")  # spawn: seguro con hilos (fork advierte/deadlock) y portable
     iters = 10
     procs = [
-        ctx.Process(target=_locked_incr_worker, args=(str(tmp_path), iters)) for _ in range(3)
+        ctx.Process(target=_locked_counter_worker, args=(str(tmp_path), iters)) for _ in range(3)
     ]
-    try:
-        for p in procs:
-            p.start()
-        for p in procs:
-            p.join(timeout=60)
-        assert all(p.exitcode == 0 for p in procs)
-        assert int((tmp_path / "counter.txt").read_text()) == 3 * iters
-    finally:
-        for p in procs:  # no dejar procesos vivos si algo venció el timeout
-            if p.is_alive():
-                p.terminate()
-                p.join(timeout=10)
+    for p in procs:
+        p.start()
+    _join_or_kill(procs)
+    assert all(p.exitcode == 0 for p in procs)
+    assert int((tmp_path / "counter.txt").read_text()) == 3 * iters  # sin lost updates
+
+
+def test_doce_writers_concurrentes_mkdir_y_lock_reales(tmp_path):
+    """12 procesos por _atomic_write_csv al MISMO destino en un dir anidado inexistente:
+    la carrera de mkdir se tolera (EEXIST idempotente) y todos publican sin error."""
+    ctx = mp.get_context("spawn")
+    procs = [ctx.Process(target=_concurrent_writer, args=(str(tmp_path), i)) for i in range(12)]
+    for p in procs:
+        p.start()
+    _join_or_kill(procs)
+    assert [p.exitcode for p in procs] == [0] * 12  # ni un FileExistsError
+    dest = tmp_path / "reports" / "ProdDetails" / "carrera_nueva" / "out.csv"
+    df = pd.read_csv(dest)
+    assert list(df.columns) == ["a"] and len(df) == 1 and 0 <= int(df["a"].iloc[0]) < 12
+    assert _tmp_residuos(dest.parent) == []
 
 
 # ── E2E ──
