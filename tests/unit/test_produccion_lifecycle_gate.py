@@ -69,17 +69,35 @@ def test_published_sin_adapter_esta_gated(reg, tmp_path):
     assert resolve_destination(d, tmp_path, allow_preliminary=False) is None
 
 
-def test_published_con_adapter_registrado_escribe_canonico(reg, tmp_path, monkeypatch):
-    """Con un adapter explícito registrado, el published SÍ escribe el canónico."""
+def test_published_con_adapter_callable_registrado_escribe_canonico(reg, tmp_path, monkeypatch):
+    """Con un adapter CALLABLE registrado, el published resuelve al canónico.
+
+    (Registrar exige una función real, no una string en un allowlist.)
+    """
+    import pandas as pd
     import scripts.produccion_padecimiento as mod
 
-    monkeypatch.setattr(mod, "_GENERIC_CANONICAL_POLICIES", frozenset({"legacy_neuro_2026"}))
+    monkeypatch.setattr(
+        mod, "_CANONICAL_ADAPTERS", {"legacy_neuro_2026": lambda d, root: pd.DataFrame()}
+    )
     d = reg.get("Publicado")
     dest = mod.resolve_destination(d, tmp_path, allow_preliminary=False)
     assert dest is not None
     assert dest.canonical is True
     assert dest.path == tmp_path / "reports" / "ProdDetails" / "produccion_publicado.csv"
     assert dest.criterio == "legacy_neuro_2026"
+
+
+def test_published_con_adapter_pero_allow_preliminary_es_none(reg, tmp_path, monkeypatch):
+    """Gate completo en el resolver: published + allow_preliminary = None aunque haya adapter."""
+    import pandas as pd
+    import scripts.produccion_padecimiento as mod
+
+    monkeypatch.setattr(
+        mod, "_CANONICAL_ADAPTERS", {"legacy_neuro_2026": lambda d, root: pd.DataFrame()}
+    )
+    d = reg.get("Publicado")
+    assert mod.resolve_destination(d, tmp_path, allow_preliminary=True) is None
 
 
 @pytest.mark.parametrize("name", ["Configurado", "Entrenado"])
