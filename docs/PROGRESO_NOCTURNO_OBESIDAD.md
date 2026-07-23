@@ -33,9 +33,13 @@
 
 ## RESUMEN EJECUTIVO (leer esto primero)
 
-Se completó el **núcleo del refactor "sin hard-codes"** (EPIC 0-1-2) y se **probó end-to-end** que
-un padecimiento nuevo (Obesidad E66) fluye por todo el pipeline con solo 1 entrada de registry +
-1 grupo de cuadro. **Neuro + Dengue quedan byte-idénticos** (suite 970 verde en cada frontera).
+> **Fase 0 CERRADA · Obesidad NO-GO.** Lo de abajo es el intento preliminar (invalidado). Siguiente:
+> Fase 1 (lifecycle gate del selector).
+
+Se completó el **núcleo del refactor "sin hard-codes"** (EPIC 0-1-2): la *maquinaria del registry*
+habilita el onboarding N+1 con ~1 entrada + 1 grupo de cuadro. Pero **los resultados de Obesidad NO
+son válidos** (NO-GO; ver `FASE_0_CONTENCION.md`): se demostró la *abstracción*, no un pronóstico
+productivo. **Neuro + Dengue quedan byte-idénticos** (suite 980 verde en cada frontera).
 
 ### Qué está HECHO y commiteado (9 commits, hooks verdes; suite 980 verde)
 - **EPIC 0** (c3784ddf): catálogo canónico 432 (corrige el 435/102 inflado) + golden freeze per-motor.

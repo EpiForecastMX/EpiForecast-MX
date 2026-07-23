@@ -1,12 +1,12 @@
 # PLAN BRUTAL — Obesidad E66 y onboarding N+1 de padecimientos
 
-Estado: Fase 0 con PASS material y FAIL documental; cierre formal pendiente
+Estado: Fase 0 CERRADA (PASS material + documental). Siguiente: Fase 1 (lifecycle gate del selector). Obesidad permanece NO-GO.
 Fecha de auditoría: 2026-07-22
 Repositorio backend auditado: EpiForecast-MX
 Rama backend: feat/registry-padecimientos-obesidad
 HEAD backend auditado: 7798c0e7
 HEAD backend de contención verificado: 0f58fe71
-HEAD backend candidato de cierre verificado: 13802002 (local, ahead 1, sin push)
+HEAD backend de cierre de Fase 0: e1d77c4a (local, ahead 2, sin push); este plan ahora trackeado en git
 Base backend: b535b525
 Repositorio web auditado: EpiForecast-IMSS-Dashboard
 HEAD web auditado: a90ad9f5
@@ -1332,11 +1332,11 @@ pero no se promueve a la siguiente si el criterio de salida no está cumplido.
 
 ### Fase 0 — Contención y preservación
 
-Estado al 2026-07-22: PASS material, FAIL documental. Los forecasts legacy y el
-dashboard público están recuperados; SHA256SUMS valida 4/4; la selección inválida
-salió de la ruta canónica; forecasts y Tableau coinciden con sus punteros. El cierre
-formal queda pendiente porque documentos operativos todavía contienen recetas de
-entrenamiento/predicción y dvc checkout amplias que contradicen este plan.
+Estado al 2026-07-22: **CERRADA** (PASS material + documental; HEAD e1d77c4a, ahead 2, sin push).
+Los forecasts legacy y el dashboard público están recuperados; SHA256SUMS valida 4/4; la selección
+inválida salió de la ruta canónica; forecasts y Tableau coinciden con sus punteros. El delta
+documental quedó cerrado: se neutralizaron las recetas de entrenamiento/predicción y los `dvc
+checkout` amplios de los documentos operativos, y este plan quedó trackeado.
 
 Objetivo:
 
@@ -2173,18 +2173,19 @@ Estas fuentes justifican disponibilidad y capacidades. No sustituyen el benchmar
 
 ## 17. Siguiente acción autorizable
 
-La primera acción de implementación no es entrenar ni publicar.
+La primera acción de implementación no fue entrenar ni publicar.
 
-Es cerrar el delta documental de Fase 0:
+Fue cerrar el delta documental de Fase 0 — **✅ COMPLETADO en e1d77c4a**:
 
-1. retirar dvc checkout --force global y cualquier checkout sin target explícito;
-2. retirar o bloquear antes de su aparición todas las recetas de train, SageMaker,
-   predice y publicación de los documentos históricos;
-3. corregir el encabezado ambiguo, los conteos de modelos/tests y las afirmaciones
+1. ✅ retirado el `dvc checkout --force` global y todo checkout sin target explícito;
+2. ✅ bloqueadas/reescritas las recetas de train, SageMaker, predice y publicación de los
+   documentos históricos (banner NO-GO antes de su aparición);
+3. ✅ corregidos el encabezado ambiguo, los conteos de modelos/tests y las afirmaciones
    end-to-end que la auditoría invalidó;
-4. decidir cómo versionar este plan, que todavía está untracked;
-5. volver a ejecutar el gate documental sin tocar datos, modelos ni DVC.
+4. ✅ este plan quedó **trackeado en git**;
+5. ✅ gate documental revalidado sin tocar datos, modelos ni DVC.
 
-Solo después se debe iniciar Fase 1. El primer test debe demostrar que un padecimiento
-configured/preliminary no puede recrear una selección canónica. No entrenar ni
+**Fase 0 CERRADA.** Ahora sí puede iniciar **Fase 1** (con OK formal). El primer test debe demostrar
+que un padecimiento configured/preliminary **no** puede recrear una selección canónica — es decir, el
+**lifecycle gate del selector** (`produccion_padecimiento.py` ignora hoy `lifecycle`). No entrenar ni
 publicar durante ese trabajo.

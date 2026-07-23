@@ -1,6 +1,6 @@
 # Obesidad (E66) — Estado de cierre y pendientes
 
-## Estado: NO-GO / CONTENIDA (Fase 0) — NO cerrada
+## Estado: Fase 0 CERRADA · Obesidad NO-GO (no productiva) · Siguiente: Fase 1 (lifecycle gate del selector)
 
 > **CORRECCIÓN:** una auditoría posterior encontró regresiones graves (forecasts globales
 > sobrescritos, Prophet ~4.6× bajo por expm1, rolling_cv_v1 nunca corrió, exposición prematura
