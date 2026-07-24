@@ -17,6 +17,8 @@ def test_candidate_engines_desde_politica():
         "seasonal_median_5y",
         "ets_add_damped_log1p",
         "ridge_harmonic_log1p",
+        "prophet_count_log1p",
+        "prophet_rate_log1p",
     ]
 
 

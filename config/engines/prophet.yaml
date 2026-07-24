@@ -33,13 +33,24 @@ selection:
 
 # Dos perfiles fijos. `frozen` lo congela el tuning oficial; sin él, benchmark falla cerrado
 # (el benchmark NUNCA reabre la rejilla).
+# Congelado por el tuning oficial `obesidad_tune_smoke_3398a12d14c8` @ commit a72acf27
+# (fold development_2024, centinelas hombres 29/31/15 y mujeres 29/11/15, 36/36 configuraciones
+# válidas por perfil). Ambos perfiles eligieron la MISMA estructura, la más simple de la rejilla.
 engines:
   prophet_count_log1p:
     transform: log1p
-    frozen: null
+    frozen: # mediana sMAPE en centinelas 50.73 · media 43.52
+      seasonality_mode: additive
+      changepoint_prior_scale: 0.01
+      seasonality_prior_scale: 0.5
+      fourier_order: 5
   prophet_rate_log1p:
     transform: rate_log1p
-    frozen: null
+    frozen: # mediana sMAPE en centinelas 33.68 · media 38.53
+      seasonality_mode: additive
+      changepoint_prior_scale: 0.01
+      seasonality_prior_scale: 0.5
+      fourier_order: 5
 
 resource_limits:
   max_threads: 1

@@ -1,10 +1,10 @@
 """F2/C3 — gate de INTEGRACIÓN E66: disease_run end-to-end (dataset_id vs run_id + benchmark OOS).
 
 validate-data materializa runs/<dataset_id>/ (DatasetManifest, intacto). benchmark crea un dir
-run_id DISTINTO y corre los 7 motores candidatos (5 estacionales + ETS + Ridge armónico) en
-subprocess limpio, cada uno produciendo forecast/eval/metrics para los 111 productos modelando SOLO
-64 bases. Los dos motores que ajustan añaden fit_diagnostics.csv (una fila por serie/fold).
-Requiere datos gitignored.
+run_id DISTINTO y corre los 9 motores candidatos (5 estacionales + ETS + Ridge armónico + los dos
+perfiles Prophet) en subprocess limpio, cada uno produciendo forecast/eval/metrics para los 111
+productos modelando SOLO 64 bases. Los cuatro motores que ajustan añaden fit_diagnostics.csv (una
+fila por serie/fold). Requiere datos gitignored.
 """
 
 from __future__ import annotations
@@ -31,10 +31,15 @@ _ENGINES = [
     "seasonal_median_5y",
     "ets_add_damped_log1p",
     "ridge_harmonic_log1p",
+    "prophet_count_log1p",
+    "prophet_rate_log1p",
 ]
 _ETS = "ets_add_damped_log1p"
 _RIDGE = "ridge_harmonic_log1p"
-_AJUSTAN = (_ETS, _RIDGE)  # los únicos que entrenan (y por tanto emiten diagnóstico de ajuste)
+_PROPHET_COUNT = "prophet_count_log1p"
+_PROPHET_RATE = "prophet_rate_log1p"
+# Los que entrenan (y por tanto emiten un diagnóstico de ajuste por serie/fold).
+_AJUSTAN = (_ETS, _RIDGE, _PROPHET_COUNT, _PROPHET_RATE)
 _N_TRAIN_POR_FOLD = [366, 418, 470, 522]  # semanas previas de cada fold dev (2021-24)
 
 
@@ -72,7 +77,7 @@ def test_gate_dataset_manifest(dataset, root):
     assert {a.schema for a in dataset.artifacts} == {"epi_dataset_v2", "products.v1", "lineage.v1"}
 
 
-def test_gate_benchmark_7_motores_succeeded(bench_full, dataset):
+def test_gate_benchmark_9_motores_succeeded(bench_full, dataset):
     man, _ = bench_full
     assert man.run_id != dataset.dataset_id and man.dataset_id == dataset.dataset_id
     assert man.status == "succeeded" and man.exit_code == 0
@@ -117,8 +122,9 @@ def test_gate_diagnosticos_solo_de_los_motores_que_ajustan(bench_full):
         assert len(diag) == 256 and diag.groupby(["geography_id", "sex"]).ngroups == 64
         assert sorted(diag["n_train"].unique()) == _N_TRAIN_POR_FOLD
         assert diag["transform_digest"].nunique() == 1 and diag["config_digest"].nunique() == 1
-        assert spec["transform"]["forward_steps"] == ["log1p"]  # inversa expm1 por contrato
-        assert spec["transform"]["inverse_steps"] == ["expm1"]
+        # expm1 gobernado por el contrato en TODOS los motores que transforman el objetivo.
+        assert spec["transform"]["forward_steps"][-1] == "log1p"
+        assert spec["transform"]["inverse_steps"][0] == "expm1"
         assert spec["transform_digest"] == diag["transform_digest"].iloc[0]
         assert spec["resource_limits"] == {"max_threads": 1}
     assert set(_diagnostics(run_dir, _ETS)["variant"]) <= {"primary", "retry"}
@@ -139,10 +145,36 @@ def test_gate_seleccion_interna_del_ridge(bench_full):
     assert spec["engine_params"]["sklearn_version"]  # versión efectiva registrada
 
 
+def test_gate_perfiles_prophet_congelados_y_por_metadata(bench_full):
+    # Los dos perfiles difieren SOLO en su TransformContract y usan la config congelada del tuning.
+    _, run_dir = bench_full
+    count, rate = _spec(run_dir, _PROPHET_COUNT), _spec(run_dir, _PROPHET_RATE)
+    assert count["transform"]["forward_steps"] == ["log1p"]
+    assert count["transform"]["rate_scale"] is None
+    assert rate["transform"]["forward_steps"] == ["rate_per_exposure", "log1p"]
+    assert rate["transform"]["inverse_steps"] == ["expm1", "rate_to_count"]
+    assert rate["transform"]["rate_scale"] == 100_000.0  # del perfil del registry
+    for spec in (count, rate):
+        frozen = spec["engine_params"]["frozen"]
+        assert set(frozen) == {
+            "seasonality_mode",
+            "changepoint_prior_scale",
+            "seasonality_prior_scale",
+            "fourier_order",
+        }
+        assert spec["engine_params"]["uncertainty_samples"] == 0  # MAP, sin intervalos
+        assert spec["engine_params"]["mcmc_samples"] == 0
+        assert spec["engine_params"]["yearly_seasonality"] is False  # nativas desactivadas
+        assert spec["engine_params"]["prophet_version"]
+    # Las diagnósticas registran la configuración efectiva, idéntica en las 256 serie/folds.
+    diag = _diagnostics(run_dir, _PROPHET_RATE)
+    assert diag["fourier_order"].nunique() == 1 and diag["seasonality_mode"].nunique() == 1
+
+
 def test_gate_reporte_comparativo(bench_full):
     _, run_dir = bench_full
     comp = pd.read_csv(run_dir / "comparison.csv")  # auto-generado en el run multi-motor
-    assert set(comp["engine"]) == set(_ENGINES) and len(comp) == 7
+    assert set(comp["engine"]) == set(_ENGINES) and len(comp) == 9
     assert {"smape_bases", "smape_all", "smape_nacional_general", "runtime_s"} <= set(comp.columns)
     base = comp[comp["engine"] == "seasonal_naive_lag52"]["smape_all_impr_pct_vs_baseline"].iloc[0]
     assert base == 0.0  # el baseline no mejora sobre sí mismo (no se elige ganador)

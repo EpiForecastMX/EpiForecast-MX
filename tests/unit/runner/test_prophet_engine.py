@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 from typing import Any
 
 import numpy as np
@@ -122,11 +123,20 @@ def test_transform_por_perfil_desde_el_registry():
     assert rate.rate_scale == 100_000.0 and rate.requires_exposure
 
 
-def test_benchmark_sin_configuracion_congelada_falla_cerrado():
-    ad: Any = adapters.get_adapter(_COUNT)
-    assert ad._profile["frozen"] is None  # el YAML arranca sin congelar
+def test_benchmark_sin_configuracion_congelada_falla_cerrado(tmp_path):
+    cfg = copy.deepcopy(_CFG)
+    cfg["engines"][_COUNT]["frozen"] = None
+    sin_congelar = prophet_engine.ProphetProfileAdapter(_COUNT, cfg)
     with pytest.raises(ProphetEngineError, match="sin configuración congelada"):
-        ad.run("benchmark", "/tmp/no-usado")
+        sin_congelar.run("benchmark", str(tmp_path))
+
+
+def test_configuracion_congelada_es_una_combinacion_de_la_rejilla():
+    # El benchmark usa lo que congeló el tuning; nunca reabre la rejilla.
+    grid = build_grid(_CFG)
+    for name in (_COUNT, _RATE):
+        frozen = _CFG["engines"][name]["frozen"]
+        assert frozen is not None and dict(frozen) in grid
 
 
 def test_predictor_conteo_recupera_el_nivel():
