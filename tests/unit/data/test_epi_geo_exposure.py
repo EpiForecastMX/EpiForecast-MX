@@ -52,35 +52,47 @@ def test_resolve_desconocido_levanta(catalog):
 def test_catalogo_menos_de_32_levanta(tmp_path):
     p = tmp_path / "cat.csv"
     p.write_text(
-        "cve_ent,nombre_canonico,nombre_inegi,region,aliases\n"
-        "01,Aguascalientes,Aguascalientes,Occidente,Ags.\n",
+        "cve_ent,nombre_canonico,nombre_inegi,macroregion_id,macroregion_name,aliases\n"
+        "01,Aguascalientes,Aguascalientes,occidente,Occidente,Ags.\n",
         encoding="utf-8",
     )
     with pytest.raises(ge.GeoExposureError):
         ge.load_geo_catalog(p)
 
 
-# ── Membresía de regiones (C2: datos trackeados, no dict legacy) ──
-def test_regiones_membresia(catalog):
-    assert catalog.regions() == ["Centro", "Norte", "Occidente", "Sureste"]
-    counts = {r: len(catalog.states_in_region(r)) for r in catalog.regions()}
-    assert counts == {"Norte": 9, "Occidente": 8, "Centro": 7, "Sureste": 8}
+# ── Membresía de macrorregiones (C2: datos trackeados, identidad != display) ──
+def test_macrorregiones_membresia(catalog):
+    assert catalog.macroregion_ids() == ["centro", "norte", "occidente", "sureste"]
+    counts = {m: len(catalog.states_in_macroregion(m)) for m in catalog.macroregion_ids()}
+    assert counts == {"norte": 9, "occidente": 8, "centro": 7, "sureste": 8}
     # Partición exacta de las 32 (sin solapes ni huecos).
-    todos = [cve for r in catalog.regions() for cve in catalog.states_in_region(r)]
+    todos = [cve for m in catalog.macroregion_ids() for cve in catalog.states_in_macroregion(m)]
     assert sorted(todos) == catalog.cve_ents() and len(set(todos)) == 32
 
 
+def test_macroregion_names(catalog):
+    # ID (identidad, lowercase) desacoplado del nombre de display; no se deriva por slugify.
+    assert {m: catalog.macroregion_name(m) for m in catalog.macroregion_ids()} == {
+        "norte": "Norte",
+        "occidente": "Occidente",
+        "centro": "Centro",
+        "sureste": "Sureste",
+    }
+
+
 @pytest.mark.parametrize(
-    "cve,region",
-    [("05", "Norte"), ("16", "Occidente"), ("09", "Centro"), ("30", "Sureste")],
+    "cve,macroregion_id",
+    [("05", "norte"), ("16", "occidente"), ("09", "centro"), ("30", "sureste")],
 )
-def test_region_of(catalog, cve, region):
-    assert catalog.region_of(cve) == region
+def test_macroregion_of(catalog, cve, macroregion_id):
+    assert catalog.macroregion_of(cve) == macroregion_id
 
 
-def test_region_desconocida_levanta(catalog):
+def test_macroregion_desconocida_levanta(catalog):
     with pytest.raises(ge.GeoExposureError):
-        catalog.states_in_region("Bajío")
+        catalog.states_in_macroregion("bajio")
+    with pytest.raises(ge.GeoExposureError):
+        catalog.macroregion_name("bajio")
 
 
 # ── Exposición: snapshot SINTÉTICO de 32 entidades (usa los nombres INEGI del catálogo) ──

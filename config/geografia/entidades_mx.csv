@@ -1,33 +1,33 @@
-cve_ent,nombre_canonico,nombre_inegi,region,aliases
-01,Aguascalientes,Aguascalientes,Occidente,Ags.
-02,Baja California,Baja California,Norte,B.C.|BC
-03,Baja California Sur,Baja California Sur,Norte,B.C.S.|BCS
-04,Campeche,Campeche,Sureste,Camp.
-05,Coahuila,Coahuila de Zaragoza,Norte,Coah.|Coahuila de Zaragoza
-06,Colima,Colima,Occidente,Col.
-07,Chiapas,Chiapas,Sureste,Chis.
-08,Chihuahua,Chihuahua,Norte,Chih.
-09,Ciudad de México,Ciudad de México,Centro,Distrito Federal|CDMX|D.F.|DF|Ciudad de Mexico
-10,Durango,Durango,Norte,Dgo.
-11,Guanajuato,Guanajuato,Occidente,Gto.
-12,Guerrero,Guerrero,Sureste,Gro.
-13,Hidalgo,Hidalgo,Centro,Hgo.
-14,Jalisco,Jalisco,Occidente,Jal.
-15,México,México,Centro,Estado de México|Edomex|Edo. Méx.|Mex.|Mexico
-16,Michoacán,Michoacán de Ocampo,Occidente,Mich.|Michoacán de Ocampo|Michoacan
-17,Morelos,Morelos,Centro,Mor.
-18,Nayarit,Nayarit,Occidente,Nay.
-19,Nuevo León,Nuevo León,Norte,N.L.|NL|Nuevo Leon
-20,Oaxaca,Oaxaca,Sureste,Oax.
-21,Puebla,Puebla,Centro,Pue.
-22,Querétaro,Querétaro,Centro,Qro.|Queretaro
-23,Quintana Roo,Quintana Roo,Sureste,Q. Roo|Q.R.|QRoo
-24,San Luis Potosí,San Luis Potosí,Occidente,S.L.P.|SLP|San Luis Potosi
-25,Sinaloa,Sinaloa,Norte,Sin.
-26,Sonora,Sonora,Norte,Son.
-27,Tabasco,Tabasco,Sureste,Tab.
-28,Tamaulipas,Tamaulipas,Norte,Tamps.
-29,Tlaxcala,Tlaxcala,Centro,Tlax.
-30,Veracruz,Veracruz de Ignacio de la Llave,Sureste,Ver.|Veracruz de Ignacio de la Llave
-31,Yucatán,Yucatán,Sureste,Yuc.|Yucatan
-32,Zacatecas,Zacatecas,Occidente,Zac.
+cve_ent,nombre_canonico,nombre_inegi,macroregion_id,macroregion_name,aliases
+01,Aguascalientes,Aguascalientes,occidente,Occidente,Ags.
+02,Baja California,Baja California,norte,Norte,B.C.|BC
+03,Baja California Sur,Baja California Sur,norte,Norte,B.C.S.|BCS
+04,Campeche,Campeche,sureste,Sureste,Camp.
+05,Coahuila,Coahuila de Zaragoza,norte,Norte,Coah.|Coahuila de Zaragoza
+06,Colima,Colima,occidente,Occidente,Col.
+07,Chiapas,Chiapas,sureste,Sureste,Chis.
+08,Chihuahua,Chihuahua,norte,Norte,Chih.
+09,Ciudad de México,Ciudad de México,centro,Centro,Distrito Federal|CDMX|D.F.|DF|Ciudad de Mexico
+10,Durango,Durango,norte,Norte,Dgo.
+11,Guanajuato,Guanajuato,occidente,Occidente,Gto.
+12,Guerrero,Guerrero,sureste,Sureste,Gro.
+13,Hidalgo,Hidalgo,centro,Centro,Hgo.
+14,Jalisco,Jalisco,occidente,Occidente,Jal.
+15,México,México,centro,Centro,Estado de México|Edomex|Edo. Méx.|Mex.|Mexico
+16,Michoacán,Michoacán de Ocampo,occidente,Occidente,Mich.|Michoacán de Ocampo|Michoacan
+17,Morelos,Morelos,centro,Centro,Mor.
+18,Nayarit,Nayarit,occidente,Occidente,Nay.
+19,Nuevo León,Nuevo León,norte,Norte,N.L.|NL|Nuevo Leon
+20,Oaxaca,Oaxaca,sureste,Sureste,Oax.
+21,Puebla,Puebla,centro,Centro,Pue.
+22,Querétaro,Querétaro,centro,Centro,Qro.|Queretaro
+23,Quintana Roo,Quintana Roo,sureste,Sureste,Q. Roo|Q.R.|QRoo
+24,San Luis Potosí,San Luis Potosí,occidente,Occidente,S.L.P.|SLP|San Luis Potosi
+25,Sinaloa,Sinaloa,norte,Norte,Sin.
+26,Sonora,Sonora,norte,Norte,Son.
+27,Tabasco,Tabasco,sureste,Sureste,Tab.
+28,Tamaulipas,Tamaulipas,norte,Norte,Tamps.
+29,Tlaxcala,Tlaxcala,centro,Centro,Tlax.
+30,Veracruz,Veracruz de Ignacio de la Llave,sureste,Sureste,Ver.|Veracruz de Ignacio de la Llave
+31,Yucatán,Yucatán,sureste,Sureste,Yuc.|Yucatan
+32,Zacatecas,Zacatecas,occidente,Occidente,Zac.

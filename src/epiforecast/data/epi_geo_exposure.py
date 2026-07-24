@@ -57,14 +57,24 @@ class GeoCatalog:
         self.entities = entities
         self._by_cve: dict[str, GeoEntity] = {}
         self._by_folded: dict[str, str] = {}  # nombre/alias folded -> cve_ent
-        self._by_region: dict[str, list[str]] = {}  # region -> cve_ents (membresía trackeada)
+        self._by_macroregion: dict[str, list[str]] = {}  # macroregion_id -> cve_ents (trackeado)
+        self._macroregion_names: dict[str, str] = {}  # macroregion_id -> display name (declarado)
         for e in entities:
             if e.cve_ent in self._by_cve:
                 raise GeoExposureError(f"CVE_ENT duplicado: {e.cve_ent}")
-            if not e.region:
-                raise GeoExposureError(f"entidad {e.cve_ent} sin región asignada")
+            if not e.macroregion_id or not e.macroregion_name:
+                raise GeoExposureError(
+                    f"entidad {e.cve_ent} sin macrorregión (id/nombre) asignada"
+                )
+            prev = self._macroregion_names.get(e.macroregion_id)
+            if prev is not None and prev != e.macroregion_name:
+                raise GeoExposureError(
+                    f"macroregion_id '{e.macroregion_id}' con nombres inconsistentes: "
+                    f"{prev!r} vs {e.macroregion_name!r}"
+                )
+            self._macroregion_names[e.macroregion_id] = e.macroregion_name
             self._by_cve[e.cve_ent] = e
-            self._by_region.setdefault(e.region, []).append(e.cve_ent)
+            self._by_macroregion.setdefault(e.macroregion_id, []).append(e.cve_ent)
             for token in (e.nombre_canonico, e.nombre_inegi, *e.aliases):
                 f = _fold(token)
                 if not f:
@@ -78,7 +88,7 @@ class GeoCatalog:
             raise GeoExposureError(
                 f"el catálogo debe tener 32 entidades, tiene {len(self._by_cve)}"
             )
-        for cves in self._by_region.values():
+        for cves in self._by_macroregion.values():
             cves.sort()
 
     def resolve(self, name: str) -> str:
@@ -97,18 +107,26 @@ class GeoCatalog:
     def cve_ents(self) -> list[str]:
         return sorted(self._by_cve)
 
-    def regions(self) -> list[str]:
-        """Regiones declaradas en el catálogo trackeado (orden estable)."""
-        return sorted(self._by_region)
+    def macroregion_ids(self) -> list[str]:
+        """IDs de macrorregión declarados en el catálogo trackeado (orden estable)."""
+        return sorted(self._by_macroregion)
 
-    def states_in_region(self, region: str) -> list[str]:
-        """CVE_ENT de los estados miembros de ``region`` (membresía trackeada, no dict legacy)."""
-        if region not in self._by_region:
-            raise GeoExposureError(f"región desconocida: {region!r}")
-        return list(self._by_region[region])
+    def states_in_macroregion(self, macroregion_id: str) -> list[str]:
+        """CVE_ENT miembros de ``macroregion_id`` (membresía trackeada, no dict legacy)."""
+        if macroregion_id not in self._by_macroregion:
+            raise GeoExposureError(f"macroregion_id desconocido: {macroregion_id!r}")
+        return list(self._by_macroregion[macroregion_id])
 
-    def region_of(self, cve_ent: str) -> str:
-        return self.entity(cve_ent).region
+    def macroregion_of(self, cve_ent: str) -> str:
+        """CVE_ENT → macroregion_id (identidad; alimenta ``SeriesKey.geography_id``)."""
+        return self.entity(cve_ent).macroregion_id
+
+    def macroregion_name(self, macroregion_id: str) -> str:
+        """macroregion_id → nombre de display declarado (no derivado por slugify)."""
+        name = self._macroregion_names.get(macroregion_id)
+        if name is None:
+            raise GeoExposureError(f"macroregion_id desconocido: {macroregion_id!r}")
+        return name
 
 
 def _load_yaml(path: Path) -> dict[str, Any]:
@@ -130,7 +148,8 @@ def load_geo_catalog(path: str | Path | None = None) -> GeoCatalog:
             cve_ent=str(r["cve_ent"]).zfill(2),
             nombre_canonico=str(r["nombre_canonico"]).strip(),
             nombre_inegi=str(r["nombre_inegi"]).strip(),
-            region=str(r["region"]).strip(),
+            macroregion_id=str(r["macroregion_id"]).strip(),
+            macroregion_name=str(r["macroregion_name"]).strip(),
             aliases=tuple(a.strip() for a in str(r["aliases"]).split("|") if a.strip()),
         )
         for _, r in df.iterrows()

@@ -104,7 +104,8 @@ class GeoEntity:
     cve_ent: str  # "01".."32"
     nombre_canonico: str
     nombre_inegi: str
-    region: str  # Norte | Occidente | Centro | Sureste (membresía trackeada, no dict legacy)
+    macroregion_id: str  # IDENTIDAD (norte|occidente|centro|sureste) → SeriesKey.geography_id
+    macroregion_name: str  # display (Norte|Occidente|Centro|Sureste); no se deriva por slugify
     aliases: tuple[str, ...]
 
 
