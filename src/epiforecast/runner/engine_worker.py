@@ -26,10 +26,13 @@ RC_ERROR = 1
 RC_NO_ADAPTER = 2
 
 
-def _write_result(jobs_dir: Path, engine: str, payload: dict[str, object]) -> None:
+def _write_result(jobs_dir: Path, engine: str, attempt: str, payload: dict[str, object]) -> None:
     jobs_dir.mkdir(parents=True, exist_ok=True)
     (jobs_dir / f"{engine}.result.json").write_text(
-        json.dumps({"engine": engine, **payload}, indent=2, ensure_ascii=False), encoding="utf-8"
+        json.dumps(
+            {"engine": engine, "attempt": attempt, **payload}, indent=2, ensure_ascii=False
+        ),
+        encoding="utf-8",
     )
 
 
@@ -38,11 +41,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--run-dir", required=True)
     ap.add_argument("--engine", required=True)
     ap.add_argument("--command", required=True)
+    ap.add_argument("--attempt", required=True, help="token del intento (anti-stale)")
     args = ap.parse_args(argv)
 
     run_dir = Path(args.run_dir)
     jobs_dir = run_dir / "jobs"
     engine: str = args.engine
+    attempt: str = args.attempt
 
     try:
         adapter = get_adapter(engine)
@@ -50,6 +55,7 @@ def main(argv: list[str] | None = None) -> int:
             _write_result(
                 jobs_dir,
                 engine,
+                attempt,
                 {
                     "status": "failed",
                     "exit_code": RC_NO_ADAPTER,
@@ -68,6 +74,7 @@ def main(argv: list[str] | None = None) -> int:
         _write_result(
             jobs_dir,
             engine,
+            attempt,
             {
                 "status": "succeeded",
                 "exit_code": RC_OK,
@@ -81,6 +88,7 @@ def main(argv: list[str] | None = None) -> int:
         _write_result(
             jobs_dir,
             engine,
+            attempt,
             {
                 "status": "failed",
                 "exit_code": RC_ERROR,

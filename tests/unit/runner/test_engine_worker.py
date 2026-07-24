@@ -25,11 +25,22 @@ def _result(run_dir, engine):
 
 
 def test_sin_adapter_rc2(tmp_path):
-    rc = w.main(["--run-dir", str(tmp_path), "--engine", "prophet", "--command", "benchmark"])
+    rc = w.main(
+        [
+            "--run-dir",
+            str(tmp_path),
+            "--engine",
+            "prophet",
+            "--command",
+            "benchmark",
+            "--attempt",
+            "att1",
+        ]
+    )
     assert rc == w.RC_NO_ADAPTER
     r = _result(tmp_path, "prophet")
     assert r["status"] == "failed" and r["exit_code"] == 2 and r["error_type"] == "NoAdapter"
-    assert r["artifacts"] == []
+    assert r["artifacts"] == [] and r["attempt"] == "att1"
 
 
 def test_adapter_ok_rc0(tmp_path):
@@ -40,10 +51,21 @@ def test_adapter_ok_rc0(tmp_path):
             return [ArtifactRecord("forecast_prophet.csv", "d", "forecast.v1", validated=True)]
 
     adapters.register_adapter("prophet", _Fake())
-    rc = w.main(["--run-dir", str(tmp_path), "--engine", "prophet", "--command", "forecast"])
+    rc = w.main(
+        [
+            "--run-dir",
+            str(tmp_path),
+            "--engine",
+            "prophet",
+            "--command",
+            "forecast",
+            "--attempt",
+            "att2",
+        ]
+    )
     assert rc == w.RC_OK
     r = _result(tmp_path, "prophet")
-    assert r["status"] == "succeeded" and r["exit_code"] == 0
+    assert r["status"] == "succeeded" and r["exit_code"] == 0 and r["attempt"] == "att2"
     assert r["artifacts"][0]["schema"] == "forecast.v1" and r["artifacts"][0]["validated"] is True
 
 
@@ -55,7 +77,18 @@ def test_adapter_lanza_rc1(tmp_path):
             raise RuntimeError("motor reventó")
 
     adapters.register_adapter("deepar", _Boom())
-    rc = w.main(["--run-dir", str(tmp_path), "--engine", "deepar", "--command", "refit"])
+    rc = w.main(
+        [
+            "--run-dir",
+            str(tmp_path),
+            "--engine",
+            "deepar",
+            "--command",
+            "refit",
+            "--attempt",
+            "att3",
+        ]
+    )
     assert rc == w.RC_ERROR
     r = _result(tmp_path, "deepar")
     assert r["status"] == "failed" and r["exit_code"] == 1 and r["error_type"] == "RuntimeError"

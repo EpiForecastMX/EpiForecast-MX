@@ -1,14 +1,21 @@
-"""CLI DELGADO del runner genérico de padecimientos (F2/C2). Lógica en ``epiforecast.runner``.
+"""CLI DELGADO del runner genérico de padecimientos (F2/C3). Lógica en ``epiforecast.runner``.
 
 Subcomandos:
-  validate-data <padecimiento>                     construye dataset + 111 productos (FUNCIONAL)
-  benchmark|refit|forecast <pad> --engines a,b     un subprocess limpio por motor (rc=2 sin adapter)
+  validate-data <pad>                          construye dataset + 111 productos (FUNCIONAL)
+  benchmark <pad> --stage smoke|full [--engines a,b]   subprocess limpio por motor (rc=2 sin adapter)
+  refit <pad> [--engines a,b]
+  forecast <pad> --horizon 52 [--engines a,b]
 
-Todo queda bajo ``runs/<run_id>/``. NO entrena de verdad, NO publica, NO hace push/DVC.
+``--engines`` es OVERRIDE opcional; por defecto se usan los candidatos de la POLÍTICA de evaluación
+(``config/evaluation/rolling_cv_v1.yaml``), NO los training_engines legacy del registry.
+
+validate-data → runs/<dataset_id>/ (DatasetManifest). benchmark/refit/forecast → runs/<run_id>/
+(dir distinto que referencia el dataset_id). NO entrena de verdad, NO publica, NO push/DVC.
 El exit code refleja el estado del run (0 ok, 2 sin adapter, 1 error).
 
     python -m scripts.disease_run validate-data Obesidad
-    python -m scripts.disease_run benchmark Obesidad --engines prophet,deepar
+    python -m scripts.disease_run benchmark Obesidad --stage smoke
+    python -m scripts.disease_run forecast Obesidad --horizon 52
 """
 
 from __future__ import annotations
@@ -21,6 +28,8 @@ from epiforecast.runner.manifest import (
     CMD_FORECAST,
     CMD_REFIT,
     CMD_VALIDATE_DATA,
+    STAGE_FULL,
+    STAGE_SMOKE,
 )
 
 
@@ -38,24 +47,46 @@ def _build_parser() -> argparse.ArgumentParser:
     val = sub.add_parser(CMD_VALIDATE_DATA, help="construye y valida el dataset + productos")
     val.add_argument("disease")
 
-    for cmd in (CMD_BENCHMARK, CMD_REFIT, CMD_FORECAST):
-        p = sub.add_parser(cmd, help=f"{cmd}: un subprocess limpio por motor")
-        p.add_argument("disease")
-        p.add_argument(
-            "--engines", required=True, type=_engines, help="motores separados por coma"
-        )
-        p.add_argument("--no-resume", action="store_true", help="ignora jobs previos completos")
+    bench = sub.add_parser(CMD_BENCHMARK, help="backtest OOS por motor (subprocess limpio)")
+    bench.add_argument("disease")
+    bench.add_argument("--stage", choices=[STAGE_SMOKE, STAGE_FULL], default=STAGE_FULL)
+    bench.add_argument(
+        "--engines", type=_engines, help="override; default = candidatos de la política"
+    )
+    bench.add_argument("--no-resume", action="store_true")
+
+    refit = sub.add_parser(CMD_REFIT, help="refit por motor (subprocess limpio)")
+    refit.add_argument("disease")
+    refit.add_argument("--engines", type=_engines)
+    refit.add_argument("--no-resume", action="store_true")
+
+    fc = sub.add_parser(CMD_FORECAST, help="forecast por motor (subprocess limpio)")
+    fc.add_argument("disease")
+    fc.add_argument("--horizon", type=int, default=52)
+    fc.add_argument("--engines", type=_engines)
+    fc.add_argument("--no-resume", action="store_true")
     return ap
 
 
 def main(argv: list[str] | None = None) -> int:
     args = _build_parser().parse_args(argv)
     if args.command == CMD_VALIDATE_DATA:
-        man = orch.validate_data(args.disease)
-    else:
-        man = orch.run_command(args.disease, args.command, args.engines, resume=not args.no_resume)
-    print(f"run_id={man.run_id} status={man.status} → runs/{man.run_id}/run_manifest.json")
-    return man.exit_code or 0
+        dm = orch.validate_data(args.disease)
+        print(
+            f"dataset_id={dm.dataset_id} status=validated → runs/{dm.dataset_id}/dataset_manifest.json"
+        )
+        return 0
+
+    rm = orch.run_command(
+        args.disease,
+        args.command,
+        stage=getattr(args, "stage", STAGE_FULL),
+        engines=args.engines,
+        horizon=getattr(args, "horizon", None),
+        resume=not args.no_resume,
+    )
+    print(f"run_id={rm.run_id} status={rm.status} → runs/{rm.run_id}/run_manifest.json")
+    return rm.exit_code or 0
 
 
 if __name__ == "__main__":

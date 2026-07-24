@@ -1,13 +1,16 @@
-"""F2/C2 — orquestación del runner genérico de padecimientos (carril E66; no toca neuro/Dengue).
+"""F2/C3 — orquestación del runner genérico de padecimientos (carril E66; no toca neuro/Dengue).
 
-- ``validate_data``: FUNCIONAL en C2. Construye el dataset base (41,792) + los 111 productos, los
-  materializa bajo ``runs/<run_id>/`` y escribe ``run_manifest.v1`` (succeeded) con digests,
-  artefactos validados y counts 64/47/111.
-- ``run_engines``: por comando (benchmark/refit/forecast), lanza UN subprocess limpio por motor;
-  resuelve el adapter (vacío en C2) → job rc=2; nunca aparenta éxito. Reanudación SOLO si el job
-  está ``succeeded`` con artefactos validados (un .pkl existente NO cuenta). Todo bajo runs/<run_id>/.
+- ``validate_data``: FUNCIONAL. Construye dataset base (41,792) + 111 productos bajo
+  ``runs/<dataset_id>/`` y escribe un ``DatasetManifest`` (identidad del dataset validado). NUNCA
+  se sobrescribe por una ejecución de motores.
+- ``run_command`` (benchmark/refit/forecast): calcula un ``run_id`` propio (dataset+comando+stage+
+  política+motores+seed+commit), crea ``runs/<run_id>/`` (dir DISTINTO) que referencia el
+  ``dataset_id``, y lanza un subprocess LIMPIO por motor. Motores por defecto = candidatos de la
+  POLÍTICA (no los training_engines legacy).
 
-Sin train real, sin publicación, sin DVC, sin git push.
+Un job solo es exitoso si rc=0, el ``result.json`` es de ESTE intento (token) y cada artefacto
+existe y coincide con su digest. stdout/stderr se guardan por job. Reanudación SOLO si el job está
+succeeded con artefactos validados (un .pkl suelto NO cuenta). Sin train real/publicación/DVC/push.
 """
 
 from __future__ import annotations
@@ -15,6 +18,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+import secrets
 import subprocess
 import sys
 from typing import Any
@@ -24,13 +28,17 @@ from epiforecast.data.epi_dataset import build_epi_dataset_v2
 from epiforecast.data.epi_geo_exposure import load_geo_catalog
 from epiforecast.runner.contracts import SCHEMA_DATASET, SCHEMA_PRODUCTS
 from epiforecast.runner.manifest import (
-    CMD_VALIDATE_DATA,
     STATUS_FAILED,
     ArtifactRecord,
+    DatasetManifest,
+    JobRecord,
     RunManifest,
+    compute_run_id,
 )
+from epiforecast.runner.policy import candidate_engines, policy_digest, policy_seed
 
 _ROOT = Path(__file__).resolve().parents[3]
+SCHEMA_LINEAGE = "lineage.v1"
 
 
 class RunnerError(ValueError):
@@ -54,49 +62,63 @@ def _git_commit() -> str | None:
         return None
 
 
-def validate_data(disease: str, runs_root: Path | None = None) -> RunManifest:
-    """Construye dataset base + 111 productos, los versiona y escribe run_manifest.v1 (succeeded)."""
+def validate_data(disease: str, runs_root: Path | None = None) -> DatasetManifest:
+    """Construye dataset base + 111 productos bajo runs/<dataset_id>/ y escribe DatasetManifest."""
     result = build_epi_dataset_v2(disease, runs_root=runs_root)
     catalog = load_geo_catalog()
     agg = build_products(result.dataset, catalog, result.config.disease_id)
 
-    run_dir = result.run_dir
-    products_path = run_dir / "products.csv"
+    dataset_dir = result.run_dir  # runs/<dataset_id>/
+    products_path = dataset_dir / "products.csv"
     agg.products.to_csv(products_path, index=False)
-    (run_dir / "lineage.json").write_text(
+    lineage_path = dataset_dir / "lineage.json"
+    lineage_path.write_text(
         json.dumps(agg.lineage, indent=2, ensure_ascii=False), encoding="utf-8"
     )
 
-    man = RunManifest(
-        run_id=result.run_id,
-        disease_id=result.config.disease_id,
-        command=CMD_VALIDATE_DATA,
-    )
+    man = DatasetManifest(dataset_id=result.run_id, disease_id=result.config.disease_id)
     man.code_commit = _git_commit()
-    man.input_digests = dict(result.digests)
+    man.digests = dict(result.digests)
     man.counts = {
         "base": agg.counts["base"],
         "derived": agg.counts["derived"],
         "products": agg.counts["products"],
     }
-    man.start()
-    man.add_artifact(
+    man.artifacts = [
         ArtifactRecord(
             "epi_dataset_v2.csv", result.digests["dataset"], SCHEMA_DATASET, validated=True
-        )
-    )
-    man.add_artifact(
-        ArtifactRecord("products.csv", _sha256(products_path), SCHEMA_PRODUCTS, validated=True)
-    )
-    man.succeed()
-    man.write(run_dir)
+        ),
+        ArtifactRecord("products.csv", _sha256(products_path), SCHEMA_PRODUCTS, validated=True),
+        ArtifactRecord("lineage.json", _sha256(lineage_path), SCHEMA_LINEAGE, validated=True),
+    ]
+    man.write(dataset_dir)
     return man
+
+
+def verify_artifacts(run_dir: Path, artifacts: list[dict[str, Any]]) -> list[str]:
+    """Problemas (vacío = OK): cada artefacto declarado debe existir y coincidir con su digest."""
+    problems: list[str] = []
+    for a in artifacts:
+        p = run_dir / str(a["path"])
+        if not p.exists():
+            problems.append(f"artefacto ausente: {a['path']}")
+        elif _sha256(p) != a["digest"]:
+            problems.append(f"digest no coincide: {a['path']}")
+    return problems
 
 
 def _spawn_engine(
     run_dir: Path, engine: str, command: str, python_exe: str | None
-) -> tuple[int, dict[str, Any] | None]:
-    """Lanza el worker en un subprocess limpio; devuelve (exit_code, result.json | None)."""
+) -> tuple[int, dict[str, Any] | None, str]:
+    """Subprocess LIMPIO por motor. Genera token de intento, borra result.json previo, captura
+    stdout/stderr a disco. Devuelve (exit_code, result.json | None, attempt)."""
+    attempt = secrets.token_hex(8)
+    jobs_dir = run_dir / "jobs"
+    jobs_dir.mkdir(parents=True, exist_ok=True)
+    result_path = jobs_dir / f"{engine}.result.json"
+    if result_path.exists():
+        result_path.unlink()  # anti-stale: ningún result de un intento anterior sobrevive
+
     cmd = [
         python_exe or sys.executable,
         "-m",
@@ -107,13 +129,51 @@ def _spawn_engine(
         engine,
         "--command",
         command,
+        "--attempt",
+        attempt,
     ]
     proc = subprocess.run(cmd, capture_output=True, text=True)
-    result_path = run_dir / "jobs" / f"{engine}.result.json"
+    (jobs_dir / f"{engine}.stdout.txt").write_text(proc.stdout or "", encoding="utf-8")
+    (jobs_dir / f"{engine}.stderr.txt").write_text(proc.stderr or "", encoding="utf-8")
     result: dict[str, Any] | None = None
     if result_path.exists():
         result = json.loads(result_path.read_text(encoding="utf-8"))
-    return proc.returncode, result
+    return proc.returncode, result, attempt
+
+
+def _apply_result(
+    run_dir: Path,
+    job: JobRecord,
+    engine: str,
+    rc: int,
+    result: dict[str, Any] | None,
+    attempt: str,
+) -> None:
+    """Acepta el job SOLO si rc=0, el result es de este intento y los artefactos verifican digest."""
+    job.stdout = f"jobs/{engine}.stdout.txt"
+    job.stderr = f"jobs/{engine}.stderr.txt"
+    if result is None:
+        job.fail(rc or 1, "SubprocessError", f"subprocess terminó rc={rc} sin result.json")
+    elif result.get("attempt") != attempt:
+        job.fail(1, "StaleResult", "result.json no pertenece a este intento")
+    elif rc != 0 or result.get("status") != "succeeded":
+        job.fail(
+            int(result.get("exit_code") or rc or 1),
+            str(result.get("error_type") or "EngineError"),
+            str(result.get("error_message") or ""),
+        )
+    else:
+        problems = verify_artifacts(run_dir, result.get("artifacts") or [])
+        if problems:
+            job.fail(1, "ArtifactMismatch", "; ".join(problems))
+        else:
+            arts = [
+                ArtifactRecord(
+                    path=a["path"], digest=a["digest"], schema=a["schema"], validated=True
+                )
+                for a in result["artifacts"]
+            ]
+            job.succeed(arts)
 
 
 def run_engines(
@@ -122,23 +182,37 @@ def run_engines(
     command: str,
     engines: list[str],
     *,
+    dataset_id: str = "",
+    stage: str | None = None,
+    policy_digest_value: str | None = None,
+    seed: int | None = None,
+    code_commit: str | None = None,
     resume: bool = True,
     python_exe: str | None = None,
 ) -> RunManifest:
     """Ejecuta ``command`` para cada motor en subprocess limpio; actualiza y escribe el manifiesto."""
     if not engines:
-        raise RunnerError(f"{command}: se requiere al menos un motor (--engines)")
+        raise RunnerError(f"{command}: se requiere al menos un motor (--engines o política)")
     run_dir = Path(run_dir)
 
     # Reanudación: reutiliza el manifiesto SOLO si es del mismo comando; si no, arranca limpio.
     man: RunManifest | None = None
-    mpath = run_dir / "run_manifest.json"
-    if resume and mpath.exists():
+    if resume and (run_dir / "run_manifest.json").exists():
         prev = RunManifest.read(run_dir)
         if prev.command == command:
             man = prev
     if man is None:
-        man = RunManifest(run_id=run_dir.name, disease_id=disease_id, command=command)
+        man = RunManifest(
+            run_id=run_dir.name,
+            disease_id=disease_id,
+            command=command,
+            dataset_id=dataset_id,
+            stage=stage if stage in ("smoke", "full") else None,
+            policy_digest=policy_digest_value,
+            seed=seed,
+            code_commit=code_commit,
+            engines=list(engines),
+        )
     man.start()
 
     for engine in engines:
@@ -146,36 +220,16 @@ def run_engines(
         if resume and prior is not None and prior.is_complete():
             continue  # succeeded + artefactos validados → no se re-ejecuta
         job = man.job(engine)
-        # Reinicia el estado del job (un intento previo fallido/incompleto no se hereda).
-        job.status = "pending"
-        job.started_at = job.finished_at = None
-        job.exit_code = job.error_type = job.error_message = None
-        job.artifacts.clear()
+        job.reset()
         job.start()
-
-        rc, result = _spawn_engine(run_dir, engine, command, python_exe)
-        if result is not None and result.get("status") == "succeeded":
-            arts = [
-                ArtifactRecord(**{k: a[k] for k in ("path", "digest", "schema", "validated")})
-                for a in (result.get("artifacts") or [])
-            ]
-            job.succeed(arts)
-        elif result is not None:
-            job.fail(
-                int(result.get("exit_code") or rc or 1),
-                str(result.get("error_type") or "EngineError"),
-                str(result.get("error_message") or ""),
-            )
-        else:  # sin result.json: el worker no dejó señal → fallo por exit-code
-            job.fail(rc or 1, "SubprocessError", f"subprocess terminó rc={rc} sin result.json")
+        rc, result, attempt = _spawn_engine(run_dir, engine, command, python_exe)
+        _apply_result(run_dir, job, engine, rc, result, attempt)
 
     failed = [e for e, j in man.jobs.items() if j.status == STATUS_FAILED]
     if failed:
         codes = {man.jobs[e].exit_code for e in failed}
         man.fail(
-            2 if codes == {2} else 1,
-            "EngineJobsFailed",
-            f"motores fallidos: {sorted(failed)}",
+            2 if codes == {2} else 1, "EngineJobsFailed", f"motores fallidos: {sorted(failed)}"
         )
     else:
         man.succeed()
@@ -186,11 +240,42 @@ def run_engines(
 def run_command(
     disease: str,
     command: str,
-    engines: list[str],
     *,
+    stage: str = "full",
+    engines: list[str] | None = None,
+    horizon: int | None = None,
+    policy_name: str = "rolling_cv_v1",
     runs_root: Path | None = None,
     resume: bool = True,
 ) -> RunManifest:
-    """benchmark/refit/forecast: localiza el run del dataset (determinista) y orquesta los motores."""
+    """benchmark/refit/forecast: localiza el dataset (dataset_id) y orquesta los motores en runs/<run_id>/."""
     result = build_epi_dataset_v2(disease, runs_root=runs_root)
-    return run_engines(result.run_dir, result.config.disease_id, command, engines, resume=resume)
+    dataset_id = result.run_id
+    disease_id = result.config.disease_id
+
+    pol_digest = policy_digest(policy_name)
+    seed = policy_seed(policy_name)
+    used_engines = engines if engines else candidate_engines(policy_name)
+    code_commit = _git_commit()
+
+    # variant identifica la ejecución dentro del run_id: stage (benchmark) o h<N> (forecast).
+    variant = f"h{horizon}" if command == "forecast" and horizon else stage
+    run_id = compute_run_id(
+        disease_id, dataset_id, command, variant, pol_digest, used_engines, seed, code_commit
+    )
+    runs_base = runs_root or (_ROOT / "runs")
+    run_dir = runs_base / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    return run_engines(
+        run_dir,
+        disease_id,
+        command,
+        used_engines,
+        dataset_id=dataset_id,
+        stage=stage if command == "benchmark" else None,
+        policy_digest_value=pol_digest,
+        seed=seed,
+        code_commit=code_commit,
+        resume=resume,
+    )

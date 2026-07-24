@@ -88,3 +88,74 @@ def test_round_trip_json(tmp_path):
 def test_from_dict_schema_desconocido_levanta():
     with pytest.raises(m.ManifestError):
         m.RunManifest.from_dict({"schema": "run_manifest.v2", "run_id": "r"})
+
+
+def test_stage_invalido_levanta():
+    with pytest.raises(m.ManifestError):
+        m.RunManifest(run_id="r", disease_id="obesidad", command=m.CMD_BENCHMARK, stage="raro")
+
+
+def test_job_reset_limpia_estado():
+    j = m.JobRecord(engine="prophet")
+    j.start()
+    j.fail(2, "NoAdapter", "x")
+    j.reset()
+    assert j.status == m.STATUS_PENDING and j.exit_code is None and j.artifacts == []
+    assert j.error_type is None and j.started_at is None
+
+
+# ── compute_run_id: identidad reproducible del run ──
+def _rid(**over):
+    base = dict(
+        disease_id="obesidad",
+        dataset_id="obesidad_abc123",
+        command=m.CMD_BENCHMARK,
+        stage="full",
+        policy_digest="pd",
+        engines=["seasonal_naive_lag52"],
+        seed=42,
+        code_commit="c0ffee",
+    )
+    base.update(over)
+    return m.compute_run_id(**base)
+
+
+def test_compute_run_id_reproducible_y_orden_motores():
+    assert _rid() == _rid()  # mismos inputs → mismo run_id
+    assert _rid(engines=["a", "b"]) == _rid(engines=["b", "a"])  # orden de motores no cambia id
+    assert _rid().startswith("obesidad_benchmark_full_")
+
+
+@pytest.mark.parametrize(
+    "over",
+    [
+        {"command": m.CMD_FORECAST},
+        {"stage": "smoke"},
+        {"engines": ["otro"]},
+        {"seed": 43},
+        {"policy_digest": "pd2"},
+        {"code_commit": "d00d"},
+        {"dataset_id": "obesidad_xyz789"},
+    ],
+)
+def test_compute_run_id_distinto_por_cada_componente(over):
+    assert _rid(**over) != _rid()
+
+
+# ── DatasetManifest ──
+def test_dataset_manifest_round_trip(tmp_path):
+    dm = m.DatasetManifest(dataset_id="obesidad_abc123", disease_id="obesidad")
+    dm.code_commit = "c0ffee"
+    dm.digests = {"raw": "a", "dataset": "b"}
+    dm.counts = {"base": 64, "derived": 47, "products": 111}
+    dm.artifacts = [m.ArtifactRecord("products.csv", "d", "products.v1", True)]
+    dm.write(tmp_path)
+    back = m.DatasetManifest.read(tmp_path)
+    assert back.to_dict() == dm.to_dict()
+    assert back.schema == m.DATASET_MANIFEST_SCHEMA
+    assert back.counts == {"base": 64, "derived": 47, "products": 111}
+
+
+def test_dataset_manifest_schema_desconocido_levanta():
+    with pytest.raises(m.ManifestError):
+        m.DatasetManifest.from_dict({"schema": "dataset_manifest.v2", "dataset_id": "x"})

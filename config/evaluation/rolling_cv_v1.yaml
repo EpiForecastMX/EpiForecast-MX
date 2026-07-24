@@ -1,0 +1,39 @@
+# F2/C3 — Política de backtest OOS rolling-origin para el carril E66 (Obesidad).
+# DECLARATIVA: el runner/evaluador lee esto; nada de folds/años en condicionales Python.
+# El train de cada fold es toda la historia estrictamente anterior al inicio del holdout
+# (mínimo 260 semanas). Toda transformación/feature/escala se ajusta EXCLUSIVAMENTE con el
+# train del fold. Distinto stage/motores/seed → distinto run_id.
+version: 1
+name: rolling_cv_v1
+
+seed: 20260724
+seasonal_horizon: 52 # horizonte estacional (semanas) del pronóstico OOS
+min_train_weeks: 260 # historia previa mínima exigida por fold
+mase_seasonal_lag: 52 # denominador naive estacional de MASE (calculado SOLO sobre train)
+
+metrics:
+  primary: smape # sMAPE es la métrica principal (selección)
+  reported: [smape, mase, mae, rmse, wape, bias]
+
+# Candidatos del benchmark: NO son los training_engines legacy del registry.
+candidate_engines:
+  - seasonal_naive_lag52
+
+# Folds por año epidemiológico. n_weeks = semanas MMWR del año (verificado con epi_calendar).
+folds:
+  development: # elegibles para selección/tuning
+    - {epi_year: 2021, n_weeks: 52}
+    - {epi_year: 2022, n_weeks: 52}
+    - {epi_year: 2023, n_weeks: 52}
+    - {epi_year: 2024, n_weeks: 52}
+  test: # bloqueado: no participa en tuning
+    - {epi_year: 2025, n_weeks: 53}
+  stress: # solo reporte
+    - {epi_year: 2020, n_weeks: 53}
+  prospective: # solo reporte (parcial; la serie llega a 2026-W26)
+    - {epi_year: 2026}
+
+# Alcance por stage del comando benchmark.
+stages:
+  smoke: {fold_groups: [development], last_n_folds: 1} # último fold dev (verificación rápida)
+  full: {fold_groups: [development]} # los 4 folds dev = 64×208 predicciones base

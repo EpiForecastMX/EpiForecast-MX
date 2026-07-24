@@ -6,6 +6,8 @@ No requiere datos gitignored (no construye dataset). El gate de validate-data va
 
 from __future__ import annotations
 
+import hashlib
+
 import pytest
 
 from epiforecast.runner import orchestrator as orch
@@ -14,6 +16,7 @@ from epiforecast.runner.manifest import (
     STATUS_FAILED,
     STATUS_SUCCEEDED,
     ArtifactRecord,
+    JobRecord,
     RunManifest,
 )
 
@@ -29,11 +32,56 @@ def test_sin_adapter_todos_fallan_rc2(tmp_path):
     assert set(man.jobs) == {"prophet", "deepar"}
     for j in man.jobs.values():
         assert j.status == STATUS_FAILED and j.exit_code == 2 and j.error_type == "NoAdapter"
-    # Manifiesto y result.json quedan bajo el run_dir.
+    # Manifiesto, result.json y logs stdout/stderr quedan bajo el run_dir.
     assert (tmp_path / "run_manifest.json").exists()
     assert (tmp_path / "jobs" / "prophet.result.json").exists()
+    assert (tmp_path / "jobs" / "prophet.stdout.txt").exists()
+    assert (tmp_path / "jobs" / "prophet.stderr.txt").exists()
+    assert man.jobs["prophet"].stdout == "jobs/prophet.stdout.txt"
     # Ningún job es reanudable (no succeeded + validado).
     assert not any(j.is_complete() for j in man.jobs.values())
+
+
+# ── Aceptación de un job: rc0 + intento correcto + digest de artefactos (funciones puras) ──
+def test_verify_artifacts(tmp_path):
+    (tmp_path / "f.csv").write_text("hola")
+    digest = hashlib.sha256(b"hola").hexdigest()
+    assert orch.verify_artifacts(tmp_path, [{"path": "f.csv", "digest": digest}]) == []
+    # ausente y digest incorrecto → problemas
+    assert orch.verify_artifacts(tmp_path, [{"path": "no.csv", "digest": digest}])
+    assert orch.verify_artifacts(tmp_path, [{"path": "f.csv", "digest": "malo"}])
+
+
+def test_apply_result_rechaza_stale(tmp_path):
+    job = JobRecord(engine="prophet")
+    stale = {"status": "succeeded", "attempt": "viejo", "artifacts": []}
+    orch._apply_result(tmp_path, job, "prophet", 0, stale, attempt="nuevo")
+    assert job.status == STATUS_FAILED and job.error_type == "StaleResult"
+
+
+def test_apply_result_rechaza_digest_no_coincidente(tmp_path):
+    (tmp_path / "f.csv").write_text("x")
+    job = JobRecord(engine="prophet")
+    result = {
+        "status": "succeeded",
+        "attempt": "a",
+        "artifacts": [{"path": "f.csv", "digest": "malo", "schema": "forecast.v1"}],
+    }
+    orch._apply_result(tmp_path, job, "prophet", 0, result, attempt="a")
+    assert job.status == STATUS_FAILED and job.error_type == "ArtifactMismatch"
+
+
+def test_apply_result_acepta_con_digest_correcto(tmp_path):
+    (tmp_path / "f.csv").write_text("x")
+    digest = hashlib.sha256(b"x").hexdigest()
+    job = JobRecord(engine="prophet")
+    result = {
+        "status": "succeeded",
+        "attempt": "a",
+        "artifacts": [{"path": "f.csv", "digest": digest, "schema": "forecast.v1"}],
+    }
+    orch._apply_result(tmp_path, job, "prophet", 0, result, attempt="a")
+    assert job.status == STATUS_SUCCEEDED and job.is_complete()
 
 
 def test_reanudacion_salta_job_completo(tmp_path):
