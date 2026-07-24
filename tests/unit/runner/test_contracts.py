@@ -1,4 +1,4 @@
-"""F2/C2 — contratos del runner: TrainingSpec + validadores de ForecastFrame/EvaluationFrame."""
+"""F2/C3.2 — contratos definitivos: TrainingSpec (solo bases) + frames fila-a-fila validados."""
 
 from __future__ import annotations
 
@@ -10,50 +10,77 @@ import pytest
 from epiforecast.data.epi_dataset_spec import SeriesKey
 from epiforecast.runner import contracts as c
 
-
-def _key() -> SeriesKey:
-    return SeriesKey("obesidad", "nacional", "mx", "general")
+_ENG = "seasonal_naive_lag52"
 
 
-def test_training_spec_valido_y_key_str():
-    spec = c.TrainingSpec(
-        key=_key(),
-        engine="prophet",
-        horizon_weeks=52,
-        profile_id="obesidad_cronica",
-        profile_digest="abc",
-        transformations=("log1p", "rate_per_100k"),
+def _base_key() -> SeriesKey:
+    return SeriesKey("obesidad", "estado", "05", "hombres")
+
+
+def _spec(**over):
+    args = dict(
+        key=_base_key(),
+        engine=_ENG,
+        dataset_digest="dd",
+        policy_name="rolling_cv_v1",
+        policy_digest="pd",
+        fold_id="development_2024",
+        seed=42,
+        horizon=52,
+        transform=c.identity_transform("obesidad", _ENG),
     )
-    assert spec.horizon_weeks == 52 and spec.key.geography_id == "mx"
-    assert c.series_key_str(_key()) == "obesidad/nacional/mx/general"
+    args.update(over)
+    return c.TrainingSpec(**args)
+
+
+# ── TrainingSpec: SOLO las 64 bases estado×sexo ──
+def test_training_spec_valido():
+    spec = _spec()
+    assert spec.horizon == 52 and spec.transform.target_space.value == "count"
+    assert c.series_key_str(_base_key()) == "obesidad/estado/05/hombres"
+
+
+@pytest.mark.parametrize(
+    "key",
+    [
+        SeriesKey("obesidad", "nacional", "mx", "general"),
+        SeriesKey("obesidad", "region", "norte", "hombres"),
+        SeriesKey("obesidad", "estado", "05", "general"),  # general no es base
+    ],
+)
+def test_training_spec_rechaza_no_base(key):
+    with pytest.raises(c.ContractError):
+        _spec(key=key)
 
 
 @pytest.mark.parametrize("horizon", [0, -1, True])
 def test_training_spec_horizon_invalido(horizon):
     with pytest.raises(c.ContractError):
-        c.TrainingSpec(_key(), "prophet", horizon, "p", "d")
+        _spec(horizon=horizon)
 
 
-def test_training_spec_engine_vacio_y_frecuencia():
+def test_training_spec_transform_engine_mismatch():
     with pytest.raises(c.ContractError):
-        c.TrainingSpec(_key(), "", 52, "p", "d")
-    with pytest.raises(c.ContractError):
-        c.TrainingSpec(
-            SeriesKey("obesidad", "nacional", "mx", "general", "daily"), "prophet", 52, "p", "d"
-        )
+        _spec(transform=c.identity_transform("obesidad", "otro_motor"))
 
 
-def _forecast_df(**over) -> pd.DataFrame:
+# ── ForecastFrame (forecast.v1): fila a fila, intervalos conjuntos, no negativos ──
+def _fc(**over) -> pd.DataFrame:
     base = {
-        c.COL_GEO_LEVEL: "nacional",
-        c.COL_GEO_ID: "mx",
-        c.COL_SEX: "general",
-        c.COL_FREQUENCY: "epi_week",
-        c.COL_EPI_YEAR: 2026,
+        c.COL_RUN_ID: "r",
+        c.COL_ENGINE: _ENG,
+        c.COL_FOLD: "development_2024",
+        c.COL_ORIGIN_EPI_YEAR: 2023,
+        c.COL_ORIGIN_EPI_WEEK: 52,
+        c.COL_HORIZON: 1,
+        "disease_id": "obesidad",
+        c.COL_GEO_LEVEL: "estado",
+        c.COL_GEO_ID: "05",
+        c.COL_SEX: "hombres",
+        c.COL_EPI_YEAR: 2024,
         c.COL_EPI_WEEK: 1,
-        c.COL_DS: date(2026, 1, 5),
-        c.COL_ENGINE: "prophet",
-        c.COL_YHAT: 10.0,
+        c.COL_DS: date(2024, 1, 1),
+        c.COL_Y_PRED: 10.0,
         c.COL_YHAT_LOWER: 8.0,
         c.COL_YHAT_UPPER: 12.0,
     }
@@ -61,77 +88,129 @@ def _forecast_df(**over) -> pd.DataFrame:
     return pd.DataFrame([base])
 
 
-def test_forecast_frame_valido():
-    df = _forecast_df()
-    assert c.validate_forecast_frame(df) is df
-
-
-def test_forecast_frame_columna_faltante():
-    with pytest.raises(c.ContractError):
-        c.validate_forecast_frame(_forecast_df().drop(columns=[c.COL_YHAT_UPPER]))
+def test_forecast_frame_valido_y_intervalos_nulos():
+    assert c.validate_forecast_frame(_fc()) is not None
+    # intervalos conjuntamente nulos → válido.
+    c.validate_forecast_frame(_fc(**{c.COL_YHAT_LOWER: None, c.COL_YHAT_UPPER: None}))
 
 
 @pytest.mark.parametrize(
     "over",
     [
-        {c.COL_YHAT: float("nan")},
-        {c.COL_YHAT_LOWER: 11.0},  # lower > yhat
-        {c.COL_YHAT_UPPER: 9.0},  # upper < yhat
+        {c.COL_Y_PRED: -1.0},  # negativo
+        {c.COL_Y_PRED: float("inf")},  # no finito
+        {c.COL_Y_PRED: float("nan")},  # NaN
+        {c.COL_YHAT_LOWER: None},  # un intervalo nulo y el otro no
+        {c.COL_YHAT_LOWER: 11.0},  # lower > y_pred
+        {c.COL_YHAT_UPPER: 9.0},  # upper < y_pred
+        {c.COL_YHAT_LOWER: -1.0},  # intervalo negativo
         {c.COL_GEO_LEVEL: "planeta"},
         {c.COL_SEX: "otro"},
-        {c.COL_FREQUENCY: "daily"},
-        {c.COL_ENGINE: ""},
+        {c.COL_HORIZON: 0},
     ],
 )
 def test_forecast_frame_invariantes(over):
     with pytest.raises(c.ContractError):
-        c.validate_forecast_frame(_forecast_df(**over))
+        c.validate_forecast_frame(_fc(**over))
 
 
-def test_forecast_frame_duplicados():
-    df = pd.concat([_forecast_df(), _forecast_df()], ignore_index=True)
+def test_forecast_frame_columna_faltante_y_duplicados():
     with pytest.raises(c.ContractError):
-        c.validate_forecast_frame(df)
+        c.validate_forecast_frame(_fc().drop(columns=[c.COL_Y_PRED]))
+    with pytest.raises(c.ContractError):
+        c.validate_forecast_frame(pd.concat([_fc(), _fc()], ignore_index=True))
 
 
-def _eval_df(**over) -> pd.DataFrame:
+# ── EvaluationFrame (evaluation.v1): unión verdad↔predicción fila a fila ──
+def _ev(**over) -> pd.DataFrame:
     base = {
+        c.COL_RUN_ID: "r",
+        c.COL_ENGINE: _ENG,
+        c.COL_FOLD: "development_2024",
+        c.COL_SPLIT: "development",
+        c.COL_HORIZON: 1,
+        "disease_id": "obesidad",
         c.COL_GEO_LEVEL: "nacional",
         c.COL_GEO_ID: "mx",
         c.COL_SEX: "general",
-        c.COL_ENGINE: "prophet",
-        c.COL_FOLD: 0,
-        c.COL_N_TEST: 52,
-        c.COL_SMAPE: 12.3,
-        c.COL_MASE: 0.8,
-        c.COL_RMSE: 3.1,
-        c.COL_MAE: 2.0,
+        c.COL_EPI_YEAR: 2024,
+        c.COL_EPI_WEEK: 1,
+        c.COL_DS: date(2024, 1, 1),
+        c.COL_Y_TRUE: 9,
+        c.COL_Y_PRED: 10.0,
     }
     base.update(over)
     return pd.DataFrame([base])
 
 
 def test_evaluation_frame_valido():
-    df = _eval_df()
-    assert c.validate_evaluation_frame(df) is df
+    assert c.validate_evaluation_frame(_ev()) is not None
 
 
 @pytest.mark.parametrize(
     "over",
     [
-        {c.COL_N_TEST: 0},
-        {c.COL_SMAPE: -1.0},
-        {c.COL_MASE: float("inf")},
-        {c.COL_GEO_LEVEL: "planeta"},
+        {c.COL_SPLIT: "otro"},
+        {c.COL_Y_TRUE: -1},
+        {c.COL_Y_PRED: float("nan")},
     ],
 )
 def test_evaluation_frame_invariantes(over):
     with pytest.raises(c.ContractError):
-        c.validate_evaluation_frame(_eval_df(**over))
+        c.validate_evaluation_frame(_ev(**over))
 
 
-def test_evaluation_frame_duplicados_y_columna():
+def test_evaluation_frame_duplicados():
     with pytest.raises(c.ContractError):
-        c.validate_evaluation_frame(pd.concat([_eval_df(), _eval_df()], ignore_index=True))
+        c.validate_evaluation_frame(pd.concat([_ev(), _ev()], ignore_index=True))
+
+
+# ── MetricFrame (metrics.v1): resumen; NaN OK (flag), nunca inf ──
+def _mt(**over) -> pd.DataFrame:
+    base = {
+        c.COL_ENGINE: _ENG,
+        c.COL_FOLD: "development_2024",
+        c.COL_SPLIT: "development",
+        "disease_id": "obesidad",
+        c.COL_GEO_LEVEL: "nacional",
+        c.COL_GEO_ID: "mx",
+        c.COL_SEX: "general",
+        c.COL_N_OBS: 52,
+        c.COL_SMAPE: 12.3,
+        c.COL_MASE: 0.8,
+        c.COL_MAE: 2.0,
+        c.COL_RMSE: 3.1,
+        c.COL_WAPE: 0.5,
+        c.COL_BIAS: -0.2,
+        c.COL_FLAGS: "",
+    }
+    base.update(over)
+    return pd.DataFrame([base])
+
+
+def test_metric_frame_valido_con_nan_flag():
+    # MASE con denominador cero → NaN + flag (válido; nunca inf).
+    out = c.validate_metric_frame(
+        _mt(**{c.COL_MASE: float("nan"), c.COL_FLAGS: "mase_zero_denom"})
+    )
+    assert out is not None
+    assert c.validate_metric_frame(_mt()) is not None
+
+
+@pytest.mark.parametrize(
+    "over",
+    [
+        {c.COL_MASE: float("inf")},  # inf prohibido
+        {c.COL_N_OBS: 0},
+        {c.COL_GEO_LEVEL: "planeta"},
+        {c.COL_SPLIT: "otro"},
+    ],
+)
+def test_metric_frame_invariantes(over):
     with pytest.raises(c.ContractError):
-        c.validate_evaluation_frame(_eval_df().drop(columns=[c.COL_MASE]))
+        c.validate_metric_frame(_mt(**over))
+
+
+def test_metric_frame_duplicados():
+    with pytest.raises(c.ContractError):
+        c.validate_metric_frame(pd.concat([_mt(), _mt()], ignore_index=True))

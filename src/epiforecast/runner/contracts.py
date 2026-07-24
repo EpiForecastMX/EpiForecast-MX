@@ -1,26 +1,34 @@
-"""F2/C2 — contratos tipados del runner: claves/specs congeladas + frames con validador de esquema.
+"""F2/C3.2 — contratos DEFINITIVOS del runner: specs congeladas + frames fila-a-fila validados.
 
 Reutiliza el ÚNICO ``SeriesKey`` (``epi_dataset_spec``); no crea otra definición paralela.
-- ``TrainingSpec`` (frozen): lo que un adapter de motor necesita para entrenar una serie.
-- ``ForecastFrame`` / ``EvaluationFrame``: son DataFrames con un validador de esquema (no subclases),
-  con columnas/tipos/invariantes exactos. Sin dependencias nuevas (solo pandas).
+- ``TrainingSpec`` (frozen): lo que un adapter necesita para entrenar/predecir UNA de las 64 bases
+  (estado×sexo). Lleva dataset/policy digests, fold, seed, horizonte, ``TransformContract``,
+  parámetros namespaced del motor y límites de recursos. SOLO admite claves estado×{hombres,mujeres}.
+- ``ForecastFrame`` (``forecast.v1``): predicción FILA A FILA (run/motor/fold/origen/horizonte/
+  SeriesKey/periodo/y_pred_cases); intervalos conjuntamente nulos o válidos, no negativos.
+- ``EvaluationFrame`` (``evaluation.v1``): unión FILA A FILA verdad↔predicción (y_true/y_pred/split/
+  procedencia).
+- ``MetricFrame`` (``metrics.v1``): resumen SEPARADO por motor/fold/producto (sMAPE/MASE/MAE/RMSE/
+  WAPE/bias); métricas con denominador cero quedan NaN + flag, nunca inf.
 
-Los adapters aún no existen (C2): estos contratos fijan la forma; el runner los exige cuando haya
-motor. Metadata de artefacto NUNCA re-infiere el padecimiento por ``stem.split('_')``.
+Negativos, no-finitos o duplicados invalidan el frame (→ motor/fold). Metadata de artefacto NUNCA
+re-infiere el padecimiento por ``stem.split('_')``.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import math
+from typing import Any
 
 import pandas as pd
 
+from epiforecast.artifacts.transforms import TargetSpace, TransformContract
 from epiforecast.data.epi_dataset_spec import (
+    BASE_SEXES,
     COL_DS,
     COL_EPI_WEEK,
     COL_EPI_YEAR,
-    COL_FREQUENCY,
     COL_GEO_ID,
     COL_GEO_LEVEL,
     COL_SEX,
@@ -31,78 +39,142 @@ from epiforecast.data.epi_dataset_spec import (
     SeriesKey,
 )
 
-# Nombres de schema para la metadata de artefactos del manifiesto.
+# Schemas de artefactos (metadata del manifiesto).
 SCHEMA_DATASET = "epi_dataset_v2"
 SCHEMA_PRODUCTS = "products.v1"
 SCHEMA_FORECAST = "forecast.v1"
 SCHEMA_EVALUATION = "evaluation.v1"
+SCHEMA_METRICS = "metrics.v1"
 
 _GEO_LEVELS: frozenset[str] = frozenset({GEO_LEVEL_ESTADO, GEO_LEVEL_REGION, GEO_LEVEL_NACIONAL})
 _SEXES: frozenset[str] = frozenset({"hombres", "mujeres", "general"})
 
-# Columnas de identidad compartidas por todos los frames de productos/pronóstico/evaluación.
+# Splits de evaluación (grupos de folds de la política).
+SPLIT_DEVELOPMENT = "development"
+SPLIT_TEST = "test"
+SPLIT_STRESS = "stress"
+SPLIT_PROSPECTIVE = "prospective"
+SPLITS: frozenset[str] = frozenset(
+    {SPLIT_DEVELOPMENT, SPLIT_TEST, SPLIT_STRESS, SPLIT_PROSPECTIVE}
+)
+
+# Identidad (SeriesKey materializado en columnas).
 IDENTITY_COLUMNS: tuple[str, ...] = (COL_GEO_LEVEL, COL_GEO_ID, COL_SEX)
 
+COL_RUN_ID = "run_id"
 COL_ENGINE = "engine"
-COL_YHAT = "yhat"
+COL_FOLD = "fold"
+COL_SPLIT = "split"
+COL_ORIGIN_EPI_YEAR = "origin_epi_year"
+COL_ORIGIN_EPI_WEEK = "origin_epi_week"
+COL_HORIZON = "horizon"
+COL_Y_PRED = "y_pred_cases"
+COL_Y_TRUE = "y_true_cases"
 COL_YHAT_LOWER = "yhat_lower"
 COL_YHAT_UPPER = "yhat_upper"
-COL_FOLD = "fold"
-COL_N_TEST = "n_test"
-# Métricas de evaluación (sMAPE principal; selector sMAPE→MASE→RMSE es política de C3).
+COL_N_OBS = "n_obs"
+COL_FLAGS = "flags"
+
+# Métricas (sMAPE principal; selector sMAPE→MASE→RMSE es política de C3+).
 COL_SMAPE = "smape"
 COL_MASE = "mase"
-COL_RMSE = "rmse"
 COL_MAE = "mae"
-EVAL_METRICS: tuple[str, ...] = (COL_SMAPE, COL_MASE, COL_RMSE, COL_MAE)
+COL_RMSE = "rmse"
+COL_WAPE = "wape"
+COL_BIAS = "bias"
+METRIC_COLUMNS_VALUES: tuple[str, ...] = (
+    COL_SMAPE,
+    COL_MASE,
+    COL_MAE,
+    COL_RMSE,
+    COL_WAPE,
+    COL_BIAS,
+)
+
+_PROVENANCE: tuple[str, ...] = (COL_RUN_ID, COL_ENGINE, COL_FOLD)
+_IDENTITY_FULL: tuple[str, ...] = ("disease_id", COL_GEO_LEVEL, COL_GEO_ID, COL_SEX)
+_PERIOD: tuple[str, ...] = (COL_EPI_YEAR, COL_EPI_WEEK, COL_DS)
 
 FORECAST_COLUMNS: tuple[str, ...] = (
-    COL_GEO_LEVEL,
-    COL_GEO_ID,
-    COL_SEX,
-    COL_FREQUENCY,
-    COL_EPI_YEAR,
-    COL_EPI_WEEK,
-    COL_DS,
-    COL_ENGINE,
-    COL_YHAT,
+    *_PROVENANCE,
+    COL_ORIGIN_EPI_YEAR,
+    COL_ORIGIN_EPI_WEEK,
+    COL_HORIZON,
+    *_IDENTITY_FULL,
+    *_PERIOD,
+    COL_Y_PRED,
     COL_YHAT_LOWER,
     COL_YHAT_UPPER,
 )
 EVALUATION_COLUMNS: tuple[str, ...] = (
-    COL_GEO_LEVEL,
-    COL_GEO_ID,
-    COL_SEX,
+    *_PROVENANCE,
+    COL_SPLIT,
+    COL_HORIZON,
+    *_IDENTITY_FULL,
+    *_PERIOD,
+    COL_Y_TRUE,
+    COL_Y_PRED,
+)
+METRIC_COLUMNS: tuple[str, ...] = (
     COL_ENGINE,
     COL_FOLD,
-    COL_N_TEST,
-    *EVAL_METRICS,
+    COL_SPLIT,
+    *_IDENTITY_FULL,
+    COL_N_OBS,
+    *METRIC_COLUMNS_VALUES,
+    COL_FLAGS,
 )
 
 
 class ContractError(ValueError):
-    """Un frame no cumple el contrato de esquema (columnas/tipos/invariantes)."""
+    """Un spec o frame no cumple el contrato (columnas/tipos/invariantes)."""
+
+
+def identity_transform(disease_id: str, engine: str) -> TransformContract:
+    """TransformContract IDENTIDAD (count→count, sin pasos): predice conteos directos."""
+    return TransformContract(
+        disease_id=disease_id,
+        engine_id=engine,
+        source_space=TargetSpace.COUNT,
+        target_space=TargetSpace.COUNT,
+        forward_steps=(),
+        inverse_steps=(),
+        rate_scale=None,
+    )
 
 
 @dataclass(frozen=True)
 class TrainingSpec:
-    """Especificación congelada para entrenar UNA serie con UN motor (la consume un adapter)."""
+    """Spec congelada para UNA de las 64 bases (estado×sexo). La consume un adapter de motor."""
 
     key: SeriesKey
     engine: str
-    horizon_weeks: int
-    profile_id: str
-    profile_digest: str  # digest del perfil efectivo (reproducibilidad)
-    transformations: tuple[str, ...] = ()  # transformaciones efectivas (log1p, tasa/100k, …)
-    train_cutoff_ds: str | None = None  # origen OOS (ds ISO); None = serie completa
+    dataset_digest: str
+    policy_name: str
+    policy_digest: str
+    fold_id: str
+    seed: int
+    horizon: int
+    transform: TransformContract
+    engine_params: dict[str, Any] = field(default_factory=dict)  # namespaced por motor
+    resource_limits: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
+        if self.key.geography_level != GEO_LEVEL_ESTADO or self.key.sex not in BASE_SEXES:
+            raise ContractError(
+                "TrainingSpec SOLO admite las 64 claves estado×{hombres,mujeres}: "
+                f"{self.key.geography_level}/{self.key.sex}"
+            )
         if self.key.frequency != FREQ_EPI_WEEK:
             raise ContractError(f"frecuencia no soportada: {self.key.frequency!r}")
         if not self.engine:
             raise ContractError("engine vacío")
-        if self.horizon_weeks <= 0 or isinstance(self.horizon_weeks, bool):
-            raise ContractError(f"horizon_weeks debe ser entero positivo: {self.horizon_weeks!r}")
+        if isinstance(self.horizon, bool) or self.horizon <= 0:
+            raise ContractError(f"horizon debe ser entero positivo: {self.horizon!r}")
+        if self.transform.engine_id != self.engine:
+            raise ContractError(
+                f"transform.engine_id ({self.transform.engine_id}) != engine ({self.engine})"
+            )
 
 
 @dataclass(frozen=True)
@@ -122,19 +194,11 @@ def series_key_str(key: SeriesKey) -> str:
     return f"{key.disease_id}/{key.geography_level}/{key.geography_id}/{key.sex}"
 
 
+# ── Helpers de validación de frames ──
 def _require_columns(df: pd.DataFrame, columns: tuple[str, ...], what: str) -> None:
     missing = [c for c in columns if c not in df.columns]
     if missing:
         raise ContractError(f"{what}: faltan columnas {missing}")
-
-
-def _require_finite_nonneg(df: pd.DataFrame, cols: tuple[str, ...], what: str) -> None:
-    for c in cols:
-        s = pd.to_numeric(df[c], errors="coerce")
-        if s.isna().any():
-            raise ContractError(f"{what}: {c} con valores no numéricos/NaN")
-        if (s < 0).any() or not s.map(math.isfinite).all():
-            raise ContractError(f"{what}: {c} con valores negativos o no finitos")
 
 
 def _require_valid_identity(df: pd.DataFrame, what: str) -> None:
@@ -146,27 +210,43 @@ def _require_valid_identity(df: pd.DataFrame, what: str) -> None:
         raise ContractError(f"{what}: sex inválido {sorted(bad_sex)}")
 
 
+def _num_finite_nonneg(df: pd.DataFrame, col: str, what: str) -> pd.Series:
+    s = pd.to_numeric(df[col], errors="coerce")
+    if s.isna().any() or not s.map(math.isfinite).all():
+        raise ContractError(f"{what}: {col} con NaN/no finito")
+    if (s < 0).any():
+        raise ContractError(f"{what}: {col} negativo")
+    return s
+
+
+def _require_no_dupes(df: pd.DataFrame, key: list[str], what: str) -> None:
+    if df.duplicated(key).any():
+        raise ContractError(f"{what}: filas duplicadas por {key}")
+
+
 def validate_forecast_frame(df: pd.DataFrame) -> pd.DataFrame:
     """Valida un ``ForecastFrame`` (schema ``forecast.v1``). Devuelve el frame o levanta."""
     what = "ForecastFrame"
     _require_columns(df, FORECAST_COLUMNS, what)
     _require_valid_identity(df, what)
-    if (df[COL_FREQUENCY] != FREQ_EPI_WEEK).any():
-        raise ContractError(f"{what}: frequency debe ser {FREQ_EPI_WEEK!r}")
     if df[COL_ENGINE].astype(str).str.len().eq(0).any():
         raise ContractError(f"{what}: engine vacío")
-    for c in (COL_YHAT, COL_YHAT_LOWER, COL_YHAT_UPPER):
-        s = pd.to_numeric(df[c], errors="coerce")
-        if s.isna().any() or not s.map(math.isfinite).all():
-            raise ContractError(f"{what}: {c} con NaN/no finito")
-    lo = pd.to_numeric(df[COL_YHAT_LOWER])
-    hi = pd.to_numeric(df[COL_YHAT_UPPER])
-    yh = pd.to_numeric(df[COL_YHAT])
-    if not ((lo <= yh) & (yh <= hi)).all():
-        raise ContractError(f"{what}: se viola yhat_lower <= yhat <= yhat_upper")
-    key = [*IDENTITY_COLUMNS, COL_ENGINE, COL_EPI_YEAR, COL_EPI_WEEK]
-    if df.duplicated(key).any():
-        raise ContractError(f"{what}: filas duplicadas por {key}")
+    if (pd.to_numeric(df[COL_HORIZON], errors="coerce") < 1).any():
+        raise ContractError(f"{what}: horizon debe ser >= 1")
+    y_pred = _num_finite_nonneg(df, COL_Y_PRED, what)
+
+    lo_null = df[COL_YHAT_LOWER].isna()
+    hi_null = df[COL_YHAT_UPPER].isna()
+    if (lo_null != hi_null).any():
+        raise ContractError(f"{what}: intervalos deben ser conjuntamente nulos o presentes")
+    present = ~lo_null
+    if present.any():
+        lo = _num_finite_nonneg(df[present], COL_YHAT_LOWER, what)
+        hi = _num_finite_nonneg(df[present], COL_YHAT_UPPER, what)
+        if not ((lo <= y_pred[present]) & (y_pred[present] <= hi)).all():
+            raise ContractError(f"{what}: se viola yhat_lower <= y_pred_cases <= yhat_upper")
+
+    _require_no_dupes(df, [*_PROVENANCE, *IDENTITY_COLUMNS, COL_EPI_YEAR, COL_EPI_WEEK], what)
     return df
 
 
@@ -175,13 +255,31 @@ def validate_evaluation_frame(df: pd.DataFrame) -> pd.DataFrame:
     what = "EvaluationFrame"
     _require_columns(df, EVALUATION_COLUMNS, what)
     _require_valid_identity(df, what)
-    if df[COL_ENGINE].astype(str).str.len().eq(0).any():
-        raise ContractError(f"{what}: engine vacío")
-    n = pd.to_numeric(df[COL_N_TEST], errors="coerce")
-    if n.isna().any() or (n < 1).any():
-        raise ContractError(f"{what}: n_test debe ser >= 1")
-    _require_finite_nonneg(df, EVAL_METRICS, what)
-    key = [*IDENTITY_COLUMNS, COL_ENGINE, COL_FOLD]
-    if df.duplicated(key).any():
-        raise ContractError(f"{what}: filas duplicadas por {key}")
+    bad_split = set(df[COL_SPLIT].unique()) - SPLITS
+    if bad_split:
+        raise ContractError(f"{what}: split inválido {sorted(bad_split)}")
+    _num_finite_nonneg(df, COL_Y_TRUE, what)
+    _num_finite_nonneg(df, COL_Y_PRED, what)
+    _require_no_dupes(
+        df, [COL_ENGINE, COL_FOLD, *IDENTITY_COLUMNS, COL_EPI_YEAR, COL_EPI_WEEK], what
+    )
+    return df
+
+
+def validate_metric_frame(df: pd.DataFrame) -> pd.DataFrame:
+    """Valida un ``MetricFrame`` (schema ``metrics.v1``). Métricas NaN OK (flag); nunca inf."""
+    what = "MetricFrame"
+    _require_columns(df, METRIC_COLUMNS, what)
+    _require_valid_identity(df, what)
+    bad_split = set(df[COL_SPLIT].unique()) - SPLITS
+    if bad_split:
+        raise ContractError(f"{what}: split inválido {sorted(bad_split)}")
+    if (pd.to_numeric(df[COL_N_OBS], errors="coerce") < 1).any():
+        raise ContractError(f"{what}: n_obs debe ser >= 1")
+    for col in METRIC_COLUMNS_VALUES:
+        s = pd.to_numeric(df[col], errors="coerce")
+        # NaN permitido (denominador cero → null + flag); inf NO.
+        if s.notna().any() and not s.dropna().map(math.isfinite).all():
+            raise ContractError(f"{what}: {col} con valor no finito (usar NaN + flag, nunca inf)")
+    _require_no_dupes(df, [COL_ENGINE, COL_FOLD, *IDENTITY_COLUMNS], what)
     return df
