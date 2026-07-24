@@ -29,6 +29,7 @@ from epiforecast.data.epi_geo_exposure import load_geo_catalog
 from epiforecast.runner.contracts import SCHEMA_DATASET, SCHEMA_PRODUCTS
 from epiforecast.runner.manifest import (
     STATUS_FAILED,
+    STATUS_SUCCEEDED,
     ArtifactRecord,
     DatasetManifest,
     JobRecord,
@@ -36,6 +37,7 @@ from epiforecast.runner.manifest import (
     compute_run_id,
 )
 from epiforecast.runner.policy import candidate_engines, policy_digest, policy_seed
+from epiforecast.runner.report import comparative_report
 
 _ROOT = Path(__file__).resolve().parents[3]
 SCHEMA_LINEAGE = "lineage.v1"
@@ -324,7 +326,7 @@ def run_command(
         encoding="utf-8",
     )
 
-    return run_engines(
+    man = run_engines(
         run_dir,
         disease_id,
         command,
@@ -338,3 +340,7 @@ def run_command(
         counts=dm.counts,
         resume=resume,
     )
+    # Un benchmark multi-motor exitoso emite el reporte comparativo (sin elegir ganador).
+    if command == "benchmark" and man.status == STATUS_SUCCEEDED and len(used_engines) > 1:
+        comparative_report(run_dir)
+    return man

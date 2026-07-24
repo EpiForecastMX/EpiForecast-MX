@@ -8,11 +8,8 @@ from epiforecast.data import epi_dataset_spec as spec
 from epiforecast.data.epi_calendar import shift, weeks_in_year
 from epiforecast.runner import adapters
 from epiforecast.runner import contracts as ct
-from epiforecast.runner.engines.seasonal_naive import (
-    ENGINE,
-    SeasonalNaiveLag52Adapter,
-    predict_series,
-)
+from epiforecast.runner.engines import harness
+from epiforecast.runner.engines.seasonal_naive import ENGINE, _predict, predict_series
 from epiforecast.runner.policy import load_policy
 
 
@@ -29,7 +26,7 @@ def test_adapter_registrado_y_solo_benchmark():
 
 
 def test_disease_id_desde_contexto_sin_hardcode():
-    # _predict_fold escribe el disease_id que recibe, NO "obesidad" hardcodeado.
+    # El harness escribe el disease_id que recibe, NO "obesidad" hardcodeado.
     fold = load_policy("rolling_cv_v1").development_folds()[0]  # 2021
     base_truth = pd.DataFrame(
         [
@@ -43,7 +40,7 @@ def test_disease_id_desde_contexto_sin_hardcode():
             for w in range(1, weeks_in_year(2020) + 1)  # cubre las fuentes lag-52 del holdout 2021
         ]
     )
-    df = SeasonalNaiveLag52Adapter()._predict_fold(base_truth, fold, "run1", "synthetic_disease")
+    df, _ = harness._predict_fold(base_truth, fold, "run1", "synthetic_disease", ENGINE, _predict)
     assert (df["disease_id"] == "synthetic_disease").all()
     assert len(df) == 52 and (df[ct.COL_GEO_LEVEL] == "estado").all()
 

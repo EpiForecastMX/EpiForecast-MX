@@ -21,6 +21,10 @@ metrics:
 # Candidatos del benchmark: NO son los training_engines legacy del registry.
 candidate_engines:
   - seasonal_naive_lag52
+  - seasonal_mean_3y
+  - seasonal_median_3y
+  - seasonal_mean_5y
+  - seasonal_median_5y
 
 # Folds por año epidemiológico. n_weeks = semanas MMWR del año (verificado con epi_calendar).
 folds:

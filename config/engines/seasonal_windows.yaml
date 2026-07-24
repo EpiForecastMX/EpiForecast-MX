@@ -1,0 +1,12 @@
+# F2/C3b — familia genérica de ventanas estacionales (un solo harness, cuatro configuraciones).
+# Para cada (año, semana): consulta la MISMA semana epidemiológica en los N años anteriores, usando
+# únicamente periodos existentes y estrictamente previos al origen. Con >= min_obs valores, calcula
+# media o mediana; sin suficientes (p.ej. W53 sin historial) usa el fallback y lo registra. Ningún
+# nombre de padecimiento aparece aquí.
+version: 1
+family: seasonal_window
+engines:
+  seasonal_mean_3y: {statistic: mean, years: 3, min_obs: 1, fallback: seasonal_naive_lag52}
+  seasonal_median_3y: {statistic: median, years: 3, min_obs: 1, fallback: seasonal_naive_lag52}
+  seasonal_mean_5y: {statistic: mean, years: 5, min_obs: 1, fallback: seasonal_naive_lag52}
+  seasonal_median_5y: {statistic: median, years: 5, min_obs: 1, fallback: seasonal_naive_lag52}

@@ -9,7 +9,13 @@ from epiforecast.runner import policy
 
 def test_candidate_engines_desde_politica():
     # Los candidatos vienen de la política, NO de los training_engines legacy del registry.
-    assert policy.candidate_engines("rolling_cv_v1") == ["seasonal_naive_lag52"]
+    assert policy.candidate_engines("rolling_cv_v1") == [
+        "seasonal_naive_lag52",
+        "seasonal_mean_3y",
+        "seasonal_median_3y",
+        "seasonal_mean_5y",
+        "seasonal_median_5y",
+    ]
 
 
 def test_policy_digest_estable_y_no_vacio():
