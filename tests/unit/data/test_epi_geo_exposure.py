@@ -52,11 +52,35 @@ def test_resolve_desconocido_levanta(catalog):
 def test_catalogo_menos_de_32_levanta(tmp_path):
     p = tmp_path / "cat.csv"
     p.write_text(
-        "cve_ent,nombre_canonico,nombre_inegi,aliases\n01,Aguascalientes,Aguascalientes,Ags.\n",
+        "cve_ent,nombre_canonico,nombre_inegi,region,aliases\n"
+        "01,Aguascalientes,Aguascalientes,Occidente,Ags.\n",
         encoding="utf-8",
     )
     with pytest.raises(ge.GeoExposureError):
         ge.load_geo_catalog(p)
+
+
+# ── Membresía de regiones (C2: datos trackeados, no dict legacy) ──
+def test_regiones_membresia(catalog):
+    assert catalog.regions() == ["Centro", "Norte", "Occidente", "Sureste"]
+    counts = {r: len(catalog.states_in_region(r)) for r in catalog.regions()}
+    assert counts == {"Norte": 9, "Occidente": 8, "Centro": 7, "Sureste": 8}
+    # Partición exacta de las 32 (sin solapes ni huecos).
+    todos = [cve for r in catalog.regions() for cve in catalog.states_in_region(r)]
+    assert sorted(todos) == catalog.cve_ents() and len(set(todos)) == 32
+
+
+@pytest.mark.parametrize(
+    "cve,region",
+    [("05", "Norte"), ("16", "Occidente"), ("09", "Centro"), ("30", "Sureste")],
+)
+def test_region_of(catalog, cve, region):
+    assert catalog.region_of(cve) == region
+
+
+def test_region_desconocida_levanta(catalog):
+    with pytest.raises(ge.GeoExposureError):
+        catalog.states_in_region("Bajío")
 
 
 # ── Exposición: snapshot SINTÉTICO de 32 entidades (usa los nombres INEGI del catálogo) ──

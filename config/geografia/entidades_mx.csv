@@ -1,33 +1,33 @@
-cve_ent,nombre_canonico,nombre_inegi,aliases
-01,Aguascalientes,Aguascalientes,Ags.
-02,Baja California,Baja California,B.C.|BC
-03,Baja California Sur,Baja California Sur,B.C.S.|BCS
-04,Campeche,Campeche,Camp.
-05,Coahuila,Coahuila de Zaragoza,Coah.|Coahuila de Zaragoza
-06,Colima,Colima,Col.
-07,Chiapas,Chiapas,Chis.
-08,Chihuahua,Chihuahua,Chih.
-09,Ciudad de México,Ciudad de México,Distrito Federal|CDMX|D.F.|DF|Ciudad de Mexico
-10,Durango,Durango,Dgo.
-11,Guanajuato,Guanajuato,Gto.
-12,Guerrero,Guerrero,Gro.
-13,Hidalgo,Hidalgo,Hgo.
-14,Jalisco,Jalisco,Jal.
-15,México,México,Estado de México|Edomex|Edo. Méx.|Mex.|Mexico
-16,Michoacán,Michoacán de Ocampo,Mich.|Michoacán de Ocampo|Michoacan
-17,Morelos,Morelos,Mor.
-18,Nayarit,Nayarit,Nay.
-19,Nuevo León,Nuevo León,N.L.|NL|Nuevo Leon
-20,Oaxaca,Oaxaca,Oax.
-21,Puebla,Puebla,Pue.
-22,Querétaro,Querétaro,Qro.|Queretaro
-23,Quintana Roo,Quintana Roo,Q. Roo|Q.R.|QRoo
-24,San Luis Potosí,San Luis Potosí,S.L.P.|SLP|San Luis Potosi
-25,Sinaloa,Sinaloa,Sin.
-26,Sonora,Sonora,Son.
-27,Tabasco,Tabasco,Tab.
-28,Tamaulipas,Tamaulipas,Tamps.
-29,Tlaxcala,Tlaxcala,Tlax.
-30,Veracruz,Veracruz de Ignacio de la Llave,Ver.|Veracruz de Ignacio de la Llave
-31,Yucatán,Yucatán,Yuc.|Yucatan
-32,Zacatecas,Zacatecas,Zac.
+cve_ent,nombre_canonico,nombre_inegi,region,aliases
+01,Aguascalientes,Aguascalientes,Occidente,Ags.
+02,Baja California,Baja California,Norte,B.C.|BC
+03,Baja California Sur,Baja California Sur,Norte,B.C.S.|BCS
+04,Campeche,Campeche,Sureste,Camp.
+05,Coahuila,Coahuila de Zaragoza,Norte,Coah.|Coahuila de Zaragoza
+06,Colima,Colima,Occidente,Col.
+07,Chiapas,Chiapas,Sureste,Chis.
+08,Chihuahua,Chihuahua,Norte,Chih.
+09,Ciudad de México,Ciudad de México,Centro,Distrito Federal|CDMX|D.F.|DF|Ciudad de Mexico
+10,Durango,Durango,Norte,Dgo.
+11,Guanajuato,Guanajuato,Occidente,Gto.
+12,Guerrero,Guerrero,Sureste,Gro.
+13,Hidalgo,Hidalgo,Centro,Hgo.
+14,Jalisco,Jalisco,Occidente,Jal.
+15,México,México,Centro,Estado de México|Edomex|Edo. Méx.|Mex.|Mexico
+16,Michoacán,Michoacán de Ocampo,Occidente,Mich.|Michoacán de Ocampo|Michoacan
+17,Morelos,Morelos,Centro,Mor.
+18,Nayarit,Nayarit,Occidente,Nay.
+19,Nuevo León,Nuevo León,Norte,N.L.|NL|Nuevo Leon
+20,Oaxaca,Oaxaca,Sureste,Oax.
+21,Puebla,Puebla,Centro,Pue.
+22,Querétaro,Querétaro,Centro,Qro.|Queretaro
+23,Quintana Roo,Quintana Roo,Sureste,Q. Roo|Q.R.|QRoo
+24,San Luis Potosí,San Luis Potosí,Occidente,S.L.P.|SLP|San Luis Potosi
+25,Sinaloa,Sinaloa,Norte,Sin.
+26,Sonora,Sonora,Norte,Son.
+27,Tabasco,Tabasco,Sureste,Tab.
+28,Tamaulipas,Tamaulipas,Norte,Tamps.
+29,Tlaxcala,Tlaxcala,Centro,Tlax.
+30,Veracruz,Veracruz de Ignacio de la Llave,Sureste,Ver.|Veracruz de Ignacio de la Llave
+31,Yucatán,Yucatán,Sureste,Yuc.|Yucatan
+32,Zacatecas,Zacatecas,Occidente,Zac.

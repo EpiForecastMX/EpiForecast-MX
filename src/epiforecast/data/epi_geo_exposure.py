@@ -57,10 +57,14 @@ class GeoCatalog:
         self.entities = entities
         self._by_cve: dict[str, GeoEntity] = {}
         self._by_folded: dict[str, str] = {}  # nombre/alias folded -> cve_ent
+        self._by_region: dict[str, list[str]] = {}  # region -> cve_ents (membresía trackeada)
         for e in entities:
             if e.cve_ent in self._by_cve:
                 raise GeoExposureError(f"CVE_ENT duplicado: {e.cve_ent}")
+            if not e.region:
+                raise GeoExposureError(f"entidad {e.cve_ent} sin región asignada")
             self._by_cve[e.cve_ent] = e
+            self._by_region.setdefault(e.region, []).append(e.cve_ent)
             for token in (e.nombre_canonico, e.nombre_inegi, *e.aliases):
                 f = _fold(token)
                 if not f:
@@ -74,6 +78,8 @@ class GeoCatalog:
             raise GeoExposureError(
                 f"el catálogo debe tener 32 entidades, tiene {len(self._by_cve)}"
             )
+        for cves in self._by_region.values():
+            cves.sort()
 
     def resolve(self, name: str) -> str:
         """Nombre (canónico/INEGI/alias) → CVE_ENT. Estricto: desconocido levanta."""
@@ -90,6 +96,19 @@ class GeoCatalog:
 
     def cve_ents(self) -> list[str]:
         return sorted(self._by_cve)
+
+    def regions(self) -> list[str]:
+        """Regiones declaradas en el catálogo trackeado (orden estable)."""
+        return sorted(self._by_region)
+
+    def states_in_region(self, region: str) -> list[str]:
+        """CVE_ENT de los estados miembros de ``region`` (membresía trackeada, no dict legacy)."""
+        if region not in self._by_region:
+            raise GeoExposureError(f"región desconocida: {region!r}")
+        return list(self._by_region[region])
+
+    def region_of(self, cve_ent: str) -> str:
+        return self.entity(cve_ent).region
 
 
 def _load_yaml(path: Path) -> dict[str, Any]:
@@ -111,6 +130,7 @@ def load_geo_catalog(path: str | Path | None = None) -> GeoCatalog:
             cve_ent=str(r["cve_ent"]).zfill(2),
             nombre_canonico=str(r["nombre_canonico"]).strip(),
             nombre_inegi=str(r["nombre_inegi"]).strip(),
+            region=str(r["region"]).strip(),
             aliases=tuple(a.strip() for a in str(r["aliases"]).split("|") if a.strip()),
         )
         for _, r in df.iterrows()

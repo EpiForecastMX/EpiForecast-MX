@@ -104,6 +104,7 @@ class GeoEntity:
     cve_ent: str  # "01".."32"
     nombre_canonico: str
     nombre_inegi: str
+    region: str  # Norte | Occidente | Centro | Sureste (membresía trackeada, no dict legacy)
     aliases: tuple[str, ...]
 
 
