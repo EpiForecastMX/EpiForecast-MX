@@ -20,6 +20,7 @@ import sys
 import traceback
 
 from epiforecast.runner.adapters import get_adapter
+import epiforecast.runner.engines as _engines  # noqa: F401 — registra los adapters al importar
 
 RC_OK = 0
 RC_ERROR = 1

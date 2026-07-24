@@ -248,10 +248,13 @@ def run_command(
     runs_root: Path | None = None,
     resume: bool = True,
 ) -> RunManifest:
-    """benchmark/refit/forecast: localiza el dataset (dataset_id) y orquesta los motores en runs/<run_id>/."""
-    result = build_epi_dataset_v2(disease, runs_root=runs_root)
-    dataset_id = result.run_id
-    disease_id = result.config.disease_id
+    """benchmark/refit/forecast: materializa el dataset (dataset_id) y orquesta los motores en runs/<run_id>/."""
+    # Materializa dataset + productos + DatasetManifest (idempotente); el adapter lee products.csv.
+    dm = validate_data(disease, runs_root=runs_root)
+    dataset_id = dm.dataset_id
+    disease_id = dm.disease_id
+    runs_base = runs_root or (_ROOT / "runs")
+    dataset_dir = runs_base / dataset_id
 
     pol_digest = policy_digest(policy_name)
     seed = policy_seed(policy_name)
@@ -263,9 +266,25 @@ def run_command(
     run_id = compute_run_id(
         disease_id, dataset_id, command, variant, pol_digest, used_engines, seed, code_commit
     )
-    runs_base = runs_root or (_ROOT / "runs")
     run_dir = runs_base / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
+
+    # Contexto que el adapter (subprocess) necesita para localizar datos + política.
+    (run_dir / "job_context.json").write_text(
+        json.dumps(
+            {
+                "dataset_dir": str(dataset_dir),
+                "dataset_id": dataset_id,
+                "disease_id": disease_id,
+                "policy_name": policy_name,
+                "stage": stage,
+                "seed": seed,
+                "horizon": horizon,
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
 
     return run_engines(
         run_dir,

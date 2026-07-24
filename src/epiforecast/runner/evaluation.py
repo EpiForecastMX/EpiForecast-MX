@@ -215,22 +215,20 @@ def build_metric_frame(
 ) -> pd.DataFrame:
     """MetricFrame por (motor, fold, producto). MASE usa la verdad de TRAIN (previa al holdout)."""
     key = [_DISEASE, COL_GEO_LEVEL, COL_GEO_ID, COL_SEX]
+    # Pre-indexa la verdad por producto una sola vez (evita O(grupos × N)); pkey = year*100+week.
+    truth_idx: dict[tuple[Any, ...], pd.DataFrame] = {}
+    for ident_key, prod in truth_full.groupby(key, sort=False):
+        p = prod.sort_values([COL_EPI_YEAR, COL_EPI_WEEK])
+        truth_idx[ident_key] = p.assign(_pkey=p[COL_EPI_YEAR] * 100 + p[COL_EPI_WEEK])
+
     rows: list[dict[str, Any]] = []
     for (engine, fold, split, *ident), grp in eval_frame.groupby(
         [COL_ENGINE, COL_FOLD, COL_SPLIT, *key], sort=False
     ):
         grp = grp.sort_values([COL_EPI_YEAR, COL_EPI_WEEK])
-        # Clave entera de periodo (semanas <= 53 → year*100+week es monótona).
         holdout_start = int(grp[COL_EPI_YEAR].iloc[0]) * 100 + int(grp[COL_EPI_WEEK].iloc[0])
-        # Verdad de TRAIN del producto: periodos estrictamente anteriores al holdout.
-        prod_truth = truth_full[
-            (truth_full[_DISEASE] == ident[0])
-            & (truth_full[COL_GEO_LEVEL] == ident[1])
-            & (truth_full[COL_GEO_ID] == ident[2])
-            & (truth_full[COL_SEX] == ident[3])
-        ].sort_values([COL_EPI_YEAR, COL_EPI_WEEK])
-        pkey = prod_truth[COL_EPI_YEAR] * 100 + prod_truth[COL_EPI_WEEK]
-        train_true = prod_truth[pkey < holdout_start][COL_Y_CASES].to_numpy()
+        prod_truth = truth_idx[tuple(ident)]
+        train_true = prod_truth[prod_truth["_pkey"] < holdout_start][COL_Y_CASES].to_numpy()
         metrics, flags = series_metrics(
             grp[COL_Y_TRUE].to_numpy(), grp[COL_Y_PRED].to_numpy(), train_true, mase_lag
         )
