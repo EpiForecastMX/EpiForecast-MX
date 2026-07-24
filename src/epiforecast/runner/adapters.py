@@ -15,9 +15,13 @@ from epiforecast.runner.manifest import ArtifactRecord
 
 @runtime_checkable
 class EngineAdapter(Protocol):
-    """Interfaz PROVISIONAL de un motor. Se ejecuta dentro del subprocess limpio del worker."""
+    """Interfaz de un motor. Se ejecuta dentro del subprocess limpio del worker."""
 
     name: str
+
+    def supports(self, command: str) -> bool:
+        """True si el motor implementa ``command`` (benchmark/refit/forecast)."""
+        ...
 
     def run(self, command: str, run_dir: str) -> list[ArtifactRecord]:
         """Ejecuta ``command`` para este motor y devuelve los artefactos emitidos (validados)."""

@@ -62,6 +62,20 @@ def _git_commit() -> str | None:
         return None
 
 
+def _tracked_dirty() -> list[str]:
+    """Archivos TRACKEADOS con cambios sin commit (staged o no). Los untracked (``??``) NO cuentan."""
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(_ROOT), "status", "--porcelain"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return []
+    return [ln[3:] for ln in out.stdout.splitlines() if ln[:2] != "??"]
+
+
 def validate_data(disease: str, runs_root: Path | None = None) -> DatasetManifest:
     """Construye dataset base + 111 productos bajo runs/<dataset_id>/ y escribe DatasetManifest."""
     result = build_epi_dataset_v2(disease, runs_root=runs_root)
@@ -105,6 +119,14 @@ def verify_artifacts(run_dir: Path, artifacts: list[dict[str, Any]]) -> list[str
         elif _sha256(p) != a["digest"]:
             problems.append(f"digest no coincide: {a['path']}")
     return problems
+
+
+def _resumable(run_dir: Path, job: JobRecord) -> bool:
+    """Reanudable SOLO si terminó bien Y sus artefactos AÚN existen y verifican digest en disco."""
+    if not job.is_complete():
+        return False
+    arts = [{"path": a.path, "digest": a.digest} for a in job.artifacts]
+    return not verify_artifacts(run_dir, arts)
 
 
 def _spawn_engine(
@@ -187,6 +209,8 @@ def run_engines(
     policy_digest_value: str | None = None,
     seed: int | None = None,
     code_commit: str | None = None,
+    input_digests: dict[str, str] | None = None,
+    counts: dict[str, int] | None = None,
     resume: bool = True,
     python_exe: str | None = None,
 ) -> RunManifest:
@@ -213,12 +237,17 @@ def run_engines(
             code_commit=code_commit,
             engines=list(engines),
         )
+    # Digests y conteos del DatasetManifest viajan al RunManifest (trazabilidad).
+    if input_digests is not None:
+        man.input_digests = dict(input_digests)
+    if counts is not None:
+        man.counts = dict(counts)
     man.start()
 
     for engine in engines:
         prior = man.jobs.get(engine)
-        if resume and prior is not None and prior.is_complete():
-            continue  # succeeded + artefactos validados → no se re-ejecuta
+        if resume and prior is not None and _resumable(run_dir, prior):
+            continue  # succeeded + artefactos que AÚN existen y verifican digest en disco
         job = man.job(engine)
         job.reset()
         job.start()
@@ -247,8 +276,17 @@ def run_command(
     policy_name: str = "rolling_cv_v1",
     runs_root: Path | None = None,
     resume: bool = True,
+    require_clean: bool = False,
 ) -> RunManifest:
     """benchmark/refit/forecast: materializa el dataset (dataset_id) y orquesta los motores en runs/<run_id>/."""
+    # Un run OFICIAL exige árbol limpio: el code_commit del run_id debe reflejar el código real.
+    if require_clean:
+        dirty = _tracked_dirty()
+        if dirty:
+            raise RunnerError(
+                f"run oficial rechazado: {len(dirty)} archivo(s) trackeado(s) sin commit "
+                f"(p.ej. {dirty[0]}). Commitea antes de un benchmark canónico."
+            )
     # Materializa dataset + productos + DatasetManifest (idempotente); el adapter lee products.csv.
     dm = validate_data(disease, runs_root=runs_root)
     dataset_id = dm.dataset_id
@@ -296,5 +334,7 @@ def run_command(
         policy_digest_value=pol_digest,
         seed=seed,
         code_commit=code_commit,
+        input_digests=dm.digests,
+        counts=dm.counts,
         resume=resume,
     )

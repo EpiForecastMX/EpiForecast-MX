@@ -54,17 +54,20 @@ def _build_parser() -> argparse.ArgumentParser:
         "--engines", type=_engines, help="override; default = candidatos de la política"
     )
     bench.add_argument("--no-resume", action="store_true")
+    bench.add_argument("--allow-dirty", action="store_true", help="permite árbol trackeado sucio")
 
     refit = sub.add_parser(CMD_REFIT, help="refit por motor (subprocess limpio)")
     refit.add_argument("disease")
     refit.add_argument("--engines", type=_engines)
     refit.add_argument("--no-resume", action="store_true")
+    refit.add_argument("--allow-dirty", action="store_true")
 
     fc = sub.add_parser(CMD_FORECAST, help="forecast por motor (subprocess limpio)")
     fc.add_argument("disease")
     fc.add_argument("--horizon", type=int, default=52)
     fc.add_argument("--engines", type=_engines)
     fc.add_argument("--no-resume", action="store_true")
+    fc.add_argument("--allow-dirty", action="store_true")
     return ap
 
 
@@ -84,6 +87,7 @@ def main(argv: list[str] | None = None) -> int:
         engines=args.engines,
         horizon=getattr(args, "horizon", None),
         resume=not args.no_resume,
+        require_clean=not args.allow_dirty,  # runs por CLI son oficiales: exigen árbol limpio
     )
     print(f"run_id={rm.run_id} status={rm.status} → runs/{rm.run_id}/run_manifest.json")
     return rm.exit_code or 0

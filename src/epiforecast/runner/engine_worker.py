@@ -25,6 +25,7 @@ import epiforecast.runner.engines as _engines  # noqa: F401 — registra los ada
 RC_OK = 0
 RC_ERROR = 1
 RC_NO_ADAPTER = 2
+RC_UNSUPPORTED = 3  # el motor existe pero no implementa el comando
 
 
 def _write_result(jobs_dir: Path, engine: str, attempt: str, payload: dict[str, object]) -> None:
@@ -70,6 +71,28 @@ def main(argv: list[str] | None = None) -> int:
                 file=sys.stderr,
             )
             return RC_NO_ADAPTER
+
+        if not adapter.supports(args.command):
+            _write_result(
+                jobs_dir,
+                engine,
+                attempt,
+                {
+                    "status": "failed",
+                    "exit_code": RC_UNSUPPORTED,
+                    "error_type": "UnsupportedCommand",
+                    "error_message": (
+                        f"el motor {engine!r} no implementa el comando {args.command!r}"
+                    ),
+                    "artifacts": [],
+                },
+            )
+            print(
+                f"[disease_run] motor {engine!r}: comando {args.command!r} no soportado "
+                f"(rc={RC_UNSUPPORTED})",
+                file=sys.stderr,
+            )
+            return RC_UNSUPPORTED
 
         artifacts = adapter.run(args.command, str(run_dir))
         _write_result(

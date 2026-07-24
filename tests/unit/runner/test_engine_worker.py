@@ -47,6 +47,9 @@ def test_adapter_ok_rc0(tmp_path):
     class _Fake:
         name = "prophet"
 
+        def supports(self, command):
+            return True
+
         def run(self, command, run_dir):
             return [ArtifactRecord("forecast_prophet.csv", "d", "forecast.v1", validated=True)]
 
@@ -73,6 +76,9 @@ def test_adapter_lanza_rc1(tmp_path):
     class _Boom:
         name = "deepar"
 
+        def supports(self, command):
+            return True
+
         def run(self, command, run_dir):
             raise RuntimeError("motor reventó")
 
@@ -84,7 +90,7 @@ def test_adapter_lanza_rc1(tmp_path):
             "--engine",
             "deepar",
             "--command",
-            "refit",
+            "benchmark",
             "--attempt",
             "att3",
         ]
@@ -92,3 +98,24 @@ def test_adapter_lanza_rc1(tmp_path):
     assert rc == w.RC_ERROR
     r = _result(tmp_path, "deepar")
     assert r["status"] == "failed" and r["exit_code"] == 1 and r["error_type"] == "RuntimeError"
+
+
+def test_comando_no_soportado_rc3(tmp_path):
+    class _OnlyBench:
+        name = "prophet"
+
+        def supports(self, command):
+            return command == "benchmark"
+
+        def run(self, command, run_dir):  # no debería llamarse
+            raise AssertionError("run no debe ejecutarse si el comando no está soportado")
+
+    adapters.register_adapter("prophet", _OnlyBench())
+    rc = w.main(
+        ["--run-dir", str(tmp_path), "--engine", "prophet", "--command", "refit", "--attempt", "a"]
+    )
+    assert rc == w.RC_UNSUPPORTED
+    r = _result(tmp_path, "prophet")
+    assert (
+        r["status"] == "failed" and r["exit_code"] == 3 and r["error_type"] == "UnsupportedCommand"
+    )

@@ -84,19 +84,42 @@ def test_apply_result_acepta_con_digest_correcto(tmp_path):
     assert job.status == STATUS_SUCCEEDED and job.is_complete()
 
 
-def test_reanudacion_salta_job_completo(tmp_path):
-    # Semilla: prophet succeeded + artefacto validado (mismo comando).
+def _seed_complete(tmp_path, engine="prophet"):
+    """Semilla: manifiesto con un job succeeded + artefacto REAL en disco (digest coincidente)."""
+    content = b"forecast-data"
+    (tmp_path / "p.csv").write_bytes(content)
+    digest = hashlib.sha256(content).hexdigest()
     seed = RunManifest(run_id=tmp_path.name, disease_id="obesidad", command=CMD_BENCHMARK)
-    seed.job("prophet").succeed([ArtifactRecord("p.csv", "d", "forecast.v1", validated=True)])
+    seed.job(engine).succeed([ArtifactRecord("p.csv", digest, "forecast.v1", validated=True)])
     seed.write(tmp_path)
+    return digest
 
+
+def test_reanudacion_salta_job_completo(tmp_path):
+    _seed_complete(tmp_path)
     man = orch.run_engines(tmp_path, "obesidad", CMD_BENCHMARK, ["prophet", "deepar"], resume=True)
-    assert man.jobs["prophet"].status == STATUS_SUCCEEDED  # NO se re-ejecutó
+    assert (
+        man.jobs["prophet"].status == STATUS_SUCCEEDED
+    )  # NO se re-ejecutó (artefacto verificado)
     assert man.jobs["prophet"].is_complete()
     assert man.jobs["deepar"].status == STATUS_FAILED and man.jobs["deepar"].exit_code == 2
-    # deepar NO corrió su worker durante el resume de prophet: solo deepar.result.json existe.
     assert (tmp_path / "jobs" / "deepar.result.json").exists()
     assert not (tmp_path / "jobs" / "prophet.result.json").exists()
+
+
+def test_resume_reejecuta_si_artefacto_corrupto(tmp_path):
+    # El manifiesto dice succeeded+validated, pero el artefacto en disco NO coincide → se re-ejecuta.
+    _seed_complete(tmp_path)
+    (tmp_path / "p.csv").write_bytes(b"corrompido")  # digest ya no coincide
+    man = orch.run_engines(tmp_path, "obesidad", CMD_BENCHMARK, ["prophet"], resume=True)
+    assert man.jobs["prophet"].status == STATUS_FAILED and man.jobs["prophet"].exit_code == 2
+
+
+def test_resume_reejecuta_si_artefacto_ausente(tmp_path):
+    _seed_complete(tmp_path)
+    (tmp_path / "p.csv").unlink()  # artefacto borrado
+    man = orch.run_engines(tmp_path, "obesidad", CMD_BENCHMARK, ["prophet"], resume=True)
+    assert man.jobs["prophet"].status == STATUS_FAILED
 
 
 def test_pkl_existente_no_cuenta_como_terminado(tmp_path):
@@ -107,8 +130,26 @@ def test_pkl_existente_no_cuenta_como_terminado(tmp_path):
 
 
 def test_no_resume_reejecuta_completo(tmp_path):
-    seed = RunManifest(run_id=tmp_path.name, disease_id="obesidad", command=CMD_BENCHMARK)
-    seed.job("prophet").succeed([ArtifactRecord("p.csv", "d", "forecast.v1", validated=True)])
-    seed.write(tmp_path)
+    _seed_complete(tmp_path)
     man = orch.run_engines(tmp_path, "obesidad", CMD_BENCHMARK, ["prophet"], resume=False)
     assert man.jobs["prophet"].status == STATUS_FAILED  # sin resume → re-ejecuta → rc2
+
+
+def test_copia_digests_y_counts_al_manifest(tmp_path):
+    man = orch.run_engines(
+        tmp_path,
+        "obesidad",
+        CMD_BENCHMARK,
+        ["prophet"],
+        input_digests={"raw": "aa", "dataset": "bb"},
+        counts={"base": 64, "products": 111},
+    )
+    assert man.input_digests == {"raw": "aa", "dataset": "bb"}
+    assert man.counts == {"base": 64, "products": 111}
+
+
+def test_require_clean_rechaza_arbol_sucio(monkeypatch):
+    # Guard de run oficial: cambios trackeados sin commit → RunnerError ANTES de construir datos.
+    monkeypatch.setattr(orch, "_tracked_dirty", lambda: ["src/epiforecast/x.py"])
+    with pytest.raises(orch.RunnerError):
+        orch.run_command("Obesidad", "benchmark", require_clean=True)

@@ -2,18 +2,50 @@
 
 from __future__ import annotations
 
+import pandas as pd
+
+from epiforecast.data import epi_dataset_spec as spec
 from epiforecast.data.epi_calendar import shift, weeks_in_year
 from epiforecast.runner import adapters
-from epiforecast.runner.engines.seasonal_naive import ENGINE, predict_series
+from epiforecast.runner import contracts as ct
+from epiforecast.runner.engines.seasonal_naive import (
+    ENGINE,
+    SeasonalNaiveLag52Adapter,
+    predict_series,
+)
+from epiforecast.runner.policy import load_policy
 
 
 def _truth_map(years):
     return {(y, w): y * 1000 + w for y in years for w in range(1, weeks_in_year(y) + 1)}
 
 
-def test_adapter_registrado():
+def test_adapter_registrado_y_solo_benchmark():
     assert ENGINE in adapters.available_adapters()
-    assert adapters.get_adapter(ENGINE) is not None
+    ad = adapters.get_adapter(ENGINE)
+    assert ad is not None
+    assert ad.supports("benchmark") is True
+    assert ad.supports("refit") is False and ad.supports("forecast") is False
+
+
+def test_disease_id_desde_contexto_sin_hardcode():
+    # _predict_fold escribe el disease_id que recibe, NO "obesidad" hardcodeado.
+    fold = load_policy("rolling_cv_v1").development_folds()[0]  # 2021
+    base_truth = pd.DataFrame(
+        [
+            {
+                spec.COL_GEO_ID: "05",
+                spec.COL_SEX: "hombres",
+                spec.COL_EPI_YEAR: 2020,
+                spec.COL_EPI_WEEK: w,
+                spec.COL_Y_CASES: 10 + w,
+            }
+            for w in range(1, weeks_in_year(2020) + 1)  # cubre las fuentes lag-52 del holdout 2021
+        ]
+    )
+    df = SeasonalNaiveLag52Adapter()._predict_fold(base_truth, fold, "run1", "synthetic_disease")
+    assert (df["disease_id"] == "synthetic_disease").all()
+    assert len(df) == 52 and (df[ct.COL_GEO_LEVEL] == "estado").all()
 
 
 def test_recupera_lag52_exacto():

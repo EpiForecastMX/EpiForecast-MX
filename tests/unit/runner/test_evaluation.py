@@ -49,6 +49,12 @@ def test_metrics_lag_mayor_que_train_null():
     assert math.isnan(m[ct.COL_MASE]) and "mase_zero_denom" in flags
 
 
+def test_wape_en_porcentaje():
+    # WAPE = 100 × Σ|error| / Σ|real| = 100 × 4 / 20 = 20.0 (mismo escalado que sMAPE).
+    m, _ = ev.series_metrics([10, 10], [12, 12], [1, 2, 3], mase_lag=1)
+    assert m[ct.COL_WAPE] == pytest.approx(20.0)
+
+
 # ── Derivación 64→111 de pronósticos ──
 def _base_fc(catalog, y=lambda i, j: 1.0 + i + j) -> pd.DataFrame:
     rows = []

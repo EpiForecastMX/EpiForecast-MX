@@ -64,6 +64,9 @@ def test_gate_benchmark_succeeded_dir_distinto(bench_full, dataset):
     assert man.run_id != dataset.dataset_id and man.dataset_id == dataset.dataset_id
     assert man.stage == "full" and man.policy_digest and man.engines == ["seasonal_naive_lag52"]
     assert man.status == "succeeded" and man.exit_code == 0
+    # Digests y conteos del DatasetManifest viajaron al RunManifest (C3a.1).
+    assert set(man.input_digests) == {"raw", "exposure", "config", "dataset"}
+    assert man.counts == {"base": 64, "derived": 47, "products": 111}
     job = man.jobs["seasonal_naive_lag52"]
     assert job.is_complete()  # succeeded + artefactos validados (digest re-verificado)
     assert {a.schema for a in job.artifacts} == {

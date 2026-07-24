@@ -122,28 +122,47 @@ def derive_forecast_products(base_fc: pd.DataFrame, catalog: GeoCatalog) -> pd.D
         ),
     ]
     products = pd.concat(tiers, ignore_index=True)
-    _reconcile(products)
+    _reconcile(products, catalog)
     return products
 
 
-def _reconcile(products: pd.DataFrame) -> None:
-    """Verifica (tol 1e-9) general==H+M en todo nivel y Σ regiones == nacional, por periodo."""
+def _close(a: Any, b: Any) -> bool:
+    """Igualdad numérica con tolerancia ABSOLUTA declarada (rtol=0, atol=1e-9)."""
+    return bool(np.allclose(a, b, rtol=0.0, atol=RECON_TOL))
+
+
+def _reconcile(products: pd.DataFrame, catalog: GeoCatalog) -> None:
+    """Reconciliación (rtol=0, atol=1e-9): general==H+M, Σ estados==región y Σ regiones==nacional."""
     piv = products.pivot_table(
         index=[COL_GEO_LEVEL, COL_GEO_ID, COL_EPI_YEAR, COL_EPI_WEEK],
         columns=COL_SEX,
         values=COL_Y_PRED,
         aggfunc="sum",
     )
-    if not np.allclose(piv[SEX_GENERAL], piv["hombres"] + piv["mujeres"], atol=RECON_TOL):
+    if not _close(piv[SEX_GENERAL], piv["hombres"] + piv["mujeres"]):
         raise EvaluationError("reconciliación de pronóstico: general != H+M")
+
+    pk = [COL_EPI_YEAR, COL_EPI_WEEK]
+    # Σ estados-general (por su región) == región-general.
+    sg = products[
+        (products[COL_GEO_LEVEL] == GEO_LEVEL_ESTADO) & (products[COL_SEX] == SEX_GENERAL)
+    ]
+    sg = sg.assign(**{_MR: sg[COL_GEO_ID].map(catalog.macroregion_of)})
+    rg = products[
+        (products[COL_GEO_LEVEL] == GEO_LEVEL_REGION) & (products[COL_SEX] == SEX_GENERAL)
+    ]
+    sg_sum = sg.groupby([_MR, *pk], sort=True)[COL_Y_PRED].sum()
+    rg_sum = rg.rename(columns={COL_GEO_ID: _MR}).groupby([_MR, *pk], sort=True)[COL_Y_PRED].sum()
+    if not _close(sg_sum.to_numpy(), rg_sum.reindex(sg_sum.index).to_numpy()):
+        raise EvaluationError("reconciliación de pronóstico: Σ estados != región")
+
+    # Σ regiones == nacional, por sexo.
     reg = products[products[COL_GEO_LEVEL] == GEO_LEVEL_REGION]
     nat = products[products[COL_GEO_LEVEL] == GEO_LEVEL_NACIONAL]
-    rk = [COL_SEX, COL_EPI_YEAR, COL_EPI_WEEK]
+    rk = [COL_SEX, *pk]
     reg_sum = reg.groupby(rk, sort=True)[COL_Y_PRED].sum()
     nat_sum = nat.groupby(rk, sort=True)[COL_Y_PRED].sum()
-    if not np.allclose(
-        reg_sum.to_numpy(), nat_sum.reindex(reg_sum.index).to_numpy(), atol=RECON_TOL
-    ):
+    if not _close(reg_sum.to_numpy(), nat_sum.reindex(reg_sum.index).to_numpy()):
         raise EvaluationError("reconciliación de pronóstico: Σ regiones != nacional")
 
 
@@ -179,7 +198,7 @@ def series_metrics(
     flags: list[str] = []
     sum_true = float(np.abs(yt).sum())
     if sum_true > 0.0:
-        wape = float(abs_err.sum() / sum_true)
+        wape = float(100.0 * abs_err.sum() / sum_true)  # en % (coherente con sMAPE)
     else:
         wape = float("nan")
         flags.append("wape_zero_denom")

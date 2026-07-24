@@ -43,6 +43,8 @@ from epiforecast.runner.policy import load_policy
 ENGINE = "seasonal_naive_lag52"
 SCHEMA_ENGINE_SPEC = "engine_spec.v1"
 _LAG = 52
+# Hasta implementar refit/forecast, este motor SOLO acepta benchmark (fail-closed honesto).
+_SUPPORTED = frozenset({"benchmark"})
 
 
 def predict_series(
@@ -62,9 +64,13 @@ class SeasonalNaiveLag52Adapter:
 
     name = ENGINE
 
+    def supports(self, command: str) -> bool:
+        return command in _SUPPORTED
+
     def run(self, command: str, run_dir: str) -> list[ArtifactRecord]:
         rd = Path(run_dir)
         ctx = json.loads((rd / "job_context.json").read_text(encoding="utf-8"))
+        disease_id = str(ctx["disease_id"])  # SIEMPRE del contexto; nunca hardcode
         products = pd.read_csv(Path(ctx["dataset_dir"]) / "products.csv")
         catalog = load_geo_catalog()
         policy = load_policy(ctx["policy_name"])
@@ -78,7 +84,7 @@ class SeasonalNaiveLag52Adapter:
         fc_parts, ev_parts = [], []
         n_base_predictions = 0  # predicciones de las 64 bases (excluye derivados)
         for fold in folds:
-            base_fc = self._predict_fold(base_truth, fold, run_id)
+            base_fc = self._predict_fold(base_truth, fold, run_id, disease_id)
             n_base_predictions += len(base_fc)
             full_fc = derive_forecast_products(base_fc, catalog)
             # El holdout de un fold = todas las semanas de su año epidemiológico.
@@ -115,6 +121,7 @@ class SeasonalNaiveLag52Adapter:
             "seed": ctx["seed"],
             "seasonal_lag": _LAG,
             "fold_ids": [f.fold_id for f in folds],
+            "disease_id": disease_id,
             "n_series_modeled": int(base_truth.groupby([COL_GEO_ID, COL_SEX]).ngroups),
             "base_predictions": int(n_base_predictions),
             "derived_eval_rows": int(len(eval_all)),
@@ -124,7 +131,9 @@ class SeasonalNaiveLag52Adapter:
         arts.append(_rec(rd, spec_path, SCHEMA_ENGINE_SPEC))
         return arts
 
-    def _predict_fold(self, base_truth: pd.DataFrame, fold: Any, run_id: str) -> pd.DataFrame:
+    def _predict_fold(
+        self, base_truth: pd.DataFrame, fold: Any, run_id: str, disease_id: str
+    ) -> pd.DataFrame:
         holdout = list(fold.holdout)
         oy, ow = fold.train_end
         rows: list[dict[str, Any]] = []
@@ -145,7 +154,7 @@ class SeasonalNaiveLag52Adapter:
                         ct.COL_ORIGIN_EPI_YEAR: oy,
                         ct.COL_ORIGIN_EPI_WEEK: ow,
                         ct.COL_HORIZON: h,
-                        "disease_id": "obesidad",
+                        "disease_id": disease_id,
                         COL_GEO_LEVEL: GEO_LEVEL_ESTADO,
                         COL_GEO_ID: cve,
                         COL_SEX: sexo,
