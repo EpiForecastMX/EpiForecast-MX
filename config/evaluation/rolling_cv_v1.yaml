@@ -26,6 +26,7 @@ candidate_engines:
   - seasonal_mean_5y
   - seasonal_median_5y
   - ets_add_damped_log1p
+  - ridge_harmonic_log1p
 
 # Folds por año epidemiológico. n_weeks = semanas MMWR del año (verificado con epi_calendar).
 folds:

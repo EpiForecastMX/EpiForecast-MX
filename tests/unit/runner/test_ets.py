@@ -148,8 +148,8 @@ def test_transform_gobernada_por_metadata(monkeypatch):
 def test_hueco_en_el_train_falla_cerrado():
     request = _request([5.0] * _N_TRAIN)
     train = dict(request.train)
-    train.pop((2016, 10))  # el motor NUNCA rellena huecos
-    with pytest.raises(EtsFitError, match="hueco en el train"):
+    train.pop((2016, 10))  # invariante compartido del harness: NUNCA se rellenan huecos
+    with pytest.raises(harness.HarnessError, match="hueco en el train"):
         _predict(harness.SeriesRequest(request.spec, train, request.holdout, request.origin))
 
 

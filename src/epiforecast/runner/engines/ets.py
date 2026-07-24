@@ -30,7 +30,6 @@ import numpy as np
 from omegaconf import OmegaConf
 
 from epiforecast.artifacts.transforms import TransformContractError
-from epiforecast.data.epi_calendar import shift
 from epiforecast.runner import contracts as ct
 from epiforecast.runner.adapters import register_adapter
 from epiforecast.runner.engines import harness
@@ -133,20 +132,14 @@ def _attempt(
 
 
 def _train_array(request: harness.SeriesRequest, seasonal_periods: int) -> np.ndarray[Any, Any]:
-    """Serie de train contigua y con historia suficiente (fail-closed; nunca rellena huecos)."""
-    periods = sorted(request.train)
-    who = ct.series_key_str(request.spec.key)
-    for prev, cur in zip(periods, periods[1:], strict=False):
-        if shift(prev[0], prev[1], 1) != cur:
-            raise EtsFitError(
-                f"{who}/{request.spec.fold_id}: hueco en el train entre {prev} y {cur}"
-            )
+    """Serie de train contigua (harness) y con historia suficiente para inicializar la estación."""
+    periods, counts = harness.train_series(request)  # contigüidad: invariante compartido
     if len(periods) < _MIN_SEASONS * seasonal_periods:
         raise EtsFitError(
-            f"{who}/{request.spec.fold_id}: {len(periods)} semanas de train "
-            f"(< {_MIN_SEASONS} estaciones de {seasonal_periods})"
+            f"{ct.series_key_str(request.spec.key)}/{request.spec.fold_id}: {len(periods)} "
+            f"semanas de train (< {_MIN_SEASONS} estaciones de {seasonal_periods})"
         )
-    return np.asarray([request.train[p] for p in periods], dtype=float)
+    return counts
 
 
 def make_predictor(cfg: dict[str, Any]) -> harness.PredictFn:

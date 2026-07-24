@@ -30,6 +30,7 @@ from pathlib import Path
 import time
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from epiforecast.artifacts.transforms import TransformContract
@@ -141,6 +142,22 @@ class _FoldOutcome:
 def _rec(run_dir: Path, path: Path, schema: str) -> ArtifactRecord:
     digest = hashlib.sha256(path.read_bytes()).hexdigest()
     return ArtifactRecord(str(path.relative_to(run_dir)), digest, schema, validated=True)
+
+
+def train_series(request: SeriesRequest) -> tuple[list[Period], np.ndarray[Any, Any]]:
+    """Train ordenado y CONTIGUO en el calendario MMWR (fail-closed; jamás rellena huecos).
+
+    Helper compartido por los motores que ajustan sobre la serie completa: una sola implementación
+    del invariante de contigüidad, no una copia por motor.
+    """
+    periods = sorted(request.train)
+    for prev, cur in zip(periods, periods[1:], strict=False):
+        if shift(prev[0], prev[1], 1) != cur:
+            raise HarnessError(
+                f"{request.spec.engine}/{ct.series_key_str(request.spec.key)}/"
+                f"{request.spec.fold_id}: hueco en el train entre {prev} y {cur}"
+            )
+    return periods, np.asarray([request.train[p] for p in periods], dtype=float)
 
 
 def _validate_predictions(out: SeriesForecast, request: SeriesRequest) -> None:

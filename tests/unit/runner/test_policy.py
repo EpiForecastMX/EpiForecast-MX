@@ -16,6 +16,7 @@ def test_candidate_engines_desde_politica():
         "seasonal_mean_5y",
         "seasonal_median_5y",
         "ets_add_damped_log1p",
+        "ridge_harmonic_log1p",
     ]
 
 

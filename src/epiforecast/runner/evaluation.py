@@ -179,6 +179,21 @@ def build_evaluation_frame(full_fc: pd.DataFrame, truth: pd.DataFrame, split: st
 
 
 # ── Métricas por serie (casos), zero-safe, nunca inf ──
+def smape_percent(y_true: Any, y_pred: Any) -> float:
+    """sMAPE en % (métrica principal). Zero-safe: si ``|y|+|ŷ|==0`` el término es 0, sin 0/0.
+
+    ÚNICA implementación de sMAPE del runner: la usan tanto el MetricFrame como los motores que
+    seleccionan hiperparámetros con validación interna (nunca una segunda fórmula paralela).
+    """
+    yt = np.asarray(y_true, dtype=float)
+    yp = np.asarray(y_pred, dtype=float)
+    abs_err = np.abs(yp - yt)
+    denom = np.abs(yt) + np.abs(yp)
+    term = np.zeros_like(abs_err, dtype=float)
+    np.divide(2.0 * abs_err, denom, out=term, where=denom != 0.0)
+    return float(term.mean() * 100.0)
+
+
 def series_metrics(
     y_true: Any, y_pred: Any, train_true: Any, mase_lag: int
 ) -> tuple[dict[str, float], list[str]]:
@@ -189,11 +204,7 @@ def series_metrics(
     mae = float(abs_err.mean())
     rmse = float(np.sqrt((err**2).mean()))
     bias = float(err.mean())
-
-    denom_s = np.abs(yt) + np.abs(yp)
-    term = np.zeros_like(abs_err, dtype=float)  # denom_s==0 (ambos cero) → 0, sin warning 0/0
-    np.divide(2.0 * abs_err, denom_s, out=term, where=denom_s != 0.0)
-    smape = float(term.mean() * 100.0)
+    smape = smape_percent(yt, yp)
 
     flags: list[str] = []
     sum_true = float(np.abs(yt).sum())

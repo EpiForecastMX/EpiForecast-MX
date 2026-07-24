@@ -1,0 +1,23 @@
+# F2/C3d — configuración DECLARATIVA del motor Ridge armónico (scikit-learn).
+# Rejilla, ventana de validación interna, métrica de selección y desempate viven AQUÍ; el motor no
+# decide nada en condicionales Python. Cambiar este archivo cambia el config_digest del spec.json.
+engine: ridge_harmonic_log1p
+implementation: sklearn_ridge
+solver: svd # determinista (descomposición cerrada, sin optimizador iterativo)
+fit_intercept: true
+target_transform: log1p # inversa expm1 gobernada por el TransformContract del TrainingSpec
+
+# Diseño: tendencia lineal estandarizada (solo con el set de ajuste) + armónicos de Fourier sobre
+# el ds epidemiológico (calendario MMWR), periodo anual. Sin lags.
+seasonal_period_days: 365.25
+fourier_orders: [2, 4, 6]
+alphas: [0.1, 1.0, 10.0]
+
+# Selección temporal INTERNA dentro del train exterior (el holdout nunca participa).
+inner_validation_weeks: 52
+min_inner_train_weeks: 104 # historia mínima del inner-train (2 años)
+selection_metric: smape # sMAPE en casos absolutos (misma fórmula que el MetricFrame)
+tie_break: [min_fourier_order, max_alpha]
+
+resource_limits:
+  max_threads: 1
