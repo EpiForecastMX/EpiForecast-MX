@@ -234,6 +234,28 @@ EpiForecast-MX/
 - **Horizonte Dengue: 1 año productivo + proyección 5 años ilustrativa.** El pronóstico preciso es 52 sem (DeepAR no puede más: `past_length=context+lags+pred_length > 390 sem de datos`). La proyección multi-año (`build_dengue_forecast_web.py`) ahora la genera **NB-GLM con `predict(freeze_trend=True)`** (paramétrico Fourier+ONI, extrapola >52 sem sin divergir; reemplazó la antigua banda plana de Prophet). `freeze_trend` congela la tendencia lineal en su último nivel para no extrapolar la pendiente inflada por 2024: con solo 2 ciclos epidémicos (2019, 2024) el ciclo de ~4 años no es aprendible, así que muestra el patrón estacional a nivel estable, no la magnitud de la próxima epidemia. El eje del chart arranca el año previo al último real (`chart_from_year`) para que la escala no la aplaste el pico 2024. Web: `dengue_forecast.json` → sección de pronóstico en `dengue.html`.
 - **DeepAR Dengue:** bloque `short_series` en `deepar.yaml` (cohort-aware via `is_neuro`): cohortes de menor historia que la neuro usan context_length=104, lags acotados (`max_lag=53`, conserva el lag anual), CV ligera (2x26) y `gap_fill=interpolate` (semanas sin boletin se interpolan; semana real con 0 se conserva en 0). DeepAR usa CUDA (SageMaker) > CPU; MPS (Apple Silicon) queda DESHABILITADO por defecto (ops de muestreo StudentT no implementados en MPS + riesgo de deadlock con procesos concurrentes); forzar con `deepar.allow_mps: true`. NO correr dos entrenamientos DeepAR locales concurrentes.
 
+### Carril E66 / Obesidad (runner genérico aislado — NO productivo, NO-GO)
+> **Obesidad (E66) es NO-GO**: no se entrena de verdad, publica, `git push`, `dvc add/push` ni se marca `published` sin **OK formal explícito**. Este carril vive APARTE del pipeline neuro/Dengue (no lo toca; legacy byte-idéntico). Rama `feat/registry-padecimientos-obesidad`, **sin push**. Cada micro-commit se revisa por diff.
+
+- **Datos nuevos (`src/epiforecast/data/`)**, sin tocar el legacy:
+  - `epi_calendar.py`: calendario **MMWR** (semana dom→sáb; `weeks_in_year`, `week_start`, `shift`, `ds_for`, `target_period(observation_lag_weeks)`). Semanas verificadas: 2020/2025=53, 2021-24=52.
+  - `epi_geo_exposure.py`: catálogo geográfico TRACKEADO `config/geografia/entidades_mx.csv` (32 entidades; `macroregion_id` identidad ≠ `macroregion_name` display, sin slugify) + snapshot de exposición `inegi_cpv2020_static` (`config/exposicion.yaml`, join estricto 1:1 + digest). `GeoCatalog`: resolve/entity/cve_ents/macroregion_ids/states_in_macroregion/macroregion_of.
+  - `epi_reconcile.py`: reconciliación causal H+M=total (deltas de acumulados, fallbacks, imputación).
+  - `epi_dataset.py`: `build_epi_dataset_v2(disease)` → **41,792 filas** (32 estados × 2 sexos × 653 periodos, 2014-W01..2026-W26), versionado en `runs/<dataset_id>/`.
+  - `epi_aggregate.py`: `build_products` deriva **111 productos** (64 base + 32 estado-general + 12 región[4×3sexos] + 3 nacional) SOLO de las 64 bases; reconciliación con **tolerancia cero**.
+- **Runner genérico (`src/epiforecast/runner/`)**:
+  - `contracts.py`: **único** `SeriesKey` + `TrainingSpec` (solo 64 bases) + validadores `ForecastFrame`/`EvaluationFrame`/`MetricFrame` (fila-a-fila; intervalos conjuntamente nulos/válidos, no negativos; NaN+flag nunca inf).
+  - `manifest.py`: `DatasetManifest` (`runs/<dataset_id>/`) + `RunManifest` v1 (`runs/<run_id>/`, dir DISTINTO). `dataset_id`=digest del dataset; `run_id`=digest(dataset+comando+stage+política+motores+seed+commit). Escritura atómica.
+  - `policy.py` + `config/evaluation/rolling_cv_v1.yaml`: backtest OOS rolling-origin declarativo (folds dev 2021-24 de 52 sem, ≥260 previas; test 2025/stress 2020/prospective 2026 solo reporte). **sMAPE principal**; MASE lag-52 **train-only**.
+  - `evaluation.py`: derivación 64→111 de pronósticos (recon `atol=1e-9`) + alineación verdad↔pred + métricas zero-safe (sMAPE/MASE/MAE/RMSE/WAPE**%**/bias firmado).
+  - `engines/` = **harness compartido** (`harness.py`) + motores; cada motor solo aporta su `PredictFn(truth_map,holdout)->(preds,n_fallback)`. Registrados: `seasonal_naive_lag52` + `seasonal_{mean,median}_{3,5}y` (`config/engines/seasonal_windows.yaml`). Adapters declaran `supports()` (solo benchmark; refit/forecast → **rc=3**).
+  - `report.py`: `comparison.csv` (mediana sMAPE/MASE bases/111/nacional + runtime + mejora vs baseline; **no elige ganador**).
+- **CLI `python -m scripts.disease_run`** (todo bajo `runs/<...>/`, gitignored):
+  - `validate-data Obesidad` → dataset + 111 productos (FUNCIONAL, rc0).
+  - `benchmark Obesidad --stage smoke|full [--engines a,b] [--allow-dirty]` → un subprocess LIMPIO por motor; el run oficial exige **árbol trackeado limpio** (`--allow-dirty` para dev). Reanudación solo si el job está succeeded + artefactos **re-verificados en disco** (un .pkl no cuenta).
+- **Baselines canónicos** (commits limpios): Seasonal Naive `obesidad_benchmark_full_7952e226c10a` @ `cf97301b`; run conjunto 5 motores `obesidad_benchmark_full_fc70f5f15b7b` @ `1e0709fd` (mediana sMAPE_all: naive 39.5, mean_5y **28.0 = −29%**). Cada motor: 13,312 predicciones base / 23,088 derivadas / 444 métricas / **solo 64 modeladas**.
+- **Registry**: Obesidad declara `training_engines=(prophet,deepar,ensemble,stacking)` (legacy, NO gobierna el benchmark) y `selection_policy=rolling_cv_v1`, `exposure_source_id=inegi_cpv2020_static`, `lifecycle=configured`.
+
 ### Convenciones de Codigo
 - **Imports**: Agrupar stdlib, luego terceros, luego locales (isort via Ruff).
 - **Tipado**: Uso estricto de `mypy`. Retornos de funciones deben estar tipados.
