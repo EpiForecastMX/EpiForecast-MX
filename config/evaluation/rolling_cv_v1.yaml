@@ -11,6 +11,9 @@ seasonal_horizon: 52 # horizonte estacional (semanas) del pronóstico OOS
 min_train_weeks: 260 # historia previa mínima exigida por fold
 mase_seasonal_lag: 52 # denominador naive estacional de MASE (calculado SOLO sobre train)
 
+# Origen de la serie E66 (define cuántas semanas previas tiene cada fold).
+series_start: {epi_year: 2014, epi_week: 1}
+
 metrics:
   primary: smape # sMAPE es la métrica principal (selección)
   reported: [smape, mase, mae, rmse, wape, bias]
