@@ -23,7 +23,7 @@ from typing import Any
 
 import pandas as pd
 
-from epiforecast.artifacts.transforms import TargetSpace, TransformContract
+from epiforecast.artifacts.transforms import TargetSpace, TransformContract, TransformStep
 from epiforecast.data.epi_dataset_spec import (
     BASE_SEXES,
     COL_DS,
@@ -139,6 +139,19 @@ def identity_transform(disease_id: str, engine: str) -> TransformContract:
         target_space=TargetSpace.COUNT,
         forward_steps=(),
         inverse_steps=(),
+        rate_scale=None,
+    )
+
+
+def log1p_transform(disease_id: str, engine: str) -> TransformContract:
+    """TransformContract log1p (count→transformed); la inversa expm1 la gobierna el contrato."""
+    return TransformContract(
+        disease_id=disease_id,
+        engine_id=engine,
+        source_space=TargetSpace.COUNT,
+        target_space=TargetSpace.TRANSFORMED,
+        forward_steps=(TransformStep.LOG1P,),
+        inverse_steps=(TransformStep.EXPM1,),
         rate_scale=None,
     )
 

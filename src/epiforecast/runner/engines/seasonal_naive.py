@@ -2,7 +2,8 @@
 
 Para cada semana objetivo del holdout, reutiliza el valor de 52 semanas atrás (calendario MMWR).
 Si el origen del salto cae DENTRO del holdout (folds de 53 semanas: 2020/2025), continúa
-RECURSIVAMENTE con la predicción previa — nunca consulta valores reales posteriores al origen.
+RECURSIVAMENTE con la predicción previa — nunca consulta valores reales posteriores al origen (el
+harness ya solo le entrega el train del fold; la recursión mantiene la propiedad para h>52).
 
 Su artefacto es la especificación reproducible + predicciones + métricas (NO un .pkl). Solo aporta
 su predictor; el harness gestiona datos/folds, 64 bases, derivación 64→111, eval/métricas y specs.
@@ -22,21 +23,20 @@ _SUPPORTED = frozenset({"benchmark"})
 
 
 def predict_series(
-    truth_map: dict[tuple[int, int], float], holdout: list[tuple[int, int]]
+    train_map: dict[tuple[int, int], float], holdout: list[tuple[int, int]]
 ) -> dict[tuple[int, int], float]:
     """Seasonal naive lag-52 para una serie. Recursivo si el origen del salto cae en el holdout."""
     holdout_set = set(holdout)
     preds: dict[tuple[int, int], float] = {}
     for y, w in holdout:  # holdout en orden creciente → los recursivos ya están calculados
         src = shift(y, w, -_LAG)
-        preds[(y, w)] = preds[src] if src in holdout_set else truth_map[src]
+        preds[(y, w)] = preds[src] if src in holdout_set else train_map[src]
     return preds
 
 
-def _predict(
-    truth_map: dict[tuple[int, int], float], holdout: list[tuple[int, int]]
-) -> tuple[dict[tuple[int, int], float], int]:
-    return predict_series(truth_map, holdout), 0  # el baseline nunca hace fallback
+def _predict(request: harness.SeriesRequest) -> harness.SeriesForecast:
+    # El baseline nunca hace fallback ni emite diagnóstico de ajuste (no ajusta nada).
+    return harness.SeriesForecast(predict_series(request.train, list(request.holdout)))
 
 
 class SeasonalNaiveLag52Adapter:

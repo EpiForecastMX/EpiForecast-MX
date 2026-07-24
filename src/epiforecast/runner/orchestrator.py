@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 import secrets
 import subprocess
@@ -41,6 +42,16 @@ from epiforecast.runner.report import comparative_report
 
 _ROOT = Path(__file__).resolve().parents[3]
 SCHEMA_LINEAGE = "lineage.v1"
+
+# Un solo thread numérico por subprocess de motor: ejecución secuencial y reproducible (BLAS/OpenMP
+# multihilo puede reordenar reducciones en coma flotante entre corridas).
+_SINGLE_THREAD_ENV: dict[str, str] = {
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "MKL_NUM_THREADS": "1",
+    "NUMEXPR_NUM_THREADS": "1",
+    "VECLIB_MAXIMUM_THREADS": "1",
+}
 
 
 class RunnerError(ValueError):
@@ -156,7 +167,9 @@ def _spawn_engine(
         "--attempt",
         attempt,
     ]
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+    proc = subprocess.run(
+        cmd, capture_output=True, text=True, env={**os.environ, **_SINGLE_THREAD_ENV}
+    )
     (jobs_dir / f"{engine}.stdout.txt").write_text(proc.stdout or "", encoding="utf-8")
     (jobs_dir / f"{engine}.stderr.txt").write_text(proc.stderr or "", encoding="utf-8")
     result: dict[str, Any] | None = None
@@ -315,6 +328,7 @@ def run_command(
             {
                 "dataset_dir": str(dataset_dir),
                 "dataset_id": dataset_id,
+                "dataset_digest": dm.digests["dataset"],  # digest COMPLETO → TrainingSpec
                 "disease_id": disease_id,
                 "policy_name": policy_name,
                 "stage": stage,

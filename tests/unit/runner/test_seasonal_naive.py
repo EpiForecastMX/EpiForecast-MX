@@ -40,9 +40,19 @@ def test_disease_id_desde_contexto_sin_hardcode():
             for w in range(1, weeks_in_year(2020) + 1)  # cubre las fuentes lag-52 del holdout 2021
         ]
     )
-    df, _ = harness._predict_fold(base_truth, fold, "run1", "synthetic_disease", ENGINE, _predict)
-    assert (df["disease_id"] == "synthetic_disease").all()
-    assert len(df) == 52 and (df[ct.COL_GEO_LEVEL] == "estado").all()
+    ctx = harness.EngineContext(
+        engine=ENGINE,
+        disease_id="synthetic_disease",
+        dataset_digest="d" * 64,
+        policy_name="rolling_cv_v1",
+        policy_digest="p" * 64,
+        seed=1,
+        transform=ct.identity_transform("synthetic_disease", ENGINE),
+    )
+    out = harness._predict_fold(base_truth, fold, "run1", ctx, _predict)
+    assert (out.forecast["disease_id"] == "synthetic_disease").all()
+    assert len(out.forecast) == 52 and (out.forecast[ct.COL_GEO_LEVEL] == "estado").all()
+    assert out.n_fallback == 0 and out.diagnostics == []
 
 
 def test_recupera_lag52_exacto():

@@ -5,14 +5,32 @@ from __future__ import annotations
 import pytest
 
 from epiforecast.data.epi_calendar import shift
+from epiforecast.data.epi_dataset_spec import SeriesKey
 from epiforecast.runner import adapters
+from epiforecast.runner import contracts as ct
+from epiforecast.runner.engines import harness
 from epiforecast.runner.engines.seasonal_window import (
     WindowConfigError,
+    _as_predict_fn,
     load_window_config,
     make_predictor,
 )
 
 _NAMES = {"seasonal_mean_3y", "seasonal_median_3y", "seasonal_mean_5y", "seasonal_median_5y"}
+
+
+def _spec_for(engine: str) -> ct.TrainingSpec:
+    return ct.TrainingSpec(
+        key=SeriesKey("synthetic_disease", "estado", "05", "hombres"),
+        engine=engine,
+        dataset_digest="d" * 64,
+        policy_name="rolling_cv_v1",
+        policy_digest="p" * 64,
+        fold_id="development_2024",
+        seed=1,
+        horizon=1,
+        transform=ct.identity_transform("synthetic_disease", engine),
+    )
 
 
 def test_config_y_registro():
@@ -78,6 +96,18 @@ def test_invariancia_post_origen():
         altered[k] = -999.0
     predict = make_predictor(5, "mean", 1)
     assert predict(base, holdout)[0] == predict(altered, holdout)[0]
+
+
+def test_wrapper_del_harness_preserva_preds_y_fallback():
+    # El adapter al contrato PredictFn no altera las predicciones ni el conteo de fallback.
+    window = make_predictor(3, "mean", 1)
+    train = {(2021, 1): 10.0, (2022, 1): 20.0, (2023, 1): 30.0}
+    preds, nfb = window(train, [(2024, 1)])
+    request = harness.SeriesRequest(
+        spec=_spec_for("seasonal_mean_3y"), train=train, holdout=((2024, 1),), origin=(2023, 52)
+    )
+    out = _as_predict_fn(window)(request)
+    assert out.predictions == preds and out.n_fallback == nfb and out.diagnostics == {}
 
 
 def test_estadistico_invalido_levanta():

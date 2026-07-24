@@ -40,28 +40,44 @@ def load_window_config() -> dict[str, dict[str, Any]]:
     return {str(k): dict(v) for k, v in raw["engines"].items()}
 
 
-def make_predictor(years: int, statistic: str, min_obs: int) -> harness.PredictFn:
+WindowFn = Callable[
+    [dict[tuple[int, int], float], list[tuple[int, int]]],
+    tuple[dict[tuple[int, int], float], int],
+]
+
+
+def make_predictor(years: int, statistic: str, min_obs: int) -> WindowFn:
     """Predictor de ventana: media/mediana de la misma semana en ``years`` años previos; fallback naive."""
     if statistic not in _STATISTICS:
         raise WindowConfigError(f"estadístico no soportado: {statistic!r}")
     stat = _STATISTICS[statistic]
 
     def predict(
-        truth_map: dict[tuple[int, int], float], holdout: list[tuple[int, int]]
+        train_map: dict[tuple[int, int], float], holdout: list[tuple[int, int]]
     ) -> tuple[dict[tuple[int, int], float], int]:
         holdout_set = set(holdout)
         preds: dict[tuple[int, int], float] = {}
         n_fallback = 0
         for y, w in holdout:
             # Misma semana epidemiológica en los N años previos; solo periodos existentes.
-            vals = [truth_map[(y - k, w)] for k in range(1, years + 1) if (y - k, w) in truth_map]
+            vals = [train_map[(y - k, w)] for k in range(1, years + 1) if (y - k, w) in train_map]
             if len(vals) >= min_obs:
                 preds[(y, w)] = float(stat(vals))
             else:  # sin historial en la ventana (p.ej. W53) → seasonal_naive_lag52 recursivo
                 src = shift(y, w, -_LAG)
-                preds[(y, w)] = preds[src] if src in holdout_set else truth_map[src]
+                preds[(y, w)] = preds[src] if src in holdout_set else train_map[src]
                 n_fallback += 1
         return preds, n_fallback
+
+    return predict
+
+
+def _as_predict_fn(window: WindowFn) -> harness.PredictFn:
+    """Adapta el predictor de ventana (puro) al contrato ``PredictFn`` del harness."""
+
+    def predict(request: harness.SeriesRequest) -> harness.SeriesForecast:
+        preds, n_fallback = window(request.train, list(request.holdout))
+        return harness.SeriesForecast(preds, n_fallback)
 
     return predict
 
@@ -75,7 +91,7 @@ class SeasonalWindowAdapter:
         self._statistic = statistic
         self._min_obs = min_obs
         self._fallback = fallback
-        self._predict = make_predictor(years, statistic, min_obs)
+        self._predict = _as_predict_fn(make_predictor(years, statistic, min_obs))
 
     def supports(self, command: str) -> bool:
         return command in _SUPPORTED
