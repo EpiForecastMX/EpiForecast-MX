@@ -36,6 +36,7 @@ def test_disease_id_desde_contexto_sin_hardcode():
                 spec.COL_EPI_YEAR: 2020,
                 spec.COL_EPI_WEEK: w,
                 spec.COL_Y_CASES: 10 + w,
+                spec.COL_EXPOSURE: 1_000_000,
             }
             for w in range(1, weeks_in_year(2020) + 1)  # cubre las fuentes lag-52 del holdout 2021
         ]

@@ -21,7 +21,7 @@ reproducible byte a byte): va a ``jobs/<engine>.fit_timing.csv`` y NO es un arte
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from dataclasses import dataclass, field
 import hashlib
 import json
@@ -40,6 +40,7 @@ from epiforecast.data.epi_dataset_spec import (
     COL_DS,
     COL_EPI_WEEK,
     COL_EPI_YEAR,
+    COL_EXPOSURE,
     COL_GEO_ID,
     COL_GEO_LEVEL,
     COL_SEX,
@@ -70,12 +71,19 @@ class HarnessError(ValueError):
 
 @dataclass(frozen=True)
 class SeriesRequest:
-    """Lo que recibe un predictor para UNA serie base y UN fold. ``train`` nunca incluye holdout."""
+    """Lo que recibe un predictor para UNA serie base y UN fold. ``train`` nunca incluye holdout.
+
+    La exposición SÍ viaja para los periodos del holdout: es el denominador poblacional del
+    periodo objetivo (no una observación futura del target), imprescindible para devolver una
+    tasa a casos. Los casos reales del holdout nunca se entregan.
+    """
 
     spec: ct.TrainingSpec
     train: dict[Period, float]  # periodos <= origin, ascendentes
     holdout: tuple[Period, ...]
     origin: Period
+    train_exposure: dict[Period, float] = field(default_factory=dict)
+    holdout_exposure: dict[Period, float] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -176,26 +184,74 @@ def _validate_predictions(out: SeriesForecast, request: SeriesRequest) -> None:
         raise HarnessError(f"{who}: n_fallback negativo ({out.n_fallback})")
 
 
+def _validate_exposure(request: SeriesRequest) -> None:
+    """Si el contrato requiere exposición, exigir cobertura EXACTA y valores finitos positivos."""
+    if not request.spec.transform.requires_exposure:
+        return
+    who = f"{request.spec.engine}/{ct.series_key_str(request.spec.key)}/{request.spec.fold_id}"
+    for label, periods, exposure in (
+        ("train", set(request.train), request.train_exposure),
+        ("holdout", set(request.holdout), request.holdout_exposure),
+    ):
+        if set(exposure) != periods:
+            raise HarnessError(f"{who}: exposición de {label} no cubre exactamente sus periodos")
+        for period, value in exposure.items():
+            if not math.isfinite(value) or value <= 0:
+                raise HarnessError(f"{who}: exposición inválida en {period}: {value!r}")
+
+
+def series_requests(
+    base_truth: pd.DataFrame, fold: Fold, ctx: EngineContext
+) -> Iterator[tuple[str, str, SeriesRequest]]:
+    """Materializa el ``SeriesRequest`` de cada serie base para UN fold (train cortado en el origen).
+
+    Única construcción de requests del runner: la comparten el backtest y el tuning, de modo que
+    ambos ven exactamente el mismo corte causal.
+    """
+    holdout = tuple(fold.holdout)
+    origin = fold.train_end
+    if shift(origin[0], origin[1], 1) != holdout[0]:
+        raise HarnessError(f"fold {fold.fold_id}: el holdout no arranca justo después del origen")
+    holdout_set = set(holdout)
+
+    for (cve, sexo), grp in base_truth.groupby([COL_GEO_ID, COL_SEX], sort=False):
+        train: dict[Period, float] = {}
+        train_exposure: dict[Period, float] = {}
+        holdout_exposure: dict[Period, float] = {}
+        for y, w, cases, exposure in zip(
+            grp[COL_EPI_YEAR],
+            grp[COL_EPI_WEEK],
+            grp[COL_Y_CASES],
+            grp[COL_EXPOSURE],
+            strict=True,
+        ):
+            period = (int(y), int(w))
+            if period <= origin:  # verdad ESTRICTAMENTE anterior al holdout
+                train[period] = float(cases)
+                train_exposure[period] = float(exposure)
+            elif period in holdout_set:
+                holdout_exposure[period] = float(exposure)  # denominador, NUNCA los casos
+        request = SeriesRequest(
+            ctx.spec_for(str(cve), str(sexo), fold),
+            dict(sorted(train.items())),
+            holdout,
+            origin,
+            dict(sorted(train_exposure.items())),
+            dict(sorted(holdout_exposure.items())),
+        )
+        _validate_exposure(request)
+        yield str(cve), str(sexo), request
+
+
 def _predict_fold(
     base_truth: pd.DataFrame, fold: Fold, run_id: str, ctx: EngineContext, predict_fn: PredictFn
 ) -> _FoldOutcome:
     """Ejecuta las 64 bases de UN fold: train cortado en el origen, predicciones validadas."""
     holdout = tuple(fold.holdout)
     origin = fold.train_end
-    if shift(origin[0], origin[1], 1) != holdout[0]:
-        raise HarnessError(f"fold {fold.fold_id}: el holdout no arranca justo después del origen")
-
     out = _FoldOutcome(pd.DataFrame(), 0, [], [])
     rows: list[dict[str, Any]] = []
-    for (cve, sexo), grp in base_truth.groupby([COL_GEO_ID, COL_SEX], sort=False):
-        train = {
-            (int(y), int(w)): float(v)
-            for y, w, v in zip(grp[COL_EPI_YEAR], grp[COL_EPI_WEEK], grp[COL_Y_CASES], strict=True)
-            if (int(y), int(w)) <= origin  # verdad ESTRICTAMENTE anterior al holdout
-        }
-        spec = ctx.spec_for(str(cve), str(sexo), fold)
-        request = SeriesRequest(spec, dict(sorted(train.items())), holdout, origin)
-
+    for cve, sexo, request in series_requests(base_truth, fold, ctx):
         started = time.perf_counter()
         result = predict_fn(request)
         elapsed = time.perf_counter() - started

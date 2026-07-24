@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -15,7 +16,12 @@ from epiforecast.runner.policy import load_policy
 
 _ENGINE = "spy_engine"
 _DISEASE = "synthetic_disease"
+_RATE_DISEASE = "obesidad"  # la escala de tasa sale del perfil del registry, no del test
 _SERIES = (("05", "hombres"), ("09", "mujeres"))
+
+
+def _rate_transform(engine: str):
+    return ct.rate_log1p_transform(_RATE_DISEASE, engine)
 
 
 def _fold():
@@ -31,6 +37,7 @@ def _base_truth(years=(2019, 2020, 2021)) -> pd.DataFrame:
                 spec.COL_EPI_YEAR: y,
                 spec.COL_EPI_WEEK: w,
                 spec.COL_Y_CASES: float(y * 100 + w),
+                spec.COL_EXPOSURE: 1_000_000.0,
             }
             for cve, sexo in _SERIES
             for y in years
@@ -137,6 +144,55 @@ def test_diagnosticos_llevan_identidad_y_digests():
 def test_sin_diagnosticos_no_emite_filas():
     out = harness._predict_fold(_base_truth(), _fold(), "run1", _ctx(), _flat)
     assert out.diagnostics == [] and len(out.forecast) == len(_SERIES) * 52
+
+
+def test_exposicion_cubre_train_y_holdout_sin_filtrar_casos():
+    # La exposición del holdout es el denominador del periodo objetivo, no una observación futura.
+    fold = _fold()
+    seen: list[harness.SeriesRequest] = []
+    ctx = _ctx(
+        engine="prophet_rate",
+        disease_id=_RATE_DISEASE,
+        transform=_rate_transform("prophet_rate"),
+    )
+
+    def predict(request):
+        seen.append(request)
+        return _flat(request)
+
+    harness._predict_fold(_base_truth(), fold, "run1", ctx, predict)
+    for request in seen:
+        assert set(request.train_exposure) == set(request.train)
+        assert set(request.holdout_exposure) == set(request.holdout)
+        assert all(v == 1_000_000.0 for v in request.holdout_exposure.values())
+        assert not set(request.holdout) & set(request.train)  # los casos del holdout no viajan
+
+
+def test_exposicion_incompleta_o_no_positiva_levanta():
+    ctx = _ctx(
+        engine="prophet_rate",
+        disease_id=_RATE_DISEASE,
+        transform=_rate_transform("prophet_rate"),
+    )
+    base = _base_truth()
+    faltante = base[~((base[spec.COL_EPI_YEAR] == 2021) & (base[spec.COL_EPI_WEEK] == 5))]
+    with pytest.raises(harness.HarnessError, match="no cubre exactamente"):
+        harness._predict_fold(faltante, _fold(), "run1", ctx, _flat)
+
+    cero = base.copy()
+    cero.loc[cero[spec.COL_EPI_YEAR] == 2021, spec.COL_EXPOSURE] = 0.0
+    with pytest.raises(harness.HarnessError, match="exposición inválida"):
+        harness._predict_fold(cero, _fold(), "run1", ctx, _flat)
+
+
+def test_round_trip_de_tasa_vuelve_a_casos():
+    transform = _rate_transform("prophet_rate")
+    casos = np.array([0.0, 7.0, 153.0, 4210.0])
+    exposicion = np.array([1_000_000.0, 250_000.0, 3_500_000.0, 900_000.0])
+    ida = transform.apply_forward(casos, exposure=exposicion)
+    vuelta = transform.apply_inverse(ida, exposure=exposicion)
+    assert np.allclose(vuelta, casos, rtol=0, atol=1e-9)
+    assert transform.rate_scale == 100_000.0  # del perfil del registry, no hardcodeado
 
 
 def test_config_digest_depende_de_params_y_transform():

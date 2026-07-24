@@ -23,6 +23,7 @@ from typing import Any
 
 import pandas as pd
 
+from epiforecast import registry
 from epiforecast.artifacts.transforms import TargetSpace, TransformContract, TransformStep
 from epiforecast.data.epi_dataset_spec import (
     BASE_SEXES,
@@ -153,6 +154,26 @@ def log1p_transform(disease_id: str, engine: str) -> TransformContract:
         forward_steps=(TransformStep.LOG1P,),
         inverse_steps=(TransformStep.EXPM1,),
         rate_scale=None,
+    )
+
+
+def rate_log1p_transform(disease_id: str, engine: str) -> TransformContract:
+    """TransformContract tasa+log1p (count→rate→transformed→expm1→count).
+
+    La escala de tasa NO se hardcodea: sale del perfil del registry del padecimiento (única
+    fuente de verdad, la misma que usa ``resolve_transform_contract``).
+    """
+    spec = registry.require(disease_id)
+    if spec.profile.rate_scale is None:
+        raise ContractError(f"perfil '{spec.profile_name}' no declara rate_scale (tasa imposible)")
+    return TransformContract(
+        disease_id=disease_id,
+        engine_id=engine,
+        source_space=TargetSpace.COUNT,
+        target_space=TargetSpace.TRANSFORMED,
+        forward_steps=(TransformStep.RATE_PER_EXPOSURE, TransformStep.LOG1P),
+        inverse_steps=(TransformStep.EXPM1, TransformStep.RATE_TO_COUNT),
+        rate_scale=float(spec.profile.rate_scale),
     )
 
 
