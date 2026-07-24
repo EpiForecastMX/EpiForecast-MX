@@ -266,3 +266,6 @@ notebooks/bad *
 # Evidencia forense Fase 0 (Obesidad NO-GO): forecasts grandes preservados en disco,
 # NO en git (usar SHA256SUMS.txt como manifiesto durable). Ver docs/FASE_0_CONTENCION.md
 reports/_evidencia_regresion_ab201731/*_OBESIDAD_ONLY.csv
+
+# Runs locales de EpiDatasetV2 / disease_run (F1/F2): artefactos por run_id, no en git
+runs/
