@@ -1,0 +1,15 @@
+# Fuentes de exposición reusables (EpiDatasetV2 las EXIGE; el legacy puede omitirlas).
+# Obesidad solo REFERENCIA una fuente por id; no duplica rutas ni columnas.
+version: 1
+
+catalogo_geografico: config/geografia/entidades_mx.csv
+
+fuentes:
+  inegi_cpv2020_static:
+    path: data/utils/inegi.csv
+    reference: "CPV 2020"
+    cutoff: "2020-03-15"
+    entidad_column: "Entidad federativa"
+    columns: [Hombres, Mujeres, Total]
+    # Digest esperado del snapshot (reproducibilidad, NO seguridad).
+    sha256: d1453197abfc18b52955fbc7e86c4750e4f1ec9f1c9987a02a293139d70be3e2
