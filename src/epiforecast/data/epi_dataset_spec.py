@@ -15,8 +15,8 @@ SEX_HOMBRES = "hombres"
 SEX_MUJERES = "mujeres"
 BASE_SEXES: tuple[str, str] = (SEX_HOMBRES, SEX_MUJERES)
 
-# Columna de exposición (CPV 2020) por sexo, resuelta por registry (no por condicionales).
-EXPOSURE_COLUMN: dict[str, str] = {SEX_HOMBRES: "Hombres", SEX_MUJERES: "Mujeres"}
+# El mapeo sexo → columna de exposición NO se hard-codea aquí: vive en config/exposicion.yaml
+# (``columns_by_sex``) y viaja en ``ExposureSnapshot.columns_by_sex``.
 
 
 # ── Quality flags (causales; se acumulan por observación como conjunto ordenado) ──
@@ -114,15 +114,21 @@ class ExposureSnapshot:
     source_id: str  # "inegi_cpv2020_static"
     reference: str  # "CPV 2020"
     cutoff: date  # 2020-03-15
-    columns: tuple[str, ...]  # ("Hombres", "Mujeres", "Total")
+    columns_by_sex: dict[str, str]  # {"hombres":"Hombres","mujeres":"Mujeres"}
+    total_column: str | None  # "Total" (para verificar H+M=Total)
     digest: str  # sha256 del archivo fuente
     by_cve_ent: dict[str, dict[str, int]]  # cve_ent -> {"Hombres":int,"Mujeres":int,"Total":int}
 
+    def exposure_for(self, cve_ent: str, sexo: str) -> int:
+        """Exposición del ``(cve_ent, sexo)`` vía ``columns_by_sex`` (no hard-code)."""
+        return self.by_cve_ent[cve_ent][self.columns_by_sex[sexo]]
+
 
 @dataclass(frozen=True)
-class E66Config:
-    """Config del carril E66 leída del registry/cuadros (no hard-code)."""
+class EpiDatasetConfig:
+    """Config del carril EpiDatasetV2 leída del registry/cuadros (no hard-code)."""
 
     disease_id: str
     observation_lag_weeks: int
     exposure_source_id: str
+    expected_n_states: int

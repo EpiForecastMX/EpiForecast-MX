@@ -95,7 +95,8 @@ def test_digest_incorrecto_levanta(tmp_path, catalog, monkeypatch):
         '    reference: "CPV 2020"\n'
         '    cutoff: "2020-03-15"\n'
         '    entidad_column: "Entidad federativa"\n'
-        "    columns: [Hombres, Mujeres, Total]\n"
+        "    columns_by_sex: {hombres: Hombres, mujeres: Mujeres}\n"
+        "    total_column: Total\n"
         "    sha256: deadbeef\n",
         "utf-8",
     )

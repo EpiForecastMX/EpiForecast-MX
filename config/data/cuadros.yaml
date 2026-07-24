@@ -13,6 +13,9 @@ cuadro_groups:
     page_anchors: ["e66", "obesidad"]
     state_markers: ["aguascalientes", "zacatecas"]
     year_week_source: filename
+    # Retraso de observación del boletín (EpiDatasetV2): la (año,semana) de FUENTE se
+    # desplaza este número de semanas hacia atrás en el calendario epidemiológico.
+    observation_lag_weeks: 1
     # Padecimientos co-ubicados (izq->der). onboard:false = extraíble pero no se emite.
     diseases:
       - id: obesidad

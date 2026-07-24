@@ -10,6 +10,10 @@ fuentes:
     reference: "CPV 2020"
     cutoff: "2020-03-15"
     entidad_column: "Entidad federativa"
-    columns: [Hombres, Mujeres, Total]
+    # Columna de exposición por sexo base (no hard-code en Python).
+    columns_by_sex:
+      hombres: Hombres
+      mujeres: Mujeres
+    total_column: Total   # para verificar Hombres + Mujeres = Total
     # Digest esperado del snapshot (reproducibilidad, NO seguridad).
     sha256: d1453197abfc18b52955fbc7e86c4750e4f1ec9f1c9987a02a293139d70be3e2

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 from datetime import date
 import hashlib
+import math
 from pathlib import Path
 from typing import Any, cast
 import unicodedata
@@ -35,6 +36,14 @@ def _fold(s: str) -> str:
 
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _strict_int(v: object, ctx: str) -> int:
+    """int SOLO si el valor es finito y entero exacto (no trunca floats arbitrarios)."""
+    f = float(v)  # type: ignore[arg-type]
+    if not math.isfinite(f) or not f.is_integer():
+        raise GeoExposureError(f"{ctx}: valor no entero/finito: {v!r}")
+    return int(f)
 
 
 def _exposicion_config_path() -> Path:
@@ -125,20 +134,22 @@ def load_exposure_snapshot(
         )
 
     ent_col = str(spec["entidad_column"])
-    cols = [str(c) for c in spec["columns"]]
+    columns_by_sex = {str(k): str(v) for k, v in spec["columns_by_sex"].items()}
+    total_col = str(spec["total_column"]) if spec.get("total_column") else None
+    read_cols = list(
+        dict.fromkeys([*columns_by_sex.values(), *([total_col] if total_col else [])])
+    )
     df = pd.read_csv(path)
     by_cve: dict[str, dict[str, int]] = {}
     for _, r in df.iterrows():
         cve = catalog.resolve(str(r[ent_col]))
         if cve in by_cve:
             raise GeoExposureError(f"exposición duplicada para CVE_ENT {cve}")
-        vals = {c: int(r[c]) for c in cols}
+        vals = {c: _strict_int(r[c], f"exposición {source_id}/{cve}/{c}") for c in read_cols}
         if not all(v > 0 for v in vals.values()):
             raise GeoExposureError(f"exposición no positiva en {cve}: {vals}")
-        if {"Hombres", "Mujeres", "Total"} <= vals.keys() and (
-            vals["Hombres"] + vals["Mujeres"] != vals["Total"]
-        ):
-            raise GeoExposureError(f"Hombres+Mujeres != Total en {cve}: {vals}")
+        if total_col and sum(vals[c] for c in columns_by_sex.values()) != vals[total_col]:
+            raise GeoExposureError(f"suma por sexo != {total_col} en {cve}: {vals}")
         by_cve[cve] = vals
     if len(by_cve) != 32:
         raise GeoExposureError(f"la exposición debe cubrir 32 entidades, cubre {len(by_cve)}")
@@ -147,7 +158,8 @@ def load_exposure_snapshot(
         source_id=source_id,
         reference=str(spec["reference"]),
         cutoff=date.fromisoformat(str(spec["cutoff"])),
-        columns=tuple(cols),
+        columns_by_sex=columns_by_sex,
+        total_column=total_col,
         digest=digest,
         by_cve_ent=by_cve,
     )

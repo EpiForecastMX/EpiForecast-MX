@@ -90,6 +90,7 @@ _DISEASE_KEYS = frozenset(
         "profile",
         "batch",
         "extraction_group",
+        "exposure_source_id",
         "lifecycle",
         "channels",
         "training_engines",
@@ -151,6 +152,7 @@ class Disease:
     gallery_enabled: bool
     web: Mapping[str, Any]
     profile: Profile
+    exposure_source_id: str | None = None  # solo EpiDatasetV2 lo exige; legacy = None
 
 
 @dataclass(frozen=True)
@@ -257,6 +259,7 @@ def _build_disease(body: Mapping[str, Any], profiles: Mapping[str, Profile]) -> 
         gallery_enabled=bool(body.get("gallery_enabled", True)),
         web=dict(body.get("web", {})),
         profile=profiles[pname],
+        exposure_source_id=(body.get("exposure_source_id") or None),
     )
 
 
