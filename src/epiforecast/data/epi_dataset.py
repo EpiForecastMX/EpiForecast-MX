@@ -25,7 +25,12 @@ from epiforecast import registry
 from epiforecast.data import epi_calendar as ec
 from epiforecast.data import epi_dataset_spec as spec
 from epiforecast.data.epi_dataset_spec import ExposureSnapshot
-from epiforecast.data.epi_geo_exposure import GeoCatalog, load_exposure_snapshot, load_geo_catalog
+from epiforecast.data.epi_geo_exposure import (
+    GeoCatalog,
+    geo_catalog_path,
+    load_exposure_snapshot,
+    load_geo_catalog,
+)
 from epiforecast.data.epi_reconcile import reconcile_state
 
 _ROOT = Path(__file__).resolve().parents[3]
@@ -88,7 +93,7 @@ def load_config(disease: str) -> spec.EpiDatasetConfig:
     if isinstance(n_states, bool) or not isinstance(n_states, int) or n_states <= 0:
         raise EpiDatasetError(f"n_states_expected inválido: {n_states!r}")
     return spec.EpiDatasetConfig(
-        disease_id=d.slug,
+        disease_id=d.id,  # id del registry (invariante N+1); NO el slug (coinciden en Obesidad)
         observation_lag_weeks=lag,
         exposure_source_id=d.exposure_source_id,
         expected_n_states=n_states,
@@ -160,7 +165,9 @@ def explode_base(
 
 
 def _canonical_csv(df: pd.DataFrame) -> str:
-    return cast("str", df.sort_values(_CANONICAL_ORDER).reset_index(drop=True).to_csv(index=False))
+    # Anotación (no cast): robusta a que pandas-stubs infiera str o Any para to_csv.
+    csv: str = df.sort_values(_CANONICAL_ORDER).reset_index(drop=True).to_csv(index=False)
+    return csv
 
 
 def build_epi_dataset_v2(
@@ -184,13 +191,22 @@ def build_epi_dataset_v2(
     base = explode_base(state, snapshot, catalog, cfg.disease_id)
     base = base.sort_values(_CANONICAL_ORDER).reset_index(drop=True)
 
+    catalog_path = geo_catalog_path()
+    catalog_digest = _sha256_bytes(catalog_path.read_bytes())
     dataset_digest = _sha256_bytes(_canonical_csv(base).encode("utf-8"))
     config_payload = {
         "disease_id": cfg.disease_id,
-        "observation_lag_weeks": cfg.observation_lag_weeks,
-        "exposure_source_id": cfg.exposure_source_id,
+        "calendar": {"kind": "epi_mmwr", "observation_lag_weeks": cfg.observation_lag_weeks},
         "expected_n_states": cfg.expected_n_states,
-        "columns_by_sex": snapshot.columns_by_sex,
+        "exposure": {
+            "source_id": cfg.exposure_source_id,
+            "reference": snapshot.reference,
+            "cutoff": str(snapshot.cutoff),
+            "columns_by_sex": snapshot.columns_by_sex,
+            "total_column": snapshot.total_column,
+            "digest": snapshot.digest,
+        },
+        "geo_catalog": {"path": str(catalog_path.relative_to(_ROOT)), "digest": catalog_digest},
     }
     config_digest = _sha256_bytes(
         json.dumps(config_payload, sort_keys=True, ensure_ascii=False).encode("utf-8")
@@ -207,8 +223,9 @@ def build_epi_dataset_v2(
     inputs_dir = run_dir / "inputs"
     inputs_dir.mkdir(parents=True, exist_ok=True)
 
-    # Insumos efectivos.
+    # Insumos efectivos: raw, catálogo geográfico, exposición canónica y config.
     shutil.copy2(raw_path, inputs_dir / raw_path.name)
+    shutil.copy2(catalog_path, inputs_dir / catalog_path.name)
     exp_proj = pd.DataFrame(
         [{"cve_ent": c, **snapshot.by_cve_ent[c]} for c in sorted(snapshot.by_cve_ent)]
     )

@@ -1,6 +1,12 @@
-"""F1/C1 — catálogo geográfico + snapshot de exposición CPV 2020 (join estricto, digest)."""
+"""F1/C1 — catálogo geográfico (trackeado) + loader de exposición con snapshot SINTÉTICO.
+
+No lee ``data/utils/inegi.csv`` (gitignored). El snapshot real CPV 2020 (digest/sumas) → integration.
+El catálogo (``config/geografia/entidades_mx.csv``) sí es trackeado y CI-safe.
+"""
 
 from __future__ import annotations
+
+import hashlib
 
 import pandas as pd
 import pytest
@@ -13,6 +19,7 @@ def catalog():
     return ge.load_geo_catalog()
 
 
+# ── Catálogo (trackeado) ──
 def test_catalogo_32_entidades(catalog):
     assert len(catalog.entities) == 32
     assert catalog.cve_ents() == [f"{i:02d}" for i in range(1, 33)]
@@ -42,63 +49,80 @@ def test_resolve_desconocido_levanta(catalog):
         catalog.resolve("Narnia")
 
 
-def test_todas_las_entidades_del_raw_e66_resuelven(catalog):
-    raw = pd.read_csv("data/raw/data_raw_Obesidad.csv", usecols=["Entidad"])
-    for e in raw["Entidad"].dropna().unique():
-        assert catalog.resolve(e) in catalog._by_cve  # sin fuzzy: match exacto o alias
-
-
-def test_exposicion_cpv2020_digest_y_sumas(catalog):
-    snap = ge.load_exposure_snapshot("inegi_cpv2020_static", catalog)
-    assert snap.source_id == "inegi_cpv2020_static"
-    assert snap.reference == "CPV 2020"
-    assert str(snap.cutoff) == "2020-03-15"
-    assert snap.digest == "d1453197abfc18b52955fbc7e86c4750e4f1ec9f1c9987a02a293139d70be3e2"
-    assert len(snap.by_cve_ent) == 32
-    h = sum(v["Hombres"] for v in snap.by_cve_ent.values())
-    m = sum(v["Mujeres"] for v in snap.by_cve_ent.values())
-    t = sum(v["Total"] for v in snap.by_cve_ent.values())
-    assert (h, m, t) == (61_473_390, 64_540_634, 126_014_024)
-    for cve, v in snap.by_cve_ent.items():
-        assert v["Hombres"] + v["Mujeres"] == v["Total"], cve
-        assert all(x > 0 for x in v.values()), cve
-
-
-def test_fuente_desconocida_levanta(catalog):
-    with pytest.raises(ge.GeoExposureError):
-        ge.load_exposure_snapshot("no_existe", catalog)
-
-
-# ── Validaciones del catálogo con datos sintéticos ──
-def _write_catalog(tmp_path, rows: list[str]):
+def test_catalogo_menos_de_32_levanta(tmp_path):
     p = tmp_path / "cat.csv"
     p.write_text(
-        "cve_ent,nombre_canonico,nombre_inegi,aliases\n" + "\n".join(rows) + "\n", "utf-8"
+        "cve_ent,nombre_canonico,nombre_inegi,aliases\n01,Aguascalientes,Aguascalientes,Ags.\n",
+        encoding="utf-8",
     )
-    return p
-
-
-def test_catalogo_menos_de_32_levanta(tmp_path):
-    p = _write_catalog(tmp_path, ["01,Aguascalientes,Aguascalientes,Ags."])
     with pytest.raises(ge.GeoExposureError):
         ge.load_geo_catalog(p)
 
 
-def test_digest_incorrecto_levanta(tmp_path, catalog, monkeypatch):
-    # Config con sha256 esperado erróneo → debe abortar.
+# ── Exposición: snapshot SINTÉTICO de 32 entidades (usa los nombres INEGI del catálogo) ──
+def _synthetic_source(tmp_path, catalog, *, kind="ok"):
+    rows = []
+    for i, e in enumerate(catalog.entities):
+        h, m = 100 + i, 120 + i
+        if kind == "fractional" and i == 0:
+            h = h + 0.5  # valor no entero → debe fallar el gate
+        if kind == "nonpositive" and i == 0:
+            h = 0
+        t = h + m
+        if kind == "break_total" and i == 0:
+            t = t + 1
+        rows.append({"Entidad federativa": e.nombre_inegi, "Hombres": h, "Mujeres": m, "Total": t})
+    inegi = tmp_path / "inegi_syn.csv"
+    pd.DataFrame(rows).to_csv(inegi, index=False)
+    sha = "deadbeef" if kind == "bad_sha" else hashlib.sha256(inegi.read_bytes()).hexdigest()
     cfg = tmp_path / "exposicion.yaml"
     cfg.write_text(
         "version: 1\n"
         "fuentes:\n"
-        "  inegi_cpv2020_static:\n"
-        "    path: data/utils/inegi.csv\n"
-        '    reference: "CPV 2020"\n'
-        '    cutoff: "2020-03-15"\n'
+        "  syn:\n"
+        f'    path: "{inegi}"\n'
+        '    reference: "TEST"\n'
+        '    cutoff: "2020-01-01"\n'
         '    entidad_column: "Entidad federativa"\n'
-        "    columns_by_sex: {hombres: Hombres, mujeres: Mujeres}\n"
+        "    columns_by_sex:\n"
+        "      hombres: Hombres\n"
+        "      mujeres: Mujeres\n"
         "    total_column: Total\n"
-        "    sha256: deadbeef\n",
-        "utf-8",
+        f"    sha256: {sha}\n",
+        encoding="utf-8",
     )
-    with pytest.raises(ge.GeoExposureError, match="digest"):
-        ge.load_exposure_snapshot("inegi_cpv2020_static", catalog, config_path=cfg)
+    return cfg
+
+
+def test_exposicion_loader_ok(tmp_path, catalog):
+    snap = ge.load_exposure_snapshot(
+        "syn", catalog, config_path=_synthetic_source(tmp_path, catalog)
+    )
+    assert len(snap.by_cve_ent) == 32
+    assert snap.columns_by_sex == {"hombres": "Hombres", "mujeres": "Mujeres"}
+    assert snap.total_column == "Total"
+    for v in snap.by_cve_ent.values():
+        assert v["Hombres"] + v["Mujeres"] == v["Total"]
+    assert snap.exposure_for("01", "hombres") == 100 and snap.exposure_for("01", "mujeres") == 120
+
+
+def test_exposicion_fuente_desconocida(tmp_path, catalog):
+    with pytest.raises(ge.GeoExposureError):
+        ge.load_exposure_snapshot(
+            "no_existe", catalog, config_path=_synthetic_source(tmp_path, catalog)
+        )
+
+
+@pytest.mark.parametrize(
+    "kind,match", [("bad_sha", "digest"), ("break_total", "Total"), ("fractional", "entero")]
+)
+def test_exposicion_validaciones(tmp_path, catalog, kind, match):
+    cfg = _synthetic_source(tmp_path, catalog, kind=kind)
+    with pytest.raises(ge.GeoExposureError, match=match):
+        ge.load_exposure_snapshot("syn", catalog, config_path=cfg)
+
+
+def test_exposicion_no_positiva(tmp_path, catalog):
+    cfg = _synthetic_source(tmp_path, catalog, kind="nonpositive")
+    with pytest.raises(ge.GeoExposureError):
+        ge.load_exposure_snapshot("syn", catalog, config_path=cfg)

@@ -96,10 +96,15 @@ def _load_yaml(path: Path) -> dict[str, Any]:
     return cast("dict[str, Any]", OmegaConf.to_container(OmegaConf.load(path), resolve=True))
 
 
+def geo_catalog_path() -> Path:
+    """Ruta (resuelta) del catálogo geográfico trackeado declarado en ``exposicion.yaml``."""
+    return _ROOT / str(_load_yaml(_exposicion_config_path())["catalogo_geografico"])
+
+
 def load_geo_catalog(path: str | Path | None = None) -> GeoCatalog:
     """Carga el catálogo geográfico trackeado."""
     if path is None:
-        path = _ROOT / str(_load_yaml(_exposicion_config_path())["catalogo_geografico"])
+        path = geo_catalog_path()
     df = pd.read_csv(path, dtype=str).fillna("")
     entities = [
         GeoEntity(
