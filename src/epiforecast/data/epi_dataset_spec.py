@@ -7,6 +7,7 @@ Obesidad/E66; no toca el pipeline productivo (neuro/Dengue byte-idéntico).
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date
 
@@ -32,6 +33,40 @@ class QualityFlag:
     SEX_FALLBACK_HALF = "sex_fallback_half"  # 0.5 sin historia
     NEGATIVE_SOURCE = "negative_source"  # valor fuente negativo (revisión) conservado
     NOT_SPECIFIED = "not_specified"  # n.e. en la fuente
+
+
+# Orden canónico de las banderas para la unión ordenada de los agregados (F2/C2).
+QUALITY_FLAG_ORDER: tuple[str, ...] = (
+    QualityFlag.SOURCE_MISSING,
+    QualityFlag.TOTAL_IMPUTED,
+    QualityFlag.PREDECESSOR_SNAPSHOT_INVALID,
+    QualityFlag.SEX_DELTA_TOTAL_MISMATCH,
+    QualityFlag.SEX_FALLBACK_STATE_13W,
+    QualityFlag.SEX_FALLBACK_NATIONAL,
+    QualityFlag.SEX_FALLBACK_HALF,
+    QualityFlag.NEGATIVE_SOURCE,
+    QualityFlag.NOT_SPECIFIED,
+)
+_FLAG_RANK: dict[str, int] = {f: i for i, f in enumerate(QUALITY_FLAG_ORDER)}
+
+
+def merge_quality_flags(flag_strings: Iterable[str]) -> str:
+    """Unión ORDENADA (canónica) de banderas '|'-separadas de varios contribuyentes.
+
+    Deduplica, ordena las conocidas por ``QUALITY_FLAG_ORDER`` y agrega cualquier bandera
+    desconocida al final en orden alfabético (determinista). '' si no hay banderas.
+    """
+    seen: set[str] = set()
+    for s in flag_strings:
+        if not s:
+            continue
+        for tok in str(s).split("|"):
+            t = tok.strip()
+            if t:
+                seen.add(t)
+    known = sorted((f for f in seen if f in _FLAG_RANK), key=lambda f: _FLAG_RANK[f])
+    unknown = sorted(f for f in seen if f not in _FLAG_RANK)
+    return "|".join([*known, *unknown])
 
 
 # ── Nombres de columnas del dataset base (largo) ──
@@ -60,6 +95,40 @@ COL_QUALITY_FLAGS = "quality_flags"
 # Claves de identidad (nunca deben duplicarse).
 STATE_KEY: tuple[str, ...] = (COL_EPI_YEAR, COL_EPI_WEEK, COL_CVE_ENT)
 BASE_KEY: tuple[str, ...] = (COL_EPI_YEAR, COL_EPI_WEEK, COL_CVE_ENT, COL_SEXO)
+
+# ── Productos derivados (F2/C2): niveles/identidad geográfica y sexo agregado ──
+SEX_GENERAL = "general"  # H + M (nivel agregado; nunca se entrena directo)
+ALL_SEXES: tuple[str, str, str] = (SEX_HOMBRES, SEX_MUJERES, SEX_GENERAL)
+
+GEO_LEVEL_ESTADO = "estado"
+GEO_LEVEL_REGION = "region"  # macrorregión (norte|occidente|centro|sureste)
+GEO_LEVEL_NACIONAL = "nacional"
+NATIONAL_GEO_ID = "mx"
+FREQ_EPI_WEEK = "epi_week"
+
+# Columnas del frame de PRODUCTOS: SeriesKey + tiempo + medidas. Sin columnas de
+# reconciliación (viven en el dataset base) ni lineage por fila (va en el manifest).
+COL_GEO_LEVEL = "geography_level"
+COL_GEO_ID = "geography_id"
+COL_SEX = "sex"
+COL_FREQUENCY = "frequency"
+
+PRODUCT_KEY: tuple[str, ...] = (COL_GEO_LEVEL, COL_GEO_ID, COL_SEX, COL_EPI_YEAR, COL_EPI_WEEK)
+PRODUCT_COLUMNS: tuple[str, ...] = (
+    COL_DISEASE_ID,
+    COL_GEO_LEVEL,
+    COL_GEO_ID,
+    COL_SEX,
+    COL_FREQUENCY,
+    COL_EPI_YEAR,
+    COL_EPI_WEEK,
+    COL_PERIOD_START,
+    COL_DS,
+    COL_Y_CASES,
+    COL_EXPOSURE,
+    COL_OBSERVED,
+    COL_QUALITY_FLAGS,
+)
 
 BASE_COLUMNS: tuple[str, ...] = (
     COL_DISEASE_ID,
