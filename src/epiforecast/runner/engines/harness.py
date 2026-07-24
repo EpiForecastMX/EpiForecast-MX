@@ -147,7 +147,7 @@ class _FoldOutcome:
     timing: list[dict[str, Any]]
 
 
-def _rec(run_dir: Path, path: Path, schema: str) -> ArtifactRecord:
+def artifact_record(run_dir: Path, path: Path, schema: str) -> ArtifactRecord:
     digest = hashlib.sha256(path.read_bytes()).hexdigest()
     return ArtifactRecord(str(path.relative_to(run_dir)), digest, schema, validated=True)
 
@@ -168,7 +168,7 @@ def train_series(request: SeriesRequest) -> tuple[list[Period], np.ndarray[Any, 
     return periods, np.asarray([request.train[p] for p in periods], dtype=float)
 
 
-def _validate_predictions(out: SeriesForecast, request: SeriesRequest) -> None:
+def validate_predictions(out: SeriesForecast, request: SeriesRequest) -> None:
     """El predictor cubre EXACTAMENTE el holdout con casos finitos no negativos (o rc≠0)."""
     who = f"{request.spec.engine}/{ct.series_key_str(request.spec.key)}/{request.spec.fold_id}"
     holdout, got = set(request.holdout), set(out.predictions)
@@ -256,7 +256,7 @@ def _predict_fold(
         result = predict_fn(request)
         elapsed = time.perf_counter() - started
 
-        _validate_predictions(result, request)
+        validate_predictions(result, request)
         out.n_fallback += result.n_fallback
         identity = {
             ct.COL_FOLD: fold.fold_id,
@@ -375,11 +375,11 @@ def run_benchmark(
     ):
         path = adir / fname
         df.to_csv(path, index=False)
-        arts.append(_rec(rd, path, schema))
+        arts.append(artifact_record(rd, path, schema))
     if diagnostics:  # motores sin diagnóstico de ajuste (estacionales) no emiten el artefacto
         diag_path = adir / "fit_diagnostics.csv"
         pd.DataFrame(diagnostics).to_csv(diag_path, index=False)
-        arts.append(_rec(rd, diag_path, SCHEMA_FIT_DIAGNOSTICS))
+        arts.append(artifact_record(rd, diag_path, SCHEMA_FIT_DIAGNOSTICS))
 
     spec = {
         "engine": engine,
@@ -401,5 +401,5 @@ def run_benchmark(
     }
     spec_path = adir / "spec.json"
     spec_path.write_text(json.dumps(spec, indent=2, sort_keys=True), encoding="utf-8")
-    arts.append(_rec(rd, spec_path, SCHEMA_ENGINE_SPEC))
+    arts.append(artifact_record(rd, spec_path, SCHEMA_ENGINE_SPEC))
     return arts

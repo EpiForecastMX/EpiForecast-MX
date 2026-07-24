@@ -314,7 +314,7 @@ def run_command(
     used_engines = engines if engines else candidate_engines(policy_name)
     code_commit = _git_commit()
 
-    # variant identifica la ejecución dentro del run_id: stage (benchmark) o h<N> (forecast).
+    # variant identifica la ejecución dentro del run_id: stage (benchmark/tune) o h<N> (forecast).
     variant = f"h{horizon}" if command == "forecast" and horizon else stage
     run_id = compute_run_id(
         disease_id, dataset_id, command, variant, pol_digest, used_engines, seed, code_commit
@@ -346,7 +346,7 @@ def run_command(
         command,
         used_engines,
         dataset_id=dataset_id,
-        stage=stage if command == "benchmark" else None,
+        stage=stage if command in ("benchmark", "tune") else None,
         policy_digest_value=pol_digest,
         seed=seed,
         code_commit=code_commit,

@@ -1,0 +1,45 @@
+# F2/C4.3 — configuración DECLARATIVA de los motores Prophet del runner genérico (carril E66).
+# NO es config/models/prophet.yaml (ese gobierna el pipeline legacy neuro/Dengue y no se toca).
+# Sin ENSO, sin holidays COVID, sin regresores externos, sin CV ni fallbacks del ProphetForecaster.
+common:
+  implementation: prophet_map # ajuste MAP (uncertainty_samples=0, mcmc_samples=0)
+  growth: linear
+  yearly_seasonality: false # estacionalidades nativas DESACTIVADAS
+  weekly_seasonality: false
+  daily_seasonality: false
+  n_changepoints: 25
+  changepoint_range: 0.8
+  uncertainty_samples: 0
+  mcmc_samples: 0
+  seasonality_name: annual_mmwr
+  seasonality_period_days: 365.25 # anualidad sobre el ds MMWR
+
+# Rejilla del comando tune: 2 × 3 × 3 × 2 = 36 configuraciones.
+grid:
+  seasonality_mode: [additive, multiplicative]
+  changepoint_prior_scale: [0.01, 0.03, 0.05]
+  seasonality_prior_scale: [0.05, 0.1, 0.5]
+  fourier_order: [5, 10]
+
+# Selección determinista: mediana → media → y luego los desempates declarados, en este orden.
+selection:
+  metric: smape
+  aggregate: [median, mean]
+  tie_break:
+    - {param: fourier_order, order: asc}
+    - {param: changepoint_prior_scale, order: asc}
+    - {param: seasonality_prior_scale, order: asc}
+    - {param: seasonality_mode, order: [additive, multiplicative]}
+
+# Dos perfiles fijos. `frozen` lo congela el tuning oficial; sin él, benchmark falla cerrado
+# (el benchmark NUNCA reabre la rejilla).
+engines:
+  prophet_count_log1p:
+    transform: log1p
+    frozen: null
+  prophet_rate_log1p:
+    transform: rate_log1p
+    frozen: null
+
+resource_limits:
+  max_threads: 1

@@ -7,8 +7,9 @@ El worker de subprocess importa ``epiforecast.runner.engines`` para poblar el re
 from __future__ import annotations
 
 from epiforecast.runner.engines import ets as ets
+from epiforecast.runner.engines import prophet_engine as prophet_engine
 from epiforecast.runner.engines import ridge_harmonic as ridge_harmonic
 from epiforecast.runner.engines import seasonal_naive as seasonal_naive
 from epiforecast.runner.engines import seasonal_window as seasonal_window
 
-__all__ = ["ets", "ridge_harmonic", "seasonal_naive", "seasonal_window"]
+__all__ = ["ets", "prophet_engine", "ridge_harmonic", "seasonal_naive", "seasonal_window"]

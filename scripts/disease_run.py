@@ -3,6 +3,7 @@
 Subcomandos:
   validate-data <pad>                          construye dataset + 111 productos (FUNCIONAL)
   benchmark <pad> --stage smoke|full [--engines a,b]   subprocess limpio por motor (rc=2 sin adapter)
+  tune <pad> --stage smoke|full [--engines a,b]        congela hiperparámetros (centinelas+rejilla)
   refit <pad> [--engines a,b]
   forecast <pad> --horizon 52 [--engines a,b]
 
@@ -15,6 +16,7 @@ El exit code refleja el estado del run (0 ok, 2 sin adapter, 1 error).
 
     python -m scripts.disease_run validate-data Obesidad
     python -m scripts.disease_run benchmark Obesidad --stage smoke
+    python -m scripts.disease_run tune Obesidad --stage smoke --engines prophet_count_log1p
     python -m scripts.disease_run forecast Obesidad --horizon 52
 """
 
@@ -27,6 +29,7 @@ from epiforecast.runner.manifest import (
     CMD_BENCHMARK,
     CMD_FORECAST,
     CMD_REFIT,
+    CMD_TUNE,
     CMD_VALIDATE_DATA,
     STAGE_FULL,
     STAGE_SMOKE,
@@ -55,6 +58,17 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     bench.add_argument("--no-resume", action="store_true")
     bench.add_argument("--allow-dirty", action="store_true", help="permite árbol trackeado sucio")
+
+    tune = sub.add_parser(
+        CMD_TUNE, help="congela hiperparámetros por motor (centinelas + rejilla)"
+    )
+    tune.add_argument("disease")
+    tune.add_argument("--stage", choices=[STAGE_SMOKE, STAGE_FULL], default=STAGE_SMOKE)
+    tune.add_argument(
+        "--engines", type=_engines, help="override; default = candidatos de la política"
+    )
+    tune.add_argument("--no-resume", action="store_true")
+    tune.add_argument("--allow-dirty", action="store_true")
 
     refit = sub.add_parser(CMD_REFIT, help="refit por motor (subprocess limpio)")
     refit.add_argument("disease")
