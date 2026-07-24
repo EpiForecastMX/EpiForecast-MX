@@ -1,8 +1,9 @@
 """F2/C3 — gate de INTEGRACIÓN E66: disease_run end-to-end (dataset_id vs run_id + benchmark OOS).
 
 validate-data materializa runs/<dataset_id>/ (DatasetManifest, intacto). benchmark crea un dir
-run_id DISTINTO y corre los 5 motores estacionales en subprocess limpio, cada uno produciendo
-forecast/eval/metrics para los 111 productos modelando SOLO 64 bases. Requiere datos gitignored.
+run_id DISTINTO y corre los 6 motores candidatos (5 estacionales + ETS) en subprocess limpio, cada
+uno produciendo forecast/eval/metrics para los 111 productos modelando SOLO 64 bases. El ETS añade
+fit_diagnostics.csv con un ajuste por serie/fold. Requiere datos gitignored.
 """
 
 from __future__ import annotations
@@ -27,7 +28,10 @@ _ENGINES = [
     "seasonal_median_3y",
     "seasonal_mean_5y",
     "seasonal_median_5y",
+    "ets_add_damped_log1p",
 ]
+_ETS = "ets_add_damped_log1p"
+_N_TRAIN_POR_FOLD = [366, 418, 470, 522]  # semanas previas de cada fold dev (2021-24)
 
 
 def _require_data() -> None:
@@ -64,7 +68,7 @@ def test_gate_dataset_manifest(dataset, root):
     assert {a.schema for a in dataset.artifacts} == {"epi_dataset_v2", "products.v1", "lineage.v1"}
 
 
-def test_gate_benchmark_5_motores_succeeded(bench_full, dataset):
+def test_gate_benchmark_6_motores_succeeded(bench_full, dataset):
     man, _ = bench_full
     assert man.run_id != dataset.dataset_id and man.dataset_id == dataset.dataset_id
     assert man.status == "succeeded" and man.exit_code == 0
@@ -89,10 +93,32 @@ def test_gate_cobertura_por_motor(bench_full, engine):
     assert len(mt) == 444 and mt.groupby(["geography_level", "geography_id", "sex"]).ngroups == 111
 
 
+def test_gate_diagnosticos_de_ajuste_solo_del_ets(bench_full):
+    # Un ajuste por serie/fold (64×4) SOLO en el motor que entrena; los estacionales no ajustan.
+    _, run_dir = bench_full
+    for engine in _ENGINES:
+        emits = engine == _ETS
+        assert _spec(run_dir, engine)["n_diagnostics"] == (256 if emits else 0)
+        assert (run_dir / "artifacts" / engine / "fit_diagnostics.csv").exists() is emits
+        # La duración por serie es telemetría wall-clock: fuera de los artefactos con digest.
+        assert (run_dir / "jobs" / f"{engine}.fit_timing.csv").exists()
+
+    diag = pd.read_csv(run_dir / "artifacts" / _ETS / "fit_diagnostics.csv")
+    assert len(diag) == 256 and diag.groupby(["geography_id", "sex"]).ngroups == 64
+    assert sorted(diag["n_train"].unique()) == _N_TRAIN_POR_FOLD
+    assert set(diag["variant"]) <= {"primary", "retry"}
+    assert diag["transform_digest"].nunique() == 1 and diag["config_digest"].nunique() == 1
+    spec = _spec(run_dir, _ETS)
+    assert spec["transform"]["forward_steps"] == ["log1p"]  # inversa expm1 por contrato
+    assert spec["transform"]["inverse_steps"] == ["expm1"]
+    assert spec["transform_digest"] == diag["transform_digest"].iloc[0]
+    assert spec["resource_limits"] == {"max_threads": 1}
+
+
 def test_gate_reporte_comparativo(bench_full):
     _, run_dir = bench_full
     comp = pd.read_csv(run_dir / "comparison.csv")  # auto-generado en el run multi-motor
-    assert set(comp["engine"]) == set(_ENGINES) and len(comp) == 5
+    assert set(comp["engine"]) == set(_ENGINES) and len(comp) == 6
     assert {"smape_bases", "smape_all", "smape_nacional_general", "runtime_s"} <= set(comp.columns)
     base = comp[comp["engine"] == "seasonal_naive_lag52"]["smape_all_impr_pct_vs_baseline"].iloc[0]
     assert base == 0.0  # el baseline no mejora sobre sí mismo (no se elige ganador)

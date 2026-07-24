@@ -1,0 +1,31 @@
+# F2/C3c — configuración DECLARATIVA del motor ETS (Holt-Winters, statsmodels).
+# El motor NO decide nada en condicionales Python: variantes, periodo y política de reintento
+# viven aquí. Cambiar este archivo cambia el config_digest del spec.json (trazabilidad).
+engine: ets_add_damped_log1p
+implementation: statsmodels_holt_winters
+target_transform: log1p # inversa expm1 gobernada por el TransformContract del TrainingSpec
+optimized: true
+remove_bias: false # sin corrección posterior de bias
+use_boxcox: false
+
+# Se intentan EN ORDEN; gana la primera utilizable (pronóstico finito y no negativo en casos).
+# strict=true exige además convergencia del optimizador y ausencia de ConvergenceWarning.
+variants:
+  - name: primary
+    strict: true
+    trend: add
+    damped_trend: true
+    seasonal: add
+    seasonal_periods: 52
+    initialization_method: estimated
+  - name: retry # ETS aditivo estacional SIN tendencia (único reintento permitido)
+    strict: false
+    trend: null
+    damped_trend: false
+    seasonal: add
+    seasonal_periods: 52
+    initialization_method: estimated
+
+# Ejecución secuencial dentro del subprocess del motor (el orquestador fija los threads a 1).
+resource_limits:
+  max_threads: 1
