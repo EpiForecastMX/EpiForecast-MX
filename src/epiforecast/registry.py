@@ -113,7 +113,7 @@ _LIFECYCLES = frozenset({"configured", "trained", "published"})
 BACKEND_LEGACY = "legacy_models"  # models/<engine>/<artifact_key>/ (los 4 publicados)
 BACKEND_RUNNER_RUNS = "runner_runs"  # refit+forecast sellados bajo runs_root; SOLO para `trained`
 BACKEND_RUNNER_RELEASE = (
-    "runner_release"  # release_manifest.v1 restaurable; exigido por `published`
+    "runner_release"  # release_manifest.v2 restaurable; exigido por `published`
 )
 ARTIFACT_BACKENDS = frozenset({BACKEND_LEGACY, BACKEND_RUNNER_RUNS, BACKEND_RUNNER_RELEASE})
 _RUNNER_RUNS_KEYS = frozenset(

@@ -4,7 +4,7 @@ Recibe identidad ya verificada (``VerifiedRunnerRuns``), rutas fuente tipadas (`
 un root de salida; copia los bytes DECLARADOS re-comprobando sus digests, genera únicamente metadata
 canónica (``release_manifest``) y sella el bundle. No conoce ningún padecimiento, motor ni conteo.
 
-Orden obligatorio, sin ciclos: payloads → ``identity_payload.v1`` → ``release_id`` →
+Orden obligatorio, sin ciclos: payloads → ``identity_payload.v2`` → ``release_id`` →
 ``release_manifest.json`` → ``SHA256SUMS.txt``. La hora de construcción no participa en nada.
 
 Se construye SIEMPRE en un staging temporal dentro del root de salida y sólo se promueve —con un

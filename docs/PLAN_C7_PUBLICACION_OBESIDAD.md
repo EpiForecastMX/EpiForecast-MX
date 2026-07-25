@@ -1,17 +1,17 @@
 # C7 — Plan operativo de publicación de Obesidad
 
-> **Estado autoritativo (2026-07-25): C7.1 CERRADA** en `91269e6f`, con cierre documental
-> `7a8c25cd` y contrato C7.2 endurecido en `0dbd0f01`. Las Acciones **1–8 de 8**
-> están ejecutadas y verificadas: 259 pruebas focales, `make test-fast` con 1,609 PASS, 31 pruebas
-> de integración reales, lint, typecheck y ambos doctors verdes. El rango
-> `029fe666..0dbd0f01` ya fue subido por fast-forward a
-> `origin/feat/registry-padecimientos-obesidad`; local y remoto coinciden. Esta actualización del
-> plan es el único delta trackeado posterior.
+> **Estado autoritativo (2026-07-25): C7.2-A y C7.2-A.1 CERRADAS** en `2bed74ee` y
+> `fb3bcdca`. El remoto continúa en `0dbd0f01`; la rama local está `ahead 2`. El builder
+> activación-agnóstico produjo dos bundles temporales byte-idénticos bajo roots y locales
+> distintos, reprodujo 3,328 bases y 5,772 productos con diferencia exacta `0.0`, y no persistió
+> ningún bundle. No hubo DVC, push, deploy ni publicación.
 >
-> **Orden vigente:** C7.2-A tiene el baseline 23.1 revalidado; los pasos 23.2–23.6 no están
-> iniciados. Requiere la autorización literal `GO C7.2-A`; esa autorización cubre implementación
-> y builds temporales locales, nunca DVC, ruta final, push, frontend o publicación. La Ronda 16
-> contiene el estado y la orden autoritativos.
+> **Orden vigente:** ejecutar **C7.2-A.2** antes de C7.2-B. La remoción de `activation` cambió de
+> forma incompatible tanto el payload de identidad como el manifest; por ello deben versionarse
+> como `identity_payload.v2` y `release_manifest.v2`. `runner_release_builder.v2` identifica la
+> implementación, pero no sustituye el schema. C7.2-B permanece bloqueada hasta que A.2 demuestre
+> rechazo explícito de v1, determinismo entre locales y reproducción exacta. La Ronda 19 contiene
+> las órdenes autoritativas.
 > Obesidad continúa `trained`, NO-GO e invisible para `published_only`.
 >
 > **Alcance:** publicar únicamente Obesidad E66. Anorexia F50 permanece
@@ -58,7 +58,7 @@ Estado local al redactar:
 
 | componente | estado |
 | --- | --- |
-| Backend | `feat/registry-padecimientos-obesidad` @ `0dbd0f01`; material C7.1 en `91269e6f` |
+| Backend | `feat/registry-padecimientos-obesidad` @ `fb3bcdca`; local `ahead 2` |
 | Remoto backend | `origin/feat/registry-padecimientos-obesidad` @ `0dbd0f01` |
 | Frontend | `main` @ `179bbe36`, sin cambios trackeados |
 | Obesidad | `trained`, NO-GO, invisible para `published_only` |
@@ -66,7 +66,9 @@ Estado local al redactar:
 | Publicados | Depresión, Parkinson, Alzheimer y Dengue |
 | Respaldo C5–C6 | `029fe666`, local + S3, SHA256 concordante |
 | C7.0 | residuos pre-C3 fuera del dataset canónico; guard en `b981b6e5` |
-| C7.1 | registry por backend + validación de identidad; cierre doc-only; sin push |
+| C7.1 | registry por backend + validación de identidad; publicado en la rama remota hasta `0dbd0f01` |
+| C7.2-A | builder temporal determinista en `2bed74ee`; local, sin DVC |
+| C7.2-A.1 | activación fuera del bundle en `fb3bcdca`; local, sin DVC |
 
 Cadena estadística canónica:
 
@@ -194,7 +196,7 @@ Fuentes de verdad, sin duplicar decisiones:
 | Selección por SeriesKey | `final_selection.csv` sellado |
 | Modelos finales | `model_index.json` + envelopes + estados |
 | Forecast publicable | `forecast.csv` sellado |
-| Contenido del release | `release_manifest.v1` |
+| Contenido del release | `release_manifest.v2` después del microcierre C7.2-A.2 |
 | Release visible | puntero público versionado |
 
 ---
@@ -208,7 +210,7 @@ Distinguir explícitamente tres backends de artefactos:
 - `legacy_models`: usa `models/<engine>/<artifact_key>/` para los cuatro padecimientos actuales;
 - `runner_runs`: valida refit y forecast sellados bajo un `runs_root`; es válido para `trained`,
   nunca para `published`;
-- `runner_release`: usa un `release_manifest.v1` restaurable desde DVC; es obligatorio para
+- `runner_release`: usa un `release_manifest.v2` restaurable desde DVC; es obligatorio para
   `published`.
 
 No cambiar simplemente `training_engines` de Obesidad a seis strings. Ese campo gobierna el carril
@@ -250,7 +252,7 @@ Reglas:
    SeriesKeys únicas, `final_refit=true`, `train_end`, engines realmente presentes y forecast
    64+47.
 5. Para `runner_release`, el doctor valida lo anterior desde el bundle restaurado y contrasta
-   `release_manifest.v1` y `SHA256SUMS.txt`.
+   `release_manifest.v2` y `SHA256SUMS.txt`.
 6. Una carpeta existente sin envelope/digest correcto es un error.
 7. Un artefacto preliminar legacy nunca satisface `runner_runs` ni `runner_release`.
 8. F50 continúa sin source publicable y no gana canales.
@@ -332,7 +334,7 @@ literalmente `inputs/config_effective.json`, porque ese archivo conserva una rut
 workspace y no es un contrato de ejecución del release. No se incluye un input por conveniencia:
 cada archivo debe estar consumido por el loader de `runner_release` o eliminarse del bundle.
 
-`release_manifest.v1` debe declarar:
+`release_manifest.v2` debe declarar:
 
 - schema y `release_id`;
 - `disease_id` tomado del registry (`obesidad` en la primera instancia);
@@ -342,11 +344,14 @@ cada archivo debe estar consumido por el loader de `runner_release` o eliminarse
 - origen 2026-W26 y horizonte 2026-W27…2027-W26;
 - `interval_method=none` y `uncertainty_available=false`;
 - listado de cada archivo con tamaño, SHA256 y schema;
-- canales candidatos, todavía no activos;
-- lifecycle requerido para activación;
 - inventario exacto de `runtime_inputs`;
 - cero timestamps de ejecución, rutas absolutas, mtime, uid, gid o metadata ambiental dentro del
   contenido inmutable.
+
+El bundle no declara canales, galería, lifecycle, estado de activación ni ningún otro dato de
+política pública. Esos campos pertenecen al futuro `public_release_pointer.v1`, que referencia un
+`release_id` sin cambiarlo. El manifest y el payload de identidad tienen conjuntos de claves
+cerrados y rechazan cualquier metadata de activación.
 
 ### Identidad sin ciclos y serialización canónica
 
@@ -355,7 +360,7 @@ No calcular el `release_id` a partir del tarball, del manifest que contiene ese 
 
 El orden obligatorio es:
 
-1. construir un `identity_payload` canónico con schema del release, `disease_id`, versión del
+1. construir un `identity_payload.v2` canónico con schema del release, `disease_id`, versión del
    builder y los digests sellados de dataset, política, selección, aceptación, refit, forecast y
    runtime inputs;
 2. serializarlo como JSON UTF-8, claves ordenadas, separadores estables y newline final;
@@ -405,18 +410,25 @@ Crear un comando genérico de promoción desde runs sellados. Debe:
 
 ### Autorización dividida
 
-- **C7.2-A — implementación local:** requiere GO explícito. Autoriza código, tests y dos bundles
-  temporales para probar determinismo/restauración. No autoriza `dvc add`, cambios de punteros,
-  `dvc push` ni escritura en la ruta final.
-- **C7.2-B — materialización y puntero local:** solo después del PASS de C7.2-A y con otro GO.
+- **C7.2-A — implementación local: COMPLETADA** en `2bed74ee`. Construyó y reprodujo dos bundles
+  temporales; no escribió la ruta final ni tocó DVC.
+- **C7.2-A.1 — desacoplar activación: COMPLETADA** en `fb3bcdca`. El bundle ya no depende de
+  canales, galería o lifecycle.
+- **C7.2-A.2 — versionar schemas: SIGUIENTE.** Debe cerrar `identity_payload.v2` y
+  `release_manifest.v2`, rechazar v1 explícitamente y repetir el gate temporal. No autoriza
+  `dvc add`, cambios de punteros, `dvc push` ni escritura en la ruta final.
+- **C7.2-B — materialización y puntero local:** solo después del PASS de C7.2-A.2 y con otro GO.
   Autoriza promover atómicamente el bundle verificado a su ruta final y crear el target DVC
   dedicado. No autoriza `dvc push`.
 - **C7.2-C — subida remota:** `dvc push` requiere una tercera autorización posterior al gate y a
   la revisión del diff del puntero.
 
-### Commit propuesto
+### Commits
 
-`C7.2 immutable runner release bundle + dedicated DVC target`
+- ejecutado: `C7.2-A deterministic runner release bundle` (`2bed74ee`);
+- ejecutado: `C7.2-A.1 decouple public activation from the release bundle` (`fb3bcdca`);
+- siguiente: `C7.2-A.2 version runner release schemas before persistence`;
+- futuro y con GO separado: `C7.2-B materialize runner release + dedicated DVC target`.
 
 ---
 
@@ -424,7 +436,7 @@ Crear un comando genérico de promoción desde runs sellados. Debe:
 
 ### Objetivo
 
-Transformar `release_manifest.v1` y `forecast.csv` en artefactos de consumo sin editar manualmente
+Transformar `release_manifest.v2` y `forecast.csv` en artefactos de consumo sin editar manualmente
 listas de padecimientos y sin publicar antes del lifecycle.
 
 El compilador tendrá dos modos:
@@ -2693,6 +2705,184 @@ la Acción 4.
 
 _Respuesta:_
 
+**Decisión:** no conservar los nombres v1. Antes de persistir el primer bundle, ejecutar el
+microcierre C7.2-A.2 y subir **ambos** schemas incompatibles:
+
+- `identity_payload.v1` → `identity_payload.v2`;
+- `release_manifest.v1` → `release_manifest.v2`;
+- `runtime_config.v1` permanece sin cambios;
+- `public_release_pointer.v1` permanece sólo documentado y fuera del bundle.
+
+`runner_release_builder.v2` no reemplaza esta decisión: la versión del builder identifica el
+productor; el schema identifica la forma y el contrato que deben interpretar loaders, doctors y
+consumidores.
+
+---
+
+### Ronda 19 — Auditoría de C7.2-A.1 y órdenes de continuación — 2026-07-25
+
+#### Veredicto
+
+**PASS funcional para C7.2-A.1; NO-GO para C7.2-B hasta cerrar A.2.**
+
+El desacoplamiento de activación es correcto y necesario:
+
+- el entry point dejó de leer `channels`, `gallery_enabled` y `lifecycle`;
+- `activation` no existe en el payload de identidad ni en el manifest;
+- la forma del manifest es cerrada y rechaza claves nuevas o faltantes;
+- el mismo release se obtiene al variar la política pública del registry;
+- `BUILDER_VERSION=runner_release_builder.v2` participa en la identidad;
+- no hay bundles persistidos que migrar.
+
+Estado comprobado:
+
+```text
+HEAD local   fb3bcdca · parent 2bed74ee · ahead 2
+Remoto       origin/feat/registry-padecimientos-obesidad @ 0dbd0f01
+Build A/B    obesidad_release_a3d4cbe9f896 · byte-idénticos
+Forecast     3,328 bases + 5,772 productos · máx |Δ| = 0.0
+Tests        1,789 fast · 61 integración en dos tandas
+Calidad      lint, mypy y ambos doctors rc=0
+Outputs      0 bundles persistidos · artifacts/releases/ ausente
+Externos     sin push, DVC, deploy, frontend ni publicación
+Lifecycle    Obesidad trained/NO-GO · F50 configured/NO-GO
+```
+
+La única corrección formal antes de materializar es el versionado del contrato. Remover
+`activation` cambia el conjunto de claves y la semántica de dos documentos. Un loader debe poder
+decir “schema v1 no soportado” sin depender de que, accidentalmente, falle después el digest o el
+`release_id`. Como todavía no existe ningún bundle persistido, este es el último punto barato y
+seguro para corregirlo.
+
+#### Orden R19.1 — C7.2-A.2: versionar los schemas incompatibles
+
+Ejecutar en un commit separado y acotado:
+
+1. Cambiar `IDENTITY_SCHEMA` a `identity_payload.v2`.
+2. Cambiar `RELEASE_SCHEMA` a `release_manifest.v2`.
+3. Mantener `RUNTIME_CONFIG_SCHEMA=runtime_config.v1`.
+4. Mantener `BUILDER_VERSION=runner_release_builder.v2`.
+5. Actualizar loader, verifier, manifest, fixtures y tests para exigir literalmente v2.
+6. Añadir fixtures mínimos de v1 y probar que loader/verifier los rechazan con un error tipado y
+   explícito de schema; no aceptar como prueba un fallo posterior de digest, identidad o claves.
+7. Probar que una identidad v2 declara `release_schema=release_manifest.v2`.
+8. Probar que todo manifest emitido declara `schema=release_manifest.v2` e
+   `identity_schema=identity_payload.v2`.
+9. Conservar cerrados los conjuntos de claves y las prohibiciones de activación.
+10. No introducir compatibilidad de lectura con v1: nunca hubo un bundle v1 persistido y aceptar
+    dos formas añadiría complejidad sin usuario real.
+
+Esta orden puede modificar únicamente los módulos y tests del bundle necesarios para versionar el
+contrato, además de este plan. No autoriza refactors laterales.
+
+#### Orden R19.2 — Repetir el gate completo de A.2
+
+Después del cambio de schema:
+
+1. construir desde cero en dos roots temporales nuevos;
+2. usar al menos `LC_ALL=C` y `LC_ALL=en_US.UTF-8`;
+3. demostrar el mismo `release_id` y `diff -r` vacío entre ambos builds;
+4. aceptar que el nuevo `release_id` difiera de `a3d4cbe9f896`, porque el schema forma parte de la
+   identidad;
+5. verificar los 150 archivos, manifest, `SHA256SUMS.txt` e inventario exacto;
+6. reproducir desde cada bundle sin leer `runs/`;
+7. exigir 3,328 bases, 5,772 productos y diferencia máxima exacta `0.0`;
+8. ejecutar las pruebas focales del release, `make test-fast`, integración en las dos tandas ya
+   justificadas, lint, mypy y ambos doctors;
+9. volver a comparar los cuatro runs canónicos, `rolling_cv_v1`, los cuatro agregados legacy,
+   `config/` y el frontend contra el baseline;
+10. eliminar los temporales y demostrar que `artifacts/releases/` sigue sin existir.
+
+El SIGSEGV preexistente no se corrige dentro de A.2. Se conserva la ejecución de integración en dos
+tandas y la evidencia del reproductor mínimo.
+
+#### Orden R19.3 — Commit y STOP de A.2
+
+Si todo pasa:
+
+1. crear un commit local separado, sugerido:
+
+   ```text
+   C7.2-A.2 version runner release schemas before persistence
+   ```
+
+2. comprobar que la rama queda tres commits por delante del remoto;
+3. entregar el nuevo `release_id`, resultados de gates y diff de rutas;
+4. detenerse.
+
+Prohibido dentro de A.2:
+
+- `git push`;
+- escribir bajo `artifacts/releases/`;
+- `dvc add`, crear o editar `.dvc`, `dvc push`;
+- cambiar `artifact_source` a `runner_release`;
+- construir `public_release_pointer.v1`;
+- tocar canales, galería, lifecycle, frontend o cualquier artefacto público;
+- iniciar C7.2-B, C7.2-C o C7.3.
+
+#### Orden R19.4 — Revisión y checkpoint Git
+
+Después del PASS de A.2:
+
+1. auditar juntos `2bed74ee`, `fb3bcdca` y el commit A.2;
+2. comprobar que no contienen bundles, `.dvc`, rutas públicas ni cambios de lifecycle;
+3. solicitar autorización explícita antes de subir ese rango;
+4. si se autoriza, hacer fast-forward de la rama de trabajo únicamente;
+5. el push no autoriza C7.2-B ni DVC.
+
+#### Orden R19.5 — C7.2-B: sede local, doctor y target DVC
+
+Sólo después de A.2 PASS y de recibir el literal `GO C7.2-B`:
+
+1. definir como sede final:
+
+   ```text
+   artifacts/releases/<disease_id>/<release_id>/
+   ```
+
+2. cablear `runner_release` en el doctor con un `releases_root` explícito e inyectable; no usar
+   cwd, `runs/`, home ni paths absolutos del equipo;
+3. hacer que el doctor compruebe schema v2, `release_id`, identidad, checksums, inventario, cadena
+   sellada, 64 modelos cargables y reproducción;
+4. probar el doctor sobre una copia temporal válida y sobre mutaciones de schema, digest,
+   inventario, modelo faltante y release ajeno;
+5. materializar el bundle validado desde un temporal al destino final mediante promoción atómica;
+6. rechazar un destino existente distinto y aceptar idempotentemente el mismo contenido;
+7. cargar y reproducir otra vez desde la ruta final, sin consultar `runs/`;
+8. crear un target DVC **dedicado únicamente a ese bundle**; no modificar `models.dvc`,
+   `reports/forecasts.dvc` ni Tableau;
+9. ejecutar `dvc status` dirigido, revisar el `.dvc` y verificar que el diff contiene sólo el
+   bundle, el puntero nuevo, código/tests del doctor y documentación;
+10. cambiar el candidato del registry a `runner_release` sólo si el doctor puede resolver y validar
+    la sede final sin excepciones especiales;
+11. mantener Obesidad en `trained`, NO-GO y fuera de `published_only`;
+12. crear el commit local de C7.2-B y detenerse.
+
+C7.2-B no autoriza `dvc push`, Git push, canales, puntero público, lifecycle, frontend, deploy ni
+publicación.
+
+#### Orden R19.6 — C7.2-C y fases posteriores
+
+1. **C7.2-C:** subir el target DVC sólo con autorización explícita posterior, descargarlo en un
+   entorno temporal limpio y repetir doctor + reproducción.
+2. **C7.3:** construir puentes candidate desde `release_manifest.v2`; nunca escribir superficies
+   públicas desde modo candidate.
+3. **C7.4:** completar las cuatro semanas prospectivas congeladas, sin tuning ni sustitución del
+   veredicto canónico.
+4. **C7.5:** crear `public_release_pointer.v1` con los cuatro canales iniciales (`web`, `epibot`,
+   `reports`, `tableau`), galería desactivada y referencia al `release_id`. Cambiar canales no debe
+   mover el bundle.
+5. **C7.6:** resolver o aislar con causa demostrada el SIGSEGV `deepar_smoke + pipeline_e2e`; no
+   mergear ni publicar con el gate monolítico inexplicablemente rojo.
+6. **C7.7:** lifecycle, deploy y activación siguen siendo acciones externas separadas y requieren
+   autorización literal por cada superficie.
+
+#### Próxima orden exacta
+
+> **GO C7.2-A.2. Versiona `identity_payload.v2` y `release_manifest.v2`, prueba el rechazo
+> explícito de v1, reconstruye en dos temporales y locales, reproduce el forecast con diferencia
+> exacta 0.0, ejecuta todos los gates y detente sin push, DVC ni publicación.**
+
 ---
 
 ### Ronda 15 — Auditoría independiente del baseline C7.2-A y orden corregida — 2026-07-25
@@ -4306,11 +4496,10 @@ artifacts/releases/ → NO EXISTE · .dvc sin tocar · frontend main @ 179bbe36 
 
 #### Dos cosas que quedan señaladas, no hechas
 
-1. **`channels_candidate` sale con 6 canales**, incluidos `weekly_validation` y
-   `prospective_validation`, porque el builder los DERIVA del registry en vez de escribirlos. El
-   registro candidato debe ser exactamente `web, epibot, reports, tableau` con `gallery_enabled:
-   false`. Es trabajo de **C7.5**, y tocar el registry aquí habría salido del alcance del GO. Ojo:
-   los canales entran en la identidad, así que corregirlos **cambiará el `release_id`**.
+1. **HISTÓRICO, SUPERSEDIDO POR C7.2-A.1.** En `2bed74ee`, `channels_candidate` salía con seis
+   canales y formaba parte de la identidad. `fb3bcdca` eliminó por completo activación, canales,
+   galería y lifecycle del bundle. Los cuatro canales reales siguen siendo trabajo de **C7.5**,
+   pero ahora vivirán en `public_release_pointer.v1` y no cambiarán el `release_id`.
 2. **El doctor NO se cableó para `runner_release`**: sigue diciendo "verificación no implementada
    todavía". Hacerlo exige resolver dónde vive el release (`artifacts/releases/<disease>/<id>/`), y
    esa ruta la define **C7.2-B**. Cablearlo ahora obligaría a inventar el destino antes de que se
@@ -4446,6 +4635,116 @@ Output   0 bundles persistidos · temporales A/B eliminados
 Release  NO-GO · Obesidad = trained · runner_runs · F50 = configured · NO-GO
 Deuda    SIGSEGV preexistente de integración = bloqueo pre-merge/pre-publicación (no de C7.2-A.1)
 Pendiente C7.2-B (doctor runner_release + materialización) · C7.5 (canales reales + puntero)
+```
+
+_Respuesta:_ versionar ambos contratos antes de persistir. `identity_payload.v2` y
+`release_manifest.v2` son obligatorios; `runtime_config.v1` y `public_release_pointer.v1`
+permanecen como están. C7.2-B no puede empezar hasta cerrar C7.2-A.2. Las órdenes completas y el
+STOP están en la Ronda 19.
+
+---
+
+### Ronda 20 — C7.2-A.2: schemas versionados antes de persistir — 2026-07-25
+
+Decisión aceptada: los nombres v1 no se conservan. `BUILDER_VERSION` identifica al **productor**; el
+schema identifica la **forma y el contrato** que deben interpretar loaders, doctors y consumidores.
+Son dos ejes distintos y confundirlos habría dejado un `release_manifest.v1` con dos formas.
+
+Commit separado sobre `fb3bcdca`. Cero escrituras externas.
+
+#### R19.1 — Versionado · **PASS**
+
+```text
+identity_payload.v1  → identity_payload.v2
+release_manifest.v1  → release_manifest.v2
+runtime_config.v1               sin cambios (su forma no cambió)
+runner_release_builder.v2       sin cambios (ya identifica al productor)
+```
+
+Sin lectura de compatibilidad con v1: nunca se persistió un bundle v1 y aceptar dos formas añadiría
+ramas sin un solo usuario real.
+
+#### Lo que hacía falta para que el rechazo fuera POR LA VERSIÓN
+
+El punto 6 de la orden es el que tenía filo, y descubrió un hueco real: el manifest declara **tres**
+versiones y el loader sólo comprobaba una.
+
+- `schema` sí lo verificaba `read_json`, antes que nada;
+- `identity_schema` **no se comprobaba en ninguna parte**;
+- `builder_version` **tampoco**.
+
+Un bundle con `identity_schema: identity_payload.v1` habría sido rechazado igualmente… pero por un
+`identity_digest` que no cuadra. Ese mensaje dice "algo está corrupto" cuando lo único que pasa es
+que el formato es viejo, y manda a quien lo lea a buscar una corrupción que no existe. Exactamente
+el fallo tardío que la orden prohíbe aceptar como prueba.
+
+Las tres versiones se comprueban ahora **explícitamente y primero**, en `check_manifest_shape`,
+antes del inventario, de las sumas y de la identidad. Verificado uno a uno, con las sumas rehechas a
+propósito para que el sello no matara la mutación antes de tiempo:
+
+```text
+_v1_completo              [por versión]  schema: 'release_manifest.v1' != 'release_manifest.v2'
+_v1_solo_el_manifest      [por versión]  schema: 'release_manifest.v1' != 'release_manifest.v2'
+_v1_solo_la_identidad     [por versión]  identity_schema: 'identity_payload.v1' != 'identity_payload.v2'
+_builder_de_otra_versión  [por versión]  builder_version: 'runner_release_builder.v1' != …v2
+```
+
+Ninguno cae en `digest de`, `release_id:` ni `claves:`.
+
+**Añadí la comprobación de `builder_version` sin que la orden la pidiera.** Es la misma clase de
+defecto: sin ella, un bundle de otro productor fallaba por `release_id` —porque `builder_version` va
+dentro de la identidad—, es decir, tarde y con el mensaje equivocado. Si prefieres que un builder
+distinto no sea motivo de rechazo explícito, se quita en una línea.
+
+#### R19.2 — Gate completo · **PASS**
+
+```text
+build A: root temporal nuevo · LC_ALL=C            → obesidad_release_2517e7858901
+build B: root temporal nuevo · LC_ALL=en_US.UTF-8  → obesidad_release_2517e7858901
+diff -r A B: vacío · 150 archivos · SHA256SUMS.txt 149 líneas · 148 payloads
+schema release_manifest.v2 · identity_schema identity_payload.v2 · builder v2
+reproducción desde AMBOS bundles, sin leer runs/: 3,328 bases · 5,772 productos · máx |Δ| = 0.0
+```
+
+El `release_id` pasa de `a3d4cbe9f896` a `2517e7858901`. Es lo esperado y lo correcto: el schema
+forma parte de la identidad. No hay nada que migrar.
+
+| comprobación | resultado |
+| --- | --- |
+| `ruff format --check` + `ruff check` | 275 archivos OK · All checks passed |
+| `mypy src/epiforecast/` | 153 archivos, sin incidencias |
+| focales del release | **195 passed** |
+| fast | **1,796 passed** (eran 1,789; +7) en 73 s |
+| integración | **61 passed** (59 + 2, dos tandas) |
+| doctor Obesidad / completo | rc=0 / rc=0 |
+
+Preservación contra el baseline, sin una sola diferencia:
+
+```text
+dataset 2ef4ee1236aa94c0 · aceptación 6bbc7f84ea5ec5bb · refit 972f7519f885c0d1
+forecast d89d92ee7e73b848 · rolling_cv_v1 dd6d4a0274a6f8bb
+all_forecast_{prophet,deepar,ensemble,stacking}  cb5be395 96791595 1d2cf0a7 ac97dc8e
+artifacts/releases/ AUSENTE · .dvc 0 · config/ 0 · frontend main @ 179bbe36 limpio
+temporales A y B eliminados
+```
+
+#### Alcance del diff
+
+Nueve rutas. Ocho son módulos y tests del bundle. La novena es `registry.py`, y es **un comentario
+de una línea** que decía `release_manifest.v1` junto a `BACKEND_RUNNER_RELEASE`: dejarlo habría sido
+documentar mal el contrato que el propio backend exige. Cero cambios de comportamiento ahí.
+
+#### Estado
+
+```text
+C7.2-A.2 PASS · commit local separado · rama 3 commits por delante del remoto
+Contrato identity_payload.v2 + release_manifest.v2 + runtime_config.v1 + builder v2
+Rechazo  las tres versiones se comprueban explícitamente y ANTES que el contenido
+Tests    195 del release (187 fast + 8 integración) · 41 mutaciones de rechazo
+Output   0 bundles persistidos · artifacts/releases/ sigue sin existir
+Release  NO-GO · Obesidad = trained · runner_runs · F50 = configured · NO-GO
+Deuda    SIGSEGV preexistente = bloqueo pre-merge/pre-publicación
+Sigue    R19.4 (auditar el rango 2bed74ee..HEAD y pedir autorización de push)
 ```
 
 _Respuesta:_

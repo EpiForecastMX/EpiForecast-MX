@@ -24,7 +24,12 @@ import pytest
 
 from epiforecast.runner import adapters
 from epiforecast.runner.artifact_identity import ArtifactValidationError
-from epiforecast.runner.release_contract import CHECKSUMS_FILE, MANIFEST_FILE
+from epiforecast.runner.release_contract import (
+    CHECKSUMS_FILE,
+    IDENTITY_SCHEMA,
+    MANIFEST_FILE,
+    RELEASE_SCHEMA,
+)
 from epiforecast.runner.release_loader import verify_bundle
 from epiforecast.runner.release_runtime import RUNTIME_CONFIG_FILE, RUNTIME_DIR
 from tests.unit.runner import artifact_fixtures as af
@@ -334,7 +339,67 @@ def test_los_sellos_internos_atrapan_la_mutación(prístino, tmp_path, mutacion,
         verify_bundle(root)
 
 
-# ── Grupo 4: la capacidad de forecast del motor ──────────────────────────────────────────────
+# ── Grupo 4: versiones del contrato — el rechazo debe ser POR LA VERSIÓN ─────────────────────
+def _v1_completo(root: Path) -> None:
+    rf.degradar_a_v1(root)
+
+
+def _v1_solo_el_manifest(root: Path) -> None:
+    rf.degradar_a_v1(root, claves=("schema",))
+
+
+def _v1_solo_la_identidad(root: Path) -> None:
+    rf.degradar_a_v1(root, claves=("identity_schema",))
+
+
+def _builder_de_otra_versión(root: Path) -> None:
+    manifest = rf.leer_manifest(root)
+    manifest["builder_version"] = "runner_release_builder.v1"
+    rf.escribir_manifest(root, manifest)
+    rf.resellar_checksums(root)
+
+
+VERSIONES: list[tuple[Mutacion, str]] = [
+    (_v1_completo, r"schema: 'release_manifest\.v1' != 'release_manifest\.v2'"),
+    (_v1_solo_el_manifest, r"schema: 'release_manifest\.v1' != 'release_manifest\.v2'"),
+    (_v1_solo_la_identidad, r"identity_schema: 'identity_payload\.v1' != 'identity_payload\.v2'"),
+    (_builder_de_otra_versión, r"builder_version: 'runner_release_builder\.v1'"),
+]
+
+
+@pytest.mark.parametrize(("mutacion", "patron"), VERSIONES, ids=[m.__name__ for m, _ in VERSIONES])
+def test_una_versión_anterior_del_contrato_se_rechaza_por_su_versión(
+    prístino, tmp_path, mutacion, patron
+):
+    """R19.1.6: el mensaje debe nombrar la VERSIÓN.
+
+    Un fallo posterior de digest, identidad o claves también rechazaría el bundle, pero diría que
+    algo está corrupto cuando lo único que pasa es que el formato es viejo. Por eso el patrón exige
+    el texto exacto de la comparación de versión, y por eso las sumas se rehacen antes: si el sello
+    matara la mutación, no se estaría probando nada de esto.
+    """
+    root = _copia(prístino, tmp_path)
+    mutacion(root)
+    with pytest.raises(ArtifactValidationError, match=patron):
+        verify_bundle(root)
+
+
+def test_no_existe_lectura_de_compatibilidad_con_v1(prístino, tmp_path):
+    """R19.1.10: no se acepta v1 ni en modo lectura. Un solo formato, sin ramas."""
+    root = _copia(prístino, tmp_path)
+    rf.degradar_a_v1(root)
+    with pytest.raises(ArtifactValidationError):
+        verify_bundle(root)
+    # y el bundle vuelve a ser válido en cuanto recupera su versión: no hay daño colateral.
+    # (el nombre del directorio no es identidad: el builder verifica el staging ANTES de renombrar)
+    manifest = rf.leer_manifest(root)
+    manifest["schema"], manifest["identity_schema"] = RELEASE_SCHEMA, IDENTITY_SCHEMA
+    rf.escribir_manifest(root, manifest)
+    rf.resellar_checksums(root)
+    assert verify_bundle(root).release_id == prístino.name
+
+
+# ── Grupo 5: la capacidad de forecast del motor ──────────────────────────────────────────────
 def test_un_motor_sin_capacidad_de_forecast_final_invalida_el_release(
     prístino, tmp_path, monkeypatch
 ):

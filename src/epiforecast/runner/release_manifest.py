@@ -1,4 +1,4 @@
-"""C7.2-A/R15.3 — la metadata canónica del release: cadena, calendario y ``release_manifest.v1``.
+"""C7.2-A/R15.3 — la metadata canónica del release: cadena, calendario y ``release_manifest.v2``.
 
 Todo lo que el manifest declara se DERIVA de artefactos sellados: la cadena y sus ``code_commit``
 salen de los manifiestos de los runs (nunca del git vivo), el calendario del refit y del lineage, los
@@ -95,7 +95,7 @@ def build_manifest(
     digests: Mapping[str, str],
     destino: Path,
 ) -> dict[str, Any]:
-    """``release_manifest.v1``: identidad, cadena, calendario, conteos e inventario de payloads.
+    """``release_manifest.v2``: identidad, cadena, calendario, conteos e inventario de payloads.
 
     Describe QUÉ modelos hay y de dónde salen. No describe dónde se publican: canales, galería y
     lifecycle son política revocable de C7.5 y no viajan en el bundle (C7.2-A.1).

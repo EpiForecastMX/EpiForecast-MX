@@ -1,6 +1,6 @@
 """C7.2-A — identidad ACÍCLICA y serialización canónica de un release bundle del runner.
 
-El ``release_id`` sale de un ``identity_payload.v1`` que NO contiene el manifest ni los checksums:
+El ``release_id`` sale de un ``identity_payload.v2`` que NO contiene el manifest ni los checksums:
 calcularlo sobre el manifest que lo lleva dentro, o sobre ``SHA256SUMS.txt``, crearía una
 dependencia circular. El orden obligatorio es identity → ``release_id`` → manifest → checksums.
 
@@ -28,8 +28,8 @@ from epiforecast.runner.artifact_identity import (
     text_of,
 )
 
-RELEASE_SCHEMA = "release_manifest.v1"
-IDENTITY_SCHEMA = "identity_payload.v1"
+RELEASE_SCHEMA = "release_manifest.v2"
+IDENTITY_SCHEMA = "identity_payload.v2"
 RUNTIME_CONFIG_SCHEMA = "runtime_config.v1"
 # C7.2-A.1: v2 saca la metadata de activación de la identidad. Va DENTRO del payload de identidad,
 # así que un bundle construido con v1 y otro con v2 nunca comparten `release_id`.
@@ -146,7 +146,7 @@ def _payload_inventory(raw: object, label: str) -> dict[str, str]:
 def identity_payload(
     *, disease_id: str, chain: Mapping[str, str], payloads: Mapping[str, str]
 ) -> dict[str, Any]:
-    """``identity_payload.v1``: lo ÚNICO de lo que puede depender el ``release_id``.
+    """``identity_payload.v2``: lo ÚNICO de lo que puede depender el ``release_id``.
 
     Lleva la cadena sellada (dataset/política/selección/aceptación/refit/forecast) y el digest de
     CADA payload. Un byte distinto en cualquier archivo del bundle mueve el ID; el manifest y los

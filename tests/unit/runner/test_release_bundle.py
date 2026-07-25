@@ -20,8 +20,11 @@ from epiforecast.runner.release_contract import (
     ACTIVATION_KEYS,
     BUILDER_VERSION,
     CHECKSUMS_FILE,
+    IDENTITY_SCHEMA,
     MANIFEST_FILE,
     MANIFEST_KEYS,
+    RELEASE_SCHEMA,
+    identity_payload,
     parse_checksums,
 )
 from epiforecast.runner.release_loader import verify_bundle
@@ -156,6 +159,22 @@ def test_cambiar_la_política_pública_no_altera_el_bundle(tmp_path, monkeypatch
 def test_el_builder_declara_su_versión_en_el_manifest(bundle):
     """La versión del builder SÍ es identidad: v1 y v2 nunca comparten `release_id`."""
     assert rf.leer_manifest(bundle)["builder_version"] == BUILDER_VERSION
+
+
+def test_todo_manifest_emitido_declara_los_schemas_v2(bundle):
+    """R19.1.8: el contrato que un consumidor debe interpretar va escrito, no implícito."""
+    manifest = rf.leer_manifest(bundle)
+    assert manifest["schema"] == RELEASE_SCHEMA == "release_manifest.v2"
+    assert manifest["identity_schema"] == IDENTITY_SCHEMA == "identity_payload.v2"
+
+
+def test_la_identidad_declara_el_schema_del_release_que_describe():
+    """R19.1.7: el payload de identidad dice a qué forma de manifest pertenece."""
+    identidad = identity_payload(
+        disease_id="x", chain={"dataset_id": "x_1"}, payloads={"a.csv": "0" * 64}
+    )
+    assert identidad["schema"] == "identity_payload.v2"
+    assert identidad["release_schema"] == "release_manifest.v2"
 
 
 # ── Higiene: nada del entorno dentro del contenido inmutable ──────────────────────────────────

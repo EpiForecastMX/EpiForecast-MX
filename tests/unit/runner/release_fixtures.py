@@ -132,6 +132,20 @@ def resellar(root: Path) -> None:
     resellar_checksums(root)
 
 
+# Versiones ANTERIORES del contrato, sólo para probar que se rechazan. Nunca se persistió un
+# bundle v1: estos fixtures lo fabrican degradando uno v2 (C7.2-A.2/R19.1.6).
+SCHEMAS_V1 = {"schema": "release_manifest.v1", "identity_schema": "identity_payload.v1"}
+
+
+def degradar_a_v1(root: Path, *, claves: tuple[str, ...] = ("schema", "identity_schema")) -> None:
+    """Reescribe el manifest como si lo hubiera emitido el builder anterior, y re-sella las sumas."""
+    manifest = leer_manifest(root)
+    for clave in claves:
+        manifest[clave] = SCHEMAS_V1[clave]
+    escribir_manifest(root, manifest)
+    resellar_checksums(root)
+
+
 def un_estado(root: Path) -> Path:
     """Ruta de un estado de modelo dentro del bundle (orden estable)."""
     return sorted((root / "refit" / "models").rglob("*.state.*"))[0]
