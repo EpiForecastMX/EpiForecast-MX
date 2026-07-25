@@ -25,7 +25,7 @@ cuadro_groups:
       - id: anorexia_f50
         keyword: "Anorexia_F50"
         block_index: 1
-        onboard: false
+        onboard: true
     # Variantes de layout (columnas por padecimiento). Frontera verificada por discovery:
     # 3col (Sem, H, M) hasta 2015_sem01; 4col (+ año anterior) desde 2015_sem02.
     layout_variants:

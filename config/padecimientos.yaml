@@ -86,6 +86,31 @@ perfiles:
       ensemble: false                 # decisión vigente: conservar conteos
       stacking: false                 # decisión vigente: conservar conteos
 
+  baja_incidencia_semanal:
+    # Perfil para padecimientos de MUY baja incidencia semanal: conteos absolutos, ceros reales
+    # (no faltantes) y CERO traits legacy activos. La exposición está disponible por si un motor
+    # futuro modela tasa, pero ningún motor la usa hoy (motor_rate todo en false).
+    cohorte_id: baja_incidencia
+    unidad: conteos
+    rate_scale: 100000
+    prophet_log_transform: false
+    prophet_covid_holidays: false
+    ensemble_covid_holidays: false
+    prophet_cv_weights: false
+    prophet_enso: false
+    nbglm_enso: false
+    ensemble_clamp: false
+    stacking_clamp: false
+    deepar_short_series: false
+    fallback_regional: false          # baja incidencia NO se rescata con el modelo regional
+    excluir_outliers: false
+    invert_log_predict: false
+    motor_rate:
+      prophet: false
+      deepar: false
+      ensemble: false
+      stacking: false
+
 # ── Padecimientos ──
 padecimientos:
   - id: depresion
@@ -212,3 +237,31 @@ padecimientos:
       color: "#D97706"                # ámbar (texto oscuro)
       label: "Obesidad"
       nombre_completo: "Obesidad (E66)"
+
+
+  # ── NUEVO (C6/N+1): co-ubicado con Obesidad en el cuadro 14.1, bloque 1. INVISIBLE. ──
+  - id: anorexia_f50
+    data_name: "Anorexia F50"
+    artifact_key: Anorexia_F50        # dir/stem en disco y data/raw/data_raw_<artifact_key>.csv
+    slug: anorexia_f50
+    display_name: "Anorexia F50"
+    cie_codes: ["F50"]
+    aliases: ["anorexia", "anorexia f50", "anorexia nerviosa", "trastorno de la conducta alimentaria",
+              "tca", "bulimia", "trastornos alimentarios"]
+    profile: baja_incidencia_semanal
+    batch: standalone
+    extraction_group: trastornos_nutricion
+    exposure_source_id: inegi_cpv2020_static   # EpiDatasetV2 lo EXIGE
+    lifecycle: configured             # C6 demuestra N+1; NO entrena ni publica
+    channels: []                      # sin canal alguno: no se emite a ninguna superficie
+    training_engines: []              # ningún motor legacy autorizado; el smoke usa --engines
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null            # no entrena Prophet legacy (training_engines vacío)
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:                              # mínimos que exige el doctor; NO se consumen públicamente
+      color: "#6D28D9"                # violeta (no colisiona con la paleta publicada)
+      label: "Anorexia F50"
+      nombre_completo: "Anorexia y otros trastornos de la conducta alimentaria (F50)"

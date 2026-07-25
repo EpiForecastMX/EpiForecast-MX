@@ -82,6 +82,7 @@ def test_cie_map():
         "G30": "Alzheimer",
         "A97": "Dengue",
         "E66": "Obesidad",
+        "F50": "Anorexia F50",  # C6/N+1: co-ubicado con Obesidad en el cuadro 14.1
     }
 
 
