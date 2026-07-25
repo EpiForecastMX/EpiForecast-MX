@@ -1,13 +1,16 @@
 # C7 — Plan operativo de publicación de Obesidad
 
-> **Estado autoritativo (2026-07-25): C7.1 CERRADA** en `91269e6f`. Las Acciones **1–8 de 8**
+> **Estado autoritativo (2026-07-25): C7.1 CERRADA** en `91269e6f`, con cierre documental
+> `7a8c25cd`. Las Acciones **1–8 de 8**
 > están ejecutadas y verificadas: 259 pruebas focales, `make test-fast` con 1,609 PASS, 31 pruebas
-> de integración reales, lint, typecheck y ambos doctors verdes. La rama está dos commits delante
-> de `origin/feat/registry-padecimientos-obesidad`; no se hizo push. La única modificación
-> trackeada posterior al commit es este cierre documental.
+> de integración reales, lint, typecheck y ambos doctors verdes. El rango
+> `029fe666..7a8c25cd` ya fue subido por fast-forward a
+> `origin/feat/registry-padecimientos-obesidad`; local y remoto coinciden. Esta actualización del
+> plan es el único delta trackeado posterior.
 >
-> **Orden vigente:** STOP. No iniciar C7.2, no hacer push y no promover DVC sin autorización
-> explícita. El próximo paso permitido es revisar el commit `91269e6f` y este delta documental.
+> **Orden vigente:** STOP. No iniciar C7.2 ni promover DVC sin autorización explícita. Primero
+> preservar estas órdenes en un commit doc-only y sincronizarlo con autorización específica;
+> después solicitar `GO C7.2-A`.
 > Obesidad continúa `trained`, NO-GO e invisible para `published_only`.
 >
 > **Alcance:** publicar únicamente Obesidad E66. Anorexia F50 permanece
@@ -54,15 +57,15 @@ Estado local al redactar:
 
 | componente | estado |
 | --- | --- |
-| Backend | `feat/registry-padecimientos-obesidad` @ `91269e6f`, C7.1 cerrada |
-| Remoto backend | `origin/feat/registry-padecimientos-obesidad` @ `029fe666` |
+| Backend | `feat/registry-padecimientos-obesidad` @ `7a8c25cd`; material C7.1 en `91269e6f` |
+| Remoto backend | `origin/feat/registry-padecimientos-obesidad` @ `7a8c25cd` |
 | Frontend | `main` @ `179bbe36`, sin cambios trackeados |
 | Obesidad | `trained`, NO-GO, invisible para `published_only` |
 | F50 | `configured`, NO-GO, sin canales |
 | Publicados | Depresión, Parkinson, Alzheimer y Dengue |
 | Respaldo C5–C6 | `029fe666`, local + S3, SHA256 concordante |
 | C7.0 | residuos pre-C3 fuera del dataset canónico; guard en `b981b6e5` |
-| C7.1 | registry por backend + validación de identidad; commit local, sin push |
+| C7.1 | registry por backend + validación de identidad; cierre doc-only; sin push |
 
 Cadena estadística canónica:
 
@@ -272,9 +275,12 @@ Reglas:
 
 ### Decisión
 
-Usar un target DVC nuevo y dedicado:
+Usar un target DVC nuevo y dedicado. La ruta se deriva de `disease_id`; Obesidad es la primera
+instancia, no un literal dentro del constructor:
 
 ```text
+artifacts/releases/<disease_id>/<release_id>/
+# primera instancia:
 artifacts/releases/obesidad/<release_id>/
 ```
 
@@ -293,11 +299,16 @@ obesidad_release_<digest12>
 artifacts/releases/obesidad/<release_id>/
 ├── release_manifest.json
 ├── SHA256SUMS.txt
+├── runtime_inputs/
+│   ├── entidades_mx.csv
+│   ├── exposure_<source_id>.csv
+│   └── config_effective.json
 ├── policy/
 │   └── rolling_cv_v1.yaml
 ├── selection/
 │   ├── final_selection.csv
-│   └── acceptance.json
+│   ├── acceptance.json
+│   └── acceptance_run_manifest.json
 ├── refit/
 │   ├── run_manifest.json
 │   ├── refit_summary.json
@@ -311,11 +322,17 @@ artifacts/releases/obesidad/<release_id>/
     └── lineage.json
 ```
 
+`runtime_inputs/` contiene las copias efectivas selladas necesarias para ejecutar el forecast desde
+el bundle sin depender de `runs/`, rutas absolutas ni del estado mutable del workspace. Para el
+forecast actual incluye, como mínimo, el catálogo geográfico, el snapshot de exposición declarado
+y la configuración efectiva que identifica ambos. No se copia un input por conveniencia: cada
+archivo debe estar consumido por el loader de `runner_release` o eliminarse del bundle.
+
 `release_manifest.v1` debe declarar:
 
 - schema y `release_id`;
-- `disease_id=obesidad`;
-- code commit;
+- `disease_id` tomado del registry (`obesidad` en la primera instancia);
+- versión del builder y code commit;
 - dataset, policy, selection, acceptance, refit y forecast IDs/digests;
 - conteos 64/47/111 y 3,328/5,772;
 - origen 2026-W26 y horizonte 2026-W27…2027-W26;
@@ -323,7 +340,31 @@ artifacts/releases/obesidad/<release_id>/
 - listado de cada archivo con tamaño, SHA256 y schema;
 - canales candidatos, todavía no activos;
 - lifecycle requerido para activación;
-- fecha de construcción como metadata no identitaria.
+- inventario exacto de `runtime_inputs`;
+- cero timestamps de ejecución, rutas absolutas, mtime, uid, gid o metadata ambiental dentro del
+  contenido inmutable.
+
+### Identidad sin ciclos y serialización canónica
+
+No calcular el `release_id` a partir del tarball, del manifest que contiene ese mismo ID ni de
+`SHA256SUMS.txt`: cualquiera de esas opciones crea una dependencia circular.
+
+El orden obligatorio es:
+
+1. construir un `identity_payload` canónico con schema del release, `disease_id`, versión del
+   builder y los digests sellados de dataset, política, selección, aceptación, refit, forecast y
+   runtime inputs;
+2. serializarlo como JSON UTF-8, claves ordenadas, separadores estables y newline final;
+3. definir `release_id = <disease_id>_release_<sha256(identity_payload)[:12]>`;
+4. construir `release_manifest.json` con ese ID e inventario de **payloads**, excluyendo del
+   inventario al propio manifest y a `SHA256SUMS.txt`;
+5. generar `SHA256SUMS.txt` sobre todos los payloads **más** `release_manifest.json`, pero nunca
+   sobre sí mismo;
+6. ordenar siempre por ruta POSIX relativa usando `sorted()` de Python por punto de código. No
+   depender de `sort` de shell ni de `LC_COLLATE`.
+
+La hora de construcción, si se necesita como telemetría, se escribe en un receipt externo al
+bundle y no participa en el `release_id`, manifest, checksums ni comparación byte a byte.
 
 ### Construcción
 
@@ -336,23 +377,38 @@ Crear un comando genérico de promoción desde runs sellados. Debe:
 5. ser idempotente: mismos insumos producen mismo `release_id` y mismos bytes;
 6. rechazar un destino existente con contenido distinto;
 7. no leer nombres de archivos para inferir identidad;
-8. no tocar rutas canónicas ni públicas.
+8. generar JSON/CSV/checksums con serialización y orden explícitos;
+9. comprobar que todos los paths persistidos son relativos al bundle;
+10. cargar el snapshot de exposición y el catálogo desde `runtime_inputs`, no desde el workspace;
+11. no tocar rutas canónicas ni públicas.
 
 ### Gate C7.2
 
 - restauración desde clon/entorno limpio usando únicamente Git + target DVC;
-- los 64 modelos cargan y producen el mismo forecast numérico;
+- los 64 modelos cargan y producen el mismo forecast numérico usando solo el bundle y sus
+  `runtime_inputs`;
 - `forecast.csv` y los artefactos deterministas conservan los digests esperados;
 - 6 índices + 64 envelopes + 64 estados presentes y verificados;
 - cero referencias necesarias a rutas absolutas del equipo;
+- dos builds en roots distintos y bajo locales distintos producen el mismo `release_id`,
+  `release_manifest.json`, `SHA256SUMS.txt` y payloads byte a byte;
+- modificar un byte de cualquier fuente de identidad cambia el `release_id`; modificar solo un
+  receipt externo no lo cambia;
+- manifest e inventario no tienen autorreferencias ni ciclos de checksum;
 - `models.dvc`, forecasts legacy y Tableau legacy intactos;
 - `dvc status` del nuevo target coherente y diff limitado al bundle/puntero nuevo;
 - todavía no hay `dvc push`.
 
-### Autorización
+### Autorización dividida
 
-Construir el bundle local y crear su puntero DVC requieren OK de implementación de C7.2.
-`dvc push` requiere otro OK posterior.
+- **C7.2-A — implementación local:** requiere GO explícito. Autoriza código, tests y dos bundles
+  temporales para probar determinismo/restauración. No autoriza `dvc add`, cambios de punteros,
+  `dvc push` ni escritura en la ruta final.
+- **C7.2-B — materialización y puntero local:** solo después del PASS de C7.2-A y con otro GO.
+  Autoriza promover atómicamente el bundle verificado a su ruta final y crear el target DVC
+  dedicado. No autoriza `dvc push`.
+- **C7.2-C — subida remota:** `dvc push` requiere una tercera autorización posterior al gate y a
+  la revisión del diff del puntero.
 
 ### Commit propuesto
 
@@ -3255,7 +3311,7 @@ _Respuesta:_
 
 ---
 
-## 19. Re-auditoría independiente del cierre C7.1 y órdenes vigentes — 2026-07-25
+## 19. Re-auditoría independiente del cierre C7.1 — histórica, ejecutada
 
 ### Veredicto
 
@@ -3281,8 +3337,9 @@ La revisión independiente confirmó:
 | DVC dirigido | `reports/forecasts.dvc` y `models.dvc` siguen `modified`; cero archivos fechados 2026-07-25 dentro de ambos targets |
 | visibilidad | publicados = Depresión, Parkinson, Alzheimer y Dengue; Obesidad sigue fuera |
 
-El árbol trackeado **no se describe actualmente como limpio**: este plan es la única modificación
-trackeada posterior al commit. Los archivos no rastreados del usuario permanecen fuera del alcance.
+En el instante de esta ronda, este plan era la única modificación trackeada posterior al commit.
+Después quedó preservado en el commit doc-only `7a8c25cd`; véanse las secciones 20 y 21. Los
+archivos no rastreados del usuario permanecieron fuera del alcance.
 
 ### Corrección de evidencia: digests agregados
 
@@ -3328,7 +3385,7 @@ visibilidad son contratos distintos.
 
 ### Órdenes siguientes
 
-#### Orden 19.1 — Congelar C7.1
+#### Orden 19.1 — Congelar C7.1 · **COMPLETADA**
 
 1. No modificar más código de C7.1 salvo un defecto reproducible nuevo.
 2. Revisar el diff de `91269e6f` y este único delta documental.
@@ -3365,7 +3422,7 @@ C7.2 no se cierra hasta demostrar:
 - tests focales, fast, integración, lint, typecheck y doctors verdes;
 - commit acotado y **STOP sin `dvc push`, git push, deploy ni publicación**.
 
-### Próxima acción inequívoca
+### Próxima acción de esa ronda — supersedida
 
 **Revisar C7.1.** Si se aprueba, autorizar expresamente el commit doc-only y/o el push. Solo
 después emitir un GO separado para implementar C7.2. No ejecutar C7.3–C7.6 ni cambiar
@@ -3438,3 +3495,251 @@ published_members = Depresión, Parkinson, Alzheimer, Dengue
 Pendiente de tu autorización explícita, por separado: el `git push` y el GO de C7.2.
 
 _Respuesta:_
+
+---
+
+## 21. Auditoría previa al push — histórica, ejecutada
+
+### Veredicto
+
+**PASS.** El commit `7a8c25cd` es estrictamente doc-only: su único path es este plan. No cambió
+código, configuración, tests, runs, DVC ni frontend. El árbol trackeado estaba limpio antes de
+esta actualización; la rama está tres commits delante del remoto:
+
+```text
+029fe666  remoto y checkpoint respaldado
+b981b6e5  C7.0: cuarentena + guard del dataset
+91269e6f  C7.1: backend de artefactos + doctor por identidad
+7a8c25cd  cierre documental + causa raíz de digests
+```
+
+Por tanto, un eventual `git push` no subiría solamente C7.1 o el documento: publicaría el rango
+completo `029fe666..7a8c25cd`. Esa unidad debe revisarse y autorizarse como tal.
+
+### Evidencia revalidada
+
+| comprobación | resultado |
+| --- | --- |
+| paths de `7a8c25cd` | solo `docs/PLAN_C7_PUBLICACION_OBESIDAD.md` |
+| `git diff --check 91269e6f..7a8c25cd` | PASS |
+| locale `C` | `2ef4…`, `6bbc…`, `972f…`, `d89d…` |
+| locale `en_US.UTF-8` | `2ef4…`, `4e03…`, `972f…`, `fb6f…` |
+| causa de discrepancia | confirmada: collation distinto, mismos bytes |
+| doctor Obesidad | rc=0 |
+| doctor completo | rc=0 |
+| política | `dd6d4a0274a6f8bb…` |
+| agregados legacy | cuatro SHA256 iguales a R13 |
+| DVC dirigido | ambos targets siguen `modified`; cero archivos fechados 2026-07-25 |
+| frontend | `main @ 179bbe36`, cero cambios trackeados |
+
+No fue necesario repetir fast/integración: el único commit posterior a sus gates modifica
+Markdown. Reejecutarlas no aportaría cobertura adicional sobre ese delta.
+
+### Hallazgos de diseño de C7.2 cerrados en este plan
+
+1. **Identidad circular:** el manifest no puede inventariar su propio hash ni el de
+   `SHA256SUMS.txt`. El `release_id` se deriva de un `identity_payload` previo y canónico.
+2. **Reproducibilidad falsa por timestamps:** una hora de construcción dentro del bundle daría
+   bytes distintos para el mismo ID. La telemetría temporal queda fuera del contenido inmutable.
+3. **Orden dependiente del locale:** checksums y manifest usan `sorted()` sobre rutas POSIX
+   relativas; nunca `sort` sin locale fijado.
+4. **Bundle no autosuficiente:** cargar modelos no basta para repetir Prophet en tasa. El release
+   debe incluir catálogo geográfico, snapshot de exposición y configuración efectiva, y el loader
+   debe consumirlos desde `runtime_inputs/`.
+5. **Autorización demasiado amplia:** C7.2 queda separada en implementación local, puntero DVC
+   local y subida remota.
+
+### Órdenes vigentes
+
+#### Orden 21.1 — Decisión sobre el push · **COMPLETADA**
+
+Antes de cualquier push:
+
+1. revisar `git log --oneline 029fe666..7a8c25cd`;
+2. revisar el diff material `029fe666..91269e6f`;
+3. revisar por separado el diff doc-only `91269e6f..7a8c25cd`;
+4. confirmar que se desea subir **los tres commits**;
+5. recibir autorización explícita para `git push`.
+
+No reescribir, squash, amendar ni rebasear esa cadena durante la revisión. El push no es requisito
+para comenzar un experimento local, pero sí debe resolverse antes de presentar C7 como checkpoint
+compartido.
+
+#### Orden 21.2 — C7.2-A: contrato e implementación local · **requiere GO separado**
+
+Cuando exista autorización explícita, ejecutar en este orden:
+
+1. escribir primero tests del `identity_payload`, serialización canónica, inventario acíclico,
+   paths relativos y rechazo de contenido distinto bajo el mismo destino;
+2. implementar un builder genérico que reciba `disease_id` y `VerifiedRunnerRuns`;
+3. construir únicamente en dos temporales independientes, nunca en
+   `artifacts/releases/…` durante C7.2-A;
+4. incluir solo modelos, forecast, lineage, política, selección, aceptación y runtime inputs
+   realmente consumidos;
+5. implementar el loader/validador de `runner_release` contra el bundle temporal;
+6. cargar 64 modelos y reproducir las 3,328 bases y 5,772 filas totales usando exclusivamente el
+   bundle;
+7. repetir la construcción bajo roots y locales distintos y exigir igualdad byte a byte;
+8. ejecutar gates completos;
+9. hacer un commit C7.2-A acotado y detenerse.
+
+Prohibido en C7.2-A:
+
+- `dvc add`, `dvc push`, cambios de punteros o escritura en la ruta final;
+- reentrenar, retunear o recalcular la selección/aceptación;
+- tocar `models.dvc`, `reports/forecasts.dvc`, forecasts legacy o frontend;
+- cambiar lifecycle, canales, galería o F50;
+- usar `obesidad`, 64, 111, nombres de motores o rutas del equipo como reglas del builder
+  genérico; los valores concretos solo son evidencia del primer release.
+
+#### Orden 21.3 — Gate de C7.2-A
+
+El gate mínimo es:
+
+```text
+tests unitarios del identity payload y release builder       PASS
+tests del loader runner_release y mutaciones                 PASS
+dos builds, roots/locales distintos                         byte-idénticos
+reproducción del forecast desde el bundle                   numéricamente idéntica
+make lint                                                    PASS
+make typecheck                                               PASS
+make test-fast                                               PASS
+integración Obesidad + F50                                  PASS
+doctor Obesidad en runner_runs                              PASS
+doctor completo                                              PASS
+legacy + política + DVC dirigido + frontend                 sin delta nuevo
+```
+
+Además, cada fallo de manifest, checksum, input, modelo o lineage debe terminar en error tipado y
+rc no cero, nunca en traceback ni aceptación parcial.
+
+#### Orden 21.4 — Después del PASS de C7.2-A
+
+1. entregar commit, diff, inventario, `release_id` candidato y evidencia;
+2. pedir GO de **C7.2-B** para materializar la ruta final y crear el puntero DVC dedicado;
+3. detenerse otra vez antes de `dvc push`;
+4. pedir GO de **C7.2-C** únicamente después de revisar el puntero y restaurar desde otro root.
+
+### Próxima acción de esa ronda — supersedida
+
+**No ejecutar todavía.** La siguiente decisión humana es una de estas dos autorizaciones
+independientes:
+
+1. autorizar el push del rango completo `029fe666..7a8c25cd`; y/o
+2. emitir `GO C7.2-A` para implementar y validar el bundle únicamente en temporales locales.
+
+Ninguna de las dos autoriza DVC remoto, C7.3, frontend, deploy ni `trained → published`.
+
+---
+
+## 22. Push de C7.0–C7.1 cerrado y orden de arranque C7.2-A — 2026-07-25
+
+### Veredicto del push
+
+**PASS.** El rango completo se publicó por fast-forward en la rama de trabajo:
+
+```text
+local  7a8c25cdcd7da4f8c9e6ee74b5195f4e23711af6
+origin 7a8c25cdcd7da4f8c9e6ee74b5195f4e23711af6
+ahead/behind 0/0
+main intacta
+```
+
+La operación compartió únicamente C7.0, C7.1 y su cierre documental. No hizo merge a `main`, DVC,
+deploy, frontend ni cambio de lifecycle. Obesidad permanece `trained`, `runner_runs`, NO-GO; F50
+permanece `configured`, NO-GO.
+
+### Delta documental pendiente
+
+Las secciones 21 y 22 y el endurecimiento del contrato C7.2 todavía existen solo en el working
+tree. Son el único cambio trackeado. No deben mezclarse con el futuro código de C7.2-A porque son
+las instrucciones que lo gobiernan.
+
+#### Orden 22.1 — Preservar el plan actualizado · **requiere autorización**
+
+Con autorización explícita para el cierre documental:
+
+1. comprobar que el único path trackeado modificado es
+   `docs/PLAN_C7_PUBLICACION_OBESIDAD.md`;
+2. ejecutar `git diff --check`;
+3. añadir por ruta exacta, nunca con `git add .` o `-A`;
+4. revisar el staged diff completo;
+5. crear un commit doc-only con mensaje:
+
+```text
+docs: harden C7.2 release bundle contract
+```
+
+6. verificar que el commit contiene un solo path;
+7. no volver a editar el plan para escribir el SHA del propio commit;
+8. con autorización explícita de push para **ese commit**, subirlo por fast-forward;
+9. comprobar local/remoto iguales y detenerse.
+
+No es necesario repetir fast ni integración para este commit: el delta es exclusivamente
+Markdown. Sí son obligatorios `git diff --check`, whitelist de un path y revisión del staged diff.
+
+### Orden de ejecución de C7.2-A
+
+Solo después de que el plan actualizado exista en remoto y el usuario emita literalmente
+`GO C7.2-A`, ejecutar la Orden 21.2 con estas fronteras:
+
+#### A0 — Congelar contrato con tests
+
+1. definir `identity_payload.v1` y su serialización canónica;
+2. probar que no existe ciclo entre `release_id`, manifest y checksums;
+3. probar orden independiente del locale;
+4. probar rechazo de rutas absolutas, traversal, archivos extra/faltantes y schema desconocido;
+5. probar que timestamps o receipts externos no entran al contenido inmutable.
+
+#### A1 — Builder genérico, solo temporal
+
+1. recibir `disease_id`, `VerifiedRunnerRuns` y roots inyectables;
+2. derivar motores, series, conteos, horizonte e inputs desde artefactos sellados;
+3. copiar únicamente payloads requeridos;
+4. generar `runtime_inputs` con catálogo, exposición y configuración efectiva;
+5. escribir primero en un temporal;
+6. validar el bundle completo antes de devolver éxito;
+7. no escribir en `artifacts/releases/`.
+
+#### A2 — Loader `runner_release`
+
+1. validar `identity_payload`, `release_id`, manifest, checksums e inventario exacto;
+2. cargar índices, envelopes y estados desde paths declarados;
+3. consumir exposición y geografía desde el bundle;
+4. reproducir el forecast sin leer `runs/` ni rutas canónicas del workspace;
+5. emitir errores tipados ante cualquier corrupción o inconsistencia.
+
+#### A3 — Reproducibilidad funcional
+
+1. construir en dos roots temporales;
+2. ejecutar una construcción bajo locale `C` y otra bajo `en_US.UTF-8`;
+3. exigir mismo `release_id` y todos los archivos byte-idénticos;
+4. cargar los 64 modelos del release candidato;
+5. reproducir 3,328 predicciones base y 5,772 filas totales;
+6. exigir igualdad numérica con el forecast canónico;
+7. mutar una fuente de identidad y comprobar que cambia el ID o falla cerrado.
+
+#### A4 — Gate, commit y STOP
+
+Ejecutar la matriz completa de la Orden 21.3, revisar preservación de legacy/DVC/frontend y hacer
+un commit acotado de C7.2-A. El commit no puede contener:
+
+- bundles finales o temporales;
+- punteros `.dvc`;
+- cambios en `runs/`, `models/`, `reports/forecasts/` o frontend;
+- lifecycle, channels, gallery o F50;
+- outputs generados o archivos del usuario.
+
+Al terminar, entregar evidencia y detenerse. C7.2-A no autoriza C7.2-B.
+
+### Próxima acción inequívoca
+
+La siguiente autorización recomendada es:
+
+> **Autoriza Orden 22.1: crea y sube el commit doc-only del plan actualizado; no inicies
+> C7.2-A.**
+
+Después de confirmar ese push, la siguiente orden será:
+
+> **GO C7.2-A: implementa y valida el release bundle únicamente en temporales locales, ejecuta
+> todos los gates y detente sin DVC ni publicación.**
