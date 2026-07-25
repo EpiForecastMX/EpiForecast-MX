@@ -196,7 +196,10 @@ padecimientos:
     batch: standalone
     extraction_group: trastornos_nutricion
     exposure_source_id: inegi_cpv2020_static   # EpiDatasetV2 lo EXIGE; el legacy puede omitirlo
-    lifecycle: configured             # configured -> trained -> published (flip = gate)
+    # configured -> trained -> published (cada flip es un gate). `trained` = C5 cerrado: selección
+    # congelada, gate 2025 aceptado, 64 modelos finales y forecast preliminar reproducibles bajo
+    # runs/. NO habilita publicación ni rutas canónicas: sigue invisible para published_only.
+    lifecycle: trained
     channels: [web, epibot, reports, tableau, weekly_validation, prospective_validation]
     training_engines: [prophet, deepar, ensemble, stacking]
     eligible_engines: [prophet, deepar, ensemble, stacking]

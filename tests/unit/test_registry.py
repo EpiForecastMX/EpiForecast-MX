@@ -87,7 +87,7 @@ def test_cie_map():
 
 def test_obesidad_configurada_perfil_propio():
     obe = registry.require("Obesidad")
-    assert obe.lifecycle == "configured"
+    assert obe.lifecycle == "trained"  # C5 cerrado; NUNCA published (ver test_lifecycle_trained)
     assert obe.profile.cohorte_id == "obesidad"  # ni neuro ni conteos
     assert obe.batch == "standalone"
     assert set(obe.eligible_engines) == {"prophet", "deepar", "ensemble", "stacking"}
