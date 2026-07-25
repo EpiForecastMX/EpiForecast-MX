@@ -44,7 +44,37 @@ folds:
   prospective: # solo reporte (parcial; la serie llega a 2026-W26)
     - {epi_year: 2026}
 
+# Selección por SeriesKey CONSCIENTE DE COMPLEJIDAD (C5): los motores nuevos solo desplazan a un
+# incumbent si la mejora es material. Todo declarativo; el selector no tiene preferencias en código.
+selection:
+  aggregate: median # mediana de los folds de development (2021-24)
+  challenger_min_improvement_pct: 5.0 # un challenger abre su tier SOLO con ≥5% de mejora en sMAPE
+  band_pct: 5.0 # banda de candidatos dentro del tier elegido
+  tie_break: [mase, rmse, cost, engine] # dentro de la banda, en este orden
+  tiers:
+    incumbents: # los 7 motores de C3 (baseline + ventanas + ETS + Ridge)
+      - seasonal_naive_lag52
+      - seasonal_mean_3y
+      - seasonal_median_3y
+      - seasonal_mean_5y
+      - seasonal_median_5y
+      - ets_add_damped_log1p
+      - ridge_harmonic_log1p
+    challengers: [prophet_count_log1p, prophet_rate_log1p]
+  # Costo DECLARATIVO (no wall-clock, que varía entre máquinas): 1 = tabla, 4 = ajuste bayesiano.
+  cost:
+    seasonal_naive_lag52: 1
+    seasonal_mean_3y: 1
+    seasonal_median_3y: 1
+    seasonal_mean_5y: 1
+    seasonal_median_5y: 1
+    ridge_harmonic_log1p: 2
+    ets_add_damped_log1p: 3
+    prophet_count_log1p: 4
+    prophet_rate_log1p: 4
+
 # Alcance por stage del comando benchmark.
 stages:
   smoke: {fold_groups: [development], last_n_folds: 1} # último fold dev (verificación rápida)
   full: {fold_groups: [development]} # los 4 folds dev = 64×208 predicciones base
+  test: {fold_groups: [test]} # 2025 (53 sem): se abre UNA sola vez, con selección congelada

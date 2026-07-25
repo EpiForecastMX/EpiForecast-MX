@@ -29,6 +29,7 @@ from epiforecast.runner.manifest import (
     CMD_BENCHMARK,
     CMD_FORECAST,
     CMD_REFIT,
+    CMD_SELECT,
     CMD_TUNE,
     CMD_VALIDATE_DATA,
     STAGE_FULL,
@@ -70,6 +71,11 @@ def _build_parser() -> argparse.ArgumentParser:
     tune.add_argument("--no-resume", action="store_true")
     tune.add_argument("--allow-dirty", action="store_true")
 
+    select = sub.add_parser(CMD_SELECT, help="congela la selección por SeriesKey (no entrena)")
+    select.add_argument("disease")
+    select.add_argument("--benchmark-run", required=True, help="run_id del benchmark ya ejecutado")
+    select.add_argument("--allow-dirty", action="store_true")
+
     refit = sub.add_parser(CMD_REFIT, help="refit por motor (subprocess limpio)")
     refit.add_argument("disease")
     refit.add_argument("--engines", type=_engines)
@@ -93,6 +99,16 @@ def main(argv: list[str] | None = None) -> int:
             f"dataset_id={dm.dataset_id} status=validated → runs/{dm.dataset_id}/dataset_manifest.json"
         )
         return 0
+
+    if args.command == CMD_SELECT:
+        sm = orch.run_selection(
+            args.disease,
+            args.benchmark_run,
+            runs_root=None,
+            require_clean=not args.allow_dirty,
+        )
+        print(f"run_id={sm.run_id} status={sm.status} → runs/{sm.run_id}/selection_manifest.json")
+        return sm.exit_code or 0
 
     rm = orch.run_command(
         args.disease,

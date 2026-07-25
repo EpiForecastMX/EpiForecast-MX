@@ -8,7 +8,7 @@ la historia ESTRICTAMENTE anterior al inicio del holdout.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import hashlib
 from pathlib import Path
 from typing import Any, cast
@@ -103,6 +103,7 @@ class EvaluationPolicy:
     candidate_engines: tuple[str, ...]
     folds: tuple[Fold, ...]
     stages: dict[str, Any]
+    selection: dict[str, Any] = field(default_factory=dict)
 
     def development_folds(self) -> tuple[Fold, ...]:
         return tuple(f for f in self.folds if f.group == GROUP_DEVELOPMENT)
@@ -158,6 +159,7 @@ def load_policy(name: str) -> EvaluationPolicy:
         candidate_engines=tuple(candidate_engines(name)),
         folds=folds,
         stages=dict(raw["stages"]),
+        selection=dict(raw.get("selection", {})),
     )
     _validate(pol)
     return pol

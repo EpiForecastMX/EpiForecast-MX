@@ -40,10 +40,11 @@ STATUSES: frozenset[str] = frozenset(
 CMD_VALIDATE_DATA = "validate-data"
 CMD_BENCHMARK = "benchmark"
 CMD_TUNE = "tune"
+CMD_SELECT = "select"
 CMD_REFIT = "refit"
 CMD_FORECAST = "forecast"
 COMMANDS: frozenset[str] = frozenset(
-    {CMD_VALIDATE_DATA, CMD_BENCHMARK, CMD_TUNE, CMD_REFIT, CMD_FORECAST}
+    {CMD_VALIDATE_DATA, CMD_BENCHMARK, CMD_TUNE, CMD_SELECT, CMD_REFIT, CMD_FORECAST}
 )
 
 # Stages de ejecución (distinto stage → distinto run_id).

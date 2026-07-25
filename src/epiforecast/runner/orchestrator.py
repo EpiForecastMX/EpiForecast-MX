@@ -24,9 +24,13 @@ import subprocess
 import sys
 from typing import Any
 
+import pandas as pd
+
 from epiforecast.data.epi_aggregate import build_products
 from epiforecast.data.epi_dataset import build_epi_dataset_v2
 from epiforecast.data.epi_geo_exposure import load_geo_catalog
+from epiforecast.runner import contracts as ct
+from epiforecast.runner import selection
 from epiforecast.runner.contracts import SCHEMA_DATASET, SCHEMA_PRODUCTS
 from epiforecast.runner.manifest import (
     STATUS_FAILED,
@@ -37,7 +41,7 @@ from epiforecast.runner.manifest import (
     RunManifest,
     compute_run_id,
 )
-from epiforecast.runner.policy import candidate_engines, policy_digest, policy_seed
+from epiforecast.runner.policy import candidate_engines, load_policy, policy_digest, policy_seed
 from epiforecast.runner.report import comparative_report
 
 _ROOT = Path(__file__).resolve().parents[3]
@@ -277,6 +281,133 @@ def run_engines(
         )
     else:
         man.succeed()
+    man.write(run_dir)
+    return man
+
+
+def run_selection(
+    disease: str,
+    benchmark_run_id: str,
+    *,
+    policy_name: str = "rolling_cv_v1",
+    runs_root: Path | None = None,
+    require_clean: bool = False,
+) -> RunManifest:
+    """Congela la selección por SeriesKey a partir de un benchmark YA ejecutado (no entrena nada).
+
+    Verifica que el benchmark sea exitoso, del mismo dataset y con sus artefactos intactos; aplica
+    la regla declarada en la política; compone el portafolio 64→111 en development y escribe
+    selection.csv, portfolio_development.csv, selection_report.md y selection_manifest.json.
+    """
+    if require_clean:
+        dirty = _tracked_dirty()
+        if dirty:
+            raise RunnerError(
+                f"selección oficial rechazada: {len(dirty)} archivo(s) trackeado(s) sin commit "
+                f"(p.ej. {dirty[0]}). Commitea antes de congelar la selección."
+            )
+    dm = validate_data(disease, runs_root=runs_root)
+    runs_base = runs_root or (_ROOT / "runs")
+    bench_dir = runs_base / benchmark_run_id
+    if not (bench_dir / "run_manifest.json").exists():
+        raise RunnerError(f"no existe el benchmark {benchmark_run_id!r} en {runs_base}")
+    bench = RunManifest.read(bench_dir)
+    if bench.command != "benchmark" or bench.status != STATUS_SUCCEEDED:
+        raise RunnerError(f"{benchmark_run_id}: no es un benchmark exitoso ({bench.status})")
+    if bench.dataset_id != dm.dataset_id:
+        raise RunnerError(
+            f"{benchmark_run_id}: dataset {bench.dataset_id} != actual {dm.dataset_id}"
+        )
+    for engine, job in bench.jobs.items():
+        problems = verify_artifacts(
+            bench_dir, [{"path": a.path, "digest": a.digest} for a in job.artifacts]
+        )
+        if problems:
+            raise RunnerError(f"{benchmark_run_id}/{engine}: {'; '.join(problems)}")
+
+    policy = load_policy(policy_name)
+    rule = selection.SelectionRule.from_policy(policy)
+    metrics = pd.concat(
+        [
+            pd.read_csv(bench_dir / "artifacts" / e / "metrics.csv", dtype={"geography_id": str})
+            for e in bench.engines
+        ],
+        ignore_index=True,
+    )
+    sel = selection.build_selection(metrics, rule)
+
+    code_commit = _git_commit()
+    run_id = compute_run_id(
+        dm.disease_id,
+        dm.dataset_id,
+        "select",
+        benchmark_run_id.rsplit("_", 1)[-1],  # variante = sufijo del benchmark consumido
+        policy.digest,
+        list(bench.engines),
+        policy.seed,
+        code_commit,
+    )
+    run_dir = runs_base / run_id
+    forecasts = {
+        e: pd.read_csv(bench_dir / "artifacts" / e / "forecast.csv", dtype={"geography_id": str})
+        for e in bench.engines
+    }
+    base_fc = selection.compose_base_forecast(forecasts, sel, run_id)
+    products = pd.read_csv(runs_base / dm.dataset_id / "products.csv", dtype={"geography_id": str})
+    _, portfolio_metrics = selection.evaluate_portfolio(
+        base_fc, products, policy, ct.SPLIT_DEVELOPMENT
+    )
+    summary = selection.portfolio_summary(portfolio_metrics)
+
+    provenance = {
+        "disease_id": dm.disease_id,
+        "dataset_id": dm.dataset_id,
+        "dataset_digest": dm.digests["dataset"],
+        "benchmark_run_id": benchmark_run_id,
+        "benchmark_code_commit": bench.code_commit,
+        "policy_name": policy_name,
+        "policy_digest": policy.digest,
+        "code_commit": code_commit,
+    }
+    digest = selection.selection_digest(rule, provenance, sel)
+    report = selection.render_report(sel, summary, rule, provenance)
+    arts, _ = selection.write_selection(
+        run_dir,
+        sel,
+        portfolio_metrics,
+        report,
+        {
+            "selection_digest": digest,
+            "rule": rule.to_dict(),
+            "provenance": provenance,
+            "counts": {
+                "series": int(len(sel)),
+                "engines_selected": int(sel["selected_engine"].nunique()),
+                "challengers": int((sel["tier"] == "challenger").sum()),
+            },
+            "distribution": {
+                str(k): int(v)
+                for k, v in sel["selected_engine"].value_counts().sort_index().items()
+            },
+            "portfolio_development": summary,
+        },
+    )
+
+    man = RunManifest(
+        run_id=run_id,
+        disease_id=dm.disease_id,
+        command="select",
+        dataset_id=dm.dataset_id,
+        policy_digest=policy.digest,
+        seed=policy.seed,
+        code_commit=code_commit,
+        engines=list(bench.engines),
+    )
+    man.input_digests = {**dm.digests, "selection": digest}
+    man.counts = {"series": int(len(sel)), "products": 111}
+    man.start()
+    man.artifacts = arts
+    man.succeed()
     man.write(run_dir)
     return man
 

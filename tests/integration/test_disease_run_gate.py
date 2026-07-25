@@ -16,6 +16,7 @@ import pytest
 
 from epiforecast.data import epi_dataset as ed
 from epiforecast.runner import orchestrator as orch
+from epiforecast.runner import selection
 from epiforecast.runner.manifest import DATASET_MANIFEST_SCHEMA, DatasetManifest
 
 pytestmark = pytest.mark.integration
@@ -63,6 +64,13 @@ def dataset(root):
 def bench_full(root, dataset):
     man = orch.run_command("Obesidad", "benchmark", stage="full", runs_root=root)
     return man, root / man.run_id
+
+
+@pytest.fixture(scope="module")
+def selection_run(root, bench_full):
+    man, _ = bench_full
+    sel_man = orch.run_selection("Obesidad", man.run_id, runs_root=root)
+    return sel_man, root / sel_man.run_id
 
 
 def _spec(run_dir, engine):
@@ -178,6 +186,53 @@ def test_gate_reporte_comparativo(bench_full):
     assert {"smape_bases", "smape_all", "smape_nacional_general", "runtime_s"} <= set(comp.columns)
     base = comp[comp["engine"] == "seasonal_naive_lag52"]["smape_all_impr_pct_vs_baseline"].iloc[0]
     assert base == 0.0  # el baseline no mejora sobre sí mismo (no se elige ganador)
+
+
+def test_gate_seleccion_congelada(selection_run):
+    # Mapa serie→motor sobre development; los 47 derivados NUNCA eligen motor.
+    man, sel_dir = selection_run
+    sel = pd.read_csv(sel_dir / "selection.csv", dtype={"geography_id": str})
+    assert len(sel) == 64 and not sel.duplicated(["geography_id", "sex"]).any()
+    assert sel["selected_engine"].value_counts().to_dict() == {
+        "seasonal_mean_5y": 16,
+        "ets_add_damped_log1p": 16,
+        "ridge_harmonic_log1p": 12,
+        "seasonal_median_5y": 10,
+        "prophet_rate_log1p": 5,
+        "prophet_count_log1p": 5,
+    }
+    assert int((sel["tier"] == "challenger").sum()) == 10  # Prophet entra en 10/64
+    challengers = sel[sel["tier"] == "challenger"]
+    assert (challengers["challenger_improvement_pct"] >= 5.0).all()
+    incumbents = sel[sel["tier"] == "incumbent"]
+    assert (incumbents["challenger_improvement_pct"] < 5.0).all()
+    assert man.input_digests["selection"]
+
+
+def test_gate_portafolio_de_desarrollo(selection_run):
+    _, sel_dir = selection_run
+    manifest = json.loads((sel_dir / "selection_manifest.json").read_text(encoding="utf-8"))
+    resumen = manifest["portfolio_development"]
+    assert resumen["smape_bases"] == pytest.approx(26.07, abs=0.01)
+    assert resumen["smape_all"] == pytest.approx(24.52, abs=0.01)
+    assert resumen["smape_nacional_general"] == pytest.approx(14.40, abs=0.01)
+
+    portfolio = pd.read_csv(sel_dir / "portfolio_development.csv", dtype={"geography_id": str})
+    assert len(portfolio) == 444  # 111 productos × 4 folds
+    assert portfolio.groupby(["geography_level", "geography_id", "sex"]).ngroups == 111
+    assert set(portfolio["engine"]) == {"portfolio"}  # identidad del portafolio, no del donante
+    assert manifest["selection_digest"] and manifest["rule"]["band_pct"] == 5.0
+
+
+def test_gate_seleccion_cargable_y_sellada(selection_run):
+    _, sel_dir = selection_run
+    sel, manifest = selection.load_frozen_selection(sel_dir)
+    assert len(sel) == 64 and manifest["counts"]["series"] == 64
+    assert (sel_dir / "selection_report.md").read_text(encoding="utf-8").startswith("# Selección")
+    # El manifiesto sella los otros tres artefactos: alterar uno invalida la carga.
+    (sel_dir / "selection_report.md").write_text("alterado", encoding="utf-8")
+    with pytest.raises(selection.SelectionError, match="alterado"):
+        selection.load_frozen_selection(sel_dir)
 
 
 def test_gate_validate_data_intacto_tras_benchmark(bench_full, dataset, root):
