@@ -1,11 +1,14 @@
 # C7 — Plan operativo de publicación de Obesidad
 
-> **Estado:** plan validado; C7.1 tiene un WIP local con las Acciones **1–5 de 8 CERRADAS**.
-> La auditoría independiente R13 revalidó el microcierre R11 y la reparación de la suite legacy:
-> 259 pruebas focales, `make test-fast` con 1,610, lint, typecheck y ambos doctors verdes. No queda
-> un fallo funcional abierto en esas acciones. La siguiente ejecución es la Acción 6, limitada a
-> limpieza y trazabilidad de tests; después siguen el gate completo (7) y el commit aislado (8).
-> No commitear ni avanzar a C7.2 hasta cerrar todas las acciones de las secciones 15 y 16.
+> **Estado autoritativo (2026-07-25): C7.1 CERRADA** en `91269e6f`. Las Acciones **1–8 de 8**
+> están ejecutadas y verificadas: 259 pruebas focales, `make test-fast` con 1,609 PASS, 31 pruebas
+> de integración reales, lint, typecheck y ambos doctors verdes. La rama está dos commits delante
+> de `origin/feat/registry-padecimientos-obesidad`; no se hizo push. La única modificación
+> trackeada posterior al commit es este cierre documental.
+>
+> **Orden vigente:** STOP. No iniciar C7.2, no hacer push y no promover DVC sin autorización
+> explícita. El próximo paso permitido es revisar el commit `91269e6f` y este delta documental.
+> Obesidad continúa `trained`, NO-GO e invisible para `published_only`.
 >
 > **Alcance:** publicar únicamente Obesidad E66. Anorexia F50 permanece
 > `lifecycle=configured`, `channels: []`, `gallery_enabled: false` y oculta durante toda C7.
@@ -51,7 +54,7 @@ Estado local al redactar:
 
 | componente | estado |
 | --- | --- |
-| Backend | `feat/registry-padecimientos-obesidad` @ `b981b6e5` |
+| Backend | `feat/registry-padecimientos-obesidad` @ `91269e6f`, C7.1 cerrada |
 | Remoto backend | `origin/feat/registry-padecimientos-obesidad` @ `029fe666` |
 | Frontend | `main` @ `179bbe36`, sin cambios trackeados |
 | Obesidad | `trained`, NO-GO, invisible para `published_only` |
@@ -59,6 +62,7 @@ Estado local al redactar:
 | Publicados | Depresión, Parkinson, Alzheimer y Dengue |
 | Respaldo C5–C6 | `029fe666`, local + S3, SHA256 concordante |
 | C7.0 | residuos pre-C3 fuera del dataset canónico; guard en `b981b6e5` |
+| C7.1 | registry por backend + validación de identidad; commit local, sin push |
 
 Cadena estadística canónica:
 
@@ -681,7 +685,7 @@ F50      = configured · NO-GO · no publicada
 
 ---
 
-## 15. Auditoría inicial del WIP local de C7.1 — 2026-07-25
+## 15. Auditoría inicial del WIP local de C7.1 — histórica, cerrada
 
 > **Veredicto:** dirección correcta, implementación incompleta, gate **FAIL**.
 >
@@ -835,7 +839,7 @@ Así se conserva toda la cobertura sin volver a habilitar Obesidad en el carril 
 7. Evitar que el doctor relea dos veces el mismo manifest; cargarlo una vez y pasar el objeto
    validado.
 
-### Estado real
+### Estado al abrir esta auditoría — histórico, supersedido
 
 ```text
 C7.1     = WIP · FAIL global · Acciones 1–2 PASS · Acción 3 REABIERTA · sin commit
@@ -847,7 +851,7 @@ C7.2     = NO INICIAR
 
 ---
 
-## 16. Acciones obligatorias para cerrar C7.1
+## 16. Checklist ejecutado para cerrar C7.1
 
 Ejecutar en este orden, sin ampliar alcance:
 
@@ -986,7 +990,7 @@ anclado a estados sellados, contrato completo por job y `point-only` explícito 
 **Gate:** `tests/unit/test_produccion_ownership.py` pasa completo, 75/75, por la misma ruta
 productiva del selector; `scripts/produccion_padecimiento.py` y la configuración real no cambiaron.
 
-### Acción 6 — Limpiar y justificar el delta de tests
+### Acción 6 — Limpiar y justificar el delta de tests · **CERRADA**
 
 #### 6.1 — Limpieza mecánica exacta
 
@@ -1051,7 +1055,11 @@ No modificar producción, registry, runner, runs o configuración durante Acció
 
 **Gate:** ninguna cobertura se sostiene solo por una afirmación documental.
 
-### Acción 7 — Ejecutar el gate completo
+**Resultado:** 213 pruebas focales PASS; se eliminó una parametrización realmente duplicada,
+se corrigieron tres nombres obsoletos y el baseline fast quedó en 1,609 PASS sin pérdida de
+cobertura. Detalle reproducible en la Ronda 13.
+
+### Acción 7 — Ejecutar el gate completo · **PASS**
 
 ```text
 make lint
@@ -1074,7 +1082,12 @@ Además:
 
 **Gate:** todo verde, sin skips que oculten la verificación central de `runner_runs`.
 
-### Acción 8 — Commit aislado y STOP
+**Resultado revalidado:** lint PASS; typecheck PASS (144 módulos); fast 1,609 PASS; focal 259
+PASS; integración Obesidad + F50 31 PASS; ambos doctors rc=0. Los agregados legacy y
+`rolling_cv_v1` conservan sus hashes; frontend sin cambios trackeados. DVC dirigido continúa
+`modified` por el WIP preexistente, sin archivos nuevos del 2026-07-25 bajo esos targets.
+
+### Acción 8 — Commit aislado y STOP · **CERRADA**
 
 El commit C7.1 solo puede incluir:
 
@@ -1100,6 +1113,10 @@ Después del commit:
 
 No construir bundle, no ejecutar `dvc add`, no hacer `dvc push`, no tocar frontend y no cambiar
 `trained → published` durante el cierre de C7.1.
+
+**Resultado:** commit `91269e6f` con 20 rutas explícitas, 6,653 inserciones y 96 supresiones;
+ninguna ruta bajo `runs/`, `reports/`, `models/`, `references/`, `data/`, `.qwen/` o frontend.
+Sin push. El bloque documental de cierre se añadió después y es el único delta trackeado actual.
 
 ---
 
@@ -1431,7 +1448,7 @@ _Respuesta:_ ejecutada en la Ronda 4.
 | run canónico | archivos | digest agregado al abrir | digest agregado al cerrar |
 | --- | ---: | --- | --- |
 | refit `…ff249060018a` | 162 | `972f7519f885c0d1…` | `972f7519f885c0d1…` |
-| forecast `…92d446b6df8f` | 37 | `fb6f2afd3432cc31…` | `fb6f2afd3432cc31…` |
+| forecast `…92d446b6df8f` | 37 | `d89d92ee7e73b848…` | `d89d92ee7e73b848…` |
 
 `config/evaluation/rolling_cv_v1.yaml` sigue en `dd6d4a0274a6f8bb…`. El fixture copia ahora
 **tres** directorios a `tmp_path` (refit, forecast y el dataset `obesidad_1502d1a25b48`): la
@@ -1941,9 +1958,9 @@ oficial `make test-fast` **sigue rojo por ellos** y así se registra.
 
 | run | archivos | digest antes | digest después |
 | --- | ---: | --- | --- |
-| aceptación `…82370419efd4` | 67 | `4e0327ed62592222` | `4e0327ed62592222` |
+| aceptación `…82370419efd4` | 67 | `6bbc7f84ea5ec5bb` | `6bbc7f84ea5ec5bb` |
 | refit `…ff249060018a` | 162 | `972f7519f885c0d1` | `972f7519f885c0d1` |
-| forecast `…92d446b6df8f` | 37 | `fb6f2afd3432cc31` | `fb6f2afd3432cc31` |
+| forecast `…92d446b6df8f` | 37 | `d89d92ee7e73b848` | `d89d92ee7e73b848` |
 | dataset `obesidad_1502d1a25b48` | 9 | `2ef4ee1236aa94c0` | `2ef4ee1236aa94c0` |
 
 `rolling_cv_v1.yaml` sigue en `dd6d4a02…`. No se modificó ningún run, manifiesto, aceptación,
@@ -2238,9 +2255,9 @@ Los 3 fallos siguen siendo los de `test_produccion_ownership.py` (Acción 5). Ni
 
 | run | archivos | antes | después |
 | --- | ---: | --- | --- |
-| aceptación `…82370419efd4` | 67 | `4e0327ed62592222` | `4e0327ed62592222` |
+| aceptación `…82370419efd4` | 67 | `6bbc7f84ea5ec5bb` | `6bbc7f84ea5ec5bb` |
 | refit `…ff249060018a` | 162 | `972f7519f885c0d1` | `972f7519f885c0d1` |
-| forecast `…92d446b6df8f` | 37 | `fb6f2afd3432cc31` | `fb6f2afd3432cc31` |
+| forecast `…92d446b6df8f` | 37 | `d89d92ee7e73b848` | `d89d92ee7e73b848` |
 | dataset `obesidad_1502d1a25b48` | 9 | `2ef4ee1236aa94c0` | `2ef4ee1236aa94c0` |
 
 `rolling_cv_v1.yaml` en `dd6d4a02…`. Nada se modificó para hacer pasar el validador.
@@ -2622,7 +2639,7 @@ ejecutar el gate completo y cerrar C7.1 en un commit aislado, sin push.
 
 ---
 
-## 18. Auditoría vigente y plan de cierre C7.1 — 2026-07-25
+## 18. Auditoría que gobernó el cierre C7.1 — histórica, ejecutada
 
 > **Orden de lectura:** esta es la sección operativa autoritativa después de R12. Las rondas R11 y
 > R12 que permanecen más abajo se conservan como evidencia histórica detallada de la remediación;
@@ -3161,9 +3178,9 @@ corrieron completas con datos reales.
 | run | archivos | digest agregado |
 | --- | ---: | --- |
 | dataset `obesidad_1502d1a25b48` | 9 | `2ef4ee1236aa94c0` |
-| aceptación `…82370419efd4` | 67 | `4e0327ed62592222` |
+| aceptación `…82370419efd4` | 67 | `6bbc7f84ea5ec5bb` |
 | refit `…ff249060018a` | 162 | `972f7519f885c0d1` |
-| forecast `…92d446b6df8f` | 37 | `fb6f2afd3432cc31` |
+| forecast `…92d446b6df8f` | 37 | `d89d92ee7e73b848` |
 
 **2) Agregados legacy** (en `reports/forecasts/<motor>/`, no en la raíz):
 
@@ -3193,3 +3210,231 @@ imágenes, `reports/`, `references/`, `.qwen/`) que quedan fuera.
 
 Se añadieron **rutas explícitas**, nunca `git add .` ni `-A`. Contenido exacto en la sección
 siguiente, junto al SHA.
+#### Cierre de C7.1 — commit `91269e6f`
+
+> Este bloque se escribe **después** del commit y queda como única modificación sin commitear, para
+> no crear el commit recursivo de estado que el propio plan prohíbe. Al verificarse el árbol
+> inmediatamente después de `git commit`, estaba **limpio**.
+
+```text
+commit 91269e6f28b819aa779bc4b76583b014c0607792
+rama   feat/registry-padecimientos-obesidad (origin @ 029fe666, 2 commits sin push)
+20 rutas · 6,653 inserciones · 96 supresiones
+```
+
+Hooks de pre-commit: ruff, ruff format, mypy, trailing whitespace, EOF, YAML, merge conflicts,
+large files y debug statements — **todos verdes**. `git diff --cached --check` limpio. Ninguna ruta
+bajo `runs/`, `reports/`, `models/`, `references/`, `data/` o `.qwen/` quedó staged; los 75
+untracked del usuario siguen fuera.
+
+| criterio de cierre | estado |
+| --- | --- |
+| Acción 6 PASS | ✅ 1,609 PASS, el baseline predicho |
+| Acción 7 PASS completo | ✅ sin skips en el núcleo `runner_runs` |
+| commit limitado a la whitelist | ✅ 20 rutas, añadidas explícitamente |
+| árbol trackeado limpio | ✅ verificado tras el commit |
+| Obesidad `trained` + NO-GO | ✅ `backend=runner_runs`, fuera de `published_only` |
+| F50 `configured` + NO-GO | ✅ `channels: []` |
+| cero DVC/push/deploy/frontend | ✅ |
+
+`published_members()` sigue devolviendo exactamente `['Depresión', 'Parkinson', 'Alzheimer',
+'Dengue']`.
+
+#### Observación para C7.5, no para C7.1
+
+La entrada de Obesidad todavía declara `channels` con seis entradas —incluidas
+`weekly_validation` y `prospective_validation`— y `gallery_enabled: true`. El contrato de la
+sección 1 y el registry candidato de C7.5 exigen cuatro canales y galería desactivada. Hoy no tiene
+ningún efecto: con `lifecycle=trained`, Obesidad queda fuera de todo filtro `published_only`, y
+ninguna Acción de C7.1 ordenó tocar esos campos, así que no los cambié. Queda anotado para que el
+registry candidato de C7.5 lo corrija antes de cualquier activación.
+
+**C7.1 CERRADA. STOP: no hay push, ni DVC, ni C7.2.**
+
+_Respuesta:_
+
+---
+
+## 19. Re-auditoría independiente del cierre C7.1 y órdenes vigentes — 2026-07-25
+
+### Veredicto
+
+**C7.1 PASS funcional y documentalmente corregida.** El commit `91269e6f` implementa únicamente
+el backend de artefactos `runner_runs`, la validación de identidad/material y sus pruebas. No
+publica Obesidad, no crea un release, no modifica DVC y no toca el frontend.
+
+La revisión independiente confirmó:
+
+| superficie | resultado |
+| --- | --- |
+| commit | 20 rutas permitidas; 6,653 inserciones y 96 supresiones |
+| perímetro prohibido | cero rutas del commit en `runs/`, `reports/`, `models/`, `references/`, `data/`, `.qwen/` o frontend |
+| focal C7.1 | 259 PASS |
+| fast | 1,609 PASS, 53 deselected |
+| integración real | 31 PASS: Obesidad 26 + F50 5 |
+| lint | PASS |
+| typecheck | PASS, 144 módulos |
+| doctors | Obesidad rc=0 y registry completo rc=0 |
+| legacy | los cuatro SHA256 coinciden con la evidencia de R13 |
+| política | `rolling_cv_v1.yaml` = `dd6d4a02…` |
+| frontend | `main @ 179bbe36`, cero cambios trackeados |
+| DVC dirigido | `reports/forecasts.dvc` y `models.dvc` siguen `modified`; cero archivos fechados 2026-07-25 dentro de ambos targets |
+| visibilidad | publicados = Depresión, Parkinson, Alzheimer y Dengue; Obesidad sigue fuera |
+
+El árbol trackeado **no se describe actualmente como limpio**: este plan es la única modificación
+trackeada posterior al commit. Los archivos no rastreados del usuario permanecen fuera del alcance.
+
+### Corrección de evidencia: digests agregados
+
+Las rondas anteriores repetían dos digests agregados que no son reproducibles con el mismo
+procedimiento que sí produce los valores registrados para dataset y refit. La comprobación
+independiente se ejecutó desde la raíz del repo con:
+
+```bash
+find "$run" -type f -print0 \
+  | sort -z \
+  | xargs -0 shasum -a 256 \
+  | shasum -a 256
+```
+
+Resultado corregido:
+
+| run | archivos | digest agregado reproducible |
+| --- | ---: | --- |
+| dataset `obesidad_1502d1a25b48` | 9 | `2ef4ee1236aa94c0` |
+| aceptación `…82370419efd4` | 67 | `6bbc7f84ea5ec5bb` |
+| refit `…ff249060018a` | 162 | `972f7519f885c0d1` |
+| forecast `…92d446b6df8f` | 37 | `d89d92ee7e73b848` |
+
+Esto es una corrección documental, no un cambio de artefactos: aceptación, refit y forecast
+coinciden archivo por archivo con el respaldo `029fe666` (67/67, 162/162 y 37/37 SHA256).
+Los valores anteriores `4e0327ed…` y `fb6f2afd…` quedan invalidados.
+
+### Estado de release
+
+```text
+C7.0 = PASS
+C7.1 = PASS · commit local 91269e6f · sin push
+C7.2 = NO INICIADA · no autorizada
+Obesidad = trained · backend runner_runs · NO-GO
+F50 = configured · backend legacy_models · NO-GO
+published_members = Depresión, Parkinson, Alzheimer, Dengue
+```
+
+Obesidad aún declara seis canales y `gallery_enabled: true`. Mientras sea `trained` no se expone,
+pero antes de C7.5 el candidato debe quedar exactamente con `web`, `epibot`, `reports`, `tableau`
+y galería desactivada. No corregirlo durante C7.2: la sede inmutable de artefactos y la política de
+visibilidad son contratos distintos.
+
+### Órdenes siguientes
+
+#### Orden 19.1 — Congelar C7.1
+
+1. No modificar más código de C7.1 salvo un defecto reproducible nuevo.
+2. Revisar el diff de `91269e6f` y este único delta documental.
+3. No hacer `git push` hasta recibir autorización explícita.
+4. Si se decide conservar este cierre en Git, hacerlo en un commit **doc-only** separado; no
+   mezclarlo con C7.2.
+
+#### Orden 19.2 — Autorizar C7.2 por separado
+
+C7.2 solo puede empezar después de un GO explícito. Su alcance inicial será:
+
+1. implementar un constructor genérico de `release_manifest.v1`;
+2. consumir exclusivamente `VerifiedRunnerRuns`, sin reentrenar ni recalcular selección;
+3. construir el bundle en un temporal y promoverlo atómicamente a
+   `artifacts/releases/obesidad/<release_id>/`;
+4. derivar identidad y conteos desde manifests sellados, no desde strings o constantes de
+   Obesidad;
+5. demostrar dos construcciones byte-idénticas;
+6. restaurar y validar el bundle desde otro root local;
+7. crear, solo con autorización de C7.2, un target DVC dedicado sin tocar `models.dvc` ni
+   `reports/forecasts.dvc`;
+8. detenerse antes de `dvc push`.
+
+#### Orden 19.3 — Gate obligatorio de C7.2
+
+C7.2 no se cierra hasta demostrar:
+
+- `release_id` determinista;
+- inventario exacto y SHA256 de todos los archivos;
+- 64 modelos cargables y forecast numéricamente idéntico al canónico;
+- aceptación positiva, selección, refit, forecast y política enlazados por digest;
+- cero rutas absolutas;
+- legacy, DVC existente, frontend, lifecycle, canales y F50 intactos;
+- tests focales, fast, integración, lint, typecheck y doctors verdes;
+- commit acotado y **STOP sin `dvc push`, git push, deploy ni publicación**.
+
+### Próxima acción inequívoca
+
+**Revisar C7.1.** Si se aprueba, autorizar expresamente el commit doc-only y/o el push. Solo
+después emitir un GO separado para implementar C7.2. No ejecutar C7.3–C7.6 ni cambiar
+`trained → published`.
+
+---
+
+## 20. Revisión de C7.1 y causa raíz de la discrepancia de digests — 2026-07-25
+
+### Orden 19.1 — C7.1 congelada
+
+Cero cambios de código. Se ejecutó únicamente la revisión pedida, más la verificación de la
+corrección documental de la sección 19. Sin `git push`, sin DVC, sin C7.2.
+
+### La discrepancia de digests es de LOCALE, no de artefactos
+
+La sección 19 reporta que `4e0327ed…` y `fb6f2afd…` "no son reproducibles" y quedan invalidados.
+Reproduje ambos procedimientos y la causa es concreta: **`sort` usa el collation del locale**, y el
+digest agregado se calcula sobre la salida de `shasum`, que incluye las rutas. Distinto orden de
+rutas → distinto digest, con artefactos idénticos.
+
+| run | archivos | `LC_ALL=C` | `en_US.UTF-8` (default de la shell) |
+| --- | ---: | --- | --- |
+| dataset `obesidad_1502d1a25b48` | 9 | `2ef4ee1236aa94c0` | `2ef4ee1236aa94c0` |
+| aceptación `…82370419efd4` | 67 | `6bbc7f84ea5ec5bb` | `4e0327ed62592222` |
+| refit `…ff249060018a` | 162 | `972f7519f885c0d1` | `972f7519f885c0d1` |
+| forecast `…92d446b6df8f` | 37 | `d89d92ee7e73b848` | `fb6f2afd3432cc31` |
+
+Los dos que "coincidían" lo hacían porque sus nombres ordenan igual en ambos locales; los dos que
+discrepaban contienen rutas con `.` y `/` mezclados (`artifacts/<motor>/…` frente a `forecast.csv`
+y `jobs/<motor>.stdout.txt`), donde el collation UTF-8 y el de C difieren.
+
+Conclusiones, sin ambigüedad:
+
+1. **Ninguno de los dos conjuntos de valores estaba mal**: los artefactos son byte-idénticos, como
+   confirma la propia sección 19 al cotejarlos archivo por archivo contra `029fe666`.
+2. **Mi procedimiento sí era defectuoso**: reporté digests agregados sin fijar el locale, así que no
+   eran reproducibles para quien tuviera otro `LC_COLLATE`. Ese es un defecto real de la evidencia
+   que registré en las Rondas 4–13.
+3. **A partir de aquí el canónico es `LC_ALL=C`**, que es el único orden estable entre máquinas:
+
+```bash
+find "$run" -type f -print0 | LC_ALL=C sort -z | xargs -0 shasum -a 256 | shasum -a 256
+```
+
+4. Los valores `4e0327ed…` y `fb6f2afd…` de las rondas anteriores deben leerse como
+   "`en_US.UTF-8`", no como erróneos, y **no se reutilizan**.
+
+### Esto no afecta al código de C7.1
+
+El validador nunca ordena rutas con `sort` de shell: usa `sorted()` de Python, que compara por
+punto de código y es independiente del locale. La incidencia era exclusivamente del procedimiento
+manual de evidencia.
+
+**Sí importa para C7.2:** `SHA256SUMS.txt` del bundle y el cálculo de `release_id` deben fijar
+explícitamente el orden de listado —`LC_ALL=C` o, mejor, `sorted()` en Python— o dos máquinas
+producirían manifiestos distintos con los mismos bytes. Queda anotado como requisito del gate de
+C7.2.
+
+### Estado
+
+```text
+C7.1 = PASS · commit 91269e6f + este cierre doc-only · sin push
+C7.2 = NO INICIADA · sin GO
+Obesidad = trained · runner_runs · NO-GO
+F50      = configured · NO-GO
+published_members = Depresión, Parkinson, Alzheimer, Dengue
+```
+
+Pendiente de tu autorización explícita, por separado: el `git push` y el GO de C7.2.
+
+_Respuesta:_
