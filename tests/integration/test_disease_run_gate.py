@@ -10,13 +10,14 @@ fila por serie/fold). Requiere datos gitignored.
 from __future__ import annotations
 
 import json
+import shutil
 
 import pandas as pd
 import pytest
 
 from epiforecast.data import epi_dataset as ed
+from epiforecast.runner import acceptance, selection
 from epiforecast.runner import orchestrator as orch
-from epiforecast.runner import selection
 from epiforecast.runner.manifest import DATASET_MANIFEST_SCHEMA, DatasetManifest
 
 pytestmark = pytest.mark.integration
@@ -224,15 +225,82 @@ def test_gate_portafolio_de_desarrollo(selection_run):
     assert manifest["selection_digest"] and manifest["rule"]["band_pct"] == 5.0
 
 
-def test_gate_seleccion_cargable_y_sellada(selection_run):
+def test_gate_seleccion_cargable_y_sellada(selection_run, tmp_path):
     _, sel_dir = selection_run
     sel, manifest = selection.load_frozen_selection(sel_dir)
     assert len(sel) == 64 and manifest["counts"]["series"] == 64
     assert (sel_dir / "selection_report.md").read_text(encoding="utf-8").startswith("# Selección")
-    # El manifiesto sella los otros tres artefactos: alterar uno invalida la carga.
-    (sel_dir / "selection_report.md").write_text("alterado", encoding="utf-8")
+    # El manifiesto sella los otros tres artefactos: alterar uno invalida la carga. Se altera una
+    # COPIA: la selección oficial queda intacta para el stage test.
+    copia = tmp_path / "copia"
+    shutil.copytree(sel_dir, copia)
+    (copia / "selection_report.md").write_text("alterado", encoding="utf-8")
     with pytest.raises(selection.SelectionError, match="alterado"):
-        selection.load_frozen_selection(sel_dir)
+        selection.load_frozen_selection(copia)
+
+
+@pytest.fixture(scope="module")
+def test_stage(root, selection_run):
+    sel_man, _ = selection_run
+    man = orch.run_command(
+        "Obesidad", "benchmark", stage="test", runs_root=root, selection_run_id=sel_man.run_id
+    )
+    return man, root / man.run_id
+
+
+def test_gate_2025_solo_con_seleccion_congelada(test_stage, selection_run):
+    # El stage test corre SOLO las familias seleccionadas + el control, y lleva el selection_digest.
+    man, run_dir = test_stage
+    sel_man, _ = selection_run
+    assert man.status == "succeeded" and man.stage == "test"
+    assert man.input_digests["selection"] == sel_man.input_digests["selection"]
+    assert set(man.engines) == {
+        "seasonal_mean_5y",
+        "seasonal_median_5y",
+        "ets_add_damped_log1p",
+        "ridge_harmonic_log1p",
+        "prophet_count_log1p",
+        "prophet_rate_log1p",
+        "seasonal_naive_lag52",  # control
+    }
+    job_ctx = json.loads((run_dir / "job_context.json").read_text(encoding="utf-8"))
+    assert job_ctx["selection_digest"] == sel_man.input_digests["selection"]
+    assert man.input_digests["selection"][:12] in man.run_id  # identidad del run
+
+    for engine in man.engines:  # 2025 completo: 53 semanas, sin fallbacks
+        spec = _spec(run_dir, engine)
+        assert spec["fold_ids"] == ["test_2025"]
+        assert spec["base_predictions"] == 64 * 53 == 3_392
+        assert spec["derived_eval_rows"] == 111 * 53 == 5_883
+        assert spec["n_fallback"] == 0
+
+
+def test_gate_aceptacion_2025(test_stage):
+    _, run_dir = test_stage
+    acc = json.loads((run_dir / "acceptance.json").read_text(encoding="utf-8"))
+    assert acc["accepted"] is True
+    assert {c["scope"] for c in acc["checks"]} == {
+        "smape_bases",
+        "smape_all",
+        "smape_nacional_general",
+    }
+    for check in acc["checks"]:  # el portafolio mejora al control en los tres ámbitos
+        assert check["passed"] and check["worse_pct"] < 0
+
+    portfolio = pd.read_csv(run_dir / "portfolio_test.csv", dtype={"geography_id": str})
+    assert len(portfolio) == 111 and set(portfolio["split"]) == {"test"}
+    assert portfolio.groupby(["geography_level", "geography_id", "sex"]).ngroups == 111
+
+    final, _ = acceptance.load_accepted(run_dir)
+    assert len(final) == 64 and set(final["source"]) == {"development_selection"}
+    assert final["selected_engine"].value_counts().to_dict() == {
+        "seasonal_mean_5y": 16,
+        "ets_add_damped_log1p": 16,
+        "ridge_harmonic_log1p": 12,
+        "seasonal_median_5y": 10,
+        "prophet_rate_log1p": 5,
+        "prophet_count_log1p": 5,
+    }  # el mapa de desarrollo queda aceptado SIN modificaciones
 
 
 def test_gate_validate_data_intacto_tras_benchmark(bench_full, dataset, root):

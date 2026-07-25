@@ -104,6 +104,7 @@ class EvaluationPolicy:
     folds: tuple[Fold, ...]
     stages: dict[str, Any]
     selection: dict[str, Any] = field(default_factory=dict)
+    acceptance: dict[str, Any] = field(default_factory=dict)
 
     def development_folds(self) -> tuple[Fold, ...]:
         return tuple(f for f in self.folds if f.group == GROUP_DEVELOPMENT)
@@ -160,6 +161,7 @@ def load_policy(name: str) -> EvaluationPolicy:
         folds=folds,
         stages=dict(raw["stages"]),
         selection=dict(raw.get("selection", {})),
+        acceptance=dict(raw.get("acceptance", {})),
     )
     _validate(pol)
     return pol

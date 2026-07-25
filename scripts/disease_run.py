@@ -4,6 +4,8 @@ Subcomandos:
   validate-data <pad>                          construye dataset + 111 productos (FUNCIONAL)
   benchmark <pad> --stage smoke|full [--engines a,b]   subprocess limpio por motor (rc=2 sin adapter)
   tune <pad> --stage smoke|full [--engines a,b]        congela hiperparámetros (centinelas+rejilla)
+  select <pad> --benchmark-run <run_id>                congela la selección por SeriesKey
+  benchmark <pad> --stage test --selection <run_id>    abre 2025 UNA vez (gate de aceptación)
   refit <pad> [--engines a,b]
   forecast <pad> --horizon 52 [--engines a,b]
 
@@ -34,6 +36,7 @@ from epiforecast.runner.manifest import (
     CMD_VALIDATE_DATA,
     STAGE_FULL,
     STAGE_SMOKE,
+    STAGE_TEST,
 )
 
 
@@ -53,9 +56,14 @@ def _build_parser() -> argparse.ArgumentParser:
 
     bench = sub.add_parser(CMD_BENCHMARK, help="backtest OOS por motor (subprocess limpio)")
     bench.add_argument("disease")
-    bench.add_argument("--stage", choices=[STAGE_SMOKE, STAGE_FULL], default=STAGE_FULL)
+    bench.add_argument(
+        "--stage", choices=[STAGE_SMOKE, STAGE_FULL, STAGE_TEST], default=STAGE_FULL
+    )
     bench.add_argument(
         "--engines", type=_engines, help="override; default = candidatos de la política"
+    )
+    bench.add_argument(
+        "--selection", help="run_id de la selección congelada (OBLIGATORIO con --stage test)"
     )
     bench.add_argument("--no-resume", action="store_true")
     bench.add_argument("--allow-dirty", action="store_true", help="permite árbol trackeado sucio")
@@ -118,6 +126,7 @@ def main(argv: list[str] | None = None) -> int:
         horizon=getattr(args, "horizon", None),
         resume=not args.no_resume,
         require_clean=not args.allow_dirty,  # runs por CLI son oficiales: exigen árbol limpio
+        selection_run_id=getattr(args, "selection", None),
     )
     print(f"run_id={rm.run_id} status={rm.status} → runs/{rm.run_id}/run_manifest.json")
     return rm.exit_code or 0

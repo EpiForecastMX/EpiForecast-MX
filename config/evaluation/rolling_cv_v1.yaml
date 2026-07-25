@@ -73,6 +73,17 @@ selection:
     prophet_count_log1p: 4
     prophet_rate_log1p: 4
 
+# Gate de aceptación del stage `test` (2025). Se abre UNA sola vez, con la selección ya congelada:
+# si el portafolio no pasa, NO se retunea ni se cambia ninguna selección por resultados de 2025 —
+# se rechaza entero y la selección final cae al motor de control.
+acceptance:
+  control_engine: seasonal_naive_lag52
+  max_worse_pct: # cuánto puede empeorar el portafolio frente al control, por ámbito
+    smape_bases: 5.0
+    smape_all: 5.0
+    smape_nacional_general: 10.0
+  fallback_engine: seasonal_naive_lag52 # las 64 bases si el portafolio se rechaza
+
 # Alcance por stage del comando benchmark.
 stages:
   smoke: {fold_groups: [development], last_n_folds: 1} # último fold dev (verificación rápida)

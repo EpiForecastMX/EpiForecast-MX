@@ -29,10 +29,11 @@ import pandas as pd
 from epiforecast.data.epi_aggregate import build_products
 from epiforecast.data.epi_dataset import build_epi_dataset_v2
 from epiforecast.data.epi_geo_exposure import load_geo_catalog
+from epiforecast.runner import acceptance, selection
 from epiforecast.runner import contracts as ct
-from epiforecast.runner import selection
 from epiforecast.runner.contracts import SCHEMA_DATASET, SCHEMA_PRODUCTS
 from epiforecast.runner.manifest import (
+    STAGES,
     STATUS_FAILED,
     STATUS_SUCCEEDED,
     ArtifactRecord,
@@ -250,7 +251,7 @@ def run_engines(
             disease_id=disease_id,
             command=command,
             dataset_id=dataset_id,
-            stage=stage if stage in ("smoke", "full") else None,
+            stage=stage if stage in STAGES else None,
             policy_digest=policy_digest_value,
             seed=seed,
             code_commit=code_commit,
@@ -412,6 +413,80 @@ def run_selection(
     return man
 
 
+def _load_selection_for_test(
+    runs_base: Path, selection_run_id: str | None, policy: Any, dataset_id: str
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    """El stage ``test`` SOLO existe con una selección congelada, intacta y de la MISMA política."""
+    if not selection_run_id:
+        raise RunnerError(
+            "stage 'test' requiere --selection <run_id>: 2025 no se abre sin selección congelada"
+        )
+    sel, manifest = selection.load_frozen_selection(runs_base / selection_run_id)
+    provenance = manifest["provenance"]
+    if provenance["policy_digest"] != policy.digest:
+        raise RunnerError(
+            "la selección se congeló con OTRA política "
+            f"({provenance['policy_digest'][:12]} != {policy.digest[:12]})"
+        )
+    if provenance["dataset_id"] != dataset_id:
+        raise RunnerError(
+            f"la selección es de otro dataset ({provenance['dataset_id']} != {dataset_id})"
+        )
+    return sel, manifest
+
+
+def _finish_test_stage(
+    run_dir: Path,
+    man: RunManifest,
+    sel: pd.DataFrame,
+    sel_manifest: dict[str, Any],
+    policy: Any,
+    products: pd.DataFrame,
+    code_commit: str | None,
+) -> None:
+    """Compone el portafolio 2025, aplica el gate de aceptación y escribe toda la evidencia."""
+    rule = acceptance.AcceptanceRule.from_policy(policy)
+    forecasts = {
+        e: pd.read_csv(run_dir / "artifacts" / e / "forecast.csv", dtype={"geography_id": str})
+        for e in man.engines
+    }
+    base_fc = selection.compose_base_forecast(forecasts, sel, man.run_id)
+    _, portfolio_metrics = selection.evaluate_portfolio(base_fc, products, policy, ct.SPLIT_TEST)
+    control_metrics = pd.read_csv(
+        run_dir / "artifacts" / rule.control_engine / "metrics.csv", dtype={"geography_id": str}
+    )
+    verdict = acceptance.evaluate_gate(
+        acceptance.summarize(portfolio_metrics), acceptance.summarize(control_metrics), rule
+    )
+    final = acceptance.final_selection(sel, verdict, rule)
+    fold = policy.folds_for_stage("test")[-1]
+    provenance = {
+        "run_id": man.run_id,
+        "code_commit": code_commit,
+        "selection_run_id": sel_manifest["provenance"]["benchmark_run_id"],
+        "selection_digest": sel_manifest["selection_digest"],
+        "fold_id": fold.fold_id,
+        "n_weeks": fold.n_weeks,
+    }
+    report = acceptance.render_report(verdict, rule, final, provenance)
+    arts = acceptance.write_acceptance(
+        run_dir,
+        portfolio_metrics,
+        final,
+        report,
+        {
+            **verdict,
+            "rule": rule.to_dict(),
+            "provenance": provenance,
+            "portfolio": acceptance.summarize(portfolio_metrics),
+            "control": acceptance.summarize(control_metrics),
+            "engines_in_run": list(man.engines),
+        },
+    )
+    man.artifacts = [*man.artifacts, *arts]
+    man.write(run_dir)
+
+
 def run_command(
     disease: str,
     command: str,
@@ -423,8 +498,18 @@ def run_command(
     runs_root: Path | None = None,
     resume: bool = True,
     require_clean: bool = False,
+    selection_run_id: str | None = None,
 ) -> RunManifest:
     """benchmark/refit/forecast: materializa el dataset (dataset_id) y orquesta los motores en runs/<run_id>/."""
+    # 2025 no se abre sin selección congelada, y NUNCA para tunear: se comprueba ANTES de tocar
+    # datos, para que un intento inválido no llegue siquiera a materializar el dataset.
+    if stage == "test":
+        if command != "benchmark":
+            raise RunnerError(f"stage 'test' solo existe para benchmark, no para {command!r}")
+        if not selection_run_id:
+            raise RunnerError(
+                "stage 'test' requiere --selection <run_id>: 2025 no se abre sin selección congelada"
+            )
     # Un run OFICIAL exige árbol limpio: el code_commit del run_id debe reflejar el código real.
     if require_clean:
         dirty = _tracked_dirty()
@@ -445,8 +530,23 @@ def run_command(
     used_engines = engines if engines else candidate_engines(policy_name)
     code_commit = _git_commit()
 
+    # El stage `test` (2025) se abre UNA vez y SOLO con selección congelada; tunear con él está
+    # prohibido: sería convertir el conjunto de aceptación en otro conjunto de tuning.
+    sel: pd.DataFrame | None = None
+    sel_manifest: dict[str, Any] = {}
+    if stage == "test":
+        policy = load_policy(policy_name)
+        sel, sel_manifest = _load_selection_for_test(
+            runs_base, selection_run_id, policy, dataset_id
+        )
+        control = acceptance.AcceptanceRule.from_policy(policy).control_engine
+        # Solo las familias efectivamente seleccionadas + el control (nada de motores ociosos).
+        used_engines = sorted({*sel["selected_engine"].unique(), control})
+
     # variant identifica la ejecución dentro del run_id: stage (benchmark/tune) o h<N> (forecast).
     variant = f"h{horizon}" if command == "forecast" and horizon else stage
+    if stage == "test":  # la identidad del run incluye la selección congelada que lo autoriza
+        variant = f"test_{sel_manifest['selection_digest'][:12]}"
     run_id = compute_run_id(
         disease_id, dataset_id, command, variant, pol_digest, used_engines, seed, code_commit
     )
@@ -465,12 +565,17 @@ def run_command(
                 "stage": stage,
                 "seed": seed,
                 "horizon": horizon,
+                "selection_digest": sel_manifest.get("selection_digest"),
+                "selection_run_id": selection_run_id if stage == "test" else None,
             },
             indent=2,
         ),
         encoding="utf-8",
     )
 
+    digests = dict(dm.digests)
+    if sel_manifest:
+        digests["selection"] = sel_manifest["selection_digest"]
     man = run_engines(
         run_dir,
         disease_id,
@@ -481,11 +586,22 @@ def run_command(
         policy_digest_value=pol_digest,
         seed=seed,
         code_commit=code_commit,
-        input_digests=dm.digests,
+        input_digests=digests,
         counts=dm.counts,
         resume=resume,
     )
     # Un benchmark multi-motor exitoso emite el reporte comparativo (sin elegir ganador).
     if command == "benchmark" and man.status == STATUS_SUCCEEDED and len(used_engines) > 1:
         comparative_report(run_dir)
+    # El stage test cierra con el gate de aceptación: veredicto global y selección final.
+    if stage == "test" and man.status == STATUS_SUCCEEDED and sel is not None:
+        _finish_test_stage(
+            run_dir,
+            man,
+            sel,
+            sel_manifest,
+            load_policy(policy_name),
+            pd.read_csv(dataset_dir / "products.csv", dtype={"geography_id": str}),
+            code_commit,
+        )
     return man

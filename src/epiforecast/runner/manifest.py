@@ -50,7 +50,8 @@ COMMANDS: frozenset[str] = frozenset(
 # Stages de ejecución (distinto stage → distinto run_id).
 STAGE_SMOKE = "smoke"
 STAGE_FULL = "full"
-STAGES: frozenset[str] = frozenset({STAGE_SMOKE, STAGE_FULL})
+STAGE_TEST = "test"  # 2025: se abre UNA vez, solo con selección congelada
+STAGES: frozenset[str] = frozenset({STAGE_SMOKE, STAGE_FULL, STAGE_TEST})
 
 
 class ManifestError(ValueError):
