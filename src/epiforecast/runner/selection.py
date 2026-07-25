@@ -315,11 +315,15 @@ def render_report(
     for engine, n in dist.items():
         tier = "challenger" if engine in rule.challengers else "incumbent"
         lines.append(f"| `{engine}` | {n} | {tier} |")
-    n_ch = int((sel["tier"] == "challenger").sum())
+    activos = sel[sel["tier"] == "challenger"]
+    n_ch = len(activos)
+    # Mediana SOLO de los challengers activos; sobre las 64 series el valor es negativo y engaña.
+    mejora = float(activos["challenger_improvement_pct"].median()) if n_ch else float("nan")
     lines += [
         "",
         f"Challengers activos en **{n_ch}/64** series "
-        f"(mejora mediana declarada: {sel['challenger_improvement_pct'].median():.2f}%).",
+        f"(mejora mediana entre los activos: {mejora:.2f}%; "
+        f"sobre las 64 series la mediana es {sel['challenger_improvement_pct'].median():.2f}%).",
         "",
         "## Portafolio en desarrollo (64→111 derivado, sin elegir motor para agregados)",
         "",
