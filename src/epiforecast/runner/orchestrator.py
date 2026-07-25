@@ -443,6 +443,7 @@ def _finish_test_stage(
     policy: Any,
     products: pd.DataFrame,
     code_commit: str | None,
+    selection_run_id: str,
 ) -> None:
     """Compone el portafolio 2025, aplica el gate de aceptación y escribe toda la evidencia."""
     rule = acceptance.AcceptanceRule.from_policy(policy)
@@ -463,7 +464,8 @@ def _finish_test_stage(
     provenance = {
         "run_id": man.run_id,
         "code_commit": code_commit,
-        "selection_run_id": sel_manifest["provenance"]["benchmark_run_id"],
+        "selection_run_id": selection_run_id,
+        "benchmark_run_id": sel_manifest["provenance"]["benchmark_run_id"],
         "selection_digest": sel_manifest["selection_digest"],
         "fold_id": fold.fold_id,
         "n_weeks": fold.n_weeks,
@@ -603,5 +605,6 @@ def run_command(
             load_policy(policy_name),
             pd.read_csv(dataset_dir / "products.csv", dtype={"geography_id": str}),
             code_commit,
+            str(selection_run_id),
         )
     return man
