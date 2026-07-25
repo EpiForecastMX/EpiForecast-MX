@@ -29,8 +29,8 @@ import pandas as pd
 from epiforecast import registry
 from epiforecast.data.epi_aggregate import build_products
 from epiforecast.data.epi_dataset import build_epi_dataset_v2
-from epiforecast.data.epi_geo_exposure import load_geo_catalog
-from epiforecast.runner import acceptance, forecasting, selection
+from epiforecast.data.epi_geo_exposure import load_exposure_snapshot, load_geo_catalog
+from epiforecast.runner import acceptance, final_models, forecasting, selection
 from epiforecast.runner import contracts as ct
 from epiforecast.runner import refit as refit_mod
 from epiforecast.runner.contracts import SCHEMA_DATASET, SCHEMA_PRODUCTS
@@ -63,6 +63,20 @@ _SINGLE_THREAD_ENV: dict[str, str] = {
 
 class RunnerError(ValueError):
     """Error de orquestación del runner."""
+
+
+def _exposure_metadata(disease: str) -> dict[str, Any]:
+    """Procedencia de la exposición, resuelta por metadata (nunca literales en el reporte)."""
+    spec = registry.require(disease)
+    if not spec.exposure_source_id:
+        raise RunnerError(f"{spec.id}: el registry no declara exposure_source_id")
+    snapshot = load_exposure_snapshot(spec.exposure_source_id, load_geo_catalog())
+    return {
+        "source_id": snapshot.source_id,
+        "reference": snapshot.reference,
+        "cutoff": snapshot.cutoff.isoformat(),
+        "digest": snapshot.digest,
+    }
 
 
 def _sha256(path: Path) -> str:
@@ -364,6 +378,9 @@ def run_selection(
 
     provenance = {
         "disease_id": dm.disease_id,
+        "disease_label": registry.require(disease).display_name,
+        "cie_codes": list(registry.require(disease).cie_codes),
+        "development_folds": [f.fold_id for f in policy.development_folds()],
         "dataset_id": dm.dataset_id,
         "dataset_digest": dm.digests["dataset"],
         "benchmark_run_id": benchmark_run_id,
@@ -446,6 +463,7 @@ def _finish_test_stage(
     products: pd.DataFrame,
     code_commit: str | None,
     selection_run_id: str,
+    disease_label: str,
 ) -> None:
     """Compone el portafolio 2025, aplica el gate de aceptación y escribe toda la evidencia."""
     rule = acceptance.AcceptanceRule.from_policy(policy)
@@ -465,6 +483,8 @@ def _finish_test_stage(
     fold = policy.folds_for_stage("test")[-1]
     provenance = {
         "run_id": man.run_id,
+        "disease_id": man.disease_id,
+        "disease_label": disease_label,
         "code_commit": code_commit,
         "selection_run_id": selection_run_id,
         "benchmark_run_id": sel_manifest["provenance"]["benchmark_run_id"],
@@ -514,6 +534,14 @@ def _refit_context(
         if problems:
             raise RunnerError(f"{acceptance_run_id}/{engine}: {'; '.join(problems)}")
 
+    declared = {a.path: a.digest for j in test_man.jobs.values() for a in j.artifacts}
+    declared.update({a.path: a.digest for a in test_man.artifacts})
+    for nombre in ("acceptance.json", "final_selection.csv"):
+        esperado = declared.get(nombre)
+        if esperado is None:
+            raise RunnerError(f"{acceptance_run_id}: {nombre} no está declarado en el manifiesto")
+        if _sha256(test_dir / nombre) != esperado:
+            raise RunnerError(f"{acceptance_run_id}: {nombre} no coincide con el manifiesto")
     final, payload = acceptance.load_accepted(test_dir)  # re-verifica digests de la evidencia
     if not payload.get("accepted"):
         raise RunnerError(f"{acceptance_run_id}: la aceptación fue NEGATIVA; no se refitea")
@@ -614,8 +642,23 @@ def run_command(
             raise RunnerError(f"{refit_run_id}: no es un refit exitoso ({refit_man.status})")
         if refit_man.dataset_id != dataset_id:
             raise RunnerError(f"{refit_run_id}: refit de otro dataset")
+        problems = verify_artifacts(
+            refit_dir,
+            [
+                {"path": a.path, "digest": a.digest}
+                for a in [
+                    *refit_man.artifacts,
+                    *(x for j in refit_man.jobs.values() for x in j.artifacts),
+                ]
+            ],
+        )
+        if problems:
+            raise RunnerError(f"{refit_run_id}: artefactos del refit inválidos ({problems[0]})")
         used_engines = list(refit_man.engines)
+        for engine in used_engines:  # índices y estados cargables ANTES de pronosticar
+            final_models.load_models(refit_dir, engine)
         refit_prov = dict(refit_man.input_digests)
+        refit_prov["refit_digest"] = _sha256(refit_dir / "refit_summary.json")
         origin = tuple(json.loads((refit_dir / "refit_summary.json").read_text())["train_end"])
 
     # variant identifica la ejecución dentro del run_id: stage (benchmark/tune) o h<N> (forecast).
@@ -659,7 +702,10 @@ def run_command(
                 "refit_dir": str(runs_base / str(refit_run_id)) if refit_run_id else None,
                 "refit_run_id": refit_run_id,
                 "origin": list(origin) if origin else None,
+                "disease_label": registry.require(disease).display_name,
                 "exposure_source_id": registry.require(disease).exposure_source_id,
+                "exposure": _exposure_metadata(disease),
+                "refit_digest": refit_prov.get("refit_digest"),
             },
             indent=2,
         ),
@@ -687,10 +733,17 @@ def run_command(
     # Un benchmark multi-motor exitoso emite el reporte comparativo (sin elegir ganador).
     if command == "benchmark" and man.status == STATUS_SUCCEEDED and len(used_engines) > 1:
         comparative_report(run_dir)
-    if command == "refit" and man.status == STATUS_SUCCEEDED and final_sel is not None:
-        refit_mod.write_summary(run_dir, man, final_sel, refit_prov, code_commit)
-    if command == "forecast" and man.status == STATUS_SUCCEEDED:
-        forecasting.finish_forecast(run_dir, man, runs_base / str(refit_run_id), code_commit)
+    # Fases de cierre: si alguna falla, el run queda FAILED con su evidencia; jamás un manifiesto
+    # succeeded de una fase incompleta.
+    try:
+        if command == "refit" and man.status == STATUS_SUCCEEDED and final_sel is not None:
+            refit_mod.write_summary(run_dir, man, final_sel, refit_prov, code_commit)
+        if command == "forecast" and man.status == STATUS_SUCCEEDED:
+            forecasting.finish_forecast(run_dir, man, runs_base / str(refit_run_id), code_commit)
+    except Exception as exc:
+        man.fail(1, type(exc).__name__, str(exc))
+        man.write(run_dir)
+        raise
     # El stage test cierra con el gate de aceptación: veredicto global y selección final.
     if stage == "test" and man.status == STATUS_SUCCEEDED and sel is not None:
         _finish_test_stage(
@@ -702,5 +755,6 @@ def run_command(
             pd.read_csv(dataset_dir / "products.csv", dtype={"geography_id": str}),
             code_commit,
             str(selection_run_id),
+            registry.require(disease).display_name,
         )
     return man

@@ -12,11 +12,12 @@ from __future__ import annotations
 import json
 import shutil
 
+import numpy as np
 import pandas as pd
 import pytest
 
 from epiforecast.data import epi_dataset as ed
-from epiforecast.runner import acceptance, selection
+from epiforecast.runner import acceptance, final_models, selection
 from epiforecast.runner import orchestrator as orch
 from epiforecast.runner.manifest import DATASET_MANIFEST_SCHEMA, DatasetManifest
 
@@ -319,3 +320,113 @@ def test_gate_reproducible(bench_full, tmp_path_factory):
         d1 = sorted((a.schema, a.digest) for a in man1.jobs[e].artifacts)
         d2 = sorted((a.schema, a.digest) for a in man2.jobs[e].artifacts)
         assert d1 == d2
+
+
+@pytest.fixture(scope="module")
+def refit_run(root, test_stage):
+    man, _ = test_stage
+    refit = orch.run_command("Obesidad", "refit", runs_root=root, acceptance_run_id=man.run_id)
+    return refit, root / refit.run_id
+
+
+@pytest.fixture(scope="module")
+def forecast_run(root, refit_run):
+    man, _ = refit_run
+    fc = orch.run_command(
+        "Obesidad", "forecast", horizon=52, runs_root=root, refit_run_id=man.run_id
+    )
+    return fc, root / fc.run_id
+
+
+def test_gate_refit_final(refit_run):
+    # 64 modelos, uno por base seleccionada; cero para derivados; toda la historia.
+    man, run_dir = refit_run
+    assert man.status == "succeeded"
+    summary = json.loads((run_dir / "refit_summary.json").read_text(encoding="utf-8"))
+    assert summary["n_models"] == 64 and summary["final_refit"] is True
+    assert summary["n_train_values"] == [653] and summary["train_end"] == [2026, 26]
+    assert summary["distribution"] == {
+        "seasonal_mean_5y": 16,
+        "ets_add_damped_log1p": 16,
+        "ridge_harmonic_log1p": 12,
+        "seasonal_median_5y": 10,
+        "prophet_rate_log1p": 5,
+        "prophet_count_log1p": 5,
+    }
+    total = 0
+    for engine in man.engines:  # todos los envelopes y estados deben cargar y verificar sello
+        modelos = final_models.load_models(run_dir, engine)
+        total += len(modelos)
+        for envelope, _ in modelos:
+            assert envelope["series_key"]["geography_level"] == "estado"
+            assert envelope["final_refit"] and envelope["n_train"] == 653
+    assert total == 64
+
+
+def _consistencia(full: pd.DataFrame) -> None:
+    piv = full.pivot_table(
+        index=["geography_level", "geography_id", "epi_year", "epi_week"],
+        columns="sex",
+        values="y_pred_cases",
+    )
+    assert np.allclose(piv["general"], piv["hombres"] + piv["mujeres"], rtol=0, atol=1e-9)
+    estados = full[(full.geography_level == "estado") & (full.sex == "general")]
+    nacional = full[(full.geography_level == "nacional") & (full.sex == "general")]
+    por_periodo = estados.groupby(["epi_year", "epi_week"])["y_pred_cases"].sum()
+    nac = nacional.set_index(["epi_year", "epi_week"])["y_pred_cases"].reindex(por_periodo.index)
+    assert np.allclose(por_periodo.to_numpy(), nac.to_numpy(), rtol=0, atol=1e-9)
+
+
+def test_gate_forecast_preliminar(forecast_run):
+    man, run_dir = forecast_run
+    assert man.status == "succeeded"
+    base = pd.read_csv(run_dir / "forecast_base.csv", dtype={"geography_id": str})
+    full = pd.read_csv(run_dir / "forecast.csv", dtype={"geography_id": str})
+    assert len(base) == 3_328 and len(full) == 5_772
+    assert full.groupby(["geography_level", "geography_id", "sex"]).ngroups == 111
+    periodos = sorted({(y, w) for y, w in zip(full.epi_year, full.epi_week, strict=True)})
+    assert len(periodos) == 52 and periodos[0] == (2026, 27) and periodos[-1] == (2027, 26)
+    assert not full.duplicated(
+        ["geography_level", "geography_id", "sex", "epi_year", "epi_week"]
+    ).any()
+    assert full["y_pred_cases"].notna().all() and (full["y_pred_cases"] >= 0).all()
+    assert np.isfinite(full["y_pred_cases"]).all()
+    assert full["yhat_lower"].isna().all() and full["yhat_upper"].isna().all()  # point-only
+    _consistencia(full)
+    lineage = json.loads((run_dir / "lineage.json").read_text(encoding="utf-8"))
+    assert lineage["refit_digest"] and lineage["products"] == 111
+
+
+def test_gate_forecast_portable(forecast_run, refit_run, tmp_path_factory):
+    # El refit copiado a otro runs_root pronostica lo MISMO, sin depender de rutas originales.
+    _, refit_dir = refit_run
+    _, original_dir = forecast_run
+    otro = tmp_path_factory.mktemp("runs_portable")
+    shutil.copytree(refit_dir, otro / refit_dir.name)
+    orch.validate_data("Obesidad", runs_root=otro)
+    portable = orch.run_command(
+        "Obesidad", "forecast", horizon=52, runs_root=otro, refit_run_id=refit_dir.name
+    )
+    assert portable.status == "succeeded"
+    cols = ["geography_level", "geography_id", "sex", "epi_year", "epi_week", "y_pred_cases"]
+    izq = pd.read_csv(otro / portable.run_id / "forecast.csv", dtype={"geography_id": str})
+    der = pd.read_csv(original_dir / "forecast.csv", dtype={"geography_id": str})
+    assert (
+        izq[cols]
+        .sort_values(cols)
+        .reset_index(drop=True)
+        .equals(der[cols].sort_values(cols).reset_index(drop=True))
+    )  # numéricamente idéntico
+
+
+def test_gate_estado_retirado_deja_el_run_failed(refit_run, tmp_path_factory):
+    _, refit_dir = refit_run
+    roto = tmp_path_factory.mktemp("runs_roto")
+    shutil.copytree(refit_dir, roto / refit_dir.name)
+    orch.validate_data("Obesidad", runs_root=roto)
+    estados = sorted((roto / refit_dir.name / "models" / "seasonal_mean_5y").glob("*.state.json"))
+    estados[0].unlink()  # retirar un estado sellado
+    with pytest.raises((final_models.FinalModelError, orch.RunnerError)):
+        orch.run_command(
+            "Obesidad", "forecast", horizon=52, runs_root=roto, refit_run_id=refit_dir.name
+        )

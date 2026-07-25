@@ -298,9 +298,12 @@ def render_report(
 ) -> str:
     """``selection_report.md``: resumen humano, distribución y anomalías (sin elegir nada nuevo)."""
     dist = sel["selected_engine"].value_counts().sort_index()
+    etiqueta = provenance.get("disease_label") or provenance["disease_id"]
+    folds = provenance.get("development_folds") or []
     lines = [
-        "# Selección por SeriesKey — desarrollo 2021-2024",
+        f"# Selección por SeriesKey — {etiqueta}, desarrollo",
         "",
+        f"- Folds de development: {', '.join(str(f) for f in folds) or 'los de la política'}",
         f"- Benchmark: `{provenance['benchmark_run_id']}` @ `{provenance['code_commit']}`",
         f"- Política: `{provenance['policy_name']}` (digest `{provenance['policy_digest'][:12]}`)",
         f"- Dataset: `{provenance['dataset_id']}`",
@@ -347,7 +350,7 @@ def render_report(
         f"- {banda_amplia}/64 series resolvieron con banda de más de un candidato "
         "(desempate por MASE/RMSE/costo).",
         "",
-        "**No es una decisión de producción**: Obesidad sigue NO-GO y sin publicar.",
+        f"**No es una decisión de producción**: {etiqueta} sigue NO-GO y sin publicar.",
     ]
     return "\n".join(lines) + "\n"
 

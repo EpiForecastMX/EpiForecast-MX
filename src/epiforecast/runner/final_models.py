@@ -19,6 +19,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 import hashlib
 import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -208,11 +209,16 @@ def load_models(run_dir: Path, engine: str) -> list[tuple[dict[str, Any], FinalS
     out: list[tuple[dict[str, Any], FinalState]] = []
     for entry in index["models"]:
         envelope_path = models_dir / entry["envelope_path"]
+        if not envelope_path.exists():
+            raise FinalModelError(f"envelope ausente: {entry['envelope_path']}")
         envelope_bytes = envelope_path.read_bytes()
         if hashlib.sha256(envelope_bytes).hexdigest() != entry["envelope_digest"]:
             raise FinalModelError(f"envelope alterado: {entry['envelope_path']}")
         envelope = json.loads(envelope_bytes)
-        state_bytes = (models_dir / envelope["state_path"]).read_bytes()
+        state_file = models_dir / envelope["state_path"]
+        if not state_file.exists():
+            raise FinalModelError(f"estado ausente: {envelope['state_path']}")
+        state_bytes = state_file.read_bytes()
         if hashlib.sha256(state_bytes).hexdigest() != envelope["state_digest"]:
             raise FinalModelError(f"estado alterado: {envelope['state_path']}")
         if not envelope.get("final_refit"):
@@ -226,6 +232,30 @@ def load_models(run_dir: Path, engine: str) -> list[tuple[dict[str, Any], FinalS
         )
         out.append((envelope, state))
     return out
+
+
+def validate_window(window: FinalWindow) -> None:
+    """Ventana de refit válida: historia no vacía y CONTIGUA, valores finitos no negativos y,
+    si el contrato lo exige, exposición completa y estrictamente positiva."""
+    from epiforecast.data.epi_calendar import shift
+
+    who = f"{window.spec.engine}/{ct.series_key_str(window.spec.key)}"
+    periods = sorted(window.train)
+    if not periods:
+        raise FinalModelError(f"{who}: historia vacía")
+    for prev, cur in zip(periods, periods[1:], strict=False):
+        if shift(prev[0], prev[1], 1) != cur:
+            raise FinalModelError(f"{who}: hueco en la historia entre {prev} y {cur}")
+    for period in periods:
+        value = window.train[period]
+        if not math.isfinite(value) or value < 0:
+            raise FinalModelError(f"{who}: valor inválido en {period}: {value!r}")
+    if window.spec.transform.requires_exposure:
+        if set(window.train_exposure) != set(periods):
+            raise FinalModelError(f"{who}: la exposición no cubre toda la historia")
+        for period, value in window.train_exposure.items():
+            if not math.isfinite(value) or value <= 0:
+                raise FinalModelError(f"{who}: exposición inválida en {period}: {value!r}")
 
 
 def final_windows(
@@ -266,4 +296,6 @@ def final_windows(
         )
     if len(windows) != len(assigned):
         raise FinalModelError(f"series asignadas no resueltas: {len(windows)} de {len(assigned)}")
+    for window in windows:
+        validate_window(window)
     return windows

@@ -108,8 +108,12 @@ def render_report(
 ) -> str:
     """``acceptance_report.md``: veredicto, cada comprobación y qué queda como selección final."""
     estado = "ACEPTADO" if verdict["accepted"] else "RECHAZADO"
+    etiqueta = provenance.get("disease_label") or provenance.get("disease_id", "")
     lines = [
-        f"# Gate de aceptación 2025 — portafolio {estado}",
+        f"# Gate de aceptación {provenance['fold_id']} — {etiqueta}: portafolio {estado}",
+        "",
+        "El conjunto de test NO participa en tuning ni en la selección: el veredicto canónico es",
+        "este y no se recalcula. Reproducir técnicamente el run está permitido y queda registrado.",
         "",
         f"- Selección congelada: `{provenance['selection_run_id']}` "
         f"(digest `{provenance['selection_digest'][:12]}`)",
@@ -144,7 +148,7 @@ def render_report(
         "| --- | ---: |",
         *[f"| `{engine}` | {n} |" for engine, n in dist.items()],
         "",
-        "**No es una decisión de producción**: Obesidad sigue NO-GO y sin publicar.",
+        f"**No es una decisión de producción**: {etiqueta} sigue NO-GO y sin publicar.",
     ]
     return "\n".join(lines) + "\n"
 

@@ -136,6 +136,11 @@ def finish_forecast(run_dir: Path, man: Any, refit_dir: Path, code_commit: str |
     """Une las 64 bases de los motores, deriva los 47 productos y emite el reporte preliminar."""
     from epiforecast.runner.evaluation import derive_forecast_products
 
+    job = json.loads((run_dir / "job_context.json").read_text(encoding="utf-8"))
+    etiqueta = job.get("disease_label") or man.disease_id
+    exposure = job["exposure"]
+    refit_digest = job["refit_digest"]
+
     parts = [
         pd.read_csv(run_dir / "artifacts" / e / "forecast_base.csv", dtype={COL_GEO_ID: str})
         for e in man.engines
@@ -187,8 +192,13 @@ def finish_forecast(run_dir: Path, man: Any, refit_dir: Path, code_commit: str |
             int(base[ct.COL_ORIGIN_EPI_YEAR].iloc[0]),
             int(base[ct.COL_ORIGIN_EPI_WEEK].iloc[0]),
         ],
-        "rule": "los 47 derivados son suma exacta de las 64 bases (general=H+M, región=Σ estados, nacional=Σ regiones)",
+        "rule": (
+            "los 47 derivados se MATERIALIZAN sumando las 64 bases: general=H+M por estado, "
+            "región=Σ estados de la macrorregión y nacional=Σ de los 32 estados. Que Σ regiones "
+            "== nacional es una validación EQUIVALENTE, no la definición"
+        ),
         "refit_run_id": refit_dir.name,
+        "refit_digest": refit_digest,
         "engines": {e: int((inventory["engine"] == e).sum()) for e in man.engines},
     }
     lin_path = run_dir / "lineage.json"
@@ -208,7 +218,7 @@ def finish_forecast(run_dir: Path, man: Any, refit_dir: Path, code_commit: str |
     )
     report = "\n".join(
         [
-            "# Forecast preliminar de Obesidad (E66)",
+            f"# Forecast preliminar — {etiqueta}",
             "",
             f"- Run: `{man.run_id}` @ `{code_commit}` · refit `{refit_dir.name}`",
             f"- Origen `{lineage['origin']}` → horizonte {horizon} semanas "
@@ -235,9 +245,10 @@ def finish_forecast(run_dir: Path, man: Any, refit_dir: Path, code_commit: str |
             "  producen intervalos homogéneos y no se inventan.",
             f"- Valores negativos o no finitos: {int((full[ct.COL_Y_PRED] < 0).sum())} / "
             f"{int((~full[ct.COL_Y_PRED].apply(math.isfinite)).sum())}.",
-            "- Exposición futura: snapshot estático declarado (CPV 2020), resuelto por metadata.",
+            f"- Exposición futura: snapshot estático `{exposure['source_id']}` "
+            f"({exposure['reference']}, corte {exposure['cutoff']}), resuelto por metadata.",
             "",
-            "**Preliminar y NO productivo**: Obesidad sigue NO-GO, fuera de todo canal público.",
+            f"**Preliminar y NO productivo**: {etiqueta} sigue NO-GO, fuera de todo canal público.",
         ]
     )
     rep_path = run_dir / "preliminary_report.md"
