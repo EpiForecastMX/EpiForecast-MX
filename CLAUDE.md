@@ -290,12 +290,15 @@ EpiForecast-MX/
   (Querétaro) → 2 filas base; cero negativos o nulos; general=H+M, Σ estados=región, Σ regiones=nacional.
   **57.3% de ceros**: son datos de baja incidencia, nunca faltantes.
 - **Smoke OOS** `anorexia_f50_benchmark_smoke_06ee26150ba1` @ `7c374d49` (checkpoint funcional C6.2):
-  fold único `development_2024`, rc=0, **64 series modeladas** y cero derivadas, 3,328 predicciones base,
-  5,772 filas de evaluación, 111 métricas, `n_fallback=0`, `disease_id=anorexia_f50` en todo artefacto y
+  fold único `development_2024`, rc=0, **64 series base modeladas** y **cero series derivadas modeladas
+  directamente** (los 47 productos derivados SÍ se materializan, por suma de las bases), 3,328
+  predicciones base, 5,772 filas de evaluación sobre los 111 productos, 111 métricas, `n_fallback=0`,
+  `disease_id=anorexia_f50` en todo artefacto y
   mismo `run_id`+digests en otro `runs_root`. **Sin umbral de sMAPE**: C6 demuestra reutilización
   funcional, no calidad productiva (la mediana sale ~93, esperable en series casi-cero).
-- **Preservación verificada**: el diff de C6 toca solo `config/` y `tests/` — cero cambios en `src/`,
-  `scripts/`, frontend y `rolling_cv_v1.yaml` (digest `dd6d4a02…` intacto); los 4 agregados legacy
+- **Preservación verificada**: el diff de C6 toca `config/`, `tests/` y `CLAUDE.md` (documentación) —
+  cero cambios en `src/`, `scripts/`, frontend y `rolling_cv_v1.yaml` (digest `dd6d4a02…` intacto);
+  los 4 agregados legacy
   byte-idénticos; runs canónicos C5 de Obesidad intactos; estado dirigido de DVC sin cambios.
 
 
