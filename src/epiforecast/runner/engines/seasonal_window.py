@@ -124,6 +124,12 @@ class SeasonalWindowAdapter:
         preds, _ = window_fn(seasonal_history(state), list(request.periods))
         return preds
 
+    def forecast_state(
+        self, state: fm.FinalState, request: fm.ForecastRequest
+    ) -> dict[tuple[int, int], float]:
+        """Capacidad R15.4: delega en ``forecast_final`` (una sola implementación)."""
+        return self.forecast_final(state, request)
+
     def run(self, command: str, run_dir: str) -> list[ArtifactRecord]:
         if command == "refit":
             return refit.run_refit(self.name, self.fit_final, run_dir, self._params)

@@ -258,6 +258,12 @@ class EtsAdapter:
     def supports(self, command: str) -> bool:
         return command in _SUPPORTED
 
+    def forecast_state(
+        self, state: fm.FinalState, request: fm.ForecastRequest
+    ) -> dict[tuple[int, int], float]:
+        """Capacidad R15.4: delega en ``forecast_final`` (una sola implementación)."""
+        return forecast_final(state, request)
+
     def _engine_params(self) -> dict[str, Any]:
         return {
             "implementation": self._cfg["implementation"],

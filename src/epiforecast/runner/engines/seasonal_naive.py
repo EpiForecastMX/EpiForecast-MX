@@ -62,6 +62,12 @@ class SeasonalNaiveLag52Adapter:
     def supports(self, command: str) -> bool:
         return command in _SUPPORTED
 
+    def forecast_state(
+        self, state: fm.FinalState, request: fm.ForecastRequest
+    ) -> dict[tuple[int, int], float]:
+        """Capacidad R15.4: delega en ``forecast_final`` (una sola implementación)."""
+        return forecast_final(state, request)
+
     def run(self, command: str, run_dir: str) -> list[ArtifactRecord]:
         params = {"seasonal_lag": _LAG, "history_weeks": _HISTORY_WEEKS}
         if command == "refit":

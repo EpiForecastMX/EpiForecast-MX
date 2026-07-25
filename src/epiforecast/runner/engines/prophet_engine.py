@@ -225,6 +225,12 @@ class ProphetProfileAdapter:
     def supports(self, command: str) -> bool:
         return command in _SUPPORTED
 
+    def forecast_state(
+        self, state: fm.FinalState, request: fm.ForecastRequest
+    ) -> dict[tuple[int, int], float]:
+        """Capacidad R15.4: delega en ``forecast_final`` (una sola implementación)."""
+        return forecast_final(state, request)
+
     def _params(self, extra: dict[str, Any]) -> dict[str, Any]:
         return {
             **self._cfg["common"],

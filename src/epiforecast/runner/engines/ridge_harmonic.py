@@ -275,6 +275,12 @@ class RidgeHarmonicAdapter:
     def supports(self, command: str) -> bool:
         return command in _SUPPORTED
 
+    def forecast_state(
+        self, state: fm.FinalState, request: fm.ForecastRequest
+    ) -> dict[tuple[int, int], float]:
+        """Capacidad R15.4: delega en ``forecast_final`` (una sola implementación)."""
+        return forecast_final(state, request)
+
     def run(self, command: str, run_dir: str) -> list[ArtifactRecord]:
         import sklearn  # versión efectiva → entra al spec.json y al config_digest
 

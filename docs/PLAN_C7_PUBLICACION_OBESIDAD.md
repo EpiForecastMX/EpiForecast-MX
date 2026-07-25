@@ -1,16 +1,17 @@
 # C7 — Plan operativo de publicación de Obesidad
 
 > **Estado autoritativo (2026-07-25): C7.1 CERRADA** en `91269e6f`, con cierre documental
-> `7a8c25cd`. Las Acciones **1–8 de 8**
+> `7a8c25cd` y contrato C7.2 endurecido en `0dbd0f01`. Las Acciones **1–8 de 8**
 > están ejecutadas y verificadas: 259 pruebas focales, `make test-fast` con 1,609 PASS, 31 pruebas
 > de integración reales, lint, typecheck y ambos doctors verdes. El rango
-> `029fe666..7a8c25cd` ya fue subido por fast-forward a
+> `029fe666..0dbd0f01` ya fue subido por fast-forward a
 > `origin/feat/registry-padecimientos-obesidad`; local y remoto coinciden. Esta actualización del
 > plan es el único delta trackeado posterior.
 >
-> **Orden vigente:** STOP. No iniciar C7.2 ni promover DVC sin autorización explícita. Primero
-> preservar estas órdenes en un commit doc-only y sincronizarlo con autorización específica;
-> después solicitar `GO C7.2-A`.
+> **Orden vigente:** C7.2-A tiene el baseline 23.1 revalidado; los pasos 23.2–23.6 no están
+> iniciados. Requiere la autorización literal `GO C7.2-A`; esa autorización cubre implementación
+> y builds temporales locales, nunca DVC, ruta final, push, frontend o publicación. La Ronda 16
+> contiene el estado y la orden autoritativos.
 > Obesidad continúa `trained`, NO-GO e invisible para `published_only`.
 >
 > **Alcance:** publicar únicamente Obesidad E66. Anorexia F50 permanece
@@ -57,8 +58,8 @@ Estado local al redactar:
 
 | componente | estado |
 | --- | --- |
-| Backend | `feat/registry-padecimientos-obesidad` @ `7a8c25cd`; material C7.1 en `91269e6f` |
-| Remoto backend | `origin/feat/registry-padecimientos-obesidad` @ `7a8c25cd` |
+| Backend | `feat/registry-padecimientos-obesidad` @ `0dbd0f01`; material C7.1 en `91269e6f` |
+| Remoto backend | `origin/feat/registry-padecimientos-obesidad` @ `0dbd0f01` |
 | Frontend | `main` @ `179bbe36`, sin cambios trackeados |
 | Obesidad | `trained`, NO-GO, invisible para `published_only` |
 | F50 | `configured`, NO-GO, sin canales |
@@ -302,7 +303,7 @@ artifacts/releases/obesidad/<release_id>/
 ├── runtime_inputs/
 │   ├── entidades_mx.csv
 │   ├── exposure_<source_id>.csv
-│   └── config_effective.json
+│   └── runtime_config.json
 ├── policy/
 │   └── rolling_cv_v1.yaml
 ├── selection/
@@ -322,11 +323,14 @@ artifacts/releases/obesidad/<release_id>/
     └── lineage.json
 ```
 
-`runtime_inputs/` contiene las copias efectivas selladas necesarias para ejecutar el forecast desde
-el bundle sin depender de `runs/`, rutas absolutas ni del estado mutable del workspace. Para el
-forecast actual incluye, como mínimo, el catálogo geográfico, el snapshot de exposición declarado
-y la configuración efectiva que identifica ambos. No se copia un input por conveniencia: cada
-archivo debe estar consumido por el loader de `runner_release` o eliminarse del bundle.
+`runtime_inputs/` contiene los insumos efectivos sellados necesarios para ejecutar el forecast
+desde el bundle sin depender de `runs/`, rutas absolutas ni del estado mutable del workspace. Para
+el forecast actual incluye, como mínimo, el catálogo geográfico y la proyección por `cve_ent` del
+snapshot de exposición. `runtime_config.json` se genera canónicamente con rutas **relativas al
+bundle**, source id, referencia/corte, columnas por sexo y digests de procedencia; no se copia
+literalmente `inputs/config_effective.json`, porque ese archivo conserva una ruta relativa al
+workspace y no es un contrato de ejecución del release. No se incluye un input por conveniencia:
+cada archivo debe estar consumido por el loader de `runner_release` o eliminarse del bundle.
 
 `release_manifest.v1` debe declarar:
 
@@ -2689,6 +2693,167 @@ la Acción 4.
 
 _Respuesta:_
 
+---
+
+### Ronda 15 — Auditoría independiente del baseline C7.2-A y orden corregida — 2026-07-25
+
+#### Veredicto
+
+**Paso 23.1 PASS; implementación NO iniciada.** La revalidación independiente reproduce:
+
+```text
+dataset      9 archivos    2ef4ee1236aa94c0
+aceptación  67 archivos    6bbc7f84ea5ec5bb
+refit      162 archivos    972f7519f885c0d1
+forecast    37 archivos    d89d92ee7e73b848
+política                    dd6d4a0274a6f8bb
+doctor Obesidad / completo  rc=0 / rc=0
+DVC dirigido                modified preexistente
+frontend                    main @ 179bbe36, cero trackeados
+```
+
+El único cambio trackeado continúa siendo este plan. No hay módulos, tests ni bundles de C7.2-A a
+medio construir.
+
+#### Correcciones a la Ronda 14
+
+##### R15-C1 — Los temporales sin path no son evidencia reutilizable
+
+La Ronda 14 dice que creó dos roots, pero no registra sus paths y una sesión distinta no debe
+depender de ellos. Se consideran descartables. Después del GO se crean dos roots nuevos, se
+registran durante el gate y se eliminan al cerrar. Nunca se promueve uno de esos directorios.
+
+##### R15-C2 — `VerifiedRunnerRuns` no contiene los archivos fuente
+
+La dataclass contiene identidades, conteos, engines y `state_digest`, pero no `runs_root`, paths de
+envelopes/estados ni bytes de policy, selección, aceptación, forecast o runtime inputs. La frase
+«no hay que reabrir ningún run» queda invalidada.
+
+Contrato corregido:
+
+1. el entry point recibe roots y rutas fuente explícitas;
+2. invoca `validate_runner_runs` para obtener `VerifiedRunnerRuns`;
+3. entrega al builder puro la identidad verificada **junto con** un objeto tipado de source paths;
+4. al copiar, re-verifica cada digest declarado;
+5. nunca deriva identidad desde nombres de archivo, aunque use las rutas declaradas por manifests.
+
+##### R15-C3 — La exposición del dataset es una proyección, no el raw original
+
+`inputs/exposure_inegi_cpv2020_static.csv` tiene schema por `cve_ent`; el loader actual
+`load_exposure_snapshot` espera el raw INEGI y su YAML global. El loader del release no debe fingir
+que son intercambiables.
+
+Se exige un loader puro de runtime exposure que:
+
+- reciba `runtime_config.json`, catálogo y CSV proyectado desde el bundle;
+- valide claves, columnas por sexo, enteros positivos, unicidad y `Hombres + Mujeres = Total`;
+- exija cobertura exacta del catálogo;
+- contraste sus valores con las exposiciones selladas en el dataset;
+- registre por separado el SHA256 del CSV proyectado y el digest de procedencia del snapshot
+  original.
+
+##### R15-C4 — No recablear el runner completo
+
+No es necesario reescribir `orchestrator.py` ni la ruta productiva de `forecasting.py`. La
+reproducción aislada puede reutilizar:
+
+- `final_models.load_models` contra `bundle/refit`;
+- `ForecastRequest` con periodos y exposición del bundle;
+- las funciones `forecast_final` ya implementadas;
+- `derive_forecast_products` con el catálogo del bundle.
+
+Para resolver motores sin un `if engine == ...`, extender el registry de adapters con una
+capacidad tipada opcional, por ejemplo `FinalStateForecaster.forecast_state(state, request)`.
+Cada adapter seleccionado debe implementarla delegando en su función actual. Un motor presente en
+el release sin esa capacidad hace fallar el build/loader; nunca se sustituye por otro.
+
+#### Orden corregida de implementación
+
+Esta orden solo se ejecuta tras recibir `GO C7.2-A`.
+
+##### R15.1 — Preparación
+
+1. conservar el baseline de 23.1;
+2. crear roots A/B nuevos con `mktemp -d`;
+3. registrar los paths solo como telemetría de la ejecución, no dentro del bundle;
+4. definir cleanup garantizado;
+5. no reutilizar los temporales anónimos de R14.
+
+##### R15.2 — RED: identidad e inputs
+
+Antes del builder, añadir tests que fallen por ausencia de:
+
+- `identity_payload.v1` y JSON canónico;
+- release ID acíclico;
+- inventario exacto y checksums sin autorreferencia;
+- paths POSIX relativos y orden independiente del locale;
+- `runtime_config.v1`;
+- loader del catálogo y exposición proyectada;
+- rechazo de inputs faltantes, extra, alterados o incompatibles con el dataset;
+- rechazo de metadata ambiental/timestamps dentro del bundle.
+
+##### R15.3 — Entry point y builder
+
+Separar dos capas:
+
+1. **entry point impuro:** abre registry/manifests, valida la cadena y resuelve source paths;
+2. **builder puro:** recibe identidad verificada, source paths tipados y output temporal.
+
+El builder:
+
+- copia los bytes declarados y vuelve a comprobarlos;
+- genera metadata canónica;
+- incluye solo dependencias consumidas;
+- escribe `runtime_config.json` con paths internos relativos;
+- valida el bundle antes de devolverlo;
+- es idempotente ante un destino idéntico y rechaza uno distinto;
+- no conoce `Obesidad`, motores concretos ni conteos escritos a mano.
+
+##### R15.4 — Capacidad de forecast final
+
+1. declarar un protocolo tipado para pronosticar desde `FinalState`;
+2. implementarlo en cada adapter elegible reutilizando su función actual;
+3. comprobar que todos los engines del portafolio verificado ofrecen la capacidad;
+4. mantener sin cambios el flujo legacy `adapter.run("forecast", run_dir)`;
+5. probar que un adapter sin capacidad falla con error tipado.
+
+##### R15.5 — Loader y reproducción
+
+1. verificar release ID, manifest, checksums e inventario;
+2. cargar catálogo/exposición exclusivamente desde `runtime_inputs`;
+3. cargar modelos exclusivamente desde `bundle/refit`;
+4. construir solicitudes para el horizonte declarado;
+5. pronosticar las series base con el adapter asignado;
+6. derivar productos desde las bases;
+7. comparar frame completo contra el forecast canónico;
+8. repetir sin permitir lecturas bajo `runs/` después de abrir el bundle.
+
+##### R15.6 — Determinismo y gate
+
+1. construir A con locale `C`;
+2. construir B con locale `en_US.UTF-8`;
+3. comparar release ID, rutas y bytes;
+4. ejecutar mutaciones de manifest, checksum, modelo, catálogo, exposición y config;
+5. ejecutar la matriz 21.3;
+6. recalcular el baseline de preservación;
+7. confirmar que no existe salida bajo `artifacts/releases/`;
+8. hacer commit local y STOP.
+
+Este plan puede formar parte del commit de C7.2-A como documentación de la ejecución; no crear otro
+ciclo de commit doc-only antes de empezar. El commit debe mantener el plan y el código/tests de
+C7.2-A separados de cualquier output material.
+
+#### Criterio de cierre
+
+No basta que el builder produzca un directorio válido. C7.2-A requiere demostrar que un consumidor
+puede cargarlo y reproducir el forecast sin `runs/`, configuración global de exposición ni rutas
+del equipo.
+
+#### Próxima orden
+
+> **GO C7.2-A. Continúa desde R15.1 hasta R15.6; construye únicamente en temporales, incluye este
+> plan en el commit local de cierre y detente sin DVC, push ni publicación.**
+
 _Respuesta auditada:_ Ronda 12 queda aceptada. No apareció otro bloqueo funcional en R11 ni en la
 Acción 5. Ejecutar ahora la Acción 6 acotada que se detalla en las secciones 16 y 18; después
 ejecutar el gate completo y cerrar C7.1 en un commit aislado, sin push.
@@ -3632,7 +3797,7 @@ Ninguna de las dos autoriza DVC remoto, C7.3, frontend, deploy ni `trained → p
 
 ---
 
-## 22. Push de C7.0–C7.1 cerrado y orden de arranque C7.2-A — 2026-07-25
+## 22. Push y preservación del contrato C7.2 — histórica, ejecutada
 
 ### Veredicto del push
 
@@ -3649,13 +3814,13 @@ La operación compartió únicamente C7.0, C7.1 y su cierre documental. No hizo 
 deploy, frontend ni cambio de lifecycle. Obesidad permanece `trained`, `runner_runs`, NO-GO; F50
 permanece `configured`, NO-GO.
 
-### Delta documental pendiente
+### Delta documental — preservado
 
-Las secciones 21 y 22 y el endurecimiento del contrato C7.2 todavía existen solo en el working
-tree. Son el único cambio trackeado. No deben mezclarse con el futuro código de C7.2-A porque son
-las instrucciones que lo gobiernan.
+Las secciones 21 y 22 y el endurecimiento del contrato C7.2 quedaron preservados en
+`0dbd0f01`, commit doc-only de un solo path, y subidos por fast-forward. No se mezclaron con
+código de C7.2-A.
 
-#### Orden 22.1 — Preservar el plan actualizado · **requiere autorización**
+#### Orden 22.1 — Preservar el plan actualizado · **COMPLETADA**
 
 Con autorización explícita para el cierre documental:
 
@@ -3732,14 +3897,433 @@ un commit acotado de C7.2-A. El commit no puede contener:
 
 Al terminar, entregar evidencia y detenerse. C7.2-A no autoriza C7.2-B.
 
-### Próxima acción inequívoca
+### Próxima acción de esa ronda — vigente hasta emitir el GO
 
-La siguiente autorización recomendada es:
-
-> **Autoriza Orden 22.1: crea y sube el commit doc-only del plan actualizado; no inicies
-> C7.2-A.**
-
-Después de confirmar ese push, la siguiente orden será:
+La autorización documental ya fue ejecutada. La siguiente orden es:
 
 > **GO C7.2-A: implementa y valida el release bundle únicamente en temporales locales, ejecuta
 > todos los gates y detente sin DVC ni publicación.**
+
+---
+
+## 23. Validación final antes de C7.2-A y orden ejecutable — 2026-07-25
+
+### Veredicto
+
+**READY, pendiente únicamente del GO.** La Orden 22.1 se ejecutó correctamente:
+
+| comprobación | resultado |
+| --- | --- |
+| commit | `0dbd0f01` — `docs: harden C7.2 release bundle contract` |
+| contenido | un solo path: este plan |
+| local/remoto | mismo SHA, ahead/behind 0/0 |
+| working tree trackeado al abrir | limpio |
+| `git diff --check 7a8c25cd..0dbd0f01` | PASS |
+| paths prohibidos | ninguno |
+| doctor Obesidad | rc=0 |
+| doctor completo | rc=0 |
+| política | `dd6d4a0274a6f8bb…` |
+| DVC dirigido | divergencia preexistente, sin promoción |
+| frontend | `main @ 179bbe36`, sin cambios trackeados |
+
+No se repitieron fast ni integración porque `0dbd0f01` solo modifica Markdown y no cambia ninguna
+superficie ejecutable.
+
+### Alcance exacto que autoriza `GO C7.2-A`
+
+El GO autoriza:
+
+- crear o modificar código genérico del builder y loader de `runner_release`;
+- crear o modificar tests unitarios y de integración necesarios;
+- construir bundles únicamente bajo temporales inyectados;
+- leer y verificar los runs canónicos sin modificarlos;
+- ejecutar lint, typecheck, fast, integración y doctors;
+- crear al final un commit local acotado de C7.2-A.
+
+El GO **no** autoriza:
+
+- escribir bajo `artifacts/releases/`;
+- crear o modificar archivos `.dvc`;
+- ejecutar `dvc add`, `dvc push`, `git push`, deploy o merge;
+- escribir en `runs/`, modelos o forecasts canónicos;
+- reentrenar, retunear, reseleccionar o reabrir aceptación 2025;
+- tocar frontend, lifecycle, channels, gallery o F50;
+- iniciar C7.2-B, C7.2-C o C7.3.
+
+### Orden operativa C7.2-A
+
+#### Paso 23.1 — Baseline y evidencia
+
+Antes de editar código:
+
+1. registrar HEAD, status trackeado y lista de untracked ajenos;
+2. registrar hashes canónicos de aceptación, refit, forecast, política y cuatro agregados legacy;
+3. registrar `dvc status` dirigido y estado del frontend;
+4. confirmar doctors verdes;
+5. crear los roots temporales con `mktemp -d`.
+
+#### Paso 23.2 — Contratos primero
+
+Implementar primero tests que fijen:
+
+1. `identity_payload.v1` canónico;
+2. `release_id` derivado sin autorreferencia;
+3. manifest con inventario exclusivo de payloads;
+4. `SHA256SUMS.txt` que incluye manifest + payloads y se excluye a sí mismo;
+5. rutas POSIX relativas ordenadas con `sorted()`;
+6. ausencia de timestamps y metadata ambiental;
+7. runtime inputs completos;
+8. rechazo de faltantes, extras, traversal, paths absolutos, digest falso y schema desconocido.
+
+No escribir el builder hasta que estos tests describan resultados concretos y fallen por la
+ausencia de implementación.
+
+#### Paso 23.3 — Builder temporal genérico
+
+1. recibir `disease_id`, `VerifiedRunnerRuns`, source roots y output root;
+2. derivar todas las identidades desde registry/manifests sellados;
+3. copiar bytes sin reinterpretar modelos ni inferir identidad por filename;
+4. generar únicamente metadata canónica;
+5. incluir catálogo, exposición y configuración efectiva consumidos;
+6. validar antes de declarar éxito;
+7. rechazar destino existente diferente y aceptar idempotentemente el idéntico;
+8. no contener condicionales específicos para Obesidad.
+
+#### Paso 23.4 — Loader y reproducción aislada
+
+1. cargar exclusivamente desde el bundle temporal;
+2. verificar manifest, checksums, inventario, modelos y lineage;
+3. cargar todos los modelos finales;
+4. resolver exposición/geografía desde `runtime_inputs`;
+5. reproducir el forecast completo;
+6. comparar claves, periodos y valores con el forecast canónico;
+7. demostrar que retirar o alterar cualquier dependencia produce error tipado.
+
+#### Paso 23.5 — Determinismo entre entornos
+
+Construir dos veces:
+
+```text
+build A: root temporal A · locale C
+build B: root temporal B · locale en_US.UTF-8
+```
+
+Exigir:
+
+- mismo `release_id`;
+- mismo árbol de rutas;
+- mismos bytes por archivo;
+- mismo `release_manifest.json`;
+- mismo `SHA256SUMS.txt`;
+- cero paths absolutos;
+- ningún acceso a `runs/` durante la carga/reproducción desde el bundle terminado.
+
+#### Paso 23.6 — Gate final y commit
+
+Ejecutar la Orden 21.3 completa y, además:
+
+1. recalcular evidencia de preservación;
+2. revisar `git diff --check`;
+3. clasificar cada path modificado/nuevo;
+4. excluir temporales y outputs;
+5. crear un solo commit de C7.2-A;
+6. verificar que el commit no contiene bundles, DVC ni archivos ajenos;
+7. detenerse sin push.
+
+Mensaje sugerido:
+
+```text
+C7.2-A deterministic runner release bundle
+```
+
+### Criterio de cierre
+
+C7.2-A solo puede declararse PASS si el bundle temporal es autosuficiente, determinista y reproduce
+el forecast; que los archivos “existan” o que sus digests coincidan sin cargar y pronosticar no es
+suficiente.
+
+### Orden siguiente
+
+La orden exacta que desbloquea la implementación es:
+
+> **GO C7.2-A. Ejecuta íntegramente la sección 23; construye solo en temporales, haz el commit
+> local acotado y detente sin DVC, push ni publicación.**
+
+---
+
+### Ronda 14 — C7.2-A: Paso 23.1 ejecutado; 23.2–23.6 NO INICIADOS — 2026-07-25
+
+#### Paso 23.1 — Baseline y evidencia · **CERRADO**
+
+| dato | valor |
+| --- | --- |
+| HEAD | `0dbd0f01` en `feat/registry-padecimientos-obesidad`, local == origin |
+| árbol | 1 trackeado modificado (este plan, sección 23) · 75 untracked del usuario |
+| doctor Obesidad / completo | rc=0 / rc=0 |
+| frontend | `main @ 179bbe36`, cero trackeados modificados |
+| DVC dirigido | `reports/forecasts.dvc` y `models.dvc` siguen `modified` (divergencia preexistente) |
+
+Hashes canónicos con el procedimiento **`LC_ALL=C`** fijado en la sección 20:
+
+```text
+obesidad_1502d1a25b48                             n=9    2ef4ee1236aa94c0
+obesidad_benchmark_test_7f582a3a4ed7_82370419efd4 n=67   6bbc7f84ea5ec5bb
+obesidad_refit_final_91590fa7452f_ff249060018a    n=162  972f7519f885c0d1
+obesidad_forecast_h52_ff249060018a_92d446b6df8f   n=37   d89d92ee7e73b848
+config/evaluation/rolling_cv_v1.yaml                     dd6d4a0274a6f8bb
+all_forecast_{prophet,deepar,ensemble,stacking}.csv      cb5be395… 96791595… 1d2cf0a7… ac97dc8e…
+```
+
+Roots temporales creados con `mktemp -d`, pero sus paths no quedaron registrados. **No son
+reutilizables ni cuentan como precondición durable**; R15 ordena recrearlos después del GO.
+
+#### Por qué me detengo aquí
+
+**No inicié el Paso 23.2.** Aplico la regla dura del encargo: *si una acción no cabe entera en el
+contexto, no se empieza; se registra y se para*. Es el mismo criterio con el que se detuvieron las
+Rondas 1 y 3, y aquí pesa más que nunca.
+
+C7.2-A no es una acción mediana. Exige, como mínimo:
+
+1. **23.2** — la batería de contratos ANTES del builder: `identity_payload.v1` con serialización
+   canónica, ausencia de ciclo entre `release_id`/manifest/checksums, `SHA256SUMS.txt` que se
+   excluye a sí mismo, orden `sorted()` sobre rutas POSIX relativas, cero timestamps, runtime
+   inputs completos y **ocho clases de rechazo** (faltante, extra, traversal, path absoluto, digest
+   falso, schema desconocido…). Deben existir y **fallar** por ausencia de implementación.
+2. **23.3** — builder genérico, sin un solo condicional por padecimiento.
+3. **23.4** — un loader que cargue los modelos y reproduzca el forecast sin leer `runs/`,
+   resolviendo exposición y geografía desde `runtime_inputs/`. R15 acota la implementación:
+   reutilizar `final_models`, las funciones finales y la derivación existente; no recablear el
+   orquestador completo.
+4. **23.5** — dos construcciones bajo roots y locales distintos, byte-idénticas.
+5. **23.6** — el gate completo de la Orden 21.3: fast (~62 s), integración (~165 s), focal (~45 s),
+   lint, typecheck, doctors, evidencia de preservación y commit acotado.
+
+El riesgo concreto de arrancar sin poder terminar no es perder trabajo: es dejar **medio construido
+el componente que fabrica el bundle publicable**. Un builder a medias que ya escribe manifests es
+peor que ninguno, porque el siguiente turno no sabría si lo que hay en disco cumple el contrato o
+solo lo aparenta — exactamente el falso verde que costó cuatro auditorías erradicar en C7.1.
+
+#### Punto exacto de reanudación
+
+La siguiente sesión arranca en el **Paso 23.2** con todo lo previo ya hecho:
+
+1. el baseline de arriba es la evidencia de preservación contra la que se comparará al cerrar;
+2. `VerifiedRunnerRuns` expone la identidad, pero no los source paths ni bytes. El entry point
+   debe recibir roots explícitos, reabrir los artefactos declarados y re-verificar sus digests al
+   copiarlos, como corrige R15;
+3. el requisito de orden independiente del locale ya está diagnosticado y escrito (sección 20);
+4. `artifact_identity` aporta las primitivas tipadas (`require_exact_records`, `int_of`,
+   `mapping_of`, `verify_records`) que el manifest y los checksums deben reutilizar en vez de
+   reimplementar.
+
+#### Estado
+
+```text
+C7.2-A = Paso 23.1 CERRADO · Pasos 23.2–23.6 NO INICIADOS
+Sin código nuevo, sin bundles, sin escribir en artifacts/releases/, sin DVC, sin push
+Obesidad = trained · runner_runs · NO-GO · F50 = configured · NO-GO
+Runs canónicos íntegros · doctors verdes · frontend y legacy sin delta
+```
+
+_Respuesta:_
+
+---
+
+### Ronda 16 — Estado autoritativo y orden de continuación — 2026-07-25
+
+La Ronda 14 queda aceptada únicamente como baseline. Las correcciones técnicas y la secuencia de
+implementación de R15 son autoritativas:
+
+- temporales de R14: descartables, no reutilizar;
+- `VerifiedRunnerRuns`: identidad, no contenedor de paths/bytes;
+- roots y source paths: explícitos e inyectables;
+- exposición: loader del CSV proyectado por `cve_ent`, no loader global del raw INEGI;
+- forecast: capacidad tipada de los adapters, sin diccionario de motores ni recablear el
+  orquestador;
+- build y validación: solo temporales, sin `artifacts/releases/` ni DVC.
+
+Estado inequívoco:
+
+```text
+C7.2-A  23.1 PASS · 23.2–23.6 NO INICIADOS
+Código   cero cambios
+Outputs  cero bundles
+Release  NO-GO
+```
+
+La siguiente acción requiere autorización, no otra auditoría:
+
+> **GO C7.2-A. Ejecuta R15.1–R15.6 completas, incluye el plan en el commit local de cierre y
+> detente sin DVC, push, deploy ni publicación.**
+
+---
+
+### Ronda 17 — C7.2-A ejecutado: R15.1–R15.6 CERRADAS — 2026-07-25
+
+GO recibido. Se ejecutó la sección 23 con las correcciones de R15 como autoritativas. **Cero
+escrituras bajo `runs/`, `artifacts/releases/`, DVC, frontend, lifecycle o canales.**
+
+#### R15.1 — Preparación · **PASS**
+
+Baseline reverificado antes de tocar código, y **una corrección de procedimiento**: la Ronda 14 no
+dejó escrito CÓMO se calcula el hash agregado de un run, y hay varias formas que dan resultados
+distintos sobre los mismos bytes. Al reproducirlo con `find -exec shasum` obtuve
+`c6984ae1088c7703` para el dataset en vez de `2ef4ee1236aa94c0`, y **no era una discrepancia real**:
+son procedimientos distintos, no contenidos distintos. Queda fijado el que reproduce R14/R15:
+
+```bash
+LC_ALL=C find runs/<id> -type f | LC_ALL=C sort | xargs shasum -a 256 | shasum -a 256
+```
+
+Es la misma clase de fallo que la sección 20 (`LC_COLLATE`): un procedimiento no escrito produce
+"discrepancias" que no existen. Con él, los cuatro runs y los cuatro agregados legacy reproducen el
+baseline exactamente.
+
+Roots temporales nuevos (`mktemp -d`), registrados como telemetría y **fuera de todo bundle**:
+`…/scratchpad/relA.pv4l4Y` y `…/scratchpad/relB.BKeQjS`. Los de R14 se descartaron sin reutilizar.
+
+#### R15.2 — RED primero · **PASS**
+
+Los contratos se escribieron y **fallaron por ausencia de implementación** antes de existir el
+builder: `test_release_contract.py` (57) y `test_release_runtime.py` (29). Fijan JSON canónico,
+identidad acíclica, `SHA256SUMS.txt` autoexcluyente, orden por `sorted()` de Python, ausencia de
+metadata ambiental y el loader de exposición proyectada de R15-C3.
+
+Cada rechazo se verificó **individualmente por su mensaje**, no por el verde agregado.
+
+#### R15.3 — Entry point y builder · **PASS**
+
+Dos capas separadas, como exige R15-C2:
+
+| capa | módulo | qué hace |
+| --- | --- | --- |
+| impura | `release_entry.py` (93) | registry → `validate_runner_runs` → rutas fuente |
+| rutas | `release_sources.py` (299) | roots explícitos, plan de payloads desde los manifiestos |
+| puro | `release_builder.py` (197) | copia bytes, re-verifica digests, sella, promueve atómico |
+| metadata | `release_manifest.py` (169) | cadena, calendario, conteos, inventario |
+| identidad | `release_contract.py` (183) | `identity_payload.v1` → `release_id` → checksums |
+
+`VerifiedRunnerRuns` se usa como IDENTIDAD, no como contenedor de archivos: los envelopes y estados
+se enumeran desde `model_index.json`, el catálogo y la exposición desde `config_effective.json`, y
+cada digest declarado se vuelve a comprobar **al copiar**. Ningún condicional por padecimiento,
+motor ni conteo.
+
+#### R15.4 — Capacidad de forecast final · **PASS**
+
+`FinalStateForecaster` (protocolo tipado) + `final_forecaster(name)` en `adapters.py`. Los 6 motores
+del portafolio la implementan **delegando en su `forecast_final` existente**: no hay un segundo
+camino de pronóstico. El carril legacy `adapter.run("forecast", run_dir)` queda intacto. Un motor
+sin la capacidad hace fallar el release con error tipado y **jamás se sustituye por otro**
+(`test_final_forecaster.py`, 22 pruebas).
+
+#### R15.5 — Loader y reproducción · **PASS con un hallazgo**
+
+`release_loader.py` (222) + `release_verify.py` (146) + `release_reproduce.py` (233). El bundle se
+verifica entero y **se reproduce el forecast completo**:
+
+```text
+3,328 filas base · 5,772 filas de 111 productos · máx |Δ| = 0.0 en ambos frames
+```
+
+**Hallazgo (y por qué la primera comparación daba 2.27e-13).** 222 de 3,328 filas diferían en 1 ULP.
+Perseguí la causa antes de aceptar ninguna tolerancia, porque "casi igual" no es reproducir:
+
+1. no era mi código: llamar a `ets.forecast_final` del propio runner sobre el estado canónico daba
+   la misma diferencia;
+2. no era el multithreading de BLAS: fijar `OMP/OPENBLAS/MKL/NUMEXPR/VECLIB=1` no la movía;
+3. re-ejecutar el carril original `forecasting.run_forecast` sí reproducía el CSV sellado **byte a
+   byte**, lo que contradecía (1) y obligaba a seguir;
+4. instrumentando ambos caminos en el mismo proceso, los dos devolvían el MISMO double.
+
+La diferencia no estaba en el cómputo sino en la **lectura**: `to_csv` escribe
+`1271.6760897744061` correctamente, pero `read_csv` con el parser por defecto de pandas lo devuelve
+como `1271.676089774406` —el double vecino—. Y `finish_forecast` **releía** las bases de cada motor
+con ese parser antes de derivar los 47 productos, así que esa pérdida forma parte del artefacto
+publicado.
+
+Consecuencia en el código, no en la tolerancia: la reproducción pasa las bases por la **misma
+frontera de precisión** (`_through_csv`) y los frames del bundle se leen con
+`float_precision="round_trip"`. El resultado es igualdad EXACTA con `tol=0.0`; no se introdujo
+ninguna tolerancia de conveniencia.
+
+**"Sin `runs/`" está verificado, no prometido.** La carga y la reproducción corren con un guardia
+que parchea `builtins.open`, `io.open` y `os.open` y revienta ante cualquier lectura bajo los dos
+árboles de runs. El guardia tiene su propia prueba por tres vías (`pathlib`, `builtins`, `pandas`):
+sin ella, un guardia que no detectara nada habría dado verde a todo.
+
+#### R15.6 — Determinismo y gate · **PASS**
+
+```text
+build A: root A · LC_ALL=C            → obesidad_release_34bbcc4ac509
+build B: root B · LC_ALL=en_US.UTF-8  → obesidad_release_34bbcc4ac509
+diff -r A B → idéntico · agregado 66563ef192f0a48b8a5a83c520ab4bec (ambos)
+150 archivos = 148 payloads + release_manifest.json + SHA256SUMS.txt
+148 payloads = 6 índices + 64 envelopes + 64 estados + 3 runtime_inputs + 11 de cadena
+```
+
+Matriz de rechazo, 33 mutaciones en tres grupos con re-sellado distinto para que cada una mida lo
+que dice medir (`test_release_mutations.py`):
+
+| grupo | re-sellado | mutaciones | qué atrapa |
+| --- | --- | ---: | --- |
+| sello | ninguno | 15 | inventario, digests, tamaños, `SHA256SUMS.txt` |
+| identidad | sólo checksums | 6 | el `release_id` recalculado deja de cuadrar |
+| contenido | inventario + identidad + checksums | 12 | los sellos INTERNOS de los runs de origen |
+
+Cero falsos verdes y cero tracebacks: los 33 mensajes se revisaron uno a uno.
+
+#### Gate (Orden 21.3)
+
+| comprobación | resultado |
+| --- | --- |
+| `ruff format --check` + `ruff check` | 275 archivos OK · All checks passed |
+| `mypy src/epiforecast/` | 153 archivos, sin incidencias |
+| fast (`not slow and not integration`) | **1,775 passed** en 70 s (eran 1,609; +166 nuevas) |
+| integración | **61 passed** (59 + 2) en dos tandas, ver nota |
+| doctor Obesidad / completo | rc=0 / rc=0 |
+| SRP ≤300 líneas | 9 módulos nuevos, máximo 299 |
+
+**Nota sobre la integración: hay un SIGSEGV PREEXISTENTE, ajeno a C7.2-A.** Correr la suite entera
+en un solo proceso muere con rc=139 en `test_pipeline_e2e`. Reproductor mínimo:
+`test_deepar_smoke.py + test_pipeline_e2e.py` → rc=139; `test_disease_run_gate.py +
+test_pipeline_e2e.py` → 29 passed. Lo verifiqué **con mis cambios de `src/` en stash**: sigue dando
+rc=139. Es una interacción torch↔pipeline in-process que no toca ningún módulo de este trabajo. Por
+eso la integración se corrió en dos tandas (todo menos `test_deepar_smoke`, y `test_deepar_smoke`
+aparte), ambas rc=0. **Queda como deuda registrada, no arreglada aquí**: excede el alcance del GO.
+
+#### Preservación
+
+```text
+obesidad_1502d1a25b48                             n=9    2ef4ee1236aa94c0   ✓ baseline
+obesidad_benchmark_test_7f582a3a4ed7_82370419efd4 n=67   6bbc7f84ea5ec5bb   ✓
+obesidad_refit_final_91590fa7452f_ff249060018a    n=162  972f7519f885c0d1   ✓
+obesidad_forecast_h52_ff249060018a_92d446b6df8f   n=37   d89d92ee7e73b848   ✓
+rolling_cv_v1.yaml                                       dd6d4a0274a6f8bb   ✓
+all_forecast_{prophet,deepar,ensemble,stacking}  cb5be395 96791595 1d2cf0a7 ac97dc8e  ✓
+artifacts/releases/ → NO EXISTE · .dvc sin tocar · frontend main @ 179bbe36 limpio
+```
+
+#### Dos cosas que quedan señaladas, no hechas
+
+1. **`channels_candidate` sale con 6 canales**, incluidos `weekly_validation` y
+   `prospective_validation`, porque el builder los DERIVA del registry en vez de escribirlos. El
+   registro candidato debe ser exactamente `web, epibot, reports, tableau` con `gallery_enabled:
+   false`. Es trabajo de **C7.5**, y tocar el registry aquí habría salido del alcance del GO. Ojo:
+   los canales entran en la identidad, así que corregirlos **cambiará el `release_id`**.
+2. **El doctor NO se cableó para `runner_release`**: sigue diciendo "verificación no implementada
+   todavía". Hacerlo exige resolver dónde vive el release (`artifacts/releases/<disease>/<id>/`), y
+   esa ruta la define **C7.2-B**. Cablearlo ahora obligaría a inventar el destino antes de que se
+   autorice materializarlo.
+
+#### Estado
+
+```text
+C7.2-A  R15.1–R15.6 PASS · commit local acotado · SIN push, DVC, deploy ni publicación
+Código  9 módulos nuevos en src/epiforecast/runner/ + capacidad en adapters y 5 motores
+Tests   174 nuevas (166 fast + 8 integración) · 33 mutaciones de rechazo
+Output  0 bundles persistidos: los dos builds viven en temporales y se descartan
+Release NO-GO · Obesidad = trained · runner_runs · F50 = configured · NO-GO
+```
+
+_Respuesta:_
