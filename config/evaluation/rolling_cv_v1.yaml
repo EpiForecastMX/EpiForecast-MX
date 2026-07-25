@@ -61,7 +61,9 @@ selection:
       - ets_add_damped_log1p
       - ridge_harmonic_log1p
     challengers: [prophet_count_log1p, prophet_rate_log1p]
-  # Costo DECLARATIVO (no wall-clock, que varía entre máquinas): 1 = tabla, 4 = ajuste bayesiano.
+  # Costo DECLARATIVO (no wall-clock, que varía entre máquinas): 1 = tabla sin ajuste,
+  # 2 = regresión cerrada, 3 = optimización iterativa, 4 = ajuste MAP con backend Stan
+  # (los perfiles Prophet corren MAP: uncertainty_samples=0 y mcmc_samples=0, NO son bayesianos).
   cost:
     seasonal_naive_lag52: 1
     seasonal_mean_3y: 1
