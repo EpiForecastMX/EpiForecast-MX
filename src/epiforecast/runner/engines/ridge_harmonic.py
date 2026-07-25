@@ -25,6 +25,7 @@ selección, train exterior en el refit): ni el inner-validation ni el holdout to
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 from pathlib import Path
 from typing import Any, cast
 
@@ -34,6 +35,8 @@ from omegaconf import OmegaConf
 from epiforecast.artifacts.transforms import TransformContractError
 from epiforecast.data.epi_calendar import ds_for
 from epiforecast.runner import contracts as ct
+from epiforecast.runner import final_models as fm
+from epiforecast.runner import forecasting, refit
 from epiforecast.runner.adapters import register_adapter
 from epiforecast.runner.engines import harness
 from epiforecast.runner.evaluation import smape_percent
@@ -42,7 +45,7 @@ from epiforecast.runner.manifest import ArtifactRecord
 ENGINE = "ridge_harmonic_log1p"
 _ROOT = Path(__file__).resolve().parents[4]
 _CONFIG = _ROOT / "config" / "engines" / "ridge_harmonic.yaml"
-_SUPPORTED = frozenset({"benchmark"})
+_SUPPORTED = frozenset({"benchmark", "refit", "forecast"})
 
 
 class RidgeFitError(RuntimeError):
@@ -87,14 +90,13 @@ def _days(periods: list[tuple[int, int]]) -> np.ndarray[Any, Any]:
     return np.asarray([ds_for(y, w).toordinal() for y, w in periods], dtype=float)
 
 
-def _fit_predict(
+def fit_coefficients(
     days_fit: np.ndarray[Any, Any],
     y_fit: np.ndarray[Any, Any],
-    days_target: np.ndarray[Any, Any],
     cand: Candidate,
     cfg: dict[str, Any],
-) -> tuple[np.ndarray[Any, Any], float, float]:
-    """Ajusta un Ridge y predice en espacio transformado. Escalador SOLO del set de ajuste."""
+) -> dict[str, Any]:
+    """Ajusta un Ridge y devuelve su estado PORTABLE (coeficientes + escalador + diseño)."""
     from sklearn.linear_model import Ridge
 
     center = float(days_fit.mean())
@@ -104,9 +106,41 @@ def _fit_predict(
         alpha=cand.alpha, solver=str(cfg["solver"]), fit_intercept=bool(cfg["fit_intercept"])
     )
     model.fit(design_matrix(days_fit, cand.fourier_order, center, scale, period), y_fit)
-    target = design_matrix(days_target, cand.fourier_order, center, scale, period)
-    predicted = np.asarray(model.predict(target), dtype=float)
-    return predicted, float(np.linalg.norm(model.coef_)), float(model.intercept_)
+    return {
+        "coef": [float(c) for c in np.asarray(model.coef_).ravel()],
+        "intercept": float(model.intercept_),
+        "center": center,
+        "scale": scale,
+        "fourier_order": cand.fourier_order,
+        "alpha": cand.alpha,
+        "seasonal_period_days": period,
+        "solver": str(cfg["solver"]),
+    }
+
+
+def predict_from_state(state: dict[str, Any], days: np.ndarray[Any, Any]) -> np.ndarray[Any, Any]:
+    """Predicción en espacio transformado desde el estado portable (sin sklearn en la carga)."""
+    design = design_matrix(
+        days,
+        int(state["fourier_order"]),
+        float(state["center"]),
+        float(state["scale"]),
+        float(state["seasonal_period_days"]),
+    )
+    return np.asarray(design @ np.asarray(state["coef"], dtype=float) + state["intercept"])
+
+
+def _fit_predict(
+    days_fit: np.ndarray[Any, Any],
+    y_fit: np.ndarray[Any, Any],
+    days_target: np.ndarray[Any, Any],
+    cand: Candidate,
+    cfg: dict[str, Any],
+) -> tuple[np.ndarray[Any, Any], float, float]:
+    """Ajusta un Ridge y predice en espacio transformado. Escalador SOLO del set de ajuste."""
+    state = fit_coefficients(days_fit, y_fit, cand, cfg)
+    predicted = predict_from_state(state, days_target)
+    return predicted, float(np.linalg.norm(state["coef"])), float(state["intercept"])
 
 
 def _to_counts(transform: Any, values: np.ndarray[Any, Any]) -> np.ndarray[Any, Any] | None:
@@ -122,7 +156,8 @@ def _to_counts(transform: Any, values: np.ndarray[Any, Any]) -> np.ndarray[Any, 
 
 
 def _select(
-    request: harness.SeriesRequest,
+    who: str,
+    transform: Any,
     days: np.ndarray[Any, Any],
     y: np.ndarray[Any, Any],
     counts: np.ndarray[Any, Any],
@@ -131,7 +166,6 @@ def _select(
     """Selección temporal interna: rejilla completa sobre inner-train, sMAPE en inner-validation."""
     n_val = int(cfg["inner_validation_weeks"])
     split = len(y) - n_val
-    who = f"{ct.series_key_str(request.spec.key)}/{request.spec.fold_id}"
     if split < int(cfg["min_inner_train_weeks"]):
         raise RidgeFitError(
             f"{who}: inner-train de {split} semanas (< {cfg['min_inner_train_weeks']})"
@@ -140,7 +174,7 @@ def _select(
     scored: list[tuple[float, int, float, Candidate]] = []
     for cand in candidates(cfg):
         predicted, _, _ = _fit_predict(days[:split], y[:split], days[split:], cand, cfg)
-        val_counts = _to_counts(request.spec.transform, predicted)
+        val_counts = _to_counts(transform, predicted)
         if val_counts is None:
             continue  # candidato inválido: no se recorta, se descarta
         # Desempate declarado: menor sMAPE → menor orden de Fourier → mayor alpha.
@@ -162,7 +196,8 @@ def make_predictor(cfg: dict[str, Any]) -> harness.PredictFn:
         y = transform.apply_forward(counts)  # log1p gobernado por el contrato
         days = _days(periods)
 
-        cand, inner_smape, n_valid = _select(request, days, y, counts, cfg)
+        who = f"{ct.series_key_str(request.spec.key)}/{request.spec.fold_id}"
+        cand, inner_smape, n_valid = _select(who, transform, days, y, counts, cfg)
         predicted, coef_norm, intercept = _fit_predict(
             days, y, _days(list(request.holdout)), cand, cfg
         )
@@ -191,6 +226,43 @@ def make_predictor(cfg: dict[str, Any]) -> harness.PredictFn:
     return predict
 
 
+def fit_final(cfg: dict[str, Any], window: fm.FinalWindow) -> fm.FinalState:
+    """Refit final: misma selección interna, sobre TODA la historia; estado portable en JSON."""
+    periods = sorted(window.train)
+    counts = np.asarray([window.train[p] for p in periods], dtype=float)
+    transform = window.spec.transform
+    y = transform.apply_forward(counts)
+    days = _days(periods)
+    who = ct.series_key_str(window.spec.key)
+    cand, inner_smape, n_valid = _select(who, transform, days, y, counts, cfg)
+    state = fit_coefficients(days, y, cand, cfg)
+    if _to_counts(transform, predict_from_state(state, days[-1:])) is None:
+        raise RidgeFitError(f"{who}: el refit final produjo conteos inutilizables")
+    return fm.FinalState(
+        fmt=fm.FMT_JSON,
+        text=json.dumps(state, sort_keys=True, separators=(",", ":")),
+        config={
+            "fourier_order": cand.fourier_order,
+            "alpha": cand.alpha,
+            "inner_smape": inner_smape,
+            "n_candidates_valid": n_valid,
+            "solver": str(cfg["solver"]),
+        },
+    )
+
+
+def forecast_final(
+    state: fm.FinalState, request: fm.ForecastRequest
+) -> dict[tuple[int, int], float]:
+    """Pronostica desde los coeficientes serializados; NO reajusta ni necesita sklearn."""
+    payload = json.loads(state.text or "{}")
+    predicted = predict_from_state(payload, _days(list(request.periods)))
+    counts = _to_counts(request.transform, predicted)
+    if counts is None:
+        raise RidgeFitError("forecast final Ridge inutilizable tras la inversa")
+    return dict(zip(request.periods, (float(v) for v in counts), strict=True))
+
+
 class RidgeHarmonicAdapter:
     """Adapter del motor Ridge armónico; delega todo el flujo común al harness."""
 
@@ -207,6 +279,18 @@ class RidgeHarmonicAdapter:
         import sklearn  # versión efectiva → entra al spec.json y al config_digest
 
         params = {k: v for k, v in self._cfg.items() if k != "resource_limits"}
+        if command == "refit":
+            return refit.run_refit(
+                self.name,
+                lambda w: fit_final(self._cfg, w),
+                run_dir,
+                {**params, "sklearn_version": sklearn.__version__},
+                transform=ct.log1p_transform,
+                resource_limits=dict(self._cfg["resource_limits"]),
+                versions={"sklearn_version": sklearn.__version__},
+            )
+        if command == "forecast":
+            return forecasting.run_forecast(self.name, forecast_final, run_dir)
         return harness.run_benchmark(
             self.name,
             self._predict,

@@ -39,7 +39,7 @@ def test_config_y_registro():
     for name in _NAMES:
         ad = adapters.get_adapter(name)
         assert ad is not None
-        assert ad.supports("benchmark") and not ad.supports("refit")
+        assert ad.supports("benchmark") and ad.supports("refit") and ad.supports("forecast")
 
 
 def test_mean_3y_exacto():

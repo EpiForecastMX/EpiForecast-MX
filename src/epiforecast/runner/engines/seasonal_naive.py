@@ -12,14 +12,18 @@ su predictor; el harness gestiona datos/folds, 64 bases, derivación 64→111, e
 from __future__ import annotations
 
 from epiforecast.data.epi_calendar import shift
+from epiforecast.runner import final_models as fm
+from epiforecast.runner import forecasting, refit
 from epiforecast.runner.adapters import register_adapter
 from epiforecast.runner.engines import harness
+from epiforecast.runner.engines.seasonal_state import seasonal_history, seasonal_state
 from epiforecast.runner.manifest import ArtifactRecord
 
 ENGINE = "seasonal_naive_lag52"
 _LAG = 52
-# Hasta implementar refit/forecast, este motor SOLO acepta benchmark (fail-closed honesto).
-_SUPPORTED = frozenset({"benchmark"})
+_SUPPORTED = frozenset({"benchmark", "refit", "forecast"})
+# Historia MÍNIMA que el estado final necesita: el salto lag-52 más la semana 53 de los años largos.
+_HISTORY_WEEKS = 53
 
 
 def predict_series(
@@ -39,6 +43,17 @@ def _predict(request: harness.SeriesRequest) -> harness.SeriesForecast:
     return harness.SeriesForecast(predict_series(request.train, list(request.holdout)))
 
 
+def fit_final(window: fm.FinalWindow) -> fm.FinalState:
+    """El "ajuste" del baseline es su historia mínima: no hay parámetros que estimar."""
+    return seasonal_state(window.train, _HISTORY_WEEKS, {"seasonal_lag": _LAG})
+
+
+def forecast_final(
+    state: fm.FinalState, request: fm.ForecastRequest
+) -> dict[tuple[int, int], float]:
+    return predict_series(seasonal_history(state), list(request.periods))
+
+
 class SeasonalNaiveLag52Adapter:
     """Adapter genérico (Protocol ``EngineAdapter``) ejecutado dentro del subprocess limpio."""
 
@@ -48,6 +63,11 @@ class SeasonalNaiveLag52Adapter:
         return command in _SUPPORTED
 
     def run(self, command: str, run_dir: str) -> list[ArtifactRecord]:
+        params = {"seasonal_lag": _LAG, "history_weeks": _HISTORY_WEEKS}
+        if command == "refit":
+            return refit.run_refit(self.name, fit_final, run_dir, params)
+        if command == "forecast":
+            return forecasting.run_forecast(self.name, forecast_final, run_dir)
         return harness.run_benchmark(self.name, _predict, run_dir, {"seasonal_lag": _LAG})
 
 

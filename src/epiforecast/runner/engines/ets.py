@@ -31,6 +31,8 @@ from omegaconf import OmegaConf
 
 from epiforecast.artifacts.transforms import TransformContractError
 from epiforecast.runner import contracts as ct
+from epiforecast.runner import final_models as fm
+from epiforecast.runner import forecasting, refit
 from epiforecast.runner.adapters import register_adapter
 from epiforecast.runner.engines import harness
 from epiforecast.runner.manifest import ArtifactRecord
@@ -38,7 +40,7 @@ from epiforecast.runner.manifest import ArtifactRecord
 ENGINE = "ets_add_damped_log1p"
 _ROOT = Path(__file__).resolve().parents[4]
 _CONFIG = _ROOT / "config" / "engines" / "ets.yaml"
-_SUPPORTED = frozenset({"benchmark"})
+_SUPPORTED = frozenset({"benchmark", "refit", "forecast"})
 _MIN_SEASONS = 2  # statsmodels exige ≥ 2 estaciones completas para inicializar la estacionalidad
 
 
@@ -78,10 +80,10 @@ def _variants(cfg: dict[str, Any]) -> tuple[Variant, ...]:
     )
 
 
-def _fit_forecast(
-    y: np.ndarray[Any, Any], horizon: int, variant: Variant, cfg: dict[str, Any]
-) -> tuple[np.ndarray[Any, Any], bool, list[str], float]:
-    """Ajusta UNA variante y pronostica en espacio transformado. Devuelve (fc, converged, warns, aic)."""
+def _fit_result(
+    y: np.ndarray[Any, Any], variant: Variant, cfg: dict[str, Any]
+) -> tuple[Any, bool, list[str], float]:
+    """Ajusta UNA variante y devuelve el RESULTADO de statsmodels (+ convergencia, warnings, AIC)."""
     from statsmodels.tsa.holtwinters import ExponentialSmoothing
 
     with warnings.catch_warnings(record=True) as caught:
@@ -95,10 +97,17 @@ def _fit_forecast(
             initialization_method=variant.initialization_method,
             use_boxcox=bool(cfg["use_boxcox"]),
         ).fit(optimized=bool(cfg["optimized"]), remove_bias=bool(cfg["remove_bias"]))
-        forecast = np.asarray(res.forecast(horizon), dtype=float)
     names = sorted({type(w.message).__name__ for w in caught})
     converged = bool((res.mle_retvals or {}).get("success", False))
-    return forecast, converged, names, float(res.aic)
+    return res, converged, names, float(res.aic)
+
+
+def _fit_forecast(
+    y: np.ndarray[Any, Any], horizon: int, variant: Variant, cfg: dict[str, Any]
+) -> tuple[np.ndarray[Any, Any], bool, list[str], float]:
+    """Ajusta UNA variante y pronostica en espacio transformado. Devuelve (fc, converged, warns, aic)."""
+    res, converged, names, aic = _fit_result(y, variant, cfg)
+    return np.asarray(res.forecast(horizon), dtype=float), converged, names, aic
 
 
 def _attempt(
@@ -171,6 +180,72 @@ def make_predictor(cfg: dict[str, Any]) -> harness.PredictFn:
     return predict
 
 
+def fit_final(cfg: dict[str, Any], window: fm.FinalWindow) -> fm.FinalState:
+    """Refit final: misma política de variantes, sobre TODA la historia; estado = pickle versionado."""
+    periods = sorted(window.train)
+    counts = np.asarray([window.train[p] for p in periods], dtype=float)
+    variants = _variants(cfg)
+    if len(periods) < _MIN_SEASONS * variants[0].seasonal_periods:
+        raise EtsFitError(f"{ct.series_key_str(window.spec.key)}: historia insuficiente")
+    transform = window.spec.transform
+    y = transform.apply_forward(counts)
+    rejections: list[str] = []
+    for variant in variants:
+        try:
+            res, converged, names, aic = _fit_result(y, variant, cfg)
+            fc = transform.apply_inverse(
+                np.asarray(res.forecast(window.spec.horizon), dtype=float)
+            )
+        except (ValueError, TypeError, np.linalg.LinAlgError, TransformContractError) as exc:
+            rejections.append(f"{variant.name}: {type(exc).__name__}")
+            continue
+        if not np.isfinite(fc).all() or (fc < 0).any():
+            rejections.append(f"{variant.name}: pronóstico inutilizable")
+            continue
+        if variant.strict and (not converged or "ConvergenceWarning" in names):
+            rejections.append(f"{variant.name}: sin convergencia limpia")
+            continue
+        import pickle  # el estado se sella con digest y solo lo lee este runner
+
+        return fm.FinalState(
+            fmt=fm.FMT_STATSMODELS_PICKLE,
+            data=pickle.dumps(res, protocol=pickle.HIGHEST_PROTOCOL),
+            config={
+                "variant": variant.name,
+                "trend": variant.trend,
+                "damped_trend": variant.damped_trend,
+                "seasonal": variant.seasonal,
+                "seasonal_periods": variant.seasonal_periods,
+                "converged": converged,
+                "warnings": "|".join(names),
+                "aic": aic,
+            },
+        )
+    raise EtsFitError(
+        f"{ct.series_key_str(window.spec.key)}: refit final sin variante utilizable ({rejections})"
+    )
+
+
+def forecast_final(
+    state: fm.FinalState, request: fm.ForecastRequest
+) -> dict[tuple[int, int], float]:
+    """Pronostica desde el resultado serializado; NO reajusta."""
+    import pickle
+
+    res = pickle.loads(state.data or b"")  # noqa: S301 — artefacto propio, sellado por digest
+    fc = np.asarray(res.forecast(len(request.periods)), dtype=float)
+    counts = request.transform.apply_inverse(fc)
+    if not np.isfinite(counts).all() or (counts < 0).any():
+        raise EtsFitError("forecast final ETS inutilizable tras la inversa")
+    return dict(zip(request.periods, (float(v) for v in counts), strict=True))
+
+
+def _statsmodels_version() -> str:
+    from importlib.metadata import version
+
+    return version("statsmodels")
+
+
 class EtsAdapter:
     """Adapter del motor ETS; delega todo el flujo común al harness (solo aporta su PredictFn)."""
 
@@ -183,19 +258,34 @@ class EtsAdapter:
     def supports(self, command: str) -> bool:
         return command in _SUPPORTED
 
+    def _engine_params(self) -> dict[str, Any]:
+        return {
+            "implementation": self._cfg["implementation"],
+            "target_transform": self._cfg["target_transform"],
+            "optimized": self._cfg["optimized"],
+            "remove_bias": self._cfg["remove_bias"],
+            "use_boxcox": self._cfg["use_boxcox"],
+            "variants": self._cfg["variants"],
+        }
+
     def run(self, command: str, run_dir: str) -> list[ArtifactRecord]:
+        if command == "refit":
+            return refit.run_refit(
+                self.name,
+                lambda w: fit_final(self._cfg, w),
+                run_dir,
+                self._engine_params(),
+                transform=ct.log1p_transform,
+                resource_limits=dict(self._cfg["resource_limits"]),
+                versions={"statsmodels_version": _statsmodels_version()},
+            )
+        if command == "forecast":
+            return forecasting.run_forecast(self.name, forecast_final, run_dir)
         return harness.run_benchmark(
             self.name,
             self._predict,
             run_dir,
-            {
-                "implementation": self._cfg["implementation"],
-                "target_transform": self._cfg["target_transform"],
-                "optimized": self._cfg["optimized"],
-                "remove_bias": self._cfg["remove_bias"],
-                "use_boxcox": self._cfg["use_boxcox"],
-                "variants": self._cfg["variants"],
-            },
+            self._engine_params(),
             transform=ct.log1p_transform,
             resource_limits=dict(self._cfg["resource_limits"]),
         )

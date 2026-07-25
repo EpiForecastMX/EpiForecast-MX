@@ -82,7 +82,7 @@ def test_adapters_registrados_con_tune_y_benchmark():
         ad = adapters.get_adapter(name)
         assert ad is not None
         assert ad.supports("benchmark") and ad.supports("tune")
-        assert not ad.supports("refit") and not ad.supports("forecast")
+        assert ad.supports("refit") and ad.supports("forecast")
 
 
 def test_config_declarativa_sin_extras_legacy():

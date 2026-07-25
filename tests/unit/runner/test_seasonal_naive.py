@@ -17,12 +17,12 @@ def _truth_map(years):
     return {(y, w): y * 1000 + w for y in years for w in range(1, weeks_in_year(y) + 1)}
 
 
-def test_adapter_registrado_y_solo_benchmark():
+def test_adapter_registrado_con_ciclo_completo():
     assert ENGINE in adapters.available_adapters()
     ad = adapters.get_adapter(ENGINE)
     assert ad is not None
-    assert ad.supports("benchmark") is True
-    assert ad.supports("refit") is False and ad.supports("forecast") is False
+    assert ad.supports("benchmark") and ad.supports("refit") and ad.supports("forecast")
+    assert ad.supports("tune") is False
 
 
 def test_disease_id_desde_contexto_sin_hardcode():

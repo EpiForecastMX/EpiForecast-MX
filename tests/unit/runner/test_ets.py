@@ -52,11 +52,11 @@ def _predict(request: harness.SeriesRequest) -> harness.SeriesForecast:
     return make_predictor(_CFG)(request)
 
 
-def test_adapter_registrado_y_solo_benchmark():
+def test_adapter_registrado_con_ciclo_completo():
     ad = adapters.get_adapter(ENGINE)
     assert ad is not None
-    assert ad.supports("benchmark") is True
-    assert ad.supports("refit") is False and ad.supports("forecast") is False
+    assert ad.supports("benchmark") and ad.supports("refit") and ad.supports("forecast")
+    assert ad.supports("tune") is False  # ETS no tunea: su variante se decide por convergencia
 
 
 def test_config_declarativa():

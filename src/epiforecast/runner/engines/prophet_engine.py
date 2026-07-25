@@ -32,14 +32,15 @@ import pandas as pd
 
 from epiforecast.data.epi_calendar import ds_for
 from epiforecast.runner import contracts as ct
-from epiforecast.runner import tuning
+from epiforecast.runner import final_models as fm
+from epiforecast.runner import forecasting, refit, tuning
 from epiforecast.runner.adapters import register_adapter
 from epiforecast.runner.engines import harness
 from epiforecast.runner.manifest import ArtifactRecord
 
 _ROOT = Path(__file__).resolve().parents[4]
 _CONFIG = _ROOT / "config" / "engines" / "prophet.yaml"
-_SUPPORTED = frozenset({"benchmark", "tune"})
+_SUPPORTED = frozenset({"benchmark", "tune", "refit", "forecast"})
 _TRANSFORMS: dict[str, harness.TransformFactory] = {
     "log1p": ct.log1p_transform,
     "rate_log1p": ct.rate_log1p_transform,
@@ -138,6 +139,80 @@ def make_predictor(common: dict[str, Any], config: dict[str, Any]) -> harness.Pr
     return predict
 
 
+def _fit_model(frame: pd.DataFrame, config: dict[str, Any], common: dict[str, Any]) -> Any:
+    """Ajusta un Prophet MAP y devuelve el MODELO (para serializarlo con su JSON oficial)."""
+    from prophet import Prophet
+
+    logging.getLogger("cmdstanpy").setLevel(logging.WARNING)
+    logging.getLogger("prophet").setLevel(logging.WARNING)
+    model = Prophet(
+        growth=str(common["growth"]),
+        yearly_seasonality=bool(common["yearly_seasonality"]),
+        weekly_seasonality=bool(common["weekly_seasonality"]),
+        daily_seasonality=bool(common["daily_seasonality"]),
+        n_changepoints=int(common["n_changepoints"]),
+        changepoint_range=float(common["changepoint_range"]),
+        seasonality_mode=str(config["seasonality_mode"]),
+        changepoint_prior_scale=float(config["changepoint_prior_scale"]),
+        seasonality_prior_scale=float(config["seasonality_prior_scale"]),
+        uncertainty_samples=int(common["uncertainty_samples"]),
+        mcmc_samples=int(common["mcmc_samples"]),
+    )
+    model.add_seasonality(
+        name=str(common["seasonality_name"]),
+        period=float(common["seasonality_period_days"]),
+        fourier_order=int(config["fourier_order"]),
+    )
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        model.fit(frame)
+    return model
+
+
+def fit_final(
+    common: dict[str, Any], config: dict[str, Any], window: fm.FinalWindow
+) -> fm.FinalState:
+    """Refit final con la configuración congelada; estado = serialización JSON oficial de Prophet."""
+    from prophet.serialize import model_to_json
+
+    periods = sorted(window.train)
+    counts = np.asarray([window.train[p] for p in periods], dtype=float)
+    transform = window.spec.transform
+    exposure = (
+        np.asarray([window.train_exposure[p] for p in periods], dtype=float)
+        if transform.requires_exposure
+        else None
+    )
+    y = transform.apply_forward(counts, exposure=exposure)
+    frame = pd.DataFrame({"ds": [pd.Timestamp(ds_for(*p)) for p in periods], "y": y})
+    try:
+        model = _fit_model(frame, config, common)
+    except Exception as exc:  # noqa: BLE001 — el job falla, nunca hay fallback
+        raise ProphetEngineError(
+            f"{ct.series_key_str(window.spec.key)}: refit final Prophet fallido ({exc})"
+        ) from exc
+    return fm.FinalState(
+        fmt=fm.FMT_PROPHET_JSON, text=model_to_json(model), config={**config, **common}
+    )
+
+
+def forecast_final(
+    state: fm.FinalState, request: fm.ForecastRequest
+) -> dict[tuple[int, int], float]:
+    """Pronostica desde el JSON oficial; NO reajusta. La tasa vuelve a casos con el contrato."""
+    from prophet.serialize import model_from_json
+
+    model = model_from_json(state.text or "")
+    future = pd.DataFrame({"ds": [pd.Timestamp(ds_for(*p)) for p in request.periods]})
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        yhat = np.asarray(model.predict(future)["yhat"].to_numpy(), dtype=float)
+    counts = request.transform.apply_inverse(yhat, exposure=request.exposure_array())
+    if not np.isfinite(counts).all() or (counts < 0).any():
+        raise ProphetEngineError("forecast final Prophet inutilizable tras la inversa")
+    return dict(zip(request.periods, (float(v) for v in counts), strict=True))
+
+
 class ProphetProfileAdapter:
     """Un perfil Prophet (conteo o tasa): mismo motor, distinto TransformContract."""
 
@@ -169,6 +244,19 @@ class ProphetProfileAdapter:
 
     def run(self, command: str, run_dir: str) -> list[ArtifactRecord]:
         limits = dict(self._cfg["resource_limits"])
+        if command == "refit":
+            frozen = self._frozen()
+            return refit.run_refit(
+                self.name,
+                lambda w: fit_final(self._cfg["common"], frozen, w),
+                run_dir,
+                self._params({"frozen": frozen}),
+                transform=self._transform,
+                resource_limits=limits,
+                versions=_versions(),
+            )
+        if command == "forecast":
+            return forecasting.run_forecast(self.name, forecast_final, run_dir)
         if command == "tune":
             return tuning.run_tuning(
                 self.name,

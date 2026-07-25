@@ -26,11 +26,13 @@ from typing import Any
 
 import pandas as pd
 
+from epiforecast import registry
 from epiforecast.data.epi_aggregate import build_products
 from epiforecast.data.epi_dataset import build_epi_dataset_v2
 from epiforecast.data.epi_geo_exposure import load_geo_catalog
-from epiforecast.runner import acceptance, selection
+from epiforecast.runner import acceptance, forecasting, selection
 from epiforecast.runner import contracts as ct
+from epiforecast.runner import refit as refit_mod
 from epiforecast.runner.contracts import SCHEMA_DATASET, SCHEMA_PRODUCTS
 from epiforecast.runner.manifest import (
     STAGES,
@@ -489,6 +491,45 @@ def _finish_test_stage(
     man.write(run_dir)
 
 
+def _refit_context(
+    runs_base: Path, acceptance_run_id: str, dm: DatasetManifest, policy: Any
+) -> tuple[pd.DataFrame, dict[str, Any], dict[str, Any]]:
+    """Valida el run de aceptación y devuelve (selección final, payload, procedencia)."""
+    test_dir = runs_base / acceptance_run_id
+    if not (test_dir / "run_manifest.json").exists():
+        raise RunnerError(f"no existe el run de aceptación {acceptance_run_id!r}")
+    test_man = RunManifest.read(test_dir)
+    if test_man.command != "benchmark" or test_man.stage != "test":
+        raise RunnerError(f"{acceptance_run_id}: no es un run de stage test")
+    if test_man.status != STATUS_SUCCEEDED:
+        raise RunnerError(f"{acceptance_run_id}: el run de aceptación no fue exitoso")
+    if test_man.dataset_id != dm.dataset_id or test_man.disease_id != dm.disease_id:
+        raise RunnerError(f"{acceptance_run_id}: dataset o padecimiento distintos")
+    if test_man.policy_digest != policy.digest:
+        raise RunnerError(f"{acceptance_run_id}: se aceptó con OTRA política")
+    for engine, job in test_man.jobs.items():
+        problems = verify_artifacts(
+            test_dir, [{"path": a.path, "digest": a.digest} for a in job.artifacts]
+        )
+        if problems:
+            raise RunnerError(f"{acceptance_run_id}/{engine}: {'; '.join(problems)}")
+
+    final, payload = acceptance.load_accepted(test_dir)  # re-verifica digests de la evidencia
+    if not payload.get("accepted"):
+        raise RunnerError(f"{acceptance_run_id}: la aceptación fue NEGATIVA; no se refitea")
+    keys = set(zip(final["geography_id"], final["sex"], strict=True))
+    if len(final) != 64 or len(keys) != 64:
+        raise RunnerError(f"{acceptance_run_id}: la selección final no tiene 64 claves únicas")
+    provenance = {
+        "acceptance_run_id": acceptance_run_id,
+        "acceptance_digest": _sha256(test_dir / "acceptance.json"),
+        "final_selection_digest": _sha256(test_dir / "final_selection.csv"),
+        "selection_run_id": payload["provenance"]["selection_run_id"],
+        "selection_digest": payload["provenance"]["selection_digest"],
+    }
+    return final, payload, provenance
+
+
 def run_command(
     disease: str,
     command: str,
@@ -501,6 +542,8 @@ def run_command(
     resume: bool = True,
     require_clean: bool = False,
     selection_run_id: str | None = None,
+    acceptance_run_id: str | None = None,
+    refit_run_id: str | None = None,
 ) -> RunManifest:
     """benchmark/refit/forecast: materializa el dataset (dataset_id) y orquesta los motores en runs/<run_id>/."""
     # 2025 no se abre sin selección congelada, y NUNCA para tunear: se comprueba ANTES de tocar
@@ -512,6 +555,15 @@ def run_command(
             raise RunnerError(
                 "stage 'test' requiere --selection <run_id>: 2025 no se abre sin selección congelada"
             )
+    # refit y forecast están gobernados por artefactos previos, nunca por una lista manual.
+    if command == "refit" and not acceptance_run_id:
+        raise RunnerError("refit requiere --acceptance-run <run_id> (la selección aceptada manda)")
+    if command == "forecast" and not refit_run_id:
+        raise RunnerError("forecast requiere --refit-run <run_id>: nunca reajusta implícitamente")
+    if engines and command in ("refit", "forecast"):
+        raise RunnerError(
+            f"{command}: los motores salen de la selección aceptada, no de --engines"
+        )
     # Un run OFICIAL exige árbol limpio: el code_commit del run_id debe reflejar el código real.
     if require_clean:
         dirty = _tracked_dirty()
@@ -545,15 +597,42 @@ def run_command(
         # Solo las familias efectivamente seleccionadas + el control (nada de motores ociosos).
         used_engines = sorted({*sel["selected_engine"].unique(), control})
 
+    # refit: los motores y las series salen de la selección ACEPTADA, nunca de --engines.
+    final_sel: pd.DataFrame | None = None
+    refit_prov: dict[str, Any] = {}
+    origin: tuple[int, int] | None = None
+    if command == "refit":
+        policy = load_policy(policy_name)
+        final_sel, _, refit_prov = _refit_context(runs_base, str(acceptance_run_id), dm, policy)
+        used_engines = sorted(final_sel["selected_engine"].unique())
+    elif command == "forecast":
+        refit_dir = runs_base / str(refit_run_id)
+        if not (refit_dir / "run_manifest.json").exists():
+            raise RunnerError(f"no existe el run de refit {refit_run_id!r}")
+        refit_man = RunManifest.read(refit_dir)
+        if refit_man.command != "refit" or refit_man.status != STATUS_SUCCEEDED:
+            raise RunnerError(f"{refit_run_id}: no es un refit exitoso ({refit_man.status})")
+        if refit_man.dataset_id != dataset_id:
+            raise RunnerError(f"{refit_run_id}: refit de otro dataset")
+        used_engines = list(refit_man.engines)
+        refit_prov = dict(refit_man.input_digests)
+        origin = tuple(json.loads((refit_dir / "refit_summary.json").read_text())["train_end"])
+
     # variant identifica la ejecución dentro del run_id: stage (benchmark/tune) o h<N> (forecast).
     variant = f"h{horizon}" if command == "forecast" and horizon else stage
     if stage == "test":  # la identidad del run incluye la selección congelada que lo autoriza
         variant = f"test_{sel_manifest['selection_digest'][:12]}"
+    if command == "refit":  # identidad = la aceptación y la selección final que la gobiernan
+        variant = f"final_{refit_prov['final_selection_digest'][:12]}"
+    if command == "forecast":
+        variant = f"h{horizon}_{str(refit_run_id).rsplit('_', 1)[-1]}"
     run_id = compute_run_id(
         disease_id, dataset_id, command, variant, pol_digest, used_engines, seed, code_commit
     )
     run_dir = runs_base / run_id
     run_dir.mkdir(parents=True, exist_ok=True)
+    if final_sel is not None:  # la selección utilizada viaja DENTRO del run de refit
+        final_sel.to_csv(run_dir / refit_mod.SELECTION_FILE, index=False)
 
     # Contexto que el adapter (subprocess) necesita para localizar datos + política.
     (run_dir / "job_context.json").write_text(
@@ -564,11 +643,23 @@ def run_command(
                 "dataset_digest": dm.digests["dataset"],  # digest COMPLETO → TrainingSpec
                 "disease_id": disease_id,
                 "policy_name": policy_name,
+                "policy_digest": pol_digest,
                 "stage": stage,
                 "seed": seed,
-                "horizon": horizon,
-                "selection_digest": sel_manifest.get("selection_digest"),
-                "selection_run_id": selection_run_id if stage == "test" else None,
+                "horizon": horizon if horizon else load_policy(policy_name).seasonal_horizon,
+                "code_commit": code_commit,
+                "selection_digest": (
+                    sel_manifest.get("selection_digest") or refit_prov.get("selection_digest")
+                ),
+                "selection_run_id": (
+                    selection_run_id if stage == "test" else refit_prov.get("selection_run_id")
+                ),
+                "acceptance_run_id": refit_prov.get("acceptance_run_id"),
+                "acceptance_digest": refit_prov.get("acceptance_digest"),
+                "refit_dir": str(runs_base / str(refit_run_id)) if refit_run_id else None,
+                "refit_run_id": refit_run_id,
+                "origin": list(origin) if origin else None,
+                "exposure_source_id": registry.require(disease).exposure_source_id,
             },
             indent=2,
         ),
@@ -578,6 +669,7 @@ def run_command(
     digests = dict(dm.digests)
     if sel_manifest:
         digests["selection"] = sel_manifest["selection_digest"]
+    digests.update({k: v for k, v in refit_prov.items() if k.endswith("digest")})
     man = run_engines(
         run_dir,
         disease_id,
@@ -595,6 +687,10 @@ def run_command(
     # Un benchmark multi-motor exitoso emite el reporte comparativo (sin elegir ganador).
     if command == "benchmark" and man.status == STATUS_SUCCEEDED and len(used_engines) > 1:
         comparative_report(run_dir)
+    if command == "refit" and man.status == STATUS_SUCCEEDED and final_sel is not None:
+        refit_mod.write_summary(run_dir, man, final_sel, refit_prov, code_commit)
+    if command == "forecast" and man.status == STATUS_SUCCEEDED:
+        forecasting.finish_forecast(run_dir, man, runs_base / str(refit_run_id), code_commit)
     # El stage test cierra con el gate de aceptación: veredicto global y selección final.
     if stage == "test" and man.status == STATUS_SUCCEEDED and sel is not None:
         _finish_test_stage(

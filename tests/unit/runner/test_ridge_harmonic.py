@@ -62,11 +62,11 @@ def _sinusoide(n: int, amplitud: float = 0.30, nivel: float = 100.0, skip: int =
     return np.expm1(np.log1p(nivel) + amplitud * np.sin(2 * np.pi * days / 365.25))
 
 
-def test_adapter_registrado_y_solo_benchmark():
+def test_adapter_registrado_con_ciclo_completo():
     ad = adapters.get_adapter(ENGINE)
     assert ad is not None
-    assert ad.supports("benchmark") is True
-    assert ad.supports("refit") is False and ad.supports("forecast") is False
+    assert ad.supports("benchmark") and ad.supports("refit") and ad.supports("forecast")
+    assert ad.supports("tune") is False  # la selección de Ridge es interna, no por rejilla externa
 
 
 def test_config_declarativa():

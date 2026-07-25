@@ -6,8 +6,8 @@ Subcomandos:
   tune <pad> --stage smoke|full [--engines a,b]        congela hiperparámetros (centinelas+rejilla)
   select <pad> --benchmark-run <run_id>                congela la selección por SeriesKey
   benchmark <pad> --stage test --selection <run_id>    abre 2025 UNA vez (gate de aceptación)
-  refit <pad> [--engines a,b]
-  forecast <pad> --horizon 52 [--engines a,b]
+  refit <pad> --acceptance-run <run_id>                refit final (64 modelos)
+  forecast <pad> --refit-run <run_id> --horizon 52     forecast preliminar (64→111)
 
 ``--engines`` es OVERRIDE opcional; por defecto se usan los candidatos de la POLÍTICA de evaluación
 (``config/evaluation/rolling_cv_v1.yaml``), NO los training_engines legacy del registry.
@@ -84,16 +84,18 @@ def _build_parser() -> argparse.ArgumentParser:
     select.add_argument("--benchmark-run", required=True, help="run_id del benchmark ya ejecutado")
     select.add_argument("--allow-dirty", action="store_true")
 
-    refit = sub.add_parser(CMD_REFIT, help="refit por motor (subprocess limpio)")
+    refit = sub.add_parser(CMD_REFIT, help="refit final gobernado por la selección aceptada")
     refit.add_argument("disease")
-    refit.add_argument("--engines", type=_engines)
+    refit.add_argument(
+        "--acceptance-run", required=True, help="run_id del stage test ACEPTADO (manda él)"
+    )
     refit.add_argument("--no-resume", action="store_true")
     refit.add_argument("--allow-dirty", action="store_true")
 
-    fc = sub.add_parser(CMD_FORECAST, help="forecast por motor (subprocess limpio)")
+    fc = sub.add_parser(CMD_FORECAST, help="forecast preliminar cargando los modelos del refit")
     fc.add_argument("disease")
+    fc.add_argument("--refit-run", required=True, help="run_id del refit final")
     fc.add_argument("--horizon", type=int, default=52)
-    fc.add_argument("--engines", type=_engines)
     fc.add_argument("--no-resume", action="store_true")
     fc.add_argument("--allow-dirty", action="store_true")
     return ap
@@ -122,8 +124,10 @@ def main(argv: list[str] | None = None) -> int:
         args.disease,
         args.command,
         stage=getattr(args, "stage", STAGE_FULL),
-        engines=args.engines,
+        engines=getattr(args, "engines", None),
         horizon=getattr(args, "horizon", None),
+        acceptance_run_id=getattr(args, "acceptance_run", None),
+        refit_run_id=getattr(args, "refit_run", None),
         resume=not args.no_resume,
         require_clean=not args.allow_dirty,  # runs por CLI son oficiales: exigen árbol limpio
         selection_run_id=getattr(args, "selection", None),
