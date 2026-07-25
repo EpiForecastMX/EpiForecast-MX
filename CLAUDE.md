@@ -261,6 +261,41 @@ EpiForecast-MX/
   - `benchmark Obesidad --stage smoke|full [--engines a,b] [--allow-dirty]` → un subprocess LIMPIO por motor; el run oficial exige **árbol trackeado limpio** (`--allow-dirty` para dev). Reanudación solo si el job está succeeded + artefactos **re-verificados en disco** (un .pkl no cuenta).
   - `tune Obesidad --stage smoke|full --engines a,b` → congela hiperparámetros por motor (centinelas + rejilla); solo lo soportan los motores que lo declaran (el resto → **rc=3**).
 - **Baselines canónicos** (commits limpios): Seasonal Naive `obesidad_benchmark_full_7952e226c10a` @ `cf97301b`; run conjunto 5 motores `obesidad_benchmark_full_fc70f5f15b7b` @ `1e0709fd`; run 6 motores `6ff688593915` @ `52fc07af`; run 7 motores `b0c4b6e18c50` @ `7ff41b04`; **run vigente 9 motores `obesidad_benchmark_full_301981b4c42c` @ `08d554cd`**. Mediana sMAPE_all: naive 39.5 · median_3y 36.7 · mean_3y 32.5 · **prophet_count 31.9** · ETS 30.0 · **prophet_rate 28.5** · median_5y 28.3 · **mean_5y 28.02** · **Ridge 28.00 (−29.07%)**; en las 64 bases: mean_5y 28.99 < Ridge 29.70 ≈ median_5y 29.71 < prophet_rate 30.24 < ETS 30.50 < prophet_count 32.09. `prophet_rate` es el **mejor en nacional General (19.58) y en MASE_all (0.81)**. Cada motor: 13,312 predicciones base / 23,088 derivadas / 444 métricas / **solo 64 modeladas** / `n_train` por fold 366/418/470/522; los cuatro que ajustan emiten 256 diagnósticos. **Tuning oficial** de Prophet: `obesidad_tune_smoke_3398a12d14c8` @ `a72acf27` (36 configs × 6 centinelas = 216 ajustes por perfil, 36/36 válidas; ambos perfiles congelan additive · cp=0.01 · sp=0.5 · Fourier=5). Los 7 motores previos conservan `metrics.csv` **byte-idéntico**. Verificado reproducible: mismo `run_id` y los 40 artefactos con el mismo digest en otro `runs_root`. **Sigue sin elegirse ganador** (la selección por SeriesKey con umbral de 5% es C5).
+### Carril N+1 — Anorexia F50 (C6: demostración, NO productiva)
+
+> **F50 es una DEMOSTRACIÓN de N+1**: se dio de alta **sin una línea de Python**, para probar que el
+> runner absorbe un padecimiento nuevo por configuración. `lifecycle=configured`, `channels: []`,
+> `training_engines: []`, invisible en todo filtro `published_only`. NO-GO como Obesidad.
+
+- **Alta por configuración** (`c5803acd`): perfil `baja_incidencia_semanal` en `config/padecimientos.yaml`
+  (conteos, `rate_scale` disponible pero **ningún motor en tasa**, y TODOS los traits legacy apagados —
+  sin log1p/COVID/ENSO/clamp/short_series y **sin `fallback_regional`**, que en baja incidencia sería lo
+  peor) + entrada `anorexia_f50` (CIE F50, alias clínicos incl. TCA/bulimia, grupo `trastornos_nutricion`,
+  exposición `inegi_cpv2020_static`, política **`rolling_cv_v1` reutilizada intacta**). En
+  `config/data/cuadros.yaml` cambia **solo** `onboard: false → true`: F50 es el **bloque 1** del cuadro
+  14.1, co-ubicado con Obesidad (bloque 0).
+- **Extracción** (`scripts/extrae_cuadro --disease anorexia_f50`): 654 PDFs → **653 ok**, único fallido
+  `2014_sem01.pdf` (`no_page`); **20,896 filas**, 32 entidades por boletín, 0 duplicados, fuente
+  2014-W02…2026-W27; layouts **53** de 3 columnas y **600** de 4; una sola ausencia de `Casos_semana`
+  (Querétaro 2016-W50) y 1,696 ausencias esperadas de año anterior. **Determinista**: dos corridas
+  independientes dan `sha256 2a7bb815…` byte a byte. Copiado tal cual a `data/raw/data_raw_Anorexia_F50.csv`
+  (sin `merge_cuadro.py`, sin tocar el consolidado, sin operaciones DVC).
+- **Guard anti-confusión de bloque** (imprescindible): como F50 y Obesidad salen del MISMO cuadro, todos
+  los conteos del gate pasarían igual leyendo el bloque equivocado. Contraste directo: **0.2%** de celdas
+  coinciden (35 de 20,896) y los totales difieren 160× (**47,143** vs 7,542,552).
+- **Dataset** `anorexia_f50_05a3b9cfde27`: 41,792 filas base / 64 series / 653 obs por serie
+  (2014-W01…2026-W26), 72,483 filas y 111 productos, 47 derivados; 1 total estado-periodo imputado
+  (Querétaro) → 2 filas base; cero negativos o nulos; general=H+M, Σ estados=región, Σ regiones=nacional.
+  **57.3% de ceros**: son datos de baja incidencia, nunca faltantes.
+- **Smoke OOS** `anorexia_f50_benchmark_smoke_06ee26150ba1` @ `7c374d49` (checkpoint funcional C6.2):
+  fold único `development_2024`, rc=0, **64 series modeladas** y cero derivadas, 3,328 predicciones base,
+  5,772 filas de evaluación, 111 métricas, `n_fallback=0`, `disease_id=anorexia_f50` en todo artefacto y
+  mismo `run_id`+digests en otro `runs_root`. **Sin umbral de sMAPE**: C6 demuestra reutilización
+  funcional, no calidad productiva (la mediana sale ~93, esperable en series casi-cero).
+- **Preservación verificada**: el diff de C6 toca solo `config/` y `tests/` — cero cambios en `src/`,
+  `scripts/`, frontend y `rolling_cv_v1.yaml` (digest `dd6d4a02…` intacto); los 4 agregados legacy
+  byte-idénticos; runs canónicos C5 de Obesidad intactos; estado dirigido de DVC sin cambios.
+
 - **Registry**: Obesidad declara `training_engines=(prophet,deepar,ensemble,stacking)` (legacy, NO gobierna el benchmark) y `selection_policy=rolling_cv_v1`, `exposure_source_id=inegi_cpv2020_static`, `lifecycle=configured`.
 
 ### Convenciones de Codigo
