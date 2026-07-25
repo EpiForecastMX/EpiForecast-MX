@@ -18,7 +18,7 @@ import shutil
 from typing import Any
 
 from epiforecast.runner.artifact_validation import validate_runner_runs
-from epiforecast.runner.release_builder import BuiltRelease, ReleaseActivation, build_release
+from epiforecast.runner.release_builder import BuiltRelease, build_release
 from epiforecast.runner.release_contract import (
     CHECKSUMS_FILE,
     MANIFEST_FILE,
@@ -32,12 +32,6 @@ from epiforecast.runner.release_sources import resolve_sources
 from tests.unit.runner import artifact_fixtures as af
 
 POLICY = Path("config/evaluation/rolling_cv_v1.yaml")
-ACTIVACION = ReleaseActivation(
-    backend="runner_release",
-    lifecycle_required="published",
-    channels_candidate=("epibot", "reports", "tableau", "web"),
-    activated=False,
-)
 
 
 @dataclass(frozen=True)
@@ -73,7 +67,6 @@ def construir_en(prep: Preparado, output_root: Path) -> BuiltRelease:
     return build_release(
         verified=prep.verified,
         sources=prep.sources,
-        activation=ACTIVACION,
         output_root=output_root,
     )
 
@@ -81,6 +74,15 @@ def construir_en(prep: Preparado, output_root: Path) -> BuiltRelease:
 def construir(tmp_path: Path, *, salida: str = "out") -> BuiltRelease:
     """Prepara y construye en un solo paso (el caso común de las pruebas)."""
     return construir_en(preparar(tmp_path), tmp_path / salida)
+
+
+def construir_por_entry(prep: Preparado, output_root: Path) -> BuiltRelease:
+    """Construye por el ENTRY POINT real (registry incluido), sobre la copia aislada de los runs."""
+    from epiforecast.runner.release_entry import build_release_for_disease
+
+    return build_release_for_disease(
+        af.DISEASE, runs_root=prep.runs_root, policy_path=POLICY, output_root=output_root
+    )
 
 
 def copia(bundle: Path, destino: Path) -> Path:
@@ -123,7 +125,6 @@ def resellar(root: Path) -> None:
     identidad = identity_payload(
         disease_id=manifest["disease_id"],
         chain=manifest["chain"],
-        activation=manifest["activation"],
         payloads={r["path"]: r["sha256"] for r in manifest["payloads"]},
     )
     manifest["release_id"], manifest["identity_digest"] = release_id_for(identidad)

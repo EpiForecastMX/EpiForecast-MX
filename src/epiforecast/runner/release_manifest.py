@@ -1,4 +1,4 @@
-"""C7.2-A/R15.3 — la metadata canónica del release: cadena, activación y ``release_manifest.v1``.
+"""C7.2-A/R15.3 — la metadata canónica del release: cadena, calendario y ``release_manifest.v1``.
 
 Todo lo que el manifest declara se DERIVA de artefactos sellados: la cadena y sus ``code_commit``
 salen de los manifiestos de los runs (nunca del git vivo), el calendario del refit y del lineage, los
@@ -7,12 +7,15 @@ un padecimiento, ni un motor, ni un 64/47/111 escritos a mano.
 
 El ``release_id`` se calcula ANTES del manifest, desde el payload de identidad, y por eso el manifest
 puede llevarlo dentro sin crear un ciclo.
+
+C7.2-A.1: el manifest describe QUÉ modelos hay y de dónde salen, nunca DÓNDE se publican. Canales,
+galería, lifecycle y activación son política pública —revocable, y ajena a los modelos— y vivirán en
+el ``public_release_pointer.v1`` de C7.5, que apuntará a este ``release_id`` por referencia.
 """
 
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -36,28 +39,6 @@ if TYPE_CHECKING:  # sólo para tipar; en runtime lo pasa el llamador
 RUN_MANIFEST = "run_manifest.json"
 DATASET_MANIFEST = "dataset_manifest.json"
 RUNTIME_CONFIG_PATH = f"{RUNTIME_DIR}/{RUNTIME_CONFIG_FILE}"
-
-
-@dataclass(frozen=True, slots=True)
-class ReleaseActivation:
-    """Qué haría falta para activar este release. Declarado por el registry, NUNCA activado aquí."""
-
-    backend: str
-    lifecycle_required: str
-    channels_candidate: tuple[str, ...]
-    activated: bool = False
-
-    def payload(self) -> dict[str, Any]:
-        return {
-            "backend": text_of(self.backend, "activation: backend"),
-            "lifecycle_required": text_of(
-                self.lifecycle_required, "activation: lifecycle_required"
-            ),
-            "channels_candidate": sorted(
-                text_of(c, "activation: channels_candidate") for c in self.channels_candidate
-            ),
-            "activated": bool(self.activated),
-        }
 
 
 def dataset_digests(sources: ReleaseSources, clave: str) -> str:
@@ -113,21 +94,19 @@ def build_manifest(
     entries: Sequence[PayloadEntry],
     digests: Mapping[str, str],
     destino: Path,
-    activation: ReleaseActivation,
 ) -> dict[str, Any]:
-    """``release_manifest.v1``: identidad, cadena, calendario, conteos e inventario de payloads."""
+    """``release_manifest.v1``: identidad, cadena, calendario, conteos e inventario de payloads.
+
+    Describe QUÉ modelos hay y de dónde salen. No describe dónde se publican: canales, galería y
+    lifecycle son política revocable de C7.5 y no viajan en el bundle (C7.2-A.1).
+    """
     lineage = read_json(sources.forecast_dir / "lineage.json", "forecast: lineage")
     forecast_man = read_json(sources.forecast_dir / RUN_MANIFEST, "forecast: manifiesto")
     horizon = int_of(lineage.get("horizon"), "forecast: lineage: horizon")
 
     cadena = chain_of(verified, sources)
     release_id, identity_digest = release_id_for(
-        identity_payload(
-            disease_id=verified.disease_id,
-            chain=cadena,
-            activation=activation.payload(),
-            payloads=digests,
-        )
+        identity_payload(disease_id=verified.disease_id, chain=cadena, payloads=digests)
     )
     esquemas = {e.bundle_path: e.schema for e in entries}
     esquemas[RUNTIME_CONFIG_PATH] = RUNTIME_CONFIG_SCHEMA
@@ -148,7 +127,6 @@ def build_manifest(
         "builder_version": BUILDER_VERSION,
         "disease_id": verified.disease_id,
         "chain": cadena,
-        "activation": activation.payload(),
         "calendar": _calendar(verified, horizon),
         "counts": dict(sorted(conteos.items())),
         "engines": dict(sorted(verified.distribution)),

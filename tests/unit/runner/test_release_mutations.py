@@ -132,6 +132,31 @@ def _sin_payloads(root: Path) -> None:
     rf.escribir_manifest(root, manifest)
 
 
+def _activación_inyectada(root: Path) -> None:
+    """C7.2-A.1: intentar devolver la política pública al bundle, por la puerta de atrás."""
+    manifest = rf.leer_manifest(root)
+    manifest["activation"] = {"channels_candidate": ["web"], "activated": True}
+    rf.escribir_manifest(root, manifest)
+
+
+def _canales_en_la_cadena(root: Path) -> None:
+    manifest = rf.leer_manifest(root)
+    manifest["chain"]["channels"] = "web,epibot"
+    rf.escribir_manifest(root, manifest)
+
+
+def _clave_inventada_en_el_manifest(root: Path) -> None:
+    manifest = rf.leer_manifest(root)
+    manifest["inventada"] = "lo que sea"
+    rf.escribir_manifest(root, manifest)
+
+
+def _clave_ausente_en_el_manifest(root: Path) -> None:
+    manifest = rf.leer_manifest(root)
+    manifest.pop("intervals")
+    rf.escribir_manifest(root, manifest)
+
+
 SELLO: list[tuple[Mutacion, str]] = [
     (_borrar_payload, "faltan"),
     (_archivo_intruso, "no declarados"),
@@ -150,6 +175,25 @@ SELLO: list[tuple[Mutacion, str]] = [
     (_sin_payloads, "no declara payloads"),
 ]
 
+# La forma del manifest es un conjunto CERRADO: se comprueba con los checksums rehechos, porque lo
+# que se quiere probar es que el contrato la rechaza aunque el sello cuadre.
+FORMA: list[tuple[Mutacion, str]] = [
+    (_activación_inyectada, "claves"),
+    (_canales_en_la_cadena, "activación pública"),
+    (_clave_inventada_en_el_manifest, "claves"),
+    (_clave_ausente_en_el_manifest, "claves"),
+]
+
+
+@pytest.mark.parametrize(("mutacion", "patron"), FORMA, ids=[m.__name__ for m, _ in FORMA])
+def test_la_forma_cerrada_del_manifest_atrapa_la_mutación(prístino, tmp_path, mutacion, patron):
+    """Sin forma cerrada, el manifest podía crecer campos que la identidad no cubre."""
+    root = _copia(prístino, tmp_path)
+    mutacion(root)
+    rf.resellar_checksums(root)
+    with pytest.raises(ArtifactValidationError, match=patron):
+        verify_bundle(root)
+
 
 @pytest.mark.parametrize(("mutacion", "patron"), SELLO, ids=[m.__name__ for m, _ in SELLO])
 def test_el_sello_del_release_atrapa_la_mutación(prístino, tmp_path, mutacion, patron):
@@ -163,18 +207,6 @@ def test_el_sello_del_release_atrapa_la_mutación(prístino, tmp_path, mutacion,
 def _chain_alterada(root: Path) -> None:
     manifest = rf.leer_manifest(root)
     manifest["chain"]["dataset_digest"] = "f" * 64
-    rf.escribir_manifest(root, manifest)
-
-
-def _activación_alterada(root: Path) -> None:
-    manifest = rf.leer_manifest(root)
-    manifest["activation"]["channels_candidate"] = ["web"]
-    rf.escribir_manifest(root, manifest)
-
-
-def _activada_a_mano(root: Path) -> None:
-    manifest = rf.leer_manifest(root)
-    manifest["activation"]["activated"] = True
     rf.escribir_manifest(root, manifest)
 
 
@@ -198,8 +230,6 @@ def _identity_digest_falso(root: Path) -> None:
 
 IDENTIDAD: list[tuple[Mutacion, str]] = [
     (_chain_alterada, "release_id"),
-    (_activación_alterada, "release_id"),
-    (_activada_a_mano, "release_id"),
     (_disease_alterado, "release_id"),
     (_release_id_falso, "release_id"),
     (_identity_digest_falso, "identity_digest"),

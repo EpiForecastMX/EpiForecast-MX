@@ -24,6 +24,7 @@ from epiforecast.runner.release_contract import (
     build_checksums,
     canonical_json,
     check_bundle_path,
+    check_no_activation,
     identity_payload,
     parse_checksums,
     release_id_for,
@@ -42,12 +43,6 @@ CHAIN = {
     "refit_digest": "f" * 64,
     "forecast_run_id": "x_forecast_1",
 }
-ACTIVATION = {
-    "backend": "runner_release",
-    "lifecycle_required": "published",
-    "channels_candidate": ["epibot", "web"],
-    "activated": False,
-}
 PAYLOADS = {
     "forecast/forecast.csv": "1" * 64,
     "refit/models/motor_a/model_index.json": "2" * 64,
@@ -59,7 +54,6 @@ def _identity(**cambios: object) -> dict[str, object]:
     datos: dict[str, object] = {
         "disease_id": "x",
         "chain": dict(CHAIN),
-        "activation": dict(ACTIVATION),
         "payloads": dict(PAYLOADS),
     }
     datos.update(cambios)
@@ -154,10 +148,23 @@ def test_release_id_cambia_si_cambia_cualquier_eslabón_de_la_cadena(clave):
     assert release_id_for(_identity(chain=cadena))[0] != release_id_for(_identity())[0]
 
 
-def test_release_id_cambia_si_cambian_los_canales_candidatos():
-    """La activación declarada es identidad: un bundle con otros canales es otro release."""
-    activacion = {**ACTIVATION, "channels_candidate": ["web"]}
-    assert release_id_for(_identity(activation=activacion))[0] != release_id_for(_identity())[0]
+def test_la_identidad_no_admite_metadata_de_activación_pública():
+    """C7.2-A.1: canales, galería y lifecycle no son identidad; su cambio no reconstruye nada."""
+    serializado = canonical_json(_identity()).decode("utf-8")
+    for prohibido in ("channel", "gallery", "lifecycle", "activated", "activation"):
+        assert prohibido not in serializado
+
+
+@pytest.mark.parametrize(
+    "clave", ["activation", "channels", "channels_candidate", "gallery_enabled", "lifecycle"]
+)
+def test_check_no_activation_rechaza_la_política_pública(clave):
+    with pytest.raises(ArtifactValidationError, match="activación pública"):
+        check_no_activation({clave: "lo que sea"}, "x")
+
+
+def test_check_no_activation_deja_pasar_lo_que_sí_es_del_release():
+    check_no_activation({"disease_id": "x", "chain": {}, "payloads": {}}, "x")
 
 
 def test_release_id_no_cambia_por_metadata_ambiental():
@@ -169,7 +176,6 @@ def test_release_id_no_cambia_por_metadata_ambiental():
         "builder_version",
         "disease_id",
         "chain",
-        "activation",
         "payloads",
     }
 

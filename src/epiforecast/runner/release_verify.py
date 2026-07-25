@@ -27,8 +27,10 @@ from epiforecast.runner.artifact_identity import (
 from epiforecast.runner.release_contract import (
     CHECKSUMS_FILE,
     MANIFEST_FILE,
+    MANIFEST_KEYS,
     check_bundle_path,
     check_digest,
+    check_no_activation,
     identity_payload,
     parse_checksums,
     release_id_for,
@@ -87,16 +89,26 @@ def check_checksums(root: Path, inventario: Mapping[str, tuple[str, int, str]]) 
         equal(f"release: {CHECKSUMS_FILE}: digest de {ruta}", declarados[ruta], digest)
 
 
+def check_manifest_shape(manifest: Mapping[str, Any]) -> None:
+    """El manifest declara EXACTAMENTE sus claves: nada puede crecerle sin mover el ``release_id``.
+
+    Sin este cierre, un manifest podía ganar campos que la identidad no cubre —empezando por los de
+    activación pública— y seguir verificando. Con él, cualquier añadido es un error de contrato.
+    """
+    equal(f"{MANIFEST_FILE}: claves", sorted(manifest), sorted(MANIFEST_KEYS))
+    check_no_activation(manifest, MANIFEST_FILE)
+
+
 def check_identity(manifest: Mapping[str, Any], digests: Mapping[str, str]) -> tuple[str, str]:
     """El ``release_id`` se RECALCULA desde el payload de identidad: no se cree el declarado."""
     cadena = {
         text_of(k, f"{MANIFEST_FILE}: chain"): text_of(v, f"{MANIFEST_FILE}: chain[{k!r}]")
         for k, v in mapping_of(manifest.get("chain"), f"{MANIFEST_FILE}: chain").items()
     }
+    check_no_activation(cadena, f"{MANIFEST_FILE}: chain")
     identidad = identity_payload(
         disease_id=text_of(manifest.get("disease_id"), f"{MANIFEST_FILE}: disease_id"),
         chain=cadena,
-        activation=mapping_of(manifest.get("activation"), f"{MANIFEST_FILE}: activation"),
         payloads=digests,
     )
     release_id, identity_digest = release_id_for(identidad)

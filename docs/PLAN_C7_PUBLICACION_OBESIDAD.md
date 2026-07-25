@@ -4327,3 +4327,125 @@ Release NO-GO · Obesidad = trained · runner_runs · F50 = configured · NO-GO
 ```
 
 _Respuesta:_
+
+---
+
+### Ronda 18 — C7.2-A.1: la activación pública sale del bundle — 2026-07-25
+
+Bloqueo de diseño aceptado sin reservas: **acoplar canales al `release_id` era un error mío**, no un
+detalle. Un release describe QUÉ modelos hay y de dónde salen; DÓNDE se publican es una decisión
+posterior y revocable. Con el acoplamiento, apagar un canal renombraba —y obligaba a reconstruir— un
+bundle cuyos 64 modelos no habían cambiado en un byte. Peor: el `release_id` es la referencia que
+C7.2-B fija en DVC y C7.5 activa, así que el acoplamiento habría hecho que **la publicación mueva su
+propio identificador**.
+
+Commit separado, sobre `2bed74ee`.
+
+#### Qué se quitó
+
+`activation` desaparece **del payload de identidad y del manifest**. No queda "desactivado" ni
+vacío: no existe.
+
+```text
+identity_payload.v1  {schema, release_schema, builder_version, disease_id, chain, payloads}
+release_manifest.v1  {schema, release_id, identity_schema, identity_digest, builder_version,
+                      disease_id, chain, calendar, counts, engines, intervals,
+                      runtime_inputs, payloads}
+```
+
+El entry point ya **no lee** `disease.channels`; del registry sólo sale `artifact_source`, o sea qué
+runs sellados son los del padecimiento. Y `build_release` perdió el parámetro: la política pública ya
+no puede llegar al builder ni por descuido.
+
+```text
+build_release(verified, sources, output_root)          # antes llevaba activation=
+build_release_for_disease(disease_id, runs_root, policy_path, output_root, geo_catalog)
+```
+
+`BUILDER_VERSION` sube a **`runner_release_builder.v2`**. Está dentro del payload de identidad, así
+que un bundle v1 y uno v2 **nunca comparten `release_id`**; no hay ambigüedad posible entre formatos.
+
+#### Un cierre extra que hacía falta para que esto se sostenga
+
+Quitar la clave no basta: el manifest podía **crecer campos que la identidad no cubre** —empezando
+por los de activación— y seguir verificando, porque `SHA256SUMS.txt` sella el manifest pero el
+`release_id` no lo sella a él. Así que la forma del manifest es ahora un **conjunto cerrado**
+(`MANIFEST_KEYS`) y hay un guardia explícito (`check_no_activation`) sobre el manifest y sobre la
+cadena. Sin esto, la corrección se podía deshacer por la puerta de atrás.
+
+#### Prueba de que el desacoplamiento es real
+
+No basta con que la clave no aparezca. Se construye por el **entry point real** —la capa que antes
+leía los canales— con el registry declarando otra política, y se compara byte a byte:
+
+| política declarada por el registry | `release_id` | bytes |
+| --- | --- | --- |
+| `channels: ["web"]` | idéntico | idénticos |
+| `channels: []` | idéntico | idénticos |
+| `gallery_enabled: false` | idéntico | idénticos |
+| `lifecycle: published` | idéntico | idénticos |
+| las cuatro a la vez | idéntico | idénticos |
+
+Verifiqué antes que el `monkeypatch` **llega de verdad** al entry point; una invariancia que se
+cumple porque el sustituto nunca se usa no probaría nada.
+
+Cuatro mutaciones nuevas (grupo **FORMA**, con los checksums rehechos a propósito):
+
+```text
+_activación_inyectada           -> release_manifest.json: claves: [...'activation'...] != [...]
+_canales_en_la_cadena           -> chain: ['channels'] es metadata de activación pública…
+_clave_inventada_en_el_manifest -> release_manifest.json: claves: …
+_clave_ausente_en_el_manifest   -> release_manifest.json: claves: …
+```
+
+#### Determinismo y gate
+
+```text
+build A: root A · LC_ALL=C            → obesidad_release_a3d4cbe9f896
+build B: root B · LC_ALL=en_US.UTF-8  → obesidad_release_a3d4cbe9f896
+diff -r A B → idéntico · agregado 7306bd5a5a0ec6043311630ac4c48a28 · 150 archivos
+reproducción: 3,328 base + 5,772 productos · máx |Δ| = 0.0 · sin leer runs/
+```
+
+| comprobación | resultado |
+| --- | --- |
+| `ruff format --check` + `ruff check` | 275 archivos OK · All checks passed |
+| `mypy src/epiforecast/` | 153 archivos, sin incidencias |
+| fast | **1,789 passed** (eran 1,775; +14 netas) en 74 s |
+| integración | **61 passed** (59 + 2, dos tandas por el SIGSEGV preexistente) |
+| doctor Obesidad / completo | rc=0 / rc=0 |
+| SRP ≤300 | máximo 299 (`release_sources.py`) |
+| runs canónicos · política · 4 agregados legacy | idénticos al baseline |
+| `artifacts/releases/` · `.dvc` · `config/` · frontend | sin tocar |
+
+El `release_id` cambió (`34bbcc4ac509` → `a3d4cbe9f896`) por el bump de builder y por la salida de la
+activación. Es lo correcto y **no invalida nada**: C7.2-A no persistió ningún bundle, los dos builds
+vivieron en temporales y se borraron.
+
+#### Dos notas de contrato
+
+1. **`release_manifest.v1` conserva su nombre** pese a cambiar de forma. Lo pensé y lo dejo así con
+   una razón: no existe —ni existió— ningún bundle v1 persistido en ninguna parte, y un hipotético
+   v1 **falla cerrado** contra este loader (su identidad incluía la activación, así que el
+   `release_id` ya no le cuadraría). Además `builder_version` va DENTRO de la identidad y distingue
+   los dos formatos sin ambigüedad. Si prefieres subirlo a `release_manifest.v2` por higiene de
+   formato, es un cambio de una línea y lo hago; no lo decido por mi cuenta porque afecta a lo que
+   C7.2-B fije en DVC.
+2. **`public_release_pointer.v1` queda sólo documentado**, como pediste: en `release_contract.py`,
+   `release_manifest.py` y `release_entry.py` está escrito que canales, galería, lifecycle y estado
+   de activación viven ahí y apuntan al `release_id` **por referencia**. No se construyó nada: es
+   C7.5.
+
+#### Estado
+
+```text
+C7.2-A.1 PASS · commit local separado · SIN push, DVC, deploy ni publicación
+Bundle   activación-agnóstico · builder v2 · manifest de claves cerradas
+Tests    188 del release (180 fast + 8 integración) · 37 mutaciones de rechazo
+Output   0 bundles persistidos · temporales A/B eliminados
+Release  NO-GO · Obesidad = trained · runner_runs · F50 = configured · NO-GO
+Deuda    SIGSEGV preexistente de integración = bloqueo pre-merge/pre-publicación (no de C7.2-A.1)
+Pendiente C7.2-B (doctor runner_release + materialización) · C7.5 (canales reales + puntero)
+```
+
+_Respuesta:_

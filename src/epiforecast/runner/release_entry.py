@@ -2,8 +2,11 @@
 
 Es la única capa que mira el registry y los runs. Abre la cadena con ``validate_runner_runs`` (la
 misma implementación que usa el doctor: no hay una segunda), resuelve las rutas fuente explícitas y
-se las entrega al builder puro junto con la activación DECLARADA —qué haría falta para publicar—,
-que aquí nunca se aplica.
+se las entrega al builder puro.
+
+Del registry sólo sale la CADENA (``artifact_source``): qué runs sellados son los del padecimiento.
+Los canales, la galería y el lifecycle no se leen aquí ni viajan al bundle (C7.2-A.1) — son política
+pública de C7.5 y ni siquiera pueden alterar el `release_id`.
 
 Construir un bundle no publica nada: no toca `runs/`, ni el lifecycle, ni canales, ni DVC. El
 destino lo decide quien llama; C7.2-A sólo autoriza temporales.
@@ -17,22 +20,8 @@ from epiforecast import registry
 from epiforecast.data.epi_geo_exposure import GeoCatalog
 from epiforecast.runner.artifact_identity import ArtifactValidationError, require, text_of
 from epiforecast.runner.artifact_validation import VerifiedRunnerRuns, validate_runner_runs
-from epiforecast.runner.release_builder import BuiltRelease, ReleaseActivation, build_release
+from epiforecast.runner.release_builder import BuiltRelease, build_release
 from epiforecast.runner.release_sources import ReleaseSources, resolve_sources
-
-# Publicar exige `runner_release`: la matriz lifecycle × backend del registry ya lo impone. El
-# bundle lo DECLARA para que su activación sea auditable, y nunca lo aplica.
-LIFECYCLE_FOR_ACTIVATION = "published"
-
-
-def activation_for(disease: registry.Disease) -> ReleaseActivation:
-    """Canales candidatos y lifecycle requerido, tomados del registry tal cual están declarados."""
-    return ReleaseActivation(
-        backend=registry.BACKEND_RUNNER_RELEASE,
-        lifecycle_required=LIFECYCLE_FOR_ACTIVATION,
-        channels_candidate=tuple(str(c) for c in disease.channels),
-        activated=False,
-    )
 
 
 def verify_chain(
@@ -88,6 +77,5 @@ def build_release_for_disease(
     return build_release(
         verified=verified,
         sources=sources_for(verified, runs_root=runs_root, policy_path=policy_path),
-        activation=activation_for(disease),
         output_root=output_root,
     )

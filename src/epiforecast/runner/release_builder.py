@@ -38,7 +38,6 @@ from epiforecast.runner.release_contract import (
 )
 from epiforecast.runner.release_manifest import (
     RUNTIME_CONFIG_PATH,
-    ReleaseActivation,
     build_manifest,
     dataset_digests,
 )
@@ -58,7 +57,7 @@ from epiforecast.runner.release_sources import (
 if TYPE_CHECKING:  # sólo para tipar; en runtime lo pasa el llamador
     from epiforecast.runner.artifact_validation import VerifiedRunnerRuns
 
-__all__ = ["BuiltRelease", "ReleaseActivation", "build_release"]
+__all__ = ["BuiltRelease", "build_release"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -161,7 +160,6 @@ def build_release(
     *,
     verified: VerifiedRunnerRuns,
     sources: ReleaseSources,
-    activation: ReleaseActivation,
     output_root: Path,
 ) -> BuiltRelease:
     """Construye el bundle bajo ``output_root/<release_id>/`` y lo valida antes de devolverlo."""
@@ -176,7 +174,7 @@ def build_release(
         (staging / RUNTIME_CONFIG_PATH).write_bytes(crudo)
         digests[RUNTIME_CONFIG_PATH] = sha256_bytes(crudo)
 
-        manifiesto = build_manifest(verified, sources, entradas, digests, staging, activation)
+        manifiesto = build_manifest(verified, sources, entradas, digests, staging)
         bytes_manifest = canonical_json(manifiesto)
         (staging / MANIFEST_FILE).write_bytes(bytes_manifest)
         (staging / CHECKSUMS_FILE).write_bytes(

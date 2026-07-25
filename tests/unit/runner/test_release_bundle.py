@@ -8,13 +8,22 @@ y que dos construcciones distintas den los MISMOS bytes.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 from pathlib import Path
 
 import pytest
 
+from epiforecast import registry
 from epiforecast.runner.artifact_identity import ArtifactValidationError
-from epiforecast.runner.release_contract import CHECKSUMS_FILE, MANIFEST_FILE, parse_checksums
+from epiforecast.runner.release_contract import (
+    ACTIVATION_KEYS,
+    BUILDER_VERSION,
+    CHECKSUMS_FILE,
+    MANIFEST_FILE,
+    MANIFEST_KEYS,
+    parse_checksums,
+)
 from epiforecast.runner.release_loader import verify_bundle
 from epiforecast.runner.release_runtime import RUNTIME_CONFIG_FILE, RUNTIME_DIR
 from tests.unit.runner import artifact_fixtures as af
@@ -98,11 +107,55 @@ def test_el_release_declara_point_only(bundle):
     assert intervalos == {"interval_method": "none", "uncertainty_available": False}
 
 
-def test_la_activación_viaja_declarada_y_desactivada(bundle):
-    activacion = rf.leer_manifest(bundle)["activation"]
-    assert activacion["activated"] is False
-    assert activacion["lifecycle_required"] == "published"
-    assert activacion["channels_candidate"] == sorted(rf.ACTIVACION.channels_candidate)
+def test_el_manifest_no_lleva_metadata_de_activación_pública(bundle):
+    """C7.2-A.1: el release dice QUÉ modelos hay, nunca DÓNDE se publican."""
+    manifest = rf.leer_manifest(bundle)
+    assert set(manifest) == set(MANIFEST_KEYS)
+    assert not ACTIVATION_KEYS & set(manifest)
+    texto = (bundle / MANIFEST_FILE).read_text(encoding="utf-8")
+    for prohibido in ("channel", "gallery", "lifecycle", "activated"):
+        assert prohibido not in texto
+
+
+@pytest.mark.parametrize(
+    "politica",
+    [
+        {"channels": ["web"]},
+        {"channels": []},
+        {"gallery_enabled": False},
+        {"lifecycle": "published"},
+        {"channels": ["web"], "gallery_enabled": False, "lifecycle": "published"},
+    ],
+)
+def test_cambiar_la_política_pública_no_altera_el_bundle(tmp_path, monkeypatch, politica):
+    """El motivo de C7.2-A.1: encender un canal no puede obligar a reconstruir modelos intactos.
+
+    Se construye por el ENTRY POINT real —la capa que antes leía ``disease.channels``— con el
+    registry declarando otra política pública. El ``release_id`` y cada byte deben ser los mismos.
+    """
+    real = registry.require(af.DISEASE)
+    prep = rf.preparar(tmp_path)
+    referencia = rf.construir_por_entry(prep, tmp_path / "ref")
+
+    monkeypatch.setattr(registry, "require", lambda _: dataclasses.replace(real, **politica))
+    otro = rf.construir_por_entry(prep, tmp_path / "otro")
+
+    assert otro.release_id == referencia.release_id
+    assert otro.identity_digest == referencia.identity_digest
+    rutas = {p.relative_to(referencia.path).as_posix() for p in referencia.path.rglob("*")}
+    assert rutas == {p.relative_to(otro.path).as_posix() for p in otro.path.rglob("*")}
+    distintos = [
+        r
+        for r in sorted(rutas)
+        if (referencia.path / r).is_file()
+        and (referencia.path / r).read_bytes() != (otro.path / r).read_bytes()
+    ]
+    assert not distintos
+
+
+def test_el_builder_declara_su_versión_en_el_manifest(bundle):
+    """La versión del builder SÍ es identidad: v1 y v2 nunca comparten `release_id`."""
+    assert rf.leer_manifest(bundle)["builder_version"] == BUILDER_VERSION
 
 
 # ── Higiene: nada del entorno dentro del contenido inmutable ──────────────────────────────────

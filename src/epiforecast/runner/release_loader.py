@@ -46,6 +46,7 @@ from epiforecast.runner.release_verify import (
     check_checksums,
     check_identity,
     check_inventory,
+    check_manifest_shape,
     check_run_manifest,
     payload_inventory,
 )
@@ -132,6 +133,7 @@ def verify_bundle(root: Path) -> VerifiedRelease:
     require(root.is_dir(), f"release: no existe el bundle {root.name}")
     require((root / MANIFEST_FILE).is_file(), f"release: falta {MANIFEST_FILE}")
     manifest = read_json(root / MANIFEST_FILE, MANIFEST_FILE, RELEASE_SCHEMA)
+    check_manifest_shape(manifest)
     inventario = payload_inventory(manifest)
     check_inventory(root, inventario)
     check_checksums(root, inventario)

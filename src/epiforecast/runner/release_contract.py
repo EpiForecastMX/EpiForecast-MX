@@ -31,7 +31,9 @@ from epiforecast.runner.artifact_identity import (
 RELEASE_SCHEMA = "release_manifest.v1"
 IDENTITY_SCHEMA = "identity_payload.v1"
 RUNTIME_CONFIG_SCHEMA = "runtime_config.v1"
-BUILDER_VERSION = "runner_release_builder.v1"
+# C7.2-A.1: v2 saca la metadata de activación de la identidad. Va DENTRO del payload de identidad,
+# así que un bundle construido con v1 y otro con v2 nunca comparten `release_id`.
+BUILDER_VERSION = "runner_release_builder.v2"
 
 MANIFEST_FILE = "release_manifest.json"
 CHECKSUMS_FILE = "SHA256SUMS.txt"
@@ -43,7 +45,8 @@ SELF_DESCRIBING: tuple[str, str] = (MANIFEST_FILE, CHECKSUMS_FILE)
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _SEPARATOR = "  "  # coreutils: digest + dos espacios + ruta
 
-# Claves EXACTAS del payload de identidad. Cerrado a propósito: nada del entorno puede colarse.
+# Claves EXACTAS del payload de identidad. Cerrado a propósito: nada del entorno puede colarse, y
+# tampoco nada de POLÍTICA PÚBLICA (canales, galería, lifecycle, activado). Ver ACTIVATION_KEYS.
 IDENTITY_KEYS: frozenset[str] = frozenset(
     {
         "schema",
@@ -51,9 +54,37 @@ IDENTITY_KEYS: frozenset[str] = frozenset(
         "builder_version",
         "disease_id",
         "chain",
-        "activation",
         "payloads",
     }
+)
+
+# Claves EXACTAS del manifest. Es un conjunto cerrado por la misma razón: sin él, el manifest podría
+# crecer campos no verificados —empezando por los de activación— sin mover el `release_id`.
+MANIFEST_KEYS: frozenset[str] = frozenset(
+    {
+        "schema",
+        "release_id",
+        "identity_schema",
+        "identity_digest",
+        "builder_version",
+        "disease_id",
+        "chain",
+        "calendar",
+        "counts",
+        "engines",
+        "intervals",
+        "runtime_inputs",
+        "payloads",
+    }
+)
+
+# Metadata de ACTIVACIÓN PÚBLICA: canales, galería, lifecycle y estado de activación. NO pertenece
+# al bundle (C7.2-A.1). Un release describe QUÉ modelos hay y de dónde salen; dónde se publican es
+# una decisión posterior y revocable que vivirá en el `public_release_pointer.v1` de C7.5,
+# apuntando al `release_id` por referencia. Acoplarlas obligaría a reconstruir —y a renombrar— un
+# bundle cuyos modelos no cambiaron sólo por encender o apagar un canal.
+ACTIVATION_KEYS: frozenset[str] = frozenset(
+    {"activation", "channels", "channels_candidate", "gallery", "gallery_enabled", "lifecycle"}
 )
 
 
@@ -113,17 +144,17 @@ def _payload_inventory(raw: object, label: str) -> dict[str, str]:
 
 
 def identity_payload(
-    *,
-    disease_id: str,
-    chain: Mapping[str, str],
-    activation: Mapping[str, Any],
-    payloads: Mapping[str, str],
+    *, disease_id: str, chain: Mapping[str, str], payloads: Mapping[str, str]
 ) -> dict[str, Any]:
     """``identity_payload.v1``: lo ÚNICO de lo que puede depender el ``release_id``.
 
-    Lleva la cadena sellada (dataset/política/selección/aceptación/refit/forecast), la activación
-    declarada por el registry y el digest de CADA payload. Un byte distinto en cualquier archivo del
-    bundle mueve el ID; el manifest y los checksums, que contienen el ID, quedan fuera.
+    Lleva la cadena sellada (dataset/política/selección/aceptación/refit/forecast) y el digest de
+    CADA payload. Un byte distinto en cualquier archivo del bundle mueve el ID; el manifest y los
+    checksums, que contienen el ID, quedan fuera para no crear un ciclo.
+
+    Lo que tampoco entra —y ésa es la corrección de C7.2-A.1— es la POLÍTICA DE PUBLICACIÓN. Los
+    modelos de un release no cambian porque se encienda un canal, así que encender un canal no puede
+    cambiar su identidad ni obligar a reconstruirlo.
     """
     who = "identity_payload"
     return {
@@ -135,9 +166,18 @@ def identity_payload(
             text_of(k, f"{who}: chain"): text_of(v, f"{who}: chain[{k!r}]")
             for k, v in sorted(chain.items())
         },
-        "activation": {text_of(k, f"{who}: activation"): v for k, v in sorted(activation.items())},
         "payloads": _payload_inventory(payloads, f"{who}: payloads"),
     }
+
+
+def check_no_activation(data: Mapping[str, Any], label: str) -> None:
+    """Ninguna clave de activación pública puede aparecer en el bundle (C7.2-A.1)."""
+    intrusas = sorted(ACTIVATION_KEYS & set(data))
+    require(
+        not intrusas,
+        f"{label}: {intrusas} es metadata de activación pública y no pertenece al release "
+        f"(vivirá en el public_release_pointer.v1 de C7.5, por referencia al release_id)",
+    )
 
 
 def release_id_for(identity: Mapping[str, Any]) -> tuple[str, str]:
