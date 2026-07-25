@@ -261,6 +261,8 @@ EpiForecast-MX/
   - `benchmark Obesidad --stage smoke|full [--engines a,b] [--allow-dirty]` → un subprocess LIMPIO por motor; el run oficial exige **árbol trackeado limpio** (`--allow-dirty` para dev). Reanudación solo si el job está succeeded + artefactos **re-verificados en disco** (un .pkl no cuenta).
   - `tune Obesidad --stage smoke|full --engines a,b` → congela hiperparámetros por motor (centinelas + rejilla); solo lo soportan los motores que lo declaran (el resto → **rc=3**).
 - **Baselines canónicos** (commits limpios): Seasonal Naive `obesidad_benchmark_full_7952e226c10a` @ `cf97301b`; run conjunto 5 motores `obesidad_benchmark_full_fc70f5f15b7b` @ `1e0709fd`; run 6 motores `6ff688593915` @ `52fc07af`; run 7 motores `b0c4b6e18c50` @ `7ff41b04`; **run vigente 9 motores `obesidad_benchmark_full_301981b4c42c` @ `08d554cd`**. Mediana sMAPE_all: naive 39.5 · median_3y 36.7 · mean_3y 32.5 · **prophet_count 31.9** · ETS 30.0 · **prophet_rate 28.5** · median_5y 28.3 · **mean_5y 28.02** · **Ridge 28.00 (−29.07%)**; en las 64 bases: mean_5y 28.99 < Ridge 29.70 ≈ median_5y 29.71 < prophet_rate 30.24 < ETS 30.50 < prophet_count 32.09. `prophet_rate` es el **mejor en nacional General (19.58) y en MASE_all (0.81)**. Cada motor: 13,312 predicciones base / 23,088 derivadas / 444 métricas / **solo 64 modeladas** / `n_train` por fold 366/418/470/522; los cuatro que ajustan emiten 256 diagnósticos. **Tuning oficial** de Prophet: `obesidad_tune_smoke_3398a12d14c8` @ `a72acf27` (36 configs × 6 centinelas = 216 ajustes por perfil, 36/36 válidas; ambos perfiles congelan additive · cp=0.01 · sp=0.5 · Fourier=5). Los 7 motores previos conservan `metrics.csv` **byte-idéntico**. Verificado reproducible: mismo `run_id` y los 40 artefactos con el mismo digest en otro `runs_root`. **Sigue sin elegirse ganador** (la selección por SeriesKey con umbral de 5% es C5).
+- **Registry**: Obesidad declara `training_engines=(prophet,deepar,ensemble,stacking)` (legacy, NO gobierna el benchmark) y `selection_policy=rolling_cv_v1`, `exposure_source_id=inegi_cpv2020_static`, **`lifecycle=trained`** (C5 cerrado; nunca `published`).
+
 ### Carril N+1 — Anorexia F50 (C6: demostración, NO productiva)
 
 > **F50 es una DEMOSTRACIÓN de N+1**: se dio de alta **sin una línea de Python**, para probar que el
@@ -296,7 +298,6 @@ EpiForecast-MX/
   `scripts/`, frontend y `rolling_cv_v1.yaml` (digest `dd6d4a02…` intacto); los 4 agregados legacy
   byte-idénticos; runs canónicos C5 de Obesidad intactos; estado dirigido de DVC sin cambios.
 
-- **Registry**: Obesidad declara `training_engines=(prophet,deepar,ensemble,stacking)` (legacy, NO gobierna el benchmark) y `selection_policy=rolling_cv_v1`, `exposure_source_id=inegi_cpv2020_static`, `lifecycle=configured`.
 
 ### Convenciones de Codigo
 - **Imports**: Agrupar stdlib, luego terceros, luego locales (isort via Ruff).
