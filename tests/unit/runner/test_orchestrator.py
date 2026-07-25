@@ -153,3 +153,25 @@ def test_require_clean_rechaza_arbol_sucio(monkeypatch):
     monkeypatch.setattr(orch, "_tracked_dirty", lambda: ["src/epiforecast/x.py"])
     with pytest.raises(orch.RunnerError):
         orch.run_command("Obesidad", "benchmark", require_clean=True)
+
+
+def test_guard_rechaza_residuos_de_ejecucion_en_un_dataset(tmp_path):
+    # C7.0: dataset_id y run_id son identidades DISTINTAS. Un run_manifest.json o un jobs/ dentro
+    # del dir de un dataset es ambigüedad pre-C3 y debe fallar cerrado, no colarse.
+    d = tmp_path / "obesidad_deadbeef"
+    d.mkdir()
+    orch.reject_run_residues(d)  # dir limpio: no levanta
+
+    (d / "dataset_manifest.json").write_text("{}")
+    (d / "manifest.json").write_text("{}")
+    (d / "inputs").mkdir()
+    orch.reject_run_residues(d)  # procedencia legítima del constructor: tampoco levanta
+
+    (d / "run_manifest.json").write_text("{}")
+    with pytest.raises(orch.RunnerError, match="artefactos de ejecución"):
+        orch.reject_run_residues(d)
+
+    (d / "run_manifest.json").unlink()
+    (d / "jobs").mkdir()
+    with pytest.raises(orch.RunnerError, match="artefactos de ejecución"):
+        orch.reject_run_residues(d)

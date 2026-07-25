@@ -110,9 +110,32 @@ def _tracked_dirty() -> list[str]:
     return [ln[3:] for ln in out.stdout.splitlines() if ln[:2] != "??"]
 
 
+# Residuos que NO pueden convivir con un dataset: son de una EJECUCIÓN DE MOTORES, no del
+# constructor. Antes de C3 el runner escribía ambos en el mismo dir y un dataset canónico podía
+# quedar con un run_manifest.json `failed` dentro, indistinguible de un benchmark real.
+_RUN_RESIDUES: tuple[str, ...] = ("run_manifest.json", "jobs")
+
+
+def reject_run_residues(dataset_dir: Path) -> None:
+    """Un dir de dataset NO puede contener artefactos de ejecución de motores (ambigüedad pre-C3).
+
+    ``dataset_manifest.json`` (autoridad del dataset), ``manifest.json`` e ``inputs/`` (procedencia
+    del constructor) son legítimos. Un ``run_manifest.json`` o un ``jobs/`` ahí dentro significan que
+    alguien ejecutó motores sobre el dir del dataset: fail-closed, se pone en cuarentena a mano.
+    """
+    encontrados = [n for n in _RUN_RESIDUES if (dataset_dir / n).exists()]
+    if encontrados:
+        raise RunnerError(
+            f"{dataset_dir.name}: el dir del dataset contiene artefactos de ejecución "
+            f"{encontrados}. dataset_id y run_id son identidades DISTINTAS (C3): mueve esos "
+            f"residuos a runs/_quarantine/ antes de continuar."
+        )
+
+
 def validate_data(disease: str, runs_root: Path | None = None) -> DatasetManifest:
     """Construye dataset base + 111 productos bajo runs/<dataset_id>/ y escribe DatasetManifest."""
     result = build_epi_dataset_v2(disease, runs_root=runs_root)
+    reject_run_residues(result.run_dir)
     catalog = load_geo_catalog()
     agg = build_products(result.dataset, catalog, result.config.disease_id)
 
