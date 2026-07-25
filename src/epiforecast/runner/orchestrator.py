@@ -613,8 +613,9 @@ def run_command(
     code_commit = _git_commit()
 
     # El stage `test` (2025) SOLO corre con selección congelada, y tunear con él está prohibido:
-    # sería convertir el conjunto de aceptación en otro conjunto de tuning. El veredicto canónico
-    # no se recalcula; reproducirlo técnicamente sí está permitido y queda registrado.
+    # sería convertir el conjunto de aceptación en otro conjunto de tuning. Una reproducción
+    # técnica recalcula métricas y veredicto y queda registrada, pero no reemplaza la decisión
+    # canónica ni puede influir en selección, umbrales o tuning.
     sel: pd.DataFrame | None = None
     sel_manifest: dict[str, Any] = {}
     if stage == "test":

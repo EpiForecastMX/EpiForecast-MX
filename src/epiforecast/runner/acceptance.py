@@ -5,9 +5,10 @@ El portafolio congelado en desarrollo se confronta con 2025 completo (53 semanas
 ENTERO y la selección final cae al motor de fallback para las 64 bases. Nunca se retunea con 2025 ni
 se cambia una serie por su resultado individual: eso convertiría el test en otro conjunto de tuning.
 
-Contrato real: 2025 NO participa en tuning ni en la selección, y el veredicto canónico no se
-recalcula. Reproducir técnicamente el run (misma selección, mismo código) está permitido y queda
-registrado — lo que está prohibido es usar sus resultados para decidir nada.
+Contrato real: 2025 NO participa en tuning ni en la selección. Reproducir técnicamente el run
+(misma selección, mismo código) SÍ recalcula métricas y veredicto, y está permitido y registrado;
+lo que una reproducción no puede hacer es reemplazar la decisión canónica ni influir en la
+selección, los umbrales o el tuning.
 
 Umbrales y motores viven en la política (``acceptance``); aquí no hay números en código.
 """
@@ -116,8 +117,9 @@ def render_report(
     lines = [
         f"# Gate de aceptación {provenance['fold_id']} — {etiqueta}: portafolio {estado}",
         "",
-        "El conjunto de test NO participa en tuning ni en la selección: el veredicto canónico es",
-        "este y no se recalcula. Reproducir técnicamente el run está permitido y queda registrado.",
+        "El conjunto de test NO participa en tuning ni en la selección. Esta es la decisión",
+        "canónica. Una reproducción técnica recalcula métricas y veredicto y queda registrada, pero",
+        "no reemplaza esta decisión ni puede influir en la selección, los umbrales o el tuning.",
         "",
         f"- Selección congelada: `{provenance['selection_run_id']}` "
         f"(digest `{provenance['selection_digest'][:12]}`)",
