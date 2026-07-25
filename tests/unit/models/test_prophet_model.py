@@ -132,7 +132,7 @@ class TestProphetForecasterInit:
     def test_serie_starts_empty(self, forecaster):
         assert forecaster.serie.empty
 
-    def test_obesidad_usa_contrato_tipado_aunque_config_plana_diga_lo_contrario(self):
+    def test_perfil_de_tasa_usa_contrato_tipado_aunque_config_plana_diga_lo_contrario(self):
         config = {
             **MOCK_CONF,
             "normalizar_tasa": False,
@@ -141,10 +141,10 @@ class TestProphetForecasterInit:
         }
         with patch("epiforecast.models.prophet.model.Prophet"):
             obj = ProphetForecaster(
-                _make_df(padecimiento="Obesidad"),
+                _make_df(padecimiento="Depresión"),
                 sexo="incrementos_hombres",
                 entidad="Jalisco",
-                padecimiento="Obesidad",
+                padecimiento="Depresión",
                 config=config,
             )
         assert obj.normalizar_tasa is True
@@ -224,13 +224,13 @@ class TestAgrupa:
         assert "Total" in obj.serie.columns
 
     def test_registered_rate_rechaza_dataset_sin_exposure(self):
-        df = _make_df(padecimiento="Obesidad").drop(columns="Total")
+        df = _make_df(padecimiento="Depresión").drop(columns="Total")
         with patch("epiforecast.models.prophet.model.Prophet"):
             obj = ProphetForecaster(
                 df,
                 sexo="incrementos_hombres",
                 entidad="Jalisco",
-                padecimiento="Obesidad",
+                padecimiento="Depresión",
                 config=MOCK_CONF,
             )
         with pytest.raises(ValueError, match="exposición"):
@@ -376,7 +376,7 @@ class TestPredict:
         with pytest.raises(RuntimeError, match="fit()"):
             forecaster.predict()
 
-    def test_obesidad_invierte_log_y_tasa_desde_contrato(self):
+    def test_perfil_de_tasa_invierte_log_y_tasa_desde_contrato(self):
         config = {
             **MOCK_CONF,
             "normalizar_tasa": False,
@@ -385,10 +385,10 @@ class TestPredict:
         }
         with patch("epiforecast.models.prophet.model.Prophet"):
             obj = ProphetForecaster(
-                _make_df(padecimiento="Obesidad"),
+                _make_df(padecimiento="Depresión"),
                 sexo="incrementos_hombres",
                 entidad="Jalisco",
-                padecimiento="Obesidad",
+                padecimiento="Depresión",
                 config=config,
             )
         population = 126_014_024.0
@@ -412,13 +412,13 @@ class TestPredict:
 
         assert out["yhat"].iloc[0] == pytest.approx(cases)
 
-    def test_obesidad_no_emite_tasa_como_casos_si_falta_exposure(self):
+    def test_perfil_de_tasa_no_emite_tasa_como_casos_si_falta_exposure(self):
         with patch("epiforecast.models.prophet.model.Prophet"):
             obj = ProphetForecaster(
-                _make_df(padecimiento="Obesidad"),
+                _make_df(padecimiento="Depresión"),
                 sexo="incrementos_hombres",
                 entidad="Jalisco",
-                padecimiento="Obesidad",
+                padecimiento="Depresión",
                 config=MOCK_CONF,
             )
         obj._model = MagicMock()
@@ -426,13 +426,13 @@ class TestPredict:
         with pytest.raises(ValueError, match="requiere exposición"):
             obj.predict(horizon=1)
 
-    def test_obesidad_alinea_exposure_historica_y_futura_por_fecha(self):
+    def test_perfil_de_tasa_alinea_exposure_historica_y_futura_por_fecha(self):
         with patch("epiforecast.models.prophet.model.Prophet"):
             obj = ProphetForecaster(
-                _make_df(padecimiento="Obesidad"),
+                _make_df(padecimiento="Depresión"),
                 sexo="incrementos_hombres",
                 entidad="Jalisco",
-                padecimiento="Obesidad",
+                padecimiento="Depresión",
                 config=MOCK_CONF,
             )
         dates = pd.date_range("2025-01-06", periods=3, freq="W-MON")
@@ -503,7 +503,7 @@ def test_cv_alinea_exposure_por_fecha_y_evalua_en_casos():
         tasa_por=100_000.0,
         log_transform=True,
         col_poblacion="Total",
-        transform_contract=resolve_transform_contract("Obesidad", "prophet"),
+        transform_contract=resolve_transform_contract("Depresión", "prophet"),
     )
 
     assert metrics["rmse"] == pytest.approx(0.0)
@@ -559,7 +559,7 @@ def test_eval_rapida_count_log_evalua_en_casos_absolutos():
     assert metrics["mae"] == pytest.approx(25.0)
 
 
-def test_eval_rapida_alinea_exposure_y_evalua_obesidad_en_casos():
+def test_eval_rapida_alinea_exposure_y_evalua_perfil_de_tasa_en_casos():
     from epiforecast.models.prophet.data_prep import eval_rapida
 
     dates = pd.date_range("2025-01-06", periods=4, freq="W-MON")
@@ -587,7 +587,7 @@ def test_eval_rapida_alinea_exposure_y_evalua_obesidad_en_casos():
         tasa_por=100_000.0,
         entidad="Nacional",
         sexo="incrementos_hombres",
-        transform_contract=resolve_transform_contract("Obesidad", "prophet"),
+        transform_contract=resolve_transform_contract("Depresión", "prophet"),
     )
 
     assert metrics["rmse"] == pytest.approx(0.0, abs=1e-12)
@@ -700,3 +700,22 @@ class TestBuildHolidays:
         ):
             obj = ProphetForecaster(df, sexo="incrementos_hombres", entidad="Jalisco")
         assert "cambio_oaxaca" not in obj.fechas_atipicas["holiday"].values
+
+
+class TestObesidadFueraDelCarrilLegacy:
+    """C7.1: Obesidad no declara motores legacy, así que el entrenador legacy no la instancia."""
+
+    def test_prophet_legacy_no_puede_construirse_para_obesidad(self):
+        from epiforecast.artifacts.transforms import TransformContractError
+
+        with (
+            patch("epiforecast.models.prophet.model.Prophet"),
+            pytest.raises(TransformContractError, match="no está declarado para entrenamiento"),
+        ):
+            ProphetForecaster(
+                _make_df(padecimiento="Obesidad"),
+                sexo="incrementos_hombres",
+                entidad="Jalisco",
+                padecimiento="Obesidad",
+                config=MOCK_CONF,
+            )

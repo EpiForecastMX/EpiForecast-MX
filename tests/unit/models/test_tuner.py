@@ -49,10 +49,11 @@ class TestGridKeyMap:
         assert _GRID_KEY_MAP["Parkinson"] == "parkinson"
 
     def test_all_diseases_mapped(self):
-        # Derivado del registry: 3 neuro + Dengue + Obesidad (E66).
-        assert len(_GRID_KEY_MAP) == 5
+        # Derivado del registry: 3 neuro + Dengue. Obesidad salió del mapa en C7.1 al dejar de
+        # declarar prophet_grid_key: no entrena Prophet legacy, su rejilla vive en el runner.
+        assert len(_GRID_KEY_MAP) == 4
         assert _GRID_KEY_MAP["Dengue"] == "dengue"
-        assert _GRID_KEY_MAP["Obesidad"] == "obesidad"
+        assert "Obesidad" not in _GRID_KEY_MAP
 
 
 class TestLoadGrid:

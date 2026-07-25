@@ -78,7 +78,7 @@ perfiles:
 padecimientos:
   - {id: cfg, data_name: Cfg, artifact_key: Cfg, slug: cfg, cie_codes: [C9],
      profile: cronica, lifecycle: configured, selection_policy: rolling_cv_v1,
-     eligible_engines: [prophet], training_engines: [prophet]}
+     eligible_engines: [prophet, deepar], training_engines: [prophet, deepar]}
 """
 
 _YAML_BAD_SLUG = """
@@ -397,10 +397,45 @@ def test_unlock_falla_post_commit_no_convierte_publicacion_en_error(tmp_path, mo
     assert dest.exists()
 
 
-def test_main_rc0_aunque_teardown_falle(tmp_path, monkeypatch):
-    """main jamás dice 'no publicado' (rc=4) cuando el replace SÍ ocurrió."""
+@pytest.fixture
+def cfg_preliminar(tmp_path, monkeypatch):
+    """Padecimiento sintético `configured` con motores legacy, inyectado en el registry.
+
+    Obesidad ya no declara motores legacy (C7.1), así que el carril viejo la rechaza —y debe
+    seguir haciéndolo—. El contrato que estas pruebas protegen (teardown, señal y E2E preliminar)
+    no es sobre Obesidad, sino sobre CUALQUIER padecimiento no publicado, así que se ejercita con
+    uno sintético por la misma ruta productiva del selector.
+    """
+    entrada = load_registry_from_text(tmp_path, _YAML_CONFIGURED).get("Cfg")
     monkeypatch.setattr(mod, "ROOT", tmp_path)
+    monkeypatch.setattr(mod.registry, "require", lambda name: entrada)
+    return entrada
+
+
+def _preliminar_de(root: Path, slug: str) -> Path:
+    return (
+        root
+        / "reports"
+        / "ProdDetails"
+        / "_preliminar_NO_GO"
+        / f"produccion_{slug}_PRELIMINAR.csv"
+    )
+
+
+def test_el_carril_legacy_rechaza_a_obesidad(tmp_path, monkeypatch):
+    """Obesidad no tiene motores legacy: el selector viejo no puede producir nada para ella."""
+    monkeypatch.setattr(mod, "ROOT", tmp_path)
+    obesidad = mod.registry.require("Obesidad")
+    assert obesidad.eligible_engines == () and obesidad.training_engines == ()
     _write_completo(tmp_path, "Prophet", "Obesidad", "prophet")
+    # rc=1 es el contrato observado: "Ningún motor entrenado", no un fallo genérico.
+    assert mod.main(["--disease", "Obesidad", "--allow-preliminary"]) == 1
+    assert not _preliminar_de(tmp_path, obesidad.slug).exists()
+
+
+def test_main_rc0_aunque_teardown_falle(tmp_path, monkeypatch, cfg_preliminar):
+    """main jamás dice 'no publicado' (rc=4) cuando el replace SÍ ocurrió."""
+    _write_completo(tmp_path, "Prophet", "Cfg", "prophet")
     real_close = mod.os.close
 
     def close_then_raise(fd):
@@ -408,17 +443,10 @@ def test_main_rc0_aunque_teardown_falle(tmp_path, monkeypatch):
         raise OSError("close boom")
 
     monkeypatch.setattr(mod.os, "close", close_then_raise)
-    rc = mod.main(["--disease", "Obesidad", "--allow-preliminary"])
+    rc = mod.main(["--disease", "Cfg", "--allow-preliminary"])
     monkeypatch.setattr(mod.os, "close", real_close)
     assert rc == 0
-    preliminar = (
-        tmp_path
-        / "reports"
-        / "ProdDetails"
-        / "_preliminar_NO_GO"
-        / "produccion_obesidad_PRELIMINAR.csv"
-    )
-    assert preliminar.exists()  # publicado y reportado como éxito
+    assert _preliminar_de(tmp_path, "cfg").exists()  # publicado y reportado como éxito
 
 
 def test_signal_post_commit_no_propaga(tmp_path, monkeypatch):
@@ -437,9 +465,8 @@ def test_signal_post_commit_no_propaga(tmp_path, monkeypatch):
     assert dest.exists()  # commit consumado
 
 
-def test_main_rc0_aunque_teardown_reciba_senal(tmp_path, monkeypatch):
-    monkeypatch.setattr(mod, "ROOT", tmp_path)
-    _write_completo(tmp_path, "Prophet", "Obesidad", "prophet")
+def test_main_rc0_aunque_teardown_reciba_senal(tmp_path, monkeypatch, cfg_preliminar):
+    _write_completo(tmp_path, "Prophet", "Cfg", "prophet")
     real_fsync, calls = mod.os.fsync, {"n": 0}
 
     def fake(fd):
@@ -449,15 +476,8 @@ def test_main_rc0_aunque_teardown_reciba_senal(tmp_path, monkeypatch):
         return real_fsync(fd)
 
     monkeypatch.setattr(mod.os, "fsync", fake)
-    assert mod.main(["--disease", "Obesidad", "--allow-preliminary"]) == 0
-    preliminar = (
-        tmp_path
-        / "reports"
-        / "ProdDetails"
-        / "_preliminar_NO_GO"
-        / "produccion_obesidad_PRELIMINAR.csv"
-    )
-    assert preliminar.exists()
+    assert mod.main(["--disease", "Cfg", "--allow-preliminary"]) == 0
+    assert _preliminar_de(tmp_path, "cfg").exists()
 
 
 # ── Round-trip: valores CSV válidos no dependen de inferencia automática ──
@@ -671,21 +691,14 @@ def test_doce_writers_concurrentes_mkdir_y_lock_reales(tmp_path):
 
 
 # ── E2E ──
-def test_e2e_preliminar_escribe_schema_honesto(tmp_path, monkeypatch):
-    monkeypatch.setattr(mod, "ROOT", tmp_path)
-    _write_completo(tmp_path, "Prophet", "Obesidad", "prophet")
-    _write_completo(tmp_path, "Deepar", "Obesidad", "deepar")  # case real: Deepar_, no DeepAR_
+def test_e2e_preliminar_escribe_schema_honesto(tmp_path, monkeypatch, cfg_preliminar):
+    _write_completo(tmp_path, "Prophet", "Cfg", "prophet")
+    _write_completo(tmp_path, "Deepar", "Cfg", "deepar")  # case real: Deepar_, no DeepAR_
 
-    assert mod.main(["--disease", "Obesidad", "--allow-preliminary"]) == 0
+    assert mod.main(["--disease", "Cfg", "--allow-preliminary"]) == 0
 
-    canonical = tmp_path / "reports" / "ProdDetails" / "produccion_obesidad.csv"
-    preliminar = (
-        tmp_path
-        / "reports"
-        / "ProdDetails"
-        / "_preliminar_NO_GO"
-        / "produccion_obesidad_PRELIMINAR.csv"
-    )
+    canonical = tmp_path / "reports" / "ProdDetails" / "produccion_cfg.csv"
+    preliminar = _preliminar_de(tmp_path, "cfg")
     assert not canonical.exists()
     assert preliminar.exists()
     df = pd.read_csv(preliminar)

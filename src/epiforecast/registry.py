@@ -12,7 +12,7 @@ por este registry (EPIC 2), preservando los bordes de ``None``.
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import math
 from pathlib import Path
 from typing import Any, cast
@@ -101,9 +101,70 @@ _DISEASE_KEYS = frozenset(
         "aggregate_national",
         "gallery_enabled",
         "web",
+        "artifact_source",
     }
 )
 _LIFECYCLES = frozenset({"configured", "trained", "published"})
+
+# ── Backends de artefactos (C7.1) ──────────────────────────────────────────────────────────────
+# De DÓNDE salen los modelos de un padecimiento. Existir un directorio NO es evidencia: antes de
+# C7.1 el doctor daba verde a Obesidad por 790 PKL preliminares del carril viejo que no son sus
+# modelos finales. Cada backend declara su propia prueba de identidad.
+BACKEND_LEGACY = "legacy_models"  # models/<engine>/<artifact_key>/ (los 4 publicados)
+BACKEND_RUNNER_RUNS = "runner_runs"  # refit+forecast sellados bajo runs_root; SOLO para `trained`
+BACKEND_RUNNER_RELEASE = (
+    "runner_release"  # release_manifest.v1 restaurable; exigido por `published`
+)
+ARTIFACT_BACKENDS = frozenset({BACKEND_LEGACY, BACKEND_RUNNER_RUNS, BACKEND_RUNNER_RELEASE})
+_RUNNER_RUNS_KEYS = frozenset(
+    {"backend", "refit_run_id", "forecast_run_id", "policy_digest", "final_selection_digest"}
+)
+_RUNNER_RELEASE_KEYS = frozenset({"backend", "release_id"})
+_BACKEND_KEYS: dict[str, frozenset[str]] = {
+    BACKEND_LEGACY: frozenset({"backend"}),
+    BACKEND_RUNNER_RUNS: _RUNNER_RUNS_KEYS,
+    BACKEND_RUNNER_RELEASE: _RUNNER_RELEASE_KEYS,
+}
+# Matriz lifecycle × backend. `runner_runs` describe artefactos locales sin sede distribuible:
+# vale para el estado en que se demuestra el entrenamiento, no para publicar. Publicar exige un
+# release restaurable. `legacy_models` es el carril histórico y admite cualquier estado.
+_BACKEND_LIFECYCLES: dict[str, frozenset[str]] = {
+    BACKEND_LEGACY: _LIFECYCLES,
+    BACKEND_RUNNER_RUNS: frozenset({"trained"}),
+    BACKEND_RUNNER_RELEASE: frozenset({"trained", "published"}),
+}
+
+
+@dataclass(frozen=True, slots=True)
+class ArtifactSource:
+    """De dónde salen los modelos de un padecimiento. Inmutable y validado al cargar (C7.1)."""
+
+    backend: str
+    refit_run_id: str | None = None
+    forecast_run_id: str | None = None
+    policy_digest: str | None = None
+    final_selection_digest: str | None = None
+    release_id: str | None = None
+
+    @property
+    def is_legacy(self) -> bool:
+        return self.backend == BACKEND_LEGACY
+
+    def to_dict(self) -> dict[str, str]:
+        return {
+            k: v
+            for k, v in (
+                ("backend", self.backend),
+                ("refit_run_id", self.refit_run_id),
+                ("forecast_run_id", self.forecast_run_id),
+                ("policy_digest", self.policy_digest),
+                ("final_selection_digest", self.final_selection_digest),
+                ("release_id", self.release_id),
+            )
+            if v is not None
+        }
+
+
 _BOOL_PROFILE_KEYS = _PROFILE_KEYS - {
     "cohorte_id",
     "unidad",
@@ -153,6 +214,14 @@ class Disease:
     web: Mapping[str, Any]
     profile: Profile
     exposure_source_id: str | None = None  # solo EpiDatasetV2 lo exige; legacy = None
+    # De dónde salen los modelos (C7.1). Sin declarar = backend legacy.
+    artifact_source: ArtifactSource = field(
+        default_factory=lambda: ArtifactSource(backend=BACKEND_LEGACY)
+    )
+
+    @property
+    def artifact_backend(self) -> str:
+        return self.artifact_source.backend
 
 
 @dataclass(frozen=True)
@@ -225,6 +294,57 @@ def _build_profiles(raw: Mapping[str, Any]) -> dict[str, Profile]:
     return profiles
 
 
+def _build_artifact_source(body: Mapping[str, Any], lifecycle: str) -> ArtifactSource:
+    """Valida ``artifact_source`` fail-closed. Sin declararlo, el backend es el legacy."""
+    disease_id = body.get("id")
+    raw = body.get("artifact_source")
+    if raw is None:
+        if lifecycle == "published":  # los publicados actuales viven en el carril legacy
+            return ArtifactSource(backend=BACKEND_LEGACY)
+        return ArtifactSource(backend=BACKEND_LEGACY)
+    if not isinstance(raw, Mapping):
+        raise RegistryError(f"'{disease_id}': artifact_source debe ser un mapeo")
+
+    backend = raw.get("backend")
+    if not isinstance(backend, str) or backend not in ARTIFACT_BACKENDS:
+        raise RegistryError(
+            f"'{disease_id}': artifact_source.backend desconocido {backend!r} "
+            f"(esperado {sorted(ARTIFACT_BACKENDS)})"
+        )
+    esperadas = _BACKEND_KEYS[backend]
+    faltan, sobran = esperadas - set(raw), set(raw) - esperadas
+    if faltan or sobran:
+        raise RegistryError(
+            f"'{disease_id}': artifact_source de {backend!r} con claves faltantes "
+            f"{sorted(faltan)} y desconocidas {sorted(sobran)}"
+        )
+    for clave, valor in raw.items():
+        # Un valor no-string (int, bool, lista, None) es una identidad inválida, no algo a coercer.
+        if not isinstance(valor, str):
+            raise RegistryError(
+                f"'{disease_id}': artifact_source.{clave} debe ser string, no "
+                f"{type(valor).__name__}"
+            )
+        if not valor.strip():
+            raise RegistryError(f"'{disease_id}': artifact_source.{clave} vacío")
+    permitidos = _BACKEND_LIFECYCLES[backend]
+    if lifecycle not in permitidos:
+        raise RegistryError(
+            f"'{disease_id}': backend {backend!r} no es admisible con lifecycle {lifecycle!r} "
+            f"(permitidos {sorted(permitidos)})"
+        )
+    if (
+        lifecycle == "published"
+        and backend != BACKEND_RUNNER_RELEASE
+        and backend != BACKEND_LEGACY
+    ):
+        raise RegistryError(
+            f"'{disease_id}': lifecycle=published exige {BACKEND_LEGACY!r} o "
+            f"{BACKEND_RUNNER_RELEASE!r}"
+        )
+    return ArtifactSource(**{str(k): str(v) for k, v in raw.items()})
+
+
 def _build_disease(body: Mapping[str, Any], profiles: Mapping[str, Profile]) -> Disease:
     unknown = set(body) - _DISEASE_KEYS
     if unknown:
@@ -258,6 +378,7 @@ def _build_disease(body: Mapping[str, Any], profiles: Mapping[str, Profile]) -> 
         aggregate_national=bool(body.get("aggregate_national", False)),
         gallery_enabled=bool(body.get("gallery_enabled", True)),
         web=dict(body.get("web", {})),
+        artifact_source=_build_artifact_source(body, lifecycle),
         profile=profiles[pname],
         exposure_source_id=(body.get("exposure_source_id") or None),
     )

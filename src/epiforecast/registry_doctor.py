@@ -36,12 +36,22 @@ def _grid_keys(model_file: str, grid_key_name: str) -> set[str]:
     return set((data.get(grid_key_name) or {}).keys())
 
 
+def _project_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
+
 def _models_dir() -> Path:
-    root = Path(__file__).resolve().parents[2]
+    root = _project_root()
     return (root / "models") if (root / "models").exists() else Path("models")
 
 
-def diagnose(name: str | None = None, check_artifacts: bool = False) -> list[Problem]:
+def diagnose(
+    name: str | None = None,
+    check_artifacts: bool = False,
+    *,
+    runs_root: Path | None = None,
+    models_root: Path | None = None,
+) -> list[Problem]:
     """Lista de problemas (vacía = OK). ``name=None`` diagnostica todos los padecimientos."""
     problems: list[Problem] = []
     targets = [registry.require(name)] if name else list(registry.get_registry().diseases)
@@ -74,12 +84,74 @@ def diagnose(name: str | None = None, check_artifacts: bool = False) -> list[Pro
                 problems.append(
                     Problem(d.id, "error", f"motor elegible '{e}' no está en training_engines")
                 )
-        # Artefactos (solo si se pide y el padecimiento debería tener modelos).
+        # Artefactos (solo si se pide y el padecimiento debería tener modelos). El backend decide
+        # QUÉ es evidencia: existir un directorio no lo es (C7.1).
         if check_artifacts and d.lifecycle in ("trained", "published"):
-            for e in d.training_engines:
-                mdir = _models_dir() / e / d.artifact_key
-                if not mdir.exists():
-                    problems.append(
-                        Problem(d.id, "error", f"models/{e}/{d.artifact_key}/ no existe")
-                    )
+            problems.extend(_diagnose_artifacts(d, runs_root, models_root))
+    return problems
+
+
+# ── Verificación de artefactos por backend (C7.1) ──────────────────────────────────────────────
+def _runs_root() -> Path:
+    return _project_root() / "runs"
+
+
+def _diagnose_artifacts(
+    d: registry.Disease, runs_root: Path | None = None, models_root: Path | None = None
+) -> list[Problem]:
+    """Despacha al backend declarado. Un backend del runner NUNCA acepta models/<motor>/."""
+    backend = d.artifact_backend
+    if backend == registry.BACKEND_LEGACY:
+        base = models_root or _models_dir()
+        return [
+            Problem(d.id, "error", f"models/{e}/{d.artifact_key}/ no existe")
+            for e in d.training_engines
+            if not (base / e / d.artifact_key).exists()
+        ]
+    if backend == registry.BACKEND_RUNNER_RUNS:
+        return _diagnose_runner_runs(d, runs_root or _runs_root())
+    return [
+        Problem(
+            d.id,
+            "error",
+            f"backend {backend!r}: verificación no implementada todavía (C7.2 la define)",
+        )
+    ]
+
+
+def _policy_path(d: registry.Disease) -> Path:
+    return _project_root() / "config" / "evaluation" / f"{d.selection_policy}.yaml"
+
+
+def _diagnose_runner_runs(d: registry.Disease, runs_root: Path) -> list[Problem]:
+    """Adaptador: delega TODO el contrato en el validador del runner y traduce su error.
+
+    El doctor no vuelve a implementar la identidad de los runs sellados (Acción 3): existe una
+    sola implementación —``runner.artifact_validation``— y aquí solo se convierte
+    ``ArtifactValidationError`` en ``Problem``, para que un artefacto roto nunca escape como
+    traceback.
+    """
+    from epiforecast.runner.artifact_identity import ArtifactValidationError
+    from epiforecast.runner.artifact_validation import validate_runner_runs
+
+    problems: list[Problem] = []
+    src = d.artifact_source
+    try:
+        validate_runner_runs(
+            disease_id=d.id,
+            refit_run_id=str(src.refit_run_id),
+            forecast_run_id=str(src.forecast_run_id),
+            policy_digest=str(src.policy_digest),
+            final_selection_digest=str(src.final_selection_digest),
+            runs_root=runs_root,
+            policy_path=_policy_path(d),
+        )
+    except ArtifactValidationError as exc:
+        problems.append(Problem(d.id, "error", str(exc)))
+
+    # Los PKL preliminares del carril viejo no son evidencia y no deben mirarse siquiera.
+    if d.training_engines or d.eligible_engines:
+        problems.append(
+            Problem(d.id, "warning", "declara motores legacy pese a usar un backend del runner")
+        )
     return problems

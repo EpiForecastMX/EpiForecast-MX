@@ -91,8 +91,10 @@ def test_obesidad_configurada_perfil_propio():
     assert obe.lifecycle == "trained"  # C5 cerrado; NUNCA published (ver test_lifecycle_trained)
     assert obe.profile.cohorte_id == "obesidad"  # ni neuro ni conteos
     assert obe.batch == "standalone"
-    assert set(obe.eligible_engines) == {"prophet", "deepar", "ensemble", "stacking"}
-    assert "nbglm" not in obe.eligible_engines
+    # C7.1: el carril nuevo no entrena motores legacy, así que Obesidad no declara ninguno; su
+    # backend de artefactos son los runs sellados del runner.
+    assert obe.training_engines == () and obe.eligible_engines == ()
+    assert obe.artifact_backend == registry.BACKEND_RUNNER_RUNS
     # perfil crónico: Prophet/DeepAR en tasa; Ensemble/Stacking conservan conteos.
     assert obe.profile.rate_scale == 100_000
     assert registry.trait("Obesidad", "prophet", "rate") is True
