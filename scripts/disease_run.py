@@ -5,7 +5,7 @@ Subcomandos:
   benchmark <pad> --stage smoke|full [--engines a,b]   subprocess limpio por motor (rc=2 sin adapter)
   tune <pad> --stage smoke|full [--engines a,b]        congela hiperparámetros (centinelas+rejilla)
   select <pad> --benchmark-run <run_id>                congela la selección por SeriesKey
-  benchmark <pad> --stage test --selection <run_id>    abre 2025 UNA vez (gate de aceptación)
+  benchmark <pad> --stage test --selection <run_id>    gate de aceptación 2025 (selección congelada)
   refit <pad> --acceptance-run <run_id>                refit final (64 modelos)
   forecast <pad> --refit-run <run_id> --horizon 52     forecast preliminar (64→111)
 

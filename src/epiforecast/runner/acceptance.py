@@ -1,9 +1,13 @@
-"""F2/C5.2 — gate de aceptación del stage ``test`` (2025), evaluado UNA sola vez.
+"""F2/C5.2 — gate de aceptación del stage ``test`` (2025).
 
 El portafolio congelado en desarrollo se confronta con 2025 completo (53 semanas) contra un motor de
 **control** declarado. El veredicto es global y binario: si el portafolio no pasa, se rechaza
 ENTERO y la selección final cae al motor de fallback para las 64 bases. Nunca se retunea con 2025 ni
 se cambia una serie por su resultado individual: eso convertiría el test en otro conjunto de tuning.
+
+Contrato real: 2025 NO participa en tuning ni en la selección, y el veredicto canónico no se
+recalcula. Reproducir técnicamente el run (misma selección, mismo código) está permitido y queda
+registrado — lo que está prohibido es usar sus resultados para decidir nada.
 
 Umbrales y motores viven en la política (``acceptance``); aquí no hay números en código.
 """

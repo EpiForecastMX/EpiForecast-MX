@@ -50,7 +50,7 @@ COMMANDS: frozenset[str] = frozenset(
 # Stages de ejecución (distinto stage → distinto run_id).
 STAGE_SMOKE = "smoke"
 STAGE_FULL = "full"
-STAGE_TEST = "test"  # 2025: se abre UNA vez, solo con selección congelada
+STAGE_TEST = "test"  # 2025: solo con selección congelada; no participa en tuning ni selección
 STAGES: frozenset[str] = frozenset({STAGE_SMOKE, STAGE_FULL, STAGE_TEST})
 
 

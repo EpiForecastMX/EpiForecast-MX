@@ -612,8 +612,9 @@ def run_command(
     used_engines = engines if engines else candidate_engines(policy_name)
     code_commit = _git_commit()
 
-    # El stage `test` (2025) se abre UNA vez y SOLO con selección congelada; tunear con él está
-    # prohibido: sería convertir el conjunto de aceptación en otro conjunto de tuning.
+    # El stage `test` (2025) SOLO corre con selección congelada, y tunear con él está prohibido:
+    # sería convertir el conjunto de aceptación en otro conjunto de tuning. El veredicto canónico
+    # no se recalcula; reproducirlo técnicamente sí está permitido y queda registrado.
     sel: pd.DataFrame | None = None
     sel_manifest: dict[str, Any] = {}
     if stage == "test":
