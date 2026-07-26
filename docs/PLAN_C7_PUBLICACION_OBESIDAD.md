@@ -6402,3 +6402,94 @@ Deuda     SIGSEGV (repo principal) · drift del rag_index publicado (dashboard),
 ```
 
 _Respuesta:_
+
+---
+
+### Ronda 33 — Auditoría de los dos rangos de C7.3 — 2026-07-26
+
+Auditados `backend 5286543c..e45c2ee4` y `dashboard 179bbe36..4c99114b`. Sin push ni deploy.
+
+#### Superficie · **PASS en ambos**
+
+```text
+backend    3 commits ·  7 archivos · 1,115 inserciones · 0 binarios
+dashboard  1 commit  ·  6 archivos ·   459 inserciones · 0 binarios
+```
+
+Backend: cero rutas de `artifacts/`, `runs/`, `models/`, `reports/`, `data/`, `epibot/`, `config/`
+o `.dvc`. Dashboard: cero cambios en `knowledge.json`, `rag_index.json`, HTML, CSS, netlify,
+`bento.json`, `hero_series.json` ni `zoom_series.json`. `git diff --check` PASS en ambos.
+
+En Git, bajo `artifacts/` sólo viven dos archivos —el `.dvc` y el `.gitignore`—: ni uno de los 150
+del bundle.
+
+#### Exposición pública · **PASS**
+
+```text
+obesidad            trained · runner_release
+published_members   Depresión, Parkinson, Alzheimer, Dengue
+web · epibot · reports · tableau   los mismos cuatro, en los cuatro canales
+menciones a "obesidad" en knowledge.json / rag_index.json / index.html / epibot/index.html:  0
+agregados legacy    cb5be395 · 96791595 · 1d2cf0a7 · ac97dc8e   sin cambio
+ProdDetails         0 cambios
+```
+
+#### Regresiones · **PASS**
+
+Sólo dos archivos existentes se tocaron en todo C7.3, y ambos de forma acotada:
+
+- `release_reproduce.py`: rename `_read_bundled` → `read_bundled_frame`, con sus dos llamadas
+  actualizadas y **cero referencias al nombre viejo** en todo el repo;
+- `corpus.mjs`: `buildChunks()` gana un parámetro **opcional**. Sus tres llamadores existentes
+  (`rag_verify`, `build_rag_index`, y el nuevo `rag_staging`) siguen invocándolo sin argumentos, y
+  el corpus por defecto es idéntico chunk a chunk.
+
+Suites: 604 del runner+publicación en el backend, 19/19 en el dashboard, doctor completo rc=0.
+
+#### R33-P0 — Un contrato entre repos que nadie verificaba
+
+El compilador emite `schema: "publication_shard.v1"` en `shard_manifest.json` y en
+`web/manifest.json`. **El consumidor del dashboard nunca lo miraba.**
+
+Importa más que dentro de un mismo repo: productor y consumidor viven en repositorios distintos,
+evolucionan en commits distintos y se revisan por separado. Sin esa igualdad, un cambio de formato se
+habría manifestado como un error confuso aguas abajo —o peor, como una lectura equivocada en
+silencio— en vez de decir «este shard es de otra versión». Es exactamente la lección de C7.2-A.2,
+ahora cruzando el límite entre repos, donde nadie la había aplicado.
+
+Corregido en el dashboard (`d5ead880`): ambos manifiestos se comprueban contra `SHARD_SCHEMA`, con
+tres pruebas nuevas —otro schema, sin schema, y el positivo—. Verificado extremo a extremo con el
+shard real: schema aceptado, 5,772 filas, `candidate=true`.
+
+#### Dependencias entre repos · **PASS, sin acoplamiento de rutas**
+
+```text
+dashboard → repo principal   ninguna ruta: el staging root llega por argumento
+repo principal → dashboard   ninguna referencia a epibot/, rag_index ni al repo
+único vínculo                el schema del shard, ahora verificado en ambos lados
+```
+
+Ninguno de los dos repos puede romper al otro por moverse de sitio; sólo por cambiar el contrato, y
+eso ahora se nota.
+
+#### Deuda preexistente (no de C7.3, verificada con los cambios en stash)
+
+```text
+backend    SIGSEGV  deepar_smoke + pipeline_e2e en un solo proceso
+dashboard  DRIFT    454 chunks de corpus vs 452 en el rag_index publicado (19 sin cubrir)
+dashboard  npm test answerTrainingConfig 9/10 · null 46/49
+```
+
+Los tres bloquean merge/publicación, no este checkpoint.
+
+#### Estado
+
+```text
+Backend    e45c2ee4 · ahead 3 de origin
+Dashboard  d5ead880 · rama feat/c73-candidate-staging · ahead 2 de main
+Obesidad   trained · runner_release · invisible en ambos repos
+Canales    prospective_validation y weekly_validation intactos: C7.5
+Sin push, sin deploy, sin DVC, sin lifecycle
+```
+
+_Respuesta:_
