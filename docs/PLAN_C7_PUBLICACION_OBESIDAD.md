@@ -8411,3 +8411,78 @@ C7.4        CONGELADO · INCOMPLETE 0/4 · gate_digest 5bc39aa5d44f5e62… intac
 ```
 
 _Respuesta:_
+
+---
+
+### Ronda 51 — `GEMINI_API_KEY` disponible: qué desbloquea y qué no — 2026-07-26
+
+#### La clave llegó en la forma correcta
+
+```text
+GEMINI_API_KEY   presente como secreto de entorno · longitud 39 · prefijo AIza…
+```
+
+No se imprime, no se escribe y no se registra aquí su valor. Higiene comprobada:
+
+| comprobación | resultado |
+| --- | --- |
+| archivos trackeados que la mencionan | 9, todos **por nombre de variable** (netlify.toml, scripts de RAG, package.json, README) |
+| valores con forma de key en el árbol trackeado | **ninguno** |
+| `.env` u otros secretos sin trackear | ninguno |
+
+#### Pero la clave no desbloquea el RAG por sí sola
+
+El plan puso tres cosas por delante, y siguen vigentes:
+
+1. **auditar `98404fa0`** — la Ronda 47 dice literalmente: «Sólo después de auditar ese commit se
+   autorizará `C7.6-RAG-CONTRACT`»;
+2. **47.2, traza del handler real** — sin verificar `expectedHandler`, el 616/616 prueba salidas
+   pero **no enrutamiento**. Montar el RAG sobre una suite que no demuestra quién respondió
+   mezclaría dos fuentes de fallo, que es justo lo que la Ronda 47 quiso evitar;
+3. **47.3, integrar `test:cases:verify`** en los comandos oficiales.
+
+Y cuando toque el RAG, el orden del propio plan es **`C7.6-RAG-CONTRACT` primero** —presencia,
+alineación y vector no vacío por chunk, fallando cerrado ante API, rate-limit o vector vacío— y
+**sólo después** regenerar el índice público. Al revés produciría otra vez un índice cuyo verde no
+prueba nada: el mismo patrón que llevamos toda la fase corrigiendo.
+
+#### Preguntas abiertas, para que las contestes aquí
+
+**P1 — ¿Cuál ejecuto ahora?**
+
+| opción | qué es | por qué elegirla |
+| --- | --- | --- |
+| **a** | auditar `98404fa0` | es el gate formal que el plan exige antes del RAG; rápido |
+| **b** | 47.2, traza del handler real | cierra el hallazgo R47-P0, el mayor de la readiness |
+| **c** | 47.3, integrar los checks en los comandos | pequeño; deja `npm test` verificando el fixture solo |
+| **d** | `GO C7.6-RAG-CONTRACT` | salta al RAG asumiendo el orden alterado |
+
+**P2 — Si es (d), ¿confirmas explícitamente que se altera el orden** y que el contrato del RAG se
+implementa **antes** de regenerar el índice público, no después?
+
+**P3 — Push.** Hay trabajo local sin subir en los dos repos:
+
+```text
+backend     e68c075c · ahead 5 de origin/feat/registry-padecimientos-obesidad
+dashboard   98404fa0 · ahead 4 de main (rama feat/c73-candidate-staging, ya remota)
+```
+
+¿Autorizas alguno, ambos o ninguno todavía? Cada uno necesita su literal.
+
+**P4 — Alcance de la regeneración del RAG, cuando llegue.** El drift son 19 chunks de fuentes
+legacy (validación semanal 12, Dengue 3, datos del proyecto 2, Avance 1 y 2). Regenerar el índice
+**público** toca la superficie publicada del dashboard. ¿Se hace sobre la rama candidate y se
+revisa por diff, o prefieres que quede en staging hasta la activación?
+
+#### Estado
+
+```text
+Backend     e68c075c · limpio · ahead 5 · SIN PUSH
+Dashboard   98404fa0 · limpio · 616/616 · 19/19 · superficie intacta · ahead 4 · SIN PUSH
+Readiness   SIGSEGV ✓ · npm test ✓ · autoridad del fixture ✓ · traza de handler ✗ · RAG ✗
+Clave       disponible como secreto de entorno · sin usar todavía
+Obesidad    trained · runner_release · puntero inactivo · 0 menciones públicas · NO-GO
+C7.4        CONGELADO · INCOMPLETE 0/4 · gate_digest 5bc39aa5d44f5e62… intacto
+```
+
+_Respuesta:_
