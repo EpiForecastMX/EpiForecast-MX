@@ -6554,3 +6554,96 @@ Siguiente  C7.4 (gate prospectivo de cuatro semanas), con su propio GO
 ```
 
 _Respuesta:_
+
+---
+
+### Ronda 35 — C7.4: gate prospectivo congelado · veredicto INCOMPLETE — 2026-07-26
+
+#### Veredicto
+
+```text
+INCOMPLETE — 0 de 4 semanas objetivo válidas
+```
+
+No es un fallo del gate ni del release: **la verdad todavía no existe**.
+
+```text
+último boletín fuente        2026-W27  →  periodo objetivo 2026-W26 (lag de observación 1 sem)
+última observación sellada   2026-W26  ==  el ORIGEN del forecast congelado
+semanas objetivo             2026-W27 · W28 · W29 · W30
+semanas con verdad           ninguna
+```
+
+La primera semana del gate, 2026-W27, necesita el boletín de la semana fuente W28. **Cuatro semanas
+epidemiológicas consecutivas son cuatro boletines: es tiempo de calendario y no se puede comprimir.**
+El propio plan lo contempla: «INCOMPLETE: faltan semanas válidas; C7 espera».
+
+#### Lo que sí se hizo, y era lo urgente: CONGELAR
+
+Congelar después de ver resultados no vale nada. Por eso el congelamiento se ejecutó hoy, con cero
+semanas de verdad disponibles:
+
+```text
+schema                      prospective_gate.v1
+release                     obesidad_release_2517e7858901 · origen 2026-W26 · horizonte 52
+candidate_forecast_digest   e7e2f5eef2efe7fc1071a1adbcc7c9efba1ab29e8265e395e566799f55e3c9e2
+control_engine              seasonal_naive_lag52
+control_forecast_digest     bb18accc0e6c9fbf8fd62fd48d4c9fc0807d4678e99d89f294ca6c7c41bce315
+dataset_digest              1502d1a25b48c11b7afd30173163d78e4c67a55e31551737a9bed20358cc4340
+regla (máx. degradación)    bases +5% · 111 productos +5% · nacional General +10%
+GATE DIGEST                 5bc39aa5d44f5e62062775dc09a0366ac856f47e5444fbb52ca07e608e61b65d
+```
+
+El control **no se guarda como un CSV suelto** que alguien pudiera regenerar distinto: se congela por
+**digest + receta determinista** sobre el dataset sellado. Reproducirlo da ese digest o el gate falla.
+Y como el baseline es la observación de 52 semanas antes, congelarlo **no es entrenar**: no hay un
+solo parámetro que ajustar. Cero retuning, cero re-selección, cero refit.
+
+Cualquier intento de aflojar el umbral después de ver resultados mueve el `gate_digest`. Hay una
+prueba por componente que lo demuestra.
+
+#### Un test propio que estaba mal, y lo que enseñó
+
+Escribí que el control de 2026-W27 debía repetir **2025-W27**. Falló: devolvía 2025-W28. El test
+estaba mal, no el motor. **2025 es un año MMWR de 53 semanas**, así que retroceder 52 *semanas* no
+cae en «la misma semana del año pasado».
+
+Corregido usando `shift(2026, 27, -52)` en vez de un número escrito a mano, con la aserción explícita
+de que eso da `(2025, 28)`. La versión ingenua habría dado verde en años de 52 semanas y rojo en los
+de 53, que es la peor clase de test: el que sólo falla cuando el calendario se pone interesante.
+
+#### Reglas que quedan probadas
+
+| regla | prueba |
+| --- | --- |
+| una semana ausente NO se vuelve cero | sí |
+| una semana **parcial** (presente en una serie, ausente en otra) no cuenta | sí |
+| con <4 semanas el veredicto es INCOMPLETE, nunca PASS optimista | sí (0, 1, 2 y 3) |
+| con 4 semanas se evalúa y se reporta **por semana** | sí |
+| mover candidato, control, dataset, origen o umbral mueve el `gate_digest` | sí |
+| el control es lag-52 real, no un relleno | sí |
+
+#### Gate
+
+```text
+fast 1,882 passed (+20) · lint · mypy 158 archivos · doctor rc=0
+agregados legacy cb5be395 96791595 1d2cf0a7 ac97dc8e · runs/ 0 modificados
+obesidad trained · runner_release · published = neuro + Dengue
+```
+
+#### Cómo se cierra C7.4
+
+Con cada boletín nuevo, volver a ejecutar el gate **sin tocar nada del congelado**. Cuando las cuatro
+semanas tengan verdad completa, el veredicto pasará solo a PASS o FAIL. Si alguna semana llega
+incompleta o no cumple el contrato de 32 entidades, no cuenta y el gate espera a la siguiente.
+
+#### Estado
+
+```text
+C7.4     CONGELADO · veredicto INCOMPLETE (0/4) · sin retuning, lifecycle ni publicación
+Espera   4 boletines · el primero habilita 2026-W27
+Release  NO-GO · Obesidad = trained · runner_release · F50 = configured · NO-GO
+Deuda    SIGSEGV (backend) · drift del rag_index publicado y 4 fallos de npm test (dashboard)
+```
+
+_Respuesta:_
