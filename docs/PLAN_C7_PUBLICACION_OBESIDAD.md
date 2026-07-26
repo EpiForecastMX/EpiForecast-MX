@@ -5191,3 +5191,62 @@ publicación hasta quedar explicado o aislado con un gate estable.
 
 > **Crea un commit doc-only con esta actualización del plan, verifica `ahead 5` y detente. Después
 > solicita autorización explícita para subir el checkpoint C7.2-A; no inicies C7.2-B ni DVC.**
+
+---
+
+### Ronda 24 — Checkpoint C7.2-A subido — 2026-07-25
+
+Autorización literal recibida y ejecutada la Orden R23.3. **Sólo push de la rama de trabajo.**
+
+```text
+origin/feat/registry-padecimientos-obesidad
+  antes   0dbd0f01dfdf64a84146f07bf62dae2360600f18
+  después 827de945ec577fb89ec4ae14d0fe987167ce9ce5   ← SHA remoto registrado
+  git push origin feat/registry-padecimientos-obesidad
+    0dbd0f01..827de945   (fast-forward, sin --force)
+```
+
+Comprobado inmediatamente antes: el remoto seguía en `0dbd0f01` y el local era descendiente
+directo. Comprobado después con `git ls-remote`: el SHA remoto coincide con `HEAD`.
+
+#### Los cinco commits publicados
+
+```text
+827de945  docs: close C7.2-A audit and authorize checkpoint review
+d5347905  C7.2-A.2.1 decouple builder provenance from schema compatibility
+b809599d  C7.2-A.2 version runner release schemas before persistence
+fb3bcdca  C7.2-A.1 decouple public activation from the release bundle
+2bed74ee  C7.2-A deterministic runner release bundle
+```
+
+#### Estado posterior
+
+| comprobación | resultado |
+| --- | --- |
+| `ahead` / `behind` | 0 / 0 |
+| árbol trackeado | limpio |
+| rama | `feat/registry-padecimientos-obesidad` |
+| `main` local y remota | `b535b525`, sin tocar |
+| PR / merge / tag / release | ninguno |
+| runs canónicos | dataset `2ef4ee1236aa94c0` · refit `972f7519f885c0d1` · forecast `d89d92ee7e73b848` |
+| `artifacts/releases/` | AUSENTE |
+| `.dvc` | 0 tocados |
+
+#### Lo que este push NO autoriza
+
+- C7.2-B (sede final, doctor `runner_release`, promoción atómica, target DVC);
+- ninguna operación DVC;
+- lifecycle, canales, galería, frontend, deploy ni publicación;
+- merge a `main`.
+
+El SIGSEGV preexistente `deepar_smoke + pipeline_e2e` sigue siendo **bloqueo de merge y de
+publicación**, no del checkpoint: el perímetro de C7.2-A pasa aislado y el fallo reproduce sin él.
+
+#### Siguiente
+
+Esperando el literal:
+
+> **GO C7.2-B. Materializa localmente el bundle verificado en su sede final, implementa el doctor
+> `runner_release` y crea el target DVC dedicado; detente sin `dvc push`, Git push ni publicación.**
+
+_Respuesta:_
