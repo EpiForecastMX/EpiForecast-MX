@@ -106,10 +106,16 @@ def check_mode(mode: str) -> str:
     return mode
 
 
-def check_staging_root(output_root: Path, repo_root: Path) -> Path:
+def repo_root() -> Path:
+    """Raíz del repo desde ``src/epiforecast/publication/``."""
+    return Path(__file__).resolve().parents[3]
+
+
+def check_staging_root(output_root: Path, repo_root_path: Path | None = None) -> Path:
     """Un output de ``candidate`` NUNCA cae dentro de una ruta pública del repo."""
+    repo_root_path = repo_root_path if repo_root_path is not None else repo_root()
     destino = output_root.resolve()
-    raiz = repo_root.resolve()
+    raiz = repo_root_path.resolve()
     if destino == raiz or raiz in destino.parents:
         relativa = destino.relative_to(raiz)
         primera = relativa.parts[0] if relativa.parts else ""
@@ -149,10 +155,10 @@ def _release_id_of(disease: registry.Disease) -> str:
 
 def _rows(verified: VerifiedRelease, disease_id: str) -> pd.DataFrame:
     """El ``forecast.csv`` sellado + identidad y procedencia por fila."""
-    from epiforecast.runner.release_reproduce import _read_bundled  # misma lectura sin pérdida
+    from epiforecast.runner.release_reproduce import read_bundled_frame  # lectura sin pérdida
     from epiforecast.runner.release_sources import DIR_FORECAST
 
-    frame = _read_bundled(
+    frame = read_bundled_frame(
         verified.root / DIR_FORECAST / "forecast.csv", f"{disease_id}: forecast.csv"
     )
     try:

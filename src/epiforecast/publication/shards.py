@@ -31,7 +31,7 @@ from epiforecast.data.epi_dataset_spec import (
 from epiforecast.runner.artifact_identity import require
 from epiforecast.runner.release_contract import canonical_json, sha256_bytes
 
-from .compiler import UNCERTAINTY_LABEL, Compilation
+from .compiler import MODE_CANDIDATE, UNCERTAINTY_LABEL, Compilation, check_staging_root
 
 CHANNEL_REPORTS = "reports"
 CHANNEL_TABLEAU = "tableau"
@@ -142,7 +142,10 @@ def _tableau(c: Compilation, root: Path, reg: dict[str, str]) -> None:
 
 def _web(c: Compilation, root: Path, reg: dict[str, str]) -> None:
     """Manifest generado: filtros y series salen de los DATOS y la metadata del registry."""
+    from epiforecast.runner.release_reproduce import horizon_periods
+
     filas = c.rows
+    periodos = horizon_periods(c.verified.origin, c.verified.horizon)
     manifest = {
         "schema": SHARD_SCHEMA,
         "channel": CHANNEL_WEB,
@@ -155,10 +158,10 @@ def _web(c: Compilation, root: Path, reg: dict[str, str]) -> None:
             "geography_ids": sorted(set(filas[COL_GEO_ID])),
             "sexes": sorted(set(filas[COL_SEX])),
             "engines": sorted(set(filas.loc[~filas["derived"], "engine"])),
-            "periods": [
-                [int(filas[COL_EPI_YEAR].min()), int(filas.loc[filas.index[0], COL_EPI_WEEK])],
-                [int(filas[COL_EPI_YEAR].max()), int(filas.loc[filas.index[-1], COL_EPI_WEEK])],
-            ],
+            # Del calendario MMWR del release, no de la posición de una fila: con el orden
+            # geográfico coincidía por casualidad, y dejaría de coincidir en cuanto dos series
+            # tuvieran horizontes distintos.
+            "periods": [list(periodos[0]), list(periodos[-1])],
         },
     }
     _write(root, f"{CHANNEL_WEB}/manifest.json", canonical_json(manifest), reg)
@@ -213,8 +216,17 @@ _BRIDGES: Mapping[str, Any] = {
 }
 
 
-def emit_shards(c: Compilation, output_root: Path) -> EmittedShards:
-    """Escribe los shards de los canales DECLARADOS con puente, bajo ``<root>/<disease>/<release>``."""
+def emit_shards(
+    c: Compilation, output_root: Path, *, repo_root_path: Path | None = None
+) -> EmittedShards:
+    """Escribe los shards de los canales DECLARADOS con puente, bajo ``<root>/<disease>/<release>``.
+
+    El destino se valida AQUÍ. Tener el guard en el compilador y confiar en que el llamador lo
+    invoque era una comprobación que no comprobaba: ``emit_shards`` aceptaba cualquier ruta, incluida
+    una pública. En modo ``candidate`` el destino no puede caer bajo una ruta pública del repo.
+    """
+    if c.mode == MODE_CANDIDATE:
+        check_staging_root(output_root, repo_root_path)
     declarados = tuple(sorted(set(c.disease.channels)))
     con_puente = tuple(canal for canal in declarados if canal in _BRIDGES)
     require(con_puente, f"{c.disease_id}: ningún canal declarado tiene puente de compilación")

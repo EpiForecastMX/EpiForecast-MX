@@ -6231,3 +6231,94 @@ Deuda     SIGSEGV preexistente = bloqueo pre-merge/pre-publicación
 ```
 
 _Respuesta:_
+
+---
+
+### Ronda 31 — Auditoría de C7.3a y corrección de un guard que no guardaba — 2026-07-26
+
+Auditoría del diff `5286543c..52497d3f` antes de tocar el frontend.
+
+#### Superficie · **PASS**
+
+```text
+6 archivos · 888 inserciones · 0 borrados · todo texto
+A  src/epiforecast/publication/{__init__,compiler,shards}.py
+A  tests/unit/publication/{__init__,test_compiler_shards}.py
+M  docs/PLAN_C7_PUBLICACION_OBESIDAD.md
+```
+
+Cero rutas de `artifacts/`, `runs/`, `models/`, `reports/`, `data/`, `epibot/`, `.dvc` o
+`padecimientos.yaml`. `git diff --check` PASS.
+
+#### Genericidad · **PASS, verificada por AST y no por grep**
+
+Buscar cadenas a ojo no distingue código de docstring. Recorriendo el AST y excluyendo los
+docstrings, **ningún literal de padecimiento ni de motor aparece en código ejecutable** de los tres
+módulos. Las menciones a `all_forecast_*`, `tabla_333` e `if disease == …` están sólo en las
+docstrings que explican qué NO se hace.
+
+#### Rechazos, uno a uno · **PASS**
+
+```text
+public sin published        -> lifecycle para publicar: 'trained' != 'published'
+modo inventado              -> modo de compilación desconocido: 'produccion'
+F50 (sin release)           -> exige backend 'runner_release', no 'legacy_models'
+legacy publicado            -> exige backend 'runner_release', no 'legacy_models'
+padecimiento inexistente    -> padecimiento desconocido
+staging en reports/         -> ruta pública del repo
+published + puntero OK      -> COMPILA (5,772 filas)
+```
+
+El último importa tanto como los otros: si el modo `public` fuera inalcanzable por un bug, los seis
+rechazos anteriores no demostrarían nada. Está bloqueado por política, no por avería.
+
+#### R31-P0 — Un guard que no guardaba (defecto propio)
+
+`check_staging_root` existía, estaba exportado y **tenía dos pruebas verdes**… pero **nadie lo
+llamaba**. `emit_shards` aceptaba cualquier destino. Comprobado en vivo: escribió shards dentro de un
+directorio llamado `reports/` sin una queja.
+
+Es exactamente el patrón que estas auditorías llevan cazando toda la fase: una comprobación probada
+en aislamiento que no está cableada al camino que debía proteger. Probar la función no prueba el
+sistema.
+
+Corregido: la validación vive **dentro de `emit_shards`**, que en modo `candidate` rechaza cualquier
+destino bajo una ruta pública del repo. Con dos pruebas nuevas que fallan si se vuelve a desconectar,
+y verificado contra las rutas reales:
+
+```text
+reports/staging · epibot/staging · artifacts/staging  -> rechazados · 0 bytes escritos en el repo
+```
+
+#### R31-P1 — Filtros de periodo derivados de la posición de una fila
+
+`filters.periods` del manifest web salía de `min/max(epi_year)` combinado con la semana de la
+primera y la última fila **tras ordenar por geografía**. El resultado era correcto —`[[2026,27],
+[2027,26]]`, igual que el calendario del release— pero por casualidad: coincide sólo porque todas las
+series comparten horizonte. Ahora sale del calendario MMWR verificado, con una prueba que lo contrasta
+contra `first_period`/`last_period` del manifest del release.
+
+#### R31-P2 — Import de un nombre privado entre módulos
+
+El compilador importaba `release_reproduce._read_bundled`. Promovido a `read_bundled_frame`: si un
+módulo necesita la lectura sin pérdida de otro, esa lectura es API, no un detalle privado.
+
+#### Gate tras la corrección
+
+```text
+fast              1,862 passed   (eran 1,855; +7)
+publicación          35 passed   (eran 28)
+lint · mypy       All checks passed · 157 archivos sin incidencias
+doctor completo   rc=0
+```
+
+#### Estado
+
+```text
+C7.3a     PASS auditado · dos defectos propios corregidos · nada desplegado
+Obesidad  trained · runner_release · invisible en los cuatro canales · NO-GO
+Canales   prospective_validation y weekly_validation NO se tocan: son de C7.5
+Pendiente C7.3b y C7.3c en EpiForecast-IMSS-Dashboard, con su propio GO
+```
+
+_Respuesta:_

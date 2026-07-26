@@ -274,3 +274,38 @@ def test_un_padecimiento_legacy_tampoco_se_compila(sede):
     """Los cuatro publicados viven en el carril legacy: este compilador no los toca."""
     with pytest.raises(ArtifactValidationError, match="exige backend 'runner_release'"):
         compile_release(disease_id="depresion", mode=MODE_CANDIDATE, releases_root=sede)
+
+
+# ── El guard tiene que GUARDAR, no sólo existir ───────────────────────────────────────────────
+@pytest.mark.parametrize("publico", ["reports", "data", "epibot", "models", "artifacts"])
+def test_emit_shards_rechaza_por_si_mismo_un_destino_publico(compilacion, tmp_path, publico):
+    """El defecto que encontró la auditoría: el guard estaba en el compilador y nadie lo llamaba.
+
+    Con `check_staging_root` sólo exportado, `emit_shards` aceptaba cualquier ruta —incluida
+    `reports/`—. Una comprobación que el llamador puede olvidar no es una comprobación.
+    """
+    falso_repo = tmp_path / "repo"
+    (falso_repo / publico).mkdir(parents=True)
+    with pytest.raises(ArtifactValidationError, match="ruta pública"):
+        emit_shards(compilacion, falso_repo / publico / "staging", repo_root_path=falso_repo)
+
+
+def test_emit_shards_acepta_un_staging_legitimo(compilacion, tmp_path):
+    falso_repo = tmp_path / "repo"
+    falso_repo.mkdir()
+    shards = emit_shards(compilacion, tmp_path / "staging", repo_root_path=falso_repo)
+    assert shards.files
+
+
+def test_los_periodos_del_manifest_web_salen_del_calendario_del_release(shards, compilacion):
+    """No de la posición de una fila: con el orden geográfico coincidía por casualidad."""
+    manifest = json.loads(
+        (shards.root / CHANNEL_WEB / "manifest.json").read_text(encoding="utf-8")
+    )
+    release = json.loads(
+        (compilacion.verified.root / "release_manifest.json").read_text(encoding="utf-8")
+    )
+    assert manifest["filters"]["periods"] == [
+        release["calendar"]["first_period"],
+        release["calendar"]["last_period"],
+    ]

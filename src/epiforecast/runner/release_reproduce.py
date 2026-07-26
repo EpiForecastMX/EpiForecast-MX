@@ -167,7 +167,7 @@ def _through_csv(frame: pd.DataFrame) -> pd.DataFrame:
     return pd.read_csv(io.StringIO(buffer.getvalue()), dtype={COL_GEO_ID: str}, low_memory=False)
 
 
-def _read_bundled(path: Path, label: str) -> pd.DataFrame:
+def read_bundled_frame(path: Path, label: str) -> pd.DataFrame:
     """CSV del bundle SIN pérdida: ``round_trip`` devuelve el double exacto que se escribió."""
     try:
         return pd.read_csv(
@@ -217,8 +217,8 @@ def check_reproduction(verified: VerifiedRelease, *, tol: float = 0.0) -> Reprod
     """Reproduce y contrasta contra los frames que el propio bundle transporta (tolerancia 0)."""
     base, productos = reproduce_forecast(verified)
     carpeta = verified.root / DIR_FORECAST
-    sellado_base = _read_bundled(carpeta / BASE_FILE, BASE_FILE)
-    sellado_full = _read_bundled(carpeta / FORECAST_FILE, FORECAST_FILE)
+    sellado_base = read_bundled_frame(carpeta / BASE_FILE, BASE_FILE)
+    sellado_full = read_bundled_frame(carpeta / FORECAST_FILE, FORECAST_FILE)
     _check_point_only(
         {
             f"release: {BASE_FILE}": sellado_base,
