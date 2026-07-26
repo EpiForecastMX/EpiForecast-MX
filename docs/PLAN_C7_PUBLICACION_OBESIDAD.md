@@ -6493,3 +6493,64 @@ Sin push, sin deploy, sin DVC, sin lifecycle
 ```
 
 _Respuesta:_
+
+---
+
+### Ronda 34 — Checkpoints de C7.3 subidos en los dos repos — 2026-07-26
+
+Ambos pushes autorizados por separado y ejecutados. **Sin merge, sin PR, sin deploy a producción,
+sin cambios en Netlify.**
+
+```text
+BACKEND    origin/feat/registry-padecimientos-obesidad
+             5286543c..815a49a3   fast-forward, sin --force · ls-remote == HEAD
+             ahead 0 / behind 0 · main b535b525 sin mover
+
+DASHBOARD  origin/feat/c73-candidate-staging   [new branch] d5ead880
+             ls-remote == d5ead880 · ahead 0 / behind 0
+             origin/main 179bbe36 SIN MOVER · ramas en origin: main + la nueva
+```
+
+Sin merges, sin tags, sin PR: `gh` no se invocó en ningún momento. El enlace `pull/new/...` que
+imprime GitHub al crear una rama es una sugerencia suya, no un PR abierto.
+
+Superficie publicada del dashboard tras el push, intacta y sin una sola mención al padecimiento
+candidate:
+
+```text
+epibot/knowledge.json  e1d9a7d98943      epibot/rag_index.json  86417db3ae05
+index.html             94549fbd0338      menciones a "obesidad": 0
+```
+
+#### Sobre los branch deploys de Netlify
+
+Se pidió desactivarlos antes del push (opción 2) y **no pude hacerlo**: no hay CLI de Netlify
+instalado, la config local no tiene usuarios ni token de auth, y no hay `NETLIFY_AUTH_TOKEN` en el
+entorno. Esa opción vive en la cuenta de Netlify, no en el repo, y no se intentó obtener credenciales
+para tocar infraestructura ajena al código.
+
+La autorización siguiente aceptó explícitamente un posible branch preview automático, así que el
+push se ejecutó tal cual. **Queda pendiente de verificación humana** si Netlify levantó un preview de
+`feat/c73-candidate-staging`: desde aquí no es comprobable —el nombre del sitio en `*.netlify.app` no
+aparece en el repo, sólo el dominio de producción `epiforecast.mx`—.
+
+Acotación de lo que ese preview podría ser, con lo que sí es verificable:
+
+- no publicaría el padecimiento candidate: 0 menciones en los tres artefactos de superficie;
+- no tocaría producción: la rama de producción es `main` y no se movió;
+- probablemente fallaría, por el drift preexistente de 19 chunks que hace fallar `rag:ci`.
+
+#### Estado
+
+```text
+C7.3       a/b/c entregadas y subidas · dos repos, dos ramas, cero merges
+Backend    815a49a3 en origin · ahead 0
+Dashboard  d5ead880 en origin/feat/c73-candidate-staging · main intacta
+Obesidad   trained · runner_release · invisible en ambos repos
+Canales    prospective_validation y weekly_validation intactos: C7.5
+Pendiente  confirmar en la UI de Netlify si hubo preview; desactivar branch deploys hasta cerrar C7.3
+Deuda      SIGSEGV (backend) · drift del rag_index publicado y 4 fallos de npm test (dashboard)
+Siguiente  C7.4 (gate prospectivo de cuatro semanas), con su propio GO
+```
+
+_Respuesta:_
