@@ -1,17 +1,17 @@
 # C7 — Plan operativo de publicación de Obesidad
 
-> **Estado autoritativo (2026-07-25): C7.2-A, A.1 y A.2 CERRADAS** en `2bed74ee`,
-> `fb3bcdca` y `b809599d`. El remoto continúa en `0dbd0f01`; la rama local está `ahead 3`.
-> `identity_payload.v2` y `release_manifest.v2` quedaron implementados; dos bundles temporales
-> byte-idénticos reprodujeron 3,328 bases y 5,772 productos con diferencia exacta `0.0`. No se
-> persistió ningún bundle y no hubo DVC, push, deploy ni publicación.
+> **Estado autoritativo (2026-07-25): C7.2-A, A.1, A.2 y A.2.1 CERRADAS** en `2bed74ee`,
+> `fb3bcdca`, `b809599d` y `d5347905`. El remoto continúa en `0dbd0f01`; la rama local está
+> `ahead 4` antes de commitear esta actualización documental. Los schemas gobiernan compatibilidad
+> y `builder_version` queda como procedencia sellada. El release candidato continúa siendo
+> `obesidad_release_2517e7858901`; no se persistió ningún bundle y no hubo DVC, push, deploy ni
+> publicación.
 >
-> **Orden vigente:** ejecutar **C7.2-A.2.1** antes del push y de C7.2-B. La auditoría independiente
-> confirmó los schemas v2, pero encontró que el verifier trata `builder_version` como requisito de
-> compatibilidad exacto aunque el propio contrato lo define sólo como identidad del productor.
-> Eso rompería la restauración de bundles v2 al evolucionar el builder sin cambiar el schema. A.2.1
-> debe conservar `builder_version` sellado en la identidad, pero usar únicamente los schemas para
-> decidir compatibilidad. La Ronda 21 contiene las órdenes autoritativas.
+> **Orden vigente:** congelar esta auditoría en un commit **doc-only**, revisar el rango completo y
+> solicitar autorización explícita para subir el checkpoint de C7.2-A. El push no autoriza
+> C7.2-B. Después del checkpoint remoto se requiere otro GO para sede final, doctor
+> `runner_release`, materialización atómica y target DVC local. La Ronda 23 contiene las órdenes
+> autoritativas.
 > Obesidad continúa `trained`, NO-GO e invisible para `published_only`.
 >
 > **Alcance:** publicar únicamente Obesidad E66. Anorexia F50 permanece
@@ -58,7 +58,7 @@ Estado local al redactar:
 
 | componente | estado |
 | --- | --- |
-| Backend | `feat/registry-padecimientos-obesidad` @ `b809599d`; local `ahead 3` |
+| Backend | `feat/registry-padecimientos-obesidad` @ `d5347905`; local `ahead 4` antes del commit doc-only |
 | Remoto backend | `origin/feat/registry-padecimientos-obesidad` @ `0dbd0f01` |
 | Frontend | `main` @ `179bbe36`, sin cambios trackeados |
 | Obesidad | `trained`, NO-GO, invisible para `published_only` |
@@ -69,7 +69,8 @@ Estado local al redactar:
 | C7.1 | registry por backend + validación de identidad; publicado en la rama remota hasta `0dbd0f01` |
 | C7.2-A | builder temporal determinista en `2bed74ee`; local, sin DVC |
 | C7.2-A.1 | activación fuera del bundle en `fb3bcdca`; local, sin DVC |
-| C7.2-A.2 | schemas v2 en `b809599d`; local, sin DVC; pendiente desacoplar compatibilidad del builder |
+| C7.2-A.2 | schemas v2 en `b809599d`; local, sin DVC |
+| C7.2-A.2.1 | builder como procedencia sellada en `d5347905`; local, sin DVC |
 
 Cadena estadística canónica:
 
@@ -417,10 +418,11 @@ Crear un comando genérico de promoción desde runs sellados. Debe:
   canales, galería o lifecycle.
 - **C7.2-A.2 — versionar schemas: COMPLETADA** en `b809599d`. Cerró
   `identity_payload.v2` y `release_manifest.v2`, rechazó v1 explícitamente y repitió el gate.
-- **C7.2-A.2.1 — compatibilidad por schema: SIGUIENTE.** Debe impedir que el verifier confunda
-  `builder_version` —procedencia sellada— con el criterio de compatibilidad del formato. No
-  autoriza `dvc add`, cambios de punteros, `dvc push` ni escritura en la ruta final.
-- **C7.2-B — materialización y puntero local:** solo después del PASS de C7.2-A.2.1 y con otro GO.
+- **C7.2-A.2.1 — compatibilidad por schema: COMPLETADA** en `d5347905`. El verifier usa schemas
+  para compatibilidad y conserva `builder_version` como procedencia sellada.
+- **Checkpoint Git de C7.2-A — SIGUIENTE.** Requiere commit doc-only de la auditoría y autorización
+  explícita para push. No autoriza DVC ni C7.2-B.
+- **C7.2-B — materialización y puntero local:** sólo después del checkpoint remoto y con otro GO.
   Autoriza promover atómicamente el bundle verificado a su ruta final y crear el target DVC
   dedicado. No autoriza `dvc push`.
 - **C7.2-C — subida remota:** `dvc push` requiere una tercera autorización posterior al gate y a
@@ -431,7 +433,8 @@ Crear un comando genérico de promoción desde runs sellados. Debe:
 - ejecutado: `C7.2-A deterministic runner release bundle` (`2bed74ee`);
 - ejecutado: `C7.2-A.1 decouple public activation from the release bundle` (`fb3bcdca`);
 - ejecutado: `C7.2-A.2 version runner release schemas before persistence` (`b809599d`);
-- siguiente: `C7.2-A.2.1 decouple builder provenance from schema compatibility`;
+- ejecutado: `C7.2-A.2.1 decouple builder provenance from schema compatibility` (`d5347905`);
+- siguiente: commit doc-only de auditoría y checkpoint Git con autorización separada;
 - futuro y con GO separado: `C7.2-B materialize runner release + dedicated DVC target`.
 
 ---
@@ -5034,4 +5037,157 @@ Deuda     SIGSEGV preexistente = bloqueo pre-merge/pre-publicación
 Sigue     R21.4: auditoría del rango 0dbd0f01..HEAD y autorización explícita de push
 ```
 
-_Respuesta:_
+_Respuesta:_ A.2.1 queda aceptada. No iniciar C7.2-B. Primero preservar esta auditoría en un commit
+doc-only y solicitar autorización explícita para subir el checkpoint completo.
+
+---
+
+### Ronda 23 — Auditoría final del checkpoint C7.2-A — 2026-07-25
+
+#### Veredicto
+
+**PASS. C7.2-A queda funcionalmente cerrada; apta para checkpoint Git, todavía NO autorizada para
+push ni para C7.2-B.**
+
+Se auditó el rango completo:
+
+```text
+0dbd0f01..d5347905
+├── 2bed74ee  C7.2-A builder determinista
+├── fb3bcdca  C7.2-A.1 activación fuera del bundle
+├── b809599d  C7.2-A.2 schemas v2
+└── d5347905  C7.2-A.2.1 procedencia ≠ compatibilidad
+```
+
+El delta contiene únicamente:
+
+- módulos genéricos del release bajo `src/epiforecast/runner/`;
+- capacidad tipada de forecast final en adapters/motores existentes;
+- tests unitarios e integración del bundle;
+- un comentario de schema en `registry.py`;
+- este plan.
+
+No contiene:
+
+- `runs/`, `artifacts/releases/`, `models/`, `reports/` o datos;
+- archivos `.dvc` ni cambios de targets;
+- configuración de lifecycle, canales o galería;
+- frontend;
+- artefactos públicos o canónicos.
+
+#### Validación independiente
+
+```text
+cinco suites unitarias del release              192 PASS
+test_release_reproduction.py                      8 PASS
+total focal revalidado                           200 PASS
+doctor Obesidad --artifacts                      rc=0
+doctor --artifacts                               rc=0
+git diff --check 0dbd0f01..d5347905              PASS
+artifacts/releases/                              AUSENTE
+frontend main                                    179bbe36 · trackeado limpio
+rama                                             ahead 4
+```
+
+La auditoría comprobó directamente que:
+
+1. el bundle canónico sigue siendo `obesidad_release_2517e7858901`;
+2. schemas v1 se rechazan por schema;
+3. alterar `builder_version` sin re-sellar rompe integridad;
+4. un builder v3 coherente bajo schema v2 carga y recibe otro `release_id`;
+5. el builder instalado continúa produciendo v2;
+6. `builder_version` no gobierna compatibilidad;
+7. no se reintrodujo metadata de activación;
+8. Obesidad sigue `trained`, F50 `configured`, ambas NO-GO.
+
+Se aceptan como evidencia del commit, sin repetir en esta ronda, los gates completos ya registrados:
+`make test-fast` 1,801 PASS, 61 pruebas de integración en dos tandas, lint y mypy verdes, builds A/B
+byte-idénticos y reproducción exacta `0.0`.
+
+#### Orden R23.1 — Commit documental
+
+Crear un commit que contenga **únicamente**:
+
+```text
+docs/PLAN_C7_PUBLICACION_OBESIDAD.md
+```
+
+Mensaje sugerido:
+
+```text
+docs: close C7.2-A audit and authorize checkpoint review
+```
+
+Antes y después:
+
+1. `git diff --check`;
+2. confirmar con `git diff --cached --name-only` que sólo está el plan;
+3. ejecutar los hooks aplicables;
+4. comprobar árbol trackeado limpio;
+5. comprobar `ahead 5`;
+6. detenerse sin push.
+
+No amendar ni reescribir los cuatro commits técnicos.
+
+#### Orden R23.2 — Autorización de push
+
+Después del commit doc-only, presentar:
+
+- SHA del commit documental;
+- rango exacto `0dbd0f01..HEAD`;
+- lista de cinco commits;
+- `git diff --name-status` del rango;
+- confirmación de cero rutas prohibidas;
+- confirmación de que el remoto continúa en `0dbd0f01`.
+
+Esperar una autorización literal equivalente a:
+
+> **AUTORIZO PUSH DEL CHECKPOINT C7.2-A `0dbd0f01..HEAD` A
+> `origin/feat/registry-padecimientos-obesidad`.**
+
+Sin esa autorización no ejecutar `git push`.
+
+#### Orden R23.3 — Push del checkpoint, si se autoriza
+
+1. confirmar inmediatamente antes que local sigue siendo descendiente directo del remoto;
+2. hacer push sólo de `feat/registry-padecimientos-obesidad`;
+3. prohibido usar `--force`;
+4. verificar con `git ls-remote` que el SHA remoto coincide con `HEAD`;
+5. comprobar `ahead 0`, árbol trackeado limpio y main intacta;
+6. no crear PR, merge, tag ni release;
+7. registrar el SHA remoto en este plan;
+8. detenerse.
+
+El push:
+
+- no autoriza C7.2-B;
+- no autoriza DVC;
+- no autoriza lifecycle, canales, frontend, deploy ni publicación.
+
+#### Orden R23.4 — Próxima fase después del checkpoint
+
+Con local/remoto alineados, solicitar otro literal:
+
+> **GO C7.2-B. Materializa localmente el bundle verificado en su sede final, implementa el doctor
+> `runner_release` y crea el target DVC dedicado; detente sin `dvc push`, Git push ni publicación.**
+
+C7.2-B deberá seguir las órdenes R19.5 ya definidas:
+
+1. sede `artifacts/releases/<disease_id>/<release_id>/`;
+2. `releases_root` explícito e inyectable;
+3. doctor por schema, identidad, checksums, inventario, modelos y reproducción;
+4. promoción atómica e idempotente;
+5. target DVC exclusivo del bundle;
+6. Obesidad permanece `trained` y NO-GO;
+7. commit local y STOP.
+
+#### Deuda separada
+
+El SIGSEGV preexistente `deepar_smoke + pipeline_e2e` no bloquea el checkpoint de la rama, porque
+el perímetro afectado pasa aislado y el fallo reproduce sin C7.2-A. Sí continúa bloqueando merge y
+publicación hasta quedar explicado o aislado con un gate estable.
+
+#### Próxima orden exacta
+
+> **Crea un commit doc-only con esta actualización del plan, verifica `ahead 5` y detente. Después
+> solicita autorización explícita para subir el checkpoint C7.2-A; no inicies C7.2-B ni DVC.**
