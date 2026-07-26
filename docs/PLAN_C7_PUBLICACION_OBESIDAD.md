@@ -1,8 +1,8 @@
 # C7 — Plan operativo de publicación de Obesidad
 
 > **Estado autoritativo (2026-07-26): C7.2 y C7.3 CERRADAS; C7.5-PREP PASS; C7.6 BACKEND PASS.**
-> Backend local/remoto `dbfdd49c`; dashboard local/remoto
-> `feat/c73-candidate-staging@d5ead880`. El target DVC del release
+> Backend local `7460a5bb` y remoto `dbfdd49c`; dashboard local
+> `feat/c73-candidate-staging@42477019` y remoto `d5ead880`. El target DVC del release
 > `obesidad_release_2517e7858901` está sincronizado y fue restaurado con caché vacía. El SIGSEGV
 > PyTorch→LightGBM quedó aislado por archivo, con 1,918 fast y 61/61 integraciones. No hubo
 > activación, merge, deploy ni publicación.
@@ -13,12 +13,13 @@
 > `INCOMPLETE (0/4)` y no se presenta como PASS. Un FAIL final obliga a rollback; un PASS convierte
 > la publicación condicionada en confirmada.
 >
-> **Orden vigente:** (1) cerrar los 11 fallos de `npm test`, agrupados en cuatro causas; (2)
-> corregir el contrato de vectores del RAG y llevar el drift real a cero con la clave ya disponible
+> **Orden vigente:** (1) reparar la autoridad reproducible de la suite del dashboard: el fixture
+> actual da 618/618, pero `npm run test:gen` lo reemplaza por 565 casos y deja 12 fallos; (2)
+> corregir el contrato de vectores del RAG y llevar el drift real a cero con la clave disponible
 > como secreto; (3)
 > cerrar C7.6-READINESS y emitir el paquete de aprobación; (4) activar y desplegar coordinadamente
 > con etiqueta pública de validación en curso; (5) reejecutar C7.4 con cada boletín hasta 4/4. La
-> Ronda 40 contiene las órdenes ejecutables y sustituye cualquier orden histórica incompatible.
+> Ronda 45 contiene la orden ejecutable vigente y sustituye cualquier orden histórica incompatible.
 > Obesidad continúa por ahora `trained`, NO-GO e invisible para `published_only`.
 >
 > **Alcance:** publicar únicamente Obesidad E66. Anorexia F50 permanece
@@ -2758,6 +2759,168 @@ sin devolverle motores legacy a Obesidad), que además es lo único que mantiene
 la Acción 4.
 
 _Respuesta:_
+
+---
+
+### Anexo técnico R45-A — Auditoría independiente del fixture generado — 2026-07-26
+
+La implementación funcional de `42477019` fue auditada sin modificar el dashboard. El commit tiene
+dos archivos, 80 inserciones y 17 borrados:
+
+```text
+epibot/js/kb.js
+epibot/tests/test_cases.json
+```
+
+No tocó RAG, knowledge, HTML, Netlify, manifests ni artefactos candidate.
+
+#### Resultado independiente
+
+```text
+npm test             618/618 PASS · rc=0
+test:candidate         19/19 PASS · rc=0
+git diff --check                 PASS
+superficies públicas             byte-idénticas a d5ead880
+menciones Obesidad públicas      0
+```
+
+La lógica implementada coincide con la Ronda 43:
+
+- hiperparámetros continúan delegados al RAG;
+- referencia/identidad del artículo del proyecto llega a la ficha local;
+- metodología/contenido del artículo continúa en RAG;
+- los temas ajenos reciben rechazo local;
+- distribución gráfica ya no es robada por los dos handlers anteriores;
+- las dos regresiones negativas conservan los handlers de rango y tabla.
+
+#### R45-P0 — el fixture verde no es reproducible desde su generador
+
+El commit modificó el artefacto generado `test_cases.json`, pero no actualizó
+`tests/generate_tests.js`. Esto deja dos autoridades incompatibles:
+
+```text
+npm test                         lee test_cases.json
+npm run test:gen                 sobrescribe test_cases.json desde generate_tests.js
+run_tests.js                     indica ejecutar el generador si falta el fixture
+```
+
+La reproducción se hizo en un temporal creado desde `42477019`, sin escribir en el dashboard:
+
+```text
+fixture commiteado               618 casos · 618 PASS
+fixture recién generado          565 casos
+suite sobre fixture generado     553 PASS · 12 FAIL · rc=1
+consultas ausentes               52
+consultas con contrato distinto  13
+```
+
+Entre las 52 ausentes están las dos regresiones de 43.1, los casos conversacionales añadidos
+después y los ocho casos de Dengue. Entre las 13 divergencias están los cuatro cambios de
+expectativa de 43.1 y siete contratos de distribución preexistentes.
+
+Además, `generate_tests.js` siempre termina en `rc=0`: sólo valida entidades y escribe el JSON; no
+ejecuta las respuestas aunque su cabecera diga “genera y ejecuta”. Por eso un `test:gen` verde no
+prueba que el fixture generado sea válido.
+
+**Veredicto:** el código funcional de 43.1 es aceptable, pero el gate de readiness queda
+**CONDICIONAL / NO CERRADO** hasta eliminar esta doble autoridad. No se autoriza comenzar el RAG
+con una suite que una orden oficial puede degradar silenciosamente.
+
+#### Orden 45.1 — Una sola autoridad reproducible para los casos del KB
+
+Trabajar únicamente en el dashboard, sobre `42477019`, sin push ni RAG.
+
+1. Preservar los dos untracked del usuario y capturar los hashes públicos.
+2. Declarar `tests/generate_tests.js` como fuente y `test_cases.json` como artefacto determinista.
+3. Llevar al generador:
+   - las 52 consultas que hoy sólo existen en el JSON;
+   - los 13 contratos divergentes con las expectativas vigentes;
+   - las notas funcionales de G1/G2 y las dos regresiones G4;
+   - cualquier helper mínimo necesario para expresar `setupQuery` y metadata sin duplicación.
+4. No copiar IDs manuales como identidad. Los IDs se asignan de forma consecutiva y estable al
+   construir la lista; la consulta y su contrato son la identidad semántica.
+5. Añadir un modo no mutante:
+
+```text
+node tests/generate_tests.js --check
+```
+
+Este modo debe:
+
+- construir el fixture enteramente en memoria;
+- comparar bytes o una serialización canónica contra `test_cases.json`;
+- no escribir;
+- devolver `rc!=0` ante cualquier diferencia, ausencia, duplicado de consulta o ID no consecutivo.
+
+6. Mantener el modo de escritura explícito para desarrollo, pero corregir su documentación: generar
+   no equivale a ejecutar la suite.
+7. Añadir a `package.json`:
+
+```text
+test:cases:verify   node tests/generate_tests.js --check
+test                test:cases:verify && node tests/run_tests.js
+```
+
+La sintaxis final puede usar `npm run`, pero el verificador debe ejecutarse automáticamente antes
+de los 618 casos.
+8. Añadir una prueba del propio contrato que demuestre, en temporal:
+   - fixture idéntico → `rc=0`;
+   - expectativa alterada → `rc!=0`;
+   - caso faltante → `rc!=0`;
+   - consulta duplicada → `rc!=0`;
+   - el modo `--check` no cambia el archivo.
+9. Regenerar una vez por el modo explícito y exigir diff nulo entre el fixture resultante y el
+   fixture revisado de 618 casos.
+
+No hacer:
+
+- borrar las 52 consultas para hacer coincidir el generador;
+- aceptar nuevamente 565 como universo;
+- relajar expectativas, convertir casos en `*` o añadir skips;
+- regenerar RAG;
+- usar `GEMINI_API_KEY`;
+- tocar consumer candidate, knowledge, RAG, HTML o deploy.
+
+#### Gate 45.1
+
+```text
+npm run test:cases:verify       PASS · no modifica archivos
+npm test                        618/618 PASS
+npm run test:candidate           19/19 PASS
+npm run test:gen                produce el mismo test_cases.json
+segunda generación             byte-idéntica
+consultas únicas               618
+IDs consecutivos               1..618
+knowledge/RAG/HTML             byte-idénticos
+Obesidad pública               0 menciones
+```
+
+Crear un único commit local del dashboard y **STOP** para auditoría. No hacer push.
+
+#### Orden posterior — no ejecutar en la misma ronda
+
+Sólo después de auditar 45.1 se autorizará la antigua Orden 40.2, renombrada:
+
+```text
+GO C7.6-RAG-CONTRACT:
+exigir presencia, alineación y vector no vacío para cada chunk candidate;
+fallar cerrado ante API/rate-limit/vector vacío;
+sin regenerar todavía el índice público, sin push ni deploy.
+```
+
+#### Estado y próxima acción exacta
+
+```text
+C7.6 backend                 PASS @ dbfdd49c
+C7.6 dashboard funcional    618/618 @ 42477019
+C7.6 autoridad de pruebas   FAIL · generador 565 → 553/565
+C7.6 RAG                    drift 19 · contrato pendiente
+Obesidad                    trained · no publicada
+```
+
+**Ejecutar sólo la Orden 45.1 y detenerse.**
+
+_Respuesta:_ pendiente del commit local y reporte del gate 45.1.
 
 ---
 
@@ -7757,3 +7920,119 @@ Obesidad    trained · no publicada · 0 menciones en la superficie del dashboar
 ```
 
 _Respuesta:_
+
+---
+
+### Ronda 45 — Veredicto vigente y siguiente orden — 2026-07-26
+
+La auditoría independiente confirma que `42477019` corrige funcionalmente los 11 casos:
+
+```text
+npm test             618/618 PASS
+test:candidate         19/19 PASS
+superficies públicas  byte-idénticas
+```
+
+Pero el cierre de 43.1 queda **condicionado** por el hallazgo R45-P0 documentado en el Anexo
+R45-A: `npm run test:gen` sustituye los 618 casos por 565 y la suite resultante queda en
+553/565. Una ruta oficial no puede degradar silenciosamente el gate.
+
+#### Orden vigente
+
+Ejecutar únicamente la **Orden 45.1 — Una sola autoridad reproducible para los casos del KB**,
+descrita en el Anexo R45-A:
+
+1. sincronizar `generate_tests.js` con los 618 contratos vigentes;
+2. añadir `--check` no mutante y fail-closed;
+3. ejecutar ese verificador automáticamente antes de `npm test`;
+4. probar fixture idéntico, alterado, incompleto y con consulta duplicada;
+5. demostrar dos generaciones byte-idénticas;
+6. conservar 618/618 y 19/19;
+7. preservar knowledge, RAG y HTML byte-idénticos;
+8. crear un solo commit local del dashboard y detenerse.
+
+No usar `GEMINI_API_KEY`, no regenerar RAG y no hacer push, deploy o merge.
+
+Sólo después de auditar ese commit se autorizará `C7.6-RAG-CONTRACT`.
+
+_Respuesta:_ pendiente del commit local y reporte del gate 45.1.
+
+---
+
+### Ronda 46 — Orden 45.1: el `--check` funciona y destapó un bloqueo de decisión — 2026-07-26
+
+**45.1 NO se cierra en esta ronda, y no por falta de trabajo: el verificador nuevo encontró un
+defecto preexistente en el fixture que exige una decisión tuya, no una elección mía.**
+
+Nada commiteado. Único cambio en el dashboard: `epibot/tests/generate_tests.js` (sin commit).
+`npm test` sigue en 618/618. Sin push, RAG ni `GEMINI_API_KEY`.
+
+#### Lo que sí quedó hecho
+
+```text
+prefijo alineado generador ↔ fixture   565 de 565, en el MISMO orden
+consultas del JSON ausentes            52   → llevadas al generador
+contratos divergentes                  15   → llevados al generador
+```
+
+Dos precisiones sobre el Anexo R45-A: los contratos divergentes son **15, no 13**; y el prefijo
+alinea exactamente, así que los IDs 1..565 no se mueven y los 52 añadidos ocupan 566..618.
+
+El generador recuperó la autoridad de forma declarativa (`CONTRATOS_VIGENTES` +
+`CASOS_ADICIONALES`), y `--check` está implementado: reconstruye en memoria, compara la
+serialización canónica, **no escribe**, y falla cerrado ante diferencia, ausencia, duplicado o ID no
+consecutivo.
+
+#### R46-P0 — el fixture tiene tres consultas DUPLICADAS con contratos contradictorios
+
+Es lo primero que reportó `--check`, y es preexistente:
+
+| consulta | caso A | caso B |
+| --- | --- | --- |
+| `como esta jalisco` | #78 · `*` · entidad `{estado: Jalisco}` | #191 · `answerEstado` · debe contener «Jalisco» |
+| `como esta tabasco` | #82 · `*` · entidad `{estado: Tabasco}` | #199 · `answerEstado` · debe contener «Tabasco» |
+| `cuantos modelos tiene parkinson` | #220 · `answerPadecimiento` · «Parkinson» | #606 · `answerConteo` · «111», «modelo» |
+
+Los dos primeros pares **no son un error de verdad**: son dos propósitos distintos sobre la misma
+consulta —una prueba de detección de entidades y una de contrato de respuesta—. Ambas pueden pasar a
+la vez, y de hecho pasan.
+
+El tercero **sí es una contradicción**: la misma consulta se declara de `answerPadecimiento` en un
+caso y de `answerConteo` en otro. Sólo uno puede ser cierto. Hoy nadie lo nota porque el harness no
+verifica qué handler respondió: valida por `mustContain`, y ambos contratos son satisfechos por
+respuestas distintas.
+
+#### Por qué me detengo aquí
+
+La orden pide dos cosas que, con este fixture, no pueden cumplirse a la vez:
+
+- «devolver `rc!=0` ante cualquier … duplicado de consulta»;
+- «no borrar casos … ni relajar expectativas».
+
+Resolverlo exige una decisión de contrato, y hay tres salidas legítimas:
+
+| opción | qué implica | coste |
+| --- | --- | --- |
+| **A** | la unicidad se mide por (consulta, `setupQuery`, **propósito**), distinguiendo pruebas de entidad de pruebas de respuesta | resuelve #78/#191 y #82/#199 sin borrar nada; **no** resuelve #220/#606 |
+| **B** | resolver #220/#606 decidiendo cuál es el contrato correcto y fusionando en un solo caso | borra un caso, que la orden prohíbe |
+| **C** | mantener la unicidad estricta y aceptar que el fixture cambie de tamaño | contradice «no borrar casos» |
+
+Mi recomendación es **A + B acotada**: adoptar el propósito como parte de la identidad (resuelve dos
+de los tres sin perder cobertura) y, para `cuantos modelos tiene parkinson`, decidir **tú** cuál es
+el contrato correcto —¿cuenta de modelos o ficha del padecimiento?— y dejar un solo caso con ese
+contrato, registrando la decisión aquí. Es un borrado, sí, pero de una contradicción, no de
+cobertura.
+
+No lo decido por mi cuenta: elegir handler por una consulta ambigua es producto.
+
+#### Estado
+
+```text
+Orden 45.1   PARCIAL · generador con las 52 + 15 · --check implementado y funcionando
+Bloqueo      R46-P0 · 3 consultas duplicadas, 1 contradictoria · decisión pendiente
+Dashboard    1 archivo modificado sin commitear · npm test 618/618 · superficie intacta
+Readiness    SIGSEGV ✓ · npm test ✓ funcional · autoridad de pruebas PENDIENTE · RAG pendiente
+```
+
+_Respuesta:_ **¿opción A + B acotada?** Y si es que sí: para `cuantos modelos tiene parkinson`,
+¿`answerConteo` («111 modelos») o `answerPadecimiento` (ficha de Parkinson)?
