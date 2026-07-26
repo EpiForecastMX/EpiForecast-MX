@@ -1,15 +1,16 @@
 # C7 — Plan operativo de publicación de Obesidad
 
-> **Estado autoritativo (2026-07-25): C7.2-A, C7.2-B Y C7.2-C1 CERRADAS.** C7.2-A está respaldada
-> en Git remoto `827de945`. C7.2-B quedó en el commit local `c6a2e713`; la rama está `ahead 2`.
-> C7.2-C1 subió únicamente el target DVC oscuro. `dvc status -c` está sincronizado y una raíz nueva
-> con caché vacía restauró 150 archivos desde S3; el doctor de Obesidad pasó desde esa copia. No
-> hubo Git push de C7.2-B, deploy ni publicación.
+> **Estado autoritativo (2026-07-26): C7.2-A, C7.2-B Y C7.2-C1 CERRADAS.** C7.2-A está respaldada
+> en Git remoto `827de945`. C7.2-B está en `c6a2e713` y el cierre documental de C1 en `be143338`;
+> la rama está `ahead 3` antes de commitear esta auditoría. El target DVC está sincronizado y fue
+> restaurado desde S3 con caché vacía. El rango Git fue auditado: contiene puntero, código/tests,
+> registry y plan, pero no el bundle ni targets legacy. No hubo Git push de C7.2-B, deploy ni
+> publicación.
 >
-> **Orden vigente:** crear un commit doc-only con esta evidencia, auditar
-> `827de945..HEAD` y solicitar autorización explícita para C7.2-C2: push Git fast-forward de la rama
-> de trabajo. Ese push no autoriza C7.3, lifecycle, canales, frontend o publicación. La Ronda 28
-> contiene las órdenes autoritativas.
+> **Orden vigente:** congelar esta auditoría en un último commit doc-only, comprobar `ahead 4` y
+> solicitar autorización explícita para C7.2-C2: push Git fast-forward de
+> `827de945..HEAD`. Ese push no autoriza C7.3, lifecycle, canales, frontend o publicación. La Ronda
+> 29 contiene las órdenes autoritativas.
 > Obesidad continúa `trained`, NO-GO e invisible para `published_only`.
 >
 > **Alcance:** publicar únicamente Obesidad E66. Anorexia F50 permanece
@@ -56,7 +57,7 @@ Estado local al redactar:
 
 | componente | estado |
 | --- | --- |
-| Backend | `feat/registry-padecimientos-obesidad` @ `c6a2e713`; local `ahead 2` |
+| Backend | `feat/registry-padecimientos-obesidad` @ `be143338`; local `ahead 3` antes del cierre doc-only |
 | Remoto backend | `origin/feat/registry-padecimientos-obesidad` @ `827de945` |
 | Frontend | `main` @ `179bbe36`, sin cambios trackeados |
 | Obesidad | `trained`, NO-GO, invisible para `published_only` |
@@ -427,8 +428,10 @@ Crear un comando genérico de promoción desde runs sellados. Debe:
   restauración local y target DVC dirigido están verdes.
 - **C7.2-C1 — subida DVC oscura: COMPLETADA.** El target está sincronizado y fue restaurado desde
   S3 en una caché nueva.
-- **C7.2-C2 — checkpoint Git: SIGUIENTE CON AUTORIZACIÓN EXPLÍCITA.** Publica el puntero y código
-  de C7.2-B únicamente en la rama de trabajo.
+- **Cierre documental C7.2-C — SIGUIENTE.** Un último commit doc-only debe registrar la auditoría
+  del rango.
+- **C7.2-C2 — checkpoint Git:** queda listo después de ese commit y requiere autorización
+  explícita. Publica el puntero y código de C7.2-B únicamente en la rama de trabajo.
 
 ### Commits
 
@@ -440,7 +443,7 @@ Crear un comando genérico de promoción desde runs sellados. Debe:
 - ejecutado: `C7.2-B materialize the release bundle, wire the doctor and add a DVC target`
   (`c6a2e713`);
 - ejecutado: C7.2-C1, subida DVC y restauración remota;
-- siguiente y con autorización separada: C7.2-C2, checkpoint Git.
+- siguiente: commit doc-only de auditoría; después, con autorización separada, C7.2-C2.
 
 ---
 
@@ -5982,3 +5985,128 @@ Sigue    C7.2-C2 (commit documental + autorización de Git push), con su propio 
 _Respuesta:_ C7.2-C1 aceptada. La restauración remota quedó confirmada tanto por la ejecución como
 por la auditoría independiente. Seguir las órdenes R28.1–R28.4: commit doc-only, revisión del rango
 y autorización separada antes del push Git. No iniciar C7.3.
+
+---
+
+### Ronda 29 — Auditoría final del rango C7.2-C2 — 2026-07-26
+
+#### Veredicto
+
+**PASS. El rango está listo para un último commit documental y, después, autorización de push
+Git.**
+
+Estado:
+
+```text
+HEAD                       be143338
+remoto                     827de945
+ahead                      3
+DVC remoto                 sincronizado
+bundle remoto              restaurable desde caché vacía
+delta trackeado pendiente  sólo este plan
+```
+
+Commits locales sobre el remoto:
+
+```text
+be143338  docs: close C7.2-C1 remote restoration gate
+c6a2e713  C7.2-B materialize the release bundle, wire the doctor and add a DVC target
+34d785a8  docs: record C7.2-A checkpoint remote SHA
+```
+
+#### Auditoría del rango `827de945..be143338`
+
+`git diff --check`: **PASS**.
+
+Rutas:
+
+- `artifacts/releases/obesidad/.gitignore`;
+- `artifacts/releases/obesidad/obesidad_release_2517e7858901.dvc`;
+- `config/padecimientos.yaml`;
+- plan;
+- código genérico de sede/doctor;
+- tests del release, registry y backend.
+
+Confirmaciones:
+
+1. el bundle de 150 archivos está ignorado y no entra a Git;
+2. sólo aparece el target DVC nuevo;
+3. ningún target legacy fue modificado;
+4. no hay `runs/`, forecasts, modelos legacy, datos o frontend en el rango;
+5. el registry conserva `lifecycle=trained`;
+6. F50 conserva `configured`;
+7. el rango es descendiente directo de `827de945`;
+8. el remoto continúa exactamente en `827de945`;
+9. el objeto DVC ya está sincronizado antes de publicar el puntero Git.
+
+#### Orden R29.1 — Último commit doc-only
+
+Crear un commit que contenga únicamente:
+
+```text
+docs/PLAN_C7_PUBLICACION_OBESIDAD.md
+```
+
+Mensaje sugerido:
+
+```text
+docs: approve C7.2-C2 Git checkpoint
+```
+
+Gate:
+
+1. `git diff --check`;
+2. staged set exacto = plan;
+3. hooks verdes;
+4. no amend;
+5. árbol trackeado limpio;
+6. `ahead 4`;
+7. detenerse sin push.
+
+Este es el último microcommit documental de C7.2. El resultado del futuro push se registrará junto
+con el inicio sustantivo de C7.3, no en otro commit independiente.
+
+#### Orden R29.2 — Presentar autorización C7.2-C2
+
+Después del commit:
+
+1. informar el nuevo SHA;
+2. listar los cuatro commits de `827de945..HEAD`;
+3. confirmar remoto en `827de945`;
+4. confirmar DVC remoto sincronizado;
+5. pedir:
+
+> **AUTORIZO C7.2-C2: PUSH FAST-FORWARD DE `827de945..HEAD` A
+> `origin/feat/registry-padecimientos-obesidad`. NO AUTORIZO MERGE, DEPLOY NI PUBLICACIÓN.**
+
+#### Orden R29.3 — Ejecutar el push, si se autoriza
+
+1. revalidar ancestry y SHA remoto;
+2. push sólo de la rama de trabajo;
+3. sin `--force`;
+4. comprobar `git ls-remote == HEAD`;
+5. comprobar `ahead 0`, árbol trackeado limpio y `main` intacta;
+6. no crear PR, merge, tag o release;
+7. detenerse.
+
+C7.2 quedará entonces cerrada en Git y DVC.
+
+#### Orden R29.4 — Siguiente fase
+
+Con C7.2-C2 PASS, pedir un GO separado para C7.3:
+
+> **GO C7.3. Implementa el compilador genérico y los puentes Reports, Tableau, Web y EpiBot/RAG
+> únicamente en candidate/staging; demuestra que Obesidad sigue invisible con lifecycle=trained y
+> detente sin publicar.**
+
+Antes de cualquier publicación futura:
+
+- C7.4 debe completar cuatro semanas prospectivas;
+- C7.5 debe dejar sólo `web`, `epibot`, `reports`, `tableau`;
+- C7.5 debe cambiar `gallery_enabled` a `false`;
+- el SIGSEGV debe resolverse o aislarse antes de merge/publicación.
+
+#### Próxima orden exacta
+
+> **Crear el commit doc-only `docs: approve C7.2-C2 Git checkpoint`, verificar `ahead 4` y
+> detenerse. Después solicitar autorización explícita para el push Git; no iniciar C7.3.**
