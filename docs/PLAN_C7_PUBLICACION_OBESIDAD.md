@@ -1,18 +1,15 @@
 # C7 — Plan operativo de publicación de Obesidad
 
-> **Estado autoritativo (2026-07-25): C7.2-A CERRADA Y RESPALDADA EN EL REMOTO.** El checkpoint
-> `0dbd0f01..827de945` fue subido por fast-forward a
-> `origin/feat/registry-padecimientos-obesidad`; `git ls-remote` confirma `827de945`. El local está
-> en `34d785a8`, `ahead 1`, por un commit exclusivamente documental que registra el SHA remoto.
-> Los schemas gobiernan compatibilidad, `builder_version` es procedencia sellada y el release
-> candidato sigue siendo `obesidad_release_2517e7858901`. No existe bundle persistido ni hubo DVC,
-> deploy o publicación.
+> **Estado autoritativo (2026-07-25): C7.2-A, C7.2-B Y C7.2-C1 CERRADAS.** C7.2-A está respaldada
+> en Git remoto `827de945`. C7.2-B quedó en el commit local `c6a2e713`; la rama está `ahead 2`.
+> C7.2-C1 subió únicamente el target DVC oscuro. `dvc status -c` está sincronizado y una raíz nueva
+> con caché vacía restauró 150 archivos desde S3; el doctor de Obesidad pasó desde esa copia. No
+> hubo Git push de C7.2-B, deploy ni publicación.
 >
-> **Orden vigente:** C7.2-B puede iniciar únicamente con el literal `GO C7.2-B`. Autoriza sede final
-> local, doctor `runner_release`, promoción atómica y target DVC dedicado; no autoriza `dvc push`,
-> Git push, lifecycle, canales, frontend ni publicación. No crear otro microcommit sólo para
-> registrar este estado: el delta documental se incluye en el futuro commit local de C7.2-B. La
-> Ronda 25 contiene las órdenes autoritativas.
+> **Orden vigente:** crear un commit doc-only con esta evidencia, auditar
+> `827de945..HEAD` y solicitar autorización explícita para C7.2-C2: push Git fast-forward de la rama
+> de trabajo. Ese push no autoriza C7.3, lifecycle, canales, frontend o publicación. La Ronda 28
+> contiene las órdenes autoritativas.
 > Obesidad continúa `trained`, NO-GO e invisible para `published_only`.
 >
 > **Alcance:** publicar únicamente Obesidad E66. Anorexia F50 permanece
@@ -59,7 +56,7 @@ Estado local al redactar:
 
 | componente | estado |
 | --- | --- |
-| Backend | `feat/registry-padecimientos-obesidad` @ `34d785a8`; local `ahead 1` doc-only |
+| Backend | `feat/registry-padecimientos-obesidad` @ `c6a2e713`; local `ahead 2` |
 | Remoto backend | `origin/feat/registry-padecimientos-obesidad` @ `827de945` |
 | Frontend | `main` @ `179bbe36`, sin cambios trackeados |
 | Obesidad | `trained`, NO-GO, invisible para `published_only` |
@@ -73,6 +70,8 @@ Estado local al redactar:
 | C7.2-A.2 | schemas v2 en `b809599d`; local, sin DVC |
 | C7.2-A.2.1 | builder como procedencia sellada en `d5347905`; local, sin DVC |
 | Checkpoint C7.2-A | cinco commits publicados por fast-forward hasta `827de945` |
+| C7.2-B | bundle local + doctor + target DVC en `c6a2e713`; sin push |
+| C7.2-C1 | target DVC presente en S3 y restaurado desde caché vacía; sin Git push |
 
 Cadena estadística canónica:
 
@@ -424,12 +423,12 @@ Crear un comando genérico de promoción desde runs sellados. Debe:
   para compatibilidad y conserva `builder_version` como procedencia sellada.
 - **Checkpoint Git de C7.2-A — COMPLETADO.** El remoto quedó en `827de945`; no autorizó DVC ni
   C7.2-B.
-- **C7.2-B — materialización y puntero local: SIGUIENTE CON GO EXPLÍCITO.** Autoriza únicamente la
-  sede final local, el doctor `runner_release`, promoción atómica y target DVC dedicado.
-  Autoriza promover atómicamente el bundle verificado a su ruta final y crear el target DVC
-  dedicado. No autoriza `dvc push`.
-- **C7.2-C — subida remota:** `dvc push` requiere una tercera autorización posterior al gate y a
-  la revisión del diff del puntero.
+- **C7.2-B — materialización y puntero local: COMPLETADA** en `c6a2e713`. Bundle, doctor,
+  restauración local y target DVC dirigido están verdes.
+- **C7.2-C1 — subida DVC oscura: COMPLETADA.** El target está sincronizado y fue restaurado desde
+  S3 en una caché nueva.
+- **C7.2-C2 — checkpoint Git: SIGUIENTE CON AUTORIZACIÓN EXPLÍCITA.** Publica el puntero y código
+  de C7.2-B únicamente en la rama de trabajo.
 
 ### Commits
 
@@ -438,7 +437,10 @@ Crear un comando genérico de promoción desde runs sellados. Debe:
 - ejecutado: `C7.2-A.2 version runner release schemas before persistence` (`b809599d`);
 - ejecutado: `C7.2-A.2.1 decouple builder provenance from schema compatibility` (`d5347905`);
 - ejecutado: checkpoint Git C7.2-A hasta `827de945`;
-- siguiente y con GO separado: `C7.2-B materialize runner release + dedicated DVC target`.
+- ejecutado: `C7.2-B materialize the release bundle, wire the doctor and add a DVC target`
+  (`c6a2e713`);
+- ejecutado: C7.2-C1, subida DVC y restauración remota;
+- siguiente y con autorización separada: C7.2-C2, checkpoint Git.
 
 ---
 
@@ -5562,4 +5564,421 @@ Deuda   SIGSEGV preexistente = bloqueo pre-merge/pre-publicación
 Sigue   C7.2-C (`dvc push` + restauración en clon limpio), con su propio GO
 ```
 
-_Respuesta:_
+_Respuesta:_ C7.2-B queda aceptada tras cerrar de forma independiente la restauración local que no
+aparecía en el reporte. No ejecutar todavía `dvc push`: C7.2-C se divide en C1 (objeto DVC) y C2
+(checkpoint Git), cada una con autorización propia.
+
+---
+
+### Ronda 26 — Auditoría independiente de C7.2-B y órdenes C7.2-C — 2026-07-25
+
+#### Veredicto
+
+**PASS. C7.2-B queda cerrada; C7.2-C1 queda lista para autorización explícita.**
+
+Estado auditado:
+
+```text
+HEAD local                 c6a2e713 · ahead 2
+remoto Git                 827de945
+release_id                 obesidad_release_2517e7858901
+sede local                 artifacts/releases/obesidad/<release_id>/
+bundle                     150 archivos · 3,660,402 bytes
+target DVC                 md5 9304fd8a9c2c23c2aec96d612a0f7b2b.dir
+dvc status local dirigido  up to date
+dvc status -c              150 archivos new
+backend Obesidad           runner_release
+lifecycle Obesidad         trained · fuera de published_members()
+F50                        configured · oculta
+```
+
+La salida `new` de `dvc status -c` confirma que el objeto todavía no está en el remoto configurado.
+Es el estado correcto antes de C7.2-C1 y evidencia adicional de que C7.2-B no ejecutó `dvc push`.
+
+#### Validación independiente
+
+```text
+test_release_store + backend + bundle +
+artifact_validation + registry                 267 PASS
+doctor Obesidad --artifacts                    rc=0
+doctor --artifacts                             rc=0
+dvc status <target>                            up to date
+git diff --check 34d785a8..c6a2e713            PASS
+```
+
+Se confirmó:
+
+- el doctor real valida desde `artifacts/releases/`, no desde `runs/`;
+- el registry declara `runner_release` y el release correcto;
+- Obesidad permanece `trained`;
+- `published_members()` sigue siendo Depresión, Parkinson, Alzheimer y Dengue;
+- el target nuevo es el único `.dvc` tocado;
+- `models.dvc`, forecasts, figures, datos, logs y Tableau permanecen intactos;
+- frontend `main @ 179bbe36` está trackeado limpio.
+
+#### Brecha documental cerrada por la auditoría
+
+R25.4 exigía restaurar desde otra raíz usando Git + caché DVC local y volver a ejecutar el doctor.
+El reporte de C7.2-B sólo registraba `dvc status`, así que ese criterio no podía darse por hecho.
+
+Se ejecutó en:
+
+```text
+/private/tmp/epiforecast-c72b-restore.DZRfsP
+```
+
+Procedimiento:
+
+1. exportar `HEAD` a la raíz temporal;
+2. inicializar allí un repositorio Git aislado;
+3. configurar **sólo en el temporal** la caché DVC local del repo;
+4. ejecutar `dvc checkout` únicamente sobre el target nuevo;
+5. verificar 150 archivos restaurados;
+6. ejecutar el doctor de Obesidad usando el código y configuración del temporal.
+
+Resultado:
+
+```text
+dvc checkout target       PASS
+archivos restaurados      150
+doctor Obesidad           rc=0
+reproducción              implícita en el doctor · tol=0.0
+```
+
+El doctor global del temporal no es un gate válido de este ensayo porque el `git archive` no
+restauró los targets DVC legacy de los otros cuatro publicados; reportó correctamente que sus
+directorios de modelos no existían. El doctor de Obesidad sí es el gate pertinente y pasó desde el
+bundle restaurado.
+
+El temporal se conserva para evidencia; no se borró nada.
+
+#### Observación de activación, no bloqueante de C7.2-C
+
+El registry conserva, como antes de C7.2-B:
+
+```text
+channels        web, epibot, reports, tableau, weekly_validation, prospective_validation
+gallery_enabled true
+```
+
+No están activos porque Obesidad sigue `trained`. C7.2-B tenía la orden de no cambiarlos y la
+respetó. Antes de cualquier flip a `published`, C7.5 deberá reemplazarlos por exactamente:
+
+```text
+channels        web, epibot, reports, tableau
+gallery_enabled false
+```
+
+Este ajuste pertenece al puntero/activación pública, no al bundle ni a su `release_id`.
+
+#### Orden R26.1 — Preparar el checkpoint documental
+
+No crear otro commit antes de C7.2-C1. Mantener esta actualización del plan como delta local y
+preservarla en el futuro commit documental de cierre de C7.2-C. Evita encadenar commits que sólo
+registran el estado del commit anterior.
+
+Antes de pedir autorización:
+
+1. comprobar que `c6a2e713` sigue siendo `HEAD`;
+2. comprobar que el único delta trackeado es este plan;
+3. repetir `dvc status -c` del target y confirmar `new`;
+4. confirmar remoto Git en `827de945`;
+5. confirmar lifecycle `trained`.
+
+#### Orden R26.2 — C7.2-C1: subir únicamente el objeto DVC
+
+Requiere el literal:
+
+> **GO C7.2-C1. Autoriza `dvc push` únicamente para
+> `artifacts/releases/obesidad/obesidad_release_2517e7858901.dvc`; verifica el remoto y restaura
+> desde él en un temporal limpio. No hagas Git push ni publiques nada.**
+
+Con ese GO:
+
+1. ejecutar `dvc push` con el target explícito; nunca `dvc push` global;
+2. no usar `--force`;
+3. comprobar `dvc status -c <target>` sin salidas `new` o `changed`;
+4. crear otra raíz temporal limpia que no use la caché local existente;
+5. exportar el commit local con el puntero DVC;
+6. configurar únicamente el remoto DVC;
+7. ejecutar `dvc pull <target>`;
+8. verificar 150 archivos, tamaño, digest del directorio y `SHA256SUMS.txt`;
+9. ejecutar doctor Obesidad y reproducción exacta `0.0`;
+10. registrar el objeto remoto y resultados;
+11. detenerse.
+
+Prohibido en C1:
+
+- Git push;
+- modificar el target o reconstruir el bundle;
+- subir cualquier otro target DVC;
+- lifecycle, canales, galería, frontend o publicación;
+- iniciar C7.2-C2 o C7.3.
+
+#### Orden R26.3 — C7.2-C2: checkpoint Git separado
+
+Sólo después del PASS de C1:
+
+1. actualizar este plan con la evidencia del remoto DVC;
+2. crear un commit doc-only de cierre C7.2-C, o incluir el plan en un commit de checkpoint sin
+   alterar `c6a2e713`;
+3. auditar el rango `827de945..HEAD`;
+4. verificar que contiene C7.2-B, el plan y el puntero DVC, pero ningún bundle Git;
+5. pedir autorización literal para push de la rama de trabajo;
+6. hacer fast-forward sin `--force`;
+7. verificar `git ls-remote`, `ahead 0`, main intacta y sin PR/merge/tag;
+8. detenerse.
+
+El push Git no autoriza C7.3, canales ni publicación.
+
+#### Orden R26.4 — Después de C7.2-C
+
+El siguiente trabajo sustantivo será C7.3:
+
+1. compilador genérico desde `release_manifest.v2`;
+2. outputs candidate únicamente en staging;
+3. puentes Reports, Tableau, Web y EpiBot/RAG;
+4. prueba obligatoria de que Obesidad no aparece públicamente mientras siga `trained`;
+5. ningún cambio al bundle ni al `release_id`.
+
+C7.4 conserva el gate prospectivo de cuatro semanas. C7.5 corrige canales/galería y crea el puntero
+público. El SIGSEGV preexistente debe quedar resuelto o aislado antes de merge/publicación.
+
+#### Próxima orden exacta
+
+> **Esperar `GO C7.2-C1`. Sólo entonces subir el target DVC dedicado, restaurarlo desde el remoto
+> en un temporal sin caché local y detenerse sin Git push, lifecycle ni publicación.**
+
+_Respuesta:_ C7.2-C1 queda aceptada. El target DVC está sincronizado y la restauración remota pasó.
+No iniciar C7.3: corresponde cerrar documentalmente C7.2-C y pedir autorización separada para el
+push Git de C7.2-C2.
+
+---
+
+### Ronda 28 — Auditoría independiente del remoto DVC y orden C7.2-C2 — 2026-07-25
+
+#### Veredicto
+
+**PASS. C7.2-C1 cerrada; C7.2-C2 lista para revisión y autorización.**
+
+Comprobaciones sobre el repo vivo:
+
+```text
+dvc status target             up to date
+dvc status -c target          Cache and remote 's3remote' are in sync
+target                        9304fd8a9c2c23c2aec96d612a0f7b2b.dir
+Git remoto                    827de945
+Git local                     c6a2e713 · ahead 2
+bundle local                  150 archivos
+```
+
+#### Restauración desde el remoto con caché vacía
+
+Se creó una raíz nueva:
+
+```text
+/tmp/epiforecast-c72c-remote.oA9qVA
+```
+
+La raíz no reutilizó `.dvc/cache` del repo original. Procedimiento:
+
+1. exportar el commit local que contiene código, registry y puntero;
+2. inicializar Git en el temporal;
+3. conservar únicamente la configuración del remoto DVC trackeada;
+4. ejecutar:
+
+   ```text
+   dvc pull artifacts/releases/obesidad/obesidad_release_2517e7858901.dvc
+   ```
+
+5. contar archivos;
+6. ejecutar el doctor de Obesidad con el código y configuración de esa raíz.
+
+Resultado:
+
+```text
+151 objetos descargados de S3
+150 archivos materializados
+doctor Obesidad --artifacts   rc=0
+reproducción                  incluida por el doctor · tol=0.0
+```
+
+Esto demuestra que el target no depende de la caché ni de `runs/` de la máquina original.
+El temporal se conserva como evidencia; no se borró nada.
+
+#### Orden R28.1 — Commit documental de cierre C7.2-C
+
+Crear un commit local que contenga únicamente:
+
+```text
+docs/PLAN_C7_PUBLICACION_OBESIDAD.md
+```
+
+Mensaje sugerido:
+
+```text
+docs: close C7.2-C1 remote restoration gate
+```
+
+Antes de commitear:
+
+1. `git diff --check`;
+2. `git diff --cached --name-only` debe listar únicamente el plan;
+3. hooks aplicables verdes;
+4. no amendar `c6a2e713`;
+5. después del commit, árbol trackeado limpio y rama `ahead 3`.
+
+#### Orden R28.2 — Auditoría del rango para C7.2-C2
+
+Auditar:
+
+```text
+827de945..HEAD
+```
+
+El rango esperado contiene:
+
+1. `34d785a8`, registro documental del checkpoint C7.2-A;
+2. `c6a2e713`, implementación C7.2-B;
+3. el nuevo commit doc-only de C7.2-C1.
+
+Verificar:
+
+- sólo código/tests del release, registry, puntero DVC y plan;
+- el bundle de 150 archivos no entra a Git;
+- ningún target DVC legacy cambió;
+- lifecycle sigue `trained`;
+- F50 sigue `configured`;
+- frontend no aparece;
+- `git diff --check` verde;
+- remoto Git sigue en `827de945`.
+
+#### Orden R28.3 — Autorización explícita de C7.2-C2
+
+Presentar SHA del commit documental y rango exacto. Esperar una autorización literal equivalente a:
+
+> **AUTORIZO C7.2-C2: PUSH FAST-FORWARD DE `827de945..HEAD` A
+> `origin/feat/registry-padecimientos-obesidad`. NO AUTORIZO MERGE, DEPLOY NI PUBLICACIÓN.**
+
+Sin esa autorización no ejecutar `git push`.
+
+#### Orden R28.4 — Ejecutar C7.2-C2, si se autoriza
+
+1. confirmar que el remoto sigue en `827de945`;
+2. confirmar que local es descendiente directo;
+3. push únicamente de `feat/registry-padecimientos-obesidad`;
+4. no usar `--force`;
+5. verificar con `git ls-remote` el SHA remoto;
+6. comprobar `ahead 0`, árbol trackeado limpio y `main` intacta;
+7. no crear PR, merge, tag o release;
+8. detenerse.
+
+Después del push, un clon de la rama podrá ejecutar `dvc pull` y doctor sin acceder a esta máquina:
+el objeto DVC ya está remoto y el puntero quedará en Git.
+
+#### Orden R28.5 — Después de C7.2-C2
+
+C7.2 queda cerrada. La siguiente fase sustantiva será C7.3, con otro GO:
+
+> **GO C7.3. Implementa el compilador genérico y los cuatro puentes en modo candidate/staging;
+> demuestra que Obesidad sigue invisible mientras lifecycle=trained y detente sin publicar.**
+
+C7.3 no puede:
+
+- cambiar el bundle o `release_id`;
+- escribir artefactos públicos desde modo candidate;
+- cambiar lifecycle, canales o galería;
+- desplegar frontend;
+- ejecutar merge o publicación.
+
+#### Próxima orden exacta
+
+> **Crear el commit doc-only de cierre C7.2-C1, verificar `ahead 3` y detenerse. Después solicitar
+> autorización explícita para el push Git C7.2-C2; no iniciar C7.3.**
+
+---
+
+### Ronda 27 — C7.2-C1: el objeto DVC subido y restaurado desde el remoto — 2026-07-25
+
+Ejecutada la Orden R26.2 con el GO recibido. **Sin Git push, sin lifecycle, sin publicación.**
+
+#### Preflight (R26.1)
+
+```text
+HEAD                       c6a2e713          ✓
+delta trackeado            sólo este plan    ✓
+dvc status -c <target>     151 objetos new   ✓ (no estaba en el remoto)
+remoto Git                 827de945          ✓ (sin mover)
+lifecycle Obesidad         trained · runner_release · obesidad_release_2517e7858901
+```
+
+#### Push del target explícito (R26.2.1–3)
+
+```text
+dvc push artifacts/releases/obesidad/obesidad_release_2517e7858901.dvc
+  → 151 files pushed          (150 payloads + el objeto .dir)
+dvc status -c <target>
+  → Cache and remote 's3remote' are in sync
+```
+
+Sin `--force` y **sin `dvc push` global**. Los demás targets no se tocaron: `models.dvc` y
+`reports/forecasts.dvc` ya estaban en sync con el remoto y siguen con 0 objetos pendientes, así que
+este push no arrastró nada suyo.
+
+Objeto remoto:
+
+```text
+s3://epiforecast-mx-data/files/md5/93/04fd8a9c2c23c2aec96d612a0f7b2b.dir
+  16,743 bytes · ETag 9304fd8a9c2c23c2aec96d612a0f7b2b
+```
+
+#### Restauración desde el REMOTO, sin caché local (R26.2.4–9)
+
+```text
+/private/tmp/.../scratchpad/restoreC1.zUnIkK
+```
+
+Procedimiento: `git archive HEAD` a la raíz temporal → repo Git aislado → **caché DVC vacía** (no se
+apuntó a la del repo, a diferencia del ensayo de la Ronda 26) → sólo el remoto S3 heredado de
+`.dvc/config` → `dvc pull` del target.
+
+```text
+dvc pull <target>            151 files fetched · 150 added
+archivos                     150            ✓
+bytes                        3,660,402      ✓
+SHA256SUMS.txt               618b45775dc8c5b9…  == sede local
+release_manifest.json        38a19a0bb85ada88…  == sede local
+diff -r restaurado vs local  IDÉNTICO
+```
+
+El ensayo corre con el **código y la sede del temporal**, no con los del repo — verificado
+imprimiendo de dónde se importa `epiforecast` y comprobando que `default_releases_root()` cae dentro
+del temporal:
+
+```text
+epiforecast desde   <temporal>/src
+sede resuelta       <temporal>/artifacts/releases
+doctor obesidad     rc=0 · sin problemas
+reproducción        3,328 bases · 5,772 productos · máx |Δ| = 0.0
+release_id          obesidad_release_2517e7858901
+```
+
+Es la primera prueba de que el bundle es restaurable **por alguien que no sea esta máquina**: Git da
+el puntero, S3 da los bytes, y el doctor valida y reproduce sin `runs/` y sin caché previa.
+
+El temporal se conserva como evidencia.
+
+#### Estado
+
+```text
+C7.2-C1 PASS · SIN commit nuevo (R26.1: el plan queda como delta local para el cierre C7.2-C2)
+DVC      objeto en el remoto · target en sync · ningún otro target subido
+Git      HEAD c6a2e713 · ahead 2 · remoto 827de945 sin mover
+Release  NO-GO · Obesidad = trained · runner_release · F50 = configured · NO-GO
+Deuda    SIGSEGV preexistente = bloqueo pre-merge/pre-publicación
+Sigue    C7.2-C2 (commit documental + autorización de Git push), con su propio GO
+```
+
+_Respuesta:_ C7.2-C1 aceptada. La restauración remota quedó confirmada tanto por la ejecución como
+por la auditoría independiente. Seguir las órdenes R28.1–R28.4: commit doc-only, revisión del rango
+y autorización separada antes del push Git. No iniciar C7.3.
