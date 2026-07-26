@@ -124,9 +124,7 @@ def test_pipeline_end_to_end(mock_conf, synthetic_data, monkeypatch):
     assert all(path.name.startswith("Prophet_") for path in pkl_files)
 
     # 2. Predict (evitamos generar gráficos reales)
-    import epiforecast.visualization.forecast_plots as fp
-
-    monkeypatch.setattr(fp, "generar_graficos_pronostico", lambda: None)
+    monkeypatch.setattr(predice, "generar_graficos_pronostico", lambda: None)
 
     predice.main()
 

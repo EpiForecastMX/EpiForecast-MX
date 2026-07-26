@@ -10,6 +10,7 @@ PYTHON ?= .venv/bin/python
 MODELO ?= prophet
 ACTIVATE := bin/activate
 SRC = src/epiforecast
+QUALITY_PATHS = src/epiforecast/ tests/ scripts/run_isolated_pytest.py
 
 .DEFAULT_GOAL := help
 
@@ -386,21 +387,22 @@ model-pipeline: train models-push predict report forecast-push
 ## Lint: verificar formato y calidad
 .PHONY: lint
 lint:
-	$(PYTHON) -m ruff format --check src/epiforecast/ tests/
-	$(PYTHON) -m ruff check src/epiforecast/ tests/
+	$(PYTHON) -m ruff format --check $(QUALITY_PATHS)
+	$(PYTHON) -m ruff check $(QUALITY_PATHS)
 	@echo ">>> Lint passed."
 
 ## Format: auto-formatear código
 .PHONY: format
 format:
-	$(PYTHON) -m ruff check --fix src/epiforecast/ tests/
-	$(PYTHON) -m ruff format src/epiforecast/ tests/
+	$(PYTHON) -m ruff check --fix $(QUALITY_PATHS)
+	$(PYTHON) -m ruff format $(QUALITY_PATHS)
 	@echo ">>> Formatted."
 
 ## Type check con mypy
 .PHONY: typecheck
 typecheck:
 	$(PYTHON) -m mypy src/epiforecast/
+	$(PYTHON) -m mypy scripts/run_isolated_pytest.py
 	@echo ">>> Type check passed."
 
 ## Ejecutar tests
@@ -409,31 +411,14 @@ test:
 	$(PYTHON) -m coverage erase
 	$(PYTHON) -m pytest -o addopts='' --strict-markers --tb=short -q tests/ \
 		-m "not slow and not integration" --cov=src/epiforecast --cov-report= --cov-fail-under=0
-	@set -eu; \
-	collected=$$(mktemp); \
-	trap 'rm -f "$$collected"' EXIT HUP INT TERM; \
-	if ! $(PYTHON) -m pytest -o addopts='' --collect-only -q tests/ \
-		-m "slow or integration" >"$$collected" 2>&1; then \
-		cat "$$collected"; \
-		exit 1; \
-	fi; \
-	count=0; \
-	while IFS= read -r node; do \
-		case "$$node" in \
-			*::*) \
-				count=$$((count + 1)); \
-				echo ">>> Test aislado: $$node"; \
-				$(PYTHON) -m pytest -o addopts='' --strict-markers --tb=short -q "$$node" \
-					--cov=src/epiforecast --cov-append --cov-report= --cov-fail-under=0; \
-				;; \
-		esac; \
-	done <"$$collected"; \
-	if [ "$$count" -eq 0 ]; then \
-		echo "No se recolectaron tests slow/integration"; \
-		exit 1; \
-	fi
+	$(PYTHON) scripts/run_isolated_pytest.py --coverage
 	$(PYTHON) -m coverage report --fail-under=68
 	@echo ">>> Tests passed."
+
+## Tests lentos/integración, un proceso por archivo para aislar runtimes nativos
+.PHONY: test-integration
+test-integration:
+	$(PYTHON) scripts/run_isolated_pytest.py
 
 ## Tests rápidos (sin slow/integration)
 .PHONY: test-fast

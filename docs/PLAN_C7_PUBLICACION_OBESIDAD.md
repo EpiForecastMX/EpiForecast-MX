@@ -2758,6 +2758,106 @@ _Respuesta:_
 
 ---
 
+### Ronda 39 — C7.6-READINESS backend: SIGSEGV aislado y gate estable — 2026-07-26
+
+#### Diagnóstico reproducido
+
+El reproductor histórico continúa siendo válido:
+
+```text
+pytest test_deepar_smoke.py + test_pipeline_e2e.py en un solo proceso → rc=139
+```
+
+`faulthandler` acotó la caída a esta secuencia:
+
+```text
+DeepAR/PyTorch PASS
+pipeline Prophet PASS
+Ensemble PASS
+Stacking: ProphetExpert PASS · ETSExpert PASS
+LightGBM → OMP Error #179 pthread_mutex_init → SIGSEGV
+```
+
+La causa es una colisión de runtimes OpenMP nativos cargados en el mismo intérprete, no un fallo
+del modelo ni falta de hilos. El entorno contiene implementaciones distintas para PyTorch y el
+stack scikit-learn/LightGBM; fijar `OMP_NUM_THREADS=1` no descarga ni unifica esos runtimes.
+
+Cada módulo en un proceso limpio pasa:
+
+```text
+test_deepar_smoke.py   2/2 PASS
+test_pipeline_e2e.py   3/3 PASS
+```
+
+#### Solución funcional
+
+Se añadió `scripts/run_isolated_pytest.py`, genérico y sin nombres de motores o padecimientos:
+
+1. recolecta node IDs con el marker solicitado;
+2. deduplica por archivo conservando el orden;
+3. ejecuta cada archivo en un intérprete nuevo;
+4. acota los hilos numéricos a uno;
+5. detiene el gate ante el primer fallo;
+6. convierte una señal `SIGSEGV` al código observable `139`.
+
+El aislamiento es por archivo, no por cada caso parametrizado. Así DeepAR y Stacking nunca
+comparten runtime, mientras los fixtures costosos de cada módulo se reutilizan. `Makefile` expone
+`make test-integration` y `make test` usa el mismo runner con cobertura.
+
+Regresión nueva:
+
+```text
+7/7 PASS · deduplicación · un proceso por archivo · fail-fast · SIGSEGV → rc=139
+```
+
+#### Hallazgo lateral y cierre
+
+El E2E parcheaba `forecast_plots.generar_graficos_pronostico`, pero `scripts.predice` ya había
+importado otra referencia. El mock no actuaba y una figura se escribió en `reports/forecasts`.
+
+Se corrigió el patch sobre el consumidor real (`predice.generar_graficos_pronostico`). La PNG
+generada se comparó y se restauró de forma dirigida desde su objeto DVC:
+
+```text
+archivo   reports/forecasts/ensemble/Alzheimer/Nacional/Alzheimer_Nacional_general.png
+md5 DVC   b46687bd16ee1a4f4e5262ede997d39d
+sha256    71af6ddd4bdffa6276197e7ad63beab3316bde14fc01a7c423b2663f921d497d
+```
+
+Una repetición del E2E dejó ese SHA256 idéntico. No se hizo checkout global. El target completo
+`reports/forecasts.dvc` continúa reportando una divergencia de directorio previa que debe tratarse
+por separado; esta ronda sólo restauró el archivo que ella misma alteró. Los cuatro agregados CSV
+conservan `cb5be395`, `96791595`, `1d2cf0a7` y `ac97dc8e`.
+
+#### Gate backend
+
+```text
+lint                              PASS
+mypy src + runner aislado         PASS
+fast                              1,918 PASS
+integración                       61/61 PASS · 8 procesos por archivo · rc=0
+doctor Obesidad / completo        rc=0 / rc=0
+release DVC                       up to date
+published por 6 canales           Depresión · Parkinson · Alzheimer · Dengue
+Obesidad                          trained · invisible
+```
+
+#### Estado y siguiente orden
+
+El bloqueante backend `SIGSEGV` queda **AISLADO/PASS**, pendiente de auditoría y commit. C7.6 no
+está cerrada todavía:
+
+1. corregir los cuatro fallos de `npm test` del dashboard;
+2. regenerar el RAG con `GEMINI_API_KEY` ya disponible como secreto de entorno;
+3. exigir `npm test`, `npm run check` y drift RAG cero;
+4. auditar ambos repos y preparar el paquete de aprobación.
+
+No autoriza merge, deploy, activación, lifecycle ni publicación.
+
+_Respuesta:_
+
+---
+
 ### Aviso final de autoridad — aplicar Ronda 37
 
 Las rondas anteriores se conservan como bitácora y pueden contener el orden ya sustituido de
@@ -7075,3 +7175,20 @@ Obesidad    trained · runner_release · puntero INACTIVO · NO-GO
 ```
 
 _Respuesta:_
+
+---
+
+### Estado operativo final — aplicar Ronda 39
+
+La Orden 37.1 ya fue subida en `e8102de2`. El microcierre backend de la Orden 37.2 está implementado
+y verificado como WIP:
+
+```text
+SIGSEGV       causa demostrada · aislamiento por archivo · PASS
+fast          1,918 PASS
+integración   61/61 PASS · rc=0
+estado        sin commit, push, merge, deploy ni activación
+```
+
+**Siguiente:** auditar/commitear este microcierre y continuar con los cuatro fallos del dashboard y
+el RAG. La descripción completa y la evidencia están en la Ronda 39.
