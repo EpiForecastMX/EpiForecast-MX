@@ -8350,3 +8350,64 @@ C7.4        CONGELADO · INCOMPLETE 0/4 · gate_digest 5bc39aa5d44f5e62… intac
 ```
 
 _Respuesta:_
+
+---
+
+### Ronda 50 — Orden 47.1 CERRADA: una sola autoridad para el fixture — 2026-07-26
+
+Commit único en el dashboard: **`98404fa0`**. STOP. Sin 47.2, RAG, clave, push, deploy ni activación.
+
+#### Gate 47.1
+
+```text
+fixture generado         616 filas · 616 consultas únicas · IDs 1..616
+--check                  rc=0 · hash antes b0df96e06d69914a == después  → NO escribe
+dos generaciones         byte-idénticas
+npm test                 616/616 PASS
+npm run test:candidate    19/19 PASS
+knowledge · rag_index · index.html · epibot/index.html   byte-idénticos a 42477019
+archivos tocados         sólo epibot/tests/ (kb.js, run_tests.js y package.json intactos)
+```
+
+`--check` falla cerrado, comprobado en temporal sobre las cuatro mutaciones que pide la orden:
+
+```text
+fixture idéntico    rc=0        caso ausente        rc=1
+contrato alterado   rc=1        consulta duplicada  rc=1
+                                fixture ausente     rc=1
+```
+
+#### Cómo se resolvió, sin overlays
+
+`CONTRATOS_VIGENTES` desapareció: cada contrato se declara **una sola vez, en su sección**.
+
+- **Jalisco y Tabasco**: el duplicado no lo producía una línea repetida sino el **bucle sobre
+  `sampleEstados`**, que emitía `como esta <estado>` como caso entity-only chocando con el caso
+  explícito de `answerEstado`. El bucle ahora los omite y el caso explícito verifica **respuesta Y
+  entidad**. Cero cobertura perdida.
+- **Parkinson**: `cuantos modelos tiene parkinson` → `answerConteo` con `111`/`modelo`; la ficha se
+  pide con la consulta propia `informacion de parkinson` → `answerPadecimiento`.
+- **12 contratos** corregidos en su declaración original.
+- **52 consultas** devueltas a la fuente con `add`/`addCtx`, agrupadas por intención: Dengue (8),
+  distribución y rendimiento (2), contexto conversacional (35) y resto (7).
+
+Ediciones localizadas, cada una con aserción de impacto único (`count == 1`). Ningún regex global:
+la Ronda 48 falló exactamente por ahí.
+
+#### Nota sobre el recuento
+
+616 y no 618 porque las dos filas fusionadas eran **la misma consulta declarada dos veces**, no dos
+pruebas distintas. El fixture pasa de 618 filas con 3 consultas repetidas a 616 filas con 616
+consultas únicas — que es la precondición para que `--check` pueda exigir unicidad sin contradecirse.
+
+#### Estado
+
+```text
+Dashboard   98404fa0 · limpio · 616/616 · 19/19 · superficie intacta · ahead 4 de main, SIN PUSH
+Backend     ahead 5, SIN PUSH
+Readiness   SIGSEGV ✓ · npm test ✓ · autoridad del fixture ✓ · traza de handler ✗ (47.2) · RAG ✗
+Obesidad    trained · runner_release · puntero inactivo · 0 menciones públicas · NO-GO
+C7.4        CONGELADO · INCOMPLETE 0/4 · gate_digest 5bc39aa5d44f5e62… intacto
+```
+
+_Respuesta:_
