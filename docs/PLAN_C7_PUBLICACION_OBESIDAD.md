@@ -1,9 +1,9 @@
 # C7 — Plan operativo de publicación de Obesidad
 
 > **Estado autoritativo (2026-07-26): C7.2 y C7.3 CERRADAS; C7.5-PREP PASS; C7.6 BACKEND PASS.**
-> Backend local `0273b591` y remoto `dbfdd49c`; dashboard local
-> `feat/c73-candidate-staging@42477019` más un cambio parcial sin commit en
-> `tests/generate_tests.js`, y remoto `d5ead880`. El target DVC del release
+> Backend local `40d32c1f` y remoto `dbfdd49c`; dashboard local limpio
+> `feat/c73-candidate-staging@42477019` y remoto `d5ead880`. El intento parcial de 47.1 fue
+> revertido completamente; no quedan cambios trackeados en el dashboard. El target DVC del release
 > `obesidad_release_2517e7858901` está sincronizado y fue restaurado con caché vacía. El SIGSEGV
 > PyTorch→LightGBM quedó aislado por archivo, con 1,918 fast y 61/61 integraciones. No hubo
 > activación, merge, deploy ni publicación.
@@ -8260,6 +8260,93 @@ Readiness   SIGSEGV ✓ · npm test funcional ✓ · autoridad del fixture ✗ �
 Obesidad    trained · no publicada
 ```
 
-_Respuesta:_ ¿retomo 47.1 con el patrón corregido en una ronda dedicada, o prefieres que ataque
-primero 47.2 (traza del handler real), que es lo que hoy hace que cualquier verde de enrutamiento
-sea indemostrable?
+_Respuesta:_ **retomar primero 47.1 en una ronda dedicada; no empezar 47.2 todavía.**
+
+La autoridad del fixture es la dependencia anterior: instrumentar el handler contra 618 filas con
+duplicados y contratos contradictorios mezclaría dos fuentes de fallo y haría difícil distinguir
+un defecto del dispatcher de un defecto del corpus de pruebas.
+
+Orden autorizada para la siguiente ronda:
+
+1. trabajar desde el dashboard limpio en `42477019`;
+2. usar ediciones localizadas y revisables (`apply_patch` o edición manual por declaración);
+   **prohibido** repetir el reemplazo global por regex;
+3. fusionar Jalisco y Tabasco, separar conteo/ficha de Parkinson y dejar 616 consultas únicas;
+4. corregir los 15 contratos en sus declaraciones originales, sin tabla de overrides;
+5. incorporar los casos posteriores con `add`/`addCtx` en secciones funcionales;
+6. implementar `--check` no mutante y generación determinista;
+7. exigir:
+
+```text
+fixture generado              616 consultas únicas
+IDs                           1..616
+--check                       rc=0 · hash antes=después
+npm test                      616/616 PASS de salida
+test:candidate                19/19 PASS
+dos generaciones              byte-idénticas
+superficies públicas          byte-idénticas
+```
+
+8. crear un único commit local de 47.1 y **STOP**.
+
+En esa ronda todavía no se toca `kb.js`, `run_tests.js`, `package.json`, RAG ni la clave. Tras
+auditar el commit de 47.1, ejecutar 47.2 en un commit separado para que `expectedHandler` se
+contraste contra el handler real; después se ejecutará 47.3 para integrar ambos checks en los
+comandos oficiales.
+
+---
+
+### Ronda 49 — Universo objetivo de 47.1, verificado — 2026-07-26
+
+**No arranco 47.1 en esta ronda.** Estoy al final del contexto útil de esta sesión, y empezar una
+migración de 616 casos que no puedo terminar ni verificar repetiría exactamente el error de la Ronda
+48 —el que la orden prohíbe repetir—. Dejo medido lo que faltaba para que la próxima vuelta sea
+mecánica.
+
+#### El objetivo cuadra con la orden, comprobado sobre el fixture real
+
+```text
+filas commiteadas                 618
+consultas únicas                  615      (3 duplicadas)
+tras fusionar las 3               615
++ 'informacion de parkinson'      616      ← objetivo de la orden 47.1
+base del generador                565
+consultas nuevas a incorporar      51
+```
+
+Las tres duplicadas no aportan una consulta única cada una, así que **fusionarlas no cambia el
+recuento de únicas**: pasa de 618 filas a 615 consultas, y la separación de la ficha de Parkinson
+añade la 616. La orden y el fixture coinciden sin ajustes.
+
+#### Receta exacta para la próxima ronda
+
+Todo verificado en esta sesión; no hay que re-descubrir nada:
+
+| paso | cantidad | detalle |
+| --- | ---: | --- |
+| fusionar Jalisco | 1 | borrar `add('como esta jalisco', '*', [], [], {estado:'Jalisco'})`; enriquecer `add('como esta jalisco', 'answerEstado', ['Jalisco'])` con `{estado:'Jalisco'}` |
+| fusionar Tabasco | 1 | idéntico, con Tabasco |
+| re-contratar Parkinson | 1 | `cuantos modelos tiene parkinson` → `answerConteo`, `['111','modelo']`, entidad Parkinson |
+| separar la ficha | +1 | `add('informacion de parkinson', 'answerPadecimiento', ['Parkinson'])` |
+| contratos in situ | 15 | ids 78, 82, 150, 287, 377, 378, 380, 452, 508–512, 514, 606 |
+| casos posteriores | +51 | con `add`/`addCtx`, en secciones funcionales |
+
+Formato real del fuente, que es donde falló la Ronda 48:
+
+```js
+add('como esta jalisco', 'answerEstado', ['Jalisco']);   // comillas SIMPLES, una línea por caso
+```
+
+Ediciones localizadas y revisables. **Regex global: prohibido.**
+
+#### Estado al cerrar la sesión
+
+```text
+Dashboard   42477019 · limpio · 618/618 · 19/19 · superficie intacta · ahead 3 de main, SIN PUSH
+Backend     ahead 4 · SIN PUSH
+Readiness   SIGSEGV ✓ · npm test funcional ✓ · autoridad del fixture ✗ · traza de handler ✗ · RAG ✗
+Obesidad    trained · runner_release · puntero inactivo · 0 menciones públicas · NO-GO
+C7.4        CONGELADO · INCOMPLETE 0/4 · gate_digest 5bc39aa5d44f5e62… intacto
+```
+
+_Respuesta:_
