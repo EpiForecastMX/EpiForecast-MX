@@ -1,9 +1,10 @@
 # C7 — Plan operativo de publicación de Obesidad
 
-> **Estado autoritativo (2026-07-26): C7.2 y C7.3 CERRADAS; C7.5-PREP PASS.** El backend remoto
-> está en `815a49a3`; el dashboard candidate está en `d5ead880`. El backend local está en
-> `7b05d240`, `ahead 3`, con C7.4 congelado y C7.5-PREP implementado. El target DVC del release
-> `obesidad_release_2517e7858901` está sincronizado y fue restaurado con caché vacía. No hubo
+> **Estado autoritativo (2026-07-26): C7.2 y C7.3 CERRADAS; C7.5-PREP PASS; C7.6 BACKEND PASS.**
+> Backend local/remoto `dbfdd49c`; dashboard local/remoto
+> `feat/c73-candidate-staging@d5ead880`. El target DVC del release
+> `obesidad_release_2517e7858901` está sincronizado y fue restaurado con caché vacía. El SIGSEGV
+> PyTorch→LightGBM quedó aislado por archivo, con 1,918 fast y 61/61 integraciones. No hubo
 > activación, merge, deploy ni publicación.
 >
 > **Decisión de política del usuario (2026-07-26):** no esperar cuatro semanas antes de publicar.
@@ -12,10 +13,12 @@
 > `INCOMPLETE (0/4)` y no se presenta como PASS. Un FAIL final obliga a rollback; un PASS convierte
 > la publicación condicionada en confirmada.
 >
-> **Orden vigente:** (1) congelar y respaldar el delta local; (2) cerrar C7.6-READINESS; (3) emitir
-> el paquete de aprobación; (4) activar y desplegar coordinadamente con etiqueta pública de
-> validación en curso; (5) reejecutar C7.4 con cada boletín hasta 4/4. La Ronda 37 contiene las
-> órdenes ejecutables y sustituye cualquier orden histórica incompatible.
+> **Orden vigente:** (1) cerrar los 11 fallos de `npm test`, agrupados en cuatro causas; (2)
+> corregir el contrato de vectores del RAG y llevar el drift real a cero con la clave ya disponible
+> como secreto; (3)
+> cerrar C7.6-READINESS y emitir el paquete de aprobación; (4) activar y desplegar coordinadamente
+> con etiqueta pública de validación en curso; (5) reejecutar C7.4 con cada boletín hasta 4/4. La
+> Ronda 40 contiene las órdenes ejecutables y sustituye cualquier orden histórica incompatible.
 > Obesidad continúa por ahora `trained`, NO-GO e invisible para `published_only`.
 >
 > **Alcance:** publicar únicamente Obesidad E66. Anorexia F50 permanece
@@ -7192,3 +7195,565 @@ estado        sin commit, push, merge, deploy ni activación
 
 **Siguiente:** auditar/commitear este microcierre y continuar con los cuatro fallos del dashboard y
 el RAG. La descripción completa y la evidencia están en la Ronda 39.
+
+---
+
+### Ronda 40 — Auditoría posterior al push y órdenes de C7.6 dashboard/RAG — 2026-07-26
+
+#### Estado auditado, sólo lectura
+
+```text
+backend HEAD/remoto     dbfdd49c · ahead 0 · behind 0
+dashboard HEAD/remoto   d5ead880 · feat/c73-candidate-staging
+backend SIGSEGV         AISLADO/PASS
+Obesidad                trained · 4 canales candidate · gallery false
+publicados              Depresión · Parkinson · Alzheimer · Dengue
+F50                     configured · oculta
+activación/deploy       ninguno
+```
+
+Los archivos no rastreados de ambos repos son del usuario y quedan fuera de alcance.
+
+#### Hallazgo R40-P0 — “sin drift” de staging no significa “todos tienen vector”
+
+`scripts/rag_staging.mjs` construye el índice candidate reutilizando vectores del índice público y
+asigna `[]` a los chunks nuevos. Su verificación sólo comprueba que el hash del chunk exista:
+
+```text
+chunk candidate presente + vector []  → hoy imprime “✔ sin drift”
+```
+
+Eso fue suficiente para demostrar en C7.3 que el corpus candidate se incorporaba sin tocar la
+superficie pública, pero **no satisface C7.6-READINESS**. EpiBot requiere que cada chunk público o
+candidate tenga un vector no vacío. El contrato correcto es el mismo de `rag_verify.mjs`:
+presencia **y** vector.
+
+También se confirmó que `build_rag_index.mjs` es resiliente: puede terminar sin error aunque un
+embedding falle y deje un vector vacío. Por tanto, ejecutar `rag:build` no basta. El gate siempre
+debe terminar con `rag:verify` en `rc=0` y cero vectores vacíos.
+
+#### Orden 40.1 — Corregir 11 fallos en cuatro grupos de `npm test`
+
+Trabajar únicamente en `EpiForecast-IMSS-Dashboard`, rama `feat/c73-candidate-staging`.
+
+1. Capturar hashes de `knowledge.json`, `rag_index.json`, `index.html` y `epibot/index.html`.
+2. Ejecutar `npm test` y registrar los 11 casos exactos, consulta, respuesta y aserción.
+3. Reproducirlos en un worktree temporal de `origin/main@179bbe36` para separar deuda previa de
+   regresión candidate, sin cambiar de rama el worktree principal.
+4. Corregir la causa en código o fixtures según el contrato funcional; no bajar expectativas, no
+   convertir fallos en skips y no aumentar tolerancias.
+5. Añadir una regresión mínima por causa, no una copia masiva de los casos.
+6. Ejecutar:
+
+```text
+npm test
+npm run test:candidate
+```
+
+7. Confirmar que los cuatro artefactos públicos del paso 1 siguen byte-idénticos.
+8. STOP para auditoría del diff. No regenerar RAG dentro del mismo commit.
+
+Gate 40.1:
+
+```text
+npm test              100% PASS
+test:candidate        100% PASS
+knowledge/RAG/HTML    byte-idénticos
+Obesidad pública      0 menciones
+deploy/push/merge     ninguno
+```
+
+#### Orden 40.2 — Hacer verdadero el contrato RAG candidate
+
+En un commit separado:
+
+1. Cambiar la verificación de staging para exigir un vector no vacío por cada chunk.
+2. Añadir pruebas rojas para:
+   - chunk ausente;
+   - chunk presente con `[]`;
+   - vector presente pero desalineado con su chunk;
+   - caso completamente cubierto.
+3. Permitir que el builder candidate genere los embeddings faltantes usando
+   `GEMINI_API_KEY`, o construir el índice ampliado mediante una función compartida con
+   `build_rag_index.mjs`; no duplicar la lógica de embeddings.
+4. Mantener la salida exclusivamente bajo `<staging_root>/rag_index.staging.json`.
+5. No leer ni escribir el valor de la clave. Antes de ejecutar, comprobar sólo:
+
+```sh
+test -n "${GEMINI_API_KEY:-}"
+```
+
+6. Un fallo de API, rate limit o vector vacío debe dar `rc != 0`; no degradar a modo léxico en el
+   gate de readiness.
+7. STOP y auditar el contrato antes de regenerar índices.
+
+#### Orden 40.3 — Reparar el drift público en la rama, sin deploy
+
+Después de 40.1 y 40.2:
+
+1. Preservar hash y copia temporal de `epibot/rag_index.json`.
+2. Desde `epibot/`, con la clave sólo en el entorno, ejecutar:
+
+```text
+npm run rag:build
+npm run rag:verify
+```
+
+3. Exigir:
+
+```text
+chunks corpus == chunks índice
+vectores no vacíos == chunks corpus
+missing == 0
+failed embeddings == 0
+rag:verify rc == 0
+```
+
+4. Verificar que el índice público de esta rama todavía contiene **cero** chunks de Obesidad. La
+   reparación de drift baseline no activa el candidate.
+5. El diff permitido es el índice RAG y, sólo si la causa lo exige, sus pruebas/código de build.
+   `knowledge.json` y los HTML permanecen byte-idénticos.
+6. No deploy, push, merge ni publicación.
+
+#### Orden 40.4 — Gate RAG con Obesidad únicamente en staging
+
+1. Regenerar un shard candidate C7.3a en un temporal fuera de rutas públicas, desde
+   `obesidad_release_2517e7858901`, mientras Obesidad siga `trained`.
+2. Ejecutar el builder candidate corregido sobre ese staging.
+3. Exigir:
+
+```text
+corpus base                 cubierto 100%
+chunk Obesidad candidate    presente y con vector
+vectores vacíos             0
+drift staging               0
+rag_index.json de la rama   sin Obesidad
+knowledge/HTML públicos     sin Obesidad
+```
+
+4. Ejecutar `npm run check`; debe quedar completamente verde.
+5. Repetir el build candidate en otro staging y comparar contenido determinista ignorando sólo
+   metadata temporal expresamente no identitaria.
+6. STOP para auditoría conjunta de los commits 40.1–40.4.
+
+#### Criterio de cierre C7.6-READINESS
+
+```text
+backend lint/typecheck/fast/integration     PASS · ya cerrado en dbfdd49c
+dashboard npm test/test:candidate/check     PASS
+RAG baseline                               drift 0 · todos los chunks con vector
+RAG Obesidad candidate                     drift 0 en staging · todos con vector
+superficies públicas                       Obesidad ausente
+legacy/F50                                 intactos
+```
+
+Al cumplirlo, generar el paquete C7.6 y pedir autorizaciones separadas. No ejecutar todavía el flip,
+el puntero activo, el deploy, Tableau o la publicación condicionada.
+
+#### Próxima acción exacta
+
+**Ejecutar sólo la Orden 40.1.** Presentar el diagnóstico de los 11 fallos agrupados por causa y el
+diff; no empezar 40.2 en la misma ronda.
+
+_Respuesta:_
+
+---
+
+### Ronda 41 — Validación read-only del dashboard y RAG — 2026-07-26
+
+Se ejecutaron únicamente pruebas no mutantes. No se regeneró el índice, no se utilizó
+`GEMINI_API_KEY`, no se cambió código y no hubo commit, push, merge, deploy o activación.
+
+#### Resultado exacto
+
+```text
+npm test                 605/616 PASS · 11 FAIL · rc=1
+npm run test:candidate    19/19 PASS · rc=0
+npm run rag:verify        DRIFT 19 · rc=1
+```
+
+El reporte anterior de “cuatro fallos” era ambiguo: hay **11 casos fallidos**, concentrados en
+**cuatro grupos funcionales**:
+
+| grupo | casos | síntoma |
+| --- | ---: | --- |
+| `answerTrainingConfig` | 1 | “hiperparametros del modelo” devuelve `null` |
+| `null` / fuera de tema | 3 | fútbol, bitcoin y tacos devuelven rechazo explícito en vez de `null` |
+| `answerProyectoMeta` | 5 | artículo/publicación/paper/referencia devuelven `null` |
+| `answerDistribucion` | 2 | la respuesta existe, pero no cumple el contrato textual `Distribución/DISTRIB` |
+| **Total** | **11** | cuatro causas a diagnosticar |
+
+Casos exactos:
+
+```text
+287  hiperparametros del modelo
+377  resultado del futbol
+378  como va el bitcoin
+380  receta de tacos
+413  tienen articulo publicado
+414  publicacion del proyecto
+415  hay paper del proyecto
+416  donde esta el articulo
+417  referencia del articulo
+512  boxplot del smape
+513  grafico del mase por padecimiento
+```
+
+#### RAG baseline
+
+```text
+corpus actual    454 chunks
+índice actual    452 chunks · 452 con vector
+faltantes        19
+```
+
+Fuentes afectadas:
+
+| fuente | faltantes |
+| --- | ---: |
+| Validación semanal | 12 |
+| Datos de Dengue | 3 |
+| Datos del proyecto | 2 |
+| Avance 1 (Equipo 01) | 1 |
+| Avance 2 (Equipo 01) | 1 |
+
+La rama candidate conserva su contrato point-only: 19/19 pruebas verdes. El fallo de readiness
+está en la suite funcional legacy y en el índice RAG baseline, no en el consumidor candidate.
+
+#### Orden corregida
+
+La Orden 40.1 se mantiene, con esta precisión:
+
+1. tratar los 11 casos como cuatro causas, no como 11 parches textuales;
+2. reproducir cada grupo en `origin/main@179bbe36`;
+3. decidir por contrato si los tres fuera de tema deben devolver `null` o un rechazo explícito;
+   cambiar código y expectativas juntos sólo si existe una decisión funcional documentada;
+4. no regenerar `test_cases.json` para borrar discrepancias;
+5. exigir 616/616 y 19/19 antes de comenzar la Orden 40.2.
+
+Después, la Orden 40.2 debe cerrar el falso verde de vectores vacíos y la Orden 40.3 debe resolver
+los 19 chunks con la clave como secreto.
+
+#### Próxima acción
+
+**Diagnosticar y proponer el arreglo de los cuatro grupos de la Orden 40.1.** No implementar ni
+regenerar RAG hasta recibir el siguiente GO.
+
+_Respuesta:_
+
+---
+
+### Ronda 42 — Diagnóstico de los 11 fallos del dashboard (Orden 40.1) — 2026-07-26
+
+Diagnóstico y propuesta. **No se implementó nada**, no se regeneró el RAG, no se usó la clave, no
+hubo commit, push, deploy ni activación en el dashboard.
+
+*(Nota de método: este diagnóstico se entregó primero en el chat en vez de aquí. Corregido: la
+bitácora es el canal, y la respuesta va al final de esta ronda.)*
+
+#### Reproducción en `main` (punto 2 de la orden corregida)
+
+```text
+rama feat/c73-candidate-staging @ d5ead880   PASS 605 · FAIL 11 · rc=1
+main                          @ 179bbe36   PASS 605 · FAIL 11 · rc=1
+conjunto de fallos                          IDÉNTICO
+```
+
+Preexistentes y ajenos a C7.3. El consumidor candidate sigue en 19/19.
+
+#### Las cuatro causas
+
+**G1 (#287) y G3 (#413–417) — 6 casos — son la MISMA causa.** En `answer()`, antes de la cadena de
+handlers, hay un guard deliberado:
+
+```js
+// Guard: preguntas sobre el PAPER / MICAI / metodología → ceder al RAG, que
+// tiene el artículo indexado. Se hace ANTES de los handlers locales...
+const ragIntent = ['paper','micai','articulo','publicacion',…,'hiperparametro','hiperparametros',…];
+if (any(q, ragIntent) && !ent.estado) return null;
+```
+
+`articulo`, `publicacion`, `paper` e `hiperparametros` **están en esa lista a propósito**. Por eso
+devuelven `null` aunque `answerProyectoMeta` (kb.js:1164) y `answerTrainingConfig` tengan
+disparadores que coinciden: **nunca se les llega**. Los tests codifican el comportamiento anterior
+al guard.
+
+**G2 (#377, #378, #380) — 3 casos — guard off-topic, también deliberado y con motivo escrito:**
+
+```js
+// Guard: temas claramente ajenos (clima, deportes, recetas, etc.) → declinar
+// LOCALMENTE, sin ceder a la IA. Evita además el fuzzy 'clima'→'colima'.
+```
+
+Los tests esperan `null` (fallback a Gemini); el producto decidió declinar en local. La decisión
+funcional existe y está documentada en el código, que es la condición que pide el punto 3.
+
+**G4 (#512, #513) — 2 casos — colisión de prioridad en la cadena. Éste sí es un defecto real.**
+Confirmado ejecutando, no leyendo:
+
+| caso | lo captura | posición | debía capturarlo |
+| --- | --- | ---: | --- |
+| `boxplot del smape` | `answerSmapeBox` (trigger `boxplot`) | 9 | `answerDistribucion` (12) |
+| `grafico del mase por padecimiento` | `answerRendimientoPorPadecimiento` | 7 | `answerDistribucion` (12) |
+
+`answerDistribucion` también dispara con `boxplot`, pero llega tarde. `answerRendimientoPorPadecimiento`
+ya tiene un `chartWord` que lo aparta de matriz/burbuja/polar/mapa/treemap/radar/barra: **le falta
+`grafico`+métrica**, que es territorio de `answerDistribucion`.
+
+#### Propuesta
+
+1. **G1+G3+G2 (9 casos) → actualizar expectativas, no el código.** El comportamiento es intencional
+   y está documentado en el propio código. `#287` y `#413–417` pasan a esperar `null` con nota
+   «cedido al RAG por `ragIntent`»; `#377/378/380` pasan a esperar el rechazo local con
+   `mustContain`. **Nueve ediciones nominales, una por caso, con su razón**: no se regenera
+   `test_cases.json` (punto 4 de la orden).
+2. **G4 (2 casos) → arreglar el código.** Guarda en `answerSmapeBox` para ceder ante consulta de
+   distribución con métrica, y ampliar el `chartWord` de `answerRendimientoPorPadecimiento` para no
+   robar `grafico`+métrica. Las expectativas se quedan: el contrato correcto es el que hoy falla.
+3. Dejar la decisión de contrato de G2 firmada aquí, para que no viva sólo en un comentario.
+
+#### La lectura alternativa, que es tuya y no mía
+
+Hay una segunda lectura defendible de G1+G3: que `ragIntent` sea **demasiado ancho** y esté cediendo
+al RAG preguntas que el KB local respondía mejor. Los cinco de `answerProyectoMeta` tienen respuesta
+local rica y curada (título, subtítulo, título en inglés, autores con institución), y cederlas al RAG
+las degrada. Si ésa es tu lectura, el arreglo es **acotar `ragIntent`** y **mantener** las
+expectativas tal como están.
+
+Las dos opciones son coherentes; la diferencia es de producto, no técnica:
+
+| opción | qué se cambia | efecto para el usuario final |
+| --- | --- | --- |
+| **A** — el guard manda | 9 expectativas | «¿hay paper?» la contesta el RAG con el texto del artículo |
+| **B** — el KB local manda | `ragIntent` se acota | «¿hay paper?» devuelve la ficha curada del proyecto |
+
+No la decido yo.
+
+#### Estado
+
+```text
+Orden 40.1  DIAGNOSTICADA · sin implementar
+Fallos      11 = 4 causas · 9 por expectativas obsoletas · 2 por prioridad de cadena
+Dashboard   tracked-clean · worktree temporal de main retirado
+RAG         sin tocar · drift 19 pendiente de la clave
+Obesidad    trained · no publicada
+```
+
+_Respuesta:_ **SUPERSEDIDA por la Ronda 43.** La pregunta A/B agrupaba incorrectamente dos
+intenciones con autoridades distintas: configuración metodológica y ficha institucional.
+
+---
+
+### Ronda 43 — Órdenes ejecutables para cerrar `npm test` — 2026-07-26
+
+Revisión del plan y del código completada. No se implementó nada en esta ronda. La decisión
+funcional queda cerrada aquí para que la siguiente ejecución no tenga que reinterpretarla.
+
+#### Decisión de enrutamiento
+
+| intención | autoridad | decisión |
+| --- | --- | --- |
+| hiperparámetros/metodología detallada | RAG versionado | mantener el guard; `answer()` devuelve `null` |
+| identidad, artículo y referencia del proyecto | KB local curado | acotar el guard y ejecutar `answerProyectoMeta` |
+| fútbol, bitcoin, recetas y temas inequívocamente ajenos | rechazo local | mantener la respuesta explícita; no gastar Gemini |
+| distribución gráfica de métricas | `answerDistribucion` | corregir precedencia; no cambiar la expectativa |
+
+No se adopta A ni B en bloque. La solución correcta es **híbrida**:
+
+- `hiperparametros del modelo` permanece delegado al RAG porque pide configuración metodológica y
+  ésta debe proceder del corpus versionado;
+- las cinco consultas sobre el artículo/proyecto las responde el KB local porque ya tiene una ficha
+  determinista, curada y más precisa que una recuperación abierta;
+- el rechazo local de temas ajenos es el contrato vigente de producto;
+- los dos casos de distribución son defectos reales de prioridad.
+
+#### Orden 43.1 — Implementar únicamente el cierre de los 11 casos
+
+Trabajar sólo en:
+
+```text
+EpiForecast-IMSS-Dashboard
+rama feat/c73-candidate-staging
+```
+
+Antes de editar:
+
+1. confirmar `HEAD=d5ead880`, árbol trackeado limpio y conservar los untracked del usuario;
+2. capturar SHA256 de:
+   - `epibot/knowledge.json`;
+   - `epibot/rag_index.json`;
+   - `index.html`;
+   - `epibot/index.html`;
+3. ejecutar `npm test` y guardar el baseline de 605/616.
+
+Cambios permitidos:
+
+1. **G1 — un caso (`hiperparametros del modelo`):**
+   - mantener `hiperparametro/hiperparametros` en `ragIntent`;
+   - actualizar solamente esa expectativa para exigir `null`;
+   - documentar en el test que la consulta se delega al RAG.
+2. **G3 — cinco casos de artículo/proyecto:**
+   - acotar `ragIntent` para que una consulta de identidad/referencia del **proyecto** llegue a
+     `answerProyectoMeta`;
+   - no retirar globalmente `paper`, `articulo` o `publicacion`: las consultas metodológicas o de
+     contenido del artículo deben seguir delegándose al RAG;
+   - resolver la distinción mediante intención explícita y testeable, no mediante el orden casual
+     de palabras;
+   - conservar sin cambios las cinco expectativas actuales.
+3. **G2 — tres consultas fuera de tema:**
+   - conservar el rechazo local explícito;
+   - cambiar las tres expectativas de `null` a la respuesta/handler contractual;
+   - exigir contenido mínimo estable (`EPI`, fuera del proyecto), no comparar el párrafo completo.
+4. **G4 — dos consultas de distribución:**
+   - hacer que `answerSmapeBox` ceda `boxplot`+métrica cuando la intención sea distribución;
+   - hacer que `answerRendimientoPorPadecimiento` ceda `grafico/grafica/plot/chart`+métrica;
+   - mantener `answerDistribucion` como handler esperado;
+   - añadir regresiones negativas para demostrar que “rango de SMAPE” todavía llega a
+     `answerSmapeBox` y “tabla de métricas por padecimiento” todavía llega a
+     `answerRendimientoPorPadecimiento`.
+
+Restricciones:
+
+- no regenerar masivamente `test_cases.json`; modificar los casos fuente y regenerar sólo mediante
+  el mecanismo normal si el repositorio así lo exige;
+- no borrar casos, convertirlos en `*`, añadir skips ni debilitar `mustContain`;
+- no tocar el consumidor candidate, shards, manifests, RAG, HTML, Netlify o configuración de
+  deploy;
+- no usar `GEMINI_API_KEY`;
+- un solo commit funcional acotado; no mezclar todavía la Orden 40.2.
+
+#### Gate 43.1
+
+Ejecutar:
+
+```text
+npm test
+npm run test:candidate
+```
+
+Exigir:
+
+```text
+npm test                    616/616 PASS
+test:candidate              19/19 PASS
+fallos nuevos               0
+knowledge/RAG/HTML          byte-idénticos al baseline
+Obesidad en superficie      0 menciones
+push/deploy/merge           ninguno
+```
+
+Auditar el diff por handler y por test. Si aparece cualquier cambio fuera de `epibot/js/` y
+`epibot/tests/`, detenerse y justificarlo antes de continuar.
+
+#### Orden 43.2 — STOP obligatorio
+
+Al quedar verde 43.1:
+
+1. crear un commit local del dashboard;
+2. reportar SHA, archivos cambiados, conteos exactos y hashes preservados;
+3. **detenerse**;
+4. no iniciar el contrato de vectores, no regenerar el índice y no hacer push.
+
+La siguiente autorización, separada, será para la Orden 40.2:
+
+```text
+GO C7.6-RAG-CONTRACT: exigir vectores candidate no vacíos y fail-closed.
+SIN REGENERAR TODAVÍA EL ÍNDICE PÚBLICO, SIN PUSH NI DEPLOY.
+```
+
+#### Estado después de esta revisión
+
+```text
+C7.6 backend              PASS @ dbfdd49c
+C7.6 dashboard funcional pendiente de ejecutar Orden 43.1
+C7.6 RAG                  drift 19 · contrato de vector pendiente
+Obesidad                  trained · no publicada
+C7.4                      INCOMPLETE 0/4 · congelado intacto
+```
+
+#### Próxima acción exacta
+
+**Ejecutar únicamente la Orden 43.1 y detenerse en 43.2.** No regenerar RAG en la misma ronda.
+
+_Respuesta:_ pendiente del reporte de ejecución de 43.1.
+
+---
+
+### Ronda 44 — Orden 43.1 ejecutada: `npm test` en verde — 2026-07-26
+
+Commit único y acotado en `EpiForecast-IMSS-Dashboard`, rama `feat/c73-candidate-staging`:
+**`42477019`**. Sin push, deploy, merge ni activación. Sin usar `GEMINI_API_KEY`.
+
+#### Preflight
+
+```text
+HEAD d5ead880 · árbol trackeado limpio · 2 untracked del usuario conservados
+baseline  knowledge e1d9a7d9894319e6 · rag_index 86417db3ae059eb7
+          index.html 94549fbd0338886b · epibot/index.html f2e66edcdf9127b7
+npm test  605/616 · rc=1
+```
+
+#### Lo aplicado, por causa
+
+| grupo | qué se cambió | qué NO se cambió |
+| --- | --- | --- |
+| **G1** (1) | sólo la expectativa de #287 → `null` | `hiperparametro(s)` sigue en `ragIntent` |
+| **G3** (5) | el guard: `proyectoRefIntent` vs marcadores de CONTENIDO | **las 5 expectativas, intactas** |
+| **G2** (3) | 3 expectativas → `EPI` + «fuera del proyecto» | el rechazo local, intacto |
+| **G4** (2) | precedencia en dos handlers | `answerDistribucion` sigue siendo el esperado |
+
+G3 se resolvió por **intención explícita y testeable**, no por orden de palabras: `¿hay artículo?`,
+`¿dónde está?`, `¿cómo se cita?` → ficha local; `metodología`, `contribuciones`, `hallazgos`,
+`abstract` → RAG. Comprobado en runtime que las seis consultas de contenido siguen cediendo.
+
+#### Verificación de que cada arreglo funciona POR SU RAZÓN
+
+```text
+OK  G1 delegado al RAG    "hiperparametros del modelo"          -> NULL
+OK  G3 ficha local        "tienen articulo publicado"           -> **Artículo del proyecto…**
+OK  G3 ficha local        "referencia del articulo"             -> **Artículo del proyecto…**
+OK  G3 RAG (contenido)    "metodologia del paper"               -> NULL
+OK  G3 RAG (contenido)    "contribuciones del articulo"         -> NULL
+OK  G3 RAG (contenido)    "abstract del paper"                  -> NULL
+OK  G2 rechazo local      "resultado del futbol"                -> Soy **EPI**…
+OK  G4 distribución       "boxplot del smape"                   -> **Distribución de SMAPE (%)**
+OK  G4 distribución       "grafico del mase por padecimiento"   -> **Distribución de MASE**
+OK  G4 NO cede            "rango de smape"                      -> **Rango de SMAPE…** intercuartil
+OK  G4 NO cede            "tabla de metricas por padecimiento"  -> **Rendimiento 2026…**
+```
+
+#### Gate 43.1
+
+```text
+npm test            618/618 PASS   (616 originales + 2 regresiones negativas de G4)
+test:candidate       19/19 PASS
+fallos nuevos        0
+knowledge · rag_index · index.html · epibot/index.html   BYTE-IDÉNTICOS a HEAD
+menciones a obesidad en superficie                        0
+diff                 sólo epibot/js/kb.js y epibot/tests/test_cases.json
+```
+
+Auditoría del diff contra las restricciones de la orden:
+
+```text
+casos borrados            0        convertidos a '*'              0
+mustContain debilitado    0        skips añadidos                 0
+casos modificados         4  (#287 de G1 · #377/378/380 de G2)
+casos nuevos              2  (#617, #618: regresiones negativas)
+```
+
+Los cinco de G3 **no se tocaron**: pasan porque se corrigió el código, que era lo pedido.
+
+*(Nota: la orden exigía 616/616. Son 618/618 porque las dos regresiones negativas que la propia
+orden 43.1.4 pide añadir suben el total. Cero fallos.)*
+
+#### Estado
+
+```text
+Orden 43.1  CERRADA · commit 42477019 · STOP en 43.2 respetado
+Readiness   SIGSEGV cerrado (dbfdd49c) · npm test cerrado (42477019) · RAG drift 19 PENDIENTE
+RAG         sigue bloqueado por GEMINI_API_KEY como secreto de entorno
+Obesidad    trained · no publicada · 0 menciones en la superficie del dashboard
+```
+
+_Respuesta:_
