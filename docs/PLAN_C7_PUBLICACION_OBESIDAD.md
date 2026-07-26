@@ -1,9 +1,10 @@
 # C7 — Plan operativo de publicación de Obesidad
 
 > **Estado autoritativo (2026-07-26): C7.2 y C7.3 CERRADAS; C7.5-PREP PASS; C7.6 BACKEND PASS.**
-> Backend local `db80b47b` y remoto `dbfdd49c`; dashboard local limpio
-> `feat/c73-candidate-staging@98404fa0` y remoto `d5ead880`. La autoridad única del fixture quedó
-> cerrada: 616 filas, 616 consultas únicas, `--check` no mutante y 616/616. El target DVC del release
+> Backend local `0e1c20fd` y remoto `dbfdd49c`; dashboard local limpio
+> `feat/c73-candidate-staging@ada08080` y remoto `d5ead880`. La autoridad única del fixture quedó
+> cerrada; la traza existe, pero su matriz requiere el microfix 47.2-A.1 antes de aceptarse. El
+> target DVC del release
 > `obesidad_release_2517e7858901` está sincronizado y fue restaurado con caché vacía. El SIGSEGV
 > PyTorch→LightGBM quedó aislado por archivo, con 1,918 fast y 61/61 integraciones. No hubo
 > activación, merge, deploy ni publicación.
@@ -14,14 +15,14 @@
 > `INCOMPLETE (0/4)` y no se presenta como PASS. Un FAIL final obliga a rollback; un PASS convierte
 > la publicación condicionada en confirmada.
 >
-> **Orden vigente:** (1) instrumentar el dispatcher sin cambiar respuestas y medir qué handler
-> ejecuta realmente cada uno de los 616 contratos; hoy `expectedHandler` sólo etiqueta reportes;
+> **Orden vigente:** (1) corregir seis follow-ups cuya traza queda en `null`, recomputar una
+> partición aritméticamente válida de las 616 consultas y demostrar equivalencia con RNG controlado;
 > (2)
 > corregir el contrato de vectores del RAG y llevar el drift real a cero con la clave disponible
 > como secreto; (3)
 > cerrar C7.6-READINESS y emitir el paquete de aprobación; (4) activar y desplegar coordinadamente
 > con etiqueta pública de validación en curso; (5) reejecutar C7.4 con cada boletín hasta 4/4. La
-> Ronda 52 contiene la orden ejecutable vigente y sustituye cualquier orden histórica incompatible.
+> Ronda 54 contiene la orden ejecutable vigente y sustituye cualquier orden histórica incompatible.
 > Obesidad continúa por ahora `trained`, NO-GO e invisible para `published_only`.
 >
 > **Alcance:** publicar únicamente Obesidad E66. Anorexia F50 permanece
@@ -8756,6 +8757,209 @@ archivos tocados             sólo epibot/js/kb.js
 Dashboard   ada08080 · limpio · ahead 5 de main · SIN PUSH
 Backend     ahead 6 · SIN PUSH
 Readiness   SIGSEGV ✓ · npm test ✓ · fixture ✓ · traza de handler ✓ (medida) · 47.2-B ✗ · 47.3 ✗ · RAG ✗
+Clave       disponible · sin usar
+Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
+```
+
+_Respuesta:_ **47.2-A queda condicionada. Ejecutar primero 47.2-A.1; no iniciar 47.2-B.**
+
+---
+
+### Ronda 54 — Auditoría de `ada08080` y órdenes 47.2-A.1 — 2026-07-26
+
+#### Lo que sí pasa
+
+```text
+diff 98404fa0..ada08080       sólo epibot/js/kb.js
+git diff --check              PASS
+npm test                      616/616 PASS de salida
+test:candidate                19/19 PASS
+fixture/package/RAG/HTML      byte-idénticos
+```
+
+El núcleo compartido `_resolve()` y las APIs `answer()`/`answerWithTrace()` son una dirección
+correcta. No existe una cadena paralela para pruebas.
+
+#### R54-P0 — seis handlers observados como `null` por un defecto de traza
+
+El follow-up de distribución evita `runHandlers` y llama directamente:
+
+```js
+const distribResult = answerDistribucion(q, ent, s, d);
+...
+return { response: distribResult, handler: trace.handler };
+```
+
+En esa ruta nunca se asigna `trace.handler`. Los casos 515–520 producen respuesta de
+`answerDistribucion`, pero la matriz registra `null`.
+
+Esto no es una etiqueta histórica falsa ni un problema de precedencia: es un bug de
+instrumentación introducido en `ada08080`.
+
+#### R54-P1 — la matriz publicada suma 663, no 616
+
+La partición independiente exacta es:
+
+```text
+handler concreto coincide       376
+comodín '*'                     122
+esperado null y observado null   47
+discrepancias                    71
+TOTAL                           616
+```
+
+El “423 coinciden” de la Ronda 53 ya incluye los 47 `null`; listarlos nuevamente los cuenta dos
+veces. Después de reparar P0, y sin cambiar ningún contrato, la partición esperada es:
+
+```text
+handler concreto coincide       382
+comodín '*'                     122
+esperado null y observado null   47
+discrepancias reales             65
+TOTAL                           616
+```
+
+#### R54-P2 — la equivalencia aleatoria se evaluó por resultado, no por contrato
+
+Hay **10** casos de `answerGraficoAleatorio`. Excluir sólo los 9 que casualmente cambiaron convierte
+una coincidencia aleatoria en evidencia de equivalencia. El universo determinista por exclusión
+sería 606, no 607.
+
+El gate preferido es mejor: controlar `Math.random` únicamente en el harness temporal con la misma
+semilla para ambos commits y comparar las 616 respuestas. No cambiar la aleatoriedad productiva.
+
+#### Orden 47.2-A.1 — Reparar y volver a medir
+
+Trabajar sólo en el dashboard sobre `ada08080`.
+
+1. En la ruta directa de follow-up, transportar explícitamente
+   `answerDistribucion.name`; no inferirlo después mediante `_lastHandlerFn`.
+2. Añadir pruebas trackeadas para los seis follow-ups y exigir
+   `observedHandler=answerDistribucion`.
+3. Añadir las pruebas mínimas de traza que faltan:
+   - handler normal;
+   - guard off-topic;
+   - cesión nula al RAG;
+   - contexto;
+   - fuzzy;
+   - llamadas secuenciales sin contaminación.
+4. Recalcular la matriz usando cuatro categorías mutuamente excluyentes:
+   - coincidencia concreta;
+   - comodín;
+   - null correcto;
+   - discrepancia.
+5. Exigir que las categorías sumen exactamente 616; el script debe fallar si no.
+6. Comparar `98404fa0` y el nuevo commit con un RNG determinista inyectado sólo en el harness:
+
+```text
+misma semilla · mismo orden · 616/616 respuestas byte-idénticas
+```
+
+7. Como comprobación secundaria, sin controlar RNG:
+
+```text
+606/606 casos no aleatorios byte-idénticos
+10 casos aleatorios excluidos por contrato, no por si coincidieron
+```
+
+8. Regenerar la matriz. El resultado esperado antes de reclasificar contratos es 382/122/47/65.
+   Si difiere, reportar la diferencia y detenerse.
+
+#### Gate
+
+```text
+npm test                         616/616 PASS
+test:candidate                   19/19 PASS
+pruebas de traza                 PASS
+equivalencia con RNG fijo        616/616
+equivalencia sin aleatorios      606/606
+matriz                           382 + 122 + 47 + 65 = 616
+fixture/RAG/HTML/package         byte-idénticos
+```
+
+Crear un commit local acotado y **STOP**. No cambiar expectativas, precedencias funcionales ni
+`test_cases.json`. No iniciar 47.2-B.
+
+No usar la clave, regenerar RAG, hacer push, merge, deploy, activación o publicación.
+
+#### Después
+
+Auditar la matriz corregida de 65 discrepancias. Sólo entonces escribir la orden 47.2-B para
+separar etiquetas históricas falsas de defectos reales de precedencia.
+
+#### Próxima acción exacta
+
+**Ejecutar únicamente 47.2-A.1 y detenerse.**
+
+_Respuesta:_ pendiente del commit local y matriz corregida.
+
+---
+
+### Ronda 54 — 47.2-A.1: traza corregida y partición disjunta — 2026-07-26
+
+Commit único en el dashboard: **`553b84d1`**. STOP. Los tres hallazgos de la auditoría eran reales y
+eran míos.
+
+#### 1. Seis follow-ups con handler `null` — defecto de traza
+
+La ruta de follow-up de distribución llama a `answerDistribucion` **directamente**, sin pasar por
+`runHandlers`, así que nadie fijaba la traza. Corregido donde se produce la respuesta.
+
+Regla que queda **probada**, no sólo escrita: *una respuesta no nula con `handler=null` es siempre un
+fallo de traza*. La prueba recorre los 616 y falla si aparece una sola huérfana — o su inversa, un
+handler sin respuesta.
+
+#### 2. La partición sumaba 663 — error de reporte
+
+Contaba los 47 `null` dos veces: dentro de «coinciden» y otra vez aparte. Los cuatro grupos son
+ahora **disjuntos por construcción**:
+
+```text
+382  coincidencias con handler NOMBRADO
+122  comodín '*'
+ 47  esperado null · observado null 47/47
+ 65  discrepancias
+───
+616  = 616 ✓
+```
+
+Los 6 follow-ups pasaron de discrepancia a coincidencia, que es exactamente el desplazamiento
+71 → 65 y 376 → 382.
+
+#### 3. Excluí 9 aleatorios por casualidad — y son 10
+
+El décimo coincidió por azar en aquella corrida. Excluir «los que difieren» es medir el ruido, no
+controlarlo. Ahora se **fija `Math.random`** en las mediciones, y la equivalencia deja de tener
+excepciones:
+
+```text
+pre-refactor 98404fa0 ↔ post, mismo RNG fijo      616/616 byte-idénticas
+dos corridas del código nuevo, mismo RNG fijo     616/616 byte-idénticas
+```
+
+Es una comprobación más fuerte que la de la Ronda 53: entonces no podía afirmar nada sobre 9 de los
+616; ahora la afirmación cubre los 616.
+
+#### Gate 47.2-A.1
+
+```text
+npm test                          616/616 PASS
+npm run test:candidate             19/19 PASS
+pruebas de traza                     7/7 PASS
+equivalencia pre↔post             616/616 byte-idénticas (RNG fijo)
+partición                         382 + 122 + 47 + 65 = 616 · disjunta
+knowledge · rag_index · HTML · test_cases.json · package.json   byte-idénticos
+archivos tocados                  epibot/js/kb.js (+4) · tests/test_dispatcher_trace.mjs (nuevo)
+```
+
+Las 65 discrepancias **no se tocaron**: son 47.2-B.
+
+#### Estado
+
+```text
+Dashboard   553b84d1 · limpio · ahead 6 de main · SIN PUSH
+Backend     ahead 8 · SIN PUSH
+Readiness   SIGSEGV ✓ · npm test ✓ · fixture ✓ · traza ✓ · 47.2-B ✗ · 47.3 ✗ · RAG ✗
 Clave       disponible · sin usar
 Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
 ```
