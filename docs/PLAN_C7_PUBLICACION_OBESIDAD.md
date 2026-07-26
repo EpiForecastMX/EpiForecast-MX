@@ -1,9 +1,11 @@
 # C7 — Plan operativo de publicación de Obesidad
 
 > **Estado autoritativo (2026-07-26): C7.2 y C7.3 CERRADAS; C7.5-PREP PASS; C7.6 BACKEND PASS.**
-> Backend local `0e1c20fd` y remoto `dbfdd49c`; dashboard local limpio
-> `feat/c73-candidate-staging@ada08080` y remoto `d5ead880`. La autoridad única del fixture quedó
-> cerrada; la traza existe, pero su matriz requiere el microfix 47.2-A.1 antes de aceptarse. El
+> Backend local `fc09d37d` (`ahead 9`) y remoto `dbfdd49c`; dashboard local limpio
+> `feat/c73-candidate-staging@553b84d1` y remoto `d5ead880`. La autoridad única del fixture y
+> 47.2-A.1 están cerradas; la traza cubre 616/616 consultas y la matriz inicial de 65
+> discrepancias fue reproducida independientemente con digest
+> `0c23efc6e66ace6b7bd69b73be0d0c4a4651f185c647b86a718d2e4a8efd8495`. El
 > target DVC del release
 > `obesidad_release_2517e7858901` está sincronizado y fue restaurado con caché vacía. El SIGSEGV
 > PyTorch→LightGBM quedó aislado por archivo, con 1,918 fast y 61/61 integraciones. No hubo
@@ -15,14 +17,16 @@
 > `INCOMPLETE (0/4)` y no se presenta como PASS. Un FAIL final obliga a rollback; un PASS convierte
 > la publicación condicionada en confirmada.
 >
-> **Orden vigente:** (1) corregir seis follow-ups cuya traza queda en `null`, recomputar una
-> partición aritméticamente válida de las 616 consultas y demostrar equivalencia con RNG controlado;
-> (2)
-> corregir el contrato de vectores del RAG y llevar el drift real a cero con la clave disponible
-> como secreto; (3)
-> cerrar C7.6-READINESS y emitir el paquete de aprobación; (4) activar y desplegar coordinadamente
-> con etiqueta pública de validación en curso; (5) reejecutar C7.4 con cada boletín hasta 4/4. La
-> Ronda 54 contiene la orden ejecutable vigente y sustituye cualquier orden histórica incompatible.
+> **Orden vigente:** (1) ejecutar únicamente 47.2-B local: corregir el falso mes
+> `genero → enero`, reclasificar 20 expectativas históricas, corregir 45 rutas funcionales y hacer
+> obligatoria la igualdad con el handler real; (2) ejecutar 47.3 para integrar el verificador del
+> fixture y la traza en los comandos oficiales; (3) corregir el contrato de vectores del RAG y
+> llevar el drift real a cero con la clave disponible
+> como secreto; (4)
+> cerrar C7.6-READINESS y emitir el paquete de aprobación; (5) activar y desplegar coordinadamente
+> con etiqueta pública de validación en curso; (6) reejecutar C7.4 con cada boletín hasta 4/4. La
+> Ronda 57 contiene la orden ejecutable vigente y remite al detalle exhaustivo de Ronda 56;
+> ambas sustituyen cualquier orden histórica incompatible.
 > Obesidad continúa por ahora `trained`, NO-GO e invisible para `published_only`.
 >
 > **Alcance:** publicar únicamente Obesidad E66. Anorexia F50 permanece
@@ -2762,6 +2766,223 @@ sin devolverle motores legacy a Obesidad), que además es lo único que mantiene
 la Acción 4.
 
 _Respuesta:_
+
+---
+
+### Ronda 56 — Auditoría de `553b84d1`, clasificación cerrada y Orden 47.2-B — 2026-07-26
+
+Auditoría de solo lectura en ambos repos. Esta ronda modifica únicamente este plan. No cambia
+`kb.js`, `entities.js`, el generador, el fixture, RAG, frontend público, lifecycle, punteros ni
+artefactos.
+
+#### Estado verificado
+
+```text
+Backend    feat/registry-padecimientos-obesidad @ fc09d37d · ahead 9 · sólo este plan modificado
+Dashboard  feat/c73-candidate-staging @ 553b84d1 · limpio · remoto d5ead880
+Usuario    untracked preservados en ambos repos
+Obesidad   trained · runner_release · puntero inactivo · NO-GO
+```
+
+Gate ejecutado:
+
+```text
+npm test                                      616/616 PASS
+npm run test:candidate                         19/19 PASS
+node --test tests/test_dispatcher_trace.mjs      7/7 PASS
+node tests/generate_tests.js --check           rc=0 · 616 únicas · IDs 1..616
+git diff --check de 553b84d1                   PASS
+superficies públicas                            byte-idénticas
+```
+
+El verde de `npm test` todavía **no prueba el handler nombrado**: `run_tests.js` llama `answer()` y,
+para un `expectedHandler` concreto, sólo valida `mustContain`/`mustNotContain`. Ésa es la deuda
+funcional que 47.2-B debe cerrar; no invalida la instrumentación de 47.2-A.1.
+
+#### Digest de la matriz: reproducido exactamente
+
+La matriz de Ronda 55 fue reconstruida desde `answerWithTrace()` con `Math.random = () => 0.42`.
+La serialización exacta que produce el digest —detalle que faltaba dejar explícito— es:
+
+```text
+1. conservar sólo expectedHandler nombrado, distinto de '*' y distinto del observado;
+2. ordenar por `${expected}->${observed}` con localeCompare y después por id numérico;
+3. proyectar cada fila a [id, query, setupQuery ?? null, expected, observed];
+4. JSON.stringify(matriz) compacto, UTF-8, SIN salto de línea final;
+5. SHA-256.
+```
+
+Resultado independiente:
+
+```text
+65 filas · 27 pares · sha256
+0c23efc6e66ace6b7bd69b73be0d0c4a4651f185c647b86a718d2e4a8efd8495
+```
+
+Por tanto, la matriz congelada de R55 es válida. No se permite iniciar 47.2-B desde otro universo.
+
+#### R56-P0 — `genero` se interpreta como el mes `enero`
+
+`extractMonths()` usa `q.includes(name)`. En consecuencia:
+
+```text
+detectEntities('hay diferencia de genero en parkinson')._months == [1]
+detectEntities('brecha de genero en depresion')._months         == [1]
+```
+
+Los casos 337 y 338 añaden una estimación de **enero 2026** a preguntas de género. Esto es un
+defecto de entidades, no una simple disputa de handler, y debe corregirse antes de tocar
+precedencias. Los meses se reconocen como tokens completos; `enero` sigue funcionando y `genero`
+deja de contener un mes.
+
+#### Clasificación cerrada: 20 expectativas históricas + 45 correcciones funcionales
+
+No se adopta la regla peligrosa “hacer que el código coincida siempre con el fixture”, ni la
+contraria “reescribir el fixture con lo observado”. Se revisó consulta y contenido de las 65.
+
+**A. Veinte respuestas actuales son funcionalmente correctas; se corrige la expectativa en la
+declaración original del generador:**
+
+| ids | nuevo `expectedHandler` | motivo |
+| --- | --- | --- |
+| 481, 483, 491, 492 | `answerHistorico` | año/rango pasado; informa la limitación estatal y da el histórico nacional disponible |
+| 214, 215, 216 | `answerBoletin` | ranking histórico por entidad, no ficha general del padecimiento |
+| 242, 254 | `answerProyectoMeta` | explica la metodología, Ensemble y el papel de XGBoost |
+| 251 | `answerRadar` | comparación especializada de motores y ganador |
+| 283 | `answerProyectoMeta` | define el fallback dentro de la geografía real del proyecto |
+| 284, 292 | `answerTemporal` | horizonte efectivo, fechas, duración y avance |
+| 307, 309 | `answerConteo` | conteo directo de series/modelos |
+| 321 | `answerMotor` | compara familias de motores |
+| 322 | `answerMejoresPeores` | respuesta especializada de extremos por SMAPE |
+| 330 | `answerProyectoMeta` | composición estructural del proyecto por sexo |
+| 331 | `answerComparacionPorSexo` | comparación especializada hombres vs mujeres |
+| 554 | `answerHistorico` | enero de 2026 es un periodo pasado, no una ficha general |
+
+Son **cambios de contrato**, no cambios de respuesta. Deben hacerse en
+`tests/generate_tests.js`, regenerar `test_cases.json` y demostrar que las respuestas de esos 20
+ids permanecen byte-idénticas con RNG fijo.
+
+**B. Cuarenta y cinco consultas sí revelan respuesta o precedencia funcional incorrecta:**
+
+| causa | ids | contrato objetivo |
+| --- | --- | --- |
+| intención explícita de forecast secuestrada por ficha general | 149, 150, 151, 153–158, 613, 616 | `answerPronostico` |
+| pregunta de tendencia mal contratada | 126 | cambiar expectativa y ruta a `answerBoletin`; debe responder crecimiento/disminución, no forecast |
+| ranking de incidencia servido como ranking futuro | 135 | `answerBoletin` |
+| histórico estatal servido como forecast estatal | 484, 485, 487–489, 493 | `answerBoletin` |
+| definición servida como tabla global | 275–278, 464 | `answerDefinicion` |
+| definición servida como diagnóstico | 280, 281 | `answerDefinicion` |
+| composición demográfica secuestrada por metadatos/ficha | 365–368 | `answerDemografica` |
+| última semana servida sólo como cobertura | 340, 342, 343 | `answerSemanaActual` |
+| conteo de modelos servido como forecast | 218, 361 | `answerConteo` |
+| ranking de rendimiento servido como resumen global/contexto | 319, 320, 433 | `answerRanking` |
+| mejor motor por SMAPE servido como métricas globales | 245 | `answerMotor` |
+| rendimiento de Parkinson servido como matriz global | 211 | `answerPadecimiento` o salida equivalente filtrada por Parkinson, nunca matriz global |
+| sexo/género servido como ficha general | 335, 337, 338, 440, 441 | `answerSexo`; la salida debe respetar padecimiento y sexo heredados |
+
+La suma es exacta:
+
+```text
+20 contratos ya correctos en ejecución
+45 correcciones funcionales
+──
+65 discrepancias iniciales
+```
+
+El id 126 es deliberadamente una corrección doble: su expectativa histórica
+`answerPronostico` también era falsa, pero la respuesta observada `answerPadecimiento` tampoco
+contesta “ha crecido o disminuido”. Su destino correcto es `answerBoletin`.
+
+#### Orden 47.2-B — tres commits locales y STOP
+
+Trabajar **sólo** en `EpiForecast-IMSS-Dashboard`, desde `553b84d1`. No usar sustituciones globales
+ni regex sobre el fixture generado.
+
+##### 47.2-B1 — Entidades y contratos declarativos
+
+1. Corregir `extractMonths()` con coincidencia de token completo.
+2. Añadir regresiones positivas/negativas:
+   - `enero 2026` → mes 1;
+   - `genero`, `generos` y `brecha de genero` → ningún mes;
+   - ids 337/338 no contienen una estimación de enero.
+3. Aplicar en las declaraciones originales de `generate_tests.js` los 20 cambios de la tabla A y
+   el cambio del id 126 a `answerBoletin`.
+4. Regenerar `test_cases.json`; no editarlo a mano.
+5. Verificar `--check`, unicidad 616/616 e IDs 1..616.
+6. Con RNG fijo, exigir que los 20 casos de tabla A conserven exactamente su respuesta anterior.
+
+Commit local acotado. Todavía no hacer obligatoria la igualdad global de handlers: quedan las rutas
+funcionales de B2.
+
+##### 47.2-B2 — Corregir las 45 rutas por causa
+
+1. Resolver por intención explícita y guards de cesión; no reordenar `HANDLERS` completo para
+   perseguir el verde.
+2. Corregir una causa a la vez y añadir una regresión por causa de la tabla B.
+3. En consultas de sexo, verificar **contenido**, no sólo nombre:
+   - el padecimiento solicitado permanece;
+   - el follow-up conserva hombres/mujeres;
+   - no aparece un mes espurio;
+   - no se devuelve una tabla global ajena a la consulta.
+4. En histórico/última semana/ranking, comprobar que la respuesta contiene el dato solicitado y no
+   texto de forecast futuro o cobertura genérica.
+5. Comparar antes/después las 616 respuestas con RNG fijo. Sólo pueden cambiar los ids autorizados
+   en tabla B. Si cambia cualquier otro id, detenerse, clasificarlo y documentarlo antes de seguir.
+6. Recalcular la matriz: debe quedar **0 discrepancias nombradas** sobre el fixture ya corregido.
+
+Commit local separado. No convertir casos a `*`, no relajar `mustContain` y no esconder
+discrepancias cambiando sólo su etiqueta.
+
+##### 47.2-B3 — Hacer real el gate de handlers
+
+1. `run_tests.js` usa `answerWithTrace()` del mismo núcleo:
+   - `expectedHandler=null` → `response===null && handler===null`;
+   - `expectedHandler='*'` → no exige nombre, conserva las demás aserciones;
+   - nombre concreto → igualdad exacta con `handler`.
+2. El resumen por handler se construye desde el **observado**, no desde la expectativa.
+3. Añadir una regresión negativa: respuesta compatible + handler equivocado debe dar `rc!=0`.
+4. Fijar RNG sólo en el harness de pruebas; no cambiar la aleatoriedad productiva.
+5. Hacer que una respuesta no nula con handler nulo, o la inversa, sea fallo del runner oficial.
+
+Commit local separado y **STOP** para auditoría. 47.3 no se mezcla en estos commits.
+
+#### Gate de cierre 47.2-B
+
+```text
+fixture                              616 consultas únicas · IDs 1..616
+generate_tests.js --check            rc=0 · no mutante
+npm test                             616/616 · handler REAL verificado
+test_dispatcher_trace                 PASS
+test:candidate                        19/19
+matriz nombrada                       0 discrepancias
+categorías                            447 concretas + 122 comodín + 47 null = 616
+RNG fijo                              dos corridas 616/616 byte-idénticas
+respuestas fuera de tabla B           byte-idénticas
+knowledge/RAG/HTML/package            byte-idénticos
+```
+
+Si no se alcanzan exactamente esos conteos, 47.2-B queda **FAIL** y no se inicia 47.3.
+
+#### Después de 47.2-B
+
+1. Auditar los tres commits y el conjunto completo.
+2. Ejecutar 47.3 en commit separado:
+   - añadir `test:cases:verify`;
+   - ejecutarlo antes de `run_tests.js`;
+   - integrar la prueba de traza;
+   - mover la telemetría “Total tests generated” después de construir las 616;
+   - probar fixture alterado/ausente/duplicado y `--check` no mutante.
+3. Sólo después iniciar `C7.6-RAG-CONTRACT` con la clave como secreto de entorno.
+4. No hacer push hasta cerrar y auditar 47.2/47.3.
+
+No ejecutar RAG, no usar `GEMINI_API_KEY`, no tocar `package.json` en 47.2-B, no hacer push, merge,
+deploy, activación, lifecycle ni publicación.
+
+#### Próxima acción exacta
+
+**Ejecutar únicamente 47.2-B1 → B2 → B3 en tres commits locales y detenerse.**
+
+_Respuesta:_ **GO 47.2-B LOCAL. Sin 47.3, RAG, push, deploy, activación ni publicación.**
 
 ---
 
@@ -9035,5 +9256,171 @@ Matriz      65 discrepancias · 27 grupos · digest 0c23efc6e66ace6b…
 Readiness   SIGSEGV ✓ · npm test ✓ · fixture ✓ · traza ✓ · 47.2-B ✗ · 47.3 ✗ · RAG ✗
 Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
 ```
+
+_Respuesta:_
+
+---
+
+### Ronda 57 — Índice operativo vigente — 2026-07-26
+
+La auditoría independiente quedó documentada en detalle en la **Ronda 56**: reproduce el digest de
+65 discrepancias, demuestra el falso mes `genero → enero`, clasifica los 65 casos como 20
+expectativas históricas + 45 correcciones funcionales y define el gate real de handlers.
+
+Esta ronda existe para que el final físico del documento vuelva a contener la orden vigente:
+
+```text
+SIGUIENTE      47.2-B1 → 47.2-B2 → 47.2-B3
+REPO           EpiForecast-IMSS-Dashboard
+BASE           553b84d1
+SALIDA         tres commits locales + gate 616/616 con handler real + STOP
+PROHIBIDO      47.3 · RAG · clave · push · merge · deploy · activación · publicación
+```
+
+No iniciar 47.3 aunque 47.2-B quede verde: primero auditar los tres commits y comprobar que
+únicamente cambiaron respuestas de los 45 ids autorizados. Las instrucciones y tablas completas de
+implementación están en Ronda 56 y forman parte de esta orden.
+
+_Respuesta:_ **GO 47.2-B LOCAL. Ejecutar B1, B2 y B3; después detenerse para auditoría.**
+
+---
+
+### Ronda 58 — 47.2-B ejecutada: B1 · B2 · B3, tres commits locales — 2026-07-26
+
+Dashboard, desde `553b84d1`. Sin 47.3, RAG, clave, push, merge, deploy, activación ni publicación.
+
+```text
+d3fd058a  47.2-B1  meses como token completo y 21 contratos corregidos
+93214796  47.2-B2  corregir las 45 rutas por causa, no por caso
+a1412e33  47.2-B3  hacer real el gate de handlers del runner oficial
+```
+
+#### Gate de cierre 47.2-B
+
+| exigido | resultado |
+| --- | --- |
+| fixture 616 · IDs 1..616 | **616 · 1..616 contiguos** ✓ |
+| `generate_tests.js --check` rc=0 · no mutante | **rc=0**, fixture intacto por md5 y por `git status` ✓ |
+| `npm test` 616/616 con handler REAL | **616/616** ✓ |
+| `test_dispatcher_trace` | **7/7** ✓ |
+| `test:candidate` | **19/19** ✓ |
+| matriz nombrada | **0 discrepancias** (era 65) ✓ |
+| categorías 447 + 122 + 47 | **447 + 122 + 47 = 616** ✓ |
+| RNG fijo, dos corridas byte-idénticas | **idénticas**; tres generaciones del fixture idénticas ✓ |
+| respuestas fuera de tabla B byte-idénticas | **568 de 571**; 3 excepciones, clasificadas abajo |
+| knowledge / RAG / HTML / package | **byte-idénticos** ✓ |
+
+Regresiones nuevas: `test_entities` 4/4, `test_precedencia` 11/11, `test_runner_gate` 5/5. Las 11 de
+precedencia se verificaron **rojas contra `d3fd058a`** y 3 de las 4 de entidades **rojas contra el
+`extractMonths` anterior**: prueban la corrección, no la acompañan.
+
+**La matriz congelada `0c23efc6e66ace6b7bd69b73be0d0c4a4651f185c647b86a718d2e4a8efd8495` queda en
+cero.** El digest actual, `4f53cda1…`, es el del conjunto vacío.
+
+#### B1 — R56-P0 era más ancho de lo reportado
+
+`extractMonths` usaba `includes()`. El caso conocido era `genero ⊃ enero`; la auditoría encontró
+además **`mayor ⊃ mayo`**, que marcaba "estados con **mayo**r incidencia" como consulta de mayo.
+Por eso B1 cerró **21** discrepancias y no 20: el id 135 lo arregló la misma causa de entidades.
+
+Los 21 cambios de contrato se hicieron línea a línea en la declaración original; el diff de
+`test_cases.json` son exactamente **21 líneas de `expectedHandler`**, y las **20/20** respuestas de
+la tabla A quedaron byte-idénticas con RNG fijo.
+
+#### B2 — doce causas, no cuarenta y cinco parches
+
+| causa | corrección | ids |
+| --- | --- | --- |
+| la ficha del padecimiento secuestraba intención de futuro | cede ante `PRONOSTICO_EXPLICITO` | 11 |
+| …y el conteo de modelos, el sexo y la demografía | tres cesiones más en el mismo handler | 8 |
+| composición demográfica atrapada por metadatos y por el área apilada | ceden `answerProyectoMeta` y `answerStackedArea` | 3 |
+| "la última semana" servida como cobertura temporal | cede `answerTemporal`; `answerSemanaActual` reconoce la frase | 3 |
+| matriz global con un padecimiento nombrado | cede `answerMatrizRendimiento` | 1 |
+| definición servida como tabla de métricas / como diagnóstico | ceden ambos; `answerDefinicion` acepta "que es \<término del glosario\>" | 7 |
+| ranking de precisión servido como resumen global | cede `answerMetricaGlobal` | 2 |
+| mejor motor por métrica | lo gana `answerMotor`; discriminante **motor(es) vs modelo(s)** | 1 |
+| tendencia sólo en pretérito | `histTriggers` con participios ("ha crecido") | 1 |
+| histórico estatal servido como pronóstico estatal | rama nueva en `answerBoletin`, con aviso explícito cuando no hay serie del estado | 6 |
+| ranking de precisión atrapado por el ranking de entidades | cede `answerBoletin` ante mejor/peor | 1 |
+| respuestas de sexo con tabla global ajena | `answerSexo` responde **por padecimiento** y respeta el sexo heredado | 5 |
+
+Sobre el contenido que exigía la orden: el padecimiento permanece, el follow-up conserva
+hombres/mujeres, no aparece mes espurio y no se devuelve tabla global ajena — verificado caso por
+caso, no por el nombre del handler.
+
+Una decisión que conviene registrar: la rama de histórico estatal exige vocabulario histórico
+**explícito** (histórico, tendencia, evolución, "como ha sido", últimos N años). Con el `caso`
+genérico de `histTriggers` habría bastado "casos de depresión en Jalisco" para convertir una
+consulta de pronóstico en histórica. Se acotó a propósito.
+
+#### Las tres respuestas que cambiaron fuera de la tabla B
+
+| id | consulta | qué pasó |
+| --- | --- | --- |
+| 447 | "y el histórico" (tras "depresion en jalisco") | `answerSpecificSeries` → `answerBoletin`. Es literalmente la causa del histórico estatal, con otra redacción. Expectativa `*`. |
+| 455 | "pronostico de depresoin" | `answerPadecimiento` → `answerPronostico`. Es el id 149 con un typo; que la variante con typo conservara la ficha sería incoherente. Expectativa `*`. |
+| 602 | "el pronostico decia que iban a ser mas?" (tras "ultimo dato del boletin") | **Mismo handler.** Cambia porque su *setup* ahora resuelve a `answerSemanaActual`: el follow-up compara la semana 27 en vez de volcar 27 semanas × 3 padecimientos. Más enfocado, y su expectativa se sigue cumpliendo. |
+
+Ninguna de las tres relaja una aserción ni esconde una discrepancia.
+
+#### B3 — el gate era falso y ahora no lo es
+
+`run_tests.js` llamaba `answer()` y sólo miraba el texto. Se comprobó ejecutando el runner
+**anterior** con un fixture que miente el handler: `PASS: 1 | FAIL: 0`, rc=0. Ahí vivieron las 65.
+
+Ahora usa `answerWithTrace()` del mismo núcleo y exige igualdad exacta del nombre, respuesta y
+handler ambos nulos cuando se declara `null`, y la invariante respuesta↔dueño. El resumen por
+handler se construye desde el **observado**. El RNG se fija en el harness, no en `kb.js`. El fixture
+es parametrizable por argumento, lo que permite `test_runner_gate.mjs` (5 pruebas, fixtures en un
+temporal): control positivo, handler mentido con texto compatible, `null` declarado sobre consulta
+que responde, comodín que no desactiva `mustContain`, y cesión al RAG con dueño declarado.
+
+Reparto observado con el gate real: **563 nombrados + 53 nulos**. Los 53 son los 47 declarados
+`null` más 6 comodines que legítimamente ceden.
+
+#### Dos precisiones sobre lo que veníamos diciendo
+
+1. **"616 consultas únicas" es, con exactitud, 616 pares (consulta, setup) únicos y 611 cadenas de
+   consulta distintas**: cinco consultas aparecen dos veces con setup distinto. Es así desde antes
+   de 47.1 y es lo que valida `--check`; lo aclaro para que nadie lea una regresión donde no la hay.
+2. **Falso verde en mi propia verificación, corregido:** comprobé las superficies con `git diff --
+   quiet 553b84d1 HEAD -- epibot/<archivo>` estando dentro de `epibot/`, así que el pathspec
+   resolvía a `epibot/epibot/...` y todo salía "byte-idéntico", incluido `test_cases.json`, que sí
+   cambió. Rehecho desde la raíz del repo. Los resultados de la tabla de arriba son los buenos.
+
+#### Diff acumulado `553b84d1..a1412e33`
+
+```text
+8 archivos · +615 / −81
+M  epibot/js/entities.js               +5 / −1
+M  epibot/js/kb.js                   +204 / −8
+M  epibot/tests/generate_tests.js     21 lineas de contrato
+M  epibot/tests/run_tests.js          +46 / −30
+M  epibot/tests/test_cases.json       21 lineas de expectedHandler
+A  epibot/tests/test_entities.mjs      61
+A  epibot/tests/test_precedencia.mjs  175
+A  epibot/tests/test_runner_gate.mjs   82
+knowledge.json · rag_index.json · index.html · package.json · package-lock.json  byte-identicos
+```
+
+#### Pendiente que 47.2-B deja abierto a propósito
+
+Tocar `kb.js` y `entities.js` obliga, según el `CLAUDE.md` del dashboard, a subir el `app.js?v` de
+`index.html` **antes de cualquier deploy** — si no, el navegador sigue sirviendo el bundle viejo. No
+se hizo porque el gate exige el HTML byte-idéntico y aquí no hay deploy. **Queda como bloqueo previo
+a desplegar**, no como olvido.
+
+#### Estado
+
+```text
+Dashboard   a1412e33 · limpio · ahead 9 de main · SIN PUSH
+Backend     ahead 9 · SIN PUSH
+Matriz      0 discrepancias nombradas (congelada 0c23efc6… cerrada)
+Readiness   SIGSEGV ✓ · npm test real ✓ · fixture ✓ · traza ✓ · 47.2-B ✓ · 47.3 ✗ · RAG ✗
+Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
+```
+
+Siguiente acción exacta: **auditar los tres commits** y comprobar que sólo cambiaron respuestas de
+los ids autorizados más los tres clasificados. 47.3 no se inicia hasta que esa auditoría cierre.
 
 _Respuesta:_
