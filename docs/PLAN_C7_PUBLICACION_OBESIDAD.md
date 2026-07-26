@@ -6322,3 +6322,83 @@ Pendiente C7.3b y C7.3c en EpiForecast-IMSS-Dashboard, con su propio GO
 ```
 
 _Respuesta:_
+
+---
+
+### Ronda 32 — C7.3b/C7.3c: consumo candidate y RAG de staging — 2026-07-26
+
+Ejecutado en `EpiForecast-IMSS-Dashboard`, **en rama nueva** `feat/c73-candidate-staging` (estaba en
+`main`), commit local `4c99114b`. **Nada desplegado, sin push, sin lifecycle ni canales.**
+
+Su `CLAUDE.md` prohíbe `Co-Authored-By`; ese commit va sin líneas de coautoría.
+
+#### C7.3b — consumir el manifest candidate y mostrar point-only
+
+```text
+epibot/scripts/lib/candidate.mjs   lee y VALIDA <staging>/<disease>/<release>
+epibot/js/point_only.js            reglas puras de dibujo, sin DOM
+```
+
+El error que había que evitar no es un crash: es un **gráfico creíble y falso**. Convertir el vacío
+de un intervalo en `0` dibuja una banda que baja hasta el eje y sugiere una certeza que nadie
+calculó. Por eso:
+
+- `toValue`: `''`, `nan`, `None`, `null` y `undefined` son **ausencia**, nunca cero;
+- con `interval_method=none` la banda es `null` — ni ceros, ni una copia de la línea;
+- la etiqueta «Pronóstico puntual; sin intervalo de incertidumbre» **viaja con la serie**: si el
+  gráfico se muestra, el aviso se muestra con él;
+- aunque llegaran límites, `interval_method=none` manda: el lector rechaza el shard.
+
+Verificado con el shard real de C7.3a: 5,772 filas, `lifecycle=trained`, `isPubliclyVisible=false`,
+`band=null`, 52 puntos en nacional/general.
+
+#### C7.3c — reindexar y verificar drift, sólo en staging
+
+```text
+epibot/scripts/rag_staging.mjs     índice paralelo en el staging; el publicado no se toca
+corpus 454 → 455 chunks (+1 candidate) · 435 vectores reutilizados · ✔ sin drift
+chunks con "obesidad": índice PUBLICADO 0 · índice de STAGING 1
+```
+
+`buildChunks` acepta ahora `candidateRoot` **opcional**. Sin ese argumento el corpus es idéntico
+chunk a chunk al de antes —lo comprobé por digest, y la primera comparación que hice era inválida
+porque el módulo resuelve rutas desde su propio directorio; repetida en el sitio correcto:
+`11ec6151867a4cac` en ambos—. El índice publicado no puede derivar por el mero hecho de que exista
+un candidate en la máquina.
+
+#### 16 pruebas nuevas que fabrican sus propios shards
+
+No dependen del repo principal. Cubren: el vacío nunca es cero, la banda nula, candidate ≠ público,
+y cuatro rechazos (declara incertidumbre, declara intervalos, trae límites, miente en el conteo).
+
+#### Dos rojos PREEXISTENTES, verificados con mis cambios en stash
+
+```text
+npm run rag:verify   ✖ DRIFT: 454 chunks de corpus vs 452 en el índice publicado (19 sin cubrir)
+npm test             answerTrainingConfig 9/10 · null 46/49
+```
+
+Ambos idénticos en `HEAD` limpio. **No son de C7.3** y no los toco: regenerar el índice publicado
+exige `GEMINI_API_KEY` y es una escritura sobre la superficie publicada, justo lo que el GO excluye.
+`npm run check` ya estaba rojo por ese drift antes de este trabajo.
+
+#### Preservación
+
+```text
+epibot/knowledge.json · epibot/rag_index.json · index.html · epibot/index.html   SIN CAMBIOS
+node --check de los 10 módulos tocados y vecinos: OK
+gate propio: 16/16
+```
+
+#### Estado
+
+```text
+C7.3  a/b/c entregadas · dos repos, dos commits locales, cero deploys
+Repo principal        b14a6ca2 · ahead 2
+Dashboard             4c99114b · rama feat/c73-candidate-staging · ahead 1 de main
+Obesidad  trained · runner_release · invisible en público y en el índice RAG publicado
+Canales   prospective_validation y weekly_validation intactos: son de C7.5
+Deuda     SIGSEGV (repo principal) · drift del rag_index publicado (dashboard), ambos preexistentes
+```
+
+_Respuesta:_
