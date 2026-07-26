@@ -1,17 +1,22 @@
 # C7 — Plan operativo de publicación de Obesidad
 
-> **Estado autoritativo (2026-07-26): C7.2-A, C7.2-B Y C7.2-C1 CERRADAS.** C7.2-A está respaldada
-> en Git remoto `827de945`. C7.2-B está en `c6a2e713` y el cierre documental de C1 en `be143338`;
-> la rama está `ahead 3` antes de commitear esta auditoría. El target DVC está sincronizado y fue
-> restaurado desde S3 con caché vacía. El rango Git fue auditado: contiene puntero, código/tests,
-> registry y plan, pero no el bundle ni targets legacy. No hubo Git push de C7.2-B, deploy ni
-> publicación.
+> **Estado autoritativo (2026-07-26): C7.2 y C7.3 CERRADAS; C7.5-PREP PASS.** El backend remoto
+> está en `815a49a3`; el dashboard candidate está en `d5ead880`. El backend local está en
+> `7b05d240`, `ahead 3`, con C7.4 congelado y C7.5-PREP implementado. El target DVC del release
+> `obesidad_release_2517e7858901` está sincronizado y fue restaurado con caché vacía. No hubo
+> activación, merge, deploy ni publicación.
 >
-> **Orden vigente:** congelar esta auditoría en un último commit doc-only, comprobar `ahead 4` y
-> solicitar autorización explícita para C7.2-C2: push Git fast-forward de
-> `827de945..HEAD`. Ese push no autoriza C7.3, lifecycle, canales, frontend o publicación. La Ronda
-> 29 contiene las órdenes autoritativas.
-> Obesidad continúa `trained`, NO-GO e invisible para `published_only`.
+> **Decisión de política del usuario (2026-07-26):** no esperar cuatro semanas antes de publicar.
+> C7.4 conserva exactamente su candidato, control, umbrales y `gate_digest`, pero pasa de gate
+> previo a **verificación prospectiva posterior a una publicación condicionada**. Hoy continúa
+> `INCOMPLETE (0/4)` y no se presenta como PASS. Un FAIL final obliga a rollback; un PASS convierte
+> la publicación condicionada en confirmada.
+>
+> **Orden vigente:** (1) congelar y respaldar el delta local; (2) cerrar C7.6-READINESS; (3) emitir
+> el paquete de aprobación; (4) activar y desplegar coordinadamente con etiqueta pública de
+> validación en curso; (5) reejecutar C7.4 con cada boletín hasta 4/4. La Ronda 37 contiene las
+> órdenes ejecutables y sustituye cualquier orden histórica incompatible.
+> Obesidad continúa por ahora `trained`, NO-GO e invisible para `published_only`.
 >
 > **Alcance:** publicar únicamente Obesidad E66. Anorexia F50 permanece
 > `lifecycle=configured`, `channels: []`, `gallery_enabled: false` y oculta durante toda C7.
@@ -42,12 +47,16 @@ La publicación inicial tendrá estas decisiones cerradas:
 | Galería | desactivada en el primer release |
 | Intervalos | `point-only`, declarado en datos, reportes y UI |
 | Sede de modelos | bundle inmutable propio bajo DVC; no `models/` legacy ni `runs/` completo |
-| Gate prospectivo | 4 semanas epidemiológicas consecutivas, sin retuning |
+| Gate prospectivo | congelado antes de publicar; 4 semanas consecutivas como verificación posterior |
+| Estado inicial público | publicación condicionada, con validación prospectiva `0/4` visible |
 | Activación | lifecycle + puntero de release público; ambos deben coincidir |
 | Rollback | restaurar puntero y versiones públicas anteriores; no borrar el bundle |
 
-No se publicará como “preliminar” para saltarse el gate prospectivo. Una excepción requeriría una
-decisión formal distinta y una modificación explícita de este plan.
+La decisión formal del usuario del 2026-07-26 autoriza cambiar el orden, no falsear el resultado:
+C7.4 permanece `INCOMPLETE` hasta reunir cuatro semanas válidas. La publicación inicial será
+`published`, pero deberá declarar de forma visible **“validación prospectiva en curso (0/4
+semanas) · pronóstico puntual sin intervalos”**. No se permite llamar PASS a un resultado
+incompleto, retirar la etiqueta antes del PASS, retunear con esas semanas ni cambiar el congelado.
 
 ---
 
@@ -157,7 +166,8 @@ restaurar el puntero de release y las versiones públicas anteriores.
 
 `weekly_validation` y `prospective_validation` no son superficies equivalentes a web o Reports.
 Para el primer release de Obesidad no se declararán como canales públicos. El gate prospectivo se
-ejecuta antes de publicar, pero eso no lo convierte automáticamente en un canal habilitado.
+congela antes de publicar y se completa después como verificación condicionante, pero eso no lo
+convierte automáticamente en un canal habilitado.
 
 ---
 
@@ -173,22 +183,22 @@ flowchart LR
     E --> F2["Shard Tableau"]
     E --> F3["Manifest web"]
     E --> F4["Corpus EpiBot/RAG"]
-    C --> G["C7.4<br/>Forecast y control congelados"]
-    G --> H{"4 semanas<br/>prospectivas PASS"}
+    C --> G["C7.4<br/>Forecast, control y regla congelados"]
     F1 --> I["C7.5<br/>Gates de consumidores"]
     F2 --> I
     F3 --> I
     F4 --> I
-    H --> I
-    I --> J["C7.6<br/>Paquete de aprobación"]
+    G --> I
+    I --> J["C7.6<br/>Readiness + paquete de aprobación"]
     J --> K{"OK explícito<br/>por acción externa"}
     K --> L["Subir bundle oscuro"]
     L --> M["Activar puntero + lifecycle"]
     M --> N["Deploy coordinado"]
-    N --> O["Smoke público + vigilancia"]
-    O --> P{"PASS"}
-    P -->|sí| Q["Release publicado"]
-    P -->|no| R["Rollback de puntero y deploy"]
+    N --> O["Publicación condicionada<br/>validación 0/4 visible"]
+    O --> H{"C7.4 llega a 4/4"}
+    H -->|PASS| Q["Release confirmado<br/>retirar etiqueta de validación"]
+    H -->|FAIL| R["Rollback de puntero, lifecycle y deploy"]
+    H -->|INCOMPLETE| O
 ```
 
 Fuentes de verdad, sin duplicar decisiones:
@@ -538,7 +548,7 @@ No retunear, re-seleccionar, cambiar umbrales ni refitear usando las semanas del
 
 ### Ventana
 
-Esperar cuatro semanas objetivo consecutivas con boletín utilizable:
+Reunir cuatro semanas objetivo consecutivas con boletín utilizable:
 
 ```text
 2026-W27, 2026-W28, 2026-W29 y 2026-W30
@@ -575,10 +585,17 @@ Además:
 
 ### Resultado
 
-- **PASS:** habilita C7.5.
-- **FAIL:** Obesidad permanece `trained`; no hay retuning automático. Abrir un plan de diagnóstico
-  separado.
-- **INCOMPLETE:** faltan semanas válidas; C7 espera.
+- **PASS:** confirma el release ya publicado y permite retirar la etiqueta de validación
+  prospectiva en curso.
+- **FAIL:** ejecutar rollback obligatorio al puntero, lifecycle y deploy públicos anteriores. No
+  hay retuning automático ni sustitución silenciosa del candidato. Abrir un plan de diagnóstico
+  separado después de restaurar el estado público previo.
+- **INCOMPLETE:** faltan semanas válidas. Si el release ya está publicado, permanece condicionado
+  y conserva la etiqueta con el contador real `n/4`; no se interpreta como PASS.
+
+Esta excepción de orden no cambia el gate. El candidato, el control, la receta, los umbrales, las
+semanas y el `gate_digest` permanecen congelados. Cualquier modificación crea otro gate y no puede
+usarse para confirmar este release.
 
 ### Gate C7.4
 
@@ -609,8 +626,9 @@ Preparar, sin activar todavía:
 | --- | --- |
 | Registry | doctor valida release y digests; false green legacy eliminado |
 | Dataset/modelos | 64 modelos cargables; 111 productos reconciliados |
-| Calidad | aceptación 2025 PASS + prospectivo C7.4 PASS |
+| Calidad | aceptación 2025 PASS + C7.4 congelado e íntegro; se permite `INCOMPLETE` por decisión explícita |
 | Point-only | etiqueta consistente; ninguna banda inventada |
+| Validación en curso | contador `n/4`, estado `INCOMPLETE` y regla de rollback visibles |
 | Reports | shard/reporte candidate completo |
 | Tableau | datasource candidate válido y legacy intacto |
 | Web | Obesidad visible solo en preview candidate |
@@ -639,7 +657,9 @@ Generar un documento de release con:
 - inventario del bundle;
 - hashes legacy antes/después;
 - preview de Reports, Tableau, web y EpiBot;
-- resultado prospectivo;
+- estado prospectivo real (`INCOMPLETE n/4`, `PASS` o `FAIL`) y su `gate_digest`;
+- excepción formal para publicar con C7.4 incompleto y etiqueta pública obligatoria;
+- procedimiento semanal de actualización del contador sin tocar el congelado;
 - plan de activación;
 - plan y comandos de rollback;
 - lista explícita de acciones externas aún no realizadas.
@@ -661,7 +681,9 @@ Las aprobaciones deben pedirse y registrarse por separado:
 
 ## 11. C7.7 — Activación coordinada
 
-Solo se ejecuta con C7.1–C7.6 PASS y las autorizaciones anteriores.
+Solo se ejecuta con C7.1–C7.3, C7.5 y C7.6 en PASS, C7.4 congelado e íntegro, y las
+autorizaciones anteriores. La única excepción admitida es que el veredicto final de C7.4 continúe
+`INCOMPLETE`; no se acepta un FAIL ni una alteración del `gate_digest`.
 
 Orden:
 
@@ -672,8 +694,11 @@ Orden:
 5. generar los cuatro outputs públicos desde el release activo;
 6. desplegar frontend/EpiBot y promover Tableau;
 7. ejecutar smoke público;
-8. observar errores, integridad y consistencia durante la ventana acordada;
-9. declarar C7 PASS o ejecutar rollback.
+8. mostrar en los cuatro canales la etiqueta
+   `Validación prospectiva en curso (0/4 semanas) · pronóstico puntual sin intervalos`;
+9. observar errores, integridad y consistencia desde el primer minuto;
+10. reejecutar C7.4 con cada boletín, sin retuning ni refit;
+11. al llegar a 4/4, confirmar el release si PASS o ejecutar rollback si FAIL.
 
 El gate de activación exige:
 
@@ -684,6 +709,7 @@ El gate de activación exige:
 - las cifras públicas muestreadas coinciden con el forecast sellado;
 - no existe pérdida ni cambio numérico en los cuatro padecimientos previos;
 - las superficies declaran point-only;
+- las superficies declaran el estado prospectivo real y el contador `n/4`;
 - todos los checks públicos responden correctamente.
 
 Commit aislado del flip:
@@ -737,9 +763,11 @@ Objetivo de recuperación: restaurar visibilidad anterior en menos de 30 minutos
 | 3 | C7.3a compiler + shards candidate | ninguno |
 | 4 | C7.3b frontend candidate | ninguno |
 | 5 | C7.3c EpiBot/RAG candidate | ninguno |
-| 6 | C7.4 prospective gate | ninguno |
-| 7 | C7.5 gates y paquete de release | ninguno |
-| 8 | C7.7 flip/puntero, tras autorización | publicación |
+| 6 | C7.4 congelado prospectivo | ninguno; queda `INCOMPLETE 0/4` |
+| 7 | C7.5-PREP puntero/canales + gates | ninguno |
+| 8 | C7.6 readiness + paquete de aprobación | ninguno |
+| 9 | C7.7 flip/puntero, tras autorización | publicación condicionada |
+| 10 | C7.4 veredicto 4/4 | confirmar publicación o rollback |
 
 Backend y frontend permanecen en commits/repos separados. Los outputs materiales y sus punteros no
 se mezclan con cambios de lógica.
@@ -748,12 +776,13 @@ se mezclan con cambios de lógica.
 
 ## 14. Criterio final de éxito
 
-C7 termina únicamente cuando:
+C7 alcanza **publicación condicionada** cuando C7.6 está verde, la activación coordinada termina
+sin errores y el estado `INCOMPLETE n/4` es visible. C7 termina definitivamente únicamente cuando:
 
 - el doctor valida el backend real y no los PKL preliminares;
 - el release se restaura desde Git + DVC en un entorno limpio;
 - 64 modelos y 111 productos conservan identidad, digests y reconciliación;
-- cuatro semanas prospectivas pasan la regla congelada;
+- cuatro semanas prospectivas pasan la regla congelada; si fallan, el rollback se completa;
 - Reports, Tableau, web y EpiBot consumen manifests/shards genéricos;
 - la UI declara honestamente que el forecast es puntual;
 - Obesidad aparece solo en los cuatro canales autorizados;
@@ -763,10 +792,17 @@ C7 termina únicamente cuando:
 - existe rollback probado por puntero/versiones;
 - todas las promociones externas tienen aprobación registrada.
 
-Hasta entonces:
+Antes de la activación:
 
 ```text
 Obesidad = trained · NO-GO · no publicada
+F50      = configured · NO-GO · no publicada
+```
+
+Después de una activación exitosa y antes del veredicto 4/4:
+
+```text
+Obesidad = published · PUBLICACIÓN CONDICIONADA · validación prospectiva n/4 visible
 F50      = configured · NO-GO · no publicada
 ```
 
@@ -2717,6 +2753,185 @@ Corresponde la **Acción 5** (reparar las tres pruebas legacy con un registry si
 sin devolverle motores legacy a Obesidad), que además es lo único que mantiene rojo el gate oficial
 `make test-fast`. Me detengo aquí porque la orden vigente de la Ronda 9 llegaba hasta el cierre de
 la Acción 4.
+
+_Respuesta:_
+
+---
+
+### Aviso final de autoridad — aplicar Ronda 37
+
+Las rondas anteriores se conservan como bitácora y pueden contener el orden ya sustituido de
+“esperar 4/4 antes de publicar”. La orden vigente es la **Ronda 37**:
+
+```text
+1. checkpoint y push autorizado;
+2. C7.6-READINESS completamente verde;
+3. paquete y rollback probados;
+4. publicación condicionada con C7.4 INCOMPLETE n/4 visible;
+5. PASS confirma; FAIL revierte.
+```
+
+No ejecutar un flip o deploy directamente desde C7.5-PREP. Lo siguiente es la Orden 37.1 y luego
+la Orden 37.2.
+
+---
+
+### Ronda 37 — Decisión de publicación condicionada y órdenes autoritativas — 2026-07-26
+
+#### Decisión registrada
+
+El usuario decidió publicar Obesidad sin esperar a que transcurran las cuatro semanas de C7.4 y
+revalidar prospectivamente después. Esta decisión **cambia el orden**, no los datos ni el criterio:
+
+```text
+C7.4 actual       INCOMPLETE · 0/4
+gate_digest       5bc39aa5d44f5e62062775dc09a0366ac856f47e5444fbb52ca07e608e61b65d
+release_id        obesidad_release_2517e7858901
+modalidad         publicación condicionada hasta PASS 4/4
+si resulta FAIL   rollback obligatorio, sin retuning automático
+```
+
+No se modifica el candidato, control, dataset, origen, horizonte, umbrales ni semanas. Esta
+autorización de política **no ejecuta por sí sola** un push, merge, deploy, promoción de Tableau,
+activación de puntero o cambio de lifecycle.
+
+#### Lo que sigue bloqueando antes de activar
+
+Esperar cuatro semanas ya no bloquea. Sí bloquean estos tres problemas funcionales de
+C7.6-READINESS:
+
+1. aislar el `SIGSEGV` de la integración y dejar un comando estable que siempre termine con
+   resultado verificable;
+2. corregir los cuatro fallos reales de `npm test` del dashboard;
+3. regenerar y verificar el índice RAG público hasta obtener drift cero.
+
+Para el punto 3 se requiere `GEMINI_API_KEY` en un entorno autorizado. La clave se entrega sólo
+como secreto de entorno o CI: nunca se escribe en Git, el plan, logs, fixtures o artefactos. Como
+la decisión es publicar los cuatro canales, **no tener la clave bloquea EpiBot y, por tanto, la
+publicación completa**. No se recorta el canal en silencio.
+
+#### Órdenes, en este orden
+
+##### Orden 37.1 — Congelar y respaldar el checkpoint local
+
+1. Auditar `815a49a3..HEAD` y confirmar que sólo contiene C7.4, C7.5-PREP, pruebas y este plan.
+2. Crear un commit doc-only para esta decisión; no mezclarlo con código.
+3. Reejecutar `git diff --check`, tests dirigidos, doctor y hashes legacy.
+4. Presentar el SHA y pedir autorización literal para push fast-forward del backend.
+5. No hacer merge, deploy, activar puntero ni cambiar lifecycle durante este checkpoint.
+
+Autorización que se debe solicitar:
+
+```text
+AUTORIZO PUSH BACKEND 815a49a3..HEAD A
+origin/feat/registry-padecimientos-obesidad.
+SIN MERGE, DEPLOY, ACTIVACIÓN NI PUBLICACIÓN.
+```
+
+##### Orden 37.2 — Cerrar C7.6-READINESS
+
+Backend:
+
+1. reproducir el `SIGSEGV` con un comando mínimo;
+2. demostrar si la causa es estado compartido, orden de pruebas o una dependencia nativa;
+3. aislar el smoke DeepAR en subproceso si ésa es la solución mínima;
+4. añadir una regresión que falle si reaparece `rc=139`;
+5. ejecutar la integración completa con una estrategia estable y documentada.
+
+Dashboard:
+
+1. reproducir los cuatro fallos de `npm test` sobre `main` y sobre la rama candidate;
+2. corregir causa raíz sin relajar aserciones ni ocultar tests;
+3. regenerar el RAG con la clave suministrada de forma segura;
+4. exigir `rag:verify` con drift cero;
+5. ejecutar `npm test`, `npm run check` y las pruebas candidate point-only.
+
+Gate de salida:
+
+```text
+backend lint/typecheck/fast/integration     PASS · sin rc=139
+dashboard npm test/npm run check           PASS
+RAG publicado/candidate                    drift 0
+doctor + DVC release                       PASS
+legacy                                     byte-idéntico
+Obesidad                                   trained · puntero inactivo
+F50                                        configured · oculta
+```
+
+No se autoriza activación si falta una sola fila de este gate.
+
+##### Orden 37.3 — Preparar el paquete de publicación condicionada
+
+Con readiness verde:
+
+1. registrar commits exactos de backend y dashboard;
+2. incluir el release ID, digests, puntero inactivo y rollback previo;
+3. incluir C7.4 como `INCOMPLETE 0/4`, nunca como PASS;
+4. generar previews finales de los cuatro canales;
+5. comprobar que todos muestran point-only y el aviso de validación en curso;
+6. probar rollback completo en staging;
+7. detenerse y pedir autorizaciones externas nombradas.
+
+Texto público mínimo:
+
+```text
+Validación prospectiva en curso (0/4 semanas).
+Pronóstico puntual; no se estimaron intervalos de incertidumbre.
+```
+
+##### Orden 37.4 — Activación coordinada
+
+Sólo después del gate anterior y de las autorizaciones externas:
+
+1. guardar puntero, deploy, datasource e índice público anteriores;
+2. hacer merge/push de código aprobado, sin mezclar entrenamiento;
+3. cambiar Obesidad `trained → published`;
+4. activar `public_release_pointer.v1` para `obesidad_release_2517e7858901`;
+5. materializar Reports, Tableau, web y EpiBot desde el mismo release;
+6. desplegar el dashboard y promover las superficies aprobadas;
+7. ejecutar smoke público y comparar valores muestreados con el forecast sellado;
+8. verificar que F50 siga oculta y que neuro + Dengue no cambien;
+9. si cualquier check falla, ejecutar rollback inmediato.
+
+La activación debe producir una sola identidad pública coherente. No se permite que lifecycle,
+puntero, frontend, Tableau o RAG queden apuntando a estados distintos.
+
+##### Orden 37.5 — Verificación semanal posterior
+
+Con cada boletín nuevo:
+
+1. incorporar únicamente la nueva verdad validada por el contrato de 32 entidades;
+2. reejecutar el gate congelado;
+3. publicar el contador y detalle semanal `n/4`;
+4. no retunear, re-seleccionar, refitear ni cambiar umbrales;
+5. conservar todos los informes y digests.
+
+Al cierre:
+
+| veredicto 4/4 | acción obligatoria |
+| --- | --- |
+| PASS | confirmar release y retirar sólo la etiqueta “validación en curso” |
+| FAIL | restaurar puntero, lifecycle, deploy, Tableau y RAG anteriores |
+| INCOMPLETE | mantener publicación condicionada y etiqueta; esperar semanas válidas |
+
+#### Disparadores de rollback inmediato antes de 4/4
+
+No se espera al gate estadístico si ocurre cualquiera de estos eventos:
+
+- bundle o puntero no restaurable;
+- checksum, schema o lineage inválido;
+- duplicados, negativos, no finitos o ruptura de reconciliación;
+- cifras públicas distintas al shard sellado;
+- F50 visible o canal no autorizado;
+- pérdida o alteración de un padecimiento legacy;
+- error material de frontend, EpiBot, Reports o Tableau;
+- el aviso point-only o el estado `n/4` no aparece.
+
+#### Próxima acción exacta
+
+**Ahora:** ejecutar la Orden 37.1. Después, con el checkpoint remoto confirmado, ejecutar la Orden
+37.2. No activar todavía. La publicación condicionada queda autorizada como ruta de trabajo, pero
+la acción externa se solicita al cerrar readiness con el paquete y rollback completos.
 
 _Respuesta:_
 
@@ -6751,6 +6966,112 @@ C7.5-PREP  PASS · commit local · puntero INACTIVO, sólo en staging
 C7.4       CONGELADO · INCOMPLETE (0/4) · el congelado NO se tocó
 Obesidad   trained · runner_release · gallery off · 4 canales candidatos · NO-GO
 Pendiente  C7.6-READINESS (3 bloqueantes) · reejecutar C7.4 por boletín
+```
+
+_Respuesta:_
+
+---
+
+### Estado operativo final — sustituye el cierre de la Ronda 36
+
+La decisión vigente está desarrollada en la **Ronda 37**. En síntesis:
+
+```text
+esperar 4/4 antes de publicar     YA NO ES BLOQUEANTE
+C7.4                              INCOMPLETE 0/4, congelado e íntegro
+antes de activar                  checkpoint + C7.6-READINESS verde
+primera publicación              condicionada, point-only, n/4 visible
+después                          evaluación semanal sin retuning
+PASS 4/4                         confirma
+FAIL 4/4                         rollback obligatorio
+```
+
+**Siguiente orden:** ejecutar 37.1 y luego 37.2. No saltar directamente al flip o al deploy.
+
+---
+
+### Ronda 38 — Orden 37.1: checkpoint auditado y un defecto propio corregido — 2026-07-26
+
+#### La decisión, anotada
+
+Publicar sin esperar las cuatro semanas es una decisión de política, y el plan la resuelve de forma
+responsable: modalidad **condicionada**, C7.4 visible como `INCOMPLETE 0/4` —nunca como PASS—,
+revalidación semanal y **rollback obligatorio si sale FAIL**. Lo que cambia es el papel del gate: deja
+de ser un control *previo* a publicar y pasa a ser un control *posterior*. Queda escrito para que
+dentro de un mes nadie lo lea como si el gate hubiera pasado.
+
+#### 37.1.1 — Auditoría de `815a49a3..HEAD` · **encontró un defecto REAL**
+
+```text
+6 archivos · 1,016 inserciones · cero superficies prohibidas · diff --check PASS
+plan 1 · código C7.4+C7.5-PREP 2 · tests 2 · registry 1
+```
+
+Pero el diff del registry mostró **cinco** sustituciones de `channels`, no una.
+
+#### R38-P0 — Recorté los canales de los cinco padecimientos, no de Obesidad
+
+Mi cambio de C7.5-PREP usó un reemplazo global. Resultado:
+
+```text
+depresion · parkinson · alzheimer · dengue   perdieron weekly_validation y prospective_validation
+```
+
+Son **los cuatro publicados**, y esos dos canales los alimenta el carril legacy (tabla_333 +
+congelado). **Ninguna prueba se puso roja**, porque nadie afirmaba esos canales: se habrían caído de
+la validación semanal y de la prospectiva en silencio. Ése es el peor modo de fallo de toda esta
+fase —una superficie que desaparece sin que nada se ponga rojo— y es justo el que estas auditorías
+existen para cazar.
+
+Revertido (`eaa13160`): los cuatro publicados recuperan sus seis canales y `gallery_enabled: true`.
+El recorte queda **sólo** en el bloque de Obesidad.
+
+Regresión añadida, y **verificada contra el estado defectuoso**: 6 pruebas en rojo con el archivo
+roto, 84 en verde con el corregido. Fija la superficie de los cuatro publicados, que sólo Obesidad
+esté recortada, y que `published_members()` siga devolviendo los cuatro por ambos canales legacy.
+
+Lección aplicable al resto de C7: **editar YAML por sustitución de texto no distingue bloques.** Los
+cambios por padecimiento se acotan al bloque, como sí se hizo con `gallery_enabled`.
+
+#### 37.1.3 — Reverificación tras la corrección
+
+```text
+git diff --check     PASS
+lint · format · mypy PASS · 286 archivos · 159 módulos
+fast                 1,911 passed (+6 de la regresión)
+doctor obesidad      rc=0        doctor completo   rc=0
+legacy               cb5be395 · 96791595 · 1d2cf0a7 · ac97dc8e   sin cambio
+obesidad             trained · gallery false · 4 canales
+published            Depresión, Parkinson, Alzheimer, Dengue     F50 configured
+```
+
+#### 37.1.4 — Checkpoint listo, sin subir
+
+```text
+815a49a3..HEAD
+  eaa13160  C7.5-PREP fix: el recorte de canales era sólo de Obesidad
+  7b05d240  C7.5-PREP public release pointer, exact channels, rollback
+  f7b14694  C7.4 frozen prospective gate for runner releases
+  fece856e  docs: record C7.3 checkpoints pushed in both repos
++ este commit doc-only
+```
+
+Sin merge, deploy, activación de puntero ni cambio de lifecycle.
+
+#### Sobre `GEMINI_API_KEY`
+
+Anotado tal como pide la Ronda 37: se entrega **sólo** como secreto de entorno o CI, nunca en Git,
+el plan, logs, fixtures ni artefactos. Sin ella, EpiBot no puede alcanzar drift cero y, como la
+decisión es publicar los cuatro canales, **bloquea la publicación completa**. No se recorta el canal
+en silencio.
+
+#### Estado
+
+```text
+Orden 37.1  cerrada salvo el push, que espera literal
+Orden 37.2  C7.6-READINESS NO iniciada
+C7.4        CONGELADO · INCOMPLETE 0/4 · el congelado no se tocó
+Obesidad    trained · runner_release · puntero INACTIVO · NO-GO
 ```
 
 _Respuesta:_
