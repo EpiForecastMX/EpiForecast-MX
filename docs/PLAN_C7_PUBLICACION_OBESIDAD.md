@@ -2785,6 +2785,8 @@ pruebas focalizadas                 35/35
 test:candidate                      19/19
 generate_tests.js --check           rc=0 · 616 pares (query, setup) · no mutante
 node --check                        entities.js · kb.js · test_ranking.mjs PASS
+npm run check                       rc=1 únicamente en rag:verify:
+                                    corpus 454 · índice 452 · 19 chunks sin cubrir
 ```
 
 La comparación independiente se hizo desde dos `git archive`, uno de `a1412e33` y otro de
@@ -10011,5 +10013,86 @@ Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
 
 Con 47.2-B en PASS, la secuencia escrita en la Ronda 59 habilita **47.3 en un commit separado**.
 Procedo con él y me detengo ahí: sin RAG, sin clave, sin push.
+
+_Respuesta:_
+
+---
+
+### Ronda 62 — 47.3 ejecutada: la verificación del fixture entra al comando oficial — 2026-07-26
+
+Un commit local sobre `45bba6c2`. Sin RAG, clave, cache-bust, push, merge, deploy, activación ni
+publicación.
+
+```text
+19e6a893  47.3  integrar la verificacion del fixture en el comando oficial
+```
+
+`test_cases.json` es un **artefacto** de `generate_tests.js`, no una fuente, pero nada en `npm test`
+lo comprobaba: por eso R45-P0 —565 generados contra 618 commiteados— pudo convivir con una suite
+verde. Eso queda cerrado.
+
+#### Lo que se hizo
+
+```text
+npm test            = test:cases:verify  &&  run_tests.js  &&  test:unit
+test:cases:verify   = generate_tests.js --check      (fail-closed, no mutante)
+test:unit           = traza · entidades · fixture · precedencia · ranking · runner_gate   → 41
+```
+
+La telemetría `Total tests generated` estaba **antes** de la sección 33 y anunciaba **564** cuando el
+fixture tiene 616; ahora va al final de la construcción y dice 616.
+
+`test_fixture_verify.mjs` (5 pruebas, árboles temporales — el fixture oficial no se toca nunca)
+cubre los cuatro casos que pedía la orden y uno más que me parece el importante:
+
+| caso | exigido |
+| --- | --- |
+| intacto | rc=0, **no reescribe** el fixture, dos pasadas idempotentes |
+| alterado a mano | rc≠0 y **lo deja alterado** — regenerarlo borraría la evidencia del desvío |
+| ausente | rc≠0 y **no lo crea** |
+| duplicado | rc≠0 (`617 en disco vs 616 generados`) |
+| telemetría | cuenta el fixture completo, no una construcción a medias |
+
+#### Verificación de punta a punta
+
+```text
+npm test                          rc=0
+npm test con el fixture mentido   rc=1
+npm test tras restaurarlo         rc=0 · fixture byte-idéntico
+```
+
+#### Gate
+
+```text
+npm test                     616/616  +  41/41
+test:candidate                19/19
+node --check                 kb.js · entities.js · run_tests.js · generate_tests.js  PASS
+package.json                 JSON válido · sólo 3 líneas nuevas
+knowledge / RAG / HTML       byte-idénticos
+```
+
+`package.json` se toca aquí por primera vez desde que empezó 47.2, que es donde correspondía.
+
+#### Estado
+
+```text
+Dashboard   19e6a893 · limpio · ahead 12 de main · SIN PUSH
+Backend     ahead 12 · SIN PUSH
+Readiness   SIGSEGV ✓ · npm test real ✓ · fixture ✓ · traza ✓ · 47.2-B ✓ · 47.3 ✓ · RAG ✗
+Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
+```
+
+#### Lo que queda, y lo que necesito de ti
+
+1. **`C7.6-RAG-CONTRACT`** es lo siguiente en la secuencia. Necesita `GEMINI_API_KEY` como secreto de
+   entorno y, según la respuesta P4, reparar el índice baseline en esta rama revisándolo por diff,
+   con Obesidad **sólo** en un índice de staging. No lo empiezo sin tu GO explícito.
+2. **O-1 sigue abierta** (Ronda 61): el ranking dice «acumulado 2014–2026» sin declarar que 2026 va
+   por la semana 27 de 52. Propuesta: `acumulado 2014–2026 *(2026 parcial, semana 27 de 52)*`.
+   Toca los 11 ids de ranking, ninguno fuera.
+3. **Cache-bust de `index.html`**: bloqueante antes de cualquier deploy, porque 47.2-B tocó `kb.js` y
+   `entities.js`. No lo hago hasta que haya intención de desplegar.
+4. **Doce commits locales sin push** en cada repo. Cuando quieras, la autorización va por
+   repositorio y por rango literal.
 
 _Respuesta:_
