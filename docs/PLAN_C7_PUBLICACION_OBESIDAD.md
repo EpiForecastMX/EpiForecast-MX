@@ -1,11 +1,11 @@
 # C7 — Plan operativo de publicación de Obesidad
 
 > **Estado autoritativo (2026-07-26): C7.2 y C7.3 CERRADAS; C7.5-PREP PASS; C7.6 BACKEND PASS.**
-> Backend local `fc09d37d` (`ahead 9`) y remoto `dbfdd49c`; dashboard local limpio
-> `feat/c73-candidate-staging@553b84d1` y remoto `d5ead880`. La autoridad única del fixture y
-> 47.2-A.1 están cerradas; la traza cubre 616/616 consultas y la matriz inicial de 65
-> discrepancias fue reproducida independientemente con digest
-> `0c23efc6e66ace6b7bd69b73be0d0c4a4651f185c647b86a718d2e4a8efd8495`. El
+> Backend local `8216044e` (`ahead 10`) y remoto `dbfdd49c`; dashboard local limpio
+> `feat/c73-candidate-staging@a1412e33` y remoto `d5ead880`. 47.2-B1/B2/B3 cerraron la matriz de
+> handlers (616/616 y cero discrepancias nombradas), pero la auditoría semántica posterior encontró
+> un P0 en el ranking del boletín: el mismo agregado global se etiqueta como si fuera específico de
+> Depresión, Parkinson o Alzheimer. **47.2-B queda CONDICIONADA hasta cerrar 47.2-B4.** El
 > target DVC del release
 > `obesidad_release_2517e7858901` está sincronizado y fue restaurado con caché vacía. El SIGSEGV
 > PyTorch→LightGBM quedó aislado por archivo, con 1,918 fast y 61/61 integraciones. No hubo
@@ -17,16 +17,16 @@
 > `INCOMPLETE (0/4)` y no se presenta como PASS. Un FAIL final obliga a rollback; un PASS convierte
 > la publicación condicionada en confirmada.
 >
-> **Orden vigente:** (1) ejecutar únicamente 47.2-B local: corregir el falso mes
-> `genero → enero`, reclasificar 20 expectativas históricas, corregir 45 rutas funcionales y hacer
-> obligatoria la igualdad con el handler real; (2) ejecutar 47.3 para integrar el verificador del
-> fixture y la traza en los comandos oficiales; (3) corregir el contrato de vectores del RAG y
+> **Orden vigente:** (1) ejecutar únicamente 47.2-B4 local: rankings por padecimiento derivados de
+> su fuente correcta, cobertura parcial explícita, denominadores nacionales honestos y consulta por
+> sexo fuera del ranking de entidades; (2) auditar B4 y cerrar formalmente 47.2-B; (3) ejecutar
+> 47.3 para integrar el verificador del fixture y la traza en los comandos oficiales; (4) corregir
+> el contrato de vectores del RAG y
 > llevar el drift real a cero con la clave disponible
-> como secreto; (4)
-> cerrar C7.6-READINESS y emitir el paquete de aprobación; (5) activar y desplegar coordinadamente
-> con etiqueta pública de validación en curso; (6) reejecutar C7.4 con cada boletín hasta 4/4. La
-> Ronda 57 contiene la orden ejecutable vigente y remite al detalle exhaustivo de Ronda 56;
-> ambas sustituyen cualquier orden histórica incompatible.
+> como secreto; (5)
+> cerrar C7.6-READINESS y emitir el paquete de aprobación; (6) activar y desplegar coordinadamente
+> con etiqueta pública de validación en curso; (7) reejecutar C7.4 con cada boletín hasta 4/4. La
+> Ronda 59 contiene la orden ejecutable vigente y sustituye cualquier orden histórica incompatible.
 > Obesidad continúa por ahora `trained`, NO-GO e invisible para `published_only`.
 >
 > **Alcance:** publicar únicamente Obesidad E66. Anorexia F50 permanece
@@ -9422,5 +9422,274 @@ Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
 
 Siguiente acción exacta: **auditar los tres commits** y comprobar que sólo cambiaron respuestas de
 los ids autorizados más los tres clasificados. 47.3 no se inicia hasta que esa auditoría cierre.
+
+_Respuesta:_
+
+---
+
+### Ronda 59 — Auditoría de 47.2-B y Orden 47.2-B4 — 2026-07-26
+
+Auditoría independiente de `553b84d1..a1412e33`. Esta ronda modifica únicamente este plan. No
+corrige código, no usa la clave y no toca RAG, HTML, lifecycle, punteros ni publicación.
+
+#### Lo que pasa
+
+```text
+diff acumulado                       8 archivos · +615 / -81 · diff --check PASS
+npm test                             616/616 · handler real
+pruebas focalizadas                  27/27
+test:candidate                       19/19
+generate_tests.js --check            rc=0 · 616 pares (query, setup) únicos
+node --check                         kb.js · entities.js · run_tests.js PASS
+superficies públicas                 sin cambios
+```
+
+La comparación independiente se ejecutó desde un `git archive` limpio de `553b84d1`, con
+`Math.random = () => 0.42`, contra `a1412e33`:
+
+```text
+filas comparadas                     616 / 616
+respuestas o handlers cambiados       48
+ids autorizados de tabla B            45 / 45
+extras documentados                  447 · 455 · 602
+extras no declarados                   0
+ids autorizados sin cambiar            0
+```
+
+Los tres commits están bien separados y hacen lo que declaran. B1 corrige meses y contratos; B2
+contiene las rutas funcionales; B3 convierte el runner en un gate real. **No se pide reabrirlos.**
+
+#### R59-P0 — ranking con etiqueta de padecimiento y datos globales
+
+La auditoría de contenido encontró una mentira numérica que ni `mustContain` ni la igualdad del
+handler detectan. `answerBoletin` usa siempre:
+
+```js
+const ranking = bol.ranking_entidades || [];
+```
+
+Esa tabla no tiene dimensión de padecimiento. Sin embargo, cuando la consulta nombra uno, el
+handler sólo cambia el título a “incidencia de Parkinson/Alzheimer/Depresion”. Resultado actual:
+
+```text
+ranking de depresion                 Ciudad de Mexico 193,538 · Jalisco 127,377 · ...
+que estados tienen mas parkinson     Ciudad de Mexico 193,538 · Jalisco 127,377 · ...
+donde hay mas alzheimer              Ciudad de Mexico 193,538 · Jalisco 127,377 · ...
+```
+
+Los números son **idénticos** para los tres padecimientos. Los ids 132, 134, 135, 214, 215 y 216
+quedan semánticamente incorrectos aunque su handler coincida.
+
+La clasificación anterior de los ids 214–216 como “respuesta actual correcta” fue equivocada:
+**el handler histórico era correcto, pero su fuente no**. B1 siguió la orden escrita; el defecto es
+de la auditoría que autorizó esa reclasificación.
+
+#### R59-P0 — un top-20 se presenta como total nacional
+
+`ranking_entidades` contiene 20 filas:
+
+```text
+suma del ranking_entidades           1,310,006
+suma anual nacional de 3 pads        1,581,046
+cobertura del subtotal                  82.9%
+```
+
+El handler suma las 20 filas y lo muestra como **“Total acumulado”**; también calcula porcentajes
+contra ese subtotal. No es un total nacional. Los rankings genéricos de los ids 129–133 y 136
+necesitan denominador y etiqueta honestos, aunque su orden de entidades pueda conservarse.
+
+#### R59-P1 — una pregunta por sexo cae en ranking de entidades
+
+El id 339, `cual sexo tiene mas incidencia`, tiene expectativa `*` y actualmente responde
+`answerBoletin` con una tabla de entidades. El comodín ocultó una respuesta de otra dimensión. Debe
+ser un contrato nombrado y responder hombres vs mujeres desde `stats.demo_historica`, declarando el
+universo de padecimientos incluido.
+
+#### Veredicto
+
+```text
+47.2-B1/B2/B3 · implementación y gate de rutas    PASS
+47.2-B · contenido semántico completo             FAIL condicionado
+47.3                                              NO INICIAR
+```
+
+No es motivo para deshacer los tres commits: el defecto es acotado, preexistía y ahora quedó
+visible porque se revisó el contenido detrás del handler.
+
+#### Orden 47.2-B4 — verdad del ranking, un commit local y STOP
+
+Trabajar sólo en `EpiForecast-IMSS-Dashboard` sobre `a1412e33`.
+
+1. **Ranking específico por padecimiento.**
+   - Derivarlo de `boletin.anual_por_estado_pad`, nunca de `ranking_entidades`.
+   - Sumar los años disponibles por estado y por el padecimiento pedido.
+   - Canonicalizar estados reutilizando `ESTADOS_ALIAS`/una API exportada de `entities.js`; no
+     copiar otro diccionario en `kb.js`.
+   - `Distrito Federal` y `Ciudad de Mexico` deben producir una sola entidad canónica; si existen
+     filas en el mismo año, sumar las observaciones, no sobrescribir una con otra.
+
+2. **Cobertura parcial explícita.**
+   - `anual_por_estado_pad` no cubre las 32 entidades: el texto debe declarar
+     `N entidades canónicas con desglose cargado`.
+   - No llamarlo “ranking nacional completo”.
+   - Mostrar el subtotal cubierto y su porcentaje del total nacional.
+
+3. **Denominador verdadero.**
+   - Para un padecimiento, usar la suma de `boletin.anual_por_pad[pad]` como total nacional.
+   - Para el ranking genérico, usar la suma de todos los padecimientos en `anual_por_pad`.
+   - `ranking_entidades` puede conservarse para el orden genérico, pero sus 20 filas son
+     `entidades disponibles en el ranking`, no “total acumulado”.
+   - Todos los porcentajes deben declarar el denominador que usan.
+
+4. **Consulta por sexo.**
+   - `answerBoletin` debe ceder ante intención explícita de sexo/género.
+   - `cual sexo tiene mas incidencia` debe responder por una ruta de sexo, con totales históricos
+     agregados desde las claves presentes en `stats.demo_historica`.
+   - El texto declara qué padecimientos suma; no hardcodear una cifra ni asumir que siempre son
+     tres.
+   - Cambiar el contrato original del id 339 de `*` al handler real elegido y regenerar el fixture.
+
+5. **Pruebas que deben morder.**
+   - rankings de Depresión, Parkinson y Alzheimer no son byte-idénticos;
+   - cada suma por padecimiento coincide con `anual_por_estado_pad`;
+   - el denominador coincide con `anual_por_pad`;
+   - CDMX aparece una vez e incorpora ambas claves históricas;
+   - se declara cobertura parcial y nunca “ranking nacional completo”;
+   - el ranking genérico no llama total al subtotal de 20;
+   - id 339 devuelve comparación por sexo y nunca una tabla de entidades;
+   - alterar una fuente de un padecimiento cambia sólo su ranking.
+
+6. **Control de alcance.**
+   - Comparar las 616 respuestas de `a1412e33` contra B4 con RNG fijo.
+   - Esperados: rankings genéricos 129, 130, 131, 133 y 136; rankings por padecimiento 132, 134,
+     135, 214, 215 y 216; sexo 339. Conjunto único esperado: **12 ids**.
+   - Cualquier otro cambio se documenta y se detiene antes de commitear.
+
+7. **Gate.**
+
+```text
+npm test                             616/616 con handler real
+test_entities + precedencia + B4     PASS
+test_runner_gate                     PASS
+test:candidate                       19/19
+generate_tests.js --check            rc=0 · no mutante
+knowledge/RAG/HTML/package           byte-idénticos
+```
+
+Crear **un commit local** de B4 y detenerse. No mezclar 47.3.
+
+No usar `GEMINI_API_KEY`, no regenerar RAG, no tocar cache-bust todavía, no hacer push, merge,
+deploy, activación, lifecycle ni publicación.
+
+#### Después
+
+1. Auditar B4 y cerrar formalmente 47.2-B.
+2. Sólo con PASS, ejecutar 47.3 en un commit separado.
+3. Después de 47.3, iniciar `C7.6-RAG-CONTRACT`.
+
+#### Próxima acción exacta
+
+**Ejecutar únicamente 47.2-B4, crear un commit local y detenerse.**
+
+_Respuesta:_ **GO 47.2-B4 LOCAL. Sin 47.3, RAG, push, deploy, activación ni publicación.**
+
+---
+
+### Ronda 60 — 47.2-B4 ejecutada: verdad del ranking — 2026-07-26
+
+Dashboard, un commit local sobre `a1412e33`. Sin 47.3, RAG, clave, cache-bust, push, merge, deploy,
+activación ni publicación.
+
+```text
+3ee38310  47.2-B4  verdad del ranking: fuente, denominador y cobertura
+```
+
+R59-P0 confirmado y corregido. La auditoría tenía razón en lo esencial y en el matiz: el handler de
+los ids 214–216 era el correcto, **su fuente no**. Esto es lo que devolvía antes:
+
+```text
+ranking de depresion              Ciudad de Mexico 193,538 · Jalisco 127,377 · ...
+que estados tienen mas parkinson  Ciudad de Mexico 193,538 · Jalisco 127,377 · ...   ← idénticas
+donde hay mas alzheimer           Ciudad de Mexico 193,538 · Jalisco 127,377 · ...   ← idénticas
+```
+
+y esto ahora:
+
+```text
+Parkinson    Jalisco 9,657 (10.6%) · Veracruz 7,959 · Ciudad de Mexico 6,607 · ...
+             14 entidades canónicas · 63,055 casos = 69.3% del nacional (90,929)
+Depresion    Ciudad de Mexico 235,862 · Jalisco 114,820 · ...
+Alzheimer    Jalisco 2,900 · Chihuahua 2,335 · Sinaloa 2,208 · ...
+```
+
+#### Qué se hizo
+
+1. **Fuente.** El ranking por padecimiento se deriva de `boletin.anual_por_estado_pad`, sumando los
+   años disponibles por entidad y padecimiento. `ranking_entidades` ya no se usa cuando hay
+   padecimiento: no tiene esa dimensión y por eso mentía.
+2. **Canonicalización sin diccionario duplicado.** `entities.js` exporta `canonEstado()`; `kb.js` la
+   importa. *Distrito Federal* y *Ciudad de Mexico* colapsan en una entidad y sus años **se suman**
+   —2017 existe en ambas grafías con 389 y 81 casos de Parkinson—, no se sobrescriben.
+   Lo apliqué **también al ranking genérico**, que las traía como dos filas: son **19** entidades,
+   no 20. La orden sólo lo exigía para el ranking por padecimiento, pero contar dos veces la misma
+   entidad es la misma falta a menor escala.
+3. **Denominador verdadero.** Total nacional desde `anual_por_pad`, declarado en el texto, y cada
+   porcentaje dice contra qué se calcula: *% del total nacional de Parkinson* frente a
+   *% de las disponibles*.
+4. **Cobertura parcial explícita.** «**14 entidades canónicas con desglose cargado**, no las 32» y
+   el cierre con subtotal, porcentaje y total nacional. Desapareció el «**Total acumulado**» que
+   bautizaba total a un subconjunto del 82.9%.
+5. **Sexo.** `answerBoletin` cede ante intención explícita de sexo. `cual sexo tiene mas incidencia`
+   la responde `answerDemografica` sumando las claves **presentes** de `stats.demo_historica` y
+   nombrándolas: hoy son **cuatro** —Alzheimer, Dengue, Depresion, Parkinson—, no tres, y el texto
+   lo dice. El id 339 pasa de comodín a contrato nombrado.
+
+#### Alcance: exactamente los 12 previstos
+
+```text
+cambian     129 130 131 132 133 134 135 136 · 214 215 216 · 339
+extras                                                        0
+faltantes                                                     0
+matriz nombrada                                               0 discrepancias
+```
+
+#### Gate
+
+| exigido | resultado |
+| --- | --- |
+| `npm test` con handler real | **616/616** ✓ |
+| entities · precedencia · B4 | **4/4 · 11/11 · 8/8** ✓ |
+| `test_runner_gate` | **5/5** ✓ |
+| `test:candidate` | **19/19** ✓ |
+| `generate_tests.js --check` | **rc=0**, fixture intacto por md5 ✓ |
+| knowledge / RAG / HTML / package | **byte-idénticos** ✓ |
+
+Las **8 pruebas de `test_ranking.mjs` se verificaron rojas contra `a1412e33`**: muerden. Cubren lo
+que pidió la orden, incluida la última —alterar Nayarit/Parkinson mueve sólo el ranking de
+Parkinson y deja Depresión y Alzheimer byte-idénticos—.
+
+`test_dispatcher_trace` sigue 7/7. Categorías: **448 nombradas + 121 comodín + 47 null** (el 339
+cruzó de comodín a nombrada).
+
+#### Lo que este commit NO arregla, y conviene tener escrito
+
+- La cobertura de `anual_por_estado_pad` es de **14 entidades canónicas de 32**. El ranking por
+  padecimiento es honesto sobre ello, pero sigue siendo parcial: no es un dato que el EpiBot pueda
+  presentar como panorama nacional por entidad. Si eso importa para publicar, se arregla en el
+  generador de `knowledge.json` (repo backend), no aquí.
+- El cache-bust de `index.html` sigue **pendiente y bloqueante antes de cualquier deploy**: este
+  commit vuelve a tocar `kb.js` y `entities.js`.
+
+#### Estado
+
+```text
+Dashboard   3ee38310 · limpio · ahead 10 de main · SIN PUSH
+Backend     ahead 10 · SIN PUSH
+Readiness   SIGSEGV ✓ · npm test real ✓ · fixture ✓ · traza ✓ · 47.2-B ✓ (B1–B4) · 47.3 ✗ · RAG ✗
+Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
+```
+
+Siguiente acción exacta: **auditar `a1412e33..3ee38310` y cerrar formalmente 47.2-B**. 47.3 no se
+inicia hasta ese PASS.
 
 _Respuesta:_
