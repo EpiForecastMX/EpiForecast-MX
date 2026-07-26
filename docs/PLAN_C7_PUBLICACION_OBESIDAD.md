@@ -8965,3 +8965,75 @@ Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
 ```
 
 _Respuesta:_
+
+---
+
+### Ronda 55 — Auditoría de `553b84d1` y matriz de 65 CONGELADA — 2026-07-26
+
+Sin cambios de código. Ningún commit en el dashboard. Sin 47.2-B, 47.3, RAG, push ni deploy.
+
+#### Auditoría de `553b84d1` · **PASS**
+
+```text
+2 archivos · 81 inserciones · 0 borrados · git diff --check PASS
+M epibot/js/kb.js                        +4  (3 de comentario, 1 de código)
+A epibot/tests/test_dispatcher_trace.mjs +77
+knowledge · rag_index · HTML · test_cases.json · package.json   byte-idénticos
+```
+
+El cambio funcional es **una línea**: `trace.handler = 'answerDistribucion'` en la ruta que llamaba
+al handler fuera de `runHandlers`. Proporción correcta para lo que arregla.
+
+#### Matriz de 65 discrepancias, congelada
+
+```text
+DIGEST  0c23efc6e66ace6b7bd69b73be0d0c4a4651f185c647b86a718d2e4a8efd8495
+```
+
+Se congela **por digest sobre una serialización canónica** —`[id, query, setupQuery, expected,
+observed]`, ordenada por par causal y luego por id, medida con `Math.random` fijo—. Si 47.2-B parte
+de otra matriz, el digest lo delata. **27 grupos causales:**
+
+| n | esperado → observado | ids |
+| ---: | --- | --- |
+| 12 | `answerPronostico → answerPadecimiento` | 126, 149–158, 613, 616 |
+| 6 | `answerBoletin → answerSpecificSeries` | 484, 485, 487, 488, 489, 493 |
+| 5 | `answerDefinicion → answerMetricaGlobal` | 275–278, 464 |
+| 5 | `answerSexo → answerPadecimiento` | 335, 337, 338, 440, 441 |
+| 4 | `answerBoletin → answerHistorico` | 481, 483, 491, 492 |
+| 3 | `answerDemografica → answerProyectoMeta` | 365, 366, 368 |
+| 3 | `answerPadecimiento → answerBoletin` | 214, 215, 216 |
+| 3 | `answerSemanaActual → answerTemporal` | 340, 342, 343 |
+| 2 | `answerConteo → answerPadecimiento` | 218, 361 |
+| 2 | `answerDefinicion → answerDiagnosticos` | 280, 281 |
+| 2 | `answerMotor → answerProyectoMeta` | 242, 254 |
+| 2 | `answerProyectoMeta → answerConteo` | 307, 309 |
+| 2 | `answerRanking → answerMetricaGlobal` | 319, 320 |
+| 1×14 | resto | 135, 211, 245, 251, 283, 284, 292, 321, 322, 330, 331, 367, 433, 554 |
+
+**Corrección respecto a la Ronda 53:** el grupo mayor no es
+`answerDefinicion → answerMetricaGlobal` sino **`answerPronostico → answerPadecimiento`, con 12**.
+No aparecía en aquel listado porque lo trunqué a los primeros pares; la matriz de entonces también
+arrastraba los 6 follow-ups mal trazados. Ésta es la buena, y es la que queda congelada.
+
+#### Lo que ya se puede decir de la clasificación, sin decidirla
+
+Cinco grupos concentran **32 de 65** (49%), y los tres mayores tienen un patrón reconocible: la
+consulta menciona un padecimiento y responde el handler del padecimiento en vez del de intención
+(pronóstico, sexo, conteo). Eso sugiere **precedencia**, no etiqueta falsa. Los pares hacia
+`answerProyectoMeta` (6 en total) huelen a lo contrario: consultas de metadatos que el fixture
+atribuyó a otro handler.
+
+No lo cierro aquí: clasificar es 47.2-B y exige mirar cada grupo, no inferir del nombre.
+
+#### Estado
+
+```text
+Dashboard   553b84d1 · limpio · ahead 6 de main · SIN PUSH
+Backend     ahead 9 · SIN PUSH
+Matriz      65 discrepancias · 27 grupos · digest 0c23efc6e66ace6b…
+Readiness   SIGSEGV ✓ · npm test ✓ · fixture ✓ · traza ✓ · 47.2-B ✗ · 47.3 ✗ · RAG ✗
+Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
+```
+
+_Respuesta:_
