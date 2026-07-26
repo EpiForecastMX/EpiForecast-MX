@@ -6110,3 +6110,124 @@ Antes de cualquier publicación futura:
 
 > **Crear el commit doc-only `docs: approve C7.2-C2 Git checkpoint`, verificar `ahead 4` y
 > detenerse. Después solicitar autorización explícita para el push Git; no iniciar C7.3.**
+
+---
+
+### Ronda 30 — C7.2-C2 subido y C7.3a: compilador y puentes candidate — 2026-07-26
+
+#### Cierre de C7.2 (registrado aquí, no en un commit suelto)
+
+```text
+origin/feat/registry-padecimientos-obesidad
+  827de945..5286543c   fast-forward, sin --force · git ls-remote == HEAD
+  ahead 0 · behind 0 · main intacta en b535b525 · sin PR, merge, tag ni release
+```
+
+**C7.2 queda cerrada en Git y en DVC.** El objeto ya estaba en S3 antes de publicar el puntero, así
+que un clon de la rama puede hacer `dvc pull` y correr el doctor sin acceder a esta máquina.
+
+---
+
+#### C7.3a — compilador genérico y los cuatro puentes · **PASS**
+
+`src/epiforecast/publication/`: capa separada del runner. El runner produce y sella; esta traduce, y
+sólo puede escribir en producción cuando el lifecycle lo permite.
+
+```text
+compiler.py  243 líneas   modos candidate/public + contrato de salida (21 columnas)
+shards.py    240 líneas   Reports · Tableau · Web · EpiBot/RAG
+```
+
+#### Compilar no es publicar
+
+| situación | resultado |
+| --- | --- |
+| `trained` + candidate | compila a staging |
+| `public` sin `lifecycle=published` | rechaza **por lifecycle** |
+| `published` sin puntero activo | rechaza: exige el `public_release_pointer.v1` de C7.5 |
+| `published` con puntero a otro release | rechaza |
+| staging dentro de `reports/`, `data/`, `epibot/`, `models/`, `artifacts/` | rechaza |
+
+El modo `public` **no puede usarse todavía**, y falla diciendo exactamente por qué. Es fail-closed
+por construcción, no por omisión.
+
+#### Contrato de salida
+
+Cada fila lleva `release_id`, `disease_id`, SeriesKey completa, periodo MMWR + `ds`, `yhat_cases`,
+motor, `derived`, origen/horizonte, lineage (`forecast_run_id`, `refit_digest`),
+`interval_method=none`, límites nulos y la etiqueta VISIBLE
+«Pronóstico puntual; sin intervalo de incertidumbre».
+
+Las 3,328 filas base llevan **su** motor seleccionado; las 2,444 derivadas se atribuyen al
+**portafolio**. Inventarles un motor sería mentir sobre quién las produjo.
+
+Los valores no se recalculan: se traducen del `forecast.csv` sellado, con desviación máxima **0.0**.
+
+#### Los cuatro puentes (staging temporal)
+
+```text
+epibot/corpus/obesidad.md · epibot/knowledge.json
+reports/forecast_products.csv · reports/report.md
+tableau/forecast_shard.csv · tableau/schema.json
+web/manifest.json · web/series.csv
+shard_manifest.json
+```
+
+Color, etiqueta, CIE, slug, galería y canales salen del registry; filtros y series, de los datos. Ni
+un `if disease == ...`, ni una lista escrita a mano, ni identidad recuperada de un nombre de archivo.
+
+El corpus RAG dice explícitamente que **no hay intervalos** y separa los 64 modelos de los 111
+productos: confundirlos es el error que un RAG repetiría para siempre.
+
+#### Un hallazgo que confirma lo que C7.5 tiene pendiente
+
+Los canales declarados que **no** tienen puente quedan escritos en el manifiesto del shard, no
+descartados en silencio:
+
+```text
+channels_emitted          epibot, reports, tableau, web
+channels_without_bridge   prospective_validation, weekly_validation
+```
+
+Son exactamente los dos que C7.5 debe quitar del registry. El compilador no los borra por su cuenta
+—no es su competencia— pero tampoco deja que pasen desapercibidos.
+
+#### Gate C7.3 (la parte de backend)
+
+| criterio | resultado |
+| --- | --- |
+| dos compilaciones → mismos bytes | PASS (digest por archivo idéntico) |
+| valores de los puentes vs forecast sellado | PASS · máx \|Δ\| = 0.0 |
+| Obesidad ausente de outputs públicos con `trained` | PASS · fuera de `published_members()` en los 4 canales |
+| F50 ausente / rechazo explícito | PASS · `configured`, sin release → rechazado |
+| artefactos públicos de los 4 publicados sin cambios | PASS · agregados y `ProdDetails/` intactos |
+| suites backend | 1,855 fast · 61 integración (dos tandas) |
+| lint · mypy · doctores | PASS · PASS · rc=0 / rc=0 |
+| nada desplegado | PASS |
+
+#### Lo que NO hice, y por qué
+
+C7.3 está dividido en tres commits por el propio plan. **Sólo entrego C7.3a.**
+
+- **C7.3b** (consumidor de manifest en el frontend + UI point-only) y **C7.3c** (regeneración del
+  índice RAG y verificación de drift) viven en **otro repositorio**: `EpiForecast-IMSS-Dashboard`.
+- La regla dura dice que no se toca el frontend sin OK formal explícito, y el GO acotaba a
+  «candidate/staging». Un manifest generado a staging es backend; editar el frontend no lo es.
+- Por eso el criterio del gate «el índice RAG se regenera desde el corpus nuevo y verifica que no
+  exista drift» **queda pendiente y declarado**, no dado por hecho: el corpus ya se genera, el
+  índice se regenera en C7.3c.
+
+El frontend sigue en `main @ 179bbe36`, trackeado limpio.
+
+#### Estado
+
+```text
+C7.2      CERRADA (Git + DVC) · remoto 5286543c
+C7.3a     PASS · commit local · staging temporal eliminado · nada desplegado
+Tests     28 nuevas de publicación · 1,855 fast
+Release   NO-GO · Obesidad = trained · runner_release · F50 = configured · NO-GO
+Pendiente C7.3b y C7.3c (repo del frontend, requieren OK aparte)
+Deuda     SIGSEGV preexistente = bloqueo pre-merge/pre-publicación
+```
+
+_Respuesta:_
