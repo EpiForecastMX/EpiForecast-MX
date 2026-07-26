@@ -1,9 +1,9 @@
 # C7 — Plan operativo de publicación de Obesidad
 
 > **Estado autoritativo (2026-07-26): C7.2 y C7.3 CERRADAS; C7.5-PREP PASS; C7.6 BACKEND PASS.**
-> Backend local `40d32c1f` y remoto `dbfdd49c`; dashboard local limpio
-> `feat/c73-candidate-staging@42477019` y remoto `d5ead880`. El intento parcial de 47.1 fue
-> revertido completamente; no quedan cambios trackeados en el dashboard. El target DVC del release
+> Backend local `db80b47b` y remoto `dbfdd49c`; dashboard local limpio
+> `feat/c73-candidate-staging@98404fa0` y remoto `d5ead880`. La autoridad única del fixture quedó
+> cerrada: 616 filas, 616 consultas únicas, `--check` no mutante y 616/616. El target DVC del release
 > `obesidad_release_2517e7858901` está sincronizado y fue restaurado con caché vacía. El SIGSEGV
 > PyTorch→LightGBM quedó aislado por archivo, con 1,918 fast y 61/61 integraciones. No hubo
 > activación, merge, deploy ni publicación.
@@ -14,14 +14,14 @@
 > `INCOMPLETE (0/4)` y no se presenta como PASS. Un FAIL final obliga a rollback; un PASS convierte
 > la publicación condicionada en confirmada.
 >
-> **Orden vigente:** (1) cerrar la doble autoridad generador/fixture y hacer que
-> `expectedHandler` se verifique realmente: hoy sólo etiqueta reportes y no comprueba qué handler
-> respondió; (2)
+> **Orden vigente:** (1) instrumentar el dispatcher sin cambiar respuestas y medir qué handler
+> ejecuta realmente cada uno de los 616 contratos; hoy `expectedHandler` sólo etiqueta reportes;
+> (2)
 > corregir el contrato de vectores del RAG y llevar el drift real a cero con la clave disponible
 > como secreto; (3)
 > cerrar C7.6-READINESS y emitir el paquete de aprobación; (4) activar y desplegar coordinadamente
 > con etiqueta pública de validación en curso; (5) reejecutar C7.4 con cada boletín hasta 4/4. La
-> Ronda 47 contiene la orden ejecutable vigente y sustituye cualquier orden histórica incompatible.
+> Ronda 52 contiene la orden ejecutable vigente y sustituye cualquier orden histórica incompatible.
 > Obesidad continúa por ahora `trained`, NO-GO e invisible para `published_only`.
 >
 > **Alcance:** publicar únicamente Obesidad E66. Anorexia F50 permanece
@@ -2761,6 +2761,154 @@ sin devolverle motores legacy a Obesidad), que además es lo único que mantiene
 la Acción 4.
 
 _Respuesta:_
+
+---
+
+### Anexo técnico R52-A — Decisiones P1–P4 y diseño de 47.2-A — 2026-07-26
+
+- **P1:** opción **(a) completada en la Ronda 52**. `98404fa0` queda aceptado para continuar.
+  La siguiente ejecución es 47.2-A, no RAG.
+- **P2:** no se altera el orden. `C7.6-RAG-CONTRACT` sigue después de 47.2 y 47.3.
+- **P3:** **ningún push todavía**. Acumular el checkpoint local hasta cerrar 47.2/47.3 y pedir
+  literales separados por repositorio.
+- **P4:** el drift baseline se repara en `feat/c73-candidate-staging` y se revisa por diff, sin
+  deploy. El chunk de Obesidad se genera únicamente en un índice de staging hasta la activación.
+
+#### Veredicto de 47.1
+
+Auditoría independiente:
+
+```text
+diff 42477019..98404fa0       sólo generate_tests.js + test_cases.json
+git diff --check              PASS
+fixture                       616 filas · 616 consultas únicas · IDs 1..616
+generate_tests.js --check     rc=0 · hash antes=después
+npm test                      616/616 PASS
+test:candidate                19/19 PASS
+knowledge/RAG/HTML            byte-idénticos a 42477019
+```
+
+**47.1 queda ACEPTADA.** No se detectó pérdida de cobertura material.
+
+#### R52-P1 — telemetría incorrecta, artefacto correcto
+
+El comando imprime:
+
+```text
+Total tests generated: 564
+...
+fixture reproducible: 616 casos
+```
+
+La primera línea se ejecuta antes de añadir las 52 consultas posteriores. No altera el fixture ni
+el gate, pero es una salida falsa. Mover ese `console.log` al final de la construcción queda como
+microfix obligatorio dentro de 47.3, cuando se integren los comandos oficiales. No reabrir 47.1 ni
+amendar `98404fa0` sólo por esta línea.
+
+#### Por qué 47.2 se divide
+
+Activar de golpe la comparación estricta de handler puede descubrir etiquetas históricas falsas.
+Corregir instrumentación y contratos en el mismo paso ocultaría qué cambió. Por eso 47.2 se divide:
+
+```text
+47.2-A  instrumentar + medir · cero cambios en respuestas/fixture
+47.2-B  resolver discrepancias y hacer la comparación obligatoria
+```
+
+#### Orden 47.2-A — Instrumentar el dispatcher y producir el mapa observado
+
+Trabajar sólo en el dashboard desde `98404fa0`.
+
+1. Capturar:
+   - hashes de `knowledge.json`, `rag_index.json` y ambos HTML;
+   - salida de las 616 consultas actuales en un temporal no trackeado;
+   - estado de contexto/follow-ups de los casos con `setupQuery`.
+2. Crear un único núcleo de resolución que produzca:
+
+```text
+{ response, handler }
+```
+
+3. `answer(query)` debe delegar a ese núcleo y continuar devolviendo sólo `response`. No duplicar
+   guards, fuzzy matching, herencia de contexto ni `HANDLERS`.
+4. Exponer una API diagnóstica para pruebas, por ejemplo `answerWithTrace(query)`, que use el mismo
+   núcleo.
+5. Asignar identidad estable a cada salida:
+   - handlers de `HANDLERS` → `handler.name`;
+   - rechazo off-topic → `answerFueraDeTema`;
+   - guard de inyección → `answerInjectionGuard`;
+   - guard de código → `answerCodeRequest`;
+   - cesión a RAG/Gemini y ausencia de respuesta → `handler=null`.
+6. Contexto, corrección fuzzy y prefijos visibles no cambian la identidad: reportar el handler que
+   produjo la respuesta subyacente.
+7. No usar `_lastHandlerFn` como única fuente post-hoc: es estado global mutable y no cubre todos
+   los guards. El resultado del dispatcher debe transportar la identidad junto con la respuesta.
+8. Mantener exactamente la semántica conversacional existente. No introducir un segundo camino de
+   producción “sólo para tests”.
+
+#### Auditoría de equivalencia obligatoria
+
+Antes y después del refactor:
+
+```text
+616 responses                    byte-idénticas
+616 null/no-null                 idénticos
+entidades y setupQuery           idénticos
+test:candidate                   19/19
+superficies públicas             byte-idénticas
+```
+
+Crear un reporte temporal, no trackeado, con:
+
+```text
+id · query · expectedHandler · observedHandler · coincide
+```
+
+Agrupar discrepancias por `expectedHandler → observedHandler`. No corregir todavía
+`test_cases.json`, no relajar aserciones y no convertir casos a `*`.
+
+#### Pruebas mínimas de 47.2-A
+
+1. `answer()` y `answerWithTrace().response` son idénticos.
+2. Un handler normal reporta su nombre real.
+3. Off-topic reporta `answerFueraDeTema`.
+4. Una cesión RAG reporta `null`.
+5. Un follow-up conserva el handler subyacente.
+6. Una corrección fuzzy conserva el handler subyacente.
+7. Dos consultas secuenciales no contaminan la identidad observada.
+
+#### Gate y STOP
+
+```text
+npm test                         616/616 PASS de salida
+test:candidate                   19/19 PASS
+respuestas antes/después         byte-idénticas
+mapa observedHandler             616/616 filas
+fixture                          sin cambios
+RAG/knowledge/HTML               sin cambios
+```
+
+Entregar un commit local de instrumentación y pruebas, más el conteo de discrepancias. **STOP.**
+No hacer todavía obligatoria la igualdad de handlers; eso es 47.2-B después de auditar el mapa.
+
+No usar `GEMINI_API_KEY`, no regenerar índices, no tocar `package.json`, no hacer push, merge,
+deploy, activación o publicación.
+
+#### Después de 47.2-A
+
+1. auditar el mapa de discrepancias;
+2. ejecutar 47.2-B para corregir contratos/enrutamiento y exigir igualdad real;
+3. ejecutar 47.3 para integrar `test:cases:verify`, corregir la telemetría 564→616 y dejar los
+   comandos oficiales fail-closed;
+4. sólo entonces implementar `C7.6-RAG-CONTRACT`;
+5. reparar el índice baseline en la rama candidate;
+6. generar Obesidad únicamente en staging.
+
+#### Próxima acción exacta
+
+**Ejecutar únicamente 47.2-A y detenerse con el mapa observado.**
+
+_Respuesta:_ pendiente del commit local, equivalencia byte a byte y matriz de discrepancias.
 
 ---
 
@@ -8483,6 +8631,133 @@ Readiness   SIGSEGV ✓ · npm test ✓ · autoridad del fixture ✓ · traza de
 Clave       disponible como secreto de entorno · sin usar todavía
 Obesidad    trained · runner_release · puntero inactivo · 0 menciones públicas · NO-GO
 C7.4        CONGELADO · INCOMPLETE 0/4 · gate_digest 5bc39aa5d44f5e62… intacto
+```
+
+_Respuesta:_
+
+- **P1:** opción **(a) completada**. `98404fa0` queda aceptado y la siguiente ejecución es 47.2-A.
+- **P2:** no se altera el orden; RAG continúa después de 47.2 y 47.3.
+- **P3:** ningún push todavía.
+- **P4:** reparar el índice baseline en la rama candidate, revisarlo por diff y mantener Obesidad
+  exclusivamente en un índice de staging hasta la activación.
+
+---
+
+### Ronda 52 — Orden vigente: medir el handler real — 2026-07-26
+
+La auditoría material de 47.1 fue PASS. El detalle, las pruebas reproducidas y el diseño completo de
+47.2-A están en el **Anexo técnico R52-A**.
+
+#### Próxima acción
+
+Ejecutar únicamente **47.2-A**:
+
+1. instrumentar un único dispatcher que entregue `{response, handler}`;
+2. conservar `answer()` y sus 616 respuestas byte-idénticas;
+3. producir la matriz de 616 handlers observados frente a los esperados;
+4. no corregir todavía discrepancias ni modificar `test_cases.json`;
+5. entregar commit local, conteos agrupados y STOP.
+
+Gate:
+
+```text
+npm test                   616/616 PASS de salida
+test:candidate             19/19 PASS
+respuestas antes/después   byte-idénticas
+mapa observedHandler       616/616 filas
+fixture/RAG/HTML           sin cambios
+```
+
+No usar la clave, regenerar RAG, modificar `package.json`, hacer push, deploy, merge, activación o
+publicación.
+
+_Respuesta:_ pendiente del commit local y matriz de discrepancias de 47.2-A.
+
+---
+
+### Ronda 53 — 47.2-A: el handler real, medido — 2026-07-26
+
+Commit único en el dashboard: **`ada08080`**. STOP. Sin corregir discrepancias, sin tocar
+`test_cases.json`, `package.json`, RAG, HTML ni la clave. Sin push.
+
+#### Diseño implementado
+
+```text
+_resolve(query) -> { response, handler }        núcleo ÚNICO
+answer(query)   -> response                      firma y salida idénticas
+answerWithTrace(query) -> {response, handler}    MISMO núcleo, sin ruta paralela "para tests"
+```
+
+La identidad viaja **con la resolución**, mediante un `trace` por llamada. No se dedujo de
+`_lastHandlerFn`: es global mutable y no cubre los guards previos a la cadena, como advertía R52-A.7.
+
+Identidades estables: handlers de `HANDLERS` por `handler.name`; rechazo off-topic
+`answerFueraDeTema`; `answerInjectionGuard`; `answerCodeRequest`; cesión a RAG/Gemini y ausencia de
+respuesta → `handler=null`.
+
+#### Equivalencia: 607/607, y por qué no 616
+
+```text
+respuestas byte-idénticas      607 de 607 comparables
+diferencias                      9 · todas de answerGraficoAleatorio
+```
+
+**La exigencia de «616 respuestas byte-idénticas» no es alcanzable, y no por el refactor.**
+`answerGraficoAleatorio` devuelve un gráfico aleatorio por diseño. Lo verifiqué de la única forma que
+lo demuestra: **dos corridas del MISMO código difieren en esos mismos ids** (521–530). Excluyéndolos,
+la equivalencia es exacta. Conviene anotarlo para 47.2-B/47.3: cualquier gate que exija
+determinismo de respuestas tiene que excluir ese handler o fijarle una semilla.
+
+#### Matriz observada frente a esperada
+
+```text
+filas                   616
+coinciden               423
+comodín '*'             122   (sin expectativa de handler)
+esperado null           47    observado null: 47/47  ✓
+DISCREPANCIAS           71
+```
+
+Los 47 `null` esperados aciertan todos: la delegación al RAG/Gemini está bien declarada. Las 71
+discrepancias, agrupadas por par esperado→observado (top):
+
+```text
+5  answerDefinicion -> answerMetricaGlobal      3  answerSemanaActual -> answerTemporal
+5  answerSexo -> answerPadecimiento             3  answerDemografica -> answerProyectoMeta
+4  answerBoletin -> answerHistorico             2  answerConteo -> answerPadecimiento
+3  answerPadecimiento -> answerBoletin          2  answerMotor -> answerProyectoMeta
+…y 18 pares más de 1–2 casos
+```
+
+Ninguna se corrige en esta ronda, por diseño: 47.2 se dividió justamente para no mezclar
+instrumentación con corrección de contratos.
+
+#### Lectura preliminar, para 47.2-B
+
+71 de 616 es un 11.5%. No significa 71 defectos: una parte serán **etiquetas históricas falsas** —el
+fixture nombró un handler plausible que nunca fue el que respondía— y otra parte serán **defectos
+reales de precedencia**, como los dos que G4 ya corrigió. Separarlas es el trabajo de 47.2-B, y sólo
+entonces la comparación de handler puede volverse obligatoria.
+
+#### Gate 47.2-A
+
+```text
+npm test                     616/616 PASS
+npm run test:candidate        19/19 PASS
+respuestas antes/después     607/607 byte-idénticas (9 aleatorias, justificadas)
+mapa observedHandler         616/616 filas
+knowledge · rag_index · HTML · test_cases.json · package.json   byte-idénticos
+archivos tocados             sólo epibot/js/kb.js
+```
+
+#### Estado
+
+```text
+Dashboard   ada08080 · limpio · ahead 5 de main · SIN PUSH
+Backend     ahead 6 · SIN PUSH
+Readiness   SIGSEGV ✓ · npm test ✓ · fixture ✓ · traza de handler ✓ (medida) · 47.2-B ✗ · 47.3 ✗ · RAG ✗
+Clave       disponible · sin usar
+Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
 ```
 
 _Respuesta:_
