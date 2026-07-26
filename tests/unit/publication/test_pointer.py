@@ -152,3 +152,45 @@ def test_cambiar_la_politica_publica_no_mueve_el_release_id(politica):
     """Si esto fallara, apagar un canal obligaría a reconstruir modelos intactos."""
     disease = dataclasses.replace(_obesidad(), **politica)
     assert pointer_for(disease).release_id == _obesidad().artifact_source.release_id
+
+
+# ── Regresión: el recorte de canales es SÓLO de Obesidad ──────────────────────────────────────
+CANALES_LEGACY = (
+    "web",
+    "epibot",
+    "reports",
+    "tableau",
+    "weekly_validation",
+    "prospective_validation",
+)
+
+
+@pytest.mark.parametrize("padecimiento", ["depresion", "parkinson", "alzheimer", "dengue"])
+def test_los_publicados_conservan_sus_seis_canales_y_su_galeria(padecimiento):
+    """Regresión de C7.5-PREP: un `replace` global recortó los canales de LOS CINCO padecimientos.
+
+    Los cuatro publicados alimentan `weekly_validation` y `prospective_validation` por el carril
+    legacy (tabla_333 + congelado). Quitárselos no rompía ninguna prueba —nadie los afirmaba— pero
+    los habría sacado de esas superficies en silencio. El recorte pertenece únicamente a Obesidad,
+    cuyo release del runner no produce esos dos canales.
+    """
+    disease = registry.require(padecimiento)
+    assert tuple(disease.channels) == CANALES_LEGACY
+    assert disease.gallery_enabled is True
+    assert disease.lifecycle == "published"
+
+
+def test_solo_obesidad_tiene_la_superficie_recortada():
+    recortados = [
+        d.id
+        for d in registry.get_registry().diseases
+        if set(d.channels) == set(SUPPORTED_CHANNELS)
+    ]
+    assert recortados == [DISEASE]
+
+
+def test_los_publicados_siguen_alcanzables_por_los_dos_canales_legacy():
+    for canal in ("weekly_validation", "prospective_validation"):
+        alcanzables = registry.published_members(canal)
+        assert len(alcanzables) == 4, f"{canal}: {alcanzables}"
+        assert DISEASE not in [m.lower() for m in alcanzables]

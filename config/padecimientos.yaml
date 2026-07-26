@@ -124,10 +124,7 @@ padecimientos:
     batch: General                    # cohorte_lote: entra al lote neuro
     extraction_group: neuro_boletin
     lifecycle: published
-    # C7.5-PREP: canales candidatos EXACTOS. `weekly_validation` y `prospective_validation` no
-    # aplican a un release del runner (no hay tabla_333 ni congelado legacy detrás). Cambiarlos NO
-    # mueve el `release_id`: la activación pública salió del bundle en C7.2-A.1.
-    channels: [web, epibot, reports, tableau]
+    channels: [web, epibot, reports, tableau, weekly_validation, prospective_validation]
     training_engines: [prophet, deepar, ensemble, stacking]
     eligible_engines: [prophet, deepar, ensemble, stacking]
     selection_policy: legacy_neuro_2026
@@ -151,10 +148,7 @@ padecimientos:
     batch: General
     extraction_group: neuro_boletin
     lifecycle: published
-    # C7.5-PREP: canales candidatos EXACTOS. `weekly_validation` y `prospective_validation` no
-    # aplican a un release del runner (no hay tabla_333 ni congelado legacy detrás). Cambiarlos NO
-    # mueve el `release_id`: la activación pública salió del bundle en C7.2-A.1.
-    channels: [web, epibot, reports, tableau]
+    channels: [web, epibot, reports, tableau, weekly_validation, prospective_validation]
     training_engines: [prophet, deepar, ensemble, stacking]
     eligible_engines: [prophet, deepar, ensemble, stacking]
     selection_policy: legacy_neuro_2026
@@ -178,10 +172,7 @@ padecimientos:
     batch: General
     extraction_group: neuro_boletin
     lifecycle: published
-    # C7.5-PREP: canales candidatos EXACTOS. `weekly_validation` y `prospective_validation` no
-    # aplican a un release del runner (no hay tabla_333 ni congelado legacy detrás). Cambiarlos NO
-    # mueve el `release_id`: la activación pública salió del bundle en C7.2-A.1.
-    channels: [web, epibot, reports, tableau]
+    channels: [web, epibot, reports, tableau, weekly_validation, prospective_validation]
     training_engines: [prophet, deepar, ensemble, stacking]
     eligible_engines: [prophet, deepar, ensemble, stacking]
     selection_policy: legacy_neuro_2026
@@ -205,10 +196,7 @@ padecimientos:
     batch: standalone                 # NO entra a General (carril propio)
     extraction_group: dengue_boletin
     lifecycle: published
-    # C7.5-PREP: canales candidatos EXACTOS. `weekly_validation` y `prospective_validation` no
-    # aplican a un release del runner (no hay tabla_333 ni congelado legacy detrás). Cambiarlos NO
-    # mueve el `release_id`: la activación pública salió del bundle en C7.2-A.1.
-    channels: [web, epibot, reports, tableau]
+    channels: [web, epibot, reports, tableau, weekly_validation, prospective_validation]
     training_engines: [prophet, deepar, ensemble, stacking, nbglm]
     eligible_engines: [prophet, deepar, nbglm]   # árboles NO productivos (no extrapolan)
     selection_policy: legacy_dengue_2026
