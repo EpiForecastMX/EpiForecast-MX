@@ -124,7 +124,10 @@ padecimientos:
     batch: General                    # cohorte_lote: entra al lote neuro
     extraction_group: neuro_boletin
     lifecycle: published
-    channels: [web, epibot, reports, tableau, weekly_validation, prospective_validation]
+    # C7.5-PREP: canales candidatos EXACTOS. `weekly_validation` y `prospective_validation` no
+    # aplican a un release del runner (no hay tabla_333 ni congelado legacy detrás). Cambiarlos NO
+    # mueve el `release_id`: la activación pública salió del bundle en C7.2-A.1.
+    channels: [web, epibot, reports, tableau]
     training_engines: [prophet, deepar, ensemble, stacking]
     eligible_engines: [prophet, deepar, ensemble, stacking]
     selection_policy: legacy_neuro_2026
@@ -148,7 +151,10 @@ padecimientos:
     batch: General
     extraction_group: neuro_boletin
     lifecycle: published
-    channels: [web, epibot, reports, tableau, weekly_validation, prospective_validation]
+    # C7.5-PREP: canales candidatos EXACTOS. `weekly_validation` y `prospective_validation` no
+    # aplican a un release del runner (no hay tabla_333 ni congelado legacy detrás). Cambiarlos NO
+    # mueve el `release_id`: la activación pública salió del bundle en C7.2-A.1.
+    channels: [web, epibot, reports, tableau]
     training_engines: [prophet, deepar, ensemble, stacking]
     eligible_engines: [prophet, deepar, ensemble, stacking]
     selection_policy: legacy_neuro_2026
@@ -172,7 +178,10 @@ padecimientos:
     batch: General
     extraction_group: neuro_boletin
     lifecycle: published
-    channels: [web, epibot, reports, tableau, weekly_validation, prospective_validation]
+    # C7.5-PREP: canales candidatos EXACTOS. `weekly_validation` y `prospective_validation` no
+    # aplican a un release del runner (no hay tabla_333 ni congelado legacy detrás). Cambiarlos NO
+    # mueve el `release_id`: la activación pública salió del bundle en C7.2-A.1.
+    channels: [web, epibot, reports, tableau]
     training_engines: [prophet, deepar, ensemble, stacking]
     eligible_engines: [prophet, deepar, ensemble, stacking]
     selection_policy: legacy_neuro_2026
@@ -196,7 +205,10 @@ padecimientos:
     batch: standalone                 # NO entra a General (carril propio)
     extraction_group: dengue_boletin
     lifecycle: published
-    channels: [web, epibot, reports, tableau, weekly_validation, prospective_validation]
+    # C7.5-PREP: canales candidatos EXACTOS. `weekly_validation` y `prospective_validation` no
+    # aplican a un release del runner (no hay tabla_333 ni congelado legacy detrás). Cambiarlos NO
+    # mueve el `release_id`: la activación pública salió del bundle en C7.2-A.1.
+    channels: [web, epibot, reports, tableau]
     training_engines: [prophet, deepar, ensemble, stacking, nbglm]
     eligible_engines: [prophet, deepar, nbglm]   # árboles NO productivos (no extrapolan)
     selection_policy: legacy_dengue_2026
@@ -225,7 +237,10 @@ padecimientos:
     # congelada, gate 2025 aceptado, 64 modelos finales y forecast preliminar reproducibles bajo
     # runs/. NO habilita publicación ni rutas canónicas: sigue invisible para published_only.
     lifecycle: trained
-    channels: [web, epibot, reports, tableau, weekly_validation, prospective_validation]
+    # C7.5-PREP: canales candidatos EXACTOS. `weekly_validation` y `prospective_validation` no
+    # aplican a un release del runner (no hay tabla_333 ni congelado legacy detrás). Cambiarlos NO
+    # mueve el `release_id`: la activación pública salió del bundle en C7.2-A.1.
+    channels: [web, epibot, reports, tableau]
     # C7.1: el carril nuevo NO entrenó DeepAR/Ensemble/Stacking. Vaciar estos campos legacy impide
     # que un PKL preliminar del carril viejo se haga pasar por artefacto de Obesidad. Los motores
     # reales viven en la política (candidatos) y en final_selection.csv (los 6 seleccionados).
@@ -243,7 +258,8 @@ padecimientos:
     prophet_grid_key: null            # C7.1: no entrena Prophet legacy; el grid vive en el runner
     deepar_grid_key: null             # DeepAR-Obesidad usa escalares del bloque long-series (sin grid propio)
     aggregate_national: false
-    gallery_enabled: true
+    # La galería es superficie pública: se enciende en la activación de C7.5, no antes.
+    gallery_enabled: false
     web:
       color: "#D97706"                # ámbar (texto oscuro)
       label: "Obesidad"

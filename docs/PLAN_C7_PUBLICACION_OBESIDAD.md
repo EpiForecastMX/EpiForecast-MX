@@ -6647,3 +6647,110 @@ Deuda    SIGSEGV (backend) · drift del rag_index publicado y 4 fallos de npm te
 ```
 
 _Respuesta:_
+
+---
+
+### Ronda 36 — C7.5-PREP: puntero, canales y rollback — 2026-07-26
+
+#### Auditoría de `f7b14694` (paso 1) · **PASS**
+
+```text
+3 archivos · 566 inserciones · 0 borrados
+A src/epiforecast/publication/prospective.py · A tests/… · M el plan
+superficies prohibidas: ninguna · git diff --check PASS
+sin datetime, now(), azar ni rutas absolutas → gate_digest reproducible
+gate_digest 5bc39aa5d44f5e62… recomputado idéntico
+```
+
+**No lo subo**: la regla dura del encargo pide OK formal por cada acción externa, y hasta ahora todos
+los pushes han llevado su literal. Queda presentado más abajo.
+
+#### C7.5-PREP · **PASS**
+
+```yaml
+channels: [web, epibot, reports, tableau]   # antes 6
+gallery_enabled: false                      # antes true
+lifecycle: trained                          # SIN TOCAR
+```
+
+`public_release_pointer.v1` (`publication/pointer.py`, 166 líneas), preparado **inactivo**:
+
+```json
+{"schema":"public_release_pointer.v1","disease_id":"obesidad",
+ "release_id":"obesidad_release_2517e7858901",
+ "channels":["epibot","reports","tableau","web"],
+ "gallery_enabled":false,"active":false,"lifecycle_required":"published"}
+digest 722baf8a13f6519f4fee5cdb2656583dbe986d80950d5812af69ef430b8f98d6
+```
+
+Preparar no es publicar, y el código lo impone en vez de confiarlo:
+
+| regla | efecto |
+| --- | --- |
+| puntero inactivo | no exige `published`; se prepara con `trained` sin fingir nada |
+| activar el puntero | **exige** `lifecycle=published` |
+| escribir un puntero ACTIVO | prohibido en preparación: eso ya es publicar |
+| destino del puntero | no puede caer en `reports/`, `data/`, `epibot/`, `artifacts/`… |
+| canales `weekly_validation` / `prospective_validation` | rechazados: un release del runner no los produce |
+
+#### La consecuencia de C7.2-A.1, verificada en la práctica
+
+Cambiar canales de 6 a 4 y apagar la galería **no movió el `release_id`**:
+
+```text
+antes  obesidad_release_2517e7858901
+después obesidad_release_2517e7858901   ← idéntico
+```
+
+Ése era exactamente el motivo de sacar la activación del bundle. Si siguiera dentro, este cambio de
+política habría obligado a reconstruir —y renombrar— 64 modelos que no cambiaron. Hay tres pruebas
+parametrizadas que lo fijan.
+
+#### Rollback
+
+Rollback es **reemplazar un puntero**, no reconstruir un bundle: `rollback_to()` devuelve un puntero
+nuevo con otro `release_id` y los mismos canales, y está probado que no escribe ni toca el release.
+Volver atrás cuesta 12 caracteres y queda auditado por digest.
+
+#### Consumidores contra la nueva superficie
+
+```text
+compilador   canales emitidos (epibot, reports, tableau, web) · sin puente: ()   ← ya vacío
+shard web    gallery_enabled false · release_id sin mover
+frontend     5,772 filas · candidate=true · visible en público=false · band null ✓
+doctor       rc=0
+```
+
+El `channels_without_bridge` que C7.3a dejó señalado **queda cerrado**: ya no hay canal declarado sin
+puente.
+
+#### Gate
+
+```text
+fast 1,905 passed (+23) · integración 59 (tanda A) · frontend 19/19
+lint · mypy 159 archivos · doctor rc=0
+agregados legacy cb5be395 96791595 1d2cf0a7 ac97dc8e · release 764c62e2f203e1df · dvc up to date
+```
+
+#### C7.6-READINESS: NO INICIADO
+
+Aplico la regla del encargo: no empiezo lo que no cabe entero. Los tres bloqueantes son trabajo
+sustantivo y en dos repos:
+
+1. **SIGSEGV** — aislar `deepar_smoke` del resto de la integración con un gate estable;
+2. **drift del RAG** — 19 chunks; regenerar el índice publicado **exige `GEMINI_API_KEY`**, que no
+   está en este entorno, así que probablemente sea trabajo tuyo o requiera la key;
+3. **4 fallos de `npm test`** en el dashboard.
+
+Dejarlos a medias sería peor que no empezarlos.
+
+#### Estado
+
+```text
+C7.5-PREP  PASS · commit local · puntero INACTIVO, sólo en staging
+C7.4       CONGELADO · INCOMPLETE (0/4) · el congelado NO se tocó
+Obesidad   trained · runner_release · gallery off · 4 canales candidatos · NO-GO
+Pendiente  C7.6-READINESS (3 bloqueantes) · reejecutar C7.4 por boletín
+```
+
+_Respuesta:_
