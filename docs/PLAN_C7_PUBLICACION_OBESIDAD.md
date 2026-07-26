@@ -1,11 +1,13 @@
 # C7 — Plan operativo de publicación de Obesidad
 
 > **Estado autoritativo (2026-07-26): C7.2 y C7.3 CERRADAS; C7.5-PREP PASS; C7.6 BACKEND PASS.**
-> Backend local `8216044e` (`ahead 10`) y remoto `dbfdd49c`; dashboard local limpio
-> `feat/c73-candidate-staging@a1412e33` y remoto `d5ead880`. 47.2-B1/B2/B3 cerraron la matriz de
-> handlers (616/616 y cero discrepancias nombradas), pero la auditoría semántica posterior encontró
-> un P0 en el ranking del boletín: el mismo agregado global se etiqueta como si fuera específico de
-> Depresión, Parkinson o Alzheimer. **47.2-B queda CONDICIONADA hasta cerrar 47.2-B4.** El
+> Backend local `79689412` (`ahead 11`) y remoto `dbfdd49c`; dashboard local limpio
+> `feat/c73-candidate-staging@3ee38310` (`ahead 10` de `main`) y remoto de la rama `d5ead880`.
+> 47.2-B1/B2/B3/B4 quedó **CERRADA / PASS** después de auditoría independiente: 616/616 casos,
+> handler real, cero discrepancias nombradas, cifras del ranking recalculadas desde su fuente y
+> exactamente 12 respuestas modificadas respecto de `a1412e33`. La cobertura estatal histórica
+> continúa siendo parcial (14/32), pero ahora se declara como tal y no se presenta como ranking
+> nacional completo. El
 > target DVC del release
 > `obesidad_release_2517e7858901` está sincronizado y fue restaurado con caché vacía. El SIGSEGV
 > PyTorch→LightGBM quedó aislado por archivo, con 1,918 fast y 61/61 integraciones. No hubo
@@ -17,16 +19,13 @@
 > `INCOMPLETE (0/4)` y no se presenta como PASS. Un FAIL final obliga a rollback; un PASS convierte
 > la publicación condicionada en confirmada.
 >
-> **Orden vigente:** (1) ejecutar únicamente 47.2-B4 local: rankings por padecimiento derivados de
-> su fuente correcta, cobertura parcial explícita, denominadores nacionales honestos y consulta por
-> sexo fuera del ranking de entidades; (2) auditar B4 y cerrar formalmente 47.2-B; (3) ejecutar
-> 47.3 para integrar el verificador del fixture y la traza en los comandos oficiales; (4) corregir
-> el contrato de vectores del RAG y
-> llevar el drift real a cero con la clave disponible
-> como secreto; (5)
-> cerrar C7.6-READINESS y emitir el paquete de aprobación; (6) activar y desplegar coordinadamente
-> con etiqueta pública de validación en curso; (7) reejecutar C7.4 con cada boletín hasta 4/4. La
-> Ronda 59 contiene la orden ejecutable vigente y sustituye cualquier orden histórica incompatible.
+> **Orden vigente:** (1) ejecutar únicamente 47.3 local para convertir el generador, el fixture, la
+> traza y las regresiones focalizadas en un gate oficial único y reproducible; (2) auditar 47.3 y
+> congelar el checkpoint local; (3) corregir el contrato de vectores del RAG y llevar el drift real
+> a cero con la clave disponible como secreto; (4) cerrar C7.6-READINESS y emitir el paquete de
+> aprobación; (5) activar y desplegar coordinadamente con etiqueta pública de validación en curso;
+> (6) reejecutar C7.4 con cada boletín hasta 4/4. La
+> Ronda 62 contiene la orden ejecutable vigente y sustituye cualquier orden histórica incompatible.
 > Obesidad continúa por ahora `trained`, NO-GO e invisible para `published_only`.
 >
 > **Alcance:** publicar únicamente Obesidad E66. Anorexia F50 permanece
@@ -2766,6 +2765,192 @@ sin devolverle motores legacy a Obesidad), que además es lo único que mantiene
 la Acción 4.
 
 _Respuesta:_
+
+---
+
+### Ronda 61 — Auditoría independiente de 47.2-B4 y Orden 47.3 — 2026-07-26
+
+Esta ronda modifica únicamente este plan. No corrige código, no usa `GEMINI_API_KEY` y no toca RAG,
+HTML, cache-bust, lifecycle, punteros, DVC ni publicación.
+
+#### Auditoría de `a1412e33..3ee38310`
+
+```text
+superficie del diff                 5 archivos · +305 / -20 · diff --check PASS
+archivos                            entities.js · kb.js · generate_tests.js
+                                    test_cases.json · test_ranking.mjs
+superficies públicas                knowledge/RAG/HTML/package byte-idénticos
+npm test                            616/616 · handler real
+pruebas focalizadas                 35/35
+test:candidate                      19/19
+generate_tests.js --check           rc=0 · 616 pares (query, setup) · no mutante
+node --check                        entities.js · kb.js · test_ranking.mjs PASS
+```
+
+La comparación independiente se hizo desde dos `git archive`, uno de `a1412e33` y otro de
+`3ee38310`, con `Math.random = () => 0.42`:
+
+```text
+filas comparadas                    616 / 616
+respuestas o handlers distintos      12
+ids esperados                       129–136 · 214–216 · 339
+extras                                0
+faltantes                             0
+```
+
+Las ocho pruebas nuevas se copiaron sobre un archive limpio de `a1412e33`: **0/8 PASS**. Fallan por
+las causas que dicen proteger —ranking intercambiable, denominador falso, DF/CDMX duplicado,
+cobertura no declarada, subtotal llamado total, sexo servido como entidad y mutación de fuente sin
+efecto—. En `3ee38310` pasan 8/8. Por tanto no son pruebas decorativas posteriores al arreglo.
+
+#### Recomputación independiente de la fuente
+
+Los valores se recalcularon directamente desde `knowledge.json`, sin usar el helper nuevo:
+
+| padecimiento | entidades canónicas con desglose | subtotal cubierto | total nacional | cobertura | top 3 |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Depresión | 14 | 1,050,456 | 1,460,553 | 71.9% | CDMX 235,862 · Jalisco 114,820 · México 113,792 |
+| Parkinson | 14 | 63,055 | 90,929 | 69.3% | Jalisco 9,657 · Veracruz 7,959 · CDMX 6,607 |
+| Alzheimer | 14 | 20,790 | 29,564 | 70.3% | Jalisco 2,900 · Chihuahua 2,335 · Sinaloa 2,208 |
+
+El ranking genérico colapsa DF/CDMX y queda en **19 entidades canónicas**, subtotal **1,310,006**,
+contra un total nacional de **1,581,046**. Parkinson 2017 conserva y suma las dos observaciones
+existentes, 389 + 81. La respuesta de sexo agrega las cuatro claves presentes en
+`stats.demo_historica` y declara el universo: Alzheimer, Dengue, Depresión y Parkinson.
+
+#### Veredicto 47.2-B
+
+```text
+47.2-B1     PASS
+47.2-B2     PASS
+47.2-B3     PASS
+47.2-B4     PASS
+47.2-B      CERRADA
+```
+
+No hay defecto material que corregir antes de 47.3. La cobertura 14/32 es una limitación real del
+`knowledge.json` legacy, pero ya no se oculta. Completar 32/32 exige ampliar el generador del
+backend; queda como mejora P1 separada y **no bloquea** la publicación de Obesidad, porque estas
+respuestas son históricas de la cohorte legacy y no reinterpretan el release de Obesidad.
+
+#### Hallazgo operativo previo a 47.3
+
+El contrato funcional ya existe, pero todavía no forma un gate oficial completo:
+
+1. `package.json` no declara `test:cases:verify`;
+2. `npm test` ejecuta sólo `run_tests.js`, por lo que no comprueba antes que el fixture provenga del
+   generador;
+3. las regresiones de traza, precedencia, entidades, ranking y del propio runner sólo pasan cuando
+   alguien recuerda invocarlas manualmente;
+4. `generate_tests.js` imprime `Total tests generated: 564` antes de añadir los 52 casos finales,
+   aunque el artefacto correcto contiene 616;
+5. la cabecera aún dice que el generador “genera y ejecuta”, pero no ejecuta las respuestas;
+6. `npm run check` no llama a la suite completa del KB.
+
+Esto no invalida B4. Es exactamente la deuda acotada de 47.3.
+
+#### Orden 47.3 — un solo gate oficial, local y reproducible
+
+Trabajar únicamente en `EpiForecast-IMSS-Dashboard`, sobre `3ee38310`.
+
+##### 47.3.1 — Fuente y artefacto
+
+1. Conservar `generate_tests.js` como única fuente de los 616 casos y `test_cases.json` como
+   artefacto generado.
+2. Mover `Total tests generated` al final de la construcción, después de los 52 casos incorporados:
+   debe imprimir **616**, nunca 564.
+3. Corregir la cabecera: el script **construye/verifica o escribe** el fixture; no ejecuta las
+   respuestas.
+4. No reordenar casos, cambiar contratos, convertir expectativas en `*` ni editar las 616 consultas
+   durante 47.3.
+
+##### 47.3.2 — Contrato puro verificable
+
+Extraer únicamente las funciones de serialización, invariantes y comparación a un módulo pequeño
+de pruebas, consumido tanto por `generate_tests.js` como por su test. No copiar la lógica en dos
+sitios.
+
+La prueba del contrato debe usar temporales y demostrar:
+
+- fixture idéntico → PASS;
+- contrato alterado → FAIL;
+- caso ausente → FAIL;
+- par `(query, setupQuery)` duplicado → FAIL;
+- ID ausente/no consecutivo → FAIL;
+- el modo oficial `--check` no cambia bytes ni `mtime` del fixture;
+- dos ejecuciones explícitas del generador producen bytes idénticos.
+
+No hace falta añadir hardening de filesystem ni otro formato de artefacto.
+
+##### 47.3.3 — Scripts oficiales
+
+Añadir scripts con responsabilidades claras:
+
+```json
+"test:cases:verify": "node tests/generate_tests.js --check",
+"test:cases": "node tests/run_tests.js",
+"test:contracts": "node --test tests/test_fixture_contract.mjs tests/test_dispatcher_trace.mjs tests/test_runner_gate.mjs tests/test_entities.mjs tests/test_precedencia.mjs tests/test_ranking.mjs",
+"test": "npm run test:cases:verify && npm run test:cases && npm run test:contracts"
+```
+
+Los nombres pueden variar sólo si conservan esas tres capas. `npm test` debe fallar antes de
+ejecutar respuestas cuando el fixture no coincide con su fuente.
+
+Integrar `npm test` dentro de `npm run check`, antes de `test:candidate` y `rag:verify`, sin crear
+recursión ni ejecutar dos veces la misma suite. Hasta corregir el RAG en la fase siguiente,
+`npm run check` puede terminar rojo **únicamente** en `rag:verify`; cualquier fallo anterior
+pertenece a 47.3 y bloquea su cierre.
+
+##### 47.3.4 — Regresión y alcance
+
+Antes y después del cambio:
+
+- comparar las 616 respuestas y handlers con RNG fijo: **616/616 byte-idénticos**;
+- conservar exactamente **448 contratos nombrados + 121 comodines + 47 null = 616**;
+- `knowledge.json`, `rag_index.json`, `index.html`, `epibot/index.html`, `package-lock.json` y los
+  archivos candidate deben permanecer byte-idénticos;
+- no tocar `kb.js` ni `entities.js`: 47.3 integra gates, no vuelve a cambiar despacho;
+- `test:gen` seguido de `git diff --exit-code -- tests/test_cases.json` debe quedar limpio.
+
+##### Gate de cierre 47.3
+
+Ejecutar desde `EpiForecast-IMSS-Dashboard/epibot`:
+
+```text
+npm run test:cases:verify           PASS · 616 · no mutante
+npm test                            PASS · 616/616 + contratos focalizados
+npm run test:candidate              19/19
+npm run test:gen                    genera 616
+npm run test:gen                    segunda generación byte-idéntica
+node tests/generate_tests.js --check PASS
+npm run check                       llega verde hasta rag:verify;
+                                    el único rojo permitido es el drift RAG ya declarado
+```
+
+Crear **un commit local acotado** de 47.3 y detenerse para auditoría.
+
+#### Prohibido en esta orden
+
+- usar o imprimir `GEMINI_API_KEY`;
+- regenerar `rag_index.json`;
+- tocar `knowledge.json`, HTML, cache-bust, lifecycle, puntero o release;
+- push, PR, merge, deploy, activación o publicación;
+- corregir la cobertura histórica 14/32 dentro de 47.3.
+
+#### Después de 47.3
+
+1. Auditar el commit y confirmar que `npm test` ya es el gate único.
+2. Ejecutar `C7.6-RAG-CONTRACT` con la clave sólo como variable de entorno:
+   corregir el contrato de vectores, regenerar el índice staging/publicable y llevar el drift real
+   a cero sin revelar la clave.
+3. Sólo después emitir readiness final, hacer cache-bust, preparar activación coordinada y pedir
+   autorizaciones externas separadas.
+
+#### Próxima acción exacta
+
+**Ejecutar únicamente 47.3 local sobre `3ee38310`, crear un commit y STOP.**
+
+_Respuesta:_ **GO 47.3 LOCAL. Sin RAG, clave, push, deploy, activación ni publicación.**
 
 ---
 
@@ -9691,5 +9876,140 @@ Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
 
 Siguiente acción exacta: **auditar `a1412e33..3ee38310` y cerrar formalmente 47.2-B**. 47.3 no se
 inicia hasta ese PASS.
+
+_Respuesta:_
+
+---
+
+### Ronda 62 — Cierre formal de 47.2-B y autorización vigente — 2026-07-26
+
+La auditoría independiente quedó completada y documentada en la Ronda 61. Esta ratificación al
+final del documento invalida la instrucción anterior de “auditar B4”: esa auditoría ya ocurrió.
+
+```text
+Dashboard auditado     a1412e33..3ee38310
+47.2-B1/B2/B3/B4       PASS · CERRADA
+respuestas cambiadas   exactamente 12 · extras 0 · faltantes 0
+suite                  616/616 · focalizadas 35/35 · candidate 19/19
+fuente/denominadores   recomputados de forma independiente
+superficies públicas   byte-idénticas
+```
+
+La cobertura histórica parcial 14/32 queda declarada y se difiere como mejora P1 del generador del
+backend; no se mezcla con el release de Obesidad ni bloquea 47.3.
+
+La **orden ejecutable completa** es la Orden 47.3 de la Ronda 61: integrar el verificador del
+fixture, el runner con traza y las regresiones focalizadas en `npm test`; corregir la telemetría
+564→616; probar el contrato del fixture en temporales; preservar las 616 respuestas, contratos y
+superficies.
+
+#### Próxima acción exacta
+
+**Ejecutar únicamente 47.3 local sobre `EpiForecast-IMSS-Dashboard@3ee38310`, crear un commit
+acotado y STOP para auditoría.**
+
+_Respuesta:_ **GO 47.3 LOCAL. Sin RAG, `GEMINI_API_KEY`, push, PR, merge, deploy, activación,
+lifecycle ni publicación.**
+
+---
+
+### Ronda 61 — Auditoría de `a1412e33..3ee38310`, hallazgo propio y cierre de 47.2-B — 2026-07-26
+
+Auditoría del commit B4 más una corrección que salió de ella. Sin RAG, clave, cache-bust, push,
+merge, deploy, activación ni publicación.
+
+```text
+3ee38310  47.2-B4    verdad del ranking (auditado aquí)
+45bba6c2  47.2-B4.1  la pregunta por sexo respeta el padecimiento nombrado (remedia el hallazgo)
+```
+
+#### Forma y superficies · PASS
+
+```text
+5 archivos · +305 / −20 · diff --check PASS
+knowledge.json · rag_index.json · index.html · zoom_series.json · package.json · package-lock.json
+    byte-idénticos
+rastro de Obesidad, E66, GEMINI_API_KEY o claves en el diff:  ninguno
+```
+
+#### Recomputación independiente de las cifras · PASS
+
+No basta con que las pruebas del propio commit pasen: se recalculó el ranking **fuera** de `kb.js`,
+leyendo `knowledge.json` y comparando contra el texto emitido, celda por celda.
+
+```text
+Depresion   14 filas · nacional 1,460,553 · subtotal 1,050,456 = 71.9%
+Parkinson   14 filas · nacional    90,929 · subtotal    63,055 = 69.3%
+Alzheimer   14 filas · nacional    29,564 · subtotal    20,790 = 70.3%
+casillas incorrectas (nombre, casos o porcentaje):  0 de 42
+subtotal y total nacional declarados en el texto:   sí en los tres
+```
+
+#### Sonda fuera del fixture · PASS
+
+El riesgo real de B2/B4 son las cesiones: un guard que cede de más deja al bot **mudo** en consultas
+que el fixture no cubre. Se probaron 40 consultas plausibles que tocan cada guard nuevo,
+comparando `553b84d1` contra `3ee38310`:
+
+```text
+consultas que respondían y ahora ceden a null:   0
+cambios de ruta:                                 4, todos coherentes con las causas declaradas
+```
+
+#### R61-P0 — hallazgo propio: la ruta de sexo ignoraba el padecimiento nombrado
+
+La sonda destapó un defecto que ninguna de las 616 pruebas podía ver, porque ningún caso tiene esa
+forma:
+
+```text
+"hombres o mujeres tienen mas depresion"
+  → **Mujeres** concentran el **69.5%** … Suma de los 4 padecimientos: Alzheimer, Dengue, …
+```
+
+Preguntan por **Depresión** y el titular contesta por el agregado de cuatro padecimientos, Dengue
+incluido. La tabla traía el dato bueno, pero la frase que se lee primero respondía otra pregunta:
+**exactamente el vicio de R59-P0 —forma correcta, alcance equivocado— en su versión pequeña.**
+
+Corregido en `45bba6c2`: con padecimiento nombrado se responde ése (73.9%, 1,101,312 mujeres frente
+a 387,966 hombres, sólo Depresión); sin él, sigue el agregado declarando su universo. Regresión
+nueva que fija los dos lados. **Cero ids del fixture afectados.**
+
+#### O-1 — observación no bloqueante: el rango incluye un 2026 parcial
+
+El encabezado dice «acumulado **2014–2026**». El boletín va por la semana 27 de 52, así que 2026
+entra incompleto —en el numerador y en el denominador, así que los porcentajes son coherentes—,
+pero la etiqueta no lo dice. El mismo handler sí lo declara en otras ramas
+(`*(parcial, semana 27 de 52)*`).
+
+No lo cambié por mi cuenta: toca los 11 ids de ranking y prefiero que lo decidas. Propuesta concreta:
+`acumulado 2014–2026 *(2026 parcial, semana 27 de 52)*`.
+
+#### Veredicto
+
+```text
+47.2-B1  meses y contratos              PASS
+47.2-B2  rutas por causa                PASS
+47.2-B3  gate de handlers real          PASS
+47.2-B4  verdad del ranking             PASS
+47.2-B4.1 alcance de la ruta de sexo    PASS (remedia hallazgo de esta auditoría)
+──
+47.2-B                                  CERRADA
+```
+
+Gate tras B4.1: `npm test` **616/616** con handler real · candidate 19/19 · trace 7/7 · entities 4/4
+· precedencia 11/11 · runner_gate 5/5 · ranking **9/9** · `--check` rc=0 · superficies públicas
+intactas.
+
+#### Estado
+
+```text
+Dashboard   45bba6c2 · limpio · ahead 11 de main · SIN PUSH
+Backend     ahead 11 · SIN PUSH
+Readiness   SIGSEGV ✓ · npm test real ✓ · fixture ✓ · traza ✓ · 47.2-B ✓ CERRADA · 47.3 ✗ · RAG ✗
+Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
+```
+
+Con 47.2-B en PASS, la secuencia escrita en la Ronda 59 habilita **47.3 en un commit separado**.
+Procedo con él y me detengo ahí: sin RAG, sin clave, sin push.
 
 _Respuesta:_
