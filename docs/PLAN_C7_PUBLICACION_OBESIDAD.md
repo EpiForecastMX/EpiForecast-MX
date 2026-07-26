@@ -1,17 +1,18 @@
 # C7 — Plan operativo de publicación de Obesidad
 
-> **Estado autoritativo (2026-07-25): C7.2-A, A.1, A.2 y A.2.1 CERRADAS** en `2bed74ee`,
-> `fb3bcdca`, `b809599d` y `d5347905`. El remoto continúa en `0dbd0f01`; la rama local está
-> `ahead 4` antes de commitear esta actualización documental. Los schemas gobiernan compatibilidad
-> y `builder_version` queda como procedencia sellada. El release candidato continúa siendo
-> `obesidad_release_2517e7858901`; no se persistió ningún bundle y no hubo DVC, push, deploy ni
-> publicación.
+> **Estado autoritativo (2026-07-25): C7.2-A CERRADA Y RESPALDADA EN EL REMOTO.** El checkpoint
+> `0dbd0f01..827de945` fue subido por fast-forward a
+> `origin/feat/registry-padecimientos-obesidad`; `git ls-remote` confirma `827de945`. El local está
+> en `34d785a8`, `ahead 1`, por un commit exclusivamente documental que registra el SHA remoto.
+> Los schemas gobiernan compatibilidad, `builder_version` es procedencia sellada y el release
+> candidato sigue siendo `obesidad_release_2517e7858901`. No existe bundle persistido ni hubo DVC,
+> deploy o publicación.
 >
-> **Orden vigente:** congelar esta auditoría en un commit **doc-only**, revisar el rango completo y
-> solicitar autorización explícita para subir el checkpoint de C7.2-A. El push no autoriza
-> C7.2-B. Después del checkpoint remoto se requiere otro GO para sede final, doctor
-> `runner_release`, materialización atómica y target DVC local. La Ronda 23 contiene las órdenes
-> autoritativas.
+> **Orden vigente:** C7.2-B puede iniciar únicamente con el literal `GO C7.2-B`. Autoriza sede final
+> local, doctor `runner_release`, promoción atómica y target DVC dedicado; no autoriza `dvc push`,
+> Git push, lifecycle, canales, frontend ni publicación. No crear otro microcommit sólo para
+> registrar este estado: el delta documental se incluye en el futuro commit local de C7.2-B. La
+> Ronda 25 contiene las órdenes autoritativas.
 > Obesidad continúa `trained`, NO-GO e invisible para `published_only`.
 >
 > **Alcance:** publicar únicamente Obesidad E66. Anorexia F50 permanece
@@ -58,8 +59,8 @@ Estado local al redactar:
 
 | componente | estado |
 | --- | --- |
-| Backend | `feat/registry-padecimientos-obesidad` @ `d5347905`; local `ahead 4` antes del commit doc-only |
-| Remoto backend | `origin/feat/registry-padecimientos-obesidad` @ `0dbd0f01` |
+| Backend | `feat/registry-padecimientos-obesidad` @ `34d785a8`; local `ahead 1` doc-only |
+| Remoto backend | `origin/feat/registry-padecimientos-obesidad` @ `827de945` |
 | Frontend | `main` @ `179bbe36`, sin cambios trackeados |
 | Obesidad | `trained`, NO-GO, invisible para `published_only` |
 | F50 | `configured`, NO-GO, sin canales |
@@ -71,6 +72,7 @@ Estado local al redactar:
 | C7.2-A.1 | activación fuera del bundle en `fb3bcdca`; local, sin DVC |
 | C7.2-A.2 | schemas v2 en `b809599d`; local, sin DVC |
 | C7.2-A.2.1 | builder como procedencia sellada en `d5347905`; local, sin DVC |
+| Checkpoint C7.2-A | cinco commits publicados por fast-forward hasta `827de945` |
 
 Cadena estadística canónica:
 
@@ -420,9 +422,10 @@ Crear un comando genérico de promoción desde runs sellados. Debe:
   `identity_payload.v2` y `release_manifest.v2`, rechazó v1 explícitamente y repitió el gate.
 - **C7.2-A.2.1 — compatibilidad por schema: COMPLETADA** en `d5347905`. El verifier usa schemas
   para compatibilidad y conserva `builder_version` como procedencia sellada.
-- **Checkpoint Git de C7.2-A — SIGUIENTE.** Requiere commit doc-only de la auditoría y autorización
-  explícita para push. No autoriza DVC ni C7.2-B.
-- **C7.2-B — materialización y puntero local:** sólo después del checkpoint remoto y con otro GO.
+- **Checkpoint Git de C7.2-A — COMPLETADO.** El remoto quedó en `827de945`; no autorizó DVC ni
+  C7.2-B.
+- **C7.2-B — materialización y puntero local: SIGUIENTE CON GO EXPLÍCITO.** Autoriza únicamente la
+  sede final local, el doctor `runner_release`, promoción atómica y target DVC dedicado.
   Autoriza promover atómicamente el bundle verificado a su ruta final y crear el target DVC
   dedicado. No autoriza `dvc push`.
 - **C7.2-C — subida remota:** `dvc push` requiere una tercera autorización posterior al gate y a
@@ -434,8 +437,8 @@ Crear un comando genérico de promoción desde runs sellados. Debe:
 - ejecutado: `C7.2-A.1 decouple public activation from the release bundle` (`fb3bcdca`);
 - ejecutado: `C7.2-A.2 version runner release schemas before persistence` (`b809599d`);
 - ejecutado: `C7.2-A.2.1 decouple builder provenance from schema compatibility` (`d5347905`);
-- siguiente: commit doc-only de auditoría y checkpoint Git con autorización separada;
-- futuro y con GO separado: `C7.2-B materialize runner release + dedicated DVC target`.
+- ejecutado: checkpoint Git C7.2-A hasta `827de945`;
+- siguiente y con GO separado: `C7.2-B materialize runner release + dedicated DVC target`.
 
 ---
 
@@ -5248,5 +5251,315 @@ Esperando el literal:
 
 > **GO C7.2-B. Materializa localmente el bundle verificado en su sede final, implementa el doctor
 > `runner_release` y crea el target DVC dedicado; detente sin `dvc push`, Git push ni publicación.**
+
+_Respuesta:_ checkpoint remoto validado. No hace falta otro push documental antes de C7.2-B. El
+commit local `34d785a8` y esta actualización del plan se preservarán dentro del futuro cierre local
+de C7.2-B.
+
+---
+
+### Ronda 25 — Validación posterior al push y orden C7.2-B — 2026-07-25
+
+#### Veredicto
+
+**PASS. El checkpoint remoto de C7.2-A es correcto y C7.2-B queda lista para autorización
+separada.**
+
+Validación directa:
+
+```text
+remoto antes del push      0dbd0f01dfdf64a84146f07bf62dae2360600f18
+remoto autorizado          827de945ec577fb89ec4ae14d0fe987167ce9ce5
+git ls-remote actual       827de945ec577fb89ec4ae14d0fe987167ce9ce5
+push                       fast-forward, sin --force
+local                      34d785a8 · ahead 1 · commit doc-only
+frontend                   main/origin main @ 179bbe36 · trackeado limpio
+bundle persistido          NO
+DVC                        NO
+lifecycle/publicación      NO
+```
+
+`34d785a8` sólo añade la Ronda 24 con el SHA remoto y las fronteras del push. No contiene código,
+configuración, datos, DVC ni artefactos.
+
+#### Decisión de continuidad documental
+
+No crear una cadena infinita de microcommits donde cada commit sólo registra el SHA del anterior.
+El estado remoto autoritativo ya está fijado en `827de945`. El commit local `34d785a8` y el delta
+actual de este plan:
+
+- permanecen locales durante C7.2-B;
+- forman parte del commit local de cierre de C7.2-B;
+- no autorizan ni fuerzan un push;
+- no alteran la identidad del release.
+
+#### Orden R25.1 — Entrada a C7.2-B
+
+C7.2-B sólo inicia al recibir:
+
+> **GO C7.2-B. Materializa localmente el bundle
+> `obesidad_release_2517e7858901` en su sede final, implementa y valida el doctor
+> `runner_release`, crea el target DVC dedicado y detente sin `dvc push`, Git push ni
+> publicación.**
+
+Ese GO autoriza exclusivamente:
+
+1. código y tests genéricos necesarios para resolver un `runner_release`;
+2. materialización local del bundle ya verificado;
+3. creación del target DVC dedicado local;
+4. cambio de `artifact_source` de Obesidad a `runner_release` sólo después de que el doctor valide
+   la sede final;
+5. commit local de C7.2-B y actualización de este plan.
+
+#### Orden R25.2 — Sede y promoción
+
+Destino obligatorio:
+
+```text
+artifacts/releases/obesidad/obesidad_release_2517e7858901/
+```
+
+Reglas:
+
+1. construir primero en un temporal del mismo filesystem;
+2. verificar schema, identidad, checksums, inventario, modelos y reproducción antes de promover;
+3. promover atómicamente;
+4. aceptar idempotentemente un destino byte-idéntico;
+5. rechazar un destino existente con cualquier diferencia;
+6. no copiar `runs/` completos ni modelos legacy;
+7. no inferir identidad desde nombres de archivo;
+8. no incluir rutas absolutas, timestamps o metadata ambiental.
+
+#### Orden R25.3 — Doctor `runner_release`
+
+Implementar con `releases_root` explícito e inyectable:
+
+1. resolver `<releases_root>/<disease_id>/<release_id>`;
+2. exigir `release_manifest.v2` e `identity_payload.v2`;
+3. validar `SHA256SUMS.txt`, inventario exacto, cadena y `release_id`;
+4. cargar 6 índices, 64 envelopes y 64 estados;
+5. reproducir 3,328 bases y 5,772 productos sin leer `runs/`;
+6. exigir diferencia exacta `0.0`;
+7. validar point-only, calendario, 64+47=111 e identidades aritméticas;
+8. devolver error tipado ante release ausente, schema ajeno, byte alterado, modelo faltante,
+   release de otro padecimiento o reproducción distinta;
+9. mantener `runner_runs` válido únicamente para `trained`;
+10. exigir `runner_release` para cualquier padecimiento `published`.
+
+Pruebas negativas obligatorias:
+
+- root inexistente;
+- release_id inexistente;
+- manifest/schema alterado;
+- checksum alterado;
+- archivo extra o faltante;
+- envelope/estado faltante;
+- `disease_id` ajeno;
+- reproducción con diferencia;
+- intento de resolver desde `runs/` o cwd implícito.
+
+#### Orden R25.4 — Target DVC dedicado
+
+Después de que la ruta final y el doctor estén verdes:
+
+1. crear un único target para
+   `artifacts/releases/obesidad/obesidad_release_2517e7858901/`;
+2. no modificar `models.dvc`, `reports/forecasts.dvc`, Tableau ni targets legacy;
+3. inspeccionar el `.dvc`: path exacto, hash coherente y sin dependencias ambientales;
+4. ejecutar `dvc status` dirigido;
+5. demostrar restauración local desde una copia temporal usando Git + caché DVC disponible;
+6. volver a ejecutar doctor y reproducción sobre la restauración;
+7. no ejecutar `dvc push`.
+
+Si crear el target requiere descargar, subir o reemplazar datos remotos, detenerse: C7.2-B sólo
+autoriza estado DVC local.
+
+#### Orden R25.5 — Registry y lifecycle
+
+Sólo después del PASS completo:
+
+```yaml
+artifact_source:
+  backend: runner_release
+  release_id: obesidad_release_2517e7858901
+```
+
+Invariantes:
+
+- lifecycle continúa `trained`;
+- Obesidad sigue fuera de `published_only`;
+- canales y galería no cambian;
+- F50 permanece `configured` y oculta;
+- los cuatro publicados legacy no cambian de backend;
+- ninguna carpeta legacy de Obesidad autoriza el release.
+
+#### Orden R25.6 — Gate y STOP
+
+Ejecutar:
+
+```text
+pruebas unitarias focales del release y doctor
+test_release_reproduction.py
+integración del doctor runner_release
+make test-fast
+integración en las dos tandas documentadas
+make lint
+make typecheck
+doctor Obesidad --artifacts
+doctor --artifacts
+git diff --check
+dvc status dirigido al nuevo target
+```
+
+Verificar además:
+
+- bundle final = 150 archivos y mismo digest agregado que los builds temporales;
+- `release_id=obesidad_release_2517e7858901`;
+- reproducción 3,328/5,772 con diferencia `0.0`;
+- runs canónicos, política, agregados legacy y frontend intactos;
+- cero `dvc push`, Git push, deploy o publicación;
+- SIGSEGV preexistente registrado, sin ampliar C7.2-B para corregirlo.
+
+Crear un commit local acotado de C7.2-B, incluyendo la actualización pendiente de este plan, y
+detenerse. Entregar:
+
+- SHA y diff;
+- ruta final y target DVC;
+- digest del bundle;
+- resultados del doctor/restauración;
+- estado dirigido de DVC;
+- confirmación `trained`/NO-GO.
+
+#### Prohibido en C7.2-B
+
+- `dvc push`;
+- Git push;
+- lifecycle `trained → published`;
+- construir `public_release_pointer.v1`;
+- activar canales o galería;
+- tocar frontend, Reports, Tableau, EpiBot o RAG;
+- deploy, PR, merge, tag o release;
+- iniciar C7.2-C o C7.3.
+
+#### Próxima orden exacta
+
+> **Esperar `GO C7.2-B`. Con ese GO, materializar y versionar localmente el bundle, implementar el
+> doctor `runner_release`, cambiar el backend de Obesidad sólo tras PASS y detenerse sin subir ni
+> publicar nada.**
+
+---
+
+### Ronda 25 — C7.2-B: sede, doctor y target DVC — 2026-07-25
+
+Ejecutadas las doce órdenes de R19.5. **Sin `dvc push`, sin Git push, sin publicación.**
+
+#### Sede y promoción atómica (R19.5.1, .5, .6) · **PASS**
+
+```text
+artifacts/releases/obesidad/obesidad_release_2517e7858901/   150 archivos
+```
+
+`release_store.py` recibe `releases_root` SIEMPRE por parámetro: no mira cwd, `runs/`, home ni
+rutas del equipo. Se promueve con `copytree` a un hermano del destino y `replace` atómico, así que
+un fallo a media copia no deja un release incompleto con aspecto de release. Idempotente
+(`reused=True` en la segunda promoción) y **no repara** una sede manipulada: la rechaza.
+
+El `release_id` no se pasa: sale de verificar el bundle, para que la carpeta no pueda quedar
+nombrada por algo distinto de lo que el artefacto declara.
+
+#### Doctor `runner_release` (R19.5.2, .3, .4) · **PASS**
+
+`_diagnose_runner_release` exige, en orden: el release declarado existe en la sede → verifica
+entero → es EL que el registry declara → es del padecimiento correcto → **reproduce con tol 0.0**.
+
+26 pruebas, todas sobre una sede inyectada en `tmp_path` (jamás sobre la del repo). Mutaciones
+cubiertas: schema v1, digest, inventario, modelo faltante, release bajo otro ID, release de otro
+padecimiento y sede vacía.
+
+**Una prueba mía era un falso verde y la reescribí.** `test_el_doctor_exige_que_el_release
+_reproduzca…` alteraba una predicción y afirmaba que sólo la reproducción lo cazaba. Al comprobarlo
+a mano resultó que `verify_bundle` ya lo rechazaba: el `run_manifest.json` del forecast que viaja
+dentro también sella ese CSV. Para que la prueba probara lo que dice, la mutación tiene que
+sobrevivir a schema, checksums, inventario, sellos internos e identidad —hay que actualizar también
+el manifiesto sellado y renombrar el bundle a su nuevo ID—. Con eso, la reproducción es lo único
+que queda entre el artefacto y un verde. Añadí además una prueba-guardia que verifica que el
+falseado SÍ pasa la verificación estructural: si dejara de pasarla, la otra volvería a no probar
+nada.
+
+#### Reproducción desde la ruta final (R19.5.7) · **PASS**
+
+```text
+3,328 bases · 5,772 productos · máx |Δ| = 0.0 · guardia activo contra cualquier lectura bajo runs/
+```
+
+#### Target DVC dedicado (R19.5.8, .9) · **PASS**
+
+```text
+artifacts/releases/obesidad/obesidad_release_2517e7858901.dvc
+  md5 9304fd8a9c2c23c2aec96d612a0f7b2b.dir · 150 archivos · 3,660,402 bytes
+artifacts/releases/obesidad/.gitignore   (lo genera DVC; el bundle no entra a Git)
+dvc status dirigido → up to date
+models.dvc · reports/forecasts.dvc · reports/figures.dvc · data/*.dvc · logs.dvc → SIN TOCAR
+```
+
+#### El flip del registry (R19.5.10) · **HECHO, y por qué**
+
+```yaml
+artifact_source:
+  backend: runner_release
+  release_id: obesidad_release_2517e7858901
+```
+
+La condición era que el doctor resolviera y validara la sede sin excepciones especiales: lo hace.
+Y hay un argumento más fuerte que no estaba escrito: **`runs/` está gitignored y fuera de DVC**, así
+que el backend anterior no era verificable por nadie que no fuera esta máquina. El bundle sí tiene
+puntero DVC. El flip no es sólo admisible: mejora la recuperabilidad.
+
+Los IDs de los runs no se pierden: viajan en el `chain` del release.
+
+#### Lo que el flip destapó: 159 pruebas en `skipped`, no en verde
+
+Al cambiar el backend, `test_artifact_validation.py` no falló — **se saltó entero**. Las fixtures
+resolvían los runs con `source().refit_run_id`, que pasó a ser `None`, y `hay_runs()` devolvía
+`False`. 134 mutaciones de C7.1 desactivadas en silencio, con la suite en verde.
+
+Reparado en la raíz:
+
+- `artifact_fixtures.sealed_chain()` lee la cadena del release que el registry apunta —no la escribe
+  a mano ni la infiere—;
+- `hay_runs()` exige AHORA el release **y** los runs: si sólo mirara los runs, el próximo cambio de
+  backend volvería a dejar las pruebas dormidas;
+- `test_artifact_validation`, `test_artifact_backend` y `release_fixtures` toman de ahí las
+  identidades;
+- el adaptador de `runner_runs` sigue probado: se sustituye el padecimiento por uno equivalente con
+  la cadena sellada, porque ese carril sigue vivo (es el que valida antes de promover).
+
+Dos recursiones infinitas aparecieron al sustituir `registry.require` dentro de un helper que a su
+vez lee el registry; se resuelven calculando el sustituto ANTES de parchear.
+
+#### Gate
+
+| comprobación | resultado |
+| --- | --- |
+| `ruff format --check` + `ruff check` | 277 archivos OK · All checks passed |
+| `mypy src/epiforecast/` | 154 archivos, sin incidencias |
+| fast | **1,827 passed** (eran 1,801; +26) · **0 skipped en las suites del runner** |
+| integración | **61 passed** (59 + 2, dos tandas) |
+| doctor Obesidad / completo | rc=0 / rc=0 — ahora **por el bundle**, no por `runs/` |
+| runs canónicos · política · agregados legacy · frontend | idénticos al baseline |
+| lifecycle | Obesidad `trained`, fuera de `published_only` (`published` = neuro + Dengue) |
+
+#### Estado
+
+```text
+C7.2-B PASS · commit local · SIN dvc push, Git push ni publicación
+Sede    artifacts/releases/obesidad/obesidad_release_2517e7858901/ (150 archivos)
+DVC     target dedicado creado; los seis targets legacy sin tocar
+Doctor  runner_release cableado con releases_root inyectable; exige reproducción
+Tests   26 nuevas de sede/doctor · 159 rescatadas de `skipped`
+Release NO-GO · Obesidad = trained · runner_release · F50 = configured · NO-GO
+Deuda   SIGSEGV preexistente = bloqueo pre-merge/pre-publicación
+Sigue   C7.2-C (`dvc push` + restauración en clon limpio), con su propio GO
+```
 
 _Respuesta:_

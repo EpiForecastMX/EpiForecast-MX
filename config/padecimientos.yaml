@@ -232,14 +232,14 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
-    # De dónde salen los modelos: refit y forecast SELLADOS del runner, no models/<motor>/Obesidad/.
-    # `runner_runs` es admisible con lifecycle=trained; publicar exigirá `runner_release` (C7.2).
+    # De dónde salen los modelos (C7.2-B): el RELEASE BUNDLE inmutable de su sede, no
+    # models/<motor>/Obesidad/ ni runs/. `runs/` está gitignored y fuera de DVC, así que no era
+    # recuperable por nadie más; el bundle sí tiene puntero DVC dedicado. El release lleva dentro
+    # su propia cadena sellada (dataset/política/selección/aceptación/refit/forecast), por eso aquí
+    # basta con su ID. `runner_release` es admisible con lifecycle=trained: NO habilita publicar.
     artifact_source:
-      backend: runner_runs
-      refit_run_id: obesidad_refit_final_91590fa7452f_ff249060018a
-      forecast_run_id: obesidad_forecast_h52_ff249060018a_92d446b6df8f
-      policy_digest: dd6d4a0274a6f8bb0f51d27628294b7db694b792966abaa92528dc2765020b2a
-      final_selection_digest: 91590fa7452fa75581df18d6e892ac7053727ab368d38d298a26931fe6e89bab
+      backend: runner_release
+      release_id: obesidad_release_2517e7858901
     prophet_grid_key: null            # C7.1: no entrena Prophet legacy; el grid vive en el runner
     deepar_grid_key: null             # DeepAR-Obesidad usa escalares del bloque long-series (sin grid propio)
     aggregate_national: false

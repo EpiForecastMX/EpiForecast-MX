@@ -52,14 +52,16 @@ def sellado(tmp_path):
 
 
 def _validar(root: Path, **extra):
+    # Desde C7.2-B el registry declara `runner_release`; las identidades de los runs sellados
+    # viajan en el `chain` del bundle, no en el registry ni escritas a mano aquí.
     d = registry.require(fx.DISEASE)
-    src = d.artifact_source
+    cadena = fx.sealed_chain()
     kwargs = {
         "disease_id": d.id,
-        "refit_run_id": str(src.refit_run_id),
-        "forecast_run_id": str(src.forecast_run_id),
-        "policy_digest": str(src.policy_digest),
-        "final_selection_digest": str(src.final_selection_digest),
+        "refit_run_id": cadena["refit_run_id"],
+        "forecast_run_id": cadena["forecast_run_id"],
+        "policy_digest": cadena["policy_digest"],
+        "final_selection_digest": cadena["final_selection_digest"],
         "runs_root": root,
         "policy_path": _RAIZ / "config" / "evaluation" / f"{d.selection_policy}.yaml",
         "geo_catalog": _catalogo(),

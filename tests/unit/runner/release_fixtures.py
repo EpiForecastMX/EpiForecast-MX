@@ -17,6 +17,7 @@ from pathlib import Path
 import shutil
 from typing import Any
 
+from epiforecast import registry
 from epiforecast.runner.artifact_validation import validate_runner_runs
 from epiforecast.runner.release_builder import BuiltRelease, build_release
 from epiforecast.runner.release_contract import (
@@ -43,10 +44,26 @@ class Preparado:
     runs_root: Path
 
 
+def chain_source() -> registry.ArtifactSource:
+    """``ArtifactSource`` de tipo ``runner_runs`` derivada de la cadena SELLADA del release.
+
+    El registry ya declara ``runner_release`` (C7.2-B), pero promover se hace SIEMPRE desde los runs
+    sellados; sus identidades viven en el ``chain`` del bundle, no escritas a mano aquí.
+    """
+    cadena = af.sealed_chain()
+    return registry.ArtifactSource(
+        backend=registry.BACKEND_RUNNER_RUNS,
+        refit_run_id=cadena["refit_run_id"],
+        forecast_run_id=cadena["forecast_run_id"],
+        policy_digest=cadena["policy_digest"],
+        final_selection_digest=cadena["final_selection_digest"],
+    )
+
+
 def preparar(tmp_path: Path) -> Preparado:
     """Copia los runs sellados a ``tmp_path/runs`` y valida la cadena sobre ESA copia."""
     runs = af.copiar_runs_sellados(tmp_path / "runs")
-    src = af.source()
+    src = chain_source()
     verificado = validate_runner_runs(
         disease_id=af.DISEASE,
         refit_run_id=str(src.refit_run_id),
@@ -82,6 +99,19 @@ def construir_por_entry(prep: Preparado, output_root: Path) -> BuiltRelease:
 
     return build_release_for_disease(
         af.DISEASE, runs_root=prep.runs_root, policy_path=POLICY, output_root=output_root
+    )
+
+
+def disease_desde_runs(**politica: object) -> registry.Disease:
+    """Obesidad declarando ``runner_runs`` (como antes del flip) y la política pública que se pida.
+
+    Promover exige el backend de runs; el flip a ``runner_release`` es el estado POSTERIOR. Esta
+    sustitución permite seguir ejercitando el entry point real sin escribir identidades a mano.
+    """
+    import dataclasses
+
+    return dataclasses.replace(
+        registry.require(af.DISEASE), artifact_source=chain_source(), **politica
     )
 
 

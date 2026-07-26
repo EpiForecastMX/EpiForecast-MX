@@ -15,7 +15,6 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-import filecmp
 from pathlib import Path
 import shutil
 import tempfile
@@ -53,6 +52,7 @@ from epiforecast.runner.release_sources import (
     payload_plan,
     read_dataset_config,
 )
+from epiforecast.runner.release_store import diff_trees
 
 if TYPE_CHECKING:  # sólo para tipar; en runtime lo pasa el llamador
     from epiforecast.runner.artifact_validation import VerifiedRunnerRuns
@@ -128,18 +128,6 @@ def _runtime_config(
     return config
 
 
-def _diff_trees(izq: Path, der: Path) -> list[str]:
-    """Rutas que sobran, faltan o difieren BYTE a byte entre dos árboles."""
-    izquierda = {p.relative_to(izq).as_posix() for p in izq.rglob("*") if p.is_file()}
-    derecha = {p.relative_to(der).as_posix() for p in der.rglob("*") if p.is_file()}
-    distintos = [
-        ruta
-        for ruta in sorted(izquierda & derecha)
-        if not filecmp.cmp(izq / ruta, der / ruta, shallow=False)
-    ]
-    return sorted(izquierda ^ derecha) + distintos
-
-
 def _finalize(staging: Path, output_root: Path, release_id: str) -> tuple[Path, bool]:
     """Idempotente: si el destino ya existe IDÉNTICO se reutiliza; si difiere, se rechaza."""
     destino = output_root / release_id
@@ -147,7 +135,7 @@ def _finalize(staging: Path, output_root: Path, release_id: str) -> tuple[Path, 
         output_root.mkdir(parents=True, exist_ok=True)
         staging.replace(destino)  # atómico dentro del mismo root: nunca hay un bundle a medias
         return destino, False
-    diferencias = _diff_trees(staging, destino)
+    diferencias = diff_trees(staging, destino)
     require(
         not diferencias,
         f"release {release_id}: el destino ya existe con contenido distinto ({diferencias[:3]})",

@@ -8,7 +8,6 @@ y que dos construcciones distintas den los MISMOS bytes.
 
 from __future__ import annotations
 
-import dataclasses
 import json
 from pathlib import Path
 
@@ -136,11 +135,16 @@ def test_cambiar_la_política_pública_no_altera_el_bundle(tmp_path, monkeypatch
     Se construye por el ENTRY POINT real —la capa que antes leía ``disease.channels``— con el
     registry declarando otra política pública. El ``release_id`` y cada byte deben ser los mismos.
     """
-    real = registry.require(af.DISEASE)
     prep = rf.preparar(tmp_path)
+    # El registry ya declara `runner_release`; promover exige `runner_runs`, así que se sustituye
+    # por la cadena SELLADA del propio release y se le cambia encima la política pública. Los dos
+    # sustitutos se resuelven ANTES de parchear: resolverlos dentro recursaría sobre el parche.
+    base, alterado = rf.disease_desde_runs(), rf.disease_desde_runs(**politica)
+
+    monkeypatch.setattr(registry, "require", lambda _: base)
     referencia = rf.construir_por_entry(prep, tmp_path / "ref")
 
-    monkeypatch.setattr(registry, "require", lambda _: dataclasses.replace(real, **politica))
+    monkeypatch.setattr(registry, "require", lambda _: alterado)
     otro = rf.construir_por_entry(prep, tmp_path / "otro")
 
     assert otro.release_id == referencia.release_id

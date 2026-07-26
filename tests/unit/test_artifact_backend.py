@@ -11,7 +11,8 @@ from epiforecast.registry_doctor import diagnose
 from tests.unit.runner import artifact_fixtures as fx
 
 _OBESIDAD = "obesidad"
-_REFIT = "obesidad_refit_final_91590fa7452f_ff249060018a"
+# Se captura ANTES de sustituir `registry.require`: el doctor lee el registry por dentro.
+_REAL_OBESIDAD = registry.require(_OBESIDAD)
 
 
 def _errores(nombre: str) -> list[str]:
@@ -33,13 +34,23 @@ def test_los_cuatro_publicados_siguen_en_legacy():
         assert spec.training_engines  # el carril legacy sí declara motores
 
 
-def test_obesidad_declara_los_runs_sellados_y_ningun_motor_legacy():
+def test_obesidad_declara_su_release_bundle_y_ningun_motor_legacy():
+    """C7.2-B: la evidencia de Obesidad es el release inmutable, no `runs/` ni models/<motor>/.
+
+    `runs/` está gitignored y fuera de DVC, así que nadie más podía verificarlo; el bundle tiene
+    puntero DVC dedicado. Los IDs de los runs no desaparecen: viajan en el `chain` del release.
+    """
     spec = registry.require(_OBESIDAD)
-    assert spec.artifact_backend == registry.BACKEND_RUNNER_RUNS
+    assert spec.artifact_backend == registry.BACKEND_RUNNER_RELEASE
     # Vaciar los motores legacy es lo que impide que un PKL preliminar se haga pasar por artefacto.
     assert spec.training_engines == () and spec.eligible_engines == ()
-    assert spec.artifact_source.refit_run_id == _REFIT
-    assert spec.artifact_source.policy_digest.startswith("dd6d4a02")
+    assert spec.artifact_source.release_id == "obesidad_release_2517e7858901"
+    assert spec.artifact_source.to_dict() == {
+        "backend": "runner_release",
+        "release_id": "obesidad_release_2517e7858901",
+    }
+    # `runner_release` es admisible con `trained`: declararlo NO publica nada.
+    assert spec.lifecycle == "trained"
 
 
 # ── Acción 2: gate positivo y negativo del loader ──────────────────────────────────────────────
@@ -146,12 +157,31 @@ def sellado(tmp_path):
     return fx.copiar_runs_sellados(tmp_path)
 
 
-def _errores_en(root) -> list[str]:
-    return [
-        p.message
-        for p in diagnose(_OBESIDAD, check_artifacts=True, runs_root=root)
-        if p.severity == "error"
-    ]
+def _errores_en(root, monkeypatch=None) -> list[str]:
+    """Errores del doctor sobre la copia sellada, forzando el carril ``runner_runs``.
+
+    Desde C7.2-B el registry declara ``runner_release``; estas pruebas son el contrato del ADAPTADOR
+    de `runner_runs`, que sigue vivo (es el que valida la cadena antes de promover). Se sustituye el
+    padecimiento por uno equivalente con la cadena SELLADA del release, sin escribir IDs a mano.
+    """
+    # La cadena se resuelve ANTES de sustituir `registry.require`: resolverla dentro provocaría
+    # una recursión infinita, porque leer el release pasa por el propio registry.
+    sustituto = _obesidad_runner_runs()
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(registry, "require", lambda _: sustituto)
+        return [
+            p.message
+            for p in diagnose(_OBESIDAD, check_artifacts=True, runs_root=root)
+            if p.severity == "error"
+        ]
+
+
+def _obesidad_runner_runs() -> registry.Disease:
+    import dataclasses
+
+    from tests.unit.runner.release_fixtures import chain_source
+
+    return dataclasses.replace(_REAL_OBESIDAD, artifact_source=chain_source())
 
 
 def test_la_copia_sellada_valida_igual_que_la_canonica(sellado):
@@ -159,14 +189,14 @@ def test_la_copia_sellada_valida_igual_que_la_canonica(sellado):
 
 
 def test_retirar_un_estado_sellado_hace_fallar_al_doctor(sellado):
-    refit = sellado / registry.require(_OBESIDAD).artifact_source.refit_run_id
+    refit = fx.refit_dir(sellado)
     sorted((refit / "models" / "seasonal_mean_5y").glob("*.state.json"))[0].unlink()
     errores = _errores_en(sellado)
     assert errores and "seasonal_mean_5y" in errores[0]
 
 
 def test_alterar_un_estado_sellado_hace_fallar_al_doctor(sellado):
-    refit = sellado / registry.require(_OBESIDAD).artifact_source.refit_run_id
+    refit = fx.refit_dir(sellado)
     estado = sorted((refit / "models" / "ridge_harmonic_log1p").glob("*.state.json"))[0]
     estado.write_text('{"coef": [0.0]}', encoding="utf-8")
     errores = _errores_en(sellado)
@@ -174,7 +204,7 @@ def test_alterar_un_estado_sellado_hace_fallar_al_doctor(sellado):
 
 
 def test_alterar_el_forecast_sellado_hace_fallar_al_doctor(sellado):
-    fc = sellado / registry.require(_OBESIDAD).artifact_source.forecast_run_id
+    fc = fx.forecast_dir(sellado)
     (fc / "lineage.json").write_text('{"base_series": 1, "derived_products": 1}', encoding="utf-8")
     assert _errores_en(sellado)
 

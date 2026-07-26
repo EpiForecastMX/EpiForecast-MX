@@ -82,4 +82,4 @@ def test_cuadro_compartido_emite_los_dos_bloques():
 def test_obesidad_no_cambia_con_el_alta_de_f50():
     obe = registry.require("obesidad")
     assert obe.lifecycle == "trained" and obe.profile_name == "obesidad_cronica"
-    assert obe.artifact_backend == registry.BACKEND_RUNNER_RUNS  # C7.1, no el carril legacy
+    assert obe.artifact_backend == registry.BACKEND_RUNNER_RELEASE  # C7.2-B, no el legacy

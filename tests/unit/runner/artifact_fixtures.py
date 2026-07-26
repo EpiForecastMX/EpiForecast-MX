@@ -33,21 +33,51 @@ def source() -> registry.ArtifactSource:
     return registry.require(DISEASE).artifact_source
 
 
+def sealed_chain() -> dict[str, str]:
+    """Cadena SELLADA del padecimiento, declarada por el release que el registry apunta (C7.2-B).
+
+    Desde el flip a ``runner_release`` el registry ya no lleva los IDs de los runs: los lleva el
+    propio bundle, en su ``chain``. Parece circular —hay que leer un release para reconstruirlo—
+    pero no lo es: el release ya existe y está versionado; estas pruebas sólo lo re-derivan desde
+    los runs para comprobar que sale idéntico. Y evita lo que sí sería un error: escribir los IDs
+    de los runs a mano en los tests.
+    """
+    from epiforecast.runner.release_store import default_releases_root, release_path
+
+    manifest = (
+        release_path(default_releases_root(), DISEASE, str(source().release_id))
+        / "release_manifest.json"
+    )
+    return {str(k): str(v) for k, v in leer(manifest)["chain"].items()}
+
+
 def hay_runs() -> bool:
-    """¿Existen los runs canónicos locales? (no se versionan: `runs/` está gitignored)."""
+    """¿Están en local el release declarado Y los runs canónicos que lo originan?
+
+    Ni `runs/` (gitignored) ni el bundle (DVC) viajan en el repo, así que sin ellos se salta. Se
+    exigen los DOS a propósito: si sólo se comprobaran los runs, el flip a ``runner_release``
+    habría dejado 159 pruebas en `skipped` —verdes de mentira— en vez de en rojo.
+    """
     src = source()
-    root = runs_root()
-    return (root / str(src.refit_run_id) / "refit_summary.json").exists() and (
-        root / str(src.forecast_run_id) / "lineage.json"
+    if not src.release_id:
+        return False
+    from epiforecast.runner.release_store import default_releases_root, release_path
+
+    sede = release_path(default_releases_root(), DISEASE, str(src.release_id))
+    if not (sede / "release_manifest.json").exists():
+        return False
+    cadena, root = sealed_chain(), runs_root()
+    return (root / cadena["refit_run_id"] / "refit_summary.json").exists() and (
+        root / cadena["forecast_run_id"] / "lineage.json"
     ).exists()
 
 
 def refit_dir(root: Path) -> Path:
-    return root / str(source().refit_run_id)
+    return root / sealed_chain()["refit_run_id"]
 
 
 def forecast_dir(root: Path) -> Path:
-    return root / str(source().forecast_run_id)
+    return root / sealed_chain()["forecast_run_id"]
 
 
 def dataset_dir(root: Path) -> Path:
@@ -63,12 +93,12 @@ def acceptance_dir(root: Path) -> Path:
 def copiar_runs_sellados(destino: Path) -> Path:
     """Dataset + aceptación + refit + forecast copiados tal cual (nunca hard links)."""
     origen = runs_root()
-    src = source()
-    refit_id = str(src.refit_run_id)
+    cadena = sealed_chain()
+    refit_id = cadena["refit_run_id"]
     resumen = leer(origen / refit_id / "refit_summary.json")
     ids = [
         refit_id,
-        str(src.forecast_run_id),
+        cadena["forecast_run_id"],
         str(leer(origen / refit_id / "run_manifest.json")["dataset_id"]),
         str(resumen["provenance"]["acceptance_run_id"]),
     ]

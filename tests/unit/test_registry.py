@@ -94,7 +94,7 @@ def test_obesidad_configurada_perfil_propio():
     # C7.1: el carril nuevo no entrena motores legacy, así que Obesidad no declara ninguno; su
     # backend de artefactos son los runs sellados del runner.
     assert obe.training_engines == () and obe.eligible_engines == ()
-    assert obe.artifact_backend == registry.BACKEND_RUNNER_RUNS
+    assert obe.artifact_backend == registry.BACKEND_RUNNER_RELEASE  # C7.2-B: el bundle
     # perfil crónico: Prophet/DeepAR en tasa; Ensemble/Stacking conservan conteos.
     assert obe.profile.rate_scale == 100_000
     assert registry.trait("Obesidad", "prophet", "rate") is True

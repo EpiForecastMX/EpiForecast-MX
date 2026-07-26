@@ -51,6 +51,7 @@ def diagnose(
     *,
     runs_root: Path | None = None,
     models_root: Path | None = None,
+    releases_root: Path | None = None,
 ) -> list[Problem]:
     """Lista de problemas (vacía = OK). ``name=None`` diagnostica todos los padecimientos."""
     problems: list[Problem] = []
@@ -87,7 +88,7 @@ def diagnose(
         # Artefactos (solo si se pide y el padecimiento debería tener modelos). El backend decide
         # QUÉ es evidencia: existir un directorio no lo es (C7.1).
         if check_artifacts and d.lifecycle in ("trained", "published"):
-            problems.extend(_diagnose_artifacts(d, runs_root, models_root))
+            problems.extend(_diagnose_artifacts(d, runs_root, models_root, releases_root))
     return problems
 
 
@@ -97,7 +98,10 @@ def _runs_root() -> Path:
 
 
 def _diagnose_artifacts(
-    d: registry.Disease, runs_root: Path | None = None, models_root: Path | None = None
+    d: registry.Disease,
+    runs_root: Path | None = None,
+    models_root: Path | None = None,
+    releases_root: Path | None = None,
 ) -> list[Problem]:
     """Despacha al backend declarado. Un backend del runner NUNCA acepta models/<motor>/."""
     backend = d.artifact_backend
@@ -110,12 +114,12 @@ def _diagnose_artifacts(
         ]
     if backend == registry.BACKEND_RUNNER_RUNS:
         return _diagnose_runner_runs(d, runs_root or _runs_root())
-    return [
-        Problem(
-            d.id,
-            "error",
-            f"backend {backend!r}: verificación no implementada todavía (C7.2 la define)",
-        )
+    if backend == registry.BACKEND_RUNNER_RELEASE:
+        from epiforecast.runner.release_store import default_releases_root
+
+        return _diagnose_runner_release(d, releases_root or default_releases_root())
+    return [  # pragma: no cover — ARTIFACT_BACKENDS no admite otro valor
+        Problem(d.id, "error", f"backend {backend!r}: verificación no implementada")
     ]
 
 
@@ -150,6 +154,47 @@ def _diagnose_runner_runs(d: registry.Disease, runs_root: Path) -> list[Problem]
         problems.append(Problem(d.id, "error", str(exc)))
 
     # Los PKL preliminares del carril viejo no son evidencia y no deben mirarse siquiera.
+    if d.training_engines or d.eligible_engines:
+        problems.append(
+            Problem(d.id, "warning", "declara motores legacy pese a usar un backend del runner")
+        )
+    return problems
+
+
+def _diagnose_runner_release(d: registry.Disease, releases_root: Path) -> list[Problem]:
+    """Adaptador: el release DECLARADO existe en su sede, verifica entero y REPRODUCE.
+
+    Que el directorio exista no es evidencia —ése fue el falso verde de C7.1— y que sus digests
+    cuadren tampoco: un bundle sólo es evidencia si sus 64 modelos cargan y vuelven a producir el
+    forecast que transporta. Por eso el doctor reproduce, y por eso tarda unos segundos.
+
+    ``releases_root`` se inyecta; aquí no se resuelve ninguna ruta por cwd ni por convención.
+    """
+    from epiforecast.runner.artifact_identity import ArtifactValidationError
+    from epiforecast.runner.release_loader import verify_bundle
+    from epiforecast.runner.release_reproduce import check_reproduction
+    from epiforecast.runner.release_store import release_path
+
+    problems: list[Problem] = []
+    release_id = str(d.artifact_source.release_id)
+    try:
+        destino = release_path(releases_root, d.id, release_id)
+        if not destino.is_dir():
+            raise ArtifactValidationError(f"el release declarado no está en la sede: {release_id}")
+        verificado = verify_bundle(destino)
+        # El release que se carga tiene que ser EL que el registry declara, no otro que valide.
+        if verificado.release_id != release_id:
+            raise ArtifactValidationError(
+                f"la sede contiene {verificado.release_id!r} donde el registry declara {release_id!r}"
+            )
+        if verificado.disease_id != d.id:
+            raise ArtifactValidationError(
+                f"el release es de {verificado.disease_id!r}, no de {d.id!r}"
+            )
+        check_reproduction(verificado, tol=0.0)
+    except ArtifactValidationError as exc:
+        problems.append(Problem(d.id, "error", str(exc)))
+
     if d.training_engines or d.eligible_engines:
         problems.append(
             Problem(d.id, "warning", "declara motores legacy pese a usar un backend del runner")
