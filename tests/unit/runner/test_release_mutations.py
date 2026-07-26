@@ -5,12 +5,16 @@ exige un ``ArtifactValidationError`` con el mensaje correcto: ningún traceback,
 descuido y —sobre todo— ningún fallo que se resuelva en el sello cuando lo que se quiere probar es
 la IDENTIDAD o el CONTENIDO.
 
-Por eso hay tres grupos con re-sellado distinto:
+Por eso los grupos llevan re-sellado distinto: cada uno neutraliza la comprobación anterior para que
+la mutación llegue viva hasta la que se quiere probar.
 
 | grupo | re-sellado | qué debe atrapar la mutación |
 | --- | --- | --- |
 | sello | ninguno | inventario, digests, tamaños y ``SHA256SUMS.txt`` |
+| forma | sólo checksums | el conjunto CERRADO de claves del manifest |
 | identidad | sólo checksums | el ``release_id`` recalculado deja de cuadrar |
+| versiones | sólo checksums | el schema, y por su nombre (nunca por un digest posterior) |
+| procedencia | según el caso | la forma del ``builder_version`` y el sello, NO su valor |
 | contenido | inventario + identidad + checksums | los sellos INTERNOS de los runs de origen |
 """
 
@@ -25,6 +29,7 @@ import pytest
 from epiforecast.runner import adapters
 from epiforecast.runner.artifact_identity import ArtifactValidationError
 from epiforecast.runner.release_contract import (
+    BUILDER_VERSION,
     CHECKSUMS_FILE,
     IDENTITY_SCHEMA,
     MANIFEST_FILE,
@@ -352,9 +357,30 @@ def _v1_solo_la_identidad(root: Path) -> None:
     rf.degradar_a_v1(root, claves=("identity_schema",))
 
 
-def _builder_de_otra_versión(root: Path) -> None:
+def _builder_alterado_sin_resellar(root: Path) -> None:
+    """Sólo se cambia el campo: ni identidad ni sumas se rehacen."""
     manifest = rf.leer_manifest(root)
-    manifest["builder_version"] = "runner_release_builder.v1"
+    manifest["builder_version"] = "runner_release_builder.v3"
+    rf.escribir_manifest(root, manifest)
+
+
+def _builder_con_formato_inválido(root: Path) -> None:
+    manifest = rf.leer_manifest(root)
+    manifest["builder_version"] = "no-es-una-version"
+    rf.escribir_manifest(root, manifest)
+    rf.resellar_checksums(root)
+
+
+def _builder_vacío(root: Path) -> None:
+    manifest = rf.leer_manifest(root)
+    manifest["builder_version"] = ""
+    rf.escribir_manifest(root, manifest)
+    rf.resellar_checksums(root)
+
+
+def _builder_no_es_string(root: Path) -> None:
+    manifest = rf.leer_manifest(root)
+    manifest["builder_version"] = 2
     rf.escribir_manifest(root, manifest)
     rf.resellar_checksums(root)
 
@@ -363,8 +389,49 @@ VERSIONES: list[tuple[Mutacion, str]] = [
     (_v1_completo, r"schema: 'release_manifest\.v1' != 'release_manifest\.v2'"),
     (_v1_solo_el_manifest, r"schema: 'release_manifest\.v1' != 'release_manifest\.v2'"),
     (_v1_solo_la_identidad, r"identity_schema: 'identity_payload\.v1' != 'identity_payload\.v2'"),
-    (_builder_de_otra_versión, r"builder_version: 'runner_release_builder\.v1'"),
 ]
+
+# `builder_version` es PROCEDENCIA: se valida su forma, y alterarlo rompe el sello o la identidad,
+# pero NUNCA se compara contra el builder instalado (C7.2-A.2.1/R21-P0).
+PROCEDENCIA: list[tuple[Mutacion, str]] = [
+    (_builder_alterado_sin_resellar, r"SHA256SUMS\.txt: digest de release_manifest\.json"),
+    (_builder_con_formato_inválido, r"builder_version 'no-es-una-version' no tiene el formato"),
+    (_builder_vacío, r"builder_version: se esperaba un string no vacío"),
+    (_builder_no_es_string, r"builder_version: se esperaba un string no vacío"),
+]
+
+
+@pytest.mark.parametrize(
+    ("mutacion", "patron"), PROCEDENCIA, ids=[m.__name__ for m, _ in PROCEDENCIA]
+)
+def test_la_procedencia_del_builder_se_sella_pero_no_gobierna_la_compatibilidad(
+    prístino, tmp_path, mutacion, patron
+):
+    root = _copia(prístino, tmp_path)
+    mutacion(root)
+    with pytest.raises(ArtifactValidationError, match=patron):
+        verify_bundle(root)
+
+
+def test_un_bundle_v2_de_otro_builder_sigue_siendo_cargable(prístino, tmp_path):
+    """R21-P0: subir el builder a v3 no puede volver incargables los bundles v2 ya publicados.
+
+    Se re-sella el fixture como si lo hubiera producido `runner_release_builder.v3` bajo el MISMO
+    schema v2. Debe cargar y reproducir, y su `release_id` debe ser otro: el productor es identidad.
+    Nada de esto monkeypatchea la constante; pasa por el verifier real.
+    """
+    root = _copia(prístino, tmp_path)
+    nuevo_id = rf.reconstruir_con_builder(root, "runner_release_builder.v3")
+
+    verificado = verify_bundle(root)
+    assert verificado.release_id == nuevo_id != prístino.name
+    assert rf.leer_manifest(root)["builder_version"] == "runner_release_builder.v3"
+    assert rf.leer_manifest(root)["schema"] == RELEASE_SCHEMA
+
+
+def test_el_builder_instalado_sigue_emitiendo_su_propia_versión(prístino):
+    """El default sólo gobierna la CONSTRUCCIÓN: los bundles nuevos declaran el builder instalado."""
+    assert rf.leer_manifest(prístino)["builder_version"] == BUILDER_VERSION
 
 
 @pytest.mark.parametrize(("mutacion", "patron"), VERSIONES, ids=[m.__name__ for m, _ in VERSIONES])

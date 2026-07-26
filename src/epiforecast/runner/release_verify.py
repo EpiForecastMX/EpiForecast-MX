@@ -5,9 +5,13 @@ lo que su manifest declara, que ``SHA256SUMS.txt`` lo cubra sin cubrirse a sí m
 ``release_id`` VUELVA A SALIR del payload de identidad. Si algo de esto falla, abrir los modelos
 sería mirar un artefacto que ya no es el que se firmó.
 
-Las versiones se comprueban PRIMERO y de forma explícita (C7.2-A.2): ``release_manifest.v2``,
-``identity_payload.v2`` y la versión del builder. No hay lectura de v1 —nunca se persistió un bundle
-v1— y un formato viejo debe rechazarse diciendo que es viejo, no fallando después en un digest.
+Los SCHEMAS se comprueban PRIMERO y de forma explícita (C7.2-A.2): ``release_manifest.v2`` e
+``identity_payload.v2``. No hay lectura de v1 —nunca se persistió un bundle v1— y un formato viejo
+debe rechazarse diciendo que es viejo, no fallando después en un digest.
+
+La versión del builder NO es un gate de compatibilidad (C7.2-A.2.1): sólo se valida su forma y se
+reutiliza el valor declarado para recomputar la identidad. Un bundle v2 producido por un builder
+posterior sigue siendo cargable; alterar ese campo sin re-sellar sigue rompiendo la identidad.
 """
 
 from __future__ import annotations
@@ -29,11 +33,11 @@ from epiforecast.runner.artifact_identity import (
     text_of,
 )
 from epiforecast.runner.release_contract import (
-    BUILDER_VERSION,
     CHECKSUMS_FILE,
     IDENTITY_SCHEMA,
     MANIFEST_FILE,
     MANIFEST_KEYS,
+    check_builder_version,
     check_bundle_path,
     check_digest,
     check_no_activation,
@@ -96,25 +100,33 @@ def check_checksums(root: Path, inventario: Mapping[str, tuple[str, int, str]]) 
 
 
 def check_manifest_shape(manifest: Mapping[str, Any]) -> None:
-    """Versiones EXPLÍCITAS y claves cerradas, antes de mirar un solo byte del bundle.
+    """Schemas EXPLÍCITOS y claves cerradas, antes de mirar un solo byte del bundle.
 
-    El schema del manifest lo comprueba ya ``read_json``. Aquí se cierran las otras dos versiones que
-    el manifest declara —la del payload de identidad y la del builder—, y se hace ANTES que nada
-    porque un bundle de otra versión **debe rechazarse por su versión**, no por el fallo de digest o
-    de ``release_id`` que vendría después (C7.2-A.2/R19.1.6): un mensaje sobre un digest que no
-    cuadra oculta la causa real y hace pensar en corrupción donde sólo hay un formato viejo.
+    El schema del manifest lo comprueba ya ``read_json``; aquí se cierra el del payload de identidad.
+    Se hace ANTES que nada porque un bundle de otro formato **debe rechazarse por su schema**, no por
+    el fallo de digest o de ``release_id`` que vendría después (R19.1.6): un mensaje sobre un digest
+    que no cuadra oculta la causa real y hace pensar en corrupción donde sólo hay un formato viejo.
+
+    De ``builder_version`` se valida la FORMA, nunca el valor. Es procedencia, no compatibilidad
+    (R21-P0): exigir que coincida con el builder instalado haría que subir a v3 volviera incargables
+    todos los bundles v2 ya publicados, que es justo lo contrario de un release restaurable.
 
     El cierre de claves va después: sin él, el manifest podía ganar campos que la identidad no cubre
     —empezando por los de activación pública— y seguir verificando.
     """
     equal(f"{MANIFEST_FILE}: identity_schema", manifest.get("identity_schema"), IDENTITY_SCHEMA)
-    equal(f"{MANIFEST_FILE}: builder_version", manifest.get("builder_version"), BUILDER_VERSION)
+    check_builder_version(manifest.get("builder_version"), MANIFEST_FILE)
     equal(f"{MANIFEST_FILE}: claves", sorted(manifest), sorted(MANIFEST_KEYS))
     check_no_activation(manifest, MANIFEST_FILE)
 
 
 def check_identity(manifest: Mapping[str, Any], digests: Mapping[str, str]) -> tuple[str, str]:
-    """El ``release_id`` se RECALCULA desde el payload de identidad: no se cree el declarado."""
+    """El ``release_id`` se RECALCULA desde el payload de identidad: no se cree el declarado.
+
+    Se recompone con el ``builder_version`` que DECLARA el bundle, no con el instalado: así un
+    release producido por otro builder sigue siendo verificable, y alterar ese campo sin re-sellar
+    sigue moviendo el ``release_id`` y haciéndolo fallar (R21-P0).
+    """
     cadena = {
         text_of(k, f"{MANIFEST_FILE}: chain"): text_of(v, f"{MANIFEST_FILE}: chain[{k!r}]")
         for k, v in mapping_of(manifest.get("chain"), f"{MANIFEST_FILE}: chain").items()
@@ -124,6 +136,7 @@ def check_identity(manifest: Mapping[str, Any], digests: Mapping[str, str]) -> t
         disease_id=text_of(manifest.get("disease_id"), f"{MANIFEST_FILE}: disease_id"),
         chain=cadena,
         payloads=digests,
+        builder_version=check_builder_version(manifest.get("builder_version"), MANIFEST_FILE),
     )
     release_id, identity_digest = release_id_for(identidad)
     equal(f"{MANIFEST_FILE}: release_id", manifest.get("release_id"), release_id)

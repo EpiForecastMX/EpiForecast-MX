@@ -106,7 +106,12 @@ def build_manifest(
 
     cadena = chain_of(verified, sources)
     release_id, identity_digest = release_id_for(
-        identity_payload(disease_id=verified.disease_id, chain=cadena, payloads=digests)
+        identity_payload(
+            disease_id=verified.disease_id,
+            chain=cadena,
+            payloads=digests,
+            builder_version=BUILDER_VERSION,  # explícito: quien CONSTRUYE sella su procedencia
+        )
     )
     esquemas = {e.bundle_path: e.schema for e in entries}
     esquemas[RUNTIME_CONFIG_PATH] = RUNTIME_CONFIG_SCHEMA

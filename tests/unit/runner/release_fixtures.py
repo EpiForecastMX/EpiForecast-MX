@@ -122,10 +122,13 @@ def resellar(root: Path) -> None:
         datos = path.read_bytes()
         payloads.append({**registro, "sha256": sha256_bytes(datos), "bytes": len(datos)})
     manifest["payloads"] = sorted(payloads, key=lambda r: r["path"])
+    # El re-sellado usa el builder que DECLARA el manifest, no el instalado: así un fixture de
+    # otro productor se puede re-sellar de forma coherente (C7.2-A.2.1).
     identidad = identity_payload(
         disease_id=manifest["disease_id"],
         chain=manifest["chain"],
         payloads={r["path"]: r["sha256"] for r in manifest["payloads"]},
+        builder_version=manifest["builder_version"],
     )
     manifest["release_id"], manifest["identity_digest"] = release_id_for(identidad)
     escribir_manifest(root, manifest)
@@ -144,6 +147,15 @@ def degradar_a_v1(root: Path, *, claves: tuple[str, ...] = ("schema", "identity_
         manifest[clave] = SCHEMAS_V1[clave]
     escribir_manifest(root, manifest)
     resellar_checksums(root)
+
+
+def reconstruir_con_builder(root: Path, builder_version: str) -> str:
+    """Fixture de OTRO productor bajo el mismo schema v2: re-sella identidad y sumas. → release_id."""
+    manifest = leer_manifest(root)
+    manifest["builder_version"] = builder_version
+    escribir_manifest(root, manifest)
+    resellar(root)
+    return str(leer_manifest(root)["release_id"])
 
 
 def un_estado(root: Path) -> Path:

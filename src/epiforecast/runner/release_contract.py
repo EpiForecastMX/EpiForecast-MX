@@ -31,8 +31,11 @@ from epiforecast.runner.artifact_identity import (
 RELEASE_SCHEMA = "release_manifest.v2"
 IDENTITY_SCHEMA = "identity_payload.v2"
 RUNTIME_CONFIG_SCHEMA = "runtime_config.v1"
-# C7.2-A.1: v2 saca la metadata de activación de la identidad. Va DENTRO del payload de identidad,
-# así que un bundle construido con v1 y otro con v2 nunca comparten `release_id`.
+# Versión del builder que produce los bundles NUEVOS. Es PROCEDENCIA, no compatibilidad: va sellada
+# dentro del payload de identidad —alterarla mueve el `release_id`— pero NO decide si un bundle se
+# puede cargar. Eso lo deciden los schemas (C7.2-A.2.1/R21-P0): si el productor gobernara la
+# compatibilidad, subir el builder a v3 por una corrección interna dejaría de cargar bundles v2
+# históricos cuyo schema, inventario, modelos y forecast siguen siendo perfectamente válidos.
 BUILDER_VERSION = "runner_release_builder.v2"
 
 MANIFEST_FILE = "release_manifest.json"
@@ -44,6 +47,9 @@ SELF_DESCRIBING: tuple[str, str] = (MANIFEST_FILE, CHECKSUMS_FILE)
 
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _SEPARATOR = "  "  # coreutils: digest + dos espacios + ruta
+# ``<nombre>.v<N>``: el productor se identifica con un formato versionado estable, para que
+# "otro builder" siga siendo un dato legible y no una cadena arbitraria.
+_BUILDER_VERSION = re.compile(r"^[a-z][a-z0-9_]*\.v[1-9][0-9]*$")
 
 # Claves EXACTAS del payload de identidad. Cerrado a propósito: nada del entorno puede colarse, y
 # tampoco nada de POLÍTICA PÚBLICA (canales, galería, lifecycle, activado). Ver ACTIVATION_KEYS.
@@ -126,6 +132,20 @@ def check_digest(raw: object, label: str) -> str:
     return digest
 
 
+def check_builder_version(raw: object, label: str) -> str:
+    """Procedencia del productor: string no vacío con formato ``<nombre>.v<N>``.
+
+    Se valida la FORMA, nunca el valor: comparar contra el builder instalado convertiría al
+    productor en gate de compatibilidad y volvería incargables bundles históricos válidos (R21-P0).
+    """
+    version = text_of(raw, f"{label}: builder_version")
+    require(
+        _BUILDER_VERSION.match(version),
+        f"{label}: builder_version {version!r} no tiene el formato '<nombre>.v<N>'",
+    )
+    return version
+
+
 def _payload_inventory(raw: object, label: str) -> dict[str, str]:
     """Inventario ``ruta -> sha256`` validado y ordenado; el manifest y los checksums NO caben."""
     if not isinstance(raw, Mapping):
@@ -144,7 +164,11 @@ def _payload_inventory(raw: object, label: str) -> dict[str, str]:
 
 
 def identity_payload(
-    *, disease_id: str, chain: Mapping[str, str], payloads: Mapping[str, str]
+    *,
+    disease_id: str,
+    chain: Mapping[str, str],
+    payloads: Mapping[str, str],
+    builder_version: str = BUILDER_VERSION,
 ) -> dict[str, Any]:
     """``identity_payload.v2``: lo ÚNICO de lo que puede depender el ``release_id``.
 
@@ -155,12 +179,17 @@ def identity_payload(
     Lo que tampoco entra —y ésa es la corrección de C7.2-A.1— es la POLÍTICA DE PUBLICACIÓN. Los
     modelos de un release no cambian porque se encienda un canal, así que encender un canal no puede
     cambiar su identidad ni obligar a reconstruirlo.
+
+    ``builder_version`` es procedencia SELLADA: entra al payload —alterarlo mueve el ``release_id``—
+    pero se recibe explícito. El default sirve para CONSTRUIR; al verificar, el llamador pasa el que
+    el bundle declara, para poder recomputar la identidad de un release producido por otro builder
+    (R21-P0). El schema, y sólo el schema, gobierna la compatibilidad.
     """
     who = "identity_payload"
     return {
         "schema": IDENTITY_SCHEMA,
         "release_schema": RELEASE_SCHEMA,
-        "builder_version": BUILDER_VERSION,
+        "builder_version": check_builder_version(builder_version, who),
         "disease_id": text_of(disease_id, f"{who}: disease_id"),
         "chain": {
             text_of(k, f"{who}: chain"): text_of(v, f"{who}: chain[{k!r}]")

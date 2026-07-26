@@ -1,17 +1,17 @@
 # C7 — Plan operativo de publicación de Obesidad
 
-> **Estado autoritativo (2026-07-25): C7.2-A y C7.2-A.1 CERRADAS** en `2bed74ee` y
-> `fb3bcdca`. El remoto continúa en `0dbd0f01`; la rama local está `ahead 2`. El builder
-> activación-agnóstico produjo dos bundles temporales byte-idénticos bajo roots y locales
-> distintos, reprodujo 3,328 bases y 5,772 productos con diferencia exacta `0.0`, y no persistió
-> ningún bundle. No hubo DVC, push, deploy ni publicación.
+> **Estado autoritativo (2026-07-25): C7.2-A, A.1 y A.2 CERRADAS** en `2bed74ee`,
+> `fb3bcdca` y `b809599d`. El remoto continúa en `0dbd0f01`; la rama local está `ahead 3`.
+> `identity_payload.v2` y `release_manifest.v2` quedaron implementados; dos bundles temporales
+> byte-idénticos reprodujeron 3,328 bases y 5,772 productos con diferencia exacta `0.0`. No se
+> persistió ningún bundle y no hubo DVC, push, deploy ni publicación.
 >
-> **Orden vigente:** ejecutar **C7.2-A.2** antes de C7.2-B. La remoción de `activation` cambió de
-> forma incompatible tanto el payload de identidad como el manifest; por ello deben versionarse
-> como `identity_payload.v2` y `release_manifest.v2`. `runner_release_builder.v2` identifica la
-> implementación, pero no sustituye el schema. C7.2-B permanece bloqueada hasta que A.2 demuestre
-> rechazo explícito de v1, determinismo entre locales y reproducción exacta. La Ronda 19 contiene
-> las órdenes autoritativas.
+> **Orden vigente:** ejecutar **C7.2-A.2.1** antes del push y de C7.2-B. La auditoría independiente
+> confirmó los schemas v2, pero encontró que el verifier trata `builder_version` como requisito de
+> compatibilidad exacto aunque el propio contrato lo define sólo como identidad del productor.
+> Eso rompería la restauración de bundles v2 al evolucionar el builder sin cambiar el schema. A.2.1
+> debe conservar `builder_version` sellado en la identidad, pero usar únicamente los schemas para
+> decidir compatibilidad. La Ronda 21 contiene las órdenes autoritativas.
 > Obesidad continúa `trained`, NO-GO e invisible para `published_only`.
 >
 > **Alcance:** publicar únicamente Obesidad E66. Anorexia F50 permanece
@@ -58,7 +58,7 @@ Estado local al redactar:
 
 | componente | estado |
 | --- | --- |
-| Backend | `feat/registry-padecimientos-obesidad` @ `fb3bcdca`; local `ahead 2` |
+| Backend | `feat/registry-padecimientos-obesidad` @ `b809599d`; local `ahead 3` |
 | Remoto backend | `origin/feat/registry-padecimientos-obesidad` @ `0dbd0f01` |
 | Frontend | `main` @ `179bbe36`, sin cambios trackeados |
 | Obesidad | `trained`, NO-GO, invisible para `published_only` |
@@ -69,6 +69,7 @@ Estado local al redactar:
 | C7.1 | registry por backend + validación de identidad; publicado en la rama remota hasta `0dbd0f01` |
 | C7.2-A | builder temporal determinista en `2bed74ee`; local, sin DVC |
 | C7.2-A.1 | activación fuera del bundle en `fb3bcdca`; local, sin DVC |
+| C7.2-A.2 | schemas v2 en `b809599d`; local, sin DVC; pendiente desacoplar compatibilidad del builder |
 
 Cadena estadística canónica:
 
@@ -414,10 +415,12 @@ Crear un comando genérico de promoción desde runs sellados. Debe:
   temporales; no escribió la ruta final ni tocó DVC.
 - **C7.2-A.1 — desacoplar activación: COMPLETADA** en `fb3bcdca`. El bundle ya no depende de
   canales, galería o lifecycle.
-- **C7.2-A.2 — versionar schemas: SIGUIENTE.** Debe cerrar `identity_payload.v2` y
-  `release_manifest.v2`, rechazar v1 explícitamente y repetir el gate temporal. No autoriza
-  `dvc add`, cambios de punteros, `dvc push` ni escritura en la ruta final.
-- **C7.2-B — materialización y puntero local:** solo después del PASS de C7.2-A.2 y con otro GO.
+- **C7.2-A.2 — versionar schemas: COMPLETADA** en `b809599d`. Cerró
+  `identity_payload.v2` y `release_manifest.v2`, rechazó v1 explícitamente y repitió el gate.
+- **C7.2-A.2.1 — compatibilidad por schema: SIGUIENTE.** Debe impedir que el verifier confunda
+  `builder_version` —procedencia sellada— con el criterio de compatibilidad del formato. No
+  autoriza `dvc add`, cambios de punteros, `dvc push` ni escritura en la ruta final.
+- **C7.2-B — materialización y puntero local:** solo después del PASS de C7.2-A.2.1 y con otro GO.
   Autoriza promover atómicamente el bundle verificado a su ruta final y crear el target DVC
   dedicado. No autoriza `dvc push`.
 - **C7.2-C — subida remota:** `dvc push` requiere una tercera autorización posterior al gate y a
@@ -427,7 +430,8 @@ Crear un comando genérico de promoción desde runs sellados. Debe:
 
 - ejecutado: `C7.2-A deterministic runner release bundle` (`2bed74ee`);
 - ejecutado: `C7.2-A.1 decouple public activation from the release bundle` (`fb3bcdca`);
-- siguiente: `C7.2-A.2 version runner release schemas before persistence`;
+- ejecutado: `C7.2-A.2 version runner release schemas before persistence` (`b809599d`);
+- siguiente: `C7.2-A.2.1 decouple builder provenance from schema compatibility`;
 - futuro y con GO separado: `C7.2-B materialize runner release + dedicated DVC target`.
 
 ---
@@ -4745,6 +4749,289 @@ Output   0 bundles persistidos · artifacts/releases/ sigue sin existir
 Release  NO-GO · Obesidad = trained · runner_runs · F50 = configured · NO-GO
 Deuda    SIGSEGV preexistente = bloqueo pre-merge/pre-publicación
 Sigue    R19.4 (auditar el rango 2bed74ee..HEAD y pedir autorización de push)
+```
+
+_Respuesta:_ no hacer push todavía. El versionado de schemas queda aceptado, pero la comprobación
+exacta de `builder_version` mezcla procedencia y compatibilidad. Ejecutar primero C7.2-A.2.1 según
+la Ronda 21.
+
+---
+
+### Ronda 21 — Auditoría independiente de C7.2-A.2 y orden corregida — 2026-07-25
+
+#### Veredicto
+
+**PASS del versionado v2; FAIL mínimo de compatibilidad futura. No hacer push ni iniciar C7.2-B.**
+
+La auditoría confirmó:
+
+- commit `b809599d` separado sobre `fb3bcdca`;
+- sólo nueve rutas: ocho módulos/tests del bundle y un comentario en `registry.py`;
+- `identity_payload.v2`, `release_manifest.v2` y `runtime_config.v1` declarados correctamente;
+- rechazo explícito de v1 antes de inventario, checksum e identidad;
+- conjuntos de claves cerrados y activación ausente;
+- cero bundles persistidos y cero cambios DVC;
+- frontend trackeado limpio en `179bbe36`;
+- Obesidad continúa `trained`, NO-GO; F50 continúa `configured`, NO-GO.
+
+Validación independiente ejecutada:
+
+```text
+187 pruebas unitarias focales del release       PASS
+8 pruebas de integración de reproducción        PASS
+doctor Obesidad --artifacts                     rc=0
+doctor --artifacts                              rc=0
+git diff --check fb3bcdca..b809599d             PASS
+```
+
+Los 187 unitarios + 8 de integración reproducen las 195 pruebas focales declaradas por A.2. Los
+resultados completos de `make test-fast`, las otras 53 pruebas de integración, lint y mypy quedan
+aceptados como evidencia del commit; esta auditoría repitió de forma independiente el perímetro
+afectado.
+
+#### Hallazgo R21-P0 — `builder_version` está actuando como schema
+
+El contrato afirma correctamente:
+
+```text
+builder_version  = identidad/procedencia del productor
+schema           = forma y compatibilidad del documento
+```
+
+Pero el verifier implementa:
+
+```python
+equal(manifest["builder_version"], BUILDER_VERSION)
+```
+
+y `check_identity` reconstruye el payload con el `BUILDER_VERSION` instalado, no con el valor
+sellado en el manifest. Consecuencia:
+
+1. hoy se persiste un bundle válido `release_manifest.v2`, producido por builder v2;
+2. mañana el builder sube a v3 por una corrección interna que no cambia el schema;
+3. el loader v3 rechaza el bundle histórico v2 únicamente porque su productor fue v2;
+4. el bundle deja de ser restaurable aunque su schema, inventario, identidad, modelos y forecast
+   sigan siendo válidos.
+
+Esto contradice el objetivo de un release inmutable y restaurable. También contradice la razón
+central de A.2: si el schema gobierna la compatibilidad, la versión del productor no puede volver a
+gobernarla por otra puerta.
+
+No se debe eliminar `builder_version`. Debe seguir dentro del manifest y de la identidad, de modo
+que alterarlo mueva el `release_id` o rompa el sello. Lo que se elimina es la comparación contra la
+constante del código lector.
+
+#### Orden R21.1 — C7.2-A.2.1: separar procedencia de compatibilidad
+
+En un commit local separado:
+
+1. mantener `BUILDER_VERSION=runner_release_builder.v2` para construir bundles nuevos;
+2. extender `identity_payload` para aceptar un `builder_version` explícito, con el valor actual
+   como default únicamente para el builder;
+3. validar `builder_version` como string no vacío y con formato versionado estable;
+4. al verificar un bundle, leer el `builder_version` declarado y usar **ese mismo valor** para
+   reconstruir su payload de identidad;
+5. retirar la igualdad contra el `BUILDER_VERSION` instalado como gate de compatibilidad;
+6. conservar igualdad exacta de `schema=release_manifest.v2` e
+   `identity_schema=identity_payload.v2`;
+7. conservar `builder_version` dentro del payload canónico y del `identity_digest`;
+8. no añadir compatibilidad con schemas v1.
+
+La regla resultante debe ser:
+
+```text
+schema v2 soportado + identidad íntegra              → puede cargar
+schema distinto                                      → rechaza por schema
+builder_version alterado sin re-sellar              → rechaza por identidad/sello
+builder distinto, declarado y re-sellado bajo v2    → acepta si todo el contrato v2 es válido
+```
+
+#### Orden R21.2 — Tests obligatorios
+
+Añadir pruebas que demuestren las cuatro fronteras:
+
+1. bundle canónico builder v2 → PASS;
+2. `release_manifest.v1` o `identity_payload.v1` → FAIL explícito por schema;
+3. cambiar sólo `builder_version`, sin reconstruir identidad/checksums → FAIL por integridad;
+4. construir o re-sellar coherentemente un fixture `release_manifest.v2` con
+   `runner_release_builder.v3` → PASS y `release_id` distinto;
+5. builder vacío, no string o con formato inválido → `ArtifactValidationError`;
+6. el builder normal sigue emitiendo `runner_release_builder.v2`;
+7. el candidato oficial conserva el mismo `release_id` `obesidad_release_2517e7858901`, porque su
+   contenido y su productor no cambiaron.
+
+No aceptar una prueba que monkeypatchee una constante sin pasar por el verifier real.
+
+#### Orden R21.3 — Gate
+
+Repetir:
+
+```text
+pytest de las cinco suites unitarias del release
+pytest tests/integration/test_release_reproduction.py
+make test-fast
+integración en las dos tandas documentadas
+make lint
+make typecheck
+doctor Obesidad --artifacts
+doctor --artifacts
+git diff --check
+```
+
+Además:
+
+1. reconstruir A/B en roots y locales distintos;
+2. exigir `obesidad_release_2517e7858901` en ambos;
+3. exigir `diff -r` vacío, 150 archivos y reproducción exacta `0.0`;
+4. revalidar runs canónicos, política, agregados legacy, ausencia de `artifacts/releases/`, DVC,
+   config y frontend;
+5. eliminar temporales.
+
+#### Orden R21.4 — Commit y STOP
+
+Si todo queda verde:
+
+```text
+C7.2-A.2.1 decouple builder provenance from schema compatibility
+```
+
+Después:
+
+1. comprobar `ahead 4`;
+2. entregar diff, nuevo conteo de pruebas y evidencia A/B;
+3. detenerse sin push;
+4. auditar el rango completo `0dbd0f01..HEAD`;
+5. pedir autorización explícita para subir los cuatro commits locales como checkpoint.
+
+Prohibido:
+
+- `git push`;
+- escribir en `artifacts/releases/`;
+- crear o modificar `.dvc`;
+- `dvc add` o `dvc push`;
+- cambiar `artifact_source` a `runner_release`;
+- tocar lifecycle, canales, galería, frontend o superficies públicas;
+- iniciar C7.2-B.
+
+#### Después del PASS
+
+El orden posterior permanece:
+
+1. revisión y, con autorización explícita, push de A, A.1, A.2 y A.2.1;
+2. otro GO para C7.2-B: sede final, doctor `runner_release`, materialización atómica y target DVC
+   local;
+3. otro GO para C7.2-C: `dvc push` y restauración en entorno limpio;
+4. C7.3 puentes candidate;
+5. C7.4 cuatro semanas prospectivas;
+6. C7.5 puntero público y canales;
+7. resolver/aislar el SIGSEGV antes de merge o publicación;
+8. activación externa sólo al final.
+
+#### Próxima orden exacta
+
+> **GO C7.2-A.2.1. Conserva `builder_version` como procedencia sellada, usa sólo los schemas para
+> compatibilidad, prueba un builder v3 coherente bajo schema v2, reconstruye A/B con el mismo
+> release_id oficial y detente sin push, DVC ni publicación.**
+
+---
+
+### Ronda 22 — C7.2-A.2.1: procedencia ≠ compatibilidad — 2026-07-25
+
+R21-P0 aceptado sin matices, y con una nota que me toca: **la comprobación defectuosa la añadí yo en
+A.2**, por mi cuenta y fuera de la orden. La declaré en la Ronda 20 ("si prefieres que un builder
+distinto no sea motivo de rechazo explícito, se quita en una línea"), pero declararla no la hacía
+correcta. El defecto es exactamente el que describe la auditoría: yo estaba corrigiendo un fallo
+*tardío* y, al hacerlo, convertí al productor en gate de compatibilidad —la misma puerta que A.2
+cerraba por el lado del schema, reabierta por el otro lado—.
+
+Escenario que rompía: builder v3 por una corrección interna que no toca el schema → el loader v3
+rechaza un bundle v2 histórico **por quién lo hizo**, aunque su schema, inventario, identidad,
+modelos y forecast sigan intactos. Eso no es un release restaurable.
+
+Commit separado sobre `b809599d`.
+
+#### R21.1 — El cambio · **PASS**
+
+```python
+identity_payload(..., builder_version=BUILDER_VERSION)   # default SÓLO para construir
+check_builder_version(raw, label)                        # valida la FORMA: <nombre>.v<N>
+check_identity(...)  →  builder_version=<el que DECLARA el bundle>
+```
+
+`BUILDER_VERSION` sigue en `runner_release_builder.v2`, sigue dentro del payload canónico y del
+`identity_digest`. Lo que desaparece es la igualdad contra la constante del lector.
+
+La regla queda:
+
+| situación | resultado |
+| --- | --- |
+| schema v2 + identidad íntegra | carga |
+| schema distinto | rechaza **por schema** |
+| `builder_version` alterado sin re-sellar | rechaza **por integridad** |
+| otro builder, declarado y re-sellado bajo v2 | **carga**, con otro `release_id` |
+| builder vacío, no string o mal formado | `ArtifactValidationError` |
+
+#### R21.2 — Las cuatro fronteras, verificadas una a una
+
+```text
+1) canónico builder v2            → obesidad_release_2517e7858901
+2) release_manifest.v1            → schema: 'release_manifest.v1' != 'release_manifest.v2'
+   identity_payload.v1            → identity_schema: 'identity_payload.v1' != '…v2'
+3) builder alterado sin re-sellar → SHA256SUMS.txt: digest de release_manifest.json: …
+4) builder v3 coherente bajo v2   → CARGA · release_id obesidad_release_1bfae4fa39c0 (≠ oficial)
+                                    reproduce 3,328 / 5,772 · máx |Δ| = 0.0
+5) builder ''                     → builder_version: se esperaba un string no vacío, no ''
+   builder 2 (int)                → builder_version: se esperaba un string no vacío, no 2
+   builder 'no-es-una-version'    → builder_version … no tiene el formato '<nombre>.v<N>'
+6) el builder instalado sigue emitiendo runner_release_builder.v2
+7) el candidato oficial conserva obesidad_release_2517e7858901
+```
+
+El caso 4 pasa por `verify_bundle` real y por la reproducción completa: no hay monkeypatch de
+constantes en ninguna de las pruebas nuevas. El re-sellado de fixtures usa ahora el builder que
+**declara** el manifest, no el instalado; si siguiera usando el instalado, el fixture v3 se
+"arreglaría" solo y el caso 4 sería un falso verde.
+
+#### R21.3 — Gate · **PASS**
+
+```text
+build A: root nuevo · LC_ALL=C            → obesidad_release_2517e7858901
+build B: root nuevo · LC_ALL=en_US.UTF-8  → obesidad_release_2517e7858901
+diff -r vacío · 150 archivos · reproducción desde AMBOS: 3,328 / 5,772 · máx |Δ| = 0.0
+```
+
+El `release_id` oficial **no se movió**, como exige R21.2.7: ni el contenido ni el productor
+cambiaron, y `builder_version` sigue en el payload con el mismo valor.
+
+| comprobación | resultado |
+| --- | --- |
+| `ruff format --check` + `ruff check` | 275 archivos OK · All checks passed |
+| `mypy src/epiforecast/` | 153 archivos, sin incidencias |
+| cinco suites unitarias del release | **192 passed** |
+| `test_release_reproduction.py` | **8 passed** |
+| fast | **1,801 passed** (eran 1,796; +5) |
+| integración | **61 passed** (59 + 2, dos tandas) |
+| doctores / `git diff --check` | rc=0 / rc=0 · PASS |
+
+Preservación sin una sola diferencia frente al baseline: dataset `2ef4ee1236aa94c0`, aceptación
+`6bbc7f84ea5ec5bb`, refit `972f7519f885c0d1`, forecast `d89d92ee7e73b848`, política
+`dd6d4a0274a6f8bb`, los cuatro agregados legacy, `artifacts/releases/` ausente, `.dvc` 0, `config/`
+0, frontend `main @ 179bbe36` limpio. Temporales eliminados.
+
+#### Alcance del diff
+
+Cinco rutas de código y tests, más este plan. `registry.py` **no** se toca en A.2.1.
+
+#### Estado
+
+```text
+C7.2-A.2.1 PASS · commit local separado · ahead 4 · SIN push, DVC ni publicación
+Contrato  schema = compatibilidad · builder_version = procedencia sellada
+Tests     200 del release (192 fast + 8 integración) · 45 mutaciones de rechazo
+Output    0 bundles persistidos · artifacts/releases/ sigue sin existir
+Release   NO-GO · Obesidad = trained · runner_runs · F50 = configured · NO-GO
+Deuda     SIGSEGV preexistente = bloqueo pre-merge/pre-publicación
+Sigue     R21.4: auditoría del rango 0dbd0f01..HEAD y autorización explícita de push
 ```
 
 _Respuesta:_
