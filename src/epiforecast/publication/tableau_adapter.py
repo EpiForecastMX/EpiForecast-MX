@@ -297,12 +297,12 @@ class TableSink(Protocol):
     def drop_table(self, name: str) -> None: ...
 
 
-def _canonical_frame(frame: pd.DataFrame) -> str:
+def canonical_frame(frame: pd.DataFrame) -> str:
     """Serialización canónica de una tabla: mismo contenido → mismo texto, para comparar de verdad."""
     return str(frame.astype(str).to_csv(index=False))
 
 
-def _verify_readback(sink: TableSink, nombre: str, esperado: pd.DataFrame) -> None:
+def verify_readback(sink: TableSink, nombre: str, esperado: pd.DataFrame) -> None:
     """Relee lo escrito y compara TODO el contenido, no el número de filas.
 
     Comparar sólo `len` dejaba pasar un sink que alteraba un valor y conservaba el conteo: la
@@ -315,8 +315,8 @@ def _verify_readback(sink: TableSink, nombre: str, esperado: pd.DataFrame) -> No
     equal(f"{nombre}: filas tras releer", len(leido), len(esperado))
     equal(
         f"{nombre}: contenido tras releer",
-        sha256_bytes(_canonical_frame(leido).encode("utf-8")),
-        sha256_bytes(_canonical_frame(esperado).encode("utf-8")),
+        sha256_bytes(canonical_frame(leido).encode("utf-8")),
+        sha256_bytes(canonical_frame(esperado).encode("utf-8")),
     )
 
 
@@ -404,7 +404,7 @@ def _restaurar(
             sink.drop_table(nombre)
     for nombre, frame in antes.items():
         actual = sink.read_table(nombre) if nombre in set(sink.list_tables()) else None
-        if actual is None or _canonical_frame(actual) != _canonical_frame(frame):
+        if actual is None or canonical_frame(actual) != canonical_frame(frame):
             sink.write_table(nombre, frame)
 
 
@@ -415,7 +415,7 @@ def _verificar_restauracion(
     presentes = sorted(n for n in gestionadas if n in set(sink.list_tables()))
     equal("restauración: tablas del namespace", presentes, sorted(antes))
     for nombre, frame in antes.items():
-        _verify_readback(sink, nombre, frame)
+        verify_readback(sink, nombre, frame)
 
 
 def _compensar(
@@ -433,6 +433,42 @@ def _compensar(
         raise PromotionRecoveryError(
             f"{error} · restauración: {fallo}", _inventario(sink, nombres, antes)
         ) from error
+
+
+PROMOTION_PLAN_SCHEMA = "tableau_runner_promotion.v1"
+
+
+def promotion_plan(sink: TableSink, tables: RunnerTables) -> dict[str, Any]:
+    """El plan EXACTO de mutaciones que `promote` ejecutaría sobre el sink tal como está ahora.
+
+    Existe para poder enseñarlo antes de aplicarlo. Que no se desvíe del protocolo real no se
+    promete en un comentario: una prueba compara este plan con las operaciones que `MemorySink`
+    registra durante una promoción de verdad.
+
+    Sólo lee.
+    """
+    nombres = sorted(tables.as_mapping())
+    existentes = set(sink.list_tables())
+    pasos: list[str] = []
+    for nombre in nombres:
+        pasos.append(f"write:{nombre}{SUFFIX_NEXT}")
+    for nombre in nombres:
+        if nombre in existentes:
+            pasos.append(f"rename:{nombre}->{nombre}{SUFFIX_BACKUP}")
+        pasos.append(f"rename:{nombre}{SUFFIX_NEXT}->{nombre}")
+    for nombre in nombres:
+        if nombre not in existentes:
+            continue
+        if f"{nombre}{SUFFIX_PREVIOUS}" in existentes:
+            pasos.append(f"drop:{nombre}{SUFFIX_PREVIOUS}")
+        pasos.append(f"rename:{nombre}{SUFFIX_BACKUP}->{nombre}{SUFFIX_PREVIOUS}")
+    return {
+        "schema": PROMOTION_PLAN_SCHEMA,
+        "namespace": nombres,
+        "steps": pasos,
+        "rows": {n: int(len(f)) for n, f in sorted(tables.as_mapping().items())},
+        "digests": tables.digests(),
+    }
 
 
 def promote(sink: TableSink, tables: RunnerTables) -> dict[str, Any]:
@@ -472,7 +508,7 @@ def promote(sink: TableSink, tables: RunnerTables) -> dict[str, Any]:
             )
             objetivos[nombre] = objetivo
             sink.write_table(f"{nombre}{SUFFIX_NEXT}", objetivo)
-            _verify_readback(sink, f"{nombre}{SUFFIX_NEXT}", objetivo)
+            verify_readback(sink, f"{nombre}{SUFFIX_NEXT}", objetivo)
 
         # ── 3-4. respaldo y activación ──
         for nombre in nombres:
@@ -482,7 +518,7 @@ def promote(sink: TableSink, tables: RunnerTables) -> dict[str, Any]:
 
         # ── 5. verificación de las dos activas ──
         for nombre in nombres:
-            _verify_readback(sink, nombre, objetivos[nombre])
+            verify_readback(sink, nombre, objetivos[nombre])
 
         # ── 6. consolidación del punto de retorno, dentro del protocolo compensable ──
         for nombre in nombres:
@@ -503,7 +539,7 @@ def promote(sink: TableSink, tables: RunnerTables) -> dict[str, Any]:
         "promoted": list(nombres),
         "previous": [f"{n}{SUFFIX_PREVIOUS}" for n in nombres if n in antes],
         "digests": {
-            nombre: sha256_bytes(_canonical_frame(objetivos[nombre]).encode("utf-8"))
+            nombre: sha256_bytes(canonical_frame(objetivos[nombre]).encode("utf-8"))
             for nombre in nombres
         },
     }
@@ -538,7 +574,7 @@ def rollback(sink: TableSink, nombres: Sequence[str] = TABLES) -> list[str]:
                 sink.rename_table(nombre, f"{nombre}{SUFFIX_BACKUP}")
             sink.rename_table(f"{nombre}{SUFFIX_PREVIOUS}", nombre)
         for nombre in restaurables:
-            _verify_readback(sink, nombre, antes[f"{nombre}{SUFFIX_PREVIOUS}"])
+            verify_readback(sink, nombre, antes[f"{nombre}{SUFFIX_PREVIOUS}"])
         for nombre in restaurables:
             respaldo = f"{nombre}{SUFFIX_BACKUP}"
             if respaldo in set(sink.list_tables()):
