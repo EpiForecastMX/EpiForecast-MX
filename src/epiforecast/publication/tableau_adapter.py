@@ -21,6 +21,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+import io
 import json
 from pathlib import Path
 from typing import Any, Protocol
@@ -31,6 +32,8 @@ from epiforecast.runner.artifact_identity import IO_ERRORS, ArtifactValidationEr
 from epiforecast.runner.release_contract import canonical_json, sha256_bytes
 
 ADAPTER_SCHEMA = "tableau_runner_tables.v1"
+# Vista de conveniencia, NO autoritativa: su contenedor ZIP lleva metadata temporal.
+XLSX_VIEW = "runner_tables.xlsx"
 SHARD_SCHEMA = "publication_shard.v1"
 
 # Nombres RESERVADOS. El prefijo `runner_` es el namespace que separa estas tablas de las cinco
@@ -42,6 +45,7 @@ TABLES: tuple[str, ...] = (TABLE_FORECAST, TABLE_RELEASES)
 # Sufijos del protocolo transaccional del sink (A5).
 SUFFIX_NEXT = "__next"
 SUFFIX_PREVIOUS = "__previous"
+SUFFIX_BACKUP = "__backup"
 
 # Claves de identidad de una fila de release: el upsert es por aquí, nunca por posición.
 RELEASE_KEY: tuple[str, str] = ("disease_id", "release_id")
@@ -112,14 +116,41 @@ def _check_forecast(frame: pd.DataFrame, columnas: Sequence[str], filas: int) ->
         )
 
 
+def _check_sealed(root: Path, manifest: Mapping[str, Any], relativo: str) -> bytes:
+    """Bytes de un archivo del shard, VERIFICADOS contra el inventario que el propio shard sella.
+
+    Parsear primero y confiar después es el orden equivocado: un CSV alterado se convierte en un
+    DataFrame perfectamente válido, y el conteo de filas no lo delata (R96-P0-3).
+    """
+    files = manifest.get("files")
+    require(isinstance(files, dict), f"{SHARD_MANIFEST}: no trae el inventario `files`")
+    assert isinstance(files, dict)  # noqa: S101 — para mypy
+    declarado = files.get(relativo)
+    require(bool(declarado), f"{SHARD_MANIFEST}: no declara {relativo}")
+    path = root / relativo
+    require(path.is_file(), f"{relativo}: no existe en el shard")
+    datos = path.read_bytes()
+    equal(f"{relativo}: digest contra el inventario del shard", sha256_bytes(datos), declarado)
+    return datos
+
+
 def build_tables(shard_root: Path) -> RunnerTables:
     """Lee un shard compilado y produce las dos tablas del namespace ``runner_``."""
     root = Path(shard_root)
     manifest = _read_json(root / SHARD_MANIFEST, SHARD_MANIFEST)
     equal(f"{SHARD_MANIFEST}: schema", manifest.get("schema"), SHARD_SCHEMA)
-    schema = _read_json(root / SCHEMA_JSON, SCHEMA_JSON)
+    schema = json.loads(_check_sealed(root, manifest, SCHEMA_JSON).decode("utf-8"))
     equal(f"{SCHEMA_JSON}: schema", schema.get("schema"), SHARD_SCHEMA)
-    equal("schema.json contra el manifiesto", schema.get("release_id"), manifest.get("release_id"))
+    # Identidad cruzada completa, no sólo el release.
+    for clave in ("release_id", "disease_id", "lifecycle", "rows", "interval_method"):
+        equal(
+            f"{SCHEMA_JSON}: {clave} contra el manifiesto", schema.get(clave), manifest.get(clave)
+        )
+    equal(
+        f"{SCHEMA_JSON}: estado contra el manifiesto",
+        schema.get("publication_status"),
+        manifest.get("publication_status"),
+    )
 
     estado = manifest.get("publication_status")
     require(isinstance(estado, dict), "el shard no trae publication_status")
@@ -128,11 +159,10 @@ def build_tables(shard_root: Path) -> RunnerTables:
     require(bool(etiqueta), "el shard no trae publication_label")
     equal("etiqueta contra el estado", etiqueta, estado.get("label"))
 
-    csv = root / FORECAST_CSV
-    require(csv.is_file(), f"{FORECAST_CSV}: no existe")
+    datos = _check_sealed(root, manifest, FORECAST_CSV)
     try:
-        frame = pd.read_csv(csv, dtype=str, keep_default_na=False, na_values=[])
-    except IO_ERRORS as exc:
+        frame = pd.read_csv(io.BytesIO(datos), dtype=str, keep_default_na=False, na_values=[])
+    except (*IO_ERRORS, ValueError) as exc:
         raise TableauAdapterError(f"{FORECAST_CSV}: ilegible ({exc})") from exc
 
     columnas = [c["name"] for c in schema.get("columns", [])]
@@ -203,11 +233,15 @@ def upsert_releases(actual: pd.DataFrame | None, nuevas: pd.DataFrame) -> pd.Dat
     )
 
 
-def write_local(tables: RunnerTables, destino: Path) -> dict[str, str]:
-    """Serialización local determinista (CSV + XLSX) para inspección y round-trip.
+def write_local(tables: RunnerTables, destino: Path, *, xlsx: bool = True) -> dict[str, str]:
+    """Serialización local: **CSV autoritativo** + un XLSX de conveniencia.
 
-    No es una promoción: escribe donde se le diga, y el llamador es quien decide que sea un
-    temporal. → {ruta relativa: sha256}
+    El XLSX NO entra en los digests. Un `.xlsx` es un ZIP con metadata temporal del contenedor, así
+    que dos escrituras del mismo contenido dan SHA distintos: llamarlo determinista sería falso
+    (R96-P1-1). Se conserva como vista para abrir a mano, declarado como no autoritativo.
+
+    No es una promoción: escribe donde se le diga, y el llamador decide que sea un temporal.
+    → {ruta relativa: sha256} sólo de lo autoritativo
     """
     destino.mkdir(parents=True, exist_ok=True)
     registro: dict[str, str] = {}
@@ -215,11 +249,13 @@ def write_local(tables: RunnerTables, destino: Path) -> dict[str, str]:
         datos = frame.to_csv(index=False).encode("utf-8")
         (destino / f"{nombre}.csv").write_bytes(datos)
         registro[f"{nombre}.csv"] = sha256_bytes(datos)
-    libro = destino / "runner_tables.xlsx"
-    with pd.ExcelWriter(libro, engine="openpyxl") as writer:
-        for nombre, frame in sorted(tables.as_mapping().items()):
-            frame.to_excel(writer, sheet_name=nombre, index=False)
-    registro["runner_tables.xlsx"] = sha256_bytes(libro.read_bytes())
+    vistas: list[str] = []
+    if xlsx:
+        libro = destino / XLSX_VIEW
+        with pd.ExcelWriter(libro, engine="openpyxl") as writer:
+            for nombre, frame in sorted(tables.as_mapping().items()):
+                frame.to_excel(writer, sheet_name=nombre, index=False)
+        vistas.append(XLSX_VIEW)
     manifiesto = {
         "schema": ADAPTER_SCHEMA,
         "disease_id": tables.disease_id,
@@ -229,6 +265,8 @@ def write_local(tables: RunnerTables, destino: Path) -> dict[str, str]:
         },
         "digests": tables.digests(),
         "files": dict(sorted(registro.items())),
+        # Se declara para que nadie lo confunda con evidencia: existe, y no cuenta.
+        "non_authoritative_views": vistas,
     }
     (destino / "adapter_manifest.json").write_bytes(canonical_json(manifiesto))
     return registro
@@ -259,63 +297,179 @@ class TableSink(Protocol):
     def drop_table(self, name: str) -> None: ...
 
 
-def promote(sink: TableSink, tables: RunnerTables) -> dict[str, Any]:
-    """Promoción TRANSACCIONAL a las tablas del namespace. Simulable con un sink falso.
+def _canonical_frame(frame: pd.DataFrame) -> str:
+    """Serialización canónica de una tabla: mismo contenido → mismo texto, para comparar de verdad."""
+    return str(frame.astype(str).to_csv(index=False))
 
-    El orden importa y es el único que deja el destino recuperable:
 
-    1. escribir ``<tabla>__next`` completa —con el upsert ya aplicado sobre lo que hay activo—;
-    2. validar filas y digests de lo escrito;
-    3. mover la activa a ``<tabla>__previous`` y ``__next`` a activa;
-    4. si algo falla antes del paso 3, las tablas ACTIVAS no se tocan.
+def _verify_readback(sink: TableSink, nombre: str, esperado: pd.DataFrame) -> None:
+    """Relee lo escrito y compara TODO el contenido, no el número de filas.
 
-    El rollback es el swap inverso: `rollback()`.
+    Comparar sólo `len` dejaba pasar un sink que alteraba un valor y conservaba el conteo: la
+    promoción activaba el dato alterado y reportaba el digest del frame original (R96-P0-3).
     """
-    activas = set(sink.list_tables())
-    escritas: list[str] = []
+    leido = sink.read_table(nombre)
+    require(leido is not None, f"{nombre}: el sink no devolvió la tabla escrita")
+    assert leido is not None  # noqa: S101 — para mypy
+    equal(f"{nombre}: columnas tras releer", list(leido.columns), list(esperado.columns))
+    equal(f"{nombre}: filas tras releer", len(leido), len(esperado))
+    equal(
+        f"{nombre}: contenido tras releer",
+        sha256_bytes(_canonical_frame(leido).encode("utf-8")),
+        sha256_bytes(_canonical_frame(esperado).encode("utf-8")),
+    )
+
+
+class PromotionRecoveryError(TableauAdapterError):
+    """La promoción falló Y la compensación no pudo restaurar el estado previo.
+
+    No se disfraza de error normal: quien lo reciba tiene que recuperar a mano, y para eso lleva el
+    inventario de lo que quedó en el sink.
+    """
+
+    def __init__(self, mensaje: str, inventario: Mapping[str, Any]) -> None:
+        super().__init__(f"RECOVERY_REQUIRED: {mensaje}")
+        self.status = "RECOVERY_REQUIRED"
+        self.inventario = dict(inventario)
+
+
+def promote(sink: TableSink, tables: RunnerTables) -> dict[str, Any]:
+    """Promoción RECUPERABLE de las dos tablas del namespace.
+
+    Un sink de hojas de cálculo no ofrece transacciones multi-tabla, así que no se promete
+    atomicidad: se promete **recuperabilidad**. El protocolo es:
+
+    1. *preflight*: se fotografían activas, temporales y respaldos;
+    2. se escribe cada ``<tabla>__next`` y se **relee entera** para compararla;
+    3. se respalda cada activa en ``<tabla>__backup`` —sin tocar un ``__previous`` válido, que es
+       el punto de retorno del rollback anterior—;
+    4. se activan las dos;
+    5. se verifican las dos ya activas;
+    6. ante fallo en cualquier frontera —write, read, rename o drop— se compensa y se restaura
+       exactamente el estado previo. Si la compensación falla, se lanza `PromotionRecoveryError`
+       con el inventario.
+
+    Antes, un fallo en el rename de la segunda tabla dejaba una activa nueva y la otra AUSENTE
+    (R96-P0-2). Ahora, o quedan las dos viejas, o las dos nuevas.
+    """
+    nombres = sorted(tables.as_mapping())
+    antes = {n: sink.read_table(n) for n in sink.list_tables()}
+    creadas: list[str] = []
+
+    def compensar(activadas: Sequence[str]) -> None:
+        """Devuelve el sink al estado fotografiado en el preflight.
+
+        Se recorre el namespace COMPLETO, no sólo lo que llegó a activarse: si el fallo cae entre el
+        respaldo y la activación, esa tabla está viva en su ``__backup`` y hay que traerla de vuelta
+        aunque nunca figurara como activada (R96-P0-2).
+        """
+        for nombre in nombres:
+            existentes = set(sink.list_tables())
+            respaldo = f"{nombre}{SUFFIX_BACKUP}"
+            if respaldo in existentes:
+                if nombre in existentes:
+                    sink.drop_table(nombre)
+                sink.rename_table(respaldo, nombre)
+            elif nombre in activadas and nombre not in antes:
+                sink.drop_table(nombre)  # no existía antes: no debe quedar
+        for temporal in creadas:
+            if temporal in set(sink.list_tables()):
+                sink.drop_table(temporal)
+
+    def inventario() -> dict[str, Any]:
+        return {
+            "tables": sorted(sink.list_tables()),
+            "expected_before": sorted(antes),
+            "namespace": nombres,
+        }
+
+    # ── 2. temporales verificadas ──
+    objetivos: dict[str, pd.DataFrame] = {}
     try:
-        for nombre, frame in sorted(tables.as_mapping().items()):
-            objetivo = frame
-            if nombre == TABLE_RELEASES:
-                objetivo = upsert_releases(sink.read_table(nombre), frame)
-            sink.write_table(f"{nombre}{SUFFIX_NEXT}", objetivo)
-            escritas.append(f"{nombre}{SUFFIX_NEXT}")
-            leido = sink.read_table(f"{nombre}{SUFFIX_NEXT}")
-            require(
-                leido is not None, f"{nombre}{SUFFIX_NEXT}: el sink no devolvió la tabla escrita"
+        for nombre in nombres:
+            frame = tables.as_mapping()[nombre]
+            objetivo = (
+                upsert_releases(sink.read_table(nombre), frame)
+                if nombre == TABLE_RELEASES
+                else frame
             )
-            assert leido is not None  # noqa: S101 — para mypy
-            equal(f"{nombre}{SUFFIX_NEXT}: filas", len(leido), len(objetivo))
+            objetivos[nombre] = objetivo
+            temporal = f"{nombre}{SUFFIX_NEXT}"
+            sink.write_table(temporal, objetivo)
+            creadas.append(temporal)
+            _verify_readback(sink, temporal, objetivo)
     except Exception:
-        # Nada de lo activo se tocó todavía: se limpian sólo las temporales.
-        for nombre in escritas:
-            sink.drop_table(nombre)
+        try:
+            compensar([])
+        except Exception as fallo:  # pragma: no cover - la compensación aquí sólo borra temporales
+            raise PromotionRecoveryError(str(fallo), inventario()) from fallo
         raise
 
-    movidas: list[str] = []
-    for nombre in sorted(tables.as_mapping()):
-        if nombre in activas:
-            sink.rename_table(nombre, f"{nombre}{SUFFIX_PREVIOUS}")
-        sink.rename_table(f"{nombre}{SUFFIX_NEXT}", nombre)
-        movidas.append(nombre)
+    # ── 3-5. respaldo, activación y verificación ──
+    activadas: list[str] = []
+    try:
+        for nombre in nombres:
+            if nombre in antes:
+                sink.rename_table(nombre, f"{nombre}{SUFFIX_BACKUP}")
+            sink.rename_table(f"{nombre}{SUFFIX_NEXT}", nombre)
+            creadas.remove(f"{nombre}{SUFFIX_NEXT}")
+            activadas.append(nombre)
+        for nombre in nombres:
+            _verify_readback(sink, nombre, objetivos[nombre])
+    except Exception as error:
+        try:
+            compensar(activadas)
+        except Exception as fallo:
+            raise PromotionRecoveryError(
+                f"{error} · compensación: {fallo}", inventario()
+            ) from error
+        raise
+
+    # ── 6. sólo con las dos activas verificadas se consolida el punto de retorno ──
+    for nombre in nombres:
+        respaldo = f"{nombre}{SUFFIX_BACKUP}"
+        if respaldo in set(sink.list_tables()):
+            previa = f"{nombre}{SUFFIX_PREVIOUS}"
+            if previa in set(sink.list_tables()):
+                sink.drop_table(previa)
+            sink.rename_table(respaldo, previa)
     return {
-        "promoted": movidas,
-        "previous": [f"{n}{SUFFIX_PREVIOUS}" for n in movidas if n in activas],
-        "digests": tables.digests(),
+        "status": "PROMOTED",
+        "promoted": list(nombres),
+        "previous": [f"{n}{SUFFIX_PREVIOUS}" for n in nombres if n in antes],
+        "digests": {
+            nombre: sha256_bytes(_canonical_frame(objetivos[nombre]).encode("utf-8"))
+            for nombre in nombres
+        },
     }
 
 
 def rollback(sink: TableSink, nombres: Sequence[str] = TABLES) -> list[str]:
-    """Swap inverso: ``__previous`` vuelve a ser la activa. Sin ``__previous`` no hay nada que hacer."""
+    """Swap inverso RECUPERABLE: la activa no se borra hasta tener la previa a salvo.
+
+    Antes se hacía `drop(activa)` y luego `rename(previa → activa)`: si ese rename fallaba, se
+    perdían las dos (R96-P0-2). Ahora la activa se aparta a ``__backup`` y sólo se borra cuando la
+    previa ya ocupó su lugar.
+    """
     restauradas = []
-    existentes = set(sink.list_tables())
     for nombre in sorted(nombres):
+        existentes = set(sink.list_tables())
         previa = f"{nombre}{SUFFIX_PREVIOUS}"
         if previa not in existentes:
             continue
+        respaldo = f"{nombre}{SUFFIX_BACKUP}"
+        aparto = False
         if nombre in existentes:
-            sink.drop_table(nombre)
-        sink.rename_table(previa, nombre)
+            sink.rename_table(nombre, respaldo)
+            aparto = True
+        try:
+            sink.rename_table(previa, nombre)
+        except Exception:
+            if aparto:
+                sink.rename_table(respaldo, nombre)  # la activa vuelve a su sitio
+            raise
+        if aparto:
+            sink.drop_table(respaldo)
         restauradas.append(nombre)
     return restauradas
 

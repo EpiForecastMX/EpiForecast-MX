@@ -18,11 +18,13 @@ import pandas as pd
 import pytest
 
 from epiforecast.publication.tableau_adapter import (
+    SUFFIX_BACKUP,
     SUFFIX_NEXT,
     SUFFIX_PREVIOUS,
     TABLE_FORECAST,
     TABLE_RELEASES,
     MemorySink,
+    PromotionRecoveryError,
     build_tables,
     promote,
     read_local,
@@ -135,10 +137,16 @@ def _shard(tmp_path: Path, *, filas: int = 3, limites: bool = False, **manifiest
         "publication_label": ETIQUETA,
     }
     comun.update(manifiesto)
-    (root / "shard_manifest.json").write_bytes(canonical_json(comun))
-    (root / "tableau" / "schema.json").write_bytes(
-        canonical_json({**comun, "channel": "tableau", "columns": [{"name": c} for c in COLUMNAS]})
-    )
+    schema = {**comun, "channel": "tableau", "columns": [{"name": c} for c in COLUMNAS]}
+    (root / "tableau" / "schema.json").write_bytes(canonical_json(schema))
+    # El shard sella el digest de cada archivo que emite; el adaptador los verifica antes de parsear.
+    import hashlib
+
+    archivos = {
+        rel: hashlib.sha256((root / rel).read_bytes()).hexdigest()
+        for rel in ("tableau/forecast_shard.csv", "tableau/schema.json")
+    }
+    (root / "shard_manifest.json").write_bytes(canonical_json({**comun, "files": archivos}))
     return root
 
 
@@ -224,15 +232,45 @@ def test_un_limite_de_intervalo_rompe_el_contrato_point_only(tmp_path):
         build_tables(_shard(tmp_path, limites=True))
 
 
+def _resellar(root: Path, **cambios) -> None:
+    """Rehace schema e inventario tras alterar el shard: mide la comprobación siguiente, no el sello."""
+    import hashlib
+
+    manifiesto = {**json.loads((root / "shard_manifest.json").read_text()), **cambios}
+    schema = {**json.loads((root / "tableau" / "schema.json").read_text()), **cambios}
+    (root / "tableau" / "schema.json").write_bytes(canonical_json(schema))
+    manifiesto["files"] = {
+        rel: hashlib.sha256((root / rel).read_bytes()).hexdigest()
+        for rel in ("tableau/forecast_shard.csv", "tableau/schema.json")
+    }
+    (root / "shard_manifest.json").write_bytes(canonical_json(manifiesto))
+
+
 def test_una_clave_serie_periodo_duplicada_se_rechaza(tmp_path):
     root = _shard(tmp_path, filas=2)
     csv = root / "tableau" / "forecast_shard.csv"
     lineas = csv.read_text(encoding="utf-8").splitlines(keepends=True)
     csv.write_text("".join([*lineas, lineas[1]]), encoding="utf-8")
-    (root / "shard_manifest.json").write_bytes(
-        canonical_json({**json.loads((root / "shard_manifest.json").read_text()), "rows": 3})
-    )
+    _resellar(root, rows=3)
     with pytest.raises(ArtifactValidationError, match="duplicadas"):
+        build_tables(root)
+
+
+def test_un_csv_alterado_no_llega_siquiera_a_parsearse(tmp_path):
+    """R96-P0-3: el sello del shard se comprueba ANTES de convertir el CSV en un DataFrame."""
+    root = _shard(tmp_path, filas=2)
+    csv = root / "tableau" / "forecast_shard.csv"
+    texto = csv.read_text(encoding="utf-8")
+    csv.write_text(texto.replace(",10,", ",999999999,"), encoding="utf-8")
+    with pytest.raises(ArtifactValidationError, match="digest contra el inventario"):
+        build_tables(root)
+
+
+def test_un_schema_alterado_tampoco(tmp_path):
+    root = _shard(tmp_path)
+    schema = root / "tableau" / "schema.json"
+    schema.write_bytes(canonical_json({**json.loads(schema.read_text()), "rows": 99}))
+    with pytest.raises(ArtifactValidationError, match="digest contra el inventario"):
         build_tables(root)
 
 
@@ -274,10 +312,16 @@ def test_la_promocion_escribe_next_valida_y_luego_intercambia(tmp_path):
     orden = [op for op in sink.operaciones if op.startswith(("write:", "rename:"))]
     assert orden[0].startswith(f"write:{TABLE_FORECAST}{SUFFIX_NEXT}"), "primero las __next"
     assert all(SUFFIX_NEXT in op for op in orden if op.startswith("write:"))
-    assert any(f"rename:{TABLE_FORECAST}->{TABLE_FORECAST}{SUFFIX_PREVIOUS}" == op for op in orden)
+    # La activa se aparta a __backup antes de activarse la nueva; __previous se consolida al final.
+    assert any(f"rename:{TABLE_FORECAST}->{TABLE_FORECAST}{SUFFIX_BACKUP}" == op for op in orden)
+    assert orden.index(f"rename:{TABLE_FORECAST}->{TABLE_FORECAST}{SUFFIX_BACKUP}") < orden.index(
+        f"rename:{TABLE_FORECAST}{SUFFIX_NEXT}->{TABLE_FORECAST}"
+    )
+    assert resultado["status"] == "PROMOTED"
     assert sorted(resultado["promoted"]) == [TABLE_FORECAST, TABLE_RELEASES]
     assert f"{TABLE_FORECAST}{SUFFIX_PREVIOUS}" in sink.list_tables()
     assert f"{TABLE_FORECAST}{SUFFIX_NEXT}" not in sink.list_tables()
+    assert not [t for t in sink.list_tables() if t.endswith(SUFFIX_BACKUP)]
 
 
 def test_las_tablas_legacy_no_se_tocan(tmp_path):
@@ -372,3 +416,140 @@ def test_el_shard_real_produce_las_dos_tablas(tmp_path):
     promote(sink, tablas)
     assert sorted(sink.list_tables()) == [TABLE_FORECAST, TABLE_RELEASES]
     assert len(sink.read_table(TABLE_FORECAST)) == len(tablas.forecast)
+
+
+# ── Regresiones de la auditoría R96 ───────────────────────────────────────────────────────────
+class _SinkQueFallaEn(MemorySink):
+    """Sink que revienta en una frontera concreta: write, read, rename o drop."""
+
+    def __init__(self, inicial=None, *, falla_en=None):
+        super().__init__(inicial)
+        self.falla_en = falla_en or (lambda op: False)
+
+    def _quizas(self, op):
+        if self.falla_en(op):
+            raise RuntimeError(f"el sink falló en {op}")
+
+    def write_table(self, name, frame):
+        self._quizas(f"write:{name}")
+        super().write_table(name, frame)
+
+    def read_table(self, name):
+        self._quizas(f"read:{name}")
+        return super().read_table(name)
+
+    def rename_table(self, origen, destino):
+        self._quizas(f"rename:{origen}->{destino}")
+        super().rename_table(origen, destino)
+
+    def drop_table(self, name):
+        self._quizas(f"drop:{name}")
+        super().drop_table(name)
+
+
+@pytest.mark.parametrize(
+    "frontera",
+    [
+        f"write:{TABLE_RELEASES}{SUFFIX_NEXT}",
+        f"read:{TABLE_FORECAST}{SUFFIX_NEXT}",
+        f"rename:{TABLE_FORECAST}->{TABLE_FORECAST}{SUFFIX_BACKUP}",
+        f"rename:{TABLE_FORECAST}{SUFFIX_NEXT}->{TABLE_FORECAST}",
+        f"rename:{TABLE_RELEASES}->{TABLE_RELEASES}{SUFFIX_BACKUP}",
+        f"rename:{TABLE_RELEASES}{SUFFIX_NEXT}->{TABLE_RELEASES}",
+        f"read:{TABLE_RELEASES}",
+    ],
+)
+def test_un_fallo_en_cualquier_frontera_deja_las_dos_activas_como_estaban(tmp_path, frontera):
+    """R96-P0-2: antes, fallar en el segundo rename dejaba una tabla nueva y la otra AUSENTE."""
+    tablas = build_tables(_shard(tmp_path))
+    previas = {
+        TABLE_FORECAST: pd.DataFrame([{"x": "vieja_forecast"}]),
+        TABLE_RELEASES: tablas.releases.assign(verdict="PASS"),
+    }
+    sink = _SinkQueFallaEn(previas, falla_en=lambda op: op == frontera)
+
+    with pytest.raises(RuntimeError, match="el sink falló"):
+        promote(sink, tablas)
+
+    sink.falla_en = lambda op: False  # la inyección termina con la promoción; ahora se audita
+    for nombre, frame in previas.items():
+        assert nombre in sink.list_tables(), f"{nombre} quedó AUSENTE tras fallar en {frontera}"
+        pd.testing.assert_frame_equal(sink.read_table(nombre), frame)
+    assert not [t for t in sink.list_tables() if t.endswith((SUFFIX_NEXT, SUFFIX_BACKUP))], (
+        "no pueden quedar temporales ni respaldos colgando"
+    )
+
+
+def test_un_sink_que_altera_el_contenido_se_detecta_aunque_conserve_las_filas(tmp_path):
+    """R96-P0-3: comparar `len` dejaba pasar un valor cambiado; ahora se compara el contenido."""
+    tablas = build_tables(_shard(tmp_path))
+
+    class SinkQueAltera(MemorySink):
+        def write_table(self, name, frame):
+            if name == f"{TABLE_FORECAST}{SUFFIX_NEXT}":
+                frame = frame.copy()
+                frame.loc[0, "yhat_cases"] = "999999999"  # mismas filas, otro dato
+            super().write_table(name, frame)
+
+    sink = SinkQueAltera({TABLE_FORECAST: pd.DataFrame([{"x": "la de antes"}])})
+    with pytest.raises(ArtifactValidationError, match="contenido tras releer"):
+        promote(sink, tablas)
+    pd.testing.assert_frame_equal(
+        sink.read_table(TABLE_FORECAST), pd.DataFrame([{"x": "la de antes"}])
+    )
+
+
+def test_el_rollback_no_pierde_la_activa_si_falla_el_rename(tmp_path):
+    """R96-P0-2: antes borraba la activa y luego renombraba; si eso fallaba, se perdían las dos."""
+    tablas = build_tables(_shard(tmp_path))
+    previa = pd.DataFrame([{"x": "la de antes"}])
+    sink = _SinkQueFallaEn({TABLE_FORECAST: previa})
+    promote(sink, tablas)
+
+    sink.falla_en = lambda op: op == f"rename:{TABLE_FORECAST}{SUFFIX_PREVIOUS}->{TABLE_FORECAST}"
+    with pytest.raises(RuntimeError):
+        rollback(sink, [TABLE_FORECAST])
+    assert TABLE_FORECAST in sink.list_tables(), "la activa no puede desaparecer"
+    assert len(sink.read_table(TABLE_FORECAST)) == len(tablas.forecast)
+    assert f"{TABLE_FORECAST}{SUFFIX_PREVIOUS}" in sink.list_tables(), "la previa sigue disponible"
+
+
+def test_recovery_required_se_reporta_con_inventario(tmp_path):
+    """Si ni la compensación funciona, no se disfraza de error normal."""
+    tablas = build_tables(_shard(tmp_path))
+
+    def falla(op):
+        return (
+            op.startswith(f"rename:{TABLE_RELEASES}{SUFFIX_NEXT}")
+            or op.startswith("drop:")
+            or (op.startswith(f"rename:{TABLE_FORECAST}{SUFFIX_BACKUP}"))
+        )
+
+    sink = _SinkQueFallaEn({TABLE_FORECAST: pd.DataFrame([{"x": 1}])}, falla_en=falla)
+    with pytest.raises(PromotionRecoveryError) as exc:
+        promote(sink, tablas)
+    assert exc.value.status == "RECOVERY_REQUIRED"
+    assert set(exc.value.inventario) == {"tables", "expected_before", "namespace"}
+    assert exc.value.inventario["namespace"] == [TABLE_FORECAST, TABLE_RELEASES]
+
+
+def test_el_xlsx_no_es_autoritativo_y_los_csv_si(tmp_path):
+    """R96-P1-1: el contenedor ZIP lleva metadata temporal; llamarlo determinista sería falso."""
+    import time
+
+    tablas = build_tables(_shard(tmp_path, filas=4))
+    a, b = tmp_path / "a", tmp_path / "b"
+    primero = write_local(tablas, a)
+    time.sleep(2.5)  # separado en el tiempo, a propósito
+    segundo = write_local(tablas, b)
+
+    assert primero == segundo, "los CSV autoritativos sí son byte-idénticos"
+    assert (a / "adapter_manifest.json").read_bytes() == (b / "adapter_manifest.json").read_bytes()
+    assert (a / "runner_tables.xlsx").read_bytes() != (b / "runner_tables.xlsx").read_bytes(), (
+        "y el ZIP NO lo es: por eso queda fuera de los digests"
+    )
+    assert "runner_tables.xlsx" not in primero, "el XLSX no entra en los digests"
+    manifiesto = json.loads((a / "adapter_manifest.json").read_text())
+    assert manifiesto["non_authoritative_views"] == ["runner_tables.xlsx"]
+    assert "runner_tables.xlsx" not in manifiesto["files"]
+    assert (a / "runner_tables.xlsx").is_file(), "se conserva como vista para abrir a mano"
