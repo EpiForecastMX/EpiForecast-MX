@@ -246,6 +246,9 @@ SCOPE_BASE = "smape_base"
 SCOPE_PRODUCTS = "smape_products"
 SCOPE_NATIONAL = "smape_national_general"
 SCOPES: tuple[str, ...] = (SCOPE_BASE, SCOPE_PRODUCTS, SCOPE_NATIONAL)
+# Las SEIS métricas del runner. Se emiten SIEMPRE: una clave ausente no es un `null`
+# deliberado, es evidencia perdida que `.get()` disfraza (R82-P0-1).
+METRIC_KEYS: tuple[str, ...] = ("smape", "mase", "mae", "rmse", "wape", "bias")
 
 WEEK_COMPLETE = "completa"
 WEEK_PARTIAL = "parcial"
@@ -640,11 +643,13 @@ def scope_metrics(
     clave = ["geography_level", "geography_id", "sex"]
     resumen: dict[str, Any] = {}
     for nombre in ("candidate", "control"):
-        acumulado: dict[str, list[float]] = {}
+        acumulado: dict[str, list[float]] = {k: [] for k in METRIC_KEYS}
         banderas: dict[str, int] = {}
+        productos = 0
         verdad = filas["truth"].sort_values([*clave, "epi_year", "epi_week"])
         pred = filas[nombre].sort_values([*clave, "epi_year", "epi_week"])
         for llave, grupo in verdad.groupby(clave, sort=True):
+            productos += 1
             producto = (str(llave[0]), str(llave[1]), str(llave[2]))
             sub = pred[
                 (pred["geography_level"] == producto[0])
@@ -657,15 +662,15 @@ def scope_metrics(
                 list(grupo["y_pred_cases"]), list(sub["y_pred_cases"]), previa, mase_lag=mase_lag
             )
             for k, v in metricas.items():
-                if math.isfinite(float(v)):
-                    acumulado.setdefault(k, []).append(float(v))
+                if k in acumulado and math.isfinite(float(v)):
+                    acumulado[k].append(float(v))
             for f in flags:
                 banderas[f] = banderas.get(f, 0) + 1
         resumen[nombre] = {
-            "products": int(len(acumulado.get("smape", []))),
+            "products": productos,
             "median": {
-                k: _finite_or_none(float(np.median(v))) if v else None
-                for k, v in sorted(acumulado.items())
+                k: (_finite_or_none(float(np.median(acumulado[k]))) if acumulado[k] else None)
+                for k in METRIC_KEYS
             },
             "flags": dict(sorted(banderas.items())),
         }

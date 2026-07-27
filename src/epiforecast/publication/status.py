@@ -35,6 +35,7 @@ from epiforecast.publication.prospective import (
     ACCEPTANCE_RULE,
     CONTROL_ENGINE,
     GATE_SCHEMA,
+    METRIC_KEYS,
     SCOPE_BASE,
     SCOPE_NATIONAL,
     SCOPE_PRODUCTS,
@@ -377,6 +378,9 @@ SCOPE_KEYS: frozenset[str] = frozenset(
     }
 )
 METRIC_SIDE_KEYS: frozenset[str] = frozenset({"products", "median", "flags"})
+# Procedencia EXACTA del snapshot de observación. Aceptar `{}` convertía la verdad en una identidad
+# sin origen (R82-P0-2). La geografía sigue sellada dentro del digest efectivo de `config`.
+SOURCE_DIGEST_KEYS: frozenset[str] = frozenset({"raw", "config", "exposure"})
 PER_WEEK_KEYS: frozenset[str] = frozenset({"week", "series", "smape_candidate", "smape_control"})
 # Filas esperadas por semana en cada ámbito: bases, productos derivados y el único nacional General.
 SCOPE_ROWS_PER_WEEK: dict[str, int] = {SCOPE_BASE: 64, SCOPE_PRODUCTS: 111, SCOPE_NATIONAL: 1}
@@ -461,13 +465,26 @@ def _check_metrics(evaluation: ProspectiveEvaluation) -> None:
         equal(f"evaluación: lados de {scope}", sorted(cuerpo), ["candidate", "control"])
         for lado, bloque in cuerpo.items():
             _exact_keys(bloque, METRIC_SIDE_KEYS, f"evaluación: métricas {scope}.{lado}")
-            _strict_int(bloque["products"], f"evaluación: {scope}.{lado}.products")
+            productos = _strict_int(bloque["products"], f"evaluación: {scope}.{lado}.products")
+            equal(
+                f"evaluación: productos del ámbito {scope}.{lado}",
+                productos,
+                SCOPE_ROWS_PER_WEEK[scope],
+            )
             mediana = bloque["median"]
             require(
                 isinstance(mediana, dict), f"evaluación: {scope}.{lado}.median no es un objeto"
             )
+            # Las seis, siempre: una clave ausente no es un null, es evidencia perdida.
+            _exact_keys(mediana, frozenset(METRIC_KEYS), f"evaluación: {scope}.{lado}.median")
             flags = bloque["flags"]
             require(isinstance(flags, dict), f"evaluación: {scope}.{lado}.flags no es un objeto")
+            for nombre, cuenta in flags.items():
+                n = _strict_int(cuenta, f"evaluación: {scope}.{lado}.flags.{nombre}")
+                require(
+                    0 <= n <= productos,
+                    f"evaluación: {scope}.{lado}.flags.{nombre}={n} fuera de 0..{productos}",
+                )
             for nombre, valor in mediana.items():
                 if valor is None:
                     # Indefinido SÓLO con su bandera: un null sin explicación es un dato perdido.
@@ -487,9 +504,39 @@ def _check_per_week(evaluation: ProspectiveEvaluation) -> None:
     )
     for detalle in evaluation.per_week:
         _exact_keys(detalle, PER_WEEK_KEYS, "evaluación: detalle semanal")
-        _strict_int(detalle["series"], "evaluación: detalle semanal .series")
+        equal(
+            "evaluación: series del detalle semanal",
+            _strict_int(detalle["series"], "evaluación: detalle semanal .series"),
+            SCOPE_ROWS_PER_WEEK[SCOPE_BASE],
+        )
         _number(detalle["smape_candidate"], "evaluación: detalle semanal .smape_candidate")
         _number(detalle["smape_control"], "evaluación: detalle semanal .smape_control")
+
+
+def _check_sequence(evaluation: ProspectiveEvaluation, gate: FrozenGate) -> None:
+    """La secuencia observada tiene que estar COMPLETA: sin huecos que borren evidencia.
+
+    Validar cada omisión por separado permitía re-sellar un artefacto sin W28 conservando W29–W31
+    como completas: el veredicto numérico no cambia, pero desaparece qué pasó con una semana
+    programada (R82-P1). Aquí se exige que completadas ∪ omitidas cubran exactamente cada periodo
+    observable, sin solapes ni repeticiones.
+    """
+    corte = evaluation.observation_cutoff
+    require(corte is not None, "evaluación: falta observation_cutoff")
+    assert corte is not None  # noqa: S101 — para mypy; `require` ya falló si era None
+    ventana = [
+        p for p in horizon_periods(gate.origin, gate.horizon) if gate.target_weeks[0] <= p <= corte
+    ]
+    completas = list(evaluation.completed_weeks)
+    if len(completas) >= len(gate.target_weeks):
+        # Ya se llegó a la meta: la secuencia termina en la última semana que contó.
+        ventana = [p for p in ventana if p <= completas[-1]]
+    observadas = sorted([*completas, *[p for p, _ in evaluation.skipped_weeks]])
+    equal(
+        "evaluación: secuencia observada (completadas ∪ omitidas)",
+        observadas,
+        sorted(ventana),
+    )
 
 
 def _check_skipped(evaluation: ProspectiveEvaluation, gate: FrozenGate) -> None:
@@ -531,6 +578,18 @@ def _check_evaluation(evaluation: ProspectiveEvaluation, gate: FrozenGate) -> No
         gate.dataset_digest,
     )
     equal("evaluación: semanas programadas", evaluation.scheduled_weeks, gate.target_weeks)
+    _exact_keys(
+        evaluation.observation_source_digests,
+        SOURCE_DIGEST_KEYS,
+        "evaluación: procedencia del dataset de observación",
+    )
+    corte = evaluation.observation_cutoff
+    require(corte is not None, "evaluación: observation_cutoff es obligatorio")
+    assert corte is not None  # noqa: S101 — para mypy
+    require(
+        corte >= gate.origin,
+        f"evaluación: el corte observado {corte} es anterior al origen congelado {gate.origin}",
+    )
     _check_completed_weeks(evaluation.completed_weeks, gate, "evaluación")
     require(
         evaluation.verdict in VERDICTS, f"evaluación: veredicto desconocido {evaluation.verdict!r}"
@@ -539,6 +598,7 @@ def _check_evaluation(evaluation: ProspectiveEvaluation, gate: FrozenGate) -> No
         faltan = [s for s in SCOPES if s not in evaluation.scopes]
         require(not faltan, f"evaluación: un veredicto {evaluation.verdict} sin ámbitos {faltan}")
     _check_skipped(evaluation, gate)
+    _check_sequence(evaluation, gate)
     _check_scopes(evaluation, gate)
     _check_metrics(evaluation)
     _check_per_week(evaluation)

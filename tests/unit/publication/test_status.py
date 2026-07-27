@@ -16,6 +16,7 @@ import json
 from pathlib import Path
 import shutil
 
+import pandas as pd
 import pytest
 
 from epiforecast import registry
@@ -29,6 +30,7 @@ from epiforecast.publication.compiler import (
 from epiforecast.publication.prospective import (
     ACCEPTANCE_RULE,
     GATE_WEEKS,
+    METRIC_KEYS,
     VERDICT_FAIL,
     VERDICT_INCOMPLETE,
     VERDICT_PASS,
@@ -129,7 +131,11 @@ def _cuerpo(gate: FrozenGate, completadas, veredicto: str) -> ProspectiveEvaluat
                 "passes": degradacion <= float(gate.rule[scope]),
             }
             metrics[scope] = {
-                lado: {"products": filas, "median": {"smape": 10.0}, "flags": {}}
+                lado: {
+                    "products": filas,
+                    "median": dict.fromkeys(METRIC_KEYS, 10.0),
+                    "flags": {},
+                }
                 for lado in ("candidate", "control")
             }
     return ProspectiveEvaluation(
@@ -142,8 +148,8 @@ def _cuerpo(gate: FrozenGate, completadas, veredicto: str) -> ProspectiveEvaluat
         training_dataset_digest=gate.dataset_digest,
         observation_dataset_id="x_dataset_observacion",
         observation_dataset_digest="e" * 64,
-        observation_source_digests={"raw": "f" * 64},
-        observation_cutoff=(max(completadas) if completadas else None),
+        observation_source_digests={"raw": "f" * 64, "config": "0" * 64, "exposure": "1" * 64},
+        observation_cutoff=(max(completadas) if completadas else gate.origin),
         scheduled_weeks=gate.target_weeks,
         completed_weeks=completadas,
         skipped_weeks=(),
@@ -919,4 +925,128 @@ def test_torcer_la_aritmetica_del_artefacto_se_rechaza_aunque_se_reselle(tmp_pat
     (raiz / EVALUATION_FILE).write_bytes(canonical_json(reSellado))
     (raiz / STATUS_FILE).write_bytes(canonical_json(_status(gate, reSellado)))
     with pytest.raises(ArtifactValidationError, match=patron):
+        load_declared_status(af.DISEASE, config_root_path=tmp_path / "publication")
+
+
+# ── Forma cerrada del contrato (A.3.1) ────────────────────────────────────────────────────────
+@real
+def test_las_seis_metricas_estan_siempre_presentes_aunque_sean_null(tmp_path):
+    """R82-P0-1: una clave AUSENTE no es un `null` deliberado, y `.get()` lo disfrazaba."""
+    from epiforecast.data.epi_geo_exposure import load_geo_catalog
+    from epiforecast.publication.prospective import METRIC_KEYS as CLAVES
+    from epiforecast.publication.prospective import evaluate
+    from epiforecast.runner.release_reproduce import horizon_periods
+
+    catalogo = load_geo_catalog()
+    gate = load_declared_status(af.DISEASE).gate
+    series = [(e.cve_ent, s) for e in catalogo.entities for s in ("hombres", "mujeres")]
+    semanas = tuple(horizon_periods(gate.origin, GATE_WEEKS))
+    hist = {s: dict.fromkeys(semanas, 5.0) for s in series}  # constante ⇒ MASE indefinido
+    frame = pd.DataFrame(
+        [
+            {"geography_id": g, "sex": x, "epi_year": p[0], "epi_week": p[1], "y_pred_cases": 5.0}
+            for g, x in series
+            for p in semanas
+        ]
+    )
+    r = evaluate(gate, frame, frame, hist, catalog=catalogo)
+    for scope, bloque in r["metrics"].items():
+        for lado, lado_bloque in bloque.items():
+            mediana = lado_bloque["median"]
+            assert list(mediana) == list(CLAVES), f"{scope}.{lado}: faltan claves"
+            assert "mase" in mediana, f"{scope}.{lado}: la clave mase debe EXISTIR"
+            assert mediana["mase"] is None
+            assert lado_bloque["flags"].get("mase_zero_denom") == lado_bloque["products"]
+
+
+@real
+@pytest.mark.parametrize(
+    ("torcer", "patron"),
+    [
+        (lambda e: e.update({"observation_source_digests": {}}), "procedencia.*faltan claves"),
+        (
+            lambda e: e["observation_source_digests"].pop("config"),
+            "procedencia.*faltan claves",
+        ),
+        (
+            lambda e: e["observation_source_digests"].update({"otra": "a" * 64}),
+            "procedencia.*no reconocidas",
+        ),
+        (lambda e: e.update({"observation_cutoff": None}), "observation_cutoff es obligatorio"),
+        (lambda e: e.update({"observation_cutoff": [2020, 1]}), "anterior al origen"),
+        (
+            lambda e: e["metrics"]["smape_base"]["candidate"].update({"products": 7}),
+            "productos del ámbito",
+        ),
+        (
+            lambda e: e["metrics"]["smape_base"]["candidate"]["median"].pop("mase"),
+            "median: faltan claves",
+        ),
+        (
+            lambda e: e["metrics"]["smape_base"]["candidate"]["flags"].update({"x": 999}),
+            "fuera de 0",
+        ),
+        (lambda e: e["per_week"][0].update({"series": 1}), "series del detalle semanal"),
+    ],
+)
+def test_forma_cerrada_del_evaluation(tmp_path, torcer, patron):
+    """Cada campo publicado tiene una forma exigible; re-sellar el digest no lo salva."""
+    from epiforecast.publication.status import config_root
+
+    gate = load_declared_status(af.DISEASE).gate
+    payload = _cuerpo(gate, gate.target_weeks, VERDICT_FAIL).payload()
+    payload = {
+        **payload,
+        "training_dataset_id": load_declared_status(af.DISEASE).evaluation.training_dataset_id,
+        "training_dataset_digest": gate.dataset_digest,
+    }
+    torcer(payload)
+    payload.pop("evaluation_digest")
+    resellado = ProspectiveEvaluation(**_desde_payload(payload)).payload()
+
+    raiz = tmp_path / "publication" / af.DISEASE
+    raiz.mkdir(parents=True)
+    (raiz / GATE_FILE).write_bytes((config_root() / af.DISEASE / GATE_FILE).read_bytes())
+    (raiz / EVALUATION_FILE).write_bytes(canonical_json(resellado))
+    (raiz / STATUS_FILE).write_bytes(canonical_json(_status(gate, resellado)))
+    with pytest.raises(ArtifactValidationError, match=patron):
+        load_declared_status(af.DISEASE, config_root_path=tmp_path / "publication")
+
+
+@real
+def test_no_se_puede_borrar_una_semana_observada_de_la_secuencia(tmp_path):
+    """R82-P1: sin W28 en omitidas, la secuencia W27..W31 tiene un hueco que nadie declara."""
+    from epiforecast.publication.status import config_root
+    from epiforecast.runner.release_reproduce import horizon_periods
+
+    gate = load_declared_status(af.DISEASE).gate
+    ventana = list(horizon_periods(gate.origin, gate.horizon))
+    w27, w28, w29, w30 = gate.target_weeks
+    w31 = ventana[ventana.index(w30) + 1]
+
+    completo = _cuerpo(gate, (w27, w29, w30, w31), VERDICT_FAIL).payload()
+    completo["skipped_weeks"] = [{"week": list(w28), "reason": "ausente"}]
+    completo["observation_cutoff"] = list(w31)
+    completo["training_dataset_id"] = load_declared_status(
+        af.DISEASE
+    ).evaluation.training_dataset_id
+    completo["training_dataset_digest"] = gate.dataset_digest
+    completo.pop("evaluation_digest")
+    valido = ProspectiveEvaluation(**_desde_payload(completo)).payload()
+
+    raiz = tmp_path / "publication" / af.DISEASE
+    raiz.mkdir(parents=True)
+    (raiz / GATE_FILE).write_bytes((config_root() / af.DISEASE / GATE_FILE).read_bytes())
+    (raiz / EVALUATION_FILE).write_bytes(canonical_json(valido))
+    (raiz / STATUS_FILE).write_bytes(canonical_json(_status(gate, valido)))
+    # Con la omisión declarada, carga.
+    load_declared_status(af.DISEASE, config_root_path=tmp_path / "publication")
+
+    # Borrarla y re-sellar: la secuencia deja de cubrir W28 y se rechaza.
+    sin_omision = {**valido, "skipped_weeks": []}
+    sin_omision.pop("evaluation_digest")
+    resellado = ProspectiveEvaluation(**_desde_payload(sin_omision)).payload()
+    (raiz / EVALUATION_FILE).write_bytes(canonical_json(resellado))
+    (raiz / STATUS_FILE).write_bytes(canonical_json(_status(gate, resellado)))
+    with pytest.raises(ArtifactValidationError, match="secuencia observada"):
         load_declared_status(af.DISEASE, config_root_path=tmp_path / "publication")
