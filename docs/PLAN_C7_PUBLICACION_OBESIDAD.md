@@ -1,9 +1,9 @@
 # C7 — Plan operativo de publicación de Obesidad
 
 > **Estado autoritativo (2026-07-26): C7.2 y C7.3 CERRADAS; C7.5-PREP PASS; C7.6 BACKEND PASS;
-> B4.2 PASS; RAG-A IMPLEMENTADA / AUDITORÍA FAIL.**
-> Backend local `b6b3d89e` (`ahead 15`) y remoto `dbfdd49c`; dashboard limpio
-> `feat/c73-candidate-staging@b9cb7a1f` (`ahead 14` de `main`) y remoto de la rama `d5ead880`.
+> B4.2 PASS; RAG-A/A.1 PASS.**
+> Backend local `d54d9ceb` (`ahead 16`) y remoto `dbfdd49c`; dashboard limpio
+> `feat/c73-candidate-staging@40442c6d` (`ahead 15` de `main`) y remoto de la rama `d5ead880`.
 > 47.3 quedó **CERRADA / PASS**: `npm test` verifica primero el fixture reproducible, ejecuta
 > 616/616 respuestas con handler real y luego 41/41 contratos focalizados.
 > 47.2-B1/B2/B3/B4/B4.1 quedó **CERRADA / PASS** después de auditoría independiente: 616/616 casos,
@@ -22,18 +22,16 @@
 > `INCOMPLETE (0/4)` y no se presenta como PASS. Un FAIL final obliga a rollback; un PASS convierte
 > la publicación condicionada en confirmada.
 >
-> **Orden vigente:** (1) ejecutar `C7.6-RAG-A.1`, que corrige el falso verde de `rag:ci` sin clave
-> y liga la caché/verificación a la identidad `model + dim`; (2) auditar A.1 y sólo después ejecutar
-> `C7.6-RAG-B`, que repara el índice público baseline con la clave disponible como secreto;
-> (3) auditar B y ejecutar
-> `C7.6-RAG-C`, que demuestra el índice candidate exclusivamente en staging; (4) cerrar
-> C7.6-READINESS y emitir el paquete de aprobación; (5) activar y desplegar
-> coordinadamente con etiqueta pública de validación en curso; (6) reejecutar C7.4 con cada boletín
-> hasta 4/4. La Ronda 68 contiene la orden ejecutable vigente y sustituye cualquier orden histórica
+> **Orden vigente:** (1) ejecutar `C7.6-RAG-B`, que repara únicamente el índice público baseline
+> con la clave disponible como secreto y cierra sus 37 problemas; (2) auditar B y ejecutar
+> `C7.6-RAG-C`, que demuestra el índice candidate exclusivamente en staging; (3) cerrar
+> C7.6-READINESS y emitir el paquete de aprobación; (4) activar y desplegar
+> coordinadamente con etiqueta pública de validación en curso; (5) reejecutar C7.4 con cada boletín
+> hasta 4/4. La Ronda 70 contiene la orden ejecutable vigente y sustituye cualquier orden histórica
 > incompatible.
 > Obesidad continúa por ahora `trained`, NO-GO e invisible para `published_only`.
 >
-> **Avance operativo estimado de C7: 79% hacia la publicación condicionada.** La cifra usa pesos
+> **Avance operativo estimado de C7: ≈81% hacia la publicación condicionada.** La cifra usa pesos
 > declarados por impacto del entregable, no cantidad de commits ni líneas. Estado por fase:
 >
 > | fase | peso | avance | aporte | estado verificable |
@@ -44,14 +42,14 @@
 > | C7.3 compilador y consumidores en sombra | 20% | 100% | 20.0% | PASS |
 > | C7.4 congelado prospectivo | 10% | 50% | 5.0% | contrato congelado; evidencia `0/4` |
 > | C7.5 preparación de activación | 10% | 85% | 8.5% | PREP PASS; falta gate integral final |
-> | C7.6 readiness | 15% | 70% | 10.5% | backend/dashboard PASS; RAG-A requiere A.1; B/C pendientes |
+> | C7.6 readiness | 15% | 80% | 12.0% | backend/dashboard y RAG-A PASS; B/C pendientes |
 > | C7.7 activación, deploy y smoke | 10% | 0% | 0.0% | no autorizado ni ejecutado |
-> | **Total** | **100%** |  | **79.0%** | Obesidad sigue oculta |
+> | **Total** | **100%** |  | **80.5% (≈81%)** | Obesidad sigue oculta |
 >
-> El **79% no significa publicada**: la exposición pública sigue en **0%** porque lifecycle, puntero
+> El **≈81% no significa publicada**: la exposición pública sigue en **0%** porque lifecycle, puntero
 > activo y deploy no se han ejecutado. La confirmación prospectiva se informa separadamente como
 > **0/4 semanas (0%)** y continuará después de la publicación condicionada por decisión explícita
-> del usuario. Próximo incremento real: cerrar RAG-A, RAG-B y RAG-C; después emitir readiness y
+> del usuario. Próximo incremento real: cerrar RAG-B y RAG-C; después emitir readiness y
 > recién entonces autorizar C7.7.
 >
 > **Alcance:** publicar únicamente Obesidad E66. Anorexia F50 permanece
@@ -10951,5 +10949,246 @@ Avance      79% hasta que cierres A.1
 ```
 
 Siguiente acción exacta: **auditar A.1**. RAG-B sigue bloqueada.
+
+_Respuesta:_
+
+---
+
+### Ronda 70 — Auditoría C7.6-RAG-A.1 PASS y orden RAG-B — 2026-07-26
+
+#### Veredicto
+
+**C7.6-RAG-A y A.1 quedan CERRADAS / PASS. Se autoriza RAG-B con alcance local y exacto.**
+
+Auditoría independiente sobre `b9cb7a1f..40442c6d`:
+
+```text
+diff                                  4 archivos · +186 / -18 · diff --check PASS
+npm test                              616/616 + 67/67
+test:candidate                        19/19
+pruebas RAG                           24/24
+env -u GEMINI_API_KEY npm run rag:ci  rc=1 · no construye · sí verifica
+rag_index.json                         SHA256 intacto
+model-A → model-B, misma dimensión     reused=0 · generated=1 · embed_calls=1
+```
+
+Los dos P0 quedan cerrados:
+
+1. `rag:ci` ejecuta siempre `rag:verify`; sin clave conserva el índice pero ya no puede dar verde
+   si el índice commiteado tiene drift.
+2. La caché usa identidad `model + dim + chunkHash`; un cambio de modelo o dimensión fuerza
+   regeneración y el verificador contrasta metadata, conteos y forma.
+
+El tratamiento de duplicados también es correcto: dos vectores distintos para el mismo hash son
+ambiguos y no se reutilizan; dos copias byte-idénticas pueden reducirse a una entrada de caché,
+pero un índice escrito con chunks duplicados sigue siendo rechazado por el verificador.
+
+No quedan bloqueantes de A. **RAG-B será el primer paso que use `GEMINI_API_KEY`.**
+
+#### Orden C7.6-RAG-B — reparar exclusivamente el baseline público
+
+Trabajar únicamente en `EpiForecast-IMSS-Dashboard` sobre `40442c6d`. Un commit local y STOP.
+
+##### B0 · preflight sin exponer el secreto
+
+1. Confirmar:
+
+```text
+HEAD                                  40442c6d
+worktree trackeado                    limpio
+branch                                feat/c73-candidate-staging
+test -n "${GEMINI_API_KEY:-}"         rc=0
+```
+
+No imprimir valor, longitud, prefijo, sufijo, entorno ni comando expandido. Si la clave no está
+presente en **esa misma sesión**, detenerse y pedir que se exporte; no copiarla a archivos,
+`.env`, historial, logs ni argumentos.
+
+2. Capturar en un directorio temporal fuera del repo:
+   - copia de `epibot/rag_index.json`;
+   - SHA256 anterior;
+   - inventario por `chunkHash → vector` del índice anterior;
+   - hashes de `knowledge.json`, `index.html`, `epibot/index.html` y demás superficies públicas.
+
+No tocar el candidate shard ni construir staging en B.
+
+##### B1 · construcción única
+
+Desde `epibot/`, ejecutar una sola vez:
+
+```text
+npm run rag:build
+```
+
+Resultado esperado por la medición actual:
+
+```text
+corpus final          454 chunks
+reutilizados          435
+generados             19
+modelo                gemini-embedding-001
+dimensión             768
+faltos/fallidos       0
+```
+
+Si el proveedor falla, entrega un vector inválido, los conteos no cuadran o el comando termina
+`rc!=0`, detenerse. No reintentar manualmente en bucle, no reducir el corpus, no aflojar el
+verificador y no editar el JSON a mano.
+
+##### B2 · verificación estructural y semántica
+
+Ejecutar:
+
+```text
+npm run rag:verify
+npm run check
+```
+
+Ambos deben terminar `rc=0`. Además verificar de forma independiente:
+
+1. `count == chunks.length == vectors.length == 454`;
+2. `model == gemini-embedding-001` y `dim == 768`;
+3. 454 hashes únicos, cada uno con vector no vacío de 768 valores finitos;
+4. `missing=0`, `extra=0`, `duplicate=0`, `invalid_vector=0`;
+5. los **435 chunks reutilizados** conservan exactamente el mismo vector por `chunkHash`;
+6. aparecen exactamente los 19 hashes del corpus antes faltantes;
+7. desaparecen exactamente los 17 hashes obsoletos que ya no pertenecen al corpus;
+8. el único cambio adicional permitido es metadata derivada del nuevo build, como `built` y
+   `count`;
+9. cero chunks, títulos, texto o fuentes de Obesidad en `rag_index.json`;
+10. `knowledge.json`, ambos HTML y las demás superficies públicas permanecen byte-idénticos.
+
+La igualdad de los 435 vectores se comprueba por hash, no por posición, porque al retirar 17
+chunks la posición de entradas posteriores puede cambiar.
+
+##### B3 · tratamiento de resultados
+
+- **Si todo pasa:** crear un commit local que contenga únicamente
+  `epibot/rag_index.json`, con mensaje claro de reparación del baseline, y STOP.
+- **Si cualquier gate falla:** no crear commit. Conservar la copia/hashes de evidencia, registrar el
+  fallo y detenerse. No ejecutar RAG-C.
+- Nunca añadir al commit temporales, logs, `.env`, secretos ni cambios incidentales.
+
+##### Gate de cierre de B
+
+```text
+rag:build                           rc=0 · reused 435 · generated 19
+rag:verify                          rc=0 · 454/454
+npm run check                       rc=0
+índice                              454 hashes únicos · 454 vectores válidos
+435 vectores previos                byte-idénticos por chunkHash
+delta de corpus                     +19 esperados / -17 obsoletos
+Obesidad pública                    0 chunks
+knowledge / HTML                    byte-idénticos
+commit                              sólo epibot/rag_index.json
+```
+
+#### Lo que B no autoriza
+
+- No candidate/staging index.
+- No tocar `knowledge.json`, HTML, JS de aplicación, Netlify o package scripts.
+- No cache-bust, push, PR, merge, deploy, lifecycle, puntero ni publicación.
+- No ejecutar RAG-C automáticamente.
+
+#### Avance
+
+El avance operativo sube a **80.5% (≈81%)** al cerrar A/A.1. B sólo se acredita cuando el índice
+baseline quede en drift cero y el commit contenga exclusivamente el índice.
+
+#### Próxima acción exacta
+
+**Ejecutar únicamente C7.6-RAG-B local según B0–B3, crear un commit sólo si todo pasa y STOP.**
+
+_Respuesta:_ **GO C7.6-RAG-B LOCAL. Se autoriza usar `GEMINI_API_KEY` sólo desde el entorno para
+regenerar el índice baseline público. Sin RAG-C, push, PR, merge, deploy, cache-bust, activación,
+lifecycle ni publicación.**
+
+---
+
+### Ronda 70 — C7.6-RAG-B ejecutada: índice baseline reparado, drift cero — 2026-07-26
+
+Un commit local sobre `40442c6d`, **con `epibot/rag_index.json` como único archivo**. Primera
+ejecución de todo C7 que usa `GEMINI_API_KEY`, leída sólo del entorno. Sin RAG-C, push, PR, merge,
+deploy, cache-bust, activación, lifecycle ni publicación.
+
+```text
+4cdc17dd  C7.6-RAG-B  reparar el indice baseline publico: drift cero
+```
+
+#### Los números pedidos, uno por uno
+
+```text
+chunks                454   ✓
+vectores reutilizados 435   ✓  (byte-idénticos a los del índice previo: 435/435)
+vectores generados     19   ✓
+chunks retirados       17   ✓
+drift                   0   ✓  rag:verify rc=0
+```
+
+#### El diff del índice, explicado antes de aceptarlo
+
+Comprobé que el cambio es exactamente el que el verificador anunciaba, no uno parecido:
+
+```text
+los 19 agregados == los 19 que el verificador reportaba sin cubrir   true
+los 17 retirados == los 17 que reportaba como sobrantes              true
+```
+
+Y qué son:
+
+```text
+RETIRADOS (17)   12 Validación semanal · 3 Datos de Dengue · 2 Datos del proyecto
+AGREGADOS (19)   los mismos 17, en su versión vigente
+                 + 1 Avance 1 (Equipo 01) + 1 Avance 2 (Equipo 01)
+```
+
+Los 17 no son pérdida de cobertura: son la versión **vieja** del mismo contenido, que cambió cuando
+llegaron boletines nuevos —mismo `source` y mismo `title`, otro texto, otro hash—. El crecimiento
+neto de **+2** son las dos páginas de Avance que nunca habían entrado al índice. Nada más se movió.
+
+#### Salud del índice resultante
+
+```text
+vectores vacíos                 0
+dimensiones distintas de 768    0
+valores no finitos              0
+hashes duplicados               0
+modelo declarado                gemini-embedding-001 / 768  = el que produjo TODOS sus vectores
+menciones de Obesidad           0
+```
+
+#### `npm run check` completamente verde, por primera vez
+
+```text
+node --check de los 13 archivos      PASS
+npm test                             616/616 + 67 unitarias
+npm run test:candidate               19/19
+npm run rag:verify                   rc=0 · «un vector válido por chunk, sin faltantes ni duplicados»
+rc final                             0
+```
+
+#### Higiene de la clave y del commit
+
+```text
+GEMINI_API_KEY   leída del entorno · nunca impresa, ni su longitud, prefijo o sufijo
+                 no aparece en el índice, ni en el mensaje del commit, ni en el plan
+commit           1 archivo: epibot/rag_index.json
+knowledge.json / index.html / package.json   byte-idénticos
+```
+
+Copia y SHA256 del índice previo (`86417db3ae059eb7…`) quedaron en un temporal antes de construir,
+por si hiciera falta volver.
+
+#### Estado
+
+```text
+Dashboard   4cdc17dd · limpio · ahead 16 de main · SIN PUSH
+Backend     ahead 16 · SIN PUSH
+Readiness   47.2-B ✓ · 47.3 ✓ · B4.2 ✓ · RAG-A ✓ · RAG-A.1 ✓ · RAG-B ✓ · RAG-C ✗
+Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
+```
+
+Siguiente acción exacta: **auditar B**. `C7.6-RAG-C` —el índice candidate sólo en staging— sigue sin
+autorizar.
 
 _Respuesta:_
