@@ -26,6 +26,7 @@ from epiforecast.publication.tableau_adapter import (
     MemorySink,
     PromotionRecoveryError,
     build_tables,
+    managed_tables,
     promote,
     read_local,
     rollback,
@@ -529,7 +530,13 @@ def test_recovery_required_se_reporta_con_inventario(tmp_path):
     with pytest.raises(PromotionRecoveryError) as exc:
         promote(sink, tablas)
     assert exc.value.status == "RECOVERY_REQUIRED"
-    assert set(exc.value.inventario) == {"tables", "expected_before", "namespace"}
+    assert set(exc.value.inventario) == {
+        "tables",
+        "expected_before",
+        "namespace",
+        "managed",
+        "residues",
+    }
     assert exc.value.inventario["namespace"] == [TABLE_FORECAST, TABLE_RELEASES]
 
 
@@ -553,3 +560,161 @@ def test_el_xlsx_no_es_autoritativo_y_los_csv_si(tmp_path):
     assert manifiesto["non_authoritative_views"] == ["runner_tables.xlsx"]
     assert "runner_tables.xlsx" not in manifiesto["files"]
     assert (a / "runner_tables.xlsx").is_file(), "se conserva como vista para abrir a mano"
+
+
+# ── Regresiones de la auditoría R98 ───────────────────────────────────────────────────────────
+@pytest.mark.parametrize("residuo", [SUFFIX_NEXT, SUFFIX_BACKUP])
+def test_el_preflight_rechaza_residuos_de_una_recuperacion_inconclusa(tmp_path, residuo):
+    """R98-P1-1: escribir encima de un residuo borra la evidencia que permitiría recuperar."""
+    tablas = build_tables(_shard(tmp_path))
+    sink = MemorySink(
+        {
+            TABLE_FORECAST: pd.DataFrame([{"x": "activa"}]),
+            f"{TABLE_RELEASES}{residuo}": pd.DataFrame([{"x": "a medio camino"}]),
+        }
+    )
+    antes = {n: sink.read_table(n) for n in sink.list_tables()}
+
+    with pytest.raises(PromotionRecoveryError) as exc:
+        promote(sink, tablas)
+
+    assert exc.value.status == "RECOVERY_REQUIRED"
+    assert exc.value.inventario["residues"] == [f"{TABLE_RELEASES}{residuo}"]
+    assert sink.operaciones == [], "el preflight mira, no toca"
+    assert sorted(sink.list_tables()) == sorted(antes)
+    for nombre, frame in antes.items():
+        pd.testing.assert_frame_equal(sink.read_table(nombre), frame)
+
+
+@pytest.mark.parametrize(
+    "frontera",
+    [
+        f"drop:{TABLE_FORECAST}{SUFFIX_PREVIOUS}",
+        f"rename:{TABLE_FORECAST}{SUFFIX_BACKUP}->{TABLE_FORECAST}{SUFFIX_PREVIOUS}",
+        f"drop:{TABLE_RELEASES}{SUFFIX_PREVIOUS}",
+        f"rename:{TABLE_RELEASES}{SUFFIX_BACKUP}->{TABLE_RELEASES}{SUFFIX_PREVIOUS}",
+    ],
+)
+def test_un_fallo_en_la_consolidacion_tambien_se_compensa(tmp_path, frontera):
+    """R98-P0-1: la consolidación estaba FUERA del try, así que dejaba el rollback partido."""
+    tablas = build_tables(_shard(tmp_path))
+    sink = _SinkQueFallaEn(
+        {TABLE_FORECAST: pd.DataFrame([{"x": "vieja"}]), TABLE_RELEASES: tablas.releases}
+    )
+    promote(sink, tablas)  # primera promoción: crea las __previous
+    antes = {n: sink.read_table(n) for n in sink.list_tables()}
+
+    sink.falla_en = lambda op: op == frontera
+    with pytest.raises(RuntimeError, match="el sink falló"):
+        promote(sink, tablas)
+
+    sink.falla_en = lambda op: False
+    assert sorted(sink.list_tables()) == sorted(antes), "el namespace vuelve a la fotografía"
+    for nombre, frame in antes.items():
+        pd.testing.assert_frame_equal(sink.read_table(nombre), frame, check_dtype=False)
+
+
+@pytest.mark.parametrize(
+    "frontera",
+    [
+        f"rename:{TABLE_FORECAST}->{TABLE_FORECAST}{SUFFIX_BACKUP}",
+        f"rename:{TABLE_FORECAST}{SUFFIX_PREVIOUS}->{TABLE_FORECAST}",
+        f"rename:{TABLE_RELEASES}->{TABLE_RELEASES}{SUFFIX_BACKUP}",
+        f"rename:{TABLE_RELEASES}{SUFFIX_PREVIOUS}->{TABLE_RELEASES}",
+        f"read:{TABLE_RELEASES}",
+    ],
+)
+def test_el_rollback_del_par_no_deja_una_activa_de_cada_promocion(tmp_path, frontera):
+    """R98-P0-2: restaurar la primera y fallar en la segunda mezclaba el par."""
+    tablas = build_tables(_shard(tmp_path))
+    sink = _SinkQueFallaEn(
+        {
+            TABLE_FORECAST: pd.DataFrame([{"x": "vieja_forecast"}]),
+            TABLE_RELEASES: tablas.releases.assign(verdict="PASS"),
+        }
+    )
+    promote(sink, tablas)
+    antes = {n: sink.read_table(n) for n in sink.list_tables()}
+
+    sink.falla_en = lambda op: op == frontera
+    with pytest.raises(RuntimeError, match="el sink falló"):
+        rollback(sink)
+
+    sink.falla_en = lambda op: False
+    assert sorted(sink.list_tables()) == sorted(antes)
+    for nombre, frame in antes.items():
+        pd.testing.assert_frame_equal(sink.read_table(nombre), frame, check_dtype=False)
+    # Ninguna activa quedó de la promoción anterior mientras la otra seguía en la nueva.
+    assert len(sink.read_table(TABLE_FORECAST)) == len(tablas.forecast)
+
+
+def test_el_rollback_completo_devuelve_las_dos_activas(tmp_path):
+    tablas = build_tables(_shard(tmp_path))
+    previas = {
+        TABLE_FORECAST: pd.DataFrame([{"x": "vieja_forecast"}]),
+        TABLE_RELEASES: tablas.releases.assign(verdict="PASS"),
+    }
+    sink = MemorySink(previas)
+    promote(sink, tablas)
+
+    assert rollback(sink) == [TABLE_FORECAST, TABLE_RELEASES]
+    for nombre, frame in previas.items():
+        pd.testing.assert_frame_equal(sink.read_table(nombre), frame, check_dtype=False)
+    assert not [t for t in sink.list_tables() if t.endswith((SUFFIX_BACKUP, SUFFIX_PREVIOUS))]
+
+
+def test_si_la_restauracion_tampoco_funciona_se_reporta_recovery_required(tmp_path):
+    tablas = build_tables(_shard(tmp_path))
+    sink = _SinkQueFallaEn({TABLE_FORECAST: pd.DataFrame([{"x": "vieja"}])})
+
+    # Falla la activación y además toda escritura de compensación sobre la activa.
+    sink.falla_en = lambda op: op in {
+        f"rename:{TABLE_RELEASES}{SUFFIX_NEXT}->{TABLE_RELEASES}",
+        f"write:{TABLE_FORECAST}",
+    } or op.startswith(f"rename:{TABLE_FORECAST}{SUFFIX_BACKUP}")
+
+    with pytest.raises(PromotionRecoveryError) as exc:
+        promote(sink, tablas)
+    assert exc.value.status == "RECOVERY_REQUIRED"
+    assert exc.value.inventario["expected_before"] == [TABLE_FORECAST]
+    assert exc.value.inventario["managed"] == managed_tables()
+
+
+def test_el_namespace_administrado_son_ocho_nombres():
+    """El protocolo sólo puede tocar esto; cualquier otra tabla del sink es ajena."""
+    assert managed_tables() == [
+        TABLE_FORECAST,
+        f"{TABLE_FORECAST}{SUFFIX_PREVIOUS}",
+        f"{TABLE_FORECAST}{SUFFIX_NEXT}",
+        f"{TABLE_FORECAST}{SUFFIX_BACKUP}",
+        TABLE_RELEASES,
+        f"{TABLE_RELEASES}{SUFFIX_PREVIOUS}",
+        f"{TABLE_RELEASES}{SUFFIX_NEXT}",
+        f"{TABLE_RELEASES}{SUFFIX_BACKUP}",
+    ]
+
+
+@pytest.mark.parametrize(
+    "frontera", [f"drop:{TABLE_FORECAST}{SUFFIX_BACKUP}", f"drop:{TABLE_RELEASES}{SUFFIX_BACKUP}"]
+)
+def test_si_el_sink_no_deja_retirar_el_respaldo_el_par_sigue_siendo_coherente(tmp_path, frontera):
+    """La limpieza del respaldo es lo último. Si el sink la rechaza, la compensación necesita ese
+    mismo `drop` y tampoco puede: se reporta RECOVERY_REQUIRED en vez de fingir que se restauró.
+    Lo que sí queda garantizado es que las dos activas son de la MISMA promoción."""
+    tablas = build_tables(_shard(tmp_path))
+    previas = {
+        TABLE_FORECAST: pd.DataFrame([{"x": "vieja_forecast"}]),
+        TABLE_RELEASES: tablas.releases.assign(verdict="PASS"),
+    }
+    sink = _SinkQueFallaEn(previas)
+    promote(sink, tablas)
+
+    sink.falla_en = lambda op: op == frontera
+    with pytest.raises(PromotionRecoveryError) as exc:
+        rollback(sink)
+
+    sink.falla_en = lambda op: False
+    assert exc.value.status == "RECOVERY_REQUIRED"
+    assert exc.value.inventario["managed"] == managed_tables()
+    for nombre, frame in previas.items():
+        pd.testing.assert_frame_equal(sink.read_table(nombre), frame, check_dtype=False)

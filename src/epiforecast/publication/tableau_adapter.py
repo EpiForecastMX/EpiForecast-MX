@@ -321,7 +321,7 @@ def _verify_readback(sink: TableSink, nombre: str, esperado: pd.DataFrame) -> No
 
 
 class PromotionRecoveryError(TableauAdapterError):
-    """La promoción falló Y la compensación no pudo restaurar el estado previo.
+    """La operación falló Y la restauración no pudo devolver el sink a su estado previo.
 
     No se disfraza de error normal: quien lo reciba tiene que recuperar a mano, y para eso lleva el
     inventario de lo que quedó en el sink.
@@ -333,59 +333,136 @@ class PromotionRecoveryError(TableauAdapterError):
         self.inventario = dict(inventario)
 
 
+# Namespace ADMINISTRADO: los únicos nombres que este protocolo puede leer, escribir o borrar.
+_SUFIJOS_GESTIONADOS = ("", SUFFIX_PREVIOUS, SUFFIX_NEXT, SUFFIX_BACKUP)
+
+
+def managed_tables(nombres: Sequence[str] = TABLES) -> list[str]:
+    """Activa, previa, temporal y respaldo de cada tabla. Todo lo demás en el sink es ajeno."""
+    return [f"{n}{sufijo}" for n in sorted(nombres) for sufijo in _SUFIJOS_GESTIONADOS]
+
+
+def _inventario(
+    sink: TableSink,
+    nombres: Sequence[str],
+    antes: Mapping[str, pd.DataFrame],
+    residuos: Sequence[str] = (),
+) -> dict[str, Any]:
+    """Lo que hace falta para recuperar a mano: qué hay, qué debería haber y qué es nuestro."""
+    return {
+        "tables": sorted(sink.list_tables()),
+        "expected_before": sorted(antes),
+        "namespace": sorted(nombres),
+        "managed": managed_tables(nombres),
+        "residues": sorted(residuos),
+    }
+
+
+def _snapshot(sink: TableSink, gestionadas: Sequence[str]) -> dict[str, pd.DataFrame]:
+    """Fotografía del namespace administrado ENTERO: activas, previas, temporales y respaldos."""
+    existentes = set(sink.list_tables())
+    fotos: dict[str, pd.DataFrame] = {}
+    for nombre in gestionadas:
+        if nombre not in existentes:
+            continue
+        frame = sink.read_table(nombre)
+        require(frame is not None, f"{nombre}: el sink lo lista y no lo devuelve")
+        assert frame is not None  # noqa: S101 — para mypy
+        fotos[nombre] = frame
+    return fotos
+
+
+def _check_preflight(sink: TableSink, nombres: Sequence[str], gestionadas: Sequence[str]) -> None:
+    """Sin residuos no se empieza.
+
+    Un ``__next`` o un ``__backup`` vivo es la evidencia de una recuperación inconclusa. Empezar
+    encima la sobrescribiría, que es justamente lo que impediría recuperar (R98-P1-1). Aquí no se
+    toca el sink: se mira y se sale.
+    """
+    existentes = set(sink.list_tables())
+    residuos = [
+        n for n in gestionadas if n.endswith((SUFFIX_NEXT, SUFFIX_BACKUP)) and n in existentes
+    ]
+    if residuos:
+        raise PromotionRecoveryError(
+            f"el sink conserva residuos de una operación anterior: {residuos}",
+            _inventario(sink, nombres, {}, residuos),
+        )
+
+
+def _restaurar(
+    sink: TableSink, antes: Mapping[str, pd.DataFrame], gestionadas: Sequence[str]
+) -> None:
+    """Devuelve el namespace administrado EXACTAMENTE a la fotografía del preflight.
+
+    Se restaura por contenido y no por el nombre en que quedó cada cosa: así la compensación es la
+    misma haya fallado el respaldo, la activación o la consolidación, en vez de una cadena de casos
+    particulares que se olvida justo del que ocurrió (R98-P0-1).
+    """
+    for nombre in gestionadas:
+        if nombre not in antes and nombre in set(sink.list_tables()):
+            sink.drop_table(nombre)
+    for nombre, frame in antes.items():
+        actual = sink.read_table(nombre) if nombre in set(sink.list_tables()) else None
+        if actual is None or _canonical_frame(actual) != _canonical_frame(frame):
+            sink.write_table(nombre, frame)
+
+
+def _verificar_restauracion(
+    sink: TableSink, antes: Mapping[str, pd.DataFrame], gestionadas: Sequence[str]
+) -> None:
+    """Restaurar sin verificar es afirmar. Se comparan los nombres y el contenido de cada uno."""
+    presentes = sorted(n for n in gestionadas if n in set(sink.list_tables()))
+    equal("restauración: tablas del namespace", presentes, sorted(antes))
+    for nombre, frame in antes.items():
+        _verify_readback(sink, nombre, frame)
+
+
+def _compensar(
+    sink: TableSink,
+    nombres: Sequence[str],
+    antes: Mapping[str, pd.DataFrame],
+    gestionadas: Sequence[str],
+    error: Exception,
+) -> None:
+    """Restaura y verifica; si eso tampoco sale, el fallo se reporta como RECOVERY_REQUIRED."""
+    try:
+        _restaurar(sink, antes, gestionadas)
+        _verificar_restauracion(sink, antes, gestionadas)
+    except Exception as fallo:
+        raise PromotionRecoveryError(
+            f"{error} · restauración: {fallo}", _inventario(sink, nombres, antes)
+        ) from error
+
+
 def promote(sink: TableSink, tables: RunnerTables) -> dict[str, Any]:
     """Promoción RECUPERABLE de las dos tablas del namespace.
 
     Un sink de hojas de cálculo no ofrece transacciones multi-tabla, así que no se promete
     atomicidad: se promete **recuperabilidad**. El protocolo es:
 
-    1. *preflight*: se fotografían activas, temporales y respaldos;
+    1. *preflight*: se rechaza cualquier residuo y se fotografía el namespace administrado entero;
     2. se escribe cada ``<tabla>__next`` y se **relee entera** para compararla;
     3. se respalda cada activa en ``<tabla>__backup`` —sin tocar un ``__previous`` válido, que es
        el punto de retorno del rollback anterior—;
     4. se activan las dos;
     5. se verifican las dos ya activas;
-    6. ante fallo en cualquier frontera —write, read, rename o drop— se compensa y se restaura
-       exactamente el estado previo. Si la compensación falla, se lanza `PromotionRecoveryError`
-       con el inventario.
+    6. se consolida ``__backup``→``__previous``;
+    7. ante fallo en cualquier frontera —write, read, rename o drop— **incluida la consolidación**,
+       se restaura la fotografía completa y se verifica. Si eso falla, `PromotionRecoveryError`.
 
     Antes, un fallo en el rename de la segunda tabla dejaba una activa nueva y la otra AUSENTE
-    (R96-P0-2). Ahora, o quedan las dos viejas, o las dos nuevas.
+    (R96-P0-2), y la consolidación caía fuera de la recuperación (R98-P0-1). Ahora, o queda todo el
+    namespace como estaba, o queda la promoción entera.
     """
     nombres = sorted(tables.as_mapping())
-    antes = {n: sink.read_table(n) for n in sink.list_tables()}
-    creadas: list[str] = []
+    gestionadas = managed_tables(nombres)
+    _check_preflight(sink, nombres, gestionadas)
+    antes = _snapshot(sink, gestionadas)
 
-    def compensar(activadas: Sequence[str]) -> None:
-        """Devuelve el sink al estado fotografiado en el preflight.
-
-        Se recorre el namespace COMPLETO, no sólo lo que llegó a activarse: si el fallo cae entre el
-        respaldo y la activación, esa tabla está viva en su ``__backup`` y hay que traerla de vuelta
-        aunque nunca figurara como activada (R96-P0-2).
-        """
-        for nombre in nombres:
-            existentes = set(sink.list_tables())
-            respaldo = f"{nombre}{SUFFIX_BACKUP}"
-            if respaldo in existentes:
-                if nombre in existentes:
-                    sink.drop_table(nombre)
-                sink.rename_table(respaldo, nombre)
-            elif nombre in activadas and nombre not in antes:
-                sink.drop_table(nombre)  # no existía antes: no debe quedar
-        for temporal in creadas:
-            if temporal in set(sink.list_tables()):
-                sink.drop_table(temporal)
-
-    def inventario() -> dict[str, Any]:
-        return {
-            "tables": sorted(sink.list_tables()),
-            "expected_before": sorted(antes),
-            "namespace": nombres,
-        }
-
-    # ── 2. temporales verificadas ──
     objetivos: dict[str, pd.DataFrame] = {}
     try:
+        # ── 2. temporales verificadas ──
         for nombre in nombres:
             frame = tables.as_mapping()[nombre]
             objetivo = (
@@ -394,45 +471,33 @@ def promote(sink: TableSink, tables: RunnerTables) -> dict[str, Any]:
                 else frame
             )
             objetivos[nombre] = objetivo
-            temporal = f"{nombre}{SUFFIX_NEXT}"
-            sink.write_table(temporal, objetivo)
-            creadas.append(temporal)
-            _verify_readback(sink, temporal, objetivo)
-    except Exception:
-        try:
-            compensar([])
-        except Exception as fallo:  # pragma: no cover - la compensación aquí sólo borra temporales
-            raise PromotionRecoveryError(str(fallo), inventario()) from fallo
-        raise
+            sink.write_table(f"{nombre}{SUFFIX_NEXT}", objetivo)
+            _verify_readback(sink, f"{nombre}{SUFFIX_NEXT}", objetivo)
 
-    # ── 3-5. respaldo, activación y verificación ──
-    activadas: list[str] = []
-    try:
+        # ── 3-4. respaldo y activación ──
         for nombre in nombres:
             if nombre in antes:
                 sink.rename_table(nombre, f"{nombre}{SUFFIX_BACKUP}")
             sink.rename_table(f"{nombre}{SUFFIX_NEXT}", nombre)
-            creadas.remove(f"{nombre}{SUFFIX_NEXT}")
-            activadas.append(nombre)
+
+        # ── 5. verificación de las dos activas ──
         for nombre in nombres:
             _verify_readback(sink, nombre, objetivos[nombre])
-    except Exception as error:
-        try:
-            compensar(activadas)
-        except Exception as fallo:
-            raise PromotionRecoveryError(
-                f"{error} · compensación: {fallo}", inventario()
-            ) from error
-        raise
 
-    # ── 6. sólo con las dos activas verificadas se consolida el punto de retorno ──
-    for nombre in nombres:
-        respaldo = f"{nombre}{SUFFIX_BACKUP}"
-        if respaldo in set(sink.list_tables()):
+        # ── 6. consolidación del punto de retorno, dentro del protocolo compensable ──
+        for nombre in nombres:
+            respaldo = f"{nombre}{SUFFIX_BACKUP}"
+            existentes = set(sink.list_tables())
+            if respaldo not in existentes:
+                continue
             previa = f"{nombre}{SUFFIX_PREVIOUS}"
-            if previa in set(sink.list_tables()):
+            if previa in existentes:
                 sink.drop_table(previa)
             sink.rename_table(respaldo, previa)
+    except Exception as error:
+        _compensar(sink, nombres, antes, gestionadas, error)
+        raise
+
     return {
         "status": "PROMOTED",
         "promoted": list(nombres),
@@ -445,33 +510,44 @@ def promote(sink: TableSink, tables: RunnerTables) -> dict[str, Any]:
 
 
 def rollback(sink: TableSink, nombres: Sequence[str] = TABLES) -> list[str]:
-    """Swap inverso RECUPERABLE: la activa no se borra hasta tener la previa a salvo.
+    """Swap inverso RECUPERABLE, sobre el **par** y no tabla por tabla.
 
     Antes se hacía `drop(activa)` y luego `rename(previa → activa)`: si ese rename fallaba, se
-    perdían las dos (R96-P0-2). Ahora la activa se aparta a ``__backup`` y sólo se borra cuando la
-    previa ya ocupó su lugar.
+    perdían las dos (R96-P0-2). Después, cada tabla se protegía por separado: si la primera
+    restauraba y la segunda fallaba, el par quedaba mezclado —una activa de la promoción anterior y
+    otra de la nueva—, que es el estado que ningún consumidor puede interpretar (R98-P0-2).
+
+    Ahora se fotografía el namespace entero, se restauran todas, se verifican todas y sólo entonces
+    se retiran los respaldos; cualquier fallo devuelve la fotografía completa.
+
+    Sólo vuelven las tablas que tienen ``__previous``: una que se creó en la promoción no tiene a
+    qué volver, y borrarla sería inventar una semántica que nadie pidió.
     """
-    restauradas = []
-    for nombre in sorted(nombres):
-        existentes = set(sink.list_tables())
-        previa = f"{nombre}{SUFFIX_PREVIOUS}"
-        if previa not in existentes:
-            continue
-        respaldo = f"{nombre}{SUFFIX_BACKUP}"
-        aparto = False
-        if nombre in existentes:
-            sink.rename_table(nombre, respaldo)
-            aparto = True
-        try:
-            sink.rename_table(previa, nombre)
-        except Exception:
-            if aparto:
-                sink.rename_table(respaldo, nombre)  # la activa vuelve a su sitio
-            raise
-        if aparto:
-            sink.drop_table(respaldo)
-        restauradas.append(nombre)
-    return restauradas
+    nombres = sorted(nombres)
+    gestionadas = managed_tables(nombres)
+    _check_preflight(sink, nombres, gestionadas)
+    existentes = set(sink.list_tables())
+    restaurables = [n for n in nombres if f"{n}{SUFFIX_PREVIOUS}" in existentes]
+    if not restaurables:
+        return []
+    antes = _snapshot(sink, gestionadas)
+
+    try:
+        for nombre in restaurables:
+            if nombre in set(sink.list_tables()):
+                sink.rename_table(nombre, f"{nombre}{SUFFIX_BACKUP}")
+            sink.rename_table(f"{nombre}{SUFFIX_PREVIOUS}", nombre)
+        for nombre in restaurables:
+            _verify_readback(sink, nombre, antes[f"{nombre}{SUFFIX_PREVIOUS}"])
+        for nombre in restaurables:
+            respaldo = f"{nombre}{SUFFIX_BACKUP}"
+            if respaldo in set(sink.list_tables()):
+                sink.drop_table(respaldo)
+    except Exception as error:
+        _compensar(sink, nombres, antes, gestionadas, error)
+        raise
+
+    return list(restaurables)
 
 
 class MemorySink:
