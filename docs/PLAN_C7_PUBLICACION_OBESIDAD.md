@@ -1,9 +1,11 @@
 # C7 — Plan operativo de publicación de Obesidad
 
 > **Estado autoritativo (2026-07-26): C7.2 y C7.3 CERRADAS; C7.5-PREP PASS; C7.6 BACKEND PASS.**
-> Backend local `79689412` (`ahead 11`) y remoto `dbfdd49c`; dashboard local limpio
-> `feat/c73-candidate-staging@3ee38310` (`ahead 10` de `main`) y remoto de la rama `d5ead880`.
-> 47.2-B1/B2/B3/B4 quedó **CERRADA / PASS** después de auditoría independiente: 616/616 casos,
+> Backend local `4886dc22` (`ahead 13`) y remoto `dbfdd49c`; dashboard limpio
+> `feat/c73-candidate-staging@19e6a893` (`ahead 12` de `main`) y remoto de la rama `d5ead880`.
+> 47.3 quedó **CERRADA / PASS**: `npm test` verifica primero el fixture reproducible, ejecuta
+> 616/616 respuestas con handler real y luego 41/41 contratos focalizados.
+> 47.2-B1/B2/B3/B4/B4.1 quedó **CERRADA / PASS** después de auditoría independiente: 616/616 casos,
 > handler real, cero discrepancias nombradas, cifras del ranking recalculadas desde su fuente y
 > exactamente 12 respuestas modificadas respecto de `a1412e33`. La cobertura estatal histórica
 > continúa siendo parcial (14/32), pero ahora se declara como tal y no se presenta como ranking
@@ -19,13 +21,13 @@
 > `INCOMPLETE (0/4)` y no se presenta como PASS. Un FAIL final obliga a rollback; un PASS convierte
 > la publicación condicionada en confirmada.
 >
-> **Orden vigente:** (1) ejecutar únicamente 47.3 local para convertir el generador, el fixture, la
-> traza y las regresiones focalizadas en un gate oficial único y reproducible; (2) auditar 47.3 y
-> congelar el checkpoint local; (3) corregir el contrato de vectores del RAG y llevar el drift real
-> a cero con la clave disponible como secreto; (4) cerrar C7.6-READINESS y emitir el paquete de
-> aprobación; (5) activar y desplegar coordinadamente con etiqueta pública de validación en curso;
-> (6) reejecutar C7.4 con cada boletín hasta 4/4. La
-> Ronda 62 contiene la orden ejecutable vigente y sustituye cualquier orden histórica incompatible.
+> **Orden vigente:** (1) cerrar el microcontrato B4.2 antes de activación: padecimiento explícito sin
+> fuente demográfica falla cerrado y el ranking declara el corte real del último año; (2) corregir el
+> contrato de vectores del RAG y llevar el drift real a cero con la clave disponible como secreto;
+> (3) cerrar C7.6-READINESS y emitir el paquete de aprobación; (4) activar y desplegar
+> coordinadamente con etiqueta pública de validación en curso; (5) reejecutar C7.4 con cada boletín
+> hasta 4/4. La Ronda 64 contiene la orden ejecutable vigente y sustituye cualquier orden histórica
+> incompatible.
 > Obesidad continúa por ahora `trained`, NO-GO e invisible para `published_only`.
 >
 > **Alcance:** publicar únicamente Obesidad E66. Anorexia F50 permanece
@@ -10018,6 +10020,137 @@ _Respuesta:_
 
 ---
 
+### Ronda 63 — Auditoría de B4.1, estado del WIP 47.3 y órdenes — 2026-07-26
+
+Esta ronda actualiza únicamente el plan. No se corrigió código del dashboard, no se usó la clave y
+no se tocó RAG, HTML, lifecycle, puntero, release ni publicación.
+
+#### B4.1 auditado · PASS
+
+```text
+commit                              45bba6c2
+diff 3ee38310..45bba6c2             kb.js + test_ranking.mjs · +24 / -4
+fixture                             616 respuestas/handlers byte-idénticos
+regresión nueva contra 3ee38310     8/9 PASS; falla sólo el caso que B4.1 corrige
+regresión nueva contra 45bba6c2     9/9 PASS
+npm test                            616/616 + unitarios PASS
+focalizadas                         36/36
+candidate                           19/19
+generate --check                    PASS · anuncia 616
+superficies públicas                intactas
+```
+
+La corrección respeta el alcance pedido: “hombres o mujeres tienen más depresión” usa únicamente
+Depresión; la consulta sin padecimiento conserva el agregado y declara las cuatro fuentes. Cero
+casos del fixture cambian.
+
+#### WIP 47.3 detectado y validado, todavía sin commit
+
+Mientras se auditaba apareció trabajo local en el dashboard:
+
+```text
+M   epibot/package.json
+M   epibot/tests/generate_tests.js
+??  epibot/tests/test_fixture_verify.mjs
+```
+
+No tocar ni descartar ese WIP. La dirección es correcta:
+
+- `npm test` ejecuta primero `test:cases:verify`, luego 616 casos y después los unitarios;
+- la telemetría ya se movió y anuncia 616;
+- cinco pruebas ejercitan fixture intacto, alterado, ausente, duplicado y telemetría;
+- todo ocurre sobre copias temporales;
+- el fixture y las superficies permanecen intactos.
+
+Gate observado sobre el WIP:
+
+```text
+npm test                            PASS · 616/616 + 41 unitarios
+test:candidate                      19/19
+generate_tests.js --check           PASS · 616
+npm run check                       llega hasta rag:verify y falla sólo por el drift conocido:
+                                    corpus 454 · índice 452 · 19 chunks sin cubrir
+```
+
+#### Orden inmediata — terminar 47.3 sin ampliar el alcance
+
+Completar el WIP existente, no reimplementarlo:
+
+1. corregir la cabecera de `generate_tests.js`: construye/verifica/escribe; **no ejecuta** las
+   respuestas;
+2. demostrar en temporal que dos ejecuciones de escritura de `test:gen` producen bytes idénticos;
+3. fortalecer “no mutante” comprobando bytes **y mtime** tras `--check`;
+4. integrar `npm test` dentro de `npm run check`, antes de candidate/RAG, sin recursión ni suites
+   duplicadas;
+5. confirmar que el test de fixture alterado cubre también un ID no consecutivo; puede añadirse un
+   caso pequeño al test actual, sin extraer otro framework;
+6. conservar `package-lock.json` sin cambios: sólo cambian scripts, no dependencias;
+7. ejecutar el gate completo y crear **un commit local único de 47.3**;
+8. STOP para auditoría. No comenzar B4.2 ni RAG en el mismo commit.
+
+No se exige extraer un módulo puro si el test sigue invocando el CLI real sobre copias temporales:
+esa ruta es más directa y evita duplicar el contrato.
+
+#### Gate de cierre 47.3
+
+```text
+npm run test:cases:verify           PASS · 616 · bytes/mtime intactos
+npm test                            616/616 + todos los unitarios focalizados
+npm run test:candidate              19/19
+test:gen ×2 en temporales            mismos bytes
+test_fixture_verify                 incluye intacto/alterado/ausente/duplicado/ID/telemetría
+npm run check                       único rojo permitido: rag:verify 454/452/19
+knowledge/RAG/HTML/package-lock      byte-idénticos
+kb.js/entities.js/test_cases.json    sin cambios respecto de 45bba6c2
+```
+
+#### Hallazgo latente para B4.2 — no mezclar ahora
+
+B4.1 aún tiene un fallback semánticamente peligroso para N+1:
+
+```js
+ent.padecimiento && demo[ent.padecimiento]
+  ? [ent.padecimiento]
+  : Object.keys(demo)
+```
+
+Si se nombra un padecimiento pero falta su entrada demográfica, responde con **todos los demás**.
+Se reprodujo eliminando sólo `demo_historica.Depresion`: “hombres o mujeres tienen más depresión”
+contestó con Alzheimer + Dengue + Parkinson, 53.8%. Para un padecimiento N+1 esto sería una
+respuesta convincente y falsa.
+
+Después de auditar 47.3, B4.2 será un microcommit separado:
+
+1. padecimiento explícito sin fuente demográfica → `null` o mensaje explícito de dato no
+   disponible; nunca agregado global;
+2. padecimiento explícito con fuente → sólo esa fuente;
+3. sin padecimiento explícito → agregado de claves presentes;
+4. el ranking debe declarar dinámicamente que el último año es parcial usando
+   `boletin.meta.max_anio/max_semana`; no hardcodear 2026, semana 27 ni la fecha del sistema;
+5. pruebas de las tres ramas y del encabezado parcial;
+6. cambios de respuestas autorizados para la etiqueta parcial: sólo los 11 rankings
+   `129–136, 214–216`; cualquier extra detiene el commit.
+
+La etiqueta parcial es P2; el fallback a otras enfermedades es P0 antes de activar Obesidad. Se
+resuelven juntos por economía, pero **después** del checkpoint 47.3.
+
+#### Secuencia después
+
+1. Terminar 47.3 → commit local → auditoría.
+2. Ejecutar B4.2 → commit local → auditoría.
+3. Ejecutar `C7.6-RAG-CONTRACT` con `GEMINI_API_KEY` sólo como secreto de entorno.
+4. Llevar `npm run check` completamente a verde.
+5. Recién entonces preparar cache-bust, activación condicionada y autorizaciones externas.
+
+#### Próxima acción exacta
+
+**Terminar únicamente el WIP 47.3 que ya existe, crear un commit local y STOP.**
+
+_Respuesta:_ **GO TERMINAR 47.3 LOCAL. Sin B4.2, RAG, clave, push, PR, merge, deploy, activación,
+lifecycle ni publicación.**
+
+---
+
 ### Ronda 62 — 47.3 ejecutada: la verificación del fixture entra al comando oficial — 2026-07-26
 
 Un commit local sobre `45bba6c2`. Sin RAG, clave, cache-bust, push, merge, deploy, activación ni
@@ -10094,5 +10227,180 @@ Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
    `entities.js`. No lo hago hasta que haya intención de desplegar.
 4. **Doce commits locales sin push** en cada repo. Cuando quieras, la autorización va por
    repositorio y por rango literal.
+
+_Respuesta:_
+
+---
+
+### Ronda 64 — Auditoría de 47.3 y Orden B4.2 — 2026-07-26
+
+#### 47.3 auditada · PASS
+
+```text
+commit                              19e6a893
+diff 45bba6c2..19e6a893             3 archivos · +116 / -7 · diff --check PASS
+npm test                            616/616 + 41/41
+test:candidate                      19/19
+fixture mentido                     npm test rc=1
+fixture restaurado                  npm test rc=0 · bytes originales
+generación en archive limpio ×2     SHA256 714afb027ae7… en ambas
+generate --check                    rc=0 · 616
+knowledge/RAG/HTML/package-lock      byte-idénticos
+```
+
+El commit hace lo que declara y 47.3 queda cerrado. Dos observaciones menores no lo invalidan:
+
+- la primera línea de `generate_tests.js` todavía dice “genera y ejecuta ~400”; se corrige junto
+  con el próximo cambio legítimo del archivo, sin abrir un commit sólo por comentario;
+- `npm run check` aún no llama `npm test`; deberá incorporarlo cuando
+  `C7.6-RAG-CONTRACT` toque ese gate y lo lleve completamente a verde.
+
+No se pide reabrir 47.3 ni añadir más infraestructura de fixture.
+
+#### Orden B4.2 — último microcontrato semántico antes del RAG
+
+Trabajar únicamente en el dashboard sobre `19e6a893`. Un commit local y STOP.
+
+1. En `answerDemografica`, si `ent.padecimiento` está presente:
+   - con entrada en `stats.demo_historica`, responder sólo ese padecimiento;
+   - sin entrada, devolver `null` o un mensaje explícito de dato no disponible;
+   - **nunca** caer al agregado de las demás enfermedades.
+2. Sin padecimiento explícito, conservar el agregado dinámico de las claves presentes.
+3. En los rankings históricos, construir la etiqueta de corte desde:
+   - `boletin.meta.max_anio`;
+   - `boletin.meta.max_semana`;
+   No usar `new Date()`, `2026`, `27`, `52` ni `53` como decisión hardcodeada. El metadato no
+   declara cuántas semanas completan ese año MMWR, por lo que el texto honesto es **“datos hasta la
+   semana N”**, no inferir completo/parcial con una constante.
+4. Añadir pruebas que muerdan:
+   - eliminar temporalmente `demo_historica.Depresion` y preguntar por Depresión debe dar
+     `null/no disponible`, nunca Alzheimer+Dengue+Parkinson;
+   - fuente presente → sólo el padecimiento pedido;
+   - consulta global → todas las claves presentes;
+   - cambiar sintéticamente `max_anio/max_semana` mueve ambos valores del texto, sin fecha del
+     sistema.
+5. Comparar las 616 respuestas/handlers con RNG fijo. Cambios permitidos: sólo los 11 rankings
+   `129–136, 214–216`; la consulta latente de fuente demográfica ausente no está en el fixture.
+6. Ejecutar:
+
+```text
+npm test                            616/616 + unitarios
+npm run test:candidate              19/19
+npm run test:cases:verify           PASS · no mutante
+node --check                        kb.js · tests nuevos
+knowledge/RAG/HTML/package          byte-idénticos
+```
+
+7. Crear un commit local B4.2 y detenerse. No corregir RAG ni cache-bust en ese commit.
+
+#### Después de B4.2
+
+1. Auditar B4.2 y confirmar el conjunto exacto de 11 respuestas.
+2. Ejecutar `C7.6-RAG-CONTRACT`:
+   - usar `GEMINI_API_KEY` sólo desde el entorno y nunca imprimirla;
+   - reparar el índice baseline hasta drift cero;
+   - mantener Obesidad únicamente en el índice candidate/staging hasta activación;
+   - integrar `npm test` en `npm run check`;
+   - corregir el comentario obsoleto de `generate_tests.js`;
+   - exigir `npm run check` completamente verde.
+3. Después preparar cache-bust y el paquete final de activación condicionada.
+
+#### Próxima acción exacta
+
+**Ejecutar sólo B4.2 local sobre `19e6a893`, crear un commit y STOP.**
+
+_Respuesta:_ **GO B4.2 LOCAL. Sin RAG, clave, push, PR, merge, deploy, cache-bust, activación,
+lifecycle ni publicación.**
+
+---
+
+### Ronda 65 — B4.2 ejecutada: corte desde metadata y fallback fail-closed — 2026-07-26
+
+Un commit local sobre `19e6a893`. Sin RAG, clave, push, PR, merge, deploy, cache-bust, activación,
+lifecycle ni publicación.
+
+```text
+438441a0  B4.2  corte derivado de metadata y fallback demografico fail-closed
+```
+
+#### O-1 · el corte sale de `boletin.meta`, no de una constante
+
+```text
+antes   **… incidencia de Parkinson** (acumulado 2014–2026) — 14 entidades canónicas…
+ahora   **… incidencia de Parkinson** (acumulado desde 2014, datos hasta la semana 27 de 2026) — …
+```
+
+Adopté tu criterio tal cual: **“datos hasta la semana N de AAAA”**, sin decir “de 52” ni “parcial”.
+El metadato dice hasta dónde llegan los datos; **no** dice cuántas semanas tiene ese año MMWR —hay
+de 52 y de 53—, así que inferirlo sería afirmar algo que el contrato no declara. Cero `new Date()`
+y cero constantes de calendario en la rama: verificado sobre el rango exacto de líneas, las únicas
+apariciones de `27`/`52`/`53` están en el comentario que explica por qué no se usan.
+
+#### Fallback N+1 · fallar cerrado
+
+`answerDemografica` caía al agregado cuando el padecimiento pedido no tenía desglose: devolvía la
+suma de las **otras** enfermedades como si respondiera la pregunta. Con Obesidad y Anorexia F50 ya
+dados de alta en el registry, eso se dispara solo en cuanto alguien pregunte por ellos.
+
+```text
+ahora   "No tengo desglose demográfico por sexo de **X** en el boletín. Sí lo tengo de: …"
+```
+
+Tres decisiones que conviene que revises:
+
+1. **Mensaje y no `null`.** La orden permitía ambos. Elegí mensaje porque cediendo, un handler
+   posterior de la cadena volvería a servir un agregado ajeno — el defecto reaparecería una casilla
+   más abajo.
+2. **Nombra de qué padecimientos sí hay datos, nunca sus cifras.** La prueba lo fija: ninguna cifra
+   de los otros puede aparecer. Si prefieres que ni los nombre, es una línea.
+3. **Mismo criterio aplicado a `answerSexo`**, que con un padecimiento sin datos bajaba a la tabla
+   global de los 333 modelos. Es el mismo agujero en el handler de al lado; no tenía sentido tapar
+   uno y dejar el otro. No cambia ningún id del fixture.
+
+#### Pruebas que muerden
+
+Las dos nuevas se verificaron **rojas contra `19e6a893`** (las otras nueve, verdes en ambos: no son
+las que prueban esto):
+
+```text
+quitar demo_historica.Depresion y preguntar por Depresión
+   → mensaje explícito · 0 cifras de Alzheimer/Dengue/Parkinson · 0 tablas
+   → restaurada la fuente, vuelve a responder con sus propias cifras
+max_anio/max_semana = 1999/3
+   → "datos hasta la semana 3 de 1999" en ranking por padecimiento y en el genérico
+   → el año del sistema NO aparece · no dice "de 52", "de 53" ni "parcial"
+```
+
+#### Alcance · exactamente los 11 permitidos
+
+```text
+cambian     129 130 131 132 133 134 135 136 · 214 215 216
+extras                                        0
+permitidos sin cambiar                        0
+matriz nombrada                               0 discrepancias
+```
+
+#### Gate
+
+```text
+npm test                     616/616  +  43/43
+test:candidate                19/19
+test:cases:verify             rc=0 · fixture intacto por md5
+node --check                  kb.js · test_ranking.mjs  PASS
+knowledge / RAG / HTML / package / package-lock   byte-idénticos
+```
+
+#### Estado
+
+```text
+Dashboard   438441a0 · limpio · ahead 13 de main · SIN PUSH
+Backend     ahead 13 · SIN PUSH
+Readiness   SIGSEGV ✓ · npm test real ✓ · fixture ✓ · traza ✓ · 47.2-B ✓ · 47.3 ✓ · B4.2 ✓ · RAG ✗
+Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
+```
+
+Siguiente acción exacta: **auditar B4.2**. Después, `C7.6-RAG-CONTRACT` con `GEMINI_API_KEY` desde
+el entorno — no lo empiezo sin tu GO, y ahí van también las dos deudas que dejaste anotadas en la
+Ronda 64: `npm test` dentro de `npm run check` y el comentario obsoleto de `generate_tests.js`.
 
 _Respuesta:_
