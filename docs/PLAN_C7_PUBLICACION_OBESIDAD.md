@@ -1,8 +1,9 @@
 # C7 — Plan operativo de publicación de Obesidad
 
-> **Estado autoritativo (2026-07-26): C7.2 y C7.3 CERRADAS; C7.5-PREP PASS; C7.6 BACKEND PASS.**
-> Backend local `4886dc22` (`ahead 13`) y remoto `dbfdd49c`; dashboard limpio
-> `feat/c73-candidate-staging@19e6a893` (`ahead 12` de `main`) y remoto de la rama `d5ead880`.
+> **Estado autoritativo (2026-07-26): C7.2 y C7.3 CERRADAS; C7.5-PREP PASS; C7.6 BACKEND PASS;
+> B4.2 PASS.**
+> Backend local `64716ec1` (`ahead 14`) y remoto `dbfdd49c`; dashboard limpio
+> `feat/c73-candidate-staging@438441a0` (`ahead 13` de `main`) y remoto de la rama `d5ead880`.
 > 47.3 quedó **CERRADA / PASS**: `npm test` verifica primero el fixture reproducible, ejecuta
 > 616/616 respuestas con handler real y luego 41/41 contratos focalizados.
 > 47.2-B1/B2/B3/B4/B4.1 quedó **CERRADA / PASS** después de auditoría independiente: 616/616 casos,
@@ -21,14 +22,36 @@
 > `INCOMPLETE (0/4)` y no se presenta como PASS. Un FAIL final obliga a rollback; un PASS convierte
 > la publicación condicionada en confirmada.
 >
-> **Orden vigente:** (1) cerrar el microcontrato B4.2 antes de activación: padecimiento explícito sin
-> fuente demográfica falla cerrado y el ranking declara el corte real del último año; (2) corregir el
-> contrato de vectores del RAG y llevar el drift real a cero con la clave disponible como secreto;
-> (3) cerrar C7.6-READINESS y emitir el paquete de aprobación; (4) activar y desplegar
-> coordinadamente con etiqueta pública de validación en curso; (5) reejecutar C7.4 con cada boletín
-> hasta 4/4. La Ronda 64 contiene la orden ejecutable vigente y sustituye cualquier orden histórica
+> **Orden vigente:** (1) ejecutar `C7.6-RAG-A`, que corrige y prueba el contrato de vectores sin usar
+> la clave ni regenerar índices; (2) auditar A y sólo después ejecutar `C7.6-RAG-B`, que repara el
+> índice público baseline con la clave disponible como secreto; (3) auditar B y ejecutar
+> `C7.6-RAG-C`, que demuestra el índice candidate exclusivamente en staging; (4) cerrar
+> C7.6-READINESS y emitir el paquete de aprobación; (5) activar y desplegar
+> coordinadamente con etiqueta pública de validación en curso; (6) reejecutar C7.4 con cada boletín
+> hasta 4/4. La Ronda 66 contiene la orden ejecutable vigente y sustituye cualquier orden histórica
 > incompatible.
 > Obesidad continúa por ahora `trained`, NO-GO e invisible para `published_only`.
+>
+> **Avance operativo estimado de C7: 79% hacia la publicación condicionada.** La cifra usa pesos
+> declarados por impacto del entregable, no cantidad de commits ni líneas. Estado por fase:
+>
+> | fase | peso | avance | aporte | estado verificable |
+> | --- | ---: | ---: | ---: | --- |
+> | C7.0 contención de residuos | 5% | 100% | 5.0% | PASS |
+> | C7.1 identidad y registry | 10% | 100% | 10.0% | PASS |
+> | C7.2 bundle inmutable + DVC | 20% | 100% | 20.0% | PASS |
+> | C7.3 compilador y consumidores en sombra | 20% | 100% | 20.0% | PASS |
+> | C7.4 congelado prospectivo | 10% | 50% | 5.0% | contrato congelado; evidencia `0/4` |
+> | C7.5 preparación de activación | 10% | 85% | 8.5% | PREP PASS; falta gate integral final |
+> | C7.6 readiness | 15% | 70% | 10.5% | backend/dashboard PASS; RAG A/B/C pendiente |
+> | C7.7 activación, deploy y smoke | 10% | 0% | 0.0% | no autorizado ni ejecutado |
+> | **Total** | **100%** |  | **79.0%** | Obesidad sigue oculta |
+>
+> El **79% no significa publicada**: la exposición pública sigue en **0%** porque lifecycle, puntero
+> activo y deploy no se han ejecutado. La confirmación prospectiva se informa separadamente como
+> **0/4 semanas (0%)** y continuará después de la publicación condicionada por decisión explícita
+> del usuario. Próximo incremento real: cerrar RAG-A, RAG-B y RAG-C; después emitir readiness y
+> recién entonces autorizar C7.7.
 >
 > **Alcance:** publicar únicamente Obesidad E66. Anorexia F50 permanece
 > `lifecycle=configured`, `channels: []`, `gallery_enabled: false` y oculta durante toda C7.
@@ -2767,6 +2790,172 @@ sin devolverle motores legacy a Obesidad), que además es lo único que mantiene
 la Acción 4.
 
 _Respuesta:_
+
+---
+
+### Ronda 66 — Auditoría B4.2 PASS y orden C7.6-RAG por gates — 2026-07-26
+
+#### B4.2 auditada · PASS
+
+La auditoría se hizo sobre el rango `19e6a893..438441a0`, no sólo sobre el reporte del commit.
+
+```text
+commit                              438441a0
+superficie                          kb.js + test_ranking.mjs · +91 / -6
+git diff --check                    PASS
+npm test                            616/616 + 43/43
+test:candidate                      19/19
+test:cases:verify                   616 · rc=0 · no mutante
+node --check                        kb.js + test_ranking.mjs · PASS
+respuestas modificadas              129–136 y 214–216 · exactamente 11
+respuestas extra/faltantes          0 / 0
+handlers modificados                0
+pruebas nuevas contra 19e6a893      2 rojas de 11; las 9 restantes verdes
+knowledge/RAG/HTML/package          byte-idénticos
+```
+
+Las tres decisiones de B4.2 quedan aceptadas:
+
+1. **Mensaje explícito en vez de `null`: correcto.** Ceder con `null` permitiría que un handler
+   posterior contestara con el agregado de otro padecimiento. El mensaje detiene la resolución con
+   una respuesta honesta.
+2. **Nombrar fuentes disponibles sin mostrar sus cifras: aceptado.** Ayuda al usuario sin atribuir
+   números ajenos al padecimiento pedido. Las pruebas fijan que ninguna cifra de otro padecimiento
+   pueda aparecer.
+3. **Aplicar el mismo cierre a `answerSexo`: correcto.** Era el mismo defecto semántico en la ruta
+   contigua. Dejarla abierta habría conservado el fallo para Obesidad, F50 y cualquier N+1 sin
+   desglose.
+
+La etiqueta de corte también queda aceptada: sale de `boletin.meta.max_semana/max_anio` y declara
+“datos hasta la semana N de AAAA”. No inventa si el año MMWR tiene 52 o 53 semanas y no depende de
+la fecha del sistema.
+
+**B4.2 queda CERRADA. No reabrirla durante C7.6.**
+
+#### Hallazgo que gobierna C7.6-RAG
+
+El índice candidate de staging puede dar un **falso verde** hoy:
+
+- `rag_staging.mjs` comprueba que el chunk exista, pero asigna `[]` a los chunks sin embedding;
+- un chunk candidate con vector vacío se reporta como “sin drift”;
+- `build_rag_index.mjs` tolera clave ausente, fallo de API o embedding vacío y puede terminar con
+  `rc=0`;
+- la disponibilidad de búsqueda léxica no satisface readiness del canal RAG.
+
+Por eso no se autoriza regenerar ningún índice antes de corregir el contrato. Tener
+`GEMINI_API_KEY` disponible no convierte un verificador incompleto en un gate válido.
+
+#### C7.6-RAG-A — contrato y pruebas, sin usar la clave
+
+Ésta es la **única acción autorizada inmediatamente**. Trabajar en
+`EpiForecast-IMSS-Dashboard` sobre `438441a0`, en un commit local y STOP.
+
+1. Extraer una única función compartida para:
+   - reutilizar embeddings por `chunkHash`;
+   - generar los embeddings faltantes;
+   - validar el resultado completo.
+   `build_rag_index.mjs` y `rag_staging.mjs` deben consumirla; no duplicar llamadas a Gemini,
+   reintentos ni reglas de validación.
+2. El contrato de un índice válido exige simultáneamente:
+   - mismo número de `chunks` y `vectors`;
+   - cada chunk esperado presente exactamente una vez por `chunkHash`;
+   - vector correspondiente presente, arreglo no vacío, dimensión declarada y valores numéricos
+     finitos;
+   - vector asociado al mismo chunk/hash, sin aceptar desalineación posicional;
+   - cero chunks esperados ausentes, cero extras ambiguos y cero hashes duplicados.
+3. Fallar con `rc!=0` ante:
+   - clave ausente cuando falten embeddings;
+   - error/rate-limit agotado;
+   - respuesta sin vector, vector vacío, dimensión incorrecta o valor no finito;
+   - chunk ausente, duplicado, extra o asociado al vector de otro chunk.
+   No escribir un índice parcial ni caer a modo léxico en readiness.
+4. La escritura sólo ocurre después de validar el frame completo y debe ser atómica. Ante fallo,
+   conservar el archivo previo byte-idéntico y no dejar temporales.
+5. Añadir pruebas deterministas que muerdan, sin red real:
+   - índice totalmente cubierto → PASS;
+   - chunk ausente → FAIL;
+   - `[]` → FAIL;
+   - dimensión incorrecta/NaN → FAIL;
+   - chunk y vector desalineados → FAIL;
+   - fallo permanente de proveedor → FAIL y destino previo intacto;
+   - caché válida → no solicita embedding otra vez;
+   - candidate nuevo → exige embedding real, no `[]`.
+6. Integrar en esta misma pieza las dos deudas pequeñas de la Ronda 64:
+   - corregir el encabezado de `generate_tests.js`: construye/verifica/escribe 616 casos; no los
+     ejecuta;
+   - hacer que `npm run check` invoque `npm test` exactamente una vez, sin recursión ni duplicar
+     suites.
+7. Gate de A:
+
+```text
+npm test                            616/616 + unitarios
+npm run test:candidate              19/19 o más
+pruebas nuevas RAG                  todas verdes, proveedor simulado
+node --check                        scripts y pruebas tocados
+npm run check                       puede seguir rojo ÚNICAMENTE por el drift baseline conocido;
+                                     debe ejecutar y aprobar npm test antes de llegar a ese rojo
+epibot/rag_index.json               byte-idéntico
+knowledge.json / HTML               byte-idénticos
+GEMINI_API_KEY                      no leída, no impresa, no requerida
+```
+
+8. Un commit local `C7.6-RAG-A` y STOP para auditoría. No encadenar B.
+
+#### C7.6-RAG-B — reparar el índice público baseline
+
+**No autorizada todavía.** Se autoriza únicamente después de auditar A.
+
+1. Verificar presencia con `test -n "${GEMINI_API_KEY:-}"`; no imprimir longitud, valor, prefijo,
+   sufijo ni serializar el entorno.
+2. Preservar en temporal el SHA256 y una copia de `epibot/rag_index.json`.
+3. Ejecutar el builder corregido sobre el corpus público, sin candidate root.
+4. Exigir:
+   - corpus e índice con el mismo conjunto de chunks;
+   - un vector válido por chunk;
+   - `missing=0`, `failed=0`, duplicados=0;
+   - `npm run rag:verify` rc=0;
+   - cero chunks o texto de Obesidad en el índice público;
+   - `knowledge.json` y HTML byte-idénticos.
+5. Revisar el diff del índice: sólo cambios explicables por los 19 chunks baseline antes no
+   cubiertos y metadata derivada; cualquier otro cambio se investiga.
+6. `npm run check` completamente verde.
+7. Un commit local separado y STOP. Sin push, deploy ni candidate.
+
+#### C7.6-RAG-C — índice candidate sólo en staging
+
+**No autorizada todavía.** Se autoriza únicamente después de auditar B.
+
+1. Compilar el shard candidate en un directorio temporal desde
+   `obesidad_release_2517e7858901`, manteniendo Obesidad `trained`.
+2. Construir `rag_index.staging.json` con el corpus público ya cubierto más el chunk candidate.
+3. Exigir:
+   - todos los chunks públicos conservan vector válido;
+   - el chunk de Obesidad existe exactamente una vez y tiene vector válido no vacío;
+   - cero drift, vacíos, fallos, duplicados o desalineaciones;
+   - `epibot/rag_index.json` público sigue sin Obesidad;
+   - `knowledge.json`, HTML y superficies públicas siguen sin Obesidad.
+4. Repetir en otro staging limpio. Comparar identidad determinista ignorando únicamente metadata
+   temporal expresamente no identitaria; chunks, hashes y vectores deben coincidir.
+5. `npm run check` completamente verde.
+6. STOP para auditoría y paquete de readiness. Sin push, cache-bust, deploy, activación,
+   lifecycle ni publicación.
+
+#### Prohibiciones comunes de C7.6-RAG
+
+- Nunca registrar, imprimir ni commitear `GEMINI_API_KEY`.
+- No introducir fallback léxico como sustituto de un embedding requerido.
+- No incluir Obesidad en `rag_index.json`, `knowledge.json` ni HTML públicos.
+- No tocar backend, release DVC, puntero, lifecycle, canales o galería.
+- No push, PR, merge, deploy, cache-bust ni publicación.
+
+#### Próxima acción exacta
+
+**Ejecutar únicamente `C7.6-RAG-A` local: contrato compartido, validación fail-closed, pruebas y
+las dos deudas de package/generador. Un commit y STOP.**
+
+_Respuesta:_ **GO C7.6-RAG-A LOCAL. Sin usar `GEMINI_API_KEY`, sin regenerar
+`rag_index.json`, sin candidate build, push, PR, merge, deploy, cache-bust, activación, lifecycle
+ni publicación.**
 
 ---
 
@@ -10402,5 +10591,123 @@ Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
 Siguiente acción exacta: **auditar B4.2**. Después, `C7.6-RAG-CONTRACT` con `GEMINI_API_KEY` desde
 el entorno — no lo empiezo sin tu GO, y ahí van también las dos deudas que dejaste anotadas en la
 Ronda 64: `npm test` dentro de `npm run check` y el comentario obsoleto de `generate_tests.js`.
+
+_Respuesta:_
+
+---
+
+### Ronda 67 — C7.6-RAG-A ejecutada: contrato único, fail-closed y probado sin red — 2026-07-26
+
+Un commit local sobre `438441a0`. **Sin usar `GEMINI_API_KEY`**, sin regenerar `rag_index.json`, sin
+candidate build, push, PR, merge, deploy, cache-bust, activación, lifecycle ni publicación.
+
+```text
+b9cb7a1f  C7.6-RAG-A  contrato unico del indice RAG, fail-closed y probado sin red
+```
+
+#### La función compartida
+
+`scripts/lib/rag_index.mjs` concentra caché por `chunkHash`, generación, validación y escritura.
+`build_rag_index.mjs`, `rag_staging.mjs` y `rag_verify.mjs` la consumen; ninguno llama a Gemini,
+reintenta ni decide validez por su cuenta. Una prueba lo fija por inspección del propio código: si
+alguien vuelve a duplicar reglas o a escribir `vectors[i] = …`, se pone rojo.
+
+#### El contrato, y por qué la alineación necesitaba algo más
+
+Se exige **simultáneamente**: mismo número de chunks y vectores · cada chunk del corpus presente
+exactamente una vez por hash · vector no vacío, de la dimensión declarada y con valores finitos ·
+asociado al chunk para el que se pidió · cero faltantes, extras y duplicados.
+
+La desalineación no se detecta mirando el archivo: son arreglos paralelos, la posición **es** la
+asociación, y el vector de otro chunk cabe igual de bien. Por eso el vector viaja con el hash para
+el que se obtuvo y la asignación pasa por una única vía, `assignVector(entry, hash, vector)`, que
+rechaza el cruce en el momento de producirlo en vez de esperar a la validación. Lo digo explícito
+porque es la parte del contrato que **no** puede verificarse sobre un índice ya escrito por un
+tercero: ahí sólo se comprueba cobertura, unicidad y validez de cada vector.
+
+#### Falla cerrado
+
+```text
+clave ausente habiendo embeddings que generar     rc≠0
+proveedor caído tras los reintentos               rc≠0
+respuesta sin vector, vacía, mal dimensionada     rc≠0  (y NO se reintenta: no es transitorio)
+chunk ausente, duplicado, extra o desalineado     rc≠0
+```
+
+Nunca se escribe un índice parcial ni se cae a modo léxico. La caché tampoco **recicla** vectores
+inválidos: reusarlos propagaría el defecto en vez de regenerarlo. La escritura es atómica —temporal
++ `rename`— y sólo ocurre tras validar el frame completo; ante fallo el destino previo queda
+byte-idéntico y no sobrevive ningún temporal (verificado listando el directorio).
+
+Comprobado en vivo, sin clave: `rag:build` → `faltan 19 embeddings y no hay proveedor disponible`,
+rc≠0, `rag_index.json` con el mismo md5 y cero temporales huérfanos.
+
+#### Pruebas · 17, con proveedor simulado, sin red ni clave
+
+```text
+índice cubierto PASS · chunk ausente FAIL · vector [] FAIL · dimensión/NaN/no-numérico FAIL
+desalineado FAIL (y assignVector lo impide de entrada) · duplicado FAIL
+fallo permanente del proveedor FAIL + destino byte-idéntico + sin temporales
+sin proveedor FAIL · respuesta inválida FAIL sin reintentos inútiles
+caché válida → 0 peticiones · caché inválida → regenera · candidate nuevo exige vector real
+escritura atómica · una sola implementación compartida · reutilización por hash, no por posición
+```
+
+Tres de ellas nacieron rojas por defectos **míos**, no del código bajo prueba, y por eso las
+menciono: el `finally` de un helper borraba el temporal mientras el cuerpo async seguía corriendo;
+`buildIndex` ya rechazaba duplicados y yo esperaba el frame; y mi primer intento de simular la
+desalineación movía el vector **sin** su procedencia, así que no probaba nada. La tercera es la que
+llevó a `assignVector`.
+
+#### Deudas de la Ronda 64, saldadas
+
+- Encabezado de `generate_tests.js`: **construye, valida y escribe** los 616 casos; **no** los
+  ejecuta. Documenta que `test_cases.json` es artefacto y que la fuente son las llamadas `add`.
+- `npm run check` invoca `npm test` **exactamente una vez**, antes de `rag:verify`, sin recursión
+  (`npm test` no llama a `check`) y sin duplicar suites (`test:candidate` no está dentro de
+  `npm test`).
+
+#### Un cambio que no estaba en la orden y conviene que revises
+
+`rag:ci` construía siempre y sólo verificaba si había clave. Con el builder fail-closed, eso
+**abortaría el CI sin clave** en vez de degradar en silencio. Lo cambié a: con clave, construye y
+verifica; sin clave, conserva el índice commiteado y lo dice. Es coherente con «no introducir
+fallback léxico», pero es una decisión mía sobre CI y prefiero que la valides.
+
+#### Gate de A
+
+| exigido | resultado |
+| --- | --- |
+| `npm test` | **616/616 + 60 unitarias** ✓ |
+| `npm run test:candidate` | **19/19** ✓ |
+| pruebas nuevas RAG, proveedor simulado | **17/17** ✓ |
+| `node --check` de lo tocado | **PASS** ✓ |
+| `npm run check` | **rc=1 sólo en `rag:verify`**, tras ejecutar y aprobar `npm test` (línea 27 del log) y `test:candidate` (línea 185); el rojo aparece en la 198 ✓ |
+| `epibot/rag_index.json` | **byte-idéntico** ✓ |
+| `knowledge.json` / HTML | **byte-idénticos** ✓ |
+| `GEMINI_API_KEY` | **no leída por ninguna prueba, nunca impresa, no requerida** ✓ |
+
+El drift baseline, ahora medido con el contrato completo:
+
+```text
+corpus 454 · índice 452 · 36 problemas = 19 chunks del corpus sin cubrir
+                                       + 17 chunks del índice que ya no existen en el corpus
+                                       + 0 vectores inválidos + 0 duplicados
+```
+
+El verificador anterior sólo veía los 19; los 17 sobrantes no los reportaba nadie. Es la magnitud
+real que tendrá que cerrar C7.6-RAG-B.
+
+#### Estado
+
+```text
+Dashboard   b9cb7a1f · limpio · ahead 14 de main · SIN PUSH
+Backend     ahead 14 · SIN PUSH
+Readiness   47.2-B ✓ · 47.3 ✓ · B4.2 ✓ · RAG-A ✓ · RAG-B ✗ · RAG-C ✗
+Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
+```
+
+Siguiente acción exacta: **auditar A**. `C7.6-RAG-B` sigue no autorizada; cuando lo esté, será la
+primera vez que se use la clave.
 
 _Respuesta:_
