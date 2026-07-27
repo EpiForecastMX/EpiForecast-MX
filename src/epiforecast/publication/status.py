@@ -5,22 +5,25 @@ verdad. Lo que cambia cada boletín es el **resultado observado**, y hasta ahora
 sólo en el plan operativo. Publicar así mostraría un pronóstico puntual correcto omitiendo la
 condición bajo la que se autorizó publicarlo, que es peor que no publicarlo (R74-P0).
 
-Tres identidades separadas, y ninguna contamina a la otra:
+Cuatro identidades separadas, y ninguna contamina a la otra:
 
 1. **bundle** inmutable — modelos y forecast; su ``release_id`` no cambia por esto;
-2. **gate** congelado inmutable — candidato, control, dataset, origen, semanas objetivo, umbrales y
-   su ``gate_digest``;
-3. **estado** mutable — veredicto y semanas observadas; referencia al gate y al release, y **nunca**
-   forma parte de la identidad del bundle.
+2. **gate** congelado inmutable — candidato, control, dataset de ENTRENAMIENTO, origen, semanas
+   objetivo, umbrales y su ``gate_digest``;
+3. **evaluation** — toda la evidencia que justifica el veredicto: qué verdad se usó, qué semanas
+   contaron, cuáles se omitieron y por qué, y las métricas por ámbito. Es lo que hace auditable un
+   futuro PASS o FAIL (R78-P0-3);
+4. **status** — el resumen que viaja a los consumidores, que referencia el ``evaluation_digest``.
 
-Todo lo de aquí es genérico: ni un padecimiento, ni un ``0/4``, ni un umbral escritos en el código.
-La ruta de los archivos puede ser específica por configuración; el contrato y el loader no.
+Nada de esto forma parte del ``release_id``. Todo es genérico: ni un padecimiento, ni un ``0/4``, ni
+un umbral escritos en el código. La ruta de los archivos puede ser específica por configuración; el
+contrato y el loader no.
 """
 
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 import math
 from pathlib import Path
@@ -32,6 +35,7 @@ from epiforecast.publication.prospective import (
     ACCEPTANCE_RULE,
     CONTROL_ENGINE,
     GATE_SCHEMA,
+    SCOPES,
     VERDICT_FAIL,
     VERDICT_INCOMPLETE,
     VERDICT_PASS,
@@ -45,10 +49,13 @@ from epiforecast.runner.artifact_identity import (
     text_of,
 )
 from epiforecast.runner.release_contract import canonical_json, sha256_bytes
+from epiforecast.runner.release_reproduce import horizon_periods
 
-STATUS_SCHEMA = "prospective_status.v1"
+STATUS_SCHEMA = "prospective_status.v2"
+EVALUATION_SCHEMA = "prospective_evaluation.v1"
 GATE_FILE = "prospective_gate.json"
 STATUS_FILE = "prospective_status.json"
+EVALUATION_FILE = "prospective_evaluation.json"
 CONFIG_DIRNAME = "publication"
 
 VERDICTS: tuple[str, ...] = (VERDICT_INCOMPLETE, VERDICT_PASS, VERDICT_FAIL)
@@ -83,11 +90,37 @@ STATUS_KEYS: frozenset[str] = frozenset(
         "disease_id",
         "release_id",
         "gate_digest",
+        "evaluation_digest",
+        "observation_dataset_id",
+        "observation_dataset_digest",
         "verdict",
         "weeks_required",
         "weeks_available",
         "completed_weeks",
         "target_weeks",
+    }
+)
+EVALUATION_KEYS: frozenset[str] = frozenset(
+    {
+        "schema",
+        "disease_id",
+        "release_id",
+        "gate_digest",
+        "candidate_forecast_digest",
+        "control_forecast_digest",
+        "training_dataset_id",
+        "training_dataset_digest",
+        "observation_dataset_id",
+        "observation_dataset_digest",
+        "observation_source_digests",
+        "scheduled_weeks",
+        "completed_weeks",
+        "skipped_weeks",
+        "scopes",
+        "metrics",
+        "per_week",
+        "verdict",
+        "evaluation_digest",
     }
 )
 RULE_KEYS: frozenset[str] = frozenset(ACCEPTANCE_RULE)
@@ -136,6 +169,11 @@ def _period(valor: Any, etiqueta: str) -> Period:
     return (año, semana)
 
 
+def _periods(valor: Any, etiqueta: str) -> tuple[Period, ...]:
+    require(isinstance(valor, (list, tuple)), f"{etiqueta}: se esperaba una lista de periodos")
+    return tuple(_period(p, etiqueta) for p in valor)
+
+
 def _read_json(path: Path, etiqueta: str) -> dict[str, Any]:
     try:
         datos = json.loads(path.read_text(encoding="utf-8"))
@@ -178,9 +216,7 @@ def load_gate(path: Path) -> FrozenGate:
         release_id=text_of(datos.get("release_id"), "gate prospectivo: release_id"),
         origin=_period(datos.get("origin"), "gate prospectivo: origin"),
         horizon=horizonte,
-        target_weeks=tuple(
-            _period(p, "gate prospectivo: target_weeks") for p in datos.get("target_weeks", ())
-        ),
+        target_weeks=_periods(datos.get("target_weeks"), "gate prospectivo: target_weeks"),
         candidate_digest=_digest(
             datos.get("candidate_forecast_digest"), "gate prospectivo: candidate_forecast_digest"
         ),
@@ -202,12 +238,68 @@ def load_gate(path: Path) -> FrozenGate:
 
 
 @dataclass(frozen=True, slots=True)
-class ProspectiveStatus:
-    """Resultado observado del gate. Referencia al gate y al release; jamás los redefine."""
+class ProspectiveEvaluation:
+    """Evidencia completa de UNA evaluación: de dónde salió la verdad y qué decidió el gate.
+
+    Sin esto, un futuro PASS o FAIL era una palabra sin nada detrás: el JSON sólo guardaba el
+    veredicto y el conteo, así que nadie podía auditar por qué (R78-P0-3).
+    """
 
     disease_id: str
     release_id: str
     gate_digest: str
+    candidate_digest: str
+    control_digest: str
+    training_dataset_id: str
+    training_dataset_digest: str
+    observation_dataset_id: str
+    observation_dataset_digest: str
+    observation_source_digests: dict[str, str]
+    scheduled_weeks: tuple[Period, ...]
+    completed_weeks: tuple[Period, ...]
+    skipped_weeks: tuple[tuple[Period, str], ...]
+    verdict: str
+    scopes: dict[str, Any] = field(default_factory=dict)
+    metrics: dict[str, Any] = field(default_factory=dict)
+    per_week: tuple[dict[str, Any], ...] = ()
+
+    def payload(self) -> dict[str, Any]:
+        cuerpo: dict[str, Any] = {
+            "schema": EVALUATION_SCHEMA,
+            "disease_id": self.disease_id,
+            "release_id": self.release_id,
+            "gate_digest": self.gate_digest,
+            "candidate_forecast_digest": self.candidate_digest,
+            "control_forecast_digest": self.control_digest,
+            "training_dataset_id": self.training_dataset_id,
+            "training_dataset_digest": self.training_dataset_digest,
+            "observation_dataset_id": self.observation_dataset_id,
+            "observation_dataset_digest": self.observation_dataset_digest,
+            "observation_source_digests": dict(sorted(self.observation_source_digests.items())),
+            "scheduled_weeks": [list(p) for p in self.scheduled_weeks],
+            "completed_weeks": [list(p) for p in self.completed_weeks],
+            "skipped_weeks": [{"week": list(p), "reason": r} for p, r in self.skipped_weeks],
+            "scopes": self.scopes,
+            "metrics": self.metrics,
+            "per_week": [dict(d) for d in self.per_week],
+            "verdict": self.verdict,
+        }
+        return {**cuerpo, "evaluation_digest": sha256_bytes(canonical_json(cuerpo))}
+
+    def digest(self) -> str:
+        return str(self.payload()["evaluation_digest"])
+
+
+@dataclass(frozen=True, slots=True)
+class ProspectiveStatus:
+    """Resumen que viaja a los consumidores. Referencia gate y evaluación; no los redefine."""
+
+    disease_id: str
+    release_id: str
+    gate_digest: str
+    evaluation_digest: str
+    observation_dataset_id: str
+    observation_dataset_digest: str
     verdict: str
     weeks_required: int
     weeks_available: int
@@ -224,6 +316,9 @@ class ProspectiveStatus:
             "disease_id": self.disease_id,
             "release_id": self.release_id,
             "gate_digest": self.gate_digest,
+            "evaluation_digest": self.evaluation_digest,
+            "observation_dataset_id": self.observation_dataset_id,
+            "observation_dataset_digest": self.observation_dataset_digest,
             "verdict": self.verdict,
             "weeks_required": self.weeks_required,
             "weeks_available": self.weeks_available,
@@ -244,11 +339,66 @@ class ProspectiveStatus:
         return f"Validación prospectiva en curso {avance}"
 
 
-def _check_status(status: ProspectiveStatus, gate: FrozenGate) -> None:
+def _check_completed_weeks(semanas: tuple[Period, ...], gate: FrozenGate, etiqueta: str) -> None:
+    """Ordenadas, únicas y DENTRO del horizonte congelado — no necesariamente las programadas.
+
+    Exigir que fueran subconjunto de ``target_weeks`` hacía que el reemplazo de una semana ausente
+    pasara su prueba unitaria y muriera en el loader (R78-P0-2): W31 sustituye a W28 y sigue siendo
+    una semana del horizonte que el release pronosticó.
+    """
+    require(len(set(semanas)) == len(semanas), f"{etiqueta}: hay semanas completadas repetidas")
+    require(
+        list(semanas) == sorted(semanas), f"{etiqueta}: las semanas completadas deben ir ordenadas"
+    )
+    ventana = set(horizon_periods(gate.origin, gate.horizon))
+    fuera = [p for p in semanas if p not in ventana]
+    require(not fuera, f"{etiqueta}: semanas fuera del horizonte congelado: {fuera}")
+    tempranas = [p for p in semanas if p < gate.target_weeks[0]]
+    require(not tempranas, f"{etiqueta}: semanas anteriores al inicio del gate: {tempranas}")
+
+
+def _check_evaluation(evaluation: ProspectiveEvaluation, gate: FrozenGate) -> None:
+    equal("evaluación: disease_id", evaluation.disease_id, gate.disease_id)
+    equal("evaluación: release_id", evaluation.release_id, gate.release_id)
+    equal("evaluación: gate_digest", evaluation.gate_digest, gate.digest())
+    # El congelado se verifica ENTERO: candidato, control y dataset de entrenamiento. El control
+    # faltaba, y podía sustituirse sin que nadie lo notara (R78-P0-4).
+    equal("evaluación: candidato del gate", evaluation.candidate_digest, gate.candidate_digest)
+    equal("evaluación: control del gate", evaluation.control_digest, gate.control_digest)
+    equal(
+        "evaluación: dataset de entrenamiento del gate",
+        evaluation.training_dataset_digest,
+        gate.dataset_digest,
+    )
+    equal("evaluación: semanas programadas", evaluation.scheduled_weeks, gate.target_weeks)
+    _check_completed_weeks(evaluation.completed_weeks, gate, "evaluación")
+    require(
+        evaluation.verdict in VERDICTS, f"evaluación: veredicto desconocido {evaluation.verdict!r}"
+    )
+    if evaluation.verdict != VERDICT_INCOMPLETE:
+        faltan = [s for s in SCOPES if s not in evaluation.scopes]
+        require(not faltan, f"evaluación: un veredicto {evaluation.verdict} sin ámbitos {faltan}")
+
+
+def _check_status(
+    status: ProspectiveStatus, gate: FrozenGate, evaluation: ProspectiveEvaluation
+) -> None:
     equal("estado prospectivo: disease_id", status.disease_id, gate.disease_id)
     equal("estado prospectivo: release_id", status.release_id, gate.release_id)
     equal("estado prospectivo: gate_digest", status.gate_digest, gate.digest())
     equal("estado prospectivo: semanas objetivo", status.target_weeks, gate.target_weeks)
+    equal("estado prospectivo: evaluation_digest", status.evaluation_digest, evaluation.digest())
+    equal(
+        "estado prospectivo: dataset de observación",
+        (status.observation_dataset_id, status.observation_dataset_digest),
+        (evaluation.observation_dataset_id, evaluation.observation_dataset_digest),
+    )
+    equal("estado prospectivo: veredicto contra la evaluación", status.verdict, evaluation.verdict)
+    equal(
+        "estado prospectivo: semanas completadas contra la evaluación",
+        status.completed_weeks,
+        evaluation.completed_weeks,
+    )
 
     require(
         status.verdict in VERDICTS,
@@ -270,28 +420,13 @@ def _check_status(status: ProspectiveStatus, gate: FrozenGate) -> None:
         len(status.completed_weeks),
         status.weeks_available,
     )
-    require(
-        len(set(status.completed_weeks)) == len(status.completed_weeks),
-        "estado prospectivo: hay semanas completadas repetidas",
-    )
-    require(
-        list(status.completed_weeks) == sorted(status.completed_weeks),
-        "estado prospectivo: las semanas completadas deben ir ordenadas",
-    )
-    fuera = [p for p in status.completed_weeks if p not in gate.target_weeks]
-    require(
-        not fuera,
-        f"estado prospectivo: semanas completadas que no son objetivo del gate: {fuera}",
-    )
+    _check_completed_weeks(status.completed_weeks, gate, "estado prospectivo")
 
     # Coherencia veredicto ↔ conteos: un gate incompleto no puede declararse resuelto, ni uno
     # completo quedarse en «en curso».
     completo = status.weeks_available == status.weeks_required
     if status.verdict == VERDICT_INCOMPLETE:
-        require(
-            not completo,
-            "estado prospectivo: INCOMPLETE con todas las semanas disponibles",
-        )
+        require(not completo, "estado prospectivo: INCOMPLETE con todas las semanas disponibles")
     else:
         require(
             completo,
@@ -300,22 +435,131 @@ def _check_status(status: ProspectiveStatus, gate: FrozenGate) -> None:
         )
 
 
+def load_evaluation(path: Path, gate: FrozenGate) -> ProspectiveEvaluation:
+    """Carga la evidencia y **recomputa su digest** antes de creerle nada."""
+    datos = _read_json(path, "evaluación prospectiva")
+    equal("evaluación prospectiva: schema", datos.get("schema"), EVALUATION_SCHEMA)
+    _exact_keys(datos, EVALUATION_KEYS, "evaluación prospectiva")
+    declarado = _digest(
+        datos.get("evaluation_digest"), "evaluación prospectiva: evaluation_digest"
+    )
+
+    fuentes = datos.get("observation_source_digests")
+    require(
+        isinstance(fuentes, dict), "evaluación prospectiva: observation_source_digests inválido"
+    )
+    assert isinstance(fuentes, dict)  # noqa: S101 — para mypy
+    omitidas = datos.get("skipped_weeks")
+    require(isinstance(omitidas, list), "evaluación prospectiva: skipped_weeks inválido")
+    assert isinstance(omitidas, list)  # noqa: S101 — para mypy
+
+    evaluation = ProspectiveEvaluation(
+        disease_id=text_of(datos.get("disease_id"), "evaluación prospectiva: disease_id"),
+        release_id=text_of(datos.get("release_id"), "evaluación prospectiva: release_id"),
+        gate_digest=_digest(datos.get("gate_digest"), "evaluación prospectiva: gate_digest"),
+        candidate_digest=_digest(
+            datos.get("candidate_forecast_digest"), "evaluación prospectiva: candidato"
+        ),
+        control_digest=_digest(
+            datos.get("control_forecast_digest"), "evaluación prospectiva: control"
+        ),
+        training_dataset_id=text_of(
+            datos.get("training_dataset_id"), "evaluación prospectiva: training_dataset_id"
+        ),
+        training_dataset_digest=_digest(
+            datos.get("training_dataset_digest"), "evaluación prospectiva: training_dataset_digest"
+        ),
+        observation_dataset_id=text_of(
+            datos.get("observation_dataset_id"), "evaluación prospectiva: observation_dataset_id"
+        ),
+        observation_dataset_digest=_digest(
+            datos.get("observation_dataset_digest"),
+            "evaluación prospectiva: observation_dataset_digest",
+        ),
+        observation_source_digests={
+            str(k): _digest(v, f"evaluación prospectiva: fuente {k}") for k, v in fuentes.items()
+        },
+        scheduled_weeks=_periods(
+            datos.get("scheduled_weeks"), "evaluación prospectiva: scheduled_weeks"
+        ),
+        completed_weeks=_periods(
+            datos.get("completed_weeks"), "evaluación prospectiva: completed_weeks"
+        ),
+        skipped_weeks=tuple(
+            (
+                _period(d.get("week"), "evaluación prospectiva: skipped_weeks"),
+                text_of(d.get("reason"), "evaluación prospectiva: motivo"),
+            )
+            for d in omitidas
+        ),
+        verdict=text_of(datos.get("verdict"), "evaluación prospectiva: verdict"),
+        scopes=dict(datos.get("scopes") or {}),
+        metrics=dict(datos.get("metrics") or {}),
+        per_week=tuple(dict(d) for d in (datos.get("per_week") or [])),
+    )
+    equal("evaluación prospectiva: digest recomputado", evaluation.digest(), declarado)
+    _check_evaluation(evaluation, gate)
+    return evaluation
+
+
+def load_status(
+    path: Path, gate: FrozenGate, evaluation: ProspectiveEvaluation
+) -> ProspectiveStatus:
+    """Carga y VALIDA el estado contra su gate y su evaluación. Falla cerrado ante incoherencias."""
+    datos = _read_json(path, "estado prospectivo")
+    equal("estado prospectivo: schema", datos.get("schema"), STATUS_SCHEMA)
+    _exact_keys(datos, STATUS_KEYS, "estado prospectivo")
+    status = ProspectiveStatus(
+        disease_id=text_of(datos.get("disease_id"), "estado prospectivo: disease_id"),
+        release_id=text_of(datos.get("release_id"), "estado prospectivo: release_id"),
+        gate_digest=_digest(datos.get("gate_digest"), "estado prospectivo: gate_digest"),
+        evaluation_digest=_digest(
+            datos.get("evaluation_digest"), "estado prospectivo: evaluation_digest"
+        ),
+        observation_dataset_id=text_of(
+            datos.get("observation_dataset_id"), "estado prospectivo: observation_dataset_id"
+        ),
+        observation_dataset_digest=_digest(
+            datos.get("observation_dataset_digest"),
+            "estado prospectivo: observation_dataset_digest",
+        ),
+        verdict=text_of(datos.get("verdict"), "estado prospectivo: verdict"),
+        weeks_required=_strict_int(
+            datos.get("weeks_required"), "estado prospectivo: weeks_required"
+        ),
+        weeks_available=_strict_int(
+            datos.get("weeks_available"), "estado prospectivo: weeks_available"
+        ),
+        completed_weeks=_periods(
+            datos.get("completed_weeks"), "estado prospectivo: completed_weeks"
+        ),
+        target_weeks=_periods(datos.get("target_weeks"), "estado prospectivo: target_weeks"),
+    )
+    _check_status(status, gate, evaluation)
+    return status
+
+
+# Marca interna: la capability sólo la emite el loader oficial. Un objeto construido a mano no es
+# una capability validada, y con un token privado eso deja de ser una convención (R76-P0-2).
+_LOADER_TOKEN = object()
+
+
 @dataclass(frozen=True, slots=True)
 class PublicationStatus:
-    """Capability: gate congelado + estado, **validados entre sí en su construcción**.
-
-    Antes se pasaba un ``ProspectiveStatus`` desnudo y el compilador sólo comparaba identificadores:
-    un objeto construido a mano con digest y conteos falsos entraba igual, incluso en modo público
-    (R76-P0-2). Aquí no hay forma de tener una instancia sin que el gate recompute su digest y el
-    estado sea coherente con él; y el compilador, además, la ancla al release sellado.
-    """
+    """Capability: gate + evaluación + estado, cruzados y validados. Sólo la emite el loader."""
 
     gate: FrozenGate
+    evaluation: ProspectiveEvaluation
     status: ProspectiveStatus
+    token: Any = None
 
     def __post_init__(self) -> None:
-        equal("capability: digest del gate", self.gate.digest(), self.status.gate_digest)
-        _check_status(self.status, self.gate)
+        require(
+            self.token is _LOADER_TOKEN,
+            "la capability de publicación sólo se obtiene de load_declared_status()",
+        )
+        _check_evaluation(self.evaluation, self.gate)
+        _check_status(self.status, self.gate, self.evaluation)
 
     @property
     def disease_id(self) -> str:
@@ -337,34 +581,6 @@ class PublicationStatus:
         return self.status.progress_label()
 
 
-def load_status(path: Path, gate: FrozenGate) -> ProspectiveStatus:
-    """Carga y VALIDA el estado contra su gate. Falla cerrado ante cualquier incoherencia."""
-    datos = _read_json(path, "estado prospectivo")
-    equal("estado prospectivo: schema", datos.get("schema"), STATUS_SCHEMA)
-    _exact_keys(datos, STATUS_KEYS, "estado prospectivo")
-    status = ProspectiveStatus(
-        disease_id=text_of(datos.get("disease_id"), "estado prospectivo: disease_id"),
-        release_id=text_of(datos.get("release_id"), "estado prospectivo: release_id"),
-        gate_digest=_digest(datos.get("gate_digest"), "estado prospectivo: gate_digest"),
-        verdict=text_of(datos.get("verdict"), "estado prospectivo: verdict"),
-        weeks_required=_strict_int(
-            datos.get("weeks_required"), "estado prospectivo: weeks_required"
-        ),
-        weeks_available=_strict_int(
-            datos.get("weeks_available"), "estado prospectivo: weeks_available"
-        ),
-        completed_weeks=tuple(
-            _period(p, "estado prospectivo: completed_weeks")
-            for p in datos.get("completed_weeks", ())
-        ),
-        target_weeks=tuple(
-            _period(p, "estado prospectivo: target_weeks") for p in datos.get("target_weeks", ())
-        ),
-    )
-    _check_status(status, gate)
-    return status
-
-
 def config_root(repo_root_path: Path | None = None) -> Path:
     """Raíz declarativa ``config/publication/``. La RUTA puede ser específica; el contrato no."""
     from .compiler import repo_root
@@ -373,18 +589,31 @@ def config_root(repo_root_path: Path | None = None) -> Path:
     return raiz / "config" / CONFIG_DIRNAME
 
 
+def declared_paths(disease_id: str, *, config_root_path: Path | None = None) -> dict[str, Path]:
+    """Rutas declarativas del padecimiento. Un solo sitio construye estas rutas."""
+    raiz = (config_root_path if config_root_path is not None else config_root()) / disease_id
+    return {
+        "root": raiz,
+        "gate": raiz / GATE_FILE,
+        "evaluation": raiz / EVALUATION_FILE,
+        "status": raiz / STATUS_FILE,
+    }
+
+
 def load_declared_status(
     disease_id: str, *, config_root_path: Path | None = None
 ) -> PublicationStatus:
-    """Gate + estado DECLARADOS de un padecimiento, ya validados entre sí.
+    """Gate + evaluación + estado DECLARADOS, ya validados y cruzados entre sí.
 
     Se lee aquí, en el borde, y se **inyecta**: ninguna función pura del compilador o de los puentes
     toca el filesystem para averiguar en qué estado está la validación.
     """
-    raiz = (config_root_path if config_root_path is not None else config_root()) / disease_id
-    gate = load_gate(raiz / GATE_FILE)
+    rutas = declared_paths(disease_id, config_root_path=config_root_path)
+    gate = load_gate(rutas["gate"])
     equal(f"{disease_id}: disease_id del gate declarado", gate.disease_id, disease_id)
-    return PublicationStatus(gate=gate, status=load_status(raiz / STATUS_FILE, gate))
+    evaluation = load_evaluation(rutas["evaluation"], gate)
+    status = load_status(rutas["status"], gate, evaluation)
+    return PublicationStatus(gate=gate, evaluation=evaluation, status=status, token=_LOADER_TOKEN)
 
 
 def status_facts(capability: PublicationStatus, *, label: str) -> dict[str, Any]:
@@ -393,6 +622,8 @@ def status_facts(capability: PublicationStatus, *, label: str) -> dict[str, Any]
     return {
         "schema": STATUS_SCHEMA,
         "gate_digest": status.gate_digest,
+        "evaluation_digest": status.evaluation_digest,
+        "observation_dataset_id": status.observation_dataset_id,
         "verdict": status.verdict,
         "weeks_required": status.weeks_required,
         "weeks_available": status.weeks_available,

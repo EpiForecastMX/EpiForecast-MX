@@ -21,9 +21,11 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+import math
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
 
 from epiforecast.data.epi_dataset_spec import (
@@ -298,6 +300,49 @@ def _scope_rows(products: pd.DataFrame, scope: str) -> pd.DataFrame:
     ]
 
 
+def check_series_frame(frame: pd.DataFrame, etiqueta: str, esperadas: set[SeriesId]) -> None:
+    """Antes de agregar nada: claves exactas, sin duplicados y valores utilizables.
+
+    Comparar sólo el NÚMERO de filas dejaba pasar un frame con las claves cambiadas y el mismo
+    tamaño. Aquí se exige el conjunto exacto de SeriesKeys y que ningún valor sea NaN, infinito o
+    negativo: agregarlos produciría un total que parece un dato (R78-P1).
+    """
+    faltan = {"geography_id", "sex", "epi_year", "epi_week", "y_pred_cases"} - set(frame.columns)
+    require(not faltan, f"{etiqueta}: faltan columnas {sorted(faltan)}")
+    claves = list(
+        zip(frame["geography_id"], frame["sex"], frame["epi_year"], frame["epi_week"], strict=True)
+    )
+    require(len(claves) == len(set(claves)), f"{etiqueta}: hay claves serie×periodo duplicadas")
+    series = {(str(g), str(x)) for g, x, _, _ in claves}
+    require(
+        series == esperadas,
+        f"{etiqueta}: SeriesKeys distintas de las esperadas "
+        f"(+{sorted(series - esperadas)[:3]} −{sorted(esperadas - series)[:3]})",
+    )
+    valores = frame["y_pred_cases"].to_numpy(dtype=float)
+    require(bool(np.isfinite(valores).all()), f"{etiqueta}: hay valores no finitos (NaN o inf)")
+    require(bool((valores >= 0.0).all()), f"{etiqueta}: hay valores negativos")
+
+
+def seasonal_denominators(
+    training: Mapping[SeriesId, dict[Period, float]], lag: int = 52
+) -> dict[SeriesId, float]:
+    """Denominador MASE por serie, desde la historia de ENTRENAMIENTO congelada.
+
+    Calcularlo con ``train_true=[]`` dejaba MASE en NaN siempre (R78-P1): no era el MASE del runner,
+    era un hueco con bandera.
+    """
+    denominadores: dict[SeriesId, float] = {}
+    for serie, historia in training.items():
+        valores = [historia[p] for p in sorted(historia)]
+        if len(valores) > lag:
+            difs = [abs(valores[i] - valores[i - lag]) for i in range(lag, len(valores))]
+            denominadores[serie] = float(sum(difs) / len(difs)) if difs else 0.0
+        else:
+            denominadores[serie] = 0.0
+    return denominadores
+
+
 def _degradation_pct(candidate: float, control: float) -> float:
     """Degradación relativa del candidato frente al control. Zero-safe y nunca ``inf``."""
     if control == 0.0:
@@ -312,6 +357,7 @@ def evaluate(
     historia: Mapping[SeriesId, dict[Period, float]],
     *,
     catalog: Any | None = None,
+    training: Mapping[SeriesId, dict[Period, float]] | None = None,
 ) -> dict[str, Any]:
     """Aplica la REGLA congelada sobre las semanas observadas. Nunca reajusta ni mueve umbrales.
 
@@ -319,13 +365,22 @@ def evaluate(
     (R76-P0-1): el FAIL documentado no podía ocurrir. Ahora se derivan los 111 productos desde las
     64 bases con la MISMA función del runner —para verdad, candidato y control—, y se compara sMAPE
     por ámbito contra el umbral del gate.
+
+    ``historia`` es la verdad OBSERVADA (el boletín vigente) y decide ``n/4``; ``training`` es la
+    historia congelada del dataset de entrenamiento y sólo aporta los denominadores del MASE. Son
+    dos identidades distintas y mezclarlas es lo que impedía avanzar de 0/4 (R78-P0-1).
     """
     from epiforecast.data.epi_geo_exposure import load_geo_catalog
     from epiforecast.runner.evaluation import derive_forecast_products, series_metrics
 
     catalogo = catalog if catalog is not None else load_geo_catalog()
+    entrenamiento = training if training is not None else historia
     seleccion = select_weeks(historia, gate)
     semanas = seleccion.completed
+    esperadas = set(historia)
+    if semanas:
+        check_series_frame(_restrict(candidate, semanas), "candidato", esperadas)
+        check_series_frame(_restrict(control, semanas), "control", esperadas)
 
     detalle: list[dict[str, Any]] = []
     for periodo in semanas:
@@ -404,9 +459,13 @@ def evaluate(
                 "max_degradation_pct": umbral,
                 "passes": bool(degradacion <= umbral),
             }
-            # Reportadas, NO usadas para el veredicto: el gate se decide con sMAPE.
-            m, flags = series_metrics(yt, yc, [], mase_lag=52)
-            metricas[scope] = {**{k: float(v) for k, v in m.items()}, "flags": flags}
+            # Reportadas, NO usadas para el veredicto: el gate se decide con sMAPE. El MASE sale
+            # de la historia de ENTRENAMIENTO congelada, no de un denominador vacío.
+            m, flags = series_metrics(yt, yc, _training_series(entrenamiento), mase_lag=52)
+            metricas[scope] = {
+                **{k: (float(v) if math.isfinite(float(v)) else None) for k, v in m.items()},
+                "flags": flags,
+            }
 
     if not completo:
         veredicto = VERDICT_INCOMPLETE
@@ -426,6 +485,14 @@ def evaluate(
         "selection": seleccion.payload(),
         "gate_digest": gate.digest(),
     }
+
+
+def _training_series(training: Mapping[SeriesId, dict[Period, float]]) -> list[float]:
+    """Serie de entrenamiento concatenada por SeriesKey ordenada: el denominador estacional real."""
+    valores: list[float] = []
+    for serie in sorted(training):
+        valores.extend(training[serie][p] for p in sorted(training[serie]))
+    return valores
 
 
 def _restrict(frame: pd.DataFrame, semanas: tuple[Period, ...]) -> pd.DataFrame:

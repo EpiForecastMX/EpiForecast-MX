@@ -58,6 +58,25 @@ class ManifestError(ValueError):
     """Manifiesto o transición de estado inválidos."""
 
 
+RUNS_DIRNAME = "runs"
+
+
+def default_runs_root() -> Path:
+    """Raíz de ``runs/`` del repo. Contrato PÚBLICO: nadie debe importar la privada del doctor.
+
+    ``parents[3]`` es la raíz desde ``src/epiforecast/runner/``.
+    """
+    return Path(__file__).resolve().parents[3] / RUNS_DIRNAME
+
+
+def dataset_dir(dataset_id: str, runs_root: Path | None = None) -> Path:
+    """Directorio de un dataset por su identidad, sin construir rutas a mano en cada llamador."""
+    raiz = runs_root if runs_root is not None else default_runs_root()
+    if not dataset_id or "/" in dataset_id or dataset_id in {".", ".."}:
+        raise ManifestError(f"dataset_id inválido: {dataset_id!r}")
+    return raiz / dataset_id
+
+
 def utc_now() -> str:
     """Timestamp ISO-8601 en UTC (inyectable en pruebas vía monkeypatch)."""
     return datetime.now(UTC).isoformat()
