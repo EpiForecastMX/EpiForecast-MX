@@ -18,6 +18,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -44,7 +45,7 @@ from epiforecast.runner.release_contract import INTERVAL_METHOD_NONE
 from epiforecast.runner.release_loader import VerifiedRelease, verify_bundle
 from epiforecast.runner.release_store import release_path
 
-from .status import ProspectiveStatus
+from .status import PublicationStatus
 
 MODE_CANDIDATE = "candidate"
 MODE_PUBLIC = "public"
@@ -97,7 +98,7 @@ class Compilation:
     rows: pd.DataFrame
     verified: VerifiedRelease
     disease: registry.Disease
-    status: ProspectiveStatus | None = None
+    status: PublicationStatus | None = None
 
     @property
     def base_rows(self) -> pd.DataFrame:
@@ -117,7 +118,7 @@ class Compilation:
         return publication_label(self.status, self.verified)
 
 
-def publication_label(status: ProspectiveStatus, verified: VerifiedRelease) -> str:
+def publication_label(status: PublicationStatus, verified: VerifiedRelease) -> str:
     """Una sola fuente para la etiqueta que verán los cuatro canales.
 
     Se compone de DATOS: los conteos salen del estado validado y la cola point-only del propio
@@ -155,8 +156,32 @@ def check_staging_root(output_root: Path, repo_root_path: Path | None = None) ->
     return destino
 
 
+def _check_gate_against_release(gate: Any, verified: VerifiedRelease, root: Path) -> None:
+    """Ancla el gate al artefacto SELLADO, no sólo a un `release_id` que cualquiera puede escribir.
+
+    Sin esto, una capability internamente coherente pero fabricada —otros digests bajo el mismo
+    release_id— seguiría entrando. Aquí el candidato y el dataset del gate tienen que ser los del
+    bundle que se acaba de verificar, y el origen y el horizonte, los suyos (R76-P0-2).
+    """
+    from epiforecast.publication.prospective import frame_digest
+    from epiforecast.runner.release_reproduce import read_bundled_frame
+    from epiforecast.runner.release_sources import DIR_FORECAST
+
+    equal("gate: dataset del release", gate.dataset_digest, verified.chain["dataset_digest"])
+    equal("gate: origen del release", tuple(gate.origin), tuple(verified.origin))
+    equal("gate: horizonte del release", gate.horizon, verified.horizon)
+    base = read_bundled_frame(root / DIR_FORECAST / "forecast_base.csv", "forecast_base")
+    columnas = ["geography_id", "sex", "epi_year", "epi_week", "y_pred_cases"]
+    candidato = (
+        base[columnas]
+        .sort_values(["geography_id", "sex", "epi_year", "epi_week"])
+        .reset_index(drop=True)
+    )
+    equal("gate: candidato del release", gate.candidate_digest, frame_digest(candidato))
+
+
 def _check_status(
-    disease: registry.Disease, release_id: str, mode: str, status: ProspectiveStatus | None
+    disease: registry.Disease, release_id: str, mode: str, status: PublicationStatus | None
 ) -> None:
     """El estado prospectivo es parte del contrato de publicación, no un adorno.
 
@@ -167,6 +192,8 @@ def _check_status(
     if status is not None:
         equal(f"{disease.id}: disease_id del estado prospectivo", status.disease_id, disease.id)
         equal(f"{disease.id}: release_id del estado prospectivo", status.release_id, release_id)
+        equal(f"{disease.id}: disease_id del gate", status.gate.disease_id, disease.id)
+        equal(f"{disease.id}: release_id del gate", status.gate.release_id, release_id)
     if mode == MODE_CANDIDATE:
         return
     require(
@@ -274,7 +301,7 @@ def compile_release(
     mode: str,
     releases_root: Path,
     pointer_release_id: str | None = None,
-    status: ProspectiveStatus | None = None,
+    status: PublicationStatus | None = None,
 ) -> Compilation:
     """Compila el release DECLARADO del padecimiento. No escribe nada: sólo produce las filas."""
     check_mode(mode)
@@ -293,6 +320,8 @@ def compile_release(
     verified = verify_bundle(destino)
     equal(f"{disease.id}: release_id de la sede", verified.release_id, release_id)
     equal(f"{disease.id}: disease_id del release", verified.disease_id, disease.id)
+    if status is not None:
+        _check_gate_against_release(status.gate, verified, destino)
 
     return Compilation(
         mode=mode,

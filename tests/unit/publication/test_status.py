@@ -46,6 +46,7 @@ from epiforecast.publication.status import (
     STATUS_FILE,
     STATUS_SCHEMA,
     ProspectiveStatus,
+    PublicationStatus,
     load_declared_status,
     load_gate,
 )
@@ -134,10 +135,10 @@ def test_alterar_el_umbral_del_gate_mueve_su_digest_y_rompe_el_estado(tmp_path):
 def test_el_estado_se_valida_contra_su_gate(tmp_path):
     gate = _gate()
     raiz = _escribir(tmp_path, gate, _status(gate))
-    status = load_declared_status(OTRO, config_root_path=raiz)
-    assert status.verdict == VERDICT_INCOMPLETE
-    assert (status.weeks_available, status.weeks_required) == (0, GATE_WEEKS)
-    assert status.publishable is True
+    cap = load_declared_status(OTRO, config_root_path=raiz)
+    assert cap.verdict == VERDICT_INCOMPLETE
+    assert (cap.status.weeks_available, cap.status.weeks_required) == (0, GATE_WEEKS)
+    assert cap.publishable is True
 
 
 def test_estado_ausente(tmp_path):
@@ -206,9 +207,9 @@ def test_un_fail_no_es_publicable_pero_si_cargable(tmp_path):
     datos = _status(gate, verdict=VERDICT_FAIL, completed_weeks=list(gate.target_weeks))
     datos["weeks_available"] = len(gate.target_weeks)
     raiz = _escribir(tmp_path, gate, datos)
-    status = load_declared_status(OTRO, config_root_path=raiz)
-    assert status.verdict == VERDICT_FAIL
-    assert status.publishable is False
+    cap = load_declared_status(OTRO, config_root_path=raiz)
+    assert cap.verdict == VERDICT_FAIL
+    assert cap.publishable is False
 
 
 # ── Etiqueta derivada ─────────────────────────────────────────────────────────────────────────
@@ -219,17 +220,20 @@ class _Release:
         self.uncertainty_available = uncertainty_available
 
 
-def _st(verdict: str, disponibles: int) -> ProspectiveStatus:
+def _st(verdict: str, disponibles: int) -> PublicationStatus:
     gate = _gate()
-    return ProspectiveStatus(
-        disease_id=OTRO,
-        release_id=OTRO_RELEASE,
-        gate_digest=gate.digest(),
-        verdict=verdict,
-        weeks_required=GATE_WEEKS,
-        weeks_available=disponibles,
-        completed_weeks=gate.target_weeks[:disponibles],
-        target_weeks=gate.target_weeks,
+    return PublicationStatus(
+        gate=gate,
+        status=ProspectiveStatus(
+            disease_id=OTRO,
+            release_id=OTRO_RELEASE,
+            gate_digest=gate.digest(),
+            verdict=verdict,
+            weeks_required=GATE_WEEKS,
+            weeks_available=disponibles,
+            completed_weeks=gate.target_weeks[:disponibles],
+            target_weeks=gate.target_weeks,
+        ),
     )
 
 
@@ -271,9 +275,9 @@ def sede(tmp_path_factory) -> Path:
 
 @real
 def test_el_estado_declarado_del_repo_es_el_del_gate_congelado():
-    status = load_declared_status(af.DISEASE)
-    assert status.release_id == str(registry.require(af.DISEASE).artifact_source.release_id)
-    assert (status.verdict, status.weeks_available, status.weeks_required) == (
+    cap = load_declared_status(af.DISEASE)
+    assert cap.release_id == str(registry.require(af.DISEASE).artifact_source.release_id)
+    assert (cap.verdict, cap.status.weeks_available, cap.status.weeks_required) == (
         VERDICT_INCOMPLETE,
         0,
         GATE_WEEKS,
@@ -309,7 +313,7 @@ def test_los_cuatro_puentes_muestran_la_etiqueta_exacta(sede, tmp_path):
         assert bloque["publication_label"] == ETIQUETA_VIGENTE
         assert estado["verdict"] == VERDICT_INCOMPLETE
         assert (estado["weeks_available"], estado["weeks_required"]) == (0, GATE_WEEKS)
-        assert estado["gate_digest"] == load_declared_status(af.DISEASE).gate_digest
+        assert estado["gate_digest"] == load_declared_status(af.DISEASE).status.gate_digest
 
 
 @real
@@ -322,18 +326,39 @@ def test_sin_estado_no_se_emite_ningun_shard(sede, tmp_path):
 
 
 @real
-def test_un_estado_de_otro_release_o_padecimiento_se_rechaza(sede):
+def test_una_capability_fabricada_no_pasa_ni_en_candidate_ni_en_public(sede):
+    """R76-P0-2: un status construido a mano no es una capability validada."""
     bueno = load_declared_status(af.DISEASE)
+
+    # 1) La capability incoherente NO se puede ni construir: el gate y el estado no cuadran.
     for cambio, patron in (
-        ({"release_id": "obesidad_release_000000000000"}, "release_id del estado"),
-        ({"disease_id": "otro"}, "disease_id del estado"),
+        ({"release_id": "obesidad_release_000000000000"}, "release_id"),
+        ({"disease_id": "otro"}, "disease_id"),
+        ({"gate_digest": "0" * 64}, "digest del gate"),
+        ({"weeks_available": 998, "weeks_required": 999}, "weeks_required"),
+        ({"target_weeks": ()}, "semanas objetivo"),
     ):
         with pytest.raises(ArtifactValidationError, match=patron):
+            PublicationStatus(gate=bueno.gate, status=dataclasses.replace(bueno.status, **cambio))
+
+    # 2) Y una capability internamente coherente pero con OTRO gate tampoco entra: el compilador
+    #    ancla el gate al bundle sellado (candidato, dataset, origen y horizonte).
+    falso_gate = dataclasses.replace(bueno.gate, candidate_digest="d" * 64)
+    fabricada = PublicationStatus(
+        gate=falso_gate,
+        status=dataclasses.replace(bueno.status, gate_digest=falso_gate.digest()),
+    )
+    for modo, extra in (
+        (MODE_CANDIDATE, {}),
+        (MODE_PUBLIC, {"pointer_release_id": bueno.release_id}),
+    ):
+        with pytest.raises(ArtifactValidationError, match="candidato del release|lifecycle"):
             compile_release(
                 disease_id=af.DISEASE,
-                mode=MODE_CANDIDATE,
+                mode=modo,
                 releases_root=sede,
-                status=dataclasses.replace(bueno, **cambio),
+                status=fabricada,
+                **extra,
             )
 
 
@@ -354,11 +379,14 @@ def test_el_modo_public_exige_estado_y_rechaza_un_fail(sede, monkeypatch):
         )
 
     # Con FAIL: nunca habilita el modo público.
-    fallido = dataclasses.replace(
-        bueno,
-        verdict=VERDICT_FAIL,
-        weeks_available=GATE_WEEKS,
-        completed_weeks=bueno.target_weeks,
+    fallido = PublicationStatus(
+        gate=bueno.gate,
+        status=dataclasses.replace(
+            bueno.status,
+            verdict=VERDICT_FAIL,
+            weeks_available=GATE_WEEKS,
+            completed_weeks=bueno.gate.target_weeks,
+        ),
     )
     with pytest.raises(ArtifactValidationError, match="no habilita publicación"):
         compile_release(
@@ -374,8 +402,14 @@ def test_el_modo_public_exige_estado_y_rechaza_un_fail(sede, monkeypatch):
 def test_el_estado_no_toca_la_identidad_del_bundle(sede, tmp_path):
     """Cambiar el estado NO puede mover el release_id ni las filas: son identidades separadas."""
     bueno = load_declared_status(af.DISEASE)
-    otro = dataclasses.replace(
-        bueno, verdict=VERDICT_PASS, weeks_available=GATE_WEEKS, completed_weeks=bueno.target_weeks
+    otro = PublicationStatus(
+        gate=bueno.gate,
+        status=dataclasses.replace(
+            bueno.status,
+            verdict=VERDICT_PASS,
+            weeks_available=GATE_WEEKS,
+            completed_weeks=bueno.gate.target_weeks,
+        ),
     )
     a = compile_release(
         disease_id=af.DISEASE, mode=MODE_CANDIDATE, releases_root=sede, status=bueno
@@ -387,3 +421,82 @@ def test_el_estado_no_toca_la_identidad_del_bundle(sede, tmp_path):
     assert a.rows.equals(b.rows)
     # Y la etiqueta sí cambia: es lo único que debe moverse.
     assert a.label != b.label
+
+
+# ── Tipos, formas y claves (A.1) ──────────────────────────────────────────────────────────────
+@pytest.mark.parametrize(
+    ("cambio", "patron"),
+    [
+        ({"gate_digest": "ABC"}, "SHA256"),
+        ({"dataset_digest": "z" * 64}, "SHA256"),
+        ({"horizon": 0}, "positivo"),
+        ({"horizon": True}, "entero"),
+        ({"origin": [2026, 99]}, "calendario MMWR"),
+        ({"target_weeks": [[2026, 27], [2026, 27]]}, "repetidas"),
+        ({"acceptance_rule_max_degradation_pct": {"smape_base": 5.0}}, "faltan claves"),
+        (
+            {"acceptance_rule_max_degradation_pct": {**ACCEPTANCE_RULE, "otra": 1.0}},
+            "no reconocidas",
+        ),
+        ({"control_engine": "otro_motor"}, "control_engine"),
+        ({"extra": 1}, "no reconocidas"),
+    ],
+)
+def test_rechazos_de_forma_del_gate(tmp_path, cambio, patron):
+    gate = _gate()
+    datos = {**gate.payload(), "gate_digest": gate.digest(), **cambio}
+    raiz = tmp_path / "publication" / OTRO
+    raiz.mkdir(parents=True)
+    (raiz / GATE_FILE).write_bytes(canonical_json(datos))
+    with pytest.raises(ArtifactValidationError, match=patron):
+        load_gate(raiz / GATE_FILE)
+
+
+@pytest.mark.parametrize(
+    ("cambio", "patron"),
+    [
+        ({"weeks_available": True}, "entero"),
+        ({"weeks_required": "4"}, "entero"),
+        ({"completed_weeks": [[2026, 60]]}, "calendario MMWR"),
+        ({"completed_weeks": [[True, 27]]}, "entero"),
+        ({"extra": 1}, "no reconocidas"),
+    ],
+)
+def test_rechazos_de_forma_del_estado(tmp_path, cambio, patron):
+    gate = _gate()
+    raiz = _escribir(tmp_path, gate, {**_status(gate), **cambio})
+    with pytest.raises(ArtifactValidationError, match=patron):
+        load_declared_status(OTRO, config_root_path=raiz)
+
+
+# ── Entry point reproducible (A.1) ────────────────────────────────────────────────────────────
+@real
+def test_check_es_no_mutante_y_write_es_reproducible(tmp_path):
+    """El estado se DERIVA; editar el JSON a mano contradice el contrato (R76-P1)."""
+    from scripts.prospective_status import main
+
+    from epiforecast.publication.status import config_root
+
+    vigente = (config_root() / af.DISEASE / STATUS_FILE).read_bytes()
+
+    # --check contra el declarado del repo: coincide y no toca nada.
+    antes = (config_root() / af.DISEASE / STATUS_FILE).read_bytes()
+    assert main([af.DISEASE, "--check"]) == 0
+    assert (config_root() / af.DISEASE / STATUS_FILE).read_bytes() == antes
+
+    # Copia con el gate real y un estado MENTIDO: --check falla y NO lo corrige.
+    raiz = tmp_path / "publication" / af.DISEASE
+    raiz.mkdir(parents=True)
+    (raiz / GATE_FILE).write_bytes((config_root() / af.DISEASE / GATE_FILE).read_bytes())
+    mentira = json.loads(vigente)
+    mentira["verdict"] = VERDICT_PASS
+    mentira["weeks_available"] = GATE_WEEKS
+    mentira["completed_weeks"] = mentira["target_weeks"]
+    (raiz / STATUS_FILE).write_bytes(canonical_json(mentira))
+    assert main([af.DISEASE, "--check", "--config-root", str(tmp_path / "publication")]) == 1
+    assert json.loads((raiz / STATUS_FILE).read_bytes())["verdict"] == VERDICT_PASS
+
+    # --write lo deja en el estado real, byte-idéntico al declarado en el repo.
+    assert main([af.DISEASE, "--write", "--config-root", str(tmp_path / "publication")]) == 0
+    assert (raiz / STATUS_FILE).read_bytes() == vigente
+    assert not list(raiz.glob("*.tmp*")), "la escritura atómica no deja temporales"

@@ -19,12 +19,18 @@ La ruta de los archivos puede ser específica por configuración; el contrato y 
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 import json
+import math
 from pathlib import Path
+import re
 from typing import Any
 
+from epiforecast.data.epi_calendar import weeks_in_year
 from epiforecast.publication.prospective import (
+    ACCEPTANCE_RULE,
+    CONTROL_ENGINE,
     GATE_SCHEMA,
     VERDICT_FAIL,
     VERDICT_INCOMPLETE,
@@ -52,18 +58,82 @@ VERDICTS_PUBLICABLES: tuple[str, ...] = (VERDICT_INCOMPLETE, VERDICT_PASS)
 
 Period = tuple[int, int]
 
+SHA256_HEX = re.compile(r"^[0-9a-f]{64}$")
+
+# Conjuntos EXACTOS de claves: una clave de más es un archivo que dice algo que nadie valida.
+GATE_KEYS: frozenset[str] = frozenset(
+    {
+        "schema",
+        "disease_id",
+        "release_id",
+        "origin",
+        "horizon",
+        "target_weeks",
+        "candidate_forecast_digest",
+        "control_engine",
+        "control_forecast_digest",
+        "dataset_digest",
+        "acceptance_rule_max_degradation_pct",
+        "gate_digest",
+    }
+)
+STATUS_KEYS: frozenset[str] = frozenset(
+    {
+        "schema",
+        "disease_id",
+        "release_id",
+        "gate_digest",
+        "verdict",
+        "weeks_required",
+        "weeks_available",
+        "completed_weeks",
+        "target_weeks",
+    }
+)
+RULE_KEYS: frozenset[str] = frozenset(ACCEPTANCE_RULE)
+
+
+def _exact_keys(datos: Mapping[str, Any], esperadas: frozenset[str], etiqueta: str) -> None:
+    sobran = sorted(set(datos) - esperadas)
+    faltan = sorted(esperadas - set(datos))
+    require(not sobran, f"{etiqueta}: claves no reconocidas {sobran}")
+    require(not faltan, f"{etiqueta}: faltan claves {faltan}")
+
+
+def _strict_int(valor: Any, etiqueta: str) -> int:
+    """Entero de verdad: ``True`` es ``int`` en Python y no puede colarse como una semana."""
+    require(
+        isinstance(valor, int) and not isinstance(valor, bool),
+        f"{etiqueta}: se esperaba un entero, no {valor!r}",
+    )
+    return int(valor)
+
+
+def _digest(valor: Any, etiqueta: str) -> str:
+    texto = text_of(valor, etiqueta)
+    require(bool(SHA256_HEX.match(texto)), f"{etiqueta}: no es un SHA256 hex de 64 caracteres")
+    return texto
+
 
 def _period(valor: Any, etiqueta: str) -> Period:
+    """Periodo MMWR válido: no basta con que sean dos enteros, la semana tiene que existir.
+
+    Los años MMWR tienen 52 o 53 semanas según el año; aceptar ``(2026, 60)`` sería admitir una
+    fecha que el calendario del proyecto no puede representar.
+    """
     require(
         isinstance(valor, (list, tuple)) and len(valor) == 2,
         f"{etiqueta}: se esperaba [año, semana], no {valor!r}",
     )
-    año, semana = valor
+    año = _strict_int(valor[0], f"{etiqueta}: año")
+    semana = _strict_int(valor[1], f"{etiqueta}: semana")
+    require(1900 < año < 2200, f"{etiqueta}: año fuera de rango ({año})")
+    tope = weeks_in_year(año)
     require(
-        isinstance(año, int) and isinstance(semana, int) and not isinstance(año, bool),
-        f"{etiqueta}: año y semana deben ser enteros, no {valor!r}",
+        1 <= semana <= tope,
+        f"{etiqueta}: semana {semana} fuera del calendario MMWR de {año} (1..{tope})",
     )
-    return (int(año), int(semana))
+    return (año, semana)
 
 
 def _read_json(path: Path, etiqueta: str) -> dict[str, Any]:
@@ -86,36 +156,46 @@ def load_gate(path: Path) -> FrozenGate:
     """
     datos = _read_json(path, "gate prospectivo")
     equal("gate prospectivo: schema", datos.get("schema"), GATE_SCHEMA)
-    declarado = text_of(datos.get("gate_digest"), "gate prospectivo: gate_digest")
+    _exact_keys(datos, GATE_KEYS, "gate prospectivo")
+    declarado = _digest(datos.get("gate_digest"), "gate prospectivo: gate_digest")
 
     rule = datos.get("acceptance_rule_max_degradation_pct")
-    require(
-        isinstance(rule, dict) and bool(rule), "gate prospectivo: falta la regla de aceptación"
-    )
+    require(isinstance(rule, dict), "gate prospectivo: falta la regla de aceptación")
     assert isinstance(rule, dict)  # noqa: S101 — para mypy; `require` ya falló si no lo era
+    _exact_keys(rule, RULE_KEYS, "gate prospectivo: regla de aceptación")
+    for clave, umbral in rule.items():
+        require(
+            isinstance(umbral, (int, float))
+            and not isinstance(umbral, bool)
+            and math.isfinite(float(umbral))
+            and float(umbral) >= 0.0,
+            f"gate prospectivo: umbral {clave}={umbral!r} debe ser finito y no negativo",
+        )
+    horizonte = _strict_int(datos.get("horizon"), "gate prospectivo: horizon")
+    require(horizonte > 0, "gate prospectivo: horizon debe ser positivo")
     gate = FrozenGate(
         disease_id=text_of(datos.get("disease_id"), "gate prospectivo: disease_id"),
         release_id=text_of(datos.get("release_id"), "gate prospectivo: release_id"),
         origin=_period(datos.get("origin"), "gate prospectivo: origin"),
-        horizon=int(datos.get("horizon", 0)),
+        horizon=horizonte,
         target_weeks=tuple(
             _period(p, "gate prospectivo: target_weeks") for p in datos.get("target_weeks", ())
         ),
-        candidate_digest=text_of(
+        candidate_digest=_digest(
             datos.get("candidate_forecast_digest"), "gate prospectivo: candidate_forecast_digest"
         ),
-        control_digest=text_of(
+        control_digest=_digest(
             datos.get("control_forecast_digest"), "gate prospectivo: control_forecast_digest"
         ),
-        dataset_digest=text_of(datos.get("dataset_digest"), "gate prospectivo: dataset_digest"),
+        dataset_digest=_digest(datos.get("dataset_digest"), "gate prospectivo: dataset_digest"),
         rule={str(k): float(v) for k, v in rule.items()},
     )
     require(gate.target_weeks, "gate prospectivo: sin semanas objetivo")
-    equal(
-        "gate prospectivo: control_engine",
-        datos.get("control_engine"),
-        gate.payload()["control_engine"],
+    require(
+        list(gate.target_weeks) == sorted(set(gate.target_weeks)),
+        "gate prospectivo: semanas objetivo repetidas o desordenadas",
     )
+    equal("gate prospectivo: control_engine", datos.get("control_engine"), CONTROL_ENGINE)
     # El digest se RECOMPUTA desde el contenido; si no cuadra, el archivo miente sobre su identidad.
     equal("gate prospectivo: digest recomputado", gate.digest(), declarado)
     return gate
@@ -220,17 +300,59 @@ def _check_status(status: ProspectiveStatus, gate: FrozenGate) -> None:
         )
 
 
+@dataclass(frozen=True, slots=True)
+class PublicationStatus:
+    """Capability: gate congelado + estado, **validados entre sí en su construcción**.
+
+    Antes se pasaba un ``ProspectiveStatus`` desnudo y el compilador sólo comparaba identificadores:
+    un objeto construido a mano con digest y conteos falsos entraba igual, incluso en modo público
+    (R76-P0-2). Aquí no hay forma de tener una instancia sin que el gate recompute su digest y el
+    estado sea coherente con él; y el compilador, además, la ancla al release sellado.
+    """
+
+    gate: FrozenGate
+    status: ProspectiveStatus
+
+    def __post_init__(self) -> None:
+        equal("capability: digest del gate", self.gate.digest(), self.status.gate_digest)
+        _check_status(self.status, self.gate)
+
+    @property
+    def disease_id(self) -> str:
+        return self.status.disease_id
+
+    @property
+    def release_id(self) -> str:
+        return self.status.release_id
+
+    @property
+    def verdict(self) -> str:
+        return self.status.verdict
+
+    @property
+    def publishable(self) -> bool:
+        return self.status.publishable
+
+    def progress_label(self) -> str:
+        return self.status.progress_label()
+
+
 def load_status(path: Path, gate: FrozenGate) -> ProspectiveStatus:
     """Carga y VALIDA el estado contra su gate. Falla cerrado ante cualquier incoherencia."""
     datos = _read_json(path, "estado prospectivo")
     equal("estado prospectivo: schema", datos.get("schema"), STATUS_SCHEMA)
+    _exact_keys(datos, STATUS_KEYS, "estado prospectivo")
     status = ProspectiveStatus(
         disease_id=text_of(datos.get("disease_id"), "estado prospectivo: disease_id"),
         release_id=text_of(datos.get("release_id"), "estado prospectivo: release_id"),
-        gate_digest=text_of(datos.get("gate_digest"), "estado prospectivo: gate_digest"),
+        gate_digest=_digest(datos.get("gate_digest"), "estado prospectivo: gate_digest"),
         verdict=text_of(datos.get("verdict"), "estado prospectivo: verdict"),
-        weeks_required=int(datos.get("weeks_required", 0)),
-        weeks_available=int(datos.get("weeks_available", -1)),
+        weeks_required=_strict_int(
+            datos.get("weeks_required"), "estado prospectivo: weeks_required"
+        ),
+        weeks_available=_strict_int(
+            datos.get("weeks_available"), "estado prospectivo: weeks_available"
+        ),
         completed_weeks=tuple(
             _period(p, "estado prospectivo: completed_weeks")
             for p in datos.get("completed_weeks", ())
@@ -253,7 +375,7 @@ def config_root(repo_root_path: Path | None = None) -> Path:
 
 def load_declared_status(
     disease_id: str, *, config_root_path: Path | None = None
-) -> ProspectiveStatus:
+) -> PublicationStatus:
     """Gate + estado DECLARADOS de un padecimiento, ya validados entre sí.
 
     Se lee aquí, en el borde, y se **inyecta**: ninguna función pura del compilador o de los puentes
@@ -262,11 +384,12 @@ def load_declared_status(
     raiz = (config_root_path if config_root_path is not None else config_root()) / disease_id
     gate = load_gate(raiz / GATE_FILE)
     equal(f"{disease_id}: disease_id del gate declarado", gate.disease_id, disease_id)
-    return load_status(raiz / STATUS_FILE, gate)
+    return PublicationStatus(gate=gate, status=load_status(raiz / STATUS_FILE, gate))
 
 
-def status_facts(status: ProspectiveStatus, *, label: str) -> dict[str, Any]:
+def status_facts(capability: PublicationStatus, *, label: str) -> dict[str, Any]:
     """Bloque que TODOS los puentes repiten igual: identidad del gate, conteos y etiqueta visible."""
+    status = capability.status
     return {
         "schema": STATUS_SCHEMA,
         "gate_digest": status.gate_digest,
