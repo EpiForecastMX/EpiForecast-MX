@@ -13,6 +13,8 @@ from __future__ import annotations
 import hashlib
 import io
 from pathlib import Path
+from shutil import rmtree
+import tempfile
 from xml.etree import ElementTree as ET
 
 import pandas as pd
@@ -201,12 +203,75 @@ def test_sin_hoja_de_staging_declarada_no_genera(tmp_path):
     assert STAGING_ID_ENV in salida
 
 
-def test_el_id_productivo_como_parametro_se_rechaza(tmp_path):
+def test_el_id_tiene_que_ser_exactamente_el_de_staging(tmp_path):
+    """R102-P1: un workbook apuntando a otra hoja no valida el sink que se quiere validar."""
+    for otro in (ID_PRODUCCION, "1OtraHojaCualquiera00000000000000000000000"):
+        rc, salida = _generar(
+            tmp_path, tmp_path / "runs" / "x.twb", extra=["--spreadsheet-id", otro]
+        )
+        assert rc == RC_REFUSED
+        assert "no coincide con la hoja de staging" in salida
+    rc, _ = _generar(tmp_path, tmp_path / "runs" / "x.twb", extra=["--spreadsheet-id", ID_STAGING])
+    assert rc == RC_OK, "confirmar el mismo id sí vale"
+
+
+def test_sin_la_variable_productiva_no_se_genera(tmp_path):
+    """R102-P0-1: sin ella no se puede demostrar que staging no es producción."""
     rc, salida = _generar(
-        tmp_path, tmp_path / "runs" / "x.twb", extra=["--spreadsheet-id", ID_PRODUCCION]
+        tmp_path, tmp_path / "runs" / "x.twb", entorno={STAGING_ID_ENV: ID_STAGING}
     )
     assert rc == RC_REFUSED
-    assert "productivo" in salida
+    assert PRODUCTION_ID_ENV in salida
+
+
+def test_la_salida_no_llama_validado_al_workbook(tmp_path):
+    """Se generó y se verificó el XML. Que Tableau Desktop lo abra es otro gate."""
+    import json
+
+    rc, salida = _generar(tmp_path, tmp_path / "runs" / "x.twb")
+    assert rc == RC_OK
+    assert json.loads(salida.strip())["tableau_desktop_validated"] is False
+
+
+# ── Containment real del destino (R102-P0-3) ───────────────────────────────────────────────────
+@pytest.mark.parametrize("relativa", ["reports/tmp/candidate.twb", "reports/runs/candidate.twb"])
+def test_una_ruta_del_repo_con_un_componente_llamado_tmp_o_runs_no_cuela(tmp_path, relativa):
+    """Antes bastaba que un componente se llamara tmp/var/runs; ambas son rutas trackeables."""
+    destino = Path.cwd() / relativa
+    rc, salida = _generar(tmp_path, destino)
+    assert rc == RC_REFUSED
+    assert "no desciende" in salida
+    assert not destino.exists() and not destino.parent.exists(), "ni se creó el directorio"
+
+
+def test_runs_del_repositorio_si_es_destino_valido(tmp_path):
+    destino = Path.cwd() / "runs" / "_b01_test" / "candidate.twb"
+    try:
+        rc, salida = _generar(tmp_path, destino)
+        assert rc == RC_OK, salida
+        assert destino.is_file()
+    finally:
+        rmtree(destino.parent, ignore_errors=True)
+
+
+def test_el_temporal_real_del_sistema_tambien(tmp_path):
+    destino = Path(tempfile.gettempdir()) / "b01_candidate.twb"
+    try:
+        rc, salida = _generar(tmp_path, destino)
+        assert rc == RC_OK, salida
+    finally:
+        destino.unlink(missing_ok=True)
+
+
+def test_un_symlink_que_apunta_al_repositorio_se_resuelve_y_se_rechaza(tmp_path):
+    """La ruta se resuelve antes de decidir: declarar un temporal no basta si apunta a otro sitio."""
+    dentro = Path.cwd() / "reports"
+    puente = tmp_path / "parece_temporal"
+    puente.symlink_to(dentro, target_is_directory=True)
+    rc, salida = _generar(tmp_path, puente / "colado.twb")
+    assert rc == RC_REFUSED
+    assert "no desciende" in salida
+    assert not (dentro / "colado.twb").exists()
 
 
 def test_el_workbook_productivo_sigue_byte_identico():

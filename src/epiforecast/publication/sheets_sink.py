@@ -222,17 +222,29 @@ class GoogleSheetsTableSink:
         self._llamar(f"del_worksheet({name})", lambda: self._hoja.del_worksheet(ws))
 
 
-def staging_ids(entorno: dict[str, str] | None = None) -> tuple[str, str | None]:
+def staging_ids(
+    entorno: dict[str, str] | None = None, *, require_production: bool = False
+) -> tuple[str, str | None]:
     """Id de staging y de producción, validados. Sin staging declarado no hay nada que abrir.
 
     Que el id de staging **no sea** el productivo no es una precaución de estilo: son la misma clase
     de identificador, y una confusión de variable escribiría las tablas del runner en la hoja que
     alimenta el Tableau público.
+
+    `require_production` es la diferencia entre mirar y escribir. Con la variable productiva ausente,
+    la comparación «staging ≠ producción» no falla: **no se puede hacer**, y dar por buena una
+    identidad que no se pudo comprobar es exactamente el error que esta función existe para evitar
+    (R102-P0-1). Para inspeccionar basta staging; para mutar hacen falta las dos.
     """
     env = dict(os.environ if entorno is None else entorno)
     staging = (env.get(STAGING_ID_ENV) or "").strip()
     produccion = (env.get(PRODUCTION_ID_ENV) or "").strip() or None
     require(bool(staging), f"falta {STAGING_ID_ENV}: sin hoja de staging no se opera")
+    require(
+        not require_production or bool(produccion),
+        f"falta {PRODUCTION_ID_ENV}: sin ella no se puede demostrar que {STAGING_ID_ENV} "
+        "no es la hoja productiva, y sin demostrarlo no se escribe",
+    )
     require(
         staging != produccion,
         f"{STAGING_ID_ENV} y {PRODUCTION_ID_ENV} apuntan a la MISMA hoja",

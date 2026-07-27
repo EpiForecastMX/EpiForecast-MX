@@ -46,12 +46,19 @@ STATE_CLEAN = "CLEAN"  # activa presente, sin residuos
 STATE_MISSING = "MISSING"  # ni activa ni respaldo: no hay nada que recuperar
 STATE_NEXT_RESIDUE = "NEXT_RESIDUE"  # sobra un __next de una promoción abortada
 STATE_BACKUP_ORPHAN = "BACKUP_ORPHAN"  # la activa está y su respaldo también: consolidar
-STATE_RECOVERY_REQUIRED = "RECOVERY_REQUIRED"  # la activa falta y sólo vive en el respaldo
+STATE_RECOVERY_REQUIRED = "RECOVERY_REQUIRED"  # la activa falta pero vive en respaldo o previa
 
 # Acciones que el plan puede proponer. No existe ninguna que borre fuera del namespace.
 ACTION_DROP_NEXT = "drop_next"
 ACTION_RESTORE_BACKUP = "restore_backup"
+ACTION_RESTORE_PREVIOUS = "restore_previous"
 ACTION_CONSOLIDATE_BACKUP = "consolidate_backup"
+
+# De dónde saldrá la activa al terminar. Se decide ANTES de mutar, no se descubre a mitad.
+SOURCE_ACTIVE = "active"
+SOURCE_BACKUP = SUFFIX_BACKUP.lstrip("_")
+SOURCE_PREVIOUS = SUFFIX_PREVIOUS.lstrip("_")
+SOURCE_NONE = "none"
 
 
 def table_inventory(sink: TableSink, nombres: Sequence[str] = TABLES) -> dict[str, Any]:
@@ -87,8 +94,10 @@ def classify(inventario: Mapping[str, Any], nombres: Sequence[str] = TABLES) -> 
     for nombre in sorted(nombres):
         activa = nombre in tablas
         respaldo = f"{nombre}{SUFFIX_BACKUP}" in tablas
+        previa = f"{nombre}{SUFFIX_PREVIOUS}" in tablas
         temporal = f"{nombre}{SUFFIX_NEXT}" in tablas
-        if not activa and respaldo:
+        if not activa and (respaldo or previa):
+            # Falta la activa, pero existe de dónde traerla: es recuperable, no perdida.
             estados[nombre] = STATE_RECOVERY_REQUIRED
         elif not activa:
             estados[nombre] = STATE_MISSING
@@ -101,29 +110,83 @@ def classify(inventario: Mapping[str, Any], nombres: Sequence[str] = TABLES) -> 
     return estados
 
 
+def projected_sources(
+    inventario: Mapping[str, Any], nombres: Sequence[str] = TABLES
+) -> dict[str, str]:
+    """De dónde saldrá cada activa al terminar. Se decide ANTES de mutar.
+
+    El orden es deliberado: la propia activa, su respaldo, y sólo entonces la previa. Si ninguna de
+    las tres existe, la tabla es irrecuperable y ese hecho tiene que conocerse **antes** de la
+    primera mutación, no descubrirse al validar la postcondición (R102-P0-2).
+    """
+    tablas = inventario["tables"]
+    fuentes: dict[str, str] = {}
+    for nombre in sorted(nombres):
+        if nombre in tablas:
+            fuentes[nombre] = SOURCE_ACTIVE
+        elif f"{nombre}{SUFFIX_BACKUP}" in tablas:
+            fuentes[nombre] = SOURCE_BACKUP
+        elif f"{nombre}{SUFFIX_PREVIOUS}" in tablas:
+            fuentes[nombre] = SOURCE_PREVIOUS
+        else:
+            fuentes[nombre] = SOURCE_NONE
+    return fuentes
+
+
 def recovery_plan(sink: TableSink, nombres: Sequence[str] = TABLES) -> dict[str, Any]:
-    """Plan de recuperación DETERMINISTA, ligado al digest del inventario que lo justifica."""
+    """Plan de recuperación DETERMINISTA, ligado al digest del inventario que lo justifica.
+
+    Si alguna tabla es irrecuperable, el plan sale **sin una sola acción**. Antes proponía borrar los
+    ``__next`` y descubría al final que faltaban las activas: con sólo dos ``__next`` y nada más,
+    eso borraba la única copia que quedaba y luego informaba error, con el namespace vacío
+    (R102-P0-2). Y la validación es global: no se ejecuta media recuperación porque la otra tabla sí
+    tuviera arreglo.
+    """
     inventario = table_inventory(sink, nombres)
     estados = classify(inventario, nombres)
+    fuentes = projected_sources(inventario, nombres)
+    bloqueadas = sorted(n for n, origen in fuentes.items() if origen == SOURCE_NONE)
+
+    base: dict[str, Any] = {
+        "schema": PLAN_SCHEMA,
+        "inventory_digest": inventario["inventory_digest"],
+        "namespace": sorted(nombres),
+        "states": estados,
+        "sources": fuentes,
+        "blocked": bloqueadas,
+    }
+    if bloqueadas:
+        # Un `__next` aislado no se activa ni se borra: es evidencia, y se conserva hasta que alguien
+        # decida explícitamente qué hacer con ella.
+        return {
+            **base,
+            "actions": [],
+            "status": "RECOVERY_REQUIRED",
+            "reason": (
+                f"sin activa, respaldo ni previa para {bloqueadas}: no hay recuperación posible "
+                "sin decidir a mano qué es la verdad"
+            ),
+        }
+
     acciones: list[dict[str, str]] = []
     for nombre in sorted(nombres):
-        estado = estados[nombre]
-        if estado == STATE_RECOVERY_REQUIRED:
+        estado, origen = estados[nombre], fuentes[nombre]
+        if origen == SOURCE_BACKUP:
             # La activa no está: el respaldo es la única copia y vuelve a su sitio.
             acciones.append({"action": ACTION_RESTORE_BACKUP, "table": nombre, "state": estado})
+        elif origen == SOURCE_PREVIOUS:
+            # Sin respaldo, la previa es lo único que puede volver a ser activa. Se declara.
+            acciones.append({"action": ACTION_RESTORE_PREVIOUS, "table": nombre, "state": estado})
         elif estado == STATE_BACKUP_ORPHAN:
             # La activa está: el respaldo pasa a ser el punto de retorno, no se descarta.
             acciones.append(
                 {"action": ACTION_CONSOLIDATE_BACKUP, "table": nombre, "state": estado}
             )
         if f"{nombre}{SUFFIX_NEXT}" in inventario["tables"]:
-            # Un temporal nunca fue activado: no es evidencia de nada que haya que conservar.
+            # Sólo con la activa asegurada: un temporal nunca activado no es la última copia de nada.
             acciones.append({"action": ACTION_DROP_NEXT, "table": nombre, "state": estado})
     return {
-        "schema": PLAN_SCHEMA,
-        "inventory_digest": inventario["inventory_digest"],
-        "namespace": sorted(nombres),
-        "states": estados,
+        **base,
         "actions": acciones,
         "status": "RECOVERY_REQUIRED" if acciones else "CLEAN",
     }
@@ -149,6 +212,12 @@ def apply_recovery(
         "recovery: el inventario cambió desde que se emitió el plan",
         actual["inventory_digest"],
         plan.get("inventory_digest"),
+    )
+    bloqueadas = list(plan.get("blocked", []))
+    require(
+        not bloqueadas,
+        f"recovery: {bloqueadas} no tiene activa, respaldo ni previa; aplicar cualquier acción "
+        "empeoraría el estado. No se toca nada.",
     )
     fotos = {n: sink.read_table(n) for n in actual["tables"]}
 
@@ -192,6 +261,11 @@ def _aplicar_una(
             sink.drop_table(nombre)
         sink.rename_table(respaldo, nombre)
         return
+    if accion == ACTION_RESTORE_PREVIOUS:
+        require(previa in existentes, f"recovery: {previa} ya no está; el plan quedó obsoleto")
+        require(nombre not in existentes, f"recovery: {nombre} ya está activa; no se pisa")
+        sink.rename_table(previa, nombre)
+        return
     if accion == ACTION_CONSOLIDATE_BACKUP:
         require(respaldo in existentes, f"recovery: {respaldo} ya no está; el plan quedó obsoleto")
         if previa in existentes:
@@ -209,7 +283,8 @@ def _verificar_activas(
     require(not faltan, f"recovery: al terminar faltan las activas {faltan}")
     for nombre in sorted(nombres):
         esperado = fotos.get(nombre)
-        if esperado is None:
-            esperado = fotos.get(f"{nombre}{SUFFIX_BACKUP}")
+        for alternativa in (SUFFIX_BACKUP, SUFFIX_PREVIOUS):
+            if esperado is None:
+                esperado = fotos.get(f"{nombre}{alternativa}")
         if esperado is not None:
             verify_readback(sink, nombre, esperado)

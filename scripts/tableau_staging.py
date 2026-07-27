@@ -14,6 +14,10 @@ termina con rc no-cero **antes de autenticar y antes de mutar**.
     3. `--expect-inventory <digest>`: el estado sobre el que se emitió el plan;
     4. `--confirm-spreadsheet-id <id>`: el id de staging escrito a mano, no leído del entorno.
 
+La condición 2 exige que `GSHEETS_SPREADSHEET_ID` esté **presente**: con la variable ausente la
+comparación no falla, es que no se puede hacer, y una identidad que no se pudo comprobar no es una
+identidad comprobada. Para `inspect` y para los dry-run basta la hoja de staging.
+
 El namespace es fijo: ``runner_forecast``, ``runner_releases`` y sus sufijos administrados. No hay
 bandera para ampliarlo, no hay `prune`, y ninguna operación toca las cinco tabs legacy.
 
@@ -91,8 +95,13 @@ def _guardas(sub: argparse.ArgumentParser) -> None:
 
 
 def _check_apply(args: argparse.Namespace, entorno: dict[str, str] | None = None) -> str:
-    """Las cuatro condiciones. Se comprueban ANTES de abrir nada."""
-    staging, _ = staging_ids(entorno)
+    """Las cuatro condiciones. Se comprueban ANTES de abrir nada.
+
+    La segunda exige que la variable productiva **exista**: sin ella, «staging ≠ producción» no
+    falla, simplemente no se puede comprobar, y cruzar el borde de `--apply` sin poder demostrarlo
+    es depender de que el operador seguramente cargó la otra variable (R102-P0-1).
+    """
+    staging, _ = staging_ids(entorno, require_production=True)
     if not args.expect_inventory:
         raise ArtifactValidationError(
             "--apply exige --expect-inventory: aplicar sin fijar el estado de partida es actuar "

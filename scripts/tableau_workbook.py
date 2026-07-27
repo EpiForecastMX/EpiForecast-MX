@@ -2,12 +2,22 @@
 
     python -m scripts.tableau_workbook --shard <dir> --out runs/tableau_staging/x.twb
 
-El id de la hoja sale de `C7_TABLEAU_STAGING_SPREADSHEET_ID` (o de `--spreadsheet-id`), nunca del
-workbook productivo. El destino tiene que ser un temporal o una ruta gitignored: este artefacto no
-entra al repositorio, y ``reports/dashboards/viz_epiforecastmx.twb`` no se abre ni se toca.
+El id de la hoja sale de `C7_TABLEAU_STAGING_SPREADSHEET_ID`, y `--spreadsheet-id` sólo sirve para
+**confirmarlo**: tiene que coincidir exactamente. Un workbook apuntando a otra hoja se separaría del
+sink que se pretende validar, y entonces validar el uno no dice nada del otro (R102-P1). Se exige
+además la variable productiva, para poder demostrar que no colisionan.
+
+El destino tiene que ser descendiente de `<repo>/runs/` —comprobadamente gitignored— o de la raíz
+temporal real del sistema. Se comprueba **antes** de crear directorios o escribir bytes, y sobre la
+ruta ya resuelta, de modo que un symlink no pueda colar el artefacto dentro del repositorio
+(R102-P0-3). ``reports/dashboards/viz_epiforecastmx.twb`` no se abre ni se toca.
 
 Genera y **verifica**: si el XML resultante contiene Tableau Public, el id productivo, una ruta
 absoluta o una tabla legacy, el comando termina en rc no-cero y no deja el archivo.
+
+Lo que este comando NO demuestra: que Tableau Desktop pueda abrir, consultar y refrescar el
+workbook. Eso es un gate de B1-PREFLIGHT, y por eso la salida declara
+``tableau_desktop_validated: false`` en vez de llamarlo «validado».
 """
 
 from __future__ import annotations
@@ -15,7 +25,9 @@ from __future__ import annotations
 import argparse
 from collections.abc import Sequence
 from pathlib import Path
+import subprocess
 import sys
+import tempfile
 from typing import Any
 
 from epiforecast.publication.recovery import plan_bytes
@@ -31,8 +43,8 @@ RC_REFUSED = 2
 
 # Único destino trackeado que jamás puede ser la salida.
 WORKBOOK_PRODUCTIVO = Path("reports/dashboards/viz_epiforecastmx.twb")
-# Raíces admitidas: `runs/` está gitignored y los temporales del sistema, por definición, tampoco.
-RAICES_PERMITIDAS = ("runs", "tmp", "var", "private")
+# Directorio del repositorio donde SÍ puede caer un artefacto local. Se comprueba que esté ignorado.
+DIRECTORIO_RUNS = "runs"
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -48,22 +60,50 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _esta_ignorado(ruta: Path, raiz_repo: Path) -> bool:
+    """¿git ignora esta ruta? Se pregunta a git, no se deduce leyendo `.gitignore` a ojo."""
+    try:
+        resultado = subprocess.run(  # noqa: S603 — argumentos fijos, sin shell
+            ["git", "check-ignore", "-q", str(ruta)],  # noqa: S607
+            cwd=str(raiz_repo),
+            capture_output=True,
+            check=False,
+        )
+    except OSError:
+        return False  # sin git no se puede demostrar; no demostrado es no
+    return resultado.returncode == 0
+
+
 def _check_destino(destino: Path, raiz_repo: Path) -> None:
-    """El artefacto no entra al repositorio. Y el workbook productivo no es un destino."""
-    resuelto = destino.resolve()
-    require_no = resuelto == (raiz_repo / WORKBOOK_PRODUCTIVO).resolve()
-    if require_no:
+    """El artefacto no entra al repositorio. Y el workbook productivo no es un destino.
+
+    Buscar `tmp`, `var` o `runs` entre los componentes de la ruta aceptaba
+    ``<repo>/reports/tmp/x.twb`` y ``<repo>/reports/runs/x.twb``, que son rutas trackeables dentro
+    del repositorio (R102-P0-3). Aquí se compara contra dos **raíces resueltas**, y la resolución es
+    lo que impide que un symlink apunte a otro sitio del que se declara.
+    """
+    resuelto = destino.expanduser().resolve()
+    if resuelto == (raiz_repo / WORKBOOK_PRODUCTIVO).resolve():
         raise ArtifactValidationError(
             f"--out apunta al workbook productivo {WORKBOOK_PRODUCTIVO}; no se toca"
         )
     if resuelto.suffix != ".twb":
         raise ArtifactValidationError(f"--out tiene que terminar en .twb, no {resuelto.suffix!r}")
-    partes = resuelto.parts
-    if not any(p in RAICES_PERMITIDAS for p in partes):
-        raise ArtifactValidationError(
-            f"--out {resuelto} no está bajo un temporal ni bajo runs/: "
-            "este workbook no se versiona"
-        )
+
+    runs = (raiz_repo / DIRECTORIO_RUNS).resolve()
+    temporal = Path(tempfile.gettempdir()).resolve()
+    if resuelto.is_relative_to(runs):
+        if not _esta_ignorado(runs, raiz_repo):
+            raise ArtifactValidationError(
+                f"{DIRECTORIO_RUNS}/ no está ignorado por git en este árbol; "
+                "escribir ahí metería el workbook al repositorio"
+            )
+        return
+    if resuelto.is_relative_to(temporal):
+        return
+    raise ArtifactValidationError(
+        f"--out {resuelto} no desciende de {runs} ni de {temporal}: este workbook no se versiona"
+    )
 
 
 def main(
@@ -78,11 +118,13 @@ def main(
     raiz = Path.cwd() if raiz_repo is None else raiz_repo
 
     try:
-        staging, produccion = staging_ids(entorno)
+        # Se exigen las dos: sin la productiva no se puede demostrar que no colisionan.
+        staging, produccion = staging_ids(entorno, require_production=True)
         identificador = args.spreadsheet_id or staging
-        if produccion and identificador == produccion:
+        if identificador != staging:
             raise ArtifactValidationError(
-                "--spreadsheet-id es el id productivo; el workbook de staging no lo lleva"
+                "--spreadsheet-id no coincide con la hoja de staging declarada; un workbook que "
+                "apunta a otra hoja no valida el sink que se quiere validar"
             )
         _check_destino(args.out, raiz)
     except ArtifactValidationError as exc:
@@ -109,6 +151,8 @@ def main(
                 "out": str(args.out),
                 "bytes": len(xml),
                 "digest": sha256_bytes(xml),
+                # Se generó y se verificó el XML. Abrirlo en Tableau Desktop es un gate de B1.
+                "tableau_desktop_validated": False,
             }
         ).decode("utf-8")
     )

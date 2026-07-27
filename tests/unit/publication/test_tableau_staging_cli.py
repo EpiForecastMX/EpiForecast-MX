@@ -22,7 +22,11 @@ from epiforecast.publication.recovery import (
     ACTION_CONSOLIDATE_BACKUP,
     ACTION_DROP_NEXT,
     ACTION_RESTORE_BACKUP,
+    ACTION_RESTORE_PREVIOUS,
     PLAN_SCHEMA,
+    SOURCE_BACKUP,
+    SOURCE_NONE,
+    SOURCE_PREVIOUS,
     STATE_BACKUP_ORPHAN,
     STATE_CLEAN,
     STATE_NEXT_RESIDUE,
@@ -350,3 +354,142 @@ def test_shard_real_produce_5772_mas_1_y_el_plan_de_tabs_esperado():
     ]
     assert datos["applied"] is False
     assert set(datos["digests"]) == {TABLE_FORECAST, TABLE_RELEASES}
+
+
+# ── Regresiones de la auditoría R102 ──────────────────────────────────────────────────────────
+def test_apply_sin_la_variable_productiva_se_niega(tmp_path):
+    """R102-P0-1: sin ella, «staging ≠ producción» no falla — es que no se puede comprobar."""
+    sink, _ = _promovido(tmp_path)
+    inventario = table_inventory(sink)
+    sink.operaciones.clear()
+
+    rc, salida = _correr(
+        [
+            "recover",
+            "--apply",
+            "--expect-inventory",
+            inventario["inventory_digest"],
+            "--confirm-spreadsheet-id",
+            ID_STAGING,
+        ],
+        sink=sink,
+        entorno={STAGING_ID_ENV: ID_STAGING},
+    )
+    assert rc == RC_REFUSED
+    assert PRODUCTION_ID_ENV in salida
+    assert sink.operaciones == [], "ni una operación, ni una autenticación"
+
+
+def test_los_dry_run_si_corren_con_solo_la_hoja_de_staging(tmp_path):
+    """Mirar no es escribir: para inspeccionar basta declarar staging."""
+    sink, _ = _promovido(tmp_path)
+    for argv in (["inspect"], ["recover"]):
+        rc, _ = _correr(argv, sink=sink, entorno={STAGING_ID_ENV: ID_STAGING})
+        assert rc == RC_OK, argv
+    assert sink.operaciones == []
+
+
+def test_solo_next_y_nada_mas_no_se_borra_nada(tmp_path):
+    """R102-P0-2: antes borraba los dos __next y luego informaba error, con el namespace vacío."""
+    tablas = build_tables(_shard(tmp_path, filas=3))
+    sink = MemorySink(
+        {
+            f"{TABLE_FORECAST}{SUFFIX_NEXT}": tablas.forecast,
+            f"{TABLE_RELEASES}{SUFFIX_NEXT}": tablas.releases,
+        }
+    )
+    antes = {n: sink.read_table(n) for n in sink.list_tables()}
+    sink.operaciones.clear()
+
+    plan = recovery_plan(sink)
+    assert plan["status"] == "RECOVERY_REQUIRED"
+    assert plan["actions"] == [], "no se propone nada que empeore el estado"
+    assert plan["blocked"] == [TABLE_FORECAST, TABLE_RELEASES]
+    assert plan["sources"] == {TABLE_FORECAST: SOURCE_NONE, TABLE_RELEASES: SOURCE_NONE}
+
+    with pytest.raises(Exception, match="no tiene activa, respaldo ni previa"):
+        apply_recovery(sink, plan)
+
+    assert sink.operaciones == [], "el sink queda byte-idéntico"
+    assert sorted(sink.list_tables()) == sorted(antes)
+    for nombre, frame in antes.items():
+        pd.testing.assert_frame_equal(sink.read_table(nombre), frame)
+
+
+def test_una_activa_ausente_con_previa_se_restaura_explicitamente(tmp_path):
+    """Gate 9: o se restaura desde __previous y se verifica, o no se toca. Nunca queda peor."""
+    sink, _ = _promovido(tmp_path)
+    previa = sink.read_table(f"{TABLE_FORECAST}{SUFFIX_PREVIOUS}")
+    sink.drop_table(TABLE_FORECAST)  # sin activa y sin respaldo
+
+    plan = recovery_plan(sink)
+    assert plan["sources"][TABLE_FORECAST] == SOURCE_PREVIOUS
+    assert plan["blocked"] == []
+    assert plan["actions"] == [
+        {
+            "action": ACTION_RESTORE_PREVIOUS,
+            "table": TABLE_FORECAST,
+            "state": STATE_RECOVERY_REQUIRED,
+        }
+    ]
+
+    resultado = apply_recovery(sink, plan)
+    assert resultado["status"] == "RECOVERED"
+    pd.testing.assert_frame_equal(sink.read_table(TABLE_FORECAST), previa)
+    assert f"{TABLE_FORECAST}{SUFFIX_PREVIOUS}" not in sink.list_tables()
+
+
+def test_el_respaldo_gana_a_la_previa_como_origen(tmp_path):
+    """Con las dos disponibles, la activa vuelve del respaldo: es la copia más reciente."""
+    sink, _ = _promovido(tmp_path)
+    respaldo = pd.DataFrame([{"x": "la que se apartó"}])
+    sink.drop_table(TABLE_FORECAST)
+    sink.write_table(f"{TABLE_FORECAST}{SUFFIX_BACKUP}", respaldo)
+
+    plan = recovery_plan(sink)
+    assert plan["sources"][TABLE_FORECAST] == SOURCE_BACKUP
+    apply_recovery(sink, plan)
+    pd.testing.assert_frame_equal(sink.read_table(TABLE_FORECAST), respaldo)
+
+
+def test_una_combinacion_mixta_no_ejecuta_media_recuperacion(tmp_path):
+    """Gate 10: una tabla arreglable y la otra no ⇒ no se toca ninguna."""
+    sink, _ = _promovido(tmp_path)
+    # runner_releases sí puede volver desde su respaldo…
+    releases = sink.read_table(TABLE_RELEASES)
+    sink.drop_table(TABLE_RELEASES)
+    sink.write_table(f"{TABLE_RELEASES}{SUFFIX_BACKUP}", releases)
+    # …y runner_forecast no tiene de dónde volver.
+    sink.drop_table(TABLE_FORECAST)
+    sink.drop_table(f"{TABLE_FORECAST}{SUFFIX_PREVIOUS}")
+    sink.write_table(f"{TABLE_FORECAST}{SUFFIX_NEXT}", pd.DataFrame([{"x": "a medias"}]))
+    antes = {n: sink.read_table(n) for n in sink.list_tables()}
+    sink.operaciones.clear()
+
+    plan = recovery_plan(sink)
+    assert plan["blocked"] == [TABLE_FORECAST]
+    assert plan["sources"][TABLE_RELEASES] == SOURCE_BACKUP, "sí tenía arreglo"
+    assert plan["actions"] == [], "y aun así no se propone ninguna"
+
+    with pytest.raises(Exception, match="no tiene activa, respaldo ni previa"):
+        apply_recovery(sink, plan)
+
+    assert sink.operaciones == []
+    assert sorted(sink.list_tables()) == sorted(antes)
+    for nombre, frame in antes.items():
+        pd.testing.assert_frame_equal(sink.read_table(nombre), frame)
+
+
+def test_el_cli_reporta_el_bloqueo_sin_mutar(tmp_path):
+    tablas = build_tables(_shard(tmp_path, filas=2))
+    sink = MemorySink({f"{TABLE_FORECAST}{SUFFIX_NEXT}": tablas.forecast})
+    sink.operaciones.clear()
+
+    rc, salida = _correr(["recover"], sink=sink)
+    datos = _json(salida)
+    assert rc == RC_OK, "el dry-run informa; no es él quien falla"
+    assert datos["status"] == "RECOVERY_REQUIRED"
+    assert datos["blocked"] == [TABLE_FORECAST, TABLE_RELEASES]
+    assert datos["actions"] == []
+    assert "reason" in datos
+    assert sink.operaciones == []
