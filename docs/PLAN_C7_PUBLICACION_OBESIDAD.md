@@ -1,9 +1,9 @@
 # C7 — Plan operativo de publicación de Obesidad
 
 > **Estado autoritativo (2026-07-26): C7.2 y C7.3 CERRADAS; C7.5-PREP PASS; C7.6 BACKEND PASS;
-> B4.2 PASS.**
-> Backend local `64716ec1` (`ahead 14`) y remoto `dbfdd49c`; dashboard limpio
-> `feat/c73-candidate-staging@438441a0` (`ahead 13` de `main`) y remoto de la rama `d5ead880`.
+> B4.2 PASS; RAG-A IMPLEMENTADA / AUDITORÍA FAIL.**
+> Backend local `b6b3d89e` (`ahead 15`) y remoto `dbfdd49c`; dashboard limpio
+> `feat/c73-candidate-staging@b9cb7a1f` (`ahead 14` de `main`) y remoto de la rama `d5ead880`.
 > 47.3 quedó **CERRADA / PASS**: `npm test` verifica primero el fixture reproducible, ejecuta
 > 616/616 respuestas con handler real y luego 41/41 contratos focalizados.
 > 47.2-B1/B2/B3/B4/B4.1 quedó **CERRADA / PASS** después de auditoría independiente: 616/616 casos,
@@ -22,13 +22,14 @@
 > `INCOMPLETE (0/4)` y no se presenta como PASS. Un FAIL final obliga a rollback; un PASS convierte
 > la publicación condicionada en confirmada.
 >
-> **Orden vigente:** (1) ejecutar `C7.6-RAG-A`, que corrige y prueba el contrato de vectores sin usar
-> la clave ni regenerar índices; (2) auditar A y sólo después ejecutar `C7.6-RAG-B`, que repara el
-> índice público baseline con la clave disponible como secreto; (3) auditar B y ejecutar
+> **Orden vigente:** (1) ejecutar `C7.6-RAG-A.1`, que corrige el falso verde de `rag:ci` sin clave
+> y liga la caché/verificación a la identidad `model + dim`; (2) auditar A.1 y sólo después ejecutar
+> `C7.6-RAG-B`, que repara el índice público baseline con la clave disponible como secreto;
+> (3) auditar B y ejecutar
 > `C7.6-RAG-C`, que demuestra el índice candidate exclusivamente en staging; (4) cerrar
 > C7.6-READINESS y emitir el paquete de aprobación; (5) activar y desplegar
 > coordinadamente con etiqueta pública de validación en curso; (6) reejecutar C7.4 con cada boletín
-> hasta 4/4. La Ronda 66 contiene la orden ejecutable vigente y sustituye cualquier orden histórica
+> hasta 4/4. La Ronda 68 contiene la orden ejecutable vigente y sustituye cualquier orden histórica
 > incompatible.
 > Obesidad continúa por ahora `trained`, NO-GO e invisible para `published_only`.
 >
@@ -43,7 +44,7 @@
 > | C7.3 compilador y consumidores en sombra | 20% | 100% | 20.0% | PASS |
 > | C7.4 congelado prospectivo | 10% | 50% | 5.0% | contrato congelado; evidencia `0/4` |
 > | C7.5 preparación de activación | 10% | 85% | 8.5% | PREP PASS; falta gate integral final |
-> | C7.6 readiness | 15% | 70% | 10.5% | backend/dashboard PASS; RAG A/B/C pendiente |
+> | C7.6 readiness | 15% | 70% | 10.5% | backend/dashboard PASS; RAG-A requiere A.1; B/C pendientes |
 > | C7.7 activación, deploy y smoke | 10% | 0% | 0.0% | no autorizado ni ejecutado |
 > | **Total** | **100%** |  | **79.0%** | Obesidad sigue oculta |
 >
@@ -10709,5 +10710,246 @@ Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
 
 Siguiente acción exacta: **auditar A**. `C7.6-RAG-B` sigue no autorizada; cuando lo esté, será la
 primera vez que se use la clave.
+
+_Respuesta:_
+
+---
+
+### Ronda 68 — Auditoría de C7.6-RAG-A: dos correcciones antes de B — 2026-07-26
+
+#### Veredicto
+
+**RAG-A está bien encaminada, pero NO pasa todavía la auditoría. RAG-B continúa bloqueada.**
+
+La auditoría se hizo sobre `438441a0..b9cb7a1f`, ejecutando las suites y reproduciendo los caminos
+que no cubren las 17 pruebas nuevas.
+
+```text
+diff                                7 archivos · +560 / -178 · diff --check PASS
+npm test                            616/616 + 60/60
+test:candidate                      19/19
+test_rag_index                      17/17
+rag_index/knowledge/HTML            byte-idénticos
+```
+
+La extracción a `scripts/lib/rag_index.mjs`, el fallo cerrado ante embeddings ausentes o inválidos,
+la asociación por hash durante la construcción y la escritura posterior a la validación son
+correctos. El hallazgo `19 faltantes + 17 extras = 36 problemas` también se reproduce.
+
+#### R68-P0 — `rag:ci` da verde sin clave aunque el índice esté roto
+
+Reproducción exacta sobre `b9cb7a1f`:
+
+```text
+env -u GEMINI_API_KEY npm run rag:ci    rc=0
+npm run rag:verify                      rc=1 · 36 problemas
+rag_index.json                           SHA256 sin cambio
+```
+
+No reconstruir sin clave es correcto. **No verificar el índice commiteado es incorrecto.** En
+Netlify/CI sin secreto, el estado actual quedaría verde aunque el propio verificador ya sabe que el
+índice tiene drift.
+
+Contrato correcto:
+
+```text
+con clave      rag:build → rag:verify
+sin clave      NO rag:build → rag:verify sobre el índice commiteado
+```
+
+En ambos caminos `rag:verify` es obligatorio. Si el índice commiteado tiene drift, `rag:ci` debe
+terminar con `rc!=0`.
+
+#### R68-P0 — la caché no está ligada al modelo de embeddings
+
+Reproducción independiente, misma dimensión:
+
+```json
+{
+  "previous_model": "model-A",
+  "new_model": "model-B",
+  "reused": 1,
+  "generated": 0,
+  "embed_calls": 0
+}
+```
+
+El nuevo índice declara `model-B`, pero conserva el vector producido por `model-A`. Un cambio de
+modelo con la misma dimensión generaría un índice mezclado y aparentemente válido.
+
+Además, `problemsAgainstCorpus()` acepta un índice con `model` incorrecto porque sólo recibe
+`dim`; tampoco contrasta de forma explícita `count`, `index.dim` ni la identidad del modelo.
+
+La identidad de caché no es sólo `chunkHash`: es como mínimo:
+
+```text
+embedding_identity = model + dim
+entry_identity     = embedding_identity + chunkHash
+```
+
+#### Orden C7.6-RAG-A.1 — microcorrección, todavía sin clave
+
+Trabajar únicamente en el dashboard sobre `b9cb7a1f`. Un commit local y STOP.
+
+1. Corregir `rag:ci`:
+
+```text
+si GEMINI_API_KEY existe   npm run rag:build
+si no existe               conservar el índice commiteado
+siempre                    npm run rag:verify
+```
+
+2. Ligar la reutilización de caché a `model + dim`:
+   - si cualquiera difiere, reutilizar **cero** vectores y regenerar todos;
+   - no permitir que el índice resultante declare un modelo distinto al que produjo sus vectores;
+   - mantener la reutilización por `chunkHash` sólo dentro de la misma identidad de embeddings.
+3. Extender el verificador compartido para rechazar:
+   - `index.model !== expectedModel`;
+   - `index.dim !== expectedDim`;
+   - `index.count !== chunks.length`;
+   - `chunks.length !== vectors.length`;
+   - metadata ausente o de tipo inválido.
+   `rag_verify.mjs` debe pasar explícitamente `EMBED_MODEL` y `EMBED_DIM`.
+4. Tratar duplicados ambiguos en la caché de forma fail-closed o no reutilizable; nunca aplicar
+   silenciosamente “el último gana”.
+5. Añadir pruebas que muerdan:
+   - sin clave + índice válido → no construye, sí verifica, rc=0;
+   - sin clave + drift → no construye, sí verifica, rc!=0;
+   - cambio de modelo con misma dimensión → `reused=0`, se llama al proveedor;
+   - cambio de dimensión → `reused=0`;
+   - modelo/dim/count ausente, falso o incorrecto → verificador FAIL;
+   - misma identidad + mismo hash → reutiliza;
+   - hash duplicado en caché → no se resuelve con “último gana”.
+6. Repetir el gate sin clave:
+
+```text
+npm test                              616/616 + unitarios
+npm run test:candidate                PASS
+node --test tests/test_rag_index.mjs  PASS
+env -u GEMINI_API_KEY npm run rag:ci  rc=1 mientras existan los 36 problemas
+rag_index.json                         byte-idéntico
+knowledge.json / HTML                  byte-idénticos
+```
+
+7. Un commit local `C7.6-RAG-A.1` y STOP. No ejecutar B ni usar la clave.
+
+#### Estado del avance
+
+El avance operativo permanece en **79%**. RAG-A produjo infraestructura válida, pero no se acredita
+como gate cerrado hasta resolver los dos P0. No se avanza el porcentaje por código escrito si el
+camino oficial de CI todavía puede dar un falso verde.
+
+#### Próxima acción exacta
+
+**Ejecutar únicamente C7.6-RAG-A.1 local y detenerse para auditoría.**
+
+_Respuesta:_ **GO C7.6-RAG-A.1 LOCAL. Sin usar `GEMINI_API_KEY`, sin regenerar
+`rag_index.json`, sin RAG-B/C, push, PR, merge, deploy, cache-bust, activación, lifecycle ni
+publicación.**
+
+---
+
+### Ronda 69 — C7.6-RAG-A.1: los dos P0 corregidos — 2026-07-26
+
+Un commit local sobre `b9cb7a1f`. **Sin usar `GEMINI_API_KEY`**, sin regenerar `rag_index.json`, sin
+RAG-B/C, push, deploy, cache-bust, activación ni publicación.
+
+```text
+40442c6d  C7.6-RAG-A.1  rag:ci siempre verifica y la cache se liga al modelo
+```
+
+Los dos hallazgos son correctos y son míos. Reproduje ambos sobre `b9cb7a1f` antes de tocar nada, y
+volví a medirlos después.
+
+#### R68-P0 (1) · `rag:ci` daba verde sin mirar el índice
+
+```text
+b9cb7a1f   sin clave → rc=0 · construyó: no · verificó: NO
+40442c6d   sin clave → rc=1 · construyó: no · verificó: sí
+```
+
+No reconstruir sin clave era lo correcto; no verificar, no. En CI sin secreto el estado quedaba
+verde con el índice roto, y el propio verificador ya sabía que tenía drift. Ahora `rag:verify` corre
+**siempre**, en ambos caminos, y su veredicto manda.
+
+#### R68-P0 (2) · la caché no estaba ligada al modelo
+
+Reproducción sobre `b9cb7a1f`, misma dimensión:
+
+```json
+{"previous_model":"model-A","new_model":"model-B","reused":1,"generated":0,
+ "embed_calls":0,"vector_es_de_model_A":true}
+```
+
+El índice se declaraba `model-B` conservando vectores de `model-A`. Después:
+
+```json
+{"previous_model":"model-A","new_model":"model-B","reused":0,"generated":1,
+ "embed_calls":1,"vector_es_de_model_A":false}
+```
+
+La identidad de una entrada es **`model + dim + chunkHash`**. Si el modelo o la dimensión difieren,
+no se reutiliza **nada**. Tenías razón en el diagnóstico de fondo: dos vectores de 768 componentes
+son numéricamente compatibles y semánticamente incomparables si vienen de modelos distintos, y ése
+es justo el error que ningún tamaño detecta.
+
+#### Lo demás que pedía la orden
+
+- **Duplicados en la caché**: un hash repetido con vectores **distintos** se descarta por completo
+  —no se reutiliza ninguno de los dos— en vez de aplicar «el último gana». Si los dos vectores son
+  idénticos no hay ambigüedad y sí se reutiliza.
+- **Verificador**: rechaza `model` distinto o ausente, `dim` no numérico o distinto, `count`
+  distinto del corpus, `chunks`/`vectors` ausentes, de otro tipo o de distinta longitud.
+  `rag_verify.mjs` pasa `EMBED_MODEL` y `EMBED_DIM` explícitos e imprime lo que el índice declara,
+  para que el rojo diga *qué* no cuadra.
+
+#### Pruebas · 24 en total (7 nuevas), sin red ni clave
+
+Las de `rag:ci` ejecutan **la cadena real leída del `package.json` del repo** —no una copia— con
+`rag:build` y `rag:verify` sustituidos por stubs que dejan constancia de haberse ejecutado. Así se
+comprueban los cuatro caminos: con y sin clave, con verificador que aprueba y que reprueba.
+
+```text
+sin clave + índice sano    → no construye · sí verifica · rc=0
+sin clave + drift          → no construye · sí verifica · rc≠0     ← el falso verde de R68-P0
+con clave + sano           → construye · verifica · rc=0
+con clave + drift          → construye · verifica · rc≠0
+```
+
+#### El drift baseline sube a 37
+
+```text
+antes  36 = 19 sin cubrir + 17 sobrantes
+ahora  37 = 19 sin cubrir + 17 sobrantes + 1 metadata (count 452 ≠ 454 del corpus)
+```
+
+#### Gate, sin clave
+
+```text
+npm test                              616/616 + 67 unitarias
+npm run test:candidate                19/19
+node --test tests/test_rag_index.mjs  24/24
+env -u GEMINI_API_KEY npm run rag:ci  rc=1  (los 37 problemas siguen ahí, como debe ser)
+node --check                          rag_index.mjs · rag_verify.mjs · test_rag_index.mjs  PASS
+rag_index.json / knowledge.json / HTML   byte-idénticos
+GEMINI_API_KEY                        no usada por ninguna prueba
+```
+
+Una nota de honestidad sobre la evidencia: no pude correr el archivo de pruebas completo contra
+`b9cb7a1f` para enseñar «N rojas», porque importa `sameEmbeddingIdentity`, que allí no existe, y el
+módulo entero falla al cargar. Por eso reproduje los dos P0 con scripts mínimos contra el código
+anterior —los JSON de arriba— en vez de afirmar un recuento de rojas que no medí.
+
+#### Estado
+
+```text
+Dashboard   40442c6d · limpio · ahead 15 de main · SIN PUSH
+Backend     ahead 15 · SIN PUSH
+Readiness   47.2-B ✓ · 47.3 ✓ · B4.2 ✓ · RAG-A ✎ (a auditar) · RAG-B ✗ · RAG-C ✗
+Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
+Avance      79% hasta que cierres A.1
+```
+
+Siguiente acción exacta: **auditar A.1**. RAG-B sigue bloqueada.
 
 _Respuesta:_
