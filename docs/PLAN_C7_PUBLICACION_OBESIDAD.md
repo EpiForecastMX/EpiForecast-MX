@@ -1,9 +1,15 @@
 # C7 — Plan operativo de publicación de Obesidad
 
-> **Estado autoritativo (2026-07-26): C7.2 y C7.3 CERRADAS; C7.5-PREP PASS; C7.6 BACKEND PASS;
-> B4.2 PASS; RAG-A/A.1 PASS.**
-> Backend local `d54d9ceb` (`ahead 16`) y remoto `dbfdd49c`; dashboard limpio
-> `feat/c73-candidate-staging@40442c6d` (`ahead 15` de `main`) y remoto de la rama `d5ead880`.
+> **Estado autoritativo (2026-07-27): C7.2 y C7.3 CERRADAS; C7.5-PREP PASS; núcleo C7.6 PASS;
+> B4.2 PASS; RAG-A/A.1/B y **RAG-C-REPEAT definitivo PASS**. STATUS-A/A.1/A.2/A.3/A.3.1 y
+> STATUS-B/B.1 están **CERRADOS / PASS**. La atribución DVC y el descubrimiento de sinks cerraron.
+> ADAPTERS-A/A.1/A.1.1 están **CERRADAS / PASS** tras auditoría ejecutable: instalación sellada,
+> 16 fronteras del installer, promoción y rollback recuperables del par Tableau y preflight
+> fail-closed. ADAPTERS-B0 + B0.1 están **CERRADAS / PASS** tras auditoría independiente:
+> identidad obligatoria, containment real y recuperación no destructiva verificadas con repros.
+> La validación externa de Google Sheets/Tableau todavía no comenzó. Backend local `20e1ccdf`
+> (`ahead 28`) y remoto `dbfdd49c`; dashboard limpio
+> `feat/c73-candidate-staging@9487e322` (`ahead 20` del remoto de la rama `d5ead880`).
 > 47.3 quedó **CERRADA / PASS**: `npm test` verifica primero el fixture reproducible, ejecuta
 > 616/616 respuestas con handler real y luego 41/41 contratos focalizados.
 > 47.2-B1/B2/B3/B4/B4.1 quedó **CERRADA / PASS** después de auditoría independiente: 616/616 casos,
@@ -22,16 +28,15 @@
 > `INCOMPLETE (0/4)` y no se presenta como PASS. Un FAIL final obliga a rollback; un PASS convierte
 > la publicación condicionada en confirmada.
 >
-> **Orden vigente:** (1) ejecutar `C7.6-RAG-B`, que repara únicamente el índice público baseline
-> con la clave disponible como secreto y cierra sus 37 problemas; (2) auditar B y ejecutar
-> `C7.6-RAG-C`, que demuestra el índice candidate exclusivamente en staging; (3) cerrar
-> C7.6-READINESS y emitir el paquete de aprobación; (4) activar y desplegar
-> coordinadamente con etiqueta pública de validación en curso; (5) reejecutar C7.4 con cada boletín
-> hasta 4/4. La Ronda 70 contiene la orden ejecutable vigente y sustituye cualquier orden histórica
-> incompatible.
+> **Orden vigente:** B1-PREFLIGHT queda **PARKED_BY_USER** hasta que sea posible preparar Google.
+> Su reanudación está documentada en `docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md`. El cache-bust
+> transitivo del dashboard quedó **PASS** en `9487e322`. Ejecutar únicamente
+> `C7.6-DOCS-CHECKPOINT` en el backend: versionar el plan autoritativo y el manual en un commit
+> local doc-only, verificar su alcance y hacer STOP. La Ronda 111 contiene la orden vigente y
+> sustituye cualquier orden histórica incompatible.
 > Obesidad continúa por ahora `trained`, NO-GO e invisible para `published_only`.
 >
-> **Avance operativo estimado de C7: ≈81% hacia la publicación condicionada.** La cifra usa pesos
+> **Avance operativo estimado de C7: 82% hacia la publicación condicionada.** La cifra usa pesos
 > declarados por impacto del entregable, no cantidad de commits ni líneas. Estado por fase:
 >
 > | fase | peso | avance | aporte | estado verificable |
@@ -42,15 +47,15 @@
 > | C7.3 compilador y consumidores en sombra | 20% | 100% | 20.0% | PASS |
 > | C7.4 congelado prospectivo | 10% | 50% | 5.0% | contrato congelado; evidencia `0/4` |
 > | C7.5 preparación de activación | 10% | 85% | 8.5% | PREP PASS; falta gate integral final |
-> | C7.6 readiness | 15% | 80% | 12.0% | backend/dashboard y RAG-A PASS; B/C pendientes |
+> | C7.6 readiness | 15% | 92% | 13.8% | B0/B0.1 PASS; B1 estacionado con manual de reanudación |
 > | C7.7 activación, deploy y smoke | 10% | 0% | 0.0% | no autorizado ni ejecutado |
-> | **Total** | **100%** |  | **80.5% (≈81%)** | Obesidad sigue oculta |
+> | **Total** | **100%** |  | **82.3% ≈ 82%** | Obesidad sigue oculta |
 >
-> El **≈81% no significa publicada**: la exposición pública sigue en **0%** porque lifecycle, puntero
+> El **82% no significa publicada**: la exposición pública sigue en **0%** porque lifecycle, puntero
 > activo y deploy no se han ejecutado. La confirmación prospectiva se informa separadamente como
 > **0/4 semanas (0%)** y continuará después de la publicación condicionada por decisión explícita
-> del usuario. Próximo incremento real: cerrar RAG-B y RAG-C; después emitir readiness y
-> recién entonces autorizar C7.7.
+> del usuario. Próximo incremento real: validar el sink real de staging en preflight y apply
+> separados y sólo entonces solicitar las autorizaciones de C7.7.
 >
 > **Alcance:** publicar únicamente Obesidad E66. Anorexia F50 permanece
 > `lifecycle=configured`, `channels: []`, `gallery_enabled: false` y oculta durante toda C7.
@@ -11192,3 +11197,6553 @@ Siguiente acción exacta: **auditar B**. `C7.6-RAG-C` —el índice candidate s�
 autorizar.
 
 _Respuesta:_
+
+---
+
+### Ronda 72 — Auditoría C7.6-RAG-B PASS y orden RAG-C — 2026-07-26
+
+#### Veredicto
+
+**C7.6-RAG-B queda CERRADA / PASS. Se autoriza RAG-C únicamente en staging temporal.**
+
+Auditoría independiente de `40442c6d..4cdc17dd`:
+
+```text
+diff / commit                         sólo epibot/rag_index.json
+old → new                             452 → 454 chunks
+intersección                          435 hashes
+vectores idénticos en intersección    435/435
+agregados / retirados                 +19 / -17 exactos
+hashes únicos                         454
+vectores inválidos                    0
+contract_problems                     0
+modelo / dimensión                    gemini-embedding-001 / 768
+menciones de Obesidad                 0
+rag:verify                            rc=0
+npm run check                         rc=0
+```
+
+La clasificación también coincide:
+
+```text
+retirados   12 Validación semanal + 3 Datos de Dengue + 2 Datos del proyecto
+agregados   los 17 anteriores actualizados + Avance 1 + Avance 2
+```
+
+El índice baseline público queda sano, sin Obesidad y sin mezcla de modelos. No se requiere ninguna
+corrección adicional en B.
+
+#### Orden C7.6-RAG-C — Obesidad candidate exclusivamente en dos staging roots
+
+RAG-C es un **gate de ejecución**, no una modificación de producto. Trabajar con:
+
+```text
+Backend     7e36e086
+Dashboard   4cdc17dd
+Obesidad    lifecycle=trained
+Release     obesidad_release_2517e7858901
+```
+
+No crear commit vacío. Si el gate pasa sin cambios de código, reportar evidencia y STOP.
+
+##### C0 · preflight
+
+1. Ambos worktrees deben estar trackeados-limpios; preservar los untracked del usuario.
+2. Confirmar que existe y verifica el release bajo:
+
+```text
+artifacts/releases/obesidad/obesidad_release_2517e7858901/
+```
+
+Si falta, detenerse: RAG-C no autoriza `dvc pull`.
+3. Confirmar sin imprimirla:
+
+```text
+test -n "${GEMINI_API_KEY:-}"
+```
+
+Si no está disponible en la misma sesión, detenerse. No usar `.env`, argumentos, logs ni archivos.
+4. Capturar SHA256 de las superficies públicas antes de empezar:
+   - dashboard `epibot/rag_index.json`, `epibot/knowledge.json`, `index.html`,
+     `epibot/index.html`;
+   - backend: agregados legacy, puntero/lifecycle y target DVC del release.
+5. Crear dos raíces independientes con `mktemp -d`, fuera de ambos repos:
+
+```text
+C7_RAG_STAGING_A
+C7_RAG_STAGING_B
+```
+
+No reutilizar el temporal histórico de C7.3.
+
+##### C1 · compilar los mismos shards candidate dos veces
+
+Desde el backend, para cada raíz A/B:
+
+1. Resolver `releases_root` con `default_releases_root()`, no escribir una ruta absoluta en código.
+2. Ejecutar:
+
+```python
+compile_release(
+    disease_id="obesidad",
+    mode=MODE_CANDIDATE,
+    releases_root=default_releases_root(),
+)
+emit_shards(compilation, staging_root)
+```
+
+El único identificador específico permitido en la invocación es `disease_id="obesidad"`; el
+compilador y los puentes permanecen genéricos.
+3. Exigir en ambas raíces:
+
+```text
+release_id                  obesidad_release_2517e7858901
+lifecycle                   trained
+channels_emitted            epibot, reports, tableau, web
+channels_without_bridge     []
+filas forecast              5,772
+shards A vs B               byte-idénticos antes del índice RAG
+```
+
+Si compilar A/B produce bytes distintos, detenerse antes de llamar al proveedor.
+
+##### C2 · construir los dos índices de staging
+
+Desde `EpiForecast-IMSS-Dashboard/epibot`, ejecutar una vez por raíz:
+
+```text
+npm run rag:staging -- "$C7_RAG_STAGING_A"
+npm run rag:staging -- "$C7_RAG_STAGING_B"
+```
+
+Cada ejecución debe reutilizar los 454 vectores públicos y generar exactamente **un** embedding
+candidate.
+
+Resultado esperado en cada staging:
+
+```text
+chunks publicados       454
+chunks con candidate    455 (+1)
+vectores reutilizados   454
+vectores generados      1
+vectores inválidos      0
+drift                   0
+```
+
+Un fallo de API, vector vacío, identidad incorrecta o conteo diferente termina C con FAIL. No
+reintentar manualmente en bucle ni copiar el vector de A a B.
+
+##### C3 · verificaciones independientes
+
+1. Para cada `rag_index.staging.json`:
+   - `count == chunks.length == vectors.length == 455`;
+   - modelo `gemini-embedding-001`, dimensión 768;
+   - 455 hashes únicos y 455 vectores válidos;
+   - 454 hashes públicos con vectores byte-idénticos al índice público por `chunkHash`;
+   - exactamente un chunk candidate cuyo contenido identifica Obesidad;
+   - ese chunk tiene vector válido y no existe en el índice público.
+2. Comparar A contra B:
+   - eliminar únicamente el campo temporal `built`;
+   - chunks, orden, hashes, modelo, dimensión y los 455 vectores deben ser idénticos;
+   - el vector candidate generado independientemente debe coincidir exactamente tras la
+     normalización declarada por el builder.
+3. Recalcular SHA256 de superficies:
+   - `epibot/rag_index.json` público byte-idéntico a `4cdc17dd`;
+   - `knowledge.json`, ambos HTML, package y archivos públicos byte-idénticos;
+   - cero menciones públicas de Obesidad.
+4. Ejecutar `npm run check`; debe continuar `rc=0`.
+5. Backend: Obesidad sigue `trained`, F50 `configured`, `published_members()` sigue conteniendo
+   sólo Depresión, Parkinson, Alzheimer y Dengue; release DVC y legacy sin cambios.
+
+##### C4 · STOP y evidencia
+
+Si todo pasa:
+
+- no crear commit en dashboard ni backend;
+- conservar temporalmente A/B para que la auditoría pueda inspeccionarlos;
+- reportar sus rutas opacas, SHA256 normalizados y todos los conteos;
+- no subir los temporales ni añadirlos a Git/DVC.
+
+Si cualquier gate falla:
+
+- detenerse con evidencia;
+- no corregir código dentro de C;
+- no borrar A/B hasta decidir la causa;
+- no avanzar a readiness ni activación.
+
+#### Gate de cierre de C
+
+```text
+shards A/B                           byte-idénticos
+índice A/B normalizado               byte-idéntico
+public/reused                        454/454 vectores idénticos por hash
+candidate                            1 chunk · 1 vector válido · sólo staging
+total staging                        455 chunks / 455 vectores
+drift / vacíos / duplicados          0 / 0 / 0
+npm run check                        rc=0
+superficies públicas                 byte-idénticas · Obesidad ausente
+lifecycle/published/F50/legacy/DVC   sin cambios
+commits                              ninguno
+```
+
+#### Avance
+
+El avance operativo queda en **82%**. C7.6 subirá a cierre técnico sólo cuando RAG-C pase y se emita
+el paquete final de readiness.
+
+#### Próxima acción exacta
+
+**Ejecutar únicamente C7.6-RAG-C en dos temporales independientes y STOP.**
+
+_Respuesta:_ **GO C7.6-RAG-C LOCAL/STAGING. Se autoriza usar `GEMINI_API_KEY` sólo desde el entorno
+para generar el único embedding candidate en cada staging. Sin commits, push, PR, merge, deploy,
+cache-bust, activación, lifecycle ni publicación.**
+
+---
+
+### Ronda 73 — C7.6-RAG-C ejecutada: Obesidad candidate sólo en staging — 2026-07-27
+
+Gate de ejecución. **Ningún commit**, ningún cambio de producto. Temporales conservados para tu
+auditoría. Obesidad sigue `trained`.
+
+#### C0 · preflight
+
+```text
+dashboard trackeado-limpio        sí
+backend trackeado-limpio          1 archivo: este plan, con TUS ediciones pendientes (no lo commiteo)
+release en la sede                existe y verifica · obesidad_release_2517e7858901
+GEMINI_API_KEY                    presente en el entorno de esta sesión (no impresa)
+raíces con mktemp -d              A y B, fuera de ambos repos, nuevas (no el temporal de C7.3)
+```
+
+Rutas opacas conservadas:
+
+```text
+A  /var/folders/0p/fpm4_3l94jxbbc__pnl93bmw0000gn/T/tmp.0dHMA2ZqRm
+B  /var/folders/0p/fpm4_3l94jxbbc__pnl93bmw0000gn/T/tmp.krVjHPSu3H
+```
+
+#### C1 · shards compilados dos veces
+
+```text
+                          A                                B
+release_id                obesidad_release_2517e7858901    idem
+lifecycle                 trained                          idem
+channels_emitted          epibot, reports, tableau, web    idem
+channels_without_bridge   []                               []
+filas forecast            5,772                            5,772
+```
+
+**Byte-idénticos antes de tocar el proveedor**: `diff -r` sin diferencias y el mismo digest de árbol
+sobre los 9 archivos de cada raíz —`dfe85262a5a8d6c2…`—. Esa comparación es previa al índice, como
+pedía la orden: si los shards no coincidieran, no habría que gastar una sola llamada a la API.
+
+#### C2 · dos índices de staging
+
+```text
+                        A      B
+chunks publicados       454    454
+chunks con candidate    455    455  (+1)
+vectores reutilizados   454    454
+vectores generados        1      1
+rc                        0      0
+```
+
+#### C3 · verificación independiente
+
+```text
+                                       A         B
+count == chunks == vectors             455       455
+modelo / dimensión                     gemini-embedding-001 / 768
+hashes únicos                          455       455
+vectores inválidos                     0         0
+problemas de contrato                  0         0
+públicos reutilizados byte-idénticos   454/454   454/454
+chunks candidate                       1         1
+id del candidate                       candidate:obesidad:obesidad_release_2517e7858901
+vector del candidate válido            sí        sí
+¿el candidate está en el índice público?  no     no
+```
+
+**A contra B, normalizado** (se elimina únicamente `built`, el campo temporal declarado no
+identitario):
+
+```text
+sha256  deaf6591d63cd150c80216d4b95a3d2a4dacd1c4c0efd332eebd4aa4bb264dea   A
+sha256  deaf6591d63cd150c80216d4b95a3d2a4dacd1c4c0efd332eebd4aa4bb264dea   B
+chunks idénticos · orden idéntico · 455 vectores idénticos · incluido el candidate
+```
+
+El embedding candidate se generó **de forma independiente en cada raíz** y coincidió exacto: el
+proveedor es determinista para el mismo texto bajo la normalización que declara el builder.
+
+Superficies públicas, SHA256 antes y después de todo el ejercicio:
+
+```text
+epibot/rag_index.json · epibot/knowledge.json · index.html · epibot/index.html
+all_forecast_{prophet,deepar,ensemble,stacking}.csv
+→ los 8 idénticos · rag_index.json además byte-idéntico a 4cdc17dd · 0 menciones de Obesidad
+```
+
+Backend:
+
+```text
+obesidad       lifecycle=trained · 4 canales · gallery=False
+anorexia_f50   lifecycle=configured · 0 canales
+published_members(web|epibot|reports|tableau)  = Alzheimer, Dengue, Depresión, Parkinson
+legacy y DVC   sin cambios trackeados
+npm run check  rc=0
+```
+
+#### Dos cosas que debo declarar
+
+1. **Hice una pasada preliminar** en otros dos temporales antes de leer la Ronda 72 completa, con el
+   mismo procedimiento pero invocando `node scripts/rag_staging.mjs` en vez de `npm run rag:staging`
+   y sin comparar los shards previamente. La rehice entera siguiendo la orden al pie de la letra.
+   Las cuatro corridas —las dos preliminares y A/B— dan **el mismo digest normalizado**, así que la
+   evidencia adicional apunta al mismo sitio. Los cuatro temporales quedan disponibles.
+2. **Corregí un digest mal calculado antes de reportarlo.** Mi primer cálculo en JS pasaba un
+   arreglo como segundo argumento de `JSON.stringify`, que no ordena claves: **filtra propiedades**,
+   y de forma recursiva, así que habría comparado los chunks vacíos. El digest de arriba está
+   recalculado con serialización canónica completa. Las comparaciones directas de `chunks` y
+   `vectors` nunca dependieron de eso.
+
+#### Gate de cierre de C
+
+```text
+shards A/B byte-idénticos                        ✓
+índice A/B normalizado byte-idéntico             ✓
+454/454 vectores públicos idénticos por hash     ✓
+candidate: 1 chunk · 1 vector válido · staging   ✓
+total staging 455/455                            ✓
+drift / vacíos / duplicados                      0 / 0 / 0
+npm run check                                    rc=0
+superficies públicas byte-idénticas · sin Obesidad  ✓
+lifecycle / published / F50 / legacy / DVC       sin cambios
+commits                                          ninguno
+```
+
+#### Estado
+
+```text
+Dashboard   4cdc17dd · limpio · ahead 16 · SIN PUSH · sin commit nuevo
+Backend     7e36e086 + este plan sin commitear · ahead 17 · SIN PUSH
+Readiness   RAG-A ✓ · A.1 ✓ · B ✓ · C ✓ (a auditar)
+Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
+```
+
+No commiteo esta ronda: la orden dice **commits ninguno**, y además el plan tiene tus ediciones sin
+commitear — no me corresponde subirlas. Queda escrita en el archivo para que la audites.
+
+_Respuesta:_
+
+---
+
+### Ronda 74 — Auditoría C7.6-RAG-C PASS y brecha de estado público — 2026-07-27
+
+#### Veredicto de la auditoría
+
+**C7.6-RAG-C pasa para el candidate actual. C7.6-READINESS todavía NO se cierra.**
+
+Se revalidaron sin modificar producto los dos temporales autoritativos:
+
+```text
+A  /var/folders/0p/fpm4_3l94jxbbc__pnl93bmw0000gn/T/tmp.0dHMA2ZqRm
+B  /var/folders/0p/fpm4_3l94jxbbc__pnl93bmw0000gn/T/tmp.krVjHPSu3H
+```
+
+Resultado independiente:
+
+```text
+shards A/B                                      9/9 byte-idénticos
+count == chunks == vectors                     455 en A y B
+modelo / dimensión                             gemini-embedding-001 / 768
+hashes únicos / vectores inválidos             455 / 0
+vectores públicos iguales al baseline          454/454 en A y B
+chunk candidate                                exactamente 1 en A y B
+candidate ausente del índice público           sí
+vector candidate A == B                        igualdad exacta
+índices normalizados A == B                    igualdad estructural exacta
+npm run check                                  rc=0
+lifecycle / published_members / DVC             sin cambios
+```
+
+El SHA `deaf6591…` reportado en la Ronda 73 es válido bajo su serializador canónico. Una
+recomprobación con otro serializador recursivo de claves ordenadas produjo
+`1fe79560b72f02139f7d455d780824ab22040470fc60687f043a3386598befd2` para **A y B**. La diferencia
+entre cadenas proviene de la codificación de serialización, no de los datos: la comparación
+estructural directa, el orden, los 455 chunks y los 455 vectores son idénticos. No es un bloqueo.
+
+No borrar los temporales A/B hasta terminar la auditoría de `PUBLICATION-STATUS`; son la evidencia
+del candidate previo al cambio de etiqueta.
+
+#### R74-P0 — el estado prospectivo aún no es un contrato de publicación
+
+La matriz de aceptación exige hacer visible:
+
+```text
+Validación prospectiva en curso (0/4 semanas) · pronóstico puntual sin intervalos
+```
+
+Hoy esa frase y el estado `INCOMPLETE 0/4` existen en este plan, pero **no existe un artefacto
+persistido y validado que los consumidores puedan usar**:
+
+- `f7b14694` añadió la lógica tipada de `prospective.py` y sus pruebas, pero no materializó el gate
+  congelado ni su estado actual como fuente de verdad;
+- el puntero público no contiene ni debe contener el estado semanal;
+- el compilador sólo emite `interval_method=none` y la etiqueta point-only;
+- Reports, Tableau, Web y EpiBot no reciben `gate_digest`, veredicto ni contador `n/4`;
+- el dashboard sólo entiende la ausencia de intervalos; no valida ni presenta el estado
+  prospectivo;
+- por lo tanto, activar hoy podría mostrar un pronóstico puntual correcto pero omitir la condición
+  bajo la que el usuario autorizó publicarlo.
+
+Esto es un bloqueo funcional de readiness, no un problema estadístico ni una razón para reconstruir
+el bundle. El release inmutable y su `release_id` **no cambian**.
+
+#### Diseño cerrado
+
+Separar tres identidades:
+
+1. **Bundle inmutable:** modelos y forecast; continúa siendo
+   `obesidad_release_2517e7858901`.
+2. **Gate congelado inmutable:** candidato, control, dataset, origen, objetivos, umbrales y
+   `gate_digest`.
+3. **Estado prospectivo mutable:** resultado observado semana a semana; referencia al gate y al
+   release, nunca forma parte de la identidad del bundle.
+
+Rutas de datos declarativos propuestas:
+
+```text
+config/publication/obesidad/prospective_gate.json
+config/publication/obesidad/prospective_status.json
+```
+
+El código que las carga debe ser genérico: ninguna rama `if disease == "obesidad"`, ningún
+`0/4` hardcodeado y ninguna lógica de enfermedad en JavaScript o Python. La ruta puede ser
+específica por configuración; el contrato y el loader no.
+
+El gate persistido debe recomputar exactamente:
+
+```text
+schema                     prospective_gate.v1
+disease_id                 obesidad
+release_id                 obesidad_release_2517e7858901
+origin                     2026-W26
+target weeks               2026-W27, W28, W29, W30
+candidate_forecast_digest  e7e2f5eef2efe7fc1071a1adbcc7c9efba1ab29e8265e395e566799f55e3c9e2
+control_forecast_digest    bb18accc0e6c9fbf8fd62fd48d4c9fc0807d4678e99d89f294ca6c7c41bce315
+dataset_digest             1502d1a25b48c11b7afd30173163d78e4c67a55e31551737a9bed20358cc4340
+gate_digest                5bc39aa5d44f5e62062775dc09a0366ac856f47e5444fbb52ca07e608e61b65d
+```
+
+El estado inicial debe declarar, como datos y no como texto libre:
+
+```text
+verdict          INCOMPLETE
+weeks_available  0
+weeks_required   4
+completed_weeks  []
+target_weeks     2026-W27..W30
+gate_digest      5bc39aa5d44f5e62062775dc09a0366ac856f47e5444fbb52ca07e608e61b65d
+```
+
+La etiqueta visible se deriva de esos campos. Para el estado actual debe resultar **exactamente**:
+
+```text
+Validación prospectiva en curso (0/4 semanas) · pronóstico puntual sin intervalos
+```
+
+Un estado `FAIL` nunca habilita compilación pública y, si aparece después de activar, dispara el
+procedimiento de rollback. `INCOMPLETE` se permite únicamente porque el usuario autorizó
+publicación condicionada; nunca se representa como PASS.
+
+#### Orden C7.6-PUBLICATION-STATUS-A — sólo backend
+
+Trabajar sobre backend `7e36e086`. Ejecutar únicamente esta mitad y detenerse:
+
+1. Añadir un loader/validador tipado y genérico bajo `src/epiforecast/publication/`.
+2. Persistir los dos JSON anteriores. El gate es inmutable; el status es el único que cambia con
+   cada boletín.
+3. Validar fail-closed:
+   - schema exacto;
+   - `disease_id`, `release_id` y `gate_digest` coherentes;
+   - recomputación exacta del digest del gate;
+   - `0 <= weeks_available <= weeks_required`;
+   - semanas completadas únicas, ordenadas y subconjunto de las objetivo;
+   - reglas `INCOMPLETE`, `PASS` y `FAIL` coherentes con los conteos;
+   - un `FAIL` o una identidad cruzada impiden modo público.
+4. Conectar el status validado al compilador y a `emit_shards`; no leerlo globalmente desde el
+   filesystem dentro de funciones puras.
+5. Emitir identidad y etiqueta en los cuatro puentes:
+   - `reports/report.md`;
+   - `tableau/schema.json`;
+   - `web/manifest.json`;
+   - `epibot/knowledge.json` y `epibot/corpus/obesidad.md`;
+   - `shard_manifest.json` debe sellar el estado que gobierna esos archivos.
+6. El modo `candidate` acepta un status inyectado y lo muestra. El modo `public` exige además
+   lifecycle, puntero activo y status válido para el mismo release.
+7. Probar el contrato con un segundo padecimiento sintético; no fijar `obesidad`, `64`, `111`,
+   `0/4` ni nombres de motores en el código genérico.
+8. Probar rechazos por status ausente, gate alterado, release/disease cruzado, conteos inválidos,
+   semanas duplicadas y `FAIL` en modo público.
+9. Compilar dos raíces temporales candidate y exigir:
+   - mismos 9 archivos y bytes idénticos entre raíces;
+   - 5,772 filas sin cambio numérico;
+   - etiqueta exacta presente en Reports, Tableau, Web y EpiBot;
+   - bundle y `release_id` idénticos al baseline;
+   - cero escritura en superficies públicas.
+10. Ejecutar lint, mypy, fast, pruebas de publicación, integraciones estables y doctors.
+11. Crear **un único commit local backend** para `PUBLICATION-STATUS-A` y STOP.
+
+#### Prohibiciones de STATUS-A
+
+- No tocar el dashboard.
+- No usar `GEMINI_API_KEY`.
+- No generar índices RAG.
+- No modificar `artifacts/releases/`, el bundle, su `.dvc` ni el `release_id`.
+- No cambiar lifecycle, puntero activo, canales, galería o `rolling_cv_v1`.
+- No escribir en `reports/`, `data/`, `epibot/`, Tableau o Web canónicos.
+- No push, PR, merge, deploy, cache-bust, activación ni publicación.
+- No ejecutar `STATUS-B` en la misma ronda.
+
+#### Secuencia posterior, todavía no autorizada
+
+```text
+auditar STATUS-A
+→ STATUS-B sólo dashboard: validar y mostrar el status candidate
+→ auditar STATUS-B
+→ repetir RAG-C en dos temporales con el corpus candidate definitivo
+→ paquete final C7.6-READINESS
+→ autorizaciones separadas de activación y deploy
+```
+
+RAG-C debe repetirse después de STATUS-B porque el texto del chunk candidate cambiará. El índice
+público debe permanecer byte-idéntico; sólo el candidate de staging se regenera. No reutilizar como
+evidencia final los temporales de la Ronda 73.
+
+#### Avance
+
+El avance operativo se mantiene en **82%**. RAG-C pasó, pero no se suma avance mientras la etiqueta
+obligatoria carezca de contrato y el candidate definitivo aún no haya repetido C.
+
+#### Próxima acción exacta
+
+**Ejecutar únicamente `C7.6-PUBLICATION-STATUS-A` local en backend y STOP.**
+
+_Respuesta:_ **GO C7.6-PUBLICATION-STATUS-A LOCAL. Persistir y validar gate/status, propagar la
+etiqueta a los cuatro shards candidate, un commit backend y STOP. Sin dashboard, clave, RAG, DVC,
+push, lifecycle, activación, deploy ni publicación.**
+
+---
+
+---
+
+### Ronda 75 — C7.6-PUBLICATION-STATUS-A ejecutada — 2026-07-27
+
+Un commit local en el backend. Sin dashboard, clave, RAG, DVC, push, lifecycle, activación, deploy
+ni publicación. **STATUS-B no se tocó.**
+
+```text
+a81a5f5d  C7.6-PUBLICATION-STATUS-A el estado prospectivo como contrato, no como frase
+```
+
+#### Lo que resuelve R74-P0
+
+Tenías razón: `INCOMPLETE 0/4` vivía sólo en el plan. Ahora la condición viaja **pegada a los
+datos**, con las tres identidades separadas que definiste — el bundle no cambió ni un byte y su
+`release_id` sigue siendo el mismo.
+
+#### El gate persistido NO se escribió a mano
+
+Lo derivé del release sellado y del dataset, y exigí que reprodujera el digest congelado en C7.4
+**antes** de escribir nada:
+
+```text
+candidate_forecast_digest  e7e2f5eef2efe7fc1071a1adbcc7c9efba1ab29e8265e395e566799f55e3c9e2  ✓
+control_forecast_digest    bb18accc0e6c9fbf8fd62fd48d4c9fc0807d4678e99d89f294ca6c7c41bce315  ✓
+dataset_digest             1502d1a25b48c11b7afd30173163d78e4c67a55e31551737a9bed20358cc4340  ✓
+gate_digest                5bc39aa5d44f5e62062775dc09a0366ac856f47e5444fbb52ca07e608e61b65d  ✓
+origin 2026-W26 · horizonte 52 · objetivo W27–W30 · regla 5/5/10
+```
+
+Los cuatro coinciden con los tuyos. El estado inicial sale de `available_weeks` sobre el dataset
+sellado: **INCOMPLETE, 0 de 4**, con `completed_weeks: []`.
+
+#### La etiqueta se deriva, no se escribe
+
+```text
+Validación prospectiva en curso (0/4 semanas) · pronóstico puntual sin intervalos
+```
+
+El avance sale del estado validado y la cola point-only del propio release —si el release trajera
+intervalos, esa cola no aparece—. Probé también `(2/4)`, `superada (4/4)` y `NO superada (4/4)`:
+todas se componen igual, sin un `0/4` en el código.
+
+#### Validación fail-closed
+
+El loader **recomputa** el digest del gate desde su contenido en vez de creer lo que el archivo
+declara: aflojar un umbral y dejar el digest viejo se rechaza. Sobre el estado: schema exacto,
+identidad cruzada, rango de conteos, semanas únicas, ordenadas y subconjunto de las objetivo,
+coherencia veredicto↔conteos, y **un `FAIL` nunca habilita modo público**.
+
+Una decisión que conviene que revises: **sin estado no se emite ningún shard**, en los dos modos.
+Compilar sin estado sí se permite —produce filas, no publica—, pero emitir sí, porque un shard sin
+su condición es exactamente el defecto que R74-P0 describe. Eso obligó a inyectar el estado
+declarado en las pruebas de C7.3a, que es el único cambio en `test_compiler_shards.py`.
+
+#### Genericidad
+
+El grueso de las 28 pruebas nuevas corre sobre un padecimiento **sintético** con gate fabricado: si
+el contrato sólo funcionara con Obesidad no sería un contrato. No hay `if disease ==`, ni `64`,
+ni `111`, ni `0/4`, ni nombres de motores en el código genérico; la ruta es configurable, el
+contrato no.
+
+#### Verificación con dos raíces temporales
+
+```text
+C  /var/folders/0p/fpm4_3l94jxbbc__pnl93bmw0000gn/T/tmp.74R02ePHWw
+D  /var/folders/0p/fpm4_3l94jxbbc__pnl93bmw0000gn/T/tmp.YofwNMXiSh
+
+9 archivos por raíz · diff -r sin diferencias · digest de árbol 8aeb4382a00515904af5c0290dc0cb0e…
+filas                     5,772 en ambas · sin cambio numérico
+release_id                obesidad_release_2517e7858901 · idéntico al baseline
+etiqueta exacta en        reports/report.md (2×) · tableau/schema.json · web/manifest.json
+                          epibot/knowledge.json · epibot/corpus/obesidad.md · shard_manifest.json
+escrituras públicas       ninguna
+```
+
+Nota para la siguiente vuelta: el digest del árbol de shards pasa de `dfe85262…` (Ronda 73) a
+`8aeb4382…`, porque ahora llevan la etiqueta. Confirma lo que ya anticipaste: **RAG-C debe
+repetirse** después de STATUS-B, y los temporales de la Ronda 73 no sirven como evidencia final.
+
+#### Gate
+
+```text
+ruff check + format            PASS
+mypy                           160 archivos · PASS
+pytest -m "not slow and not integration"   1946 passed · cobertura 80.16%
+tests/unit/publication         112 passed (28 nuevas)
+integración de release         8 passed
+doctor_padecimiento            rc=0
+agregados legacy               los 4 byte-idénticos
+obesidad                       trained · release sin cambios · published_members intacto
+```
+
+#### Estado
+
+```text
+Backend     a81a5f5d · ahead 18 · SIN PUSH  (el plan sigue con tus ediciones sin commitear)
+Dashboard   4cdc17dd · limpio · ahead 16 · SIN PUSH · intacto en esta ronda
+Readiness   RAG-A ✓ A.1 ✓ B ✓ C ✓(pendiente repetir) · STATUS-A ✓ (a auditar) · STATUS-B ✗
+Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
+```
+
+Siguiente acción exacta: **auditar STATUS-A**. STATUS-B —validar y mostrar el estado en el
+dashboard— sigue sin autorizar.
+
+_Respuesta:_
+
+---
+
+### Ronda 76 — Auditoría STATUS-A: propagación PASS, evaluator y capability FAIL — 2026-07-27
+
+#### Veredicto
+
+**`a81a5f5d` no se descarta: resolvió correctamente la persistencia y propagación del estado
+`INCOMPLETE 0/4`. STATUS-A queda PARCIAL, no PASS. Antes del dashboard se exige A.1.**
+
+Superficie auditada:
+
+```text
+commit                         a81a5f5d
+archivos                       7 · config 2 · src 3 · tests 2
+gate/status declarados         presentes y coherentes con 5bc39aa5…
+shards candidate               9 · 5,772 filas · etiqueta en los cuatro puentes
+release_id / bundle            obesidad_release_2517e7858901 · sin cambio
+tests focalizados              83/83 PASS con --no-cov
+temporales C/D                 byte-idénticos · digest 8aeb4382…
+legacy / lifecycle / DVC       sin cambios
+```
+
+La decisión “sin status no se emite ningún shard” queda **APROBADA**. Es correcta: compilar filas
+en memoria no es publicar; materializar un shard sin la condición prospectiva sí produciría un
+artefacto ambiguo.
+
+#### R76-P0-1 — el evaluator congelado no aplica la regla 5/5/10
+
+`prospective.evaluate()` marca:
+
+```python
+PASS si hay cuatro semanas; INCOMPLETE en otro caso
+```
+
+No compara el candidato contra el control usando `gate.rule`. Tampoco materializa ni evalúa los
+111 productos o nacional General. Reproducción independiente:
+
+```text
+verdad              5
+control             5       sMAPE = 0
+candidato      100,000       sMAPE ≈ 199.98
+regla                +5/+5/+10
+veredicto actual     PASS    ← incorrecto
+```
+
+Por tanto, hoy el FAIL documentado nunca puede ocurrir al completar cuatro semanas. El digest
+congelado sí es correcto; lo incompleto es la implementación del veredicto.
+
+#### R76-P0-2 — un objeto status construido a mano evade el gate
+
+`compile_release()` recibe un `ProspectiveStatus` desnudo. Sólo verifica que `disease_id` y
+`release_id` coincidan; no vuelve a validar digest, semanas, conteos o coherencia. Reproducción
+independiente, sin escribir archivos:
+
+```text
+gate_digest          0000…0000
+weeks                998/999
+target_weeks         []
+completed_weeks      []
+candidate            aceptado
+public + puntero     aceptado
+```
+
+El loader es estricto, pero nada obliga al caller a usarlo. Un tipo construido a mano no es una
+capability validada.
+
+#### R76-P0-3 — una semana faltante impide llegar a 4/4 para siempre
+
+El gate congeló W27–W30 y `available_weeks()` sólo inspecciona esas cuatro. A la vez, el contrato
+operativo dice que una semana parcial o faltante no cuenta y que se espera la siguiente semana
+válida. Con el código actual, si W28 fuera inválida, W31 nunca se considera y el status queda
+`INCOMPLETE 3/4` indefinidamente.
+
+Sin mover `gate_digest`, la semántica de `prospective_gate.v1` debe quedar explícita:
+
+- `target_weeks` es la ventana inicialmente programada;
+- la evaluación comienza en W27;
+- se recorren semanas cronológicas dentro del horizonte congelado;
+- cuentan las primeras cuatro con verdad completa;
+- una semana inválida se registra como omitida y se reemplaza por la siguiente válida;
+- candidato y control siguen siendo los mismos forecasts congelados.
+
+#### R76-P1 — la actualización semanal todavía no es reproducible
+
+El repo contiene loaders y el JSON inicial, pero no un entry point que derive
+`prospective_status.json` desde gate + release + dataset. El 0/4 se generó correctamente en esta
+ronda, pero el procedimiento no quedó ejecutable para 1/4, 2/4, 3/4 y el veredicto final. Editar el
+JSON a mano contradice el objetivo del contrato.
+
+Además, el validador debe cerrar forma y tipos: semana booleana, semana fuera del calendario MMWR,
+digests no SHA256, reglas desconocidas/no finitas y claves extra deben rechazarse antes de evaluar.
+
+#### Orden C7.6-PUBLICATION-STATUS-A.1 — evaluator real y status validado
+
+Ejecutar únicamente backend sobre `a81a5f5d`, en un commit local y STOP:
+
+1. Sustituir el `ProspectiveStatus` desnudo en `Compilation` por un contrato validado que lleve
+   **gate + status**. El compilador y `emit_shards` deben revalidarlo; no deben leer filesystem.
+2. Hacer que el único loader público entregue ese contrato. Un caller no puede habilitar candidate
+   ni public pasando una dataclass fabricada.
+3. Cerrar schemas y tipos:
+   - conjuntos exactos de claves para gate y status;
+   - enteros no booleanos;
+   - periodos MMWR válidos;
+   - origen/horizonte positivos;
+   - digests SHA256 de 64 hex minúsculas;
+   - regla con exactamente `smape_base`, `smape_products` y `smape_national_general`;
+   - umbrales finitos y no negativos.
+4. Implementar la selección de semanas válidas desde la primera objetivo hasta el horizonte:
+   registrar programadas, completadas y omitidas con motivo; tomar las primeras cuatro completas.
+5. Implementar el veredicto real con el mismo calendario, reconciliación, agregación y fórmulas del
+   runner:
+   - 64 bases;
+   - 111 productos derivados exclusivamente desde las bases;
+   - nacional General;
+   - cobertura 100%, claves únicas, finitos/no negativos e identidades aritméticas.
+6. Para cada ámbito, calcular sMAPE de candidato y control sobre las mismas filas acumuladas. PASS
+   sólo si:
+
+   ```text
+   candidate <= control * (1 + max_degradation_pct / 100)
+   ```
+
+   Caso zero-safe: si control=0 y candidate=0, degradación 0; si control=0 y candidate>0, el ámbito
+   falla. Reportar también bias, MAE, RMSE, WAPE y MASE sin usarlos para el veredicto.
+7. `INCOMPLETE` con menos de cuatro semanas completas; con cuatro, `PASS` sólo si pasan los tres
+   ámbitos y `FAIL` si falla cualquiera. Guardar métricas, diferencias y detalle semanal.
+8. Añadir un entry point genérico y reproducible con dos modos:
+   - `--check`: deriva el status esperado y falla si el archivo declarado difiere, sin mutarlo;
+   - `--write`: escritura atómica explícita del status derivado.
+   Debe resolver insumos por identidad sellada, no por nombres inferidos ni rutas absolutas.
+9. El JSON vigente debe continuar `INCOMPLETE 0/4` y, tras regenerarlo con el entry point, quedar
+   byte-idéntico al de `a81a5f5d`.
+10. Pruebas que deben fallar contra `a81a5f5d` y pasar con A.1:
+    - candidato catastrófico + control perfecto → `FAIL`;
+    - fallo independiente en bases, 111 productos y nacional General;
+    - una semana programada ausente se reemplaza por la siguiente completa;
+    - semana parcial no cuenta ni se vuelve cero;
+    - status fabricado con digest/conteos falsos se rechaza en candidate y public;
+    - periodos, digests, reglas, tipos y claves extra inválidos se rechazan;
+    - `--check` es no mutante y `--write` es atómico;
+    - el status real 0/4, label, 5,772 filas y nueve shards permanecen deterministas.
+11. Ejecutar lint, format, mypy, fast, publicación, integración estable y doctors.
+12. Crear un único commit local `C7.6-PUBLICATION-STATUS-A.1` y STOP.
+
+#### Prohibiciones de A.1
+
+- No cambiar candidato, control, umbrales, `gate_digest`, bundle o `release_id`.
+- No retuning, re-selección, refit ni forecast.
+- No dashboard, `GEMINI_API_KEY` o RAG.
+- No DVC, push, lifecycle, puntero activo, deploy o publicación.
+- No ejecutar STATUS-B en la misma ronda.
+
+#### Secuencia posterior, aún no autorizada
+
+```text
+auditar STATUS-A.1
+→ STATUS-B sólo dashboard
+→ auditar STATUS-B
+→ repetir RAG-C en dos temporales
+→ paquete C7.6-READINESS
+→ autorizaciones externas separadas
+```
+
+#### Avance
+
+El avance se mantiene en **82%**. La etiqueta ya viaja con los shards, pero aún no puede afirmarse
+que el futuro PASS/FAIL sea real ni que cualquier status aceptado haya pasado el gate.
+
+#### Próxima acción exacta
+
+**Ejecutar únicamente `C7.6-PUBLICATION-STATUS-A.1` local en backend y STOP.**
+
+_Respuesta:_ **GO C7.6-PUBLICATION-STATUS-A.1 LOCAL. Corregir evaluator 5/5/10, reemplazo de
+semanas, capability validada y actualización reproducible; un commit backend y STOP. Sin dashboard,
+clave, RAG, DVC, push, lifecycle, activación, deploy ni publicación.**
+
+---
+
+### Ronda 77 — C7.6-PUBLICATION-STATUS-A.1 ejecutada — 2026-07-27
+
+Un commit local en el backend. Sin dashboard, clave, RAG, DVC, push, lifecycle, activación, deploy
+ni publicación. **STATUS-B no se tocó.**
+
+```text
+2ecb3fae  C7.6-PUBLICATION-STATUS-A.1 evaluador real, semanas reemplazables y capability
+```
+
+Los tres hallazgos son correctos y son míos. Reproduje cada uno contra `a81a5f5d` antes de tocar
+nada, y volví a medirlo después:
+
+```text
+R76-P0-1  candidato 100000 vs verdad 5, control perfecto
+          antes  PASS          ahora  FAIL
+R76-P0-3  con la semana programada 2026-W28 ausente
+          antes  3/4 para siempre   ahora  4/4 tomando la siguiente completa
+R76-P0-2  status fabricado (gate_digest 0000…, 998/999, target vacío)
+          antes  ACEPTADO por el tipo    ahora  RECHAZADO al construirlo
+```
+
+#### El veredicto ahora se calcula
+
+`evaluate()` aplica la regla congelada **por ámbito**: 64 bases, 111 productos derivados desde las
+bases con la **misma** función del runner —aplicada igual a verdad, candidato y control, así que la
+aritmética de los tres es la misma— y nacional General. PASS sólo si en los tres
+
+```text
+candidate <= control * (1 + max_degradation_pct / 100)
+```
+
+Zero-safe tal como lo pediste: control=0 y candidate=0 → degradación 0; control=0 y candidate>0 →
+el ámbito falla, sin dividir. MAE, RMSE, WAPE, bias y MASE se reportan y **no** deciden.
+
+Una prueba fija que los tres ámbitos se evalúan de verdad por separado: con un sesgo alterno por
+sexo, las bases fallan y el nacional casi no se entera —los errores se cancelan al agregar—. Ésa es
+la razón de tener tres umbrales y no uno.
+
+#### Las semanas se reemplazan, sin mover el gate
+
+`target_weeks` pasa a ser la ventana **programada**, no una lista cerrada: se recorren semanas
+cronológicas dentro del horizonte congelado, cuentan las primeras cuatro completas, y cada omitida
+queda registrada con su motivo (`ausente` / `parcial`). Una semana parcial no cuenta ni se vuelve
+cero. Candidato y control siguen siendo los congelados, así que **el `gate_digest` no se mueve**.
+
+#### La capability
+
+`PublicationStatus` valida gate + estado **en su construcción**, así que no existe una instancia
+incoherente. Y añadí algo que la orden no pedía pero que cierra el agujero de verdad: el compilador
+**ancla el gate al bundle sellado** —candidato, dataset, origen y horizonte—, de modo que una
+capability internamente coherente pero fabricada bajo el mismo `release_id` tampoco entra, ni en
+candidate ni en public. Sin eso, bastaba con inventar un gate consistente consigo mismo.
+
+#### Formas y tipos cerrados
+
+Conjuntos exactos de claves (gate, estado y regla), enteros no booleanos, periodos MMWR válidos
+—52 o 53 semanas según el año—, origen y horizonte positivos, digests SHA256 de 64 hex minúsculas,
+regla con exactamente las tres claves y umbrales finitos no negativos.
+
+#### Actualización reproducible
+
+```text
+python -m scripts.prospective_status obesidad --check    # no muta; rc≠0 si el archivo miente
+python -m scripts.prospective_status obesidad --write    # escritura atómica
+```
+
+Verificado: `--check` sobre un estado mentido (`PASS 4/4`) devuelve rc=1 y **lo deja mentido** —no
+lo corrige por su cuenta—; `--write` lo deja en el estado real y sin temporales. El JSON vigente
+sigue **INCOMPLETE 0/4** y, regenerado, queda **byte-idéntico al de `a81a5f5d`**.
+
+#### Gate
+
+```text
+ruff check + format                        PASS
+mypy                                       161 archivos · PASS
+pytest -m "not slow and not integration"   1973 passed · cobertura 80.49%
+publicación                                44 + 11 + 57 = 112 → ahora 167 con las nuevas
+integración de release                     8 passed
+doctor_padecimiento                        rc=0
+gate/status declarados                     byte-idénticos a a81a5f5d
+bundle · gate_digest · umbrales · release_id   sin cambios
+```
+
+#### Una limitación de la evidencia, dicha explícitamente
+
+No puedo enseñar «N pruebas rojas» corriendo `test_prospective_rule.py` contra `a81a5f5d`: importa
+`SCOPE_BASE`, `select_weeks` y `WEEK_PARTIAL`, que allí no existen, y el módulo entero falla al
+cargar. Por eso reproduje los tres P0 con scripts mínimos forzando el código antiguo por
+`PYTHONPATH` —la tabla de arriba— en vez de afirmar un recuento que no medí. Es la misma limitación
+que ya declaré en RAG-A.1.
+
+#### Estado
+
+```text
+Backend     2ecb3fae · ahead 19 · SIN PUSH  (el plan sigue con tus ediciones sin commitear)
+Dashboard   4cdc17dd · limpio · ahead 16 · SIN PUSH · intacto
+Readiness   RAG-A ✓ A.1 ✓ B ✓ C ✓(a repetir) · STATUS-A ✓ A.1 ✓ (a auditar) · STATUS-B ✗
+Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
+```
+
+Siguiente acción exacta: **auditar STATUS-A.1**. STATUS-B sigue sin autorizar.
+
+_Respuesta:_
+
+---
+
+### Ronda 78 — Auditoría STATUS-A.1: evaluator PASS, flujo prospectivo todavía incompleto — 2026-07-27
+
+#### Veredicto
+
+**A.1 corrige los tres repros de R76 en aislamiento, pero STATUS-A aún queda PARCIAL. Se exige A.2
+antes del dashboard.**
+
+Evidencia auditada:
+
+```text
+commit                         2ecb3fae
+diff                           6 archivos · +890/-64 · check PASS
+tests focalizados              110/110 PASS con --no-cov
+candidato 100000/control 5     FAIL correcto
+regla por ámbitos              bases / 111 productos / nacional General
+zero-safe                      correcto
+capability con status falso    rechazada
+digests actuales               candidato/control/dataset/gate coinciden
+estado vigente                 INCOMPLETE 0/4
+bundle / lifecycle / DVC       sin cambios
+```
+
+El evaluator 5/5/10, la separación de los tres ámbitos, la derivación 64→111 y el registro de
+semanas omitidas quedan **aprobados como núcleo matemático**.
+
+#### R78-P0-1 — el updater usa como verdad el dataset congelado en el origen
+
+`scripts/prospective_status.py` resuelve la “verdad observada” con:
+
+```text
+release.chain.dataset_id → runs/obesidad_1502d1a25b48/epi_dataset_v2.csv
+máximo periodo de ese dataset → 2026-W26
+primera semana del gate       → 2026-W27
+```
+
+Ese dataset es el de entrenamiento congelado. Es correcto para reconstruir el control, pero por
+definición nunca contendrá la verdad futura. Ejecutar `--check` cada boletín continuará dando
+`INCOMPLETE 0/4` para siempre.
+
+El flujo debe separar:
+
+1. **training dataset congelado:** reconstruye y verifica el control y los denominadores MASE;
+2. **observation dataset nuevo:** contiene la verdad que llega con cada boletín y decide `n/4`.
+
+Usar un único frame para ambos mezcla dos identidades incompatibles.
+
+#### R78-P0-2 — la semana de reemplazo se selecciona pero no puede cargarse
+
+`select_weeks()` permite sustituir W28 ausente por W31. Sin embargo `_check_status()` exige que cada
+`completed_week` pertenezca a `gate.target_weeks` —W27..W30—. Reproducción:
+
+```text
+completed_weeks  W27, W29, W30, W31
+selector         4/4 válido
+PublicationStatus
+                 RECHAZADO: W31 no es objetivo del gate
+```
+
+Por tanto, el reemplazo pasa su prueba unitaria pero no puede atravesar el loader, el compilador ni
+los shards.
+
+#### R78-P0-3 — el resultado que decide PASS/FAIL se descarta
+
+`evaluate()` produce `scopes`, métricas, detalle semanal y semanas omitidas. `derive_status()` sólo
+conserva:
+
+```text
+verdict · weeks_available · completed_weeks
+```
+
+No persiste dataset de verdad, sus digests, métricas candidato/control, degradaciones, selección,
+omisiones ni detalle semanal. El plan exige un informe sellado y reproducible; con el JSON actual
+no puede auditarse por qué un futuro status dice PASS o FAIL.
+
+#### R78-P0-4 — el control congelado aún puede sustituirse sin rechazo
+
+El compilador ancla candidato, dataset, origen y horizonte al bundle, pero no el control. Una
+capability construida con el mismo release y `control_digest=dddd…`, internamente coherente con su
+propio gate, sigue siendo aceptada en candidate. El updater tampoco compara
+`frame_digest(control)` contra `gate.control_digest`.
+
+El control es parte del congelado y debe verificarse antes de evaluar y antes de aceptar la
+evidencia.
+
+#### R78-P1 — validación de frames y MASE
+
+- El evaluator compara conteos de filas, pero no exige explícitamente igualdad de claves entre
+  verdad, candidato y control antes de agregar.
+- Duplicados, negativos y no finitos no tienen un gate focalizado.
+- `series_metrics(..., train_true=[], mase_lag=52)` hace que MASE sea siempre `NaN` con flag; no es
+  el MASE del runner sobre historia congelada.
+- El comando importa `_runs_root`, API privada de `registry_doctor`, en vez de consumir un contrato
+  público de DatasetManifest.
+
+No afectan el 0/4 actual, pero sí harían incompleta o no reproducible la evidencia final.
+
+#### Diseño cerrado para A.2
+
+Mantener el gate actual y su digest intactos. Añadir dos artefactos mutables relacionados:
+
+```text
+config/publication/<disease_id>/prospective_evaluation.json
+config/publication/<disease_id>/prospective_status.json
+```
+
+`prospective_evaluation.v1` conserva toda la evidencia. `prospective_status.v2` es el resumen que
+viaja a los consumidores y referencia `evaluation_digest`. Ninguno forma parte del `release_id`.
+
+El evaluation debe contener, como mínimo:
+
+```text
+schema · disease_id · release_id · gate_digest
+candidate_digest · control_digest · training_dataset_id/digest
+observation_dataset_id/digest y digests efectivos de raw/config/exposición/geografía
+scheduled/completed/skipped weeks con motivos
+scopes candidato/control/degradación/umbral/PASS
+métricas y flags por ámbito
+detalle por semana
+verdict · evaluation_digest
+```
+
+El status v2 debe contener el resumen actual, `observation_dataset_id/digest`,
+`evaluation_digest`, contador y etiqueta derivable. El loader sólo entrega la capability después
+de recomputar y cruzar gate + evaluation + status.
+
+#### Orden C7.6-PUBLICATION-STATUS-A.2 — verdad prospectiva y evidencia sellada
+
+Ejecutar sólo backend sobre `2ecb3fae`, un commit local y STOP:
+
+1. Separar `training_history` y `observation_history` en el evaluator y el entry point.
+2. Resolver el training dataset desde el release, validar su DatasetManifest y exigir
+   `dataset_digest == gate.dataset_digest`.
+3. Reconstruir el control **sólo** desde training history y exigir
+   `frame_digest(control) == gate.control_digest`.
+4. Leer el candidato del bundle y exigir
+   `frame_digest(candidate) == gate.candidate_digest` antes de evaluar.
+5. Para `--write`, exigir un `--observation-dataset-id` explícito. Debe ser un EpiDatasetV2
+   verificable del mismo padecimiento, generado por el carril nuevo con el boletín más reciente.
+6. Para `--check`, usar el `observation_dataset_id` ya declarado en status/evaluation; no volver
+   silenciosamente al dataset congelado.
+7. Validar el observation dataset:
+   - manifest y digests íntegros;
+   - mismo disease/config/calendario/exposición/geografía;
+   - exactamente las 64 SeriesKeys esperadas;
+   - claves periodo×serie únicas;
+   - valores finitos y no negativos;
+   - prefijo hasta el origen idéntico al training dataset;
+   - las semanas posteriores proceden del nuevo snapshot y nunca se imputan como cero.
+8. Permitir `completed_weeks` posteriores a la ventana programada siempre que estén ordenadas,
+   dentro del horizonte congelado y sean exactamente las primeras cuatro semanas completas que
+   declara la evaluación. W31 debe ser válida como reemplazo de W28.
+9. Persistir `prospective_evaluation.v1` con toda la evidencia y
+   `prospective_status.v2` referenciando su digest. Escribir primero evaluation y después status,
+   ambos atómicamente; cualquier mezcla intermedia debe fallar cerrado al cargar.
+10. El compilador y `emit_shards` deben aceptar únicamente la capability validada contra los tres
+    artefactos y el bundle. Un control digest inventado debe ser rechazado en candidate y public.
+11. Antes de métricas, exigir igualdad exacta de claves y cobertura entre verdad/candidato/control,
+    sin duplicados, NaN, infinitos o negativos; derivar los 111 productos y validar reconciliación.
+12. Calcular MASE con denominadores estacionales obtenidos de la historia de entrenamiento
+    congelada, por SeriesKey y con las mismas reglas/flags del runner. Un valor indefinido se
+    representa como `null` + flag, nunca `NaN` JSON.
+13. Tests que deben fallar contra `2ecb3fae` y pasar con A.2:
+    - el dataset congelado no puede fingir semanas futuras;
+    - un observation dataset nuevo avanza 0→1/4 sin alterar training/control;
+    - W31 reemplaza W28 y la capability completa carga/emite;
+    - prefijo histórico modificado, disease/digest/config cruzado o dataset sin manifest se rechaza;
+    - control digest fabricado se rechaza;
+    - duplicado, clave faltante/extra, negativo, NaN e infinito fallan antes de métricas;
+    - alterar evaluation o status rompe sus digests y el cruce;
+    - `--check` es no mutante y usa la verdad declarada;
+    - `--write` exige truth explícita y no deja archivos incoherentes;
+    - el estado real sigue `INCOMPLETE 0/4`, con la misma etiqueta y 5,772 filas.
+14. Ejecutar lint, format, mypy, fast, publicación, integración estable y doctors.
+15. Crear un único commit local `C7.6-PUBLICATION-STATUS-A.2` y STOP.
+
+#### Prohibiciones de A.2
+
+- No descargar ni extraer boletines nuevos dentro de esta ronda; usar fixtures y el dataset actual
+  para dejar 0/4 reproducible.
+- No cambiar gate, candidato, control, umbrales, bundle o release.
+- No dashboard, clave, RAG, DVC, push, lifecycle, puntero, deploy o publicación.
+- No ejecutar STATUS-B en la misma ronda.
+
+#### Secuencia posterior, aún no autorizada
+
+```text
+auditar STATUS-A.2
+→ STATUS-B sólo dashboard
+→ auditar STATUS-B
+→ repetir RAG-C en dos temporales
+→ paquete C7.6-READINESS
+→ autorizaciones externas separadas
+```
+
+#### Avance
+
+El avance permanece en **82%**. El cálculo 5/5/10 ya existe, pero todavía no puede recibir verdad
+nueva ni dejar evidencia sellada y consumible de su decisión.
+
+#### Próxima acción exacta
+
+**Ejecutar únicamente `C7.6-PUBLICATION-STATUS-A.2` local en backend y STOP.**
+
+_Respuesta:_ **GO C7.6-PUBLICATION-STATUS-A.2 LOCAL. Separar training/verdad, sellar evaluation,
+admitir reemplazos end-to-end y validar frames/control; un commit backend y STOP. Sin boletines
+nuevos, dashboard, clave, RAG, DVC, push, lifecycle, activación, deploy ni publicación.**
+
+---
+
+### Ronda 79 — C7.6-PUBLICATION-STATUS-A.2 ejecutada — 2026-07-27
+
+Un commit local en el backend. Sin boletines nuevos, dashboard, clave, RAG, DVC, push, lifecycle,
+activación, deploy ni publicación. **STATUS-B no se tocó.**
+
+```text
+f41c2e3d  C7.6-PUBLICATION-STATUS-A.2 verdad prospectiva separada y evidencia sellada
+```
+
+Los cinco hallazgos eran correctos. Uno por uno:
+
+#### R78-P0-1 · la verdad ya no es el dataset congelado
+
+Se separan **training** —reconstruye el control y da los denominadores MASE— y **observation** —la
+verdad que llega con cada boletín y decide `n/4`—. `--write` **exige** `--observation-dataset-id`:
+la verdad se declara, no se infiere. Sin ese cambio, `--check` habría devuelto `0/4` para siempre.
+
+#### R78-P0-2 · el reemplazo atraviesa todo el flujo
+
+`completed_weeks` ya no se valida contra `target_weeks` sino contra el **horizonte congelado**, con
+orden y unicidad. W31 sustituye a W28 y el trío carga, compila y emite. La prueba lo recorre entero.
+
+#### R78-P0-3 · la evidencia se persiste
+
+Nuevo `prospective_evaluation.v1`: verdad usada y sus digests, semanas programadas/completadas y
+**omitidas con motivo**, ámbitos con sMAPE candidato/control, degradación, umbral y `passes`,
+métricas por ámbito y detalle semanal. `prospective_status.v2` lo referencia por
+`evaluation_digest`, y el loader no entrega la capability sin cruzar los tres artefactos.
+
+#### R78-P0-4 · el control ya no se puede sustituir
+
+La evaluación sella candidato, control y dataset de entrenamiento; el loader los cruza contra el
+gate; y el updater **reconstruye el control** desde la historia congelada y exige
+`frame_digest(control) == gate.control_digest` antes de evaluar. Una prueba comprueba los tres:
+control, candidato y dataset inventados se rechazan.
+
+#### R78-P1 · frames y MASE
+
+Antes de agregar nada se exige el conjunto **exacto** de SeriesKeys, sin duplicados, sin no finitos
+y sin negativos. El MASE sale de la historia de entrenamiento congelada y un valor indefinido viaja
+como `null`, nunca `NaN` en JSON. Y el comando dejó de importar `registry_doctor._runs_root`:
+`runner.manifest` expone `default_runs_root()` y `dataset_dir()`.
+
+#### Dos cosas que hice y conviene que revises
+
+1. **La capability sólo la emite el loader.** Le puse un token privado: un objeto construido a mano
+   ya no es siquiera *construible*, no sólo inválido. Es más fuerte que lo que pedía la orden, y es
+   lo que cierra de verdad R76-P0-2.
+2. **El dataset de observación se valida como el mismo carril**: mismo padecimiento, mismos digests
+   de config y exposición, 64 SeriesKeys, integridad del CSV contra su manifiesto y **prefijo hasta
+   el origen idéntico** al de entrenamiento. `raw` sí puede diferir —es un boletín nuevo—.
+
+#### Sin boletines nuevos, pero probado de punta a punta
+
+Los dos tests fabrican el snapshot que un boletín produciría, en un `runs/` temporal inyectado:
+
+```text
+verdad con W27                    → 1/4 · INCOMPLETE · "en curso (1/4 semanas)"
+                                     gate, control y training intactos
+verdad con W27, W29, W30 y W31    → 4/4 · W28 registrada como «ausente»
+                                     la capability completa carga
+```
+
+#### Estado vigente, sin cambios
+
+```text
+INCOMPLETE 0/4 · misma etiqueta · 5,772 filas · 9 shards
+verdad observada declarada: obesidad_1502d1a25b48 (aún el congelado, porque no hay boletín nuevo)
+```
+
+Eso último es honesto y conviene tenerlo escrito: hoy la verdad declarada **es** el dataset de
+entrenamiento, porque no hay otro. La diferencia con antes es que ahora eso es una **declaración
+explícita y verificable**, no un valor por defecto invisible; y en cuanto exista un dataset con el
+boletín nuevo, `--write` lo exige por nombre.
+
+#### Gate
+
+```text
+ruff check + format                        PASS
+mypy                                       161 archivos · PASS
+pytest -m "not slow and not integration"   1975 passed · cobertura 80.61%
+tests/unit/publication                     todos PASS (46 en test_status)
+integración de release                     8 passed
+doctor_padecimiento                        rc=0
+gate congelado · umbrales · bundle · release_id   sin cambios
+```
+
+#### Estado
+
+```text
+Backend     f41c2e3d · ahead 20 · SIN PUSH  (el plan sigue con tus ediciones sin commitear)
+Dashboard   4cdc17dd · limpio · ahead 16 · SIN PUSH · intacto
+Readiness   RAG-A ✓ A.1 ✓ B ✓ C ✓(a repetir) · STATUS-A ✓ A.1 ✓ A.2 ✓ (a auditar) · STATUS-B ✗
+Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
+```
+
+Siguiente acción exacta: **auditar STATUS-A.2**. STATUS-B sigue sin autorizar.
+
+_Respuesta:_
+
+---
+
+### Ronda 80 — Auditoría STATUS-A.2: identidad PASS, corte temporal y MASE todavía incorrectos — 2026-07-27
+
+#### Veredicto
+
+**A.2 cierra la separación training/observation, el reemplazo W31, el sellado de evaluation/status
+y la identidad del control. No se aprueba todavía STATUS-A completo: requiere un microcierre
+funcional A.3 antes de tocar el dashboard.**
+
+Evidencia independiente:
+
+```text
+commit auditado                   f41c2e3d
+worktree backend                  sólo este plan modificado; untracked del usuario preservados
+diff check                        PASS
+tests focalizados                112/112 PASS con --no-cov
+prospective_status --check       rc=0
+estado                           INCOMPLETE 0/4
+evaluation.skipped_weeks         52
+primera "ausente"                2026-W27
+última "ausente"                 2027-W26
+seasonal_denominators()          definida, pero no llamada por producción
+MASE efectivo                    una concatenación de las 64 historias
+```
+
+Lo aprobado de A.2:
+
+1. `--write` exige un observation dataset explícito y `--check` reutiliza el declarado;
+2. training y observation tienen identidades distintas y el prefijo al origen se contrasta;
+3. candidato y control se verifican contra sus digests congelados;
+4. W31 puede reemplazar W28 a través de loader, compilador y shards;
+5. evaluation y status se escriben por separado, se cruzan por digest y sólo el loader entrega la
+   capability;
+6. el gate, umbrales, bundle, release y lifecycle no cambiaron.
+
+#### R80-P0-1 — semanas futuras etiquetadas falsamente como ausentes
+
+`select_weeks()` recorre todo el horizonte de 52 semanas desde 2026-W27. No conoce el último periodo
+que el observation dataset realmente pudo observar. Cuando el snapshot termina en 2026-W26,
+`week_state()` devuelve `ausente` para cada semana futura y el artefacto vigente registra:
+
+```text
+skipped_weeks = 52
+2026-W27 ... 2027-W26 → "ausente"
+```
+
+`prospective_status --check` devuelve verde sobre esa evidencia. No es una diferencia editorial:
+una semana futura no es una semana ausente. La omisión sólo existe cuando el corte observado ya
+pasó esa semana y el snapshot no trae las 64 series completas.
+
+Contrato correcto:
+
+- derivar `observation_cutoff` del máximo periodo válido del snapshot de observación;
+- inspeccionar sólo desde la primera semana programada hasta
+  `min(observation_cutoff, fin_del_horizonte)`;
+- no crear registros para semanas posteriores al corte;
+- persistir el corte en la evaluación y validarlo al cargar;
+- con el snapshot vigente, `0/4` debe llevar `skipped_weeks=[]`;
+- con verdad hasta W31 y W28 realmente ausente, la única omisión debe ser W28, nunca W32…W52.
+
+#### R80-P0-2 — MASE cruza fronteras entre SeriesKeys
+
+`seasonal_denominators()` calcula correctamente un denominador por serie, pero no tiene ningún
+caller de producción. El evaluator usa:
+
+```python
+series_metrics(yt, yc, _training_series(entrenamiento), mase_lag=52)
+```
+
+`_training_series()` concatena, en orden, las 64 historias. El lag-52 atraviesa las fronteras entre
+entidades/sexos y genera diferencias que nunca existieron dentro de una serie. Además, para los
+ámbitos de 111 productos y nacional General usa la historia de las bases, no la historia agregada
+del producto evaluado.
+
+El contrato del runner es por producto: cada SeriesKey obtiene su propio denominador seasonal
+lag-52 sobre su propia historia previa, y los reportes resumen después esas métricas. A.3 debe
+reutilizar ese contrato:
+
+1. derivar de las 64 bases la historia de training de los mismos 111 productos;
+2. calcular métricas por producto con su propia historia, sin concatenar SeriesKeys;
+3. resumir MASE por ámbito con la misma mediana declarada que usan los reportes del runner;
+4. conservar MAE/RMSE/WAPE/bias y sus flags de forma auditable para candidato y control;
+5. representar denominador indefinido como `null` + flag, nunca `NaN` ni infinito.
+
+MASE no decide el PASS/FAIL 5/5/10, pero forma parte de la evidencia prometida. Publicar una métrica
+con denominador contaminado sería un reporte falso aunque el veredicto de sMAPE fuese correcto.
+
+#### R80-P0-3 — el CSV puede ocultar duplicados antes del gate
+
+`read_base_history()` convierte cada grupo a un `dict[(year, week)]`. Una fila duplicada con la
+misma serie y periodo se sobrescribe silenciosamente antes de que
+`check_observation_dataset()` vea la historia. Por tanto, “64 SeriesKeys y valores válidos” no
+prueba la unicidad del frame fuente.
+
+A.3 debe validar el EpiDatasetV2 tabular **antes** de convertirlo a mappings:
+
+- schema requerido;
+- exactamente 64 SeriesKeys base;
+- unicidad de `(cve_ent, sexo, epi_year, epi_week)`;
+- periodos MMWR válidos y ordenables;
+- valores finitos y no negativos;
+- mismo conjunto de periodos por serie dentro del snapshot;
+- sólo después construir `history`.
+
+La igualdad de `config_digest` ya sella indirectamente el catálogo geográfico porque C1 lo incluyó
+en el payload efectivo. Debe quedar fijado por una prueba/asserión; no hace falta duplicar una
+segunda fuente de identidad.
+
+#### R80-P1 — el digest sella bytes, pero el loader no valida la aritmética interna
+
+`load_evaluation()` recomputa `evaluation_digest`, pero `scopes`, `metrics` y `per_week` entran como
+diccionarios casi opacos. Si alguien modifica `passes`, degradación, conteos o detalle semanal y
+recalcula el digest exterior, el loader no recompone la coherencia matemática completa.
+
+Antes de que STATUS-B consuma este contrato entre repos, A.3 debe fijar una forma cerrada:
+
+- claves exactas y tipos para los tres scopes;
+- `rows` igual a `64*n`, `111*n` y `1*n`;
+- sMAPE/degradación finitas o el único caso zero-safe declarado;
+- `degradation_pct`, `passes` y verdict recomputados desde candidato/control/umbral;
+- `per_week` uno a uno con `completed_weeks`, sin semanas extra o repetidas;
+- razones de omisión en un enum cerrado y sólo hasta `observation_cutoff`;
+- métricas finitas o `null` únicamente con su flag correspondiente.
+
+No se pide convertir el loader en un segundo evaluator ni volver a leer `runs/` desde el dashboard:
+se pide que el artefacto sea internamente autoconsistente y falle cerrado si su propia aritmética
+se contradice.
+
+#### Orden C7.6-PUBLICATION-STATUS-A.3 — cierre funcional mínimo
+
+Ejecutar únicamente backend sobre `f41c2e3d`, un commit local y STOP:
+
+1. Introducir `observation_cutoff` derivado del observation dataset validado.
+2. Limitar la selección de semanas al corte observado; jamás registrar el futuro como
+   `ausente`/`parcial`.
+3. Persistir el corte en `prospective_evaluation.v2`. Mantener
+   `prospective_status.v2` como resumen que referencia el nuevo `evaluation_digest`; STATUS-B aún
+   no existe, así que no hay consumidor público que migrar.
+4. Validar el frame tabular de training y observation antes de `read_base_history`; ningún
+   duplicado puede desaparecer por una conversión a `dict`.
+5. Reemplazar `_training_series()` por métricas por producto. Derivar la historia training 64→111
+   con el mismo catálogo/lineage del runner y usar un denominador lag-52 por producto.
+6. Persistir métricas auditables de candidato y control por ámbito; resumir MASE con la mediana de
+   productos finitos, igual que los reportes del runner.
+7. Cerrar y validar semánticamente `scopes`, `metrics`, `per_week`, `skipped_weeks` y verdict.
+8. Regenerar únicamente evaluation/status locales. Deben conservar:
+   `gate_digest`, candidato, control, training dataset, bundle, release_id, `INCOMPLETE 0/4`,
+   etiqueta y 5,772 filas. Cambiarán `evaluation_digest` y el digest de shards porque se corrige la
+   evidencia; eso es esperado y obliga a repetir RAG-C después de STATUS-B.
+9. Añadir pruebas que fallen contra `f41c2e3d` y pasen con A.3:
+   - snapshot vigente: corte W26, `0/4`, cero omitidas;
+   - snapshot hasta W27: `1/4`, cero semanas futuras omitidas;
+   - snapshot hasta W31 con W28 ausente: `4/4`, única omitida W28;
+   - duplicado periodo×serie rechazado antes de construir history;
+   - MASE de dos series con escalas muy distintas no cambia al añadir/reordenar la otra;
+   - MASE de un producto derivado usa su propia historia agregada;
+   - denominador cero → `null` + flag;
+   - alterar rows, degradación, passes, verdict, per_week, cutoff o motivo de omisión se rechaza
+     aun si se recalcula el digest exterior;
+   - `--check` sigue no mutante y `--write` sigue atómico.
+10. Ejecutar `ruff`, format-check, mypy, fast, los 112 tests focalizados de publicación,
+    integración estable y doctors.
+11. Crear un único commit local `C7.6-PUBLICATION-STATUS-A.3` y STOP.
+
+#### Prohibiciones de A.3
+
+- No descargar/extractar boletines ni fabricar un dataset canónico nuevo.
+- No cambiar gate, regla 5/5/10, candidato, control, bundle, release o lifecycle.
+- No dashboard, clave, RAG, DVC, push, puntero activo, deploy o publicación.
+- No ejecutar STATUS-B en la misma ronda.
+- No reabrir defensas de filesystem, locks o amenazas locales: esta ronda es sólo verdad,
+  calendario, métricas y contrato de evidencia.
+
+#### Secuencia posterior, aún no autorizada
+
+```text
+auditar STATUS-A.3
+→ STATUS-B sólo dashboard
+→ auditar STATUS-B
+→ repetir RAG-C en dos temporales
+→ paquete C7.6-READINESS
+→ autorizaciones externas separadas
+```
+
+#### Avance
+
+El avance se mantiene en **82%**. A.2 añadió la arquitectura correcta, pero dos valores publicados
+por ella todavía serían falsos: omisiones futuras y MASE contaminado. No se otorga avance por
+cantidad de código mientras esos contratos funcionales no cierren.
+
+#### Próxima acción exacta
+
+**Ejecutar únicamente `C7.6-PUBLICATION-STATUS-A.3` local en backend y STOP.**
+
+_Respuesta:_ **GO C7.6-PUBLICATION-STATUS-A.3 LOCAL. Corregir corte observado, duplicados
+pre-history, MASE por producto y coherencia semántica de evaluation; un commit backend y STOP. Sin
+boletines nuevos, dashboard, clave, RAG, DVC, push, lifecycle, activación, deploy ni publicación.**
+
+---
+
+### Ronda 81 — C7.6-PUBLICATION-STATUS-A.3 ejecutada — 2026-07-27
+
+Un commit local en el backend. Sin boletines nuevos, dashboard, clave, RAG, DVC, push, lifecycle,
+activación, deploy ni publicación. **STATUS-B no se tocó.**
+
+```text
+83f04ce6  C7.6-PUBLICATION-STATUS-A.3 corte observado, MASE por producto y evidencia coherente
+```
+
+Los cuatro hallazgos eran correctos, y los dos primeros producían **valores publicados falsos**.
+
+#### R80-P0-1 · el futuro no es una semana ausente
+
+```text
+antes   skipped_weeks = 52 · primera "ausente" 2026-W27 · sin corte declarado
+ahora   skipped_weeks = 0  · observation_cutoff [2026, 26]
+```
+
+La ventana termina en el corte que el propio snapshot alcanza. El corte se persiste y se valida al
+cargar: una semana declarada omitida que sea posterior al corte se rechaza.
+
+#### R80-P0-2 · MASE por producto, medido
+
+Reproducción con dos escalas (1 y 1000) en series constantes, donde el lag-52 **dentro** de cada
+serie es exactamente 0:
+
+```text
+antes   denominador CONCATENADO 495.6 sobre una serie ficticia de 6,656 puntos
+ahora   111 productos con denominador propio · máximo 0.0
+```
+
+Un 0 no es «peor»: es el valor correcto para una serie constante, y por eso viaja como `null` con su
+bandera. El 495.6 medía saltos entre entidades que nunca ocurrieron. Ahora la historia de training
+se deriva 64→111 con el catálogo del runner y cada producto usa la suya; el ámbito se resume con la
+mediana de productos finitos, para candidato **y** control.
+
+#### R80-P0-3 · los duplicados mueren en el frame
+
+`check_dataset_frame` valida el EpiDatasetV2 tabular antes de construir ningún mapping: schema, 64
+SeriesKeys, unicidad de `(cve_ent, sexo, epi_year, epi_week)`, periodos MMWR válidos, finitos no
+negativos y el mismo conjunto de periodos por serie. La prueba duplica una fila real del dataset
+canónico y comprueba que ya no sobrevive.
+
+#### R80-P1 · el artefacto se sostiene solo
+
+El loader recomputa **degradación, `passes` y veredicto** desde sMAPE candidato/control y el umbral
+del gate, y exige forma cerrada: `rows = 64n / 111n / 1n`, `per_week` uno a uno con
+`completed_weeks`, motivos de omisión en enum cerrado y nunca posteriores al corte, y `null`
+únicamente acompañado de su bandera. Siete mutaciones —`rows`, degradación, `passes`, veredicto,
+`per_week`, `cutoff` y motivo inventado— se rechazan **aunque se recalcule el digest exterior**.
+
+#### Lo que cambia y lo que no
+
+```text
+gate_digest · regla 5/5/10 · candidato · control · bundle · release_id   byte-idénticos
+estado vigente        INCOMPLETE 0/4 · misma etiqueta · 5,772 filas · 9 shards
+evaluation            v1 → v2 (nuevo campo observation_cutoff)
+evaluation_digest     cambia: la evidencia se corrigió
+digest de shards      11c3161870c33a25… (antes 8aeb4382…)
+```
+
+El digest de shards vuelve a moverse, como anticipaste. **RAG-C debe repetirse después de
+STATUS-B**, no antes.
+
+#### Gate
+
+```text
+ruff check + format                        PASS
+mypy                                       161 archivos · PASS
+pytest -m "not slow and not integration"   1989 passed · cobertura 80.78%
+tests/unit/publication                     155 passed
+integración de release                     8 passed
+doctor_padecimiento                        rc=0
+```
+
+#### Estado
+
+```text
+Backend     83f04ce6 · ahead 21 · SIN PUSH  (el plan sigue con tus ediciones sin commitear)
+Dashboard   4cdc17dd · limpio · ahead 16 · SIN PUSH · intacto
+Readiness   RAG-A ✓ A.1 ✓ B ✓ C ✓(a repetir) · STATUS-A ✓ A.1 ✓ A.2 ✓ A.3 ✓ (a auditar) · STATUS-B ✗
+Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
+```
+
+Siguiente acción exacta: **auditar STATUS-A.3**. STATUS-B sigue sin autorizar.
+
+_Respuesta:_
+
+---
+
+### Ronda 82 — Auditoría STATUS-A.3: cálculo PASS, contrato v2 requiere microcierre — 2026-07-27
+
+#### Veredicto
+
+**A.3 aprueba el corte observado, la validación pre-history y el cálculo MASE por producto. Antes de
+entregar el contrato al dashboard necesita A.3.1: un cierre pequeño de forma y evidencia, no otro
+rediseño del evaluator.**
+
+Evidencia independiente:
+
+```text
+commit auditado                   83f04ce6
+diff                              7 archivos · +670/-97 · check PASS
+tests unitarios de publication    155/155 PASS con --no-cov
+prospective_status --check        rc=0
+schema                            prospective_evaluation.v2
+observation_cutoff                2026-W26
+completed / skipped               0 / 0
+estado                            INCOMPLETE 0/4
+```
+
+Queda aprobado:
+
+- el futuro ya no se etiqueta como ausente;
+- W28 omitida y W31 sustituta atraviesan el flujo;
+- el CSV se valida antes de convertirse a `dict`;
+- training se deriva 64→111 y MASE se calcula por producto;
+- degradación, `passes` y verdict se recomputan al cargar;
+- el artefacto vigente conserva gate, candidato, control, bundle, release y 5,772 filas.
+
+#### R82-P0-1 — “MASE null” es en realidad una clave ausente
+
+En una serie constante, `series_metrics()` devuelve MASE no finito con
+`mase_zero_denom`. `scope_metrics()` sólo acumula métricas finitas y construye `median` recorriendo
+las listas que sí existen. Resultado medido:
+
+```text
+median_keys    bias, mae, rmse, smape, wape
+mase_present   false
+mase_get       null
+flags          {"mase_zero_denom": 64}
+```
+
+La prueba usa `.get("mase") is None`, por lo que no distingue entre “clave presente con null” y
+“clave borrada”. La afirmación de Ronda 81 —“viaja como null con su bandera”— todavía no es cierta.
+El consumidor entre repos necesita una forma estable: las seis métricas deben estar siempre
+presentes.
+
+#### R82-P0-2 — se puede borrar la procedencia y volver a sellar
+
+La forma exterior exige `observation_source_digests`, pero el loader no exige sus miembros. Repro
+independiente sobre el evaluation vigente:
+
+```text
+observation_source_digests = {}
+evaluation_digest          recomputado
+status.evaluation_digest   actualizado
+load_declared_status       ACEPTA
+```
+
+La evidencia prometida en A.2 era `raw/config/exposure`; aceptar `{}` convierte el dataset de
+observación en una identidad sin procedencia. El catálogo geográfico continúa sellado dentro de
+`config`, como ya documentó R80; no se añade una fuente duplicada.
+
+#### R82-P0-3 — el corte puede desaparecer aunque el snapshot no esté vacío
+
+Segundo repro independiente:
+
+```text
+observation_cutoff         null
+evaluation_digest          recomputado
+status.evaluation_digest   actualizado
+load_declared_status       ACEPTA
+```
+
+Todo EpiDatasetV2 admitido tiene filas y un máximo periodo. En v2, `null` no representa un caso
+real: sólo permite borrar la frontera que distingue “futuro” de “ausente”. Debe ser un periodo MMWR
+obligatorio y no anterior al origen congelado.
+
+#### R82-P1 — la forma “cerrada” aún permite conteos y secuencias contradictorias
+
+La validación actual:
+
+- comprueba que `products` sea entero, pero no que sea 64/111/1 según el scope;
+- acepta cualquier subconjunto de claves dentro de `median`;
+- acepta `per_week.series=1` aunque la verdad requiera 64 bases;
+- valida que una omisión declarada sea admisible, pero no que la secuencia
+  `completed + skipped` cubra todas las semanas observables hasta el corte o hasta la cuarta
+  completa.
+
+Así, un evaluation re-sellado puede borrar W28 de `skipped_weeks`, conservar W29–W31 como completas
+y seguir cargando. No cambia el veredicto numérico, pero sí borra evidencia de qué pasó con una
+semana programada.
+
+#### Orden C7.6-PUBLICATION-STATUS-A.3.1 — cerrar la forma, sin reabrir el cálculo
+
+Ejecutar únicamente backend sobre `83f04ce6`, un commit local y STOP:
+
+1. Hacer que cada bloque `median` emita siempre exactamente:
+   `smape`, `mase`, `mae`, `rmse`, `wape`, `bias`.
+2. Si una métrica no tiene productos finitos, emitir la clave con `null`; nunca omitirla. `null`
+   sólo es válido con su flag zero-denominator correspondiente.
+3. Exigir `products == 64/111/1` para bases/productos/nacional General, tanto en candidate como en
+   control. Validar flags como conteos enteros no negativos y no mayores que `products`.
+4. Exigir en evaluation v2 exactamente los digests `raw`, `config`, `exposure`, todos SHA256
+   válidos. Conservar geografía dentro del digest efectivo de config.
+5. Hacer obligatorio `observation_cutoff`, MMWR válido y `>= gate.origin`.
+6. Exigir `per_week.series == 64`, semanas únicas y el mismo orden que `completed_weeks`.
+7. Validar la secuencia observada completa:
+   - si aún hay menos de cuatro semanas completas, `completed ∪ skipped` debe ser exactamente cada
+     periodo desde la primera semana objetivo hasta
+     `min(observation_cutoff, fin_del_horizonte)`;
+   - si ya hay cuatro completas, debe cubrir exactamente hasta la cuarta completa;
+   - ambos conjuntos deben ser disjuntos, cronológicos y cada periodo aparecer una sola vez.
+8. Mantener `prospective_evaluation.v2` y `prospective_status.v2`; no hay cambio de schema.
+9. Regenerar evaluation/status sólo si los bytes derivados cambian. Para el estado real `0/4`, los
+   digests de procedencia y el corte ya son correctos, por lo que no se deben inventar cambios.
+10. Añadir pruebas que fallen contra `83f04ce6`:
+    - distinguir clave MASE ausente de `mase: null`;
+    - rechazar source digests vacíos/faltantes/extra;
+    - rechazar cutoff null o anterior al origen;
+    - rechazar `products`, claves de median, flags o `per_week.series` falsos aunque se re-selle;
+    - rechazar que se borre una semana observada de completed/skipped;
+    - aceptar los tres escenarios aprobados: W26→0/4 sin omisiones, W27→1/4, W31 con sólo W28
+      omitida.
+11. Ejecutar ruff, format-check, mypy, fast, los 155 unitarios de publication, integración estable
+    y doctors.
+12. Crear un único commit local `C7.6-PUBLICATION-STATUS-A.3.1` y STOP.
+
+#### Prohibiciones de A.3.1
+
+- No cambiar evaluación sMAPE 5/5/10, derivación 64→111, candidato, control, gate o release.
+- No descargar boletines ni crear datasets.
+- No dashboard, clave, RAG, DVC, push, lifecycle, puntero, deploy o publicación.
+- No ejecutar STATUS-B en esta ronda.
+- No añadir endurecimiento de filesystem, concurrencia o seguridad local: sólo forma del contrato
+  prospectivo ya calculado.
+
+#### Secuencia posterior, aún no autorizada
+
+```text
+auditar STATUS-A.3.1
+→ STATUS-B sólo dashboard
+→ auditar STATUS-B
+→ repetir RAG-C en dos temporales
+→ paquete C7.6-READINESS
+→ autorizaciones externas separadas
+```
+
+#### Avance
+
+El avance se mantiene en **82%**. El cálculo funcional ya es correcto; A.3.1 evita entregar al
+dashboard un schema que acepte métricas o procedencia incompletas.
+
+#### Próxima acción exacta
+
+**Ejecutar únicamente `C7.6-PUBLICATION-STATUS-A.3.1` local en backend y STOP.**
+
+_Respuesta:_ **GO C7.6-PUBLICATION-STATUS-A.3.1 LOCAL. Hacer explícitas las seis métricas, exigir
+procedencia/corte y cerrar conteos y secuencia semanal; un commit backend y STOP. Sin dashboard,
+clave, RAG, DVC, push, lifecycle, activación, deploy ni publicación.**
+
+---
+
+### Ronda 83 — C7.6-PUBLICATION-STATUS-A.3.1 ejecutada — 2026-07-27
+
+Un commit local en el backend. Sin dashboard, clave, RAG, DVC, push, lifecycle, activación, deploy
+ni publicación. **STATUS-B no se tocó.**
+
+```text
+84d84675  C7.6-PUBLICATION-STATUS-A.3.1 forma cerrada del contrato prospectivo
+```
+
+#### R82-P0-1 · tenías razón, y desmiente lo que escribí en la Ronda 81
+
+Dije que un MASE indefinido «viaja como `null` con su bandera». **No era cierto**: la clave no
+estaba, y mi propia prueba usaba `.get("mase") is None`, que no distingue *ausente* de *null*. El
+test daba verde sobre una afirmación falsa.
+
+```text
+antes   median = bias, mae, rmse, smape, wape        · 'mase' presente: False
+ahora   median = bias, mae, mase, rmse, smape, wape  · 'mase' presente: True · valor null
+        flags = {"mase_zero_denom": 64}
+```
+
+Las seis se emiten siempre, y un `null` sólo es válido acompañado de su bandera.
+
+#### R82-P0-2 y P0-3 · procedencia y corte, reproducidos
+
+```text
+                                   83f04ce6      A.3.1
+procedencia vaciada y re-sellada   ACEPTA        RECHAZA
+observation_cutoff = null          ACEPTA        RECHAZA
+```
+
+Ahora se exigen exactamente `raw`, `config` y `exposure` —los tres SHA256 válidos— y el corte es
+obligatorio, MMWR válido y no anterior al origen congelado. La geografía sigue sellada dentro del
+digest efectivo de `config`, sin duplicar fuente.
+
+#### R82-P1 · conteos y secuencia
+
+`products` debe ser **64/111/1** por ámbito y lado, `median` lleva exactamente las seis claves, cada
+flag es un entero `0..products`, `per_week.series == 64`, y **completadas ∪ omitidas** tiene que
+cubrir *exactamente* cada periodo observable hasta el corte —o hasta la cuarta completa—. La prueba
+carga un artefacto con W28 declarada ausente y luego la borra re-sellando: deja de cargar.
+
+#### Lo que NO cambió
+
+```text
+sMAPE 5/5/10 · derivación 64→111 · candidato · control · gate · release_id   intactos
+los tres escenarios aprobados                    W26→0/4 · W27→1/4 · W31 con sólo W28 omitida
+evaluation y status declarados                   BYTE-IDÉNTICOS a 83f04ce6
+digest de shards                                 sin cambio
+```
+
+Esto último es deliberado y responde a tu punto 9: el `0/4` vigente ya tenía corte y procedencia
+correctos, y no hay métricas que completar porque no hay ámbitos. No inventé un cambio para
+justificar la ronda.
+
+#### Gate
+
+```text
+ruff check + format                        PASS
+mypy                                       161 archivos · PASS
+pytest -m "not slow and not integration"   2000 passed · cobertura 80.82%
+publicación                                68 en test_status · 14 en test_prospective_rule
+integración de release                     8 passed
+doctor_padecimiento                        rc=0
+```
+
+#### Estado
+
+```text
+Backend     84d84675 · ahead 22 · SIN PUSH  (el plan sigue con tus ediciones sin commitear)
+Dashboard   4cdc17dd · limpio · ahead 16 · SIN PUSH · intacto
+Readiness   RAG-A ✓ A.1 ✓ B ✓ C ✓(a repetir) · STATUS-A ✓ A.1 ✓ A.2 ✓ A.3 ✓ A.3.1 ✓ · STATUS-B ✗
+Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
+```
+
+Siguiente acción exacta: **auditar STATUS-A.3.1**. STATUS-B sigue sin autorizar.
+
+_Respuesta:_
+
+---
+
+### Ronda 84 — Auditoría STATUS-A.3.1: STATUS-A CERRADO / PASS — 2026-07-27
+
+#### Veredicto
+
+**A.3.1 cierra los repros de R82 sin cambiar los artefactos declarados. STATUS-A completo queda
+aprobado y se autoriza STATUS-B únicamente en el dashboard.**
+
+Evidencia independiente:
+
+```text
+commit auditado                         84d84675
+diff                                    3 archivos · +206/-11 · check PASS
+rutas                                   prospective.py · status.py · test_status.py
+evaluation/status declarados            no tocados por el commit
+tests unitarios de publication          166/166 PASS con --no-cov
+prospective_status --check              rc=0
+procedencia vacía re-sellada            RECHAZADA
+observation_cutoff null re-sellado      RECHAZADO
+estado                                  INCOMPLETE 0/4
+```
+
+Los contratos aprobados al cerrar STATUS-A son:
+
+1. training y observation están separados y sellados;
+2. candidato, control, dataset y gate conservan sus identidades congeladas;
+3. el futuro no se registra como ausente;
+4. una semana faltante se sustituye por la siguiente completa dentro del horizonte;
+5. el dataset tabular se valida antes de construir histories;
+6. MASE se calcula por producto y las seis métricas siempre existen;
+7. procedencia, corte, conteos, secuencia, degradación, `passes` y verdict fallan cerrado;
+8. evaluation v2 y status v2 se cruzan por digest;
+9. los shards siguen declarando `INCOMPLETE 0/4` y point-only;
+10. Obesidad continúa `trained`, invisible y sin puntero activo.
+
+No se abre otro microcierre backend. Los aspectos no decisivos de presentación pertenecen ahora al
+consumidor STATUS-B; RAG se repite después, una sola vez, con el texto candidate definitivo.
+
+#### Objetivo de STATUS-B
+
+El dashboard ya sabe leer un shard candidate y evitar una banda de incertidumbre falsa. Le falta
+consumir el bloque `publication_status` que ahora produce el backend, verificar que sea el mismo en
+`shard_manifest.json` y `web/manifest.json`, y llevar su etiqueta al modelo de vista. No debe
+reimplementar el evaluator ni leer los JSON privados del backend.
+
+La autoridad que cruza repos es el shard:
+
+```text
+publication_shard.v1
+├── publication_label
+└── publication_status
+    ├── schema = prospective_status.v2
+    ├── gate_digest / evaluation_digest / status_digest
+    ├── observation_dataset_id
+    ├── verdict
+    ├── weeks_available / weeks_required
+    ├── completed_weeks / target_weeks
+    └── label
+```
+
+#### Orden C7.6-PUBLICATION-STATUS-B — consumidor de staging
+
+Ejecutar únicamente en
+`/Users/haowei/Documents/Integrador/EpiForecast-IMSS-Dashboard`, rama
+`feat/c73-candidate-staging`, sobre `4cdc17dd`; un commit local y STOP:
+
+1. Extender `epibot/scripts/lib/candidate.mjs` para validar `publication_status` como parte
+   obligatoria de `publication_shard.v1`.
+2. Exigir forma cerrada del bloque:
+   - `schema == prospective_status.v2`;
+   - digests de gate/evaluation/status con 64 hex minúsculas;
+   - `observation_dataset_id` y `label` no vacíos;
+   - verdict en `INCOMPLETE/PASS/FAIL`;
+   - enteros no booleanos con `0 <= weeks_available <= weeks_required`;
+   - `completed_weeks.length == weeks_available`;
+   - `target_weeks.length == weeks_required`;
+   - periodos `[epi_year, epi_week]` válidos y únicos.
+3. Exigir coherencia:
+   - `publication_label == publication_status.label`;
+   - el bloque completo y la etiqueta deben ser byte/valor-equivalentes entre
+     `shard_manifest.json` y `web/manifest.json`;
+   - `INCOMPLETE` sólo con menos semanas que las requeridas;
+   - `PASS/FAIL` sólo con todas las semanas;
+   - completed weeks ordenadas y dentro del conjunto/horizonte declarado por el shard.
+4. No reconstruir el texto español ni recalcular el gate en JavaScript. El backend ya validó la
+   evidencia; el dashboard valida el contrato transportado y muestra su `label`.
+5. Crear o extender un view-model puro de staging para que cualquier serie candidate lleve juntas:
+   - `validationLabel = publication_label`;
+   - `uncertaintyLabel = Pronóstico puntual; sin intervalo de incertidumbre`;
+   - `band = null`;
+   - `isPubliclyVisible = false` mientras lifecycle sea `trained`.
+6. Rechazar el shard antes de producir el view-model si falta el status, si difiere entre
+   manifests, si la etiqueta está vacía/inconsistente o si los conteos/verdict se contradicen.
+7. Mantener `buildChunks()` público sin argumentos byte-idéntico. El chunk candidate de staging
+   debe contener la etiqueta exacta y la advertencia point-only; no copiarlo todavía al índice
+   público.
+8. Probar con fixtures propios los estados:
+   - `INCOMPLETE 0/4`;
+   - `INCOMPLETE 1/4`;
+   - `PASS 4/4`;
+   - `FAIL 4/4`;
+   - todos los rechazos del punto 6.
+9. Gate entre repos con un shard real generado por el backend `84d84675` en un temporal:
+   - 5,772 filas;
+   - release `obesidad_release_2517e7858901`;
+   - lifecycle `trained`;
+   - etiqueta exacta
+     `Validación prospectiva en curso (0/4 semanas) · pronóstico puntual sin intervalos`;
+   - `band=null`;
+   - `isPubliclyVisible=false`;
+   - cuatro canales emitidos y ninguno sin puente.
+   La ruta temporal se inyecta por argumento; no hardcodear la ubicación del backend.
+10. Ejecutar `npm test`, `npm run test:candidate` y `npm run check`. El índice RAG público y las
+    superficies publicadas deben permanecer byte-idénticos y con cero menciones de Obesidad.
+11. Tocar sólo módulos/tests de staging necesarios. No modificar `knowledge.json`,
+    `rag_index.json`, HTML, CSS, Netlify, package/lock ni archivos públicos.
+12. Crear un único commit local `C7.6-PUBLICATION-STATUS-B` en la rama del dashboard y STOP.
+
+#### Prohibiciones de STATUS-B
+
+- No modificar backend, gate, evaluation, status, release, bundle o DVC.
+- No usar `GEMINI_API_KEY`, regenerar RAG ni ejecutar RAG-C en esta ronda.
+- No lifecycle, puntero, push, PR, merge, deploy, preview o publicación.
+- No integrar Obesidad en HTML/knowledge/index públicos.
+- No inventar una segunda fórmula de estado en JavaScript.
+
+#### Gate de salida
+
+STATUS-B se cierra sólo si:
+
+```text
+shard real 5,772 filas                     PASS
+status v2 y label cruzados entre manifests PASS
+view-model 0/4 + point-only                PASS
+candidate sigue no público                 PASS
+npm test / test:candidate / check          PASS
+superficies e índice público               byte-idénticos · 0 Obesidad
+un commit dashboard                        creado
+```
+
+#### Secuencia posterior, aún no autorizada
+
+```text
+auditar STATUS-B
+→ repetir RAG-C en dos temporales con el nuevo chunk candidate
+→ paquete C7.6-READINESS
+→ autorizaciones externas separadas
+```
+
+#### Avance
+
+El avance sube a **83%**: STATUS-A está cerrado. La exposición pública permanece en **0%**.
+
+#### Próxima acción exacta
+
+**Ejecutar únicamente `C7.6-PUBLICATION-STATUS-B` local en el dashboard y STOP.**
+
+_Respuesta:_ **GO C7.6-PUBLICATION-STATUS-B LOCAL EN
+EpiForecast-IMSS-Dashboard. Validar y transportar publication_status/label al view-model candidate,
+probar el shard real 0/4 point-only y preservar toda superficie pública; un commit dashboard y
+STOP. Sin RAG-C, clave, backend, DVC, push, lifecycle, activación, deploy ni publicación.**
+
+---
+
+### Ronda 85 — C7.6-PUBLICATION-STATUS-B ejecutada — 2026-07-27
+
+Un commit local en el **dashboard**, rama `feat/c73-candidate-staging`. Sin RAG-C, clave, backend,
+DVC, push, lifecycle, activación, deploy ni publicación.
+
+```text
+2213bff2  C7.6-PUBLICATION-STATUS-B consumir y transportar el estado prospectivo
+```
+
+#### Lo que valida el consumidor
+
+`candidate.mjs` trata `publication_status` como parte **obligatoria** de `publication_shard.v1`:
+schema `prospective_status.v2`, tres digests de 64 hex minúsculas, `observation_dataset_id` y
+`label` no vacíos, verdict en el enum, enteros no booleanos con `0 ≤ disponibles ≤ requeridas`,
+longitudes coherentes con los conteos, periodos MMWR válidos y únicos, completadas ordenadas y no
+anteriores a la primera objetivo, e `INCOMPLETE` sólo con menos semanas de las requeridas.
+
+Y exige **coherencia entre repos**: el bloque tiene que ser idéntico en `shard_manifest.json` y
+`web/manifest.json`, y `publication_label` coincidir con `publication_status.label` en ambos. Que
+viaje por duplicado no es redundancia inútil —cada canal lee el suyo—; si divergen, el usuario vería
+dos condiciones distintas para el mismo dato.
+
+No se recalcula el gate ni se reconstruye el texto en español. El backend ya validó la evidencia;
+aquí se valida el **contrato transportado**.
+
+#### El view-model
+
+`candidate_view.mjs` junta lo que nunca debe separarse:
+
+```text
+validationLabel     verbatim del backend
+uncertaintyLabel    Pronóstico puntual; sin intervalo de incertidumbre
+band                null
+isPubliclyVisible   false mientras lifecycle sea trained
+```
+
+Ni siquiera un `PASS 4/4` lo vuelve público: eso lo decide el lifecycle, no el veredicto.
+
+#### Gate entre repos, con el shard real
+
+Generado por el backend `84d84675` en un temporal **inyectado por argumento** (`C7_SHARD_ROOT`);
+la ubicación del otro repo no está codificada en ningún sitio:
+
+```text
+/var/folders/0p/fpm4_3l94jxbbc__pnl93bmw0000gn/T/tmp.mFi7eoX0gV
+
+5,772 filas · release obesidad_release_2517e7858901 · lifecycle trained
+etiqueta   Validación prospectiva en curso (0/4 semanas) · pronóstico puntual sin intervalos
+band null · isPubliclyVisible false · 4 canales · channels_without_bridge []
+```
+
+#### Fixtures: los cuatro estados y los rechazos
+
+`0/4`, `1/4`, `PASS 4/4` y `FAIL 4/4`, más status ausente, distinto entre manifiestos, etiqueta
+inconsistente, forma cerrada rota (14 variantes), veredicto contra conteos, orden y ventana.
+
+#### Efectos colaterales que conviene tener escritos
+
+1. **Cuatro pruebas de `test_candidate_staging.mjs` se pusieron rojas** al hacer obligatorio el
+   estado, porque sus fixtures no lo traían. Es exactamente lo que debía pasar; se les añadió el
+   bloque. Ningún caso se relajó.
+2. **No wireé el test nuevo en `npm run test:candidate`**: eso exige tocar `package.json`, que tu
+   punto 11 prohíbe en esta ronda. Se ejecuta explícitamente con
+   `node --test tests/test_candidate_status.mjs`. Queda pendiente integrarlo al comando oficial
+   cuando autorices tocar `package.json`; hasta entonces el gate depende de que alguien lo
+   invoque, y eso es una deuda, no una comodidad.
+
+#### Gate
+
+```text
+npm test                        616/616 + 67 unitarias · rc=0
+npm run test:candidate          19/19
+test_candidate_status           12/12 con el shard real (11 sin él, 1 skip declarado)
+npm run check                   rc=0
+node --check                    candidate.mjs · candidate_view.mjs  PASS
+buildChunks() público           454 chunks · digest 11ec6151867a4cac… sin cambio
+chunk candidate de staging      lleva la etiqueta exacta y la advertencia point-only
+knowledge.json · rag_index.json · index.html · epibot/index.html   byte-idénticos · 0 Obesidad
+package.json / lock             sin tocar
+```
+
+#### Estado
+
+```text
+Dashboard   2213bff2 · limpio · ahead 17 de main · SIN PUSH
+Backend     84d84675 · ahead 22 · SIN PUSH · intacto en esta ronda
+Readiness   STATUS-A ✓ (A.1/A.2/A.3/A.3.1) · STATUS-B ✓ (a auditar) · RAG-C a repetir
+Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
+```
+
+Siguiente acción exacta: **auditar STATUS-B**. Después, repetir RAG-C en dos temporales con el
+chunk candidate definitivo.
+
+_Respuesta:_
+
+---
+
+### Ronda 86 — Auditoría STATUS-B: consumidor PASS, gate canónico desconectado — 2026-07-27
+
+#### Veredicto
+
+**El consumidor funciona y el gate real entre repos pasa. STATUS-B queda PARCIAL hasta B.1 porque
+su prueba principal no forma parte de `npm test`, `npm run test:candidate` ni `npm run check`.**
+
+Evidencia independiente:
+
+```text
+commit auditado                   2213bff2
+diff                              4 archivos · +459 · check PASS
+npm test                          616/616 + 67 · PASS
+npm run test:candidate            19/19 · PASS
+test_candidate_status sin shard   11 PASS + 1 SKIP
+test_candidate_status shard real  12/12 PASS
+npm run check                     PASS
+shard real                        5,772 · trained · 0/4 · point-only · no público
+superficies públicas              byte-idénticas · 0 Obesidad
+```
+
+#### R86-P0 — el test que protege STATUS-B no corre en CI
+
+`npm run test:candidate` continúa ejecutando únicamente:
+
+```text
+node --test tests/test_candidate_staging.mjs
+```
+
+`npm run check` delega a ese comando, por lo que tampoco ejecuta
+`tests/test_candidate_status.mjs`. Un cambio futuro podría romper status/label/view-model y dejar
+verdes todos los comandos oficiales. Ejecutarlo manualmente demuestra que hoy funciona, pero no
+convierte la prueba en un gate mantenible.
+
+La causa es una contradicción de la **Orden 84**, no una desobediencia de la implementación:
+
+- punto 10: `npm run test:candidate` y `npm run check` debían cubrir el gate;
+- punto 11: prohibía modificar `package.json`, único lugar donde se cablean esos comandos.
+
+Se corrige la orden: B.1 autoriza explícitamente modificar sólo los scripts de
+`epibot/package.json`. No autoriza dependencias ni `package-lock.json`.
+
+#### R86-P1 — “forma cerrada” y coherencia entre manifests todavía son parciales
+
+El validador comprueba los campos conocidos, pero no rechaza campos desconocidos dentro de
+`publication_status`. Bajo un schema versionado, “cerrado” significa el conjunto exacto de once
+claves que emite `status_facts()`, no “al menos estas claves”.
+
+Además, cruza status y label, pero no cruza otros invariantes que ambos manifests repiten. Un
+`web/manifest.json` con `lifecycle=published` y un `shard_manifest.json` con `lifecycle=trained`
+puede cargar hoy porque sólo se contrasta el release y el status. Cada canal podría interpretar una
+visibilidad distinta para el mismo shard.
+
+No se pide duplicar el evaluator ni endurecer entradas arbitrarias. Se pide cerrar el contrato que
+los dos repos ya declaran.
+
+#### Orden C7.6-PUBLICATION-STATUS-B.1 — integración canónica mínima
+
+Ejecutar únicamente en el dashboard sobre `2213bff2`, un commit local y STOP:
+
+1. Modificar `epibot/package.json`:
+   - `test:candidate` debe ejecutar `test_candidate_staging.mjs` y
+     `test_candidate_status.mjs`;
+   - `check` debe cubrir también `candidate_view.mjs`, directa o indirectamente mediante el test
+     canónico.
+2. No añadir dependencias, scripts de red ni cambios en `package-lock.json`.
+3. Exigir en `publication_status` exactamente estas claves:
+   `schema`, `gate_digest`, `evaluation_digest`, `status_digest`, `observation_dataset_id`,
+   `verdict`, `weeks_required`, `weeks_available`, `completed_weeks`, `target_weeks`, `label`.
+   Una clave faltante o desconocida debe fallar.
+4. Cruzar entre `shard_manifest.json` y `web/manifest.json`, además del status/label:
+   `schema`, `release_id`, `disease_id`, `lifecycle`, `rows`, `interval_method`,
+   `uncertainty_available`. No comparar el manifest entero: cada canal tiene campos propios.
+5. Hacer que el view-model use la función compartida de visibilidad o fijar por prueba que su regla
+   sea idéntica: sólo `lifecycle=published` devuelve `true`; PASS/FAIL no intervienen.
+6. Añadir pruebas que fallen contra `2213bff2`:
+   - el archivo nuevo aparece en el comando real leído desde `package.json`;
+   - status con clave extra se rechaza;
+   - `web` con disease, lifecycle, rows, interval o uncertainty distintos se rechaza;
+   - control positivo con los manifests reales sigue pasando.
+7. Ejecutar:
+
+```text
+npm test
+npm run test:candidate
+npm run check
+C7_SHARD_ROOT=<temporal-real> npm run test:candidate
+```
+
+   El último debe ejecutar también el caso real de 5,772 filas; sin la variable, ese único caso
+   puede declararse SKIP mientras todos los fixtures contractuales sí corren.
+8. Verificar otra vez que `knowledge.json`, `rag_index.json`, ambos HTML y `buildChunks()` público
+   sean byte-idénticos y contengan cero Obesidad.
+9. Crear un único commit local `C7.6-PUBLICATION-STATUS-B.1` en el dashboard y STOP.
+
+#### Prohibiciones de B.1
+
+- No backend, RAG-C, clave, regeneración del índice ni modificación de sus bytes.
+- No dependencias, package-lock, HTML, CSS, Netlify o superficies públicas.
+- No push, PR, merge, deploy, lifecycle, puntero, activación o publicación.
+- No añadir más validación estadística: el backend es autoridad del gate.
+
+#### Secuencia posterior, aún no autorizada
+
+```text
+auditar STATUS-B.1
+→ repetir RAG-C en dos temporales con el chunk candidate definitivo
+→ paquete C7.6-READINESS
+→ autorizaciones externas separadas
+```
+
+#### Avance
+
+Se mantiene en **83%**. El comportamiento está implementado, pero todavía no es un gate automático.
+
+#### Próxima acción exacta
+
+**Ejecutar únicamente `C7.6-PUBLICATION-STATUS-B.1` local en el dashboard y STOP.**
+
+_Respuesta:_ **GO C7.6-PUBLICATION-STATUS-B.1 LOCAL EN EpiForecast-IMSS-Dashboard. Integrar el test
+de status en los comandos canónicos, cerrar las claves exactas y cruzar los invariantes comunes de
+ambos manifests; un commit dashboard y STOP. Se autoriza sólo el cambio de scripts en
+epibot/package.json, sin dependencias ni lock. Sin RAG-C, clave, backend, push, lifecycle,
+activación, deploy ni publicación.**
+
+---
+
+### Ronda 87 — C7.6-PUBLICATION-STATUS-B.1 ejecutada — 2026-07-27
+
+Un commit local en el **dashboard**. Sin RAG-C, clave, backend, push, lifecycle, activación, deploy
+ni publicación.
+
+```text
+20822a62  C7.6-PUBLICATION-STATUS-B.1 integrar el gate y cerrar el contrato
+```
+
+#### R86-P0 · el gate ya es automático
+
+```text
+test:candidate   node --test tests/test_candidate_staging.mjs tests/test_candidate_status.mjs
+check            … node --check candidate_view.mjs … && npm test && npm run test:candidate && rag:verify
+```
+
+`npm run check` ejecuta ahora el test de status **por dentro** —verificado en su salida, no leyendo
+el script—. Sólo se tocaron *scripts*: ni dependencias ni `package-lock.json`, que queda
+byte-idéntico.
+
+Y gracias por corregir la orden en vez de sostener la contradicción: el punto 10 pedía el gate y el
+11 prohibía el único archivo donde se cablea. Lo dejé escrito como deuda precisamente para esto.
+
+#### R86-P1 · el contrato, ahora cerrado de verdad
+
+«Forma cerrada» era en realidad «al menos estas claves». Ahora se exige el conjunto **exacto de
+once** que emite `status_facts()`: una clave desconocida o ausente falla.
+
+Y se cruzan los invariantes que **ambos** manifiestos declaran —`schema`, `release_id`,
+`disease_id`, `lifecycle`, `rows`, `interval_method`, `uncertainty_available`—, no el manifiesto
+entero, porque cada canal tiene campos propios. Un `web` con `lifecycle=published` y un shard con
+`trained` ya no carga: eran dos visibilidades distintas para el mismo dato.
+
+El view-model usa la **misma** función de visibilidad que la vista pública en vez de repetir la
+regla.
+
+#### Pruebas · tres de cuatro rojas contra `2213bff2`
+
+```text
+el archivo aparece en el comando real leído del package.json     ROJA antes
+clave extra o ausente en publication_status                      ROJA antes
+divergencia de cada invariante común (6 casos)                   ROJA antes
+la visibilidad sale de la función compartida                     verde en ambos
+```
+
+La cuarta pasa en los dos commits porque la regla duplicada era **equivalente**. La dejo como
+guardia contra una divergencia futura; no la presento como prueba de una corrección.
+
+#### Gate
+
+```text
+npm test                                616/616 + 67 · rc=0
+npm run test:candidate (sin shard)      35 casos · 34 PASS + 1 SKIP declarado
+npm run test:candidate (shard real)     35/35
+npm run check                           rc=0 · ejecuta el test de status dentro
+buildChunks() público                   454 chunks · digest 11ec6151867a4cac… sin cambio
+knowledge.json · rag_index.json · ambos HTML · package-lock   byte-idénticos
+menciones públicas de Obesidad          0
+```
+
+Shard real usado en el gate (temporal, inyectado por `C7_SHARD_ROOT`):
+
+```text
+/var/folders/0p/fpm4_3l94jxbbc__pnl93bmw0000gn/T/tmp.mFi7eoX0gV
+```
+
+#### Estado
+
+```text
+Dashboard   20822a62 · limpio · ahead 18 de main · SIN PUSH
+Backend     84d84675 · ahead 22 · SIN PUSH · intacto
+Readiness   STATUS-A ✓ · STATUS-B ✓ B.1 ✓ (a auditar) · RAG-C a repetir
+Obesidad    trained · puntero inactivo · 0 menciones públicas · NO-GO
+```
+
+Siguiente acción exacta: **auditar STATUS-B.1**. Después, repetir RAG-C en dos temporales con el
+chunk candidate definitivo.
+
+_Respuesta:_
+
+---
+
+### Ronda 88 — Auditoría STATUS-B.1 PASS y orden RAG-C definitiva — 2026-07-27
+
+#### Veredicto
+
+**C7.6-PUBLICATION-STATUS-B/B.1 queda CERRADA / PASS. No se abre otro microcierre del
+consumidor. La siguiente acción única es repetir RAG-C en dos staging roots nuevos.**
+
+Auditoría independiente de `2213bff2..20822a62`:
+
+```text
+commit auditado                         20822a62
+diff                                    4 archivos · +97/-10 · check PASS
+package.json                            sólo scripts · package-lock sin cambio
+test:candidate sin shard real           34 PASS + 1 SKIP declarado
+test:candidate con shard real           35/35 PASS · 5,772 filas
+npm run check                           rc=0 · ejecuta status por dentro
+publication_status                      conjunto exacto de 11 claves
+invariantes cruzados                    schema/release/disease/lifecycle/rows/interval/uncertainty
+visibilidad                             una función compartida · sólo lifecycle=published
+corpus público                          454 chunks · sin cambio
+superficies públicas                    byte-idénticas · 0 Obesidad
+```
+
+La comprobación de preservación se repitió desde la raíz correcta del dashboard después de que un
+primer comando de auditoría usara rutas relativas desde `epibot/`. Ese error fue sólo del comando
+de lectura posterior a los tests: no escribió archivos ni invalida el gate. Los SHA256 observados
+son:
+
+```text
+epibot/knowledge.json       e1d9a7d9894319e60330fb85baea3f50bcf13d2c96253fac496f3b3535856e58
+epibot/rag_index.json       efbae8712e9f8a287a2e54192dbafb39eee0205954a8f5c64b3bf34ec020401f
+epibot/index.html           f2e66edcdf9127b74de16d0b44cc570f3cca0d28521eb7430b1c4071038c758b
+index.html                  94549fbd0338886b0630e361027cc952ddcfc32debb09a59fa12278f7bf09857
+epibot/package-lock.json    8f444596dc90424473810b1c5541a9f25cff4911f523a4316736ddd420549e09
+```
+
+No se eleva a defecto el hecho de que JavaScript valide la forma de un periodo y no vuelva a
+implementar el calendario epidemiológico completo. La autoridad estadística y MMWR permanece en el
+backend; el dashboard valida el contrato transportado. Duplicar ahí el calendario agregaría una
+segunda fuente de verdad sin mejorar la decisión pública.
+
+#### Orden C7.6-RAG-C-REPEAT — candidate definitivo sólo en temporales
+
+RAG-C es un **gate de ejecución**, no una modificación de producto. Ejecutar con:
+
+```text
+Backend     84d84675
+Dashboard   20822a62
+Obesidad    lifecycle=trained
+Release     obesidad_release_2517e7858901
+Status      prospective_status.v2 · INCOMPLETE 0/4
+```
+
+Si alguno de esos identificadores no coincide, detenerse; no adaptar la orden al estado encontrado.
+
+##### C0 · preflight
+
+1. Confirmar los dos HEAD y que no existan cambios trackeados de producto. En backend se permite
+   únicamente este plan modificado por el usuario; preservar todos los untracked de ambos repos.
+2. Verificar localmente, sin `dvc pull`, el bundle:
+
+```text
+artifacts/releases/obesidad/obesidad_release_2517e7858901/
+```
+
+3. Confirmar la clave sin imprimir valor, longitud ni prefijo:
+
+```text
+test -n "${GEMINI_API_KEY:-}"
+```
+
+   Si falta en esa misma sesión, STOP. No leer `.env`, historial, keychain ni archivos.
+4. Capturar antes de empezar:
+   - SHA256 de `rag_index.json`, `knowledge.json` y ambos HTML;
+   - lifecycle/canales de Obesidad y F50 y `published_members()` para los cuatro canales;
+   - estado del target DVC del release y hashes legacy.
+5. Crear A y B con `mktemp -d`, fuera de los dos repos. No reutilizar ningún temporal anterior.
+
+##### C1 · compilar dos veces los shards con el status declarado
+
+Desde backend, en A y B, usar las APIs públicas:
+
+```python
+from epiforecast.publication.compiler import MODE_CANDIDATE, compile_release
+from epiforecast.runner.release_store import default_releases_root
+from epiforecast.publication.shards import emit_shards
+from epiforecast.publication.status import load_declared_status
+
+status = load_declared_status("obesidad")
+compilation = compile_release(
+    disease_id="obesidad",
+    mode=MODE_CANDIDATE,
+    releases_root=default_releases_root(),
+    status=status,
+)
+emit_shards(compilation, staging_root)
+```
+
+No construir `PublicationStatus` a mano, no pasar `status=None` y no copiar shards históricos.
+
+Exigir **antes de usar el proveedor**:
+
+```text
+release_id                  obesidad_release_2517e7858901
+lifecycle                   trained
+publication_status          prospective_status.v2 · INCOMPLETE · 0/4
+publication_label           Validación prospectiva en curso (0/4 semanas) · pronóstico puntual sin intervalos
+channels_emitted            epibot, reports, tableau, web
+channels_without_bridge     []
+filas forecast              5,772
+shards A vs B               byte-idénticos
+```
+
+El digest histórico `dfe85262…` de Ronda 73 **no** es expectativa: pertenecía al candidate anterior
+sin el status definitivo. Calcular y reportar el nuevo digest de árbol de los nueve archivos.
+
+##### C2 · construir los dos índices de staging
+
+Desde `EpiForecast-IMSS-Dashboard/epibot`, una vez por raíz:
+
+```text
+npm run rag:staging -- "$C7_RAG_STAGING_A"
+npm run rag:staging -- "$C7_RAG_STAGING_B"
+```
+
+Cada ejecución debe:
+
+```text
+chunks públicos        454
+chunks con candidate   455
+vectores reutilizados  454
+vectores generados     1
+modelo/dimensión       gemini-embedding-001 / 768
+```
+
+No reintentar en bucle, copiar el vector entre raíces ni degradar a fallback léxico.
+
+##### C3 · verificaciones independientes
+
+1. En cada `rag_index.staging.json`: `count == chunks.length == vectors.length == 455`, hashes
+   únicos, cero vectores vacíos/no finitos/de dimensión incorrecta y cero problemas de contrato.
+2. Los 454 vectores públicos deben ser byte-idénticos al índice público por `chunkHash`.
+3. Debe existir exactamente un chunk
+   `candidate:obesidad:obesidad_release_2517e7858901`, ausente del índice público, con:
+   - etiqueta prospectiva exacta `0/4`;
+   - advertencia point-only;
+   - un vector válido.
+4. Comparar A y B eliminando **sólo** `built`: chunks, texto, orden, hashes, modelo, dimensión y los
+   455 vectores deben ser idénticos. Reportar el SHA256 normalizado de ambos.
+5. Ejecutar `npm run check`; debe volver a pasar e incluir STATUS-B/B.1 y `rag:verify`.
+6. Recalcular todas las superficies públicas y exigir bytes idénticos y cero menciones de
+   Obesidad.
+7. Confirmar nuevamente:
+   - Obesidad `trained`, cuatro canales, galería apagada y puntero inactivo;
+   - F50 `configured`, sin canales;
+   - `published_members()` = Alzheimer, Dengue, Depresión y Parkinson;
+   - release DVC, runs canónicos y agregados legacy sin cambio.
+
+##### C4 · salida y STOP
+
+Si pasa:
+
+- no crear commit en ninguno de los repos;
+- conservar A/B para auditoría y reportar sólo sus rutas opacas;
+- reportar digests, conteos y resultado de cada gate;
+- STOP: no iniciar readiness, push, activación o deploy en la misma ronda.
+
+Si falla:
+
+- conservar A/B y la evidencia;
+- no corregir código dentro de RAG-C;
+- no regenerar el índice público;
+- no avanzar.
+
+#### Prohibiciones
+
+- No escribir `epibot/rag_index.json`, `knowledge.json`, HTML ni otra superficie pública.
+- No modificar código, tests, config, plan, bundle, DVC, lifecycle, puntero o canales.
+- No commit, push, PR, merge, tag, deploy, preview, cache-bust, activación ni publicación.
+- No registrar `GEMINI_API_KEY` en comandos persistidos, archivos, logs o evidencia.
+
+#### Gate de cierre
+
+```text
+shards A/B con status definitivo         byte-idénticos
+índices A/B sin built                    byte-idénticos
+public/reused                            454/454 idénticos por hash
+candidate                                1 chunk · 1 vector válido · sólo staging
+total                                    455 chunks / 455 vectores
+drift / vacíos / duplicados              0 / 0 / 0
+npm run check                            rc=0
+superficies públicas                     byte-idénticas · 0 Obesidad
+lifecycle/puntero/F50/legacy/DVC          sin cambios
+commits                                  ninguno
+```
+
+#### Secuencia posterior, todavía no autorizada
+
+```text
+auditar la evidencia de RAG-C-REPEAT
+→ emitir C7.6-READINESS con lista exacta de commits y gates
+→ autorizar por separado checkpoints remotos
+→ autorizar por separado activación
+→ autorizar por separado deploy y smoke público
+```
+
+#### Avance
+
+El avance operativo permanece en **83%** hasta que RAG-C se repita y la evidencia final de
+readiness quede emitida. La exposición pública permanece en **0%**.
+
+#### Próxima acción exacta
+
+**Ejecutar únicamente `C7.6-RAG-C-REPEAT` en A/B temporales y STOP.**
+
+_Respuesta:_ **GO C7.6-RAG-C-REPEAT LOCAL/STAGING. Usar `GEMINI_API_KEY` sólo desde el entorno para
+generar independientemente el único embedding candidate en cada raíz; no modificar producto ni
+crear commits. Sin push, PR, merge, DVC, lifecycle, puntero, activación, deploy ni publicación.**
+
+---
+
+### Ronda 88 — C7.6-RAG-C-REPEAT ejecutada: candidate definitivo en dos temporales — 2026-07-27
+
+Gate de ejecución. **Ningún commit**, ningún cambio de producto. Temporales conservados. Obesidad
+sigue `trained`.
+
+#### C0 · preflight
+
+```text
+dashboard trackeado-limpio     sí
+backend trackeado-limpio       1 archivo: este plan, con TUS ediciones pendientes (no lo commiteo)
+release en la sede             verifica · obesidad_release_2517e7858901
+GEMINI_API_KEY                 presente en el entorno (no impresa)
+raíces con mktemp -d           P y Q, nuevas y distintas de las de la Ronda 73
+```
+
+```text
+P  /var/folders/0p/fpm4_3l94jxbbc__pnl93bmw0000gn/T/tmp.6zZYTWxvQD
+Q  /var/folders/0p/fpm4_3l94jxbbc__pnl93bmw0000gn/T/tmp.TSNwwSzKSr
+```
+
+#### C1 · el candidate DEFINITIVO, compilado dos veces
+
+```text
+release_id / lifecycle / filas    obesidad_release_2517e7858901 · trained · 5,772
+etiqueta                          Validación prospectiva en curso (0/4 semanas) · pronóstico
+                                  puntual sin intervalos
+diff -r P vs Q                    sin diferencias
+digest del árbol (9 archivos)     11c3161870c33a250b405c6ca83dae800980cded6fe058aa154b75a9b99818ca
+```
+
+Ese digest es el de STATUS-A.3, no el de la Ronda 73 (`dfe85262…`): el shard cambió porque ahora
+lleva el estado prospectivo. **Ésa es la razón de repetir RAG-C**, y queda comprobada antes de gastar
+una sola llamada al proveedor.
+
+#### C2 · dos índices de staging
+
+```text
+                        P      Q
+chunks publicados       454    454
+chunks con candidate    455    455  (+1)
+vectores reutilizados   454    454
+vectores generados        1      1
+rc                        0      0
+```
+
+#### C3 · verificación independiente
+
+```text
+                                       P         Q
+count == chunks == vectors             455       455
+modelo / dimensión                     gemini-embedding-001 / 768
+hashes únicos / vectores inválidos     455 / 0   455 / 0
+problemas de contrato                  0         0
+públicos reutilizados byte-idénticos   454/454   454/454
+chunks candidate                       1         1
+vector del candidate válido            sí        sí
+¿el candidate está en el índice público?  no     no
+el chunk lleva la etiqueta 0/4         sí        sí
+el chunk declara point-only            sí        sí
+```
+
+**P contra Q, normalizado** (se elimina únicamente `built`):
+
+```text
+sha256  39389f8eac996bd443d0dddf730175f016c1a05ac49472bf200342b7e451ebe4   P
+sha256  39389f8eac996bd443d0dddf730175f016c1a05ac49472bf200342b7e451ebe4   Q
+```
+
+Distinto del de la Ronda 73 (`deaf6591…`), como debía: el texto del chunk candidate cambió. El
+embedding se generó **de forma independiente en cada raíz** y volvió a coincidir exacto.
+
+#### Superficies y estado
+
+```text
+las 11 superficies (4 del dashboard + 4 agregados legacy + gate/evaluation/status)
+                                    SHA256 idénticos antes y después
+rag_index.json público              byte-idéntico a 20822a62
+menciones públicas de Obesidad      0
+npm run check                       rc=0
+test:candidate con el shard real    35/35 · el consumidor valida el candidate definitivo
+obesidad / anorexia_f50             trained · configured
+estado prospectivo                  INCOMPLETE 0/4
+published_members(web)              Alzheimer, Dengue, Depresión, Parkinson
+commits                             ninguno
+```
+
+#### Gate de cierre
+
+```text
+shards P/Q byte-idénticos                        ✓
+índice P/Q normalizado byte-idéntico             ✓
+454/454 vectores públicos idénticos por hash     ✓
+candidate: 1 chunk · 1 vector válido · staging   ✓
+total staging 455/455                            ✓
+drift / vacíos / duplicados                      0 / 0 / 0
+superficies públicas byte-idénticas · sin Obesidad  ✓
+lifecycle / published / legacy / DVC             sin cambios
+```
+
+Siguiente acción exacta: **auditar RAG-C-REPEAT**. Después, el paquete `C7.6-READINESS`.
+
+_Respuesta:_
+
+---
+
+### Ronda 89 — Auditoría RAG-C-REPEAT PASS y orden del paquete C7.6 — 2026-07-27
+
+#### Veredicto
+
+**C7.6-RAG-C-REPEAT queda CERRADA / PASS. Todos los gates técnicos de C7.6 están verdes. No hay
+otro microcierre funcional pendiente antes del paquete documental de readiness.**
+
+Auditoría independiente sobre los temporales conservados:
+
+```text
+P  /var/folders/0p/fpm4_3l94jxbbc__pnl93bmw0000gn/T/tmp.6zZYTWxvQD
+Q  /var/folders/0p/fpm4_3l94jxbbc__pnl93bmw0000gn/T/tmp.TSNwwSzKSr
+
+shards P/Q                         diff -r sin diferencias
+release / lifecycle / filas        obesidad_release_2517e7858901 · trained · 5,772
+status                             prospective_status.v2 · INCOMPLETE 0/4
+manifest ↔ web status/label        idénticos
+channels                           epibot, reports, tableau, web · sin puente faltante
+índices                            455 chunks = 455 vectores
+modelo / dimensión                 gemini-embedding-001 / 768
+hashes únicos / vectores inválidos 455 / 0
+reutilizados públicos              454/454 byte-idénticos por chunkHash
+candidate                          exactamente 1 · ausente del público · vector válido
+candidate visible                  etiqueta 0/4 + point-only
+P/Q sin built                      contenido equivalente
+DVC release                        up to date
+superficies públicas               sin cambios · 0 Obesidad
+```
+
+La auditoría reprodujo la **igualdad**, no reutilizó ciegamente los digests reportados:
+
+- la comparación directa de los nueve shards es idéntica;
+- un digest independiente del inventario de archivos coincide entre P y Q;
+- una serialización JSON directa sin `built` coincide entre P y Q;
+- los 455 chunks, su orden y los 455 vectores se compararon elemento a elemento.
+
+Los valores de esos digests independientes no tienen que coincidir con `11c316…` o `39389f…`
+porque cada receta serializa rutas/JSON de forma distinta. No es un defecto material: la igualdad de
+bytes y estructuras está demostrada. El paquete de readiness debe registrar **la receta junto al
+digest**, para que ningún hash futuro quede ambiguo.
+
+Preservación comprobada:
+
+```text
+release DVC                                  Data and pipelines are up to date
+prospective_gate.json SHA256                 24e10d9f3b08f736d77af353e068934371cd475dd9d70a36f3b470395ace1658
+prospective_evaluation.json SHA256           3f1b4be42ee1ea5e0fabc6af82f4515025aef76dc01241e70509bffc50beb212
+prospective_status.json SHA256               0407b771bd832cd0c97dbdc61efb1c1be24633b4617fde84aba78c6936a38894
+Prophet legacy SHA256                        cb5be3959781da7a0b44f9510bcaaf22c70fb3f34ae3780e786d5748968ef8bc
+DeepAR legacy SHA256                         96791595a2d4806de6b246aaf77ee0efe85f46c439eadb8afe8f6dd11670949a
+Ensemble legacy SHA256                       1d2cf0a7dcb9e54cdd69020c3c079fb57832293e961aecd0b0f325034ef2f68c
+Stacking legacy SHA256                       ac97dc8e210b95f26b01220702c89b34b47a4e61aabbc0d2246749961ee95b88
+```
+
+Dashboard público:
+
+```text
+knowledge.json SHA256       e1d9a7d9894319e60330fb85baea3f50bcf13d2c96253fac496f3b3535856e58
+rag_index.json SHA256       efbae8712e9f8a287a2e54192dbafb39eee0205954a8f5c64b3bf34ec020401f
+epibot/index.html SHA256    f2e66edcdf9127b74de16d0b44cc570f3cca0d28521eb7430b1c4071038c758b
+index.html SHA256           94549fbd0338886b0630e361027cc952ddcfc32debb09a59fa12278f7bf09857
+```
+
+#### Orden C7.6-READINESS-PACKAGE — documentación autoritativa y STOP
+
+Esta ronda **no implementa C7.7**. Su único entregable es el paquete que permite decidir las
+acciones externas sin reconstruir la historia desde 13 mil líneas.
+
+Trabajar sólo en:
+
+```text
+/Users/haowei/Documents/Integrador/EpiForecast-MX/docs/PLAN_C7_PUBLICACION_OBESIDAD.md
+```
+
+No crear otro archivo. Añadir una sección autocontenida titulada:
+
+```text
+C7.6-READINESS-PACKAGE — candidato de publicación condicionada
+```
+
+##### P0 · estado e identidades exactas
+
+Registrar mediante comandos de lectura, no copiando valores históricos sin comprobar:
+
+1. fecha, ramas, HEAD locales y SHA remotos de backend y dashboard;
+2. rangos locales todavía no publicados:
+   - backend `dbfdd49c..84d84675` más este plan sin commit;
+   - dashboard `d5ead880..20822a62`;
+3. `release_id`, dataset, policy, selection, acceptance, refit y forecast canónicos;
+4. `gate_digest`, candidate/control/dataset digests, evaluation y status digests;
+5. lifecycle, canales, galería y estado del puntero;
+6. estado de F50 y lista exacta de `published_members()` por los cuatro canales.
+
+Si un HEAD o digest cambió, detenerse y explicar el delta; no actualizar silenciosamente el
+paquete para adaptarlo.
+
+##### P1 · matriz final de gates
+
+Incluir una tabla con evidencia y veredicto de cada gate:
+
+- release bundle restaurable y target DVC sincronizado;
+- doctor por identidad;
+- 64 modelos cargables, 111 productos, 3,328 bases y 5,772 filas;
+- aceptación 2025;
+- gate prospectivo congelado, real y todavía `INCOMPLETE 0/4`;
+- point-only sin bandas inventadas;
+- compilación candidate en Reports, Tableau, web y EpiBot;
+- STATUS-A y STATUS-B/B.1;
+- RAG público 454/454 con drift cero;
+- RAG candidate final 455/455 en P y Q;
+- backend lint/typecheck/fast/integración estable sin SIGSEGV;
+- dashboard `npm test`, `test:candidate` y `npm run check`;
+- legacy byte-idéntico;
+- F50 ausente;
+- superficies públicas todavía sin Obesidad.
+
+Cada fila debe decir `PASS`, `INCOMPLETE aceptado por política` o `NO EJECUTADO`. Está prohibido
+convertir `0/4` en PASS.
+
+##### P2 · inventario de cambios pendientes de checkpoint
+
+Listar por repositorio:
+
+1. commits de código/config que deben viajar;
+2. commits puramente documentales;
+3. archivos trackeados aún modificados;
+4. untracked del usuario que quedan expresamente fuera;
+5. archivos públicos que **no** cambiaron;
+6. estado de main y de las ramas remotas.
+
+No afirmar “ahead N” sin declarar contra qué referencia. Para dashboard distinguir:
+
+- commits locales respecto de `origin/feat/c73-candidate-staging`;
+- commits de la rama respecto de `main`.
+
+##### P3 · candidato público que se autorizaría
+
+Declarar exactamente:
+
+```text
+padecimiento              Obesidad E66
+release                   obesidad_release_2517e7858901
+canales                   web, epibot, reports, tableau
+galería                   false
+incertidumbre             point-only
+validación prospectiva    INCOMPLETE 0/4
+etiqueta obligatoria      Validación prospectiva en curso (0/4 semanas) ·
+                          pronóstico puntual sin intervalos
+F50                       permanece configured y oculta
+```
+
+La publicación sería **condicionada**, no confirmada. El congelado 5/5/10 no se retunea, no se
+reselecciona y no se refitea con las semanas prospectivas.
+
+##### P4 · plan de activación por transacciones separadas
+
+Escribir, sin ejecutar, la secuencia exacta:
+
+1. **Checkpoint Git backend:** después de auditar el cambio documental y crear un commit doc-only,
+   pedir autorización para fast-forward de la rama; sin merge.
+2. **Checkpoint Git dashboard:** pedir autorización separada para fast-forward de
+   `feat/c73-candidate-staging`; sin PR, merge ni deploy.
+3. **Integración controlada:** pedir autorización para PR/merge de código genérico mientras
+   Obesidad siga `trained`; verificar CI y que producción no cambie.
+4. **Snapshot de rollback:** guardar SHAs, puntero, hashes públicos, índice RAG, datasource/workbook
+   Tableau y deploy de producción vigentes.
+5. **Activación backend:** en un commit aislado, cambiar sólo el lifecycle a `published` y crear el
+   `public_release_pointer.v1` activo para el mismo release. Probar que un release o status
+   diferente falla.
+6. **Materialización pública:** compilar los cuatro canales desde el puntero activo; no insertar
+   Obesidad en agregados legacy por motor.
+7. **RAG público:** promover el único chunk candidate validado mediante el builder contractual,
+   conservando 454 vectores y añadiendo exactamente uno; `rag:verify` debe quedar en drift cero.
+8. **Dashboard/cache-bust:** actualizar los consumidores y el cache-bust sólo en el deploy
+   autorizado; point-only y `0/4` deben ser visibles.
+9. **Tableau/Reports:** promover únicamente los shards del mismo release.
+10. **Smoke coordinado:** comparar valores muestreados en los cuatro canales contra el forecast
+    sellado; comprobar legacy y F50.
+
+No presentar esos pasos como una única autorización. Push, merge, activación, RAG público, Tableau
+y deploy son efectos externos distintos.
+
+##### P5 · rollback ejecutable
+
+El paquete debe identificar los valores previos reales y ordenar:
+
+1. restaurar puntero público anterior o retirar el puntero de Obesidad;
+2. revertir `published → trained`;
+3. restaurar índice RAG, knowledge/HTML/cache-bust y deploy anteriores;
+4. restaurar datasource/workbook Tableau y Reports;
+5. verificar que `published_members()` vuelva a los cuatro padecimientos históricos;
+6. comprobar los cuatro hashes legacy y que F50 continúe oculta;
+7. conservar el bundle y la evidencia: rollback no significa borrar DVC/S3;
+8. emitir incidente con causa y digests.
+
+Disparadores inmediatos: identidad/digest inválido, discrepancia numérica, banda falsa, ausencia de
+la etiqueta, F50 visible, alteración legacy, canal roto o punteros incoherentes. Al completar 4/4:
+PASS confirma; FAIL obliga a este rollback; INCOMPLETE conserva la etiqueta.
+
+##### P6 · autorizaciones literales, todavía vacías
+
+Cerrar el paquete con casillas no marcadas y el alcance exacto:
+
+```text
+[ ] AUTORIZO COMMIT DOC-ONLY DEL PLAN C7.6.
+[ ] AUTORIZO PUSH BACKEND <SHA_REMOTO>..<SHA_AUDITADO> A LA RAMA DE TRABAJO. SIN MERGE.
+[ ] AUTORIZO PUSH DASHBOARD <SHA_REMOTO>..<SHA_AUDITADO> A feat/c73-candidate-staging.
+    SIN PR, MERGE NI DEPLOY.
+[ ] AUTORIZO PR/INTEGRACIÓN DE CÓDIGO GENÉRICO MANTENIENDO OBESIDAD trained.
+[ ] AUTORIZO ACTIVACIÓN BACKEND: PUNTERO ACTIVO + trained→published.
+[ ] AUTORIZO MATERIALIZACIÓN/PROMOCIÓN DE REPORTS Y TABLEAU.
+[ ] AUTORIZO PROMOCIÓN DEL RAG PÚBLICO Y DEPLOY DEL DASHBOARD.
+```
+
+Los SHA se rellenan con los observados al crear el paquete; no usar `HEAD` como autorización.
+
+##### P7 · verificaciones de esta ronda
+
+Como es doc-only:
+
+```text
+git diff --check
+git status --short --branch en ambos repos
+releer HEAD/remotos/digests usados
+confirmar que el diff de esta ronda toca sólo este plan
+```
+
+No repetir entrenamiento, benchmark, refit, forecast ni llamadas a Gemini. No borrar P/Q hasta que
+el paquete sea auditado.
+
+#### Prohibiciones
+
+- No código, tests, config, registry, lifecycle, puntero, DVC o superficies públicas.
+- No commit, push, PR, merge, tag, deploy, preview, cache-bust o publicación.
+- No regenerar RAG, Tableau, Reports o forecast.
+- No tocar o añadir untracked del usuario.
+- No marcar ninguna autorización.
+
+#### Salida y STOP
+
+Presentar:
+
+1. sección exacta añadida;
+2. matriz de gates;
+3. SHAs/rangos verificados;
+4. lista de autorizaciones aún vacías;
+5. confirmación de que sólo cambió el plan.
+
+Después STOP para auditoría.
+
+#### Avance
+
+C7.6 queda técnicamente verde pero documentalmente abierto hasta auditar el paquete. Avance
+operativo: **83%**; exposición pública: **0%**; validación prospectiva: **0/4**.
+
+#### Próxima acción exacta
+
+**Ejecutar únicamente `C7.6-READINESS-PACKAGE` dentro de este plan y STOP.**
+
+_Respuesta:_ **GO C7.6-READINESS-PACKAGE DOC-ONLY. Consolidar en este mismo plan identidades,
+gates, cambios, activación, rollback y autorizaciones vacías; no crear otro archivo ni ejecutar
+acciones externas. Sin commit, push, merge, DVC, lifecycle, puntero, RAG, Tableau, deploy ni
+publicación.**
+
+---
+
+## C7.6-READINESS-PACKAGE — candidato de publicación condicionada
+
+> Paquete **doc-only**, emitido el **2026-07-27T04:43Z**. Ninguna acción externa ejecutada: sin
+> commit, push, merge, DVC, lifecycle, puntero, RAG público, Tableau, deploy ni publicación.
+> Todos los valores se releyeron con comandos en esta ronda; ninguno se copió de rondas previas.
+
+### P0 · Estado e identidades exactas
+
+#### Repositorios
+
+```text
+backend    EpiForecast-MX
+           rama            feat/registry-padecimientos-obesidad
+           HEAD local      84d84675
+           remoto          origin/feat/registry-padecimientos-obesidad @ dbfdd49c
+           locales         22 commits sobre el remoto · 114 sobre main (b535b525)
+           trackeado       1 archivo modificado: docs/PLAN_C7_PUBLICACION_OBESIDAD.md
+
+dashboard  EpiForecast-IMSS-Dashboard
+           rama            feat/c73-candidate-staging   (sin upstream configurado)
+           HEAD local      20822a62
+           remoto          origin/feat/c73-candidate-staging @ d5ead880
+           locales         16 commits sobre el remoto · 18 sobre main (179bbe36)
+           trackeado       limpio
+```
+
+Dos precisiones que la orden pide no dar por hechas: el dashboard **no tiene upstream configurado**
+—`@{u}` falla—, así que su comparación se hace contra `origin/feat/c73-candidate-staging`
+explícitamente; y «ahead N» sólo tiene sentido con la referencia declarada, por eso van las dos
+cifras.
+
+#### Release y cadena canónica
+
+```text
+release_id             obesidad_release_2517e7858901
+backend / lifecycle    runner_release / trained
+canales / galería      epibot, reports, tableau, web / false
+origen / horizonte     2026-W26 / 52 semanas
+conteos                64 modelos · 64 bases · 3,328 pronósticos base
+                       47 derivados · 111 productos · 5,772 filas
+dataset_id             obesidad_1502d1a25b48
+dataset_digest         1502d1a25b48c11b7afd30173163d78e4c67a55e31551737a9bed20358cc4340
+policy                 rolling_cv_v1 · dd6d4a0274a6f8bb0f51d27628294b7db694b792966abaa92528dc2765020b2a
+selection_digest       7f582a3a4ed780614c7649d3a9d38869ab10456829edf5271fede8f2472cdf72
+final_selection_digest 91590fa7452fa75581df18d6e892ac7053727ab368d38d298a26931fe6e89bab
+acceptance_run_id      obesidad_benchmark_test_7f582a3a4ed7_82370419efd4
+acceptance_digest      c264f6380e1d5869efabef534180b717cba4e7c8c075b102fe0a7c0548f3ca1f
+refit_run_id           obesidad_refit_final_91590fa7452f_ff249060018a
+refit_digest           c619438a2f02f3ca7edf4247784878139ed8838b56eb87de1bfbacb919595ed9
+forecast_run_id        obesidad_forecast_h52_ff249060018a_92d446b6df8f
+```
+
+#### Gate prospectivo y estado
+
+```text
+gate_digest            5bc39aa5d44f5e62062775dc09a0366ac856f47e5444fbb52ca07e608e61b65d
+candidate_digest       e7e2f5eef2efe7fc1071a1adbcc7c9efba1ab29e8265e395e566799f55e3c9e2
+control_digest         bb18accc0e6c9fbf8fd62fd48d4c9fc0807d4678e99d89f294ca6c7c41bce315
+evaluation_digest      57c78cdebbe8c515b91646297bc647ba59e5d60c4719e215413b9a1bdf44ac90
+status_digest          0407b771bd832cd0c97dbdc61efb1c1be24633b4617fde84aba78c6936a38894
+veredicto              INCOMPLETE 0/4 · corte observado 2026-W26
+etiqueta               Validación prospectiva en curso (0/4 semanas)
+```
+
+**La receta junto al digest**, como pidió la auditoría — porque tres de estos números conviven con
+el SHA256 del archivo que los contiene y no son lo mismo:
+
+```text
+artefacto     sha256(archivo)      digest declarado dentro
+gate          24e10d9f3b08f736…    5bc39aa5d44f5e62…   (payload SIN la clave gate_digest)
+evaluation    3f1b4be42ee1ea5e…    57c78cdebbe8c515…   (payload SIN la clave evaluation_digest)
+status        0407b771bd832cd0…    el archivo ES el payload → ambos coinciden
+```
+
+Cualquier hash citado en adelante debe decir cuál de las dos recetas usa.
+
+#### Registry
+
+```text
+obesidad        lifecycle=trained · gallery=false · 4 canales · puntero público: NO EXISTE
+anorexia_f50    lifecycle=configured · 0 canales
+published_members(web|epibot|reports|tableau)  = Alzheimer, Dengue, Depresión, Parkinson
+```
+
+### P1 · Matriz final de gates
+
+| gate | evidencia | veredicto |
+| --- | --- | --- |
+| Bundle en la sede y verificable | `verify_bundle` rc=0 · `release_id` y `disease_id` cuadran | PASS |
+| Target DVC del release sincronizado | `dvc status <release>.dvc` → *up to date* | PASS |
+| Working tree DVC global apto para promoción | 6 targets modificados; `reports/forecasts` y `reports/figures` solapan la promoción | **BLOQUEADO** |
+| Doctor por identidad | `scripts.doctor_padecimiento` rc=0 | PASS |
+| 64 modelos · 111 productos · 3,328 bases · 5,772 filas | conteos del bundle verificado y del shard compilado | PASS |
+| Aceptación 2025 | `acceptance_digest c264f638…` sellado en la cadena | PASS |
+| Gate prospectivo congelado y real | `gate_digest 5bc39aa5…` recomputado desde release+dataset; regla 5/5/10 aplicada por ámbito | PASS |
+| Validación prospectiva | `INCOMPLETE 0/4` · corte 2026-W26 · 0 omisiones | **INCOMPLETE aceptado por política** |
+| Point-only sin bandas inventadas | `interval_method=none`, límites vacíos, `band=null` en el view-model | PASS |
+| Compilación candidate en los 4 canales | 9 archivos · `channels_without_bridge []` | PASS |
+| STATUS-A (A.1/A.2/A.3/A.3.1) | evaluación sellada, capability por loader, formas cerradas | PASS |
+| STATUS-B / B.1 | consumidor valida las 11 claves, cruza 7 invariantes y transporta la etiqueta | PASS |
+| RAG público | 454 chunks = 454 vectores · `rag:verify` drift cero | PASS |
+| RAG candidate final | P y Q: 455/455 · 454 públicos byte-idénticos · 1 candidate | PASS |
+| Backend lint/typecheck/fast/integración | ruff+format, mypy 161, 2000 tests, integración 8 | PASS |
+| SIGSEGV de integración | runner aislado por archivo, rc=0 | PASS |
+| Dashboard `npm test` / `test:candidate` / `check` | 616/616 + 67 · 35/35 con shard real · rc=0 | PASS |
+| Agregados legacy byte-idénticos | 4 SHA256 sin cambio en todo C7.6 · 0 filas de Obesidad | PASS |
+| F50 ausente de todo lo público | `configured`, 0 canales | PASS |
+| Superficies públicas sin Obesidad | knowledge, rag_index y ambos HTML: 0 menciones | PASS |
+| Puntero público activo | **no existe todavía** (es el paso de activación) | NO EJECUTADO |
+| Materialización pública de los 4 canales | no ejecutada | NO EJECUTADO |
+| Deploy y cache-bust | no ejecutados | NO EJECUTADO |
+
+`0/4` **no** se convierte en PASS en ninguna fila.
+
+#### Una salvedad que no aparecía en la auditoría
+
+La auditoría reproduce **seis targets DVC modificados** en el working tree:
+
+```text
+models.dvc
+logs.dvc
+data/raw.dvc
+data/processed/dataset_boletin_epidemiologico.csv.dvc
+reports/figures.dvc
+reports/forecasts.dvc
+```
+
+`dvc data status --granular` expande esos seis targets a muchas rutas; el conteo «21 entradas» del
+primer paquete no es una unidad estable ni fue reproducido y queda retirado. Es un estado
+**preexistente** del entorno del usuario, no un efecto de C7.6: los cuatro agregados legacy tienen
+el mismo SHA256 antes y después de cada ronda, y el target DVC dedicado del release está *up to
+date*. No obstante, `reports/figures.dvc` y `reports/forecasts.dvc` solapan la futura promoción de
+Reports. Por eso C7.6 no se declara cerrado hasta atribuir el WIP y diseñar la promoción desde un
+clon/worktree limpio, sin `dvc checkout`, `dvc add` ni `dvc push` sobre este árbol.
+
+### P2 · Inventario de cambios pendientes de checkpoint
+
+#### Backend `dbfdd49c..84d84675` — 22 commits
+
+```text
+código/config (5)   a81a5f5d  STATUS-A          2ecb3fae  STATUS-A.1
+                    f41c2e3d  STATUS-A.2        83f04ce6  STATUS-A.3
+                    84d84675  STATUS-A.3.1
+documentales (17)   7e36e086 · d54d9ceb · b6b3d89e · 64716ec1 · 4886dc22 · f7ef25d5 · 79689412
+                    8216044e · fc09d37d · a8ab5ae8 · 0e1c20fd · db80b47b · e68c075c · fef5998b
+                    40d32c1f · 0273b591 · 7460a5bb
+trackeado sin commit   docs/PLAN_C7_PUBLICACION_OBESIDAD.md  (este paquete + tus ediciones)
+```
+
+#### Dashboard `d5ead880..20822a62` — 16 commits
+
+```text
+20822a62 STATUS-B.1   2213bff2 STATUS-B    4cdc17dd RAG-B      40442c6d RAG-A.1
+b9cb7a1f RAG-A        438441a0 B4.2        19e6a893 47.3       45bba6c2 47.2-B4.1
+3ee38310 47.2-B4      a1412e33 47.2-B3     93214796 47.2-B2    d3fd058a 47.2-B1
+553b84d1 47.2-A.1     ada08080 47.2-A      98404fa0 fixture    42477019 npm test
+trackeado sin commit   ninguno
+```
+
+#### Untracked del usuario · expresamente fuera
+
+```text
+backend    .qwen/ · references/ · reports/FigCanva · reports/FigResumenEjecutivo · reports/HTMLsCanva
+           reports/Latex · reports/RuthPoster · reports/docs · varios PDF y PNG
+dashboard  EpiBot_v2_SinFondo.png · kb.zip
+```
+
+Ninguno se añadió, movió ni borró en todo C7.6.
+
+#### Archivos públicos que NO cambiaron
+
+```text
+epibot/knowledge.json    e1d9a7d9894319e60330fb85baea3f50bcf13d2c96253fac496f3b3535856e58
+epibot/rag_index.json    efbae8712e9f8a287a2e54192dbafb39eee0205954a8f5c64b3bf34ec020401f
+epibot/index.html        f2e66edcdf9127b74de16d0b44cc570f3cca0d28521eb7430b1c4071038c758b
+index.html               94549fbd0338886b0630e361027cc952ddcfc32debb09a59fa12278f7bf09857
+all_forecast_prophet     cb5be3959781da7a0b44f9510bcaaf22c70fb3f34ae3780e786d5748968ef8bc
+all_forecast_deepar      96791595a2d4806de6b246aaf77ee0efe85f46c439eadb8afe8f6dd11670949a
+all_forecast_ensemble    1d2cf0a7dcb9e54cdd69020c3c079fb57832293e961aecd0b0f325034ef2f68c
+all_forecast_stacking    ac97dc8e210b95f26b01220702c89b34b47a4e61aabbc0d2246749961ee95b88
+```
+
+El `rag_index.json` público **sí** cambió una vez en C7.6 —RAG-B, `4cdc17dd`, para cerrar su drift—
+y desde entonces es byte-idéntico. Ese cambio ya está en los 16 commits pendientes.
+
+### P3 · Candidato público que se autorizaría
+
+```text
+padecimiento              Obesidad E66
+release                   obesidad_release_2517e7858901
+canales                   web, epibot, reports, tableau
+galería                   false
+incertidumbre             point-only (interval_method=none, límites vacíos)
+validación prospectiva    INCOMPLETE 0/4 · gate 5bc39aa5… · corte 2026-W26
+etiqueta obligatoria      Validación prospectiva en curso (0/4 semanas) ·
+                          pronóstico puntual sin intervalos
+F50                       permanece configured y oculta
+```
+
+Publicación **condicionada**, no confirmada. El congelado 5/5/10 no se retunea, no se reselecciona
+y no se refitea con las semanas prospectivas: si al llegar a 4/4 el veredicto es FAIL, se ejecuta el
+rollback de P5, no un reajuste.
+
+### P4 · Plan de activación por transacciones separadas
+
+Escrito, **no ejecutado**. Cada punto es una autorización distinta.
+
+1. **Checkpoint doc backend** — auditar el cambio documental y crear un commit doc-only del plan.
+2. **Push backend** — fast-forward de `feat/registry-padecimientos-obesidad`. Sin merge.
+3. **Push dashboard** — fast-forward de `feat/c73-candidate-staging`. Sin PR, merge ni deploy.
+4. **Integración controlada** — PR/merge del código genérico con Obesidad todavía `trained`;
+   verificar CI y que producción no cambie.
+5. **Carril limpio de activación** — crear un clon/worktree limpio desde los SHAs ya publicados,
+   restaurar únicamente los targets DVC declarados y generar ahí las superficies. El working tree
+   actual con WIP no se usa para promover ni se limpia en bloque.
+6. **Snapshot de rollback** — SHAs, puntero, hashes públicos, índice RAG, datasource/workbook de
+   Tableau y deploy de producción vigentes, guardados antes de tocar nada.
+7. **Activación backend** — commit aislado: lifecycle `trained → published` y creación del
+   `public_release_pointer.v1` activo para *este* release. Probar que un release o un status
+   distinto falla cerrado.
+8. **Materialización pública** — compilar los cuatro canales desde el puntero activo. No insertar
+   Obesidad en los agregados legacy por motor.
+9. **RAG público** — promover el único chunk candidate ya validado con el builder contractual:
+   454 vectores conservados + exactamente 1 nuevo; `rag:verify` en drift cero.
+10. **Dashboard y cache-bust** — actualizar consumidores y subir `app.js?v` en `index.html` sólo en
+   el deploy autorizado. La etiqueta `0/4` y el point-only deben quedar visibles.
+11. **Tableau y Reports** — promover únicamente los shards de este release.
+12. **Smoke coordinado** — muestrear valores en los cuatro canales contra el forecast sellado;
+    comprobar legacy intacto y F50 invisible.
+
+### P5 · Rollback ejecutable
+
+Los hashes de P2 son el **checkpoint candidato actual**, no se deben tratar como valores eternos.
+Los valores autoritativos de rollback se recapturan inmediatamente antes de la activación, después
+de integrar código genérico pero antes de cambiar puntero/lifecycle. Si coinciden con P2 se
+registran como confirmados; si no, se detiene la activación y se audita el delta. Hoy no existe
+puntero de Obesidad: bajo el estado actual, el rollback consiste en retirarlo, no en restaurar otro.
+
+1. retirar el `public_release_pointer.v1` de Obesidad;
+2. revertir lifecycle `published → trained`;
+3. restaurar `rag_index.json` a `efbae871…`, `knowledge.json` a `e1d9a7d9…`, ambos HTML a
+   `f2e66edc…` / `94549fbd…`, el cache-bust anterior y el deploy previo;
+4. restaurar datasource/workbook de Tableau y los Reports promovidos;
+5. verificar que `published_members()` vuelve a Alzheimer, Dengue, Depresión y Parkinson en los
+   cuatro canales;
+6. comprobar los cuatro SHA256 legacy de P2 y que F50 sigue oculta;
+7. **conservar** el bundle, su `.dvc` y toda la evidencia: rollback no es borrar DVC/S3;
+8. emitir incidente con causa y digests implicados.
+
+Disparadores inmediatos: identidad o digest inválido, discrepancia numérica contra el forecast
+sellado, banda de incertidumbre dibujada, ausencia de la etiqueta, F50 visible, agregado legacy
+alterado, canal roto o punteros incoherentes.
+
+Al completar 4/4: **PASS** confirma la publicación · **FAIL** obliga a este rollback ·
+**INCOMPLETE** conserva la etiqueta y no habilita nada nuevo.
+
+### P6 · Autorizaciones literales — todas vacías
+
+```text
+[ ] AUTORIZO COMMIT DOC-ONLY DEL PLAN C7.6.
+[ ] AUTORIZO PUSH BACKEND dbfdd49c..<SHA_DEL_COMMIT_DOC_AUDITADO>
+    A origin/feat/registry-padecimientos-obesidad. SIN MERGE.
+[ ] AUTORIZO PUSH DASHBOARD d5ead880..20822a62 A origin/feat/c73-candidate-staging.
+    SIN PR, MERGE NI DEPLOY.
+[ ] AUTORIZO PR/INTEGRACIÓN DE CÓDIGO GENÉRICO MANTENIENDO OBESIDAD trained.
+[ ] AUTORIZO ACTIVACIÓN BACKEND: PUNTERO ACTIVO + trained→published.
+[ ] AUTORIZO MATERIALIZACIÓN/PROMOCIÓN DE REPORTS Y TABLEAU.
+[ ] AUTORIZO PROMOCIÓN DEL RAG PÚBLICO Y DEPLOY DEL DASHBOARD.
+```
+
+El endpoint backend se rellena **después** del commit doc-only: autorizar primero ese commit vuelve
+obsoleto por definición a `84d84675` como endpoint de push. El rango dashboard sí queda fijado en
+`d5ead880..20822a62` mientras su HEAD no cambie. Si cualquier endpoint se mueve después de ser
+auditado, el paquete queda inválido y se reemite; ninguna autorización usa `HEAD`.
+
+### P7 · Verificaciones de esta ronda
+
+```text
+git diff --check (ambos repos)          PASS
+diff de esta ronda                      sólo docs/PLAN_C7_PUBLICACION_OBESIDAD.md
+HEAD backend / dashboard                84d84675 · 20822a62   (releídos, sin cambio)
+remotos                                 dbfdd49c · d5ead880    (releídos)
+digests del gate/evaluation/status      releídos del disco, no copiados
+temporales P y Q                        conservados para auditoría
+comandos externos ejecutados            ninguno
+llamadas a Gemini                       ninguna
+```
+
+Temporales de RAG-C-REPEAT, todavía disponibles:
+
+```text
+P  /var/folders/0p/fpm4_3l94jxbbc__pnl93bmw0000gn/T/tmp.6zZYTWxvQD
+Q  /var/folders/0p/fpm4_3l94jxbbc__pnl93bmw0000gn/T/tmp.TSNwwSzKSr
+```
+
+### Estado al cerrar el paquete
+
+```text
+Backend     84d84675 · ahead 22 de dbfdd49c · SIN PUSH
+Dashboard   20822a62 · ahead 16 de d5ead880 · SIN PUSH
+C7.6        gates de producto verdes · paquete emitido · DVC global pendiente de aislamiento
+Obesidad    trained · sin puntero · 0 menciones públicas · NO-GO
+Validación  INCOMPLETE 0/4 · exposición pública 0%
+```
+
+_Respuesta:_
+
+---
+
+### Ronda 90 — Auditoría del paquete: correcciones formales y gate DVC — 2026-07-27
+
+#### Veredicto
+
+**El paquete representa correctamente el release, los gates y el estado `INCOMPLETE 0/4`, pero
+C7.6 todavía no puede declararse cerrado.** La auditoría encontró dos correcciones formales ya
+aplicadas al paquete y un bloqueante operativo que requiere atribución read-only:
+
+1. `84d84675` no podía ser el endpoint del push posterior al commit doc-only, porque ese commit
+   moverá HEAD; el literal ahora exige el SHA documental ya auditado;
+2. los hashes de rollback se recapturan justo antes de activar, después de integrar código;
+3. no hay «21 entradas DVC» reproducibles: hay **seis targets DVC modificados**, con muchas rutas
+   granulares. Dos solapan la futura promoción de Reports.
+
+Continúa en PASS:
+
+```text
+release dedicado .dvc            up to date
+bundle runner_release            íntegro
+legacy agregado                  hashes canónicos sin cambio
+RAG público/candidate            454/454 y 455/455
+STATUS-A / STATUS-B              PASS
+Obesidad / F50                   trained / configured
+superficie pública               0 Obesidad
+```
+
+Queda por aislar:
+
+```text
+models.dvc
+logs.dvc
+data/raw.dvc
+data/processed/dataset_boletin_epidemiologico.csv.dvc
+reports/figures.dvc
+reports/forecasts.dvc
+```
+
+No se atribuye automáticamente ese estado a C7.6 ni se propone borrarlo. Contiene extracción E66,
+F50 y artefactos legacy/preliminares que deben preservarse. El problema es transaccional: promover
+Reports desde el mismo árbol mezclaría la publicación con WIP no relacionado.
+
+#### Orden C7.6-DVC-ATTRIBUTION — sólo lectura y diseño del carril limpio
+
+Ejecutar únicamente en backend `84d84675`; escribir resultados sólo como nueva subsección de este
+plan. Para procesar salidas grandes se permite un temporal fuera del repo. Un ciclo y STOP.
+
+##### D0 · preflight
+
+1. Confirmar HEAD `84d84675`, remoto `dbfdd49c` y que el único trackeado modificado sea este plan.
+2. Preservar todos los untracked; no abrir, mover, copiar o añadir sus contenidos.
+3. Confirmar que el target dedicado del release continúa `up to date`.
+4. Capturar los cuatro hashes legacy y los hashes de gate/evaluation/status.
+
+##### D1 · inventario reproducible
+
+Ejecutar sólo para lectura:
+
+```text
+dvc status
+dvc data status
+dvc data status --granular
+```
+
+Guardar la salida granular únicamente en un temporal. Añadir una tabla por los seis targets con:
+
+- estado target-level;
+- conteo definido de rutas añadidas, modificadas y eliminadas;
+- tamaño total aproximado;
+- periodos/timestamps cuando sean relevantes;
+- padecimientos presentes;
+- contenido legacy, E66, F50 o mixto;
+- coincidencia exacta con rutas que C7.7 pretenda promover.
+
+No volver a reportar «21» sin definir unidad y receta.
+
+##### D2 · atribución funcional
+
+Clasificar cada target:
+
+```text
+A  WIP necesario que debe preservarse
+B  preliminar/legacy que no participa en runner_release
+C  superficie que colisionaría con C7.7
+D  diferencia todavía sin atribución
+```
+
+Para `reports/forecasts.dvc` y `reports/figures.dvc`:
+
+1. enumerar agregados legacy que permanecen byte-idénticos;
+2. resumir diferencias por padecimiento y motor;
+3. comprobar si el compilador público necesita escribir ahí o puede usar un destino dedicado;
+4. declarar las rutas exactas propuestas para Reports y Tableau.
+
+No basta etiquetar algo «preexistente»: hay que explicar por qué C7.7 no lo sobrescribirá.
+
+##### D3 · carril limpio obligatorio
+
+Diseñar una activación que **no use este working tree sucio**:
+
+1. checkpoints Git sólo después de auditoría;
+2. clon/worktree temporal desde SHAs explícitos ya publicados;
+3. restauración dirigida del bundle, inputs legacy de verificación y superficies de rollback;
+4. `dvc status` limpio en ese carril antes de materializar;
+5. compilación/promoción con inventario antes/después;
+6. promoción sólo de outputs declarados, nunca de directorios DVC completos;
+7. conservar evidencia antes de eliminar el temporal.
+
+Declarar qué comandos futuros requerirán red o escritura. En esta ronda **no crear** el carril ni
+hacer `dvc pull`.
+
+##### D4 · veredicto obligatorio
+
+Cerrar con exactamente uno:
+
+```text
+PASS_CLEAN_LANE_DESIGNED
+BLOCKED_DESTINATION_COLLISION
+BLOCKED_UNATTRIBUTED_DVC
+```
+
+Sólo `PASS_CLEAN_LANE_DESIGNED` permite terminar C7.6. No exige limpiar el árbol actual; exige
+demostrar que la publicación puede evitarlo.
+
+#### Prohibiciones
+
+- No `dvc checkout`, `dvc add`, `dvc commit`, `dvc push`, `dvc pull` ni borrado.
+- No copiar/mover outputs DVC, modelos, logs, raw, processed, forecasts o figuras.
+- No código, config, tests, lifecycle, puntero, RAG, Tableau, Reports o superficies públicas.
+- No commit, push, PR, merge, deploy, activación o publicación.
+
+#### Salida y STOP
+
+Añadir al plan:
+
+1. tabla de seis targets con conteos y clasificación;
+2. colisiones reales o descartadas;
+3. destinos exactos de publicación propuestos;
+4. diseño del carril limpio;
+5. veredicto D4.
+
+Después STOP para auditoría.
+
+#### Avance
+
+Se mantiene en **83%**. Los gates del producto están verdes; la exposición pública sigue en
+**0%**. C7.6 permanece abierto únicamente por la transacción DVC/Reports, no por el modelo o RAG.
+
+#### Próxima acción exacta
+
+**Ejecutar únicamente `C7.6-DVC-ATTRIBUTION` read-only y STOP.**
+
+_Respuesta:_ **GO C7.6-DVC-ATTRIBUTION READ-ONLY. Inventariar y clasificar los seis targets DVC,
+descartar o confirmar colisiones y diseñar un carril limpio de activación. Sin checkout/add/commit/
+push/pull DVC, sin mover archivos y sin commit, push, lifecycle, RAG, Tableau, deploy ni
+publicación.**
+
+---
+
+### Ronda 91 — C7.6-DVC-ATTRIBUTION (read-only) — 2026-07-27
+
+Sólo lecturas. Sin `dvc checkout/add/commit/push/pull`, sin mover un archivo, sin commit, push,
+lifecycle, puntero, RAG, Tableau, Reports, deploy ni publicación. La salida granular se guardó en un
+temporal fuera del repo.
+
+#### D0 · preflight
+
+```text
+HEAD 84d84675 · remoto dbfdd49c · único trackeado modificado: este plan
+untracked del usuario                      intactos (no se abrió, movió ni copió ninguno)
+release dedicado .dvc                      Data and pipelines are up to date
+legacy prophet/deepar/ensemble/stacking    cb5be395… / 96791595… / 1d2cf0a7… / ac97dc8e…
+gate / evaluation / status (sha del archivo) 24e10d9f… / 3f1b4be4… / 0407b771…
+```
+
+#### D1 · inventario reproducible, con unidad definida
+
+**Unidad:** una línea `«estado: ruta»` de `dvc data status --granular`. **Receta:** ejecutar ese
+comando y contar por prefijo de target. Con eso:
+
+```text
+entradas granulares totales   4,012
+        added                 3,991
+        modified                 21   ← 6 líneas de target + 15 rutas hijas
+```
+
+Ahí está el «21» de la ronda anterior: **no eran 21 rutas**, eran 6 targets más 15 archivos. Lo
+dejo dicho porque lo reporté sin definir la unidad.
+
+| target | added | modified | deleted | MB aprox | contenido | clase |
+| --- | ---: | ---: | ---: | ---: | --- | :---: |
+| `models/` | 790 | 0 | 0 | 121.5 | **100% Obesidad** (deepar/prophet/ensemble/stacking, `.pkl`+`.csv`) | B |
+| `logs/` | 3,196 | 0 | 0 | 4.3 | ejecuciones 2026-07-21 … 2026-07-26 | A |
+| `data/raw/` | 3 | 0 | 0 | 2.4 | `data_raw_{Obesidad,Anorexia_F50,Dengue}.csv` | A |
+| `data/processed/dataset_boletin_epidemiologico.csv` | 0 | 0 | 0 | — | sólo la línea de target | B |
+| `reports/figures/` | 2 | 10 | 0 | 1.1 | 2 figuras de Obesidad; 10 EDA/`.DS_Store` | B |
+| `reports/forecasts/` | 0 | 5 | 0 | 2.7 | 5 PNG `ensemble/Alzheimer` (Aguascalientes ×3, Nacional ×2) | C→descartada |
+
+Fechas de modificación: `reports/figures` y `data/processed` **2026-07-22**; los cinco PNG de
+`reports/forecasts` **2026-07-23**. C7.6 empezó el **2026-07-26**. Son anteriores.
+
+#### D2 · atribución funcional
+
+```text
+A  WIP necesario que debe preservarse            logs/ · data/raw/
+B  preliminar o legacy fuera de runner_release   models/ · reports/figures/ · data/processed/…csv
+C  colisionaría con C7.7                          (ninguno — ver abajo)
+D  sin atribución                                 ninguno
+```
+
+**Ningún artefacto de C7.6 aparece en el delta.** Verificado por conteo directo:
+
+```text
+artifacts/releases   0 entradas
+config/publication   0 entradas
+runs                 0 entradas
+all_forecast_*.csv   0 entradas   ← los cuatro agregados legacy conservan su hash canónico
+```
+
+Los 790 de `models/` son artefactos de Obesidad producidos por el **carril legacy** (`.pkl` por
+serie), no por `runner_release`: el bundle vive en `artifacts/releases/` y ese target sigue *up to
+date*. Son preliminares que deben preservarse, no residuos que borrar.
+
+Una atribución que sí me toca: **parte de `logs/` la generó C7.6**. Los más recientes son del
+2026-07-26 23:17, dentro de mis rondas — cualquier ejecución que importe `epiforecast` escribe
+loguru. Es el único rastro que dejó este trabajo en el delta DVC, y no es una superficie de
+producto.
+
+##### `reports/forecasts.dvc` y `reports/figures.dvc` en detalle
+
+1. **Agregados legacy byte-idénticos:** los cuatro `all_forecast_*.csv` no aparecen en el delta y
+   sus SHA256 son los canónicos de todo C7.6.
+2. **Diferencias por padecimiento y motor:** las cinco de `reports/forecasts` son PNG de
+   `ensemble/Alzheimer` en Aguascalientes y Nacional. Cero CSV, cero Obesidad, cero F50. Las de
+   `reports/figures` son EDA general (histogramas, violines, correlación, un `.DS_Store`) más dos
+   figuras añadidas de Obesidad.
+3. **¿El compilador público necesita escribir ahí?** **No.** `emit_shards` escribe bajo un
+   `output_root` **inyectado**, y `check_staging_root` prohíbe expresamente que en modo candidate
+   caiga bajo `reports/`, `data/`, `models/`, `epibot/`, `web/` o `artifacts/`. No hay ninguna ruta
+   del compilador que apunte a `reports/forecasts/` ni a `reports/figures/`.
+4. **Destinos propuestos para C7.7** (hoy inexistentes, fuera de todo target DVC):
+
+```text
+reports/publication/<disease_id>/<release_id>/    report.md · forecast_products.csv
+tableau/publication/<disease_id>/<release_id>/    forecast_shard.csv · schema.json
+```
+
+`reports/figures.dvc` y `reports/forecasts.dvc` son targets **hermanos**, no ancestros de
+`reports/publication/`: promover ahí no toca sus outputs ni requiere `dvc commit` de un directorio
+sucio.
+
+**Colisión C descartada, con la razón:** la promoción de Reports no sobrescribirá esos cinco PNG ni
+los diez de EDA porque no escribe en sus directorios; y no puede hacerlo por accidente porque el
+guard de destino es parte del compilador, no una convención.
+
+#### D3 · carril limpio de activación (diseñado, no creado)
+
+1. **Checkpoints Git primero**, y sólo tras auditoría: commit doc-only, luego los dos push
+   autorizados por separado. Nada de lo que sigue usa este working tree.
+2. **Worktree o clon temporal desde SHAs explícitos ya publicados**, fuera de ambos repos:
+   `git worktree add <tmp> <SHA_backend_publicado>`.
+3. **Restauración dirigida, no masiva:** `dvc pull` **sólo** de
+   `artifacts/releases/obesidad/obesidad_release_2517e7858901.dvc` y de los inputs de verificación
+   estrictamente necesarios. Nunca `dvc pull` a secas: eso arrastraría los seis targets sucios.
+   *(Requiere red y escritura en el temporal.)*
+4. **Gate del carril:** `dvc status` **limpio** ahí antes de materializar nada. Si no lo está, se
+   detiene: es la comprobación que este árbol no puede pasar hoy.
+5. **Compilación y promoción** con inventario **antes y después** —lista de rutas y SHA256— hacia
+   los destinos dedicados de D2.4.
+6. **Sólo outputs declarados:** nunca `dvc add` de un directorio completo; cada archivo promovido
+   se enumera.
+7. **Evidencia antes de borrar:** copiar inventarios y digests fuera del temporal, y sólo entonces
+   `git worktree remove`.
+
+Comandos futuros que exigirán **red**: `git push`, `dvc pull`, `dvc push`, deploy. Que exigirán
+**escritura fuera del temporal**: la activación del puntero y el lifecycle, en el repo real.
+
+#### D4 · veredicto
+
+```text
+PASS_CLEAN_LANE_DESIGNED
+```
+
+Los seis targets están inventariados con unidad definida y clasificados; ninguno contiene artefactos
+de C7.6; la única colisión candidata —`reports/forecasts`— queda descartada porque el compilador no
+escribe en ese directorio y los destinos de publicación propuestos están fuera de todo target DVC;
+y el carril limpio está diseñado para no depender de este árbol.
+
+No se limpia el working tree actual ni se propone borrar nada: contiene extracción E66, F50, Dengue
+y artefactos preliminares que deben preservarse.
+
+_Respuesta:_
+
+---
+
+### Ronda 92 — Auditoría DVC PASS con dos correcciones de cierre — 2026-07-27
+
+#### Veredicto
+
+**La atribución DVC queda CERRADA / PASS.** La evidencia independiente reproduce:
+
+```text
+unidad                         línea «estado: ruta» del granular
+total                          4,012
+added / modified / deleted     3,991 / 21 / 0
+targets                        6
+models added                   790 · 100% Obesidad legacy
+logs added                     3,196
+raw added                      3
+figures                        2 added + 10 modified
+forecasts                      5 PNG modificados + línea target
+hits C7.6/agregados            0
+```
+
+Las clases A/B y la colisión descartada se sostienen: los destinos propuestos son hermanos de
+`reports/figures` y `reports/forecasts`, no descendientes. Los cuatro agregados legacy permanecen
+fuera del delta. `PASS_CLEAN_LANE_DESIGNED` es válido como dirección.
+
+Antes de usar ese diseño hay dos correcciones funcionales:
+
+#### R92-P0 — `dvc status` global no puede ser el gate tras un pull dirigido
+
+En un clon limpio que sólo restaura el release y algunos inputs, los demás outputs DVC estarán
+ausentes. Por definición, `dvc status` global los reportará como modificados/eliminados aunque el
+carril de publicación esté correcto. Exigir «global limpio» contradice «no arrastrar los seis
+targets».
+
+Corrección obligatoria:
+
+```text
+dvc status <release.dvc> <cada-target-requerido.dvc>   debe estar limpio
+dvc status global                                      se captura, pero no decide
+inventario de outputs no materializados                declarado explícitamente
+```
+
+La publicación sólo puede consumir targets incluidos en esa lista cerrada. Si aparece una
+dependencia nueva, se detiene y se amplía la lista; no se ejecuta `dvc pull` global.
+
+#### R92-P1 — un directorio sin autoridad no es un canal publicado
+
+`reports/publication/...` y `tableau/publication/...`:
+
+- no existen hoy;
+- no están cubiertos por los dos targets DVC sucios;
+- tampoco están ignorados, trackeados, versionados ni conectados a un deploy.
+
+Eso descarta la colisión, pero **no demuestra entrega**. Copiar 1.7 MB a un directorio local no
+publica Reports ni actualiza Tableau. Antes de C7.7 hay que identificar el sink real, su autoridad,
+su operación de promoción y su rollback.
+
+El compilador debe escribir primero bajo un temporal externo. Sólo el adaptador/promotor del canal
+puede llevar los archivos al sink real. No se adopta por defecto Git ni un target DVC nuevo, y no se
+confunde un path de staging con la superficie pública.
+
+#### Orden C7.6-CHANNEL-SINKS — descubrimiento read-only y contrato final
+
+Ejecutar sólo lecturas en ambos repos. Escribir el resultado únicamente en este plan y STOP.
+
+##### S0 · preflight
+
+1. Backend `84d84675`, dashboard `20822a62`; preservar plan/untracked.
+2. Confirmar lifecycle `trained`, puntero ausente, cuatro canales y F50 oculta.
+3. No usar P/Q como destino: son evidencia, no superficies.
+
+##### S1 · mapear cada canal de extremo a extremo
+
+Para `web`, `epibot`, `reports` y `tableau`, localizar en código/config/docs:
+
+| campo obligatorio | significado |
+| --- | --- |
+| fuente | shard/manifest exacto del compilador |
+| adaptador | función/comando que traduce o copia |
+| sink real | repo, objeto, datasource, workbook o servicio consumido |
+| autoridad | Git, DVC/S3, Netlify, Tableau u otra declarada |
+| promoción | comando/operación externa exacta |
+| visibilidad | condición lifecycle/puntero que lo hace público |
+| verificación | prueba/smoke y comparación contra release |
+| rollback | objeto/versión/hash que se restaura |
+
+No inferir un sink por el nombre del canal. Si no existe adaptador de promoción, declararlo
+`MISSING_ADAPTER`; si falta destino externo, `MISSING_SINK`.
+
+##### S2 · Reports
+
+Responder con evidencia:
+
+1. quién consume hoy un artefacto bajo `reports/`;
+2. si `report.md` y `forecast_products.csv` deben:
+   - permanecer sólo como build temporal,
+   - entrar a Git,
+   - tener target DVC dedicado,
+   - o promoverse a un objeto/servicio externo existente;
+3. cuál es la URL/ruta lógica pública sin hardcodear una máquina;
+4. qué archivo/versión previa restaura el rollback.
+
+`reports/publication/...` sólo puede conservarse si se demuestra su consumidor y su mecanismo de
+versionado/promoción. De lo contrario, se retira como destino y queda únicamente como staging.
+
+##### S3 · Tableau
+
+Responder con evidencia:
+
+1. cuál es hoy la autoridad: datasource, workbook o archivo;
+2. qué proceso consume `forecast_shard.csv` + `schema.json`;
+3. si existe promoción automatizada o es una acción manual documentada;
+4. nombre/ID del recurso sin exponer credenciales;
+5. cómo se captura la versión previa y se ejecuta rollback;
+6. cómo se prueba que Obesidad aparece point-only sin alterar neuro/Dengue.
+
+Si no existe un adaptador real, C7.7 no puede marcar Tableau como materializado aunque el CSV sea
+válido.
+
+##### S4 · web y EpiBot
+
+Confirmar, sin regenerar:
+
+- archivos exactos del dashboard que cambiarán;
+- relación entre manifest, shard, `knowledge.json` e índice RAG;
+- comando de build y deploy;
+- efecto de merge a `main` sobre Netlify y cómo se evita un deploy no autorizado;
+- snapshot y rollback de ambos HTML, knowledge, índice, cache-bust y deploy.
+
+##### S5 · gate DVC dirigido
+
+Definir la lista exacta de targets DVC que el carril limpio necesita. Como mínimo debe incluir el
+release dedicado; cualquier otro debe justificar qué verificación lo consume.
+
+El gate escrito debe tener esta forma:
+
+```text
+required_dvc_targets             lista cerrada
+dvc status <required targets>    limpio
+unmaterialized targets           lista declarada · no consumida
+promotion inventory              sólo archivos del release/shards
+global dvc status                evidencia informativa, no criterio
+```
+
+##### S6 · veredicto
+
+Cerrar con uno:
+
+```text
+PASS_CHANNEL_SINKS_DECLARED
+BLOCKED_MISSING_REPORTS_SINK
+BLOCKED_MISSING_TABLEAU_ADAPTER
+BLOCKED_PUBLIC_DEPLOY_CONTRACT
+```
+
+Puede haber más de un bloqueo; enumerarlos. Sólo `PASS_CHANNEL_SINKS_DECLARED` permite cerrar C7.6.
+
+#### Prohibiciones
+
+- No crear directorios `reports/publication` o `tableau/publication`.
+- No generar/copiar shards, RAG, workbook, datasource o archivos públicos.
+- No DVC pull/checkout/add/commit/push.
+- No código, config, lifecycle, puntero, commit, push, PR, merge, deploy o publicación.
+- No usar credenciales de Tableau, Netlify, AWS o Gemini.
+
+#### Salida y STOP
+
+Añadir:
+
+1. matriz de cuatro canales;
+2. evidencia de sinks/adaptadores;
+3. lista DVC dirigida;
+4. bloqueos reales;
+5. veredicto S6.
+
+Después STOP para auditoría.
+
+#### Avance
+
+Permanece en **83%**. DVC ya está atribuido; lo único que falta para cerrar readiness es demostrar
+que Reports y Tableau tienen destinos reales y reversibles. Exposición pública: **0%**.
+
+#### Próxima acción exacta
+
+**Ejecutar únicamente `C7.6-CHANNEL-SINKS` read-only y STOP.**
+
+_Respuesta:_ **GO C7.6-CHANNEL-SINKS READ-ONLY. Mapear fuente→adaptador→sink→promoción→rollback de
+los cuatro canales y corregir el gate DVC a lista dirigida. Sin crear destinos, usar credenciales,
+modificar código/DVC ni hacer commit, push, merge, deploy, lifecycle o publicación.**
+
+---
+
+### Ronda 93 — C7.6-CHANNEL-SINKS (read-only) — 2026-07-27
+
+Sólo lecturas en ambos repos. Sin crear destinos, sin credenciales, sin DVC, sin commit, push,
+merge, lifecycle, puntero, deploy ni publicación.
+
+#### S0 · preflight
+
+```text
+backend 84d84675 · dashboard 20822a62 · plan y untracked intactos
+obesidad   lifecycle=trained · canales [epibot, reports, tableau, web] · galería false
+puntero público                    NO EXISTE
+F50                                configured · 0 canales
+P y Q                              evidencia de RAG-C-REPEAT; NO se usan como destino
+```
+
+#### S1 · matriz de los cuatro canales
+
+| campo | **web** | **epibot** | **reports** | **tableau** |
+| --- | --- | --- | --- | --- |
+| fuente | `web/manifest.json` + `web/series.csv` del shard | `epibot/knowledge.json` + `epibot/corpus/<disease>.md` del shard | `reports/report.md` + `reports/forecast_products.csv` del shard | `tableau/forecast_shard.csv` + `tableau/schema.json` del shard |
+| adaptador | **ninguno hoy** para un release del runner | `build_web_knowledge.py` (produce el `knowledge.json` público) + `rag:build` para el índice | `build_neuro_gallery.py --out ../EpiForecast-IMSS-Dashboard/Reports`, `build_epibot_zoom.py --reports …/Reports` | `build_tableau.py` → `tableau_model.xlsx` → `publish_gsheets.py` |
+| sink real | páginas HTML en la **raíz del repo dashboard** (`EpiDashboard.html`, `dengue.html`, `index.html`…) | `epibot/knowledge.json` y `epibot/rag_index.json`, **trackeados en Git** | **`EpiForecast-IMSS-Dashboard/Reports/`** — 1,798 archivos en Git, 185 MB | **Google Sheets** (`GSHEETS_SPREADSHEET_ID`) y copia en `s3://epiforecast-mx-data/latest/` |
+| autoridad | Git del dashboard + **Netlify** (`publish = "."`) | Git del dashboard + Netlify (`included_files` empaqueta ambos JSON para las functions) | Git del dashboard + Netlify | Google Sheets vía service account; S3 como copia secundaria |
+| promoción | merge/deploy de la rama que Netlify publica | idem, con `command = "cd epibot && npm install && npm run rag:ci"` en el build | copiar los archivos al repo dashboard y commitear | `.github/workflows/gsheets.yml` (`workflow_dispatch` / `workflow_call`) o `make s3-sync` |
+| visibilidad | lo que esté en el repo desplegado | idem | idem | lo que exista en la hoja publicada |
+| verificación | smoke contra `forecast.csv` sellado | `npm run check` + `rag:verify` drift cero | comparación de cifras y presencia de la etiqueta | comparar la pestaña `forecast` contra el shard |
+| rollback | revertir commit + redeploy | restaurar `knowledge.json` `e1d9a7d9…` y `rag_index.json` `efbae871…` + redeploy | revertir los archivos de `Reports/` en Git + redeploy | republicar la hoja desde el `tableau_model.xlsx` anterior |
+
+#### S2 · Reports — el sink existe, el adaptador **no**
+
+1. **Quién consume hoy `reports/`:** nadie en producción. El backend escribe bajo `reports/` para
+   trabajo interno, y lo que se publica vive en **otro sitio**: `EpiForecast-IMSS-Dashboard/Reports/`,
+   1,798 archivos trackeados en Git y servidos por Netlify. El propio EpiBot enlaza
+   `../Reports/dengue/…png` desde `kb.js`.
+2. **Qué debe pasar con `report.md` y `forecast_products.csv`:** ninguna de las cuatro opciones tal
+   cual. La correcta es **build temporal → adaptador → Git del dashboard**: se compilan en un
+   temporal externo y un promotor los coloca bajo `Reports/obesidad/<release_id>/`. No necesitan
+   target DVC —el sink es Git— ni deben quedarse en un directorio local del backend.
+3. **Ruta lógica pública:** `<sitio>/Reports/obesidad/<release_id>/…`, relativa al deploy; no se
+   fija ninguna máquina.
+4. **Rollback:** revertir esos archivos en Git del dashboard y redesplegar; el estado previo es
+   «no existen», porque hoy no hay ningún Reports de Obesidad.
+
+**`reports/publication/…` del diseño anterior se retira como destino.** No tiene consumidor: era un
+directorio local del backend sin autoridad, sin versionado y sin deploy. Queda **sólo como staging**
+—o mejor, se usa el temporal externo del carril limpio, que es lo que ya hace `emit_shards`—.
+
+#### S3 · Tableau — autoridad identificada, adaptador **ausente**
+
+1. **Autoridad:** una hoja de Google Sheets, identificada por la variable de repositorio
+   `GSHEETS_SPREADSHEET_ID`, escrita por `publish_gsheets.py` con un service account
+   (`GOOGLE_SERVICE_ACCOUNT_JSON`). Existe además una copia en S3
+   (`s3://epiforecast-mx-data/latest/tableau.csv`) vía `make s3-sync`.
+2. **Qué consume el shard:** **nada**. La cadena viva es
+   `build_tableau.py → data/processed/tableau_model.xlsx → publish_gsheets.py → 5 pestañas`
+   (`scaffold`, `real`, `forecast`, `metricas`, `entidades`). El `forecast_shard.csv` +
+   `schema.json` del compilador **no tienen consumidor**.
+3. **Automatización:** el workflow es `workflow_dispatch` / `workflow_call` — acción manual o
+   invocada, no automática por push.
+4. **Recurso:** `GSHEETS_SPREADSHEET_ID` (variable de repo). No se leyó ni se expone ningún valor.
+5. **Versión previa y rollback:** republicar desde el `tableau_model.xlsx` anterior; la hoja no
+   tiene versionado propio en el repo, así que el rollback exige conservar ese Excel antes de
+   publicar.
+6. **Cómo se probaría point-only sin tocar neuro/Dengue:** hoy no se puede afirmar. `build_tableau.py`
+   aplica **`filter_neuro`** a `real` y a los forecasts —línea 104 y 119, esta última descrita como
+   «defensivo: excluye forecasts no-neuro»—, así que Obesidad quedaría fuera por construcción.
+
+**Conclusión de S3: `MISSING_ADAPTER`.** Publicar Tableau exigiría un promotor nuevo que traduzca el
+shard a las pestañas existentes —o una hoja/pestaña dedicada—, más una decisión sobre `filter_neuro`.
+Ninguna de las dos cosas existe, y el CSV del shard siendo válido no lo suple.
+
+#### S4 · web y EpiBot
+
+```text
+archivos que cambiarían   epibot/knowledge.json · epibot/rag_index.json · index.html (cache-bust)
+                          + la página de Obesidad (no existe todavía)
+relación                  el shard trae web/manifest.json y series.csv; el índice RAG se construye
+                          desde el corpus, que incluiría el chunk candidate ya validado (455)
+build/deploy              Netlify · publish "." · command "cd epibot && npm install && npm run rag:ci"
+                          functions con included_files = [knowledge.json, rag_index.json]
+efecto de merge a main    `origin/HEAD -> origin/main`: un merge a main dispara el deploy de
+                          producción. Por eso el push de la rama y el merge son autorizaciones
+                          distintas: mientras se quede en `feat/c73-candidate-staging`, producción
+                          no cambia.
+snapshot / rollback       knowledge e1d9a7d9… · rag_index efbae871… · epibot/index.html f2e66edc…
+                          · index.html 94549fbd… · cache-bust actual · deploy previo de Netlify
+```
+
+Un detalle operativo que ya está anotado como deuda: tocar `kb.js`/`entities.js` obliga a subir
+`app.js?v` en `index.html`; sin eso el navegador sirve el bundle viejo aunque el deploy llegue bien.
+
+#### S5 · gate DVC dirigido (corrige R92-P0)
+
+```text
+required_dvc_targets
+    artifacts/releases/obesidad/obesidad_release_2517e7858901.dvc   el bundle
+    reports/forecasts.dvc                                          sólo para verificar que los 4
+                                                                   agregados legacy no cambian
+dvc status <required targets>      debe estar LIMPIO en el carril
+unmaterialized targets             models.dvc · logs.dvc · data/raw.dvc · reports/figures.dvc ·
+                                   data/processed/*.dvc  → declarados, NO consumidos
+promotion inventory                sólo archivos del bundle y de los shards, enumerados uno a uno
+global dvc status                  se captura como evidencia; NO decide
+```
+
+En un clon limpio, `reports/forecasts.dvc` se restaura a su versión **commiteada** —limpia por
+construcción—; el estado sucio de hoy vive sólo en este working tree. Si apareciera una dependencia
+nueva, se detiene y se amplía la lista: nunca `dvc pull` global.
+
+#### S6 · veredicto
+
+```text
+BLOCKED_MISSING_TABLEAU_ADAPTER
+```
+
+- **web** y **epibot**: sink, autoridad, promoción y rollback identificados → sin bloqueo.
+- **reports**: el sink real es `Reports/` del dashboard, con autoridad Git+Netlify y rollback por
+  revert. Falta un promotor que copie los dos archivos del shard, pero es un adaptador trivial
+  sobre un sink que **sí existe**; no bloquea por destino.
+- **tableau**: no hay adaptador del shard a la hoja, y `build_tableau.py` excluye Obesidad por
+  `filter_neuro`. **Bloquea.**
+
+C7.6 no puede cerrarse declarando Tableau materializable. Las opciones para C7.7 —que no decido
+aquí— son: escribir el promotor del shard a la hoja, extender `build_tableau.py` con la cohorte del
+release, o retirar `tableau` de los canales de Obesidad hasta tener el adaptador.
+
+_Respuesta:_
+
+---
+
+### Ronda 94 — Auditoría de sinks: el bloqueo cubre los cuatro promotores — 2026-07-27
+
+#### Veredicto
+
+**La identificación de sinks y el gate DVC dirigido quedan PASS. El veredicto
+`BLOCKED_MISSING_TABLEAU_ADAPTER` es incompleto: Tableau no es el único promotor ausente.**
+
+Evidencia reproducida:
+
+```text
+Dashboard/Reports                 1,798 archivos trackeados · 185 MB · Netlify los sirve
+Makefile backend                  build_neuro_gallery escribe al Reports del dashboard
+kb.js                             enlaza imágenes bajo ../Reports/
+origin/HEAD dashboard             origin/main
+Tableau                           build_tableau → xlsx → publish_gsheets → 5 pestañas
+build_tableau                     filter_neuro en real y forecast
+shard Tableau                     5,772 × 21 · ningún consumidor
+```
+
+La matriz de Ronda 93 contiene además las pruebas de los otros huecos:
+
+1. **web:** declara `adaptador: ninguno` y la página de Obesidad no existe;
+2. **Reports:** el sink existe, pero no hay código que instale `report.md`/CSV ni una vista que los
+   consuma; “trivial” no equivale a implementado;
+3. **EpiBot:** `candidateRoot` sólo entra en `rag_staging.mjs`. El build público sin argumentos
+   continúa con 454 chunks. `build_web_knowledge.py` no consume `publication_shard.v1` y aplica
+   `filter_neuro`;
+4. **Tableau:** el shard no entra a las cinco pestañas y el filtro neuro lo excluye.
+
+Por tanto, los bloqueos reales son:
+
+```text
+BLOCKED_PUBLIC_DEPLOY_CONTRACT
+BLOCKED_MISSING_REPORTS_ADAPTER
+BLOCKED_MISSING_EPIBOT_PROMOTER
+BLOCKED_MISSING_TABLEAU_ADAPTER
+```
+
+No se retira `tableau` ni otro canal: el alcance aprobado sigue siendo cuatro. Tampoco se modifica
+el carril legacy para “hacer caber” Obesidad. Se construye un carril genérico de promociones de
+runner releases.
+
+#### Decisión arquitectónica
+
+Separar tres conceptos:
+
+```text
+compiler     release sellado → shards neutrales             backend · ya existe
+installer    shards → árbol de consumo versionable           nuevo · puro/local
+promoter     árbol validado → Git/Netlify/Google Sheets       externo · C7.7
+```
+
+Un installer nunca publica. Todos reciben raíces por argumento y escriben sólo bajo un output
+temporal durante C7.6.
+
+Para Tableau no se toca `filter_neuro` ni se reescriben las cinco pestañas legacy. El runner usa un
+schema namespaced:
+
+```text
+runner_forecast    las 5,772 filas del shard
+runner_releases    una fila por release: identidad, status, label, point-only, digests
+```
+
+El adaptador es N+1: ninguna pestaña, condición o columna contiene `obesidad`. La conexión del
+workbook/Tableau a esas pestañas es una promoción externa posterior y seguirá bloqueada hasta una
+prueba en staging.
+
+#### Orden C7.6-PROMOTION-ADAPTERS-A — implementación local, sin promoción
+
+Se autorizan cambios de código y tests en ambos repos, en commits separados. No se autorizan
+credenciales ni escrituras en sinks reales.
+
+##### A0 · preflight
+
+1. Backend `84d84675`, dashboard `20822a62`; preservar el plan y todos los untracked.
+2. Crear cambios separados por repo; nunca commitear el plan junto con código.
+3. Mantener Obesidad `trained`, puntero ausente, F50 oculta y cuatro publicados históricos.
+4. Usar un shard real compilado en un temporal nuevo; P/Q quedan sólo como evidencia.
+
+##### A1 · contrato común de instalación
+
+Definir un manifest versionado `publication_install.v1` con:
+
+- `release_id`, `disease_id`, lifecycle, channels y schema del shard;
+- digests de todos los inputs y outputs;
+- `publication_status` y etiqueta exactas;
+- inventario cerrado de archivos;
+- modo `candidate` o `public`;
+- cero rutas absolutas, timestamps identitarios o nombres de padecimiento codificados.
+
+Reglas:
+
+- candidate acepta `trained` y sólo escribe en temporal;
+- public exige `published` + puntero activo al mismo release;
+- reejecutar es idempotente;
+- un archivo previo ajeno al inventario no se borra ni sobrescribe;
+- fallo antes de completar deja el destino previo intacto.
+
+##### A2 · dashboard installer: web + Reports
+
+Implementar en el dashboard un instalador genérico que consuma:
+
+```text
+shard_manifest.json
+web/manifest.json
+web/series.csv
+reports/report.md
+reports/forecast_products.csv
+```
+
+Salida candidate bajo una raíz temporal que imita el dashboard:
+
+```text
+publication/catalog.json
+publication/<disease_id>/<release_id>/manifest.json
+publication/<disease_id>/<release_id>/series.csv
+Reports/publication/<disease_id>/<release_id>/report.md
+Reports/publication/<disease_id>/<release_id>/forecast_products.csv
+```
+
+Añadir una vista genérica —sin literales de padecimiento— que:
+
+- resuelva por catálogo/manifest;
+- muestre etiqueta `0/4` y point-only junto a cualquier cifra;
+- no dibuje banda;
+- rechace schemas/digests/lifecycle incoherentes;
+- permanezca invisible en el catálogo público mientras sea candidate.
+
+`gallery_enabled=false` significa no insertar el release en la galería histórica; no significa
+suprimir el canal Reports.
+
+##### A3 · dashboard installer: EpiBot/RAG
+
+Generalizar el consumo candidate sin cambiar el build público por defecto:
+
+- la fuente es `epibot/knowledge.json` + `epibot/corpus/<disease>.md` del shard;
+- el installer candidate produce un árbol temporal de knowledge/corpus;
+- `buildChunks()` sin raíz conserva exactamente los 454 chunks públicos;
+- con `publicationRoot` validado produce 455;
+- public exige catálogo activo, lifecycle published y puntero coincidente;
+- el merge de knowledge es upsert por `release_id`, no concatenación ni overwrite global;
+- el índice se construye con el contrato RAG existente; no se llama Gemini en tests.
+
+El candidate real debe conservar 454 vectores y requerir sólo el vector ya caracterizado del nuevo
+chunk. No escribir todavía `knowledge.json` o `rag_index.json` públicos.
+
+##### A4 · backend adapter Tableau puro
+
+Crear un adaptador tipado que lea el shard y produzca dos DataFrames/tablas:
+
+```text
+runner_forecast
+runner_releases
+```
+
+Contrato:
+
+- `runner_forecast`: 5,772 filas y las 21 columnas declaradas, claves únicas, no negativos,
+  intervalos nulos y status/lineage verificables;
+- `runner_releases`: una fila con release/disease/origen/horizonte/filas, status, label,
+  `uncertainty_available=false`, gate/evaluation/status/refit digests;
+- upsert por `(disease_id, release_id)`;
+- no tocar `scaffold`, `real`, `forecast`, `metricas`, `entidades` legacy;
+- no importar `filter_neuro`;
+- ninguna cadena `Obesidad`, `E66`, `64`, `111` o `5772` en lógica genérica: los conteos salen del
+  schema/manifest;
+- serialización local determinista a XLSX/CSV en temporal y round-trip exacto.
+
+Definir un protocolo de sink para que las pruebas usen un fake. El cliente Google Sheets puede
+prepararse, pero no debe autenticarse ni escribir en esta ronda.
+
+##### A5 · estrategia Tableau de promoción, sólo simulada
+
+El promotor futuro escribirá tabs namespaced `runner_forecast` y `runner_releases` en la hoja
+declarada por entorno/config, con:
+
+1. tabs `__next` completas;
+2. validación de filas/digests;
+3. swap/rename a tabs activas conservando `__previous`;
+4. rollback por swap inverso;
+5. workbook Tableau de staging conectado a esas tabs antes de producción.
+
+A no ejecuta esos pasos. Una prueba fake debe demostrar el orden, el rollback y que un fallo no
+reemplaza las tabs activas.
+
+##### A6 · gates locales
+
+Backend:
+
+- unitarios del adapter y fake sink;
+- ruff/format/mypy/fast;
+- integración estable;
+- doctor y target DVC del release;
+- hashes legacy intactos.
+
+Dashboard:
+
+- `npm test`, `test:candidate`, `npm run check`;
+- pruebas del installer con fixtures y shard real;
+- dos instalaciones candidate en raíces distintas, bytes idénticos;
+- default público byte-idéntico: 454 chunks, 0 Obesidad;
+- superficies actuales y Reports actuales byte-idénticos.
+
+Gate cruzado:
+
+```text
+web candidate       manifest/series cargables · no público
+Reports candidate   dos archivos + vista genérica · no galería
+EpiBot candidate    455 chunks · sólo staging
+Tableau candidate   runner_forecast 5,772 + runner_releases 1 · fake sink
+public mode         rechazado mientras trained/sin puntero
+```
+
+##### A7 · commits y STOP
+
+Crear como máximo:
+
+```text
+backend    C7.6 Tableau runner-release adapter and transactional sink contract
+dashboard  C7.6 generic runner-release installer for web, Reports and EpiBot
+```
+
+No incluir el plan en esos commits. Reportar SHAs, diffs y gates; STOP para auditoría.
+
+#### Prohibiciones
+
+- No usar `GSHEETS_SPREADSHEET_ID`, service account, Netlify token, AWS o Gemini.
+- No escribir Google Sheets, S3, Dashboard/Reports real, knowledge/RAG público o HTML público.
+- No modificar `build_tableau.py` ni `publish_gsheets.py` legacy.
+- No DVC pull/add/commit/push/checkout.
+- No lifecycle, puntero, commit del plan, push, PR, merge, deploy o publicación.
+- No retirar canales ni encender galería.
+
+#### Secuencia posterior, aún no autorizada
+
+```text
+auditar ADAPTERS-A
+→ ADAPTERS-B: staging externo controlado de Tableau + árbol dashboard temporal
+→ cerrar C7.6
+→ checkpoints Git separados
+→ C7.7 con autorizaciones por efecto externo
+```
+
+#### Avance
+
+Se corrige a **82%**. Los modelos, release, RAG candidate y status están cerrados; la deuda restante
+es entregar los shards a consumidores reales sin tocar todavía producción.
+
+#### Próxima acción exacta
+
+**Ejecutar únicamente `C7.6-PROMOTION-ADAPTERS-A` local y STOP.**
+
+_Respuesta:_ **GO C7.6-PROMOTION-ADAPTERS-A LOCAL. Implementar installer genérico candidate para
+web/Reports/EpiBot y adaptador Tableau namespaced con fake sink; dos commits separados y STOP. Sin
+credenciales, DVC, plan commit, push, PR, merge, lifecycle, puntero, deploy ni publicación.**
+
+---
+
+### Ronda 95 — C7.6-PROMOTION-ADAPTERS-A ejecutada — 2026-07-27
+
+Dos commits separados, uno por repo. Sin credenciales, DVC, commit del plan, push, PR, merge,
+lifecycle, puntero, deploy ni publicación.
+
+```text
+backend    1806177d  C7.6 Tableau runner-release adapter and transactional sink contract
+dashboard  5aa45c49  C7.6 generic runner-release installer for web, Reports and EpiBot
+```
+
+Shard real usado en los gates cruzados, compilado en un temporal nuevo (P/Q siguen intactos como
+evidencia de RAG-C-REPEAT):
+
+```text
+/var/folders/0p/fpm4_3l94jxbbc__pnl93bmw0000gn/T/tmp.753WuabU7V
+```
+
+#### A4/A5 · adaptador Tableau con namespace propio
+
+Dos tablas reservadas, `runner_forecast` y `runner_releases`, que **no tocan** `scaffold`, `real`,
+`forecast`, `metricas` ni `entidades`. La razón de no extender el legacy es la que encontró S3:
+`build_tableau.py` filtra por cohorte neuro, y meter ahí un release del runner mezclaría dos
+identidades distintas.
+
+```text
+runner_forecast   filas y columnas que declara el schema del shard · claves únicas · yhat ≥ 0
+                  yhat_lower/upper vacíos → si llegan valores, falla
+runner_releases   1 fila: origen, horizonte, conteos, veredicto, etiqueta,
+                  uncertainty_available=false, gate/evaluation/status/refit digests
+upsert            por (disease_id, release_id): reemplaza su fila, respeta las ajenas
+serialización     CSV + XLSX deterministas, round-trip exacto, en temporal
+```
+
+**Promoción transaccional** (simulada con un sink en memoria): escribe `<tabla>__next`, valida,
+y sólo entonces mueve la activa a `__previous` y `__next` a activa. Si algo falla antes del swap,
+**las tablas activas no se tocan** y las temporales se limpian; `rollback()` es el swap inverso.
+Hay una prueba por cada uno de esos cuatro comportamientos.
+
+Esta ronda **no autentica ni escribe en Google Sheets**: el módulo no menciona `gspread`,
+credenciales ni `GSHEETS_SPREADSHEET_ID`, y una prueba lo verifica. `build_tableau.py` y
+`publish_gsheets.py` no se tocaron.
+
+La genericidad se prueba **por AST, no por grep**: el módulo no importa `filter_neuro` ni `cohorts`,
+y no tiene escritas las cadenas del padecimiento ni los conteos 64/111/5772 en su lógica. Lo hago
+así porque la prosa del módulo *explica* por qué no los usa, y un grep del texto confundiría la
+explicación con el defecto.
+
+#### A1/A2/A3 · installer genérico del dashboard
+
+`publication_install.v1` sella modo, lifecycle, canales, etiqueta, estado prospectivo e inventario
+cerrado con los digests de **cada entrada y cada salida**. Reglas verificadas una por una:
+
+```text
+candidate           acepta trained · escribe SÓLO bajo la raíz inyectada
+public              exige published Y puntero activo al mismo release
+idempotencia        reinstalar da los mismos bytes
+dos raíces          instalaciones byte-idénticas (la ruta no se filtra al contenido)
+archivo ajeno       ni se borra ni se sobrescribe
+fallo a mitad       temporal hermano → el destino previo queda intacto, sin restos
+catálogo            upsert por (disease_id, release_id) · candidate con visible=false
+```
+
+La vista es genérica de verdad: resuelve por catálogo y manifiesto, **revalida** el estado —el
+catálogo es un índice, no una autoridad— y entrega juntas la etiqueta, la advertencia point-only y
+`band=null`. Una prueba fija que el módulo no menciona ningún padecimiento por su nombre.
+
+Sobre `gallery_enabled=false`, que el plan pedía no confundir: apaga la galería, **no** el canal
+Reports. La vista expone `report.md` y `forecast_products.csv` igual, y lo dice con `inGallery:
+false` separado de `isPubliclyVisible`.
+
+`corpus.mjs` acepta `publicationRoot` y resuelve el corpus instalado **por catálogo**, para que un
+directorio huérfano no se cuele en el índice. Sin argumentos sigue dando los **454** chunks públicos
+con el mismo digest `11ec6151867a4cac…`; con la raíz instalada, **455**.
+
+#### A6 · gates
+
+```text
+backend    ruff+format PASS · mypy 161 · fast 2018 passed (81.03%) · publicación 184
+           integración 8 · doctor rc=0 · release .dvc up to date · 4 hashes legacy intactos
+dashboard  npm test 616/616 + 67 · test:candidate 52 casos (50 + 2 skip sin shard real;
+           52/52 con C7_SHARD_ROOT=/var/folders/0p/fpm4_3l94jxbbc__pnl93bmw0000gn/T/tmp.753WuabU7V) · npm run check rc=0
+cruzado    web/Reports/EpiBot candidate: 6 archivos, 5,772 filas, etiqueta 0/4, band null,
+           no público, 455 chunks · Tableau candidate: runner_forecast 5,772 + runner_releases 1
+           sobre sink falso · modo public rechazado mientras trained y sin puntero
+público    knowledge.json · rag_index.json · ambos HTML · package-lock · Reports/ real
+           byte-idénticos · 0 menciones de Obesidad
+```
+
+#### Lo que esta ronda deliberadamente NO hace
+
+- No escribe en el `Reports/` real del dashboard: el installer sólo toca la raíz que se le inyecta.
+- No prepara el cliente de Google Sheets. El orden lo permitía; preferí no dejar código de
+  autenticación sin usar, porque un cliente que nadie ejercita es una promesa, no una garantía.
+- No retira `tableau` de los canales de Obesidad ni enciende la galería.
+
+`BLOCKED_MISSING_TABLEAU_ADAPTER` de la Ronda 93 queda **resuelto en su parte local**: el adaptador
+existe, es genérico y su promoción es transaccional y reversible. Lo que sigue faltando es el
+staging externo real —la hoja y el workbook—, que es ADAPTERS-B.
+
+_Respuesta:_
+
+---
+
+### Ronda 96 — Auditoría ejecutable de ADAPTERS-A — 2026-07-27
+
+#### Veredicto
+
+```text
+ADAPTERS-A_IMPLEMENTED_BUT_AUDIT_FAIL
+ADAPTERS-B_BLOCKED
+C7.6_NO-GO
+```
+
+Los dos commits respetan la superficie autorizada y separan correctamente backend y dashboard:
+
+```text
+backend    1806177d  2 archivos · adaptador Tableau + pruebas
+dashboard  5aa45c49  5 archivos · installer/vista/corpus + pruebas y scripts npm
+```
+
+No tocaron bundle, DVC, lifecycle, puntero, credenciales ni superficies públicas. Sin embargo, los
+gates prueban principalmente fallos **antes** de la fase crítica y no cubren fallos dentro del
+commit/swap. La auditoría reprodujo cinco defectos.
+
+#### R96-P0-1 · el installer no es atómico al aplicar al destino vivo
+
+`installer.mjs` construye correctamente un temporal hermano, pero después copia sus archivos
+**uno por uno** con `cpSync()` al árbol vivo. El test de “fallo a mitad” elimina una entrada del
+shard, por lo que el error ocurre mientras todavía se prepara el temporal; no prueba la fase de
+aplicación.
+
+Reproducción independiente en un temporal:
+
+```text
+destino previo: manifest.json = SENTINEL_PREVIO
+fallo inyectado al crear Reports/ después de copiar los dos archivos web
+
+resultado:
+sentinel_preserved   false
+manifest reemplazado true
+series.csv presente  true
+catalog.json presente false
+```
+
+El destino queda parcialmente actualizado y sin catálogo que describa lo que contiene.
+
+#### R96-P0-2 · el swap de Tableau puede partir las dos tablas activas
+
+La prueba existente falla al escribir la segunda `__next`, es decir, **antes** del swap. No inyecta
+errores en los renames. Al fallar el rename de `runner_releases__next` después de activar
+`runner_forecast`, el estado observado fue:
+
+```text
+runner_forecast             NUEVA
+runner_forecast__previous   anterior
+runner_releases             AUSENTE
+runner_releases__previous   anterior
+runner_releases__next       nueva sin activar
+```
+
+No es una transacción de dos tablas. `rollback()` también borra la activa antes de renombrar la
+previa y puede perderla si ese rename falla.
+
+#### R96-P0-3 · Tableau declara validar digests, pero sólo compara filas
+
+Un sink de prueba alteró el primer `yhat_cases` de `152.0` a `999999999` al escribir
+`runner_forecast__next`, conservando el número de filas. `promote()` lo aceptó, activó el valor
+alterado y reportó el digest del frame **original**, no el del read-back. Esto contradice el
+docstring y el contrato A5.
+
+`build_tables()` tampoco cruza `tableau/forecast_shard.csv` y `tableau/schema.json` contra
+`shard_manifest.json.files` antes de consumirlos.
+
+#### R96-P0-4 · los consumidores instalados no verifican los sellos
+
+`publication_install.v1` registra digests, pero `buildReleaseView()` e `installedChunks()` no los
+recalculan. Reproducciones independientes:
+
+```text
+web/manifest.json alterado y reserializado     vista ACEPTA
+corpus/<disease>.md alterado                   RAG CONSUME el texto alterado
+```
+
+Además, `installedChunks(publicationRoot)` incorpora cualquier entrada del catálogo, incluida una
+`visible=false`; sólo cambia su URL a `null`. Eso sirve para staging, pero es una interfaz ambigua
+para un build público. Candidate y public deben ser modos explícitos y fail-closed.
+
+#### R96-P1-1 · el XLSX no es byte-determinista
+
+Dos llamadas a `write_local()` separadas por 2.1 segundos, con las mismas tablas y raíces distintas:
+
+```text
+CSV                 idénticos
+runner_tables.xlsx  SHA distinto
+```
+
+El test actual escribe ambos workbooks dentro del mismo segundo y por eso no detecta metadata
+temporal del contenedor XLSX. No puede llamarse determinista ni entrar en un manifiesto reproducible
+en su forma actual.
+
+#### R96-P1-2 · genericidad incompleta del dashboard
+
+- `publication_view.mjs` devuelve `inGallery: false` como constante en vez de derivarlo del
+  `gallery_enabled` sellado en `web/manifest.json`;
+- el installer no persiste ni cruza esa política;
+- el catálogo ordena con `localeCompare`, cuyo orden depende del locale y no demuestra bytes
+  idénticos entre máquinas;
+- `buildReleaseView()` cruza sólo identidad/lifecycle/label, no modo, inventario y digests.
+
+Esto funciona para el release actual porque su galería es falsa, pero no demuestra N+1.
+
+### Orden C7.6-PROMOTION-ADAPTERS-A.1 — corregir antes de servicios externos
+
+#### A.1-BE · backend Tableau
+
+1. Antes de parsear, verificar contra `shard_manifest.json.files` los bytes exactos de
+   `tableau/forecast_shard.csv` y `tableau/schema.json`; cruzar schema, release, disease, lifecycle,
+   status e identidad.
+2. Tras cada `write_table(__next)`, releer y comparar contenido canónico completo, columnas, tipos,
+   claves, valores y digest; comparar filas únicamente no es suficiente.
+3. Reemplazar el “swap transaccional” por un protocolo **recuperable**:
+   - preflight de activas, temporales y backups;
+   - backups por transacción que no destruyan un `__previous` válido;
+   - activar ambas tablas;
+   - verificar ambas activas;
+   - ante fallo en cualquier write/read/rename/drop, ejecutar compensación y restaurar exactamente
+     el estado previo;
+   - si la compensación falla, reportar estado `RECOVERY_REQUIRED` con inventario suficiente para
+     recuperación explícita. No afirmar atomicidad multi-tab que el sink no garantiza.
+4. Hacer `rollback()` recuperable: nunca borrar la activa antes de asegurar que la previa puede
+   restaurarse.
+5. Inyectar fallo en **cada frontera** de rename y validación, incluida la segunda tabla, y fijar
+   que las dos activas quedan ambas antiguas o ambas nuevas; nunca una mezcla ni una ausente.
+6. Corregir la reproducibilidad:
+   - o producir XLSX byte-idéntico normalizando propiedades y entradas ZIP;
+   - o declarar XLSX como vista no autoritativa y retirarlo de los digests reproducibles.
+   La prueba debe separar las escrituras más de dos segundos y comparar raíces distintas.
+
+#### A.1-FE · dashboard installer, vista y RAG
+
+1. Verificar los seis inputs contra `shard_manifest.json.files` **antes** de preparar la
+   instalación.
+2. Publicar directorios inmutables del release y hacer que `publication/catalog.json` sea el único
+   commit visible, escrito con temporal + rename en su mismo directorio:
+   - preparar y validar todo;
+   - instalar outputs aún no referenciados;
+   - escribir catálogo al final;
+   - ante fallo, el catálogo y el release previamente visible quedan byte-idénticos;
+   - una ruta ya existente con bytes distintos se rechaza, no se sobrescribe.
+3. Probar fallos durante cada copia/rename del destino vivo, no sólo mientras se arma el temporal.
+4. En cada lectura, verificar `publication_install.json`, su forma cerrada y todos los digests de
+   outputs. Un catálogo que declara un archivo ausente o alterado debe fallar, no omitirlo.
+5. Separar el consumo RAG:
+   - `candidate/staging` se solicita explícitamente y puede incorporar `visible=false`;
+   - `public` sólo incorpora entradas `visible=true`, `mode=public`, lifecycle published y puntero
+     coincidente;
+   - sin modo explícito no incorporar candidates.
+6. Persistir y cruzar `gallery_enabled`; `inGallery` se deriva de metadata y visibilidad, nunca de
+   una constante.
+7. Sustituir `localeCompare` por orden binario/canónico independiente de locale. Probar dos roots
+   bajo locales distintos.
+8. Repetir con el shard real:
+
+```text
+candidate instalado    5,772 filas · 455 chunks sólo en modo staging · 0 público
+public sin condiciones rechazado
+archivo mutado         vista y RAG rechazan
+fallo durante commit   destino/catálogo anterior byte-idéntico
+default público        454 chunks y superficies actuales byte-idénticas
+```
+
+#### Gates y commits
+
+Crear como máximo dos commits correctivos, uno por repositorio, encima de los commits auditados.
+No amend, rebase ni squash:
+
+```text
+backend    C7.6 ADAPTERS-A.1 recoverable Tableau promotion and exact readback
+dashboard  C7.6 ADAPTERS-A.1 atomic release install and sealed consumers
+```
+
+Ejecutar los gates completos de A6 y añadir las reproducciones de R96 como regresiones. El plan no
+entra en esos commits.
+
+#### STOP y prohibiciones
+
+Después de los dos commits y los gates: **STOP para auditoría**. ADAPTERS-B continúa bloqueada.
+
+Sin Google Sheets, service account, `GSHEETS_SPREADSHEET_ID`, Netlify, Gemini, AWS, DVC, commit del
+plan, push, PR, merge, lifecycle, puntero, deploy, escritura en `Reports/` real ni publicación.
+
+#### Avance
+
+Permanece en **82%**. ADAPTERS-A existe, pero todavía no es seguro conectarla a los sinks reales.
+La exposición pública continúa en **0%** y C7.4 en **INCOMPLETE 0/4**.
+
+#### Próxima acción exacta
+
+**Ejecutar únicamente `C7.6-PROMOTION-ADAPTERS-A.1` local y STOP.**
+
+_Respuesta:_ **GO C7.6-PROMOTION-ADAPTERS-A.1 LOCAL. Corregir instalación parcial, verificación de
+digests, read-back exacto, swap/rollback recuperable, XLSX reproducible, modos RAG explícitos,
+gallery metadata y orden independiente de locale; dos commits correctivos separados y STOP. Sin
+credenciales, DVC, plan commit, push, PR, merge, lifecycle, puntero, deploy ni publicación.**
+
+
+---
+
+### Ronda 97 — C7.6-PROMOTION-ADAPTERS-A.1 ejecutada — 2026-07-27
+
+**Orden ejecutada:** corregir instalación parcial, verificación de digests, read-back exacto,
+swap/rollback recuperable, XLSX reproducible, modos RAG explícitos, gallery metadata y orden
+independiente de locale. Dos commits correctivos separados, sin amend/rebase/squash, y STOP.
+
+**Commits (el plan NO entra en ellos):**
+
+```text
+backend    f1226778  C7.6 ADAPTERS-A.1 recoverable Tableau promotion and exact readback
+dashboard  9454a166  C7.6 ADAPTERS-A.1 atomic release install and sealed consumers
+```
+
+#### A.1-BE · backend Tableau (`f1226778`, encima de `1806177d`)
+
+1. **Sellado antes de parsear.** `_check_sealed()` lee los bytes de `tableau/forecast_shard.csv` y
+   `tableau/schema.json`, los compara con `shard_manifest.json.files` y sólo entonces entrega el
+   buffer a `pd.read_csv(io.BytesIO(...))`. La identidad cruzada ya no es sólo el release: se
+   comparan `release_id`, `disease_id`, `lifecycle`, `rows`, `interval_method` y el bloque
+   `publication_status` completo entre schema y manifiesto.
+2. **Read-back exacto.** `_verify_readback()` compara columnas, filas y el **digest del contenido
+   canónico** de lo releído contra lo escrito. Comparar `len` dejaba pasar un sink que cambiaba un
+   valor y conservaba el conteo.
+3. **Promoción recuperable.** No se promete atomicidad multi-tabla que un sink de hojas de cálculo
+   no puede dar; se promete recuperabilidad. Protocolo: preflight → `__next` + read-back → respaldo
+   de cada activa en `__backup` (sin destruir un `__previous` válido) → activar las dos → verificar
+   las dos → consolidar `__backup`→`__previous`. La compensación recorre el namespace **completo**,
+   no sólo lo que llegó a activarse: ahí estaba el fallo real, porque un fallo entre el respaldo y
+   la activación dejaba la tabla viva sólo en su `__backup`. Si la compensación falla,
+   `PromotionRecoveryError` con `status="RECOVERY_REQUIRED"` e inventario (`tables`,
+   `expected_before`, `namespace`).
+4. **`rollback()` recuperable:** la activa se aparta a `__backup` y sólo se borra cuando la previa
+   ya ocupó su lugar. Si el rename falla, la activa vuelve a su sitio.
+5. **XLSX.** Se declara **vista no autoritativa**: sale de los digests y del inventario, y el
+   manifiesto lo dice con `non_authoritative_views`. Un `.xlsx` es un ZIP con metadata temporal del
+   contenedor; normalizarlo habría sido pelear con el formato para sostener una afirmación que no
+   hace falta. Los CSV autoritativos **sí** son byte-idénticos.
+
+**Regresiones añadidas (13 pruebas nuevas, 18 → 31):**
+
+| Prueba | Qué fija |
+|---|---|
+| `un_fallo_en_cualquier_frontera…` (7 casos) | write/read/rename de la 1ª y de la **2ª** tabla: las dos activas quedan **ambas antiguas**, sin mezcla ni ausencias, sin temporales ni respaldos colgando |
+| `un_sink_que_altera_el_contenido…` | mismo número de filas, un valor cambiado → rechazado |
+| `un_csv_alterado_no_llega_siquiera_a_parsearse` | el sello se comprueba antes del parseo |
+| `un_schema_alterado_tampoco` | ídem para `schema.json` |
+| `el_rollback_no_pierde_la_activa_si_falla_el_rename` | la activa nunca desaparece |
+| `recovery_required_se_reporta_con_inventario` | no se disfraza de error normal |
+| `el_xlsx_no_es_autoritativo_y_los_csv_si` | dos escrituras separadas **2.5 s** en **raíces distintas**: CSV y `adapter_manifest.json` byte-idénticos, XLSX distinto y fuera de los digests |
+
+#### A.1-FE · dashboard installer, vista y RAG (`9454a166`, encima de `5aa45c49`)
+
+1. **Origen sellado.** Los seis inputs se verifican contra `shard_manifest.json.files` antes de
+   preparar nada. Antes se copiaba primero y se sellaba después el digest de lo ya alterado, así que
+   la verificación posterior daba por bueno el contenido mutado.
+2. **Release inmutable + catálogo como único commit visible.** Se acabó el `cpSync` archivo a
+   archivo sobre el árbol vivo. Una ruta existente con bytes distintos se **rechaza**; con los
+   mismos bytes no se reescribe. `publication/catalog.json` se escribe **al final**, con temporal +
+   `rename` dentro de su propio directorio.
+3. **Fallo en el destino vivo.** Las escrituras pasan por `ops`, inyectable. Diez fronteras
+   parametrizadas (write y rename de cada archivo, del manifiesto de instalación y del catálogo)
+   fijan que el catálogo y el release **que ya era visible** quedan byte-idénticos y que el catálogo
+   sigue nombrando sólo al release anterior.
+4. **Lectura verificada.** `readInstalledRelease()` exige forma cerrada de
+   `publication_install.json` (12 claves), identidad, estado revalidado y el digest de **todos** los
+   outputs; `readCatalog()` exige forma cerrada de cada entrada (15 claves). Un archivo ausente o
+   alterado falla; no se omite.
+5. **Modos RAG explícitos.** `staging` incorpora lo que el catálogo declare; `public` sólo
+   `visible=true` + `mode=public` + `published` + puntero coincidente. Sin modo, falla cerrado.
+6. **`gallery_enabled`** viaja del shard al manifiesto y al catálogo, se cruza al leer, y
+   `inGallery` se deriva de esa metadata × visibilidad. Era la constante `false`.
+7. **Orden binario UTF-8** (`porBytes`) en lugar de `localeCompare`, en catálogo, inventario y
+   corpus.
+
+#### Reproducciones del defecto contra el commit auditado
+
+```text
+ANTES  vista con 3 archivos mutados (report.md, series.csv, corpus): ACEPTA · filas=5772 · inGallery=false
+AHORA  vista rechaza: series.csv: digest 0f2791fa… no coincide
+
+ANTES  RAG sin modo declarado: ACEPTA · 455 chunks · texto inventado indexado = true
+AHORA  publicationRoot exige un modo explícito (staging|public), no null
+
+ANTES  reinstalar sobre bytes distintos -> SOBRESCRIBE en silencio
+AHORA  reinstalar sobre bytes distintos -> RECHAZA (es inmutable)
+
+ANTES  localeCompare  en_US: ähnlich_x  Alfa_x  zeta_x   ·  sv_SE: Alfa_x  zeta_x  ähnlich_x
+AHORA  porBytes       en_US: Alfa_x  zeta_x  ähnlich_x   ·  sv_SE: Alfa_x  zeta_x  ähnlich_x
+```
+
+La prueba de locale instala los tres shards en **dos procesos hijos** con `LANG`/`LC_ALL` distintos
+y compara los bytes del catálogo, más una aserción de control: si `localeCompare` dejara de depender
+del locale, la prueba lo diría en vez de pasar en falso.
+
+#### Shard real — `obesidad_release_2517e7858901`
+
+Recompilado desde `artifacts/releases` con el estado declarado (`compile_release` + `emit_shards`
+a un staging temporal; no se tocó ningún run canónico).
+
+```text
+candidate instalado    6 archivos · 5,772 filas · 455 chunks sólo en modo staging · 454 en público
+public sin condiciones rechazado ("exige lifecycle published")
+archivo mutado         vista y RAG rechazan por digest
+fallo durante commit   catálogo y release previo byte-idénticos (inventario igual)
+default público        454 chunks · publicReleases 0 · inGallery false
+```
+
+#### Gates
+
+```text
+backend    ruff check OK · ruff format OK (355 archivos) · mypy OK (161 fuentes)
+           pytest -m "not slow and not integration": 2031 passed, 61 deselected
+           publication/: 197 passed · test_tableau_adapter.py: 31 passed
+dashboard  node --check de las 16 fuentes · test:cases:verify 616/616
+           run_tests.js OK · test:unit 67 · test:candidate 74 (39 del installer)
+           rag:verify sincronizado (454 chunks, un vector por chunk)
+           con C7_SHARD_ROOT: 39/39, sin skips
+```
+
+#### Preservación
+
+```text
+config/evaluation/rolling_cv_v1.yaml   dd6d4a02…  (intacto)
+backend  A.1 toca 2 archivos: tableau_adapter.py + su test
+dashboard A.1 toca 4 archivos: installer.mjs, publication_view.mjs, corpus.mjs, test_installer.mjs
+corpus público  454 chunks, mismo digest antes y después del cambio (comparación like-for-like
+                contra la versión commiteada de corpus.mjs)
+runs/ y artifacts/  sin cambios · sin credenciales, DVC, push, PR, merge, lifecycle, puntero,
+                    deploy, escritura en Reports/ real ni publicación
+```
+
+#### Estado
+
+Avance **82%** (no se mueve: A.1 corrige, no avanza). Exposición pública **0%**. C7.4
+**INCOMPLETE 0/4**. ADAPTERS-B sigue bloqueada.
+
+#### Efectos colaterales y lo que queda declarado
+
+- El contrato del installer **cambió de firma**: `buildChunks({publicationRoot})` ya no basta, hay
+  que pasar `publicationMode`. Ningún script de producción lo usaba con `publicationRoot`
+  (`build_rag_index.mjs` y `rag_verify.mjs` llaman sin argumentos; `rag_staging.mjs` usa
+  `candidateRoot`), así que el índice publicado no se mueve.
+- Tras un fallo puede quedar contenido del release nuevo instalado y **no referenciado** por el
+  catálogo. Es deliberado —es lo que permite que el commit sea un solo rename— y reinstalar lo
+  completa; pero conviene que ADAPTERS-B traiga un `prune` de releases sin entrada en el catálogo.
+- El `gallery_enabled` del shard real es `false`. Cuando el release entre a galería habrá que
+  cambiarlo en el **registry**, no en el dashboard.
+
+#### Pregunta
+
+Dos cosas antes de tocar sinks reales:
+
+1. **XLSX**: se declaró vista no autoritativa en vez de normalizar el ZIP. ¿Se acepta así, o el
+   XLSX tiene que ser byte-idéntico porque alguien lo va a versionar?
+2. **`prune` de releases huérfanos**: ¿entra en ADAPTERS-B, o se deja fuera del alcance y se
+   documenta como operación manual?
+
+_Respuesta:_
+
+**Decisiones de auditoría:**
+
+1. **XLSX aceptado como vista no autoritativa.** No entra en identidad, digests, evidencia,
+   versionado, promoción ni rollback. CSV/Sheets son la autoridad. Si un consumidor futuro necesita
+   versionarlo, deberá abrir otro contrato.
+2. **No ejecutar `prune` automático en ADAPTERS-B.** B sólo podrá inventariar huérfanos en modo
+   read-only. Borrarlos será una acción destructiva posterior, con targets exactos y autorización
+   separada.
+
+---
+
+### Ronda 98 — Auditoría ejecutable de ADAPTERS-A.1 — 2026-07-27
+
+#### Veredicto
+
+```text
+ADAPTERS-A.1_CORE_FIXES_PASS
+ADAPTERS-A.1_AUDIT_FAIL_RESIDUAL
+ADAPTERS-B_BLOCKED
+C7.6_NO-GO
+```
+
+A.1 sí corrigió los defectos originales: sellos y read-back se verifican, la instalación usa el
+catálogo como commit, el release es inmutable, RAG separa staging/public, `gallery_enabled` viene de
+metadata y el orden es independiente del locale.
+
+Validación independiente:
+
+```text
+git diff --check                         PASS en ambos repos
+backend focal                            31/31 comportamientos PASS
+dashboard focal con shard real           39/39 PASS
+```
+
+La invocación aislada de pytest backend termina rc no-cero únicamente por el umbral **global** de
+coverage (20.35% al ejecutar un solo archivo), no por fallos de esas 31 pruebas. El gate completo
+reportado por el commit es 2,031 fast PASS.
+
+#### R98-P0-1 · consolidación final fuera de la recuperación
+
+La consolidación `__backup → __previous` ocurre fuera del `try/except`. Al fallar en la segunda:
+
+```text
+excepción                         RuntimeError sin RECOVERY_REQUIRED
+runner_forecast                   nueva
+runner_forecast__previous         anterior
+runner_releases                   nueva
+runner_releases__backup           anterior
+```
+
+Las activas coinciden, pero el rollback queda partido y no se entrega el inventario tipado.
+
+#### R98-P0-2 · rollback parcial del par
+
+`rollback()` protege una tabla cada vez. Si la primera restaura y falla la segunda:
+
+```text
+runner_forecast   versión anterior
+runner_releases   versión nueva
+```
+
+El par queda mezclado. El rollback debe fotografiar, restaurar y verificar las dos como una unidad.
+
+#### R98-P1-1 · preflight incompleto
+
+Una nueva promoción no rechaza residuos `__next` o `__backup`; puede sobrescribir evidencia de una
+recuperación inconclusa. Debe fallar `RECOVERY_REQUIRED` antes de escribir.
+
+#### R98-P1-2 · matriz dashboard incompleta
+
+La Ronda 97 afirma cubrir write y rename de cada artefacto, pero `FRONTERAS` contiene 10 casos. Son
+seis outputs + manifiesto + catálogo:
+
+```text
+8 artefactos × 2 fronteras = 16 casos
+```
+
+La implementación comparte helper y los diez pasan, pero el gate declarado debe enumerar los 16.
+
+#### R98-P2 · duplicación mecánica
+
+`upsert_releases()` asigna `llaves` dos veces consecutivas. No cambia el resultado; se retira.
+
+### Orden C7.6-PROMOTION-ADAPTERS-A.1.1 — cierre mínimo
+
+#### Backend
+
+1. Fotografiar todo el namespace administrado: activas, `__previous`, `__next` y `__backup`.
+2. Rechazar preflight con cualquier `__next` o `__backup`; no tocar el sink y devolver
+   `RECOVERY_REQUIRED` con inventario.
+3. Incluir la consolidación de backups en el protocolo compensable.
+4. Ante cualquier fallo hasta la última consolidación, restaurar y verificar el snapshot completo.
+   Si la restauración falla, emitir `PromotionRecoveryError`.
+5. Hacer `rollback()` recuperable para el **par**, no tabla por tabla.
+6. Probar drop y rename de cada consolidación, todas las fronteras del rollback y residuos de
+   preflight.
+7. Retirar la asignación duplicada.
+
+#### Dashboard
+
+1. Generar la matriz desde el plan real de instalación.
+2. Probar write y rename de los seis outputs, `publication_install.json` y `catalog.json`:
+   exactamente 16 fronteras.
+3. Mantener catálogo y release previamente visible byte-idénticos y sin temporales referenciados.
+4. Un inventario read-only de huérfanos es opcional; no implementar borrado ni `prune`.
+
+#### Commits y gates
+
+Máximo dos commits nuevos, sin amend/rebase/squash:
+
+```text
+backend    C7.6 ADAPTERS-A.1.1 close promotion and rollback recovery boundaries
+dashboard  C7.6 ADAPTERS-A.1.1 complete installer failure matrix
+```
+
+Repetir gates focales y completos y convertir las reproducciones R98 en regresiones.
+
+#### STOP
+
+Después de A.1.1: **STOP para auditoría**. ADAPTERS-B continúa bloqueada.
+
+Sin credenciales, Google Sheets, workbook, Netlify, Gemini, AWS, DVC, commit del plan, push, PR,
+merge, lifecycle, puntero, deploy, escritura en `Reports/` real, prune ni publicación.
+
+#### Avance
+
+Permanece en **82%**; exposición pública **0%**; C7.4 **INCOMPLETE 0/4**.
+
+#### Próxima acción exacta
+
+**Ejecutar únicamente `C7.6-PROMOTION-ADAPTERS-A.1.1` local y STOP.**
+
+_Respuesta:_ **GO C7.6-PROMOTION-ADAPTERS-A.1.1 LOCAL. Cerrar consolidación y rollback recuperable
+del par Tableau, rechazar residuos en preflight, completar las 16 fronteras del installer y retirar
+la duplicación mecánica; máximo dos commits separados y STOP. XLSX no autoritativo y prune fuera.
+Sin credenciales, DVC, plan commit, push, PR, merge, lifecycle, puntero, deploy ni publicación.**
+
+
+---
+
+### Ronda 99 — C7.6-PROMOTION-ADAPTERS-A.1.1 ejecutada — 2026-07-27
+
+**Commits (el plan NO entra en ellos):**
+
+```text
+backend    7e5ace5d  C7.6 ADAPTERS-A.1.1 close promotion and rollback recovery boundaries
+dashboard  e894a67a  C7.6 ADAPTERS-A.1.1 complete installer failure matrix
+```
+
+#### Backend — los siete puntos
+
+1. **Fotografía completa.** `managed_tables()` fija el namespace administrado: activa, `__previous`,
+   `__next` y `__backup` de cada tabla, **ocho nombres**. `_snapshot()` fotografía los que existan.
+   Lo que no esté ahí es ajeno y el protocolo no lo toca.
+2. **Preflight que rechaza residuos.** Un `__next` o `__backup` vivo aborta con
+   `PromotionRecoveryError` **sin tocar el sink** (`sink.operaciones == []` en la prueba) y con
+   `residues` en el inventario.
+3. **Consolidación dentro del protocolo compensable.** El paso `__backup`→`__previous` pasó a estar
+   dentro del `try`.
+4. **Restauración y verificación del snapshot completo.** `_restaurar()` devuelve el namespace a la
+   fotografía **por contenido**, no deshaciendo paso a paso; `_verificar_restauracion()` compara
+   nombres y contenido de cada uno. Si falla, `PromotionRecoveryError` con inventario de cinco
+   claves (`tables`, `expected_before`, `namespace`, `managed`, `residues`).
+5. **`rollback()` sobre el par.** Fotografía, restaura las dos, verifica las dos y sólo entonces
+   retira los respaldos; cualquier fallo devuelve la fotografía completa.
+6. **Regresiones (31 → 47):** residuos de preflight (2), fronteras de consolidación (4: drop y
+   rename de cada tabla), fronteras del rollback (7), rollback completo, respaldo que el sink no
+   deja retirar (2), y el namespace de ocho nombres.
+7. **R98-P2 no se reproduce.** En `f1226778`, `upsert_releases` asigna `llaves` **una sola vez**:
+
+   ```text
+   225:    llaves = set(zip(nuevas[RELEASE_KEY[0]], nuevas[RELEASE_KEY[1]], strict=True))
+   227:        ~actual.apply(lambda r: (r[RELEASE_KEY[0]], r[RELEASE_KEY[1]]) in llaves, axis=1)
+   ```
+
+   La 225 es la asignación y la 227 su uso. No hay nada que retirar; no se tocó la función.
+
+**Reproducción de R98-P0-1 y P0-2 contra `f1226778` y contra `7e5ace5d`:**
+
+```text
+P0-1  fallo en rename:runner_releases__backup->runner_releases__previous
+ANTES  RuntimeError · status=None
+       tablas: runner_forecast · runner_forecast__previous · runner_releases · runner_releases__backup
+AHORA  RuntimeError · la fotografía vuelve entera
+       tablas: runner_forecast · runner_forecast__previous · runner_releases · runner_releases__previous
+
+P0-2  fallo en rename:runner_releases__previous->runner_releases durante el rollback
+ANTES  runner_forecast: ANTERIOR · runner_releases: nueva      ← el par mezclado
+AHORA  runner_forecast: nueva    · runner_releases: nueva      ← el par intacto
+```
+
+**Lectura declarada de «el par».** `rollback()` restaura las tablas que tienen `__previous`. Una
+tabla creada por la promoción no tiene a qué volver, y borrarla sería inventar una semántica que
+nadie pidió; lo que se corrige es que la operación sea **una unidad compensable**, que es el defecto
+que R98-P0-2 describe. Con una sola tabla con `__previous`, el comportamiento no cambia.
+
+**Caso declarado.** Si el sink rechaza el `drop` del `__backup` —la última limpieza del rollback—,
+la compensación necesita ese mismo `drop` y tampoco puede: se emite `RECOVERY_REQUIRED` en vez de
+fingir una restauración. Las dos activas sí quedan garantizadamente de la misma promoción. Está
+fijado como prueba, no como nota.
+
+#### Dashboard — la matriz completa
+
+`installArtifacts(diseaseId, releaseId)` se exporta desde el instalador y es **la misma función que
+usa `installShard`** para saber qué escribe. La matriz de fallos se genera desde ahí:
+
+```text
+6 outputs + publication_install.json + catalog.json = 8 artefactos
+8 × {write, rename}                                 = 16 fronteras
+```
+
+El inyector dejó de usar expresiones regulares sueltas: compara la ruta exacta —el temporal
+`<artefacto>.installing-<token>` para `write`, el artefacto en su sitio para `rename`— y la
+aserción exige el mensaje de esa frontera concreta. Con el patrón anterior, una frontera mal
+escrita habría pasado por verde sin disparar nunca. Las 16 disparan: `grep -c "^✔ un fallo en"` = 16.
+
+Sin `prune` ni inventario de huérfanos (opcional, y se prefirió el cierre mínimo).
+
+#### Gates
+
+```text
+backend    ruff check OK · ruff format OK (355) · mypy OK (161 fuentes)
+           pytest -m "not slow and not integration": 2047 passed, 61 deselected
+           test_tableau_adapter.py: 47 passed
+dashboard  node --check de las 16 fuentes · test:cases:verify 616/616 · test:unit 67
+           test:candidate 81 (46 del installer) · rag:verify sincronizado
+           con C7_SHARD_ROOT: 46/46, sin skips
+```
+
+#### Preservación
+
+```text
+config/evaluation/rolling_cv_v1.yaml   dd6d4a02…  (intacto)
+backend   A.1.1 toca 2 archivos: tableau_adapter.py + su test
+dashboard A.1.1 toca 2 archivos: installer.mjs + test_installer.mjs
+runs/ y artifacts/ sin cambios · sin credenciales, Sheets, workbook, Netlify, Gemini, AWS, DVC,
+commit del plan, push, PR, merge, lifecycle, puntero, deploy, escritura en Reports/ real, prune ni
+publicación
+```
+
+#### Estado
+
+Avance **82%** · exposición pública **0%** · C7.4 **INCOMPLETE 0/4** · ADAPTERS-B bloqueada.
+
+#### Pregunta
+
+Una sola, y es de contrato, no de implementación:
+
+El preflight ahora **bloquea** cualquier promoción o rollback mientras exista un `__next` o
+`__backup` en el sink. Es fail-closed y deliberado, pero significa que una recuperación inconclusa
+deja el carril **parado** hasta que alguien limpie a mano. ¿Se acepta así, o ADAPTERS-B debe traer
+un comando explícito de limpieza de residuos —con targets exactos y autorización separada, como el
+`prune`— para poder desbloquear sin tocar el sink a mano?
+
+_Respuesta:_
+
+**Se acepta el preflight fail-closed.** ADAPTERS-B debe traer recuperación explícita, pero nunca
+limpieza automática:
+
+- `inspect-recovery`: read-only, inventario y digests;
+- `recover`: dry-run por defecto, limitado al namespace `runner_*`;
+- `--apply` exige ID exacto del sink de staging, snapshot/inventory digest esperado y autorización
+  separada;
+- no borrar releases huérfanos del dashboard: eso continúa fuera de alcance como `prune`.
+
+---
+
+### Ronda 100 — Auditoría ejecutable de ADAPTERS-A.1.1 — 2026-07-27
+
+#### Veredicto
+
+```text
+ADAPTERS-A.1.1_PASS
+ADAPTERS-A_CLOSED
+ADAPTERS-B0_READY
+C7.6_NO-GO_UNTIL_REAL_STAGING
+```
+
+La implementación coincide con la orden:
+
+- namespace administrado de ocho nombres;
+- preflight con residuos aborta sin operaciones;
+- consolidación incluida en la compensación;
+- snapshot completo restaurado y verificado;
+- rollback del par compensable;
+- 16 fronteras del installer derivadas del mismo `installArtifacts()` usado por producción.
+
+Validación independiente:
+
+```text
+backend focal con addopts vacío    47/47 PASS · rc=0
+dashboard con shard real           46/46 PASS · rc=0
+git diff --check                   PASS en ambos rangos
+```
+
+Los gates completos reportados —2,047 fast, mypy/ruff, 81 candidate y RAG sincronizado— son
+coherentes con los focales.
+
+#### Corrección de la auditoría R98-P2
+
+El supuesto duplicado de `llaves` **no existía**. La salida usada en R98 concatenó dos rangos
+`sed` que se solapaban en la línea 225 y mostró esa misma línea dos veces. En el archivo había una
+asignación y un uso. Fue un error de esta auditoría, no del código, y queda corregido aquí.
+
+#### Hallazgo de staging Tableau
+
+Existe un workbook trackeado:
+
+```text
+reports/dashboards/viz_epiforecastmx.twb
+```
+
+No es plantilla de staging:
+
+- declara `xml:base=https://public.tableau.com`;
+- referencia el workbook público `viz_epiforecastmx`;
+- contiene un `cloudFileId` concreto de Google Drive;
+- consume exclusivamente `scaffold`, `forecast`, `entidades`, `metricas` y `real`;
+- contiene además una ruta local de extract `.hyper`.
+
+**No modificarlo, copiar sus credenciales/IDs ni conectarlo a las tablas runner.** ADAPTERS-B debe
+crear un datasource/workbook staging separado y genérico. Tableau Desktop 2024.1 está disponible
+localmente, por lo que B1 podrá abrir y validar ese workbook sin tocar Tableau Public.
+
+### Orden C7.6-PROMOTION-ADAPTERS-B0 — tooling local, cero escrituras externas
+
+#### B0.1 · sink Google Sheets real pero inyectable
+
+Implementar `GoogleSheetsTableSink` sobre la dependencia existente `gspread`, compatible con
+`TableSink`:
+
+```text
+list_tables
+read_table
+write_table
+rename_table
+drop_table
+```
+
+Reglas:
+
+- ninguna autenticación al importar;
+- cliente/spreadsheet inyectables en tests;
+- lectura y escritura preservan encabezados, strings vacíos y conteos;
+- chunking explícito para 5,772 filas sin truncar;
+- relectura exacta después de cada write;
+- errores de API se traducen a un error tipado sin ocultar respuesta/operación, pero nunca secretos;
+- no reutilizar las funciones destructivas de `publish_gsheets.py`;
+- no tocar las cinco tabs legacy.
+
+#### B0.2 · CLI operativo
+
+Crear un CLI genérico con tres comandos:
+
+```text
+inspect           read-only · tabs, filas, digests, residuos, estado del namespace
+stage             dry-run por defecto · muestra plan exacto de write/rename/drop
+recover           dry-run por defecto · plan de recuperación de __next/__backup
+```
+
+`stage --apply` y `recover --apply` deben existir para B1, pero **no se ejecutan en B0**. Requieren:
+
+- `C7_TABLEAU_STAGING_SPREADSHEET_ID`;
+- ID distinto de `GSHEETS_SPREADSHEET_ID`;
+- snapshot/inventory digest esperado;
+- confirmación literal del ID de staging;
+- namespace limitado a `runner_forecast`, `runner_releases` y sufijos administrados.
+
+Sin esas condiciones: rc no-cero antes de autenticar o mutar.
+
+#### B0.3 · recuperación explícita
+
+La recuperación no “limpia” a ciegas:
+
+1. inspecciona residuos;
+2. clasifica el estado por tabla;
+3. propone restaurar desde `__backup`, retirar `__next` o declarar `RECOVERY_REQUIRED`;
+4. liga el plan al digest del inventario;
+5. al aplicar, revalida que el inventario no cambió;
+6. verifica las dos activas al terminar.
+
+No implementar `prune` de releases ni borrado fuera del namespace.
+
+#### B0.4 · datasource/workbook staging local
+
+Crear un artefacto **nuevo** y no público, generado desde configuración:
+
+```text
+runner_forecast
+runner_releases
+```
+
+Debe:
+
+- recibir el ID de la hoja de staging por parámetro; nunca copiar el `cloudFileId` productivo;
+- mostrar `publication_label`, point-only y ausencia de intervalos;
+- usar filtros derivados de los datos, sin literales de Obesidad/E66;
+- no modificar `viz_epiforecastmx.twb`;
+- escribirse sólo en un temporal o ruta de staging gitignored;
+- incluir un verificador XML que rechace Tableau Public, IDs productivos, rutas absolutas y las
+  cinco tablas legacy.
+
+B0 no abre Tableau Desktop ni crea/publica un workbook remoto. Eso pertenece a B1.
+
+#### B0.5 · pruebas
+
+- fake `gspread` con paginación/chunking, alteración de read-back y errores en cada API;
+- mismas fronteras de promoción/rollback sobre el sink real simulado;
+- CLI sin variables, IDs iguales, digest cambiado y ausencia de `--apply`: todos fail-closed;
+- `inspect` no mutante;
+- recuperación dry-run byte-determinista;
+- workbook staging sin IDs/rutas/literales prohibidos;
+- shard real produce 5,772 + 1 y el plan de tabs esperado;
+- legacy, bundle, DVC y superficies públicas byte-idénticos.
+
+#### Commit y STOP
+
+Un commit backend/local como máximo:
+
+```text
+C7.6 ADAPTERS-B0 Google Sheets staging sink and explicit recovery tooling
+```
+
+Si el generador del workbook merece separación, se permite un segundo commit backend. El dashboard
+no necesita código en B0.
+
+Después: **STOP para auditoría**. No ejecutar B1.
+
+#### Prohibiciones
+
+Sin usar service account, Spreadsheet ID real, Google API, Tableau Public, Netlify, Gemini, AWS,
+DVC, commit del plan, push, PR, merge, lifecycle, puntero, deploy, `Reports/` real, prune ni
+publicación. No abrir ni modificar `viz_epiforecastmx.twb`.
+
+#### Avance
+
+Permanece en **82%**; exposición pública **0%**; validación prospectiva **INCOMPLETE 0/4**.
+
+#### Próxima acción exacta
+
+**Ejecutar únicamente `C7.6-PROMOTION-ADAPTERS-B0` local y STOP.**
+
+_Respuesta:_ **GO C7.6-PROMOTION-ADAPTERS-B0 LOCAL. Implementar sink gspread inyectable, CLI
+inspect/stage/recover dry-run y datasource/workbook Tableau staging generado y separado; máximo dos
+commits backend y STOP. Sin credenciales, IDs reales, red Google, DVC, plan commit, push, lifecycle,
+puntero, deploy, prune ni publicación.**
+
+
+---
+
+### Ronda 101 — C7.6-PROMOTION-ADAPTERS-B0 ejecutada — 2026-07-27
+
+**Commits (el plan NO entra en ellos):**
+
+```text
+c5f42b59  C7.6 ADAPTERS-B0 Google Sheets staging sink and explicit recovery tooling
+7c626fd3  C7.6 ADAPTERS-B0 generated staging Tableau workbook with XML verifier
+```
+
+Cero red, cero credenciales, cero id real. `gspread` **ni siquiera está instalado** en este entorno
+y la suite pasa igual: esa es la prueba de que importar el módulo no autentica.
+
+#### B0.1 · `GoogleSheetsTableSink`
+
+Implementa el `TableSink` completo sobre un `Spreadsheet` **inyectado**. `open_spreadsheet()` es el
+único borde que adquiere credenciales, importa `gspread` de forma perezosa y no se llama en ninguna
+prueba. Una prueba recorre el fuente línea a línea y falla si aparece un `import gspread` o
+`from google…` a nivel de módulo.
+
+Tres fidelidades con la API real, no simplificaciones:
+
+| Comportamiento | Por qué importa |
+|---|---|
+| Repoblado de celdas vacías | La API recorta las vacías del final de cada fila, y en point-only `yhat_lower`/`yhat_upper` son las **dos últimas columnas**: sin repoblar, el read-back fallaría por una diferencia que no está en el dato |
+| Escritura por bloques declarados | 5,772 filas en un solo `update` es la petición que la API corta por su cuenta; el corte es nuestro, y se comprueba: 1 cabecera + 12 bloques |
+| `value_input_option="RAW"` | Sin RAW la hoja reinterpreta fechas y ceros a la izquierda |
+
+Cada `write_table` se **relee entero** y se compara: una hoja que devuelve otro contenido falla
+aunque conserve el número de filas. Los errores salen tipados (`SheetsApiError`) con la operación y
+la respuesta, y con el id de hoja y las credenciales **redactados** —un traceback termina en un log,
+y un log se comparte—. Las cinco tabs legacy se rechazan antes de llamar a la API en las cuatro
+mutaciones posibles; `list_tables()` sí las ve, porque inventariar es read-only. No se reutiliza
+nada de `publish_gsheets.py`: ese publicador borra las tabs que no estén en su lista.
+
+#### B0.2 · CLI
+
+```text
+inspect   read-only · tabs, filas, digests, residuos, estado, inventory_digest
+stage     dry-run  · plan exacto de write/rename/drop
+recover   dry-run  · plan de recuperación ligado al inventario
+```
+
+`--apply` existe para B1 y está cerrado con cuatro llaves comprobadas **antes de autenticar y antes
+de mutar**: hoja de staging declarada, distinta de la productiva, `--expect-inventory` y
+`--confirm-spreadsheet-id` escrito a mano. Sin alguna: `rc=2` y `sink.operaciones == []`. El
+namespace es fijo (ocho nombres) y no hay bandera para ampliarlo. Salida en JSON canónico.
+
+`promotion_plan()` enseña el plan antes de aplicarlo, y que no se desvíe del protocolo no es una
+promesa: una prueba lo compara con las operaciones que `MemorySink` registra durante una promoción
+real, en cuatro estados de partida.
+
+#### B0.3 · recuperación explícita
+
+Estados derivados del inventario, uno por tabla: `CLEAN`, `MISSING`, `NEXT_RESIDUE`,
+`BACKUP_ORPHAN`, `RECOVERY_REQUIRED`. Acciones propuestas: `drop_next`, `restore_backup`,
+`consolidate_backup` — ninguna borra fuera del namespace, no hay `prune`. El plan va ligado al
+`inventory_digest` que lo justifica; aplicar revalida que la hoja no se movió y verifica las dos
+activas al terminar. El plan es byte-determinista: sin marcas de tiempo, mismo estado → mismos bytes.
+
+#### B0.4 · workbook de staging generado
+
+`viz_epiforecastmx.twb` **no se abre ni se lee**: se genera uno nuevo desde el shard y desde el id de
+staging, que llega por parámetro. Tipa cada columna por sus valores; la etiqueta de validación va en
+el título de cada hoja y el point-only en el pie. Los filtros salen de los datos.
+
+```text
+shard real   14,554 bytes · digest 130a35d4… · 2 hojas
+filtros      14 dimensiones derivadas · 26 miembros · ninguna escrita en el código
+prohibidos   0 rutas absolutas · 0 Tableau Public · 0 tablas legacy · 0 id productivo
+```
+
+`verify_workbook` corre **siempre antes de escribir** y rechaza Tableau Public, ids productivos,
+rutas absolutas, `xml:base`, `source-build` ajeno, tablas legacy y la ausencia de etiqueta o
+point-only. El CLI exige destino `.twb` bajo temporal o `runs/`, y se niega tanto a apuntar al
+workbook productivo como a recibir el id productivo por parámetro.
+
+B0 no abrió Tableau Desktop ni creó nada remoto.
+
+#### Gates
+
+```text
+ruff check + format OK · mypy OK (166 fuentes)
+pytest -m "not slow and not integration"   2117 passed, 1 skipped, 61 deselected
+tests/unit/publication                     283 passed, 1 skipped
+con C7_SHARD_ROOT                          284 passed, sin skips
+```
+
+Pruebas nuevas: 71 (28 del sink, 22 del CLI y la recuperación, 21 del workbook).
+
+#### Preservación
+
+```text
+config/evaluation/rolling_cv_v1.yaml   dd6d4a0274a6f8bb…  (intacto)
+reports/dashboards/viz_epiforecastmx.twb   sin cambios (comprobado por git en una prueba)
+data/, reports/ProdDetails/, artifacts/, *.dvc   sin cambios dirigidos
+dashboard   sin tocar (B0 no necesita código de frontend)
+B0 añade 6 archivos y modifica 1 (tableau_adapter.py: promotion_plan + dos helpers públicos)
+```
+
+#### Efectos colaterales declarados
+
+- `_canonical_frame` y `_verify_readback` pasan a ser **públicos** (`canonical_frame`,
+  `verify_readback`) porque el sink y la recuperación los necesitan. Ningún consumidor externo los
+  usaba.
+- `gspread` está declarado en `pyproject.toml` pero **no instalado** en el venv. El sink funciona en
+  pruebas sin él; `--apply` en B1 requerirá instalarlo (`pip install -e ".[dev]"` no lo trae si el
+  extra no está activo). Queda dicho para que no sorprenda al primer `--apply`.
+- `tableau_adapter.py` está en 614 líneas, por encima de la guía de 300. Es coherente con sus
+  vecinos del carril (`status.py` 863, `prospective.py` 697) y partirlo a mitad de una orden
+  añadiría churn; queda declarado como deuda, no escondido.
+
+#### Pregunta
+
+Dos, ambas sobre el borde con B1:
+
+1. **`gspread` no está instalado.** ¿Lo instalo yo en el venv como paso de B1 —es un cambio de
+   entorno, no de código ni de `pyproject.toml`— o lo instalas tú antes de darme el GO?
+2. **La primera escritura real.** B1 necesitará un `C7_TABLEAU_STAGING_SPREADSHEET_ID` que hoy no
+   existe. ¿Creas tú la hoja de staging y me pasas el id sólo como secreto de entorno, o quieres que
+   el primer `--apply` lo ejecutes tú a mano con el plan que yo genere en dry-run?
+
+_Respuesta:_
+
+1. `gspread` se instalará únicamente después de que B0.1 pase, como prerrequisito de
+   **B1-PREFLIGHT**, usando el extra ya declarado `.[gsheets]` y registrando la versión efectiva.
+   No se modifican `pyproject.toml`, `requirements.txt` ni locks para “arreglar” el entorno.
+2. El usuario crea una Google Sheet nueva y exclusiva de staging y comparte únicamente esa hoja con
+   la service account. El ID se entrega sólo mediante `C7_TABLEAU_STAGING_SPREADSHEET_ID`; nunca se
+   pega en el plan, argumentos persistidos, commits o logs. Primero se ejecuta un preflight
+   read-only. La primera escritura real (`B1-APPLY`) requiere otro GO literal después de revisar el
+   inventario y el plan dry-run.
+
+Estas respuestas **no autorizan** instalar dependencias, autenticar, crear la hoja ni ejecutar
+`--apply` en esta ronda.
+
+---
+
+### Ronda 102 — Auditoría independiente de ADAPTERS-B0 — 2026-07-27
+
+#### Alcance auditado
+
+```text
+c5f42b59..7c626fd3
+9 rutas: 8 nuevas + tableau_adapter.py
+2,066 inserciones · 10 borrados
+git diff --check PASS
+```
+
+No hay cambios en `config/`, `data/`, `reports/`, `artifacts/`, `models/`, `.dvc`, dashboard,
+lifecycle, puntero o superficies públicas.
+
+Validación ejecutada sin red, credenciales ni IDs reales:
+
+```text
+tests focales B0                         70 passed, 1 skipped
+ruff check                              PASS
+ruff format --check                     PASS
+mypy (6 módulos fuente)                 PASS
+gspread instalado                       no
+Tableau Desktop 2024.1                  presente, no abierto
+```
+
+El skip es el gate de shard real cuando no se inyecta `C7_SHARD_ROOT`; el reporte previo de
+284/284 con esa raíz sigue siendo evidencia de construcción, no sustituye los repros siguientes.
+
+#### Veredicto
+
+```text
+ADAPTERS-B0_IMPLEMENTED
+ADAPTERS-B0_AUDIT_FAIL
+ADAPTERS-B0.1_REQUIRED
+B1_NOT_AUTHORIZED
+```
+
+La arquitectura general es correcta: sink inyectable, import perezoso, namespace acotado,
+read-back completo, chunking, plan determinista, workbook separado y cero contacto con el
+productivo. B0 no cierra porque tres estados reales violan sus propios contratos.
+
+#### R102-P0-1 · `--apply` no exige conocer la hoja productiva
+
+El contrato y el docstring afirman cuatro llaves, incluida identidad distinta de producción.
+`staging_ids()` permite que `GSHEETS_SPREADSHEET_ID` esté ausente y `_check_apply()` continúa.
+Repro ejecutado:
+
+```text
+entorno       C7_TABLEAU_STAGING_SPREADSHEET_ID=staging-only-id
+producción    ausente
+recover       --apply + inventory exacto + confirmación exacta
+resultado     rc=0
+```
+
+No hubo mutaciones porque el sink del repro ya estaba limpio; lo importante es que cruzó el borde
+de `--apply` sin poder demostrar que staging no era producción. B1 no puede depender de que el
+operador “seguramente” cargó la segunda variable.
+
+**Corrección obligatoria:** todo comando mutante exige ambos IDs no vacíos y distintos antes de
+autenticar. `inspect` puede requerir sólo staging; `stage`/`recover` dry-run pueden inspeccionar
+staging, pero cualquier `--apply` falla con `RC_REFUSED` si falta producción.
+
+#### R102-P0-2 · la recuperación puede borrar la única evidencia y luego fallar
+
+Estado reproducido: no existen activas ni `__backup`; existen únicamente
+`runner_forecast__next` y `runner_releases__next`.
+
+```text
+plan          clasifica ambas como MISSING
+acciones      drop_next × 2
+apply         borra ambos __next
+postcondición falla porque faltan las dos activas
+estado final  namespace vacío
+```
+
+Un plan de recuperación no puede ejecutar acciones si ya sabe que su estado final viola la
+postcondición. En particular, no debe borrar la única copia disponible y después informar error.
+
+**Corrección obligatoria:** calcular y validar el estado final previsto del namespace completo
+antes de la primera mutación. Si una activa no puede quedar presente desde activa, `__backup` o un
+`__previous` explícitamente recuperable, devolver `RECOVERY_REQUIRED`/rc no-cero y dejar el sink
+byte-idéntico. Un `__next` aislado no se activa automáticamente ni se borra: se conserva como
+evidencia hasta una decisión explícita. Añadir cobertura para combinaciones mixtas de las dos
+tablas, no sólo el caso simétrico.
+
+#### R102-P0-3 · el containment del `.twb` compara nombres de componentes, no raíces
+
+`_check_destino()` acepta si cualquier componente se llama `tmp`, `var`, `private` o `runs`.
+Repro:
+
+```text
+ACCEPT  <repo>/reports/tmp/candidate.twb
+ACCEPT  <repo>/reports/runs/candidate.twb
+ACCEPT  <repo>/runs/candidate.twb
+ACCEPT  <tempdir>/candidate.twb
+```
+
+Los dos primeros pueden ser rutas trackeables dentro del repositorio y contradicen “no escribe
+dentro del repo”. No basta encontrar una palabra en `Path.parts`.
+
+**Corrección obligatoria:** aceptar únicamente descendientes resueltos de:
+
+1. `<repo>/runs/`, cuya condición gitignored se comprueba; o
+2. la raíz temporal real de `tempfile.gettempdir()`.
+
+Rechazar el resto, incluidos symlinks que resuelvan fuera de esas raíces. La validación debe ocurrir
+antes de crear directorios o escribir bytes.
+
+#### R102-P1 · identidad del workbook y validez Tableau aún no están cerradas
+
+El CLI permite `--spreadsheet-id` distinto del staging declarado siempre que no coincida con el ID
+productivo. Eso separa el workbook del sink que se pretende validar.
+
+**Corrección obligatoria:** eliminar el override o exigir igualdad exacta con
+`C7_TABLEAU_STAGING_SPREADSHEET_ID`; exigir además el ID productivo para demostrar no-colisión.
+
+El verificador actual demuestra XML bien formado y ausencia de literales prohibidos. **No demuestra
+que Tableau Desktop pueda abrir, consultar y refrescar el workbook.** Esto no es un defecto de B0,
+porque B0 prohibía abrir Tableau, pero es un gate duro de B1-PREFLIGHT. No llamar “workbook
+validado” al artefacto hasta ejecutar ese smoke local contra la hoja exclusiva de staging.
+
+#### Deudas no bloqueantes
+
+- `tableau_adapter.py` tiene 614 líneas. No partirlo dentro de B0.1: la corrección debe ser pequeña
+  y revisable. Abrir refactor separado después del staging real.
+- Los permisos reales de la service account y la fidelidad de `gspread` todavía no se probaron.
+  Eso pertenece a B1-PREFLIGHT, no se simula con más mocks.
+- La escritura de 5,772 filas en bloques está probada con el doble; B1 deberá medir límites/cuotas y
+  read-back real sin relajar el contrato exacto.
+
+### Orden C7.6-PROMOTION-ADAPTERS-B0.1 — corrección local y STOP
+
+#### Objetivo
+
+Cerrar únicamente R102-P0-1/P0-2/P0-3/P1 sin instalar dependencias ni tocar servicios externos.
+
+#### Cambios permitidos
+
+```text
+scripts/tableau_staging.py
+scripts/tableau_workbook.py
+src/epiforecast/publication/recovery.py
+src/epiforecast/publication/sheets_sink.py
+tests/unit/publication/test_tableau_staging_cli.py
+tests/unit/publication/test_tableau_workbook.py
+tests unitarios focales de recovery/sink estrictamente necesarios
+```
+
+No modificar el schema de los shards, los datos del release, `tableau_adapter.py` salvo que una
+firma pública lo haga estrictamente necesario, ni el dashboard.
+
+#### Gates obligatorios
+
+1. `--apply` con producción ausente: `RC_REFUSED`, cero autenticación y cero operaciones.
+2. IDs staging/productivo iguales: `RC_REFUSED`.
+3. confirmación distinta de staging: `RC_REFUSED`.
+4. workbook con ID diferente del staging declarado: `RC_REFUSED`.
+5. destinos `<repo>/reports/tmp/...` y `<repo>/reports/runs/...`: rechazados sin crear nada.
+6. destinos `<repo>/runs/...` y `tempfile.gettempdir()/...`: aceptados.
+7. sólo `__next` y sin activas/backup: recuperación rechazada antes de mutar; `__next`
+   byte-idénticos.
+8. activa ausente + `__backup`: restauración existente sigue PASS.
+9. activa ausente + `__previous`: o se restaura explícitamente y se verifica, o se rechaza sin
+   mutar; nunca queda peor.
+10. combinación mixta entre las dos tablas: la validación es global y no ejecuta media
+    recuperación.
+11. los 70 tests focales actuales siguen verdes y los repros nuevos nacen rojos contra
+    `7c626fd3`.
+12. `ruff`, formato, mypy y `git diff --check` verdes.
+
+#### Commit y STOP
+
+Máximo un commit backend/local:
+
+```text
+C7.6 ADAPTERS-B0.1 close staging identity, containment and recovery preflight
+```
+
+Después STOP para auditoría. No instalar `gspread`, no autenticar, no abrir Tableau Desktop, no
+crear hoja, no usar red, DVC, commit del plan, push, lifecycle, puntero, deploy ni publicación.
+
+#### Secuencia posterior, todavía no autorizada
+
+```text
+B0.1 PASS
+  ↓
+B1-PREFLIGHT (GO separado)
+  - instalar extra .[gsheets] en el venv y registrar versión
+  - usuario crea hoja exclusiva y comparte service account
+  - inspect + dry-run, sin escrituras
+  - generar .twb temporal y abrirlo en Tableau Desktop
+  - validar conexión, refresh, etiqueta y point-only
+  ↓
+B1-APPLY (otro GO)
+  - revalidar inventario
+  - aplicar sólo sobre staging
+  - read-back exacto + rollback ensayado
+  - STOP
+```
+
+#### Estado
+
+Avance estimado permanece en **82%** · exposición pública **0%** · C7.4
+**INCOMPLETE 0/4** · Obesidad `trained` e invisible.
+
+#### Próxima acción exacta
+
+**Ejecutar sólo `C7.6-PROMOTION-ADAPTERS-B0.1` local y STOP.**
+
+_Respuesta:_ **GO C7.6-PROMOTION-ADAPTERS-B0.1 LOCAL. Corregir identidad obligatoria de
+staging/producción, containment real del workbook y recuperación no destructiva; máximo un commit
+backend y STOP. Sin instalar dependencias, credenciales, red, DVC, plan commit, push, lifecycle,
+puntero, deploy ni publicación.**
+
+
+---
+
+### Ronda 103 — C7.6-PROMOTION-ADAPTERS-B0.1 ejecutada — 2026-07-27
+
+**Commit (el plan NO entra en él):**
+
+```text
+20e1ccdf  C7.6 ADAPTERS-B0.1 close staging identity, containment and recovery preflight
+```
+
+Un solo commit, seis archivos, los seis de la lista de cambios permitidos. `tableau_adapter.py` no
+se tocó: ninguna firma pública lo hizo necesario.
+
+#### R102-P0-1 · identidad obligatoria
+
+`staging_ids()` gana `require_production`. La razón es la que da el hallazgo: con la variable
+ausente, «staging ≠ producción» **no falla, no se puede comprobar**, y dar por buena una identidad
+que no se pudo comprobar es exactamente el error que esa función existe para evitar. Todo comando
+mutante la exige antes de autenticar; `inspect` y los dry-run siguen bastando con staging.
+
+#### R102-P0-2 · recuperación que no puede empeorar el estado
+
+`projected_sources()` decide **antes de mutar** de dónde saldrá cada activa: de sí misma, de su
+`__backup` o de su `__previous`. Si alguna no tiene origen, el plan sale **sin una sola acción**,
+con `blocked` y `reason`, y `apply_recovery` se niega. La validación es global: una tabla con arreglo
+y otra sin él no ejecuta media recuperación. Un `__next` aislado ni se activa ni se borra.
+
+Se añade `restore_previous` —una activa ausente con `__previous` sí tiene de dónde volver— y el
+clasificador deja de llamar `MISSING` a lo que es recuperable.
+
+#### R102-P0-3 · containment real
+
+Se comparan dos **raíces resueltas**: `<repo>/runs/`, comprobando con `git check-ignore` que de
+verdad está ignorado, y la raíz temporal real del sistema. La resolución es lo que impide que un
+symlink cuele el artefacto dentro del repo, y ocurre antes de crear directorios o escribir bytes.
+
+#### R102-P1 · identidad del workbook
+
+`--spreadsheet-id` sólo confirma: tiene que coincidir exactamente con el staging declarado, y se
+exige la variable productiva para demostrar no-colisión. La salida declara
+`tableau_desktop_validated: false`. El XML está generado y verificado; que Tableau Desktop lo abra,
+consulte y refresque es gate de B1-PREFLIGHT, y hasta entonces el artefacto no se llama validado.
+
+#### Reproducción contra `7c626fd3` y contra `20e1ccdf`
+
+```text
+P0-1  --apply sin la variable productiva     rc=0  ->  rc=2
+P0-2  sólo __next: acciones propuestas        2    ->  0
+      namespace al terminar                 VACÍO  ->  los dos __next intactos
+P0-3  <repo>/reports/tmp/x.twb              ACEPTA ->  RECHAZA
+      <repo>/reports/runs/x.twb             ACEPTA ->  RECHAZA
+P1    workbook con otro id                  ACEPTA ->  RECHAZA
+```
+
+El repro se corrió sobre un `git worktree` detached en `7c626fd3`, con `PYTHONPATH` apuntando a su
+`src/` —sin eso, el editable install del venv resolvía `epiforecast` al árbol nuevo y el «antes»
+habría salido en verde por accidente—. El worktree quedó eliminado.
+
+Nota honesta sobre el gate 11: los repros **nacen rojos**, pero los del CLI lo hacen por
+`ImportError` (`ACTION_RESTORE_PREVIOUS` y `SOURCE_*` no existían en `7c626fd3`), no por aserción.
+Por eso la evidencia de comportamiento es la tabla de arriba, que sí corre el mismo código contra
+los dos árboles.
+
+#### Gates
+
+```text
+1  --apply con producción ausente         RC_REFUSED · 0 operaciones · 0 autenticación   PASS
+2  IDs staging/productivo iguales         RC_REFUSED                                     PASS
+3  confirmación distinta de staging       RC_REFUSED                                     PASS
+4  workbook con ID != staging             RC_REFUSED                                     PASS
+5  <repo>/reports/{tmp,runs}/...          rechazados sin crear el directorio             PASS
+6  <repo>/runs/... y gettempdir()/...     aceptados                                      PASS
+7  sólo __next                            rechazado antes de mutar · __next intactos     PASS
+8  activa ausente + __backup              restauración sigue verde                       PASS
+9  activa ausente + __previous            restaurada explícitamente y verificada         PASS
+10 combinación mixta                      validación global · 0 operaciones              PASS
+11 los focales previos siguen verdes      publication/ 298 passed (sin skips)            PASS
+12 ruff · format · mypy · diff --check    verdes                                         PASS
+
+pytest -m "not slow and not integration"   2131 passed, 1 skipped, 61 deselected
+```
+
+#### Preservación
+
+```text
+config/, data/, reports/, artifacts/, models/, .dvc, dashboard, lifecycle, puntero   sin cambios
+reports/dashboards/viz_epiforecastmx.twb   byte-idéntico (comprobado por git en una prueba)
+tableau_adapter.py                          sin tocar
+```
+
+#### Deudas que siguen abiertas, tal como quedaron declaradas
+
+- `tableau_adapter.py` en 614 líneas: refactor separado **después** del staging real.
+- Permisos de la service account y fidelidad de `gspread`: B1-PREFLIGHT, no más mocks.
+- Límites y cuotas de la escritura de 5,772 filas: B1, sin relajar el contrato exacto.
+
+#### Pregunta
+
+Una, y es la que bloquea B1-PREFLIGHT:
+
+`_esta_ignorado()` invoca `git check-ignore`. Si en la máquina donde se opere no hubiera git en el
+PATH, el comando **rechaza** `runs/` como destino —«no demostrado es no»— y sólo quedaría el
+temporal del sistema. ¿Se acepta ese comportamiento, o prefieres que `runs/` se admita sin la
+comprobación cuando git no esté disponible? Yo lo dejaría como está: es la opción que no puede
+meter un artefacto al repositorio por accidente.
+
+_Respuesta:_
+
+**Se acepta el comportamiento fail-closed.** Sin `git check-ignore` verificable, `runs/` no se
+autoriza; el temporal del sistema sigue disponible. No añadir fallback basado en el nombre de la
+ruta ni en una lectura parcial de `.gitignore`.
+
+---
+
+### Ronda 104 — Auditoría independiente de ADAPTERS-B0.1 y orden B1-PREFLIGHT — 2026-07-27
+
+#### Superficie y gates
+
+```text
+commit auditado                    20e1ccdf
+rango                              7c626fd3..20e1ccdf
+archivos                           6 permitidos
+inserciones / borrados             384 / 36
+git diff --check                   PASS
+tests focales independientes       131 passed, 1 skipped
+ruff check                         PASS
+ruff format --check                PASS
+mypy                               PASS
+```
+
+El skip pertenece al shard real cuando `C7_SHARD_ROOT` no está inyectado. La suite reportada por el
+commit —`publication/ 298` y `2,131 fast`— es coherente con los focales ejecutados aquí.
+
+#### Repros independientes
+
+```text
+--apply sin ID productivo          RECHAZADO
+staging == productivo              RECHAZADO
+staging != productivo              ACEPTADO por el guard
+<repo>/reports/tmp/x.twb           RECHAZADO
+<repo>/reports/runs/x.twb          RECHAZADO
+<repo>/runs/x.twb                  ACEPTADO y comprobado gitignored
+<tempdir>/x.twb                    ACEPTADO
+sólo __next, sin activa/backup     RECOVERY_REQUIRED · 0 acciones
+apply del plan bloqueado           RECHAZADO · namespace byte-idéntico
+```
+
+#### Veredicto
+
+```text
+ADAPTERS-B0.1_PASS
+ADAPTERS-B0_CLOSED
+B1_PREFLIGHT_READY_WHEN_PREREQUISITES_EXIST
+B1_APPLY_NOT_AUTHORIZED
+```
+
+No se encontró regresión material en el delta. La recuperación decide globalmente antes de mutar;
+el ID productivo es obligatorio en operaciones mutantes; el workbook sólo puede apuntar al staging
+declarado; y el containment se ancla a raíces resueltas.
+
+#### Precisión de secuencia
+
+La secuencia anterior decía que B1-PREFLIGHT abriría y **refrescaría** Tableau antes de B1-APPLY.
+Eso no es posible: una hoja nueva todavía no contiene `runner_forecast` ni `runner_releases`. El
+preflight puede generar y verificar el `.twb`, e incluso comprobar que Tableau lo reconoce como
+archivo, pero la conexión y el refresh completos sólo se validan **después** de una escritura
+autorizada en staging.
+
+La secuencia corregida es:
+
+```text
+B1-PREFLIGHT   autenticación read-only + inspect + stage dry-run + .twb temporal
+B1-APPLY       escribe sólo staging + read-back + abre/refresca Tableau Desktop
+C7.7           activación/deploy, con autorizaciones propias
+```
+
+#### Estado efectivo de prerrequisitos en esta sesión
+
+```text
+C7_TABLEAU_STAGING_SPREADSHEET_ID   ausente
+GSHEETS_SPREADSHEET_ID              ausente
+GOOGLE_SERVICE_ACCOUNT_JSON         ausente
+gspread                             ausente
+google-auth                         2.56.2
+```
+
+No se leyó ni buscó ningún secreto en archivos. Sólo se comprobó presencia en el entorno.
+
+### Orden C7.6-PROMOTION-ADAPTERS-B1-PREFLIGHT — lectura externa y STOP
+
+#### Preparación que corresponde al usuario
+
+1. Crear una Google Sheet **nueva, exclusiva de staging y no enlazada a Tableau Public**.
+2. Compartirla con una service account autorizada para editar sólo ese staging. No ampliar permisos
+   sobre carpetas o Drives completos.
+3. En la misma shell de ejecución, declarar sin imprimir valores:
+
+```text
+C7_TABLEAU_STAGING_SPREADSHEET_ID
+GSHEETS_SPREADSHEET_ID
+GOOGLE_SERVICE_ACCOUNT_JSON
+```
+
+`GOOGLE_SERVICE_ACCOUNT_JSON` es el JSON completo que consume el código, no una ruta. Ningún valor
+se pega en este plan, commits, logs o argumentos persistidos.
+
+#### Acciones autorizables al agente en B1-PREFLIGHT
+
+1. Capturar estado Git de ambos repos y hashes de superficies antes de operar.
+2. Instalar en el venv el extra ya declarado:
+
+```text
+.venv/bin/python -m pip install -e '.[gsheets]'
+```
+
+Registrar únicamente versiones de `gspread` y `google-auth`. No modificar fuentes, locks ni
+requirements.
+3. Verificar sólo presencia de las tres variables y que staging/productivo difieran; no imprimir
+   valor, longitud, prefijo ni JSON.
+4. Autenticar contra la hoja de staging y ejecutar únicamente:
+
+```text
+.venv/bin/python -m scripts.tableau_staging inspect
+.venv/bin/python -m scripts.tableau_staging stage --shard <candidate_shard>
+```
+
+Sin `--apply`. El segundo comando es dry-run y debe devolver el mismo `inventory_digest` observado.
+5. Compilar nuevamente el candidate en dos temporales si el shard ya no existe y comprobar bytes
+   deterministas antes de usarlo.
+6. Generar el `.twb` bajo `tempfile.gettempdir()` con el ID de staging confirmado. Verificar:
+   `tableau_desktop_validated=false`, release correcto, dos tablas runner, etiqueta 0/4, point-only,
+   cero ID productivo, cero Tableau Public y cero rutas absolutas.
+7. No exigir refresh todavía. Si se abre Tableau Desktop en preflight, sólo puede registrarse que
+   el archivo fue reconocido; ausencia de tablas en la hoja no es PASS ni FAIL del refresh.
+8. Guardar evidencia redactada: versiones, conteos/nombres de tabs, digests, plan dry-run y hashes
+   del `.twb`. Nunca el ID ni credenciales.
+9. Repetir hashes de preservación y STOP.
+
+#### Gates
+
+- `gspread` importable y dentro de `>=6,<7`;
+- autenticación read-only exitosa;
+- staging y producción declarados y distintos;
+- ninguna tab `runner_*` mutada o creada;
+- `inspect` repetido produce el mismo inventario si nadie cambió la hoja;
+- `stage` dry-run contiene únicamente el namespace administrado;
+- las tabs ajenas/default permanecen fuera del plan de mutación;
+- candidate y `.twb` deterministas;
+- ningún secreto aparece en stdout/stderr, plan, Git diff o procesos;
+- `git status` y superficies públicas iguales antes/después;
+- Obesidad permanece `trained`, puntero inactivo y fuera de `published_only`.
+
+#### Condiciones de STOP
+
+Detener sin intentar corregir remotamente si:
+
+- falta cualquiera de las tres variables;
+- staging y producción coinciden;
+- la service account no puede abrir el staging;
+- el inventario contiene residuos `__next`/`__backup`;
+- aparecen tabs `runner_*` inesperadas;
+- el dry-run propone tocar una tab legacy o ajena;
+- el workbook contiene el ID productivo o no pasa su verificador.
+
+No ejecutar `recover --apply`, `stage --apply`, Google write, Tableau refresh contra datos runner,
+Tableau Public, DVC, push, merge, lifecycle, puntero, deploy ni publicación.
+
+#### Evidencia requerida al cierre
+
+```text
+versiones instaladas (sin secretos)
+inventory_digest de inspect
+states + foreign tabs
+release_id/disease_id del dry-run
+lista exacta de operaciones propuestas
+digest del candidate y del .twb
+tableau_desktop_validated=false
+hashes de preservación antes/después
+```
+
+#### Avance
+
+C7 permanece en **82.3% ≈ 82%**. B0/B0.1 cerraron; el porcentaje entero no sube hasta validar el
+sink externo. Exposición pública **0%** y prospectiva **INCOMPLETE 0/4**.
+
+#### Próxima acción exacta
+
+Primero el usuario crea/configura la hoja y exporta las tres variables en la shell de ejecución.
+Después puede autorizar:
+
+_Respuesta:_ **GO C7.6-PROMOTION-ADAPTERS-B1-PREFLIGHT. Se autoriza instalar `.[gsheets]`, usar las
+credenciales sólo desde el entorno para autenticación read-only, ejecutar `inspect` y `stage`
+sin `--apply`, y generar/verificar candidate + workbook únicamente en temporales. STOP antes de
+cualquier escritura Google, refresh con datos runner, DVC, push, lifecycle, puntero, deploy o
+publicación.**
+
+
+---
+
+### Ronda 105 — C7.6-PROMOTION-ADAPTERS-B1-PREFLIGHT: **BLOQUEADA** en la condición de STOP — 2026-07-27
+
+#### Por qué se detuvo
+
+La primera comprobación de la orden es la lista de STOP: «detener sin intentar corregir remotamente
+si falta cualquiera de las tres variables». Faltan las tres.
+
+```text
+C7_TABLEAU_STAGING_SPREADSHEET_ID    AUSENTE
+GSHEETS_SPREADSHEET_ID               AUSENTE
+GOOGLE_SERVICE_ACCOUNT_JSON          AUSENTE
+```
+
+Sólo se comprobó **presencia**. No se leyó ningún valor, ni longitud, ni prefijo, ni se buscó un
+secreto en ningún archivo, ni se intentó crear la hoja.
+
+Una precisión operativa que conviene fijar antes del próximo intento: cada comando que ejecuto corre
+en una shell nueva que hereda el entorno del proceso de Claude Code, **no** el de tu terminal. Un
+`export` que hagas en tu shell no llega aquí. Para que llegue, las variables tienen que estar en el
+entorno desde el que se lanza la sesión.
+
+#### Lo que sí se ejecutó (sin credenciales, todo autorizado por la orden)
+
+**Paso 1 · baseline de preservación.** Capturado antes de tocar nada.
+
+**Paso 2 · instalación del extra declarado.** `pip install -e '.[gsheets]'`, sin modificar fuentes,
+`pyproject.toml` ni locks:
+
+```text
+gspread        6.2.1     (gate >=6,<7: cumple)
+google-auth    2.56.2
+añadidos por resolución: google-auth-oauthlib 1.4.0 · oauthlib 3.3.1 · requests-oauthlib 2.0.0
+```
+
+Suite rápida después de instalar: **2,131 passed, 1 skipped, 61 deselected** — el mismo resultado
+que antes, así que la instalación no movió nada.
+
+**Paso 5 · candidate determinista.** Recompilado en dos temporales independientes:
+
+```text
+release_id     obesidad_release_2517e7858901
+filas          5,772 · lifecycle trained · INCOMPLETE 0/4
+etiqueta       Validación prospectiva en curso (0/4 semanas) · pronóstico puntual sin intervalos
+9 archivos     digests idénticos entre las dos compilaciones
+  74a97228…  epibot/corpus/obesidad.md
+  074d3200…  epibot/knowledge.json
+  5fa161c2…  reports/forecast_products.csv
+  499555be…  reports/report.md
+  1f462267…  shard_manifest.json
+  5fa161c2…  tableau/forecast_shard.csv
+  d71b14b2…  tableau/schema.json
+  9ba6b025…  web/manifest.json
+  5fa161c2…  web/series.csv
+```
+
+#### Lo que NO se ejecutó, y por qué
+
+```text
+paso 3  verificar que staging != productivo    imposible: no hay ninguno de los dos
+paso 4  autenticar · inspect · stage dry-run    requiere las credenciales
+paso 6  generar el .twb                         requiere el ID de staging confirmado
+paso 7  abrir Tableau Desktop                   depende del paso 6
+paso 8  evidencia de tabs, inventory_digest     depende del paso 4
+```
+
+#### Preservación
+
+```text
+backend    HEAD 20e1ccdf · rama feat/registry-padecimientos-obesidad · 0 archivos trackeados sucios
+dashboard  HEAD e894a67a · rama feat/c73-candidate-staging · 0 sucios
+rolling_cv_v1.yaml   dd6d4a02…    viz_epiforecastmx.twb  48c0b1ce…
+tableau.csv          b334e239…    auditoria_motores_2026  02ea61f0…
+rag_index.json       efbae871…    knowledge.json          e1d9a7d9…
+hashes antes/después: IDÉNTICOS en los dos repos
+Obesidad: lifecycle trained · puntero inactivo · fuera de published_only
+```
+
+Sin escritura Google, sin refresh, sin Tableau Public, sin DVC, push, merge, lifecycle, puntero,
+deploy ni publicación. Ningún commit en esta ronda: no hubo cambios de código.
+
+#### Pregunta
+
+Para desbloquear hacen falta las tres variables **en el entorno desde el que se lanza esta sesión**,
+no en tu terminal. Dos formas, elige:
+
+1. Lanzas Claude Code con las tres exportadas (`export … && claude`), me lo dices, y yo repito
+   B1-PREFLIGHT desde el paso 3.
+2. Si prefieres no exponerlas al proceso completo, ejecutas tú los dos comandos read-only en tu
+   shell y me pegas la salida redactada:
+
+```text
+.venv/bin/python -m scripts.tableau_staging inspect
+.venv/bin/python -m scripts.tableau_staging stage --shard <ruta_del_shard>
+```
+
+Ambas salidas son JSON canónico y **no contienen el ID de la hoja** —el sink lo redacta incluso en
+los errores—, así que puedes pegarlas tal cual.
+
+¿Hoja de staging ya creada y compartida con la service account, o eso también sigue pendiente?
+
+_Respuesta:_
+
+La ronda se valida como **STOP correcto**, no como FAIL del código. No se asume que la hoja exista:
+crear y compartir la hoja sigue siendo prerrequisito del usuario.
+
+---
+
+### Ronda 106 — Auditoría del intento B1-PREFLIGHT bloqueado y orden de reanudación — 2026-07-27
+
+#### Veredicto
+
+```text
+B1_DEPENDENCY_READY
+B1_CANDIDATE_READY
+B1_EXTERNAL_PREFLIGHT_NOT_STARTED
+B1_PREFLIGHT_BLOCKED_MISSING_ENV
+B1_APPLY_NOT_AUTHORIZED
+```
+
+La condición de STOP se aplicó correctamente: al faltar las tres variables no hubo autenticación,
+lectura ni escritura Google. No existe evidencia suficiente para declarar el preflight PASS, pero
+tampoco hay una regresión.
+
+#### Validación independiente
+
+```text
+backend HEAD                       20e1ccdf · ahead 28
+dashboard HEAD                     e894a67a
+archivos trackeados de producto    0 modificados
+único trackeado modificado         este plan
+gspread                            6.2.1 · cumple >=6,<7
+google-auth                        2.56.2
+google-auth-oauthlib               1.4.0
+requests-oauthlib                  2.0.0
+oauthlib                           3.3.1
+git diff --check                   PASS
+```
+
+La instalación quedó sólo en `.venv`; no modificó `pyproject.toml`, requirements ni locks. El
+candidate recompilado conserva `obesidad_release_2517e7858901`, 5,772 filas, `trained`,
+`INCOMPLETE 0/4` y nueve archivos deterministas.
+
+#### Avance
+
+El porcentaje se mantiene en **82.3% ≈ 82%**. Instalar la dependencia y recompilar el candidate
+preparan el gate, pero no validan el sink externo. La exposición pública continúa en **0%**.
+
+### Orden de desbloqueo — acción del usuario
+
+#### U1 · crear la hoja
+
+1. Crear una Google Sheet nueva, vacía y exclusiva para C7 staging.
+2. Confirmar que no es la hoja productiva y que no está conectada a Tableau Public.
+3. Compartir únicamente esa hoja con el `client_email` de la service account como editor.
+4. No pegar aquí el ID ni el JSON.
+
+#### U2 · iniciar una sesión que herede las variables
+
+La opción recomendada es cerrar esta sesión y lanzar una nueva desde la misma shell donde se
+exportaron las variables. Un `export` hecho después en otra terminal no puede modificar el entorno
+de un proceso ya iniciado.
+
+Ejemplo conceptual —sustituir valores/ruta localmente y no pegar la salida:
+
+```zsh
+export C7_TABLEAU_STAGING_SPREADSHEET_ID='...'
+export GSHEETS_SPREADSHEET_ID='...'
+export GOOGLE_SERVICE_ACCOUNT_JSON="$(jq -c . /ruta/privada/service-account.json)"
+
+# Sólo comprobar presencia; no imprimir valores.
+for v in C7_TABLEAU_STAGING_SPREADSHEET_ID GSHEETS_SPREADSHEET_ID \
+  GOOGLE_SERVICE_ACCOUNT_JSON; do
+  if test -n "${(P)v}"; then
+    echo "$v=present"
+  else
+    echo "$v=MISSING"
+  fi
+done
+
+# Lanzar sólo si las tres dijeron present.
+claude
+```
+
+El archivo de credenciales permanece fuera de ambos repositorios. La nueva sesión sólo debe recibir
+el secreto por entorno. Si no se usa `jq`, el valor debe seguir siendo el JSON completo en una sola
+variable; el código no acepta una ruta como sustituto.
+
+### Orden C7.6-PROMOTION-ADAPTERS-B1-PREFLIGHT-RESUME — pasos 3–9 y STOP
+
+Una vez iniciada la sesión con las tres variables:
+
+1. Comprobar únicamente presencia y que los dos IDs difieran; no imprimir valores, longitudes ni
+   prefijos.
+2. Verificar que `gspread==6.2.1` continúa importable. **No reinstalar** si el gate ya cumple.
+3. Reutilizar uno de los candidates deterministas conservados. Si ya no existe, recompilar una vez
+   y exigir los mismos nueve digests antes de continuar.
+4. Autenticar contra staging y ejecutar dos veces `inspect`. Ambos inventarios deben coincidir.
+5. Ejecutar `stage --shard <candidate>` **sin `--apply`**.
+6. Verificar que el plan sólo menciona los ocho nombres administrados y conserva todas las tabs
+   ajenas.
+7. Generar el `.twb` en un temporal real, con el ID confirmado por entorno.
+8. Registrar evidencia redactada exigida en Ronda 104.
+9. Repetir preservación y STOP.
+
+No abrir el borde mutante:
+
+```text
+prohibido  stage --apply
+prohibido  recover --apply
+prohibido  escribir o renombrar tabs
+prohibido  Tableau Public / deploy / lifecycle / puntero / DVC / push
+```
+
+#### Gate de salida
+
+```text
+autenticación read-only                       PASS
+inspect A == inspect B                        PASS
+residuos __next/__backup                      0
+tabs runner activas inesperadas               0
+stage dry-run                                 PASS
+operaciones fuera del namespace               0
+candidate + twb                               deterministas
+tableau_desktop_validated                     false (esperado antes de APPLY)
+superficies/hashes                            sin cambios
+```
+
+Si falla cualquiera, STOP con evidencia redactada; no reparar remotamente en la misma ronda.
+
+#### Próxima autorización
+
+Después de crear la hoja y reiniciar la sesión con el entorno:
+
+_Respuesta:_ **GO C7.6-PROMOTION-ADAPTERS-B1-PREFLIGHT-RESUME. Reanudar desde presencia de
+variables, autenticación read-only, doble inspect, stage sin `--apply` y workbook temporal. No
+reinstalar ni recompilar si los artefactos preparados siguen válidos. STOP antes de cualquier
+escritura Google, refresh con datos runner, DVC, push, lifecycle, puntero, deploy o publicación.**
+
+---
+
+### Ronda 107 — B1 estacionado con manual y orden de trabajo independiente — 2026-07-27
+
+#### Decisión operativa
+
+```text
+B1-PREFLIGHT                    PARKED_BY_USER
+B1-APPLY                        NOT_AUTHORIZED
+DEPENDENCIAS                    READY
+CANDIDATE                       READY
+PUBLICACIÓN                     NO-GO
+```
+
+No se considera fallo ni se descarta evidencia. La reanudación completa quedó en:
+
+```text
+docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md
+```
+
+El manual contiene creación/compartición de la hoja, carga segura de variables, reinicio de sesión,
+comandos read-only, resultados esperados, condiciones de STOP, troubleshooting y limpieza de
+variables.
+
+#### Qué puede avanzar sin Google
+
+La ruta funcional de publicación no puede cruzar B1 sin inventar una validación externa. Para no
+perder tiempo, el siguiente trabajo útil es cerrar la trazabilidad de los commits locales antes de
+que sigan creciendo:
+
+```text
+backend    remoto dbfdd49c .. local 20e1ccdf
+dashboard  remoto d5ead880 .. local e894a67a
+```
+
+Esto no publica ni cambia producto. Prepara un checkpoint revisable y detecta secretos/rutas
+prohibidas antes de cualquier push futuro.
+
+### Orden C7.6-CHECKPOINT-AUDIT — read-only y STOP
+
+#### Objetivo
+
+Auditar ambos rangos locales completos y producir un manifiesto de checkpoint. No corregir código
+ni subir nada.
+
+#### Backend
+
+1. Confirmar ancestry, ahead/behind y que `main` local/remota no se movieron.
+2. Inventariar commits, autores, rutas, binarios y tamaño por commit para:
+
+```text
+dbfdd49c..20e1ccdf
+```
+
+3. Separar:
+
+```text
+code/config/tests
+docs
+DVC/pointers
+artefactos o datos
+```
+
+4. Verificar que el rango no contiene:
+
+- credenciales, IDs de Sheets, private keys o `GEMINI_API_KEY`;
+- `runs/`, modelos finales sin DVC o bundles fuera del target;
+- lifecycle `published`, puntero activo o canales públicos no aprobados;
+- cambios accidentales en agregados legacy;
+- escrituras sobre el workbook productivo.
+
+5. Revalidar gates mínimos dirigidos: Ruff, mypy, publicación, doctor y hashes legacy.
+
+#### Dashboard
+
+1. Confirmar ancestry, ahead/behind y `origin/main` intacta.
+2. Auditar:
+
+```text
+d5ead880..e894a67a
+```
+
+3. Verificar que el rango no contiene:
+
+- secretos, IDs, índices candidate temporales o shards;
+- cambios públicos involuntarios en HTML, `knowledge.json` o RAG fuera de los commits declarados;
+- deploy config, PR, merge o lifecycle;
+- menciones públicas de Obesidad.
+
+4. Revalidar `npm run check` y los gates candidate sin requerir shard real cuando corresponda.
+
+#### Documentación local no commiteada
+
+Inventariar por separado:
+
+```text
+docs/PLAN_C7_PUBLICACION_OBESIDAD.md
+docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md
+```
+
+No incluirlos automáticamente en el rango de código ni crear commit. Reportar tamaño, contenido
+general y si existe alguna cadena sensible. El plan conserva ediciones acumuladas del usuario y no
+se reescribe ni normaliza durante esta auditoría.
+
+#### Entregable
+
+Añadir al plan:
+
+```text
+SHA local/remoto por repo
+ahead/behind
+tabla de commits por clase
+rutas prohibidas: 0 o lista exacta
+secret scan redactado
+gates ejecutados
+estado de superficies
+rango exacto propuesto para cada push
+docs pendientes fuera del rango
+veredicto READY_FOR_CHECKPOINT o BLOCKED
+```
+
+#### Prohibiciones
+
+Sin editar código, configurar Google, usar credenciales, abrir Tableau, DVC, commit, push, PR,
+merge, tag, lifecycle, puntero, deploy, borrado de untracked ni publicación.
+
+#### STOP
+
+Terminar con una recomendación; no ejecutar el checkpoint. Cada push requerirá autorización literal
+por repositorio y SHA final.
+
+#### Próxima acción exacta
+
+_Respuesta:_ **GO C7.6-CHECKPOINT-AUDIT READ-ONLY. Auditar los rangos
+`dbfdd49c..20e1ccdf` y `d5ead880..e894a67a`, gates, secretos y superficies; documentar rangos
+propuestos y STOP. Sin modificar código, commit, push, DVC, Google, lifecycle, deploy ni
+publicación.**
+
+
+---
+
+### Ronda 108 — C7.6-CHECKPOINT-AUDIT (read-only) — 2026-07-27
+
+Sin editar código, sin commit, sin push, sin DVC, sin Google, sin Tableau. Ningún untracked borrado.
+
+#### SHA y ancestry
+
+```text
+backend    origin/feat/registry-padecimientos-obesidad  dbfdd49c   (upstream configurado)
+           local  20e1ccdf   ·  ancestro: SÍ  ·  ahead 28 / behind 0
+           main local == origin/main == b535b525   (no se movieron)
+           HEAD está 120 commits por delante de origin/main y 0 por detrás
+
+dashboard  d5ead880 (base declarada)  ·  local e894a67a  ·  ancestro: SÍ  ·  ahead 19 / behind 0
+           main local == origin/main == 179bbe36   (no se movieron)
+           la rama feat/c73-candidate-staging NO tiene upstream configurado
+           HEAD está 21 commits por delante de origin/main
+```
+
+**Hallazgo de secuencia:** la rama del dashboard no tiene upstream. El primer push tendrá que ser
+`--set-upstream`, y eso **crea la rama en el remoto**; no es equivalente a actualizar una existente
+como en backend. Conviene decidirlo explícitamente y no descubrirlo en el momento.
+
+#### Commits por clase
+
+**Backend `dbfdd49c..20e1ccdf` — 28 commits, autor único «Javier Rebull», 23 archivos, +10,830 / −14.**
+
+| Clase | Archivos | Notas |
+|---|---|---|
+| code/config/tests | 22 | 9 `src/`, 3 `scripts/`, 7 `tests/`, 3 `config/publication/obesidad/*.json` |
+| docs | 1 | `docs/PLAN_C7_PUBLICACION_OBESIDAD.md`, tocado por 17 de los 28 commits |
+| DVC/pointers | 0 | |
+| artefactos o datos | 0 | |
+
+Binarios: **0**. Los 6 commits más recientes son los de esta serie (ADAPTERS-A → B0.1); los 22
+anteriores son 11 de `docs:` y 11 de código de STATUS/RAG, ya auditados en sus rondas.
+
+**Dashboard `d5ead880..e894a67a` — 19 commits, autor único, 26 archivos, +4,864 / −1,103.**
+
+| Clase | Archivos | Notas |
+|---|---|---|
+| code/tests | 22 | `scripts/lib/*` (7), `scripts/*.mjs` (3), `tests/*` (12) |
+| superficie pública | 4 | `js/kb.js`, `js/entities.js`, `package.json`, `rag_index.json` |
+| deploy config / CI | 0 | ni netlify, ni `_headers`, ni `.github` |
+| binarios | 0 | |
+
+#### Rutas prohibidas
+
+```text
+backend    runs/  models/  artifacts/  data/  reports/dashboards/     0 archivos
+dashboard  shards, staging temporales, netlify, .github               0 archivos
+```
+
+#### Secret scan (sobre el contenido AÑADIDO, no sobre el árbol)
+
+```text
+                        backend (10,830 líneas)   dashboard (4,864 líneas)
+PRIVATE KEY                       0                        0
+service_account JSON              0                        0
+Google/GEMINI API key             0                        0
+AWS access key                    0                        0
+token (ghp/sk-/xoxb)              0                        0
+password/secret literal           0                        0
+id de Google Sheet (forma)        7                        0
+```
+
+Las **7 coincidencias del backend son falsos positivos**, verificadas una por una:
+
+```text
+4 × 1502d1a25b48c11b…  digest sha256 del dataset, en los tres JSON del gate congelado
+3 × 1AbCdEfGhIjKlMnOp…  fixture evidentemente falso de las pruebas del sink
+```
+
+Ninguna es un identificador real. `GSHEETS_SPREADSHEET_ID`,
+`C7_TABLEAU_STAGING_SPREADSHEET_ID` y `GEMINI_API_KEY` aparecen sólo como **nombres de variable**.
+
+#### Lifecycle, puntero y canales
+
+```text
+diff del rango sobre lifecycle/puntero/canales   0 líneas
+obesidad       lifecycle=trained      channels=[web, epibot, reports, tableau]  (declarados, no activos)
+anorexia_f50   lifecycle=configured   channels=[]
+published_only  Obesidad sigue fuera · puntero inactivo
+```
+
+#### Agregados legacy y workbook productivo
+
+```text
+tableau.csv · ProdDetails/* · data_raw* · viz_epiforecastmx.twb    0 archivos en ambos rangos
+```
+
+#### Menciones de Obesidad en la superficie pública del dashboard
+
+Aquí un grep ingenuo da un susto que conviene desactivar por escrito:
+
+```text
+js/kb.js           5 menciones
+js/entities.js     0
+rag_index.json     0   (454 chunks · gemini-embedding-001 · dim 768 · sin candidate)
+knowledge.json     0
+```
+
+De esas 5, **4 son anteriores a `d5ead880`** y viven en las listas de
+`answerPadecimientoNoModelado`: Obesidad figura ahí como padecimiento que el bot **NO** modela, que
+es exactamente lo que debe decir mientras sea NO-GO. La quinta, y única del rango, es una línea de
+**comentario**. Cero exposición.
+
+#### Gates revalidados
+
+```text
+backend    ruff check                 PASS
+           ruff format --check        PASS
+           mypy (src)                 PASS
+           pytest tests/unit/publication   297 passed, 1 skipped
+           doctor_padecimiento obesidad    ✅ completo (config)
+           hashes legacy               tableau.csv b334e239… · auditoria_motores 02ea61f0…  (intactos)
+
+dashboard  node --check de las 16 fuentes  PASS
+           test:cases:verify           616 / 616
+           test:unit                   67 passed
+           test:candidate              81 (79 passed, 2 skipped: shard real no inyectado)
+           rag:verify                  índice sincronizado, 454 chunks
+```
+
+#### Hallazgo bloqueante para el DEPLOY (no para el checkpoint)
+
+`epibot/js/kb.js` y `epibot/js/entities.js` cambiaron en el rango, pero **`epibot/index.html` no está
+en él**: `app.js?v=135` sigue igual. La regla del repo es explícita — al tocar `kb.js`/`entities.js`
+hay que subir el `?v` de **afuera**, porque Netlify sirve `/js/*` con `max-age=3600` y el navegador
+seguiría ejecutando el `app.js` cacheado, que importa el `kb.js` viejo. El cambio llegaría al
+servidor y **no se vería**.
+
+No bloquea el checkpoint —hacer push no despliega— pero sí tiene que resolverse antes de cualquier
+merge a `main`, que es lo que dispara producción.
+
+#### Documentación local fuera del rango
+
+```text
+docs/PLAN_C7_PUBLICACION_OBESIDAD.md          17,160 líneas · 752 KB · modificado (M), no commiteado
+docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md       288 líneas ·   7 KB · sin trackear (??)
+```
+
+Secret scan de ambos: **0** en todas las categorías. Las 8 coincidencias de «forma de id» en el plan
+son las cuatro digests sha256 de dataset/gate/evaluación/estado, verificadas como 64 hex. Ninguno de
+los dos documentos se incluyó en ningún rango ni se normalizó; el plan conserva tus ediciones.
+
+#### Rangos propuestos para el checkpoint
+
+```text
+backend    git push origin feat/registry-padecimientos-obesidad
+           dbfdd49c..20e1ccdf   ·  28 commits  ·  0 binarios  ·  0 rutas prohibidas
+
+dashboard  git push --set-upstream origin feat/c73-candidate-staging
+           d5ead880..e894a67a   ·  19 commits  ·  0 binarios  ·  0 rutas prohibidas
+           ⚠ crea la rama en el remoto: no es una actualización, es un alta
+```
+
+Ninguno toca `main`. Ninguno despliega por sí solo: producción sale del merge a `main` del
+dashboard, que no está propuesto aquí.
+
+#### Veredicto
+
+```text
+READY_FOR_CHECKPOINT
+```
+
+Con dos condiciones declaradas, ninguna de las cuales es un defecto del código auditado:
+
+1. el push del dashboard **crea** la rama remota (`--set-upstream`);
+2. el cache-bust de `app.js?v` está pendiente y es prerrequisito del **deploy**, no del push.
+
+#### Pregunta
+
+Tres decisiones, y ninguna la tomo yo:
+
+1. **¿Autorizas los dos push?** Cada uno por separado, con repo y SHA final literal, como pediste.
+2. **El plan y el manual** no entran en ningún rango. ¿Los quieres commiteados en un tercer commit
+   `docs:` antes del push —quedarían versionados y revisables— o siguen viviendo sólo en local?
+3. **El cache-bust**: ¿lo subo yo a `app.js?v=136` ahora, en un commit propio del dashboard, o
+   prefieres dejarlo para la ronda de deploy y que el checkpoint quede exactamente como está
+   auditado?
+
+_Respuesta:_
+
+No autorizar todavía ningún push. Primero cerrar el cache-bust completo en un commit local del
+dashboard y reauditar el SHA final. La rama remota del dashboard **ya existe**; no se creará de
+nuevo. El riesgo de branch deploy sigue sin resolverse y se decide al autorizar el push, no dentro
+del cambio de código.
+
+---
+
+### Ronda 109 — Reauditoría del checkpoint y orden de cache-bust — 2026-07-27
+
+#### Validación independiente
+
+```text
+backend remote branch        origin/feat/registry-padecimientos-obesidad @ dbfdd49c
+backend local                20e1ccdf · ahead 28 / behind 0
+backend publication tests    297 passed, 1 skipped
+backend diff --check         PASS
+
+dashboard remote branch      origin/feat/c73-candidate-staging @ d5ead880
+dashboard local              e894a67a · ahead 19 / behind 0 respecto de esa rama
+dashboard main               local == origin/main == 179bbe36
+dashboard npm run check      PASS desde EpiForecast-IMSS-Dashboard/epibot
+dashboard RAG               454/454 · sincronizado
+```
+
+El primer intento de `npm run check` desde la raíz del dashboard dio “Missing script”; no es un
+fallo del producto. El `package.json` canónico del EpiBot vive en `epibot/`, y desde ese directorio
+la cadena completa pasa. Las futuras órdenes deben declarar siempre el `workdir`.
+
+#### R109-P0-1 · la rama remota del dashboard ya existe
+
+Ronda 108 afirmó que `--set-upstream` “crearía la rama”. Es falso:
+
+```text
+git ls-remote origin feat/c73-candidate-staging
+d5ead880...  refs/heads/feat/c73-candidate-staging
+```
+
+La rama fue creada y subida durante C7.3. El local simplemente no tiene upstream configurado.
+Actualizarla sería un fast-forward `d5ead880..HEAD`; `--set-upstream` sólo configuraría tracking
+local. No presentarlo como alta remota.
+
+#### R109-P0-2 · un push de rama puede desplegar un preview
+
+Ronda 108 afirmó que ninguno de los pushes despliega por sí solo. Eso tampoco está demostrado.
+`netlify.toml` no desactiva branch deploys y la configuración efectiva vive en la UI de Netlify.
+
+Verdades verificables:
+
+- un push no mueve producción porque `main` permanece intacta;
+- un push del dashboard **puede** disparar un branch preview si Netlify lo tiene habilitado;
+- ese riesgo se acepta explícitamente o se desactivan branch deploys antes del push;
+- backend no tiene ese acoplamiento a Netlify.
+
+Por tanto, backend y dashboard tendrán autorizaciones de push separadas.
+
+#### R109-P0-3 · `app.js?v=136` solo no invalida los módulos hijos
+
+Cadena actual:
+
+```text
+epibot/index.html   → js/app.js?v=135
+epibot/js/app.js    → ./kb.js?v=102
+                    → ./entities.js?v=30
+epibot/js/kb.js     → ./entities.js?v=30
+```
+
+El rango modificó `kb.js` y `entities.js`. Pedir únicamente `app.js?v=136` fuerza a releer
+`app.js`, pero ese archivo seguiría solicitando las URLs antiguas de sus hijos, sujetas a
+`Cache-Control: max-age=3600`. El cache-bust correcto es transitivo:
+
+```text
+index.html          app.js?v=135       → app.js?v=136
+app.js              kb.js?v=102        → kb.js?v=103
+app.js              entities.js?v=30   → entities.js?v=31
+kb.js               entities.js?v=30   → entities.js?v=31
+```
+
+No cambiar lógica, contenido de datos ni versiones ajenas.
+
+#### Veredicto corregido
+
+```text
+BACKEND_READY_FOR_CHECKPOINT
+DASHBOARD_CODE_GATES_PASS
+DASHBOARD_CACHE_BUST_REQUIRED
+DASHBOARD_PUSH_REQUIRES_BRANCH_DEPLOY_DECISION
+NO_PUSH_AUTHORIZED
+```
+
+### Orden C7.6-DASHBOARD-CACHE-BUST — local, un commit y STOP
+
+#### Alcance exacto
+
+Repositorio:
+
+```text
+/Users/haowei/Documents/Integrador/EpiForecast-IMSS-Dashboard
+```
+
+Archivos permitidos:
+
+```text
+epibot/index.html
+epibot/js/app.js
+epibot/js/kb.js
+```
+
+Cambios exactos:
+
+```text
+app.js?v=135       → app.js?v=136
+kb.js?v=102        → kb.js?v=103
+entities.js?v=30   → entities.js?v=31  (en app.js)
+entities.js?v=30   → entities.js?v=31  (en kb.js)
+```
+
+`entities.js` no necesita cambiar: cambia la URL con la que sus consumidores solicitan los bytes ya
+modificados en el rango.
+
+#### Gates
+
+1. `git diff --check`.
+2. El diff contiene exactamente cuatro sustituciones en tres archivos, sin otra línea funcional.
+3. `node --check` sobre `app.js`, `kb.js` y `entities.js`.
+4. Desde `EpiForecast-IMSS-Dashboard/epibot`:
+
+```text
+npm run check
+```
+
+5. `knowledge.json`, `rag_index.json`, `package.json`, lock y Netlify byte-idénticos.
+6. `origin/main` permanece `179bbe36`.
+7. Obesidad sigue fuera de `knowledge.json`, `rag_index.json` y las superficies HTML.
+8. Ningún shard, candidate, secreto o ID entra al commit.
+
+#### Commit
+
+Un solo commit local:
+
+```text
+fix(epibot): bust module cache after candidate handler changes
+```
+
+Después STOP para auditoría del SHA nuevo.
+
+#### Prohibiciones
+
+Sin push, `--set-upstream`, PR, merge, Netlify, deploy, backend, plan commit, Google, DVC,
+lifecycle, puntero ni publicación. Preservar `EpiBot_v2_SinFondo.png` y `kb.zip` untracked.
+
+#### Lo que sigue, todavía no autorizado
+
+Tras PASS del cache-bust:
+
+1. auditar `d5ead880..NUEVO_SHA`;
+2. decidir si se acepta un posible branch preview o si se desactiva en Netlify;
+3. autorizar backend y dashboard por separado;
+4. decidir un commit doc-only para plan + manual, también separado.
+
+#### Avance
+
+C7 permanece en **82.3% ≈ 82%**. Es una corrección operativa de entrega, no exposición pública.
+
+#### Próxima acción exacta
+
+_Respuesta:_ **GO C7.6-DASHBOARD-CACHE-BUST LOCAL. Cambiar únicamente las cuatro versiones
+de la cadena `index → app → kb/entities`, ejecutar `npm run check` desde `epibot/`, crear un solo
+commit local y STOP. Sin push, branch deploy, PR, merge, backend, Google, DVC, lifecycle, puntero,
+deploy ni publicación.**
+
+
+---
+
+### Ronda 110 — C7.6-DASHBOARD-CACHE-BUST ejecutada — 2026-07-27
+
+**Commit (único, local, dashboard):**
+
+```text
+9487e322  fix(epibot): bust module cache after candidate handler changes
+```
+
+Rama `feat/c73-candidate-staging`: `e894a67a` → **`9487e322`**.
+
+#### Las cuatro sustituciones
+
+```text
+epibot/index.html   js/app.js?v=135        →  136
+epibot/js/app.js    ./kb.js?v=102          →  103
+epibot/js/app.js    ./entities.js?v=30     →  31
+epibot/js/kb.js     ./entities.js?v=30     →  31
+```
+
+`entities.js` no cambia: lo que cambia es la URL con la que sus **dos** consumidores piden los bytes
+que el rango ya modificó. Las versiones ajenas —`mexico-map?v=2`, `timelapse?v=2`, `semaforo?v=2`,
+`comparador?v=2`, `voice?v=3`, `style.css?v=47`, el favicon `?v=2`— quedaron intactas: sus archivos
+no cambiaron y moverlas habría invalidado caché sin motivo.
+
+#### Gates
+
+```text
+1  git diff --check                                            PASS
+2  diff = 4 sustituciones en 3 archivos · 4 insert / 4 delete   PASS  (ninguna línea funcional)
+3  node --check app.js · kb.js · entities.js                    PASS
+4  npm run check desde EpiForecast-IMSS-Dashboard/epibot
+     test:cases:verify   616 / 616
+     test:unit           67 passed
+     test:candidate      81 (79 passed · 2 skipped: shard real no inyectado)
+     rag:verify          índice sincronizado, 454 chunks                PASS
+5  knowledge.json · rag_index.json · package.json · lock · netlify.toml  byte-idénticos
+6  origin/main                                                  179bbe36  (sin moverse)
+7  Obesidad en knowledge.json / rag_index.json / index.html      0 · 0 · 0
+8  árbol tras el commit                                         sólo los dos untracked previos
+```
+
+`EpiBot_v2_SinFondo.png` y `kb.zip` siguen sin trackear, tal como estaban.
+
+Sin push, `--set-upstream`, PR, merge, Netlify, deploy, backend, commit del plan, Google, DVC,
+lifecycle, puntero ni publicación.
+
+#### Rango de checkpoint actualizado
+
+```text
+backend    dbfdd49c..20e1ccdf   28 commits   (sin cambios en esta ronda)
+dashboard  d5ead880..9487e322   20 commits   (+1: el cache-bust)
+```
+
+#### Pregunta
+
+El bust ya está, así que lo que queda del checkpoint son decisiones tuyas, no trabajo mío:
+
+1. **Branch preview de Netlify.** Sigue sin demostrarse si está habilitado —la configuración
+   efectiva vive en la UI, no en `netlify.toml`—. ¿Lo compruebas y decides aceptarlo o desactivarlo
+   antes de autorizar el push del dashboard? El de backend no tiene ese acoplamiento y puede
+   autorizarse por separado sin esperar a esto.
+2. **Plan y manual.** Siguen fuera de todo rango: el plan modificado y sin commitear, el manual sin
+   trackear. ¿Commit `docs:` propio antes o después de los push, o siguen sólo en local?
+
+_Respuesta:_
+
+---
+
+### Ronda 111 — Auditoría del cache-bust y orden del checkpoint documental — 2026-07-27
+
+#### Veredicto
+
+```text
+C7.6-DASHBOARD-CACHE-BUST       PASS
+BACKEND_CODE_CHECKPOINT         READY
+DASHBOARD_CODE_CHECKPOINT       READY, con riesgo externo de branch preview todavía no resuelto
+B1-PREFLIGHT                    PARKED_BY_USER
+PUBLICACIÓN                     NO-GO
+```
+
+El commit `9487e322` fue revisado por diff y por la cadena completa del EpiBot. Contiene
+exactamente las cuatro sustituciones autorizadas:
+
+```text
+index.html   app.js?v=135       -> 136
+app.js       kb.js?v=102        -> 103
+app.js       entities.js?v=30   -> 31
+kb.js        entities.js?v=30   -> 31
+```
+
+No cambia lógica, datos, RAG, configuración de Netlify ni superficies públicas.
+
+#### Evidencia revalidada
+
+```text
+dashboard HEAD                         9487e322
+dashboard remote feature              d5ead880
+dashboard ahead / behind               20 / 0
+dashboard origin/main                  179bbe36, intacta
+git diff --check                       PASS
+npm run check (workdir epibot/)        PASS
+fixture                               616 / 616
+unitarias                              67 passed
+candidate                              79 passed, 2 skips esperados sin shard real
+RAG                                    454 / 454, sincronizado
+Obesidad pública                       0 menciones en knowledge/RAG/index
+untracked del usuario                  EpiBot_v2_SinFondo.png y kb.zip, intactos
+```
+
+El backend permanece en `20e1ccdf`, 28 commits delante de `dbfdd49c`, sin cambio de código en esta
+ronda.
+
+#### Documentación pendiente
+
+Hay dos piezas autoritativas todavía fuera de un checkpoint Git:
+
+```text
+docs/PLAN_C7_PUBLICACION_OBESIDAD.md
+  trackeado y modificado
+  delta acumulado observado al iniciar esta auditoría: +6,409 / -18
+
+docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md
+  nuevo, 288 líneas
+  sha256 d38eeed6f7a60c8b089216598c138134f82719cead4eea84e790bbff33b6dcc7
+```
+
+El tamaño del plan es consecuencia de la bitácora acumulada de C7. No se debe normalizar,
+reordenar ni resumir en este checkpoint. El scan dirigido no encontró private keys ni tokens con
+forma de Google, GitHub, OpenAI, Slack o AWS. Los nombres de variables de entorno y los
+identificadores falsos de fixtures no son secretos.
+
+### Orden C7.6-DOCS-CHECKPOINT — local, doc-only y STOP
+
+#### Objetivo
+
+Versionar el estado autoritativo y el manual de reanudación antes de mover cualquier remoto. No
+mezclar documentación con código ni reinterpretar el contenido histórico.
+
+#### Preflight
+
+1. Confirmar:
+
+```text
+backend HEAD       20e1ccdf
+dashboard HEAD     9487e322
+```
+
+2. Ejecutar `git status --short --branch` en ambos repositorios.
+3. Confirmar que los únicos paths que se añadirán al índice son:
+
+```text
+docs/PLAN_C7_PUBLICACION_OBESIDAD.md
+docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md
+```
+
+4. Preservar todos los demás archivos no rastreados del usuario.
+
+#### Ejecución
+
+Añadir por ruta explícita, nunca con `git add .`:
+
+```bash
+git add -- docs/PLAN_C7_PUBLICACION_OBESIDAD.md \
+  docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md
+```
+
+Antes de commitear:
+
+```bash
+git diff --cached --name-status
+git diff --cached --check
+git diff --cached --stat
+```
+
+El `name-status` debe contener exactamente:
+
+```text
+M  docs/PLAN_C7_PUBLICACION_OBESIDAD.md
+A  docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md
+```
+
+Repetir el scan de secretos sobre el **staged diff**. Si aparece una credencial real, hacer STOP;
+no corregirla dentro del índice sin retirar primero ambos paths del staging.
+
+Commit local único:
+
+```text
+docs: preserve C7 publication plan and B1 staging manual
+```
+
+Los hooks deben quedar verdes. Después comprobar que:
+
+- el commit contiene sólo esos dos archivos;
+- el árbol trackeado queda limpio;
+- los untracked del usuario siguen intactos;
+- ningún SHA de código del dashboard cambia;
+- no se creó ni activó un puntero público.
+
+#### Prohibiciones
+
+Sin editar código, reformatear la bitácora, incluir otros documentos, `git add .`, push, PR, merge,
+tag, Netlify, branch deploy, Google, Tableau, Gemini, DVC, lifecycle, puntero, deploy ni
+publicación.
+
+#### STOP
+
+Terminar reportando el SHA documental nuevo y el nuevo rango backend
+`dbfdd49c..NUEVO_SHA`. No ejecutar ningún push.
+
+### Secuencia posterior — todavía no autorizada
+
+1. Auditar el commit documental y recalcular el rango final del backend.
+2. Autorizar por literal el push del backend.
+3. Resolver la política externa de branch deploy del dashboard:
+   - desactivarlo en Netlify, o
+   - aceptar explícitamente el posible preview de rama.
+4. Autorizar por literal el push del dashboard `d5ead880..9487e322`.
+5. Mantener B1-PREFLIGHT estacionado hasta poder seguir
+   `docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md`.
+6. No iniciar C7.7: la validación real de Google Sheets/Tableau sigue pendiente.
+
+#### Próxima acción exacta
+
+_Respuesta:_ **GO C7.6-DOCS-CHECKPOINT LOCAL. Añadir únicamente
+`docs/PLAN_C7_PUBLICACION_OBESIDAD.md` y
+`docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md`, verificar el staged diff y secretos, crear un commit
+local doc-only y STOP. Sin push, código, DVC, Google, Tableau, Netlify, lifecycle, puntero, deploy
+ni publicación.**
