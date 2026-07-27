@@ -44,6 +44,8 @@ from epiforecast.runner.release_contract import INTERVAL_METHOD_NONE
 from epiforecast.runner.release_loader import VerifiedRelease, verify_bundle
 from epiforecast.runner.release_store import release_path
 
+from .status import ProspectiveStatus
+
 MODE_CANDIDATE = "candidate"
 MODE_PUBLIC = "public"
 MODES: tuple[str, str] = (MODE_CANDIDATE, MODE_PUBLIC)
@@ -52,6 +54,10 @@ LIFECYCLE_PUBLISHED = "published"
 PORTFOLIO = "portfolio"
 # Etiqueta VISIBLE, no un comentario: el consumidor final tiene que poder leerla.
 UNCERTAINTY_LABEL = "Pronóstico puntual; sin intervalo de incertidumbre"
+# Cola de la etiqueta pública cuando el release no trae intervalos. Se AÑADE al estado prospectivo
+# porque son dos advertencias distintas: una dice qué tan validado está, la otra qué no contiene.
+POINT_ONLY_SUFFIX = "pronóstico puntual sin intervalos"
+LABEL_SEPARATOR = " · "
 
 # Rutas del repo donde vive lo PÚBLICO. `candidate` no puede escribir dentro de ninguna.
 PUBLIC_DIRS: tuple[str, ...] = ("reports", "data", "models", "epibot", "web", "artifacts")
@@ -83,7 +89,7 @@ PUBLICATION_COLUMNS: tuple[str, ...] = (
 
 @dataclass(frozen=True, slots=True)
 class Compilation:
-    """Filas compiladas de un release, con su modo y el padecimiento del que salen."""
+    """Filas compiladas de un release, con su modo, padecimiento y estado prospectivo."""
 
     mode: str
     disease_id: str
@@ -91,6 +97,7 @@ class Compilation:
     rows: pd.DataFrame
     verified: VerifiedRelease
     disease: registry.Disease
+    status: ProspectiveStatus | None = None
 
     @property
     def base_rows(self) -> pd.DataFrame:
@@ -99,6 +106,27 @@ class Compilation:
     @property
     def derived_rows(self) -> pd.DataFrame:
         return self.rows[self.rows["derived"]]
+
+    @property
+    def label(self) -> str:
+        """Etiqueta pública derivada: estado prospectivo + advertencia de incertidumbre."""
+        require(
+            self.status is not None, f"{self.disease_id}: no hay estado prospectivo que mostrar"
+        )
+        assert self.status is not None  # noqa: S101 — para mypy; `require` ya falló si era None
+        return publication_label(self.status, self.verified)
+
+
+def publication_label(status: ProspectiveStatus, verified: VerifiedRelease) -> str:
+    """Una sola fuente para la etiqueta que verán los cuatro canales.
+
+    Se compone de DATOS: los conteos salen del estado validado y la cola point-only del propio
+    release. Ni el texto del avance ni el ``n/4`` se escriben a mano en ningún puente.
+    """
+    partes = [status.progress_label()]
+    if not verified.uncertainty_available:
+        partes.append(POINT_ONLY_SUFFIX)
+    return LABEL_SEPARATOR.join(partes)
 
 
 def check_mode(mode: str) -> str:
@@ -125,6 +153,31 @@ def check_staging_root(output_root: Path, repo_root_path: Path | None = None) ->
             f"({primera}/); el modo candidate sólo escribe en staging",
         )
     return destino
+
+
+def _check_status(
+    disease: registry.Disease, release_id: str, mode: str, status: ProspectiveStatus | None
+) -> None:
+    """El estado prospectivo es parte del contrato de publicación, no un adorno.
+
+    En ``candidate`` se acepta inyectado y, si viene, tiene que ser el de ESTE release. En ``public``
+    es obligatorio: publicar sin poder mostrar bajo qué condición se autorizó es justo el fallo que
+    R74-P0 describe. Un ``FAIL`` no habilita el modo público en ninguna circunstancia.
+    """
+    if status is not None:
+        equal(f"{disease.id}: disease_id del estado prospectivo", status.disease_id, disease.id)
+        equal(f"{disease.id}: release_id del estado prospectivo", status.release_id, release_id)
+    if mode == MODE_CANDIDATE:
+        return
+    require(
+        status is not None,
+        f"{disease.id}: el modo public exige un estado prospectivo validado para {release_id}",
+    )
+    assert status is not None  # noqa: S101 — para mypy; `require` ya falló si era None
+    require(
+        status.publishable,
+        f"{disease.id}: veredicto {status.verdict} del gate prospectivo; no habilita publicación",
+    )
 
 
 def _check_lifecycle(disease: registry.Disease, mode: str, pointer_release_id: str | None) -> None:
@@ -221,6 +274,7 @@ def compile_release(
     mode: str,
     releases_root: Path,
     pointer_release_id: str | None = None,
+    status: ProspectiveStatus | None = None,
 ) -> Compilation:
     """Compila el release DECLARADO del padecimiento. No escribe nada: sólo produce las filas."""
     check_mode(mode)
@@ -230,6 +284,7 @@ def compile_release(
         raise ArtifactValidationError(f"padecimiento desconocido: {disease_id!r}") from exc
     release_id = _release_id_of(disease)
     _check_lifecycle(disease, mode, pointer_release_id)
+    _check_status(disease, release_id, mode, status)
 
     destino = release_path(releases_root, disease.id, release_id)
     require(
@@ -246,4 +301,5 @@ def compile_release(
         rows=_rows(verified, disease.id),
         verified=verified,
         disease=disease,
+        status=status,
     )

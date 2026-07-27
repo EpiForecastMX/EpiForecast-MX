@@ -32,6 +32,7 @@ from epiforecast.runner.artifact_identity import require
 from epiforecast.runner.release_contract import canonical_json, sha256_bytes
 
 from .compiler import MODE_CANDIDATE, UNCERTAINTY_LABEL, Compilation, check_staging_root
+from .status import status_facts
 
 CHANNEL_REPORTS = "reports"
 CHANNEL_TABLEAU = "tableau"
@@ -65,7 +66,16 @@ def _csv_bytes(frame: pd.DataFrame) -> bytes:
 
 
 def _facts(c: Compilation) -> dict[str, Any]:
-    """Los hechos del release que TODO puente repite igual (nunca recalculados a mano)."""
+    """Los hechos del release que TODO puente repite igual (nunca recalculados a mano).
+
+    Incluye el estado prospectivo: la condición bajo la que se autorizó publicar viaja PEGADA a los
+    datos, no en un documento aparte. Sin él no se emite nada (R74-P0).
+    """
+    require(
+        c.status is not None,
+        f"{c.disease_id}: no se emiten shards sin estado prospectivo validado",
+    )
+    assert c.status is not None  # noqa: S101 — para mypy; `require` ya falló si era None
     conteos = c.verified.counts
     return {
         "release_id": c.release_id,
@@ -84,6 +94,8 @@ def _facts(c: Compilation) -> dict[str, Any]:
         "interval_method": c.verified.interval_method,
         "uncertainty_available": c.verified.uncertainty_available,
         "uncertainty_label": UNCERTAINTY_LABEL,
+        "publication_status": status_facts(c.status, label=c.label),
+        "publication_label": c.label,
     }
 
 
@@ -93,6 +105,8 @@ def _reports(c: Compilation, root: Path, reg: dict[str, str]) -> None:
     _write(root, f"{CHANNEL_REPORTS}/forecast_products.csv", _csv_bytes(c.rows), reg)
     lineas = [
         f"# Pronóstico — {hechos['display_name']} ({', '.join(hechos['cie_codes'])})",
+        "",
+        f"**{hechos['publication_label']}**",
         "",
         f"- Release: `{hechos['release_id']}`",
         f"- Lineage: forecast `{c.verified.chain['forecast_run_id']}` · refit "
@@ -116,6 +130,14 @@ def _reports(c: Compilation, root: Path, reg: dict[str, str]) -> None:
         f"- Los {hechos['derived_products']} productos derivados se atribuyen al portafolio, no a "
         "un motor concreto: son la suma de las series base.",
         "",
+        "## Validación prospectiva",
+        "",
+        f"- **{hechos['publication_label']}**",
+        f"- Veredicto `{hechos['publication_status']['verdict']}` · "
+        f"{hechos['publication_status']['weeks_available']} de "
+        f"{hechos['publication_status']['weeks_required']} semanas objetivo con verdad disponible.",
+        f"- Gate congelado `{hechos['publication_status']['gate_digest']}`.",
+        "",
         f"**Lifecycle `{hechos['lifecycle']}`**: shard de compilación, no publicación.",
     ]
     _write(root, f"{CHANNEL_REPORTS}/report.md", ("\n".join(lineas) + "\n").encode("utf-8"), reg)
@@ -135,6 +157,8 @@ def _tableau(c: Compilation, root: Path, reg: dict[str, str]) -> None:
         "notes": [
             "`derived=false` son las series base modeladas; `derived=true` son sumas del portafolio.",
             "`yhat_lower`/`yhat_upper` viajan nulos a propósito: el release es point-only.",
+            "`publication_status` gobierna la etiqueta que debe mostrarse junto a cualquier cifra "
+            "de este shard; no es opcional.",
         ],
     }
     _write(root, f"{CHANNEL_TABLEAU}/schema.json", canonical_json(schema), reg)
@@ -197,6 +221,13 @@ def _epibot(c: Compilation, root: Path, reg: dict[str, str]) -> None:
         f"interval_method={hechos['interval_method']} y uncertainty_available="
         f"{str(hechos['uncertainty_available']).lower()}: este release NO tiene intervalos de "
         "confianza ni bandas de incertidumbre. No deben describirse como si existieran.",
+        "",
+        f"IMPORTANTE — validación prospectiva: {hechos['publication_label']}. "
+        f"El veredicto del gate congelado es {hechos['publication_status']['verdict']} con "
+        f"{hechos['publication_status']['weeks_available']} de "
+        f"{hechos['publication_status']['weeks_required']} semanas objetivo observadas "
+        f"(gate {hechos['publication_status']['gate_digest']}). Cualquier respuesta que use estas "
+        "cifras debe declarar esa condición.",
         "",
         f"Estado de publicación: lifecycle={hechos['lifecycle']}.",
     ]

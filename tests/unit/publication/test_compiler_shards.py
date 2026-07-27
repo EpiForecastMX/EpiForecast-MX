@@ -39,6 +39,7 @@ from epiforecast.publication.shards import (
     SHARD_MANIFEST,
     emit_shards,
 )
+from epiforecast.publication.status import load_declared_status
 from epiforecast.runner.artifact_identity import ArtifactValidationError
 from epiforecast.runner.release_store import promote_release
 from tests.unit.runner import artifact_fixtures as af
@@ -61,7 +62,13 @@ def sede(tmp_path_factory) -> Path:
     return destino
 
 
+def _estado():
+    """Estado prospectivo DECLARADO del padecimiento, ya validado contra su gate congelado."""
+    return load_declared_status(af.DISEASE)
+
+
 def _compilar(sede: Path, **extra):
+    extra.setdefault("status", _estado())
     return compile_release(disease_id=af.DISEASE, mode=MODE_CANDIDATE, releases_root=sede, **extra)
 
 
