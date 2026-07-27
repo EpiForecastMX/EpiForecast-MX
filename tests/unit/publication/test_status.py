@@ -29,7 +29,6 @@ from epiforecast.publication.compiler import (
 from epiforecast.publication.prospective import (
     ACCEPTANCE_RULE,
     GATE_WEEKS,
-    SCOPES,
     VERDICT_FAIL,
     VERDICT_INCOMPLETE,
     VERDICT_PASS,
@@ -82,10 +81,58 @@ def _gate(**cambios) -> FrozenGate:
     return FrozenGate(**base)
 
 
-def _evaluacion(gate: FrozenGate, **cambios) -> dict:
-    """Payload de una evaluación coherente con el gate. Los tests sólo tuercen lo que prueban."""
-    completadas = cambios.pop("completed_weeks", ())
-    evaluation = ProspectiveEvaluation(
+def _desde_payload(payload: dict) -> dict:
+    """Campos de `ProspectiveEvaluation` a partir de su payload, para re-sellar una versión torcida."""
+    return {
+        "disease_id": payload["disease_id"],
+        "release_id": payload["release_id"],
+        "gate_digest": payload["gate_digest"],
+        "candidate_digest": payload["candidate_forecast_digest"],
+        "control_digest": payload["control_forecast_digest"],
+        "training_dataset_id": payload["training_dataset_id"],
+        "training_dataset_digest": payload["training_dataset_digest"],
+        "observation_dataset_id": payload["observation_dataset_id"],
+        "observation_dataset_digest": payload["observation_dataset_digest"],
+        "observation_source_digests": payload["observation_source_digests"],
+        "observation_cutoff": (
+            tuple(payload["observation_cutoff"]) if payload.get("observation_cutoff") else None
+        ),
+        "scheduled_weeks": tuple(tuple(p) for p in payload["scheduled_weeks"]),
+        "completed_weeks": tuple(tuple(p) for p in payload["completed_weeks"]),
+        "skipped_weeks": tuple((tuple(d["week"]), d["reason"]) for d in payload["skipped_weeks"]),
+        "verdict": payload["verdict"],
+        "scopes": payload["scopes"],
+        "metrics": payload["metrics"],
+        "per_week": tuple(payload["per_week"]),
+    }
+
+
+ROWS_POR_SEMANA = {"smape_base": 64, "smape_products": 111, "smape_national_general": 1}
+
+
+def _cuerpo(gate: FrozenGate, completadas, veredicto: str) -> ProspectiveEvaluation:
+    """Evaluación SEMÁNTICAMENTE coherente: la aritmética del artefacto se sostiene sola (A.3)."""
+    completadas = tuple(completadas)
+    n = len(completadas)
+    scopes, metrics = {}, {}
+    if n:
+        for scope, filas in ROWS_POR_SEMANA.items():
+            control = 10.0
+            candidato = control if veredicto != VERDICT_FAIL else control * 2
+            degradacion = (candidato - control) / control * 100.0
+            scopes[scope] = {
+                "rows": filas * n,
+                "smape_candidate": candidato,
+                "smape_control": control,
+                "degradation_pct": degradacion,
+                "max_degradation_pct": float(gate.rule[scope]),
+                "passes": degradacion <= float(gate.rule[scope]),
+            }
+            metrics[scope] = {
+                lado: {"products": filas, "median": {"smape": 10.0}, "flags": {}}
+                for lado in ("candidate", "control")
+            }
+    return ProspectiveEvaluation(
         disease_id=gate.disease_id,
         release_id=gate.release_id,
         gate_digest=gate.digest(),
@@ -96,13 +143,37 @@ def _evaluacion(gate: FrozenGate, **cambios) -> dict:
         observation_dataset_id="x_dataset_observacion",
         observation_dataset_digest="e" * 64,
         observation_source_digests={"raw": "f" * 64},
+        observation_cutoff=(max(completadas) if completadas else None),
         scheduled_weeks=gate.target_weeks,
-        completed_weeks=tuple(completadas),
+        completed_weeks=completadas,
         skipped_weeks=(),
-        verdict=VERDICT_INCOMPLETE if len(completadas) < GATE_WEEKS else VERDICT_PASS,
-        scopes={s: {"passes": True} for s in SCOPES} if len(completadas) >= GATE_WEEKS else {},
+        verdict=veredicto,
+        scopes=scopes,
+        metrics=metrics,
+        per_week=tuple(
+            {
+                "week": list(p),
+                "series": 64,
+                "smape_candidate": 10.0,
+                "smape_control": 10.0,
+            }
+            for p in completadas
+        ),
     )
-    return {**evaluation.payload(), **cambios}
+
+
+def _evaluacion(gate: FrozenGate, **cambios) -> dict:
+    """Payload de una evaluación coherente con el gate. Los tests sólo tuercen lo que prueban."""
+    completadas = tuple(cambios.pop("completed_weeks", ()))
+    veredicto = cambios.pop(
+        "verdict", VERDICT_INCOMPLETE if len(completadas) < GATE_WEEKS else VERDICT_PASS
+    )
+    return {**_cuerpo(gate, completadas, veredicto).payload(), **cambios}
+
+
+def _evaluacion_con_veredicto(gate: FrozenGate, veredicto: str) -> dict:
+    """Evaluación COMPLETA (4/4) con el veredicto pedido, coherente consigo misma."""
+    return _cuerpo(gate, gate.target_weeks, veredicto).payload()
 
 
 def _status(gate: FrozenGate, evaluacion: dict | None = None, **cambios) -> dict:
@@ -124,28 +195,6 @@ def _status(gate: FrozenGate, evaluacion: dict | None = None, **cambios) -> dict
     }
     base.update(cambios)
     return base
-
-
-def _evaluacion_con_veredicto(gate: FrozenGate, veredicto: str) -> dict:
-    """Evaluación COMPLETA (4/4) con el veredicto pedido, coherente con su propio digest."""
-    evaluation = ProspectiveEvaluation(
-        disease_id=gate.disease_id,
-        release_id=gate.release_id,
-        gate_digest=gate.digest(),
-        candidate_digest=gate.candidate_digest,
-        control_digest=gate.control_digest,
-        training_dataset_id="x_dataset_congelado",
-        training_dataset_digest=gate.dataset_digest,
-        observation_dataset_id="x_dataset_observacion",
-        observation_dataset_digest="e" * 64,
-        observation_source_digests={"raw": "f" * 64},
-        scheduled_weeks=gate.target_weeks,
-        completed_weeks=gate.target_weeks,
-        skipped_weeks=(),
-        verdict=veredicto,
-        scopes={s: {"passes": veredicto == VERDICT_PASS} for s in SCOPES},
-    )
-    return evaluation.payload()
 
 
 def _escribir(
@@ -257,48 +306,24 @@ def test_semanas_completadas_duplicadas_desordenadas_o_ajenas(tmp_path):
 
 def test_coherencia_entre_veredicto_y_conteos(tmp_path):
     gate = _gate()
-    completas = list(gate.target_weeks)
-    # INCOMPLETE con todas las semanas: contradicción.
-    incoherente = ProspectiveEvaluation(
-        disease_id=gate.disease_id,
-        release_id=gate.release_id,
-        gate_digest=gate.digest(),
-        candidate_digest=gate.candidate_digest,
-        control_digest=gate.control_digest,
-        training_dataset_id="x_dataset_congelado",
-        training_dataset_digest=gate.dataset_digest,
-        observation_dataset_id="x_dataset_observacion",
-        observation_dataset_digest="e" * 64,
-        observation_source_digests={"raw": "f" * 64},
-        scheduled_weeks=gate.target_weeks,
-        completed_weeks=tuple(completas),
-        skipped_weeks=(),
-        verdict=VERDICT_INCOMPLETE,
-    ).payload()
+    completas = gate.target_weeks
+
+    # INCOMPLETE con todas las semanas: contradicción con sus propios ámbitos.
+    incoherente = _cuerpo(gate, completas, VERDICT_PASS).payload()
+    incoherente = {**incoherente, "verdict": VERDICT_INCOMPLETE}
+    incoherente["evaluation_digest"] = ProspectiveEvaluation(
+        **_desde_payload(incoherente)
+    ).digest()
     raiz = _escribir(tmp_path / "a", gate, _status(gate, incoherente), evaluacion=incoherente)
-    with pytest.raises(ArtifactValidationError, match="INCOMPLETE con todas las semanas"):
+    with pytest.raises(
+        ArtifactValidationError, match="veredicto recomputado|INCOMPLETE con todas"
+    ):
         load_declared_status(OTRO, config_root_path=raiz)
 
     # PASS sin las semanas: tampoco.
-    sin_semanas = ProspectiveEvaluation(
-        disease_id=gate.disease_id,
-        release_id=gate.release_id,
-        gate_digest=gate.digest(),
-        candidate_digest=gate.candidate_digest,
-        control_digest=gate.control_digest,
-        training_dataset_id="x_dataset_congelado",
-        training_dataset_digest=gate.dataset_digest,
-        observation_dataset_id="x_dataset_observacion",
-        observation_dataset_digest="e" * 64,
-        observation_source_digests={"raw": "f" * 64},
-        scheduled_weeks=gate.target_weeks,
-        completed_weeks=(),
-        skipped_weeks=(),
-        verdict=VERDICT_PASS,
-        scopes={sc: {"passes": True} for sc in SCOPES},
-    ).payload()
+    sin_semanas = _cuerpo(gate, (), VERDICT_PASS).payload()
     raiz = _escribir(tmp_path / "b", gate, _status(gate, sin_semanas), evaluacion=sin_semanas)
-    with pytest.raises(ArtifactValidationError, match="PASS exige las 4 semanas"):
+    with pytest.raises(ArtifactValidationError, match="sin ámbitos|sólo puede ser INCOMPLETE"):
         load_declared_status(OTRO, config_root_path=raiz)
 
 
@@ -417,6 +442,17 @@ def test_sin_estado_no_se_emite_ningun_shard(sede, tmp_path):
         emit_shards(c, tmp_path / "staging")
 
 
+def _evidencia_valida(gate: FrozenGate, semanas: int, veredicto: str) -> dict:
+    """Ámbitos, métricas y detalle semanal con la forma cerrada que exige el loader (A.3)."""
+    payload = _cuerpo(gate, gate.target_weeks[:semanas], veredicto).payload()
+    return {
+        "scopes": payload["scopes"],
+        "metrics": payload["metrics"],
+        "per_week": payload["per_week"],
+        "completed_weeks": payload["completed_weeks"],
+    }
+
+
 def _capability_real(tmp_path: Path, **cambios):
     """Capability del padecimiento REAL, con el gate declarado y una evaluación torcida a gusto."""
     from epiforecast.publication.status import config_root
@@ -428,6 +464,8 @@ def _capability_real(tmp_path: Path, **cambios):
     ev = json.loads((origen / EVALUATION_FILE).read_text(encoding="utf-8"))
     ev.pop("evaluation_digest")
     ev.update(cambios)
+    if ev["completed_weeks"]:
+        ev["observation_cutoff"] = max(tuple(p) for p in ev["completed_weeks"])
     evaluation = ProspectiveEvaluation(
         disease_id=ev["disease_id"],
         release_id=ev["release_id"],
@@ -439,6 +477,9 @@ def _capability_real(tmp_path: Path, **cambios):
         observation_dataset_id=ev["observation_dataset_id"],
         observation_dataset_digest=ev["observation_dataset_digest"],
         observation_source_digests=ev["observation_source_digests"],
+        observation_cutoff=(
+            tuple(ev["observation_cutoff"]) if ev.get("observation_cutoff") else None
+        ),
         scheduled_weeks=tuple(tuple(p) for p in ev["scheduled_weeks"]),
         completed_weeks=tuple(tuple(p) for p in ev["completed_weeks"]),
         skipped_weeks=tuple((tuple(d["week"]), d["reason"]) for d in ev["skipped_weeks"]),
@@ -483,8 +524,7 @@ def test_el_modo_public_exige_estado_y_rechaza_un_fail(sede, monkeypatch, tmp_pa
     fallido = _capability_real(
         tmp_path,
         verdict=VERDICT_FAIL,
-        completed_weeks=[list(p) for p in load_declared_status(af.DISEASE).gate.target_weeks],
-        scopes={s: {"passes": False} for s in SCOPES},
+        **_evidencia_valida(load_declared_status(af.DISEASE).gate, GATE_WEEKS, VERDICT_FAIL),
     )
     monkeypatch.setattr(registry, "require", lambda _: publicado)
 
@@ -515,8 +555,7 @@ def test_el_estado_no_toca_la_identidad_del_bundle(sede, tmp_path):
     otro = _capability_real(
         tmp_path,
         verdict=VERDICT_PASS,
-        completed_weeks=[list(p) for p in bueno.gate.target_weeks],
-        scopes={s: {"passes": True} for s in SCOPES},
+        **_evidencia_valida(bueno.gate, GATE_WEEKS, VERDICT_PASS),
     )
     a = compile_release(
         disease_id=af.DISEASE, mode=MODE_CANDIDATE, releases_root=sede, status=bueno
@@ -755,3 +794,129 @@ def test_una_semana_de_reemplazo_atraviesa_loader_compilador_y_shards(tmp_path, 
         shards = emit_shards(c, tmp_path / "staging")
         reports = (shards.root / CHANNEL_REPORTS / "report.md").read_text(encoding="utf-8")
         assert capability.progress_label() in reports
+
+
+# ── Corte observado, duplicados y coherencia semántica (A.3) ──────────────────────────────────
+@real
+def test_el_snapshot_vigente_no_declara_semanas_futuras_como_ausentes(tmp_path):
+    """R80-P0-1: una semana futura no es una semana ausente. Antes se registraban las 52."""
+    cap = load_declared_status(af.DISEASE)
+    assert cap.evaluation.observation_cutoff == (2026, 26)
+    assert cap.evaluation.skipped_weeks == ()
+    assert (cap.status.weeks_available, cap.status.verdict) == (0, VERDICT_INCOMPLETE)
+
+
+@real
+def test_con_verdad_hasta_w27_no_se_omite_ninguna_semana_futura(tmp_path):
+    from scripts.prospective_status import derive_evaluation
+
+    from epiforecast.publication.status import config_root
+    from epiforecast.runner.manifest import dataset_dir
+
+    cap = load_declared_status(af.DISEASE)
+    runs = tmp_path / "runs"
+    shutil.copytree(
+        dataset_dir(cap.evaluation.training_dataset_id), runs / cap.evaluation.training_dataset_id
+    )
+    obs = _observacion(
+        runs / "obs_w27",
+        runs / cap.evaluation.training_dataset_id,
+        [cap.gate.target_weeks[0]],
+        "obs_w27",
+    )
+    evaluation, status = derive_evaluation(
+        af.DISEASE, observation_dataset_id=obs, runs_root=runs, config_root_path=config_root()
+    )
+    assert evaluation.observation_cutoff == cap.gate.target_weeks[0]
+    assert evaluation.skipped_weeks == ()
+    assert (status.weeks_available, status.verdict) == (1, VERDICT_INCOMPLETE)
+
+
+@real
+def test_con_un_hueco_real_la_unica_omitida_es_esa_semana(tmp_path):
+    from scripts.prospective_status import derive_evaluation
+
+    from epiforecast.publication.status import config_root
+    from epiforecast.runner.manifest import dataset_dir
+    from epiforecast.runner.release_reproduce import horizon_periods
+
+    cap = load_declared_status(af.DISEASE)
+    gate = cap.gate
+    runs = tmp_path / "runs"
+    shutil.copytree(
+        dataset_dir(cap.evaluation.training_dataset_id), runs / cap.evaluation.training_dataset_id
+    )
+    ventana = list(horizon_periods(gate.origin, gate.horizon))
+    w27, w28, w29, w30 = gate.target_weeks
+    w31 = ventana[ventana.index(w30) + 1]
+    obs = _observacion(
+        runs / "obs_hueco",
+        runs / cap.evaluation.training_dataset_id,
+        [w27, w29, w30, w31],
+        "obs_hueco",
+    )
+    evaluation, status = derive_evaluation(
+        af.DISEASE, observation_dataset_id=obs, runs_root=runs, config_root_path=config_root()
+    )
+    assert evaluation.observation_cutoff == w31
+    assert evaluation.skipped_weeks == ((w28, "ausente"),)
+    assert status.completed_weeks == (w27, w29, w30, w31)
+
+
+@real
+def test_un_duplicado_del_csv_se_rechaza_antes_de_construir_la_historia(tmp_path):
+    """R80-P0-3: `read_base_history` los perdía al convertir a dict; ahora mueren en el frame."""
+    from epiforecast.publication.prospective import check_dataset_frame
+    from epiforecast.runner.manifest import dataset_dir
+
+    origen = dataset_dir(load_declared_status(af.DISEASE).evaluation.training_dataset_id)
+    csv = (origen / "epi_dataset_v2.csv").read_text(encoding="utf-8").splitlines(keepends=True)
+    duplicado = tmp_path / "epi_dataset_v2.csv"
+    duplicado.write_text("".join([*csv, csv[1]]), encoding="utf-8")
+    with pytest.raises(ArtifactValidationError, match="duplicadas"):
+        check_dataset_frame(duplicado, expected_series=64)
+    # Y el canónico pasa.
+    check_dataset_frame(origen / "epi_dataset_v2.csv", expected_series=64)
+
+
+@real
+@pytest.mark.parametrize(
+    ("torcer", "patron"),
+    [
+        (lambda e: e["scopes"]["smape_base"].update({"rows": 1}), "filas del ámbito"),
+        (
+            lambda e: e["scopes"]["smape_base"].update({"degradation_pct": -99.0}),
+            "degradation_pct",
+        ),
+        (lambda e: e["scopes"]["smape_base"].update({"passes": True}), "passes recomputado"),
+        (lambda e: e.update({"verdict": VERDICT_PASS}), "veredicto recomputado|veredicto contra"),
+        (lambda e: e["per_week"].append(dict(e["per_week"][0])), "detalle semanal"),
+        (lambda e: e.update({"observation_cutoff": [2026, 27]}), "posteriores al corte"),
+        (
+            lambda e: e["skipped_weeks"].append({"week": [2026, 29], "reason": "porque si"}),
+            "motivo de omisión desconocido",
+        ),
+    ],
+)
+def test_torcer_la_aritmetica_del_artefacto_se_rechaza_aunque_se_reselle(tmp_path, torcer, patron):
+    """R80-P1: el digest sella BYTES; la coherencia interna se recomputa aparte."""
+    from epiforecast.publication.status import config_root
+
+    gate = load_declared_status(af.DISEASE).gate
+    payload = _cuerpo(gate, gate.target_weeks, VERDICT_FAIL).payload()
+    payload = {
+        **payload,
+        "training_dataset_id": load_declared_status(af.DISEASE).evaluation.training_dataset_id,
+        "training_dataset_digest": gate.dataset_digest,
+    }
+    torcer(payload)
+    payload.pop("evaluation_digest")
+    reSellado = ProspectiveEvaluation(**_desde_payload(payload)).payload()  # digest recalculado
+
+    raiz = tmp_path / "publication" / af.DISEASE
+    raiz.mkdir(parents=True)
+    (raiz / GATE_FILE).write_bytes((config_root() / af.DISEASE / GATE_FILE).read_bytes())
+    (raiz / EVALUATION_FILE).write_bytes(canonical_json(reSellado))
+    (raiz / STATUS_FILE).write_bytes(canonical_json(_status(gate, reSellado)))
+    with pytest.raises(ArtifactValidationError, match=patron):
+        load_declared_status(af.DISEASE, config_root_path=tmp_path / "publication")

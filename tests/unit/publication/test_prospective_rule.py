@@ -15,6 +15,7 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
+from epiforecast.data.epi_dataset_spec import GEO_LEVEL_ESTADO
 from epiforecast.data.epi_geo_exposure import load_geo_catalog
 from epiforecast.publication.prospective import (
     ACCEPTANCE_RULE,
@@ -148,11 +149,17 @@ def test_control_perfecto_y_candidato_imperfecto_no_produce_inf_silencioso():
     assert r["verdict"] == VERDICT_FAIL
 
 
-def test_las_metricas_extra_se_reportan_pero_no_deciden():
+def test_las_metricas_extra_se_reportan_por_producto_para_ambos():
+    """Candidato y control, resumidos por mediana de productos; nunca deciden el veredicto."""
     hist = _historia()
     r = _evaluar(hist, _pred(VENTANA, lambda i, p: 100.0), _pred(VENTANA, lambda i, p: 100.0))
     for scope in (SCOPE_BASE, SCOPE_PRODUCTS, SCOPE_NATIONAL):
-        assert set(r["metrics"][scope]) >= {"smape", "mae", "rmse", "wape", "bias", "mase"}
+        bloque = r["metrics"][scope]
+        assert set(bloque) == {"candidate", "control"}
+        for lado in ("candidate", "control"):
+            assert set(bloque[lado]) == {"products", "median", "flags"}
+            assert set(bloque[lado]["median"]) >= {"smape", "mae", "rmse", "wape", "bias"}
+    assert r["metrics"][SCOPE_NATIONAL]["candidate"]["products"] == 1
     assert r["verdict"] == VERDICT_PASS  # decidido por sMAPE contra el control, no por MAE
 
 
@@ -199,3 +206,50 @@ def test_la_seleccion_no_pasa_del_horizonte_congelado():
     hist = _historia(semanas=(*VENTANA, (2027, 30)))
     seleccion = select_weeks(hist, _gate(horizon=2))
     assert all(p in VENTANA[:2] for p in seleccion.completed)
+
+
+# ── MASE por producto (A.3) ───────────────────────────────────────────────────────────────────
+def test_el_denominador_mase_no_cruza_fronteras_entre_series():
+    """R80-P0-2: concatenar las 64 historias medía saltos entre entidades que nunca existieron.
+
+    Con series constantes de escalas muy distintas (1 y 1000), el lag-52 DENTRO de cada serie es
+    exactamente 0. Un denominador no nulo sólo puede venir del salto entre una serie y la siguiente.
+    """
+    from epiforecast.publication.prospective import product_history
+
+    hist = {
+        s: {
+            (2024 + (w - 1) // 52, ((w - 1) % 52) + 1): (1.0 if i % 2 else 1000.0)
+            for w in range(1, 105)
+        }
+        for i, s in enumerate(SERIES)
+    }
+    productos = product_history(hist, CATALOGO, "x")
+    assert len(productos) == 111
+    for clave, historia in productos.items():
+        valores = [historia[p] for p in sorted(historia)]
+        difs = [abs(valores[i] - valores[i - 52]) for i in range(52, len(valores))]
+        assert difs, clave
+        assert max(difs) == 0.0, f"{clave}: el lag-52 cruzó una frontera de serie"
+
+
+def test_el_producto_derivado_usa_su_propia_historia_agregada():
+    """El nacional General no es la historia de una base: es la suma de las 64, y así se mide."""
+    from epiforecast.data.epi_dataset_spec import GEO_LEVEL_NACIONAL, NATIONAL_GEO_ID, SEX_GENERAL
+    from epiforecast.publication.prospective import product_history
+
+    hist = {s: {(2025, w): 3.0 for w in range(1, 54)} for s in SERIES}  # 2025 tiene 53 semanas
+    productos = product_history(hist, CATALOGO, "x")
+    nacional = productos[(GEO_LEVEL_NACIONAL, NATIONAL_GEO_ID, SEX_GENERAL)]
+    assert nacional[(2025, 1)] == 3.0 * len(SERIES)
+    base = productos[(GEO_LEVEL_ESTADO, SERIES[0][0], SERIES[0][1])]
+    assert base[(2025, 1)] == 3.0
+
+
+def test_un_denominador_cero_viaja_como_null_con_su_bandera():
+    """Serie constante ⇒ MASE indefinido. Nunca NaN en JSON: null y la bandera que lo explica."""
+    hist = _historia()
+    r = _evaluar(hist, _pred(VENTANA, lambda i, p: 100.0), _pred(VENTANA, lambda i, p: 100.0))
+    bloque = r["metrics"][SCOPE_BASE]["candidate"]
+    assert bloque["median"].get("mase") is None
+    assert any("mase" in f for f in bloque["flags"]), bloque["flags"]

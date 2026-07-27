@@ -35,7 +35,11 @@ from epiforecast.publication.prospective import (
     ACCEPTANCE_RULE,
     CONTROL_ENGINE,
     GATE_SCHEMA,
+    SCOPE_BASE,
+    SCOPE_NATIONAL,
+    SCOPE_PRODUCTS,
     SCOPES,
+    SKIP_REASONS,
     VERDICT_FAIL,
     VERDICT_INCOMPLETE,
     VERDICT_PASS,
@@ -52,7 +56,7 @@ from epiforecast.runner.release_contract import canonical_json, sha256_bytes
 from epiforecast.runner.release_reproduce import horizon_periods
 
 STATUS_SCHEMA = "prospective_status.v2"
-EVALUATION_SCHEMA = "prospective_evaluation.v1"
+EVALUATION_SCHEMA = "prospective_evaluation.v2"
 GATE_FILE = "prospective_gate.json"
 STATUS_FILE = "prospective_status.json"
 EVALUATION_FILE = "prospective_evaluation.json"
@@ -113,6 +117,7 @@ EVALUATION_KEYS: frozenset[str] = frozenset(
         "observation_dataset_id",
         "observation_dataset_digest",
         "observation_source_digests",
+        "observation_cutoff",
         "scheduled_weeks",
         "completed_weeks",
         "skipped_weeks",
@@ -255,6 +260,7 @@ class ProspectiveEvaluation:
     observation_dataset_id: str
     observation_dataset_digest: str
     observation_source_digests: dict[str, str]
+    observation_cutoff: Period | None
     scheduled_weeks: tuple[Period, ...]
     completed_weeks: tuple[Period, ...]
     skipped_weeks: tuple[tuple[Period, str], ...]
@@ -276,6 +282,9 @@ class ProspectiveEvaluation:
             "observation_dataset_id": self.observation_dataset_id,
             "observation_dataset_digest": self.observation_dataset_digest,
             "observation_source_digests": dict(sorted(self.observation_source_digests.items())),
+            "observation_cutoff": list(self.observation_cutoff)
+            if self.observation_cutoff
+            else None,
             "scheduled_weeks": [list(p) for p in self.scheduled_weeks],
             "completed_weeks": [list(p) for p in self.completed_weeks],
             "skipped_weeks": [{"week": list(p), "reason": r} for p, r in self.skipped_weeks],
@@ -357,6 +366,157 @@ def _check_completed_weeks(semanas: tuple[Period, ...], gate: FrozenGate, etique
     require(not tempranas, f"{etiqueta}: semanas anteriores al inicio del gate: {tempranas}")
 
 
+SCOPE_KEYS: frozenset[str] = frozenset(
+    {
+        "rows",
+        "smape_candidate",
+        "smape_control",
+        "degradation_pct",
+        "max_degradation_pct",
+        "passes",
+    }
+)
+METRIC_SIDE_KEYS: frozenset[str] = frozenset({"products", "median", "flags"})
+PER_WEEK_KEYS: frozenset[str] = frozenset({"week", "series", "smape_candidate", "smape_control"})
+# Filas esperadas por semana en cada ámbito: bases, productos derivados y el único nacional General.
+SCOPE_ROWS_PER_WEEK: dict[str, int] = {SCOPE_BASE: 64, SCOPE_PRODUCTS: 111, SCOPE_NATIONAL: 1}
+
+
+def _number(valor: Any, etiqueta: str, *, permite_inf: bool = False) -> float:
+    require(
+        isinstance(valor, (int, float)) and not isinstance(valor, bool),
+        f"{etiqueta}: se esperaba un número, no {valor!r}",
+    )
+    numero = float(valor)
+    require(
+        math.isfinite(numero) or permite_inf,
+        f"{etiqueta}: valor no finito ({valor!r})",
+    )
+    return numero
+
+
+def _check_scopes(evaluation: ProspectiveEvaluation, gate: FrozenGate) -> None:
+    """La aritmética del artefacto tiene que sostenerse sola.
+
+    El digest sella los BYTES: alguien podía cambiar ``passes`` o la degradación y recalcularlo, y
+    el loader lo aceptaba (R80-P1). Aquí se recomputan degradación, ``passes`` y veredicto desde
+    sMAPE candidato/control y el umbral del gate, que es lo único que decide.
+    """
+    semanas = len(evaluation.completed_weeks)
+    if not evaluation.scopes:
+        require(
+            evaluation.verdict == VERDICT_INCOMPLETE and semanas < len(gate.target_weeks),
+            "evaluación: sin ámbitos, el veredicto sólo puede ser INCOMPLETE",
+        )
+        return
+
+    equal("evaluación: ámbitos declarados", sorted(evaluation.scopes), sorted(SCOPES))
+    pasan: list[bool] = []
+    for scope, cuerpo in evaluation.scopes.items():
+        require(isinstance(cuerpo, dict), f"evaluación: ámbito {scope} no es un objeto")
+        _exact_keys(cuerpo, SCOPE_KEYS, f"evaluación: ámbito {scope}")
+        equal(
+            f"evaluación: filas del ámbito {scope}",
+            _strict_int(cuerpo["rows"], f"evaluación: {scope}.rows"),
+            SCOPE_ROWS_PER_WEEK[scope] * semanas,
+        )
+        candidato = _number(cuerpo["smape_candidate"], f"evaluación: {scope}.smape_candidate")
+        control = _number(cuerpo["smape_control"], f"evaluación: {scope}.smape_control")
+        umbral = _number(cuerpo["max_degradation_pct"], f"evaluación: {scope}.max_degradation_pct")
+        equal(f"evaluación: umbral del ámbito {scope}", umbral, float(gate.rule[scope]))
+
+        declarada = _number(
+            cuerpo["degradation_pct"], f"evaluación: {scope}.degradation_pct", permite_inf=True
+        )
+        # Único caso zero-safe declarado: control perfecto y candidato imperfecto ⇒ inf ⇒ falla.
+        esperada = (
+            (0.0 if candidato == 0.0 else float("inf"))
+            if control == 0.0
+            else (candidato - control) / control * 100.0
+        )
+        require(
+            declarada == esperada or math.isclose(declarada, esperada, rel_tol=1e-9, abs_tol=1e-9),
+            f"evaluación: {scope}.degradation_pct declarada {declarada} ≠ {esperada} recomputada",
+        )
+        require(
+            isinstance(cuerpo["passes"], bool), f"evaluación: {scope}.passes debe ser booleano"
+        )
+        equal(
+            f"evaluación: {scope}.passes recomputado", cuerpo["passes"], bool(declarada <= umbral)
+        )
+        pasan.append(bool(cuerpo["passes"]))
+
+    completo = semanas >= len(gate.target_weeks)
+    esperado = (VERDICT_PASS if all(pasan) else VERDICT_FAIL) if completo else VERDICT_INCOMPLETE
+    equal("evaluación: veredicto recomputado desde los ámbitos", evaluation.verdict, esperado)
+
+
+def _check_metrics(evaluation: ProspectiveEvaluation) -> None:
+    if not evaluation.metrics:
+        require(not evaluation.scopes, "evaluación: hay ámbitos pero no métricas")
+        return
+    equal("evaluación: métricas por ámbito", sorted(evaluation.metrics), sorted(SCOPES))
+    for scope, cuerpo in evaluation.metrics.items():
+        require(isinstance(cuerpo, dict), f"evaluación: métricas de {scope} no son un objeto")
+        equal(f"evaluación: lados de {scope}", sorted(cuerpo), ["candidate", "control"])
+        for lado, bloque in cuerpo.items():
+            _exact_keys(bloque, METRIC_SIDE_KEYS, f"evaluación: métricas {scope}.{lado}")
+            _strict_int(bloque["products"], f"evaluación: {scope}.{lado}.products")
+            mediana = bloque["median"]
+            require(
+                isinstance(mediana, dict), f"evaluación: {scope}.{lado}.median no es un objeto"
+            )
+            flags = bloque["flags"]
+            require(isinstance(flags, dict), f"evaluación: {scope}.{lado}.flags no es un objeto")
+            for nombre, valor in mediana.items():
+                if valor is None:
+                    # Indefinido SÓLO con su bandera: un null sin explicación es un dato perdido.
+                    require(
+                        any(nombre in f for f in flags),
+                        f"evaluación: {scope}.{lado}.{nombre} es null sin bandera que lo explique",
+                    )
+                    continue
+                _number(valor, f"evaluación: {scope}.{lado}.median.{nombre}")
+
+
+def _check_per_week(evaluation: ProspectiveEvaluation) -> None:
+    equal(
+        "evaluación: detalle semanal contra las semanas completadas",
+        [tuple(d.get("week", ())) for d in evaluation.per_week],
+        [tuple(p) for p in evaluation.completed_weeks],
+    )
+    for detalle in evaluation.per_week:
+        _exact_keys(detalle, PER_WEEK_KEYS, "evaluación: detalle semanal")
+        _strict_int(detalle["series"], "evaluación: detalle semanal .series")
+        _number(detalle["smape_candidate"], "evaluación: detalle semanal .smape_candidate")
+        _number(detalle["smape_control"], "evaluación: detalle semanal .smape_control")
+
+
+def _check_skipped(evaluation: ProspectiveEvaluation, gate: FrozenGate) -> None:
+    """Sólo se omite lo que ya se pudo observar. El futuro no es una semana ausente (R80-P0-1)."""
+    corte = evaluation.observation_cutoff
+    for periodo, motivo in evaluation.skipped_weeks:
+        require(
+            motivo in SKIP_REASONS,
+            f"evaluación: motivo de omisión desconocido {motivo!r} (esperado {list(SKIP_REASONS)})",
+        )
+        require(
+            corte is not None and periodo <= corte,
+            f"evaluación: {periodo} se declara omitida pero es posterior al corte observado {corte}",
+        )
+        require(
+            periodo >= gate.target_weeks[0],
+            f"evaluación: {periodo} es anterior al inicio del gate",
+        )
+    omitidas = [p for p, _ in evaluation.skipped_weeks]
+    require(len(set(omitidas)) == len(omitidas), "evaluación: semanas omitidas repetidas")
+    solapan = set(omitidas) & set(evaluation.completed_weeks)
+    require(not solapan, f"evaluación: semanas a la vez completas y omitidas: {sorted(solapan)}")
+    if corte is not None:
+        tardias = [p for p in evaluation.completed_weeks if p > corte]
+        require(not tardias, f"evaluación: semanas completadas posteriores al corte: {tardias}")
+
+
 def _check_evaluation(evaluation: ProspectiveEvaluation, gate: FrozenGate) -> None:
     equal("evaluación: disease_id", evaluation.disease_id, gate.disease_id)
     equal("evaluación: release_id", evaluation.release_id, gate.release_id)
@@ -378,6 +538,10 @@ def _check_evaluation(evaluation: ProspectiveEvaluation, gate: FrozenGate) -> No
     if evaluation.verdict != VERDICT_INCOMPLETE:
         faltan = [s for s in SCOPES if s not in evaluation.scopes]
         require(not faltan, f"evaluación: un veredicto {evaluation.verdict} sin ámbitos {faltan}")
+    _check_skipped(evaluation, gate)
+    _check_scopes(evaluation, gate)
+    _check_metrics(evaluation)
+    _check_per_week(evaluation)
 
 
 def _check_status(
@@ -479,6 +643,11 @@ def load_evaluation(path: Path, gate: FrozenGate) -> ProspectiveEvaluation:
         observation_source_digests={
             str(k): _digest(v, f"evaluación prospectiva: fuente {k}") for k, v in fuentes.items()
         },
+        observation_cutoff=(
+            _period(datos["observation_cutoff"], "evaluación prospectiva: observation_cutoff")
+            if datos.get("observation_cutoff") is not None
+            else None
+        ),
         scheduled_weeks=_periods(
             datos.get("scheduled_weeks"), "evaluación prospectiva: scheduled_weeks"
         ),

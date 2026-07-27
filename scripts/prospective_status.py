@@ -36,8 +36,10 @@ from epiforecast.publication.prospective import (
     Period,
     SeriesId,
     build_control,
+    check_dataset_frame,
     evaluate,
     frame_digest,
+    observation_cutoff,
     read_base_history,
 )
 from epiforecast.publication.status import (
@@ -77,7 +79,11 @@ def _manifest(dataset_id: str, runs_root: Path | None = None) -> tuple[DatasetMa
     return manifest, directorio
 
 
-def _history(directorio: Path) -> dict[SeriesId, dict[Period, float]]:
+def _history(
+    directorio: Path, *, expected_series: int | None = None
+) -> dict[SeriesId, dict[Period, float]]:
+    """Historia por serie, PREVIA validación del frame tabular: los duplicados no pueden perderse."""
+    check_dataset_frame(directorio / DATASET_CSV, expected_series=expected_series)
     return read_base_history(directorio / DATASET_CSV)
 
 
@@ -166,13 +172,14 @@ def derive_evaluation(
     # 3) Observación: la verdad que decide n/4.
     obs_id = observation_dataset_id or training_id
     obs_manifest, obs_dir = _manifest(obs_id, runs_root)
-    observation_history = _history(obs_dir)
+    observation_history = _history(obs_dir, expected_series=len(training_history))
     check_observation_dataset(
         obs_manifest, training_manifest, observation_history, training_history, gate.origin
     )
 
+    corte = observation_cutoff(observation_history)
     resultado: dict[str, Any] = evaluate(
-        gate, candidato, control, observation_history, training=training_history
+        gate, candidato, control, observation_history, training=training_history, cutoff=corte
     )
     seleccion = resultado["selection"]
     semanas = tuple((int(a), int(s)) for a, s in resultado["weeks"])
@@ -190,6 +197,7 @@ def derive_evaluation(
         observation_source_digests={
             k: str(obs_manifest.digests[k]) for k in SOURCE_KEYS if k in obs_manifest.digests
         },
+        observation_cutoff=corte,
         scheduled_weeks=gate.target_weeks,
         completed_weeks=semanas,
         skipped_weeks=tuple(

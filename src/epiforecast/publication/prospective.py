@@ -95,6 +95,71 @@ class FrozenGate:
         return sha256_bytes(canonical_json(self.payload()))
 
 
+def check_dataset_frame(dataset_csv: Path, *, expected_series: int | None = None) -> None:
+    """Valida el EpiDatasetV2 TABULAR antes de convertirlo a mappings.
+
+    ``read_base_history`` construye un ``dict`` por serie: una fila duplicada con la misma serie y
+    periodo se sobrescribe en silencio y el gate posterior nunca la ve (R80-P0-3). La unicidad hay
+    que probarla sobre el frame, no sobre el diccionario que ya la perdió.
+    """
+    from epiforecast.data.epi_calendar import weeks_in_year
+
+    try:
+        frame = pd.read_csv(
+            dataset_csv,
+            usecols=[COL_CVE_ENT, COL_SEXO, COL_EPI_YEAR, COL_EPI_WEEK, COL_Y_CASES],
+            dtype={COL_CVE_ENT: str},
+            low_memory=False,
+        )
+    except IO_ERRORS as exc:
+        raise ArtifactValidationError(f"dataset: ilegible ({exc})") from exc
+    except ValueError as exc:
+        raise ArtifactValidationError(f"dataset: columnas requeridas ausentes ({exc})") from exc
+
+    base = frame[frame[COL_SEXO].isin(BASE_SEXES)]
+    require(len(base) > 0, "dataset: no hay filas de series base")
+
+    claves = list(
+        zip(
+            base[COL_CVE_ENT],
+            base[COL_SEXO],
+            base[COL_EPI_YEAR],
+            base[COL_EPI_WEEK],
+            strict=True,
+        )
+    )
+    require(
+        len(claves) == len(set(claves)),
+        f"dataset: hay {len(claves) - len(set(claves))} filas duplicadas (serie × periodo)",
+    )
+
+    series = sorted({(str(c), str(x)) for c, x, _, _ in claves})
+    if expected_series is not None:
+        equal("dataset: número de SeriesKeys base", len(series), expected_series)
+
+    for año, semana in {(int(a), int(w)) for _, _, a, w in claves}:
+        tope = weeks_in_year(año)
+        require(
+            1 <= semana <= tope,
+            f"dataset: semana {semana} fuera del calendario MMWR de {año} (1..{tope})",
+        )
+
+    valores = base[COL_Y_CASES].to_numpy(dtype=float)
+    require(bool(np.isfinite(valores).all()), "dataset: hay valores no finitos")
+    require(bool((valores >= 0.0).all()), "dataset: hay valores negativos")
+
+    por_serie: dict[SeriesId, set[Period]] = {}
+    for cve, sexo, año, semana in claves:
+        por_serie.setdefault((str(cve), str(sexo)), set()).add((int(año), int(semana)))
+    referencia = por_serie[series[0]]
+    distintas = [k for k, v in por_serie.items() if v != referencia]
+    require(
+        not distintas,
+        f"dataset: {len(distintas)} series con un conjunto de periodos distinto al resto"
+        + (f" (p. ej. {distintas[0]})" if distintas else ""),
+    )
+
+
 def read_base_history(dataset_csv: Path) -> dict[SeriesId, dict[Period, float]]:
     """Historia observada por serie base, desde el dataset SELLADO."""
     try:
@@ -185,6 +250,8 @@ SCOPES: tuple[str, ...] = (SCOPE_BASE, SCOPE_PRODUCTS, SCOPE_NATIONAL)
 WEEK_COMPLETE = "completa"
 WEEK_PARTIAL = "parcial"
 WEEK_MISSING = "ausente"
+# Enum CERRADO de motivos de omisión: nada más puede aparecer en la evidencia.
+SKIP_REASONS: tuple[str, ...] = (WEEK_PARTIAL, WEEK_MISSING)
 
 
 @dataclass(frozen=True, slots=True)
@@ -211,8 +278,16 @@ def week_state(historia: Mapping[SeriesId, dict[Period, float]], periodo: Period
     return WEEK_MISSING if presentes == 0 else WEEK_PARTIAL
 
 
+def observation_cutoff(historia: Mapping[SeriesId, dict[Period, float]]) -> Period | None:
+    """Último periodo que el snapshot pudo observar. Sin él, el futuro parece verdad ausente."""
+    periodos = {p for serie in historia.values() for p in serie}
+    return max(periodos) if periodos else None
+
+
 def select_weeks(
-    historia: Mapping[SeriesId, dict[Period, float]], gate: FrozenGate
+    historia: Mapping[SeriesId, dict[Period, float]],
+    gate: FrozenGate,
+    cutoff: Period | None = None,
 ) -> WeekSelection:
     """Primeras ``GATE_WEEKS`` semanas COMPLETAS desde la primera objetivo, dentro del horizonte.
 
@@ -221,8 +296,16 @@ def select_weeks(
     esto, un boletín incompleto dejaría el gate atascado en 3/4 para siempre (R76-P0-3). El
     candidato y el control siguen siendo los mismos forecasts congelados, así que esto no mueve el
     ``gate_digest``: sólo dice qué semanas se pudieron observar.
+
+    La ventana termina en el CORTE observado. Una semana futura no es una semana ausente: recorrer
+    las 52 del horizonte hacía que el artefacto registrara 52 omisiones inventadas (R80-P0-1).
     """
-    ventana = [p for p in horizon_periods(gate.origin, gate.horizon) if p >= gate.target_weeks[0]]
+    corte = cutoff if cutoff is not None else observation_cutoff(historia)
+    ventana = [
+        p
+        for p in horizon_periods(gate.origin, gate.horizon)
+        if p >= gate.target_weeks[0] and (corte is None or p <= corte)
+    ]
     completas: list[Period] = []
     omitidas: list[tuple[Period, str]] = []
     for periodo in ventana:
@@ -358,6 +441,7 @@ def evaluate(
     *,
     catalog: Any | None = None,
     training: Mapping[SeriesId, dict[Period, float]] | None = None,
+    cutoff: Period | None = None,
 ) -> dict[str, Any]:
     """Aplica la REGLA congelada sobre las semanas observadas. Nunca reajusta ni mueve umbrales.
 
@@ -371,11 +455,12 @@ def evaluate(
     dos identidades distintas y mezclarlas es lo que impedía avanzar de 0/4 (R78-P0-1).
     """
     from epiforecast.data.epi_geo_exposure import load_geo_catalog
-    from epiforecast.runner.evaluation import derive_forecast_products, series_metrics
+    from epiforecast.runner.evaluation import derive_forecast_products
 
     catalogo = catalog if catalog is not None else load_geo_catalog()
     entrenamiento = training if training is not None else historia
-    seleccion = select_weeks(historia, gate)
+    corte = cutoff if cutoff is not None else observation_cutoff(historia)
+    seleccion = select_weeks(historia, gate, corte)
     semanas = seleccion.completed
     esperadas = set(historia)
     if semanas:
@@ -436,6 +521,7 @@ def evaluate(
                 catalogo,
             ),
         }
+        historia_productos = product_history(entrenamiento, catalogo, gate.disease_id)
         clave = ["geography_level", "geography_id", "sex", "epi_year", "epi_week"]
         base_ordenada = {
             nombre: frame.sort_values(clave).reset_index(drop=True)
@@ -459,13 +545,9 @@ def evaluate(
                 "max_degradation_pct": umbral,
                 "passes": bool(degradacion <= umbral),
             }
-            # Reportadas, NO usadas para el veredicto: el gate se decide con sMAPE. El MASE sale
-            # de la historia de ENTRENAMIENTO congelada, no de un denominador vacío.
-            m, flags = series_metrics(yt, yc, _training_series(entrenamiento), mase_lag=52)
-            metricas[scope] = {
-                **{k: (float(v) if math.isfinite(float(v)) else None) for k, v in m.items()},
-                "flags": flags,
-            }
+            # Reportadas, NO usadas para el veredicto: el gate se decide con sMAPE. Cada producto
+            # con SU historia previa; el ámbito se resume por mediana.
+            metricas[scope] = scope_metrics(filas, historia_productos)
 
     if not completo:
         veredicto = VERDICT_INCOMPLETE
@@ -483,16 +565,111 @@ def evaluate(
         "scopes": scopes,
         "metrics": metricas,
         "selection": seleccion.payload(),
+        "observation_cutoff": list(corte) if corte is not None else None,
         "gate_digest": gate.digest(),
     }
 
 
-def _training_series(training: Mapping[SeriesId, dict[Period, float]]) -> list[float]:
-    """Serie de entrenamiento concatenada por SeriesKey ordenada: el denominador estacional real."""
-    valores: list[float] = []
-    for serie in sorted(training):
-        valores.extend(training[serie][p] for p in sorted(training[serie]))
-    return valores
+def product_history(
+    training: Mapping[SeriesId, dict[Period, float]], catalog: Any, disease_id: str
+) -> dict[tuple[str, str, str], dict[Period, float]]:
+    """Historia de entrenamiento de los 111 PRODUCTOS, derivada de las 64 bases.
+
+    El MASE del runner es por producto: cada SeriesKey usa su propio denominador estacional sobre su
+    propia historia. Concatenar las 64 historias hacía que el lag-52 cruzara fronteras entre
+    entidades y sexos y midiera diferencias que nunca existieron (R80-P0-2).
+    """
+    from epiforecast.runner.evaluation import derive_forecast_products
+
+    periodos = sorted({p for serie in training.values() for p in serie})
+    filas = [
+        {
+            "geography_id": geo,
+            "sex": sexo,
+            "epi_year": p[0],
+            "epi_week": p[1],
+            "y_cases": training[(geo, sexo)][p],
+        }
+        for (geo, sexo) in sorted(training)
+        for p in periodos
+        if p in training[(geo, sexo)]
+    ]
+    base = pd.DataFrame(filas)
+    origen = periodos[-1] if periodos else (0, 0)
+    productos = derive_forecast_products(
+        _forecast_shape(
+            base, disease_id=disease_id, origin=origen, horizon=len(periodos), engine="training"
+        ),
+        catalog,
+    )
+    historia: dict[tuple[str, str, str], dict[Period, float]] = {}
+    for nivel, geo, sexo, año, semana, valor in zip(
+        productos["geography_level"],
+        productos["geography_id"],
+        productos["sex"],
+        productos["epi_year"],
+        productos["epi_week"],
+        productos["y_pred_cases"],
+        strict=True,
+    ):
+        historia.setdefault((str(nivel), str(geo), str(sexo)), {})[(int(año), int(semana))] = (
+            float(valor)
+        )
+    return historia
+
+
+def _finite_or_none(valor: float) -> float | None:
+    """``NaN``/``inf`` no son un número en JSON: viajan como ``null`` con su bandera."""
+    return float(valor) if math.isfinite(float(valor)) else None
+
+
+def scope_metrics(
+    filas: dict[str, pd.DataFrame],
+    training_products: Mapping[tuple[str, str, str], dict[Period, float]],
+    *,
+    mase_lag: int = 52,
+) -> dict[str, Any]:
+    """Métricas por PRODUCTO y su resumen por ámbito, para candidato y control.
+
+    Cada producto se mide con su propia historia previa; el ámbito se resume con la MEDIANA de los
+    productos finitos, igual que los reportes del runner. MASE no decide el veredicto, pero
+    publicarlo con un denominador contaminado sería un reporte falso.
+    """
+    from epiforecast.runner.evaluation import series_metrics
+
+    clave = ["geography_level", "geography_id", "sex"]
+    resumen: dict[str, Any] = {}
+    for nombre in ("candidate", "control"):
+        acumulado: dict[str, list[float]] = {}
+        banderas: dict[str, int] = {}
+        verdad = filas["truth"].sort_values([*clave, "epi_year", "epi_week"])
+        pred = filas[nombre].sort_values([*clave, "epi_year", "epi_week"])
+        for llave, grupo in verdad.groupby(clave, sort=True):
+            producto = (str(llave[0]), str(llave[1]), str(llave[2]))
+            sub = pred[
+                (pred["geography_level"] == producto[0])
+                & (pred["geography_id"] == producto[1])
+                & (pred["sex"] == producto[2])
+            ]
+            historia = training_products.get(producto, {})
+            previa = [historia[p] for p in sorted(historia)]
+            metricas, flags = series_metrics(
+                list(grupo["y_pred_cases"]), list(sub["y_pred_cases"]), previa, mase_lag=mase_lag
+            )
+            for k, v in metricas.items():
+                if math.isfinite(float(v)):
+                    acumulado.setdefault(k, []).append(float(v))
+            for f in flags:
+                banderas[f] = banderas.get(f, 0) + 1
+        resumen[nombre] = {
+            "products": int(len(acumulado.get("smape", []))),
+            "median": {
+                k: _finite_or_none(float(np.median(v))) if v else None
+                for k, v in sorted(acumulado.items())
+            },
+            "flags": dict(sorted(banderas.items())),
+        }
+    return resumen
 
 
 def _restrict(frame: pd.DataFrame, semanas: tuple[Period, ...]) -> pd.DataFrame:
