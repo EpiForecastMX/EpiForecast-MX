@@ -10,7 +10,12 @@ PYTHON ?= .venv/bin/python
 MODELO ?= prophet
 ACTIVATE := bin/activate
 SRC = src/epiforecast
-QUALITY_PATHS = src/epiforecast/ tests/ scripts/run_isolated_pytest.py
+C7_SCRIPTS = \
+	scripts/prospective_week.py \
+	scripts/prospective_status.py \
+	scripts/publication_readiness.py \
+	scripts/tableau_workbook.py
+QUALITY_PATHS = src/epiforecast/ tests/ scripts/run_isolated_pytest.py $(C7_SCRIPTS)
 
 .DEFAULT_GOAL := help
 
@@ -403,6 +408,9 @@ format:
 typecheck:
 	$(PYTHON) -m mypy src/epiforecast/
 	$(PYTHON) -m mypy scripts/run_isolated_pytest.py
+	@for script in $(C7_SCRIPTS); do \
+		$(PYTHON) -m mypy "$$script" || exit 1; \
+	done
 	@echo ">>> Type check passed."
 
 ## Ejecutar tests

@@ -24,6 +24,11 @@ concurrency:
 
 env:
   PYTHON_VERSION: "3.12"
+  C7_SCRIPTS: >-
+    scripts/prospective_week.py
+    scripts/prospective_status.py
+    scripts/publication_readiness.py
+    scripts/tableau_workbook.py
 
 jobs:
   quality:
@@ -49,13 +54,18 @@ jobs:
           pip install -e ".[dev]"
 
       - name: Lint (ruff check)
-        run: ruff check src/epiforecast/ tests/
+        run: ruff check src/epiforecast/ tests/ scripts/run_isolated_pytest.py $C7_SCRIPTS
 
       - name: Format check (ruff format)
-        run: ruff format --check src/epiforecast/ tests/
+        run: ruff format --check src/epiforecast/ tests/ scripts/run_isolated_pytest.py $C7_SCRIPTS
 
       - name: Type check (mypy)
-        run: mypy src/epiforecast/
+        run: |
+          mypy src/epiforecast/
+          mypy scripts/run_isolated_pytest.py
+          for script in $C7_SCRIPTS; do
+            mypy "$script"
+          done
 
   test:
     name: "Tests"

@@ -16,6 +16,7 @@ import io
 import json
 from pathlib import Path
 import re
+import subprocess
 
 import pandas as pd
 import pytest
@@ -220,6 +221,18 @@ def test_la_evidencia_no_puede_caer_dentro_del_repositorio(tmp_path):
             check_evidence_root(repo / prohibida, repo)
     assert check_evidence_root(repo / "runs" / "_ev", repo)
     assert check_evidence_root(tmp_path / "ev", repo)
+
+
+def test_runs_ignorado_se_acepta_antes_de_existir_en_un_clon_limpio(tmp_path):
+    repo = tmp_path / "clean_clone"
+    repo.mkdir()
+    (repo / ".gitignore").write_text("runs/\n", encoding="utf-8")
+    subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+    destino = repo / "runs" / "readiness" / "evidence"
+    assert not (repo / "runs").exists(), "la precondición reproduce el clon limpio"
+
+    assert check_evidence_root(destino, repo) == destino.resolve()
+    assert not (repo / "runs").exists(), "validar no crea el destino"
 
 
 def test_el_objetivo_del_release_se_deriva_y_no_se_escribe_a_mano(sede):

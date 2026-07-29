@@ -451,10 +451,12 @@ def _raiz_repo() -> Path:
 
 
 def _esta_ignorado(ruta: Path, raiz_repo: Path) -> bool:
+    """Comprueba la regla para el contenido, aunque el directorio aún no exista."""
+    probe = ruta / ".epiforecast-ignore-probe"
     try:
         return (
             subprocess.run(  # noqa: S603 — argumentos fijos, sin shell
-                ["git", "check-ignore", "-q", str(ruta)],  # noqa: S607
+                ["git", "check-ignore", "-q", str(probe)],  # noqa: S607
                 cwd=str(raiz_repo),
                 capture_output=True,
                 check=False,

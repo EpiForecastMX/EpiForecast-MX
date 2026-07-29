@@ -13,7 +13,7 @@ from __future__ import annotations
 import hashlib
 import io
 from pathlib import Path
-from shutil import rmtree
+import subprocess
 import tempfile
 from xml.etree import ElementTree as ET
 
@@ -245,13 +245,18 @@ def test_una_ruta_del_repo_con_un_componente_llamado_tmp_o_runs_no_cuela(tmp_pat
 
 
 def test_runs_del_repositorio_si_es_destino_valido(tmp_path):
-    destino = Path.cwd() / "runs" / "_b01_test" / "candidate.twb"
-    try:
-        rc, salida = _generar(tmp_path, destino)
-        assert rc == RC_OK, salida
-        assert destino.is_file()
-    finally:
-        rmtree(destino.parent, ignore_errors=True)
+    """El clon limpio no tiene ``runs/`` todavía; la regla de ignore basta para escribirlo."""
+    repo = tmp_path / "clean_clone"
+    repo.mkdir()
+    (repo / ".gitignore").write_text("runs/\n", encoding="utf-8")
+    subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+    destino = repo / "runs" / "_b01_test" / "candidate.twb"
+    assert not (repo / "runs").exists(), "la precondición reproduce el clon limpio"
+
+    rc, salida = _generar(tmp_path, destino, raiz_repo=repo)
+
+    assert rc == RC_OK, salida
+    assert destino.is_file()
 
 
 def test_el_temporal_real_del_sistema_tambien(tmp_path):

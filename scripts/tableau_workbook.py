@@ -61,10 +61,16 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _esta_ignorado(ruta: Path, raiz_repo: Path) -> bool:
-    """¿git ignora esta ruta? Se pregunta a git, no se deduce leyendo `.gitignore` a ojo."""
+    """¿git ignora el contenido de esta raíz, incluso si la raíz todavía no existe?
+
+    ``git check-ignore runs`` devuelve 1 en un clon limpio cuando ``runs/`` no se ha creado,
+    aunque ``runs/`` esté correctamente declarado en ``.gitignore``. Consultar un hijo
+    hipotético prueba la regla que gobernará los artefactos antes de escribirlos.
+    """
+    probe = ruta / ".epiforecast-ignore-probe"
     try:
         resultado = subprocess.run(  # noqa: S603 — argumentos fijos, sin shell
-            ["git", "check-ignore", "-q", str(ruta)],  # noqa: S607
+            ["git", "check-ignore", "-q", str(probe)],  # noqa: S607
             cwd=str(raiz_repo),
             capture_output=True,
             check=False,
