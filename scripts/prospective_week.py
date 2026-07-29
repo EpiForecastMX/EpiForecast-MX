@@ -32,8 +32,10 @@ from epiforecast.data.epi_dataset import load_config, raw_path_for
 from epiforecast.data.epi_geo_exposure import GeoCatalog, load_geo_catalog
 from epiforecast.data.extraction.cuadro_extractor import extract_cuadro_from_pdf
 from epiforecast.publication.observation_store import (
+    REPORT_FILE,
     effective_raw_path,
     materialize_observation,
+    observation_path,
     resolve_observation_dir,
 )
 from epiforecast.publication.status import declared_paths
@@ -186,7 +188,7 @@ def merge_observation_raw(
         for row in new[["Anio", "Semana"]].drop_duplicates().itertuples(index=False)
     }
     latest = max(old_periods, key=lambda p: ec.week_start(*p))
-    stale = sorted(p for p in new_periods if ec.week_start(*p) <= ec.week_start(*latest))
+    stale = sorted(p for p in new_periods if ec.week_start(*p) < ec.week_start(*latest))
     if stale:
         raise ProspectiveWeekError(
             f"los boletines deben ser posteriores al baseline {latest}; llegaron {stale}"
@@ -214,9 +216,41 @@ def merge_observation_raw(
         raise ProspectiveWeekError("clave (Anio,Semana,Entidad,Padecimiento) duplicada")
     overlap = old_key.merge(new_key, how="inner")
     if not overlap.empty:
-        raise ProspectiveWeekError("los boletines nuevos sobrescriben claves históricas")
+        # Repetir exactamente el último boletín es una operación idempotente. Cualquier revisión
+        # de sus valores o cualquier solapamiento parcial se rechaza: este carril no reescribe
+        # historia después de observar el forecast.
+        old_latest = old.loc[
+            (old["Anio"].astype(int) == latest[0]) & (old["Semana"].astype(int) == latest[1])
+        ].copy()
+        new_latest = new.loc[
+            (new["Anio"].astype(int) == latest[0]) & (new["Semana"].astype(int) == latest[1])
+        ].copy()
+        if new_latest.empty:
+            raise ProspectiveWeekError("los boletines nuevos sobrescriben claves históricas")
 
-    combined = pd.concat([old, new], ignore_index=True)
+        def comparable(frame: pd.DataFrame) -> pd.DataFrame:
+            result = frame.copy()
+            result["Anio"] = result["Anio"].astype(int)
+            result["Semana"] = result["Semana"].astype(int)
+            result["Entidad"] = _resolved_entities(result, geo, "comparación idempotente")
+            return result.sort_values(list(RAW_KEY)).reset_index(drop=True)
+
+        try:
+            pd.testing.assert_frame_equal(
+                comparable(old_latest),
+                comparable(new_latest),
+                check_dtype=False,
+                check_like=False,
+            )
+        except AssertionError as exc:
+            raise ProspectiveWeekError(
+                f"el periodo {latest} ya existe con valores distintos; revisión rechazada"
+            ) from exc
+        new = new.loc[
+            ~((new["Anio"].astype(int) == latest[0]) & (new["Semana"].astype(int) == latest[1]))
+        ].copy()
+
+    combined = old.copy() if new.empty else pd.concat([old, new], ignore_index=True)
     # Orden estable sin reinterpretar valores. El prefijo lógico es exactamente `old`.
     return combined.sort_values(["Anio", "Semana", "Entidad"]).reset_index(drop=True)
 
@@ -290,6 +324,41 @@ def _baseline_from_declared_state(
     return effective_raw_path(directory, raw_digest)
 
 
+def _existing_report(
+    disease_id: str,
+    dataset_id: str,
+    source_pdfs: list[dict[str, str]],
+    *,
+    observation_store_root: Path | None,
+) -> dict[str, Any] | None:
+    path = (
+        observation_path(
+            disease_id,
+            dataset_id,
+            store_root=observation_store_root,
+        )
+        / REPORT_FILE
+    )
+    if not path.is_file():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ProspectiveWeekError(f"reporte portable ilegible: {path}") from exc
+    if not isinstance(payload, dict):
+        raise ProspectiveWeekError("reporte portable no es un objeto JSON")
+    declared_digest = payload.pop("report_digest", None)
+    recomputed = sha256_bytes(canonical_json(payload))
+    payload["report_digest"] = declared_digest
+    if (
+        declared_digest != recomputed
+        or payload.get("observation_dataset_id") != dataset_id
+        or payload.get("source_pdfs") != source_pdfs
+    ):
+        raise ProspectiveWeekError("el reporte portable existente no coincide con esta repetición")
+    return payload
+
+
 def run_week(
     disease: str,
     pdfs: Iterable[Path],
@@ -301,6 +370,10 @@ def run_week(
     """Ejecuta el carril aislado y devuelve evidencia canónica; no escribe estado público."""
     declared = registry.require(disease)
     pdf_paths = [Path(path).resolve() for path in pdfs]
+    pdf_identity = [
+        {"name": path.name, "sha256": _sha256(path)}
+        for path in sorted(pdf_paths, key=lambda p: p.name)
+    ]
     effective_runs = (runs_root or default_runs_root()).resolve()
     canonical = raw_path_for(disease).resolve()
     source = (
@@ -332,6 +405,14 @@ def run_week(
         manifest = orchestrator.validate_data(
             declared.id, runs_root=effective_runs, raw_path=observation_raw
         )
+        existing = _existing_report(
+            declared.id,
+            manifest.dataset_id,
+            pdf_identity,
+            observation_store_root=observation_store_root,
+        )
+        if existing is not None:
+            return existing
         evaluation, status = derive_evaluation(
             declared.id,
             observation_dataset_id=manifest.dataset_id,
@@ -340,10 +421,7 @@ def run_week(
         )
         return _report_payload(
             disease_id=declared.id,
-            source_pdfs=[
-                {"name": path.name, "sha256": _sha256(path)}
-                for path in sorted(pdf_paths, key=lambda p: p.name)
-            ],
+            source_pdfs=pdf_identity,
             source_periods=source_periods,
             baseline_raw_digest=_sha256(source),
             observation_raw_digest=_sha256(observation_raw),

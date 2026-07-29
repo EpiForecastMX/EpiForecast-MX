@@ -92,12 +92,39 @@ def test_merge_preserva_prefijo_y_acepta_periodo_posterior():
     pd.testing.assert_frame_equal(prefix, expected)
 
 
-@pytest.mark.parametrize("period", [(2026, 27), (2026, 26)])
-def test_merge_rechaza_reemplazo_o_periodo_viejo(period):
+def test_merge_repetido_identico_es_idempotente():
+    baseline = _rows(2026, 27)
+    repeated = _rows(2026, 27)
+    repeated["Semana"] = repeated["Semana"].astype(str)  # extractor entrega la semana como texto
+    merged = pw.merge_observation_raw(
+        baseline,
+        repeated,
+        disease_name="Obesidad",
+        catalog=load_geo_catalog(),
+    )
+    pd.testing.assert_frame_equal(
+        merged,
+        baseline.sort_values(["Anio", "Semana", "Entidad"]).reset_index(drop=True),
+    )
+
+
+def test_merge_rechaza_periodo_viejo():
     with pytest.raises(pw.ProspectiveWeekError, match="posteriores"):
         pw.merge_observation_raw(
             _rows(2026, 27),
-            _rows(*period),
+            _rows(2026, 26),
+            disease_name="Obesidad",
+            catalog=load_geo_catalog(),
+        )
+
+
+def test_merge_rechaza_revision_del_ultimo_periodo():
+    revised = _rows(2026, 27)
+    revised.loc[0, "Casos_semana"] += 1
+    with pytest.raises(pw.ProspectiveWeekError, match="revisión rechazada"):
+        pw.merge_observation_raw(
+            _rows(2026, 27),
+            revised,
             disease_name="Obesidad",
             catalog=load_geo_catalog(),
         )
