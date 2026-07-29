@@ -20751,7 +20751,7 @@ avanzar a 2/4. Hasta entonces no hay entrenamiento ni modificación estadística
 
 ### Veredicto
 
-**PASS LOCAL. CI remoto pendiente del push de este checkpoint.**
+**PASS LOCAL Y REMOTO.**
 
 La auditoría del run GitHub Actions `30492596708` separó tres hechos:
 
@@ -20831,3 +20831,24 @@ Integration Tests seguirá `SKIPPED` en un PR: el workflow lo ejecuta únicament
 
 La advertencia de GitHub sobre la futura migración de acciones de Node 20 es mantenimiento del
 workflow, no causa del rojo y no bloquea este checkpoint.
+
+### Resultado remoto
+
+El rango `683be533..beeff86e` se subió por fast-forward normal. La rama remota quedó exactamente en
+el checkpoint material auditado y el run del PR terminó:
+
+```text
+workflow / run       CI · 30496017610
+head_sha             beeff86e77a4788544bffa6282fff540bdec9d5a
+Code Quality         PASS · 3m55s
+Tests                PASS · 5m02s
+Integration Tests    SKIPPED por condición de pull_request
+conclusión           SUCCESS
+```
+
+La prueba que había fallado en los runs `30280630979` y `30492596708` pasó en el clon limpio de
+GitHub. El rojo no se ocultó ni se deseleccionó: se corrigió la semántica consultada a Git y el
+caso continúa dentro del job Tests.
+
+El commit que registra este resultado es sólo documental; el checkpoint funcional validado por el
+run anterior es `beeff86e`.
