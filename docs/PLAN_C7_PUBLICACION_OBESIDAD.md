@@ -20744,3 +20744,90 @@ decisiones de apply, activación, merge y deploy
 
 **Esperar el siguiente boletín oficial. En cuanto exista, ejecutar el mismo carril aislado para
 avanzar a 2/4. Hasta entonces no hay entrenamiento ni modificación estadística pendiente.**
+
+---
+
+## Ronda 131 — auditoría CI y cierre de fronteras operativas — 2026-07-29
+
+### Veredicto
+
+**PASS LOCAL. CI remoto pendiente del push de este checkpoint.**
+
+La auditoría del run GitHub Actions `30492596708` separó tres hechos:
+
+```text
+Code Quality       PASS
+Tests              FAIL · 1 caso
+Integration Tests  SKIPPED por diseño en pull_request
+```
+
+El único rojo era:
+
+```text
+tests/unit/publication/test_tableau_workbook.py::
+test_runs_del_repositorio_si_es_destino_valido
+```
+
+No era un problema de cobertura ni del modelo. Git devuelve código 1 al consultar
+`git check-ignore runs` cuando `runs/` todavía no existe en un clon limpio, aunque `.gitignore`
+declare correctamente `runs/`. El mismo defecto estaba duplicado en el workbook de staging y en
+el orquestador de readiness. Localmente quedaba oculto porque este workspace ya tenía `runs/`.
+
+### Commits funcionales
+
+```text
+0dcf3b11  C7 make readiness CI-safe in clean clones
+cec991d7  C7 prevent prospective state regressions
+```
+
+### Correcciones
+
+1. La comprobación de ignore consulta un hijo hipotético de `runs/`, que reproduce la regla que
+   gobernará los artefactos aunque el directorio todavía no exista.
+2. Las regresiones crean repositorios Git temporales con `runs/` ausente; validar no crea el
+   directorio y generar el workbook sí puede crearlo bajo la ruta ignorada.
+3. `prospective_status --write` carga y valida la evaluación declarada previa y exige:
+   - conservar todas las semanas ya completadas;
+   - no retroceder `observation_cutoff`;
+   - rechazar un estado previo huérfano sin evaluación.
+4. `prospective_week --write` rechaza `--baseline-raw`. La opción continúa disponible sólo para
+   dry-run; una escritura oficial parte siempre de la verdad portable declarada.
+5. Make y GitHub Actions incluyen explícitamente los cuatro CLI gobernantes de C7 en Ruff y mypy:
+   `prospective_week.py`, `prospective_status.py`, `publication_readiness.py` y
+   `tableau_workbook.py`. Mypy los ejecuta individualmente para evitar colisiones del namespace
+   `scripts`.
+
+### Gates locales
+
+```text
+hooks de ambos commits                       PASS
+ruff format / ruff check                     PASS · 307 archivos
+mypy src                                     PASS · 165 fuentes
+mypy runner aislado + 4 CLI C7              PASS
+tests focales clean-clone/readiness          224 passed
+tests focales week/status                    83 passed
+make test-fast                               2,353 passed · 1 skipped · 62 deselected
+comando exacto de CI con cobertura           2,353 passed · 1 skipped · 62 deselected
+cobertura                                    81.70% · mínimo 70%
+git diff --check                             PASS
+```
+
+### Preservación
+
+No cambiaron dataset de entrenamiento, snapshot de observación, gate, candidato, control, release,
+umbrales, lifecycle, puntero, DVC, agregados legacy ni dashboard. Obesidad continúa
+`trained`, invisible para `published_only` y en `INCOMPLETE 1/4`.
+
+### Orden vigente
+
+1. Hacer push fast-forward de la rama feature.
+2. Esperar el CI remoto del SHA exacto.
+3. Si Code Quality y Tests pasan, registrar el run y mantener WEEK-2 como siguiente acción
+   automática cuando exista el boletín oficial W29.
+4. Si falla, auditar únicamente el delta del job; no modificar modelo, datos ni umbrales.
+
+Integration Tests seguirá `SKIPPED` en un PR: el workflow lo ejecuta únicamente por
+`workflow_dispatch` o por el schedule semanal. Eso no se reporta como fallo.
+
+La advertencia de GitHub sobre la futura migración de acciones de Node 20 es mantenimiento del
+workflow, no causa del rojo y no bloquea este checkpoint.
