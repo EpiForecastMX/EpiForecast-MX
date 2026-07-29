@@ -52,6 +52,7 @@ from epiforecast.publication.status import (
     ProspectiveEvaluation,
     ProspectiveStatus,
     declared_paths,
+    load_evaluation,
     load_gate,
 )
 from epiforecast.runner.artifact_identity import ArtifactValidationError, equal, require
@@ -275,6 +276,36 @@ def _declared_observation_id(rutas: dict[str, Path]) -> str | None:
     return None
 
 
+def require_monotonic_progress(
+    previous: ProspectiveEvaluation,
+    proposed: ProspectiveEvaluation,
+) -> None:
+    """Una escritura puede conservar o avanzar la evidencia, nunca olvidarla.
+
+    El gate admite semanas de reemplazo cuando una semana programada falta, por lo que no se exige
+    que las completadas formen un prefijo. Sí se exige conservar toda semana ya completada y no
+    retroceder el corte observado.
+    """
+    previous_weeks = set(previous.completed_weeks)
+    proposed_weeks = set(proposed.completed_weeks)
+    lost = sorted(previous_weeks - proposed_weeks)
+    require(
+        not lost,
+        f"progreso prospectivo: la actualización perdería semanas ya completadas: {lost}",
+    )
+    previous_cutoff = previous.observation_cutoff
+    proposed_cutoff = proposed.observation_cutoff
+    require(
+        previous_cutoff is not None and proposed_cutoff is not None,
+        "progreso prospectivo: ambos cortes observados son obligatorios",
+    )
+    assert previous_cutoff is not None and proposed_cutoff is not None  # noqa: S101
+    require(
+        proposed_cutoff >= previous_cutoff,
+        f"progreso prospectivo: el corte retrocedería de {previous_cutoff} a {proposed_cutoff}",
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("disease_id")
@@ -311,6 +342,15 @@ def main(argv: list[str] | None = None) -> int:
             runs_root=args.runs_root,
             observation_store_root=args.observation_store_root,
         )
+        if args.write and rutas["evaluation"].exists():
+            previous_gate = load_gate(rutas["gate"])
+            previous_evaluation = load_evaluation(rutas["evaluation"], previous_gate)
+            require_monotonic_progress(previous_evaluation, evaluation)
+        elif args.write and rutas["status"].exists():
+            raise ArtifactValidationError(
+                "progreso prospectivo: existe estado sin evaluación previa; "
+                "no se puede demostrar una actualización monotónica"
+            )
     except (ArtifactValidationError, OSError, ValueError) as exc:
         print(f"✖ no se pudo derivar el estado: {exc}", file=sys.stderr)
         return 2

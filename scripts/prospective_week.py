@@ -454,6 +454,13 @@ def _parser() -> argparse.ArgumentParser:
 
 def main(argv: list[str] | None = None) -> int:
     args = _parser().parse_args(argv)
+    if args.write and args.baseline_raw is not None:
+        print(
+            "✖ prospective-week: --baseline-raw es sólo para dry-run; "
+            "--write parte siempre de la verdad declarada",
+            file=sys.stderr,
+        )
+        return 2
     try:
         payload = run_week(
             args.disease,

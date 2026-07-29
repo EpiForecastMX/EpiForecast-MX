@@ -673,6 +673,55 @@ def test_check_es_no_mutante_y_write_exige_verdad_declarada(tmp_path):
     assert not list(raiz.glob("*.tmp")), "la escritura atómica no deja temporales"
 
 
+@real
+def test_write_no_puede_perder_una_semana_ya_declarada(tmp_path, monkeypatch):
+    """Una invocación manual con un snapshot viejo no puede regresar de 1/4 a 0/4."""
+    from scripts import prospective_status as command
+
+    from epiforecast.publication.status import config_root
+
+    current = load_declared_status(af.DISEASE)
+    assert current.status.completed_weeks, "el fixture real debe tener progreso que proteger"
+    root = tmp_path / "publication" / af.DISEASE
+    root.mkdir(parents=True)
+    source = config_root() / af.DISEASE
+    for name in (GATE_FILE, EVALUATION_FILE, STATUS_FILE):
+        (root / name).write_bytes((source / name).read_bytes())
+    before = {name: (root / name).read_bytes() for name in (EVALUATION_FILE, STATUS_FILE)}
+
+    regressed_evaluation = dataclasses.replace(
+        current.evaluation,
+        observation_cutoff=current.gate.origin,
+        completed_weeks=(),
+    )
+    regressed_status = dataclasses.replace(
+        current.status,
+        evaluation_digest=regressed_evaluation.digest(),
+        weeks_available=0,
+        completed_weeks=(),
+    )
+    monkeypatch.setattr(
+        command,
+        "derive_evaluation",
+        lambda *_args, **_kwargs: (regressed_evaluation, regressed_status),
+    )
+
+    rc = command.main(
+        [
+            af.DISEASE,
+            "--write",
+            "--observation-dataset-id",
+            current.evaluation.training_dataset_id,
+            "--config-root",
+            str(tmp_path / "publication"),
+        ]
+    )
+
+    assert rc == 2
+    assert {name: (root / name).read_bytes() for name in (EVALUATION_FILE, STATUS_FILE)} == before
+    assert not list(root.glob("*.tmp"))
+
+
 # ── Verdad nueva: el flujo avanza y admite reemplazos (A.2) ───────────────────────────────────
 def _observacion(destino: Path, training_dir: Path, semanas: list[Period], dataset_id: str) -> str:
     """Dataset de observación sintético: la historia congelada + semanas nuevas completas.

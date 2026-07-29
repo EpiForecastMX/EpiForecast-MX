@@ -190,6 +190,23 @@ def test_cli_dry_run_es_obligatorio():
         pw._parser().parse_args(["--disease", "obesidad", "--pdf", "x.pdf"])
 
 
+def test_cli_write_rechaza_un_baseline_manual_antes_de_leerlo(tmp_path, capsys):
+    """Un baseline arbitrario puede retroceder el estado; sólo se admite para inspección."""
+    rc = pw.main(
+        [
+            "--disease",
+            "obesidad",
+            "--pdf",
+            str(tmp_path / "no_se_debe_leer.pdf"),
+            "--baseline-raw",
+            str(tmp_path / "historia_vieja.csv"),
+            "--write",
+        ]
+    )
+    assert rc == 2
+    assert "--baseline-raw es sólo para dry-run" in capsys.readouterr().err
+
+
 def test_siguiente_semana_parte_del_ultimo_raw_declarado(monkeypatch, tmp_path):
     canonical = tmp_path / "canonical.csv"
     canonical.write_bytes(b"viejo")
