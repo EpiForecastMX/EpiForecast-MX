@@ -201,6 +201,117 @@ def _ruta_relativa_segura(relativa: str, base: Path) -> Path:
     return destino
 
 
+# ── Validadores de forma: tipos y VALORES, no sólo nombres de clave ────────────────────────────
+# La forma cerrada por claves no basta. `namespace=null` o `rows="bad"` pasaban el control de claves
+# y reventaban después en el primer `sorted`, `.items` o `dict`, saliendo como TypeError,
+# AttributeError o ValueError: errores incidentales del intérprete, no rechazos de dominio
+# (R126-P1). Aquí el tipo se demuestra ANTES de tocar el valor.
+
+
+def _exige_texto(valor: Any, etiqueta: str) -> str:
+    require(isinstance(valor, str), f"readiness: {etiqueta} no es texto")
+    return str(valor)
+
+
+def _exige_sha256(valor: Any, etiqueta: str) -> str:
+    texto = _exige_texto(valor, etiqueta)
+    require(bool(_SHA256.fullmatch(texto)), f"readiness: {etiqueta} no es un sha256")
+    return texto
+
+
+def _exige_bool(valor: Any, etiqueta: str) -> bool:
+    # `0`, `"false"` y `None` no son booleanos: en un contrato, «casi» es «no».
+    require(isinstance(valor, bool), f"readiness: {etiqueta} no es un booleano")
+    return bool(valor)
+
+
+def _exige_entero_no_negativo(valor: Any, etiqueta: str) -> int:
+    require(
+        isinstance(valor, int) and not isinstance(valor, bool) and valor >= 0,
+        f"readiness: {etiqueta} no es un entero no negativo",
+    )
+    return int(valor)
+
+
+def _exige_lista_unica_de_texto(valor: Any, etiqueta: str) -> list[str]:
+    require(isinstance(valor, list), f"readiness: {etiqueta} no es una lista")
+    for i, elemento in enumerate(valor):
+        _exige_texto(elemento, f"{etiqueta}[{i}]")
+    require(len(set(valor)) == len(valor), f"readiness: {etiqueta} trae elementos repetidos")
+    return [str(v) for v in valor]
+
+
+def _exige_claves_exactas(valor: Any, claves: Sequence[str], etiqueta: str) -> dict[str, Any]:
+    require(isinstance(valor, dict), f"readiness: {etiqueta} no es un mapeo")
+    _exige_forma_cerrada(valor, sorted(claves), etiqueta)
+    return dict(valor)
+
+
+def _check_forma_del_plan(plan: Any) -> None:
+    """Forma del plan sellado: tipos y valores de cada campo, antes de cruzarlo con nada."""
+    _exige_claves_exactas(plan, PLAN_KEYS, "promotion_plan")
+    equal("readiness: schema del plan", plan["schema"], PROMOTION_PLAN_SCHEMA)
+    namespace = _exige_lista_unica_de_texto(plan["namespace"], "promotion_plan.namespace")
+    equal("readiness: namespace del plan", sorted(namespace), sorted(TABLES))
+    require(isinstance(plan["steps"], list), "readiness: promotion_plan.steps no es una lista")
+    for paso in plan["steps"]:
+        _check_paso(paso)
+    filas = _exige_claves_exactas(plan["rows"], TABLES, "promotion_plan.rows")
+    for tabla, cuenta in sorted(filas.items()):
+        _exige_entero_no_negativo(cuenta, f"promotion_plan.rows[{tabla}]")
+    digests = _exige_claves_exactas(plan["digests"], TABLES, "promotion_plan.digests")
+    for tabla, digest in sorted(digests.items()):
+        _exige_sha256(digest, f"promotion_plan.digests[{tabla}]")
+
+
+def _check_forma_del_workbook(workbook: Any) -> None:
+    _exige_claves_exactas(workbook, WORKBOOK_KEYS, "workbook")
+    _exige_sha256(workbook["digest"], "workbook.digest")
+    tablas = _exige_lista_unica_de_texto(workbook["tables"], "workbook.tables")
+    equal("readiness: tablas del workbook", sorted(tablas), sorted(TABLES))
+    require(
+        _exige_bool(workbook["tableau_desktop_validated"], "workbook.tableau_desktop_validated")
+        is False,
+        "readiness: el preflight se declara validado en Tableau Desktop, y eso es un gate manual",
+    )
+
+
+def check_external_shape(payload: Any) -> None:
+    """Forma COMPLETA de `external_preflight.v2`. La usan el productor y el consumidor.
+
+    Una sola definición: si el productor validara con un criterio y el loader con otro, el que
+    escribe podría emitir algo que el que lee rechaza, o —peor— al revés.
+    """
+    _exige_claves_exactas(payload, EXTERNAL_KEYS, EXTERNAL_FILE)
+    equal("readiness: schema del preflight externo", payload["schema"], EXTERNAL_SCHEMA)
+    equal("readiness: estado del preflight externo", payload["status"], STATUS_READY_EXTERNAL)
+    equal(
+        "readiness: manual_requirements_status del preflight",
+        payload["manual_requirements_status"],
+        "PENDING",
+    )
+    for clave in ("disease_id", "release_id"):
+        require(bool(_exige_texto(payload[clave], clave)), f"readiness: {clave} vacío")
+    for clave in (
+        "local_manifest_digest",
+        "inventory_digest",
+        "preflight_digest",
+        "staging_identity_digest",
+        "production_identity_digest",
+    ):
+        _exige_sha256(payload[clave], clave)
+    _exige_lista_unica_de_texto(payload["foreign_tabs"], "foreign_tabs")
+    entorno = _exige_claves_exactas(
+        payload["environment_present"],
+        (STAGING_ID_ENV, PRODUCTION_ID_ENV, SERVICE_ACCOUNT_ENV),
+        "environment_present",
+    )
+    for variable, presente in sorted(entorno.items()):
+        _exige_bool(presente, f"environment_present[{variable}]")
+    _check_forma_del_plan(payload["promotion_plan"])
+    _check_forma_del_workbook(payload["workbook"])
+
+
 def identity_digest(purpose: str, identificador: str) -> str:
     """Huella de una hoja SIN el id.
 
@@ -292,9 +403,11 @@ def _exige_forma_cerrada(objeto: Mapping[str, Any], claves: Sequence[str], etiqu
     vistas = sorted(objeto)
     sobran = [k for k in vistas if k not in claves]
     faltan = [k for k in claves if k not in vistas]
+    # El prefijo `readiness:` no es cosmético: es lo que permite distinguir de un vistazo un rechazo
+    # de este contrato de un error incidental del intérprete.
     require(
         not sobran and not faltan,
-        f"{etiqueta}: forma inesperada"
+        f"readiness: {etiqueta}: forma inesperada"
         + (f" · faltan {faltan}" if faltan else "")
         + (f" · sobran {sobran}" if sobran else ""),
     )
@@ -704,7 +817,9 @@ def run_external_readonly(
         },
     }
     reporte["preflight_digest"] = sha256_bytes(canonical_json(reporte))
-    _exige_forma_cerrada(reporte, EXTERNAL_KEYS, EXTERNAL_FILE)
+    # El productor valida con el MISMO validador que usará el consumidor: no se escribe nada que
+    # después no se pueda cargar.
+    check_external_shape(reporte)
     # Se revalida la ubicación JUSTO antes de escribir: entre la carga y aquí pudo cambiar el
     # destino —un symlink reapuntado, por ejemplo— y lo que importa es dónde caen los bytes.
     destino = check_evidence_root(local_evidence.parent) / EXTERNAL_FILE
@@ -739,8 +854,7 @@ def load_external_preflight(
         payload.get("schema") != EXTERNAL_SCHEMA_RETIRADO,
         f"readiness: {EXTERNAL_SCHEMA_RETIRADO} no se migra ni se acepta; regenera el preflight",
     )
-    _exige_forma_cerrada(payload, EXTERNAL_KEYS, EXTERNAL_FILE)
-    equal("readiness: schema del preflight externo", payload.get("schema"), EXTERNAL_SCHEMA)
+    check_external_shape(payload)
 
     declarado = payload["preflight_digest"]
     cuerpo = {k: v for k, v in payload.items() if k != "preflight_digest"}
@@ -771,19 +885,9 @@ def load_external_preflight(
         sellado["manifest_digest"],
     )
 
-    require(
-        isinstance(payload["inventory_digest"], str)
-        and bool(_SHA256.fullmatch(payload["inventory_digest"])),
-        "readiness: inventory_digest del preflight no es un sha256",
-    )
     _check_plan_sellado(payload["promotion_plan"], tablas, sellado)
 
     # ── el workbook se REPRODUCE con el id vigente: si no coincide, la evidencia es de otra hoja ──
-    _exige_forma_cerrada(payload["workbook"], WORKBOOK_KEYS, "workbook")
-    require(
-        payload["workbook"]["tableau_desktop_validated"] is False,
-        "readiness: el preflight se declara validado en Tableau Desktop, y eso es un gate manual",
-    )
     xml = build_workbook_xml(
         tablas, spreadsheet_id=staging, label=sellado["shard"]["publication_label"]
     )
@@ -954,6 +1058,7 @@ __all__ = [
     "STATUS_PASS_LOCAL",
     "build_parser",
     "check_evidence_root",
+    "check_external_shape",
     "identity_digest",
     "load_external_preflight",
     "load_local_evidence",

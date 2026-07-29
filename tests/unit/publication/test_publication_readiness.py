@@ -33,6 +33,7 @@ from scripts.publication_readiness import (
     STATUS_FAIL,
     STATUS_PASS_LOCAL,
     check_evidence_root,
+    check_external_shape,
     identity_digest,
     load_external_preflight,
     main,
@@ -1202,7 +1203,7 @@ def test_un_paso_malformado_da_error_de_dominio_y_no_uno_incidental(sede, tmp_pa
     ruta = _resellar_externo(_preflight(sede, tmp_path), **{"promotion_plan.steps": [paso]})
     with pytest.raises(ArtifactValidationError) as exc:
         load_external_preflight(ruta, entorno=_entorno())
-    assert not isinstance(exc.value, (IndexError, KeyError, TypeError))
+    assert type(exc.value) is ArtifactValidationError, f"error incidental: {exc.value!r}"
     assert str(exc.value).startswith("readiness:"), "el rechazo tiene que ser de dominio"
 
 
@@ -1280,3 +1281,198 @@ def test_ningun_centinela_sobrevive_al_carril_externo_v2(sede, tmp_path):
         crudo = archivo.read_bytes().decode("utf-8", errors="replace")
         for centinela in centinelas:
             assert centinela not in crudo, f"{centinela} en {archivo.name}"
+
+
+# ── Regresiones de la auditoría R126: forma anidada tipada ────────────────────────────────────
+def _rechazo_tipado(ruta: Path):
+    """Toda forma inválida termina en ArtifactValidationError con prefijo `readiness:`.
+
+    `ArtifactValidationError` hereda de `ValueError`, así que negar el tipo no distingue nada: lo
+    que separa un rechazo de dominio de un error incidental es que la clase sea EXACTAMENTE la del
+    contrato y que el mensaje diga de qué frontera viene.
+    """
+    with pytest.raises(ArtifactValidationError) as exc:
+        load_external_preflight(ruta, entorno=_entorno())
+    assert type(exc.value) is ArtifactValidationError, f"error incidental: {exc.value!r}"
+    assert str(exc.value).startswith("readiness:"), f"sin frontera declarada: {exc.value!r}"
+    return exc.value
+
+
+@pytest.mark.parametrize(
+    "valor",
+    [
+        None,
+        "runner_forecast",
+        [TABLE_FORECAST, 7],
+        [TABLE_FORECAST, TABLE_FORECAST],
+        [TABLE_FORECAST],
+        [TABLE_FORECAST, TABLE_RELEASES, "runner_extra"],
+        {},
+    ],
+)
+def test_namespace_del_plan_con_forma_invalida(sede, tmp_path, valor):
+    """R126-P1: `namespace=null` reventaba en el primer `sorted` como TypeError."""
+    ruta = _resellar_externo(_preflight(sede, tmp_path), **{"promotion_plan.namespace": valor})
+    _rechazo_tipado(ruta)
+
+
+@pytest.mark.parametrize(
+    "valor",
+    [
+        None,
+        "bad",
+        [1, 2],
+        {TABLE_FORECAST: 3},
+        {TABLE_FORECAST: 3, TABLE_RELEASES: 1, "runner_extra": 0},
+        {TABLE_FORECAST: True, TABLE_RELEASES: 1},
+        {TABLE_FORECAST: -1, TABLE_RELEASES: 1},
+        {TABLE_FORECAST: 3.5, TABLE_RELEASES: 1},
+        {TABLE_FORECAST: "3", TABLE_RELEASES: 1},
+    ],
+)
+def test_rows_del_plan_con_forma_invalida(sede, tmp_path, valor):
+    """`rows="bad"` salía como AttributeError al llamar `.items`."""
+    ruta = _resellar_externo(_preflight(sede, tmp_path), **{"promotion_plan.rows": valor})
+    _rechazo_tipado(ruta)
+
+
+@pytest.mark.parametrize(
+    "valor",
+    [
+        None,
+        "bad",
+        ["a"],
+        {TABLE_FORECAST: "0" * 64},
+        {TABLE_FORECAST: "0" * 64, TABLE_RELEASES: "0" * 64, "runner_extra": "0" * 64},
+        {TABLE_FORECAST: "no-es-un-digest", TABLE_RELEASES: "0" * 64},
+        {TABLE_FORECAST: 1, TABLE_RELEASES: "0" * 64},
+    ],
+)
+def test_digests_del_plan_con_forma_invalida(sede, tmp_path, valor):
+    """`digests="bad"` salía como ValueError al construir un dict."""
+    ruta = _resellar_externo(_preflight(sede, tmp_path), **{"promotion_plan.digests": valor})
+    _rechazo_tipado(ruta)
+
+
+@pytest.mark.parametrize("valor", [None, "bad", 7, {}])
+def test_steps_del_plan_con_forma_invalida(sede, tmp_path, valor):
+    ruta = _resellar_externo(_preflight(sede, tmp_path), **{"promotion_plan.steps": valor})
+    _rechazo_tipado(ruta)
+
+
+@pytest.mark.parametrize("valor", [None, 7, "no-es-un-digest", "A" * 64, ["0" * 64]])
+def test_digest_del_workbook_con_forma_invalida(sede, tmp_path, valor):
+    ruta = _resellar_externo(_preflight(sede, tmp_path), **{"workbook.digest": valor})
+    _rechazo_tipado(ruta)
+
+
+@pytest.mark.parametrize(
+    "valor",
+    [
+        None,
+        "runner_forecast",
+        [TABLE_FORECAST, TABLE_FORECAST],
+        [TABLE_FORECAST],
+        [TABLE_FORECAST, TABLE_RELEASES, "runner_extra"],
+        [TABLE_FORECAST, 9],
+    ],
+)
+def test_tables_del_workbook_con_forma_invalida(sede, tmp_path, valor):
+    ruta = _resellar_externo(_preflight(sede, tmp_path), **{"workbook.tables": valor})
+    _rechazo_tipado(ruta)
+
+
+@pytest.mark.parametrize("valor", [None, 0, 1, "false", "False", []])
+def test_tableau_desktop_validated_solo_acepta_el_booleano_false(sede, tmp_path, valor):
+    """En un contrato, «casi un booleano» es «no»."""
+    ruta = _resellar_externo(
+        _preflight(sede, tmp_path), **{"workbook.tableau_desktop_validated": valor}
+    )
+    _rechazo_tipado(ruta)
+
+
+@pytest.mark.parametrize(
+    "clave",
+    [
+        "staging_identity_digest",
+        "production_identity_digest",
+        "inventory_digest",
+        "local_manifest_digest",
+    ],
+)
+@pytest.mark.parametrize("valor", [None, 7, "no-es-un-digest", "Z" * 64])
+def test_las_huellas_y_digests_exigen_forma_sha256(sede, tmp_path, clave, valor):
+    ruta = _resellar_externo(_preflight(sede, tmp_path), **{clave: valor})
+    _rechazo_tipado(ruta)
+
+
+@pytest.mark.parametrize("valor", [None, "scaffold", [1], ["scaffold", "scaffold"], {}])
+def test_foreign_tabs_con_forma_invalida(sede, tmp_path, valor):
+    ruta = _resellar_externo(_preflight(sede, tmp_path), **{"foreign_tabs": valor})
+    _rechazo_tipado(ruta)
+
+
+@pytest.mark.parametrize(
+    "valor",
+    [
+        None,
+        "presentes",
+        {},
+        {STAGING_ID_ENV: True},
+        {STAGING_ID_ENV: True, PRODUCTION_ID_ENV: True, SERVICE_ACCOUNT_ENV: True, "OTRA": True},
+        {STAGING_ID_ENV: 1, PRODUCTION_ID_ENV: True, SERVICE_ACCOUNT_ENV: True},
+        {STAGING_ID_ENV: "true", PRODUCTION_ID_ENV: True, SERVICE_ACCOUNT_ENV: True},
+    ],
+)
+def test_environment_present_con_forma_invalida(sede, tmp_path, valor):
+    ruta = _resellar_externo(_preflight(sede, tmp_path), **{"environment_present": valor})
+    _rechazo_tipado(ruta)
+
+
+@pytest.mark.parametrize("valor", [None, "DONE", "pending", "", True])
+def test_manual_requirements_status_distinto_de_pending(sede, tmp_path, valor):
+    ruta = _resellar_externo(_preflight(sede, tmp_path), **{"manual_requirements_status": valor})
+    _rechazo_tipado(ruta)
+
+
+@pytest.mark.parametrize("clave", ["disease_id", "release_id"])
+@pytest.mark.parametrize("valor", [None, 7, "", []])
+def test_identidad_textual_del_preflight(sede, tmp_path, clave, valor):
+    ruta = _resellar_externo(_preflight(sede, tmp_path), **{clave: valor})
+    _rechazo_tipado(ruta)
+
+
+def test_el_productor_valida_con_la_misma_funcion_antes_de_escribir(sede, tmp_path):
+    """Una sola definición de forma: el que escribe no puede emitir lo que el que lee rechaza."""
+    import scripts.publication_readiness as mod
+
+    llamadas: list[str] = []
+    original = mod.check_external_shape
+
+    def espia(payload):
+        llamadas.append("productor" if not llamadas else "consumidor")
+        return original(payload)
+
+    mod.check_external_shape = espia  # type: ignore[assignment]
+    try:
+        ruta = _preflight(sede, tmp_path)
+        assert llamadas == ["productor"], "el productor no validó antes de persistir"
+        load_external_preflight(ruta, entorno=_entorno())
+        assert llamadas == ["productor", "consumidor"], "el consumidor usó otra definición"
+    finally:
+        mod.check_external_shape = original  # type: ignore[assignment]
+
+
+def test_el_artefacto_emitido_pasa_su_propia_forma(sede, tmp_path):
+    ruta = _preflight(sede, tmp_path)
+    check_external_shape(json.loads(ruta.read_text("utf-8")))
+
+
+def test_el_verificador_vivo_sigue_sin_operaciones_tras_el_cierre(sede, tmp_path):
+    sink = _SinkConIdentidad()
+    ruta = _preflight(sede, tmp_path, sink=lambda _: sink)
+    resultado = verify_external_preflight_live(
+        ruta, entorno=_entorno(), sink_factory=lambda _: sink
+    )
+    assert resultado["status"] == "PASS_EXTERNAL_READONLY"
+    assert sink.operaciones == []
