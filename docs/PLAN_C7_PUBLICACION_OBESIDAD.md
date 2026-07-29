@@ -7,9 +7,9 @@
 > 16 fronteras del installer, promoción y rollback recuperables del par Tableau y preflight
 > fail-closed. ADAPTERS-B0 + B0.1 están **CERRADAS / PASS** tras auditoría independiente:
 > identidad obligatoria, containment real y recuperación no destructiva verificadas con repros.
-> La validación externa de Google Sheets/Tableau todavía no comenzó. Backend local `20e1ccdf`
-> (`ahead 28`) y remoto `dbfdd49c`; dashboard limpio
-> `feat/c73-candidate-staging@9487e322` (`ahead 20` del remoto de la rama `d5ead880`).
+> La validación externa de Google Sheets/Tableau todavía no comenzó. Backend local y remoto
+> sincronizados en `c453b979`; dashboard local y remoto sincronizados en
+> `feat/c73-candidate-staging@9487e322`.
 > 47.3 quedó **CERRADA / PASS**: `npm test` verifica primero el fixture reproducible, ejecuta
 > 616/616 respuestas con handler real y luego 41/41 contratos focalizados.
 > 47.2-B1/B2/B3/B4/B4.1 quedó **CERRADA / PASS** después de auditoría independiente: 616/616 casos,
@@ -28,15 +28,24 @@
 > `INCOMPLETE (0/4)` y no se presenta como PASS. Un FAIL final obliga a rollback; un PASS convierte
 > la publicación condicionada en confirmada.
 >
-> **Orden vigente:** B1-PREFLIGHT queda **PARKED_BY_USER** hasta que sea posible preparar Google.
-> Su reanudación está documentada en `docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md`. El cache-bust
-> transitivo del dashboard quedó **PASS** en `9487e322`. Ejecutar únicamente
-> `C7.6-DOCS-CHECKPOINT` en el backend: versionar el plan autoritativo y el manual en un commit
-> local doc-only, verificar su alcance y hacer STOP. La Ronda 111 contiene la orden vigente y
-> sustituye cualquier orden histórica incompatible.
+> **Orden vigente:** el checkpoint remoto de ambos repos quedó **CERRADO / PASS**. Por decisión del
+> usuario, todas las tareas que requieren intervención manual quedan estacionadas: inventario del
+> preview de Netlify, creación/compartición de Google Sheets, credenciales, Tableau Desktop,
+> activación y deploy. La primera auditoría del harness encontró dos P0 en el handoff externo:
+> la receta canónica no podía localizar el shard y la evidencia local alterada no se revalidaba.
+> A.1 cerró esos defectos, pero la reauditoría encontró dos fronteras restantes: el flujo externo
+> aceptaba una evidencia reubicada bajo rutas versionables y no exigía que `shard_files` fuera
+> exactamente el inventario del shard. A.2 cerró ambas. A.3 cerró la identidad de las hojas, el
+> plan completo y la revalidación viva de sólo lectura. A.3.1 cerró la forma anidada con un único
+> validador compartido por productor y consumidor. La auditoría final del rango de cinco commits
+> quedó **PASS**. La llegada del boletín fuente 2026-W28 abre una acción funcional nueva y legítima:
+> registrar la primera semana prospectiva sin tocar el pipeline legacy. **No ejecutar
+> `make update-week`**: no alimenta C7.4 y hace pull/force/push sobre superficies ajenas. Continuar
+> únicamente con `C7.4-WEEK-1-A`, local y sin promoción. La Ronda 129 contiene la orden vigente;
+> cualquier orden histórica incompatible queda sustituida.
 > Obesidad continúa por ahora `trained`, NO-GO e invisible para `published_only`.
 >
-> **Avance operativo estimado de C7: 82% hacia la publicación condicionada.** La cifra usa pesos
+> **Avance operativo estimado de C7: 83% hacia la publicación condicionada.** La cifra usa pesos
 > declarados por impacto del entregable, no cantidad de commits ni líneas. Estado por fase:
 >
 > | fase | peso | avance | aporte | estado verificable |
@@ -47,15 +56,19 @@
 > | C7.3 compilador y consumidores en sombra | 20% | 100% | 20.0% | PASS |
 > | C7.4 congelado prospectivo | 10% | 50% | 5.0% | contrato congelado; evidencia `0/4` |
 > | C7.5 preparación de activación | 10% | 85% | 8.5% | PREP PASS; falta gate integral final |
-> | C7.6 readiness | 15% | 92% | 13.8% | B0/B0.1 PASS; B1 estacionado con manual de reanudación |
+> | C7.6 readiness | 15% | 97% | 14.6% | carril autónomo PASS; falta B1 externo/manual |
 > | C7.7 activación, deploy y smoke | 10% | 0% | 0.0% | no autorizado ni ejecutado |
-> | **Total** | **100%** |  | **82.3% ≈ 82%** | Obesidad sigue oculta |
+> | **Total** | **100%** |  | **83.1% ≈ 83%** | Obesidad sigue oculta |
 >
-> El **82% no significa publicada**: la exposición pública sigue en **0%** porque lifecycle, puntero
+> El **83% no significa publicada**: la exposición pública sigue en **0%** porque lifecycle, puntero
 > activo y deploy no se han ejecutado. La confirmación prospectiva se informa separadamente como
 > **0/4 semanas (0%)** y continuará después de la publicación condicionada por decisión explícita
 > del usuario. Próximo incremento real: validar el sink real de staging en preflight y apply
 > separados y sólo entonces solicitar las autorizaciones de C7.7.
+>
+> **Avance del programa completo C1–C7 por macrohitos: ≈98%.** C1–C6 están cerradas y C7 va al
+> 83%; usando una macrofase como unidad, `(6×100 + 83) / 7 = 97.6%`. Esta lectura mide construcción
+> técnica y gates, no exposición: publicación real **0%** y prospectiva **0/4**.
 >
 > **Alcance:** publicar únicamente Obesidad E66. Anorexia F50 permanece
 > `lifecycle=configured`, `channels: []`, `gallery_enabled: false` y oculta durante toda C7.
@@ -2794,6 +2807,298 @@ sin devolverle motores legacy a Obesidad), que además es lo único que mantiene
 la Acción 4.
 
 _Respuesta:_
+
+---
+
+### Ronda 124 — Auditoría integral del harness y última frontera de consumo — 2026-07-29
+
+#### Rango auditado
+
+```text
+base     c453b979
+HEAD     7025aa31
+commits  527615f5 · d9a54f18 · 7025aa31
+estado   ahead 3 · sin push
+```
+
+Superficie del rango:
+
+```text
+Makefile
+docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md
+scripts/publication_readiness.py
+tests/unit/publication/test_publication_readiness.py
+
+4 archivos · 1,934 inserciones · 16 eliminaciones
+```
+
+`git show --check`, `git diff --check` y la revisión de rutas: **PASS**. No hay cambios en
+registry, lifecycle, config, release, DVC, modelos, forecasts, dashboard ni superficies públicas.
+Los archivos no rastreados del usuario permanecen intactos. La única modificación trackeada fuera
+del rango continúa siendo este plan.
+
+Gate focal repetido durante esta auditoría:
+
+```text
+tests/unit/publication/test_publication_readiness.py   78 / 78 PASS
+```
+
+A.2 cierra correctamente las tres fronteras que declaró:
+
+1. ubicación segura de evidencia tanto al cargar como inmediatamente antes de escribir;
+2. inventario exacto y canónico del shard;
+3. loader que recomputa el digest y cruza el preflight con la evidencia local.
+
+El rango queda **PASS en superficie, generación e integridad local**, pero **NO listo para push**
+porque la auditoría del consumidor siguiente encontró una última frontera funcional.
+
+#### R124-P0 · el PASS externo no está ligado a la hoja que inspeccionó
+
+`run_external_readonly` usa `C7_TABLEAU_STAGING_SPREADSHEET_ID` para abrir el sink y construir el
+workbook, pero `external_preflight.v1` no persiste ninguna identidad redactada de la hoja. Después,
+`load_external_preflight(path)` acepta el PASS sin recibir ni contrastar el entorno.
+
+Reproducción independiente con dos IDs de staging distintos y dos sinks vacíos:
+
+```json
+{
+  "a_status": "PASS_EXTERNAL_READONLY",
+  "b_status": "PASS_EXTERNAL_READONLY",
+  "same_inventory": true,
+  "same_planned_steps": true,
+  "workbook_digest_changed": true,
+  "declares_staging_identity": false,
+  "loader_accepts_without_environment": "PASS_EXTERNAL_READONLY"
+}
+```
+
+Que el digest del workbook cambie no resuelve la identidad: el loader no sabe qué ID vigente debe
+reproducir ni con cuál compararlo. Dos hojas vacías pueden tener exactamente el mismo inventario y
+plan. Un futuro apply podría consumir evidencia obtenida de la hoja A mientras el entorno apunta a
+la hoja B.
+
+Esto no es endurecimiento contra un atacante. Es trazabilidad básica del handoff: la evidencia debe
+decir, sin filtrar el ID, **qué hoja inspeccionó**, y el consumidor debe demostrar que sigue
+operando sobre esa misma hoja.
+
+#### R124-P1 · se pierde el plan tipado y un paso malformado escapa sin error de dominio
+
+`promotion_plan()` ya devuelve el contrato completo:
+
+```text
+schema · namespace · steps · rows · digests
+```
+
+El preflight conserva únicamente `planned_steps`. Así se pierden el schema, los conteos y los
+digests del plan exacto que se inspeccionó, aunque las tablas locales ya están selladas.
+
+Además, el loader interpreta cada cadena con:
+
+```python
+p.split(":")[1].split("->")[0]
+```
+
+Reproducción con `planned_steps=["malformed"]`, volviendo a sellar el digest exterior:
+
+```text
+IndexError: list index out of range
+```
+
+Debe rechazarse con `ArtifactValidationError`; un artefacto inválido no puede escapar como fallo
+accidental del parser.
+
+#### Veredicto
+
+```text
+LOCAL HARNESS                         PASS
+EVIDENCE LOCATION                     PASS
+SHARD INVENTORY EXACTNESS             PASS
+EXTERNAL GENERATION READ-ONLY         PASS
+EXTERNAL SPREADSHEET IDENTITY BINDING FAIL
+FULL PROMOTION PLAN SEAL              FAIL
+LIVE PRE-APPLY REVALIDATION            MISSING
+RANGO c453b979..7025aa31               NO PUSH todavía
+F50                                    NO EJECUTAR
+TAREAS MANUALES                        PENDING_MANUAL
+```
+
+### Orden C7.6-AUTO-B1-HARNESS-A.3 — identidad externa y estado vivo, local, sin red y STOP
+
+#### Objetivo
+
+Cerrar la última superficie autónoma de consumo antes del trabajo manual:
+
+1. demostrar para qué hoja se produjo el preflight sin persistir el ID;
+2. sellar el plan completo que se observó;
+3. poder revalidar, de sólo lectura, que la hoja y el plan siguen iguales inmediatamente antes de
+   una futura autorización de escritura.
+
+No implementar apply, promote, rollback externo ni ninguna escritura sobre Google.
+
+#### Alcance permitido
+
+```text
+scripts/publication_readiness.py
+tests/unit/publication/test_publication_readiness.py
+docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md   sólo si cambia el contrato visible
+```
+
+No tocar `tableau_adapter.py`, `sheets_sink.py`, los CLI anteriores, `Makefile`, registry, config,
+artifacts, DVC, dashboard ni este plan dentro del commit.
+
+#### A.3.1 · versionar el artefacto externo
+
+Cambiar de forma cerrada:
+
+```text
+external_preflight.v1  →  external_preflight.v2
+```
+
+No existe un preflight externo productivo que deba migrarse; los actuales son temporales o de
+tests. No mantener dos loaders ni compatibilidad silenciosa con v1.
+
+#### A.3.2 · ligar el preflight a ambas hojas sin filtrar IDs
+
+Persistir dos fingerprints con separación de contexto:
+
+```text
+staging_identity_digest =
+  sha256(canonical_json({"purpose": "c7-staging", "id": staging_id}))
+
+production_identity_digest =
+  sha256(canonical_json({"purpose": "c7-production", "id": production_id}))
+```
+
+Reglas:
+
+- los IDs reales siguen siendo obligatorios, no vacíos y distintos;
+- ningún ID, JSON de service account, email, longitud, prefijo ni fragmento entra en stdout,
+  errores o archivos;
+- no sellar la service account: puede rotar sin cambiar la hoja gobernada;
+- ambos fingerprints forman parte de `preflight_digest`;
+- `load_external_preflight` recibe explícitamente el entorno y recomputa ambos fingerprints antes
+  de aceptar el PASS.
+
+El loader sigue siendo puro: puede leer evidencia y usar los IDs sólo para recomputar, pero no abre
+Google ni escribe.
+
+#### A.3.3 · sellar `promotion_plan` completo
+
+Sustituir `planned_steps` por el mapping completo devuelto por `promotion_plan()`:
+
+```text
+schema     tableau_runner_promotion.v1
+namespace  conjunto exacto administrado
+steps      lista ordenada
+rows       conteos exactos por tabla
+digests    digests exactos por tabla
+```
+
+El loader exige forma cerrada y cruza:
+
+- `namespace` contra `TABLES`;
+- `rows` contra las tablas reconstruidas desde la evidencia local;
+- `digests` contra `table_digests`;
+- cada paso contra una gramática cerrada `write|rename|drop`, sin indexar resultados de `split`;
+- toda tabla origen/destino dentro del namespace y sus sufijos administrados.
+
+Cualquier paso malformado debe producir `ArtifactValidationError`, nunca `IndexError`, `KeyError`
+ni otro error incidental.
+
+#### A.3.4 · reproducir el workbook con la identidad vigente
+
+Al cargar el preflight:
+
+1. volver a cargar la evidencia local con `load_local_evidence`;
+2. reconstruir el workbook desde esas tablas usando el `staging_id` vigente;
+3. comparar su digest y tablas con el workbook sellado;
+4. mantener `tableau_desktop_validated=false`.
+
+Esto demuestra localmente que la evidencia corresponde al ID vigente sin abrir la hoja ni
+persistirlo.
+
+#### A.3.5 · verificador externo vivo de sólo lectura
+
+Añadir una capacidad separada, por ejemplo:
+
+```text
+verify_external_preflight_live(external_evidence, entorno, sink_factory)
+```
+
+Orden obligatorio:
+
+1. cargar y validar v2 contra el entorno;
+2. abrir exactamente el sink de staging declarado por ese entorno;
+3. si el sink expone identidad, exigir que coincida con el ID de staging;
+4. leer dos inventarios consecutivos y exigir estabilidad;
+5. comparar el `inventory_digest` vivo con el sellado;
+6. recomputar `promotion_plan(sink, tables)` y compararlo **completo** con el sellado;
+7. devolver PASS de sólo lectura.
+
+La función no escribe, renombra, elimina ni crea nada. Éste será el gate que una futura orden de
+apply tendrá que ejecutar inmediatamente antes de la primera escritura. No crear el apply en A.3.
+
+#### Tests obligatorios
+
+1. Dos IDs de staging distintos sobre sinks vacíos producen fingerprints y preflights distintos.
+2. El loader con el entorno B rechaza el preflight producido con A, antes de abrir un sink.
+3. Cambiar sólo el ID productivo también rechaza.
+4. IDs, JSON, email, longitud, prefijo y centinelas no aparecen en stdout ni en ningún archivo.
+5. El loader sin entorno o con una variable ausente rechaza: no acepta contexto implícito.
+6. Workbook regenerado con el ID vigente coincide; con otro ID rechaza.
+7. `promotion_plan` positivo cruza schema, namespace, steps, rows y digests.
+8. Mutar por separado schema, namespace, steps, rows o digests y resellar sólo el exterior rechaza.
+9. Paso vacío, sin `:`, verbo desconocido, flecha incompleta o tabla ajena rechaza con
+   `ArtifactValidationError`.
+10. Inventario vivo distinto después del preflight rechaza.
+11. Plan vivo distinto con inventario estable rechaza.
+12. Sink con identidad distinta de la solicitada rechaza.
+13. Estado vivo idéntico pasa.
+14. Contadores demuestran cero operaciones de escritura en loader y verificador vivo.
+15. Los 78 focales existentes permanecen verdes.
+16. La forma v1 se rechaza explícitamente; no se migra ni se acepta por fallback.
+
+#### Gates
+
+```text
+ruff check
+ruff format --check
+mypy
+tests focales
+tests/unit/publication completos
+make test-fast
+carril local real dos veces, mismo digest
+external-readonly positivo con sink inyectado
+load_external_preflight v2 positivo con entorno explícito
+verify_external_preflight_live positivo con sink inyectado
+doctor --artifacts
+release y agregados legacy byte-idénticos
+búsqueda de centinelas en stdout y evidencia
+git diff --check
+```
+
+#### Commit y STOP
+
+Un commit local separado:
+
+```text
+C7.6 bind external preflight to spreadsheet identity and live state
+```
+
+Después STOP. No push. No ejecutar F50. No acceder a Google, Netlify o Tableau Desktop. No DVC,
+lifecycle, puntero, deploy ni publicación.
+
+Al cerrar A.3 se audita el rango completo `c453b979..NUEVO_SHA`. Si esa auditoría pasa, el carril
+autónomo queda realmente agotado: lo único pendiente será ejecutar el manual cuando exista la hoja
+y el entorno externo, y cualquier push conservará su autorización separada.
+
+#### Siguiente orden autónoma
+
+_Respuesta:_ **GO C7.6-AUTO-B1-HARNESS-A.3 LOCAL. Versionar `external_preflight` a v2, ligarlo a
+fingerprints redactados de las hojas de staging y producción, sellar el `promotion_plan` completo
+y añadir la revalidación del estado vivo estrictamente read-only. Probarlo todo con sinks
+inyectados, crear un commit local separado y STOP. Sin Google, credenciales reales, F50, DVC, push,
+lifecycle, puntero, deploy ni publicación.**
 
 ---
 
@@ -17747,3 +18052,2695 @@ _Respuesta:_ **GO C7.6-DOCS-CHECKPOINT LOCAL. Añadir únicamente
 `docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md`, verificar el staged diff y secretos, crear un commit
 local doc-only y STOP. Sin push, código, DVC, Google, Tableau, Netlify, lifecycle, puntero, deploy
 ni publicación.**
+
+
+---
+
+### Ronda 112 — C7.6-DOCS-CHECKPOINT ejecutada — 2026-07-27
+
+**SHA documental nuevo:**
+
+```text
+c453b979  docs: preserve C7 publication plan and B1 staging manual
+```
+
+Backend: `20e1ccdf` → **`c453b979`**. Rango de checkpoint actualizado:
+
+```text
+dbfdd49c..c453b979    29 commits   (28 de código/docs previos + 1 documental)
+behind 0 / ahead 29 respecto de origin/feat/registry-padecimientos-obesidad
+```
+
+#### Preflight
+
+```text
+backend HEAD antes    20e1ccdf   ✓
+dashboard HEAD        9487e322   ✓  (no se tocó en esta ronda)
+backend status        1 modificado (el plan) · 76 untracked
+dashboard status      limpio · 2 untracked del usuario
+```
+
+#### Staged diff
+
+```text
+A  docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md      +288
+M  docs/PLAN_C7_PUBLICACION_OBESIDAD.md         +6,589 / −17
+2 archivos · 6,860 inserciones · 17 borrados
+git diff --cached --check                        PASS
+```
+
+Añadido por ruta explícita, nunca `git add .`. Los untracked pasaron de 76 a 75: la única baja es el
+manual, que dejó de estarlo porque ahora está trackeado. Los 75 restantes —`references/`,
+`reports/`, `.qwen/`— intactos.
+
+#### Scan de secretos sobre el diff STAGED
+
+```text
+PRIVATE KEY                    0
+service_account JSON           0
+Google / GEMINI API key        0
+AWS access key                 0
+token (ghp / sk- / xoxb)       0
+password/secret literal        0
+id de Google Sheet (forma)     7  →  las cuatro digests sha256, verificadas como 64 hex
+```
+
+Ningún identificador de Google Sheets ni de Drive aparece en ninguno de los dos documentos. El
+manual describe **cómo** cargar las variables; no contiene ningún valor.
+
+#### Post-commit
+
+```text
+el commit contiene sólo esos dos archivos        ✓  (name-status: A + M, nada más)
+árbol trackeado                                   limpio
+untracked del usuario                             75, intactos
+archivos fuera de docs/ en el commit              0
+SHA de código del dashboard                       9487e322, sin cambios
+main local == origin/main                         b535b525, sin moverse
+lifecycle obesidad                                trained · sin puntero público
+hooks                                             verdes (ruff/mypy skipped: no hay .py)
+```
+
+La bitácora no se reformateó ni se normalizó: conserva tus ediciones acumuladas tal cual.
+
+#### Rangos finales del checkpoint
+
+```text
+backend    dbfdd49c..c453b979    29 commits   ·  0 binarios  ·  0 rutas prohibidas
+dashboard  d5ead880..9487e322    20 commits   ·  0 binarios  ·  0 rutas prohibidas
+```
+
+Sin push, PR, merge, tag, Netlify, branch deploy, Google, Tableau, Gemini, DVC, lifecycle, puntero,
+deploy ni publicación.
+
+#### Lo que queda, en tu orden
+
+1. auditar `c453b979` y cerrar el rango del backend;
+2. autorizar por literal el push del backend;
+3. resolver la política de branch deploy de Netlify;
+4. autorizar por literal el push del dashboard `d5ead880..9487e322`;
+5. retomar B1 con `docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md`;
+6. C7.7 sigue cerrada hasta validar el sink real.
+
+_Respuesta:_
+
+---
+
+### Ronda 113 — Auditoría independiente del checkpoint documental — 2026-07-27
+
+#### Commit auditado
+
+```text
+c453b979  docs: preserve C7 publication plan and B1 staging manual
+parent    20e1ccdf
+```
+
+El commit es doc-only estricto:
+
+```text
+A  docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md       288 líneas
+M  docs/PLAN_C7_PUBLICACION_OBESIDAD.md          +6,572 / -17
+```
+
+La diferencia entre el total de inserciones del commit (`6,860`) y el `numstat` del plan
+(`6,572`) son las 288 líneas del manual, no una tercera ruta.
+
+#### Auditoría independiente
+
+```text
+origin/feat/registry-padecimientos-obesidad   dbfdd49c
+HEAD                                           c453b979
+parent                                         20e1ccdf
+remote es ancestro de HEAD                     SÍ
+ahead / behind                                 29 / 0
+main == origin/main                            b535b525
+git show --check                               PASS
+git diff --check dbfdd49c..c453b979            PASS
+rutas del commit                               exactamente 2, ambas docs/
+binarios                                       0
+rutas prohibidas en el rango                   0
+secret scan del commit                         0 credenciales
+manual sha256                                  d38eeed6f7a60c8b089216598c138134f82719cead4eea84e790bbff33b6dcc7
+```
+
+No entraron `runs/`, `models/`, `artifacts/`, datos, forecasts, dashboards, puntero público,
+configuración de lifecycle ni modelos. Los demás archivos no rastreados del usuario no forman
+parte del commit.
+
+La modificación actual del plan posterior a `c453b979` corresponde exclusivamente al registro de
+las Rondas 112–113 y al encabezado autoritativo. No cambia el SHA que se propone subir y no se
+debe incorporar mediante un commit adicional antes de este push: hacerlo produciría otra vuelta
+off-by-one sin cambiar el checkpoint material.
+
+#### Veredicto
+
+```text
+BACKEND_CHECKPOINT_AUDIT     PASS
+BACKEND_PUSH                 READY_FOR_EXPLICIT_AUTHORIZATION
+DASHBOARD_PUSH               SEPARADO; requiere decisión sobre branch preview
+B1-PREFLIGHT                 PARKED_BY_USER
+ACTIVACIÓN / PUBLICACIÓN     NO AUTORIZADAS
+```
+
+### Orden C7.6-PUSH-BACKEND-CHECKPOINT — acción externa y STOP
+
+Esta orden **no está autorizada por el documento**. Sólo se ejecuta si el usuario emite el literal
+del final de esta ronda.
+
+#### Preflight inmediato
+
+1. Confirmar que `HEAD` sigue siendo exactamente `c453b979`.
+2. Confirmar que el remoto de la rama sigue siendo exactamente `dbfdd49c`.
+3. Confirmar `dbfdd49c` como ancestro de `c453b979`.
+4. Confirmar `ahead 29 / behind 0`.
+5. Confirmar que no hay cambios staged. La modificación local del plan puede permanecer unstaged.
+6. No ejecutar `git pull`, rebase, merge ni amend.
+
+Si cualquiera de los SHA cambió, hacer STOP y reauditar; la autorización queda inválida.
+
+#### Push acotado
+
+Publicar el SHA auditado en la rama exacta, sin depender de otro HEAD:
+
+```bash
+git push origin \
+  c453b979:refs/heads/feat/registry-padecimientos-obesidad
+```
+
+Prohibido `--force`, `--force-with-lease`, push de tags, otras ramas o `main`.
+
+#### Verificación posterior
+
+1. `git ls-remote` debe devolver `c453b979` para
+   `refs/heads/feat/registry-padecimientos-obesidad`.
+2. Local contra la rama remota debe quedar `ahead 0 / behind 0`.
+3. `main` local y remota deben continuar en `b535b525`.
+4. No debe existir PR, merge, tag, release, deploy ni cambio de lifecycle.
+5. La modificación local del plan y los untracked del usuario deben permanecer intactos.
+
+#### STOP
+
+Reportar el SHA remoto y detenerse. No continuar con el dashboard, Netlify, B1, Google, Tableau,
+DVC, lifecycle, puntero, deploy ni publicación.
+
+### Secuencia posterior — todavía no autorizada
+
+1. Resolver en Netlify si los branch deploys están desactivados o aceptar explícitamente el
+   posible preview.
+2. Revalidar que el dashboard continúe en `9487e322` y el remoto en `d5ead880`.
+3. Autorizar separadamente el push del dashboard.
+4. Retomar B1 cuando se puedan preparar las credenciales y la hoja de staging siguiendo el manual.
+5. Sólo después cerrar readiness y solicitar una autorización separada para C7.7.
+
+#### Próxima autorización literal
+
+_Respuesta:_ **AUTORIZO PUSH BACKEND `dbfdd49c..c453b979` A
+`origin/feat/registry-padecimientos-obesidad`. FAST-FORWARD, SIN `--force`, MERGE, PR, TAG, DVC,
+ACTIVACIÓN, DEPLOY NI PUBLICACIÓN. VERIFICAR SHA REMOTO Y STOP.**
+
+
+---
+
+### Ronda 114 — PUSH BACKEND ejecutado — 2026-07-27
+
+Autorización literal: `dbfdd49c..c453b979` a `origin/feat/registry-padecimientos-obesidad`,
+fast-forward, sin `--force`.
+
+#### Pre-push verificado antes de tocar el remoto
+
+```text
+local HEAD                                    c453b979
+remoto real (git ls-remote)                   dbfdd49c   ← coincide con el rango autorizado
+dbfdd49c es ancestro de HEAD                  SÍ  → fast-forward genuino
+behind / ahead                                0 / 29
+```
+
+#### Resultado
+
+```text
+To https://github.com/IntegradorIMSS2026Team01/EpiForecast-MX.git
+   dbfdd49c..c453b979  feat/registry-padecimientos-obesidad -> feat/registry-padecimientos-obesidad
+rc=0
+```
+
+Notación `dbfdd49c..c453b979` sin `+`: git lo confirma como **fast-forward**, no como actualización
+forzada.
+
+#### SHA remoto verificado tras el push
+
+```text
+git ls-remote origin refs/heads/feat/registry-padecimientos-obesidad
+c453b979f47b3798ccb3f2248c0942a6d0c8fcc7      ← coincide con el local
+
+git ls-remote origin refs/heads/main
+b535b5256aa888b905de34b4da9a23c043d414d4      ← intacta
+
+local vs remoto: behind 0 / ahead 0
+```
+
+#### Lo que NO se hizo
+
+```text
+--force · merge · PR · tag (9 refs de tag en origin, las mismas) · DVC · activación · deploy
+publicación · dashboard
+```
+
+El dashboard sigue exactamente donde estaba: local `9487e322`, remoto `d5ead880`. Su push necesita
+su propia autorización, y antes la decisión sobre branch deploys de Netlify.
+
+`docs/PLAN_C7_PUBLICACION_OBESIDAD.md` vuelve a figurar como modificado: es esta ronda, escrita
+después del push. No entró en él.
+
+#### Estado
+
+```text
+backend    origin/feat/registry-padecimientos-obesidad   c453b979   ✅ sincronizado
+dashboard  origin/feat/c73-candidate-staging             d5ead880   pendiente (20 commits)
+main (ambos repos)                                       sin mover
+Obesidad   lifecycle trained · NO-GO · sin puntero público · invisible
+C7.4       INCOMPLETE 0/4 · exposición pública 0%
+```
+
+Publicar código a una rama de trabajo no expone nada: no hay merge a `main`, no hay deploy, y el
+lifecycle sigue en `trained`. Lo que cambió es que el trabajo ya no vive sólo en este equipo.
+
+#### Pregunta
+
+Quedan dos cosas antes de que el checkpoint esté completo, y las dos son tuyas:
+
+1. **Branch deploys de Netlify.** Sigue sin comprobarse si están habilitados —la configuración
+   efectiva está en la UI, no en `netlify.toml`—. ¿Los desactivas, o aceptas explícitamente que el
+   push del dashboard pueda levantar un preview de rama? Un preview no es producción, pero sí es una
+   URL accesible con el EpiBot y sus datos.
+2. **Push del dashboard** `d5ead880..9487e322`, 20 commits, con su autorización literal cuando
+   decidas lo anterior.
+
+_Respuesta:_
+
+---
+
+### Ronda 115 — Validación post-push backend y reauditoría final del dashboard — 2026-07-27
+
+#### Backend
+
+```text
+local HEAD                                      c453b979
+origin/feat/registry-padecimientos-obesidad     c453b979
+ahead / behind                                  0 / 0
+main local y remota                             b535b525
+```
+
+El push informado en la Ronda 114 queda validado contra las referencias remotas locales:
+fast-forward cerrado, rama de trabajo sincronizada y `main` intacta. La modificación actual del
+plan es posterior al push y permanece local; no altera el checkpoint subido.
+
+#### Dashboard re-auditado
+
+```text
+local HEAD                         9487e322
+origin/feat/c73-candidate-staging  d5ead880
+ahead / behind                     20 / 0
+origin/main                        179bbe36
+ancestry                           d5ead880 es ancestro de 9487e322
+diff --check                       PASS
+rango                              28 archivos · +4,867 / -1,106
+secret scan                        0 credenciales
+node --check                       PASS
+npm run check                      PASS
+fixture                            616 / 616
+unitarias                          67 / 67
+candidate                          79 pass · 2 skips esperados sin shard real
+RAG                                454 / 454 · sincronizado
+Obesidad pública                   0 en knowledge.json, rag_index.json y HTML
+```
+
+Los 28 archivos pertenecen a código, pruebas, fixture, índice RAG sincronizado y cache-bust
+declarados durante C7.3–C7.6. No hay `netlify.toml`, workflow, shard candidate, credencial ni
+artefacto temporal añadido al rango. Los dos untracked del usuario siguen fuera de Git.
+
+#### Riesgo real del push
+
+El push **no mueve producción** porque `origin/main` no cambia. Sin embargo, la configuración de
+branch deploys vive en Netlify y no puede deducirse del repositorio. Si está habilitada, el push
+puede crear o actualizar una URL preview de la rama.
+
+Ese preview no contiene datos públicos de Obesidad:
+
+- `knowledge.json`, `rag_index.json` y los HTML tienen cero menciones;
+- el candidate sólo entra cuando se inyecta explícitamente un staging root;
+- lifecycle continúa `trained`;
+- no existe puntero público activo.
+
+Por tanto, aceptar el posible preview es una decisión operativa razonable para terminar el
+checkpoint sin esperar acceso a Netlify. No equivale a autorizar producción, merge o publicación.
+
+#### Veredicto
+
+```text
+BACKEND CHECKPOINT       CLOSED / REMOTE
+DASHBOARD RANGE          PASS / READY
+DASHBOARD PRODUCTION     UNCHANGED
+BRANCH PREVIEW           UNKNOWN · requires explicit acceptance or UI disable
+B1-PREFLIGHT             PARKED_BY_USER
+C7.7                     NO-GO
+```
+
+### Opción A — recomendada para avanzar
+
+Aceptar explícitamente el posible preview y autorizar sólo el push fast-forward del SHA auditado:
+
+_Respuesta:_ **ACEPTO EL POSIBLE BRANCH PREVIEW DE NETLIFY. AUTORIZO PUSH DASHBOARD
+`d5ead880..9487e322` A `origin/feat/c73-candidate-staging`, FAST-FORWARD Y SIN `--force`, PR,
+MERGE, TAG, CAMBIO DE `main`, DEPLOY DE PRODUCCIÓN, ACTIVACIÓN NI PUBLICACIÓN. VERIFICAR SHA
+REMOTO Y STOP.**
+
+### Opción B — máxima contención externa
+
+1. En Netlify, desactivar temporalmente Branch deploys para el sitio.
+2. Confirmar que Production branch sigue siendo `main`.
+3. Emitir:
+
+_Respuesta:_ **BRANCH DEPLOYS DE NETLIFY DESACTIVADOS Y PRODUCTION BRANCH SIGUE EN `main`.
+AUTORIZO PUSH DASHBOARD `d5ead880..9487e322` A `origin/feat/c73-candidate-staging`,
+FAST-FORWARD Y SIN `--force`, PR, MERGE, TAG, CAMBIO DE `main`, DEPLOY, ACTIVACIÓN NI
+PUBLICACIÓN. VERIFICAR SHA REMOTO Y STOP.**
+
+#### Reglas comunes al ejecutar cualquiera
+
+1. Revalidar inmediatamente antes que remoto=`d5ead880`, local=`9487e322` y ancestry sea
+   fast-forward.
+2. Empujar el SHA exacto:
+
+```bash
+git push origin \
+  9487e322:refs/heads/feat/c73-candidate-staging
+```
+
+3. Verificar con `git ls-remote` que la rama remota termina en `9487e322`.
+4. Confirmar `ahead 0 / behind 0` y `origin/main=179bbe36`.
+5. STOP. Sin abrir PR, mergear, desplegar producción, tocar backend, B1, Google, Tableau, DVC,
+   lifecycle, puntero ni publicación.
+
+#### Después del push — todavía no autorizado
+
+El checkpoint de código de ambos repos quedará remoto. La ruta funcional seguirá detenida en B1
+hasta que pueda ejecutarse el manual de Google Sheets/Tableau. No iniciar C7.7 sólo porque ambos
+push hayan terminado.
+
+
+---
+
+### Ronda 116 — PUSH DASHBOARD ejecutado · CHECKPOINT COMPLETO — 2026-07-27
+
+Autorización literal: `d5ead880..9487e322` a `origin/feat/c73-candidate-staging`, fast-forward, sin
+`--force`, con el posible branch preview de Netlify **aceptado explícitamente**.
+
+#### Pre-push verificado antes de tocar el remoto
+
+```text
+local HEAD                          9487e322
+remoto real (git ls-remote)         d5ead880   ← coincide con el rango autorizado
+d5ead880 es ancestro de HEAD        SÍ  → fast-forward genuino
+commits a subir                     20
+main local == main remota           179bbe36
+```
+
+#### Resultado
+
+```text
+To https://github.com/IntegradorIMSS2026Team01/EpiForecast-IMSS-Dashboard.git
+   d5ead880..9487e322  feat/c73-candidate-staging -> feat/c73-candidate-staging
+rc=0
+```
+
+Sin `+` en la notación: fast-forward confirmado por git.
+
+#### SHA remoto verificado tras el push
+
+```text
+refs/heads/feat/c73-candidate-staging   9487e3221d89b3e068c9e82df89b4448bfccfcee   ← igual al local
+refs/heads/main                         179bbe36cbff972737b2140658f37e1dcd480621   ← intacta
+refs de tag en origin                   0
+local vs remoto                         behind 0 / ahead 0
+```
+
+No se usó `--set-upstream`: no estaba en la autorización y sólo configura tracking local. La rama
+local sigue sin upstream; el próximo push tendrá que nombrar el remoto igual que éste.
+
+#### Estado del checkpoint
+
+```text
+backend    origin/feat/registry-padecimientos-obesidad   c453b979   ✅
+dashboard  origin/feat/c73-candidate-staging             9487e322   ✅
+main (ambos repos)                        b535b525 · 179bbe36      sin mover
+CHECKPOINT COMPLETO
+```
+
+#### Lo que sigue en pie
+
+```text
+Obesidad          lifecycle trained · NO-GO · sin puntero público · fuera de published_only
+C7.4              INCOMPLETE 0/4
+exposición        0% en producción
+B1-PREFLIGHT      estacionado · docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md
+C7.7              cerrada hasta validar el sink real de Google Sheets/Tableau
+```
+
+Sin `--force`, PR, merge, tag, cambio de `main`, deploy de producción, activación ni publicación.
+
+#### Una cosa que conviene mirar ahora, no dentro de un mes
+
+El branch preview quedó aceptado, así que **puede existir una URL de rama** sirviendo este EpiBot.
+Si Netlify lo levantó, esa URL expone el dashboard con `knowledge.json` y `rag_index.json` de 454
+chunks — sin Obesidad, verificado — pero es una superficie accesible que antes no existía. Dos cosas
+que sólo puedes comprobar tú en la UI de Netlify:
+
+1. si el preview se creó y con qué URL;
+2. si esa URL está indexable o protegida por contraseña.
+
+No es un problema de contenido: el candidate no está ahí. Es cuestión de saber qué quedó publicado.
+
+#### Pregunta
+
+Con el checkpoint cerrado, el siguiente trabajo real es B1 y depende de ti:
+
+1. **¿Retomamos B1-PREFLIGHT?** Necesita la hoja de staging creada, compartida con la service
+   account, y las tres variables en el entorno **desde el que se lanza la sesión** — el manual lo
+   detalla paso a paso.
+2. Si Google va para largo, ¿prefieres que avance el refactor pendiente de `tableau_adapter.py`
+   (614 líneas, deuda declarada en la Ronda 101), que es local y no depende de nada externo?
+
+_Respuesta:_
+
+---
+
+### Ronda 117 — Validación del checkpoint completo y orden de continuación — 2026-07-27
+
+#### Estado revalidado
+
+```text
+backend local / remoto feature     c453b979 / c453b979
+backend ahead / behind             0 / 0
+backend main                       b535b525
+
+dashboard local / remoto feature   9487e322 / 9487e322
+dashboard ahead / behind           0 / 0
+dashboard main                     179bbe36
+dashboard upstream local           no configurado, deliberadamente
+```
+
+Los únicos elementos locales fuera del checkpoint son la bitácora posterior del plan y los
+untracked preexistentes del usuario. No hay trabajo de producto pendiente de push.
+
+#### Veredicto
+
+```text
+CHECKPOINT C7.6 EN AMBOS REPOS       CLOSED / REMOTE
+PRODUCCIÓN                            SIN CAMBIOS
+OBESIDAD                              trained · NO-GO · exposición 0%
+BRANCH PREVIEW                        POSIBLE · aceptado, falta inventariarlo en Netlify
+B1-PREFLIGHT                          ÚNICO BLOQUEANTE FUNCIONAL
+REFACTOR tableau_adapter.py           DEFERRED hasta después del staging real
+```
+
+No conviene usar el refactor de `tableau_adapter.py` como trabajo de relleno antes de B1. El
+adaptador actual tiene 298 pruebas de publicación y fue diseñado precisamente para confrontarse
+ahora con `gspread` y un workbook reales. Refactorizarlo antes de esa evidencia:
+
+- cambia la superficie que B1 pretende validar;
+- obliga a repetir parte de ADAPTERS-A/B0;
+- puede esconder si un fallo viene de Google o de la reorganización;
+- no acerca por sí mismo la publicación.
+
+El refactor permanece como deuda válida, pero se ejecutará con comportamiento real ya medido.
+
+### Orden inmediata para el usuario — inventario del preview
+
+En Netlify:
+
+1. Abrir el sitio del dashboard.
+2. Ir a **Deploys** y filtrar por `feat/c73-candidate-staging`.
+3. Registrar en la respuesta:
+
+```text
+preview_created: true | false
+preview_status: ready | failed | canceled | none
+preview_url: <URL o none>
+access: public | password | team-only | unknown
+search_indexing: allowed | blocked | unknown
+production_branch: main
+production_deploy_unchanged: true
+```
+
+4. Si existe y no quieres mantenerlo, deshabilitar branch deploys o borrar sólo ese deploy desde
+   Netlify. No borrar la rama Git ni tocar producción.
+5. No pegar tokens, IDs internos, headers ni credenciales en el plan; la URL del preview sí puede
+   registrarse si no contiene un secreto.
+
+Esta comprobación no bloquea preparar B1, pero cierra el inventario de superficies externas.
+
+### Orden funcional siguiente — reanudar B1 cuando sea posible
+
+Seguir literalmente:
+
+```text
+docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md
+```
+
+Condiciones antes de arrancar una nueva sesión:
+
+1. hoja de Google Sheets **de staging**, nunca la productiva;
+2. hoja compartida con la service account;
+3. `C7_TABLEAU_STAGING_SPREADSHEET_ID` disponible en el entorno;
+4. `GSHEETS_SPREADSHEET_ID` productivo disponible sólo para demostrar no-colisión;
+5. `GOOGLE_SERVICE_ACCOUNT_JSON` disponible como secreto de entorno;
+6. las tres variables heredadas por el proceso que lanza la sesión;
+7. no imprimir valores, longitudes ni prefijos.
+
+Al reanudar, ejecutar primero únicamente el preflight read-only del manual. Si identidad,
+permisos, tablas existentes o separación staging/productivo no son demostrables, STOP. No aplicar,
+promover ni activar en la misma orden.
+
+#### Próxima autorización literal para B1
+
+_Respuesta:_ **GO C7.6-PROMOTION-ADAPTERS-B1-PREFLIGHT READ-ONLY. Seguir
+`docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md`, validar identidad y permisos de la hoja de staging
+sin escribir tablas, generar sólo evidencia en temporal permitido y STOP. Sin apply, DVC, push,
+PR, merge, lifecycle, puntero, deploy ni publicación.**
+
+Si todavía no puedes preparar Google, no hay otra acción funcional crítica que ejecutar: conserva
+el checkpoint y retoma B1 cuando estén disponibles la hoja y las variables.
+
+---
+
+### Ronda 118 — Carril autónomo mientras las tareas manuales quedan pendientes — 2026-07-29
+
+#### Decisión del usuario
+
+El usuario no puede intervenir manualmente ahora. Quedan expresamente estacionadas, sin bloquear
+el trabajo local:
+
+```text
+Netlify UI / inventario del branch preview
+crear y compartir la hoja Google Sheets de staging
+obtener o cargar IDs y service-account JSON
+abrir o refrescar Tableau Desktop
+autorizar apply sobre Google
+activar lifecycle y puntero
+merge, deploy y smoke público
+```
+
+No presentar ninguna de ellas como PASS. Permanecen `PENDING_MANUAL`.
+
+#### Qué sí puede avanzar de forma autónoma
+
+El código ya tiene piezas separadas para compilar el candidate, inspeccionar Google, planear el
+staging y generar el workbook, pero el procedimiento sigue distribuido entre dos CLI y un manual.
+La siguiente mejora útil es un **orquestador genérico de readiness** que:
+
+1. complete todo el carril local sin red ni credenciales;
+2. produzca evidencia determinista y redactada;
+3. cuando las variables existan en el futuro, continúe automáticamente con el preflight externo
+   read-only;
+4. nunca contenga ni habilite `--apply`;
+5. distinga `PASS_LOCAL` de `BLOCKED_EXTERNAL`, sin llamar PASS a B1.
+
+Esto reduce la intervención futura a provisionar Google una sola vez. No publica y no cambia el
+porcentaje de exposición.
+
+### Orden C7.6-AUTO-B1-HARNESS — local, genérica, sin red y STOP
+
+#### Objetivo
+
+Crear un comando canónico:
+
+```text
+python -m scripts.publication_readiness
+```
+
+que cierre automáticamente la preparación local de un release y deje listo el mismo comando para
+reanudar el preflight externo cuando exista el entorno.
+
+#### Alcance permitido
+
+```text
+scripts/publication_readiness.py                         nuevo
+tests/unit/publication/test_publication_readiness.py     nuevo
+Makefile                                                 sólo un target delgado, si aporta valor
+docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md               sólo para sustituir la receta manual
+                                                        por el comando canónico; sin secretos
+```
+
+No tocar:
+
+```text
+src/epiforecast/publication/tableau_adapter.py
+src/epiforecast/publication/sheets_sink.py
+scripts/tableau_staging.py
+scripts/tableau_workbook.py
+config/padecimientos.yaml
+config/publication/
+artifacts/ · reports/ · data/ · models/ · dashboard
+```
+
+El orquestador compone APIs existentes; no las rediseña.
+
+#### Interfaz mínima
+
+```text
+publication_readiness local
+  --disease <registry_id>
+  --release-target <ruta .dvc o bundle>
+  --evidence-root <runs/ o temporal permitido>
+
+publication_readiness external-readonly
+  --local-evidence <manifest local>
+```
+
+Reglas:
+
+- `local` no lee variables de Google y no importa ni autentica `gspread`;
+- `external-readonly` exige las tres variables, pero sólo invoca `inspect`, dry-run de `stage` y
+  generación/verificación del workbook;
+- no existe subcomando, flag ni llamada interna equivalente a `apply`, `recover`, promote o
+  delete;
+- disease, release, conteos y canales se derivan de registry/manifests, nunca de constantes de
+  Obesidad;
+- la raíz de evidencia debe estar en `runs/` gitignored o en el temporal real del sistema;
+- ningún ID, JSON, email, ruta de credencial, longitud o prefijo sensible entra al reporte.
+
+#### Flujo `local`
+
+1. Verificar registry, lifecycle y backend de artefacto.
+2. Verificar bundle, checksums y release manifest.
+3. Compilar candidate dos veces bajo raíces distintas.
+4. Exigir árboles byte-idénticos.
+5. Validar manifests y shards.
+6. Construir tablas Tableau y workbook con una identidad **sintética claramente local**, nunca con
+   el ID productivo.
+7. Verificar:
+
+```text
+release_id estable
+5,772 filas / 111 productos para el release actual, derivados del manifest, no hardcodeados
+lifecycle trained
+INCOMPLETE 0/4
+point-only y límites nulos
+channels_without_bridge vacío
+workbook tableau_desktop_validated=false
+cero escrituras públicas
+```
+
+8. Escribir atómicamente un `readiness_manifest.v1.json` con sólo digests, conteos, versiones,
+   estados y lista de requisitos externos pendientes.
+9. Resultado:
+
+```text
+PASS_LOCAL + BLOCKED_EXTERNAL
+```
+
+`BLOCKED_EXTERNAL` no es error del carril local ni PASS de B1.
+
+#### Flujo futuro `external-readonly`
+
+Cuando el usuario prepare Google:
+
+1. cargar y verificar el manifest local;
+2. comprobar sólo presencia de variables y no-colisión de IDs;
+3. autenticar una vez;
+4. ejecutar dos inventarios y exigir digest idéntico;
+5. ejecutar stage sin `--apply`;
+6. regenerar/verificar el workbook con el ID real de staging;
+7. producir `external_preflight.v1.json` redactado;
+8. STOP.
+
+No se implementa ni se prueba contra red en esta ronda. Se prueba con adaptadores inyectados que
+demuestran secuencia, no mutación y redacción.
+
+#### Tests obligatorios
+
+1. Dos corridas locales producen el mismo manifest salvo una ruta temporal explícitamente excluida
+   de identidad.
+2. El código no contiene `apply`, `recover`, `promote`, `delete` ni llamadas de escritura al sink.
+3. Local funciona con `gspread` ausente y con las variables secretas sembradas; no las lee.
+4. External-readonly sin una variable devuelve `BLOCKED_EXTERNAL`, sin autenticar.
+5. IDs iguales se rechazan antes de autenticar.
+6. Proveedor que intenta registrar un secreto: la salida lo redacta y el test busca el valor
+   centinela en todos los archivos.
+7. Inventarios distintos: FAIL, sin stage.
+8. Dry-run que propone una tab ajena o residuos: FAIL.
+9. Workbook con ID productivo, Tableau Public o `tableau_desktop_validated=true`: FAIL.
+10. Bundle/shard alterado: FAIL antes de cualquier borde externo.
+11. Disease sintética demuestra N+1; AST sin nombres de padecimientos, motores ni `64/111`.
+12. El manifest declara honestamente `manual_requirements_status=PENDING`.
+
+#### Gates
+
+```text
+ruff check
+ruff format --check
+mypy
+tests focales del orquestador
+tests/unit/publication completos
+make test-fast
+doctor_padecimiento Obesidad --artifacts
+hashes del release y cuatro agregados legacy sin cambio
+git diff --check
+```
+
+Ejecutar una prueba local real sobre el release DVC actual, sin red, y reportar la ruta del manifest
+gitignored. No usar Google ni Gemini.
+
+#### Commit y STOP
+
+Un commit local acotado, sin push:
+
+```text
+C7.6 automate local publication readiness and external preflight handoff
+```
+
+Después STOP para auditoría. No iniciar el refactor de `tableau_adapter.py` en el mismo commit.
+
+#### Prohibiciones
+
+Sin credenciales, red de Google, Netlify, Tableau Desktop, `--apply`, recover, DVC add/push, push
+Git, PR, merge, lifecycle, puntero, deploy, publicación ni borrado de untracked.
+
+#### Siguiente orden autónoma
+
+_Respuesta:_ **GO C7.6-AUTO-B1-HARNESS LOCAL. Implementar el orquestador genérico de readiness,
+ejecutar únicamente el flujo local sin red ni credenciales, producir evidencia gitignored, crear
+un commit local acotado y STOP. Mantener todas las tareas manuales como `PENDING_MANUAL`; sin
+Google, Netlify, Tableau Desktop, apply, DVC, push, lifecycle, puntero, deploy ni publicación.**
+
+
+---
+
+### Ronda 119 — C7.6-AUTO-B1-HARNESS ejecutada — 2026-07-29
+
+**Commit local (sin push):**
+
+```text
+527615f5  C7.6 automate local publication readiness and external preflight handoff
+```
+
+Cuatro archivos, los cuatro del alcance permitido. El plan **no** entró en el commit.
+
+```text
+A  scripts/publication_readiness.py
+A  tests/unit/publication/test_publication_readiness.py
+M  Makefile                                     (un target delgado: `make readiness`)
+M  docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md   (la receta manual → el comando canónico)
+```
+
+`tableau_adapter.py`, `sheets_sink.py`, `tableau_staging.py`, `tableau_workbook.py`,
+`config/`, `artifacts/`, `reports/`, `data/`, `models/` y el dashboard: sin tocar. El orquestador
+**compone** las APIs existentes; no rediseña ninguna.
+
+#### Corrida real sobre el release DVC actual, sin red
+
+```text
+make readiness DISEASE=obesidad RELEASE=artifacts/releases/obesidad/obesidad_release_2517e7858901
+
+evidencia   runs/readiness/obesidad/readiness_manifest.json      (gitignored: .gitignore:271 runs/)
+status      PASS_LOCAL          external_status  BLOCKED_EXTERNAL          failures  []
+reproducible  2 compilaciones · 0 diferencias de árbol
+shard       5,772 filas · 111 productos (64 base + 47 derivados) · 64 modelos · horizonte 52
+            lifecycle trained · INCOMPLETE 0/4 · interval_method none
+            channels_without_bridge []  ·  etiqueta «… (0/4 semanas) · pronóstico puntual …»
+tablas      runner_forecast 5,772 · runner_releases 1
+workbook    14,546 bytes · tableau_desktop_validated false · identidad sintética
+public_writes  0
+manual_requirements_status  PENDING  (8 tareas enumeradas por nombre)
+manifest_digest  bc88050e3c4169db…  ← IDÉNTICO en dos raíces de evidencia distintas
+```
+
+Ningún conteo de esa tabla está escrito en el código: todos salen del manifiesto del shard.
+
+#### Los doce tests obligatorios
+
+| # | Qué fija | Cómo |
+|---|---|---|
+| 1 | dos corridas, el mismo manifiesto | mismo `manifest_digest` y mismos bytes en disco; `evidence_path` es lo único que difiere y está fuera de la identidad |
+| 2 | sin operaciones de escritura | **AST**: ninguna llamada del módulo resuelve a `apply/recover/promote/rollback/delete/write_table/rename_table/drop_table/del_worksheet/update_title` |
+| 3 | local no lee las variables | se siembran las tres con centinelas, corre el carril y se buscan los centinelas en **todos** los archivos producidos |
+| 4 | falta una variable → `BLOCKED_EXTERNAL` | parametrizado por las tres; el `sink_factory` cuenta aperturas y queda en **0** |
+| 5 | IDs iguales → bloqueado antes de autenticar | igual, con 0 aperturas |
+| 6 | proveedor que filtra el secreto | el sink revienta arrastrando id y JSON; se buscan los centinelas en el reporte y en todos los archivos |
+| 7 | inventarios distintos → FAIL | la hoja se mueve entre los dos inventarios; no hay `planned_steps` |
+| 8 | residuos → FAIL | parametrizado por `__next` y `__backup` |
+| 9 | workbook inválido → FAIL | el verificador ya cubre ID productivo, Tableau Public y `tableau_desktop_validated` |
+| 10 | shard alterado → FAIL antes del borde externo | el segundo árbol sale distinto: no se emite evidencia |
+| 11 | genericidad | AST sin nombres de padecimiento, motores ni los conteos; y los invariantes se comprueban contra el `disease` **inyectado** |
+| 12 | honestidad del manifiesto | `manual_requirements_status == PENDING` |
+
+**27 pruebas nuevas, todas verdes.**
+
+#### Dos lecturas que declaro en vez de esconder
+
+1. **`promotion_plan` contiene la subcadena «promot».** La orden pedía que el código no contuviera
+   `promote`. La leí como «no llamar a ninguna operación de escritura», que es lo que protege el
+   contrato, y la prueba es por AST sobre las llamadas, no por grep sobre el texto.
+   `promotion_plan` sólo lee —su docstring lo dice y una prueba de `test_sheets_sink` lo ancla al
+   comportamiento real de `promote`— y duplicar el protocolo para evitar una palabra habría
+   reintroducido justo la deriva que A.1.1 cerró.
+2. **La genericidad N+1 se prueba a nivel de unidad**, no compilando un padecimiento sintético de
+   punta a punta: eso exigiría una segunda entrada de registry y su `config/publication/`, y C6 ya
+   demostró el alta por configuración con F50. Lo que sí se prueba aquí es que los invariantes se
+   evalúan contra el `disease` que se inyecta, y que el AST no conoce ningún nombre ni conteo.
+
+#### Gates
+
+```text
+ruff check                                    PASS
+ruff format --check                           PASS (365 archivos)
+mypy                                          PASS (165 fuentes)
+tests/unit/publication                        324 passed · 1 skipped
+make test-fast                                2,158 passed · 1 skipped · 61 deselected
+doctor_padecimiento obesidad --artifacts      ✅ completo (config+artefactos)
+git diff --check                              PASS
+```
+
+#### Preservación
+
+```text
+release SHA256SUMS.txt        618b4577…      sin cambios
+tableau.csv                   b334e239…      auditoria_motores_2026  02ea61f0…
+tabla_333_modelos_produccion  af7942a4…
+artifacts/ · data/ · reports/ · models/ · config/ · dashboard   sin tocar
+Obesidad   lifecycle trained · NO-GO · sin puntero · fuera de published_only
+```
+
+Sin credenciales, red de Google, Netlify, Tableau Desktop, `--apply`, recover, DVC, push, PR, merge,
+lifecycle, puntero, deploy, publicación ni borrado de untracked.
+
+#### Qué queda automatizable
+
+Poco, y conviene decirlo: **el carril local ya está cerrado**. Lo que queda es la validación externa,
+y no se puede simular sin mentir. Cuando existan las tres variables, un solo comando
+—`publication_readiness external-readonly`— cierra el preflight entero.
+
+La única deuda técnica declarada sigue siendo el refactor de `tableau_adapter.py` (614 líneas), que
+tú mismo pospusiste hasta después del staging real.
+
+#### Pregunta
+
+Antes de que dé por agotado el carril autónomo:
+
+1. ¿Quieres que el `readiness` se ejecute también sobre **Anorexia F50** —`lifecycle=configured`,
+   sin canales— como prueba negativa real de N+1? Debería fallar por «ningún canal declarado tiene
+   puente», y eso sería evidencia de genericidad mucho más fuerte que la actual.
+2. ¿Hay algo más que consideres automatizable, o cierro aquí y el siguiente movimiento es tuyo
+   (hoja de staging + variables) siguiendo el manual?
+
+_Respuesta:_
+
+---
+
+### Ronda 120 — Auditoría independiente de AUTO-B1-HARNESS — 2026-07-29
+
+#### Superficie y pruebas que sí pasan
+
+```text
+commit                         527615f5
+parent                         c453b979
+archivos                       4, todos permitidos
+git show --check               PASS
+secret scan del diff           0 credenciales reales
+tests focales                  27 / 27
+ruff / format / mypy           coherentes con el gate reportado
+carril local real              PASS_LOCAL + BLOCKED_EXTERNAL
+```
+
+El flujo local es útil y no abre Google. Sin embargo, el criterio de cierre incluía que la
+reanudación externa futura funcionara con el comando del manual y que la evidencia gobernara el
+handoff. Eso todavía es **FAIL** por dos reproducciones P0.
+
+#### R120-P0-1 · el comando canónico del manual no puede localizar el shard
+
+El manual ordena:
+
+```bash
+python -m scripts.publication_readiness external-readonly \
+  --local-evidence runs/readiness/obesidad/readiness_manifest.json
+```
+
+Pero el JSON persistido no contiene `evidence_path` ni una ruta relativa sellada:
+
+```text
+has("evidence_path") = false
+```
+
+Con las tres variables presentes y un sink inyectado sin red, el mismo camino termina:
+
+```text
+status   FAIL
+failure  KeyError: 'evidence_path'
+```
+
+Las pruebas no lo detectaron porque siempre pasaron `shard_root` directamente a la función. El CLI
+documentado no lo pasa. La prueba del helper no prueba el contrato de usuario.
+
+#### R120-P0-2 · una evidencia local alterada gobierna el preflight externo
+
+`run_external_readonly` copia `manifest_digest`, pero nunca lo recomputa. Tampoco cruza
+`disease_id`, `release_id` y `shard_manifest_digest` contra el shard que consume.
+
+Reproducción sin red:
+
+1. copiar el manifiesto real;
+2. cambiar `disease_id` y `release_id`;
+3. dejar el digest viejo;
+4. pasar el shard real por `shard_root`;
+5. usar un sink de memoria.
+
+Resultado:
+
+```json
+{
+  "status": "PASS_EXTERNAL_READONLY",
+  "disease_id": "padecimiento_fabricado",
+  "release_id": "release_fabricado",
+  "local_manifest_digest": "bc88050e..."
+}
+```
+
+Es un falso PASS de lineage: el plan y el workbook salen del shard real, pero el reporte afirma
+otra identidad. Antes de tocar Google, esto es P0.
+
+#### R120-P1 · `external_preflight.v1` no queda persistido
+
+`EXTERNAL_FILE = "external_preflight.json"` está declarado pero no se usa. El flujo externo
+devuelve JSON por stdout; no deja un artefacto atómico, sellado y cargable que pueda gobernar el
+siguiente gate. No bloquea el carril local, pero sí el handoff prometido.
+
+#### Sobre la prueba negativa con F50
+
+No ejecutarla todavía. F50 tiene:
+
+```text
+lifecycle       configured
+channels        []
+artifact_source ausente
+release bundle  ausente
+```
+
+Por tanto, `readiness` fallaría antes de compilar —por falta de release/status—, no por «ningún
+canal declarado tiene puente». Reportarlo como prueba real de genericidad sería atribuir al guard
+de canales un fallo producido en otra frontera. C6 ya demuestra N+1 por configuración; una prueba
+end-to-end de readiness requiere primero un release F50 sellado, trabajo fuera de C7.
+
+#### Veredicto
+
+```text
+LOCAL HARNESS                  PASS
+EXTERNAL HANDOFF               FAIL
+COMMIT 527615f5                REQUIERE A.1 antes de push
+F50 NEGATIVE RUN               NO EJECUTAR; precondiciones ausentes
+TAREAS MANUALES                PENDING_MANUAL, sin cambio
+```
+
+### Orden C7.6-AUTO-B1-HARNESS-A.1 — local, sin red y STOP
+
+#### Alcance permitido
+
+```text
+scripts/publication_readiness.py
+tests/unit/publication/test_publication_readiness.py
+docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md
+```
+
+No tocar Makefile salvo que el target local haya quedado incorrecto. No tocar adapters, sinks, CLI
+previos, registry, config, artifacts, dashboard ni el plan dentro del commit.
+
+#### Corrección 1 · manifest local autocontenido y portable
+
+Persistir en `readiness_manifest.v1`:
+
+```text
+shard_relative_root
+shard_tree_digest
+```
+
+La ruta debe ser relativa al directorio de evidencia, canónica y sin componentes absolutos, `.`,
+`..` ni symlinks que salgan de la raíz. No persistir rutas absolutas.
+
+El comando externo sin `--shard-root` debe resolver:
+
+```text
+local_evidence.parent / shard_relative_root
+```
+
+Si se conserva `--shard-root` por compatibilidad, exigir que resuelva exactamente al mismo
+directorio declarado; no permitir que sustituya la identidad sellada.
+
+#### Corrección 2 · loader de evidencia
+
+Crear una única función que:
+
+1. exija forma cerrada de `readiness_manifest.v1`;
+2. extraiga `manifest_digest`, recompute `sha256(canonical_json(payload_sin_digest))` y compare;
+3. resuelva la raíz del shard con containment;
+4. cargue y verifique `shard_manifest.json` y todos sus archivos;
+5. compare al menos:
+
+```text
+disease_id
+release_id
+shard_manifest_digest
+publication_label
+lifecycle
+rows
+products
+channels_emitted
+```
+
+6. reconstruya las tablas y compruebe `table_digests`;
+7. sólo entonces permita abrir el borde externo.
+
+Toda discrepancia debe fallar antes de `sink_factory`.
+
+#### Corrección 3 · evidencia externa persistida
+
+El CLI externo debe escribir atómicamente, junto al manifiesto local:
+
+```text
+external_preflight.json
+```
+
+Contrato:
+
+- schema cerrado `external_preflight.v1`;
+- digest propio recomputable, excluyendo sólo su campo de digest;
+- identidad cruzada con el local y el shard;
+- inventario, pasos dry-run, workbook y estado redactados;
+- nunca IDs, JSON, emails, longitudes, prefijos ni rutas de credenciales;
+- ante `BLOCKED_EXTERNAL` puede imprimir el estado, pero no debe reemplazar un PASS externo previo;
+- ante FAIL no debe reemplazar evidencia previa válida; conservar el fallo en stdout redactado.
+
+#### Tests rojos obligatorios
+
+1. Ejecutar el CLI exactamente como lo documenta el manual, sin `--shard-root`: debe llegar al
+   sink inyectado y completar el positivo.
+2. Manifiesto sin ruta relativa: rechazo antes del sink.
+3. Ruta absoluta, `..` o symlink fuera de evidencia: rechazo.
+4. `--shard-root` distinto del declarado: rechazo.
+5. Alterar cada uno de disease, release, manifest digest, shard digest, label, lifecycle, rows,
+   products o channels y volver a sellar sólo la capa exterior: rechazo antes del sink.
+6. Alterar un archivo del shard: rechazo antes del sink.
+7. Alterar `table_digests`: rechazo.
+8. External PASS escribe un JSON cargable y su digest recomputa.
+9. FAIL/BLOCKED no destruyen un PASS externo previo.
+10. Buscar todos los centinelas secretos en stdout y en todos los archivos producidos.
+11. El comando del manual se extrae o prueba desde el propio documento para impedir otra deriva.
+
+#### Gates
+
+```text
+ruff check
+ruff format --check
+mypy
+tests focales
+tests/unit/publication completos
+make test-fast
+carril local real dos veces, mismo digest
+external-readonly positivo con sink inyectado, sin red
+doctor --artifacts
+release y agregados legacy byte-idénticos
+git diff --check
+```
+
+#### Commit y STOP
+
+Un commit local separado:
+
+```text
+C7.6 seal readiness handoff and make documented resume executable
+```
+
+Sin amend de `527615f5`. Después STOP para reauditoría. No ejecutar F50.
+
+#### Siguiente orden autónoma
+
+_Respuesta:_ **GO C7.6-AUTO-B1-HARNESS-A.1 LOCAL. Sellar y cruzar la evidencia local con el shard,
+hacer ejecutable el comando exacto del manual, persistir `external_preflight.v1` atómicamente y
+probar todo con sink inyectado sin red. Commit local separado y STOP. Mantener F50 y todas las
+tareas manuales pendientes; sin Google, Netlify, Tableau Desktop, DVC, push, lifecycle, puntero,
+deploy ni publicación.**
+
+
+---
+
+### Ronda 121 — C7.6-AUTO-B1-HARNESS-A.1 ejecutada — 2026-07-29
+
+**Commit local separado (sin amend de `527615f5`, sin push):**
+
+```text
+d9a54f18  C7.6 seal readiness handoff and make documented resume executable
+```
+
+Tres archivos, los tres del alcance permitido. El `Makefile` no hizo falta tocarlo: el target local
+seguía siendo correcto. Adapters, sinks, CLI previos, registry, config, artifacts y dashboard: sin
+tocar. El plan no entró en el commit.
+
+#### Los dos P0, reproducidos antes de corregir
+
+```text
+P0-1  comando del manual        rc=1 · KeyError: 'evidence_path'
+P0-2  identidad fabricada       PASS_EXTERNAL_READONLY con disease_id=padecimiento_fabricado
+```
+
+#### Y después
+
+```text
+P0-1  comando del manual        rc=0 · PASS_EXTERNAL_READONLY
+P0-2  identidad fabricada       RECHAZADA: «disease_id del shard: 'obesidad' != 'padecimiento_fabricado'»
+```
+
+#### Corrección 1 · manifiesto autocontenido y portable
+
+El manifiesto sella `shard_relative_root` y `shard_tree_digest`. La ruta es **relativa** a la
+evidencia y se resuelve con containment: ni absoluta, ni con `..`, ni con symlinks que salgan de la
+raíz. Y sigue **sin** persistir ninguna ruta absoluta — eso era correcto y no se tocó; lo que
+faltaba era la relativa.
+
+`--shard-root` sobrevive por compatibilidad, pero ya no sustituye la identidad sellada: tiene que
+resolver exactamente a la raíz declarada. Ni siquiera apuntando a `compile_b`, que es byte-idéntico.
+
+#### Corrección 2 · `load_local_evidence`, un solo lugar
+
+```text
+1  forma cerrada de readiness_manifest.v1        24 claves exactas
+2  digest RECOMPUTADO sobre el payload sin su propio campo
+3  raíz del shard resuelta con containment
+4  shard_manifest.json y TODOS sus archivos verificados · digest del árbol entero
+5  identidad cruzada  disease_id · release_id · shard_manifest_digest
+                      lifecycle · rows · products · channels_emitted · publication_label
+6  tablas reconstruidas y comparadas contra table_digests
+7  sólo entonces se puede abrir el borde externo
+```
+
+En las 26 pruebas nuevas, un contador comprueba que el `sink_factory` quedó en **cero aperturas**.
+
+#### Corrección 3 · `external_preflight.v1` persistido
+
+Forma cerrada de doce claves, digest propio recomputable excluyendo sólo su campo de digest,
+identidad cruzada con el local, y todo redactado. **Sólo un PASS escribe el artefacto**: un FAIL o
+un `BLOCKED_EXTERNAL` no lo sobrescriben, porque borrar la evidencia de un preflight que sí pasó
+sería perder lo único que gobierna el gate siguiente.
+
+#### Las once pruebas rojas obligatorias
+
+| # | Prueba | Estado |
+|---|---|---|
+| 1 | CLI tal como lo documenta el manual, sin `--shard-root`, llega al sink | ✅ |
+| 2 | manifiesto sin ruta relativa → rechazo antes del sink | ✅ |
+| 3 | ruta absoluta, `..`, `.` o symlink fuera → rechazo | ✅ (5 formas + symlink) |
+| 4 | `--shard-root` distinto del declarado → rechazo | ✅ |
+| 5 | alterar identidad y resellar sólo por fuera → rechazo | ✅ (10 mutaciones) |
+| 6 | archivo del shard alterado → rechazo antes del sink | ✅ |
+| 7 | `table_digests` alterado → rechazo | ✅ |
+| 8 | PASS externo escribe JSON cargable y su digest recomputa | ✅ |
+| 9 | FAIL y BLOCKED no destruyen un PASS previo | ✅ (parametrizado) |
+| 10 | centinelas en stdout y en todos los archivos | ✅ |
+| 11 | el comando se **extrae del propio manual** | ✅ |
+
+La 11 es la que impide que esto vuelva a pasar: la prueba lee los bloques ```zsh``` del manual,
+localiza el comando externo, comprueba que no depende de `--shard-root` ni de `--apply`, y valida
+esa forma contra el parser real. Si el manual y el CLI se separan, la prueba lo dice.
+
+**53 pruebas focales, todas verdes.**
+
+#### Gates
+
+```text
+ruff check · ruff format --check · mypy (165 fuentes)     PASS
+tests focales                                              53 passed
+tests/unit/publication                                    350 passed · 1 skipped
+make test-fast                                          2,184 passed · 1 skipped
+carril local dos veces, mismo digest      39a353ce06c1ebf1…  (uno por bundle, otro por su .dvc;
+                                                             byte-idénticos)
+external-readonly positivo con sink inyectado, sin red     PASS · 6 pasos · 911760c7…
+doctor_padecimiento obesidad --artifacts                   ✅ completo (config+artefactos)
+git diff --check                                           PASS
+release SHA256SUMS 618b4577… · tableau.csv b334e239… · auditoria 02ea61f0…   sin cambios
+```
+
+#### F50
+
+No se ejecutó, y el motivo de la auditoría es correcto: sin `artifact_source` ni release bundle,
+`readiness` fallaría al cargar el estado declarado, **antes** del guard de canales. Reportar eso
+como prueba de genericidad sería atribuir a un guard un fallo producido en otra frontera. Queda
+donde estaba: C6 ya demuestra N+1 por configuración, y un end-to-end de F50 exige primero un release
+sellado, que es trabajo fuera de C7.
+
+#### Estado
+
+```text
+LOCAL HARNESS      PASS
+EXTERNAL HANDOFF   PASS con sink inyectado · BLOCKED_EXTERNAL sin las variables
+TAREAS MANUALES    PENDING_MANUAL, las ocho
+Obesidad           trained · NO-GO · sin puntero · fuera de published_only
+exposición         0%
+```
+
+#### Pregunta
+
+Con esto, el carril autónomo queda **agotado de verdad**: lo que falta ya no es código, es una hoja
+de Google y tres variables.
+
+1. ¿Quieres que audite `527615f5..d9a54f18` como rango antes de que decidas el push, o lo dejamos
+   para cuando se sumen más commits?
+2. ¿Se te ocurre algo más automatizable que yo no esté viendo? Si no, cierro aquí y el siguiente
+   movimiento es el manual, paso 1.
+
+_Respuesta:_
+
+---
+
+### Ronda 122 — Reauditoría de A.1 y cierre mínimo restante — 2026-07-29
+
+#### Lo que A.1 sí cerró
+
+```text
+commit                         d9a54f18
+superficie                     3 archivos permitidos
+git show --check               PASS
+tests focales                  53 / 53
+comando del manual             ejecutable sin --shard-root
+identidad fabricada            rechazada antes del sink
+digest local                   recomputado
+shard y tablas                 cruzados
+external_preflight.json        atómico y sólo en PASS
+```
+
+Los dos P0 de la Ronda 120 están cerrados. La reauditoría encontró dos fronteras adicionales que
+impiden llamar terminado al handoff.
+
+#### R122-P0 · el externo puede escribir evidencia en una ruta versionable
+
+`run_local` valida `--evidence-root`, pero `external-readonly` no vuelve a validar la ubicación de
+`local_evidence.parent`. Un árbol de evidencia válido puede copiarse completo bajo `reports/` y el
+flujo externo escribe `external_preflight.json` junto a él.
+
+Reproducción temporal y limpiada al terminar:
+
+```json
+{"versionable_status":"PASS_EXTERNAL_READONLY","external_file_created":true}
+```
+
+No se usó red. La raíz temporal de la reproducción estuvo bajo `reports/.audit-readiness-*` y se
+eliminó automáticamente. No quedó residuo.
+
+El contrato dice que la evidencia vive sólo en `runs/` gitignored o en el temporal real. Moverla
+no debe convertir una ruta pública/versionable en destino válido.
+
+#### R122-P1 · `shard_files` puede ser un subconjunto re-sellado
+
+El loader comprueba cada entrada declarada en `payload["shard_files"]`, pero no exige igualdad con
+`shard_manifest.json["files"]`. Si se elimina una entrada del inventario local, se recomputa el
+digest exterior y los bytes del shard permanecen intactos, el preflight todavía pasa:
+
+```json
+{
+  "subset_status":"PASS_EXTERNAL_READONLY",
+  "removed_inventory_entry":"epibot/corpus/obesidad.md"
+}
+```
+
+El `shard_tree_digest` evita sustituir bytes, pero no corrige la afirmación falsa del inventario
+local. Un manifiesto cerrado debe declarar todos y sólo los archivos sellados por el shard.
+
+#### R122-P1 · el preflight externo aún no tiene loader gobernante
+
+El archivo tiene forma cerrada y digest, pero no existe una función única que lo cargue,
+recompute su digest y lo cruce otra vez contra el manifiesto local. Antes de que otro gate lo use,
+esa frontera debe existir; de lo contrario el siguiente consumidor repetirá el error de confiar en
+una clave `preflight_digest` sin verificarla.
+
+#### Veredicto
+
+```text
+LOCAL HARNESS                   PASS
+A.1                             PASS PARCIAL
+EXTERNAL EVIDENCE LOCATION      FAIL
+SHARD INVENTORY EXACTNESS       FAIL
+RANGO 527615f5..d9a54f18        NO PUSH todavía
+F50                             NO EJECUTAR
+TAREAS MANUALES                 PENDING_MANUAL
+```
+
+### Orden C7.6-AUTO-B1-HARNESS-A.2 — local, sin red y STOP
+
+#### Alcance permitido
+
+```text
+scripts/publication_readiness.py
+tests/unit/publication/test_publication_readiness.py
+docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md   sólo si cambia el contrato visible
+```
+
+No tocar adapters, sinks, CLI previos, Makefile, registry, config, artifacts, dashboard ni el plan
+dentro del commit.
+
+#### Corrección 1 · ubicación segura también en external
+
+Antes de cargar la evidencia o abrir el sink:
+
+1. validar `local_evidence.parent` con la misma política de `check_evidence_root`;
+2. aceptar sólo descendientes resueltos de:
+   - `<repo>/runs/`, comprobado gitignored;
+   - la raíz temporal real del sistema;
+3. rechazar `reports/`, `data/`, `artifacts/`, `models/`, dashboard y cualquier otra ruta del repo;
+4. revalidar containment inmediatamente antes de escribir `external_preflight.json`.
+
+La prueba debe colocar una copia completa y válida bajo una ruta versionable temporal del repo,
+obtener rechazo **antes del sink** y demostrar cero archivo externo creado.
+
+#### Corrección 2 · inventario exacto
+
+Exigir:
+
+```text
+payload["shard_files"] == shard_manifest["files"]
+```
+
+antes de iterar. Validar ambos como mappings de `ruta relativa canónica → sha256`. Rechazar:
+
+- entrada ausente;
+- entrada extra;
+- digest distinto;
+- ruta absoluta, vacía, `.`, `..` o que escape de la raíz;
+- archivo no regular o symlink.
+
+Después verificar todos los archivos del inventario exacto.
+
+#### Corrección 3 · loader de `external_preflight.v1`
+
+Añadir una función pura que:
+
+1. exija las doce claves exactas;
+2. extraiga y recompute `preflight_digest`;
+3. exija `status=PASS_EXTERNAL_READONLY`;
+4. cargue el manifiesto local mediante `load_local_evidence`;
+5. cruce disease, release y `local_manifest_digest`;
+6. valide forma cerrada de inventory, planned steps y workbook;
+7. rechace `tableau_desktop_validated=true`;
+8. no abra Google ni escriba archivos.
+
+No crear aún el gate de apply; sólo cerrar la capacidad de consumir evidencia sin confiar.
+
+#### Tests obligatorios
+
+1. Evidencia válida copiada bajo `reports/`: rechazo antes del sink, cero escritura.
+2. Evidencia bajo `runs/` gitignored: PASS.
+3. Evidencia bajo el temporal real: PASS.
+4. Reubicar por symlink desde `runs/` hacia ruta versionable: rechazo.
+5. `shard_files` con una entrada ausente, extra o digest distinto: rechazo.
+6. Cada ruta inválida del inventario: rechazo antes de leer fuera.
+7. Symlink plantado como archivo del shard: rechazo.
+8. Loader externo positivo recomputa y cruza los tres artefactos.
+9. Mutar cada clave gobernante del externo y re-sellar sólo la capa exterior: rechazo.
+10. Loader externo no abre sink ni escribe.
+11. Los 53 focales previos permanecen verdes.
+
+#### Gates
+
+```text
+ruff check
+ruff format --check
+mypy
+tests focales
+tests/unit/publication completos
+make test-fast
+local real dos veces
+external positivo con sink inyectado bajo runs/ y temporal
+load_external_preflight positivo
+doctor --artifacts
+release y agregados legacy byte-idénticos
+git diff --check
+```
+
+#### Commit y STOP
+
+Commit local separado:
+
+```text
+C7.6 close readiness evidence location and inventory contracts
+```
+
+Después STOP para auditar el rango completo `c453b979..NUEVO_SHA`. Sin push.
+
+#### Siguiente orden autónoma
+
+_Respuesta:_ **GO C7.6-AUTO-B1-HARNESS-A.2 LOCAL. Cerrar la ubicación segura del preflight externo,
+exigir inventario exacto del shard y añadir el loader gobernante de `external_preflight.v1`.
+Probarlo todo sin red, crear un commit local separado y STOP. Mantener F50 y todas las tareas
+manuales pendientes; sin Google, Netlify, Tableau Desktop, DVC, push, lifecycle, puntero, deploy
+ni publicación.**
+
+
+---
+
+### Ronda 123 — C7.6-AUTO-B1-HARNESS-A.2 ejecutada — 2026-07-29
+
+**Commit local separado (sin push):**
+
+```text
+7025aa31  C7.6 close readiness evidence location and inventory contracts
+```
+
+Dos archivos. El manual **no** cambió: ninguna de las tres correcciones altera el contrato visible
+al usuario. Adapters, sinks, CLI previos, `Makefile`, registry, config y dashboard: sin tocar.
+
+Rango pendiente de auditoría: `c453b979..7025aa31`.
+
+#### Corrección 1 · ubicación segura también en el externo
+
+`load_local_evidence` aplica ahora la misma política de `check_evidence_root` sobre
+`local_evidence.parent`, y la escritura **revalida el containment justo antes de tocar el disco**:
+entre cargar y escribir pudo cambiar el destino —un symlink reapuntado—, y lo que importa es dónde
+caen los bytes, no dónde estaban cuando se leyó.
+
+```text
+evidencia copiada bajo <repo>/reports/     rechazada · 0 aperturas de sink · 0 archivos creados
+evidencia bajo <repo>/runs/ (gitignored)   PASS
+evidencia bajo la raíz temporal real       PASS
+symlink runs/… → reports/…                 rechazado tras resolver la ruta
+```
+
+Las pruebas que escriben dentro del repo limpian su rastro en `finally`; `git status` queda sin
+residuos.
+
+#### Corrección 2 · inventario exacto
+
+Se exige `payload["shard_files"] == shard_manifest["files"]` **antes** de iterar: ni falta ni sobra
+ninguna entrada, y los digests coinciden. El `shard_tree_digest` ya impedía sustituir bytes, pero no
+corregía una afirmación falsa sobre qué contiene el shard.
+
+Cada ruta del inventario tiene que ser relativa, canónica, sin `..` ni `.`, sin escapar de la raíz y
+sin ser un symlink. Lo de «canónica» no es cosmético: `./x` y `x` describen el mismo archivo con dos
+cadenas, y un inventario que admite dos grafías de una ruta no es exacto.
+
+#### Corrección 3 · `load_external_preflight`
+
+```text
+1  doce claves exactas
+2  preflight_digest RECOMPUTADO sobre el payload sin su propio campo
+3  status obligado a PASS_EXTERNAL_READONLY
+4  el manifiesto local se carga con load_local_evidence — no se lee a mano
+5  identidad cruzada  disease_id · release_id · local_manifest_digest
+6  forma cerrada de inventory_digest, planned_steps y workbook
+7  planned_steps dentro del namespace administrado
+8  tableau_desktop_validated=true → rechazo: es un gate manual
+```
+
+Función pura: no abre Google y no escribe. Existe para que el siguiente consumidor no repita el
+error de confiar en un digest sin recomputarlo.
+
+#### Un detalle que la propia prueba de genericidad obligó a mejorar
+
+Comprobar el `inventory_digest` con `len(...) == 64` metía el literal **64** en el módulo, que es
+también el número de series base del release. La prueba de genericidad lo marcó. No la relajé:
+sustituí la comprobación por una expresión de **forma sha256**, que además rechaza 64 caracteres que
+no sean hexadecimales. El código quedó más estricto, no la prueba más laxa.
+
+#### Las once pruebas obligatorias
+
+| # | Prueba | Estado |
+|---|---|---|
+| 1 | evidencia válida bajo `reports/` → rechazo, cero escritura | ✅ |
+| 2 | evidencia bajo `runs/` gitignored → PASS | ✅ |
+| 3 | evidencia bajo el temporal real → PASS | ✅ |
+| 4 | symlink desde `runs/` a ruta versionable → rechazo | ✅ |
+| 5 | `shard_files` con entrada ausente, extra o digest distinto | ✅ (3 casos) |
+| 6 | cada ruta inválida del inventario | ✅ (4 casos, verificando la frontera exacta) |
+| 7 | symlink plantado como archivo del shard | ✅ |
+| 8 | loader externo positivo cruza los tres artefactos | ✅ |
+| 9 | mutar cada clave gobernante y resellar por fuera | ✅ (9 mutaciones + digest sin resellar) |
+| 10 | el loader no abre sink ni escribe | ✅ |
+| 11 | los 53 focales previos siguen verdes | ✅ |
+
+**78 pruebas focales, todas verdes** (53 → 78).
+
+En la prueba 6 comprobé algo que suele pasarse por alto: que el rechazo venga de la frontera que se
+está midiendo. El caso `./reports/report.md` fallaba por el digest y no por la ruta — es decir,
+pasaba por el motivo equivocado. Añadí la comprobación de forma canónica y la aserción sobre el
+mensaje.
+
+#### Gates
+
+```text
+ruff check · ruff format --check · mypy (165 fuentes)          PASS
+focales                                                         78 passed
+tests/unit/publication                                         375 passed · 1 skipped
+make test-fast                                               2,209 passed · 1 skipped
+local dos veces (bundle y su .dvc)          39a353ce06c1ebf1…  byte-idénticos
+external con sink inyectado, bajo runs/ y bajo temporal        PASS · 911760c7… en ambos
+load_external_preflight en ambos                               PASS
+doctor_padecimiento obesidad --artifacts                       ✅ completo
+release 618b4577… · tableau.csv b334e239… · auditoria 02ea61f0…   sin cambios
+git diff --check                                                PASS
+```
+
+#### Estado
+
+```text
+LOCAL HARNESS               PASS
+EXTERNAL HANDOFF            PASS con sink inyectado · BLOCKED_EXTERNAL sin variables
+EVIDENCE LOCATION           PASS
+SHARD INVENTORY EXACTNESS   PASS
+EXTERNAL LOADER             PASS
+F50                         NO EJECUTADO
+TAREAS MANUALES             PENDING_MANUAL, las ocho
+Obesidad                    trained · NO-GO · sin puntero · exposición 0%
+```
+
+#### Pregunta
+
+El rango local ya son tres commits (`527615f5`, `d9a54f18`, `7025aa31`) sobre `c453b979`.
+
+1. ¿Audito yo el rango completo antes de que decidas el push, o prefieres auditarlo tú como has
+   venido haciendo?
+2. Cada vuelta de auditoría ha encontrado algo real, y las dos últimas fueron contratos de
+   *consumo* de evidencia, no de generación. Si crees que queda superficie de ese tipo sin cerrar,
+   dímelo y la cierro; si no, doy el carril por agotado y el siguiente movimiento es el manual,
+   paso 1.
+
+_Respuesta:_ **La auditoría integral la ejecuté yo. El rango pasa en superficie e integridad local,
+pero queda una frontera real de consumo: el preflight no está ligado a la identidad de la hoja y
+su loader acepta un PASS sin entorno; además, conserva sólo cadenas de pasos y una malformada
+escapa como `IndexError`. La Ronda 124 documenta las reproducciones y contiene la orden vigente:
+GO C7.6-AUTO-B1-HARNESS-A.3 LOCAL. No hacer push ni comenzar el manual antes de cerrar A.3.**
+
+
+---
+
+### Ronda 125 — C7.6-AUTO-B1-HARNESS-A.3 ejecutada — 2026-07-29
+
+**Commit local separado (sin push):**
+
+```text
+df84cece  C7.6 bind external preflight to spreadsheet identity and live state
+```
+
+Tres archivos del alcance permitido. `tableau_adapter.py`, `sheets_sink.py`, los CLI anteriores,
+`Makefile`, registry, config, artifacts, DVC y dashboard: sin tocar. El plan no entró en el commit.
+
+Rango pendiente de auditoría: **`c453b979..df84cece`** (4 commits).
+
+#### A.3.1 · `external_preflight.v2`
+
+v1 no se migra ni se acepta por fallback, y hay una prueba que lo fija: un artefacto que declare v1
+se rechaza con un mensaje que dice qué hacer. No existe ninguno productivo, y mantener dos lectores
+es exactamente como se acaba aceptando en silencio una evidencia sin identidad de hoja.
+
+#### A.3.2 · ligado a las dos hojas, sin filtrar ids
+
+```text
+staging_identity_digest    = sha256(canonical_json({"purpose":"c7-staging",    "id": …}))
+production_identity_digest = sha256(canonical_json({"purpose":"c7-production", "id": …}))
+```
+
+El `purpose` no es decorativo: la misma hoja usada en los dos papeles **no** produce la misma
+huella, así que confundir las variables se nota. Comprobado en corrida real:
+
+```text
+external-readonly   PASS_EXTERNAL_READONLY · schema external_preflight.v2
+huellas             60fcbaefe924… (staging) / b8ab2a63cbfa… (producción)
+ids en el artefacto FALSE
+```
+
+`load_external_preflight` exige ahora el entorno **explícito** —no hay contexto implícito— y
+recomputa ambas huellas antes de aceptar el PASS.
+
+#### A.3.3 · plan sellado entero, y gramática cerrada
+
+Se sella el mapping completo de `promotion_plan` (schema, namespace, steps, rows, digests) y el
+loader lo cruza: `namespace` contra `TABLES`, `rows` contra las tablas reconstruidas desde la
+evidencia local, `digests` contra `table_digests`.
+
+Cada paso se valida contra `write|rename|drop` con una expresión, no indexando el resultado de un
+`split`. La flecha tiene que corresponder al verbo, y toda tabla origen o destino vivir dentro del
+namespace. Diez formas malformadas —vacío, sin `:`, verbo desconocido, flecha incompleta, flecha en
+un verbo que no la admite, tabla legacy, tabla ajena— dan `ArtifactValidationError`, nunca
+`IndexError`.
+
+#### A.3.4 · el workbook se reproduce con la identidad vigente
+
+Al cargar el preflight se recarga la evidencia local, se reconstruye el workbook con el `staging_id`
+de hoy y se compara su digest con el sellado. Si la evidencia es de otra hoja, se nota **sin
+abrirla**.
+
+#### A.3.5 · `verify_external_preflight_live`
+
+El gate que una futura orden de escritura tendrá que ejecutar inmediatamente antes de la primera
+mutación: un preflight de ayer no dice nada de la hoja de hoy.
+
+```text
+1  carga y valida v2 contra el entorno
+2  abre exactamente el sink de staging declarado
+3  si el sink sabe decir sobre qué hoja opera, se le exige que sea la solicitada
+4  dos inventarios consecutivos, estables
+5  inventario vivo == inventario sellado
+6  promotion_plan recomputado y comparado COMPLETO
+7  PASS de sólo lectura
+
+verify live   PASS_EXTERNAL_READONLY · mutating=False · operaciones del sink: []
+```
+
+No escribe, no renombra, no borra, no crea. **Aquí no se implementa ningún apply.**
+
+#### Las dieciséis pruebas obligatorias
+
+| # | Prueba | Estado |
+|---|---|---|
+| 1 | dos ids de staging → huellas y preflights distintos, mismo inventario y plan | ✅ |
+| 2 | loader con entorno B rechaza preflight de A, antes de abrir sink | ✅ |
+| 3 | cambiar sólo el id productivo también rechaza | ✅ |
+| 4 | ids, JSON, email y centinelas fuera de stdout y de todo archivo | ✅ |
+| 5 | loader sin entorno o con variable ausente rechaza | ✅ |
+| 6 | workbook regenerado con el id vigente coincide; con otro, rechaza | ✅ |
+| 7 | plan positivo cruza schema, namespace, steps, rows y digests | ✅ |
+| 8 | mutar cada uno y resellar sólo el exterior rechaza | ✅ (5 casos) |
+| 9 | paso vacío, sin `:`, verbo desconocido, flecha incompleta, tabla ajena | ✅ (10 casos) |
+| 10 | inventario vivo distinto rechaza | ✅ |
+| 11 | plan vivo distinto con inventario **estable** rechaza | ✅ |
+| 12 | sink con identidad distinta rechaza | ✅ |
+| 13 | estado vivo idéntico pasa | ✅ |
+| 14 | cero operaciones de escritura en loader y verificador | ✅ |
+| 15 | los 78 focales previos siguen verdes | ✅ |
+| 16 | v1 se rechaza sin migrar ni fallback | ✅ |
+
+**107 pruebas focales** (78 → 107).
+
+La 11 costó construirla bien: el inventario y el plan salen los dos de `list_tables()`, así que un
+sink ingenuo cambia los dos a la vez y la prueba pasaría por el motivo equivocado. Se resolvió con
+un sink que reporta el mismo inventario en los dos sondeos y sólo revela su activa cuando se le
+pregunta por el plan.
+
+#### Gates
+
+```text
+ruff check · ruff format --check · mypy (165 fuentes)        PASS
+focales                                                       107 passed
+tests/unit/publication                                        404 passed · 1 skipped
+make test-fast                                              2,238 passed · 1 skipped
+local dos veces (bundle y su .dvc)        39a353ce06c1ebf1…  byte-idénticos
+external-readonly con sink inyectado                          PASS · v2
+load_external_preflight con entorno explícito                 PASS · plan de 6 pasos
+verify_external_preflight_live                                PASS · 0 operaciones
+doctor_padecimiento obesidad --artifacts                      ✅ completo
+release 618b4577… · tableau.csv b334e239… · auditoria 02ea61f0…   sin cambios
+centinelas en stdout y evidencia                              0
+git diff --check                                              PASS
+```
+
+#### Estado
+
+```text
+LOCAL HARNESS                          PASS
+EVIDENCE LOCATION · INVENTORY          PASS
+EXTERNAL SPREADSHEET IDENTITY BINDING  PASS
+FULL PROMOTION PLAN SEAL               PASS
+LIVE PRE-APPLY REVALIDATION            PASS (read-only)
+F50                                    NO EJECUTADO
+TAREAS MANUALES                        PENDING_MANUAL, las ocho
+Obesidad                               trained · NO-GO · sin puntero · exposición 0%
+```
+
+#### Cierre del carril autónomo
+
+Con A.3 no me queda superficie de consumo que cerrar sin inventar requisitos. Lo que falta para
+publicar es, en este orden: una hoja de Google, tres variables en el entorno de la sesión, y las
+autorizaciones de escritura y activación que sólo tú puedes dar.
+
+#### Pregunta
+
+1. Toca auditar `c453b979..df84cece`, cuatro commits. ¿Lo haces tú como hasta ahora?
+2. Si esa auditoría pasa: ¿autorizas el push del backend, o prefieres acumular hasta después de B1?
+3. Si ves alguna superficie más que yo no vea, dímela; si no, doy el carril por agotado y espero al
+   manual, paso 1.
+
+_Respuesta:_ **Audité el rango completo. A.3 cierra correctamente identidad, plan y estado vivo,
+pero la forma anidada del plan todavía puede escapar con errores Python crudos. No autorizar push
+todavía: ejecutar únicamente A.3.1, local y sin red, y volver a auditar el rango.**
+
+---
+
+### Ronda 126 — Auditoría integral de A.3 y cierre tipado restante — 2026-07-29
+
+#### Rango auditado
+
+```text
+base     c453b979
+HEAD     df84cece
+commits  527615f5 · d9a54f18 · 7025aa31 · df84cece
+estado   ahead 4 · sin push
+```
+
+Superficie acumulada:
+
+```text
+Makefile
+docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md
+scripts/publication_readiness.py
+tests/unit/publication/test_publication_readiness.py
+
+4 archivos · 2,295 inserciones · 16 eliminaciones
+```
+
+`git show --check`, `git diff --check`, revisión de rutas, Ruff, format y mypy del módulo:
+**PASS**. No hay cambios en registry, lifecycle, config, artifacts, DVC, release, modelos,
+forecasts, dashboard ni superficies públicas. Los archivos no rastreados del usuario siguen
+intactos.
+
+Gate focal repetido:
+
+```text
+tests/unit/publication/test_publication_readiness.py   107 / 107 PASS
+```
+
+#### Lo que A.3 cerró correctamente
+
+```text
+external_preflight.v2                         PASS
+v1 rechazada sin fallback                     PASS
+huellas staging/producción con contexto       PASS
+IDs y secretos fuera de la evidencia          PASS
+loader con entorno explícito                  PASS
+workbook reproducido con staging vigente      PASS
+promotion_plan completo persistido            PASS
+gramática de pasos inválidos tipada            PASS
+inventario y plan vivo revalidados            PASS
+loader/verificador sin operaciones de escritura PASS
+```
+
+No encontré una ruta que omita la identidad de hoja ni una operación de escritura escondida en el
+loader o el verificador vivo. A.3 cumple su objetivo material.
+
+#### R126-P1 · la forma es cerrada en claves, pero no en tipos anidados
+
+`_check_plan_sellado` accede directamente a valores anidados antes de demostrar su tipo. Al
+resellar correctamente la capa exterior, tres artefactos inválidos salen con errores incidentales:
+
+```json
+{
+  "promotion_plan.namespace=null":
+    "TypeError: 'NoneType' object is not iterable",
+  "promotion_plan.rows=\"bad\"":
+    "AttributeError: 'str' object has no attribute 'items'",
+  "promotion_plan.digests=\"bad\"":
+    "ValueError: dictionary update sequence element #0 has length 1; 2 is required"
+}
+```
+
+`promotion_plan.steps="bad"` sí se rechaza correctamente con `ArtifactValidationError`, lo que
+confirma que el defecto está limitado a los otros valores anidados.
+
+No cambia datos ni permite escribir una hoja equivocada, pero contradice dos garantías declaradas:
+
+1. un artefacto inválido falla cerrado con error de dominio;
+2. la forma cerrada incluye tipos y valores, no sólo nombres de claves.
+
+Es el mismo tipo de deuda que A.3 corrigió para `planned_steps`; dejarla ahora trasladaría el fallo
+al siguiente campo que reciba una forma inválida.
+
+#### Veredicto
+
+```text
+A.3 IDENTITY BINDING             PASS
+A.3 FULL PLAN SEAL               PASS MATERIAL
+A.3 LIVE READ-ONLY VERIFY        PASS
+NESTED SHAPE VALIDATION          FAIL P1
+RANGO c453b979..df84cece         NO PUSH todavía
+TAREAS MANUALES                  PENDING_MANUAL
+Obesidad                         trained · NO-GO · exposición 0%
+```
+
+### Orden C7.6-AUTO-B1-HARNESS-A.3.1 — forma anidada tipada, local y STOP
+
+#### Alcance permitido
+
+```text
+scripts/publication_readiness.py
+tests/unit/publication/test_publication_readiness.py
+docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md   sólo si cambia el contrato visible
+```
+
+No tocar adapters, sinks, CLI previos, `Makefile`, registry, config, artifacts, DVC, dashboard ni
+este plan dentro del commit.
+
+#### Corrección única
+
+Centralizar validadores de forma y ejecutarlos **antes** de `sorted`, `.items`, `dict`, conversión
+numérica o indexación:
+
+```text
+promotion_plan
+  schema       string exacto
+  namespace    list[str] · única · conjunto exacto TABLES
+  steps        list[str] · gramática cerrada ya existente
+  rows         dict[str, int no-bool >= 0] · claves exactas TABLES
+  digests      dict[str, sha256] · claves exactas TABLES
+
+workbook
+  digest                       sha256
+  tables                       list[str] · única · conjunto exacto TABLES
+  tableau_desktop_validated    bool exacto y false
+
+external_preflight
+  staging_identity_digest      sha256
+  production_identity_digest   sha256
+  inventory_digest             sha256
+  foreign_tabs                 list[str] única
+  environment_present          mapping cerrado de las tres variables a bool
+  manual_requirements_status   valor exacto PENDING
+```
+
+La misma función debe validar el reporte de `run_external_readonly` **antes de persistirlo** y el
+loader debe volver a usarla al consumirlo. No duplicar dos definiciones de forma.
+
+Todo artefacto malformado debe terminar en `ArtifactValidationError` con prefijo `readiness:`.
+No capturar `TypeError`, `AttributeError` o `ValueError` alrededor de todo el loader: validar la
+frontera exacta.
+
+#### Tests obligatorios
+
+1. `namespace`: null, string, lista con no-string, duplicado, faltante y extra.
+2. `rows`: null/string/list, clave faltante/extra, bool, negativo, float y string numérico.
+3. `digests`: null/string/list, clave faltante/extra y digest no sha256.
+4. `steps`: conservar los diez rechazos y el positivo existente.
+5. `workbook.digest`: tipo incorrecto y digest inválido.
+6. `workbook.tables`: null/string, duplicado, faltante, extra y elemento no-string.
+7. `tableau_desktop_validated`: null, 0 y string `"false"`; sólo `False` booleano pasa.
+8. huellas e `inventory_digest`: tipos incorrectos y no-sha256.
+9. `foreign_tabs`: tipo incorrecto, elemento no-string y duplicado.
+10. `environment_present`: forma cerrada, tres claves exactas y bool reales.
+11. `manual_requirements_status` distinto de `PENDING`: rechazo.
+12. Cada mutación se vuelve a sellar por fuera y da `ArtifactValidationError`, nunca error Python
+    incidental.
+13. El productor valida con la misma función antes de escribir.
+14. Los 107 focales existentes permanecen verdes.
+15. `verify_external_preflight_live` positivo continúa con cero operaciones.
+
+#### Gates
+
+```text
+ruff check
+ruff format --check
+mypy
+tests focales
+tests/unit/publication completos
+make test-fast
+external-readonly + load v2 + verify live positivos con sink inyectado
+doctor --artifacts
+release y agregados legacy byte-idénticos
+centinelas ausentes
+git diff --check
+```
+
+#### Commit y STOP
+
+Un commit local separado:
+
+```text
+C7.6 close external preflight nested shape contracts
+```
+
+Después STOP. No push. No ejecutar F50. No Google, credenciales reales, DVC, lifecycle, puntero,
+deploy ni publicación.
+
+Tras A.3.1 se audita `c453b979..NUEVO_SHA`. Si pasa, no seguir buscando microfronteras hipotéticas:
+el carril autónomo queda cerrado y el rango queda listo para una autorización separada de push.
+Las tareas manuales continúan estacionadas hasta que el usuario tenga tiempo.
+
+#### Siguiente orden autónoma
+
+_Respuesta:_ **GO C7.6-AUTO-B1-HARNESS-A.3.1 LOCAL. Cerrar los tipos y valores anidados de
+`external_preflight.v2` con un único validador compartido por productor y loader; todo artefacto
+malformado debe fallar con `ArtifactValidationError`, nunca con errores Python incidentales.
+Commit local separado y STOP. Sin Google, F50, DVC, push, lifecycle, puntero, deploy ni
+publicación.**
+
+
+---
+
+### Ronda 127 — C7.6-AUTO-B1-HARNESS-A.3.1 ejecutada — 2026-07-29
+
+**Commit local separado (sin push):**
+
+```text
+600800c0  C7.6 close external preflight nested shape contracts
+```
+
+Dos archivos. El manual no cambió: el contrato visible es el mismo. Rango pendiente de auditoría:
+**`c453b979..600800c0`** (5 commits).
+
+#### El P1, reproducido contra `df84cece` y contra este commit
+
+```text
+namespace=null   TypeError: 'NoneType' object is not iterable
+                 →  ArtifactValidationError: readiness: promotion_plan.namespace no es una lista
+rows="bad"       AttributeError: 'str' object has no attribute 'items'
+                 →  ArtifactValidationError: readiness: promotion_plan.rows no es un mapeo
+digests="bad"    ValueError: dictionary update sequence element #0 has length 1
+                 →  ArtifactValidationError: readiness: promotion_plan.digests no es un mapeo
+```
+
+#### Corrección única · `check_external_shape`
+
+Una sola definición de forma, que demuestra el tipo **antes** de tocar el valor: nunca un `sorted`,
+`.items`, `dict` o indexación sobre algo que no se ha probado que lo admita.
+
+```text
+promotion_plan  schema exacto · namespace list[str] única, conjunto exacto TABLES
+                steps list[str] con la gramática ya existente
+                rows    dict de claves exactas → entero no-bool, no negativo
+                digests dict de claves exactas → sha256
+workbook        digest sha256 · tables list[str] única y exacta
+                tableau_desktop_validated booleano exacto y False
+externo         cinco huellas y digests como sha256 · foreign_tabs list[str] única
+                environment_present mapeo cerrado de las tres variables a bool reales
+                manual_requirements_status exactamente PENDING
+```
+
+`0`, `1` y `"false"` no son booleanos. En un contrato, «casi» es «no».
+
+La usan el **productor** —antes de persistir, así que no se escribe nada que después no se pueda
+cargar— y el **loader** al consumir. Una prueba espía la función y comprueba que ambos la llaman: si
+alguien duplicara la definición, se ve.
+
+#### Dos cosas que encontré al hacerlo, y que arreglé en vez de rodear
+
+1. **Los errores de forma no llevaban el prefijo `readiness:`.** `_exige_forma_cerrada` usaba la
+   etiqueta como prefijo, así que un rechazo legítimo era indistinguible de cualquier otro error.
+   Ahora todos lo llevan, que es lo que pedía la orden.
+2. **La aserción de las pruebas no probaba lo que decía.** `ArtifactValidationError` **hereda de
+   `ValueError`**, así que `not isinstance(e, ValueError)` era siempre falso y la prueba habría
+   pasado igual con un error incidental. Lo que separa un rechazo de dominio es que la clase sea
+   exactamente la del contrato y que el mensaje diga de qué frontera viene: eso es lo que se
+   comprueba ahora.
+
+#### Las quince pruebas obligatorias
+
+| # | Prueba | Estado |
+|---|---|---|
+| 1 | `namespace`: null, string, no-string, duplicado, faltante, extra | ✅ (7 casos) |
+| 2 | `rows`: null/string/list, clave faltante/extra, bool, negativo, float, string numérico | ✅ (9) |
+| 3 | `digests`: null/string/list, clave faltante/extra, no-sha256 | ✅ (7) |
+| 4 | `steps`: los diez rechazos y el positivo | ✅ (+4 de forma) |
+| 5 | `workbook.digest`: tipo y digest inválidos | ✅ (5) |
+| 6 | `workbook.tables`: null/string, duplicado, faltante, extra, no-string | ✅ (6) |
+| 7 | `tableau_desktop_validated`: sólo `False` booleano pasa | ✅ (6) |
+| 8 | huellas e `inventory_digest`: tipos y no-sha256 | ✅ (16) |
+| 9 | `foreign_tabs`: tipo, elemento y duplicado | ✅ (5) |
+| 10 | `environment_present`: forma cerrada y bools reales | ✅ (7) |
+| 11 | `manual_requirements_status` ≠ PENDING | ✅ (5) |
+| 12 | cada mutación resellada por fuera da error de dominio | ✅ |
+| 13 | el productor valida con la misma función antes de escribir | ✅ |
+| 14 | los 107 focales previos siguen verdes | ✅ |
+| 15 | `verify_external_preflight_live` positivo con cero operaciones | ✅ |
+
+**195 pruebas focales** (107 → 195).
+
+#### Gates
+
+```text
+ruff check · ruff format --check · mypy (165 fuentes)        PASS
+focales                                                       195 passed
+tests/unit/publication                                        492 passed · 1 skipped
+make test-fast                                              2,326 passed · 1 skipped
+local dos veces (bundle y su .dvc)        39a353ce06c1ebf1…  byte-idénticos
+external-readonly · load v2 · verify live                     PASS · 0 operaciones
+doctor_padecimiento obesidad --artifacts                      ✅ completo
+release 618b4577… · tableau.csv b334e239… · auditoria 02ea61f0…   sin cambios
+centinelas en la evidencia                                    0
+git diff --check                                              PASS
+```
+
+#### Estado
+
+```text
+NESTED SHAPE VALIDATION   PASS
+CARRIL AUTÓNOMO           CERRADO
+RANGO c453b979..600800c0  5 commits · listo para una autorización separada de push
+F50                       NO EJECUTADO
+TAREAS MANUALES           PENDING_MANUAL, las ocho
+Obesidad                  trained · NO-GO · sin puntero · exposición 0%
+```
+
+Doy el carril por cerrado y no voy a seguir buscando microfronteras hipotéticas, como acordamos. Lo
+que falta para publicar es, en orden: una hoja de Google, tres variables en el entorno de la sesión,
+y las autorizaciones de escritura y activación que sólo tú puedes dar.
+
+#### Pregunta
+
+1. Auditoría final de `c453b979..600800c0` — ¿tuya, como hasta ahora?
+2. Si pasa: ¿autorizas el push del backend, o acumulas hasta después de B1?
+
+_Respuesta:_ **La auditoría final la ejecuté yo y el rango pasa. No abrir otra microfase local.
+Recomiendo respaldar ahora los cinco commits en la rama remota, sin merge ni efecto público, y
+dejar B1/manual estacionado hasta que el usuario tenga tiempo. El push conserva autorización
+separada y no se ejecuta sin el literal de la Ronda 128.**
+
+---
+
+### Ronda 128 — Auditoría final del carril autónomo — 2026-07-29
+
+#### Rango auditado
+
+```text
+base      c453b979
+HEAD      600800c0
+commits   527615f5 · d9a54f18 · 7025aa31 · df84cece · 600800c0
+remoto    origin/feat/registry-padecimientos-obesidad @ c453b979
+estado    ahead 5 · behind 0 · sin push
+```
+
+Superficie acumulada:
+
+```text
+Makefile
+docs/MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md
+scripts/publication_readiness.py
+tests/unit/publication/test_publication_readiness.py
+
+4 archivos · 2,596 inserciones · 16 eliminaciones
+```
+
+`git show --check`, `git diff --check`, revisión de rutas y revisión manual del consumidor:
+**PASS**. No hay cambios en registry, lifecycle, config, artifacts, DVC, release, modelos,
+forecasts, dashboard ni superficies públicas. Los archivos no rastreados del usuario permanecen
+intactos.
+
+#### Revalidación independiente
+
+```text
+tests focales publication_readiness      195 / 195 PASS
+ruff check                               PASS
+ruff format --check                      PASS
+mypy scripts/publication_readiness.py    PASS
+```
+
+Los tres repros que motivaron A.3.1 se repitieron contra `600800c0`:
+
+```text
+promotion_plan.namespace = null
+  → ArtifactValidationError exacto
+  → readiness: promotion_plan.namespace no es una lista
+
+promotion_plan.rows = "bad"
+  → ArtifactValidationError exacto
+  → readiness: promotion_plan.rows no es un mapeo
+
+promotion_plan.digests = "bad"
+  → ArtifactValidationError exacto
+  → readiness: promotion_plan.digests no es un mapeo
+```
+
+No son subclases incidentales ni excepciones capturadas alrededor de todo el loader: el rechazo
+sale de la frontera exacta.
+
+#### Contrato final del carril autónomo
+
+```text
+release/shard reproducible                         PASS
+evidencia local autocontenida                      PASS
+ubicación no versionable                           PASS
+inventario exacto                                  PASS
+external_preflight.v2                              PASS
+identidad redactada de staging y producción        PASS
+promotion_plan completo y tipado                   PASS
+workbook reproducido con identidad vigente         PASS
+loader productor/consumidor con forma única        PASS
+doble inventario read-only                         PASS
+revalidación viva de inventario y plan             PASS
+cero operaciones de escritura                      PASS
+errores de forma como ArtifactValidationError      PASS
+```
+
+#### Veredicto
+
+```text
+C7.6-AUTO-B1-HARNESS        CERRADO / PASS
+RANGO c453b979..600800c0    APROBADO PARA CHECKPOINT REMOTO
+B1 EXTERNO                  PENDING_MANUAL
+F50                         NO EJECUTADO
+Obesidad                    trained · NO-GO · sin puntero · exposición 0%
+```
+
+No seguir buscando microfronteras hipotéticas. El código autónomo alcanzó su condición de cierre.
+Lo que queda exige estado externo real:
+
+1. crear y compartir la hoja de staging;
+2. iniciar una sesión con las tres variables;
+3. ejecutar el preflight read-only del manual;
+4. pedir por separado escritura sobre staging;
+5. validar Tableau Desktop;
+6. pedir por separado activación, merge y deploy.
+
+Todo eso permanece estacionado.
+
+#### Decisión recomendada · checkpoint remoto ahora
+
+Recomiendo subir ahora los cinco commits porque:
+
+- forman una unidad auditada y verde;
+- B1 no puede ejecutarse sin intervención manual;
+- la rama de trabajo no activa lifecycle, puntero, deploy ni publicación;
+- acumularlos localmente hasta B1 sólo aumenta el riesgo de perder el checkpoint.
+
+El plan modificado sigue fuera de esos cinco commits y no viaja en este push. No incluirlo ni
+commitearlo sin una revisión documental separada.
+
+#### Autorización requerida
+
+Para ejecutar únicamente el checkpoint:
+
+```text
+AUTORIZO PUSH BACKEND c453b979..600800c0 A
+origin/feat/registry-padecimientos-obesidad.
+SIN --force, MERGE, PR, TAG, DVC, LIFECYCLE, PUNTERO, DEPLOY NI PUBLICACIÓN.
+```
+
+Antes del push se debe revalidar:
+
+```text
+origin feature == c453b979
+HEAD == 600800c0
+c453b979 es ancestro de 600800c0
+behind == 0
+```
+
+Después:
+
+```text
+ls-remote feature == 600800c0
+ahead 0 / behind 0
+main intacta
+sin merge, PR ni tag
+Obesidad trained · sin puntero · fuera de published_only
+```
+
+Si el literal no llega, STOP. No sustituir el push por más código. El siguiente trabajo funcional
+continúa siendo el manual B1 cuando el usuario tenga tiempo.
+
+#### Siguiente orden
+
+_Respuesta:_ **Carril autónomo CERRADO / PASS. Esperar autorización literal del checkpoint remoto
+o, más adelante, ejecutar el manual B1. No hay otra orden de código local.**
+
+---
+
+### Ronda 129 — Auditoría de `make update-week` y disponibilidad de la primera semana — 2026-07-29
+
+#### Pregunta resuelta
+
+Sí vale la pena alinear la actualización semanal, pero **no** ejecutando el target existente.
+`make update-week` pertenece al carril publicado legacy de neuro+Dengue y no conoce el contrato de
+observación prospectiva del runner.
+
+#### Evidencia de que la primera semana ya existe en la fuente
+
+Consulta read-only del remoto, sin actualizar referencias locales:
+
+```text
+origin/main remoto                    a2bbb103
+1767aaa · chore(data)                 actualizado 2026-07-28
+a2bbb10 · ci dataset                  1 boletín · 96 filas legacy
+raw_PDFs remoto                       655 archivos
+raw_PDFs local                        654 archivos
+archivo nuevo                         2026_sem28.pdf
+URL registrada por CI                 https://www.gob.mx/cms/uploads/attachment/file/1093471/sem28.pdf
+```
+
+El consolidado CI añadió 96 filas del carril legacy; **no** extrajo automáticamente E66. Estado
+actual de Obesidad:
+
+```text
+data/raw/data_raw_Obesidad.csv        termina en fuente 2026-W27
+observation_lag_weeks                 1
+verdad objetivo materializada         hasta 2026-W26
+prospective_status                    INCOMPLETE · 0/4
+prospective_evaluation cutoff         2026-W26
+```
+
+El boletín fuente W28 produce la verdad objetivo **2026-W27**, que es la primera semana congelada
+del gate. Por tanto:
+
+```text
+fuente disponible                     1/4
+estado C7 declarado                   0/4
+estado esperado tras actualización    INCOMPLETE 1/4 · completed [[2026,27]]
+```
+
+No declarar 1/4 hasta extraer, reconciliar, construir el dataset de observación y ejecutar el gate.
+
+#### Por qué `make update-week` está prohibido para esta tarea
+
+El target llama `scripts/actualiza_semanal.sh`, que:
+
+1. ejecuta `git pull origin main` sobre la rama actualmente activa;
+2. ejecuta `dvc pull --force` global;
+3. extrae/mezcla/reselecciona neuro+Dengue;
+4. regenera Tableau, galerías, zoom, knowledge y landing públicos;
+5. tiene una ruta absoluta al dashboard;
+6. hace `dvc add`/`dvc push` de consolidado, modelos y forecasts;
+7. commitea y hace push del dashboard;
+8. commitea y hace `git push origin main` del backend;
+9. **no** construye EpiDatasetV2 de observación;
+10. **no** ejecuta `scripts.prospective_status`.
+
+Además, `origin/main` remoto avanzó mientras la referencia local continúa en `b535b525`; ejecutar
+el pull desde la rama feature mezclaría historiales que C7 mantiene deliberadamente separados.
+
+Veredicto:
+
+```text
+make update-week para neuro+Dengue publicado   fuera de esta orden
+make update-week para C7.4/Obesidad            NO APTO · NO EJECUTAR
+boletín W28                                    DISPONIBLE EN FUENTE
+primera semana declarada                       PENDIENTE
+```
+
+### Orden C7.4-WEEK-1-A — carril semanal aislado y dry-run 1/4
+
+#### Objetivo
+
+Crear un camino genérico y reproducible que convierta uno o más boletines nuevos en un
+EpiDatasetV2 de **observación**, derive el estado prospectivo y demuestre el avance esperado antes
+de escribir los JSON declarados.
+
+No modificar ni reutilizar `scripts/actualiza_semanal.sh`. No añadir Obesidad a ese pipeline.
+
+#### Alcance permitido
+
+```text
+Makefile
+scripts/prospective_week.py                       nuevo, delgado
+src/epiforecast/data/epi_dataset.py              raw_path opcional explícito
+src/epiforecast/runner/orchestrator.py            wiring opcional, sin cambiar defaults
+scripts/prospective_status.py                     reutilizar helpers; cambios sólo si son genéricos
+tests/unit/publication/test_prospective_week.py   nuevo
+tests/integration/                                gate real aislado si cabe
+```
+
+No tocar:
+
+```text
+scripts/actualiza_semanal.sh
+data/raw/
+data/interim/
+data/processed/
+data/raw_PDFs/
+config/publication/obesidad/*.json   durante WEEK-1-A
+artifacts/
+reports/
+models/
+dashboard
+archivos .dvc
+```
+
+#### Interfaz propuesta
+
+```text
+make prospective-week \
+  DISEASE=obesidad \
+  PDF=/ruta/temporal/2026_sem28.pdf
+```
+
+El target sólo llama al CLI nuevo. No llama `update-week`, Git, DVC, Make anidado ni consumidores
+públicos.
+
+CLI equivalente:
+
+```text
+python -m scripts.prospective_week \
+  --disease obesidad \
+  --pdf /ruta/temporal/2026_sem28.pdf \
+  --dry-run
+```
+
+`--disease` y `--pdf` son argumentos; no escribir nombres de padecimiento, semanas, 32, 64, 111 o
+1/4 en el código. Todos salen del registry, configuración, catálogo, gate y manifiestos.
+
+#### Flujo obligatorio
+
+1. Resolver padecimiento, grupo de extracción, lag y dataset de entrenamiento desde los contratos.
+2. Leer el raw canónico como **baseline inmutable**, sin modificarlo.
+3. Extraer únicamente cada PDF declarado mediante `extract_cuadro_from_pdf`.
+4. Exigir resultado válido, padecimiento correcto, periodo fuente nuevo y conjunto completo de
+   entidades configuradas.
+5. Formar en temporal un raw de observación con upsert exacto por
+   `(Anio, Semana, Entidad, Padecimiento)`.
+6. Exigir que el prefijo histórico del baseline sea semánticamente idéntico y que sólo se añadan
+   periodos fuente posteriores.
+7. Construir EpiDatasetV2 usando `raw_path` explícito y un `runs_root` inyectado.
+8. Construir 64 bases y derivados mediante el mismo orquestador; no reentrenar ni refitear.
+9. Ejecutar `derive_evaluation` contra el nuevo `observation_dataset_id`.
+10. Comparar contra el gate congelado:
+    - mismo `gate_digest`;
+    - mismo release;
+    - mismos candidato y control;
+    - mismo config/exposure;
+    - prefijo hasta origen idéntico.
+11. Emitir un reporte canónico de dry-run con dataset, corte, semanas completas/omitidas y
+    veredicto propuesto.
+12. No escribir `prospective_evaluation.json` ni `prospective_status.json` en WEEK-1-A.
+
+#### Resultado real esperado para W28
+
+Sin codificar estos valores como lógica:
+
+```text
+source period             2026-W28
+observation cutoff        2026-W27
+completed_weeks           [[2026,27]]
+weeks_available/required  1/4
+verdict                   INCOMPLETE
+skipped_weeks             []
+gate_digest               5bc39aa5d44f5e62… sin cambio
+```
+
+Si cualquier valor difiere, STOP y auditar; no forzar 1/4.
+
+#### Tests obligatorios
+
+1. Raw path por defecto conserva byte por byte el comportamiento de `validate-data`.
+2. Raw path explícito sólo afecta el insumo raw y queda copiado/sellado en el nuevo dataset.
+3. Un PDF fuente nuevo válido añade exactamente un periodo fuente completo.
+4. Lag 1 convierte fuente W28 en objetivo W27 mediante el calendario, no restando enteros.
+5. PDF repetido es idempotente: mismo dataset_id y mismo reporte.
+6. PDF anterior, duplicado con valores distintos o revisión del prefijo: rechazo.
+7. Entidad faltante/extra/duplicada: rechazo.
+8. Padecimiento o grupo equivocado: rechazo.
+9. Extracción inválida: no deja dataset ni estado parcial.
+10. Baseline canónico permanece byte-idéntico.
+11. Cero cambios en DVC, consolidado, forecasts, modelos y dashboard.
+12. Dataset de observación conserva config/exposure y las SeriesKeys de entrenamiento.
+13. Gate, candidato, control, release y umbrales permanecen idénticos.
+14. Dry-run W28 deriva 1/4 e INCOMPLETE sin escribir los JSON declarados.
+15. Sin nueva semana válida, deriva 0/4 y no finge progreso.
+16. Dos raíces temporales producen el mismo dataset_id, reporte y digests.
+17. Genericidad: padecimiento, conteos y periodos salen de metadata, no de literales ejecutables.
+
+#### Gates
+
+```text
+ruff check
+ruff format --check
+mypy
+tests focales nuevos
+tests/unit/publication completos
+make test-fast
+dry-run sintético reproducible
+dry-run real con W28 desde temporal
+prospective_status actual continúa byte-idéntico y 0/4
+gate/release/candidate/control byte-idénticos
+cuatro agregados legacy byte-idénticos
+git diff --check
+```
+
+#### Descarga del boletín real
+
+WEEK-1-A puede usar la URL registrada por CI, pero sólo hacia un `mktemp` y sin persistirla en
+config o código. Verificar que es PDF y dejar que el extractor derive año/semana desde el documento;
+el nombre del archivo no gobierna la identidad.
+
+No hacer `git fetch/pull`, no reemplazar `data/raw_PDFs.dvc` y no usar `dvc pull --force`.
+
+#### Commit y STOP
+
+Un commit local:
+
+```text
+C7.4 add isolated prospective weekly observation dry-run
+```
+
+Después STOP para auditar código y dry-run. No registrar todavía 1/4 en los JSON trackeados.
+
+#### WEEK-1-B, todavía no autorizado
+
+Sólo después de auditar A:
+
+1. decidir la sede portable del dataset de observación —no dejar un status trackeado apuntando
+   únicamente a `runs/` gitignored;
+2. materializar/versionar esa evidencia con autorización separada si requiere DVC;
+3. ejecutar `prospective_status --write`;
+4. comprobar 1/4;
+5. regenerar readiness/candidate en temporales con la etiqueta 1/4;
+6. actualizar el porcentaje del plan;
+7. mantener lifecycle, puntero y publicación intactos.
+
+#### Siguiente orden autónoma
+
+_Respuesta:_ **GO C7.4-WEEK-1-A LOCAL. Implementar un carril semanal prospectivo aislado y
+genérico, usar W28 únicamente desde un temporal y demostrar por dry-run que deriva INCOMPLETE 1/4
+sin modificar raw canónico, JSON declarados, DVC, legacy, dashboard ni publicación. Commit local
+separado y STOP. No ejecutar `make update-week`.**
+
+---
+
+## Ronda 130 — C7.4-WEEK-1 cerrada y primera semana registrada — 2026-07-29
+
+### Veredicto
+
+**PASS · INCOMPLETE 1/4.**
+
+El boletín oficial fuente `2026-W28` se extrajo por el carril aislado, produjo la verdad objetivo
+`2026-W27` y avanzó el gate prospectivo de `0/4` a `1/4`. `INCOMPLETE` sigue siendo el único
+veredicto válido hasta reunir cuatro semanas completas; el resultado favorable de la primera
+semana no se extrapola ni autoriza publicación.
+
+No se ejecutó `make update-week`, el pipeline legacy, entrenamiento, refit, selección, DVC global,
+lifecycle, puntero, merge, deploy ni publicación.
+
+### Commits del backend
+
+```text
+bb8c2a87  C7.4 add isolated prospective weekly observation dry-run
+5775bb48  C7.4 persist portable prospective observation state
+f025045a  C7.4 record first prospective week and observation snapshot
+923ead67  C7.4 make weekly observation replay idempotent
+5891d601  C7.4 make readiness test follow prospective progress
+2d91086b  C7.4 make status gates follow declared progress
+```
+
+### Commit del dashboard
+
+```text
+a044403d  C7.4 align candidate tests with prospective progress
+```
+
+El dashboard dejó de fijar `0/4` en sus pruebas contra el shard real. Ahora exige que etiqueta,
+veredicto y conteos coincidan exactamente con el bloque `publication_status` sellado. Esta
+corrección evita editar tests al avanzar a `2/4`, `3/4` o `4/4`.
+
+### Evidencia de fuente y extracción
+
+```text
+PDF oficial                 2026_sem28.pdf
+SHA256 PDF                  4b131609a8ab3b76569943634d211ac49998609b2e960d91fd10861695d59181
+periodo fuente              2026-W28
+filas extraídas             32/32 entidades configuradas
+observation_lag_weeks       1
+periodo objetivo            2026-W27
+```
+
+El nombre del archivo no gobierna la identidad epidemiológica: el extractor y el calendario
+validan el periodo. El PDF sólo se conserva dentro de la evidencia versionada del snapshot.
+
+### Snapshot de observación portable
+
+```text
+dataset_id                  obesidad_71ba82d0ee33
+dataset_digest              71ba82d0ee33c2ba8f01f025dd23e5984c54f6f235fa8e0ed7dfc938febb2ec3
+raw_digest                  535948b8c5d520b0716216ce3194eab0e644721a5de11defd009d7d849459c6f
+report_digest               be9b804762f0e0bc5c7f638d4ec547b8ddd65c467a59a573128ef0c78f7c09c4
+DVC target                  artifacts/observations/obesidad/obesidad_71ba82d0ee33.dvc
+DVC md5                     8e1be34c945d385bcb1abaf6421f1ffe.dir
+DVC files / size            20 / 32,396,226 bytes
+DVC remoto                  14 objetos subidos · target up to date
+```
+
+El snapshot incluye:
+
+```text
+dataset de observación y products
+raw efectivo, catálogo, exposición y config
+PDF fuente y reporte canónico
+dataset de entrenamiento mínimo bajo _training/
+```
+
+Por ello `prospective_status --check` funciona en un clon limpio con `runs/` vacío después de
+descargar **sólo** el release y este target de observación. La restauración dirigida añadió 170
+archivos y reprodujo `INCOMPLETE 1/4`.
+
+### Estado prospectivo declarado
+
+```text
+release_id                  obesidad_release_2517e7858901
+gate_digest                 5bc39aa5d44f5e62062775dc09a0366ac856f47e5444fbb52ca07e608e61b65d
+candidate_digest            e7e2f5eef2efe7fc1071a1adbcc7c9efba1ab29e8265e395e566799f55e3c9e2
+control_digest              bb18accc0e6c9fbf8fd62fd48d4c9fc0807d4678e99d89f294ca6c7c41bce315
+observation_cutoff          2026-W27
+completed_weeks             [[2026,27]]
+skipped_weeks               []
+weeks                       1/4
+verdict                     INCOMPLETE
+status file SHA256          937c6b7795d1fb08e35b6986b54651aa2c8855db7c0d45917c47d15b9a509d58
+evaluation file SHA256      6cc2787c7f0b343df37f71290f80e55ea48df6f5395037f8c64927e5a85a3fd6
+```
+
+El gate, candidato, control, release y umbrales permanecen congelados.
+
+### Resultado informativo de la primera semana
+
+Estos números **no deciden** mientras el gate siga incompleto:
+
+| ámbito | sMAPE candidate | sMAPE control | degradación | umbral | semana pasa |
+|---|---:|---:|---:|---:|---|
+| 64 bases | 27.4377 | 33.2786 | -17.55% | +5% | sí |
+| 111 productos | 26.8743 | 33.1996 | -19.05% | +5% | sí |
+| nacional General | 28.1413 | 33.0942 | -14.97% | +10% | sí |
+
+La primera observación favorece al candidate en los tres ámbitos, pero el veredicto continúa
+`INCOMPLETE`.
+
+### Idempotencia y siguiente boletín
+
+Reprocesar el mismo último boletín con los mismos valores:
+
+- no crea otro dataset;
+- no mueve los JSON;
+- conserva bytes y digests;
+- no altera el target DVC;
+- devuelve el reporte canónico existente.
+
+El mismo periodo con valores distintos se rechaza como revisión. La siguiente corrida parte del
+último raw declarado —no del raw histórico original—, de modo que W29 acumulará W28 en vez de
+perder la primera semana.
+
+### Readiness y canales
+
+`make readiness` recompiló dos veces el candidate:
+
+```text
+status                      PASS_LOCAL
+external                    BLOCKED_EXTERNAL
+public_writes               0
+label                       Validación prospectiva en curso (1/4 semanas) · pronóstico puntual sin intervalos
+rows                        5,772
+products                    111 = 64 base + 47 derivados
+readiness_manifest_digest   484c711443217b78b65a1e19cd6fb7412bcbacce5c67a4697162f6d301d09b89
+shard_tree_digest           2026e7d72f3096480f6a7bbc988adc1962d1a2add70bed11a1bcd142a91d85be
+```
+
+La validación externa Google/Tableau permanece estacionada como `BLOCKED_EXTERNAL`; no se
+disfraza como fallo local ni como PASS externo.
+
+### Gates finales
+
+```text
+ruff / format                                    PASS
+mypy                                             165 fuentes + runner aislado PASS
+make test-fast                                   2,350 passed · 1 skipped · 62 deselected
+tests/integration/test_epi_dataset_gate.py       11 passed
+dashboard test:candidate con shard real          81 passed
+dashboard npm run check                          PASS · RAG público 454/454
+doctor Obesidad --artifacts                      PASS
+doctor --artifacts                               PASS
+prospective_status obesidad --check              PASS · 1/4
+DVC release + observation                        up to date
+clon limpio + pulls dirigidos + runs vacío       PASS
+```
+
+Hashes legacy preservados:
+
+```text
+prophet    cb5be3959781da7a0b44f9510bcaaf22c70fb3f34ae3780e786d5748968ef8bc
+deepar     96791595a2d4806de6b246aaf77ee0efe85f46c439eadb8afe8f6dd11670949a
+ensemble   1d2cf0a7dcb9e54cdd69020c3c079fb57832293e961aecd0b0f325034ef2f68c
+stacking   ac97dc8e210b95f26b01220702c89b34b47a4e61aabbc0d2246749961ee95b88
+```
+
+### Avance sin mezclar ejes
+
+| eje | avance |
+|---|---:|
+| plataforma C1–C6 | 100% |
+| implementación técnica de C7 | 82.3% |
+| gate prospectivo C7.4 | **25% (1/4)** |
+| readiness local | 100% |
+| readiness externo Google/Tableau | 0% · `BLOCKED_EXTERNAL` |
+| exposición pública de Obesidad | **0%** |
+
+No se modifica artificialmente el 82.3% de implementación por recibir una semana de calendario:
+el avance prospectivo se reporta por separado. El modelo y el sistema ya están construidos; las
+tres semanas restantes son evidencia temporal, no desarrollo.
+
+## Orden autónoma vigente — WEEK-2 a WEEK-4
+
+Cuando aparezca un boletín fuente posterior:
+
+1. descargar únicamente el PDF oficial a un temporal;
+2. verificar PDF y SHA256;
+3. ejecutar primero:
+
+   ```text
+   make prospective-week DISEASE=obesidad PDF=/ruta/temporal/boletin.pdf
+   ```
+
+4. si el dry-run conserva gate/release/candidate/control y añade exactamente la siguiente verdad
+   válida, ejecutar:
+
+   ```text
+   make prospective-week-record DISEASE=obesidad PDF=/ruta/temporal/boletin.pdf
+   ```
+
+5. ejecutar `prospective_status --check`;
+6. ejecutar `dvc add` y `dvc push` **sólo** sobre el nuevo target
+   `artifacts/observations/obesidad/<dataset_id>.dvc`;
+7. recompilar readiness en temporales;
+8. ejecutar backend fast/integración/doctors y dashboard candidate/check;
+9. commitear backend y dashboard por separado;
+10. hacer push fast-forward únicamente de las ramas feature;
+11. actualizar esta sección con dataset, digests, métricas y conteo `n/4`.
+
+### Reglas que siguen vigentes
+
+- No ejecutar `make update-week` para Obesidad.
+- No `dvc pull/add/push` global.
+- No modificar el forecast candidate, control, gate, release o umbrales.
+- No reentrenar, retunear, reseleccionar ni refitear.
+- No tratar una semana ausente o parcial como cero.
+- No marcar PASS/FAIL antes de cuatro semanas completas.
+- No activar lifecycle ni puntero.
+- No merge, deploy o publicación mientras readiness externo siga bloqueado.
+- Preservar todos los untracked del usuario.
+
+### Trabajo paralelo permitido sin intervención del usuario
+
+Mientras llegan W29–W31 se puede:
+
+1. auditar y subir por fast-forward los checkpoints feature;
+2. mantener el carril semanal, tests y documentación;
+3. repetir readiness local;
+4. preparar evidencia read-only;
+5. revisar disponibilidad de nuevos boletines sin mutar repositorios.
+
+Queda pendiente manual, sin bloquear las semanas:
+
+```text
+crear/compartir hoja Google Sheets de staging
+inyectar las tres variables en la sesión
+preflight externo read-only
+refresh/verificación Tableau Desktop
+decisiones de apply, activación, merge y deploy
+```
+
+### Siguiente acción exacta
+
+**Esperar el siguiente boletín oficial. En cuanto exista, ejecutar el mismo carril aislado para
+avanzar a 2/4. Hasta entonces no hay entrenamiento ni modificación estadística pendiente.**
