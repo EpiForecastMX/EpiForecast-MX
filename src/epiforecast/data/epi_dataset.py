@@ -100,7 +100,13 @@ def load_config(disease: str) -> spec.EpiDatasetConfig:
     )
 
 
-def _raw_path(disease: str) -> Path:
+def raw_path_for(disease: str) -> Path:
+    """Ruta canónica del raw de un padecimiento.
+
+    El constructor acepta además una ruta explícita para snapshots de observación semanales. La
+    ruta canónica sigue siendo el default para no cambiar el carril de entrenamiento ni sus
+    digests históricos.
+    """
     return _ROOT / "data" / "raw" / f"data_raw_{registry.require(disease).artifact_key}.csv"
 
 
@@ -171,7 +177,11 @@ def _canonical_csv(df: pd.DataFrame) -> str:
 
 
 def build_epi_dataset_v2(
-    disease: str, runs_root: Path | None = None, run_id: str | None = None
+    disease: str,
+    runs_root: Path | None = None,
+    run_id: str | None = None,
+    *,
+    raw_path: Path | None = None,
 ) -> EpiDatasetV2Result:
     """Construye EpiDatasetV2 y lo versiona en ``runs/<run_id>/`` con digests + insumos efectivos."""
     cfg = load_config(disease)
@@ -182,9 +192,11 @@ def build_epi_dataset_v2(
             f"columns_by_sex debe ser exactamente {set(spec.BASE_SEXES)}: {set(snapshot.columns_by_sex)}"
         )
 
-    raw_path = _raw_path(disease)
-    raw = pd.read_csv(raw_path, low_memory=False)
-    raw_digest = _sha256_bytes(raw_path.read_bytes())
+    effective_raw_path = (raw_path or raw_path_for(disease)).resolve()
+    if not effective_raw_path.is_file():
+        raise EpiDatasetError(f"raw explícito inexistente o no regular: {effective_raw_path}")
+    raw = pd.read_csv(effective_raw_path, low_memory=False)
+    raw_digest = _sha256_bytes(effective_raw_path.read_bytes())
 
     prep = build_prep(raw, catalog, cfg.observation_lag_weeks)
     state = reconcile_state(prep, set(catalog.cve_ents()))
@@ -224,7 +236,7 @@ def build_epi_dataset_v2(
     inputs_dir.mkdir(parents=True, exist_ok=True)
 
     # Insumos efectivos: raw, catálogo geográfico, exposición canónica y config.
-    shutil.copy2(raw_path, inputs_dir / raw_path.name)
+    shutil.copy2(effective_raw_path, inputs_dir / effective_raw_path.name)
     shutil.copy2(catalog_path, inputs_dir / catalog_path.name)
     exp_proj = pd.DataFrame(
         [{"cve_ent": c, **snapshot.by_cve_ent[c]} for c in sorted(snapshot.by_cve_ent)]

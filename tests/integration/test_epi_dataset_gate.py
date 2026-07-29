@@ -81,6 +81,15 @@ def test_gate_digests_y_reproducible(built, tmp_path):
     assert again.digests["dataset"] == built.digests["dataset"]
 
 
+def test_raw_explicito_canonico_conserva_identidad_y_queda_sellado(built, tmp_path):
+    """El nuevo wiring no cambia el default y sella la ruta explícita como insumo efectivo."""
+    explicit = ed.build_epi_dataset_v2("Obesidad", runs_root=tmp_path / "runs", raw_path=_RAW)
+    assert explicit.run_id == built.run_id
+    assert explicit.digests == built.digests
+    copied = explicit.run_dir / "inputs" / _RAW.name
+    assert copied.read_bytes() == _RAW.read_bytes()
+
+
 def test_gate_insumos_efectivos_y_manifest(built):
     inp = built.run_dir / "inputs"
     names = {p.name for p in inp.iterdir()}

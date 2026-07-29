@@ -545,6 +545,21 @@ readiness:
 		--release-target $(RELEASE) \
 		--evidence-root runs/readiness/$(DISEASE)
 
+.PHONY: prospective-week
+## Incorpora un boletín al carril prospectivo AISLADO (sin legacy, train, DVC ni publicación).
+##   make prospective-week DISEASE=<id> PDF=<ruta.pdf>
+prospective-week:
+ifndef DISEASE
+	$(error Uso: make prospective-week DISEASE=<id> PDF=<ruta.pdf>)
+endif
+ifndef PDF
+	$(error Uso: make prospective-week DISEASE=<id> PDF=<ruta.pdf>)
+endif
+	$(PYTHON) -m scripts.prospective_week \
+		--disease $(DISEASE) \
+		--pdf "$(PDF)" \
+		--dry-run
+
 #################################################################################
 # 📖 HELP                                                                      #
 #################################################################################

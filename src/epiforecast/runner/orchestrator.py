@@ -132,9 +132,11 @@ def reject_run_residues(dataset_dir: Path) -> None:
         )
 
 
-def validate_data(disease: str, runs_root: Path | None = None) -> DatasetManifest:
+def validate_data(
+    disease: str, runs_root: Path | None = None, *, raw_path: Path | None = None
+) -> DatasetManifest:
     """Construye dataset base + 111 productos bajo runs/<dataset_id>/ y escribe DatasetManifest."""
-    result = build_epi_dataset_v2(disease, runs_root=runs_root)
+    result = build_epi_dataset_v2(disease, runs_root=runs_root, raw_path=raw_path)
     reject_run_residues(result.run_dir)
     catalog = load_geo_catalog()
     agg = build_products(result.dataset, catalog, result.config.disease_id)
