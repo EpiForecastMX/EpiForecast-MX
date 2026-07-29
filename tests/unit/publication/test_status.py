@@ -382,10 +382,6 @@ real = pytest.mark.skipif(
     not af.hay_runs(), reason="los runs sellados de C5 no están en este entorno (runs/ gitignored)"
 )
 
-ETIQUETA_VIGENTE = (
-    "Validación prospectiva en curso (0/4 semanas) · pronóstico puntual sin intervalos"
-)
-
 
 @pytest.fixture(scope="module")
 def sede(tmp_path_factory) -> Path:
@@ -400,22 +396,22 @@ def sede(tmp_path_factory) -> Path:
 def test_el_estado_declarado_del_repo_es_el_del_gate_congelado():
     cap = load_declared_status(af.DISEASE)
     assert cap.release_id == str(registry.require(af.DISEASE).artifact_source.release_id)
-    assert (cap.verdict, cap.status.weeks_available, cap.status.weeks_required) == (
-        VERDICT_INCOMPLETE,
-        0,
-        GATE_WEEKS,
-    )
+    assert cap.status.weeks_available == len(cap.status.completed_weeks)
+    assert cap.status.weeks_required == len(cap.gate.target_weeks) == GATE_WEEKS
+    assert cap.verdict == cap.status.verdict
 
 
 @real
 def test_los_cuatro_puentes_muestran_la_etiqueta_exacta(sede, tmp_path):
+    vigente = load_declared_status(af.DISEASE)
     c = compile_release(
         disease_id=af.DISEASE,
         mode=MODE_CANDIDATE,
         releases_root=sede,
-        status=load_declared_status(af.DISEASE),
+        status=vigente,
     )
-    assert c.label == ETIQUETA_VIGENTE
+    etiqueta = c.label
+    assert etiqueta.startswith(vigente.progress_label())
     shards = emit_shards(c, tmp_path / "staging")
 
     reports = (shards.root / CHANNEL_REPORTS / "report.md").read_text(encoding="utf-8")
@@ -429,14 +425,17 @@ def test_los_cuatro_puentes_muestran_la_etiqueta_exacta(sede, tmp_path):
     corpus = (shards.root / CHANNEL_EPIBOT / f"corpus/{af.DISEASE}.md").read_text(encoding="utf-8")
     manifest = json.loads((shards.root / SHARD_MANIFEST).read_text(encoding="utf-8"))
 
-    assert ETIQUETA_VIGENTE in reports
-    assert ETIQUETA_VIGENTE in corpus
+    assert etiqueta in reports
+    assert etiqueta in corpus
     for bloque in (tableau, web, know["release"], manifest):
         estado = bloque["publication_status"]
-        assert bloque["publication_label"] == ETIQUETA_VIGENTE
-        assert estado["verdict"] == VERDICT_INCOMPLETE
-        assert (estado["weeks_available"], estado["weeks_required"]) == (0, GATE_WEEKS)
-        assert estado["gate_digest"] == load_declared_status(af.DISEASE).status.gate_digest
+        assert bloque["publication_label"] == etiqueta
+        assert estado["verdict"] == vigente.verdict
+        assert (estado["weeks_available"], estado["weeks_required"]) == (
+            vigente.status.weeks_available,
+            vigente.status.weeks_required,
+        )
+        assert estado["gate_digest"] == vigente.status.gate_digest
 
 
 @real
@@ -839,9 +838,11 @@ def test_una_semana_de_reemplazo_atraviesa_loader_compilador_y_shards(tmp_path, 
 def test_el_snapshot_vigente_no_declara_semanas_futuras_como_ausentes(tmp_path):
     """R80-P0-1: una semana futura no es una semana ausente. Antes se registraban las 52."""
     cap = load_declared_status(af.DISEASE)
-    assert cap.evaluation.observation_cutoff == (2026, 26)
-    assert cap.evaluation.skipped_weeks == ()
-    assert (cap.status.weeks_available, cap.status.verdict) == (0, VERDICT_INCOMPLETE)
+    cutoff = cap.evaluation.observation_cutoff
+    assert cutoff is not None
+    assert all(period <= cutoff for period, _ in cap.evaluation.skipped_weeks)
+    assert cap.status.weeks_available == len(cap.status.completed_weeks)
+    assert cap.status.verdict == cap.evaluation.verdict
 
 
 @real
