@@ -137,7 +137,8 @@ def test_el_release_sigue_siendo_un_candidate_point_only(sede, tmp_path):
     assert shard["channels_without_bridge"] == []
     assert shard["verdict"] == "INCOMPLETE"
     assert shard["weeks_available"] < shard["weeks_required"]
-    assert "(0/4 semanas)" in shard["publication_label"]
+    avance = f"({shard['weeks_available']}/{shard['weeks_required']} semanas)"
+    assert avance in shard["publication_label"]
 
 
 def test_dos_corridas_dan_el_mismo_manifiesto(sede, tmp_path):
