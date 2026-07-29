@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 from collections.abc import Iterable
 import hashlib
+import json
 from pathlib import Path
 import sys
 import tempfile
@@ -23,12 +24,19 @@ from typing import Any
 
 import pandas as pd
 from scripts.prospective_status import derive_evaluation
+from scripts.prospective_status import main as status_main
 
 from epiforecast import registry
 from epiforecast.data import epi_calendar as ec
 from epiforecast.data.epi_dataset import load_config, raw_path_for
 from epiforecast.data.epi_geo_exposure import GeoCatalog, load_geo_catalog
 from epiforecast.data.extraction.cuadro_extractor import extract_cuadro_from_pdf
+from epiforecast.publication.observation_store import (
+    effective_raw_path,
+    materialize_observation,
+    resolve_observation_dir,
+)
+from epiforecast.publication.status import declared_paths
 from epiforecast.runner import orchestrator
 from epiforecast.runner.artifact_identity import ArtifactValidationError
 from epiforecast.runner.manifest import default_runs_root
@@ -216,6 +224,7 @@ def merge_observation_raw(
 def _report_payload(
     *,
     disease_id: str,
+    source_pdfs: list[dict[str, str]],
     source_periods: list[tuple[int, int]],
     baseline_raw_digest: str,
     observation_raw_digest: str,
@@ -226,11 +235,14 @@ def _report_payload(
     payload: dict[str, Any] = {
         "schema": REPORT_SCHEMA,
         "disease_id": disease_id,
+        "source_pdfs": source_pdfs,
         "source_periods": [list(p) for p in source_periods],
         "baseline_raw_digest": baseline_raw_digest,
         "observation_raw_digest": observation_raw_digest,
         "observation_dataset_id": dataset_manifest.dataset_id,
         "observation_dataset_digest": dataset_manifest.digests["dataset"],
+        "training_dataset_id": evaluation.training_dataset_id,
+        "training_dataset_digest": evaluation.training_dataset_digest,
         "observation_cutoff": list(evaluation.observation_cutoff),
         "release_id": evaluation.release_id,
         "gate_digest": evaluation.gate_digest,
@@ -248,20 +260,62 @@ def _report_payload(
     return payload
 
 
+def _baseline_from_declared_state(
+    disease_id: str,
+    canonical: Path,
+    *,
+    runs_root: Path,
+    observation_store_root: Path | None,
+) -> Path:
+    """Último raw declarado; no volver al entrenamiento después de haber avanzado el gate."""
+    paths = declared_paths(disease_id)
+    try:
+        status = json.loads(paths["status"].read_text(encoding="utf-8"))
+        evaluation = json.loads(paths["evaluation"].read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return canonical
+    dataset_id = status.get("observation_dataset_id")
+    source_digests = evaluation.get("observation_source_digests")
+    raw_digest = source_digests.get("raw") if isinstance(source_digests, dict) else None
+    if not isinstance(dataset_id, str) or not dataset_id or not isinstance(raw_digest, str):
+        return canonical
+    if _sha256(canonical) == raw_digest:
+        return canonical
+    directory = resolve_observation_dir(
+        disease_id,
+        dataset_id,
+        runs_root=runs_root,
+        store_root=observation_store_root,
+    )
+    return effective_raw_path(directory, raw_digest)
+
+
 def run_week(
     disease: str,
     pdfs: Iterable[Path],
     *,
     baseline_raw: Path | None = None,
     runs_root: Path | None = None,
+    observation_store_root: Path | None = None,
 ) -> dict[str, Any]:
     """Ejecuta el carril aislado y devuelve evidencia canónica; no escribe estado público."""
     declared = registry.require(disease)
-    source = (baseline_raw or raw_path_for(disease)).resolve()
+    pdf_paths = [Path(path).resolve() for path in pdfs]
+    effective_runs = (runs_root or default_runs_root()).resolve()
+    canonical = raw_path_for(disease).resolve()
+    source = (
+        baseline_raw
+        or _baseline_from_declared_state(
+            declared.id,
+            canonical,
+            runs_root=effective_runs,
+            observation_store_root=observation_store_root,
+        )
+    ).resolve()
     if not source.is_file():
         raise ProspectiveWeekError(f"raw baseline inexistente: {source}")
     baseline = pd.read_csv(source, low_memory=False)
-    new_rows = extract_new_rows(declared.id, pdfs)
+    new_rows = extract_new_rows(declared.id, pdf_paths)
     merged = merge_observation_raw(baseline, new_rows, disease_name=declared.data_name)
     source_periods = sorted(
         {
@@ -270,7 +324,6 @@ def run_week(
         },
         key=lambda p: ec.week_start(*p),
     )
-    effective_runs = (runs_root or default_runs_root()).resolve()
     effective_runs.mkdir(parents=True, exist_ok=True)
 
     with tempfile.TemporaryDirectory(prefix="prospective_week_") as tmp:
@@ -283,9 +336,14 @@ def run_week(
             declared.id,
             observation_dataset_id=manifest.dataset_id,
             runs_root=effective_runs,
+            observation_store_root=observation_store_root,
         )
         return _report_payload(
             disease_id=declared.id,
+            source_pdfs=[
+                {"name": path.name, "sha256": _sha256(path)}
+                for path in sorted(pdf_paths, key=lambda p: p.name)
+            ],
             source_periods=source_periods,
             baseline_raw_digest=_sha256(source),
             observation_raw_digest=_sha256(observation_raw),
@@ -301,11 +359,17 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--pdf", type=Path, action="append", required=True)
     parser.add_argument("--baseline-raw", type=Path, default=None)
     parser.add_argument("--runs-root", type=Path, default=None)
-    parser.add_argument(
+    parser.add_argument("--observation-store-root", type=Path, default=None)
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument(
         "--dry-run",
         action="store_true",
-        required=True,
-        help="obligatorio: no modifica el estado prospectivo declarado",
+        help="no modifica el estado prospectivo declarado",
+    )
+    mode.add_argument(
+        "--write",
+        action="store_true",
+        help="materializa evidencia portable y actualiza evaluación/estado declarados",
     )
     return parser
 
@@ -318,7 +382,33 @@ def main(argv: list[str] | None = None) -> int:
             args.pdf,
             baseline_raw=args.baseline_raw,
             runs_root=args.runs_root,
+            observation_store_root=args.observation_store_root,
         )
+        if args.write:
+            effective_runs = (args.runs_root or default_runs_root()).resolve()
+            destination = materialize_observation(
+                effective_runs / str(payload["observation_dataset_id"]),
+                training_dataset_dir=effective_runs / str(payload["training_dataset_id"]),
+                disease_id=str(payload["disease_id"]),
+                dataset_id=str(payload["observation_dataset_id"]),
+                source_pdfs=args.pdf,
+                report=payload,
+                store_root=args.observation_store_root,
+            )
+            status_args = [
+                str(payload["disease_id"]),
+                "--write",
+                "--observation-dataset-id",
+                str(payload["observation_dataset_id"]),
+                "--runs-root",
+                str(effective_runs),
+            ]
+            if args.observation_store_root is not None:
+                status_args.extend(["--observation-store-root", str(args.observation_store_root)])
+            if status_main(status_args) != 0:
+                raise ProspectiveWeekError(
+                    f"la observación quedó en {destination}, pero el estado no pudo actualizarse"
+                )
     except (
         ArtifactValidationError,
         OSError,

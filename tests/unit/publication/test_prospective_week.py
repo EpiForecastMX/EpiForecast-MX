@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -122,6 +124,8 @@ def test_run_week_es_determinista_y_pasa_raw_explicito(monkeypatch, tmp_path):
 
     evaluation = SimpleNamespace(
         observation_cutoff=(2026, 27),
+        training_dataset_id="obesidad_entrenamiento",
+        training_dataset_digest="0" * 64,
         release_id="obesidad_release_x",
         gate_digest="2" * 64,
         candidate_digest="3" * 64,
@@ -142,7 +146,11 @@ def test_run_week_es_determinista_y_pasa_raw_explicito(monkeypatch, tmp_path):
     assert first == second
     assert captured[0] == captured[1]
     assert first["source_periods"] == [[2026, 28]]
+    assert first["source_pdfs"] == [
+        {"name": pdf.name, "sha256": hashlib.sha256(pdf.read_bytes()).hexdigest()}
+    ]
     assert first["observation_cutoff"] == [2026, 27]
+    assert first["training_dataset_id"] == "obesidad_entrenamiento"
     assert first["completed_weeks"] == [[2026, 27]]
     assert first["weeks_available"] == 1
     assert first["verdict"] == "INCOMPLETE"
@@ -153,3 +161,38 @@ def test_run_week_es_determinista_y_pasa_raw_explicito(monkeypatch, tmp_path):
 def test_cli_dry_run_es_obligatorio():
     with pytest.raises(SystemExit):
         pw._parser().parse_args(["--disease", "obesidad", "--pdf", "x.pdf"])
+
+
+def test_siguiente_semana_parte_del_ultimo_raw_declarado(monkeypatch, tmp_path):
+    canonical = tmp_path / "canonical.csv"
+    canonical.write_bytes(b"viejo")
+    store_root = tmp_path / "store"
+    dataset_id = "obesidad_observada"
+    dataset = store_root / "obesidad" / dataset_id
+    inputs = dataset / "inputs"
+    inputs.mkdir(parents=True)
+    observed = inputs / "raw.csv"
+    observed.write_bytes(b"nuevo")
+    raw_digest = hashlib.sha256(observed.read_bytes()).hexdigest()
+
+    config = tmp_path / "publication"
+    config.mkdir()
+    status = config / "status.json"
+    evaluation = config / "evaluation.json"
+    status.write_text(json.dumps({"observation_dataset_id": dataset_id}), encoding="utf-8")
+    evaluation.write_text(
+        json.dumps({"observation_source_digests": {"raw": raw_digest}}), encoding="utf-8"
+    )
+    monkeypatch.setattr(
+        pw,
+        "declared_paths",
+        lambda *_args, **_kwargs: {"status": status, "evaluation": evaluation},
+    )
+
+    result = pw._baseline_from_declared_state(
+        "obesidad",
+        canonical,
+        runs_root=tmp_path / "runs",
+        observation_store_root=store_root,
+    )
+    assert result == observed

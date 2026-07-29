@@ -30,6 +30,10 @@ import sys
 from typing import Any
 
 from epiforecast import registry
+from epiforecast.publication.observation_store import (
+    resolve_observation_dir,
+    resolve_training_dir,
+)
 from epiforecast.publication.prospective import (
     GATE_WEEKS,
     FrozenGate,
@@ -65,9 +69,14 @@ SOURCE_KEYS: tuple[str, ...] = ("raw", "config", "exposure")
 IDENTITY_KEYS: tuple[str, ...] = ("config", "exposure")
 
 
-def _manifest(dataset_id: str, runs_root: Path | None = None) -> tuple[DatasetManifest, Path]:
+def _manifest(
+    dataset_id: str,
+    runs_root: Path | None = None,
+    *,
+    explicit_dir: Path | None = None,
+) -> tuple[DatasetManifest, Path]:
     """Manifiesto de un dataset, con su INTEGRIDAD comprobada: el CSV es el que dice ser."""
-    directorio = dataset_dir(dataset_id, runs_root)
+    directorio = explicit_dir or dataset_dir(dataset_id, runs_root)
     require(directorio.is_dir(), f"dataset {dataset_id}: no está en runs/")
     manifest = DatasetManifest.read(directorio)
     equal(f"dataset {dataset_id}: dataset_id del manifiesto", manifest.dataset_id, dataset_id)
@@ -136,6 +145,7 @@ def derive_evaluation(
     observation_dataset_id: str | None = None,
     config_root_path: Path | None = None,
     runs_root: Path | None = None,
+    observation_store_root: Path | None = None,
 ) -> tuple[ProspectiveEvaluation, ProspectiveStatus]:
     """Evaluación completa y su resumen, derivados de los cuatro insumos verificados."""
     rutas = declared_paths(disease_id, config_root_path=config_root_path)
@@ -159,7 +169,16 @@ def derive_evaluation(
 
     # 2) Entrenamiento congelado: control y denominadores MASE.
     training_id = str(verificado.chain["dataset_id"])
-    training_manifest, training_dir = _manifest(training_id, runs_root)
+    obs_id = observation_dataset_id or training_id
+    effective_runs = runs_root or dataset_dir(training_id).parent
+    training_dir = resolve_training_dir(
+        disease_id,
+        obs_id,
+        training_id,
+        runs_root=effective_runs,
+        store_root=observation_store_root,
+    )
+    training_manifest, training_dir = _manifest(training_id, runs_root, explicit_dir=training_dir)
     equal(
         "dataset de entrenamiento contra el gate",
         training_manifest.digests.get("dataset"),
@@ -170,8 +189,16 @@ def derive_evaluation(
     equal("control reconstruido contra el gate", frame_digest(control), gate.control_digest)
 
     # 3) Observación: la verdad que decide n/4.
-    obs_id = observation_dataset_id or training_id
-    obs_manifest, obs_dir = _manifest(obs_id, runs_root)
+    if obs_id == training_id:
+        obs_dir = training_dir
+    else:
+        obs_dir = resolve_observation_dir(
+            disease_id,
+            obs_id,
+            runs_root=effective_runs,
+            store_root=observation_store_root,
+        )
+    obs_manifest, obs_dir = _manifest(obs_id, runs_root, explicit_dir=obs_dir)
     observation_history = _history(obs_dir, expected_series=len(training_history))
     check_observation_dataset(
         obs_manifest, training_manifest, observation_history, training_history, gate.origin
@@ -261,6 +288,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--config-root", type=Path, default=None)
     parser.add_argument("--runs-root", type=Path, default=None)
+    parser.add_argument("--observation-store-root", type=Path, default=None)
     args = parser.parse_args(argv)
 
     rutas = declared_paths(args.disease_id, config_root_path=args.config_root)
@@ -281,6 +309,7 @@ def main(argv: list[str] | None = None) -> int:
             observation_dataset_id=obs_id,
             config_root_path=args.config_root,
             runs_root=args.runs_root,
+            observation_store_root=args.observation_store_root,
         )
     except (ArtifactValidationError, OSError, ValueError) as exc:
         print(f"✖ no se pudo derivar el estado: {exc}", file=sys.stderr)

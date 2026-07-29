@@ -755,6 +755,38 @@ def test_una_verdad_nueva_avanza_el_contador_sin_tocar_el_congelado(tmp_path):
 
 
 @real
+def test_la_verdad_portable_se_resuelve_sin_run_local(tmp_path):
+    """Un clon con el target DVC restaurado puede recomputar el estado sin el run de esta máquina."""
+    from scripts.prospective_status import derive_evaluation
+
+    from epiforecast.publication.status import config_root
+    from epiforecast.runner.manifest import dataset_dir
+
+    gate = load_declared_status(af.DISEASE).gate
+    training_id = load_declared_status(af.DISEASE).evaluation.training_dataset_id
+    runs = tmp_path / "runs"
+    shutil.copytree(dataset_dir(training_id), runs / training_id)
+    obs_id = "obs_portable"
+    portable = tmp_path / "observations" / af.DISEASE / obs_id
+    _observacion(portable, runs / training_id, [gate.target_weeks[0]], obs_id)
+    shutil.copytree(
+        runs / training_id,
+        portable / "_training" / training_id,
+    )
+    shutil.rmtree(runs)
+
+    evaluation, status = derive_evaluation(
+        af.DISEASE,
+        observation_dataset_id=obs_id,
+        runs_root=runs,
+        observation_store_root=tmp_path / "observations",
+        config_root_path=config_root(),
+    )
+    assert evaluation.observation_dataset_id == obs_id
+    assert status.completed_weeks == (gate.target_weeks[0],)
+
+
+@real
 def test_una_semana_de_reemplazo_atraviesa_loader_compilador_y_shards(tmp_path, sede):
     """R78-P0-2: W31 sustituye a W28 y el estado resultante tiene que poder cargarse y emitirse."""
     from scripts.prospective_status import derive_evaluation

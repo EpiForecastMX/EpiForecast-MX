@@ -560,6 +560,20 @@ endif
 		--pdf "$(PDF)" \
 		--dry-run
 
+.PHONY: prospective-week-record
+## Tras un dry-run verde, materializa la observación y actualiza el estado prospectivo declarado.
+prospective-week-record:
+ifndef DISEASE
+	$(error Uso: make prospective-week-record DISEASE=<id> PDF=<ruta.pdf>)
+endif
+ifndef PDF
+	$(error Uso: make prospective-week-record DISEASE=<id> PDF=<ruta.pdf>)
+endif
+	$(PYTHON) -m scripts.prospective_week \
+		--disease $(DISEASE) \
+		--pdf "$(PDF)" \
+		--write
+
 #################################################################################
 # 📖 HELP                                                                      #
 #################################################################################
