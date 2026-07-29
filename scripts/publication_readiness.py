@@ -144,6 +144,8 @@ IDENTIDAD_CRUZADA: tuple[str, ...] = (
 )
 
 _LARGO_SOSPECHOSO = re.compile(r"[A-Za-z0-9_\-]{32,}")
+# Forma de un digest. Más estricta que medir el largo: también rechaza 64 caracteres que no sean hex.
+_SHA256 = re.compile(r"[0-9a-f]{64}")
 
 
 def _digest_de_arbol(raiz: Path) -> str:
@@ -177,6 +179,59 @@ def _ruta_relativa_segura(relativa: str, base: Path) -> Path:
     )
     require(destino.is_dir(), f"readiness: {relativa!r} no existe bajo la evidencia")
     return destino
+
+
+def _archivo_del_inventario(relativo: str, raiz: Path) -> Path:
+    """Resuelve una entrada del inventario dentro del shard, o falla.
+
+    Un inventario es una lista de rutas relativas canónicas. Una ruta absoluta, un `..` o un symlink
+    convierten «verificar el shard» en «verificar lo que haya al otro lado del enlace».
+    """
+    require(bool(relativo), "readiness: el inventario del shard trae una ruta vacía")
+    candidata = Path(relativo)
+    require(not candidata.is_absolute(), f"readiness: {relativo!r} es una ruta absoluta")
+    require(
+        all(parte not in ("..", ".") for parte in candidata.parts),
+        f"readiness: {relativo!r} contiene componentes relativos",
+    )
+    # La clave del inventario tiene que ser la forma canónica: `./x`, `a//b` o `a/` describen el
+    # mismo archivo con otra cadena, y un inventario que admite dos grafías de una ruta no es un
+    # inventario exacto.
+    require(
+        candidata.as_posix() == relativo,
+        f"readiness: {relativo!r} no es la forma canónica de la ruta",
+    )
+    base = raiz.resolve()
+    destino = base / candidata
+    require(
+        not destino.is_symlink(), f"readiness: {relativo!r} es un symlink, no un archivo del shard"
+    )
+    require(destino.resolve().is_relative_to(base), f"readiness: {relativo!r} escapa del shard")
+    require(destino.is_file(), f"readiness: el shard no trae {relativo}")
+    return destino
+
+
+def _exige_inventario_exacto(declarado: Mapping[str, Any], sellado: Mapping[str, Any]) -> None:
+    """El inventario local declara TODOS y SÓLO los archivos que el shard sella.
+
+    Comprobar cada entrada declarada no basta: quitar una del inventario local y volver a sellar la
+    capa exterior dejaba pasar un manifiesto que afirmaba menos de lo que el shard contiene
+    (R122-P1). El `shard_tree_digest` impide sustituir bytes, no corrige una afirmación falsa.
+    """
+    require(
+        isinstance(declarado, dict) and isinstance(sellado, dict),
+        "readiness: los inventarios tienen que ser mapeos ruta → sha256",
+    )
+    faltan = sorted(set(sellado) - set(declarado))
+    sobran = sorted(set(declarado) - set(sellado))
+    require(
+        not faltan and not sobran,
+        "readiness: el inventario local no coincide con el del shard"
+        + (f" · faltan {faltan}" if faltan else "")
+        + (f" · sobran {sobran}" if sobran else ""),
+    )
+    for ruta in sorted(declarado):
+        equal(f"readiness: digest declarado de {ruta}", declarado[ruta], sellado[ruta])
 
 
 def _exige_forma_cerrada(objeto: Mapping[str, Any], claves: Sequence[str], etiqueta: str) -> None:
@@ -216,7 +271,7 @@ def _redactar(valor: str, sensibles: Sequence[str] = ()) -> str:
 
     def _quizas(match: re.Match[str]) -> str:
         texto = match.group(0)
-        if re.fullmatch(r"[0-9a-f]{64}", texto):
+        if _SHA256.fullmatch(texto):
             return texto  # digest: evidencia reproducible
         return "«redactado»"
 
@@ -460,6 +515,10 @@ def load_local_evidence(
     """
     import json  # noqa: PLC0415
 
+    # La política de ubicación es la misma que la de escritura. Copiar un árbol de evidencia válido
+    # bajo `reports/` no puede convertir una ruta versionable en destino legítimo (R122-P0).
+    check_evidence_root(local_evidence.parent)
+
     payload = json.loads(local_evidence.read_text("utf-8"))
     _exige_forma_cerrada(payload, READINESS_KEYS, READINESS_FILE)
     equal("readiness: schema de la evidencia local", payload.get("schema"), READINESS_SCHEMA)
@@ -491,9 +550,9 @@ def load_local_evidence(
         sha256_bytes(canonical_json(manifiesto)),
         payload["shard_manifest_digest"],
     )
+    _exige_inventario_exacto(payload["shard_files"], manifiesto["files"])
     for relativo, esperado in sorted(payload["shard_files"].items()):
-        archivo = raiz / relativo
-        require(archivo.is_file(), f"readiness: el shard no trae {relativo}")
+        archivo = _archivo_del_inventario(relativo, raiz)
         equal(f"readiness: digest de {relativo}", sha256_bytes(archivo.read_bytes()), esperado)
     equal(
         "readiness: digest del árbol del shard",
@@ -587,10 +646,72 @@ def run_external_readonly(
     }
     reporte["preflight_digest"] = sha256_bytes(canonical_json(reporte))
     _exige_forma_cerrada(reporte, EXTERNAL_KEYS, EXTERNAL_FILE)
+    # Se revalida la ubicación JUSTO antes de escribir: entre la carga y aquí pudo cambiar el
+    # destino —un symlink reapuntado, por ejemplo— y lo que importa es dónde caen los bytes.
+    destino = check_evidence_root(local_evidence.parent) / EXTERNAL_FILE
     # Sólo un PASS deja artefacto. Un FAIL o un bloqueo no pueden borrar la evidencia de un
     # preflight anterior que sí pasó: destruirla sería perder lo único que gobierna el gate.
-    _escribir_atomico(local_evidence.parent / EXTERNAL_FILE, canonical_json(reporte))
-    return {**reporte, "evidence_path": str(local_evidence.parent / EXTERNAL_FILE)}
+    _escribir_atomico(destino, canonical_json(reporte))
+    return {**reporte, "evidence_path": str(destino)}
+
+
+def load_external_preflight(external_evidence: Path) -> dict[str, Any]:
+    """Carga y VERIFICA un `external_preflight.v1` antes de que otro gate lo consuma.
+
+    Función pura: no abre Google, no escribe nada. Existe para que el siguiente consumidor no
+    repita el error de confiar en un `preflight_digest` sin recomputarlo, que es exactamente el
+    fallo que A.1 cerró un nivel más abajo (R122-P1).
+    """
+    import json  # noqa: PLC0415
+
+    check_evidence_root(external_evidence.parent)
+    payload = json.loads(external_evidence.read_text("utf-8"))
+    _exige_forma_cerrada(payload, EXTERNAL_KEYS, EXTERNAL_FILE)
+    equal("readiness: schema del preflight externo", payload.get("schema"), EXTERNAL_SCHEMA)
+
+    declarado = payload["preflight_digest"]
+    cuerpo = {k: v for k, v in payload.items() if k != "preflight_digest"}
+    equal(
+        "readiness: digest del preflight externo", sha256_bytes(canonical_json(cuerpo)), declarado
+    )
+    equal("readiness: estado del preflight externo", payload["status"], STATUS_READY_EXTERNAL)
+
+    local = json.loads((external_evidence.parent / READINESS_FILE).read_text("utf-8"))
+    sellado, _, _ = load_local_evidence(external_evidence.parent / READINESS_FILE)
+    equal("readiness: el preflight describe otro manifiesto", sellado, local)
+    for clave in ("disease_id", "release_id"):
+        equal(f"readiness: {clave} del preflight", payload[clave], sellado[clave])
+    equal(
+        "readiness: local_manifest_digest del preflight",
+        payload["local_manifest_digest"],
+        sellado["manifest_digest"],
+    )
+
+    require(
+        isinstance(payload["inventory_digest"], str)
+        and bool(_SHA256.fullmatch(payload["inventory_digest"])),
+        "readiness: inventory_digest del preflight no es un sha256",
+    )
+    require(
+        isinstance(payload["planned_steps"], list)
+        and all(isinstance(p, str) for p in payload["planned_steps"]),
+        "readiness: planned_steps del preflight no es una lista de pasos",
+    )
+    ajenos = [
+        p
+        for p in payload["planned_steps"]
+        if p.split(":")[1].split("->")[0] not in managed_tables()
+    ]
+    require(not ajenos, f"readiness: el preflight declara pasos fuera del namespace: {ajenos}")
+    _exige_forma_cerrada(
+        payload["workbook"], ("digest", "tables", "tableau_desktop_validated"), "workbook"
+    )
+    require(
+        payload["workbook"]["tableau_desktop_validated"] is False,
+        "readiness: el preflight se declara validado en Tableau Desktop, y eso es un gate manual",
+    )
+    equal("readiness: tablas del workbook", sorted(payload["workbook"]["tables"]), sorted(TABLES))
+    return dict(payload)
 
 
 def _abrir_sink(staging: str, sink_factory: Any) -> Any:
@@ -679,6 +800,7 @@ __all__ = [
     "STATUS_PASS_LOCAL",
     "build_parser",
     "check_evidence_root",
+    "load_external_preflight",
     "load_local_evidence",
     "main",
     "resolve_release_target",

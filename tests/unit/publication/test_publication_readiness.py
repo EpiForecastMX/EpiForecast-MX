@@ -33,6 +33,7 @@ from scripts.publication_readiness import (
     STATUS_FAIL,
     STATUS_PASS_LOCAL,
     check_evidence_root,
+    load_external_preflight,
     main,
     resolve_release_target,
     run_external_readonly,
@@ -810,3 +811,272 @@ def test_ningun_centinela_aparece_en_stdout_ni_en_ningun_archivo(sede, tmp_path)
         crudo = archivo.read_bytes().decode("utf-8", errors="replace")
         for centinela in centinelas:
             assert centinela not in crudo, f"{centinela} en {archivo.name}"
+
+
+# ── Regresiones de la auditoría R122 ──────────────────────────────────────────────────────────
+REPO = Path(__file__).resolve().parents[3]
+
+
+def _resellar_externo(ruta: Path, **cambios) -> Path:
+    from epiforecast.runner.release_contract import canonical_json, sha256_bytes
+
+    payload = json.loads(ruta.read_text("utf-8"))
+    for clave, valor in cambios.items():
+        if "." in clave:
+            padre, hijo = clave.split(".", 1)
+            payload[padre] = {**payload[padre], hijo: valor}
+        else:
+            payload[clave] = valor
+    payload.pop("preflight_digest", None)
+    payload["preflight_digest"] = sha256_bytes(canonical_json(payload))
+    ruta.write_text(json.dumps(payload), encoding="utf-8")
+    return ruta
+
+
+def test_una_evidencia_copiada_a_una_ruta_versionable_se_rechaza(sede, tmp_path):
+    """R122-P0: mover un árbol válido no puede convertir `reports/` en destino legítimo."""
+    from shutil import copytree, rmtree
+
+    _local(sede, tmp_path / "ev")
+    destino = REPO / "reports" / "_a2_readiness_test"
+    fabrica, estado = _contador()
+    try:
+        copytree(tmp_path / "ev", destino)
+        with pytest.raises(ArtifactValidationError, match="no se versiona"):
+            run_external_readonly(
+                local_evidence=destino / "readiness_manifest.json",
+                entorno=_entorno(),
+                sink_factory=fabrica,
+            )
+        assert estado["n"] == 0, "se abrió el sink desde una ruta versionable"
+        assert not (destino / "external_preflight.json").exists(), "escribió en el repositorio"
+    finally:
+        rmtree(destino, ignore_errors=True)
+
+
+def test_la_evidencia_bajo_runs_del_repositorio_si_vale(sede, tmp_path):
+    from shutil import copytree, rmtree
+
+    _local(sede, tmp_path / "ev")
+    destino = REPO / "runs" / "_a2_readiness_test"
+    fabrica, estado = _contador()
+    try:
+        copytree(tmp_path / "ev", destino)
+        reporte = run_external_readonly(
+            local_evidence=destino / "readiness_manifest.json",
+            entorno=_entorno(),
+            sink_factory=fabrica,
+        )
+        assert reporte["status"] == "PASS_EXTERNAL_READONLY"
+        assert estado["n"] == 1
+        assert (destino / "external_preflight.json").is_file()
+    finally:
+        rmtree(destino, ignore_errors=True)
+
+
+def test_la_evidencia_bajo_el_temporal_real_tambien(sede, tmp_path):
+    """`tmp_path` ya vive bajo la raíz temporal del sistema: es el caso positivo por defecto."""
+    import tempfile
+
+    assert tmp_path.resolve().is_relative_to(Path(tempfile.gettempdir()).resolve())
+    _local(sede, tmp_path / "ev")
+    fabrica, estado = _contador()
+    reporte = run_external_readonly(
+        local_evidence=tmp_path / "ev" / "readiness_manifest.json",
+        entorno=_entorno(),
+        sink_factory=fabrica,
+    )
+    assert reporte["status"] == "PASS_EXTERNAL_READONLY"
+    assert estado["n"] == 1
+
+
+def test_un_symlink_desde_runs_hacia_el_repositorio_se_rechaza(sede, tmp_path):
+    """La ruta se resuelve antes de decidir: declarar `runs/` no basta si apunta a otro sitio."""
+    from shutil import copytree, rmtree
+
+    _local(sede, tmp_path / "ev")
+    real = REPO / "reports" / "_a2_readiness_link_target"
+    puente = REPO / "runs" / "_a2_readiness_link"
+    fabrica, estado = _contador()
+    try:
+        copytree(tmp_path / "ev", real)
+        puente.parent.mkdir(parents=True, exist_ok=True)
+        puente.symlink_to(real, target_is_directory=True)
+        with pytest.raises(ArtifactValidationError, match="no se versiona"):
+            run_external_readonly(
+                local_evidence=puente / "readiness_manifest.json",
+                entorno=_entorno(),
+                sink_factory=fabrica,
+            )
+        assert estado["n"] == 0
+        assert not (real / "external_preflight.json").exists()
+    finally:
+        puente.unlink(missing_ok=True)
+        rmtree(real, ignore_errors=True)
+
+
+# ── Inventario exacto ─────────────────────────────────────────────────────────────────────────
+def _mutar_inventario(ruta: Path, mutacion) -> Path:
+    payload = json.loads(ruta.read_text("utf-8"))
+    payload["shard_files"] = mutacion(dict(payload["shard_files"]))
+    return _resellar(ruta, shard_files=payload["shard_files"])
+
+
+@pytest.mark.parametrize(
+    ("nombre", "mutacion"),
+    [
+        ("entrada ausente", lambda f: {k: v for k, v in f.items() if "corpus" not in k}),
+        ("entrada extra", lambda f: {**f, "web/inventado.csv": "0" * 64}),
+        ("digest distinto", lambda f: {**f, "reports/report.md": "0" * 64}),
+    ],
+)
+def test_un_inventario_que_no_coincide_con_el_shard_se_rechaza(sede, tmp_path, nombre, mutacion):
+    """R122-P1: comprobar sólo lo declarado dejaba pasar un inventario que afirmaba de menos."""
+    _local(sede, tmp_path / "ev")
+    manifiesto = _mutar_inventario(tmp_path / "ev" / "readiness_manifest.json", mutacion)
+    fabrica, estado = _contador()
+
+    with pytest.raises(ArtifactValidationError):
+        run_external_readonly(local_evidence=manifiesto, entorno=_entorno(), sink_factory=fabrica)
+    assert estado["n"] == 0, f"«{nombre}» llegó al borde externo"
+
+
+@pytest.mark.parametrize("ruta", ["", "/etc/passwd", "../fuera.md", "./reports/report.md"])
+def test_una_ruta_invalida_en_el_inventario_se_rechaza(sede, tmp_path, ruta):
+    _local(sede, tmp_path / "ev")
+    fabrica, estado = _contador()
+
+    def mutacion(files):
+        files.pop("reports/report.md", None)
+        files[ruta] = "0" * 64
+        return files
+
+    # Se altera también el manifiesto del shard —con el MISMO canonical_json que usa el código—
+    # para que el inventario exacto coincida y lo que se mide sea la comprobación de la RUTA.
+    from epiforecast.runner.release_contract import canonical_json, sha256_bytes
+
+    reporte_ruta = tmp_path / "ev" / "readiness_manifest.json"
+    payload = json.loads(reporte_ruta.read_text("utf-8"))
+    shard_manifest = tmp_path / "ev" / payload["shard_relative_root"] / "shard_manifest.json"
+    sm = json.loads(shard_manifest.read_text("utf-8"))
+    sm["files"] = mutacion(dict(sm["files"]))
+    shard_manifest.write_bytes(canonical_json(sm))
+    _resellar(
+        reporte_ruta,
+        shard_files=sm["files"],
+        shard_manifest_digest=sha256_bytes(canonical_json(sm)),
+        shard_tree_digest=_digest_arbol(tmp_path / "ev" / payload["shard_relative_root"]),
+    )
+
+    with pytest.raises(ArtifactValidationError) as exc:
+        run_external_readonly(
+            local_evidence=reporte_ruta, entorno=_entorno(), sink_factory=fabrica
+        )
+    motivos = ("ruta absoluta", "componentes relativos", "ruta vacía", "forma canónica")
+    assert any(m in str(exc.value) for m in motivos), f"rechazado por otra frontera: {exc.value}"
+    assert estado["n"] == 0
+
+
+def _digest_arbol(raiz: Path) -> str:
+    from epiforecast.runner.release_contract import canonical_json, sha256_bytes
+
+    archivos = {
+        p.relative_to(raiz).as_posix(): sha256_bytes(p.read_bytes())
+        for p in sorted(raiz.rglob("*"))
+        if p.is_file()
+    }
+    return sha256_bytes(canonical_json(archivos))
+
+
+def test_un_symlink_plantado_como_archivo_del_shard_se_rechaza(sede, tmp_path):
+    reporte = _local(sede, tmp_path / "ev")
+    shard = tmp_path / "ev" / "compile_a" / af.DISEASE / reporte["release_id"]
+    informe = shard / "reports" / "report.md"
+    fuera = tmp_path / "afuera.md"
+    fuera.write_bytes(informe.read_bytes())
+    informe.unlink()
+    informe.symlink_to(fuera)
+    fabrica, estado = _contador()
+
+    with pytest.raises(ArtifactValidationError, match="symlink"):
+        run_external_readonly(
+            local_evidence=tmp_path / "ev" / "readiness_manifest.json",
+            entorno=_entorno(),
+            sink_factory=fabrica,
+        )
+    assert estado["n"] == 0
+
+
+# ── Loader gobernante del preflight externo ───────────────────────────────────────────────────
+def _con_preflight(sede: Path, tmp_path: Path) -> Path:
+    _local(sede, tmp_path / "ev")
+    fabrica, _ = _contador()
+    run_external_readonly(
+        local_evidence=tmp_path / "ev" / "readiness_manifest.json",
+        entorno=_entorno(),
+        sink_factory=fabrica,
+    )
+    return tmp_path / "ev" / "external_preflight.json"
+
+
+def test_el_loader_externo_recomputa_y_cruza_los_tres_artefactos(sede, tmp_path):
+    ruta = _con_preflight(sede, tmp_path)
+    payload = load_external_preflight(ruta)
+
+    local = json.loads((tmp_path / "ev" / "readiness_manifest.json").read_text("utf-8"))
+    assert payload["status"] == "PASS_EXTERNAL_READONLY"
+    assert payload["local_manifest_digest"] == local["manifest_digest"]
+    assert payload["disease_id"] == local["disease_id"]
+    assert payload["workbook"]["tableau_desktop_validated"] is False
+    assert sorted(payload) == sorted(EXTERNAL_KEYS)
+
+
+def test_el_loader_externo_no_abre_sink_ni_escribe(sede, tmp_path):
+    ruta = _con_preflight(sede, tmp_path)
+    antes = {p: p.read_bytes() for p in _archivos(tmp_path / "ev")}
+    load_external_preflight(ruta)
+    despues = {p: p.read_bytes() for p in _archivos(tmp_path / "ev")}
+    assert antes == despues, "el loader escribió o movió algo"
+
+
+@pytest.mark.parametrize(
+    "cambio",
+    [
+        {"schema": "external_preflight.v2"},
+        {"status": "FAIL"},
+        {"disease_id": "padecimiento_fabricado"},
+        {"release_id": "release_fabricado"},
+        {"local_manifest_digest": "0" * 64},
+        {"inventory_digest": "no-es-un-digest"},
+        {"planned_steps": ["write:tabla_ajena"]},
+        {"workbook.tableau_desktop_validated": True},
+        {"workbook.tables": ["scaffold", "real"]},
+    ],
+)
+def test_mutar_una_clave_gobernante_del_externo_se_rechaza(sede, tmp_path, cambio):
+    """Resellar la capa exterior no vuelve verdadero lo que el artefacto afirma."""
+    ruta = _resellar_externo(_con_preflight(sede, tmp_path), **cambio)
+    with pytest.raises(ArtifactValidationError):
+        load_external_preflight(ruta)
+
+
+def test_el_digest_del_externo_se_recomputa_no_se_copia(sede, tmp_path):
+    ruta = _con_preflight(sede, tmp_path)
+    payload = json.loads(ruta.read_text("utf-8"))
+    payload["disease_id"] = "padecimiento_fabricado"  # sin volver a sellar
+    ruta.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ArtifactValidationError, match="digest del preflight externo"):
+        load_external_preflight(ruta)
+
+
+def test_el_loader_externo_exige_ubicacion_segura(sede, tmp_path):
+    from shutil import copytree, rmtree
+
+    _con_preflight(sede, tmp_path)
+    destino = REPO / "reports" / "_a2_preflight_test"
+    try:
+        copytree(tmp_path / "ev", destino)
+        with pytest.raises(ArtifactValidationError, match="no se versiona"):
+            load_external_preflight(destino / "external_preflight.json")
+    finally:
+        rmtree(destino, ignore_errors=True)
