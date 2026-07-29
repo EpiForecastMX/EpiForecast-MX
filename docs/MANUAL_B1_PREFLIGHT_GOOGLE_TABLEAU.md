@@ -196,11 +196,16 @@ equivalente a:
 Un PASS deja un artefacto junto al manifiesto local, y su digest se recomputa:
 
 ```text
-runs/readiness/<padecimiento>/external_preflight.json    schema external_preflight.v1
+runs/readiness/<padecimiento>/external_preflight.json    schema external_preflight.v2
 ```
 
 Un `BLOCKED_EXTERNAL` o un `FAIL` **no** lo sobrescriben: la evidencia de un preflight que sí pasó
 no se destruye por un intento posterior.
+
+El artefacto queda ligado a **las dos hojas** por una huella redactada —nunca por el id—, así que
+sólo se puede consumir con el mismo entorno con el que se produjo. Y antes de cualquier futura
+autorización de escritura habrá que revalidar el estado vivo, que sigue siendo de sólo lectura: la
+hoja y el plan tienen que seguir siendo los del preflight.
 
 El reporte debe contener, sin secretos:
 

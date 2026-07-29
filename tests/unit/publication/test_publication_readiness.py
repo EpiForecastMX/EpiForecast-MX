@@ -33,11 +33,13 @@ from scripts.publication_readiness import (
     STATUS_FAIL,
     STATUS_PASS_LOCAL,
     check_evidence_root,
+    identity_digest,
     load_external_preflight,
     main,
     resolve_release_target,
     run_external_readonly,
     run_local,
+    verify_external_preflight_live,
 )
 
 from epiforecast import registry
@@ -309,7 +311,7 @@ def test_el_externo_lee_dos_veces_y_no_escribe_nunca(sede, tmp_path):
     )
     assert reporte["status"] == "PASS_EXTERNAL_READONLY"
     assert len(reporte["inventory_digest"]) == 64
-    assert reporte["planned_steps"], "el plan se enseña"
+    assert reporte["promotion_plan"]["steps"], "el plan se enseña entero"
     assert reporte["workbook"]["tableau_desktop_validated"] is False
     assert sink.operaciones == [], "ni una operación de escritura"
 
@@ -336,7 +338,7 @@ def test_dos_inventarios_distintos_fallan_y_no_hay_plan(sede, tmp_path):
     )
     assert reporte["status"] == STATUS_FAIL
     assert "inventarios" in reporte["failure"]
-    assert "planned_steps" not in reporte
+    assert "promotion_plan" not in reporte
 
 
 @pytest.mark.parametrize("residuo", [SUFFIX_NEXT, SUFFIX_BACKUP])
@@ -597,7 +599,7 @@ def test_el_comando_del_manual_llega_al_sink_sin_shard_root(sede, tmp_path):
     assert rc == RC_OK, salida.getvalue()
     assert datos["status"] == "PASS_EXTERNAL_READONLY"
     assert estado["n"] == 1, "se autenticó exactamente una vez"
-    assert datos["planned_steps"]
+    assert datos["promotion_plan"]["steps"]
 
 
 def test_el_comando_documentado_en_el_manual_es_el_que_existe():
@@ -1021,7 +1023,7 @@ def _con_preflight(sede: Path, tmp_path: Path) -> Path:
 
 def test_el_loader_externo_recomputa_y_cruza_los_tres_artefactos(sede, tmp_path):
     ruta = _con_preflight(sede, tmp_path)
-    payload = load_external_preflight(ruta)
+    payload = load_external_preflight(ruta, entorno=_entorno())
 
     local = json.loads((tmp_path / "ev" / "readiness_manifest.json").read_text("utf-8"))
     assert payload["status"] == "PASS_EXTERNAL_READONLY"
@@ -1034,7 +1036,7 @@ def test_el_loader_externo_recomputa_y_cruza_los_tres_artefactos(sede, tmp_path)
 def test_el_loader_externo_no_abre_sink_ni_escribe(sede, tmp_path):
     ruta = _con_preflight(sede, tmp_path)
     antes = {p: p.read_bytes() for p in _archivos(tmp_path / "ev")}
-    load_external_preflight(ruta)
+    load_external_preflight(ruta, entorno=_entorno())
     despues = {p: p.read_bytes() for p in _archivos(tmp_path / "ev")}
     assert antes == despues, "el loader escribió o movió algo"
 
@@ -1042,13 +1044,13 @@ def test_el_loader_externo_no_abre_sink_ni_escribe(sede, tmp_path):
 @pytest.mark.parametrize(
     "cambio",
     [
-        {"schema": "external_preflight.v2"},
+        {"schema": "external_preflight.v3"},
         {"status": "FAIL"},
         {"disease_id": "padecimiento_fabricado"},
         {"release_id": "release_fabricado"},
         {"local_manifest_digest": "0" * 64},
         {"inventory_digest": "no-es-un-digest"},
-        {"planned_steps": ["write:tabla_ajena"]},
+        {"promotion_plan.steps": ["write:tabla_ajena"]},
         {"workbook.tableau_desktop_validated": True},
         {"workbook.tables": ["scaffold", "real"]},
     ],
@@ -1057,7 +1059,7 @@ def test_mutar_una_clave_gobernante_del_externo_se_rechaza(sede, tmp_path, cambi
     """Resellar la capa exterior no vuelve verdadero lo que el artefacto afirma."""
     ruta = _resellar_externo(_con_preflight(sede, tmp_path), **cambio)
     with pytest.raises(ArtifactValidationError):
-        load_external_preflight(ruta)
+        load_external_preflight(ruta, entorno=_entorno())
 
 
 def test_el_digest_del_externo_se_recomputa_no_se_copia(sede, tmp_path):
@@ -1066,7 +1068,7 @@ def test_el_digest_del_externo_se_recomputa_no_se_copia(sede, tmp_path):
     payload["disease_id"] = "padecimiento_fabricado"  # sin volver a sellar
     ruta.write_text(json.dumps(payload), encoding="utf-8")
     with pytest.raises(ArtifactValidationError, match="digest del preflight externo"):
-        load_external_preflight(ruta)
+        load_external_preflight(ruta, entorno=_entorno())
 
 
 def test_el_loader_externo_exige_ubicacion_segura(sede, tmp_path):
@@ -1077,6 +1079,204 @@ def test_el_loader_externo_exige_ubicacion_segura(sede, tmp_path):
     try:
         copytree(tmp_path / "ev", destino)
         with pytest.raises(ArtifactValidationError, match="no se versiona"):
-            load_external_preflight(destino / "external_preflight.json")
+            load_external_preflight(destino / "external_preflight.json", entorno=_entorno())
     finally:
         rmtree(destino, ignore_errors=True)
+
+
+# ── Regresiones de la auditoría R124 ──────────────────────────────────────────────────────────
+OTRO_STAGING = "CENTINELA-OTRA-HOJA-DE-STAGING-DISTINTA"
+
+
+def _preflight(sede, tmp_path, entorno=None, sink=None):
+    _local(sede, tmp_path / "ev")
+    fabrica = sink or _contador()[0]
+    run_external_readonly(
+        local_evidence=tmp_path / "ev" / "readiness_manifest.json",
+        entorno=entorno or _entorno(),
+        sink_factory=fabrica,
+    )
+    return tmp_path / "ev" / "external_preflight.json"
+
+
+def test_dos_hojas_de_staging_distintas_dan_preflights_distintos(sede, tmp_path):
+    """R124-P0: dos hojas vacías tienen el mismo inventario y el mismo plan. La huella las separa."""
+    a = json.loads(_preflight(sede, tmp_path / "a").read_text("utf-8"))
+    b = json.loads(
+        _preflight(
+            sede, tmp_path / "b", entorno=_entorno(**{STAGING_ID_ENV: OTRO_STAGING})
+        ).read_text("utf-8")
+    )
+    assert a["inventory_digest"] == b["inventory_digest"], "el estado de la hoja sí es el mismo"
+    assert a["promotion_plan"] == b["promotion_plan"], "y el plan también"
+    assert a["staging_identity_digest"] != b["staging_identity_digest"], "pero la hoja no"
+    assert a["preflight_digest"] != b["preflight_digest"]
+    # La huella no es el id ni lo contiene.
+    for centinela in (CENTINELA_ID, OTRO_STAGING, ID_PRODUCCION):
+        assert centinela not in json.dumps(a) and centinela not in json.dumps(b)
+
+
+def test_el_mismo_id_en_los_dos_papeles_no_da_la_misma_huella():
+    """Separación de contexto: confundir las variables tiene que notarse."""
+    assert identity_digest("c7-staging", "X") != identity_digest("c7-production", "X")
+
+
+@pytest.mark.parametrize("variable", [STAGING_ID_ENV, PRODUCTION_ID_ENV])
+def test_el_loader_rechaza_un_preflight_producido_para_otra_hoja(sede, tmp_path, variable):
+    ruta = _preflight(sede, tmp_path)
+    otro = _entorno(**{variable: "CENTINELA-HOJA-QUE-NO-ES"})
+    with pytest.raises(ArtifactValidationError, match="hoja"):
+        load_external_preflight(ruta, entorno=otro)
+
+
+def test_el_loader_no_acepta_contexto_implicito(sede, tmp_path):
+    ruta = _preflight(sede, tmp_path)
+    with pytest.raises(ArtifactValidationError, match="entorno explícito"):
+        load_external_preflight(ruta)
+    with pytest.raises(ArtifactValidationError, match=PRODUCTION_ID_ENV):
+        load_external_preflight(ruta, entorno={STAGING_ID_ENV: CENTINELA_ID})
+
+
+def test_el_workbook_se_reproduce_con_la_hoja_vigente(sede, tmp_path):
+    """A.3.4: si el workbook sellado no se reproduce con el id de hoy, la evidencia es de otra hoja."""
+    ruta = _preflight(sede, tmp_path)
+    assert load_external_preflight(ruta, entorno=_entorno())["workbook"]["digest"]
+
+    # Se altera SÓLO el digest del workbook y se resella: la reproducción local lo delata.
+    _resellar_externo(ruta, **{"workbook.digest": "0" * 64})
+    with pytest.raises(ArtifactValidationError, match="no se reproduce con la hoja vigente"):
+        load_external_preflight(ruta, entorno=_entorno())
+
+
+def test_la_forma_v1_se_rechaza_sin_migrar(sede, tmp_path):
+    ruta = _resellar_externo(_preflight(sede, tmp_path), schema="external_preflight.v1")
+    with pytest.raises(ArtifactValidationError, match="no se migra ni se acepta"):
+        load_external_preflight(ruta, entorno=_entorno())
+
+
+# ── El plan sellado entero ────────────────────────────────────────────────────────────────────
+def test_el_preflight_sella_el_plan_completo(sede, tmp_path):
+    payload = load_external_preflight(_preflight(sede, tmp_path), entorno=_entorno())
+    plan = payload["promotion_plan"]
+    assert sorted(plan) == ["digests", "namespace", "rows", "schema", "steps"]
+    assert plan["schema"] == "tableau_runner_promotion.v1"
+    assert sorted(plan["namespace"]) == sorted([TABLE_FORECAST, TABLE_RELEASES])
+    local = json.loads((tmp_path / "ev" / "readiness_manifest.json").read_text("utf-8"))
+    assert plan["digests"] == local["table_digests"]
+    assert plan["rows"] == local["tables"]
+
+
+@pytest.mark.parametrize(
+    "cambio",
+    [
+        {"promotion_plan.schema": "otro_schema.v1"},
+        {"promotion_plan.namespace": [TABLE_FORECAST]},
+        {"promotion_plan.rows": {TABLE_FORECAST: 1, TABLE_RELEASES: 1}},
+        {"promotion_plan.digests": {TABLE_FORECAST: "0" * 64, TABLE_RELEASES: "0" * 64}},
+        {"promotion_plan.steps": ["write:runner_forecast__next", "drop:scaffold"]},
+    ],
+)
+def test_mutar_el_plan_sellado_y_resellar_por_fuera_se_rechaza(sede, tmp_path, cambio):
+    ruta = _resellar_externo(_preflight(sede, tmp_path), **cambio)
+    with pytest.raises(ArtifactValidationError):
+        load_external_preflight(ruta, entorno=_entorno())
+
+
+@pytest.mark.parametrize(
+    "paso",
+    [
+        "",
+        "malformed",
+        "runner_forecast",
+        "borrar:runner_forecast",
+        "rename:runner_forecast->",
+        "rename:runner_forecast",
+        "write:runner_forecast->runner_releases",
+        "drop:scaffold",
+        "write:tabla_ajena",
+        ":runner_forecast",
+    ],
+)
+def test_un_paso_malformado_da_error_de_dominio_y_no_uno_incidental(sede, tmp_path, paso):
+    """R124-P1: `p.split(':')[1]` convertía un artefacto inválido en un fallo accidental del parser."""
+    ruta = _resellar_externo(_preflight(sede, tmp_path), **{"promotion_plan.steps": [paso]})
+    with pytest.raises(ArtifactValidationError) as exc:
+        load_external_preflight(ruta, entorno=_entorno())
+    assert not isinstance(exc.value, (IndexError, KeyError, TypeError))
+    assert str(exc.value).startswith("readiness:"), "el rechazo tiene que ser de dominio"
+
+
+# ── Verificador vivo, sólo lectura ────────────────────────────────────────────────────────────
+class _SinkConIdentidad(_SinkTrazado):
+    def __init__(self, inicial=None, spreadsheet_id=CENTINELA_ID):
+        super().__init__(inicial)
+        self.spreadsheet_id = spreadsheet_id
+
+
+def test_el_estado_vivo_identico_pasa(sede, tmp_path):
+    sink = _SinkConIdentidad()
+    ruta = _preflight(sede, tmp_path, sink=lambda _: sink)
+    resultado = verify_external_preflight_live(
+        ruta, entorno=_entorno(), sink_factory=lambda _: sink
+    )
+    assert resultado["status"] == "PASS_EXTERNAL_READONLY"
+    assert resultado["mutating"] is False
+    assert sink.operaciones == [], "cero operaciones de escritura"
+
+
+def test_un_inventario_vivo_distinto_se_rechaza(sede, tmp_path):
+    ruta = _preflight(sede, tmp_path, sink=lambda _: _SinkConIdentidad())
+    movido = _SinkConIdentidad({TABLE_FORECAST: pd.DataFrame([{"x": "otra cosa"}])})
+    with pytest.raises(ArtifactValidationError, match="inventario vivo"):
+        verify_external_preflight_live(ruta, entorno=_entorno(), sink_factory=lambda _: movido)
+
+
+def test_un_plan_vivo_distinto_con_inventario_estable_se_rechaza(sede, tmp_path):
+    """El inventario puede coincidir y el plan no.
+
+    Se sella con una hoja vacía —plan de cuatro pasos, sin respaldos— y en vivo se le presenta una
+    hoja que reporta el mismo inventario a los dos sondeos pero que sí tiene una activa cuando se le
+    pregunta por el plan: mismo estado declarado, otro plan real.
+    """
+    ruta = _preflight(sede, tmp_path, sink=lambda _: _SinkConIdentidad())
+
+    class InventarioEstablePeroOtroPlan(_SinkConIdentidad):
+        def __init__(self):
+            super().__init__({TABLE_FORECAST: pd.DataFrame([{"x": "activa"}])})
+            self.sondeos = 0
+
+        def list_tables(self):
+            self.sondeos += 1
+            # Los dos primeros sondeos son los inventarios; el tercero, el del plan.
+            return [] if self.sondeos <= 2 else super().list_tables()
+
+    otro = InventarioEstablePeroOtroPlan()
+    with pytest.raises(ArtifactValidationError, match="plan vivo"):
+        verify_external_preflight_live(ruta, entorno=_entorno(), sink_factory=lambda _: otro)
+
+
+def test_un_sink_que_opera_sobre_otra_hoja_se_rechaza(sede, tmp_path):
+    ruta = _preflight(sede, tmp_path, sink=lambda _: _SinkConIdentidad())
+    ajeno = _SinkConIdentidad(spreadsheet_id="CENTINELA-HOJA-EQUIVOCADA")
+    with pytest.raises(ArtifactValidationError, match="otra hoja"):
+        verify_external_preflight_live(ruta, entorno=_entorno(), sink_factory=lambda _: ajeno)
+
+
+def test_el_verificador_vivo_no_escribe_nada(sede, tmp_path):
+    sink = _SinkConIdentidad()
+    ruta = _preflight(sede, tmp_path, sink=lambda _: sink)
+    antes = {p: p.read_bytes() for p in _archivos(tmp_path / "ev")}
+    verify_external_preflight_live(ruta, entorno=_entorno(), sink_factory=lambda _: sink)
+    assert {p: p.read_bytes() for p in _archivos(tmp_path / "ev")} == antes
+    assert sink.operaciones == []
+
+
+def test_ningun_centinela_sobrevive_al_carril_externo_v2(sede, tmp_path):
+    sink = _SinkConIdentidad()
+    ruta = _preflight(sede, tmp_path, sink=lambda _: sink)
+    verify_external_preflight_live(ruta, entorno=_entorno(), sink_factory=lambda _: sink)
+    centinelas = (CENTINELA_ID, ID_PRODUCCION, OTRO_STAGING, "CENTINELA-CLAVE-PRIVADA")
+    for archivo in _archivos(tmp_path):
+        crudo = archivo.read_bytes().decode("utf-8", errors="replace")
+        for centinela in centinelas:
+            assert centinela not in crudo, f"{centinela} en {archivo.name}"

@@ -43,9 +43,11 @@ from epiforecast.publication.sheets_sink import (
     PRODUCTION_ID_ENV,
     SERVICE_ACCOUNT_ENV,
     STAGING_ID_ENV,
+    staging_ids,
 )
 from epiforecast.publication.status import load_declared_status
 from epiforecast.publication.tableau_adapter import (
+    PROMOTION_PLAN_SCHEMA,
     TABLES,
     TableauAdapterError,
     build_tables,
@@ -58,7 +60,10 @@ from epiforecast.runner.release_contract import canonical_json, sha256_bytes
 from epiforecast.runner.release_store import diff_trees, release_path
 
 READINESS_SCHEMA = "readiness_manifest.v1"
-EXTERNAL_SCHEMA = "external_preflight.v1"
+EXTERNAL_SCHEMA = "external_preflight.v2"
+# v1 no se migra ni se acepta por fallback: no existe ninguno productivo, y mantener dos
+# lectores es como se acaba aceptando en silencio una evidencia sin identidad de hoja.
+EXTERNAL_SCHEMA_RETIRADO = "external_preflight.v1"
 READINESS_FILE = "readiness_manifest.json"
 EXTERNAL_FILE = "external_preflight.json"
 
@@ -125,12 +130,27 @@ EXTERNAL_KEYS: tuple[str, ...] = (
     "inventory_digest",
     "local_manifest_digest",
     "manual_requirements_status",
-    "planned_steps",
     "preflight_digest",
+    "production_identity_digest",
+    "promotion_plan",
     "release_id",
     "schema",
+    "staging_identity_digest",
     "status",
     "workbook",
+)
+
+# Forma CERRADA del plan sellado: el contrato entero de `promotion_plan`, no sólo sus pasos.
+PLAN_KEYS: tuple[str, ...] = ("digests", "namespace", "rows", "schema", "steps")
+WORKBOOK_KEYS: tuple[str, ...] = ("digest", "tables", "tableau_desktop_validated")
+
+# Separación de contexto: el mismo id no puede producir el mismo fingerprint en los dos papeles.
+PURPOSE_STAGING = "c7-staging"
+PURPOSE_PRODUCTION = "c7-production"
+
+# Gramática CERRADA de un paso del plan. Se parsea, no se indexa el resultado de un `split`.
+_PASO = re.compile(
+    r"^(?P<verbo>write|rename|drop):(?P<origen>[A-Za-z0-9_]+)(?:->(?P<destino>[A-Za-z0-9_]+))?$"
 )
 
 # Claves que el manifiesto local y el shard tienen que declarar IGUAL. Copiar sin cruzar es lo que
@@ -179,6 +199,40 @@ def _ruta_relativa_segura(relativa: str, base: Path) -> Path:
     )
     require(destino.is_dir(), f"readiness: {relativa!r} no existe bajo la evidencia")
     return destino
+
+
+def identity_digest(purpose: str, identificador: str) -> str:
+    """Huella de una hoja SIN el id.
+
+    La evidencia tiene que poder decir qué hoja inspeccionó, y no puede decirlo escribiendo el id.
+    El `purpose` separa contextos: la misma hoja usada como staging y como producción no produce la
+    misma huella, así que confundir las variables no pasa desapercibido.
+    """
+    require(bool(identificador), f"readiness: no hay identificador para {purpose}")
+    return sha256_bytes(canonical_json({"purpose": purpose, "id": identificador}))
+
+
+def _check_paso(paso: Any) -> None:
+    """Valida un paso contra una gramática cerrada.
+
+    Antes se hacía `p.split(":")[1].split("->")[0]`: un paso malformado salía como `IndexError`, y
+    un artefacto inválido no puede escapar como fallo accidental del parser (R124-P1).
+    """
+    require(isinstance(paso, str), f"readiness: paso del plan que no es texto: {paso!r}")
+    encaje = _PASO.match(paso)
+    require(encaje is not None, f"readiness: paso fuera de la gramática del plan: {paso!r}")
+    assert encaje is not None  # noqa: S101 — para mypy
+    verbo, origen, destino = encaje.group("verbo"), encaje.group("origen"), encaje.group("destino")
+    require(
+        (verbo == "rename") == (destino is not None),
+        f"readiness: {paso!r} usa la flecha de forma incompatible con «{verbo}»",
+    )
+    gestionadas = managed_tables()
+    for tabla in (origen, destino):
+        require(
+            tabla is None or tabla in gestionadas,
+            f"readiness: {paso!r} nombra una tabla fuera del namespace administrado",
+        )
 
 
 def _archivo_del_inventario(relativo: str, raiz: Path) -> Path:
@@ -614,10 +668,8 @@ def run_external_readonly(
         require(not residuos, f"readiness: el sink conserva residuos {residuos}")
 
         plan = promotion_plan(sink, tablas)  # sólo lee: enseña el plan, no lo ejecuta
-        fuera = [
-            p for p in plan["steps"] if p.split(":")[1].split("->")[0] not in managed_tables()
-        ]
-        require(not fuera, f"readiness: el plan propone tocar algo ajeno: {fuera}")
+        for paso in plan["steps"]:
+            _check_paso(paso)
 
         xml = build_workbook_xml(
             tablas, spreadsheet_id=staging, label=local["shard"]["publication_label"]
@@ -637,7 +689,14 @@ def run_external_readonly(
         "status": STATUS_READY_EXTERNAL,
         "inventory_digest": primero["inventory_digest"],
         "foreign_tabs": [_redactar(t, sensibles) for t in primero["foreign"]],
-        "planned_steps": plan["steps"],
+        # El plan ENTERO, no sólo sus pasos: conservar la lista y tirar schema, conteos y digests
+        # deja al consumidor sin con qué comparar el plan vivo.
+        "promotion_plan": {clave: plan[clave] for clave in PLAN_KEYS},
+        # Qué hojas se inspeccionaron, sin decir cuáles: la evidencia queda atada a ellas.
+        "staging_identity_digest": identity_digest(PURPOSE_STAGING, staging),
+        "production_identity_digest": identity_digest(
+            PURPOSE_PRODUCTION, (env.get(PRODUCTION_ID_ENV) or "").strip()
+        ),
         "workbook": {
             "digest": sha256_bytes(xml),
             "tables": workbook["tables"],
@@ -655,17 +714,31 @@ def run_external_readonly(
     return {**reporte, "evidence_path": str(destino)}
 
 
-def load_external_preflight(external_evidence: Path) -> dict[str, Any]:
-    """Carga y VERIFICA un `external_preflight.v1` antes de que otro gate lo consuma.
+def load_external_preflight(
+    external_evidence: Path, *, entorno: Mapping[str, str] | None = None
+) -> dict[str, Any]:
+    """Carga y VERIFICA un `external_preflight.v2` contra el entorno vigente.
 
-    Función pura: no abre Google, no escribe nada. Existe para que el siguiente consumidor no
-    repita el error de confiar en un `preflight_digest` sin recomputarlo, que es exactamente el
-    fallo que A.1 cerró un nivel más abajo (R122-P1).
+    Función pura: no abre Google y no escribe. El entorno es **explícito y obligatorio**: aceptar un
+    PASS sin saber para qué hoja se produjo es exactamente la brecha de trazabilidad que cierra esta
+    versión (R124-P0). Dos hojas vacías tienen el mismo inventario y el mismo plan; lo único que las
+    distingue es su huella.
     """
     import json  # noqa: PLC0415
 
+    require(
+        entorno is not None,
+        "readiness: el loader externo exige el entorno explícito; no hay contexto implícito",
+    )
+    env = dict(entorno or {})
+    staging, produccion = staging_ids(env, require_production=True)
+
     check_evidence_root(external_evidence.parent)
     payload = json.loads(external_evidence.read_text("utf-8"))
+    require(
+        payload.get("schema") != EXTERNAL_SCHEMA_RETIRADO,
+        f"readiness: {EXTERNAL_SCHEMA_RETIRADO} no se migra ni se acepta; regenera el preflight",
+    )
     _exige_forma_cerrada(payload, EXTERNAL_KEYS, EXTERNAL_FILE)
     equal("readiness: schema del preflight externo", payload.get("schema"), EXTERNAL_SCHEMA)
 
@@ -676,9 +749,20 @@ def load_external_preflight(external_evidence: Path) -> dict[str, Any]:
     )
     equal("readiness: estado del preflight externo", payload["status"], STATUS_READY_EXTERNAL)
 
-    local = json.loads((external_evidence.parent / READINESS_FILE).read_text("utf-8"))
-    sellado, _, _ = load_local_evidence(external_evidence.parent / READINESS_FILE)
-    equal("readiness: el preflight describe otro manifiesto", sellado, local)
+    # ── identidad de las dos hojas, recomputada desde el entorno vigente ──
+    equal(
+        "readiness: el preflight se produjo para otra hoja de staging",
+        payload["staging_identity_digest"],
+        identity_digest(PURPOSE_STAGING, staging),
+    )
+    equal(
+        "readiness: el preflight declara otra hoja productiva",
+        payload["production_identity_digest"],
+        identity_digest(PURPOSE_PRODUCTION, produccion or ""),
+    )
+
+    # ── evidencia local: se carga con su propio loader, no se lee a mano ──
+    sellado, _, tablas = load_local_evidence(external_evidence.parent / READINESS_FILE)
     for clave in ("disease_id", "release_id"):
         equal(f"readiness: {clave} del preflight", payload[clave], sellado[clave])
     equal(
@@ -692,26 +776,96 @@ def load_external_preflight(external_evidence: Path) -> dict[str, Any]:
         and bool(_SHA256.fullmatch(payload["inventory_digest"])),
         "readiness: inventory_digest del preflight no es un sha256",
     )
-    require(
-        isinstance(payload["planned_steps"], list)
-        and all(isinstance(p, str) for p in payload["planned_steps"]),
-        "readiness: planned_steps del preflight no es una lista de pasos",
-    )
-    ajenos = [
-        p
-        for p in payload["planned_steps"]
-        if p.split(":")[1].split("->")[0] not in managed_tables()
-    ]
-    require(not ajenos, f"readiness: el preflight declara pasos fuera del namespace: {ajenos}")
-    _exige_forma_cerrada(
-        payload["workbook"], ("digest", "tables", "tableau_desktop_validated"), "workbook"
-    )
+    _check_plan_sellado(payload["promotion_plan"], tablas, sellado)
+
+    # ── el workbook se REPRODUCE con el id vigente: si no coincide, la evidencia es de otra hoja ──
+    _exige_forma_cerrada(payload["workbook"], WORKBOOK_KEYS, "workbook")
     require(
         payload["workbook"]["tableau_desktop_validated"] is False,
         "readiness: el preflight se declara validado en Tableau Desktop, y eso es un gate manual",
     )
+    xml = build_workbook_xml(
+        tablas, spreadsheet_id=staging, label=sellado["shard"]["publication_label"]
+    )
+    equal(
+        "readiness: el workbook sellado no se reproduce con la hoja vigente",
+        sha256_bytes(xml),
+        payload["workbook"]["digest"],
+    )
     equal("readiness: tablas del workbook", sorted(payload["workbook"]["tables"]), sorted(TABLES))
     return dict(payload)
+
+
+def _check_plan_sellado(plan: Any, tablas: Any, sellado: Mapping[str, Any]) -> None:
+    """El plan sellado, entero y cruzado contra las tablas que la evidencia local describe."""
+    require(isinstance(plan, dict), "readiness: promotion_plan no es un mapeo")
+    _exige_forma_cerrada(plan, PLAN_KEYS, "promotion_plan")
+    equal("readiness: schema del plan", plan["schema"], PROMOTION_PLAN_SCHEMA)
+    equal("readiness: namespace del plan", sorted(plan["namespace"]), sorted(TABLES))
+    equal(
+        "readiness: conteos del plan",
+        {k: int(v) for k, v in sorted(plan["rows"].items())},
+        {n: int(len(f)) for n, f in sorted(tablas.as_mapping().items())},
+    )
+    equal("readiness: digests del plan", dict(plan["digests"]), dict(sellado["table_digests"]))
+    require(isinstance(plan["steps"], list), "readiness: los pasos del plan no son una lista")
+    for paso in plan["steps"]:
+        _check_paso(paso)
+
+
+def verify_external_preflight_live(
+    external_evidence: Path,
+    *,
+    entorno: Mapping[str, str] | None = None,
+    sink_factory: Any = None,
+) -> dict[str, Any]:
+    """Revalida, SÓLO LEYENDO, que la hoja y el plan siguen siendo los del preflight.
+
+    Éste es el gate que una futura orden de escritura tendrá que ejecutar inmediatamente antes de la
+    primera mutación: un preflight de ayer no dice nada de la hoja de hoy. No escribe, no renombra,
+    no borra y no crea nada; aquí no se implementa ningún apply.
+    """
+    payload = load_external_preflight(external_evidence, entorno=entorno)
+    env = dict(entorno or {})
+    staging, _ = staging_ids(env, require_production=True)
+    _, _, tablas = load_local_evidence(external_evidence.parent / READINESS_FILE)
+
+    sink = _abrir_sink(staging, sink_factory)
+    # Si el sink sabe decir sobre qué hoja opera, se le exige que sea la solicitada.
+    declarada = getattr(sink, "spreadsheet_id", None)
+    require(
+        declarada is None or declarada == staging,
+        "readiness: el sink abierto opera sobre otra hoja distinta de la solicitada",
+    )
+
+    primero = table_inventory(sink, TABLES)
+    segundo = table_inventory(sink, TABLES)
+    equal(
+        "readiness: la hoja se movió entre dos inventarios consecutivos",
+        primero["inventory_digest"],
+        segundo["inventory_digest"],
+    )
+    equal(
+        "readiness: el inventario vivo no es el del preflight",
+        primero["inventory_digest"],
+        payload["inventory_digest"],
+    )
+
+    vivo = promotion_plan(sink, tablas)
+    equal(
+        "readiness: el plan vivo no es el sellado",
+        {clave: vivo[clave] for clave in PLAN_KEYS},
+        dict(payload["promotion_plan"]),
+    )
+    return {
+        "schema": EXTERNAL_SCHEMA,
+        "status": STATUS_READY_EXTERNAL,
+        "mutating": False,
+        "disease_id": payload["disease_id"],
+        "release_id": payload["release_id"],
+        "inventory_digest": primero["inventory_digest"],
+        "preflight_digest": payload["preflight_digest"],
+    }
 
 
 def _abrir_sink(staging: str, sink_factory: Any) -> Any:
@@ -800,10 +954,12 @@ __all__ = [
     "STATUS_PASS_LOCAL",
     "build_parser",
     "check_evidence_root",
+    "identity_digest",
     "load_external_preflight",
     "load_local_evidence",
     "main",
     "resolve_release_target",
     "run_external_readonly",
     "run_local",
+    "verify_external_preflight_live",
 ]
