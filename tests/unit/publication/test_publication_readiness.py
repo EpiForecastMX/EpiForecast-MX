@@ -20,11 +20,14 @@ import re
 import pandas as pd
 import pytest
 from scripts.publication_readiness import (
+    EXTERNAL_KEYS,
+    EXTERNAL_SCHEMA,
     LOCAL_SHEET_IDENTITY,
     MANUAL_REQUIREMENTS,
     RC_BLOCKED,
     RC_FAIL,
     RC_OK,
+    READINESS_KEYS,
     READINESS_SCHEMA,
     STATUS_BLOCKED_EXTERNAL,
     STATUS_FAIL,
@@ -531,3 +534,279 @@ def test_el_cli_local_falla_con_un_destino_versionable(sede, tmp_path):
     assert rc == RC_FAIL
     assert "no se versiona" in salida.getvalue()
     assert not re.search(r"«redactado»", salida.getvalue()), "una ruta local no es un secreto"
+
+
+# ── Regresiones de la auditoría R120 ──────────────────────────────────────────────────────────
+def _contador():
+    """Fábrica de sink que cuenta aperturas: si el rechazo es previo, tiene que quedar en cero."""
+    estado = {"n": 0}
+
+    def fabrica(_):
+        estado["n"] += 1
+        return _SinkTrazado({TABLE_FORECAST: pd.DataFrame([{"x": "vieja"}])})
+
+    return fabrica, estado
+
+
+def _resellar(ruta: Path, **cambios) -> Path:
+    """Altera el manifiesto y vuelve a sellar SÓLO la capa exterior: el digest propio."""
+    from epiforecast.runner.release_contract import canonical_json, sha256_bytes
+
+    payload = json.loads(ruta.read_text("utf-8"))
+    for clave, valor in cambios.items():
+        if "." in clave:
+            padre, hijo = clave.split(".", 1)
+            payload[padre] = {**payload[padre], hijo: valor}
+        else:
+            payload[clave] = valor
+    payload.pop("manifest_digest", None)
+    payload["manifest_digest"] = sha256_bytes(canonical_json(payload))
+    ruta.write_text(json.dumps(payload), encoding="utf-8")
+    return ruta
+
+
+def test_el_manifiesto_sella_la_ruta_relativa_y_el_arbol(sede, tmp_path):
+    """R120-P0-1: sin esto, el manifiesto no sabe dónde está su propio shard."""
+    reporte = _local(sede, tmp_path / "ev")
+    persistido = json.loads((tmp_path / "ev" / "readiness_manifest.json").read_text("utf-8"))
+
+    assert persistido["shard_relative_root"] == f"compile_a/{af.DISEASE}/{reporte['release_id']}"
+    assert len(persistido["shard_tree_digest"]) == 64
+    assert "evidence_path" not in persistido, "una ruta absoluta ata el artefacto a su máquina"
+    assert sorted(persistido) == sorted(READINESS_KEYS)
+
+
+def test_el_comando_del_manual_llega_al_sink_sin_shard_root(sede, tmp_path):
+    """R120-P0-1: el contrato de usuario es el CLI documentado, no el helper con parámetros."""
+    _local(sede, tmp_path / "ev")
+    fabrica, estado = _contador()
+    salida = io.StringIO()
+
+    rc = main(
+        [
+            "external-readonly",
+            "--local-evidence",
+            str(tmp_path / "ev" / "readiness_manifest.json"),
+        ],
+        entorno=_entorno(),
+        salida=salida,
+        sink_factory=fabrica,
+    )
+    datos = json.loads(salida.getvalue())
+    assert rc == RC_OK, salida.getvalue()
+    assert datos["status"] == "PASS_EXTERNAL_READONLY"
+    assert estado["n"] == 1, "se autenticó exactamente una vez"
+    assert datos["planned_steps"]
+
+
+def test_el_comando_documentado_en_el_manual_es_el_que_existe():
+    """Anti-deriva: el comando se extrae del propio manual, no se transcribe aquí."""
+    manual = (
+        Path(__file__).resolve().parents[3] / "docs" / "MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md"
+    ).read_text("utf-8")
+    bloques = re.findall(r"```zsh\n(.*?)```", manual, re.S)
+    externos = [b for b in bloques if "publication_readiness external-readonly" in b]
+    assert externos, "el manual ya no documenta el comando externo"
+
+    crudo = " ".join(externos[0].replace("\\\n", " ").split())
+    argv = crudo.split()[crudo.split().index("external-readonly") :]
+    assert argv[0] == "external-readonly"
+    assert "--shard-root" not in argv, (
+        "el manual no puede depender de una bandera de compatibilidad"
+    )
+    assert "--apply" not in crudo
+    # Y el parser real acepta exactamente esa forma.
+    from scripts.publication_readiness import build_parser
+
+    args = build_parser().parse_args(["external-readonly", "--local-evidence", "x.json"])
+    assert args.comando == "external-readonly"
+
+
+@pytest.mark.parametrize(
+    "ruta",
+    ["", "/etc/passwd", "../fuera", "compile_a/./x", "no_existe/aqui"],
+)
+def test_una_raiz_de_shard_insegura_o_ausente_se_rechaza_antes_del_sink(sede, tmp_path, ruta):
+    _local(sede, tmp_path / "ev")
+    manifiesto = _resellar(tmp_path / "ev" / "readiness_manifest.json", shard_relative_root=ruta)
+    fabrica, estado = _contador()
+
+    with pytest.raises(ArtifactValidationError):
+        run_external_readonly(local_evidence=manifiesto, entorno=_entorno(), sink_factory=fabrica)
+    assert estado["n"] == 0
+
+
+def test_un_symlink_que_sale_de_la_evidencia_se_rechaza(sede, tmp_path):
+    _local(sede, tmp_path / "ev")
+    fuera = tmp_path / "fuera"
+    fuera.mkdir()
+    (tmp_path / "ev" / "puente").symlink_to(fuera, target_is_directory=True)
+    manifiesto = _resellar(
+        tmp_path / "ev" / "readiness_manifest.json", shard_relative_root="puente"
+    )
+    fabrica, estado = _contador()
+
+    with pytest.raises(ArtifactValidationError, match="fuera del directorio de evidencia"):
+        run_external_readonly(local_evidence=manifiesto, entorno=_entorno(), sink_factory=fabrica)
+    assert estado["n"] == 0
+
+
+def test_shard_root_distinto_del_sellado_se_rechaza(sede, tmp_path):
+    reporte = _local(sede, tmp_path / "ev")
+    otro = tmp_path / "ev" / "compile_b" / af.DISEASE / reporte["release_id"]
+    fabrica, estado = _contador()
+
+    with pytest.raises(ArtifactValidationError, match="contradice la raíz sellada"):
+        run_external_readonly(
+            local_evidence=tmp_path / "ev" / "readiness_manifest.json",
+            entorno=_entorno(),
+            sink_factory=fabrica,
+            shard_root=otro,
+        )
+    assert estado["n"] == 0, "ni siquiera con un shard idéntico: la identidad la manda el sello"
+
+
+@pytest.mark.parametrize(
+    "cambio",
+    [
+        {"disease_id": "padecimiento_fabricado"},
+        {"release_id": "release_fabricado"},
+        {"shard_manifest_digest": "0" * 64},
+        {"shard_tree_digest": "0" * 64},
+        {"shard.publication_label": "otra etiqueta"},
+        {"shard.lifecycle": "published"},
+        {"shard.rows": 1},
+        {"shard.products": 1},
+        {"shard.channels_emitted": ["web"]},
+        {"table_digests": {"runner_forecast": "0" * 64, "runner_releases": "0" * 64}},
+    ],
+)
+def test_una_identidad_fabricada_no_gobierna_el_preflight(sede, tmp_path, cambio):
+    """R120-P0-2: resellar la capa exterior no basta; se cruza contra el shard que se consume."""
+    _local(sede, tmp_path / "ev")
+    manifiesto = _resellar(tmp_path / "ev" / "readiness_manifest.json", **cambio)
+    fabrica, estado = _contador()
+
+    with pytest.raises(ArtifactValidationError):
+        run_external_readonly(local_evidence=manifiesto, entorno=_entorno(), sink_factory=fabrica)
+    assert estado["n"] == 0, f"{cambio} llegó al borde externo"
+
+
+def test_el_digest_del_manifiesto_se_recomputa_no_se_copia(sede, tmp_path):
+    _local(sede, tmp_path / "ev")
+    ruta = tmp_path / "ev" / "readiness_manifest.json"
+    payload = json.loads(ruta.read_text("utf-8"))
+    payload["disease_id"] = "padecimiento_fabricado"  # sin volver a sellar
+    ruta.write_text(json.dumps(payload), encoding="utf-8")
+    fabrica, estado = _contador()
+
+    with pytest.raises(ArtifactValidationError, match="digest del manifiesto local"):
+        run_external_readonly(local_evidence=ruta, entorno=_entorno(), sink_factory=fabrica)
+    assert estado["n"] == 0
+
+
+def test_un_archivo_del_shard_alterado_se_rechaza_antes_del_sink(sede, tmp_path):
+    reporte = _local(sede, tmp_path / "ev")
+    informe = (
+        tmp_path
+        / "ev"
+        / "compile_a"
+        / af.DISEASE
+        / reporte["release_id"]
+        / "reports"
+        / "report.md"
+    )
+    informe.write_text("# informe alterado\n", encoding="utf-8")
+    fabrica, estado = _contador()
+
+    with pytest.raises(ArtifactValidationError, match="digest de reports/report.md"):
+        run_external_readonly(
+            local_evidence=tmp_path / "ev" / "readiness_manifest.json",
+            entorno=_entorno(),
+            sink_factory=fabrica,
+        )
+    assert estado["n"] == 0
+
+
+# ── Evidencia externa persistida (R120-P1) ────────────────────────────────────────────────────
+def test_un_pass_externo_deja_un_artefacto_cargable_y_recomputable(sede, tmp_path):
+    _local(sede, tmp_path / "ev")
+    fabrica, _ = _contador()
+    reporte = run_external_readonly(
+        local_evidence=tmp_path / "ev" / "readiness_manifest.json",
+        entorno=_entorno(),
+        sink_factory=fabrica,
+    )
+    assert reporte["status"] == "PASS_EXTERNAL_READONLY"
+
+    ruta = tmp_path / "ev" / "external_preflight.json"
+    persistido = json.loads(ruta.read_text("utf-8"))
+    assert sorted(persistido) == sorted(EXTERNAL_KEYS)
+    assert persistido["schema"] == EXTERNAL_SCHEMA
+
+    from epiforecast.runner.release_contract import canonical_json, sha256_bytes
+
+    cuerpo = {k: v for k, v in persistido.items() if k != "preflight_digest"}
+    assert sha256_bytes(canonical_json(cuerpo)) == persistido["preflight_digest"]
+    # Identidad cruzada con el local.
+    local = json.loads((tmp_path / "ev" / "readiness_manifest.json").read_text("utf-8"))
+    assert persistido["local_manifest_digest"] == local["manifest_digest"]
+    assert persistido["disease_id"] == local["disease_id"]
+
+
+@pytest.mark.parametrize("modo", ["bloqueado", "fallo"])
+def test_ni_un_fallo_ni_un_bloqueo_destruyen_un_pass_externo_previo(sede, tmp_path, modo):
+    _local(sede, tmp_path / "ev")
+    manifiesto = tmp_path / "ev" / "readiness_manifest.json"
+    fabrica, _ = _contador()
+    run_external_readonly(local_evidence=manifiesto, entorno=_entorno(), sink_factory=fabrica)
+
+    ruta = tmp_path / "ev" / "external_preflight.json"
+    antes = ruta.read_bytes()
+
+    if modo == "bloqueado":
+        reporte = run_external_readonly(
+            local_evidence=manifiesto,
+            entorno=_entorno(**{STAGING_ID_ENV: ""}),
+            sink_factory=fabrica,
+        )
+        assert reporte["status"] == STATUS_BLOCKED_EXTERNAL
+    else:
+
+        def revienta(_):
+            raise RuntimeError(f"la hoja {CENTINELA_ID} no abre")
+
+        reporte = run_external_readonly(
+            local_evidence=manifiesto, entorno=_entorno(), sink_factory=revienta
+        )
+        assert reporte["status"] == STATUS_FAIL
+        assert CENTINELA_ID not in json.dumps(reporte)
+
+    assert ruta.read_bytes() == antes, "la evidencia del PASS anterior se conservó intacta"
+
+
+def test_ningun_centinela_aparece_en_stdout_ni_en_ningun_archivo(sede, tmp_path):
+    """Gate 10: se busca en la salida del CLI y en todo lo que quedó en disco."""
+    _local(sede, tmp_path / "ev")
+    salida = io.StringIO()
+
+    def revienta(_):
+        raise RuntimeError(f"fallo con {CENTINELA_ID} y {CENTINELA_JSON}")
+
+    main(
+        [
+            "external-readonly",
+            "--local-evidence",
+            str(tmp_path / "ev" / "readiness_manifest.json"),
+        ],
+        entorno=_entorno(),
+        salida=salida,
+        sink_factory=revienta,
+    )
+    centinelas = (CENTINELA_ID, ID_PRODUCCION, "CENTINELA-CLAVE-PRIVADA")
+    for centinela in centinelas:
+        assert centinela not in salida.getvalue(), f"{centinela} en stdout"
+    for archivo in _archivos(tmp_path):
+        crudo = archivo.read_bytes().decode("utf-8", errors="replace")
+        for centinela in centinelas:
+            assert centinela not in crudo, f"{centinela} en {archivo.name}"

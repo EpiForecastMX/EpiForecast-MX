@@ -193,6 +193,15 @@ equivalente a:
 
 ## Paso 7 — resultado esperado
 
+Un PASS deja un artefacto junto al manifiesto local, y su digest se recomputa:
+
+```text
+runs/readiness/<padecimiento>/external_preflight.json    schema external_preflight.v1
+```
+
+Un `BLOCKED_EXTERNAL` o un `FAIL` **no** lo sobrescriben: la evidencia de un preflight que sí pasó
+no se destruye por un intento posterior.
+
 El reporte debe contener, sin secretos:
 
 ```text

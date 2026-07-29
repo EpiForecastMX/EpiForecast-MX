@@ -89,7 +89,106 @@ MANUAL_REQUIREMENTS: tuple[str, ...] = (
     "merge_deploy_and_public_smoke",
 )
 
+# Forma CERRADA del manifiesto local. Ni una clave más, ni una menos.
+READINESS_KEYS: tuple[str, ...] = (
+    "artifact_backend",
+    "declared_channels",
+    "disease_id",
+    "external_status",
+    "failures",
+    "gallery_enabled",
+    "manifest_digest",
+    "manual_requirements",
+    "manual_requirements_status",
+    "public_writes",
+    "release_id",
+    "reproducible",
+    "schema",
+    "selection_policy",
+    "shard",
+    "shard_files",
+    "shard_manifest_digest",
+    "shard_relative_root",
+    "shard_tree_digest",
+    "status",
+    "table_digests",
+    "tables",
+    "versions",
+    "workbook",
+)
+
+# Forma CERRADA del preflight externo.
+EXTERNAL_KEYS: tuple[str, ...] = (
+    "disease_id",
+    "environment_present",
+    "foreign_tabs",
+    "inventory_digest",
+    "local_manifest_digest",
+    "manual_requirements_status",
+    "planned_steps",
+    "preflight_digest",
+    "release_id",
+    "schema",
+    "status",
+    "workbook",
+)
+
+# Claves que el manifiesto local y el shard tienen que declarar IGUAL. Copiar sin cruzar es lo que
+# deja pasar una identidad fabricada (R120-P0-2).
+IDENTIDAD_CRUZADA: tuple[str, ...] = (
+    "lifecycle",
+    "rows",
+    "products",
+    "channels_emitted",
+    "publication_label",
+)
+
 _LARGO_SOSPECHOSO = re.compile(r"[A-Za-z0-9_\-]{32,}")
+
+
+def _digest_de_arbol(raiz: Path) -> str:
+    """Digest del árbol ENTERO: rutas relativas ordenadas con su digest. Identidad, no muestreo."""
+    archivos = {
+        p.relative_to(raiz).as_posix(): sha256_bytes(p.read_bytes())
+        for p in sorted(raiz.rglob("*"))
+        if p.is_file()
+    }
+    return sha256_bytes(canonical_json(archivos))
+
+
+def _ruta_relativa_segura(relativa: str, base: Path) -> Path:
+    """Resuelve una ruta declarada dentro de la evidencia, o falla.
+
+    Una ruta absoluta no es portable; `..` sale de la evidencia; un symlink puede apuntar a
+    cualquier parte. Se comprueban las tres, y sobre la ruta ya resuelta.
+    """
+    require(bool(relativa), "readiness: el manifiesto no declara shard_relative_root")
+    candidata = Path(relativa)
+    require(not candidata.is_absolute(), f"readiness: {relativa!r} es una ruta absoluta")
+    require(
+        all(parte not in ("..", ".") for parte in candidata.parts),
+        f"readiness: {relativa!r} contiene componentes relativos",
+    )
+    raiz = base.resolve()
+    destino = (raiz / candidata).resolve()
+    require(
+        destino.is_relative_to(raiz),
+        f"readiness: {relativa!r} resuelve fuera del directorio de evidencia",
+    )
+    require(destino.is_dir(), f"readiness: {relativa!r} no existe bajo la evidencia")
+    return destino
+
+
+def _exige_forma_cerrada(objeto: Mapping[str, Any], claves: Sequence[str], etiqueta: str) -> None:
+    vistas = sorted(objeto)
+    sobran = [k for k in vistas if k not in claves]
+    faltan = [k for k in claves if k not in vistas]
+    require(
+        not sobran and not faltan,
+        f"{etiqueta}: forma inesperada"
+        + (f" · faltan {faltan}" if faltan else "")
+        + (f" · sobran {sobran}" if sobran else ""),
+    )
 
 
 def _redactar_local(valor: str) -> str:
@@ -302,6 +401,10 @@ def run_local(
         "shard": hechos,
         "shard_files": dict(sorted(manifiesto["files"].items())),
         "shard_manifest_digest": sha256_bytes(canonical_json(manifiesto)),
+        # Ruta RELATIVA a la evidencia: el manifiesto tiene que ser portable y localizar su shard
+        # sin que nadie se lo pase por bandera (R120-P0-1). Nunca una ruta absoluta.
+        "shard_relative_root": arboles[0].relative_to(evidencia).as_posix(),
+        "shard_tree_digest": _digest_de_arbol(arboles[0]),
         "reproducible": {"compilations": len(arboles), "tree_differences": len(diferencias)},
         "tables": {n: int(len(f)) for n, f in sorted(tablas.as_mapping().items())},
         "table_digests": tablas.digests(),
@@ -322,7 +425,10 @@ def run_local(
     }
     destino = evidencia / READINESS_FILE
     cuerpo["manifest_digest"] = sha256_bytes(canonical_json(cuerpo))
+    _exige_forma_cerrada(cuerpo, READINESS_KEYS, READINESS_FILE)
     _escribir_atomico(destino, canonical_json(cuerpo))
+    # `evidence_path` viaja de vuelta al llamador pero NO se persiste: una ruta absoluta en un
+    # artefacto lo ata a la máquina que lo escribió.
     return {**cuerpo, "evidence_path": str(destino)}
 
 
@@ -342,6 +448,71 @@ def _entorno_externo(entorno: Mapping[str, str] | None) -> tuple[dict[str, bool]
     return presencia, faltan
 
 
+def load_local_evidence(
+    local_evidence: Path, *, shard_root: Path | None = None
+) -> tuple[dict[str, Any], Path, Any]:
+    """Carga la evidencia local y la CRUZA con el shard que dice describir.
+
+    Copiar el digest sin recomputarlo, y no comparar la identidad contra el shard que de verdad se
+    consume, dejaba pasar un manifiesto con `disease_id` y `release_id` fabricados: el plan y el
+    workbook salían del shard real y el reporte afirmaba otra cosa (R120-P0-2). Aquí toda
+    discrepancia falla **antes** de que exista un borde externo que abrir.
+    """
+    import json  # noqa: PLC0415
+
+    payload = json.loads(local_evidence.read_text("utf-8"))
+    _exige_forma_cerrada(payload, READINESS_KEYS, READINESS_FILE)
+    equal("readiness: schema de la evidencia local", payload.get("schema"), READINESS_SCHEMA)
+    require(
+        payload.get("status") == STATUS_PASS_LOCAL,
+        f"readiness: la evidencia local no está en {STATUS_PASS_LOCAL}",
+    )
+
+    # 1. El digest se RECOMPUTA sobre el payload sin su propio campo de digest.
+    declarado = payload["manifest_digest"]
+    cuerpo = {k: v for k, v in payload.items() if k != "manifest_digest"}
+    equal(
+        "readiness: digest del manifiesto local", sha256_bytes(canonical_json(cuerpo)), declarado
+    )
+
+    # 2. La raíz del shard sale del propio manifiesto, con containment.
+    raiz = _ruta_relativa_segura(payload["shard_relative_root"], local_evidence.parent)
+    if shard_root is not None:
+        equal(
+            "readiness: --shard-root contradice la raíz sellada",
+            shard_root.expanduser().resolve(),
+            raiz,
+        )
+
+    # 3. El shard entero: su manifiesto y TODOS sus archivos.
+    manifiesto = json.loads((raiz / "shard_manifest.json").read_text("utf-8"))
+    equal(
+        "readiness: digest del manifiesto del shard",
+        sha256_bytes(canonical_json(manifiesto)),
+        payload["shard_manifest_digest"],
+    )
+    for relativo, esperado in sorted(payload["shard_files"].items()):
+        archivo = raiz / relativo
+        require(archivo.is_file(), f"readiness: el shard no trae {relativo}")
+        equal(f"readiness: digest de {relativo}", sha256_bytes(archivo.read_bytes()), esperado)
+    equal(
+        "readiness: digest del árbol del shard",
+        _digest_de_arbol(raiz),
+        payload["shard_tree_digest"],
+    )
+
+    # 4. Identidad cruzada: no basta con que el manifiesto sea coherente consigo mismo.
+    for clave in ("disease_id", "release_id"):
+        equal(f"readiness: {clave} del shard", manifiesto[clave], payload[clave])
+    for clave in IDENTIDAD_CRUZADA:
+        equal(f"readiness: {clave} del shard", manifiesto[clave], payload["shard"][clave])
+
+    # 5. Las tablas se reconstruyen y se comparan contra los digests sellados.
+    tablas = build_tables(raiz)
+    equal("readiness: digests de las tablas", tablas.digests(), payload["table_digests"])
+    return payload, raiz, tablas
+
+
 def run_external_readonly(
     *,
     local_evidence: Path,
@@ -350,14 +521,7 @@ def run_external_readonly(
     shard_root: Path | None = None,
 ) -> dict[str, Any]:
     """Preflight externo de sólo lectura. Dos inventarios, plan en seco y workbook. Nada más."""
-    import json  # noqa: PLC0415
-
-    local = json.loads(local_evidence.read_text("utf-8"))
-    equal("readiness: schema de la evidencia local", local.get("schema"), READINESS_SCHEMA)
-    require(
-        local.get("status") == STATUS_PASS_LOCAL,
-        f"readiness: la evidencia local no está en {STATUS_PASS_LOCAL}",
-    )
+    local, raiz_shard, tablas = load_local_evidence(local_evidence, shard_root=shard_root)
 
     presencia, faltan = _entorno_externo(entorno)
     base: dict[str, Any] = {
@@ -390,8 +554,6 @@ def run_external_readonly(
         residuos = [t for t in primero["tables"] if t.endswith(("__next", "__backup"))]
         require(not residuos, f"readiness: el sink conserva residuos {residuos}")
 
-        raiz_shard = shard_root if shard_root is not None else Path(local["evidence_path"]).parent
-        tablas = build_tables(raiz_shard)
         plan = promotion_plan(sink, tablas)  # sólo lee: enseña el plan, no lo ejecuta
         fuera = [
             p for p in plan["steps"] if p.split(":")[1].split("->")[0] not in managed_tables()
@@ -411,7 +573,7 @@ def run_external_readonly(
             "failure": _redactar(f"{type(exc).__name__}: {exc}", sensibles),
         }
 
-    return {
+    reporte = {
         **base,
         "status": STATUS_READY_EXTERNAL,
         "inventory_digest": primero["inventory_digest"],
@@ -423,6 +585,12 @@ def run_external_readonly(
             "tableau_desktop_validated": False,
         },
     }
+    reporte["preflight_digest"] = sha256_bytes(canonical_json(reporte))
+    _exige_forma_cerrada(reporte, EXTERNAL_KEYS, EXTERNAL_FILE)
+    # Sólo un PASS deja artefacto. Un FAIL o un bloqueo no pueden borrar la evidencia de un
+    # preflight anterior que sí pasó: destruirla sería perder lo único que gobierna el gate.
+    _escribir_atomico(local_evidence.parent / EXTERNAL_FILE, canonical_json(reporte))
+    return {**reporte, "evidence_path": str(local_evidence.parent / EXTERNAL_FILE)}
 
 
 def _abrir_sink(staging: str, sink_factory: Any) -> Any:
@@ -460,7 +628,9 @@ def main(
     *,
     entorno: Mapping[str, str] | None = None,
     salida: Any = None,
+    sink_factory: Any = None,
 ) -> int:
+    """`sink_factory` se inyecta en pruebas; no existe como bandera del CLI."""
     destino = sys.stdout if salida is None else salida
     args = build_parser().parse_args(argv)
     try:
@@ -475,6 +645,7 @@ def main(
                 local_evidence=args.local_evidence,
                 entorno=entorno,
                 shard_root=args.shard_root,
+                sink_factory=sink_factory,
             )
     except (ArtifactValidationError, TableauAdapterError, KeyError, OSError) as exc:
         redactar = _redactar_local if args.comando == CMD_LOCAL else _redactar
@@ -494,18 +665,21 @@ if __name__ == "__main__":  # pragma: no cover - entrada de proceso
 
 
 __all__ = [
+    "EXTERNAL_KEYS",
     "EXTERNAL_SCHEMA",
     "LOCAL_SHEET_IDENTITY",
     "MANUAL_REQUIREMENTS",
     "RC_BLOCKED",
     "RC_FAIL",
     "RC_OK",
+    "READINESS_KEYS",
     "READINESS_SCHEMA",
     "STATUS_BLOCKED_EXTERNAL",
     "STATUS_FAIL",
     "STATUS_PASS_LOCAL",
     "build_parser",
     "check_evidence_root",
+    "load_local_evidence",
     "main",
     "resolve_release_target",
     "run_external_readonly",
