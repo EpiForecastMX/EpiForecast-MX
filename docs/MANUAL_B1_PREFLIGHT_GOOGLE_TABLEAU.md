@@ -159,32 +159,36 @@ No pegues valores ni credenciales.
 
 ## Paso 6 — qué debe ejecutar el agente
 
-El agente debe:
-
-1. comprobar presencia de variables sin imprimirlas;
-2. comprobar `gspread==6.2.1`;
-3. reutilizar o recompilar el candidate determinista;
-4. ejecutar dos veces:
+Ya no es una receta de varios comandos encadenados a mano: es **uno solo**, y el mismo que ya se
+ejecutó en local sin credenciales.
 
 ```zsh
-.venv/bin/python -m scripts.tableau_staging inspect
+.venv/bin/python -m scripts.publication_readiness external-readonly \
+  --local-evidence runs/readiness/<padecimiento>/readiness_manifest.json
 ```
 
-5. comprobar que ambos inventarios coinciden;
-6. ejecutar:
+Ese comando, y sólo ese, hace en este orden:
+
+1. carga la evidencia local y exige que esté en `PASS_LOCAL`;
+2. comprueba **presencia** de las tres variables y que staging ≠ producción, sin imprimir ninguna;
+3. autentica **una vez** contra la hoja de staging;
+4. inventaría dos veces y exige el mismo `inventory_digest`;
+5. rechaza cualquier residuo `__next` o `__backup`;
+6. enseña el plan de staging **en seco**;
+7. regenera y verifica el workbook con el ID real de staging;
+8. se detiene.
+
+El carril local se cierra antes, sin nada de Google:
 
 ```zsh
-.venv/bin/python -m scripts.tableau_staging stage --shard RUTA_TEMPORAL_DEL_CANDIDATE
+make readiness DISEASE=<padecimiento> RELEASE=<ruta al bundle o su .dvc>
 ```
 
-7. generar el workbook bajo el temporal del sistema;
-8. verificar digests, etiqueta `0/4`, point-only y preservación;
-9. detenerse.
-
-En esta fase nunca debe aparecer:
+En esta fase no existe —ni en el CLI ni dentro del código— ninguna bandera, subcomando o llamada
+equivalente a:
 
 ```text
---apply
+--apply    recover    promote    delete
 ```
 
 ## Paso 7 — resultado esperado

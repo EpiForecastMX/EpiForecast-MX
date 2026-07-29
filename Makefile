@@ -532,6 +532,20 @@ web-dev: web-build
 	cd web_dashboard && npx serve -l 3000
 
 #################################################################################
+# 📦 PUBLICACION (C7)                                                          #
+#################################################################################
+
+.PHONY: readiness
+## Cierra el carril local de publicacion de un release y deja evidencia gitignored.
+##   make readiness DISEASE=<id> RELEASE=<ruta al bundle o su .dvc>
+## No usa red ni credenciales. Termina en PASS_LOCAL + BLOCKED_EXTERNAL.
+readiness:
+	$(PYTHON) -m scripts.publication_readiness local \
+		--disease $(DISEASE) \
+		--release-target $(RELEASE) \
+		--evidence-root runs/readiness/$(DISEASE)
+
+#################################################################################
 # 📖 HELP                                                                      #
 #################################################################################
 
