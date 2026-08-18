@@ -4,7 +4,7 @@
 > · Dashboard en `feat/c73-candidate-staging` @ `a044403d`.
 > Objetivo: una sola rama por repositorio, datos sincronizados y `make update-week` operativo.
 >
-> **ESTADO 2026-08-18: fases 0, 1 y 2 EJECUTADAS; fase 5 parcial.**
+> **ESTADO 2026-08-18: fases 0, 1, 2 y 3 EJECUTADAS; fase 5 parcial. Falta la fase 4.**
 > Auditado de forma independiente el mismo día: la convergencia es válida y C7 permanece intacto,
 > pero **el flujo semanal sigue siendo NO-GO**. Las correcciones de esa auditoría están incorporadas
 > en la bitácora, marcadas como tales. Ambos repositorios tienen ya una única rama
@@ -374,3 +374,88 @@ sitio                    200 en landing, epibot y knowledge.json · cero obesida
 4. **W31** — solo tras reparar la descarga bloqueada con 403.
 
 C7 permanece congelado en 1/4 durante todo lo anterior.
+
+
+---
+
+## 10. Fase 3 · ejecutada — 2026-08-18
+
+### 3a · scraper
+
+Causa aislada y corregida: gob.mx responde 403 al User-Agent por defecto de `requests`.
+Selenium ya navegaba con uno de navegador y por eso encontraba el boletín; la descarga
+directa no, así que lo localizaba y moría al pedirlo. El agente pasa a ser una constante
+única compartida. La descarga es ahora atómica (temporal contiguo, renombrado solo al
+validar), exige la firma `%PDF-` y un tamaño mínimo, y no deja residuos ni al fallar.
+
+Verificado contra el boletín real: **2,492,888 bytes, sha256 `4657affc…`**. Diez pruebas
+nuevas; se omiten donde no está el extra `scraping`.
+
+### 3b · flujo semanal
+
+El modo predeterminado pasa a ser **en seco**: prepara, calcula y escribe un manifiesto
+de lo que cambiaría, sin versionar ni publicar. Publicar es un comando aparte,
+`make update-week-apply`.
+
+El preflight aborta antes de tocar nada si algún repositorio no está en la rama que sirve
+el sitio, si hay cambios rastreados sin confirmar, si falta upstream, si hay archivos sin
+versionar en las rutas que sus descargas retirarían, o —solo al publicar— si el
+consolidado trae padecimientos fuera de la lista autorizada sin declarar
+`ALLOW_EXTRA_DISEASES=1`. Las descargas son dirigidas y sin forzar, el `git pull` es
+`--ff-only`, y se quitaron los `|| true` de las operaciones críticas.
+
+**Dos ajustes salidos de probarlo en ejecución, no de escribirlo:**
+
+1. El guard abortaba por los CSV de `data/raw/`, ruta que el flujo rediseñado **ya no
+   descarga**. Bloquear por un riesgo que el propio rediseño eliminó convierte al guard en
+   algo que la gente aprende a saltarse. Ahora aborta por lo que sus descargas pueden
+   retirar y **avisa** del resto: 793 archivos, de los cuales **790 son artefactos de
+   modelos de obesidad sin versionar ni respaldar**, un riesgo mayor que los tres CSV que
+   ya se respaldaron y que conviene resolver aparte.
+2. La lista de padecimientos bloqueaba también en seco, cuando solo concierne al
+   versionado.
+
+### 3c · sincronización del consolidado, pieza que faltaba
+
+`dvc pull` se negaba a bajar el consolidado y **tenía razón**: el archivo local es una
+superposición de lo versionado y de filas que solo existen en este disco. La orden que
+"arregla" ese error es `--force`, y lo que hace es borrar el trabajo local.
+
+`scripts/sincroniza_consolidado.py` hace lo contrario: trae la versión versionada a un
+temporal, exige que las filas compartidas coincidan y agrega solo las que faltan. Si una
+fila ya existente cambió de valor, se detiene: eso es una corrección de la fuente, no una
+semana nueva, y no le toca decidirlo a un script que corre solo. Ocho pruebas.
+
+### Corrida en seco completa
+
+```text
+preflight              PASS · avisos legibles
+consolidado            fusión aditiva, obesidad preservada
+dengue                 avanzó W27 -> W30 por sí solo
+neuro                  W30
+artefactos             galería, zoom, knowledge, índice y novedades regenerados
+publicado              NADA
+manifiesto             runs/_refresh/refresh_20260818_184029.txt
+```
+
+### Hallazgo colateral · un golden que medía datos
+
+`test_seleccion_productiva_legacy_congelada` congelaba `(disease, entidad, sexo, motor)`.
+El motor se re-selecciona con cada boletín, así que el hash cambiaba cada semana sin que
+nadie tocara el código: al incorporar las semanas 28 a 30 las 432 series quedaron
+idénticas en estructura y solo se movió la asignación.
+
+Se separó en dos: se congela la **estructura** (lo que un refactor del selector no puede
+cambiar) y se comprueba que cada motor pertenezca al conjunto válido de su cohorte. Lo
+segundo atrapa además un error que el hash no distinguía, porque un hash distinto no
+decía si el cambio era legítimo: asignar a dengue un motor de árboles, excluido por no
+extrapolar.
+
+### Estado al cierre de la fase 3
+
+```text
+suite                  2,372 pruebas · lint y typecheck PASS
+flujo semanal          OPERATIVO en seco; publicar sigue siendo un paso aparte
+pendiente              fase 4: correr --apply y verificar el sitio en vivo
+                       (requiere ALLOW_EXTRA_DISEASES=1 mientras obesidad esté en el consolidado)
+```
