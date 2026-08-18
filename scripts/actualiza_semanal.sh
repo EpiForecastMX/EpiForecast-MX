@@ -170,10 +170,15 @@ echo "    $(echo "$extras" | grep '^PRESENTES:' | sed 's/^PRESENTES://')"
 lista_extras="$(echo "$extras" | grep '^EXTRAS:' | sed 's/^EXTRAS://' || true)"
 if [ -n "$lista_extras" ]; then
   echo "    fuera de la lista autorizada: ${lista_extras}"
-  if [ "${ALLOW_EXTRA_DISEASES:-0}" != "1" ]; then
+  # Solo importa al versionar: en seco no se sube nada, asi que se informa y se sigue.
+  if [ "$MODE" = "apply" ] && [ "${ALLOW_EXTRA_DISEASES:-0}" != "1" ]; then
     fatal "el consolidado contiene padecimientos fuera de la lista autorizada (${lista_extras}). Versionarlo los sube al almacenamiento remoto. Declara ALLOW_EXTRA_DISEASES=1 si es lo que quieres."
   fi
-  echo "    ALLOW_EXTRA_DISEASES=1: se versionaran tambien"
+  if [ "$MODE" = "apply" ]; then
+    echo "    ALLOW_EXTRA_DISEASES=1: se versionaran tambien"
+  else
+    echo "    (en seco no se versiona; al publicar hara falta ALLOW_EXTRA_DISEASES=1)"
+  fi
 fi
 
 echo ""
