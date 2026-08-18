@@ -33,6 +33,22 @@ from selenium.webdriver.common.by import By
 # Config
 # ──────────────────────────────────────────────
 BASE_URL = "https://www.gob.mx"
+
+# gob.mx responde 403 a los User-Agent de cliente automatizado. Selenium ya navegaba con uno de
+# navegador, pero la descarga directa no, de modo que el scraper encontraba el boletin y fallaba al
+# bajarlo. Una sola fuente de verdad para ambos.
+BROWSER_USER_AGENT = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/131.0.0.0 Safari/537.36"
+)
+DOWNLOAD_HEADERS = {
+    "User-Agent": BROWSER_USER_AGENT,
+    "Accept": "application/pdf,*/*",
+    "Accept-Language": "es-MX,es;q=0.9",
+}
+PDF_MAGIC = b"%PDF-"
+MIN_PDF_BYTES = 1024
 TARGET_URL = (
     f"{BASE_URL}/salud/documentos/"
     "boletinepidemiologico-sistema-nacional-de-vigilancia-"
@@ -155,11 +171,7 @@ def scrape_bulletins() -> list[dict]:
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option("useAutomationExtension", False)
-    options.add_argument(
-        "user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-        "AppleWebKit/537.36 (KHTML, like Gecko) "
-        "Chrome/131.0.0.0 Safari/537.36"
-    )
+    options.add_argument(f"user-agent={BROWSER_USER_AGENT}")
 
     driver = webdriver.Chrome(options=options)
     # Borra navigator.webdriver antes de que cargue cualquier script de la pagina.
@@ -204,16 +216,43 @@ def scrape_bulletins() -> list[dict]:
     return bulletins
 
 
+class NotAPdfError(RuntimeError):
+    """La respuesta se descargo pero no es un PDF utilizable."""
+
+
 def download_pdf(url: str, dest: Path) -> None:
+    """Descarga un boletin de forma atomica y verificada.
+
+    Falla cerrado: si la respuesta no empieza con la firma de PDF o es demasiado
+    pequena para serlo, no deja archivo en destino. Escribe primero a un temporal
+    contiguo y solo entonces renombra, para que una descarga interrumpida no deje
+    un PDF truncado que el pipeline tomaria por bueno.
+    """
     log.info("Descargando: %s", url)
-    r = requests.get(url, stream=True, timeout=60)
-    r.raise_for_status()
     dest.parent.mkdir(parents=True, exist_ok=True)
-    with open(dest, "wb") as f:
-        for chunk in r.iter_content(8192):
-            if chunk:
-                f.write(chunk)
-    log.info("Guardado: %s", dest)
+    tmp = dest.with_name(dest.name + ".part")
+
+    try:
+        r = requests.get(url, stream=True, timeout=60, headers=DOWNLOAD_HEADERS)
+        r.raise_for_status()
+        with open(tmp, "wb") as f:
+            for chunk in r.iter_content(8192):
+                if chunk:
+                    f.write(chunk)
+
+        size = tmp.stat().st_size
+        if size < MIN_PDF_BYTES:
+            raise NotAPdfError(f"{url}: {size} bytes, demasiado pequeno para un boletin")
+        with open(tmp, "rb") as f:
+            magic = f.read(len(PDF_MAGIC))
+        if magic != PDF_MAGIC:
+            raise NotAPdfError(f"{url}: la respuesta no es un PDF (empieza con {magic!r})")
+
+        tmp.replace(dest)
+    finally:
+        tmp.unlink(missing_ok=True)
+
+    log.info("Guardado: %s (%d bytes)", dest, dest.stat().st_size)
 
 
 # ──────────────────────────────────────────────
