@@ -3,7 +3,10 @@
 > Fecha: 2026-08-18 · Repo principal en `feat/registry-padecimientos-obesidad` @ `cc4e8e01`
 > · Dashboard en `feat/c73-candidate-staging` @ `a044403d`.
 > Objetivo: una sola rama por repositorio, datos sincronizados y `make update-week` operativo.
-> Este documento es diagnóstico y plan. **No autoriza ejecutar nada.**
+>
+> **ESTADO 2026-08-18: fases 0, 1, 2 y 5 EJECUTADAS.** Ambos repositorios tienen ya una única rama
+> remota, `main`, con la integración continua en verde. Quedan pendientes la **fase 3** (reparar el
+> flujo semanal) y la **fase 4** (publicar las semanas 28 a 30). Bitácora al final del documento.
 
 ---
 
@@ -206,3 +209,83 @@ Faltan nueve días para el congreso y la presentación es el compromiso con fech
 
 **Recomendación:** Fase 0 hoy. Fases 1 a 4 en un bloque dedicado, no intercaladas con la
 presentación, porque tocan publicación en vivo y merecen atención completa.
+
+
+---
+
+## 8. Bitácora de ejecución — 2026-08-18
+
+### Fase 0 · asegurar lo insustituible — **hecha**
+
+Respaldo en `_backups/2026-08-18_pre-merge-main/`, verificado byte a byte contra los originales.
+El digest de anorexia (`2a7bb815…`) coincide con el documentado en CLAUDE.md, lo que confirma que
+es la extracción determinista ya validada.
+
+### Fase 1 · unificar el repositorio principal — **hecha**
+
+```text
+merge origin/main -> feature      sin conflictos, tres archivos
+estado C7 antes vs después        SIN CAMBIOS (diff vacío sobre 48 digests)
+prospective_status --check        rc=0 · 1/4 semanas · verdad observada intacta
+lint · typecheck                  PASS
+test-fast                         2,353 passed · 1 skipped · 62 deselected
+main                              fast-forward a a6acf301, publicado
+```
+
+### Fase 2 · unificar el dashboard — **hecha**
+
+```text
+menciones de obesidad en lo servido   6, todas en listas de "NO modelado" y comentarios
+npm test                              67/67
+main                                  fast-forward a a044403d, publicado
+sitio en vivo                         landing, epibot y knowledge.json responden 200
+obesidad en el sitio                  0 menciones
+```
+
+### Incidente · integración continua roja tras el primer envío, **resuelto**
+
+El typecheck falló en `main` con 14 errores en cinco archivos, **ninguno provocado por un cambio de
+código**. El flujo instala con `pip install -e ".[dev]"` sin fijar versiones y trajo mypy 1.20.2,
+numpy 2.5.2 y prophet 1.4.0, posteriores a las locales (1.19.1, 2.4.6, 1.3.0). Prophet 1.4 declara
+sus parámetros como `Literal`, así que pasar una cadena leída de configuración pasa a ser error; y
+numpy 2.5 con mypy 1.20 endurecen los operandos de union sobre `ExtensionArray`.
+
+Se fijaron las tres por debajo de esas versiones, siguiendo el precedente de `ruff`. **La razón no
+es solo el typecheck:** los 435 artefactos serializados en producción se generaron con prophet 1.3.x
+y numpy 2.4.x, de modo que permitir versiones futuras arbitrarias era un riesgo de reproducibilidad
+que nadie había declarado. Es el mismo patrón que rompió el flujo en junio.
+
+**Deuda registrada:** adaptar el código a las firmas nuevas para poder levantar los techos.
+
+```text
+CI tras el arreglo    Code Quality 4m37s PASS · Tests 5m02s PASS
+```
+
+### Fase 5 · higiene — **hecha en parte**
+
+Se borraron, tras verificar que `main` las contenía por completo, las dos ramas de trabajo
+(`feat/registry-padecimientos-obesidad` y `feat/c73-candidate-staging`) en local y en remoto, y
+`chore/patent-bundle-mechanical-fixes`, que no tenía ningún commit propio.
+
+**Ambos repositorios tienen ahora una única rama remota: `main`.**
+
+Quedan tres ramas **solo locales**, de febrero, residuos del reescrito de historial de junio:
+`Fork/aws-training-comparison-R5KGp`, `claude/aws-training-comparison-R5KGp` y
+`refactor/mlops-structure`. Sus commits "que main no tiene" son los mismos cambios con otro
+identificador, previos al reescrito. Se borran cuando se confirme que no guardan nada único.
+
+### Hallazgo adicional · el scraper falló hoy
+
+La ejecución programada `Scrape Boletines SINAVE` de hoy terminó en fallo, y es la razón de que no
+exista una semana 31. Encaja con el muro anti-robot intermitente de gob.mx ya documentado. No
+bloquea nada de lo anterior, pero conviene revisarlo antes del próximo lunes.
+
+### Estado al cierre
+
+```text
+principal    main @ cdb72853   CI verde
+dashboard    main @ a044403d   sitio sano, obesidad invisible
+datos        boletín neuro hasta 2026-W30 · dengue y obesidad en W27
+C7           intacto · obesidad trained · prospectiva 1/4
+sitio        sigue mostrando W27: falta la fase 4
+```
