@@ -123,8 +123,17 @@ except Exception as exc:  # noqa: BLE001
 anadidos = [p for p in (estado.get("uncommitted", {}).get("added", []) or []) if isinstance(p, str)]
 for p in sorted(p for p in anadidos if p.startswith(DESCARGA)):
     print(f"BLOQUEA:{p}")
-for p in sorted(p for p in anadidos if p.startswith(AVISO)):
-    print(f"AVISA:{p}")
+
+# El aviso se agrupa por directorio: listar cientos de artefactos de modelos uno a
+# uno vuelve ilegible el preflight y esconde lo que si importa.
+from collections import Counter  # noqa: E402
+
+grupos = Counter()
+for p in (p for p in anadidos if p.startswith(AVISO)):
+    partes = p.split("/")
+    grupos["/".join(partes[:-1]) + "/" if len(partes) > 1 else p] += 1
+for carpeta, n in sorted(grupos.items()):
+    print(f"AVISA:{carpeta}|{n}")
 PYGUARD
 )"
 if echo "$sin_versionar" | grep -q '^ERROR_GUARD:'; then
@@ -133,8 +142,10 @@ fi
 bloquean="$(echo "$sin_versionar" | grep '^BLOQUEA:' | sed 's/^BLOQUEA://' || true)"
 avisan="$(echo "$sin_versionar" | grep '^AVISA:' | sed 's/^AVISA://' || true)"
 if [ -n "$avisan" ]; then
-  echo "    AVISO · sin versionar (este flujo no los toca, pero un pull forzado a mano si):"
-  echo "$avisan" | sed 's/^/      /'
+  total_avisos="$(echo "$avisan" | awk -F'|' '{s+=$2} END {print s+0}')"
+  echo "    AVISO · ${total_avisos} archivo(s) sin versionar fuera de las rutas de descarga."
+  echo "            Este flujo no los toca, pero un pull forzado a mano si los retiraria:"
+  echo "$avisan" | awk -F'|' '{printf "      %-46s %6d\n", $1, $2}'
 fi
 if [ -n "$bloquean" ]; then
   echo "$bloquean" | sed 's/^/      /' >&2
