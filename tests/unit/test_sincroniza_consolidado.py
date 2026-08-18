@@ -147,3 +147,16 @@ def test_la_fusion_no_deja_claves_duplicadas(local: Path) -> None:
 
     despues = pd.read_csv(local)
     assert not despues.duplicated(subset=CLAVE).any()
+
+
+def test_la_escritura_no_deja_temporal(local: Path) -> None:
+    """La escritura es atomica: ni al terminar queda un .part que confunda al inventario."""
+    versionado = pd.DataFrame(
+        [
+            _fila(2026, 27, "Jalisco", "Depresión", 10),
+            _fila(2026, 28, "Jalisco", "Depresión", 12),
+        ]
+    )
+    sincroniza(local, versionado, aplicar=True)
+
+    assert list(local.parent.glob("*.part")) == []

@@ -110,7 +110,16 @@ def sincroniza(ruta: Path, versionado: pd.DataFrame, *, aplicar: bool) -> dict[s
         )
         if fusionado.duplicated(subset=CLAVE).any():
             raise SincronizacionError("la fusion produjo claves duplicadas; no se escribio nada")
-        fusionado.to_csv(ruta, index=False)
+        # Escritura atomica: `to_csv` directo sobre el destino deja el consolidado truncado
+        # si el proceso muere a media escritura, y ese archivo es la entrada de todo el
+        # pipeline semanal. Se escribe al lado y se renombra, que en el mismo sistema de
+        # archivos es atomico.
+        temporal = ruta.with_name(ruta.name + ".part")
+        try:
+            fusionado.to_csv(temporal, index=False)
+            temporal.replace(ruta)
+        finally:
+            temporal.unlink(missing_ok=True)
         resumen["aplicado"] = True
 
     return resumen

@@ -267,6 +267,20 @@ $PYTHON scripts/actualiza_barra_fechas.py \
   --zoom  "${REPORTS}/zoom_data_neuro.json"
 $PYTHON scripts/build_news_weekly.py --dashboard "$DASHBOARD_ROOT"
 
+# El corpus del EpiBot acaba de cambiar, asi que su indice de recuperacion queda
+# desfasado hasta regenerarlo. El flujo no puede hacerlo solo: `rag:build` necesita una
+# credencial externa. Se comprueba y se reporta; publicar con el indice desfasado deja
+# al asistente respondiendo desde un corpus que ya no existe.
+paso "VERIFICACION · indice de recuperacion del EpiBot"
+RAG_OK=1
+if ! ( cd "${DASHBOARD_ROOT}/epibot" && npm run rag:verify --silent >/dev/null 2>&1 ); then
+  RAG_OK=0
+  echo "    !! el indice RAG no corresponde al corpus actual."
+  echo "       Regeneralo:  cd ${DASHBOARD_ROOT}/epibot && GEMINI_API_KEY=... npm run rag:build"
+else
+  echo "    indice sincronizado con el corpus"
+fi
+
 # ─────────────────────────────────────────────────────────────────────
 # 3. MANIFIESTO — que cambiaria, antes de decidir publicarlo
 # ─────────────────────────────────────────────────────────────────────
@@ -279,6 +293,7 @@ MANIFEST="${MANIFEST_DIR}/refresh_$(date +%Y%m%d_%H%M%S).txt"
   echo "semana antes         ${ANTES}"
   echo "semana despues       ${ANIO},${SEM}"
   echo "dengue               $([ "$DENGUE_OK" -eq 1 ] && echo ok || echo 'fallo, se conservo el previo')"
+  echo "indice RAG           $([ "$RAG_OK" -eq 1 ] && echo sincronizado || echo 'DESFASADO: regenerar antes de publicar')"
   echo "padecimientos        $(echo "$extras" | grep '^PRESENTES:' | sed 's/^PRESENTES://')"
   echo ""
   echo "== repositorio principal (rastreado) =="
@@ -302,6 +317,10 @@ fi
 # ─────────────────────────────────────────────────────────────────────
 # 4. PUBLICAR — solo con --apply
 # ─────────────────────────────────────────────────────────────────────
+if [ "$RAG_OK" -ne 1 ]; then
+  fatal "el indice de recuperacion del EpiBot no corresponde al corpus. Regeneralo antes de publicar, o el asistente respondera desde un corpus que ya no existe."
+fi
+
 paso "PUBLICAR · dashboard"
 # Cache-bust: el EpiBot carga knowledge.json con ?v=DATA_VERSION. Sin subirlo, el
 # navegador sirve el knowledge.json anterior tras cada refresh.

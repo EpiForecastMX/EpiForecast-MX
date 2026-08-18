@@ -441,8 +441,18 @@ class KnowledgeBase:
             pad_col = "Padecimiento" if "Padecimiento" in bol.columns else None
             ah_col = "Acumulado_hombres" if "Acumulado_hombres" in bol.columns else None
             am_col = "Acumulado_mujeres" if "Acumulado_mujeres" in bol.columns else None
+            # Solo padecimientos con lifecycle=published. El roster ya filtraba, pero la
+            # demografia se calculaba sobre TODO el consolidado, que incluye los carriles
+            # aun no autorizados: el 2026-08-18 eso puso los casos historicos de obesidad
+            # en el knowledge.json que se iba a publicar. Se usa el registry, no una lista
+            # escrita a mano, para que dar de alta un padecimiento no reabra la fuga.
+            from epiforecast import registry
+
+            publicables = set(registry.names(published_only=True))
             if pad_col and ah_col and am_col:
                 for pad in bol[pad_col].dropna().unique():
+                    if str(pad) not in publicables:
+                        continue
                     sub = bol[bol[pad_col] == pad]
                     if sub.empty:
                         continue
