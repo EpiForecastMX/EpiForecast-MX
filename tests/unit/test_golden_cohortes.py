@@ -7,8 +7,11 @@ outliers. La firma se computa llamando a los helpers REALES; así, cuando EPIC 1
 respalde con el registry, este test prueba que el comportamiento no cambió (byte-idéntico
 en la parte determinista). Referencias de código de cada gate en ``_gate_signature``.
 
-También congela un hash de la selección productiva legacy (432 series) como red de
-seguridad para el selector unificado de EPIC 3.
+También congela la **estructura** del catálogo productivo legacy (432 series) como red
+de seguridad para el selector unificado de EPIC 3, y comprueba que cada motor asignado
+pertenezca al conjunto válido de su cohorte. La asignación concreta NO se congela: se
+re-selecciona con la realidad de cada boletín y cambiaría el hash cada semana sin que
+nadie tocara el código.
 """
 
 from __future__ import annotations
@@ -180,18 +183,56 @@ def test_excluir_outliers_yaml_incluye_dengue():
     assert set(found) == set(_EXCLUIR_OUTLIERS)
 
 
-# ── Freeze de la selección productiva legacy (red de seguridad para EPIC 3) ──
-_SELECCION_LEGACY_SHA256 = "4b92c0367846de1b2161edef2f49e3cc6fc96ce724fe3d976caad287cf03e309"
+# ── Freeze del catálogo productivo legacy (red de seguridad para EPIC 3) ──
+#
+# Este freeze congelaba (disease, entidad, sexo, MOTOR). El motor, sin embargo, se
+# re-selecciona con la realidad de cada boletín, así que el hash cambiaba cada semana
+# aunque no se tocara una línea de código: el 2026-08-18, al incorporar las semanas 28
+# a 30, las 432 series quedaron idénticas en estructura y solo se movió la asignación.
+# Un golden que falla por datos nuevos no protege el refactor que dice proteger; enseña
+# a actualizar el hash sin mirar, que es justo lo contrario de una red de seguridad.
+#
+# Se congela ahora lo que un refactor del selector NO puede cambiar (qué series existen)
+# y se comprueba por separado lo que sí importa de la asignación: que ningún motor caiga
+# fuera del conjunto permitido para su cohorte. Eso además atrapa errores que el hash no
+# distinguía, como asignar a dengue un motor de árboles, excluido por no extrapolar.
+_ESTRUCTURA_LEGACY_SHA256 = "b33a8282951472452fc00395a68b198a3eef5cde2f5e40636a6530f7ce40abf5"
+_SERIES_LEGACY = 432
+
+# Dengue excluye Ensemble y Stacking a propósito: los árboles no extrapolan la dinámica
+# epidémica a 52 semanas. Ver CLAUDE.md, sección de producción de dengue.
+_MOTORES_VALIDOS: dict[str, frozenset[str]] = {
+    "alzheimer": frozenset({"Prophet", "DeepAR", "Ensemble", "Stacking"}),
+    "depresion": frozenset({"Prophet", "DeepAR", "Ensemble", "Stacking"}),
+    "parkinson": frozenset({"Prophet", "DeepAR", "Ensemble", "Stacking"}),
+    "dengue": frozenset({"Prophet", "DeepAR", "NBGLM"}),
+}
 
 
-def test_seleccion_productiva_legacy_congelada():
+def _catalogo_o_skip():
     from epiforecast import catalog
 
     if not (catalog._neuro_table_path().exists() and catalog._dengue_table_path().exists()):
         pytest.skip("artefactos de producción ausentes (sin DVC pull)")
     df, _ = catalog.build_production_catalog()
-    rows = sorted(
-        (r.disease_id, r.entidad, r.sexo, r.motor_productivo) for r in df.itertuples(index=False)
-    )
-    blob = "\n".join("|".join(map(str, t)) for t in rows)
-    assert hashlib.sha256(blob.encode()).hexdigest() == _SELECCION_LEGACY_SHA256
+    return df
+
+
+def test_estructura_catalogo_legacy_congelada():
+    """Qué series existen es independiente del boletín: si esto cambia, cambió el código."""
+    df = _catalogo_o_skip()
+    filas = sorted((r.disease_id, r.entidad, r.sexo) for r in df.itertuples(index=False))
+    assert len(filas) == _SERIES_LEGACY
+    blob = "\n".join("|".join(map(str, t)) for t in filas)
+    assert hashlib.sha256(blob.encode()).hexdigest() == _ESTRUCTURA_LEGACY_SHA256
+
+
+def test_motores_productivos_dentro_del_conjunto_valido():
+    """La asignación cambia cada semana; lo que no puede cambiar es el menú de cada cohorte."""
+    df = _catalogo_o_skip()
+    invalidos = [
+        (r.disease_id, r.entidad, r.sexo, r.motor_productivo)
+        for r in df.itertuples(index=False)
+        if r.motor_productivo not in _MOTORES_VALIDOS.get(r.disease_id, frozenset())
+    ]
+    assert not invalidos, f"motor fuera del conjunto permitido: {invalidos[:5]}"
