@@ -4,7 +4,10 @@
 > · Dashboard en `feat/c73-candidate-staging` @ `a044403d`.
 > Objetivo: una sola rama por repositorio, datos sincronizados y `make update-week` operativo.
 >
-> **ESTADO 2026-08-18: fases 0, 1, 2 y 5 EJECUTADAS.** Ambos repositorios tienen ya una única rama
+> **ESTADO 2026-08-18: fases 0, 1 y 2 EJECUTADAS; fase 5 parcial.**
+> Auditado de forma independiente el mismo día: la convergencia es válida y C7 permanece intacto,
+> pero **el flujo semanal sigue siendo NO-GO**. Las correcciones de esa auditoría están incorporadas
+> en la bitácora, marcadas como tales. Ambos repositorios tienen ya una única rama
 > remota, `main`, con la integración continua en verde. Quedan pendientes la **fase 3** (reparar el
 > flujo semanal) y la **fase 4** (publicar las semanas 28 a 30). Bitácora al final del documento.
 
@@ -225,17 +228,25 @@ es la extracción determinista ya validada.
 
 ```text
 merge origin/main -> feature      sin conflictos, tres archivos
-estado C7 antes vs después        SIN CAMBIOS (diff vacío sobre 48 digests)
+estado C7 antes vs después        diff vacío · ver la precisión abajo
 prospective_status --check        rc=0 · 1/4 semanas · verdad observada intacta
 lint · typecheck                  PASS
 test-fast                         2,353 passed · 1 skipped · 62 deselected
 main                              fast-forward a a6acf301, publicado
 ```
 
+**Precisión sobre la comparación de C7 (auditoría del 2026-08-18):** reporté "48 digests sin
+cambios". La cifra mezclaba tres secciones de un mismo volcado: digests de artefactos, líneas de
+lifecycle y agregados legacy; y la captura usaba `head -30`, de modo que cubrió **30 de los 35**
+digests existentes. El diff salió vacío sobre lo comparado, y el chequeo prospectivo con rc=0 y los
+hashes congelados corroboran materialmente que C7 no cambió, pero **la afirmación era más amplia que
+la evidencia**. La línea base completa de los 35, con el comando que la reproduce, quedó persistida
+en `_backups/2026-08-18_pre-merge-main/c7_digests_linea_base.txt`.
+
 ### Fase 2 · unificar el dashboard — **hecha**
 
 ```text
-menciones de obesidad en lo servido   6, todas en listas de "NO modelado" y comentarios
+menciones en lo servido               5 de obesidad + 1 de anorexia; listas de "NO modelado" y un comentario
 npm test                              67/67
 main                                  fast-forward a a044403d, publicado
 sitio en vivo                         landing, epibot y knowledge.json responden 200
@@ -261,6 +272,11 @@ que nadie había declarado. Es el mismo patrón que rompió el flujo en junio.
 CI tras el arreglo    Code Quality 4m37s PASS · Tests 5m02s PASS
 ```
 
+**Matiz sobre el alcance del verde remoto:** en un clon limpio la integración continua ejecuta
+**1,825 pruebas y omite 529** que dependen de artefactos locales bajo `runs/` y `releases/`, con
+cobertura del 74.11 %. El gate local con artefactos presentes sí selecciona las 2,353 esperadas.
+**Verde remoto no equivale a gate local completo**, y ninguno de los dos sustituye al otro.
+
 ### Fase 5 · higiene — **hecha en parte**
 
 Se borraron, tras verificar que `main` las contenía por completo, las dos ramas de trabajo
@@ -269,16 +285,30 @@ Se borraron, tras verificar que `main` las contenía por completo, las dos ramas
 
 **Ambos repositorios tienen ahora una única rama remota: `main`.**
 
-Quedan tres ramas **solo locales**, de febrero, residuos del reescrito de historial de junio:
-`Fork/aws-training-comparison-R5KGp`, `claude/aws-training-comparison-R5KGp` y
-`refactor/mlops-structure`. Sus commits "que main no tiene" son los mismos cambios con otro
-identificador, previos al reescrito. Se borran cuando se confirme que no guardan nada único.
+Quedan tres ramas **solo locales**, de febrero, presumibles residuos del reescrito de historial de
+junio: `Fork/aws-training-comparison-R5KGp`, `claude/aws-training-comparison-R5KGp` y
+`refactor/mlops-structure`.
+
+**Corrección (auditoría del 2026-08-18):** afirmé que sus commits eran los mismos cambios con otro
+identificador. **Eso no está demostrado.** `git cherry` marca **11, 11 y 19 parches sin equivalencia
+exacta en `main`**. Pueden estar absorbidos por combinaciones de commits o por versiones
+posteriores, pero mientras no se demuestre parche por parche, **no se borran**. Quedan como están.
 
 ### Hallazgo adicional · el scraper falló hoy
 
-La ejecución programada `Scrape Boletines SINAVE` de hoy terminó en fallo, y es la razón de que no
-exista una semana 31. Encaja con el muro anti-robot intermitente de gob.mx ya documentado. No
-bloquea nada de lo anterior, pero conviene revisarlo antes del próximo lunes.
+La ejecución programada `Scrape Boletines SINAVE` de hoy terminó en fallo.
+
+**Corrección (auditoría del 2026-08-18):** dije que por eso "no existe" una semana 31. **Sí existe.**
+El scraper la localizó y falló al descargarla:
+
+```text
+Descargando: https://www.gob.mx/cms/uploads/attachment/file/1098440/sem31.pdf
+requests.exceptions.HTTPError: 403 Client Error: Forbidden
+```
+
+El diagnóstico correcto no es ausencia de publicación sino **denegación en la descarga**, coherente
+con el muro anti-robot de gob.mx ya documentado. Incorporar la W31 exige reparar la descarga; las
+semanas 28 a 30 no dependen de ello.
 
 ### Estado al cierre
 
@@ -289,3 +319,58 @@ datos        boletín neuro hasta 2026-W30 · dengue y obesidad en W27
 C7           intacto · obesidad trained · prospectiva 1/4
 sitio        sigue mostrando W27: falta la fase 4
 ```
+
+
+---
+
+## 9. Auditoría independiente — 2026-08-18
+
+Revisión de solo lectura sobre lo ejecutado. **Veredicto: la convergencia es válida y C7 permanece
+intacto; el flujo semanal sigue siendo NO-GO y `make update-week` no debe ejecutarse hasta cerrar
+la fase 3.**
+
+### Correcciones incorporadas
+
+| # | Afirmación previa | Corrección |
+| --- | --- | --- |
+| 3 | Los commits de las tres ramas locales son los mismos con otro identificador | **No demostrado.** `git cherry` marca 11, 11 y 19 parches sin equivalencia. No se borran |
+| 4 | "CI verde" | El clon limpio corre **1,825 pruebas y omite 529** dependientes de artefactos locales; cobertura 74.11 %. Verde remoto ≠ gate local |
+| 5 | "48 digests sin cambios" | Mezclaba tres secciones y truncaba a 30 de 35. Línea base completa ya persistida |
+| 6 | 6 menciones de obesidad en `kb.js` | **5** de obesidad y 1 de anorexia |
+| 7 | El fallo del scraper explica que "no exista" la W31 | **Sí existe**; la descarga devuelve **403 Forbidden** |
+
+Ninguna altera el veredicto: C7 no se movió y el sitio no expone obesidad. Corrigen el alcance de lo
+que quedó afirmado por escrito.
+
+### Confirmaciones de la auditoría
+
+```text
+backend / dashboard      main, idénticos a origin/main · una sola rama remota en ambos
+merge 20fc1b96           contiene cc4e8e01 y el antiguo main 48749a08, sin conflictos
+respaldos                los cuatro coinciden byte a byte con los originales
+C7                       trained · gallery false · sin puntero activo · rc=0 · 1/4
+                         gate_digest 5bc39aa5… · release y observación en s3remote
+legacy                   cb5be395 · 96791595 · 1d2cf0a7 · ac97dc8e
+dashboard                npm run check PASS · 616/616 · 67/67 · RAG 454/454
+sitio                    200 en landing, epibot y knowledge.json · cero obesidad · sigue en W27
+```
+
+### Riesgos vigentes
+
+1. **`actualiza_semanal.sh` sin reparar:** conserva `dvc pull --force`, versiona y publica el
+   consolidado completo junto con `models` y `reports/forecasts`, hace envíos directos en ambos
+   repositorios y **carece de modo en seco y de comprobaciones efectivas de rama y árbol**. Que hoy
+   ambos repos estén en `main` desactiva dos de los supuestos rotos **por circunstancia, no porque
+   el script los verifique**.
+2. **DVC no está globalmente verde:** siete objetivos con modificaciones (`models`, `logs`,
+   `data/raw`, `data/raw_PDFs`, consolidado, `reports/figures`, `reports/forecasts`). Los tres CSV
+   respaldados siguen fuera del puntero y **un pull forzado puede retirarlos**.
+
+### Orden de reanudación
+
+1. **Fase 3** — reparar el flujo semanal.
+2. **Corrida en seco** verificable.
+3. **Fases 28 a 30** — publicar el atraso.
+4. **W31** — solo tras reparar la descarga bloqueada con 403.
+
+C7 permanece congelado en 1/4 durante todo lo anterior.
