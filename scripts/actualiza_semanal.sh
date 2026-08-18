@@ -99,13 +99,18 @@ for par in "principal:${REPO_ROOT}" "dashboard:${DASHBOARD_ROOT}"; do
   echo "    ${nombre}: ${detras} commit(s) por detras del remoto"
 done
 
-# P4 · GUARD CLAVE: archivos sin versionar bajo rutas que DVC va a tocar.
-# Es la leccion del 2026-08-18: data/raw/ contiene CSV que existen SOLO en disco
-# (obesidad, anorexia, dengue) y un pull forzado los retira sin aviso.
+# P4 · GUARD: archivos sin versionar en las rutas que ESTE flujo descarga.
+# Leccion del 2026-08-18: `dvc pull --force` retira sin aviso lo que no esta en un
+# puntero, y data/raw/ contiene CSV que existen SOLO en disco. Este flujo ya no
+# descarga data/raw/ ni fuerza nada, asi que ahi solo se avisa; se aborta unicamente
+# por lo que sus propias descargas pueden retirar. Un guard que bloquea por algo que
+# no puede ocurrir termina siendo un guard que la gente aprende a saltarse.
 paso "PREFLIGHT · archivos sin versionar en rutas DVC"
 sin_versionar="$("$PYTHON" - <<'PYGUARD'
 import json, subprocess, sys
-RUTAS = ("data/raw/", "data/raw_PDFs/", "data/processed/")
+
+DESCARGA = ("data/processed/", "data/raw_PDFs/")   # lo que este flujo baja -> ABORTA
+AVISO = ("data/raw/", "models/", "reports/forecasts/")  # el resto -> solo informa
 try:
     out = subprocess.run(
         ["dvc", "data", "status", "--granular", "--json"],
@@ -115,20 +120,27 @@ try:
 except Exception as exc:  # noqa: BLE001
     print(f"ERROR_GUARD: no se pudo consultar dvc data status: {exc}")
     sys.exit(0)
-anadidos = estado.get("uncommitted", {}).get("added", []) or []
-riesgo = [p for p in anadidos if isinstance(p, str) and p.startswith(RUTAS)]
-for p in sorted(riesgo):
-    print(p)
+anadidos = [p for p in (estado.get("uncommitted", {}).get("added", []) or []) if isinstance(p, str)]
+for p in sorted(p for p in anadidos if p.startswith(DESCARGA)):
+    print(f"BLOQUEA:{p}")
+for p in sorted(p for p in anadidos if p.startswith(AVISO)):
+    print(f"AVISA:{p}")
 PYGUARD
 )"
 if echo "$sin_versionar" | grep -q '^ERROR_GUARD:'; then
   fatal "$(echo "$sin_versionar" | sed 's/^ERROR_GUARD: //')"
 fi
-if [ -n "$sin_versionar" ]; then
-  echo "$sin_versionar" | sed 's/^/      /' >&2
-  fatal "hay archivos bajo rutas DVC que no estan en ningun puntero. Una descarga forzada los retira. Versionalos o respaldalos antes de continuar."
+bloquean="$(echo "$sin_versionar" | grep '^BLOQUEA:' | sed 's/^BLOQUEA://' || true)"
+avisan="$(echo "$sin_versionar" | grep '^AVISA:' | sed 's/^AVISA://' || true)"
+if [ -n "$avisan" ]; then
+  echo "    AVISO · sin versionar (este flujo no los toca, pero un pull forzado a mano si):"
+  echo "$avisan" | sed 's/^/      /'
 fi
-echo "    sin archivos en riesgo"
+if [ -n "$bloquean" ]; then
+  echo "$bloquean" | sed 's/^/      /' >&2
+  fatal "hay archivos sin versionar en rutas que este flujo descarga. La descarga los retiraria. Versionalos o muevelos antes de continuar."
+fi
+echo "    ninguna ruta de descarga en riesgo"
 
 # P5 · padecimientos presentes frente a la lista autorizada.
 paso "PREFLIGHT · padecimientos en el consolidado"
