@@ -492,12 +492,18 @@ data-commit:
 data-weekly: data-add data-commit
 	@echo ">>> Flujo semanal completado."
 
-## Refresh semanal COMPLETO (sin retrain): pull CI+DVC, Dengue extract/merge,
-## reselect motor, tableau, validacion, galeria neuro+Dengue, zoom, knowledge,
-## barra de fechas (auto) y publish dashboard + versionado DVC/S3.
+## Refresh semanal EN SECO (sin retrain, SIN publicar): preflight, datos DVC dirigidos,
+## Dengue, reselect motor, tableau, validacion, galeria neuro+Dengue, zoom, knowledge,
+## barra de fechas y manifiesto de cambios. NO versiona ni envia nada.
 .PHONY: update-week
 update-week:
-	bash scripts/actualiza_semanal.sh
+	bash scripts/actualiza_semanal.sh --dry-run
+
+## Igual que update-week y ADEMAS versiona en DVC/S3 y publica en ambos repositorios.
+## Correr solo tras revisar el manifiesto del modo en seco.
+.PHONY: update-week-apply
+update-week-apply:
+	bash scripts/actualiza_semanal.sh --apply
 
 ## Ver estado de DVC
 .PHONY: data-status
