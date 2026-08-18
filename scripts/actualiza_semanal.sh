@@ -321,6 +321,32 @@ if [ "$RAG_OK" -ne 1 ]; then
   fatal "el indice de recuperacion del EpiBot no corresponde al corpus. Regeneralo antes de publicar, o el asistente respondera desde un corpus que ya no existe."
 fi
 
+# ORDEN DELIBERADO: primero el almacenamiento y el repositorio principal, y el dashboard
+# al final. Al reves, si la segunda mitad fallaba, el sitio ya habia quedado publicado
+# apuntando a datos que nadie habia versionado. El dashboard es la superficie visible: es
+# lo ultimo que se mueve, cuando todo lo que lo respalda ya esta en su sitio.
+
+paso "PUBLICAR · repositorio principal"
+# Objetivos EXPLICITOS. Antes se versionaba `models` y `reports/forecasts` completos, que
+# arrastraban los 790 artefactos preliminares de obesidad al almacenamiento compartido
+# como si fueran produccion. El refresh semanal no reentrena: no tiene por que tocar los
+# modelos. Sin `|| true`: si el versionado falla, el flujo se detiene en vez de confirmar
+# punteros que no corresponden a lo almacenado.
+dvc add "$CONSOLIDADO"
+dvc push "${CONSOLIDADO}.dvc"
+git add "${CONSOLIDADO}.dvc" reports/ProdDetails/
+if git diff --cached --quiet; then
+  echo "    Repo principal sin cambios."
+else
+  _msg="data/prod: refresh semanal sem ${SEM}/${ANIO} (consolidado, tablas, validacion)"
+  # El hook reformatea validacion_semanal.html y aborta el primer intento;
+  # se re-agrega y se reintenta UNA vez con el archivo ya corregido.
+  git commit -q -m "$_msg" \
+    || { git add "${CONSOLIDADO}.dvc" reports/ProdDetails/; git commit -q -m "$_msg"; }
+  git push origin "$RAMA_ESPERADA"
+  echo "    Repo principal publicado."
+fi
+
 paso "PUBLICAR · dashboard"
 # Cache-bust: el EpiBot carga knowledge.json con ?v=DATA_VERSION. Sin subirlo, el
 # navegador sirve el knowledge.json anterior tras cada refresh.
@@ -337,24 +363,6 @@ else
   git -C "$DASHBOARD_ROOT" commit -q -m "reports+epibot: refresh semanal sem ${SEM}/${ANIO} (galeria, zoom, knowledge, barra de fechas, novedades)"
   git -C "$DASHBOARD_ROOT" push
   echo "    Dashboard publicado."
-fi
-
-paso "PUBLICAR · repositorio principal"
-# Sin `|| true`: si el versionado falla, el flujo debe detenerse, no seguir y
-# confirmar punteros que no corresponden a lo que hay en el almacenamiento.
-dvc add "$CONSOLIDADO" models reports/forecasts
-dvc push
-git add "${CONSOLIDADO}.dvc" models.dvc reports/forecasts.dvc reports/ProdDetails/
-if git diff --cached --quiet; then
-  echo "    Repo principal sin cambios."
-else
-  _msg="data/prod: refresh semanal sem ${SEM}/${ANIO} (consolidado, tablas, validacion)"
-  # El hook reformatea validacion_semanal.html y aborta el primer intento;
-  # se re-agrega y se reintenta UNA vez con el archivo ya corregido.
-  git commit -q -m "$_msg" \
-    || { git add "${CONSOLIDADO}.dvc" reports/ProdDetails/; git commit -q -m "$_msg"; }
-  git push origin "$RAMA_ESPERADA"
-  echo "    Repo principal publicado."
 fi
 
 echo ""
