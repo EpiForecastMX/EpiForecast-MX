@@ -459,3 +459,58 @@ flujo semanal          OPERATIVO en seco; publicar sigue siendo un paso aparte
 pendiente              fase 4: correr --apply y verificar el sitio en vivo
                        (requiere ALLOW_EXTRA_DISEASES=1 mientras obesidad esté en el consolidado)
 ```
+
+
+---
+
+## 11. Auditoría NO-GO de la fase 4 y su remediación — 2026-08-18
+
+**Veredicto acatado: NO-GO.** No se ejecutó `--apply`, ni `--allow-dirty`, ni
+`ALLOW_EXTRA_DISEASES=1`, ni ninguna operación DVC global.
+
+### El bloqueante que importaba
+
+El knowledge.json **preparado para publicar** contenía los casos históricos reales de
+obesidad (2,719,585 hombres · 4,884,368 mujeres · 7,603,953) bajo `stats.demo_historica`.
+El roster sí filtraba por lifecycle; la demografía se calculaba sobre todo el consolidado.
+
+**Por qué no lo detecté:** verifiqué "cero obesidad" contra el sitio **ya desplegado**, que
+no tenía el archivo nuevo, en vez de contra el artefacto **que se iba a desplegar**. El
+gate del dashboard sí lo vio. Es la diferencia entre comprobar lo que hay publicado y
+comprobar lo que se va a publicar, y solo la segunda protege de algo.
+
+### Estado de los siete bloqueantes
+
+| # | Bloqueante | Estado |
+| --- | --- | --- |
+| 1 | Obesidad filtrada al knowledge público | **Cerrado.** Filtro desde el registry, no lista a mano. Cuatro pruebas, incluida una sobre el artefacto del dashboard |
+| 2 | Dry-run y apply incompatibles; manifiesto sin sellar | **ABIERTO.** Es el que falta para reabrir la fase 4 |
+| 3 | Apply arrastraría los 790 artefactos WIP | **Cerrado.** Versionado acotado al consolidado; los 790 respaldados con manifiesto SHA256 |
+| 4 | Publicación partida (dashboard primero) | **Cerrado.** Orden invertido: almacenamiento y backend primero, dashboard al final |
+| 5 | CI no cubría las pruebas del scraper | **Cerrado.** Los jobs de pruebas instalan el extra `scraping`; las diez corren |
+| 6 | Escritura no atómica del consolidado | **Cerrado.** Temporal contiguo y renombrado, con prueba |
+| 7 | Afirmación falsa sobre el índice RAG | **Corregido y convertido en gate.** Ver abajo |
+
+### Sobre el índice RAG
+
+Mi reporte decía que se había regenerado; no era cierto. Además, comprobado con el
+knowledge.json anterior de `main`, **el gate ya fallaba antes de este refresh**: la
+desincronización es previa, el refresh la agrava. El dashboard no tiene integración
+continua, y por eso pasó inadvertida.
+
+El flujo no puede regenerarlo solo porque `rag:build` necesita una credencial externa, así
+que ahora **comprueba y se niega a publicar** si el índice no corresponde al corpus.
+Publicar así deja al asistente respondiendo desde un corpus que ya no existe.
+
+### Lo que falta para reabrir la fase 4
+
+1. **Staging sellado** (bloqueante 2): que el dry-run produzca un manifiesto con HEAD y
+   digests, y que `apply` consuma exactamente ese staging en vez de reejecutar el
+   preflight sobre un árbol que él mismo ensució.
+2. **Regenerar el índice RAG** con la credencial, y `npm run check` completamente verde.
+3. **Dry-run en clon limpio** con el gate completo: roster 432, dengue 99, cero obesidad
+   y anorexia en superficies públicas, cero cambios DVC en modelos y agregados
+   congelados, W31 incorporada.
+4. Solo entonces publicar, y hacer prueba de humo en vivo.
+
+C7 sigue en **1/4** y no se toca hasta que lo anterior esté cerrado.
