@@ -196,7 +196,14 @@ git pull --ff-only origin "$RAMA_ESPERADA"
 
 paso "[2/10] Descargar los objetivos DVC necesarios"
 # Dirigido y sin forzar: no puede retirar nada que no este en estos punteros.
-dvc pull "${CONSOLIDADO}.dvc" data/raw_PDFs.dvc
+dvc pull data/raw_PDFs.dvc
+
+# El consolidado NO se descarga: se fusiona. Es una superposicion del archivo versionado
+# y de filas que hoy solo viven en local, asi que `dvc pull` lo ve modificado y se niega,
+# y `--force` lo resolveria borrando el trabajo local. La sincronizacion aditiva agrega
+# solo las semanas nuevas y falla cerrado si el origen corrigio una fila ya existente.
+# Se aplica tambien en seco: es preparacion local, no publicacion.
+$PYTHON -m scripts.sincroniza_consolidado
 
 ULTIMA="$(_semana_de)"
 ANIO="$(echo "$ULTIMA" | cut -d',' -f1)"
