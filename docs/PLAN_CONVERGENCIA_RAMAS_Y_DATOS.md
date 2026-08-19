@@ -514,3 +514,60 @@ Publicar así deja al asistente respondiendo desde un corpus que ya no existe.
 4. Solo entonces publicar, y hacer prueba de humo en vivo.
 
 C7 sigue en **1/4** y no se toca hasta que lo anterior esté cerrado.
+
+
+---
+
+## 12. Fase 1 cerrada · staging sellado integrado y validado — 2026-08-18
+
+### Lo que cambió
+
+El módulo del sello existía pero no gobernaba nada. Ahora el flujo **solo prepara y
+sella**: siembra el staging clonando el destino (varios generadores leen lo que ya
+existe), redirige a él todos los generadores —incluidos los de dengue, que apuntaban al
+sitio por variables del Makefile— y al terminar retira lo que no cambió, para que el
+inventario diga qué cambió esta semana en vez de repetir los casi dos mil archivos del
+sitio. En APFS la siembra usa `clonefile`: instantánea y sin duplicar espacio.
+
+**El guion ya no contiene ninguna operación de publicación:** cero `git push`, cero
+`dvc push`, cero `dvc add`. Instalar es `make update-week-apply MANIFEST=…`, que exige
+el manifiesto explícitamente, verifica HEAD, inventario y digest de cada artefacto, y
+copia esos bytes sin regenerar.
+
+**Excepción declarada:** el consolidado sí se actualiza en su ruta canónica, porque es
+la entrada de la que leen todos los generadores y no un artefacto publicable. Su digest
+queda sellado en el manifiesto.
+
+### Recuperación ante fallo a mitad de los renombrados
+
+Cada publicación aparta el archivo previo y recuerda con qué lo reemplazó; un fallo
+deshace en orden inverso todo lo ya publicado. **La prueba destapó un defecto que no
+había previsto:** el registro se anotaba después de ambos renombrados, así que el hueco
+entre apartar y publicar quedaba sin registrar y el destino perdía una versión que sí
+existía. El registro se adelantó.
+
+### Corrida real contra clon limpio
+
+```text
+staging sellado    709b400e874feff6 · 1,794 artefactos
+sitio de trabajo   CERO archivos tocados
+clon limpio        cero cambios durante la preparación
+instalación        1,794 artefactos · sin residuos · idempotente
+knowledge          2026-W30 · cero obesidad · IDÉNTICO byte a byte al sellado
+suite              2,397 pruebas · lint y typecheck PASS
+```
+
+### Dos ajustes salidos de la corrida
+
+1. El preflight leía la ruta del dashboard antes de definirla, porque esa variable pasó
+   a apuntar al staging. Ahora inspecciona el repositorio real y la generación escribe
+   en el staging.
+2. El preflight abortaba si un repositorio no estaba en `main`. Eso protegía la
+   publicación, que este guion ya no hace, y el gate en clon limpio se corre justamente
+   sobre worktrees en HEAD suelto. Pasa a informar; **quien publica es el apply**, y allí
+   la comprobación es más fuerte que la rama: exige que el HEAD sea el sellado.
+
+### Siguiente
+
+W31 (aún no está en la ruta canónica) → regenerar el índice RAG con la credencial →
+gate en clon limpio → checkpoint humano → publicación → smoke. C7 sigue en 1/4.
