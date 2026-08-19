@@ -396,11 +396,12 @@ def test_el_shard_real_produce_las_dos_tablas(tmp_path):
     from epiforecast.publication.status import load_declared_status
     from epiforecast.runner.release_store import default_releases_root
 
+    declarado = load_declared_status(af.DISEASE)
     c = compile_release(
         disease_id=af.DISEASE,
         mode=MODE_CANDIDATE,
         releases_root=default_releases_root(),
-        status=load_declared_status(af.DISEASE),
+        status=declarado,
     )
     shards = emit_shards(c, tmp_path / "staging")
     tablas = build_tables(shards.root)
@@ -410,7 +411,10 @@ def test_el_shard_real_produce_las_dos_tablas(tmp_path):
     fila = tablas.releases.iloc[0]
     assert fila.release_id == c.release_id
     assert fila.lifecycle == "trained"
-    assert fila.verdict == "INCOMPLETE"
+    # El veredicto se compara contra lo declarado, no contra un valor fijo: fijarlo en
+    # INCOMPLETE congelaba el punto en que estaba la validación, y el contrato falló al
+    # completarse las cuatro semanas sin que la emisión de tablas hubiera cambiado.
+    assert fila.verdict == declarado.verdict
     assert fila.publication_label.endswith("pronóstico puntual sin intervalos")
 
     sink = MemorySink()

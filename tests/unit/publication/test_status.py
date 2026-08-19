@@ -555,12 +555,20 @@ def test_el_modo_public_exige_estado_y_rechaza_un_fail(sede, monkeypatch, tmp_pa
 
 @real
 def test_el_estado_no_toca_la_identidad_del_bundle(sede, tmp_path):
-    """Cambiar el estado NO puede mover el release_id ni las filas: son identidades separadas."""
+    """Cambiar el estado NO puede mover el release_id ni las filas: son identidades separadas.
+
+    El estado sintético se construye siempre DISTINTO del declarado. Antes se fijaba en
+    PASS dando por supuesto que lo declarado seguiría incompleto; cuando la validación
+    prospectiva alcanzó sus cuatro semanas, ambos coincidieron y el contrato falló sin que
+    nada estuviera mal. Lo que se comprueba no depende de en qué punto esté la validación.
+    """
     bueno = load_declared_status(af.DISEASE)
+    distinto = VERDICT_INCOMPLETE if bueno.verdict == VERDICT_PASS else VERDICT_PASS
+    semanas = 1 if distinto == VERDICT_INCOMPLETE else GATE_WEEKS
     otro = _capability_real(
         tmp_path,
-        verdict=VERDICT_PASS,
-        **_evidencia_valida(bueno.gate, GATE_WEEKS, VERDICT_PASS),
+        verdict=distinto,
+        **_evidencia_valida(bueno.gate, semanas, distinto),
     )
     a = compile_release(
         disease_id=af.DISEASE, mode=MODE_CANDIDATE, releases_root=sede, status=bueno
@@ -644,14 +652,23 @@ def test_check_es_no_mutante_y_write_exige_verdad_declarada(tmp_path):
     raiz.mkdir(parents=True)
     for archivo, bytes_ in vigentes.items():
         (raiz / archivo).write_bytes(bytes_)
+    # La mentira se construye SIEMPRE distinta de lo declarado. Antes mentía hacia PASS
+    # dando por supuesto que lo real seguiría incompleto; al completarse la validación,
+    # la "mentira" pasó a coincidir con la verdad y --check dejaba de tener nada que
+    # objetar. Lo que se comprueba no depende de en qué punto esté la validación.
     mentira = json.loads(vigentes[STATUS_FILE])
-    mentira["verdict"] = VERDICT_PASS
-    mentira["weeks_available"] = GATE_WEEKS
-    mentira["completed_weeks"] = mentira["target_weeks"]
+    if mentira["verdict"] == VERDICT_PASS:
+        mentira["verdict"] = VERDICT_INCOMPLETE
+        mentira["weeks_available"] = 1
+        mentira["completed_weeks"] = mentira["target_weeks"][:1]
+    else:
+        mentira["verdict"] = VERDICT_PASS
+        mentira["weeks_available"] = GATE_WEEKS
+        mentira["completed_weeks"] = mentira["target_weeks"]
     (raiz / STATUS_FILE).write_bytes(canonical_json(mentira))
     config = str(tmp_path / "publication")
     assert main([af.DISEASE, "--check", "--config-root", config]) == 1
-    assert json.loads((raiz / STATUS_FILE).read_bytes())["verdict"] == VERDICT_PASS
+    assert json.loads((raiz / STATUS_FILE).read_bytes())["verdict"] == mentira["verdict"]
 
     # --write con la verdad declarada deja los dos archivos, byte-idénticos a los del repo.
     observacion = json.loads(vigentes[STATUS_FILE])["observation_dataset_id"]
