@@ -253,3 +253,95 @@ def test_una_version_distinta_del_generador_se_rechaza(tmp_path: Path) -> None:
 
     with pytest.raises(StagingError, match="regenéralo"):
         verifica(raiz, manifiesto, head_backend=HEAD_BACKEND, head_dashboard=HEAD_DASHBOARD)
+
+
+# ── 7 · fallo DURANTE la publicación: recuperación ──────────────────────────
+
+
+def _replace_que_falla_en(n: int):
+    """Devuelve un reemplazo de Path.replace que falla en la n-ésima llamada.
+
+    Copiar es la parte lenta y ya estaba cubierta. Lo que faltaba probar es el tramo
+    corto pero real en el que unos archivos ya se publicaron y otros no. Tiene que ser
+    una función, no un objeto invocable: asignado a la clase, solo una función recibe
+    el `self` de la instancia.
+    """
+    original = Path.replace
+    estado = {"llamadas": 0}
+
+    def _reemplazo(self: Path, destino):  # noqa: ANN001
+        estado["llamadas"] += 1
+        if estado["llamadas"] == n:
+            raise OSError("fallo simulado del sistema de archivos")
+        return original(self, destino)
+
+    return _reemplazo
+
+
+def test_un_fallo_durante_la_publicacion_restaura_el_estado_previo(
+    tmp_path: Path, monkeypatch
+) -> None:
+    raiz, manifiesto = _sella(tmp_path)
+    destinos = _destinos(tmp_path)
+
+    # El destino ya tiene una version anterior de cada artefacto.
+    previos = {}
+    for rel in manifiesto.inventario:
+        partes = Path(rel).parts
+        anterior = destinos[partes[0]].joinpath(*partes[1:])
+        anterior.parent.mkdir(parents=True, exist_ok=True)
+        contenido = f"version anterior de {rel}"
+        anterior.write_text(contenido, encoding="utf-8")
+        previos[anterior] = contenido
+
+    # Falla a mitad de los renombrados: son 3 artefactos y cada uno aparta y publica.
+    monkeypatch.setattr(Path, "replace", _replace_que_falla_en(4))
+
+    with pytest.raises(OSError, match="fallo simulado"):
+        aplica(
+            raiz, manifiesto, destinos, head_backend=HEAD_BACKEND, head_dashboard=HEAD_DASHBOARD
+        )
+
+    monkeypatch.undo()
+
+    # Todo vuelve a su version anterior: ni una mezcla de las dos.
+    for ruta, contenido in previos.items():
+        assert ruta.read_text(encoding="utf-8") == contenido, f"{ruta} quedo publicado a medias"
+
+
+def test_un_fallo_durante_la_publicacion_no_deja_residuos(tmp_path: Path, monkeypatch) -> None:
+    raiz, manifiesto = _sella(tmp_path)
+    destinos = _destinos(tmp_path)
+    for rel in manifiesto.inventario:
+        partes = Path(rel).parts
+        anterior = destinos[partes[0]].joinpath(*partes[1:])
+        anterior.parent.mkdir(parents=True, exist_ok=True)
+        anterior.write_text("anterior", encoding="utf-8")
+
+    monkeypatch.setattr(Path, "replace", _replace_que_falla_en(4))
+    with pytest.raises(OSError):
+        aplica(
+            raiz, manifiesto, destinos, head_backend=HEAD_BACKEND, head_dashboard=HEAD_DASHBOARD
+        )
+    monkeypatch.undo()
+
+    for raiz_destino in destinos.values():
+        assert list(raiz_destino.rglob("*.part")) == []
+        assert list(raiz_destino.rglob("*.prev")) == []
+
+
+def test_una_publicacion_correcta_no_deja_apartados(tmp_path: Path) -> None:
+    raiz, manifiesto = _sella(tmp_path)
+    destinos = _destinos(tmp_path)
+    for rel in manifiesto.inventario:
+        partes = Path(rel).parts
+        anterior = destinos[partes[0]].joinpath(*partes[1:])
+        anterior.parent.mkdir(parents=True, exist_ok=True)
+        anterior.write_text("anterior", encoding="utf-8")
+
+    aplica(raiz, manifiesto, destinos, head_backend=HEAD_BACKEND, head_dashboard=HEAD_DASHBOARD)
+
+    for raiz_destino in destinos.values():
+        assert list(raiz_destino.rglob("*.prev")) == []
+        assert list(raiz_destino.rglob("*.part")) == []
+    assert (destinos["dashboard"] / "epibot" / "knowledge.json").read_text() == '{"semana": 31}'

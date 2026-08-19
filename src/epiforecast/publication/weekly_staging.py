@@ -279,10 +279,18 @@ def aplica(
     `destinos` mapea el primer segmento de cada ruta inventariada a su raíz real, de modo
     que el staging pueda contener artefactos de más de un repositorio.
 
-    La instalación es transaccional en dos tiempos: primero se copian TODOS los artefactos
-    a temporales contiguos, y solo cuando todos están en su sitio se renombran. Copiar y
-    renombrar de uno en uno dejaría el destino a medio publicar si algo falla a mitad de
-    la lista, que es precisamente el estado que nadie sabe cómo deshacer.
+    La instalación es transaccional en tres tiempos:
+
+    1. **Copiar** todo a temporales contiguos. Un fallo aquí borra los temporales y deja
+       el destino sin tocar.
+    2. **Publicar** renombrando uno a uno, apartando antes el archivo previo. Renombrar
+       es rápido pero no instantáneo para una lista larga: si el segundo renombrado
+       falla, el primero ya quedó instalado. Por eso cada publicación recuerda qué
+       reemplazó, y un fallo deshace en orden inverso todo lo ya publicado.
+    3. **Limpiar** los apartados cuando ya no hacen falta.
+
+    Así el destino queda con la versión nueva completa o con la anterior completa, nunca
+    con una mezcla de las dos.
     """
     verifica(raiz_staging, manifiesto, head_backend=head_backend, head_dashboard=head_dashboard)
 
@@ -307,6 +315,31 @@ def aplica(
             temporal.unlink(missing_ok=True)
         raise
 
-    for temporal, destino in pendientes:
-        temporal.replace(destino)
+    # ── publicar, recordando con que se reemplazo cada archivo ──────────────
+    publicados: list[tuple[Path, Path | None]] = []
+    try:
+        for temporal, destino in pendientes:
+            previo: Path | None = None
+            if destino.exists():
+                previo = destino.with_name(destino.name + ".prev")
+                destino.replace(previo)
+            # Se anota ANTES de publicar. Anotarlo después dejaba sin registro el hueco
+            # entre apartar y publicar: si fallaba ahí, el archivo previo quedaba apartado
+            # y nadie lo restauraba, de modo que el destino perdía una versión que sí
+            # existía. Lo destapó la prueba de fallo a mitad de los renombrados.
+            publicados.append((destino, previo))
+            temporal.replace(destino)
+    except Exception:
+        for destino, previo in reversed(publicados):
+            destino.unlink(missing_ok=True)
+            if previo is not None:
+                previo.replace(destino)
+        for temporal, _ in pendientes:
+            temporal.unlink(missing_ok=True)
+        raise
+
+    for _, previo in publicados:
+        if previo is not None:
+            previo.unlink(missing_ok=True)
+
     return sorted(manifiesto.inventario)
