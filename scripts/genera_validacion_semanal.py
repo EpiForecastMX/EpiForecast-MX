@@ -1269,6 +1269,21 @@ def _update_excel(comp: pd.DataFrame, anio: int, semana: int) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _normaliza_para_hooks(html: str) -> str:
+    """Deja el HTML en la forma que exigen los hooks del repositorio.
+
+    Este informe se versiona en git, y los hooks `trailing-whitespace` y
+    `end-of-file-fixer` lo reescribian al confirmarlo. Con el refresh semanal sellado eso
+    era un problema real y no cosmetico: el archivo publicado dejaba de ser byte a byte el
+    que se habia revisado, porque el hook lo modificaba entre el sello y el commit.
+
+    Emitirlo ya normalizado hace que el hook no tenga nada que cambiar, de modo que lo
+    sellado y lo publicado coincidan sin intervencion.
+    """
+    lineas = [linea.rstrip() for linea in html.split("\n")]
+    return "\n".join(lineas).rstrip("\n") + "\n"
+
+
 def main() -> None:
     print("Cargando boletin epidemiologico...")
     boletin, anio, semana = _load_boletin_full()
@@ -1300,7 +1315,7 @@ def main() -> None:
     print("Generando HTML...")
     html = _generate_html(comp, anio, semana)
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT.write_text(html, encoding="utf-8")
+    OUTPUT.write_text(_normaliza_para_hooks(html), encoding="utf-8")
     print(f"  {OUTPUT} ({len(html):,} bytes)")
 
     print("Actualizando Excel de produccion...")
