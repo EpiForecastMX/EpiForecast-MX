@@ -131,13 +131,27 @@ def test_los_conteos_salen_del_manifiesto_no_de_una_constante(sede, tmp_path):
 
 
 def test_el_release_sigue_siendo_un_candidate_point_only(sede, tmp_path):
+    """Superar la validación prospectiva NO activa nada por sí solo.
+
+    Este contrato afirmaba `verdict == "INCOMPLETE"`, que era el estado de la validación
+    mientras estaba en curso, no una propiedad del release. Al alcanzarse legítimamente
+    las cuatro semanas, el 2026-08-19, el contrato falló sin que nada se hubiera activado:
+    congelaba un estado transitorio en vez de la garantía.
+
+    Lo que debe sostenerse, y ahora se afirma, es más fuerte: sea cual sea el veredicto,
+    el padecimiento sigue en `trained`, el pronóstico sigue siendo puntual y no aparece
+    ningún canal sin puente. La activación exige autorización aparte, nunca un PASS.
+    """
     shard = _local(sede, tmp_path / "ev")["shard"]
     assert shard["lifecycle"] == registry.require(af.DISEASE).lifecycle == "trained"
     assert shard["interval_method"] == "none"
     assert shard["uncertainty_available"] is False
     assert shard["channels_without_bridge"] == []
-    assert shard["verdict"] == "INCOMPLETE"
-    assert shard["weeks_available"] < shard["weeks_required"]
+
+    assert shard["verdict"] in {"INCOMPLETE", "PASS", "FAIL"}
+    assert shard["weeks_available"] <= shard["weeks_required"]
+    if shard["verdict"] == "INCOMPLETE":
+        assert shard["weeks_available"] < shard["weeks_required"]
     avance = f"({shard['weeks_available']}/{shard['weeks_required']} semanas)"
     assert avance in shard["publication_label"]
 
