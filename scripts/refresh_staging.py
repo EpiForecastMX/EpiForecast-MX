@@ -70,11 +70,20 @@ def _cmd_snapshot(args: argparse.Namespace) -> int:
 
 
 def _parse_boletin(crudo: str) -> Boletin:
-    partes = crudo.split(":", 3)
-    if len(partes) != 4:
+    """Interpreta ``nombre:url:bytes:sha256``.
+
+    Se separa desde el final: la URL contiene sus propios dos puntos, así que partir
+    desde el principio la rompía por la mitad.
+    """
+    resto, tam, digest = crudo.rsplit(":", 2)
+    nombre, _, url = resto.partition(":")
+    if not (nombre and url and digest):
         raise StagingError(f"boletín mal formado (nombre:url:bytes:sha256): {crudo}")
-    nombre, url, tam, digest = partes
-    return Boletin(nombre=nombre, url=url, bytes=int(tam), sha256=digest)
+    try:
+        tamano = int(tam)
+    except ValueError as exc:
+        raise StagingError(f"tamaño no numérico en el boletín: {tam!r}") from exc
+    return Boletin(nombre=nombre, url=url, bytes=tamano, sha256=digest)
 
 
 def _cmd_seal(args: argparse.Namespace) -> int:
