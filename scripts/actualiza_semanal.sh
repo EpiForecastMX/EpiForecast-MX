@@ -1,57 +1,58 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────
-# actualiza_semanal.sh  (UNIFICADO, con preflight y modo en seco)
+# actualiza_semanal.sh  —  PREPARA y SELLA el refresh semanal
 #
-# Refresh semanal COMPLETO tras un boletin nuevo, SIN reentrenar modelos:
-# extiende el dato real, reselecciona el motor productivo, regenera las
-# tablas/validacion, la galeria /reports/ (neuro + Dengue), el zoom y el
-# knowledge.json del EpiBot, actualiza la barra de fechas y publica.
+# Extiende el dato real tras un boletin nuevo, reselecciona el motor productivo y
+# regenera tablas, validacion, galeria (neuro + Dengue), zoom, knowledge y barra de
+# fechas. NO reentrena: los pronosticos siguen congelados y solo avanza la realidad.
 #
-# NO reentrena (eso es make train / dengue-train-*, infrecuente). Aqui los
-# pronosticos quedan congelados y solo avanza la realidad: es la vista de
-# validacion semanal honesta (real vs pronostico bloqueado).
+# ESTE GUION NO PUBLICA. Genera todo bajo runs/_refresh/<run_id>/outputs y lo sella con
+# un manifiesto. Instalar esos bytes es una orden aparte, que recibe el manifiesto de
+# forma explicita:
 #
-#   MODO EN SECO (default):  prepara y calcula; NO publica nada.
-#   MODO APLICAR:            lo anterior y ademas versiona y publica.
+#   make update-week                        # prepara y sella
+#   make update-week-apply MANIFEST=<ruta>  # instala lo sellado
+#
+# Antes preparaba escribiendo directamente en ambos repositorios y despues decidia si
+# publicar. Eso tenia dos consecuencias: el propio modo en seco ensuciaba el arbol y la
+# publicacion abortaba por su culpa; y lo que se publicaba no era necesariamente lo
+# revisado, porque entre una cosa y otra el pipeline volvia a correr.
+#
+# El staging se siembra clonando el destino (varios generadores leen lo que ya existe) y
+# al sellar se retira lo que no cambio, de modo que el inventario diga que cambio esta
+# semana y no repita los casi dos mil archivos del sitio.
+#
+# EXCEPCION DECLARADA: el consolidado del boletin SI se actualiza en su ruta canonica.
+# Es la entrada de la que leen todos los generadores, no un artefacto publicable, y su
+# digest queda sellado en el manifiesto para que la instalacion sepa sobre que dato se
+# preparo.
 #
 # Uso:
-#   make update-week           # en seco
-#   make update-week-apply     # publica
-#   bash scripts/actualiza_semanal.sh [--dry-run|--apply] [--allow-dirty]
-#
-# Historia: hasta 2026-08-18 este script hacia `git pull`, `dvc pull --force`,
-# versionado global y envios automaticos sin comprobar nada. Con el trabajo de
-# C7 fuera de main, eso podia inyectar merges en una rama auditada, BORRAR los
-# CSV de obesidad/anorexia/dengue que viven solo en disco, y publicar en una
-# rama que el sitio no sirve, anunciando exito sin cambiar nada. El preflight
-# de abajo existe para que esos cuatro casos aborten en vez de ocurrir.
+#   bash scripts/actualiza_semanal.sh [--allow-dirty]
 # ─────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
-# ── Argumentos ───────────────────────────────────────────────────────
-MODE="dry-run"
 ALLOW_DIRTY=0
 for arg in "$@"; do
   case "$arg" in
-    --apply)       MODE="apply" ;;
-    --dry-run)     MODE="dry-run" ;;
     --allow-dirty) ALLOW_DIRTY=1 ;;
-    *) echo "Uso: $0 [--dry-run|--apply] [--allow-dirty]" >&2; exit 2 ;;
+    *) echo "Uso: $0 [--allow-dirty]" >&2; exit 2 ;;
   esac
 done
+MODE="prepare"
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-DASHBOARD_ROOT="/Users/haowei/Documents/Integrador/EpiForecast-IMSS-Dashboard"
-REPORTS="${DASHBOARD_ROOT}/Reports"
-EPIBOT="${DASHBOARD_ROOT}/epibot"
+# Parametrizable para poder preparar contra un clon limpio sin tocar el sitio de trabajo.
+DASHBOARD_REAL="${DASHBOARD_REAL:-/Users/haowei/Documents/Integrador/EpiForecast-IMSS-Dashboard}"
 PYTHON="${REPO_ROOT}/.venv/bin/python"
 CONSOLIDADO="data/processed/dataset_boletin_epidemiologico.csv"
-MANIFEST_DIR="${REPO_ROOT}/runs/_refresh"
+REFRESH_DIR="${REPO_ROOT}/runs/_refresh"
+TRABAJO="${REFRESH_DIR}/_trabajo"
 RAMA_ESPERADA="main"
 
 # Padecimientos que el refresh semanal puede versionar y publicar. Cualquier otro
-# presente en el consolidado obliga a declararlo con ALLOW_EXTRA_DISEASES=1: no se
-# versiona sin querer el insumo de un carril que sigue sin autorizacion.
+# presente en el consolidado se informa: la frontera efectiva la aplica el filtro por
+# lifecycle del generador de conocimiento, no una variable de entorno.
 PADECIMIENTOS_PUBLICABLES="Alzheimer Depresión Parkinson Dengue"
 
 cd "$REPO_ROOT"
@@ -170,25 +171,40 @@ echo "    $(echo "$extras" | grep '^PRESENTES:' | sed 's/^PRESENTES://')"
 lista_extras="$(echo "$extras" | grep '^EXTRAS:' | sed 's/^EXTRAS://' || true)"
 if [ -n "$lista_extras" ]; then
   echo "    fuera de la lista autorizada: ${lista_extras}"
-  # Solo importa al versionar: en seco no se sube nada, asi que se informa y se sigue.
-  if [ "$MODE" = "apply" ] && [ "${ALLOW_EXTRA_DISEASES:-0}" != "1" ]; then
-    fatal "el consolidado contiene padecimientos fuera de la lista autorizada (${lista_extras}). Versionarlo los sube al almacenamiento remoto. Declara ALLOW_EXTRA_DISEASES=1 si es lo que quieres."
-  fi
-  if [ "$MODE" = "apply" ]; then
-    echo "    ALLOW_EXTRA_DISEASES=1: se versionaran tambien"
-  else
-    echo "    (en seco no se versiona; al publicar hara falta ALLOW_EXTRA_DISEASES=1)"
-  fi
+  echo "    (este guion no publica; el filtro por lifecycle los mantiene fuera del sitio)"
 fi
 
 echo ""
 echo ">>> PREFLIGHT COMPLETO"
 
 # ─────────────────────────────────────────────────────────────────────
-# 2. PREPARAR — datos y computo. No publica.
+# 2. SEMBRAR EL STAGING — el destino se clona; nada se escribe en el sitio real
+# ─────────────────────────────────────────────────────────────────────
+paso "SEMBRAR STAGING"
+rm -rf "$TRABAJO"
+mkdir -p "$TRABAJO/outputs/dashboard" "$TRABAJO/outputs/backend"
+
+# `cp -Rc` usa clonefile en APFS: instantaneo y sin duplicar espacio en disco.
+for elemento in Reports epibot validacion_semanal.html news.json index.html novedades.html; do
+  if [ -e "${DASHBOARD_REAL}/${elemento}" ]; then
+    cp -Rc "${DASHBOARD_REAL}/${elemento}" "$TRABAJO/outputs/dashboard/" 2>/dev/null \
+      || cp -R "${DASHBOARD_REAL}/${elemento}" "$TRABAJO/outputs/dashboard/"
+  fi
+done
+$PYTHON -m scripts.refresh_staging snapshot \
+  --raiz "$TRABAJO/outputs" --salida "$TRABAJO/semilla.json"
+
+# A partir de aqui, los generadores escriben en el staging y NO en el sitio.
+DASHBOARD_ROOT="$TRABAJO/outputs/dashboard"
+REPORTS="${DASHBOARD_ROOT}/Reports"
+EPIBOT="${DASHBOARD_ROOT}/epibot"
+
+# ─────────────────────────────────────────────────────────────────────
+# 3. PREPARAR — datos y computo. No publica.
 # ─────────────────────────────────────────────────────────────────────
 _semana_de() { tail -1 "$CONSOLIDADO" | cut -d',' -f1,2; }
 ANTES="$(_semana_de)"
+DIGEST_CONSOLIDADO_ANTES="$(shasum -a 256 "$CONSOLIDADO" | cut -d' ' -f1)"
 
 paso "[1/10] Traer commits de datos del flujo automatizado"
 # --ff-only: si el remoto divergio, aborta en vez de fabricar un merge.
@@ -247,7 +263,10 @@ $PYTHON -m scripts.build_neuro_gallery --out "$REPORTS"
 paso "[7/10] Dengue: produccion + web"
 if [ "$DENGUE_OK" -eq 1 ] || [ -f reports/forecasts/nbglm/all_forecast_nbglm.csv ]; then
   make dengue-produccion
-  make dengue-web
+  # Se redirigen explicitamente: por defecto apuntan al sitio real.
+  make dengue-web \
+    DASHBOARD_DENGUE="${REPORTS}/dengue" \
+    DASHBOARD_EPIBOT="${EPIBOT}"
 else
   echo "    !! Se omite Dengue web (sin datos/forecast NBGLM). Revisa make dengue-pipeline manual."
 fi
@@ -282,91 +301,42 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────────────
-# 3. MANIFIESTO — que cambiaria, antes de decidir publicarlo
+# 4. SELLAR — inventario y manifiesto de lo producido
 # ─────────────────────────────────────────────────────────────────────
-paso "MANIFIESTO DE CAMBIOS"
-mkdir -p "$MANIFEST_DIR"
-MANIFEST="${MANIFEST_DIR}/refresh_$(date +%Y%m%d_%H%M%S).txt"
-{
-  echo "modo                 ${MODE}"
-  echo "fecha                $(date -u +%Y-%m-%dT%H:%M:%SZ)"
-  echo "semana antes         ${ANTES}"
-  echo "semana despues       ${ANIO},${SEM}"
-  echo "dengue               $([ "$DENGUE_OK" -eq 1 ] && echo ok || echo 'fallo, se conservo el previo')"
-  echo "indice RAG           $([ "$RAG_OK" -eq 1 ] && echo sincronizado || echo 'DESFASADO: regenerar antes de publicar')"
-  echo "padecimientos        $(echo "$extras" | grep '^PRESENTES:' | sed 's/^PRESENTES://')"
-  echo ""
-  echo "== repositorio principal (rastreado) =="
-  git -C "$REPO_ROOT" status --short --untracked-files=no || true
-  echo ""
-  echo "== dashboard (rastreado) =="
-  git -C "$DASHBOARD_ROOT" status --short --untracked-files=no || true
-} | tee "$MANIFEST"
+paso "SELLAR STAGING"
+
+# El backend aporta al staging las tablas que el refresh regenera y que viven en git.
+mkdir -p "$TRABAJO/outputs/backend/reports/ProdDetails"
+for f in reports/ProdDetails/tabla_333_modelos_produccion.xlsx \
+         reports/ProdDetails/auditoria_motores_2026.xlsx \
+         reports/ProdDetails/produccion_dengue.csv \
+         reports/ProdDetails/produccion_dengue.xlsx \
+         reports/ProdDetails/validacion_semanal.html; do
+  [ -f "$f" ] && cp "$f" "$TRABAJO/outputs/backend/reports/ProdDetails/"
+done
+
+HEAD_BACKEND="$(git -C "$REPO_ROOT" rev-parse HEAD)"
+HEAD_DASHBOARD="$(git -C "$DASHBOARD_REAL" rev-parse HEAD)"
+
+$PYTHON -m scripts.refresh_staging seal \
+  --trabajo "$TRABAJO" \
+  --semilla "$TRABAJO/semilla.json" \
+  --head-backend "$HEAD_BACKEND" \
+  --head-dashboard "$HEAD_DASHBOARD" \
+  --digest-consolidado "$(shasum -a 256 "$CONSOLIDADO" | cut -d' ' -f1)" \
+  --semana-anterior "$ANTES" \
+  --semana-nueva "${ANIO},${SEM}" \
+  --padecimientos "$(echo "$PADECIMIENTOS_PUBLICABLES" | tr ' ' ',')"
+
 echo ""
-echo "    manifiesto -> ${MANIFEST}"
-
-if [ "$MODE" != "apply" ]; then
-  echo ""
-  echo ">>> MODO EN SECO: no se versiono ni publico nada."
-  echo "    Los artefactos locales SI se regeneraron; revisa el manifiesto de arriba."
-  echo "    Para publicar:  make update-week-apply"
-  [ "$DENGUE_OK" -eq 0 ] && echo "    NOTA: Dengue quedo en su version previa."
-  exit 0
-fi
-
-# ─────────────────────────────────────────────────────────────────────
-# 4. PUBLICAR — solo con --apply
-# ─────────────────────────────────────────────────────────────────────
+echo ">>> PREPARACION COMPLETA (sem ${SEM}/${ANIO}). Dengue_OK=${DENGUE_OK}."
+echo "    NADA se publico: los artefactos estan sellados bajo runs/_refresh/."
+echo "    Revisa el manifiesto y despues instala con:"
+echo "      make update-week-apply MANIFEST=runs/_refresh/<run_id>/manifest.json"
 if [ "$RAG_OK" -ne 1 ]; then
-  fatal "el indice de recuperacion del EpiBot no corresponde al corpus. Regeneralo antes de publicar, o el asistente respondera desde un corpus que ya no existe."
+  echo ""
+  echo "    ATENCION: el indice RAG no corresponde al corpus. Regeneralo ANTES de instalar:"
+  echo "      cd ${DASHBOARD_REAL}/epibot && GEMINI_API_KEY=... npm run rag:build"
 fi
-
-# ORDEN DELIBERADO: primero el almacenamiento y el repositorio principal, y el dashboard
-# al final. Al reves, si la segunda mitad fallaba, el sitio ya habia quedado publicado
-# apuntando a datos que nadie habia versionado. El dashboard es la superficie visible: es
-# lo ultimo que se mueve, cuando todo lo que lo respalda ya esta en su sitio.
-
-paso "PUBLICAR · repositorio principal"
-# Objetivos EXPLICITOS. Antes se versionaba `models` y `reports/forecasts` completos, que
-# arrastraban los 790 artefactos preliminares de obesidad al almacenamiento compartido
-# como si fueran produccion. El refresh semanal no reentrena: no tiene por que tocar los
-# modelos. Sin `|| true`: si el versionado falla, el flujo se detiene en vez de confirmar
-# punteros que no corresponden a lo almacenado.
-dvc add "$CONSOLIDADO"
-dvc push "${CONSOLIDADO}.dvc"
-git add "${CONSOLIDADO}.dvc" reports/ProdDetails/
-if git diff --cached --quiet; then
-  echo "    Repo principal sin cambios."
-else
-  _msg="data/prod: refresh semanal sem ${SEM}/${ANIO} (consolidado, tablas, validacion)"
-  # El hook reformatea validacion_semanal.html y aborta el primer intento;
-  # se re-agrega y se reintenta UNA vez con el archivo ya corregido.
-  git commit -q -m "$_msg" \
-    || { git add "${CONSOLIDADO}.dvc" reports/ProdDetails/; git commit -q -m "$_msg"; }
-  git push origin "$RAMA_ESPERADA"
-  echo "    Repo principal publicado."
-fi
-
-paso "PUBLICAR · dashboard"
-# Cache-bust: el EpiBot carga knowledge.json con ?v=DATA_VERSION. Sin subirlo, el
-# navegador sirve el knowledge.json anterior tras cada refresh.
-_DV_TODAY="$(date +%Y%m%d)"
-if [ -f "${DASHBOARD_ROOT}/epibot/js/kb.js" ]; then
-  perl -i -pe "s/const DATA_VERSION = '[0-9]+';/const DATA_VERSION = '${_DV_TODAY}';/" \
-    "${DASHBOARD_ROOT}/epibot/js/kb.js"
-  echo "    cache-bust: DATA_VERSION -> ${_DV_TODAY}"
-fi
-git -C "$DASHBOARD_ROOT" add Reports/ epibot/ validacion_semanal.html news.json index.html novedades.html
-if git -C "$DASHBOARD_ROOT" diff --cached --quiet; then
-  echo "    Dashboard sin cambios."
-else
-  git -C "$DASHBOARD_ROOT" commit -q -m "reports+epibot: refresh semanal sem ${SEM}/${ANIO} (galeria, zoom, knowledge, barra de fechas, novedades)"
-  git -C "$DASHBOARD_ROOT" push
-  echo "    Dashboard publicado."
-fi
-
-echo ""
-echo ">>> REFRESH SEMANAL PUBLICADO (sem ${SEM}/${ANIO}). Dengue_OK=${DENGUE_OK}."
-echo "    manifiesto: ${MANIFEST}"
-[ "$DENGUE_OK" -eq 0 ] && echo "    NOTA: Dengue quedo en su version previa; corre 'make dengue-pipeline' a mano."
+[ "$DENGUE_OK" -eq 0 ] && echo "    NOTA: Dengue quedo en su version previa."
 exit 0

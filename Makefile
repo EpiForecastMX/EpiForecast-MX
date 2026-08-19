@@ -121,8 +121,10 @@ preprocess: reset get-dataset filter clean transform get-inegi mapper
 # incorpora con su propio flujo. El prep lee del CONSOLIDADO (que ya contiene Dengue),
 # NO del data_raw.csv neuro; por eso el override de data.raw_data_file=${data.boletin}
 # (interpolacion OmegaConf -> fuente unica, sin duplicar la ruta del consolidado).
-DASHBOARD_DENGUE   := ../EpiForecast-IMSS-Dashboard/Reports/dengue
-DASHBOARD_EPIBOT   := ../EpiForecast-IMSS-Dashboard/epibot
+# `?=` para que el refresh semanal pueda redirigirlos a su staging: el flujo genera
+# fuera del sitio y solo despues se instala lo sellado.
+DASHBOARD_DENGUE   ?= ../EpiForecast-IMSS-Dashboard/Reports/dengue
+DASHBOARD_EPIBOT   ?= ../EpiForecast-IMSS-Dashboard/epibot
 DASHBOARD_MOTORES  := ../EpiForecast-IMSS-Dashboard/Reports/motores
 
 ## Donas de distribucion de motores por padecimiento neuro (EpiBot)
@@ -492,18 +494,24 @@ data-commit:
 data-weekly: data-add data-commit
 	@echo ">>> Flujo semanal completado."
 
-## Refresh semanal EN SECO (sin retrain, SIN publicar): preflight, datos DVC dirigidos,
-## Dengue, reselect motor, tableau, validacion, galeria neuro+Dengue, zoom, knowledge,
-## barra de fechas y manifiesto de cambios. NO versiona ni envia nada.
+## Refresh semanal: PREPARA y SELLA. Genera todo bajo runs/_refresh/<run_id>/outputs
+## y escribe su manifiesto. NO publica, no versiona y no envia nada.
 .PHONY: update-week
 update-week:
-	bash scripts/actualiza_semanal.sh --dry-run
+	bash scripts/actualiza_semanal.sh
 
-## Igual que update-week y ADEMAS versiona en DVC/S3 y publica en ambos repositorios.
-## Correr solo tras revisar el manifiesto del modo en seco.
+## Instala un staging YA SELLADO. Exige el manifiesto de forma explicita; verifica los
+## HEAD, el inventario y el digest de cada artefacto, y copia esos bytes sin regenerar.
+##   make update-week-apply MANIFEST=runs/_refresh/<run_id>/manifest.json
 .PHONY: update-week-apply
 update-week-apply:
-	bash scripts/actualiza_semanal.sh --apply
+ifndef MANIFEST
+	$(error Uso: make update-week-apply MANIFEST=runs/_refresh/<run_id>/manifest.json)
+endif
+	$(PYTHON) -m scripts.refresh_staging apply \
+		--manifiesto "$(MANIFEST)" \
+		--destino-backend . \
+		--destino-dashboard ../EpiForecast-IMSS-Dashboard
 
 ## Ver estado de DVC
 .PHONY: data-status

@@ -343,3 +343,47 @@ def aplica(
             previo.unlink(missing_ok=True)
 
     return sorted(manifiesto.inventario)
+
+
+def snapshot_digests(raiz: Path) -> dict[str, str]:
+    """Digest de cada archivo bajo `raiz`, con rutas relativas.
+
+    Se toma antes de generar, sobre la semilla clonada del destino, para poder distinguir
+    después qué produjo el refresh de lo que ya estaba ahí.
+    """
+    if not raiz.is_dir():
+        return {}
+    return {str(rel): sha256_de(raiz / rel) for rel in _relativos(raiz)}
+
+
+def poda_a_cambiados(raiz_outputs: Path, semilla: dict[str, str]) -> dict[str, str]:
+    """Deja en el staging solo lo que el refresh cambió o creó.
+
+    El staging se siembra clonando el destino, porque varios generadores leen lo que ya
+    existe. Sellarlo entero significaría inventariar y reinstalar los casi dos mil
+    archivos del sitio en cada refresh, y un inventario así no dice nada: lo que hay que
+    poder revisar es qué cambió esta semana.
+
+    Devuelve el inventario de lo que queda. Los directorios que quedan vacíos se retiran.
+    """
+    if not raiz_outputs.is_dir():
+        raise StagingError(f"no existe el directorio de artefactos: {raiz_outputs}")
+
+    conservados: dict[str, str] = {}
+    for rel in _relativos(raiz_outputs):
+        clave = str(rel)
+        actual = sha256_de(raiz_outputs / rel)
+        if semilla.get(clave) == actual:
+            (raiz_outputs / rel).unlink()
+        else:
+            conservados[clave] = actual
+
+    for directorio in sorted(
+        (p for p in raiz_outputs.rglob("*") if p.is_dir()),
+        key=lambda p: len(p.parts),
+        reverse=True,
+    ):
+        if not any(directorio.iterdir()):
+            directorio.rmdir()
+
+    return conservados
