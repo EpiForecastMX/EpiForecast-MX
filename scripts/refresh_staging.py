@@ -145,6 +145,64 @@ def _cmd_apply(args: argparse.Namespace) -> int:
     return 0
 
 
+def _archivos_modificados(repo: Path) -> set[str]:
+    """Rutas rastreadas que difieren del HEAD, relativas a la raíz del repositorio."""
+    salida = subprocess.run(
+        ["git", "-C", str(repo), "status", "--porcelain", "--untracked-files=no"],
+        capture_output=True,
+        text=True,
+    )
+    if salida.returncode != 0:
+        raise StagingError(f"no se pudo leer el estado de {repo}: {salida.stderr.strip()}")
+    rutas: set[str] = set()
+    for linea in salida.stdout.splitlines():
+        if not linea.strip():
+            continue
+        ruta = linea[3:].strip().strip('"')
+        # Los renombrados llegan como "antes -> despues"; interesa el destino.
+        if " -> " in ruta:
+            ruta = ruta.split(" -> ", 1)[1]
+        rutas.add(ruta)
+    return rutas
+
+
+def _cmd_check_completeness(args: argparse.Namespace) -> int:
+    """Comprueba que instalar el sello cambia EXACTAMENTE lo que el sello declara.
+
+    Un sello puede ser íntegro y aun así estar incompleto: si un generador escribió
+    fuera del staging, su salida nunca entró al inventario y la instalación deja el
+    destino a medio actualizar. Esto lo detecta comparando conjuntos, no contando.
+    """
+    manifiesto = Manifiesto.lee(Path(args.manifiesto))
+    destinos = {
+        "backend": Path(args.destino_backend),
+        "dashboard": Path(args.destino_dashboard),
+    }
+
+    declarado: dict[str, set[str]] = {clave: set() for clave in destinos}
+    for rel in manifiesto.inventario:
+        partes = Path(rel).parts
+        if partes[0] in declarado:
+            declarado[partes[0]].add("/".join(partes[1:]))
+
+    problemas: list[str] = []
+    for clave, raiz in destinos.items():
+        observado = _archivos_modificados(raiz)
+        esperado = declarado[clave]
+        # Un artefacto identico al del HEAD no aparece en el diff y no es un problema.
+        sobran = sorted(observado - esperado)
+        print(f"    {clave}: declarados {len(esperado):,} · modificados {len(observado):,}")
+        if sobran:
+            problemas.append(f"{clave}: {len(sobran)} archivo(s) cambiados fuera del inventario")
+            for r in sobran[:10]:
+                print(f"      FUERA DEL SELLO: {r}")
+
+    if problemas:
+        raise StagingError("; ".join(problemas))
+    print("    completitud: todo lo que cambió está declarado en el sello")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="orden", required=True)
@@ -172,6 +230,14 @@ def main(argv: list[str] | None = None) -> int:
     p_app.add_argument("--destino-backend", default=str(REPO_ROOT))
     p_app.add_argument("--destino-dashboard", required=True)
     p_app.set_defaults(func=_cmd_apply)
+
+    p_chk = sub.add_parser(
+        "check-completeness", help="verifica que lo instalado coincide con lo sellado"
+    )
+    p_chk.add_argument("--manifiesto", required=True)
+    p_chk.add_argument("--destino-backend", default=str(REPO_ROOT))
+    p_chk.add_argument("--destino-dashboard", required=True)
+    p_chk.set_defaults(func=_cmd_check_completeness)
 
     args = parser.parse_args(argv)
     try:

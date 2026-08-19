@@ -194,11 +194,19 @@ def upsert_news(item: dict[str, Any], news_path: Path) -> None:
     news_path.write_text(json.dumps(d, ensure_ascii=False, indent=4) + "\n", encoding="utf-8")
 
 
-def bump_static_html(data: dict[str, Any], item: dict[str, Any]) -> None:
-    """Datelines 'Edición de la semana N, AAAA' + fallback estatico del lead."""
+def bump_static_html(data: dict[str, Any], item: dict[str, Any], dashboard: Path) -> None:
+    """Datelines 'Edición de la semana N, AAAA' + fallback estatico del lead.
+
+    `dashboard` es obligatorio. Antes se ignoraba la ruta recibida por `main` y se
+    escribia sobre la constante global, de modo que `news.json` iba al destino pedido
+    pero `index.html` y `novedades.html` acababan siempre en el sitio real. En el
+    refresh semanal eso significaba dos cosas a la vez: el sello quedaba incompleto,
+    porque esos dos archivos nunca entraban en el inventario, y el sitio se modificaba
+    aunque la corrida no publicara nada.
+    """
     wk, year = data["week"], data["year"]
     for name in ("index.html", "novedades.html"):
-        p = DASHBOARD / name
+        p = dashboard / name
         if not p.exists():
             continue
         html = p.read_text(encoding="utf-8")
@@ -246,7 +254,7 @@ def main() -> int:
 
     item = build_item(data)
     upsert_news(item, news_path)
-    bump_static_html(data, item)
+    bump_static_html(data, item, args.dashboard)
 
     print(
         f"  news.json -> sem {data['week']}/{data['year']} | "
