@@ -67,20 +67,25 @@ paso "PREFLIGHT (modo: ${MODE})"
 
 [ -x "$PYTHON" ] || fatal "no existe el interprete del entorno: $PYTHON"
 command -v dvc >/dev/null || fatal "dvc no esta en el PATH"
-[ -d "$DASHBOARD_ROOT" ] || fatal "no existe el repositorio del dashboard: $DASHBOARD_ROOT"
+[ -d "$DASHBOARD_REAL" ] || fatal "no existe el repositorio del dashboard: $DASHBOARD_REAL"
 
-# P1 · ambos repositorios en la rama que sirve el sitio.
-for par in "principal:${REPO_ROOT}" "dashboard:${DASHBOARD_ROOT}"; do
+# P1 · rama de cada repositorio. Solo se informa: este guion ya NO publica, y el gate en
+# clon limpio se corre precisamente sobre worktrees en HEAD suelto. Quien publica es el
+# apply, y alli la comprobacion es mas fuerte que la rama: exige que el HEAD sea
+# exactamente el que se sello.
+for par in "principal:${REPO_ROOT}" "dashboard:${DASHBOARD_REAL}"; do
   nombre="${par%%:*}"; ruta="${par#*:}"
   rama="$(git -C "$ruta" rev-parse --abbrev-ref HEAD)"
-  [ "$rama" = "$RAMA_ESPERADA" ] || fatal \
-    "el repositorio ${nombre} esta en '${rama}' y se esperaba '${RAMA_ESPERADA}'. Publicar desde otra rama deja el sitio sin cambios y el flujo anunciando exito."
-  echo "    ${nombre}: rama ${rama}"
+  if [ "$rama" = "$RAMA_ESPERADA" ]; then
+    echo "    ${nombre}: rama ${rama}"
+  else
+    echo "    ${nombre}: rama ${rama} (no es ${RAMA_ESPERADA}; se prepara igual, no se publica)"
+  fi
 done
 
 # P2 · arbol rastreado limpio: un refresh sobre cambios a medio hacer los publica.
 if [ "$ALLOW_DIRTY" -eq 0 ]; then
-  for par in "principal:${REPO_ROOT}" "dashboard:${DASHBOARD_ROOT}"; do
+  for par in "principal:${REPO_ROOT}" "dashboard:${DASHBOARD_REAL}"; do
     nombre="${par%%:*}"; ruta="${par#*:}"
     if [ -n "$(git -C "$ruta" status --porcelain --untracked-files=no)" ]; then
       git -C "$ruta" status --short --untracked-files=no >&2
@@ -91,13 +96,15 @@ if [ "$ALLOW_DIRTY" -eq 0 ]; then
 fi
 
 # P3 · upstream configurado y sin divergencia: publicar sobre un remoto adelantado falla tarde.
-for par in "principal:${REPO_ROOT}" "dashboard:${DASHBOARD_ROOT}"; do
+for par in "principal:${REPO_ROOT}" "dashboard:${DASHBOARD_REAL}"; do
   nombre="${par%%:*}"; ruta="${par#*:}"
-  git -C "$ruta" rev-parse --abbrev-ref '@{upstream}' >/dev/null 2>&1 \
-    || fatal "el repositorio ${nombre} no tiene upstream configurado en ${RAMA_ESPERADA}"
-  git -C "$ruta" fetch --quiet origin "$RAMA_ESPERADA"
-  detras="$(git -C "$ruta" rev-list --count "HEAD..origin/${RAMA_ESPERADA}")"
-  echo "    ${nombre}: ${detras} commit(s) por detras del remoto"
+  if git -C "$ruta" rev-parse --abbrev-ref '@{upstream}' >/dev/null 2>&1; then
+    git -C "$ruta" fetch --quiet origin "$RAMA_ESPERADA"
+    detras="$(git -C "$ruta" rev-list --count "HEAD..origin/${RAMA_ESPERADA}")"
+    echo "    ${nombre}: ${detras} commit(s) por detras del remoto"
+  else
+    echo "    ${nombre}: sin upstream (HEAD suelto); se prepara igual"
+  fi
 done
 
 # P4 · GUARD: archivos sin versionar en las rutas que ESTE flujo descarga.
