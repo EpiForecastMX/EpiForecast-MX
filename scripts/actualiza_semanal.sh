@@ -155,11 +155,20 @@ if [ -n "$avisan" ]; then
   echo "            Este flujo no los toca, pero un pull forzado a mano si los retiraria:"
   echo "$avisan" | awk -F'|' '{printf "      %-46s %6d\n", $1, $2}'
 fi
+# Si hay archivos sin versionar en una ruta que este flujo descarga, la descarga los
+# retiraria. La respuesta segura no es abortar sino OMITIR esa descarga: solo sirve para
+# traer lo que falte, y omitirla nunca destruye nada. Se declara, porque el precio es que
+# si el flujo automatizado subio algo nuevo, esta corrida no lo vera.
+OMITIR_PULL_PDFS=0
+OMITIR_PULL_CONSOLIDADO=0
 if [ -n "$bloquean" ]; then
-  echo "$bloquean" | sed 's/^/      /' >&2
-  fatal "hay archivos sin versionar en rutas que este flujo descarga. La descarga los retiraria. Versionalos o muevelos antes de continuar."
+  echo "    sin versionar en rutas de descarga (se omitira su descarga para no retirarlos):"
+  echo "$bloquean" | sed 's/^/      /'
+  echo "$bloquean" | grep -q '^data/raw_PDFs/' && OMITIR_PULL_PDFS=1
+  echo "$bloquean" | grep -q '^data/processed/' && OMITIR_PULL_CONSOLIDADO=1
+else
+  echo "    ninguna ruta de descarga en riesgo"
 fi
-echo "    ninguna ruta de descarga en riesgo"
 
 # P5 · padecimientos presentes frente a la lista autorizada.
 paso "PREFLIGHT · padecimientos en el consolidado"
@@ -219,14 +228,22 @@ git pull --ff-only origin "$RAMA_ESPERADA"
 
 paso "[2/10] Descargar los objetivos DVC necesarios"
 # Dirigido y sin forzar: no puede retirar nada que no este en estos punteros.
-dvc pull data/raw_PDFs.dvc
+if [ "$OMITIR_PULL_PDFS" -eq 1 ]; then
+  echo "    se omite data/raw_PDFs.dvc: hay PDFs locales sin versionar que la descarga retiraria"
+else
+  dvc pull data/raw_PDFs.dvc
+fi
 
 # El consolidado NO se descarga: se fusiona. Es una superposicion del archivo versionado
 # y de filas que hoy solo viven en local, asi que `dvc pull` lo ve modificado y se niega,
 # y `--force` lo resolveria borrando el trabajo local. La sincronizacion aditiva agrega
 # solo las semanas nuevas y falla cerrado si el origen corrigio una fila ya existente.
 # Se aplica tambien en seco: es preparacion local, no publicacion.
-$PYTHON -m scripts.sincroniza_consolidado
+if [ "$OMITIR_PULL_CONSOLIDADO" -eq 1 ]; then
+  echo "    se omite la sincronizacion: hay datos locales sin versionar en data/processed/"
+else
+  $PYTHON -m scripts.sincroniza_consolidado
+fi
 
 ULTIMA="$(_semana_de)"
 ANIO="$(echo "$ULTIMA" | cut -d',' -f1)"
