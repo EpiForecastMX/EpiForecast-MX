@@ -147,8 +147,20 @@ def _cmd_apply(args: argparse.Namespace) -> int:
 
 def _archivos_modificados(repo: Path) -> set[str]:
     """Rutas rastreadas que difieren del HEAD, relativas a la raíz del repositorio."""
+    # `core.quotepath=false` evita que git devuelva los acentos como escapes octales
+    # (`\303\251` por `é`), que no casarían contra el inventario y darían falsos
+    # positivos justo en las entidades con tilde.
     salida = subprocess.run(
-        ["git", "-C", str(repo), "status", "--porcelain", "--untracked-files=no"],
+        [
+            "git",
+            "-C",
+            str(repo),
+            "-c",
+            "core.quotepath=false",
+            "status",
+            "--porcelain",
+            "--untracked-files=no",
+        ],
         capture_output=True,
         text=True,
     )
