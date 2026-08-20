@@ -155,7 +155,8 @@ def test_el_desfase_de_semana_esta_confirmado():
 #
 # Sin esto la suite queda verde aunque LaTeX falle: `nonstopmode` escribe un PDF
 # igualmente, así que contar páginas no basta. Aquí se exige código de salida 0 y cero
-# errores '!'. El master vive fuera del árbol rastreado, así que la prueba se salta sola.
+# errores '!'. El master sí se versiona (excepción explícita en .gitignore), así que su
+# ausencia es un fallo, no un skip; lo único que se salta es la falta de pdflatex.
 
 MASTER = RAIZ / "Congresos/MICAI/paper_camera_ready.tex"
 
@@ -245,3 +246,36 @@ def test_el_master_cabe_en_el_limite_de_micai(compilacion):
     pg = re.findall(r"Output written on .*?\((\d+) pages", log)
     assert pg, "pdflatex no escribió PDF"
     assert int(pg[0]) <= 20, f"{pg[0]} páginas, el techo de MICAI es 20"
+
+
+def test_el_gate_de_compilacion_bloquea_por_exceso_de_paginas(tmp_path):
+    """compila.sh debe FALLAR con más de 20 páginas, no sólo imprimir el número.
+
+    Prueba destructiva sobre una copia: se rellena el master hasta desbordar el techo
+    y se exige que el script salga distinto de cero. Un gate que imprime la cifra pero
+    no la aplica no es un gate.
+    """
+    import shutil
+    import subprocess
+
+    guion = MASTER.parent / "compila.sh"
+    if not guion.exists():
+        pytest.skip("compila.sh no está en este árbol")
+    if shutil.which("pdflatex") is None:
+        pytest.skip("pdflatex no disponible en esta máquina")
+
+    for n in ("llncs.cls", "splncs04.bst", "compila.sh", MASTER.name):
+        shutil.copy(MASTER.parent / n, tmp_path / n)
+    shutil.copytree(MASTER.parent / "Figures", tmp_path / "Figures", dirs_exist_ok=True)
+
+    roto = tmp_path / MASTER.name
+    roto.write_text(
+        roto.read_text().replace(
+            "\\end{document}", "\\clearpage\\null\\clearpage\\null\n\\end{document}"
+        )
+    )
+    r = subprocess.run(
+        ["./compila.sh"], cwd=tmp_path, capture_output=True, text=True, timeout=600, check=False
+    )
+    assert r.returncode != 0, f"el gate dejó pasar un master sobre el techo:\n{r.stdout}"
+    assert "FALLA" in r.stdout
