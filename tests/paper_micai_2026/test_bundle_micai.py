@@ -160,14 +160,36 @@ def test_el_desfase_de_semana_esta_confirmado():
 MASTER = RAIZ / "Congresos/MICAI/paper_camera_ready.tex"
 
 
+DEPENDENCIAS = [
+    "paper_camera_ready.tex",
+    "llncs.cls",
+    "splncs04.bst",
+    "Figures/fig01_temporal_distribution.pdf",
+    "Figures/fig19_validation_2026.pdf",
+    "Figures/fig20_oos_perstate.pdf",
+]
+
+
+def test_el_master_y_sus_dependencias_estan_versionados():
+    """Un clon limpio tiene que poder reconstruir el camera-ready.
+
+    Esto NO se salta: si el master no está, la suite debe ponerse roja. Antes se saltaba,
+    y eso dejaba a CI en verde sin paper.
+    """
+    faltan = [d for d in DEPENDENCIAS if not (MASTER.parent / d).exists()]
+    assert not faltan, (
+        f"faltan del árbol: {faltan}. El camera-ready se versiona por una excepción "
+        "explícita de .gitignore; si desapareció, la excepción se rompió."
+    )
+
+
 def _compila(tmp_path):
     import shutil
     import subprocess
 
-    if not MASTER.exists():
-        pytest.skip("el master no está en este árbol")
+    assert MASTER.exists(), f"el master no está en {MASTER}"
     if shutil.which("pdflatex") is None:
-        pytest.skip("pdflatex no disponible")
+        pytest.skip("pdflatex no disponible en esta máquina")
     orig = MASTER.parent
     for n in ("llncs.cls", "splncs04.bst", MASTER.name):
         shutil.copy(orig / n, tmp_path / n)
