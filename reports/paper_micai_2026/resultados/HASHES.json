@@ -1,0 +1,11 @@
+{
+  "sello": "paquete sellado 2026-08-20T16:35:34+00:00 · modelos c13e7163 · observaciones b43ebdf2",
+  "archivos": {
+    "ablacion_dinamica.csv": "7d89135442dfcb405b1127aaf28186ec08fcb06f0990df9d7ab8bab783adb050",
+    "ablacion_estatica.csv": "34ece1f241d73a250bf36f159bdbcfe6ed4bb73f7735a3cf0a34a3f2e272f1fa",
+    "dinamica_por_serie.csv": "5cc2ca799279a757c572dbedcccb40b42b00b98569e8bf8463143a82d5857ddb",
+    "estatica_por_serie.csv": "2b747ce9da16154c10ff025e25eda0d033744d025eb8b2749083a06b53de66f4",
+    "oos_por_serie.csv": "a9a267aed882d8784ebecdbd958cdd9281a501334dfbdc4aae338e4e97fe95ba",
+    "region_membership.csv": "4d337494edeaadd6bce050ecb7b4d9f2f6e33d71225f10173bff463e1d096239"
+  }
+}
