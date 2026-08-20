@@ -149,3 +149,77 @@ def test_el_desfase_de_semana_esta_confirmado():
     con_w = sum(abs(modelo[w] - bol[w]) < 0.5 for w in ws)
     con_w1 = sum(abs(modelo[w] - bol[w + 1]) < 0.5 for w in ws)
     assert con_w1 > 5 * max(con_w, 1), f"coincidencias w={con_w} w+1={con_w1}"
+
+
+# --------------------------------------------------------------- gate de compilacion
+#
+# Sin esto la suite queda verde aunque LaTeX falle: `nonstopmode` escribe un PDF
+# igualmente, así que contar páginas no basta. Aquí se exige código de salida 0 y cero
+# errores '!'. El master vive fuera del árbol rastreado, así que la prueba se salta sola.
+
+MASTER = RAIZ / "Congresos/MICAI/paper_camera_ready.tex"
+
+
+def _compila(tmp_path):
+    import shutil
+    import subprocess
+
+    if not MASTER.exists():
+        pytest.skip("el master no está en este árbol")
+    if shutil.which("pdflatex") is None:
+        pytest.skip("pdflatex no disponible")
+    orig = MASTER.parent
+    for n in ("llncs.cls", "splncs04.bst", MASTER.name):
+        shutil.copy(orig / n, tmp_path / n)
+    shutil.copytree(orig / "Figures", tmp_path / "Figures", dirs_exist_ok=True)
+    rc = 0
+    for _ in range(3):
+        r = subprocess.run(
+            ["pdflatex", "-interaction=nonstopmode", MASTER.name],
+            cwd=tmp_path,
+            capture_output=True,
+            timeout=300,
+            check=False,
+        )
+        rc = r.returncode or rc
+    log = (tmp_path / MASTER.with_suffix(".log").name).read_text(encoding="latin-1")
+    return rc, log
+
+
+@pytest.fixture(scope="module")
+def compilacion(tmp_path_factory):
+    return _compila(tmp_path_factory.mktemp("latex"))
+
+
+def test_el_master_compila_sin_errores(compilacion):
+    rc, log = compilacion
+    errores = [ln for ln in log.splitlines() if ln.startswith("!")]
+    assert rc == 0, f"pdflatex salió con {rc}"
+    assert not errores, "errores de LaTeX:\n" + "\n".join(errores[:5])
+
+
+def test_no_quedan_referencias_sin_resolver(compilacion):
+    import re
+
+    _, log = compilacion
+    assert not re.findall(r"[Uu]ndefined (?:citation|reference|control)", log)
+
+
+def test_ningun_overfull_grave(compilacion):
+    import re
+
+    _, log = compilacion
+    graves = [
+        float(v) for v in re.findall(r"Overfull \\[hv]box \(([0-9.]+)pt", log) if float(v) > 15
+    ]
+    assert not graves, f"overfull > 15pt: {graves}"
+
+
+def test_el_master_cabe_en_el_limite_de_micai(compilacion):
+    """MICAI: hasta 20 páginas; más exige contactar a los organizadores."""
+    import re
+
+    _, log = compilacion
+    pg = re.findall(r"Output written on .*?\((\d+) pages", log)
+    assert pg, "pdflatex no escribió PDF"
+    assert int(pg[0]) <= 20, f"{pg[0]} páginas, el techo de MICAI es 20"
