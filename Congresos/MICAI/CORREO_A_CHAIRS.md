@@ -1,7 +1,18 @@
 # Correo a los chairs — corrección de metadatos, ponencia #12
 
-Enviar por el contacto de CMT, o directo a los Program Chairs (Gilberto Ochoa-Ruiz,
-Iris Mendez). **Sólo si la edición está cerrada también en tu propio perfil.**
+**Confirmado el 21-ago-2026: la sección autoral de CMT está bloqueada.** Ya no es una
+hipótesis, así que este correo hay que mandarlo.
+
+**Cómo enviarlo, por orden de fiabilidad:**
+
+1. **Responder a la carta de aceptación.** Es lo mejor: ya va dirigida a los chairs y
+   queda hilada con la ponencia #12, sin que nadie tenga que buscar de qué hablas.
+2. **CMT → «Contact Chairs»** (o «Email Chairs») desde la página de la ponencia. Ese
+   enlace sigue activo aunque los campos de autor estén en solo lectura.
+
+Los Program Chairs son **Gilberto Ochoa-Ruiz** e **Iris Mendez**. No tenemos sus
+direcciones directas y no conviene adivinarlas: cualquiera de las dos vías de arriba
+llega, y además deja constancia dentro del sistema.
 
 > **Asunto:** Paper #12 — author metadata correction (spelling and affiliation, no authorship change)
 >
@@ -14,9 +25,9 @@ Iris Mendez). **Sólo si la edición está cerrada también en tu propio perfil.
 > While preparing the camera-ready version we found that the author metadata registered
 > in CMT differs from the final manuscript in two respects. The author list is
 > unchanged — the same five authors, in the same order — so this is a correction of
-> spelling and affiliation, not a change of authorship. The CMT fields appear to be
-> read-only for us at this stage, so we would be grateful if you could apply the
-> corrections or open the record for editing.
+> spelling and affiliation, not a change of authorship. The author section of our
+> submission is read-only on our side, so we cannot apply the corrections ourselves; we
+> would be grateful if you could either apply them or open the record for editing.
 >
 > **Surnames.** All five authors carry compound Spanish surnames, which must be
 > hyphenated so that they are indexed as a single surname rather than split into a
@@ -35,15 +46,16 @@ Iris Mendez). **Sólo si la edición está cerrada también en tu propio perfil.
 > require the name to be written as **Tecnologico de Monterrey** — in Spanish, without
 > the accent, without acronyms and without translations — so that it is indexed
 > correctly in Scopus and Web of Science. The fifth author's affiliation should read
-> **Instituto Mexicano del Seguro Social, OOAD Guerrero (Órgano de Operación
-> Administrativa Desconcentrada), Mexico**.
+> **Instituto Mexicano del Seguro Social, OOAD Guerrero, Mexico**.
 >
 > The camera-ready manuscript already carries the corrected names and affiliations, and
-> we are uploading it within the deadline.
+> we are uploading it within the deadline. Should you prefer that CMT and the manuscript
+> be reconciled the other way round, please let us know and we will adjust the
+> manuscript instead — our only concern is that the two match before production.
 >
 > Thank you very much,
 >
-> Javier Rebull-Saucedo
+> Javier Augusto Rebull-Saucedo
 > Corresponding author, submission #12
 > rebull@outlook.com
 
