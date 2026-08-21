@@ -130,7 +130,7 @@
 
 % =====================================================================
 \begin{abstract}
-Weekly forecasting of psychiatric demand is hard because surveillance
+Weekly forecasting of reported psychiatric incidence is hard because surveillance
 signals are heterogeneous across regions, sex strata, and time, so no single
 forecasting paradigm performs uniformly well. Rather than imposing one
 algorithm system-wide, we present a deterministic, auditable framework
@@ -170,8 +170,8 @@ In Mexico, the National Epidemiological Surveillance System (SINAVE)
 records about 150{,}000 new cases of depressive episode (CIE-10 F32)
 per year~\cite{sinave2026}. Despite the routine availability of weekly
 case counts, psychiatric-service planning remains largely
-\emph{reactive}: without a prospective trajectory, demand surges become
-visible in the bulletin only after they have occurred.
+\emph{reactive}: without a prospective trajectory, surges in reported cases
+become visible in the bulletin only after they have occurred.
 
 Accurate weekly federal-entity forecasts would make this planning
 \emph{proactive}: a reliable 52-week-ahead trajectory would allow
@@ -369,8 +369,8 @@ combinations.
 \paragraph{Temporal and seasonal structure.}
 Figure~\ref{fig:temporal} shows the national series. Three regimes are
 visible: a stable 2014--2018 baseline; the COVID-19 disruption of
-2020--2021, when both reporting capacity and clinical demand shifted
-abruptly; and a post-pandemic regime in 2022--2025 that exceeds
+2020--2021, whose shift these counts cannot apportion between reporting
+and disease; and a post-pandemic regime in 2022--2025 that exceeds
 pre-pandemic levels. The series exhibits clear intra-annual
 seasonality, with recurring annual peaks between epidemiological
 weeks 8 and 20 (February--May).
@@ -813,7 +813,7 @@ supplementary material.
 \label{ssec:demoforecasts}
 
 Forecasting the three strata separately reveals sex-specific
-high-demand windows. The selected national female model (Ensemble,
+peak windows in reported cases. The selected national female model (Ensemble,
 \smape\ $=7.11\%$) projects 116{,}047 cases for 2026, against 43{,}500
 male cases and 155{,}966 in the general stratum; the annual peak falls
 in February--May for both sexes. Because the strata are forecast
@@ -1083,11 +1083,11 @@ The 74\%/\hspace{0pt}26\% reported female--male split, broadly echoed by the
 % women", que es exactamente esa conclusion. Ahora describe la composicion de la
 % demanda registrada --que si es lo que se mide-- y deja el uso como potencial.
 2026 forecast (about 73\%/\hspace{0pt}27\%), describes the composition of
-\emph{reported} demand: a planning figure taken from the national mean alone
+\emph{reported cases}: a planning figure taken from the national mean alone
 would not carry that composition, and male depression remains plausibly
 under-identified. A sex-disaggregated 52-week forecast could therefore inform
-capacity planning for the February--May demand peak and male-targeted
-help-seeking campaigns in quieter months. We
+planning for the February--May peak and male-targeted help-seeking campaigns
+in quieter months, alongside capacity and access data this panel lacks. We
 emphasize that the data represent \emph{reported incidence}, not
 prevalence; the female--male gap is a hypothesis requiring dedicated
 epidemiological validation before being used as policy input. This
@@ -1143,9 +1143,9 @@ contribute to the male shortfall noted in
 Sect.~\ref{ssec:data}. A model fitted to these series therefore learns
 the reporting process together with the disease process, and the
 selection rule inherits both. What the forecasts
-target is therefore reported demand, which is what the panel measures;
-whether reported demand is the right planning target is a health-services
-question this study does not address. The framework should not be read as
+target is therefore reported incidence, which is what the panel measures;
+whether that is the right planning target is a health-services question this
+study does not address. The framework should not be read as
 forecasting community-level incidence, and transfer to a system with
 different case-ascertainment rules must be demonstrated, not assumed.
 

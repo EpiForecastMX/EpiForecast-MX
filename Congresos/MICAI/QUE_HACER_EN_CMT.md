@@ -100,7 +100,7 @@ Al terminar la carga, descarga o captura el acuse de CMT y guárdalo junto a
 `Envio/HASH_ENVIO.txt`. Ese archivo tiene el sha256 del paquete:
 
 ```
-250b11922a047d7089a26fcd2b35a08ce542d19148bb81f2d27ce1c4f436827c
+ccd4db9d20c2bcc9934d4332a1914e65410ffacd42f7c991b3b5b760ff5c579a
 ```
 
 Compruébalo antes de subir — este control falla si el ZIP y los documentos no

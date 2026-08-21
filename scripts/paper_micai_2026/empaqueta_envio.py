@@ -241,7 +241,7 @@ def escribe_sello(zip_path: Path) -> tuple[str, int]:
         if doc.resolve() == SELLO.resolve():
             continue
         texto = doc.read_text(errors="ignore")
-        nuevo = sello.propaga(texto, sha)
+        nuevo = sello.propaga(texto, sha, tam)
         if nuevo != texto:
             doc.write_text(nuevo)
     return sha, tam

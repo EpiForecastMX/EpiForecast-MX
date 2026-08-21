@@ -71,16 +71,47 @@ def hashes_del_paquete(texto: str) -> list[str]:
     return encontrados
 
 
-def propaga(texto: str, sha: str) -> str:
-    """Reescribe SOLO los hashes atribuidos al paquete. Los ajenos no se tocan."""
-    lineas = texto.splitlines(keepends=True)
+# El TAMANIO se declara aparte del hash y tambien caduca. Un documento llego a
+# decir 701,662 bytes con el ZIP en 701,531 y el gate daba verde, porque solo
+# comprobaba el tamanio de HASH_ENVIO.txt. Se escribe de varias formas.
+TAMANIO = re.compile(r"\b(\d{3}[.,\u00a0 ]?\d{3})\b")
+ETIQUETA_TAM = re.compile(r"bytes|tama\u00f1o|tamanio|size", re.I)
+
+
+def _entero(s: str) -> int:
+    return int(re.sub(r"[.,\u00a0 ]", "", s))
+
+
+def tamanios_del_paquete(texto: str) -> list[int]:
+    """Tamanios presentados como el del ZIP. Misma regla de atribucion que el hash."""
+    lineas = texto.splitlines()
+    salida = []
     for i, linea in enumerate(lineas):
-        if not SHA256.search(linea):
-            continue
+        contexto = "\n".join(lineas[max(0, i - VENTANA) : i + 1])
+        if ATRIBUYE.search(contexto) and ETIQUETA_TAM.search(contexto):
+            salida += [_entero(m.group(1)) for m in TAMANIO.finditer(linea)]
+    return salida
+
+
+def propaga(texto: str, sha: str, tam: int | None = None) -> str:
+    """Reescribe SOLO lo atribuido al paquete: el hash y, si se da, el tamanio."""
+    lineas = texto.splitlines(keepends=True)
+    for i in range(len(lineas)):
         contexto = "".join(lineas[max(0, i - VENTANA) : i + 1])
-        if ATRIBUYE.search(contexto):
-            lineas[i] = SHA256.sub(sha, linea)
+        if not ATRIBUYE.search(contexto):
+            continue
+        if SHA256.search(lineas[i]):
+            lineas[i] = SHA256.sub(sha, lineas[i])
+        if tam is not None and ETIQUETA_TAM.search(contexto):
+            lineas[i] = TAMANIO.sub(lambda m: _formatea(m.group(1), tam), lineas[i])
     return "".join(lineas)
+
+
+def _formatea(original: str, tam: int) -> str:
+    """Conserva el separador de miles que ya usaba el documento."""
+    sep = next((c for c in original if c in ".,\u00a0 "), "")
+    s = str(tam)
+    return f"{s[:-3]}{sep}{s[-3:]}" if sep else s
 
 
 def revisa() -> int:
@@ -117,18 +148,19 @@ def revisa() -> int:
         if malos:
             fallos += 1
 
-    # El tamanio se declara aparte del hash y tambien se copiaba a mano.
-    sello = MICAI / "Envio" / "HASH_ENVIO.txt"
-    if sello.exists():
-        tam = re.search(r"bytes\s+(\d+)", sello.read_text())
-        if not tam:
-            print("\n  HASH_ENVIO.txt no declara el tamanio. FALLA.")
-            fallos += 1
-        elif int(tam.group(1)) != len(datos):
-            print(
-                f"\n  HASH_ENVIO.txt declara {tam.group(1)} bytes, el ZIP tiene {len(datos)}. FALLA."
-            )
-            fallos += 1
+    # Los TAMANIOS, en todos los documentos y con la misma regla de atribucion.
+    print(f"\n  tamanios declarados (real {len(datos)}):")
+    vistos = 0
+    for doc in documentos():
+        for t_dec in tamanios_del_paquete(doc.read_text(errors="ignore")):
+            vistos += 1
+            ok = t_dec == len(datos)
+            print(f"    {doc.relative_to(MICAI)}: {t_dec}  {'ok' if ok else 'NO COINCIDE'}")
+            if not ok:
+                fallos += 1
+    if not vistos:
+        print("    ninguno; al menos HASH_ENVIO.txt deberia declararlo. FALLA.")
+        fallos += 1
 
     print(f"\n  VEREDICTO: {'PASA' if not fallos else 'FALLA'}")
     return 0 if not fallos else 1

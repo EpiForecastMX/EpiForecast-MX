@@ -388,3 +388,28 @@ def test_el_hash_del_paquete_si_se_reconoce_en_sus_tres_formas():
     ):
         assert s.hashes_del_paquete(contexto) == [h], f"no reconocido en: {contexto[:44]}"
         assert s.propaga(contexto, "0" * 64).count("0" * 64) == 1
+
+
+def test_un_tamanio_caducado_en_cualquier_documento_falla():
+    """El tamaño también caduca, y no solo en HASH_ENVIO.txt.
+
+    El gate comprobaba el tamaño únicamente del archivo de sello, así que un
+    documento que declaraba 701,662 bytes con el ZIP en 701,531 pasaba en verde.
+    """
+    s = _sello()
+    real = 701531
+    viejo = "- Archivo: `Congresos/MICAI/Envio/012.zip`.\n- Tamaño: 701,662 bytes."
+    assert s.tamanios_del_paquete(viejo) == [701662], "no se detecta el tamaño declarado"
+    assert real != 701662  # el gate compara contra el real y falla
+    # y la propagación lo corrige conservando el separador de miles del documento
+    assert "701,531" in s.propaga(viejo, "0" * 64, real)
+    sin_sep = "Paquete camera-ready\n\n  bytes   701662"
+    assert "701531" in s.propaga(sin_sep, "0" * 64, real)
+
+
+def test_un_numero_ajeno_no_se_confunde_con_el_tamanio_del_paquete():
+    """Sin etiqueta de tamaño ni mención del paquete, un número no se toca."""
+    s = _sello()
+    ajeno = "La cohorte reúne 391 semanas y 123,456 episodios registrados."
+    assert s.tamanios_del_paquete(ajeno) == []
+    assert "123,456" in s.propaga(ajeno, "0" * 64, 701531)
