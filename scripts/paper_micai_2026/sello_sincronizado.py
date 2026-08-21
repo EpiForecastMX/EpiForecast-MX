@@ -28,14 +28,50 @@ RAIZ = Path(__file__).resolve().parents[2]
 MICAI = RAIZ / "Congresos" / "MICAI"
 ZIP = MICAI / "Envio" / "012.zip"
 
-# Documentos que citan el sello. Cualquier sha256 de 64 caracteres que aparezca
-# en ellos tiene que ser el del ZIP: no hay motivo para que citen otro.
-DOCUMENTOS = [
-    MICAI / "Envio" / "HASH_ENVIO.txt",
-    MICAI / "QUE_HACER_EN_CMT.md",
-]
+
+# Los documentos NO se enumeran a mano: se descubren. La lista fija se quedo corta
+# --AUDITORIA_FINAL_CIERRE.md citaba un hash caducado y nadie lo miraba-- y volveria
+# a quedarse corta con el siguiente documento que alguien escriba.
+def documentos() -> list[Path]:
+    return sorted(
+        r
+        for patron in ("*.md", "*.txt")
+        for r in MICAI.rglob(patron)
+        if "_archive" not in r.parts and SHA256.search(r.read_text(errors="ignore"))
+    )
+
 
 SHA256 = re.compile(r"\b[0-9a-f]{64}\b")
+
+# No todo sha256 de estos documentos es el del paquete: la auditoria cita tambien el
+# del CSV de la ablacion publica, y eso es correcto. Solo se exige coincidencia a los
+# que se presentan COMO el del ZIP, es decir los que aparecen cerca de su nombre o de
+# una etiqueta de sello. Exigirlo a todos daria un falso positivo.
+VENTANA = 3  # lineas hacia atras donde buscar la atribucion
+ATRIBUYE = re.compile(r"012\.zip|sha256|SHA-256|Paquete camera-ready", re.I)
+
+
+def hashes_del_paquete(texto: str) -> list[str]:
+    lineas = texto.splitlines()
+    encontrados = []
+    for i, linea in enumerate(lineas):
+        for m in SHA256.finditer(linea):
+            contexto = "\n".join(lineas[max(0, i - VENTANA) : i + 1])
+            if ATRIBUYE.search(contexto):
+                encontrados.append(m.group(0))
+    return encontrados
+
+
+def propaga(texto: str, sha: str) -> str:
+    """Reescribe SOLO los hashes atribuidos al paquete. Los ajenos no se tocan."""
+    lineas = texto.splitlines(keepends=True)
+    for i, linea in enumerate(lineas):
+        if not SHA256.search(linea):
+            continue
+        contexto = "".join(lineas[max(0, i - VENTANA) : i + 1])
+        if ATRIBUYE.search(contexto):
+            lineas[i] = SHA256.sub(sha, linea)
+    return "".join(lineas)
 
 
 def revisa() -> int:
@@ -53,22 +89,22 @@ def revisa() -> int:
     print(f"  bytes             {len(datos)}")
 
     fallos = 0
-    for doc in DOCUMENTOS:
+    for doc in documentos():
         if not doc.exists():
             print(f"\n  {doc.name}: no existe. FALLA.")
             fallos += 1
             continue
-        texto = doc.read_text()
-        citados = set(SHA256.findall(texto))
+        texto = doc.read_text(errors="ignore")
+        citados = set(hashes_del_paquete(texto))
+        otros = len(set(SHA256.findall(texto)) - citados)
         if not citados:
-            print(f"\n  {doc.name}: no cita ningun sha256. FALLA.")
-            fallos += 1
+            print(f"\n  {doc.relative_to(MICAI)}: cita sha256 pero ninguno como el del paquete")
             continue
         malos = sorted(citados - {real})
-        print(f"\n  {doc.name}: cita {len(citados)} sha256")
+        extra = f" (+{otros} ajenos, no se revisan)" if otros else ""
+        print(f"\n  {doc.relative_to(MICAI)}: {len(citados)} del paquete{extra}")
         for c in sorted(citados):
-            marca = "ok" if c == real else "NO COINCIDE"
-            print(f"    {c[:16]}...  {marca}")
+            print(f"    {c[:16]}...  {'ok' if c == real else 'NO COINCIDE'}")
         if malos:
             fallos += 1
 

@@ -231,14 +231,19 @@ def escribe_sello(zip_path: Path) -> tuple[str, int]:
         "\n"
         "Al subir a CMT, guarda el comprobante junto a este archivo.\n"
     )
-    # Y se propaga a los documentos que lo citan. Copiarlo a mano fue justo como
-    # llegaron a existir tres valores distintos a la vez.
-    for doc in (MICAI / "QUE_HACER_EN_CMT.md",):
-        if doc.exists():
-            texto = doc.read_text()
-            nuevo = re.sub(r"\b[0-9a-f]{64}\b", sha, texto)
-            if nuevo != texto:
-                doc.write_text(nuevo)
+    # Y se propaga a TODOS los documentos que lo citan, descubiertos, no enumerados:
+    # la lista fija se quedo corta una vez. Se reescriben solo los hashes atribuidos
+    # al paquete; los ajenos --el del CSV de la ablacion publica, por ejemplo-- no se
+    # tocan, que es justo lo que una sustitucion ciega habria roto.
+    import sello_sincronizado as sello  # noqa: PLC0415
+
+    for doc in sello.documentos():
+        if doc.resolve() == SELLO.resolve():
+            continue
+        texto = doc.read_text(errors="ignore")
+        nuevo = sello.propaga(texto, sha)
+        if nuevo != texto:
+            doc.write_text(nuevo)
     return sha, tam
 
 
