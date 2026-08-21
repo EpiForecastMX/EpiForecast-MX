@@ -73,23 +73,42 @@ def hashes_del_paquete(texto: str) -> list[str]:
 
 # El TAMANIO se declara aparte del hash y tambien caduca. Un documento llego a
 # decir 701,662 bytes con el ZIP en 701,531 y el gate daba verde, porque solo
-# comprobaba el tamanio de HASH_ENVIO.txt. Se escribe de varias formas.
-TAMANIO = re.compile(r"\b(\d{3}[.,\u00a0 ]?\d{3})\b")
-ETIQUETA_TAM = re.compile(r"bytes|tama\u00f1o|tamanio|size", re.I)
+# comprobaba el tamanio de HASH_ENVIO.txt.
+#
+# La etiqueta tiene que estar en la MISMA LINEA que el numero, no en una ventana
+# de contexto. Con `size` generico y ventana de tres lineas, un «Sample size:
+# 123,456 observations» escrito cerca del bloque del sello contaba como tamanio
+# del paquete, y propaga() lo reescribia a 701,684: un dato cientifico destruido
+# por el mecanismo que existe para cuidar los sellos. Mismo error que ya se
+# corrigio en la atribucion del hash, repetido aqui.
+#
+# Las dos formas que usan de verdad los documentos, y ambas llevan «bytes» al lado:
+#     bytes   701684
+#     - Tamanio: 701,684 bytes.
+TAMANIO_ETIQUETADO = re.compile(
+    r"(?:\bbytes\b[^\d\n]{0,12}(\d{1,3}(?:[.,\u00a0 ]\d{3})+|\d{4,})"
+    r"|(\d{1,3}(?:[.,\u00a0 ]\d{3})+|\d{4,})[^\d\n]{0,12}\bbytes\b)",
+    re.I,
+)
 
 
 def _entero(s: str) -> int:
     return int(re.sub(r"[.,\u00a0 ]", "", s))
 
 
+def _numero(m: re.Match[str]) -> str:
+    return m.group(1) or m.group(2)
+
+
 def tamanios_del_paquete(texto: str) -> list[int]:
-    """Tamanios presentados como el del ZIP. Misma regla de atribucion que el hash."""
+    """Tamanios presentados como el del ZIP: «bytes» en la misma linea y el
+    paquete nombrado en el contexto. Sin las dos cosas, el numero no se toca."""
     lineas = texto.splitlines()
     salida = []
     for i, linea in enumerate(lineas):
         contexto = "\n".join(lineas[max(0, i - VENTANA) : i + 1])
-        if ATRIBUYE.search(contexto) and ETIQUETA_TAM.search(contexto):
-            salida += [_entero(m.group(1)) for m in TAMANIO.finditer(linea)]
+        if ATRIBUYE.search(contexto):
+            salida += [_entero(_numero(m)) for m in TAMANIO_ETIQUETADO.finditer(linea)]
     return salida
 
 
@@ -102,8 +121,11 @@ def propaga(texto: str, sha: str, tam: int | None = None) -> str:
             continue
         if SHA256.search(lineas[i]):
             lineas[i] = SHA256.sub(sha, lineas[i])
-        if tam is not None and ETIQUETA_TAM.search(contexto):
-            lineas[i] = TAMANIO.sub(lambda m: _formatea(m.group(1), tam), lineas[i])
+        if tam is not None:
+            lineas[i] = TAMANIO_ETIQUETADO.sub(
+                lambda m: m.group(0).replace(_numero(m), _formatea(_numero(m), tam)),
+                lineas[i],
+            )
     return "".join(lineas)
 
 

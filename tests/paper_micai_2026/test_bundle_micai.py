@@ -408,8 +408,32 @@ def test_un_tamanio_caducado_en_cualquier_documento_falla():
 
 
 def test_un_numero_ajeno_no_se_confunde_con_el_tamanio_del_paquete():
-    """Sin etiqueta de tamaño ni mención del paquete, un número no se toca."""
+    """La etiqueta tiene que estar en la MISMA línea, no en la ventana de contexto.
+
+    Con `size` genérico y ventana de tres líneas, un «Sample size: 123,456
+    observations» escrito junto al bloque del sello contaba como tamaño del
+    paquete y `propaga()` lo reescribía: un dato científico destruido por el
+    mecanismo que existe para cuidar los sellos.
+    """
     s = _sello()
-    ajeno = "La cohorte reúne 391 semanas y 123,456 episodios registrados."
-    assert s.tamanios_del_paquete(ajeno) == []
-    assert "123,456" in s.propaga(ajeno, "0" * 64, 701531)
+    sello = "Paquete camera-ready 012.zip\nSHA-256 del paquete: " + "a" * 64
+    for ajeno in (
+        f"{sello}\nSample size: 123,456 observations",
+        f"{sello}\nTamaño de la muestra: 99,999 series",
+        "La cohorte reúne 391 semanas y 123,456 episodios registrados.",
+    ):
+        assert s.tamanios_del_paquete(ajeno) == [], f"atribuido de más: {ajeno[-40:]}"
+        intacto = s.propaga(ajeno, "0" * 64, 701531)
+        assert intacto.splitlines()[-1] == ajeno.splitlines()[-1], "propaga() pisó un número ajeno"
+
+
+def test_el_tamanio_se_reconoce_en_sus_tres_formas_reales():
+    """Con y sin separador de miles, y con la etiqueta a cada lado del número."""
+    s = _sello()
+    for texto, esperado in (
+        ("Paquete camera-ready\n\n  bytes   701531", "bytes   701684"),
+        ("- Archivo: `012.zip`.\n- Tamaño: 701,662 bytes.", "- Tamaño: 701,684 bytes."),
+        ("Package: 012.zip\nPackage size: 701 662 bytes", "Package size: 701 684 bytes"),
+    ):
+        assert s.tamanios_del_paquete(texto), f"no detectado en: {texto.splitlines()[-1]}"
+        assert s.propaga(texto, "0" * 64, 701684).splitlines()[-1].strip() == esperado
