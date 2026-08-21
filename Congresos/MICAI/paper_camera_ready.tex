@@ -111,8 +111,8 @@
 % MNA se menciona en Acknowledgments, que es donde el lineamiento lo permite (seccion V).
 % "ITESM" figura entre las afiliaciones NO aceptadas (seccion VI).
 \institute{Tecnologico de Monterrey, Monterrey, Mexico\\
-           \email{rebull@outlook.com}, \email{jcpn@me.com},\\
-           \email{luisgss10@hotmail.com}, \email{gbarcelo@tec.mx}
+           \email{rebull@exatec.tec.mx}, \email{A01795941@tec.mx},\\
+           \email{luisgss10@exatec.tec.mx}, \email{gbarcelo@tec.mx}
            \and
            % Afiliacion abreviada por instruccion del autor de correspondencia (21-ago-2026):
            % se conserva OOAD Guerrero y el pais se presenta en ingles, sin expansion.
@@ -301,7 +301,7 @@ tree-based hybrids contribute nonlinear responses to calendar and lag
 features that neither of the first two represents, one blended with a
 structural component and one stacked over heterogeneous experts. Two
 further candidates were implemented and evaluated under the identical
-protocol and then left out of the deployed pool: a tuned Auto-ARIMA with
+protocol and then left out of the final candidate pool: a tuned Auto-ARIMA with
 Fourier annual terms, as the classical baseline the family above
 motivates, and PatchTST, as a patching transformer representative of the
 recent long-horizon architectures. Both are reported in
@@ -972,7 +972,8 @@ depends on having four? We re-run the selection rule restricted to each
 subset of the pool and rescore the resulting assignments without
 refitting---the rule adjudicates among forecasts that were already
 locked. Two regimes are separated: \emph{static}, selecting once from
-cross-validated evidence as deployed, and \emph{dynamic}, reselecting on
+cross-validated evidence as in the frozen baseline assignment, and
+\emph{dynamic}, reselecting on
 W03--W11 and scoring on the later, unused weeks W12--W18. Selection runs
 over all 111 series; scoring runs over the 99 with a direct bulletin
 observation, the 12 derived regional series being a sensitivity. Policies

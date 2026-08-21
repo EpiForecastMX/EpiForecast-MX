@@ -1,7 +1,7 @@
 Paquete camera-ready MICAI 2026 · ponencia #12
 
-  sha256  849d5451b11918c21be0807cffbd3749c7b77edb305ccab94d1748eb535fda2b
-  bytes   701541
+  sha256  688315d48fd43bd6ecabbc47e363c5c8d6abd059d1c81a5af8c033fd8dec22bb
+  bytes   701752
 
 Este archivo lo escribe empaqueta_envio.py; no se edita a mano.
 

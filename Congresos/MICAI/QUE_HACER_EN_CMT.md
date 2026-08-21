@@ -27,7 +27,18 @@ TEC-II-05 del Tec para que Scopus indexe bien.
 > Gerardo; CMT, la licencia firmada y el README del repositorio citado tienen que
 > decir exactamente lo mismo, carácter por carácter.
 
-Los correos **no se tocan**: los cinco ya coinciden con el paper, incluido el de Ruth con
+> **Los correos SÍ cambian** (sugerencia de Grettel, 21-ago-2026, ya avisado a los
+> chairs). Tres autores pasan a su cuenta institucional y la portada ya los lleva:
+>
+> | # | En CMT hoy | **Debe decir** |
+> |---|---|---|
+> | 1 | rebull@outlook.com | **rebull@exatec.tec.mx** |
+> | 2 | jcpn@me.com | **A01795941@tec.mx** |
+> | 3 | luisgss10@hotmail.com | **luisgss10@exatec.tec.mx** |
+>
+> Grettel y Ruth no cambian.
+
+Los de Grettel y Ruth **no se tocan**: ya coinciden con el paper, incluido el de Ruth con
 punto (`ruth.perezher@imss.gob.mx`).
 
 El orden de los autores **tampoco se toca**: ya es el correcto.
@@ -100,7 +111,7 @@ Al terminar la carga, descarga o captura el acuse de CMT y guárdalo junto a
 `Envio/HASH_ENVIO.txt`. Ese archivo tiene el sha256 del paquete:
 
 ```
-849d5451b11918c21be0807cffbd3749c7b77edb305ccab94d1748eb535fda2b
+688315d48fd43bd6ecabbc47e363c5c8d6abd059d1c81a5af8c033fd8dec22bb
 ```
 
 Compruébalo antes de subir — este control falla si el ZIP y los documentos no

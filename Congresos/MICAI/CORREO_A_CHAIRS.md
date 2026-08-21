@@ -70,7 +70,7 @@ llega, y además deja constancia dentro del sistema.
 >
 > Javier Augusto Rebull-Saucedo
 > Corresponding author, submission #12
-> rebull@outlook.com
+> rebull@exatec.tec.mx
 
 ---
 

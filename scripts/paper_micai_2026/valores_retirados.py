@@ -24,6 +24,16 @@ RETIRADOS = [
     # Los patrones van anclados a su contexto: una cifra suelta como "26,5" tambien
     # aparece en la lista de lags {1,2,4,8,13,26,52} y en un eje de la Figura 1, y un
     # control que grita en falso se acaba ignorando.
+    # Retiradas el 21-ago-2026: el articulo describe un PROTOTIPO de investigacion,
+    # con una asignacion congelada. Nada esta "desplegado", y decirlo contradice al
+    # repositorio publico, que ya usa la terminologia correcta.
+    ("«as deployed»", r"as deployed", "as in the frozen baseline assignment"),
+    ("«deployed pool»", r"deployed pool", "final candidate pool"),
+    # Correos personales sustituidos por los institucionales (acordado con Grettel,
+    # avisado a los chairs). Si reaparecen, la portada deja de coincidir con CMT.
+    ("correo rebull@outlook.com", r"rebull@outlook\.com", "rebull@exatec.tec.mx"),
+    ("correo jcpn@me.com", r"jcpn@me\.com", "A01795941@tec.mx"),
+    ("correo luisgss10@hotmail.com", r"luisgss10@hotmail\.com", "luisgss10@exatec.tec.mx"),
     # Retiradas el 21-ago-2026, al conectar la ablacion dinamica a la REGLA COMPLETA
     # (sMAPE -> banda 5% -> MASE -> RMSE) en vez de al minimo sMAPE a secas.
     ("dinamica sin DeepAR 26,8 %", r"26[.,]8\\?%", "26,4 %"),

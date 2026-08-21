@@ -27,7 +27,7 @@ El archivo ya está descargado; no hay que buscarlo:
       Javier Augusto Rebull-Saucedo · Juan Carlos Pérez-Nava ·
       Luis Gerardo Sánchez-Salazar · Grettel Barceló-Alonso · Ruth Pérez-Hernández
 - [ ] Corresponding author y *Print Name*: **Javier Augusto Rebull-Saucedo**
-- [ ] Fecha, dirección postal y `rebull@outlook.com`
+- [ ] Fecha, dirección postal y `rebull@exatec.tec.mx`
 - [ ] **«Edition ID / IPS» EN BLANCO.** Lo llena el editor de Springer; el instructivo
       oficial pide explícitamente que los autores no lo toquen.
 - [ ] Imprimir y **firmar a mano** (Javier firma en nombre de los cinco)
@@ -51,8 +51,8 @@ Debe corresponder a:
 
 ```
 Congresos/MICAI/Envio/012.zip
-849d5451b11918c21be0807cffbd3749c7b77edb305ccab94d1748eb535fda2b
-701 541 bytes
+688315d48fd43bd6ecabbc47e363c5c8d6abd059d1c81a5af8c033fd8dec22bb
+701 752 bytes
 ```
 
 ---
