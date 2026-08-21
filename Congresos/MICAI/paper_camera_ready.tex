@@ -54,7 +54,7 @@
 % Fallback keeps the file compilable where bbding is unavailable (e.g. minimal
 % TeX installs); on Overleaf the bbding glyph is used.
 \IfFileExists{bbding.sty}{\usepackage{bbding}}{\providecommand{\Envelope}{$\boxtimes$}}
-\usepackage{hyperref}
+\usepackage[hidelinks]{hyperref}
 \renewcommand\UrlFont{\color{black}\rmfamily}
 \urlstyle{rm}
 
@@ -152,7 +152,7 @@ is reproducible and extends to conditions with heterogeneous behavior.
 Depression is a leading cause of disability worldwide and imposes a major
 burden on public health systems~\cite{santomauro2021}.
 In Mexico, it affects an estimated 8--10 million people, and the
-National Epidemiological Surveillance System (SINAVE) records over
+National Epidemiological Surveillance System (SINAVE) records about
 150{,}000 new cases of depressive episode (CIE-10 F32) per
 year~\cite{sinave2026}. Despite the routine availability of weekly
 case counts, psychiatric-service planning remains largely
@@ -209,7 +209,7 @@ each forecasting paradigm prevails. A central finding is that the cross-validate
 \emph{selection} signal, not an out-of-sample guarantee: per-series
 accuracy degrades on live 2026 data, a degradation the revisable
 rule absorbs by reassigning models as the signal accumulates,
-substantiated by the first eighteen epidemiological weeks of 2026.
+substantiated by the 2026 bulletins published since the training cutoff.
 
 % =====================================================================
 \section{Foundations and Related Work}
@@ -639,17 +639,8 @@ are tied, $e^\star=\arg\min_{e\in\mathcal{B}}r_e$.
 The low-incidence regional fallback of Sect.~\ref{ssec:framework} is
 then applied. The resulting choice and its metrics are persisted
 alongside each forecast, so every locked prediction is justified by an
-auditable record rather than an architectural prior. In compact form:
+auditable record rather than an architectural prior.
 
-\begin{quote}\small\ttfamily\raggedright
-Sort the four models by cross-validated sMAPE; let e1 be the best
-model and e2 the second-best model.\\
-If the relative gap between e1 and e2 exceeds 5\%, select e1.\\
-Otherwise, among the models within 5\% of e1's sMAPE, select the
-\hspace*{0.5em}model with the lowest MASE, breaking any remaining ties by RMSE.\\
-If the cumulative count over the last 52 weeks is below 5, use the
-\hspace*{0.5em}regional model.
-\end{quote}
 
 \paragraph{Search budget.}
 The per-model search effort is calibrated to its dominant source of
@@ -692,11 +683,14 @@ not as expected live accuracy.
 
 DeepAR achieves the lowest median value for all four metrics by a wide
 margin and beats the seasonal-naive baseline on 99.1\% of
-combinations. Under the selection strategy it is locked for 107 of 111
-combinations (96.4\%), and for all $32\times3=96$
-federal-entity combinations; the four exceptions are aggregate series
-(the three national strata, discussed next, and one sparse southern
-region, for which the rule selects Stacking). Because DeepAR's federal-entity margin far exceeds the 5\%
+combinations. Under the published rule it is selected for 107 of 111
+combinations (96.4\%), including all $32\times3=96$
+federal-entity combinations; the four exceptions are aggregate series:
+the three national strata, discussed next, and one sparse southern
+region, where the two leading candidates fall inside the 5\% band: the
+published rule breaks the tie on \mase\ and selects Stacking, whereas
+the frozen baseline assignment of Sect.~\ref{ssec:ablation} broke it on
+\rmse\ and carries DeepAR, hence 108 there against 107 here. Because DeepAR's federal-entity margin far exceeds the 5\%
 selection band, this assignment is insensitive to the exact threshold,
 which only adjudicates the near-ties among the aggregate series.
 
@@ -708,8 +702,7 @@ an artifact of a weak classical baseline. A grid search over the
 transformer's patch length and context window does not narrow this
 gap: across five configurations its general-stratum cross-validated
 \smape\ stays within 22--23\% (best 22.3\%), several times higher than
-the recurrent model's median, so the gap does not stem from an
-untuned baseline.
+the recurrent model's median.
 
 \begin{table}[t]
 \centering
@@ -754,16 +747,14 @@ PatchTST (transformer) & 27.18 & 1.409 & --- & --- & 27.0 & --- \\
 \smallskip
 {\footnotesize $^{\ddagger}$~The Auto-ARIMA baseline models
 $\log(1{+}y)$ with an ARIMA order selected by AIC over a compact grid
-and Fourier annual terms ($K{=}4$), the standard treatment of long
-weekly seasonality; PatchTST~\cite{nie2023patchtst} is run with its
+and Fourier annual terms ($K{=}4$); PatchTST~\cite{nie2023patchtst} is run with its
 reference configuration (patch length~16) on the same 104-week context
 window as DeepAR. Both are deliberately out-of-the-box implementations
 of widely cited baselines, not exhaustively tuned competitors. We
 report their scale-free \smape\ and \mase, which cross-check against
 the production pipeline at the national stratum (\smape\ 8.9\% vs.\
 8.8\%; \mase\ 0.60 vs.\ 0.59); \rmse/\mae\ are omitted as their
-absolute scale is not comparable across the two implementations.
-Neither participates in the model-selection pool.}
+absolute scale is not comparable across the two implementations.}
 \end{table}
 
 \paragraph{Why the recurrent model dominates in cross-validation, and where it does not.}
@@ -845,8 +836,8 @@ Sect.~\ref{sec:discussion}.
 We assess the locked national-general forecast (Ensemble) against
 every 2026 SINAVE bulletin published since the training cutoff,
 covering epidemiological weeks
-W02--W18 (Table~\ref{tab:validation}, Fig.~\ref{fig:validation}). No
-2026 observation was used for training, tuning, or selection
+W02--W18 (Table~\ref{tab:validation}, Fig.~\ref{fig:validation}); no
+2026 observation entered training, tuning or selection
 (Sect.~\ref{ssec:eval}).
 
 \begin{table}[t]
@@ -884,7 +875,8 @@ W10 & 3{,}057 & 3{,}167 & 3{,}227 & $+3.6$  &     &       &       &       &     
 \smallskip
 \parbox{0.9\textwidth}{\footnotesize\textbf{Cumulative W02--W18:}
 observed 48{,}300, predicted 49{,}482 (reconciled 50{,}261), deviation
-$\mathbf{+2.45\%}$ (reconciled $+4.1\%$).}
+$\mathbf{+2.45\%}$ (reconciled $+4.1\%$). Aggregates are computed on
+unrounded values, so a column of rounded cells may differ by one case.}
 \end{table}
 
 \begin{figure}[t]
@@ -895,9 +887,8 @@ $\mathbf{+2.45\%}$ (reconciled $+4.1\%$).}
 (a) Late-2025 context and W02--W18 observed (gray) versus the locked
 Ensemble forecast (green), scored in bulletin week numbering.
 (b) Per-week deviation against the
-$\pm5\%$ planning-tolerance band (shaded); bars are colored by
-absolute deviation: green within $\pm5\%$, orange between $5\%$ and
-$10\%$, and wine above $10\%$.}
+$\pm5\%$ planning-tolerance band (shaded), with bars colored by
+absolute deviation.}
 \label{fig:validation}
 \end{figure}
 
@@ -944,10 +935,7 @@ at 2{,}341 cases through the manuscript cutoff and is therefore not a
 reporting-lag artifact; the four subsequent weeks, W15--W18, return to
 an \smape\ of 2.7\%, so the miss does not propagate into the
 trajectory. We treat W14 as one observation in the tail of the
-in-sample error distribution rather than as evidence of model drift,
-and note that the most recent one or two weeks of any bulletin should
-still be read with caution because of the documented SINAVE reporting
-lag.
+in-sample error distribution rather than as evidence of model drift.
 
 \paragraph{Per-series behavior.}
 Cross-validation accuracy does not persist per series out of sample
@@ -1075,16 +1063,16 @@ should be trusted once the signal moves.
 \label{sec:discussion}
 % =====================================================================
 
-Combining forecasters with complementary inductive biases and
-selecting one model per series through a transparent, revisable rule
-provides a principled way to forecast a heterogeneous panel: it
-preserves the simpler model when an aggregate series favors it and
-reselects models as live data accumulate. The auditable log makes
-each locked forecast defensible by a metric rather than by an
-architectural preference; we stress that the cross-validation ranking
-favoring the recurrent model is a selection signal, not an
-out-of-sample guarantee, since per-series accuracy degrades on live
-2026 data (Sect.~\ref{sec:results}).
+Two findings should be read together. The ablation of
+Sect.~\ref{ssec:ablation} does not support the claim that the candidate
+pool improves accuracy here: no leave-one-out variant separates from the
+full pool, and a single-model policy matches it. What the same experiment
+does support is revision. Against the frozen baseline assignment,
+reselecting on prior weeks lowers the median error on weeks the
+reselection never saw, and the auditable log is what makes that possible:
+it records the evidence behind each choice, so a selection that has
+stopped transporting can be shown to have done so and replaced on stated
+grounds rather than on an architectural preference.
 
 \paragraph{Public-health relevance.}
 The 74\%/26\% reported female--male split, broadly echoed by the 2026
@@ -1122,7 +1110,11 @@ cross-validation metrics of Table~\ref{tab:aggmetrics} are optimistic
 relative to live performance, and Sect.~\ref{ssec:ablation} shows the
 ranking does not transport. The out-of-sample claim therefore rests on
 the national-aggregate prospective evaluation and on the revision
-experiment, not on the cross-validation medians. (iii)~The headline prospective
+experiment, not on the cross-validation medians. The search budget is
+also not equalized (Sect.~\ref{ssec:eval}): Prophet, the candidate given
+the broadest explicit search, has the lowest out-of-sample point
+estimate, but the differences are not significant and cannot be
+attributed causally to tuning effort. (iii)~The headline prospective
 evaluation is at the national-aggregate stratum over an early-2026
 window (W02--W18); the per-series analysis runs over W03--W18, the
 sixteen weeks for which every series has both a bulletin observation and
@@ -1177,10 +1169,12 @@ nationwide panel of series and demographic strata, selects the
 recurrent model (DeepAR) for the large majority of federal-entity
 series, while the rule retains simpler models where aggregation
 favors them. We
-explicitly treat this ranking as an in-sample selection signal: on
-live 2026 data the per-series advantage narrows and the framework
-reselects, so our out-of-sample evidence is the prospective national
-evaluation, not the cross-validation figures. We are not aware of prior
+explicitly treat this ranking as an in-sample selection signal: on live
+2026 data the advantage narrows, and an ablation finds no evidence that
+the pool beats a single-model policy. The contribution is therefore not
+that several models beat one, but that an auditable mechanism detects
+when a frozen assignment has stopped transporting and revises it using
+only prior observations. We are not aware of prior
 work that applies a multi-model framework with auditable, revisable
 per-series model selection to psychiatric surveillance at
 federal-entity granularity in a Latin American country. The framework

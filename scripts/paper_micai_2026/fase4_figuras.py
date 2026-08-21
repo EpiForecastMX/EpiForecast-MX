@@ -82,8 +82,8 @@ def figura3() -> None:
     )
     ax1.axvline(fechas[0], color="#999", lw=0.9, ls=":")
     ax1.set_title(
-        "Depression: 2026 prospective evaluation — national general stratum, "
-        "W02–W18 (every SINAVE bulletin since training cut-off)"
+        f"(a) Depression: 2026 prospective evaluation — national general stratum, "
+        f"W{sem[0]:02d}–W{sem[-1]:02d} (every SINAVE bulletin since training cut-off)"
     )
     ax1.set_ylabel("National cases per week")
     ax1.set_ylim(bottom=0)
@@ -109,7 +109,8 @@ def figura3() -> None:
     ax2.set_ylim(min(dev.min() - 5, -8), max(dev.max() + 6, 10))
     ax2.set_ylabel("Deviation (%)")
     ax2.set_title(
-        f"Per-week deviation, locked forecast vs. SINAVE bulletin (W{sem[0]:02d}–W{sem[-1]:02d})",
+        f"(b) Per-week deviation, locked forecast vs. SINAVE bulletin "
+        f"(W{sem[0]:02d}–W{sem[-1]:02d})",
         fontsize=10.5,
     )
     ax2.legend(fontsize=8.5, loc="upper right", frameon=False)
