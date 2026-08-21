@@ -258,7 +258,8 @@ def audita_gates() -> None:
         ("paquete compila desde el ZIP", "empaqueta_envio.py"),
         # Estos dos van DESPUES de empaquetar: uno mira el PDF ya ensamblado y el
         # otro el ZIP recien escrito, asi que solo tienen sentido en ese orden.
-        ("bibliografia sin partir", "bibliografia_intacta.py"),
+        ("bibliografia y citas ordenadas", "bibliografia_intacta.py"),
+        ("fuentes del PDF sin Type 3", "fuentes_pdf.py"),
         ("sello sincronizado", "sello_sincronizado.py"),
     ]:
         r = subprocess.run(

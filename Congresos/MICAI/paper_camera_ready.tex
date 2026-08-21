@@ -81,13 +81,16 @@
 % Nombres, orden, afiliaciones y correos contrastados con la ficha de CMT (consultada
 % 20-ago-2026): la carta de aceptacion exige que el camera-ready y CMT coincidan.
 % La forma de Ruth y su afiliacion reproducen su instruccion expresa del 20-ago-2026;
-% CMT conserva una forma abreviada anterior y debe actualizarse antes de la entrega.
-\author{Javier Rebull-Saucedo\inst{1}\orcidID{0009-0008-2089-5274}\thanks{Corresponding author.} \and
-        Juan P\'erez-Nava\inst{1}\orcidID{0009-0005-6708-5541} \and
-        Luis S\'anchez-Salazar\inst{1}\orcidID{0009-0009-6101-8072} \and
+% Nombres de pila COMPLETOS, como pide Springer y como los registran los ORCID
+% publicos. CMT conserva la forma abreviada y debe actualizarse antes de la entrega,
+% igual que la licencia y el README del repositorio citado: los cuatro tienen que
+% coincidir caracter por caracter.
+\author{Javier Augusto Rebull-Saucedo\inst{1}\orcidID{0009-0008-2089-5274}\thanks{Corresponding author.} \and
+        Juan Carlos P\'erez-Nava\inst{1}\orcidID{0009-0005-6708-5541} \and
+        Luis Gerardo S\'anchez-Salazar\inst{1}\orcidID{0009-0009-6101-8072} \and
         Grettel Barcel\'o-Alonso\inst{1}\orcidID{0009-0004-3373-6441} \and
         Ruth P\'erez-Hern\'andez\inst{2}\orcidID{0000-0003-3261-1220}}
-\authorrunning{J. Rebull-Saucedo et al.}
+\authorrunning{J.A. Rebull-Saucedo et al.}
 % Afiliacion segun TEC-II-05 "Lineamientos para la afiliacion institucional" (v.03,
 % vigente 2025): el nombre es "Tecnologico de Monterrey", en espanol y SIN ACENTO --
 % la excepcion existe para que los sistemas de indexacion no lo corrompan--, sin siglas,
@@ -135,8 +138,9 @@ ablation shows that the candidate pool is not what carries the result, and
 that the cross-validated ranking does not transport to the prospective
 window. The contribution is therefore not that several models beat one,
 but that an auditable mechanism detects when a frozen assignment stops
-transporting and revises it using only prior observations. The framework
-is reproducible and extends to conditions with heterogeneous behavior.
+transporting and revises it using only prior observations. The selection
+and evaluation analyses are reproducible, and the mechanism extends to
+conditions with heterogeneous behavior.
 
 \keywords{Depression \and Time series forecasting \and
           Probabilistic recurrent networks \and Multi-model
@@ -151,14 +155,13 @@ is reproducible and extends to conditions with heterogeneous behavior.
 
 Depression is a leading cause of disability worldwide and imposes a major
 burden on public health systems~\cite{santomauro2021}.
-In Mexico, it affects an estimated 8--10 million people, and the
-National Epidemiological Surveillance System (SINAVE) records about
-150{,}000 new cases of depressive episode (CIE-10 F32) per
-year~\cite{sinave2026}. Despite the routine availability of weekly
+In Mexico, the National Epidemiological Surveillance System (SINAVE)
+records about 150{,}000 new cases of depressive episode (CIE-10 F32)
+per year~\cite{sinave2026}. Despite the routine availability of weekly
 case counts, psychiatric-service planning remains largely
 \emph{reactive}: capacity is adjusted only after demand surges are
-already visible in the bulletin, producing recurrent saturation
-windows during the February--May period.
+already visible in the bulletin, producing recurrent demand peaks
+during the February--May period.
 
 Accurate weekly federal-entity forecasts would make this planning
 \emph{proactive}: a reliable 52-week-ahead trajectory would allow
@@ -226,8 +229,8 @@ remains a
 standard baseline, but its linearity and stationarity assumptions
 limit performance on non-stationary public-health signals subject to
 regime changes. Exponential-smoothing state-space models
-(ETS)~\cite{hyndman2008} offer flexible additive or multiplicative
-decompositions but treat each series independently.
+(ETS)~\cite{hyndman2018forecasting,hyndman2008} offer flexible additive or
+multiplicative decompositions but treat each series independently.
 Prophet~\cite{taylor2018} popularized an additive decomposition with
 explicit trend, seasonality, and holiday components and is robust to
 missing data and outliers, making it a frequent default in
@@ -237,13 +240,13 @@ entities. Recurrent neural networks (RNNs), particularly long
 short-term memory (LSTM) networks, have shown clear
 advantages for epidemiological series: Chimmula and
 Zhang~\cite{chimmula2020} applied LSTMs to COVID-19 incidence in
-Canada, outperforming classical baselines over short horizons,
-although such data-hungry models can overreact on smooth, high-volume
-aggregates for which simpler decompositions may already suffice. For
+Canada, although such data-hungry models can overreact on smooth,
+high-volume aggregates for which simpler decompositions may already
+suffice. For
 public-health surveillance specifically, collaborative forecasting
 efforts have shown that systematic, reproducible evaluation of
 probabilistic forecasts is feasible at a national
-scale~\cite{reich2019,cramer2022}. More recent architectures push long-horizon
+scale~\cite{cramer2022,reich2019}. More recent architectures push long-horizon
 accuracy further---for example, the hierarchical-interpolation network
 N-HiTS~\cite{challu2023nhits}---and large pretrained \emph{foundation}
 models for time series, such as Chronos~\cite{ansari2024chronos},
@@ -260,7 +263,7 @@ probabilistic autoregressive RNN that \emph{learns} across a panel of
 related series and emits a full predictive
 distribution at each step; recent surveys of deep learning for
 forecasting situate such global models within a broad design
-space~\cite{benidis2022,lim2021,hewamalage2021}. Large-scale
+space~\cite{benidis2022,hewamalage2021,lim2021}. Large-scale
 empirical evidence from the M4 and M5 forecasting competitions---open
 benchmarks spanning 100{,}000 cross-domain series and a
 large hierarchical retail-sales corpus, respectively---shows that
@@ -270,8 +273,8 @@ collections, and that combinations are particularly
 robust~\cite{makridakis2020,makridakis2022}, including automated
 ensembles tuned to weekly series~\cite{godahewa2023}. Combining the explicit
 components of additive decompositions with the nonlinear capacity of
-gradient-boosted decision trees (GBDTs) has proven effective in retail
-and energy forecasting~\cite{hyndman2018forecasting}, and Prophet--neural
+gradient-boosted decision trees (GBDTs) has proven effective in
+retail forecasting~\cite{makridakis2022}, and Prophet--neural
 hybrids have improved pandemic incidence forecasts~\cite{dash2024}. Stacked
 generalization~\cite{wolpert1992} formalizes the learning of a meta-model
 over heterogeneous base learners. These foundations motivate a
@@ -414,7 +417,7 @@ exposed through a single, common interface, so that the selection rule
 operates uniformly across all of them (Fig.~\ref{fig:pipeline}).
 
 \begin{itemize}
-\item \textbf{Probabilistic recurrent network (DeepAR)}~\cite{salinas2020,alexandrov2020}:
+\item \textbf{Probabilistic recurrent network (DeepAR)}~\cite{alexandrov2020,salinas2020}:
 an autoregressive recurrent network that emits a Student-$t$
 distribution whose mean is the point forecast. Each federal-entity and
 regional series is fit with its own DeepAR model; the national
@@ -1015,7 +1018,7 @@ the candidate pool improves accuracy on this panel.
 
 \paragraph{The cross-validated ranking does not transport.}
 The direction of the discrepancy matters more than its size. Prophet is
-the \emph{worst}-ranked candidate in cross-validation
+the \emph{worst-ranked} candidate in cross-validation
 (Table~\ref{tab:aggmetrics}) and the best in the prospective window. The
 evidence the rule selects on is thus not merely noisy out of sample; on
 this panel it does not carry the ordering it was selected for. This is
@@ -1062,8 +1065,8 @@ forecast (about 73\%/27\%), has planning implications: a service grid
 sized to the national mean may underserve
 women in absolute terms, while male depression remains plausibly
 under-identified. A sex-disaggregated 52-week forecast could support
-both proactive capacity allocation for the February--May saturation
-window and male-targeted help-seeking campaigns in quieter months. We
+both proactive capacity allocation for the February--May demand
+peak and male-targeted help-seeking campaigns in quieter months. We
 emphasize that the data represent \emph{reported incidence}, not
 prevalence; the female--male gap is a hypothesis requiring dedicated
 epidemiological validation before being used as policy input. This
@@ -1167,8 +1170,8 @@ federal-entity granularity in a Latin American country. The framework is a resea
 The SINAVE bulletin reports aggregate weekly case counts at the
 federal-entity level, stratified by sex. All analyses were performed
 on these aggregate cells, and no cell corresponds to an individual
-patient; therefore, no informed consent or review-board approval was
-required.
+patient: only public, aggregate, non-identifiable data were used, and
+no individual-level record was accessed at any point.
 The data are published as open data by the Direcci\'on General de
 Epidemiolog\'ia, Secretar\'ia de Salud, and were retrieved from the
 public SINAVE portal on 2026-04-15~\cite{sinave2026}; redistribution

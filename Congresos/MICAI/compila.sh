@@ -78,6 +78,16 @@ if [ $gate -eq 0 ]; then
   rc_bib=$?
   echo "$SALIDA_BIB" | tail -4
   [ $rc_bib -ne 0 ] && gate=1
+
+  # Las fuentes tambien se miran aqui, sobre el PDF entero. El gate de tipografia
+  # mide el TAMANIO de los glifos de las figuras; este mira el TIPO de las fuentes
+  # del documento. Son preguntas distintas: el paper llego a tener 15 recursos
+  # Type 3 con el gate de tipografia en verde.
+  SALIDA_FNT=$("$PY_BIN" "$AQUI/../../scripts/paper_micai_2026/fuentes_pdf.py" \
+       "$D/paper_camera_ready.pdf")
+  rc_fnt=$?
+  echo "$SALIDA_FNT" | tail -5
+  [ $rc_fnt -ne 0 ] && gate=1
 fi
 
 # el PDF canonico sigue al master, no al reves

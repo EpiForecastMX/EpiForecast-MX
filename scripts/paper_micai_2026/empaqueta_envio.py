@@ -38,12 +38,73 @@ EPOCA = 1787443200
 SELLO_ESPERADO = "D:20260823000000Z"
 
 
+# Comentarios que SI viajan al maquetador. El resto son notas internas: historia
+# de errores, avisos sobre CMT, la variante de doble ciego, apuntes en español.
+# Nada de eso afecta al PDF, pero el .tex del ZIP lo lee una persona de Springer.
+CONSERVAR = ("% ALT-TEXT",)
+
+# Si alguno de estos sobrevive al saneo, no se empaqueta.
+PROHIBIDOS = (">>> REVIEW", ">>> CAMERA-READY", "Claude-Session", "/Users/", "CMT")
+
+
+def _corta_comentario(linea: str) -> str:
+    """Devuelve la linea sin el texto del comentario, conservando el % si lo habia.
+
+    El % NO se borra: en LaTeX un % al final de linea se come el salto, asi que
+    quitarlo cambiaria el espaciado. Un %% escapado no abre comentario.
+    """
+    i, barras = 0, 0
+    while i < len(linea):
+        c = linea[i]
+        if c == "\\":
+            barras += 1
+        elif c == "%" and barras % 2 == 0:
+            return linea[: i + 1]
+        else:
+            barras = 0
+        i += 1
+    return linea
+
+
+def sanea_tex(tex: str) -> str:
+    """Quita las notas internas del .tex sin tocar una sola instruccion.
+
+    Que esto es inocuo no se argumenta: empaqueta_envio.py compila la copia saneada
+    y exige que el PDF salga byte a byte igual al canonico. Si el saneo cambiase
+    algo, el hash no coincidiria y el paquete no se genera.
+    """
+    salida = []
+    for linea in tex.splitlines():
+        pelada = linea.lstrip()
+        if pelada.startswith("%"):
+            if any(pelada.startswith(c) for c in CONSERVAR):
+                salida.append(linea)
+            continue  # comentario de linea completa: fuera
+        salida.append(_corta_comentario(linea))
+    return "\n".join(salida) + "\n"
+
+
+# pdfTeX deriva el /ID del trailer del NOMBRE del fichero, y en el ZIP el master
+# se llama 012.tex. Medido: entre el PDF canonico y el compilado desde el ZIP
+# difieren 60 bytes y TODOS estan dentro del /ID; el resto, incluidos todos los
+# flujos de contenido, es identico. Normalizarlo permite exigir igualdad byte a
+# byte de todo lo demas, que es mas fuerte que comparar paginas o texto extraido.
+_ID = re.compile(rb"/ID \[<[0-9A-F]+> <[0-9A-F]+>\]")
+
+
+def _sin_id(pdf: bytes) -> bytes:
+    return _ID.sub(b"/ID [<0> <0>]", pdf)
+
+
 def figuras_referenciadas(tex: str) -> list[str]:
     return sorted(set(re.findall(r"\\includegraphics\[[^\]]*\]\{([^}]+)\}", tex)))
 
 
 def construye() -> tuple[Path, list[str]]:
-    tex = MASTER.read_text()
+    tex = sanea_tex(MASTER.read_text())
+    fugas = sorted({p for p in PROHIBIDOS if p in tex})
+    if fugas:
+        raise SystemExit(f"el .tex saneado todavia contiene: {fugas}")
     figs = figuras_referenciadas(tex)
     faltan = [f for f in figs if not (MICAI / "Figures" / f).exists()]
     if faltan:
@@ -120,7 +181,16 @@ def verifica(zip_path: Path) -> dict:
             check=False,
         ).stdout
         a4 = "595.276 x 841.89" in info
+        # PRUEBA DE IDENTIDAD. El .tex del ZIP va saneado: sin las notas internas
+        # del master. Que eso sea inocuo no se argumenta, se demuestra: el PDF que
+        # sale de compilar la copia saneada tiene que ser byte a byte el canonico.
+        # Solo se puede exigir porque la compilacion es reproducible (fecha fija);
+        # si algun dia deja de serlo, esto lo caza antes que nadie.
+        salido = (d / texs[0]).with_suffix(".pdf").read_bytes()
+        canonico = (MICAI / "paper_camera_ready.pdf").read_bytes()
+        identico = _sin_id(salido) == _sin_id(canonico)
         return {
+            "identico": identico,
             "nombres": nombres,
             "rc": rc,
             "errores": len(err),
@@ -157,6 +227,14 @@ def escribe_sello(zip_path: Path) -> tuple[str, int]:
         "\n"
         "Al subir a CMT, guarda el comprobante junto a este archivo.\n"
     )
+    # Y se propaga a los documentos que lo citan. Copiarlo a mano fue justo como
+    # llegaron a existir tres valores distintos a la vez.
+    for doc in (MICAI / "QUE_HACER_EN_CMT.md",):
+        if doc.exists():
+            texto = doc.read_text()
+            nuevo = re.sub(r"\b[0-9a-f]{64}\b", sha, texto)
+            if nuevo != texto:
+                doc.write_text(nuevo)
     return sha, tam
 
 
@@ -177,6 +255,10 @@ if __name__ == "__main__":
         f"{v['errores']} errores · {v['undefined']} undefined · "
         f"{v['overfull_graves']} overfull >15pt · A4 {'si' if v['a4'] else 'NO'}"
     )
+    print(
+        "  .tex saneado (sin notas internas): PDF "
+        + ("byte-identico al canonico salvo el /ID" if v["identico"] else "DISTINTO del canonico")
+    )
     malo = (
         v["rc"]
         or v["errores"]
@@ -185,6 +267,7 @@ if __name__ == "__main__":
         or not v["a4"]
         or v["paginas"] is None
         or v["paginas"] > 20
+        or not v["identico"]
     )
     # El sello lo ESCRIBE este script, no una mano. Antes se copiaba a mano en
     # HASH_ENVIO.txt y en QUE_HACER_EN_CMT.md, y los tres valores acabaron

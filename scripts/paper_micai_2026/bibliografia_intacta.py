@@ -1,4 +1,8 @@
-"""Gate: la lista de referencias no puede quedar partida por un flotante.
+"""Gate: la bibliografia entera y las citas multiples en orden numerico.
+
+Dos comprobaciones sobre la misma lista de referencias del PDF ensamblado.
+
+PRIMERA: la lista no puede quedar partida por un flotante.
 
 Nace de un fallo real. La Tabla 4 vivia dentro del apendice, declarada como
 flotante `[!h]`; no cabia en su pagina, LaTeX la diferia y acababa impresa
@@ -14,9 +18,15 @@ bibliografia, asi que el pie de la Tabla 4 aparece despues de la ultima
 referencia y eso esta bien. Lo que nunca puede pasar es que un pie de figura o
 de tabla caiga en medio de la lista.
 
+SEGUNDA: toda cita multiple va en orden numerico ascendente. Lo pide la guia de
+Springer y se habia colado en tres grupos: [23,9], [4,19,14] y [24,2]. El orden lo
+fija el orden de las claves dentro de \\cite{}, porque splncs04 no las reordena;
+como la bibliografia es alfabetica, la clave y el numero no van a la par y el
+desorden no se ve leyendo la fuente. Por eso se mide sobre el PDF.
+
 Uso:
     python scripts/paper_micai_2026/bibliografia_intacta.py [ruta.pdf]
-Devuelve 0 si la lista esta intacta, 1 si algo la parte.
+Devuelve 0 si la lista esta intacta y las citas ordenadas, 1 si no.
 """
 
 from __future__ import annotations
@@ -104,9 +114,26 @@ def revisa(ruta: Path) -> int:
     for p, _t, e in fuera:
         print(f"  «{e}» en la pagina {p}, despues de la ultima referencia (correcto)")
 
-    veredicto = "PASA" if not intrusos else "FALLA"
+    fallos = len(intrusos)
+
+    # Citas multiples en orden ascendente. Se leen del texto extraido: un grupo es
+    # una lista de numeros entre corchetes separados por comas.
+    with pdfplumber.open(ruta) as doc:
+        texto = "\n".join((pg.extract_text() or "") for pg in doc.pages)
+    grupos = re.findall(r"\[(\d+(?:,\d+)+)\]", texto)
+    desordenados = []
+    for g in grupos:
+        nums = [int(x) for x in g.split(",")]
+        if nums != sorted(nums):
+            desordenados.append((g, ",".join(str(x) for x in sorted(nums))))
+    print(f"\n  citas multiples   : {len(grupos)}")
+    for malo, bueno in desordenados:
+        print(f"    [{malo}] deberia ser [{bueno}]")
+    fallos += len(desordenados)
+
+    veredicto = "PASA" if not fallos else "FALLA"
     print(f"\n  VEREDICTO: {veredicto}")
-    return 0 if not intrusos else 1
+    return 0 if not fallos else 1
 
 
 if __name__ == "__main__":

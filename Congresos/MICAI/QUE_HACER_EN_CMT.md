@@ -16,11 +16,16 @@ TEC-II-05 del Tec para que Scopus indexe bien.
 
 | # | Nombre en CMT hoy | **Debe decir** | Organization hoy | **Debe decir** |
 |---|---|---|---|---|
-| 1 | Javier Rebull Saucedo | **Javier Rebull-Saucedo** | ITESM | **Tecnologico de Monterrey** |
-| 2 | Juan Pérez Nava | **Juan Pérez-Nava** | ITESM | **Tecnologico de Monterrey** |
-| 3 | Luis Sánchez Salazar | **Luis Sánchez-Salazar** | ITESM | **Tecnologico de Monterrey** |
+| 1 | Javier Rebull Saucedo | **Javier Augusto Rebull-Saucedo** | ITESM | **Tecnologico de Monterrey** |
+| 2 | Juan Pérez Nava | **Juan Carlos Pérez-Nava** | ITESM | **Tecnologico de Monterrey** |
+| 3 | Luis Sánchez Salazar | **Luis Gerardo Sánchez-Salazar** | ITESM | **Tecnologico de Monterrey** |
 | 4 | Grettel Barceló Alonso | **Grettel Barceló-Alonso** | ITESM | **Tecnologico de Monterrey** |
 | 5 | Ruth Pérez Hernández | **Ruth Pérez-Hernández** | IMSS | **Instituto Mexicano del Seguro Social** |
+
+> **Nombres de pila completos.** Springer los pide completos y así los registran los
+> ORCID públicos de los tres. La portada ya dice Javier Augusto, Juan Carlos y Luis
+> Gerardo; CMT, la licencia firmada y el README del repositorio citado tienen que
+> decir exactamente lo mismo, carácter por carácter.
 
 Los correos **no se tocan**: los cinco ya coinciden con el paper, incluido el de Ruth con
 punto (`ruth.perezher@imss.gob.mx`).
@@ -94,7 +99,7 @@ Al terminar la carga, descarga o captura el acuse de CMT y guárdalo junto a
 `Envio/HASH_ENVIO.txt`. Ese archivo tiene el sha256 del paquete:
 
 ```
-12eccbfc565914d9a0c206e073dbc9f44b9c541b438d97bdcf6d6a1a0e9ea6f6
+6654673be896f7b8f1f4feabafa78a9b58a210a2e8971834c268f6fbdc97448f
 ```
 
 Compruébalo antes de subir — este control falla si el ZIP y los documentos no
