@@ -122,10 +122,14 @@ def audita_lncs(tex: str) -> None:
         f"las {len(figs)} figuras llevan caption abajo",
         f"figuras con caption arriba: {mal_f}",
     )
+    # El marcador ya no es (\Envelope): con las fuentes de LNCS salia como un
+    # glifo roto en la primera pagina. Ahora es una nota al pie \thanks, que
+    # compone igual en cualquier instalacion. Sigue teniendo que haber UNO.
+    marcas = t.count("\\thanks{Corresponding author.}")
     check(
-        t.count("(\\Envelope)") == 1,
+        marcas == 1,
         "exactamente un autor de correspondencia",
-        f"marcadores de correspondencia: {t.count('(\\Envelope)')}",
+        f"marcadores de correspondencia: {marcas}",
     )
     check(
         t.count("\\orcidID") == 5, "los cinco ORCID", f"ORCID encontrados: {t.count('\\orcidID')}"
@@ -252,6 +256,10 @@ def audita_gates() -> None:
         ("cifras retiradas", "valores_retirados.py"),
         ("coherencia de ventanas", "ventanas_coherentes.py"),
         ("paquete compila desde el ZIP", "empaqueta_envio.py"),
+        # Estos dos van DESPUES de empaquetar: uno mira el PDF ya ensamblado y el
+        # otro el ZIP recien escrito, asi que solo tienen sentido en ese orden.
+        ("bibliografia sin partir", "bibliografia_intacta.py"),
+        ("sello sincronizado", "sello_sincronizado.py"),
     ]:
         r = subprocess.run(
             [sys.executable, str(Path(__file__).parent / guion)],

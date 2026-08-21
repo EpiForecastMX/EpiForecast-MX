@@ -14,6 +14,7 @@ Uso:  .venv/bin/python scripts/paper_micai_2026/empaqueta_envio.py
 from __future__ import annotations
 
 import hashlib
+import os
 from pathlib import Path
 import re
 import shutil
@@ -27,6 +28,14 @@ MICAI = RAIZ / "Congresos/MICAI"
 MASTER = MICAI / "paper_camera_ready.tex"
 NUMERO = "012"
 DESTINO = MICAI / "Envio" / f"{NUMERO}.zip"
+SELLO = MICAI / "Envio" / "HASH_ENVIO.txt"
+
+
+# Misma fecha fija que compila.sh: 2026-08-23T00:00:00Z, el limite de entrega.
+# pdfTeX incrusta /CreationDate, asi que sin fijarla el PDF —y con el, el ZIP—
+# cambia de hash en cada compilacion. Si se cambia aqui, cambiarla alli tambien.
+EPOCA = 1787443200
+SELLO_ESPERADO = "D:20260823000000Z"
 
 
 def figuras_referenciadas(tex: str) -> list[str]:
@@ -47,7 +56,18 @@ def construye() -> tuple[Path, list[str]]:
     piezas = [(f"{NUMERO}.tex", tex.encode())]
     piezas += [(n, (MICAI / n).read_bytes()) for n in ("llncs.cls", "splncs04.bst")]
     piezas += [(f"Figures/{f}", (MICAI / "Figures" / f).read_bytes()) for f in figs]
-    piezas += [(f"{NUMERO}.pdf", (MICAI / "paper_camera_ready.pdf").read_bytes())]
+    pdf = (MICAI / "paper_camera_ready.pdf").read_bytes()
+    # El PDF que se envia tiene que venir de compila.sh CON la fecha fija. Si no,
+    # lleva la hora real de compilacion y el sha256 del ZIP cambia cada vez que se
+    # recompila, que es justo como se desincronizaron los tres hashes. Falla
+    # cerrado: mejor no empaquetar que empaquetar algo que no se puede volver a
+    # obtener igual.
+    if SELLO_ESPERADO.encode() not in pdf:
+        raise SystemExit(
+            f"el PDF no lleva el sello reproducible {SELLO_ESPERADO}: "
+            "recompilalo con Congresos/MICAI/compila.sh antes de empaquetar."
+        )
+    piezas += [(f"{NUMERO}.pdf", pdf)]
 
     DESTINO.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(DESTINO, "w", zipfile.ZIP_DEFLATED) as z:
@@ -78,8 +98,10 @@ def verifica(zip_path: Path) -> dict:
             )
         rc = 0
         for _ in range(3):
+            entorno = {**os.environ, "SOURCE_DATE_EPOCH": str(EPOCA), "FORCE_SOURCE_DATE": "1"}
             r = subprocess.run(
                 ["pdflatex", "-interaction=nonstopmode", texs[0]],
+                env=entorno,
                 cwd=d,
                 capture_output=True,
                 timeout=300,
@@ -109,6 +131,35 @@ def verifica(zip_path: Path) -> dict:
         }
 
 
+def escribe_sello(zip_path: Path) -> tuple[str, int]:
+    """Deja el sha256 y el tamanio del ZIP en HASH_ENVIO.txt. Fuente unica."""
+    datos = zip_path.read_bytes()
+    sha, tam = hashlib.sha256(datos).hexdigest(), len(datos)
+    SELLO.write_text(
+        "Paquete camera-ready MICAI 2026 · ponencia #12\n"
+        "\n"
+        f"  sha256  {sha}\n"
+        f"  bytes   {tam}\n"
+        "\n"
+        "Este archivo lo escribe empaqueta_envio.py; no se edita a mano.\n"
+        "\n"
+        "El PDF se compila con fecha fija (SOURCE_DATE_EPOCH) y el ZIP se arma con\n"
+        "fecha y orden fijos, asi que el hash identifica el CONTENIDO: reconstruirlo\n"
+        "desde las mismas fuentes vuelve a dar exactamente este valor. Si no coincide,\n"
+        "algo cambio en el paper, en las figuras o en la clase.\n"
+        "\n"
+        "Reconstruir:\n"
+        "  Congresos/MICAI/compila.sh\n"
+        "  .venv/bin/python scripts/paper_micai_2026/empaqueta_envio.py\n"
+        "\n"
+        "Comprobar que los documentos declaran este mismo valor:\n"
+        "  .venv/bin/python scripts/paper_micai_2026/sello_sincronizado.py\n"
+        "\n"
+        "Al subir a CMT, guarda el comprobante junto a este archivo.\n"
+    )
+    return sha, tam
+
+
 if __name__ == "__main__":
     z, figs = construye()
     v = verifica(z)
@@ -135,5 +186,12 @@ if __name__ == "__main__":
         or v["paginas"] is None
         or v["paginas"] > 20
     )
+    # El sello lo ESCRIBE este script, no una mano. Antes se copiaba a mano en
+    # HASH_ENVIO.txt y en QUE_HACER_EN_CMT.md, y los tres valores acabaron
+    # distintos entre si. Ahora hay una sola fuente y sello_sincronizado.py
+    # comprueba que los documentos digan lo que dice el ZIP.
+    if not malo:
+        escribe_sello(z)
+        print(f"  sello escrito en {SELLO.relative_to(RAIZ)}")
     print("  VEREDICTO:", "FALLA" if malo else "PASA")
     sys.exit(1 if malo else 0)

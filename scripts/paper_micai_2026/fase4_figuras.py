@@ -102,7 +102,10 @@ def figura1() -> None:
     # a este ancho los años consecutivos se tocaban: uno de cada tres basta
     ax2.set_xticks([dt.date(a, 1, 1) for a in range(2014, 2027, 3)])
     ax2.set_xticklabels([str(a) for a in range(2014, 2027, 3)])
-    ax2.legend(loc="lower center", bbox_to_anchor=(0.5, 1.0), frameon=False, borderaxespad=0)
+    # dentro de los ejes, no sobre ellos: anclada arriba la leyenda caia justo
+    # donde va el titulo del panel. A la izquierda porque la serie crece con los
+    # anios y ese rincon (2014-2016) es el unico que queda vacio.
+    ax2.legend(loc="upper left", frameon=False, borderaxespad=0.3)
     ax2.grid(alpha=0.25, lw=0.4)
     fig.tight_layout()
     fig.savefig(SALIDA / "fig01_temporal_distribution.pdf")
@@ -128,8 +131,15 @@ def figura3() -> None:
     ctx = ctx[ctx.index >= 40]
     ctx_f = [lunes(2025, int(w)) for w in ctx.index]
 
+    # Las etiquetas de las barras no cabian: chocaban entre si (+17 con +15) hiciera
+    # lo que hiciera el escalonado vertical. La causa es el ancho, no la altura: a
+    # 0.86 del texto habia ~9.7 pt por barra y una etiqueta de tres caracteres a
+    # 6.5 pt mide ~11. A 0.94 hay ~15 pt por barra y ya no pueden tocarse. La ALTURA
+    # TOTAL se conserva (0.94 x 0.5535 = 0.86 x 0.605 del ancho de texto): subirla
+    # empujaba el articulo a 21 paginas. Lo que cambia es el reparto interno, 1.6:1
+    # en vez de 2:1, para que el panel rotulado gane el sitio a costa del de arriba.
     fig, (ax1, ax2) = plt.subplots(
-        2, 1, figsize=medida(0.86, 0.605), gridspec_kw={"height_ratios": [2.0, 1.0]}
+        2, 1, figsize=medida(0.94, 0.5535), gridspec_kw={"height_ratios": [1.6, 1.0]}
     )
     ax1.plot(
         ctx_f,
@@ -165,23 +175,35 @@ def figura3() -> None:
     colores = [C_GREEN if abs(d) <= 5 else (C_ENSEMBLE if abs(d) <= 10 else C_DEEPAR) for d in dev]
     ax2.axhspan(-5, 5, color=C_GOLD, alpha=0.12, label="Planning tolerance ±5%")
     ax2.bar(etiquetas, dev, color=colores, width=0.66)
+    # Ensanchar el panel ya evita el solape, pero dos barras rotuladas contiguas
+    # (+17 y +15) quedan a menos de 1 pt y se leen pegadas. A la segunda de cada
+    # par se le sube la etiqueta. El escalon solo aplica si ambas caen del MISMO
+    # lado del cero: una etiqueta de arriba y otra de abajo no pueden tocarse, y
+    # escalonarlas igual empujaba +24 fuera del marco. El umbral de +-5 no cambia:
+    # se rotula lo que sale de la tolerancia, ni una barra mas.
+    salto, escalon, alto_glifo = 1.4, 16.0, 14.0
+    rotulos, previa_i, previa_lado = [], -99, 0
     for i, d in enumerate(dev):
         if abs(d) <= 5:  # dentro de la tolerancia: la banda ya lo comunica
             continue
-        salto = 1.2 + (2.6 if i % 2 else 0)  # vecinas a distinta altura
-        ax2.text(
-            i,
-            d + (salto if d >= 0 else -salto),
-            f"{d:+.0f}",
-            ha="center",
-            va="bottom" if d >= 0 else "top",
-            fontsize=6.5,
-        )
+        lado = 1 if d >= 0 else -1
+        contigua = i - previa_i == 1 and lado == previa_lado
+        rotulos.append((i, d + lado * (salto + (escalon if contigua else 0.0)), f"{d:+.0f}", lado))
+        previa_i, previa_lado = i, lado
+    # OJO: no llamar "y" a la altura. `y` es la serie observada y el sMAPE que se
+    # imprime al final se calcula con ella; desempaquetarla aqui la pisaba en
+    # silencio y el diagnostico salia 198.61% en vez de 7.40%.
+    for i, altura, txt, lado in rotulos:
+        ax2.text(i, altura, txt, ha="center", va="bottom" if lado > 0 else "top", fontsize=6.5)
     ax2.axhline(0, color="#333", lw=0.8)
-    # holgura arriba y abajo: sin ella la etiqueta de la peor semana choca con el titulo
-    # holgura suficiente para que las etiquetas de las barras extremas no se corten
-    margen = max(abs(dev).max() * 0.28, 8)
-    ax2.set_ylim(dev.min() - margen, dev.max() + margen)
+    # El eje se deduce de donde quedaron las etiquetas, no de las barras: asi el
+    # escalon nunca puede sacar una fuera del marco, caiga donde caiga.
+    ys = [altura for _, altura, _, _ in rotulos]
+    holgura = max(abs(dev).max() * 0.10, 2.0)
+    ax2.set_ylim(
+        min(dev.min(), min(ys) - alto_glifo) - holgura,
+        max(dev.max(), max(ys) + alto_glifo) + holgura,
+    )
     ax2.set_ylabel("Deviation (%)")
     ax2.set_title("(b)", loc="left", fontweight="bold")
     ax2.legend(loc="upper right", frameon=False, bbox_to_anchor=(1.0, 1.32), borderaxespad=0)

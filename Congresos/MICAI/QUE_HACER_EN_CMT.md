@@ -94,7 +94,14 @@ Al terminar la carga, descarga o captura el acuse de CMT y guárdalo junto a
 `Envio/HASH_ENVIO.txt`. Ese archivo tiene el sha256 del paquete:
 
 ```
-6d6eaa5e670343ace5d877fd882751fb9865e836c513d31e2eb1b6146dce3c41
+12eccbfc565914d9a0c206e073dbc9f44b9c541b438d97bdcf6d6a1a0e9ea6f6
+```
+
+Compruébalo antes de subir — este control falla si el ZIP y los documentos no
+coinciden, que es como se desincronizaron la primera vez:
+
+```
+.venv/bin/python scripts/paper_micai_2026/sello_sincronizado.py
 ```
 
 El ZIP se construye de forma determinista, así que ese hash identifica el **contenido**:

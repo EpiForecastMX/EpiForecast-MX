@@ -1,4 +1,13 @@
 #!/bin/bash
+# FECHA FIJA. pdfTeX incrusta /CreationDate y /ModDate, asi que sin esto cada
+# recompilacion produce un PDF distinto byte a byte aunque la fuente no cambie,
+# el ZIP de envio cambia de sha256 y el hash deja de identificar nada. Con
+# SOURCE_DATE_EPOCH + FORCE_SOURCE_DATE el PDF sale identico entre corridas
+# (comprobado: dos compilaciones limpias dan el mismo sha256).
+# El valor es el limite de entrega, 2026-08-23T00:00:00Z. Si se cambia aqui hay
+# que cambiarlo tambien en scripts/paper_micai_2026/empaqueta_envio.py.
+export SOURCE_DATE_EPOCH=1787443200
+export FORCE_SOURCE_DATE=1
 # Gate de compilacion del master MICAI 2026. Tres pasadas de pdflatex.
 #
 # BLOQUEA por: codigo de salida != 0, cualquier error '!' de LaTeX, referencias sin
@@ -55,6 +64,21 @@ print("  GATE       :", "FALLA" if malo else "PASA")
 sys.exit(1 if malo else 0)
 PY
 gate=$?
+
+# La bibliografia no puede quedar partida por un flotante. Se comprueba aqui,
+# sobre el PDF recien salido, porque en la fuente .tex no hay nada anomalo que
+# ver: la Tabla 4 se colaba entre las referencias 2 y 3 y el .log salia limpio.
+if [ $gate -eq 0 ]; then
+  PY_BIN="$AQUI/../../.venv/bin/python"
+  [ -x "$PY_BIN" ] || PY_BIN=python3
+  # Sin variable intermedia esto seria un falso verde: en una tuberia el estado
+  # que se lee es el del ULTIMO mandato, o sea el de `tail`, que siempre vale 0.
+  SALIDA_BIB=$("$PY_BIN" "$AQUI/../../scripts/paper_micai_2026/bibliografia_intacta.py" \
+       "$D/paper_camera_ready.pdf")
+  rc_bib=$?
+  echo "$SALIDA_BIB" | tail -4
+  [ $rc_bib -ne 0 ] && gate=1
+fi
 
 # el PDF canonico sigue al master, no al reves
 [ $gate -eq 0 ] && cp -f "$D/paper_camera_ready.pdf" "$AQUI/paper_camera_ready.pdf"

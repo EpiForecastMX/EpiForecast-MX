@@ -33,6 +33,9 @@ import pdfplumber
 RAIZ = Path(__file__).resolve().parents[2]
 PDF = RAIZ / "Congresos/MICAI/paper_camera_ready.pdf"
 MINIMO = 6.0
+CAPTION_PT = 9.0  # LNCS compone los pies a 9 pt
+MARGEN_PT = 134.8  # margen izquierdo del bloque de texto, en coordenadas del PDF
+ESPERADAS = [1, 2, 3, 4]
 
 
 def _efectivo(c: dict) -> float:
@@ -47,12 +50,19 @@ def revisa() -> list[tuple[int, str, float, int]]:
         for n, pagina in enumerate(doc.pages, start=1):
             chars = pagina.chars
             texto = "".join(c["text"] for c in chars)
-            m = re.search(r"Fig\.\s*(\d+)", texto)
+            # Un pie de figura no es cualquier «Fig. N»: LNCS los compone a 9 pt y
+            # arrancando en el margen izquierdo del bloque de texto. Las menciones
+            # dentro del parrafo van a 10 pt y en cualquier x, y antes se colaban
+            # como si fueran figuras.
+            m = None
+            for cand in re.finditer(r"Fig\.\s*(\d+)", texto):
+                c = chars[cand.start()]
+                if abs(c["size"] - CAPTION_PT) < 0.3 and abs(c["x0"] - MARGEN_PT) < 2:
+                    m = cand
+                    break
             if not m:
                 continue
-            # el pie marca el final de la figura; todo lo de arriba es la figura
-            idx = texto.index(m.group(0))
-            tope = chars[idx]["top"]
+            tope = chars[m.start()]["top"]
             dentro = [c for c in chars if c["top"] < tope - 1]
             if not dentro:
                 continue
@@ -75,8 +85,10 @@ if __name__ == "__main__":
         if bajos:
             malas.append((fig, mn, bajos))
         print(f"  {pg:<9}{fig:<10}{mn:>8.2f}pt{bajos:>14}{marca}")
-    if not filas:
-        print("\n  NINGUNA FIGURA ENCONTRADA: el gate no esta midiendo nada")
+    halladas = [int(f.split()[1].rstrip(".")) for _, f, _, _ in filas]
+    if halladas != ESPERADAS:
+        print(f"\n  FIGURAS DETECTADAS {halladas}, se esperaban {ESPERADAS}:")
+        print("  el gate no esta midiendo lo que cree medir")
         sys.exit(1)
     print("\n  VEREDICTO:", "FALLA" if malas else "PASA")
     sys.exit(1 if malas else 0)

@@ -684,7 +684,7 @@ gap: across five configurations its general-stratum cross-validated
 \smape\ stays within 22--23\% (best 22.3\%), several times higher than
 the recurrent model's median.
 
-\begin{table}[!h]
+\begin{table}[t]
 \centering
 \caption{Aggregate \emph{cross-validation} performance over the 111
 series--stratum combinations (in-sample model-selection metrics, not
@@ -819,7 +819,7 @@ covering epidemiological weeks
 W02--W18 (Table~\ref{tab:validation}, Fig.~\ref{fig:validation}). The assignment scored here was
 frozen before any 2026 observation existed (Sect.~\ref{ssec:eval}).
 
-\begin{table}[!h]
+\begin{table}[t]
 \centering
 \caption{Out-of-sample evaluation: SINAVE-published weekly incidence
 (national, general stratum) versus the locked Ensemble forecast for
@@ -861,7 +861,10 @@ unrounded values, so a column of rounded cells may differ by one case.}
 \begin{figure}[t]
 \centering
 % ALT-TEXT (accessibility / proofing): Two-panel chart: (a) observed versus locked Ensemble forecast for the national general stratum, late-2025 context plus 2026 weeks W02-W18; (b) per-week percentage deviation against a plus/minus 5 percent planning-tolerance band.
-\includegraphics[width=0.86\textwidth]{fig19_validation_2026.pdf}
+% El ancho DEBE coincidir con el nativo de la figura (fase4_figuras.py,
+% figura3: medida(0.94, ...)). Si no, LaTeX la reescala y encoge la
+% tipografia: a 0.86 quedaba en 5.93 pt, por debajo del minimo de Springer.
+\includegraphics[width=0.94\textwidth]{fig19_validation_2026.pdf}
 \caption{2026 out-of-sample evaluation, national general stratum.
 (a) Late-2025 context and W02--W18 observed (gray) versus the locked
 Ensemble forecast (green), scored in bulletin week numbering.
@@ -966,7 +969,7 @@ are compared pairwise over the same series (Wilcoxon signed-rank), since
 comparing each policy's own reassigned subset would compare different
 sets.
 
-\begin{table}[!h]
+\begin{table}[t]
 \centering
 \caption{Ablation of the candidate pool: median out-of-sample \smape\ (\%)
 over the 99 directly observed series, W03--W18. \emph{Static} selects once
@@ -1188,6 +1191,19 @@ proprietary data or computing resources.
 \end{credits}
 
 % =====================================================================
+
+
+% =====================================================================
+% El apendice va ANTES de las referencias: es lo que pide la guia de Springer
+% para Computer Science Proceedings, y el unico apendice de MICAI 2025 tambien
+% aparece ahi. Si se deja despues, sus maquetadores lo mueven y el articulo
+% puede volver a pasar de 20 paginas fuera de nuestro control.
+%
+% Los hiperparametros iban en una Tabla 4 flotante. Como flotante no cabia en su
+% pagina, LaTeX la diferia y acababa impresa entre las referencias, partiendo la
+% bibliografia; forzarla a su sitio costaba una pagina 21. Van aqui como parrafo
+% corrido: mismo contenido, sin flotante que colocar y sin media pagina de coste.
+% =====================================================================
 \appendix
 \section{Implementation and Reproducibility Details}
 \label{app:impl}
@@ -1197,35 +1213,23 @@ YAML files under OmegaConf. The framework runs on Python~3.12 with
 GluonTS~0.15 (PyTorch~2.5), Prophet~1.1, XGBoost~2.0, LightGBM~4.3,
 scikit-learn~1.4 and pandas~2.2; DeepAR trains on one NVIDIA~T4 GPU and
 the rest on CPU. Every seed source is fixed at~42 and cuDNN runs
-deterministically. Table~\ref{tab:hparams} lists the per-model
-hyperparameters; the configuration files, the pseudocode and the
-per-state table are in the repository cited in Sect.~\ref{ssec:eval}.
+deterministically. The per-state out-of-sample table, the frozen
+assignment and the ablation of Sect.~\ref{ssec:ablation} are reproducible
+from the repository cited in Sect.~\ref{ssec:eval}.
 
-\begin{table}[!h]
-\centering
-\caption{Principal hyperparameters, fixed before the 2026 evaluation.}
-\label{tab:hparams}
-\setlength{\tabcolsep}{5pt}
-\renewcommand{\arraystretch}{1.0}
-\footnotesize
-\begin{tabular}{@{}l@{\hspace{8pt}}p{0.78\textwidth}@{}}
-\toprule
-\textbf{Model} & \textbf{Principal hyperparameters} \\
-\midrule
-DeepAR & 2 layers $\times$ 80 cells; context 104 wk; horizon 52;
-         dropout 0.15; Student-$t$ output; Adam
-         $\eta{=}5{\times}10^{-4}$, $\lambda_2{=}10^{-6}$; batch 32;
-         $\leq$300 epochs; early stop (patience 15). \\
-Prophet & rate per 100k, $\log(1{+}y)$; changepoint prior
-          $\in\{0.01,0.03,0.05\}$; seasonality prior
-          $\in\{0.025,0.05,0.1,0.5\}$ (12-point grid under temporal CV). \\
-Ensemble & XGBoost on calendar/lags $\{1,2,4,8,13,26,52\}$/rolling
-           stats; blend weight learned on out-of-fold predictions. \\
-Stacking & Prophet $+$ ETS $+$ LightGBM experts; nonnegative
-           ElasticNet ($\alpha{=}1.0$, \texttt{l1\_ratio}${=}0.5$). \\
-\bottomrule
-\end{tabular}
-\end{table}
+\smallskip\noindent
+\textit{Principal hyperparameters}, all fixed before the 2026 evaluation.
+\textit{DeepAR}: two layers of 80 cells, context 104 weeks, horizon 52,
+dropout 0.15, Student-$t$ output, Adam with $\eta{=}5{\times}10^{-4}$ and
+$\lambda_2{=}10^{-6}$, batch 32, at most 300 epochs with early stopping
+(patience 15). \textit{Prophet}: rate per 100k under $\log(1{+}y)$,
+changepoint prior in $\{0.01,0.03,0.05\}$ and seasonality prior in
+$\{0.025,0.05,0.1,0.5\}$, chosen on a 12-point grid under temporal
+cross-validation. \textit{Ensemble}: XGBoost over calendar features, lags
+$\{1,2,4,8,13,26,52\}$ and rolling statistics, with the blend weight
+learned out of fold. \textit{Stacking}: Prophet, ETS and LightGBM experts
+combined by a nonnegative ElasticNet ($\alpha{=}1.0$,
+\texttt{l1\_ratio}${=}0.5$).
 
 % =====================================================================
 % References (Springer MathPhSci / splncs04 style, alphabetical order)
@@ -1402,5 +1406,4 @@ Wolpert, D.H.: Stacked generalization. Neural Netw.\ \textbf{5}(2),
 \url{https://doi.org/10.1016/S0893-6080(05)80023-1}
 
 \end{thebibliography}
-
 \end{document}
