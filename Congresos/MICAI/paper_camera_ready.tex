@@ -775,20 +775,17 @@ shift and converges to a strong in-sample fit on this dense, clean
 panel; and the probabilistic likelihood regularizes training on
 asymmetric counts. We caution that this is an in-sample cross-validation
 result that does not persist out of sample (Sect.~\ref{sec:validation}).
-At the national-aggregate level the advantage is neutralized: there,
-the DeepAR forecast is produced by the joint model summed over states,
-and aggregation smooths the idiosyncratic state variation, so simpler
-models fit the smooth trend at least as well. The strategy therefore locks Ensemble for the national
-general and women strata and Prophet for men, with cross-validated
-\smape\ of 8.75\%, 7.11\%, and 12.64\% respectively (\mase\ 0.59, 0.46,
-0.76); we retain these data-driven choices rather than override them. That
-the rule lands on different models across the three national
-strata---a tree-based hybrid for the general and female series and a
-structural model for the smaller male series---is the per-series
-mechanism working as intended: each stratum is matched to the inductive
-bias its own cross-validated evidence supports rather than inheriting
-the federal-entity winner, so these aggregate-level choices reflect a
-different data regime, not a contradiction of the federal-entity result.
+At the national-aggregate level the advantage is neutralized: the DeepAR
+forecast is the joint model summed over states, and aggregation smooths
+the idiosyncratic state variation, so simpler models fit the smooth
+trend at least as well. The rule therefore locks Ensemble for the
+national general and women strata and Prophet for men, with
+cross-validated \smape\ of 8.75\%, 7.11\%, and 12.64\% (\mase\ 0.59,
+0.46, 0.76). That it lands on different models across the three national
+strata is the per-series mechanism working as intended: each stratum
+follows its own evidence rather than inheriting the federal-entity
+winner, so these choices reflect a different data regime, not a
+contradiction.
 
 \paragraph{Statistical significance.}
 A one-sided Wilcoxon signed-rank test on the 111 paired per-series
@@ -808,7 +805,7 @@ Sect.~\ref{ssec:ablation} shows that the ordering does not survive
 either. The framework is designed for this: per-series assignments are
 revisable. Where counts are large
 and \smape\ is stable (the national strata) the locked forecast
-generalizes well, as the prospective evaluation quantifies ($6.63\%$
+generalizes well, as the prospective evaluation quantifies ($7.40\%$
 over W02--W18); we treat that, not the cross-validation medians, as
 the primary out-of-sample evidence of this study.
 
@@ -848,7 +845,7 @@ Sect.~\ref{sec:discussion}.
 We assess the locked national-general forecast (Ensemble) against
 every 2026 SINAVE bulletin published since the training cutoff,
 covering epidemiological weeks
-W01--W18 (Table~\ref{tab:validation}, Fig.~\ref{fig:validation}). No
+W02--W18 (Table~\ref{tab:validation}, Fig.~\ref{fig:validation}). No
 2026 observation was used for training, tuning, or selection
 (Sect.~\ref{ssec:eval}).
 
@@ -856,11 +853,12 @@ W01--W18 (Table~\ref{tab:validation}, Fig.~\ref{fig:validation}). No
 \centering
 \caption{Out-of-sample evaluation: SINAVE-published weekly incidence
 (national, general stratum) versus the locked Ensemble forecast for
-2026 weeks W01--W18. Deviation is $100(\hat{y}-y)/y$. W01 is reported
-separately, as the bulletin's first week is structurally incomplete
-(holiday-season carry-over from the prior W52); aggregates are over
-the complete weeks W02--W18. The `Recon.'\ column is the minimum-trace
-reconciled national-general forecast (Sect.~\ref{sec:discussion}).}
+2026 weeks W02--W18. Deviation is $100(\hat{y}-y)/y$. Forecasts are
+scored in bulletin week numbering; W01 is not evaluable, as the locked
+horizon provides no forecast for it, and the bulletin's first week is in
+any case structurally incomplete (holiday-season carry-over from the
+prior W52). The `Recon.'\ column is the minimum-trace reconciled
+national-general forecast (Sect.~\ref{sec:discussion}).}
 \label{tab:validation}
 \setlength{\tabcolsep}{4pt}
 \renewcommand{\arraystretch}{1.1}
@@ -871,33 +869,32 @@ reconciled national-general forecast (Sect.~\ref{sec:discussion}).}
 \textbf{Week} & \textbf{Obs.} & \textbf{Pred.} & \textbf{Recon.} & \textbf{Dev.\,(\%)} &
 \textbf{Week} & \textbf{Obs.} & \textbf{Pred.} & \textbf{Recon.} & \textbf{Dev.\,(\%)}\\
 \midrule
-W01$^\ast$ & 1{,}259 & 2{,}022 & --- & $+60.6$ & W10 & 3{,}057 & 3{,}132 & 3{,}190 & $+2.5$ \\
-W02 & 2{,}220 & 2{,}511 & 2{,}487 & $+13.1$ & W11 & 3{,}052 & 3{,}004 & 3{,}061 & $-1.6$ \\
-W03 & 2{,}819 & 2{,}869 & 2{,}835 & $+1.8$  & W12 & 2{,}574 & 2{,}891 & 2{,}953 & $+12.3$ \\
-W04 & 2{,}820 & 3{,}044 & 3{,}030 & $+7.9$  & W13 & 3{,}223 & 2{,}897 & 2{,}955 & $-10.1$ \\
-W05 & 2{,}595 & 2{,}973 & 3{,}012 & $+14.6$ & W14 & 2{,}341 & 2{,}961 & 3{,}030 & $+26.5$ \\
-W06 & 2{,}585 & 2{,}886 & 2{,}961 & $+11.6$ & W15 & 2{,}981 & 3{,}093 & 3{,}124 & $+3.8$ \\
-W07 & 2{,}975 & 2{,}906 & 2{,}997 & $-2.3$  & W16 & 3{,}065 & 3{,}048 & 3{,}112 & $-0.6$ \\
-\textbf{W08} & \textbf{3{,}041} & \textbf{3{,}046} & \textbf{3{,}131} & $\mathbf{+0.2}$ & W17 & 3{,}075 & 3{,}032 & 3{,}080 & $-1.4$ \\
-W09 & 3{,}086 & 3{,}167 & 3{,}228 & $+2.6$  & W18 & 2{,}791 & 2{,}964 & 3{,}033 & $+6.2$ \\
+W02 & 2{,}220 & 2{,}022 & 2{,}078 & $-8.9$  & W11 & 3{,}052 & 3{,}132 & 3{,}190 & $+2.6$ \\
+W03 & 2{,}819 & 2{,}511 & 2{,}487 & $-10.9$ & W12 & 2{,}574 & 3{,}004 & 3{,}060 & $+16.7$ \\
+W04 & 2{,}820 & 2{,}869 & 2{,}834 & $+1.7$  & W13 & 3{,}223 & 2{,}891 & 2{,}954 & $-10.3$ \\
+W05 & 2{,}595 & 3{,}044 & 3{,}030 & $+17.3$ & W14 & 2{,}341 & 2{,}897 & 2{,}955 & $+23.8$ \\
+W06 & 2{,}585 & 2{,}973 & 3{,}012 & $+15.0$ & W15 & 2{,}981 & 2{,}961 & 3{,}030 & $-0.7$ \\
+W07 & 2{,}975 & 2{,}886 & 2{,}961 & $-3.0$  & W16 & 3{,}065 & 3{,}093 & 3{,}124 & $+0.9$ \\
+W08 & 3{,}041 & 2{,}906 & 2{,}997 & $-4.4$  & W17 & 3{,}075 & 3{,}048 & 3{,}112 & $-0.9$ \\
+W09 & 3{,}086 & 3{,}046 & 3{,}131 & $-1.3$  & W18 & 2{,}791 & 3{,}032 & 3{,}080 & $+8.6$ \\
+W10 & 3{,}057 & 3{,}167 & 3{,}227 & $+3.6$  &     &       &       &       &        \\
 \bottomrule
 \end{tabular}}
 
 \smallskip
 \parbox{0.9\textwidth}{\footnotesize\textbf{Cumulative W02--W18:}
-observed 48{,}300, predicted 50{,}424 (reconciled 51{,}219), deviation
-$\mathbf{+4.40\%}$ (reconciled $+6.0\%$)
-($\ast$\,W01 excluded from aggregates).}
+observed 48{,}300, predicted 49{,}482 (reconciled 50{,}261), deviation
+$\mathbf{+2.45\%}$ (reconciled $+4.1\%$).}
 \end{table}
 
 \begin{figure}[t]
 \centering
-% ALT-TEXT (accessibility / proofing): Two-panel chart: (a) observed versus locked Ensemble forecast for the national general stratum, late-2025 context plus 2026 weeks W01-W18; (b) per-week percentage deviation against a plus/minus 5 percent planning-tolerance band.
+% ALT-TEXT (accessibility / proofing): Two-panel chart: (a) observed versus locked Ensemble forecast for the national general stratum, late-2025 context plus 2026 weeks W02-W18; (b) per-week percentage deviation against a plus/minus 5 percent planning-tolerance band.
 \includegraphics[width=0.86\textwidth]{fig19_validation_2026.pdf}
 \caption{2026 out-of-sample evaluation, national general stratum.
-(a) Late-2025 context and W01--W18 observed (gray) versus the locked
-Ensemble forecast (green); W01 is flagged as incomplete and the W08
-planning milestone is annotated. (b) Per-week deviation against the
+(a) Late-2025 context and W02--W18 observed (gray) versus the locked
+Ensemble forecast (green), scored in bulletin week numbering.
+(b) Per-week deviation against the
 $\pm5\%$ planning-tolerance band (shaded); bars are colored by
 absolute deviation: green within $\pm5\%$, orange between $5\%$ and
 $10\%$, and wine above $10\%$.}
@@ -906,43 +903,51 @@ $10\%$, and wine above $10\%$.}
 
 \paragraph{Aggregate behavior.}
 Over the 17 complete weeks W02--W18, the locked forecast attains an
-\smape\ of \textbf{6.63\%} (mean \mae\ $=184$ cases per week) and a
-cumulative deviation of $+4.40\%$, within the $\pm5\%$ planning
+\smape\ of \textbf{7.40\%} (mean \mae\ $=205$ cases per week) and a
+cumulative deviation of $+2.45\%$, within the $\pm5\%$ planning
 tolerance. The relevant comparator is the CV-period \smape\ for the
-same national-general stratum, 8.75\%: the
-out-of-sample error is below the in-sample CV error. The weekly errors
-have a median absolute percentage error of 3.7\%, below the 6.6\% median of the per-week CV errors, so the forecast generalizes without visible drift. The ranking is robust to the error metric: under a
-count-appropriate mean Poisson deviance, the locked Ensemble forecast
-is again the best of the four models in this window ($21.7$, against
-$31.9$ for Prophet, $32.0$ for DeepAR, and $87.5$ for Stacking).
-Consistent with the deployment setting, an empirical 80\% prediction
-interval (10th/90th percentiles of post-2021 residuals) covers 15 of 17
-validation weeks (88\%; 76\% under a full-history calibration),
-bracketing the nominal level rather than reflecting the overconfidence
-of a single model's native intervals.
+same national-general stratum, 8.75\%: the out-of-sample error is below
+the in-sample CV error. The weekly errors have a median absolute
+percentage error of 4.4\%, below the 6.6\% median of the per-week CV
+errors, so the forecast generalizes without visible drift. The ranking
+is robust to the error metric: under a count-appropriate mean Poisson
+deviance, the locked Ensemble forecast is again the best of the four
+models in this window ($25.3$, against $30.4$ for Prophet, $57.9$ for
+DeepAR, and $104.9$ for Stacking). Uncertainty, however, does not
+transport as well as the point forecast. The empirical 80\% residual
+band, calibrated from the 10th and 90th percentiles of post-2021
+residuals, covered 10 of the 17 complete prospective weeks (58.8\%).
+This undercoverage indicates that the historical residual distribution
+did not transport to W02--W18; the band should therefore be interpreted
+as a diagnostic uncertainty summary rather than as calibrated
+prospective coverage.
 
 \paragraph{Pairwise comparison.}
-A Diebold--Mariano test with the Harvey--Leybourne--Newbold small-sample
-correction on the W02--W18 squared-error losses does not reject equal
-accuracy between the locked Ensemble and DeepAR ($p=0.15$) or Prophet
-($p=0.10$), and indicates that Ensemble is more accurate than Stacking
-($p=0.03$); with only seventeen weeks, the test has limited power, so
-a non-rejection means insufficient evidence to separate the leading
-models, not equivalence.
+We compare the locked Ensemble against each rival with a
+Diebold--Mariano test carrying the Harvey--Leybourne--Newbold
+small-sample correction, on the W02--W18 squared-error losses. The
+unadjusted two-sided $p$-values are $0.0167$ against DeepAR, $0.0178$
+against Stacking, and $0.4328$ against Prophet. These are three
+exploratory comparisons on the same seventeen weeks, so we adjust them:
+under Holm the first two both become $p=0.0502$ and neither clears the
+conventional $5\%$ threshold. We therefore read the result as nominal
+evidence of lower squared-error loss against DeepAR and Stacking, not
+as an established difference, and as no evidence at all against
+Prophet. With seventeen weeks the test has little power, so a
+non-rejection means insufficient evidence to separate the leading
+models rather than equivalence.
 
 \paragraph{Largest single-week deviation.}
-W14 has the largest single-week deviation ($+26.5\%$), well beyond the
-upper quartile of the cross-validation error band.
-The value remained at 2{,}341 cases through the manuscript cutoff and
-is therefore not a reporting-lag artifact; the four subsequent weeks,
-W15--W18, return to an \smape\ of 2.9\%, so the miss does not propagate
-into the trajectory. We treat W14 as one observation in the tail of
-the in-sample error distribution rather than as evidence of model
-drift, and note that the most recent one or two weeks of any bulletin
-should still be read with caution because of the documented SINAVE
-reporting lag. Week W08, the onset of the February--May saturation
-window, deviates by only $+0.2\%$, though the 17-week aggregate is the
-more informative summary.
+W14 has the largest single-week deviation ($+23.8\%$), well beyond the
+upper quartile of the cross-validation error band. The value remained
+at 2{,}341 cases through the manuscript cutoff and is therefore not a
+reporting-lag artifact; the four subsequent weeks, W15--W18, return to
+an \smape\ of 2.7\%, so the miss does not propagate into the
+trajectory. We treat W14 as one observation in the tail of the
+in-sample error distribution rather than as evidence of model drift,
+and note that the most recent one or two weeks of any bulletin should
+still be read with caution because of the documented SINAVE reporting
+lag.
 
 \paragraph{Per-series behavior.}
 Cross-validation accuracy does not persist per series out of sample
@@ -951,9 +956,10 @@ model and demographic stratum. The cross-validated dominance of the
 recurrent model (dashed line) does not survive: out of sample no model
 is uniformly best, and the error grows toward the sparse male stratum,
 where low weekly counts also inflate \smape\ because of small
-denominators---on the scale-free \mase, the same male series remain
-near 0.45--0.50 for all four models, well below 1, about twice as
-accurate as 52-week seasonal persistence.
+denominators---on the scale-free \mase, scored against 52-week
+seasonal persistence, the same male series sit between 0.73 and 0.90
+across the four models: better than persistence, but by a far narrower
+margin than the cross-validated figures suggest.
 This is the regime in which an \emph{auditable, revisable} rule earns
 its keep, and Sect.~\ref{ssec:ablation} tests that claim directly
 against the frozen deployment.
@@ -963,15 +969,16 @@ against the frozen deployment.
 \centering
 \includegraphics[width=0.95\textwidth]{fig20_oos_perstate.pdf}
 \caption{Out-of-sample 2026 per-series symmetric error by model and
-demographic stratum; each box pools the 32 federal-entity series with
-the national series for that stratum, over the 2026 weeks available at
-the production cutoff. On the national-general series alone, Prophet
-and the locked Ensemble tie at $13\%$ (national row of the released
-per-state table). In cross-validation the recurrent model is
-selected for most series at a $5.99\%$ median (dashed line); out of
-sample that advantage disappears and the four models converge near
-45--48\%, worst on the sparse male stratum. The auditable rule treats
-these scores as a revisable signal and reassigns 73 of the 111 series.}
+demographic stratum over W03--W18, the weeks common to every series;
+each box pools the 32 federal-entity
+series with the national series for that stratum ($n{=}99$). In
+cross-validation the recurrent model is selected for most series at a
+$5.99\%$ median (dashed line); out of sample that advantage disappears
+and the four models converge, with per-series medians of $26.4\%$ for
+Prophet, $27.9\%$ for DeepAR, $28.3\%$ for Ensemble, and $29.3\%$ for
+Stacking, worst on the sparse male stratum. Treating these scores as a
+revisable signal reassigns 55 of the 99 series (62 of 111 when the
+derived regional series are included).}
 \label{fig:oos2026}
 \end{figure}
 
@@ -984,7 +991,7 @@ subset of the pool and rescore the resulting assignments without
 refitting---the rule adjudicates among forecasts that were already
 locked. Two regimes are separated: \emph{static}, selecting once from
 cross-validated evidence as deployed, and \emph{dynamic}, reselecting on
-W02--W11 and scoring on the later, unused weeks W12--W18. Selection runs
+W03--W11 and scoring on the later, unused weeks W12--W18. Selection runs
 over all 111 series; scoring runs over the 99 with a direct bulletin
 observation, the 12 derived regional series being a sensitivity. Policies
 are compared pairwise over the same series (Wilcoxon signed-rank), since
@@ -994,8 +1001,8 @@ sets.
 \begin{table}[t]
 \centering
 \caption{Ablation of the candidate pool: median out-of-sample \smape\ (\%)
-over the 99 directly observed series, W02--W18. \emph{Static} selects once
-from cross-validated evidence; \emph{dynamic} reselects on W02--W11 and is
+over the 99 directly observed series, W03--W18. \emph{Static} selects once
+from cross-validated evidence; \emph{dynamic} reselects on W03--W11 and is
 scored on the unused weeks. $p$: two-sided Wilcoxon signed-rank against
 the full pool over the same series. The frozen deployment is the
 assignment locked before 2026, and the baseline the dynamic regime must
@@ -1102,12 +1109,12 @@ variances, removes the incoherence by construction; the reconciled
 national-general series (Table~\ref{tab:validation}, `Recon.'\ column)
 shifts the operational forecast by only $1.9\%$ on average and, because
 it is already well calibrated, slightly raises the cumulative deviation
-($+6.0\%$ vs.\ $+4.40\%$). The independence approximation is thus a
+($+4.1\%$ vs.\ $+2.45\%$). The independence approximation is thus a
 small source of error, and we report the unreconciled forecasts for
 transparency.
 
 \paragraph{Limitations.}
-Five limitations constrain the conclusions. (i)~Only one condition
+Seven limitations constrain the conclusions. (i)~Only one condition
 (depression) is evaluated; transfer to conditions with different
 temporal behavior remains to be demonstrated. (ii)~The per-series
 cross-validation metrics of Table~\ref{tab:aggmetrics} are optimistic
@@ -1116,12 +1123,16 @@ ranking does not transport. The out-of-sample claim therefore rests on
 the national-aggregate prospective evaluation and on the revision
 experiment, not on the cross-validation medians. (iii)~The headline prospective
 evaluation is at the national-aggregate stratum over an early-2026
-window (W01--W18); a per-state out-of-sample table over the same window
+window (W02--W18); a per-state out-of-sample table over the same window
 is released with the source code, but a per-state \emph{full-year}
 evaluation is still pending. (iv)~The
 most recent bulletins are subject to reporting-lag revision, so the
-latest one or two weeks are provisional. (v)~The framework has not
-been externally validated outside SINAVE/Mexico. (vi)~SINAVE is a
+latest one or two weeks are provisional. (v)~Revising point-forecast
+assignments does not by itself calibrate predictive uncertainty:
+rolling recalibration or direct probabilistic evaluation is required,
+as the undercoverage of the empirical band in
+Sect.~\ref{sec:validation} shows. (vi)~The framework has not been
+externally validated outside SINAVE/Mexico. (vii)~SINAVE is a
 passive, facility-based system, so the panel measures \emph{reported}
 incidence: it counts episodes that reached care and were coded, not
 episodes that occurred. Two consequences bear on generalizability.

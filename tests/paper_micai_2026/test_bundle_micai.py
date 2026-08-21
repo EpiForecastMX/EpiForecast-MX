@@ -279,3 +279,20 @@ def test_el_gate_de_compilacion_bloquea_por_exceso_de_paginas(tmp_path):
     )
     assert r.returncode != 0, f"el gate dejó pasar un master sobre el techo:\n{r.stdout}"
     assert "FALLA" in r.stdout
+
+
+# --------------------------------------------------------------- cifras obsoletas
+def test_ninguna_cifra_retirada_sobrevive():
+    """Toda cifra de la validación cambió al corregir la alineación de semanas.
+
+    Este control mira el .tex sin comentarios y también el PDF, porque una cifra
+    puede entrar por una figura y no por el fuente.
+    """
+    import valores_retirados
+
+    if not valores_retirados.TEX.exists():
+        pytest.skip("el master no está en este árbol")
+    hallazgos = valores_retirados.revisa()
+    assert not hallazgos, "cifras retiradas vivas:\n" + "\n".join(
+        f"  [{e}] {c[:120]}" for e, c, _ in hallazgos[:8]
+    )
