@@ -85,3 +85,13 @@ firmarlo a mano**, no conseguirlo.
 3. Imprimir, **firmar a mano**, escanear.
 4. Preguntar a Ruth si el IMSS requiere algo adicional.
 5. Subirlo a CMT en su campo, junto con `012.zip`.
+
+> **La licencia NO es un tramite posterior.** Va por el mismo canal y en el mismo
+> momento que el paquete, asi que comparte plazo: **domingo 23-ago-2026, fin del dia
+> AoE**. Esta fuera del ZIP, no fuera de la entrega. Sin ella firmada el camera-ready
+> no queda completo aunque el `012.zip` este cargado.
+
+> El paso 4 no es opcional y conviene hacerlo YA, porque depende de otra persona:
+> Ruth tiene que ver su afiliacion tal como va impresa --`Instituto Mexicano del
+> Seguro Social, OOAD Guerrero, Mexico`-- antes de que se firme. Si su firma lleva
+> una forma y la portada otra, Springer para la produccion.
