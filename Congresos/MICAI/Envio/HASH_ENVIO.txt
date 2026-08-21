@@ -1,0 +1,13 @@
+Paquete camera-ready MICAI 2026 · ponencia #12
+
+  sha256  83c1a737b30ed26fa0201ad7316d448dc46222af552d52b4b917bef000b78078
+  bytes   538676
+
+El ZIP se construye de forma determinista (fecha fija y orden fijo), asi que este
+hash identifica el CONTENIDO: regenerarlo desde las mismas fuentes vuelve a dar el
+mismo valor. Si no coincide, algo cambio en el paper, en las figuras o en la clase.
+
+Reconstruir y verificar:
+  .venv/bin/python scripts/paper_micai_2026/empaqueta_envio.py
+
+Al subir a CMT, guarda el comprobante junto a este archivo.

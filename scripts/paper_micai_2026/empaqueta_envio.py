@@ -40,14 +40,23 @@ def construye() -> tuple[Path, list[str]]:
     if faltan:
         raise SystemExit(f"faltan figuras referenciadas: {faltan}")
 
+    # ZIP DETERMINISTA. Sin fecha fija, cada regeneracion cambia el sha256 aunque el
+    # contenido sea identico, y entonces el hash no sirve para identificar la copia
+    # enviada, que es justo para lo que se guarda.
+    fecha = (2026, 1, 1, 0, 0, 0)
+    piezas = [(f"{NUMERO}.tex", tex.encode())]
+    piezas += [(n, (MICAI / n).read_bytes()) for n in ("llncs.cls", "splncs04.bst")]
+    piezas += [(f"Figures/{f}", (MICAI / "Figures" / f).read_bytes()) for f in figs]
+    piezas += [(f"{NUMERO}.pdf", (MICAI / "paper_camera_ready.pdf").read_bytes())]
+
     DESTINO.parent.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(DESTINO, "w", zipfile.ZIP_DEFLATED) as z:
-        z.writestr(f"{NUMERO}.tex", tex)  # un solo .tex, con el numero de ponencia
-        z.write(MICAI / "llncs.cls", "llncs.cls")
-        z.write(MICAI / "splncs04.bst", "splncs04.bst")
-        for f in figs:
-            z.write(MICAI / "Figures" / f, f"Figures/{f}")
-        z.write(MICAI / "paper_camera_ready.pdf", f"{NUMERO}.pdf")
+        for nombre, datos in sorted(piezas):
+            info = zipfile.ZipInfo(nombre, date_time=fecha)
+            info.compress_type = zipfile.ZIP_DEFLATED
+            info.create_system = 3  # unix, para no depender del anfitrion
+            info.external_attr = 0o644 << 16
+            z.writestr(info, datos)
     return DESTINO, figs
 
 
@@ -61,7 +70,12 @@ def verifica(zip_path: Path) -> dict:
         if len(texs) != 1:
             raise SystemExit(f"el paquete debe llevar UN solo .tex, lleva {texs}")
         if shutil.which("pdflatex") is None:
-            return {"nombres": nombres, "compila": "sin pdflatex"}
+            # falla cerrado: este script es un gate de entrega, y un paquete sin
+            # verificar no puede reportarse como bueno
+            raise SystemExit(
+                "pdflatex no disponible: el paquete NO se pudo verificar.\n"
+                "  Un gate de entrega no puede pasar sin compilar desde el ZIP."
+            )
         rc = 0
         for _ in range(3):
             r = subprocess.run(
@@ -107,9 +121,6 @@ if __name__ == "__main__":
     print("  contenido:")
     for n in v["nombres"]:
         print(f"     {n}")
-    if v.get("compila") == "sin pdflatex":
-        print("\n  pdflatex no disponible: no se pudo verificar la compilacion")
-        sys.exit(0)
     print(
         f"\n  compilado DESDE EL ZIP: {v['paginas']} paginas · rc={v['rc']} · "
         f"{v['errores']} errores · {v['undefined']} undefined · "
