@@ -11,8 +11,11 @@ Contrato (predeclarado ANTES de ver resultados):
   - seleccion estatica: regla publicada, banda 5% -> MASE -> RMSE, siempre sobre n=111.
   - evaluacion OOS: principal n=99 (estados + nacional), sensibilidad n=111 (con regiones).
     Se reportan las dos. No se elige denominador despues de ver el resultado.
-  - dinamica: reseleccion por minimo sMAPE en W02-W11 (definicion ya auditada), puntuada
-    en W12-W18. La variante con desempates completos va como sensibilidad aparte.
+  - dinamica: reseleccion por minimo sMAPE en la ventana temprana (semanas <= CORTE,
+    definicion ya auditada), puntuada en las semanas posteriores no usadas. La ventana
+    efectiva se DERIVA del dato -- hoy W03-W11 y W12-W18, porque la primera fecha `ds`
+    de 2026 cae en semana ISO 2 y con el corrimiento va a la 3 -- y queda registrada en
+    oos_por_serie.csv. La variante con desempates completos va como sensibilidad aparte.
 
 Uso:  ../../.venv/bin/python fase1_ablacion.py
 """
@@ -389,7 +392,10 @@ if __name__ == "__main__":
         print(f"    {r['pool']:<34} {r['reparto']}")
 
     print("\n" + "=" * 92)
-    print("banda · ABLACION DINAMICA — reseleccion en W02-W11, puntuada en W12-W18")
+    print(
+        "B · ABLACION DINAMICA — reseleccion en la ventana temprana, "
+        "puntuada en las semanas no usadas"
+    )
     print("   metricas GLOBALES sobre las mismas series; el % entre reasignadas es diagnostico")
     print("=" * 92)
     base = {

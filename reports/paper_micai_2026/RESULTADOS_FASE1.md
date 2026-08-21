@@ -1,5 +1,29 @@
 # Resultados Fase 1 — ablación del pool de candidatos
 
+> ## ⚠ SUPERSEDIDO — evidencia histórica
+>
+> **Las cifras de este documento salieron de `all_forecast_*`, que NO es la fuente
+> canónica.** La Tabla 2 del paper sale de `tableau.csv`, y tener dos fuentes de
+> pronóstico en un mismo artículo es justo el defecto que este trabajo vino a corregir.
+> Todo se recalculó desde `tableau.csv` el 20-ago-2026 (commit `6d23bb3a`).
+>
+> **Las cifras vigentes están en [`FASE4_CIFRAS.md`](FASE4_CIFRAS.md)** y en
+> `fase4_cifras.json`. Lo que cambió:
+>
+> | n=99 | aquí (`all_forecast`) | vigente (**tableau**) |
+> |---|---|---|
+> | Prophet | 26,40 | **26,74** |
+> | DeepAR | 27,92 | **27,38** |
+> | Ensemble | 28,30 | **28,08** |
+> | Stacking | 29,28 | 29,28 |
+> | Reasignaciones que mejoran | 78,2 % | **76,4 %** |
+> | Mediana dinámica final | 28,81 | **28,52** |
+> | Ventana declarada | W02–W18 | **W03–W18** (derivada del dato) |
+>
+> Este documento se conserva sin editar el resto de su contenido: es el registro de
+> cómo se llegó al hallazgo, y borrarlo escondería el error en vez de dejarlo trazable.
+
+
 **Fecha:** 20 de agosto de 2026 · **Paquete:** `c13e7163` / `b43ebdf2`
 **El paper sigue sin tocarse.** Contrato predeclarado antes de ver resultados.
 
