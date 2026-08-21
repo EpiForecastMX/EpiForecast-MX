@@ -311,3 +311,39 @@ def test_las_ventanas_no_se_contradicen():
         pytest.skip("faltan el JSON de cifras o el master")
     fallos = ventanas_coherentes.revisa()
     assert not fallos, "ventanas incoherentes:\n" + "\n".join(f"  {x}" for x in fallos)
+
+
+def test_ninguna_letra_de_figura_baja_de_6pt():
+    """Springer: «lettering in figures should not use font sizes smaller than 6 pt».
+
+    Ningún gate anterior lo veía. La figura se genera y LaTeX la reduce al incluirla,
+    así que el tamaño del generador no dice nada: hay que medir el efectivo. Antes de
+    este control las cuatro figuras iban entre 2,3 y 3,9 pt.
+    """
+    import tipografia_figuras
+
+    if not tipografia_figuras.TEX.exists():
+        pytest.skip("el master no está en este árbol")
+    bajas = [
+        (f, ef) for f, _, _, ef in tipografia_figuras.revisa() if ef < tipografia_figuras.MINIMO
+    ]
+    assert not bajas, "figuras por debajo de 6 pt: " + ", ".join(
+        f"{f} ({ef:.2f} pt)" for f, ef in bajas
+    )
+
+
+def test_las_referencias_no_llevan_flotantes_intercalados():
+    """La bibliografía debe ser contigua: 1..28 sin saltos ni repeticiones."""
+    import re
+    import subprocess
+
+    pdf = RAIZ / "Congresos/MICAI/paper_camera_ready.pdf"
+    if not pdf.exists():
+        pytest.skip("no hay PDF compilado")
+    txt = subprocess.run(
+        ["pdftotext", "-layout", str(pdf), "-"], capture_output=True, text=True, check=False
+    ).stdout
+    nums = [int(n) for n in re.findall(r"^ *(\d+)\. [A-Z][a-z]", txt, re.M)]
+    # la secuencia de la bibliografía es la cola creciente que llega a 28
+    biblio = nums[nums.index(1, 1) :] if nums.count(1) > 1 else nums
+    assert biblio == list(range(1, len(biblio) + 1)), f"referencias no contiguas: {biblio[:12]}"

@@ -64,11 +64,12 @@ def revisa() -> list[str]:
                 ["pdftotext", str(FIG4), "-"], capture_output=True, text=True, check=False
             ).stdout
         )
-        if serie not in txt:
-            hallados = set(re.findall(r"W\d+-W\d+", txt))
-            fallos.append(
-                f"rotulo de la Figura 4: no dice {serie} (encontrado: {hallados or 'nada'})"
-            )
+        # El rotulo dentro de la figura es OPCIONAL: el titulo interno se retiro
+        # porque a tamano final se recortaba y repetia el pie. Lo que no se tolera es
+        # un rotulo que CONTRADIGA al dato.
+        hallados = set(re.findall(r"W\d+-W\d+", txt))
+        if hallados and hallados != {serie}:
+            fallos.append(f"rotulo de la Figura 4: dice {hallados}, el dato es {serie}")
 
     # la ventana nacional no puede haber quedado escrita como la de series
     if re.search(r"Over the \d+ complete weeks " + re.escape(serie), tex):

@@ -82,7 +82,7 @@
 % 20-ago-2026): la carta de aceptacion exige que el camera-ready y CMT coincidan.
 % La forma de Ruth y su afiliacion reproducen su instruccion expresa del 20-ago-2026;
 % CMT conserva una forma abreviada anterior y debe actualizarse antes de la entrega.
-\author{Javier Rebull-Saucedo\inst{1}\orcidID{0009-0008-2089-5274}(\Envelope) \and
+\author{Javier Rebull-Saucedo\inst{1}\orcidID{0009-0008-2089-5274}\thanks{Corresponding author.} \and
         Juan P\'erez-Nava\inst{1}\orcidID{0009-0005-6708-5541} \and
         Luis S\'anchez-Salazar\inst{1}\orcidID{0009-0009-6101-8072} \and
         Grettel Barcel\'o-Alonso\inst{1}\orcidID{0009-0004-3373-6441} \and
@@ -701,7 +701,7 @@ gap: across five configurations its general-stratum cross-validated
 \smape\ stays within 22--23\% (best 22.3\%), several times higher than
 the recurrent model's median.
 
-\begin{table}[t]
+\begin{table}[!h]
 \centering
 \caption{Aggregate \emph{cross-validation} performance over the 111
 series--stratum combinations (in-sample model-selection metrics, not
@@ -836,7 +836,7 @@ covering epidemiological weeks
 W02--W18 (Table~\ref{tab:validation}, Fig.~\ref{fig:validation}). The assignment scored here was
 frozen before any 2026 observation existed (Sect.~\ref{ssec:eval}).
 
-\begin{table}[t]
+\begin{table}[!h]
 \centering
 \caption{Out-of-sample evaluation: SINAVE-published weekly incidence
 (national, general stratum) versus the locked Ensemble forecast for
@@ -983,7 +983,7 @@ are compared pairwise over the same series (Wilcoxon signed-rank), since
 comparing each policy's own reassigned subset would compare different
 sets.
 
-\begin{table}[t]
+\begin{table}[!h]
 \centering
 \caption{Ablation of the candidate pool: median out-of-sample \smape\ (\%)
 over the 99 directly observed series, W03--W18. \emph{Static} selects once
@@ -1209,25 +1209,21 @@ proprietary data or computing resources.
 \section{Implementation and Reproducibility Details}
 \label{app:impl}
 % =====================================================================
-The four models share a single interface and are configured from
-hierarchical YAML files under OmegaConf. The framework runs on
-Python~3.12 with GluonTS~0.15 (PyTorch~2.5), Prophet~1.1,
-XGBoost~2.0, LightGBM~4.3, scikit-learn~1.4, and pandas~2.2; DeepAR
-trains on one NVIDIA~T4 GPU and the remaining models on CPU. Run-to-run reproducibility is enforced by
-fixing every seed source---\texttt{torch}, \texttt{numpy},
-\texttt{random}, and the tree libraries' sampling seeds---at~42 and
-enabling deterministic cuDNN kernels. Table~\ref{tab:hparams} lists the
-per-model hyperparameters; the configuration files, the model-selection
-pseudocode, and the per-state out-of-sample table are released with the
-source code.
+The four models share a single interface, configured from hierarchical
+YAML files under OmegaConf. The framework runs on Python~3.12 with
+GluonTS~0.15 (PyTorch~2.5), Prophet~1.1, XGBoost~2.0, LightGBM~4.3,
+scikit-learn~1.4 and pandas~2.2; DeepAR trains on one NVIDIA~T4 GPU and
+the rest on CPU. Every seed source is fixed at~42 and cuDNN runs
+deterministically. Table~\ref{tab:hparams} lists the per-model
+hyperparameters; the configuration files, the pseudocode and the
+per-state table are in the repository cited in Sect.~\ref{ssec:eval}.
 
-\begin{table}[t]
+\begin{table}[!h]
 \centering
-\caption{Principal hyperparameters per model, fixed before the 2026
-evaluation window.}
+\caption{Principal hyperparameters, fixed before the 2026 evaluation.}
 \label{tab:hparams}
 \setlength{\tabcolsep}{5pt}
-\renewcommand{\arraystretch}{1.12}
+\renewcommand{\arraystretch}{1.0}
 \footnotesize
 \begin{tabular}{@{}l@{\hspace{8pt}}p{0.78\textwidth}@{}}
 \toprule
@@ -1237,14 +1233,11 @@ DeepAR & 2 layers $\times$ 80 cells; context 104 wk; horizon 52;
          dropout 0.15; Student-$t$ output; Adam
          $\eta{=}5{\times}10^{-4}$, $\lambda_2{=}10^{-6}$; batch 32;
          $\leq$300 epochs; early stop (patience 15). \\
-\addlinespace
 Prophet & rate per 100k, $\log(1{+}y)$; changepoint prior
           $\in\{0.01,0.03,0.05\}$; seasonality prior
           $\in\{0.025,0.05,0.1,0.5\}$ (12-point grid under temporal CV). \\
-\addlinespace
 Ensemble & XGBoost on calendar/lags $\{1,2,4,8,13,26,52\}$/rolling
            stats; blend weight learned on out-of-fold predictions. \\
-\addlinespace
 Stacking & Prophet $+$ ETS $+$ LightGBM experts; nonnegative
            ElasticNet ($\alpha{=}1.0$, \texttt{l1\_ratio}${=}0.5$). \\
 \bottomrule

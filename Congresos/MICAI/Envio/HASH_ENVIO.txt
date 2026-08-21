@@ -1,7 +1,7 @@
 Paquete camera-ready MICAI 2026 · ponencia #12
 
-  sha256  c9ff73816863cf27bc9463f6bd370fedfbb556da415701abf946bcf82c61e23d
-  bytes   535269
+  sha256  c3271788c7ee92a59dd3a8f99a952f1026ee6d5fd0a56038bdcd13b0c130729f
+  bytes   494739
 
 El ZIP se construye de forma determinista (fecha fija y orden fijo), asi que este
 hash identifica el CONTENIDO: regenerarlo desde las mismas fuentes vuelve a dar el

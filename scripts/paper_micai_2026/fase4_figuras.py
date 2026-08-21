@@ -28,9 +28,34 @@ RAIZ = Path(__file__).resolve().parents[2]
 SALIDA = RAIZ / "Congresos/MICAI/Figures"
 RESULT = RAIZ / "reports/paper_micai_2026/resultados"
 
+# TAMANO FISICO FINAL. Springer exige >=6 pt de letra DENTRO de la figura
+# (instructivo, 4.5). Generarla grande y dejar que LaTeX la reduzca divide el
+# tamano por la escala: a 0.34 una etiqueta de 7.5 pt acaba en 2.5 pt. Por eso
+# cada figura se genera al ancho exacto al que se imprime, con escala 1.
+ANCHO_TEXTO_PT = 347.0
+PULGADA = 72.0
+
+
+def medida(frac: float, aspecto: float) -> tuple[float, float]:
+    """(ancho, alto) en pulgadas para imprimirse a `frac` del bloque de texto."""
+    w = ANCHO_TEXTO_PT * frac / PULGADA
+    return w, w * aspecto
+
+
 C_OBS, C_PROPHET, C_DEEPAR = "#4A4A4A", "#004D40", "#880E4F"
 C_ENSEMBLE, C_STACK, C_GOLD, C_GREEN = "#FF6F00", "#1A237E", "#B8860B", "#0A4F3C"
-plt.rcParams.update({"font.size": 9.5, "axes.titlesize": 11})
+plt.rcParams.update(
+    {
+        "font.size": 7,  # >= 6 pt de Springer, con margen
+        "axes.titlesize": 7.5,
+        "axes.labelsize": 6.5,
+        "xtick.labelsize": 6.5,
+        "ytick.labelsize": 6.5,
+        "legend.fontsize": 6.5,
+        "pdf.fonttype": 42,  # TrueType incrustada: nada de Type 3
+        "ps.fonttype": 42,
+    }
+)
 
 
 def lunes(anio: int, semana: int) -> dt.date:
@@ -40,6 +65,49 @@ def lunes(anio: int, semana: int) -> dt.date:
         return dt.date.fromisocalendar(anio, semana, 1)
     except ValueError:
         return dt.date.fromisocalendar(anio, 52, 1) + dt.timedelta(weeks=semana - 52)
+
+
+def figura1() -> None:
+    """Distribucion temporal: (a) casos anuales, (b) serie semanal nacional.
+
+    Se regenera desde el paquete sellado y al ancho final. La version anterior
+    rotulaba los trece valores anuales dentro de las barras; a esta escala esas
+    etiquetas quedaban por debajo del minimo de Springer y el eje ya los comunica.
+    """
+    b = bundle.observado()
+    b = b[b.Padecimiento == "Depresión"]
+    anual = b.groupby("Anio")["Casos_semana"].sum().sort_index()
+    sem = b.groupby(["Anio", "Semana"])["Casos_semana"].sum().sort_index()
+    fechas = [lunes(int(a), int(w)) for a, w in sem.index]
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=medida(0.80, 0.341))
+    ax1.bar([str(a) for a in anual.index], anual.to_numpy(float) / 1000, color=C_GREEN, alpha=0.85)
+    ax1.set_title("(a) Annual reported cases")
+    ax1.set_ylabel("Thousands of cases")
+    ax1.tick_params(axis="x", rotation=90)
+    ax1.grid(axis="y", alpha=0.25, lw=0.4)
+    ax1.set_axisbelow(True)
+
+    ax2.axvspan(
+        dt.date(2020, 3, 1),
+        dt.date(2021, 12, 31),
+        color=C_GOLD,
+        alpha=0.15,
+        label="COVID-19 disruption",
+    )
+    ax2.plot(fechas, sem.to_numpy(float), color=C_OBS, lw=0.6)
+    ax2.set_title("(b) Weekly national series")
+    ax2.set_ylabel("Cases per week")
+    ax2.set_ylim(bottom=0)
+    ax2.legend(loc="lower left", frameon=False)
+    ax2.grid(alpha=0.25, lw=0.4)
+    fig.tight_layout()
+    fig.savefig(SALIDA / "fig01_temporal_distribution.pdf")
+    plt.close(fig)
+    print(
+        f"  Figura 1  {anual.index.min()}-{anual.index.max()}  "
+        f"{len(sem)} semanas  ultimo anio {anual.iloc[-1]:,.0f}"
+    )
 
 
 def figura3() -> None:
@@ -58,7 +126,7 @@ def figura3() -> None:
     ctx_f = [lunes(2025, int(w)) for w in ctx.index]
 
     fig, (ax1, ax2) = plt.subplots(
-        2, 1, figsize=(12.23, 7.4), gridspec_kw={"height_ratios": [2.0, 1.0]}
+        2, 1, figsize=medida(0.86, 0.605), gridspec_kw={"height_ratios": [2.0, 1.0]}
     )
     ax1.plot(
         ctx_f,
@@ -81,13 +149,12 @@ def figura3() -> None:
         label="Locked Ensemble forecast",
     )
     ax1.axvline(fechas[0], color="#999", lw=0.9, ls=":")
-    ax1.set_title(
-        f"(a) Depression: 2026 prospective evaluation — national general stratum, "
-        f"W{sem[0]:02d}–W{sem[-1]:02d} (every SINAVE bulletin since training cut-off)"
-    )
+    # Los titulos internos repetian el pie de figura y a este ancho se recortaban.
+    # Basta un rotulo de panel; el pie explica el contenido.
+    ax1.set_title("(a)", loc="left", fontweight="bold")
     ax1.set_ylabel("National cases per week")
     ax1.set_ylim(bottom=0)
-    ax1.legend(fontsize=8.5, loc="lower right", frameon=False, ncol=2)
+    ax1.legend(fontsize=7.5, loc="lower right", frameon=False, ncol=2)
     ax1.grid(True, alpha=0.25, lw=0.5)
 
     dev = 100.0 * (f - y) / y
@@ -102,20 +169,22 @@ def figura3() -> None:
             f"{d:+.0f}",
             ha="center",
             va="bottom" if d >= 0 else "top",
-            fontsize=7.5,
+            fontsize=6.5,
         )
     ax2.axhline(0, color="#333", lw=0.8)
     # holgura arriba y abajo: sin ella la etiqueta de la peor semana choca con el titulo
-    ax2.set_ylim(min(dev.min() - 5, -8), max(dev.max() + 6, 10))
+    # holgura suficiente para que las etiquetas de las barras extremas no se corten
+    margen = max(abs(dev).max() * 0.28, 8)
+    ax2.set_ylim(dev.min() - margen, dev.max() + margen)
     ax2.set_ylabel("Deviation (%)")
-    ax2.set_title(
-        f"(b) Per-week deviation, locked forecast vs. SINAVE bulletin "
-        f"(W{sem[0]:02d}–W{sem[-1]:02d})",
-        fontsize=10.5,
-    )
-    ax2.legend(fontsize=8.5, loc="upper right", frameon=False)
+    ax2.set_title("(b)", loc="left", fontweight="bold")
+    ax2.legend(loc="upper right", frameon=False, bbox_to_anchor=(1.0, 1.32), borderaxespad=0)
     ax2.grid(True, axis="y", alpha=0.25, lw=0.5)
-    plt.setp(ax2.get_xticklabels(), fontsize=8.5)
+    # a este ancho las 17 etiquetas se tocaban: se rotulan las impares y se rotan
+    for i, lab in enumerate(ax2.get_xticklabels()):
+        lab.set_rotation(90)
+        if i % 2:
+            lab.set_visible(False)
     fig.tight_layout()
     fig.savefig(SALIDA / "fig19_validation_2026.pdf")
     plt.close(fig)
@@ -136,7 +205,7 @@ def figura4() -> None:
         ("ensemble", "Ensemble", C_ENSEMBLE, "..."),
         ("stacking", "Stacking", C_STACK, "xx"),
     ]
-    fig, ax = plt.subplots(figsize=(9.5, 4.17))
+    fig, ax = plt.subplots(figsize=medida(0.95, 0.439))
     w = 0.19
     tope = 0.0
     for gi, (sx, _) in enumerate(estratos):
@@ -160,35 +229,26 @@ def figura4() -> None:
             )
             bp["boxes"][0].set(facecolor=col, alpha=0.55, edgecolor=col, hatch=hat, lw=1.0)
     ax.axhline(5.99, color=C_DEEPAR, ls=(0, (4, 2)), lw=1.2)
-    ax.text(
-        2.45,
-        8.5,
-        "DeepAR cross-validation median (5.99%)",
-        fontsize=8,
-        color=C_DEEPAR,
-        ha="right",
-        style="italic",
-    )
+    # La anotacion de la mediana de CV se retiro: caia sobre los bigotes de las
+    # cajas y el pie de figura ya dice que representa la linea discontinua.
     ax.set_xticks(range(len(estratos)))
     ax.set_xticklabels([s[1] for s in estratos])
     ax.set_ylabel("Out-of-sample 2026 sMAPE (%)")
     ax.set_xlabel("Demographic stratum")
     # la ventana del rotulo se DERIVA del dato: si cambia, cambia con el, y no puede
     # contradecir al pie de figura ni al JSON
-    vent = f"W{int(oos.sem_min.min()):02d}–W{int(oos.sem_max.max()):02d}"
-    ax.set_title(
-        f"Out-of-sample 2026 per-series error by model and stratum, {vent} "
-        "(each box: 32 entities + national)"
-    )
+    # el titulo interno duplicaba el pie y se recortaba a este ancho
     ax.set_ylim(0, float(np.ceil(tope / 5) * 5))
     ax.legend(
         handles=[
             mpatches.Patch(facecolor=c, alpha=0.55, hatch=h, label=lab) for _, lab, c, h in modelos
         ],
         ncol=4,
-        fontsize=8.5,
-        loc="upper left",
+        loc="lower center",
+        bbox_to_anchor=(0.5, 1.0),
         frameon=False,
+        columnspacing=1.2,
+        handlelength=1.4,
     )
     ax.grid(True, axis="y", alpha=0.25, lw=0.5)
     fig.tight_layout()
@@ -200,6 +260,7 @@ def figura4() -> None:
 
 if __name__ == "__main__":
     print("FASE 4 · FIGURAS —", bundle.sello())
+    figura1()
     figura3()
     figura4()
     print(f"  escritas en {SALIDA}")
