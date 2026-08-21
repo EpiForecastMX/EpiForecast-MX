@@ -252,6 +252,7 @@ their behavior on the sparse, regime-shifting panels typical of
 epidemiological surveillance remains largely untested.
 
 \subsection{Foundations of Multi-Model Forecasting}
+\label{ssec:multimodel}
 
 The case for combining heterogeneous forecasters is well established.
 Salinas et~al.~\cite{salinas2020} introduced DeepAR, a global
@@ -596,21 +597,19 @@ are strictly expanding; lag and rolling features never reference an
 observation later than the forecast origin (multi-step rollout fills
 $h{>}1$ lags \emph{recursively} with predictions, never future values);
 demographic covariates are pre-origin annual estimates; and the
-low-incidence fallback depends only on past counts. The 2026 bulletins
-of Sect.~\ref{sec:validation} were used \emph{exclusively} for
-evaluation: no 2026 observation was used to train, tune, or reselect
-any model, and all hyperparameters, architectures, and the selection rule were
-fixed on data through 2025-W53. We therefore describe the evaluation as
-\emph{out-of-sample} rather than \emph{blind}; the guarantee is the
-temporal separation described above. As a leakage check, an otherwise
+low-incidence fallback depends only on past counts. No 2026 observation entered the
+training, tuning or selection of the \emph{frozen} assignment:
+hyperparameters, architectures and the rule were fixed on data through
+2025-W53. The one place where 2026 data drive a choice is the revision
+experiment of Sect.~\ref{ssec:ablation}, separated in time: reselection
+sees only W03--W11 and is scored on W12--W18, which it never observes. As a leakage check, an otherwise
 identical global-versus-local (single-series) DeepAR pair on eight
 states improved the
 median \smape\ by only ${\sim}5\%$ ($24.9$ vs.\ $26.3$): a modest,
 legitimate cross-learning gain, not an information
-leak.\footnote{This controlled pair uses a lightweight identical
-configuration to isolate the global-versus-local effect; its absolute
-errors exceed those of the production-configured model in
-Table~\ref{tab:aggmetrics}.}
+leak. That controlled pair runs a lightweight configuration to isolate
+the global-versus-local effect, so its absolute errors exceed those of
+Table~\ref{tab:aggmetrics}.
 
 \paragraph{Baselines.}
 Beyond the four candidate models of Sect.~\ref{ssec:framework}, the
@@ -690,14 +689,12 @@ the three national strata, discussed next, and one sparse southern
 region, where the two leading candidates fall inside the 5\% band: the
 published rule breaks the tie on \mase\ and selects Stacking, whereas
 the frozen baseline assignment of Sect.~\ref{ssec:ablation} broke it on
-\rmse\ and carries DeepAR, hence 108 there against 107 here. Because DeepAR's federal-entity margin far exceeds the 5\%
-selection band, this assignment is insensitive to the exact threshold,
-which only adjudicates the near-ties among the aggregate series.
+\rmse\ and carries DeepAR, hence 108 there against 107 here. DeepAR's federal-entity margin far exceeds the 5\%
+band, so the assignment is insensitive to the exact threshold.
 
-Two additional baselines evaluated under the identical protocol---a
-tuned Auto-ARIMA with Fourier seasonality and a PatchTST
-transformer---have median errors close to those of the statistical models and remain
-well above DeepAR's cross-validation value, confirming that the gap is not
+The two discarded candidates of Sect.~\ref{ssec:multimodel}---a tuned
+Auto-ARIMA with Fourier seasonality and a PatchTST transformer---land
+close to the statistical models and well above DeepAR, so the gap is not
 an artifact of a weak classical baseline. A grid search over the
 transformer's patch length and context window does not narrow this
 gap: across five configurations its general-stratum cross-validated
@@ -836,9 +833,8 @@ Sect.~\ref{sec:discussion}.
 We assess the locked national-general forecast (Ensemble) against
 every 2026 SINAVE bulletin published since the training cutoff,
 covering epidemiological weeks
-W02--W18 (Table~\ref{tab:validation}, Fig.~\ref{fig:validation}); no
-2026 observation entered training, tuning or selection
-(Sect.~\ref{ssec:eval}).
+W02--W18 (Table~\ref{tab:validation}, Fig.~\ref{fig:validation}). The assignment scored here was
+frozen before any 2026 observation existed (Sect.~\ref{ssec:eval}).
 
 \begin{table}[t]
 \centering
@@ -921,10 +917,11 @@ unadjusted two-sided $p$-values are $0.0167$ against DeepAR, $0.0178$
 against Stacking, and $0.4328$ against Prophet. These are three
 exploratory comparisons on the same seventeen weeks, so we adjust them:
 under Holm the first two both become $p=0.0502$ and neither clears the
-conventional $5\%$ threshold. We therefore read the result as nominal
-evidence of lower squared-error loss against DeepAR and Stacking, not
-as an established difference, and as no evidence at all against
-Prophet. With seventeen weeks the test has little power, so a
+conventional $5\%$ threshold. The losses also come from a single frozen
+multi-horizon trajectory, so serial dependence may not be fully absorbed
+at $h{=}1$. We therefore read the result as indicative of lower
+squared-error loss against DeepAR and Stacking, not as an established
+difference, and as no evidence at all against Prophet. With seventeen weeks the test has little power, so a
 non-rejection means insufficient evidence to separate the leading
 models rather than equivalence.
 
@@ -950,7 +947,7 @@ across the four models: better than persistence, but by a far narrower
 margin than the cross-validated figures suggest.
 This is the regime in which an \emph{auditable, revisable} rule earns
 its keep, and Sect.~\ref{ssec:ablation} tests that claim directly
-against the frozen deployment.
+against the frozen baseline assignment.
 
 % ALT-TEXT (accessibility / proofing): Grouped boxplots of out-of-sample 2026 symmetric error (sMAPE, vertical axis) for the four models across three demographic strata (general, women, men). Errors rise from the general to the male stratum and the four models overlap within each stratum, all far above the dashed DeepAR cross-validation median near 6 percent.
 \begin{figure}[t]
@@ -992,9 +989,8 @@ sets.
 over the 99 directly observed series, W03--W18. \emph{Static} selects once
 from cross-validated evidence; \emph{dynamic} reselects on W03--W11 and is
 scored on the unused weeks. $p$: two-sided Wilcoxon signed-rank against
-the full pool over the same series. The frozen deployment is the
-assignment locked before 2026, and the baseline the dynamic regime must
-beat.}
+the full pool over the same series. The frozen baseline is the
+assignment locked before 2026, and what the dynamic regime must beat.}
 \label{tab:ablation}
 \setlength{\tabcolsep}{6pt}
 \renewcommand{\arraystretch}{1.1}
@@ -1013,7 +1009,7 @@ Full pool (four models)      & 27.4 & ---   & 28.5 & ---\\
 \addlinespace
 Prophet alone                & 26.7 & 0.09  & 27.6 & 0.99\\
 \midrule
-Frozen deployment (baseline) & \multicolumn{2}{c}{---} & 32.7 & ---\\
+Frozen baseline assignment   & \multicolumn{2}{c}{---} & 32.7 & ---\\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1042,7 +1038,7 @@ the selection mechanism itself.
 
 \paragraph{What does hold is revision.}
 The dynamic column separates the two claims. Against the frozen
-deployment---the assignment actually locked before 2026---reselecting on
+baseline---the assignment locked before 2026---reselecting on
 prior weeks lowers the median from $32.7\%$ to $28.5\%$ on weeks the
 reselection never saw, and every pool tested improves on that baseline.
 The gain comes from revising, not from the pool: the full pool does not
@@ -1177,9 +1173,7 @@ when a frozen assignment has stopped transporting and revises it using
 only prior observations. We are not aware of prior
 work that applies a multi-model framework with auditable, revisable
 per-series model selection to psychiatric surveillance at
-federal-entity granularity in a Latin American country. The framework
-is a research prototype; future work will broaden the set of conditions,
-baselines, and prospective horizons evaluated.
+federal-entity granularity in a Latin American country. The framework is a research prototype.
 
 % =====================================================================
 \section*{Ethics and Data Availability}

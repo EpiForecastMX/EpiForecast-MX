@@ -94,7 +94,7 @@ Al terminar la carga, descarga o captura el acuse de CMT y guárdalo junto a
 `Envio/HASH_ENVIO.txt`. Ese archivo tiene el sha256 del paquete:
 
 ```
-83c1a737b30ed26fa0201ad7316d448dc46222af552d52b4b917bef000b78078
+c9ff73816863cf27bc9463f6bd370fedfbb556da415701abf946bcf82c61e23d
 ```
 
 El ZIP se construye de forma determinista, así que ese hash identifica el **contenido**:

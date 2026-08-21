@@ -1,10 +1,9 @@
 # Licencia LNAI — qué hacer, ponencia #12
 
-**Estado: el formato NO está descargado.** No aparece en el repositorio ni en Descargas.
-Hay que bajarlo antes de firmarlo.
-
-Descarga: `micai.org/2026/authors/` → **`LNAI_license_to_publish_MICAI2026_maintrack.docx`**
-(el de *maintrack*; el de *posters* es CCIS y no aplica).
+**Estado: descargado**, en
+`DocusMICAI/LNAI_license_to_publish_MICAI2026_maintrack.docx` (59 KB, versión
+`v.2.0.1 12_2025`). Estaba en `micai.org/docs/`, no en la página de autores.
+**Falta llenarlo y firmarlo.**
 
 ---
 
