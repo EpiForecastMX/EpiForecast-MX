@@ -35,8 +35,8 @@ Iris Mendez). **Sólo si la edición está cerrada también en tu propio perfil.
 > require the name to be written as **Tecnologico de Monterrey** — in Spanish, without
 > the accent, without acronyms and without translations — so that it is indexed
 > correctly in Scopus and Web of Science. The fifth author's affiliation should read
-> **Instituto Mexicano del Seguro Social, Órgano de Operación Administrativa
-> Desconcentrada Estatal Guerrero**.
+> **Instituto Mexicano del Seguro Social, OOAD Guerrero (Órgano de Operación
+> Administrativa Desconcentrada), Mexico**.
 >
 > The camera-ready manuscript already carries the corrected names and affiliations, and
 > we are uploading it within the deadline.

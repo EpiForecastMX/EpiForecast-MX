@@ -20,7 +20,7 @@ TEC-II-05 del Tec para que Scopus indexe bien.
 | 2 | Juan Pérez Nava | **Juan Carlos Pérez-Nava** | ITESM | **Tecnologico de Monterrey** |
 | 3 | Luis Sánchez Salazar | **Luis Gerardo Sánchez-Salazar** | ITESM | **Tecnologico de Monterrey** |
 | 4 | Grettel Barceló Alonso | **Grettel Barceló-Alonso** | ITESM | **Tecnologico de Monterrey** |
-| 5 | Ruth Pérez Hernández | **Ruth Pérez-Hernández** | IMSS | **Instituto Mexicano del Seguro Social, Órgano de Operación Administrativa Desconcentrada Estatal Guerrero** |
+| 5 | Ruth Pérez Hernández | **Ruth Pérez-Hernández** | IMSS | **Instituto Mexicano del Seguro Social, OOAD Guerrero (Órgano de Operación Administrativa Desconcentrada), Mexico** |
 
 > **Nombres de pila completos.** Springer los pide completos y así los registran los
 > ORCID públicos de los tres. La portada ya dice Javier Augusto, Juan Carlos y Luis
@@ -99,7 +99,7 @@ Al terminar la carga, descarga o captura el acuse de CMT y guárdalo junto a
 `Envio/HASH_ENVIO.txt`. Ese archivo tiene el sha256 del paquete:
 
 ```
-1bfec014a83ed22efc79fbd967ab86b373a9a30ccb234a9fa68dfbfaed8b5a99
+7461998d9ef82ff8b55cbdabe0d27cb2c7f9eda26cfe1558b2388f88f268d182
 ```
 
 Compruébalo antes de subir — este control falla si el ZIP y los documentos no
