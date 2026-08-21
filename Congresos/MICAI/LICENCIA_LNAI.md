@@ -24,7 +24,8 @@ Del instructivo oficial (`reference_material/Instructions+for+proceedings+author
 - **«Digital signatures are not acceptable»** (§5.1). Hay que **imprimir, firmar a mano y
   escanear**. Una firma insertada como imagen o un PDF firmado digitalmente no sirven.
 - **Un solo autor de correspondencia por paper**, y debe **coincidir con el marcado en la
-  cabecera**. En el paper es Javier, con el sobre ✉ y `rebull@outlook.com`. ✔
+  cabecera**. En el paper es Javier, con asterisco, la nota «Corresponding author.» y
+  `rebull@outlook.com`. ✔
 - El autor de correspondencia firma **en nombre de todos** y debe tener autoridad para
   hacerlo. Confírmalo con los otros cuatro antes de firmar.
 - Si algún autor está sujeto a un régimen especial (empleo gubernamental, Crown

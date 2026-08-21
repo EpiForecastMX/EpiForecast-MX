@@ -260,6 +260,7 @@ def audita_gates() -> None:
         # otro el ZIP recien escrito, asi que solo tienen sentido en ese orden.
         ("bibliografia y citas ordenadas", "bibliografia_intacta.py"),
         ("fuentes del PDF sin Type 3", "fuentes_pdf.py"),
+        ("margen derecho sin tinta fuera", "margen_derecho.py"),
         ("sello sincronizado", "sello_sincronizado.py"),
     ]:
         r = subprocess.run(

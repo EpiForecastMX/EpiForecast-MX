@@ -60,6 +60,11 @@
 % margen. xurl permite partir en cualquier caracter; no cambia como se ve la
 % URL, solo donde puede cortar el renglon.
 \usepackage{xurl}
+% Ante un renglon que no cabe, TeX prefiere por defecto sacar tinta al margen
+% antes que aflojar los espacios. Aqui se invierte esa preferencia: con 1em de
+% holgura de emergencia estira el interpalabra de esa linea y no desborda. Un
+% renglon algo mas suelto no se nota; 7 pt de texto fuera del bloque, si.
+\emergencystretch=1em
 \renewcommand\UrlFont{\color{black}\rmfamily}
 \urlstyle{rm}
 
@@ -165,9 +170,8 @@ In Mexico, the National Epidemiological Surveillance System (SINAVE)
 records about 150{,}000 new cases of depressive episode (CIE-10 F32)
 per year~\cite{sinave2026}. Despite the routine availability of weekly
 case counts, psychiatric-service planning remains largely
-\emph{reactive}: capacity is adjusted only after demand surges are
-already visible in the bulletin, producing recurrent demand peaks
-during the February--May period.
+\emph{reactive}: without a prospective trajectory, demand surges become
+visible in the bulletin only after they have occurred.
 
 Accurate weekly federal-entity forecasts would make this planning
 \emph{proactive}: a reliable 52-week-ahead trajectory would allow
@@ -394,7 +398,8 @@ which penalizes single-series baselines. Women account for 74.0\% of
 reported cases against 26.0\% in men over 2014--2025, exceeding the
 1.5--2$\times$ female prevalence of major depressive
 disorder~\cite{albert2015}; because the data are \emph{reported incidence},
-this likely reflects both clinical patterns and male underreporting.
+the larger gap may reflect both underlying prevalence and
+sex-differential care-seeking or reporting.
 We forecast the three strata separately and revisit the gap in
 Sect.~\ref{sec:discussion}. Based on the indicators available for
 measurement---a median annual coefficient of
@@ -1067,8 +1072,11 @@ stopped transporting can be shown to have done so and replaced on stated
 grounds rather than on an architectural preference.
 
 \paragraph{Public-health relevance.}
-The 74\%/26\% reported female--male split, broadly echoed by the 2026
-forecast (about 73\%/27\%), has planning implications: a service grid
+% "74\%/26\%" es un unico bloque que TeX no puede partir, y en ese renglon no
+% quedaba otro punto de corte: la linea se salia 3.6 pt del bloque de texto.
+% \hspace{0pt} tras la barra ofrece un corte posible sin cambiar nada visible.
+The 74\%/\hspace{0pt}26\% reported female--male split, broadly echoed by the
+2026 forecast (about 73\%/\hspace{0pt}27\%), has planning implications: a service grid
 sized to the national mean may underserve
 women in absolute terms, while male depression remains plausibly
 under-identified. A sex-disaggregated 52-week forecast could support
@@ -1124,8 +1132,8 @@ incidence: it counts episodes that reached care and were coded, not
 episodes that occurred. Two consequences bear on generalizability.
 Diagnostic and reporting capacity differs across federal entities, so
 part of the level difference between states reflects surveillance
-capacity rather than epidemiology; and care-seeking differs by sex, which
-is the most likely source of the male shortfall noted in
+capacity rather than epidemiology; and sex-differential care-seeking may
+contribute to the male shortfall noted in
 Sect.~\ref{ssec:data}. A model fitted to these series therefore learns
 the reporting process together with the disease process, and the
 selection rule inherits both. This does not invalidate the forecasts for
@@ -1225,9 +1233,10 @@ YAML files under OmegaConf. The framework runs on Python~3.12 with
 GluonTS~0.15 (PyTorch~2.5), Prophet~1.1, XGBoost~2.0, LightGBM~4.3,
 scikit-learn~1.4 and pandas~2.2; DeepAR trains on one NVIDIA~T4 GPU and
 the rest on CPU. Every seed source is fixed at~42 and cuDNN runs
-deterministically. The per-state out-of-sample table, the frozen
-assignment and the ablation of Sect.~\ref{ssec:ablation} are reproducible
-from the repository cited in Sect.~\ref{ssec:eval}.
+deterministically. The per-state out-of-sample table, frozen assignment,
+and aggregate inputs are released in the repository cited in
+Sect.~\ref{ssec:eval}; its script reruns the ablation of
+Sect.~\ref{ssec:ablation} from those files.
 
 \smallskip\noindent
 \textit{Principal hyperparameters}, all fixed before the 2026 evaluation.

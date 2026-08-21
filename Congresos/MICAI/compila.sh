@@ -11,7 +11,7 @@ export FORCE_SOURCE_DATE=1
 # Gate de compilacion del master MICAI 2026. Tres pasadas de pdflatex.
 #
 # BLOQUEA por: codigo de salida != 0, cualquier error '!' de LaTeX, referencias sin
-# resolver, overfull > 15pt, o mas de 20 paginas (el techo de MICAI).
+# resolver, overfull > 6pt, o mas de 20 paginas (el techo de MICAI).
 #
 # Dos trampas que este script existe para no repetir:
 #   - `nonstopmode` escribe PDF aunque LaTeX haya fallado, asi que contar paginas no
@@ -48,7 +48,10 @@ ov  = [float(x) for x in re.findall(r"Overfull \\[hv]box \(([0-9.]+)pt", t)]
 und = len(re.findall(r"[Uu]ndefined (?:citation|reference|control)", t))
 pg  = re.findall(r"Output written on .*?\((\d+) pages", t)
 rc  = int(os.environ.get("RC", "0"))
-graves  = [v for v in ov if v > 15]
+# 15 pt era demasiado permisivo: una linea con 3.6 pt de tinta fuera del bloque
+# se veia a simple vista y pasaba. El limite duro lo pone ahora margen_derecho.py,
+# que mide tinta sobre el PDF; esto queda como aviso temprano desde el .log.
+graves  = [v for v in ov if v > 6]
 paginas = int(pg[0]) if pg else None
 print(f"  paginas    : {paginas if paginas is not None else '??'}"
       + ("  <-- SOBRE EL TECHO DE 20" if paginas and paginas > 20 else ""))
@@ -57,7 +60,7 @@ print(f"  errores '!': {len(err)}")
 for l in err[:5]:
     print(f"     {l[:95]}")
 print(f"  undefined  : {und}")
-print(f"  overfull   : {len(ov)}  (>15pt: {len(graves)}" + (f", peor {max(ov):.2f}pt)" if ov else ")"))
+print(f"  overfull   : {len(ov)}  (>6pt: {len(graves)}" + (f", peor {max(ov):.2f}pt)" if ov else ")"))
 malo = (rc != 0 or err or und or graves
         or paginas is None or paginas > 20)   # <- el limite de paginas SI bloquea
 print("  GATE       :", "FALLA" if malo else "PASA")
@@ -88,6 +91,15 @@ if [ $gate -eq 0 ]; then
   rc_fnt=$?
   echo "$SALIDA_FNT" | tail -5
   [ $rc_fnt -ne 0 ] && gate=1
+
+  # Tinta fuera del bloque de texto, medida sobre el PDF. El .log dice cuanto le
+  # sobra a la caja del renglon; esto dice cuanto sobresale de verdad, que es lo
+  # que ve quien lee, y deja colgar la puntuacion final como es normal componer.
+  SALIDA_MAR=$("$PY_BIN" "$AQUI/../../scripts/paper_micai_2026/margen_derecho.py" \
+       "$D/paper_camera_ready.pdf")
+  rc_mar=$?
+  echo "$SALIDA_MAR" | tail -3
+  [ $rc_mar -ne 0 ] && gate=1
 fi
 
 # el PDF canonico sigue al master, no al reves

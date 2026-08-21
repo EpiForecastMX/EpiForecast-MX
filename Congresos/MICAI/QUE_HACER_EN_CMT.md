@@ -1,7 +1,7 @@
 # Qué hacer en CMT — MICAI 2026, ponencia #12
 
 **Fecha límite: domingo 23 de agosto, fin del día AoE** (≈ 24-ago 06:00 hora del centro
-de México). Hoy es jueves 20: quedan **3 días**.
+de México). Hoy es viernes 21: quedan **2 días**.
 
 La carta de aceptación pide que los nombres y las afiliaciones sean correctos **en el paper
 y en CMT**. Hoy no coinciden. Estos son los valores a los que hay que llevar CMT.
@@ -77,19 +77,20 @@ Una vez que CMT coincida con el paper:
   20 páginas, A4, sin errores.
 - No subas la carpeta suelta ni el `.tex` por separado: MICAI acepta LaTeX **sólo** como
   `.zip`.
+- No subas `012_overleaf.zip`, `paper_submission.pdf` ni ningún paquete histórico: son
+  artefactos anteriores y no son el candidato sellado.
 
 ---
 
 ## 4. Lo demás que pide la carta
 
-- **Licencia LNAI** — descarga `LNAI_license_to_publish_MICAI2026_maintrack.docx` de
-  `micai.org/2026/authors/`, la firmas **tú** como autor de correspondencia, y la subes
-  donde CMT la pida.
-- **Registro** — al menos un autor debe registrarse en `micai.org/2026/#registration`.
-  Sin esto el paper se retira de las actas, aunque el camera-ready esté entregado.
-  **Pero no esperes al registro para subir el ZIP**: el registro temprano abre el 24 de
-  agosto —un día *después* del camera-ready— y el pago vence el 16 de octubre. Sube
-  primero el paquete; el registro se completa después.
+- **Licencia LNAI** — usa la copia ya descargada en
+  `Congresos/MICAI/DocusMICAI/LNAI_license_to_publish_MICAI2026_maintrack.docx`, la
+  completas, la firmas **a mano tú** como autor de correspondencia y la subes donde CMT
+  la pida. Deja `Edition ID / IPS` en blanco.
+- **Registro** — al menos un autor debe registrarse. La página oficial fija el registro
+  temprano para el 18 de septiembre y el pago para el 16 de octubre. **No esperes al
+  registro para subir el ZIP**: primero cierra el camera-ready y conserva su acuse.
 
 ---
 
@@ -99,7 +100,7 @@ Al terminar la carga, descarga o captura el acuse de CMT y guárdalo junto a
 `Envio/HASH_ENVIO.txt`. Ese archivo tiene el sha256 del paquete:
 
 ```
-7461998d9ef82ff8b55cbdabe0d27cb2c7f9eda26cfe1558b2388f88f268d182
+e0f435260206fab8a0d11b34d57495979791d5098aec3d8f47aaf5f2e728598e
 ```
 
 Compruébalo antes de subir — este control falla si el ZIP y los documentos no
