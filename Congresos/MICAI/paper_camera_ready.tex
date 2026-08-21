@@ -462,86 +462,69 @@ sparser conditions in the SINAVE catalog.
 \definecolor{ImssGreen}{HTML}{0A4F3C}
 \definecolor{ImssGold}{HTML}{B8860B}
 \definecolor{ImssWine}{HTML}{880E4F}
-\definecolor{ImssIndigo}{HTML}{1A237E}
-\definecolor{ImssOrange}{HTML}{C75300}
 \definecolor{ImssNavy}{HTML}{0D2A4F}
 \definecolor{ImssGray}{HTML}{4A4A4A}
-\resizebox{\textwidth}{!}{%
+% SIN \resizebox. El diagrama medía 776 pt de ancho natural y se comprimía a 347,
+% o sea al 45 %: una etiqueta \scriptsize acababa en 3.2 pt, muy por debajo del
+% mínimo de 6 pt de Springer. Rediseñado en dos filas, cabe a escala 1 (308 pt) y
+% el texto conserva su cuerpo.
 \begin{tikzpicture}[
-    >={Stealth[length=2.6mm, width=1.8mm]},
-    every node/.style={font=\small},
-    data/.style={rectangle, rounded corners=4pt,
-        draw=ImssGreen, line width=0.9pt, fill=ImssGreen, text=white,
-        minimum width=22mm, minimum height=12mm, align=center,
-        font=\small\bfseries},
-    output/.style={rectangle, rounded corners=4pt,
-        draw=ImssNavy, line width=0.9pt, fill=ImssNavy, text=white,
-        minimum width=22mm, minimum height=12mm, align=center,
-        font=\small\bfseries},
-    cand/.style={rectangle, rounded corners=4pt,
-        draw=ImssGray, line width=1pt, fill=ImssGray!6,
-        text=ImssGray!20!black,
-        minimum width=21mm, minimum height=10mm, align=center,
-        font=\small\bfseries},
-    selector/.style={rectangle, rounded corners=4pt,
-        draw=ImssGold, line width=1.4pt, fill=ImssGold!12,
-        text=ImssGold!35!black,
-        minimum width=27mm, minimum height=14mm, align=center,
-        font=\small\bfseries},
-    gate/.style={diamond, aspect=2.1, draw=ImssWine, line width=1pt,
-        fill=ImssWine!8, text=ImssWine!55!black,
-        inner sep=1pt, align=center, font=\scriptsize\bfseries},
-    regio/.style={rectangle, rounded corners=4pt,
-        draw=ImssWine, line width=1pt, fill=ImssWine!8,
-        text=ImssWine!55!black, minimum width=22mm, minimum height=10mm,
+    >={Stealth[length=1.8mm, width=1.3mm]},
+    every node/.style={font=\scriptsize},
+    data/.style={rectangle, rounded corners=2.5pt, draw=ImssGreen, line width=0.7pt,
+        fill=ImssGreen, text=white, minimum width=16mm, minimum height=7mm,
         align=center, font=\scriptsize\bfseries},
-    flow/.style={->, line width=0.9pt, draw=ImssGray!55, rounded corners=2pt},
-    flowmain/.style={->, line width=1.5pt, draw=ImssGreen!80!black,
-        rounded corners=2pt},
-    stage/.style={font=\footnotesize\itshape, text=ImssGray}
-]
-\node[data] (sinave) {SINAVE\\bulletin\\[0.4mm]\scriptsize\mdseries 2014--2025};
-\node[data, right=10mm of sinave] (clean) {Clean +\\features};
-\node[data, right=10mm of clean]  (cv)    {Rolling-\\origin CV};
+    output/.style={rectangle, rounded corners=2.5pt, draw=ImssNavy, line width=0.7pt,
+        fill=ImssNavy, text=white, minimum width=16mm, minimum height=7mm,
+        align=center, font=\scriptsize\bfseries},
+    cand/.style={rectangle, rounded corners=2.5pt, draw=ImssGray, line width=0.7pt,
+        fill=ImssGray!7, text=ImssGray!20!black, minimum width=17mm,
+        minimum height=5mm, align=center, font=\scriptsize\bfseries},
+    selector/.style={rectangle, rounded corners=2.5pt, draw=ImssGold, line width=1pt,
+        fill=ImssGold!12, text=ImssGold!35!black, minimum width=30mm,
+        minimum height=8mm, align=center, font=\scriptsize\bfseries},
+    gate/.style={diamond, aspect=2.4, draw=ImssWine, line width=0.7pt,
+        fill=ImssWine!8, text=ImssWine!55!black, inner sep=0.5pt, align=center,
+        font=\scriptsize\bfseries},
+    regio/.style={rectangle, rounded corners=2.5pt, draw=ImssWine, line width=0.7pt,
+        fill=ImssWine!8, text=ImssWine!55!black, minimum width=16mm,
+        minimum height=5mm, align=center, font=\scriptsize\bfseries},
+    flow/.style={->, line width=0.6pt, draw=ImssGray!55, rounded corners=1.5pt},
+    main/.style={->, line width=1pt, draw=ImssGreen!80!black, rounded corners=1.5pt}]
 
-\node[cand, right=20mm of cv, yshift=18mm]  (deepar)  {DeepAR\\[0.2mm]\scriptsize\mdseries global RNN};
-\node[cand, right=20mm of cv, yshift=6mm]   (prophet) {Prophet\\[0.2mm]\scriptsize\mdseries additive};
-\node[cand, right=20mm of cv, yshift=-6mm]  (ens)     {Ensemble\\[0.2mm]\scriptsize\mdseries $+$XGBoost};
-\node[cand, right=20mm of cv, yshift=-18mm] (stack)   {Stacking\\[0.2mm]\scriptsize\mdseries 3 experts};
+\node[data] (sinave) {SINAVE\\[-1pt]\scriptsize\mdseries 2014--2025};
+\node[data, right=5mm of sinave] (clean) {Clean $+$\\[-1pt]features};
+\node[data, right=5mm of clean]  (cv)    {Rolling-\\[-1pt]origin CV};
 
-\node[selector, right=22mm of prophet, yshift=-6mm] (sel)
-     {Model\\selection\\[0.4mm]\scriptsize\mdseries
-      \smape\ $\to$ \mase\ $\to$ \rmse};
+\node[cand, right=9mm of cv, yshift=9mm]   (deepar)  {DeepAR};
+\node[cand, right=9mm of cv, yshift=3mm]   (prophet) {Prophet};
+\node[cand, right=9mm of cv, yshift=-3mm]  (ens)     {Ensemble};
+\node[cand, right=9mm of cv, yshift=-9mm]  (stack)   {Stacking};
 
-\node[gate, right=14mm of sel] (gate) {Low-\\incidence?};
-\node[regio, below=8mm of gate] (regio) {Regional\\model};
-\node[output, right=14mm of gate] (out)
-     {Locked\\forecast\\[0.4mm]\scriptsize\mdseries 52 weeks};
+\node[selector, below=17mm of sinave.south, xshift=9mm] (sel)
+     {Model selection\\[-1pt]\scriptsize\mdseries \smape\ $\to$ \mase\ $\to$ \rmse};
+\node[gate, right=7mm of sel] (gate) {Low\\[-1pt]incidence?};
+\node[output, right=7mm of gate] (out) {Locked\\[-1pt]\scriptsize\mdseries 52 weeks};
+\node[regio, below=4mm of gate] (regio) {Regional};
 
 \begin{pgfonlayer}{background}
-\node[fit=(deepar)(prophet)(ens)(stack),
-      inner xsep=4mm, inner ysep=3mm, rounded corners=6pt,
-      fill=ImssGray!4, draw=ImssGray!25, line width=0.4pt, dashed] (engbox) {};
+\node[fit=(deepar)(prophet)(ens)(stack), inner xsep=2mm, inner ysep=1.5mm,
+      rounded corners=3pt, fill=ImssGray!4, draw=ImssGray!25, line width=0.3pt,
+      dashed] (box) {};
 \end{pgfonlayer}
-\node[stage, anchor=south] at (engbox.north) [yshift=0.4mm]
-     {Four candidate models, trained in parallel per series};
+\node[font=\scriptsize\itshape, text=ImssGray, anchor=south] at (box.north)
+     [yshift=0.3mm] {Four candidates, trained in parallel per series};
 
-\draw[flowmain] (sinave) -- (clean);
-\draw[flowmain] (clean)  -- (cv);
-\draw[flow] (cv.east) to[out=18,  in=180] (deepar.west);
-\draw[flow] (cv.east) to[out=6,   in=180] (prophet.west);
-\draw[flow] (cv.east) to[out=-6,  in=180] (ens.west);
-\draw[flow] (cv.east) to[out=-18, in=180] (stack.west);
-\draw[flow] (deepar.east)  to[out=0, in=165] (sel.west);
-\draw[flow] (prophet.east) to[out=0, in=178] (sel.west);
-\draw[flow] (ens.east)     to[out=0, in=190] (sel.west);
-\draw[flow] (stack.east)   to[out=0, in=205] (sel.west);
-\draw[flowmain] (sel) -- (gate);
-\draw[flowmain] (gate) -- node[above, font=\scriptsize, text=ImssGreen!50!black]{no} (out);
+\draw[main] (sinave) -- (clean);
+\draw[main] (clean)  -- (cv);
+\draw[flow] (cv.east) to[out=20, in=180] (box.west);
+% del bloque de candidatos baja y entra al selector por arriba, sin cruzar el rombo
+\draw[main] (box.south) |- ++(0,-6mm) -| (sel.north);
+\draw[main] (sel) -- (gate);
+\draw[main] (gate) -- node[above, font=\scriptsize, text=ImssGreen!50!black]{no} (out);
 \draw[flow] (gate) -- node[right, font=\scriptsize, text=ImssWine!55!black]{yes} (regio);
-\draw[flow] (regio.east) to[out=0, in=250] (out.south);
-\end{tikzpicture}%
-}
+\draw[flow] (regio.east) to[out=0, in=-90] (out.south);
+\end{tikzpicture}
 \caption{Proposed framework. Four candidate models with complementary
 inductive assumptions are trained in parallel per series; a
 deterministic rule selects one on cross-validated \smape\ (with

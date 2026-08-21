@@ -4,10 +4,20 @@
 «The lettering in figures should not use font sizes smaller than 6 pt (~2 mm
 character height)» -- instructivo de autores, seccion 4.5.
 
-Ningun gate anterior lo veia: la figura se genera grande y LaTeX la reduce al
-incluirla, asi que el tamano nominal del generador no dice nada. Aqui se mide el
-tamano EFECTIVO: el de la fuente dentro del PDF de la figura, multiplicado por la
-escala con la que el .tex la imprime.
+Se mide sobre el PDF ENSAMBLADO, no sobre los archivos de figura sueltos. Dos
+razones, ambas aprendidas a golpes:
+
+  - la version anterior solo miraba lo que entra por \\includegraphics, asi que el
+    diagrama TikZ de la Figura 2 le era invisible y el gate daba verde en falso;
+  - leia el tamano nominal del operador Tf e ignoraba el escalado por matriz de
+    texto, de modo que tampoco median bien las que si veia.
+
+El texto rotado necesita otra lectura: para un glifo girado, `size` devuelve la
+extension de la tinta, no el cuerpo de la fuente; el cuerpo esta en `width`.
+
+Region de figura: en este paper las cuatro son flotantes [t]/[!h] que ocupan la
+parte alta de su pagina, asi que se considera figura todo lo que esta por encima
+del pie «Fig. N.».
 
 Uso:  .venv/bin/python scripts/paper_micai_2026/tipografia_figuras.py
 """
@@ -16,72 +26,57 @@ from __future__ import annotations
 
 from pathlib import Path
 import re
-import subprocess
 import sys
-import zlib
+
+import pdfplumber
 
 RAIZ = Path(__file__).resolve().parents[2]
-MICAI = RAIZ / "Congresos/MICAI"
-TEX = MICAI / "paper_camera_ready.tex"
+PDF = RAIZ / "Congresos/MICAI/paper_camera_ready.pdf"
 MINIMO = 6.0
-ANCHO_TEXTO = 347.0  # pt, bloque de texto de llncs
 
 
-def escalas() -> dict[str, float]:
-    """Factor de reduccion con el que el .tex imprime cada figura."""
-    t = TEX.read_text()
-    out = {}
-    for frac, fig in re.findall(r"\\includegraphics\[width=([0-9.]+)\\textwidth\]\{([^}]+)\}", t):
-        info = subprocess.run(
-            ["pdfinfo", str(MICAI / "Figures" / fig)], capture_output=True, text=True, check=False
-        ).stdout
-        m = re.search(r"Page size:\s+([0-9.]+)", info)
-        if m:
-            out[fig] = ANCHO_TEXTO * float(frac) / float(m.group(1))
-    return out
+def _efectivo(c: dict) -> float:
+    """Cuerpo de la fuente del glifo, tenga o no rotacion."""
+    return float(c["width"]) if not c["upright"] else float(c["size"])
 
 
-def tamanos(pdf: Path) -> list[float]:
-    """Tamanos de fuente presentes en el PDF, en puntos nativos."""
-    datos = pdf.read_bytes()
-    flujos = []
-    for m in re.finditer(rb"stream\r?\n", datos):
-        fin = datos.find(b"endstream", m.end())
-        if fin < 0:
-            continue
-        try:
-            flujos.append(zlib.decompress(datos[m.end() : fin]).decode("latin-1"))
-        except Exception:  # noqa: BLE001 - flujos no comprimidos o binarios
-            continue
-    vistos = []
-    for f in flujos:
-        # "/F1 9.5 Tf" fija la fuente; el Tm que lo rodea puede reescalar
-        for tf in re.finditer(r"/[A-Za-z0-9]+\s+([0-9.]+)\s+Tf", f):
-            vistos.append(float(tf.group(1)))
-    return vistos
-
-
-def revisa() -> list[tuple[str, float, float, float]]:
+def revisa() -> list[tuple[int, str, float, int]]:
+    """(pagina, figura, minimo efectivo, glifos por debajo) por cada figura hallada."""
     filas = []
-    for fig, esc in sorted(escalas().items()):
-        t = tamanos(MICAI / "Figures" / fig)
-        if not t:
-            filas.append((fig, esc, float("nan"), float("nan")))
-            continue
-        filas.append((fig, esc, min(t), min(t) * esc))
+    with pdfplumber.open(PDF) as doc:
+        for n, pagina in enumerate(doc.pages, start=1):
+            chars = pagina.chars
+            texto = "".join(c["text"] for c in chars)
+            m = re.search(r"Fig\.\s*(\d+)", texto)
+            if not m:
+                continue
+            # el pie marca el final de la figura; todo lo de arriba es la figura
+            idx = texto.index(m.group(0))
+            tope = chars[idx]["top"]
+            dentro = [c for c in chars if c["top"] < tope - 1]
+            if not dentro:
+                continue
+            tam = [_efectivo(c) for c in dentro]
+            bajos = sum(1 for t in tam if t < MINIMO)
+            filas.append((n, f"Fig. {m.group(1)}", min(tam), bajos))
     return filas
 
 
 if __name__ == "__main__":
-    print("=" * 74)
+    print("=" * 72)
     print(f"TIPOGRAFIA EN FIGURAS — minimo de Springer: {MINIMO} pt")
-    print("=" * 74)
-    print(f"\n  {'figura':<36}{'escala':>8}{'nativo':>9}{'efectivo':>10}")
+    print("  medido sobre el PDF ensamblado, incluidas las figuras TikZ")
+    print("=" * 72)
+    filas = revisa()
+    print(f"\n  {'pagina':<9}{'figura':<10}{'minimo':>10}{'glifos <6pt':>14}")
     malas = []
-    for fig, esc, nat, ef in revisa():
-        marca = "" if ef >= MINIMO else "  <-- POR DEBAJO"
-        if ef < MINIMO:
-            malas.append((fig, ef))
-        print(f"  {fig:<36}{esc:>8.3f}{nat:>8.1f}pt{ef:>9.2f}pt{marca}")
+    for pg, fig, mn, bajos in filas:
+        marca = "" if bajos == 0 else "  <-- INCUMPLE"
+        if bajos:
+            malas.append((fig, mn, bajos))
+        print(f"  {pg:<9}{fig:<10}{mn:>8.2f}pt{bajos:>14}{marca}")
+    if not filas:
+        print("\n  NINGUNA FIGURA ENCONTRADA: el gate no esta midiendo nada")
+        sys.exit(1)
     print("\n  VEREDICTO:", "FALLA" if malas else "PASA")
     sys.exit(1 if malas else 0)

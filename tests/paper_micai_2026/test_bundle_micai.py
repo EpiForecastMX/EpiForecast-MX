@@ -316,19 +316,19 @@ def test_las_ventanas_no_se_contradicen():
 def test_ninguna_letra_de_figura_baja_de_6pt():
     """Springer: «lettering in figures should not use font sizes smaller than 6 pt».
 
-    Ningún gate anterior lo veía. La figura se genera y LaTeX la reduce al incluirla,
-    así que el tamaño del generador no dice nada: hay que medir el efectivo. Antes de
-    este control las cuatro figuras iban entre 2,3 y 3,9 pt.
+    Se mide sobre el PDF ENSAMBLADO. La primera versión de este control sólo miraba
+    los archivos cargados con \\includegraphics, así que el diagrama TikZ le era
+    invisible: daba verde mientras ese diagrama iba a 3,2 pt.
     """
     import tipografia_figuras
 
-    if not tipografia_figuras.TEX.exists():
-        pytest.skip("el master no está en este árbol")
-    bajas = [
-        (f, ef) for f, _, _, ef in tipografia_figuras.revisa() if ef < tipografia_figuras.MINIMO
-    ]
+    if not tipografia_figuras.PDF.exists():
+        pytest.skip("no hay PDF compilado")
+    filas = tipografia_figuras.revisa()
+    assert filas, "el gate no encontró ninguna figura: no está midiendo nada"
+    bajas = [(fig, mn, n) for _, fig, mn, n in filas if n]
     assert not bajas, "figuras por debajo de 6 pt: " + ", ".join(
-        f"{f} ({ef:.2f} pt)" for f, ef in bajas
+        f"{fig} ({mn:.2f} pt, {n} glifos)" for fig, mn, n in bajas
     )
 
 

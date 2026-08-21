@@ -99,7 +99,10 @@ def figura1() -> None:
     ax2.set_title("(b) Weekly national series")
     ax2.set_ylabel("Cases per week")
     ax2.set_ylim(bottom=0)
-    ax2.legend(loc="lower left", frameon=False)
+    # a este ancho los años consecutivos se tocaban: uno de cada tres basta
+    ax2.set_xticks([dt.date(a, 1, 1) for a in range(2014, 2027, 3)])
+    ax2.set_xticklabels([str(a) for a in range(2014, 2027, 3)])
+    ax2.legend(loc="lower center", bbox_to_anchor=(0.5, 1.0), frameon=False, borderaxespad=0)
     ax2.grid(alpha=0.25, lw=0.4)
     fig.tight_layout()
     fig.savefig(SALIDA / "fig01_temporal_distribution.pdf")
@@ -163,9 +166,12 @@ def figura3() -> None:
     ax2.axhspan(-5, 5, color=C_GOLD, alpha=0.12, label="Planning tolerance ±5%")
     ax2.bar(etiquetas, dev, color=colores, width=0.66)
     for i, d in enumerate(dev):
+        if abs(d) <= 5:  # dentro de la tolerancia: la banda ya lo comunica
+            continue
+        salto = 1.2 + (2.6 if i % 2 else 0)  # vecinas a distinta altura
         ax2.text(
             i,
-            d + (1.2 if d >= 0 else -1.2),
+            d + (salto if d >= 0 else -salto),
             f"{d:+.0f}",
             ha="center",
             va="bottom" if d >= 0 else "top",
