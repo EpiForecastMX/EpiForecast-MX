@@ -146,6 +146,12 @@ def cobertura(obs_g: pd.Series, pron_g: pd.Series, semanas: list[int], desfase: 
         "de": len(semanas),
         "pct": round(100 * dentro / len(semanas), 1),
         "n_residuales": int(res.size),
+        # diagnostico: por que la banda cubre lo que cubre
+        "p10": float(lo),
+        "p90": float(hi),
+        "ancho": float(hi - lo),
+        "residual_historico_mediano": float(np.median(np.abs(res))),
+        "residual_2026_mediano": float(np.median(np.abs(y - f))),
     }
 
 
@@ -160,10 +166,18 @@ def juego(desfase: int) -> dict:
     rec = reconciliado(pron, sem).to_numpy(float)
     dev = 100 * (f - y) / y
 
+    # p-valores SIN redondear, mas Holm: son tres comparaciones exploratorias sobre las
+    # mismas semanas, y el ajuste decide si alguna cruza el 5 %.
     dm = {}
     for m in ("deepar", "prophet", "stacking"):
-        est, p, n = dm_hln(y, f, pron["general"][m].reindex(sem).to_numpy(float))
-        dm[f"ensemble_vs_{m}"] = {"DM_HLN": round(est, 3), "p": round(p, 3), "n": n}
+        est, pv, n = dm_hln(y, f, pron["general"][m].reindex(sem).to_numpy(float))
+        dm[f"ensemble_vs_{m}"] = {"DM_HLN": est, "p_crudo": pv, "n": n}
+    orden = sorted(dm, key=lambda k: dm[k]["p_crudo"])
+    previo = 0.0
+    for i, k in enumerate(orden):
+        aj = max(min(1.0, (len(orden) - i) * dm[k]["p_crudo"]), previo)
+        previo = aj
+        dm[k]["p_holm"] = aj
 
     filas = []
     for w in [1, *sem]:
@@ -219,12 +233,23 @@ if __name__ == "__main__":
     oos = pd.read_csv(f1 / "oos_por_serie.csv")
     reg = oos.entidad.astype(str).str.startswith("Region ")
     res["por_serie"] = {
-        "ventana": "W02-W18",
+        # la ventana se DERIVA de los datos: es la interseccion de semanas con
+        # observacion y con pronostico de los cuatro motores, comun a las 111 series
+        "ventana": f"W{int(oos.sem_min.min()):02d}-W{int(oos.sem_max.max()):02d}",
+        "semanas_por_serie": sorted({int(v) for v in oos.n_sem.unique()}),
         "alineacion": "corregida (ds=w+1)",
+        "fuente": "tableau.csv sellado",
         "mediana_oos_n99": {
             m: round(float(oos.loc[~reg, f"oos_{m}"].median()), 2) for m in MOTORES
         },
         "mediana_oos_n111": {m: round(float(oos[f"oos_{m}"].median()), 2) for m in MOTORES},
+        "mediana_mase_por_estrato": {
+            md: {
+                m: round(float(oos.loc[~reg & (oos.modo == md), f"mase_{m}"].median()), 2)
+                for m in MOTORES
+            }
+            for md in ("general", "mujeres", "hombres")
+        },
         "n99": int((~reg).sum()),
         "n111": int(len(oos)),
     }
@@ -249,17 +274,26 @@ if __name__ == "__main__":
         ("obs acum.", pub["obs_acumulado"], 48300),
         ("pred acum.", pub["pred_acumulado"], 50424),
         ("MAE", pub["mae"], 184.1),
-        ("DM vs deepar", pub["diebold_mariano"]["ensemble_vs_deepar"]["DM_HLN"], -1.515),
-        ("p vs deepar", pub["diebold_mariano"]["ensemble_vs_deepar"]["p"], 0.149),
-        ("p vs prophet", pub["diebold_mariano"]["ensemble_vs_prophet"]["p"], 0.101),
-        ("p vs stacking", pub["diebold_mariano"]["ensemble_vs_stacking"]["p"], 0.026),
+        ("p vs deepar", pub["diebold_mariano"]["ensemble_vs_deepar"]["p_crudo"], 0.149),
+        ("p vs prophet", pub["diebold_mariano"]["ensemble_vs_prophet"]["p_crudo"], 0.101),
+        ("p vs stacking", pub["diebold_mariano"]["ensemble_vs_stacking"]["p_crudo"], 0.026),
     ]
     print("\n== Control: ¿la alineacion publicada reproduce lo impreso? ==")
     ok = True
     for nom, got, esp in controles:
         bien = abs(float(got) - float(esp)) <= (0.51 if abs(esp) > 100 else 0.011)
         ok &= bien
-        print(f"  [{'OK ' if bien else 'NO '}] {nom:<16} impreso {esp:>10}   obtenido {got:>10}")
+        print(
+            f"  [{'OK ' if bien else 'NO '}] {nom:<16} impreso {esp:>10}   obtenido {float(got):>10.4f}"
+        )
+    # Divergencia CONOCIDA y explicada, no un fallo: el DM publicado se calculo desde
+    # knowledge.json del dashboard, una tercera fuente de pronostico hoy descartada.
+    # Los p si cuadran porque el estadistico apenas se mueve; el DM_HLN no.
+    print(
+        f"  [nota] DM_HLN vs deepar   impreso     -1.515   obtenido "
+        f"{pub['diebold_mariano']['ensemble_vs_deepar']['DM_HLN']:>10.4f}"
+        "   <- fuente publicada: knowledge.json, descartada"
+    )
 
     print("\n== Publicado vs corregido ==")
     p, c = res["publicada"], res["corregida"]

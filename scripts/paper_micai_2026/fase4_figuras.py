@@ -109,7 +109,8 @@ def figura3() -> None:
     ax2.set_ylim(min(dev.min() - 5, -8), max(dev.max() + 6, 10))
     ax2.set_ylabel("Deviation (%)")
     ax2.set_title(
-        "Per-week deviation, locked forecast vs. SINAVE bulletin (W02–W18)", fontsize=10.5
+        f"Per-week deviation, locked forecast vs. SINAVE bulletin (W{sem[0]:02d}–W{sem[-1]:02d})",
+        fontsize=10.5,
     )
     ax2.legend(fontsize=8.5, loc="upper right", frameon=False)
     ax2.grid(True, axis="y", alpha=0.25, lw=0.5)
@@ -171,8 +172,11 @@ def figura4() -> None:
     ax.set_xticklabels([s[1] for s in estratos])
     ax.set_ylabel("Out-of-sample 2026 sMAPE (%)")
     ax.set_xlabel("Demographic stratum")
+    # la ventana del rotulo se DERIVA del dato: si cambia, cambia con el, y no puede
+    # contradecir al pie de figura ni al JSON
+    vent = f"W{int(oos.sem_min.min()):02d}–W{int(oos.sem_max.max()):02d}"
     ax.set_title(
-        "Out-of-sample 2026 per-series error by model and stratum, W02–W18 "
+        f"Out-of-sample 2026 per-series error by model and stratum, {vent} "
         "(each box: 32 entities + national)"
     )
     ax.set_ylim(0, float(np.ceil(tope / 5) * 5))

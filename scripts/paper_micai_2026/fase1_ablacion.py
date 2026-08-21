@@ -72,11 +72,11 @@ def mapa_regional() -> pd.DataFrame:
 
 
 # ------------------------------------------------------------------ observaciones
-def observaciones(mapa: pd.DataFrame) -> pd.DataFrame:
+def observaciones(mapa: pd.DataFrame, anio: int = 2026) -> pd.DataFrame:
     d = bundle.observado()
     d = d[d["Padecimiento"] == "Depresión"].copy()
     d["Entidad"] = d["Entidad"].replace({"Distrito Federal": "Ciudad de México"})
-    d = d[d["Anio"] == 2026].sort_values(["Entidad", "Semana"])
+    d = d[d["Anio"] == anio].sort_values(["Entidad", "Semana"])
     rec = []
     for e, g in d.groupby("Entidad"):
         g = g.sort_values("Semana")
@@ -105,21 +105,25 @@ def observaciones(mapa: pd.DataFrame) -> pd.DataFrame:
 
 # ------------------------------------------------------------------ pronosticos
 def pronosticos() -> dict[str, pd.DataFrame]:
-    fcs = {}
-    for m in MOTORES:
-        fc = bundle.forecast(m)
-        fc = fc[
-            fc["meta_padecimiento"].astype(str).str.contains("epres", case=False, na=False)
-        ].copy()
-        fc["ds"] = pd.to_datetime(fc["ds"])
-        fc = fc[fc["ds"].dt.year == 2026]
-        fc["Semana"] = fc["ds"].dt.isocalendar().week.astype(int) + 1  # -> semana de boletin
-        fcs[m] = (
-            fc.rename(columns={"meta_entidad": "entidad", "meta_modo": "modo"})
-            .groupby(["entidad", "modo", "Semana"], as_index=False)["yhat"]
-            .mean()
-        )
-    return fcs
+    """Pronosticos por serie y motor, desde `tableau.csv` sellado.
+
+    FUENTE UNICA: la Tabla 2 del paper sale de tableau, asi que el analisis por serie
+    tiene que salir de ahi tambien. Leerlo de `all_forecast_*` daba medianas distintas
+    (Prophet 26,40 contra 26,74; DeepAR 27,92 contra 27,38) y reintroducia el mismo
+    defecto que este trabajo vino a corregir: dos fuentes de pronostico en un paper.
+    """
+    t = bundle.tableau()
+    d = t[t["padecimiento"] == "Depresión"].copy()
+    d["ds"] = pd.to_datetime(d["ds"])
+    d = d[d["ds"].dt.year == 2026]
+    d["Semana"] = d["ds"].dt.isocalendar().week.astype(int) + 1  # -> semana de boletin
+    d = d.rename(columns={"entidad": "entidad", "meta_modo": "modo"})
+    return {
+        m: d.groupby(["entidad", "modo", "Semana"], as_index=False)[f"yhat_{m}"]
+        .mean()
+        .rename(columns={f"yhat_{m}": "yhat"})
+        for m in MOTORES
+    }
 
 
 # ------------------------------------------------------------------ regla publicada
@@ -142,26 +146,49 @@ def clave_xlsx_a_forecast(entidad: str) -> str:
 
 
 # ------------------------------------------------------------------ OOS por serie y modelo
-def oos_por_serie(obs: pd.DataFrame, fcs: dict) -> pd.DataFrame:
+def oos_por_serie(obs: pd.DataFrame, fcs: dict, obs_previo: pd.DataFrame) -> pd.DataFrame:
+    """sMAPE y MASE fuera de muestra por serie y motor.
+
+    La ventana NO se fija a mano: se toma la interseccion de semanas con observacion y
+    con pronostico de los cuatro motores, y se registra en cada fila. El MASE usa la
+    persistencia estacional a 52 semanas, es decir la misma semana del anio anterior.
+    """
     o = obs.set_index(["entidad", "modo", "Semana"])["y"]
+    prev = obs_previo.set_index(["entidad", "modo", "Semana"])["y"]
     idx = {m: fcs[m].set_index(["entidad", "modo", "Semana"])["yhat"] for m in MOTORES}
     llaves = sorted({(e, md) for e, md, _ in o.index})
     filas = []
     for e, md in llaves:
-        fila = {"entidad": e, "modo": md}
-        for m in MOTORES:
-            try:
-                sub = idx[m].loc[(e, md)]
-            except KeyError:
-                fila[f"oos_{m}"] = np.nan
-                continue
-            semanas = [w for w in VENTANA if (e, md, w) in o.index and w in sub.index]
-            fila["n_sem"] = len(semanas)
-            fila[f"oos_{m}"] = (
-                smape([o.loc[(e, md, w)] for w in semanas], [sub.loc[w] for w in semanas])
-                if len(semanas) >= 4
-                else np.nan
+        comun = [
+            w
+            for w in VENTANA
+            if (e, md, w) in o.index and all((e, md, w) in idx[m].index for m in MOTORES)
+        ]
+        if len(comun) < 4:
+            continue
+        y = np.array([o.loc[(e, md, w)] for w in comun], float)
+        fila = {
+            "entidad": e,
+            "modo": md,
+            "sem_min": min(comun),
+            "sem_max": max(comun),
+            "n_sem": len(comun),
+        }
+        con_naive = [w for w in comun if (e, md, w) in prev.index]
+        den = (
+            np.mean(
+                np.abs(
+                    np.array([o.loc[(e, md, w)] for w in con_naive], float)
+                    - np.array([prev.loc[(e, md, w)] for w in con_naive], float)
+                )
             )
+            if len(con_naive) >= 4
+            else np.nan
+        )
+        for m in MOTORES:
+            f = np.array([idx[m].loc[(e, md, w)] for w in comun], float)
+            fila[f"oos_{m}"] = smape(y, f)
+            fila[f"mase_{m}"] = float(np.mean(np.abs(y - f)) / den) if den and den > 0 else np.nan
         filas.append(fila)
     return pd.DataFrame(filas)
 
@@ -332,7 +359,8 @@ if __name__ == "__main__":
     cv = cv_all[cv_all.padecimiento.astype(str).str.contains("epresi", na=False)].copy()
     print(f"  series con metricas CV: {len(cv)}")
 
-    oos = oos_por_serie(obs, fcs)
+    obs_previo = observaciones(mapa, anio=2025)
+    oos = oos_por_serie(obs, fcs, obs_previo)
     oos.to_csv(SALIDA / "oos_por_serie.csv", index=False)
     reg_ok = oos[oos.entidad.astype(str).str.startswith("Region ")]["oos_deepar"].notna().sum()
     print(

@@ -296,3 +296,18 @@ def test_ninguna_cifra_retirada_sobrevive():
     assert not hallazgos, "cifras retiradas vivas:\n" + "\n".join(
         f"  [{e}] {c[:120]}" for e, c, _ in hallazgos[:8]
     )
+
+
+def test_las_ventanas_no_se_contradicen():
+    """El análisis por serie corre sobre una ventana distinta a la del agregado.
+
+    Ya se contradijo una vez: el rótulo dentro de la Figura 4 decía una ventana y su
+    pie decía otra. La ventana se deriva del dato y debe coincidir en JSON, .tex,
+    pies y figura.
+    """
+    import ventanas_coherentes
+
+    if not (ventanas_coherentes.JSON.exists() and ventanas_coherentes.TEX.exists()):
+        pytest.skip("faltan el JSON de cifras o el master")
+    fallos = ventanas_coherentes.revisa()
+    assert not fallos, "ventanas incoherentes:\n" + "\n".join(f"  {x}" for x in fallos)

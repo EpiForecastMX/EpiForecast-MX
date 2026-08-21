@@ -957,7 +957,7 @@ recurrent model (dashed line) does not survive: out of sample no model
 is uniformly best, and the error grows toward the sparse male stratum,
 where low weekly counts also inflate \smape\ because of small
 denominators---on the scale-free \mase, scored against 52-week
-seasonal persistence, the same male series sit between 0.73 and 0.90
+seasonal persistence, the same male series sit between 0.74 and 0.90
 across the four models: better than persistence, but by a far narrower
 margin than the cross-validated figures suggest.
 This is the regime in which an \emph{auditable, revisable} rule earns
@@ -974,8 +974,8 @@ each box pools the 32 federal-entity
 series with the national series for that stratum ($n{=}99$). In
 cross-validation the recurrent model is selected for most series at a
 $5.99\%$ median (dashed line); out of sample that advantage disappears
-and the four models converge, with per-series medians of $26.4\%$ for
-Prophet, $27.9\%$ for DeepAR, $28.3\%$ for Ensemble, and $29.3\%$ for
+and the four models converge, with per-series medians of $26.7\%$ for
+Prophet, $27.4\%$ for DeepAR, $28.1\%$ for Ensemble, and $29.3\%$ for
 Stacking, worst on the sparse male stratum. Treating these scores as a
 revisable signal reassigns 55 of the 99 series (62 of 111 when the
 derived regional series are included).}
@@ -1017,29 +1017,30 @@ beat.}
 \cmidrule(lr){2-3}\cmidrule(lr){4-5}
 \textbf{Candidate pool} & \smape & $p$ & \smape & $p$\\
 \midrule
-Full pool (four models)      & 27.9 & ---   & 28.8 & ---\\
-\quad without Prophet        & 27.9 & 0.84  & 29.2 & 0.07\\
-\quad without DeepAR         & 28.0 & 0.48  & 26.9 & 0.03\\
-\quad without Ensemble       & 27.9 & 0.69  & 28.8 & 0.08\\
-\quad without Stacking       & 27.9 & 1.00  & 28.9 & 0.31\\
+Full pool (four models)      & 27.4 & ---   & 28.5 & ---\\
+\quad without Prophet        & 27.4 & 0.84  & 29.4 & 0.07\\
+\quad without DeepAR         & 28.0 & 0.49  & 26.8 & 0.03\\
+\quad without Ensemble       & 27.4 & 0.69  & 28.8 & 0.17\\
+\quad without Stacking       & 27.4 & 1.00  & 28.8 & 0.72\\
 \addlinespace
-Prophet alone                & 26.4 & 0.07  & 27.5 & 0.89\\
+Prophet alone                & 26.7 & 0.09  & 27.6 & 0.99\\
 \midrule
-Frozen deployment (baseline) & \multicolumn{2}{c}{---} & 32.6 & ---\\
+Frozen deployment (baseline) & \multicolumn{2}{c}{---} & 32.7 & ---\\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \paragraph{The pool is not what carries the result.}
-Removing any single candidate leaves the static median unmoved: the four
-leave-one-out variants fall within $0.1$ points of the full pool and
-none approaches significance (Table~\ref{tab:ablation}). This holds even
-when the removal reorganizes the assignment completely---dropping DeepAR
-moves 107 of 111 selections onto other models and still changes the
-median by $0.05$ points. Against a single-model policy the comparison is
-no more favorable: Prophet alone attains the best static point estimate,
-and we find no evidence that the full selection beats it ($p{=}0.07$;
-$p{=}0.06$ on the 111-series sensitivity). We therefore do not claim that
+Removing any single candidate leaves the static median essentially
+unmoved: the four leave-one-out variants fall within $0.6$ points of the
+full pool and none approaches significance (Table~\ref{tab:ablation}).
+This holds even when the removal reorganizes the assignment
+completely---dropping DeepAR moves 96 of the 99 scored selections onto
+other models and moves the median by $0.6$ points. Against a
+single-model policy the comparison is no more favorable: Prophet alone
+attains the best static point estimate, and we find no evidence that the
+full selection beats it ($p{=}0.09$; $p{=}0.07$ on the 111-series
+sensitivity). We therefore do not claim that
 the candidate pool improves accuracy on this panel.
 
 \paragraph{The cross-validated ranking does not transport.}
@@ -1054,11 +1055,11 @@ the selection mechanism itself.
 \paragraph{What does hold is revision.}
 The dynamic column separates the two claims. Against the frozen
 deployment---the assignment actually locked before 2026---reselecting on
-prior weeks lowers the median from $32.6\%$ to $28.8\%$ on weeks the
+prior weeks lowers the median from $32.7\%$ to $28.5\%$ on weeks the
 reselection never saw, and every pool tested improves on that baseline.
 The gain comes from revising, not from the pool: the full pool does not
-beat Prophet alone here either ($p{=}0.89$). The best leave-one-out
-variant in this regime, the pool without DeepAR ($26.9\%$, $p{=}0.03$),
+beat Prophet alone here either ($p{=}0.99$). The best leave-one-out
+variant in this regime, the pool without DeepAR ($26.8\%$, $p{=}0.03$),
 is a comparison selected after seeing the outcome, and we do not propose
 it as a superior configuration. The framework's value on this panel is
 therefore not that four models beat one; it is that a mechanism with an
@@ -1123,9 +1124,10 @@ ranking does not transport. The out-of-sample claim therefore rests on
 the national-aggregate prospective evaluation and on the revision
 experiment, not on the cross-validation medians. (iii)~The headline prospective
 evaluation is at the national-aggregate stratum over an early-2026
-window (W02--W18); a per-state out-of-sample table over the same window
-is released with the source code, but a per-state \emph{full-year}
-evaluation is still pending. (iv)~The
+window (W02--W18); the per-series analysis runs over W03--W18, the
+sixteen weeks for which every series has both a bulletin observation and
+a locked forecast, and the per-state table is released with the source
+code, but a per-state \emph{full-year} evaluation is still pending. (iv)~The
 most recent bulletins are subject to reporting-lag revision, so the
 latest one or two weeks are provisional. (v)~Revising point-forecast
 assignments does not by itself calibrate predictive uncertainty:
