@@ -347,3 +347,44 @@ def test_las_referencias_no_llevan_flotantes_intercalados():
     # la secuencia de la bibliografía es la cola creciente que llega a 28
     biblio = nums[nums.index(1, 1) :] if nums.count(1) > 1 else nums
     assert biblio == list(range(1, len(biblio) + 1)), f"referencias no contiguas: {biblio[:12]}"
+
+
+def _sello():
+    """Carga sello_sincronizado.py, que vive junto a los demás scripts del paper."""
+    sys.path.insert(0, str(RAIZ / "scripts/paper_micai_2026"))
+    import sello_sincronizado
+
+    return sello_sincronizado
+
+
+def test_un_hash_cientifico_no_se_confunde_con_el_del_paquete():
+    """La atribución tiene que ser explícita, no una etiqueta genérica.
+
+    Con `sha256` a secas como marcador, una línea tan normal como «SHA-256 del CSV
+    de ablación:» contaba como si el hash fuese el del paquete. Peor: `propaga()`
+    lo habría reescrito al resellar, destruyendo un hash científico con el
+    mecanismo que existe justamente para cuidar los sellos.
+    """
+    s = _sello()
+    ajeno = "217192fa570e3f2e52e12c10d5ae239ff7385e80da3b3576bf454e894f9d88f4"
+    for etiqueta in (
+        "SHA-256 del CSV de ablación:",
+        "sha256 de los resultados publicados:",
+        "Hash determinista de data/ablation_results.csv",
+    ):
+        texto = f"# Nota\n\n{etiqueta}\n`{ajeno}`\n"
+        assert s.hashes_del_paquete(texto) == [], f"atribuido de más con «{etiqueta}»"
+        assert ajeno in s.propaga(texto, "0" * 64), f"propaga() pisó el hash con «{etiqueta}»"
+
+
+def test_el_hash_del_paquete_si_se_reconoce_en_sus_tres_formas():
+    """Las tres formas que usan de verdad los documentos del envío."""
+    s = _sello()
+    h = "bc4ad509fbc8c14a1de59835fb0cc4702b1c908aefe79b1868661e1353894e03"
+    for contexto in (
+        f"- Archivo: `Congresos/MICAI/Envio/012.zip`.\n- SHA-256: `{h}`.",
+        f"Paquete camera-ready MICAI 2026 · ponencia #12\n\n  sha256  {h}",
+        f"Ese archivo tiene el sha256 del paquete:\n\n```\n{h}\n```",
+    ):
+        assert s.hashes_del_paquete(contexto) == [h], f"no reconocido en: {contexto[:44]}"
+        assert s.propaga(contexto, "0" * 64).count("0" * 64) == 1

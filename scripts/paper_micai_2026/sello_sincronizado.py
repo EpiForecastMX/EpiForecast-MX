@@ -48,7 +48,16 @@ SHA256 = re.compile(r"\b[0-9a-f]{64}\b")
 # que se presentan COMO el del ZIP, es decir los que aparecen cerca de su nombre o de
 # una etiqueta de sello. Exigirlo a todos daria un falso positivo.
 VENTANA = 3  # lineas hacia atras donde buscar la atribucion
-ATRIBUYE = re.compile(r"012\.zip|sha256|SHA-256|Paquete camera-ready", re.I)
+
+# La atribucion tiene que ser EXPLICITA. Con `sha256` a secas como marcador, una
+# linea tan normal como "SHA-256 del CSV de ablacion:" contaba como si el hash
+# fuese el del paquete, y propaga() lo habria pisado al resellar: un hash
+# cientifico destruido por el mecanismo que existe para cuidar los sellos.
+# Cada alternativa de aqui nombra el paquete; ninguna es una etiqueta generica.
+ATRIBUYE = re.compile(
+    r"012\.zip|paquete camera-ready|sha256 del paquete|hash del paquete|sello del paquete",
+    re.I,
+)
 
 
 def hashes_del_paquete(texto: str) -> list[str]:
