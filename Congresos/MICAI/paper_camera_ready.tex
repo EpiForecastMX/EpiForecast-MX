@@ -55,6 +55,11 @@
 % TeX installs); on Overleaf the bbding glyph is used.
 \IfFileExists{bbding.sty}{\usepackage{bbding}}{\providecommand{\Envelope}{$\boxtimes$}}
 \usepackage[hidelinks]{hyperref}
+% Sin esto, \url solo parte en / . - y similares. "EpiForecastMX" no lleva
+% ninguno, asi que la direccion del repositorio no cabia y se salia 92 pt del
+% margen. xurl permite partir en cualquier caracter; no cambia como se ve la
+% URL, solo donde puede cortar el renglon.
+\usepackage{xurl}
 \renewcommand\UrlFont{\color{black}\rmfamily}
 \urlstyle{rm}
 
@@ -645,7 +650,7 @@ cross-validation protocol.
 % >>> CAMERA-READY code-availability sentence (active):
 The model-selection, evaluation, and analysis code supporting this
 study is publicly available at
-\url{https://github.com/IntegradorIMSS2026Team01/per-series-model-selection2026}.
+\url{https://github.com/EpiForecastMX/per-series-model-selection2026}.
 % >>> REVIEW (double-blind) code-availability sentence (inactive):
 % The complete source code and configuration files will be released
 % upon acceptance.
@@ -951,7 +956,7 @@ $5.99\%$ median (dashed line); out of sample that advantage disappears
 and the four models converge, with per-series medians of $26.7\%$ for
 Prophet, $27.4\%$ for DeepAR, $28.1\%$ for Ensemble, and $29.3\%$ for
 Stacking, worst on the sparse male stratum. Treating these scores as a
-revisable signal reassigns 55 of the 99 series (62 of 111 when the
+revisable signal reassigns 56 of the 99 series (63 of 111 when the
 derived regional series are included).}
 \label{fig:oos2026}
 \end{figure}
@@ -991,12 +996,12 @@ assignment locked before 2026, and what the dynamic regime must beat.}
 \textbf{Candidate pool} & \smape & $p$ & \smape & $p$\\
 \midrule
 Full pool (four models)      & 27.4 & ---   & 28.5 & ---\\
-\quad without Prophet        & 27.4 & 0.84  & 29.4 & 0.07\\
-\quad without DeepAR         & 28.0 & 0.49  & 26.8 & 0.03\\
-\quad without Ensemble       & 27.4 & 0.69  & 28.8 & 0.17\\
-\quad without Stacking       & 27.4 & 1.00  & 28.8 & 0.72\\
+\quad without Prophet        & 27.4 & 0.84  & 29.4 & 0.02\\
+\quad without DeepAR         & 28.0 & 0.49  & 26.4 & 0.07\\
+\quad without Ensemble       & 27.4 & 0.69  & 28.5 & 0.23\\
+\quad without Stacking       & 27.4 & 1.00  & 28.8 & 0.87\\
 \addlinespace
-Prophet alone                & 26.7 & 0.09  & 27.6 & 0.99\\
+Prophet alone                & 26.7 & 0.09  & 27.6 & 0.73\\
 \midrule
 Frozen baseline assignment   & \multicolumn{2}{c}{---} & 32.7 & ---\\
 \bottomrule
@@ -1031,10 +1036,11 @@ baseline---the assignment locked before 2026---reselecting on
 prior weeks lowers the median from $32.7\%$ to $28.5\%$ on weeks the
 reselection never saw, and every pool tested improves on that baseline.
 The gain comes from revising, not from the pool: the full pool does not
-beat Prophet alone here either ($p{=}0.99$). The best leave-one-out
-variant in this regime, the pool without DeepAR ($26.8\%$, $p{=}0.03$),
-is a comparison selected after seeing the outcome, and we do not propose
-it as a superior configuration. The framework's value on this panel is
+beat Prophet alone here either ($p{=}0.73$), and no leave-one-out
+variant improves on it at conventional levels---the best, without DeepAR
+($26.4\%$, $p{=}0.07$), is in any case selected after seeing the
+outcome. Only removing Prophet separates from the full pool ($29.4\%$,
+$p{=}0.02$), one nominal result among five comparisons. The framework's value on this panel is
 therefore not that four models beat one; it is that a mechanism with an
 auditable record detects when a frozen assignment has stopped
 transporting and revises it using only observations preceding the
@@ -1174,7 +1180,9 @@ patient: only public, aggregate, non-identifiable data were used, and
 no individual-level record was accessed at any point.
 The data are published as open data by the Direcci\'on General de
 Epidemiolog\'ia, Secretar\'ia de Salud, and were retrieved from the
-public SINAVE portal on 2026-04-15~\cite{sinave2026}; redistribution
+public SINAVE portal, first consulted on 2026-04-15; the snapshot scored
+here, which runs through bulletin week W18, was materialized on
+2026-05-20~\cite{sinave2026}. Redistribution
 is governed by the bulletin's open-data terms.
 
 % >>> CAMERA-READY credits block (active). Remove for REVIEW version.
@@ -1304,7 +1312,7 @@ deep auto regressor neural prophet. Sci.\ Rep.\ \textbf{14}, 5287
 Direcci\'on General de Epidemiolog\'ia (DGE), Secretar\'ia de Salud,
 M\'exico: SINAVE Bolet\'in Epidemiol\'ogico.
 \url{https://www.gob.mx/salud/acciones-y-programas/direccion-general-de-epidemiologia-boletin-epidemiologico}
-(accessed 2026-04-15)
+(accessed 2026-05-20)
 
 \bibitem{garciapacheco2024}
 Garc\'ia-Pacheco, J.\'A., Torres-Ortega, M.L., Borges, G.: The burden

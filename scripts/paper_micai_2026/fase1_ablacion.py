@@ -11,11 +11,16 @@ Contrato (predeclarado ANTES de ver resultados):
   - seleccion estatica: regla publicada, banda 5% -> MASE -> RMSE, siempre sobre n=111.
   - evaluacion OOS: principal n=99 (estados + nacional), sensibilidad n=111 (con regiones).
     Se reportan las dos. No se elige denominador despues de ver el resultado.
-  - dinamica: reseleccion por minimo sMAPE en la ventana temprana (semanas <= CORTE,
+  - dinamica: reseleccion con la REGLA PUBLICADA ENTERA --sMAPE, banda del 5%, MASE,
+    RMSE-- sobre la ventana temprana (semanas <= CORTE,
     definicion ya auditada), puntuada en las semanas posteriores no usadas. La ventana
     efectiva se DERIVA del dato -- hoy W03-W11 y W12-W18, porque la primera fecha `ds`
     de 2026 cae en semana ISO 2 y con el corrimiento va a la 3 -- y queda registrada en
-    oos_por_serie.csv. La variante con desempates completos va como sensibilidad aparte.
+    oos_por_serie.csv. Antes reseleccionaba por minimo sMAPE a secas, que es solo el
+    primer paso de la regla: el paper dice "we re-run the selection rule" y la ablacion
+    tiene que ejecutar esa y no otra. El cambio mueve 4 asignaciones del pool completo
+    (55 -> 56 reasignaciones), la mediana sin DeepAR de 26.82 a 26.44 y su p de 0.033 a
+    0.069; la mediana del pool completo, 28.52, no se mueve.
 
 Uso:  ../../.venv/bin/python fase1_ablacion.py
 """
@@ -49,6 +54,11 @@ def smape(y, f) -> float:
     dn = (np.abs(y) + np.abs(f)) / 2
     m = dn > 0
     return float(100 * np.mean(np.abs(y - f)[m] / dn[m])) if m.any() else np.nan
+
+
+def rmse(y, f) -> float:
+    y, f = np.asarray(y, float), np.asarray(f, float)
+    return float(np.sqrt(np.mean((y - f) ** 2)))
 
 
 # ------------------------------------------------------------------ mapa regional
@@ -260,7 +270,7 @@ def resume_estatica(pxs: pd.DataFrame, universo: str) -> pd.DataFrame:
 
 
 # ------------------------------------------------------------------ ablacion dinamica
-def dinamica_por_serie(obs, fcs, base: dict) -> pd.DataFrame:
+def dinamica_por_serie(obs, fcs, base: dict, obs_previo: pd.DataFrame) -> pd.DataFrame:
     """Devuelve, por serie y por pool, el sMAPE held-out de la politica de ese pool.
 
     Una fila por serie; una columna por pool. Asi las comparaciones entre pools son
@@ -268,6 +278,7 @@ def dinamica_por_serie(obs, fcs, base: dict) -> pd.DataFrame:
     cada pool compara conjuntos distintos y no es valido.
     """
     o = obs.set_index(["entidad", "modo", "Semana"])["y"]
+    prev = obs_previo.set_index(["entidad", "modo", "Semana"])["y"]
     idx = {m: fcs[m].set_index(["entidad", "modo", "Semana"])["yhat"] for m in MOTORES}
     pools = (
         [tuple(MOTORES)]
@@ -289,22 +300,57 @@ def dinamica_por_serie(obs, fcs, base: dict) -> pd.DataFrame:
             if len(tempranas) < 4 or len(tardias) < 4:
                 ok = False
                 break
-            per[m] = (
-                smape([o.loc[(e, md, w)] for w in tempranas], [sub.loc[w] for w in tempranas]),
-                smape([o.loc[(e, md, w)] for w in tardias], [sub.loc[w] for w in tardias]),
-            )
+            yt = np.array([o.loc[(e, md, w)] for w in tempranas], float)
+            ft = np.array([sub.loc[w] for w in tempranas], float)
+            per[m] = {
+                "temprano_smape": smape(yt, ft),
+                "temprano_mae": float(np.mean(np.abs(yt - ft))),
+                "temprano_rmse": rmse(yt, ft),
+                "tardio_smape": smape(
+                    [o.loc[(e, md, w)] for w in tardias], [sub.loc[w] for w in tardias]
+                ),
+            }
+            tempranas_naive = tempranas
         if not ok or m_base not in per:
             continue
+        # Denominador del MASE: persistencia estacional a 52 semanas sobre las MISMAS
+        # semanas tempranas. Si no hay bastantes, el MASE queda NaN y `elige` cae al
+        # criterio primario, que es lo que la regla publicada hace en ese caso.
+        con_naive = [w for w in tempranas_naive if (e, md, w) in prev.index]
+        den = (
+            float(
+                np.mean(
+                    np.abs(
+                        np.array([o.loc[(e, md, w)] for w in con_naive], float)
+                        - np.array([prev.loc[(e, md, w)] for w in con_naive], float)
+                    )
+                )
+            )
+            if len(con_naive) >= 4
+            else np.nan
+        )
         fila = {
             "entidad": e,
             "modo": md,
             "base": m_base,
-            "H_base": per[m_base][1],
+            "H_base": per[m_base]["tardio_smape"],
             "regional": str(e).startswith("Region "),
         }
+        # La reseleccion aplica la REGLA PUBLICADA entera --sMAPE, banda del 5%, MASE,
+        # RMSE-- sobre la evidencia de la ventana temprana. Antes tomaba el minimo
+        # sMAPE a secas, que es solo su primer paso: el paper dice "we re-run the
+        # selection rule" y eso tiene que ser literal, o la ablacion valida una regla
+        # distinta de la que el articulo propone.
+        evidencia = {}
+        for m in MOTORES:
+            evidencia[f"{m}_smape"] = per[m]["temprano_smape"]
+            evidencia[f"{m}_mase"] = per[m]["temprano_mae"] / den if den and den > 0 else np.nan
+            evidencia[f"{m}_rmse"] = per[m]["temprano_rmse"]
         for pool in pools:
-            m_re = min(pool, key=lambda m: per[m][0])
-            fila[f"H::{'+'.join(pool)}"] = per[m_re][1]
+            m_re = elige(evidencia, pool)
+            if m_re is None:
+                m_re = min(pool, key=lambda m: per[m]["temprano_smape"])
+            fila[f"H::{'+'.join(pool)}"] = per[m_re]["tardio_smape"]
             fila[f"sel::{'+'.join(pool)}"] = m_re
         filas.append(fila)
     return pd.DataFrame(filas)
@@ -404,7 +450,7 @@ if __name__ == "__main__":
         .lower()
         for _, r in cv.iterrows()
     }
-    pxs = dinamica_por_serie(obs, fcs, base)
+    pxs = dinamica_por_serie(obs, fcs, base, obs_previo)
     pxs.to_csv(SALIDA / "dinamica_por_serie.csv", index=False)
     dinamicas = []
     for universo in ("n99", "n111"):

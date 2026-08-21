@@ -120,7 +120,12 @@ def revisa(ruta: Path) -> int:
     # una lista de numeros entre corchetes separados por comas.
     with pdfplumber.open(ruta) as doc:
         texto = "\n".join((pg.extract_text() or "") for pg in doc.pages)
-    grupos = re.findall(r"\[(\d+(?:,\d+)+)\]", texto)
+    # Los saltos de linea se aplanan ANTES de buscar: un grupo partido entre dos
+    # renglones ("[9,\n23]") no lo veia el patron, asi que quedaba sin revisar.
+    # Se noto al cambiar el ancho de una URL: aparecio un quinto grupo que llevaba
+    # ahi todo el tiempo.
+    plano = re.sub(r"\s+", "", texto)
+    grupos = re.findall(r"\[(\d+(?:,\d+)+)\]", plano)
     desordenados = []
     for g in grupos:
         nums = [int(x) for x in g.split(",")]

@@ -130,15 +130,19 @@ def construye() -> tuple[Path, list[str]]:
         )
     piezas += [(f"{NUMERO}.pdf", pdf)]
 
+    # Se escribe un CANDIDATO, no el destino final. Antes se escribia directamente
+    # sobre Envio/012.zip y se verificaba despues: si la verificacion fallaba, el
+    # paquete malo se quedaba en la ruta buena y el ultimo bueno se habia perdido.
     DESTINO.parent.mkdir(parents=True, exist_ok=True)
-    with zipfile.ZipFile(DESTINO, "w", zipfile.ZIP_DEFLATED) as z:
+    candidato = DESTINO.with_suffix(".zip.candidato")
+    with zipfile.ZipFile(candidato, "w", zipfile.ZIP_DEFLATED) as z:
         for nombre, datos in sorted(piezas):
             info = zipfile.ZipInfo(nombre, date_time=fecha)
             info.compress_type = zipfile.ZIP_DEFLATED
             info.create_system = 3  # unix, para no depender del anfitrion
             info.external_attr = 0o644 << 16
             z.writestr(info, datos)
-    return DESTINO, figs
+    return candidato, figs
 
 
 def verifica(zip_path: Path) -> dict:
@@ -239,10 +243,20 @@ def escribe_sello(zip_path: Path) -> tuple[str, int]:
 
 
 if __name__ == "__main__":
-    z, figs = construye()
+    # --verifica: modo de SOLO LECTURA sobre el ZIP que ya existe. Lo usa la
+    # auditoria, que no tiene por que reconstruir el artefacto ni reescribir su
+    # sello: una auditoria que muta lo que audita no es una auditoria.
+    solo_lee = "--verifica" in sys.argv
+    if solo_lee:
+        if not DESTINO.exists():
+            print(f"no existe {DESTINO.relative_to(RAIZ)}; construyelo primero.")
+            sys.exit(1)
+        z = DESTINO
+    else:
+        z, figs = construye()
     v = verifica(z)
     print("=" * 72)
-    print(f"PAQUETE DE ENVIO — {z.relative_to(RAIZ)}")
+    print(f"PAQUETE DE ENVIO — {DESTINO.relative_to(RAIZ)}")
     print("=" * 72)
     print(
         f"  {z.stat().st_size / 1024:.0f} KB · sha256 {hashlib.sha256(z.read_bytes()).hexdigest()[:16]}"
@@ -273,8 +287,15 @@ if __name__ == "__main__":
     # HASH_ENVIO.txt y en QUE_HACER_EN_CMT.md, y los tres valores acabaron
     # distintos entre si. Ahora hay una sola fuente y sello_sincronizado.py
     # comprueba que los documentos digan lo que dice el ZIP.
-    if not malo:
-        escribe_sello(z)
+    if solo_lee:
+        print("  (modo verificacion: no se reconstruyo ni se reescribio el sello)")
+    elif malo:
+        z.unlink(missing_ok=True)
+        print("  candidato descartado; el paquete anterior sigue intacto")
+    else:
+        # Reemplazo atomico: o esta el paquete viejo entero, o el nuevo entero.
+        z.replace(DESTINO)
+        escribe_sello(DESTINO)
         print(f"  sello escrito en {SELLO.relative_to(RAIZ)}")
     print("  VEREDICTO:", "FALLA" if malo else "PASA")
     sys.exit(1 if malo else 0)

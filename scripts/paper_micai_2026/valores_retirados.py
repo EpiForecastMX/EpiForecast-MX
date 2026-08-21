@@ -24,6 +24,19 @@ RETIRADOS = [
     # Los patrones van anclados a su contexto: una cifra suelta como "26,5" tambien
     # aparece en la lista de lags {1,2,4,8,13,26,52} y en un eje de la Figura 1, y un
     # control que grita en falso se acaba ignorando.
+    # Retiradas el 21-ago-2026, al conectar la ablacion dinamica a la REGLA COMPLETA
+    # (sMAPE -> banda 5% -> MASE -> RMSE) en vez de al minimo sMAPE a secas.
+    ("dinamica sin DeepAR 26,8 %", r"26[.,]8\\?%", "26,4 %"),
+    ("dinamica sin DeepAR p=0,03", r"p\{=\}0[.,]03\b", "p=0,07"),
+    ("full pool vs Prophet p=0,99", r"p\{=\}0[.,]99\b", "p=0,73"),
+    ("reasigna 55 de 99", r"reassigns 55 of the 99", "56 de 99"),
+    ("62 de 111 reasignadas", r"62 of 111", "63 de 111"),
+    # Retirada el 21-ago-2026: la W18 termina el 3 de mayo, no se pudo tomar el 15 de abril
+    (
+        "snapshot fechado 2026-04-15",
+        r"portal on 2026-04-15",
+        "consulta inicial 15-abr, snapshot 20-may",
+    ),
     ("sMAPE prospectivo 6,63 %", r"6[.,]63\\?%", "7,40 %"),
     ("desviacion acumulada +4,40 %", r"\+4[.,]40\\?%", "+2,45 %"),
     ("MAE 184", r"=\s*184\$|\b184 cases", "205"),

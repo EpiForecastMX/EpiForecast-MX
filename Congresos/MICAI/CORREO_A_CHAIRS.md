@@ -24,9 +24,9 @@ Iris Mendez). **Sólo si la edición está cerrada también en tu propio perfil.
 >
 > | Currently in CMT | Correct |
 > |---|---|
-> | Javier Rebull Saucedo | Javier Rebull-Saucedo |
-> | Juan Pérez Nava | Juan Pérez-Nava |
-> | Luis Sánchez Salazar | Luis Sánchez-Salazar |
+> | Javier Rebull Saucedo | Javier Augusto Rebull-Saucedo |
+> | Juan Pérez Nava | Juan Carlos Pérez-Nava |
+> | Luis Sánchez Salazar | Luis Gerardo Sánchez-Salazar |
 > | Grettel Barceló Alonso | Grettel Barceló-Alonso |
 > | Ruth Pérez Hernández | Ruth Pérez-Hernández |
 >

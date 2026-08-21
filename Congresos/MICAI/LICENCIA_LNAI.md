@@ -40,13 +40,16 @@ Del instructivo oficial (`reference_material/Instructions+for+proceedings+author
 **§5.2 — apellidos compuestos.** Springer pide literalmente: *«If you or any of your
 co-authors have more than one family name, it should be made quite clear how your name is
 to be displayed in the running heads and the author index.»* El guion es justo el
-mecanismo, y `\authorrunning{J. Rebull-Saucedo et al.}` lo deja explícito para el titulillo.
+mecanismo, y `\authorrunning{J.A. Rebull-Saucedo et al.}` lo deja explícito para el titulillo.
 **El paper ya hace lo que pide esa sección**, y eso refuerza el correo a los chairs.
 
 **§5.2 — nombres completos.** Pide que los nombres vayan *«written out in full»*, sin
-iniciales. La versión actual —`Javier`, `Juan`, `Luis`, `Ruth`— cumple; la anterior
-—`Javier A.`, `Juan Carlos`— llevaba inicial y **era la que no cumplía**. Alinear a CMT nos
-dejó, por casualidad, del lado correcto de esta regla.
+iniciales. Esto lo teníamos MAL y se corrigió el 21-ago-2026: la portada llevaba `Javier`,
+`Juan` y `Luis`, que no son los nombres completos sino formas cortas. Los ORCID públicos
+registran **Javier Augusto**, **Juan Carlos** y **Luis Gerardo**, y así va ahora la portada.
+CMT, esta licencia y el README del repositorio citado tienen que decir exactamente lo mismo,
+carácter por carácter: si la licencia firmada lleva un nombre y la portada otro, Springer
+para la producción.
 
 **§5.3 — ORCID.** Pide incluirlo en la cabecera; en el libro impreso se sustituye por el
 icono de ORCID. Los cinco ya están puestos con `\orcidID`. ✔
@@ -67,13 +70,16 @@ Descargados en `DocusMICAI/`: instructivo de autores y los dos templates.
 - **§4.2**: los *full papers* son de 12–15 páginas «o más». Nuestras 20 caben dentro del
   techo de MICAI.
 
-**Lo que NO se descargó: el formato de licencia.** Es lo único que falta del paquete.
+**El formato de licencia SÍ está descargado**, en
+`DocusMICAI/LNAI_license_to_publish_MICAI2026_maintrack.docx`. No aparecía en la página de
+autores sino en `micai.org/docs/`, que es lo que despistó. Lo que falta es **llenarlo y
+firmarlo a mano**, no conseguirlo.
 
 ---
 
 ## Orden
 
-1. Descargar el `.docx` de `micai.org/2026/authors/`.
+1. Abrir el `.docx` que ya está en `DocusMICAI/` (no hay que descargar nada).
 2. Llenarlo — título y autores tal como aparecen en el paper, **«Edition ID / IPS» en blanco**.
 3. Imprimir, **firmar a mano**, escanear.
 4. Preguntar a Ruth si el IMSS requiere algo adicional.

@@ -255,7 +255,7 @@ def audita_gates() -> None:
     for nombre, guion in [
         ("cifras retiradas", "valores_retirados.py"),
         ("coherencia de ventanas", "ventanas_coherentes.py"),
-        ("paquete compila desde el ZIP", "empaqueta_envio.py"),
+        ("paquete compila desde el ZIP", "empaqueta_envio.py --verifica"),
         # Estos dos van DESPUES de empaquetar: uno mira el PDF ya ensamblado y el
         # otro el ZIP recien escrito, asi que solo tienen sentido en ese orden.
         ("bibliografia y citas ordenadas", "bibliografia_intacta.py"),
@@ -263,7 +263,7 @@ def audita_gates() -> None:
         ("sello sincronizado", "sello_sincronizado.py"),
     ]:
         r = subprocess.run(
-            [sys.executable, str(Path(__file__).parent / guion)],
+            [sys.executable, str(Path(__file__).parent / guion.split()[0]), *guion.split()[1:]],
             capture_output=True,
             text=True,
             check=False,
