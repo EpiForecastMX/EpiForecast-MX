@@ -1,16 +1,28 @@
 # Correo a los chairs — corrección de metadatos, ponencia #12
 
-**Confirmado el 21-ago-2026: la sección autoral de CMT está bloqueada.** Ya no es una
-hipótesis, así que este correo hay que mandarlo.
+**ENVIADO el 21-ago-2026** por CMT → «Email Chairs», con acuse «1 emails successfully
+sent». La sección autoral de CMT está bloqueada de verdad, así que este correo era el
+único camino. Lo que sigue abajo es lo que se mandó, para el registro.
+
+Dos imprecisiones del texto enviado, anotadas por honestidad y sin consecuencia
+práctica: el encabezado decía «Surnames» cuando la tabla también completa los nombres
+de pila —la columna «Correct» es inequívoca, quien copie de ahí acierta—, y se ofrecía
+alinear el manuscrito a CMT si lo preferían, lo que en rigor abre la puerta a terminar
+con «ITESM». Si contestan por ahí, se declina citando TEC-II-05. No se manda un segundo
+correo: retractarse de una oferta se lee peor que la oferta.
 
 **Cómo enviarlo, por orden de fiabilidad:**
 
-1. **Responder a la carta de aceptación.** Es lo mejor: ya va dirigida a los chairs y
-   queda hilada con la ponencia #12, sin que nadie tenga que buscar de qué hablas.
-2. **CMT → «Contact Chairs»** (o «Email Chairs») desde la página de la ponencia. Ese
-   enlace sigue activo aunque los campos de autor estén en solo lectura.
+1. **CMT → «Email Chairs»** desde la página de la ponencia. Es la vía que se usó el
+   21-ago-2026 y funcionó: CMT confirma «1 emails successfully sent» y queda constancia
+   dentro del sistema. El enlace sigue activo aunque los campos de autor estén en solo
+   lectura.
+2. **Responder a la carta de aceptación**, sólo si su `Reply-To` no es un `no-reply`.
+   Muchas notificaciones de CMT lo son y el correo se pierde sin aviso.
 
-Los Program Chairs son **Gilberto Ochoa-Ruiz** e **Iris Mendez**. No tenemos sus
+Los Program Chairs son **Gilberto Ochoa** e **Iris Méndez**, en la forma que usa la web
+oficial de MICAI 2026. Si escribes por «Contact Chairs» no hace falta nombrarlos:
+«Dear Program Chairs» evita equivocarse con la forma del nombre. No tenemos sus
 direcciones directas y no conviene adivinarlas: cualquiera de las dos vías de arriba
 llega, y además deja constancia dentro del sistema.
 
@@ -29,9 +41,10 @@ llega, y además deja constancia dentro del sistema.
 > submission is read-only on our side, so we cannot apply the corrections ourselves; we
 > would be grateful if you could either apply them or open the record for editing.
 >
-> **Surnames.** All five authors carry compound Spanish surnames, which must be
-> hyphenated so that they are indexed as a single surname rather than split into a
-> middle name and a surname:
+> **Author names.** The corrected forms carry the complete given names and the
+> hyphenated compound surnames used in the camera-ready manuscript and in the authors'
+> ORCID records. The hyphen matters: without it the compound surname is indexed as a
+> middle name plus a surname.
 >
 > | Currently in CMT | Correct |
 > |---|---|
