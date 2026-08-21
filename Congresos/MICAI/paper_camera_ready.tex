@@ -95,11 +95,14 @@
 % publicos. CMT conserva la forma abreviada y debe actualizarse antes de la entrega,
 % igual que la licencia y el README del repositorio citado: los cuatro tienen que
 % coincidir caracter por caracter.
-\author{Javier Augusto Rebull-Saucedo\inst{1}\orcidID{0009-0008-2089-5274}\thanks{Corresponding author.} \and
-        Juan Carlos P\'erez-Nava\inst{1}\orcidID{0009-0005-6708-5541} \and
-        Luis Gerardo S\'anchez-Salazar\inst{1}\orcidID{0009-0009-6101-8072} \and
-        Grettel Barcel\'o-Alonso\inst{1}\orcidID{0009-0004-3373-6441} \and
-        Ruth P\'erez-Hern\'andez\inst{2}\orcidID{0000-0003-3261-1220}}
+% Espacios DUROS dentro de cada nombre. Sin ellos LaTeX partia los nombres por la
+% mitad --"Juan Carlos" al final de un renglon y "Perez-Nava" al principio del
+% siguiente-- lo que ademas de feo gastaba lineas y empujaba Keywords a la pagina 2.
+\author{Javier~Augusto~Rebull-Saucedo\inst{1}\orcidID{0009-0008-2089-5274}\thanks{Corresponding author.} \and
+        Juan~Carlos~P\'erez-Nava\inst{1}\orcidID{0009-0005-6708-5541} \and
+        Luis~Gerardo~S\'anchez-Salazar\inst{1}\orcidID{0009-0009-6101-8072} \and
+        Grettel~Barcel\'o-Alonso\inst{1}\orcidID{0009-0004-3373-6441} \and
+        Ruth~P\'erez-Hern\'andez\inst{2}\orcidID{0000-0003-3261-1220}}
 \authorrunning{J.A. Rebull-Saucedo et al.}
 % Afiliacion segun TEC-II-05 "Lineamientos para la afiliacion institucional" (v.03,
 % vigente 2025): el nombre es "Tecnologico de Monterrey", en espanol y SIN ACENTO --
@@ -130,21 +133,18 @@
 Weekly forecasting of psychiatric demand is hard because surveillance
 signals are heterogeneous across regions, sex strata, and time, so no single
 forecasting paradigm performs uniformly well. Rather than imposing one
-algorithm across an entire surveillance system, we present a
-deterministic, auditable framework that selects, for each series, the
-model best supported by its own evidence. The framework draws on a
-library of forecasters with deliberately different inductive
+algorithm system-wide, we present a deterministic, auditable framework
+that selects, per series, the model best supported by its own evidence.
+Its candidate pool spans deliberately different inductive
 assumptions---a structural additive decomposition, a probabilistic
-recurrent network, and two tree-based hybrids---so that the candidate pool
-spans diverse temporal representations. A transparent rule then selects
-one model per series based on cross-validated accuracy, can reassign
-low-incidence series to a regional model, and records every decision in a
-justified selection log. We instantiate it for weekly depression
+recurrent network, and two tree-based hybrids. A transparent rule selects
+on cross-validated accuracy, can reassign low-incidence series to a
+regional model, and records every decision in a justified log. We instantiate it for weekly depression
 incidence (CIE-10 F32) across Mexico's 32 federal entities, using public
 bulletins of the National Epidemiological Surveillance System (SINAVE),
 and validate it twice: by rolling-origin cross-validation over a decade of
-weekly observations and a prospective out-of-sample assessment against the
-2026 bulletins released after the training cutoff. A leave-one-model-out
+weekly observations, and prospectively against the 2026 bulletins released
+after the training cutoff. A leave-one-model-out
 ablation shows that the candidate pool is not what carries the result, and
 that the cross-validated ranking does not transport to the prospective
 window. The contribution is therefore not that several models beat one,
