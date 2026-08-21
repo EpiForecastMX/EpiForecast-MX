@@ -15,7 +15,17 @@ repositorio. Va primero.
 
 ---
 
-## 1. Lo que sí bloquea: el paper promete material que el repo público no tiene
+## 1. RESUELTO — el material prometido ya está publicado
+
+> **Cerrado el 21-ago-2026**, commit `73800d1` del repo público. Se publicó
+> `data/per_series_out_of_sample_2026.csv` (111 series, sMAPE y MASE por modelo,
+> W03–W18), se añadió la corrección de Holm a `analysis/statistical_tests.py`, se
+> documentó el desfase de semana en el README y en el docstring, y se retiró el
+> encuadre de doble ciego, que seguía ahí pese a la aceptación. La tabla publicada
+> es byte-idéntica a la local. **Las tres promesas del paper se cumplen.**
+
+### El problema, tal como se encontró
+
 
 El artículo dice tres veces que hay material liberado con el código:
 
