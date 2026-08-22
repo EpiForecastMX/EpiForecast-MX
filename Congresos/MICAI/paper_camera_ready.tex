@@ -348,7 +348,8 @@ by the Direcci\'on General de
 Epidemiolog\'ia~\cite{sinave2026}, Mexico's consolidated public health
 surveillance system. After calendar alignment under the
 SINAVE epidemiological-week convention,\footnote{The SINAVE calendar
-is similar but not identical to the ISO~8601 and CDC Morbidity and
+is similar but not identical to the ISO~8601 and U.S. Centers for Disease
+Control and Prevention Morbidity and
 Mortality Weekly Report (MMWR) week
 conventions. We use the calendar as published in the bulletin and do
 not re-index against either external standard.} the harmonized panel
@@ -361,8 +362,8 @@ disaggregated by sex (women and men) and aggregated into an overall
 total (general). We analyze the 32 federal entities and four socio-urban
 regions---high-density metropolitan, medium-density urban, vulnerable
 South--Southeast, and rural/dispersed---defined from population density
-and demographic indicators from the National Institute of Statistics and
-Geography (INEGI). The released files retain the original
+and demographic indicators published by the National Institute of
+Statistics and Geography (INEGI). The released files retain the original
 Spanish labels. Together with the national series, this yields
 $37 \times 3 = 111$ series--stratum combinations.
 
@@ -740,7 +741,8 @@ PatchTST (transformer) & 27.18 & 1.409 & --- & --- & 27.0 & --- \\
 
 \smallskip
 {\footnotesize $^{\ddagger}$~The Auto-ARIMA baseline models
-$\log(1{+}y)$ with an ARIMA order selected by AIC over a compact grid
+$\log(1{+}y)$ with an ARIMA order selected by the Akaike information
+criterion over a compact grid
 and Fourier annual terms ($K{=}4$); PatchTST~\cite{nie2023patchtst} is run with its
 reference configuration (patch length~16) on the same 104-week context
 window as DeepAR. Both are deliberately out-of-the-box implementations
@@ -1150,7 +1152,7 @@ different case-ascertainment rules must be demonstrated, not assumed.
 \paragraph{Future work.}
 We plan to extend the framework to additional \mbox{ICD-10} codes in the
 SINAVE catalog, to report a full-year per-state prospective evaluation,
-to add tuned SARIMA and N-BEATS/N-HiTS baselines, and to
+to add tuned seasonal ARIMA and N-BEATS/N-HiTS baselines, and to
 pursue external validation. A further direction is to make the
 \emph{forecasts} explainable, not only the selection. The rule explains
 which model was chosen and on what evidence, but not why that model
