@@ -523,6 +523,10 @@ def test_regiones_traducidas_pero_los_datos_no():
         assert espanol not in tex, f"etiqueta espanola viva en el .tex: {espanol}"
         assert espanol not in pdf, f"etiqueta espanola visible en el PDF: {espanol}"
 
+    # INEGI es una sigla institucional espanola: un lector internacional no la infiere
+    assert "National Institute of Statistics and Geography (INEGI)" in tex
+    assert "(INEGI)" in pdf.replace("- ", "")
+
     csv = RAIZ / "reports/paper_micai_2026/resultados/region_membership.csv"
     datos = csv.read_text(encoding="utf-8")
     for espanol in REGIONES_ES:

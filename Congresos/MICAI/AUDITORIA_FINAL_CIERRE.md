@@ -19,8 +19,8 @@ hasta cerrar cuatro acciones externas:
 ## Candidato sellado
 
 - Archivo: `Congresos/MICAI/Envio/012.zip`.
-- SHA-256: `46ec0471bb729c4fffce5a3dbf74feec880b7bb65ced96f6f4d8da53f1e50892`.
-- Tamaño: 700,921 bytes.
+- SHA-256: `7f705dad00829370cb1b093e8632d8d3af22aa0e936c28beacc3489083931b3e`.
+- Tamaño: 700,982 bytes.
 - Contenido: un solo `012.tex`, `012.pdf`, `llncs.cls`, `splncs04.bst` y las
   tres figuras externas realmente referenciadas.
 - Reconstrucción desde el ZIP: 20 páginas A4, `pdflatex rc=0`, cero errores,
