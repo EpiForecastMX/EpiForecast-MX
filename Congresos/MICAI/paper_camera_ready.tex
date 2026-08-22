@@ -967,19 +967,16 @@ derived regional series are included).}
 \subsection{Ablation of the Candidate Pool}
 \label{ssec:ablation}
 
-A four-model pool invites a direct question: how much of the result
-depends on having four? We re-run the selection rule restricted to each
+We conduct an ablation study to test whether performance depends on
+retaining all four candidate models. We re-run the selection rule on each
 subset of the pool and rescore the resulting assignments without
-refitting---the rule adjudicates among forecasts that were already
-locked. Two regimes are separated: \emph{static}, selecting once from
-cross-validated evidence as in the frozen baseline assignment, and
-\emph{dynamic}, reselecting on
-W03--W11 and scoring on the later, unused weeks W12--W18. Selection runs
-over all 111 series; scoring runs over the 99 with a direct bulletin
-observation, the 12 derived regional series being a sensitivity. Policies
-are compared pairwise over the same series (Wilcoxon signed-rank), since
-comparing each policy's own reassigned subset would compare different
-sets.
+refitting. We evaluate two selection schemes: \emph{static}, selecting
+once from cross-validated evidence as in the frozen baseline assignment;
+and \emph{dynamic}, reselecting on W03--W11 and scoring on the unused
+weeks W12--W18. Selection spans all 111 series; primary scoring covers
+the 99 directly observed, with the 12 derived regional series reported
+as a sensitivity. Policies are compared pairwise over the same 99 series
+using the Wilcoxon signed-rank test.
 
 \begin{table}[t]
 \centering
@@ -988,7 +985,8 @@ over the 99 directly observed series, W03--W18. \emph{Static} selects once
 from cross-validated evidence; \emph{dynamic} reselects on W03--W11 and is
 scored on the unused weeks. $p$: two-sided Wilcoxon signed-rank against
 the full pool over the same series. The frozen baseline is the
-assignment locked before 2026, and what the dynamic regime must beat.}
+assignment locked before 2026, the benchmark for the dynamic selection
+scheme.}
 \label{tab:ablation}
 \setlength{\tabcolsep}{6pt}
 \renewcommand{\arraystretch}{1.1}
@@ -1014,11 +1012,10 @@ Frozen baseline assignment   & \multicolumn{2}{c}{---} & 32.7 & ---\\
 
 \paragraph{The pool is not what carries the result.}
 Removing any single candidate leaves the static median essentially
-unmoved: the four leave-one-out variants fall within $0.6$ points of the
-full pool and none approaches significance (Table~\ref{tab:ablation}).
-This holds even when the removal reorganizes the assignment
-completely---dropping DeepAR moves 96 of the 99 scored selections onto
-other models and moves the median by $0.6$ points. Against a
+unchanged: none of the four leave-one-out variants differs significantly
+from the full pool (Table~\ref{tab:ablation}). Even dropping DeepAR
+reassigns 96 of 99 series while shifting the median by only $0.6$
+points. Against a
 single-model policy the comparison is no more favorable: Prophet alone
 attains the best static point estimate, and we find no evidence that the
 full selection beats it ($p{=}0.09$; $p{=}0.07$ on the 111-series
@@ -1030,9 +1027,7 @@ The direction of the discrepancy matters more than its size. Prophet is
 the \emph{worst-ranked} candidate in cross-validation
 (Table~\ref{tab:aggmetrics}) and the best in the prospective window. The
 evidence the rule selects on is thus not merely noisy out of sample; on
-this panel it does not carry the ordering it was selected for. This is
-the same phenomenon quantified in Sect.~\ref{sec:results}, isolated to
-the selection mechanism itself.
+this panel it does not carry the ordering it was selected for.
 
 \paragraph{What does hold is revision.}
 The dynamic column separates the two claims. Against the frozen
@@ -1040,11 +1035,11 @@ baseline---the assignment locked before 2026---reselecting on
 prior weeks lowers the median from $32.7\%$ to $28.5\%$ on weeks the
 reselection never saw, and every pool tested improves on that baseline.
 The gain comes from revising, not from the pool: the full pool does not
-beat Prophet alone here either ($p{=}0.73$), and no leave-one-out
-variant improves on it at conventional levels---the best, without DeepAR
-($26.4\%$, $p{=}0.07$), is in any case selected after seeing the
-outcome. Only removing Prophet separates from the full pool ($29.4\%$,
-$p{=}0.02$), one nominal result among five comparisons. The framework's value on this panel is
+beat Prophet alone ($p{=}0.73$), and no leave-one-out pool significantly
+improves on the full pool. The lowest leave-one-out point estimate is
+obtained without DeepAR ($26.4\%$, $p{=}0.07$), but this minimum was not
+pre-specified. Removing Prophet is the sole nominal degradation relative
+to the full pool ($29.4\%$, $p{=}0.02$; five unadjusted comparisons). The framework's value on this panel is
 therefore not that four models beat one; it is that a mechanism with an
 auditable record detects when a frozen assignment has stopped
 transporting and revises it using only observations preceding the
@@ -1060,9 +1055,11 @@ should be trusted once the signal moves.
 
 Two findings should be read together. The ablation of
 Sect.~\ref{ssec:ablation} does not support the claim that the candidate
-pool improves accuracy here: no leave-one-out variant separates from the
-full pool, and a single-model policy matches it. What the same experiment
-does support is revision. Against the frozen baseline assignment,
+pool improves accuracy here: no leave-one-out variant improves on the
+full pool, and a single-model policy matches it. Removing Prophet is the
+only nominally different leave-one-out result, and its error is higher.
+What the same experiment does support is revision. Against the frozen
+baseline assignment,
 reselecting on prior weeks lowers the median error on weeks the
 reselection never saw, and the auditable log is what makes that possible:
 it records the evidence behind each choice, so a selection that has
