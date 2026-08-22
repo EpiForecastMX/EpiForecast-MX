@@ -437,3 +437,93 @@ def test_el_tamanio_se_reconoce_en_sus_tres_formas_reales():
     ):
         assert s.tamanios_del_paquete(texto), f"no detectado en: {texto.splitlines()[-1]}"
         assert s.propaga(texto, "0" * 64, 701684).splitlines()[-1].strip() == esperado
+
+
+# ---------------------------------------------------------------------------
+# Terminologia. Comentario de Grettel, 21-ago-2026: el abstract y la intro
+# usaban la sigla espanola CIE-10 ANTES de que el cuerpo introdujera la
+# inglesa, y las regiones socio-urbanas iban en espanol en un articulo en
+# ingles. Estas dos pruebas impiden la regresion.
+# ---------------------------------------------------------------------------
+
+REGIONES_EN = (
+    "high-density metropolitan",
+    "medium-density urban",
+    "vulnerable South--Southeast",
+    "rural/dispersed",
+)
+# el PDF imprime la raya, no los dos guiones del fuente
+REGIONES_EN_PDF = tuple(r.replace("--", "\u2013") for r in REGIONES_EN)
+REGIONES_ES = ("Metropolitana alta", "Urbana media", "Sur-Sureste vulnerable", "Rural / dispersa")
+
+
+def _plano(texto: str) -> str:
+    """Aplana saltos de linea y guiones de corte: una frase partida por el
+    salto escaparia al control, y eso ya paso una vez con la bibliografia."""
+    import re
+
+    texto = re.sub(
+        r"\\mbox\{([^}]*)\}", r"\1", texto
+    )  # \mbox protege del corte, no cambia el texto
+    return " ".join(re.sub(r"-\s*\n\s*", "", texto).split())
+
+
+def _pdf_plano() -> str:
+    import subprocess
+
+    pdf = RAIZ / "Congresos/MICAI/paper_camera_ready.pdf"
+    if not pdf.exists():
+        pytest.skip("no hay PDF compilado")
+    salida = subprocess.run(
+        ["pdftotext", "-layout", str(pdf), "-"], capture_output=True, text=True, check=False
+    ).stdout
+    return _plano(salida)
+
+
+def test_terminologia_icd_unificada():
+    tex = _plano(MASTER.read_text(encoding="utf-8"))
+
+    n = tex.count("CIE-10")
+    assert n == 1, f"CIE-10 aparece {n} veces en el .tex; debe ser 1"
+    assert "renders the classification acronym in Spanish as CIE-10" in tex
+
+    # el abstract se lee suelto: es un ambito propio, aparte del cuerpo
+    expansion = "International Classification of Diseases, 10th Revision (ICD-10)"
+    assert tex.count(expansion) == 2, (
+        f"la expansion aparece {tex.count(expansion)} veces; se esperan 2 "
+        "(abstract y primera mencion del cuerpo)"
+    )
+
+    for fragmento in (
+        "coded as F32 in the International",  # abstract
+        r"(ICD-10 code \textbf{F32})",  # 3.1
+        "Depression (ICD-10 code F32) temporal",  # pie de la Figura 1
+        "(ICD-10 F32) cases 2014-2026",  # ALT-TEXT: viaja en el ZIP
+        "additional ICD-10 codes",  # future work
+    ):
+        assert fragmento in tex, f"falta en el .tex: {fragmento}"
+
+    assert _pdf_plano().count("CIE-10") == 1, "el PDF impreso contradice al fuente"
+
+
+def test_regiones_traducidas_pero_los_datos_no():
+    """El articulo va en ingles. Los CSV publicados conservan los identificadores
+    espanoles: son reproducibles y el repo publico depende de ellos."""
+    tex = _plano(MASTER.read_text(encoding="utf-8"))
+    pdf = _pdf_plano()
+
+    for ingles in REGIONES_EN:
+        assert ingles in tex, f"falta la traduccion en el .tex: {ingles}"
+    # un compuesto ingles SI puede partirse por su propio guion ("high-/density"),
+    # a diferencia de un codigo como ICD-10: aqui la comparacion ignora guiones
+    pdf_sg = pdf.replace("-", "")
+    for ingles in REGIONES_EN_PDF:
+        assert ingles.replace("-", "") in pdf_sg, f"falta la traduccion en el PDF: {ingles}"
+    for espanol in REGIONES_ES:
+        assert espanol not in tex, f"etiqueta espanola viva en el .tex: {espanol}"
+        assert espanol not in pdf, f"etiqueta espanola visible en el PDF: {espanol}"
+
+    csv = RAIZ / "reports/paper_micai_2026/resultados/region_membership.csv"
+    datos = csv.read_text(encoding="utf-8")
+    for espanol in REGIONES_ES:
+        assert espanol in datos, f"el CSV perdio el identificador reproducible: {espanol}"

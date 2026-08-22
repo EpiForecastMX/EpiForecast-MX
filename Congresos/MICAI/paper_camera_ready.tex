@@ -139,9 +139,11 @@ Its candidate pool spans deliberately different inductive
 assumptions---a structural additive decomposition, a probabilistic
 recurrent network, and two tree-based hybrids. A transparent rule selects
 models using cross-validated accuracy, can reassign low-incidence series
-to a regional model, and records every decision in a justified log. We instantiate it for weekly depression
-incidence (CIE-10 F32) across Mexico's 32 federal entities, using public
-bulletins of the National Epidemiological Surveillance System (SINAVE),
+to a regional model, and records every decision in a justified log. We instantiate it for weekly
+incidence of depressive episodes coded as F32 in the International
+Classification of Diseases, 10th Revision (\mbox{ICD-10}), across Mexico's 32
+federal entities, using public bulletins of the National Epidemiological
+Surveillance System (SINAVE),
 and validate it twice: by rolling-origin cross-validation over a decade of
 weekly observations, and prospectively against the 2026 bulletins released
 after the training cutoff. A leave-one-model-out
@@ -167,8 +169,9 @@ conditions with heterogeneous behavior.
 Depression is a leading cause of disability worldwide and imposes a major
 burden on public health systems~\cite{santomauro2021}.
 In Mexico, the National Epidemiological Surveillance System (SINAVE)
-records about 150{,}000 new cases of depressive episode (CIE-10 F32)
-per year~\cite{sinave2026}. Those counts are \emph{retrospective}: without
+records about 150{,}000 new cases per year of depressive episode, coded
+F32 in the International Classification of Diseases, 10th Revision
+(\mbox{ICD-10})~\cite{sinave2026}. Those counts are \emph{retrospective}: without
 a prospective trajectory, surges in reported cases become visible only
 after they have occurred.
 
@@ -335,12 +338,11 @@ evaluation.
 \subsection{Data Characterization}
 \label{ssec:data}
 
-The study uses weekly case counts of \emph{depressive episode}, the
-category the WHO International Classification of Diseases, 10th revision
-(ICD-10) codes as \textbf{F32}: a first, single episode of depressed
+The study uses weekly case counts of \emph{depressive episode}
+(\mbox{ICD-10} code \textbf{F32}): a first, single episode of depressed
 mood with loss of interest and reduced energy, graded mild, moderate, or
 severe, and distinct from recurrent depressive disorder (F33). SINAVE
-labels it with the Spanish acronym of the same classification, CIE-10.
+renders the classification acronym in Spanish as \mbox{CIE-10}.
 Counts are as reported in the SINAVE bulletin
 by the Direcci\'on General de
 Epidemiolog\'ia~\cite{sinave2026}, Mexico's consolidated public health
@@ -356,12 +358,12 @@ week~1 of 2014 was unavailable in the retrieved archive, so 2014
 contributes 52 weeks; 2020 and 2025 each contain 53 epidemiological
 weeks, giving $626 = 10{\times}52 + 2{\times}53$. Records are
 disaggregated by sex (women and men) and aggregated into an overall
-total (general). We analyze the 32 federal entities,
-four socio-urban regions defined by population density and INEGI
-demographic indicators (\emph{Metropolitana alta}, \emph{Urbana
-media}, \emph{Sur-Sureste vulnerable}, \emph{Rural / dispersa}), and a
-national series, yielding $37 \times 3 = 111$ series--stratum
-combinations.
+total (general). We analyze the 32 federal entities and four socio-urban
+regions---high-density metropolitan, medium-density urban, vulnerable
+South--Southeast, and rural/dispersed---defined from population density
+and INEGI demographic indicators. The released files retain the original
+Spanish labels. Together with the national series, this yields
+$37 \times 3 = 111$ series--stratum combinations.
 
 \paragraph{Temporal and seasonal structure.}
 Figure~\ref{fig:temporal} shows the national series. Three regimes are
@@ -374,9 +376,9 @@ weeks 8 and 20 (February--May).
 
 \begin{figure}[t]
 \centering
-% ALT-TEXT (accessibility / proofing): Two-panel chart: (a) annual reported depression (CIE-10 F32) cases 2014-2026 as bars; (b) weekly national series with the COVID-19 disruption window shaded.
+% ALT-TEXT (accessibility / proofing): Two-panel chart: (a) annual reported depression (ICD-10 F32) cases 2014-2026 as bars; (b) weekly national series with the COVID-19 disruption window shaded.
 \includegraphics[width=0.80\textwidth]{fig01_temporal_distribution.pdf}
-\caption{Depression (CIE-10 F32) temporal distribution. (a) Annual
+\caption{Depression (\mbox{ICD-10} code F32) temporal distribution. (a) Annual
 reported cases 2014--2026 (2026 is year-to-date). (b) Weekly national
 series; the COVID-19 disruption window is highlighted in gold. The
 post-2022 level shift and the recurring February--May peaks motivate
@@ -1145,7 +1147,7 @@ forecasting community-level incidence, and transfer to a system with
 different case-ascertainment rules must be demonstrated, not assumed.
 
 \paragraph{Future work.}
-We plan to extend the framework to additional CIE-10 codes in the
+We plan to extend the framework to additional \mbox{ICD-10} codes in the
 SINAVE catalog, to report a full-year per-state prospective evaluation,
 to add tuned SARIMA and N-BEATS/N-HiTS baselines, and to
 pursue external validation. A further direction is to make the
