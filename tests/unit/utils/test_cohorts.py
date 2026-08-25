@@ -41,3 +41,16 @@ class TestFilterNeuro:
         df = pd.DataFrame({"pad": ["Dengue", "Parkinson"], "x": [1, 2]})
         out = filter_neuro(df, col="pad")
         assert out["pad"].tolist() == ["Parkinson"]
+
+    def test_columna_en_minuscula_si_filtra(self):
+        """`tabla_333` y `produccion_dengue.csv` escriben la columna en minúscula.
+
+        Con la comparación exacta previa, esta llamada devolvía el frame ENTERO sin
+        filtrar y sin avisar. Ese no-op es el origen del 435 que publicaba el sitio.
+        """
+        df = pd.DataFrame(
+            {"padecimiento": ["Depresion", "Parkinson", "Alzheimer", "Dengue"], "x": [1, 2, 3, 4]}
+        )
+        out = filter_neuro(df)
+        assert len(out) == 3
+        assert "Dengue" not in out["padecimiento"].tolist()

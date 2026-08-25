@@ -77,9 +77,20 @@ def _normalize_keys(obj: Any) -> Any:
 
 
 def build_prod_models(cache: ProjectDataCache) -> list[dict]:
-    """Exporta los 333 modelos de produccion como lista de dicts."""
+    """Exporta las 333 series neuro de producción como lista de dicts.
+
+    El filtro por cohorte faltaba: el docstring prometía 333 y se exportaban las **435**
+    filas del workbook, incluidas las 102 de Dengue —con 3 nacionales duplicados y 13
+    selecciones de Ensemble/Stacking que Dengue no admite—. Ese es el `dengue n=102` que
+    llegó al `knowledge.json` publicado. Dengue viaja en su propia sección
+    (`build_dengue_section`), con su selector y sus motores.
+    Ver docs/CONTRATO_VOCABULARIO_CIFRAS.md.
+    """
     prod = cache.prod_models
     if prod is None or prod.empty:
+        return []
+    prod = filter_neuro(prod)
+    if prod.empty:
         return []
 
     cols = [

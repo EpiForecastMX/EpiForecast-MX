@@ -333,8 +333,8 @@ parkinson,Parkinson,neuro,region_Urbana media,hombres,DeepAR,tabla_333
 parkinson,Parkinson,neuro,region_Urbana media,mujeres,DeepAR,tabla_333
 parkinson,Parkinson,neuro,region_Urbana media,general,DeepAR,tabla_333
 dengue,Dengue,dengue,Aguascalientes,general,NBGLM,produccion_dengue
-dengue,Dengue,dengue,Aguascalientes,hombres,NBGLM,produccion_dengue
-dengue,Dengue,dengue,Aguascalientes,mujeres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Aguascalientes,hombres,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Aguascalientes,mujeres,NBGLM,produccion_dengue
 dengue,Dengue,dengue,Baja California,general,Prophet,produccion_dengue
 dengue,Dengue,dengue,Baja California,hombres,DeepAR,produccion_dengue
 dengue,Dengue,dengue,Baja California,mujeres,DeepAR,produccion_dengue
@@ -342,7 +342,7 @@ dengue,Dengue,dengue,Baja California Sur,general,NBGLM,produccion_dengue
 dengue,Dengue,dengue,Baja California Sur,hombres,NBGLM,produccion_dengue
 dengue,Dengue,dengue,Baja California Sur,mujeres,NBGLM,produccion_dengue
 dengue,Dengue,dengue,Campeche,general,NBGLM,produccion_dengue
-dengue,Dengue,dengue,Campeche,hombres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Campeche,hombres,NBGLM,produccion_dengue
 dengue,Dengue,dengue,Campeche,mujeres,DeepAR,produccion_dengue
 dengue,Dengue,dengue,Chiapas,general,Prophet,produccion_dengue
 dengue,Dengue,dengue,Chiapas,hombres,Prophet,produccion_dengue
@@ -357,7 +357,7 @@ dengue,Dengue,dengue,Coahuila,general,Prophet,produccion_dengue
 dengue,Dengue,dengue,Coahuila,hombres,Prophet,produccion_dengue
 dengue,Dengue,dengue,Coahuila,mujeres,Prophet,produccion_dengue
 dengue,Dengue,dengue,Colima,general,Prophet,produccion_dengue
-dengue,Dengue,dengue,Colima,hombres,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Colima,hombres,Prophet,produccion_dengue
 dengue,Dengue,dengue,Colima,mujeres,Prophet,produccion_dengue
 dengue,Dengue,dengue,Durango,general,DeepAR,produccion_dengue
 dengue,Dengue,dengue,Durango,hombres,DeepAR,produccion_dengue
@@ -371,29 +371,29 @@ dengue,Dengue,dengue,Guerrero,mujeres,Prophet,produccion_dengue
 dengue,Dengue,dengue,Hidalgo,general,Prophet,produccion_dengue
 dengue,Dengue,dengue,Hidalgo,hombres,DeepAR,produccion_dengue
 dengue,Dengue,dengue,Hidalgo,mujeres,DeepAR,produccion_dengue
-dengue,Dengue,dengue,Jalisco,general,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Jalisco,general,Prophet,produccion_dengue
 dengue,Dengue,dengue,Jalisco,hombres,NBGLM,produccion_dengue
 dengue,Dengue,dengue,Jalisco,mujeres,Prophet,produccion_dengue
 dengue,Dengue,dengue,Michoacán,general,DeepAR,produccion_dengue
 dengue,Dengue,dengue,Michoacán,hombres,NBGLM,produccion_dengue
 dengue,Dengue,dengue,Michoacán,mujeres,Prophet,produccion_dengue
-dengue,Dengue,dengue,Morelos,general,Prophet,produccion_dengue
-dengue,Dengue,dengue,Morelos,hombres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Morelos,general,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Morelos,hombres,DeepAR,produccion_dengue
 dengue,Dengue,dengue,Morelos,mujeres,Prophet,produccion_dengue
-dengue,Dengue,dengue,México,general,DeepAR,produccion_dengue
+dengue,Dengue,dengue,México,general,Prophet,produccion_dengue
 dengue,Dengue,dengue,México,hombres,DeepAR,produccion_dengue
-dengue,Dengue,dengue,México,mujeres,DeepAR,produccion_dengue
+dengue,Dengue,dengue,México,mujeres,Prophet,produccion_dengue
 dengue,Dengue,dengue,Nacional,general,Prophet,produccion_dengue
 dengue,Dengue,dengue,Nacional,hombres,Prophet,produccion_dengue
 dengue,Dengue,dengue,Nacional,mujeres,Prophet,produccion_dengue
 dengue,Dengue,dengue,Nayarit,general,NBGLM,produccion_dengue
 dengue,Dengue,dengue,Nayarit,hombres,Prophet,produccion_dengue
 dengue,Dengue,dengue,Nayarit,mujeres,NBGLM,produccion_dengue
-dengue,Dengue,dengue,Nuevo León,general,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Nuevo León,general,NBGLM,produccion_dengue
 dengue,Dengue,dengue,Nuevo León,hombres,DeepAR,produccion_dengue
 dengue,Dengue,dengue,Nuevo León,mujeres,Prophet,produccion_dengue
 dengue,Dengue,dengue,Oaxaca,general,Prophet,produccion_dengue
-dengue,Dengue,dengue,Oaxaca,hombres,DeepAR,produccion_dengue
+dengue,Dengue,dengue,Oaxaca,hombres,Prophet,produccion_dengue
 dengue,Dengue,dengue,Oaxaca,mujeres,Prophet,produccion_dengue
 dengue,Dengue,dengue,Puebla,general,Prophet,produccion_dengue
 dengue,Dengue,dengue,Puebla,hombres,DeepAR,produccion_dengue
@@ -406,8 +406,8 @@ dengue,Dengue,dengue,Quintana Roo,hombres,DeepAR,produccion_dengue
 dengue,Dengue,dengue,Quintana Roo,mujeres,NBGLM,produccion_dengue
 dengue,Dengue,dengue,San Luis Potosí,general,NBGLM,produccion_dengue
 dengue,Dengue,dengue,San Luis Potosí,hombres,DeepAR,produccion_dengue
-dengue,Dengue,dengue,San Luis Potosí,mujeres,DeepAR,produccion_dengue
-dengue,Dengue,dengue,Sinaloa,general,NBGLM,produccion_dengue
+dengue,Dengue,dengue,San Luis Potosí,mujeres,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Sinaloa,general,Prophet,produccion_dengue
 dengue,Dengue,dengue,Sinaloa,hombres,NBGLM,produccion_dengue
 dengue,Dengue,dengue,Sinaloa,mujeres,NBGLM,produccion_dengue
 dengue,Dengue,dengue,Sonora,general,NBGLM,produccion_dengue
@@ -417,14 +417,14 @@ dengue,Dengue,dengue,Tabasco,general,Prophet,produccion_dengue
 dengue,Dengue,dengue,Tabasco,hombres,Prophet,produccion_dengue
 dengue,Dengue,dengue,Tabasco,mujeres,NBGLM,produccion_dengue
 dengue,Dengue,dengue,Tamaulipas,general,NBGLM,produccion_dengue
-dengue,Dengue,dengue,Tamaulipas,hombres,NBGLM,produccion_dengue
-dengue,Dengue,dengue,Tamaulipas,mujeres,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Tamaulipas,hombres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Tamaulipas,mujeres,Prophet,produccion_dengue
 dengue,Dengue,dengue,Tlaxcala,general,DeepAR,produccion_dengue
 dengue,Dengue,dengue,Tlaxcala,hombres,DeepAR,produccion_dengue
 dengue,Dengue,dengue,Tlaxcala,mujeres,NBGLM,produccion_dengue
-dengue,Dengue,dengue,Veracruz,general,NBGLM,produccion_dengue
-dengue,Dengue,dengue,Veracruz,hombres,NBGLM,produccion_dengue
-dengue,Dengue,dengue,Veracruz,mujeres,NBGLM,produccion_dengue
+dengue,Dengue,dengue,Veracruz,general,Prophet,produccion_dengue
+dengue,Dengue,dengue,Veracruz,hombres,Prophet,produccion_dengue
+dengue,Dengue,dengue,Veracruz,mujeres,Prophet,produccion_dengue
 dengue,Dengue,dengue,Yucatán,general,Prophet,produccion_dengue
 dengue,Dengue,dengue,Yucatán,hombres,DeepAR,produccion_dengue
 dengue,Dengue,dengue,Yucatán,mujeres,NBGLM,produccion_dengue
