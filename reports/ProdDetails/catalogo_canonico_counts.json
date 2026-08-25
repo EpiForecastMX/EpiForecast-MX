@@ -13,9 +13,9 @@
   },
   "motor_dist": {
     "dengue": {
-      "DeepAR": 30,
-      "NBGLM": 30,
-      "Prophet": 39
+      "DeepAR": 27,
+      "NBGLM": 26,
+      "Prophet": 46
     },
     "neuro": {
       "DeepAR": 98,

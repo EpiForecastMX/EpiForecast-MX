@@ -13,6 +13,26 @@ from .data_cache import ProjectDataCache
 
 logger = logging.getLogger(__name__)
 
+
+def _solo_neuro(df: Any) -> Any:
+    """Recorta el workbook de producción a la cohorte neuro (333 series).
+
+    Se apoya en ``epiforecast.utils.cohorts.filter_neuro``, que lee el registry. Si el
+    paquete no está disponible (la consola EPI puede correr sin él), cae a filtrar por la
+    columna ``padecimiento`` con los tres nombres neuro, que es el mismo resultado para
+    los padecimientos vigentes. Lo que NO se hace nunca es devolver el frame entero: eso
+    es lo que producía el 435.
+    """
+    try:
+        from epiforecast.utils.cohorts import filter_neuro
+
+        return filter_neuro(df)
+    except Exception:  # pragma: no cover - ruta de degradación
+        if "padecimiento" in getattr(df, "columns", []):
+            return df[df["padecimiento"].isin(["Depresion", "Parkinson", "Alzheimer"])]
+        return df
+
+
 # ---------------------------------------------------------------------------
 # Normalizacion de texto
 # ---------------------------------------------------------------------------
@@ -220,9 +240,24 @@ class KnowledgeBase:
             self._stats = stats
             return stats
 
-        df = prod.copy()
+        # Este bloque describe la COHORTE NEURO y sólo la neuro. Antes tomaba el workbook
+        # entero, que arrastra 102 filas de Dengue con 3 nacionales duplicados (una fila
+        # por motor) y 13 selecciones de Ensemble/Stacking que Dengue no admite. De ahí
+        # salían el 435 que publicaba el sitio, el «145 por sexo», el «15 nacionales» y
+        # una distribución de motores que mezclaba dos cohortes con motores distintos.
+        #
+        # Dengue tiene su propia sección (`build_dengue_section`) porque sus métricas y su
+        # selector no comparten estructura; y los totales de plataforma (432 series, 444
+        # gráficos) salen del catálogo canónico, no de aquí.
+        # Ver docs/CONTRATO_VOCABULARIO_CIFRAS.md.
+        df = _solo_neuro(prod).copy()
 
-        # --- GLOBAL ---
+        if df.empty:
+            self._stats = stats
+            return stats
+
+        # --- GLOBAL (cohorte neuro) ---
+        stats["cohorte"] = "neuro"
         stats["total_modelos"] = len(df)
         stats["modelo_activo"] = self.cache.modelo_activo
 

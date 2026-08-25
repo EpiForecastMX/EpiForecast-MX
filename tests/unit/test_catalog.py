@@ -68,3 +68,80 @@ def test_diagnostico_documenta_dengue_stale(catalog_data):
     assert d.get("dengue_en_tabla_333") == 102
     assert d.get("nacionales_duplicados") == 3
     assert d.get("tiene_nbglm") is False
+
+
+# --------------------------------------------------------------------------------------
+# Gate de vocabulario público (2026-08-24). Ver docs/CONTRATO_VOCABULARIO_CIFRAS.md.
+# Añadido tras encontrar que el sitio publicado respondía 435 donde las diapositivas
+# decían 333 y el manifiesto decía 432.
+# --------------------------------------------------------------------------------------
+
+
+def test_dengue_incluye_nbglm(catalog_data):
+    """No basta con que los motores sean elegibles: NBGLM tiene que estar.
+
+    El Dengue de `tabla_333` también pasa «solo motores elegibles» si se le quitan
+    Ensemble y Stacking, y aun así sería la selección vieja. La huella de que el
+    catálogo viene del selector vigente es la presencia de NBGLM.
+    """
+    df, _ = catalog_data
+    den_engines = set(df[df["cohorte"] == "dengue"]["motor_productivo"])
+    assert "NBGLM" in den_engines
+    assert not ({"Ensemble", "Stacking"} & den_engines)
+
+
+def test_por_sexo_es_144_cada_uno(catalog_data):
+    """432 / 3. Si sale 145, alguien volvió a contar desde la tabla inflada."""
+    df, _ = catalog_data
+    assert df["sexo"].value_counts().to_dict() == {
+        "hombres": 144,
+        "mujeres": 144,
+        "general": 144,
+    }
+
+
+def test_nacional_es_12_y_no_15(catalog_data):
+    """9 neuro (3 padecimientos × 3 sexos) + 3 dengue.
+
+    El 15 del catálogo inflado son estos 12 más las 3 series `Dengue · Nacional`
+    contadas una segunda vez, por el otro motor.
+    """
+    df, _ = catalog_data
+    nac = df[df["entidad"].astype(str).str.lower().str.contains("nacional", na=False)]
+    assert len(nac) == 12
+    assert nac["cohorte"].value_counts().to_dict() == {"neuro": 9, "dengue": 3}
+
+
+def test_distribucion_de_motores_suma_432(catalog_data):
+    """Un desglose por motor es una distribución: siempre suma el total de su cohorte."""
+    _, counts = catalog_data
+    assert sum(counts.motor_dist["neuro"].values()) == 333
+    assert sum(counts.motor_dist["dengue"].values()) == 99
+    total = sum(sum(v.values()) for v in counts.motor_dist.values())
+    assert total == counts.production_series_count == 432
+
+
+def test_manifiesto_en_disco_no_esta_rancio(catalog_data):
+    """El manifiesto publicado tiene que decir lo mismo que las fuentes de hoy.
+
+    Este control existe por un caso real: el 24-ago-2026 el
+    `catalogo_canonico_counts.json` vigente se había construido el 18-ago a las 15:31 y
+    `produccion_dengue.csv` se regeneró ese mismo día a las 22:30. El manifiesto seguía
+    publicando `DeepAR 30 · NBGLM 30 · Prophet 39` cuando la distribución real era
+    `Prophet 46 · DeepAR 27 · NBGLM 26`. **Los totales coincidían**, así que ningún
+    conteo lo delataba: sólo el desglose.
+    """
+    import json
+
+    _, counts = catalog_data
+    ruta = catalog._proddetails_dir() / "catalogo_canonico_counts.json"
+    if not ruta.exists():
+        pytest.skip("no hay manifiesto en disco; se genera con scripts.build_catalogo_canonico")
+    disco = json.loads(ruta.read_text(encoding="utf-8"))
+    assert disco["production_series_count"] == counts.production_series_count
+    assert disco["gallery_item_count"] == counts.gallery_item_count
+    assert disco["por_cohorte"] == counts.por_cohorte
+    assert disco["motor_dist"] == counts.motor_dist, (
+        "el manifiesto en disco quedó más viejo que sus fuentes: "
+        "corre `python -m scripts.build_catalogo_canonico`"
+    )

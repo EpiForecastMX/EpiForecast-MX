@@ -35,6 +35,7 @@ import unicodedata
 
 import pandas as pd
 
+from epiforecast.utils.cohorts import filter_neuro
 from epiforecast.utils.config import logger
 
 # ---------------------------------------------------------------------------
@@ -127,7 +128,11 @@ def load_neuro() -> pd.DataFrame:
     Cada fila representa una serie con su MOTOR PRODUCTIVO ya elegido; las metricas
     ``*_prod`` son las de ese motor. Las regiones agregadas vienen como ``region_<nombre>``.
     """
-    df = pd.read_excel(TABLA_NEURO)
+    # Filtro de cohorte: la tabla trae 435 filas (333 neuro + 102 de Dengue stale, con 3
+    # nacionales duplicados por motor). Sin esto, `compute_neuro_stats` cuenta 435 y
+    # `conteo_tipo["nacional"]` sale 15 en vez de 12; así llegó el 435 a
+    # reporte_resultados.html. Ver docs/CONTRATO_VOCABULARIO_CIFRAS.md.
+    df = filter_neuro(pd.read_excel(TABLA_NEURO))
     out = pd.DataFrame()
     out["meta_padecimiento"] = df["padecimiento"].map(lambda p: PAD_DISPLAY.get(str(p), str(p)))
     out["meta_modo"] = df["sexo"].astype(str)
