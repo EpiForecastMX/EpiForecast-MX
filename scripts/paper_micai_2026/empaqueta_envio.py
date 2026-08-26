@@ -26,6 +26,10 @@ import zipfile
 RAIZ = Path(__file__).resolve().parents[2]
 MICAI = RAIZ / "Congresos/MICAI"
 MASTER = MICAI / "paper_camera_ready.tex"
+# El paper ID va a TRES digitos con cero a la izquierda: la guia de MICAI lo ejemplifica
+# asi ("023.zip"), y ese mismo NUMERO nombra el .tex y el .pdf de dentro del ZIP.
+# No se toca: pdfTeX deriva el /ID del trailer del nombre del fichero, asi que
+# cambiarlo cambia el PDF y con el el sello.
 NUMERO = "012"
 DESTINO = MICAI / "Envio" / f"{NUMERO}.zip"
 SELLO = MICAI / "Envio" / "HASH_ENVIO.txt"
