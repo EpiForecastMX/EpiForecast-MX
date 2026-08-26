@@ -3,8 +3,12 @@
 > Un solo lugar para lo que quedó abierto en los dos carriles de estos días: la
 > presentación de CALASS y el arreglo de las cifras públicas. Nada de esto bloquea al otro.
 >
-> Estado de fondo: **el mazo está cerrado y listo para proyectarse**; el hotfix del sitio
-> está **en draft, con preview verde, sin merge y sin producción**.
+> Estado de fondo: **el mazo está cerrado y listo para proyectarse**; el arreglo de las cifras
+> está **mergeado y en producción desde el 25-ago**.
+>
+> **Corregido el 25-ago tras la auditoría externa:** este documento se commiteó a `main` con su
+> texto anterior, que ya era falso — decía que producción respondía 435 y que había tres PR en
+> borrador. Los seis PR del Dashboard y los tres de MX están mergeados.
 
 ---
 
@@ -33,20 +37,31 @@ Paquete vigente: `Congresos/CALASS2026/USB/` — 15 láminas, guion de 14.5 min.
 
 ---
 
-## 2. Dashboard · tres PR en borrador, ninguno mergeado
+## 2. Dashboard · desplegado
 
-Producción sigue intacta: responde 435, que es la prueba de que no se ha desplegado nada.
+**Producción dice 432.** Verificado contra el sitio en vivo: la portada, el EpiBot y
+`knowledge.json` están dentro del contrato, y una auditoría externa lo confirmó de forma
+independiente el 25-ago.
 
-| # | Rama | Qué hace |
+| # | Qué hizo | Estado |
 | --- | --- | --- |
-| [#1](https://github.com/EpiForecastMX/EpiForecast-IMSS-Dashboard/pull/1) | `hotfix/cifras-432` | 435 → 432 en toda la superficie pública |
-| [#2](https://github.com/EpiForecastMX/EpiForecast-IMSS-Dashboard/pull/2) | `fix/ortografia-entidades` | las vistas dejan de enseñar «Nuevo Leon» |
-| [#3](https://github.com/EpiForecastMX/EpiForecast-IMSS-Dashboard/pull/3) | `chore/ignorar-artefactos-locales` | ignora los 6 MB que un `add -A` barrería |
+| #1 | 435 → 432 en toda la superficie pública | mergeado |
+| #2 | las vistas dejan de enseñar «Nuevo Leon» | mergeado |
+| #3 | ignora los 6 MB que un `add -A` barrería | mergeado |
+| #4 | las diez vistas apuntan al workbook propio de Tableau | mergeado |
+| #5 | la fecha de actualización decía marzo | mergeado |
+| #6 | README al día | mergeado |
 
 En MX el hotfix vive en `hotfix/cifras-432` ([PR #3 de MX](https://github.com/EpiForecastMX/EpiForecast-MX/pull/3)).
 Contrato normativo: `docs/CONTRATO_VOCABULARIO_CIFRAS.md`.
 
-### ⚠️ Antes de desplegar: el número de caché
+### El número de caché (resuelto)
+
+Se mergearon las dos ramas **antes** de desplegar, así que `app.js?v=137` cubrió ambos cambios.
+Producción sirve v137, verificado. La nota original se conserva abajo porque el razonamiento
+sigue valiendo para el próximo despliegue.
+
+### ⚠️ La trampa, para la próxima vez: el número de caché
 
 `hotfix/cifras-432` y `fix/ortografia-entidades` **salen las dos de `main` (v136) y las dos
 dejan `app.js?v=137`**. Git no marca conflicto —es el mismo cambio textual—, así que el
@@ -60,9 +75,16 @@ abierta.
 
 ### Lo que falta decidir
 
-1. **¿Se promueven a producción?** Requiere salir de borrador, mergear y desplegar. Ninguna
-   de las tres cosas está autorizada todavía.
-2. **El árbol sucio de `paper/micai-2026-camera-ready` (MX).** **Corrección importante: la
+1. ~~¿Se promueven a producción?~~ **Hecho el 25-ago**, autorizado por el usuario.
+2. ~~El árbol sucio de `paper/micai-2026-camera-ready`.~~ **Resuelto el 25-ago**: se verificó
+   archivo por archivo, se rescataron los dos únicos que eran trabajo real (`build_tableau.py`
+   con `fecha_boletin`, y `empaqueta_envio.py`) y la rama se mergeó a `main` en el PR #6.
+3. **El gate de cifras sólo mira `knowledge.json`.** Hallazgo de la auditoría externa del
+   25-ago: `epibot/scripts/cifras_verify.mjs` abre ese archivo y ninguno más, así que **no puede
+   atrapar un 435 reintroducido en `index.html`, `bento.json` o `EpiDashboard.html`**, que son
+   las superficies que ve el público. El contrato se cumple hoy, pero no está defendido.
+   Ampliarlo es tarea posterior al congreso.
+4. **Nota histórica del árbol sucio (se conserva el razonamiento).** **Corrección importante: la
    versión anterior de esta nota decía que los nueve archivos estaban duplicados y que se
    limpiaran con `git checkout --`. Se verificó archivo por archivo y no era exacto.** De
    los nueve, sólo cuatro son idénticos al hotfix; los otros cinco difieren —aunque **sólo
