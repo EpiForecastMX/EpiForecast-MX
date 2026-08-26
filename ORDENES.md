@@ -11,17 +11,43 @@ cd /Users/haowei/Documents/Integrador/EpiForecast-MX
 
 ## 1 · Presentación CALASS 2026
 
-### Reconstruir el mazo y los PDF
+### Reconstruir el mazo — EL FLUJO REAL, en este orden
+
+> Cada paso existe porque saltárselo ya produjo un fallo. `imprime_documentos.py` **sólo copia**
+> los PDF de las láminas: no los construye. Si tocas `construye.py` y no corres Chrome, el
+> sellado usará el PDF anterior — y el conteo de páginas no lo delata, porque el viejo también
+> tiene 15. Hoy la guardia se niega a sellar y te recuerda el comando; antes, no.
 
 ```bash
-cd Congresos/CALASS2026/diapositivas
-../../.venv/bin/python construye.py
+cd EpiForecast-MX/Congresos/CALASS2026
 
+# 1 · Figuras, si cambió su fuente o los datos
+python3 figuras/fig_mapa_motores.py            # lámina 8 · «Modelo ganador»
+python3 figuras/captura_comparador.py          # lámina 6 · recaptura del sitio, con gate de tilde
+python3 figuras/fig_validacion_prospectiva.py  # lámina 10
+
+# 2 · HTML de las láminas
+cd diapositivas && python3 construye.py && cd ..
+
+# 3 · PDF canónicos — ESTE PASO ES APARTE Y SE OLVIDA
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
-for i in fr es; do
+cd diapositivas && for i in fr es; do
   "$CHROME" --headless --disable-gpu --no-pdf-header-footer \
-    --print-to-pdf="calass2026_$i.pdf" "file://$PWD/calass2026_$i.html"
-done
+    --print-to-pdf="calass2026_$i.pdf" --virtual-time-budget=20000 \
+    "file://$PWD/calass2026_$i.html"; done && cd ..
+
+# 4 · Sellado completo: mazos, guion, preguntas, respaldos, tarjetas, LEEME y HASHES
+python3 imprime_documentos.py
+
+# 5 · Validar. Sin verde, no se lleva a ninguna memoria.
+python3 valida.py
+bash USB/verifica.command      # ahora devuelve código 1 si algo no cuadra
+```
+
+**Y míralo.** Los gates no ven maquetación: renderiza y observa antes de sellar.
+
+```bash
+pdftoppm -png -r 70 USB/1_PRESENTACION_fr_PROYECTAR.pdf /tmp/rev
 ```
 
 ### Regenerar las figuras
