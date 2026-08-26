@@ -625,7 +625,19 @@ def make_scaffold(real_long: pd.DataFrame, fact_forecast: pd.DataFrame) -> pd.Da
         .sort_values(SCAFFOLD_COLS)
         .reset_index(drop=True)
     )
-    logger.info("Scaffold construido -> filas: {}", len(scaffold))
+
+    # `ds` viene del pipeline, que resta una semana a la del boletin
+    # (`transformer.py::_ajusta_semanas`). Tableau deriva la semana de `ds` y por eso
+    # llevaba meses rotulando la semana N del boletin como N-1: el tablero decia 30 donde
+    # el EpiBot, el portal y la presentacion decian 31.
+    #
+    # Se corrige con una columna de PRESENTACION, no moviendo `ds`, que es la llave que
+    # une scaffold con real y con forecast. Vive solo en scaffold, que es de donde el
+    # modelo relacional toma sus dimensiones y filtros (ver la cabecera de este archivo);
+    # repetirla en las otras hojas crearia columnas temporales ambiguas.
+    scaffold["fecha_boletin"] = pd.to_datetime(scaffold["ds"]) + pd.Timedelta(weeks=1)
+
+    logger.info("Scaffold construido -> filas: {} | fecha_boletin = ds + 7 dias", len(scaffold))
     return scaffold
 
 
