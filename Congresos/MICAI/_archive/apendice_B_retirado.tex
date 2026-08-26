@@ -1,0 +1,50 @@
+% =====================================================================
+\section{Per-State Out-of-Sample Evaluation (2026)}
+\label{app:perstate}
+% =====================================================================
+Table~\ref{tab:perstate} reports the per-entity out-of-sample 2026
+\smape\ of the four models (general stratum); its wide spread---genuine
+state heterogeneity compounded by \smape\ inflation for sparse
+counts---is what the per-series, revisable rule is built to absorb. It
+also explains why no single model dominates the panel, rather than
+indicating a shortcoming of any individual forecaster.
+
+\begin{table}[t]
+\centering
+\caption{Per-state out-of-sample 2026 \smape\ (\%), general stratum,
+weeks W02--W18 (Dpr~DeepAR, Prp~Prophet, Ens~Ensemble, and Stk~Stacking);
+\textbf{bold} indicates each series' lowest error. Cross-validation
+selects DeepAR for all 32 entities (Ensemble nationally), yet out of
+sample, it is lowest in only 10 of the 33 series. Medians: DeepAR
+30.0, Prophet 25.8, Ensemble 27.0, Stacking 30.2 (per-cell values are rounded to integers for display; per-column medians are computed on the unrounded \smape). The bold entry
+indicates the lowest out-of-sample error for that series; the held-out
+test in Sect.~\ref{sec:validation}, scored on \emph{unused} weeks,
+shows that reassignment generalizes.}
+\label{tab:perstate}
+\setlength{\tabcolsep}{4pt}
+\renewcommand{\arraystretch}{1.05}
+\footnotesize
+\begin{tabular}{l rrrr @{\hskip 5mm} l rrrr}
+\toprule
+\textbf{Entidad} & \textbf{Dpr} & \textbf{Prp} & \textbf{Ens} & \textbf{Stk} & \textbf{Entidad} & \textbf{Dpr} & \textbf{Prp} & \textbf{Ens} & \textbf{Stk}\\
+\midrule
+Aguascalientes & 26 & \textbf{20} & 25 & 21 & Nayarit & \textbf{30} & 34 & 38 & 38\\
+Baja California & 20 & \textbf{8} & 9 & 12 & Nuevo Le\'on & 31 & 38 & \textbf{30} & 37\\
+Baja Calif.\ Sur & 39 & 49 & 40 & \textbf{37} & Oaxaca & \textbf{22} & 26 & 31 & 30\\
+Campeche & 37 & 26 & 26 & \textbf{25} & Puebla & 46 & \textbf{37} & 53 & 59\\
+Chiapas & 35 & 35 & \textbf{33} & 37 & Quer\'etaro & 43 & \textbf{32} & 33 & 35\\
+Chihuahua & \textbf{15} & 17 & 16 & \textbf{15} & Quintana Roo & \textbf{28} & 35 & \textbf{28} & 31\\
+Ciudad de M\'exico & 26 & \textbf{20} & 24 & 39 & San Luis Potos\'i & 34 & \textbf{32} & 36 & 49\\
+Coahuila & 36 & \textbf{23} & 24 & 30 & Sinaloa & 31 & \textbf{25} & 35 & 46\\
+Colima & \textbf{30} & 47 & 32 & 72 & Sonora & 23 & 21 & 22 & \textbf{20}\\
+Durango & 34 & 31 & \textbf{27} & 29 & Tabasco & \textbf{47} & 64 & 52 & 61\\
+Estado de M\'exico & 24 & 23 & \textbf{19} & 33 & Tamaulipas & 27 & \textbf{23} & 25 & 30\\
+Guanajuato & \textbf{21} & 39 & 42 & 36 & Tlaxcala & \textbf{44} & 55 & 53 & 72\\
+Guerrero & 40 & 25 & 25 & \textbf{23} & Veracruz & 26 & 28 & 26 & \textbf{22}\\
+Hidalgo & 23 & \textbf{20} & 22 & 23 & Yucat\'an & 31 & 25 & 37 & \textbf{24}\\
+Jalisco & 21 & \textbf{14} & 15 & 16 & Zacatecas & \textbf{16} & 23 & 21 & 23\\
+Michoac\'an & \textbf{40} & 63 & 68 & 92 & \textbf{Nacional} & 16 & \textbf{13} & \textbf{13} & 18\\
+Morelos & 23 & \textbf{21} & 24 & 24 &  & & & & \\
+\bottomrule
+\end{tabular}
+\end{table}

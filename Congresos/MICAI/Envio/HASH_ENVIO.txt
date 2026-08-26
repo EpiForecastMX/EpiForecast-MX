@@ -1,0 +1,20 @@
+Paquete camera-ready MICAI 2026 · ponencia #12
+
+  sha256  beea60062b4a1a7ec6adda3a0cf89bac82d7112a9f31dc4784d229dd8b6cd5ed
+  bytes   700995
+
+Este archivo lo escribe empaqueta_envio.py; no se edita a mano.
+
+El PDF se compila con fecha fija (SOURCE_DATE_EPOCH) y el ZIP se arma con
+fecha y orden fijos, asi que el hash identifica el CONTENIDO: reconstruirlo
+desde las mismas fuentes vuelve a dar exactamente este valor. Si no coincide,
+algo cambio en el paper, en las figuras o en la clase.
+
+Reconstruir:
+  Congresos/MICAI/compila.sh
+  .venv/bin/python scripts/paper_micai_2026/empaqueta_envio.py
+
+Comprobar que los documentos declaran este mismo valor:
+  .venv/bin/python scripts/paper_micai_2026/sello_sincronizado.py
+
+Al subir a CMT, guarda el comprobante junto a este archivo.

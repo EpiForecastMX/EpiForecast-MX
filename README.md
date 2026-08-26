@@ -217,7 +217,7 @@ EpiForecast-MX/
 
 ```bash
 # Clone the repository
-git clone https://github.com/IntegradorIMSS2026Team01/EpiForecast-MX.git
+git clone https://github.com/EpiForecastMX/EpiForecast-MX.git
 cd EpiForecast-MX
 
 # Create virtual environment and install dependencies

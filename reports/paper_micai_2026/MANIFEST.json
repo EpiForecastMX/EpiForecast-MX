@@ -1,0 +1,66 @@
+{
+  "proyecto": "EpiForecast-MX / MICAI 2026 paper #12",
+  "proposito": "Paquete historico congelado: unica fuente autorizada de cifras del paper.",
+  "sellado_utc": "2026-08-20T16:35:34+00:00",
+  "commit_modelos": "c13e7163",
+  "commit_observaciones": "b43ebdf2",
+  "arbol_forecasts": "2844e4f18a14bd58dbe8144947c56173.dir",
+  "piezas": [
+    {
+      "nombre": "tableau.csv",
+      "commit": "c13e7163",
+      "origen": "dvc:48334ad5dce66a118b92ab8ee9cc6482",
+      "md5": "48334ad5dce66a118b92ab8ee9cc6482",
+      "sha256": "b334e239ab7ba5757df226df46d637928f2161fa4b58c002e81e208a237a8203",
+      "bytes": 142073637
+    },
+    {
+      "nombre": "dataset_boletin_epidemiologico.csv",
+      "commit": "b43ebdf2",
+      "origen": "dvc:fa18313ae0b27588975c6ca818b69a21",
+      "md5": "fa18313ae0b27588975c6ca818b69a21",
+      "sha256": "b29a1e76c0331b1636f23759424659eee7ed31e40ffadf76dbbeec90c76b5b29",
+      "bytes": 2747754
+    },
+    {
+      "nombre": "tabla_333_modelos_produccion.xlsx",
+      "commit": "c13e7163",
+      "origen": "git:c13e7163:reports/ProdDetails/tabla_333_modelos_produccion.xlsx",
+      "md5": "567b032a3fbf780d02de5c8088431cdc",
+      "sha256": "a41bbb37e4ae495719947af4825d53b94914fd0f9ef43743a7b840b71c92706f",
+      "bytes": 88469
+    },
+    {
+      "nombre": "forecasts/deepar/all_forecast_deepar.csv",
+      "commit": "c13e7163",
+      "origen": "dvc:2844e4f18a14bd58dbe8144947c56173.dir#deepar/all_forecast_deepar.csv",
+      "md5": "35d99e2ea261111ead142ff8105cf5be",
+      "sha256": "5553f8af05be6d60888b29590e54eb6d498b895ee2228582782533827d9ed97e",
+      "bytes": 85518166
+    },
+    {
+      "nombre": "forecasts/prophet/all_forecast_prophet.csv",
+      "commit": "c13e7163",
+      "origen": "dvc:2844e4f18a14bd58dbe8144947c56173.dir#prophet/all_forecast_prophet.csv",
+      "md5": "d150478edebc9be2cc560f82d97ebc13",
+      "sha256": "d7f722f7818b2abea7039eb7e6da5524c85ee904f3d2b8a8c908bf3ca0a4a764",
+      "bytes": 98468230
+    },
+    {
+      "nombre": "forecasts/ensemble/all_forecast_ensemble.csv",
+      "commit": "c13e7163",
+      "origen": "dvc:2844e4f18a14bd58dbe8144947c56173.dir#ensemble/all_forecast_ensemble.csv",
+      "md5": "ad51d5933990ae3b42d1a36809ce008c",
+      "sha256": "c0fad3601511fbe0ead8fc6244df178b08b1d1f6599ffcff826f2d4d82fa3a9a",
+      "bytes": 88213868
+    },
+    {
+      "nombre": "forecasts/stacking/all_forecast_stacking.csv",
+      "commit": "c13e7163",
+      "origen": "dvc:2844e4f18a14bd58dbe8144947c56173.dir#stacking/all_forecast_stacking.csv",
+      "md5": "7b591521e17531efa16f5e08887b245c",
+      "sha256": "e8142eeae362a1cc0604707ad039e3601c1c2829a0fb32a4aea0f057661c2bcc",
+      "bytes": 84414715
+    }
+  ]
+}

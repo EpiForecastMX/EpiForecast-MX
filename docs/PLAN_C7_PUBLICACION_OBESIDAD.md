@@ -18278,7 +18278,7 @@ behind / ahead                                0 / 29
 #### Resultado
 
 ```text
-To https://github.com/IntegradorIMSS2026Team01/EpiForecast-MX.git
+To https://github.com/EpiForecastMX/EpiForecast-MX.git
    dbfdd49c..c453b979  feat/registry-padecimientos-obesidad -> feat/registry-padecimientos-obesidad
 rc=0
 ```
@@ -18468,7 +18468,7 @@ main local == main remota           179bbe36
 #### Resultado
 
 ```text
-To https://github.com/IntegradorIMSS2026Team01/EpiForecast-IMSS-Dashboard.git
+To https://github.com/EpiForecastMX/EpiForecast-IMSS-Dashboard.git
    d5ead880..9487e322  feat/c73-candidate-staging -> feat/c73-candidate-staging
 rc=0
 ```
