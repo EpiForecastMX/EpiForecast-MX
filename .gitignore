@@ -304,3 +304,48 @@ runs/
 *.twb Files/
 .~*.twbr
 reports/dashboards/*.hyper
+
+# ── Trabajo local que no se versiona (25-ago-2026) ─────────────────────────────
+# Anadido tras una auditoria externa: el arbol tenia 81 entradas sin seguimiento
+# y 381 MB. Ninguna era codigo, config ni dato del pipeline; se enumeran por
+# categoria en vez de barrerlas, para que anadir algo nuevo siga siendo visible.
+
+# Residuo de herramientas y trabajo suelto
+.qwen/
+tmp/
+respaldos_gsheets/
+scratchpad_crop.png
+uv.lock
+
+# Intermedios de LaTeX (el .tex es fuente y NO se ignora)
+reports/Latex/*.aux
+reports/Latex/*.log
+reports/Latex/*.out
+reports/Latex/*.toc
+reports/Latex/*.lof
+reports/Latex/*.lot
+reports/Latex/*.fls
+reports/Latex/*.fdb_latexmk
+reports/Latex/*.synctex.gz
+# ...y la salida compilada mas las figuras, que se generan (viven tambien en
+# reports/FigResumenEjecutivo/). El .tex y el .bib son fuente y SI se versionan.
+reports/Latex/*.pdf
+reports/Latex/*.png
+reports/**/__pycache__/
+
+# Material de referencia y entregables: binarios grandes (339 MB solo references/).
+# Mismo criterio que `Congresos/`, que tampoco se versiona.
+references/
+reports/FigResumenEjecutivo/
+reports/FigCanva/
+reports/HTMLsCanva/
+reports/RuthPoster/
+reports/*.pdf
+
+# Borradores locales de Tableau. El canonico es NewVersionAug2026/, que SI esta
+# versionado; estos son los intermedios de la reparacion de W31 y no se publican.
+reports/dashboards/*_W31_*.twb
+
+# Obesidad (E66) es NO-GO: no se publica ni se hace `git push` de sus artefactos
+# sin OK formal explicito. Ver CLAUDE.md.
+reports/docs/EDA_Obesidad*.pdf
