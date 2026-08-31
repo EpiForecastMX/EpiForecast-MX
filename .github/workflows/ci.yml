@@ -85,7 +85,7 @@ jobs:
         # para leer el PDF entregado. Sin el fallaban con FileNotFoundError desde que el
         # camera-ready entro a main (PR #6). NO se saltan cuando falta la herramienta: una
         # comprobacion que no se puede correr no es una comprobacion que pasa.
-        run: sudo apt-get install -y ghostscript poppler-utils
+        run: sudo apt-get update && sudo apt-get install -y ghostscript poppler-utils
 
       - name: Create isolated venv
         run: |
@@ -126,7 +126,7 @@ jobs:
         # para leer el PDF entregado. Sin el fallaban con FileNotFoundError desde que el
         # camera-ready entro a main (PR #6). NO se saltan cuando falta la herramienta: una
         # comprobacion que no se puede correr no es una comprobacion que pasa.
-        run: sudo apt-get install -y ghostscript poppler-utils
+        run: sudo apt-get update && sudo apt-get install -y ghostscript poppler-utils
 
       - name: Create isolated venv
         run: |
