@@ -104,7 +104,9 @@ jobs:
           pip install -e ".[dev,scraping]"
 
       - name: Tests + coverage
-        run: pytest tests/ -v --tb=short -m "not slow and not integration" --cov-fail-under=70 --cov-report=xml
+        run: >-
+          pytest tests/ -v --tb=short -m "not slow and not integration"
+          --cov=src/epiforecast --cov-report=term-missing --cov-report=xml
 
       - name: Upload coverage
         if: always()

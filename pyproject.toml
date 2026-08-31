@@ -188,8 +188,6 @@ addopts = [
     "-v",
     "--tb=short",
     "--strict-markers",
-    "--cov=src/epiforecast",
-    "--cov-report=term-missing",
 ]
 markers = [
     "unit: marks pure unit tests",
@@ -219,10 +217,13 @@ omit = [
 [tool.coverage.report]
 show_missing = true
 skip_empty = true
-# Gate de cobertura EJECUTABLE (antes era solo aspiracional). Cobertura actual
-# ~70%; el piso se fija con margen para no romper CI ante churn menor, pero
-# bloquea la erosion por debajo del umbral.
-fail_under = 68
+# UMBRAL CANONICO UNICO. Antes convivian tres cifras (68 aqui, 70 en CI, 68 en
+# el Makefile) y `--cov` viajaba en addopts, asi que este piso se aplicaba a
+# CUALQUIER invocacion de pytest, midiera lo que midiera: una corrida de un
+# subconjunto lo incumplia por construccion. Ahora la cobertura se DECLARA en
+# el call site y este es el unico numero. compliance_check.py queda fuera a
+# proposito (usa --cov-fail-under=0; es diagnostico, no gate).
+fail_under = 70
 
 # ─── Flit ─────────────────────────────────────────────────────────────────────
 [tool.flit.module]
