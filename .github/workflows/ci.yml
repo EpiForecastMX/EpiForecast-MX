@@ -1,8 +1,14 @@
 # .github/workflows/ci.yml
 # EpiForecast-MX — Continuous Integration
 #
-# Triggers: push to main/refactor/*, PR to main
-# Jobs: quality → test → integration (manual only)
+# Triggers: push to main/refactor/*, PR to main, cron de los lunes
+# Jobs: quality → test  (siempre)  ·  integration  (SOLO workflow_dispatch)
+#
+# El cron de los lunes ejecuta quality y test. `integration` NO corre en el
+# schedule: es el carril legacy, exige la cadena sellada de runs/ (gitignored)
+# y en un runner limpio se salta el 87% de sus pruebas. Se deja como ejecucion
+# MANUAL para no reportar verde una integracion que no se comprueba. Aparecera
+# como omitido en las corridas programadas: eso es el estado honesto.
 #
 # Uses a venv to isolate from runner pre-installed packages,
 # avoiding version mismatches (e.g. urllib3/requests).
@@ -15,7 +21,7 @@ on:
   pull_request:
     branches: [main]
   schedule:
-    - cron: "0 6 * * 1"  # lunes 06:00 UTC — integration tests semanales
+    - cron: "0 6 * * 1"  # lunes 06:00 UTC — quality + test (integration NO)
   workflow_dispatch:
 
 concurrency:
@@ -110,7 +116,8 @@ jobs:
   integration:
     name: "Integration Tests"
     runs-on: ubuntu-latest
-    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
+    # Carril legacy: solo a mano. Ver la cabecera del archivo.
+    if: github.event_name == 'workflow_dispatch'
     needs: test
     steps:
       - uses: actions/checkout@v4
