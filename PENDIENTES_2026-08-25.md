@@ -12,10 +12,18 @@
 
 ---
 
-## 1. CALASS 2026 · lo que no depende de la máquina
+## 1. CALASS 2026 · CERRADO POR LOS HECHOS (31-ago-2026)
 
-El congreso es el **27-29 de agosto**; la sesión 4.1, el jueves 27 a las 11:30.
-Paquete vigente: `Congresos/CALASS2026/USB/` — 15 láminas, guion de 14.5 min.
+> **Se expuso el jueves 27 de agosto en la sesión 4.1** y el congreso terminó el 29. Los
+> cuatro pendientes de la tabla de abajo —ensayos, QR, las dos USB, confirmar el 16:9— ya no
+> aplican: se conservan como registro de lo que se cuidó. **Lo único que sobrevive es la
+> deuda de diseño**, que es del producto y no del viaje.
+>
+> Cómo fue y qué se publicó: `Congresos/CALASS2026/ESTADO.md`, entrada del 31-ago. La
+> crónica pública, con fotos, está en `epiforecast.mx/calass.html`.
+
+El congreso fue el **27-29 de agosto**; la sesión 4.1, el jueves 27 a las 11:30.
+Paquete usado: `Congresos/CALASS2026/USB/` — 15 láminas, guion de 14.5 min.
 
 | # | Pendiente | De quién |
 | --- | --- | --- |
