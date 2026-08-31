@@ -192,6 +192,8 @@ addopts = [
     "--cov-report=term-missing",
 ]
 markers = [
+    "unit: marks pure unit tests",
+    "contract: marks tests that verify contracts across components or repository state",
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "integration: marks integration tests",
 ]

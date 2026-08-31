@@ -392,7 +392,7 @@ def sede(tmp_path_factory) -> Path:
     return destino
 
 
-@real
+@pytest.mark.contract
 def test_el_estado_declarado_del_repo_es_el_del_gate_congelado():
     cap = load_declared_status(af.DISEASE)
     assert cap.release_id == str(registry.require(af.DISEASE).artifact_source.release_id)
@@ -510,7 +510,7 @@ def _capability_real(tmp_path: Path, **cambios):
     return load_declared_status(af.DISEASE, config_root_path=tmp_path / "publication")
 
 
-@real
+@pytest.mark.contract
 def test_un_control_o_candidato_inventado_no_llega_a_la_capability(tmp_path):
     """R78-P0-4: el control es parte del congelado y ya no puede sustituirse en silencio."""
     for clave, patron in (
@@ -900,7 +900,7 @@ def test_una_semana_de_reemplazo_atraviesa_loader_compilador_y_shards(tmp_path, 
 
 
 # ── Corte observado, duplicados y coherencia semántica (A.3) ──────────────────────────────────
-@real
+@pytest.mark.contract
 def test_el_snapshot_vigente_no_declara_semanas_futuras_como_ausentes(tmp_path):
     """R80-P0-1: una semana futura no es una semana ausente. Antes se registraban las 52."""
     cap = load_declared_status(af.DISEASE)
@@ -984,7 +984,7 @@ def test_un_duplicado_del_csv_se_rechaza_antes_de_construir_la_historia(tmp_path
     check_dataset_frame(origen / "epi_dataset_v2.csv", expected_series=64)
 
 
-@real
+@pytest.mark.contract
 @pytest.mark.parametrize(
     ("torcer", "patron"),
     [
@@ -1028,7 +1028,7 @@ def test_torcer_la_aritmetica_del_artefacto_se_rechaza_aunque_se_reselle(tmp_pat
 
 
 # ── Forma cerrada del contrato (A.3.1) ────────────────────────────────────────────────────────
-@real
+@pytest.mark.contract
 def test_las_seis_metricas_estan_siempre_presentes_aunque_sean_null(tmp_path):
     """R82-P0-1: una clave AUSENTE no es un `null` deliberado, y `.get()` lo disfrazaba."""
     from epiforecast.data.epi_geo_exposure import load_geo_catalog
@@ -1058,7 +1058,7 @@ def test_las_seis_metricas_estan_siempre_presentes_aunque_sean_null(tmp_path):
             assert lado_bloque["flags"].get("mase_zero_denom") == lado_bloque["products"]
 
 
-@real
+@pytest.mark.contract
 @pytest.mark.parametrize(
     ("torcer", "patron"),
     [
@@ -1112,7 +1112,7 @@ def test_forma_cerrada_del_evaluation(tmp_path, torcer, patron):
         load_declared_status(af.DISEASE, config_root_path=tmp_path / "publication")
 
 
-@real
+@pytest.mark.contract
 def test_no_se_puede_borrar_una_semana_observada_de_la_secuencia(tmp_path):
     """R82-P1: sin W28 en omitidas, la secuencia W27..W31 tiene un hueco que nadie declara."""
     from epiforecast.publication.status import config_root

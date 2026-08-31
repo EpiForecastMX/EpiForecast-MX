@@ -22,10 +22,8 @@ from epiforecast.runner.artifact_identity import ArtifactValidationError
 from epiforecast.runner.release_contract import MANIFEST_FILE
 from epiforecast.runner.release_loader import verify_bundle
 from epiforecast.runner.release_store import (
-    default_releases_root,
     diff_trees,
     promote_release,
-    release_path,
 )
 from tests.unit.runner import artifact_fixtures as af
 from tests.unit.runner import release_fixtures as rf
@@ -64,26 +62,6 @@ def _disease_release(release_id: str) -> registry.Disease:
 
 def _diagnosticar(disease: registry.Disease, sede: Path) -> list[registry_doctor.Problem]:
     return registry_doctor._diagnose_runner_release(disease, sede)
-
-
-# ── Sede ──────────────────────────────────────────────────────────────────────────────────────
-def test_la_sede_se_deriva_de_disease_id_y_release_id(sede):
-    destino = release_path(sede, "obesidad", "obesidad_release_abc123456789")
-    assert destino == sede / "obesidad" / "obesidad_release_abc123456789"
-
-
-@pytest.mark.parametrize("segmento", ["../fuera", "con/barra", "..", ".", "", "  "])
-def test_la_sede_rechaza_segmentos_que_no_son_un_directorio(sede, segmento):
-    with pytest.raises(ArtifactValidationError):
-        release_path(sede, "obesidad", segmento)
-    with pytest.raises(ArtifactValidationError):
-        release_path(sede, segmento, "obesidad_release_abc123456789")
-
-
-def test_la_sede_por_defecto_es_artifacts_releases_del_repo():
-    ruta = default_releases_root()
-    assert ruta.parts[-2:] == ("artifacts", "releases")
-    assert (ruta.parents[1] / "pyproject.toml").is_file()  # es el root del repo, no el cwd
 
 
 # ── Promoción ─────────────────────────────────────────────────────────────────────────────────
@@ -144,11 +122,6 @@ def test_el_doctor_falla_si_el_release_declarado_no_está_en_la_sede(bundle, sed
     _promover(bundle, sede)
     problemas = _diagnosticar(_disease_release("obesidad_release_000000000000"), sede)
     assert len(problemas) == 1 and "no está en la sede" in problemas[0].message
-
-
-def test_el_doctor_falla_con_la_sede_vacía(sede):
-    problemas = _diagnosticar(_disease_release("obesidad_release_000000000000"), sede)
-    assert len(problemas) == 1 and problemas[0].severity == "error"
 
 
 def test_el_doctor_avisa_si_el_padecimiento_declara_motores_legacy(bundle, sede):

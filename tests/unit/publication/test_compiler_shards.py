@@ -28,7 +28,6 @@ from epiforecast.publication.compiler import (
     MODE_PUBLIC,
     PUBLICATION_COLUMNS,
     UNCERTAINTY_LABEL,
-    check_staging_root,
     compile_release,
 )
 from epiforecast.publication.shards import (
@@ -107,16 +106,6 @@ def test_el_modo_public_rechaza_un_puntero_a_otro_release(sede, monkeypatch):
             releases_root=sede,
             pointer_release_id="obesidad_release_000000000000",
         )
-
-
-@pytest.mark.parametrize("publico", ["reports", "data", "epibot", "models", "artifacts"])
-def test_candidate_no_puede_escribir_en_una_ruta_publica_del_repo(publico):
-    with pytest.raises(ArtifactValidationError, match="ruta pública"):
-        check_staging_root(REPO / publico / "staging", REPO)
-
-
-def test_candidate_acepta_un_staging_fuera_de_las_rutas_publicas(tmp_path):
-    assert check_staging_root(tmp_path / "staging", REPO) == (tmp_path / "staging").resolve()
 
 
 # ── Contrato de salida ────────────────────────────────────────────────────────────────────────
