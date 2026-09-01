@@ -22,7 +22,9 @@ Limitación declarada: el periodo estacional es 52 fijo, así que los años MMWR
 from __future__ import annotations
 
 from dataclasses import dataclass
+import io
 from pathlib import Path
+import pickle
 from typing import Any, cast
 import warnings
 
@@ -230,14 +232,60 @@ def forecast_final(
     state: fm.FinalState, request: fm.ForecastRequest
 ) -> dict[tuple[int, int], float]:
     """Pronostica desde el resultado serializado; NO reajusta."""
-    import pickle
-
-    res = pickle.loads(state.data or b"")  # noqa: S301 — artefacto propio, sellado por digest
+    res = _load_statsmodels_state(state.data or b"")
     fc = np.asarray(res.forecast(len(request.periods)), dtype=float)
     counts = request.transform.apply_inverse(fc)
     if not np.isfinite(counts).all() or (counts < 0).any():
         raise EtsFitError("forecast final ETS inutilizable tras la inversa")
     return dict(zip(request.periods, (float(v) for v in counts), strict=True))
+
+
+def _load_statsmodels_state(data: bytes) -> Any:
+    """Carga un estado sellado y soporta el cambio `_xp` introducido por SciPy 1.18.
+
+    Los pickles creados antes de ese cambio contienen un ``LbfgsInvHessProduct`` sin la
+    nueva clave privada. El loader normal sigue siendo la primera ruta. Sólo ante ese
+    ``KeyError`` exacto se usa un unpickler local que completa el namespace NumPy del
+    operador; no parchea clases globales ni silencia ningún otro error de deserialización.
+    """
+    try:
+        return pickle.loads(data)  # noqa: S301 — estado propio, verificado antes por digest
+    except KeyError as exc:
+        if exc.args != ("_xp",):
+            raise
+
+    from scipy.optimize._lbfgsb_py import LbfgsInvHessProduct
+    from scipy.sparse.linalg import aslinearoperator
+
+    numpy_namespace = aslinearoperator(np.empty((0, 0)))._xp
+
+    class LegacyScipyUnpickler(pickle.Unpickler):
+        def __init__(self, stream: io.BytesIO) -> None:
+            super().__init__(stream)
+            self._compat_class: type[Any] | None = None
+
+        def find_class(self, module: str, name: str) -> Any:
+            cls = super().find_class(module, name)
+            if cls is not LbfgsInvHessProduct:
+                return cls
+            if self._compat_class is None:
+                original_setstate = cls.__setstate__
+
+                def setstate(instance: Any, state: dict[str, Any]) -> None:
+                    if "_xp" in state:
+                        original_setstate(instance, state)
+                        return
+                    instance.__dict__.update(state)
+                    instance._xp = numpy_namespace
+
+                self._compat_class = type(
+                    "LegacyLbfgsInvHessProduct",
+                    (cls,),
+                    {"__setstate__": setstate},
+                )
+            return self._compat_class
+
+    return LegacyScipyUnpickler(io.BytesIO(data)).load()  # noqa: S301
 
 
 def _statsmodels_version() -> str:
