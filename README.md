@@ -597,12 +597,11 @@ GitHub Actions runs on pushes to `main` and `refactor/*`, pull requests to `main
 weekly Monday 06:00 UTC schedule:
 
 1. **Code Quality** (`ci.yml`): Ruff lint + format check + mypy type checking.
-2. **Tests** (`ci.yml`): 2,509 collected tests in the current tree; slow and integration
-   tests are deselected. The last run on `main`, before four new skip/ETS compatibility
-   controls were added, collected 2,505.
+2. **Tests** (`ci.yml`): 2,509 collected tests; slow and integration tests are deselected.
    Coverage is declared by this job and enforced from the single canonical
    `[tool.coverage.report] fail_under = 70` setting. The current clean Ubuntu runner result
-   is 1,942 passed, 501 skipped, 62 deselected, and 74.46% coverage.
+   is 1,946 passed, 497 skipped, 66 deselected, and 74.50% coverage (`main` run
+   `33467472543`). A skip budget of 497 makes any new omission an explicit decision.
 3. **Integration Tests** (`ci.yml`): Legacy, manual-only (`workflow_dispatch`). It requires
    the sealed `runs/` chain, which is absent from clean runners, so scheduled, push, and PR
    workflows report this job as **skipped**, not as a misleading green integration check.

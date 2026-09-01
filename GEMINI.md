@@ -1,6 +1,6 @@
 # GEMINI.md — Contexto operativo de EpiForecast-MX
 
-> Auditado contra `main` en el checkpoint `c2913831` el 31-ago-2026.
+> Auditado contra `main` en el checkpoint `cb7695d9` el 1-sep-2026.
 > Guía para Gemini CLI dentro de `EpiForecast-MX`; no sustituye las órdenes del
 > workspace ni autoriza acciones externas.
 
@@ -28,22 +28,27 @@ por separado. Para revisar o diagnosticar, no implementar ni mutar salvo petici�
 
 ### Repositorios
 
-- Backend: `EpiForecast-MX`, rama única en `origin`: `main`; checkpoint auditado
-  `c2913831`.
-- Frontend: `EpiForecast-IMSS-Dashboard`, `main` en `1719615f`.
+- Backend: `EpiForecast-MX`, `main`/`origin/main` en `cb7695d9`; el worktree contiene sólo
+  la actualización documental post-merge todavía sin commit.
+- Frontend: `EpiForecast-IMSS-Dashboard`, `main`/`origin/main` en `5f8666dc`, desplegado;
+  el worktree contiene sólo su actualización de README todavía sin commit.
+- Quedan dos ramas ya mergeadas, locales y remotas: `ci/skip-budget-ets-legacy` y
+  `fix/frontend-deudas`. Ambas puntas son ancestros comprobados de `main`; no confundir
+  «main activo» con «una sola rama» hasta borrarlas de forma explícita.
 - El remoto local `respaldo` conserva una referencia de archivo MICAI: no borrarla.
 - Mantener backend y frontend en commits y PR separados.
 
 ### CI semanal
 
 El incidente «CI falla los lunes» está arreglado en `main` mediante PR #12, merge
-`59488c57`. Run de push a `main` `33458210918`:
+`59488c57`. La tanda de deuda/compatibilidad entró después por PR #13. Run vigente de
+push a `main` `33467472543`:
 
 - Code Quality: PASS;
 - Tests: PASS;
 - Integration Tests: SKIPPED;
-- 2,505 colectadas = 1,942 passed + 501 skipped + 62 deselected;
-- cobertura 74.46%; gate canónico único `fail_under = 70`.
+- 2,509 colectadas = 1,946 passed + 497 skipped + 66 deselected;
+- cobertura 74.50%; gate canónico único `fail_under = 70`.
 
 `--cov` no vive en `pytest.addopts`: el job `Tests` declara el alcance y toma el
 umbral de `[tool.coverage.report]`. `scripts/compliance_check.py` usa
@@ -58,7 +63,8 @@ verificado en push/PR; schedule aún no observado».
 
 ### Deuda de skips
 
-El job verde contiene 501 skips en Ubuntu. El universo D2 auditado tiene 552 nodeids:
+El job verde contiene 497 skips en Ubuntu, exactamente el presupuesto configurado. El
+universo D2 histórico auditado tiene 552 nodeids:
 
 - 81 passed y 471 skipped;
 - 460 nodeids en 156 grupos usan la cadena sellada;
@@ -127,16 +133,18 @@ candidato supera al control en bases, 111 productos y nacional General.
 existente es anterior y todavía declara 1/4: es evidencia local obsoleta. El preflight
 Google/Tableau sigue `BLOCKED_EXTERNAL`.
 
-**Compatibilidad ETS cerrada localmente (31-ago), pendiente de CI remoto.** SciPy 1.18
+**Compatibilidad ETS cerrada en local y Ubuntu (1-sep).** SciPy 1.18
 añadió `_xp` al estado de `LinearOperator`; los pickles sellados anteriores no lo traen.
 El loader intenta primero el pickle normal y sólo ante ese `KeyError` exacto usa un
 unpickler local para `LbfgsInvHessProduct`; no parchea clases globales ni oculta otros
 errores. Los 16 modelos ETS reproducen sus 832 valores canónicos con error máximo
-`2.27e-13`; las 54 pruebas focales y el carril local completo quedan verdes.
+`2.27e-13`; las 54 pruebas focales, el carril local completo y el run de `main`
+`33467472543` quedan verdes. El shim sigue siendo deuda temporal: depende de privados de
+SciPy y debe retirarse cuando exista un estado ETS portable versionado.
 
 Antes de activar hacen falta, con permisos separados:
 
-1. validar el cambio ETS en CI y después regenerar readiness local contra 4/4;
+1. regenerar readiness local contra 4/4, sin promover;
 2. staging externo y preflight;
 3. Tableau Desktop y smoke test;
 4. autorización de apply;
@@ -223,8 +231,8 @@ Rollback público: rama nueva + `git revert` + PR. Nunca reescribir historia.
 
 ## 6. Tests y gates
 
-- Pytest: 136 archivos test, 2,509 nodeids en el árbol actual. El último CI de `main`,
-  anterior a cuatro controles de skips/compatibilidad ETS, colectó 2,505.
+- Pytest: 136 archivos test, 2,509 nodeids; run vigente de `main`: 1,946 passed,
+  497 skipped y 66 deselected.
 - Markers: `unit`, `contract`, `slow`, `integration`.
 - `--strict-markers` activo.
 - Umbral único: `fail_under = 70`.

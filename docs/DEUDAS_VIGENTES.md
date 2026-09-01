@@ -1,6 +1,7 @@
 # Deudas vigentes — índice canónico
 
-> Auditado el 31-ago-2026 contra `main` de backend y frontend. Este archivo separa
+> Auditado el 1-sep-2026 contra backend `main@cb7695d9` y frontend `main@5f8666dc`.
+> Este archivo separa
 > trabajo vigente de bitácoras históricas. Una deuda que aparezca sólo en un documento
 > antiguo no se ejecuta hasta contrastarla aquí y en el código.
 
@@ -37,26 +38,30 @@
   `--max-skips=497` mediante un plugin propio; un control subprocess demuestra que 1 skip
   con presupuesto 0 termina en rc=1. El límite parte del último Ubuntu (501) menos los
   cuatro agregados ahora deseleccionados. Sus controles, junto con los dos de compatibilidad
-  ETS, elevan la colección actual de 2,505 a 2,509; el presupuesto debe confirmarse en el
-  próximo run remoto.
-- **Pickle ETS incompatible con SciPy 1.18:** cerrado localmente, pendiente de CI remoto.
+  ETS, elevan la colección de 2,505 a 2,509. El run de `main` `33467472543` confirmó
+  exactamente 497 skips: el presupuesto está calibrado sin holgura.
+- **Pickle ETS incompatible con SciPy 1.18:** cerrado en local y Ubuntu.
   El loader normal sigue siendo la primera ruta; sólo ante `KeyError('_xp')` un unpickler
   local completa el namespace NumPy de `LbfgsInvHessProduct`. No hay parche global y otro
   `KeyError` sigue fallando. Los 16 modelos del release reprodujeron 832 valores canónicos
-  con error máximo `2.27e-13`; 54 pruebas focales y el carril completo pasan.
+  con error máximo `2.27e-13`; 54 pruebas focales, el carril completo y el run de `main`
+  `33467472543` pasan.
 
 ## Prioridad 0 — siguiente trabajo local seguro
 
 1. **Política de skips del carril manual.** El job Tests ya tiene presupuesto; falta decidir
    qué debe poder omitir Integration cuando se lanza expresamente por `workflow_dispatch`.
 2. **Readiness de Obesidad rancio.** El manifiesto local conserva 1/4 aunque el status
-   canónico da 4/4. Regenerarlo sólo después de que el loader ETS pase CI remoto; hacerlo
-   localmente no autoriza preflight, apply, lifecycle, puntero, publicación ni DVC.
+   canónico da 4/4. El loader ETS ya pasó CI: regenerarlo localmente es el siguiente paso
+   seguro, pero no autoriza preflight, apply, lifecycle, puntero, publicación ni DVC.
 
 ## Prioridad 1 — requiere un microplan propio
 
 - **Cadena sellada sintética:** prototipo acotado antes de clasificar D1. Quedan 460
   nodeids en 156 grupos que consumen cadena; no llamarlos «460 grupos».
+- **Retiro del shim ETS:** depende de `LbfgsInvHessProduct` y `_xp`, privados de SciPy.
+  Mantenerlo mientras el release vigente use `statsmodels_pickle`; retirarlo sólo después
+  de migrar a un estado ETS portable con schema versionado y equivalencia demostrada.
 - **Generador de `knowledge.json`:** debe emitir las mismas estadísticas neuro que hoy
   recompone `_fixCohortStats` en runtime. Criterio: igualdad profunda de todos los campos
   afectados antes de borrar la compatibilidad.

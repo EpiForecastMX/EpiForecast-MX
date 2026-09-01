@@ -3,10 +3,11 @@
 > **DOCUMENTO HISTÓRICO, SUPERSEDIDO.** Describe el intento preliminar y la contención de
 > Fase 0. No es la cola vigente ni autoriza ejecutar los comandos conservados abajo.
 >
-> Estado efectivo al 31-ago-2026: Obesidad está `trained`, invisible para
+> Estado efectivo al 1-sep-2026: Obesidad está `trained`, invisible para
 > `published_only`, con release `obesidad_release_2517e7858901` y evaluación prospectiva
-> **PASS 4/4** (`2026-W27..W30`). Continúa **NO-GO**: el readiness local está rancio en 1/4
-> y el preflight Google/Tableau permanece `BLOCKED_EXTERNAL`. Consultar
+> **PASS 4/4** (`2026-W27..W30`). El loader ETS pasó en Ubuntu. Continúa **NO-GO**: el
+> readiness local está rancio en 1/4 y el preflight Google/Tableau permanece
+> `BLOCKED_EXTERNAL`. Consultar
 > `docs/PLAN_C7_PUBLICACION_OBESIDAD.md`, `GEMINI.md` y `docs/DEUDAS_VIGENTES.md`.
 
 ## Estado: Fase 0 CERRADA · Obesidad NO-GO (no productiva) · Siguiente: Fase 1 (lifecycle gate del selector)

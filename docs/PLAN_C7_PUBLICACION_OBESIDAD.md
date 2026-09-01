@@ -4,8 +4,9 @@
 > las órdenes antiguas no vuelven a ser operativas por aparecer más arriba. Obesidad sigue
 > `trained`/NO-GO y la prospectiva efectiva es PASS 4/4 (`2026-W27..W30`), pero el
 > readiness local conserva 1/4. El loader compatible ya reproduce localmente los 16 ETS
-> sellados frente a sus 832 valores canónicos; falta el CI remoto antes de regenerar
-> readiness. No activar, publicar, promover DVC ni ejecutar una orden histórica.
+> sellados frente a sus 832 valores canónicos y pasó en Ubuntu (`main`, run
+> `33467472543`). El siguiente paso local es regenerar readiness; no activar, publicar,
+> promover DVC ni ejecutar una orden histórica.
 > Resumen contrastado: `GEMINI.md` y `docs/DEUDAS_VIGENTES.md`.
 
 > **Estado autoritativo (2026-07-27): C7.2 y C7.3 CERRADAS; C7.5-PREP PASS; núcleo C7.6 PASS;

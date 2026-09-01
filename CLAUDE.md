@@ -1,23 +1,28 @@
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
-## Estado CI semanal — 2026-08-31
+## Estado CI semanal — 2026-09-01
 
 - PR #12 quedó en `main` mediante merge commit `59488c57`; la rama de trabajo ya fue
-  borrada local y remotamente y el repo conserva una sola rama.
-- Runs remotos verificados: PR `33448159471` y push a `main` `33458210918`, ambos con
-  Code Quality PASS, Tests PASS e Integration Tests SKIPPED.
-- En Ubuntu: 2,505 colectadas = 1,942 passed + 501 skipped + 62 deselected; cobertura
-  74.46% con umbral canónico único de 70.
+  borrada local y remotamente. Después se creó `ci/skip-budget-ets-legacy`, hoy mergeada
+  pero todavía presente local y remotamente.
+- Runs remotos verificados: PR #13 `33466506664` y push final a `main` `33467472543`,
+  ambos con Code Quality PASS, Tests PASS e Integration Tests SKIPPED.
+- En Ubuntu: 2,509 colectadas = 1,946 passed + 497 skipped + 66 deselected; cobertura
+  74.50% con umbral canónico único de 70. El presupuesto de skips es exactamente 497.
 - El cron del lunes ejecuta Quality y Tests. Integration es legacy y sólo corre con
   `workflow_dispatch`; en schedule debe aparecer SKIPPED, no verde.
 - El incidente está arreglado en push/PR, pero su cierre operativo espera el schedule
   del 7-sep-2026. La rutina `trig_0182z2jL5YUwBbmTmHnbPS3t` lo comprueba a las 06:50 UTC.
 - Rollback únicamente por causalidad demostrada: `git revert -m 1 59488c57` en rama y
   PR; nunca reset ni force-push de `main`.
+- Backend `main@cb7695d9` y frontend `main@5f8666dc` están sincronizados; el frontend está
+  desplegado. Los únicos deltas actuales son esta actualización documental y el README del
+  frontend, todavía sin commit. Persisten dos ramas ya mergeadas, locales y remotas:
+  `ci/skip-budget-ets-legacy` y `fix/frontend-deudas`.
 - Los cuatro agregados legacy ya no tienen doble guarda: viven en `tests/integration/`,
   se deseleccionan en el job normal y fallan por ausencia en el manual. Pendiente después
-  del schedule: validar remotamente el loader ETS compatible, política de skips del carril
-  Integration (Tests ya limita a 497), prototipo de cadena sintética y sólo entonces acotar
+  del schedule: política de skips/restauración del carril Integration, readiness 1/4→4/4,
+  prototipo de cadena sintética y sólo entonces acotar
   los 460 nodeids en
   156 grupos que siguen pendientes en D1. Índice vigente: `docs/DEUDAS_VIGENTES.md`.
 
