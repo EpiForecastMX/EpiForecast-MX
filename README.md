@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/Python-3.12-blue?style=flat&logo=python&logoColor=white" alt="Python 3.12"/>
   <img src="https://img.shields.io/badge/Models-Prophet_%2B_DeepAR_%2B_Ensemble_%2B_Stacking-orange?style=flat" alt="Multi-Model"/>
   <img src="https://img.shields.io/badge/GPU-SageMaker_T4-76b900?style=flat&logo=nvidia&logoColor=white" alt="GPU SageMaker"/>
-  <img src="https://img.shields.io/badge/Tests-907-brightgreen?style=flat" alt="907 Tests"/>
+  <img src="https://img.shields.io/badge/Tests-2505-brightgreen?style=flat" alt="2505 Tests"/>
   <img src="https://img.shields.io/badge/DVC-S3-945DD6?style=flat&logo=dvc&logoColor=white" alt="DVC + S3"/>
 </p>
 
@@ -169,7 +169,7 @@ EpiForecast-MX/
 |   |-- ci_process_boletines.py   #   CI/CD bulletin processing (Camelot)
 |   +-- publish_gsheets.py        #   Google Sheets publisher
 |
-|-- tests/                        # Test suite (62 files, 945 tests, ~79% coverage, enforced gate)
+|-- tests/                        # Test suite (134 files, 2,505 tests, 74.5% CI coverage, gate at 70%)
 |   |-- unit/                     #   Unit tests for all modules
 |   +-- integration/              #   End-to-end pipeline tests
 |
@@ -192,7 +192,7 @@ EpiForecast-MX/
 |   +-- docs/                     #   PDF reports
 |
 |-- .github/workflows/            # CI/CD
-|   |-- ci.yml                    #   Quality gate (lint + typecheck + tests)
+|   |-- ci.yml                    #   Quality gate (lint + typecheck + tests); integration is manual-only
 |   |-- scrape_boletines.yml      #   Daily automated bulletin scraping
 |   |-- process_boletines.yml     #   Bulletin PDF processing (Camelot)
 |   +-- gsheets.yml               #   Google Sheets publishing
@@ -590,11 +590,18 @@ make dengue-web                # public charts + JSON + EpiBot knowledge.json
 
 ## CI/CD
 
-GitHub Actions runs on every push to `main` and on pull requests:
+GitHub Actions runs on pushes to `main` and `refactor/*`, pull requests to `main`, and a
+weekly Monday 06:00 UTC schedule:
 
 1. **Code Quality** (`ci.yml`): Ruff lint + format check + mypy type checking.
-2. **Tests** (`ci.yml`): Pytest with 945 tests and an enforced coverage gate (`fail_under = 68`), excluding slow and integration tests.
-3. **Integration Tests** (`ci.yml`): Manual trigger only (`workflow_dispatch`).
+2. **Tests** (`ci.yml`): 2,505 collected tests with slow and integration tests deselected.
+   Coverage is declared by this job and enforced from the single canonical
+   `[tool.coverage.report] fail_under = 70` setting. The current clean Ubuntu runner result
+   is 1,942 passed, 501 skipped, 62 deselected, and 74.46% coverage.
+3. **Integration Tests** (`ci.yml`): Legacy, manual-only (`workflow_dispatch`). It requires
+   the sealed `runs/` chain, which is absent from clean runners, so scheduled, push, and PR
+   workflows report this job as **skipped**, not as a misleading green integration check.
+   Scheduled runs use a distinct concurrency group and are not cancelled by pushes to `main`.
 4. **Bulletin Scraping** (`scrape_boletines.yml`): Daily automated SINAVE bulletin download via Selenium.
 5. **Bulletin Processing** (`process_boletines.yml`): Camelot PDF extraction and dataset consolidation.
 6. **Google Sheets** (`gsheets.yml`): Publishes Tableau data to shared spreadsheet.

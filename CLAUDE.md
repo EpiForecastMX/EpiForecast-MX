@@ -1,5 +1,23 @@
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
+## Estado CI semanal — 2026-09-01
+
+- PR #12 quedó en `main` mediante merge commit `59488c57`; la rama de trabajo ya fue
+  borrada local y remotamente y el repo conserva una sola rama.
+- Runs remotos verificados: PR `33448159471` y push a `main` `33458210918`, ambos con
+  Code Quality PASS, Tests PASS e Integration Tests SKIPPED.
+- En Ubuntu: 2,505 colectadas = 1,942 passed + 501 skipped + 62 deselected; cobertura
+  74.46% con umbral canónico único de 70.
+- El cron del lunes ejecuta Quality y Tests. Integration es legacy y sólo corre con
+  `workflow_dispatch`; en schedule debe aparecer SKIPPED, no verde.
+- El incidente está arreglado en push/PR, pero su cierre operativo espera el schedule
+  del 7-sep-2026. La rutina `trig_0182z2jL5YUwBbmTmHnbPS3t` lo comprueba a las 06:50 UTC.
+- Rollback únicamente por causalidad demostrada: `git revert -m 1 59488c57` en rama y
+  PR; nunca reset ni force-push de `main`.
+- Pendiente después del schedule: cuatro agregados legacy doblemente guardados, política
+  de skips, prototipo de cadena sintética y sólo entonces acotar los 460 nodeids en
+  124 grupos que siguen pendientes en D1.
+
 ## Resumen del Proyecto
 
 **EpiForecast-MX** es una plataforma de inteligencia epidemiologica multi-modelo para el **IMSS**. Pronostica la incidencia semanal de Depresion (F32), Parkinson (G20) y Alzheimer (G30) en las 32 entidades federativas de Mexico con un horizonte de 52 semanas. Utiliza **Prophet**, **DeepAR** (GluonTS + PyTorch), **Ensemble** (Prophet + XGBoost) y **Stacking** (Prophet + ETS + LightGBM + Ridge) como motores de pronostico. Cada modelo genera 333 artefactos .pkl (3 padecimientos x ~111 combinaciones estado/region/sexo).
@@ -129,7 +147,7 @@ EpiForecast-MX/
 │       ├── help_menu.py          #     Menu de ayuda multi-seccion
 │       └── targets.py            #     Navegador de targets Makefile
 ├── scripts/                      # Entry points CLI (~24 scripts)
-├── tests/                        #   unit/ + integration/ (~62 archivos, 945 tests)
+├── tests/                        #   unit/ + integration/ (134 archivos, 2,505 tests colectados)
 ├── data/                         # raw/ → interim/ → processed/ (DVC)
 ├── models/                       # Artefactos .pkl (DVC, 4x333 = 1332 modelos)
 ├── reports/                      # Graficos, reportes HTML, forecasts, ProdDetails/
@@ -214,7 +232,14 @@ EpiForecast-MX/
 - Metricas registradas: rmse, mae, mape, smape, mase, elapsed_seconds.
 
 ### CI/CD (GitHub Actions)
-- `ci.yml`: Quality gate (lint + typecheck + tests). Push a main, PRs, weekly Monday 06:00 UTC.
+- `ci.yml`: `quality` (ruff+mypy) → `test` (todo lo no `slow/integration`, con cobertura)
+  → `integration`.
+  Los dos primeros corren en push a main/refactor/*, PRs y el cron de los **lunes 06:00 UTC**.
+  **`integration` SOLO con `workflow_dispatch`**: es el carril legacy, exige la cadena sellada
+  de `runs/` (gitignored) y en un runner limpio se salta el 87% de sus pruebas; aparece como
+  **omitido** en las corridas programadas en vez de reportar un verde que no se comprueba.
+  `concurrency` agrupa por `event_name` y **exime al `schedule` de la cancelación**, para que un
+  push a main no se lleve por delante el run semanal.
 - `scrape_boletines.yml`: Scraping diario automatizado de boletines SINAVE (Selenium + Chrome).
 - `process_boletines.yml`: Procesamiento de PDFs con Camelot, merge al dataset consolidado.
 - `gsheets.yml`: Publicacion de datos Tableau a Google Sheets (service account).
@@ -308,7 +333,17 @@ EpiForecast-MX/
 - **Logging**: Usar `loguru.logger` para trazas de depuracion y errores.
 - **Lint**: Ruff con line-length=99, target Python 3.12.
 - **SRP**: Maximo 300 lineas por modulo. Unica excepcion documentada: `models/deepar/model.py` (complejidad inherente de GluonTS). Los God-modules de visualizacion se particionaron (metodo cubrir->partir, con tests smoke/estructurales de red): `comparison_builders.py` -> `comparison_panels` + `comparison_metrics` + `comparison_builders`; `comparison_bars.py` -> `comparison_bars_helpers` + `comparison_prod_bars` + `comparison_bars`; `avance5_charts.py` -> `avance5_panels` + `avance5_metric_charts` + `avance5_charts`; `avance5_tables.py` -> `avance5_data` (carga/merge/win-rate) + `avance5_tables` (markdown).
-- **Tests**: Pytest con marcadores `slow` e `integration`. Gate de cobertura EJECUTABLE (`fail_under = 68` en pyproject); cobertura ~79% (suite completa). Actualmente 945 tests en ~62 archivos.
+- **Tests**: Pytest con cuatro marcadores — `unit` (funciones puras), `contract` (contrato entre
+  componentes o estado trackeado del repo), `slow` e `integration`. `--strict-markers` está activo:
+  usar un marcador sin registrarlo en `pyproject.toml` es un **error**, no un aviso.
+  **Gate de cobertura: `fail_under = 70` en `[tool.coverage.report]` es la ÚNICA cifra.** `--cov`
+  ya NO viaja en `addopts`: la cobertura se declara en el *call site* (job `Tests` y `make test`),
+  porque el piso global se aplicaba a cualquier invocación midiera lo que midiera — y eso tuvo el
+  cron en rojo 12 lunes con cero pruebas fallidas. `scripts/compliance_check.py` queda fuera a
+  propósito (`--cov-fail-under=0`): es diagnóstico con sus propios mínimos, no un consumidor del gate.
+  2,505 tests colectados en 134 archivos; cobertura **74.5% en CI** (selección `not slow and not
+  integration`, medida en runner limpio). Ojo: en local, con `runs/` y el bundle restaurados, la
+  cifra sube varios puntos y los skips caen de ~500 a ~1 — **no confundir esa medición con la de CI**.
 - **Pre-commit**: Ruff check + format, mypy, trailing whitespace, YAML/TOML check.
 
 ### Dependencias Clave
