@@ -1,5 +1,13 @@
 # C7 — Plan operativo de publicación de Obesidad
 
+> **ENRUTAMIENTO VIGENTE — 31-ago-2026.** Este documento es una bitácora cronológica:
+> las órdenes antiguas no vuelven a ser operativas por aparecer más arriba. Obesidad sigue
+> `trained`/NO-GO y la prospectiva efectiva es PASS 4/4 (`2026-W27..W30`), pero el
+> readiness local conserva 1/4. El loader compatible ya reproduce localmente los 16 ETS
+> sellados frente a sus 832 valores canónicos; falta el CI remoto antes de regenerar
+> readiness. No activar, publicar, promover DVC ni ejecutar una orden histórica.
+> Resumen contrastado: `GEMINI.md` y `docs/DEUDAS_VIGENTES.md`.
+
 > **Estado autoritativo (2026-07-27): C7.2 y C7.3 CERRADAS; C7.5-PREP PASS; núcleo C7.6 PASS;
 > B4.2 PASS; RAG-A/A.1/B y **RAG-C-REPEAT definitivo PASS**. STATUS-A/A.1/A.2/A.3/A.3.1 y
 > STATUS-B/B.1 están **CERRADOS / PASS**. La atribución DVC y el descubrimiento de sinks cerraron.

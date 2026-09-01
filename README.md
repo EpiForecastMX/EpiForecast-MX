@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/Python-3.12-blue?style=flat&logo=python&logoColor=white" alt="Python 3.12"/>
   <img src="https://img.shields.io/badge/Models-Prophet_%2B_DeepAR_%2B_Ensemble_%2B_Stacking-orange?style=flat" alt="Multi-Model"/>
   <img src="https://img.shields.io/badge/GPU-SageMaker_T4-76b900?style=flat&logo=nvidia&logoColor=white" alt="GPU SageMaker"/>
-  <img src="https://img.shields.io/badge/Tests-2505-brightgreen?style=flat" alt="2505 Tests"/>
+  <img src="https://img.shields.io/badge/Tests-2509-brightgreen?style=flat" alt="2509 Tests"/>
   <img src="https://img.shields.io/badge/DVC-S3-945DD6?style=flat&logo=dvc&logoColor=white" alt="DVC + S3"/>
 </p>
 
@@ -169,7 +169,7 @@ EpiForecast-MX/
 |   |-- ci_process_boletines.py   #   CI/CD bulletin processing (Camelot)
 |   +-- publish_gsheets.py        #   Google Sheets publisher
 |
-|-- tests/                        # Test suite (134 files, 2,505 tests, 74.5% CI coverage, gate at 70%)
+|-- tests/                        # Test suite (136 test files, 2,509 tests; last CI 74.5%, gate at 70%)
 |   |-- unit/                     #   Unit tests for all modules
 |   +-- integration/              #   End-to-end pipeline tests
 |
@@ -590,11 +590,16 @@ make dengue-web                # public charts + JSON + EpiBot knowledge.json
 
 ## CI/CD
 
+La cola técnica vigente —separada de las bitácoras históricas— está en
+[`docs/DEUDAS_VIGENTES.md`](docs/DEUDAS_VIGENTES.md).
+
 GitHub Actions runs on pushes to `main` and `refactor/*`, pull requests to `main`, and a
 weekly Monday 06:00 UTC schedule:
 
 1. **Code Quality** (`ci.yml`): Ruff lint + format check + mypy type checking.
-2. **Tests** (`ci.yml`): 2,505 collected tests with slow and integration tests deselected.
+2. **Tests** (`ci.yml`): 2,509 collected tests in the current tree; slow and integration
+   tests are deselected. The last run on `main`, before four new skip/ETS compatibility
+   controls were added, collected 2,505.
    Coverage is declared by this job and enforced from the single canonical
    `[tool.coverage.report] fail_under = 70` setting. The current clean Ubuntu runner result
    is 1,942 passed, 501 skipped, 62 deselected, and 74.46% coverage.

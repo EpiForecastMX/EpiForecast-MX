@@ -1,6 +1,6 @@
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
-## Estado CI semanal — 2026-09-01
+## Estado CI semanal — 2026-08-31
 
 - PR #12 quedó en `main` mediante merge commit `59488c57`; la rama de trabajo ya fue
   borrada local y remotamente y el repo conserva una sola rama.
@@ -14,9 +14,12 @@
   del 7-sep-2026. La rutina `trig_0182z2jL5YUwBbmTmHnbPS3t` lo comprueba a las 06:50 UTC.
 - Rollback únicamente por causalidad demostrada: `git revert -m 1 59488c57` en rama y
   PR; nunca reset ni force-push de `main`.
-- Pendiente después del schedule: cuatro agregados legacy doblemente guardados, política
-  de skips, prototipo de cadena sintética y sólo entonces acotar los 460 nodeids en
-  124 grupos que siguen pendientes en D1.
+- Los cuatro agregados legacy ya no tienen doble guarda: viven en `tests/integration/`,
+  se deseleccionan en el job normal y fallan por ausencia en el manual. Pendiente después
+  del schedule: validar remotamente el loader ETS compatible, política de skips del carril
+  Integration (Tests ya limita a 497), prototipo de cadena sintética y sólo entonces acotar
+  los 460 nodeids en
+  156 grupos que siguen pendientes en D1. Índice vigente: `docs/DEUDAS_VIGENTES.md`.
 
 ## Resumen del Proyecto
 
@@ -147,7 +150,7 @@ EpiForecast-MX/
 │       ├── help_menu.py          #     Menu de ayuda multi-seccion
 │       └── targets.py            #     Navegador de targets Makefile
 ├── scripts/                      # Entry points CLI (~24 scripts)
-├── tests/                        #   unit/ + integration/ (134 archivos, 2,505 tests colectados)
+├── tests/                        #   unit/ + integration/ (136 archivos test, 2,509 colectados)
 ├── data/                         # raw/ → interim/ → processed/ (DVC)
 ├── models/                       # Artefactos .pkl (DVC, 4x333 = 1332 modelos)
 ├── reports/                      # Graficos, reportes HTML, forecasts, ProdDetails/
@@ -341,7 +344,8 @@ EpiForecast-MX/
   porque el piso global se aplicaba a cualquier invocación midiera lo que midiera — y eso tuvo el
   cron en rojo 12 lunes con cero pruebas fallidas. `scripts/compliance_check.py` queda fuera a
   propósito (`--cov-fail-under=0`): es diagnóstico con sus propios mínimos, no un consumidor del gate.
-  2,505 tests colectados en 134 archivos; cobertura **74.5% en CI** (selección `not slow and not
+  2,509 tests colectados en 136 archivos test; el último CI previo a los cuatro controles nuevos
+  colectó 2,505 y obtuvo cobertura **74.5%** (selección `not slow and not
   integration`, medida en runner limpio). Ojo: en local, con `runs/` y el bundle restaurados, la
   cifra sube varios puntos y los skips caen de ~500 a ~1 — **no confundir esa medición con la de CI**.
 - **Pre-commit**: Ruff check + format, mypy, trailing whitespace, YAML/TOML check.

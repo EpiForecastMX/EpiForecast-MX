@@ -9,6 +9,9 @@
 > **Corregido el 25-ago tras la auditoría externa:** este documento se commiteó a `main` con su
 > texto anterior, que ya era falso — decía que producción respondía 435 y que había tres PR en
 > borrador. Los seis PR del Dashboard y los tres de MX están mergeados.
+>
+> **Reauditado el 31-ago:** ésta es una bitácora histórica. La cola vigente y los ítems
+> descartados por evidencia están en `docs/DEUDAS_VIGENTES.md`.
 
 ---
 
@@ -78,8 +81,8 @@ ortografía, el número ya no sube y los navegadores con v137 en caché **no vue
 `app.js`**.
 
 **Mergear las dos antes de desplegar** (v137 cubre ambas), o **subir a 138 antes del
-segundo despliegue**. Producción no se ha desplegado nunca con v137: la vía limpia sigue
-abierta.
+segundo despliegue**. Esto describe el riesgo histórico: v137 sí se desplegó y el nuevo
+arreglo del comparador incrementa el cache-bust a v138.
 
 ### Lo que falta decidir
 
@@ -87,11 +90,9 @@ abierta.
 2. ~~El árbol sucio de `paper/micai-2026-camera-ready`.~~ **Resuelto el 25-ago**: se verificó
    archivo por archivo, se rescataron los dos únicos que eran trabajo real (`build_tableau.py`
    con `fecha_boletin`, y `empaqueta_envio.py`) y la rama se mergeó a `main` en el PR #6.
-3. **El gate de cifras sólo mira `knowledge.json`.** Hallazgo de la auditoría externa del
-   25-ago: `epibot/scripts/cifras_verify.mjs` abre ese archivo y ninguno más, así que **no puede
-   atrapar un 435 reintroducido en `index.html`, `bento.json` o `EpiDashboard.html`**, que son
-   las superficies que ve el público. El contrato se cumple hoy, pero no está defendido.
-   Ampliarlo es tarea posterior al congreso.
+3. ~~**El gate de cifras sólo mira `knowledge.json`.**~~ **Resuelto.** El contrato enumera
+   la superficie publicada completa desde `netlify.toml`, revisa HTML/JSON y subdirectorios,
+   y tiene controles negativos. Verificación del 31-ago: 41 archivos, 453 chunks, PASS.
 4. **Nota histórica del árbol sucio (se conserva el razonamiento).** **Corrección importante: la
    versión anterior de esta nota decía que los nueve archivos estaban duplicados y que se
    limpiaran con `git checkout --`. Se verificó archivo por archivo y no era exacto.** De
@@ -107,22 +108,26 @@ abierta.
 
 ### Mejoras identificadas y no hechas
 
-- **`cifras:verify && rag:ci` cortocircuita.** Si falla el primero, Netlify solo reporta ese
-  fallo. Bloquea correctamente el despliegue, pero conviene un runner que acumule códigos.
-- **`_fixCohortStats` (`epibot/js/kb.js`) quedó redundante**, no dañina. Retirarla es tarea
-  posterior al congreso, y **sólo tras comprobar que produce exactamente lo mismo**.
-- **`bento.json` sigue siendo un snapshot de junio** presentado con un punto verde de «en
-  vivo». Regenerarlo exige un generador que no existe.
-- **El comparador enseña «Depresión · ?»**: el motor viene vacío por esa vía de datos.
+- ~~**`cifras:verify && rag:ci` cortocircuita.**~~ **Resuelto el 31-ago:**
+  `deploy:verify` ejecuta ambos gates, informa los dos códigos y devuelve fallo si cualquiera
+  queda en rojo.
+- ~~**`_fixCohortStats` quedó redundante.**~~ **Descartado por medición.** Todavía cambia
+  `por_motor`, `bottom5_smape` y la construcción de `dist_motor` respecto al JSON crudo.
+  Retirarla hoy alteraría cifras públicas; primero debe corregirse el generador y probar
+  igualdad profunda.
+- ~~**`bento.json` se presenta como dato vivo.**~~ **Retirado el 31-ago:** la portada ya no
+  tenía el mosaico; sólo quedaba una carga muerta del snapshot. Se eliminó la petición y el
+  JSON queda como evidencia histórica, sin consumidor público.
+- ~~**El comparador enseña «Depresión · ?».**~~ **Resuelto el 31-ago:** el payload conserva
+  ahora el motor por padecimiento y una prueba Node protege el contrato.
 - **Las tildes de las entidades siguen ausentes en los datos** (`knowledge.json` guarda
   «Nuevo Leon» y seis más). Es correcto —son claves— pero conviene que el generador emita
   además un campo de presentación, para no depender de un mapa en el frontend.
 
 ## 3. Lo que sigue abierto de antes, y no se tocó estos días
 
-- **Autoría del programa.** La portada lleva 7 autores y 4 afiliaciones; la sumisión
-  registrada tiene 6 y 3. Se decidió que **los 7 son correctos** y la portada se queda, pero
-  el programa del congreso imprimirá lo registrado. Nadie ha escrito al comité.
+- **Autoría del programa CALASS (histórico).** El congreso ya terminó; la discrepancia queda
+  como registro y no como acción operativa pendiente.
 - **Tableau Public sigue sin cerrarse.** Los borradores locales no deben publicarse. Memoria
   del carril: `docs/ESTADO_TABLEAU_W31_2026-08-20.md`.
 - **MICAI 2026**: entregado el 23-ago; falta el registro de un autor.

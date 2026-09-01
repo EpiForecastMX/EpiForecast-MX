@@ -1,6 +1,6 @@
 # GEMINI.md — Contexto operativo de EpiForecast-MX
 
-> Auditado contra `main` en el checkpoint `bf3740b5` el 1-sep-2026.
+> Auditado contra `main` en el checkpoint `c2913831` el 31-ago-2026.
 > Guía para Gemini CLI dentro de `EpiForecast-MX`; no sustituye las órdenes del
 > workspace ni autoriza acciones externas.
 
@@ -29,7 +29,7 @@ por separado. Para revisar o diagnosticar, no implementar ni mutar salvo petici�
 ### Repositorios
 
 - Backend: `EpiForecast-MX`, rama única en `origin`: `main`; checkpoint auditado
-  `bf3740b5`.
+  `c2913831`.
 - Frontend: `EpiForecast-IMSS-Dashboard`, `main` en `1719615f`.
 - El remoto local `respaldo` conserva una referencia de archivo MICAI: no borrarla.
 - Mantener backend y frontend en commits y PR separados.
@@ -63,12 +63,16 @@ El job verde contiene 501 skips en Ubuntu. El universo D2 auditado tiene 552 nod
 - 81 passed y 471 skipped;
 - 460 nodeids en 156 grupos usan la cadena sellada;
 - 6 tienen dependencia implícita confirmada;
-- 4 agregados legacy tienen doble guarda;
+- los 4 agregados legacy antes doblemente guardados viven ahora en `tests/integration/`:
+  el job normal los deselecciona y el manual falla si falta un CSV;
 - 1 prueba es mixta y debe dividirse.
 
 Los 44 despertados son 15 `unit` + 29 `contract`, movidos y verificados en clon
-limpio. No llamar «460 grupos» a lo pendiente. Orden: cuatro dobles guardas → política
-de skips por job → prototipo de cadena sintética → sólo si es viable, los 156 grupos.
+limpio. No llamar «460 grupos» a lo pendiente. El job Tests limita ahora los skips a 497;
+cuatro controles nuevos elevan la colección del árbol de trabajo a 2,509. Falta la política
+del carril manual. Orden vigente: política de Integration → prototipo de cadena sintética
+→ sólo si es viable, los 156 grupos.
+La cola contrastada y las memorias supersedidas están en `docs/DEUDAS_VIGENTES.md`.
 
 ## 3. Padecimientos y lifecycle
 
@@ -121,10 +125,18 @@ candidato supera al control en bases, 111 productos y nacional General.
 
 **4/4 no autoriza publicar.** El `runs/readiness/obesidad/readiness_manifest.json`
 existente es anterior y todavía declara 1/4: es evidencia local obsoleta. El preflight
-Google/Tableau sigue `BLOCKED_EXTERNAL`. Antes de activar hacen falta, con permisos
-separados:
+Google/Tableau sigue `BLOCKED_EXTERNAL`.
 
-1. regenerar readiness local contra 4/4;
+**Compatibilidad ETS cerrada localmente (31-ago), pendiente de CI remoto.** SciPy 1.18
+añadió `_xp` al estado de `LinearOperator`; los pickles sellados anteriores no lo traen.
+El loader intenta primero el pickle normal y sólo ante ese `KeyError` exacto usa un
+unpickler local para `LbfgsInvHessProduct`; no parchea clases globales ni oculta otros
+errores. Los 16 modelos ETS reproducen sus 832 valores canónicos con error máximo
+`2.27e-13`; las 54 pruebas focales y el carril local completo quedan verdes.
+
+Antes de activar hacen falta, con permisos separados:
+
+1. validar el cambio ETS en CI y después regenerar readiness local contra 4/4;
 2. staging externo y preflight;
 3. Tableau Desktop y smoke test;
 4. autorización de apply;
@@ -211,7 +223,8 @@ Rollback público: rama nueva + `git revert` + PR. Nunca reescribir historia.
 
 ## 6. Tests y gates
 
-- Pytest: 134 archivos, 2,505 nodeids.
+- Pytest: 136 archivos test, 2,509 nodeids en el árbol actual. El último CI de `main`,
+  anterior a cuatro controles de skips/compatibilidad ETS, colectó 2,505.
 - Markers: `unit`, `contract`, `slow`, `integration`.
 - `--strict-markers` activo.
 - Umbral único: `fail_under = 70`.
