@@ -104,8 +104,14 @@ jobs:
           pip install -e ".[dev,scraping]"
 
       - name: Tests + coverage
+        # Baseline Ubuntu tras mover los cuatro agregados legacy: 501 - 4 = 497.
+        # Un skip nuevo es una regresión y vuelve rojo el job.
+        # `python -m` conserva el checkout en sys.path durante el preparse y permite
+        # cargar el plugin local antes de la colección; el console script `pytest` no
+        # ofrece esa garantía.
         run: >-
-          pytest tests/ -v --tb=short -m "not slow and not integration"
+          python -m pytest tests/ -v --tb=short -m "not slow and not integration"
+          -p tests.skip_budget --max-skips=497
           --cov=src/epiforecast --cov-report=term-missing --cov-report=xml
 
       - name: Upload coverage
@@ -148,6 +154,8 @@ jobs:
           pip install -e ".[dev,scraping]"
 
       - name: Run integration tests
+        # Incluye los cuatro agregados legacy: si no fueron restaurados, sus checks
+        # fallan. En este carril ausencia no equivale a una integración aprobada.
         run: pytest tests/integration/ -v --tb=long -m integration
         env:
           AWS_DEFAULT_REGION: us-east-1

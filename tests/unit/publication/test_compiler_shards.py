@@ -48,8 +48,6 @@ pytestmark = pytest.mark.skipif(
     not af.hay_runs(), reason="los runs sellados de C5 no están en este entorno (runs/ gitignored)"
 )
 
-REPO = Path(__file__).resolve().parents[3]
-
 
 @pytest.fixture(scope="module")
 def sede(tmp_path_factory) -> Path:
@@ -234,28 +232,6 @@ def test_obesidad_sigue_invisible_en_todo_lo_publico(shards):
     assert af.DISEASE not in [d.lower() for d in registry.published_members()]
     for canal in (CHANNEL_REPORTS, CHANNEL_TABLEAU, CHANNEL_WEB, CHANNEL_EPIBOT):
         assert af.DISEASE not in [d.lower() for d in registry.published_members(canal)]
-
-
-@pytest.mark.parametrize(
-    "artefacto",
-    [
-        "reports/forecasts/prophet/all_forecast_prophet.csv",
-        "reports/forecasts/deepar/all_forecast_deepar.csv",
-        "reports/forecasts/ensemble/all_forecast_ensemble.csv",
-        "reports/forecasts/stacking/all_forecast_stacking.csv",
-    ],
-)
-def test_los_agregados_legacy_no_contienen_al_padecimiento_compilado(artefacto):
-    """Regla 1: compilar jamás añade filas a los agregados de los cuatro publicados."""
-    ruta = REPO / artefacto
-    if not ruta.exists():
-        pytest.skip(f"{artefacto} no está en este entorno")
-    padecimientos = set(
-        pd.read_csv(ruta, usecols=["meta_padecimiento"])["meta_padecimiento"].astype(str)
-    )
-    assert not {p for p in padecimientos if p.lower() == af.DISEASE}
-    # Y el contenido no se movió: el gate de preservación vive también aquí.
-    assert padecimientos
 
 
 def test_f50_no_se_compila(sede):

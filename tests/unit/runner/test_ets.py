@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import pickle
 from typing import Any
 
 import numpy as np
 import pytest
+from scipy.optimize._lbfgsb_py import LbfgsInvHessProduct
+from scipy.sparse.linalg import LinearOperator
 
 from epiforecast.data.epi_calendar import shift
 from epiforecast.data.epi_dataset_spec import SeriesKey
@@ -179,3 +182,28 @@ def test_params_del_adapter_incluyen_variantes_y_limites():
     ad: Any = adapters.get_adapter(ENGINE)
     assert ad._cfg["variants"] == _CFG["variants"]
     assert ad._cfg["resource_limits"]["max_threads"] == 1
+
+
+def test_loader_compat_repara_solo_el_xp_ausente_de_scipy_legacy(monkeypatch):
+    operator = LbfgsInvHessProduct(np.eye(2), np.eye(2))
+    monkeypatch.setattr(
+        LinearOperator,
+        "__getstate__",
+        lambda instance: {key: value for key, value in instance.__dict__.items() if key != "_xp"},
+    )
+    payload = pickle.dumps(operator, protocol=pickle.HIGHEST_PROTOCOL)
+
+    with pytest.raises(KeyError, match="_xp"):
+        pickle.loads(payload)  # noqa: S301 — control negativo del pickle fabricado
+
+    restored = ets._load_statsmodels_state(payload)
+    assert np.array_equal(restored @ np.array([1.0, 2.0]), np.array([1.0, 2.0]))
+
+
+def test_loader_compat_no_oculta_otro_keyerror(monkeypatch):
+    def falla(_data):
+        raise KeyError("otra_clave")
+
+    monkeypatch.setattr(pickle, "loads", falla)
+    with pytest.raises(KeyError, match="otra_clave"):
+        ets._load_statsmodels_state(b"estado")

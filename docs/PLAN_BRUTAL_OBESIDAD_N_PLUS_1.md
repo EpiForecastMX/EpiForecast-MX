@@ -1,5 +1,11 @@
 # PLAN BRUTAL — Obesidad E66 ASAP y plataforma funcional N+1
 
+> **HISTÓRICO, NO OPERATIVO.** Este plan conserva la ejecución C1–C5 y fue superado por
+> C6/C7. No usar su rama, checkpoint, conteos de pruebas ni «Siguiente» como instrucciones
+> vigentes. Estado actual: `main`, Obesidad `trained`/NO-GO, prospectiva PASS 4/4,
+> readiness local rancio; el loader ETS compatible pasa localmente y espera CI remoto. Consultar
+> `GEMINI.md`, `docs/PLAN_C7_PUBLICACION_OBESIDAD.md` y `docs/DEUDAS_VIGENTES.md`.
+
 > Estado de referencia: backend `ad98225a`, frontend `179bbe36`.
 > Objetivo: entrenar Obesidad correctamente cuanto antes y convertir el flujo en una plataforma
 > genérica para padecimientos del boletín.

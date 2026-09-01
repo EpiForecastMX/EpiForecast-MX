@@ -9,8 +9,9 @@
 > SageMaker, `dvc add/push` o `dvc checkout` que aparezca más abajo está OBSOLETO y NO debe
 > ejecutarse** — varios reproducen las regresiones (`predice Obesidad` sobrescribe los agregados
 > globales). Las afirmaciones "end-to-end / completado" de abajo son del **intento preliminar**, no un
-> cierre válido. Las cifras de modelos/tests pueden estar desactualizadas. La secuencia autoritativa
-> es `docs/PLAN_BRUTAL_OBESIDAD_N_PLUS_1.md`; el estado de contención, `docs/FASE_0_CONTENCION.md`.
+> cierre válido. Las cifras de modelos/tests pueden estar desactualizadas. El propio PLAN_BRUTAL
+> también es ya histórico; usar `GEMINI.md`, `docs/PLAN_C7_PUBLICACION_OBESIDAD.md` y
+> `docs/DEUDAS_VIGENTES.md`. El estado de contención permanece en `docs/FASE_0_CONTENCION.md`.
 
 ## Estado por épica
 

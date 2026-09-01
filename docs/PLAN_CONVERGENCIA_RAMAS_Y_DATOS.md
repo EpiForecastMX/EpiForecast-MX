@@ -1,5 +1,9 @@
 # Auditoría de estado y plan de convergencia a una sola rama
 
+> **HISTÓRICO, NO OPERATIVO.** Esta bitácora documenta la convergencia del 18-ago-2026.
+> Sus ramas, estado prospectivo 1/4 y acciones siguientes quedaron superados. Consultar
+> `docs/DEUDAS_VIGENTES.md`, `GEMINI.md` y el estado canónico actual antes de actuar.
+
 > Fecha: 2026-08-18 · Repo principal en `feat/registry-padecimientos-obesidad` @ `cc4e8e01`
 > · Dashboard en `feat/c73-candidate-staging` @ `a044403d`.
 > Objetivo: una sola rama por repositorio, datos sincronizados y `make update-week` operativo.
