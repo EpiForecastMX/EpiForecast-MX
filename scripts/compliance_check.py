@@ -487,6 +487,9 @@ def check_testing():
                 "tests/unit/",
                 "--cov=src/epiforecast",
                 "--cov-report=term",
+                # Diagnostico, NO gate: tiene sus propios minimos (30/50/80)
+                # mas abajo y no debe heredar el fail_under canonico.
+                "--cov-fail-under=0",
                 "--tb=no",
                 "-q",
             ],

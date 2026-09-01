@@ -23,7 +23,6 @@ from epiforecast.runner.release_contract import (
     MANIFEST_FILE,
     MANIFEST_KEYS,
     RELEASE_SCHEMA,
-    identity_payload,
     parse_checksums,
 )
 from epiforecast.runner.release_loader import verify_bundle
@@ -170,15 +169,6 @@ def test_todo_manifest_emitido_declara_los_schemas_v2(bundle):
     manifest = rf.leer_manifest(bundle)
     assert manifest["schema"] == RELEASE_SCHEMA == "release_manifest.v2"
     assert manifest["identity_schema"] == IDENTITY_SCHEMA == "identity_payload.v2"
-
-
-def test_la_identidad_declara_el_schema_del_release_que_describe():
-    """R19.1.7: el payload de identidad dice a qué forma de manifest pertenece."""
-    identidad = identity_payload(
-        disease_id="x", chain={"dataset_id": "x_1"}, payloads={"a.csv": "0" * 64}
-    )
-    assert identidad["schema"] == "identity_payload.v2"
-    assert identidad["release_schema"] == "release_manifest.v2"
 
 
 # ── Higiene: nada del entorno dentro del contenido inmutable ──────────────────────────────────

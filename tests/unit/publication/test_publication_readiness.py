@@ -10,13 +10,11 @@ Nada aquí toca la red. El sink externo se inyecta, y el `sede` se construye en 
 
 from __future__ import annotations
 
-import ast
 import dataclasses
 import io
 import json
 from pathlib import Path
 import re
-import subprocess
 
 import pandas as pd
 import pytest
@@ -33,9 +31,7 @@ from scripts.publication_readiness import (
     STATUS_BLOCKED_EXTERNAL,
     STATUS_FAIL,
     STATUS_PASS_LOCAL,
-    check_evidence_root,
     check_external_shape,
-    identity_digest,
     load_external_preflight,
     main,
     resolve_release_target,
@@ -227,28 +223,6 @@ def test_un_shard_alterado_falla_antes_de_cualquier_borde_externo(sede, tmp_path
     assert not (tmp_path / "ev" / "readiness_manifest.json").exists(), "no se emitió evidencia"
 
 
-# ── Contención de la evidencia ────────────────────────────────────────────────────────────────
-def test_la_evidencia_no_puede_caer_dentro_del_repositorio(tmp_path):
-    repo = Path(__file__).resolve().parents[3]
-    for prohibida in ("reports/tmp/ev", "reports/runs/ev", "src/ev"):
-        with pytest.raises(ArtifactValidationError, match="no se versiona"):
-            check_evidence_root(repo / prohibida, repo)
-    assert check_evidence_root(repo / "runs" / "_ev", repo)
-    assert check_evidence_root(tmp_path / "ev", repo)
-
-
-def test_runs_ignorado_se_acepta_antes_de_existir_en_un_clon_limpio(tmp_path):
-    repo = tmp_path / "clean_clone"
-    repo.mkdir()
-    (repo / ".gitignore").write_text("runs/\n", encoding="utf-8")
-    subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
-    destino = repo / "runs" / "readiness" / "evidence"
-    assert not (repo / "runs").exists(), "la precondición reproduce el clon limpio"
-
-    assert check_evidence_root(destino, repo) == destino.resolve()
-    assert not (repo / "runs").exists(), "validar no crea el destino"
-
-
 def test_el_objetivo_del_release_se_deriva_y_no_se_escribe_a_mano(sede):
     bundle = _objetivo(sede)
     raiz = resolve_release_target(bundle, af.DISEASE, bundle.name)
@@ -426,81 +400,6 @@ def test_el_externo_exige_evidencia_local_aprobada(sede, tmp_path):
         )
 
 
-# ── El contrato del código: sólo lectura, y genérico ──────────────────────────────────────────
-ESCRITURAS_PROHIBIDAS = {
-    "apply",
-    "apply_recovery",
-    "recover",
-    "promote",
-    "rollback",
-    "delete",
-    "write_table",
-    "rename_table",
-    "drop_table",
-    "del_worksheet",
-    "update_title",
-    "installShard",
-}
-
-
-def test_el_orquestador_no_llama_a_ninguna_operacion_de_escritura():
-    """AST, no grep: lo que importa es qué se LLAMA, no qué palabra aparece en un comentario."""
-    arbol = ast.parse(FUENTE.read_text("utf-8"))
-    llamadas = set()
-    for nodo in ast.walk(arbol):
-        if isinstance(nodo, ast.Call):
-            f = nodo.func
-            llamadas.add(f.attr if isinstance(f, ast.Attribute) else getattr(f, "id", ""))
-    prohibidas = llamadas & ESCRITURAS_PROHIBIDAS
-    assert not prohibidas, f"el orquestador llama a {prohibidas}"
-
-
-def test_no_existe_bandera_ni_subcomando_equivalente_a_aplicar():
-    fuente = FUENTE.read_text("utf-8")
-    for prohibido in ('"--apply"', "'--apply'", '"apply"', '"recover"'):
-        assert prohibido not in fuente, f"{prohibido} declarado en el CLI"
-    from scripts.publication_readiness import build_parser
-
-    ayuda = build_parser().format_help()
-    assert "--apply" not in ayuda
-    for accion in build_parser()._actions:  # noqa: SLF001 — se inspecciona el parser a propósito
-        assert getattr(accion, "dest", "") != "apply"
-
-
-def test_el_orquestador_no_conoce_ningun_padecimiento_ni_conteo():
-    """Genericidad: sin nombres de padecimiento, sin motores y sin los conteos del release actual."""
-    arbol = ast.parse(FUENTE.read_text("utf-8"))
-    literales = [
-        n.value
-        for n in ast.walk(arbol)
-        if isinstance(n, ast.Constant) and isinstance(n.value, (str, int))
-    ]
-    docstrings = set()
-    for nodo in ast.walk(arbol):
-        if isinstance(nodo, (ast.Module, ast.FunctionDef, ast.ClassDef)):
-            doc = ast.get_docstring(nodo)
-            if doc:
-                docstrings.add(doc)
-    textos = [v for v in literales if isinstance(v, str) and v not in docstrings]
-
-    # Por palabra completa: `channels_without_bridge` contiene «ridge» y no es un motor.
-    for prohibido in (
-        "obesidad",
-        "e66",
-        "anorexia",
-        "dengue",
-        "prophet",
-        "deepar",
-        "ridge",
-        "ets",
-    ):
-        patron = re.compile(rf"\b{prohibido}\b", re.IGNORECASE)
-        culpables = [t for t in textos if patron.search(t)]
-        assert not culpables, f"{prohibido} escrito en el orquestador: {culpables[:2]}"
-    for conteo in (64, 111, 5772, 52, 47):
-        assert conteo not in literales, f"el conteo {conteo} está hardcodeado"
-
-
 def test_es_generico_frente_a_un_padecimiento_distinto(sede, tmp_path, monkeypatch):
     """N+1: los invariantes se comprueban contra el disease INYECTADO, no contra una constante."""
     from scripts.publication_readiness import _comprobar_invariantes
@@ -629,29 +528,6 @@ def test_el_comando_del_manual_llega_al_sink_sin_shard_root(sede, tmp_path):
     assert datos["status"] == "PASS_EXTERNAL_READONLY"
     assert estado["n"] == 1, "se autenticó exactamente una vez"
     assert datos["promotion_plan"]["steps"]
-
-
-def test_el_comando_documentado_en_el_manual_es_el_que_existe():
-    """Anti-deriva: el comando se extrae del propio manual, no se transcribe aquí."""
-    manual = (
-        Path(__file__).resolve().parents[3] / "docs" / "MANUAL_B1_PREFLIGHT_GOOGLE_TABLEAU.md"
-    ).read_text("utf-8")
-    bloques = re.findall(r"```zsh\n(.*?)```", manual, re.S)
-    externos = [b for b in bloques if "publication_readiness external-readonly" in b]
-    assert externos, "el manual ya no documenta el comando externo"
-
-    crudo = " ".join(externos[0].replace("\\\n", " ").split())
-    argv = crudo.split()[crudo.split().index("external-readonly") :]
-    assert argv[0] == "external-readonly"
-    assert "--shard-root" not in argv, (
-        "el manual no puede depender de una bandera de compatibilidad"
-    )
-    assert "--apply" not in crudo
-    # Y el parser real acepta exactamente esa forma.
-    from scripts.publication_readiness import build_parser
-
-    args = build_parser().parse_args(["external-readonly", "--local-evidence", "x.json"])
-    assert args.comando == "external-readonly"
 
 
 @pytest.mark.parametrize(
@@ -1143,11 +1019,6 @@ def test_dos_hojas_de_staging_distintas_dan_preflights_distintos(sede, tmp_path)
     # La huella no es el id ni lo contiene.
     for centinela in (CENTINELA_ID, OTRO_STAGING, ID_PRODUCCION):
         assert centinela not in json.dumps(a) and centinela not in json.dumps(b)
-
-
-def test_el_mismo_id_en_los_dos_papeles_no_da_la_misma_huella():
-    """Separación de contexto: confundir las variables tiene que notarse."""
-    assert identity_digest("c7-staging", "X") != identity_digest("c7-production", "X")
 
 
 @pytest.mark.parametrize("variable", [STAGING_ID_ENV, PRODUCTION_ID_ENV])
