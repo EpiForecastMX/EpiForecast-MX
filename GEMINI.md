@@ -32,6 +32,21 @@ DATA_VERSION 20260826, `app.js?v=140`, cifras 333/99/432/444, RAG 453 chunks, va
 Estado vigente: backend `main@3bd67236`, frontend `main@8490e433`; ramas P0/P1/P1b y respaldo
 conservados. W34 sólo cuando exista su PDF oficial y los cuatro publicados avancen juntos.
 
+**Limpieza one-shot (2-sep-2026, noche):** ambos repositorios quedan sólo con `main` local y
+`origin/main`; cero worktrees adicionales (se retiraron sin `--force` los dos del par de la
+corrida 7). Ramas borradas tras verificar ancestría con `main`, locales con `-d` y remotas con
+`push --delete`: backend `ci/skip-budget-ets-legacy`, `docs/p1b-publicada`,
+`p0/namespace-e-inmutabilidad-del-sello`, `p1/actualizacion-semanal-2026-w33`,
+`p1/release-backend-2026-w33-c6` (sólo local), `p1b/fallback-estatico-w33` y
+`p1b/release-backend-c7` (sólo local); frontend `fix/frontend-deudas`,
+`p1/actualizacion-semanal-2026-w33` y `p1b/fallback-estatico-w33`. La ref temporal
+`auditoria/main` se retiró. El respaldo P0 pre-rebase vive ahora en la etiqueta LOCAL
+`archive/p0-pre-rebase-584cf72d-2026-09-02` (no publicada); `respaldo/paper/micai-2026-camera-ready`
+no se tocó. Se retiraron sólo los temporales `_trabajo*` y `_release` del scratchpad; sellos,
+clon, DVC, PDFs, modelos y evidencia (`planes/p1_2026-w33_2026-09-02/`, con
+`limpieza/inventario_antes.txt`) se conservan. Producción sigue en W33; W34, DVC, datos y
+despliegue intactos.
+
 Regla gobernante: todos los miembros `published` del registry comparten un corte público
 único. Uno faltante, adelantado, atrasado o sin cobertura exacta bloquea el lote completo;
 no se publica al resto ni se reduce el conjunto por flags. Obesidad y Anorexia siguen
