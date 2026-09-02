@@ -1,37 +1,61 @@
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
-## Estado P0 del flujo semanal — 2026-09-02
+## Estado P0 del flujo semanal — 2026-09-02 (tercera tanda: correctiva, cerrada en local)
 
 Esta sección sustituye cualquier instrucción inferior que presente `make update-week` como
-receta activa. Backend: rama `p0/namespace-e-inmutabilidad-del-sello`, doce commits locales
-sobre `a9a694c8`, árbol limpio, sin push (los seis del 1-sep más `a251f6cd` --out,
-`3dd732df` P0.1/P0.2/P0.10, `21b58ebb` P0.8, `92a2c99e` entradas rastreadas y NBGLM,
-`8e192f8c` paridad sobre el registry, y el commit de esta documentación). La referencia
-local `origin/main` sigue en `a9a694c8`; el remoto observado en `16476a98` no se integró
-ni se auditó (exige autorización de red). Frontend: `main@0e777995`, intacto.
+receta activa. Backend: rama `p0/namespace-e-inmutabilidad-del-sello`, **veintiséis commits
+locales sobre `a9a694c8`** (los doce previos más catorce de la tanda correctiva del 2-sep,
+`34d5395e … a0fb313b`), árbol limpio, sin push. La referencia local `origin/main` sigue en
+`a9a694c8`; el remoto observado en `16476a98` no se integró ni se auditó (exige red).
+Frontend: `main@0e777995`, intacto, sin worktrees.
 
-`make update-week` sigue bloqueado en preflight: el cableado completo está probado con
-repositorios sintéticos y la hidratación real aborta por un defecto de datos (abajo); P1
-exige autorización. Flujo cableado: `materialize` (git archive de los HEAD, 41/41) →
-`hydrate` (sandbox del backend con SOLO la allowlist `config/publication/entradas_semanales.json`
-leída del HEAD, copias con SHA256, contrato exacto 32/432/444 + paridad de corte) →
-generadores en el sandbox con `--out` → `run-gates` → `seal` (deriva de la hidratación
-`digest_consolidado_antes/candidato`, boletines e inventario de entradas; exige paridad
-entre los publicados del registry, cobertura del candidato y cadena de caché frente al HEAD
-del dashboard; manifiesto `weekly_staging/3` con `inputs/` sellados) → `prepare-worktrees`
-→ `apply --destinos` → `check-completeness`. `CONFINAMIENTO_LISTO = True`; P0.11 = opción C.
+`make update-week` sigue bloqueado en preflight **por autorización, no por código**: P0.1,
+P0.2 y P0.8 están cerrados; correr el carril real exige red (pull, `dvc pull`,
+sincronización aditiva, API de Gemini para el índice RAG) y la decisión de publicar (P1).
+Flujo cableado y probado: `materialize` (git archive de los HEAD; escribe
+`materializacion.json`, que `hydrate`, `bump-cache`, `run-gates` y `seal` exigen con sus
+HEAD y política) → `hydrate` (sandbox con SOLO la allowlist `entradas/2`: 44 entradas
+reales incluidas `dengue_boletin.csv`, su manifiesto, `inegi.csv`, `models/*/*/*_completo.csv`
+por patrón y el ONI cacheado; directorios scratch; contrato del HEAD: catálogo, registry y
+profundidad mínima 52 con continuidad MMWR) → generadores en el sandbox con `--out` →
+`bump-cache` (DATA_VERSION y cada `?v=`, imports anidados incluidos, plan en memoria) →
+`run-gates` (evidencia en `gates.en_curso/` con marcador; huérfanos por pgid+arranque;
+residuos apartados, nunca borrados; digest del ejecutable gobernante) → `seal` (evidencia,
+cobertura, cadena de caché, inmutables, `revisa_aditivo` base ⊆ candidato, semanas atadas
+a los cortes y a `boletin.ultima_semana`, y la poda PREVISTA con retirables/lápidas, todo
+ANTES de podar) → `prepare-worktrees` (rollback; revalida gates contra la política del
+HEAD canónico) → `apply` (re-liga bajo el lock; composición del par antes de `aplicado`,
+también en el no-op) → `check-completeness` → `discard-worktrees --manifiesto` (ligado a
+run_id, digest, lock, estado y a que git reconozca cada worktree). `CONFINAMIENTO_LISTO =
+True`; P0.11 = opción C.
 
-Gate vigente: 812 pruebas de publicación; `make test-fast` = 2,719 passed, 1 skipped, 66
-deselected (cero skips nuevos); Ruff, mypy, `bash -n` y `git diff --check` verdes.
+Datos: la tabla 333 rastreada quedó **reparada** (432 filas, `76d3e311…`, commit
+`dd54d51b`, autoridad `produccion_dengue.csv` documentada en `catalog.py`) y la causa raíz
+corregida en `merge_all_models` (`4962e582`). `WEEKS_LIMIT = 15` en
+`reselect_motor_2026.py` **queda como decisión pendiente documentada**: el comentario dice
+«= boletín más reciente» pero ningún contrato canónico fija la ventana, y cambiarla
+re-selecciona motores de 333 series.
 
-Hallazgos de datos que bloquean la hidratación real (no se corrigen en este carril):
-`reports/ProdDetails/tabla_333_modelos_produccion.xlsx` (rastreado, commit `7bd8bb55`)
-lleva 435 filas con tres claves duplicadas y contradictorias de Dengue Nacional (filas
-112-114 Prophet, sMAPE 35-38; filas 166-168 DeepAR, sMAPE 80-110). El contrato lo detecta
-en 4,5 s y aborta sin residuos. Pendiente además: `--out` de `build_neuro_gallery`,
-`build_epibot_zoom`, `dengue-web` ya lo aceptan; `sincroniza_consolidado` usa `dvc get`
-(red) dentro del sandbox; auditoría ciega externa; auditoría del avance remoto; P1 sólo con
-autorización. Plan auditado:
+Gate vigente: 902 pruebas de publicación; `make test-fast` = **2,820 passed, 1 skipped, 66
+deselected** (cero skips nuevos); Ruff, mypy, `bash -n` y `git diff --check` verdes; **85
+mutaciones del código (las 42 originales con anclas al día, 28 de las defensas nuevas y
+16 de la auditoría final), 85 vistas caer**; auditoría adversarial final por tres agentes
+ciegos: sus hallazgos alto/medio corregidos en `83950f96` y `a0fb313b`.
+
+Ensayo real del 2-sep (evidencia en `planes/ensayo_P012_2026-09-02/`, con `SHA256SUMS`):
+**tramo 1**, la cadena de generación completa sobre W31 sin red —materialize, hidratación
+real (44 entradas, contratos PASS), los diez pasos de generación en el sandbox, `bump-cache`
+(DATA_VERSION 20260824→20260825, kb.js?v=104→105, app.js?v=138→139) y `run-gates`: `cifras`
+PASS y **`rag` FAIL** porque el índice RAG rastreado no cubre el `knowledge.json` regenerado
+y reconstruirlo exige GEMINI_API_KEY (red): fallo cerrado, sin sello. **Tramo 2**, sello →
+par desechable sobre la composición real con un cambio fuera del corpus RAG: gates PASS,
+run `e147ff8deb914b4a`, prepare/apply/check en clones locales con composición aplicada ==
+sellada, no-op verificado, byte alterado → check falla y apply deja el par inválido,
+discard ligado al manifiesto; repos reales con un solo worktree y frontend limpio. Los tres
+hallazgos que el ensayo destapó (directorios scratch, ONI sin red, NB-GLM constante) están
+corregidos en `98faf4d3` y `a0fb313b`.
+
+Plan auditado:
 
 - `../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`, SHA256
   `5cfdf5a4a2d8e5ed1acf004e8c90a00e929dfd217ba051fff925e742fe9e233d`.

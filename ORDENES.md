@@ -2,37 +2,29 @@
 
 ## 0 · Salida de sesión P0 — no ejecutar la actualización semanal
 
-Estado al 1-sep-2026: rama `p0/namespace-e-inmutabilidad-del-sello` sobre `a9a694c8`, con
-siete archivos P0 sin commit. `make update-week` debe abortar antes de DVC y del staging.
-No usar `update-week-apply`, no descargar W32/W33, no ejecutar DVC y no publicar.
+Estado al 2-sep-2026 (tercera tanda): rama `p0/namespace-e-inmutabilidad-del-sello` con
+**veintiséis commits locales sobre `a9a694c8`**, árbol limpio, sin push. `make update-week`
+aborta en preflight hasta la autorización de P1. No usar `update-week-apply` sobre los
+repositorios canónicos, no descargar W32/W33, no ejecutar DVC y no publicar.
 
-Para retomar, copiar literalmente el prompt de:
+Para retomar, leer la sección P0 de `AGENTS.md` (workspace) y `CLAUDE.md`. Receta local,
+en este orden y sólo con datos sintéticos o el ensayo en clones locales:
 
-```text
-/Users/haowei/Documents/Integrador/planes/PROMPT_REANUDAR_P0_RUNNER_GATES_2026-09-01.md
-```
+1. `materialize --trabajo <nuevo> --repo-backend . --head-backend <sha> --repo-dashboard
+   <repo> --head-dashboard <sha>` (escribe `materializacion.json`);
+2. `hydrate --trabajo <trabajo> --repo-backend . --head-backend <sha> --padecimientos
+   "Alzheimer,Depresión,Parkinson,Dengue" --boletin nombre:url:bytes:sha256 ...`;
+3. generadores en `<trabajo>.sandbox/EpiForecast-MX` con `--out` hacia
+   `<trabajo>/outputs`; `bump-cache --trabajo --destino-dashboard --head-dashboard`;
+   `run-gates --trabajo --head-backend --destino-backend --destino-dashboard`; `seal` con
+   `--destino-backend`, `--destino-dashboard`, `--semana-anterior`/`--semana-nueva`
+   (= cortes reales) y `--padecimientos`;
+4. `make update-week-apply MANIFEST=<run>/manifest.json DESTINOS=<raíz nueva>` (sólo
+   sobre clones o worktrees desechables) y `make update-week-discard MANIFEST=… DESTINOS=…`.
 
-SHA256 al cerrar:
-`063277ed7fb745da600c35f12325238a2841707201029aa28ef5690e0d2a5ee9`.
-
-P0 avanzó en doce commits locales (1 y 2-sep): runner de gates, apply confinado
-(`CONFINAMIENTO_LISTO = True`), materialización 41/41, completitud exacta, opción C de
-P0.11, `--out` en los tres generadores, hidratación por allowlist con contrato exacto,
-entradas selladas, Dengue fail-closed y cadena de caché. Nada se publicó ni se hizo push.
-Receta local, en este orden y sólo con datos sintéticos o composición temporal:
-
-1. `python -m scripts.refresh_staging materialize --trabajo <nuevo> --head-backend <sha>
-   --repo-dashboard <repo> --head-dashboard <sha>`;
-2. `hydrate --trabajo <trabajo> --head-backend <sha> --padecimientos "A,B,C,D"
-   [--boletin nombre:url:bytes:sha256 ...]` (sandbox en `<trabajo>.sandbox/`);
-3. generar en el sandbox con `--out` hacia `<trabajo>/outputs`; `run-gates`; `seal`
-   (sin `--digest-consolidado`, `--boletin` ni `--operacion-dvc`);
-4. `make update-week-apply MANIFEST=<run>/manifest.json DESTINOS=<raíz nueva>`;
-   `discard-worktrees --destinos <raíz>`.
-
-Rollback: descartar el par y el sandbox; el sello y su evidencia se conservan. Bloqueo
-real vigente: la tabla 333 rastreada tiene tres claves duplicadas y contradictorias de
-Dengue Nacional; la hidratación real aborta hasta corregirla (P1, con autorización).
+Rollback: descartar el par y el sandbox; el sello y su evidencia se conservan. La tabla
+333 ya está reparada; el bloqueo vigente es la autorización de P1 (red: pull, DVC,
+GEMINI_API_KEY para el índice RAG).
 
 Plan auditado, que no debe reescribirse durante el handoff:
 `../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`, SHA256

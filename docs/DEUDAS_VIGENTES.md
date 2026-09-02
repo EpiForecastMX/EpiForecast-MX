@@ -10,47 +10,59 @@
 
 El plan vigente es `../../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`
 (SHA256 `5cfdf5a4a2d8e5ed1acf004e8c90a00e929dfd217ba051fff925e742fe9e233d`). La rama
-`p0/namespace-e-inmutabilidad-del-sello` lleva doce commits locales sobre `a9a694c8`, sin
-push.
+`p0/namespace-e-inmutabilidad-del-sello` lleva veintiséis commits locales sobre
+`a9a694c8`, sin push.
 
-Cerrado (1 y 2-sep, con controles negativos y mutaciones del código vistos caer):
+Cerrado (1 y 2-sep, con controles negativos y 85 mutaciones del código vistas caer):
 
-- P0.9 runner real de gates; P0.6 apply confinado; composición 41/41; completitud exacta;
-  P0.11 opción C (dataset DVC pendiente; ninguna operación DVC se declara);
-- `--out` en `build_web_knowledge.py`, `build_tableau.py` y `genera_validacion_semanal.py`
-  (y corrección del `NaN -> null` que nunca se aplicaba);
-- P0.1 hidratación por allowlist (`config/publication/entradas_semanales.json`, leída del
-  HEAD) con contrato exacto: 32 entidades por semana, 432 series por motor legacy, 99 de
-  NBGLM, 444 en el zoom, unicidad y paridad de corte; las entradas rastreadas se toman del
-  HEAD y el worktree tiene que coincidir;
-- P0.2 `weekly_staging/3`: `digest_consolidado_antes/candidato`, boletines verificados e
-  inventario de entradas derivados de la hidratación; copias inmutables bajo `inputs/`
-  verificadas por `verifica`;
-- P0.8 Dengue fail-closed en el orquestador y paridad de corte exigida por `seal` entre
-  todos los publicados del registry;
-- P0.10 cadena de caché comprobada contra el HEAD del dashboard (`DATA_VERSION` →
-  `kb.js?v=` → `app.js?v=` y la boca `no-store`).
+- P0.9 runner real de gates (solape por prefijos administrados, marcador y huérfanos,
+  residuos apartados, digest del ejecutable, `chmod` es mutación, timeout con gracia);
+  P0.6 apply confinado (registro atómico, rollback de prepare, discard ligado,
+  composición del par también en el no-op); composición 41/41; completitud exacta;
+  P0.11 opción C;
+- `--out` en los tres generadores; P0.1 hidratación por allowlist `entradas/2` (44
+  entradas reales, patrones glob, directorios scratch, entradas rastreadas desde el HEAD)
+  con contrato del HEAD (catálogo, registry, profundidad 52 contigua MMWR, aditivo base ⊆
+  candidato, forecasts sin series repetidas, alias no ambiguos);
+- P0.2 `weekly_staging/3` con `entrada.lista`, inmutables verificadas al sellar, semanas
+  atadas a los cortes y al EpiBot; materialización exigida por todos los pasos;
+- P0.8 Dengue fail-closed y paridad entre todos los publicados; NB-GLM re-lanza errores
+  de E/S (sin red no publica una constante);
+- P0.10 cadena de caché fail-closed con imports anidados y `bump-cache`;
+- datos: tabla 333 reparada (432 filas) y causa raíz en `merge_all_models`.
 
-Gate: 812 pruebas de publicación; `make test-fast` = 2,719 passed, 1 skipped, 66
+Gate: 902 pruebas de publicación; `make test-fast` = 2,820 passed, 1 skipped, 66
 deselected; Ruff, mypy, `bash -n`, `git diff --check` verdes.
+
+Ensayo real del 2-sep (evidencia en `planes/ensayo_P012_2026-09-02/`, con `SHA256SUMS`):
+**tramo 1**, la cadena de generación completa sobre W31 sin red —materialize, hidratación
+real (44 entradas, contratos PASS), los diez pasos de generación en el sandbox, `bump-cache`
+(DATA_VERSION 20260824→20260825, kb.js?v=104→105, app.js?v=138→139) y `run-gates`: `cifras`
+PASS y **`rag` FAIL** porque el índice RAG rastreado no cubre el `knowledge.json` regenerado
+y reconstruirlo exige GEMINI_API_KEY (red): fallo cerrado, sin sello. **Tramo 2**, sello →
+par desechable sobre la composición real con un cambio fuera del corpus RAG: gates PASS,
+run `e147ff8deb914b4a`, prepare/apply/check en clones locales con composición aplicada ==
+sellada, no-op verificado, byte alterado → check falla y apply deja el par inválido,
+discard ligado al manifiesto; repos reales con un solo worktree y frontend limpio. Los tres
+hallazgos que el ensayo destapó (directorios scratch, ONI sin red, NB-GLM constante) están
+corregidos en `98faf4d3` y `a0fb313b`.
 
 Abierto, en orden:
 
-1. **Datos:** `reports/ProdDetails/tabla_333_modelos_produccion.xlsx` (rastreado, commit
-   `7bd8bb55`) tiene 435 filas con tres claves duplicadas y contradictorias de Dengue
-   Nacional (112-114 Prophet vs 166-168 DeepAR). Bloquea la hidratación real. Regenerar o
-   deduplicar con la autoridad de `produccion_dengue.csv`, en P1 y con autorización;
-   revisar de paso que el zoom del EpiBot nombra `mexico` en neuro y `estado de mexico`
-   en Dengue (el contrato lo tolera por alias; es incoherencia de presentación);
-2. `sincroniza_consolidado.py` usa `dvc get` (red) dentro del sandbox: sin autorización de
-   red no corre; `build_web_knowledge.py` lee `_gallery_items.json` del dashboard hermano
-   (resuelto en el sandbox por enlace);
-3. auditoría ciega externa de los doce commits; auditoría del avance remoto `a9a694c8 →
-   16476a98` sólo con autorización de red;
-4. P1 (W32/W33) sólo con autorización; push, PR, merge, DVC y deploy separados.
+1. **P1 (W32/W33) sólo con autorización**: exige red (pull, `dvc pull`, sincronización
+   aditiva con `dvc get`) y GEMINI_API_KEY para reconstruir `rag_index.json` (sin él el
+   gate `rag` FALLA cada semana que cambie `knowledge.json`); push, PR, merge, DVC y deploy
+   separados;
+2. `WEEKS_LIMIT = 15` en `reselect_motor_2026.py`: decisión pendiente (ningún contrato
+   canónico fija la ventana; cambiarla re-selecciona motores);
+3. auditoría del avance remoto `a9a694c8 → 16476a98` sólo con autorización de red;
+4. bajos de la auditoría final, documentados y no corregidos: el aditivo no vigila
+   padecimientos no publicados ni columnas fuera de `COLUMNAS_VALOR`; `ventana_semanas`
+   de entidades por semana fijo en 52; `DATA_VERSION` con forma de fecha se incrementa
+   (+1) salvo `--data-version`; el zoom del EpiBot nombra `mexico` y `estado de mexico`.
 
 Límites declarados: ni runner ni sello son sandbox; los digests no son firma; sin
-atomicidad entre repositorios.
+atomicidad entre repositorios; la identidad del huérfano exige `ps` con `lstart`.
 
 ## Cerradas o retiradas en esta auditoría
 
