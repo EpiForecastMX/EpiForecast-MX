@@ -17,10 +17,19 @@ Cuatro subórdenes, que corresponden a los momentos del flujo, en este orden:
     exige que la evidencia de ``run-gates`` apunte exactamente a esa composición y a la
     política del HEAD. Escribe el manifiesto con las entradas que lo gobiernan.
 
+``prepare-worktrees``
+    Crea el par de worktrees DESECHABLES —uno por repositorio, desprendidos en los HEAD
+    sellados— y los registra bajo una raíz nueva con lock. Es el único destino que
+    ``apply`` admite.
+
 ``apply``
-    Recibe un manifiesto **explícito**, verifica que todo siga como se selló e instala
-    esos bytes. No regenera nada y no admite un escape que permita publicar algo
-    distinto de lo revisado.
+    Recibe un manifiesto **explícito** y la raíz del par registrado; verifica con git que
+    cada destino es ese worktree, limpio y en el HEAD exacto, e instala los bytes sellados.
+    No acepta rutas libres, no regenera nada y cualquier fallo deja el par inválido.
+
+``check-completeness`` / ``discard-worktrees``
+    Miden la instalación sobre el par (rastreados, sin rastrear, faltantes, sobrantes,
+    alterados y lápidas) y retiran el par cuando ya no hace falta.
 
 Uso:
     python -m scripts.refresh_staging snapshot --raiz <dir> --salida <json>
@@ -30,14 +39,19 @@ Uso:
         --head-backend <sha> --head-dashboard <sha> --digest-consolidado <sha> \\
         --semana-anterior <a,s> --semana-nueva <a,s> --padecimientos "A,B,C" \\
         [--boletin nombre:url:bytes:sha256 ...] [--destino-final <dir>]
-    python -m scripts.refresh_staging apply --manifiesto <json> \\
-        --destino-backend <dir> --destino-dashboard <dir>
+    python -m scripts.refresh_staging prepare-worktrees --manifiesto <json> \\
+        --repo-backend <dir> --repo-dashboard <dir> --destinos <raiz-nueva>
+    python -m scripts.refresh_staging apply --manifiesto <json> --destinos <raiz>
+    python -m scripts.refresh_staging check-completeness --manifiesto <json> --destinos <raiz>
+    python -m scripts.refresh_staging discard-worktrees --destinos <raiz>
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -45,6 +59,13 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from epiforecast.publication.gate_runner import ejecuta_gates  # noqa: E402
+from epiforecast.publication.release_worktrees import (  # noqa: E402
+    ESTADO_APLICADO,
+    RegistroDestinos,
+    aplica,
+    descarta_worktrees,
+    prepara_worktrees,
+)
 from epiforecast.publication.weekly_staging import (  # noqa: E402
     DIR_EVIDENCIA,
     RUTA_POLITICA,
@@ -55,11 +76,11 @@ from epiforecast.publication.weekly_staging import (  # noqa: E402
     PoliticaCenso,
     SelloEntrada,
     StagingError,
-    aplica,
     calcula_baseline,
     inventaria,
     poda_a_cambiados,
     sella,
+    sha256_de,
     snapshot_digests,
     verifica,
     verifica_evidencia_en_disco,
@@ -276,96 +297,170 @@ def _cmd_seal(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_prepare_worktrees(args: argparse.Namespace) -> int:
+    registro = prepara_worktrees(
+        Path(args.manifiesto),
+        {"backend": Path(args.repo_backend), "dashboard": Path(args.repo_dashboard)},
+        Path(args.destinos),
+    )
+    for espacio, destino in sorted(registro.destinos.items()):
+        print(f"    {espacio:<10} {destino.ruta}  @ {destino.head[:12]}")
+    print(f"    registro   : {registro.raiz / 'registro.json'} ({registro.estado})")
+    return 0
+
+
 def _cmd_apply(args: argparse.Namespace) -> int:
     ruta = Path(args.manifiesto)
     manifiesto = Manifiesto.lee(ruta)
-    raiz_staging = ruta.parent
-
-    destinos = {
-        "backend": Path(args.destino_backend),
-        "dashboard": Path(args.destino_dashboard),
-    }
-    instalados = aplica(
-        raiz_staging,
-        manifiesto,
-        destinos,
-        head_backend=_head(Path(args.destino_backend)),
-        head_dashboard=_head(Path(args.destino_dashboard)),
-    )
-    print(f"    instalados {len(instalados):,} artefactos del staging {manifiesto.run_id}")
+    instalados = aplica(ruta.parent, manifiesto, Path(args.destinos))
+    print(f"    instalados {len(instalados):,} artefactos del staging {manifiesto.run_id[:16]}")
     print(
         f"    semana     {manifiesto.entrada.semana_anterior} -> {manifiesto.entrada.semana_nueva}"
+    )
+    print(
+        f"    destinos   : {Path(args.destinos)} (par desechable; nada tocó los worktrees reales)"
     )
     return 0
 
 
-def _archivos_modificados(repo: Path) -> set[str]:
-    """Rutas rastreadas que difieren del HEAD, relativas a la raíz del repositorio."""
-    # `core.quotepath=false` evita que git devuelva los acentos como escapes octales
-    # (`\303\251` por `é`), que no casarían contra el inventario y darían falsos
-    # positivos justo en las entidades con tilde.
+def _cmd_discard_worktrees(args: argparse.Namespace) -> int:
+    registro = descarta_worktrees(Path(args.destinos))
+    print(f"    par {registro.run_id[:16]} descartado; registro conservado en {registro.raiz}")
+    return 0
+
+
+def _estado_git(ruta: Path) -> dict[str, str]:
+    """`git status --porcelain --untracked-files=all` como {ruta_relativa: XY}.
+
+    `core.quotepath=false` evita que git devuelva los acentos como escapes octales
+    (`\303\251` por `é`), que no casarían contra el inventario y darían falsos
+    positivos justo en las entidades con tilde. Se incluyen los archivos sin rastrear:
+    con `--untracked-files=no` un archivo nuevo escrito fuera del sello era invisible.
+    """
     salida = subprocess.run(
         [
             "git",
             "-C",
-            str(repo),
+            str(ruta),
             "-c",
             "core.quotepath=false",
             "status",
             "--porcelain",
-            "--untracked-files=no",
+            "--untracked-files=all",
         ],
         capture_output=True,
         text=True,
     )
     if salida.returncode != 0:
-        raise StagingError(f"no se pudo leer el estado de {repo}: {salida.stderr.strip()}")
-    rutas: set[str] = set()
+        raise StagingError(f"no se pudo leer el estado de {ruta}: {salida.stderr.strip()}")
+    entradas: dict[str, str] = {}
     for linea in salida.stdout.splitlines():
         if not linea.strip():
             continue
-        ruta = linea[3:].strip().strip('"')
+        codigo, resto = linea[:2], linea[3:].strip().strip('"')
         # Los renombrados llegan como "antes -> despues"; interesa el destino.
-        if " -> " in ruta:
-            ruta = ruta.split(" -> ", 1)[1]
-        rutas.add(ruta)
-    return rutas
+        if " -> " in resto:
+            resto = resto.split(" -> ", 1)[1]
+        entradas[resto] = codigo
+    return entradas
+
+
+def _digest_en_head(ruta: Path, rel: str) -> str | None:
+    """SHA256 del blob rastreado en HEAD para `rel`, o None si no existe ahí."""
+    salida = subprocess.run(
+        ["git", "-C", str(ruta), "cat-file", "-p", f"HEAD:{rel}"], capture_output=True
+    )
+    if salida.returncode != 0:
+        return None
+    return hashlib.sha256(salida.stdout).hexdigest()
 
 
 def _cmd_check_completeness(args: argparse.Namespace) -> int:
-    """Comprueba que instalar el sello cambia EXACTAMENTE lo que el sello declara.
+    """Comprueba que instalar el sello cambió EXACTAMENTE lo que el sello declara.
 
-    Un sello puede ser íntegro y aun así estar incompleto: si un generador escribió
-    fuera del staging, su salida nunca entró al inventario y la instalación deja el
-    destino a medio actualizar. Esto lo detecta comparando conjuntos, no contando.
+    Se mide sobre el par desechable ya aplicado, donde antes de instalar no había nada
+    fuera del HEAD. Seis conjuntos, todos exactos: rastreados modificados y sin rastrear
+    nuevos (los declarados), faltantes (declarados que git no ve cambiar o no están),
+    sobrantes (cambios que el sello no declara), alterados (declarados con otro digest) y
+    lápidas (tienen que estar ausentes y, si estaban en HEAD, verse borradas).
     """
     manifiesto = Manifiesto.lee(Path(args.manifiesto))
-    destinos = {
-        "backend": Path(args.destino_backend),
-        "dashboard": Path(args.destino_dashboard),
-    }
-
-    declarado: dict[str, set[str]] = {clave: set() for clave in destinos}
-    for rel in manifiesto.inventario:
-        partes = Path(rel).parts
-        if partes[0] in declarado:
-            declarado[partes[0]].add("/".join(partes[1:]))
+    registro = RegistroDestinos.lee(Path(args.destinos))
+    if registro.run_id != manifiesto.run_id:
+        raise StagingError("el par de destinos es de otra corrida")
+    if registro.estado != ESTADO_APLICADO:
+        raise StagingError(
+            f"el par está {registro.estado!r}; la completitud se mide sobre un par aplicado"
+        )
 
     problemas: list[str] = []
-    for clave, raiz in destinos.items():
-        observado = _archivos_modificados(raiz)
-        esperado = declarado[clave]
-        # Un artefacto identico al del HEAD no aparece en el diff y no es un problema.
-        sobran = sorted(observado - esperado)
-        print(f"    {clave}: declarados {len(esperado):,} · modificados {len(observado):,}")
-        if sobran:
-            problemas.append(f"{clave}: {len(sobran)} archivo(s) cambiados fuera del inventario")
-            for r in sobran[:10]:
-                print(f"      FUERA DEL SELLO: {r}")
+    for espacio, destino in sorted(registro.destinos.items()):
+        ruta = Path(destino.ruta)
+        observado = _estado_git(ruta)
+        declarados = {
+            rel.split("/", 1)[1]: digest
+            for rel, digest in manifiesto.inventario.items()
+            if rel.split("/", 1)[0] == espacio
+        }
+        lapidas = {
+            rel.split("/", 1)[1]
+            for rel in manifiesto.tombstones
+            if rel.split("/", 1)[0] == espacio
+        }
+        faltantes: list[str] = []
+        alterados: list[str] = []
+        lapidas_mal: list[str] = []
+        rastreados = 0
+        sin_rastrear = 0
+        for rel, digest in sorted(declarados.items()):
+            objetivo = ruta / rel
+            if objetivo.is_symlink() or not objetivo.is_file():
+                faltantes.append(rel)
+                continue
+            if sha256_de(objetivo) != digest:
+                alterados.append(rel)
+                continue
+            codigo = observado.get(rel)
+            if codigo == "??":
+                sin_rastrear += 1
+            elif codigo is not None:
+                rastreados += 1
+            elif _digest_en_head(ruta, rel) != digest:
+                # Distinto del HEAD y git no lo ve cambiar: no puede ser.
+                faltantes.append(rel)
+        for rel in sorted(lapidas):
+            # Una lápida está bien si el archivo no existe y, cuando HEAD lo rastreaba, git lo
+            # ve borrado. Cualquier otra combinación es una retirada que no ocurrió.
+            presente = os.path.lexists(ruta / rel)
+            rastreada_y_no_borrada = (
+                _digest_en_head(ruta, rel) is not None and observado.get(rel, "").strip() != "D"
+            )
+            if presente or rastreada_y_no_borrada:
+                lapidas_mal.append(rel)
+        sobrantes = sorted(
+            rel for rel in observado if rel not in declarados and rel not in lapidas
+        )
+
+        print(
+            f"    {espacio}: rastreados {rastreados:,} · sin rastrear {sin_rastrear:,} · "
+            f"faltantes {len(faltantes):,} · sobrantes {len(sobrantes):,} · "
+            f"alterados {len(alterados):,} · lápidas {len(lapidas):,}"
+            f"{' (mal ' + str(len(lapidas_mal)) + ')' if lapidas_mal else ''}"
+        )
+        for etiqueta, lista in (
+            ("FALTANTE", faltantes),
+            ("SOBRANTE", sobrantes),
+            ("ALTERADO", alterados),
+            ("LÁPIDA MAL", lapidas_mal),
+        ):
+            for rel in lista[:10]:
+                print(f"      {etiqueta}: {rel}")
+            if lista:
+                problemas.append(f"{espacio}: {len(lista)} {etiqueta.lower()}(s)")
 
     if problemas:
         raise StagingError("; ".join(problemas))
-    print("    completitud: todo lo que cambió está declarado en el sello")
+    print("    completitud: el par contiene exactamente lo que el sello declara")
     return 0
 
 
@@ -405,19 +500,32 @@ def main(argv: list[str] | None = None) -> int:
     p_seal.add_argument("--operacion-dvc", action="append")
     p_seal.set_defaults(func=_cmd_seal)
 
-    p_app = sub.add_parser("apply", help="instala un staging sellado")
+    p_wt = sub.add_parser(
+        "prepare-worktrees", help="crea y registra el par de worktrees desechables del sello"
+    )
+    p_wt.add_argument("--manifiesto", required=True)
+    p_wt.add_argument("--repo-backend", default=str(REPO_ROOT))
+    p_wt.add_argument("--repo-dashboard", required=True)
+    p_wt.add_argument("--destinos", required=True, help="raíz NUEVA para el par y su registro")
+    p_wt.set_defaults(func=_cmd_prepare_worktrees)
+
+    # `apply` no admite rutas de destino: sólo la raíz del par registrado. Un flag que
+    # reciba un directorio cualquiera es un flag que instala en un directorio cualquiera.
+    p_app = sub.add_parser("apply", help="instala un staging sellado en su par registrado")
     p_app.add_argument("--manifiesto", required=True)
-    p_app.add_argument("--destino-backend", default=str(REPO_ROOT))
-    p_app.add_argument("--destino-dashboard", required=True)
+    p_app.add_argument("--destinos", required=True)
     p_app.set_defaults(func=_cmd_apply)
 
     p_chk = sub.add_parser(
         "check-completeness", help="verifica que lo instalado coincide con lo sellado"
     )
     p_chk.add_argument("--manifiesto", required=True)
-    p_chk.add_argument("--destino-backend", default=str(REPO_ROOT))
-    p_chk.add_argument("--destino-dashboard", required=True)
+    p_chk.add_argument("--destinos", required=True)
     p_chk.set_defaults(func=_cmd_check_completeness)
+
+    p_dis = sub.add_parser("discard-worktrees", help="retira el par desechable registrado")
+    p_dis.add_argument("--destinos", required=True)
+    p_dis.set_defaults(func=_cmd_discard_worktrees)
 
     args = parser.parse_args(argv)
     try:

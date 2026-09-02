@@ -24,17 +24,17 @@ import pytest
 
 from epiforecast.publication import gate_runner
 from epiforecast.publication.gate_runner import ejecuta_gates
+from epiforecast.publication.release_worktrees import aplica
 from epiforecast.publication.weekly_staging import (
     CONFINAMIENTO_LISTO,
     DIR_EVIDENCIA,
-    MODO_DRAFT,
+    MODO_APLICABLE,
     VERSION_POLITICA,
     EvidenciaGates,
     GateSpec,
     Manifiesto,
     PoliticaCenso,
     StagingError,
-    aplica,
     calcula_run_id_de,
     inventaria,
     verifica,
@@ -216,10 +216,10 @@ def test_e2e_gates_sinteticos_sellan_un_borrador_verificable(tmp_path: Path) -> 
     (sellado,) = [d for d in tmp_path.iterdir() if (d / "manifest.json").is_file()]
     manifiesto = Manifiesto.lee(sellado / "manifest.json")
 
-    # Borrador, con motivo, porque P0.6 no existe; y la palanca sigue apagada.
-    assert CONFINAMIENTO_LISTO is False
-    assert manifiesto.modo == MODO_DRAFT
-    assert "P0.6" in manifiesto.motivo_draft
+    # Aplicable y sin motivo: P0.6 confina la instalación al par registrado.
+    assert CONFINAMIENTO_LISTO is True
+    assert manifiesto.modo == MODO_APLICABLE
+    assert manifiesto.motivo_draft == ""
     # Sólo lo cambiado se inventaría; la composición es la del árbol completo.
     assert set(manifiesto.inventario) == {"dashboard/index.html"}
     assert manifiesto.composicion == evidencia.composicion
@@ -244,14 +244,10 @@ def test_e2e_gates_sinteticos_sellan_un_borrador_verificable(tmp_path: Path) -> 
     assert "evidencia" in manifiesto.payload_canonico()["resultados_pruebas"]
     assert "observacional" not in manifiesto.payload_canonico()["resultados_pruebas"]
     verifica(sellado, manifiesto, head_backend=head, head_dashboard="b" * 40)
-    with pytest.raises(StagingError, match="no es aplicable"):
-        aplica(
-            sellado,
-            manifiesto,
-            {"dashboard": tmp_path / "d", "backend": tmp_path / "b"},
-            head_backend=head,
-            head_dashboard="b" * 40,
-        )
+    # Y aun así no hay destino arbitrario: sin par registrado no se instala en ningún sitio.
+    with pytest.raises(StagingError, match="no existe la raíz de destinos"):
+        aplica(sellado, manifiesto, tmp_path / "sin_registro")
+    assert not (tmp_path / "d").exists() and not (tmp_path / "b").exists()
 
 
 def test_dos_ejecuciones_equivalentes_comparten_identidad_aunque_cambien_los_tiempos(

@@ -22,9 +22,11 @@ import pytest
 
 from epiforecast.publication.gate_runner import ejecuta_gates
 from epiforecast.publication.weekly_staging import (
+    CONFINAMIENTO_LISTO,
     DIR_EVIDENCIA,
     MODO_APLICABLE,
     MODO_DRAFT,
+    MOTIVO_P06,
     VERSION_POLITICA,
     AutoridadLapidas,
     Boletin,
@@ -32,7 +34,7 @@ from epiforecast.publication.weekly_staging import (
     PoliticaCenso,
     SelloEntrada,
     StagingError,
-    aplica,
+    _instala,
     calcula_baseline,
     calcula_composicion,
     calcula_run_id_de,
@@ -249,10 +251,10 @@ def _puebla_destino(raiz: Path, destinos: dict[str, Path], contenido) -> dict[Pa
 
 
 def _hazlo_aplicable(raiz: Path, manifiesto: Manifiesto) -> Manifiesto:
-    """Promueve un sello a `aplicable`, SÓLO para probar la maquinaria de instalación.
+    """Fija el sello en `aplicable` para probar la maquinaria de instalación.
 
-    En producción esa promoción la hará P0.6 al confinar la instalación; aquí se hace a
-    mano porque lo que se prueba es la transacción, no la veracidad del sello.
+    Desde P0.6 `sella` ya lo emite así; esto lo deja explícito y reescribe el manifiesto
+    para que las pruebas de la transacción no dependan de la palanca global.
     """
     manifiesto.modo = MODO_APLICABLE
     manifiesto.motivo_draft = ""
@@ -377,7 +379,7 @@ def test_instala_exactamente_los_bytes_sellados(tmp_path: Path) -> None:
     raiz, manifiesto = _sella(tmp_path)
     destinos = _destinos(tmp_path)
 
-    instalados = aplica(
+    instalados = _instala(
         raiz, manifiesto, destinos, head_backend=HEAD_BACKEND, head_dashboard=HEAD_DASHBOARD
     )
 
@@ -392,7 +394,7 @@ def test_la_instalacion_no_regenera_nada(tmp_path: Path) -> None:
     """Lo instalado sale del staging, no de volver a calcular: se comprueba el digest."""
     raiz, manifiesto = _sella(tmp_path)
     destinos = _destinos(tmp_path)
-    aplica(raiz, manifiesto, destinos, head_backend=HEAD_BACKEND, head_dashboard=HEAD_DASHBOARD)
+    _instala(raiz, manifiesto, destinos, head_backend=HEAD_BACKEND, head_dashboard=HEAD_DASHBOARD)
 
     from epiforecast.publication.weekly_staging import sha256_de
 
@@ -410,7 +412,7 @@ def test_un_destino_sin_declarar_no_publica_nada(tmp_path: Path) -> None:
     destinos = {"dashboard": tmp_path / "destino_dashboard"}  # falta 'backend'
 
     with pytest.raises(StagingError, match="no hay destino declarado"):
-        aplica(
+        _instala(
             raiz, manifiesto, destinos, head_backend=HEAD_BACKEND, head_dashboard=HEAD_DASHBOARD
         )
 
@@ -427,7 +429,7 @@ def test_la_verificacion_falla_antes_de_tocar_el_destino(tmp_path: Path) -> None
     )
 
     with pytest.raises(StagingError):
-        aplica(
+        _instala(
             raiz, manifiesto, destinos, head_backend=HEAD_BACKEND, head_dashboard=HEAD_DASHBOARD
         )
 
@@ -543,7 +545,7 @@ def test_un_fallo_durante_la_publicacion_restaura_el_estado_previo(
     monkeypatch.setattr(Path, "replace", _replace_que_falla_en(4))
 
     with pytest.raises(OSError, match="fallo simulado"):
-        aplica(
+        _instala(
             raiz, manifiesto, destinos, head_backend=HEAD_BACKEND, head_dashboard=HEAD_DASHBOARD
         )
 
@@ -562,7 +564,7 @@ def test_un_fallo_durante_la_publicacion_no_deja_residuos(tmp_path: Path, monkey
 
     monkeypatch.setattr(Path, "replace", _replace_que_falla_en(4))
     with pytest.raises(OSError):
-        aplica(
+        _instala(
             raiz, manifiesto, destinos, head_backend=HEAD_BACKEND, head_dashboard=HEAD_DASHBOARD
         )
     monkeypatch.undo()
@@ -578,7 +580,7 @@ def test_una_publicacion_correcta_no_deja_apartados(tmp_path: Path) -> None:
     _puebla_destino(raiz, destinos, "anterior")
     manifiesto = _sella_aplicable(raiz, tmp_path, destinos=destinos)
 
-    aplica(raiz, manifiesto, destinos, head_backend=HEAD_BACKEND, head_dashboard=HEAD_DASHBOARD)
+    _instala(raiz, manifiesto, destinos, head_backend=HEAD_BACKEND, head_dashboard=HEAD_DASHBOARD)
 
     for raiz_destino in destinos.values():
         assert list(raiz_destino.rglob("*.prev")) == []
@@ -650,7 +652,7 @@ def test_una_clave_que_escapa_no_llega_a_tocar_el_destino(tmp_path: Path) -> Non
     _reescribe_manifiesto(raiz, mete_escape)
 
     with pytest.raises(StagingError, match="ruta sellable"):
-        aplica(
+        _instala(
             raiz,
             Manifiesto.lee(raiz / "manifest.json"),
             _destinos(tmp_path),
@@ -670,7 +672,7 @@ def test_un_padre_del_destino_que_es_enlace_aborta(tmp_path: Path) -> None:
     (destinos["dashboard"] / "Reports").symlink_to(ajeno, target_is_directory=True)
 
     with pytest.raises(StagingError, match="enlace simbólico"):
-        aplica(
+        _instala(
             raiz,
             manifiesto,
             destinos,
@@ -960,7 +962,7 @@ def test_un_manifiesto_mutado_en_memoria_no_se_aplica(tmp_path: Path) -> None:
     destinos = _destinos(tmp_path)
 
     with pytest.raises(StagingError, match="no es el que está sellado en disco"):
-        aplica(
+        _instala(
             raiz,
             manifiesto,
             destinos,
@@ -1018,7 +1020,7 @@ def test_un_part_del_destino_preplantado_no_se_sigue(tmp_path: Path) -> None:
     (destinos["dashboard"] / "Reports" / f"index.html.{marca}.part").symlink_to(victima)
 
     with pytest.raises(StagingError, match="ya existe"):
-        aplica(
+        _instala(
             raiz, manifiesto, destinos, head_backend=HEAD_BACKEND, head_dashboard=HEAD_DASHBOARD
         )
     assert victima.read_text(encoding="utf-8") == "archivo externo"
@@ -1104,7 +1106,7 @@ def test_una_lapida_retira_el_archivo_del_destino(tmp_path: Path) -> None:
     (destinos["dashboard"] / "viejo.html").write_text("obsoleto", encoding="utf-8")
     raiz, manifiesto = _sella_con_lapida(tmp_path, ("dashboard/viejo.html",))
 
-    aplica(raiz, manifiesto, destinos, head_backend=HEAD_BACKEND, head_dashboard=HEAD_DASHBOARD)
+    _instala(raiz, manifiesto, destinos, head_backend=HEAD_BACKEND, head_dashboard=HEAD_DASHBOARD)
 
     assert not (destinos["dashboard"] / "viejo.html").exists()
     assert not (destinos["dashboard"] / "viejo.html.prev").exists()
@@ -1145,7 +1147,7 @@ def test_un_fallo_en_la_segunda_lapida_restaura_la_primera(tmp_path: Path, monke
 
     monkeypatch.setattr(Path, "replace", replace_que_falla)
     with pytest.raises(OSError):
-        aplica(
+        _instala(
             raiz, manifiesto, destinos, head_backend=HEAD_BACKEND, head_dashboard=HEAD_DASHBOARD
         )
     monkeypatch.undo()
@@ -1195,7 +1197,7 @@ def test_una_lapida_con_padre_enlazado_no_se_aplica(tmp_path: Path) -> None:
     (destinos["dashboard"] / "sub").symlink_to(ajeno, target_is_directory=True)
 
     with pytest.raises(StagingError, match="enlace simbólico"):
-        aplica(
+        _instala(
             raiz, manifiesto, destinos, head_backend=HEAD_BACKEND, head_dashboard=HEAD_DASHBOARD
         )
     assert (ajeno / "viejo.html").read_text() == "archivo externo"
@@ -1261,7 +1263,7 @@ def test_un_fallo_en_cualquier_transicion_conserva_el_original(
 
     monkeypatch.setattr(Path, "replace", _falla_en("index.html", cuando))
     with pytest.raises(OSError):
-        aplica(
+        _instala(
             raiz, manifiesto, destinos, head_backend=HEAD_BACKEND, head_dashboard=HEAD_DASHBOARD
         )
     monkeypatch.undo()
@@ -1312,7 +1314,7 @@ def test_una_escritura_que_miente_sobre_lo_escrito_no_se_publica(
 
     monkeypatch.setattr(_os, "write", write_mentiroso)
     with pytest.raises(StagingError, match="truncad"):
-        aplica(
+        _instala(
             raiz, manifiesto, destinos, head_backend=HEAD_BACKEND, head_dashboard=HEAD_DASHBOARD
         )
     monkeypatch.undo()
@@ -1386,17 +1388,21 @@ def test_una_lapida_cuyo_digest_cambio_no_se_sella(tmp_path: Path) -> None:
 
 
 def test_un_sello_borrador_no_se_aplica(tmp_path: Path) -> None:
-    """Composición y gates ya se calculan y ejecutan; la instalación sigue sin confinar.
+    """Un borrador anterior a P0.6 sigue sin poder instalarse.
 
-    Hasta que P0.6 confine `apply` a worktrees desechables, el sello se marca `draft` y
-    `aplica` lo rechaza aunque todo lo demás cuadre.
+    El modo vive en el manifiesto: encender `CONFINAMIENTO_LISTO` no promueve lo que ya
+    estaba sellado como borrador. Se construye uno como los que dejaron las rondas previas.
     """
     raiz = _staging_con_artefactos(tmp_path / "staging")
     manifiesto = _sella_en(raiz, tmp_path)
+    manifiesto.modo = MODO_DRAFT
+    manifiesto.motivo_draft = MOTIVO_P06
+    manifiesto.run_id = calcula_run_id_de(manifiesto)
+    manifiesto.escribe(raiz / "manifest.json")
 
-    assert manifiesto.modo == "draft"
+    assert Manifiesto.lee(raiz / "manifest.json").modo == MODO_DRAFT
     with pytest.raises(StagingError, match="draft|no aplicable"):
-        aplica(
+        _instala(
             raiz,
             manifiesto,
             _destinos(tmp_path),
@@ -1855,26 +1861,18 @@ def test_un_gate_corrido_sobre_otra_composicion_aborta(tmp_path: Path) -> None:
         _sella_en(raiz, tmp_path, politica=politica, corre_gates=False)
 
 
-def test_un_sello_verificado_sigue_siendo_borrador_hasta_p06(tmp_path: Path) -> None:
-    """Condición 8, con su límite: verificado no es instalable.
-
-    Composición, política y gates cuadran, y aun así el sello queda `draft` porque `apply`
-    todavía admite destinos arbitrarios. Son dos preguntas distintas.
+def test_un_sello_verificado_sale_aplicable_tras_p06(tmp_path: Path) -> None:
+    """Condición 8 cerrada: composición, política y gates cuadran, y la instalación está
+    confinada a worktrees desechables, así que el sello nuevo es aplicable y sin motivo.
     """
     raiz = _staging_con_artefactos(tmp_path / "staging")
 
     manifiesto = _sella_en(raiz, tmp_path)
 
-    assert manifiesto.modo == MODO_DRAFT
-    assert "P0.6" in manifiesto.motivo_draft
-    with pytest.raises(StagingError, match="no es aplicable"):
-        aplica(
-            raiz,
-            manifiesto,
-            _destinos(tmp_path),
-            head_backend=HEAD_BACKEND,
-            head_dashboard=HEAD_DASHBOARD,
-        )
+    assert CONFINAMIENTO_LISTO is True
+    assert manifiesto.modo == MODO_APLICABLE
+    assert manifiesto.motivo_draft == ""
+    assert Manifiesto.lee(raiz / "manifest.json").modo == MODO_APLICABLE
 
 
 # ── 23 · los dos universos y la política canónica ──────────────────────────

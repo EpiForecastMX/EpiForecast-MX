@@ -1412,13 +1412,18 @@ def _sin_duplicados(pares: list[tuple[str, Any]]) -> dict[str, Any]:
 # instalación (P0.6), y mientras no exista `sella` produce borradores.
 MODO_APLICABLE = "aplicable"
 MODO_DRAFT = "draft"
+# Motivo que llevan los borradores sellados ANTES de P0.6. Se conserva para leerlos y
+# para construir borradores en pruebas; ningún sello nuevo lo escribe.
 MOTIVO_P06 = (
     "P0.6 pendiente: apply todavía admite destinos arbitrarios y no exige worktrees "
     "desechables. Verificar el sello y poder instalarlo son dos cosas distintas."
 )
-# Se enciende junto con el confinamiento de P0.6, no antes. Es la única palanca que
-# convierte un sello verificado en instalable, y está aquí para que se vea de un vistazo.
-CONFINAMIENTO_LISTO = False
+# Encendida con P0.6 (1-sep-2026): `release_worktrees.aplica` sólo instala en el par de
+# worktrees desechables registrado para el run_id, verificado con git y bajo lock, y
+# cualquier fallo deja el par inválido. Es la única palanca que convierte un sello
+# verificado en instalable, y está aquí para que se vea de un vistazo. Los borradores
+# sellados antes siguen siendo borradores: el modo vive en el manifiesto, no aquí.
+CONFINAMIENTO_LISTO = True
 
 
 def valida_contrato(manifiesto: Manifiesto) -> None:
@@ -1687,7 +1692,7 @@ def verifica(
     verifica_evidencia_en_disco(raiz_staging, manifiesto)
 
 
-def aplica(
+def _instala(
     raiz_staging: Path,
     manifiesto: Manifiesto,
     destinos: dict[str, Path],
@@ -1695,10 +1700,12 @@ def aplica(
     head_backend: str,
     head_dashboard: str,
 ) -> list[str]:
-    """Instala los bytes sellados. No regenera nada.
+    """Núcleo transaccional de la instalación. No regenera nada y no elige el destino.
 
-    `destinos` mapea el primer segmento de cada ruta inventariada a su raíz real, de modo
-    que el staging pueda contener artefactos de más de un repositorio.
+    Es privado a propósito: la entrada pública es `release_worktrees.aplica`, que sólo
+    admite el par de worktrees desechables registrado para el `run_id`. Aquí `destinos`
+    mapea el primer segmento de cada ruta inventariada a su raíz real, de modo que el
+    staging pueda contener artefactos de más de un repositorio.
 
     La instalación es transaccional en tres tiempos:
 
