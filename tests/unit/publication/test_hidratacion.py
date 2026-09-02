@@ -577,3 +577,20 @@ def test_autorizar_un_solo_padecimiento_no_reduce_el_contrato_en_la_hidratacion(
         hidrata(
             trabajo, repo_b, head_b, padecimientos_autorizados=("Obesidad",), contrato=fab.CONTRATO
         )
+
+
+def test_la_copia_conserva_el_mtime_del_origen(tmp_path: Path) -> None:
+    """`build_web_knowledge.py` deriva «último entrenamiento» del mtime del forecast: una
+    copia fresca publicaba la fecha de la hidratación como si se hubiera entrenado."""
+    import os
+
+    from epiforecast.publication import hidratacion
+
+    origen = tmp_path / "forecast.csv"
+    origen.write_text("ds,yhat\n", encoding="utf-8")
+    antiguo = 1_700_000_000
+    os.utime(origen, (antiguo, antiguo))
+
+    hidratacion._copia_regular(origen, tmp_path / "copia.csv")
+
+    assert int((tmp_path / "copia.csv").stat().st_mtime) == antiguo
