@@ -15,6 +15,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import subprocess
 import sys
 import time
 from typing import Any
@@ -73,10 +74,11 @@ def _python(nombre: str, codigo: str, **kwargs: Any) -> dict[str, Any]:
 def _politica_cruda(
     gates: list[dict[str, Any]],
     superficies: tuple[str, ...] = ("dashboard/index.html",),
+    prefijos: tuple[str, ...] = ("backend/reports/ProdDetails/", "dashboard/"),
 ) -> dict[str, Any]:
     return {
         "version": VERSION_POLITICA,
-        "prefijos_administrados": ["dashboard/"],
+        "prefijos_administrados": sorted(prefijos),
         "patron_superficie": {
             "prefijo": "dashboard/",
             "sufijos": [".html", ".json"],
@@ -99,7 +101,7 @@ def _staging(raiz: Path, contenido: str = "uno") -> Path:
 
 
 def _corre(raiz: Path, gates: list[dict[str, Any]], **kwargs: Any) -> EvidenciaGates:
-    return ejecuta_gates(raiz, _politica(gates, **kwargs), destinos_vivos=())
+    return ejecuta_gates(raiz, _politica(gates, **kwargs), destinos_vivos={})
 
 
 def _repo_con_politica(raiz: Path, politica: dict[str, Any]) -> tuple[Path, str]:
@@ -572,7 +574,7 @@ def test_la_evidencia_de_otra_composicion_no_sirve(tmp_path: Path) -> None:
     a = _staging(tmp_path / "a", "uno")
     b = _staging(tmp_path / "b", "dos")
     politica = _politica([_gate("cifras")])
-    ejecuta_gates(a, politica, destinos_vivos=())
+    ejecuta_gates(a, politica, destinos_vivos={})
     shutil.copytree(a / DIR_EVIDENCIA, b / DIR_EVIDENCIA)
     evidencia = EvidenciaGates.lee(b)  # íntegra en sí misma…
 
@@ -681,15 +683,70 @@ def test_un_gates_preplantado_como_enlace_no_se_usa(tmp_path: Path) -> None:
     assert list(ajeno.iterdir()) == []
 
 
-# ── 7 · el cwd no escapa ni cae en un destino vivo ───────────────────────────
+# ── 7 · el cwd no escapa; el staging no cae en lo administrado de un destino vivo ──
 
 
-def test_el_staging_no_puede_solaparse_con_un_destino_vivo(tmp_path: Path) -> None:
+def test_el_staging_no_puede_caer_en_un_prefijo_administrado_del_dashboard(tmp_path: Path) -> None:
+    """`dashboard/` está administrado entero: un staging dentro del sitio mediría el sitio."""
     vivo = tmp_path / "sitio_real"
     raiz = _staging(vivo / "staging_dentro")
 
-    with pytest.raises(StagingError, match="se solapan"):
-        ejecuta_gates(raiz, _politica([_gate("cifras")]), destinos_vivos=(vivo,))
+    with pytest.raises(StagingError, match="prefijo administrado 'dashboard/'"):
+        ejecuta_gates(raiz, _politica([_gate("cifras")]), destinos_vivos={"dashboard": vivo})
+    assert not (raiz / DIR_EVIDENCIA).exists()
+    assert not (raiz / gate_runner.DIR_EN_CURSO).exists()
+
+
+def test_el_staging_si_puede_vivir_bajo_runs_del_backend(tmp_path: Path) -> None:
+    """El layout real: `<backend>/runs/_refresh/_trabajo`, fuera de `reports/ProdDetails/`.
+
+    Hasta ahora el runner rechazaba cualquier staging bajo un destino vivo, y el
+    orquestador crea el suyo dentro del backend: el flujo real no podía correr.
+    """
+    backend = tmp_path / "backend"
+    (backend / "reports" / "ProdDetails").mkdir(parents=True)
+    raiz = _staging(backend / "runs" / "_refresh" / "_trabajo")
+
+    evidencia = ejecuta_gates(
+        raiz,
+        _politica([_gate("cifras")]),
+        destinos_vivos={"backend": backend, "dashboard": tmp_path / "dashboard"},
+    )
+
+    assert evidencia.veredicto == "PASS"
+
+
+@pytest.mark.parametrize(
+    ("subruta", "mensaje"),
+    [
+        ("reports/ProdDetails/_trabajo", "prefijo administrado 'backend/reports/ProdDetails/'"),
+        (".git/_trabajo", "dentro del .git"),
+    ],
+)
+def test_el_staging_no_cae_en_lo_administrado_ni_en_el_git_del_backend(
+    tmp_path: Path, subruta: str, mensaje: str
+) -> None:
+    backend = tmp_path / "backend"
+    raiz = _staging(backend / subruta)
+
+    with pytest.raises(StagingError, match=mensaje):
+        ejecuta_gates(
+            raiz,
+            _politica([_gate("cifras")]),
+            destinos_vivos={"backend": backend, "dashboard": tmp_path / "dashboard"},
+        )
+    assert not (raiz / DIR_EVIDENCIA).exists()
+
+
+def test_un_destino_vivo_dentro_del_staging_se_rechaza(tmp_path: Path) -> None:
+    raiz = _staging(tmp_path / "s")
+
+    with pytest.raises(StagingError, match="está dentro del staging"):
+        ejecuta_gates(
+            raiz,
+            _politica([_gate("cifras")]),
+            destinos_vivos={"dashboard": raiz / "outputs" / "dashboard"},
+        )
     assert not (raiz / DIR_EVIDENCIA).exists()
 
 
@@ -832,3 +889,273 @@ def test_la_evidencia_no_escribe_dentro_de_outputs(tmp_path: Path) -> None:
         "rag",
     ]
     assert not os.path.lexists(raiz / "outputs" / DIR_EVIDENCIA)
+
+
+# ── 10 · residuos de corridas anteriores: parciales, FAIL, huérfanos ─────────
+
+
+def _duerme(nombre: str = "cifras", segundos: int = 60) -> dict[str, Any]:
+    return _python(nombre, f"import time; time.sleep({segundos})", timeout_s=120)
+
+
+def _sembrar_en_curso(raiz: Path, *, runner_pid: int, hijo: dict[str, Any] | None) -> Path:
+    """Lo que deja un runner muerto a medias: `gates.en_curso/` con su marcador."""
+    carpeta = raiz / gate_runner.DIR_EN_CURSO
+    (carpeta / "cifras").mkdir(parents=True)
+    (carpeta / "cifras" / "stdout.bin").write_bytes(b"a medias")
+    (carpeta / "runner.json").write_text(
+        json.dumps(
+            {
+                "esquema": gate_runner.ESQUEMA_RUNNER,
+                "runner_pid": runner_pid,
+                "inicio": "2026-09-02T00:00:00.000000+00:00",
+                "gate_en_curso": "cifras",
+                "hijo": hijo,
+            }
+        ),
+        encoding="utf-8",
+    )
+    return carpeta
+
+
+def _pid_muerto() -> int:
+    """Un pid que existió y ya no existe."""
+    proceso = subprocess.Popen([PYTHON, "-c", "pass"])
+    proceso.wait()
+    return proceso.pid
+
+
+def test_el_marcador_no_queda_en_la_evidencia_final(tmp_path: Path) -> None:
+    raiz = _staging(tmp_path / "s")
+    _corre(raiz, [_gate("cifras")])
+
+    assert not (raiz / gate_runner.DIR_EN_CURSO).exists()
+    assert not (raiz / DIR_EVIDENCIA / "runner.json").exists()
+    assert EvidenciaGates.lee(raiz).veredicto == "PASS"
+
+
+def test_un_pass_previo_de_la_misma_composicion_se_conserva_y_no_se_repite(
+    tmp_path: Path,
+) -> None:
+    raiz = _staging(tmp_path / "s")
+    _corre(raiz, [_gate("cifras")])
+    antes = (raiz / DIR_EVIDENCIA / "indice.json").read_bytes()
+
+    with pytest.raises(StagingError, match="PASS para esta misma composición"):
+        _corre(raiz, [_gate("cifras")])
+    assert (raiz / DIR_EVIDENCIA / "indice.json").read_bytes() == antes
+    assert not list(raiz.glob(f"{DIR_EVIDENCIA}.*"))
+
+
+def test_una_evidencia_fail_previa_se_aparta_sin_borrarse_y_se_repite(tmp_path: Path) -> None:
+    raiz = _staging(tmp_path / "s")
+    fallida = _corre(raiz, [_python("cifras", "raise SystemExit(1)")])
+    assert fallida.veredicto == "FAIL"
+
+    resultado = gate_runner.ejecuta_gates_con_acciones(
+        raiz, _politica([_gate("cifras")]), destinos_vivos={}
+    )
+
+    assert resultado.evidencia.veredicto == "PASS"
+    assert any("(fail) apartada" in a for a in resultado.acciones)
+    apartada = raiz / f"{DIR_EVIDENCIA}.fail-1"
+    assert (apartada / "indice.json").is_file(), "la evidencia anterior no se borra"
+    assert json.loads((apartada / "indice.json").read_text())["veredicto"] == "FAIL"
+
+
+def test_la_evidencia_de_otra_composicion_se_aparta(tmp_path: Path) -> None:
+    raiz = _staging(tmp_path / "s", "uno")
+    _corre(raiz, [_gate("cifras")])
+    (raiz / "outputs" / "dashboard" / "index.html").write_text("dos", encoding="utf-8")
+
+    resultado = gate_runner.ejecuta_gates_con_acciones(
+        raiz, _politica([_gate("cifras")]), destinos_vivos={}
+    )
+
+    assert resultado.evidencia.veredicto == "PASS"
+    assert any("(otra-composicion) apartada" in a for a in resultado.acciones)
+    assert (raiz / f"{DIR_EVIDENCIA}.otra-composicion-1" / "indice.json").is_file()
+
+
+def test_una_evidencia_ilegible_se_aparta(tmp_path: Path) -> None:
+    raiz = _staging(tmp_path / "s")
+    (raiz / DIR_EVIDENCIA).mkdir()
+    (raiz / DIR_EVIDENCIA / "indice.json").write_text("{ roto", encoding="utf-8")
+
+    resultado = gate_runner.ejecuta_gates_con_acciones(
+        raiz, _politica([_gate("cifras")]), destinos_vivos={}
+    )
+
+    assert resultado.evidencia.veredicto == "PASS"
+    assert (raiz / f"{DIR_EVIDENCIA}.ilegible-1" / "indice.json").read_text() == "{ roto"
+
+
+def test_una_corrida_interrumpida_por_senal_deja_huerfano_y_la_siguiente_lo_mata(
+    tmp_path: Path,
+) -> None:
+    """Runner muerto (SIGKILL): el hijo sigue vivo. La corrida siguiente lo mata y aparta."""
+    raiz = _staging(tmp_path / "s")
+    huerfano = subprocess.Popen(
+        [PYTHON, "-c", "import time; time.sleep(120)"], start_new_session=True
+    )
+    try:
+        identidad = gate_runner._identidad_de(huerfano.pid)
+        assert identidad is not None and identidad[0] == huerfano.pid
+        _sembrar_en_curso(
+            raiz,
+            runner_pid=_pid_muerto(),
+            hijo={
+                "gate": "cifras",
+                "pid": huerfano.pid,
+                "pgid": huerfano.pid,
+                "arranque": identidad[1],
+                "ejecutable": PYTHON,
+            },
+        )
+
+        resultado = gate_runner.ejecuta_gates_con_acciones(
+            raiz, _politica([_gate("cifras")]), destinos_vivos={}
+        )
+
+        assert huerfano.wait(timeout=10) == -9, "el grupo huérfano recibió SIGKILL"
+        assert resultado.evidencia.veredicto == "PASS"
+        assert any("grupo huérfano" in a and "eliminado" in a for a in resultado.acciones)
+        parcial = raiz / f"{gate_runner.DIR_EN_CURSO}.parcial-1"
+        assert (parcial / "cifras" / "stdout.bin").read_bytes() == b"a medias"
+        assert not (raiz / gate_runner.DIR_EN_CURSO).exists()
+    finally:
+        if huerfano.poll() is None:
+            huerfano.kill()
+            huerfano.wait()
+
+
+def test_un_pid_reutilizado_por_otro_proceso_no_se_mata(tmp_path: Path) -> None:
+    raiz = _staging(tmp_path / "s")
+    ajeno = subprocess.Popen(
+        [PYTHON, "-c", "import time; time.sleep(120)"], start_new_session=True
+    )
+    try:
+        _sembrar_en_curso(
+            raiz,
+            runner_pid=_pid_muerto(),
+            hijo={
+                "gate": "cifras",
+                "pid": ajeno.pid,
+                "pgid": ajeno.pid,
+                # Mismo pid y grupo, otro instante de arranque: es un proceso posterior.
+                "arranque": "Mon Jan  1 00:00:00 2001",
+                "ejecutable": PYTHON,
+            },
+        )
+
+        resultado = gate_runner.ejecuta_gates_con_acciones(
+            raiz, _politica([_gate("cifras")]), destinos_vivos={}
+        )
+
+        assert ajeno.poll() is None, "un proceso ajeno con el pid reutilizado no se toca"
+        assert any("ya es otro proceso" in a for a in resultado.acciones)
+    finally:
+        ajeno.kill()
+        ajeno.wait()
+
+
+def test_otra_corrida_viva_no_se_pisa(tmp_path: Path) -> None:
+    raiz = _staging(tmp_path / "s")
+    otro_runner = subprocess.Popen([PYTHON, "-c", "import time; time.sleep(120)"])
+    try:
+        _sembrar_en_curso(raiz, runner_pid=otro_runner.pid, hijo=None)
+
+        with pytest.raises(StagingError, match="sigue en marcha"):
+            _corre(raiz, [_gate("cifras")])
+        assert (raiz / gate_runner.DIR_EN_CURSO / "runner.json").is_file()
+        assert not (raiz / DIR_EVIDENCIA).exists()
+    finally:
+        otro_runner.kill()
+        otro_runner.wait()
+
+
+def test_una_interrupcion_del_runner_mata_al_hijo_y_deja_el_marcador(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Ctrl-C mientras corre un gate: el hijo no queda huérfano, la evidencia queda parcial."""
+    raiz = _staging(tmp_path / "s")
+    lanzados: list[subprocess.Popen[bytes]] = []
+    popen_real = subprocess.Popen
+
+    class PopenInterrumpido(popen_real):  # type: ignore[type-arg,misc]
+        def communicate(self, *args: Any, **kwargs: Any) -> Any:
+            lanzados.append(self)
+            if len(lanzados) == 1:
+                raise KeyboardInterrupt
+            return super().communicate(*args, **kwargs)
+
+    monkeypatch.setattr(gate_runner.subprocess, "Popen", PopenInterrumpido)
+
+    with pytest.raises(KeyboardInterrupt):
+        _corre(raiz, [_duerme()])
+
+    (hijo,) = lanzados
+    assert hijo.returncode == -9, "el runner mató al grupo del hijo antes de morir"
+    marcador = json.loads((raiz / gate_runner.DIR_EN_CURSO / "runner.json").read_text())
+    assert marcador["hijo"] is None and marcador["runner_pid"] == os.getpid()
+    assert not (raiz / DIR_EVIDENCIA).exists()
+
+    # Y la corrida siguiente, ya sin interrupción, limpia y termina.
+    monkeypatch.setattr(gate_runner.subprocess, "Popen", popen_real)
+    resultado = gate_runner.ejecuta_gates_con_acciones(
+        raiz, _politica([_gate("cifras")]), destinos_vivos={}
+    )
+    assert resultado.evidencia.veredicto == "PASS"
+    assert (raiz / f"{gate_runner.DIR_EN_CURSO}.parcial-1").is_dir()
+
+
+# ── 11 · el ejecutable resuelto gobierna por su digest ───────────────────────
+
+
+def test_el_digest_del_ejecutable_entra_en_el_registro_gobernante(tmp_path: Path) -> None:
+    from epiforecast.publication.weekly_staging import sha256_de
+
+    raiz = _staging(tmp_path / "s")
+    evidencia = _corre(raiz, [_gate("cifras")])
+
+    registro = evidencia.gates["cifras"]
+    assert registro.ejecutable_sha256 == sha256_de(Path(TRUE))
+    indice = json.loads((raiz / DIR_EVIDENCIA / "indice.json").read_text())
+    assert indice["gates"]["cifras"]["ejecutable_sha256"] == registro.ejecutable_sha256
+    assert "ejecutable_sha256" in registro.como_dict()
+
+
+def test_un_pass_sin_digest_de_ejecutable_no_se_lee(tmp_path: Path) -> None:
+    raiz = _staging(tmp_path / "s")
+    _corre(raiz, [_gate("cifras")])
+
+    def blanquea(d: dict) -> None:
+        d["gates"]["cifras"]["ejecutable_sha256"] = ""
+
+    _reescribe_indice(raiz, blanquea)
+    with pytest.raises(StagingError, match="PASS sin digest del ejecutable"):
+        EvidenciaGates.lee(raiz)
+
+
+def test_otro_ejecutable_con_el_mismo_nombre_cambia_la_identidad(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Dos `true` distintos en el PATH permitido: mismo argv, evidencia distinta."""
+    bin_a, bin_b = tmp_path / "a" / "bin", tmp_path / "b" / "bin"
+    for carpeta, cuerpo in (
+        (bin_a, "#!/bin/sh\nexit 0\n"),
+        (bin_b, "#!/bin/sh\n# otro\nexit 0\n"),
+    ):
+        carpeta.mkdir(parents=True)
+        (carpeta / "verdad").write_text(cuerpo, encoding="utf-8")
+        (carpeta / "verdad").chmod(0o755)
+    gate = _gate("cifras", ["verdad"], heredar=("PATH",))
+
+    monkeypatch.setenv("PATH", str(bin_a))
+    uno = _corre(_staging(tmp_path / "uno"), [gate])
+    monkeypatch.setenv("PATH", str(bin_b))
+    dos = _corre(_staging(tmp_path / "dos"), [gate])
+
+    assert uno.veredicto == dos.veredicto == "PASS"
+    assert uno.gates["cifras"].ejecutable_sha256 != dos.gates["cifras"].ejecutable_sha256
+    assert uno.como_manifiesto()["gates"] != dos.como_manifiesto()["gates"]

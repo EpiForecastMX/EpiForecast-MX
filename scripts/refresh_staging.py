@@ -80,7 +80,7 @@ from epiforecast.publication.contratos_datos import (  # noqa: E402
     exige_todo,
     revisa_candidato,
 )
-from epiforecast.publication.gate_runner import ejecuta_gates  # noqa: E402
+from epiforecast.publication.gate_runner import ejecuta_gates_con_acciones  # noqa: E402
 from epiforecast.publication.hidratacion import hidrata  # noqa: E402
 from epiforecast.publication.materializa import materializa_candidato  # noqa: E402
 from epiforecast.publication.release_worktrees import (  # noqa: E402
@@ -239,11 +239,17 @@ def _cmd_run_gates(args: argparse.Namespace) -> int:
     """
     trabajo = Path(args.trabajo)
     politica = PoliticaCenso.del_head(Path(args.destino_backend), args.head_backend)
-    evidencia = ejecuta_gates(
+    resultado = ejecuta_gates_con_acciones(
         trabajo,
         politica,
-        destinos_vivos=(Path(args.destino_backend), Path(args.destino_dashboard)),
+        destinos_vivos={
+            "backend": Path(args.destino_backend),
+            "dashboard": Path(args.destino_dashboard),
+        },
     )
+    evidencia = resultado.evidencia
+    for accion in resultado.acciones:
+        print(f"    residuo previo  : {accion}")
     for nombre, registro in evidencia.gates.items():
         causa = f" ({registro.causa}: {registro.detalle})" if registro.causa else ""
         print(f"    gate {nombre:<12} {registro.veredicto}{causa}")

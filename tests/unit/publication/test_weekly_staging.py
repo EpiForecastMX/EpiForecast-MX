@@ -211,9 +211,7 @@ def _sella_en(
         )
         politica = _politica(tmp_path, superficies=censo, retirables=tombstones)
     if corre_gates:
-        ejecuta_gates(
-            raiz, politica_para_gates or politica, destinos_vivos=tuple(destinos.values())
-        )
+        ejecuta_gates(raiz, politica_para_gates or politica, destinos_vivos=destinos)
     if not fab.esta_hidratado(raiz):
         fab.hidrata_minimo(raiz, head_backend=HEAD_BACKEND)
     return sella(
@@ -1364,7 +1362,7 @@ def test_una_lapida_fuera_de_la_semilla_no_se_sella(tmp_path: Path) -> None:
     raiz = _staging_con_artefactos(tmp_path / "staging")
 
     politica = _politica(tmp_path, retirables=("dashboard/del_usuario.html",))
-    ejecuta_gates(raiz, politica, destinos_vivos=tuple(destinos.values()))
+    ejecuta_gates(raiz, politica, destinos_vivos=destinos)
     fab.hidrata_minimo(raiz, head_backend=HEAD_BACKEND)
     with pytest.raises(StagingError, match="no está en la semilla"):
         sella(
@@ -1393,7 +1391,7 @@ def test_una_lapida_cuyo_digest_cambio_no_se_sella(tmp_path: Path) -> None:
     raiz = _staging_con_artefactos(tmp_path / "staging")
 
     politica = _politica(tmp_path, retirables=("dashboard/viejo.html",))
-    ejecuta_gates(raiz, politica, destinos_vivos=tuple(destinos.values()))
+    ejecuta_gates(raiz, politica, destinos_vivos=destinos)
     fab.hidrata_minimo(raiz, head_backend=HEAD_BACKEND)
     with pytest.raises(StagingError, match="cambió en el destino"):
         sella(
@@ -1463,7 +1461,7 @@ def _sella_con_autoridad(
     tmp_path: Path,
 ) -> Manifiesto:
     politica = _politica(tmp_path, retirables=tombstones)
-    ejecuta_gates(raiz, politica, destinos_vivos=tuple(destinos.values()))
+    ejecuta_gates(raiz, politica, destinos_vivos=destinos)
     fab.hidrata_minimo(raiz, head_backend=HEAD_BACKEND)
     return sella(
         raiz,
@@ -1604,7 +1602,7 @@ def test_una_corrida_que_solo_retira_tambien_se_sella(tmp_path: Path) -> None:
         superficies=("dashboard/obsoleto.html",),
         retirables=("dashboard/obsoleto.html",),
     )
-    ejecuta_gates(raiz, politica, destinos_vivos=tuple(destinos.values()))
+    ejecuta_gates(raiz, politica, destinos_vivos=destinos)
     fab.hidrata_minimo(raiz, head_backend=HEAD_BACKEND)
     manifiesto = sella(
         raiz,
@@ -1729,7 +1727,7 @@ def test_la_composicion_del_sello_la_calcula_el_sello(tmp_path: Path) -> None:
     politica = _politica(
         tmp_path, superficies=(*SUPERFICIES_DEL_STAGING, "dashboard/heredado.html")
     )
-    ejecuta_gates(raiz, politica, destinos_vivos=tuple(_destinos(tmp_path).values()))
+    ejecuta_gates(raiz, politica, destinos_vivos=_destinos(tmp_path))
     completa, _ = calcula_composicion({}, inventaria(raiz / "outputs"), ())
     poda = poda_a_cambiados(raiz / "outputs", semilla)
     assert not heredado.exists() and "dashboard/heredado.html" not in poda.cambiados
@@ -1829,7 +1827,7 @@ def test_un_gate_de_menos_en_la_evidencia_se_rechaza(tmp_path: Path) -> None:
     """
     raiz = _staging_con_artefactos(tmp_path / "staging")
     politica = _politica(tmp_path)
-    ejecuta_gates(raiz, politica, destinos_vivos=tuple(_destinos(tmp_path).values()))
+    ejecuta_gates(raiz, politica, destinos_vivos=_destinos(tmp_path))
     shutil.rmtree(raiz / DIR_EVIDENCIA / "rag")
     _reescribe_indice(raiz, lambda d: d["gates"].pop("rag"))
     _reescribe_observacional(raiz, lambda d: d["gates"].pop("rag"))
@@ -1841,7 +1839,7 @@ def test_un_gate_de_menos_en_la_evidencia_se_rechaza(tmp_path: Path) -> None:
 def test_un_gate_de_mas_en_la_evidencia_se_rechaza(tmp_path: Path) -> None:
     raiz = _staging_con_artefactos(tmp_path / "staging")
     politica = _politica(tmp_path)
-    ejecuta_gates(raiz, politica, destinos_vivos=tuple(_destinos(tmp_path).values()))
+    ejecuta_gates(raiz, politica, destinos_vivos=_destinos(tmp_path))
     shutil.copytree(raiz / DIR_EVIDENCIA / "rag", raiz / DIR_EVIDENCIA / "inventado")
 
     def mete_gate(d: dict) -> None:
@@ -1863,7 +1861,7 @@ def test_un_argv_editado_en_la_evidencia_no_cuadra_con_la_politica(tmp_path: Pat
     """
     raiz = _staging_con_artefactos(tmp_path / "staging")
     politica = _politica(tmp_path)
-    ejecuta_gates(raiz, politica, destinos_vivos=tuple(_destinos(tmp_path).values()))
+    ejecuta_gates(raiz, politica, destinos_vivos=_destinos(tmp_path))
     _reescribe_indice(raiz, lambda d: d["gates"]["cifras"].update(argv=["/usr/bin/env", "true"]))
 
     with pytest.raises(StagingError, match="ejecutó otro comando"):
@@ -1885,7 +1883,7 @@ def test_un_gate_corrido_sobre_otra_composicion_aborta(tmp_path: Path) -> None:
     """
     raiz = _staging_con_artefactos(tmp_path / "staging")
     politica = _politica(tmp_path)
-    ejecuta_gates(raiz, politica, destinos_vivos=tuple(_destinos(tmp_path).values()))
+    ejecuta_gates(raiz, politica, destinos_vivos=_destinos(tmp_path))
     (raiz / "outputs" / "dashboard" / "Reports" / "index.html").write_text(
         "regenerado despues de los gates", encoding="utf-8"
     )
@@ -2090,7 +2088,7 @@ def test_una_clave_duplicada_en_la_politica_no_pasa() -> None:
 def test_sin_hidratacion_no_hay_sello(tmp_path: Path) -> None:
     raiz = _staging_con_artefactos(tmp_path / "staging")
     politica = _politica(tmp_path)
-    ejecuta_gates(raiz, politica, destinos_vivos=tuple(_destinos(tmp_path).values()))
+    ejecuta_gates(raiz, politica, destinos_vivos=_destinos(tmp_path))
 
     with pytest.raises(StagingError, match="no hay hidratación registrada"):
         sella(
@@ -2109,7 +2107,7 @@ def test_el_sello_deriva_los_digests_del_consolidado_y_los_boletines(tmp_path: P
     candidato = fab.consolidado_csv().replace("3,10,12", "4,10,12")
     boletin = Boletin("2026_sem31.pdf", "https://ejemplo/sem31.pdf", 0, "")
     politica = _politica(tmp_path)
-    ejecuta_gates(raiz, politica, destinos_vivos=tuple(_destinos(tmp_path).values()))
+    ejecuta_gates(raiz, politica, destinos_vivos=_destinos(tmp_path))
     registro = fab.hidrata_minimo(
         raiz, head_backend=HEAD_BACKEND, candidato=candidato, boletines=(boletin,)
     )
@@ -2135,7 +2133,7 @@ def test_un_candidato_con_dengue_rezagado_no_sella(tmp_path: Path) -> None:
     """P0.8: el consolidado candidato corta Dengue una semana antes que neuro."""
     raiz = _staging_con_artefactos(tmp_path / "staging")
     politica = _politica(tmp_path)
-    ejecuta_gates(raiz, politica, destinos_vivos=tuple(_destinos(tmp_path).values()))
+    ejecuta_gates(raiz, politica, destinos_vivos=_destinos(tmp_path))
     fab.hidrata_minimo(
         raiz,
         head_backend=HEAD_BACKEND,
@@ -2167,7 +2165,7 @@ def test_un_digest_de_entrada_editado_en_el_manifiesto_no_cuadra(tmp_path: Path)
 def test_la_hidratacion_tiene_que_ser_del_head_que_se_sella(tmp_path: Path) -> None:
     raiz = _staging_con_artefactos(tmp_path / "staging")
     politica = _politica(tmp_path)
-    ejecuta_gates(raiz, politica, destinos_vivos=tuple(_destinos(tmp_path).values()))
+    ejecuta_gates(raiz, politica, destinos_vivos=_destinos(tmp_path))
     fab.hidrata_minimo(raiz, head_backend="f" * 40)
 
     with pytest.raises(StagingError, match="la hidratación se hizo sobre ffffffffffff"):
@@ -2178,7 +2176,7 @@ def test_declarar_menos_padecimientos_no_desactiva_la_paridad(tmp_path: Path) ->
     """Interfaz alternativa cerrada: la paridad es entre los publicados del registry."""
     raiz = _staging_con_artefactos(tmp_path / "staging")
     politica = _politica(tmp_path)
-    ejecuta_gates(raiz, politica, destinos_vivos=tuple(_destinos(tmp_path).values()))
+    ejecuta_gates(raiz, politica, destinos_vivos=_destinos(tmp_path))
     fab.hidrata_minimo(
         raiz,
         head_backend=HEAD_BACKEND,

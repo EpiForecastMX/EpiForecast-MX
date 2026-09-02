@@ -1079,8 +1079,11 @@ def calcula_composicion(
 class RegistroGate:
     """Lo que gobierna de la ejecución de un gate. Todo entra en el identificador.
 
-    Los tiempos y el ejecutable resuelto NO están aquí: son observacionales y viven en
-    `observacional.json`. Dos ejecuciones equivalentes comparten este registro byte a byte.
+    Los tiempos y la RUTA del ejecutable resuelto NO están aquí: son observacionales y viven
+    en `observacional.json`. El DIGEST del ejecutable sí: la política gobierna el nombre
+    (`argv[0]`) y el PATH permitido, pero dos máquinas con el mismo nombre pueden ejecutar
+    binarios distintos, y un PASS de `node` que no dice qué `node` no certifica el mismo
+    gate. Dos ejecuciones equivalentes comparten este registro byte a byte.
     """
 
     gate: str
@@ -1096,6 +1099,7 @@ class RegistroGate:
     stdout_sha256: str
     stderr_bytes: int
     stderr_sha256: str
+    ejecutable_sha256: str = ""
 
     CLAVES = (
         "gate",
@@ -1112,6 +1116,7 @@ class RegistroGate:
         "senal",
         "stdout",
         "stderr",
+        "ejecutable_sha256",
     )
 
     def como_dict(self) -> dict[str, Any]:
@@ -1131,6 +1136,7 @@ class RegistroGate:
             "senal": self.senal,
             "stdout": {"bytes": self.stdout_bytes, "sha256": self.stdout_sha256},
             "stderr": {"bytes": self.stderr_bytes, "sha256": self.stderr_sha256},
+            "ejecutable_sha256": self.ejecutable_sha256,
         }
 
     @staticmethod
@@ -1199,6 +1205,15 @@ class RegistroGate:
             ):
                 raise StagingError(f"{flujo} del gate {nombre} malformado: {valor!r}")
             flujos[flujo] = (valor["bytes"], valor["sha256"])
+        ejecutable = crudo["ejecutable_sha256"]
+        if not isinstance(ejecutable, str) or (
+            ejecutable != "" and not _RE_SHA256.fullmatch(ejecutable)
+        ):
+            raise StagingError(f"ejecutable_sha256 del gate {nombre} no es un SHA256 o vacío")
+        # Un gate que llegó a lanzarse tiene ejecutable; uno que no (ausente, cwd inválido,
+        # no ejecutado) no lo tiene. Un PASS sin digest de ejecutable no dice qué corrió.
+        if veredicto == VEREDICTO_REQUERIDO and ejecutable == "":
+            raise StagingError(f"el gate {nombre} declara PASS sin digest del ejecutable")
         return RegistroGate(
             gate=nombre,
             veredicto=veredicto,
@@ -1213,6 +1228,7 @@ class RegistroGate:
             stdout_sha256=flujos["stdout"][1],
             stderr_bytes=flujos["stderr"][0],
             stderr_sha256=flujos["stderr"][1],
+            ejecutable_sha256=ejecutable,
         )
 
 

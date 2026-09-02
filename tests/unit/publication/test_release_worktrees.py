@@ -169,7 +169,7 @@ def _corrida(tmp_path: Path, *, aplicable: bool = True, con_lapida: bool = False
         (outputs / "dashboard" / "obsoleto.html").unlink()
 
     politica_head = PoliticaCenso.del_head(repo_b, head_b)
-    ejecuta_gates(staging, politica_head, destinos_vivos=(repo_b, repo_d))
+    ejecuta_gates(staging, politica_head, destinos_vivos={"backend": repo_b, "dashboard": repo_d})
     fab.hidrata_minimo(staging, head_backend=head_b)
     poda = poda_a_cambiados(outputs, semilla)
     tombstones = tuple(sorted(poda.eliminados_reales))
