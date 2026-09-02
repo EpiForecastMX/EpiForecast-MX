@@ -15,13 +15,20 @@ Para retomar, copiar literalmente el prompt de:
 SHA256 al cerrar:
 `063277ed7fb745da600c35f12325238a2841707201029aa28ef5690e0d2a5ee9`.
 
-El runner local de gates ya está en el árbol (1-sep, tarde): `run-gates` antes de
-`seal`, política `censo/2`, `--resultados-pruebas` retirado. Lo que sigue no es la
-actualización de datos, sino:
+P0 avanzó hasta P0.12 en seis commits locales (1-sep, noche): runner real de gates, apply
+confinado a worktrees desechables (`CONFINAMIENTO_LISTO = True`), materialización 41/41,
+completitud exacta y decisión P0.11 = opción C (dataset DVC pendiente). Nada se publicó ni se
+hizo push. Receta local, en este orden y sólo con datos sintéticos o composición temporal:
 
-1. autorizar el commit local de checkpoint P0.9 y, encima, el del runner
-   (`../planes/checkpoint_P09_2026-09-01/README.md`); nunca push;
-2. P0.6 (apply confinado), siembra 41/41, recableado del orquestador, decisión DVC P0.11.
+1. `python -m scripts.refresh_staging materialize --trabajo <nuevo> --head-backend <sha>
+   --repo-dashboard <repo> --head-dashboard <sha>`;
+2. generar en `<trabajo>/outputs`; `run-gates --trabajo <trabajo> --head-backend <sha>
+   --destino-dashboard <repo>`; `seal ...` (sin `--resultados-pruebas`, sin `--operacion-dvc`);
+3. `make update-week-apply MANIFEST=<run>/manifest.json DESTINOS=<raíz nueva>` = prepare-worktrees
+   + apply + check-completeness sobre el par desechable; `discard-worktrees --destinos <raíz>`.
+
+Rollback: descartar el par; el sello y su evidencia se conservan. Lo que sigue: P0.1, P0.2,
+P0.8, auditoría ciega externa, y P1 sólo con autorización.
 
 Plan auditado, que no debe reescribirse durante el handoff:
 `../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`, SHA256

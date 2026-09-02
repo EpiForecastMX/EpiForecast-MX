@@ -7,38 +7,28 @@
 
 ## 0. Trabajo activo: P0 del flujo semanal
 
-El árbol contiene nueve archivos de núcleo P0 sin commit: cinco modificados y cuatro
-nuevos, en dos deltas lógicos (checkpoint P0.9 y runner de gates). No descartarlos,
-mezclarlos con otra deuda ni confirmar/publicar sin autorización. El frontend
-`main@0e777995c9e53cdd08b6d25ad58b65928a25b88b` está intacto.
+Backend en `p0/namespace-e-inmutabilidad-del-sello` con seis commits locales sobre
+`a9a694c8` (checkpoint P0.9, runner de gates, P0.6, composición 41/41 + opción C, política
+ligada al HEAD canónico, documentación) y árbol limpio. No hay push; la referencia local
+`origin/main` sigue en `a9a694c8` y el remoto observado en `16476a98` no se integró. No hacer
+fetch/pull/rebase ni mezclar ese avance sin auditar el delta y obtener autorización. El
+frontend `main@0e777995c9e53cdd08b6d25ad58b65928a25b88b` está intacto.
 
-La rama y las referencias locales backend parten de `a9a694c8`; una consulta remota de sólo
-lectura observó después `origin` `main@16476a98`. No hacer fetch/pull/rebase ni incorporar
-ese avance dentro del worktree P0 sin auditar primero el delta y obtener autorización.
+`make update-week` sigue bloqueado en preflight (P0.1, P0.2, P0.8 y autorización de P1).
+El flujo cableado es `materialize → run-gates → seal → prepare-worktrees → apply →
+check-completeness`: la política `censo/2` define los gates como `argv` + `cwd` +
+`timeout_s` + `entorno`; el runner los ejecuta sin shell sobre el árbol candidato completo
+y deja evidencia con digests; `seal` la relee y no admite resultados ni operaciones DVC por
+flag; `apply` sólo instala en un par de worktrees desechables registrado y verificado con
+git, bajo lock, y cualquier fallo invalida el par. `CONFINAMIENTO_LISTO = True`. Decisión
+P0.11: opción C, dataset DVC pendiente.
 
-`make update-week` está bloqueado intencionalmente antes de DVC y del staging. El plan
-auditado es `../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`, SHA256
-`5cfdf5a4a2d8e5ed1acf004e8c90a00e929dfd217ba051fff925e742fe9e233d`. El prompt y plan de
-reanudación exactos están en
-`../planes/PROMPT_REANUDAR_P0_RUNNER_GATES_2026-09-01.md` (SHA256
-`063277ed7fb745da600c35f12325238a2841707201029aa28ef5690e0d2a5ee9`).
-
-Implementado y validado localmente: `weekly_staging/2`, namespace cerrado, sidecar,
-inmutabilidad, baseline, tombstones derivados, composición completa, política canónica
-desde Git y 41 superficies exactas. Los sellos siguen en `draft` porque P0.6 no existe y
-`CONFINAMIENTO_LISTO = False`.
-
-Gate local vigente (1-sep, cierre del runner): 186 pruebas dirigidas y `make test-fast`
-con 2,608 passed, 1 skipped y 66 deselected; Ruff, mypy, `bash -n` y `git diff --check`
-verdes. La prueba de HEAD distinto ya afirma `difieren: entrada` con `capsys`.
-
-El runner real de gates está entregado en el árbol: `censo/2` define cada gate como
-`argv` + `cwd` + `timeout_s` + `entorno`; `run-gates` lo ejecuta sin shell sobre el árbol
-candidato completo antes de podar, deriva PASS del exit 0 y deja evidencia con digests en
-`<trabajo>/gates/`; `seal` ya no acepta resultados por flag y relee esa evidencia. Sigue
-`draft` (`CONFINAMIENTO_LISTO = False`). Pendiente sin autorizar: checkpoint P0.9 y commit
-del runner (instantánea y receta en `../planes/checkpoint_P09_2026-09-01/`); después P0.6,
-siembra 41/41, recableado del orquestador y decisión DVC P0.11.
+Gate local vigente: 223 pruebas dirigidas; `make test-fast` con 2,645 passed, 1 skipped y 66
+deselected; Ruff, mypy, `bash -n` y `git diff --check` verdes. Ensayo con la composición real
+y gates Node reales en `../planes/ensayo_P012_2026-09-01/`. Pendiente: P0.1, P0.2, P0.8,
+P0.10, auditoría ciega externa y P1 con autorización. Plan auditado:
+`../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`, SHA256
+`5cfdf5a4a2d8e5ed1acf004e8c90a00e929dfd217ba051fff925e742fe9e233d`.
 
 ## 1. Precedencia y forma de trabajo
 

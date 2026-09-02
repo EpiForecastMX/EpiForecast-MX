@@ -1,35 +1,38 @@
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
-## Estado P0 del flujo semanal — 2026-09-01
+## Estado P0 del flujo semanal — 2026-09-01 (cierre nocturno)
 
 Esta sección sustituye cualquier instrucción inferior que presente `make update-week` como
-receta activa. Backend: `p0/namespace-e-inmutabilidad-del-sello@a9a694c8`, con nueve
-archivos de núcleo P0 sin commit (checkpoint P0.9 + runner de gates) más las memorias de
-cierre. Frontend:
-`main@0e777995`, intacto. La referencia local `origin/main` del backend sigue en `a9a694c8`,
-pero el remoto se observó en `16476a98`; no hacer fetch/pull/rebase sobre el worktree sucio.
+receta activa. Backend: rama `p0/namespace-e-inmutabilidad-del-sello`, seis commits locales
+sobre `a9a694c8` y árbol limpio: `ee16ef02` checkpoint P0.9 · `62be548d` runner real de
+gates · `fb0e7776` P0.6 apply confinado · `dcd031de` composición 41/41, completitud,
+orquestación y opción C · `75498857` política del sello ligada al HEAD canónico · más el
+commit de esta documentación. Sin push. La referencia local `origin/main` sigue en
+`a9a694c8`; el remoto observado en `16476a98` no se integró. Frontend: `main@0e777995`,
+intacto y sin worktrees registrados.
 
-`make update-week` está bloqueado antes de DVC y staging. No descargar W32/W33, aplicar,
-publicar, ejecutar DVC ni encender `CONFINAMIENTO_LISTO`. El árbol implementa
-`weekly_staging/2`, namespace cerrado, sidecar, runs inmutables, baseline, tombstones,
-composición completa y política Git con 41 superficies; los sellos permanecen `draft` por
-P0.6 pendiente.
+`make update-week` sigue bloqueado en preflight: faltan P0.1 (hidratación por allowlist),
+P0.2 (inputs bajo el staging) y P0.8 (Dengue fail-closed), y P1 exige autorización. El
+flujo está cableado y probado con repositorios sintéticos y con la composición real:
+`materialize` (git archive de los HEAD sellados, 41/41 superficies) → generadores →
+`run-gates` (argv exacto sin shell, evidencia con SHA256) → `seal` (relee esa evidencia;
+sin flags de resultados ni de DVC) → `prepare-worktrees` (par desechable registrado con
+lock) → `apply --destinos` (sólo en ese par, verificado con git) → `check-completeness`
+(rastreados, sin rastrear, faltantes, sobrantes, alterados, lápidas y composición aplicada
+== sellada). `CONFINAMIENTO_LISTO = True`: los sellos nuevos salen `aplicable`; un borrador
+anterior sigue sin instalarse. Decisión P0.11: **opción C**, superficies públicas al día y
+dataset DVC pendiente; `operaciones_dvc = []` siempre.
 
-Gate vigente (1-sep, cierre del runner): 186 pruebas dirigidas y `make test-fast` = 2,608
-passed, 1 skipped y 66 deselected; Ruff, mypy, `bash -n` y `git diff --check` verdes. El
-test de HEAD distinto ya afirma `difieren: entrada` con `capsys`.
+Gate vigente: 223 dirigidas; `make test-fast` = 2,645 passed, 1 skipped, 66 deselected
+(cero skips nuevos); Ruff, mypy, `bash -n` y `git diff --check` verdes. Ensayo real con
+gates Node PASS y evidencia en `../planes/ensayo_P012_2026-09-01/`. Ni el runner ni el sello
+son un sandbox; los digests no son firma; no hay atomicidad entre repositorios.
 
-El runner real de gates está en el árbol: política `censo/2` con gates estructurados
-(`argv`, `cwd`, `timeout_s`, `entorno`), suborden `run-gates` que ejecuta el argv exacto sin
-shell sobre el árbol candidato completo, veredicto derivado del exit 0, evidencia con
-SHA256 en `<trabajo>/gates/`, `--resultados-pruebas` retirado y `seal` releyendo y
-sellando esa evidencia. Pendiente y sin autorizar: commit de checkpoint P0.9 (instantánea
-en `../planes/checkpoint_P09_2026-09-01/`) y commit del runner; después P0.6, siembra
-41/41, recableado del orquestador y decisión DVC P0.11. Plan auditado y prompt histórico:
+Pendiente: P0.1, P0.2, P0.8, P0.10 (cadena de caché), `--out` de los generadores (P2),
+auditoría ciega externa de los commits, y P1 sólo con autorización aparte. Plan auditado:
 
 - `../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`, SHA256
-  `5cfdf5a4a2d8e5ed1acf004e8c90a00e929dfd217ba051fff925e742fe9e233d`;
-- `../planes/PROMPT_REANUDAR_P0_RUNNER_GATES_2026-09-01.md`.
+  `5cfdf5a4a2d8e5ed1acf004e8c90a00e929dfd217ba051fff925e742fe9e233d`.
 
 ## Estado CI semanal — 2026-09-01
 

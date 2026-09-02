@@ -9,29 +9,35 @@
 ## Activa — P0 del flujo de actualización semanal
 
 El plan vigente es `../../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`
-(SHA256 `5cfdf5a4a2d8e5ed1acf004e8c90a00e929dfd217ba051fff925e742fe9e233d`). El árbol contiene
-nueve archivos de núcleo sin commit, en dos deltas lógicos: el checkpoint P0.9 con
-`weekly_staging/2` —namespace, sidecar, runs inmutables, baseline, tombstones derivados,
-composición completa y política Git con censo exacto de 41 superficies— y, encima, el
-runner real de gates. Los sellos siguen `draft`; `CONFINAMIENTO_LISTO = False`.
+(SHA256 `5cfdf5a4a2d8e5ed1acf004e8c90a00e929dfd217ba051fff925e742fe9e233d`). La rama
+`p0/namespace-e-inmutabilidad-del-sello` lleva seis commits locales sobre `a9a694c8`
+(checkpoint P0.9, runner de gates, P0.6, composición 41/41 + opción C, política ligada al
+HEAD canónico, documentación), sin push.
 
-Último gate (1-sep, cierre del runner): 186 pruebas dirigidas; `make test-fast` = 2,608
-passed, 1 skipped y 66 deselected; Ruff, mypy, `bash -n` y `git diff --check` verdes. El
-control de HEAD distinto afirma con `capsys` el motivo `difieren: entrada`.
+Cerrado (1-sep, con controles negativos y mutaciones del código vistos caer):
 
-Entregado: runner real de gates. La política `censo/2` define cada gate como `argv` +
-`cwd` + `timeout_s` + `entorno`; `run-gates` ejecuta el argv exacto sin shell sobre el
-árbol candidato completo antes de podar, deriva PASS sólo del exit 0 y deja evidencia con
-digests en `<trabajo>/gates/`; `seal` ya no acepta `--resultados-pruebas` y relee esa
-evidencia exigiendo política y composición exactas. Límites declarados: no es un sandbox
-(cierra la interfaz, no al proceso) y los digests no son firma.
+- P0.9 runner real de gates: `censo/2`, `run-gates` sin shell sobre el árbol completo,
+  evidencia con digests, `seal` sin flag de resultados;
+- P0.6 apply confinado: par de worktrees desechables registrado, verificado con git y bajo
+  lock; cualquier fallo invalida el par; `CONFINAMIENTO_LISTO = True`; la política del sello
+  debe ser la del HEAD del repositorio canónico;
+- composición 41/41 por `git archive`; `check-completeness` con seis conjuntos y composición
+  aplicada == sellada; `actualiza_semanal.sh` y `make update-week-apply` recableados detrás
+  del bloqueo;
+- P0.11 decidido: opción C, superficies públicas al día y dataset DVC pendiente; ninguna
+  operación DVC se declara;
+- P0.12 ensayado en sintético y con la composición real (gates Node reales PASS); evidencia
+  en `../../planes/ensayo_P012_2026-09-01/`.
 
-Pendiente, por este orden: (1) autorizar el commit local de checkpoint P0.9 (instantánea
-y receta en `../../planes/checkpoint_P09_2026-09-01/`) y el commit del runner, nunca push;
-(2) P0.6, apply confinado a worktrees desechables; (3) siembra 41/41, `check-completeness`
-con untracked y recableado de `actualiza_semanal.sh` a `run-gates` → `seal`; (4) decisión
-DVC P0.11 antes de P1. Handoff histórico (anterior al runner):
-`../../planes/PROMPT_REANUDAR_P0_RUNNER_GATES_2026-09-01.md`.
+Gate: 223 dirigidas; `make test-fast` = 2,645 passed, 1 skipped, 66 deselected; Ruff, mypy,
+`bash -n`, `git diff --check` verdes.
+
+Abierto, en orden: (1) P0.1 hidratación por allowlist con control positivo 333/99/432 y
+conjuntos exactos; (2) P0.2 inputs bajo el staging con `digest_consolidado` antes/candidato;
+(3) P0.8 Dengue fail-closed; (4) P0.10 cadena de caché; (5) `--out` de
+`build_web_knowledge.py`, `build_tableau.py` y `genera_validacion_semanal.py` (P2); (6)
+auditoría ciega externa de los commits; (7) P1 sólo con autorización. Límites declarados:
+ni runner ni sello son sandbox; los digests no son firma; sin atomicidad entre repositorios.
 
 ## Cerradas o retiradas en esta auditoría
 
