@@ -5,16 +5,25 @@
 > Guía para Gemini CLI dentro de `EpiForecast-MX`; no sustituye las órdenes del
 > workspace ni autoriza acciones externas.
 
-## 0. Trabajo activo: P1 W33 y paridad obligatoria
+## 0. Trabajo activo: P1 W33 publicada y tanda correctiva P1b
 
-Validado contra la página oficial el 2-sep-2026: hay 33 boletines de 2026 y el máximo es
-W33; W34 no está publicada. El sello aplicable `882663dac1f1e39b` lleva juntos a
-Alzheimer, Depresión, Parkinson y Dengue de W31 a W33, con 1,800 artefactos, 0 lápidas y
-gates `cifras` y `rag` PASS. El backend tiene checkpoint material `e8f7ba0a` más el
-estado documental en `p1/actualizacion-semanal-2026-w33`, PR draft #15; frontend
-`p1/actualizacion-semanal-2026-w33@d0826bda`, PR draft #11.
-El sello `2ae89151e88aa92a` queda supersedido: CI encontró el catálogo canónico rancio y
-la corrida completa se repitió tras cerrar el cableado y la estabilidad byte a byte.
+La fuente oficial 2026 fue comprobada el 2-sep-2026: contiene 33 boletines y el último
+verificable es W33; W34 aún no está publicada. **P1 está publicada**: el sello
+`882663dac1f1e39b` (W31 → W33, cuatro publicados en el mismo corte, 1,800 artefactos, 0
+lápidas, `cifras` y `rag` PASS) se integró con merge commit `d7c9c6c2` en el backend (CI de
+`main` run 33672251817 verde: 2,326 passed, 497 skips exactos, cobertura 77 %) y `72ae9e83`
+en el frontend; Netlify desplegó https://epiforecast.mx con DATA_VERSION 20260825, knowledge
+W33 (432/444), RAG 453, zoom 444 y los cuatro padecimientos con última fecha real 2026-08-10.
+
+**Tanda correctiva P1b (2-sep-2026, PRs draft, sin merge):** el smoke productivo encontró el
+banner estático de novedades de `index.html` incoherente (titular del CALASS con fecha y
+subtítulo de W33; lista secundaria en W31). Causa: `scripts/build_news_weekly.py` sólo
+sustituía el titular si ya era una nota semanal. Corrección en `1ae477d5` (el bloque
+`#newsBannerRow` se reescribe entero desde `news.json`, fallando en seco si falta) y gate
+`cifras` reforzado en el frontend (`84536608`: el bloque estático debe coincidir con
+`news.json`; contra el sitio publicado reporta cuatro desalineaciones). Re-sello
+`89d70cc441ee255a` con ambos arreglos; backend PR draft #16 (`p1b/fallback-estatico-w33`) y
+frontend PR draft #12. Fusionar la del frontend despliega el banner corregido.
 
 Regla gobernante: todos los miembros `published` del registry comparten un corte público
 único. Uno faltante, adelantado, atrasado o sin cobertura exacta bloquea el lote completo;
@@ -70,9 +79,9 @@ por separado. Para revisar o diagnosticar, no implementar ni mutar salvo petici�
 
 - Backend: `EpiForecast-MX`, rama de trabajo
   `p1/actualizacion-semanal-2026-w33`, checkpoint material `e8f7ba0a`, abierta como PR
-  draft #15 contra `main@5da24116`.
-- Frontend canónico: `EpiForecast-IMSS-Dashboard`, `main@0e777995`; la candidata P1 vive
-  en `p1/actualizacion-semanal-2026-w33@d0826bda`, PR draft #11.
+  P1 fusionada (`d7c9c6c2`); tanda correctiva en `p1b/fallback-estatico-w33@1ae477d5`, PR draft #16.
+- Frontend canónico: `EpiForecast-IMSS-Dashboard`, `main@72ae9e83` (P1 publicada); la
+  corrección del banner vive en `p1b/fallback-estatico-w33@84536608`, PR draft #12.
   durante P0.
 - Quedan dos ramas ya mergeadas, locales y remotas: `ci/skip-budget-ets-legacy` y
   `fix/frontend-deudas`. Ambas puntas son ancestros comprobados de `main`; no confundir

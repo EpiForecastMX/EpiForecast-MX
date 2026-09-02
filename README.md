@@ -437,22 +437,15 @@ make update-week     # BLOCKED while the sealed P0 workflow is completed (see se
 
 ### 8. Weekly Update Flow (`make update-week`)
 
-> **Operational status — 2026-09-02: P1 W33 candidate sealed, not published.** The official
-> 2026 source currently exposes 33 bulletins; W34 is not yet published. Sealed run
-> `882663dac1f1e39b` advances Alzheimer, Depression, Parkinson and Dengue together from W31
-> to W33, with 1,800 artifacts, zero tombstones, and the `cifras` and `rag` gates passing.
-> It supersedes `2ae89151e88aa92a` after CI exposed a stale canonical catalog and the whole
-> sealed run was rebuilt. Backend PR #15 and frontend PR #11 are drafts; the candidate is
-> not production.
->
-> Every disease whose registry lifecycle is `published` must have the exact same public
-> `(year, epidemiological week)`. If one disease is missing, ahead or behind, the whole
-> release fails closed. Partial publication and carrying a stale disease forward are
-> forbidden. W34 may enter only after its official PDF exists and all published diseases
-> can advance to it together. The numbered flow below is historical, not an executable
-> runbook.
-> Current plan: `../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`.
-> Resume handoff: `../planes/PROMPT_REANUDAR_P0_RUNNER_GATES_2026-09-01.md`.
+> **Operational status — 2026-09-02: P1 W33 published; corrective batch P1b in draft PRs.** The
+> sealed run `882663dac1f1e39b` (Alzheimer, Depression, Parkinson and Dengue together at W33,
+> 1,800 artifacts, zero tombstones, `cifras` and `rag` gates passing) was merged: backend
+> `d7c9c6c2` (main CI run 33672251817 green) and frontend `72ae9e83`; Netlify deployed
+> https://epiforecast.mx at W33 (DATA_VERSION 20260825, RAG 453 chunks, zoom 444 series).
+> The production smoke found the landing's static news fallback out of sync (CALASS headline
+> with the W33 date); `1ae477d5` rewrites that block from `news.json` and the frontend `cifras`
+> gate now enforces it (`84536608`). Re-sealed as `89d70cc441ee255a`: backend PR #16 and frontend PR
+> #12 are drafts; merging the frontend one redeploys the fixed banner.
 
 Historically this was described as a one-command weekly refresh that keeps
 the working copy, DVC artifacts and the public dashboard in lockstep with the

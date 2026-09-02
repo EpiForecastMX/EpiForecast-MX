@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime
+import html as html_mod
 import json
 from pathlib import Path
 import re
@@ -194,8 +195,90 @@ def upsert_news(item: dict[str, Any], news_path: Path) -> None:
     news_path.write_text(json.dumps(d, ensure_ascii=False, indent=4) + "\n", encoding="utf-8")
 
 
+SUB_NEUTRAL = (
+    "Se integró el Boletín SINAVE en los cuatro padecimientos; el detalle por padecimiento "
+    "y las métricas SMAPE/MASE aparecen en esta sección."
+)
+_RE_BANNER = re.compile(
+    r'(<div class="news-banner-row" id="newsBannerRow">)(.*?)(\n {8}</div>)', re.DOTALL
+)
+
+
+def _plain(fragmento: str) -> str:
+    """Texto sin etiquetas y con blancos colapsados (espejo de `plain()` del JS)."""
+    return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", fragmento or "")).strip()
+
+
+def _summary(it: dict[str, Any]) -> str:
+    """Espejo de `summary()` del JS: `summary` explícito o el primer párrafo, a 150 chars."""
+    if it.get("summary"):
+        return str(it["summary"])
+    t = _plain(html_mod.unescape((it.get("body") or [""])[0]))
+    if len(t) > 150:
+        t = re.sub(r"\s+\S*$", "", t[:147]) + "…"
+    return t
+
+
+def _esc(x: Any) -> str:
+    return html_mod.escape(str(x if x is not None else ""), quote=False)
+
+
+def render_news_banner(items: list[dict[str, Any]]) -> str:
+    """HTML interior de `#newsBannerRow`: lead = items[0], minis = items[1:3].
+
+    Es el fallback que se ve cuando falla el fetch de `news.json`, así que replica lo que
+    pinta el JS (`leadHtml`/`miniHtml`) para que estático y dinámico digan lo mismo. Para la
+    nota semanal el subtítulo es neutral y estable (las cifras las inyecta el JS).
+    """
+    if not items:
+        raise ValueError("news.json sin items: no hay con qué escribir el fallback estático")
+    top = items[:3]
+    lead = top[0]
+    tipo = lead.get("type") or "datos"
+    sub = SUB_NEUTRAL if tipo == "datos" else _summary(lead)
+    partes = [
+        '          <a href="novedades.html" class="news-lead">',
+        '            <div class="news-lead-meta">',
+        f'              <span class="news-date">{_esc(lead.get("date"))}</span>',
+        f'              <span class="news-tag news-tag--{_esc(tipo)}">{_esc(lead.get("tag"))}</span>',
+        "            </div>",
+        f'            <div class="news-lead-title">{_esc(lead.get("title"))}</div>',
+        f'            <div class="news-lead-sub">{_esc(sub)}</div>',
+        "          </a>",
+        '          <div class="news-mini-list">',
+    ]
+    for it in top[1:]:
+        t = it.get("type") or "datos"
+        partes += [
+            '            <a href="novedades.html" class="news-mini">',
+            f'              <span class="news-tag news-tag--{_esc(t)}">{_esc(it.get("tag"))}</span>',
+            f'              <span class="news-mini-title">{_esc(it.get("title"))}</span>',
+            f'              <span class="news-mini-date">{_esc(it.get("date"))}</span>',
+            "            </a>",
+        ]
+    partes.append("          </div>")
+    return "\n" + "\n".join(partes)
+
+
+def _items_para_el_banner(dashboard: Path, item: dict[str, Any]) -> list[dict[str, Any]]:
+    """Los items de `news.json` del destino, exigiendo que la nota semanal vaya primero."""
+    news_path = dashboard / "news.json"
+    if not news_path.is_file():
+        raise FileNotFoundError(
+            f"falta {news_path}: el fallback estático se escribe desde news.json"
+        )
+    items: list[dict[str, Any]] = json.loads(news_path.read_text(encoding="utf-8")).get(
+        "items", []
+    )
+    if not items or items[0].get("title") != item["title"]:
+        raise ValueError(
+            "news.json no tiene la nota semanal como primer item; corre upsert_news antes"
+        )
+    return items
+
+
 def bump_static_html(data: dict[str, Any], item: dict[str, Any], dashboard: Path) -> None:
-    """Datelines 'Edición de la semana N, AAAA' + fallback estatico del lead.
+    """Datelines 'Edición de la semana N, AAAA' + fallback estático completo del banner.
 
     `dashboard` es obligatorio. Antes se ignoraba la ruta recibida por `main` y se
     escribia sobre la constante global, de modo que `news.json` iba al destino pedido
@@ -203,6 +286,11 @@ def bump_static_html(data: dict[str, Any], item: dict[str, Any], dashboard: Path
     refresh semanal eso significaba dos cosas a la vez: el sello quedaba incompleto,
     porque esos dos archivos nunca entraban en el inventario, y el sitio se modificaba
     aunque la corrida no publicara nada.
+
+    El banner estático se reescribe ENTERO desde `news.json` (lead + minis). Antes sólo se
+    sustituían fecha y subtítulo sin condición y el titular sólo si ya era una nota semanal:
+    con el CALASS destacado a mano, W33 salió a producción con titular del CALASS, fecha y
+    subtítulo de W33 y la lista secundaria sin actualizar (2-sep-2026).
     """
     wk, year = data["week"], data["year"]
     for name in ("index.html", "novedades.html"):
@@ -214,27 +302,17 @@ def bump_static_html(data: dict[str, Any], item: dict[str, Any], dashboard: Path
             r"Edición de la semana \d+, \d{4}", f"Edición de la semana {wk}, {year}", html
         )
         if name == "index.html":
-            # fallback estatico del lead (solo se ve si falla el fetch de news.json)
-            html = re.sub(
-                r'(<div class="news-lead-title">)Ya contamos con la semana epidemiológica \d+ de \d{4}(</div>)',
-                rf"\g<1>{item['title']}\g<2>",
-                html,
-            )
-            html = re.sub(
-                r'(<span class="news-date">)[^<]*(</span>)',
-                rf"\g<1>{item['date']}\g<2>",
-                html,
-                count=1,
-            )
-            # sub neutral estable (el detalle con cifras lo inyecta news.json via JS)
-            html = re.sub(
-                r'(<div class="news-lead-sub">).*?(</div>)',
-                r"\g<1>Se integró el Boletín SINAVE en los cuatro padecimientos; "
-                r"el detalle por padecimiento y las métricas SMAPE/MASE aparecen en "
-                r"esta sección.\g<2>",
-                html,
-                count=1,
-            )
+            bloque = render_news_banner(_items_para_el_banner(dashboard, item))
+            encontrados = list(_RE_BANNER.finditer(html))
+            n = len(encontrados)
+            if n == 1:
+                m = encontrados[0]
+                html = html[: m.start(2)] + bloque + html[m.end(2) :]
+            if n != 1:
+                raise ValueError(
+                    'index.html sin el bloque <div class="news-banner-row" id="newsBannerRow">: '
+                    "no se puede escribir el fallback estático"
+                )
         p.write_text(html, encoding="utf-8")
 
 

@@ -1,13 +1,24 @@
 # Órdenes a la mano
 
-## 0 · P1 W33 — todos los publicados avanzan juntos
+## 0 · P1 W33 publicada; P1b (banner estático) en PRs draft
 
-Fuente oficial validada el 2-sep-2026: 33 boletines disponibles, máximo W33; W34 aún no
-existe. Sello candidato vigente `882663dac1f1e39b`: W31→W33, Alzheimer + Depresión +
-Parkinson + Dengue en corte común, 1,800 artefactos, 0 lápidas, `cifras` y `rag` PASS.
-PRs draft: backend #15 con checkpoint material `e8f7ba0a` y frontend #11 en `d0826bda`. El sello anterior
-`2ae89151e88aa92a` está supersedido por la corrección del catálogo canónico. No confundir
-candidato con publicación.
+La fuente oficial 2026 fue comprobada el 2-sep-2026: contiene 33 boletines y el último
+verificable es W33; W34 aún no está publicada. **P1 está publicada**: el sello
+`882663dac1f1e39b` (W31 → W33, cuatro publicados en el mismo corte, 1,800 artefactos, 0
+lápidas, `cifras` y `rag` PASS) se integró con merge commit `d7c9c6c2` en el backend (CI de
+`main` run 33672251817 verde: 2,326 passed, 497 skips exactos, cobertura 77 %) y `72ae9e83`
+en el frontend; Netlify desplegó https://epiforecast.mx con DATA_VERSION 20260825, knowledge
+W33 (432/444), RAG 453, zoom 444 y los cuatro padecimientos con última fecha real 2026-08-10.
+
+**Tanda correctiva P1b (2-sep-2026, PRs draft, sin merge):** el smoke productivo encontró el
+banner estático de novedades de `index.html` incoherente (titular del CALASS con fecha y
+subtítulo de W33; lista secundaria en W31). Causa: `scripts/build_news_weekly.py` sólo
+sustituía el titular si ya era una nota semanal. Corrección en `1ae477d5` (el bloque
+`#newsBannerRow` se reescribe entero desde `news.json`, fallando en seco si falta) y gate
+`cifras` reforzado en el frontend (`84536608`: el bloque estático debe coincidir con
+`news.json`; contra el sitio publicado reporta cuatro desalineaciones). Re-sello
+`89d70cc441ee255a` con ambos arreglos; backend PR draft #16 (`p1b/fallback-estatico-w33`) y
+frontend PR draft #12. Fusionar la del frontend despliega el banner corregido.
 
 Regla de operación: resolver del HEAD todos los `lifecycle=published` y exigir exactamente
 el mismo `(año, semana)` para cada uno en consolidado, salidas y superficies. Si uno no
