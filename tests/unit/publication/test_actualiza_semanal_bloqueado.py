@@ -102,6 +102,9 @@ def test_el_cableado_del_orquestador_es_el_del_flujo_sellado() -> None:
         "rama RETRAIN muerta"
     )
     assert "RETRAIN=1 no cabe en el carril semanal" in texto
+    # El catálogo canónico se regenera en el carril y viaja al candidato del backend.
+    assert "scripts.build_catalogo_canonico" in texto
+    assert "reports/ProdDetails/catalogo_canonico_counts.json" in texto
 
 
 @pytest.mark.contract
