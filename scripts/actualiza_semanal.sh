@@ -442,12 +442,15 @@ paso "INDICE RAG del EpiBot (GEMINI_API_KEY + node_modules del repositorio real)
 if [ -n "${GEMINI_API_KEY:-}" ]; then
   [ -d "${DASHBOARD_REAL}/epibot/node_modules" ] \
     || fatal "faltan las dependencias de node en ${DASHBOARD_REAL}/epibot (npm ci alli, con red)"
+  # El corpus RAG lee tambien las notas HTML de la RAIZ del sitio (corpus.mjs, ROOT_DIR):
+  # el area lleva el dashboard candidato entero, no solo epibot/. Con solo epibot/ salian
+  # 84 chunks en vez de 453 y el gate `rag` fallaba (P1, 2-sep-2026).
   RAG_AREA="${TRABAJO}.rag"
   rm -rf "$RAG_AREA"; mkdir -p "$RAG_AREA"
-  cp -R "$EPIBOT" "$RAG_AREA/epibot"
-  cp -R "${DASHBOARD_REAL}/epibot/node_modules" "$RAG_AREA/epibot/node_modules"
-  (cd "$RAG_AREA/epibot" && npm run rag:build)
-  cp "$RAG_AREA/epibot/rag_index.json" "$EPIBOT/rag_index.json"
+  cp -R "$DASHBOARD_ROOT" "$RAG_AREA/dashboard"
+  cp -R "${DASHBOARD_REAL}/epibot/node_modules" "$RAG_AREA/dashboard/epibot/node_modules"
+  (cd "$RAG_AREA/dashboard/epibot" && npm run rag:build)
+  cp "$RAG_AREA/dashboard/epibot/rag_index.json" "$EPIBOT/rag_index.json"
 else
   echo "    sin GEMINI_API_KEY no se reconstruye el indice RAG; el gate 'rag' de run-gates"
   echo "    lo verificara y, si knowledge.json cambio, FALLARA (no hay sello sin indice al dia)."

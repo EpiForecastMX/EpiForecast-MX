@@ -86,8 +86,11 @@ def test_el_cableado_del_orquestador_es_el_del_flujo_sellado() -> None:
     assert "${TRABAJO}.sandbox.previo" in texto, "el sandbox previo se aparta con el trabajo"
     # El índice RAG se construye en un área aparte con las dependencias del repositorio real
     # y sólo el índice vuelve al candidato: el candidato nunca lleva node_modules.
+    assert 'cp -R "$DASHBOARD_ROOT" "$RAG_AREA/dashboard"' in texto, (
+        "el corpus RAG lee la raíz del sitio"
+    )
     assert 'cp -R "${DASHBOARD_REAL}/epibot/node_modules"' in texto
-    assert 'cp "$RAG_AREA/epibot/rag_index.json" "$EPIBOT/rag_index.json"' in texto
+    assert 'cp "$RAG_AREA/dashboard/epibot/rag_index.json" "$EPIBOT/rag_index.json"' in texto
     assert '[ -d "${EPIBOT}/node_modules" ]' not in texto, (
         "rama muerta: el candidato no trae node_modules"
     )
