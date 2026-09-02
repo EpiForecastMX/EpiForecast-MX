@@ -97,3 +97,56 @@ def test_generar_markdown_reporte_completo():
     # menciona métricas y al menos un modelo
     assert "SMAPE" in md.upper()
     assert any(lbl in md for lbl in ("Prophet", "DeepAR", "Ensemble", "Stacking"))
+
+
+def _nacionales(entidad: object, nivel: str, rmse: float) -> pd.DataFrame:
+    """Las tres series nacionales de Dengue, codificadas como lo hace cada motor."""
+    return pd.DataFrame(
+        {
+            "padecimiento": ["Dengue"] * 3,
+            "sexo": ["incrementos_total", "incrementos_hombres", "incrementos_mujeres"],
+            "nivel": [nivel] * 3,
+            "Entidad": [entidad] * 3,
+            "rmse": [rmse] * 3,
+            "smape": [rmse * 2] * 3,
+        }
+    )
+
+
+def test_el_nacional_de_dengue_casa_aunque_cada_motor_lo_codifique_distinto():
+    """Prophet/Ensemble/Stacking: Entidad vacía y nivel='nacional'; DeepAR de Dengue:
+    Entidad='Nacional'. Antes eran dos claves y la tabla de producción salía con el
+    nacional de Dengue duplicado (filas Prophet y DeepAR contradictorias)."""
+    data = {
+        "prophet": _nacionales(np.nan, "nacional", 10.0),
+        "deepar": _nacionales("Nacional", "nacional", 30.0),
+        "ensemble": _nacionales(np.nan, "nacional", 20.0),
+    }
+
+    merged = merge_all_models(data)
+
+    assert len(merged) == 3, "una fila por sexo, no una por motor"
+    assert sorted(merged["sexo"]) == sorted(data["prophet"]["sexo"])
+    assert merged["rmse_prophet"].notna().all()
+    assert merged["rmse_deepar"].notna().all()
+    assert merged["rmse_ensemble"].notna().all()
+    assert (merged["nivel"] == "nacional").all()
+    assert (merged["Entidad"] == "").all()
+    assert (merged["ganador_rmse"] == "prophet").all()
+    assert not merged.duplicated(["padecimiento", "sexo", "nivel", "Entidad"]).any()
+
+
+def test_el_nacional_legacy_de_deepar_sigue_casando():
+    """La codificación vieja (Entidad='general'/'hombres'/'mujeres', nivel='regional')."""
+    deepar = pd.DataFrame(
+        {
+            "padecimiento": ["Depresión"] * 3,
+            "sexo": ["incrementos_total"] * 3,
+            "nivel": ["regional"] * 3,
+            "Entidad": ["general", "hombres", "mujeres"],
+            "rmse": [1.0, 2.0, 3.0],
+        }
+    )
+    prophet = _nacionales(np.nan, "nacional", 5.0).assign(padecimiento="Depresión")
+    merged = merge_all_models({"prophet": prophet, "deepar": deepar})
+    assert len(merged) == 3 and merged["rmse_deepar"].notna().all()

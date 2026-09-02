@@ -247,6 +247,18 @@ def merge_all_models(data: dict[str, pd.DataFrame]) -> pd.DataFrame:
             subset["Entidad"] = subset["Entidad"].map(
                 lambda x: _normalizar_entidad(str(x)) if pd.notna(x) else ""
             )
+        # El agregado nacional tiene UNA identidad, la codifique quien la codifique:
+        # Prophet/Ensemble/Stacking lo escriben con Entidad vacía y nivel='nacional'; el
+        # DeepAR de Dengue, con Entidad='Nacional'. Sin esto, las dos claves no casaban y
+        # la tabla de producción salía con el nacional de Dengue duplicado y
+        # contradictorio (filas Prophet y DeepAR para la misma serie).
+        if "Entidad" in subset.columns and "nivel" in subset.columns:
+            es_nacional = (subset["Entidad"] == "nacional") | (
+                subset["nivel"].map(lambda x: _normalizar_entidad(str(x)) if pd.notna(x) else "")
+                == "nacional"
+            )
+            subset.loc[es_nacional, "Entidad"] = ""
+            subset.loc[es_nacional, "nivel"] = "nacional"
         subset = subset.rename(columns={m: f"{m}_{model_key}" for m in metric_cols})
         if merged is None:
             merged = subset
