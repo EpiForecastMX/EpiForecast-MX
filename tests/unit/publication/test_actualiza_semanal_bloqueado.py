@@ -84,7 +84,17 @@ def test_el_cableado_del_orquestador_es_el_del_flujo_sellado() -> None:
     )
     assert "ls -1 data/raw_PDFs" not in texto
     assert "${TRABAJO}.sandbox.previo" in texto, "el sandbox previo se aparta con el trabajo"
+    # El índice RAG se construye en un área aparte con las dependencias del repositorio real
+    # y sólo el índice vuelve al candidato: el candidato nunca lleva node_modules.
+    assert 'cp -R "${DASHBOARD_REAL}/epibot/node_modules"' in texto
+    assert 'cp "$RAG_AREA/epibot/rag_index.json" "$EPIBOT/rag_index.json"' in texto
+    assert '[ -d "${EPIBOT}/node_modules" ]' not in texto, (
+        "rama muerta: el candidato no trae node_modules"
+    )
     assert "rag:build" in texto and "GEMINI_API_KEY" in texto
+    # bash 3.2: "${PDFS[@]: -2}" con un solo elemento itera cero veces; índices explícitos.
+    assert "${PDFS[@]: -2}" not in texto and "N_PDFS=${#PDFS[@]}" in texto
+    assert 'fatal "no se declaro ningun boletin"' in texto
     assert 'make -C "$SANDBOX" PYTHON="$PYTHON" tabla-produccion' not in texto, (
         "rama RETRAIN muerta"
     )

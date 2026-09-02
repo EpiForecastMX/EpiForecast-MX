@@ -142,3 +142,25 @@ def test_future_oni_inyecta_escenario():
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+def test_un_error_de_red_o_de_archivo_no_es_una_serie_degenerada(monkeypatch):
+    """Sin ONI (URLError es OSError) el ajuste no cae a una constante: revienta."""
+    from urllib.error import URLError
+
+    from epiforecast.data import enso
+
+    def sin_red(*_a, **_k):
+        raise URLError("sin red")
+
+    monkeypatch.setattr(enso, "oni_for_dates", sin_red)
+    with pytest.raises(OSError, match="sin red"):
+        _fit_model(_serie(), "Dengue")
+
+    # Un fallo numérico del GLM sí es el caso degenerado previsto: constante.
+    def glm_infactible(*_a, **_k):
+        raise ValueError("singular")
+
+    monkeypatch.setattr(enso, "oni_for_dates", glm_infactible)
+    m = _fit_model(_serie(), "Dengue")
+    assert m._res is None

@@ -362,3 +362,101 @@ def test_seal_por_cli_exige_la_cadena_de_cache_y_bump_cache_la_repara(
         "dashboard/epibot/js/kb.js",
         "dashboard/epibot/knowledge.json",
     }
+
+
+# ── auditoría final: los imports entre módulos y el destino mal ruteado ──────
+
+SITIO_CON_IMPORTS_ANIDADOS = {
+    **fab.SITIO_EPIBOT,
+    "epibot/js/kb.js": (
+        "import { norm } from './entities.js?v=1';\nconst DATA_VERSION = '1';\n"
+        "export function loadKnowledge() {}\n"
+    ),
+    "epibot/js/timelapse.js": "import { renderMexicoMap } from './mexico-map.js?v=2';\n",
+    "epibot/js/mexico-map.js": "export function renderMexicoMap() {}\n",
+    "epibot/js/app.js": (
+        "import { loadKnowledge } from './kb.js?v=1';\nimport { norm } from './entities.js?v=1';\n"
+        "import { renderTimelapse } from './timelapse.js?v=1';\n"
+    ),
+}
+
+
+def _candidato_anidado(tmp_path: Path, cambios: dict[str, str]) -> tuple[Path, str, Path]:
+    repo, head = fab.repo_dashboard(tmp_path / "repo", SITIO_CON_IMPORTS_ANIDADOS)
+    outputs = tmp_path / "outputs" / "dashboard"
+    for rel, texto in {**SITIO_CON_IMPORTS_ANIDADOS, **cambios}.items():
+        (outputs / rel).parent.mkdir(parents=True, exist_ok=True)
+        (outputs / rel).write_text(texto, encoding="utf-8")
+    return repo, head, outputs
+
+
+def test_un_modulo_importado_desde_otro_modulo_tambien_exige_version_nueva(tmp_path: Path) -> None:
+    """kb.js importa entities.js: subir sólo el import de app.js deja a kb.js sirviendo el viejo."""
+    repo, head, outputs = _candidato_anidado(
+        tmp_path,
+        {
+            "epibot/js/entities.js": "export function norm(s) { return s.trim(); }\n",
+            "epibot/js/app.js": SITIO_CON_IMPORTS_ANIDADOS["epibot/js/app.js"].replace(
+                "entities.js?v=1", "entities.js?v=2"
+            ),
+        },
+    )
+    with pytest.raises(
+        StagingError, match="entities.js cambió y epibot/js/kb.js lo sigue importando con \\?v=1"
+    ):
+        revisa_cadena_cache(repo, head, outputs)
+
+
+def test_subir_la_cadena_recorre_los_imports_anidados_hasta_el_punto_fijo(tmp_path: Path) -> None:
+    repo, head, outputs = _candidato_anidado(
+        tmp_path, {"epibot/js/mexico-map.js": "export function renderMexicoMap() { return 1; }\n"}
+    )
+
+    resultado = sube_cadena_cache(repo, head, outputs)
+
+    assert resultado.cambios == (
+        "epibot/js/timelapse.js: mexico-map.js?v=2 -> 3",
+        "epibot/js/app.js: timelapse.js?v=1 -> 2",
+        "epibot/index.html: js/app.js?v=1 -> 2",
+    )
+    assert resultado.cadena.aplica and sube_cadena_cache(repo, head, outputs).cambios == ()
+
+
+def test_un_candidato_con_epibot_y_un_head_sin_el_es_un_destino_mal_ruteado(
+    tmp_path: Path,
+) -> None:
+    repo, head = fab.repo_dashboard(tmp_path / "repo", {"index.html": "<h1>sin epibot</h1>"})
+    outputs = tmp_path / "outputs"
+    for rel, texto in fab.SITIO_EPIBOT.items():
+        (outputs / rel).parent.mkdir(parents=True, exist_ok=True)
+        (outputs / rel).write_text(texto, encoding="utf-8")
+
+    with pytest.raises(StagingError, match="el HEAD del dashboard .* no lo rastrea"):
+        revisa_cadena_cache(repo, head, outputs)
+    with pytest.raises(StagingError, match="no lo rastrea"):
+        sube_cadena_cache(repo, head, outputs)
+
+
+def test_una_version_no_numerica_aborta_antes_de_escribir_nada(tmp_path: Path) -> None:
+    repo, head = fab.repo_dashboard(
+        tmp_path / "repo",
+        {
+            **fab.SITIO_EPIBOT,
+            "epibot/index.html": '<script type="module" src="js/app.js?v=beta"></script>\n',
+        },
+    )
+    outputs = tmp_path / "outputs" / "dashboard"
+    candidato = {
+        **fab.SITIO_EPIBOT,
+        "epibot/index.html": '<script type="module" src="js/app.js?v=beta"></script>\n',
+        "epibot/knowledge.json": fab.knowledge_json(extra={"nota": "nuevo"}),
+    }
+    for rel, texto in candidato.items():
+        (outputs / rel).parent.mkdir(parents=True, exist_ok=True)
+        (outputs / rel).write_text(texto, encoding="utf-8")
+
+    with pytest.raises(StagingError, match="no es numérica"):
+        sube_cadena_cache(repo, head, outputs)
+    assert (outputs / "epibot" / "js" / "kb.js").read_text() == fab.SITIO_EPIBOT[
+        "epibot/js/kb.js"
+    ], "no escribió"

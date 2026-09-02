@@ -28,6 +28,8 @@
     {"ruta": "data/processed/data_inegi_Dengue.csv", "rol": "inegi", "obligatoria": false},
     {"ruta": "data/utils/inegi.csv", "rol": "inegi", "obligatoria": true},
     {"ruta": "data/utils/mexico_states.geojson", "rol": "geo", "obligatoria": false},
-    {"ruta": "data/interim/dengue_a90a91_nacional.csv", "rol": "contexto", "obligatoria": false}
+    {"ruta": "data/interim/dengue_a90a91_nacional.csv", "rol": "contexto", "obligatoria": false},
+    {"ruta": "data/external/oni.ascii.txt", "rol": "contexto", "obligatoria": true},
+    {"ruta": "data/external/oni_forecast.csv", "rol": "contexto", "obligatoria": false}
   ]
 }

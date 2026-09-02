@@ -261,14 +261,19 @@ fi
 # `wc -c` y digest con `shasum`: portables entre macOS y Linux (el `stat` de BSD y el de GNU no comparten flags).
 BOLETINES_ARGS=()
 PDFS=(data/raw_PDFs/*.pdf)
-if [ -e "${PDFS[0]}" ]; then
-  for pdf in "${PDFS[@]: -2}"; do
-    nombre="$(basename "$pdf")"
-    tamano="$(wc -c < "$pdf" | tr -d ' ')"
-    digest="$(shasum -a 256 "$pdf" | cut -d' ' -f1)"
-    BOLETINES_ARGS+=(--boletin "${nombre}:local://data/raw_PDFs/${nombre}:${tamano}:${digest}")
-  done
-fi
+[ -e "${PDFS[0]}" ] || fatal "no hay ningun boletin en data/raw_PDFs/"
+# Indices explicitos: en bash 3.2 el corte negativo de un arreglo con UN solo elemento
+# itera cero veces y el sello saldria sin boletines, en silencio.
+N_PDFS=${#PDFS[@]}
+INICIO=$(( N_PDFS > 2 ? N_PDFS - 2 : 0 ))
+for (( i = INICIO; i < N_PDFS; i++ )); do
+  pdf="${PDFS[$i]}"
+  nombre="$(basename "$pdf")"
+  tamano="$(wc -c < "$pdf" | tr -d ' ')"
+  digest="$(shasum -a 256 "$pdf" | cut -d' ' -f1)"
+  BOLETINES_ARGS+=(--boletin "${nombre}:local://data/raw_PDFs/${nombre}:${tamano}:${digest}")
+done
+[ "${#BOLETINES_ARGS[@]}" -gt 0 ] || fatal "no se declaro ningun boletin"
 paso "HIDRATAR · sandbox por allowlist + contrato de cobertura"
 # `${ARR[@]+"${ARR[@]}"}`: con `set -u`, bash 3.2 (el de macOS) trata un arreglo vacío
 # como variable sin definir y aborta; esta forma expande a nada sin fallar.
@@ -426,16 +431,26 @@ done
 # ─────────────────────────────────────────────────────────────────────
 # 3b. INDICE RAG y CADENA DE CACHE — en el candidato, antes de los gates
 # ─────────────────────────────────────────────────────────────────────
-# El indice RAG del EpiBot se construye con la API de Gemini (red) y las dependencias de
-# node del sitio, que el candidato no trae (node_modules no se materializa). Solo se
-# reconstruye si hay clave y dependencias; si no, se declara y el gate `rag` decide: un
-# indice desfasado es un FAIL, nunca un aviso.
-paso "INDICE RAG del EpiBot (condicional: GEMINI_API_KEY + node_modules)"
-if [ -n "${GEMINI_API_KEY:-}" ] && [ -d "${EPIBOT}/node_modules" ]; then
-  (cd "$EPIBOT" && npm run rag:build)
+# El indice RAG del EpiBot (rag_index.json, rastreado) cubre los chunks de knowledge.json:
+# cambia cada semana, asi que sin reconstruirlo el gate `rag` da FAIL y no hay sello. La
+# reconstruccion exige la API de Gemini (red) y las dependencias de node del sitio, que el
+# candidato no trae (node_modules no se materializa y un enlace dentro de outputs/ no se
+# sella). Se construye en un area aparte —copia del epibot candidato + node_modules del
+# repositorio real— y solo el indice resultante vuelve al candidato. Sin clave se declara,
+# y el gate decide: un indice desfasado es un FAIL, nunca un aviso.
+paso "INDICE RAG del EpiBot (GEMINI_API_KEY + node_modules del repositorio real)"
+if [ -n "${GEMINI_API_KEY:-}" ]; then
+  [ -d "${DASHBOARD_REAL}/epibot/node_modules" ] \
+    || fatal "faltan las dependencias de node en ${DASHBOARD_REAL}/epibot (npm ci alli, con red)"
+  RAG_AREA="${TRABAJO}.rag"
+  rm -rf "$RAG_AREA"; mkdir -p "$RAG_AREA"
+  cp -R "$EPIBOT" "$RAG_AREA/epibot"
+  cp -R "${DASHBOARD_REAL}/epibot/node_modules" "$RAG_AREA/epibot/node_modules"
+  (cd "$RAG_AREA/epibot" && npm run rag:build)
+  cp "$RAG_AREA/epibot/rag_index.json" "$EPIBOT/rag_index.json"
 else
-  echo "    no se reconstruye el indice RAG (falta GEMINI_API_KEY o ${EPIBOT}/node_modules);"
-  echo "    el gate 'rag' de run-gates lo verificara y fallara si quedo desfasado."
+  echo "    sin GEMINI_API_KEY no se reconstruye el indice RAG; el gate 'rag' de run-gates"
+  echo "    lo verificara y, si knowledge.json cambio, FALLARA (no hay sello sin indice al dia)."
 fi
 
 # Los generadores cambian knowledge.json, zoom_series.json y a veces modulos del EpiBot;
