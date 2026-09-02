@@ -263,9 +263,19 @@ def revisa_forecasts(
     )
 
 
-def revisa_forecasts_listados(rutas: Iterable[Path], contrato: ContratoCobertura) -> Cobertura:
-    """Cada archivo de forecast listado trae exactamente las series del contrato."""
-    esperadas = contrato.claves_esperadas()
+def revisa_forecasts_listados(
+    rutas: Iterable[Path],
+    contrato: ContratoCobertura,
+    *,
+    esperadas: frozenset[Clave] | None = None,
+    fuente: str = "forecasts",
+) -> Cobertura:
+    """Cada archivo de forecast listado trae exactamente las series esperadas.
+
+    Por defecto, todas las del contrato (motores legacy: 432). Un motor de una cohorte
+    (NBGLM, sólo Dengue) declara su propio conjunto esperado.
+    """
+    esperadas = contrato.claves_esperadas() if esperadas is None else esperadas
     problemas: list[str] = []
     cifras: dict[str, Any] = {}
     for ruta in rutas:
@@ -284,7 +294,7 @@ def revisa_forecasts_listados(rutas: Iterable[Path], contrato: ContratoCobertura
         ]
         nuevos, cifras[motor] = _compara_conjuntos(f"forecasts/{motor}", claves, esperadas)
         problemas.extend(nuevos)
-    return Cobertura("forecasts", cifras, tuple(problemas))
+    return Cobertura(fuente, cifras, tuple(problemas))
 
 
 def revisa_tabla_produccion(ruta: Path, contrato: ContratoCobertura) -> Cobertura:

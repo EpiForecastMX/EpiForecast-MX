@@ -339,3 +339,39 @@ def test_el_cli_hidrata_y_reporta_la_cobertura(tmp_path: Path, capsys) -> None:
     salida = capsys.readouterr().out
     assert "cobertura consolidado" in salida and "cobertura forecasts" in salida
     assert (trabajo / "entradas.json").is_file()
+
+
+def test_una_entrada_rastreada_se_toma_del_head_y_no_se_copia_a_ciegas(tmp_path: Path) -> None:
+    """Las tablas de producción están en git: el sandbox ya las trae; el worktree tiene que
+    coincidir, y si no coincide es un cambio de datos sin confirmar."""
+    lista = fab.lista_entradas_cruda(
+        [
+            (fab.RUTA_CONSOLIDADO, "consolidado", True),
+            ("reports/ProdDetails/tabla.csv", "tabla", True),
+        ]
+    )
+    repo_b, head_b, _, trabajo = _montaje(tmp_path, lista=lista)
+
+    resultado = hidrata(
+        trabajo, repo_b, head_b, padecimientos_autorizados=fab.PADECIMIENTOS, contrato=fab.CONTRATO
+    )
+
+    tabla = resultado.sandbox / "EpiForecast-MX" / "reports" / "ProdDetails" / "tabla.csv"
+    assert tabla.read_text() == "viejo\n"
+    assert (
+        resultado.registro.entradas["reports/ProdDetails/tabla.csv"]["sha256"]
+        == hashlib.sha256(b"viejo\n").hexdigest()
+    )
+
+    # Ahora el worktree difiere del HEAD: no se hidrata con ninguno de los dos.
+    repo_b2, head_b2, _, trabajo2 = _montaje(tmp_path / "otro", lista=lista)
+    (repo_b2 / "reports" / "ProdDetails" / "tabla.csv").write_text("editado sin confirmar\n")
+    with pytest.raises(StagingError, match="difiere del HEAD en el árbol de trabajo"):
+        hidrata(
+            trabajo2,
+            repo_b2,
+            head_b2,
+            padecimientos_autorizados=fab.PADECIMIENTOS,
+            contrato=fab.CONTRATO,
+        )
+    assert not (tmp_path / "otro" / "trabajo.sandbox").exists()

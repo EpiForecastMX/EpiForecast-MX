@@ -285,3 +285,23 @@ def test_el_zoom_acepta_el_alias_de_dengue_pero_no_una_clave_rota(tmp_path: Path
 
 def test_sin_archivos_del_epibot_no_hay_nada_que_revisar(tmp_path: Path) -> None:
     assert revisa_candidato(tmp_path, fab.CONTRATO) == []
+
+
+def test_un_forecast_de_cohorte_de_conteo_declara_su_propio_conjunto(tmp_path: Path) -> None:
+    """NBGLM sólo modela Dengue: 99 series reales (9 aquí), no las 432."""
+    ruta = tmp_path / "nbglm" / "all_forecast_nbglm.csv"
+    ruta.parent.mkdir()
+    lineas = [
+        linea
+        for linea in fab.forecast_csv().splitlines()
+        if fab.PAD_CONTEO in linea or linea.startswith("ds")
+    ]
+    ruta.write_text("\n".join(lineas) + "\n", encoding="utf-8")
+    solo_conteo = frozenset().union(*(fab.CONTRATO.productos(p) for p in fab.CONTRATO.conteo))
+
+    assert revisa_forecasts_listados(
+        [ruta], fab.CONTRATO, esperadas=solo_conteo, fuente="forecasts_conteo"
+    ).pasa
+    assert not revisa_forecasts_listados([ruta], fab.CONTRATO).pasa, (
+        "como legacy le faltarían las neuro"
+    )

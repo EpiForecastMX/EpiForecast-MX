@@ -57,6 +57,7 @@ VERSION_LISTA = "entradas/1"
 ROLES = (
     "consolidado",
     "forecast",
+    "forecast_conteo",
     "tabla_produccion",
     "produccion_dengue",
     "tabla",
@@ -182,6 +183,32 @@ def _copia_regular(origen: Path, destino: Path) -> tuple[int, str]:
     return estado.st_size, digest
 
 
+def _hidrata_entrada(origen: Path, destino: Path) -> tuple[int, str]:
+    """Copia la entrada al sandbox o, si es un archivo RASTREADO, exige que coincida.
+
+    `git archive` ya deja en el sandbox lo que el HEAD rastrea (por ejemplo las tablas de
+    producción). Para esas entradas la fuente es el HEAD, no el árbol de trabajo: si el
+    archivo del worktree difiere, hay un cambio de datos sin confirmar y no se hidrata a
+    ciegas con ninguno de los dos. El inventario registra el digest del sandbox.
+    """
+    if not os.path.lexists(destino):
+        return _copia_regular(origen, destino)
+    if destino.is_symlink() or not destino.is_file():
+        raise StagingError(
+            f"la entrada rastreada en el sandbox no es un archivo regular: {destino}"
+        )
+    estado = origen.lstat()
+    if stat.S_ISLNK(estado.st_mode) or not stat.S_ISREG(estado.st_mode):
+        raise StagingError(f"la entrada no es un archivo regular: {origen}")
+    digest_head = sha256_de(destino)
+    if sha256_de(origen) != digest_head:
+        raise StagingError(
+            f"la entrada rastreada {origen.name} difiere del HEAD en el árbol de trabajo; "
+            "confírmala o descártala antes de hidratar"
+        )
+    return destino.stat().st_size, digest_head
+
+
 @dataclass(frozen=True)
 class Hidratacion:
     trabajo: Path
@@ -238,7 +265,7 @@ def hidrata(
                 if entrada.obligatoria:
                     raise StagingError(f"falta la entrada obligatoria {entrada.ruta}")
                 continue
-            tamano, digest = _copia_regular(origen, backend / entrada.ruta)
+            tamano, digest = _hidrata_entrada(origen, backend / entrada.ruta)
             inventario[entrada.ruta] = {"rol": entrada.rol, "bytes": tamano, "sha256": digest}
 
         inputs = trabajo / DIR_INPUTS
@@ -303,6 +330,16 @@ def _revisa(
     ]
     if forecasts := por_rol.get("forecast"):
         coberturas.append(revisa_forecasts_listados([backend / r for r in forecasts], contrato))
+    if conteo := por_rol.get("forecast_conteo"):
+        # Motores de la cohorte de conteo (NBGLM para Dengue): sólo sus series, exactas.
+        coberturas.append(
+            revisa_forecasts_listados(
+                [backend / r for r in conteo],
+                contrato,
+                esperadas=frozenset().union(*(contrato.productos(p) for p in contrato.conteo)),
+                fuente="forecasts_conteo",
+            )
+        )
     for ruta in por_rol.get("tabla_produccion", []):
         coberturas.append(revisa_tabla_produccion(backend / ruta, contrato))
     for ruta in por_rol.get("produccion_dengue", []):

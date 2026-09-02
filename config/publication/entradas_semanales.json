@@ -7,7 +7,7 @@
     {"ruta": "reports/forecasts/deepar/all_forecast_deepar.csv", "rol": "forecast", "obligatoria": true},
     {"ruta": "reports/forecasts/ensemble/all_forecast_ensemble.csv", "rol": "forecast", "obligatoria": true},
     {"ruta": "reports/forecasts/stacking/all_forecast_stacking.csv", "rol": "forecast", "obligatoria": true},
-    {"ruta": "reports/forecasts/nbglm/all_forecast_nbglm.csv", "rol": "forecast", "obligatoria": true},
+    {"ruta": "reports/forecasts/nbglm/all_forecast_nbglm.csv", "rol": "forecast_conteo", "obligatoria": true},
     {"ruta": "reports/ProdDetails/tabla_333_modelos_produccion.xlsx", "rol": "tabla_produccion", "obligatoria": true},
     {"ruta": "reports/ProdDetails/auditoria_motores_2026.xlsx", "rol": "tabla", "obligatoria": true},
     {"ruta": "reports/ProdDetails/produccion_dengue.csv", "rol": "produccion_dengue", "obligatoria": true},
