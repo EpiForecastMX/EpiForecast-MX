@@ -16,8 +16,26 @@ import json
 from pathlib import Path
 import sys
 
-from epiforecast.catalog import build_production_catalog, validate_catalog
+import pandas as pd
+
+from epiforecast.catalog import CatalogCounts, build_production_catalog, validate_catalog
 from epiforecast.utils.config import conf, logger
+
+
+def escribe_salidas(df: pd.DataFrame, counts: CatalogCounts, out_dir: Path) -> tuple[Path, Path]:
+    """Escribe el CSV y el JSON del catálogo en ``out_dir``.
+
+    El JSON termina en salto de línea: el hook ``end-of-file-fixer`` lo exige y, si el
+    generador no lo pone, lo confirmado deja de ser byte a byte lo sellado (P1, 2-sep-2026).
+    """
+    out_dir.mkdir(parents=True, exist_ok=True)
+    csv_path = out_dir / "catalogo_canonico.csv"
+    json_path = out_dir / "catalogo_canonico_counts.json"
+    df.to_csv(csv_path, index=False)
+    json_path.write_text(
+        json.dumps(asdict(counts), ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    return csv_path, json_path
 
 
 def main() -> int:
@@ -25,14 +43,7 @@ def main() -> int:
     problems = validate_catalog(df)
 
     out_dir = Path(conf["paths"]["reports"]) / "ProdDetails"
-    out_dir.mkdir(parents=True, exist_ok=True)
-    csv_path = out_dir / "catalogo_canonico.csv"
-    json_path = out_dir / "catalogo_canonico_counts.json"
-
-    df.to_csv(csv_path, index=False)
-    json_path.write_text(
-        json.dumps(asdict(counts), ensure_ascii=False, indent=2), encoding="utf-8"
-    )
+    csv_path, json_path = escribe_salidas(df, counts, out_dir)
 
     logger.info("Catálogo canónico: {} series productivas", counts.production_series_count)
     logger.info("  por cohorte: {}", counts.por_cohorte)

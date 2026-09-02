@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
+from scripts.build_catalogo_canonico import escribe_salidas
 
 from epiforecast import catalog
 from epiforecast.catalog import DENGUE_ELIGIBLE, build_production_catalog, validate_catalog
@@ -148,3 +151,14 @@ def test_manifiesto_en_disco_no_esta_rancio(catalog_data):
         "el manifiesto en disco quedó más viejo que sus fuentes: "
         "corre `python -m scripts.build_catalogo_canonico`"
     )
+
+
+def test_el_generador_escribe_json_con_salto_final(tmp_path):
+    """Sin el «\\n» final, el hook end-of-file-fixer reescribe el archivo y el commit deja de
+    coincidir byte a byte con el sello (lo delató la corrida 5 de P1, 2-sep-2026)."""
+    df, counts = build_production_catalog()
+    csv_path, json_path = escribe_salidas(df, counts, tmp_path)
+    crudo = json_path.read_bytes()
+    assert crudo.endswith(b"}\n") and not crudo.endswith(b"\n\n")
+    assert json.loads(crudo)["production_series_count"] == 432
+    assert csv_path.read_bytes().endswith(b"\n")
