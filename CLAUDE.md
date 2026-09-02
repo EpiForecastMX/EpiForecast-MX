@@ -3,11 +3,12 @@
 ## Estado P0 del flujo semanal — 2026-09-02 (tercera tanda: correctiva, cerrada en local)
 
 Esta sección sustituye cualquier instrucción inferior que presente `make update-week` como
-receta activa. Backend: rama `p0/namespace-e-inmutabilidad-del-sello`, **veintiséis commits
-locales sobre `a9a694c8`** (los doce previos más catorce de la tanda correctiva del 2-sep,
-`34d5395e … a0fb313b`), árbol limpio, sin push. La referencia local `origin/main` sigue en
-`a9a694c8`; el remoto observado en `16476a98` no se integró ni se auditó (exige red).
-Frontend: `main@0e777995`, intacto, sin worktrees.
+receta activa. Backend: rama `p0/namespace-e-inmutabilidad-del-sello`, **26 commits rebased
+sobre el `main` remoto `16476a98`** (tip `f88a065e`; respaldo local del tip previo `584cf72d`
+en `respaldo/p0-584cf72d-2026-09-02`), árbol limpio, **enviada a `origin`**. PR draft **#14** (https://github.com/EpiForecastMX/EpiForecast-MX/pull/14) abierta en `f88a065e`, con el CI remoto `33634940281` verde: Code Quality PASS, Tests PASS (2 324 passed, 497 skipped exactos, 66 deselected, cobertura 77,00 %), Integration skipped por diseño. **Sin merge, sin DVC, sin publicación ni deploy.**
+El remoto `16476a98` sólo traía dos commits de datos del CI (registry W33 y punteros DVC
+W33 de neuro, sin Dengue); `origin/main` local sigue en `a9a694c8` porque no se ha hecho
+pull. Frontend: `main@0e777995`, intacto, sin worktrees.
 
 `make update-week` sigue bloqueado en preflight **por autorización, no por código**: P0.1,
 P0.2 y P0.8 están cerrados; correr el carril real exige red (pull, `dvc pull`,

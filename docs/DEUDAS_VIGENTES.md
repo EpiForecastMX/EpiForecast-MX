@@ -10,8 +10,8 @@
 
 El plan vigente es `../../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`
 (SHA256 `5cfdf5a4a2d8e5ed1acf004e8c90a00e929dfd217ba051fff925e742fe9e233d`). La rama
-`p0/namespace-e-inmutabilidad-del-sello` lleva veintiséis commits locales sobre
-`a9a694c8`, sin push.
+`p0/namespace-e-inmutabilidad-del-sello` lleva 26 commits rebased sobre el `main` remoto
+`16476a98` (tip `f88a065e`), enviada a `origin`. PR draft **#14** (https://github.com/EpiForecastMX/EpiForecast-MX/pull/14) abierta en `f88a065e`, con el CI remoto `33634940281` verde: Code Quality PASS, Tests PASS (2 324 passed, 497 skipped exactos, 66 deselected, cobertura 77,00 %), Integration skipped por diseño. **Sin merge, sin DVC, sin publicación ni deploy.**
 
 Cerrado (1 y 2-sep, con controles negativos y 85 mutaciones del código vistas caer):
 
@@ -55,7 +55,9 @@ Abierto, en orden:
    separados;
 2. `WEEKS_LIMIT = 15` en `reselect_motor_2026.py`: decisión pendiente (ningún contrato
    canónico fija la ventana; cambiarla re-selecciona motores);
-3. auditoría del avance remoto `a9a694c8 → 16476a98` sólo con autorización de red;
+3. ~~auditoría del avance remoto `a9a694c8 → 16476a98`~~ hecha el 2-sep: dos commits de
+   datos del CI (registry W33 y punteros W33 de neuro, sin Dengue), sin solape con el
+   delta P0; integrados por rebase; queda el merge de la PR #14 (decisión aparte);
 4. bajos de la auditoría final, documentados y no corregidos: el aditivo no vigila
    padecimientos no publicados ni columnas fuera de `COLUMNAS_VALOR`; `ventana_semanas`
    de entidades por semana fijo en 52; `DATA_VERSION` con forma de fecha se incrementa

@@ -3,9 +3,10 @@
 ## 0 · Salida de sesión P0 — no ejecutar la actualización semanal
 
 Estado al 2-sep-2026 (tercera tanda): rama `p0/namespace-e-inmutabilidad-del-sello` con
-**veintiséis commits locales sobre `a9a694c8`**, árbol limpio, sin push. `make update-week`
-aborta en preflight hasta la autorización de P1. No usar `update-week-apply` sobre los
-repositorios canónicos, no descargar W32/W33, no ejecutar DVC y no publicar.
+**26 commits rebased sobre `16476a98`** (tip `f88a065e`), árbol limpio, enviada a `origin`.
+PR draft **#14** (https://github.com/EpiForecastMX/EpiForecast-MX/pull/14) abierta en `f88a065e`, con el CI remoto `33634940281` verde: Code Quality PASS, Tests PASS (2 324 passed, 497 skipped exactos, 66 deselected, cobertura 77,00 %), Integration skipped por diseño. **Sin merge, sin DVC, sin publicación ni deploy.** `make update-week` aborta en preflight hasta la autorización de P1. No usar
+`update-week-apply` sobre los repositorios canónicos, no descargar W32/W33, no ejecutar DVC
+y no publicar; el merge de la PR es una decisión aparte.
 
 Para retomar, leer la sección P0 de `AGENTS.md` (workspace) y `CLAUDE.md`. Receta local,
 en este orden y sólo con datos sintéticos o el ensayo en clones locales:

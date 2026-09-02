@@ -7,12 +7,12 @@
 
 ## 0. Trabajo activo: P0 del flujo semanal
 
-Backend en `p0/namespace-e-inmutabilidad-del-sello` con veintiséis commits locales sobre
-`a9a694c8` (2-sep, tercera tanda correctiva `34d5395e … a0fb313b`: runner, worktrees,
-sello atado al HEAD, allowlist v2, contrato profundo, tabla 333 reparada, causa raíz en
-`merge_all_models`, orquestador, auditoría final) y árbol limpio. Sin push; `origin/main`
-local en `a9a694c8`; el remoto observado en `16476a98` no se integró ni se auditó. El
-frontend `main@0e777995c9e53cdd08b6d25ad58b65928a25b88b` está intacto.
+Backend en `p0/namespace-e-inmutabilidad-del-sello` con 26 commits rebased sobre el
+`main` remoto `16476a98` (tip `f88a065e`; 2-sep, tercera tanda correctiva: runner,
+worktrees, sello atado al HEAD, allowlist v2, contrato profundo, tabla 333 reparada, causa
+raíz en `merge_all_models`, orquestador, auditoría final), árbol limpio y rama enviada a
+`origin`. PR draft **#14** (https://github.com/EpiForecastMX/EpiForecast-MX/pull/14) abierta en `f88a065e`, con el CI remoto `33634940281` verde: Code Quality PASS, Tests PASS (2 324 passed, 497 skipped exactos, 66 deselected, cobertura 77,00 %), Integration skipped por diseño. **Sin merge, sin DVC, sin publicación ni deploy.** `origin/main` local sigue en `a9a694c8` (sin pull). El frontend
+`main@0e777995c9e53cdd08b6d25ad58b65928a25b88b` está intacto.
 
 `make update-week` sigue bloqueado en preflight hasta la autorización de P1 (red y
 decisión de publicar). Flujo: `materialize → hydrate → generadores (--out) → bump-cache →
