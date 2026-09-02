@@ -1,9 +1,70 @@
 # Deudas vigentes — índice canónico
 
-> Auditado el 1-sep-2026 contra backend `main@cb7695d9` y frontend `main@5f8666dc`.
+> Actualizado el 1-sep-2026 para el trabajo P0 sobre backend
+> `p0/namespace-e-inmutabilidad-del-sello@a9a694c8` y frontend `main@0e777995`.
 > Este archivo separa
 > trabajo vigente de bitácoras históricas. Una deuda que aparezca sólo en un documento
 > antiguo no se ejecuta hasta contrastarla aquí y en el código.
+
+## Activa — P0 del flujo de actualización semanal
+
+El plan vigente es `../../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`
+(SHA256 `5cfdf5a4a2d8e5ed1acf004e8c90a00e929dfd217ba051fff925e742fe9e233d`). La rama
+`p0/namespace-e-inmutabilidad-del-sello` lleva 26 commits rebased sobre el `main` remoto
+`16476a98` (tip `f88a065e`), enviada a `origin`. PR draft **#14** (https://github.com/EpiForecastMX/EpiForecast-MX/pull/14) abierta en `f88a065e`, con el CI remoto `33634940281` verde: Code Quality PASS, Tests PASS (2 324 passed, 497 skipped exactos, 66 deselected, cobertura 77,00 %), Integration skipped por diseño. **Sin merge, sin DVC, sin publicación ni deploy.**
+
+Cerrado (1 y 2-sep, con controles negativos y 85 mutaciones del código vistas caer):
+
+- P0.9 runner real de gates (solape por prefijos administrados, marcador y huérfanos,
+  residuos apartados, digest del ejecutable, `chmod` es mutación, timeout con gracia);
+  P0.6 apply confinado (registro atómico, rollback de prepare, discard ligado,
+  composición del par también en el no-op); composición 41/41; completitud exacta;
+  P0.11 opción C;
+- `--out` en los tres generadores; P0.1 hidratación por allowlist `entradas/2` (44
+  entradas reales, patrones glob, directorios scratch, entradas rastreadas desde el HEAD)
+  con contrato del HEAD (catálogo, registry, profundidad 52 contigua MMWR, aditivo base ⊆
+  candidato, forecasts sin series repetidas, alias no ambiguos);
+- P0.2 `weekly_staging/3` con `entrada.lista`, inmutables verificadas al sellar, semanas
+  atadas a los cortes y al EpiBot; materialización exigida por todos los pasos;
+- P0.8 Dengue fail-closed y paridad entre todos los publicados; NB-GLM re-lanza errores
+  de E/S (sin red no publica una constante);
+- P0.10 cadena de caché fail-closed con imports anidados y `bump-cache`;
+- datos: tabla 333 reparada (432 filas) y causa raíz en `merge_all_models`.
+
+Gate: 902 pruebas de publicación; `make test-fast` = 2,820 passed, 1 skipped, 66
+deselected; Ruff, mypy, `bash -n`, `git diff --check` verdes.
+
+Ensayo real del 2-sep (evidencia en `planes/ensayo_P012_2026-09-02/`, con `SHA256SUMS`):
+**tramo 1**, la cadena de generación completa sobre W31 sin red —materialize, hidratación
+real (44 entradas, contratos PASS), los diez pasos de generación en el sandbox, `bump-cache`
+(DATA_VERSION 20260824→20260825, kb.js?v=104→105, app.js?v=138→139) y `run-gates`: `cifras`
+PASS y **`rag` FAIL** porque el índice RAG rastreado no cubre el `knowledge.json` regenerado
+y reconstruirlo exige GEMINI_API_KEY (red): fallo cerrado, sin sello. **Tramo 2**, sello →
+par desechable sobre la composición real con un cambio fuera del corpus RAG: gates PASS,
+run `e147ff8deb914b4a`, prepare/apply/check en clones locales con composición aplicada ==
+sellada, no-op verificado, byte alterado → check falla y apply deja el par inválido,
+discard ligado al manifiesto; repos reales con un solo worktree y frontend limpio. Los tres
+hallazgos que el ensayo destapó (directorios scratch, ONI sin red, NB-GLM constante) están
+corregidos en `98faf4d3` y `a0fb313b`.
+
+Abierto, en orden:
+
+1. **P1 (W32/W33) sólo con autorización**: exige red (pull, `dvc pull`, sincronización
+   aditiva con `dvc get`) y GEMINI_API_KEY para reconstruir `rag_index.json` (sin él el
+   gate `rag` FALLA cada semana que cambie `knowledge.json`); push, PR, merge, DVC y deploy
+   separados;
+2. `WEEKS_LIMIT = 15` en `reselect_motor_2026.py`: decisión pendiente (ningún contrato
+   canónico fija la ventana; cambiarla re-selecciona motores);
+3. ~~auditoría del avance remoto `a9a694c8 → 16476a98`~~ hecha el 2-sep: dos commits de
+   datos del CI (registry W33 y punteros W33 de neuro, sin Dengue), sin solape con el
+   delta P0; integrados por rebase; queda el merge de la PR #14 (decisión aparte);
+4. bajos de la auditoría final, documentados y no corregidos: el aditivo no vigila
+   padecimientos no publicados ni columnas fuera de `COLUMNAS_VALOR`; `ventana_semanas`
+   de entidades por semana fijo en 52; `DATA_VERSION` con forma de fecha se incrementa
+   (+1) salvo `--data-version`; el zoom del EpiBot nombra `mexico` y `estado de mexico`.
+
+Límites declarados: ni runner ni sello son sandbox; los digests no son firma; sin
+atomicidad entre repositorios; la identidad del huérfano exige `ps` con `lstart`.
 
 ## Cerradas o retiradas en esta auditoría
 

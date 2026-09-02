@@ -494,24 +494,48 @@ data-commit:
 data-weekly: data-add data-commit
 	@echo ">>> Flujo semanal completado."
 
-## Refresh semanal: PREPARA y SELLA. Genera todo bajo runs/_refresh/<run_id>/outputs
-## y escribe su manifiesto. NO publica, no versiona y no envia nada.
+## BLOQUEADO hasta P1: materializa 41/41, genera, corre los gates de la politica y
+## sella. El cableado esta probado con repos sinteticos, no con datos reales; faltan
+## P0.1, P0.2 y P0.8. Aborta en el preflight, antes de descargar o generar nada.
 .PHONY: update-week
 update-week:
 	bash scripts/actualiza_semanal.sh
 
-## Instala un staging YA SELLADO. Exige el manifiesto de forma explicita; verifica los
-## HEAD, el inventario y el digest de cada artefacto, y copia esos bytes sin regenerar.
-##   make update-week-apply MANIFEST=runs/_refresh/<run_id>/manifest.json
+## Instala un staging YA SELLADO, y SOLO en un par de worktrees desechables nuevos:
+## los crea desprendidos en los HEAD sellados, los registra, instala bajo lock y mide la
+## completitud. Nunca toca los worktrees de trabajo. Ninguna operacion DVC (P0.11, C).
+##   make update-week-apply MANIFEST=runs/_refresh/<run_id>/manifest.json DESTINOS=runs/_release/<run_id>
 .PHONY: update-week-apply
 update-week-apply:
 ifndef MANIFEST
-	$(error Uso: make update-week-apply MANIFEST=runs/_refresh/<run_id>/manifest.json)
+	$(error Uso: make update-week-apply MANIFEST=runs/_refresh/<run_id>/manifest.json DESTINOS=runs/_release/<run_id>)
 endif
-	$(PYTHON) -m scripts.refresh_staging apply \
+ifndef DESTINOS
+	$(error Uso: make update-week-apply MANIFEST=runs/_refresh/<run_id>/manifest.json DESTINOS=runs/_release/<run_id>)
+endif
+	$(PYTHON) -m scripts.refresh_staging prepare-worktrees \
 		--manifiesto "$(MANIFEST)" \
-		--destino-backend . \
-		--destino-dashboard ../EpiForecast-IMSS-Dashboard
+		--repo-backend . \
+		--repo-dashboard ../EpiForecast-IMSS-Dashboard \
+		--destinos "$(DESTINOS)"
+	$(PYTHON) -m scripts.refresh_staging apply \
+		--manifiesto "$(MANIFEST)" --destinos "$(DESTINOS)"
+	$(PYTHON) -m scripts.refresh_staging check-completeness \
+		--manifiesto "$(MANIFEST)" --destinos "$(DESTINOS)"
+
+## Retira el par desechable de un sello, ligado a su manifiesto (run_id + digest) y solo
+## si git reconoce cada destino como worktree del repositorio registrado.
+##   make update-week-discard MANIFEST=runs/_refresh/<run_id>/manifest.json DESTINOS=runs/_release/<run_id>
+.PHONY: update-week-discard
+update-week-discard:
+ifndef MANIFEST
+	$(error Uso: make update-week-discard MANIFEST=runs/_refresh/<run_id>/manifest.json DESTINOS=runs/_release/<run_id>)
+endif
+ifndef DESTINOS
+	$(error Uso: make update-week-discard MANIFEST=runs/_refresh/<run_id>/manifest.json DESTINOS=runs/_release/<run_id>)
+endif
+	$(PYTHON) -m scripts.refresh_staging discard-worktrees \
+		--manifiesto "$(MANIFEST)" --destinos "$(DESTINOS)"
 
 ## Ver estado de DVC
 .PHONY: data-status

@@ -150,7 +150,9 @@ def _dengue_stale_diagnostics(neuro_names: tuple[str, ...]) -> dict[str, object]
         "tiene_nbglm": bool((den["modelo_produccion"] == "NBGLM").any()),
         "motivo_descartado": (
             "Se usa produccion_dengue.csv (99, con NBGLM); el Dengue de tabla_333 "
-            "es stale (dup nacionales + Ensemble/Stacking no elegibles, sin NBGLM)."
+            "es stale (Ensemble/Stacking no elegibles, sin NBGLM"
+            + (", dup nacionales" if dup else "")
+            + ")."
         ),
     }
 

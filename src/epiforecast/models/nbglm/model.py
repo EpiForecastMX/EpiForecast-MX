@@ -120,6 +120,10 @@ class NBGLMForecaster(ForecastModel):
         try:
             x = self._design(train_data["ds"], y, as_of=None)
             self._res = sm.GLM(y, x, family=sm.families.NegativeBinomial(alpha=self.alpha)).fit()
+        except OSError:
+            # Sin red para el ONI (URLError es OSError) o sin archivo: eso no es una serie
+            # degenerada, y publicar una constante en su lugar sería un fallo silencioso.
+            raise
         except Exception as e:  # noqa: BLE001 — GLM infeasible en series degeneradas
             logger.warning("NB-GLM fit falló ({}); fallback constante={:.1f}", e, self._const)
             self._res = None

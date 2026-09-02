@@ -1,8 +1,31 @@
 # GEMINI.md — Contexto operativo de EpiForecast-MX
 
-> Auditado contra `main` en el checkpoint `cb7695d9` el 1-sep-2026.
+> Actualizado contra `p0/namespace-e-inmutabilidad-del-sello` sobre
+> `a9a694c8fb1b93c616e2b179a5b24d095d3de9ce` el 1-sep-2026.
 > Guía para Gemini CLI dentro de `EpiForecast-MX`; no sustituye las órdenes del
 > workspace ni autoriza acciones externas.
+
+## 0. Trabajo activo: P0 del flujo semanal
+
+Backend en `p0/namespace-e-inmutabilidad-del-sello` con 26 commits rebased sobre el
+`main` remoto `16476a98` (tip `f88a065e`; 2-sep, tercera tanda correctiva: runner,
+worktrees, sello atado al HEAD, allowlist v2, contrato profundo, tabla 333 reparada, causa
+raíz en `merge_all_models`, orquestador, auditoría final), árbol limpio y rama enviada a
+`origin`. PR draft **#14** (https://github.com/EpiForecastMX/EpiForecast-MX/pull/14) abierta en `f88a065e`, con el CI remoto `33634940281` verde: Code Quality PASS, Tests PASS (2 324 passed, 497 skipped exactos, 66 deselected, cobertura 77,00 %), Integration skipped por diseño. **Sin merge, sin DVC, sin publicación ni deploy.** `origin/main` local sigue en `a9a694c8` (sin pull). El frontend
+`main@0e777995c9e53cdd08b6d25ad58b65928a25b88b` está intacto.
+
+`make update-week` sigue bloqueado en preflight hasta la autorización de P1 (red y
+decisión de publicar). Flujo: `materialize → hydrate → generadores (--out) → bump-cache →
+run-gates → seal → prepare-worktrees → apply → check-completeness → discard-worktrees
+--manifiesto`, todo atado al mismo par de HEAD y política por `materializacion.json`.
+`CONFINAMIENTO_LISTO = True`; P0.11 = opción C.
+
+Gate local: 902 pruebas de publicación; `make test-fast` 2,820 passed, 1 skipped, 66
+deselected; Ruff, mypy, `bash -n`, `git diff --check` verdes; 85 mutaciones vistas caer.
+Ensayo real del 2-sep (`planes/ensayo_P012_2026-09-02/`): la cadena de generación entera corre sin red en el sandbox; `run-gates` da `rag` FAIL porque el índice RAG exige GEMINI_API_KEY (red) para reconstruirse (fallo cerrado, sin sello); el tramo sello→par desechable pasa sobre la composición real con composición aplicada == sellada. Pendiente: `WEEKS_LIMIT` (decisión), auditoría del avance remoto con red, y P1
+con autorización. Plan auditado:
+`../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`, SHA256
+`5cfdf5a4a2d8e5ed1acf004e8c90a00e929dfd217ba051fff925e742fe9e233d`.
 
 ## 1. Precedencia y forma de trabajo
 
@@ -28,10 +51,10 @@ por separado. Para revisar o diagnosticar, no implementar ni mutar salvo petici�
 
 ### Repositorios
 
-- Backend: `EpiForecast-MX`, `main`/`origin/main` en `cb7695d9`; el worktree contiene sólo
-  la actualización documental post-merge todavía sin commit.
-- Frontend: `EpiForecast-IMSS-Dashboard`, `main`/`origin/main` en `5f8666dc`, desplegado;
-  el worktree contiene sólo su actualización de README todavía sin commit.
+- Backend: `EpiForecast-MX`, rama de trabajo
+  `p0/namespace-e-inmutabilidad-del-sello` sobre `a9a694c8`; worktree P0 sin commit.
+- Frontend: `EpiForecast-IMSS-Dashboard`, `main` en `0e777995`; worktree limpio e intacto
+  durante P0.
 - Quedan dos ramas ya mergeadas, locales y remotas: `ci/skip-budget-ets-legacy` y
   `fix/frontend-deudas`. Ambas puntas son ancestros comprobados de `main`; no confundir
   «main activo» con «una sola rama» hasta borrarlas de forma explícita.

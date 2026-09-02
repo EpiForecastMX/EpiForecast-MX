@@ -1,0 +1,35 @@
+{
+  "version": "entradas/2",
+  "directorio_boletines": "data/raw_PDFs",
+  "profundidad_minima_semanas": 52,
+  "directorios_scratch": [
+    "data/raw", "data/interim", "data/processed", "models",
+    "reports/forecasts", "reports/ProdDetails", "reports/figures", "web_dashboard", "logs"
+  ],
+  "entradas": [
+    {"ruta": "data/processed/dataset_boletin_epidemiologico.csv", "rol": "consolidado", "obligatoria": true},
+    {"ruta": "data/interim/dengue_boletin.csv", "rol": "dengue_interim", "obligatoria": true},
+    {"ruta": "data/interim/dengue_extraccion_manifest.csv", "rol": "dengue_interim", "obligatoria": true},
+    {"ruta": "reports/forecasts/prophet/all_forecast_prophet.csv", "rol": "forecast", "obligatoria": true},
+    {"ruta": "reports/forecasts/deepar/all_forecast_deepar.csv", "rol": "forecast", "obligatoria": true},
+    {"ruta": "reports/forecasts/ensemble/all_forecast_ensemble.csv", "rol": "forecast", "obligatoria": true},
+    {"ruta": "reports/forecasts/stacking/all_forecast_stacking.csv", "rol": "forecast", "obligatoria": true},
+    {"ruta": "reports/forecasts/nbglm/all_forecast_nbglm.csv", "rol": "forecast_conteo", "obligatoria": true},
+    {"ruta": "models/*/*/*_completo.csv", "rol": "metricas", "obligatoria": true},
+    {"ruta": "reports/ProdDetails/tabla_333_modelos_produccion.xlsx", "rol": "tabla_produccion", "obligatoria": true},
+    {"ruta": "reports/ProdDetails/auditoria_motores_2026.xlsx", "rol": "tabla", "obligatoria": true},
+    {"ruta": "reports/ProdDetails/produccion_dengue.csv", "rol": "produccion_dengue", "obligatoria": true},
+    {"ruta": "reports/ProdDetails/produccion_dengue.xlsx", "rol": "tabla", "obligatoria": false},
+    {"ruta": "data/processed/tableau.csv", "rol": "tableau", "obligatoria": true},
+    {"ruta": "data/processed/tableau_model.xlsx", "rol": "tableau", "obligatoria": true},
+    {"ruta": "data/processed/data_inegi_General.csv", "rol": "inegi", "obligatoria": true},
+    {"ruta": "data/processed/data_inegi_Alzheimer.csv", "rol": "inegi", "obligatoria": false},
+    {"ruta": "data/processed/data_inegi_Depresión.csv", "rol": "inegi", "obligatoria": false},
+    {"ruta": "data/processed/data_inegi_Dengue.csv", "rol": "inegi", "obligatoria": false},
+    {"ruta": "data/utils/inegi.csv", "rol": "inegi", "obligatoria": true},
+    {"ruta": "data/utils/mexico_states.geojson", "rol": "geo", "obligatoria": false},
+    {"ruta": "data/interim/dengue_a90a91_nacional.csv", "rol": "contexto", "obligatoria": false},
+    {"ruta": "data/external/oni.ascii.txt", "rol": "contexto", "obligatoria": true},
+    {"ruta": "data/external/oni_forecast.csv", "rol": "contexto", "obligatoria": false}
+  ]
+}

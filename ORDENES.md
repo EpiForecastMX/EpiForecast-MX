@@ -1,5 +1,36 @@
 # Órdenes a la mano
 
+## 0 · Salida de sesión P0 — no ejecutar la actualización semanal
+
+Estado al 2-sep-2026 (tercera tanda): rama `p0/namespace-e-inmutabilidad-del-sello` con
+**26 commits rebased sobre `16476a98`** (tip `f88a065e`), árbol limpio, enviada a `origin`.
+PR draft **#14** (https://github.com/EpiForecastMX/EpiForecast-MX/pull/14) abierta en `f88a065e`, con el CI remoto `33634940281` verde: Code Quality PASS, Tests PASS (2 324 passed, 497 skipped exactos, 66 deselected, cobertura 77,00 %), Integration skipped por diseño. **Sin merge, sin DVC, sin publicación ni deploy.** `make update-week` aborta en preflight hasta la autorización de P1. No usar
+`update-week-apply` sobre los repositorios canónicos, no descargar W32/W33, no ejecutar DVC
+y no publicar; el merge de la PR es una decisión aparte.
+
+Para retomar, leer la sección P0 de `AGENTS.md` (workspace) y `CLAUDE.md`. Receta local,
+en este orden y sólo con datos sintéticos o el ensayo en clones locales:
+
+1. `materialize --trabajo <nuevo> --repo-backend . --head-backend <sha> --repo-dashboard
+   <repo> --head-dashboard <sha>` (escribe `materializacion.json`);
+2. `hydrate --trabajo <trabajo> --repo-backend . --head-backend <sha> --padecimientos
+   "Alzheimer,Depresión,Parkinson,Dengue" --boletin nombre:url:bytes:sha256 ...`;
+3. generadores en `<trabajo>.sandbox/EpiForecast-MX` con `--out` hacia
+   `<trabajo>/outputs`; `bump-cache --trabajo --destino-dashboard --head-dashboard`;
+   `run-gates --trabajo --head-backend --destino-backend --destino-dashboard`; `seal` con
+   `--destino-backend`, `--destino-dashboard`, `--semana-anterior`/`--semana-nueva`
+   (= cortes reales) y `--padecimientos`;
+4. `make update-week-apply MANIFEST=<run>/manifest.json DESTINOS=<raíz nueva>` (sólo
+   sobre clones o worktrees desechables) y `make update-week-discard MANIFEST=… DESTINOS=…`.
+
+Rollback: descartar el par y el sandbox; el sello y su evidencia se conservan. La tabla
+333 ya está reparada; el bloqueo vigente es la autorización de P1 (red: pull, DVC,
+GEMINI_API_KEY para el índice RAG).
+
+Plan auditado, que no debe reescribirse durante el handoff:
+`../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`, SHA256
+`5cfdf5a4a2d8e5ed1acf004e8c90a00e929dfd217ba051fff925e742fe9e233d`.
+
 Comandos verificados de la sesión del 19-20 de agosto de 2026. Todos se ejecutan desde la
 raíz del repositorio salvo donde se indique.
 

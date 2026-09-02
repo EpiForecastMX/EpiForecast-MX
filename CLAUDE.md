@@ -1,5 +1,66 @@
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
+## Estado P0 del flujo semanal — 2026-09-02 (tercera tanda: correctiva, cerrada en local)
+
+Esta sección sustituye cualquier instrucción inferior que presente `make update-week` como
+receta activa. Backend: rama `p0/namespace-e-inmutabilidad-del-sello`, **26 commits rebased
+sobre el `main` remoto `16476a98`** (tip `f88a065e`; respaldo local del tip previo `584cf72d`
+en `respaldo/p0-584cf72d-2026-09-02`), árbol limpio, **enviada a `origin`**. PR draft **#14** (https://github.com/EpiForecastMX/EpiForecast-MX/pull/14) abierta en `f88a065e`, con el CI remoto `33634940281` verde: Code Quality PASS, Tests PASS (2 324 passed, 497 skipped exactos, 66 deselected, cobertura 77,00 %), Integration skipped por diseño. **Sin merge, sin DVC, sin publicación ni deploy.**
+El remoto `16476a98` sólo traía dos commits de datos del CI (registry W33 y punteros DVC
+W33 de neuro, sin Dengue); `origin/main` local sigue en `a9a694c8` porque no se ha hecho
+pull. Frontend: `main@0e777995`, intacto, sin worktrees.
+
+`make update-week` sigue bloqueado en preflight **por autorización, no por código**: P0.1,
+P0.2 y P0.8 están cerrados; correr el carril real exige red (pull, `dvc pull`,
+sincronización aditiva, API de Gemini para el índice RAG) y la decisión de publicar (P1).
+Flujo cableado y probado: `materialize` (git archive de los HEAD; escribe
+`materializacion.json`, que `hydrate`, `bump-cache`, `run-gates` y `seal` exigen con sus
+HEAD y política) → `hydrate` (sandbox con SOLO la allowlist `entradas/2`: 44 entradas
+reales incluidas `dengue_boletin.csv`, su manifiesto, `inegi.csv`, `models/*/*/*_completo.csv`
+por patrón y el ONI cacheado; directorios scratch; contrato del HEAD: catálogo, registry y
+profundidad mínima 52 con continuidad MMWR) → generadores en el sandbox con `--out` →
+`bump-cache` (DATA_VERSION y cada `?v=`, imports anidados incluidos, plan en memoria) →
+`run-gates` (evidencia en `gates.en_curso/` con marcador; huérfanos por pgid+arranque;
+residuos apartados, nunca borrados; digest del ejecutable gobernante) → `seal` (evidencia,
+cobertura, cadena de caché, inmutables, `revisa_aditivo` base ⊆ candidato, semanas atadas
+a los cortes y a `boletin.ultima_semana`, y la poda PREVISTA con retirables/lápidas, todo
+ANTES de podar) → `prepare-worktrees` (rollback; revalida gates contra la política del
+HEAD canónico) → `apply` (re-liga bajo el lock; composición del par antes de `aplicado`,
+también en el no-op) → `check-completeness` → `discard-worktrees --manifiesto` (ligado a
+run_id, digest, lock, estado y a que git reconozca cada worktree). `CONFINAMIENTO_LISTO =
+True`; P0.11 = opción C.
+
+Datos: la tabla 333 rastreada quedó **reparada** (432 filas, `76d3e311…`, commit
+`dd54d51b`, autoridad `produccion_dengue.csv` documentada en `catalog.py`) y la causa raíz
+corregida en `merge_all_models` (`4962e582`). `WEEKS_LIMIT = 15` en
+`reselect_motor_2026.py` **queda como decisión pendiente documentada**: el comentario dice
+«= boletín más reciente» pero ningún contrato canónico fija la ventana, y cambiarla
+re-selecciona motores de 333 series.
+
+Gate vigente: 902 pruebas de publicación; `make test-fast` = **2,820 passed, 1 skipped, 66
+deselected** (cero skips nuevos); Ruff, mypy, `bash -n` y `git diff --check` verdes; **85
+mutaciones del código (las 42 originales con anclas al día, 28 de las defensas nuevas y
+16 de la auditoría final), 85 vistas caer**; auditoría adversarial final por tres agentes
+ciegos: sus hallazgos alto/medio corregidos en `83950f96` y `a0fb313b`.
+
+Ensayo real del 2-sep (evidencia en `planes/ensayo_P012_2026-09-02/`, con `SHA256SUMS`):
+**tramo 1**, la cadena de generación completa sobre W31 sin red —materialize, hidratación
+real (44 entradas, contratos PASS), los diez pasos de generación en el sandbox, `bump-cache`
+(DATA_VERSION 20260824→20260825, kb.js?v=104→105, app.js?v=138→139) y `run-gates`: `cifras`
+PASS y **`rag` FAIL** porque el índice RAG rastreado no cubre el `knowledge.json` regenerado
+y reconstruirlo exige GEMINI_API_KEY (red): fallo cerrado, sin sello. **Tramo 2**, sello →
+par desechable sobre la composición real con un cambio fuera del corpus RAG: gates PASS,
+run `e147ff8deb914b4a`, prepare/apply/check en clones locales con composición aplicada ==
+sellada, no-op verificado, byte alterado → check falla y apply deja el par inválido,
+discard ligado al manifiesto; repos reales con un solo worktree y frontend limpio. Los tres
+hallazgos que el ensayo destapó (directorios scratch, ONI sin red, NB-GLM constante) están
+corregidos en `98faf4d3` y `a0fb313b`.
+
+Plan auditado:
+
+- `../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`, SHA256
+  `5cfdf5a4a2d8e5ed1acf004e8c90a00e929dfd217ba051fff925e742fe9e233d`.
+
 ## Estado CI semanal — 2026-09-01
 
 - PR #12 quedó en `main` mediante merge commit `59488c57`; la rama de trabajo ya fue
@@ -15,9 +76,9 @@
   del 7-sep-2026. La rutina `trig_0182z2jL5YUwBbmTmHnbPS3t` lo comprueba a las 06:50 UTC.
 - Rollback únicamente por causalidad demostrada: `git revert -m 1 59488c57` en rama y
   PR; nunca reset ni force-push de `main`.
-- Backend `main@cb7695d9` y frontend `main@5f8666dc` están sincronizados; el frontend está
-  desplegado. Los únicos deltas actuales son esta actualización documental y el README del
-  frontend, todavía sin commit. Persisten dos ramas ya mergeadas, locales y remotas:
+- Los checkpoints `main@cb7695d9` y frontend `main@5f8666dc` describen el cierre histórico
+  de esa tanda, no el worktree actual; usar la sección P0 superior para reanudar. Persisten
+  dos ramas ya mergeadas, locales y remotas:
   `ci/skip-budget-ets-legacy` y `fix/frontend-deudas`.
 - Los cuatro agregados legacy ya no tienen doble guarda: viven en `tests/integration/`,
   se deseleccionan en el job normal y fallan por ausencia en el manual. Pendiente después
