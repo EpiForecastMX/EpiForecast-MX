@@ -1,12 +1,12 @@
 # Deudas vigentes — índice canónico
 
-> Actualizado el 2-sep-2026 tras publicar P1 W33: backend `main@d7c9c6c2` y frontend
-> `main@72ae9e83`; tanda correctiva P1b en PRs draft.
+> Actualizado el 2-sep-2026 tras publicar P1 W33 y P1b: backend `main@3bd67236` y frontend
+> `main@8490e433`.
 > Este archivo separa
 > trabajo vigente de bitácoras históricas. Una deuda que aparezca sólo en un documento
 > antiguo no se ejecuta hasta contrastarla aquí y en el código.
 
-## Activa — P1b: banner estático de novedades (P1 W33 ya publicada)
+## Activa — deudas tras publicar P1 W33 y P1b (2-sep-2026)
 
 La fuente oficial 2026 fue comprobada el 2-sep-2026: contiene 33 boletines y el último
 verificable es W33; W34 aún no está publicada. **P1 está publicada**: el sello
@@ -16,15 +16,22 @@ lápidas, `cifras` y `rag` PASS) se integró con merge commit `d7c9c6c2` en el b
 en el frontend; Netlify desplegó https://epiforecast.mx con DATA_VERSION 20260825, knowledge
 W33 (432/444), RAG 453, zoom 444 y los cuatro padecimientos con última fecha real 2026-08-10.
 
-**Tanda correctiva P1b (2-sep-2026, PRs draft, sin merge):** el smoke productivo encontró el
+**Tanda correctiva P1b (2-sep-2026), integrada y publicada:** el smoke productivo encontró el
 banner estático de novedades de `index.html` incoherente (titular del CALASS con fecha y
 subtítulo de W33; lista secundaria en W31). Causa: `scripts/build_news_weekly.py` sólo
 sustituía el titular si ya era una nota semanal. Corrección en `1ae477d5` (el bloque
 `#newsBannerRow` se reescribe entero desde `news.json`, fallando en seco si falta) y gate
 `cifras` reforzado en el frontend (`84536608`: el bloque estático debe coincidir con
 `news.json`; contra el sitio publicado reporta cuatro desalineaciones). Re-sello
-`89d70cc441ee255a` con ambos arreglos; backend PR draft #16 (`p1b/fallback-estatico-w33`) y
-frontend PR draft #12. Fusionar la del frontend despliega el banner corregido.
+`89d70cc441ee255a` con ambos arreglos; backend PR #16 fusionada con merge commit `3bd67236`
+(CI de `main` run 33677859434 verde: 2,329 passed, 497 skips exactos, cobertura 77 %,
+Integration skipped) y frontend PR #12 fusionada con merge commit `8490e433`. Smoke productivo
+completo en https://epiforecast.mx, con y sin JavaScript: banner estático y DOM renderizado
+iguales a `news.json` (lead W33 · Datos · 2 de septiembre; CALASS y W31 en la lista
+secundaria), W33 en los cuatro padecimientos (última fecha real 2026-08-10, 444 series),
+DATA_VERSION 20260826, `app.js?v=140`, cifras 333/99/432/444, RAG 453 chunks, validación W33.
+Estado vigente: backend `main@3bd67236`, frontend `main@8490e433`; ramas P0/P1/P1b y respaldo
+conservados. W34 sólo cuando exista su PDF oficial y los cuatro publicados avancen juntos.
 
 Política permanente: todos los padecimientos `published` del registry tienen un único
 corte público. Si cualquiera falta o difiere en año/semana, no se sella ni publica ningún
@@ -33,8 +40,7 @@ lista del operador que omita miembros. Obesidad y Anorexia siguen excluidas por 
 si se promueven, entran en el gate. W34 queda pendiente de existencia y validación oficial,
 y deberá mover juntos a los cuatro publicados.
 
-Pendiente inmediato: CI/revisión de las PRs #16 y #12 y autorización separada para su
-merge/publicación. Deudas fuera de P1b: NBGLM de Dengue Aguascalientes desbordado; `EpiDashboard.html`
+P1b quedó cerrada con los merges `3bd67236`/`8490e433` y el smoke productivo. Siguen abiertas: NBGLM de Dengue Aguascalientes desbordado; `EpiDashboard.html`
 y `hero_series.json` del frontend se mantienen a mano (siguen en W31 / 2026-05-18); motores Dengue
 incoherentes entre tabla 333, `produccion_dengue.csv` y zoom; dataset DVC sin versionar (opción C);
 Google Sheets y Tableau conservan sus carriles manuales.
