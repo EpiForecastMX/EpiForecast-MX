@@ -970,3 +970,28 @@ def test_cli_prepare_apply_y_completitud(tmp_path: Path, capsys) -> None:
     (wt_d / "obsoleto.html").unlink()
     assert main(["check-completeness", *argv_base]) == 0
     assert main(["discard-worktrees", *argv_base]) == 0
+
+
+def test_apply_religa_el_registro_tras_releerlo_bajo_el_lock(tmp_path: Path, monkeypatch) -> None:
+    """Entre la comprobación previa y el lock, el registro pasa a ser de otra corrida."""
+    c = _corrida(tmp_path)
+    raiz = tmp_path / "destinos"
+    prepara_worktrees(c.ruta_manifiesto, c.repos, raiz)
+    lee_real = RegistroDestinos.lee
+    lecturas: list[int] = []
+
+    def lee_cambiante(raiz_registro: Path) -> RegistroDestinos:
+        registro = lee_real(raiz_registro)
+        lecturas.append(1)
+        if len(lecturas) == 2:  # la relectura bajo el lock
+            registro.run_id = "f" * 64
+        return registro
+
+    monkeypatch.setattr(release_worktrees.RegistroDestinos, "lee", staticmethod(lee_cambiante))
+    with pytest.raises(StagingError, match="cambió de corrida o de manifiesto bajo el lock"):
+        aplica(c.staging, c.manifiesto, raiz)
+    monkeypatch.undo()
+    assert RegistroDestinos.lee(raiz).estado == ESTADO_LISTO
+    assert (
+        Path(RegistroDestinos.lee(raiz).destinos["dashboard"].ruta) / "index.html"
+    ).read_text() == "semana 31"

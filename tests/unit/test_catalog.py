@@ -64,10 +64,13 @@ def test_gallery_distinto_de_produccion(catalog_data):
 def test_diagnostico_documenta_dengue_stale(catalog_data):
     _, counts = catalog_data
     d = counts.diagnostics
-    # el Dengue de tabla_333 trae 102 con 3 dup nacionales y sin NBGLM
-    assert d.get("dengue_en_tabla_333") == 102
-    assert d.get("nacionales_duplicados") == 3
+    # El Dengue de tabla_333 trae 99 filas (los 3 nacionales duplicados se repararon el
+    # 2026-09-02 con la autoridad de produccion_dengue.csv), sigue sin NBGLM y con
+    # Ensemble/Stacking: por eso NO se usa.
+    assert d.get("dengue_en_tabla_333") == 99
+    assert d.get("nacionales_duplicados") == 0
     assert d.get("tiene_nbglm") is False
+    assert d.get("selecciones_invalidas_ensemble_stacking", 0) > 0
 
 
 # --------------------------------------------------------------------------------------
