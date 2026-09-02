@@ -15,20 +15,24 @@ Para retomar, copiar literalmente el prompt de:
 SHA256 al cerrar:
 `063277ed7fb745da600c35f12325238a2841707201029aa28ef5690e0d2a5ee9`.
 
-P0 avanzó hasta P0.12 en seis commits locales (1-sep, noche): runner real de gates, apply
-confinado a worktrees desechables (`CONFINAMIENTO_LISTO = True`), materialización 41/41,
-completitud exacta y decisión P0.11 = opción C (dataset DVC pendiente). Nada se publicó ni se
-hizo push. Receta local, en este orden y sólo con datos sintéticos o composición temporal:
+P0 avanzó en doce commits locales (1 y 2-sep): runner de gates, apply confinado
+(`CONFINAMIENTO_LISTO = True`), materialización 41/41, completitud exacta, opción C de
+P0.11, `--out` en los tres generadores, hidratación por allowlist con contrato exacto,
+entradas selladas, Dengue fail-closed y cadena de caché. Nada se publicó ni se hizo push.
+Receta local, en este orden y sólo con datos sintéticos o composición temporal:
 
 1. `python -m scripts.refresh_staging materialize --trabajo <nuevo> --head-backend <sha>
    --repo-dashboard <repo> --head-dashboard <sha>`;
-2. generar en `<trabajo>/outputs`; `run-gates --trabajo <trabajo> --head-backend <sha>
-   --destino-dashboard <repo>`; `seal ...` (sin `--resultados-pruebas`, sin `--operacion-dvc`);
-3. `make update-week-apply MANIFEST=<run>/manifest.json DESTINOS=<raíz nueva>` = prepare-worktrees
-   + apply + check-completeness sobre el par desechable; `discard-worktrees --destinos <raíz>`.
+2. `hydrate --trabajo <trabajo> --head-backend <sha> --padecimientos "A,B,C,D"
+   [--boletin nombre:url:bytes:sha256 ...]` (sandbox en `<trabajo>.sandbox/`);
+3. generar en el sandbox con `--out` hacia `<trabajo>/outputs`; `run-gates`; `seal`
+   (sin `--digest-consolidado`, `--boletin` ni `--operacion-dvc`);
+4. `make update-week-apply MANIFEST=<run>/manifest.json DESTINOS=<raíz nueva>`;
+   `discard-worktrees --destinos <raíz>`.
 
-Rollback: descartar el par; el sello y su evidencia se conservan. Lo que sigue: P0.1, P0.2,
-P0.8, auditoría ciega externa, y P1 sólo con autorización.
+Rollback: descartar el par y el sandbox; el sello y su evidencia se conservan. Bloqueo
+real vigente: la tabla 333 rastreada tiene tres claves duplicadas y contradictorias de
+Dengue Nacional; la hidratación real aborta hasta corregirla (P1, con autorización).
 
 Plan auditado, que no debe reescribirse durante el handoff:
 `../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`, SHA256

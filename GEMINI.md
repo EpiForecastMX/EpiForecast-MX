@@ -7,27 +7,27 @@
 
 ## 0. Trabajo activo: P0 del flujo semanal
 
-Backend en `p0/namespace-e-inmutabilidad-del-sello` con seis commits locales sobre
-`a9a694c8` (checkpoint P0.9, runner de gates, P0.6, composición 41/41 + opción C, política
-ligada al HEAD canónico, documentación) y árbol limpio. No hay push; la referencia local
-`origin/main` sigue en `a9a694c8` y el remoto observado en `16476a98` no se integró. No hacer
-fetch/pull/rebase ni mezclar ese avance sin auditar el delta y obtener autorización. El
-frontend `main@0e777995c9e53cdd08b6d25ad58b65928a25b88b` está intacto.
+Backend en `p0/namespace-e-inmutabilidad-del-sello` con doce commits locales sobre
+`a9a694c8` (2-sep: `--out` de los tres generadores, hidratación por allowlist con contrato
+exacto, entradas selladas `weekly_staging/3`, cadena de caché, Dengue fail-closed, paridad
+sobre el registry, documentación) y árbol limpio. Sin push; `origin/main` local en
+`a9a694c8`; el remoto observado en `16476a98` no se integró ni se auditó. El frontend
+`main@0e777995c9e53cdd08b6d25ad58b65928a25b88b` está intacto.
 
-`make update-week` sigue bloqueado en preflight (P0.1, P0.2, P0.8 y autorización de P1).
-El flujo cableado es `materialize → run-gates → seal → prepare-worktrees → apply →
-check-completeness`: la política `censo/2` define los gates como `argv` + `cwd` +
-`timeout_s` + `entorno`; el runner los ejecuta sin shell sobre el árbol candidato completo
-y deja evidencia con digests; `seal` la relee y no admite resultados ni operaciones DVC por
-flag; `apply` sólo instala en un par de worktrees desechables registrado y verificado con
-git, bajo lock, y cualquier fallo invalida el par. `CONFINAMIENTO_LISTO = True`. Decisión
-P0.11: opción C, dataset DVC pendiente.
+`make update-week` sigue bloqueado en preflight. El flujo cableado es `materialize →
+hydrate → generadores en sandbox (--out) → run-gates → seal → prepare-worktrees → apply →
+check-completeness`. `hydrate` copia sólo `config/publication/entradas_semanales.json`
+(del HEAD) al sandbox y exige el contrato exacto (32 entidades, 432 series, 444 zoom,
+paridad de corte); `seal` deriva los digests del consolidado y los boletines de esa
+hidratación y no admite ni `--digest-consolidado` ni `--boletin` ni `--operacion-dvc`.
+`CONFINAMIENTO_LISTO = True`; P0.11 = opción C.
 
-Gate local vigente: 223 pruebas dirigidas; `make test-fast` con 2,645 passed, 1 skipped y 66
-deselected; Ruff, mypy, `bash -n` y `git diff --check` verdes. Ensayo con la composición real
-y gates Node reales en `../planes/ensayo_P012_2026-09-01/`. Pendiente: P0.1, P0.2, P0.8,
-P0.10, auditoría ciega externa y P1 con autorización. Plan auditado:
-`../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`, SHA256
+Gate local: 812 pruebas de publicación; `make test-fast` 2,719 passed, 1 skipped, 66
+deselected; Ruff, mypy, `bash -n`, `git diff --check` verdes. La hidratación real aborta
+por un defecto de datos real: la tabla 333 rastreada tiene tres claves duplicadas y
+contradictorias de Dengue Nacional. Pendiente: corregir ese artefacto (P1), auditoría ciega
+externa, auditoría del avance remoto con autorización de red, y P1 con autorización. Plan
+auditado: `../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`, SHA256
 `5cfdf5a4a2d8e5ed1acf004e8c90a00e929dfd217ba051fff925e742fe9e233d`.
 
 ## 1. Precedencia y forma de trabajo

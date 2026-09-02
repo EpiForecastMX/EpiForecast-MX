@@ -1,35 +1,37 @@
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
-## Estado P0 del flujo semanal — 2026-09-01 (cierre nocturno)
+## Estado P0 del flujo semanal — 2026-09-02
 
 Esta sección sustituye cualquier instrucción inferior que presente `make update-week` como
-receta activa. Backend: rama `p0/namespace-e-inmutabilidad-del-sello`, seis commits locales
-sobre `a9a694c8` y árbol limpio: `ee16ef02` checkpoint P0.9 · `62be548d` runner real de
-gates · `fb0e7776` P0.6 apply confinado · `dcd031de` composición 41/41, completitud,
-orquestación y opción C · `75498857` política del sello ligada al HEAD canónico · más el
-commit de esta documentación. Sin push. La referencia local `origin/main` sigue en
-`a9a694c8`; el remoto observado en `16476a98` no se integró. Frontend: `main@0e777995`,
-intacto y sin worktrees registrados.
+receta activa. Backend: rama `p0/namespace-e-inmutabilidad-del-sello`, doce commits locales
+sobre `a9a694c8`, árbol limpio, sin push (los seis del 1-sep más `a251f6cd` --out,
+`3dd732df` P0.1/P0.2/P0.10, `21b58ebb` P0.8, `92a2c99e` entradas rastreadas y NBGLM,
+`8e192f8c` paridad sobre el registry, y el commit de esta documentación). La referencia
+local `origin/main` sigue en `a9a694c8`; el remoto observado en `16476a98` no se integró
+ni se auditó (exige autorización de red). Frontend: `main@0e777995`, intacto.
 
-`make update-week` sigue bloqueado en preflight: faltan P0.1 (hidratación por allowlist),
-P0.2 (inputs bajo el staging) y P0.8 (Dengue fail-closed), y P1 exige autorización. El
-flujo está cableado y probado con repositorios sintéticos y con la composición real:
-`materialize` (git archive de los HEAD sellados, 41/41 superficies) → generadores →
-`run-gates` (argv exacto sin shell, evidencia con SHA256) → `seal` (relee esa evidencia;
-sin flags de resultados ni de DVC) → `prepare-worktrees` (par desechable registrado con
-lock) → `apply --destinos` (sólo en ese par, verificado con git) → `check-completeness`
-(rastreados, sin rastrear, faltantes, sobrantes, alterados, lápidas y composición aplicada
-== sellada). `CONFINAMIENTO_LISTO = True`: los sellos nuevos salen `aplicable`; un borrador
-anterior sigue sin instalarse. Decisión P0.11: **opción C**, superficies públicas al día y
-dataset DVC pendiente; `operaciones_dvc = []` siempre.
+`make update-week` sigue bloqueado en preflight: el cableado completo está probado con
+repositorios sintéticos y la hidratación real aborta por un defecto de datos (abajo); P1
+exige autorización. Flujo cableado: `materialize` (git archive de los HEAD, 41/41) →
+`hydrate` (sandbox del backend con SOLO la allowlist `config/publication/entradas_semanales.json`
+leída del HEAD, copias con SHA256, contrato exacto 32/432/444 + paridad de corte) →
+generadores en el sandbox con `--out` → `run-gates` → `seal` (deriva de la hidratación
+`digest_consolidado_antes/candidato`, boletines e inventario de entradas; exige paridad
+entre los publicados del registry, cobertura del candidato y cadena de caché frente al HEAD
+del dashboard; manifiesto `weekly_staging/3` con `inputs/` sellados) → `prepare-worktrees`
+→ `apply --destinos` → `check-completeness`. `CONFINAMIENTO_LISTO = True`; P0.11 = opción C.
 
-Gate vigente: 223 dirigidas; `make test-fast` = 2,645 passed, 1 skipped, 66 deselected
-(cero skips nuevos); Ruff, mypy, `bash -n` y `git diff --check` verdes. Ensayo real con
-gates Node PASS y evidencia en `../planes/ensayo_P012_2026-09-01/`. Ni el runner ni el sello
-son un sandbox; los digests no son firma; no hay atomicidad entre repositorios.
+Gate vigente: 812 pruebas de publicación; `make test-fast` = 2,719 passed, 1 skipped, 66
+deselected (cero skips nuevos); Ruff, mypy, `bash -n` y `git diff --check` verdes.
 
-Pendiente: P0.1, P0.2, P0.8, P0.10 (cadena de caché), `--out` de los generadores (P2),
-auditoría ciega externa de los commits, y P1 sólo con autorización aparte. Plan auditado:
+Hallazgos de datos que bloquean la hidratación real (no se corrigen en este carril):
+`reports/ProdDetails/tabla_333_modelos_produccion.xlsx` (rastreado, commit `7bd8bb55`)
+lleva 435 filas con tres claves duplicadas y contradictorias de Dengue Nacional (filas
+112-114 Prophet, sMAPE 35-38; filas 166-168 DeepAR, sMAPE 80-110). El contrato lo detecta
+en 4,5 s y aborta sin residuos. Pendiente además: `--out` de `build_neuro_gallery`,
+`build_epibot_zoom`, `dengue-web` ya lo aceptan; `sincroniza_consolidado` usa `dvc get`
+(red) dentro del sandbox; auditoría ciega externa; auditoría del avance remoto; P1 sólo con
+autorización. Plan auditado:
 
 - `../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`, SHA256
   `5cfdf5a4a2d8e5ed1acf004e8c90a00e929dfd217ba051fff925e742fe9e233d`.

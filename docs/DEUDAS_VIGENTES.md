@@ -10,34 +10,47 @@
 
 El plan vigente es `../../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`
 (SHA256 `5cfdf5a4a2d8e5ed1acf004e8c90a00e929dfd217ba051fff925e742fe9e233d`). La rama
-`p0/namespace-e-inmutabilidad-del-sello` lleva seis commits locales sobre `a9a694c8`
-(checkpoint P0.9, runner de gates, P0.6, composición 41/41 + opción C, política ligada al
-HEAD canónico, documentación), sin push.
+`p0/namespace-e-inmutabilidad-del-sello` lleva doce commits locales sobre `a9a694c8`, sin
+push.
 
-Cerrado (1-sep, con controles negativos y mutaciones del código vistos caer):
+Cerrado (1 y 2-sep, con controles negativos y mutaciones del código vistos caer):
 
-- P0.9 runner real de gates: `censo/2`, `run-gates` sin shell sobre el árbol completo,
-  evidencia con digests, `seal` sin flag de resultados;
-- P0.6 apply confinado: par de worktrees desechables registrado, verificado con git y bajo
-  lock; cualquier fallo invalida el par; `CONFINAMIENTO_LISTO = True`; la política del sello
-  debe ser la del HEAD del repositorio canónico;
-- composición 41/41 por `git archive`; `check-completeness` con seis conjuntos y composición
-  aplicada == sellada; `actualiza_semanal.sh` y `make update-week-apply` recableados detrás
-  del bloqueo;
-- P0.11 decidido: opción C, superficies públicas al día y dataset DVC pendiente; ninguna
-  operación DVC se declara;
-- P0.12 ensayado en sintético y con la composición real (gates Node reales PASS); evidencia
-  en `../../planes/ensayo_P012_2026-09-01/`.
+- P0.9 runner real de gates; P0.6 apply confinado; composición 41/41; completitud exacta;
+  P0.11 opción C (dataset DVC pendiente; ninguna operación DVC se declara);
+- `--out` en `build_web_knowledge.py`, `build_tableau.py` y `genera_validacion_semanal.py`
+  (y corrección del `NaN -> null` que nunca se aplicaba);
+- P0.1 hidratación por allowlist (`config/publication/entradas_semanales.json`, leída del
+  HEAD) con contrato exacto: 32 entidades por semana, 432 series por motor legacy, 99 de
+  NBGLM, 444 en el zoom, unicidad y paridad de corte; las entradas rastreadas se toman del
+  HEAD y el worktree tiene que coincidir;
+- P0.2 `weekly_staging/3`: `digest_consolidado_antes/candidato`, boletines verificados e
+  inventario de entradas derivados de la hidratación; copias inmutables bajo `inputs/`
+  verificadas por `verifica`;
+- P0.8 Dengue fail-closed en el orquestador y paridad de corte exigida por `seal` entre
+  todos los publicados del registry;
+- P0.10 cadena de caché comprobada contra el HEAD del dashboard (`DATA_VERSION` →
+  `kb.js?v=` → `app.js?v=` y la boca `no-store`).
 
-Gate: 223 dirigidas; `make test-fast` = 2,645 passed, 1 skipped, 66 deselected; Ruff, mypy,
-`bash -n`, `git diff --check` verdes.
+Gate: 812 pruebas de publicación; `make test-fast` = 2,719 passed, 1 skipped, 66
+deselected; Ruff, mypy, `bash -n`, `git diff --check` verdes.
 
-Abierto, en orden: (1) P0.1 hidratación por allowlist con control positivo 333/99/432 y
-conjuntos exactos; (2) P0.2 inputs bajo el staging con `digest_consolidado` antes/candidato;
-(3) P0.8 Dengue fail-closed; (4) P0.10 cadena de caché; (5) `--out` de
-`build_web_knowledge.py`, `build_tableau.py` y `genera_validacion_semanal.py` (P2); (6)
-auditoría ciega externa de los commits; (7) P1 sólo con autorización. Límites declarados:
-ni runner ni sello son sandbox; los digests no son firma; sin atomicidad entre repositorios.
+Abierto, en orden:
+
+1. **Datos:** `reports/ProdDetails/tabla_333_modelos_produccion.xlsx` (rastreado, commit
+   `7bd8bb55`) tiene 435 filas con tres claves duplicadas y contradictorias de Dengue
+   Nacional (112-114 Prophet vs 166-168 DeepAR). Bloquea la hidratación real. Regenerar o
+   deduplicar con la autoridad de `produccion_dengue.csv`, en P1 y con autorización;
+   revisar de paso que el zoom del EpiBot nombra `mexico` en neuro y `estado de mexico`
+   en Dengue (el contrato lo tolera por alias; es incoherencia de presentación);
+2. `sincroniza_consolidado.py` usa `dvc get` (red) dentro del sandbox: sin autorización de
+   red no corre; `build_web_knowledge.py` lee `_gallery_items.json` del dashboard hermano
+   (resuelto en el sandbox por enlace);
+3. auditoría ciega externa de los doce commits; auditoría del avance remoto `a9a694c8 →
+   16476a98` sólo con autorización de red;
+4. P1 (W32/W33) sólo con autorización; push, PR, merge, DVC y deploy separados.
+
+Límites declarados: ni runner ni sello son sandbox; los digests no son firma; sin
+atomicidad entre repositorios.
 
 ## Cerradas o retiradas en esta auditoría
 
