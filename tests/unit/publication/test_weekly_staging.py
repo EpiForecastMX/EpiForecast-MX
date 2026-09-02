@@ -2172,3 +2172,33 @@ def test_la_hidratacion_tiene_que_ser_del_head_que_se_sella(tmp_path: Path) -> N
 
     with pytest.raises(StagingError, match="la hidratación se hizo sobre ffffffffffff"):
         _sella_en(raiz, tmp_path, politica=politica, corre_gates=False)
+
+
+def test_declarar_menos_padecimientos_no_desactiva_la_paridad(tmp_path: Path) -> None:
+    """Interfaz alternativa cerrada: la paridad es entre los publicados del registry."""
+    raiz = _staging_con_artefactos(tmp_path / "staging")
+    politica = _politica(tmp_path)
+    ejecuta_gates(raiz, politica, destinos_vivos=tuple(_destinos(tmp_path).values()))
+    fab.hidrata_minimo(
+        raiz,
+        head_backend=HEAD_BACKEND,
+        candidato=fab.consolidado_csv(cortes={fab.PAD_NEURO: (2026, 30)}),
+    )
+    solo_dengue = SelloEntrada(
+        head_backend=HEAD_BACKEND,
+        head_dashboard=HEAD_DASHBOARD,
+        semana_anterior="2026,30",
+        semana_nueva="2026,31",
+        padecimientos_autorizados=(fab.PAD_CONTEO,),
+    )
+
+    with pytest.raises(StagingError, match="corte dispar"):
+        sella(
+            raiz,
+            solo_dengue,
+            semilla={},
+            baseline=calcula_baseline(_destinos(tmp_path), set(_relativos_de(raiz))),
+            politica=politica,
+            autoridad_lapidas=AutoridadLapidas.sin_lapidas(),
+            contrato=fab.CONTRATO,
+        )

@@ -1886,6 +1886,7 @@ def _completa_entrada(raiz_staging: Path, entrada: SelloEntrada, contrato: Any) 
         revisa_candidato,
         revisa_consolidado,
     )
+    from epiforecast.publication.contratos_datos import slug as slug_pad
 
     hidratacion = RegistroHidratacion.lee(raiz_staging)
     if hidratacion.head_backend != entrada.head_backend:
@@ -1923,7 +1924,12 @@ def _completa_entrada(raiz_staging: Path, entrada: SelloEntrada, contrato: Any) 
             raise StagingError(f"la copia del boletín {boletin.nombre} falta o no coincide")
 
     contrato_real = contrato if contrato is not None else ContratoCobertura.canonico()
-    revisa_consolidado(candidato, contrato_real, entrada.padecimientos_autorizados).exige()
+    # La paridad de corte se exige entre TODOS los publicados del contrato (registry), no
+    # entre los que declare quien sella: declarar sólo «Dengue» no desactiva la paridad.
+    declarados = {slug_pad(p) for p in entrada.padecimientos_autorizados}
+    if fuera := sorted(declarados - set(contrato_real.padecimientos)):
+        raise StagingError(f"padecimientos autorizados fuera del contrato: {fuera}")
+    revisa_consolidado(candidato, contrato_real, contrato_real.padecimientos).exige()
     exige_todo(revisa_candidato(raiz_staging / "outputs" / "dashboard", contrato_real))
 
     return SelloEntrada(
