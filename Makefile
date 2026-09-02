@@ -523,6 +523,20 @@ endif
 	$(PYTHON) -m scripts.refresh_staging check-completeness \
 		--manifiesto "$(MANIFEST)" --destinos "$(DESTINOS)"
 
+## Retira el par desechable de un sello, ligado a su manifiesto (run_id + digest) y solo
+## si git reconoce cada destino como worktree del repositorio registrado.
+##   make update-week-discard MANIFEST=runs/_refresh/<run_id>/manifest.json DESTINOS=runs/_release/<run_id>
+.PHONY: update-week-discard
+update-week-discard:
+ifndef MANIFEST
+	$(error Uso: make update-week-discard MANIFEST=runs/_refresh/<run_id>/manifest.json DESTINOS=runs/_release/<run_id>)
+endif
+ifndef DESTINOS
+	$(error Uso: make update-week-discard MANIFEST=runs/_refresh/<run_id>/manifest.json DESTINOS=runs/_release/<run_id>)
+endif
+	$(PYTHON) -m scripts.refresh_staging discard-worktrees \
+		--manifiesto "$(MANIFEST)" --destinos "$(DESTINOS)"
+
 ## Ver estado de DVC
 .PHONY: data-status
 data-status:

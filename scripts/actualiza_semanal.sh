@@ -64,29 +64,24 @@ paso()  { echo ""; echo ">>> $*"; }
 # 1. PREFLIGHT — todo falla cerrado
 # ─────────────────────────────────────────────────────────────────────
 paso "PREFLIGHT · productor bloqueado hasta P1"
-# El cableado de abajo —materialize → generadores → run-gates → seal, y después
-# prepare-worktrees → apply → check-completeness— está probado con repositorios
-# sintéticos, nunca contra datos reales. Antes de que este guion vuelva a correr de
-# verdad faltan tres cierres de P0 y una autorización:
+# El cableado de abajo —materialize → hydrate → generadores → bump-cache → run-gates →
+# seal, y después prepare-worktrees → apply → check-completeness— está probado con
+# repositorios sintéticos y ensayado por partes contra datos reales (hidratación y gates
+# reales, sello, par desechable en clones locales). P0.1 (hidratación por allowlist),
+# P0.2 (inputs inmutables bajo el staging) y P0.8 (Dengue fail-closed y paridad de corte)
+# están cerrados y probados. Lo que falta no es código: es la AUTORIZACIÓN de P1 (poner al
+# día W32, W33 y lo que haya), que exige red (pull, dvc pull, sincronización aditiva) y
+# la decisión de publicar. La decisión P0.11 ya está tomada: opción C, superficies
+# públicas al día y dataset DVC pendiente; el manifiesto no autoriza ninguna operación DVC.
 #
-#   P0.1  hidratación por allowlist de lo que los generadores leen (forecasts, modelos,
-#         PDFs, consolidado) con control positivo de cobertura 333/99/432;
-#   P0.2  copia inmutable de los inputs (PDFs y consolidado) bajo el staging, con
-#         digest antes y candidato;
-#   P0.8  Dengue fail-closed: hoy el paso [3/10] es best-effort y el [7/10] publicaría
-#         un Dengue rancio si la extracción falla.
-#
-# La decisión P0.11 ya está tomada: opción C. Esta ronda actualiza superficies públicas y
-# deja el dataset DVC pendiente; el manifiesto no autoriza ninguna operación DVC.
-# La puesta al día (P1: W32, W33 y lo que haya) exige autorización aparte.
-#
-# Se aborta AQUI, antes de la preparación cara, en vez de dejar que falle al final tras
+# Se aborta AQUÍ, antes de la preparación cara, en vez de dejar que falle al final tras
 # cuarenta minutos de trabajo tirado.
-fatal "el productor semanal sigue BLOQUEADO a propósito. El cableado materialize → run-gates
-    → seal → prepare-worktrees → apply → check-completeness está probado sólo con
-    repositorios sintéticos; faltan P0.1 (hidratación por allowlist), P0.2 (inputs bajo el
-    staging) y P0.8 (Dengue fail-closed). Decisión P0.11: opción C, superficies públicas
-    al día y dataset DVC pendiente. La puesta al día (P1) exige autorización aparte."
+fatal "el productor semanal sigue BLOQUEADO a propósito hasta la autorización de P1. El
+    cableado materialize → hydrate → generadores → bump-cache → run-gates → seal →
+    prepare-worktrees → apply → check-completeness está probado (P0.1, P0.2 y P0.8
+    cerrados); correrlo de verdad exige red (pull, dvc pull, sincronización aditiva) y
+    la decisión de publicar. Decisión P0.11: opción C, superficies públicas al día y
+    dataset DVC pendiente. La puesta al día (P1) exige autorización aparte."
 
 paso "PREFLIGHT (modo: ${MODE})"
 
@@ -234,8 +229,13 @@ echo ">>> PREFLIGHT COMPLETO"
 paso "MATERIALIZAR CANDIDATO (41/41 superficies, desde git archive)"
 # `materialize` exige un directorio nuevo: un candidato no se pisa. El anterior, si lo
 # hay, se aparta con marca de tiempo en vez de borrarse.
+# `hydrate` tampoco pisa un sandbox existente: se aparta junto con su trabajo.
+MARCA_PREVIO="$(date +%Y%m%dT%H%M%S)"
 if [ -e "$TRABAJO" ]; then
-  mv "$TRABAJO" "${TRABAJO}.previo.$(date +%Y%m%dT%H%M%S)"
+  mv "$TRABAJO" "${TRABAJO}.previo.${MARCA_PREVIO}"
+fi
+if [ -e "${TRABAJO}.sandbox" ]; then
+  mv "${TRABAJO}.sandbox" "${TRABAJO}.sandbox.previo.${MARCA_PREVIO}"
 fi
 $PYTHON -m scripts.refresh_staging materialize \
   --trabajo "$TRABAJO" \
@@ -257,17 +257,26 @@ if [ "$OMITIR_PULL_PDFS" -eq 1 ]; then
 else
   dvc pull data/raw_PDFs.dvc
 fi
+# Los dos boletines más recientes por nombre (el glob ya sale ordenado). Tamaño con
+# `wc -c` y digest con `shasum`: portables entre macOS y Linux (el `stat` de BSD y el de GNU no comparten flags).
 BOLETINES_ARGS=()
-for pdf in $(ls -1 data/raw_PDFs/*.pdf | sort | tail -n 2); do
-  nombre="$(basename "$pdf")"
-  BOLETINES_ARGS+=(--boletin "${nombre}:local://data/raw_PDFs/${nombre}:$(stat -f %z "$pdf"):$(shasum -a 256 "$pdf" | cut -d' ' -f1)")
-done
+PDFS=(data/raw_PDFs/*.pdf)
+if [ -e "${PDFS[0]}" ]; then
+  for pdf in "${PDFS[@]: -2}"; do
+    nombre="$(basename "$pdf")"
+    tamano="$(wc -c < "$pdf" | tr -d ' ')"
+    digest="$(shasum -a 256 "$pdf" | cut -d' ' -f1)"
+    BOLETINES_ARGS+=(--boletin "${nombre}:local://data/raw_PDFs/${nombre}:${tamano}:${digest}")
+  done
+fi
 paso "HIDRATAR · sandbox por allowlist + contrato de cobertura"
+# `${ARR[@]+"${ARR[@]}"}`: con `set -u`, bash 3.2 (el de macOS) trata un arreglo vacío
+# como variable sin definir y aborta; esta forma expande a nada sin fallar.
 $PYTHON -m scripts.refresh_staging hydrate \
   --trabajo "$TRABAJO" \
   --repo-backend "$REPO_ROOT" --head-backend "$HEAD_BACKEND" \
   --padecimientos "$(echo "$PADECIMIENTOS_PUBLICABLES" | tr ' ' ',')" \
-  "${BOLETINES_ARGS[@]}"
+  ${BOLETINES_ARGS[@]+"${BOLETINES_ARGS[@]}"}
 SANDBOX="${TRABAJO}.sandbox/EpiForecast-MX"
 # Los generadores corren DENTRO del sandbox: su codigo y sus entradas son los del HEAD
 # fijado mas la allowlist; el interprete es el venv real, pero PYTHONPATH pone primero el
@@ -282,8 +291,24 @@ EPIBOT="${DASHBOARD_ROOT}/epibot"
 # ─────────────────────────────────────────────────────────────────────
 # 3. PREPARAR — datos y computo. No publica.
 # ─────────────────────────────────────────────────────────────────────
-_semana_de() { tail -1 "$CONSOLIDADO" | cut -d',' -f1,2; }
-ANTES="$(_semana_de)"
+# Corte común de los padecimientos publicables (año,semana). `seal` lo contrasta con el
+# corte real de la copia base y de la candidata, así que un valor mal leído aborta; pero
+# leer «la última fila del CSV» daba el corte de un padecimiento cualquiera, no el común.
+_semana_de() {
+  "$PYTHON" - "$1" "$PADECIMIENTOS_PUBLICABLES" <<'PYSEM'
+import sys
+import pandas as pd
+ruta, permitidos = sys.argv[1], set(sys.argv[2].split())
+df = pd.read_csv(ruta, usecols=["Anio", "Semana", "Padecimiento"], low_memory=False)
+df = df[df["Padecimiento"].isin(permitidos)]
+cortes = {p: max(zip(g["Anio"], g["Semana"])) for p, g in df.groupby("Padecimiento")}
+if len(set(cortes.values())) != 1:
+    sys.exit(f"ABORTA: corte dispar entre publicables: {cortes}")
+anio, semana = next(iter(cortes.values()))
+print(f"{int(anio)},{int(semana)}")
+PYSEM
+}
+ANTES="$(_semana_de "$CONSOLIDADO")"
 DIGEST_CONSOLIDADO_ANTES="$(shasum -a 256 "$CONSOLIDADO" | cut -d' ' -f1)"
 
 paso "[1/10] Commits de datos"
@@ -304,7 +329,7 @@ else
 fi
 CONSOLIDADO="${SANDBOX}/${CONSOLIDADO}"
 
-ULTIMA="$(_semana_de)"
+ULTIMA="$(_semana_de "$CONSOLIDADO")"
 ANIO="$(echo "$ULTIMA" | cut -d',' -f1)"
 SEM="$(echo "$ULTIMA" | cut -d',' -f2)"
 echo "    Consolidado: $(wc -l < "$CONSOLIDADO") filas | ultima semana neuro: ${ANIO}/sem${SEM}"
@@ -342,12 +367,17 @@ paso "[4/10] Reseleccion de motor productivo en 2026 real"
 # Todo lo que sigue corre con cwd=$SANDBOX: lee las entradas hidratadas y escribe sus
 # subproductos en el sandbox (scratch), y sus salidas publicables van con --out al
 # candidato. El arbol real no se toca.
-if [ "${RETRAIN:-0}" = "1" ] || [ ! -f "$SANDBOX/reports/ProdDetails/tabla_333_modelos_produccion.xlsx" ]; then
-  echo "    (RETRAIN=1 o tabla ausente) -> regenerando backtest CV..."
-  make -C "$SANDBOX" PYTHON="$PYTHON" tabla-produccion
-else
-  echo "    (refresh) se reutiliza el backtest CV existente; solo se re-scorea 2026."
+# `tabla-produccion` (backtest CV de los 432 modelos, ~19 min) NO corre en este carril:
+# necesita los .pkl de los modelos, que la allowlist no hidrata a propósito. Si hace falta
+# re-backtestear, se corre en el árbol real y se confirma la tabla; el sello la lee del
+# HEAD. Una rama que lo intentara aquí fallaría a media corrida sobre un sandbox sin
+# modelos, así que se declara en vez de fingirla.
+if [ "${RETRAIN:-0}" = "1" ]; then
+  fatal "RETRAIN=1 no cabe en el carril semanal: corre 'make tabla-produccion' en el arbol real, confirma la tabla y repite."
 fi
+[ -f "$SANDBOX/reports/ProdDetails/tabla_333_modelos_produccion.xlsx" ] \
+  || fatal "falta la tabla de produccion en el sandbox (la allowlist la declara obligatoria)"
+echo "    (refresh) se reutiliza el backtest CV del HEAD; solo se re-scorea 2026."
 (cd "$SANDBOX" && $PYTHON scripts/reselect_motor_2026.py)
 
 paso "[5/10] Tableau + validacion semanal"
@@ -394,13 +424,34 @@ for f in reports/ProdDetails/auditoria_motores_2026.xlsx \
 done
 
 # ─────────────────────────────────────────────────────────────────────
+# 3b. INDICE RAG y CADENA DE CACHE — en el candidato, antes de los gates
+# ─────────────────────────────────────────────────────────────────────
+# El indice RAG del EpiBot se construye con la API de Gemini (red) y las dependencias de
+# node del sitio, que el candidato no trae (node_modules no se materializa). Solo se
+# reconstruye si hay clave y dependencias; si no, se declara y el gate `rag` decide: un
+# indice desfasado es un FAIL, nunca un aviso.
+paso "INDICE RAG del EpiBot (condicional: GEMINI_API_KEY + node_modules)"
+if [ -n "${GEMINI_API_KEY:-}" ] && [ -d "${EPIBOT}/node_modules" ]; then
+  (cd "$EPIBOT" && npm run rag:build)
+else
+  echo "    no se reconstruye el indice RAG (falta GEMINI_API_KEY o ${EPIBOT}/node_modules);"
+  echo "    el gate 'rag' de run-gates lo verificara y fallara si quedo desfasado."
+fi
+
+# Los generadores cambian knowledge.json, zoom_series.json y a veces modulos del EpiBot;
+# `bump-cache` sube DATA_VERSION y cada `?v=` que la cadena exija, SOLO en el candidato,
+# y `seal` volvera a exigir la cadena completa frente al HEAD del dashboard.
+paso "CADENA DE CACHE · bump-cache sobre el candidato"
+$PYTHON -m scripts.refresh_staging bump-cache \
+  --trabajo "$TRABAJO" \
+  --destino-dashboard "$DASHBOARD_REAL" --head-dashboard "$HEAD_DASHBOARD"
+
+# ─────────────────────────────────────────────────────────────────────
 # 4. GATES — sobre el arbol candidato COMPLETO, antes de podar
 # ─────────────────────────────────────────────────────────────────────
 # Los gates (cifras, rag) los define la politica del HEAD del backend como argv exactos;
 # `run-gates` los ejecuta sin shell dentro del candidato y deja la evidencia en
-# $TRABAJO/gates. Un gate que falle —o que mute un byte— impide sellar. El indice RAG
-# desfasado ya no es un aviso: es un FAIL del gate `rag`, y se regenera ANTES de sellar
-# con GEMINI_API_KEY=... npm run rag:build dentro del candidato, no en el sitio real.
+# $TRABAJO/gates. Un gate que falle —o que mute un byte— impide sellar.
 paso "GATES · run-gates sobre la composicion candidata"
 $PYTHON -m scripts.refresh_staging run-gates \
   --trabajo "$TRABAJO" \
@@ -413,11 +464,15 @@ $PYTHON -m scripts.refresh_staging run-gates \
 # ─────────────────────────────────────────────────────────────────────
 paso "SELLAR STAGING"
 
+# `seal` ata materializacion, hidratacion, gates, contrato y cadena de cache al mismo par
+# de HEAD: recibe los dos repositorios canonicos para leer de ellos lo que gobierna.
 $PYTHON -m scripts.refresh_staging seal \
   --trabajo "$TRABAJO" \
   --semilla "$TRABAJO/semilla.json" \
   --head-backend "$HEAD_BACKEND" \
   --head-dashboard "$HEAD_DASHBOARD" \
+  --destino-backend "$REPO_ROOT" \
+  --destino-dashboard "$DASHBOARD_REAL" \
   --semana-anterior "$ANTES" \
   --semana-nueva "${ANIO},${SEM}" \
   --padecimientos "$(echo "$PADECIMIENTOS_PUBLICABLES" | tr ' ' ',')"
@@ -428,5 +483,7 @@ echo "    NADA se publico: los artefactos estan sellados bajo runs/_refresh/."
 echo "    El sandbox ${TRABAJO}.sandbox es scratch: retiralo cuando el sello este revisado."
 echo "    Revisa el manifiesto y despues instala SOLO en un par de worktrees desechables:"
 echo "      make update-week-apply MANIFEST=runs/_refresh/<run_id>/manifest.json DESTINOS=runs/_release/<run_id>"
+echo "    Y retira el par cuando termine, ligado al mismo manifiesto:"
+echo "      make update-week-discard MANIFEST=... DESTINOS=..."
 echo "    Decision P0.11 (opcion C): el manifiesto no autoriza ninguna operacion DVC."
 exit 0
