@@ -1,17 +1,38 @@
 # Deudas vigentes — índice canónico
 
-> Actualizado el 1-sep-2026 para el trabajo P0 sobre backend
-> `p0/namespace-e-inmutabilidad-del-sello@a9a694c8` y frontend `main@0e777995`.
+> Actualizado el 2-sep-2026 para P1 W33 sobre backend `main@5da24116` y frontend
+> `main@0e777995`.
 > Este archivo separa
 > trabajo vigente de bitácoras históricas. Una deuda que aparezca sólo en un documento
 > antiguo no se ejecuta hasta contrastarla aquí y en el código.
 
-## Activa — P0 del flujo de actualización semanal
+## Activa — P1 W33 y corte público único
+
+La fuente oficial 2026 expone 33 boletines al 2-sep; W34 no está publicada. El sello
+aplicable `882663dac1f1e39b` lleva a W33, en una sola composición, a Alzheimer, Depresión,
+Parkinson y Dengue; contiene 1,800 artefactos, 0 lápidas y `cifras`/`rag` PASS. Backend PR
+draft #15: checkpoint material `e8f7ba0a` en `p1/actualizacion-semanal-2026-w33`, con
+documentación encima. Frontend PR draft #11:
+`p1/actualizacion-semanal-2026-w33@d0826bda`. El sello anterior `2ae89151e88aa92a` quedó
+supersedido: CI encontró el catálogo canónico rancio, se corrigieron su cableado y salida
+byte-estable, y se repitió la cadena completa.
+
+Política permanente: todos los padecimientos `published` del registry tienen un único
+corte público. Si cualquiera falta o difiere en año/semana, no se sella ni publica ningún
+padecimiento. No se admite publicación parcial, arrastre de una semana anterior ni una
+lista del operador que omita miembros. Obesidad y Anorexia siguen excluidas por lifecycle;
+si se promueven, entran en el gate. W34 queda pendiente de existencia y validación oficial,
+y deberá mover juntos a los cuatro publicados.
+
+Pendiente inmediato: terminar CI/revisión de las dos PRs y obtener autorización separada
+para merge/publicación. Google Sheets y Tableau conservan sus carriles manuales.
+
+## Cerrada — P0 del flujo de actualización semanal
 
 El plan vigente es `../../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`
 (SHA256 `5cfdf5a4a2d8e5ed1acf004e8c90a00e929dfd217ba051fff925e742fe9e233d`). La rama
 `p0/namespace-e-inmutabilidad-del-sello` lleva 26 commits rebased sobre el `main` remoto
-`16476a98` (tip `f88a065e`), enviada a `origin`. PR draft **#14** (https://github.com/EpiForecastMX/EpiForecast-MX/pull/14) abierta en `f88a065e`, con el CI remoto `33634940281` verde: Code Quality PASS, Tests PASS (2 324 passed, 497 skipped exactos, 66 deselected, cobertura 77,00 %), Integration skipped por diseño. **Sin merge, sin DVC, sin publicación ni deploy.**
+`16476a98` (tip `f88a065e`), enviada a `origin`. PR **#14** (https://github.com/EpiForecastMX/EpiForecast-MX/pull/14) **fusionada en `main`** con merge commit `5da24116` (padres `16476a98` y `d6e7a181`); CI del push a `main` `33645677062` verde: Code Quality PASS, Tests PASS (2 324 passed, 497 skipped exactos, 66 deselected, cobertura 77,00 %), Integration skipped por diseño. **Sin DVC, sin publicación ni deploy.** P1 en curso en `p1/actualizacion-semanal-2026-w33` desde `main@5da24116`.
 
 Cerrado (1 y 2-sep, con controles negativos y 85 mutaciones del código vistas caer):
 
@@ -47,12 +68,11 @@ discard ligado al manifiesto; repos reales con un solo worktree y frontend limpi
 hallazgos que el ensayo destapó (directorios scratch, ONI sin red, NB-GLM constante) están
 corregidos en `98faf4d3` y `a0fb313b`.
 
-Abierto, en orden:
+Deuda posterior, en orden:
 
-1. **P1 (W32/W33) sólo con autorización**: exige red (pull, `dvc pull`, sincronización
-   aditiva con `dvc get`) y GEMINI_API_KEY para reconstruir `rag_index.json` (sin él el
-   gate `rag` FALLA cada semana que cambie `knowledge.json`); push, PR, merge, DVC y deploy
-   separados;
+1. **Publicación P1 W33**: candidato sellado y PRs draft abiertos; faltan CI/revisión final
+   y autorización de merge/publicación. Nunca publicar si los cuatro `published` dejan de
+   compartir W33;
 2. `WEEKS_LIMIT = 15` en `reselect_motor_2026.py`: decisión pendiente (ningún contrato
    canónico fija la ventana; cambiarla re-selecciona motores);
 3. ~~auditoría del avance remoto `a9a694c8 → 16476a98`~~ hecha el 2-sep: dos commits de

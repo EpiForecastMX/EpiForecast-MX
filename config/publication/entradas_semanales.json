@@ -25,7 +25,7 @@
     {"ruta": "data/processed/data_inegi_General.csv", "rol": "inegi", "obligatoria": true},
     {"ruta": "data/processed/data_inegi_Alzheimer.csv", "rol": "inegi", "obligatoria": false},
     {"ruta": "data/processed/data_inegi_Depresión.csv", "rol": "inegi", "obligatoria": false},
-    {"ruta": "data/processed/data_inegi_Dengue.csv", "rol": "inegi", "obligatoria": false},
+    {"ruta": "data/processed/data_inegi_Dengue.csv", "rol": "dengue_interim", "obligatoria": false},
     {"ruta": "data/utils/inegi.csv", "rol": "inegi", "obligatoria": true},
     {"ruta": "data/utils/mexico_states.geojson", "rol": "geo", "obligatoria": false},
     {"ruta": "data/interim/dengue_a90a91_nacional.csv", "rol": "contexto", "obligatoria": false},

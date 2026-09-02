@@ -227,6 +227,10 @@ def _copia_regular(origen: Path, destino: Path) -> tuple[int, str]:
         or sha256_de(origen) != digest
     ):
         raise StagingError(f"la copia de {origen} no coincide con el original")
+    # La copia conserva las marcas de tiempo del origen: `build_web_knowledge.py` deriva
+    # «último entrenamiento» del mtime del forecast, y una copia fresca lo convertía en la
+    # fecha de la hidratación (P1, 2-sep-2026: publicaba un entrenamiento que no existió).
+    os.utime(destino, ns=(estado.st_atime_ns, estado.st_mtime_ns))
     return estado.st_size, digest
 
 

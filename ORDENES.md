@@ -1,10 +1,25 @@
 # Órdenes a la mano
 
-## 0 · Salida de sesión P0 — no ejecutar la actualización semanal
+## 0 · P1 W33 — todos los publicados avanzan juntos
+
+Fuente oficial validada el 2-sep-2026: 33 boletines disponibles, máximo W33; W34 aún no
+existe. Sello candidato vigente `882663dac1f1e39b`: W31→W33, Alzheimer + Depresión +
+Parkinson + Dengue en corte común, 1,800 artefactos, 0 lápidas, `cifras` y `rag` PASS.
+PRs draft: backend #15 con checkpoint material `e8f7ba0a` y frontend #11 en `d0826bda`. El sello anterior
+`2ae89151e88aa92a` está supersedido por la corrección del catálogo canónico. No confundir
+candidato con publicación.
+
+Regla de operación: resolver del HEAD todos los `lifecycle=published` y exigir exactamente
+el mismo `(año, semana)` para cada uno en consolidado, salidas y superficies. Si uno no
+llega, **abortar todo el lote**; nunca publicar a los demás, conservar uno atrasado ni
+ocultarlo de `--padecimientos`. W34 se procesa únicamente cuando exista el PDF oficial y
+los cuatro publicados puedan llegar juntos a W34.
+
+## 0a · Historial P0 — no usar como estado vigente
 
 Estado al 2-sep-2026 (tercera tanda): rama `p0/namespace-e-inmutabilidad-del-sello` con
 **26 commits rebased sobre `16476a98`** (tip `f88a065e`), árbol limpio, enviada a `origin`.
-PR draft **#14** (https://github.com/EpiForecastMX/EpiForecast-MX/pull/14) abierta en `f88a065e`, con el CI remoto `33634940281` verde: Code Quality PASS, Tests PASS (2 324 passed, 497 skipped exactos, 66 deselected, cobertura 77,00 %), Integration skipped por diseño. **Sin merge, sin DVC, sin publicación ni deploy.** `make update-week` aborta en preflight hasta la autorización de P1. No usar
+PR **#14** (https://github.com/EpiForecastMX/EpiForecast-MX/pull/14) **fusionada en `main`** con merge commit `5da24116` (padres `16476a98` y `d6e7a181`); CI del push a `main` `33645677062` verde: Code Quality PASS, Tests PASS (2 324 passed, 497 skipped exactos, 66 deselected, cobertura 77,00 %), Integration skipped por diseño. **Sin DVC, sin publicación ni deploy.** P1 en curso en `p1/actualizacion-semanal-2026-w33` desde `main@5da24116`. `make update-week` aborta en preflight hasta la autorización de P1. No usar
 `update-week-apply` sobre los repositorios canónicos, no descargar W32/W33, no ejecutar DVC
 y no publicar; el merge de la PR es una decisión aparte.
 

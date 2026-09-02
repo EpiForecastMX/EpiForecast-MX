@@ -1,17 +1,34 @@
 # GEMINI.md — Contexto operativo de EpiForecast-MX
 
-> Actualizado contra `p0/namespace-e-inmutabilidad-del-sello` sobre
-> `a9a694c8fb1b93c616e2b179a5b24d095d3de9ce` el 1-sep-2026.
+> Actualizado contra `p1/actualizacion-semanal-2026-w33` (checkpoint material `e8f7ba0a`), basada en
+> `main@5da24116`, el 2-sep-2026.
 > Guía para Gemini CLI dentro de `EpiForecast-MX`; no sustituye las órdenes del
 > workspace ni autoriza acciones externas.
 
-## 0. Trabajo activo: P0 del flujo semanal
+## 0. Trabajo activo: P1 W33 y paridad obligatoria
+
+Validado contra la página oficial el 2-sep-2026: hay 33 boletines de 2026 y el máximo es
+W33; W34 no está publicada. El sello aplicable `882663dac1f1e39b` lleva juntos a
+Alzheimer, Depresión, Parkinson y Dengue de W31 a W33, con 1,800 artefactos, 0 lápidas y
+gates `cifras` y `rag` PASS. El backend tiene checkpoint material `e8f7ba0a` más el
+estado documental en `p1/actualizacion-semanal-2026-w33`, PR draft #15; frontend
+`p1/actualizacion-semanal-2026-w33@d0826bda`, PR draft #11.
+El sello `2ae89151e88aa92a` queda supersedido: CI encontró el catálogo canónico rancio y
+la corrida completa se repitió tras cerrar el cableado y la estabilidad byte a byte.
+
+Regla gobernante: todos los miembros `published` del registry comparten un corte público
+único. Uno faltante, adelantado, atrasado o sin cobertura exacta bloquea el lote completo;
+no se publica al resto ni se reduce el conjunto por flags. Obesidad y Anorexia siguen
+fuera por lifecycle, pero una promoción futura las somete a la misma paridad. No anticipar
+W34: validar primero el PDF oficial y después llevar juntos a todos los publicados.
+
+## 0a. Historial: P0 del flujo semanal
 
 Backend en `p0/namespace-e-inmutabilidad-del-sello` con 26 commits rebased sobre el
 `main` remoto `16476a98` (tip `f88a065e`; 2-sep, tercera tanda correctiva: runner,
 worktrees, sello atado al HEAD, allowlist v2, contrato profundo, tabla 333 reparada, causa
 raíz en `merge_all_models`, orquestador, auditoría final), árbol limpio y rama enviada a
-`origin`. PR draft **#14** (https://github.com/EpiForecastMX/EpiForecast-MX/pull/14) abierta en `f88a065e`, con el CI remoto `33634940281` verde: Code Quality PASS, Tests PASS (2 324 passed, 497 skipped exactos, 66 deselected, cobertura 77,00 %), Integration skipped por diseño. **Sin merge, sin DVC, sin publicación ni deploy.** `origin/main` local sigue en `a9a694c8` (sin pull). El frontend
+`origin`. PR **#14** (https://github.com/EpiForecastMX/EpiForecast-MX/pull/14) **fusionada en `main`** con merge commit `5da24116` (padres `16476a98` y `d6e7a181`); CI del push a `main` `33645677062` verde: Code Quality PASS, Tests PASS (2 324 passed, 497 skipped exactos, 66 deselected, cobertura 77,00 %), Integration skipped por diseño. **Sin DVC, sin publicación ni deploy.** P1 en curso en `p1/actualizacion-semanal-2026-w33` desde `main@5da24116`. `origin/main` local sigue en `a9a694c8` (sin pull). El frontend
 `main@0e777995c9e53cdd08b6d25ad58b65928a25b88b` está intacto.
 
 `make update-week` sigue bloqueado en preflight hasta la autorización de P1 (red y
@@ -52,8 +69,10 @@ por separado. Para revisar o diagnosticar, no implementar ni mutar salvo petici�
 ### Repositorios
 
 - Backend: `EpiForecast-MX`, rama de trabajo
-  `p0/namespace-e-inmutabilidad-del-sello` sobre `a9a694c8`; worktree P0 sin commit.
-- Frontend: `EpiForecast-IMSS-Dashboard`, `main` en `0e777995`; worktree limpio e intacto
+  `p1/actualizacion-semanal-2026-w33`, checkpoint material `e8f7ba0a`, abierta como PR
+  draft #15 contra `main@5da24116`.
+- Frontend canónico: `EpiForecast-IMSS-Dashboard`, `main@0e777995`; la candidata P1 vive
+  en `p1/actualizacion-semanal-2026-w33@d0826bda`, PR draft #11.
   durante P0.
 - Quedan dos ramas ya mergeadas, locales y remotas: `ci/skip-budget-ets-legacy` y
   `fix/frontend-deudas`. Ambas puntas son ancestros comprobados de `main`; no confundir

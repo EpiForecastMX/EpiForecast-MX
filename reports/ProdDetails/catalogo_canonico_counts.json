@@ -13,9 +13,9 @@
   },
   "motor_dist": {
     "dengue": {
-      "DeepAR": 27,
-      "NBGLM": 26,
-      "Prophet": 46
+      "DeepAR": 29,
+      "NBGLM": 22,
+      "Prophet": 48
     },
     "neuro": {
       "DeepAR": 98,
@@ -29,10 +29,10 @@
     "neuro": 9
   },
   "diagnostics": {
-    "dengue_en_tabla_333": 102,
-    "nacionales_duplicados": 3,
+    "dengue_en_tabla_333": 99,
+    "nacionales_duplicados": 0,
     "selecciones_invalidas_ensemble_stacking": 13,
     "tiene_nbglm": false,
-    "motivo_descartado": "Se usa produccion_dengue.csv (99, con NBGLM); el Dengue de tabla_333 es stale (dup nacionales + Ensemble/Stacking no elegibles, sin NBGLM)."
+    "motivo_descartado": "Se usa produccion_dengue.csv (99, con NBGLM); el Dengue de tabla_333 es stale (Ensemble/Stacking no elegibles, sin NBGLM)."
   }
 }
