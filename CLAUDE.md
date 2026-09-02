@@ -5,7 +5,7 @@
 Esta sección sustituye cualquier instrucción inferior que presente `make update-week` como
 receta activa. Backend: rama `p0/namespace-e-inmutabilidad-del-sello`, **26 commits rebased
 sobre el `main` remoto `16476a98`** (tip `f88a065e`; respaldo local del tip previo `584cf72d`
-en `respaldo/p0-584cf72d-2026-09-02`), árbol limpio, **enviada a `origin`**. PR draft **#14** (https://github.com/EpiForecastMX/EpiForecast-MX/pull/14) abierta en `f88a065e`, con el CI remoto `33634940281` verde: Code Quality PASS, Tests PASS (2 324 passed, 497 skipped exactos, 66 deselected, cobertura 77,00 %), Integration skipped por diseño. **Sin merge, sin DVC, sin publicación ni deploy.**
+en `respaldo/p0-584cf72d-2026-09-02`), árbol limpio, **enviada a `origin`**. PR **#14** (https://github.com/EpiForecastMX/EpiForecast-MX/pull/14) **fusionada en `main`** con merge commit `5da24116` (padres `16476a98` y `d6e7a181`); CI del push a `main` `33645677062` verde: Code Quality PASS, Tests PASS (2 324 passed, 497 skipped exactos, 66 deselected, cobertura 77,00 %), Integration skipped por diseño. **Sin DVC, sin publicación ni deploy.** P1 en curso en `p1/actualizacion-semanal-2026-w33` desde `main@5da24116`.
 El remoto `16476a98` sólo traía dos commits de datos del CI (registry W33 y punteros DVC
 W33 de neuro, sin Dengue); `origin/main` local sigue en `a9a694c8` porque no se ha hecho
 pull. Frontend: `main@0e777995`, intacto, sin worktrees.
