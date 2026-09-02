@@ -45,6 +45,7 @@ from epiforecast.publication.weekly_staging import (
     valida_ruta_sellable,
     verifica,
 )
+from tests.unit.publication import fabrica_p0 as fab
 
 # Un gate inocuo y determinista: termina en 0 y no escribe nada. Ruta absoluta para que
 # el entorno vacío que la política permite no tenga que traer PATH.
@@ -55,19 +56,17 @@ HEAD_DASHBOARD = "b" * 40
 
 
 def _entrada() -> SelloEntrada:
+    """Sólo lo que declara quien sella; digests, boletines e inventario los deriva `sella`."""
     return SelloEntrada(
         head_backend=HEAD_BACKEND,
         head_dashboard=HEAD_DASHBOARD,
-        digest_consolidado="c" * 64,
         semana_anterior="2026,30",
         semana_nueva="2026,31",
-        padecimientos_autorizados=("Depresión", "Parkinson", "Alzheimer", "Dengue"),
-        boletines=(
-            Boletin(
-                nombre="2026_sem31.pdf", url="https://ejemplo/sem31.pdf", bytes=10, sha256="d" * 64
-            ),
-        ),
+        padecimientos_autorizados=fab.PADECIMIENTOS,
     )
+
+
+KNOWLEDGE = fab.knowledge_json()
 
 
 def _staging_con_artefactos(raiz: Path) -> Path:
@@ -77,9 +76,7 @@ def _staging_con_artefactos(raiz: Path) -> Path:
     (outputs / "dashboard" / "Reports" / "index.html").write_text(
         "<h1>galeria</h1>", encoding="utf-8"
     )
-    (outputs / "dashboard" / "epibot" / "knowledge.json").write_text(
-        '{"semana": 31}', encoding="utf-8"
-    )
+    (outputs / "dashboard" / "epibot" / "knowledge.json").write_text(KNOWLEDGE, encoding="utf-8")
     (outputs / "backend").mkdir(parents=True)
     (outputs / "backend" / "validacion.html").write_text("<p>validacion</p>", encoding="utf-8")
     return raiz
@@ -217,6 +214,8 @@ def _sella_en(
         ejecuta_gates(
             raiz, politica_para_gates or politica, destinos_vivos=tuple(destinos.values())
         )
+    if not fab.esta_hidratado(raiz):
+        fab.hidrata_minimo(raiz, head_backend=HEAD_BACKEND)
     return sella(
         raiz,
         _entrada(),
@@ -225,6 +224,7 @@ def _sella_en(
         politica=politica,
         tombstones=tombstones,
         autoridad_lapidas=_autoridad_de(raiz, destinos, tombstones),
+        contrato=fab.CONTRATO,
     )
 
 
@@ -384,7 +384,7 @@ def test_instala_exactamente_los_bytes_sellados(tmp_path: Path) -> None:
     )
 
     assert len(instalados) == 3
-    assert (destinos["dashboard"] / "epibot" / "knowledge.json").read_text() == '{"semana": 31}'
+    assert (destinos["dashboard"] / "epibot" / "knowledge.json").read_text() == KNOWLEDGE
     assert (destinos["dashboard"] / "Reports" / "index.html").read_text() == "<h1>galeria</h1>"
     assert (destinos["backend"] / "validacion.html").read_text() == "<p>validacion</p>"
     assert list(destinos["dashboard"].rglob("*.part")) == []
@@ -485,7 +485,7 @@ def test_un_manifiesto_v1_real_se_rechaza_por_version_no_por_forma(tmp_path: Pat
 def test_un_manifiesto_v2_incompleto_se_rechaza_por_forma(tmp_path: Path) -> None:
     ruta = tmp_path / "manifest.json"
     ruta.write_text(
-        json.dumps({"run_id": "abc", "version_generador": "weekly_staging/2"}),
+        json.dumps({"run_id": "abc", "version_generador": "weekly_staging/3"}),
         encoding="utf-8",
     )
 
@@ -585,7 +585,7 @@ def test_una_publicacion_correcta_no_deja_apartados(tmp_path: Path) -> None:
     for raiz_destino in destinos.values():
         assert list(raiz_destino.rglob("*.prev")) == []
         assert list(raiz_destino.rglob("*.part")) == []
-    assert (destinos["dashboard"] / "epibot" / "knowledge.json").read_text() == '{"semana": 31}'
+    assert (destinos["dashboard"] / "epibot" / "knowledge.json").read_text() == KNOWLEDGE
 
 
 # ── 8 · el espacio de nombres del manifiesto es cerrado ─────────────────────
@@ -757,6 +757,20 @@ def _repo_con_politica(
     ruta = raiz / "config" / "publication" / "politica_censo.json"
     ruta.parent.mkdir(parents=True, exist_ok=True)
     ruta.write_text(json.dumps(politica, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    # Lo que `hydrate` y el contrato leen del HEAD: allowlist y catálogo; datos sin rastrear.
+    (raiz / "config" / "publication" / "entradas_semanales.json").write_text(
+        json.dumps(fab.lista_entradas_cruda(), indent=2) + "\n", encoding="utf-8"
+    )
+    (raiz / "config" / "geografia").mkdir(parents=True, exist_ok=True)
+    (raiz / "config" / "geografia" / "entidades_mx.csv").write_text(
+        fab.CATALOGO_CSV, encoding="utf-8"
+    )
+    for rel, texto in (
+        (fab.RUTA_CONSOLIDADO, fab.consolidado_csv()),
+        (fab.RUTA_FORECAST, fab.forecast_csv()),
+    ):
+        (raiz / rel).parent.mkdir(parents=True, exist_ok=True)
+        (raiz / rel).write_text(texto, encoding="utf-8")
     corre = lambda *args: subprocess.run(  # noqa: E731
         ["git", "-C", str(raiz), *args], check=True, capture_output=True
     )
@@ -768,7 +782,7 @@ def _repo_con_politica(
         # por el azar del segundo en que se confirma.
         (raiz / "marca.txt").write_text(marca, encoding="utf-8")
         corre("add", "marca.txt")
-    corre("add", "config/publication/politica_censo.json")
+    corre("add", "config")
     corre("commit", "-qm", "politica de censo")
     head = subprocess.run(
         ["git", "-C", str(raiz), "rev-parse", "HEAD"], capture_output=True, text=True, check=True
@@ -814,6 +828,20 @@ def _argv_seal(
     if corre_gates:
         from scripts.refresh_staging import main
 
+        rc_hidrata = main(
+            [
+                "hydrate",
+                "--trabajo",
+                str(trabajo),
+                "--repo-backend",
+                str(destino),
+                "--head-backend",
+                head,
+                "--padecimientos",
+                ",".join(fab.PADECIMIENTOS),
+            ]
+        )
+        assert rc_hidrata == 0, "la hidratación del montaje tiene que pasar"
         rc_gates = main(
             [
                 "run-gates",
@@ -838,8 +866,6 @@ def _argv_seal(
         head,
         "--head-dashboard",
         HEAD_DASHBOARD,
-        "--digest-consolidado",
-        "c" * 64,
         "--semana-anterior",
         "2026,30",
         "--semana-nueva",
@@ -1045,7 +1071,7 @@ def test_un_sidecar_enlazado_no_se_acepta(tmp_path: Path) -> None:
 
 
 def test_mismas_salidas_con_entradas_distintas_no_se_reutiliza(tmp_path: Path) -> None:
-    """Mismo output y otro `digest_consolidado`: antes daba rc=0 las dos veces."""
+    """Mismo output y otra semana declarada: antes daba rc=0 las dos veces."""
     from scripts.refresh_staging import main
 
     argv = _argv_seal(_trabajo_para_sellar(tmp_path / "a", "uno"))
@@ -1053,12 +1079,11 @@ def test_mismas_salidas_con_entradas_distintas_no_se_reutiliza(tmp_path: Path) -
     (sellado,) = [d for d in (tmp_path / "a").parent.iterdir() if (d / "manifest.json").is_file()]
 
     otro = _argv_seal(_trabajo_para_sellar(tmp_path / "b", "uno"), sellado)
-    otro[otro.index("--digest-consolidado") + 1] = "e" * 64
+    otro[otro.index("--semana-nueva") + 1] = "2026,32"
 
     assert main(otro) == 1
     assert (
-        json.loads((sellado / "manifest.json").read_text())["entrada"]["digest_consolidado"]
-        == "c" * 64
+        json.loads((sellado / "manifest.json").read_text())["entrada"]["semana_nueva"] == "2026,31"
     )
 
 
@@ -1340,6 +1365,7 @@ def test_una_lapida_fuera_de_la_semilla_no_se_sella(tmp_path: Path) -> None:
 
     politica = _politica(tmp_path, retirables=("dashboard/del_usuario.html",))
     ejecuta_gates(raiz, politica, destinos_vivos=tuple(destinos.values()))
+    fab.hidrata_minimo(raiz, head_backend=HEAD_BACKEND)
     with pytest.raises(StagingError, match="no está en la semilla"):
         sella(
             raiz,
@@ -1350,6 +1376,7 @@ def test_una_lapida_fuera_de_la_semilla_no_se_sella(tmp_path: Path) -> None:
             semilla={},
             politica=politica,
             tombstones=("dashboard/del_usuario.html",),
+            contrato=fab.CONTRATO,
             autoridad_lapidas=AutoridadLapidas(
                 eliminados_reales=frozenset(), allowlist=frozenset()
             ),
@@ -1367,6 +1394,7 @@ def test_una_lapida_cuyo_digest_cambio_no_se_sella(tmp_path: Path) -> None:
 
     politica = _politica(tmp_path, retirables=("dashboard/viejo.html",))
     ejecuta_gates(raiz, politica, destinos_vivos=tuple(destinos.values()))
+    fab.hidrata_minimo(raiz, head_backend=HEAD_BACKEND)
     with pytest.raises(StagingError, match="cambió en el destino"):
         sella(
             raiz,
@@ -1377,6 +1405,7 @@ def test_una_lapida_cuyo_digest_cambio_no_se_sella(tmp_path: Path) -> None:
             semilla={"dashboard/viejo.html": "0" * 64},
             politica=politica,
             tombstones=("dashboard/viejo.html",),
+            contrato=fab.CONTRATO,
             autoridad_lapidas=AutoridadLapidas(
                 eliminados_reales=frozenset({"dashboard/viejo.html"}),
                 allowlist=frozenset({"dashboard/viejo.html"}),
@@ -1435,6 +1464,7 @@ def _sella_con_autoridad(
 ) -> Manifiesto:
     politica = _politica(tmp_path, retirables=tombstones)
     ejecuta_gates(raiz, politica, destinos_vivos=tuple(destinos.values()))
+    fab.hidrata_minimo(raiz, head_backend=HEAD_BACKEND)
     return sella(
         raiz,
         _entrada(),
@@ -1442,6 +1472,7 @@ def _sella_con_autoridad(
         baseline=calcula_baseline(destinos, set(_relativos_de(raiz)) | set(tombstones)),
         politica=politica,
         tombstones=tombstones,
+        contrato=fab.CONTRATO,
         autoridad_lapidas=autoridad,
     )
 
@@ -1574,6 +1605,7 @@ def test_una_corrida_que_solo_retira_tambien_se_sella(tmp_path: Path) -> None:
         retirables=("dashboard/obsoleto.html",),
     )
     ejecuta_gates(raiz, politica, destinos_vivos=tuple(destinos.values()))
+    fab.hidrata_minimo(raiz, head_backend=HEAD_BACKEND)
     manifiesto = sella(
         raiz,
         _entrada(),
@@ -1581,6 +1613,7 @@ def test_una_corrida_que_solo_retira_tambien_se_sella(tmp_path: Path) -> None:
         baseline=calcula_baseline(destinos, {"dashboard/obsoleto.html"}),
         politica=politica,
         tombstones=("dashboard/obsoleto.html",),
+        contrato=fab.CONTRATO,
         autoridad_lapidas=_autoridad_de(raiz, destinos, ("dashboard/obsoleto.html",)),
     )
 
@@ -2049,3 +2082,93 @@ def test_una_clave_duplicada_en_la_politica_no_pasa() -> None:
 
     with pytest.raises(StagingError, match="clave duplicada"):
         PoliticaCenso.desde_bytes(con_duplicado.encode("utf-8"))
+
+
+# ── 25 · P0.2/P0.8 · la entrada se deriva de la hidratación y el candidato cumple ──
+
+
+def test_sin_hidratacion_no_hay_sello(tmp_path: Path) -> None:
+    raiz = _staging_con_artefactos(tmp_path / "staging")
+    politica = _politica(tmp_path)
+    ejecuta_gates(raiz, politica, destinos_vivos=tuple(_destinos(tmp_path).values()))
+
+    with pytest.raises(StagingError, match="no hay hidratación registrada"):
+        sella(
+            raiz,
+            _entrada(),
+            semilla={},
+            baseline=calcula_baseline(_destinos(tmp_path), set(_relativos_de(raiz))),
+            politica=politica,
+            autoridad_lapidas=AutoridadLapidas.sin_lapidas(),
+            contrato=fab.CONTRATO,
+        )
+
+
+def test_el_sello_deriva_los_digests_del_consolidado_y_los_boletines(tmp_path: Path) -> None:
+    raiz = _staging_con_artefactos(tmp_path / "staging")
+    candidato = fab.consolidado_csv().replace("3,10,12", "4,10,12")
+    boletin = Boletin("2026_sem31.pdf", "https://ejemplo/sem31.pdf", 0, "")
+    politica = _politica(tmp_path)
+    ejecuta_gates(raiz, politica, destinos_vivos=tuple(_destinos(tmp_path).values()))
+    registro = fab.hidrata_minimo(
+        raiz, head_backend=HEAD_BACKEND, candidato=candidato, boletines=(boletin,)
+    )
+
+    manifiesto = _sella_en(raiz, tmp_path, politica=politica, corre_gates=False)
+
+    entrada = manifiesto.entrada
+    assert entrada.digest_consolidado_antes == registro.entradas[fab.RUTA_CONSOLIDADO]["sha256"]
+    assert entrada.digest_consolidado_candidato == hashlib.sha256(candidato.encode()).hexdigest()
+    assert entrada.digest_consolidado_antes != entrada.digest_consolidado_candidato
+    assert [b.nombre for b in entrada.boletines] == ["2026_sem31.pdf"]
+    assert entrada.boletines[0].sha256 == manifiesto.inputs["inputs/boletines/2026_sem31.pdf"]
+    assert (raiz / "inputs" / "consolidado_candidato.csv").read_text() == candidato
+    assert set(manifiesto.inputs) == {
+        "inputs/consolidado_base.csv",
+        "inputs/consolidado_candidato.csv",
+        "inputs/boletines/2026_sem31.pdf",
+    }
+    assert "inputs" in manifiesto.payload_canonico()
+
+
+def test_un_candidato_con_dengue_rezagado_no_sella(tmp_path: Path) -> None:
+    """P0.8: el consolidado candidato corta Dengue una semana antes que neuro."""
+    raiz = _staging_con_artefactos(tmp_path / "staging")
+    politica = _politica(tmp_path)
+    ejecuta_gates(raiz, politica, destinos_vivos=tuple(_destinos(tmp_path).values()))
+    fab.hidrata_minimo(
+        raiz,
+        head_backend=HEAD_BACKEND,
+        candidato=fab.consolidado_csv(cortes={fab.PAD_CONTEO: (2026, 30)}),
+    )
+
+    with pytest.raises(StagingError, match="corte dispar"):
+        _sella_en(raiz, tmp_path, politica=politica, corre_gates=False)
+    assert not (raiz / "manifest.json").exists()
+
+
+def test_una_copia_de_entrada_alterada_tras_sellar_rompe_la_verificacion(tmp_path: Path) -> None:
+    raiz, manifiesto = _sella(tmp_path)
+    copia = raiz / "inputs" / "consolidado_base.csv"
+    copia.write_text(copia.read_text(encoding="utf-8") + "2026,31,Jalisco,Dengue,1,0,0\n")
+
+    with pytest.raises(StagingError, match="copias de entradas alteradas"):
+        verifica(raiz, manifiesto, head_backend=HEAD_BACKEND, head_dashboard=HEAD_DASHBOARD)
+
+
+def test_un_digest_de_entrada_editado_en_el_manifiesto_no_cuadra(tmp_path: Path) -> None:
+    raiz, _ = _sella(tmp_path)
+    _reescribe_manifiesto(raiz, lambda d: d["entrada"].update(digest_consolidado_antes="e" * 64))
+
+    with pytest.raises(StagingError, match="digest_consolidado_antes no es el de la copia base"):
+        Manifiesto.lee(raiz / "manifest.json")
+
+
+def test_la_hidratacion_tiene_que_ser_del_head_que_se_sella(tmp_path: Path) -> None:
+    raiz = _staging_con_artefactos(tmp_path / "staging")
+    politica = _politica(tmp_path)
+    ejecuta_gates(raiz, politica, destinos_vivos=tuple(_destinos(tmp_path).values()))
+    fab.hidrata_minimo(raiz, head_backend="f" * 40)
+
+    with pytest.raises(StagingError, match="la hidratación se hizo sobre ffffffffffff"):
+        _sella_en(raiz, tmp_path, politica=politica, corre_gates=False)

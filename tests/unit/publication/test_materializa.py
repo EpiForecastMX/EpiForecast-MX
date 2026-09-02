@@ -30,6 +30,7 @@ from epiforecast.publication.weekly_staging import (
     calcula_composicion,
     inventaria,
 )
+from tests.unit.publication import fabrica_p0 as fab
 
 PYTHON = sys.executable
 TRUE = shutil.which("true") or "/usr/bin/true"
@@ -64,7 +65,7 @@ SITIO = {
     "Reports/index.html": "<h1>galeria</h1>",
     "Reports/zoom_data_neuro.json": '{"max_semana": 31}',
     "epibot/index.html": "<script src=app.js?v=138></script>",
-    "epibot/knowledge.json": '{"max_semana": 31}',
+    "epibot/knowledge.json": fab.knowledge_json(max_semana=31),
     "epibot/scripts/verify.mjs": "// gate\n",
     "epibot/scripts/lib/corpus.mjs": "// lib\n",
     ".gitignore": "node_modules/\n",
@@ -122,21 +123,38 @@ def _politica_cruda(gates: list[dict[str, Any]] | None = None) -> dict[str, Any]
 
 
 def _repos(tmp_path: Path, politica: dict[str, Any] | None = None) -> dict[str, Any]:
-    repo_b, head_b = _repo(
+    repo_b, head_b = fab.repo_backend(
         tmp_path / "repo_backend",
-        {
-            "config/publication/politica_censo.json": json.dumps(
-                politica or _politica_cruda(), indent=2
-            )
-            + "\n",
+        politica=politica or _politica_cruda(),
+        extra_rastreados={
             "reports/ProdDetails/produccion.csv": "motor,smape\nprophet,10\n",
             "reports/ProdDetails/validacion_semanal.html": "<p>semana 31</p>",
             "reports/otros/no_administrado.txt": "fuera del prefijo",
-            "src/codigo.py": "print('no se materializa')\n",
         },
     )
     repo_d, head_d = _repo(tmp_path / "repo_dashboard", SITIO)
     return {"repo_b": repo_b, "head_b": head_b, "repo_d": repo_d, "head_d": head_d}
+
+
+def _hidrata(trabajo: Path, r: dict[str, Any]) -> None:
+    from scripts.refresh_staging import main
+
+    assert (
+        main(
+            [
+                "hydrate",
+                "--trabajo",
+                str(trabajo),
+                "--repo-backend",
+                str(r["repo_b"]),
+                "--head-backend",
+                r["head_b"],
+                "--padecimientos",
+                ",".join(fab.PADECIMIENTOS),
+            ]
+        )
+        == 0
+    )
 
 
 def _argv_materialize(trabajo: Path, r: dict[str, Any]) -> list[str]:
@@ -180,8 +198,6 @@ def _argv_seal(trabajo: Path, r: dict[str, Any]) -> list[str]:
         r["head_b"],
         "--head-dashboard",
         r["head_d"],
-        "--digest-consolidado",
-        "c" * 64,
         "--semana-anterior",
         "2026,31",
         "--semana-nueva",
@@ -216,6 +232,7 @@ def test_materialize_extrae_el_arbol_administrado_completo(tmp_path: Path) -> No
     assert {rel for rel in presentes if rel.startswith("backend/")} == {
         "backend/reports/ProdDetails/produccion.csv",
         "backend/reports/ProdDetails/validacion_semanal.html",
+        "backend/reports/ProdDetails/tabla.csv",
     }, "del backend sólo el prefijo administrado"
     assert resultado.archivos == len(presentes)
     semilla = json.loads((trabajo / "semilla.json").read_text(encoding="utf-8"))
@@ -316,10 +333,13 @@ def test_ensayo_integral_materialize_gates_seal_apply_completitud(tmp_path: Path
 
     assert main(_argv_materialize(trabajo, r)) == 0
     assert "materializados" in capsys.readouterr().out
+    _hidrata(trabajo, r)
     # Generación candidata: dos superficies cambian, una tabla del backend cambia.
     outputs = trabajo / "outputs"
     (outputs / "dashboard" / "index.html").write_text("<h1>semana 32</h1>", encoding="utf-8")
-    (outputs / "dashboard" / "epibot" / "knowledge.json").write_text('{"max_semana": 32}')
+    (outputs / "dashboard" / "epibot" / "knowledge.json").write_text(
+        fab.knowledge_json(max_semana=32)
+    )
     (outputs / "backend" / "reports" / "ProdDetails" / "produccion.csv").write_text(
         "motor,smape\nprophet,9\n"
     )
@@ -339,6 +359,11 @@ def test_ensayo_integral_materialize_gates_seal_apply_completitud(tmp_path: Path
     }
     assert manifiesto.modo == "aplicable"
     assert manifiesto.operaciones_dvc == ()
+    assert set(manifiesto.inputs) == {
+        "inputs/consolidado_base.csv",
+        "inputs/consolidado_candidato.csv",
+    }
+    assert (sellado / "inputs" / "consolidado_base.csv").read_text() == fab.consolidado_csv()
 
     destinos = tmp_path / "runs" / "_release" / "par"
     argv_base = ["--manifiesto", str(sellado / "manifest.json"), "--destinos", str(destinos)]

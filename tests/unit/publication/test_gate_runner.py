@@ -15,7 +15,6 @@ import json
 import os
 from pathlib import Path
 import shutil
-import subprocess
 import sys
 import time
 from typing import Any
@@ -39,6 +38,7 @@ from epiforecast.publication.weekly_staging import (
     inventaria,
     verifica,
 )
+from tests.unit.publication import fabrica_p0 as fab
 
 PYTHON = sys.executable
 TRUE = shutil.which("true") or "/usr/bin/true"
@@ -103,20 +103,29 @@ def _corre(raiz: Path, gates: list[dict[str, Any]], **kwargs: Any) -> EvidenciaG
 
 
 def _repo_con_politica(raiz: Path, politica: dict[str, Any]) -> tuple[Path, str]:
-    """Repositorio Git desechable con la política confirmada en su HEAD."""
-    ruta = raiz / "config" / "publication" / "politica_censo.json"
-    ruta.parent.mkdir(parents=True)
-    ruta.write_text(json.dumps(politica, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    git = ["git", "-C", str(raiz)]
-    subprocess.run([*git, "init", "-q"], check=True, capture_output=True)
-    subprocess.run([*git, "config", "user.email", "prueba@ejemplo"], check=True)
-    subprocess.run([*git, "config", "user.name", "Prueba"], check=True)
-    subprocess.run([*git, "add", "config/publication/politica_censo.json"], check=True)
-    subprocess.run([*git, "commit", "-qm", "politica"], check=True, capture_output=True)
-    head = subprocess.run(
-        [*git, "rev-parse", "HEAD"], check=True, capture_output=True, text=True
-    ).stdout.strip()
-    return raiz, head
+    """Repositorio Git desechable con política, allowlist y catálogo en su HEAD."""
+    return fab.repo_backend(raiz, politica=politica)
+
+
+def _hidrata(trabajo: Path, repo: Path, head: str) -> None:
+    from scripts.refresh_staging import main
+
+    assert (
+        main(
+            [
+                "hydrate",
+                "--trabajo",
+                str(trabajo),
+                "--repo-backend",
+                str(repo),
+                "--head-backend",
+                head,
+                "--padecimientos",
+                ",".join(fab.PADECIMIENTOS),
+            ]
+        )
+        == 0
+    )
 
 
 def _argv_run_gates(trabajo: Path, repo: Path, head: str) -> list[str]:
@@ -144,8 +153,6 @@ def _argv_seal(trabajo: Path, repo: Path, head: str, semilla: Path) -> list[str]
         head,
         "--head-dashboard",
         "b" * 40,
-        "--digest-consolidado",
-        "c" * 64,
         "--semana-anterior",
         "2026,30",
         "--semana-nueva",
@@ -202,6 +209,7 @@ def test_e2e_gates_sinteticos_sellan_un_borrador_verificable(tmp_path: Path) -> 
     (trabajo / "outputs" / "dashboard" / "index.html").write_text("semana 31", encoding="utf-8")
     inventario_antes = inventaria(trabajo / "outputs")
 
+    _hidrata(trabajo, repo, head)
     assert main(_argv_run_gates(trabajo, repo, head)) == 0
     assert inventaria(trabajo / "outputs") == inventario_antes, "la evidencia no contamina outputs"
     evidencia = EvidenciaGates.lee(trabajo)
@@ -223,6 +231,16 @@ def test_e2e_gates_sinteticos_sellan_un_borrador_verificable(tmp_path: Path) -> 
     # Sólo lo cambiado se inventaría; la composición es la del árbol completo.
     assert set(manifiesto.inventario) == {"dashboard/index.html"}
     assert manifiesto.composicion == evidencia.composicion
+    # P0.2: la entrada la derivó el sello de la hidratación, no de flags.
+    assert (
+        manifiesto.entrada.digest_consolidado_antes
+        == manifiesto.inputs["inputs/consolidado_base.csv"]
+    )
+    assert (
+        manifiesto.entrada.digest_consolidado_candidato
+        == manifiesto.inputs["inputs/consolidado_candidato.csv"]
+    )
+    assert set(manifiesto.entrada.entradas) == {fab.RUTA_CONSOLIDADO, fab.RUTA_FORECAST}
     resultados = manifiesto.resultados_pruebas
     assert set(resultados["gates"]) == {"cifras", "rag"}
     assert all(
@@ -699,6 +717,7 @@ def _sella_por_cli(tmp_path: Path, gates: list[dict[str, Any]]) -> tuple[Path, M
     trabajo = _staging(tmp_path / "trabajo")
     semilla = tmp_path / "semilla.json"
     semilla.write_text("{}", encoding="utf-8")
+    _hidrata(trabajo, repo, head)
     assert main(_argv_run_gates(trabajo, repo, head)) == 0
     assert main(_argv_seal(trabajo, repo, head, semilla)) == 0
     (sellado,) = [d for d in tmp_path.iterdir() if (d / "manifest.json").is_file()]
@@ -757,12 +776,14 @@ def test_sellar_dos_veces_reutiliza_aunque_los_tiempos_difieran(
     semilla = tmp_path / "semilla.json"
     semilla.write_text("{}", encoding="utf-8")
     a = _staging(tmp_path / "a")
+    _hidrata(a, repo, head)
     assert main(_argv_run_gates(a, repo, head)) == 0
     assert main(_argv_seal(a, repo, head, semilla)) == 0
     (sellado,) = [d for d in tmp_path.iterdir() if (d / "manifest.json").is_file()]
     antes = (sellado / "manifest.json").read_bytes()
 
     b = _staging(tmp_path / "b")
+    _hidrata(b, repo, head)
     assert main(_argv_run_gates(b, repo, head)) == 0
     # Relojes distintos por construcción; la corrida sellada conserva los de `a`.
     assert (sellado / DIR_EVIDENCIA / "observacional.json").read_bytes() != (

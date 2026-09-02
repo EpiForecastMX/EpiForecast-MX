@@ -7,6 +7,13 @@ Subórdenes, que corresponden a los momentos del flujo, en este orden:
     HEAD que se sellarán —los prefijos los decide la política del HEAD del backend— en
     un directorio de trabajo nuevo, y registra su semilla. Sustituye a la siembra parcial.
 
+``hydrate``
+    Después de materializar y antes de generar. Construye el sandbox del backend (código
+    rastreado del HEAD más SOLO las entradas de ``config/publication/entradas_semanales.json``,
+    copiadas con SHA256), guarda copias inmutables del consolidado base y de los boletines
+    bajo ``<trabajo>/inputs/`` y exige el contrato exacto de cobertura (entidades, series,
+    paridad de corte) antes de que ningún generador corra.
+
 ``snapshot``
     Registra el digest de una semilla ya montada (lo hace ``materialize``; se conserva
     para montajes manuales y pruebas).
@@ -39,13 +46,15 @@ Subórdenes, que corresponden a los momentos del flujo, en este orden:
 Uso:
     python -m scripts.refresh_staging materialize --trabajo <dir-nuevo> \\
         --repo-backend <dir> --head-backend <sha> --repo-dashboard <dir> --head-dashboard <sha>
+    python -m scripts.refresh_staging hydrate --trabajo <dir> --head-backend <sha> \\
+        --repo-backend <dir> --padecimientos "A,B,C" [--boletin nombre:url:bytes:sha256 ...]
     python -m scripts.refresh_staging snapshot --raiz <dir> --salida <json>
     python -m scripts.refresh_staging run-gates --trabajo <dir> --head-backend <sha> \\
         --destino-backend <dir> --destino-dashboard <dir>
     python -m scripts.refresh_staging seal --trabajo <dir> --semilla <json> \\
-        --head-backend <sha> --head-dashboard <sha> --digest-consolidado <sha> \\
+        --head-backend <sha> --head-dashboard <sha> \\
         --semana-anterior <a,s> --semana-nueva <a,s> --padecimientos "A,B,C" \\
-        [--boletin nombre:url:bytes:sha256 ...] [--destino-final <dir>]
+        [--destino-final <dir>]
     python -m scripts.refresh_staging prepare-worktrees --manifiesto <json> \\
         --repo-backend <dir> --repo-dashboard <dir> --destinos <raiz-nueva>
     python -m scripts.refresh_staging apply --manifiesto <json> --destinos <raiz>
@@ -65,7 +74,14 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
+from epiforecast.publication.cadena_cache import revisa_cadena_cache  # noqa: E402
+from epiforecast.publication.contratos_datos import (  # noqa: E402
+    ContratoCobertura,
+    exige_todo,
+    revisa_candidato,
+)
 from epiforecast.publication.gate_runner import ejecuta_gates  # noqa: E402
+from epiforecast.publication.hidratacion import hidrata  # noqa: E402
 from epiforecast.publication.materializa import materializa_candidato  # noqa: E402
 from epiforecast.publication.release_worktrees import (  # noqa: E402
     ESTADO_APLICADO,
@@ -76,6 +92,7 @@ from epiforecast.publication.release_worktrees import (  # noqa: E402
 )
 from epiforecast.publication.weekly_staging import (  # noqa: E402
     DIR_EVIDENCIA,
+    DIR_INPUTS,
     RUTA_POLITICA,
     VEREDICTO_REQUERIDO,
     AutoridadLapidas,
@@ -94,6 +111,7 @@ from epiforecast.publication.weekly_staging import (  # noqa: E402
     snapshot_digests,
     verifica,
     verifica_evidencia_en_disco,
+    verifica_inputs_en_disco,
     verifica_sidecar,
 )
 
@@ -132,6 +150,7 @@ def _reutiliza_o_aborta(destino: Path, candidato: Manifiesto) -> Manifiesto:
             "no se reutiliza"
         )
     verifica_evidencia_en_disco(destino, previo)
+    verifica_inputs_en_disco(destino, previo)
     return previo
 
 
@@ -160,6 +179,28 @@ def _cmd_materialize(args: argparse.Namespace) -> int:
     print(f"    prefijos       : {', '.join(resultado.politica.prefijos_administrados)}")
     print(f"    política       : {resultado.politica.version} {resultado.politica.sha256[:16]}…")
     print(f"    semilla        : {resultado.semilla}")
+    return 0
+
+
+def _padecimientos(crudo: str) -> tuple[str, ...]:
+    return tuple(p.strip() for p in crudo.split(",") if p.strip())
+
+
+def _cmd_hydrate(args: argparse.Namespace) -> int:
+    repo = Path(args.repo_backend)
+    resultado = hidrata(
+        Path(args.trabajo),
+        repo,
+        args.head_backend,
+        padecimientos_autorizados=_padecimientos(args.padecimientos),
+        boletines=tuple(_parse_boletin(b) for b in (args.boletin or [])),
+        contrato=ContratoCobertura.del_head(repo, args.head_backend),
+    )
+    print(f"    sandbox        : {resultado.sandbox}")
+    print(f"    entradas       : {len(resultado.registro.entradas):,} copiadas con SHA256")
+    for cobertura in resultado.coberturas:
+        print(f"    cobertura {cobertura.fuente:<18} PASS {dict(cobertura.cifras)}")
+    print(f"    registro       : {Path(args.trabajo) / DIR_INPUTS} + entradas.json")
     return 0
 
 
@@ -231,6 +272,14 @@ def _cmd_seal(args: argparse.Namespace) -> int:
             "haber medido la composición entera"
         )
 
+    # Contratos sobre el árbol candidato COMPLETO, antes de podar: cobertura de lo que el
+    # candidato publica (knowledge, zoom) y cadena de caché frente al HEAD del dashboard.
+    contrato = ContratoCobertura.del_head(Path(args.destino_backend), args.head_backend)
+    exige_todo(revisa_candidato(outputs / "dashboard", contrato))
+    revisa_cadena_cache(
+        Path(args.destino_dashboard), args.head_dashboard, outputs / "dashboard", semilla
+    )
+
     poda = poda_a_cambiados(outputs, semilla)
     inventario = poda.cambiados
     if not inventario and not poda.eliminados_reales:
@@ -239,16 +288,14 @@ def _cmd_seal(args: argparse.Namespace) -> int:
         print("    el refresh no cambió ningún artefacto; no hay nada que sellar")
         return 0
 
+    # Sólo lo que declara quien sella: HEADs, semanas y padecimientos. Digests del
+    # consolidado, boletines e inventario de entradas los deriva `sella` de la hidratación.
     entrada = SelloEntrada(
         head_backend=args.head_backend,
         head_dashboard=args.head_dashboard,
-        digest_consolidado=args.digest_consolidado,
         semana_anterior=args.semana_anterior,
         semana_nueva=args.semana_nueva,
-        padecimientos_autorizados=tuple(
-            p.strip() for p in args.padecimientos.split(",") if p.strip()
-        ),
-        boletines=tuple(_parse_boletin(b) for b in (args.boletin or [])),
+        padecimientos_autorizados=_padecimientos(args.padecimientos),
     )
     # Las lápidas se DERIVAN de lo que el candidato retiró de verdad; no las declara nadie
     # a mano. Declararlas admitía dos errores simétricos —inventar una retirada y olvidar
@@ -290,6 +337,7 @@ def _cmd_seal(args: argparse.Namespace) -> int:
         # dataset DVC pendiente. No existe flag para declarar operaciones DVC.
         operaciones_dvc=(),
         autoridad_lapidas=autoridad,
+        contrato=contrato,
     )
     verifica(
         trabajo,
@@ -541,6 +589,16 @@ def main(argv: list[str] | None = None) -> int:
     p_mat.add_argument("--head-dashboard", required=True)
     p_mat.set_defaults(func=_cmd_materialize)
 
+    p_hyd = sub.add_parser(
+        "hydrate", help="sandbox del backend con las entradas de la allowlist y su contrato"
+    )
+    p_hyd.add_argument("--trabajo", required=True)
+    p_hyd.add_argument("--repo-backend", default=str(REPO_ROOT))
+    p_hyd.add_argument("--head-backend", required=True)
+    p_hyd.add_argument("--padecimientos", required=True)
+    p_hyd.add_argument("--boletin", action="append", help="nombre:url:bytes:sha256")
+    p_hyd.set_defaults(func=_cmd_hydrate)
+
     p_snap = sub.add_parser("snapshot", help="registra el digest de la semilla")
     p_snap.add_argument("--raiz", required=True)
     p_snap.add_argument("--salida", required=True)
@@ -560,11 +618,12 @@ def main(argv: list[str] | None = None) -> int:
     p_seal.add_argument("--semilla", required=True)
     p_seal.add_argument("--head-backend", required=True)
     p_seal.add_argument("--head-dashboard", required=True)
-    p_seal.add_argument("--digest-consolidado", required=True)
     p_seal.add_argument("--semana-anterior", required=True)
     p_seal.add_argument("--semana-nueva", required=True)
     p_seal.add_argument("--padecimientos", required=True)
-    p_seal.add_argument("--boletin", action="append")
+    # Ni `--digest-consolidado` ni `--boletin`: los digests y los boletines salen de la
+    # hidratación registrada en el staging. Un digest que se pasa es un digest que se
+    # inventa.
     p_seal.add_argument("--destino-final")
     p_seal.add_argument("--destino-backend", default=str(REPO_ROOT))
     p_seal.add_argument("--destino-dashboard", required=True)

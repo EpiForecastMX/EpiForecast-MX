@@ -52,6 +52,7 @@ from epiforecast.publication.weekly_staging import (
     sella,
     snapshot_digests,
 )
+from tests.unit.publication import fabrica_p0 as fab
 
 PYTHON = sys.executable
 TRUE = shutil.which("true") or "/usr/bin/true"
@@ -169,6 +170,7 @@ def _corrida(tmp_path: Path, *, aplicable: bool = True, con_lapida: bool = False
 
     politica_head = PoliticaCenso.del_head(repo_b, head_b)
     ejecuta_gates(staging, politica_head, destinos_vivos=(repo_b, repo_d))
+    fab.hidrata_minimo(staging, head_backend=head_b)
     poda = poda_a_cambiados(outputs, semilla)
     tombstones = tuple(sorted(poda.eliminados_reales))
     manifiesto = sella(
@@ -176,7 +178,6 @@ def _corrida(tmp_path: Path, *, aplicable: bool = True, con_lapida: bool = False
         SelloEntrada(
             head_backend=head_b,
             head_dashboard=head_d,
-            digest_consolidado="c" * 64,
             semana_anterior="2026,31",
             semana_nueva="2026,32",
             padecimientos_autorizados=("Dengue",),
@@ -192,6 +193,7 @@ def _corrida(tmp_path: Path, *, aplicable: bool = True, con_lapida: bool = False
         autoridad_lapidas=AutoridadLapidas(
             eliminados_reales=poda.eliminados_reales, allowlist=politica_head.retirables
         ),
+        contrato=fab.CONTRATO,
     )
     corrida = Corrida(repo_b, head_b, repo_d, head_d, staging, manifiesto)
     _fija_modo(corrida, MODO_APLICABLE if aplicable else MODO_DRAFT)

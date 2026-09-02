@@ -32,11 +32,20 @@ import stat
 import subprocess
 from typing import Any
 
+from epiforecast.publication.errores import StagingError
+
 # v2 = el sello empieza a gobernar de verdad: rutas con gramática cerrada, sidecar de
 # integridad y escrituras que no siguen enlaces. Las nueve corridas `weekly_staging/1` de
 # `runs/_refresh/` quedan históricas y NO aplicables: no traen sidecar, y anunciarlo por
 # la versión es justo lo que evita que un v1 se rechace por un motivo que no declara.
-VERSION_GENERADOR = "weekly_staging/2"
+# v3 (P0.2): la entrada deja de ser un digest declarado. El sello lleva el inventario de
+# las entradas hidratadas por allowlist, el consolidado base y candidato como copias
+# inmutables bajo `inputs/` con sus digests, y los boletines con bytes verificados.
+VERSION_GENERADOR = "weekly_staging/3"
+ARCHIVO_ENTRADAS = "entradas.json"
+DIR_INPUTS = "inputs"
+ESQUEMA_HIDRATACION = "hidratacion/1"
+RUTA_LISTA_ENTRADAS = "config/publication/entradas_semanales.json"
 
 # Único espacio de nombres sellable. Toda ruta del inventario cuelga de uno de estos dos
 # prefijos, que `aplica` traduce a la raíz del repositorio correspondiente.
@@ -49,8 +58,7 @@ TARGETS_DVC_PERMITIDOS: tuple[str, ...] = (
 )
 
 
-class StagingError(RuntimeError):
-    """El staging no puede sellarse o aplicarse tal como está."""
+__all__ = ["StagingError"]
 
 
 def sha256_de(ruta: Path) -> str:
@@ -269,26 +277,172 @@ class Boletin:
 
 @dataclass
 class SelloEntrada:
-    """Lo que había ANTES de generar: si esto cambia, el sello deja de valer."""
+    """Lo que había ANTES de generar: si esto cambia, el sello deja de valer.
+
+    Lo que declara quien sella: HEADs, semanas y padecimientos. Lo demás —digests del
+    consolidado base y candidato, boletines e inventario de entradas— lo **deriva**
+    `sella` de la hidratación registrada en el staging; no se recibe por parámetro.
+    """
 
     head_backend: str
     head_dashboard: str
-    digest_consolidado: str
     semana_anterior: str
     semana_nueva: str
     padecimientos_autorizados: tuple[str, ...]
+    digest_consolidado_antes: str = ""
+    digest_consolidado_candidato: str = ""
     boletines: tuple[Boletin, ...] = ()
+    entradas: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     def como_dict(self) -> dict[str, Any]:
         return {
             "head_backend": self.head_backend,
             "head_dashboard": self.head_dashboard,
-            "digest_consolidado": self.digest_consolidado,
+            "digest_consolidado_antes": self.digest_consolidado_antes,
+            "digest_consolidado_candidato": self.digest_consolidado_candidato,
             "semana_anterior": self.semana_anterior,
             "semana_nueva": self.semana_nueva,
             "padecimientos_autorizados": list(self.padecimientos_autorizados),
             "boletines": [b.como_dict() for b in self.boletines],
+            "entradas": {ruta: dict(meta) for ruta, meta in sorted(self.entradas.items())},
         }
+
+
+@dataclass(frozen=True)
+class RegistroHidratacion:
+    """Lo que `hydrate` dejó en el staging: qué entradas, con qué digests, y dónde está
+    el sandbox. Lo lee `sella` de su ruta fija; no hay parámetro para inyectarlo."""
+
+    head_backend: str
+    lista: dict[str, str]
+    sandbox: str
+    consolidado: str
+    entradas: dict[str, dict[str, Any]]
+    boletines: tuple[Boletin, ...]
+    cobertura: dict[str, Any]
+
+    CLAVES = (
+        "esquema",
+        "head_backend",
+        "lista",
+        "sandbox",
+        "consolidado",
+        "entradas",
+        "boletines",
+        "cobertura",
+    )
+
+    def como_dict(self) -> dict[str, Any]:
+        return {
+            "esquema": ESQUEMA_HIDRATACION,
+            "head_backend": self.head_backend,
+            "lista": dict(self.lista),
+            "sandbox": self.sandbox,
+            "consolidado": self.consolidado,
+            "entradas": {ruta: dict(meta) for ruta, meta in sorted(self.entradas.items())},
+            "boletines": [b.como_dict() for b in self.boletines],
+            "cobertura": dict(self.cobertura),
+        }
+
+    def escribe(self, trabajo: Path) -> None:
+        crudo = json.dumps(self.como_dict(), indent=2, ensure_ascii=False, sort_keys=True).encode()
+        crudo += b"\n"
+        destino = trabajo / ARCHIVO_ENTRADAS
+        _escribe_exclusivo(destino, crudo)
+        _escribe_exclusivo(
+            destino.with_name(destino.stem + ".sha256"),
+            hashlib.sha256(crudo).hexdigest().encode() + b"\n",
+        )
+
+    @staticmethod
+    def lee(trabajo: Path) -> RegistroHidratacion:
+        ruta = trabajo / ARCHIVO_ENTRADAS
+        if ruta.is_symlink() or not ruta.is_file():
+            raise StagingError(
+                f"no hay hidratación registrada en {trabajo}: corre `hydrate` antes de sellar"
+            )
+        verifica_sidecar(ruta)
+        try:
+            crudo = json.loads(ruta.read_bytes(), object_pairs_hook=_sin_duplicados)
+        except json.JSONDecodeError as exc:
+            raise StagingError(f"registro de hidratación ilegible: {exc}") from exc
+        if not isinstance(crudo, dict) or set(crudo) != set(RegistroHidratacion.CLAVES):
+            raise StagingError("registro de hidratación malformado")
+        if crudo["esquema"] != ESQUEMA_HIDRATACION:
+            raise StagingError(f"registro de hidratación de otro esquema: {crudo['esquema']!r}")
+        if not isinstance(crudo["head_backend"], str) or not re.fullmatch(
+            r"[0-9a-f]{40}", crudo["head_backend"]
+        ):
+            raise StagingError("head_backend de la hidratación no es un SHA1")
+        lista = crudo["lista"]
+        if (
+            not isinstance(lista, dict)
+            or set(lista) != {"version", "sha256"}
+            or not isinstance(lista["sha256"], str)
+            or not _RE_SHA256.fullmatch(lista["sha256"])
+        ):
+            raise StagingError("la hidratación no identifica la lista de entradas")
+        if not isinstance(crudo["sandbox"], str) or not crudo["sandbox"].startswith("/"):
+            raise StagingError("el sandbox de la hidratación tiene que ser una ruta absoluta")
+        entradas = crudo["entradas"]
+        if not isinstance(entradas, dict) or not entradas:
+            raise StagingError("la hidratación no registra ninguna entrada")
+        for ruta_e, meta in entradas.items():
+            valida_ruta_entrada(ruta_e)
+            if (
+                not isinstance(meta, dict)
+                or set(meta) != {"rol", "bytes", "sha256"}
+                or not isinstance(meta["rol"], str)
+                or isinstance(meta["bytes"], bool)
+                or not isinstance(meta["bytes"], int)
+                or meta["bytes"] < 0
+                or not isinstance(meta["sha256"], str)
+                or not _RE_SHA256.fullmatch(meta["sha256"])
+            ):
+                raise StagingError(f"entrada hidratada malformada: {ruta_e} -> {meta!r}")
+        consolidado = crudo["consolidado"]
+        if consolidado not in entradas or entradas[consolidado]["rol"] != "consolidado":
+            raise StagingError("la hidratación no señala un consolidado entre sus entradas")
+        if not isinstance(crudo["boletines"], list) or not isinstance(crudo["cobertura"], dict):
+            raise StagingError("boletines/cobertura de la hidratación malformados")
+        boletines = tuple(_lee_boletin(b) for b in crudo["boletines"])
+        return RegistroHidratacion(
+            head_backend=crudo["head_backend"],
+            lista=dict(lista),
+            sandbox=crudo["sandbox"],
+            consolidado=consolidado,
+            entradas={r: dict(m) for r, m in entradas.items()},
+            boletines=boletines,
+            cobertura=dict(crudo["cobertura"]),
+        )
+
+
+def _lee_boletin(crudo: Any) -> Boletin:
+    if not isinstance(crudo, dict) or set(crudo) != {"nombre", "url", "bytes", "sha256"}:
+        raise StagingError(f"boletín malformado: {crudo!r}")
+    if (
+        not isinstance(crudo["nombre"], str)
+        or not crudo["nombre"]
+        or not isinstance(crudo["url"], str)
+        or isinstance(crudo["bytes"], bool)
+        or not isinstance(crudo["bytes"], int)
+        or not isinstance(crudo["sha256"], str)
+        or not _RE_SHA256.fullmatch(crudo["sha256"])
+    ):
+        raise StagingError(f"boletín con campos inválidos: {crudo!r}")
+    return Boletin(
+        nombre=crudo["nombre"], url=crudo["url"], bytes=crudo["bytes"], sha256=crudo["sha256"]
+    )
+
+
+def valida_ruta_entrada(rel: Any) -> None:
+    """Ruta relativa POSIX al backend, sin `..`; distinta de la gramática sellable."""
+    if not isinstance(rel, str) or not rel or rel != rel.strip():
+        raise StagingError(f"ruta de entrada inválida: {rel!r}")
+    if rel.startswith("/") or "\\" in rel or "\x00" in rel:
+        raise StagingError(f"ruta de entrada tiene que ser relativa POSIX: {rel!r}")
+    if any(p in ("", ".", "..") for p in rel.split("/")):
+        raise StagingError(f"ruta de entrada con componente vacío, '.' o '..': {rel!r}")
 
 
 @dataclass
@@ -320,6 +474,8 @@ class Manifiesto:
     # blanca serializada como si fuera intención no describe ninguna acción real.
     operaciones_dvc: tuple[str, ...] = ()
     resultados_pruebas: dict[str, Any] = field(default_factory=dict)
+    # Copias inmutables bajo `<run>/inputs/`: consolidado base y candidato, y cada PDF.
+    inputs: dict[str, str] = field(default_factory=dict)
 
     def como_dict(self) -> dict[str, Any]:
         return {
@@ -336,6 +492,7 @@ class Manifiesto:
             "motivo_draft": self.motivo_draft,
             "operaciones_dvc": list(self.operaciones_dvc),
             "resultados_pruebas": self.resultados_pruebas,
+            "inputs": dict(sorted(self.inputs.items())),
         }
 
     def payload_canonico(self) -> dict[str, Any]:
@@ -403,6 +560,7 @@ class Manifiesto:
             "motivo_draft",
             "operaciones_dvc",
             "resultados_pruebas",
+            "inputs",
         }
         if faltantes := esperadas - set(crudo):
             raise StagingError(f"manifiesto incompleto, faltan claves: {sorted(faltantes)}")
@@ -412,14 +570,33 @@ class Manifiesto:
         if not isinstance(crudo["resultados_pruebas"], dict):
             raise StagingError("resultados_pruebas tiene que ser un objeto")
         e = crudo["entrada"]
+        claves_entrada = {
+            "head_backend",
+            "head_dashboard",
+            "digest_consolidado_antes",
+            "digest_consolidado_candidato",
+            "semana_anterior",
+            "semana_nueva",
+            "padecimientos_autorizados",
+            "boletines",
+            "entradas",
+        }
+        if not isinstance(e, dict) or set(e) != claves_entrada:
+            raise StagingError("la entrada del manifiesto no tiene la forma de weekly_staging/3")
+        if not isinstance(e["boletines"], list) or not isinstance(e["entradas"], dict):
+            raise StagingError("boletines/entradas de la entrada malformados")
+        if not isinstance(crudo["inputs"], dict):
+            raise StagingError("inputs tiene que ser un objeto")
         entrada = SelloEntrada(
             head_backend=e["head_backend"],
             head_dashboard=e["head_dashboard"],
-            digest_consolidado=e["digest_consolidado"],
             semana_anterior=e["semana_anterior"],
             semana_nueva=e["semana_nueva"],
             padecimientos_autorizados=tuple(e["padecimientos_autorizados"]),
-            boletines=tuple(Boletin(**b) for b in e.get("boletines", [])),
+            digest_consolidado_antes=e["digest_consolidado_antes"],
+            digest_consolidado_candidato=e["digest_consolidado_candidato"],
+            boletines=tuple(_lee_boletin(b) for b in e["boletines"]),
+            entradas={r: dict(m) for r, m in e["entradas"].items()},
         )
         manifiesto = Manifiesto(
             run_id=crudo["run_id"],
@@ -435,6 +612,7 @@ class Manifiesto:
             motivo_draft=crudo["motivo_draft"],
             operaciones_dvc=tuple(crudo["operaciones_dvc"]),
             resultados_pruebas=dict(crudo["resultados_pruebas"]),
+            inputs=dict(crudo["inputs"]),
         )
         valida_contrato(manifiesto)
         if manifiesto.run_id != calcula_run_id_de(manifiesto):
@@ -1475,9 +1653,84 @@ def valida_contrato(manifiesto: Manifiesto) -> None:
             raise StagingError(f"objetivo DVC no permitido en el manifiesto: {operacion}")
 
     valida_resultados_pruebas(manifiesto)
-    for boletin in manifiesto.entrada.boletines:
-        if not boletin.sha256:
-            raise StagingError(f"el boletín {boletin.nombre} no trae digest")
+    valida_inputs(manifiesto)
+
+
+def rutas_inputs(manifiesto: Manifiesto) -> frozenset[str]:
+    """Qué copias inmutables, y sólo cuáles, viven bajo `<run>/inputs/`."""
+    return frozenset(
+        {
+            f"{DIR_INPUTS}/consolidado_base.csv",
+            f"{DIR_INPUTS}/consolidado_candidato.csv",
+            *(f"{DIR_INPUTS}/boletines/{b.nombre}" for b in manifiesto.entrada.boletines),
+        }
+    )
+
+
+def valida_inputs(manifiesto: Manifiesto) -> None:
+    """P0.2: los inputs son copias con digest, y cada digest cuadra con lo que lo cita."""
+    entrada = manifiesto.entrada
+    if not entrada.entradas:
+        raise StagingError("un sello sin inventario de entradas no dice sobre qué se preparó")
+    consolidados = [
+        ruta for ruta, meta in entrada.entradas.items() if meta.get("rol") == "consolidado"
+    ]
+    if len(consolidados) != 1:
+        raise StagingError(
+            "el inventario de entradas tiene que señalar exactamente un consolidado"
+        )
+    for ruta, meta in entrada.entradas.items():
+        valida_ruta_entrada(ruta)
+        if (
+            not isinstance(meta, dict)
+            or set(meta) != {"rol", "bytes", "sha256"}
+            or not isinstance(meta["sha256"], str)
+            or not _RE_SHA256.fullmatch(meta["sha256"])
+        ):
+            raise StagingError(f"entrada malformada en el manifiesto: {ruta}")
+    esperadas = rutas_inputs(manifiesto)
+    if set(manifiesto.inputs) != esperadas:
+        raise StagingError(
+            f"inputs no inventaría exactamente las copias esperadas: {sorted(manifiesto.inputs)}"
+        )
+    for rel, digest in manifiesto.inputs.items():
+        if not isinstance(digest, str) or not _RE_SHA256.fullmatch(digest):
+            raise StagingError(f"digest inválido en inputs para {rel}")
+    base = manifiesto.inputs[f"{DIR_INPUTS}/consolidado_base.csv"]
+    if entrada.digest_consolidado_antes != base:
+        raise StagingError("digest_consolidado_antes no es el de la copia base sellada")
+    if entrada.entradas[consolidados[0]]["sha256"] != base:
+        raise StagingError("la copia base del consolidado no es la entrada hidratada")
+    if (
+        entrada.digest_consolidado_candidato
+        != manifiesto.inputs[f"{DIR_INPUTS}/consolidado_candidato.csv"]
+    ):
+        raise StagingError("digest_consolidado_candidato no es el de la copia candidata sellada")
+    nombres = [b.nombre for b in entrada.boletines]
+    if len(set(nombres)) != len(nombres):
+        raise StagingError("boletines repetidos en el sello")
+    for boletin in entrada.boletines:
+        if (
+            not boletin.sha256
+            or manifiesto.inputs[f"{DIR_INPUTS}/boletines/{boletin.nombre}"] != boletin.sha256
+        ):
+            raise StagingError(f"el boletín {boletin.nombre} no coincide con su copia sellada")
+
+
+def verifica_inputs_en_disco(raiz_staging: Path, manifiesto: Manifiesto) -> None:
+    """Lo que hay bajo `<staging>/inputs/` es exactamente lo que el manifiesto inventarió."""
+    carpeta = raiz_staging / DIR_INPUTS
+    _exige_directorio_real(carpeta, "las copias de entradas")
+    presentes = {f"{DIR_INPUTS}/{rel}" for rel in _relativos(carpeta)}
+    if faltan := sorted(set(manifiesto.inputs) - presentes):
+        raise StagingError(f"faltan copias de entradas selladas: {faltan[:5]}")
+    if sobran := sorted(presentes - set(manifiesto.inputs)):
+        raise StagingError(f"hay copias de entradas fuera del inventario: {sobran[:5]}")
+    alterados = sorted(
+        rel for rel, digest in manifiesto.inputs.items() if sha256_de(raiz_staging / rel) != digest
+    )
+    if alterados:
+        raise StagingError(f"copias de entradas alteradas después del sellado: {alterados[:5]}")
 
 
 def calcula_run_id_de(manifiesto: Manifiesto) -> str:
@@ -1553,6 +1806,7 @@ def sella(
     autoridad_lapidas: AutoridadLapidas,
     tombstones: tuple[str, ...] = (),
     operaciones_dvc: tuple[str, ...] = (),
+    contrato: Any = None,
 ) -> Manifiesto:
     """Inventaria lo producido, **calcula** la composición y escribe el manifiesto.
 
@@ -1585,6 +1839,11 @@ def sella(
         raise StagingError(f"la política no permite retirar: {fuera[:5]}")
     evidencia = EvidenciaGates.lee(raiz_staging)
     valida_gates(evidencia, politica, composicion)
+    entrada = _completa_entrada(raiz_staging, entrada, contrato)
+    inputs = {
+        f"{DIR_INPUTS}/{rel}": sha256_de(raiz_staging / DIR_INPUTS / rel)
+        for rel in _relativos(raiz_staging / DIR_INPUTS)
+    }
 
     manifiesto = Manifiesto(
         run_id="",
@@ -1603,11 +1862,81 @@ def sella(
         politica={"version": politica.version, "sha256": politica.sha256},
         operaciones_dvc=tuple(operaciones_dvc),
         resultados_pruebas=evidencia.como_manifiesto(),
+        inputs=inputs,
     )
     valida_contrato(manifiesto)
     manifiesto.run_id = calcula_run_id_de(manifiesto)
     manifiesto.escribe(raiz_staging / "manifest.json")
     return manifiesto
+
+
+def _completa_entrada(raiz_staging: Path, entrada: SelloEntrada, contrato: Any) -> SelloEntrada:
+    """P0.2 y P0.8: la entrada se deriva de la hidratación; el candidato cumple el contrato.
+
+    Lee `entradas.json`, exige que la copia base bajo `inputs/` sea la entrada hidratada,
+    copia el consolidado candidato del sandbox a `inputs/` (en exclusiva; si ya está, tiene
+    que ser idéntico), exige paridad de corte y cobertura sobre el candidato, y devuelve la
+    entrada con digests, boletines e inventario. Nada de eso lo declara quien llama.
+    """
+    # Importación local: contratos_datos depende de este módulo para la excepción, y el
+    # sello depende del contrato para el candidato. Una dirección en tiempo de carga.
+    from epiforecast.publication.contratos_datos import (
+        ContratoCobertura,
+        exige_todo,
+        revisa_candidato,
+        revisa_consolidado,
+    )
+
+    hidratacion = RegistroHidratacion.lee(raiz_staging)
+    if hidratacion.head_backend != entrada.head_backend:
+        raise StagingError(
+            f"la hidratación se hizo sobre {hidratacion.head_backend[:12]} y se sella "
+            f"{entrada.head_backend[:12]}"
+        )
+    inputs = raiz_staging / DIR_INPUTS
+    _exige_directorio_real(inputs, "las copias de entradas")
+    base = inputs / "consolidado_base.csv"
+    if base.is_symlink() or not base.is_file():
+        raise StagingError("falta inputs/consolidado_base.csv; la hidratación está incompleta")
+    digest_base = sha256_de(base)
+    if digest_base != hidratacion.entradas[hidratacion.consolidado]["sha256"]:
+        raise StagingError("la copia base del consolidado no coincide con la entrada hidratada")
+
+    origen_candidato = Path(hidratacion.sandbox) / hidratacion.consolidado
+    if origen_candidato.is_symlink() or not origen_candidato.is_file():
+        raise StagingError(f"no existe el consolidado candidato en el sandbox: {origen_candidato}")
+    digest_candidato = sha256_de(origen_candidato)
+    candidato = inputs / "consolidado_candidato.csv"
+    if candidato.is_symlink():
+        raise StagingError("inputs/consolidado_candidato.csv es un enlace simbólico")
+    if candidato.exists():
+        if sha256_de(candidato) != digest_candidato:
+            raise StagingError(
+                "inputs/consolidado_candidato.csv ya existe y no es el consolidado del sandbox"
+            )
+    else:
+        _copia_exclusiva(origen_candidato, candidato, digest_candidato)
+
+    for boletin in hidratacion.boletines:
+        copia = inputs / "boletines" / boletin.nombre
+        if copia.is_symlink() or not copia.is_file() or sha256_de(copia) != boletin.sha256:
+            raise StagingError(f"la copia del boletín {boletin.nombre} falta o no coincide")
+
+    contrato_real = contrato if contrato is not None else ContratoCobertura.canonico()
+    revisa_consolidado(candidato, contrato_real, entrada.padecimientos_autorizados).exige()
+    exige_todo(revisa_candidato(raiz_staging / "outputs" / "dashboard", contrato_real))
+
+    return SelloEntrada(
+        head_backend=entrada.head_backend,
+        head_dashboard=entrada.head_dashboard,
+        semana_anterior=entrada.semana_anterior,
+        semana_nueva=entrada.semana_nueva,
+        padecimientos_autorizados=entrada.padecimientos_autorizados,
+        digest_consolidado_antes=digest_base,
+        digest_consolidado_candidato=digest_candidato,
+        boletines=hidratacion.boletines,
+        entradas={r: dict(m) for r, m in hidratacion.entradas.items()},
+    )
 
 
 def verifica_sidecar(ruta_manifiesto: Path) -> None:
@@ -1690,6 +2019,7 @@ def verifica(
         raise StagingError(f"artefactos alterados despues del sellado: {sorted(alterados)[:5]}")
 
     verifica_evidencia_en_disco(raiz_staging, manifiesto)
+    verifica_inputs_en_disco(raiz_staging, manifiesto)
 
 
 def _instala(
