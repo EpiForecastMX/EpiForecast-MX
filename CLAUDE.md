@@ -1,5 +1,33 @@
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
+## Estado P0 del flujo semanal — 2026-09-01
+
+Esta sección sustituye cualquier instrucción inferior que presente `make update-week` como
+receta activa. Backend: `p0/namespace-e-inmutabilidad-del-sello@a9a694c8`, con siete
+archivos de núcleo P0 sin commit más las memorias de cierre. Frontend:
+`main@0e777995`, intacto. La referencia local `origin/main` del backend sigue en `a9a694c8`,
+pero el remoto se observó en `16476a98`; no hacer fetch/pull/rebase sobre el worktree sucio.
+
+`make update-week` está bloqueado antes de DVC y staging. No descargar W32/W33, aplicar,
+publicar, ejecutar DVC ni encender `CONFINAMIENTO_LISTO`. El árbol implementa
+`weekly_staging/2`, namespace cerrado, sidecar, runs inmutables, baseline, tombstones,
+composición completa y política Git con 41 superficies; los sellos permanecen `draft` por
+P0.6 pendiente.
+
+Gate vigente: 113 pruebas dirigidas y `make test-fast` = 2,535 passed, 1 skipped y 66
+deselected. Antes del checkpoint falta añadir `capsys` al test de HEAD distinto para afirmar
+el motivo `difieren: entrada`. Después se vuelve a validar y se pide autorización antes de
+commit local; nunca push.
+
+El siguiente cambio es únicamente el runner real de gates: comandos `argv` versionados sin
+shell, ejecución sobre la composición candidata, veredicto derivado, evidencia con SHA256,
+eliminación de `--resultados-pruebas` y reverificación por `seal`. No incluye P0.6 ni
+recableado del orquestador. Plan y prompt exacto:
+
+- `../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`, SHA256
+  `5cfdf5a4a2d8e5ed1acf004e8c90a00e929dfd217ba051fff925e742fe9e233d`;
+- `../planes/PROMPT_REANUDAR_P0_RUNNER_GATES_2026-09-01.md`.
+
 ## Estado CI semanal — 2026-09-01
 
 - PR #12 quedó en `main` mediante merge commit `59488c57`; la rama de trabajo ya fue
@@ -15,9 +43,9 @@
   del 7-sep-2026. La rutina `trig_0182z2jL5YUwBbmTmHnbPS3t` lo comprueba a las 06:50 UTC.
 - Rollback únicamente por causalidad demostrada: `git revert -m 1 59488c57` en rama y
   PR; nunca reset ni force-push de `main`.
-- Backend `main@cb7695d9` y frontend `main@5f8666dc` están sincronizados; el frontend está
-  desplegado. Los únicos deltas actuales son esta actualización documental y el README del
-  frontend, todavía sin commit. Persisten dos ramas ya mergeadas, locales y remotas:
+- Los checkpoints `main@cb7695d9` y frontend `main@5f8666dc` describen el cierre histórico
+  de esa tanda, no el worktree actual; usar la sección P0 superior para reanudar. Persisten
+  dos ramas ya mergeadas, locales y remotas:
   `ci/skip-budget-ets-legacy` y `fix/frontend-deudas`.
 - Los cuatro agregados legacy ya no tienen doble guarda: viven en `tests/integration/`,
   se deseleccionan en el job normal y fallan por ausencia en el manual. Pendiente después

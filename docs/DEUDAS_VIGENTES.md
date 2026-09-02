@@ -1,9 +1,28 @@
 # Deudas vigentes — índice canónico
 
-> Auditado el 1-sep-2026 contra backend `main@cb7695d9` y frontend `main@5f8666dc`.
+> Actualizado el 1-sep-2026 para el trabajo P0 sobre backend
+> `p0/namespace-e-inmutabilidad-del-sello@a9a694c8` y frontend `main@0e777995`.
 > Este archivo separa
 > trabajo vigente de bitácoras históricas. Una deuda que aparezca sólo en un documento
 > antiguo no se ejecuta hasta contrastarla aquí y en el código.
+
+## Activa — P0 del flujo de actualización semanal
+
+El plan vigente es `../../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`
+(SHA256 `5cfdf5a4a2d8e5ed1acf004e8c90a00e929dfd217ba051fff925e742fe9e233d`). El árbol contiene
+siete archivos sin commit con el núcleo `weekly_staging/2`: namespace, sidecar, runs
+inmutables, baseline, tombstones derivados, composición completa y política Git con censo
+exacto de 41 superficies. Los sellos siguen `draft`; `CONFINAMIENTO_LISTO = False`.
+
+Último gate: 113 pruebas dirigidas; `make test-fast` = 2,535 passed, 1 skipped y 66
+deselected. Antes del checkpoint falta que el control de HEAD distinto afirme mediante
+`capsys` el motivo `difieren: entrada`.
+
+Siguiente entrega: runner real de gates. Debe retirar el JSON de resultados suministrado por
+el operador, ejecutar comandos estructurados de la política sobre la composición candidata,
+derivar el veredicto y sellar/reverificar su evidencia. No incluye P0.6, DVC, W32/W33,
+recableado de `make update-week`, apply ni publicación. Handoff completo:
+`../../planes/PROMPT_REANUDAR_P0_RUNNER_GATES_2026-09-01.md`.
 
 ## Cerradas o retiradas en esta auditoría
 

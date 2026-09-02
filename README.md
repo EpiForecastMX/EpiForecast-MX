@@ -432,12 +432,22 @@ make data-push       # Upload data to S3
 make models-push     # Version and upload trained models
 make s3-sync         # Quick sync CSVs + forecasts to S3 (no DVC)
 make data-weekly     # Add + commit new weekly bulletin data
-make update-week     # End-to-end weekly sync (see section 8)
+make update-week     # BLOCKED while the sealed P0 workflow is completed (see section 8)
 ```
 
 ### 8. Weekly Update Flow (`make update-week`)
 
-One-command, end-to-end weekly refresh (~6 minutes, **no retraining**) that keeps
+> **Operational status — 2026-09-01: BLOCKED.** Do not run this target to update
+> production. The current P0 branch is replacing the unsafe legacy path with a sealed
+> `weekly_staging/2` workflow. The script exits before DVC and before staging until the
+> complete 41-surface seed, the real gate runner and disposable-worktree confinement are
+> implemented and approved. It does not authorize downloading or publishing W32/W33.
+>
+> The numbered flow below documents the historical intent; it is not an executable runbook.
+> Current plan: `../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`.
+> Resume handoff: `../planes/PROMPT_REANUDAR_P0_RUNNER_GATES_2026-09-01.md`.
+
+Historically this was described as a one-command weekly refresh that keeps
 the working copy, DVC artifacts and the public dashboard in lockstep with the
 latest SINAVE bulletin ingested by the CI scraper. Delegates to
 `scripts/actualiza_semanal.sh` and runs 11 ordered steps:
@@ -463,12 +473,11 @@ latest SINAVE bulletin ingested by the CI scraper. Delegates to
 11. **Publish**: commit + push the dashboard repo (gallery, zoom, knowledge, index)
     and version the consolidated dataset + production tables in DVC/S3.
 
-Run it after a CI boletin lands to propagate everything to stakeholders without
-manual intervention:
+These invocations are intentionally unavailable until P0/P0.6 close:
 
 ```bash
-make update-week              # weekly refresh (no retrain)
-RETRAIN=1 make update-week    # also rebuild the CV backtest table (after retraining)
+make update-week              # expected to abort before DVC/staging
+RETRAIN=1 make update-week    # also blocked; do not use as a bypass
 ```
 
 > **Before retraining on a new bulletin, run `make valida-prospectivo`** to score
@@ -482,8 +491,12 @@ push permission to `main`.
 
 ### Current Data Snapshot
 
-- **Latest epidemiological week:** 21/2026 for all four conditions. Dengue lives in a separate bulletin table that the CI does not extract, so it only advances when `make update-week` runs its incremental Dengue extraction from the same bulletin PDF — after which it is current with neuro
-- **Consolidated dataset:** 74,688 rows (`data/processed/dataset_boletin_epidemiologico.csv`) — 62,112 neuro (3 × 20,704) + 12,576 Dengue
+- **Verified local/public cut:** W31/2026. Registry and DVC pointers have W32, but the
+  W32 consolidated remote omits Dengue and must not be propagated as a complete week.
+  W33 is an external observation that must be rediscovered when execution is authorized.
+- **Local consolidated dataset:** 96,864 rows: 63,072 neuro (3 × 21,024), 12,896
+  Dengue and 20,896 Obesidad. The Obesidad rows are local NO-GO material; this
+  superposition must not be versioned or published until decision P0.11.
 - **Knowledge base:** ~220 KB — 333 neuro production models + a `dengue` section, 51 stats keys, 6 boletin sections
 - **Forecast horizon:** 52 weeks ahead (rolling, regenerated per weekly update); Dengue adds a 5-year illustrative seasonal projection
 

@@ -1,8 +1,41 @@
 # GEMINI.md — Contexto operativo de EpiForecast-MX
 
-> Auditado contra `main` en el checkpoint `cb7695d9` el 1-sep-2026.
+> Actualizado contra `p0/namespace-e-inmutabilidad-del-sello` sobre
+> `a9a694c8fb1b93c616e2b179a5b24d095d3de9ce` el 1-sep-2026.
 > Guía para Gemini CLI dentro de `EpiForecast-MX`; no sustituye las órdenes del
 > workspace ni autoriza acciones externas.
+
+## 0. Trabajo activo: P0 del flujo semanal
+
+El árbol contiene siete archivos P0 sin commit: cinco modificados y dos nuevos. No
+descartarlos, mezclarlos con otra deuda ni confirmar/publicar sin autorización. El frontend
+`main@0e777995c9e53cdd08b6d25ad58b65928a25b88b` está intacto.
+
+La rama y las referencias locales backend parten de `a9a694c8`; una consulta remota de sólo
+lectura observó después `origin` `main@16476a98`. No hacer fetch/pull/rebase ni incorporar
+ese avance dentro del worktree P0 sin auditar primero el delta y obtener autorización.
+
+`make update-week` está bloqueado intencionalmente antes de DVC y del staging. El plan
+auditado es `../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`, SHA256
+`5cfdf5a4a2d8e5ed1acf004e8c90a00e929dfd217ba051fff925e742fe9e233d`. El prompt y plan de
+reanudación exactos están en
+`../planes/PROMPT_REANUDAR_P0_RUNNER_GATES_2026-09-01.md` (SHA256
+`063277ed7fb745da600c35f12325238a2841707201029aa28ef5690e0d2a5ee9`).
+
+Implementado y validado localmente: `weekly_staging/2`, namespace cerrado, sidecar,
+inmutabilidad, baseline, tombstones derivados, composición completa, política canónica
+desde Git y 41 superficies exactas. Los sellos siguen en `draft` porque P0.6 no existe y
+`CONFINAMIENTO_LISTO = False`.
+
+Gate local vigente: 113 pruebas dirigidas y `make test-fast` con 2,535 passed, 1 skipped y
+66 deselected. Antes del runner falta una corrección de prueba: capturar stderr y afirmar
+`difieren: entrada` en el caso de mismo contenido con otro HEAD. Después se vuelve a correr
+el gate y se pide autorización para un checkpoint local; no push.
+
+El siguiente cambio es exclusivamente el runner real de gates. Debe retirar
+`--resultados-pruebas`, ejecutar `argv` versionados sin shell sobre la composición candidata,
+derivar PASS del resultado, sellar evidencia con digests y hacer que `seal` la revalide. No
+recablear el orquestador, no encender el modo aplicable y no iniciar P0.6.
 
 ## 1. Precedencia y forma de trabajo
 
@@ -28,10 +61,10 @@ por separado. Para revisar o diagnosticar, no implementar ni mutar salvo petici�
 
 ### Repositorios
 
-- Backend: `EpiForecast-MX`, `main`/`origin/main` en `cb7695d9`; el worktree contiene sólo
-  la actualización documental post-merge todavía sin commit.
-- Frontend: `EpiForecast-IMSS-Dashboard`, `main`/`origin/main` en `5f8666dc`, desplegado;
-  el worktree contiene sólo su actualización de README todavía sin commit.
+- Backend: `EpiForecast-MX`, rama de trabajo
+  `p0/namespace-e-inmutabilidad-del-sello` sobre `a9a694c8`; worktree P0 sin commit.
+- Frontend: `EpiForecast-IMSS-Dashboard`, `main` en `0e777995`; worktree limpio e intacto
+  durante P0.
 - Quedan dos ramas ya mergeadas, locales y remotas: `ci/skip-budget-ets-legacy` y
   `fix/frontend-deudas`. Ambas puntas son ancestros comprobados de `main`; no confundir
   «main activo» con «una sola rama» hasta borrarlas de forma explícita.

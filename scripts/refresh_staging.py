@@ -30,25 +30,70 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-import shutil
 import subprocess
 import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from epiforecast.publication.weekly_staging import (  # noqa: E402
+    RUTA_POLITICA,
+    AutoridadLapidas,
     Boletin,
     Manifiesto,
+    PoliticaCenso,
     SelloEntrada,
     StagingError,
     aplica,
-    calcula_run_id,
+    calcula_baseline,
+    inventaria,
     poda_a_cambiados,
     sella,
     snapshot_digests,
+    verifica,
+    verifica_sidecar,
 )
 
+
+def _reutiliza_o_aborta(destino: Path, candidato: Manifiesto) -> Manifiesto:
+    """Un run ya sellado es inmutable: o es idéntico y se reutiliza, o es un conflicto.
+
+    Antes esto era `if destino.exists(): shutil.rmtree(destino)`. Repetir una corrida con
+    el mismo contenido —o un destino forzado— destruía la evidencia ya revisada y colocaba
+    otra bajo el mismo nombre. Y comparar sólo el inventario no bastaba: dos corridas con
+    las mismas salidas pueden venir de entradas distintas. Se compara el payload entero,
+    que es exactamente lo que gobierna.
+    """
+    ruta = destino / "manifest.json"
+    if not ruta.is_file():
+        raise StagingError(
+            f"{destino} ya existe pero no contiene un manifiesto; retíralo a mano tras "
+            "revisarlo. Este mandato no borra corridas."
+        )
+    verifica_sidecar(ruta)
+    previo = Manifiesto.lee(ruta)
+
+    if previo.payload_canonico() != candidato.payload_canonico():
+        campos = sorted(
+            clave
+            for clave, valor in candidato.payload_canonico().items()
+            if previo.payload_canonico().get(clave) != valor
+        )
+        raise StagingError(
+            f"{destino.name} ya existe con otro contenido; difieren: {', '.join(campos)}"
+        )
+
+    if inventaria(destino / "outputs") != previo.inventario:
+        raise StagingError(
+            f"la corrida sellada {destino.name} ya no coincide con su propio manifiesto; "
+            "no se reutiliza"
+        )
+    return previo
+
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
+# Política canónica, rastreada por Git. `seal` la lee del commit que sella, en esta ruta
+# fija: no hay flag que permita señalar otra.
+POLITICA_CANONICA = REPO_ROOT / RUTA_POLITICA
 
 
 def _head(repo: Path) -> str:
@@ -91,8 +136,11 @@ def _cmd_seal(args: argparse.Namespace) -> int:
     outputs = trabajo / "outputs"
     semilla = json.loads(Path(args.semilla).read_text(encoding="utf-8"))
 
-    inventario = poda_a_cambiados(outputs, semilla)
-    if not inventario:
+    poda = poda_a_cambiados(outputs, semilla)
+    inventario = poda.cambiados
+    if not inventario and not poda.eliminados_reales:
+        # Una corrida que sólo RETIRA archivos sí es una corrida: si se saliera aquí, sus
+        # lápidas se perderían en silencio y el sitio conservaría lo obsoleto.
         print("    el refresh no cambió ningún artefacto; no hay nada que sellar")
         return 0
 
@@ -107,17 +155,73 @@ def _cmd_seal(args: argparse.Namespace) -> int:
         ),
         boletines=tuple(_parse_boletin(b) for b in (args.boletin or [])),
     )
+    # Las lápidas se DERIVAN de lo que el candidato retiró de verdad; no las declara nadie
+    # a mano. Declararlas admitía dos errores simétricos —inventar una retirada y olvidar
+    # otra— y sólo el primero se detectaba: una eliminación no declarada se ignoraba en
+    # silencio y el sitio conservaba lo obsoleto. Lo que sí decide una persona es la
+    # política: qué rutas pueden retirarse.
+    # La política se lee del commit que se sella, no del disco: una política temporal o
+    # sin versionar permitiría fabricar el permiso al mismo tiempo que se usa.
+    politica = PoliticaCenso.del_head(Path(args.destino_backend), args.head_backend)
+    tombstones = tuple(sorted(poda.eliminados_reales))
+    if no_autorizadas := sorted(poda.eliminados_reales - politica.retirables):
+        raise StagingError(
+            f"el candidato retiró {len(no_autorizadas)} archivo(s) que la política no "
+            f"permite borrar: {no_autorizadas[:5]}. Declara la ruta en "
+            "`retirables` de la política si de verdad debe salir del sitio, o revisa por "
+            "qué el generador dejó de producirla"
+        )
+    autoridad = AutoridadLapidas(
+        eliminados_reales=poda.eliminados_reales,
+        allowlist=politica.retirables,
+    )
+    destinos = {
+        "backend": Path(args.destino_backend),
+        "dashboard": Path(args.destino_dashboard),
+    }
+    resultados = json.loads(Path(args.resultados_pruebas).read_text(encoding="utf-8"))
 
-    run_id = calcula_run_id(entrada, inventario)
-    destino = Path(args.destino_final or (trabajo.parent / run_id))
-    if destino.exists():
-        shutil.rmtree(destino)
+    # Completar y verificar el trabajo PRIMERO; publicarlo después. Al revés —renombrar y
+    # luego sellar— un fallo intermedio dejaba una corrida con nombre final y sin
+    # manifiesto, indistinguible de una sellada a medias.
+    manifiesto = sella(
+        trabajo,
+        entrada,
+        semilla=semilla,
+        baseline=calcula_baseline(destinos, set(inventario) | set(tombstones)),
+        resultados_pruebas=resultados,
+        politica=politica,
+        tombstones=tombstones,
+        operaciones_dvc=tuple(args.operacion_dvc or ()),
+        autoridad_lapidas=autoridad,
+    )
+    verifica(
+        trabajo,
+        manifiesto,
+        head_backend=args.head_backend,
+        head_dashboard=args.head_dashboard,
+    )
+
+    destino = Path(args.destino_final or (trabajo.parent / manifiesto.run_id[:16]))
     destino.parent.mkdir(parents=True, exist_ok=True)
-    trabajo.rename(destino)
+    try:
+        # `mkdir` reclama el nombre en exclusiva; el `rename` posterior sólo puede tener
+        # éxito sobre un directorio vacío, así que publica sin poder pisar una corrida.
+        destino.mkdir()
+    except FileExistsError:
+        previo = _reutiliza_o_aborta(destino, manifiesto)
+        print(f"    staging ya sellado e idéntico: {previo.run_id[:16]} (se reutiliza)")
+        print(f"    el trabajo nuevo queda en    : {trabajo}")
+        return 0
 
-    manifiesto = sella(destino, entrada)
-    print(f"    staging sellado: {run_id}")
+    try:
+        trabajo.rename(destino)
+    except OSError:
+        destino.rmdir()
+        raise
+    print(f"    staging sellado : {manifiesto.run_id[:16]}")
     print(f"    artefactos      : {len(manifiesto.inventario):,}")
+    print(f"    lápidas         : {len(manifiesto.tombstones):,}")
     print(f"    manifiesto      : {destino / 'manifest.json'}")
     return 0
 
@@ -235,6 +339,10 @@ def main(argv: list[str] | None = None) -> int:
     p_seal.add_argument("--padecimientos", required=True)
     p_seal.add_argument("--boletin", action="append")
     p_seal.add_argument("--destino-final")
+    p_seal.add_argument("--destino-backend", default=str(REPO_ROOT))
+    p_seal.add_argument("--destino-dashboard", required=True)
+    p_seal.add_argument("--resultados-pruebas", required=True)
+    p_seal.add_argument("--operacion-dvc", action="append")
     p_seal.set_defaults(func=_cmd_seal)
 
     p_app = sub.add_parser("apply", help="instala un staging sellado")

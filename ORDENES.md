@@ -1,5 +1,30 @@
 # Órdenes a la mano
 
+## 0 · Salida de sesión P0 — no ejecutar la actualización semanal
+
+Estado al 1-sep-2026: rama `p0/namespace-e-inmutabilidad-del-sello` sobre `a9a694c8`, con
+siete archivos P0 sin commit. `make update-week` debe abortar antes de DVC y del staging.
+No usar `update-week-apply`, no descargar W32/W33, no ejecutar DVC y no publicar.
+
+Para retomar, copiar literalmente el prompt de:
+
+```text
+/Users/haowei/Documents/Integrador/planes/PROMPT_REANUDAR_P0_RUNNER_GATES_2026-09-01.md
+```
+
+SHA256 al cerrar:
+`063277ed7fb745da600c35f12325238a2841707201029aa28ef5690e0d2a5ee9`.
+
+El siguiente trabajo es el runner local de gates, no la actualización de datos. Antes:
+
+1. añadir `capsys` al control de HEAD distinto y afirmar `difieren: entrada`;
+2. repetir las pruebas dirigidas y `make test-fast`;
+3. pedir autorización antes de un commit local de checkpoint; nunca push.
+
+Plan auditado, que no debe reescribirse durante el handoff:
+`../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`, SHA256
+`5cfdf5a4a2d8e5ed1acf004e8c90a00e929dfd217ba051fff925e742fe9e233d`.
+
 Comandos verificados de la sesión del 19-20 de agosto de 2026. Todos se ejecutan desde la
 raíz del repositorio salvo donde se indique.
 

@@ -63,6 +63,24 @@ paso()  { echo ""; echo ">>> $*"; }
 # ─────────────────────────────────────────────────────────────────────
 # 1. PREFLIGHT — todo falla cerrado
 # ─────────────────────────────────────────────────────────────────────
+paso "PREFLIGHT · productor no cableado al sello v2"
+# `seal` ya calcula la composición del árbol administrado y exige que los gates se hayan
+# corrido sobre ELLA, contra una política de censo versionada. Faltan dos cosas de este
+# guion, y ninguna es cosmética:
+#
+#   1. La siembra es PARCIAL: clona Reports, epibot y cuatro archivos sueltos —18 de las
+#      41 superficies publicadas—. Con esa semilla la composición no cubre el censo y el
+#      sello aborta, con razón: certificaría un sitio que no es el que se publica.
+#   2. Los gates (cifras, rag) corren aquí sobre el staging y no declaran la composición
+#      contra la que corrieron.
+#
+# Se aborta AQUI, antes de la preparación cara, en vez de dejar que falle al final tras
+# cuarenta minutos de trabajo tirado.
+fatal "el productor semanal no está cableado al sello v2: la siembra es parcial (18 de 41
+    superficies) y los gates no declaran su composición. Aun cableado, los sellos seguirían
+    siendo borradores no instalables hasta cerrar P0.6 (apply confinado a worktrees
+    desechables)."
+
 paso "PREFLIGHT (modo: ${MODE})"
 
 [ -x "$PYTHON" ] || fatal "no existe el interprete del entorno: $PYTHON"

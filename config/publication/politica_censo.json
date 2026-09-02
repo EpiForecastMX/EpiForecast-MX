@@ -1,0 +1,68 @@
+{
+  "version": "censo/1",
+  "prefijos_administrados": [
+    "backend/reports/ProdDetails/",
+    "dashboard/"
+  ],
+  "patron_superficie": {
+    "prefijo": "dashboard/",
+    "sufijos": [
+      ".html",
+      ".json"
+    ],
+    "directorios_excluidos": [
+      ".git",
+      ".netlify",
+      "dist",
+      "node_modules"
+    ]
+  },
+  "superficies_verificables": [
+    "dashboard/Avance1.Equipo01.html",
+    "dashboard/Avance2_Equipo01.html",
+    "dashboard/EpiDashboard.html",
+    "dashboard/Reports/dengue/_gallery_items.json",
+    "dashboard/Reports/dengue/dengue_forecast.json",
+    "dashboard/Reports/dengue/dengue_serie.json",
+    "dashboard/Reports/index.html",
+    "dashboard/Reports/zoom_data_dengue.json",
+    "dashboard/Reports/zoom_data_neuro.json",
+    "dashboard/auditoria_remediacion_2026.html",
+    "dashboard/bento.json",
+    "dashboard/bitacora_modelado.html",
+    "dashboard/calass.html",
+    "dashboard/comparacion_modelos.html",
+    "dashboard/conclusiones.html",
+    "dashboard/construccion_dashboard.html",
+    "dashboard/dengue.html",
+    "dashboard/epibot/index.html",
+    "dashboard/epibot/knowledge.json",
+    "dashboard/epibot/package-lock.json",
+    "dashboard/epibot/package.json",
+    "dashboard/epibot/rag_index.json",
+    "dashboard/epibot/tests/rag_eval.json",
+    "dashboard/epibot/tests/test_cases.json",
+    "dashboard/epibot/zoom_series.json",
+    "dashboard/ficha_tecnica_prophet.html",
+    "dashboard/future_health.html",
+    "dashboard/helix.html",
+    "dashboard/hero_series.json",
+    "dashboard/hiperparametros_modelos.html",
+    "dashboard/index.html",
+    "dashboard/metodologia_dengue.html",
+    "dashboard/mexico_paths.json",
+    "dashboard/micai.html",
+    "dashboard/news.json",
+    "dashboard/novedades.html",
+    "dashboard/package.json",
+    "dashboard/pipeline_diagramEDA.html",
+    "dashboard/referencias.html",
+    "dashboard/reporte_resultados.html",
+    "dashboard/validacion_semanal.html"
+  ],
+  "retirables": [],
+  "gates": [
+    "cifras",
+    "rag"
+  ]
+}

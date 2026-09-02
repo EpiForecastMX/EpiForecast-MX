@@ -494,8 +494,9 @@ data-commit:
 data-weekly: data-add data-commit
 	@echo ">>> Flujo semanal completado."
 
-## Refresh semanal: PREPARA y SELLA. Genera todo bajo runs/_refresh/<run_id>/outputs
-## y escribe su manifiesto. NO publica, no versiona y no envia nada.
+## BLOQUEADO hasta P0.9: prepara y sella, pero su interfaz de sellado quedo desfasada
+## respecto de weekly_staging/2 (falta composicion probada y resultados de gates).
+## Aborta en el preflight, antes de descargar o generar nada.
 .PHONY: update-week
 update-week:
 	bash scripts/actualiza_semanal.sh
