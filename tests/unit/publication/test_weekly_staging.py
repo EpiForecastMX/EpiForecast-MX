@@ -388,6 +388,27 @@ def test_instala_exactamente_los_bytes_sellados(tmp_path: Path) -> None:
     assert list(destinos["dashboard"].rglob("*.part")) == []
 
 
+def test_un_destino_que_cambio_desde_el_sello_no_se_instala(tmp_path: Path) -> None:
+    """Control de M32: el baseline se comprueba ANTES de tocar nada.
+
+    El sello registró que `Reports/index.html` no existía en el destino; alguien lo escribe
+    después. Instalar encima pisaría trabajo que nadie revisó.
+    """
+    raiz, manifiesto = _sella(tmp_path)
+    destinos = _destinos(tmp_path)
+    ajeno = destinos["dashboard"] / "Reports" / "index.html"
+    ajeno.parent.mkdir(parents=True)
+    ajeno.write_text("editado después del sello", encoding="utf-8")
+
+    with pytest.raises(StagingError, match="el destino cambió desde el sellado"):
+        _instala(
+            raiz, manifiesto, destinos, head_backend=HEAD_BACKEND, head_dashboard=HEAD_DASHBOARD
+        )
+    assert ajeno.read_text(encoding="utf-8") == "editado después del sello"
+    assert not (destinos["dashboard"] / "epibot" / "knowledge.json").exists()
+    assert list(destinos["dashboard"].rglob("*.prev")) == []
+
+
 def test_la_instalacion_no_regenera_nada(tmp_path: Path) -> None:
     """Lo instalado sale del staging, no de volver a calcular: se comprueba el digest."""
     raiz, manifiesto = _sella(tmp_path)
@@ -1196,11 +1217,53 @@ def test_una_lapida_no_puede_estar_tambien_inventariada(tmp_path: Path) -> None:
 
 
 def test_una_lapida_con_archivo_presente_en_el_staging_no_se_sella(tmp_path: Path) -> None:
+    """Lo presente ES el inventario: una lápida presente es una ruta inventariada con lápida."""
     raiz = _staging_con_artefactos(tmp_path / "staging")
     (raiz / "outputs" / "dashboard" / "ambiguo.html").write_text("presente", encoding="utf-8")
 
-    with pytest.raises(StagingError, match="lápida"):
+    with pytest.raises(StagingError, match="a la vez inventariadas y con lápida"):
         _sella_en(raiz, tmp_path, tombstones=("dashboard/ambiguo.html",))
+
+
+@pytest.mark.parametrize(
+    "lapida",
+    ["dashboard/../../fuera.html", "/etc/passwd", "otro/x.html", "dashboard/./x.html", ""],
+)
+def test_la_gramatica_de_lapidas_se_exige_directamente(lapida: str) -> None:
+    """Control de M11: la gramática la aplica `valida_tombstones`, no sólo el parser de la
+    política que en `_sella_con_lapida` salta antes."""
+    from epiforecast.publication.weekly_staging import valida_tombstones
+
+    with pytest.raises(StagingError, match="ruta sellable"):
+        valida_tombstones((lapida,), {})
+
+
+def test_una_lapida_invalida_metida_en_el_manifiesto_no_se_relee(tmp_path: Path) -> None:
+    """El vector real de M11: editar el manifiesto sellado para colar una lápida con `..`."""
+    raiz, _ = _sella(tmp_path)
+
+    def cuela(crudo: dict) -> None:
+        crudo["tombstones"] = ["dashboard/../../fuera.html"]
+        crudo["baseline"]["dashboard/../../fuera.html"] = {
+            "presente": False,
+            "tipo": None,
+            "modo": None,
+            "bytes": None,
+            "sha256": None,
+        }
+
+    _reescribe_manifiesto(raiz, cuela)
+
+    with pytest.raises(StagingError, match="componente vacío, '.' o '..'"):
+        Manifiesto.lee(raiz / "manifest.json")
+
+
+@pytest.mark.parametrize("rel", ["dashboard/.git/HEAD", "backend/.git/hooks/pre-commit"])
+def test_una_ruta_bajo_git_no_es_sellable(rel: str) -> None:
+    from epiforecast.publication.weekly_staging import valida_ruta_sellable
+
+    with pytest.raises(StagingError, match="dentro de .git"):
+        valida_ruta_sellable(rel)
 
 
 def test_una_lapida_con_padre_enlazado_no_se_aplica(tmp_path: Path) -> None:

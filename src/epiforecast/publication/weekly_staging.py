@@ -94,6 +94,10 @@ def valida_ruta_sellable(rel: str) -> tuple[str, ...]:
         raise StagingError(f"ruta sellable con componente vacío, '.' o '..': {rel!r}")
     if any("\x00" in parte for parte in partes):
         raise StagingError(f"ruta sellable con byte nulo: {rel!r}")
+    if ".git" in partes:
+        # `aplica` escribe en worktrees: una clave bajo `.git` reescribiría el repositorio
+        # (HEAD, index, hooks) con bytes «sellados». Nada administrado vive ahí.
+        raise StagingError(f"ruta sellable dentro de .git: {rel!r}")
     if partes[0] not in PREFIJOS_SELLABLES:
         raise StagingError(f"ruta sellable fuera de los prefijos {PREFIJOS_SELLABLES}: {rel!r}")
     if len(partes) < 2:
@@ -1840,14 +1844,10 @@ def sella(
         raise StagingError("el staging no contiene ningun artefacto; nada que sellar")
     for rel in inventario:
         valida_ruta_sellable(rel)
+    # Una lápida con archivo presente en el staging la rechaza ya `valida_tombstones`: el
+    # inventario ES lo presente, y una ruta inventariada y con lápida no tiene significado.
     valida_tombstones(tombstones, inventario)
     valida_autoridad_lapidas(tombstones, autoridad_lapidas, baseline, semilla)
-    for rel in tombstones:
-        if (outputs / rel).exists():
-            raise StagingError(
-                f"la lápida {rel} tiene un archivo presente en el staging; una lápida es "
-                "una ausencia declarada, no un artefacto"
-            )
 
     composicion, arbol = calcula_composicion(semilla, inventario, tombstones)
     politica.revisa_universos(arbol, tombstones)

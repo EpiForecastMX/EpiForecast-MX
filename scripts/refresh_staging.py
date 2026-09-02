@@ -97,6 +97,7 @@ from epiforecast.publication.weekly_staging import (  # noqa: E402
     VEREDICTO_REQUERIDO,
     AutoridadLapidas,
     Boletin,
+    EvidenciaGates,
     Manifiesto,
     PoliticaCenso,
     SelloEntrada,
@@ -109,6 +110,7 @@ from epiforecast.publication.weekly_staging import (  # noqa: E402
     sella,
     sha256_de,
     snapshot_digests,
+    valida_gates,
     verifica,
     verifica_evidencia_en_disco,
     verifica_inputs_en_disco,
@@ -267,9 +269,14 @@ def _cmd_seal(args: argparse.Namespace) -> int:
     outputs = trabajo / "outputs"
     semilla = json.loads(Path(args.semilla).read_text(encoding="utf-8"))
 
-    # La evidencia se comprueba a fondo dentro de `sella`; aquí sólo se exige que exista
-    # ANTES de podar, porque podar es destructivo y un `seal` sin gates dejaría el árbol
-    # candidato reducido a cambios, ya no medible entero.
+    # La política se lee del commit que se sella, no del disco: una política temporal o
+    # sin versionar permitiría fabricar el permiso al mismo tiempo que se usa.
+    politica = PoliticaCenso.del_head(Path(args.destino_backend), args.head_backend)
+
+    # La evidencia se valida ENTERA antes de podar —política, conjunto de gates, PASS y
+    # composición del árbol completo—, no sólo su existencia. Podar es destructivo: un
+    # `seal` que podara y después descubriera un FAIL dejaría el árbol candidato reducido
+    # a cambios, ya no medible entero, y habría que regenerarlo para repetir los gates.
     carpeta_evidencia = trabajo / DIR_EVIDENCIA
     if carpeta_evidencia.is_symlink() or not carpeta_evidencia.is_dir():
         raise StagingError(
@@ -277,6 +284,9 @@ def _cmd_seal(args: argparse.Namespace) -> int:
             "árbol completo ANTES de sellar: seal poda el staging y los gates tienen que "
             "haber medido la composición entera"
         )
+    arbol_completo = inventaria(outputs)
+    composicion_completa, _ = calcula_composicion({}, arbol_completo, ())
+    valida_gates(EvidenciaGates.lee(trabajo), politica, composicion_completa)
 
     # Contratos sobre el árbol candidato COMPLETO, antes de podar: cobertura de lo que el
     # candidato publica (knowledge, zoom) y cadena de caché frente al HEAD del dashboard.
@@ -308,9 +318,6 @@ def _cmd_seal(args: argparse.Namespace) -> int:
     # otra— y sólo el primero se detectaba: una eliminación no declarada se ignoraba en
     # silencio y el sitio conservaba lo obsoleto. Lo que sí decide una persona es la
     # política: qué rutas pueden retirarse.
-    # La política se lee del commit que se sella, no del disco: una política temporal o
-    # sin versionar permitiría fabricar el permiso al mismo tiempo que se usa.
-    politica = PoliticaCenso.del_head(Path(args.destino_backend), args.head_backend)
     tombstones = tuple(sorted(poda.eliminados_reales))
     if no_autorizadas := sorted(poda.eliminados_reales - politica.retirables):
         raise StagingError(

@@ -135,8 +135,18 @@ def _fija_modo(corrida: Corrida, modo: str) -> None:
     manifiesto.escribe(corrida.ruta_manifiesto)
 
 
-def _corrida(tmp_path: Path, *, aplicable: bool = True, con_lapida: bool = False) -> Corrida:
-    """Repos canónicos + staging sellado por el flujo real: siembra, cambio, gates, poda, sello."""
+def _corrida(
+    tmp_path: Path,
+    *,
+    aplicable: bool = True,
+    con_lapida: bool = False,
+    canonico_sucio: bool = False,
+) -> Corrida:
+    """Repos canónicos + staging sellado por el flujo real: siembra, cambio, gates, poda, sello.
+
+    `canonico_sucio` deja una edición SIN confirmar en el backend canónico antes de sellar:
+    el baseline la registra, y el worktree desprendido en el HEAD no la tiene.
+    """
     politica = _politica_cruda(con_lapida=con_lapida)
     repo_b, head_b = _repo(
         tmp_path / "repo_backend",
@@ -168,6 +178,8 @@ def _corrida(tmp_path: Path, *, aplicable: bool = True, con_lapida: bool = False
     if con_lapida:
         (outputs / "dashboard" / "obsoleto.html").unlink()
 
+    if canonico_sucio:
+        (repo_b / "reports" / "ProdDetails" / "tabla.csv").write_text("sucio\n", encoding="utf-8")
     politica_head = PoliticaCenso.del_head(repo_b, head_b)
     ejecuta_gates(staging, politica_head, destinos_vivos={"backend": repo_b, "dashboard": repo_d})
     fab.hidrata_minimo(staging, head_backend=head_b)
@@ -405,6 +417,23 @@ def test_un_par_sucio_o_con_temporales_preplantados_se_invalida(
         aplica(c.staging, c.manifiesto, raiz)
     assert (wt_d / "index.html").read_text() == "semana 31"
     assert RegistroDestinos.lee(raiz).estado == ESTADO_INVALIDO
+
+
+def test_un_baseline_tomado_sobre_un_canonico_sucio_invalida_el_par(tmp_path: Path) -> None:
+    """Control de M32 por el camino real: el worktree está limpio en el HEAD, pero el sello
+    registró como baseline una edición sin confirmar del canónico. No coinciden: no se
+    instala, y el par queda inválido."""
+    c = _corrida(tmp_path, canonico_sucio=True)
+    raiz = tmp_path / "destinos"
+    registro = prepara_worktrees(c.ruta_manifiesto, c.repos, raiz)
+
+    with pytest.raises(StagingError, match="el destino cambió desde el sellado"):
+        aplica(c.staging, c.manifiesto, raiz)
+
+    assert RegistroDestinos.lee(raiz).estado == ESTADO_INVALIDO
+    wt_b = Path(registro.destinos["backend"].ruta)
+    assert (wt_b / "reports" / "ProdDetails" / "tabla.csv").read_text() == "viejo\n"
+    assert _git(wt_b, "status", "--porcelain").strip() == ""
 
 
 def test_un_par_invalido_no_se_reutiliza(tmp_path: Path) -> None:

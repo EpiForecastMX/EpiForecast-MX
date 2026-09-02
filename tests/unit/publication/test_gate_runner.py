@@ -327,6 +327,47 @@ def test_sellar_sin_haber_corrido_los_gates_aborta_antes_de_podar(tmp_path: Path
     assert (trabajo / "outputs" / "dashboard" / "index.html").read_text() == "uno"
 
 
+def test_sellar_con_evidencia_fail_aborta_antes_de_podar(tmp_path: Path, capsys) -> None:
+    """La evidencia se valida ENTERA antes de podar: un FAIL no deja el árbol reducido."""
+    from scripts.refresh_staging import main
+
+    repo, head = _repo_con_politica(
+        tmp_path / "repo", _politica_cruda([_python("cifras", "raise SystemExit(1)")])
+    )
+    trabajo = _staging(tmp_path / "trabajo")
+    semilla = tmp_path / "semilla.json"
+    assert main(["snapshot", "--raiz", str(trabajo / "outputs"), "--salida", str(semilla)]) == 0
+    _hidrata(trabajo, repo, head)
+    assert main(_argv_run_gates(trabajo, repo, head)) == 1
+    capsys.readouterr()
+
+    assert main(_argv_seal(trabajo, repo, head, semilla)) == 1
+
+    assert "declara FAIL" in capsys.readouterr().err
+    assert (trabajo / "outputs" / "dashboard" / "index.html").read_text() == "uno", "no podó"
+
+
+def test_sellar_con_evidencia_de_otra_composicion_aborta_antes_de_podar(
+    tmp_path: Path, capsys
+) -> None:
+    from scripts.refresh_staging import main
+
+    repo, head = _repo_con_politica(tmp_path / "repo", _politica_cruda([_gate("cifras")]))
+    trabajo = _staging(tmp_path / "trabajo")
+    semilla = tmp_path / "semilla.json"
+    assert main(["snapshot", "--raiz", str(trabajo / "outputs"), "--salida", str(semilla)]) == 0
+    _hidrata(trabajo, repo, head)
+    assert main(_argv_run_gates(trabajo, repo, head)) == 0
+    # Un byte cambia DESPUÉS de los gates.
+    (trabajo / "outputs" / "dashboard" / "index.html").write_text("dos", encoding="utf-8")
+    capsys.readouterr()
+
+    assert main(_argv_seal(trabajo, repo, head, semilla)) == 1
+
+    assert "algo cambió después de los gates" in capsys.readouterr().err
+    assert (trabajo / "outputs" / "dashboard" / "index.html").read_text() == "dos", "no podó"
+
+
 def test_seal_no_consume_evidencia_escrita_a_mano(tmp_path: Path) -> None:
     """Un `gates/` con sólo un índice que dice PASS no es evidencia."""
     raiz = _staging(tmp_path / "staging")
