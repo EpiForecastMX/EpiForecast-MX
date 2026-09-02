@@ -4,10 +4,13 @@
 
 La fuente oficial 2026 fue comprobada el 2-sep-2026: contiene 33 boletines y el último
 verificable es W33; W34 aún no está publicada. El candidato sellado vigente es
-`2ae89151e88aa92a`, de W31 a W33, con Alzheimer, Depresión, Parkinson y Dengue en el
-mismo corte, `cifras` PASS y `rag` PASS. Backend:
-`p1/actualizacion-semanal-2026-w33@6ab8a079` (PR draft #15). Frontend:
-`p1/actualizacion-semanal-2026-w33@a35bdfb3` (PR draft #11, deploy preview verde).
+`882663dac1f1e39b`, de W31 a W33, con Alzheimer, Depresión, Parkinson y Dengue en el
+mismo corte, 1,800 artefactos, 0 lápidas, `cifras` PASS y `rag` PASS. Backend:
+checkpoint material `e8f7ba0a` en `p1/actualizacion-semanal-2026-w33` (PR draft #15),
+con el estado documental encima. Frontend:
+`p1/actualizacion-semanal-2026-w33@d0826bda` (PR draft #11). El sello anterior
+`2ae89151e88aa92a` quedó supersedido después de que CI detectara el catálogo canónico
+rancio; `6d6dbd95` lo incorporó al carril y `96a940ce` hizo byte-estable su JSON.
 
 Invariante no negociable: el conjunto derivado del registry con `lifecycle=published`
 avanza como una unidad. Si cualquier publicado falta o no comparte exactamente

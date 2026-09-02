@@ -1,6 +1,6 @@
 # GEMINI.md — Contexto operativo de EpiForecast-MX
 
-> Actualizado contra `p1/actualizacion-semanal-2026-w33@6ab8a079`, basada en
+> Actualizado contra `p1/actualizacion-semanal-2026-w33` (checkpoint material `e8f7ba0a`), basada en
 > `main@5da24116`, el 2-sep-2026.
 > Guía para Gemini CLI dentro de `EpiForecast-MX`; no sustituye las órdenes del
 > workspace ni autoriza acciones externas.
@@ -8,10 +8,13 @@
 ## 0. Trabajo activo: P1 W33 y paridad obligatoria
 
 Validado contra la página oficial el 2-sep-2026: hay 33 boletines de 2026 y el máximo es
-W33; W34 no está publicada. El sello aplicable `2ae89151e88aa92a` lleva juntos a
-Alzheimer, Depresión, Parkinson y Dengue de W31 a W33, con gates `cifras` y `rag` PASS.
-Backend `p1/actualizacion-semanal-2026-w33@6ab8a079` está en PR draft #15; frontend
-`p1/actualizacion-semanal-2026-w33@a35bdfb3`, en PR draft #11 con preview verde.
+W33; W34 no está publicada. El sello aplicable `882663dac1f1e39b` lleva juntos a
+Alzheimer, Depresión, Parkinson y Dengue de W31 a W33, con 1,800 artefactos, 0 lápidas y
+gates `cifras` y `rag` PASS. El backend tiene checkpoint material `e8f7ba0a` más el
+estado documental en `p1/actualizacion-semanal-2026-w33`, PR draft #15; frontend
+`p1/actualizacion-semanal-2026-w33@d0826bda`, PR draft #11.
+El sello `2ae89151e88aa92a` queda supersedido: CI encontró el catálogo canónico rancio y
+la corrida completa se repitió tras cerrar el cableado y la estabilidad byte a byte.
 
 Regla gobernante: todos los miembros `published` del registry comparten un corte público
 único. Uno faltante, adelantado, atrasado o sin cobertura exacta bloquea el lote completo;
@@ -66,10 +69,10 @@ por separado. Para revisar o diagnosticar, no implementar ni mutar salvo petici�
 ### Repositorios
 
 - Backend: `EpiForecast-MX`, rama de trabajo
-  `p1/actualizacion-semanal-2026-w33@6ab8a079`, publicada en `origin` y abierta como PR
+  `p1/actualizacion-semanal-2026-w33`, checkpoint material `e8f7ba0a`, abierta como PR
   draft #15 contra `main@5da24116`.
 - Frontend canónico: `EpiForecast-IMSS-Dashboard`, `main@0e777995`; la candidata P1 vive
-  en `p1/actualizacion-semanal-2026-w33@a35bdfb3`, PR draft #11.
+  en `p1/actualizacion-semanal-2026-w33@d0826bda`, PR draft #11.
   durante P0.
 - Quedan dos ramas ya mergeadas, locales y remotas: `ci/skip-budget-ets-legacy` y
   `fix/frontend-deudas`. Ambas puntas son ancestros comprobados de `main`; no confundir

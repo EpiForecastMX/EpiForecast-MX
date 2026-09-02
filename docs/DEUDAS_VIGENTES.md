@@ -9,10 +9,13 @@
 ## Activa — P1 W33 y corte público único
 
 La fuente oficial 2026 expone 33 boletines al 2-sep; W34 no está publicada. El sello
-aplicable `2ae89151e88aa92a` lleva a W33, en una sola composición, a Alzheimer, Depresión,
-Parkinson y Dengue; `cifras` y `rag` pasan. Backend PR draft #15:
-`p1/actualizacion-semanal-2026-w33@6ab8a079`. Frontend PR draft #11:
-`p1/actualizacion-semanal-2026-w33@a35bdfb3`, con deploy preview verde.
+aplicable `882663dac1f1e39b` lleva a W33, en una sola composición, a Alzheimer, Depresión,
+Parkinson y Dengue; contiene 1,800 artefactos, 0 lápidas y `cifras`/`rag` PASS. Backend PR
+draft #15: checkpoint material `e8f7ba0a` en `p1/actualizacion-semanal-2026-w33`, con
+documentación encima. Frontend PR draft #11:
+`p1/actualizacion-semanal-2026-w33@d0826bda`. El sello anterior `2ae89151e88aa92a` quedó
+supersedido: CI encontró el catálogo canónico rancio, se corrigieron su cableado y salida
+byte-estable, y se repitió la cadena completa.
 
 Política permanente: todos los padecimientos `published` del registry tienen un único
 corte público. Si cualquiera falta o difiere en año/semana, no se sella ni publica ningún

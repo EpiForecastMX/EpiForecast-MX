@@ -439,9 +439,11 @@ make update-week     # BLOCKED while the sealed P0 workflow is completed (see se
 
 > **Operational status — 2026-09-02: P1 W33 candidate sealed, not published.** The official
 > 2026 source currently exposes 33 bulletins; W34 is not yet published. Sealed run
-> `2ae89151e88aa92a` advances Alzheimer, Depression, Parkinson and Dengue together from W31
-> to W33, with the `cifras` and `rag` gates passing. Backend PR #15 and frontend PR #11 are
-> drafts; neither the candidate nor its deploy preview is production.
+> `882663dac1f1e39b` advances Alzheimer, Depression, Parkinson and Dengue together from W31
+> to W33, with 1,800 artifacts, zero tombstones, and the `cifras` and `rag` gates passing.
+> It supersedes `2ae89151e88aa92a` after CI exposed a stale canonical catalog and the whole
+> sealed run was rebuilt. Backend PR #15 and frontend PR #11 are drafts; the candidate is
+> not production.
 >
 > Every disease whose registry lifecycle is `published` must have the exact same public
 > `(year, epidemiological week)`. If one disease is missing, ahead or behind, the whole

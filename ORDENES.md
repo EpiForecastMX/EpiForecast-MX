@@ -3,9 +3,11 @@
 ## 0 · P1 W33 — todos los publicados avanzan juntos
 
 Fuente oficial validada el 2-sep-2026: 33 boletines disponibles, máximo W33; W34 aún no
-existe. Sello candidato `2ae89151e88aa92a`: W31→W33, Alzheimer + Depresión + Parkinson +
-Dengue en corte común, `cifras` y `rag` PASS. PRs draft: backend #15 en `6ab8a079` y
-frontend #11 en `a35bdfb3` (preview verde). No confundir candidato con publicación.
+existe. Sello candidato vigente `882663dac1f1e39b`: W31→W33, Alzheimer + Depresión +
+Parkinson + Dengue en corte común, 1,800 artefactos, 0 lápidas, `cifras` y `rag` PASS.
+PRs draft: backend #15 con checkpoint material `e8f7ba0a` y frontend #11 en `d0826bda`. El sello anterior
+`2ae89151e88aa92a` está supersedido por la corrección del catálogo canónico. No confundir
+candidato con publicación.
 
 Regla de operación: resolver del HEAD todos los `lifecycle=published` y exigir exactamente
 el mismo `(año, semana)` para cada uno en consolidado, salidas y superficies. Si uno no
