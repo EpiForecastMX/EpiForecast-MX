@@ -19,6 +19,7 @@ from dataclasses import dataclass
 import io
 import json
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import tarfile
@@ -32,6 +33,93 @@ from epiforecast.publication.weekly_staging import (
 )
 
 ARCHIVO_MATERIALIZACION = "materializacion.json"
+_RE_SHA1 = re.compile(r"[0-9a-f]{40}")
+_RE_SHA256 = re.compile(r"[0-9a-f]{64}")
+
+
+@dataclass(frozen=True)
+class RegistroMaterializacion:
+    """Lo que `materialize` dejó escrito: de qué HEAD y con qué política se extrajo el árbol.
+
+    Es el ancla del resto del flujo: `hydrate`, `run-gates` y `seal` reciben HEAD y política
+    por argumentos, y sin esto nada impedía materializar desde un commit, hidratar desde
+    otro y sellar contra un tercero.
+    """
+
+    heads: dict[str, str]
+    politica: dict[str, str]
+    prefijos: tuple[str, ...]
+    archivos: int
+
+    @staticmethod
+    def lee(trabajo: Path) -> RegistroMaterializacion:
+        ruta = trabajo / ARCHIVO_MATERIALIZACION
+        if ruta.is_symlink() or not ruta.is_file():
+            raise StagingError(
+                f"no hay materialización registrada en {trabajo}; el trabajo tiene que salir de "
+                "`materialize`"
+            )
+        try:
+            crudo = json.loads(ruta.read_bytes())
+        except json.JSONDecodeError as exc:
+            raise StagingError(f"registro de materialización ilegible: {exc}") from exc
+        if not isinstance(crudo, dict) or set(crudo) != {
+            "heads",
+            "politica",
+            "prefijos",
+            "archivos",
+        }:
+            raise StagingError("registro de materialización malformado")
+        heads = crudo["heads"]
+        if (
+            not isinstance(heads, dict)
+            or set(heads) != set(PREFIJOS_SELLABLES)
+            or not all(isinstance(h, str) and _RE_SHA1.fullmatch(h) for h in heads.values())
+        ):
+            raise StagingError("la materialización no identifica un HEAD SHA1 por repositorio")
+        politica = crudo["politica"]
+        if (
+            not isinstance(politica, dict)
+            or set(politica) != {"version", "sha256"}
+            or not isinstance(politica["sha256"], str)
+            or not _RE_SHA256.fullmatch(politica["sha256"])
+        ):
+            raise StagingError("la materialización no identifica la política por SHA256")
+        if not isinstance(crudo["prefijos"], list) or isinstance(crudo["archivos"], bool):
+            raise StagingError("prefijos/archivos de la materialización malformados")
+        return RegistroMaterializacion(
+            heads=dict(heads),
+            politica=dict(politica),
+            prefijos=tuple(crudo["prefijos"]),
+            archivos=int(crudo["archivos"]),
+        )
+
+
+def exige_materializacion(
+    trabajo: Path,
+    *,
+    head_backend: str,
+    head_dashboard: str | None = None,
+    politica_sha256: str | None = None,
+) -> RegistroMaterializacion:
+    """Los HEAD y la política de este paso tienen que ser los de la materialización."""
+    registro = RegistroMaterializacion.lee(trabajo)
+    if registro.heads["backend"] != head_backend:
+        raise StagingError(
+            f"el candidato se materializó desde el backend {registro.heads['backend'][:12]} y "
+            f"este paso declara {head_backend[:12]}; no es el mismo árbol"
+        )
+    if head_dashboard is not None and registro.heads["dashboard"] != head_dashboard:
+        raise StagingError(
+            f"el candidato se materializó desde el dashboard {registro.heads['dashboard'][:12]} "
+            f"y este paso declara {head_dashboard[:12]}; no es el mismo árbol"
+        )
+    if politica_sha256 is not None and registro.politica["sha256"] != politica_sha256:
+        raise StagingError(
+            "la política de este paso no es la que gobernó la materialización "
+            f"({registro.politica['sha256'][:12]}… frente a {politica_sha256[:12]}…)"
+        )
+    return registro
 
 
 @dataclass(frozen=True)

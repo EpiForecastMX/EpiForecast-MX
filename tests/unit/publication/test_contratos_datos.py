@@ -14,6 +14,7 @@ import pytest
 
 from epiforecast.publication.contratos_datos import (
     ContratoCobertura,
+    revisa_aditivo,
     revisa_candidato,
     revisa_consolidado,
     revisa_forecasts_listados,
@@ -305,3 +306,156 @@ def test_un_forecast_de_cohorte_de_conteo_declara_su_propio_conjunto(tmp_path: P
     assert not revisa_forecasts_listados([ruta], fab.CONTRATO).pasa, (
         "como legacy le faltarían las neuro"
     )
+
+
+# ── profundidad absoluta, continuidad MMWR y el ancla aditiva ────────────────
+
+
+def test_un_consolidado_mas_corto_que_la_profundidad_minima_falla(tmp_path: Path) -> None:
+    """Dos semanas donde el contrato exige tres: una ventana relativa se conformaría."""
+    from dataclasses import replace
+
+    contrato = replace(fab.CONTRATO, profundidad_minima=3)
+    ruta = _archivo(tmp_path, "c.csv", fab.consolidado_csv())
+
+    cobertura = revisa_consolidado(ruta, contrato, fab.PADECIMIENTOS)
+
+    assert not cobertura.pasa
+    assert any(
+        "2 semana(s), y el contrato exige al menos 3 contiguas" in p for p in cobertura.problemas
+    )
+    assert cobertura.cifras["semanas"] == {slug(p): 2 for p in fab.PADECIMIENTOS}
+
+
+def test_un_hueco_en_las_ultimas_semanas_falla_y_uno_historico_se_informa(tmp_path: Path) -> None:
+    from dataclasses import replace
+
+    # Salto W30 -> W32 (falta la 31) dentro de la profundidad exigida.
+    ruta = _archivo(tmp_path, "c.csv", fab.consolidado_csv(semanas=((2026, 30), (2026, 32))))
+    cobertura = revisa_consolidado(ruta, fab.CONTRATO, fab.PADECIMIENTOS)
+    assert any(
+        "hueco(s) en las últimas 2 semanas: [((2026, 30), (2026, 32))]" in p
+        for p in cobertura.problemas
+    )
+
+    # El mismo hueco, pero anterior a la profundidad exigida: se informa, no bloquea.
+    ruta2 = _archivo(
+        tmp_path, "c2.csv", fab.consolidado_csv(semanas=((2026, 28), (2026, 30), (2026, 31)))
+    )
+    cobertura2 = revisa_consolidado(
+        ruta2, replace(fab.CONTRATO, profundidad_minima=2), fab.PADECIMIENTOS
+    )
+    assert cobertura2.pasa
+    assert cobertura2.cifras["huecos_historicos"] == {slug(p): 1 for p in fab.PADECIMIENTOS}
+
+
+def test_el_cruce_de_ano_mmwr_no_es_un_hueco(tmp_path: Path) -> None:
+    """2025 tiene 53 semanas MMWR: 2025-W53 -> 2026-W1 es contiguo; 2025-W52 -> 2026-W1 no."""
+    ruta = _archivo(tmp_path, "c.csv", fab.consolidado_csv(semanas=((2025, 53), (2026, 1))))
+    assert revisa_consolidado(ruta, fab.CONTRATO, fab.PADECIMIENTOS).pasa
+    ruta2 = _archivo(tmp_path, "c2.csv", fab.consolidado_csv(semanas=((2025, 52), (2026, 1))))
+    assert not revisa_consolidado(ruta2, fab.CONTRATO, fab.PADECIMIENTOS).pasa
+
+
+def test_el_candidato_contiene_la_base_intacta(tmp_path: Path) -> None:
+    base = _archivo(tmp_path, "base.csv", fab.consolidado_csv())
+    nuevo = _archivo(
+        tmp_path, "nuevo.csv", fab.consolidado_csv(semanas=(*fab.SEMANAS, (2026, 32)))
+    )
+    cobertura = revisa_aditivo(base, nuevo, fab.CONTRATO, fab.PADECIMIENTOS)
+    assert cobertura.pasa
+    assert cobertura.cifras == {"filas_base": 16, "filas_nuevas": 8}
+
+    # Una semana entera de la base que el candidato ya no trae: se perdió, no se añadió.
+    base3 = _archivo(
+        tmp_path, "base3.csv", fab.consolidado_csv(semanas=((2026, 29), (2026, 30), (2026, 31)))
+    )
+    cobertura = revisa_aditivo(base3, base, fab.CONTRATO, fab.PADECIMIENTOS)
+    assert any("perdió 8 fila(s) de la base" in p for p in cobertura.problemas)
+
+    cambiado = _archivo(
+        tmp_path, "cambiado.csv", fab.consolidado_csv().replace("3,10,12", "3,10,13")
+    )
+    cobertura = revisa_aditivo(base, cambiado, fab.CONTRATO, fab.PADECIMIENTOS)
+    assert any("cambió 16 fila(s) ya publicadas" in p for p in cobertura.problemas)
+
+    # Una entidad con OTRO nombre del catálogo sigue siendo la misma fila (alias), no una pérdida.
+    alias = _archivo(
+        tmp_path, "alias.csv", fab.consolidado_csv(sustituir={"México": "Estado de México"})
+    )
+    assert revisa_aditivo(base, alias, fab.CONTRATO, fab.PADECIMIENTOS).pasa
+
+    # Columnas perdidas: el candidato no es un superconjunto.
+    sin_columna = _archivo(
+        tmp_path,
+        "sin.csv",
+        "\n".join(",".join(linea.split(",")[:6]) for linea in fab.consolidado_csv().splitlines())
+        + "\n",
+    )
+    assert any(
+        "perdió columnas" in p
+        for p in revisa_aditivo(base, sin_columna, fab.CONTRATO, fab.PADECIMIENTOS).problemas
+    )
+
+
+def test_un_forecast_con_una_serie_repetida_falla(tmp_path: Path) -> None:
+    """Antes se deduplicaba por clave antes de comparar y la repetición era invisible."""
+    repetido = fab.forecast_csv() + fab.forecast_csv().split("\n", 1)[1]
+    ruta = tmp_path / "prophet" / "all_forecast_prophet.csv"
+    ruta.parent.mkdir()
+    ruta.write_text(repetido, encoding="utf-8")
+
+    cobertura = revisa_forecasts_listados([ruta], fab.CONTRATO)
+
+    assert not cobertura.pasa
+    assert any("serie(s) con fechas repetidas" in p for p in cobertura.problemas)
+
+
+def test_un_catalogo_con_alias_ambiguo_no_gobierna() -> None:
+    ambiguo = fab.CATALOGO_CSV + "14,Jalisco,Jalisco,occidente,Occidente,Edomex\n"
+    with pytest.raises(StagingError, match="ambiguo: el alias 'Edomex'"):
+        ContratoCobertura.desde_catalogo(ambiguo)
+    colision = fab.CATALOGO_CSV.replace("Estado de México|Edomex", "Aguascalientes")
+    with pytest.raises(StagingError, match="alias que son también entidades"):
+        ContratoCobertura.desde_catalogo(colision)
+
+
+def test_los_padecimientos_del_contrato_salen_del_registry_del_head(tmp_path: Path) -> None:
+    """El HEAD lleva un registry donde Dengue no está publicado: el contrato de ESE commit no
+    lo exige, aunque el registry del intérprete (el worktree real) sí."""
+    politica = fab.politica_cruda(("dashboard/index.html",))
+    yaml_sin_dengue = fab.REGISTRY_YAML.replace(
+        "lifecycle: published",
+        "lifecycle: trained",
+        fab.REGISTRY_YAML.count("lifecycle: published"),
+    )
+    # Sólo se despublica Dengue: se vuelve a publicar la cohorte neuro.
+    import yaml as _yaml
+
+    crudo = _yaml.safe_load(fab.REGISTRY_YAML)
+    for pad in crudo["padecimientos"]:
+        if pad.get("batch", "General") != "General" and pad.get("lifecycle") == "published":
+            pad["lifecycle"] = "trained"
+    repo, head = fab.repo_backend(
+        tmp_path / "repo",
+        politica=politica,
+        extra_rastreados={
+            "config/padecimientos.yaml": _yaml.safe_dump(
+                crudo, allow_unicode=True, sort_keys=False
+            )
+        },
+    )
+    del yaml_sin_dengue
+
+    contrato = ContratoCobertura.del_head(repo, head)
+
+    assert contrato.neuro == fab.CONTRATO.neuro
+    assert contrato.conteo == ()
+    assert contrato.profundidad_minima == fab.PROFUNDIDAD_MINIMA
+
+    # Y el worktree tiene que llevar exactamente el registry del HEAD.
+    (repo / "config" / "padecimientos.yaml").write_text(fab.REGISTRY_YAML, encoding="utf-8")
+    with pytest.raises(
+        StagingError, match="registry de padecimientos config/padecimientos.yaml difiere"
+    ):
+        ContratoCobertura.del_head(repo, head)

@@ -29,6 +29,10 @@ from epiforecast.publication.weekly_staging import (
 )
 
 TRUE = shutil.which("true") or "/usr/bin/true"
+_RAIZ_REAL = Path(__file__).resolve().parents[3]
+# El registry real, tal cual: el contrato del CLI lo lee del HEAD del repositorio sintético.
+REGISTRY_YAML = (_RAIZ_REAL / "config" / "padecimientos.yaml").read_text(encoding="utf-8")
+PROFUNDIDAD_MINIMA = 2  # las semanas del contrato pequeño
 
 # Padecimientos y regiones REALES (registry y constants, que es de donde el CLI deriva el
 # contrato); sólo el catálogo de entidades es diminuto: dos, con un alias.
@@ -43,6 +47,7 @@ CONTRATO = ContratoCobertura(
     entidades=("aguascalientes", "mexico"),
     alias={"estado de mexico": "mexico", "edomex": "mexico"},
     regiones=tuple(slug(r) for r in INEGI_REGIONS),
+    profundidad_minima=PROFUNDIDAD_MINIMA,
 )
 ENTIDADES = ("Aguascalientes", "México")
 REGIONES = tuple(f"region_{r}" for r in INEGI_REGIONS)
@@ -68,6 +73,7 @@ def consolidado_csv(
     quitar: set[tuple[str, str]] = frozenset(),
     duplicar: set[tuple[str, str]] = frozenset(),
     sustituir: dict[str, str] | None = None,
+    semanas: tuple[tuple[int, int], ...] = SEMANAS,
 ) -> str:
     """Filas (Anio, Semana, Entidad, Padecimiento, Casos_semana) para el contrato pequeño.
 
@@ -78,8 +84,8 @@ def consolidado_csv(
     lineas = ["Anio,Semana,Entidad,Padecimiento,Casos_semana,Acumulado_hombres,Acumulado_mujeres"]
     cortes = cortes or {}
     for pad in PADECIMIENTOS:
-        ultimo = cortes.get(pad, SEMANAS[-1])
-        for anio, semana in SEMANAS:
+        ultimo = cortes.get(pad, semanas[-1])
+        for anio, semana in semanas:
             if (anio, semana) > ultimo:
                 continue
             for entidad in ENTIDADES:
@@ -144,6 +150,7 @@ def knowledge_json(
     max_semana: int = 31,
     faltan: set[tuple[str, str]] = frozenset(),
     rosters_ok: bool = True,
+    extra: dict[str, Any] | None = None,
 ) -> str:
     modelos = [
         {"padecimiento": pad, "entidad": entidad, "sexo": sexo, "modelo_produccion": "Prophet"}
@@ -157,7 +164,14 @@ def knowledge_json(
         "por_cohorte": {"neuro": 21 * len(PADECIMIENTOS_NEURO), "dengue": 9},
     }
     return json.dumps(
-        {"_version": "1.0", "max_semana": max_semana, "prod_models": modelos, "rosters": rosters},
+        {
+            "_version": "1.0",
+            "max_semana": max_semana,
+            "boletin": {"ultima_semana": {"anio": 2026, "semana": max_semana}},
+            "prod_models": modelos,
+            "rosters": rosters,
+            **(extra or {}),
+        },
         ensure_ascii=False,
     )
 
@@ -225,8 +239,9 @@ def lista_entradas_cruda(
         (RUTA_FORECAST, "forecast", True),
     ]
     return {
-        "version": "entradas/1",
+        "version": "entradas/2",
         "directorio_boletines": "data/raw_PDFs",
+        "profundidad_minima_semanas": PROFUNDIDAD_MINIMA,
         "entradas": [{"ruta": r, "rol": rol, "obligatoria": ob} for r, rol, ob in entradas],
     }
 
@@ -287,6 +302,7 @@ def repo_backend(
         )
         + "\n",
         "config/geografia/entidades_mx.csv": CATALOGO_CSV,
+        "config/padecimientos.yaml": REGISTRY_YAML,
         "reports/ProdDetails/tabla.csv": "viejo\n",
         "src/codigo.py": "print('sandbox')\n",
         ".gitignore": "data/\nreports/forecasts/\n",
@@ -366,6 +382,10 @@ def hidrata_minimo(
     for boletin in boletines:
         copia = inputs / "boletines" / boletin.nombre
         copia.write_bytes(b"%PDF-" + boletin.nombre.encode())
+        # Como en la hidratación real: el PDF también vive en el sandbox, inmutable.
+        en_sandbox = sandbox / "data" / "raw_PDFs" / boletin.nombre
+        en_sandbox.parent.mkdir(parents=True, exist_ok=True)
+        en_sandbox.write_bytes(copia.read_bytes())
         entradas[f"data/raw_PDFs/{boletin.nombre}"] = {
             "rol": "pdf",
             "bytes": copia.stat().st_size,
@@ -373,7 +393,7 @@ def hidrata_minimo(
         }
     registro = RegistroHidratacion(
         head_backend=head_backend,
-        lista={"version": "entradas/1", "sha256": "1" * 64},
+        lista={"version": "entradas/2", "sha256": "1" * 64},
         sandbox=str(sandbox.resolve()),
         consolidado=RUTA_CONSOLIDADO,
         entradas=entradas,
@@ -394,3 +414,37 @@ def hidrata_minimo(
 
 def esta_hidratado(raiz_staging: Path) -> bool:
     return (raiz_staging / ARCHIVO_ENTRADAS).is_file()
+
+
+def materializa_a_mano(
+    trabajo: Path, *, head_backend: str, head_dashboard: str, politica_sha256: str
+) -> None:
+    """Lo que `materialize` registra, para stagings montados a mano en las pruebas.
+
+    `hydrate`, `run-gates` y `seal` exigen este registro y lo contrastan con sus
+    argumentos: un staging sin él no sale de `materialize` y no se sella.
+    """
+    (trabajo / "materializacion.json").write_text(
+        json.dumps(
+            {
+                "heads": {"backend": head_backend, "dashboard": head_dashboard},
+                "politica": {"version": VERSION_POLITICA, "sha256": politica_sha256},
+                "prefijos": ["backend/reports/ProdDetails/", "dashboard/"],
+                "archivos": 0,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def sha_politica_del_head(repo: Path, head: str) -> str:
+    """Digest de la política en el commit, sin contrastar el worktree (eso lo hace el CLI)."""
+    crudo = subprocess.run(
+        ["git", "-C", str(repo), "show", f"{head}:config/publication/politica_censo.json"],
+        check=True,
+        capture_output=True,
+    ).stdout
+    return hashlib.sha256(crudo).hexdigest()

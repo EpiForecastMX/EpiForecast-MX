@@ -39,7 +39,7 @@ from epiforecast.publication.contratos_datos import (
     revisa_produccion_dengue,
     revisa_tabla_produccion,
 )
-from epiforecast.publication.materializa import _archiva, _extrae
+from epiforecast.publication.materializa import _archiva, _extrae, exige_materializacion
 from epiforecast.publication.weekly_staging import (
     ARCHIVO_ENTRADAS,
     DIR_INPUTS,
@@ -53,7 +53,7 @@ from epiforecast.publication.weekly_staging import (
 
 NOMBRE_BACKEND = "EpiForecast-MX"
 NOMBRE_DASHBOARD = "EpiForecast-IMSS-Dashboard"
-VERSION_LISTA = "entradas/1"
+VERSION_LISTA = "entradas/2"
 ROLES = (
     "consolidado",
     "forecast",
@@ -64,8 +64,17 @@ ROLES = (
     "tableau",
     "inegi",
     "contexto",
+    "metricas",  # métricas CV de los modelos congelados (entrada de tabla-produccion)
+    "dengue_interim",  # serie extraída y manifiesto de Dengue: la extracción incremental parte de ahí
+    "geo",  # geometría de entidades para los mapas
+)
+# Roles que ningún generador del refresh reescribe: si al sellar difieren de lo hidratado,
+# algo escribió sobre una entrada y el candidato no salió de las entradas selladas.
+ROLES_INMUTABLES = frozenset(
+    {"forecast", "forecast_conteo", "inegi", "contexto", "metricas", "geo", "pdf"}
 )
 _RE_NOMBRE_PDF = re.compile(r"[A-Za-z0-9_.-]{1,120}\.pdf")
+_CARACTERES_PATRON = frozenset("*?[")
 
 
 @dataclass(frozen=True)
@@ -73,6 +82,10 @@ class Entrada:
     ruta: str
     rol: str
     obligatoria: bool
+
+    @property
+    def es_patron(self) -> bool:
+        return any(c in self.ruta for c in _CARACTERES_PATRON)
 
 
 @dataclass(frozen=True)
@@ -82,6 +95,7 @@ class ListaEntradas:
     version: str
     sha256: str
     directorio_boletines: str
+    profundidad_minima: int
     entradas: tuple[Entrada, ...]
 
     @staticmethod
@@ -112,15 +126,20 @@ class ListaEntradas:
         if not isinstance(crudo, dict) or set(crudo) != {
             "version",
             "directorio_boletines",
+            "profundidad_minima_semanas",
             "entradas",
         }:
             raise StagingError(
-                "lista de entradas malformada: claves {version, directorio_boletines, entradas}"
+                "lista de entradas malformada: claves {version, directorio_boletines, "
+                "profundidad_minima_semanas, entradas}"
             )
         if crudo["version"] != VERSION_LISTA:
             raise StagingError(f"lista de entradas de otra versión: {crudo['version']!r}")
         directorio = crudo["directorio_boletines"]
         _valida_ruta_relativa(directorio, "directorio de boletines")
+        profundidad = crudo["profundidad_minima_semanas"]
+        if isinstance(profundidad, bool) or not isinstance(profundidad, int) or profundidad < 1:
+            raise StagingError("profundidad_minima_semanas tiene que ser un entero >= 1")
         if not isinstance(crudo["entradas"], list) or not crudo["entradas"]:
             raise StagingError("la lista de entradas no declara ninguna entrada")
         entradas: list[Entrada] = []
@@ -132,7 +151,12 @@ class ListaEntradas:
                 raise StagingError(f"rol de entrada desconocido: {item['rol']!r}")
             if not isinstance(item["obligatoria"], bool):
                 raise StagingError(f"'obligatoria' tiene que ser booleano en {item['ruta']}")
-            entradas.append(Entrada(item["ruta"], item["rol"], item["obligatoria"]))
+            entrada = Entrada(item["ruta"], item["rol"], item["obligatoria"])
+            if entrada.es_patron and entrada.rol in ("consolidado", "tabla_produccion"):
+                raise StagingError(
+                    f"un patrón no puede tener el rol {entrada.rol!r}: {item['ruta']}"
+                )
+            entradas.append(entrada)
         rutas = [e.ruta for e in entradas]
         if len(set(rutas)) != len(rutas):
             raise StagingError("la lista de entradas repite rutas")
@@ -145,6 +169,7 @@ class ListaEntradas:
             version=crudo["version"],
             sha256=hashlib.sha256(crudo_bytes).hexdigest(),
             directorio_boletines=directorio,
+            profundidad_minima=profundidad,
             entradas=tuple(entradas),
         )
 
@@ -175,10 +200,17 @@ def _copia_regular(origen: Path, destino: Path) -> tuple[int, str]:
     destino.parent.mkdir(parents=True, exist_ok=True)
     if destino.is_symlink() or destino.exists():
         raise StagingError(f"la copia de entrada ya existe: {destino}")
+    # El digest del ORIGEN se toma antes de copiar: es lo que se declara haber hidratado.
+    # Tomarlo después dejaba pasar un origen que cambió durante la copia como si la copia
+    # fuera fiel (los dos digests salían del mismo estado final).
+    digest = sha256_de(origen)
     with origen.open("rb") as f, destino.open("xb") as g:
         shutil.copyfileobj(f, g, 1 << 20)
-    digest = sha256_de(destino)
-    if destino.stat().st_size != estado.st_size or digest != sha256_de(origen):
+    if (
+        destino.stat().st_size != estado.st_size
+        or sha256_de(destino) != digest
+        or origen.lstat().st_size != estado.st_size
+    ):
         raise StagingError(f"la copia de {origen} no coincide con el original")
     return estado.st_size, digest
 
@@ -207,6 +239,30 @@ def _hidrata_entrada(origen: Path, destino: Path) -> tuple[int, str]:
             "confírmala o descártala antes de hidratar"
         )
     return destino.stat().st_size, digest_head
+
+
+def _expande(repo_real: Path, entrada: Entrada) -> list[str]:
+    """Rutas concretas de una entrada: la suya, o lo que casa con su patrón (ordenado).
+
+    Un patrón obligatorio sin coincidencias es una entrada obligatoria ausente. Lo que casa
+    tiene que ser un archivo regular y respetar la gramática de rutas de entrada.
+    """
+    if not entrada.es_patron:
+        if not os.path.lexists(repo_real / entrada.ruta):
+            if entrada.obligatoria:
+                raise StagingError(f"falta la entrada obligatoria {entrada.ruta}")
+            return []
+        return [entrada.ruta]
+    coincidencias: list[str] = []
+    for ruta in sorted(repo_real.glob(entrada.ruta)):
+        rel = ruta.relative_to(repo_real).as_posix()
+        _valida_ruta_relativa(rel, "ruta de entrada")
+        if ruta.is_symlink() or not ruta.is_file():
+            raise StagingError(f"el patrón {entrada.ruta} casó con algo que no es archivo: {rel}")
+        coincidencias.append(rel)
+    if not coincidencias and entrada.obligatoria:
+        raise StagingError(f"el patrón obligatorio {entrada.ruta} no casa con ningún archivo")
+    return coincidencias
 
 
 @dataclass(frozen=True)
@@ -245,7 +301,14 @@ def hidrata(
     sandbox = trabajo.parent / f"{trabajo.name}.sandbox"
     if sandbox.is_symlink() or sandbox.exists():
         raise StagingError(f"ya existe el sandbox {sandbox}; no se pisa")
+    # El HEAD que se hidrata es el HEAD del que se materializó el candidato.
+    exige_materializacion(trabajo, head_backend=head_backend)
     lista = ListaEntradas.del_head(repo_backend, head_backend)
+    if lista.profundidad_minima != contrato.profundidad_minima:
+        raise StagingError(
+            f"la profundidad mínima de la lista ({lista.profundidad_minima}) no es la del "
+            f"contrato ({contrato.profundidad_minima})"
+        )
     repo_real = repo_backend.resolve()
 
     sandbox.mkdir()
@@ -260,13 +323,11 @@ def hidrata(
 
         inventario: dict[str, dict[str, Any]] = {}
         for entrada in lista.entradas:
-            origen = repo_real / entrada.ruta
-            if not os.path.lexists(origen):
-                if entrada.obligatoria:
-                    raise StagingError(f"falta la entrada obligatoria {entrada.ruta}")
-                continue
-            tamano, digest = _hidrata_entrada(origen, backend / entrada.ruta)
-            inventario[entrada.ruta] = {"rol": entrada.rol, "bytes": tamano, "sha256": digest}
+            for rel in _expande(repo_real, entrada):
+                if rel in inventario:
+                    raise StagingError(f"la entrada {rel} la declaran dos patrones/rutas")
+                tamano, digest = _hidrata_entrada(repo_real / rel, backend / rel)
+                inventario[rel] = {"rol": entrada.rol, "bytes": tamano, "sha256": digest}
 
         inputs = trabajo / DIR_INPUTS
         inputs.mkdir()

@@ -187,7 +187,7 @@ def _argv_run_gates(trabajo: Path, r: dict[str, Any]) -> list[str]:
     ]
 
 
-def _argv_seal(trabajo: Path, r: dict[str, Any]) -> list[str]:
+def _argv_seal(trabajo: Path, r: dict[str, Any], semana_nueva: str = "2026,31") -> list[str]:
     return [
         "seal",
         "--trabajo",
@@ -201,7 +201,7 @@ def _argv_seal(trabajo: Path, r: dict[str, Any]) -> list[str]:
         "--semana-anterior",
         "2026,31",
         "--semana-nueva",
-        "2026,32",
+        semana_nueva,
         "--padecimientos",
         "Dengue",
         "--destino-backend",
@@ -334,7 +334,12 @@ def test_ensayo_integral_materialize_gates_seal_apply_completitud(tmp_path: Path
     assert main(_argv_materialize(trabajo, r)) == 0
     assert "materializados" in capsys.readouterr().out
     _hidrata(trabajo, r)
-    # Generación candidata: dos superficies cambian, una tabla del backend cambia.
+    # Generación candidata: el consolidado del SANDBOX avanza a la semana 32 (sólo añade),
+    # dos superficies cambian y una tabla del backend cambia.
+    consolidado_w32 = fab.consolidado_csv(semanas=(*fab.SEMANAS, (2026, 32)))
+    (
+        trabajo.parent / f"{trabajo.name}.sandbox" / "EpiForecast-MX" / fab.RUTA_CONSOLIDADO
+    ).write_text(consolidado_w32, encoding="utf-8")
     outputs = trabajo / "outputs"
     (outputs / "dashboard" / "index.html").write_text("<h1>semana 32</h1>", encoding="utf-8")
     (outputs / "dashboard" / "epibot" / "knowledge.json").write_text(
@@ -348,10 +353,15 @@ def test_ensayo_integral_materialize_gates_seal_apply_completitud(tmp_path: Path
     assert main(_argv_run_gates(trabajo, r)) == 0
     salida = capsys.readouterr().out
     assert "gate cifras       PASS" in salida and "gate rag          PASS" in salida
-    assert main(_argv_seal(trabajo, r)) == 0
+    # Las semanas del sello se atan a los cortes: declarar W31 con un candidato en W32 aborta.
+    assert main(_argv_seal(trabajo, r)) == 1
+    assert "no es el corte del consolidado candidato (2026, 32)" in capsys.readouterr().err
+    assert main(_argv_seal(trabajo, r, semana_nueva="2026,32")) == 0
     (sellado,) = [d for d in trabajo.parent.iterdir() if (d / "manifest.json").is_file()]
     manifiesto = Manifiesto.lee(sellado / "manifest.json")
     assert manifiesto.composicion == composicion_candidata
+    assert (sellado / "inputs" / "consolidado_candidato.csv").read_text() == consolidado_w32
+    assert manifiesto.entrada.lista["version"] == "entradas/2"
     assert set(manifiesto.inventario) == {
         "dashboard/index.html",
         "dashboard/epibot/knowledge.json",
@@ -453,6 +463,7 @@ def test_una_superficie_retirada_sin_permiso_no_sella(tmp_path: Path, capsys) ->
     r2 = _repos(tmp_path / "dos", politica=_politica_cruda(gates=[fab.gate("cifras")]))
     trabajo2 = tmp_path / "trabajo2"
     assert main(_argv_materialize(trabajo2, r2)) == 0
+    _hidrata(trabajo2, r2)
     (trabajo2 / "outputs" / "dashboard" / "calass.html").unlink()
     assert main(_argv_run_gates(trabajo2, r2)) == 0
     assert main(_argv_seal(trabajo2, r2)) == 1
@@ -481,6 +492,15 @@ def test_una_materializacion_parcial_no_cubre_el_censo(tmp_path: Path, capsys) -
     )
     _git(r["repo_b"], "commit", "-qam", "gate inocuo")
     r["head_b"] = _git(r["repo_b"], "rev-parse", "HEAD").strip()
+    # La siembra a mano no pasó por `materialize`: se le da el registro que dejaría, para
+    # que la barrera que se mida sea la del censo y no la de la materialización ausente.
+    fab.materializa_a_mano(
+        trabajo,
+        head_backend=r["head_b"],
+        head_dashboard=r["head_d"],
+        politica_sha256=fab.sha_politica_del_head(r["repo_b"], r["head_b"]),
+    )
+    _hidrata(trabajo, r)
 
     assert main(_argv_run_gates(trabajo, r)) == 0
     assert main(_argv_seal(trabajo, r)) == 1
@@ -498,3 +518,30 @@ def test_seal_no_admite_operaciones_dvc(tmp_path: Path) -> None:
     with pytest.raises(SystemExit) as salida:
         main([*_argv_seal(trabajo, r), "--operacion-dvc", "data/x.dvc"])
     assert salida.value.code == 2
+
+
+def test_run_gates_y_seal_exigen_los_head_y_la_politica_de_la_materializacion(
+    tmp_path: Path, capsys
+) -> None:
+    from scripts.refresh_staging import main
+
+    r = _repos(tmp_path, politica=_politica_cruda(gates=[fab.gate("cifras")]))
+    trabajo = tmp_path / "trabajo"
+    assert main(_argv_materialize(trabajo, r)) == 0
+    _hidrata(trabajo, r)
+    # El backend avanza un commit (misma política): los pasos siguientes declaran el HEAD
+    # nuevo y el candidato se materializó desde el anterior.
+    (r["repo_b"] / "nota.txt").write_text("avanza", encoding="utf-8")
+    _git(r["repo_b"], "add", "nota.txt")
+    _git(r["repo_b"], "commit", "-qm", "avanza")
+    viejo, r["head_b"] = r["head_b"], _git(r["repo_b"], "rev-parse", "HEAD").strip()
+
+    assert main(_argv_run_gates(trabajo, r)) == 1
+    assert f"materializó desde el backend {viejo[:12]}" in capsys.readouterr().err
+    r["head_b"] = viejo
+    assert main(_argv_run_gates(trabajo, r)) == 0
+    capsys.readouterr()
+    viejo_d, r["head_d"] = r["head_d"], "e" * 40
+    assert main(_argv_seal(trabajo, r)) == 1
+    assert f"materializó desde el dashboard {viejo_d[:12]}" in capsys.readouterr().err
+    assert (trabajo / "outputs" / "dashboard" / "calass.html").is_file(), "no podó"

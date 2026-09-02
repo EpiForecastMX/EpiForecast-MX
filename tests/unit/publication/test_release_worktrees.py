@@ -191,7 +191,7 @@ def _corrida(
             head_backend=head_b,
             head_dashboard=head_d,
             semana_anterior="2026,31",
-            semana_nueva="2026,32",
+            semana_nueva="2026,31",
             padecimientos_autorizados=("Dengue",),
         ),
         semilla=semilla,

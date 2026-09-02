@@ -60,7 +60,9 @@ def _entrada() -> SelloEntrada:
     return SelloEntrada(
         head_backend=HEAD_BACKEND,
         head_dashboard=HEAD_DASHBOARD,
-        semana_anterior="2026,30",
+        # Base y candidato de la fábrica cortan en 2026-W31: las semanas del sello se atan a
+        # esos cortes (y al EpiBot del candidato), así que un sello sin semana nueva las repite.
+        semana_anterior="2026,31",
         semana_nueva="2026,31",
         padecimientos_autorizados=fab.PADECIMIENTOS,
     )
@@ -784,6 +786,7 @@ def _repo_con_politica(
     (raiz / "config" / "geografia" / "entidades_mx.csv").write_text(
         fab.CATALOGO_CSV, encoding="utf-8"
     )
+    (raiz / "config" / "padecimientos.yaml").write_text(fab.REGISTRY_YAML, encoding="utf-8")
     for rel, texto in (
         (fab.RUTA_CONSOLIDADO, fab.consolidado_csv()),
         (fab.RUTA_FORECAST, fab.forecast_csv()),
@@ -841,6 +844,14 @@ def _argv_seal(
         trabajo.parent / f"dest_{trabajo.name}",
         _politica_cruda(superficies=censo, retirables=tuple(allowlist or ()), gates=("cifras",)),
     )
+    # El staging montado a mano lleva el registro que dejaría `materialize`: HEAD y política.
+    if not (trabajo / "materializacion.json").exists():
+        fab.materializa_a_mano(
+            trabajo,
+            head_backend=head,
+            head_dashboard=head,
+            politica_sha256=fab.sha_politica_del_head(destino, head),
+        )
 
     # La evidencia la produce el runner sobre el árbol COMPLETO, antes de que `seal` pode.
     # Ya no hay un JSON de resultados que escribir: la única forma de tenerlos es correrlos.
@@ -888,7 +899,7 @@ def _argv_seal(
         "--head-dashboard",
         head,
         "--semana-anterior",
-        "2026,30",
+        "2026,31",
         "--semana-nueva",
         "2026,31",
         "--padecimientos",
@@ -2169,7 +2180,9 @@ def test_sin_hidratacion_no_hay_sello(tmp_path: Path) -> None:
 
 def test_el_sello_deriva_los_digests_del_consolidado_y_los_boletines(tmp_path: Path) -> None:
     raiz = _staging_con_artefactos(tmp_path / "staging")
-    candidato = fab.consolidado_csv().replace("3,10,12", "4,10,12")
+    # El candidato sólo AÑADE: filas de un padecimiento no publicado (como Obesidad en el
+    # consolidado real), que el contrato ignora y el invariante aditivo admite.
+    candidato = fab.consolidado_csv() + "2026,31,Aguascalientes,Obesidad,1,1,1\n"
     boletin = Boletin("2026_sem31.pdf", "https://ejemplo/sem31.pdf", 0, "")
     politica = _politica(tmp_path)
     ejecuta_gates(raiz, politica, destinos_vivos=_destinos(tmp_path))
@@ -2192,6 +2205,127 @@ def test_el_sello_deriva_los_digests_del_consolidado_y_los_boletines(tmp_path: P
         "inputs/boletines/2026_sem31.pdf",
     }
     assert "inputs" in manifiesto.payload_canonico()
+
+
+def test_un_candidato_que_cambia_una_fila_ya_publicada_no_sella(tmp_path: Path) -> None:
+    """Invariante aditivo: base ⊆ candidato con los mismos valores. Una corrección de lo ya
+    publicado no se cuela en un refresh semanal."""
+    raiz = _staging_con_artefactos(tmp_path / "staging")
+    politica = _politica(tmp_path)
+    ejecuta_gates(raiz, politica, destinos_vivos=_destinos(tmp_path))
+    fab.hidrata_minimo(
+        raiz,
+        head_backend=HEAD_BACKEND,
+        candidato=fab.consolidado_csv().replace("3,10,12", "4,10,12"),
+    )
+
+    with pytest.raises(StagingError, match="cambió 16 fila\\(s\\) ya publicadas"):
+        _sella_en(raiz, tmp_path, politica=politica, corre_gates=False)
+
+
+def test_un_candidato_que_pierde_una_semana_publicada_no_sella(tmp_path: Path) -> None:
+    """La base traía W29-W31; el candidato, W30-W31: cubre el contrato (profundidad 2,
+    contiguas) y aun así perdió lo publicado. Sólo el ancla aditiva lo ve."""
+    raiz = _staging_con_artefactos(tmp_path / "staging")
+    politica = _politica(tmp_path)
+    ejecuta_gates(raiz, politica, destinos_vivos=_destinos(tmp_path))
+    fab.hidrata_minimo(
+        raiz,
+        head_backend=HEAD_BACKEND,
+        consolidado=fab.consolidado_csv(semanas=((2026, 29), (2026, 30), (2026, 31))),
+        candidato=fab.consolidado_csv(),
+    )
+
+    with pytest.raises(StagingError, match="perdió 8 fila\\(s\\) de la base"):
+        _sella_en(raiz, tmp_path, politica=politica, corre_gates=False)
+
+
+def test_las_semanas_del_sello_se_atan_a_los_cortes(tmp_path: Path) -> None:
+    raiz = _staging_con_artefactos(tmp_path / "staging")
+    politica = _politica(tmp_path)
+    ejecuta_gates(raiz, politica, destinos_vivos=_destinos(tmp_path))
+    fab.hidrata_minimo(raiz, head_backend=HEAD_BACKEND)
+    entrada = _entrada()
+
+    entrada.semana_nueva = "2026,32"
+    with pytest.raises(
+        StagingError, match="no es el corte del consolidado candidato \\(2026, 31\\)"
+    ):
+        sella(
+            raiz,
+            entrada,
+            semilla={},
+            baseline=calcula_baseline(_destinos(tmp_path), inventaria(raiz / "outputs")),
+            politica=politica,
+            autoridad_lapidas=_autoridad_de(raiz, _destinos(tmp_path), ()),
+            contrato=fab.CONTRATO,
+        )
+    entrada.semana_nueva = "2026,31"
+    entrada.semana_anterior = "2026,30"
+    with pytest.raises(StagingError, match="no es el corte del consolidado base \\(2026, 31\\)"):
+        sella(
+            raiz,
+            entrada,
+            semilla={},
+            baseline=calcula_baseline(_destinos(tmp_path), inventaria(raiz / "outputs")),
+            politica=politica,
+            autoridad_lapidas=_autoridad_de(raiz, _destinos(tmp_path), ()),
+            contrato=fab.CONTRATO,
+        )
+    entrada.semana_anterior = "semana 31"
+    with pytest.raises(StagingError, match="forma AAAA,SS"):
+        sella(
+            raiz,
+            entrada,
+            semilla={},
+            baseline=calcula_baseline(_destinos(tmp_path), inventaria(raiz / "outputs")),
+            politica=politica,
+            autoridad_lapidas=_autoridad_de(raiz, _destinos(tmp_path), ()),
+            contrato=fab.CONTRATO,
+        )
+
+
+def test_la_semana_nueva_es_la_que_publica_el_epibot_del_candidato(tmp_path: Path) -> None:
+    """knowledge.json dice W32 y el consolidado candidato corta en W31: no cuadra."""
+    raiz = _staging_con_artefactos(tmp_path / "staging")
+    (raiz / "outputs" / "dashboard" / "epibot" / "knowledge.json").write_text(
+        fab.knowledge_json(max_semana=32), encoding="utf-8"
+    )
+    politica = _politica(tmp_path)
+    ejecuta_gates(raiz, politica, destinos_vivos=_destinos(tmp_path))
+    fab.hidrata_minimo(raiz, head_backend=HEAD_BACKEND)
+
+    with pytest.raises(
+        StagingError, match="publica la semana \\(2026, 32\\) y el sello declara \\(2026, 31\\)"
+    ):
+        _sella_en(raiz, tmp_path, politica=politica, corre_gates=False)
+
+
+def test_una_entrada_inmutable_reescrita_en_el_sandbox_no_sella(tmp_path: Path) -> None:
+    """Un generador que escribe sobre un PDF (o un forecast) produjo un candidato que no salió
+    de las entradas selladas."""
+    raiz = _staging_con_artefactos(tmp_path / "staging")
+    politica = _politica(tmp_path)
+    ejecuta_gates(raiz, politica, destinos_vivos=_destinos(tmp_path))
+    boletin = Boletin("2026_sem31.pdf", "https://ejemplo/sem31.pdf", 0, "")
+    fab.hidrata_minimo(raiz, head_backend=HEAD_BACKEND, boletines=(boletin,))
+    sandbox = tmp_path / "staging.sandbox" / "EpiForecast-MX"
+    (sandbox / "data" / "raw_PDFs" / "2026_sem31.pdf").write_bytes(b"%PDF-otro")
+
+    with pytest.raises(
+        StagingError, match="entrada inmutable data/raw_PDFs/2026_sem31.pdf \\(pdf\\) cambió"
+    ):
+        _sella_en(raiz, tmp_path, politica=politica, corre_gates=False)
+
+
+def test_el_sello_lleva_la_lista_de_entradas_y_la_exige(tmp_path: Path) -> None:
+    raiz, manifiesto = _sella(tmp_path)
+    assert manifiesto.entrada.lista == {"version": "entradas/2", "sha256": "1" * 64}
+    assert "lista" in manifiesto.payload_canonico()["entrada"]
+
+    _reescribe_manifiesto(raiz, lambda d: d["entrada"].update(lista={}))
+    with pytest.raises(StagingError, match="no identifica la lista de entradas"):
+        Manifiesto.lee(raiz / "manifest.json")
 
 
 def test_un_candidato_con_dengue_rezagado_no_sella(tmp_path: Path) -> None:

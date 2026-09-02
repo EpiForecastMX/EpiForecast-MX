@@ -76,6 +76,15 @@ def _montaje(tmp_path: Path, **kwargs):  # noqa: ANN003, ANN202
             "exactamente un consolidado obligatorio",
         ),
         (lambda d: d.update(extra=1), "malformada"),
+        (lambda d: d.pop("profundidad_minima_semanas"), "malformada"),
+        (lambda d: d.update(profundidad_minima_semanas=0), "entero >= 1"),
+        (lambda d: d.update(profundidad_minima_semanas=True), "entero >= 1"),
+        (
+            lambda d: d["entradas"].append(
+                {"ruta": "reports/*.xlsx", "rol": "tabla_produccion", "obligatoria": True}
+            ),
+            "un patrón no puede tener el rol",
+        ),
     ],
 )
 def test_el_parser_de_la_allowlist_falla_cerrado(mutador, mensaje: str) -> None:
@@ -375,3 +384,123 @@ def test_una_entrada_rastreada_se_toma_del_head_y_no_se_copia_a_ciegas(tmp_path:
             contrato=fab.CONTRATO,
         )
     assert not (tmp_path / "otro" / "trabajo.sandbox").exists()
+
+
+# ── patrones, materialización y profundidad ──────────────────────────────────
+
+
+def test_un_patron_hidrata_cada_coincidencia_con_su_rol(tmp_path: Path) -> None:
+    lista = fab.lista_entradas_cruda(
+        [
+            (fab.RUTA_CONSOLIDADO, "consolidado", True),
+            ("models/*/*/*_completo.csv", "metricas", True),
+            ("models/*/*/*.pkl", "metricas", False),
+        ]
+    )
+    repo_b, head_b, _, trabajo = _montaje(
+        tmp_path,
+        lista=lista,
+        extra_sin_rastrear={
+            "models/prophet/Dengue/Prophet_Dengue_completo.csv": "a\n",
+            "models/deepar/Dengue/Deepar_Dengue_completo.csv": "b\n",
+            "models/deepar/Dengue/otro.txt": "no casa\n",
+        },
+    )
+
+    resultado = hidrata(
+        trabajo, repo_b, head_b, padecimientos_autorizados=fab.PADECIMIENTOS, contrato=fab.CONTRATO
+    )
+
+    assert {r for r, m in resultado.registro.entradas.items() if m["rol"] == "metricas"} == {
+        "models/deepar/Dengue/Deepar_Dengue_completo.csv",
+        "models/prophet/Dengue/Prophet_Dengue_completo.csv",
+    }
+    assert not (
+        resultado.sandbox / "EpiForecast-MX" / "models" / "deepar" / "Dengue" / "otro.txt"
+    ).exists()
+
+
+def test_un_patron_obligatorio_sin_coincidencias_aborta(tmp_path: Path) -> None:
+    lista = fab.lista_entradas_cruda(
+        [
+            (fab.RUTA_CONSOLIDADO, "consolidado", True),
+            ("models/*/*/*_completo.csv", "metricas", True),
+        ]
+    )
+    repo_b, head_b, _, trabajo = _montaje(tmp_path, lista=lista)
+
+    with pytest.raises(
+        StagingError, match="patrón obligatorio models/\\*/\\*/\\*_completo.csv no casa"
+    ):
+        hidrata(
+            trabajo,
+            repo_b,
+            head_b,
+            padecimientos_autorizados=fab.PADECIMIENTOS,
+            contrato=fab.CONTRATO,
+        )
+    assert not (tmp_path / "trabajo.sandbox").exists()
+
+
+def test_hidratar_exige_el_head_de_la_materializacion(tmp_path: Path) -> None:
+    repo_b, head_b, _, trabajo = _montaje(tmp_path)
+    (repo_b / "marca.txt").write_text("otro commit", encoding="utf-8")
+    import subprocess
+
+    subprocess.run(["git", "-C", str(repo_b), "add", "marca.txt"], check=True)
+    subprocess.run(["git", "-C", str(repo_b), "commit", "-qm", "avanza"], check=True)
+    head_nuevo = subprocess.run(
+        ["git", "-C", str(repo_b), "rev-parse", "HEAD"], capture_output=True, text=True, check=True
+    ).stdout.strip()
+    assert head_nuevo != head_b
+
+    with pytest.raises(StagingError, match=f"materializó desde el backend {head_b[:12]}"):
+        hidrata(
+            trabajo,
+            repo_b,
+            head_nuevo,
+            padecimientos_autorizados=fab.PADECIMIENTOS,
+            contrato=fab.CONTRATO,
+        )
+    (trabajo / "materializacion.json").unlink()
+    with pytest.raises(StagingError, match="no hay materialización registrada"):
+        hidrata(
+            trabajo,
+            repo_b,
+            head_b,
+            padecimientos_autorizados=fab.PADECIMIENTOS,
+            contrato=fab.CONTRATO,
+        )
+
+
+def test_la_profundidad_de_la_lista_y_la_del_contrato_tienen_que_coincidir(tmp_path: Path) -> None:
+    from dataclasses import replace
+
+    repo_b, head_b, _, trabajo = _montaje(tmp_path)
+    with pytest.raises(
+        StagingError, match="profundidad mínima de la lista \\(2\\) no es la del contrato \\(52\\)"
+    ):
+        hidrata(
+            trabajo,
+            repo_b,
+            head_b,
+            padecimientos_autorizados=fab.PADECIMIENTOS,
+            contrato=replace(fab.CONTRATO, profundidad_minima=52),
+        )
+
+
+def test_el_digest_declarado_es_el_del_origen_antes_de_copiar(tmp_path: Path, monkeypatch) -> None:
+    """Un origen que cambia durante la copia no pasa por copia fiel."""
+    from epiforecast.publication import hidratacion
+
+    origen = tmp_path / "origen.csv"
+    origen.write_text("antes\n", encoding="utf-8")
+    copia_real = hidratacion.shutil.copyfileobj
+
+    def copia_que_cambia_el_origen(f, g, *a):  # noqa: ANN001, ANN202
+        copia_real(f, g, *a)
+        origen.write_text("despues\n", encoding="utf-8")
+
+    monkeypatch.setattr(hidratacion.shutil, "copyfileobj", copia_que_cambia_el_origen)
+    with pytest.raises(StagingError, match="no coincide con el original"):
+        hidratacion._copia_regular(origen, tmp_path / "copia.csv")

@@ -87,7 +87,10 @@ from epiforecast.publication.contratos_datos import (  # noqa: E402
 )
 from epiforecast.publication.gate_runner import ejecuta_gates_con_acciones  # noqa: E402
 from epiforecast.publication.hidratacion import hidrata  # noqa: E402
-from epiforecast.publication.materializa import materializa_candidato  # noqa: E402
+from epiforecast.publication.materializa import (  # noqa: E402
+    exige_materializacion,
+    materializa_candidato,
+)
 from epiforecast.publication.release_worktrees import (  # noqa: E402
     ESTADO_APLICADO,
     RegistroDestinos,
@@ -110,6 +113,7 @@ from epiforecast.publication.weekly_staging import (  # noqa: E402
     StagingError,
     calcula_baseline,
     calcula_composicion,
+    completa_entrada,
     inventaria,
     poda_a_cambiados,
     sella,
@@ -273,6 +277,7 @@ def _cmd_run_gates(args: argparse.Namespace) -> int:
     """
     trabajo = Path(args.trabajo)
     politica = PoliticaCenso.del_head(Path(args.destino_backend), args.head_backend)
+    exige_materializacion(trabajo, head_backend=args.head_backend, politica_sha256=politica.sha256)
     resultado = ejecuta_gates_con_acciones(
         trabajo,
         politica,
@@ -304,6 +309,13 @@ def _cmd_seal(args: argparse.Namespace) -> int:
     # La política se lee del commit que se sella, no del disco: una política temporal o
     # sin versionar permitiría fabricar el permiso al mismo tiempo que se usa.
     politica = PoliticaCenso.del_head(Path(args.destino_backend), args.head_backend)
+    # El sello ata materialización, hidratación, gates y política al MISMO par de HEAD.
+    exige_materializacion(
+        trabajo,
+        head_backend=args.head_backend,
+        head_dashboard=args.head_dashboard,
+        politica_sha256=politica.sha256,
+    )
 
     # La evidencia se valida ENTERA antes de podar —política, conjunto de gates, PASS y
     # composición del árbol completo—, no sólo su existencia. Podar es destructivo: un
@@ -321,21 +333,15 @@ def _cmd_seal(args: argparse.Namespace) -> int:
     valida_gates(EvidenciaGates.lee(trabajo), politica, composicion_completa)
 
     # Contratos sobre el árbol candidato COMPLETO, antes de podar: cobertura de lo que el
-    # candidato publica (knowledge, zoom) y cadena de caché frente al HEAD del dashboard.
+    # candidato publica (knowledge, zoom), cadena de caché frente al HEAD del dashboard, y
+    # las comprobaciones de datos del sello —hidratación del mismo HEAD, entradas
+    # inmutables intactas, consolidado base ⊆ candidato, semanas atadas a los cortes—.
+    # Cualquiera de ellas aborta con el árbol entero, no reducido a cambios.
     contrato = ContratoCobertura.del_head(Path(args.destino_backend), args.head_backend)
     exige_todo(revisa_candidato(outputs / "dashboard", contrato))
     revisa_cadena_cache(
         Path(args.destino_dashboard), args.head_dashboard, outputs / "dashboard", semilla
     )
-
-    poda = poda_a_cambiados(outputs, semilla)
-    inventario = poda.cambiados
-    if not inventario and not poda.eliminados_reales:
-        # Una corrida que sólo RETIRA archivos sí es una corrida: si se saliera aquí, sus
-        # lápidas se perderían en silencio y el sitio conservaría lo obsoleto.
-        print("    el refresh no cambió ningún artefacto; no hay nada que sellar")
-        return 0
-
     # Sólo lo que declara quien sella: HEADs, semanas y padecimientos. Digests del
     # consolidado, boletines e inventario de entradas los deriva `sella` de la hidratación.
     entrada = SelloEntrada(
@@ -345,6 +351,15 @@ def _cmd_seal(args: argparse.Namespace) -> int:
         semana_nueva=args.semana_nueva,
         padecimientos_autorizados=_padecimientos(args.padecimientos),
     )
+    completa_entrada(trabajo, entrada, contrato)
+
+    poda = poda_a_cambiados(outputs, semilla)
+    inventario = poda.cambiados
+    if not inventario and not poda.eliminados_reales:
+        # Una corrida que sólo RETIRA archivos sí es una corrida: si se saliera aquí, sus
+        # lápidas se perderían en silencio y el sitio conservaría lo obsoleto.
+        print("    el refresh no cambió ningún artefacto; no hay nada que sellar")
+        return 0
     # Las lápidas se DERIVAN de lo que el candidato retiró de verdad; no las declara nadie
     # a mano. Declararlas admitía dos errores simétricos —inventar una retirada y olvidar
     # otra— y sólo el primero se detectaba: una eliminación no declarada se ignoraba en

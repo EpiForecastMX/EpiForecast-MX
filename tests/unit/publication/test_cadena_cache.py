@@ -256,8 +256,15 @@ def _staging_con_epibot(tmp_path: Path) -> dict[str, Any]:
         (outputs / rel).write_text(texto, encoding="utf-8")
     semilla = trabajo / "semilla.json"
     assert main(["snapshot", "--raiz", str(trabajo / "outputs"), "--salida", str(semilla)]) == 0
+    fab.materializa_a_mano(
+        trabajo,
+        head_backend=head_b,
+        head_dashboard=head_d,
+        politica_sha256=fab.sha_politica_del_head(repo_b, head_b),
+    )
+    # Datos «nuevos» de la misma semana (el consolidado de la fábrica corta en W31).
     (outputs / "epibot" / "knowledge.json").write_text(
-        fab.knowledge_json(max_semana=32), encoding="utf-8"
+        fab.knowledge_json(extra={"nota": "regenerado"}), encoding="utf-8"
     )
     assert (
         main(

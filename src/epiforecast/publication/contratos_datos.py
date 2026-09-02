@@ -23,6 +23,7 @@ import json
 from pathlib import Path
 import re
 import subprocess
+import tempfile
 from typing import Any
 import unicodedata
 
@@ -30,6 +31,7 @@ import pandas as pd
 
 from epiforecast import registry
 from epiforecast.constants import INEGI_REGIONS
+from epiforecast.data.epi_calendar import shift as semana_siguiente
 from epiforecast.publication.errores import StagingError
 
 SEXOS: tuple[str, ...] = ("general", "hombres", "mujeres")
@@ -37,7 +39,17 @@ NACIONAL = "nacional"
 _REPO = Path(__file__).resolve().parents[3]
 CATALOGO_ENTIDADES = _REPO / "config" / "geografia" / "entidades_mx.csv"
 RUTA_CATALOGO = "config/geografia/entidades_mx.csv"
+RUTA_REGISTRY = "config/padecimientos.yaml"
+RUTA_LISTA = "config/publication/entradas_semanales.json"
 MOTORES_LEGACY: tuple[str, ...] = ("prophet", "deepar", "ensemble", "stacking")
+PROFUNDIDAD_MINIMA_POR_DEFECTO = 52
+# Columnas del consolidado cuyos valores, una vez publicados, no pueden cambiar en silencio.
+COLUMNAS_VALOR = (
+    "Casos_semana",
+    "Acumulado_hombres",
+    "Acumulado_mujeres",
+    "Acumulado_anio_anterior",
+)
 
 # Rutas de los datos que gobierna el contrato, relativas a la raíz del backend.
 RUTA_CONSOLIDADO = "data/processed/dataset_boletin_epidemiologico.csv"
@@ -64,6 +76,9 @@ class ContratoCobertura:
     entidades: tuple[str, ...]
     alias: Mapping[str, str]
     regiones: tuple[str, ...]
+    # Semanas que el consolidado tiene que traer por padecimiento, contiguas al corte. No
+    # es una ventana «relativa» que se conforma con lo que haya: es un mínimo absoluto.
+    profundidad_minima: int = PROFUNDIDAD_MINIMA_POR_DEFECTO
 
     @property
     def padecimientos(self) -> tuple[str, ...]:
@@ -113,47 +128,98 @@ class ContratoCobertura:
 
     @staticmethod
     def del_head(repo: Path, head: str) -> ContratoCobertura:
-        """El catálogo geográfico se lee del HEAD que se sella y se compara con el worktree.
+        """Catálogo geográfico, registry y profundidad mínima, leídos del HEAD que se sella.
 
-        Igual que la política: el conjunto de entidades que gobierna el contrato no puede
-        venir de un archivo suelto. Los padecimientos publicados siguen saliendo del registry.
+        Igual que la política: nada de lo que gobierna el contrato viene de un archivo
+        suelto ni del proceso. Los padecimientos publicados salen del `padecimientos.yaml`
+        de ESE commit (no del registry cacheado del intérprete, que es el del worktree), y
+        la profundidad mínima, de la allowlist de entradas del mismo commit. Cada archivo
+        tiene que coincidir byte a byte con el árbol de trabajo.
         """
-        salida = subprocess.run(
-            ["git", "-C", str(repo), "show", f"{head}:{RUTA_CATALOGO}"], capture_output=True
+        catalogo = _blob_del_head(repo, head, RUTA_CATALOGO, "el catálogo geográfico")
+        yaml_registry = _blob_del_head(repo, head, RUTA_REGISTRY, "el registry de padecimientos")
+        lista = _blob_del_head(repo, head, RUTA_LISTA, "la lista de entradas")
+        with tempfile.NamedTemporaryFile("wb", suffix=".yaml", delete=False) as tmp:
+            tmp.write(yaml_registry)
+            ruta_tmp = Path(tmp.name)
+        try:
+            registro = registry.load_registry(ruta_tmp)
+        except Exception as exc:  # RegistryError, YAML, ...: un registry ilegible no gobierna
+            raise StagingError(f"el registry de {head[:12]} no se puede cargar: {exc}") from exc
+        finally:
+            ruta_tmp.unlink(missing_ok=True)
+        return ContratoCobertura.desde_catalogo(
+            catalogo.decode("utf-8"),
+            registro=registro,
+            profundidad_minima=_profundidad_de_la_lista(lista),
         )
-        if salida.returncode != 0:
-            raise StagingError(
-                f"el catálogo geográfico {RUTA_CATALOGO} no está en {head[:12]}: "
-                f"{salida.stderr.decode(errors='replace').strip()}"
-            )
-        ruta = repo / RUTA_CATALOGO
-        if ruta.is_symlink() or not ruta.is_file() or ruta.read_bytes() != salida.stdout:
-            raise StagingError(
-                f"el catálogo geográfico {RUTA_CATALOGO} difiere de la versión de {head[:12]}"
-            )
-        return ContratoCobertura.desde_catalogo(salida.stdout.decode("utf-8"))
 
     @staticmethod
-    def desde_catalogo(texto: str) -> ContratoCobertura:
+    def desde_catalogo(
+        texto: str,
+        *,
+        registro: Any = None,
+        profundidad_minima: int = PROFUNDIDAD_MINIMA_POR_DEFECTO,
+    ) -> ContratoCobertura:
         entidades: list[str] = []
         alias: dict[str, str] = {}
-        if True:
-            for fila in csv.DictReader(texto.splitlines()):
-                canonico = slug(fila["nombre_canonico"])
-                entidades.append(canonico)
-                for nombre in (fila.get("nombre_inegi", ""), *fila.get("aliases", "").split("|")):
-                    s = slug(nombre)
-                    if s and s != canonico:
-                        alias[s] = canonico
+        for fila in csv.DictReader(texto.splitlines()):
+            canonico = slug(fila["nombre_canonico"])
+            entidades.append(canonico)
+            for nombre in (fila.get("nombre_inegi", ""), *fila.get("aliases", "").split("|")):
+                s = slug(nombre)
+                if not s or s == canonico:
+                    continue
+                if s in alias and alias[s] != canonico:
+                    raise StagingError(
+                        f"catálogo geográfico ambiguo: el alias {nombre!r} apunta a "
+                        f"{alias[s]!r} y a {canonico!r}"
+                    )
+                alias[s] = canonico
         if len(set(entidades)) != len(entidades) or not entidades:
             raise StagingError("catálogo geográfico con entidades duplicadas o vacío")
+        if colision := sorted(set(alias) & set(entidades)):
+            raise StagingError(
+                f"catálogo geográfico ambiguo: alias que son también entidades: {colision[:3]}"
+            )
+        if registro is None:
+            registro = registry.get_registry()
+        publicados = [d for d in registro.diseases if d.lifecycle == "published"]
         return ContratoCobertura(
-            neuro=tuple(slug(p) for p in registry.production_cohort()),
-            conteo=tuple(slug(p) for p in registry.standalone_members(published_only=True)),
+            neuro=tuple(slug(d.data_name) for d in publicados if d.batch == "General"),
+            conteo=tuple(slug(d.data_name) for d in publicados if d.batch != "General"),
             entidades=tuple(entidades),
             alias=alias,
             regiones=tuple(slug(r) for r in INEGI_REGIONS),
+            profundidad_minima=profundidad_minima,
         )
+
+
+def _blob_del_head(repo: Path, head: str, rel: str, que: str) -> bytes:
+    """Bytes de `rel` en `head`, exigiendo que el árbol de trabajo lleve exactamente lo mismo."""
+    salida = subprocess.run(["git", "-C", str(repo), "show", f"{head}:{rel}"], capture_output=True)
+    if salida.returncode != 0:
+        raise StagingError(
+            f"{que} {rel} no está en {head[:12]}: {salida.stderr.decode(errors='replace').strip()}"
+        )
+    ruta = repo / rel
+    if ruta.is_symlink() or not ruta.is_file() or ruta.read_bytes() != salida.stdout:
+        raise StagingError(f"{que} {rel} difiere de la versión de {head[:12]}")
+    return salida.stdout
+
+
+def _profundidad_de_la_lista(crudo: bytes) -> int:
+    """`profundidad_minima_semanas` de la allowlist; la forma completa la valida `hidratacion`."""
+    try:
+        lista = json.loads(crudo)
+    except json.JSONDecodeError as exc:
+        raise StagingError(f"lista de entradas ilegible: {exc}") from exc
+    valor = lista.get("profundidad_minima_semanas") if isinstance(lista, dict) else None
+    if isinstance(valor, bool) or not isinstance(valor, int) or valor < 1:
+        raise StagingError(
+            "la lista de entradas tiene que declarar profundidad_minima_semanas (entero >= 1)"
+        )
+    return valor
 
 
 @dataclass(frozen=True)
@@ -221,12 +287,35 @@ def revisa_consolidado(
         problemas.append(f"consolidado: sin filas para {ausentes}")
 
     cortes: dict[str, tuple[int, int]] = {}
+    profundidad: dict[str, int] = {}
+    huecos_historicos: dict[str, int] = {}
     esperadas = frozenset(contrato.entidades)
+    minimo = contrato.profundidad_minima
     for pad, grupo in df.groupby("pad"):
         semanas = sorted(
             {(int(a), int(s)) for a, s in zip(grupo["Anio"], grupo["Semana"], strict=True)}
         )
         cortes[str(pad)] = semanas[-1]
+        profundidad[str(pad)] = len(semanas)
+        # Profundidad absoluta y continuidad MMWR de las últimas `minimo` semanas: un
+        # consolidado truncado, o con una semana saltada junto al corte, no es «corto», es
+        # otro dato. Los huecos anteriores (boletines históricos ilegibles) se informan.
+        if len(semanas) < minimo:
+            problemas.append(
+                f"consolidado {pad}: {len(semanas)} semana(s), y el contrato exige al menos "
+                f"{minimo} contiguas hasta el corte"
+            )
+        recientes = semanas[-minimo:]
+        if saltos := [
+            (a, b) for a, b in zip(recientes, recientes[1:], strict=False) if _siguiente(a) != b
+        ]:
+            problemas.append(
+                f"consolidado {pad}: hueco(s) en las últimas {minimo} semanas: {saltos[:3]}"
+            )
+        anteriores = semanas[: len(semanas) - minimo + 1]
+        huecos_historicos[str(pad)] = sum(
+            1 for a, b in zip(anteriores, anteriores[1:], strict=False) if _siguiente(a) != b
+        )
         for anio, semana in semanas[-ventana_semanas:]:
             fila = grupo[(grupo["Anio"] == anio) & (grupo["Semana"] == semana)]
             canonicas = [contrato.entidad_canonica(e) for e in fila["Entidad"]]
@@ -251,7 +340,76 @@ def revisa_consolidado(
                 )
     if len(set(cortes.values())) > 1:
         problemas.append(f"consolidado: corte dispar entre publicados {cortes}")
-    return Cobertura("consolidado", {"cortes": cortes, "filas": int(len(df))}, tuple(problemas))
+    return Cobertura(
+        "consolidado",
+        {
+            "cortes": cortes,
+            "filas": int(len(df)),
+            "semanas": profundidad,
+            "huecos_historicos": huecos_historicos,
+        },
+        tuple(problemas),
+    )
+
+
+def _siguiente(semana: tuple[int, int]) -> tuple[int, int]:
+    """La semana MMWR que sigue a `semana`; si la semana no es válida, una que nunca casa."""
+    try:
+        return semana_siguiente(semana[0], semana[1], 1)
+    except ValueError:
+        return (-1, -1)
+
+
+def revisa_aditivo(
+    base: Path,
+    candidato: Path,
+    contrato: ContratoCobertura,
+    padecimientos_autorizados: Iterable[str],
+) -> Cobertura:
+    """El candidato CONTIENE la base, fila a fila y con los mismos valores. Sólo añade.
+
+    Es el ancla absoluta: la profundidad mínima dice cuánto hay que traer, esto dice que lo
+    ya publicado sigue ahí, intacto. Una corrección de una fila ya publicada no se cuela
+    en un refresh semanal; se declara y se sella aparte.
+    """
+    autorizados = {slug(p) for p in padecimientos_autorizados}
+    claves = ["Anio", "Semana", "Entidad", "Padecimiento"]
+    columnas_base = list(pd.read_csv(base, nrows=0).columns)
+    columnas_cand = list(pd.read_csv(candidato, nrows=0).columns)
+    valores = [c for c in COLUMNAS_VALOR if c in columnas_base and c in columnas_cand]
+    problemas: list[str] = []
+    if faltan_columnas := [c for c in columnas_base if c not in columnas_cand]:
+        problemas.append(f"el candidato perdió columnas del consolidado base: {faltan_columnas}")
+
+    def carga(ruta: Path) -> pd.DataFrame:
+        df = pd.read_csv(ruta, usecols=claves + valores, low_memory=False)
+        df["pad"] = df["Padecimiento"].map(slug)
+        df = df[df["pad"].isin(autorizados)].copy()
+        df["ent"] = df["Entidad"].map(lambda e: contrato.entidad_canonica(e) or f"?{slug(e)}")
+        return df.set_index(["pad", "Anio", "Semana", "ent"])[valores]
+
+    df_base, df_cand = carga(base), carga(candidato)
+    if df_base.index.has_duplicates or df_cand.index.has_duplicates:
+        problemas.append("filas duplicadas por clave (padecimiento, año, semana, entidad)")
+        return Cobertura("aditivo", {"filas_base": int(len(df_base))}, tuple(problemas))
+    faltan = df_base.index.difference(df_cand.index)
+    if len(faltan):
+        problemas.append(
+            f"el candidato perdió {len(faltan)} fila(s) de la base: {list(faltan[:3])}"
+        )
+    comunes = df_base.index.intersection(df_cand.index)
+    b, c = df_base.loc[comunes], df_cand.loc[comunes]
+    iguales = (b == c) | (b.isna() & c.isna())
+    if not iguales.all().all():
+        cambiadas = comunes[~iguales.all(axis=1)]
+        problemas.append(
+            f"el candidato cambió {len(cambiadas)} fila(s) ya publicadas: {list(cambiadas[:3])}"
+        )
+    return Cobertura(
+        "aditivo",
+        {"filas_base": int(len(df_base)), "filas_nuevas": int(len(df_cand) - len(comunes))},
+        tuple(problemas),
+    )
 
 
 def revisa_forecasts(
@@ -284,16 +442,30 @@ def revisa_forecasts_listados(
             problemas.append(f"forecasts/{motor}: falta {ruta.name}")
             continue
         df = pd.read_csv(
-            ruta, usecols=["meta_padecimiento", "meta_entidad", "meta_modo"], low_memory=False
-        ).drop_duplicates()
-        claves = [
+            ruta,
+            usecols=["ds", "meta_padecimiento", "meta_entidad", "meta_modo"],
+            low_memory=False,
+        )
+        df["clave"] = [
             _clave(contrato, p, e, m)
             for p, e, m in zip(
                 df["meta_padecimiento"], df["meta_entidad"], df["meta_modo"], strict=True
             )
         ]
-        nuevos, cifras[motor] = _compara_conjuntos(f"forecasts/{motor}", claves, esperadas)
+        # Antes se deduplicaba por clave ANTES de comparar, y una serie repetida —dos
+        # bloques de la misma clave, con fechas repetidas— era invisible. Se compara el
+        # conjunto de claves, y aparte se exige que ninguna (clave, ds) se repita.
+        nuevos, cifras[motor] = _compara_conjuntos(
+            f"forecasts/{motor}", df["clave"].drop_duplicates(), esperadas
+        )
         problemas.extend(nuevos)
+        repetidas = df[df.duplicated(["clave", "ds"], keep=False)]
+        if not repetidas.empty:
+            ejemplos = sorted({str(k) for k in repetidas["clave"]})[:3]
+            problemas.append(
+                f"forecasts/{motor}: {repetidas['clave'].nunique()} serie(s) con fechas "
+                f"repetidas: {ejemplos}"
+            )
     return Cobertura(fuente, cifras, tuple(problemas))
 
 

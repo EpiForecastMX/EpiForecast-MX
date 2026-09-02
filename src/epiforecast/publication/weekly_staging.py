@@ -19,7 +19,7 @@ decoración.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 import hashlib
@@ -297,6 +297,9 @@ class SelloEntrada:
     digest_consolidado_candidato: str = ""
     boletines: tuple[Boletin, ...] = ()
     entradas: dict[str, dict[str, Any]] = field(default_factory=dict)
+    # La allowlist que gobernó la hidratación: versión y digest. Sin esto el sello decía qué
+    # entradas llevó y no qué lista las autorizó.
+    lista: dict[str, str] = field(default_factory=dict)
 
     def como_dict(self) -> dict[str, Any]:
         return {
@@ -309,6 +312,7 @@ class SelloEntrada:
             "padecimientos_autorizados": list(self.padecimientos_autorizados),
             "boletines": [b.como_dict() for b in self.boletines],
             "entradas": {ruta: dict(meta) for ruta, meta in sorted(self.entradas.items())},
+            "lista": dict(sorted(self.lista.items())),
         }
 
 
@@ -584,11 +588,16 @@ class Manifiesto:
             "padecimientos_autorizados",
             "boletines",
             "entradas",
+            "lista",
         }
         if not isinstance(e, dict) or set(e) != claves_entrada:
             raise StagingError("la entrada del manifiesto no tiene la forma de weekly_staging/3")
-        if not isinstance(e["boletines"], list) or not isinstance(e["entradas"], dict):
-            raise StagingError("boletines/entradas de la entrada malformados")
+        if (
+            not isinstance(e["boletines"], list)
+            or not isinstance(e["entradas"], dict)
+            or not isinstance(e["lista"], dict)
+        ):
+            raise StagingError("boletines/entradas/lista de la entrada malformados")
         if not isinstance(crudo["inputs"], dict):
             raise StagingError("inputs tiene que ser un objeto")
         entrada = SelloEntrada(
@@ -601,6 +610,7 @@ class Manifiesto:
             digest_consolidado_candidato=e["digest_consolidado_candidato"],
             boletines=tuple(_lee_boletin(b) for b in e["boletines"]),
             entradas={r: dict(m) for r, m in e["entradas"].items()},
+            lista=dict(e["lista"]),
         )
         manifiesto = Manifiesto(
             run_id=crudo["run_id"],
@@ -1692,6 +1702,19 @@ def valida_inputs(manifiesto: Manifiesto) -> None:
     entrada = manifiesto.entrada
     if not entrada.entradas:
         raise StagingError("un sello sin inventario de entradas no dice sobre qué se preparó")
+    if (
+        set(entrada.lista) != {"version", "sha256"}
+        or not isinstance(entrada.lista["version"], str)
+        or not isinstance(entrada.lista["sha256"], str)
+        or not _RE_SHA256.fullmatch(entrada.lista["sha256"])
+    ):
+        raise StagingError(
+            "el sello no identifica la lista de entradas que gobernó la hidratación"
+        )
+    if not re.fullmatch(r"[0-9]{4},[0-9]{1,2}", entrada.semana_anterior) or not re.fullmatch(
+        r"[0-9]{4},[0-9]{1,2}", entrada.semana_nueva
+    ):
+        raise StagingError("las semanas del sello tienen que tener la forma AAAA,SS")
     consolidados = [
         ruta for ruta, meta in entrada.entradas.items() if meta.get("rol") == "consolidado"
     ]
@@ -1899,10 +1922,12 @@ def _completa_entrada(raiz_staging: Path, entrada: SelloEntrada, contrato: Any) 
     from epiforecast.publication.contratos_datos import (
         ContratoCobertura,
         exige_todo,
+        revisa_aditivo,
         revisa_candidato,
         revisa_consolidado,
     )
     from epiforecast.publication.contratos_datos import slug as slug_pad
+    from epiforecast.publication.hidratacion import ROLES_INMUTABLES
 
     hidratacion = RegistroHidratacion.lee(raiz_staging)
     if hidratacion.head_backend != entrada.head_backend:
@@ -1939,14 +1964,39 @@ def _completa_entrada(raiz_staging: Path, entrada: SelloEntrada, contrato: Any) 
         if copia.is_symlink() or not copia.is_file() or sha256_de(copia) != boletin.sha256:
             raise StagingError(f"la copia del boletín {boletin.nombre} falta o no coincide")
 
+    # Las entradas que ningún generador reescribe tienen que seguir en el sandbox tal como
+    # se hidrataron: un candidato producido sobre un forecast o un PDF distinto no salió de
+    # las entradas que el sello declara.
+    sandbox = Path(hidratacion.sandbox)
+    for rel, meta in sorted(hidratacion.entradas.items()):
+        if meta["rol"] not in ROLES_INMUTABLES:
+            continue
+        ruta = sandbox / rel
+        if ruta.is_symlink() or not ruta.is_file() or sha256_de(ruta) != meta["sha256"]:
+            raise StagingError(
+                f"la entrada inmutable {rel} ({meta['rol']}) cambió en el sandbox desde la "
+                "hidratación; el candidato no salió de las entradas selladas"
+            )
+
     contrato_real = contrato if contrato is not None else ContratoCobertura.canonico()
     # La paridad de corte se exige entre TODOS los publicados del contrato (registry), no
     # entre los que declare quien sella: declarar sólo «Dengue» no desactiva la paridad.
     declarados = {slug_pad(p) for p in entrada.padecimientos_autorizados}
     if fuera := sorted(declarados - set(contrato_real.padecimientos)):
         raise StagingError(f"padecimientos autorizados fuera del contrato: {fuera}")
-    revisa_consolidado(candidato, contrato_real, contrato_real.padecimientos).exige()
-    exige_todo(revisa_candidato(raiz_staging / "outputs" / "dashboard", contrato_real))
+    cobertura_base = revisa_consolidado(base, contrato_real, contrato_real.padecimientos).exige()
+    cobertura_candidato = revisa_consolidado(
+        candidato, contrato_real, contrato_real.padecimientos
+    ).exige()
+    revisa_aditivo(base, candidato, contrato_real, contrato_real.padecimientos).exige()
+    outputs_dashboard = raiz_staging / "outputs" / "dashboard"
+    exige_todo(revisa_candidato(outputs_dashboard, contrato_real))
+    _exige_semanas(
+        entrada,
+        corte_base=_corte_unico(cobertura_base.cifras["cortes"]),
+        corte_candidato=_corte_unico(cobertura_candidato.cifras["cortes"]),
+        conocimiento=outputs_dashboard / "epibot" / "knowledge.json",
+    )
 
     return SelloEntrada(
         head_backend=entrada.head_backend,
@@ -1958,7 +2008,63 @@ def _completa_entrada(raiz_staging: Path, entrada: SelloEntrada, contrato: Any) 
         digest_consolidado_candidato=digest_candidato,
         boletines=hidratacion.boletines,
         entradas={r: dict(m) for r, m in hidratacion.entradas.items()},
+        lista=dict(hidratacion.lista),
     )
+
+
+# Nombre público para el CLI, que lo corre ANTES de podar: las comprobaciones de datos del
+# sello (semanas, aditivo, inmutables, cobertura del candidato) no pueden llegar con el
+# árbol ya reducido. `sella` lo repite; es idempotente.
+completa_entrada = _completa_entrada
+
+
+def _corte_unico(cortes: Mapping[str, Any]) -> tuple[int, int]:
+    """El corte común de los publicados (la paridad ya se exigió)."""
+    valores = {(int(a), int(s)) for a, s in cortes.values()}
+    if len(valores) != 1:
+        raise StagingError(f"corte dispar entre publicados: {dict(cortes)}")
+    return valores.pop()
+
+
+def _semana(texto: str, que: str) -> tuple[int, int]:
+    partes = texto.split(",")
+    if len(partes) != 2 or not all(p.strip().isdigit() for p in partes):
+        raise StagingError(f"{que} tiene que tener la forma AAAA,SS: {texto!r}")
+    return int(partes[0]), int(partes[1])
+
+
+def _exige_semanas(
+    entrada: SelloEntrada,
+    *,
+    corte_base: tuple[int, int],
+    corte_candidato: tuple[int, int],
+    conocimiento: Path,
+) -> None:
+    """Las semanas del sello no son texto libre: son los cortes de base y candidato, y la
+    semana que el EpiBot del candidato publica."""
+    anterior = _semana(entrada.semana_anterior, "semana_anterior")
+    nueva = _semana(entrada.semana_nueva, "semana_nueva")
+    if anterior != corte_base:
+        raise StagingError(
+            f"semana_anterior {anterior} no es el corte del consolidado base {corte_base}"
+        )
+    if nueva != corte_candidato:
+        raise StagingError(
+            f"semana_nueva {nueva} no es el corte del consolidado candidato {corte_candidato}"
+        )
+    if nueva < anterior:
+        raise StagingError(f"el candidato retrocede: {anterior} -> {nueva}")
+    if conocimiento.is_file() and not conocimiento.is_symlink():
+        k = json.loads(conocimiento.read_text(encoding="utf-8"))
+        ultima = (k.get("boletin") or {}).get("ultima_semana") if isinstance(k, dict) else None
+        if not isinstance(ultima, dict) or {"anio", "semana"} - set(ultima):
+            raise StagingError("knowledge.json del candidato no declara boletin.ultima_semana")
+        publicada = (int(ultima["anio"]), int(ultima["semana"]))
+        if publicada != nueva:
+            raise StagingError(
+                f"knowledge.json del candidato publica la semana {publicada} y el sello "
+                f"declara {nueva}"
+            )
 
 
 def verifica_sidecar(ruta_manifiesto: Path) -> None:

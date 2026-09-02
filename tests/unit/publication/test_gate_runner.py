@@ -112,6 +112,13 @@ def _repo_con_politica(raiz: Path, politica: dict[str, Any]) -> tuple[Path, str]
 def _hidrata(trabajo: Path, repo: Path, head: str) -> None:
     from scripts.refresh_staging import main
 
+    if not (trabajo / "materializacion.json").exists():
+        fab.materializa_a_mano(
+            trabajo,
+            head_backend=head,
+            head_dashboard=head,
+            politica_sha256=fab.sha_politica_del_head(repo, head),
+        )
     assert (
         main(
             [
@@ -131,6 +138,13 @@ def _hidrata(trabajo: Path, repo: Path, head: str) -> None:
 
 
 def _argv_run_gates(trabajo: Path, repo: Path, head: str) -> list[str]:
+    if not (trabajo / "materializacion.json").exists():
+        fab.materializa_a_mano(
+            trabajo,
+            head_backend=head,
+            head_dashboard=head,
+            politica_sha256=fab.sha_politica_del_head(repo, head),
+        )
     return [
         "run-gates",
         "--trabajo",
@@ -157,7 +171,7 @@ def _argv_seal(trabajo: Path, repo: Path, head: str, semilla: Path) -> list[str]
         "--head-dashboard",
         head,
         "--semana-anterior",
-        "2026,30",
+        "2026,31",
         "--semana-nueva",
         "2026,31",
         "--padecimientos",
@@ -320,6 +334,7 @@ def test_sellar_sin_haber_corrido_los_gates_aborta_antes_de_podar(tmp_path: Path
     # La semilla ya contiene index.html intacto: si `seal` llegara a podar, lo borraría.
     semilla = tmp_path / "semilla.json"
     assert main(["snapshot", "--raiz", str(trabajo / "outputs"), "--salida", str(semilla)]) == 0
+    _hidrata(trabajo, repo, head)
 
     assert main(_argv_seal(trabajo, repo, head, semilla)) == 1
 
