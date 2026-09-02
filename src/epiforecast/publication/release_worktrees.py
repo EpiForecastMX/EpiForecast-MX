@@ -364,10 +364,13 @@ def prepara_worktrees(
             )
 
     padre = raiz.parent
-    if padre.is_symlink() or not padre.is_dir():
-        raise StagingError(
-            f"el directorio padre de los destinos no existe o es un enlace: {padre}"
-        )
+    if padre.is_symlink():
+        raise StagingError(f"el directorio padre de los destinos es un enlace: {padre}")
+    # `runs/_release/` puede no existir todavía: se crea. Lo que no se crea es la raíz del
+    # par, que tiene que ser nueva.
+    padre.mkdir(parents=True, exist_ok=True)
+    if not padre.is_dir():
+        raise StagingError(f"el directorio padre de los destinos no es un directorio: {padre}")
     raiz_real = padre.resolve() / raiz.name
     for espacio, repo in raices_repo.items():
         if (

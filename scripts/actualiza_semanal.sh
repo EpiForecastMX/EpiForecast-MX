@@ -63,23 +63,30 @@ paso()  { echo ""; echo ">>> $*"; }
 # ─────────────────────────────────────────────────────────────────────
 # 1. PREFLIGHT — todo falla cerrado
 # ─────────────────────────────────────────────────────────────────────
-paso "PREFLIGHT · productor no cableado al sello v2"
-# `seal` ya calcula la composición del árbol administrado y exige que los gates se hayan
-# corrido sobre ELLA, contra una política de censo versionada. Faltan dos cosas de este
-# guion, y ninguna es cosmética:
+paso "PREFLIGHT · productor bloqueado hasta P1"
+# El cableado de abajo —materialize → generadores → run-gates → seal, y después
+# prepare-worktrees → apply → check-completeness— está probado con repositorios
+# sintéticos, nunca contra datos reales. Antes de que este guion vuelva a correr de
+# verdad faltan tres cierres de P0 y una autorización:
 #
-#   1. La siembra es PARCIAL: clona Reports, epibot y cuatro archivos sueltos —18 de las
-#      41 superficies publicadas—. Con esa semilla la composición no cubre el censo y el
-#      sello aborta, con razón: certificaría un sitio que no es el que se publica.
-#   2. Los gates (cifras, rag) corren aquí sobre el staging y no declaran la composición
-#      contra la que corrieron.
+#   P0.1  hidratación por allowlist de lo que los generadores leen (forecasts, modelos,
+#         PDFs, consolidado) con control positivo de cobertura 333/99/432;
+#   P0.2  copia inmutable de los inputs (PDFs y consolidado) bajo el staging, con
+#         digest antes y candidato;
+#   P0.8  Dengue fail-closed: hoy el paso [3/10] es best-effort y el [7/10] publicaría
+#         un Dengue rancio si la extracción falla.
+#
+# La decisión P0.11 ya está tomada: opción C. Esta ronda actualiza superficies públicas y
+# deja el dataset DVC pendiente; el manifiesto no autoriza ninguna operación DVC.
+# La puesta al día (P1: W32, W33 y lo que haya) exige autorización aparte.
 #
 # Se aborta AQUI, antes de la preparación cara, en vez de dejar que falle al final tras
 # cuarenta minutos de trabajo tirado.
-fatal "el productor semanal no está cableado al sello v2: la siembra es parcial (18 de 41
-    superficies) y los gates no declaran su composición. Aun cableado, los sellos seguirían
-    siendo borradores no instalables hasta cerrar P0.6 (apply confinado a worktrees
-    desechables)."
+fatal "el productor semanal sigue BLOQUEADO a propósito. El cableado materialize → run-gates
+    → seal → prepare-worktrees → apply → check-completeness está probado sólo con
+    repositorios sintéticos; faltan P0.1 (hidratación por allowlist), P0.2 (inputs bajo el
+    staging) y P0.8 (Dengue fail-closed). Decisión P0.11: opción C, superficies públicas
+    al día y dataset DVC pendiente. La puesta al día (P1) exige autorización aparte."
 
 paso "PREFLIGHT (modo: ${MODE})"
 
@@ -208,25 +215,32 @@ if [ -n "$lista_extras" ]; then
   echo "    (este guion no publica; el filtro por lifecycle los mantiene fuera del sitio)"
 fi
 
+# P6 · commits de datos del flujo automatizado, y los HEAD se FIJAN aquí. Un pull a
+# mitad de corrida cambiaba el HEAD entre la siembra y el sello.
+paso "PREFLIGHT · commits de datos y HEAD fijados"
+# --ff-only: si el remoto divergio, aborta en vez de fabricar un merge.
+git pull --ff-only origin "$RAMA_ESPERADA"
+HEAD_BACKEND="$(git -C "$REPO_ROOT" rev-parse HEAD)"
+HEAD_DASHBOARD="$(git -C "$DASHBOARD_REAL" rev-parse HEAD)"
+echo "    backend   @ ${HEAD_BACKEND}"
+echo "    dashboard @ ${HEAD_DASHBOARD}"
+
 echo ""
 echo ">>> PREFLIGHT COMPLETO"
 
 # ─────────────────────────────────────────────────────────────────────
-# 2. SEMBRAR EL STAGING — el destino se clona; nada se escribe en el sitio real
+# 2. MATERIALIZAR EL CANDIDATO — el arbol administrado COMPLETO desde los HEAD fijados
 # ─────────────────────────────────────────────────────────────────────
-paso "SEMBRAR STAGING"
-rm -rf "$TRABAJO"
-mkdir -p "$TRABAJO/outputs/dashboard" "$TRABAJO/outputs/backend"
-
-# `cp -Rc` usa clonefile en APFS: instantaneo y sin duplicar espacio en disco.
-for elemento in Reports epibot validacion_semanal.html news.json index.html novedades.html; do
-  if [ -e "${DASHBOARD_REAL}/${elemento}" ]; then
-    cp -Rc "${DASHBOARD_REAL}/${elemento}" "$TRABAJO/outputs/dashboard/" 2>/dev/null \
-      || cp -R "${DASHBOARD_REAL}/${elemento}" "$TRABAJO/outputs/dashboard/"
-  fi
-done
-$PYTHON -m scripts.refresh_staging snapshot \
-  --raiz "$TRABAJO/outputs" --salida "$TRABAJO/semilla.json"
+paso "MATERIALIZAR CANDIDATO (41/41 superficies, desde git archive)"
+# `materialize` exige un directorio nuevo: un candidato no se pisa. El anterior, si lo
+# hay, se aparta con marca de tiempo en vez de borrarse.
+if [ -e "$TRABAJO" ]; then
+  mv "$TRABAJO" "${TRABAJO}.previo.$(date +%Y%m%dT%H%M%S)"
+fi
+$PYTHON -m scripts.refresh_staging materialize \
+  --trabajo "$TRABAJO" \
+  --repo-backend "$REPO_ROOT" --head-backend "$HEAD_BACKEND" \
+  --repo-dashboard "$DASHBOARD_REAL" --head-dashboard "$HEAD_DASHBOARD"
 
 # A partir de aqui, los generadores escriben en el staging y NO en el sitio.
 DASHBOARD_ROOT="$TRABAJO/outputs/dashboard"
@@ -240,9 +254,8 @@ _semana_de() { tail -1 "$CONSOLIDADO" | cut -d',' -f1,2; }
 ANTES="$(_semana_de)"
 DIGEST_CONSOLIDADO_ANTES="$(shasum -a 256 "$CONSOLIDADO" | cut -d' ' -f1)"
 
-paso "[1/10] Traer commits de datos del flujo automatizado"
-# --ff-only: si el remoto divergio, aborta en vez de fabricar un merge.
-git pull --ff-only origin "$RAMA_ESPERADA"
+paso "[1/10] Commits de datos"
+echo "    ya traidos en el preflight; los HEAD quedaron fijados y no cambian a mitad de corrida"
 
 paso "[2/10] Descargar los objetivos DVC necesarios"
 # Dirigido y sin forzar: no puede retirar nada que no este en estos punteros.
@@ -328,26 +341,8 @@ $PYTHON scripts/actualiza_barra_fechas.py \
   --zoom  "${REPORTS}/zoom_data_neuro.json"
 $PYTHON scripts/build_news_weekly.py --dashboard "$DASHBOARD_ROOT"
 
-# El corpus del EpiBot acaba de cambiar, asi que su indice de recuperacion queda
-# desfasado hasta regenerarlo. El flujo no puede hacerlo solo: `rag:build` necesita una
-# credencial externa. Se comprueba y se reporta; publicar con el indice desfasado deja
-# al asistente respondiendo desde un corpus que ya no existe.
-paso "VERIFICACION · indice de recuperacion del EpiBot"
-RAG_OK=1
-if ! ( cd "${DASHBOARD_ROOT}/epibot" && npm run rag:verify --silent >/dev/null 2>&1 ); then
-  RAG_OK=0
-  echo "    !! el indice RAG no corresponde al corpus actual."
-  echo "       Regeneralo:  cd ${DASHBOARD_ROOT}/epibot && GEMINI_API_KEY=... npm run rag:build"
-else
-  echo "    indice sincronizado con el corpus"
-fi
-
-# ─────────────────────────────────────────────────────────────────────
-# 4. SELLAR — inventario y manifiesto de lo producido
-# ─────────────────────────────────────────────────────────────────────
-paso "SELLAR STAGING"
-
-# El backend aporta al staging las tablas que el refresh regenera y que viven en git.
+# El backend aporta al candidato las tablas que el refresh regenera y que viven en git.
+# (Deuda P2: estos generadores no aceptan --out y escriben en el arbol real.)
 mkdir -p "$TRABAJO/outputs/backend/reports/ProdDetails"
 for f in reports/ProdDetails/tabla_333_modelos_produccion.xlsx \
          reports/ProdDetails/auditoria_motores_2026.xlsx \
@@ -357,8 +352,25 @@ for f in reports/ProdDetails/tabla_333_modelos_produccion.xlsx \
   [ -f "$f" ] && cp "$f" "$TRABAJO/outputs/backend/reports/ProdDetails/"
 done
 
-HEAD_BACKEND="$(git -C "$REPO_ROOT" rev-parse HEAD)"
-HEAD_DASHBOARD="$(git -C "$DASHBOARD_REAL" rev-parse HEAD)"
+# ─────────────────────────────────────────────────────────────────────
+# 4. GATES — sobre el arbol candidato COMPLETO, antes de podar
+# ─────────────────────────────────────────────────────────────────────
+# Los gates (cifras, rag) los define la politica del HEAD del backend como argv exactos;
+# `run-gates` los ejecuta sin shell dentro del candidato y deja la evidencia en
+# $TRABAJO/gates. Un gate que falle —o que mute un byte— impide sellar. El indice RAG
+# desfasado ya no es un aviso: es un FAIL del gate `rag`, y se regenera ANTES de sellar
+# con GEMINI_API_KEY=... npm run rag:build dentro del candidato, no en el sitio real.
+paso "GATES · run-gates sobre la composicion candidata"
+$PYTHON -m scripts.refresh_staging run-gates \
+  --trabajo "$TRABAJO" \
+  --head-backend "$HEAD_BACKEND" \
+  --destino-backend "$REPO_ROOT" \
+  --destino-dashboard "$DASHBOARD_REAL"
+
+# ─────────────────────────────────────────────────────────────────────
+# 5. SELLAR — inventario y manifiesto de lo producido
+# ─────────────────────────────────────────────────────────────────────
+paso "SELLAR STAGING"
 
 $PYTHON -m scripts.refresh_staging seal \
   --trabajo "$TRABAJO" \
@@ -373,12 +385,8 @@ $PYTHON -m scripts.refresh_staging seal \
 echo ""
 echo ">>> PREPARACION COMPLETA (sem ${SEM}/${ANIO}). Dengue_OK=${DENGUE_OK}."
 echo "    NADA se publico: los artefactos estan sellados bajo runs/_refresh/."
-echo "    Revisa el manifiesto y despues instala con:"
-echo "      make update-week-apply MANIFEST=runs/_refresh/<run_id>/manifest.json"
-if [ "$RAG_OK" -ne 1 ]; then
-  echo ""
-  echo "    ATENCION: el indice RAG no corresponde al corpus. Regeneralo ANTES de instalar:"
-  echo "      cd ${DASHBOARD_REAL}/epibot && GEMINI_API_KEY=... npm run rag:build"
-fi
+echo "    Revisa el manifiesto y despues instala SOLO en un par de worktrees desechables:"
+echo "      make update-week-apply MANIFEST=runs/_refresh/<run_id>/manifest.json DESTINOS=runs/_release/<run_id>"
+echo "    Decision P0.11 (opcion C): el manifiesto no autoriza ninguna operacion DVC."
 [ "$DENGUE_OK" -eq 0 ] && echo "    NOTA: Dengue quedo en su version previa."
 exit 0

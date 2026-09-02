@@ -1,10 +1,15 @@
 """Interfaz de línea de órdenes del staging sellado del refresh semanal.
 
-Cuatro subórdenes, que corresponden a los momentos del flujo, en este orden:
+Subórdenes, que corresponden a los momentos del flujo, en este orden:
+
+``materialize``
+    Antes de generar. Extrae con ``git archive`` el árbol administrado COMPLETO de los
+    HEAD que se sellarán —los prefijos los decide la política del HEAD del backend— en
+    un directorio de trabajo nuevo, y registra su semilla. Sustituye a la siembra parcial.
 
 ``snapshot``
-    Antes de generar. Registra el digest de la semilla clonada del destino, para poder
-    distinguir después lo que produjo el refresh de lo que ya estaba ahí.
+    Registra el digest de una semilla ya montada (lo hace ``materialize``; se conserva
+    para montajes manuales y pruebas).
 
 ``run-gates``
     Después de generar y ANTES de sellar. Ejecuta, sobre el árbol candidato completo, el
@@ -32,6 +37,8 @@ Cuatro subórdenes, que corresponden a los momentos del flujo, en este orden:
     alterados y lápidas) y retiran el par cuando ya no hace falta.
 
 Uso:
+    python -m scripts.refresh_staging materialize --trabajo <dir-nuevo> \\
+        --repo-backend <dir> --head-backend <sha> --repo-dashboard <dir> --head-dashboard <sha>
     python -m scripts.refresh_staging snapshot --raiz <dir> --salida <json>
     python -m scripts.refresh_staging run-gates --trabajo <dir> --head-backend <sha> \\
         --destino-backend <dir> --destino-dashboard <dir>
@@ -59,6 +66,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from epiforecast.publication.gate_runner import ejecuta_gates  # noqa: E402
+from epiforecast.publication.materializa import materializa_candidato  # noqa: E402
 from epiforecast.publication.release_worktrees import (  # noqa: E402
     ESTADO_APLICADO,
     RegistroDestinos,
@@ -76,7 +84,9 @@ from epiforecast.publication.weekly_staging import (  # noqa: E402
     PoliticaCenso,
     SelloEntrada,
     StagingError,
+    _relativos,
     calcula_baseline,
+    calcula_composicion,
     inventaria,
     poda_a_cambiados,
     sella,
@@ -138,6 +148,19 @@ def _head(repo: Path) -> str:
     if salida.returncode != 0:
         raise StagingError(f"no se pudo leer el HEAD de {repo}: {salida.stderr.strip()}")
     return salida.stdout.strip()
+
+
+def _cmd_materialize(args: argparse.Namespace) -> int:
+    resultado = materializa_candidato(
+        Path(args.trabajo),
+        {"backend": Path(args.repo_backend), "dashboard": Path(args.repo_dashboard)},
+        {"backend": args.head_backend, "dashboard": args.head_dashboard},
+    )
+    print(f"    materializados {resultado.archivos:,} archivos rastreados -> {resultado.outputs}")
+    print(f"    prefijos       : {', '.join(resultado.politica.prefijos_administrados)}")
+    print(f"    política       : {resultado.politica.version} {resultado.politica.sha256[:16]}…")
+    print(f"    semilla        : {resultado.semilla}")
+    return 0
 
 
 def _cmd_snapshot(args: argparse.Namespace) -> int:
@@ -263,7 +286,9 @@ def _cmd_seal(args: argparse.Namespace) -> int:
         baseline=calcula_baseline(destinos, set(inventario) | set(tombstones)),
         politica=politica,
         tombstones=tombstones,
-        operaciones_dvc=tuple(args.operacion_dvc or ()),
+        # Decisión P0.11, opción C: esta ronda actualiza superficies públicas y deja el
+        # dataset DVC pendiente. No existe flag para declarar operaciones DVC.
+        operaciones_dvc=(),
         autoridad_lapidas=autoridad,
     )
     verifica(
@@ -458,15 +483,63 @@ def _cmd_check_completeness(args: argparse.Namespace) -> int:
             if lista:
                 problemas.append(f"{espacio}: {len(lista)} {etiqueta.lower()}(s)")
 
+    # La prueba fuerte: el árbol administrado del par, recompuesto desde disco, tiene el
+    # mismo digest que la composición que midieron los gates. Sin esto, «todo lo declarado
+    # está» no dice que el par sea el árbol probado.
+    politica = PoliticaCenso.del_head(
+        Path(registro.destinos["backend"].ruta), manifiesto.entrada.head_backend
+    )
+    aplicada = _composicion_del_par(registro, politica)
+    if aplicada != manifiesto.composicion:
+        problemas.append(
+            f"composición aplicada {aplicada[:12]}… ≠ sellada {manifiesto.composicion[:12]}…"
+        )
+    print(f"    composición: aplicada {aplicada[:16]}… · sellada {manifiesto.composicion[:16]}…")
+
     if problemas:
         raise StagingError("; ".join(problemas))
     print("    completitud: el par contiene exactamente lo que el sello declara")
     return 0
 
 
+def _composicion_del_par(registro: RegistroDestinos, politica: PoliticaCenso) -> str:
+    """Digest canónico del árbol administrado tal como quedó en el par aplicado."""
+    arbol: dict[str, str] = {}
+    prefijos = [
+        p
+        for p in politica.prefijos_administrados
+        if not any(o != p and p.startswith(o) for o in politica.prefijos_administrados)
+    ]
+    for prefijo in prefijos:
+        espacio, _, subruta = prefijo.rstrip("/").partition("/")
+        raiz = Path(registro.destinos[espacio].ruta)
+        base = raiz / subruta if subruta else raiz
+        if not base.is_dir():
+            continue
+        for rel in _relativos(base):
+            partes = rel.parts
+            # El worktree lleva un archivo `.git` en su raíz; no es del árbol administrado.
+            if partes[0] == ".git":
+                continue
+            logico = "/".join([espacio, *([subruta] if subruta else []), *partes])
+            arbol[logico] = sha256_de(base / rel)
+    digest, _ = calcula_composicion({}, arbol, ())
+    return digest
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     sub = parser.add_subparsers(dest="orden", required=True)
+
+    p_mat = sub.add_parser(
+        "materialize", help="extrae el árbol administrado completo de los HEAD sellados"
+    )
+    p_mat.add_argument("--trabajo", required=True, help="directorio NUEVO de trabajo")
+    p_mat.add_argument("--repo-backend", default=str(REPO_ROOT))
+    p_mat.add_argument("--head-backend", required=True)
+    p_mat.add_argument("--repo-dashboard", required=True)
+    p_mat.add_argument("--head-dashboard", required=True)
+    p_mat.set_defaults(func=_cmd_materialize)
 
     p_snap = sub.add_parser("snapshot", help="registra el digest de la semilla")
     p_snap.add_argument("--raiz", required=True)
@@ -497,7 +570,7 @@ def main(argv: list[str] | None = None) -> int:
     p_seal.add_argument("--destino-dashboard", required=True)
     # No existe `--resultados-pruebas`: los resultados los produce `run-gates` y `seal` los
     # relee de su sitio. Un flag que reciba resultados es un flag que recibe un PASS escrito.
-    p_seal.add_argument("--operacion-dvc", action="append")
+    # Tampoco existe `--operacion-dvc` (P0.11, opción C): el manifiesto no autoriza DVC.
     p_seal.set_defaults(func=_cmd_seal)
 
     p_wt = sub.add_parser(

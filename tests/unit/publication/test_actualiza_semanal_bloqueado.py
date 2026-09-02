@@ -1,15 +1,14 @@
 """El orquestador semanal está bloqueado a propósito, y tiene que seguir estándolo.
 
-`seal` calcula ya la composición del árbol administrado y exige que los gates se hayan
-corrido sobre ella, contra una política de censo versionada. Este guion no puede
-satisfacerlo todavía: su siembra es **parcial** —18 de las 41 superficies publicadas—, así
-que la composición no cubriría el censo, y sus gates no declaran contra qué árbol
-corrieron. Sin este bloqueo el flujo haría toda la preparación —descargas, DVC, generación,
-decenas de minutos— para morir al final, con el trabajo tirado.
+El cableado —materialize → generadores → run-gates → seal, y prepare-worktrees → apply →
+check-completeness— está probado con repositorios sintéticos, no contra datos reales, y
+faltan P0.1 (hidratación por allowlist), P0.2 (inputs bajo el staging) y P0.8 (Dengue
+fail-closed). La puesta al día es P1 y exige autorización aparte. Sin este bloqueo el
+flujo haría toda la preparación —descargas, DVC, generación, decenas de minutos— para
+morir al final o, peor, para producir un candidato plausible con entradas incompletas.
 
-Esta prueba existe para que nadie retire el bloqueo por descuido. Cuando la siembra sea
-completa y los gates declaren su composición, se sustituye por la del flujo real; no se
-borra sin más.
+Esta prueba existe para que nadie retire el bloqueo por descuido. Se sustituye por la del
+flujo real cuando P1 se autorice; no se borra sin más.
 """
 
 from __future__ import annotations
@@ -35,8 +34,10 @@ def test_el_orquestador_semanal_aborta_antes_de_hacer_nada() -> None:
 
     assert resultado.returncode == 1, resultado.stdout + resultado.stderr
     assert "ABORTA" in resultado.stderr
-    assert "siembra es parcial" in resultado.stderr
-    assert "P0.6" in resultado.stderr
-    # Aborta ANTES del preflight de repositorios, DVC o cualquier generación.
+    assert "sigue BLOQUEADO" in resultado.stderr
+    assert "P0.2" in resultado.stderr
+    assert "opción C" in resultado.stderr
+    # Aborta ANTES del preflight de repositorios, del pull, de DVC o de cualquier generación.
     assert "PREFLIGHT · archivos sin versionar" not in resultado.stdout
-    assert "SEMBRAR STAGING" not in resultado.stdout
+    assert "HEAD fijados" not in resultado.stdout
+    assert "MATERIALIZAR CANDIDATO" not in resultado.stdout
