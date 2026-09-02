@@ -616,6 +616,28 @@ def test_prepare_exige_que_el_head_sellado_exista_en_el_repositorio(tmp_path: Pa
     assert not (tmp_path / "d").exists()
 
 
+def test_prepare_exige_la_politica_del_head_canonico(tmp_path: Path) -> None:
+    """Un sello cuya política no es la del HEAD del repositorio canónico no obtiene par.
+
+    Se edita el manifiesto (con run_id y sidecar recalculados, como haría quien lo
+    tocara) para que declare otra política: el repositorio desmiente el sello.
+    """
+    c = _corrida(tmp_path)
+    # Coherente consigo mismo: la política del sello y la de cada registro de gate dicen
+    # lo mismo, así que el manifiesto pasa su propia validación y sólo git lo desmiente.
+    c.manifiesto.politica = {"version": VERSION_POLITICA, "sha256": "e" * 64}
+    for registro in c.manifiesto.resultados_pruebas["gates"].values():
+        registro["politica_sha256"] = "e" * 64
+    c.manifiesto.run_id = calcula_run_id_de(c.manifiesto)
+    c.manifiesto.escribe(c.ruta_manifiesto)
+    assert Manifiesto.lee(c.ruta_manifiesto).politica["sha256"] == "e" * 64
+
+    with pytest.raises(StagingError, match="no es la que el repositorio canónico lleva"):
+        prepara_worktrees(c.ruta_manifiesto, c.repos, tmp_path / "d")
+    assert not (tmp_path / "d").exists()
+    assert _worktrees_de(c.repo_dashboard) == [str(c.repo_dashboard)]
+
+
 def test_prepare_verifica_el_sello_antes_de_crear_nada(tmp_path: Path) -> None:
     c = _corrida(tmp_path)
     (c.staging / "outputs" / "dashboard" / "index.html").write_text("alterado tras sellar")

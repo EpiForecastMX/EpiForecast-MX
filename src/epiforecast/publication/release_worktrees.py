@@ -45,6 +45,7 @@ from typing import Any
 from epiforecast.publication.weekly_staging import (
     MODO_APLICABLE,
     PREFIJOS_SELLABLES,
+    RUTA_POLITICA,
     Manifiesto,
     StagingError,
     _escribe_atomico,
@@ -362,6 +363,22 @@ def prepara_worktrees(
                 f"el HEAD sellado {heads[espacio][:12]} no existe en el repositorio {espacio} "
                 f"({repo})"
             )
+    # La política que aprobó el sello tiene que ser la que ESTE repositorio canónico lleva
+    # en ese HEAD. Un sello producido contra otro repositorio con el mismo commit es
+    # imposible salvo colisión; contra otra política, no: se comprueba el digest.
+    blob = subprocess.run(
+        ["git", "-C", str(raices_repo["backend"]), "show", f"{heads['backend']}:{RUTA_POLITICA}"],
+        capture_output=True,
+    )
+    if blob.returncode != 0:
+        raise StagingError(
+            f"el HEAD sellado {heads['backend'][:12]} no contiene la política {RUTA_POLITICA}"
+        )
+    if hashlib.sha256(blob.stdout).hexdigest() != manifiesto.politica.get("sha256"):
+        raise StagingError(
+            "la política del sello no es la que el repositorio canónico lleva en el HEAD "
+            "sellado; este par no se crea"
+        )
 
     padre = raiz.parent
     if padre.is_symlink():
