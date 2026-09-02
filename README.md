@@ -448,6 +448,8 @@ make update-week     # BLOCKED while the sealed P0 workflow is completed (see se
 > (`3bd67236`, main CI run 33677859434 green) and frontend PR #12 (`8490e433`). The production smoke
 > passed with and without JavaScript: static banner and rendered DOM equal to `news.json`, W33 for
 > all four diseases, DATA_VERSION 20260826, `app.js?v=140`, 333/99/432/444, RAG 453 chunks.
+> Repository hygiene (2026-09-02): both repositories keep only `main`/`origin/main`, no extra
+> worktrees; the P0 pre-rebase backup lives in the local tag `archive/p0-pre-rebase-584cf72d-2026-09-02`.
 
 Historically this was described as a one-command weekly refresh that keeps
 the working copy, DVC artifacts and the public dashboard in lockstep with the
