@@ -1134,15 +1134,20 @@ def test_otra_corrida_viva_no_se_pisa(tmp_path: Path) -> None:
 def test_una_interrupcion_del_runner_mata_al_hijo_y_deja_el_marcador(
     tmp_path: Path, monkeypatch
 ) -> None:
-    """Ctrl-C mientras corre un gate: el hijo no queda huérfano, la evidencia queda parcial."""
+    """Ctrl-C mientras corre un gate: el hijo no queda huérfano, la evidencia queda parcial.
+
+    El parche de `Popen` tiene que alcanzar SÓLO al hijo del gate: `subprocess.run` (el `ps`
+    del marcador) también usa `Popen`, y una versión anterior de esta prueba interrumpía
+    ese `ps` —cuyo `-9` lo ponía `run` al abortar— y pasaba sin tocar el camino que mide.
+    """
     raiz = _staging(tmp_path / "s")
     lanzados: list[subprocess.Popen[bytes]] = []
     popen_real = subprocess.Popen
 
     class PopenInterrumpido(popen_real):  # type: ignore[type-arg,misc]
         def communicate(self, *args: Any, **kwargs: Any) -> Any:
-            lanzados.append(self)
-            if len(lanzados) == 1:
+            if any("time.sleep" in str(a) for a in self.args):
+                lanzados.append(self)
                 raise KeyboardInterrupt
             return super().communicate(*args, **kwargs)
 
@@ -1152,7 +1157,8 @@ def test_una_interrupcion_del_runner_mata_al_hijo_y_deja_el_marcador(
         _corre(raiz, [_duerme()])
 
     (hijo,) = lanzados
-    assert hijo.returncode == -9, "el runner mató al grupo del hijo antes de morir"
+    assert any("time.sleep" in str(a) for a in hijo.args), "el interrumpido es el gate"
+    assert hijo.poll() == -9, "el runner mató al grupo del hijo antes de morir"
     marcador = json.loads((raiz / gate_runner.DIR_EN_CURSO / "runner.json").read_text())
     assert marcador["hijo"] is None and marcador["runner_pid"] == os.getpid()
     assert not (raiz / DIR_EVIDENCIA).exists()
