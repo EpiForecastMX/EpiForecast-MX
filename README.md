@@ -437,15 +437,17 @@ make update-week     # BLOCKED while the sealed P0 workflow is completed (see se
 
 ### 8. Weekly Update Flow (`make update-week`)
 
-> **Operational status — 2026-09-02: P1 W33 published; corrective batch P1b in draft PRs.** The
+> **Operational status — 2026-09-02: P1 W33 and corrective batch P1b published.** The
 > sealed run `882663dac1f1e39b` (Alzheimer, Depression, Parkinson and Dengue together at W33,
 > 1,800 artifacts, zero tombstones, `cifras` and `rag` gates passing) was merged: backend
 > `d7c9c6c2` (main CI run 33672251817 green) and frontend `72ae9e83`; Netlify deployed
 > https://epiforecast.mx at W33 (DATA_VERSION 20260825, RAG 453 chunks, zoom 444 series).
 > The production smoke found the landing's static news fallback out of sync (CALASS headline
 > with the W33 date); `1ae477d5` rewrites that block from `news.json` and the frontend `cifras`
-> gate now enforces it (`84536608`). Re-sealed as `89d70cc441ee255a`: backend PR #16 and frontend PR
-> #12 are drafts; merging the frontend one redeploys the fixed banner.
+> gate now enforces it (`84536608`). Re-sealed as `89d70cc441ee255a` and merged: backend PR #16
+> (`3bd67236`, main CI run 33677859434 green) and frontend PR #12 (`8490e433`). The production smoke
+> passed with and without JavaScript: static banner and rendered DOM equal to `news.json`, W33 for
+> all four diseases, DATA_VERSION 20260826, `app.js?v=140`, 333/99/432/444, RAG 453 chunks.
 
 Historically this was described as a one-command weekly refresh that keeps
 the working copy, DVC artifacts and the public dashboard in lockstep with the

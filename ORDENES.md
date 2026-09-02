@@ -1,6 +1,6 @@
 # Órdenes a la mano
 
-## 0 · P1 W33 publicada; P1b (banner estático) en PRs draft
+## 0 · P1 W33 y P1b publicadas (2-sep-2026); nada pendiente de merge
 
 La fuente oficial 2026 fue comprobada el 2-sep-2026: contiene 33 boletines y el último
 verificable es W33; W34 aún no está publicada. **P1 está publicada**: el sello
@@ -10,15 +10,22 @@ lápidas, `cifras` y `rag` PASS) se integró con merge commit `d7c9c6c2` en el b
 en el frontend; Netlify desplegó https://epiforecast.mx con DATA_VERSION 20260825, knowledge
 W33 (432/444), RAG 453, zoom 444 y los cuatro padecimientos con última fecha real 2026-08-10.
 
-**Tanda correctiva P1b (2-sep-2026, PRs draft, sin merge):** el smoke productivo encontró el
+**Tanda correctiva P1b (2-sep-2026), integrada y publicada:** el smoke productivo encontró el
 banner estático de novedades de `index.html` incoherente (titular del CALASS con fecha y
 subtítulo de W33; lista secundaria en W31). Causa: `scripts/build_news_weekly.py` sólo
 sustituía el titular si ya era una nota semanal. Corrección en `1ae477d5` (el bloque
 `#newsBannerRow` se reescribe entero desde `news.json`, fallando en seco si falta) y gate
 `cifras` reforzado en el frontend (`84536608`: el bloque estático debe coincidir con
 `news.json`; contra el sitio publicado reporta cuatro desalineaciones). Re-sello
-`89d70cc441ee255a` con ambos arreglos; backend PR draft #16 (`p1b/fallback-estatico-w33`) y
-frontend PR draft #12. Fusionar la del frontend despliega el banner corregido.
+`89d70cc441ee255a` con ambos arreglos; backend PR #16 fusionada con merge commit `3bd67236`
+(CI de `main` run 33677859434 verde: 2,329 passed, 497 skips exactos, cobertura 77 %,
+Integration skipped) y frontend PR #12 fusionada con merge commit `8490e433`. Smoke productivo
+completo en https://epiforecast.mx, con y sin JavaScript: banner estático y DOM renderizado
+iguales a `news.json` (lead W33 · Datos · 2 de septiembre; CALASS y W31 en la lista
+secundaria), W33 en los cuatro padecimientos (última fecha real 2026-08-10, 444 series),
+DATA_VERSION 20260826, `app.js?v=140`, cifras 333/99/432/444, RAG 453 chunks, validación W33.
+Estado vigente: backend `main@3bd67236`, frontend `main@8490e433`; ramas P0/P1/P1b y respaldo
+conservados. W34 sólo cuando exista su PDF oficial y los cuatro publicados avancen juntos.
 
 Regla de operación: resolver del HEAD todos los `lifecycle=published` y exigir exactamente
 el mismo `(año, semana)` para cada uno en consolidado, salidas y superficies. Si uno no
