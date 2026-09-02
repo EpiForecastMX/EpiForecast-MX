@@ -1,14 +1,31 @@
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
-## Estado P0 del flujo semanal — 2026-09-02 (tercera tanda: correctiva, cerrada en local)
+## Estado P1 vigente — corte público único W33
+
+La fuente oficial 2026 fue comprobada el 2-sep-2026: contiene 33 boletines y el último
+verificable es W33; W34 aún no está publicada. El candidato sellado vigente es
+`2ae89151e88aa92a`, de W31 a W33, con Alzheimer, Depresión, Parkinson y Dengue en el
+mismo corte, `cifras` PASS y `rag` PASS. Backend:
+`p1/actualizacion-semanal-2026-w33@6ab8a079` (PR draft #15). Frontend:
+`p1/actualizacion-semanal-2026-w33@a35bdfb3` (PR draft #11, deploy preview verde).
+
+Invariante no negociable: el conjunto derivado del registry con `lifecycle=published`
+avanza como una unidad. Si cualquier publicado falta o no comparte exactamente
+`(año, semana)` con los demás, el flujo aborta antes del sello y ninguno se publica. No
+se permite arrastrar datos viejos, publicar parcialmente ni omitir un padecimiento para
+desactivar la paridad. Obesidad y Anorexia permanecen fuera mientras no sean `published`;
+una promoción futura las incorpora a este mismo gate. W34 sólo entra cuando exista el PDF
+oficial y los cuatro publicados puedan cerrar juntos en W34.
+
+## Historial P0 del flujo semanal — 2026-09-02
 
 Esta sección sustituye cualquier instrucción inferior que presente `make update-week` como
 receta activa. Backend: rama `p0/namespace-e-inmutabilidad-del-sello`, **26 commits rebased
 sobre el `main` remoto `16476a98`** (tip `f88a065e`; respaldo local del tip previo `584cf72d`
 en `respaldo/p0-584cf72d-2026-09-02`), árbol limpio, **enviada a `origin`**. PR **#14** (https://github.com/EpiForecastMX/EpiForecast-MX/pull/14) **fusionada en `main`** con merge commit `5da24116` (padres `16476a98` y `d6e7a181`); CI del push a `main` `33645677062` verde: Code Quality PASS, Tests PASS (2 324 passed, 497 skipped exactos, 66 deselected, cobertura 77,00 %), Integration skipped por diseño. **Sin DVC, sin publicación ni deploy.** P1 en curso en `p1/actualizacion-semanal-2026-w33` desde `main@5da24116`.
 El remoto `16476a98` sólo traía dos commits de datos del CI (registry W33 y punteros DVC
-W33 de neuro, sin Dengue); `origin/main` local sigue en `a9a694c8` porque no se ha hecho
-pull. Frontend: `main@0e777995`, intacto, sin worktrees.
+W33 de neuro, sin Dengue); `main` y `origin/main` locales están ya en `5da24116`.
+Frontend canónico: `main@0e777995`, intacto.
 
 `make update-week` sigue bloqueado en preflight **por autorización, no por código**: P0.1,
 P0.2 y P0.8 están cerrados; correr el carril real exige red (pull, `dvc pull`,

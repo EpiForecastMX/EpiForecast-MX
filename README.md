@@ -437,13 +437,18 @@ make update-week     # BLOCKED while the sealed P0 workflow is completed (see se
 
 ### 8. Weekly Update Flow (`make update-week`)
 
-> **Operational status — 2026-09-01: BLOCKED.** Do not run this target to update
-> production. The current P0 branch is replacing the unsafe legacy path with a sealed
-> `weekly_staging/2` workflow. The script exits before DVC and before staging until the
-> complete 41-surface seed, the real gate runner and disposable-worktree confinement are
-> implemented and approved. It does not authorize downloading or publishing W32/W33.
+> **Operational status — 2026-09-02: P1 W33 candidate sealed, not published.** The official
+> 2026 source currently exposes 33 bulletins; W34 is not yet published. Sealed run
+> `2ae89151e88aa92a` advances Alzheimer, Depression, Parkinson and Dengue together from W31
+> to W33, with the `cifras` and `rag` gates passing. Backend PR #15 and frontend PR #11 are
+> drafts; neither the candidate nor its deploy preview is production.
 >
-> The numbered flow below documents the historical intent; it is not an executable runbook.
+> Every disease whose registry lifecycle is `published` must have the exact same public
+> `(year, epidemiological week)`. If one disease is missing, ahead or behind, the whole
+> release fails closed. Partial publication and carrying a stale disease forward are
+> forbidden. W34 may enter only after its official PDF exists and all published diseases
+> can advance to it together. The numbered flow below is historical, not an executable
+> runbook.
 > Current plan: `../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`.
 > Resume handoff: `../planes/PROMPT_REANUDAR_P0_RUNNER_GATES_2026-09-01.md`.
 
@@ -473,11 +478,12 @@ latest SINAVE bulletin ingested by the CI scraper. Delegates to
 11. **Publish**: commit + push the dashboard repo (gallery, zoom, knowledge, index)
     and version the consolidated dataset + production tables in DVC/S3.
 
-These invocations are intentionally unavailable until P0/P0.6 close:
+The governed P1 run was executed through the sealed staging commands. Do not use these
+legacy invocations as a publication bypass:
 
 ```bash
-make update-week              # expected to abort before DVC/staging
-RETRAIN=1 make update-week    # also blocked; do not use as a bypass
+make update-week              # remains guarded; requires the explicit weekly authorization
+RETRAIN=1 make update-week    # never use RETRAIN as an authorization bypass
 ```
 
 > **Before retraining on a new bulletin, run `make valida-prospectivo`** to score
@@ -491,9 +497,10 @@ push permission to `main`.
 
 ### Current Data Snapshot
 
-- **Verified local/public cut:** W31/2026. Registry and DVC pointers have W32, but the
-  W32 consolidated remote omits Dengue and must not be propagated as a complete week.
-  W33 is an external observation that must be rediscovered when execution is authorized.
+- **Published cut:** W31/2026 until the P1 PRs are reviewed and merged.
+- **Sealed candidate cut:** W33/2026 for all four published diseases — Alzheimer,
+  Depression, Parkinson and Dengue. W34 was checked against the official page on 2-sep and
+  is not available.
 - **Local consolidated dataset:** 96,864 rows: 63,072 neuro (3 × 21,024), 12,896
   Dengue and 20,896 Obesidad. The Obesidad rows are local NO-GO material; this
   superposition must not be versioned or published until decision P0.11.
