@@ -49,6 +49,8 @@ Uso:
     python -m scripts.refresh_staging hydrate --trabajo <dir> --head-backend <sha> \\
         --repo-backend <dir> --padecimientos "A,B,C" [--boletin nombre:url:bytes:sha256 ...]
     python -m scripts.refresh_staging snapshot --raiz <dir> --salida <json>
+    python -m scripts.refresh_staging bump-cache --trabajo <dir> \\
+        --destino-dashboard <dir> --head-dashboard <sha> [--data-version <valor>]
     python -m scripts.refresh_staging run-gates --trabajo <dir> --head-backend <sha> \\
         --destino-backend <dir> --destino-dashboard <dir>
     python -m scripts.refresh_staging seal --trabajo <dir> --semilla <json> \\
@@ -74,7 +76,10 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from epiforecast.publication.cadena_cache import revisa_cadena_cache  # noqa: E402
+from epiforecast.publication.cadena_cache import (  # noqa: E402
+    revisa_cadena_cache,
+    sube_cadena_cache,
+)
 from epiforecast.publication.contratos_datos import (  # noqa: E402
     ContratoCobertura,
     exige_todo,
@@ -230,6 +235,33 @@ def _parse_boletin(crudo: str) -> Boletin:
     except ValueError as exc:
         raise StagingError(f"tamaño no numérico en el boletín: {tam!r}") from exc
     return Boletin(nombre=nombre, url=url, bytes=tamano, sha256=digest)
+
+
+def _cmd_bump_cache(args: argparse.Namespace) -> int:
+    """Sube DATA_VERSION y los `?v=` que la cadena exija, en el candidato, ANTES de run-gates.
+
+    Los generadores cambian `knowledge.json`, `zoom_series.json` y a veces módulos del
+    EpiBot; sin este paso el candidato era correcto y el navegador servía el anterior. Va
+    antes de los gates porque cambia bytes de la composición.
+    """
+    trabajo = Path(args.trabajo)
+    resultado = sube_cadena_cache(
+        Path(args.destino_dashboard),
+        args.head_dashboard,
+        trabajo / "outputs" / "dashboard",
+        data_version=args.data_version,
+    )
+    if not resultado.cadena.aplica:
+        print("    el HEAD del dashboard no lleva EpiBot: no hay cadena de caché que subir")
+        return 0
+    for cambio in resultado.cambios:
+        print(f"    subido          : {cambio}")
+    if not resultado.cambios:
+        print("    la cadena de caché ya estaba al día; nada que subir")
+    print(
+        f"    cadena OK       : {len(resultado.cadena.cambiados)} archivo(s) del EpiBot cambiados"
+    )
+    return 0
 
 
 def _cmd_run_gates(args: argparse.Namespace) -> int:
@@ -593,6 +625,15 @@ def main(argv: list[str] | None = None) -> int:
     p_snap.add_argument("--raiz", required=True)
     p_snap.add_argument("--salida", required=True)
     p_snap.set_defaults(func=_cmd_snapshot)
+
+    p_bump = sub.add_parser(
+        "bump-cache", help="sube DATA_VERSION y los ?v= del EpiBot que la cadena exija"
+    )
+    p_bump.add_argument("--trabajo", required=True)
+    p_bump.add_argument("--destino-dashboard", required=True)
+    p_bump.add_argument("--head-dashboard", required=True)
+    p_bump.add_argument("--data-version", help="valor explícito de DATA_VERSION (si no, +1)")
+    p_bump.set_defaults(func=_cmd_bump_cache)
 
     p_gates = sub.add_parser(
         "run-gates", help="ejecuta los gates de la política sobre el árbol candidato completo"

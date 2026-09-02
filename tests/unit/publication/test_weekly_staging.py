@@ -883,8 +883,10 @@ def _argv_seal(
         str(trabajo / "semilla.json"),
         "--head-backend",
         head,
+        # El mismo repositorio hace de dashboard: el HEAD existe (la cadena de caché falla
+        # cerrado ante un HEAD inexistente) y sin kb.js la cadena no aplica.
         "--head-dashboard",
-        HEAD_DASHBOARD,
+        head,
         "--semana-anterior",
         "2026,30",
         "--semana-nueva",

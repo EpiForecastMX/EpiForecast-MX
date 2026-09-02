@@ -153,8 +153,9 @@ def _argv_seal(trabajo: Path, repo: Path, head: str, semilla: Path) -> list[str]
         str(semilla),
         "--head-backend",
         head,
+        # El mismo repositorio hace de dashboard: existe, y sin kb.js la cadena no aplica.
         "--head-dashboard",
-        "b" * 40,
+        head,
         "--semana-anterior",
         "2026,30",
         "--semana-nueva",
@@ -263,7 +264,7 @@ def test_e2e_gates_sinteticos_sellan_un_borrador_verificable(tmp_path: Path) -> 
     assert manifiesto.run_id == calcula_run_id_de(manifiesto)
     assert "evidencia" in manifiesto.payload_canonico()["resultados_pruebas"]
     assert "observacional" not in manifiesto.payload_canonico()["resultados_pruebas"]
-    verifica(sellado, manifiesto, head_backend=head, head_dashboard="b" * 40)
+    verifica(sellado, manifiesto, head_backend=head, head_dashboard=head)
     # Y aun así no hay destino arbitrario: sin par registrado no se instala en ningún sitio.
     with pytest.raises(StagingError, match="no existe la raíz de destinos"):
         aplica(sellado, manifiesto, tmp_path / "sin_registro")
@@ -829,19 +830,19 @@ def test_alterar_la_evidencia_sellada_rompe_la_verificacion(tmp_path: Path, arch
     ruta.write_bytes(ruta.read_bytes() + b" ")
 
     with pytest.raises(StagingError, match="evidencia de gates alterada"):
-        verifica(sellado, manifiesto, head_backend=head, head_dashboard="b" * 40)
+        verifica(sellado, manifiesto, head_backend=head, head_dashboard=head)
 
 
 def test_retirar_o_anadir_evidencia_sellada_rompe_la_verificacion(tmp_path: Path) -> None:
     sellado, manifiesto, head = _sella_por_cli(tmp_path, [_gate("cifras")])
     (sellado / DIR_EVIDENCIA / "cifras" / "stderr.bin").unlink()
     with pytest.raises(StagingError, match="falta evidencia"):
-        verifica(sellado, manifiesto, head_backend=head, head_dashboard="b" * 40)
+        verifica(sellado, manifiesto, head_backend=head, head_dashboard=head)
 
     (sellado / DIR_EVIDENCIA / "cifras" / "stderr.bin").write_bytes(b"")
     (sellado / DIR_EVIDENCIA / "extra.log").write_text("x", encoding="utf-8")
     with pytest.raises(StagingError, match="fuera del inventario"):
-        verifica(sellado, manifiesto, head_backend=head, head_dashboard="b" * 40)
+        verifica(sellado, manifiesto, head_backend=head, head_dashboard=head)
 
 
 def test_editar_el_registro_de_un_gate_en_el_manifiesto_rompe_el_run_id(tmp_path: Path) -> None:

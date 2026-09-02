@@ -434,7 +434,8 @@ def test_un_gate_de_contenido_que_falla_no_sella(tmp_path: Path, capsys) -> None
 
 def test_una_superficie_retirada_sin_permiso_no_sella(tmp_path: Path, capsys) -> None:
     """El generador retiró `calass.html`: el gate de conteo falla y, aunque no fallara,
-    la política no permite esa retirada. Dos barreras; `seal` muestra la suya primero."""
+    la política no permite esa retirada. Dos barreras: con el gate de conteo, `seal` muestra
+    el FAIL del gate ANTES de podar; con un gate inocuo, la de la política."""
     from scripts.refresh_staging import main
 
     r = _repos(tmp_path)
@@ -445,6 +446,16 @@ def test_una_superficie_retirada_sin_permiso_no_sella(tmp_path: Path, capsys) ->
     assert main(_argv_run_gates(trabajo, r)) == 1
     assert "gate cifras       FAIL (exit_code" in capsys.readouterr().out
     assert main(_argv_seal(trabajo, r)) == 1
+    assert "el gate cifras declara FAIL" in capsys.readouterr().err
+    assert (trabajo / "outputs" / "dashboard" / "index.html").is_file(), "no podó"
+
+    # Con un gate inocuo la barrera que queda es la de la política de retirables.
+    r2 = _repos(tmp_path / "dos", politica=_politica_cruda(gates=[fab.gate("cifras")]))
+    trabajo2 = tmp_path / "trabajo2"
+    assert main(_argv_materialize(trabajo2, r2)) == 0
+    (trabajo2 / "outputs" / "dashboard" / "calass.html").unlink()
+    assert main(_argv_run_gates(trabajo2, r2)) == 0
+    assert main(_argv_seal(trabajo2, r2)) == 1
     assert "no permite borrar: ['dashboard/calass.html']" in capsys.readouterr().err
 
 
@@ -462,16 +473,16 @@ def test_una_materializacion_parcial_no_cubre_el_censo(tmp_path: Path, capsys) -
         main(["snapshot", "--raiz", str(outputs), "--salida", str(trabajo / "semilla.json")]) == 0
     )
     (outputs / "dashboard" / "index.html").write_text("cambiado")
-    politica_solo_rag = _politica_cruda()
-    # El gate de cifras fallaría por conteo; se deja sólo `rag` para aislar el censo.
-    politica_solo_rag["gates"] = [g for g in politica_solo_rag["gates"] if g["id"] == "rag"]
+    politica_inocua = _politica_cruda(gates=[fab.gate("cifras")])
+    # Los gates de conteo y contenido fallarían antes (y `seal` los muestra ANTES de podar);
+    # se deja un gate inocuo para aislar la barrera del censo.
     (r["repo_b"] / "config" / "publication" / "politica_censo.json").write_text(
-        json.dumps(politica_solo_rag, indent=2) + "\n"
+        json.dumps(politica_inocua, indent=2) + "\n"
     )
-    _git(r["repo_b"], "commit", "-qam", "solo rag")
+    _git(r["repo_b"], "commit", "-qam", "gate inocuo")
     r["head_b"] = _git(r["repo_b"], "rev-parse", "HEAD").strip()
 
-    assert main(_argv_run_gates(trabajo, r)) == 1, "sin knowledge nuevo, rag falla; da igual"
+    assert main(_argv_run_gates(trabajo, r)) == 0
     assert main(_argv_seal(trabajo, r)) == 1
     faltan = len(SUPERFICIES) - 2
     assert f"no cubre {faltan} superficie(s) del censo" in capsys.readouterr().err
