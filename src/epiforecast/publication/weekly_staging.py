@@ -341,12 +341,19 @@ class Manifiesto:
     def payload_canonico(self) -> dict[str, Any]:
         """Todo lo que gobierna una acción entra en el identificador.
 
-        Queda fuera sólo `creado`, que es informativo — y por eso el sidecar cubre el JSON
-        entero, ese campo incluido.
+        Quedan fuera sólo `creado` y el registro observacional de los gates (tiempos,
+        ejecutable resuelto): son informativos, y dos corridas equivalentes deben compartir
+        identificador aunque difieran en ellos. Por eso el sidecar cubre el JSON entero, esos
+        campos incluidos, y `verifica` exige que la evidencia observacional en disco coincida
+        con su digest.
         """
         cuerpo = self.como_dict()
         cuerpo.pop("run_id")
         cuerpo.pop("creado")
+        if isinstance(cuerpo["resultados_pruebas"], dict):
+            resultados = dict(cuerpo["resultados_pruebas"])
+            resultados.pop("observacional", None)
+            cuerpo["resultados_pruebas"] = resultados
         return cuerpo
 
     def escribe(self, destino: Path) -> None:
@@ -402,6 +409,8 @@ class Manifiesto:
         if sobrantes := set(crudo) - esperadas:
             raise StagingError(f"manifiesto con claves desconocidas: {sorted(sobrantes)}")
 
+        if not isinstance(crudo["resultados_pruebas"], dict):
+            raise StagingError("resultados_pruebas tiene que ser un objeto")
         e = crudo["entrada"]
         entrada = SelloEntrada(
             head_backend=e["head_backend"],
@@ -453,8 +462,8 @@ class AutoridadLapidas:
     simétricos —inventar una retirada y olvidar otra— y sólo el primero se detectaba.
 
     Limitación declarada: el manifiesto guarda las lápidas resultantes, no esta evidencia.
-    Un lector no puede recomprobar la autorización; se comprueba al sellar. Ligar el digest
-    de la política al sello es trabajo del censo (P0.9).
+    Un lector no puede recomprobar la autorización; se comprueba al sellar. Lo que sí queda
+    ligado al sello es la política —versión y digest— contra la que se autorizó.
     """
 
     eliminados_reales: frozenset[str]
@@ -464,6 +473,185 @@ class AutoridadLapidas:
     def sin_lapidas() -> AutoridadLapidas:
         """Para sellos que no retiran nada. No autoriza ninguna retirada."""
         return AutoridadLapidas(eliminados_reales=frozenset(), allowlist=frozenset())
+
+
+# ── gates: definición en la política y evidencia de su ejecución ────────────
+#
+# La política ya no dice `"gates": ["cifras", "rag"]`. Un nombre no es un gate: un gate es un
+# `argv` exacto, un cwd cerrado, un plazo y un entorno permitido, y su resultado se deriva
+# de ejecutarlo. Sin esto, «PASS» era una palabra que cualquiera podía escribir en un JSON.
+
+VERSION_POLITICA = "censo/2"
+ESQUEMA_EVIDENCIA = "gates_evidencia/1"
+ESQUEMA_OBSERVACIONAL = "gates_observacional/1"
+DIR_EVIDENCIA = "gates"
+ARCHIVO_INDICE = "indice.json"
+ARCHIVO_OBSERVACIONAL = "observacional.json"
+TIMEOUT_MAX_S = 24 * 60 * 60
+VEREDICTO_FAIL = "FAIL"
+# Un argv cuyo ejecutable es un intérprete de órdenes equivale a `shell=True`: la política
+# volvería a ser una cadena de shell con otro envoltorio.
+INTERPRETES_DE_ORDENES = frozenset(
+    {
+        "sh",
+        "bash",
+        "zsh",
+        "dash",
+        "ksh",
+        "csh",
+        "tcsh",
+        "fish",
+        "cmd",
+        "cmd.exe",
+        "powershell",
+        "pwsh",
+    }
+)
+# Por qué un gate NO pasó. `""` es la única causa de un PASS.
+CAUSAS_FAIL = (
+    "exit_code",
+    "timeout",
+    "senal",
+    "ejecutable_ausente",
+    "cwd_invalido",
+    "excepcion",
+    "mutacion",
+    "no_ejecutado",
+)
+_RE_ID_GATE = re.compile(r"[a-z][a-z0-9_-]{0,31}")
+_RE_VARIABLE = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+_RE_SHA256 = re.compile(r"[0-9a-f]{64}")
+
+
+@dataclass(frozen=True)
+class GateSpec:
+    """Un gate es un `argv` exacto, no una orden de shell.
+
+    Cuatro cosas cerradas: el comando como lista (nunca una cadena, nunca un intérprete),
+    el cwd como prefijo administrado de la composición, el plazo y las variables de entorno
+    que se heredan por nombre o se fijan con valor. No hay ninguna otra clave: `shell`,
+    `cmd` o cualquier alias es un error de parseo, no una opción.
+    """
+
+    id: str
+    argv: tuple[str, ...]
+    cwd: str
+    timeout_s: int
+    heredar: tuple[str, ...]
+    fijar: tuple[tuple[str, str], ...]
+
+    CLAVES = ("id", "argv", "cwd", "timeout_s", "entorno")
+
+    @staticmethod
+    def desde_dict(crudo: Any, prefijos_administrados: tuple[str, ...] | None = None) -> GateSpec:
+        if not isinstance(crudo, dict):
+            raise StagingError(
+                "un gate se declara como objeto {id, argv, cwd, timeout_s, entorno}, no como "
+                f"{type(crudo).__name__} {crudo!r}; no existe forma de dar una orden de shell"
+            )
+        if faltan := set(GateSpec.CLAVES) - set(crudo):
+            raise StagingError(f"gate incompleto, faltan: {sorted(faltan)}")
+        if sobran := set(crudo) - set(GateSpec.CLAVES):
+            raise StagingError(
+                f"gate con claves desconocidas {sorted(sobran)}: no hay modo shell ni opciones "
+                "fuera del contrato"
+            )
+        ident = crudo["id"]
+        if not isinstance(ident, str) or not _RE_ID_GATE.fullmatch(ident):
+            raise StagingError(f"id de gate inválido: {ident!r}")
+
+        argv = crudo["argv"]
+        if not isinstance(argv, list) or not argv or not all(isinstance(a, str) for a in argv):
+            raise StagingError(
+                f"el argv del gate {ident} tiene que ser una lista no vacía de cadenas, no "
+                f"{argv!r}: una cadena de shell no es un argv"
+            )
+        if any(not a or "\x00" in a for a in argv):
+            raise StagingError(
+                f"el argv del gate {ident} tiene un argumento vacío o con byte nulo"
+            )
+        ejecutable = argv[0]
+        if ejecutable.rsplit("/", 1)[-1].lower() in INTERPRETES_DE_ORDENES:
+            raise StagingError(
+                f"el gate {ident} invoca un intérprete de órdenes ({ejecutable!r}): equivale a "
+                "shell=True y no se admite"
+            )
+        if "/" in ejecutable and not ejecutable.startswith("/"):
+            raise StagingError(
+                f"el ejecutable del gate {ident} es una ruta relativa: {ejecutable!r}; o es un "
+                "nombre que se busca en el PATH permitido o es una ruta absoluta"
+            )
+
+        cwd = crudo["cwd"]
+        if not isinstance(cwd, str):
+            raise StagingError(f"el cwd del gate {ident} tiene que ser una cadena: {cwd!r}")
+        _valida_prefijo(cwd, f"cwd del gate {ident}")
+        if not cwd.startswith(PREFIJOS_SELLABLES_CON_BARRA):
+            raise StagingError(
+                f"el cwd del gate {ident} ({cwd!r}) no cuelga de una raíz de la composición "
+                f"{PREFIJOS_SELLABLES_CON_BARRA}"
+            )
+        if prefijos_administrados is not None and not cwd.startswith(prefijos_administrados):
+            raise StagingError(
+                f"el cwd del gate {ident} ({cwd!r}) no cae bajo ningún prefijo administrado "
+                f"{prefijos_administrados}"
+            )
+
+        timeout = crudo["timeout_s"]
+        if isinstance(timeout, bool) or not isinstance(timeout, int):
+            raise StagingError(f"timeout_s del gate {ident} tiene que ser un entero: {timeout!r}")
+        if not 1 <= timeout <= TIMEOUT_MAX_S:
+            raise StagingError(
+                f"timeout_s del gate {ident} fuera de rango [1, {TIMEOUT_MAX_S}]: {timeout!r}"
+            )
+
+        entorno = crudo["entorno"]
+        if not isinstance(entorno, dict) or set(entorno) != {"heredar", "fijar"}:
+            raise StagingError(
+                f"el entorno del gate {ident} tiene que ser {{heredar: [...], fijar: {{...}}}}: "
+                f"{entorno!r}"
+            )
+        heredar, fijar = entorno["heredar"], entorno["fijar"]
+        if not isinstance(heredar, list) or not all(isinstance(v, str) for v in heredar):
+            raise StagingError(
+                f"entorno.heredar del gate {ident} tiene que ser una lista de nombres"
+            )
+        if not isinstance(fijar, dict) or not all(
+            isinstance(k, str) and isinstance(v, str) for k, v in fijar.items()
+        ):
+            raise StagingError(
+                f"entorno.fijar del gate {ident} tiene que ser un objeto nombre -> valor de texto"
+            )
+        for variable in [*heredar, *fijar]:
+            if not _RE_VARIABLE.fullmatch(variable):
+                raise StagingError(
+                    f"variable de entorno inválida en el gate {ident}: {variable!r}"
+                )
+        if len(set(heredar)) != len(heredar):
+            raise StagingError(f"entorno.heredar del gate {ident} tiene nombres duplicados")
+        if repetidas := sorted(set(heredar) & set(fijar)):
+            raise StagingError(f"el gate {ident} hereda y fija a la vez: {repetidas}")
+
+        return GateSpec(
+            id=ident,
+            argv=tuple(argv),
+            cwd=cwd,
+            timeout_s=timeout,
+            heredar=tuple(heredar),
+            fijar=tuple(sorted(fijar.items())),
+        )
+
+    def como_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "argv": list(self.argv),
+            "cwd": self.cwd,
+            "timeout_s": self.timeout_s,
+            "entorno": {"heredar": list(self.heredar), "fijar": dict(self.fijar)},
+        }
+
+
+PREFIJOS_SELLABLES_CON_BARRA = tuple(f"{p}/" for p in PREFIJOS_SELLABLES)
 
 
 @dataclass(frozen=True)
@@ -493,7 +681,7 @@ class PoliticaCenso:
     directorios_excluidos: frozenset[str]
     superficies_verificables: frozenset[str]
     retirables: frozenset[str]
-    gates: tuple[str, ...]
+    gates: tuple[GateSpec, ...]
 
     CLAVES = (
         "version",
@@ -503,6 +691,10 @@ class PoliticaCenso:
         "retirables",
         "gates",
     )
+
+    @property
+    def ids_gates(self) -> tuple[str, ...]:
+        return tuple(gate.id for gate in self.gates)
 
     @staticmethod
     def del_head(repo: Path, head: str) -> PoliticaCenso:
@@ -567,6 +759,11 @@ class PoliticaCenso:
             raise StagingError(f"patrón de superficie malformado: {patron!r}")
         if not isinstance(crudo["version"], str) or not crudo["version"].strip():
             raise StagingError("la política no declara una versión legible")
+        if crudo["version"] != VERSION_POLITICA:
+            raise StagingError(
+                f"la política declara la versión {crudo['version']!r} y este sello sólo "
+                f"interpreta {VERSION_POLITICA!r}; una política de otra versión no se lee a medias"
+            )
         if not isinstance(patron["prefijo"], str) or not patron["prefijo"].endswith("/"):
             raise StagingError(
                 f"el prefijo publicado tiene que terminar en '/': {patron['prefijo']!r}"
@@ -576,7 +773,6 @@ class PoliticaCenso:
             "prefijos_administrados": crudo["prefijos_administrados"],
             "superficies_verificables": crudo["superficies_verificables"],
             "retirables": crudo["retirables"],
-            "gates": crudo["gates"],
             "patron_superficie.sufijos": patron["sufijos"],
             "patron_superficie.directorios_excluidos": patron["directorios_excluidos"],
         }
@@ -587,12 +783,20 @@ class PoliticaCenso:
                 raise StagingError(f"{nombre} tiene entradas duplicadas")
         if not crudo["prefijos_administrados"]:
             raise StagingError("la política no declara ningún prefijo administrado")
-        if not crudo["gates"]:
-            raise StagingError("la política no declara ningún gate; un sello sin gates no vale")
-        if any(not nombre.strip() for nombre in crudo["gates"]):
-            raise StagingError("hay un gate sin nombre")
         for prefijo in crudo["prefijos_administrados"]:
             _valida_prefijo(prefijo, "prefijo administrado")
+        prefijos = tuple(crudo["prefijos_administrados"])
+        gates_crudos = crudo["gates"]
+        if not isinstance(gates_crudos, list):
+            raise StagingError(
+                "gates tiene que ser una lista de definiciones {id, argv, cwd, timeout_s, "
+                f"entorno}}, no {gates_crudos!r}"
+            )
+        if not gates_crudos:
+            raise StagingError("la política no declara ningún gate; un sello sin gates no vale")
+        gates = tuple(GateSpec.desde_dict(g, prefijos) for g in gates_crudos)
+        if len({g.id for g in gates}) != len(gates):
+            raise StagingError("gates con id duplicado")
         _valida_prefijo(patron["prefijo"], "prefijo publicado")
         for sufijo in patron["sufijos"]:
             if not sufijo.startswith(".") or "/" in sufijo or sufijo != sufijo.strip():
@@ -608,7 +812,6 @@ class PoliticaCenso:
         retirables = frozenset(crudo["retirables"])
         for rel in sorted(superficies | retirables):
             valida_ruta_sellable(rel)
-        prefijos = tuple(crudo["prefijos_administrados"])
         if fuera := sorted(retirables - superficies):
             raise StagingError(f"la política permite retirar rutas que no administra: {fuera[:5]}")
 
@@ -621,7 +824,7 @@ class PoliticaCenso:
             directorios_excluidos=frozenset(patron["directorios_excluidos"]),
             superficies_verificables=superficies,
             retirables=retirables,
-            gates=tuple(crudo["gates"]),
+            gates=gates,
         )
         # Coherencia entre las piezas, no sólo forma de cada una. Una política puede estar
         # bien escrita y decir algo imposible: publicar bajo un prefijo que no administra,
@@ -694,32 +897,407 @@ def calcula_composicion(
     return hashlib.sha256(cuerpo.encode()).hexdigest(), arbol
 
 
-def valida_gates(resultados: dict[str, Any], politica: PoliticaCenso, composicion: str) -> None:
-    """El conjunto de gates es exacto, y cada resultado apunta a ESTA composición.
+@dataclass(frozen=True)
+class RegistroGate:
+    """Lo que gobierna de la ejecución de un gate. Todo entra en el identificador.
 
-    Si un byte cambia después de correr los gates, la composición recalculada deja de
-    coincidir con la que declararon y el sello aborta: recomponer obliga a repetirlos.
+    Los tiempos y el ejecutable resuelto NO están aquí: son observacionales y viven en
+    `observacional.json`. Dos ejecuciones equivalentes comparten este registro byte a byte.
     """
-    esperados = set(politica.gates)
-    if faltan := sorted(esperados - set(resultados)):
-        raise StagingError(f"faltan resultados de gates que la política exige: {faltan}")
-    if sobran := sorted(set(resultados) - esperados):
-        raise StagingError(f"hay resultados de gates que la política no declara: {sobran}")
-    for nombre in sorted(esperados):
-        resultado = resultados[nombre]
-        if not isinstance(resultado, dict):
+
+    gate: str
+    veredicto: str
+    causa: str
+    detalle: str
+    politica_sha256: str
+    composicion: str
+    spec: GateSpec
+    exit_code: int | None
+    senal: int | None
+    stdout_bytes: int
+    stdout_sha256: str
+    stderr_bytes: int
+    stderr_sha256: str
+
+    CLAVES = (
+        "gate",
+        "veredicto",
+        "causa",
+        "detalle",
+        "politica_sha256",
+        "composicion",
+        "argv",
+        "cwd",
+        "timeout_s",
+        "entorno",
+        "exit_code",
+        "senal",
+        "stdout",
+        "stderr",
+    )
+
+    def como_dict(self) -> dict[str, Any]:
+        spec = self.spec.como_dict()
+        return {
+            "gate": self.gate,
+            "veredicto": self.veredicto,
+            "causa": self.causa,
+            "detalle": self.detalle,
+            "politica_sha256": self.politica_sha256,
+            "composicion": self.composicion,
+            "argv": spec["argv"],
+            "cwd": spec["cwd"],
+            "timeout_s": spec["timeout_s"],
+            "entorno": spec["entorno"],
+            "exit_code": self.exit_code,
+            "senal": self.senal,
+            "stdout": {"bytes": self.stdout_bytes, "sha256": self.stdout_sha256},
+            "stderr": {"bytes": self.stderr_bytes, "sha256": self.stderr_sha256},
+        }
+
+    @staticmethod
+    def desde_dict(nombre: str, crudo: Any) -> RegistroGate:
+        """Parser fail-closed del registro de un gate; se usa al releer índice y manifiesto."""
+        if not isinstance(crudo, dict):
             raise StagingError(f"el resultado del gate {nombre} no es un objeto")
-        if resultado.get("veredicto") != VEREDICTO_REQUERIDO:
+        if set(crudo) != set(RegistroGate.CLAVES):
+            faltan = sorted(set(RegistroGate.CLAVES) - set(crudo))
+            sobran = sorted(set(crudo) - set(RegistroGate.CLAVES))
             raise StagingError(
-                f"el gate {nombre} declara {resultado.get('veredicto')!r} y se exige "
-                f"{VEREDICTO_REQUERIDO}"
+                f"registro del gate {nombre} malformado (faltan {faltan}, sobran {sobran})"
             )
-        if resultado.get("composicion") != composicion:
+        if crudo["gate"] != nombre:
             raise StagingError(
-                f"el gate {nombre} se corrió sobre la composición "
-                f"{str(resultado.get('composicion'))[:12]}… y el candidato es {composicion[:12]}…: "
+                f"el registro bajo la clave {nombre!r} dice ser del gate {crudo['gate']!r}"
+            )
+        veredicto = crudo["veredicto"]
+        causa = crudo["causa"]
+        if veredicto not in (VEREDICTO_REQUERIDO, VEREDICTO_FAIL):
+            raise StagingError(f"veredicto desconocido en el gate {nombre}: {veredicto!r}")
+        if veredicto == VEREDICTO_REQUERIDO and causa != "":
+            raise StagingError(f"el gate {nombre} declara PASS con causa de fallo {causa!r}")
+        if veredicto == VEREDICTO_FAIL and causa not in CAUSAS_FAIL:
+            raise StagingError(f"el gate {nombre} declara FAIL con causa desconocida {causa!r}")
+        if not isinstance(crudo["detalle"], str):
+            raise StagingError(f"el detalle del gate {nombre} no es texto")
+        for clave in ("politica_sha256", "composicion"):
+            if not isinstance(crudo[clave], str) or not _RE_SHA256.fullmatch(crudo[clave]):
+                raise StagingError(f"{clave} del gate {nombre} no es un SHA256 de 64 hex")
+        spec = GateSpec.desde_dict(
+            {
+                "id": nombre,
+                "argv": crudo["argv"],
+                "cwd": crudo["cwd"],
+                "timeout_s": crudo["timeout_s"],
+                "entorno": crudo["entorno"],
+            }
+        )
+        exit_code, senal = crudo["exit_code"], crudo["senal"]
+        for etiqueta, valor in (("exit_code", exit_code), ("senal", senal)):
+            if valor is not None and (isinstance(valor, bool) or not isinstance(valor, int)):
+                raise StagingError(f"{etiqueta} del gate {nombre} tiene que ser entero o null")
+        if veredicto == VEREDICTO_REQUERIDO and (exit_code != 0 or senal is not None):
+            raise StagingError(
+                f"el gate {nombre} declara PASS sin código 0 (exit_code={exit_code!r}, "
+                f"senal={senal!r}); PASS sólo se deriva de un código de salida 0"
+            )
+        if causa == "exit_code" and exit_code in (None, 0):
+            raise StagingError(
+                f"el gate {nombre} declara fallo por exit_code y trae {exit_code!r}"
+            )
+        if causa == "senal" and senal is None:
+            raise StagingError(f"el gate {nombre} declara fallo por señal sin número de señal")
+        flujos: dict[str, tuple[int, str]] = {}
+        for flujo in ("stdout", "stderr"):
+            valor = crudo[flujo]
+            if (
+                not isinstance(valor, dict)
+                or set(valor) != {"bytes", "sha256"}
+                or isinstance(valor["bytes"], bool)
+                or not isinstance(valor["bytes"], int)
+                or valor["bytes"] < 0
+                or not isinstance(valor["sha256"], str)
+                or not _RE_SHA256.fullmatch(valor["sha256"])
+            ):
+                raise StagingError(f"{flujo} del gate {nombre} malformado: {valor!r}")
+            flujos[flujo] = (valor["bytes"], valor["sha256"])
+        return RegistroGate(
+            gate=nombre,
+            veredicto=veredicto,
+            causa=causa,
+            detalle=crudo["detalle"],
+            politica_sha256=crudo["politica_sha256"],
+            composicion=crudo["composicion"],
+            spec=spec,
+            exit_code=exit_code,
+            senal=senal,
+            stdout_bytes=flujos["stdout"][0],
+            stdout_sha256=flujos["stdout"][1],
+            stderr_bytes=flujos["stderr"][0],
+            stderr_sha256=flujos["stderr"][1],
+        )
+
+
+def rutas_evidencia(ids_gates: Iterable[str]) -> tuple[frozenset[str], frozenset[str]]:
+    """Qué archivos, y sólo cuáles, forman la evidencia de un conjunto de gates.
+
+    Devuelve (gobernantes, observacionales), con rutas relativas al staging.
+    """
+    gobernantes = {
+        f"{DIR_EVIDENCIA}/{ARCHIVO_INDICE}",
+        f"{DIR_EVIDENCIA}/{Path(ARCHIVO_INDICE).stem}.sha256",
+    }
+    for ident in ids_gates:
+        gobernantes.add(f"{DIR_EVIDENCIA}/{ident}/stdout.bin")
+        gobernantes.add(f"{DIR_EVIDENCIA}/{ident}/stderr.bin")
+    return frozenset(gobernantes), frozenset({f"{DIR_EVIDENCIA}/{ARCHIVO_OBSERVACIONAL}"})
+
+
+@dataclass(frozen=True)
+class EvidenciaGates:
+    """La evidencia que dejó el runner, releída desde disco y verificada.
+
+    Es la ÚNICA fuente de resultados de gates que `sella` acepta, y vive en la ruta fija
+    `<staging>/gates/`. No hay parámetro ni flag para señalar otra: un resultado que se
+    pueda suministrar es un resultado que se puede fabricar.
+    """
+
+    politica_version: str
+    politica_sha256: str
+    composicion: str
+    veredicto: str
+    gates: dict[str, RegistroGate]
+    evidencia: dict[str, str]
+    observacional: dict[str, str]
+
+    @staticmethod
+    def lee(raiz_staging: Path) -> EvidenciaGates:
+        carpeta = raiz_staging / DIR_EVIDENCIA
+        if carpeta.is_symlink():
+            raise StagingError(f"la evidencia de gates es un enlace simbólico: {carpeta}")
+        if not carpeta.is_dir():
+            raise StagingError(
+                f"no hay evidencia de gates en {carpeta}: corre `run-gates` sobre el árbol "
+                "completo antes de sellar"
+            )
+        presentes = {str(rel) for rel in _relativos(carpeta)}
+
+        indice = carpeta / ARCHIVO_INDICE
+        if ARCHIVO_INDICE not in presentes:
+            raise StagingError(f"la evidencia no tiene índice {ARCHIVO_INDICE}")
+        verifica_sidecar(indice)
+        crudo_indice = indice.read_bytes()
+        try:
+            crudo = json.loads(crudo_indice, object_pairs_hook=_sin_duplicados)
+        except json.JSONDecodeError as exc:
+            raise StagingError(f"índice de evidencia ilegible: {exc}") from exc
+        if not isinstance(crudo, dict) or set(crudo) != {
+            "esquema",
+            "politica",
+            "composicion",
+            "veredicto",
+            "gates",
+        }:
+            raise StagingError(f"índice de evidencia malformado: {crudo!r}"[:300])
+        if crudo["esquema"] != ESQUEMA_EVIDENCIA:
+            raise StagingError(
+                f"la evidencia es del esquema {crudo['esquema']!r} y este sello lee "
+                f"{ESQUEMA_EVIDENCIA!r}"
+            )
+        politica = crudo["politica"]
+        if (
+            not isinstance(politica, dict)
+            or set(politica) != {"version", "sha256"}
+            or not isinstance(politica["version"], str)
+            or not isinstance(politica["sha256"], str)
+            or not _RE_SHA256.fullmatch(politica["sha256"])
+        ):
+            raise StagingError(f"la evidencia no identifica la política: {politica!r}")
+        composicion = crudo["composicion"]
+        if not isinstance(composicion, str) or not _RE_SHA256.fullmatch(composicion):
+            raise StagingError("la composición de la evidencia no es un SHA256 de 64 hex")
+        if crudo["veredicto"] not in (VEREDICTO_REQUERIDO, VEREDICTO_FAIL):
+            raise StagingError(f"veredicto global desconocido: {crudo['veredicto']!r}")
+        if not isinstance(crudo["gates"], dict) or not crudo["gates"]:
+            raise StagingError("la evidencia no registra ningún gate")
+        registros = {
+            nombre: RegistroGate.desde_dict(nombre, valor)
+            for nombre, valor in crudo["gates"].items()
+        }
+        for nombre, registro in registros.items():
+            if registro.composicion != composicion:
+                raise StagingError(
+                    f"el gate {nombre} apunta a otra composición que el índice de evidencia"
+                )
+            if registro.politica_sha256 != politica["sha256"]:
+                raise StagingError(f"el gate {nombre} apunta a otra política que el índice")
+        todos_pasan = all(r.veredicto == VEREDICTO_REQUERIDO for r in registros.values())
+        if (crudo["veredicto"] == VEREDICTO_REQUERIDO) != todos_pasan:
+            raise StagingError(
+                f"el índice declara {crudo['veredicto']} y los gates no lo sostienen"
+            )
+
+        gobernantes, observacionales = rutas_evidencia(registros)
+        esperados = {
+            rel.removeprefix(f"{DIR_EVIDENCIA}/") for rel in gobernantes | observacionales
+        }
+        if faltan := sorted(esperados - presentes):
+            raise StagingError(f"evidencia incompleta, faltan: {faltan[:5]}")
+        if sobran := sorted(presentes - esperados):
+            raise StagingError(f"evidencia con archivos que nadie produjo: {sobran[:5]}")
+
+        digestos: dict[str, str] = {
+            f"{DIR_EVIDENCIA}/{ARCHIVO_INDICE}": hashlib.sha256(crudo_indice).hexdigest(),
+            f"{DIR_EVIDENCIA}/{Path(ARCHIVO_INDICE).stem}.sha256": sha256_de(
+                indice.with_name(indice.stem + ".sha256")
+            ),
+        }
+        for nombre, registro in registros.items():
+            for flujo, tamano, digest in (
+                ("stdout", registro.stdout_bytes, registro.stdout_sha256),
+                ("stderr", registro.stderr_bytes, registro.stderr_sha256),
+            ):
+                ruta = carpeta / nombre / f"{flujo}.bin"
+                if ruta.stat().st_size != tamano or sha256_de(ruta) != digest:
+                    raise StagingError(
+                        f"{flujo} del gate {nombre} no coincide con lo que registra el índice; "
+                        "la evidencia fue editada o se corrompió"
+                    )
+                digestos[f"{DIR_EVIDENCIA}/{nombre}/{flujo}.bin"] = digest
+
+        observacional = carpeta / ARCHIVO_OBSERVACIONAL
+        try:
+            obs = json.loads(observacional.read_bytes(), object_pairs_hook=_sin_duplicados)
+        except json.JSONDecodeError as exc:
+            raise StagingError(f"registro observacional ilegible: {exc}") from exc
+        if (
+            not isinstance(obs, dict)
+            or set(obs) != {"esquema", "gates"}
+            or obs["esquema"] != ESQUEMA_OBSERVACIONAL
+            or not isinstance(obs["gates"], dict)
+            or set(obs["gates"]) != set(registros)
+        ):
+            raise StagingError("registro observacional malformado o de otros gates")
+
+        return EvidenciaGates(
+            politica_version=politica["version"],
+            politica_sha256=politica["sha256"],
+            composicion=composicion,
+            veredicto=crudo["veredicto"],
+            gates=registros,
+            evidencia=dict(sorted(digestos.items())),
+            observacional={f"{DIR_EVIDENCIA}/{ARCHIVO_OBSERVACIONAL}": sha256_de(observacional)},
+        )
+
+    def como_manifiesto(self) -> dict[str, Any]:
+        """Lo que el manifiesto guarda. `observacional` queda fuera del `run_id`."""
+        return {
+            "esquema": ESQUEMA_EVIDENCIA,
+            "gates": {nombre: registro.como_dict() for nombre, registro in self.gates.items()},
+            "evidencia": dict(sorted(self.evidencia.items())),
+            "observacional": dict(sorted(self.observacional.items())),
+        }
+
+
+def valida_gates(evidencia: EvidenciaGates, politica: PoliticaCenso, composicion: str) -> None:
+    """La evidencia corresponde a ESTA política, ESTE conjunto de gates y ESTA composición.
+
+    Si un byte cambia después de correr los gates, la composición recompuesta deja de
+    coincidir con la que midieron y el sello aborta: recomponer obliga a repetirlos todos.
+    """
+    if evidencia.politica_sha256 != politica.sha256:
+        raise StagingError(
+            f"la evidencia se produjo contra la política {evidencia.politica_sha256[:12]}… y el "
+            f"HEAD sellado trae {politica.sha256[:12]}…; no es la misma política"
+        )
+    esperados = set(politica.ids_gates)
+    if faltan := sorted(esperados - set(evidencia.gates)):
+        raise StagingError(f"faltan resultados de gates que la política exige: {faltan}")
+    if sobran := sorted(set(evidencia.gates) - esperados):
+        raise StagingError(f"hay resultados de gates que la política no declara: {sobran}")
+    for spec in politica.gates:
+        registro = evidencia.gates[spec.id]
+        if registro.spec != spec:
+            raise StagingError(
+                f"la evidencia del gate {spec.id} ejecutó otro comando, cwd, plazo o entorno "
+                "que el que declara la política"
+            )
+        if registro.veredicto != VEREDICTO_REQUERIDO:
+            raise StagingError(
+                f"el gate {spec.id} declara {registro.veredicto} ({registro.causa}: "
+                f"{registro.detalle}) y se exige {VEREDICTO_REQUERIDO}"
+            )
+        if registro.composicion != composicion:
+            raise StagingError(
+                f"el gate {spec.id} se corrió sobre la composición "
+                f"{registro.composicion[:12]}… y el candidato es {composicion[:12]}…: "
                 "algo cambió después de los gates; recompón y vuelve a correrlos"
             )
+
+
+def valida_resultados_pruebas(manifiesto: Manifiesto) -> None:
+    """Forma exacta de `resultados_pruebas` en el manifiesto, y coherencia con el sello."""
+    resultados = manifiesto.resultados_pruebas
+    if not resultados:
+        raise StagingError("un sello sin resultados de gates no autoriza nada")
+    if set(resultados) != {"esquema", "gates", "evidencia", "observacional"}:
+        raise StagingError(f"resultados_pruebas malformado: claves {sorted(resultados)}")
+    if resultados["esquema"] != ESQUEMA_EVIDENCIA:
+        raise StagingError(f"resultados_pruebas de otro esquema: {resultados['esquema']!r}")
+    gates = resultados["gates"]
+    if not isinstance(gates, dict) or not gates:
+        raise StagingError("resultados_pruebas no registra ningún gate")
+    registros = {nombre: RegistroGate.desde_dict(nombre, valor) for nombre, valor in gates.items()}
+    for nombre, registro in registros.items():
+        if registro.veredicto != VEREDICTO_REQUERIDO:
+            raise StagingError(
+                f"el gate {nombre} declara {registro.veredicto!r} y se exige {VEREDICTO_REQUERIDO}"
+            )
+        if registro.composicion != manifiesto.composicion:
+            raise StagingError(
+                f"el gate {nombre} no apunta a la composición del sello; se corrió sobre otro árbol"
+            )
+        if registro.politica_sha256 != manifiesto.politica.get("sha256"):
+            raise StagingError(f"el gate {nombre} no apunta a la política del sello")
+
+    gobernantes, observacionales = rutas_evidencia(registros)
+    for clave, esperadas in (("evidencia", gobernantes), ("observacional", observacionales)):
+        mapa = resultados[clave]
+        if not isinstance(mapa, dict) or set(mapa) != esperadas:
+            raise StagingError(
+                f"{clave} de resultados_pruebas no inventaría exactamente los archivos "
+                f"esperados: {sorted(mapa) if isinstance(mapa, dict) else mapa!r}"[:300]
+            )
+        for rel, digest in mapa.items():
+            if not isinstance(digest, str) or not _RE_SHA256.fullmatch(digest):
+                raise StagingError(f"digest inválido en {clave} para {rel}")
+    for nombre, registro in registros.items():
+        evidencia = resultados["evidencia"]
+        if (
+            evidencia[f"{DIR_EVIDENCIA}/{nombre}/stdout.bin"] != registro.stdout_sha256
+            or evidencia[f"{DIR_EVIDENCIA}/{nombre}/stderr.bin"] != registro.stderr_sha256
+        ):
+            raise StagingError(
+                f"los digests de stdout/stderr del gate {nombre} no coinciden con su evidencia"
+            )
+
+
+def verifica_evidencia_en_disco(raiz_staging: Path, manifiesto: Manifiesto) -> None:
+    """Lo que hay bajo `<staging>/gates/` es exactamente lo que el manifiesto inventarió."""
+    resultados = manifiesto.resultados_pruebas
+    esperados: dict[str, str] = {**resultados["evidencia"], **resultados["observacional"]}
+    carpeta = raiz_staging / DIR_EVIDENCIA
+    _exige_directorio_real(carpeta, "la evidencia de gates")
+    presentes = {f"{DIR_EVIDENCIA}/{rel}" for rel in _relativos(carpeta)}
+    if faltan := sorted(set(esperados) - presentes):
+        raise StagingError(f"falta evidencia de gates sellada: {faltan[:5]}")
+    if sobran := sorted(presentes - set(esperados)):
+        raise StagingError(f"hay evidencia de gates fuera del inventario: {sobran[:5]}")
+    alterados = sorted(
+        rel for rel, digest in esperados.items() if sha256_de(raiz_staging / rel) != digest
+    )
+    if alterados:
+        raise StagingError(f"evidencia de gates alterada después del sellado: {alterados[:5]}")
 
 
 @dataclass(frozen=True)
@@ -830,7 +1408,8 @@ def _sin_duplicados(pares: list[tuple[str, Any]]) -> dict[str, Any]:
 
 
 # Un sello sólo es instalable cuando su composición y sus gates se calcularon, no cuando
-# alguien los declaró. Mientras P0.9 no exista, `sella` produce borradores.
+# alguien los declaró. Eso ya ocurre (P0.9); lo que falta es el confinamiento de la
+# instalación (P0.6), y mientras no exista `sella` produce borradores.
 MODO_APLICABLE = "aplicable"
 MODO_DRAFT = "draft"
 MOTIVO_P06 = (
@@ -846,7 +1425,8 @@ def valida_contrato(manifiesto: Manifiesto) -> None:
     """Contrato de `weekly_staging/2`: nada que autorice una acción puede faltar.
 
     Una versión distinta no se juzga aquí: la rechaza `verifica()` con su propio mensaje,
-    que dice qué hacer.
+    que dice qué hacer. Los resultados de gates tienen forma exacta: el registro de cada
+    gate, el inventario de su evidencia y el digest de lo observacional.
     """
     if manifiesto.version_generador != VERSION_GENERADOR:
         return
@@ -889,20 +1469,7 @@ def valida_contrato(manifiesto: Manifiesto) -> None:
         if operacion not in TARGETS_DVC_PERMITIDOS:
             raise StagingError(f"objetivo DVC no permitido en el manifiesto: {operacion}")
 
-    if not manifiesto.resultados_pruebas:
-        raise StagingError("un sello sin resultados de gates no autoriza nada")
-    for nombre, resultado in sorted(manifiesto.resultados_pruebas.items()):
-        if not isinstance(resultado, dict):
-            raise StagingError(f"el resultado del gate {nombre} no es un objeto")
-        if resultado.get("veredicto") != VEREDICTO_REQUERIDO:
-            raise StagingError(
-                f"el gate {nombre} declara {resultado.get('veredicto')!r} y se exige "
-                f"{VEREDICTO_REQUERIDO}"
-            )
-        if resultado.get("composicion") != manifiesto.composicion:
-            raise StagingError(
-                f"el gate {nombre} no apunta a la composición del sello; se corrió sobre otro árbol"
-            )
+    valida_resultados_pruebas(manifiesto)
     for boletin in manifiesto.entrada.boletines:
         if not boletin.sha256:
             raise StagingError(f"el boletín {boletin.nombre} no trae digest")
@@ -977,7 +1544,6 @@ def sella(
     *,
     semilla: dict[str, str],
     baseline: dict[str, dict[str, Any]],
-    resultados_pruebas: dict[str, Any],
     politica: PoliticaCenso,
     autoridad_lapidas: AutoridadLapidas,
     tombstones: tuple[str, ...] = (),
@@ -988,6 +1554,10 @@ def sella(
     La composición ya no la declara quien llama: se deriva de la semilla, lo cambiado y
     las lápidas. Antes era una cadena cualquiera, y hashear una afirmación falsa la vuelve
     íntegra, no verdadera.
+
+    Los resultados de los gates tampoco se reciben: se releen de `<staging>/gates/`, que
+    sólo escribe el runner, y tienen que apuntar a esta política y a esta composición. No
+    hay parámetro para inyectarlos porque cualquier parámetro sería un JSON diciendo PASS.
     """
     outputs = raiz_staging / "outputs"
     inventario = inventaria(outputs)
@@ -1008,7 +1578,8 @@ def sella(
     politica.revisa_universos(arbol, tombstones)
     if fuera := sorted(set(tombstones) - politica.retirables):
         raise StagingError(f"la política no permite retirar: {fuera[:5]}")
-    valida_gates(resultados_pruebas, politica, composicion)
+    evidencia = EvidenciaGates.lee(raiz_staging)
+    valida_gates(evidencia, politica, composicion)
 
     manifiesto = Manifiesto(
         run_id="",
@@ -1026,7 +1597,7 @@ def sella(
         composicion=composicion,
         politica={"version": politica.version, "sha256": politica.sha256},
         operaciones_dvc=tuple(operaciones_dvc),
-        resultados_pruebas=resultados_pruebas,
+        resultados_pruebas=evidencia.como_manifiesto(),
     )
     valida_contrato(manifiesto)
     manifiesto.run_id = calcula_run_id_de(manifiesto)
@@ -1113,6 +1684,8 @@ def verifica(
     if alterados:
         raise StagingError(f"artefactos alterados despues del sellado: {sorted(alterados)[:5]}")
 
+    verifica_evidencia_en_disco(raiz_staging, manifiesto)
+
 
 def aplica(
     raiz_staging: Path,
@@ -1144,9 +1717,9 @@ def aplica(
     verifica(raiz_staging, manifiesto, head_backend=head_backend, head_dashboard=head_dashboard)
     if manifiesto.modo != MODO_APLICABLE:
         raise StagingError(
-            f"el sello está en modo {manifiesto.modo!r} y no es aplicable: su composición y "
-            "sus gates los declara quien sella, nadie los ha recomputado. Sólo un sello "
-            f"{MODO_APLICABLE!r}, producido con la composición verificada, puede instalarse."
+            f"el sello está en modo {manifiesto.modo!r} y no es aplicable. "
+            f"{manifiesto.motivo_draft or 'No declara motivo.'} Sólo un sello "
+            f"{MODO_APLICABLE!r} puede instalarse."
         )
     _comprueba_baseline(manifiesto, destinos)
 

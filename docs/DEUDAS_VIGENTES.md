@@ -10,18 +10,27 @@
 
 El plan vigente es `../../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`
 (SHA256 `5cfdf5a4a2d8e5ed1acf004e8c90a00e929dfd217ba051fff925e742fe9e233d`). El árbol contiene
-siete archivos sin commit con el núcleo `weekly_staging/2`: namespace, sidecar, runs
-inmutables, baseline, tombstones derivados, composición completa y política Git con censo
-exacto de 41 superficies. Los sellos siguen `draft`; `CONFINAMIENTO_LISTO = False`.
+nueve archivos de núcleo sin commit, en dos deltas lógicos: el checkpoint P0.9 con
+`weekly_staging/2` —namespace, sidecar, runs inmutables, baseline, tombstones derivados,
+composición completa y política Git con censo exacto de 41 superficies— y, encima, el
+runner real de gates. Los sellos siguen `draft`; `CONFINAMIENTO_LISTO = False`.
 
-Último gate: 113 pruebas dirigidas; `make test-fast` = 2,535 passed, 1 skipped y 66
-deselected. Antes del checkpoint falta que el control de HEAD distinto afirme mediante
-`capsys` el motivo `difieren: entrada`.
+Último gate (1-sep, cierre del runner): 186 pruebas dirigidas; `make test-fast` = 2,608
+passed, 1 skipped y 66 deselected; Ruff, mypy, `bash -n` y `git diff --check` verdes. El
+control de HEAD distinto afirma con `capsys` el motivo `difieren: entrada`.
 
-Siguiente entrega: runner real de gates. Debe retirar el JSON de resultados suministrado por
-el operador, ejecutar comandos estructurados de la política sobre la composición candidata,
-derivar el veredicto y sellar/reverificar su evidencia. No incluye P0.6, DVC, W32/W33,
-recableado de `make update-week`, apply ni publicación. Handoff completo:
+Entregado: runner real de gates. La política `censo/2` define cada gate como `argv` +
+`cwd` + `timeout_s` + `entorno`; `run-gates` ejecuta el argv exacto sin shell sobre el
+árbol candidato completo antes de podar, deriva PASS sólo del exit 0 y deja evidencia con
+digests en `<trabajo>/gates/`; `seal` ya no acepta `--resultados-pruebas` y relee esa
+evidencia exigiendo política y composición exactas. Límites declarados: no es un sandbox
+(cierra la interfaz, no al proceso) y los digests no son firma.
+
+Pendiente, por este orden: (1) autorizar el commit local de checkpoint P0.9 (instantánea
+y receta en `../../planes/checkpoint_P09_2026-09-01/`) y el commit del runner, nunca push;
+(2) P0.6, apply confinado a worktrees desechables; (3) siembra 41/41, `check-completeness`
+con untracked y recableado de `actualiza_semanal.sh` a `run-gates` → `seal`; (4) decisión
+DVC P0.11 antes de P1. Handoff histórico (anterior al runner):
 `../../planes/PROMPT_REANUDAR_P0_RUNNER_GATES_2026-09-01.md`.
 
 ## Cerradas o retiradas en esta auditoría

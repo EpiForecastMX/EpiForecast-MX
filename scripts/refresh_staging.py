@@ -1,14 +1,21 @@
 """Interfaz de línea de órdenes del staging sellado del refresh semanal.
 
-Tres subórdenes, que corresponden a los tres momentos del flujo:
+Cuatro subórdenes, que corresponden a los momentos del flujo, en este orden:
 
 ``snapshot``
     Antes de generar. Registra el digest de la semilla clonada del destino, para poder
     distinguir después lo que produjo el refresh de lo que ya estaba ahí.
 
+``run-gates``
+    Después de generar y ANTES de sellar. Ejecuta, sobre el árbol candidato completo, el
+    ``argv`` exacto de cada gate que la política del HEAD declara, y deja la evidencia
+    —índice, stdout, stderr, digests— en ``<trabajo>/gates/``. El veredicto se deriva del
+    código de salida; no existe forma de suministrarlo.
+
 ``seal``
-    Después de generar. Retira del staging lo que no cambió, inventaría lo que queda y
-    escribe el manifiesto con las entradas que lo gobiernan.
+    Retira del staging lo que no cambió, inventaría lo que queda, recompone el árbol y
+    exige que la evidencia de ``run-gates`` apunte exactamente a esa composición y a la
+    política del HEAD. Escribe el manifiesto con las entradas que lo gobiernan.
 
 ``apply``
     Recibe un manifiesto **explícito**, verifica que todo siga como se selló e instala
@@ -17,6 +24,8 @@ Tres subórdenes, que corresponden a los tres momentos del flujo:
 
 Uso:
     python -m scripts.refresh_staging snapshot --raiz <dir> --salida <json>
+    python -m scripts.refresh_staging run-gates --trabajo <dir> --head-backend <sha> \\
+        --destino-backend <dir> --destino-dashboard <dir>
     python -m scripts.refresh_staging seal --trabajo <dir> --semilla <json> \\
         --head-backend <sha> --head-dashboard <sha> --digest-consolidado <sha> \\
         --semana-anterior <a,s> --semana-nueva <a,s> --padecimientos "A,B,C" \\
@@ -35,8 +44,11 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
+from epiforecast.publication.gate_runner import ejecuta_gates  # noqa: E402
 from epiforecast.publication.weekly_staging import (  # noqa: E402
+    DIR_EVIDENCIA,
     RUTA_POLITICA,
+    VEREDICTO_REQUERIDO,
     AutoridadLapidas,
     Boletin,
     Manifiesto,
@@ -50,6 +62,7 @@ from epiforecast.publication.weekly_staging import (  # noqa: E402
     sella,
     snapshot_digests,
     verifica,
+    verifica_evidencia_en_disco,
     verifica_sidecar,
 )
 
@@ -87,6 +100,7 @@ def _reutiliza_o_aborta(destino: Path, candidato: Manifiesto) -> Manifiesto:
             f"la corrida sellada {destino.name} ya no coincide con su propio manifiesto; "
             "no se reutiliza"
         )
+    verifica_evidencia_en_disco(destino, previo)
     return previo
 
 
@@ -131,10 +145,47 @@ def _parse_boletin(crudo: str) -> Boletin:
     return Boletin(nombre=nombre, url=url, bytes=tamano, sha256=digest)
 
 
+def _cmd_run_gates(args: argparse.Namespace) -> int:
+    """Corre los gates de la política del HEAD sobre el árbol candidato COMPLETO.
+
+    Va antes de `seal` porque `seal` poda: los gates tienen que medir la composición
+    entera, que es la que `apply` reconstruiría. La política se lee del mismo HEAD que
+    después se sella; no hay flag para elegir otra ni para elegir los comandos.
+    """
+    trabajo = Path(args.trabajo)
+    politica = PoliticaCenso.del_head(Path(args.destino_backend), args.head_backend)
+    evidencia = ejecuta_gates(
+        trabajo,
+        politica,
+        destinos_vivos=(Path(args.destino_backend), Path(args.destino_dashboard)),
+    )
+    for nombre, registro in evidencia.gates.items():
+        causa = f" ({registro.causa}: {registro.detalle})" if registro.causa else ""
+        print(f"    gate {nombre:<12} {registro.veredicto}{causa}")
+    print(f"    composición     : {evidencia.composicion[:16]}…")
+    print(f"    política        : {evidencia.politica_version} {evidencia.politica_sha256[:16]}…")
+    print(f"    evidencia       : {trabajo / DIR_EVIDENCIA}")
+    if evidencia.veredicto != VEREDICTO_REQUERIDO:
+        print("ABORTA: al menos un gate no pasó; no hay nada que sellar", file=sys.stderr)
+        return 1
+    return 0
+
+
 def _cmd_seal(args: argparse.Namespace) -> int:
     trabajo = Path(args.trabajo)
     outputs = trabajo / "outputs"
     semilla = json.loads(Path(args.semilla).read_text(encoding="utf-8"))
+
+    # La evidencia se comprueba a fondo dentro de `sella`; aquí sólo se exige que exista
+    # ANTES de podar, porque podar es destructivo y un `seal` sin gates dejaría el árbol
+    # candidato reducido a cambios, ya no medible entero.
+    carpeta_evidencia = trabajo / DIR_EVIDENCIA
+    if carpeta_evidencia.is_symlink() or not carpeta_evidencia.is_dir():
+        raise StagingError(
+            f"no hay evidencia de gates en {carpeta_evidencia}; corre `run-gates` sobre el "
+            "árbol completo ANTES de sellar: seal poda el staging y los gates tienen que "
+            "haber medido la composición entera"
+        )
 
     poda = poda_a_cambiados(outputs, semilla)
     inventario = poda.cambiados
@@ -179,17 +230,16 @@ def _cmd_seal(args: argparse.Namespace) -> int:
         "backend": Path(args.destino_backend),
         "dashboard": Path(args.destino_dashboard),
     }
-    resultados = json.loads(Path(args.resultados_pruebas).read_text(encoding="utf-8"))
 
     # Completar y verificar el trabajo PRIMERO; publicarlo después. Al revés —renombrar y
     # luego sellar— un fallo intermedio dejaba una corrida con nombre final y sin
-    # manifiesto, indistinguible de una sellada a medias.
+    # manifiesto, indistinguible de una sellada a medias. Los resultados de los gates no
+    # se pasan: `sella` los relee de `<trabajo>/gates/`.
     manifiesto = sella(
         trabajo,
         entrada,
         semilla=semilla,
         baseline=calcula_baseline(destinos, set(inventario) | set(tombstones)),
-        resultados_pruebas=resultados,
         politica=politica,
         tombstones=tombstones,
         operaciones_dvc=tuple(args.operacion_dvc or ()),
@@ -328,6 +378,15 @@ def main(argv: list[str] | None = None) -> int:
     p_snap.add_argument("--salida", required=True)
     p_snap.set_defaults(func=_cmd_snapshot)
 
+    p_gates = sub.add_parser(
+        "run-gates", help="ejecuta los gates de la política sobre el árbol candidato completo"
+    )
+    p_gates.add_argument("--trabajo", required=True)
+    p_gates.add_argument("--head-backend", required=True)
+    p_gates.add_argument("--destino-backend", default=str(REPO_ROOT))
+    p_gates.add_argument("--destino-dashboard", required=True)
+    p_gates.set_defaults(func=_cmd_run_gates)
+
     p_seal = sub.add_parser("seal", help="poda, inventaría y sella el staging")
     p_seal.add_argument("--trabajo", required=True)
     p_seal.add_argument("--semilla", required=True)
@@ -341,7 +400,8 @@ def main(argv: list[str] | None = None) -> int:
     p_seal.add_argument("--destino-final")
     p_seal.add_argument("--destino-backend", default=str(REPO_ROOT))
     p_seal.add_argument("--destino-dashboard", required=True)
-    p_seal.add_argument("--resultados-pruebas", required=True)
+    # No existe `--resultados-pruebas`: los resultados los produce `run-gates` y `seal` los
+    # relee de su sitio. Un flag que reciba resultados es un flag que recibe un PASS escrito.
     p_seal.add_argument("--operacion-dvc", action="append")
     p_seal.set_defaults(func=_cmd_seal)
 

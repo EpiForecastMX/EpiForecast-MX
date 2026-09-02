@@ -3,8 +3,9 @@
 ## Estado P0 del flujo semanal — 2026-09-01
 
 Esta sección sustituye cualquier instrucción inferior que presente `make update-week` como
-receta activa. Backend: `p0/namespace-e-inmutabilidad-del-sello@a9a694c8`, con siete
-archivos de núcleo P0 sin commit más las memorias de cierre. Frontend:
+receta activa. Backend: `p0/namespace-e-inmutabilidad-del-sello@a9a694c8`, con nueve
+archivos de núcleo P0 sin commit (checkpoint P0.9 + runner de gates) más las memorias de
+cierre. Frontend:
 `main@0e777995`, intacto. La referencia local `origin/main` del backend sigue en `a9a694c8`,
 pero el remoto se observó en `16476a98`; no hacer fetch/pull/rebase sobre el worktree sucio.
 
@@ -14,15 +15,17 @@ publicar, ejecutar DVC ni encender `CONFINAMIENTO_LISTO`. El árbol implementa
 composición completa y política Git con 41 superficies; los sellos permanecen `draft` por
 P0.6 pendiente.
 
-Gate vigente: 113 pruebas dirigidas y `make test-fast` = 2,535 passed, 1 skipped y 66
-deselected. Antes del checkpoint falta añadir `capsys` al test de HEAD distinto para afirmar
-el motivo `difieren: entrada`. Después se vuelve a validar y se pide autorización antes de
-commit local; nunca push.
+Gate vigente (1-sep, cierre del runner): 186 pruebas dirigidas y `make test-fast` = 2,608
+passed, 1 skipped y 66 deselected; Ruff, mypy, `bash -n` y `git diff --check` verdes. El
+test de HEAD distinto ya afirma `difieren: entrada` con `capsys`.
 
-El siguiente cambio es únicamente el runner real de gates: comandos `argv` versionados sin
-shell, ejecución sobre la composición candidata, veredicto derivado, evidencia con SHA256,
-eliminación de `--resultados-pruebas` y reverificación por `seal`. No incluye P0.6 ni
-recableado del orquestador. Plan y prompt exacto:
+El runner real de gates está en el árbol: política `censo/2` con gates estructurados
+(`argv`, `cwd`, `timeout_s`, `entorno`), suborden `run-gates` que ejecuta el argv exacto sin
+shell sobre el árbol candidato completo, veredicto derivado del exit 0, evidencia con
+SHA256 en `<trabajo>/gates/`, `--resultados-pruebas` retirado y `seal` releyendo y
+sellando esa evidencia. Pendiente y sin autorizar: commit de checkpoint P0.9 (instantánea
+en `../planes/checkpoint_P09_2026-09-01/`) y commit del runner; después P0.6, siembra
+41/41, recableado del orquestador y decisión DVC P0.11. Plan auditado y prompt histórico:
 
 - `../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`, SHA256
   `5cfdf5a4a2d8e5ed1acf004e8c90a00e929dfd217ba051fff925e742fe9e233d`;

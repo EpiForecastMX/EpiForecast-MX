@@ -7,8 +7,9 @@
 
 ## 0. Trabajo activo: P0 del flujo semanal
 
-El árbol contiene siete archivos P0 sin commit: cinco modificados y dos nuevos. No
-descartarlos, mezclarlos con otra deuda ni confirmar/publicar sin autorización. El frontend
+El árbol contiene nueve archivos de núcleo P0 sin commit: cinco modificados y cuatro
+nuevos, en dos deltas lógicos (checkpoint P0.9 y runner de gates). No descartarlos,
+mezclarlos con otra deuda ni confirmar/publicar sin autorización. El frontend
 `main@0e777995c9e53cdd08b6d25ad58b65928a25b88b` está intacto.
 
 La rama y las referencias locales backend parten de `a9a694c8`; una consulta remota de sólo
@@ -27,15 +28,17 @@ inmutabilidad, baseline, tombstones derivados, composición completa, política 
 desde Git y 41 superficies exactas. Los sellos siguen en `draft` porque P0.6 no existe y
 `CONFINAMIENTO_LISTO = False`.
 
-Gate local vigente: 113 pruebas dirigidas y `make test-fast` con 2,535 passed, 1 skipped y
-66 deselected. Antes del runner falta una corrección de prueba: capturar stderr y afirmar
-`difieren: entrada` en el caso de mismo contenido con otro HEAD. Después se vuelve a correr
-el gate y se pide autorización para un checkpoint local; no push.
+Gate local vigente (1-sep, cierre del runner): 186 pruebas dirigidas y `make test-fast`
+con 2,608 passed, 1 skipped y 66 deselected; Ruff, mypy, `bash -n` y `git diff --check`
+verdes. La prueba de HEAD distinto ya afirma `difieren: entrada` con `capsys`.
 
-El siguiente cambio es exclusivamente el runner real de gates. Debe retirar
-`--resultados-pruebas`, ejecutar `argv` versionados sin shell sobre la composición candidata,
-derivar PASS del resultado, sellar evidencia con digests y hacer que `seal` la revalide. No
-recablear el orquestador, no encender el modo aplicable y no iniciar P0.6.
+El runner real de gates está entregado en el árbol: `censo/2` define cada gate como
+`argv` + `cwd` + `timeout_s` + `entorno`; `run-gates` lo ejecuta sin shell sobre el árbol
+candidato completo antes de podar, deriva PASS del exit 0 y deja evidencia con digests en
+`<trabajo>/gates/`; `seal` ya no acepta resultados por flag y relee esa evidencia. Sigue
+`draft` (`CONFINAMIENTO_LISTO = False`). Pendiente sin autorizar: checkpoint P0.9 y commit
+del runner (instantánea y receta en `../planes/checkpoint_P09_2026-09-01/`); después P0.6,
+siembra 41/41, recableado del orquestador y decisión DVC P0.11.
 
 ## 1. Precedencia y forma de trabajo
 

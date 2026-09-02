@@ -14,14 +14,18 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 from typing import Any
 
 import pytest
 
+from epiforecast.publication.gate_runner import ejecuta_gates
 from epiforecast.publication.weekly_staging import (
+    DIR_EVIDENCIA,
     MODO_APLICABLE,
     MODO_DRAFT,
+    VERSION_POLITICA,
     AutoridadLapidas,
     Boletin,
     Manifiesto,
@@ -39,6 +43,10 @@ from epiforecast.publication.weekly_staging import (
     valida_ruta_sellable,
     verifica,
 )
+
+# Un gate inocuo y determinista: termina en 0 y no escribe nada. Ruta absoluta para que
+# el entorno vacío que la política permite no tenga que traer PATH.
+EJECUTABLE_INOCUO = shutil.which("true") or "/usr/bin/true"
 
 HEAD_BACKEND = "a" * 40
 HEAD_DASHBOARD = "b" * 40
@@ -75,7 +83,21 @@ def _staging_con_artefactos(raiz: Path) -> Path:
     return raiz
 
 
-GATES_OK = {"cifras": {"veredicto": "PASS"}, "rag": {"veredicto": "PASS"}}
+def _gate(
+    nombre: str,
+    argv: list[str] | None = None,
+    *,
+    cwd: str = "dashboard/",
+    timeout_s: int = 60,
+) -> dict[str, Any]:
+    """Definición estructurada de un gate: argv exacto, cwd cerrado, plazo y entorno vacío."""
+    return {
+        "id": nombre,
+        "argv": argv or [EJECUTABLE_INOCUO],
+        "cwd": cwd,
+        "timeout_s": timeout_s,
+        "entorno": {"heredar": [], "fijar": {}},
+    }
 
 
 def _semilla_de(destinos: dict[str, Path], rutas: tuple[str, ...]) -> dict[str, str]:
@@ -117,11 +139,11 @@ def _politica_cruda(
     *,
     superficies: tuple[str, ...] = SUPERFICIES_DEL_STAGING,
     retirables: tuple[str, ...] = (),
-    gates: tuple[str, ...] = ("cifras", "rag"),
+    gates: tuple[str | dict[str, Any], ...] = ("cifras", "rag"),
     prefijos: tuple[str, ...] = ("backend/", "dashboard/"),
 ) -> dict[str, Any]:
     return {
-        "version": "censo/prueba",
+        "version": VERSION_POLITICA,
         "prefijos_administrados": sorted(prefijos),
         "patron_superficie": {
             "prefijo": "dashboard/",
@@ -130,7 +152,8 @@ def _politica_cruda(
         },
         "superficies_verificables": sorted(set(superficies) | set(retirables)),
         "retirables": sorted(retirables),
-        "gates": list(gates),
+        # Un nombre solo se traduce a un gate inocuo; un dict se toma tal cual.
+        "gates": [g if isinstance(g, dict) else _gate(g) for g in gates],
     }
 
 
@@ -139,7 +162,7 @@ def _politica(
     *,
     superficies: tuple[str, ...] = SUPERFICIES_DEL_STAGING,
     retirables: tuple[str, ...] = (),
-    gates: tuple[str, ...] = ("cifras", "rag"),
+    gates: tuple[str | dict[str, Any], ...] = ("cifras", "rag"),
     nombre: str = "politica.json",
 ) -> PoliticaCenso:
     del tmp_path, nombre
@@ -158,16 +181,22 @@ def _sella_en(
     tombstones: tuple[str, ...] = (),
     semilla: dict[str, str] | None = None,
     politica: PoliticaCenso | None = None,
-    gates: dict[str, Any] | None = None,
+    corre_gates: bool = True,
+    politica_para_gates: PoliticaCenso | None = None,
 ) -> Manifiesto:
     """Sella con el contrato v2 completo, reproduciendo el orden real del flujo.
 
-    Primero se calcula la composición, después se «corren» los gates sobre ella, y sólo
-    entonces se sella: los gates tienen que apuntar al árbol que se va a instalar.
+    Primero se CORREN los gates de la política sobre el árbol completo —el runner real,
+    con comandos inocuos—, y sólo entonces se sella: no existe forma de pasarle a `sella`
+    un resultado, así que la única manera de tener uno es haberlo ejecutado.
     """
     destinos = destinos or _destinos(tmp_path)
     semilla = {} if semilla is None else semilla
-    inventario = inventaria(raiz / "outputs") if (raiz / "outputs").is_dir() else {}
+    inventario = (
+        inventaria(raiz / "outputs")
+        if (raiz / "outputs").is_dir() and not (raiz / "outputs").is_symlink()
+        else {}
+    )
     if politica is None:
         # El censo por defecto declara lo que este árbol publica de verdad: semilla,
         # candidato y lápidas. Fijar una lista a mano haría que media docena de pruebas
@@ -182,17 +211,15 @@ def _sella_en(
             )
         )
         politica = _politica(tmp_path, superficies=censo, retirables=tombstones)
-    composicion, _ = calcula_composicion(semilla, inventario, tombstones)
-    if gates is None:
-        gates = {
-            nombre: {"veredicto": "PASS", "composicion": composicion} for nombre in politica.gates
-        }
+    if corre_gates:
+        ejecuta_gates(
+            raiz, politica_para_gates or politica, destinos_vivos=tuple(destinos.values())
+        )
     return sella(
         raiz,
         _entrada(),
         semilla=semilla,
         baseline=calcula_baseline(destinos, set(inventario) | set(tombstones)),
-        resultados_pruebas=gates,
         politica=politica,
         tombstones=tombstones,
         autoridad_lapidas=_autoridad_de(raiz, destinos, tombstones),
@@ -224,8 +251,8 @@ def _puebla_destino(raiz: Path, destinos: dict[str, Path], contenido) -> dict[Pa
 def _hazlo_aplicable(raiz: Path, manifiesto: Manifiesto) -> Manifiesto:
     """Promueve un sello a `aplicable`, SÓLO para probar la maquinaria de instalación.
 
-    En producción esa promoción la hará P0.9 tras recomputar la composición; aquí se hace
-    a mano porque lo que se prueba es la transacción, no la veracidad del sello.
+    En producción esa promoción la hará P0.6 al confinar la instalación; aquí se hace a
+    mano porque lo que se prueba es la transacción, no la veracidad del sello.
     """
     manifiesto.modo = MODO_APLICABLE
     manifiesto.motivo_draft = ""
@@ -752,6 +779,8 @@ def _argv_seal(
     destino_final: Path | None = None,
     allowlist: set[str] | None = None,
     repo: tuple[Path, str] | None = None,
+    *,
+    corre_gates: bool = True,
 ) -> list[str]:
     """Argumentos de `seal` para un staging dado.
 
@@ -778,19 +807,25 @@ def _argv_seal(
         _politica_cruda(superficies=censo, retirables=tuple(allowlist or ()), gates=("cifras",)),
     )
 
-    # Los gates declaran la composición que el sello va a calcular: semilla + cambiados
-    # − lápidas. Reproducir ese cálculo aquí es lo que hace la prueba fiel al flujo.
-    semilla = json.loads((trabajo / "semilla.json").read_text(encoding="utf-8"))
-    presentes = inventaria(trabajo / "outputs") if (trabajo / "outputs").is_dir() else {}
-    cambiados = {rel: d for rel, d in presentes.items() if semilla.get(rel) != d}
-    composicion, _ = calcula_composicion(
-        semilla, cambiados, tuple(sorted(frozenset(semilla) - set(presentes)))
-    )
-    gates = trabajo.parent / f"gates_{trabajo.name}.json"
-    gates.write_text(
-        json.dumps({"cifras": {"veredicto": "PASS", "composicion": composicion}}),
-        encoding="utf-8",
-    )
+    # La evidencia la produce el runner sobre el árbol COMPLETO, antes de que `seal` pode.
+    # Ya no hay un JSON de resultados que escribir: la única forma de tenerlos es correrlos.
+    if corre_gates:
+        from scripts.refresh_staging import main
+
+        rc_gates = main(
+            [
+                "run-gates",
+                "--trabajo",
+                str(trabajo),
+                "--head-backend",
+                head,
+                "--destino-backend",
+                str(destino),
+                "--destino-dashboard",
+                str(destino),
+            ]
+        )
+        assert rc_gates == 0, "los gates inocuos del montaje tienen que pasar"
     argv = [
         "seal",
         "--trabajo",
@@ -813,8 +848,6 @@ def _argv_seal(
         str(destino),
         "--destino-backend",
         str(destino),
-        "--resultados-pruebas",
-        str(gates),
     ]
     if destino_final is not None:
         argv += ["--destino-final", str(destino_final)]
@@ -1176,6 +1209,9 @@ def test_las_lapidas_entran_en_el_identificador(tmp_path: Path) -> None:  # noqa
     raiz_b = _staging_con_artefactos(tmp_path / "b")
     lapida = ("dashboard/retirado.html",)
     semilla = _semilla_de(destinos, lapida)
+    # En `a` el archivo sigue tal cual en el candidato (heredado); en `b` lo retiró el
+    # generador. Misma semilla, dos árboles: dos identificadores.
+    (raiz_a / "outputs" / "dashboard" / "retirado.html").write_text("se fue", encoding="utf-8")
     sin = _sella_en(raiz_a, tmp_path, destinos=destinos, semilla=semilla)
     con = _sella_en(
         raiz_b,
@@ -1300,6 +1336,8 @@ def test_una_lapida_fuera_de_la_semilla_no_se_sella(tmp_path: Path) -> None:
     (destinos["dashboard"] / "del_usuario.html").write_text("trabajo ajeno", encoding="utf-8")
     raiz = _staging_con_artefactos(tmp_path / "staging")
 
+    politica = _politica(tmp_path, retirables=("dashboard/del_usuario.html",))
+    ejecuta_gates(raiz, politica, destinos_vivos=tuple(destinos.values()))
     with pytest.raises(StagingError, match="no está en la semilla"):
         sella(
             raiz,
@@ -1308,8 +1346,7 @@ def test_una_lapida_fuera_de_la_semilla_no_se_sella(tmp_path: Path) -> None:
                 destinos, set(_relativos_de(raiz)) | {"dashboard/del_usuario.html"}
             ),
             semilla={},
-            resultados_pruebas=_gates_para({}, {}, ()),
-            politica=_politica(tmp_path, retirables=("dashboard/del_usuario.html",)),
+            politica=politica,
             tombstones=("dashboard/del_usuario.html",),
             autoridad_lapidas=AutoridadLapidas(
                 eliminados_reales=frozenset(), allowlist=frozenset()
@@ -1326,6 +1363,8 @@ def test_una_lapida_cuyo_digest_cambio_no_se_sella(tmp_path: Path) -> None:
     objetivo.write_text("editado por el usuario", encoding="utf-8")
     raiz = _staging_con_artefactos(tmp_path / "staging")
 
+    politica = _politica(tmp_path, retirables=("dashboard/viejo.html",))
+    ejecuta_gates(raiz, politica, destinos_vivos=tuple(destinos.values()))
     with pytest.raises(StagingError, match="cambió en el destino"):
         sella(
             raiz,
@@ -1334,8 +1373,7 @@ def test_una_lapida_cuyo_digest_cambio_no_se_sella(tmp_path: Path) -> None:
                 destinos, set(_relativos_de(raiz)) | {"dashboard/viejo.html"}
             ),
             semilla={"dashboard/viejo.html": "0" * 64},
-            resultados_pruebas=_gates_para({"dashboard/viejo.html": "0" * 64}, {}, ()),
-            politica=_politica(tmp_path, retirables=("dashboard/viejo.html",)),
+            politica=politica,
             tombstones=("dashboard/viejo.html",),
             autoridad_lapidas=AutoridadLapidas(
                 eliminados_reales=frozenset({"dashboard/viejo.html"}),
@@ -1348,11 +1386,10 @@ def test_una_lapida_cuyo_digest_cambio_no_se_sella(tmp_path: Path) -> None:
 
 
 def test_un_sello_borrador_no_se_aplica(tmp_path: Path) -> None:
-    """`composicion` y los gates son hoy declaraciones del llamador, no hechos.
+    """Composición y gates ya se calculan y ejecutan; la instalación sigue sin confinar.
 
-    Hashear una afirmación falsa la vuelve íntegra, no verdadera. Hasta que P0.9 calcule
-    la composición y fije el conjunto de gates, el sello se marca `draft` y `aplica` lo
-    rechaza.
+    Hasta que P0.6 confine `apply` a worktrees desechables, el sello se marca `draft` y
+    `aplica` lo rechaza aunque todo lo demás cuadre.
     """
     raiz = _staging_con_artefactos(tmp_path / "staging")
     manifiesto = _sella_en(raiz, tmp_path)
@@ -1374,16 +1411,6 @@ def test_un_sello_borrador_no_se_aplica(tmp_path: Path) -> None:
 # en el candidato no prueba que un generador lo retirase.
 
 
-def _gates_para(
-    semilla: dict[str, str], cambiados: dict[str, str], tombstones: tuple[str, ...]
-) -> dict[str, Any]:
-    composicion, _ = calcula_composicion(semilla, cambiados, tombstones)
-    return {
-        "cifras": {"veredicto": "PASS", "composicion": composicion},
-        "rag": {"veredicto": "PASS", "composicion": composicion},
-    }
-
-
 def _autoridad(
     eliminados: tuple[str, ...] = (), allowlist: tuple[str, ...] = ()
 ) -> AutoridadLapidas:
@@ -1400,14 +1427,14 @@ def _sella_con_autoridad(
     semilla: dict[str, str],
     tmp_path: Path,
 ) -> Manifiesto:
-    cambiados = inventaria(raiz / "outputs")
+    politica = _politica(tmp_path, retirables=tombstones)
+    ejecuta_gates(raiz, politica, destinos_vivos=tuple(destinos.values()))
     return sella(
         raiz,
         _entrada(),
         semilla=semilla,
         baseline=calcula_baseline(destinos, set(_relativos_de(raiz)) | set(tombstones)),
-        resultados_pruebas=_gates_para(semilla, cambiados, tombstones),
-        politica=_politica(tmp_path, retirables=tombstones),
+        politica=politica,
         tombstones=tombstones,
         autoridad_lapidas=autoridad,
     )
@@ -1535,17 +1562,18 @@ def test_una_corrida_que_solo_retira_tambien_se_sella(tmp_path: Path) -> None:
     (raiz / "outputs" / "dashboard").mkdir(parents=True)
 
     semilla = _semilla_de(destinos, ("dashboard/obsoleto.html",))
+    politica = _politica(
+        tmp_path,
+        superficies=("dashboard/obsoleto.html",),
+        retirables=("dashboard/obsoleto.html",),
+    )
+    ejecuta_gates(raiz, politica, destinos_vivos=tuple(destinos.values()))
     manifiesto = sella(
         raiz,
         _entrada(),
         semilla=semilla,
         baseline=calcula_baseline(destinos, {"dashboard/obsoleto.html"}),
-        resultados_pruebas=_gates_para(semilla, {}, ("dashboard/obsoleto.html",)),
-        politica=_politica(
-            tmp_path,
-            superficies=("dashboard/obsoleto.html",),
-            retirables=("dashboard/obsoleto.html",),
-        ),
+        politica=politica,
         tombstones=("dashboard/obsoleto.html",),
         autoridad_lapidas=_autoridad_de(raiz, destinos, ("dashboard/obsoleto.html",)),
     )
@@ -1650,14 +1678,43 @@ def test_la_composicion_es_semilla_mas_cambiados_menos_lapidas() -> None:
 
 
 def test_la_composicion_del_sello_la_calcula_el_sello(tmp_path: Path) -> None:
+    """El flujo real: gates sobre el árbol completo, poda, y el sello recompone lo mismo.
+
+    Un archivo heredado de la semilla e intacto se poda del staging, pero sigue formando
+    parte de la composición: la que midieron los gates y la que `apply` reconstruiría.
+    """
     raiz = _staging_con_artefactos(tmp_path / "staging")
-    semilla = {"dashboard/heredado.html": "9" * 64}
+    heredado = raiz / "outputs" / "dashboard" / "heredado.html"
+    heredado.write_text("heredado e intacto", encoding="utf-8")
+    semilla = {"dashboard/heredado.html": sha256_de(heredado)}
+    politica = _politica(
+        tmp_path, superficies=(*SUPERFICIES_DEL_STAGING, "dashboard/heredado.html")
+    )
+    ejecuta_gates(raiz, politica, destinos_vivos=tuple(_destinos(tmp_path).values()))
+    completa, _ = calcula_composicion({}, inventaria(raiz / "outputs"), ())
+    poda = poda_a_cambiados(raiz / "outputs", semilla)
+    assert not heredado.exists() and "dashboard/heredado.html" not in poda.cambiados
 
-    manifiesto = _sella_en(raiz, tmp_path, semilla=semilla)
+    manifiesto = _sella_en(raiz, tmp_path, semilla=semilla, politica=politica, corre_gates=False)
 
-    esperada, _ = calcula_composicion(semilla, inventaria(raiz / "outputs"), ())
-    assert manifiesto.composicion == esperada
+    assert manifiesto.composicion == completa
+    assert "dashboard/heredado.html" not in manifiesto.inventario
     assert re.fullmatch(r"[0-9a-f]{64}", manifiesto.composicion)
+
+
+def test_una_semilla_que_promete_un_archivo_que_los_gates_no_vieron_no_sella(
+    tmp_path: Path,
+) -> None:
+    """Semilla con un archivo que ni está en el candidato ni tiene lápida.
+
+    Antes, con gates fabricados a la medida de cualquier composición declarada, esto
+    sellaba. Ahora la composición que midieron los gates no incluye ese archivo, y la que
+    el sello recompone sí: no son el mismo árbol.
+    """
+    raiz = _staging_con_artefactos(tmp_path / "staging")
+
+    with pytest.raises(StagingError, match="algo cambió después de los gates"):
+        _sella_en(raiz, tmp_path, semilla={"dashboard/fantasma.html": "9" * 64})
 
 
 def test_una_semilla_parcial_no_puede_sellar(tmp_path: Path) -> None:
@@ -1682,7 +1739,7 @@ def test_la_politica_queda_identificada_en_el_sello(tmp_path: Path) -> None:
 
     manifiesto = _sella_en(raiz, tmp_path, politica=politica)
 
-    assert manifiesto.politica == {"version": "censo/prueba", "sha256": politica.sha256}
+    assert manifiesto.politica == {"version": VERSION_POLITICA, "sha256": politica.sha256}
     assert "politica" in manifiesto.payload_canonico()
 
 
@@ -1696,51 +1753,106 @@ def test_cambiar_la_politica_cambia_el_identificador(tmp_path: Path) -> None:
     assert uno.run_id != otro.run_id
 
 
-@pytest.mark.parametrize(
-    ("gates_politica", "gates_resultado", "mensaje"),
-    [
-        (("cifras", "rag", "censo"), ("cifras", "rag"), "faltan resultados"),
-        (("cifras",), ("cifras", "inventado"), "no declara"),
-    ],
-)
-def test_el_conjunto_de_gates_es_exacto(
-    tmp_path: Path, gates_politica, gates_resultado, mensaje: str
-) -> None:
-    """Condición 5: ni faltantes ni desconocidos."""
-    raiz = _staging_con_artefactos(tmp_path / "staging")
-    politica = _politica(tmp_path, gates=gates_politica)
-    composicion, _ = calcula_composicion({}, inventaria(raiz / "outputs"), ())
+def _reescribe_indice(raiz: Path, mutador) -> None:
+    """Edita `gates/indice.json` **y recalcula su sidecar**, como haría quien lo tocara.
 
-    with pytest.raises(StagingError, match=mensaje):
+    Igual que con el manifiesto: el sidecar detecta edición no revisada y corrupción, no es
+    una firma. Estas pruebas miden las comprobaciones estructurales que vienen DESPUÉS.
+    """
+    ruta = raiz / DIR_EVIDENCIA / "indice.json"
+    crudo = json.loads(ruta.read_text(encoding="utf-8"))
+    mutador(crudo)
+    cuerpo = json.dumps(crudo, indent=2, ensure_ascii=False, sort_keys=True).encode() + b"\n"
+    ruta.write_bytes(cuerpo)
+    (raiz / DIR_EVIDENCIA / "indice.sha256").write_text(
+        hashlib.sha256(cuerpo).hexdigest() + "\n", encoding="utf-8"
+    )
+
+
+def test_evidencia_de_otra_politica_no_sella(tmp_path: Path) -> None:
+    """Condición 5, primera capa: la política de la evidencia es la del HEAD, o nada."""
+    raiz = _staging_con_artefactos(tmp_path / "staging")
+
+    with pytest.raises(StagingError, match="no es la misma política"):
         _sella_en(
             raiz,
             tmp_path,
-            politica=politica,
-            gates={n: {"veredicto": "PASS", "composicion": composicion} for n in gates_resultado},
+            politica=_politica(tmp_path, gates=("cifras", "rag")),
+            politica_para_gates=_politica(tmp_path, gates=("cifras",)),
         )
+
+
+def test_un_gate_de_menos_en_la_evidencia_se_rechaza(tmp_path: Path) -> None:
+    """Condición 5, segunda capa: misma política, evidencia a la que le falta un gate.
+
+    Se edita la evidencia dejándola internamente coherente —índice, sidecar y archivos—
+    para que lo que falle sea la comparación con la política, no la integridad.
+    """
+    raiz = _staging_con_artefactos(tmp_path / "staging")
+    politica = _politica(tmp_path)
+    ejecuta_gates(raiz, politica, destinos_vivos=tuple(_destinos(tmp_path).values()))
+    shutil.rmtree(raiz / DIR_EVIDENCIA / "rag")
+    _reescribe_indice(raiz, lambda d: d["gates"].pop("rag"))
+    _reescribe_observacional(raiz, lambda d: d["gates"].pop("rag"))
+
+    with pytest.raises(StagingError, match="faltan resultados de gates"):
+        _sella_en(raiz, tmp_path, politica=politica, corre_gates=False)
+
+
+def test_un_gate_de_mas_en_la_evidencia_se_rechaza(tmp_path: Path) -> None:
+    raiz = _staging_con_artefactos(tmp_path / "staging")
+    politica = _politica(tmp_path)
+    ejecuta_gates(raiz, politica, destinos_vivos=tuple(_destinos(tmp_path).values()))
+    shutil.copytree(raiz / DIR_EVIDENCIA / "rag", raiz / DIR_EVIDENCIA / "inventado")
+
+    def mete_gate(d: dict) -> None:
+        d["gates"]["inventado"] = dict(d["gates"]["rag"], gate="inventado")
+
+    _reescribe_indice(raiz, mete_gate)
+    _reescribe_observacional(raiz, lambda d: d["gates"].update(inventado=d["gates"]["rag"]))
+
+    with pytest.raises(StagingError, match="que la política no declara"):
+        _sella_en(raiz, tmp_path, politica=politica, corre_gates=False)
+
+
+def test_un_argv_editado_en_la_evidencia_no_cuadra_con_la_politica(tmp_path: Path) -> None:
+    """Misma política, mismo conjunto de gates, pero la evidencia dice que corrió OTRO argv.
+
+    Es el caso «resultado de otro gate»: la identidad del gate coincide y el comando no.
+    La evidencia se deja coherente consigo misma para que falle la comparación con la
+    política y no la integridad.
+    """
+    raiz = _staging_con_artefactos(tmp_path / "staging")
+    politica = _politica(tmp_path)
+    ejecuta_gates(raiz, politica, destinos_vivos=tuple(_destinos(tmp_path).values()))
+    _reescribe_indice(raiz, lambda d: d["gates"]["cifras"].update(argv=["/usr/bin/env", "true"]))
+
+    with pytest.raises(StagingError, match="ejecutó otro comando"):
+        _sella_en(raiz, tmp_path, politica=politica, corre_gates=False)
+
+
+def _reescribe_observacional(raiz: Path, mutador) -> None:
+    ruta = raiz / DIR_EVIDENCIA / "observacional.json"
+    crudo = json.loads(ruta.read_text(encoding="utf-8"))
+    mutador(crudo)
+    ruta.write_text(json.dumps(crudo, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def test_un_gate_corrido_sobre_otra_composicion_aborta(tmp_path: Path) -> None:
     """Condiciones 6 y 7: si un byte cambia tras los gates, hay que repetirlos.
 
-    Se simula el caso real: los gates corren, y después alguien toca un artefacto. La
-    composición recalculada deja de coincidir con la que declararon.
+    El caso real: los gates corren, y después alguien toca un artefacto. La composición
+    recompuesta por `sella` deja de coincidir con la que midieron.
     """
     raiz = _staging_con_artefactos(tmp_path / "staging")
-    composicion_vieja, _ = calcula_composicion({}, inventaria(raiz / "outputs"), ())
+    politica = _politica(tmp_path)
+    ejecuta_gates(raiz, politica, destinos_vivos=tuple(_destinos(tmp_path).values()))
     (raiz / "outputs" / "dashboard" / "Reports" / "index.html").write_text(
         "regenerado despues de los gates", encoding="utf-8"
     )
 
     with pytest.raises(StagingError, match="algo cambió después de los gates"):
-        _sella_en(
-            raiz,
-            tmp_path,
-            gates={
-                "cifras": {"veredicto": "PASS", "composicion": composicion_vieja},
-                "rag": {"veredicto": "PASS", "composicion": composicion_vieja},
-            },
-        )
+        _sella_en(raiz, tmp_path, politica=politica, corre_gates=False)
 
 
 def test_un_sello_verificado_sigue_siendo_borrador_hasta_p06(tmp_path: Path) -> None:
@@ -1843,10 +1955,13 @@ def test_la_politica_canonica_del_repositorio_es_valida() -> None:
 
     politica = PoliticaCenso.desde_bytes(POLITICA_CANONICA.read_bytes())
 
-    assert politica.version
+    assert politica.version == VERSION_POLITICA
     assert politica.superficies_verificables
-    assert politica.gates
+    assert politica.ids_gates == ("cifras", "rag")
     assert politica.prefijo_publicado == "dashboard/"
+    # Los gates reales corren `node` directamente, no `npm run` (que pasa por `sh -c`).
+    assert all(gate.argv[0] == "node" for gate in politica.gates)
+    assert all(gate.cwd == "dashboard/epibot/" for gate in politica.gates)
 
 
 # ── 24 · el censo replica la regla del gate real, y la política no se elige ─
@@ -1893,8 +2008,10 @@ def test_un_alias_interno_a_la_politica_no_vale(tmp_path: Path) -> None:
 @pytest.mark.parametrize(
     ("mutador", "mensaje"),
     [
-        (lambda d: d.update(gates=["cifras", "cifras"]), "duplicadas"),
-        (lambda d: d.update(gates=["  "]), "sin nombre"),
+        (lambda d: d.update(gates=[_gate("cifras"), _gate("cifras")]), "id duplicado"),
+        (lambda d: d.update(gates=[_gate("  ")]), "id de gate inválido"),
+        (lambda d: d.update(gates=["cifras", "rag"]), "no como str"),
+        (lambda d: d.update(version="censo/1"), "otra versión"),
         (lambda d: d.update(prefijos_administrados=["dashboard"]), "terminar en"),
         (lambda d: d.update(version=""), "versión legible"),
         (lambda d: d.update(superficies_verificables=[1]), "lista de cadenas"),

@@ -15,11 +15,13 @@ Para retomar, copiar literalmente el prompt de:
 SHA256 al cerrar:
 `063277ed7fb745da600c35f12325238a2841707201029aa28ef5690e0d2a5ee9`.
 
-El siguiente trabajo es el runner local de gates, no la actualización de datos. Antes:
+El runner local de gates ya está en el árbol (1-sep, tarde): `run-gates` antes de
+`seal`, política `censo/2`, `--resultados-pruebas` retirado. Lo que sigue no es la
+actualización de datos, sino:
 
-1. añadir `capsys` al control de HEAD distinto y afirmar `difieren: entrada`;
-2. repetir las pruebas dirigidas y `make test-fast`;
-3. pedir autorización antes de un commit local de checkpoint; nunca push.
+1. autorizar el commit local de checkpoint P0.9 y, encima, el del runner
+   (`../planes/checkpoint_P09_2026-09-01/README.md`); nunca push;
+2. P0.6 (apply confinado), siembra 41/41, recableado del orquestador, decisión DVC P0.11.
 
 Plan auditado, que no debe reescribirse durante el handoff:
 `../planes/PLAN_ACTUALIZACION_SEMANAL_UNIFICADA_2026-09-01_v4.md`, SHA256

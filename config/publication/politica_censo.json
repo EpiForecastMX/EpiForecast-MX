@@ -1,5 +1,5 @@
 {
-  "version": "censo/1",
+  "version": "censo/2",
   "prefijos_administrados": [
     "backend/reports/ProdDetails/",
     "dashboard/"
@@ -62,7 +62,41 @@
   ],
   "retirables": [],
   "gates": [
-    "cifras",
-    "rag"
+    {
+      "id": "cifras",
+      "argv": [
+        "node",
+        "scripts/cifras_verify.mjs"
+      ],
+      "cwd": "dashboard/epibot/",
+      "timeout_s": 900,
+      "entorno": {
+        "heredar": [
+          "PATH",
+          "HOME",
+          "LANG",
+          "LC_ALL"
+        ],
+        "fijar": {}
+      }
+    },
+    {
+      "id": "rag",
+      "argv": [
+        "node",
+        "scripts/rag_verify.mjs"
+      ],
+      "cwd": "dashboard/epibot/",
+      "timeout_s": 900,
+      "entorno": {
+        "heredar": [
+          "PATH",
+          "HOME",
+          "LANG",
+          "LC_ALL"
+        ],
+        "fijar": {}
+      }
+    }
   ]
 }
