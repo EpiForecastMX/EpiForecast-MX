@@ -26,6 +26,7 @@
 
 from __future__ import annotations
 
+import argparse
 from pathlib import Path
 
 import numpy as np
@@ -681,10 +682,22 @@ def save_outputs(
 # ---------------------------------------------------------------------------
 
 
-def main() -> None:
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Construye tableau_model.xlsx.")
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=None,
+        help="directorio de salida (por defecto el de data.tableau, resuelto al ejecutar); "
+        "el refresh sellado apunta al staging en vez de al árbol real",
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> None:
     in_real = Path(conf["data"]["data_inegi"])
     forecast_base = Path(conf["paths"]["reports"]) / "forecasts"
-    out_dir = Path(conf["data"]["tableau"]).parent
+    out_dir = _parse_args(argv).out or Path(conf["data"]["tableau"]).parent
 
     real, fcst = load_inputs(in_real, forecast_base)
     real, fcst = prepare_inputs(real, fcst)

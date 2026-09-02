@@ -10,9 +10,11 @@ Salida: reports/ProdDetails/validacion_semanal.html
 
 from __future__ import annotations
 
+import argparse
 from datetime import date, datetime
 import math
 from pathlib import Path
+import shutil
 from typing import Any
 from zoneinfo import ZoneInfo
 
@@ -1218,11 +1220,13 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
 # ---------------------------------------------------------------------------
 
 
-def _update_excel(comp: pd.DataFrame, anio: int, semana: int) -> None:
-    """Actualiza realidad_sem_previa en el Excel de produccion."""
+def _update_excel(
+    comp: pd.DataFrame, anio: int, semana: int, ruta_excel: Path = PROD_EXCEL
+) -> None:
+    """Actualiza realidad_sem_previa en el Excel de produccion (`ruta_excel`, en su sitio)."""
     from openpyxl import load_workbook
 
-    wb = load_workbook(PROD_EXCEL)
+    wb = load_workbook(ruta_excel)
     ws = wb.active
     if ws is None:
         print("  Error: no se pudo abrir la hoja del Excel")
@@ -1260,8 +1264,36 @@ def _update_excel(comp: pd.DataFrame, anio: int, semana: int) -> None:
             ws.cell(row=row_num, column=col_real).value = lookup[key]
             updated += 1
 
-    wb.save(PROD_EXCEL)
+    wb.save(ruta_excel)
     print(f"  Excel actualizado: {updated}/333 filas con realidad S{semana}/{anio}")
+
+
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Validacion semanal Real vs Forecast.")
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=OUTPUT.parent,
+        help="directorio de salida para validacion_semanal.html y la COPIA actualizada de "
+        "tabla_333_modelos_produccion.xlsx (por defecto reports/ProdDetails, en el sitio). "
+        "Con otro directorio el Excel del arbol real no se toca.",
+    )
+    return parser.parse_args(argv)
+
+
+def _destino_excel(out_dir: Path) -> Path:
+    """Dónde actualizar el Excel: en su sitio (legacy) o una copia bajo `--out`.
+
+    Con `--out` distinto del directorio canónico, el Excel real se copia y se actualiza
+    la copia: el generador deja de escribir en el árbol real, que es lo que ensuciaba el
+    repositorio en cada refresh y obligaba a sellar un artefacto que ya había mutado.
+    """
+    if out_dir.resolve() == PROD_EXCEL.parent.resolve():
+        return PROD_EXCEL
+    destino = out_dir / PROD_EXCEL.name
+    out_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(PROD_EXCEL, destino)
+    return destino
 
 
 # ---------------------------------------------------------------------------
@@ -1284,7 +1316,9 @@ def _normaliza_para_hooks(html: str) -> str:
     return "\n".join(lineas).rstrip("\n") + "\n"
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
+    out_dir = _parse_args(argv).out
+    salida_html = out_dir / OUTPUT.name
     print("Cargando boletin epidemiologico...")
     boletin, anio, semana = _load_boletin_full()
     n_states = boletin["entidad_norm"].nunique()
@@ -1314,12 +1348,12 @@ def main() -> None:
 
     print("Generando HTML...")
     html = _generate_html(comp, anio, semana)
-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT.write_text(_normaliza_para_hooks(html), encoding="utf-8")
-    print(f"  {OUTPUT} ({len(html):,} bytes)")
+    salida_html.parent.mkdir(parents=True, exist_ok=True)
+    salida_html.write_text(_normaliza_para_hooks(html), encoding="utf-8")
+    print(f"  {salida_html} ({len(html):,} bytes)")
 
     print("Actualizando Excel de produccion...")
-    _update_excel(comp, anio, semana)
+    _update_excel(comp, anio, semana, _destino_excel(out_dir))
 
     print("Listo.")
 

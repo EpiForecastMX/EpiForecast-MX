@@ -7,6 +7,7 @@ Uso:
     python scripts/build_web_knowledge.py
 """
 
+import argparse
 from datetime import date, datetime
 import json
 from pathlib import Path
@@ -35,7 +36,44 @@ from epiforecast.data.boletin import cargar_boletin_dengue  # noqa: E402
 from epiforecast.utils.cohorts import filter_neuro  # noqa: E402
 from epiforecast.utils.config import conf  # noqa: E402
 
+# Salida por defecto (flujo legacy). El refresh sellado pasa `--out` y escribe en el
+# staging: un generador que sólo sabe escribir en el árbol real es lo que lo ensucia.
 OUTPUT = Path("web_dashboard/knowledge.json")
+
+
+def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Genera knowledge.json del EpiBot.")
+    parser.add_argument(
+        "--out",
+        type=Path,
+        default=OUTPUT,
+        help=f"archivo de salida (por defecto {OUTPUT}); el refresh sellado apunta al staging",
+    )
+    return parser.parse_args(argv)
+
+
+def _sin_nan(valor: Any) -> Any:
+    """NaN -> None, recursivo.
+
+    El `JSONEncoder.default` que había aquí nunca se ejecutaba para NaN: `json` sabe
+    serializar un float NaN por sí mismo (como el token `NaN`, que no es JSON válido y que
+    `JSON.parse` del navegador rechaza). Se sustituye antes de serializar y se serializa
+    con `allow_nan=False`, para que un NaN que se escape sea un error y no un sitio roto.
+    """
+    if isinstance(valor, float) and pd.isna(valor):
+        return None
+    if isinstance(valor, dict):
+        return {clave: _sin_nan(v) for clave, v in valor.items()}
+    if isinstance(valor, list | tuple):
+        return [_sin_nan(v) for v in valor]
+    return valor
+
+
+def escribe_knowledge(knowledge: dict[str, Any], destino: Path) -> None:
+    """Serializa con NaN -> null en `destino`, creando su directorio si falta."""
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    with open(destino, "w", encoding="utf-8") as f:
+        json.dump(_sin_nan(knowledge), f, ensure_ascii=False, indent=None, allow_nan=False)
 
 
 def _safe_int(v: Any) -> int | None:
@@ -1028,8 +1066,9 @@ def build_padecimientos() -> dict[str, Any]:
     }
 
 
-def main() -> None:
-    """Entry point: genera knowledge.json."""
+def main(argv: list[str] | None = None) -> None:
+    """Entry point: genera knowledge.json (en `--out`, o en la ruta legacy)."""
+    destino = _parse_args(argv).out
     print("Cargando datos del proyecto...")
     cache = ProjectDataCache()
     kb = KnowledgeBase(cache)
@@ -1056,20 +1095,10 @@ def main() -> None:
     }
     _fill_horizon_dates(knowledge, cache)
 
-    # Serializar con NaN -> null
-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+    escribe_knowledge(knowledge, destino)
 
-    class NaNEncoder(json.JSONEncoder):
-        def default(self, obj: Any) -> Any:
-            if isinstance(obj, float) and pd.isna(obj):
-                return None
-            return super().default(obj)
-
-    with open(OUTPUT, "w", encoding="utf-8") as f:
-        json.dump(knowledge, f, ensure_ascii=False, indent=None, cls=NaNEncoder)
-
-    size_kb = OUTPUT.stat().st_size / 1024
-    print(f"Generado: {OUTPUT} ({size_kb:.0f} KB)")
+    size_kb = destino.stat().st_size / 1024
+    print(f"Generado: {destino} ({size_kb:.0f} KB)")
     print(f"  - {len(knowledge.get('prod_models', []))} modelos de produccion")
     print(f"  - Stats: {len(stats)} claves")
     print(f"  - Boletin: {len(knowledge.get('boletin', {}))} secciones")
