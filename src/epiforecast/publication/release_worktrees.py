@@ -153,7 +153,9 @@ class RegistroDestinos:
 
     def escribe(self) -> None:
         crudo = json.dumps(self.como_dict(), indent=2, ensure_ascii=False, sort_keys=True).encode()
-        _escribe_atomico(self.raiz / ARCHIVO_REGISTRO, crudo + b"\n", ".part")
+        # Temporal con el pid: un `.part` rancio de una corrida muerta no bloquea `marca()`
+        # (que además corre dentro del `except` de `aplica` y enmascararía el error real).
+        _escribe_atomico(self.raiz / ARCHIVO_REGISTRO, crudo + b"\n", f".{os.getpid()}.part")
 
     def marca(self, estado: str, motivo: str = "") -> None:
         if estado not in ESTADOS:
@@ -545,8 +547,12 @@ def descarta_worktrees(raiz: Path, ruta_manifiesto: Path) -> RegistroDestinos:
         raise StagingError("el par de destinos se preparó para otro manifiesto; no se descarta")
     with lock_exclusivo(raiz):
         registro = RegistroDestinos.lee(raiz)
-        if registro.run_id != manifiesto.run_id:
-            raise StagingError("el registro cambió de corrida bajo el lock; no se descarta")
+        if registro.run_id != manifiesto.run_id or registro.manifiesto_sha256 != sha256_de(
+            ruta_manifiesto
+        ):
+            raise StagingError(
+                "el registro cambió de corrida o de manifiesto bajo el lock; no se descarta"
+            )
         if registro.estado == ESTADO_DESCARTADO:
             raise StagingError(f"el par {registro.run_id[:12]}… ya está descartado")
         raiz_real = raiz.resolve()
@@ -610,6 +616,18 @@ def _exige_instalado(manifiesto: Manifiesto, destinos: dict[str, Path]) -> None:
         )
 
 
+def _exige_composicion(
+    manifiesto: Manifiesto, destinos: dict[str, Path], head_backend: str
+) -> None:
+    politica = PoliticaCenso.del_head(destinos["backend"], head_backend)
+    aplicada = composicion_del_par(destinos, politica)
+    if aplicada != manifiesto.composicion:
+        raise StagingError(
+            f"composición aplicada {aplicada[:12]}… ≠ sellada "
+            f"{manifiesto.composicion[:12]}…; el par no es el árbol que aprobaron los gates"
+        )
+
+
 def aplica(raiz_staging: Path, manifiesto: Manifiesto, raiz_destinos: Path) -> list[str]:
     """Instala el sello ÚNICAMENTE en el par registrado para su `run_id`.
 
@@ -660,10 +678,17 @@ def aplica(raiz_staging: Path, manifiesto: Manifiesto, raiz_destinos: Path) -> l
         run_dir = raiz_staging.resolve()
         destinos = {espacio: Path(d.ruta) for espacio, d in registro.destinos.items()}
         if registro.estado == ESTADO_APLICADO:
-            # Repetir un apply completado es un no-op VERIFICADO, no una reinstalación.
-            for espacio, destino in registro.destinos.items():
-                _verifica_destino(destino, heads[espacio], run_dir, limpio=False)
-            _exige_instalado(manifiesto, destinos)
+            # Repetir un apply completado es un no-op VERIFICADO, no una reinstalación: cada
+            # destino sigue siendo el worktree, lo declarado está, y el árbol administrado
+            # entero sigue siendo la composición sellada (un archivo colado la cambia).
+            try:
+                for espacio, destino in registro.destinos.items():
+                    _verifica_destino(destino, heads[espacio], run_dir, limpio=False)
+                _exige_instalado(manifiesto, destinos)
+                _exige_composicion(manifiesto, destinos, heads["backend"])
+            except BaseException as exc:
+                registro.marca(ESTADO_INVALIDO, f"{type(exc).__name__}: {exc}"[:400])
+                raise
             return sorted(manifiesto.inventario)
 
         try:
@@ -682,13 +707,7 @@ def aplica(raiz_staging: Path, manifiesto: Manifiesto, raiz_destinos: Path) -> l
             # par, recompuesto desde disco con la política del HEAD sellado (leída del
             # worktree del backend, que la lleva tal cual), es la composición que los gates
             # midieron. «Todo lo declarado está» no dice que el par sea el árbol probado.
-            politica = PoliticaCenso.del_head(destinos["backend"], heads["backend"])
-            aplicada = composicion_del_par(destinos, politica)
-            if aplicada != manifiesto.composicion:
-                raise StagingError(
-                    f"composición aplicada {aplicada[:12]}… ≠ sellada "
-                    f"{manifiesto.composicion[:12]}…; el par no es el árbol que aprobaron los gates"
-                )
+            _exige_composicion(manifiesto, destinos, heads["backend"])
         except BaseException as exc:
             registro.marca(ESTADO_INVALIDO, f"{type(exc).__name__}: {exc}"[:400])
             raise

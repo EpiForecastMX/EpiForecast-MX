@@ -545,3 +545,28 @@ def test_run_gates_y_seal_exigen_los_head_y_la_politica_de_la_materializacion(
     assert main(_argv_seal(trabajo, r)) == 1
     assert f"materializó desde el dashboard {viejo_d[:12]}" in capsys.readouterr().err
     assert (trabajo / "outputs" / "dashboard" / "calass.html").is_file(), "no podó"
+
+
+def test_bump_cache_exige_el_head_del_dashboard_de_la_materializacion(
+    tmp_path: Path, capsys
+) -> None:
+    from scripts.refresh_staging import main
+
+    r = _repos(tmp_path, politica=_politica_cruda(gates=[fab.gate("cifras")]))
+    trabajo = tmp_path / "trabajo"
+    assert main(_argv_materialize(trabajo, r)) == 0
+
+    rc = main(
+        [
+            "bump-cache",
+            "--trabajo",
+            str(trabajo),
+            "--destino-dashboard",
+            str(r["repo_d"]),
+            "--head-dashboard",
+            "e" * 40,
+        ]
+    )
+
+    assert rc == 1
+    assert f"materializó desde el dashboard {r['head_d'][:12]}" in capsys.readouterr().err

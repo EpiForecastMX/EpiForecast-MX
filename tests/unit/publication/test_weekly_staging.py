@@ -2399,3 +2399,12 @@ def test_declarar_menos_padecimientos_no_desactiva_la_paridad(tmp_path: Path) ->
             autoridad_lapidas=AutoridadLapidas.sin_lapidas(),
             contrato=fab.CONTRATO,
         )
+
+
+@pytest.mark.parametrize("rel", ["dashboard/.GIT/HEAD", "backend/.Git/config"])
+def test_git_en_mayusculas_tampoco_es_sellable(rel: str) -> None:
+    """El disco de macOS no distingue mayúsculas; la gramática tampoco."""
+    from epiforecast.publication.weekly_staging import valida_ruta_sellable
+
+    with pytest.raises(StagingError, match="dentro de .git"):
+        valida_ruta_sellable(rel)

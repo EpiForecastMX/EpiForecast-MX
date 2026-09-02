@@ -38,6 +38,7 @@ from epiforecast.publication.contratos_datos import (
     revisa_forecasts_listados,
     revisa_produccion_dengue,
     revisa_tabla_produccion,
+    slug,
 )
 from epiforecast.publication.materializa import _archiva, _extrae, exige_materializacion
 from epiforecast.publication.weekly_staging import (
@@ -217,10 +218,13 @@ def _copia_regular(origen: Path, destino: Path) -> tuple[int, str]:
     digest = sha256_de(origen)
     with origen.open("rb") as f, destino.open("xb") as g:
         shutil.copyfileobj(f, g, 1 << 20)
+    # Se vuelve a leer el origen DESPUÉS: si cambió durante la copia (aunque conserve el
+    # tamaño), la copia no es fiel a lo que se declara. Cuesta una lectura más por entrada.
     if (
         destino.stat().st_size != estado.st_size
         or sha256_de(destino) != digest
         or origen.lstat().st_size != estado.st_size
+        or sha256_de(origen) != digest
     ):
         raise StagingError(f"la copia de {origen} no coincide con el original")
     return estado.st_size, digest
@@ -268,7 +272,16 @@ def _expande(repo_real: Path, entrada: Entrada) -> list[str]:
     for ruta in sorted(repo_real.glob(entrada.ruta)):
         rel = ruta.relative_to(repo_real).as_posix()
         _valida_ruta_relativa(rel, "ruta de entrada")
-        if ruta.is_symlink() or not ruta.is_file():
+        # `*` sigue enlaces de directorio: un `models/prophet -> /fuera` haría que el
+        # inventario declarara como intra-repo lo que vive en otro sitio.
+        actual = repo_real
+        for parte in rel.split("/"):
+            actual = actual / parte
+            if actual.is_symlink():
+                raise StagingError(
+                    f"el patrón {entrada.ruta} casó a través de un enlace simbólico: {rel}"
+                )
+        if not ruta.is_file():
             raise StagingError(f"el patrón {entrada.ruta} casó con algo que no es archivo: {rel}")
         coincidencias.append(rel)
     if not coincidencias and entrada.obligatoria:
@@ -400,10 +413,13 @@ def _revisa(
     por_rol: dict[str, list[str]] = {}
     for ruta, meta in inventario.items():
         por_rol.setdefault(str(meta["rol"]), []).append(ruta)
+    # Lo autorizado tiene que estar en el contrato, pero el contrato se exige sobre TODOS
+    # los publicados: autorizar sólo «Dengue» no reduce la profundidad ni la paridad a Dengue.
+    autorizados = {slug(p) for p in padecimientos_autorizados}
+    if fuera := sorted(autorizados - set(contrato.padecimientos)):
+        raise StagingError(f"padecimientos autorizados fuera del contrato: {fuera}")
     coberturas: list[Cobertura] = [
-        revisa_consolidado(
-            backend / por_rol["consolidado"][0], contrato, padecimientos_autorizados
-        )
+        revisa_consolidado(backend / por_rol["consolidado"][0], contrato, contrato.padecimientos)
     ]
     if forecasts := por_rol.get("forecast"):
         coberturas.append(revisa_forecasts_listados([backend / r for r in forecasts], contrato))

@@ -1222,3 +1222,134 @@ def test_otro_ejecutable_con_el_mismo_nombre_cambia_la_identidad(
     assert uno.veredicto == dos.veredicto == "PASS"
     assert uno.gates["cifras"].ejecutable_sha256 != dos.gates["cifras"].ejecutable_sha256
     assert uno.como_manifiesto()["gates"] != dos.como_manifiesto()["gates"]
+
+
+# ── 12 · auditoría final: identidad del huérfano, timeout con nieto, política, modos ──
+
+
+def test_un_hijo_sin_instante_de_arranque_no_se_mata(tmp_path: Path) -> None:
+    """Sin `arranque` no hay identidad: matar por pgid solo alcanzaría a cualquier líder de
+    sesión del mismo usuario que heredara el pid."""
+    raiz = _staging(tmp_path / "s")
+    ajeno = subprocess.Popen(
+        [PYTHON, "-c", "import time; time.sleep(120)"], start_new_session=True
+    )
+    try:
+        _sembrar_en_curso(
+            raiz,
+            runner_pid=_pid_muerto(),
+            hijo={
+                "gate": "cifras",
+                "pid": ajeno.pid,
+                "pgid": ajeno.pid,
+                "arranque": None,
+                "ejecutable": PYTHON,
+            },
+        )
+        resultado = gate_runner.ejecuta_gates_con_acciones(
+            raiz, _politica([_gate("cifras")]), destinos_vivos={}
+        )
+        assert ajeno.poll() is None
+        assert any(
+            "sin instante de arranque; sin identidad no se mata" in a for a in resultado.acciones
+        )
+    finally:
+        ajeno.kill()
+        ajeno.wait()
+
+
+def test_un_marcador_malformado_no_mata_nada(tmp_path: Path) -> None:
+    raiz = _staging(tmp_path / "s")
+    ajeno = subprocess.Popen(
+        [PYTHON, "-c", "import time; time.sleep(120)"], start_new_session=True
+    )
+    try:
+        identidad = gate_runner._identidad_de(ajeno.pid)
+        assert identidad is not None
+        _sembrar_en_curso(
+            raiz,
+            runner_pid="no-es-un-pid",  # type: ignore[arg-type]
+            hijo={
+                "gate": "cifras",
+                "pid": ajeno.pid,
+                "pgid": ajeno.pid,
+                "arranque": identidad[1],
+                "ejecutable": PYTHON,
+            },
+        )
+        resultado = gate_runner.ejecuta_gates_con_acciones(
+            raiz, _politica([_gate("cifras")]), destinos_vivos={}
+        )
+        assert ajeno.poll() is None, "con un marcador malformado no se mata nada"
+        assert any("malformado; no se mata" in a for a in resultado.acciones)
+        assert (raiz / f"{gate_runner.DIR_EN_CURSO}.parcial-1").is_dir()
+    finally:
+        ajeno.kill()
+        ajeno.wait()
+
+
+def test_un_nieto_fuera_del_grupo_no_burla_el_timeout(tmp_path: Path) -> None:
+    """El gate lanza un nieto daemonizado (otra sesión) que hereda los pipes y duerme; el
+    runner no puede esperar su EOF indefinidamente."""
+    gate = _python(
+        "cifras",
+        "import subprocess, sys, time; subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(20)'], start_new_session=True); time.sleep(30)",
+        timeout_s=1,
+    )
+    inicio = time.monotonic()
+    evidencia = _corre(_staging(tmp_path / "s"), [gate])
+    duracion = time.monotonic() - inicio
+
+    assert evidencia.gates["cifras"].causa == "timeout"
+    assert "retuvo la salida" in evidencia.gates["cifras"].detalle
+    assert duracion < 12, f"el runner tardó {duracion:.1f}s: esperó el EOF del nieto"
+
+
+def test_un_pass_previo_de_otra_politica_se_aparta(tmp_path: Path) -> None:
+    raiz = _staging(tmp_path / "s")
+    _corre(raiz, [_gate("cifras")])
+
+    resultado = gate_runner.ejecuta_gates_con_acciones(
+        raiz, _politica([_gate("cifras"), _gate("rag")]), destinos_vivos={}
+    )
+
+    assert resultado.evidencia.veredicto == "PASS" and set(resultado.evidencia.gates) == {
+        "cifras",
+        "rag",
+    }
+    assert any("(otra-politica) apartada" in a for a in resultado.acciones)
+    assert (raiz / f"{DIR_EVIDENCIA}.otra-politica-1" / "indice.json").is_file()
+
+
+def test_un_chmod_tambien_es_mutacion(tmp_path: Path) -> None:
+    """El digest no cambia, pero el modo se instala: un sitio con 0600 no se sirve."""
+    evidencia = _corre(
+        _staging(tmp_path / "s"), [_python("cifras", "import os; os.chmod('index.html', 0o600)")]
+    )
+    assert evidencia.gates["cifras"].causa == "mutacion"
+    assert "1 con modo alterado ['dashboard/index.html']" in evidencia.gates["cifras"].detalle
+
+
+def test_sellar_con_una_retirada_no_permitida_no_poda(tmp_path: Path, capsys) -> None:
+    """La barrera de `retirables` y las de lápidas se comprueban sobre la poda PREVISTA."""
+    from scripts.refresh_staging import main
+
+    repo, head = _repo_con_politica(
+        tmp_path / "repo",
+        _politica_cruda(
+            [_gate("cifras")], superficies=("dashboard/index.html", "dashboard/otro.html")
+        ),
+    )
+    trabajo = _staging(tmp_path / "trabajo")
+    (trabajo / "outputs" / "dashboard" / "otro.html").write_text("se retira", encoding="utf-8")
+    semilla = tmp_path / "semilla.json"
+    assert main(["snapshot", "--raiz", str(trabajo / "outputs"), "--salida", str(semilla)]) == 0
+    (trabajo / "outputs" / "dashboard" / "otro.html").unlink()
+    _hidrata(trabajo, repo, head)
+    assert main(_argv_run_gates(trabajo, repo, head)) == 0
+    capsys.readouterr()
+
+    assert main(_argv_seal(trabajo, repo, head, semilla)) == 1
+
+    assert "no permite borrar: ['dashboard/otro.html']" in capsys.readouterr().err
+    assert (trabajo / "outputs" / "dashboard" / "index.html").read_text() == "uno", "no podó"

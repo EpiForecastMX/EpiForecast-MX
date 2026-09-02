@@ -995,3 +995,51 @@ def test_apply_religa_el_registro_tras_releerlo_bajo_el_lock(tmp_path: Path, mon
     assert (
         Path(RegistroDestinos.lee(raiz).destinos["dashboard"].ruta) / "index.html"
     ).read_text() == "semana 31"
+
+
+# ── 11 · auditoría final ─────────────────────────────────────────────────────
+
+
+def test_repetir_un_apply_con_un_archivo_colado_no_es_un_no_op(tmp_path: Path) -> None:
+    c = _corrida(tmp_path)
+    raiz = tmp_path / "destinos"
+    registro = prepara_worktrees(c.ruta_manifiesto, c.repos, raiz)
+    aplica(c.staging, c.manifiesto, raiz)
+    (Path(registro.destinos["dashboard"].ruta) / "colado.html").write_text("nadie lo selló")
+
+    with pytest.raises(StagingError, match="composición aplicada"):
+        aplica(c.staging, c.manifiesto, raiz)
+    assert RegistroDestinos.lee(raiz).estado == ESTADO_INVALIDO
+
+
+def test_un_part_rancio_del_registro_no_bloquea_marca(tmp_path: Path) -> None:
+    c = _corrida(tmp_path)
+    raiz = tmp_path / "destinos"
+    prepara_worktrees(c.ruta_manifiesto, c.repos, raiz)
+    (raiz / "registro.json.part").write_text("de una corrida muerta", encoding="utf-8")
+
+    aplica(c.staging, c.manifiesto, raiz)
+
+    assert RegistroDestinos.lee(raiz).estado == ESTADO_APLICADO
+    assert (raiz / "registro.json.part").read_text() == "de una corrida muerta"
+
+
+def test_discard_religa_el_manifiesto_bajo_el_lock(tmp_path: Path, monkeypatch) -> None:
+    c = _corrida(tmp_path)
+    raiz = tmp_path / "destinos"
+    registro = prepara_worktrees(c.ruta_manifiesto, c.repos, raiz)
+    lee_real = RegistroDestinos.lee
+    lecturas: list[int] = []
+
+    def lee_cambiante(raiz_registro: Path) -> RegistroDestinos:
+        r = lee_real(raiz_registro)
+        lecturas.append(1)
+        if len(lecturas) == 2:
+            r.manifiesto_sha256 = "e" * 64
+        return r
+
+    monkeypatch.setattr(release_worktrees.RegistroDestinos, "lee", staticmethod(lee_cambiante))
+    with pytest.raises(StagingError, match="cambió de corrida o de manifiesto bajo el lock"):
+        descarta_worktrees(raiz, c.ruta_manifiesto)
+    monkeypatch.undo()
+    assert Path(registro.destinos["dashboard"].ruta).is_dir()

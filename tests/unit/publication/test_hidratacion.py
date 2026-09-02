@@ -510,3 +510,70 @@ def test_el_digest_declarado_es_el_del_origen_antes_de_copiar(tmp_path: Path, mo
     monkeypatch.setattr(hidratacion.shutil, "copyfileobj", copia_que_cambia_el_origen)
     with pytest.raises(StagingError, match="no coincide con el original"):
         hidratacion._copia_regular(origen, tmp_path / "copia.csv")
+
+
+def test_un_patron_no_casa_a_traves_de_enlaces_de_directorio(tmp_path: Path) -> None:
+    """`*` sigue enlaces de directorio: `models/prophet -> /fuera` declararía como intra-repo
+    lo que vive en otro sitio."""
+    lista = fab.lista_entradas_cruda(
+        [
+            (fab.RUTA_CONSOLIDADO, "consolidado", True),
+            ("models/*/*/*_completo.csv", "metricas", True),
+        ]
+    )
+    repo_b, head_b, _, trabajo = _montaje(tmp_path, lista=lista)
+    fuera = tmp_path / "fuera" / "Dengue"
+    fuera.mkdir(parents=True)
+    (fuera / "X_completo.csv").write_text("a\n", encoding="utf-8")
+    (repo_b / "models").mkdir()
+    (repo_b / "models" / "prophet").symlink_to(tmp_path / "fuera", target_is_directory=True)
+
+    with pytest.raises(StagingError, match="casó a través de un enlace simbólico"):
+        hidrata(
+            trabajo,
+            repo_b,
+            head_b,
+            padecimientos_autorizados=fab.PADECIMIENTOS,
+            contrato=fab.CONTRATO,
+        )
+    assert not (tmp_path / "trabajo.sandbox").exists()
+
+
+def test_un_origen_que_cambia_conservando_el_tamano_tampoco_pasa(
+    tmp_path: Path, monkeypatch
+) -> None:
+    from epiforecast.publication import hidratacion
+
+    origen = tmp_path / "origen.csv"
+    origen.write_text("antes\n", encoding="utf-8")
+    copia_real = hidratacion.shutil.copyfileobj
+
+    def copia_y_cambia_mismo_tamano(f, g, *a):  # noqa: ANN001, ANN202
+        copia_real(f, g, *a)
+        origen.write_text("aXtes\n", encoding="utf-8")
+
+    monkeypatch.setattr(hidratacion.shutil, "copyfileobj", copia_y_cambia_mismo_tamano)
+    with pytest.raises(StagingError, match="no coincide con el original"):
+        hidratacion._copia_regular(origen, tmp_path / "copia.csv")
+
+
+def test_autorizar_un_solo_padecimiento_no_reduce_el_contrato_en_la_hidratacion(
+    tmp_path: Path,
+) -> None:
+    """Dengue en W30 y neuro en W31: aunque sólo se autorice Dengue, la paridad es entre todos."""
+    repo_b, head_b, _, trabajo = _montaje(
+        tmp_path, consolidado=fab.consolidado_csv(cortes={fab.PAD_CONTEO: (2026, 30)})
+    )
+
+    with pytest.raises(StagingError, match="corte dispar"):
+        hidrata(
+            trabajo,
+            repo_b,
+            head_b,
+            padecimientos_autorizados=(fab.PAD_CONTEO,),
+            contrato=fab.CONTRATO,
+        )
+    with pytest.raises(StagingError, match="fuera del contrato"):
+        hidrata(
+            trabajo, repo_b, head_b, padecimientos_autorizados=("Obesidad",), contrato=fab.CONTRATO
+        )

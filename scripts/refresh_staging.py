@@ -88,6 +88,7 @@ from epiforecast.publication.contratos_datos import (  # noqa: E402
 from epiforecast.publication.gate_runner import ejecuta_gates_con_acciones  # noqa: E402
 from epiforecast.publication.hidratacion import hidrata  # noqa: E402
 from epiforecast.publication.materializa import (  # noqa: E402
+    RegistroMaterializacion,
     exige_materializacion,
     materializa_candidato,
 )
@@ -113,13 +114,16 @@ from epiforecast.publication.weekly_staging import (  # noqa: E402
     StagingError,
     calcula_baseline,
     calcula_composicion,
+    calcula_poda,
     completa_entrada,
     inventaria,
     poda_a_cambiados,
     sella,
     sha256_de,
     snapshot_digests,
+    valida_autoridad_lapidas,
     valida_gates,
+    valida_tombstones,
     verifica,
     verifica_evidencia_en_disco,
     verifica_inputs_en_disco,
@@ -249,6 +253,12 @@ def _cmd_bump_cache(args: argparse.Namespace) -> int:
     antes de los gates porque cambia bytes de la composición.
     """
     trabajo = Path(args.trabajo)
+    # El único paso que muta el candidato también se ata a la materialización.
+    exige_materializacion(
+        trabajo,
+        head_backend=RegistroMaterializacion.lee(trabajo).heads["backend"],
+        head_dashboard=args.head_dashboard,
+    )
     resultado = sube_cadena_cache(
         Path(args.destino_dashboard),
         args.head_dashboard,
@@ -353,34 +363,67 @@ def _cmd_seal(args: argparse.Namespace) -> int:
     )
     completa_entrada(trabajo, entrada, contrato)
 
-    poda = poda_a_cambiados(outputs, semilla)
-    inventario = poda.cambiados
-    if not inventario and not poda.eliminados_reales:
+    # Las comprobaciones del sello que dependen de la poda se corren sobre la poda
+    # PREVISTA (sin borrar nada): retirables, universos del censo, gramática y autoridad
+    # de lápidas, y que la recomposición sea el árbol completo que midieron los gates.
+    prevista = calcula_poda(outputs, semilla)
+    if not prevista.cambiados and not prevista.eliminados_reales:
         # Una corrida que sólo RETIRA archivos sí es una corrida: si se saliera aquí, sus
         # lápidas se perderían en silencio y el sitio conservaría lo obsoleto.
         print("    el refresh no cambió ningún artefacto; no hay nada que sellar")
         return 0
-    # Las lápidas se DERIVAN de lo que el candidato retiró de verdad; no las declara nadie
-    # a mano. Declararlas admitía dos errores simétricos —inventar una retirada y olvidar
-    # otra— y sólo el primero se detectaba: una eliminación no declarada se ignoraba en
-    # silencio y el sitio conservaba lo obsoleto. Lo que sí decide una persona es la
-    # política: qué rutas pueden retirarse.
-    tombstones = tuple(sorted(poda.eliminados_reales))
-    if no_autorizadas := sorted(poda.eliminados_reales - politica.retirables):
+    tombstones_previstas = tuple(sorted(prevista.eliminados_reales))
+    if no_autorizadas := sorted(prevista.eliminados_reales - politica.retirables):
         raise StagingError(
             f"el candidato retiró {len(no_autorizadas)} archivo(s) que la política no "
             f"permite borrar: {no_autorizadas[:5]}. Declara la ruta en "
             "`retirables` de la política si de verdad debe salir del sitio, o revisa por "
             "qué el generador dejó de producirla"
         )
-    autoridad = AutoridadLapidas(
-        eliminados_reales=poda.eliminados_reales,
-        allowlist=politica.retirables,
-    )
     destinos = {
         "backend": Path(args.destino_backend),
         "dashboard": Path(args.destino_dashboard),
     }
+    baseline_prevista = calcula_baseline(
+        destinos, set(prevista.cambiados) | set(tombstones_previstas)
+    )
+    composicion_prevista, arbol_previsto = calcula_composicion(
+        semilla, prevista.cambiados, tombstones_previstas
+    )
+    politica.revisa_universos(arbol_previsto, tombstones_previstas)
+    valida_tombstones(tombstones_previstas, prevista.cambiados)
+    valida_autoridad_lapidas(
+        tombstones_previstas,
+        AutoridadLapidas(
+            eliminados_reales=prevista.eliminados_reales, allowlist=politica.retirables
+        ),
+        baseline_prevista,
+        semilla,
+    )
+    if composicion_prevista != composicion_completa:
+        raise StagingError(
+            "la poda prevista no recompone el árbol completo que midieron los gates "
+            f"({composicion_prevista[:12]}… frente a {composicion_completa[:12]}…); la semilla "
+            "no es la de este candidato"
+        )
+
+    poda = poda_a_cambiados(outputs, semilla)
+    inventario = poda.cambiados
+    if (
+        set(inventario) != set(prevista.cambiados)
+        or poda.eliminados_reales != prevista.eliminados_reales
+    ):
+        raise StagingError("la poda real no coincide con la prevista; algo cambió en el candidato")
+    # Las lápidas se DERIVAN de lo que el candidato retiró de verdad; no las declara nadie
+    # a mano. Declararlas admitía dos errores simétricos —inventar una retirada y olvidar
+    # otra— y sólo el primero se detectaba: una eliminación no declarada se ignoraba en
+    # silencio y el sitio conservaba lo obsoleto. Lo que sí decide una persona es la
+    # política: qué rutas pueden retirarse (ya comprobado sobre la poda prevista).
+    tombstones = tuple(sorted(poda.eliminados_reales))
+    autoridad = AutoridadLapidas(
+        eliminados_reales=poda.eliminados_reales,
+        allowlist=politica.retirables,
+    )
 
     # Completar y verificar el trabajo PRIMERO; publicarlo después. Al revés —renombrar y
     # luego sellar— un fallo intermedio dejaba una corrida con nombre final y sin

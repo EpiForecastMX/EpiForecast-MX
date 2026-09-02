@@ -94,9 +94,10 @@ def valida_ruta_sellable(rel: str) -> tuple[str, ...]:
         raise StagingError(f"ruta sellable con componente vacío, '.' o '..': {rel!r}")
     if any("\x00" in parte for parte in partes):
         raise StagingError(f"ruta sellable con byte nulo: {rel!r}")
-    if ".git" in partes:
+    if any(parte.lower() == ".git" for parte in partes):
         # `aplica` escribe en worktrees: una clave bajo `.git` reescribiría el repositorio
-        # (HEAD, index, hooks) con bytes «sellados». Nada administrado vive ahí.
+        # (HEAD, index, hooks) con bytes «sellados». Nada administrado vive ahí. Sin
+        # distinguir mayúsculas: el disco de macOS tampoco lo hace.
         raise StagingError(f"ruta sellable dentro de .git: {rel!r}")
     if partes[0] not in PREFIJOS_SELLABLES:
         raise StagingError(f"ruta sellable fuera de los prefijos {PREFIJOS_SELLABLES}: {rel!r}")
@@ -2280,6 +2281,23 @@ def snapshot_digests(raiz: Path) -> dict[str, str]:
     if not raiz.is_dir():
         return {}
     return {str(rel): sha256_de(raiz / rel) for rel in _relativos(raiz)}
+
+
+def calcula_poda(raiz_outputs: Path, semilla: dict[str, str]) -> Poda:
+    """Lo que `poda_a_cambiados` haría, sin tocar nada: cambiados y eliminados reales.
+
+    Sirve para correr TODAS las comprobaciones del sello sobre el árbol completo antes de
+    la poda, que es destructiva.
+    """
+    if not raiz_outputs.is_dir():
+        raise StagingError(f"no existe el directorio de artefactos: {raiz_outputs}")
+    presentes = {str(rel) for rel in _relativos(raiz_outputs)}
+    conservados = {
+        rel: digest
+        for rel, digest in inventaria(raiz_outputs).items()
+        if semilla.get(rel) != digest
+    }
+    return Poda(cambiados=conservados, eliminados_reales=frozenset(semilla) - presentes)
 
 
 def poda_a_cambiados(raiz_outputs: Path, semilla: dict[str, str]) -> Poda:

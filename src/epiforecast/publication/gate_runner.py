@@ -63,6 +63,7 @@ from epiforecast.publication.weekly_staging import (
     StagingError,
     _escribe_exclusivo,
     _exige_directorio_real,
+    _relativos,
     calcula_composicion,
     inventaria,
     sha256_de,
@@ -72,6 +73,9 @@ from epiforecast.publication.weekly_staging import (
 DIR_EN_CURSO = f"{DIR_EVIDENCIA}.en_curso"
 ARCHIVO_RUNNER = "runner.json"
 ESQUEMA_RUNNER = "gates_runner/1"
+# Tras matar el grupo por timeout, cuánto se espera el EOF de los pipes. Un nieto fuera del
+# grupo (daemonizado) los retiene; pasado el plazo se cierran y no se espera más.
+GRACIA_PIPES_S = 3
 # `ps` por ruta absoluta: el runner no depende del PATH del operador (que una prueba, o
 # un gate con PATH restringido, puede haber dejado sin /bin).
 _PS = next((r for r in ("/bin/ps", "/usr/bin/ps") if os.access(r, os.X_OK)), "ps")
@@ -285,19 +289,30 @@ def _mata_huerfano(marcador: dict[str, Any]) -> str:
     """Mata el grupo del hijo que dejó una corrida interrumpida, si sigue siendo ese hijo.
 
     Un pid se reutiliza: sólo se mata si el proceso existe, sigue en el grupo que el runner
-    le creó y arrancó en el instante registrado. Si no coincide, no es nuestro y no se toca.
+    le creó y arrancó en el instante registrado. Sin instante de arranque registrado (un
+    `ps` sin `lstart`, o un marcador plantado) no hay identidad y NO se mata: matar por pgid
+    solo alcanzaría a cualquier líder de sesión del mismo usuario que heredara el pid.
     """
     hijo = marcador.get("hijo")
     if not isinstance(hijo, dict):
         return "sin hijo registrado"
     pid, pgid, ejecutable = hijo.get("pid"), hijo.get("pgid"), hijo.get("ejecutable")
-    if not isinstance(pid, int) or not isinstance(pgid, int) or pid <= 1 or pgid <= 1:
-        return "hijo registrado sin pid válido"
+    if (
+        isinstance(pid, bool)
+        or isinstance(pgid, bool)
+        or not isinstance(pid, int)
+        or not isinstance(pgid, int)
+        or pid <= 1
+        or pgid != pid
+    ):
+        return "hijo registrado sin pid/pgid válidos; no se mata nada"
+    arranque = hijo.get("arranque")
+    if not isinstance(arranque, str) or not arranque.strip():
+        return f"el hijo {pid} se registró sin instante de arranque; sin identidad no se mata"
     if not _proceso_vivo(pid):
         return f"el hijo {pid} ya no existe"
     identidad = _identidad_de(pid)
-    arranque = hijo.get("arranque")
-    if identidad is None or identidad[0] != pgid or (arranque and identidad[1] != arranque):
+    if identidad is None or identidad[0] != pgid or identidad[1] != arranque:
         return f"el pid {pid} ya es otro proceso ({identidad!r}); no se toca"
     _mata_grupo(pgid)
     return f"grupo huérfano {pgid} del gate {hijo.get('gate')!r} ({ejecutable}) eliminado"
@@ -314,7 +329,7 @@ def _aparta(origen: Path, etiqueta: str) -> Path:
         n += 1
 
 
-def _recoge_residuos(raiz_staging: Path, composicion: str) -> list[str]:
+def _recoge_residuos(raiz_staging: Path, composicion: str, politica_sha256: str) -> list[str]:
     """Limpia lo que dejó una corrida anterior; devuelve lo que hizo, para el operador.
 
     - ``gates.en_curso/`` con marcador: si su runner sigue vivo, otra corrida está en
@@ -330,9 +345,12 @@ def _recoge_residuos(raiz_staging: Path, composicion: str) -> list[str]:
         raise StagingError(f"{en_curso} es un enlace simbólico; no se usa ni se retira")
     if en_curso.exists():
         marcador = _lee_marcador(en_curso)
-        if marcador is not None:
-            runner = marcador.get("runner_pid")
-            if isinstance(runner, int) and runner != os.getpid() and _proceso_vivo(runner):
+        runner = marcador.get("runner_pid") if marcador is not None else None
+        if marcador is None or isinstance(runner, bool) or not isinstance(runner, int):
+            # Sin marcador legible no hay identidad de nada: se aparta y no se mata nada.
+            acciones.append("marcador de corrida ausente o malformado; no se mata ningún proceso")
+        else:
+            if runner != os.getpid() and _proceso_vivo(runner):
                 raise StagingError(
                     f"otra corrida de gates sigue en marcha sobre {raiz_staging} "
                     f"(runner pid {runner}); no se compite"
@@ -353,13 +371,22 @@ def _recoge_residuos(raiz_staging: Path, composicion: str) -> list[str]:
             apartado = _aparta(carpeta, "ilegible")
             acciones.append(f"evidencia previa ilegible apartada en {apartado.name}: {exc}")
         else:
-            if previa.veredicto == VEREDICTO_REQUERIDO and previa.composicion == composicion:
+            if (
+                previa.veredicto == VEREDICTO_REQUERIDO
+                and previa.composicion == composicion
+                and previa.politica_sha256 == politica_sha256
+            ):
                 raise StagingError(
                     f"ya existe evidencia de gates en {carpeta} con PASS para esta misma "
-                    "composición; una corrida no se sobrescribe. Revísala y retírala a mano, "
-                    "o prepara otro staging"
+                    "composición y política; una corrida no se sobrescribe. Revísala y "
+                    "retírala a mano, o prepara otro staging"
                 )
-            motivo = "fail" if previa.veredicto != VEREDICTO_REQUERIDO else "otra-composicion"
+            if previa.veredicto != VEREDICTO_REQUERIDO:
+                motivo = "fail"
+            elif previa.composicion != composicion:
+                motivo = "otra-composicion"
+            else:
+                motivo = "otra-politica"
             apartado = _aparta(carpeta, motivo)
             acciones.append(f"evidencia previa ({motivo}) apartada en {apartado.name}")
     return acciones
@@ -394,12 +421,27 @@ def _corre(
             salida, errores = proceso.communicate(timeout=spec.timeout_s)
         except subprocess.TimeoutExpired:
             _mata_grupo(proceso.pid)
-            salida, errores = proceso.communicate()
+            detalle = (
+                f"venció el límite de {spec.timeout_s} s; se envió SIGKILL al grupo de procesos"
+            )
+            try:
+                salida, errores = proceso.communicate(timeout=GRACIA_PIPES_S)
+            except subprocess.TimeoutExpired:
+                # Un nieto fuera del grupo retiene stdout/stderr: no se espera su EOF.
+                for flujo in (proceso.stdout, proceso.stderr):
+                    if flujo is not None:
+                        flujo.close()
+                proceso.wait()
+                salida, errores = b"", b""
+                detalle += (
+                    f"; un proceso fuera del grupo retuvo la salida más de {GRACIA_PIPES_S} s "
+                    "y se descartó"
+                )
             return _Ejecucion(
                 None,
                 -proceso.returncode if proceso.returncode < 0 else None,
                 "timeout",
-                f"venció el límite de {spec.timeout_s} s; se envió SIGKILL al grupo de procesos",
+                detalle,
                 salida or b"",
                 errores or b"",
                 str(ejecutable),
@@ -462,15 +504,31 @@ def _ejecuta_uno(spec: GateSpec, outputs_real: Path, marcador: _Marcador) -> _Ej
         )
 
 
-def _describe_mutacion(antes: dict[str, str], despues: dict[str, str]) -> str:
+def _describe_mutacion(
+    antes: dict[str, str],
+    despues: dict[str, str],
+    modos_antes: dict[str, int],
+    modos_despues: dict[str, int],
+) -> str:
     anadidos = sorted(set(despues) - set(antes))
     retirados = sorted(set(antes) - set(despues))
     alterados = sorted(rel for rel in antes if rel in despues and antes[rel] != despues[rel])
+    modos = sorted(
+        rel
+        for rel in modos_antes
+        if rel in modos_despues and modos_antes[rel] != modos_despues[rel]
+    )
     return (
         f"el gate mutó la composición: {len(anadidos)} añadido(s) {anadidos[:3]}, "
         f"{len(retirados)} retirado(s) {retirados[:3]}, {len(alterados)} alterado(s) "
-        f"{alterados[:3]}; repite TODOS los gates sobre la composición nueva"
+        f"{alterados[:3]}, {len(modos)} con modo alterado {modos[:3]}; repite TODOS los "
+        "gates sobre la composición nueva"
     )
+
+
+def _modos(outputs: Path) -> dict[str, int]:
+    """Modo de cada archivo: un `chmod` no cambia el digest, pero sí lo que se instala."""
+    return {str(rel): stat.S_IMODE((outputs / rel).lstat().st_mode) for rel in _relativos(outputs)}
 
 
 def _sha256(crudo: bytes) -> str:
@@ -521,11 +579,12 @@ def ejecuta_gates_con_acciones(
     exige_sin_solape(outputs_real, politica, dict(destinos_vivos or {}))
 
     arbol = inventaria(outputs)
+    modos = _modos(outputs)
     for rel in arbol:
         valida_ruta_sellable(rel)
     composicion, _ = calcula_composicion({}, arbol, ())
 
-    acciones = _recoge_residuos(raiz_staging, composicion)
+    acciones = _recoge_residuos(raiz_staging, composicion, politica.sha256)
     carpeta = raiz_staging / DIR_EN_CURSO
     try:
         carpeta.mkdir()
@@ -556,9 +615,12 @@ def ejecuta_gates_con_acciones(
         else:
             ejecucion = _ejecuta_uno(spec, outputs_real, marcador)
             despues = inventaria(outputs)
-            if despues != arbol:
+            modos_despues = _modos(outputs)
+            if despues != arbol or modos_despues != modos:
                 ejecucion = replace(
-                    ejecucion, causa="mutacion", detalle=_describe_mutacion(arbol, despues)
+                    ejecucion,
+                    causa="mutacion",
+                    detalle=_describe_mutacion(arbol, despues, modos, modos_despues),
                 )
                 mutador = spec.id
         fin = _ahora()
