@@ -59,7 +59,7 @@ Uso:
         --repo-backend <dir> --repo-dashboard <dir> --destinos <raiz-nueva>
     python -m scripts.refresh_staging apply --manifiesto <json> --destinos <raiz>
     python -m scripts.refresh_staging check-completeness --manifiesto <json> --destinos <raiz>
-    python -m scripts.refresh_staging discard-worktrees --destinos <raiz>
+    python -m scripts.refresh_staging discard-worktrees --manifiesto <json> --destinos <raiz>
 """
 
 from __future__ import annotations
@@ -87,6 +87,7 @@ from epiforecast.publication.release_worktrees import (  # noqa: E402
     ESTADO_APLICADO,
     RegistroDestinos,
     aplica,
+    composicion_del_par,
     descarta_worktrees,
     prepara_worktrees,
 )
@@ -102,7 +103,6 @@ from epiforecast.publication.weekly_staging import (  # noqa: E402
     PoliticaCenso,
     SelloEntrada,
     StagingError,
-    _relativos,
     calcula_baseline,
     calcula_composicion,
     inventaria,
@@ -410,7 +410,7 @@ def _cmd_apply(args: argparse.Namespace) -> int:
 
 
 def _cmd_discard_worktrees(args: argparse.Namespace) -> int:
-    registro = descarta_worktrees(Path(args.destinos))
+    registro = descarta_worktrees(Path(args.destinos), Path(args.manifiesto))
     print(f"    par {registro.run_id[:16]} descartado; registro conservado en {registro.raiz}")
     return 0
 
@@ -550,7 +550,9 @@ def _cmd_check_completeness(args: argparse.Namespace) -> int:
     politica = PoliticaCenso.del_head(
         Path(registro.destinos["backend"].ruta), manifiesto.entrada.head_backend
     )
-    aplicada = _composicion_del_par(registro, politica)
+    aplicada = composicion_del_par(
+        {espacio: Path(d.ruta) for espacio, d in registro.destinos.items()}, politica
+    )
     if aplicada != manifiesto.composicion:
         problemas.append(
             f"composición aplicada {aplicada[:12]}… ≠ sellada {manifiesto.composicion[:12]}…"
@@ -561,31 +563,6 @@ def _cmd_check_completeness(args: argparse.Namespace) -> int:
         raise StagingError("; ".join(problemas))
     print("    completitud: el par contiene exactamente lo que el sello declara")
     return 0
-
-
-def _composicion_del_par(registro: RegistroDestinos, politica: PoliticaCenso) -> str:
-    """Digest canónico del árbol administrado tal como quedó en el par aplicado."""
-    arbol: dict[str, str] = {}
-    prefijos = [
-        p
-        for p in politica.prefijos_administrados
-        if not any(o != p and p.startswith(o) for o in politica.prefijos_administrados)
-    ]
-    for prefijo in prefijos:
-        espacio, _, subruta = prefijo.rstrip("/").partition("/")
-        raiz = Path(registro.destinos[espacio].ruta)
-        base = raiz / subruta if subruta else raiz
-        if not base.is_dir():
-            continue
-        for rel in _relativos(base):
-            partes = rel.parts
-            # El worktree lleva un archivo `.git` en su raíz; no es del árbol administrado.
-            if partes[0] == ".git":
-                continue
-            logico = "/".join([espacio, *([subruta] if subruta else []), *partes])
-            arbol[logico] = sha256_de(base / rel)
-    digest, _ = calcula_composicion({}, arbol, ())
-    return digest
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -668,7 +645,11 @@ def main(argv: list[str] | None = None) -> int:
     p_chk.add_argument("--destinos", required=True)
     p_chk.set_defaults(func=_cmd_check_completeness)
 
+    # `discard` exige el manifiesto: sólo retira el par registrado para ESA corrida, y sólo
+    # los worktrees que git reconoce como suyos. Sin manifiesto, cualquier raíz con un
+    # registro plausible se llevaría por delante lo que dijera.
     p_dis = sub.add_parser("discard-worktrees", help="retira el par desechable registrado")
+    p_dis.add_argument("--manifiesto", required=True)
     p_dis.add_argument("--destinos", required=True)
     p_dis.set_defaults(func=_cmd_discard_worktrees)
 

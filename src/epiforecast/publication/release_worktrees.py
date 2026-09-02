@@ -38,6 +38,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import stat
 import subprocess
 from typing import Any
@@ -46,16 +47,20 @@ from epiforecast.publication.weekly_staging import (
     MODO_APLICABLE,
     PREFIJOS_SELLABLES,
     RUTA_POLITICA,
+    EvidenciaGates,
     Manifiesto,
+    PoliticaCenso,
     StagingError,
     _escribe_atomico,
     _escribe_exclusivo,
     _instala,
+    _relativos,
     _sin_duplicados,
+    calcula_composicion,
     sha256_de,
+    valida_gates,
     valida_ruta_sellable,
     verifica,
-    verifica_sidecar,
 )
 
 ESQUEMA_REGISTRO = "destinos/1"
@@ -97,9 +102,22 @@ class Destino:
         return {"ruta": self.ruta, "repo": self.repo, "head": self.head}
 
 
+def _digest_registro(cuerpo: dict[str, Any]) -> str:
+    """Digest del registro SIN su propio campo `sha256`, en forma canónica."""
+    sin_digest = {k: v for k, v in cuerpo.items() if k != "sha256"}
+    return hashlib.sha256(
+        json.dumps(sin_digest, sort_keys=True, ensure_ascii=False).encode()
+    ).hexdigest()
+
+
 @dataclass
 class RegistroDestinos:
-    """`run_id -> par de worktrees`, con estado. Vive fuera de los worktrees, con sidecar."""
+    """`run_id -> par de worktrees`, con estado. Vive fuera de los worktrees.
+
+    Un solo archivo con el digest embebido, escrito con un único `replace` atómico. Con
+    registro y sidecar aparte había dos escrituras: una interrupción entre ambas dejaba un
+    par que ni `apply` ni `discard` podían releer, es decir, un residuo sin salida.
+    """
 
     raiz: Path
     run_id: str
@@ -109,10 +127,19 @@ class RegistroDestinos:
     creado: str
     destinos: dict[str, Destino]
 
-    CLAVES = ("esquema", "run_id", "manifiesto_sha256", "estado", "motivo", "creado", "destinos")
+    CLAVES = (
+        "esquema",
+        "run_id",
+        "manifiesto_sha256",
+        "estado",
+        "motivo",
+        "creado",
+        "destinos",
+        "sha256",
+    )
 
     def como_dict(self) -> dict[str, Any]:
-        return {
+        cuerpo: dict[str, Any] = {
             "esquema": ESQUEMA_REGISTRO,
             "run_id": self.run_id,
             "manifiesto_sha256": self.manifiesto_sha256,
@@ -121,16 +148,12 @@ class RegistroDestinos:
             "creado": self.creado,
             "destinos": {esp: d.como_dict() for esp, d in sorted(self.destinos.items())},
         }
+        cuerpo["sha256"] = _digest_registro(cuerpo)
+        return cuerpo
 
     def escribe(self) -> None:
         crudo = json.dumps(self.como_dict(), indent=2, ensure_ascii=False, sort_keys=True).encode()
-        destino = self.raiz / ARCHIVO_REGISTRO
-        _escribe_atomico(destino, crudo + b"\n", ".part")
-        _escribe_atomico(
-            destino.with_name(destino.stem + ".sha256"),
-            hashlib.sha256(crudo + b"\n").hexdigest().encode() + b"\n",
-            ".part",
-        )
+        _escribe_atomico(self.raiz / ARCHIVO_REGISTRO, crudo + b"\n", ".part")
 
     def marca(self, estado: str, motivo: str = "") -> None:
         if estado not in ESTADOS:
@@ -148,7 +171,6 @@ class RegistroDestinos:
             raise StagingError(
                 f"no hay registro de destinos en {raiz}; crea el par con `prepare-worktrees`"
             )
-        verifica_sidecar(ruta)
         try:
             crudo = json.loads(ruta.read_bytes(), object_pairs_hook=_sin_duplicados)
         except json.JSONDecodeError as exc:
@@ -157,6 +179,11 @@ class RegistroDestinos:
             raise StagingError("registro de destinos malformado")
         if crudo["esquema"] != ESQUEMA_REGISTRO:
             raise StagingError(f"registro de destinos de otro esquema: {crudo['esquema']!r}")
+        if crudo["sha256"] != _digest_registro(crudo):
+            raise StagingError(
+                f"el registro de destinos no coincide con su digest embebido ({ARCHIVO_REGISTRO}): "
+                "fue editado o se corrompió"
+            )
         if not isinstance(crudo["run_id"], str) or not _RE_SHA256.fullmatch(crudo["run_id"]):
             raise StagingError("el registro no identifica un run_id de 64 hex")
         if not isinstance(crudo["manifiesto_sha256"], str) or not _RE_SHA256.fullmatch(
@@ -379,6 +406,12 @@ def prepara_worktrees(
             "la política del sello no es la que el repositorio canónico lleva en el HEAD "
             "sellado; este par no se crea"
         )
+    # Y la evidencia de gates que viaja en la corrida tiene que aprobar, contra ESA
+    # política parseada de ESE blob, la composición sellada: el conjunto de gates, sus
+    # argv, el PASS y la composición. Sin esto, prepare sólo comprobaba digests de archivo.
+    valida_gates(
+        EvidenciaGates.lee(run_dir), PoliticaCenso.desde_bytes(blob.stdout), manifiesto.composicion
+    )
 
     padre = raiz.parent
     if padre.is_symlink():
@@ -406,45 +439,156 @@ def prepara_worktrees(
         ) from exc
 
     destinos: dict[str, Destino] = {}
-    for espacio in sorted(raices_repo):
-        repo = raices_repo[espacio]
-        ruta = raiz_real / espacio
-        _git(repo, "worktree", "add", "--detach", str(ruta), heads[espacio])
-        destinos[espacio] = Destino(
-            espacio=espacio, ruta=str(ruta.resolve()), repo=str(repo), head=heads[espacio]
+    creados: list[tuple[Path, Path]] = []
+    try:
+        for espacio in sorted(raices_repo):
+            repo = raices_repo[espacio]
+            ruta = raiz_real / espacio
+            _git(repo, "worktree", "add", "--detach", str(ruta), heads[espacio])
+            creados.append((repo, ruta))
+            destinos[espacio] = Destino(
+                espacio=espacio, ruta=str(ruta.resolve()), repo=str(repo), head=heads[espacio]
+            )
+            _verifica_destino(destinos[espacio], heads[espacio], run_dir, limpio=True)
+
+        _escribe_exclusivo(raiz_real / ARCHIVO_LOCK, b"")
+        registro = RegistroDestinos(
+            raiz=raiz_real,
+            run_id=manifiesto.run_id,
+            manifiesto_sha256=sha256_de(ruta_manifiesto),
+            estado=ESTADO_LISTO,
+            motivo="",
+            creado=datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            destinos=destinos,
         )
-        _verifica_destino(destinos[espacio], heads[espacio], run_dir, limpio=True)
-
-    _escribe_exclusivo(raiz_real / ARCHIVO_LOCK, b"")
-    registro = RegistroDestinos(
-        raiz=raiz_real,
-        run_id=manifiesto.run_id,
-        manifiesto_sha256=sha256_de(ruta_manifiesto),
-        estado=ESTADO_LISTO,
-        motivo="",
-        creado=datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        destinos=destinos,
-    )
-    registro.escribe()
+        registro.escribe()
+    except BaseException:
+        # Rollback: un par a medias —un worktree creado y el otro no, o sin registro— es
+        # un residuo que ni `apply` ni `discard` podrían releer. Se retira todo lo creado.
+        for repo, ruta in reversed(creados):
+            _retira_worktree(repo, ruta)
+        shutil.rmtree(raiz_real, ignore_errors=True)
+        raise
     return registro
 
 
-def descarta_worktrees(raiz: Path) -> RegistroDestinos:
-    """Retira el par con `git worktree remove --force` y lo marca descartado.
+def _retira_worktree(repo: Path, ruta: Path) -> None:
+    """`git worktree remove --force` si existe, y `prune` siempre. Sin excepción hacia arriba."""
+    if ruta.is_dir() and not ruta.is_symlink():
+        subprocess.run(
+            ["git", "-C", str(repo), "worktree", "remove", "--force", str(ruta)],
+            capture_output=True,
+        )
+    subprocess.run(["git", "-C", str(repo), "worktree", "prune"], capture_output=True)
 
-    Un par inválido o ya aplicado se descarta; nunca se «repara». El registro se conserva
-    para dejar constancia de por qué.
+
+def _exige_worktree_del_repo(destino: Destino, raiz_real: Path) -> Path | None:
+    """Un destino sólo se retira si es EXACTAMENTE el worktree que este registro creó.
+
+    Devuelve la ruta real a retirar, o None si ya no existe (sólo queda `prune`). Se
+    niega a pasar `--force` sobre cualquier otra cosa: un directorio que no cuelga del
+    repositorio registrado, que no está donde el registro dice o que es un enlace.
     """
+    ruta = Path(destino.ruta)
+    if ruta != raiz_real / destino.espacio:
+        raise StagingError(
+            f"el destino {destino.espacio} no está bajo la raíz del registro "
+            f"({ruta} frente a {raiz_real / destino.espacio}); no se retira"
+        )
+    if ruta.is_symlink():
+        raise StagingError(f"el destino {destino.espacio} es un enlace simbólico; no se retira")
+    repo = _raiz_de_repo(Path(destino.repo))
+    if not ruta.exists():
+        return None
+    real = ruta.resolve()
+    if real != ruta:
+        raise StagingError(f"el destino {destino.espacio} no está en su ruta real; no se retira")
+    if real == repo or (repo / ".git") in real.parents:
+        raise StagingError(
+            f"el destino {destino.espacio} es el worktree canónico o vive en su .git; no se retira"
+        )
+    bloque = _worktrees_registrados(repo).get(real)
+    if bloque is None:
+        raise StagingError(
+            f"el destino {destino.espacio} no figura en `git worktree list` de {repo}; "
+            "no se retira con --force lo que git no reconoce como suyo"
+        )
+    comun = Path(_git(real, "rev-parse", "--git-common-dir").strip())
+    if not comun.is_absolute():
+        comun = real / comun
+    if comun.resolve().parent != repo:
+        raise StagingError(
+            f"el destino {destino.espacio} no cuelga del repositorio registrado {repo}"
+        )
+    return real
+
+
+def descarta_worktrees(raiz: Path, ruta_manifiesto: Path) -> RegistroDestinos:
+    """Retira el par y lo marca descartado. Sólo el par de ESE manifiesto, y sólo sus worktrees.
+
+    Ligaduras, todas exigidas: el manifiesto es el que el registro cita (`run_id` y digest);
+    el registro está íntegro; nadie tiene el lock (un apply en marcha no se descarta por
+    debajo); y cada destino es exactamente el worktree que `prepare` creó bajo la raíz,
+    reconocido por git como worktree del repositorio registrado. Un par ya descartado no
+    se descarta dos veces. El registro se conserva para dejar constancia de por qué.
+    """
+    if ruta_manifiesto.is_symlink() or not ruta_manifiesto.is_file():
+        raise StagingError(f"no existe el manifiesto: {ruta_manifiesto}")
+    manifiesto = Manifiesto.lee(ruta_manifiesto)
     registro = RegistroDestinos.lee(raiz)
+    if registro.run_id != manifiesto.run_id:
+        raise StagingError(
+            f"el par de destinos es de otra corrida ({registro.run_id[:12]}… frente a "
+            f"{manifiesto.run_id[:12]}…); no se descarta"
+        )
+    if registro.manifiesto_sha256 != sha256_de(ruta_manifiesto):
+        raise StagingError("el par de destinos se preparó para otro manifiesto; no se descarta")
     with lock_exclusivo(raiz):
-        for destino in registro.destinos.values():
-            ruta = Path(destino.ruta)
-            repo = Path(destino.repo)
-            if ruta.is_dir() and not ruta.is_symlink():
-                _git(repo, "worktree", "remove", "--force", str(ruta))
+        registro = RegistroDestinos.lee(raiz)
+        if registro.run_id != manifiesto.run_id:
+            raise StagingError("el registro cambió de corrida bajo el lock; no se descarta")
+        if registro.estado == ESTADO_DESCARTADO:
+            raise StagingError(f"el par {registro.run_id[:12]}… ya está descartado")
+        raiz_real = raiz.resolve()
+        # Primero se comprueba TODO; después se retira. Un fallo a mitad no deja un par
+        # medio retirado con el registro diciendo otra cosa.
+        a_retirar = {
+            espacio: _exige_worktree_del_repo(destino, raiz_real)
+            for espacio, destino in sorted(registro.destinos.items())
+        }
+        motivo_previo = registro.motivo
+        for espacio, real in a_retirar.items():
+            repo = Path(registro.destinos[espacio].repo)
+            if real is not None:
+                _git(repo, "worktree", "remove", "--force", str(real))
             _git(repo, "worktree", "prune")
-        registro.marca(ESTADO_DESCARTADO, registro.motivo)
+        registro.marca(ESTADO_DESCARTADO, motivo_previo)
     return registro
+
+
+def composicion_del_par(destinos: dict[str, Path], politica: PoliticaCenso) -> str:
+    """Digest canónico del árbol administrado tal como quedó en un par de worktrees."""
+    arbol: dict[str, str] = {}
+    prefijos = [
+        p
+        for p in politica.prefijos_administrados
+        if not any(o != p and p.startswith(o) for o in politica.prefijos_administrados)
+    ]
+    for prefijo in prefijos:
+        espacio, _, subruta = prefijo.rstrip("/").partition("/")
+        raiz = destinos[espacio]
+        base = raiz / subruta if subruta else raiz
+        if not base.is_dir():
+            continue
+        for rel in _relativos(base):
+            partes = rel.parts
+            # El worktree lleva un archivo `.git` en su raíz; no es del árbol administrado.
+            if partes[0] == ".git":
+                continue
+            logico = "/".join([espacio, *([subruta] if subruta else []), *partes])
+            arbol[logico] = sha256_de(base / rel)
+    digest, _ = calcula_composicion({}, arbol, ())
+    return digest
 
 
 def _exige_instalado(manifiesto: Manifiesto, destinos: dict[str, Path]) -> None:
@@ -491,6 +635,11 @@ def aplica(raiz_staging: Path, manifiesto: Manifiesto, raiz_destinos: Path) -> l
 
     with lock_exclusivo(raiz_destinos):
         registro = RegistroDestinos.lee(raiz_destinos)
+        # Se re-liga tras releer: lo comprobado antes del lock pudo cambiar en medio.
+        if registro.run_id != manifiesto.run_id or registro.manifiesto_sha256 != sha256_de(
+            manifiesto_disco
+        ):
+            raise StagingError("el registro cambió de corrida o de manifiesto bajo el lock")
         if registro.estado == ESTADO_EN_CURSO:
             registro.marca(
                 ESTADO_INVALIDO,
@@ -529,6 +678,17 @@ def aplica(raiz_staging: Path, manifiesto: Manifiesto, raiz_destinos: Path) -> l
                 head_dashboard=heads["dashboard"],
             )
             _exige_instalado(manifiesto, destinos)
+            # La prueba fuerte, ANTES de declarar el par aplicado: el árbol administrado del
+            # par, recompuesto desde disco con la política del HEAD sellado (leída del
+            # worktree del backend, que la lleva tal cual), es la composición que los gates
+            # midieron. «Todo lo declarado está» no dice que el par sea el árbol probado.
+            politica = PoliticaCenso.del_head(destinos["backend"], heads["backend"])
+            aplicada = composicion_del_par(destinos, politica)
+            if aplicada != manifiesto.composicion:
+                raise StagingError(
+                    f"composición aplicada {aplicada[:12]}… ≠ sellada "
+                    f"{manifiesto.composicion[:12]}…; el par no es el árbol que aprobaron los gates"
+                )
         except BaseException as exc:
             registro.marca(ESTADO_INVALIDO, f"{type(exc).__name__}: {exc}"[:400])
             raise

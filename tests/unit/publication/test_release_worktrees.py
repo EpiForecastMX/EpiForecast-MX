@@ -213,14 +213,13 @@ def _corrida(
 
 
 def _reescribe_registro(raiz: Path, mutador) -> None:  # noqa: ANN001
+    """Edita el registro y recalcula su digest embebido: lo que haría quien lo tocara."""
     ruta = raiz / "registro.json"
     crudo = json.loads(ruta.read_text(encoding="utf-8"))
     mutador(crudo)
+    crudo["sha256"] = release_worktrees._digest_registro(crudo)
     cuerpo = json.dumps(crudo, indent=2, ensure_ascii=False, sort_keys=True).encode() + b"\n"
     ruta.write_bytes(cuerpo)
-    (raiz / "registro.sha256").write_text(
-        hashlib.sha256(cuerpo).hexdigest() + "\n", encoding="utf-8"
-    )
 
 
 def _worktrees_de(repo: Path) -> list[str]:
@@ -471,15 +470,37 @@ def test_un_registro_de_otra_corrida_o_manifiesto_se_rechaza(tmp_path: Path) -> 
     assert RegistroDestinos.lee(raiz).estado == ESTADO_LISTO
 
 
-def test_un_registro_editado_sin_sidecar_se_rechaza(tmp_path: Path) -> None:
+def test_un_registro_editado_sin_recalcular_el_digest_se_rechaza(tmp_path: Path) -> None:
     c = _corrida(tmp_path)
     raiz = tmp_path / "destinos"
     prepara_worktrees(c.ruta_manifiesto, c.repos, raiz)
     ruta = raiz / "registro.json"
     ruta.write_text(ruta.read_text(encoding="utf-8").replace('"listo"', '"aplicado"'))
 
-    with pytest.raises(StagingError, match="registro.sha256"):
+    with pytest.raises(StagingError, match="digest embebido"):
         aplica(c.staging, c.manifiesto, raiz)
+    assert not (raiz / "registro.sha256").exists(), "un solo archivo: no hay sidecar"
+    assert not list(raiz.glob("*.part")), "la escritura es un replace atómico"
+
+
+def test_el_registro_se_escribe_de_una_vez(tmp_path: Path, monkeypatch) -> None:
+    """Control de la escritura atómica: un fallo en el replace no deja un registro a medias."""
+    c = _corrida(tmp_path)
+    raiz = tmp_path / "destinos"
+    prepara_worktrees(c.ruta_manifiesto, c.repos, raiz)
+    antes = (raiz / "registro.json").read_bytes()
+    registro = RegistroDestinos.lee(raiz)
+
+    def replace_roto(*_a: Any, **_k: Any) -> None:
+        raise OSError("disco lleno")
+
+    monkeypatch.setattr(release_worktrees.Path, "replace", replace_roto)
+    with pytest.raises(OSError, match="disco lleno"):
+        registro.marca(ESTADO_INVALIDO, "prueba")
+    monkeypatch.undo()
+
+    assert (raiz / "registro.json").read_bytes() == antes
+    assert RegistroDestinos.lee(raiz).estado == ESTADO_LISTO
 
 
 # ── 5 · lock: exactamente un apply ───────────────────────────────────────────
@@ -688,14 +709,209 @@ def test_discard_retira_el_par_y_lo_deja_inservible(tmp_path: Path) -> None:
     registro = prepara_worktrees(c.ruta_manifiesto, c.repos, raiz)
     aplica(c.staging, c.manifiesto, raiz)
 
-    descarta_worktrees(raiz)
+    descarta_worktrees(raiz, c.ruta_manifiesto)
 
     assert _worktrees_de(c.repo_dashboard) == [str(c.repo_dashboard)]
     assert not Path(registro.destinos["dashboard"].ruta).exists()
     assert RegistroDestinos.lee(raiz).estado == ESTADO_DESCARTADO
     with pytest.raises(StagingError, match="descartado"):
         aplica(c.staging, c.manifiesto, raiz)
+    with pytest.raises(StagingError, match="ya está descartado"):
+        descarta_worktrees(raiz, c.ruta_manifiesto)
     assert (c.repo_dashboard / "index.html").read_text() == "semana 31"
+
+
+def test_discard_exige_el_manifiesto_del_par(tmp_path: Path) -> None:
+    """Sin ligar `discard` al manifiesto, cualquier raíz con un registro plausible se retira."""
+    c = _corrida(tmp_path)
+    raiz = tmp_path / "destinos"
+    registro = prepara_worktrees(c.ruta_manifiesto, c.repos, raiz)
+    otra = _corrida(tmp_path / "otra", con_lapida=True)  # otro contenido, otro run_id
+
+    with pytest.raises(StagingError, match="otra corrida"):
+        descarta_worktrees(raiz, otra.ruta_manifiesto)
+    # Mismo run_id, manifiesto reescrito (otro digest en disco): tampoco.
+    c.manifiesto.escribe(c.ruta_manifiesto.with_name("copia.json"))
+    (c.ruta_manifiesto.with_name("copia.json")).write_text(
+        c.ruta_manifiesto.read_text(encoding="utf-8").replace("\n", "\n ", 1), encoding="utf-8"
+    )
+    with pytest.raises(StagingError, match="otro manifiesto|no coincide|ilegible|sidecar"):
+        descarta_worktrees(raiz, c.ruta_manifiesto.with_name("copia.json"))
+    assert Path(registro.destinos["dashboard"].ruta).is_dir()
+    assert RegistroDestinos.lee(raiz).estado == ESTADO_LISTO
+
+
+def test_discard_no_retira_lo_que_git_no_reconoce_como_su_worktree(tmp_path: Path) -> None:
+    """El registro dice dónde mirar, git dice qué hay: un directorio ajeno en el sitio del
+    worktree no se borra con --force."""
+    c = _corrida(tmp_path)
+    raiz = tmp_path / "destinos"
+    registro = prepara_worktrees(c.ruta_manifiesto, c.repos, raiz)
+    wt_d = Path(registro.destinos["dashboard"].ruta)
+    _git(c.repo_dashboard, "worktree", "remove", "--force", str(wt_d))
+    wt_d.mkdir()
+    (wt_d / "del_usuario.txt").write_text("no es un worktree", encoding="utf-8")
+
+    with pytest.raises(StagingError, match="no figura en `git worktree list`"):
+        descarta_worktrees(raiz, c.ruta_manifiesto)
+
+    assert (wt_d / "del_usuario.txt").read_text() == "no es un worktree"
+    assert RegistroDestinos.lee(raiz).estado == ESTADO_LISTO
+    # Y el worktree del backend, que sí es legítimo, tampoco se tocó: se comprueba todo antes.
+    assert Path(registro.destinos["backend"].ruta).is_dir()
+
+
+def test_discard_no_retira_un_destino_fuera_de_la_raiz_del_registro(tmp_path: Path) -> None:
+    c = _corrida(tmp_path)
+    raiz = tmp_path / "destinos"
+    prepara_worktrees(c.ruta_manifiesto, c.repos, raiz)
+    ajeno = tmp_path / "ajeno_worktree"
+    _git(c.repo_dashboard, "worktree", "add", "--detach", str(ajeno), c.head_dashboard)
+
+    _reescribe_registro(raiz, lambda d: d["destinos"]["dashboard"].update(ruta=str(ajeno)))
+    with pytest.raises(StagingError, match="no está bajo la raíz del registro"):
+        descarta_worktrees(raiz, c.ruta_manifiesto)
+
+    assert ajeno.is_dir() and (ajeno / "index.html").is_file()
+    _git(c.repo_dashboard, "worktree", "remove", "--force", str(ajeno))
+
+
+def test_discard_no_compite_con_un_apply_en_marcha(tmp_path: Path) -> None:
+    c = _corrida(tmp_path)
+    raiz = tmp_path / "destinos"
+    registro = prepara_worktrees(c.ruta_manifiesto, c.repos, raiz)
+    descriptor = os.open(raiz / "apply.lock", os.O_RDWR)
+    try:
+        fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        with pytest.raises(StagingError, match="otro apply tiene el bloqueo"):
+            descarta_worktrees(raiz, c.ruta_manifiesto)
+    finally:
+        os.close(descriptor)
+    assert Path(registro.destinos["dashboard"].ruta).is_dir()
+
+
+def test_discard_por_cli_exige_el_manifiesto(tmp_path: Path, capsys) -> None:
+    from scripts.refresh_staging import main
+
+    c = _corrida(tmp_path)
+    raiz = tmp_path / "destinos"
+    prepara_worktrees(c.ruta_manifiesto, c.repos, raiz)
+
+    with pytest.raises(SystemExit):
+        main(["discard-worktrees", "--destinos", str(raiz)])
+    assert "--manifiesto" in capsys.readouterr().err
+    assert (
+        main(
+            [
+                "discard-worktrees",
+                "--manifiesto",
+                str(c.ruta_manifiesto),
+                "--destinos",
+                str(raiz),
+            ]
+        )
+        == 0
+    )
+    assert RegistroDestinos.lee(raiz).estado == ESTADO_DESCARTADO
+
+
+# ── 10 · prepare: rollback y revalidación de gates ──────────────────────────
+
+
+def test_un_fallo_a_mitad_de_prepare_no_deja_un_par_a_medias(tmp_path: Path, monkeypatch) -> None:
+    c = _corrida(tmp_path)
+    raiz = tmp_path / "destinos"
+    verifica_real = release_worktrees._verifica_destino
+
+    def verifica_que_falla_en_el_dashboard(destino: Any, *args: Any, **kwargs: Any) -> Path:
+        if destino.espacio == "dashboard":
+            raise StagingError("el dashboard no pasó la verificación (simulado)")
+        return verifica_real(destino, *args, **kwargs)
+
+    monkeypatch.setattr(release_worktrees, "_verifica_destino", verifica_que_falla_en_el_dashboard)
+    with pytest.raises(StagingError, match="simulado"):
+        prepara_worktrees(c.ruta_manifiesto, c.repos, raiz)
+
+    assert not raiz.exists(), "la raíz del par se retira entera"
+    assert _worktrees_de(c.repo_backend) == [str(c.repo_backend)], "el backend ya creado se retiró"
+    assert _worktrees_de(c.repo_dashboard) == [str(c.repo_dashboard)]
+    # Y se puede volver a intentar sobre la misma raíz.
+    monkeypatch.undo()
+    assert prepara_worktrees(c.ruta_manifiesto, c.repos, raiz).estado == ESTADO_LISTO
+
+
+def test_prepare_revalida_los_gates_contra_la_politica_del_head(tmp_path: Path) -> None:
+    """Un sello fabricado, coherente consigo mismo, cuya evidencia no cubre el conjunto de
+    gates que la política del HEAD exige. `verifica` lo acepta (digests cuadran); sólo
+    `valida_gates` contra el blob canónico lo desmiente."""
+    from epiforecast.publication.weekly_staging import DIR_EVIDENCIA, EvidenciaGates
+
+    c = _corrida(tmp_path)
+    # La política real del HEAD pasa a exigir DOS gates; el sello sólo trae `cifras`.
+    politica = _politica_cruda()
+    politica["gates"].append({**politica["gates"][0], "id": "rag"})
+    ruta_politica = c.repo_backend / "config" / "publication" / "politica_censo.json"
+    ruta_politica.write_text(json.dumps(politica, indent=2) + "\n", encoding="utf-8")
+    _git(c.repo_backend, "commit", "-qam", "dos gates")
+    head_nuevo = _git(c.repo_backend, "rev-parse", "HEAD").strip()
+    digest_politica = hashlib.sha256(ruta_politica.read_bytes()).hexdigest()
+
+    # Sello fabricado: apunta al HEAD nuevo y a su política, con evidencia de un solo gate.
+    m = c.manifiesto
+    m.entrada.head_backend = head_nuevo
+    m.politica = {"version": VERSION_POLITICA, "sha256": digest_politica}
+    for registro in m.resultados_pruebas["gates"].values():
+        registro["politica_sha256"] = digest_politica
+    indice = c.staging / DIR_EVIDENCIA / "indice.json"
+    crudo = json.loads(indice.read_text(encoding="utf-8"))
+    crudo["politica"]["sha256"] = digest_politica
+    for registro in crudo["gates"].values():
+        registro["politica_sha256"] = digest_politica
+    cuerpo = json.dumps(crudo, indent=2, ensure_ascii=False, sort_keys=True).encode() + b"\n"
+    indice.write_bytes(cuerpo)
+    (c.staging / DIR_EVIDENCIA / "indice.sha256").write_text(
+        hashlib.sha256(cuerpo).hexdigest() + "\n", encoding="utf-8"
+    )
+    m.resultados_pruebas = EvidenciaGates.lee(c.staging).como_manifiesto()
+    m.run_id = calcula_run_id_de(m)
+    m.escribe(c.ruta_manifiesto)
+    # Coherente consigo mismo: la verificación del sello pasa.
+    from epiforecast.publication.weekly_staging import verifica
+
+    verifica(
+        c.staging,
+        Manifiesto.lee(c.ruta_manifiesto),
+        head_backend=head_nuevo,
+        head_dashboard=c.head_dashboard,
+    )
+
+    with pytest.raises(StagingError, match="faltan resultados de gates que la política exige"):
+        prepara_worktrees(c.ruta_manifiesto, c.repos, tmp_path / "d")
+    assert not (tmp_path / "d").exists()
+    assert _worktrees_de(c.repo_backend) == [str(c.repo_backend)]
+
+
+def test_apply_no_declara_aplicado_un_par_cuya_composicion_no_es_la_sellada(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """Todo lo declarado está, pero el árbol administrado del par no es el que midieron los
+    gates: un archivo administrado más, colado en la instalación."""
+    c = _corrida(tmp_path)
+    raiz = tmp_path / "destinos"
+    prepara_worktrees(c.ruta_manifiesto, c.repos, raiz)
+    instala_real = release_worktrees._instala
+
+    def instala_y_cuela(
+        raiz_staging: Path, manifiesto: Manifiesto, destinos: dict[str, Path], **kw: Any
+    ) -> list[str]:
+        resultado = instala_real(raiz_staging, manifiesto, destinos, **kw)
+        (destinos["dashboard"] / "colado.html").write_text("nadie lo selló", encoding="utf-8")
+        return resultado
+
+    monkeypatch.setattr(release_worktrees, "_instala", instala_y_cuela)
+    with pytest.raises(StagingError, match="composición aplicada"):
+        aplica(c.staging, c.manifiesto, raiz)
+    assert RegistroDestinos.lee(raiz).estado == ESTADO_INVALIDO
 
 
 # ── 9 · CLI: prepare → apply → check-completeness ───────────────────────────
@@ -753,4 +969,4 @@ def test_cli_prepare_apply_y_completitud(tmp_path: Path, capsys) -> None:
 
     (wt_d / "obsoleto.html").unlink()
     assert main(["check-completeness", *argv_base]) == 0
-    assert main(["discard-worktrees", "--destinos", str(raiz)]) == 0
+    assert main(["discard-worktrees", *argv_base]) == 0
