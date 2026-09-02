@@ -242,6 +242,7 @@ def lista_entradas_cruda(
         "version": "entradas/2",
         "directorio_boletines": "data/raw_PDFs",
         "profundidad_minima_semanas": PROFUNDIDAD_MINIMA,
+        "directorios_scratch": ["data/raw", "web_dashboard"],
         "entradas": [{"ruta": r, "rol": rol, "obligatoria": ob} for r, rol, ob in entradas],
     }
 

@@ -77,6 +77,9 @@ def _montaje(tmp_path: Path, **kwargs):  # noqa: ANN003, ANN202
         ),
         (lambda d: d.update(extra=1), "malformada"),
         (lambda d: d.pop("profundidad_minima_semanas"), "malformada"),
+        (lambda d: d.pop("directorios_scratch"), "malformada"),
+        (lambda d: d.update(directorios_scratch=["data/raw", "data/raw"]), "sin repetidos"),
+        (lambda d: d.update(directorios_scratch=["../fuera"]), "directorio scratch"),
         (lambda d: d.update(profundidad_minima_semanas=0), "entero >= 1"),
         (lambda d: d.update(profundidad_minima_semanas=True), "entero >= 1"),
         (
@@ -123,6 +126,9 @@ def test_hidrata_construye_el_sandbox_con_solo_lo_declarado(tmp_path: Path) -> N
     assert (backend / fab.RUTA_CONSOLIDADO).read_text() == fab.consolidado_csv()
     assert (backend / fab.RUTA_FORECAST).is_file()
     assert not (backend / "data" / "processed" / "secreto.csv").exists(), "sólo la allowlist"
+    # Los directorios scratch existen vacíos: los generadores escriben ahí sus intermedios.
+    assert (backend / "data" / "raw").is_dir() and not any((backend / "data" / "raw").iterdir())
+    assert (backend / "web_dashboard").is_dir()
     assert not (backend / ".git").exists()
     enlace = resultado.sandbox / "EpiForecast-IMSS-Dashboard"
     assert (

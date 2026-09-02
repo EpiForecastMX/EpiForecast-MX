@@ -2,6 +2,10 @@
   "version": "entradas/2",
   "directorio_boletines": "data/raw_PDFs",
   "profundidad_minima_semanas": 52,
+  "directorios_scratch": [
+    "data/raw", "data/interim", "data/processed", "models",
+    "reports/forecasts", "reports/ProdDetails", "reports/figures", "web_dashboard", "logs"
+  ],
   "entradas": [
     {"ruta": "data/processed/dataset_boletin_epidemiologico.csv", "rol": "consolidado", "obligatoria": true},
     {"ruta": "data/interim/dengue_boletin.csv", "rol": "dengue_interim", "obligatoria": true},

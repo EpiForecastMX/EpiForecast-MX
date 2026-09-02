@@ -97,6 +97,10 @@ class ListaEntradas:
     directorio_boletines: str
     profundidad_minima: int
     entradas: tuple[Entrada, ...]
+    # Directorios que los generadores usan como scratch (intermedios regenerables) y que el
+    # `git archive` no trae porque están ignorados. El ensayo real abortó en `dengue-prep`
+    # por «Cannot save file into a non-existent directory: 'data/raw'».
+    directorios_scratch: tuple[str, ...] = ()
 
     @staticmethod
     def del_head(repo: Path, head: str) -> ListaEntradas:
@@ -127,12 +131,18 @@ class ListaEntradas:
             "version",
             "directorio_boletines",
             "profundidad_minima_semanas",
+            "directorios_scratch",
             "entradas",
         }:
             raise StagingError(
                 "lista de entradas malformada: claves {version, directorio_boletines, "
-                "profundidad_minima_semanas, entradas}"
+                "profundidad_minima_semanas, directorios_scratch, entradas}"
             )
+        scratch = crudo["directorios_scratch"]
+        if not isinstance(scratch, list) or len(set(scratch)) != len(scratch):
+            raise StagingError("directorios_scratch tiene que ser una lista sin repetidos")
+        for directorio_scratch in scratch:
+            _valida_ruta_relativa(directorio_scratch, "directorio scratch")
         if crudo["version"] != VERSION_LISTA:
             raise StagingError(f"lista de entradas de otra versión: {crudo['version']!r}")
         directorio = crudo["directorio_boletines"]
@@ -171,6 +181,7 @@ class ListaEntradas:
             directorio_boletines=directorio,
             profundidad_minima=profundidad,
             entradas=tuple(entradas),
+            directorios_scratch=tuple(scratch),
         )
 
     @property
@@ -320,6 +331,11 @@ def hidrata(
         (sandbox / NOMBRE_DASHBOARD).symlink_to(
             os.path.relpath(outputs / "dashboard", sandbox), target_is_directory=True
         )
+
+        # Scratch de los generadores: existen vacíos; lo que escriban ahí es intermedio y
+        # no entra en el inventario de entradas ni en el candidato.
+        for directorio_scratch in lista.directorios_scratch:
+            (backend / directorio_scratch).mkdir(parents=True, exist_ok=True)
 
         inventario: dict[str, dict[str, Any]] = {}
         for entrada in lista.entradas:
