@@ -34,11 +34,8 @@ from scripts.build_dengue_gallery import (  # noqa: E402
     ZOOM_FWD,
     _chart,
     _chart_zoom,
-    _resid_std,
     _zoom_path,
     boletin_real,
-    empirical_band,
-    ensure_band,
     forecast_future,
     forecast_window,
     render_extra_views,
@@ -122,10 +119,9 @@ def main() -> int:
                 ds_max = last_real + pd.Timedelta(weeks=ZOOM_FWD)
                 fc = forecast_future(motor, FC_PAD[pad], real_ent, sexo, last_real)
                 fc_zoom = forecast_window(motor, FC_PAD[pad], real_ent, sexo, win_start, ds_max)
-                std = _resid_std(real, fc_zoom)  # banda homogénea: error reciente del motor
-                fc = ensure_band(fc, std)  # histórico: respeta banda nativa
-                # zoom: banda empírica uniforme, SOLO sobre el futuro (no sobre lo real)
-                fc_zoom = empirical_band(fc_zoom, std, last_real=last_real)
+                # Solo se dibuja el intervalo PROPIO del motor. Antes se rellenaba con una
+                # banda empírica de ±1.96σ para uniformar el ancho entre motores, de modo que
+                # Ensemble y Stacking, que no producen intervalo, aparentaban tener uno.
                 titulo = f"{FC_PAD[pad]} — {ent_label} ({SEXOS[sexo]})"
                 met = series_metrics(real, fc_zoom)  # SMAPE/MASE del solape reciente
                 _chart(real, fc, motor, titulo, img, metrics=met)  # histórico (COVID auto)

@@ -14,7 +14,6 @@ Uso:
 from __future__ import annotations
 
 import argparse
-from datetime import date
 import json
 from pathlib import Path
 from typing import Any
@@ -27,7 +26,9 @@ import matplotlib.dates as mdates  # noqa: E402
 from matplotlib.patches import Patch  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
-import pandas as pd  # noqa: E402
+import pandas as pd
+
+from epiforecast.utils.semana_epi import ds_de_semana_boletin, semana_boletin_de_ds  # noqa: E402
 
 warnings.filterwarnings("ignore")
 
@@ -141,10 +142,19 @@ def forecast_window(
 
 
 def _band_degenerate(fc: pd.DataFrame) -> bool:
-    """True si el motor no aporta intervalo real (Ensemble/Stacking dan lower=upper=yhat)."""
+    """True si el motor no aporta intervalo propio.
+
+    Tres formas de no tenerlo: que falten las columnas, que vengan vacías porque el motor declara
+    que no produce intervalo, o que sean degeneradas (``lower == upper == yhat``, como emiten hoy
+    Ensemble y Stacking). Un ancho nulo o ausente no es una banda angosta: es la falta de banda, y
+    tratarlo de otro modo dibuja una certeza que nadie calculó.
+    """
     if fc.empty or not {"yhat_lower", "yhat_upper"} <= set(fc.columns):
         return True
-    return float((fc["yhat_upper"] - fc["yhat_lower"]).abs().max()) < 1e-6
+    ancho = (fc["yhat_upper"] - fc["yhat_lower"]).abs()
+    if not bool(ancho.notna().any()):
+        return True
+    return float(ancho.max(skipna=True)) < 1e-6
 
 
 def _overlay_covid(ax: object) -> None:
@@ -334,6 +344,24 @@ def ensure_band(fc: pd.DataFrame, std: float | None) -> pd.DataFrame:
     return empirical_band(fc, std)
 
 
+def _fecha_boletin(g: pd.DataFrame) -> pd.DataFrame:
+    """Asigna el ``ds`` legado de cada (Anio, Semana) del boletín con el calendario canónico.
+
+    Antes se usaba ``fromisocalendar(anio, min(semana, 52), 1)``, que fechaba lo real una semana
+    después del pronóstico y además fundía la semana 53 dentro de la 52. La semana 1 no tiene
+    ``ds`` distinguible en el calendario legado: se descarta de forma explícita, nunca se imputa.
+    """
+    semana_uno = g["Semana"].astype(int) == 1
+    if bool(semana_uno.any()):
+        logger.debug("Semana 1 sin ds legado: {} fila(s) descartada(s).", int(semana_uno.sum()))
+        g = g[~semana_uno]
+    g = g.copy()
+    g["ds"] = [
+        ds_de_semana_boletin(int(a), int(s)) for a, s in zip(g["Anio"], g["Semana"], strict=False)
+    ]
+    return g
+
+
 def _boletin_neuro() -> pd.DataFrame:
     """Boletín consolidado (2014→W20 2026), conteos por entidad. Reality CURRENTE para neuro."""
     if not _BOL_CACHE:
@@ -347,14 +375,37 @@ def _region_members(region_short: str) -> set[str]:
     return {_REGION_ENT_FIX.get(e, e) for e, r in REGION_SALUD_MENTAL.items() if r == region_short}
 
 
+def _incrementos_observados(g: pd.DataFrame, columna: str) -> pd.Series:
+    """Incremento semanal real a partir del acumulado por sexo del boletín.
+
+    La primera semana del año aporta su propio acumulado. Un incremento negativo proviene de un
+    ajuste retrospectivo de la fuente: se sustituye por la media de los tres incrementos previos
+    originales y finitos, con piso en cero y redondeo al entero más cercano. Nunca se mira una
+    semana futura, y si no hay antecedente utilizable el valor queda ausente.
+    """
+    inc = g.groupby("Anio")[columna].diff()
+    inc = inc.where(inc.notna(), g[columna]).astype(float)
+    valores = inc.to_numpy(copy=True)
+    originales = inc.to_numpy(copy=True)
+    for i in range(len(valores)):
+        if not np.isfinite(valores[i]) or valores[i] >= 0:
+            continue
+        previos = [v for v in originales[max(0, i - 3) : i] if np.isfinite(v) and v >= 0]
+        valores[i] = float(np.rint(max(0.0, float(np.mean(previos))))) if previos else np.nan
+    return pd.Series(valores, index=g.index)
+
+
 def boletin_real(
     pad_fc: str, entidad: str, sexo: str, region_short: str | None = None
 ) -> pd.DataFrame:
-    """Realidad semanal (ds, y) del boletín consolidado, en conteos, CURRENTE hasta W20 2026.
+    """Realidad semanal (ds, y) del boletín consolidado, en conteos.
 
-    Nacional = suma de entidades; región = suma de sus miembros; estado = la entidad. El sexo
-    distinto de ``general`` se reparte proporcionalmente (H + M = general) como en Dengue, porque
-    el boletín reporta el total semanal y el acumulado por sexo en columnas que no reconcilian.
+    Nacional = suma de entidades; región = suma de sus miembros; estado = la entidad.
+
+    Para hombres y mujeres se usan **observaciones reales**: el incremento semanal del acumulado
+    por sexo que publica el boletín. Antes se repartía la serie general con una proporción
+    constante de toda la historia, de modo que la curva mostrada como real era sintética y no un
+    dato observado.
     """
     df = _boletin_neuro()
     df = df[df["Padecimiento"] == pad_fc]
@@ -373,15 +424,8 @@ def boletin_real(
     )
     g = g.sort_values(["Anio", "Semana"])
     if sexo != "general":
-        h = float(g.groupby("Anio")["ah"].diff().fillna(g["ah"]).clip(lower=0).sum())
-        m = float(g.groupby("Anio")["am"].diff().fillna(g["am"]).clip(lower=0).sum())
-        tot = h + m
-        p = 0.5 if tot <= 0 else (h / tot if sexo == "hombres" else m / tot)
-        g["c"] = g["c"] * p
-    g["ds"] = [
-        pd.Timestamp(date.fromisocalendar(int(a), min(int(s), 52), 1))
-        for a, s in zip(g["Anio"], g["Semana"], strict=False)
-    ]
+        g["c"] = _incrementos_observados(g, "ah" if sexo == "hombres" else "am")
+    g = _fecha_boletin(g)
     out = g.groupby("ds", as_index=False)["c"].sum().rename(columns={"c": "y"})
     out["y"] = out["y"].clip(lower=0)
     return out.sort_values("ds").reset_index(drop=True)
@@ -392,10 +436,7 @@ def _real_general(df: pd.DataFrame) -> pd.DataFrame:
     g = df.groupby(["Anio", "Semana"], as_index=False).agg(Casos_semana=("Casos_semana", "sum"))
     g = g.sort_values(["Anio", "Semana"])
     g["y"] = g["Casos_semana"]
-    g["ds"] = [
-        pd.Timestamp(date.fromisocalendar(int(a), min(int(s), 52), 1))
-        for a, s in zip(g["Anio"], g["Semana"], strict=False)
-    ]
+    g = _fecha_boletin(g)
     return g[["ds", "y"]].reset_index(drop=True)
 
 
@@ -534,7 +575,7 @@ def _chart_compare(
             zorder=4,
         )
     if clamped:
-        wk = int(last_real.isocalendar().week)
+        wk = semana_boletin_de_ds(last_real).semana
         ax.axvline(last_real, color=TEXT, linewidth=1.0, linestyle=(0, (4, 3)), alpha=0.5)
         ax.annotate(
             f"Semana {wk}",
@@ -587,7 +628,7 @@ def _chart_zoom(
     ax.set_facecolor(BG)
     color = MOTOR_COLOR.get(motor, AMBER)
     last_real = pd.Timestamp(r["ds"].max())
-    wk = int(last_real.isocalendar().week)
+    wk = semana_boletin_de_ds(last_real).semana
 
     if not fc.empty:
         ax.axvspan(last_real, pd.Timestamp(fc["ds"].max()), color=color, alpha=0.06, zorder=0)
@@ -684,8 +725,12 @@ def zoom_payload(
     # SMAPE/MASE del solape real-vs-pronóstico (mismo cálculo que la ficha de los PNG),
     # para mostrarlos en el lightbox interactivo.
     sm, ma = series_metrics(real, fc)
+    sin_intervalo = _band_degenerate(fc)
     return {
         "motor": motor,
+        # El frontend no debe inferir la incertidumbre del ancho dibujado: si el motor no
+        # produce intervalo, lo declara y la gráfica va sin banda.
+        "intervalo_disponible": not sin_intervalo,
         # Color del motor (MISMA fuente que el PNG, MOTOR_COLOR), para que el lightbox
         # interactivo coincida con la miniatura y no se desincronicen los colores.
         "color": MOTOR_COLOR.get(motor, AMBER),
