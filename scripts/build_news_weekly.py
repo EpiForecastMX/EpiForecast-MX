@@ -27,6 +27,8 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from epiforecast.utils.semana_epi import semana_boletin_de_serie
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DASHBOARD = REPO_ROOT.parent / "EpiForecast-IMSS-Dashboard"
 
@@ -58,12 +60,13 @@ def _fecha_es(d: datetime) -> str:
     return f"{d.day} de {MESES[d.month - 1]} de {d.year}"
 
 
-def _iso_wk(s: pd.Series) -> pd.Series:
-    return pd.to_datetime(s).dt.isocalendar().week.astype(int)
+def _semana_boletin(s: pd.Series) -> pd.Series:
+    """Semana del boletín del ``ds`` legado. La semana ISO cruda va una semana atrasada."""
+    return semana_boletin_de_serie(s)["semana_boletin"]
 
 
-def _iso_yr(s: pd.Series) -> pd.Series:
-    return pd.to_datetime(s).dt.isocalendar().year.astype(int)
+def _anio_boletin(s: pd.Series) -> pd.Series:
+    return semana_boletin_de_serie(s)["anio_boletin"]
 
 
 def compute_figures() -> dict[str, Any]:
@@ -75,7 +78,7 @@ def compute_figures() -> dict[str, Any]:
 
     tab = pd.read_csv(REPO_ROOT / "data/processed/tableau.csv", low_memory=False)
     tab = tab[(tab["entidad"] == "Nacional") & (tab["meta_modo"] == "general")].copy()
-    tab["yr"], tab["wk"] = _iso_yr(tab["ds"]), _iso_wk(tab["ds"])
+    tab["yr"], tab["wk"] = _anio_boletin(tab["ds"]), _semana_boletin(tab["ds"])
     tab = tab[tab["yr"] == year]
 
     figs: dict[str, dict[str, float]] = {}
@@ -113,7 +116,7 @@ def _dengue_figures(real_nac: pd.Series, year: int) -> tuple[dict[str, float], i
         & (fc["meta_entidad"] == "Nacional")
         & (fc["meta_modo"] == "general")
     ].copy()
-    fc["yr"], fc["wk"] = _iso_yr(fc["ds"]), _iso_wk(fc["ds"])
+    fc["yr"], fc["wk"] = _anio_boletin(fc["ds"]), _semana_boletin(fc["ds"])
     fc = fc[fc["yr"] == year]
 
     rr = real_nac.loc["Dengue"]

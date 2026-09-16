@@ -307,4 +307,8 @@ class StackingForecaster(ForecastModel):
             except (ValueError, KeyError) as e:
                 logger.warning("No se pudieron calcular metricas train (Stacking): {}", e)
 
+        # Refit final con toda la historia solo después de cualquier evaluación OOS.
+        # Esto actualiza expertos, meta-learner y _n_train antes de persistir.
+        self.fit(self.serie)
+
         return self, metrics, self.get_params()

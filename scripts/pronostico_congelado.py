@@ -26,7 +26,7 @@ Uso:
 from __future__ import annotations
 
 import argparse
-from datetime import date, datetime
+from datetime import datetime
 from pathlib import Path
 import unicodedata
 from zoneinfo import ZoneInfo
@@ -36,6 +36,7 @@ import pandas as pd
 
 from epiforecast.evaluation.real_eval import build_real, eval_year
 from epiforecast.utils.config import conf, logger
+from epiforecast.utils.semana_epi import ds_de_semana_boletin, semana_boletin_de_serie
 
 REPORTS = Path(conf["paths"]["reports"])
 FC_BASE = REPORTS / "forecasts"
@@ -45,7 +46,8 @@ TABLA_333 = REPORTS / "ProdDetails" / "tabla_333_modelos_produccion.xlsx"
 PROD_DENGUE = REPORTS / "ProdDetails" / "produccion_dengue.csv"
 TZ = ZoneInfo("America/Mexico_City")
 
-# Solo semana ISO -> fecha (lunes) para alinear forecast (ds, W-MON) con boletin (Semana).
+# El calendario canonico (Semana_boletin = ISO(ds) + 1) alinea el forecast (ds, W-MON) con la
+# semana del boletin. La etiqueta ISO cruda emparejaba cada pronostico con la semana anterior.
 SEXOS = ("general", "hombres", "mujeres")
 
 
@@ -97,7 +99,7 @@ def _cutoffs() -> dict[str, tuple[int, int, pd.Timestamp]]:
     for pad, sub in bol.groupby("Padecimiento"):
         anio = int(sub["Anio"].max())
         wk = int(sub[sub["Anio"] == anio]["Semana"].max())
-        corte = pd.Timestamp(date.fromisocalendar(anio, min(wk, 52), 1))
+        corte = ds_de_semana_boletin(anio, wk)
         out[_norm(pad)] = (anio, wk, corte)
     return out
 
@@ -130,8 +132,10 @@ def freeze() -> int:
         merged["ds"] = pd.to_datetime(merged["ds"])
         merged["corte"] = merged["pad_norm"].map(lambda p: cutoffs.get(p, (0, 0, pd.NaT))[2])
         merged = merged[merged["ds"] > merged["corte"]]  # solo cola futura no vista
+        calendario = semana_boletin_de_serie(merged["ds"])
+        merged["anio_boletin"] = calendario["anio_boletin"]
+        merged["semana_boletin"] = calendario["semana_boletin"]
         for _, r in merged.iterrows():
-            iso = r["ds"].isocalendar()
             rows.append(
                 {
                     "padecimiento": r["pad_disp"],
@@ -140,8 +144,8 @@ def freeze() -> int:
                     "motor": motor_key,
                     "fecha_corte": r["corte"].date().isoformat(),
                     "ds": r["ds"].date().isoformat(),
-                    "iso_anio": int(iso.year),
-                    "iso_semana": int(iso.week),
+                    "anio_boletin": int(r["anio_boletin"]),
+                    "semana_boletin": int(r["semana_boletin"]),
                     "yhat": round(float(r["yhat"]), 2),
                     "yhat_lower": round(float(r.get("yhat_lower", np.nan)), 2),
                     "yhat_upper": round(float(r.get("yhat_upper", np.nan)), 2),
@@ -180,9 +184,9 @@ def _real_actual() -> pd.DataFrame:
     wlim = int(bol.query("Anio == @anio")["Semana"].max())
     real = build_real(bol_path, pads, anio, wlim)
     real["pad_norm"] = real["padecimiento"].map(_norm)
-    real = real.rename(columns={"Semana": "iso_semana"})
-    real["iso_anio"] = anio
-    return real[["pad_norm", "entidad", "sexo", "iso_anio", "iso_semana", "real"]]
+    real = real.rename(columns={"Semana": "semana_boletin"})
+    real["anio_boletin"] = anio
+    return real[["pad_norm", "entidad", "sexo", "anio_boletin", "semana_boletin", "real"]]
 
 
 def validar() -> int:
@@ -194,10 +198,19 @@ def validar() -> int:
     fname = PTR.read_text(encoding="utf-8").strip()
     snap = pd.read_csv(CONG_DIR / fname)
     snap["pad_norm"] = snap["padecimiento"].map(_norm)
+    # La semana SIEMPRE se re-deriva de ``ds``, que es el dato autoritativo del congelado. Asi los
+    # snapshots anteriores, que guardaron la etiqueta ISO cruda, se leen con la semana correcta sin
+    # reescribir el archivo.
+    if "ds" not in snap.columns:
+        logger.error("El congelado {} no trae la columna ds; no se puede fechar.", fname)
+        return 1
+    calendario = semana_boletin_de_serie(pd.to_datetime(snap["ds"]))
+    snap["anio_boletin"] = calendario["anio_boletin"]
+    snap["semana_boletin"] = calendario["semana_boletin"]
     real = _real_actual()
 
     merged = snap.merge(
-        real, on=["pad_norm", "entidad", "sexo", "iso_anio", "iso_semana"], how="inner"
+        real, on=["pad_norm", "entidad", "sexo", "anio_boletin", "semana_boletin"], how="inner"
     )
     # Solo semanas posteriores al corte (build_real ya da <= wlim; el congelado es > corte).
     if merged.empty:

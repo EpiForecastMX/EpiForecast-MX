@@ -129,6 +129,27 @@ class TestGetParams:
         assert params["peso_lgbm"] is None
 
 
+class TestFinalRefit:
+    def test_run_fits_train_then_refits_full_series(self, forecaster):
+        serie = _make_series(120)
+        train = serie.iloc[:100].copy()
+        test = pd.DataFrame(columns=serie.columns)
+
+        with (
+            patch.object(
+                stacking_mod,
+                "preparar_datos_ensemble",
+                return_value=(serie, train, test),
+            ),
+            patch.object(forecaster, "fit") as fit,
+        ):
+            forecaster.run()
+
+        assert fit.call_count == 2
+        pd.testing.assert_frame_equal(fit.call_args_list[0].args[0], train)
+        pd.testing.assert_frame_equal(fit.call_args_list[1].args[0], serie)
+
+
 # ── save / load ───────────────────────────────────────────────────────────────
 
 

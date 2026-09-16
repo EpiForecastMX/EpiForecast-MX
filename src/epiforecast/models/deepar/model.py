@@ -741,6 +741,15 @@ class DeepARForecaster(ForecastModel):
         cv = DeepARCrossValidator(self, config=self._conf)
         return cv.run()
 
+    @property
+    def intervalo_nominal(self) -> float | None:
+        """0.9: ``predict`` toma los cuantiles 0.05 y 0.95 de las muestras del predictor."""
+        return 0.9
+
+    @property
+    def intervalo_metodo(self) -> str | None:
+        return f"DeepAR: cuantiles 0.05 y 0.95 sobre {self.num_samples} muestras"
+
     def save(self, path: Path) -> None:
         """Serialize predictor to disk as pickle + sidecar CSVs."""
         import torch

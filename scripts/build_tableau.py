@@ -35,6 +35,7 @@ import pandas as pd
 from epiforecast.utils import paths as directory_manager
 from epiforecast.utils.cohorts import filter_neuro
 from epiforecast.utils.config import conf, logger
+from epiforecast.utils.semana_epi import semana_boletin_de_serie
 
 _METRICS = ["rmse", "mae", "mape", "smape", "mase"]
 _MODELS = ["prophet", "deepar", "ensemble", "stacking"]
@@ -636,6 +637,12 @@ def make_scaffold(real_long: pd.DataFrame, fact_forecast: pd.DataFrame) -> pd.Da
     # une scaffold con real y con forecast. Vive solo en scaffold, que es de donde el
     # modelo relacional toma sus dimensiones y filtros (ver la cabecera de este archivo);
     # repetirla en las otras hojas crearia columnas temporales ambiguas.
+    calendario = semana_boletin_de_serie(scaffold["ds"])
+    scaffold["anio_boletin"] = calendario["anio_boletin"]
+    scaffold["semana_boletin"] = calendario["semana_boletin"]
+    # `fecha_boletin` es el lunes de la semana ISO del boletin, que bajo el calendario canonico
+    # equivale exactamente a ds + 7 dias. Se calcula asi por costo sobre cientos de miles de
+    # filas; la equivalencia la fija `test_semana_epi.py` para que no pueda derivar.
     scaffold["fecha_boletin"] = pd.to_datetime(scaffold["ds"]) + pd.Timedelta(weeks=1)
 
     logger.info("Scaffold construido -> filas: {} | fecha_boletin = ds + 7 dias", len(scaffold))
