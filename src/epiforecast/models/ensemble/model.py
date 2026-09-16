@@ -341,6 +341,11 @@ class EnsembleForecaster(ForecastModel):
             metrics["rmse_train"] = train_m.get("rmse")
             metrics["smape_train"] = train_m.get("smape")
 
+        # Refit final con toda la historia solo después de cualquier evaluación OOS.
+        # El modelo persistido y su pronóstico futuro deben consumir la misma fecha
+        # máxima que Prophet, DeepAR y Stacking.
+        self.fit(self.serie)
+
         return self._prophet, metrics, self.get_params()
 
     @property

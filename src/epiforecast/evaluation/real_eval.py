@@ -27,6 +27,7 @@ import numpy.typing as npt
 import pandas as pd
 
 from epiforecast.evaluation.metrics import smape as _smape
+from epiforecast.utils.semana_epi import semana_boletin_de_serie
 
 
 def smape(y: npt.ArrayLike, yhat: npt.ArrayLike) -> float:
@@ -136,12 +137,14 @@ def build_forecasts(
 
         df = raw[["ds", "yhat", "meta_padecimiento", "meta_entidad", "meta_modo"]].copy()
         df["ds"] = pd.to_datetime(df["ds"])
-        df = df[df["ds"].dt.year == anio]
-        # Semana epidemiológica (ISO) derivada de la fecha, NO por posición (cumcount):
-        # el forecast del año puede arrancar en la semana 2 (p.ej. 2026-01-05) y cumcount
-        # lo etiquetaría como 1 → desfase de 1 semana contra el real del boletín.
-        df["Semana"] = df["ds"].dt.isocalendar().week.astype(int)
-        df = df[df["Semana"] <= weeks_limit]
+        # Calendario canónico: el ds legado cumple Semana_boletin = ISO(ds) + 1. Derivar la
+        # semana con isocalendar() a secas emparejaba el pronóstico con la semana anterior del
+        # boletín, y filtrar por el año natural del ds descartaba la primera semana del año
+        # (p. ej. 2025-12-29 es la semana 2 del boletín de 2026).
+        calendario = semana_boletin_de_serie(df["ds"])
+        df["Anio"] = calendario["anio_boletin"]
+        df["Semana"] = calendario["semana_boletin"]
+        df = df[(df["Anio"] == anio) & (df["Semana"] <= weeks_limit)]
         df = df.rename(
             columns={
                 "meta_padecimiento": "padecimiento",

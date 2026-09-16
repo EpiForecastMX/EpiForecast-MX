@@ -80,8 +80,11 @@ def test_build_real_general_y_sexo(tmp_path):
 
 
 def _forecast_csv(path) -> None:
-    # forecast que ARRANCA en la semana ISO 2 (2026-01-05), no en la 1.
-    ds = pd.to_datetime(["2026-01-05", "2026-01-12", "2026-01-19"])  # ISO sem 2,3,4
+    # Calendario legado: Semana_boletin = ISO(ds) + 1. La primera fecha cae en diciembre del año
+    # natural anterior y, aun así, es la semana 2 del boletín de 2026.
+    ds = pd.to_datetime(
+        ["2025-12-29", "2026-01-05", "2026-01-12", "2026-01-19"]  # boletín 2026: sem 2, 3, 4, 5
+    )
     rows = []
     for ent in ["Veracruz"]:
         for i, d in enumerate(ds):
@@ -98,14 +101,25 @@ def _forecast_csv(path) -> None:
     pd.DataFrame(rows).to_csv(path, index=False)
 
 
-def test_build_forecasts_alinea_por_semana_iso(tmp_path):
+def test_build_forecasts_usa_el_calendario_canonico(tmp_path):
+    """La semana del pronóstico sale del calendario canónico, no de ``isocalendar`` a secas.
+
+    Fija dos correcciones. Primera: ``Semana_boletin = ISO(ds) + 1``; etiquetar con la semana ISO
+    emparejaba cada pronóstico con la semana anterior del boletín. Segunda: el año se toma del
+    boletín y no del calendario, así que ``2025-12-29`` entra como semana 2 de 2026 en lugar de
+    descartarse en silencio.
+    """
     fpath = tmp_path / "fc.csv"
     _forecast_csv(fpath)
     fc, cv = build_forecasts({"Prophet": fpath}, ["Dengue"], 2026, weeks_limit=10)
-    # La primera fila (2026-01-05) debe etiquetarse Semana 2 (ISO), NO 1 (cumcount).
+    por_semana = dict(zip(fc["Semana"].astype(int), fc["yhat"], strict=False))
+    assert por_semana == {2: 10.0, 3: 11.0, 4: 12.0, 5: 13.0}
+    # La fila de diciembre sobrevive y es la primera semana del año de boletín.
     first = fc.sort_values("Semana").iloc[0]
     assert int(first["Semana"]) == 2
     assert first["yhat"] == 10.0
+    # Mutante: la semana ISO cruda daría 1, 2, 3, 4 y desplazaría toda la serie.
+    assert set(por_semana) != {1, 2, 3, 4}
     # cv: smape_usado por serie
     assert cv["cv_smape"].iloc[0] == pytest.approx(33.3)
     assert set(fc.columns) >= {"motor", "padecimiento", "entidad", "sexo", "Semana", "yhat"}

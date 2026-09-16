@@ -215,6 +215,42 @@ class TestGetParams:
         assert "xgboost" in result
 
 
+class TestFinalRefit:
+    def test_run_refits_full_series_after_oos_evaluation(self, forecaster):
+        forecaster._ensemble_mode = "sequential"
+        forecaster._parallel_engine = None
+        serie = pd.DataFrame(
+            {
+                "ds": pd.date_range("2023-01-02", periods=30, freq="W-MON"),
+                "y": np.arange(30, dtype=float),
+            }
+        )
+        train = serie.iloc[:20].copy()
+        test = serie.iloc[20:].copy()
+
+        with (
+            patch.object(
+                ensemble_mod,
+                "preparar_datos_ensemble",
+                return_value=(serie, train, test),
+            ),
+            patch.object(forecaster, "_fit_prophet"),
+            patch.object(forecaster, "_fit_xgboost"),
+            patch("epiforecast.models.ensemble.xgb_tuner.EnsembleXGBTuner") as tuner,
+            patch.object(
+                ensemble_mod,
+                "generar_predicciones_insample",
+                return_value=(pd.DataFrame(), pd.DataFrame()),
+            ),
+            patch.object(ensemble_mod, "calcular_metricas_ensemble", return_value={}),
+            patch.object(forecaster, "fit") as final_fit,
+        ):
+            tuner.return_value.run.return_value = ({}, {})
+            forecaster.run()
+
+        final_fit.assert_called_once_with(serie)
+
+
 # ── save / load ───────────────────────────────────────────────────────────────
 
 

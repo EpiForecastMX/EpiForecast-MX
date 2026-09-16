@@ -184,6 +184,20 @@ class ProphetForecaster(ForecastModel):
             np.random.seed(RANDOM_SEED)
             self._model.fit(train_data)
 
+    @property
+    def intervalo_nominal(self) -> float | None:
+        """Nivel nominal del intervalo nativo, leído del modelo ajustado.
+
+        El proyecto no fija ``interval_width``, así que el valor efectivo es el de la biblioteca.
+        Se lee del objeto en vez de codificarlo para que no pueda quedar desactualizado.
+        """
+        ancho = getattr(self._model, "interval_width", None)
+        return float(ancho) if ancho is not None else None
+
+    @property
+    def intervalo_metodo(self) -> str | None:
+        return "Prophet: intervalo nativo del ajuste MAP" if self._model is not None else None
+
     def predict(self, horizon: int = 52) -> pd.DataFrame:
         """Generate predictions for given horizon (weeks)."""
         if self._model is None:

@@ -21,6 +21,7 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 
 from epiforecast.utils.cohorts import filter_neuro
+from epiforecast.utils.semana_epi import ds_de_semana_boletin
 
 # ---------------------------------------------------------------------------
 # Rutas y constantes
@@ -1324,7 +1325,9 @@ def main(argv: list[str] | None = None) -> None:
     n_states = boletin["entidad_norm"].nunique()
     print(f"  Semana {anio}-S{semana} | {n_states} entidades x 3 sexos = {len(boletin)} filas")
 
-    target_date = _epiweek_to_monday(anio, semana).isoformat()
+    # El pronostico vive en el calendario legado: la semana N del boletin es ISO N-1. Usar el
+    # lunes de la semana ISO N seleccionaba la fila de la semana siguiente.
+    target_date = ds_de_semana_boletin(anio, semana).date().isoformat()
     print(f"  Fecha forecast: {target_date}")
 
     print("Cargando forecasts (4 modelos, todos los modos)...")

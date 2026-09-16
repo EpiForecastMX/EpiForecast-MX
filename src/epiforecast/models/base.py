@@ -44,6 +44,42 @@ class ForecastModel(ABC):
     def get_params(self) -> dict[str, Any]:
         """Return current model parameters."""
 
+    @property
+    def ultimo_ds_ajustado(self) -> "pd.Timestamp | None":
+        """Última fecha que consumió el ajuste final del modelo, o ``None`` si no hay serie.
+
+        Los cuatro motores de producción terminan su ``run()`` reajustando con ``self.serie``
+        completa, así que la última fecha de esa serie es la que vio el ajuste persistido. Es el
+        dato que permite marcar cada fila de pronóstico como ajuste o como futuro, y calcular su
+        adelanto: sin él, ``predict`` devuelve ambos tramos mezclados y sin marcador.
+
+        No debe confundirse con el sidecar guardado junto al modelo: ese conserva la serie
+        completa aunque el ajuste haya consumido menos, que es como se llegó a creer que
+        Ensemble y Stacking estaban ajustados hasta enero de 2026.
+        """
+        serie = getattr(self, "serie", None)
+        if (
+            serie is None
+            or getattr(serie, "empty", True)
+            or "ds" not in getattr(serie, "columns", [])
+        ):
+            return None
+        return pd.Timestamp(serie["ds"].max())
+
+    @property
+    def intervalo_nominal(self) -> float | None:
+        """Nivel nominal del intervalo propio del motor, o ``None`` si no produce intervalo.
+
+        Por omisión un motor **no** tiene intervalo. Declararlo es responsabilidad de quien lo
+        produce: emitir ``lower = upper = yhat`` no es un intervalo angosto, es su ausencia.
+        """
+        return None
+
+    @property
+    def intervalo_metodo(self) -> str | None:
+        """Cómo se construye ese intervalo, para que viaje junto al dato."""
+        return None
+
     @abstractmethod
     def run(self) -> tuple[Any, dict[str, Any], dict[str, Any]]:
         """Execute the full model pipeline: prepare data, cross-validate, train.

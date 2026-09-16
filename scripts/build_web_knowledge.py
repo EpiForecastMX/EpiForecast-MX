@@ -8,7 +8,7 @@ Uso:
 """
 
 import argparse
-from datetime import date, datetime
+from datetime import datetime
 import json
 from pathlib import Path
 import sys
@@ -35,6 +35,10 @@ from epiforecast.constants import ENTIDAD_DISPLAY  # noqa: E402
 from epiforecast.data.boletin import cargar_boletin_dengue  # noqa: E402
 from epiforecast.utils.cohorts import filter_neuro  # noqa: E402
 from epiforecast.utils.config import conf  # noqa: E402
+from epiforecast.utils.semana_epi import (  # noqa: E402
+    ds_de_semana_boletin,
+    semana_boletin_de_serie,
+)
 
 # Salida por defecto (flujo legacy). El refresh sellado pasa `--out` y escribe en el
 # staging: un generador que sólo sabe escribir en el árbol real es lo que lo ensucia.
@@ -300,7 +304,7 @@ def build_dengue_section() -> dict[str, Any]:
     # Última semana real + pronóstico productivo nacional a 52 sem (motor productivo nacional).
     last = df[df["Anio"] == df["Anio"].max()]
     last_sem = int(last["Semana"].astype(int).max())
-    last_real = pd.Timestamp(date.fromisocalendar(int(df["Anio"].max()), min(last_sem, 52), 1))
+    last_real = ds_de_semana_boletin(int(df["Anio"].max()), last_sem)
 
     # Forecast CSV por motor (cache) -> pronóstico 52 sem de una serie (entidad, general).
     _fc_cache: dict[str, pd.DataFrame] = {}
@@ -407,8 +411,9 @@ def build_dengue_weekly() -> dict[str, Any]:
             & (fdf["meta_modo"] == "general")
         ].copy()
         fdf["ds"] = pd.to_datetime(fdf["ds"])
-        fdf = fdf[fdf["ds"].dt.isocalendar().year == anio]
-        fdf["wk"] = fdf["ds"].dt.isocalendar().week.astype(int)
+        calendario = semana_boletin_de_serie(fdf["ds"])
+        fdf["wk"] = calendario["semana_boletin"]
+        fdf = fdf[calendario["anio_boletin"] == anio]
         fc_motor[m.lower()] = {
             int(w): int(round(y)) for w, y in zip(fdf["wk"], fdf["yhat"], strict=False)
         }
@@ -416,7 +421,7 @@ def build_dengue_weekly() -> dict[str, Any]:
     base_motor = motor.lower()
     semanas = []
     for wk in sorted(fc_motor.get(base_motor, {})):
-        fecha = date.fromisocalendar(anio, min(wk, 52), 1).isoformat()
+        fecha = ds_de_semana_boletin(anio, wk).date().isoformat()
         entry: dict[str, Any] = {
             "semana": wk,
             "fecha": fecha,
@@ -923,13 +928,13 @@ def build_weekly_comparison(cache: ProjectDataCache) -> dict[str, list[dict]]:
             low_memory=False,
         )
         df["ds"] = pd.to_datetime(df["ds"])
-        iso_cal = df["ds"].dt.isocalendar()
+        calendario = semana_boletin_de_serie(df["ds"])
         df = df[
             (df["meta_entidad"] == "Nacional")
             & (df["meta_modo"] == "general")
-            & (iso_cal.year == max_year)
+            & (calendario["anio_boletin"] == max_year)
         ].copy()
-        df["iso_week"] = df["ds"].dt.isocalendar().week.astype(int)
+        df["semana_boletin"] = calendario["semana_boletin"]
         fc_per_motor[motor] = df.rename(columns={"meta_padecimiento": "padecimiento"})
 
     for pad_raw in nac_actual["Padecimiento"].unique():
@@ -958,7 +963,7 @@ def build_weekly_comparison(cache: ProjectDataCache) -> dict[str, list[dict]]:
 
         weeks: list[dict] = []
         for _, row in base_df.iterrows():
-            w = int(row["iso_week"])
+            w = int(row["semana_boletin"])
             forecast = int(round(row["yhat"]))
             actual = int(actual_weeks.get(w, 0)) if w in actual_weeks else None
             entry: dict[str, Any] = {
@@ -973,7 +978,9 @@ def build_weekly_comparison(cache: ProjectDataCache) -> dict[str, list[dict]]:
                     entry["error_pct"] = error_pct
             # Forecast de cada motor para esa semana (mismo padecimiento, Nacional, general)
             for motor, mdf in fc_per_motor.items():
-                m_pad = mdf[(mdf["padecimiento"].isin([pad_raw, pad])) & (mdf["iso_week"] == w)]
+                m_pad = mdf[
+                    (mdf["padecimiento"].isin([pad_raw, pad])) & (mdf["semana_boletin"] == w)
+                ]
                 if not m_pad.empty:
                     entry[motor] = int(round(m_pad["yhat"].iloc[0]))
             weeks.append(entry)
@@ -1010,7 +1017,7 @@ def _fill_horizon_dates(knowledge: dict[str, Any], cache: ProjectDataCache) -> N
         bol = filter_neuro(bol)
         anio = int(bol["Anio"].max())
         sem = int(bol.loc[bol["Anio"] == anio, "Semana"].max())
-        last_real = pd.Timestamp.fromisocalendar(anio, sem, 1)
+        last_real = ds_de_semana_boletin(anio, sem)
         fut = df.loc[df["ds"] > last_real, "ds"]
         if not fut.empty:
             inicio = fut.min()
