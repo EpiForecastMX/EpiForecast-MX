@@ -128,6 +128,29 @@ class NBGLMForecaster(ForecastModel):
             logger.warning("NB-GLM fit falló ({}); fallback constante={:.1f}", e, self._const)
             self._res = None
 
+    @property
+    def ultimo_ds_ajustado(self) -> "pd.Timestamp | None":
+        """Corte del ajuste persistido, también tras ``load`` (que no restaura ``self.serie``)."""
+        corte = super().ultimo_ds_ajustado
+        if corte is not None:
+            return corte
+        return pd.Timestamp(self._last_ds) if self._last_ds is not None else None
+
+    @property
+    def intervalo_nominal(self) -> float | None:
+        """0.95: ``_frame`` emite yhat ± 1.96·sd con la varianza NegBin al nivel ajustado.
+
+        Es aproximado: no incorpora la incertidumbre de los parámetros y se recorta en cero, así
+        que su cobertura real no se ha evaluado; el nominal no la garantiza.
+        """
+        return 0.95 if self._res is not None else None
+
+    @property
+    def intervalo_metodo(self) -> str | None:
+        if self._res is None:
+            return None
+        return "NB-GLM: yhat ± 1.96·sqrt(mu + alpha·mu^2), sin incertidumbre de parámetros"
+
     def _frame(self, ds: Any, yhat: np.ndarray[Any, Any]) -> pd.DataFrame:
         """DataFrame (ds, yhat, intervalos NegBin) con yhat acotado a >= 0."""
         yhat = np.clip(yhat.astype(float), 0, self.clip_max)

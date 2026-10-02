@@ -185,6 +185,22 @@ class ProphetForecaster(ForecastModel):
             self._model.fit(train_data)
 
     @property
+    def ultimo_ds_ajustado(self) -> "pd.Timestamp | None":
+        """Corte del ajuste persistido, también tras ``load``.
+
+        ``load`` restaura el modelo pero no ``self.serie``, así que la regla de la base devolvía
+        ``None`` al pronosticar desde disco y la procedencia y el intervalo quedaban sin sellar.
+        El corte se toma de ``history`` del modelo ajustado: es exactamente lo que vio el ajuste.
+        """
+        corte = super().ultimo_ds_ajustado
+        if corte is not None:
+            return corte
+        history = getattr(self._model, "history", None)
+        if history is None or getattr(history, "empty", True) or "ds" not in history.columns:
+            return None
+        return pd.Timestamp(history["ds"].max())
+
+    @property
     def intervalo_nominal(self) -> float | None:
         """Nivel nominal del intervalo nativo, leído del modelo ajustado.
 

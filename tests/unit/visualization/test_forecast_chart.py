@@ -175,3 +175,43 @@ class TestGraficarPronostico:
             conf_covid=_COVID,
         )
         assert os.path.isfile(ruta)
+
+
+class TestPronosticoSinIntervalo:
+    """Ensemble/Stacking emiten límites vacíos: la gráfica no debe descartar sus filas."""
+
+    def _sin_banda(self) -> pd.DataFrame:
+        fc = _make_forecast()
+        fc["yhat_lower"] = float("nan")
+        fc["yhat_upper"] = float("nan")
+        return fc
+
+    def test_bandas_vacias_no_rompen_la_grafica(self, tmp_path):
+        ruta = graficar_pronostico(
+            forecast=self._sin_banda(),
+            serie=_make_serie(),
+            titulo="Depresion · Jalisco · general",
+            padecimiento="Depresion",
+            nombre_archivo="sin_banda",
+            carpeta_salida=str(tmp_path),
+            conf_paleta=_PALETTE,
+            conf_paleta_padecimiento=_PALETTE_PAD,
+            conf_covid=_COVID,
+        )
+        assert os.path.isfile(ruta)
+
+    def test_banda_parcial_se_dibuja_solo_donde_existe(self, tmp_path):
+        fc = _make_forecast()
+        fc.loc[fc.index[:10], ["yhat_lower", "yhat_upper"]] = float("nan")
+        ruta = graficar_pronostico(
+            forecast=fc,
+            serie=_make_serie(),
+            titulo="Parkinson · Nacional · general",
+            padecimiento="Parkinson",
+            nombre_archivo="banda_parcial",
+            carpeta_salida=str(tmp_path),
+            conf_paleta=_PALETTE,
+            conf_paleta_padecimiento=_PALETTE_PAD,
+            conf_covid=_COVID,
+        )
+        assert os.path.isfile(ruta)
