@@ -22,8 +22,14 @@ CORTE = pd.Timestamp("2026-06-22")
 
 def _marco() -> pd.DataFrame:
     ds = pd.date_range("2026-06-15", periods=4, freq="7D")
-    return pd.DataFrame({"ds": ds, "yhat": [1.0, 2.0, 3.0, 4.0],
-                         "yhat_lower": [0.5, 1.5, 2.5, 3.5], "yhat_upper": [1.5, 2.5, 3.5, 4.5]})
+    return pd.DataFrame(
+        {
+            "ds": ds,
+            "yhat": [1.0, 2.0, 3.0, 4.0],
+            "yhat_lower": [0.5, 1.5, 2.5, 3.5],
+            "yhat_upper": [1.5, 2.5, 3.5, 4.5],
+        }
+    )
 
 
 def _loader(motor: object) -> ForecastModelLoader:

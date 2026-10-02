@@ -129,7 +129,7 @@ class NBGLMForecaster(ForecastModel):
             self._res = None
 
     @property
-    def ultimo_ds_ajustado(self) -> "pd.Timestamp | None":
+    def ultimo_ds_ajustado(self) -> pd.Timestamp | None:
         """Corte del ajuste persistido, también tras ``load`` (que no restaura ``self.serie``)."""
         corte = super().ultimo_ds_ajustado
         if corte is not None:
