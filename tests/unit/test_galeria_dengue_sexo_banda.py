@@ -37,16 +37,27 @@ def galeria(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
 def test_anio_que_empieza_a_mitad_no_vuelca_el_acumulado(galeria) -> None:
     """Dengue 2018 arranca en la W27: su primer acumulado suma 26 semanas y no es un incremento."""
     g = pd.DataFrame({"Anio": [2018] * 3, "Semana": [27, 28, 29], "a": [752, 760, 775]})
-    estricto = galeria._incrementos_observados(g, "a", solo_semana_uno=True)
+    estricto = galeria._incrementos_observados(g, "a", solo_semanales=True)
     assert pd.isna(estricto.iloc[0])
     assert estricto.iloc[1:].tolist() == [8.0, 15.0]
     # control: la regla de neuro (sin la opción) sí lo vuelca, que es el pico que se evita
     assert galeria._incrementos_observados(g, "a").iloc[0] == 752.0
 
 
+def test_hueco_del_boletin_no_suma_varias_semanas(galeria) -> None:
+    """Dengue 2020 salta de la W40 a la W45: ese incremento son cinco semanas, no una."""
+    g = pd.DataFrame(
+        {"Anio": [2020] * 4, "Semana": [39, 40, 45, 46], "a": [7000, 7563, 11049, 11585]}
+    )
+    estricto = galeria._incrementos_observados(g, "a", solo_semanales=True)
+    assert pd.isna(estricto.iloc[2])
+    assert estricto.iloc[[1, 3]].tolist() == [563.0, 536.0]
+    assert galeria._incrementos_observados(g, "a").iloc[2] == 3486.0  # control: regla neuro
+
+
 def test_semana_uno_aporta_su_acumulado(galeria) -> None:
     g = pd.DataFrame({"Anio": [2026] * 3, "Semana": [1, 2, 3], "a": [6, 88, 193]})
-    assert galeria._incrementos_observados(g, "a", solo_semana_uno=True).tolist() == [
+    assert galeria._incrementos_observados(g, "a", solo_semanales=True).tolist() == [
         6.0,
         82.0,
         105.0,

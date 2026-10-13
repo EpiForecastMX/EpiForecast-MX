@@ -254,12 +254,18 @@ def _finish_axes(
             Patch(facecolor=_NINA, alpha=0.55, edgecolor="none"),
         ]
         labels += ["El Niño", "La Niña"]
+    sm, ma = metrics
+    # Con rótulos largos (intervalo nominal, «no elegible; acotado a la envolvente») la fila única
+    # invadía el badge de métricas o ensanchaba la figura: la leyenda se parte en filas de tres.
+    ancho_largo = sum(len(t) for t in labels) > 70
+    ncol = max(1, min(len(labels), 3 if ancho_largo else 6))
+    filas_leyenda = -(-len(labels) // ncol)
     ax.legend(  # type: ignore[attr-defined]
         handles,
         labels,
         loc="lower left",
         bbox_to_anchor=(0.0, 1.005),
-        ncol=min(len(labels), 6),
+        ncol=ncol,
         frameon=False,
         fontsize=8.5,
         labelcolor=TEXT,
@@ -267,7 +273,6 @@ def _finish_axes(
         handletextpad=0.5,
         columnspacing=1.4,
     )
-    sm, ma = metrics
     parts = []
     if sm is not None and np.isfinite(sm):
         parts.append(f"SMAPE {sm:.1f}%")
@@ -285,7 +290,9 @@ def _finish_axes(
             fontsize=8.5,
             fontweight="bold",
         )
-    ax.set_title(titulo, color=TEXT, fontsize=12.5, pad=30, fontweight="bold")  # type: ignore[attr-defined]
+    ax.set_title(  # type: ignore[attr-defined]
+        titulo, color=TEXT, fontsize=12.5, pad=30 + 15 * (filas_leyenda - 1), fontweight="bold"
+    )
 
 
 def series_metrics(real: pd.DataFrame, fc: pd.DataFrame) -> tuple[float | None, float | None]:
@@ -391,7 +398,7 @@ def _region_members(region_short: str) -> set[str]:
 
 
 def _incrementos_observados(
-    g: pd.DataFrame, columna: str, solo_semana_uno: bool = False
+    g: pd.DataFrame, columna: str, solo_semanales: bool = False
 ) -> pd.Series:
     """Incremento semanal real a partir del acumulado por sexo del boletín.
 
@@ -401,10 +408,13 @@ def _incrementos_observados(
     semana futura, y si no hay antecedente utilizable el valor queda ausente.
     """
     inc = g.groupby("Anio")[columna].diff()
-    if solo_semana_uno:
-        # Sólo la semana 1 aporta su acumulado: en un año que empieza a mitad (Dengue 2018 desde
-        # la W27, 2019 W3, 2020 W4) el primer acumulado suma muchas semanas y volcarlo dibuja un
-        # pico falso. Ahí el valor queda ausente, como en el transformer de entrenamiento.
+    if solo_semanales:
+        # Sólo incrementos de UNA semana. La semana 1 aporta su acumulado; el primer acumulado de
+        # un año que empieza a mitad (Dengue 2018 W27, 2019 W3, 2020 W4) suma muchas semanas, y
+        # el incremento a través de un hueco del boletín (2020: W40 → W45) también: volcarlos
+        # dibuja picos falsos. Ahí el valor queda ausente.
+        previa = g.groupby("Anio")["Semana"].shift()
+        inc = inc.mask(previa.notna() & (g["Semana"] - previa != 1))
         inc = inc.where(inc.notna() | (g["Semana"] != 1), g[columna]).astype(float)
     else:
         inc = inc.where(inc.notna(), g[columna]).astype(float)
@@ -473,7 +483,7 @@ def _real_sexo_dengue(df: pd.DataFrame, sexo: str) -> pd.DataFrame:
     col = {"hombres": "Acumulado_hombres", "mujeres": "Acumulado_mujeres"}[sexo]
     g = df.groupby(["Anio", "Semana"], as_index=False).agg(a=(col, "sum"))
     g = g.sort_values(["Anio", "Semana"])
-    g["c"] = _incrementos_observados(g, "a", solo_semana_uno=True)
+    g["c"] = _incrementos_observados(g, "a", solo_semanales=True)
     g = _fecha_boletin(g)
     out = g.groupby("ds", as_index=False)["c"].sum(min_count=1).rename(columns={"c": "y"})
     out = out.dropna(subset=["y"])
