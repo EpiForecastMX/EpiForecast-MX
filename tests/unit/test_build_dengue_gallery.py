@@ -41,13 +41,15 @@ def test_fecha_usa_el_calendario_canonico(galeria) -> None:
 
 
 def test_semana_1_se_descarta_y_la_53_conserva_identidad(galeria) -> None:
-    g = pd.DataFrame({"Anio": [2026] * 4, "Semana": [1, 6, 52, 53], "c": [9, 1, 2, 3]})
+    """2025 publica la semana 53 (MMWR; el ISO tiene 52): se fecha, no se descarta ni se funde."""
+    g = pd.DataFrame({"Anio": [2025] * 4, "Semana": [1, 6, 52, 53], "c": [9, 1, 2, 3]})
     out = galeria._fecha_boletin(g)
-    assert 1 not in set(out["Semana"])  # sin ds distinguible en el calendario legado
+    assert 1 not in set(out["Semana"])  # semana 1 no evaluable en el calendario legado
     ds52 = out.loc[out["Semana"] == 52, "ds"].iloc[0]
     ds53 = out.loc[out["Semana"] == 53, "ds"].iloc[0]
-    assert ds52 != ds53
-    assert str(ds53.date()) == "2026-12-21"
+    assert str(ds52.date()) == "2025-12-15"
+    assert str(ds53.date()) == "2025-12-22"
+    assert out["c"].tolist() == [1, 2, 3]  # la 53 conserva su valor, sin sumarse a la 52
 
 
 def test_sexo_usa_incrementos_reales_no_una_proporcion(galeria) -> None:

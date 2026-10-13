@@ -35,9 +35,9 @@ def _modulo(boletin: str, tmp_path: Any, monkeypatch: pytest.MonkeyPatch) -> Any
     return importlib.import_module("scripts.pronostico_congelado")
 
 
-def _boletin(path: Any, ultima_semana: int) -> str:
+def _boletin(path: Any, ultima_semana: int, anio: int = 2026) -> str:
     filas = [
-        {"Padecimiento": "Depresión", "Anio": 2026, "Semana": s, "Casos_semana": 10}
+        {"Padecimiento": "Depresión", "Anio": anio, "Semana": s, "Casos_semana": 10}
         for s in range(2, ultima_semana + 1)
     ]
     pd.DataFrame(filas).to_csv(path, index=False)
@@ -57,10 +57,24 @@ def test_corte_es_el_ds_de_la_ultima_semana_observada(tmp_path, monkeypatch) -> 
 
 
 def test_corte_no_trunca_la_semana_53(tmp_path, monkeypatch) -> None:
-    m = _modulo(_boletin(tmp_path / "boletin.csv", 53), tmp_path, monkeypatch)
+    """2025 publica 53 semanas (MMWR) aunque el ISO tenga 52: la 53 tiene ds propio."""
+    m = _modulo(_boletin(tmp_path / "boletin.csv", 53, anio=2025), tmp_path, monkeypatch)
     _, wk, corte = m._cutoffs()[m._norm("Depresión")]
     assert wk == 53
-    assert corte == pd.Timestamp("2026-12-21")  # ds propio de la 53, no el de la 52
+    assert corte == pd.Timestamp("2025-12-22")  # ds propio de la 53, no el de la 52
+
+
+def test_el_horizonte_2026_27_se_rotula_con_el_calendario_del_boletin() -> None:
+    """2026 tiene 52 semanas del boletín: 2026-12-21 es la 1 de 2027 y 2026-12-28 no tiene semana."""
+    ds = pd.Series(pd.to_datetime(["2026-12-14", "2026-12-21", "2026-12-28", "2027-01-04"]))
+    cal = semana_boletin_de_serie(ds)
+    assert cal["anio_boletin"].tolist()[:2] + cal["anio_boletin"].tolist()[3:] == [
+        2026,
+        2027,
+        2027,
+    ]
+    assert cal["semana_boletin"].tolist()[:2] + cal["semana_boletin"].tolist()[3:] == [52, 1, 2]
+    assert cal.iloc[2].isna().all()
 
 
 def test_la_etiqueta_iso_guardada_no_sirve_para_unir() -> None:

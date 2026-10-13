@@ -21,7 +21,6 @@ Uso:
 from __future__ import annotations
 
 import argparse
-from datetime import date
 import json
 import logging
 from pathlib import Path
@@ -31,6 +30,12 @@ import pandas as pd
 
 from epiforecast.data.boletin import cargar_boletin_dengue
 from epiforecast.utils.config import conf
+from epiforecast.utils.semana_epi import (
+    ds_de_semana_boletin,
+    fin_semana_boletin,
+    inicio_semana_boletin,
+    semana_boletin_de_ds,
+)
 
 warnings.filterwarnings("ignore")
 logging.getLogger("cmdstanpy").disabled = True
@@ -47,20 +52,29 @@ def _forecast_path(motor: str) -> Path:
     return _REPORTS / "forecasts" / motor.lower() / f"all_forecast_{motor.lower()}.csv"
 
 
-def serie_nacional() -> pd.DataFrame:
-    """Serie nacional general semanal (conteos) con ds = lunes de la semana ISO.
+def _con_ds_legado(g: pd.DataFrame) -> pd.DataFrame:
+    """Fecha cada (Anio, Semana) con el ``ds`` legado del calendario canónico (``semana_epi``).
 
-    Usa el lunes de la semana ISO (``date.fromisocalendar``) para que el histórico quede
-    en la MISMA rejilla de fechas (W-MON) que el pronóstico de los modelos y empalme sin
-    corrimiento. Fuente única: el consolidado de producción (``cargar_boletin_dengue``).
+    Antes se usaba el lunes ISO de la semana ``min(semana, 52)``: lo real quedaba una semana
+    después del pronóstico (el ``ds`` legado de la semana N es el lunes ISO de la N-1) y la
+    semana 53 (2014, 2025) se fundía con la 52 en el mismo ``ds``. La semana 1 no es evaluable en
+    el calendario legado y se descarta; la 53 conserva su identidad.
+    """
+    g = g[g["Semana"].astype(int) != 1].copy()
+    g["ds"] = [
+        ds_de_semana_boletin(int(a), int(s)) for a, s in zip(g["Anio"], g["Semana"], strict=True)
+    ]
+    return g
+
+
+def serie_nacional() -> pd.DataFrame:
+    """Serie nacional general semanal (conteos) en la rejilla de ``ds`` legado del pronóstico.
+
+    Fuente única: el consolidado de producción (``cargar_boletin_dengue``).
     """
     df = cargar_boletin_dengue()
     g = df.groupby(["Anio", "Semana"])["Casos_semana"].sum().reset_index()
-    g = g.sort_values(["Anio", "Semana"])
-    g["ds"] = [
-        pd.Timestamp(date.fromisocalendar(int(a), min(int(s), 52), 1))
-        for a, s in zip(g["Anio"], g["Semana"], strict=False)
-    ]
+    g = _con_ds_legado(g.sort_values(["Anio", "Semana"]))
     return g.rename(columns={"Casos_semana": "y"})[["ds", "y"]].reset_index(drop=True)
 
 
@@ -81,10 +95,7 @@ def serie_contexto_a9091() -> pd.DataFrame:
         .fillna(old["confirmado_acum_nacional"])
         .clip(lower=0)
     )
-    old["ds"] = [
-        pd.Timestamp(date.fromisocalendar(int(a), min(int(s), 52), 1))
-        for a, s in zip(old["Anio"], old["Semana"], strict=False)
-    ]
+    old = _con_ds_legado(old)
     return old[["ds", "y"]].reset_index(drop=True)
 
 
@@ -107,13 +118,47 @@ def pronostico_productivo(motor: str, last_real: pd.Timestamp) -> pd.DataFrame:
         & (df["meta_modo"] == "general")
     ].copy()
     d["ds"] = pd.to_datetime(d["ds"])
-    cols = [c for c in ["ds", "yhat", "yhat_lower", "yhat_upper"] if c in d.columns]
+    cols = [
+        c
+        for c in [
+            "ds",
+            "yhat",
+            "yhat_lower",
+            "yhat_upper",
+            "anio_boletin_corte",
+            "semana_boletin_corte",
+        ]
+        if c in d.columns
+    ]
     d = d[d["ds"] > last_real][cols].sort_values("ds")
     if len(d) > HORIZONTE_SEMANAS:
         raise SystemExit(
             f"pronóstico nacional con {len(d)} semanas futuras (> {HORIZONTE_SEMANAS})"
         )
     return d
+
+
+def _semana_publicada(sem: tuple[int, int]) -> dict[str, object]:
+    anio, semana = int(sem[0]), int(sem[1])
+    return {
+        "anio": anio,
+        "semana": semana,
+        "inicio": inicio_semana_boletin(anio, semana).isoformat(),
+        "fin": fin_semana_boletin(anio, semana).isoformat(),
+    }
+
+
+def _corte_modelo(pron: pd.DataFrame) -> dict[str, object] | None:
+    """Semana de corte que el pronóstico declara (``anio/semana_boletin_corte``), si la trae."""
+    cols = {"anio_boletin_corte", "semana_boletin_corte"}
+    if pron.empty or not cols <= set(pron.columns):
+        return None
+    pares = pron[list(sorted(cols))].dropna().drop_duplicates()
+    if len(pares) != 1:
+        raise SystemExit(f"pronóstico nacional con {len(pares)} cortes distintos (se espera 1)")
+    return _semana_publicada(
+        (int(pares["anio_boletin_corte"].iloc[0]), int(pares["semana_boletin_corte"].iloc[0]))
+    )
 
 
 def main() -> int:
@@ -144,6 +189,10 @@ def main() -> int:
         "meta": {
             "generado": args.generado,
             "ultima_real": last_real.strftime("%Y-%m-%d"),
+            # Identidad publicada de la última semana real y de la semana de corte del modelo:
+            # el ``ds`` legado no es la fecha del boletín (calendario v2, ``semana_epi``).
+            "ultima_semana_boletin": _semana_publicada(semana_boletin_de_ds(last_real)),
+            "corte_modelo": _corte_modelo(pron),
             "motor_nacional": motor,
             "distribucion": dist,
             "horizonte_semanas": HORIZONTE_SEMANAS,
