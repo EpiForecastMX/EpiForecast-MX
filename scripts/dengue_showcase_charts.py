@@ -6,7 +6,7 @@ Genera cuatro figuras (tema Clinical Indigo) para la web:
   - ``dengue_historico_ciclo.png`` total anual confirmado 2014-2026 (A90/A91 + A97.x),
                                    marcando el ciclo epidémico (cuatro a cinco años: 2014, 2019, 2024).
   - ``dengue_enso_ciclo.png``      índice ONI (El Niño/La Niña) vs casos de dengue por año.
-  - ``dengue_motores_dona.png``    distribución de motores productivos (DeepAR/Prophet/NB-GLM).
+  - ``dengue_motores_dona.png``    distribución de motores productivos (de la asignación congelada).
 
 Uso:
     python scripts/dengue_showcase_charts.py --out ../EpiForecast-IMSS-Dashboard/Reports/dengue
@@ -266,8 +266,8 @@ def chart_enso_ciclo(out: Path) -> None:
     """El Niño (índice ONI) vs ciclos de dengue: los grandes brotes caen en años cálidos.
 
     Eje izquierdo: ONI semanal 2014-2026, relleno cálido (>+0.5, El Niño) / frío (<-0.5, La Niña).
-    Eje derecho: total anual de dengue (barras tenues). Muestra por qué el modelo NB-GLM lleva
-    el regresor de El Niño: el pulso inter-anual del dengue sigue al ONI.
+    Eje derecho: total anual de dengue (barras tenues). Muestra por qué el ONI se estudia como
+    regresor climático: el pulso inter-anual del dengue sigue al ONI.
     """
     from epiforecast.data import enso
 
@@ -336,8 +336,8 @@ def chart_enso_ciclo(out: Path) -> None:
         0.5,
         -0.16,
         "Relleno rojo = El Niño (ONI > +0.5 °C); verde = La Niña (< -0.5 °C). Las barras rosas son el "
-        "total anual de dengue. Los picos (2014, 2019, 2024) coinciden con El Niño; por eso el modelo "
-        "NB-GLM usa el ONI para anticipar la magnitud del próximo brote.",
+        "total anual de dengue. Los picos (2014, 2019, 2024) coinciden con El Niño; por eso el ONI "
+        "se estudia como regresor climático del pronóstico.",
         transform=ax.transAxes,
         ha="center",
         va="top",
@@ -351,18 +351,17 @@ def chart_enso_ciclo(out: Path) -> None:
 
 
 def chart_motores_dona(out: Path) -> None:
-    """Dona de la distribución de motores productivos de Dengue (DeepAR/NBGLM/Prophet)."""
+    """Dona de la distribución de motores productivos de Dengue (los de la asignación congelada)."""
     prod_path = ROOT / "reports" / "ProdDetails" / "produccion_dengue.csv"
     if not prod_path.exists():
         return
     dist = pd.read_csv(prod_path)["motor_productivo"].value_counts()
     cmap = {"DeepAR": PINK, "NBGLM": AMBER, "Prophet": MINT}
     labels, vals, colors = [], [], []
-    for m in ["DeepAR", "NBGLM", "Prophet"]:  # solo productivos, en orden de carga
-        if m in dist:
-            labels.append(m)
-            vals.append(int(dist[m]))
-            colors.append(cmap[m])
+    for m, v in dist.items():  # todos los motores con series asignadas, en orden de carga
+        labels.append(str(m))
+        vals.append(int(v))
+        colors.append(cmap.get(str(m), MUTED))
     total = sum(vals)
     if not total:
         return

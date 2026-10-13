@@ -48,6 +48,8 @@ from epiforecast.utils.config import conf, logger  # noqa: E402
 REPORTS = Path(conf["paths"]["reports"])
 TABLA = REPORTS / "ProdDetails" / "tabla_333_modelos_produccion.xlsx"
 FC_BASE = REPORTS / "forecasts"
+# Comparación neuro: los 4 motores elegibles, en el orden y con el rótulo de siempre.
+COMPARE_NEURO = {m: m for m in ("Prophet", "DeepAR", "Ensemble", "Stacking")}
 PADS = ["Depresion", "Parkinson", "Alzheimer"]
 FC_PAD = {"Depresion": "Depresión", "Parkinson": "Parkinson", "Alzheimer": "Alzheimer"}
 SEXOS = {"general": "General", "hombres": "Hombres", "mujeres": "Mujeres"}
@@ -144,6 +146,7 @@ def main() -> int:
                     img,
                     titulo,
                     enso=False,
+                    motores_comparacion=COMPARE_NEURO,
                 )
                 n += 1
     (out_base / "zoom_data_neuro.json").write_text(

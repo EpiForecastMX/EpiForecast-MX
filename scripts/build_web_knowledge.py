@@ -255,6 +255,19 @@ def build_boletin(cache: ProjectDataCache) -> dict:
     return result
 
 
+_MOTORES_ENTRENADOS_DENGUE = ("Prophet", "DeepAR", "Ensemble", "Stacking", "NBGLM")
+
+
+def _motores_productivos_dengue(prod: pd.DataFrame) -> list[str]:
+    """Motores con al menos una serie en la asignación congelada, por número de series.
+
+    Es la única fuente de los motores que se muestran: un motor entrenado pero sin series
+    asignadas (Ensemble/Stacking no elegibles, NBGLM suspendido en W37) no aparece.
+    """
+    vc = prod["motor_productivo"].dropna().astype(str).value_counts()
+    return sorted(vc.index, key=lambda m: (-int(vc[m]), m))
+
+
 def build_dengue_section() -> dict[str, Any]:
     """Sección de Dengue para el EpiBot, derivada de los artefactos de producción.
 
@@ -270,6 +283,7 @@ def build_dengue_section() -> dict[str, Any]:
         return {}
     prod = pd.read_csv(prod_path)
     dist = {str(k): int(v) for k, v in prod["motor_productivo"].value_counts().items()}
+    productivos = _motores_productivos_dengue(prod)
     nac = prod[(prod["entidad"] == "Nacional") & (prod["sexo"] == "general")]
     motor_nac = str(nac["motor_productivo"].iloc[0]) if len(nac) else "Prophet"
     # smape_ganador puede ser NaN si la serie cayó al criterio mae_real_casi_cero (imposible
@@ -351,9 +365,9 @@ def build_dengue_section() -> dict[str, Any]:
         "n_entidades": int(df["Entidad"].nunique()),
         "n_series": int(len(prod)),
         "horizonte_semanas": 52,
-        "proyeccion_anios": 5,
-        "motores_entrenados": ["Prophet", "DeepAR", "Ensemble", "Stacking", "NBGLM"],
-        "motores_productivos": ["DeepAR", "Prophet", "NBGLM"],
+        "motores_entrenados": list(_MOTORES_ENTRENADOS_DENGUE),
+        # Derivado de la asignación congelada: un motor sin series asignadas no es productivo.
+        "motores_productivos": productivos,
         "dist_motor": dist,
         "motor_nacional": motor_nac,
         "smape_nacional": smape_nac,
@@ -373,11 +387,19 @@ def build_dengue_section() -> dict[str, Any]:
         "notas": [
             "Serie de producción 2018-2026 (Cuadro 7.2 SINAVE, dengue confirmado A97.x agregado).",
             "La serie histórica 2014-2017 (taxonomía vieja A90/A91) es solo contexto/EDA, no entrena.",
-            "5 motores entrenados; productivos DeepAR, Prophet y NBGLM (Negative-Binomial GLM "
-            "con estacionalidad de Fourier y regresor El Niño/ONI). Los árboles (Ensemble, "
-            "Stacking) no extrapolan la dinámica epidémica y quedan fuera de producción.",
-            "Pronóstico preciso a 1 año (52 sem); además una proyección a 5 años ILUSTRATIVA que "
-            "muestra el patrón estacional esperado, no la magnitud de la próxima epidemia.",
+            f"{len(_MOTORES_ENTRENADOS_DENGUE)} motores entrenados; productivos "
+            f"{' y '.join(productivos)} según la asignación por serie. Ensemble y Stacking no "
+            "son elegibles: los árboles no extrapolan la dinámica epidémica.",
+            *(
+                []
+                if "NBGLM" in productivos
+                else [
+                    "NBGLM está suspendido en esta ronda por inestabilidad de su predicción "
+                    "recursiva; sus modelos se conservan como evidencia, pero no se publica "
+                    "ningún pronóstico suyo."
+                ]
+            ),
+            "Pronóstico a 1 año (52 semanas). No se publica ninguna proyección multi-año.",
             "Los picos (2014, 2019, 2024) coinciden con años de El Niño; 2024 fue la mayor "
             "epidemia de dengue registrada en las Américas.",
         ],
@@ -400,7 +422,7 @@ def build_dengue_weekly() -> dict[str, Any]:
 
     base = Path(conf["paths"]["reports"]) / "forecasts"
     fc_motor: dict[str, dict[int, int]] = {}
-    for m in ["Prophet", "DeepAR", "NBGLM"]:
+    for m in _motores_productivos_dengue(prod):
         p = base / m.lower() / f"all_forecast_{m.lower()}.csv"
         if not p.exists():
             continue
@@ -465,7 +487,7 @@ def _metric_summary(sm: pd.Series, ma: pd.Series) -> dict[str, Any]:
 
 
 def _rendimiento_dengue() -> dict[str, Any]:
-    """Rendimiento 2026 de Dengue por motor (cohorte propia: DeepAR / Prophet / NBGLM).
+    """Rendimiento 2026 de Dengue por motor productivo (cohorte propia; motores de la asignación).
 
     Fuente: ``produccion_dengue.csv`` (``smape_real_<motor>`` + ``mase_real_<motor>`` +
     ``motor_productivo``). Dengue 2026 es un año bajo: casi todas las series estatales son
@@ -478,7 +500,7 @@ def _rendimiento_dengue() -> dict[str, Any]:
     if not prod_path.exists():
         return {}
     df = pd.read_csv(prod_path)
-    motores = ["DeepAR", "Prophet", "NBGLM"]
+    motores = _motores_productivos_dengue(df)
     smape_cols = [f"smape_real_{m.lower()}" for m in motores]
     if not all(c in df.columns for c in smape_cols):
         return {}

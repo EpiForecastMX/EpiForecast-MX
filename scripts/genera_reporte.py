@@ -320,16 +320,21 @@ def compute_neuro_stats(df: pd.DataFrame) -> dict:
 # ---------------------------------------------------------------------------
 # Dengue
 # ---------------------------------------------------------------------------
+# «En producción» se deriva de la asignación congelada (motor con >= 1 serie), no se fija aquí.
 DENGUE_MOTORS = [
-    ("deepar", "DeepAR", True),
-    ("nbglm", "NB-GLM", True),
-    ("prophet", "Prophet", True),
-    ("ensemble", "Ensemble", False),
-    ("stacking", "Stacking", False),
+    ("deepar", "DeepAR"),
+    ("nbglm", "NB-GLM"),
+    ("prophet", "Prophet"),
+    ("ensemble", "Ensemble"),
+    ("stacking", "Stacking"),
 ]
 DENGUE_MOTOR_NOTE = {
-    "Ensemble": "Fuera: los árboles no extrapolan la dinámica epidémica a 52 sem.",
-    "Stacking": "Fuera: los árboles no extrapolan la dinámica epidémica a 52 sem.",
+    "Ensemble": "No elegible: los árboles no extrapolan la dinámica epidémica a 52 sem.",
+    "Stacking": "No elegible: los árboles no extrapolan la dinámica epidémica a 52 sem.",
+}
+# Sin series asignadas en esta ronda (ENMIENDA_DENGUE_NBGLM_W37): modelos conservados como evidencia.
+DENGUE_MOTOR_NOTE_SIN_SERIES = {
+    "NB-GLM": "Suspendido en esta ronda: su predicción recursiva es inestable.",
 }
 
 
@@ -343,15 +348,14 @@ def compute_dengue_stats() -> dict:
 
     # --- Tabla de motores (honesta: series ganadas + en produccion) ---
     motor_table = []
-    for key, label, in_prod in DENGUE_MOTORS:
+    for key, label in DENGUE_MOTORS:
         ganadas = int((d["motor_productivo"].str.lower() == key).sum())
+        en_prod = ganadas > 0
+        nota = DENGUE_MOTOR_NOTE.get(label) or (
+            "En producción" if en_prod else DENGUE_MOTOR_NOTE_SIN_SERIES.get(label, "Sin series")
+        )
         motor_table.append(
-            {
-                "motor": label,
-                "ganadas": ganadas,
-                "en_produccion": in_prod,
-                "nota": DENGUE_MOTOR_NOTE.get(label, "En producción"),
-            }
+            {"motor": label, "ganadas": ganadas, "en_produccion": en_prod, "nota": nota}
         )
 
     # --- Ranking de las 99 series (entidad x sexo) ---

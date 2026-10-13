@@ -70,13 +70,20 @@ def _smape(y: np.ndarray, yh: np.ndarray) -> float:
 
 
 def _load_prod_map() -> pd.DataFrame:
-    """DataFrame [pad_norm, pad_disp, entidad, sexo, motor_key] con el motor productivo."""
+    """DataFrame [pad_norm, pad_disp, entidad, sexo, motor_key] con el motor productivo.
+
+    Dengue sale SÓLO de ``produccion_dengue.csv`` cuando existe: las filas Dengue de tabla_333
+    se copian de la tabla previa y no son autoritativas (en W37 discrepan en 43 de 99 series e
+    incluyen Ensemble/Stacking, no elegibles). Sumarlas congelaba cada serie dos veces.
+    """
     frames = []
     if TABLA_333.exists():
         t = pd.read_excel(
             TABLA_333, usecols=["padecimiento", "entidad", "sexo", "modelo_produccion"]
         )
         t = t.rename(columns={"modelo_produccion": "motor"})
+        if PROD_DENGUE.exists():
+            t = t[t["padecimiento"].map(_norm) != "dengue"]
         frames.append(t)
     if PROD_DENGUE.exists():
         d = pd.read_csv(

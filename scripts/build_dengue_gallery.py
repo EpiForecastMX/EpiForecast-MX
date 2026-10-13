@@ -61,7 +61,22 @@ COMPARE_COLOR = {
     "Stacking": "#8B9DFF",
     "NBGLM": "#F59E0B",
 }
-COMPARE_MOTORS = ["Prophet", "DeepAR", "Ensemble", "Stacking", "NBGLM"]
+# Árboles entrenados pero NO elegibles en Dengue (no extrapolan la dinámica epidémica): se
+# muestran en la comparación rotulados como tales. NBGLM (suspendido en W37, ENMIENDA_DENGUE_NBGLM)
+# no se compara: sólo entran los motores con series en la asignación congelada + estos dos.
+NO_ELEGIBLES = ("Ensemble", "Stacking")
+
+
+def compare_motors(prod: pd.DataFrame) -> dict[str, str]:
+    """Motores de la comparación Dengue -> etiqueta: productivos de la asignación + no elegibles."""
+    vc = prod["motor_productivo"].dropna().astype(str).value_counts()
+    productivos = sorted(vc.index, key=lambda m: (-int(vc[m]), m))
+    out = {m: m for m in productivos}
+    for m in NO_ELEGIBLES:
+        out.setdefault(m, f"{m} (no elegible; acotado a la envolvente)")
+    return out
+
+
 ZOOM5_BACK = 260  # 5 años de realidad hacia atrás en la vista "Zoom 5 años"
 
 PROD = Path(conf["paths"]["reports"]) / "ProdDetails" / "produccion_dengue.csv"
@@ -528,11 +543,12 @@ def _chart_compare(
     titulo: str,
     out: Path,
     weeks_back: int = 52,
+    etiquetas: dict[str, str] | None = None,
 ) -> None:
-    """Comparación de motores: últimas ``weeks_back`` semanas reales + el pronóstico de TODOS los
-    motores superpuestos (52 sem adelante), cada uno en su color, para compararlos en un vistazo.
+    """Comparación de motores: últimas ``weeks_back`` semanas reales + el pronóstico de los motores
+    de ``motor_fcs`` (en su orden) superpuestos (52 sem adelante), cada uno en su color.
     Cada motor se acota a la envolvente estacional histórica para que un motor que diverja
-    (Ensemble/Stacking en Dengue) no rompa la escala. Sin banda (sería ilegible con 5 líneas)."""
+    (Ensemble/Stacking en Dengue) no rompa la escala; la leyenda lo declara. Sin banda."""
     r = real.dropna().sort_values("ds").tail(weeks_back)
     if r.empty:
         return
@@ -543,8 +559,7 @@ def _chart_compare(
     hist = real[["ds", "y"]]
     fut_max = last_real
     clamped: dict[str, pd.DataFrame] = {}
-    for motor in COMPARE_MOTORS:
-        fc = motor_fcs.get(motor)
+    for motor, fc in motor_fcs.items():
         if fc is None or fc.empty:
             continue
         fc = clamp_seasonal_envelope(fc[["ds", "yhat"]].copy(), hist)
@@ -570,7 +585,7 @@ def _chart_compare(
             fc["yhat"].clip(lower=0),
             color=COMPARE_COLOR.get(motor, "#FFFFFF"),
             linewidth=1.7,
-            label=motor,
+            label=(etiquetas or {}).get(motor, motor),
             alpha=0.92,
             zorder=4,
         )
@@ -758,6 +773,7 @@ def render_extra_views(
     titulo: str,
     enso: bool,
     region_cache: pd.DataFrame | None = None,
+    motores_comparacion: dict[str, str] | None = None,
 ) -> None:
     """Genera las dos vistas extra de una serie:
       - ``_zoom5``  : 5 años de realidad + 52 sem de pronóstico (motor productivo).
@@ -805,11 +821,22 @@ def render_extra_views(
 
     # --- Comparación de modelos (solo donde hay pronóstico por motor) ---
     if region_cache is None:
+        if not motores_comparacion:
+            raise ValueError(
+                "comparación sin motores: derive motores_comparacion de la asignación"
+            )
         mfcs = {
             m: _scale(forecast_window(m, pad_fc, ent_fc, fetch_sexo, win52, ds_max))
-            for m in COMPARE_MOTORS
+            for m in motores_comparacion
         }
-        _chart_compare(real, mfcs, titulo, _compare_path(out_png), weeks_back=ZOOM_BACK)
+        _chart_compare(
+            real,
+            mfcs,
+            titulo,
+            _compare_path(out_png),
+            weeks_back=ZOOM_BACK,
+            etiquetas=motores_comparacion,
+        )
 
 
 def _sum_member_forecast(
@@ -868,6 +895,7 @@ def _dengue_regiones(
     out_base: Path,
     items: list[dict[str, str]],
     zoom: dict[str, object],
+    motores_cmp: dict[str, str],
 ) -> int:
     """Genera las 4 regiones de Dengue. PRODUCTIVO: DeepAR nativo (el mejor en el backtest OOS,
     MAE 460 vs 3.7k-10k de la agregación; ver dengue_backtest_regional). Si falta el cache de
@@ -969,6 +997,7 @@ def _dengue_regiones(
                 titulo,
                 enso=True,
                 region_cache=reg_fc if use_deepar else None,
+                motores_comparacion=motores_cmp,
             )
             items.append({"p": "Dengue", "n": data_n, "c": "Regional", "s": SEXOS[sexo], "f": rel})
             made += 1
@@ -982,6 +1011,7 @@ def main() -> int:
     out_base = Path(args.out)
 
     prod = pd.read_csv(PROD)
+    motores_cmp = compare_motors(prod)
     bol = cargar_boletin_dengue()
     bol["Entidad"] = bol["Entidad"].replace(ENTIDAD_DISPLAY)
     # Motor productivo de la serie GENERAL por entidad (hombres/mujeres se derivan del general).
@@ -1052,6 +1082,7 @@ def main() -> int:
             out_base.parent / rel,
             titulo,
             enso=True,
+            motores_comparacion=motores_cmp,
         )
         items.append(
             {
@@ -1064,7 +1095,7 @@ def main() -> int:
         )
         n += 1
 
-    n += _dengue_regiones(bol, gen_motor, out_base, items, zoom)
+    n += _dengue_regiones(bol, gen_motor, out_base, items, zoom, motores_cmp)
     (out_base / "_gallery_items.json").write_text(
         json.dumps(items, ensure_ascii=False), encoding="utf-8"
     )

@@ -73,3 +73,47 @@ def test_la_etiqueta_iso_guardada_no_sirve_para_unir() -> None:
     canonico = semana_boletin_de_serie(snap["ds"])["semana_boletin"]
     assert list(iso) == [21, 30]
     assert list(canonico) == [22, 31]
+
+
+def _tablas(m: Any, con_dengue: bool) -> None:
+    m.TABLA_333.parent.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(
+        {
+            "padecimiento": ["Depresión", "Dengue", "Dengue"],
+            "entidad": ["Nacional", "Nacional", "Colima"],
+            "sexo": ["general"] * 3,
+            "modelo_produccion": ["Ensemble", "Stacking", "Prophet"],
+        }
+    ).to_excel(m.TABLA_333, index=False)
+    if con_dengue:
+        pd.DataFrame(
+            {
+                "padecimiento": ["Dengue", "Dengue"],
+                "entidad": ["Nacional", "Colima"],
+                "sexo": ["general"] * 2,
+                "motor_productivo": ["DeepAR", "Prophet"],
+            }
+        ).to_csv(m.PROD_DENGUE, index=False)
+
+
+def test_dengue_sale_solo_de_la_asignacion_congelada(tmp_path, monkeypatch) -> None:
+    """Las filas Dengue de tabla_333 (copiadas de la previa) no deben sumarse a la asignación.
+
+    Antes cada serie Dengue quedaba dos veces en el mapa y ``freeze`` la congelaba con ambos
+    motores, incluido Stacking, que no es elegible para Dengue.
+    """
+    m = _modulo(_boletin(tmp_path / "boletin.csv", 31), tmp_path, monkeypatch)
+    _tablas(m, con_dengue=True)
+    prod = m._load_prod_map()
+    den = prod[prod["pad_norm"] == "dengue"].set_index("entidad")["motor_key"]
+    assert den.to_dict() == {"Nacional": "deepar", "Colima": "prophet"}
+    assert not prod.duplicated(["pad_norm", "entidad", "sexo"]).any()
+    assert prod.loc[prod["pad_norm"] == "depresion", "motor_key"].tolist() == ["ensemble"]
+
+
+def test_sin_asignacion_dengue_se_conserva_la_tabla(tmp_path, monkeypatch) -> None:
+    """Control: sin ``produccion_dengue.csv`` la tabla es la única fuente y no se descarta."""
+    m = _modulo(_boletin(tmp_path / "boletin.csv", 31), tmp_path, monkeypatch)
+    _tablas(m, con_dengue=False)
+    prod = m._load_prod_map()
+    assert (prod["pad_norm"] == "dengue").sum() == 2

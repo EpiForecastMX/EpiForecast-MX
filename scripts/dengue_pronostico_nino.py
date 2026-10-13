@@ -11,6 +11,11 @@ El Niño moderado hacia 2027-2028, ciclo ~4 años) y se lo damos al regresor de 
 así el modelo anticipa el próximo gran brote alineado con ese El Niño. La MAGNITUD exacta es
 incierta (ENSO no se pronostica a años); es un escenario de planeación, no una certeza.
 
+RETIRADO DEL PRODUCTO PÚBLICO en la ronda W37 (ENMIENDA_DENGUE_NBGLM_W37, 13-oct-2026): ajusta
+el mismo NB-GLM recursivo suspendido y lo proyecta varios años sin validación propia. Ya no lo
+invoca ``make dengue-web`` y se niega a escribir salvo con ``--escenario-no-validado`` (uso de
+investigación, nunca hacia el dashboard).
+
 Uso:
     python scripts/dengue_pronostico_nino.py --out ../EpiForecast-IMSS-Dashboard/Reports/dengue
 """
@@ -122,8 +127,19 @@ def _escenario_oni(last: pd.Timestamp, fut_ds: pd.DatetimeIndex) -> tuple[pd.Ser
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--out", required=True, help="Directorio de salida (Reports/dengue)")
+    ap.add_argument("--out", required=True, help="Directorio de salida (investigación)")
+    ap.add_argument(
+        "--escenario-no-validado",
+        action="store_true",
+        help="Reconoce que es un escenario NB-GLM multi-año sin validación (no publicable)",
+    )
     args = ap.parse_args()
+    if not args.escenario_no_validado:
+        logger.error(
+            "dengue_pronostico_nino está retirado del producto público (ENMIENDA_DENGUE_NBGLM_W37); "
+            "use --escenario-no-validado sólo para investigación."
+        )
+        return 2
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
 

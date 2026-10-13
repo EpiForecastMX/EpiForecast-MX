@@ -254,13 +254,14 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
       <div class="guide-card reveal" style="border-left-color:var(--gold)">
         <h3>Nuevo motor NB-GLM</h3>
         <p>Un GLM Negative-Binomial con estacionalidad de Fourier y el índice <strong>El Niño (ONI)</strong>.
-        Es count-correcto y extrapola la dinámica epidémica sin divergir; el <strong>mejor del estudio</strong> para
-        Dengue en backtest leave-one-epidemic-out (SMAPE 52 vs Prophet 102).</p>
+        Es count-correcto y el <strong>mejor del estudio</strong> para Dengue en backtest leave-one-epidemic-out
+        (SMAPE 52 vs Prophet 102). Su pronóstico es recursivo y en muchas series se desboca más allá de ~10 semanas:
+        <strong>suspendido en esta ronda</strong>.</p>
       </div>
       <div class="guide-card reveal" style="border-left-color:#F59E0B">
         <h3>Dengue en producción</h3>
         <p>Cuarto padecimiento y primera enfermedad por vector. Serie semanal <strong>2018–2026</strong> de las 32
-        entidades, modelada en conteos. Productivos <strong>DeepAR + Prophet + NB-GLM</strong>. En vivo en
+        entidades, modelada en conteos. Productivos <strong>DeepAR + Prophet</strong>. En vivo en
         <a href="dengue.html" style="color:var(--teal)">epiforecast.mx/dengue</a>.</p>
       </div>
     </div>
@@ -426,7 +427,7 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
       <div class="region-card"><h4 style="color:#F59E0B">99 series</h4><p>(Nacional + 32 entidades) × 3 sexos</p></div>
       <div class="region-card"><h4 style="color:#F59E0B">5 motores</h4><p>Prophet, DeepAR, Ensemble, Stacking, NB-GLM</p></div>
       <div class="region-card"><h4 style="color:#F59E0B">DeepAR</h4><p>Motor nacional productivo</p></div>
-      <div class="region-card"><h4 style="color:#F59E0B">1 año + 5</h4><p>Pronóstico 52 sem + proyección 5 años ilustrativa</p></div>
+      <div class="region-card"><h4 style="color:#F59E0B">52 sem</h4><p>Pronóstico a 1 año, sin proyección multi-año</p></div>
     </div>
 
     <!-- Resultados de modelado (interactivos, propios de esta página) -->
@@ -447,10 +448,11 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
         de ratio 1.61 a 0.87.</p>
       </div>
       <div class="guide-card reveal" style="border-left-color:var(--teal)">
-        <h3>NB-GLM, el mejor motor</h3>
-        <p>GLM Negative-Binomial + Fourier + El Niño: count-correcto y extrapola sin divergir. Es el mejor del
-        estudio (<span class="badge badge-green">SMAPE 52</span> vs Prophet+ENSO 76 vs Prophet 102). Ensemble y
-        Stacking quedan <strong>fuera</strong>: los árboles no extrapolan la dinámica epidémica a 52 sem.</p>
+        <h3>NB-GLM: mejor en backtest, suspendido</h3>
+        <p>GLM Negative-Binomial + Fourier + El Niño: count-correcto y el mejor del estudio en backtest
+        (<span class="badge badge-green">SMAPE 52</span> vs Prophet+ENSO 76 vs Prophet 102), pero su predicción
+        recursiva se desboca a horizontes largos y queda <strong>suspendido en esta ronda</strong>. Ensemble y
+        Stacking <strong>no son elegibles</strong>: los árboles no extrapolan la dinámica epidémica a 52 sem.</p>
       </div>
       <div class="guide-card reveal" style="border-left-color:var(--burgundy)">
         <h3>Regiones con DeepAR nativo</h3>
@@ -460,9 +462,9 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
       </div>
       <div class="guide-card reveal" style="border-left-color:var(--cool-gray)">
         <h3>Nota honesta de validación</h3>
-        <p>La métrica de selección de motor (SMAPE 2026) es <strong>in-sample</strong> (el modelo final ve 2026 H1).
-        El <strong>backtest</strong> de NB-GLM sí es limpio (leave-one-epidemic-out). Se valida prospectivo OOS en las
-        semanas no vistas antes de re-entrenar. Ver <a href="auditoria_remediacion_2026.html" style="color:var(--teal)">Auditoría</a>.</p>
+        <p>En esta ronda el motor de cada serie se eligió <strong>fuera de muestra</strong> (modelos hasta la semana 27
+        de 2026 frente a las semanas 28 a 37); esa comparación sirve para elegir motor, no es una medida publicada del
+        desempeño. El <strong>backtest</strong> de NB-GLM es limpio (leave-one-epidemic-out). Ver <a href="auditoria_remediacion_2026.html" style="color:var(--teal)">Auditoría</a>.</p>
       </div>
     </div>
 
@@ -518,7 +520,7 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
     </div>
 
     <p style="text-align:center;color:var(--text-secondary);font-size:.92rem;margin-top:2.5rem">
-      El ciclo epidémico, el mapa de carga por entidad y la proyección multi-año guiada por El Niño se exploran
+      El ciclo epidémico y el mapa de carga por entidad se exploran
       a fondo en la <a href="dengue.html" style="color:var(--teal)">página de Dengue en vivo</a>.</p>
 
     <p style="text-align:center;margin-top:2.5rem">
