@@ -56,13 +56,44 @@ def test_hueco_del_boletin_no_suma_varias_semanas(galeria) -> None:
     assert galeria._incrementos_observados(g, "a").iloc[2] == 3486.0  # control: regla neuro
 
 
-def test_semana_uno_aporta_su_acumulado(galeria) -> None:
-    g = pd.DataFrame({"Anio": [2026] * 3, "Semana": [1, 2, 3], "a": [6, 88, 193]})
-    assert galeria._incrementos_observados(g, "a", solo_semanales=True).tolist() == [
+def test_reinicio_del_acumulado_en_la_semana_uno_dengue(galeria) -> None:
+    """Dengue reinicia el acumulado en la semana 1: esa semana aporta su propio acumulado.
+
+    2024 tiene 52 semanas del boletín, así que 2024-W52 → 2025-W1 son consecutivas (en 2025, con 53,
+    la consecutiva de la W53 sería la 2026-W1).
+    """
+    g = pd.DataFrame(
+        {"Anio": [2024, 2025, 2025, 2025], "Semana": [52, 1, 2, 3], "a": [9000, 6, 88, 193]}
+    )
+    assert galeria._incrementos_observados(g, "a", solo_semanales=True).tolist()[1:] == [
         6.0,
         82.0,
         105.0,
     ]
+
+
+def test_semana_uno_sin_antecedente_queda_ausente(galeria) -> None:
+    """Sin la semana previa no se sabe si el acumulado de la semana 1 ya se reinició."""
+    g = pd.DataFrame({"Anio": [2026] * 3, "Semana": [1, 2, 3], "a": [6, 88, 193]})
+    inc = galeria._incrementos_observados(g, "a", solo_semanales=True)
+    assert pd.isna(inc.iloc[0]) and inc.iloc[1:].tolist() == [82.0, 105.0]
+
+
+def test_neuro_reinicia_en_la_semana_dos_sin_pico_anual(galeria) -> None:
+    """Depresión Nacional mujeres 2025: la semana 1 continúa el acumulado de 2024 y la 2 reinicia."""
+    g = pd.DataFrame(
+        {
+            "Anio": [2024, 2024, 2025, 2025, 2025],
+            "Semana": [51, 52, 1, 2, 3],
+            "a": [108895, 110369, 111375, 963, 2693],
+        }
+    )
+    inc = galeria._incrementos_observados(g, "a", solo_semanales=True).tolist()
+    assert inc[1:] == [1474.0, 1006.0, 963.0, 1730.0]
+    # control: agrupar por año tomaba el acumulado de la semana 1 (111,375) como incremento y la
+    # reparación de la semana 2 promediaba con él: el pico anual de decenas de miles
+    previa = g.groupby("Anio")["a"].diff()
+    assert previa.where(previa.notna(), g["a"]).iloc[2] == 111375.0
 
 
 def test_real_por_sexo_es_observado_y_descarta_lo_ausente(galeria) -> None:
@@ -259,3 +290,15 @@ def test_sin_regiones_no_genera_las_regiones(galeria, tmp_path, monkeypatch) -> 
     assert galeria.main() == 0
     items = json.loads((out / "_gallery_items.json").read_text(encoding="utf-8"))
     assert items and not any("Region" in json.dumps(i) for i in items)
+
+
+def test_revision_negativa_de_la_fuente_queda_ausente(galeria) -> None:
+    """Neuro 2016-W20: la fuente infla el acumulado y lo corrige en la W21. La W21 no se imputa."""
+    g = pd.DataFrame(
+        {"Anio": [2016] * 5, "Semana": [18, 19, 20, 21, 22], "a": [1325, 1406, 28124, 1575, 1661]}
+    )
+    inc = galeria._incrementos_observados(g, "a", solo_semanales=True)
+    assert inc.iloc[1] == 81.0 and inc.iloc[2] == 26718.0  # el dato publicado se conserva
+    assert pd.isna(inc.iloc[3]) and inc.iloc[4] == 86.0
+    # control: la regla sin estricta imputa la W21 con la media que incluye el error (pico doble)
+    assert galeria._incrementos_observados(g, "a").iloc[3] > 8000

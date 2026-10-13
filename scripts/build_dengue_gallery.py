@@ -28,7 +28,11 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd
 
-from epiforecast.utils.semana_epi import ds_de_semana_boletin, semana_boletin_de_ds  # noqa: E402
+from epiforecast.utils.semana_epi import (  # noqa: E402
+    ds_de_semana_boletin,
+    semana_boletin_de_ds,
+    semanas_del_anio_boletin,
+)
 
 warnings.filterwarnings("ignore")
 
@@ -377,21 +381,43 @@ def _incrementos_observados(
 ) -> pd.Series:
     """Incremento semanal real a partir del acumulado por sexo del boletín.
 
-    La primera semana del año aporta su propio acumulado. Un incremento negativo proviene de un
-    ajuste retrospectivo de la fuente: se sustituye por la media de los tres incrementos previos
-    originales y finitos, con piso en cero y redondeo al entero más cercano. Nunca se mira una
-    semana futura, y si no hay antecedente utilizable el valor queda ausente.
+    Un incremento negativo proviene de un ajuste retrospectivo de la fuente: sin la regla estricta
+    se sustituye por la media de los tres incrementos previos originales y finitos, con piso en
+    cero y redondeo al entero más cercano; con ella queda ausente. Nunca se mira una semana futura,
+    y si no hay antecedente utilizable el valor queda ausente.
+
+    Con ``solo_semanales`` (regla estricta, la de la galería) sólo hay incremento entre semanas
+    CONSECUTIVAS del calendario del boletín, incluido el paso de la semana 52 o 53 a la 1 del año
+    siguiente (``semana_epi`` v2). El primer acumulado de una serie o de un tramo que empieza a
+    mitad (Dengue 2018 W27, neuro 2014 W2) y la diferencia a través de un hueco (Dengue 2020
+    W40 → W45) quedan ausentes. El reinicio anual del acumulado se detecta en los datos, no se
+    supone: en Dengue ocurre en la semana 1, pero en neuro la semana 1 todavía CONTINÚA el
+    acumulado del año anterior y el reinicio llega en la semana 2 (2025-W1 mujeres 111,375 →
+    2025-W2 963). Donde el acumulado de la semana 1 o 2 cae a menos de la mitad del previo, esa
+    semana aporta su propio acumulado. Agrupar por ``Anio`` tomaba el acumulado de la semana 1
+    neuro como un incremento y fabricaba un pico anual de decenas de miles.
     """
-    inc = g.groupby("Anio")[columna].diff()
     if solo_semanales:
-        # Sólo incrementos de UNA semana. La semana 1 aporta su acumulado; el primer acumulado de
-        # un año que empieza a mitad (Dengue 2018 W27, 2019 W3, 2020 W4) suma muchas semanas, y
-        # el incremento a través de un hueco del boletín (2020: W40 → W45) también: volcarlos
-        # dibuja picos falsos. Ahí el valor queda ausente.
-        previa = g.groupby("Anio")["Semana"].shift()
-        inc = inc.mask(previa.notna() & (g["Semana"] - previa != 1))
-        inc = inc.where(inc.notna() | (g["Semana"] != 1), g[columna]).astype(float)
+        anio = g["Anio"].astype(int).to_numpy()
+        semana = g["Semana"].astype(int).to_numpy()
+        acum = g[columna].to_numpy(dtype=float)
+        bruto = np.full(len(g), np.nan)
+        for i in range(1, len(g)):
+            pa, ps = anio[i - 1], semana[i - 1]
+            consecutiva = (anio[i] == pa and semana[i] - ps == 1) or (
+                anio[i] == pa + 1 and semana[i] == 1 and ps == semanas_del_anio_boletin(int(pa))
+            )
+            if not consecutiva:
+                continue
+            reinicio = semana[i] <= 2 and acum[i] < 0.5 * acum[i - 1]
+            bruto[i] = acum[i] if reinicio else acum[i] - acum[i - 1]
+        # Una diferencia negativa es una revisión de la fuente, no la observación de una semana:
+        # queda ausente. Imputarla con la media de las previas propagaba errores de la fuente
+        # (neuro 2016-W20, acumulado ×20 en todas las entidades) a la semana siguiente.
+        bruto[bruto < 0] = np.nan
+        inc = pd.Series(bruto, index=g.index)
     else:
+        inc = g.groupby("Anio")[columna].diff()
         inc = inc.where(inc.notna(), g[columna]).astype(float)
     valores = inc.to_numpy(copy=True)
     originales = inc.to_numpy(copy=True)
