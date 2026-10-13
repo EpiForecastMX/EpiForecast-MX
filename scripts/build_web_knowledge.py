@@ -754,7 +754,8 @@ def build_static_data() -> dict[str, Any]:
             "nota_mexico": (
                 "Menor incidencia de los tres, tendencia creciente por envejecimiento "
                 "poblacional. Jalisco, Chihuahua y Sinaloa con tasas más altas. "
-                "SMAPE de predicción más elevado (>100%) por baja frecuencia."
+                "La baja frecuencia hace que una diferencia de pocos casos pese mucho en el "
+                "error porcentual."
             ),
         },
         "Dengue": {
