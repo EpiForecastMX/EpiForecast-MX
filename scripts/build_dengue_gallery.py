@@ -414,6 +414,11 @@ def boletin_real(
     por sexo que publica el boletín. Antes se repartía la serie general con una proporción
     constante de toda la historia, de modo que la curva mostrada como real era sintética y no un
     dato observado.
+
+    Regla estricta (ronda W37, la misma de Dengue): sólo incrementos de UNA semana. El primer
+    acumulado de un año que empieza a mitad (neuro 2014 arranca en la W2) no se desagrega, y la
+    diferencia a través de un hueco del boletín no se atribuye a una sola semana: ambas quedan
+    AUSENTES (no se dibujan ni se rellenan con cero). La fuente no se modifica.
     """
     df = _boletin_neuro()
     df = df[df["Padecimiento"] == pad_fc]
@@ -432,9 +437,12 @@ def boletin_real(
     )
     g = g.sort_values(["Anio", "Semana"])
     if sexo != "general":
-        g["c"] = _incrementos_observados(g, "ah" if sexo == "hombres" else "am")
+        g["c"] = _incrementos_observados(
+            g, "ah" if sexo == "hombres" else "am", solo_semanales=True
+        )
     g = _fecha_boletin(g)
-    out = g.groupby("ds", as_index=False)["c"].sum().rename(columns={"c": "y"})
+    out = g.groupby("ds", as_index=False)["c"].sum(min_count=1).rename(columns={"c": "y"})
+    out = out.dropna(subset=["y"])
     out["y"] = out["y"].clip(lower=0)
     return out.sort_values("ds").reset_index(drop=True)
 
