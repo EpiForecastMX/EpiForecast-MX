@@ -39,7 +39,6 @@ from scripts.build_dengue_gallery import (  # noqa: E402
     forecast_future,
     forecast_window,
     render_extra_views,
-    series_metrics,
     zoom_payload,
 )
 
@@ -125,9 +124,8 @@ def main() -> int:
                 # banda empírica de ±1.96σ para uniformar el ancho entre motores, de modo que
                 # Ensemble y Stacking, que no producen intervalo, aparentaban tener uno.
                 titulo = f"{FC_PAD[pad]} — {ent_label} ({SEXOS[sexo]})"
-                met = series_metrics(real, fc_zoom)  # SMAPE/MASE del solape reciente
-                _chart(real, fc, motor, titulo, img, metrics=met)  # histórico (COVID auto)
-                _chart_zoom(real, fc_zoom, motor, titulo, _zoom_path(img), metrics=met)
+                _chart(real, fc, motor, titulo, img)  # histórico (COVID auto)
+                _chart_zoom(real, fc_zoom, motor, titulo, _zoom_path(img))
                 rel = f"{pad_disp}/{fname}/{pad_disp}_{fname}_{sexo}.png"
                 zp = zoom_payload(real, fc_zoom, motor)
                 if zp:

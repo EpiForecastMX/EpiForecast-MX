@@ -33,6 +33,7 @@ from epi_modules.features.knowledge_base import KnowledgeBase  # noqa: E402
 
 from epiforecast.constants import ENTIDAD_DISPLAY  # noqa: E402
 from epiforecast.data.boletin import cargar_boletin_dengue  # noqa: E402
+from epiforecast.publication.metricas_seleccion import ROTULO, separa_metricas  # noqa: E402
 from epiforecast.utils.cohorts import filter_neuro  # noqa: E402
 from epiforecast.utils.config import conf  # noqa: E402
 from epiforecast.utils.semana_epi import (  # noqa: E402
@@ -53,6 +54,15 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=OUTPUT,
         help=f"archivo de salida (por defecto {OUTPUT}); el refresh sellado apunta al staging",
     )
+    parser.add_argument(
+        "--evidencia-metricas",
+        type=Path,
+        default=None,
+        help=(
+            "JSON de revisión con las métricas de selección retiradas del knowledge público "
+            f"(rotuladas «{ROTULO}»); nunca se publica"
+        ),
+    )
     return parser.parse_args(argv)
 
 
@@ -71,6 +81,13 @@ def _sin_nan(valor: Any) -> Any:
     if isinstance(valor, list | tuple):
         return [_sin_nan(v) for v in valor]
     return valor
+
+
+def escribe_evidencia(retiradas: dict[str, Any], destino: Path) -> None:
+    """Escribe las métricas retiradas (evidencia de revisión, no publicable)."""
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    with open(destino, "w", encoding="utf-8") as f:
+        json.dump(_sin_nan(retiradas), f, ensure_ascii=False, indent=1, allow_nan=False)
 
 
 def escribe_knowledge(knowledge: dict[str, Any], destino: Path) -> None:
@@ -1097,7 +1114,8 @@ def build_padecimientos() -> dict[str, Any]:
 
 def main(argv: list[str] | None = None) -> None:
     """Entry point: genera knowledge.json (en `--out`, o en la ruta legacy)."""
-    destino = _parse_args(argv).out
+    args = _parse_args(argv)
+    destino = args.out
     print("Cargando datos del proyecto...")
     cache = ProjectDataCache()
     kb = KnowledgeBase(cache)
@@ -1117,6 +1135,7 @@ def main(argv: list[str] | None = None) -> None:
         # Dengue: sección propia SIN normalizar (preserva tildes/eñes en estados y notas).
         "dengue": build_dengue_section(),
         # Rendimiento 2026 por padecimiento × motor (SMAPE + MASE). Claves ASCII, sin normalizar.
+        # En la ronda W37 son métricas de selección: `separa_metricas` lo retira del público.
         "rendimiento_2026": build_rendimiento_2026(),
         # Manifiesto de roster data-driven (EPIC 4): solo published, conteos canónicos.
         **build_padecimientos(),
@@ -1124,6 +1143,11 @@ def main(argv: list[str] | None = None) -> None:
     }
     _fill_horizon_dates(knowledge, cache)
 
+    # Ronda W37: las métricas por serie y motor son el error de la ventana de selección W28–W37.
+    # Salen del knowledge público y quedan sólo en la evidencia de revisión, rotuladas.
+    knowledge, retiradas = separa_metricas(knowledge)
+    if args.evidencia_metricas is not None:
+        escribe_evidencia(retiradas, args.evidencia_metricas)
     escribe_knowledge(knowledge, destino)
 
     size_kb = destino.stat().st_size / 1024

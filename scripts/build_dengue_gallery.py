@@ -36,7 +36,6 @@ from epiforecast.constants import COVID_END, COVID_START, ENTIDAD_DISPLAY  # noq
 from epiforecast.data import enso  # noqa: E402
 from epiforecast.data.boletin import cargar_boletin_dengue  # noqa: E402
 from epiforecast.data.ingestion.inegi_constants import REGION_SALUD_MENTAL  # noqa: E402
-from epiforecast.evaluation.metrics import compute_forecast_metrics  # noqa: E402
 from epiforecast.models.forecast_guards import clamp_seasonal_envelope  # noqa: E402
 from epiforecast.utils.config import conf, logger  # noqa: E402
 from epiforecast.visualization.web_theme import (  # noqa: E402
@@ -133,7 +132,18 @@ def _fc_series(motor: str, pad_fc: str, entidad: str, sexo: str) -> pd.DataFrame
         & (df["meta_entidad"].fillna("Nacional") == entidad)
         & (df["meta_modo"] == sexo)
     ]
-    cols = [c for c in ["ds", "yhat", "yhat_lower", "yhat_upper"] if c in d.columns]
+    cols = [
+        c
+        for c in (
+            "ds",
+            "yhat",
+            "yhat_lower",
+            "yhat_upper",
+            "anio_boletin_corte",
+            "semana_boletin_corte",
+        )
+        if c in d.columns
+    ]
     return d[cols].sort_values("ds").reset_index(drop=True)
 
 
@@ -234,12 +244,15 @@ def _finish_axes(
     fig: object,
     ax: object,
     titulo: str,
-    metrics: tuple[float | None, float | None] = (None, None),
     enso_overlay: bool = False,
 ) -> None:
-    """Cierra el gráfico con una FRANJA SUPERIOR limpia (fuera de los datos): título arriba,
-    leyenda horizontal a la izquierda (Real / Pronóstico [+ El Niño / La Niña]) y las métricas
-    SMAPE·MASE a la derecha como badge. Nada se encima sobre la serie."""
+    """Cierra el gráfico con una FRANJA SUPERIOR limpia (fuera de los datos): título arriba y
+    leyenda horizontal a la izquierda (Real / Pronóstico [+ El Niño / La Niña]). Nada se encima
+    sobre la serie.
+
+    Sin insignia de métricas: el SMAPE·MASE del solape reciente que se rotulaba aquí mezclaba
+    ajuste dentro de muestra con semanas posteriores al corte, y las métricas de la ventana de
+    selección W28–W37 son diagnóstico de selección, no evaluación publicable (ronda W37)."""
     for sp in ax.spines.values():  # type: ignore[attr-defined]
         sp.set_color(GRID)
     ax.tick_params(colors=MUTED, labelsize=8)  # type: ignore[attr-defined]
@@ -254,9 +267,8 @@ def _finish_axes(
             Patch(facecolor=_NINA, alpha=0.55, edgecolor="none"),
         ]
         labels += ["El Niño", "La Niña"]
-    sm, ma = metrics
     # Con rótulos largos (intervalo nominal, «no elegible; acotado a la envolvente») la fila única
-    # invadía el badge de métricas o ensanchaba la figura: la leyenda se parte en filas de tres.
+    # ensanchaba la figura: la leyenda se parte en filas de tres.
     ancho_largo = sum(len(t) for t in labels) > 70
     ncol = max(1, min(len(labels), 3 if ancho_largo else 6))
     filas_leyenda = -(-len(labels) // ncol)
@@ -273,45 +285,8 @@ def _finish_axes(
         handletextpad=0.5,
         columnspacing=1.4,
     )
-    parts = []
-    if sm is not None and np.isfinite(sm):
-        parts.append(f"SMAPE {sm:.1f}%")
-    if ma is not None and np.isfinite(ma):
-        parts.append(f"MASE {ma:.2f}")
-    if parts:
-        ax.text(  # type: ignore[attr-defined]
-            1.0,
-            1.03,
-            "   ·   ".join(parts),
-            transform=ax.transAxes,  # type: ignore[attr-defined]
-            ha="right",
-            va="bottom",
-            color=MINT,
-            fontsize=8.5,
-            fontweight="bold",
-        )
     ax.set_title(  # type: ignore[attr-defined]
         titulo, color=TEXT, fontsize=12.5, pad=30 + 15 * (filas_leyenda - 1), fontweight="bold"
-    )
-
-
-def series_metrics(real: pd.DataFrame, fc: pd.DataFrame) -> tuple[float | None, float | None]:
-    """SMAPE y MASE del solape reciente (real vs pronóstico), homogéneo para toda serie."""
-    if real.empty or fc.empty:
-        return (None, None)
-    j = real.set_index("ds")[["y"]].join(fc.set_index("ds")[["yhat"]], how="inner").dropna()
-    if len(j) < 4:
-        return (None, None)
-    train = real[real["ds"] < j.index.min()]["y"].to_numpy(dtype=float)
-    if len(train) < 10:
-        train = real["y"].to_numpy(dtype=float)
-    m = compute_forecast_metrics(
-        j["y"].to_numpy(dtype=float), j["yhat"].to_numpy(dtype=float), train
-    )
-    sm, ma = m.get("smape"), m.get("mase")
-    return (
-        float(sm) if sm is not None else None,
-        float(ma) if ma is not None else None,
     )
 
 
@@ -556,7 +531,6 @@ def _chart(
     motor: str,
     titulo: str,
     out: Path,
-    metrics: tuple[float | None, float | None] = (None, None),
     enso_overlay: bool = False,
     etiqueta_linea: str | None = None,
     etiqueta_banda: str | None = None,
@@ -586,7 +560,7 @@ def _chart(
     if enso_overlay:  # Dengue: bandas El Niño/La Niña super suavizadas
         _overlay_enso(ax, list(real["ds"]))
     _overlay_covid(ax)  # banda COVID super suavizada (si cae en el rango)
-    _finish_axes(fig, ax, titulo, metrics, enso_overlay)
+    _finish_axes(fig, ax, titulo, enso_overlay)
     fig.tight_layout()
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, facecolor=BG, bbox_inches="tight")
@@ -675,7 +649,7 @@ def _chart_compare(
             alpha=0.85,
         )
     _overlay_covid(ax)
-    _finish_axes(fig, ax, titulo, metrics=(None, None), enso_overlay=False)
+    _finish_axes(fig, ax, titulo, enso_overlay=False)
     ax.xaxis.set_major_locator(mdates.MonthLocator(interval=2))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %Y"))
     for lbl in ax.get_xticklabels():
@@ -694,7 +668,6 @@ def _chart_zoom(
     titulo: str,
     out: Path,
     weeks_back: int = 52,
-    metrics: tuple[float | None, float | None] = (None, None),
     enso_overlay: bool = False,
     etiqueta_linea: str | None = None,
     etiqueta_banda: str | None = None,
@@ -766,7 +739,7 @@ def _chart_zoom(
         win_dates = sorted({*list(r["ds"]), *(list(fc["ds"]) if not fc.empty else [])})
         _overlay_enso(ax, win_dates)
     _overlay_covid(ax)  # banda COVID (fuera de rango en el zoom reciente, se omite sola)
-    _finish_axes(fig, ax, titulo, metrics, enso_overlay)
+    _finish_axes(fig, ax, titulo, enso_overlay)
     # Densidad de ticks adaptativa: 2 meses para el zoom de 1 año, semestral para el de 5 años.
     if weeks_back > 120:
         ax.xaxis.set_major_locator(mdates.MonthLocator(bymonth=(1, 7)))
@@ -817,9 +790,6 @@ def zoom_payload(
                 lomap[k] = int(round(max(0.0, float(row.yhat_lower))))
                 himap[k] = int(round(max(0.0, float(row.yhat_upper))))
     dates = sorted(set(rmap) | set(ymap))
-    # SMAPE/MASE del solape real-vs-pronóstico (mismo cálculo que la ficha de los PNG),
-    # para mostrarlos en el lightbox interactivo.
-    sm, ma = series_metrics(real, fc)
     sin_intervalo = _band_degenerate(fc)
     return {
         "motor": motor,
@@ -836,10 +806,22 @@ def zoom_payload(
         "y": [ymap.get(k) for k in dates],
         "lo": [lomap.get(k) for k in dates],
         "hi": [himap.get(k) for k in dates],
-        "last_real": max(rmap),  # semana vigente del boletín (presente)
-        "smape": round(sm, 1) if sm is not None else None,
-        "mase": round(ma, 2) if ma is not None else None,
+        "last_real": max(rmap),  # ds legado de la semana vigente del boletín (presente)
+        # Semana de corte que declara el propio pronóstico (procedencia sellada en predict).
+        # Sin SMAPE/MASE: las métricas del solape no son evaluación publicable (ronda W37).
+        "corte_modelo": corte_modelo(fc),
     }
+
+
+def corte_modelo(fc: pd.DataFrame) -> dict[str, int] | None:
+    """``{"anio", "semana"}`` del corte que el pronóstico declara; None si no lo declara."""
+    cols = ["anio_boletin_corte", "semana_boletin_corte"]
+    if fc.empty or not set(cols) <= set(fc.columns):
+        return None
+    pares = fc[cols].dropna().drop_duplicates()
+    if len(pares) != 1:
+        return None
+    return {"anio": int(pares.iloc[0, 0]), "semana": int(pares.iloc[0, 1])}
 
 
 def render_extra_views(
@@ -1045,14 +1027,12 @@ def _dengue_regiones(
                 fc_zoom = empirical_band(fc_zoom, std, last_real=last_real)
             rel = f"dengue/{folder}/Dengue_{folder}_{sexo}.png"
             titulo = f"Dengue — {region_disp} ({SEXOS[sexo]})"
-            met = series_metrics(real, fc_zoom)
             _chart(
                 real,
                 fc,
                 motor_label,
                 titulo,
                 out_base.parent / rel,
-                metrics=met,
                 enso_overlay=True,
             )
             _chart_zoom(
@@ -1061,7 +1041,6 @@ def _dengue_regiones(
                 motor_label,
                 titulo,
                 _zoom_path(out_base.parent / rel),
-                metrics=met,
                 enso_overlay=True,
             )
             zp = zoom_payload(real, fc_zoom, motor_label)
@@ -1137,14 +1116,12 @@ def main() -> int:
         # committeados; Netlify es case-sensitive, no usar 'Dengue/').
         rel = f"dengue/{safe_ent}/Dengue_{safe_ent}_{sexo}.png"
         titulo = f"Dengue — {ent_disp} ({SEXOS[sexo]})"
-        met = series_metrics(real, fc_zoom)
         _chart(
             real,
             fc,
             motor,
             titulo,
             out_base.parent / rel,
-            metrics=met,
             enso_overlay=True,
             **rotulos,
         )
@@ -1154,7 +1131,6 @@ def main() -> int:
             motor,
             titulo,
             _zoom_path(out_base.parent / rel),
-            metrics=met,
             enso_overlay=True,
             **rotulos,
         )

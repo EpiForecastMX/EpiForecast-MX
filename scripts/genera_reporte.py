@@ -31,10 +31,12 @@ from datetime import datetime
 import json
 import math
 from pathlib import Path
+from typing import Any
 import unicodedata
 
 import pandas as pd
 
+from epiforecast.publication.metricas_seleccion import ROTULO, separa_metricas
 from epiforecast.utils.cohorts import filter_neuro
 from epiforecast.utils.config import logger
 
@@ -441,16 +443,43 @@ def _dengue_chart_cap(dg: dict) -> str:
     )
 
 
+# Ronda W37: secciones que sólo existen para mostrar el error de la ventana de selección W28–W37
+# (ranking, top/bottom, histograma, desglose por sexo y conteos por umbral de MASE).
+_SECCIONES_DE_METRICAS = (
+    "ranking",
+    "top10",
+    "bottom10",
+    "mase_histo",
+    "mase_bin_labels",
+    "por_sexo",
+    "modelos_excelentes",
+    "modelos_deficientes",
+)
+
+
+def datos_publicables(stats: dict[str, Any], dengue: dict[str, Any]) -> dict[str, Any]:
+    """Datos que se incrustan en la página, sin las métricas de selección W28–W37.
+
+    Las métricas por serie de esta ronda son el error con el que se eligió cada motor (diagnóstico
+    de selección, no evaluación independiente): no llegan al JSON público, ni siquiera ocultas. El
+    backtest sellado de Dengue (``DENGUE_BACKTEST``) no es de la ventana y se conserva.
+    """
+    publico = {k: v for k, v in stats.items() if k not in _SECCIONES_DE_METRICAS}
+    publico, _ = separa_metricas({**publico, "dengue": dengue})
+    return publico
+
+
 def build_html(stats: dict, dengue: dict) -> str:
-    stats = {**stats, "dengue": dengue}
+    stats = datos_publicables(stats, dengue)
     html = TEMPLATE.read_text(encoding="utf-8")
     repl = {
         "__DATA_JSON__": json.dumps(stats, ensure_ascii=False),
+        "__ROTULO__": ROTULO,
         "__FECHA__": stats["fecha"],
         "__TOTAL__": str(stats["total_modelos"]),
         "__NEURO_DIST_BADGES__": _neuro_dist_badges(stats["dist_neuro"]),
         "__PAD_EXPLAIN__": _pad_explain(stats["por_padecimiento"]),
-        "__DENGUE_CHART_CAP__": _dengue_chart_cap(dengue),
+        "__DENGUE_CHART_CAP__": _dengue_chart_cap(stats["dengue"]),
     }
     for tok, val in repl.items():
         html = html.replace(tok, val)

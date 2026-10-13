@@ -11,7 +11,7 @@ Salida: reports/ProdDetails/validacion_semanal.html
 from __future__ import annotations
 
 import argparse
-from datetime import date, datetime
+from datetime import datetime
 import math
 from pathlib import Path
 import shutil
@@ -21,7 +21,11 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 
 from epiforecast.utils.cohorts import filter_neuro
-from epiforecast.utils.semana_epi import ds_de_semana_boletin
+from epiforecast.utils.semana_epi import (
+    ds_de_semana_boletin,
+    fin_semana_boletin,
+    inicio_semana_boletin,
+)
 
 # ---------------------------------------------------------------------------
 # Rutas y constantes
@@ -164,15 +168,15 @@ def _norm_prod_entidad(s: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _epiweek_to_monday(anio: int, semana: int) -> date:
-    """Convierte semana epidemiologica a fecha del lunes (ISO)."""
-    return date.fromisocalendar(anio, semana, 1)
-
-
 def _epiweek_date_range(anio: int, semana: int) -> str:
-    """Rango de fechas legible."""
-    monday = _epiweek_to_monday(anio, semana)
-    sunday = date.fromisocalendar(anio, semana, 7)
+    """Rango de fechas legible de la semana del boletin: de domingo a sabado (calendario v2).
+
+    Antes se usaban el lunes y el domingo de la semana ISO con el mismo numero, que en 2026 caen
+    casi una semana antes que la semana epidemiologica publicada (W39 ISO = 21-27 sep; boletin
+    W39 = 27 sep - 3 oct).
+    """
+    monday = inicio_semana_boletin(anio, semana)  # domingo de inicio
+    sunday = fin_semana_boletin(anio, semana)  # sabado de cierre
     meses = [
         "",
         "enero",
@@ -285,7 +289,8 @@ def _load_forecasts(target_date: str) -> pd.DataFrame:
         df["entidad_norm"] = df["meta_entidad"].apply(_normalize)
         df["pad_norm"] = df["meta_padecimiento"].apply(_normalize)
         df.rename(columns={"meta_modo": "sexo"}, inplace=True)
-        frames.append(df[["entidad_norm", "pad_norm", "sexo", "yhat", "model"]])
+        corte = [c for c in ("anio_boletin_corte", "semana_boletin_corte") if c in df.columns]
+        frames.append(df[["entidad_norm", "pad_norm", "sexo", "yhat", "model", *corte]])
     if not frames:
         msg = f"No se encontraron forecasts para {target_date}"
         raise FileNotFoundError(msg)
@@ -293,13 +298,17 @@ def _load_forecasts(target_date: str) -> pd.DataFrame:
 
 
 def _load_production() -> pd.DataFrame:
-    """Lee Excel de produccion, retorna motor ganador y MASE para todas las combinaciones."""
+    """Lee Excel de produccion y retorna el motor productivo de cada combinacion.
+
+    No lee ``mase_prod``: en la ronda W37 es el error de la ventana de seleccion W28-W37
+    (diagnostico de seleccion, no evaluacion independiente) y no se publica.
+    """
     df = pd.read_excel(PROD_EXCEL, sheet_name=0)
-    df = df[["padecimiento", "entidad", "sexo", "modelo_produccion", "mase_prod"]].copy()
+    df = df[["padecimiento", "entidad", "sexo", "modelo_produccion"]].copy()
     df["entidad_norm"] = df["entidad"].apply(_norm_prod_entidad)
     df["pad_norm"] = df["padecimiento"].apply(_normalize)
     df["motor"] = df["modelo_produccion"]
-    return df[["entidad_norm", "pad_norm", "sexo", "motor", "mase_prod"]]
+    return df[["entidad_norm", "pad_norm", "sexo", "motor"]]
 
 
 # ---------------------------------------------------------------------------
@@ -431,9 +440,6 @@ def _build_comparison(
 
         error_pct, veredicto = _verdict(real_val, yhat)
 
-        mase_val = row.get("mase_prod")
-        mase_val = mase_val if pd.notna(mase_val) else None
-
         results.append(
             {
                 "entidad_norm": row["entidad_norm"],
@@ -444,7 +450,6 @@ def _build_comparison(
                 "error_pct": error_pct,
                 "veredicto": veredicto,
                 "motor": motor_lower,
-                "mase": mase_val,
                 "nivel": row["nivel"],
             }
         )
@@ -623,8 +628,6 @@ def _build_sexo_table(data: pd.DataFrame) -> str:
                 f"  <td>{_fmt_int(r['pronostico'])}</td>"
                 f'  <td class="{_err_class(r["error_pct"])}">'
                 f"{_fmt_error(r['error_pct'])}</td>"
-                f'  <td class="{_mase_class(r["mase"])}">'
-                f"{_fmt_mase(r['mase'])} {_mase_dot(r['mase'])}</td>"
                 f"  <td>{_motor_badge(r['motor'])}</td>"
                 f"  <td>{_veredicto_badge(r['veredicto'])}</td>"
                 f"</tr>\n"
@@ -634,7 +637,7 @@ def _build_sexo_table(data: pd.DataFrame) -> str:
   <table>
     <thead><tr>
       <th>Padecimiento</th><th>Sexo</th><th>Real</th><th>Pronostico</th>
-      <th>SMAPE</th><th>MASE</th><th>Motor</th><th>Veredicto</th>
+      <th>SMAPE</th><th>Motor</th><th>Veredicto</th>
     </tr></thead>
     <tbody>{rows_html}</tbody>
   </table>
@@ -650,12 +653,8 @@ def _section_dashboard(comp: pd.DataFrame, anio: int, semana: int) -> str:
     """Panel premium con gauges SVG animados: SMAPE + MASE por padecimiento."""
     nac_gen = comp[(comp["nivel"] == "nacional") & (comp["sexo"] == "general")]
 
-    # MASE desde tabla de produccion (validacion cruzada del modelo ganador)
-    prod_df = pd.read_excel(PROD_EXCEL, sheet_name=0)
-    nac_prod = prod_df[(prod_df["entidad"] == "Nacional") & (prod_df["sexo"] == "general")]
-    mase_lookup: dict[str, float] = {}
-    for _, row in nac_prod.iterrows():
-        mase_lookup[_normalize(row["padecimiento"])] = row.get("mase_prod", float("nan"))
+    # Sin MASE: el de la tabla de produccion es el error de la ventana de seleccion W28-W37
+    # (diagnostico de seleccion, no evaluacion independiente) y no se publica.
 
     date_range = _epiweek_date_range(anio, semana)
     panels = ""
@@ -669,8 +668,7 @@ def _section_dashboard(comp: pd.DataFrame, anio: int, semana: int) -> str:
         pron = int(r["pronostico"]) if pd.notna(r["pronostico"]) else 0
         motor = r["motor"]
         veredicto = r["veredicto"]
-        mase = mase_lookup.get(pad, float("nan"))
-        panels += _dashboard_panel(pad, smape, real, pron, motor, veredicto, mase)
+        panels += _dashboard_panel(pad, smape, real, pron, motor, veredicto, float("nan"))
 
     return f"""
 <section class="reveal animate">
@@ -875,8 +873,6 @@ def _section_detalle(comp: pd.DataFrame) -> str:
                 f"  <td>{_fmt_int(r['pronostico'])}</td>"
                 f'  <td class="{_err_class(r["error_pct"])}">'
                 f"{_fmt_error(r['error_pct'])}</td>"
-                f'  <td class="{_mase_class(r["mase"])}">'
-                f"{_fmt_mase(r['mase'])} {_mase_dot(r['mase'])}</td>"
                 f"  <td>{_motor_badge(r['motor'])}</td>"
                 f"  <td>{_veredicto_badge(r['veredicto'])}</td>"
                 f"</tr>\n"
@@ -900,7 +896,7 @@ def _section_detalle(comp: pd.DataFrame) -> str:
     <div class="table-wrapper">
       <table><thead><tr>
         <th>Entidad</th><th>Real</th><th>Pronostico</th>
-        <th>SMAPE</th><th>MASE</th><th>Motor</th><th>Veredicto</th>
+        <th>SMAPE</th><th>Motor</th><th>Veredicto</th>
       </tr></thead>
       <tbody>{rows_html}</tbody></table>
     </div>
@@ -988,9 +984,33 @@ def _isnan(v: Any) -> bool:
 # ---------------------------------------------------------------------------
 
 
-def _generate_html(comp: pd.DataFrame, anio: int, semana: int) -> str:
+def _corte_declarado(forecasts: pd.DataFrame) -> tuple[int, int] | None:
+    """(anio, semana) del corte que declaran los pronosticos; None si no lo declaran.
+
+    Falla si declaran cortes distintos: el pie de la pagina no puede resumirlos en uno.
+    """
+    cols = ["anio_boletin_corte", "semana_boletin_corte"]
+    if not set(cols) <= set(forecasts.columns):
+        return None
+    pares = forecasts[cols].dropna().drop_duplicates()
+    if pares.empty:
+        return None
+    if len(pares) > 1:
+        raise SystemExit(f"Los pronosticos declaran {len(pares)} cortes distintos")
+    return int(pares.iloc[0, 0]), int(pares.iloc[0, 1])
+
+
+def _generate_html(
+    comp: pd.DataFrame, anio: int, semana: int, corte: tuple[int, int] | None = None
+) -> str:
     ahora = datetime.now(tz=TZ_MX).strftime("%d/%m/%Y %H:%M hrs")
     date_range = _epiweek_date_range(anio, semana)
+    pie_corte = (
+        f"Modelos entrenados con datos hasta la semana {corte[1]}/{corte[0]}; "
+        f"realidad observada hasta la semana {semana}/{anio}"
+        if corte
+        else "Corte de entrenamiento no declarado por los pronosticos"
+    )
 
     # KPIs
     n_series = len(comp)
@@ -1000,13 +1020,6 @@ def _generate_html(comp: pd.DataFrame, anio: int, semana: int) -> str:
     nac_gen = comp[(comp["nivel"] == "nacional") & (comp["sexo"] == "general")]
     nac_err = nac_gen["error_pct"].dropna()
     nac_mean = f"{nac_err.mean():.1f}%" if len(nac_err) > 0 else "N/A"
-
-    # MASE medio nacional (CV del modelo ganador)
-    prod_df = pd.read_excel(PROD_EXCEL, sheet_name=0)
-    nac_mase = prod_df[(prod_df["entidad"] == "Nacional") & (prod_df["sexo"] == "general")][
-        "mase_prod"
-    ]
-    mase_mean = f"{nac_mase.mean():.2f}" if len(nac_mase) > 0 else "N/A"
 
     css = _build_css()
     parts: list[str] = []
@@ -1034,10 +1047,6 @@ def _generate_html(comp: pd.DataFrame, anio: int, semana: int) -> str:
       <span class="label">SMAPE nacional medio</span>
     </div>
     <div class="hero-kpi">
-      <span class="value">{mase_mean}</span>
-      <span class="label">MASE nacional medio</span>
-    </div>
-    <div class="hero-kpi">
       <span class="value">{n_good}/{n_valid}</span>
       <span class="label">Precision &le;25%</span>
     </div>
@@ -1057,7 +1066,7 @@ def _generate_html(comp: pd.DataFrame, anio: int, semana: int) -> str:
 <footer>
   <p class="footer-title">EpiForecast-MX | IMSS 2026</p>
   <p>Datos: Boletin Epidemiologico SINAVE | Generado: {ahora}</p>
-  <p>Modelos entrenados con datos hasta semana 1/2026</p>
+  <p>{pie_corte}</p>
 </footer>
 <script>
 document.addEventListener('DOMContentLoaded',function(){{
@@ -1332,7 +1341,11 @@ def main(argv: list[str] | None = None) -> None:
 
     print("Cargando forecasts (4 modelos, todos los modos)...")
     forecasts = _load_forecasts(target_date)
-    print(f"  {len(forecasts)} registros")
+    corte = _corte_declarado(forecasts)
+    forecasts = forecasts.drop(
+        columns=["anio_boletin_corte", "semana_boletin_corte"], errors="ignore"
+    )
+    print(f"  {len(forecasts)} registros | corte declarado: {corte}")
 
     print("Cargando tabla de produccion...")
     produccion = _load_production()
@@ -1350,7 +1363,7 @@ def main(argv: list[str] | None = None) -> None:
         print(f"  {nivel}: {n_good}/{len(valid)} con error <=25%")
 
     print("Generando HTML...")
-    html = _generate_html(comp, anio, semana)
+    html = _generate_html(comp, anio, semana, corte)
     salida_html.parent.mkdir(parents=True, exist_ok=True)
     salida_html.write_text(_normaliza_para_hooks(html), encoding="utf-8")
     print(f"  {salida_html} ({len(html):,} bytes)")
