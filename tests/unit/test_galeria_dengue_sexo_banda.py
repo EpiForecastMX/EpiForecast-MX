@@ -9,6 +9,7 @@ central nominal del N %», con el N que declara el propio motor.
 from __future__ import annotations
 
 import importlib
+import json
 from pathlib import Path
 import sys
 from typing import Any
@@ -234,3 +235,27 @@ def test_vista_5_anios_no_fabrica_banda(galeria, tmp_path, monkeypatch) -> None:
     )
     fut = capt[0][capt[0]["ds"] > real["ds"].max()]
     assert ((fut["yhat_upper"] - fut["yhat_lower"]).abs() < 1e-9).all()
+
+
+def test_sin_regiones_no_genera_las_regiones(galeria, tmp_path, monkeypatch) -> None:
+    """Las 4 regiones no son parte de las 99 series de la asignación: la opción las omite."""
+    prod = pd.DataFrame(
+        {"entidad": ["Colima"], "sexo": ["general"], "motor_productivo": ["DeepAR"]}
+    )
+    galeria.PROD.parent.mkdir(parents=True, exist_ok=True)
+    prod.to_csv(galeria.PROD, index=False)
+    _forecasts(galeria)
+    monkeypatch.setattr(galeria, "cargar_boletin_dengue", _boletin)
+    for f in ("_chart", "_chart_zoom", "render_extra_views"):
+        monkeypatch.setattr(galeria, f, lambda *a, **k: None)
+
+    def _no(*a: Any, **k: Any) -> int:
+        raise AssertionError("no debía generar regiones")
+
+    monkeypatch.setattr(galeria, "_dengue_regiones", _no)
+    out = tmp_path / "web" / "dengue"
+    out.mkdir(parents=True)
+    monkeypatch.setattr(sys, "argv", ["x", "--out", str(out), "--sin-regiones"])
+    assert galeria.main() == 0
+    items = json.loads((out / "_gallery_items.json").read_text(encoding="utf-8"))
+    assert items and not any("Region" in json.dumps(i) for i in items)

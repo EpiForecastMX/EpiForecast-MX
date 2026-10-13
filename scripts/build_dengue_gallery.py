@@ -1078,6 +1078,14 @@ def _dengue_regiones(
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--out", required=True, help="Directorio de salida (Reports/dengue)")
+    ap.add_argument(
+        "--sin-regiones",
+        action="store_true",
+        help=(
+            "no genera las 4 regiones: su pronóstico no forma parte de las 99 series de la "
+            "asignación congelada (caché DeepAR propio o agregación de estados sin validar)"
+        ),
+    )
     args = ap.parse_args()
     out_base = Path(args.out)
 
@@ -1171,7 +1179,10 @@ def main() -> int:
         )
         n += 1
 
-    n += _dengue_regiones(bol, gen_motor, out_base, items, zoom, motores_cmp)
+    if args.sin_regiones:
+        logger.warning("Regiones de Dengue omitidas (--sin-regiones): fuera de la asignación.")
+    else:
+        n += _dengue_regiones(bol, gen_motor, out_base, items, zoom, motores_cmp)
     (out_base / "_gallery_items.json").write_text(
         json.dumps(items, ensure_ascii=False), encoding="utf-8"
     )
