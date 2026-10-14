@@ -1,0 +1,2140 @@
+{
+ "version": 1,
+ "rotulo": "Notificaciones previstas · agregado estatal neuro",
+ "definicion": "suma de los pronósticos guardados (yhat sin redondear) de las series de los 32 estados de Alzheimer, Depresión y Parkinson, modo general, con el motor asignado, 52 pasos desde el corte; redondeada una sola vez al mostrar. No es el pronóstico de los modelos nacionales (que conservan el suyo) ni incluye regiones ni Dengue",
+ "corte": "2026-W37",
+ "procedencia": {
+  "asignacion": {
+   "archivo": "tabla_333_modelos_produccion.xlsx",
+   "sha256": "e1306c973cfa0f7166c71f08de014b3ad51eeb1481ecfc1e8a2fb022badc7f22"
+  },
+  "forecasts": {
+   "DeepAR": {
+    "archivo": "reports/forecasts/deepar/all_forecast_deepar.csv",
+    "sha256": "d289005973b8a92e78902f1160f154677722e0ff84323fa1b3e18527bf0f8302"
+   },
+   "Ensemble": {
+    "archivo": "reports/forecasts/ensemble/all_forecast_ensemble.csv",
+    "sha256": "c1c175c0562b4697d3718874c5ad1e25aa1288343d6d5650313ced68ca47b4ca"
+   },
+   "Prophet": {
+    "archivo": "reports/forecasts/prophet/all_forecast_prophet.csv",
+    "sha256": "dec13b777cdfe9a624313775c032e58acc79a20d0853133942c970957dcea935"
+   },
+   "Stacking": {
+    "archivo": "reports/forecasts/stacking/all_forecast_stacking.csv",
+    "sha256": "71fffee3b96aa76b5f8ad2eff2daba9f8a8b55a79793b0f7bb6f057d045bcf52"
+   }
+  }
+ },
+ "horizonte": {
+  "pasos": 52,
+  "ds_primero": "2026-09-07",
+  "ds_ultimo": "2027-08-30",
+  "pasos_sin_semana_del_boletin": [
+   "2026-12-28"
+  ],
+  "semanas_del_boletin": "2026-W38 a 2027-W36 (51 semanas)"
+ },
+ "series_incluidas": 96,
+ "valores": 4992,
+ "suma_original": 171524.04013366552,
+ "valor_mostrado": 171524,
+ "denominador": "96 series: 32 estados × 3 padecimientos (Alzheimer, Depresión, Parkinson), modo general · 52 pasos desde el corte W37",
+ "por_sexo": {
+  "general": {
+   "series": 96,
+   "valores": 4992,
+   "suma_original": 171524.04013366552,
+   "valor_mostrado": 171524,
+   "suma_de_totales_redondeados_por_serie": 171525,
+   "por_padecimiento": {
+    "Alzheimer": {
+     "series": 32,
+     "suma_original": 1899.2524288087557,
+     "valor_mostrado": 1899
+    },
+    "Depresion": {
+     "series": 32,
+     "suma_original": 161887.13700404353,
+     "valor_mostrado": 161887
+    },
+    "Parkinson": {
+     "series": 32,
+     "suma_original": 7737.6507008131985,
+     "valor_mostrado": 7738
+    }
+   },
+   "series_incluidas": [
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Aguascalientes",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Baja California",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 47.25995465906566
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Baja California Sur",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Campeche",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Chiapas",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 48.612297702277495
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Chihuahua",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 232.69228550570196
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Ciudad de México",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 70.15491152197771
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Coahuila",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 77.80735337621209
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Colima",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 75.10225615930942
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Durango",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 75.13416920592427
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Guanajuato",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 76.11131139329301
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Guerrero",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 39.13757451536367
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Hidalgo",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 37.69120622403325
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Jalisco",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 153.49115601402423
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Michoacán",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 74.35465805745734
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Morelos",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 54.898575214568254
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "México",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 121.90492677225777
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Nayarit",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 42.82291442428398
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Nuevo León",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 93.67849125338559
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Oaxaca",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 86.09685073290214
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Puebla",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 51.66755042885778
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Querétaro",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Quintana Roo",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "San Luis Potosí",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 40.203518593312346
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Sinaloa",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 119.81059628666783
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Sonora",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 39.20081274816506
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Tabasco",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 16.53254171262178
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Tamaulipas",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 116.33567775990943
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Tlaxcala",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Veracruz",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 108.55083854718353
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Yucatán",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Zacatecas",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Aguascalientes",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 1707.8337630531548
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Baja California",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 5162.209498586618
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Baja California Sur",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 805.230731010437
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Campeche",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 1920.6063201111945
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Chiapas",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 2682.465432558039
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Chihuahua",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 9188.783507038856
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Ciudad de México",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 31681.64663425303
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Coahuila",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 3321.537699075253
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Colima",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 1400.9967060566212
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Durango",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 4758.680058083228
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Guanajuato",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 6058.135387005492
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Guerrero",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 3093.3721518475677
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Hidalgo",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 3605.6861047680613
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Jalisco",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 11871.745117728022
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Michoacán",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 7427.898846121672
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Morelos",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 3629.25049406257
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "México",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 14190.547653198242
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Nayarit",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 3668.596015803473
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Nuevo León",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 2764.230983761624
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Oaxaca",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 3212.4522191221945
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Puebla",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 3691.1319842415596
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Querétaro",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 1101.072165037158
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Quintana Roo",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 1389.231201226879
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "San Luis Potosí",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 2968.9289439800095
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Sinaloa",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 4538.090140685454
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Sonora",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 4010.1160946539303
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Tabasco",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 3217.383708019151
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Tamaulipas",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 3363.0780060506286
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Tlaxcala",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 1252.7064436710516
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Veracruz",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 6104.307175250474
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Yucatán",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 5053.42235312243
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Zacatecas",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 3045.7634648594812
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Aguascalientes",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 55.42560971763185
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Baja California",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 107.97506410781288
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Baja California Sur",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 66.40489201446802
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Campeche",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 85.99017421713523
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Chiapas",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 221.7481286988986
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Chihuahua",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 386.9938819509072
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Ciudad de México",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 408.0711767468677
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Coahuila",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 341.0434565268234
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Colima",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 220.67214963161007
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Durango",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 289.6379330556228
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Guanajuato",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 172.04493882941858
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Guerrero",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 117.8048259543552
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Hidalgo",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 45.086900234259865
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Jalisco",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 889.0920362472534
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Michoacán",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 327.02894901676876
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Morelos",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 303.6414643015816
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "México",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 233.71346628798977
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Nayarit",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 58.77287660385428
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Nuevo León",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 211.99428933320266
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Oaxaca",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 160.60931880663043
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Puebla",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 421.38009483537144
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Querétaro",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 45.21063379868934
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Quintana Roo",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 90.07706351791415
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "San Luis Potosí",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 206.90419256014454
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Sinaloa",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 533.3609143005339
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Sonora",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 153.91616287195993
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Tabasco",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 143.43191393585215
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Tamaulipas",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 410.5192258020207
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Tlaxcala",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 43.87282533503459
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Veracruz",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 683.3823142366953
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Yucatán",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 241.10573574072632
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Zacatecas",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 60.738091595162246
+    }
+   ]
+  },
+  "hombres": {
+   "series": 96,
+   "valores": 4992,
+   "suma_original": 47134.36097530715,
+   "valor_mostrado": 47134,
+   "suma_de_totales_redondeados_por_serie": 47131,
+   "por_padecimiento": {
+    "Alzheimer": {
+     "series": 32,
+     "suma_original": 541.851129146169,
+     "valor_mostrado": 542
+    },
+    "Depresion": {
+     "series": 32,
+     "suma_original": 42657.218885861475,
+     "valor_mostrado": 42657
+    },
+    "Parkinson": {
+     "series": 32,
+     "suma_original": 3935.290960299488,
+     "valor_mostrado": 3935
+    }
+   },
+   "series_incluidas": [
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Aguascalientes",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Baja California",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Baja California Sur",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Campeche",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Chiapas",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Chihuahua",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 61.61090661960953
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Ciudad de México",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 48.48577449047149
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Coahuila",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 45.89567108352437
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Colima",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Durango",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Guanajuato",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Guerrero",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Hidalgo",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Jalisco",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 74.26972429297669
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Michoacán",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Morelos",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "México",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 62.38375723361969
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Nayarit",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Nuevo León",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 40.21784726391323
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Oaxaca",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 37.24600959600864
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Puebla",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Querétaro",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Quintana Roo",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "San Luis Potosí",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Sinaloa",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 58.679519447999645
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Sonora",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Tabasco",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Tamaulipas",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 44.72528471008942
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Tlaxcala",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Veracruz",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 68.33663440795627
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Yucatán",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Zacatecas",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Aguascalientes",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 530.1758682308388
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Baja California",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 1694.3590744842886
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Baja California Sur",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 96.48579382517508
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Campeche",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 512.9370704342513
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Chiapas",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 802.7328559481155
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Chihuahua",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 2538.6102974650985
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Ciudad de México",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 8327.100085577526
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Coahuila",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 776.7855470383304
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Colima",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 413.40711199874823
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Durango",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 1457.7814679734843
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Guanajuato",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 1329.1015496230075
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Guerrero",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 749.4289761618832
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Hidalgo",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 673.9118934276354
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Jalisco",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 3988.3672090190903
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Michoacán",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 1875.1718250431088
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Morelos",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 775.5592791397095
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "México",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 3097.364041358703
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Nayarit",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 1371.4498558080654
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Nuevo León",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 895.1000748721681
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Oaxaca",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 972.5743238278386
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Puebla",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 1182.5778759691693
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Querétaro",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 277.6333438103326
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Quintana Roo",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 364.28425487793186
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "San Luis Potosí",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 762.7537093468425
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Sinaloa",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 1359.2494179945072
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Sonora",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 707.9078236484655
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Tabasco",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 862.4709453204347
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Tamaulipas",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 821.0975172911093
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Tlaxcala",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 276.65496548141726
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Veracruz",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 1260.4999160294612
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Yucatán",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 927.6155220097241
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Zacatecas",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 976.0693928250313
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Aguascalientes",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 36.311854608238754
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Baja California",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 71.98029437500426
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Baja California Sur",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 46.0646322383466
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Campeche",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 58.67620219073731
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Chiapas",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 81.17869962328881
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Chihuahua",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 175.27087347093266
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Ciudad de México",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 194.41512762393836
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Coahuila",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 126.72834102610568
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Colima",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 99.72025677004025
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Durango",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 160.27995214403296
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Guanajuato",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 115.4043210180785
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Guerrero",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 46.930212869316684
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Hidalgo",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 39.26281273196961
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Jalisco",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 510.3854513168335
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Michoacán",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 158.56621718406677
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Morelos",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 167.73019300193224
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "México",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 233.370050907135
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Nayarit",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 26.748117989409938
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Nuevo León",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 107.52909154843542
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Oaxaca",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 99.64828777185858
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Puebla",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 95.93043391174885
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Querétaro",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Quintana Roo",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 55.743693063103635
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "San Luis Potosí",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 61.45153376508363
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Sinaloa",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 296.9272524181597
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Sonora",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 75.79926029172546
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Tabasco",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 65.06100158501121
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Tamaulipas",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 249.37021895330483
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Tlaxcala",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Veracruz",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 365.42715628672846
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Yucatán",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 113.37941961492014
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Zacatecas",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    }
+   ]
+  },
+  "mujeres": {
+   "series": 96,
+   "valores": 4992,
+   "suma_original": 123660.24114362587,
+   "valor_mostrado": 123660,
+   "suma_de_totales_redondeados_por_serie": 123663,
+   "por_padecimiento": {
+    "Alzheimer": {
+     "series": 32,
+     "suma_original": 1159.2560532522034,
+     "valor_mostrado": 1159
+    },
+    "Depresion": {
+     "series": 32,
+     "suma_original": 118989.38496803043,
+     "valor_mostrado": 118989
+    },
+    "Parkinson": {
+     "series": 32,
+     "suma_original": 3511.6001223432563,
+     "valor_mostrado": 3512
+    }
+   },
+   "series_incluidas": [
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Aguascalientes",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Baja California",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 28.555471874148516
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Baja California Sur",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Campeche",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Chiapas",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Chihuahua",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 161.1148216114995
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Ciudad de México",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 57.144011945151206
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Coahuila",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 63.885926383668846
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Colima",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 5.322032069023784
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Durango",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 43.411401289147356
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Guanajuato",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 54.59342808600793
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Guerrero",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Hidalgo",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 23.845785032904868
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Jalisco",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 94.80735181531129
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Michoacán",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 52.95981377592634
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Morelos",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "México",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 75.9127599149309
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Nayarit",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 32.74182053319037
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Nuevo León",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 65.1893256606568
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Oaxaca",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 60.950594186133685
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Puebla",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 21.62995037715104
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Querétaro",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Quintana Roo",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "San Luis Potosí",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 25.162484315468088
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Sinaloa",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 92.28005371423411
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Sonora",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 43.63567018885007
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Tabasco",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Tamaulipas",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 83.10242328043526
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Tlaxcala",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Veracruz",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 63.05647239587056
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Yucatán",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Alzheimer",
+     "entidad": "Zacatecas",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 9.954454802492762
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Aguascalientes",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 1181.2121534132043
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Baja California",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 3347.9409608144065
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Baja California Sur",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 603.9528843760805
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Campeche",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 1251.971798314702
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Chiapas",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 2817.1160782963434
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Chihuahua",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 6624.128325327328
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Ciudad de México",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 22940.768617174872
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Coahuila",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 2387.1477509597676
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Colima",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 1316.6239084017595
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Durango",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 3080.6222076546546
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Guanajuato",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 4679.806875216296
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Guerrero",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 2852.3344258004686
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Hidalgo",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 2773.565739612115
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Jalisco",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 7282.4435010162115
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Michoacán",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 5756.253613332709
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Morelos",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 2530.2950007518957
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "México",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 10949.813007518365
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Nayarit",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 2308.0355885299473
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Nuevo León",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 2381.5717388482904
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Oaxaca",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 1664.6450755590445
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Puebla",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 2783.9102403935703
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Querétaro",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 862.6120075889174
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Quintana Roo",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 715.4498758852351
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "San Luis Potosí",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 2301.5458363877933
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Sinaloa",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 3282.5117979595916
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Sonora",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 3287.6996459960938
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Tabasco",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 2466.4776798589387
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Tamaulipas",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 2577.11845433391
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Tlaxcala",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 1026.193390339374
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Veracruz",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 4703.993958742668
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Yucatán",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 3957.0460202278978
+    },
+    {
+     "padecimiento": "Depresion",
+     "entidad": "Zacatecas",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 2294.576809397959
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Aguascalientes",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Baja California",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 38.17465416118596
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Baja California Sur",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Campeche",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Chiapas",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 90.28541388875561
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Chihuahua",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 206.5996112862623
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Ciudad de México",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 133.3118511899121
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Coahuila",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 106.45948066469305
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Colima",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 113.44111509506807
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Durango",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 158.6628967044959
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Guanajuato",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 105.74508083017409
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Guerrero",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 56.675487256998956
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Hidalgo",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 37.75491505508061
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Jalisco",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 408.2280148410745
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Michoacán",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 182.6587522749695
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Morelos",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 146.30870045802092
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "México",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 193.13848749988642
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Nayarit",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 26.798473286517176
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Nuevo León",
+     "motor": "DeepAR",
+     "pasos": 52,
+     "suma_original": 87.11831030720091
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Oaxaca",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 68.42592087701232
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Puebla",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 244.70520379554642
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Querétaro",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Quintana Roo",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 48.960390807339564
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "San Luis Potosí",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 84.9615313043635
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Sinaloa",
+     "motor": "Ensemble",
+     "pasos": 52,
+     "suma_original": 242.96313137703737
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Sonora",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 57.55686203651229
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Tabasco",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 80.74029249141086
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Tamaulipas",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 172.9157135116435
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Tlaxcala",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Veracruz",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 330.03755015269326
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Yucatán",
+     "motor": "Prophet",
+     "pasos": 52,
+     "suma_original": 88.97228118940104
+    },
+    {
+     "padecimiento": "Parkinson",
+     "entidad": "Zacatecas",
+     "motor": "Stacking",
+     "pasos": 52,
+     "suma_original": 0.0
+    }
+   ]
+  }
+ }
+}
