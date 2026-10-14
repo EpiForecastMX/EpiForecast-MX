@@ -31,6 +31,7 @@ import pandas as pd
 from epiforecast.data.boletin import cargar_boletin_dengue
 from epiforecast.utils.config import conf
 from epiforecast.utils.semana_epi import (
+    DsSinSemanaBoletinError,
     ds_de_semana_boletin,
     fin_semana_boletin,
     inicio_semana_boletin,
@@ -178,7 +179,14 @@ def main() -> int:
     def _pts(df: pd.DataFrame, *cols: str) -> list[dict[str, object]]:
         rows = []
         for _, r in df.iterrows():
-            d = {"ds": pd.Timestamp(r["ds"]).strftime("%Y-%m-%d")}
+            d: dict[str, object] = {"ds": pd.Timestamp(r["ds"]).strftime("%Y-%m-%d")}
+            # Semana DEL BOLETÍN del punto: el tooltip la muestra en vez de deducirla del ds legado
+            # (que la daba una semana atrás). Un paso sin semana del boletín no la lleva.
+            try:
+                sb = semana_boletin_de_ds(pd.Timestamp(r["ds"]))
+                d["sem"] = f"{sb.anio}-W{sb.semana:02d}"
+            except DsSinSemanaBoletinError:
+                pass
             for c in cols:
                 if c in df.columns:
                     d[c] = round(float(r[c]), 1)

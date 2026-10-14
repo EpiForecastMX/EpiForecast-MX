@@ -40,6 +40,8 @@ from epiforecast.utils.cohorts import filter_neuro  # noqa: E402
 from epiforecast.utils.config import conf  # noqa: E402
 from epiforecast.utils.semana_epi import (  # noqa: E402
     ds_de_semana_boletin,
+    fin_semana_boletin,
+    inicio_semana_boletin,
 )
 
 # Salida por defecto (flujo legacy). El refresh sellado pasa `--out` y escribe en el
@@ -534,7 +536,13 @@ def build_dengue_section() -> dict[str, Any]:
         "smape_nacional": smape_nac,
         "casos_futuro_nacional_52sem": casos_fut,
         "casos_futuro_definicion": "52 pasos semanales del modelo nacional desde el corte",
-        "ultima_real": last_real.strftime("%Y-%m-%d"),
+        "ultima_real": last_real.strftime("%Y-%m-%d"),  # ds legado (no es la fecha del boletín)
+        "ultima_semana_boletin": {
+            "anio": int(df["Anio"].max()),
+            "semana": last_sem,
+            "inicio": inicio_semana_boletin(int(df["Anio"].max()), last_sem).isoformat(),
+            "fin": fin_semana_boletin(int(df["Anio"].max()), last_sem).isoformat(),
+        },
         "anual": anual,
         "anio_pico": pico_anio,
         "casos_pico": pico_casos,
