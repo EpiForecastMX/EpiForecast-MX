@@ -392,8 +392,17 @@ paso "[5/10] Tableau + validacion semanal"
 # La validacion escribe el HTML y la COPIA actualizada del Excel en el candidato del
 # backend (prefijo administrado reports/ProdDetails/); el Excel del sandbox y el real
 # quedan intactos.
-(cd "$SANDBOX" && $PYTHON scripts/genera_validacion_semanal.py --out "$TRABAJO/outputs/backend/reports/ProdDetails")
+# Seguimiento posterior al corte (campos de validacion v2): pares pronostico guardado / observado
+# de la MISMA semana, con su corte y horizonte, mas la tabla semanal del EpiBot. La validacion, el
+# zoom y el knowledge lo leen; sin el, la validacion falla (--seguimiento es obligatorio).
+SEGUIMIENTO="$TRABAJO/outputs/backend/reports/ProdDetails/seguimiento_post_corte"
+(cd "$SANDBOX" && $PYTHON scripts/genera_seguimiento_post_corte.py --out "$TRABAJO/outputs/backend/reports/ProdDetails")
+(cd "$SANDBOX" && $PYTHON scripts/genera_validacion_semanal.py --out "$TRABAJO/outputs/backend/reports/ProdDetails" --seguimiento "${SEGUIMIENTO}.csv")
 cp "$TRABAJO/outputs/backend/reports/ProdDetails/validacion_semanal.html" "$DASHBOARD_ROOT/validacion_semanal.html"
+# Los consumidores (knowledge) leen la tabla del sandbox: va la copia con los campos de validacion
+# de ESTA semana (si no, el knowledge falla en seco por semanas distintas). El arbol real no se toca.
+cp "$TRABAJO/outputs/backend/reports/ProdDetails/tabla_333_modelos_produccion.xlsx" \
+  "$SANDBOX/reports/ProdDetails/tabla_333_modelos_produccion.xlsx"
 
 paso "[6/10] Galeria neuro (graficos + zoom_data_neuro.json)"
 (cd "$SANDBOX" && $PYTHON -m scripts.build_neuro_gallery --out "$REPORTS")
@@ -414,10 +423,10 @@ make -C "$SANDBOX" PYTHON="$PYTHON" dengue-web \
 # El zoom del EpiBot fusiona neuro + Dengue: DESPUES de dengue-web para que no
 # quede desfasado con el Dengue anterior.
 paso "[8/10] Zoom del EpiBot (neuro + Dengue fresco)"
-(cd "$SANDBOX" && $PYTHON scripts/build_epibot_zoom.py --reports "$REPORTS" --out "$EPIBOT")
+(cd "$SANDBOX" && $PYTHON scripts/build_epibot_zoom.py --reports "$REPORTS" --out "$EPIBOT" --seguimiento "${SEGUIMIENTO}.csv")
 
 paso "[9/10] Knowledge.json del EpiBot"
-(cd "$SANDBOX" && $PYTHON scripts/build_web_knowledge.py --out "${EPIBOT}/knowledge.json")
+(cd "$SANDBOX" && $PYTHON scripts/build_web_knowledge.py --out "${EPIBOT}/knowledge.json" --seguimiento "${SEGUIMIENTO}.json")
 
 paso "[10/10] Barra de fechas + Novedades de la landing"
 (cd "$SANDBOX" && $PYTHON scripts/actualiza_barra_fechas.py \

@@ -140,13 +140,13 @@ neuro-gallery:
 	@echo ">>> Regenerando galeria neuro (estilo limpio, real + motor productivo)..."
 	$(PYTHON) -m scripts.build_neuro_gallery --out ../EpiForecast-IMSS-Dashboard/Reports
 	@echo ">>> Re-llaveando zoom por serie para el EpiBot (estado x sexo)..."
-	$(PYTHON) scripts/build_epibot_zoom.py --reports ../EpiForecast-IMSS-Dashboard/Reports --out $(DASHBOARD_EPIBOT)
+	$(PYTHON) scripts/build_epibot_zoom.py --reports ../EpiForecast-IMSS-Dashboard/Reports --out $(DASHBOARD_EPIBOT) $(if $(wildcard reports/ProdDetails/seguimiento_post_corte.csv),--seguimiento reports/ProdDetails/seguimiento_post_corte.csv)
 	@echo ">>> → Reports/{Depresión,Parkinson,Alzheimer}/*/ (sobrescritos) + epibot/zoom_series.json"
 
 ## Re-llave los zoom_data_*.json de la galeria a epibot/zoom_series.json (zoom del bot por estado/sexo)
 .PHONY: epibot-zoom
 epibot-zoom:
-	$(PYTHON) scripts/build_epibot_zoom.py --reports ../EpiForecast-IMSS-Dashboard/Reports --out $(DASHBOARD_EPIBOT)
+	$(PYTHON) scripts/build_epibot_zoom.py --reports ../EpiForecast-IMSS-Dashboard/Reports --out $(DASHBOARD_EPIBOT) $(if $(wildcard reports/ProdDetails/seguimiento_post_corte.csv),--seguimiento reports/ProdDetails/seguimiento_post_corte.csv)
 
 ## Entrena DeepAR nativo por region de Dengue (una a la vez, ~80 min) y cachea su pronostico.
 ## El backtest OOS mostro que DeepAR nativo es el mejor para las regiones (MAE 460 vs 3.7k-10k de
@@ -214,7 +214,7 @@ dengue-web:
 	$(PYTHON) scripts/inyecta_galeria_items.py --reports $(DASHBOARD_DENGUE)/..
 	@echo ">>> Galeria por entidad generada e inyectada en Reports/index.html (DATA desde _gallery_items.json)."
 	@echo ">>> Regenerando knowledge.json del EpiBot (incluye la seccion 'dengue')..."
-	$(PYTHON) scripts/build_web_knowledge.py
+	$(PYTHON) scripts/build_web_knowledge.py $(if $(wildcard reports/ProdDetails/seguimiento_post_corte.json),--seguimiento reports/ProdDetails/seguimiento_post_corte.json)
 	cp web_dashboard/knowledge.json $(DASHBOARD_EPIBOT)/knowledge.json
 	@echo ">>> EpiBot knowledge.json actualizado. Si tocaste kb.js/entities.js, sube el cache-bust (?v=N)."
 

@@ -10,6 +10,13 @@ diagnostico, con el numero de semanas evaluadas visible; no es una evaluacion in
 Antes comparaba la ultima semana con su propia regla de sexo (diferencia de acumulados recortada
 a cero) y escribia en la tabla la realidad de la W39 junto al pronostico de la W38.
 
+Ronda W37, decisiones del autor del 14-oct-2026: la pagina no califica los pares (sin veredictos
+EXCELENTE/BUENO/REGULAR/FALLO, semaforo ni gauges: son diagnostico de pocas semanas, no el
+desempeno general del modelo); un par ausente sigue ausente, con su motivo, y no entra en sumas;
+hombres y mujeres del nacional y las regiones se rotulan «incremento neto del acumulado por sexo,
+sujeto a revisiones», con la tabla del cambio de definicion respecto de la pagina anterior (que
+sumaba incrementos estatales recortados a cero) y los ausentes estatales aparte.
+
 Salida: reports/ProdDetails/validacion_semanal.html y la COPIA de la tabla de produccion con
 ``pron_sem_previa``/``realidad_sem_previa`` de la misma semana (la ultima evaluada).
 """
@@ -18,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime
+import json
 import math
 from pathlib import Path
 import shutil
@@ -200,63 +208,34 @@ def _registros(df: pd.DataFrame) -> list[dict[str, Any]]:
 
 
 def _comparacion(seg: pd.DataFrame) -> pd.DataFrame:
-    """Filas de la pagina (neuro) a partir de los pares del seguimiento de UNA semana objetivo."""
+    """Filas de la pagina (neuro) de UNA semana objetivo: el par tal cual, sin calificarlo.
+
+    Un par ausente conserva su motivo y lo que tenga de cada lado; nunca se convierte en cero ni
+    entra en una suma.
+    """
     filas: list[dict[str, Any]] = []
-    registros = _registros(seg[seg["cohorte"] == "neuro"])
-    for r in registros:
+    for r in _registros(seg[seg["cohorte"] == "neuro"]):
         real = None if pd.isna(r["real"]) else int(r["real"])
         pron = None if pd.isna(r["pronostico"]) else int(r["pronostico"])
-        error_pct, veredicto = _verdict(real, pron)
+        es_par = r["estado"] == "par"
         filas.append(
             {
                 "entidad_norm": _norm_prod_entidad(str(r["entidad"])),
                 "pad_norm": _normalize(str(r["padecimiento"])),
                 "sexo": str(r["sexo"]),
+                "nivel": str(r["nivel"]),
+                "motor": str(r["motor"]).lower(),
                 "real": real,
                 "pronostico": pron,
-                "error_pct": error_pct,
-                "veredicto": veredicto if r["estado"] == "par" else "N/A",
-                "motor": str(r["motor"]).lower(),
-                "nivel": str(r["nivel"]),
+                "es_par": es_par,
+                "diferencia": (pron - real)
+                if es_par and pron is not None and real is not None
+                else None,
+                "motivo": "" if es_par else str(r["motivo"]),
+                "definicion": str(r.get("definicion_real", "")),
             }
         )
     return pd.DataFrame(filas)
-
-
-# ---------------------------------------------------------------------------
-# Calculos
-# ---------------------------------------------------------------------------
-
-
-def _verdict(real_val: Any, yhat: Any) -> tuple[float | None, str]:
-    """Calcula SMAPE y veredicto.
-
-    SMAPE = |F - A| / ((|A| + |F|) / 2) * 100
-    Rango: 0-200%. Simetrico, no explota con incidencia baja.
-    """
-    if real_val is None or yhat is None:
-        return None, "N/A"
-    if isinstance(real_val, float) and math.isnan(real_val):
-        return None, "N/A"
-    if isinstance(yhat, float) and math.isnan(yhat):
-        return None, "N/A"
-    real_val = round(real_val)
-    yhat = round(yhat)
-    denom = (abs(real_val) + abs(yhat)) / 2
-    if denom == 0:
-        # Ambos cero: pronostico perfecto
-        return 0.0, "EXCELENTE"
-    if real_val == 0 and yhat <= 2:
-        # Cero real con pronostico despreciable
-        return None, "N/A"
-    smape = abs(yhat - real_val) / denom * 100
-    if smape <= 10:
-        return smape, "EXCELENTE"
-    if smape <= 25:
-        return smape, "BUENO"
-    if smape <= 50:
-        return smape, "REGULAR"
-    return smape, "FALLO"
 
 
 # ---------------------------------------------------------------------------
@@ -272,26 +251,28 @@ _FONTS_LINK = (
     '&display=swap" rel="stylesheet">'
 )
 
-VEREDICTO_COLORS: dict[str, str] = {
-    "EXCELENTE": "#2DD4BF",
-    "BUENO": "#0D9488",
-    "REGULAR": "#F59E0B",
-    "FALLO": "#EF4444",
-    "N/A": "#97999B",
-}
-VEREDICTO_TEXT_COLOR: dict[str, str] = {
-    "EXCELENTE": "#0B0F1A",
-    "BUENO": "#fff",
-    "REGULAR": "#0B0F1A",
-    "FALLO": "#fff",
-    "N/A": "#fff",
-}
 MOTOR_COLORS: dict[str, str] = {
     "prophet": "#5B8DEF",
     "deepar": "#BE185D",
     "ensemble": "#FF6F00",
     "stacking": "#1A237E",
 }
+
+NOTA_SEXO = (
+    "&dagger; Hombres y mujeres en el nacional y en las regiones: incremento neto del acumulado "
+    "por sexo, sujeto a revisiones (diferencia del acumulado agregado entre semanas consecutivas, "
+    "con todas las entidades publicadas en ambas; incluye las revisiones negativas de los estados). "
+    "No es un numero demostrado de casos nuevos. General: casos de la semana (Casos_semana), otra "
+    "cantidad del boletin; no se fuerza que general = hombres + mujeres."
+)
+_CSS_EXTRA = """
+.ausente{display:inline-block;padding:.15rem .6rem;border-radius:100px;font-size:.75rem;
+  font-weight:700;color:#0B0F1A;background:#97999B}
+.par{display:inline-block;padding:.15rem .6rem;border-radius:100px;font-size:.75rem;
+  font-weight:700;color:#EAEFF8;background:rgba(255,255,255,.12)}
+.motivo{display:block;font-size:.72rem;color:var(--cool-gray,#97999B);margin-top:.2rem}
+.nota{font-size:.85rem;color:var(--cool-gray,#97999B);margin:.8rem 0 0;line-height:1.5}
+"""
 
 
 def _badge(text: str, bg: str, fg: str = "#fff") -> str:
@@ -302,148 +283,65 @@ def _badge(text: str, bg: str, fg: str = "#fff") -> str:
     )
 
 
-def _veredicto_badge(v: str) -> str:
-    return _badge(v, VEREDICTO_COLORS.get(v, "#97999B"), VEREDICTO_TEXT_COLOR.get(v, "#fff"))
-
-
 def _motor_badge(m: str) -> str:
     return _badge(m.capitalize(), MOTOR_COLORS.get(m, "#97999B"))
 
 
-def _semaforo_dot(v: str) -> str:
-    color = VEREDICTO_COLORS.get(v, "#97999B")
-    return (
-        f'<span title="{v}" style="display:inline-block;width:22px;height:22px;'
-        f"border-radius:50%;background:{color};border:2px solid #fff;"
-        f'box-shadow:0 1px 4px rgba(0,0,0,.15)"></span>'
-    )
-
-
-def _fmt_error(val: float | None) -> str:
-    if val is None or (isinstance(val, float) and math.isnan(val)):
-        return "—"
-    return f"{val:.1f}%"
-
-
 def _fmt_int(val: Any) -> str:
     if val is None or (isinstance(val, float) and math.isnan(val)):
-        return "N/A"
+        return "&mdash;"
     return f"{int(val):,}"
 
 
-def _err_class(error_pct: float | None) -> str:
-    if error_pct is None or (isinstance(error_pct, float) and math.isnan(error_pct)):
-        return ""
-    if error_pct <= 25:
-        return "err-good"
-    return "err-bad"
-
-
-def _fmt_mase(val: Any) -> str:
+def _fmt_dif(val: Any) -> str:
     if val is None or (isinstance(val, float) and math.isnan(val)):
-        return "N/A"
-    return f"{val:.2f}"
+        return "&mdash;"
+    return f"{int(val):+,}"
 
 
-def _mase_class(val: Any) -> str:
-    if val is None or (isinstance(val, float) and math.isnan(val)):
-        return ""
-    if val < 1.0:
-        return "mase-good"
-    return "mase-warn"
+def _estado(r: Any) -> str:
+    if r["es_par"]:
+        return '<span class="par">Par</span>'
+    return f'<span class="ausente">Ausente</span><span class="motivo">{r["motivo"]}</span>'
 
 
-MASE_VERDICT_COLORS: dict[str, str] = {
-    "EXCELENTE": "#2DD4BF",
-    "BUENO": "#0D9488",
-    "REGULAR": "#F59E0B",
-    "FALLO": "#EF4444",
-    "—": "#97999B",
-}
-MASE_VERDICT_TEXT: dict[str, str] = {
-    "EXCELENTE": "#0B0F1A",
-    "BUENO": "#fff",
-    "REGULAR": "#0B0F1A",
-    "FALLO": "#fff",
-    "—": "#fff",
-}
+_CABECERA = (
+    "<th>Observado</th><th>Pronostico</th><th>Diferencia (pron. &minus; obs.)</th>"
+    "<th>Motor</th><th>Estado del par</th>"
+)
 
 
-def _mase_verdict(val: Any) -> str:
-    """Veredicto basado en MASE: < 1 supera al naive."""
-    if val is None or (isinstance(val, float) and math.isnan(val)):
-        return "—"
-    if val < 0.5:
-        return "EXCELENTE"
-    if val < 1.0:
-        return "BUENO"
-    if val < 1.5:
-        return "REGULAR"
-    return "FALLO"
-
-
-def _mase_dot(val: Any) -> str:
-    """Dot de color segun veredicto MASE, sin etiqueta."""
-    v = _mase_verdict(val)
-    color = MASE_VERDICT_COLORS.get(v, "#97999B")
+def _celdas(r: Any) -> str:
     return (
-        f'<span title="MASE {v}" style="display:inline-block;width:10px;height:10px;'
-        f"border-radius:50%;background:{color};vertical-align:middle;"
-        f'margin-left:.4rem"></span>'
+        f"<td>{_fmt_int(r['real'])}</td><td>{_fmt_int(r['pronostico'])}</td>"
+        f"<td>{_fmt_dif(r['diferencia'])}</td><td>{_motor_badge(r['motor'])}</td>"
+        f"<td>{_estado(r)}</td>"
     )
 
 
-# ---------------------------------------------------------------------------
-# Tabla reutilizable con desglose por sexo
-# ---------------------------------------------------------------------------
-
-
-def _build_sexo_table(data: pd.DataFrame) -> str:
-    """Tabla con filas agrupadas: padecimiento (rowspan=3) x sexo."""
-    rows_html = ""
+def _tabla_sexo(data: pd.DataFrame) -> str:
+    """Padecimiento (rowspan) x sexo; hombres y mujeres llevan la marca de su definicion."""
+    filas = ""
     for pad in PADECIMIENTOS:
-        pad_rows = data[data["pad_norm"] == pad]
-        if pad_rows.empty:
-            continue
-        n_sexos = sum(1 for s in SEXO_MODES if not pad_rows[pad_rows["sexo"] == s].empty)
-        first = True
-        for sexo in SEXO_MODES:
-            sr = pad_rows[pad_rows["sexo"] == sexo]
-            if sr.empty:
-                continue
-            r = sr.iloc[0]
-            is_last = sexo == SEXO_MODES[-1]
-            row_cls = ' class="row-group-last"' if is_last else ""
-            pad_cell = ""
-            if first:
-                pad_cell = (
-                    f'<td rowspan="{n_sexos}" style="font-family:var(--font-body);'
-                    f'font-weight:600;vertical-align:middle">'
-                    f"{PAD_DISPLAY.get(pad, pad)}</td>"
-                )
-                first = False
-            rows_html += (
-                f"<tr{row_cls}>"
-                f"  {pad_cell}"
-                f'  <td style="font-family:var(--font-body)">{SEXO_DISPLAY.get(sexo, sexo)}</td>'
-                f"  <td>{_fmt_int(r['real'])}</td>"
-                f"  <td>{_fmt_int(r['pronostico'])}</td>"
-                f'  <td class="{_err_class(r["error_pct"])}">'
-                f"{_fmt_error(r['error_pct'])}</td>"
-                f"  <td>{_motor_badge(r['motor'])}</td>"
-                f"  <td>{_veredicto_badge(r['veredicto'])}</td>"
-                f"</tr>\n"
+        pr = data[data["pad_norm"] == pad]
+        presentes = [s for s in SEXO_MODES if not pr[pr["sexo"] == s].empty]
+        for n, sexo in enumerate(presentes):
+            r = pr[pr["sexo"] == sexo].iloc[0]
+            pad_cell = (
+                f'<td rowspan="{len(presentes)}" style="font-weight:600;vertical-align:middle">'
+                f"{PAD_DISPLAY.get(pad, pad)}</td>"
+                if n == 0
+                else ""
             )
-
-    return f"""<div class="table-wrapper">
-  <table>
-    <thead><tr>
-      <th>Padecimiento</th><th>Sexo</th><th>Real</th><th>Pronostico</th>
-      <th>SMAPE</th><th>Motor</th><th>Veredicto</th>
-    </tr></thead>
-    <tbody>{rows_html}</tbody>
-  </table>
-</div>"""
+            marca = " &dagger;" if sexo != "general" else ""
+            filas += (
+                f"<tr>{pad_cell}<td>{SEXO_DISPLAY.get(sexo, sexo)}{marca}</td>{_celdas(r)}</tr>\n"
+            )
+    return (
+        '<div class="table-wrapper"><table><thead><tr><th>Padecimiento</th><th>Sexo</th>'
+        f"{_CABECERA}</tr></thead><tbody>{filas}</tbody></table></div>"
+        f'<p class="nota">{NOTA_SEXO}</p>'
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -451,153 +349,16 @@ def _build_sexo_table(data: pd.DataFrame) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _section_dashboard(comp: pd.DataFrame, anio: int, semana: int, horizonte: int) -> str:
-    """Panel premium con gauges SVG animados: SMAPE + MASE por padecimiento."""
-    nac_gen = comp[(comp["nivel"] == "nacional") & (comp["sexo"] == "general")]
-
-    # Sin MASE: el de la tabla de produccion es el error de la ventana de seleccion W28-W37
-    # (diagnostico de seleccion, no evaluacion independiente) y no se publica.
-
-    date_range = _epiweek_date_range(anio, semana)
-    panels = ""
-    for pad in PADECIMIENTOS:
-        row = nac_gen[nac_gen["pad_norm"] == pad]
-        if row.empty:
-            continue
-        r = row.iloc[0]
-        smape = r["error_pct"] if pd.notna(r["error_pct"]) else 0.0
-        real = int(r["real"]) if pd.notna(r["real"]) else 0
-        pron = int(r["pronostico"]) if pd.notna(r["pronostico"]) else 0
-        motor = r["motor"]
-        veredicto = r["veredicto"]
-        panels += _dashboard_panel(pad, smape, real, pron, motor, veredicto, float("nan"))
-
-    return f"""
-<section class="reveal animate">
-  <div class="dashboard">
-    <div class="dashboard-header">
-      <h2>Seguimiento nacional: semana {semana} de {anio}</h2>
-      <p>{date_range} | Horizonte {horizonte} semana{"s" if horizonte != 1 else ""} desde el corte | Modo general</p>
-    </div>
-    <div class="dashboard-grid">{panels}</div>
-  </div>
-</section>"""
-
-
-# Gauge constants
-_GAUGE_SIZE = 160
-_GAUGE_R = 65
-_GAUGE_CIRC = 2 * math.pi * _GAUGE_R  # 408.41
-
-
-def _dashboard_panel(
-    pad: str,
-    smape: float,
-    real: int,
-    pron: int,
-    motor: str,
-    veredicto: str,
-    mase: float,
-) -> str:
-    """Panel individual de un padecimiento con gauge SVG + MASE bar."""
-    cx = cy = _GAUGE_SIZE / 2
-    precision = max(0.0, min(100.0, 100.0 - smape))
-    target_offset = _GAUGE_CIRC * (1 - precision / 100)
-    gauge_color = VEREDICTO_COLORS.get(veredicto, "#97999B")
-
-    # MASE bar
-    mase_html = ""
-    if not math.isnan(mase):
-        mase_pct = min(mase / 2 * 100, 100)
-        if mase < 0.8:
-            mase_color, mase_lbl = "#2DD4BF", "Excelente"
-        elif mase < 1.0:
-            mase_color, mase_lbl = "#0D9488", "Superior al naive"
-        elif mase < 1.3:
-            mase_color, mase_lbl = "#F59E0B", "Comparable al naive"
-        else:
-            mase_color, mase_lbl = "#EF4444", "Inferior al naive"
-        mase_html = f"""
-      <div class="mase-box">
-        <div class="mase-head">
-          <span class="mase-title">MASE</span>
-          <span class="mase-val" style="color:{mase_color}">{mase:.2f}</span>
-        </div>
-        <div class="mase-track">
-          <div class="mase-fill" style="--mw:{mase_pct}%;background:{mase_color}"></div>
-          <div class="mase-ref"></div>
-        </div>
-        <div class="mase-ticks">
-          <span>0</span>
-          <span style="position:absolute;left:50%;transform:translateX(-50%)">1.0</span>
-          <span>2.0</span>
-        </div>
-        <div class="mase-lbl" style="color:{mase_color}">{mase_lbl}</div>
-      </div>"""
-
-    # Flecha SVG entre Real y Pronostico
-    arrow = (
-        '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" '
-        'stroke="rgba(232,213,181,.35)" stroke-width="2" stroke-linecap="round">'
-        '<path d="M5 12h14M13 6l6 6-6 6"/></svg>'
-    )
-
-    return f"""
-    <div class="dash-panel">
-      <h3>{PAD_DISPLAY.get(pad, pad)}</h3>
-      <div class="gauge-wrap">
-        <svg width="{_GAUGE_SIZE}" height="{_GAUGE_SIZE}"
-             viewBox="0 0 {_GAUGE_SIZE} {_GAUGE_SIZE}">
-          <defs>
-            <filter id="glow-{pad}" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="4" result="blur"/>
-              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-          </defs>
-          <circle cx="{cx}" cy="{cy}" r="{_GAUGE_R}"
-            fill="none" stroke="rgba(255,255,255,.07)" stroke-width="11"/>
-          <circle cx="{cx}" cy="{cy}" r="{_GAUGE_R}"
-            fill="none" stroke="{gauge_color}" stroke-width="11"
-            stroke-dasharray="{_GAUGE_CIRC:.2f}"
-            stroke-linecap="round"
-            transform="rotate(-90 {cx} {cy})"
-            filter="url(#glow-{pad})"
-            class="gauge-arc"
-            style="--to:{target_offset:.2f}"/>
-          <text x="{cx}" y="{cy - 10}" text-anchor="middle"
-            fill="#fff" style="font-family:var(--font-display);font-size:28px">
-            {smape:.1f}%</text>
-          <text x="{cx}" y="{cy + 14}" text-anchor="middle"
-            fill="rgba(232,213,181,.55)" style="font-family:var(--font-body);font-size:12px">
-            SMAPE</text>
-        </svg>
-      </div>
-      <div class="dash-nums">
-        <div class="dash-n">
-          <span class="dash-v" data-target="{real}">{real:,}</span>
-          <span class="dash-l">Real</span>
-        </div>
-        {arrow}
-        <div class="dash-n">
-          <span class="dash-v" data-target="{pron}">{pron:,}</span>
-          <span class="dash-l">Pronostico</span>
-        </div>
-      </div>
-      {mase_html}
-      <div class="dash-badges">
-        {_motor_badge(motor)} {_veredicto_badge(veredicto)}
-      </div>
-    </div>"""
-
-
-def _section_nacional(comp: pd.DataFrame) -> str:
+def _section_nacional(comp: pd.DataFrame, anio: int, semana: int, horizonte: int) -> str:
     nac = comp[comp["nivel"] == "nacional"]
-    table = _build_sexo_table(nac)
     return f"""
 <section class="reveal animate">
   <h2 class="section-title">Resumen Nacional</h2>
-  <p class="section-sub">Comparacion agregada por padecimiento y sexo</p>
-  <div class="card card-gold">{table}</div>
+  <p class="section-sub">{_epiweek_date_range(anio, semana)} | Horizonte {horizonte}
+  semana{"s" if horizonte != 1 else ""} desde el corte | pronostico guardado frente a lo observado
+  esa misma semana, sin calificarlo: es un diagnostico de una semana, no el desempeno general del
+  modelo</p>
+  <div class="card card-gold">{_tabla_sexo(nac)}</div>
 </section>"""
 
 
@@ -613,15 +374,13 @@ def _section_regional(comp: pd.DataFrame) -> str:
         rd = reg[reg["entidad_norm"] == region]
         if rd.empty:
             continue
-        display = REGION_DISPLAY.get(region, region)
         n_states = len(REGION_STATES.get(region, []))
-        table = _build_sexo_table(rd)
         parts.append(
             f"""
   <div class="card reveal animate">
-    <h2>{display} <span style="font-size:.85rem;color:var(--cool-gray);
+    <h2>{REGION_DISPLAY.get(region, region)} <span style="font-size:.85rem;color:var(--cool-gray);
       font-family:var(--font-body);font-weight:400">({n_states} entidades)</span></h2>
-    {table}
+    {_tabla_sexo(rd)}
   </div>"""
         )
     parts.append("</section>")
@@ -629,151 +388,123 @@ def _section_regional(comp: pd.DataFrame) -> str:
 
 
 def _section_detalle(comp: pd.DataFrame) -> str:
-    """Detalle por padecimiento: solo modo general, 33 geos."""
-    general = comp[(comp["nivel"] == "estatal") & (comp["sexo"] == "general")]
+    """Detalle por padecimiento: modo general, Nacional + 32 entidades."""
+    general = comp[comp["sexo"] == "general"]
+    general = general[general["nivel"].isin(["nacional", "estatal"])]
+    orden = {e: i for i, e in enumerate(ENTITY_ORDER)}
     parts = [
         """
 <section class="reveal animate">
   <h2 class="section-title">Detalle por Entidad Federativa</h2>
   <p class="section-sub">Modo general &mdash; 32 entidades + Nacional</p>"""
     ]
-
-    # Agregar Nacional general al inicio
-    nac_general = comp[(comp["nivel"] == "nacional") & (comp["sexo"] == "general")]
-    combined = pd.concat([nac_general, general], ignore_index=True)
-
     for pad in PADECIMIENTOS:
-        pad_data = combined[combined["pad_norm"] == pad].copy()
-        if pad_data.empty:
+        pd_ = general[general["pad_norm"] == pad]
+        if pd_.empty:
             continue
-
-        order_map = {e: i for i, e in enumerate(ENTITY_ORDER)}
-        pad_data = pad_data.assign(
-            _order=pad_data["entidad_norm"].map(lambda x, om=order_map: om.get(x, 999))
+        pd_ = pd_.assign(_o=pd_["entidad_norm"].map(lambda x: orden.get(x, 999))).sort_values("_o")
+        filas = ""
+        for _, r in pd_.iterrows():
+            cls = ' class="row-nacional"' if r["entidad_norm"] == "Nacional" else ""
+            filas += f"<tr{cls}><td>{r['entidad_norm']}</td>{_celdas(r)}</tr>\n"
+        estados = pd_[(pd_["entidad_norm"] != "Nacional") & pd_["es_par"]]
+        n_aus = int(((pd_["entidad_norm"] != "Nacional") & ~pd_["es_par"]).sum())
+        pie = (
+            f"{len(estados)} entidades con par: observado {_fmt_int(estados['real'].sum())} / "
+            f"pronostico {_fmt_int(estados['pronostico'].sum())}"
+            + (f"; {n_aus} ausente(s) fuera de la suma" if n_aus else "")
         )
-        pad_data = pad_data.sort_values("_order")
-
-        rows_html = ""
-        total_real = 0.0
-        total_prod = 0.0
-        for _, r in pad_data.iterrows():
-            is_nac = r["entidad_norm"] == "Nacional"
-            row_class = ' class="row-nacional"' if is_nac else ""
-            real_v = r["real"] if r["real"] is not None and not _isnan(r["real"]) else 0
-            prod_v = (
-                r["pronostico"]
-                if r["pronostico"] is not None and not _isnan(r["pronostico"])
-                else 0
-            )
-            if not is_nac:
-                total_real += real_v
-                total_prod += prod_v
-            rows_html += (
-                f"<tr{row_class}>"
-                f'  <td style="font-family:var(--font-body)">{r["entidad_norm"]}</td>'
-                f"  <td>{_fmt_int(r['real'])}</td>"
-                f"  <td>{_fmt_int(r['pronostico'])}</td>"
-                f'  <td class="{_err_class(r["error_pct"])}">'
-                f"{_fmt_error(r['error_pct'])}</td>"
-                f"  <td>{_motor_badge(r['motor'])}</td>"
-                f"  <td>{_veredicto_badge(r['veredicto'])}</td>"
-                f"</tr>\n"
-            )
-
-        # Conteo de veredictos
-        n_exc = len(pad_data[pad_data["veredicto"] == "EXCELENTE"])
-        n_good = len(pad_data[pad_data["veredicto"] == "BUENO"])
-        n_reg = len(pad_data[pad_data["veredicto"] == "REGULAR"])
-        n_fail = len(pad_data[pad_data["veredicto"] == "FALLO"])
-        n_na = len(pad_data[pad_data["veredicto"] == "N/A"])
-
-        precision_total = ""
-        if total_real > 0:
-            prec = abs(total_prod - total_real) / total_real * 100
-            precision_total = f" | Error acumulado: {prec:.1f}%"
-
         parts.append(f"""
   <div class="card reveal animate">
     <h2>{PAD_DISPLAY.get(pad, pad)}</h2>
     <div class="table-wrapper">
-      <table><thead><tr>
-        <th>Entidad</th><th>Real</th><th>Pronostico</th>
-        <th>SMAPE</th><th>Motor</th><th>Veredicto</th>
-      </tr></thead>
-      <tbody>{rows_html}</tbody></table>
+      <table><thead><tr><th>Entidad</th>{_CABECERA}</tr></thead>
+      <tbody>{filas}</tbody></table>
     </div>
-    <div class="card-footer">
-      <span>{_veredicto_badge("EXCELENTE")} {n_exc}</span>
-      <span>{_veredicto_badge("BUENO")} {n_good}</span>
-      <span>{_veredicto_badge("REGULAR")} {n_reg}</span>
-      <span>{_veredicto_badge("FALLO")} {n_fail}</span>
-      <span>{_veredicto_badge("N/A")} {n_na}</span>
-      <span style="margin-left:auto;font-size:.85rem;color:var(--cool-gray)">
-        Total: {_fmt_int(total_real)} real / {_fmt_int(total_prod)} pron{precision_total}
-      </span>
-    </div>
+    <div class="card-footer"><span style="font-size:.85rem;color:var(--cool-gray)">{pie}</span></div>
   </div>""")
-
     parts.append("</section>")
     return "".join(parts)
 
 
-def _section_semaforo(comp: pd.DataFrame) -> str:
-    """Grid 32x3 solo modo general."""
-    general = comp[(comp["nivel"] == "estatal") & (comp["sexo"] == "general")]
-    states = [e for e in ENTITY_ORDER if e != "Nacional"]
-    header = "<tr><th>Entidad</th>"
-    for pad in PADECIMIENTOS:
-        header += f"<th>{PAD_DISPLAY.get(pad, pad)}</th>"
-    header += "</tr>"
+def _serie(a: dict[str, Any]) -> str:
+    pad = PAD_DISPLAY.get(_normalize(str(a["padecimiento"])), str(a["padecimiento"]))
+    return f"{pad} &middot; {a['entidad']} &middot; {SEXO_DISPLAY.get(a['sexo'], a['sexo'])}"
 
-    rows = ""
-    for state in states:
-        rows += f'<tr><td style="font-family:var(--font-body);font-weight:500">{state}</td>'
-        for pad in PADECIMIENTOS:
-            match = general[(general["entidad_norm"] == state) & (general["pad_norm"] == pad)]
-            if match.empty:
-                rows += f"<td>{_semaforo_dot('N/A')}</td>"
-            else:
-                v = match.iloc[0]["veredicto"]
-                err_str = _fmt_error(match.iloc[0]["error_pct"])
-                rows += (
-                    f'<td style="text-align:center">{_semaforo_dot(v)}'
-                    f'<br><span style="font-size:.7rem;color:var(--cool-gray)">'
-                    f"{err_str}</span></td>"
-                )
-        rows += "</tr>"
 
-    leyenda = '<div class="leyenda">'
-    for label, color in VEREDICTO_COLORS.items():
-        desc = {
-            "EXCELENTE": "SMAPE &le;10%",
-            "BUENO": "SMAPE &le;25%",
-            "REGULAR": "SMAPE &le;50%",
-            "FALLO": "SMAPE &gt;50%",
-            "N/A": "Sin datos / cero real",
-        }[label]
-        leyenda += (
-            f'<span class="leyenda-item">'
-            f'<span style="display:inline-block;width:14px;height:14px;border-radius:50%;'
-            f'background:{color};vertical-align:middle;margin-right:.3rem"></span>'
-            f"{label}: {desc}</span>"
+def _section_ausentes(resumen: dict[str, Any]) -> str:
+    """Todos los pares ausentes, con su motivo y el acumulado de la fuente: se conservan aparte."""
+    filas = ""
+    for a in resumen.get("ausentes", []):
+        anio, semana = _semana(str(a["semana_objetivo"]))
+        acum = (
+            f"{_fmt_int(a['acumulado_semana_previa'])} &rarr; {_fmt_int(a['acumulado_semana'])}"
+            if "acumulado_semana" in a
+            else "&mdash;"
         )
-    leyenda += "</div>"
-
+        filas += (
+            f"<tr><td>Semana {semana} de {anio} (h={a['horizonte']})</td><td>{_serie(a)}</td>"
+            f"<td>{_motor_badge(str(a['motor']).lower())}</td><td>{_fmt_int(a['pronostico'])}</td>"
+            f"<td>{acum}</td><td>{a['motivo']}</td></tr>\n"
+        )
+    n = len(resumen.get("ausentes", []))
     return f"""
 <section class="reveal animate">
-  <h2 class="section-title">Semaforo por Entidad</h2>
-  <p class="section-sub">Vista rapida (modo general) del desempeno de los modelos</p>
-  <div class="card">
-    {leyenda}
-    <div class="table-wrapper">
-      <table class="table-semaforo">
-        <thead>{header}</thead>
-        <tbody>{rows}</tbody>
-      </table>
-    </div>
-  </div>
+  <h2 class="section-title">Pares ausentes y sus motivos</h2>
+  <p class="section-sub">{n} par{"es" if n != 1 else ""} sin observacion utilizable: el pronostico
+  se conserva, la observacion queda ausente (no se imputa ni se convierte en cero) y el par queda
+  fuera de los resumenes</p>
+  <div class="card"><div class="table-wrapper"><table>
+    <thead><tr><th>Semana</th><th>Serie</th><th>Motor</th><th>Pronostico</th>
+    <th>Acumulado por sexo de la fuente (previa &rarr; semana)</th><th>Motivo</th></tr></thead>
+    <tbody>{filas}</tbody>
+  </table></div></div>
+</section>"""
+
+
+def _section_definicion_sexo(resumen: dict[str, Any]) -> str:
+    """El nacional por sexo: incremento neto frente a la suma estatal recortada de la pagina previa."""
+    filas, cambios = "", []
+    for a in resumen.get("agregacion_sexo", []):
+        anio, semana = _semana(str(a["semana_objetivo"]))
+        pad = PAD_DISPLAY.get(_normalize(str(a["padecimiento"])), str(a["padecimiento"]))
+        revs = ", ".join(f"{e} ({v:+d})" for e, v in a["entidades_con_revision_negativa"].items())
+        cob = f"{a['entidades_semana_previa']}/{a['entidades_semana']}"
+        filas += (
+            f"<tr><td>Semana {semana} de {anio}</td><td>{pad}</td>"
+            f"<td>{SEXO_DISPLAY.get(a['sexo'], a['sexo'])}</td><td>{_fmt_int(a['real_publicado'])}</td>"
+            f"<td>{_fmt_int(a['suma_estatal_recortada'])}</td><td>{revs or '&mdash;'}</td>"
+            f"<td>{cob}</td><td>{'si' if a['semanas_consecutivas'] else 'no'}</td></tr>\n"
+        )
+        if a["neto"] != a["suma_estatal_recortada"]:
+            cambios.append(
+                f"{pad} {SEXO_DISPLAY.get(a['sexo'], a['sexo']).lower()} semana {semana}: "
+                f"{_fmt_int(a['neto'])} (con la definicion anterior, "
+                f"{_fmt_int(a['suma_estatal_recortada'])})"
+            )
+    cambio = (
+        "Las dos definiciones dan valores distintos en: " + "; ".join(cambios) + "."
+        if cambios
+        else "En estas semanas ambas definiciones coinciden."
+    )
+    return f"""
+<section class="reveal animate">
+  <h2 class="section-title">Nacional por sexo: definicion</h2>
+  <p class="section-sub">Se publica el incremento neto del acumulado por sexo, sujeto a revisiones:
+  la diferencia del acumulado nacional entre semanas consecutivas, con las 32 entidades publicadas
+  en ambas, incluidas las revisiones negativas de los estados. No es un numero demostrado de casos
+  nuevos. La pagina anterior sumaba los incrementos estatales recortando a cero los negativos; esa
+  suma ya no se publica como observado. {cambio}</p>
+  <div class="card"><div class="table-wrapper"><table>
+    <thead><tr><th>Semana</th><th>Padecimiento</th><th>Sexo</th>
+    <th>Incremento neto publicado</th><th>Suma estatal recortada a cero (definicion anterior, no publicada)</th>
+    <th>Entidades con revision negativa</th><th>Entidades publicadas (previa/semana)</th>
+    <th>Semanas consecutivas</th></tr></thead>
+    <tbody>{filas}</tbody>
+  </table></div>
+  <p class="nota">Los ausentes estatales se conservan aparte con su motivo. El nacional no se
+  reconstruye sumando incrementos estatales. Casos_semana (general) se mantiene separado y no se
+  concilia a la fuerza con hombres + mujeres.</p></div>
 </section>"""
 
 
@@ -832,7 +563,7 @@ def _resumen_semanas(seg: pd.DataFrame) -> str:
 </section>"""
 
 
-def _generate_html(seg: pd.DataFrame, corte: tuple[int, int]) -> str:
+def _generate_html(seg: pd.DataFrame, corte: tuple[int, int], resumen: dict[str, Any]) -> str:
     """Pagina de seguimiento: resumen de las semanas evaluadas y el detalle de cada una."""
     ahora = datetime.now(tz=TZ_MX).strftime("%d/%m/%Y %H:%M hrs")
     etiquetas = sorted(seg["semana_objetivo"].unique(), key=_semana)
@@ -859,7 +590,7 @@ def _generate_html(seg: pd.DataFrame, corte: tuple[int, int]) -> str:
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Seguimiento posterior al corte - Semana {ultima[1]}/{ultima[0]}</title>
 {_FONTS_LINK}
-<style>{css}</style>
+<style>{css}{_CSS_EXTRA}</style>
 <link rel="stylesheet" href="editorial.css?v=1">
 </head>
 <body>
@@ -885,6 +616,8 @@ def _generate_html(seg: pd.DataFrame, corte: tuple[int, int]) -> str:
 <div class="container">
 """)
     parts.append(_resumen_semanas(seg))
+    parts.append(_section_ausentes(resumen))
+    parts.append(_section_definicion_sexo(resumen))
     for etiqueta in reversed(etiquetas):  # la mas reciente primero
         anio, semana = _semana(etiqueta)
         g = seg[seg["semana_objetivo"] == etiqueta]
@@ -894,11 +627,9 @@ def _generate_html(seg: pd.DataFrame, corte: tuple[int, int]) -> str:
             f'\n<h2 class="section-title" style="margin-top:3rem">Semana {semana} de {anio} '
             f"(horizonte {h} desde el corte)</h2>\n"
         )
-        parts.append(_section_dashboard(comp, anio, semana, h))
-        parts.append(_section_nacional(comp))
+        parts.append(_section_nacional(comp, anio, semana, h))
         parts.append(_section_regional(comp))
         parts.append(_section_detalle(comp))
-        parts.append(_section_semaforo(comp))
 
     parts.append(f"""
 </div>
@@ -1075,6 +806,7 @@ COLUMNAS_VALIDACION = (
     "corte_validacion",
     "horizonte_validacion",
     "estado_validacion",
+    "definicion_realidad_validacion",
 )
 
 
@@ -1082,7 +814,9 @@ def _update_excel(seg_ultima: pd.DataFrame, ruta_excel: Path = PROD_EXCEL) -> in
     """Escribe en la tabla (`ruta_excel`) el par de la ULTIMA semana evaluada, ambos lados juntos.
 
     ``pron_sem_previa`` y ``realidad_sem_previa`` quedan de la misma semana objetivo, y cuatro
-    columnas declaran cual (semana, corte, horizonte y estado del par). Un par ausente deja ambas
+    columnas declaran cual (semana, corte, horizonte y estado del par) y una quinta que cantidad es
+    la realidad (en hombres y mujeres del nacional y las regiones, el incremento neto del acumulado
+    por sexo, sujeto a revisiones). Un par ausente deja ambas
     celdas vacias: nunca se conserva el pronostico de otra semana junto a una realidad nueva.
     Devuelve cuantas filas se escribieron.
     """
@@ -1132,6 +866,7 @@ def _update_excel(seg_ultima: pd.DataFrame, ruta_excel: Path = PROD_EXCEL) -> in
             "corte_validacion": str(r["corte"]),
             "horizonte_validacion": int(r["horizonte"]),
             "estado_validacion": "par" if es_par else f"ausente: {r['motivo']}",
+            "definicion_realidad_validacion": r.get("definicion_real"),
         }
         for nombre, valor in celdas.items():
             ws.cell(row=fila, column=col[nombre]).value = valor
@@ -1212,8 +947,14 @@ def main(argv: list[str] | None = None) -> None:
     etiquetas = sorted(seg["semana_objetivo"].unique(), key=_semana)
     print(f"Seguimiento posterior al corte {cortes[0]}: {len(etiquetas)} semana(s) {etiquetas}")
 
+    resumen_path = args.seguimiento.with_suffix(".json")
+    if not resumen_path.is_file():
+        raise SystemExit(
+            f"falta {resumen_path} (resumen del seguimiento: ausentes y definiciones)"
+        )
+    resumen = json.loads(resumen_path.read_text(encoding="utf-8"))
     print("Generando HTML...")
-    html = _generate_html(seg, corte)
+    html = _generate_html(seg, corte, resumen)
     salida_html.parent.mkdir(parents=True, exist_ok=True)
     salida_html.write_text(_normaliza_para_hooks(html), encoding="utf-8")
     print(f"  {salida_html} ({len(html):,} bytes)")

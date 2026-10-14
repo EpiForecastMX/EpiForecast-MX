@@ -12,7 +12,16 @@ observación, se empareja por ``(padecimiento, entidad, sexo, semana del boletí
   una fila ``fase_modelo == "pronostico"`` emitida desde el corte (``anio/semana_boletin_corte``);
 * lo observado esa misma semana, con la regla de la galería: general = ``Casos_semana``; hombres y
   mujeres = incremento del acumulado por sexo sólo entre semanas consecutivas del boletín; nacional
-  y regiones = suma de sus entidades, exigiendo que todas hayan publicado.
+  y regiones = suma de sus entidades, exigiendo que todas hayan publicado ESA semana y, para el
+  incremento por sexo, también la semana previa.
+
+Nacional y regiones por sexo (decisión del autor, 14-oct-2026): es la diferencia del acumulado
+AGREGADO entre semanas consecutivas, incluidas las revisiones negativas que publiquen los estados.
+Se rotula «incremento neto del acumulado por sexo, sujeto a revisiones»: no es un número demostrado
+de casos nuevos. No se reconstruye sumando incrementos estatales recortados a cero (la página del
+candidato anterior lo hacía: Parkinson hombres W39 daba 87; la diferencia del acumulado da 85).
+Los ausentes estatales y sus motivos se conservan aparte. ``Casos_semana`` (general) es otra
+cantidad y no se fuerza a coincidir con hombres + mujeres.
 
 Nunca se desplaza un valor ni se empareja el pronóstico de una semana con la realidad de otra. Si
 falta cualquiera de los dos lados, el par se declara AUSENTE con su motivo. El paso del horizonte
@@ -24,7 +33,11 @@ evaluación independiente ni sustituye la del artículo.
 
 Salidas (en ``--out``):
   * ``seguimiento_post_corte.csv``  una fila por (serie, semana objetivo), pares y ausentes
-  * ``seguimiento_post_corte.json`` resumen por semana y cohorte
+  * ``seguimiento_post_corte.json`` resumen por semana y cohorte, definiciones, ausentes y la
+    agregación nacional por sexo (neto frente a la suma estatal recortada)
+  * ``seguimiento_semanal_nacional.json`` la tabla semanal del EpiBot (nacional, general) por
+    padecimiento: fase observado (hasta el corte, sólo lo observado), seguimiento (pares
+    posteriores al corte) y pronóstico (semanas aún sin dato), con el periodo oficial del boletín
 
 Uso:
     python scripts/genera_seguimiento_post_corte.py --out reports/ProdDetails
@@ -71,6 +84,16 @@ from epiforecast.utils.semana_epi import (  # noqa: E402
 
 VERSION = 2
 ROTULO = "seguimiento diagnóstico posterior al corte; no evaluación independiente"
+ROTULO_SEMANAL = (
+    "comparaciones sólo en las semanas posteriores al corte (seguimiento diagnóstico, no desempeño "
+    "general del modelo); antes del corte se muestra únicamente lo observado: el ajuste dentro de "
+    "muestra no se presenta como validación"
+)
+DEF_GENERAL = "casos de la semana (Casos_semana)"
+DEF_SEXO_AGREGADO = "incremento neto del acumulado por sexo, sujeto a revisiones"
+DEF_SEXO_ESTATAL = "incremento del acumulado por sexo de la entidad"
+MOTORES_NEURO = ("Prophet", "DeepAR", "Ensemble", "Stacking")
+COL_ACUM = {"hombres": "Acumulado_hombres", "mujeres": "Acumulado_mujeres"}
 TABLA = Path(conf["paths"]["reports"]) / "ProdDetails" / "tabla_333_modelos_produccion.xlsx"
 NEURO = {"Depresion": "Depresión", "Parkinson": "Parkinson", "Alzheimer": "Alzheimer"}
 SEXOS = ("general", "hombres", "mujeres")
@@ -94,6 +117,7 @@ COLUMNAS = [
     "error_abs",
     "estado",
     "motivo",
+    "definicion_real",
 ]
 
 
@@ -110,6 +134,20 @@ def siguiente_semana(anio: int, semana: int) -> tuple[int, int]:
     if semana >= semanas_del_anio_boletin(anio):
         return anio + 1, 1
     return anio, semana + 1
+
+
+def semana_previa(anio: int, semana: int) -> tuple[int, int]:
+    """La semana del boletín anterior, incluido el paso de la 1 a la 52/53 del año previo."""
+    if semana <= 1:
+        return anio - 1, semanas_del_anio_boletin(anio - 1)
+    return anio, semana - 1
+
+
+def definicion_real(fila: dict[str, str]) -> str:
+    """Qué cantidad es «lo observado» de la serie (rótulo que viaja con cada valor)."""
+    if fila["sexo"] == "general":
+        return DEF_GENERAL
+    return DEF_SEXO_ESTATAL if _nivel(fila["entidad"]) == "estatal" else DEF_SEXO_AGREGADO
 
 
 def semanas_objetivo(corte: tuple[int, int], ultima: tuple[int, int]) -> list[tuple[int, int]]:
@@ -250,13 +288,60 @@ class Observado:
         publicaron = sub[(sub["Anio"] == anio) & (sub["Semana"] == semana)]["Entidad"].nunique()
         if publicaron < esperadas:
             return None, f"boletín incompleto ({publicaron}/{esperadas} entidades)"
+        if fila["sexo"] != "general":
+            # El incremento por sexo resta el acumulado de la semana previa: si en ella faltó una
+            # entidad, la diferencia le atribuiría a esta semana todo su acumulado.
+            pa, ps = semana_previa(anio, semana)
+            previa = sub[(sub["Anio"] == pa) & (sub["Semana"] == ps)]["Entidad"].nunique()
+            if previa < esperadas:
+                return (
+                    None,
+                    f"boletín incompleto en la semana previa ({previa}/{esperadas} entidades)",
+                )
         real = self.serie(fila)
         v = real.loc[pd.to_datetime(real["ds"]) == ds, "y"]
         if v.empty:
+            if fila["sexo"] != "general":
+                antes, _ = self.acumulado(fila, *semana_previa(anio, semana))
+                ahora, _ = self.acumulado(fila, anio, semana)
+                if antes is not None and ahora is not None and ahora < antes:
+                    return None, (
+                        f"revisión negativa del acumulado por sexo ({int(antes)} → {int(ahora)}): "
+                        "no es la observación de una semana"
+                    )
             return None, "observación no desagregable (sin semana previa consecutiva o revisión)"
         if len(v) > 1:
             return None, "observación duplicada en el ds"
         return float(v.iloc[0]), ""
+
+    def general_semana(
+        self, fila: dict[str, str], anio: int, semana: int
+    ) -> tuple[int | None, str]:
+        """``Casos_semana`` agregado de la serie en una semana del boletín (sin pasar por el ds)."""
+        sub, esperadas = self._miembros(fila)
+        s = sub[(sub["Anio"] == anio) & (sub["Semana"] == semana)]
+        if s["Entidad"].nunique() < esperadas:
+            return None, f"boletín incompleto ({s['Entidad'].nunique()}/{esperadas} entidades)"
+        v = s["Casos_semana"].sum(min_count=1)
+        return (None, "sin Casos_semana") if pd.isna(v) else (int(v), "")
+
+    def acumulado(self, fila: dict[str, str], anio: int, semana: int) -> tuple[float | None, int]:
+        """Acumulado por sexo de la serie (suma de sus entidades) y cuántas entidades publicaron."""
+        sub, _ = self._miembros(fila)
+        s = sub[(sub["Anio"] == anio) & (sub["Semana"] == semana)]
+        v = s[COL_ACUM[fila["sexo"]]].sum(min_count=1)
+        return (None if pd.isna(v) else float(v)), int(s["Entidad"].nunique())
+
+    def por_entidad(self, fila: dict[str, str], anio: int, semana: int) -> pd.Series:
+        """Incremento del acumulado por sexo de cada entidad de la serie (NaN si falta un lado)."""
+        sub, _ = self._miembros(fila)
+        col = COL_ACUM[fila["sexo"]]
+        pa, ps = semana_previa(anio, semana)
+        ahora = (
+            sub[(sub["Anio"] == anio) & (sub["Semana"] == semana)].groupby("Entidad")[col].sum()
+        )
+        antes = sub[(sub["Anio"] == pa) & (sub["Semana"] == ps)].groupby("Entidad")[col].sum()
+        return ahora.sub(antes)
 
 
 # --- pronóstico ------------------------------------------------------------------------------
@@ -295,8 +380,10 @@ def pronostico(
 # --- construcción ------------------------------------------------------------------------------
 
 
-def construye(corte: tuple[int, int]) -> tuple[pd.DataFrame, dict[str, Any]]:
-    obs = Observado()
+def construye(
+    corte: tuple[int, int], obs: Observado | None = None
+) -> tuple[pd.DataFrame, dict[str, Any]]:
+    obs = Observado() if obs is None else obs
     filas = asignacion()
     ultima = min(obs.ultima_semana("neuro"), obs.ultima_semana("dengue"))
     objetivos = semanas_objetivo(corte, ultima)
@@ -323,6 +410,7 @@ def construye(corte: tuple[int, int]) -> tuple[pd.DataFrame, dict[str, Any]]:
                         "ds_objetivo": None,
                         "estado": "ausente",
                         "motivo": "semana 1 del boletín: no evaluable",
+                        "definicion_real": definicion_real(f),
                     }
                 )
             continue
@@ -332,6 +420,7 @@ def construye(corte: tuple[int, int]) -> tuple[pd.DataFrame, dict[str, Any]]:
                 **base,
                 "nivel": _nivel(f["entidad"]),
                 "ds_objetivo": ds.date().isoformat(),
+                "definicion_real": definicion_real(f),
             }
             yhat, paso, motivo_fc = pronostico(f, ds, corte)
             real, motivo_obs = obs.valor(f, anio, semana, ds)
@@ -388,7 +477,27 @@ def construye(corte: tuple[int, int]) -> tuple[pd.DataFrame, dict[str, Any]]:
             "sin desplazar valores; un lado faltante declara el par ausente",
             "el paso del horizonte sin semana del boletín queda fuera de las comparaciones",
         ],
+        "definiciones": {
+            "general": DEF_GENERAL,
+            "sexo_agregado": DEF_SEXO_AGREGADO,
+            "sexo_estatal": DEF_SEXO_ESTATAL,
+            "notas": [
+                "nacional y regiones por sexo: diferencia entre semanas consecutivas del acumulado "
+                "agregado (suma de sus entidades, todas publicadas en ambas semanas); incluye las "
+                "revisiones negativas de los estados, así que es un incremento neto y no un número "
+                "demostrado de casos nuevos",
+                "el agregado no se reconstruye sumando incrementos estatales recortados a cero",
+                "una entidad cuyo acumulado por sexo disminuye queda ausente en su serie estatal, "
+                "con su motivo; no se imputa ni se convierte en cero",
+                "Casos_semana (general) es otra cantidad del boletín: no se fuerza a coincidir con "
+                "hombres + mujeres",
+                "cambio de definición respecto de la página del candidato anterior (f60f6b22), que "
+                "sumaba los incrementos estatales recortados a cero: ver agregacion_sexo",
+            ],
+        },
         "semanas": semanas,
+        "ausentes": _ausentes(tabla, obs, filas),
+        "agregacion_sexo": _agregacion_sexo(tabla, obs, filas),
     }
     for etiqueta, g in tabla.groupby("semana_objetivo", sort=True):
         sem: dict[str, Any] = {
@@ -417,6 +526,7 @@ def construye(corte: tuple[int, int]) -> tuple[pd.DataFrame, dict[str, Any]]:
                         "motor": str(r["motor"]),
                         "pronostico": int(r["pronostico"]),
                         "real": int(r["real"]),
+                        "definicion_real": str(r["definicion_real"]),
                     }
                     for r in _registros(nac)
                 ],
@@ -429,23 +539,272 @@ def _registros(df: pd.DataFrame) -> list[dict[str, Any]]:
     return [{str(k): v for k, v in fila.items()} for fila in df.to_dict("records")]
 
 
-def escribe(tabla: pd.DataFrame, resumen: dict[str, Any], out: Path) -> tuple[Path, Path]:
+def _int(v: Any) -> int | None:
+    return None if v is None or pd.isna(v) else int(v)
+
+
+def _fila(r: dict[str, Any]) -> dict[str, str]:
+    return {k: str(r[k]) for k in ("cohorte", "padecimiento", "entidad", "sexo", "motor")}
+
+
+def _ausentes(
+    tabla: pd.DataFrame, obs: Observado, filas: list[dict[str, str]]
+) -> list[dict[str, Any]]:
+    """Cada par ausente con su motivo y, si es una serie por sexo, el acumulado de ambas semanas."""
+    out: list[dict[str, Any]] = []
+    for r in _registros(tabla[tabla["estado"] == "ausente"]):
+        reg: dict[str, Any] = {
+            k: r[k]
+            for k in ("semana_objetivo", "horizonte", "cohorte", "padecimiento", "entidad", "sexo")
+        }
+        reg.update(
+            nivel=r["nivel"],
+            motor=r["motor"],
+            pronostico=_int(r["pronostico"]),
+            real=_int(r["real"]),
+            motivo=r["motivo"],
+        )
+        if r["sexo"] != "general" and r["ds_objetivo"] is not None:
+            anio, semana = (int(x) for x in str(r["semana_objetivo"]).split("-W"))
+            antes, _ = obs.acumulado(_fila(r), *semana_previa(anio, semana))
+            ahora, _ = obs.acumulado(_fila(r), anio, semana)
+            reg["acumulado_semana_previa"] = _int(antes)
+            reg["acumulado_semana"] = _int(ahora)
+        out.append(reg)
+    return out
+
+
+def _agregacion_sexo(
+    tabla: pd.DataFrame, obs: Observado, filas: list[dict[str, str]]
+) -> list[dict[str, Any]]:
+    """Nacional por sexo: incremento neto del acumulado frente a la suma estatal recortada a cero.
+
+    Documenta el cambio de definición: el valor publicado es ``neto`` (diferencia del acumulado
+    nacional, con las revisiones negativas de los estados); ``suma_estatal_recortada`` es lo que
+    mostraba la página anterior y NO se publica como observado.
+    """
+    out: list[dict[str, Any]] = []
+    nac = tabla[(tabla["nivel"] == "nacional") & (tabla["sexo"] != "general")]
+    for r in _registros(nac):
+        if r["ds_objetivo"] is None:
+            continue
+        f = _fila(r)
+        anio, semana = (int(x) for x in str(r["semana_objetivo"]).split("-W"))
+        previa = semana_previa(anio, semana)
+        antes, n_antes = obs.acumulado(f, *previa)
+        ahora, n_ahora = obs.acumulado(f, anio, semana)
+        inc = obs.por_entidad(f, anio, semana)
+        revisiones = inc[inc < 0]
+        neto = None if antes is None or ahora is None else int(ahora - antes)
+        out.append(
+            {
+                "semana_objetivo": r["semana_objetivo"],
+                "semana_previa": _etiqueta(*previa),
+                "cohorte": r["cohorte"],
+                "padecimiento": r["padecimiento"],
+                "sexo": r["sexo"],
+                "definicion_real": r["definicion_real"],
+                "entidades_semana": n_ahora,
+                "entidades_semana_previa": n_antes,
+                "semanas_consecutivas": siguiente_semana(*previa) == (anio, semana),
+                "acumulado_semana_previa": _int(antes),
+                "acumulado_semana": _int(ahora),
+                "neto": neto,
+                "real_publicado": _int(r["real"]),
+                "suma_estatal_recortada": int(inc.clip(lower=0).sum()),
+                "entidades_con_revision_negativa": {
+                    str(e): int(v) for e, v in revisiones.sort_index().items()
+                },
+            }
+        )
+    return out
+
+
+def _clave_wc(padecimiento: str) -> str:
+    """Clave de ``weekly_comparison`` (la del knowledge): sin tildes, como antes."""
+    return {"Depresión": "Depresion"}.get(padecimiento, padecimiento)
+
+
+def _pronostico_motor(
+    fila: dict[str, str], motor: str, ds: pd.Timestamp, corte: tuple[int, int], h: int
+) -> tuple[int | None, str]:
+    yhat, paso, motivo = pronostico({**fila, "motor": motor}, ds, corte)
+    if yhat is not None and paso is not None and paso != h:
+        return None, f"paso {paso} del pronóstico ≠ horizonte {h} del boletín"
+    return (None, motivo) if yhat is None else (int(round(max(yhat, 0.0))), "")
+
+
+def total_52_pasos(fila: dict[str, str], corte: tuple[int, int]) -> int | None:
+    """Suma de los 52 pasos semanales del pronóstico emitido desde el corte (motor asignado)."""
+    fc = _load_fc(fila["motor"])
+    if fc.empty:
+        return None
+    pad = NEURO.get(fila["padecimiento"], fila["padecimiento"])
+    d = fc[
+        (fc["meta_padecimiento"] == pad)
+        & (fc["meta_entidad"].fillna("Nacional") == _entidad_forecast(fila))
+        & (fc["meta_modo"] == fila["sexo"])
+        & (fc["fase_modelo"].fillna("pronostico") == "pronostico")
+        & (fc["anio_boletin_corte"] == corte[0])
+        & (fc["semana_boletin_corte"] == corte[1])
+    ]
+    pasos = sorted(int(x) for x in d["adelanto_semanas"])
+    if pasos != list(range(1, 53)):
+        return None
+    return int(round(max(float(d["yhat"].sum()), 0.0)))
+
+
+def semanal_nacional(
+    tabla: pd.DataFrame, obs: Observado, corte: tuple[int, int], ultima: tuple[int, int]
+) -> dict[str, Any]:
+    """Tabla semanal del EpiBot (nacional, general) del año de la última semana observada.
+
+    * ``observado``  semanas hasta el corte: SÓLO lo observado (el ajuste dentro de muestra del
+      motor no viaja: no se presenta como validación);
+    * ``seguimiento`` semanas posteriores al corte ya observadas: el par del seguimiento, copiado
+      de la misma tabla (semana, corte, horizonte, estado y motivo); un ausente sigue ausente;
+    * ``pronostico`` semanas aún sin dato: el pronóstico guardado desde el corte (y, en neuro, el de
+      cada motor con el mismo corte y paso, para el corredor).
+
+    Cada semana lleva el periodo OFICIAL del boletín; el ``ds`` legado no se publica.
+    """
+    anio = ultima[0]
+    nac = tabla[(tabla["nivel"] == "nacional") & (tabla["sexo"] == "general")]
+    pares = {(r["padecimiento"], r["semana_objetivo"]): r for r in _registros(nac)}
+    out: dict[str, Any] = {}
+    for f in asignacion():
+        if f["entidad"] != "Nacional" or f["sexo"] != "general":
+            continue
+        semanas: list[dict[str, Any]] = []
+        for s in range(1, semanas_del_anio_boletin(anio) + 1):
+            e: dict[str, Any] = {
+                "anio": anio,
+                "semana": s,
+                "etiqueta": _etiqueta(anio, s),
+                "periodo_inicio": inicio_semana_boletin(anio, s).isoformat(),
+                "periodo_fin": fin_semana_boletin(anio, s).isoformat(),
+            }
+            if (anio, s) <= corte:
+                real, motivo = obs.general_semana(f, anio, s)
+                e.update(fase="observado", real=real)
+                if motivo:
+                    e["motivo_observado"] = motivo
+            elif (anio, s) <= ultima:
+                r = pares[(f["padecimiento"], _etiqueta(anio, s))]
+                p, re_ = _int(r["pronostico"]), _int(r["real"])
+                e.update(
+                    fase="seguimiento",
+                    corte=r["corte"],
+                    horizonte=int(r["horizonte"]),
+                    pronostico=p,
+                    real=re_,
+                    estado=r["estado"],
+                    motivo=r["motivo"],
+                )
+                if r["estado"] == "par":
+                    e.update(error_abs=_int(r["error_abs"]), diferencia=p - re_)  # type: ignore[operator]
+            else:
+                h = len(semanas_objetivo(corte, (anio, s)))
+                ds = ds_de_semana_boletin(anio, s)
+                p_, motivo = _pronostico_motor(f, f["motor"], ds, corte, h)
+                e.update(
+                    fase="pronostico",
+                    corte=_etiqueta(*corte),
+                    horizonte=h,
+                    pronostico=p_,
+                    real=None,
+                )
+                if motivo:
+                    e["motivo"] = motivo
+                if f["cohorte"] == "neuro":
+                    for m in MOTORES_NEURO:
+                        v, _ = _pronostico_motor(f, m, ds, corte, h)
+                        if v is not None:
+                            e[m.lower()] = v
+            semanas.append(e)
+        out[_clave_wc(NEURO.get(f["padecimiento"], f["padecimiento"]))] = {
+            "version": 2,
+            "titulo": f"Seguimiento del pronóstico con corte W{corte[1]}",
+            "rotulo": ROTULO_SEMANAL,
+            "entidad": "Nacional",
+            "sexo": "general",
+            "definicion_real": DEF_GENERAL,
+            "modelo_productivo": f["motor"].lower(),
+            "motor": f["motor"],
+            "anio": anio,
+            "corte": _etiqueta(*corte),
+            "ultima_semana_observada": _etiqueta(*ultima),
+            "semanas_seguimiento": sum(1 for x in semanas if x["fase"] == "seguimiento"),
+            "semanas_reales": sum(1 for x in semanas if x["real"] is not None),
+            "semanas_pronostico": sum(1 for x in semanas if x["fase"] == "pronostico"),
+            "pronostico_52_pasos": total_52_pasos(f, corte),
+            "semanas": semanas,
+        }
+    return out
+
+
+def escribe(
+    tabla: pd.DataFrame,
+    resumen: dict[str, Any],
+    out: Path,
+    semanal: dict[str, Any] | None = None,
+) -> tuple[Path, Path]:
     out.mkdir(parents=True, exist_ok=True)
     csv = out / "seguimiento_post_corte.csv"
     js = out / "seguimiento_post_corte.json"
     tabla.to_csv(csv, index=False, lineterminator="\n")
     js.write_text(json.dumps(resumen, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    if semanal is not None:
+        (out / "seguimiento_semanal_nacional.json").write_text(
+            json.dumps(semanal, ensure_ascii=False, indent=1) + "\n", encoding="utf-8"
+        )
     return csv, js
+
+
+def corte_declarado() -> tuple[int, int]:
+    """El corte que declaran los pronósticos de los motores asignados (debe ser uno solo)."""
+    cortes: set[tuple[int, int]] = set()
+    for motor in {f["motor"] for f in asignacion()}:
+        fc = _load_fc(motor)
+        if fc.empty or "anio_boletin_corte" not in fc.columns:
+            continue
+        pron = fc[fc["fase_modelo"].fillna("pronostico") == "pronostico"]
+        for a, s in (
+            pron[["anio_boletin_corte", "semana_boletin_corte"]]
+            .dropna()
+            .drop_duplicates()
+            .itertuples(index=False)
+        ):
+            cortes.add((int(a), int(s)))
+    if len(cortes) != 1:
+        raise SystemExit(
+            f"los pronósticos asignados declaran {len(cortes)} cortes: {sorted(cortes)}"
+        )
+    return next(iter(cortes))
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--out", type=Path, required=True)
-    ap.add_argument("--corte", default="2026-W37", help="semana del boletín del corte (AAAA-Wss)")
+    ap.add_argument(
+        "--corte",
+        default=None,
+        help="semana del boletín del corte (AAAA-Wss); por defecto, la que declaran los pronósticos",
+    )
     a = ap.parse_args(argv)
-    anio, semana = a.corte.split("-W")
-    tabla, resumen = construye((int(anio), int(semana)))
-    csv, js = escribe(tabla, resumen, a.out)
+    if a.corte is None:
+        corte = corte_declarado()
+    else:
+        anio, semana = a.corte.split("-W")
+        corte = (int(anio), int(semana))
+    obs = Observado()
+    tabla, resumen = construye(corte, obs)
+    ultima = (
+        resumen["ultima_semana_observada"]["anio"],
+        resumen["ultima_semana_observada"]["semana"],
+    )
+    semanal = semanal_nacional(tabla, obs, corte, ultima)
+    csv, js = escribe(tabla, resumen, a.out, semanal)
     print(
         f"  seguimiento post-corte {resumen['corte']['etiqueta']}: {resumen['semanas_evaluadas']} semana(s)"
     )

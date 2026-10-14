@@ -38,7 +38,6 @@ from epiforecast.utils.cohorts import filter_neuro  # noqa: E402
 from epiforecast.utils.config import conf  # noqa: E402
 from epiforecast.utils.semana_epi import (  # noqa: E402
     ds_de_semana_boletin,
-    semana_boletin_de_serie,
 )
 
 # Salida por defecto (flujo legacy). El refresh sellado pasa `--out` y escribe en el
@@ -95,6 +94,49 @@ def carga_seguimiento(ruta: Path, prod_models: list[dict[str, Any]]) -> dict[str
     if resumen.get("semanas_evaluadas") != len(resumen["semanas"]):
         raise SystemExit(f"{ruta}: semanas_evaluadas no coincide con las semanas listadas")
     return resumen
+
+
+def carga_semanal(ruta: Path, resumen: dict[str, Any]) -> dict[str, Any]:
+    """La tabla semanal del EpiBot (``seguimiento_semanal_nacional.json``), contrastada con el resumen.
+
+    Sustituye a la «Real vs Pronóstico 2026», que alineaba lo observado con TODAS las filas del
+    pronóstico del año (el ajuste dentro de muestra W2–W37 incluido) y rotulaba el ``ds`` legado
+    como inicio de la semana. Aquí: las comparaciones son sólo los pares posteriores al corte, que
+    deben ser los del resumen; antes del corte sólo viaja lo observado; cada semana lleva el
+    periodo oficial del boletín. Falla en seco si algo no cuadra.
+    """
+    if not ruta.is_file():
+        raise SystemExit(f"falta {ruta} (lo escribe genera_seguimiento_post_corte.py)")
+    semanal: dict[str, Any] = json.loads(ruta.read_text(encoding="utf-8"))
+    corte, ultima = resumen["corte"]["etiqueta"], resumen["ultima_semana_observada"]["etiqueta"]
+    pares = {
+        (strip_accents(n["padecimiento"]), s["etiqueta"]): n
+        for s in resumen["semanas"]
+        for c in s["cohortes"].values()
+        for n in c["nacional"]
+        if n["sexo"] == "general"
+    }
+    for pad, info in semanal.items():
+        if (info.get("corte"), info.get("ultima_semana_observada")) != (corte, ultima):
+            raise SystemExit(f"{ruta}: {pad} habla de otro corte o de otra semana observada")
+        for w in info["semanas"]:
+            if "fecha" in w or "error_pct" in w:
+                raise SystemExit(f"{ruta}: {pad} {w['etiqueta']} trae campos de la tabla anterior")
+            if w["fase"] == "observado" and set(w) & {
+                "pronostico",
+                "prophet",
+                "deepar",
+                "ensemble",
+                "stacking",
+            }:
+                raise SystemExit(
+                    f"{ruta}: {pad} {w['etiqueta']} publica el ajuste dentro de muestra"
+                )
+            if w["fase"] == "seguimiento" and w["estado"] == "par":
+                n = pares.get((strip_accents(pad), w["etiqueta"]))
+                if n is None or (n["pronostico"], n["real"]) != (w["pronostico"], w["real"]):
+                    raise SystemExit(f"{ruta}: {pad} {w['etiqueta']} no es el par del seguimiento")
+    return semanal
 
 
 def _sin_nan(valor: Any) -> Any:
@@ -201,6 +243,7 @@ def build_prod_models(cache: ProjectDataCache) -> list[dict]:
         "semana_validacion",
         "corte_validacion",
         "horizonte_validacion",
+        "definicion_realidad_validacion",
         "precision_historica",
     ]
     available = [c for c in cols if c in prod.columns]
@@ -463,66 +506,6 @@ def build_dengue_section() -> dict[str, Any]:
             "Los picos (2014, 2019, 2024) coinciden con años de El Niño; 2024 fue la mayor "
             "epidemia de dengue registrada en las Américas.",
         ],
-    }
-
-
-def build_dengue_weekly() -> dict[str, Any]:
-    """Comparación semanal Real vs Pronóstico para Dengue (Nacional, general), para el
-    'zoom semanal' del EpiBot. Misma forma que build_weekly_comparison (clave 'Dengue')."""
-    prod_path = Path(conf["paths"]["reports"]) / "ProdDetails" / "produccion_dengue.csv"
-    if not prod_path.exists():
-        return {}
-    prod = pd.read_csv(prod_path)
-    nac = prod[(prod["entidad"] == "Nacional") & (prod["sexo"] == "general")]
-    motor = str(nac["motor_productivo"].iloc[0]) if len(nac) else "DeepAR"
-
-    df = cargar_boletin_dengue()
-    anio = int(df["Anio"].max())
-    real = df[df["Anio"] == anio].groupby("Semana")["Casos_semana"].sum().to_dict()
-
-    base = Path(conf["paths"]["reports"]) / "forecasts"
-    fc_motor: dict[str, dict[int, int]] = {}
-    for m in _motores_productivos_dengue(prod):
-        p = base / m.lower() / f"all_forecast_{m.lower()}.csv"
-        if not p.exists():
-            continue
-        fdf = pd.read_csv(p, low_memory=False)
-        fdf = fdf[
-            (fdf["meta_padecimiento"] == "Dengue")
-            & (fdf["meta_entidad"].fillna("Nacional") == "Nacional")
-            & (fdf["meta_modo"] == "general")
-        ].copy()
-        fdf["ds"] = pd.to_datetime(fdf["ds"])
-        calendario = semana_boletin_de_serie(fdf["ds"])
-        fdf["wk"] = calendario["semana_boletin"]
-        fdf = fdf[calendario["anio_boletin"] == anio]
-        fc_motor[m.lower()] = {
-            int(w): int(round(y)) for w, y in zip(fdf["wk"], fdf["yhat"], strict=False)
-        }
-
-    base_motor = motor.lower()
-    semanas = []
-    for wk in sorted(fc_motor.get(base_motor, {})):
-        fecha = ds_de_semana_boletin(anio, wk).date().isoformat()
-        entry: dict[str, Any] = {
-            "semana": wk,
-            "fecha": fecha,
-            "pronostico": fc_motor[base_motor].get(wk),
-        }
-        if wk in real:
-            entry["real"] = int(real[wk])
-        for m, vals in fc_motor.items():
-            if wk in vals:
-                entry[m] = vals[wk]
-        semanas.append(entry)
-    return {
-        "Dengue": {
-            "modelo_productivo": base_motor,
-            "anio": anio,
-            "semanas_reales": len(real),
-            "semanas_pronostico": len(semanas),
-            "semanas": semanas,
-        }
     }
 
 
@@ -960,125 +943,6 @@ def build_static_data() -> dict[str, Any]:
     }
 
 
-def build_weekly_comparison(cache: ProjectDataCache) -> dict[str, list[dict]]:
-    """Genera comparacion semanal Real vs Pronostico para 2026.
-
-    Para cada padecimiento (Nacional, general), alinea semanas del boletin
-    con el pronostico del modelo productivo (tableau.csv).
-    """
-    result: dict[str, list[dict]] = {}
-
-    # Boletin: actual cases (solo cohorte neuro; Dengue tiene su propio pipeline)
-    bol = cache.boletin
-    if bol is not None:
-        bol = filter_neuro(bol)
-    if bol is None or bol.empty:
-        return result
-
-    max_year = int(bol["Anio"].max())
-    bol_year = bol[bol["Anio"] == max_year]
-    if bol_year.empty:
-        return result
-
-    # Aggregate Nacional by week + padecimiento
-    nac_actual = bol_year.groupby(["Semana", "Padecimiento"])["Casos_semana"].sum().reset_index()
-
-    # Modelo productivo canónico desde la tabla productiva (no desde tableau.csv,
-    # que puede quedar stale). Usa el motor productivo del par (Nacional, general).
-    prod = cache.prod_models
-    if prod is None or prod.empty:
-        return result
-    prod_lookup: dict[str, str] = {}
-    nac_general = prod[(prod["entidad"] == "Nacional") & (prod["sexo"] == "general")]
-    for _, r in nac_general.iterrows():
-        pad_key = strip_accents(str(r["padecimiento"]))
-        prod_lookup[pad_key] = str(r.get("modelo_produccion") or "?")
-
-    # Cargar los 4 forecasts directamente para construir las series semanales
-    forecast_paths = {
-        "prophet": Path("reports/forecasts/prophet/all_forecast_prophet.csv"),
-        "deepar": Path("reports/forecasts/deepar/all_forecast_deepar.csv"),
-        "ensemble": Path("reports/forecasts/ensemble/all_forecast_ensemble.csv"),
-        "stacking": Path("reports/forecasts/stacking/all_forecast_stacking.csv"),
-    }
-    fc_per_motor: dict[str, pd.DataFrame] = {}
-    for motor, p in forecast_paths.items():
-        if not p.exists():
-            continue
-        df = pd.read_csv(
-            p,
-            usecols=["ds", "yhat", "meta_padecimiento", "meta_entidad", "meta_modo"],
-            low_memory=False,
-        )
-        df["ds"] = pd.to_datetime(df["ds"])
-        calendario = semana_boletin_de_serie(df["ds"])
-        df = df[
-            (df["meta_entidad"] == "Nacional")
-            & (df["meta_modo"] == "general")
-            & (calendario["anio_boletin"] == max_year)
-        ].copy()
-        df["semana_boletin"] = calendario["semana_boletin"]
-        fc_per_motor[motor] = df.rename(columns={"meta_padecimiento": "padecimiento"})
-
-    for pad_raw in nac_actual["Padecimiento"].unique():
-        pad = strip_accents(str(pad_raw))
-        modelo_prod_raw = prod_lookup.get(pad, "?")
-        modelo_prod = strip_accents(str(modelo_prod_raw)).lower()
-
-        # Actual weeks
-        actual_weeks = (
-            nac_actual[nac_actual["Padecimiento"] == pad_raw]
-            .set_index("Semana")["Casos_semana"]
-            .to_dict()
-        )
-
-        # Tomar las semanas del motor productivo como base
-        base_motor = modelo_prod if modelo_prod in fc_per_motor else next(iter(fc_per_motor))
-        base_df = fc_per_motor[base_motor]
-        base_df = base_df[base_df["padecimiento"] == pad_raw].sort_values("ds")
-        if base_df.empty:
-            # Algunos forecasts usan padecimientos sin acentos
-            alt = strip_accents(str(pad_raw))
-            base_df = fc_per_motor[base_motor]
-            base_df = base_df[base_df["padecimiento"] == alt].sort_values("ds")
-        if base_df.empty:
-            continue
-
-        weeks: list[dict] = []
-        for _, row in base_df.iterrows():
-            w = int(row["semana_boletin"])
-            forecast = int(round(row["yhat"]))
-            actual = int(actual_weeks.get(w, 0)) if w in actual_weeks else None
-            entry: dict[str, Any] = {
-                "semana": w,
-                "fecha": row["ds"].strftime("%Y-%m-%d"),
-                "pronostico": forecast,
-            }
-            if actual is not None:
-                entry["real"] = actual
-                if actual > 0:
-                    error_pct = round(abs(forecast - actual) / actual * 100, 1)
-                    entry["error_pct"] = error_pct
-            # Forecast de cada motor para esa semana (mismo padecimiento, Nacional, general)
-            for motor, mdf in fc_per_motor.items():
-                m_pad = mdf[
-                    (mdf["padecimiento"].isin([pad_raw, pad])) & (mdf["semana_boletin"] == w)
-                ]
-                if not m_pad.empty:
-                    entry[motor] = int(round(m_pad["yhat"].iloc[0]))
-            weeks.append(entry)
-
-        result[pad] = {
-            "modelo_productivo": modelo_prod,
-            "anio": max_year,
-            "semanas_reales": len(actual_weeks),
-            "semanas_pronostico": len(weeks),
-            "semanas": weeks,
-        }
-
-    return result
-
-
 def _fill_horizon_dates(knowledge: dict[str, Any], cache: ProjectDataCache) -> None:
     """Rellena horizonte_inicio/horizonte_fin/ultimo_entrenamiento en training_config.
 
@@ -1183,9 +1047,6 @@ def main(argv: list[str] | None = None) -> None:
         "stats": _normalize_keys(stats),
         "prod_models": prod_models,
         "boletin": _normalize_keys(build_boletin(cache)),
-        "weekly_comparison": _normalize_keys(
-            {**build_weekly_comparison(cache), **build_dengue_weekly()}
-        ),
         # Dengue: sección propia SIN normalizar (preserva tildes/eñes en estados y notas).
         "dengue": build_dengue_section(),
         # Rendimiento 2026 por padecimiento × motor (SMAPE + MASE). Claves ASCII, sin normalizar.
@@ -1197,6 +1058,12 @@ def main(argv: list[str] | None = None) -> None:
     }
     if args.seguimiento is not None:
         knowledge["seguimiento_post_corte"] = carga_seguimiento(args.seguimiento, prod_models)
+        # Tabla semanal del EpiBot («Seguimiento del pronóstico con corte W37»). Sin el
+        # seguimiento no se publica: la tabla anterior mezclaba ajuste y seguimiento.
+        knowledge["weekly_comparison"] = carga_semanal(
+            args.seguimiento.parent / "seguimiento_semanal_nacional.json",
+            knowledge["seguimiento_post_corte"],
+        )
     _fill_horizon_dates(knowledge, cache)
 
     # Ronda W37: las métricas por serie y motor son el error de la ventana de selección W28–W37.

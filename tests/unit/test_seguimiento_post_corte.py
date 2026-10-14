@@ -204,14 +204,26 @@ def test_la_tabla_lleva_ambos_lados_de_la_misma_semana(tmp_path: Path) -> None:
         ]
     )
 
+    ultima["definicion_real"] = [
+        "casos de la semana (Casos_semana)",
+        "incremento del acumulado por sexo de la entidad",
+    ]
     assert gvs._update_excel(ultima, ruta) == 2
 
     ws = load_workbook(ruta)["Produccion"]
     filas = [[c.value for c in fila] for fila in ws.iter_rows(min_row=1)]
-    assert filas[0][-4:] == list(gvs.COLUMNAS_VALIDACION)
-    assert filas[1][3:] == [3136, 3332, "2026-W39", "2026-W37", 2, "par"]
+    assert filas[0][-5:] == list(gvs.COLUMNAS_VALIDACION)
+    assert filas[1][3:] == [
+        3136,
+        3332,
+        "2026-W39",
+        "2026-W37",
+        2,
+        "par",
+        "casos de la semana (Casos_semana)",
+    ]
     assert filas[2][3:5] == [None, None]  # ausente: ni el 999 de otra semana ni medio par
-    assert filas[2][-1] == "ausente: revisión"
+    assert filas[2][-2] == "ausente: revisión"
     assert filas[3][3:5] == [None, None] and filas[3][5] is None  # Dengue no está en esta tabla
 
 
@@ -270,3 +282,430 @@ def test_tabla_v1_sin_semana_declarada_no_publica_el_par(tmp_path: Path) -> None
     fila = build_prod_models(SimpleNamespace(prod_models=v2))[0]
     assert (fila["pron_sem_previa"], fila["realidad_sem_previa"]) == (3118, 3332)
     assert (fila["semana_validacion"], fila["horizonte_validacion"]) == ("2026-W39", 2)
+
+
+# ── ronda W37, decisiones del 14-oct-2026: tabla del EpiBot y nacional por sexo ─────────────
+
+
+def test_la_semana_previa_cruza_el_anio(seg: Any) -> None:
+    assert seg.semana_previa(2026, 1) == (2025, 53)  # 2025 tiene 53 semanas del boletín
+    assert seg.semana_previa(2026, 39) == (2026, 38)
+
+
+def test_cada_valor_observado_lleva_su_definicion(seg: Any) -> None:
+    base = {"cohorte": "neuro", "padecimiento": "Parkinson", "motor": "Prophet"}
+    assert (
+        seg.definicion_real({**base, "entidad": "Nacional", "sexo": "general"}) == seg.DEF_GENERAL
+    )
+    assert (
+        seg.definicion_real({**base, "entidad": "Nacional", "sexo": "hombres"})
+        == "incremento neto del acumulado por sexo, sujeto a revisiones"
+    )
+    assert (
+        seg.definicion_real({**base, "entidad": "region_Urbana media", "sexo": "mujeres"})
+        == seg.DEF_SEXO_AGREGADO
+    )
+    assert seg.definicion_real({**base, "entidad": "Jalisco", "sexo": "mujeres"}) == (
+        seg.DEF_SEXO_ESTATAL
+    )
+
+
+def _obs_sintetico(seg: Any, filas: list[tuple[str, int, int, int, int, int]]) -> Any:
+    """Observado con un boletín neuro de juguete: (entidad, año, semana, casos, ac_h, ac_m)."""
+    obs = object.__new__(seg.Observado)
+    obs.neuro = pd.DataFrame(
+        filas,
+        columns=[
+            "Entidad",
+            "Anio",
+            "Semana",
+            "Casos_semana",
+            "Acumulado_hombres",
+            "Acumulado_mujeres",
+        ],
+    ).assign(Padecimiento="Parkinson")
+    obs.dengue = pd.DataFrame()
+    obs._cache = {}
+    return obs
+
+
+PARK_H = {
+    "cohorte": "neuro",
+    "padecimiento": "Parkinson",
+    "entidad": "Nacional",
+    "sexo": "hombres",
+    "motor": "Ensemble",
+}
+
+
+def test_sin_cobertura_en_la_semana_previa_el_incremento_por_sexo_queda_ausente(
+    seg: Any, monkeypatch
+) -> None:  # noqa: ANN001
+    monkeypatch.setattr(seg, "N_ENTIDADES", 2)
+    obs = _obs_sintetico(
+        seg,
+        [
+            ("A", 2026, 38, 9, 100, 50),  # en la W38 sólo publicó A
+            ("A", 2026, 39, 9, 110, 55),
+            ("B", 2026, 39, 9, 300, 70),
+        ],
+    )
+    real, motivo = obs.valor(PARK_H, 2026, 39, ds_de_semana_boletin(2026, 39))
+    assert real is None
+    assert motivo == "boletín incompleto en la semana previa (1/2 entidades)"
+
+
+def test_el_nacional_por_sexo_es_el_neto_del_acumulado_y_no_la_suma_recortada(
+    seg: Any, monkeypatch
+) -> None:  # noqa: ANN001
+    """El caso de Parkinson hombres W39: un estado revisa a la baja; el neto lo incluye (85) y la
+    suma estatal recortada a cero (87, la página anterior) queda documentada, no publicada."""
+    monkeypatch.setattr(seg, "N_ENTIDADES", 2)
+    obs = _obs_sintetico(
+        seg,
+        [
+            ("Tamaulipas", 2026, 38, 0, 148, 0),
+            ("Resto", 2026, 38, 0, 1000, 0),
+            ("Tamaulipas", 2026, 39, 0, 146, 0),  # revisión: −2
+            ("Resto", 2026, 39, 0, 1087, 0),  # +87
+        ],
+    )
+    tabla = pd.DataFrame(
+        [
+            {
+                **PARK_H,
+                "nivel": "nacional",
+                "semana_objetivo": "2026-W39",
+                "ds_objetivo": "2026-09-14",
+                "real": 85,
+                "definicion_real": seg.DEF_SEXO_AGREGADO,
+            }
+        ]
+    )
+    (a,) = seg._agregacion_sexo(tabla, obs, [])
+    assert (a["neto"], a["real_publicado"], a["suma_estatal_recortada"]) == (85, 85, 87)
+    assert a["entidades_con_revision_negativa"] == {"Tamaulipas": -2}
+    assert (a["entidades_semana"], a["entidades_semana_previa"]) == (2, 2)
+    assert a["semanas_consecutivas"] is True
+    assert a["definicion_real"] == "incremento neto del acumulado por sexo, sujeto a revisiones"
+
+
+def test_un_ausente_conserva_su_motivo_y_el_acumulado_de_la_fuente(seg: Any) -> None:
+    obs = _obs_sintetico(
+        seg,
+        [("Tamaulipas", 2026, 38, 0, 148, 0), ("Tamaulipas", 2026, 39, 0, 146, 0)],
+    )
+    tabla = pd.DataFrame(
+        [
+            {
+                **PARK_H,
+                "entidad": "Tamaulipas",
+                "nivel": "estatal",
+                "semana_objetivo": "2026-W39",
+                "ds_objetivo": "2026-09-14",
+                "horizonte": 2,
+                "pronostico": 5,
+                "real": None,
+                "estado": "ausente",
+                "motivo": "revisión negativa del acumulado por sexo (148 → 146)",
+            }
+        ]
+    )
+    (a,) = seg._ausentes(tabla, obs, [])
+    assert a["real"] is None and a["pronostico"] == 5  # ausente: nunca cero
+    assert (a["acumulado_semana_previa"], a["acumulado_semana"]) == (148, 146)
+    assert a["motivo"].startswith("revisión negativa")
+
+
+class _ObsGeneral:
+    def general_semana(self, fila, anio, semana):  # noqa: ANN001, ANN201
+        return 1000 + semana, ""
+
+
+def test_la_tabla_semanal_no_publica_el_ajuste_dentro_de_muestra(seg: Any, monkeypatch) -> None:  # noqa: ANN001
+    """Antes del corte sólo lo observado; los pares del seguimiento salen de la tabla; después,
+    el pronóstico guardado con su horizonte; cada semana con el periodo oficial del boletín."""
+    serie = {**SERIE, "motor": "Prophet"}
+    monkeypatch.setattr(seg, "asignacion", lambda: [serie])
+    fc = _fc([(2026, s, 100.0 + s) for s in range(38, 53)])
+    monkeypatch.setattr(seg, "_load_fc", lambda motor: fc)
+    tabla = pd.DataFrame(
+        [
+            {
+                **SERIE,
+                "nivel": "nacional",
+                "corte": "2026-W37",
+                "semana_objetivo": f"2026-W{s}",
+                "horizonte": s - 37,
+                "pronostico": 100 + s,
+                "real": 1000 + s if s == 38 else None,
+                "estado": "par" if s == 38 else "ausente",
+                "motivo": "" if s == 38 else "revisión",
+                "error_abs": 862 if s == 38 else None,
+            }
+            for s in (38, 39)
+        ]
+    )
+    out = seg.semanal_nacional(tabla, _ObsGeneral(), CORTE, (2026, 39))
+    info = out["Depresion"]
+    assert info["titulo"] == "Seguimiento del pronóstico con corte W37"
+    sem = {w["semana"]: w for w in info["semanas"]}
+    assert len(sem) == 52 and sem[1]["fase"] == "observado"
+    assert sem[37] == {
+        "anio": 2026,
+        "semana": 37,
+        "etiqueta": "2026-W37",
+        "periodo_inicio": "2026-09-13",
+        "periodo_fin": "2026-09-19",
+        "fase": "observado",
+        "real": 1037,
+    }  # ni pronóstico ni motores: el ajuste dentro de muestra no viaja
+    assert sem[38]["fase"] == "seguimiento" and sem[38]["periodo_inicio"] == "2026-09-20"
+    assert (sem[38]["pronostico"], sem[38]["real"], sem[38]["diferencia"]) == (138, 1038, -900)
+    assert sem[39]["estado"] == "ausente" and sem[39]["real"] is None  # ausente, no cero
+    assert "diferencia" not in sem[39] and "error_abs" not in sem[39]
+    assert (sem[40]["fase"], sem[40]["horizonte"], sem[40]["pronostico"]) == ("pronostico", 3, 140)
+    assert all("fecha" not in w and "error_pct" not in w for w in info["semanas"])
+    assert info["semanas_seguimiento"] == 2 and info["semanas_pronostico"] == 13
+
+
+def test_una_revision_negativa_queda_ausente_con_el_acumulado_en_el_motivo(
+    seg: Any, monkeypatch
+) -> None:  # noqa: ANN001
+    obs = _obs_sintetico(
+        seg, [("Tamaulipas", 2026, 38, 0, 148, 0), ("Tamaulipas", 2026, 39, 0, 146, 0)]
+    )
+    monkeypatch.setattr(obs, "serie", lambda fila: pd.DataFrame({"ds": [], "y": []}))
+    fila = {**PARK_H, "entidad": "Tamaulipas"}
+    real, motivo = obs.valor(fila, 2026, 39, ds_de_semana_boletin(2026, 39))
+    assert real is None
+    assert motivo.startswith("revisión negativa del acumulado por sexo (148 → 146)")
+
+
+# ── consumidores: knowledge, zoom del EpiBot y página de validación ───────────────────────────
+
+
+def _resumen_v2() -> dict[str, Any]:
+    return {
+        "corte": {"etiqueta": "2026-W37"},
+        "ultima_semana_observada": {"etiqueta": "2026-W39"},
+        "semanas": [
+            {
+                "etiqueta": "2026-W38",
+                "cohortes": {
+                    "neuro": {
+                        "nacional": [
+                            {
+                                "padecimiento": "Depresion",
+                                "sexo": "general",
+                                "pronostico": 3118,
+                                "real": 2748,
+                            }
+                        ]
+                    }
+                },
+            }
+        ],
+    }
+
+
+def _semanal_v2(**cambio: Any) -> dict[str, Any]:
+    w38 = {
+        "etiqueta": "2026-W38",
+        "fase": "seguimiento",
+        "estado": "par",
+        "pronostico": 3118,
+        "real": 2748,
+    }
+    w37 = {"etiqueta": "2026-W37", "fase": "observado", "real": 3181}
+    w37.update(cambio)
+    return {
+        "Depresion": {
+            "corte": "2026-W37",
+            "ultima_semana_observada": "2026-W39",
+            "semanas": [w37, w38],
+        }
+    }
+
+
+def test_el_knowledge_rechaza_el_ajuste_dentro_de_muestra_y_pares_ajenos(tmp_path: Path) -> None:
+    import json
+
+    from scripts.build_web_knowledge import carga_semanal
+
+    ruta = tmp_path / "seguimiento_semanal_nacional.json"
+    ruta.write_text(json.dumps(_semanal_v2()), "utf-8")
+    assert carga_semanal(ruta, _resumen_v2())["Depresion"]["corte"] == "2026-W37"
+    for cambio, msg in (
+        ({"pronostico": 3175}, "ajuste dentro de muestra"),
+        ({"fecha": "2026-08-31"}, "tabla anterior"),
+    ):
+        ruta.write_text(json.dumps(_semanal_v2(**cambio)), "utf-8")
+        with pytest.raises(SystemExit, match=msg):
+            carga_semanal(ruta, _resumen_v2())
+    otro = _semanal_v2()
+    otro["Depresion"]["semanas"][1]["pronostico"] = 3136  # el de la W39
+    ruta.write_text(json.dumps(otro), "utf-8")
+    with pytest.raises(SystemExit, match="no es el par del seguimiento"):
+        carga_semanal(ruta, _resumen_v2())
+    with pytest.raises(SystemExit, match="falta"):
+        carga_semanal(tmp_path / "no.json", _resumen_v2())
+
+
+def test_el_zoom_del_epibot_lleva_los_pares_y_falla_si_falta_uno(
+    tmp_path: Path, monkeypatch
+) -> None:  # noqa: ANN001
+    import json
+
+    from scripts import build_epibot_zoom as z
+
+    reports, out = tmp_path / "Reports", tmp_path / "epibot"
+    reports.mkdir()
+    out.mkdir()
+    clave = "Parkinson/Nacional/Parkinson_Nacional_hombres.png"
+    (reports / "zoom_data_neuro.json").write_text(
+        json.dumps({clave: {"motor": "Ensemble", "d": ["2026-09-07"], "r": [92], "y": [86]}}),
+        "utf-8",
+    )
+    csv = tmp_path / "seguimiento_post_corte.csv"
+    cols = "cohorte,padecimiento,entidad,sexo,semana_objetivo,inicio_semana,fin_semana,corte,horizonte,pronostico,real,error_abs,estado,motivo,definicion_real"
+    # La definición lleva coma: se escribe con pandas, que la entrecomilla como el CSV real.
+    pd.DataFrame(
+        [
+            dict(
+                zip(
+                    cols.split(","),
+                    [
+                        "neuro",
+                        "Parkinson",
+                        "Nacional",
+                        "hombres",
+                        "2026-W38",
+                        "2026-09-20",
+                        "2026-09-26",
+                        "2026-W37",
+                        1,
+                        86,
+                        92,
+                        6,
+                        "par",
+                        "",
+                        "incremento neto del acumulado por sexo, sujeto a revisiones",
+                    ],
+                    strict=True,
+                )
+            )
+        ]
+    ).to_csv(csv, index=False)
+    monkeypatch.setattr(
+        sys, "argv", ["z", "--reports", str(reports), "--out", str(out), "--seguimiento", str(csv)]
+    )
+    assert z.main() == 0
+    serie = json.loads((out / "zoom_series.json").read_text("utf-8"))["parkinson|nacional|hombres"]
+    assert serie["ds_corte"] == "2026-08-31" and serie["corte"] == "2026-W37"
+    assert serie["definicion_real"].startswith("incremento neto del acumulado por sexo")
+    assert serie["seguimiento"] == [
+        {
+            "etiqueta": "2026-W38",
+            "periodo_inicio": "2026-09-20",
+            "periodo_fin": "2026-09-26",
+            "corte": "2026-W37",
+            "estado": "par",
+            "motivo": "",
+            "horizonte": 1,
+            "pronostico": 86,
+            "real": 92,
+            "error_abs": 6,
+        }
+    ]
+    (reports / "zoom_data_neuro.json").write_text(
+        json.dumps({clave.replace("hombres", "mujeres"): {"motor": "Prophet"}}), "utf-8"
+    )
+    with pytest.raises(SystemExit, match="no tiene seguimiento"):
+        z.main()
+
+
+def test_la_pagina_no_califica_ni_convierte_ausentes_en_cero() -> None:
+    base = {
+        "cohorte": "neuro",
+        "padecimiento": "Parkinson",
+        "corte": "2026-W37",
+        "semana_objetivo": "2026-W39",
+        "horizonte": 2,
+        "motor": "Ensemble",
+    }
+    seg_df = pd.DataFrame(
+        [
+            {
+                **base,
+                "entidad": "Nacional",
+                "nivel": "nacional",
+                "sexo": "hombres",
+                "pronostico": 88,
+                "real": 85,
+                "estado": "par",
+                "motivo": "",
+                "definicion_real": "x",
+            },
+            {
+                **base,
+                "entidad": "Tamaulipas",
+                "nivel": "estatal",
+                "sexo": "general",
+                "pronostico": 5,
+                "real": None,
+                "estado": "ausente",
+                "motivo": "revisión negativa",
+                "definicion_real": "x",
+            },
+            {
+                **base,
+                "entidad": "Jalisco",
+                "nivel": "estatal",
+                "sexo": "general",
+                "pronostico": 9,
+                "real": 7,
+                "estado": "par",
+                "motivo": "",
+                "definicion_real": "x",
+            },
+        ]
+    )
+    resumen = {
+        "ausentes": [
+            {
+                "semana_objetivo": "2026-W39",
+                "horizonte": 2,
+                "padecimiento": "Parkinson",
+                "entidad": "Tamaulipas",
+                "sexo": "hombres",
+                "motor": "Stacking",
+                "pronostico": 5,
+                "motivo": "revisión negativa del acumulado por sexo (148 → 146)",
+                "acumulado_semana_previa": 148,
+                "acumulado_semana": 146,
+            }
+        ],
+        "agregacion_sexo": [
+            {
+                "semana_objetivo": "2026-W39",
+                "padecimiento": "Parkinson",
+                "sexo": "hombres",
+                "neto": 85,
+                "real_publicado": 85,
+                "suma_estatal_recortada": 87,
+                "entidades_con_revision_negativa": {"Tamaulipas": -2},
+                "entidades_semana": 32,
+                "entidades_semana_previa": 32,
+                "semanas_consecutivas": True,
+            }
+        ],
+    }
+    html = gvs._generate_html(seg_df, CORTE, resumen)
+    for calificacion in ("EXCELENTE", "BUENO", "REGULAR", "FALLO", "Semaforo", "SMAPE", "N/A"):
+        assert calificacion not in html
+    assert "incremento neto del acumulado por sexo, sujeto a revisiones" in html
+    assert "Pares ausentes y sus motivos" in html and "148 &rarr; 146" in html
+    assert "Parkinson (G20) hombres semana 39: 85 (con la definicion anterior, 87)" in html
+    # El ausente no entra en la suma de las entidades: 1 par (Jalisco), observado 7.
+    assert "1 entidades con par: observado 7 / pronostico 9; 1 ausente(s) fuera de la suma" in html
