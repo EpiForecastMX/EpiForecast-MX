@@ -13,15 +13,14 @@
   },
   "motor_dist": {
     "dengue": {
-      "DeepAR": 29,
-      "NBGLM": 22,
-      "Prophet": 48
+      "DeepAR": 53,
+      "Prophet": 46
     },
     "neuro": {
-      "DeepAR": 98,
-      "Ensemble": 85,
-      "Prophet": 94,
-      "Stacking": 56
+      "DeepAR": 39,
+      "Ensemble": 109,
+      "Prophet": 78,
+      "Stacking": 107
     }
   },
   "nacional_por_cohorte": {

@@ -83,17 +83,21 @@ def test_diagnostico_documenta_dengue_stale(catalog_data):
 # --------------------------------------------------------------------------------------
 
 
-def test_dengue_incluye_nbglm(catalog_data):
-    """No basta con que los motores sean elegibles: NBGLM tiene que estar.
+def test_dengue_sale_de_la_asignacion_autoritativa(catalog_data):
+    """No basta con que los motores sean elegibles: cada serie lleva el motor de la asignación.
 
-    El Dengue de `tabla_333` también pasa «solo motores elegibles» si se le quitan
-    Ensemble y Stacking, y aun así sería la selección vieja. La huella de que el
-    catálogo viene del selector vigente es la presencia de NBGLM.
+    El Dengue de `tabla_333` también pasa «solo motores elegibles» si se le quitan Ensemble y
+    Stacking, y aun así sería la selección vieja. Antes la huella era «NBGLM está presente»;
+    desde la ronda W37 NBGLM está suspendido (ENMIENDA_DENGUE_NBGLM_W37) y la huella es
+    coincidir serie por serie con `produccion_dengue.csv`.
     """
+    import pandas as pd
+
     df, _ = catalog_data
-    den_engines = set(df[df["cohorte"] == "dengue"]["motor_productivo"])
-    assert "NBGLM" in den_engines
-    assert not ({"Ensemble", "Stacking"} & den_engines)
+    den = df[df["cohorte"] == "dengue"].set_index(["entidad", "sexo"])["motor_productivo"]
+    prod = pd.read_csv(catalog._dengue_table_path()).set_index(["entidad", "sexo"])
+    assert den.sort_index().to_dict() == prod["motor_productivo"].sort_index().to_dict()
+    assert not ({"Ensemble", "Stacking"} & set(den))
 
 
 def test_por_sexo_es_144_cada_uno(catalog_data):
