@@ -211,7 +211,8 @@ dengue-web:
 	$(PYTHON) -m scripts.eda_dengue_charts --out $(DASHBOARD_DENGUE)
 	$(PYTHON) -m scripts.dengue_showcase_charts --out $(DASHBOARD_DENGUE)
 	$(PYTHON) scripts/build_dengue_gallery.py --out $(DASHBOARD_DENGUE)
-	@echo ">>> Galeria por entidad generada. Inyecta los items en Reports/index.html (ver _gallery_items.json)."
+	$(PYTHON) scripts/inyecta_galeria_items.py --reports $(DASHBOARD_DENGUE)/..
+	@echo ">>> Galeria por entidad generada e inyectada en Reports/index.html (DATA desde _gallery_items.json)."
 	@echo ">>> Regenerando knowledge.json del EpiBot (incluye la seccion 'dengue')..."
 	$(PYTHON) scripts/build_web_knowledge.py
 	cp web_dashboard/knowledge.json $(DASHBOARD_EPIBOT)/knowledge.json

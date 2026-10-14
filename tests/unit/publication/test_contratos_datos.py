@@ -39,18 +39,19 @@ def test_los_conjuntos_se_derivan_del_contrato() -> None:
     assert len(fab.CONTRATO.productos("Depresión")) == 21  # (2 + nacional + 4 regiones) × 3
     assert len(fab.CONTRATO.productos("Dengue")) == 9  # (2 + nacional) × 3
     assert len(fab.CONTRATO.claves_esperadas()) == 72  # 3 × 21 + 9
-    assert len(fab.CONTRATO.zoom_esperado()) == 84  # 4 × 7 × 3
+    assert fab.CONTRATO.zoom_esperado() == fab.CONTRATO.claves_esperadas()  # sin regiones Dengue
 
 
 def test_el_contrato_canonico_da_las_cifras_publicas() -> None:
-    """333 neuro + 99 Dengue = 432 series; 4 × 111 = 444 en la galería. Derivadas, no escritas."""
+    """333 neuro + 99 Dengue = 432 series, y la galería las mismas 432. Derivadas, no escritas."""
     canonico = ContratoCobertura.canonico()
 
     assert len(canonico.entidades) == 32
     assert len(canonico.regiones) == 4
     assert {len(canonico.productos(p)) for p in canonico.neuro} == {111}
     assert len(canonico.claves_esperadas()) == 432
-    assert len(canonico.zoom_esperado()) == 444
+    assert len(canonico.zoom_esperado()) == 432
+    assert not any(e.startswith("region") for p, e, _ in canonico.zoom_esperado() if p == "dengue")
 
 
 @pytest.mark.parametrize(

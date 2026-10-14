@@ -57,11 +57,38 @@ def test_produccion_es_432_no_435(catalog_data):
     assert counts.production_series_count != 435  # el inflado con dup + inválidos
 
 
-def test_gallery_distinto_de_produccion(catalog_data):
-    _, counts = catalog_data
-    # galería = 333 neuro + 111 Dengue (incluye las 4 regiones no productivas)
-    assert counts.gallery_item_count == 444
-    assert counts.gallery_item_count > counts.production_series_count
+def _galeria_falsa(raiz, items):
+    """Un dashboard mínimo: ``Reports/index.html`` con la línea ``const DATA = [...]``."""
+    rep = raiz / "Reports"
+    rep.mkdir(parents=True)
+    data = json.dumps(items, ensure_ascii=False)
+    (rep / "index.html").write_text(f"<script>\nconst DATA = {data};\n</script>\n", "utf-8")
+    return raiz
+
+
+def test_galeria_se_cuenta_en_lo_publicado(tmp_path, monkeypatch):
+    """Ronda W37: la galería son 432 gráficos (sin las 4 regiones de Dengue), contados en la
+    lista que la galería pinta. Antes se leía `_gallery_items.json` de Dengue ANTES de regenerarlo
+    y, si no se encontraba, se suponía 111: el candidato W37 publicó 444 con 432 gráficos."""
+    items = [{"p": "Depresión", "f": f"Depresión/x/{i}.png"} for i in range(333)]
+    items += [{"p": "Dengue", "f": f"dengue/x/{i}.png"} for i in range(99)]
+    monkeypatch.setenv(catalog.DASHBOARD_ENV, str(_galeria_falsa(tmp_path, items)))
+    _, counts = build_production_catalog()
+    assert counts.gallery_item_count == 432 == counts.production_series_count
+
+
+def test_sin_galeria_no_se_supone_un_conteo(tmp_path, monkeypatch):
+    monkeypatch.setenv(catalog.DASHBOARD_ENV, str(tmp_path / "no_existe"))
+    _, counts = build_production_catalog()
+    assert counts.gallery_item_count is None
+
+
+def test_galeria_sin_lista_data_falla(tmp_path, monkeypatch):
+    (tmp_path / "Reports").mkdir()
+    (tmp_path / "Reports" / "index.html").write_text("<html></html>", "utf-8")
+    monkeypatch.setenv(catalog.DASHBOARD_ENV, str(tmp_path))
+    with pytest.raises(ValueError, match="const DATA"):
+        build_production_catalog()
 
 
 def test_diagnostico_documenta_dengue_stale(catalog_data):
@@ -149,7 +176,8 @@ def test_manifiesto_en_disco_no_esta_rancio(catalog_data):
         pytest.skip("no hay manifiesto en disco; se genera con scripts.build_catalogo_canonico")
     disco = json.loads(ruta.read_text(encoding="utf-8"))
     assert disco["production_series_count"] == counts.production_series_count
-    assert disco["gallery_item_count"] == counts.gallery_item_count
+    if counts.gallery_item_count is not None:  # sin galería a mano no hay con qué contrastar
+        assert disco["gallery_item_count"] == counts.gallery_item_count
     assert disco["por_cohorte"] == counts.por_cohorte
     assert disco["motor_dist"] == counts.motor_dist, (
         "el manifiesto en disco quedó más viejo que sus fuentes: "

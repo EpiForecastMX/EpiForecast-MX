@@ -292,6 +292,8 @@ export PYTHONPATH="${SANDBOX}/src${PYTHONPATH:+:$PYTHONPATH}"
 DASHBOARD_ROOT="$TRABAJO/outputs/dashboard"
 REPORTS="${DASHBOARD_ROOT}/Reports"
 EPIBOT="${DASHBOARD_ROOT}/epibot"
+# El catalogo canonico cuenta los graficos en la galeria que se genera aqui, no en el sitio real.
+export EPIFORECAST_DASHBOARD="$DASHBOARD_ROOT"
 
 # ─────────────────────────────────────────────────────────────────────
 # 3. PREPARAR — datos y computo. No publica.
@@ -399,14 +401,15 @@ paso "[6/10] Galeria neuro (graficos + zoom_data_neuro.json)"
 paso "[7/10] Dengue: produccion + web"
 # Ya no hay escape por el CSV viejo: si [3/10] no produjo Dengue nuevo, el guion aborto.
 make -C "$SANDBOX" PYTHON="$PYTHON" dengue-produccion
-# El catalogo canonico (catalogo_canonico.csv + _counts.json, rastreados) se deriva de
-# produccion_dengue.csv y de la tabla 333: si no se regenera aqui, el contrato
-# `test_manifiesto_en_disco_no_esta_rancio` del CI lo delata (P1, 2-sep-2026).
-(cd "$SANDBOX" && $PYTHON -m scripts.build_catalogo_canonico)
 # Se redirigen explicitamente: por defecto apuntan al sitio real.
 make -C "$SANDBOX" PYTHON="$PYTHON" dengue-web \
   DASHBOARD_DENGUE="${REPORTS}/dengue" \
   DASHBOARD_EPIBOT="${EPIBOT}"
+# El catalogo canonico (catalogo_canonico.csv + _counts.json, rastreados) se deriva de
+# produccion_dengue.csv, de la tabla 333 y de la galeria YA inyectada (dengue-web la reescribe):
+# si no se regenera aqui, el contrato `test_manifiesto_en_disco_no_esta_rancio` del CI lo delata
+# (P1, 2-sep-2026), y si corre antes de la galeria cuenta los graficos de la ronda anterior (W37).
+(cd "$SANDBOX" && $PYTHON -m scripts.build_catalogo_canonico)
 
 # El zoom del EpiBot fusiona neuro + Dengue: DESPUES de dengue-web para que no
 # quede desfasado con el Dengue anterior.

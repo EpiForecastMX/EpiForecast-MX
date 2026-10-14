@@ -13,9 +13,11 @@ El catálogo autoritativo es:
     elegibles Prophet/DeepAR/NBGLM). (Nacional + 32 estados) × 3 sexos; SIN fallback
     regional (por eso 99 y no 111).
 
-  production_series_count = 432 (333 + 99)   ← distinto de
-  gallery_item_count       = 444 (333 + 111) ← la galería de Dengue sí incluye las 4
-  regiones (37 geo × 3 = 111), aunque no sean productivas.
+  production_series_count = 432 (333 + 99)
+  gallery_item_count       = 432 en la ronda W37: se CUENTA en el inventario que la galería
+  publica (la lista ``DATA`` de ``Reports/index.html``), no se supone. Hasta W33 la galería de
+  Dengue traía además sus 4 regiones (111 gráficos, total 444); en W37 salen porque no forman
+  parte de las 99 series de la asignación (hallazgo C). Sin inventario el conteo es ``None``.
 
 Los conteos derivados (dashboard, stats) deben leer de aquí; NO se renombra ni se
 reescribe ningún artefacto legacy (tabla_333, produccion_dengue.csv, punteros DVC).
@@ -26,7 +28,10 @@ En EPIC 1 la lista de cohorte neuro pasará a venir del registry
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import json
+import os
 from pathlib import Path
+import re
 import unicodedata
 
 import pandas as pd
@@ -76,15 +81,34 @@ def _dengue_table_path() -> Path:
     return _proddetails_dir() / "produccion_dengue.csv"
 
 
-def _dengue_gallery_items_path() -> Path:
-    # ../EpiForecast-IMSS-Dashboard/Reports/dengue/_gallery_items.json (repo del dashboard)
-    return (
-        _reports_dir().resolve().parent.parent
-        / "EpiForecast-IMSS-Dashboard"
-        / "Reports"
-        / "dengue"
-        / "_gallery_items.json"
-    )
+# Raíz del dashboard cuya galería se cuenta. El productor apunta aquí su staging; sin la variable
+# se usa el repo hermano ``../EpiForecast-IMSS-Dashboard``.
+DASHBOARD_ENV = "EPIFORECAST_DASHBOARD"
+_RE_DATA_GALERIA = re.compile(r"^const DATA = (\[.*\]);$", re.MULTILINE)
+
+
+def _dashboard_dir() -> Path:
+    env = os.environ.get(DASHBOARD_ENV)
+    if env:
+        return Path(env)
+    return _reports_dir().resolve().parent.parent / "EpiForecast-IMSS-Dashboard"
+
+
+def galeria_publicada(dashboard: Path | None = None) -> list[dict[str, str]] | None:
+    """Los gráficos que la galería pinta: la lista ``DATA`` de ``Reports/index.html``.
+
+    ``None`` si no hay galería que leer. Es el inventario que ve el público; contar en otro sitio
+    (el ``_gallery_items.json`` de Dengue antes de regenerarlo, o un 111 supuesto cuando faltaba)
+    publicó 444 cuando la galería ya tenía 432.
+    """
+    index = (dashboard or _dashboard_dir()) / "Reports" / "index.html"
+    if not index.is_file():
+        return None
+    m = _RE_DATA_GALERIA.search(index.read_text(encoding="utf-8"))
+    if m is None:
+        raise ValueError(f"{index} sin la línea `const DATA = [...]` de la galería")
+    items: list[dict[str, str]] = json.loads(m.group(1))
+    return items
 
 
 @dataclass(frozen=True)
@@ -92,7 +116,7 @@ class CatalogCounts:
     """Conteos derivados del catálogo canónico (para tests y para el manifiesto web)."""
 
     production_series_count: int
-    gallery_item_count: int
+    gallery_item_count: int | None
     por_cohorte: dict[str, int]
     por_padecimiento: dict[str, int]
     motor_dist: dict[str, dict[str, int]]
@@ -149,25 +173,18 @@ def _dengue_stale_diagnostics(neuro_names: tuple[str, ...]) -> dict[str, object]
         "selecciones_invalidas_ensemble_stacking": int(len(invalid)),
         "tiene_nbglm": bool((den["modelo_produccion"] == "NBGLM").any()),
         "motivo_descartado": (
-            "Se usa produccion_dengue.csv (99, con NBGLM); el Dengue de tabla_333 "
-            "es stale (Ensemble/Stacking no elegibles, sin NBGLM"
+            "Se usa produccion_dengue.csv (99, la asignación autoritativa); el Dengue de "
+            "tabla_333 es stale (Ensemble/Stacking no elegibles"
             + (", dup nacionales" if dup else "")
             + ")."
         ),
     }
 
 
-def _gallery_item_count(neuro_count: int) -> int:
-    """Galería = neuro (== producción neuro) + items de galería de Dengue (incluye las 4
-    regiones). Si no está el json del dashboard, cae al invariante conocido 111."""
-    import json
-
-    p = _dengue_gallery_items_path()
-    try:
-        dengue_items = len(json.loads(p.read_text(encoding="utf-8")))
-    except Exception:
-        dengue_items = 111
-    return neuro_count + dengue_items
+def _gallery_item_count() -> int | None:
+    """Gráficos publicados, contados en el inventario de la galería (``None`` si no hay)."""
+    items = galeria_publicada()
+    return None if items is None else len(items)
 
 
 def build_production_catalog(
@@ -194,7 +211,7 @@ def build_production_catalog(
 
     counts = CatalogCounts(
         production_series_count=int(len(df)),
-        gallery_item_count=_gallery_item_count(len(neuro)),
+        gallery_item_count=_gallery_item_count(),
         por_cohorte=por_cohorte,
         por_padecimiento=por_padecimiento,
         motor_dist=motor_dist,
