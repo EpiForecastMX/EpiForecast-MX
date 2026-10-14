@@ -57,11 +57,38 @@ def test_produccion_es_432_no_435(catalog_data):
     assert counts.production_series_count != 435  # el inflado con dup + inválidos
 
 
-def test_gallery_distinto_de_produccion(catalog_data):
-    _, counts = catalog_data
-    # galería = 333 neuro + 111 Dengue (incluye las 4 regiones no productivas)
-    assert counts.gallery_item_count == 444
-    assert counts.gallery_item_count > counts.production_series_count
+def _galeria_falsa(raiz, items):
+    """Un dashboard mínimo: ``Reports/index.html`` con la línea ``const DATA = [...]``."""
+    rep = raiz / "Reports"
+    rep.mkdir(parents=True)
+    data = json.dumps(items, ensure_ascii=False)
+    (rep / "index.html").write_text(f"<script>\nconst DATA = {data};\n</script>\n", "utf-8")
+    return raiz
+
+
+def test_galeria_se_cuenta_en_lo_publicado(tmp_path, monkeypatch):
+    """Ronda W37: la galería son 432 gráficos (sin las 4 regiones de Dengue), contados en la
+    lista que la galería pinta. Antes se leía `_gallery_items.json` de Dengue ANTES de regenerarlo
+    y, si no se encontraba, se suponía 111: el candidato W37 publicó 444 con 432 gráficos."""
+    items = [{"p": "Depresión", "f": f"Depresión/x/{i}.png"} for i in range(333)]
+    items += [{"p": "Dengue", "f": f"dengue/x/{i}.png"} for i in range(99)]
+    monkeypatch.setenv(catalog.DASHBOARD_ENV, str(_galeria_falsa(tmp_path, items)))
+    _, counts = build_production_catalog()
+    assert counts.gallery_item_count == 432 == counts.production_series_count
+
+
+def test_sin_galeria_no_se_supone_un_conteo(tmp_path, monkeypatch):
+    monkeypatch.setenv(catalog.DASHBOARD_ENV, str(tmp_path / "no_existe"))
+    _, counts = build_production_catalog()
+    assert counts.gallery_item_count is None
+
+
+def test_galeria_sin_lista_data_falla(tmp_path, monkeypatch):
+    (tmp_path / "Reports").mkdir()
+    (tmp_path / "Reports" / "index.html").write_text("<html></html>", "utf-8")
+    monkeypatch.setenv(catalog.DASHBOARD_ENV, str(tmp_path))
+    with pytest.raises(ValueError, match="const DATA"):
+        build_production_catalog()
 
 
 def test_diagnostico_documenta_dengue_stale(catalog_data):
@@ -83,17 +110,21 @@ def test_diagnostico_documenta_dengue_stale(catalog_data):
 # --------------------------------------------------------------------------------------
 
 
-def test_dengue_incluye_nbglm(catalog_data):
-    """No basta con que los motores sean elegibles: NBGLM tiene que estar.
+def test_dengue_sale_de_la_asignacion_autoritativa(catalog_data):
+    """No basta con que los motores sean elegibles: cada serie lleva el motor de la asignación.
 
-    El Dengue de `tabla_333` también pasa «solo motores elegibles» si se le quitan
-    Ensemble y Stacking, y aun así sería la selección vieja. La huella de que el
-    catálogo viene del selector vigente es la presencia de NBGLM.
+    El Dengue de `tabla_333` también pasa «solo motores elegibles» si se le quitan Ensemble y
+    Stacking, y aun así sería la selección vieja. Antes la huella era «NBGLM está presente»;
+    desde la ronda W37 NBGLM está suspendido (ENMIENDA_DENGUE_NBGLM_W37) y la huella es
+    coincidir serie por serie con `produccion_dengue.csv`.
     """
+    import pandas as pd
+
     df, _ = catalog_data
-    den_engines = set(df[df["cohorte"] == "dengue"]["motor_productivo"])
-    assert "NBGLM" in den_engines
-    assert not ({"Ensemble", "Stacking"} & den_engines)
+    den = df[df["cohorte"] == "dengue"].set_index(["entidad", "sexo"])["motor_productivo"]
+    prod = pd.read_csv(catalog._dengue_table_path()).set_index(["entidad", "sexo"])
+    assert den.sort_index().to_dict() == prod["motor_productivo"].sort_index().to_dict()
+    assert not ({"Ensemble", "Stacking"} & set(den))
 
 
 def test_por_sexo_es_144_cada_uno(catalog_data):
@@ -145,7 +176,8 @@ def test_manifiesto_en_disco_no_esta_rancio(catalog_data):
         pytest.skip("no hay manifiesto en disco; se genera con scripts.build_catalogo_canonico")
     disco = json.loads(ruta.read_text(encoding="utf-8"))
     assert disco["production_series_count"] == counts.production_series_count
-    assert disco["gallery_item_count"] == counts.gallery_item_count
+    if counts.gallery_item_count is not None:  # sin galería a mano no hay con qué contrastar
+        assert disco["gallery_item_count"] == counts.gallery_item_count
     assert disco["por_cohorte"] == counts.por_cohorte
     assert disco["motor_dist"] == counts.motor_dist, (
         "el manifiesto en disco quedó más viejo que sus fuentes: "

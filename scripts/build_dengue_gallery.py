@@ -28,7 +28,11 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd
 
-from epiforecast.utils.semana_epi import ds_de_semana_boletin, semana_boletin_de_ds  # noqa: E402
+from epiforecast.utils.semana_epi import (  # noqa: E402
+    ds_de_semana_boletin,
+    semana_boletin_de_ds,
+    semanas_del_anio_boletin,
+)
 
 warnings.filterwarnings("ignore")
 
@@ -36,7 +40,6 @@ from epiforecast.constants import COVID_END, COVID_START, ENTIDAD_DISPLAY  # noq
 from epiforecast.data import enso  # noqa: E402
 from epiforecast.data.boletin import cargar_boletin_dengue  # noqa: E402
 from epiforecast.data.ingestion.inegi_constants import REGION_SALUD_MENTAL  # noqa: E402
-from epiforecast.evaluation.metrics import compute_forecast_metrics  # noqa: E402
 from epiforecast.models.forecast_guards import clamp_seasonal_envelope  # noqa: E402
 from epiforecast.utils.config import conf, logger  # noqa: E402
 from epiforecast.visualization.web_theme import (  # noqa: E402
@@ -61,7 +64,22 @@ COMPARE_COLOR = {
     "Stacking": "#8B9DFF",
     "NBGLM": "#F59E0B",
 }
-COMPARE_MOTORS = ["Prophet", "DeepAR", "Ensemble", "Stacking", "NBGLM"]
+# Árboles entrenados pero NO elegibles en Dengue (no extrapolan la dinámica epidémica): se
+# muestran en la comparación rotulados como tales. NBGLM (suspendido en W37, ENMIENDA_DENGUE_NBGLM)
+# no se compara: sólo entran los motores con series en la asignación congelada + estos dos.
+NO_ELEGIBLES = ("Ensemble", "Stacking")
+
+
+def compare_motors(prod: pd.DataFrame) -> dict[str, str]:
+    """Motores de la comparación Dengue -> etiqueta: productivos de la asignación + no elegibles."""
+    vc = prod["motor_productivo"].dropna().astype(str).value_counts()
+    productivos = sorted(vc.index, key=lambda m: (-int(vc[m]), m))
+    out = {m: m for m in productivos}
+    for m in NO_ELEGIBLES:
+        out.setdefault(m, f"{m} (no elegible; acotado a la envolvente)")
+    return out
+
+
 ZOOM5_BACK = 260  # 5 años de realidad hacia atrás en la vista "Zoom 5 años"
 
 PROD = Path(conf["paths"]["reports"]) / "ProdDetails" / "produccion_dengue.csv"
@@ -118,7 +136,18 @@ def _fc_series(motor: str, pad_fc: str, entidad: str, sexo: str) -> pd.DataFrame
         & (df["meta_entidad"].fillna("Nacional") == entidad)
         & (df["meta_modo"] == sexo)
     ]
-    cols = [c for c in ["ds", "yhat", "yhat_lower", "yhat_upper"] if c in d.columns]
+    cols = [
+        c
+        for c in (
+            "ds",
+            "yhat",
+            "yhat_lower",
+            "yhat_upper",
+            "anio_boletin_corte",
+            "semana_boletin_corte",
+        )
+        if c in d.columns
+    ]
     return d[cols].sort_values("ds").reset_index(drop=True)
 
 
@@ -219,12 +248,15 @@ def _finish_axes(
     fig: object,
     ax: object,
     titulo: str,
-    metrics: tuple[float | None, float | None] = (None, None),
     enso_overlay: bool = False,
 ) -> None:
-    """Cierra el gráfico con una FRANJA SUPERIOR limpia (fuera de los datos): título arriba,
-    leyenda horizontal a la izquierda (Real / Pronóstico [+ El Niño / La Niña]) y las métricas
-    SMAPE·MASE a la derecha como badge. Nada se encima sobre la serie."""
+    """Cierra el gráfico con una FRANJA SUPERIOR limpia (fuera de los datos): título arriba y
+    leyenda horizontal a la izquierda (Real / Pronóstico [+ El Niño / La Niña]). Nada se encima
+    sobre la serie.
+
+    Sin insignia de métricas: el SMAPE·MASE del solape reciente que se rotulaba aquí mezclaba
+    ajuste dentro de muestra con semanas posteriores al corte, y las métricas de la ventana de
+    selección W28–W37 son diagnóstico de selección, no evaluación publicable (ronda W37)."""
     for sp in ax.spines.values():  # type: ignore[attr-defined]
         sp.set_color(GRID)
     ax.tick_params(colors=MUTED, labelsize=8)  # type: ignore[attr-defined]
@@ -239,12 +271,17 @@ def _finish_axes(
             Patch(facecolor=_NINA, alpha=0.55, edgecolor="none"),
         ]
         labels += ["El Niño", "La Niña"]
+    # Con rótulos largos (intervalo nominal, «no elegible; acotado a la envolvente») la fila única
+    # ensanchaba la figura: la leyenda se parte en filas de tres.
+    ancho_largo = sum(len(t) for t in labels) > 70
+    ncol = max(1, min(len(labels), 3 if ancho_largo else 6))
+    filas_leyenda = -(-len(labels) // ncol)
     ax.legend(  # type: ignore[attr-defined]
         handles,
         labels,
         loc="lower left",
         bbox_to_anchor=(0.0, 1.005),
-        ncol=min(len(labels), 6),
+        ncol=ncol,
         frameon=False,
         fontsize=8.5,
         labelcolor=TEXT,
@@ -252,44 +289,8 @@ def _finish_axes(
         handletextpad=0.5,
         columnspacing=1.4,
     )
-    sm, ma = metrics
-    parts = []
-    if sm is not None and np.isfinite(sm):
-        parts.append(f"SMAPE {sm:.1f}%")
-    if ma is not None and np.isfinite(ma):
-        parts.append(f"MASE {ma:.2f}")
-    if parts:
-        ax.text(  # type: ignore[attr-defined]
-            1.0,
-            1.03,
-            "   ·   ".join(parts),
-            transform=ax.transAxes,  # type: ignore[attr-defined]
-            ha="right",
-            va="bottom",
-            color=MINT,
-            fontsize=8.5,
-            fontweight="bold",
-        )
-    ax.set_title(titulo, color=TEXT, fontsize=12.5, pad=30, fontweight="bold")  # type: ignore[attr-defined]
-
-
-def series_metrics(real: pd.DataFrame, fc: pd.DataFrame) -> tuple[float | None, float | None]:
-    """SMAPE y MASE del solape reciente (real vs pronóstico), homogéneo para toda serie."""
-    if real.empty or fc.empty:
-        return (None, None)
-    j = real.set_index("ds")[["y"]].join(fc.set_index("ds")[["yhat"]], how="inner").dropna()
-    if len(j) < 4:
-        return (None, None)
-    train = real[real["ds"] < j.index.min()]["y"].to_numpy(dtype=float)
-    if len(train) < 10:
-        train = real["y"].to_numpy(dtype=float)
-    m = compute_forecast_metrics(
-        j["y"].to_numpy(dtype=float), j["yhat"].to_numpy(dtype=float), train
-    )
-    sm, ma = m.get("smape"), m.get("mase")
-    return (
-        float(sm) if sm is not None else None,
-        float(ma) if ma is not None else None,
+    ax.set_title(  # type: ignore[attr-defined]
+        titulo, color=TEXT, fontsize=12.5, pad=30 + 15 * (filas_leyenda - 1), fontweight="bold"
     )
 
 
@@ -375,16 +376,49 @@ def _region_members(region_short: str) -> set[str]:
     return {_REGION_ENT_FIX.get(e, e) for e, r in REGION_SALUD_MENTAL.items() if r == region_short}
 
 
-def _incrementos_observados(g: pd.DataFrame, columna: str) -> pd.Series:
+def _incrementos_observados(
+    g: pd.DataFrame, columna: str, solo_semanales: bool = False
+) -> pd.Series:
     """Incremento semanal real a partir del acumulado por sexo del boletín.
 
-    La primera semana del año aporta su propio acumulado. Un incremento negativo proviene de un
-    ajuste retrospectivo de la fuente: se sustituye por la media de los tres incrementos previos
-    originales y finitos, con piso en cero y redondeo al entero más cercano. Nunca se mira una
-    semana futura, y si no hay antecedente utilizable el valor queda ausente.
+    Un incremento negativo proviene de un ajuste retrospectivo de la fuente: sin la regla estricta
+    se sustituye por la media de los tres incrementos previos originales y finitos, con piso en
+    cero y redondeo al entero más cercano; con ella queda ausente. Nunca se mira una semana futura,
+    y si no hay antecedente utilizable el valor queda ausente.
+
+    Con ``solo_semanales`` (regla estricta, la de la galería) sólo hay incremento entre semanas
+    CONSECUTIVAS del calendario del boletín, incluido el paso de la semana 52 o 53 a la 1 del año
+    siguiente (``semana_epi`` v2). El primer acumulado de una serie o de un tramo que empieza a
+    mitad (Dengue 2018 W27, neuro 2014 W2) y la diferencia a través de un hueco (Dengue 2020
+    W40 → W45) quedan ausentes. El reinicio anual del acumulado se detecta en los datos, no se
+    supone: en Dengue ocurre en la semana 1, pero en neuro la semana 1 todavía CONTINÚA el
+    acumulado del año anterior y el reinicio llega en la semana 2 (2025-W1 mujeres 111,375 →
+    2025-W2 963). Donde el acumulado de la semana 1 o 2 cae a menos de la mitad del previo, esa
+    semana aporta su propio acumulado. Agrupar por ``Anio`` tomaba el acumulado de la semana 1
+    neuro como un incremento y fabricaba un pico anual de decenas de miles.
     """
-    inc = g.groupby("Anio")[columna].diff()
-    inc = inc.where(inc.notna(), g[columna]).astype(float)
+    if solo_semanales:
+        anio = g["Anio"].astype(int).to_numpy()
+        semana = g["Semana"].astype(int).to_numpy()
+        acum = g[columna].to_numpy(dtype=float)
+        bruto = np.full(len(g), np.nan)
+        for i in range(1, len(g)):
+            pa, ps = anio[i - 1], semana[i - 1]
+            consecutiva = (anio[i] == pa and semana[i] - ps == 1) or (
+                anio[i] == pa + 1 and semana[i] == 1 and ps == semanas_del_anio_boletin(int(pa))
+            )
+            if not consecutiva:
+                continue
+            reinicio = semana[i] <= 2 and acum[i] < 0.5 * acum[i - 1]
+            bruto[i] = acum[i] if reinicio else acum[i] - acum[i - 1]
+        # Una diferencia negativa es una revisión de la fuente, no la observación de una semana:
+        # queda ausente. Imputarla con la media de las previas propagaba errores de la fuente
+        # (neuro 2016-W20, acumulado ×20 en todas las entidades) a la semana siguiente.
+        bruto[bruto < 0] = np.nan
+        inc = pd.Series(bruto, index=g.index)
+    else:
+        inc = g.groupby("Anio")[columna].diff()
+        inc = inc.where(inc.notna(), g[columna]).astype(float)
     valores = inc.to_numpy(copy=True)
     originales = inc.to_numpy(copy=True)
     for i in range(len(valores)):
@@ -406,6 +440,11 @@ def boletin_real(
     por sexo que publica el boletín. Antes se repartía la serie general con una proporción
     constante de toda la historia, de modo que la curva mostrada como real era sintética y no un
     dato observado.
+
+    Regla estricta (ronda W37, la misma de Dengue): sólo incrementos de UNA semana. El primer
+    acumulado de un año que empieza a mitad (neuro 2014 arranca en la W2) no se desagrega, y la
+    diferencia a través de un hueco del boletín no se atribuye a una sola semana: ambas quedan
+    AUSENTES (no se dibujan ni se rellenan con cero). La fuente no se modifica.
     """
     df = _boletin_neuro()
     df = df[df["Padecimiento"] == pad_fc]
@@ -424,9 +463,12 @@ def boletin_real(
     )
     g = g.sort_values(["Anio", "Semana"])
     if sexo != "general":
-        g["c"] = _incrementos_observados(g, "ah" if sexo == "hombres" else "am")
+        g["c"] = _incrementos_observados(
+            g, "ah" if sexo == "hombres" else "am", solo_semanales=True
+        )
     g = _fecha_boletin(g)
-    out = g.groupby("ds", as_index=False)["c"].sum().rename(columns={"c": "y"})
+    out = g.groupby("ds", as_index=False)["c"].sum(min_count=1).rename(columns={"c": "y"})
+    out = out.dropna(subset=["y"])
     out["y"] = out["y"].clip(lower=0)
     return out.sort_values("ds").reset_index(drop=True)
 
@@ -438,6 +480,50 @@ def _real_general(df: pd.DataFrame) -> pd.DataFrame:
     g["y"] = g["Casos_semana"]
     g = _fecha_boletin(g)
     return g[["ds", "y"]].reset_index(drop=True)
+
+
+def _real_sexo_dengue(df: pd.DataFrame, sexo: str) -> pd.DataFrame:
+    """Serie real (ds, y) de hombres o mujeres: el incremento observado del acumulado por sexo.
+
+    Misma regla que ``boletin_real`` (la galería neuro), con la semana 1 estricta: una semana sin
+    antecedente utilizable queda AUSENTE (se descarta), nunca se rellena con cero ni se reparte la
+    serie general.
+    """
+    col = {"hombres": "Acumulado_hombres", "mujeres": "Acumulado_mujeres"}[sexo]
+    g = df.groupby(["Anio", "Semana"], as_index=False).agg(a=(col, "sum"))
+    g = g.sort_values(["Anio", "Semana"])
+    g["c"] = _incrementos_observados(g, "a", solo_semanales=True)
+    g = _fecha_boletin(g)
+    out = g.groupby("ds", as_index=False)["c"].sum(min_count=1).rename(columns={"c": "y"})
+    out = out.dropna(subset=["y"])
+    out["y"] = out["y"].clip(lower=0)
+    return out.sort_values("ds").reset_index(drop=True)
+
+
+_LINEA_DENGUE = "Media prevista ({motor})"
+
+
+def nivel_nominal(motor: str, pad_fc: str, entidad: str, sexo: str) -> float | None:
+    """Nivel nominal del intervalo que el propio motor declara para la serie (None: no produce)."""
+    df = _load_fc(motor)
+    if df.empty or "intervalo_nivel_nominal" not in df.columns:
+        return None
+    d = df[
+        (df["meta_padecimiento"] == pad_fc)
+        & (df["meta_entidad"].fillna("Nacional") == entidad)
+        & (df["meta_modo"] == sexo)
+    ]
+    if "intervalo_disponible" in d.columns:
+        d = d[d["intervalo_disponible"].astype(str).str.lower() == "true"]
+    niveles = d["intervalo_nivel_nominal"].dropna().unique()
+    return float(niveles[0]) if len(niveles) == 1 else None
+
+
+def etiqueta_banda(nivel: float | None) -> str | None:
+    """Rótulo aprobado de la banda: nominal, sin afirmar cobertura empírica."""
+    if nivel is None:
+        return None
+    return f"Intervalo predictivo central nominal del {round(nivel * 100):d} %"
 
 
 def _sex_prop(df: pd.DataFrame) -> tuple[float, float]:
@@ -479,8 +565,9 @@ def _chart(
     motor: str,
     titulo: str,
     out: Path,
-    metrics: tuple[float | None, float | None] = (None, None),
     enso_overlay: bool = False,
+    etiqueta_linea: str | None = None,
+    etiqueta_banda: str | None = None,
 ) -> None:
     fig, ax = plt.subplots(figsize=(10, 4.2), dpi=130)
     fig.patch.set_facecolor(BG)
@@ -490,19 +577,24 @@ def _chart(
     if not fc.empty:
         if {"yhat_lower", "yhat_upper"} <= set(fc.columns):
             ax.fill_between(
-                fc["ds"], fc["yhat_lower"].clip(lower=0), fc["yhat_upper"], color=color, alpha=0.15
+                fc["ds"],
+                fc["yhat_lower"].clip(lower=0),
+                fc["yhat_upper"],
+                color=color,
+                alpha=0.15,
+                label=etiqueta_banda,
             )
         ax.plot(
             fc["ds"],
             fc["yhat"].clip(lower=0),
             color=color,
             linewidth=2.2,
-            label=f"Pronóstico ({motor})",
+            label=etiqueta_linea or f"Pronóstico ({motor})",
         )
     if enso_overlay:  # Dengue: bandas El Niño/La Niña super suavizadas
         _overlay_enso(ax, list(real["ds"]))
     _overlay_covid(ax)  # banda COVID super suavizada (si cae en el rango)
-    _finish_axes(fig, ax, titulo, metrics, enso_overlay)
+    _finish_axes(fig, ax, titulo, enso_overlay)
     fig.tight_layout()
     out.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(out, facecolor=BG, bbox_inches="tight")
@@ -528,11 +620,12 @@ def _chart_compare(
     titulo: str,
     out: Path,
     weeks_back: int = 52,
+    etiquetas: dict[str, str] | None = None,
 ) -> None:
-    """Comparación de motores: últimas ``weeks_back`` semanas reales + el pronóstico de TODOS los
-    motores superpuestos (52 sem adelante), cada uno en su color, para compararlos en un vistazo.
+    """Comparación de motores: últimas ``weeks_back`` semanas reales + el pronóstico de los motores
+    de ``motor_fcs`` (en su orden) superpuestos (52 sem adelante), cada uno en su color.
     Cada motor se acota a la envolvente estacional histórica para que un motor que diverja
-    (Ensemble/Stacking en Dengue) no rompa la escala. Sin banda (sería ilegible con 5 líneas)."""
+    (Ensemble/Stacking en Dengue) no rompa la escala; la leyenda lo declara. Sin banda."""
     r = real.dropna().sort_values("ds").tail(weeks_back)
     if r.empty:
         return
@@ -543,8 +636,7 @@ def _chart_compare(
     hist = real[["ds", "y"]]
     fut_max = last_real
     clamped: dict[str, pd.DataFrame] = {}
-    for motor in COMPARE_MOTORS:
-        fc = motor_fcs.get(motor)
+    for motor, fc in motor_fcs.items():
         if fc is None or fc.empty:
             continue
         fc = clamp_seasonal_envelope(fc[["ds", "yhat"]].copy(), hist)
@@ -570,7 +662,7 @@ def _chart_compare(
             fc["yhat"].clip(lower=0),
             color=COMPARE_COLOR.get(motor, "#FFFFFF"),
             linewidth=1.7,
-            label=motor,
+            label=(etiquetas or {}).get(motor, motor),
             alpha=0.92,
             zorder=4,
         )
@@ -591,7 +683,7 @@ def _chart_compare(
             alpha=0.85,
         )
     _overlay_covid(ax)
-    _finish_axes(fig, ax, titulo, metrics=(None, None), enso_overlay=False)
+    _finish_axes(fig, ax, titulo, enso_overlay=False)
     ax.xaxis.set_major_locator(mdates.MonthLocator(interval=2))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %Y"))
     for lbl in ax.get_xticklabels():
@@ -610,8 +702,9 @@ def _chart_zoom(
     titulo: str,
     out: Path,
     weeks_back: int = 52,
-    metrics: tuple[float | None, float | None] = (None, None),
     enso_overlay: bool = False,
+    etiqueta_linea: str | None = None,
+    etiqueta_banda: str | None = None,
 ) -> None:
     """Zoom 'real vs pronóstico' (estilo EpiBot): últimas ``weeks_back`` semanas de realidad
     (hasta la semana vigente del boletín) con el pronóstico SOLAPADO sobre esas mismas semanas
@@ -634,14 +727,19 @@ def _chart_zoom(
         ax.axvspan(last_real, pd.Timestamp(fc["ds"].max()), color=color, alpha=0.06, zorder=0)
         if {"yhat_lower", "yhat_upper"} <= set(fc.columns):
             ax.fill_between(
-                fc["ds"], fc["yhat_lower"].clip(lower=0), fc["yhat_upper"], color=color, alpha=0.16
+                fc["ds"],
+                fc["yhat_lower"].clip(lower=0),
+                fc["yhat_upper"],
+                color=color,
+                alpha=0.16,
+                label=etiqueta_banda,
             )
         ax.plot(
             fc["ds"],
             fc["yhat"].clip(lower=0),
             color=color,
             linewidth=2.4,
-            label=f"Pronóstico ({motor})",
+            label=etiqueta_linea or f"Pronóstico ({motor})",
         )
     ax.plot(
         r["ds"],
@@ -675,7 +773,7 @@ def _chart_zoom(
         win_dates = sorted({*list(r["ds"]), *(list(fc["ds"]) if not fc.empty else [])})
         _overlay_enso(ax, win_dates)
     _overlay_covid(ax)  # banda COVID (fuera de rango en el zoom reciente, se omite sola)
-    _finish_axes(fig, ax, titulo, metrics, enso_overlay)
+    _finish_axes(fig, ax, titulo, enso_overlay)
     # Densidad de ticks adaptativa: 2 meses para el zoom de 1 año, semestral para el de 5 años.
     if weeks_back > 120:
         ax.xaxis.set_major_locator(mdates.MonthLocator(bymonth=(1, 7)))
@@ -692,7 +790,11 @@ def _chart_zoom(
 
 
 def zoom_payload(
-    real: pd.DataFrame, fc: pd.DataFrame, motor: str, weeks_back: int = 52
+    real: pd.DataFrame,
+    fc: pd.DataFrame,
+    motor: str,
+    weeks_back: int = 52,
+    nivel: float | None = None,
 ) -> dict[str, object] | None:
     """Datos compactos para el zoom interactivo (Chart.js): real vs pronóstico SOLAPADOS.
 
@@ -722,15 +824,19 @@ def zoom_payload(
                 lomap[k] = int(round(max(0.0, float(row.yhat_lower))))
                 himap[k] = int(round(max(0.0, float(row.yhat_upper))))
     dates = sorted(set(rmap) | set(ymap))
-    # SMAPE/MASE del solape real-vs-pronóstico (mismo cálculo que la ficha de los PNG),
-    # para mostrarlos en el lightbox interactivo.
-    sm, ma = series_metrics(real, fc)
     sin_intervalo = _band_degenerate(fc)
+    corte = corte_modelo(fc)
+    # La semana del BOLETÍN de la última observación (el ISO del ds legado va una atrás: W39 se
+    # rotulaba «Sem 38») y el ds del corte, para que el lightbox separe el ajuste dentro de
+    # muestra (hasta el corte) del pronóstico (desde el corte).
+    ult = semana_boletin_de_ds(pd.Timestamp(max(rmap)))
     return {
         "motor": motor,
         # El frontend no debe inferir la incertidumbre del ancho dibujado: si el motor no
         # produce intervalo, lo declara y la gráfica va sin banda.
         "intervalo_disponible": not sin_intervalo,
+        # Nivel NOMINAL que declara el motor (0.9 DeepAR, 0.8 Prophet); no es cobertura medida.
+        "intervalo_nivel_nominal": nivel if not sin_intervalo else None,
         # Color del motor (MISMA fuente que el PNG, MOTOR_COLOR), para que el lightbox
         # interactivo coincida con la miniatura y no se desincronicen los colores.
         "color": MOTOR_COLOR.get(motor, AMBER),
@@ -739,10 +845,28 @@ def zoom_payload(
         "y": [ymap.get(k) for k in dates],
         "lo": [lomap.get(k) for k in dates],
         "hi": [himap.get(k) for k in dates],
-        "last_real": max(rmap),  # semana vigente del boletín (presente)
-        "smape": round(sm, 1) if sm is not None else None,
-        "mase": round(ma, 2) if ma is not None else None,
+        "last_real": max(rmap),  # ds legado de la semana vigente del boletín (presente)
+        # Semana de corte que declara el propio pronóstico (procedencia sellada en predict).
+        # Sin SMAPE/MASE: las métricas del solape no son evaluación publicable (ronda W37).
+        "corte_modelo": corte,
+        "ultima_semana_boletin": {"anio": int(ult.anio), "semana": int(ult.semana)},
+        "ds_corte": (
+            ds_de_semana_boletin(corte["anio"], corte["semana"]).strftime("%Y-%m-%d")
+            if corte
+            else None
+        ),
     }
+
+
+def corte_modelo(fc: pd.DataFrame) -> dict[str, int] | None:
+    """``{"anio", "semana"}`` del corte que el pronóstico declara; None si no lo declara."""
+    cols = ["anio_boletin_corte", "semana_boletin_corte"]
+    if fc.empty or not set(cols) <= set(fc.columns):
+        return None
+    pares = fc[cols].dropna().drop_duplicates()
+    if len(pares) != 1:
+        return None
+    return {"anio": int(pares.iloc[0, 0]), "semana": int(pares.iloc[0, 1])}
 
 
 def render_extra_views(
@@ -758,14 +882,17 @@ def render_extra_views(
     titulo: str,
     enso: bool,
     region_cache: pd.DataFrame | None = None,
+    motores_comparacion: dict[str, str] | None = None,
+    etiqueta_linea: str | None = None,
+    etiqueta_banda: str | None = None,
 ) -> None:
     """Genera las dos vistas extra de una serie:
       - ``_zoom5``  : 5 años de realidad + 52 sem de pronóstico (motor productivo).
       - ``_compare``: 52 + 52 con TODOS los motores superpuestos (no aplica a regiones Dengue,
                       que solo tienen DeepAR nativo -> se omite y el toggle cae al PNG base).
 
-    ``fetch_sexo``/``p``: neuro predice cada sexo nativo (fetch_sexo=sexo, p=1.0); Dengue reparte
-    el general por proporción de sexo (fetch_sexo='general', p=razón). ``region_cache`` (Dengue
+    ``fetch_sexo``/``p``: los estados y el nacional piden cada sexo a su motor (fetch_sexo=sexo,
+    p=1.0); sólo las regiones Dengue siguen repartiendo por proporción. ``region_cache`` (Dengue
     regional) trae el pronóstico DeepAR nativo ya calculado (con banda)."""
     rsort = real.dropna().sort_values("ds")
     if rsort.empty:
@@ -787,12 +914,10 @@ def render_extra_views(
         fc5 = region_cache[(region_cache["ds"] >= win5) & (region_cache["ds"] <= ds_max)].copy()
         fc5 = _mask_band_future(_scale(fc5), last_real)
     else:
+        # Sólo el intervalo PROPIO del motor (como el zoom desde la PR #20): la banda empírica de
+        # ±1.96σ se presentaba como incertidumbre del motor y Ensemble/Stacking no tienen intervalo.
         fc5 = _scale(forecast_window(productive_motor, pad_fc, ent_fc, fetch_sexo, win5, ds_max))
-        std = _resid_std(
-            real,
-            _scale(forecast_window(productive_motor, pad_fc, ent_fc, fetch_sexo, win52, ds_max)),
-        )
-        fc5 = empirical_band(fc5, std, last_real=last_real)
+        fc5 = _mask_band_future(fc5, last_real)
     _chart_zoom(
         real,
         fc5,
@@ -801,15 +926,28 @@ def render_extra_views(
         _zoom5_path(out_png),
         weeks_back=ZOOM5_BACK,
         enso_overlay=enso,
+        etiqueta_linea=etiqueta_linea,
+        etiqueta_banda=etiqueta_banda,
     )
 
     # --- Comparación de modelos (solo donde hay pronóstico por motor) ---
     if region_cache is None:
+        if not motores_comparacion:
+            raise ValueError(
+                "comparación sin motores: derive motores_comparacion de la asignación"
+            )
         mfcs = {
             m: _scale(forecast_window(m, pad_fc, ent_fc, fetch_sexo, win52, ds_max))
-            for m in COMPARE_MOTORS
+            for m in motores_comparacion
         }
-        _chart_compare(real, mfcs, titulo, _compare_path(out_png), weeks_back=ZOOM_BACK)
+        _chart_compare(
+            real,
+            mfcs,
+            titulo,
+            _compare_path(out_png),
+            weeks_back=ZOOM_BACK,
+            etiquetas=motores_comparacion,
+        )
 
 
 def _sum_member_forecast(
@@ -868,6 +1006,7 @@ def _dengue_regiones(
     out_base: Path,
     items: list[dict[str, str]],
     zoom: dict[str, object],
+    motores_cmp: dict[str, str],
 ) -> int:
     """Genera las 4 regiones de Dengue. PRODUCTIVO: DeepAR nativo (el mejor en el backtest OOS,
     MAE 460 vs 3.7k-10k de la agregación; ver dengue_backtest_regional). Si falta el cache de
@@ -933,14 +1072,12 @@ def _dengue_regiones(
                 fc_zoom = empirical_band(fc_zoom, std, last_real=last_real)
             rel = f"dengue/{folder}/Dengue_{folder}_{sexo}.png"
             titulo = f"Dengue — {region_disp} ({SEXOS[sexo]})"
-            met = series_metrics(real, fc_zoom)
             _chart(
                 real,
                 fc,
                 motor_label,
                 titulo,
                 out_base.parent / rel,
-                metrics=met,
                 enso_overlay=True,
             )
             _chart_zoom(
@@ -949,7 +1086,6 @@ def _dengue_regiones(
                 motor_label,
                 titulo,
                 _zoom_path(out_base.parent / rel),
-                metrics=met,
                 enso_overlay=True,
             )
             zp = zoom_payload(real, fc_zoom, motor_label)
@@ -969,6 +1105,7 @@ def _dengue_regiones(
                 titulo,
                 enso=True,
                 region_cache=reg_fc if use_deepar else None,
+                motores_comparacion=motores_cmp,
             )
             items.append({"p": "Dengue", "n": data_n, "c": "Regional", "s": SEXOS[sexo], "f": rel})
             made += 1
@@ -978,13 +1115,22 @@ def _dengue_regiones(
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--out", required=True, help="Directorio de salida (Reports/dengue)")
+    ap.add_argument(
+        "--sin-regiones",
+        action="store_true",
+        help=(
+            "no genera las 4 regiones: su pronóstico no forma parte de las 99 series de la "
+            "asignación congelada (caché DeepAR propio o agregación de estados sin validar)"
+        ),
+    )
     args = ap.parse_args()
     out_base = Path(args.out)
 
     prod = pd.read_csv(PROD)
+    motores_cmp = compare_motors(prod)
     bol = cargar_boletin_dengue()
     bol["Entidad"] = bol["Entidad"].replace(ENTIDAD_DISPLAY)
-    # Motor productivo de la serie GENERAL por entidad (hombres/mujeres se derivan del general).
+    # Motor productivo de la serie GENERAL por entidad: sólo lo usan las regiones (hallazgo C).
     gen_motor = {
         str(row["entidad"]): str(row["motor_productivo"])
         for _, row in prod[prod["sexo"] == "general"].iterrows()
@@ -998,60 +1144,66 @@ def main() -> int:
         sub = bol if ent == "Nacional" else bol[bol["Entidad"] == ent_disp]
         if sub.empty:
             continue
-        # General real (Casos_semana) + su pronóstico; hombres/mujeres = general × proporción de
-        # sexo, para que H + M = general (exacto) en realidad y pronóstico.
-        motor = gen_motor.get(ent, str(r["motor_productivo"]))
-        real = _real_general(sub)
+        # Cada fila usa SU motor de la asignación congelada y su propia serie: hombres y mujeres
+        # son el incremento observado del acumulado por sexo, no la general × una proporción.
+        # H + M no tiene por qué igualar la general: el boletín publica columnas que no
+        # reconcilian, y se muestran tal cual.
+        motor = str(r["motor_productivo"])
+        real = _real_general(sub) if sexo == "general" else _real_sexo_dengue(sub, sexo)
+        if real.empty:
+            continue
         last_real = real["ds"].max()
         win_start = pd.Timestamp(real.sort_values("ds").tail(ZOOM_BACK)["ds"].min())
         ds_max = pd.Timestamp(last_real) + pd.Timedelta(weeks=ZOOM_FWD)
-        fc = _forecast(motor, ent, "general", last_real)  # futuro: histórico completo
-        fc_zoom = forecast_window(motor, "Dengue", ent, "general", win_start, ds_max)  # solapado
-        p = 1.0
-        if sexo != "general":
-            p_h, p_m = _sex_prop(sub)
-            p = p_h if sexo == "hombres" else p_m
-            real = real.assign(y=real["y"] * p)
-            fc, fc_zoom = fc.copy(), fc_zoom.copy()
-            for d in (fc, fc_zoom):
-                for c in ("yhat", "yhat_lower", "yhat_upper"):
-                    if c in d.columns:
-                        d[c] = d[c] * p
-        std = _resid_std(real, fc_zoom)  # error reciente del motor (banda homogénea)
-        fc = ensure_band(fc, std)  # histórico: respeta banda nativa
-        # zoom: banda empírica uniforme entre motores, SOLO sobre el futuro (no sobre lo real)
-        fc_zoom = empirical_band(fc_zoom, std, last_real=last_real)
+        fc = _forecast(motor, ent, sexo, last_real)  # futuro: histórico completo
+        fc_zoom = forecast_window(motor, "Dengue", ent, sexo, win_start, ds_max)  # solapado
+        # Sólo el intervalo PROPIO del motor, y sólo sobre el futuro del zoom; sin banda empírica.
+        fc_zoom = _mask_band_future(fc_zoom, last_real)
+        nivel = nivel_nominal(motor, "Dengue", ent, sexo)
+        rotulos = {
+            "etiqueta_linea": _LINEA_DENGUE.format(motor=motor),
+            "etiqueta_banda": etiqueta_banda(nivel),
+        }
         safe_ent = _safe(ent_disp)
         # Carpeta en MINÚSCULA 'dengue/' (coincide con los assets de dengue.html ya
         # committeados; Netlify es case-sensitive, no usar 'Dengue/').
         rel = f"dengue/{safe_ent}/Dengue_{safe_ent}_{sexo}.png"
         titulo = f"Dengue — {ent_disp} ({SEXOS[sexo]})"
-        met = series_metrics(real, fc_zoom)
-        _chart(real, fc, motor, titulo, out_base.parent / rel, metrics=met, enso_overlay=True)
+        _chart(
+            real,
+            fc,
+            motor,
+            titulo,
+            out_base.parent / rel,
+            enso_overlay=True,
+            **rotulos,
+        )
         _chart_zoom(
             real,
             fc_zoom,
             motor,
             titulo,
             _zoom_path(out_base.parent / rel),
-            metrics=met,
             enso_overlay=True,
+            **rotulos,
         )
-        zp = zoom_payload(real, fc_zoom, motor)
+        zp = zoom_payload(real, fc_zoom, motor, nivel=nivel)
         if zp:
             zoom[rel] = zp
         render_extra_views(
             real,
             "Dengue",
             ent,
-            "general",
-            p,
+            sexo,
+            1.0,
             last_real,
             ds_max,
             motor,
             out_base.parent / rel,
             titulo,
             enso=True,
+            motores_comparacion=motores_cmp,
+            **rotulos,
         )
         items.append(
             {
@@ -1064,7 +1216,10 @@ def main() -> int:
         )
         n += 1
 
-    n += _dengue_regiones(bol, gen_motor, out_base, items, zoom)
+    if args.sin_regiones:
+        logger.warning("Regiones de Dengue omitidas (--sin-regiones): fuera de la asignación.")
+    else:
+        n += _dengue_regiones(bol, gen_motor, out_base, items, zoom, motores_cmp)
     (out_base / "_gallery_items.json").write_text(
         json.dumps(items, ensure_ascii=False), encoding="utf-8"
     )

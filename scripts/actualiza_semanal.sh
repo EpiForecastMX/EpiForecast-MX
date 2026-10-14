@@ -292,6 +292,8 @@ export PYTHONPATH="${SANDBOX}/src${PYTHONPATH:+:$PYTHONPATH}"
 DASHBOARD_ROOT="$TRABAJO/outputs/dashboard"
 REPORTS="${DASHBOARD_ROOT}/Reports"
 EPIBOT="${DASHBOARD_ROOT}/epibot"
+# El catalogo canonico cuenta los graficos en la galeria que se genera aqui, no en el sitio real.
+export EPIFORECAST_DASHBOARD="$DASHBOARD_ROOT"
 
 # ─────────────────────────────────────────────────────────────────────
 # 3. PREPARAR — datos y computo. No publica.
@@ -390,8 +392,17 @@ paso "[5/10] Tableau + validacion semanal"
 # La validacion escribe el HTML y la COPIA actualizada del Excel en el candidato del
 # backend (prefijo administrado reports/ProdDetails/); el Excel del sandbox y el real
 # quedan intactos.
-(cd "$SANDBOX" && $PYTHON scripts/genera_validacion_semanal.py --out "$TRABAJO/outputs/backend/reports/ProdDetails")
+# Seguimiento posterior al corte (campos de validacion v2): pares pronostico guardado / observado
+# de la MISMA semana, con su corte y horizonte, mas la tabla semanal del EpiBot. La validacion, el
+# zoom y el knowledge lo leen; sin el, la validacion falla (--seguimiento es obligatorio).
+SEGUIMIENTO="$TRABAJO/outputs/backend/reports/ProdDetails/seguimiento_post_corte"
+(cd "$SANDBOX" && $PYTHON scripts/genera_seguimiento_post_corte.py --out "$TRABAJO/outputs/backend/reports/ProdDetails")
+(cd "$SANDBOX" && $PYTHON scripts/genera_validacion_semanal.py --out "$TRABAJO/outputs/backend/reports/ProdDetails" --seguimiento "${SEGUIMIENTO}.csv")
 cp "$TRABAJO/outputs/backend/reports/ProdDetails/validacion_semanal.html" "$DASHBOARD_ROOT/validacion_semanal.html"
+# Los consumidores (knowledge) leen la tabla del sandbox: va la copia con los campos de validacion
+# de ESTA semana (si no, el knowledge falla en seco por semanas distintas). El arbol real no se toca.
+cp "$TRABAJO/outputs/backend/reports/ProdDetails/tabla_333_modelos_produccion.xlsx" \
+  "$SANDBOX/reports/ProdDetails/tabla_333_modelos_produccion.xlsx"
 
 paso "[6/10] Galeria neuro (graficos + zoom_data_neuro.json)"
 (cd "$SANDBOX" && $PYTHON -m scripts.build_neuro_gallery --out "$REPORTS")
@@ -399,28 +410,37 @@ paso "[6/10] Galeria neuro (graficos + zoom_data_neuro.json)"
 paso "[7/10] Dengue: produccion + web"
 # Ya no hay escape por el CSV viejo: si [3/10] no produjo Dengue nuevo, el guion aborto.
 make -C "$SANDBOX" PYTHON="$PYTHON" dengue-produccion
-# El catalogo canonico (catalogo_canonico.csv + _counts.json, rastreados) se deriva de
-# produccion_dengue.csv y de la tabla 333: si no se regenera aqui, el contrato
-# `test_manifiesto_en_disco_no_esta_rancio` del CI lo delata (P1, 2-sep-2026).
-(cd "$SANDBOX" && $PYTHON -m scripts.build_catalogo_canonico)
 # Se redirigen explicitamente: por defecto apuntan al sitio real.
 make -C "$SANDBOX" PYTHON="$PYTHON" dengue-web \
   DASHBOARD_DENGUE="${REPORTS}/dengue" \
   DASHBOARD_EPIBOT="${EPIBOT}"
+# El catalogo canonico (catalogo_canonico.csv + _counts.json, rastreados) se deriva de
+# produccion_dengue.csv, de la tabla 333 y de la galeria YA inyectada (dengue-web la reescribe):
+# si no se regenera aqui, el contrato `test_manifiesto_en_disco_no_esta_rancio` del CI lo delata
+# (P1, 2-sep-2026), y si corre antes de la galeria cuenta los graficos de la ronda anterior (W37).
+(cd "$SANDBOX" && $PYTHON -m scripts.build_catalogo_canonico)
 
 # El zoom del EpiBot fusiona neuro + Dengue: DESPUES de dengue-web para que no
 # quede desfasado con el Dengue anterior.
 paso "[8/10] Zoom del EpiBot (neuro + Dengue fresco)"
-(cd "$SANDBOX" && $PYTHON scripts/build_epibot_zoom.py --reports "$REPORTS" --out "$EPIBOT")
+(cd "$SANDBOX" && $PYTHON scripts/build_epibot_zoom.py --reports "$REPORTS" --out "$EPIBOT" --seguimiento "${SEGUIMIENTO}.csv")
 
 paso "[9/10] Knowledge.json del EpiBot"
-(cd "$SANDBOX" && $PYTHON scripts/build_web_knowledge.py --out "${EPIBOT}/knowledge.json")
+(cd "$SANDBOX" && $PYTHON scripts/build_web_knowledge.py --out "${EPIBOT}/knowledge.json" --seguimiento "${SEGUIMIENTO}.json")
 
 paso "[10/10] Barra de fechas + Novedades de la landing"
 (cd "$SANDBOX" && $PYTHON scripts/actualiza_barra_fechas.py \
   --index "${REPORTS}/index.html" \
   --zoom  "${REPORTS}/zoom_data_neuro.json")
-(cd "$SANDBOX" && $PYTHON scripts/build_news_weekly.py --dashboard "$DASHBOARD_ROOT")
+# Portada: gráfico vivo desde el zoom y el knowledge de esta ronda (modelo nacional desde el corte).
+(cd "$SANDBOX" && $PYTHON scripts/build_hero_series.py --reports "$REPORTS" \
+  --knowledge "${EPIBOT}/knowledge.json" --out "$DASHBOARD_ROOT/hero_series.json")
+# Novedades sin Tableau: consolidado, seguimiento, catálogo y agregado de esta ronda, declarados.
+(cd "$SANDBOX" && $PYTHON scripts/build_news_weekly.py --dashboard "$DASHBOARD_ROOT" \
+  --boletin "$SANDBOX/data/processed/dataset_boletin_epidemiologico.csv" \
+  --seguimiento "${SEGUIMIENTO}.json" \
+  --catalogo "$SANDBOX/reports/ProdDetails/catalogo_canonico_counts.json" \
+  --agregado "$TRABAJO/outputs/backend/reports/ProdDetails/agregado_estatal_neuro.json")
 
 # El backend aporta al candidato las tablas que el refresh regenera y que viven en git.
 # Se copian desde el SANDBOX (donde las escribieron reselect y dengue-produccion), no

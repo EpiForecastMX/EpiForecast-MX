@@ -115,11 +115,13 @@ class ContratoCobertura:
         return frozenset().union(*(self.productos(p) for p in self.padecimientos))
 
     def zoom_esperado(self) -> frozenset[Clave]:
-        """La galería/zoom deriva regiones también para los de conteo: 4×111 = 444."""
-        entidades = (*self.entidades, NACIONAL, *(f"region {r}" for r in self.regiones))
-        return frozenset(
-            (pad, e, sexo) for pad in self.padecimientos for e in entidades for sexo in SEXOS
-        )
+        """La galería/zoom publica exactamente las series productivas: 432 en el contrato real.
+
+        Hasta W33 derivaba regiones también para los de conteo (4×111 = 444). En la ronda W37 las
+        4 regiones de Dengue salen: no forman parte de las 99 series de la asignación (hallazgo C),
+        y la galería no publica un gráfico sin serie asignada.
+        """
+        return self.claves_esperadas()
 
     @staticmethod
     def canonico(catalogo: Path = CATALOGO_ENTIDADES) -> ContratoCobertura:

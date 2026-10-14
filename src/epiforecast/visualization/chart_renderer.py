@@ -64,27 +64,34 @@ def plot_series(
     fc_overlap = forecast[forecast["ds"] <= fecha_max_datos]
     fc_future = forecast[forecast["ds"] > fecha_max_datos]
 
-    if not fc_future.empty:
+    # Banda sólo donde el motor aporta intervalo propio; su nivel nominal depende del motor
+    # (Prophet 80 %, DeepAR 90 %, NB-GLM 95 %), así que el rótulo no lo afirma.
+    fc_band = (
+        fc_future.dropna(subset=["yhat_lower", "yhat_upper"])
+        if {"yhat_lower", "yhat_upper"} <= set(fc_future.columns)
+        else fc_future.iloc[0:0]
+    )
+    if not fc_band.empty:
         ax.fill_between(
-            fc_future["ds"],
-            fc_future["yhat_lower"],
-            fc_future["yhat_upper"],
+            fc_band["ds"],
+            fc_band["yhat_lower"],
+            fc_band["yhat_upper"],
             alpha=0.15,
             color=colors["band"],
             zorder=1,
-            label="Intervalo 80 %",
+            label="Intervalo propio del motor",
         )
         ax.plot(
-            fc_future["ds"],
-            fc_future["yhat_lower"],
+            fc_band["ds"],
+            fc_band["yhat_lower"],
             color=colors["band"],
             alpha=0.2,
             lw=0.5,
             zorder=1,
         )
         ax.plot(
-            fc_future["ds"],
-            fc_future["yhat_upper"],
+            fc_band["ds"],
+            fc_band["yhat_upper"],
             color=colors["band"],
             alpha=0.2,
             lw=0.5,

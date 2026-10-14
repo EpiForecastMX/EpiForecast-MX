@@ -7,6 +7,17 @@
 > las diapositivas decían **333** y el manifiesto canónico decía **432**: tres cifras
 > verdaderas contando cosas distintas, más una cuarta que era sencillamente falsa.
 
+> **Enmienda W37 (14-oct-2026, decisión del autor).** Las 4 regiones de dengue (12 gráficos)
+> salen de la galería en la ronda con corte de modelos W37: no forman parte de las 99 series de
+> la asignación congelada (hallazgo C). **La galería publica 432 gráficos = 333 neuro + 99
+> dengue**, el mismo conjunto que las series productivas, y la cifra se **cuenta** en el
+> inventario que la galería pinta (la lista `DATA` de `Reports/index.html`), nunca se supone.
+> «444 gráficos» pasa a cifra retirada. Los PNG regionales anteriores se conservan como
+> evidencia fuera del sitio. NBGLM está suspendido para dengue en W37
+> (`ENMIENDA_DENGUE_NBGLM_W37`): los motores dengue elegibles en esta ronda son Prophet y DeepAR.
+> Lo que sigue conserva el texto de agosto como historia; donde contradice esta enmienda, manda
+> la enmienda.
+
 ---
 
 ## 1. Las cuatro cifras, y qué cuenta cada una
@@ -16,7 +27,7 @@
 | **333** | series neuro productivas | 3 padecimientos × 37 geografías × 3 sexos |
 | **99** | series de dengue productivas | 33 geografías × 3 sexos (32 entidades + nacional) |
 | **432** | **series productivas totales** | 333 + 99 |
-| **444** | **gráficos publicados en la galería** | 333 neuro + 111 dengue |
+| **432** | **gráficos publicados en la galería** (ronda W37) | 333 neuro + 99 dengue; hasta W33 eran **444** = 333 + 111 |
 
 **Los 12 de diferencia entre 99 y 111** son las cuatro regiones de dengue por tres sexos.
 La galería las dibuja **agregando sus estados**; no tienen modelo propio
@@ -92,8 +103,9 @@ conserva 435, 102, 145 ni el nacional 15.**
 
 ## 7. Redacción autorizada
 
-- «**432** series productivas · **444** gráficos publicados.»
-- «Los 12 adicionales son vistas regionales de dengue agregadas, **no modelos**.»
+- «**432** series productivas · **432** gráficos publicados» (ronda W37; hasta W33 se decía
+  «444 gráficos publicados» y «los 12 adicionales son vistas regionales de dengue agregadas,
+  no modelos»: ya no se publican).
 - «**333** modelos neuro en producción, repartidos en **37** geografías: 32 entidades,
   4 regiones y el nacional.»
 - Para la lámina 7 de CALASS: «uno por serie publicada — 333 neuronales y 111 de dengue».

@@ -186,6 +186,8 @@ def zoom_json(*, faltan: set[str] = frozenset(), dengue_con_alias: bool = True) 
     )
     for pad in CONTRATO.padecimientos:
         for entidad in entidades:
+            if pad in CONTRATO.conteo and entidad.startswith("region "):
+                continue  # ronda W37: la galería de Dengue ya no publica sus 4 regiones
             nombre = entidad
             if pad == "dengue" and entidad == "mexico" and dengue_con_alias:
                 nombre = "estado de mexico"

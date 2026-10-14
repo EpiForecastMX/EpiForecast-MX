@@ -1,6 +1,6 @@
 {
   "production_series_count": 432,
-  "gallery_item_count": 444,
+  "gallery_item_count": 432,
   "por_cohorte": {
     "dengue": 99,
     "neuro": 333
@@ -13,15 +13,14 @@
   },
   "motor_dist": {
     "dengue": {
-      "DeepAR": 29,
-      "NBGLM": 22,
-      "Prophet": 48
+      "DeepAR": 53,
+      "Prophet": 46
     },
     "neuro": {
-      "DeepAR": 98,
-      "Ensemble": 85,
-      "Prophet": 94,
-      "Stacking": 56
+      "DeepAR": 39,
+      "Ensemble": 109,
+      "Prophet": 78,
+      "Stacking": 107
     }
   },
   "nacional_por_cohorte": {
@@ -33,6 +32,6 @@
     "nacionales_duplicados": 0,
     "selecciones_invalidas_ensemble_stacking": 13,
     "tiene_nbglm": false,
-    "motivo_descartado": "Se usa produccion_dengue.csv (99, con NBGLM); el Dengue de tabla_333 es stale (Ensemble/Stacking no elegibles, sin NBGLM)."
+    "motivo_descartado": "Se usa produccion_dengue.csv (99, la asignación autoritativa); el Dengue de tabla_333 es stale (Ensemble/Stacking no elegibles)."
   }
 }

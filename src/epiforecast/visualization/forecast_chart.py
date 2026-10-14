@@ -46,7 +46,9 @@ def graficar_pronostico(
         conf_covid:             Dict con claves inicio/fin del periodo COVID-19.
         metricas:               Dict con mase, rmse, confianza del modelo (opcional).
     """
-    forecast = forecast.dropna(subset=["ds", "yhat", "yhat_lower", "yhat_upper"]).copy()
+    # Sin descartar filas por la banda: Ensemble/Stacking no producen intervalo y sus
+    # límites llegan vacíos; descartarlos dejaba el pronóstico sin filas (fecha NaT).
+    forecast = forecast.dropna(subset=["ds", "yhat"]).copy()
     serie = serie.dropna(subset=["ds", "y"]).copy()
 
     outliers, fecha_max_datos = _prepare_data(serie)
