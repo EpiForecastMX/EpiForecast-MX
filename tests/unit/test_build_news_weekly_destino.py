@@ -181,3 +181,19 @@ def test_falla_en_seco_si_falta_el_bloque_o_news_json(tmp_path: Path) -> None:
     assert "CALASS 2026, en Montréal</div>" in (tmp_path / "index.html").read_text(
         encoding="utf-8"
     )
+
+
+def test_la_nota_semanal_no_publica_cifras_de_desempeno() -> None:
+    """Ronda W37: ni desviación del acumulado ni SMAPE/MASE en la nota (ni en su subtítulo)."""
+    import re
+
+    from scripts.build_news_weekly import SUB_NEUTRAL, build_item
+
+    figs = {
+        p: {"dev": 2.9, "smape": 8.7, "mase": 0.59}
+        for p in ("Depresión", "Parkinson", "Alzheimer", "Dengue")
+    }
+    item = build_item({"year": 2026, "week": 39, "figs": figs})
+    texto = " ".join(item["body"]) + " " + SUB_NEUTRAL
+    assert "semana 39" in texto
+    assert not re.search(r"(?i)smape|mase|precisi|desv|&#37;|%", texto)

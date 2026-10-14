@@ -9,9 +9,11 @@ Se corre dentro de ``make update-week`` (paso landing) para que la seccion de
 Novedades NO vuelva a quedar stale tras un boletin nuevo. Idempotente: si ya
 existe la entrada de la misma semana/anio, la reemplaza (no duplica).
 
-Cifras (todas: pronostico productivo vs real fresco del boletin, in-sample):
-  - desviacion del acumulado 2026 por padecimiento (sum yhat / sum real - 1),
-  - SMAPE/MASE de la serie nacional por padecimiento.
+Desde la ronda W37 la nota NO publica cifras de desempeño: la desviación del acumulado y el
+SMAPE/MASE nacional que redactaba eran ajustes in-sample o métricas de la ventana de selección,
+no una evaluación independiente (decisión del autor, 14-oct-2026). La nota anuncia la semana
+integrada y remite a la galería; las cifras se siguen calculando sólo como guarda de forma del
+dato y se imprimen en consola.
 """
 
 from __future__ import annotations
@@ -144,31 +146,12 @@ def _dengue_mase(year: int, mae: float) -> float:
 
 
 def build_item(data: dict[str, Any]) -> dict[str, Any]:
-    year, wk, f = data["year"], data["week"], data["figs"]
+    year, wk = data["year"], data["week"]
     today = datetime.now()
-
-    def s(p: str) -> str:
-        return f"{f[p]['smape']:.1f}&#37; / {f[p]['mase']:.2f}"
-
     body0 = (
         f'Se integró el Boletín SINAVE hasta la <strong style="{CREAM}">semana {wk} '
-        f"de {year}</strong> en los cuatro padecimientos. Sobre las semanas transcurridas "
-        f"del año, el total pronosticado se desvía del realmente observado en "
-        f'<strong style="{CREAM}">{_pct(f["Depresión"]["dev"])} en Depresión</strong>, '
-        f'<strong style="{CREAM}">{_pct(f["Parkinson"]["dev"])} en Parkinson</strong>, '
-        f'<strong style="{CREAM}">{_pct(f["Alzheimer"]["dev"])} en Alzheimer</strong> y '
-        f'<strong style="{CREAM}">{_pct(f["Dengue"]["dev"])} en Dengue</strong>. '
-        f"Las series de conteo bajo (Alzheimer, Parkinson) muestran mayor variación entre "
-        f"recalibraciones; el acumulado se ajusta con cada reentrenamiento de modelos."
-    )
-    body1 = (
-        f'Precisión de la serie nacional por padecimiento (<strong style="{CREAM}">SMAPE / '
-        f'MASE</strong>): Depresión <strong style="{CREAM}">{s("Depresión")}</strong>, '
-        f'Parkinson <strong style="{CREAM}">{s("Parkinson")}</strong>, '
-        f'Alzheimer <strong style="{CREAM}">{s("Alzheimer")}</strong> y '
-        f'Dengue <strong style="{CREAM}">{s("Dengue")}</strong>. '
-        f"El MASE por debajo de 1 indica que el modelo supera a la persistencia estacional "
-        f"(repetir el mismo periodo del año anterior)."
+        f"de {year}</strong> en los cuatro padecimientos. La galería compara lo observado con "
+        f"el pronóstico de cada serie."
     )
     return {
         "date": _fecha_es(today),
@@ -177,7 +160,7 @@ def build_item(data: dict[str, Any]) -> dict[str, Any]:
         "tag": "Datos",
         "featured": False,
         "title": f"Ya contamos con la semana epidemiológica {wk} de {year}",
-        "body": [body0, body1],
+        "body": [body0],
         "link": {
             "href": "Reports/index.html",
             "text": "Ver real vs pronóstico en la galería",
@@ -200,7 +183,7 @@ def upsert_news(item: dict[str, Any], news_path: Path) -> None:
 
 SUB_NEUTRAL = (
     "Se integró el Boletín SINAVE en los cuatro padecimientos; el detalle por padecimiento "
-    "y las métricas SMAPE/MASE aparecen en esta sección."
+    "aparece en esta sección."
 )
 _RE_BANNER = re.compile(
     r'(<div class="news-banner-row" id="newsBannerRow">)(.*?)(\n {8}</div>)', re.DOTALL
