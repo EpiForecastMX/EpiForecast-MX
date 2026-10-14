@@ -144,6 +144,7 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
   font-weight:700;color:#EAEFF8;background:rgba(255,255,255,.12)}
 .motivo{display:block;font-size:.72rem;color:var(--cool-gray,#97999B);margin-top:.2rem}
 .nota{font-size:.85rem;color:var(--cool-gray,#97999B);margin:.8rem 0 0;line-height:1.5}
+.tabla-ajustada th,.tabla-ajustada td{white-space:normal;padding-left:.6rem;padding-right:.6rem}
 </style>
 <link rel="stylesheet" href="editorial.css?v=1">
 </head>
@@ -187,9 +188,9 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
   <p class="section-sub">5 pares sin observacion utilizable: el pronostico
   se conserva, la observacion queda ausente (no se imputa ni se convierte en cero) y el par queda
   fuera de los resumenes</p>
-  <div class="card"><div class="table-wrapper"><table>
+  <div class="card"><div class="table-wrapper"><table class="tabla-ajustada">
     <thead><tr><th>Semana</th><th>Serie</th><th>Motor</th><th>Pronostico</th>
-    <th>Acumulado por sexo de la fuente (previa &rarr; semana)</th><th>Motivo</th></tr></thead>
+    <th>Acumulado por sexo en la fuente (previa &rarr; semana)</th><th>Motivo</th></tr></thead>
     <tbody><tr><td>Semana 38 de 2026 (h=1)</td><td>Alzheimer (G30) &middot; Querétaro &middot; Mujeres</td><td><span style="display:inline-flex;align-items:center;padding:.25rem .85rem;border-radius:100px;font-size:.78rem;font-weight:700;color:#fff;background:#1A237E">Stacking</span></td><td>0</td><td>5 &rarr; 3</td><td>revisión negativa del acumulado por sexo (5 → 3): no es la observación de una semana</td></tr>
 <tr><td>Semana 38 de 2026 (h=1)</td><td>Depresion (F32) &middot; Querétaro &middot; Mujeres</td><td><span style="display:inline-flex;align-items:center;padding:.25rem .85rem;border-radius:100px;font-size:.78rem;font-weight:700;color:#fff;background:#BE185D">Deepar</span></td><td>10</td><td>665 &rarr; 648</td><td>revisión negativa del acumulado por sexo (665 → 648): no es la observación de una semana</td></tr>
 <tr><td>Semana 38 de 2026 (h=1)</td><td>Depresion (F32) &middot; San Luis Potosí &middot; Hombres</td><td><span style="display:inline-flex;align-items:center;padding:.25rem .85rem;border-radius:100px;font-size:.78rem;font-weight:700;color:#fff;background:#1A237E">Stacking</span></td><td>16</td><td>477 &rarr; 464</td><td>revisión negativa del acumulado por sexo (477 → 464): no es la observación de una semana</td></tr>
@@ -205,10 +206,10 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
   en ambas, incluidas las revisiones negativas de los estados. No es un numero demostrado de casos
   nuevos. La pagina anterior sumaba los incrementos estatales recortando a cero los negativos; esa
   suma ya no se publica como observado. Las dos definiciones dan valores distintos en: Alzheimer (G30) mujeres semana 38: 18 (con la definicion anterior, 20); Depresion (F32) hombres semana 38: 703 (con la definicion anterior, 716); Depresion (F32) mujeres semana 38: 2,025 (con la definicion anterior, 2,066); Parkinson (G20) hombres semana 39: 85 (con la definicion anterior, 87).</p>
-  <div class="card"><div class="table-wrapper"><table>
+  <div class="card"><div class="table-wrapper"><table class="tabla-ajustada">
     <thead><tr><th>Semana</th><th>Padecimiento</th><th>Sexo</th>
-    <th>Incremento neto publicado</th><th>Suma estatal recortada a cero (definicion anterior, no publicada)</th>
-    <th>Entidades con revision negativa</th><th>Entidades publicadas (previa/semana)</th>
+    <th>Incremento neto publicado</th><th>Suma estatal recortada a cero (definicion anterior; no se publica)</th>
+    <th>Entidades con revision negativa</th><th>Entidades (previa / semana)</th>
     <th>Semanas consecutivas</th></tr></thead>
     <tbody><tr><td>Semana 38 de 2026</td><td>Alzheimer (G30)</td><td>Hombres</td><td>16</td><td>16</td><td>&mdash;</td><td>32/32</td><td>si</td></tr>
 <tr><td>Semana 38 de 2026</td><td>Alzheimer (G30)</td><td>Mujeres</td><td>18</td><td>20</td><td>Querétaro (-2)</td><td>32/32</td><td>si</td></tr>
@@ -643,7 +644,7 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
 </div>
 <footer>
   <p class="footer-title">EpiForecast-MX | IMSS 2026</p>
-  <p>Datos: Boletin Epidemiologico SINAVE | Generado: 14/10/2026 06:58 hrs</p>
+  <p>Datos: Boletin Epidemiologico SINAVE | Generado: 14/10/2026 07:08 hrs</p>
   <p>Modelos entrenados con datos hasta la semana 37/2026; realidad observada hasta la semana 39/2026</p>
   <p>2 semanas evaluadas despues del corte; seguimiento diagnostico, no evaluacion independiente</p>
 </footer>
