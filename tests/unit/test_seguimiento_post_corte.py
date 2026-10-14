@@ -709,3 +709,150 @@ def test_la_pagina_no_califica_ni_convierte_ausentes_en_cero() -> None:
     assert "Parkinson (G20) hombres semana 39: 85 (con la definicion anterior, 87)" in html
     # El ausente no entra en la suma de las entidades: 1 par (Jalisco), observado 7.
     assert "1 entidades con par: observado 7 / pronostico 9; 1 ausente(s) fuera de la suma" in html
+
+
+# ── indicador «Notificaciones previstas · agregado estatal neuro» (14-oct-2026) ────────────────
+
+
+def _agregado(seg: Any, monkeypatch, cambia=None):  # noqa: ANN001, ANN202
+    """3 padecimientos × 2 estados × 3 sexos (N_ENTIDADES=2), 52 pasos de 0.3 por serie, más un
+    nacional y una región que NO deben entrar, y filas de otro corte que tampoco."""
+    monkeypatch.setattr(seg, "N_ENTIDADES", 2)
+    filas, fc = [], []
+    for pad in ("Alzheimer", "Depresion", "Parkinson"):
+        for ent in ("Jalisco", "Nacional", "region_Urbana media", "Puebla"):
+            for sexo in ("general", "hombres", "mujeres"):
+                filas.append(
+                    {
+                        "cohorte": "neuro",
+                        "padecimiento": pad,
+                        "entidad": ent,
+                        "sexo": sexo,
+                        "motor": "Prophet",
+                    }
+                )
+                for paso in range(1, 53):
+                    base = {
+                        "meta_padecimiento": seg.NEURO[pad],
+                        "meta_entidad": None
+                        if ent == "Nacional"
+                        else seg._entidad_forecast({"cohorte": "neuro", "entidad": ent}),
+                        "meta_modo": sexo,
+                        "ds": pd.Timestamp("2026-09-07") + pd.Timedelta(weeks=paso - 1),
+                        "fase_modelo": "pronostico",
+                        "adelanto_semanas": paso,
+                    }
+                    fc.append(
+                        {
+                            **base,
+                            "yhat": 0.3,
+                            "anio_boletin_corte": 2026,
+                            "semana_boletin_corte": 37,
+                        }
+                    )
+                    fc.append(
+                        {
+                            **base,
+                            "yhat": 999.0,
+                            "anio_boletin_corte": 2026,
+                            "semana_boletin_corte": 33,
+                        }
+                    )
+    df = pd.DataFrame(fc)
+    if cambia is not None:
+        df = cambia(df)
+    monkeypatch.setattr(seg, "asignacion", lambda: filas)
+    monkeypatch.setattr(seg, "_load_fc", lambda motor: df)
+    monkeypatch.setattr(seg, "_sha", lambda p: "x")
+    return seg.agregado_estatal_neuro(CORTE)
+
+
+def test_el_agregado_suma_los_yhat_originales_y_redondea_una_vez(seg: Any, monkeypatch) -> None:  # noqa: ANN001
+    ag = _agregado(seg, monkeypatch)
+    # 6 series estatales (2 estados × 3) × 52 pasos × 0.3 = 93.6 → 94; redondear cada serie
+    # (15.6 → 16) y sumar daría 96. El nacional, la región y el corte W33 no entran.
+    assert (ag["series_incluidas"], ag["valores"]) == (6, 312)
+    assert ag["suma_original"] == pytest.approx(93.6)
+    assert ag["valor_mostrado"] == 94
+    assert ag["por_sexo"]["general"]["suma_de_totales_redondeados_por_serie"] == 96
+    assert {s["entidad"] for s in ag["por_sexo"]["general"]["series_incluidas"]} == {
+        "Jalisco",
+        "Puebla",
+    }
+    assert ag["rotulo"] == "Notificaciones previstas · agregado estatal neuro"
+    assert ag["corte"] == "2026-W37" and ag["horizonte"]["pasos"] == 52
+    assert ag["horizonte"]["ds_primero"] == "2026-09-07"
+    assert ag["por_sexo"]["general"]["por_padecimiento"]["Depresion"]["series"] == 2
+
+
+def test_una_serie_ausente_no_vale_cero(seg: Any, monkeypatch) -> None:  # noqa: ANN001
+    def sin_puebla(df: pd.DataFrame) -> pd.DataFrame:
+        return df[~((df["meta_entidad"] == "Puebla") & (df["meta_padecimiento"] == "Parkinson"))]
+
+    with pytest.raises(SystemExit, match="pasos"):
+        _agregado(seg, monkeypatch, sin_puebla)
+
+
+def test_un_horizonte_incompleto_o_un_valor_invalido_aborta(seg: Any, monkeypatch) -> None:  # noqa: ANN001
+    def corto(df: pd.DataFrame) -> pd.DataFrame:
+        return df[df["adelanto_semanas"] <= 51]
+
+    with pytest.raises(SystemExit, match="no 1..52"):
+        _agregado(seg, monkeypatch, corto)
+
+    def nan(df: pd.DataFrame) -> pd.DataFrame:
+        df = df.copy()
+        df.loc[(df["meta_entidad"] == "Jalisco") & (df["adelanto_semanas"] == 7), "yhat"] = float(
+            "nan"
+        )
+        return df
+
+    with pytest.raises(SystemExit, match="no finitos o negativos"):
+        _agregado(seg, monkeypatch, nan)
+
+
+def test_el_knowledge_toma_el_agregado_y_rechaza_otro_denominador(tmp_path: Path) -> None:
+    import json
+
+    from scripts.build_web_knowledge import aplica_agregado, carga_agregado
+
+    pp = {
+        p: {"series": 32, "suma_original": v, "valor_mostrado": round(v)}
+        for p, v in (("Alzheimer", 1899.4), ("Depresion", 161887.1), ("Parkinson", 7737.54))
+    }
+    ag = {
+        "corte": "2026-W37",
+        "series_incluidas": 96,
+        "valores": 4992,
+        "suma_original": 171524.0401,
+        "valor_mostrado": 171524,
+        "por_sexo": {"general": {"por_padecimiento": pp}, "hombres": {"por_padecimiento": pp}},
+    }
+    ruta = tmp_path / "agregado_estatal_neuro.json"
+    ruta.write_text(json.dumps(ag), "utf-8")
+    resumen = {"corte": {"etiqueta": "2026-W37"}}
+    assert carga_agregado(ruta, resumen)["valor_mostrado"] == 171524
+    stats = {
+        "pronostico_total": 171525,
+        "por_pad": {
+            "Depresion": {
+                "casos_futuro_total": 161888,
+                "por_sexo": {"hombres": {"n": 37, "casos_total": 127000}},
+            }
+        },
+    }
+    aplica_agregado(stats, carga_agregado(ruta, resumen))
+    assert stats["pronostico_total"] == 171524
+    assert stats["por_pad"]["Depresion"]["casos_futuro_total"] == 161887
+    assert (
+        stats["por_pad"]["Depresion"]["por_sexo"]["hombres"]["casos_total"] == 161887
+    )  # 32 estados, no 37 geografías
+    assert stats["por_pad"]["Depresion"]["por_sexo"]["hombres"]["n_estados"] == 32
+    for cambio, msg in (
+        ({"valor_mostrado": 171525}, "redondeada una vez"),
+        ({"series_incluidas": 95}, "95 series"),
+        ({"corte": "2026-W33"}, "corte"),
+    ):
+        ruta.write_text(json.dumps({**ag, **cambio}), "utf-8")
+        with pytest.raises(SystemExit, match=msg):
+            carga_agregado(ruta, resumen)

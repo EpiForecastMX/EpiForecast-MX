@@ -35,6 +35,11 @@ Salidas (en ``--out``):
   * ``seguimiento_post_corte.csv``  una fila por (serie, semana objetivo), pares y ausentes
   * ``seguimiento_post_corte.json`` resumen por semana y cohorte, definiciones, ausentes y la
     agregación nacional por sexo (neto frente a la suma estatal recortada)
+  * ``agregado_estatal_neuro.json`` el indicador «Notificaciones previstas · agregado estatal neuro»:
+    suma de los ``yhat`` ORIGINALES de las 96 series de los 32 estados (Alzheimer, Depresión y
+    Parkinson, modo general; motor asignado), 52 pasos desde el corte, redondeada UNA vez. Lleva
+    procedencia, corte, horizonte, series incluidas y suma original, y el mismo cálculo por sexo
+    (32 estados). No sustituye a los modelos nacionales, que conservan su pronóstico propio.
   * ``seguimiento_semanal_nacional.json`` la tabla semanal del EpiBot (nacional, general) por
     padecimiento: fase observado (hasta el corte, sólo lo observado), seguimiento (pares
     posteriores al corte) y pronóstico (semanas aún sin dato), con el periodo oficial del boletín
@@ -47,6 +52,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+from decimal import ROUND_HALF_UP, Decimal
 import hashlib
 import json
 import math
@@ -761,6 +767,150 @@ def escribe(
     return csv, js
 
 
+ROTULO_AGREGADO = "Notificaciones previstas · agregado estatal neuro"
+PASOS = 52
+
+
+def redondea(x: float) -> int:
+    """Redondeo único al mostrar (mitad hacia arriba, sin sesgo de banca)."""
+    return int(Decimal(repr(x)).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+
+
+def _pasos_serie(fila: dict[str, str], corte: tuple[int, int]) -> pd.DataFrame:
+    """Las 52 filas de pronóstico guardadas desde el corte para la serie, o falla en seco."""
+    fc = _load_fc(fila["motor"])
+    pad = NEURO.get(fila["padecimiento"], fila["padecimiento"])
+    clave = f"{fila['padecimiento']} · {fila['entidad']} · {fila['sexo']} ({fila['motor']})"
+    if fc.empty:
+        raise SystemExit(f"agregado estatal: sin pronósticos de {fila['motor']} para {clave}")
+    d = fc[
+        (fc["meta_padecimiento"] == pad)
+        & (fc["meta_entidad"].fillna("Nacional") == fila["entidad"])
+        & (fc["meta_modo"] == fila["sexo"])
+        & (fc["fase_modelo"].fillna("pronostico") == "pronostico")
+        & (fc["anio_boletin_corte"] == corte[0])
+        & (fc["semana_boletin_corte"] == corte[1])
+    ].sort_values("adelanto_semanas")
+    pasos = [int(x) for x in d["adelanto_semanas"]]
+    if pasos != list(range(1, PASOS + 1)) or d["ds"].duplicated().any():
+        raise SystemExit(
+            f"agregado estatal: {clave} tiene pasos {pasos[:3]}… ({len(pasos)}), no 1..{PASOS}"
+        )
+    y = d["yhat"].astype(float)
+    if not y.map(math.isfinite).all() or (y < 0).any():
+        raise SystemExit(f"agregado estatal: {clave} con valores no finitos o negativos")
+    return d
+
+
+def agregado_estatal_neuro(corte: tuple[int, int]) -> dict[str, Any]:
+    """El indicador canónico y su detalle; una serie ausente o inválida aborta (no vale cero)."""
+    estados = [
+        f for f in asignacion() if f["cohorte"] == "neuro" and _nivel(f["entidad"]) == "estatal"
+    ]
+    out: dict[str, Any] = {
+        "version": 1,
+        "rotulo": ROTULO_AGREGADO,
+        "definicion": (
+            "suma de los pronósticos guardados (yhat sin redondear) de las series de los 32 "
+            "estados de Alzheimer, Depresión y Parkinson, modo general, con el motor asignado, "
+            "52 pasos desde el corte; redondeada una sola vez al mostrar. No es el pronóstico de "
+            "los modelos nacionales (que conservan el suyo) ni incluye regiones ni Dengue"
+        ),
+        "corte": _etiqueta(*corte),
+        "procedencia": {
+            "asignacion": {"archivo": TABLA.name, "sha256": _sha(TABLA)},
+            "forecasts": {},
+        },
+    }
+    por_sexo: dict[str, Any] = {}
+    horizonte: dict[str, Any] | None = None
+    for sexo in SEXOS:
+        filas = [f for f in estados if f["sexo"] == sexo]
+        series: list[dict[str, Any]] = []
+        por_pad: dict[str, dict[str, Any]] = {}
+        for f in filas:
+            d = _pasos_serie(f, corte)
+            suma = float(d["yhat"].astype(float).sum())
+            series.append(
+                {
+                    "padecimiento": f["padecimiento"],
+                    "entidad": f["entidad"],
+                    "motor": f["motor"],
+                    "pasos": len(d),
+                    "suma_original": suma,
+                }
+            )
+            pp = por_pad.setdefault(f["padecimiento"], {"series": 0, "suma_original": 0.0})
+            pp["series"] += 1
+            pp["suma_original"] += suma
+            if horizonte is None:
+                ds = [pd.Timestamp(x) for x in d["ds"]]
+                horizonte = {
+                    "pasos": PASOS,
+                    "ds_primero": ds[0].date().isoformat(),
+                    "ds_ultimo": ds[-1].date().isoformat(),
+                    "pasos_sin_semana_del_boletin": pasos_sin_semana(
+                        d, ds[0] - pd.Timedelta(days=1), ds[-1]
+                    ),
+                }
+                semanas = []
+                for x in ds:
+                    try:
+                        semanas.append(_etiqueta(*semana_boletin_de_ds(x)))
+                    except DsSinSemanaBoletinError:
+                        continue
+                horizonte["semanas_del_boletin"] = (
+                    f"{semanas[0]} a {semanas[-1]} ({len(semanas)} semanas)"
+                )
+        n_pad = {p: v["series"] for p, v in por_pad.items()}
+        ents = {(s_["padecimiento"], s_["entidad"]) for s_ in series}
+        if (
+            set(n_pad) != set(NEURO)
+            or set(n_pad.values()) != {N_ENTIDADES}
+            or len(ents) != len(series)
+        ):
+            raise SystemExit(
+                f"agregado estatal {sexo}: cobertura {n_pad} (se exigen 32 estados × 3)"
+            )
+        total = sum(s_["suma_original"] for s_ in series)
+        por_sexo[sexo] = {
+            "series": len(series),
+            "valores": len(series) * PASOS,
+            "suma_original": total,
+            "valor_mostrado": redondea(total),
+            "suma_de_totales_redondeados_por_serie": sum(
+                redondea(s_["suma_original"]) for s_ in series
+            ),
+            "por_padecimiento": {
+                p: {**v, "valor_mostrado": redondea(v["suma_original"])}
+                for p, v in sorted(por_pad.items())
+            },
+            "series_incluidas": series,
+        }
+    for motor in sorted({f["motor"] for f in estados}):
+        ruta = (
+            Path(conf["paths"]["reports"])
+            / "forecasts"
+            / motor.lower()
+            / f"all_forecast_{motor.lower()}.csv"
+        )
+        out["procedencia"]["forecasts"][motor] = {"archivo": str(ruta), "sha256": _sha(ruta)}
+    gen = por_sexo["general"]
+    out.update(
+        horizonte=horizonte,
+        series_incluidas=gen["series"],
+        valores=gen["valores"],
+        suma_original=gen["suma_original"],
+        valor_mostrado=gen["valor_mostrado"],
+        denominador=(
+            f"{gen['series']} series: 32 estados × 3 padecimientos (Alzheimer, Depresión, "
+            f"Parkinson), modo general · {PASOS} pasos desde el corte W{corte[1]}"
+        ),
+        por_sexo=por_sexo,
+    )
+    return out
+
+
 def corte_declarado() -> tuple[int, int]:
     """El corte que declaran los pronósticos de los motores asignados (debe ser uno solo)."""
     cortes: set[tuple[int, int]] = set()
@@ -805,6 +955,14 @@ def main(argv: list[str] | None = None) -> int:
     )
     semanal = semanal_nacional(tabla, obs, corte, ultima)
     csv, js = escribe(tabla, resumen, a.out, semanal)
+    agregado = agregado_estatal_neuro(corte)
+    (a.out / "agregado_estatal_neuro.json").write_text(
+        json.dumps(agregado, ensure_ascii=False, indent=1) + "\n", encoding="utf-8"
+    )
+    print(
+        f"  {ROTULO_AGREGADO}: {agregado['valor_mostrado']:,} "
+        f"(suma original {agregado['suma_original']:.4f}; {agregado['denominador']})"
+    )
     print(
         f"  seguimiento post-corte {resumen['corte']['etiqueta']}: {resumen['semanas_evaluadas']} semana(s)"
     )

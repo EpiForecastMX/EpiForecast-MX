@@ -9,6 +9,7 @@ Uso:
 
 import argparse
 from datetime import datetime
+from decimal import ROUND_HALF_UP, Decimal
 import json
 from pathlib import Path
 import sys
@@ -94,6 +95,51 @@ def carga_seguimiento(ruta: Path, prod_models: list[dict[str, Any]]) -> dict[str
     if resumen.get("semanas_evaluadas") != len(resumen["semanas"]):
         raise SystemExit(f"{ruta}: semanas_evaluadas no coincide con las semanas listadas")
     return resumen
+
+
+def carga_agregado(ruta: Path, resumen: dict[str, Any]) -> dict[str, Any]:
+    """El indicador «Notificaciones previstas · agregado estatal neuro», calculado en el backend.
+
+    Lo escribe ``genera_seguimiento_post_corte.py`` desde los ``yhat`` originales (suma sin
+    redondear, redondeo único). Antes ``stats.pronostico_total`` sumaba los totales por serie ya
+    redondeados (171,525 en vez de 171,524) y el EpiBot lo recalculaba igual y lo llamaba
+    «Pronóstico Nacional». Falla en seco si falta, si habla de otro corte o si no cubre 96 series.
+    """
+    if not ruta.is_file():
+        raise SystemExit(f"falta {ruta} (lo escribe genera_seguimiento_post_corte.py)")
+    ag: dict[str, Any] = json.loads(ruta.read_text(encoding="utf-8"))
+    if ag.get("corte") != resumen["corte"]["etiqueta"]:
+        raise SystemExit(f"{ruta}: corte {ag.get('corte')} ≠ {resumen['corte']['etiqueta']}")
+    if (ag.get("series_incluidas"), ag.get("valores")) != (96, 96 * 52):
+        raise SystemExit(
+            f"{ruta}: {ag.get('series_incluidas')} series / {ag.get('valores')} valores"
+        )
+    una_vez = Decimal(repr(ag["suma_original"])).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+    if ag.get("valor_mostrado") != int(una_vez):
+        raise SystemExit(f"{ruta}: valor_mostrado no es la suma original redondeada una vez")
+    return ag
+
+
+def aplica_agregado(stats: dict[str, Any], ag: dict[str, Any]) -> None:
+    """Los totales por padecimiento y por sexo pasan a ser los del agregado estatal canónico.
+
+    ``por_sexo.*.casos_total`` sumaba las 37 geografías (Nacional + 4 regiones + 32 estados: el
+    mismo caso contado hasta tres veces); ahora es la suma de los 32 estados. Los modelos
+    nacionales conservan su pronóstico propio en ``casos_nacional``.
+    """
+    stats["pronostico_total"] = ag["valor_mostrado"]
+    for pad, ps in stats.get("por_pad", {}).items():
+        gen = ag["por_sexo"]["general"]["por_padecimiento"].get(pad)
+        if gen is None:
+            continue
+        ps["casos_futuro_total"] = gen["valor_mostrado"]
+        ps["casos_futuro_total_definicion"] = "agregado estatal (32 estados, modo general)"
+        for sx, info in ps.get("por_sexo", {}).items():
+            sxa = ag["por_sexo"].get(sx, {}).get("por_padecimiento", {}).get(pad)
+            if sxa is not None:
+                info["casos_total"] = sxa["valor_mostrado"]
+                info["casos_total_definicion"] = "agregado estatal (32 estados)"
+                info["n_estados"] = sxa["series"]
 
 
 def carga_semanal(ruta: Path, resumen: dict[str, Any]) -> dict[str, Any]:
@@ -1064,6 +1110,24 @@ def main(argv: list[str] | None = None) -> None:
             args.seguimiento.parent / "seguimiento_semanal_nacional.json",
             knowledge["seguimiento_post_corte"],
         )
+        # Indicador canónico «Notificaciones previstas · agregado estatal neuro» (sin
+        # normalizar: conserva tildes); stats lleva sólo los valores que ya mostraba.
+        ag = carga_agregado(
+            args.seguimiento.parent / "agregado_estatal_neuro.json",
+            knowledge["seguimiento_post_corte"],
+        )
+        aplica_agregado(knowledge["stats"], ag)
+        knowledge["agregado_estatal_neuro"] = {k: v for k, v in ag.items() if k != "por_sexo"} | {
+            "por_padecimiento": ag["por_sexo"]["general"]["por_padecimiento"],
+            "series": ag["por_sexo"]["general"]["series_incluidas"],
+            "suma_de_totales_redondeados_por_serie": ag["por_sexo"]["general"][
+                "suma_de_totales_redondeados_por_serie"
+            ],
+            "por_sexo": {
+                sx: {k: v for k, v in d.items() if k != "series_incluidas"}
+                for sx, d in ag["por_sexo"].items()
+            },
+        }
     _fill_horizon_dates(knowledge, cache)
 
     # Ronda W37: las métricas por serie y motor son el error de la ventana de selección W28–W37.
