@@ -825,6 +825,11 @@ def zoom_payload(
                 himap[k] = int(round(max(0.0, float(row.yhat_upper))))
     dates = sorted(set(rmap) | set(ymap))
     sin_intervalo = _band_degenerate(fc)
+    corte = corte_modelo(fc)
+    # La semana del BOLETÍN de la última observación (el ISO del ds legado va una atrás: W39 se
+    # rotulaba «Sem 38») y el ds del corte, para que el lightbox separe el ajuste dentro de
+    # muestra (hasta el corte) del pronóstico (desde el corte).
+    ult = semana_boletin_de_ds(pd.Timestamp(max(rmap)))
     return {
         "motor": motor,
         # El frontend no debe inferir la incertidumbre del ancho dibujado: si el motor no
@@ -843,7 +848,13 @@ def zoom_payload(
         "last_real": max(rmap),  # ds legado de la semana vigente del boletín (presente)
         # Semana de corte que declara el propio pronóstico (procedencia sellada en predict).
         # Sin SMAPE/MASE: las métricas del solape no son evaluación publicable (ronda W37).
-        "corte_modelo": corte_modelo(fc),
+        "corte_modelo": corte,
+        "ultima_semana_boletin": {"anio": int(ult.anio), "semana": int(ult.semana)},
+        "ds_corte": (
+            ds_de_semana_boletin(corte["anio"], corte["semana"]).strftime("%Y-%m-%d")
+            if corte
+            else None
+        ),
     }
 
 
