@@ -657,7 +657,7 @@ def total_52_pasos(fila: dict[str, str], corte: tuple[int, int]) -> int | None:
     pasos = sorted(int(x) for x in d["adelanto_semanas"])
     if pasos != list(range(1, 53)):
         return None
-    return int(round(max(float(d["yhat"].sum()), 0.0)))
+    return max(redondea(float(d["yhat"].sum())), 0)  # redondeo único, mitad hacia arriba
 
 
 def semanal_nacional(

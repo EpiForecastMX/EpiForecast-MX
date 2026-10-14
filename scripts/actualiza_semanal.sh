@@ -432,7 +432,15 @@ paso "[10/10] Barra de fechas + Novedades de la landing"
 (cd "$SANDBOX" && $PYTHON scripts/actualiza_barra_fechas.py \
   --index "${REPORTS}/index.html" \
   --zoom  "${REPORTS}/zoom_data_neuro.json")
-(cd "$SANDBOX" && $PYTHON scripts/build_news_weekly.py --dashboard "$DASHBOARD_ROOT")
+# Portada: gráfico vivo desde el zoom y el knowledge de esta ronda (modelo nacional desde el corte).
+(cd "$SANDBOX" && $PYTHON scripts/build_hero_series.py --reports "$REPORTS" \
+  --knowledge "${EPIBOT}/knowledge.json" --out "$DASHBOARD_ROOT/hero_series.json")
+# Novedades sin Tableau: consolidado, seguimiento, catálogo y agregado de esta ronda, declarados.
+(cd "$SANDBOX" && $PYTHON scripts/build_news_weekly.py --dashboard "$DASHBOARD_ROOT" \
+  --boletin "$SANDBOX/data/processed/dataset_boletin_epidemiologico.csv" \
+  --seguimiento "${SEGUIMIENTO}.json" \
+  --catalogo "$SANDBOX/reports/ProdDetails/catalogo_canonico_counts.json" \
+  --agregado "$TRABAJO/outputs/backend/reports/ProdDetails/agregado_estatal_neuro.json")
 
 # El backend aporta al candidato las tablas que el refresh regenera y que viven en git.
 # Se copian desde el SANDBOX (donde las escribieron reselect y dengue-produccion), no

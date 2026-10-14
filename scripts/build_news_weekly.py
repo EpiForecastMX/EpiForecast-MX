@@ -1,40 +1,46 @@
-"""Refresca la entrada semanal de Novedades (news.json) del sitio con cifras frescas.
+"""Refresca la entrada semanal de Novedades (news.json) del sitio con la semana integrada.
 
-Genera/actualiza el item "Datos" de la semana vigente en
-``EpiForecast-IMSS-Dashboard/news.json`` (fuente de verdad que renderizan tanto
-la landing como ``novedades.html``) y bumpea los datelines "Edición de la
+Genera/actualiza el item "Datos" de la semana vigente en ``news.json`` (fuente de verdad que
+renderizan tanto la landing como ``novedades.html``) y bumpea los datelines "Edición de la
 semana N, AAAA" + el fallback estatico del lead en ``index.html``.
 
-Se corre dentro de ``make update-week`` (paso landing) para que la seccion de
-Novedades NO vuelva a quedar stale tras un boletin nuevo. Idempotente: si ya
-existe la entrada de la misma semana/anio, la reemplaza (no duplica).
+Ronda W39 (plan de cierre del 14-oct-2026): la nota ya NO lee ``data/processed/tableau.csv`` —
+congelado en W8 y excluido de esta entrega—. Sus entradas son explícitas y se declaran con su hash:
 
-Desde la ronda W37 la nota NO publica cifras de desempeño: la desviación del acumulado y el
-SMAPE/MASE nacional que redactaba eran ajustes in-sample o métricas de la ventana de selección,
-no una evaluación independiente (decisión del autor, 14-oct-2026). La nota anuncia la semana
-integrada y remite a la galería; las cifras se siguen calculando sólo como guarda de forma del
-dato y se imprimen en consola.
+* el consolidado del boletín (``--boletin``): la semana vigente es la última en la que los cuatro
+  padecimientos publicados tienen sus 32 entidades; si no comparten la misma semana, falla;
+* el seguimiento posterior al corte (``--seguimiento``): debe terminar en esa misma semana y da
+  el corte de los modelos y las semanas evaluadas;
+* el catálogo canónico (``--catalogo``): el número de gráficos de la galería, que debe coincidir
+  con las series productivas;
+* el agregado estatal canónico (``--agregado``): debe hablar del mismo corte.
+
+La nota NO publica cifras de desempeño (decisión del autor, 14-oct-2026): ni la desviación del
+acumulado ni SMAPE/MASE; los dos puntos del seguimiento no se presentan como precisión del producto.
+Idempotente: repetir la misma semana con las mismas entradas no añade ni reescribe la nota.
 """
 
 from __future__ import annotations
 
 import argparse
 from datetime import datetime
+import hashlib
 import html as html_mod
 import json
 from pathlib import Path
 import re
 from typing import Any
 
-import numpy as np
 import pandas as pd
 
-from epiforecast.utils.semana_epi import semana_boletin_de_serie
+from epiforecast.utils.semana_epi import fin_semana_boletin, inicio_semana_boletin
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DASHBOARD = REPO_ROOT.parent / "EpiForecast-IMSS-Dashboard"
+PROD_DETAILS = REPO_ROOT / "reports" / "ProdDetails"
 
-NEURO = ["Depresión", "Parkinson", "Alzheimer"]
+PUBLICADOS = ["Depresión", "Parkinson", "Alzheimer", "Dengue"]
+N_ENTIDADES = 32
 MESES = [
     "enero",
     "febrero",
@@ -52,118 +58,102 @@ MESES = [
 CREAM = "color:var(--cream)"
 
 
-def _pct(x: float) -> str:
-    """+4.0&#37; / &#8722;31.4&#37; (signo tipografico, entidad de %)."""
-    sign = "+" if x >= 0 else "&#8722;"
-    return f"{sign}{abs(x):.1f}&#37;"
-
-
-def _fecha_es(d: datetime) -> str:
+def _fecha_es(d: Any) -> str:
     return f"{d.day} de {MESES[d.month - 1]} de {d.year}"
 
 
-def _semana_boletin(s: pd.Series) -> pd.Series:
-    """Semana del boletín del ``ds`` legado. La semana ISO cruda va una semana atrasada."""
-    return semana_boletin_de_serie(s)["semana_boletin"]
+def _sha(p: Path) -> str:
+    return hashlib.sha256(p.read_bytes()).hexdigest()
 
 
-def _anio_boletin(s: pd.Series) -> pd.Series:
-    return semana_boletin_de_serie(s)["anio_boletin"]
+def semana_vigente(boletin: Path) -> tuple[int, int]:
+    """La última semana del boletín con las 32 entidades, común a los cuatro publicados."""
+    df = pd.read_csv(boletin, usecols=["Anio", "Semana", "Entidad", "Padecimiento"])
+    df["Entidad"] = df["Entidad"].replace({"Distrito Federal": "Ciudad de México"})
+    n = df.groupby(["Padecimiento", "Anio", "Semana"])["Entidad"].nunique().reset_index()
+    completas = n[n["Entidad"] >= N_ENTIDADES]
+    ultimas = {}
+    for pad in PUBLICADOS:
+        g = completas[completas["Padecimiento"] == pad]
+        if g.empty:
+            raise ValueError(f"{pad} sin ninguna semana completa en el boletín")
+        ultimas[pad] = max(zip(g["Anio"].astype(int), g["Semana"].astype(int), strict=True))
+    if len(set(ultimas.values())) != 1:
+        raise ValueError(f"corte desigual entre los padecimientos publicados: {ultimas}")
+    return next(iter(ultimas.values()))
 
 
-def compute_figures() -> dict[str, Any]:
-    """Calcula semana vigente, desviacion del acumulado y SMAPE/MASE nacional."""
-    real = pd.read_csv(REPO_ROOT / "data/processed/dataset_boletin_epidemiologico.csv")
-    year = int(real["Anio"].max())
-    r = real[real["Anio"] == year]
-    real_nac = r.groupby(["Padecimiento", "Semana"])["Casos_semana"].sum()
-
-    tab = pd.read_csv(REPO_ROOT / "data/processed/tableau.csv", low_memory=False)
-    tab = tab[(tab["entidad"] == "Nacional") & (tab["meta_modo"] == "general")].copy()
-    tab["yr"], tab["wk"] = _anio_boletin(tab["ds"]), _semana_boletin(tab["ds"])
-    tab = tab[tab["yr"] == year]
-
-    figs: dict[str, dict[str, float]] = {}
-    wk_headline = 0
-    for p in NEURO:
-        rr = real_nac.loc[p]
-        wk_obs = int(rr.index.max())
-        wk_headline = max(wk_headline, wk_obs)
-        real_tot = float(rr.loc[rr.index <= wk_obs].sum())
-        g = tab[tab["padecimiento"] == p]
-        pron_tot = float(g[g["wk"] <= wk_obs]["yhat"].sum())
-        figs[p] = {
-            "dev": (pron_tot / real_tot - 1) * 100,
-            "smape": float(g["smape"].iloc[0]),
-            "mase": float(g["mase"].iloc[0]),
-        }
-
-    figs["Dengue"], wk_d = _dengue_figures(real_nac, year)
-    wk_headline = max(wk_headline, wk_d)
-    return {"year": year, "week": wk_headline, "figs": figs}
-
-
-def _dengue_figures(real_nac: pd.Series, year: int) -> tuple[dict[str, float], int]:
-    """Dengue nacional: motor productivo (produccion_dengue) vs real fresco."""
-    prod = pd.read_csv(REPO_ROOT / "reports/ProdDetails/produccion_dengue.csv")
-    row = prod[(prod["entidad"] == "Nacional") & (prod["sexo"] == "general")].iloc[0]
-    motor = str(row["motor_productivo"]).lower()
-    smape = float(row["smape_ganador"])
-
-    fc = pd.read_csv(
-        REPO_ROOT / f"reports/forecasts/{motor}/all_forecast_{motor}.csv", low_memory=False
-    )
-    fc = fc[
-        (fc["meta_padecimiento"] == "Dengue")
-        & (fc["meta_entidad"] == "Nacional")
-        & (fc["meta_modo"] == "general")
-    ].copy()
-    fc["yr"], fc["wk"] = _anio_boletin(fc["ds"]), _semana_boletin(fc["ds"])
-    fc = fc[fc["yr"] == year]
-
-    rr = real_nac.loc["Dengue"]
-    wk_obs = int(rr.index.max())
-    real_tot = float(rr.loc[rr.index <= wk_obs].sum())
-    pron_tot = float(fc[fc["wk"] <= wk_obs]["yhat"].sum())
-
-    # MASE = MAE(modelo) / MAE(naive estacional, real anio-1 misma semana)
-    m = pd.DataFrame({"wk": rr.index, "y": rr.to_numpy()})
-    m = m[m["wk"] <= wk_obs].merge(fc[["wk", "yhat"]], on="wk", how="inner")
-    mae = float(np.mean(np.abs(m["yhat"] - m["y"]))) if len(m) else float("nan")
-    mase = _dengue_mase(year, mae)
-    return {"dev": (pron_tot / real_tot - 1) * 100, "smape": smape, "mase": mase}, wk_obs
+def compute_data(
+    boletin: Path, seguimiento: Path, catalogo: Path, agregado: Path
+) -> dict[str, Any]:
+    """Semana integrada, corte y vistas disponibles, comprobados entre sí; con la procedencia."""
+    year, wk = semana_vigente(boletin)
+    seg = json.loads(seguimiento.read_text(encoding="utf-8"))
+    ult = seg.get("ultima_semana_observada") or {}
+    if (ult.get("anio"), ult.get("semana")) != (year, wk):
+        raise ValueError(
+            f"el seguimiento termina en {ult.get('etiqueta')} y el boletín en {year}-W{wk:02d}"
+        )
+    corte = seg["corte"]["etiqueta"]
+    evaluadas = [s["etiqueta"] for s in seg.get("semanas", [])]
+    if not evaluadas or len(evaluadas) != seg.get("semanas_evaluadas"):
+        raise ValueError("el seguimiento no declara sus semanas evaluadas")
+    cat = json.loads(catalogo.read_text(encoding="utf-8"))
+    graficos = cat.get("gallery_item_count")
+    if graficos is None or graficos != cat.get("production_series_count"):
+        raise ValueError(
+            f"catálogo: {graficos} gráficos frente a {cat.get('production_series_count')} series"
+        )
+    ag = json.loads(agregado.read_text(encoding="utf-8"))
+    if ag.get("corte") != corte:
+        raise ValueError(f"el agregado estatal habla del corte {ag.get('corte')}, no de {corte}")
+    return {
+        "year": year,
+        "week": wk,
+        "inicio": inicio_semana_boletin(year, wk),
+        "fin": fin_semana_boletin(year, wk),
+        "corte": corte,
+        "semanas_evaluadas": evaluadas,
+        "graficos": int(graficos),
+        "procedencia": {str(p): _sha(p) for p in (boletin, seguimiento, catalogo, agregado)},
+    }
 
 
-def _dengue_mase(year: int, mae: float) -> float:
-    """MAE del modelo / MAE naive estacional (real anio-1, misma semana)."""
-    real = pd.read_csv(REPO_ROOT / "data/processed/dataset_boletin_epidemiologico.csv")
-    dg = real[real["Padecimiento"] == "Dengue"]
-    cur = dg[dg["Anio"] == year].groupby("Semana")["Casos_semana"].sum()
-    prev = dg[dg["Anio"] == year - 1].groupby("Semana")["Casos_semana"].sum()
-    naive = [abs(cur[s] - prev[s]) for s in cur.index if s in prev.index]
-    mae_naive = float(np.mean(naive)) if naive else float("nan")
-    return mae / mae_naive if mae_naive and not np.isnan(mae_naive) else float("nan")
+def _semana_txt(etiqueta: str) -> str:
+    return str(int(etiqueta.split("-W")[1]))
 
 
-def build_item(data: dict[str, Any]) -> dict[str, Any]:
+def build_item(data: dict[str, Any], fecha: datetime | None = None) -> dict[str, Any]:
     year, wk = data["year"], data["week"]
-    today = datetime.now()
+    hoy = fecha or datetime.now()
+    ini, fin = data["inicio"], data["fin"]
+    periodo = f"{ini.day} de {MESES[ini.month - 1]} al {fin.day} de {MESES[fin.month - 1]}"
+    sem = [_semana_txt(e) for e in data["semanas_evaluadas"]]
+    sem_txt = sem[0] if len(sem) == 1 else ", ".join(sem[:-1]) + " y " + sem[-1]
+    corte = _semana_txt(data["corte"])
     body0 = (
         f'Se integró el Boletín SINAVE hasta la <strong style="{CREAM}">semana {wk} '
-        f"de {year}</strong> en los cuatro padecimientos. La galería compara lo observado con "
-        f"el pronóstico de cada serie."
+        f"de {year}</strong> ({periodo}) en los cuatro padecimientos, con las "
+        f"{N_ENTIDADES} entidades."
+    )
+    body1 = (
+        f"Los pronósticos son los de los modelos con corte en la semana {corte}; no hubo "
+        f"reentrenamiento. La galería publica {data['graficos']} gráficos y la validación "
+        f"muestra el seguimiento de las semanas {sem_txt}: el pronóstico guardado frente a lo "
+        f"observado esa misma semana, sin calificarlo. Son semanas de diagnóstico, no el "
+        f"resultado general del modelo."
     )
     return {
-        "date": _fecha_es(today),
-        "iso": today.strftime("%Y-%m-%d"),
+        "date": _fecha_es(hoy),
+        "iso": hoy.strftime("%Y-%m-%d"),
         "type": "datos",
         "tag": "Datos",
         "featured": False,
         "title": f"Ya contamos con la semana epidemiológica {wk} de {year}",
-        "body": [body0],
+        "body": [body0, body1],
         "link": {
             "href": "Reports/index.html",
-            "text": "Ver real vs pronóstico en la galería",
+            "text": "Ver observado y pronóstico en la galería",
             "svg": (
                 '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" '
                 'stroke-width="2.5"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>'
@@ -172,13 +162,27 @@ def build_item(data: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def upsert_news(item: dict[str, Any], news_path: Path) -> None:
+def upsert_news(item: dict[str, Any], news_path: Path) -> dict[str, Any]:
+    """Pone la nota semanal primero, sin duplicarla. Devuelve la nota que quedó publicada.
+
+    Si ya existe la de la misma semana (mismo título) con el mismo contenido, no se toca: la
+    fecha original se conserva y el archivo no se reescribe (re-aplicar W39 no añade nada).
+    """
     d = json.loads(news_path.read_text(encoding="utf-8"))
-    # dedupe por titulo (codifica semana+anio): re-correr la misma semana reemplaza.
-    items = [it for it in d.get("items", []) if it.get("title") != item["title"]]
+    previas: list[dict[str, Any]] = d.get("items", [])
+    igual: dict[str, Any] | None = next(
+        (it for it in previas if it.get("title") == item["title"]), None
+    )
+    clave = ("type", "tag", "featured", "title", "body", "link")
+    if igual is not None and all(igual.get(k) == item.get(k) for k in clave):
+        if previas and previas[0] is igual:
+            return igual
+        item = igual
+    items = [it for it in previas if it.get("title") != item["title"]]
     d["items"] = [item] + items
     d["_generated"] = item["iso"]
     news_path.write_text(json.dumps(d, ensure_ascii=False, indent=4) + "\n", encoding="utf-8")
+    return item
 
 
 SUB_NEUTRAL = (
@@ -302,30 +306,51 @@ def bump_static_html(data: dict[str, Any], item: dict[str, Any], dashboard: Path
         p.write_text(html, encoding="utf-8")
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--dashboard", type=Path, default=DASHBOARD)
-    args = ap.parse_args()
-    news_path = args.dashboard / "news.json"
+    ap.add_argument(
+        "--boletin",
+        type=Path,
+        default=REPO_ROOT / "data/processed/dataset_boletin_epidemiologico.csv",
+    )
+    ap.add_argument(
+        "--seguimiento", type=Path, default=PROD_DETAILS / "seguimiento_post_corte.json"
+    )
+    ap.add_argument(
+        "--catalogo", type=Path, default=PROD_DETAILS / "catalogo_canonico_counts.json"
+    )
+    ap.add_argument("--agregado", type=Path, default=PROD_DETAILS / "agregado_estatal_neuro.json")
+    ap.add_argument("--fecha", default=None, help="AAAA-MM-DD de la nota (por defecto, hoy)")
+    ap.add_argument("--evidencia", type=Path, default=None, help="JSON con entradas y hashes")
+    args = ap.parse_args(argv)
 
-    data = compute_figures()
-    f = data["figs"]
-    # guard: las 4 series con desviacion finita; si la forma del dato se rompe,
-    # falla aqui en vez de publicar una nota a medias.
-    assert set(f) == {"Depresión", "Parkinson", "Alzheimer", "Dengue"}, f"figs={set(f)}"
-    assert all(np.isfinite(f[p]["dev"]) for p in f), "desviacion no finita"
-    assert 1 <= data["week"] <= 53, f"semana invalida: {data['week']}"
-
-    item = build_item(data)
-    upsert_news(item, news_path)
+    data = compute_data(args.boletin, args.seguimiento, args.catalogo, args.agregado)
+    fecha = datetime.strptime(args.fecha, "%Y-%m-%d") if args.fecha else None
+    item = upsert_news(build_item(data, fecha), args.dashboard / "news.json")
     bump_static_html(data, item, args.dashboard)
-
-    print(
-        f"  news.json -> sem {data['week']}/{data['year']} | "
-        + " ".join(
-            f"{p[:3]} {f[p]['dev']:+.1f}%"
-            for p in ["Depresión", "Parkinson", "Alzheimer", "Dengue"]
+    if args.evidencia is not None:
+        args.evidencia.write_text(
+            json.dumps(
+                {
+                    "semana": f"{data['year']}-W{data['week']:02d}",
+                    "corte": data["corte"],
+                    "semanas_evaluadas": data["semanas_evaluadas"],
+                    "graficos": data["graficos"],
+                    "procedencia": data["procedencia"],
+                    "nota": item["title"],
+                    "fecha_nota": item["iso"],
+                    "lee_tableau": False,
+                },
+                ensure_ascii=False,
+                indent=1,
+            )
+            + "\n",
+            encoding="utf-8",
         )
+    print(
+        f"  news.json -> sem {data['week']}/{data['year']} · corte {data['corte']} · "
+        f"{data['graficos']} gráficos · nota del {item['iso']}"
     )
     return 0
 

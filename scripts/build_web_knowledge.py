@@ -11,6 +11,7 @@ import argparse
 from datetime import datetime
 from decimal import ROUND_HALF_UP, Decimal
 import json
+import math
 from pathlib import Path
 import sys
 from typing import Any
@@ -480,16 +481,27 @@ def build_dengue_section() -> dict[str, Any]:
         fc = _fc_cache[key]
         if fc.empty:
             return 0
+        # Los 52 pasos del pronóstico emitido desde el corte (fase pronóstico), sumados sin
+        # redondear y redondeados una vez, como el agregado estatal neuro. Antes se sumaban los
+        # pasos posteriores a la última semana observada (50 tras W39) y se rotulaban «52 sem».
         d = fc[
             (fc["meta_padecimiento"] == "Dengue")
             & (fc["meta_entidad"] == entidad)
             & (fc["meta_modo"] == "general")
-        ].copy()
-        if d.empty:
-            return 0
-        d["ds"] = pd.to_datetime(d["ds"])
-        fut = d[d["ds"] > last_real].sort_values("ds").head(52)
-        return int(fut["yhat"].clip(lower=0).sum())
+            & (fc["fase_modelo"].fillna("pronostico") == "pronostico")
+        ]
+        cortes = d[["anio_boletin_corte", "semana_boletin_corte"]].drop_duplicates()
+        pasos = sorted(int(x) for x in d["adelanto_semanas"])
+        if (
+            len(cortes) != 1
+            or pasos != list(range(1, 53))
+            or not d["yhat"].map(math.isfinite).all()
+        ):
+            raise SystemExit(
+                f"Dengue {entidad} ({motor}): {len(pasos)} pasos y {len(cortes)} cortes; se exigen 52 y 1"
+            )
+        total = Decimal(repr(float(d["yhat"].astype(float).sum())))
+        return max(int(total.quantize(Decimal("1"), rounding=ROUND_HALF_UP)), 0)
 
     casos_fut: int | None = _fc_52sem("Nacional", motor_nac) or None
 
@@ -521,6 +533,7 @@ def build_dengue_section() -> dict[str, Any]:
         "motor_nacional": motor_nac,
         "smape_nacional": smape_nac,
         "casos_futuro_nacional_52sem": casos_fut,
+        "casos_futuro_definicion": "52 pasos semanales del modelo nacional desde el corte",
         "ultima_real": last_real.strftime("%Y-%m-%d"),
         "anual": anual,
         "anio_pico": pico_anio,

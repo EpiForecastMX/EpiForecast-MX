@@ -183,17 +183,135 @@ def test_falla_en_seco_si_falta_el_bloque_o_news_json(tmp_path: Path) -> None:
     )
 
 
+def _data_w39() -> dict:
+    from datetime import date
+
+    return {
+        "year": 2026,
+        "week": 39,
+        "inicio": date(2026, 9, 27),
+        "fin": date(2026, 10, 3),
+        "corte": "2026-W37",
+        "semanas_evaluadas": ["2026-W38", "2026-W39"],
+        "graficos": 432,
+        "procedencia": {},
+    }
+
+
 def test_la_nota_semanal_no_publica_cifras_de_desempeno() -> None:
     """Ronda W37: ni desviación del acumulado ni SMAPE/MASE en la nota (ni en su subtítulo)."""
     import re
 
     from scripts.build_news_weekly import SUB_NEUTRAL, build_item
 
-    figs = {
-        p: {"dev": 2.9, "smape": 8.7, "mase": 0.59}
-        for p in ("Depresión", "Parkinson", "Alzheimer", "Dengue")
-    }
-    item = build_item({"year": 2026, "week": 39, "figs": figs})
+    item = build_item(_data_w39())
     texto = " ".join(item["body"]) + " " + SUB_NEUTRAL
-    assert "semana 39" in texto
+    assert "semana 39" in texto and "(27 de septiembre al 3 de octubre)" in texto
+    assert "corte en la semana 37" in texto and "432 gráficos" in texto and "38 y 39" in texto
     assert not re.search(r"(?i)smape|mase|precisi|desv|&#37;|%", texto)
+
+
+# ── cierre W39: la nota sin Tableau, con entradas explícitas e idempotente ─────────────────────
+
+
+def _boletin(tmp_path: Path, semanas: dict[str, int]) -> Path:
+    import pandas as pd
+
+    filas = [
+        {"Anio": 2026, "Semana": s, "Entidad": f"E{e}", "Padecimiento": pad}
+        for pad, ultima in semanas.items()
+        for s in range(37, ultima + 1)
+        for e in range(32)
+    ]
+    ruta = tmp_path / "boletin.csv"
+    pd.DataFrame(filas).to_csv(ruta, index=False)
+    return ruta
+
+
+def _entradas(
+    tmp_path: Path, ultima: str = "2026-W39", corte_ag: str = "2026-W37"
+) -> tuple[Path, Path, Path]:
+    anio, sem = (int(x) for x in ultima.split("-W"))
+    seg = tmp_path / "seg.json"
+    seg.write_text(
+        json.dumps(
+            {
+                "corte": {"etiqueta": "2026-W37"},
+                "ultima_semana_observada": {"etiqueta": ultima, "anio": anio, "semana": sem},
+                "semanas_evaluadas": 2,
+                "semanas": [{"etiqueta": "2026-W38"}, {"etiqueta": "2026-W39"}],
+            }
+        ),
+        "utf-8",
+    )
+    cat = tmp_path / "cat.json"
+    cat.write_text(
+        json.dumps({"gallery_item_count": 432, "production_series_count": 432}), "utf-8"
+    )
+    ag = tmp_path / "ag.json"
+    ag.write_text(json.dumps({"corte": corte_ag}), "utf-8")
+    return seg, cat, ag
+
+
+TODOS = {"Depresión": 39, "Parkinson": 39, "Alzheimer": 39, "Dengue": 39}
+
+
+def test_la_semana_vigente_exige_el_mismo_corte_en_los_cuatro(tmp_path: Path) -> None:
+    from scripts.build_news_weekly import compute_data, semana_vigente
+
+    assert semana_vigente(_boletin(tmp_path, TODOS)) == (2026, 39)
+    with pytest.raises(ValueError, match="corte desigual"):
+        semana_vigente(_boletin(tmp_path, {**TODOS, "Dengue": 38}))
+    seg, cat, ag = _entradas(tmp_path, ultima="2026-W38")
+    with pytest.raises(ValueError, match="el seguimiento termina en 2026-W38"):
+        compute_data(_boletin(tmp_path, TODOS), seg, cat, ag)
+    seg, cat, ag = _entradas(tmp_path, corte_ag="2026-W33")
+    with pytest.raises(ValueError, match="agregado estatal"):
+        compute_data(_boletin(tmp_path, TODOS), seg, cat, ag)
+
+
+def test_reaplicar_la_semana_no_anade_ni_reescribe_y_no_lee_tableau(
+    tmp_path: Path, monkeypatch
+) -> None:  # noqa: ANN001
+    import builtins
+
+    from scripts import build_news_weekly as g
+
+    abrir = builtins.open
+
+    def vigila(f, *a, **k):  # noqa: ANN001, ANN002, ANN003, ANN202
+        assert "tableau" not in str(f), f"lee {f}"
+        return abrir(f, *a, **k)
+
+    monkeypatch.setattr(builtins, "open", vigila)
+    (tmp_path / "index.html").write_text(PORTADA, encoding="utf-8")
+    (tmp_path / "novedades.html").write_text(NOVEDADES, encoding="utf-8")
+    _escribe_news(tmp_path, [CALASS, W27])
+    seg, cat, ag = _entradas(tmp_path)
+    args = [
+        "--dashboard",
+        str(tmp_path),
+        "--boletin",
+        str(_boletin(tmp_path, TODOS)),
+        "--seguimiento",
+        str(seg),
+        "--catalogo",
+        str(cat),
+        "--agregado",
+        str(ag),
+        "--fecha",
+        "2026-10-14",
+    ]
+    assert g.main(args) == 0
+    primero = (tmp_path / "news.json").read_bytes(), (tmp_path / "index.html").read_bytes()
+    assert g.main([*args[:-1], "2026-10-21"]) == 0  # otro día, misma semana y mismas entradas
+    assert (
+        (tmp_path / "news.json").read_bytes(),
+        (tmp_path / "index.html").read_bytes(),
+    ) == primero
+    items = json.loads(primero[0])["items"]
+    assert [it["title"] for it in items].count(
+        "Ya contamos con la semana epidemiológica 39 de 2026"
+    ) == 1
+    assert items[0]["iso"] == "2026-10-14" and len(items) == 3
+    assert "Edición de la semana 39, 2026" in primero[1].decode()
