@@ -1,11 +1,17 @@
-"""Genera reporte HTML de validacion semanal: Realidad vs Pronostico.
+"""Genera el reporte HTML de seguimiento posterior al corte: Realidad vs Pronostico.
 
-Compara los casos reales del boletin epidemiologico SINAVE con las predicciones
-de los modelos de produccion para la semana mas reciente disponible.
-Incluye desglose por sexo (Nacional y Regional) y actualiza la columna
-realidad_sem_previa en la tabla de produccion Excel.
+Desde la ronda W37 (version 2 de los campos de validacion) la pagina NO calcula sus propios
+pares: los lee de ``seguimiento_post_corte.csv`` (``genera_seguimiento_post_corte.py``), que
+empareja el pronostico guardado desde el corte con lo observado la MISMA semana del boletin,
+con la asignacion congelada y la regla de observados de la galeria. Presenta cada semana
+evaluada posterior al corte (W38 a horizonte 1, W39 a horizonte 2, ...) como seguimiento
+diagnostico, con el numero de semanas evaluadas visible; no es una evaluacion independiente.
 
-Salida: reports/ProdDetails/validacion_semanal.html
+Antes comparaba la ultima semana con su propia regla de sexo (diferencia de acumulados recortada
+a cero) y escribia en la tabla la realidad de la W39 junto al pronostico de la W38.
+
+Salida: reports/ProdDetails/validacion_semanal.html y la COPIA de la tabla de produccion con
+``pron_sem_previa``/``realidad_sem_previa`` de la misma semana (la ultima evaluada).
 """
 
 from __future__ import annotations
@@ -20,23 +26,15 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
-from epiforecast.utils.cohorts import filter_neuro
-from epiforecast.utils.semana_epi import (
-    ds_de_semana_boletin,
-    fin_semana_boletin,
-    inicio_semana_boletin,
-)
+from epiforecast.utils.semana_epi import fin_semana_boletin, inicio_semana_boletin
 
 # ---------------------------------------------------------------------------
 # Rutas y constantes
 # ---------------------------------------------------------------------------
 ROOT = Path(__file__).resolve().parent.parent
-BOLETIN = ROOT / "data" / "processed" / "dataset_boletin_epidemiologico.csv"
-FORECASTS_DIR = ROOT / "reports" / "forecasts"
 PROD_EXCEL = ROOT / "reports" / "ProdDetails" / "tabla_333_modelos_produccion.xlsx"
 OUTPUT = ROOT / "reports" / "ProdDetails" / "validacion_semanal.html"
 
-MODELS = ["prophet", "deepar", "ensemble", "stacking"]
 PADECIMIENTOS = ["Alzheimer", "Parkinson", "Depresion"]
 PAD_DISPLAY: dict[str, str] = {
     "Alzheimer": "Alzheimer (G30)",
@@ -197,118 +195,32 @@ def _epiweek_date_range(anio: int, semana: int) -> str:
     return f"{monday.day} {meses[monday.month]} - {sunday.day} {meses[sunday.month]} {sunday.year}"
 
 
-def _load_boletin_full() -> tuple[pd.DataFrame, int, int]:
-    """Carga boletin con desglose por sexo derivado de acumulados.
+def _registros(df: pd.DataFrame) -> list[dict[str, Any]]:
+    return [{str(k): v for k, v in fila.items()} for fila in df.to_dict("records")]
 
-    Returns (df, anio, semana) donde df tiene columnas:
-      entidad_norm, pad_norm, sexo, real
-    Solo filas a nivel estado (32 entidades).
-    """
-    df = pd.read_csv(BOLETIN)
-    # Guard: la validación semanal es solo de la cohorte neuro de producción.
-    # Excluye Dengue (en el consolidado pero sin forecasts) para no generar filas fantasma.
-    df = filter_neuro(df)
-    anio = int(df["Anio"].max())
-    semana = int(df.loc[df["Anio"] == anio, "Semana"].max())
 
-    df_cur = df[(df["Anio"] == anio) & (df["Semana"] == semana)].copy()
-
-    # Semana previa para derivar hombres/mujeres
-    if semana > 1:
-        df_prev = df[(df["Anio"] == anio) & (df["Semana"] == semana - 1)].copy()
-    else:
-        prev_anio = anio - 1
-        prev_sem = int(df.loc[df["Anio"] == prev_anio, "Semana"].max())
-        df_prev = df[(df["Anio"] == prev_anio) & (df["Semana"] == prev_sem)].copy()
-
-    df_cur["entidad_norm"] = df_cur["Entidad"].apply(_normalize)
-    df_cur["pad_norm"] = df_cur["Padecimiento"].apply(_normalize)
-    df_prev["entidad_norm"] = df_prev["Entidad"].apply(_normalize)
-    df_prev["pad_norm"] = df_prev["Padecimiento"].apply(_normalize)
-
-    rows: list[dict[str, Any]] = []
-    for _, cur in df_cur.iterrows():
-        ent = cur["entidad_norm"]
-        pad = cur["pad_norm"]
-
-        # General
-        rows.append(
+def _comparacion(seg: pd.DataFrame) -> pd.DataFrame:
+    """Filas de la pagina (neuro) a partir de los pares del seguimiento de UNA semana objetivo."""
+    filas: list[dict[str, Any]] = []
+    registros = _registros(seg[seg["cohorte"] == "neuro"])
+    for r in registros:
+        real = None if pd.isna(r["real"]) else int(r["real"])
+        pron = None if pd.isna(r["pronostico"]) else int(r["pronostico"])
+        error_pct, veredicto = _verdict(real, pron)
+        filas.append(
             {
-                "entidad_norm": ent,
-                "pad_norm": pad,
-                "sexo": "general",
-                "real": cur["Casos_semana"],
+                "entidad_norm": _norm_prod_entidad(str(r["entidad"])),
+                "pad_norm": _normalize(str(r["padecimiento"])),
+                "sexo": str(r["sexo"]),
+                "real": real,
+                "pronostico": pron,
+                "error_pct": error_pct,
+                "veredicto": veredicto if r["estado"] == "par" else "N/A",
+                "motor": str(r["motor"]).lower(),
+                "nivel": str(r["nivel"]),
             }
         )
-
-        # Hombres / mujeres desde diferencia de acumulados
-        prev = df_prev[(df_prev["entidad_norm"] == ent) & (df_prev["pad_norm"] == pad)]
-        h_week: float | None = None
-        m_week: float | None = None
-        if not prev.empty:
-            h_cur = cur["Acumulado_hombres"]
-            h_prev = prev.iloc[0]["Acumulado_hombres"]
-            m_cur = cur["Acumulado_mujeres"]
-            m_prev = prev.iloc[0]["Acumulado_mujeres"]
-            if pd.notna(h_cur) and pd.notna(h_prev):
-                h_week = max(0, h_cur - h_prev)
-            if pd.notna(m_cur) and pd.notna(m_prev):
-                m_week = max(0, m_cur - m_prev)
-
-        rows.append(
-            {
-                "entidad_norm": ent,
-                "pad_norm": pad,
-                "sexo": "hombres",
-                "real": h_week,
-            }
-        )
-        rows.append(
-            {
-                "entidad_norm": ent,
-                "pad_norm": pad,
-                "sexo": "mujeres",
-                "real": m_week,
-            }
-        )
-
-    return pd.DataFrame(rows), anio, semana
-
-
-def _load_forecasts(target_date: str) -> pd.DataFrame:
-    """Lee los 4 all_forecast CSVs, filtra por fecha. Incluye todos los modos."""
-    frames = []
-    for model in MODELS:
-        path = FORECASTS_DIR / model / f"all_forecast_{model}.csv"
-        if not path.exists():
-            continue
-        df = pd.read_csv(path)
-        df["ds"] = pd.to_datetime(df["ds"]).dt.strftime("%Y-%m-%d")
-        df = df[df["ds"] == target_date].copy()
-        df["model"] = model
-        df["entidad_norm"] = df["meta_entidad"].apply(_normalize)
-        df["pad_norm"] = df["meta_padecimiento"].apply(_normalize)
-        df.rename(columns={"meta_modo": "sexo"}, inplace=True)
-        corte = [c for c in ("anio_boletin_corte", "semana_boletin_corte") if c in df.columns]
-        frames.append(df[["entidad_norm", "pad_norm", "sexo", "yhat", "model", *corte]])
-    if not frames:
-        msg = f"No se encontraron forecasts para {target_date}"
-        raise FileNotFoundError(msg)
-    return pd.concat(frames, ignore_index=True)
-
-
-def _load_production() -> pd.DataFrame:
-    """Lee Excel de produccion y retorna el motor productivo de cada combinacion.
-
-    No lee ``mase_prod``: en la ronda W37 es el error de la ventana de seleccion W28-W37
-    (diagnostico de seleccion, no evaluacion independiente) y no se publica.
-    """
-    df = pd.read_excel(PROD_EXCEL, sheet_name=0)
-    df = df[["padecimiento", "entidad", "sexo", "modelo_produccion"]].copy()
-    df["entidad_norm"] = df["entidad"].apply(_norm_prod_entidad)
-    df["pad_norm"] = df["padecimiento"].apply(_normalize)
-    df["motor"] = df["modelo_produccion"]
-    return df[["entidad_norm", "pad_norm", "sexo", "motor"]]
+    return pd.DataFrame(filas)
 
 
 # ---------------------------------------------------------------------------
@@ -345,116 +257,6 @@ def _verdict(real_val: Any, yhat: Any) -> tuple[float | None, str]:
     if smape <= 50:
         return smape, "REGULAR"
     return smape, "FALLO"
-
-
-def _build_comparison(
-    boletin: pd.DataFrame,
-    forecasts: pd.DataFrame,
-    produccion: pd.DataFrame,
-) -> pd.DataFrame:
-    """Construye tabla de comparacion con ~333 filas.
-
-    Niveles:
-      - nacional: 3 pads x 3 sexos = 9
-      - regional: 4 regiones x 3 pads x 3 sexos = 36
-      - estatal:  32 estados x 3 pads x 3 sexos = 288
-    Total: 333
-    """
-    all_rows: list[dict[str, Any]] = []
-
-    # --- Nacional: sumar estados por (pad, sexo) ---
-    for pad in boletin["pad_norm"].unique():
-        for sexo in SEXO_MODES:
-            mask = (boletin["pad_norm"] == pad) & (boletin["sexo"] == sexo)
-            total = boletin.loc[mask, "real"].sum()
-            all_rows.append(
-                {
-                    "entidad_norm": "Nacional",
-                    "pad_norm": pad,
-                    "sexo": sexo,
-                    "real": total,
-                    "nivel": "nacional",
-                }
-            )
-
-    # --- Regional: sumar estados por region ---
-    for region, states in REGION_STATES.items():
-        for pad in boletin["pad_norm"].unique():
-            for sexo in SEXO_MODES:
-                mask = (
-                    boletin["entidad_norm"].isin(states)
-                    & (boletin["pad_norm"] == pad)
-                    & (boletin["sexo"] == sexo)
-                )
-                total = boletin.loc[mask, "real"].sum()
-                all_rows.append(
-                    {
-                        "entidad_norm": region,
-                        "pad_norm": pad,
-                        "sexo": sexo,
-                        "real": total,
-                        "nivel": "regional",
-                    }
-                )
-
-    # --- Estatal: filas individuales ---
-    for _, row in boletin.iterrows():
-        all_rows.append(
-            {
-                "entidad_norm": row["entidad_norm"],
-                "pad_norm": row["pad_norm"],
-                "sexo": row["sexo"],
-                "real": row["real"],
-                "nivel": "estatal",
-            }
-        )
-
-    real_df = pd.DataFrame(all_rows)
-
-    # Merge con produccion para motor ganador
-    merged = real_df.merge(
-        produccion,
-        on=["entidad_norm", "pad_norm", "sexo"],
-        how="left",
-    )
-
-    # Lookup forecast yhat del motor ganador
-    results: list[dict[str, Any]] = []
-    for _, row in merged.iterrows():
-        motor = row.get("motor")
-        if pd.isna(motor) or not motor:
-            motor = "ensemble"
-        motor_lower = str(motor).lower()
-
-        match = forecasts[
-            (forecasts["entidad_norm"] == row["entidad_norm"])
-            & (forecasts["pad_norm"] == row["pad_norm"])
-            & (forecasts["sexo"] == row["sexo"])
-            & (forecasts["model"] == motor_lower)
-        ]
-        yhat = round(match["yhat"].iloc[0]) if len(match) > 0 else None
-
-        real_val = row["real"]
-        if real_val is not None and not (isinstance(real_val, float) and math.isnan(real_val)):
-            real_val = round(real_val)
-
-        error_pct, veredicto = _verdict(real_val, yhat)
-
-        results.append(
-            {
-                "entidad_norm": row["entidad_norm"],
-                "pad_norm": row["pad_norm"],
-                "sexo": row["sexo"],
-                "real": real_val,
-                "pronostico": yhat,
-                "error_pct": error_pct,
-                "veredicto": veredicto,
-                "motor": motor_lower,
-                "nivel": row["nivel"],
-            }
-        )
-
-    return pd.DataFrame(results)
 
 
 # ---------------------------------------------------------------------------
@@ -649,7 +451,7 @@ def _build_sexo_table(data: pd.DataFrame) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _section_dashboard(comp: pd.DataFrame, anio: int, semana: int) -> str:
+def _section_dashboard(comp: pd.DataFrame, anio: int, semana: int, horizonte: int) -> str:
     """Panel premium con gauges SVG animados: SMAPE + MASE por padecimiento."""
     nac_gen = comp[(comp["nivel"] == "nacional") & (comp["sexo"] == "general")]
 
@@ -674,8 +476,8 @@ def _section_dashboard(comp: pd.DataFrame, anio: int, semana: int) -> str:
 <section class="reveal animate">
   <div class="dashboard">
     <div class="dashboard-header">
-      <h2>Panel de Desempeno Nacional</h2>
-      <p>Semana {semana} | {date_range} | Modo general</p>
+      <h2>Seguimiento nacional: semana {semana} de {anio}</h2>
+      <p>{date_range} | Horizonte {horizonte} semana{"s" if horizonte != 1 else ""} desde el corte | Modo general</p>
     </div>
     <div class="dashboard-grid">{panels}</div>
   </div>
@@ -1000,26 +802,53 @@ def _corte_declarado(forecasts: pd.DataFrame) -> tuple[int, int] | None:
     return int(pares.iloc[0, 0]), int(pares.iloc[0, 1])
 
 
-def _generate_html(
-    comp: pd.DataFrame, anio: int, semana: int, corte: tuple[int, int] | None = None
-) -> str:
+def _semana(etiqueta: str) -> tuple[int, int]:
+    anio, semana = etiqueta.split("-W")
+    return int(anio), int(semana)
+
+
+def _resumen_semanas(seg: pd.DataFrame) -> str:
+    """Tabla con cada semana evaluada: horizonte, pares validos y ausentes (neuro)."""
+    filas = ""
+    for etiqueta, g in seg[seg["cohorte"] == "neuro"].groupby("semana_objetivo", sort=True):
+        anio, semana = _semana(str(etiqueta))
+        pares = int((g["estado"] == "par").sum())
+        filas += (
+            f"<tr><td>Semana {semana} de {anio}</td><td>{_epiweek_date_range(anio, semana)}</td>"
+            f"<td>{int(g['horizonte'].to_numpy()[0])}</td><td>{pares}</td>"
+            f"<td>{len(g) - pares}</td></tr>\n"
+        )
+    return f"""
+<section class="reveal">
+  <h2 class="section-title">Semanas evaluadas despues del corte</h2>
+  <p class="section-sub">Cada fila compara el pronostico guardado desde el corte con lo observado
+  esa misma semana del boletin. Un par ausente (falta el pronostico o la observacion desagregable)
+  no se rellena ni se desplaza.</p>
+  <div class="table-wrapper"><table>
+    <thead><tr><th>Semana objetivo</th><th>Fechas del boletin</th><th>Horizonte (semanas)</th>
+    <th>Pares validos</th><th>Ausentes</th></tr></thead>
+    <tbody>{filas}</tbody>
+  </table></div>
+</section>"""
+
+
+def _generate_html(seg: pd.DataFrame, corte: tuple[int, int]) -> str:
+    """Pagina de seguimiento: resumen de las semanas evaluadas y el detalle de cada una."""
     ahora = datetime.now(tz=TZ_MX).strftime("%d/%m/%Y %H:%M hrs")
-    date_range = _epiweek_date_range(anio, semana)
+    etiquetas = sorted(seg["semana_objetivo"].unique(), key=_semana)
+    n_semanas = len(etiquetas)
+    ultima = _semana(etiquetas[-1])
+    neuro = seg[seg["cohorte"] == "neuro"]
+    n_series = int(neuro[["padecimiento", "entidad", "sexo"]].drop_duplicates().shape[0])
     pie_corte = (
         f"Modelos entrenados con datos hasta la semana {corte[1]}/{corte[0]}; "
-        f"realidad observada hasta la semana {semana}/{anio}"
-        if corte
-        else "Corte de entrenamiento no declarado por los pronosticos"
+        f"realidad observada hasta la semana {ultima[1]}/{ultima[0]}"
     )
-
-    # KPIs
-    n_series = len(comp)
-    valid = comp[comp["error_pct"].notna()]
-    n_valid = len(valid)
-    n_good = len(valid[valid["error_pct"] <= 25])
-    nac_gen = comp[(comp["nivel"] == "nacional") & (comp["sexo"] == "general")]
-    nac_err = nac_gen["error_pct"].dropna()
-    nac_mean = f"{nac_err.mean():.1f}%" if len(nac_err) > 0 else "N/A"
+    rango = (
+        f"semanas {_semana(etiquetas[0])[1]} a {ultima[1]}"
+        if n_semanas > 1
+        else f"semana {ultima[1]}"
+    )
 
     css = _build_css()
     parts: list[str] = []
@@ -1028,38 +857,48 @@ def _generate_html(
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Validacion Semanal - Semana {semana}/{anio}</title>
+<title>Seguimiento posterior al corte - Semana {ultima[1]}/{ultima[0]}</title>
 {_FONTS_LINK}
 <style>{css}</style>
 <link rel="stylesheet" href="editorial.css?v=1">
 </head>
 <body>
 <div class="hero">
-  <h1>Validacion Semanal: Realidad vs Pronostico</h1>
-  <p class="subtitle">Semana Epidemiologica {semana} | {date_range}</p>
+  <h1>Seguimiento posterior al corte: Realidad vs Pronostico</h1>
+  <p class="subtitle">Seguimiento diagnostico posterior al corte de la semana {corte[1]} de {corte[0]};
+  no es una evaluacion independiente</p>
   <div class="hero-kpis">
     <div class="hero-kpi">
+      <span class="value">{n_semanas}</span>
+      <span class="label">Semanas evaluadas ({rango} de {ultima[0]})</span>
+    </div>
+    <div class="hero-kpi">
+      <span class="value">{corte[1]}/{corte[0]}</span>
+      <span class="label">Corte de los modelos</span>
+    </div>
+    <div class="hero-kpi">
       <span class="value">{n_series}</span>
-      <span class="label">Series evaluadas</span>
-    </div>
-    <div class="hero-kpi">
-      <span class="value">{nac_mean}</span>
-      <span class="label">SMAPE nacional medio</span>
-    </div>
-    <div class="hero-kpi">
-      <span class="value">{n_good}/{n_valid}</span>
-      <span class="label">Precision &le;25%</span>
+      <span class="label">Series neuro de la asignacion</span>
     </div>
   </div>
 </div>
 <div class="container">
 """)
-
-    parts.append(_section_dashboard(comp, anio, semana))
-    parts.append(_section_nacional(comp))
-    parts.append(_section_regional(comp))
-    parts.append(_section_detalle(comp))
-    parts.append(_section_semaforo(comp))
+    parts.append(_resumen_semanas(seg))
+    for etiqueta in reversed(etiquetas):  # la mas reciente primero
+        anio, semana = _semana(etiqueta)
+        g = seg[seg["semana_objetivo"] == etiqueta]
+        h = int(g["horizonte"].to_numpy()[0])
+        comp = _comparacion(g)
+        parts.append(
+            f'\n<h2 class="section-title" style="margin-top:3rem">Semana {semana} de {anio} '
+            f"(horizonte {h} desde el corte)</h2>\n"
+        )
+        parts.append(_section_dashboard(comp, anio, semana, h))
+        parts.append(_section_nacional(comp))
+        parts.append(_section_regional(comp))
+        parts.append(_section_detalle(comp))
+        parts.append(_section_semaforo(comp))
 
     parts.append(f"""
 </div>
@@ -1067,6 +906,7 @@ def _generate_html(
   <p class="footer-title">EpiForecast-MX | IMSS 2026</p>
   <p>Datos: Boletin Epidemiologico SINAVE | Generado: {ahora}</p>
   <p>{pie_corte}</p>
+  <p>{n_semanas} semana{"s" if n_semanas != 1 else ""} evaluada{"s" if n_semanas != 1 else ""} despues del corte; seguimiento diagnostico, no evaluacion independiente</p>
 </footer>
 <script>
 document.addEventListener('DOMContentLoaded',function(){{
@@ -1230,52 +1070,77 @@ footer .footer-title{font-family:var(--font-display);color:var(--cream);font-siz
 # ---------------------------------------------------------------------------
 
 
-def _update_excel(
-    comp: pd.DataFrame, anio: int, semana: int, ruta_excel: Path = PROD_EXCEL
-) -> None:
-    """Actualiza realidad_sem_previa en el Excel de produccion (`ruta_excel`, en su sitio)."""
+COLUMNAS_VALIDACION = (
+    "semana_validacion",
+    "corte_validacion",
+    "horizonte_validacion",
+    "estado_validacion",
+)
+
+
+def _update_excel(seg_ultima: pd.DataFrame, ruta_excel: Path = PROD_EXCEL) -> int:
+    """Escribe en la tabla (`ruta_excel`) el par de la ULTIMA semana evaluada, ambos lados juntos.
+
+    ``pron_sem_previa`` y ``realidad_sem_previa`` quedan de la misma semana objetivo, y cuatro
+    columnas declaran cual (semana, corte, horizonte y estado del par). Un par ausente deja ambas
+    celdas vacias: nunca se conserva el pronostico de otra semana junto a una realidad nueva.
+    Devuelve cuantas filas se escribieron.
+    """
     from openpyxl import load_workbook
 
+    etiquetas = set(seg_ultima["semana_objetivo"])
+    if len(etiquetas) != 1:
+        raise ValueError(f"se esperaba UNA semana objetivo, hay {sorted(etiquetas)}")
     wb = load_workbook(ruta_excel)
-    ws = wb.active
+    ws = wb["Produccion"] if "Produccion" in wb.sheetnames else wb.active
     if ws is None:
-        print("  Error: no se pudo abrir la hoja del Excel")
-        return
-
-    # Indices de columnas (1-indexed)
+        raise ValueError(f"{ruta_excel}: sin hoja de produccion")
     headers = [cell.value for cell in ws[1]]
-    try:
-        col_real = headers.index("realidad_sem_previa") + 1
-        col_pad = headers.index("padecimiento") + 1
-        col_ent = headers.index("entidad") + 1
-        col_sex = headers.index("sexo") + 1
-    except ValueError as e:
-        print(f"  Error: columna no encontrada en Excel — {e}")
-        return
+    for nombre in COLUMNAS_VALIDACION:
+        if nombre not in headers:
+            ws.cell(row=1, column=len(headers) + 1).value = nombre
+            headers.append(nombre)
+    col = {h: i + 1 for i, h in enumerate(headers) if h}
+    for requerida in ("padecimiento", "entidad", "sexo", "pron_sem_previa", "realidad_sem_previa"):
+        if requerida not in col:
+            raise ValueError(f"{ruta_excel}: falta la columna {requerida}")
 
-    # Lookup de realidad
-    lookup: dict[tuple[str, str, str], int | None] = {}
-    for _, row in comp.iterrows():
-        raw = row["real"]
-        val = int(round(raw)) if raw is not None and not _isnan(raw) else None
-        lookup[(row["pad_norm"], row["entidad_norm"], row["sexo"])] = val
-
-    updated = 0
-    for row_num in range(2, ws.max_row + 1):
-        pad_raw = str(ws.cell(row=row_num, column=col_pad).value or "")
-        ent_raw = str(ws.cell(row=row_num, column=col_ent).value or "")
-        sex_raw = str(ws.cell(row=row_num, column=col_sex).value or "")
-
-        pad = _normalize(pad_raw)
-        ent = _norm_prod_entidad(ent_raw)
-
-        key = (pad, ent, sex_raw)
-        if key in lookup and lookup[key] is not None:
-            ws.cell(row=row_num, column=col_real).value = lookup[key]
-            updated += 1
-
+    registros = _registros(seg_ultima[seg_ultima["cohorte"] == "neuro"])
+    pares = {
+        (
+            _normalize(str(r["padecimiento"])),
+            _norm_prod_entidad(str(r["entidad"])),
+            str(r["sexo"]),
+        ): r
+        for r in registros
+    }
+    escritas = 0
+    for fila in range(2, ws.max_row + 1):
+        clave = (
+            _normalize(str(ws.cell(row=fila, column=col["padecimiento"]).value or "")),
+            _norm_prod_entidad(str(ws.cell(row=fila, column=col["entidad"]).value or "")),
+            str(ws.cell(row=fila, column=col["sexo"]).value or ""),
+        )
+        r = pares.get(clave)
+        if r is None:
+            continue
+        es_par = r["estado"] == "par"
+        celdas = {
+            "pron_sem_previa": int(r["pronostico"]) if es_par else None,
+            "realidad_sem_previa": int(r["real"]) if es_par else None,
+            "semana_validacion": str(r["semana_objetivo"]),
+            "corte_validacion": str(r["corte"]),
+            "horizonte_validacion": int(r["horizonte"]),
+            "estado_validacion": "par" if es_par else f"ausente: {r['motivo']}",
+        }
+        for nombre, valor in celdas.items():
+            ws.cell(row=fila, column=col[nombre]).value = valor
+        escritas += 1
+    if escritas != len(pares):
+        raise ValueError(f"la tabla emparejo {escritas} de {len(pares)} series del seguimiento")
     wb.save(ruta_excel)
-    print(f"  Excel actualizado: {updated}/333 filas con realidad S{semana}/{anio}")
+    print(f"  Excel actualizado: {escritas} filas con el par de la semana {next(iter(etiquetas))}")
+    return escritas
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -1287,6 +1152,13 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="directorio de salida para validacion_semanal.html y la COPIA actualizada de "
         "tabla_333_modelos_produccion.xlsx (por defecto reports/ProdDetails, en el sitio). "
         "Con otro directorio el Excel del arbol real no se toca.",
+    )
+    parser.add_argument(
+        "--seguimiento",
+        type=Path,
+        required=True,
+        help="seguimiento_post_corte.csv (genera_seguimiento_post_corte.py): los pares de cada "
+        "semana evaluada despues del corte",
     )
     return parser.parse_args(argv)
 
@@ -1327,50 +1199,27 @@ def _normaliza_para_hooks(html: str) -> str:
 
 
 def main(argv: list[str] | None = None) -> None:
-    out_dir = _parse_args(argv).out
+    args = _parse_args(argv)
+    out_dir = args.out
     salida_html = out_dir / OUTPUT.name
-    print("Cargando boletin epidemiologico...")
-    boletin, anio, semana = _load_boletin_full()
-    n_states = boletin["entidad_norm"].nunique()
-    print(f"  Semana {anio}-S{semana} | {n_states} entidades x 3 sexos = {len(boletin)} filas")
-
-    # El pronostico vive en el calendario legado: la semana N del boletin es ISO N-1. Usar el
-    # lunes de la semana ISO N seleccionaba la fila de la semana siguiente.
-    target_date = ds_de_semana_boletin(anio, semana).date().isoformat()
-    print(f"  Fecha forecast: {target_date}")
-
-    print("Cargando forecasts (4 modelos, todos los modos)...")
-    forecasts = _load_forecasts(target_date)
-    corte = _corte_declarado(forecasts)
-    forecasts = forecasts.drop(
-        columns=["anio_boletin_corte", "semana_boletin_corte"], errors="ignore"
-    )
-    print(f"  {len(forecasts)} registros | corte declarado: {corte}")
-
-    print("Cargando tabla de produccion...")
-    produccion = _load_production()
-    print(f"  {len(produccion)} modelos")
-
-    print("Construyendo comparacion...")
-    comp = _build_comparison(boletin, forecasts, produccion)
-    print(f"  {len(comp)} series ({comp['nivel'].value_counts().to_dict()})")
-
-    # Estadisticas
-    for nivel in ["nacional", "regional", "estatal"]:
-        niv = comp[comp["nivel"] == nivel]
-        valid = niv[niv["error_pct"].notna()]
-        n_good = len(valid[valid["error_pct"] <= 25])
-        print(f"  {nivel}: {n_good}/{len(valid)} con error <=25%")
+    seg = pd.read_csv(args.seguimiento)
+    if seg.empty:
+        raise SystemExit("seguimiento sin filas: no hay semana evaluada despues del corte")
+    cortes = seg["corte"].unique()
+    if len(cortes) != 1:
+        raise SystemExit(f"el seguimiento mezcla cortes: {sorted(cortes)}")
+    corte = _semana(str(cortes[0]))
+    etiquetas = sorted(seg["semana_objetivo"].unique(), key=_semana)
+    print(f"Seguimiento posterior al corte {cortes[0]}: {len(etiquetas)} semana(s) {etiquetas}")
 
     print("Generando HTML...")
-    html = _generate_html(comp, anio, semana, corte)
+    html = _generate_html(seg, corte)
     salida_html.parent.mkdir(parents=True, exist_ok=True)
     salida_html.write_text(_normaliza_para_hooks(html), encoding="utf-8")
     print(f"  {salida_html} ({len(html):,} bytes)")
 
-    print("Actualizando Excel de produccion...")
-    _update_excel(comp, anio, semana, _destino_excel(out_dir))
-
+    print("Actualizando la copia de la tabla de produccion (ultima semana evaluada)...")
+    _update_excel(seg[seg["semana_objetivo"] == etiquetas[-1]], _destino_excel(out_dir))
     print("Listo.")
 
 

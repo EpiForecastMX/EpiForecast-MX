@@ -63,7 +63,38 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
             f"(rotuladas «{ROTULO}»); nunca se publica"
         ),
     )
+    parser.add_argument(
+        "--seguimiento",
+        type=Path,
+        default=None,
+        help=(
+            "seguimiento_post_corte.json (genera_seguimiento_post_corte.py): resumen de las "
+            "semanas evaluadas después del corte, que el EpiBot presenta como seguimiento"
+        ),
+    )
     return parser.parse_args(argv)
+
+
+def carga_seguimiento(ruta: Path, prod_models: list[dict[str, Any]]) -> dict[str, Any]:
+    """El resumen del seguimiento, comprobado contra los campos por serie de la tabla.
+
+    Los dos caminos deben hablar de la misma semana: la última evaluada del resumen es la que
+    declara cada fila de la tabla (`semana_validacion`). Si no, el EpiBot diría una semana en el
+    resumen y otra en el gráfico de calibración.
+    """
+    resumen: dict[str, Any] = json.loads(ruta.read_text(encoding="utf-8"))
+    if not resumen.get("semanas"):
+        raise SystemExit(f"{ruta}: seguimiento sin semanas evaluadas")
+    ultima = resumen["semanas"][-1]["etiqueta"]
+    declaradas = {m.get("semana_validacion") for m in prod_models}
+    if declaradas != {ultima}:
+        raise SystemExit(
+            f"la tabla declara las semanas {sorted(map(str, declaradas))} y el seguimiento "
+            f"termina en {ultima}: regenera la tabla con genera_validacion_semanal.py"
+        )
+    if resumen.get("semanas_evaluadas") != len(resumen["semanas"]):
+        raise SystemExit(f"{ruta}: semanas_evaluadas no coincide con las semanas listadas")
+    return resumen
 
 
 def _sin_nan(valor: Any) -> Any:
@@ -167,9 +198,16 @@ def build_prod_models(cache: ProjectDataCache) -> list[dict]:
         "tipo_modelo",
         "pron_sem_previa",
         "realidad_sem_previa",
+        "semana_validacion",
+        "corte_validacion",
+        "horizonte_validacion",
         "precision_historica",
     ]
     available = [c for c in cols if c in prod.columns]
+    if "semana_validacion" not in available:
+        # Tabla v1: el pronóstico y la realidad de la «semana previa» no declaran su semana y en
+        # la ronda W37 eran de semanas distintas (W38 y W39). Sin la declaración no se publican.
+        available = [c for c in available if c not in ("pron_sem_previa", "realidad_sem_previa")]
     rows = []
     for _, r in prod[available].iterrows():
         row = {}
@@ -177,7 +215,12 @@ def build_prod_models(cache: ProjectDataCache) -> list[dict]:
             v = r[c]
             if c in ("smape_prod", "mase_prod", "rmse_prod", "mae_prod"):
                 row[c] = _safe_float(v)
-            elif c in ("casos_52_semanas_futuro", "pron_sem_previa", "realidad_sem_previa"):
+            elif c in (
+                "casos_52_semanas_futuro",
+                "pron_sem_previa",
+                "realidad_sem_previa",
+                "horizonte_validacion",
+            ):
                 row[c] = _safe_int(v)
             elif c == "precision_historica":
                 row[c] = _safe_str(v)
@@ -1080,6 +1123,12 @@ def build_padecimientos() -> dict[str, Any]:
     from epiforecast.catalog import build_production_catalog
 
     df, counts = build_production_catalog()
+    if counts.gallery_item_count is None:
+        # Sin galería no hay conteo de gráficos: se cuenta en lo publicado, nunca se supone.
+        raise SystemExit(
+            "rosters.gallery_items: no se encontró la galería (Reports/index.html). Apunta "
+            "EPIFORECAST_DASHBOARD al dashboard generado antes de construir el knowledge."
+        )
     by_id = df.groupby("disease_id").size().to_dict()
 
     pads: list[dict[str, Any]] = []
@@ -1123,12 +1172,16 @@ def main(argv: list[str] | None = None) -> None:
 
     # Forzar calculo de stats
     stats = kb._ensure_stats()
+    # La validación semanal ya no se resume desde la tabla: viene del seguimiento posterior al
+    # corte (misma semana a ambos lados), en su propia sección.
+    stats.pop("validacion_semanal", None)
+    prod_models = _normalize_keys(build_prod_models(cache))
 
     knowledge: dict[str, Any] = {
         "_generated": datetime.now().isoformat(),
         "_version": "1.0",
         "stats": _normalize_keys(stats),
-        "prod_models": _normalize_keys(build_prod_models(cache)),
+        "prod_models": prod_models,
         "boletin": _normalize_keys(build_boletin(cache)),
         "weekly_comparison": _normalize_keys(
             {**build_weekly_comparison(cache), **build_dengue_weekly()}
@@ -1142,6 +1195,8 @@ def main(argv: list[str] | None = None) -> None:
         **build_padecimientos(),
         **build_static_data(),
     }
+    if args.seguimiento is not None:
+        knowledge["seguimiento_post_corte"] = carga_seguimiento(args.seguimiento, prod_models)
     _fill_horizon_dates(knowledge, cache)
 
     # Ronda W37: las métricas por serie y motor son el error de la ventana de selección W28–W37.

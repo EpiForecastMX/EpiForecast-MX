@@ -46,8 +46,9 @@ def test_validacion_semanal_actualiza_una_copia_y_no_el_excel_real(
     real.parent.mkdir()
     wb = Workbook()
     ws = wb.active
-    ws.append(["padecimiento", "entidad", "sexo", "realidad_sem_previa"])
-    ws.append(["Alzheimer", "Nacional", "general", None])
+    ws.title = "Produccion"
+    ws.append(["padecimiento", "entidad", "sexo", "pron_sem_previa", "realidad_sem_previa"])
+    ws.append(["Alzheimer", "Nacional", "general", None, None])
     wb.save(real)
     monkeypatch.setattr(g, "PROD_EXCEL", real)
 
@@ -55,20 +56,27 @@ def test_validacion_semanal_actualiza_una_copia_y_no_el_excel_real(
     destino = g._destino_excel(staging)
     assert destino == staging / real.name and destino.is_file()
 
-    comp = pd.DataFrame(
+    seg = pd.DataFrame(
         [
             {
-                "pad_norm": g._normalize("Alzheimer"),
-                "entidad_norm": g._norm_prod_entidad("Nacional"),
+                "cohorte": "neuro",
+                "padecimiento": "Alzheimer",
+                "entidad": "Nacional",
                 "sexo": "general",
-                "real": 12.0,
+                "corte": "2026-W37",
+                "semana_objetivo": "2026-W39",
+                "horizonte": 2,
+                "pronostico": 11,
+                "real": 12,
+                "estado": "par",
+                "motivo": "",
             }
         ]
     )
-    g._update_excel(comp, 2026, 31, destino)
+    g._update_excel(seg, destino)
 
-    assert load_workbook(destino).active["D2"].value == 12
-    assert load_workbook(real).active["D2"].value is None, "el Excel del árbol real no se toca"
+    assert load_workbook(destino).active["E2"].value == 12
+    assert load_workbook(real).active["E2"].value is None, "el Excel del árbol real no se toca"
     # Sin `--out` (o apuntando al directorio canónico) se conserva el comportamiento legacy.
     assert g._destino_excel(real.parent) == real
-    assert g._parse_args([]).out == g.OUTPUT.parent
+    assert g._parse_args(["--seguimiento", "s.csv"]).out == g.OUTPUT.parent

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from epiforecast import catalog
@@ -14,11 +16,38 @@ def _sources_present() -> bool:
 pytestmark = pytest.mark.skipif(not _sources_present(), reason="requiere artefactos de producción")
 
 
+# Galería de la ronda W37: 333 neuro + 99 Dengue (las 4 regiones de Dengue salen).
+_GALERIA = [{"p": "Depresión", "f": f"Depresión/x/{i}.png"} for i in range(333)] + [
+    {"p": "Dengue", "f": f"dengue/x/{i}.png"} for i in range(99)
+]
+
+
+def _dashboard(raiz, items):
+    (raiz / "Reports").mkdir(parents=True)
+    (raiz / "Reports" / "index.html").write_text(
+        f"<script>\nconst DATA = {json.dumps(items)};\n</script>\n", "utf-8"
+    )
+    return raiz
+
+
 @pytest.fixture(scope="module")
-def manifest():
+def manifest(tmp_path_factory):
     from scripts.build_web_knowledge import build_padecimientos
 
-    return build_padecimientos()
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setenv(
+            catalog.DASHBOARD_ENV, str(_dashboard(tmp_path_factory.mktemp("dash"), _GALERIA))
+        )
+        return build_padecimientos()
+
+
+def test_sin_galeria_el_knowledge_no_se_construye(tmp_path, monkeypatch):
+    """Sin inventario no hay conteo de gráficos: se aborta en vez de suponer uno."""
+    from scripts.build_web_knowledge import build_padecimientos
+
+    monkeypatch.setenv(catalog.DASHBOARD_ENV, str(tmp_path))
+    with pytest.raises(SystemExit, match="gallery_items"):
+        build_padecimientos()
 
 
 def test_solo_published_obesidad_invisible(manifest):
@@ -33,7 +62,7 @@ def test_conteos_canonicos_no_inflados(manifest):
     assert r["por_cohorte"] == {"neuro": 333, "dengue": 99}
     assert r["national_aggregators"] == 333  # solo los 3 neuro suman
     assert r["n_padecimientos"] == 4
-    assert r["gallery_items"] == 444
+    assert r["gallery_items"] == len(_GALERIA) == 432  # contado en la galería, no supuesto
 
 
 def test_cada_padecimiento_completo(manifest):
