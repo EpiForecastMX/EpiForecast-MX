@@ -272,6 +272,7 @@ _CSS_EXTRA = """
   font-weight:700;color:#EAEFF8;background:rgba(255,255,255,.12)}
 .motivo{display:block;font-size:.72rem;color:var(--cool-gray,#97999B);margin-top:.2rem}
 .nota{font-size:.85rem;color:var(--cool-gray,#97999B);margin:.8rem 0 0;line-height:1.5}
+.tabla-ajustada th,.tabla-ajustada td{white-space:normal;padding-left:.6rem;padding-right:.6rem}
 """
 
 
@@ -454,9 +455,9 @@ def _section_ausentes(resumen: dict[str, Any]) -> str:
   <p class="section-sub">{n} par{"es" if n != 1 else ""} sin observacion utilizable: el pronostico
   se conserva, la observacion queda ausente (no se imputa ni se convierte en cero) y el par queda
   fuera de los resumenes</p>
-  <div class="card"><div class="table-wrapper"><table>
+  <div class="card"><div class="table-wrapper"><table class="tabla-ajustada">
     <thead><tr><th>Semana</th><th>Serie</th><th>Motor</th><th>Pronostico</th>
-    <th>Acumulado por sexo de la fuente (previa &rarr; semana)</th><th>Motivo</th></tr></thead>
+    <th>Acumulado por sexo en la fuente (previa &rarr; semana)</th><th>Motivo</th></tr></thead>
     <tbody>{filas}</tbody>
   </table></div></div>
 </section>"""
@@ -495,10 +496,10 @@ def _section_definicion_sexo(resumen: dict[str, Any]) -> str:
   en ambas, incluidas las revisiones negativas de los estados. No es un numero demostrado de casos
   nuevos. La pagina anterior sumaba los incrementos estatales recortando a cero los negativos; esa
   suma ya no se publica como observado. {cambio}</p>
-  <div class="card"><div class="table-wrapper"><table>
+  <div class="card"><div class="table-wrapper"><table class="tabla-ajustada">
     <thead><tr><th>Semana</th><th>Padecimiento</th><th>Sexo</th>
-    <th>Incremento neto publicado</th><th>Suma estatal recortada a cero (definicion anterior, no publicada)</th>
-    <th>Entidades con revision negativa</th><th>Entidades publicadas (previa/semana)</th>
+    <th>Incremento neto publicado</th><th>Suma estatal recortada a cero (definicion anterior; no se publica)</th>
+    <th>Entidades con revision negativa</th><th>Entidades (previa / semana)</th>
     <th>Semanas consecutivas</th></tr></thead>
     <tbody>{filas}</tbody>
   </table></div>
