@@ -1,0 +1,266 @@
+{
+ "version": 2,
+ "rotulo": "seguimiento diagnóstico posterior al corte; no evaluación independiente",
+ "corte": {
+  "etiqueta": "2026-W37",
+  "anio": 2026,
+  "semana": 37,
+  "ds": "2026-08-31"
+ },
+ "ultima_semana_observada": {
+  "etiqueta": "2026-W39",
+  "anio": 2026,
+  "semana": 39
+ },
+ "semanas_evaluadas": 2,
+ "pasos_sin_semana_excluidos": [],
+ "asignacion": {
+  "neuro": {
+   "archivo": "tabla_333_modelos_produccion.xlsx",
+   "sha256": "e1306c973cfa0f7166c71f08de014b3ad51eeb1481ecfc1e8a2fb022badc7f22"
+  },
+  "dengue": {
+   "archivo": "produccion_dengue.csv",
+   "sha256": "0ce21ab786d1588bc6d9b03a09e7e8ac41f04d62eff17a50ffb479a276c5c561"
+  }
+ },
+ "reglas": [
+  "misma clave (padecimiento, entidad, sexo, semana del boletín, ds) a ambos lados",
+  "pronóstico guardado del motor asignado, emitido desde el corte (fase pronóstico)",
+  "observado con la regla de la galería; nacional y regiones exigen todas sus entidades",
+  "sin desplazar valores; un lado faltante declara el par ausente",
+  "el paso del horizonte sin semana del boletín queda fuera de las comparaciones"
+ ],
+ "semanas": [
+  {
+   "etiqueta": "2026-W38",
+   "ds": "2026-09-07",
+   "inicio": "2026-09-20",
+   "fin": "2026-09-26",
+   "horizonte": 1,
+   "cohortes": {
+    "dengue": {
+     "series": 99,
+     "pares": 99,
+     "ausentes": 0,
+     "motivos_ausencia": {},
+     "error_abs_medio": 13.25,
+     "error_abs_mediano": 2.0,
+     "nacional": [
+      {
+       "padecimiento": "Dengue",
+       "sexo": "general",
+       "motor": "DeepAR",
+       "pronostico": 236,
+       "real": 483
+      },
+      {
+       "padecimiento": "Dengue",
+       "sexo": "hombres",
+       "motor": "DeepAR",
+       "pronostico": 88,
+       "real": 193
+      },
+      {
+       "padecimiento": "Dengue",
+       "sexo": "mujeres",
+       "motor": "DeepAR",
+       "pronostico": 193,
+       "real": 290
+      }
+     ]
+    },
+    "neuro": {
+     "series": 333,
+     "pares": 329,
+     "ausentes": 4,
+     "motivos_ausencia": {
+      "observación no desagregable (sin semana previa consecutiva o revisión)": 4
+     },
+     "error_abs_medio": 9.86,
+     "error_abs_mediano": 2.0,
+     "nacional": [
+      {
+       "padecimiento": "Alzheimer",
+       "sexo": "hombres",
+       "motor": "Ensemble",
+       "pronostico": 15,
+       "real": 16
+      },
+      {
+       "padecimiento": "Alzheimer",
+       "sexo": "mujeres",
+       "motor": "Prophet",
+       "pronostico": 30,
+       "real": 18
+      },
+      {
+       "padecimiento": "Alzheimer",
+       "sexo": "general",
+       "motor": "Prophet",
+       "pronostico": 41,
+       "real": 31
+      },
+      {
+       "padecimiento": "Depresion",
+       "sexo": "hombres",
+       "motor": "Ensemble",
+       "pronostico": 836,
+       "real": 703
+      },
+      {
+       "padecimiento": "Depresion",
+       "sexo": "mujeres",
+       "motor": "Ensemble",
+       "pronostico": 2292,
+       "real": 2025
+      },
+      {
+       "padecimiento": "Depresion",
+       "sexo": "general",
+       "motor": "Ensemble",
+       "pronostico": 3118,
+       "real": 2748
+      },
+      {
+       "padecimiento": "Parkinson",
+       "sexo": "hombres",
+       "motor": "Ensemble",
+       "pronostico": 86,
+       "real": 92
+      },
+      {
+       "padecimiento": "Parkinson",
+       "sexo": "mujeres",
+       "motor": "Prophet",
+       "pronostico": 77,
+       "real": 68
+      },
+      {
+       "padecimiento": "Parkinson",
+       "sexo": "general",
+       "motor": "Prophet",
+       "pronostico": 159,
+       "real": 133
+      }
+     ]
+    }
+   }
+  },
+  {
+   "etiqueta": "2026-W39",
+   "ds": "2026-09-14",
+   "inicio": "2026-09-27",
+   "fin": "2026-10-03",
+   "horizonte": 2,
+   "cohortes": {
+    "dengue": {
+     "series": 99,
+     "pares": 99,
+     "ausentes": 0,
+     "motivos_ausencia": {},
+     "error_abs_medio": 15.97,
+     "error_abs_mediano": 2.0,
+     "nacional": [
+      {
+       "padecimiento": "Dengue",
+       "sexo": "general",
+       "motor": "DeepAR",
+       "pronostico": 225,
+       "real": 457
+      },
+      {
+       "padecimiento": "Dengue",
+       "sexo": "hombres",
+       "motor": "DeepAR",
+       "pronostico": 109,
+       "real": 198
+      },
+      {
+       "padecimiento": "Dengue",
+       "sexo": "mujeres",
+       "motor": "DeepAR",
+       "pronostico": 182,
+       "real": 258
+      }
+     ]
+    },
+    "neuro": {
+     "series": 333,
+     "pares": 332,
+     "ausentes": 1,
+     "motivos_ausencia": {
+      "observación no desagregable (sin semana previa consecutiva o revisión)": 1
+     },
+     "error_abs_medio": 9.19,
+     "error_abs_mediano": 2.0,
+     "nacional": [
+      {
+       "padecimiento": "Alzheimer",
+       "sexo": "hombres",
+       "motor": "Ensemble",
+       "pronostico": 16,
+       "real": 18
+      },
+      {
+       "padecimiento": "Alzheimer",
+       "sexo": "mujeres",
+       "motor": "Prophet",
+       "pronostico": 30,
+       "real": 23
+      },
+      {
+       "padecimiento": "Alzheimer",
+       "sexo": "general",
+       "motor": "Prophet",
+       "pronostico": 41,
+       "real": 39
+      },
+      {
+       "padecimiento": "Depresion",
+       "sexo": "hombres",
+       "motor": "Ensemble",
+       "pronostico": 836,
+       "real": 918
+      },
+      {
+       "padecimiento": "Depresion",
+       "sexo": "mujeres",
+       "motor": "Ensemble",
+       "pronostico": 2300,
+       "real": 2571
+      },
+      {
+       "padecimiento": "Depresion",
+       "sexo": "general",
+       "motor": "Ensemble",
+       "pronostico": 3136,
+       "real": 3332
+      },
+      {
+       "padecimiento": "Parkinson",
+       "sexo": "hombres",
+       "motor": "Ensemble",
+       "pronostico": 88,
+       "real": 85
+      },
+      {
+       "padecimiento": "Parkinson",
+       "sexo": "mujeres",
+       "motor": "Prophet",
+       "pronostico": 75,
+       "real": 85
+      },
+      {
+       "padecimiento": "Parkinson",
+       "sexo": "general",
+       "motor": "Prophet",
+       "pronostico": 156,
+       "real": 173
+      }
+     ]
+    }
+   }
+  }
+ ]
+}
