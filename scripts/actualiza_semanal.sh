@@ -427,6 +427,9 @@ paso "[8/10] Zoom del EpiBot (neuro + Dengue fresco)"
 
 paso "[9/10] Knowledge.json del EpiBot"
 (cd "$SANDBOX" && $PYTHON scripts/build_web_knowledge.py --out "${EPIBOT}/knowledge.json" --seguimiento "${SEGUIMIENTO}.json")
+# Comparación archivada (sin ajuste W1–W37). Sus entradas antiguas se verifican por hash.
+(cd "$SANDBOX" && $PYTHON scripts/build_comparacion_rondas.py   --knowledge "${EPIBOT}/knowledge.json" --zoom "${EPIBOT}/zoom_series.json"   --wcp "$DASHBOARD_ROOT/Reports/wcp2026/2026-09-08-8a0a9018/data.json"   --snapshot "$SANDBOX/reports/ProdDetails/congelado/forecast_congelado_20260605.csv"   --out "${EPIBOT}/comparacion_rondas.json")
+
 
 paso "[10/10] Barra de fechas + Novedades de la landing"
 (cd "$SANDBOX" && $PYTHON scripts/actualiza_barra_fechas.py \
