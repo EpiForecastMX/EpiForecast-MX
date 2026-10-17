@@ -83,6 +83,8 @@ def test_cie_map():
         "A97": "Dengue",
         "E66": "Obesidad",
         "F50": "Anorexia F50",  # C6/N+1: co-ubicado con Obesidad en el cuadro 14.1
+        "E10": "Diabetes tipo I",  # cuadro 13, bloque 1 (configured, invisible)
+        "E11": "Diabetes tipo II",  # cuadro 13, bloque 2 (configured, invisible)
     }
 
 
