@@ -48,6 +48,16 @@ def load_group(group_id: str) -> dict[str, Any]:
     return cast("dict[str, Any]", groups[group_id])
 
 
+def source_exclusion(
+    spec: dict[str, Any], filename: str, disease_id: str
+) -> dict[str, Any] | None:
+    """Entrada de ``source_exclusions`` si el boletín es errata de fuente para el padecimiento."""
+    for exc in spec.get("source_exclusions") or []:
+        if exc["file"] == filename and disease_id in exc["diseases"]:
+            return cast("dict[str, Any]", exc)
+    return None
+
+
 def find_cuadro_page(pdf_path: str, anchors: list[str], state_markers: list[str]) -> int | None:
     """Página (1-based) que contiene TODAS las anclas y los marcadores de estado."""
     reader = PdfReader(pdf_path)
@@ -78,6 +88,13 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
     }
     if year is None or week is None:
         out["reason"] = "sin año/semana en filename"
+        return out
+
+    excluded = source_exclusion(spec, Path(pdf_path).name, disease_id)
+    if excluded is not None:
+        out["reason"] = f"excluido: {excluded['reason']}"
+        out["excluded"] = True
+        out["keep_period"] = bool(excluded.get("keep_period", False))
         return out
 
     page = find_cuadro_page(pdf_path, spec["page_anchors"], spec["state_markers"])

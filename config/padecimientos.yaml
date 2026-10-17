@@ -111,6 +111,31 @@ perfiles:
       ensemble: false
       stacking: false
 
+  cronica_conteos:
+    # Crónico de ALTA incidencia semanal (Diabetes tipo II: ~10 mil casos/sem nacional). Conteos
+    # absolutos y CERO traits legacy activos, igual que baja_incidencia: el carril vive en el
+    # runner genérico, no en los motores legacy. Exposición disponible para un motor en tasa futuro.
+    cohorte_id: cronica
+    unidad: conteos
+    rate_scale: 100000
+    prophet_log_transform: false
+    prophet_covid_holidays: false
+    ensemble_covid_holidays: false
+    prophet_cv_weights: false
+    prophet_enso: false
+    nbglm_enso: false
+    ensemble_clamp: false
+    stacking_clamp: false
+    deepar_short_series: false
+    fallback_regional: false
+    excluir_outliers: false
+    invert_log_predict: false
+    motor_rate:
+      prophet: false
+      deepar: false
+      ensemble: false
+      stacking: false
+
 # ── Padecimientos ──
 padecimientos:
   - id: depresion
@@ -280,3 +305,57 @@ padecimientos:
       color: "#6D28D9"                # violeta (no colisiona con la paleta publicada)
       label: "Anorexia F50"
       nombre_completo: "Anorexia y otros trastornos de la conducta alimentaria (F50)"
+
+  # ── Diabetes (Cuadro 13, Enfermedades No Transmisibles): bloques 1 y 2. INVISIBLES. ──
+  # Alta por configuración (mismo patrón N+1 que F50): sólo dataset, sin entrenar ni publicar.
+  - id: diabetes_t1
+    data_name: "Diabetes tipo I"
+    artifact_key: Diabetes_T1
+    slug: diabetes_t1
+    display_name: "Diabetes mellitus tipo I"
+    cie_codes: ["E10"]
+    aliases: ["diabetes tipo 1", "diabetes tipo i", "dm1", "diabetes insulinodependiente",
+              "diabetes mellitus tipo 1", "e10"]
+    profile: baja_incidencia_semanal
+    batch: standalone
+    extraction_group: enfermedades_no_transmisibles
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#0E7490"
+      label: "Diabetes tipo I"
+      nombre_completo: "Diabetes mellitus insulinodependiente, tipo I (E10)"
+
+  - id: diabetes_t2
+    data_name: "Diabetes tipo II"
+    artifact_key: Diabetes_T2
+    slug: diabetes_t2
+    display_name: "Diabetes mellitus tipo II"
+    cie_codes: ["E11", "E12", "E13", "E14"]
+    aliases: ["diabetes", "diabetes tipo 2", "diabetes tipo ii", "dm2", "diabetes mellitus",
+              "diabetes no insulinodependiente", "diabetes mellitus tipo 2", "e11"]
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: enfermedades_no_transmisibles
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#BE185D"
+      label: "Diabetes tipo II"
+      nombre_completo: "Diabetes mellitus no insulinodependiente, tipo II (E11-E14)"
