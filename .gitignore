@@ -1,5 +1,9 @@
 # Data
-/data/*
+# `?*` y no `*`: igual para git, pero dulwich >= 1.1 (el que instala `pip install dvc`) da
+# por ignorado todo directorio cuyo contenido describe un patron terminado en `/*` y DVC
+# lo poda sin leer sus .dvc. Con `/data/*`, `dvc pull` y `dvc push` dejaron de ver
+# data/raw_PDFs.dvc y el scraper sello una carpeta de un solo PDF (sep-oct 2026).
+/data/?*
 
 # Web dashboard (deployado en repo separado EpiForecast-IMSS-Dashboard)
 web_dashboard/
@@ -246,13 +250,13 @@ Stories/
 
 # Permitir que Git vea data/processed/, pero ignorar su contenido
 !/data/processed/
-/data/processed/*
+/data/processed/?*
 !data/processed/*.dvc
 !data/processed/.gitignore
 # Models (DVC-tracked en S3)
 /models
 !/data/raw/
-/data/raw/*
+/data/raw/?*
 !data/raw/*.dvc
 !data/raw/.gitignore
 
