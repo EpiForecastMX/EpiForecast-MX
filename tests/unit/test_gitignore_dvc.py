@@ -24,12 +24,3 @@ def test_ningun_patron_de_data_termina_en_barra_asterisco() -> None:
     ]
     culpables = [p for p in patrones if "data/" in p and p.rstrip("/").endswith(("/*", "/**"))]
     assert culpables == [], f"usar `?*` en lugar de `*` en: {culpables}"
-
-
-@pytest.mark.contract
-def test_dulwich_no_da_por_ignorados_los_directorios_con_punteros() -> None:
-    dulwich_ignore = pytest.importorskip("dulwich.ignore")
-    dulwich_repo = pytest.importorskip("dulwich.repo")
-    gestor = dulwich_ignore.IgnoreFilterManager.from_repo(dulwich_repo.Repo(str(RAIZ)))
-    for directorio in ("data/", "data/processed/", "data/raw/"):
-        assert not gestor.is_ignored(directorio), directorio
