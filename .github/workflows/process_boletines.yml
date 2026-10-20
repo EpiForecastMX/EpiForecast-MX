@@ -70,12 +70,18 @@ jobs:
           dvc remote modify s3remote --local secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
 
       - name: Pull PDFs from S3
-        run: dvc pull
+        run: dvc pull data/raw_PDFs.dvc data/processed/dataset_boletin_epidemiologico.csv.dvc
 
       - name: Verify PDFs
         run: |
-          echo "PDFs en data/raw_PDFs/:"
-          ls data/raw_PDFs/*.pdf 2>/dev/null | wc -l
+          N=$(find data/raw_PDFs -maxdepth 1 -name '*.pdf' 2>/dev/null | wc -l)
+          ESPERADOS=$(awk '/nfiles:/ {print $2}' data/raw_PDFs.dvc)
+          echo "PDFs en data/raw_PDFs/: ${N} (puntero: ${ESPERADOS})"
+          if [ "$N" -ne "$ESPERADOS" ] || [ "$N" -lt 600 ]; then
+            echo "::error::faltan PDFs tras dvc pull (${N} de ${ESPERADOS})"; exit 1
+          fi
+          [ -f data/processed/dataset_boletin_epidemiologico.csv ] || {
+            echo "::error::dvc pull no restauro el consolidado"; exit 1; }
 
       # ── 4. Ejecutar procesamiento ──
       - name: Run extraction & merge pipeline
@@ -100,7 +106,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
           dvc add data/processed/dataset_boletin_epidemiologico.csv
-          dvc push
+          dvc push data/processed/dataset_boletin_epidemiologico.csv.dvc
 
       # ── 6. Git commit del .dvc file ──
       - name: Commit .dvc pointer

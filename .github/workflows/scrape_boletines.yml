@@ -111,9 +111,18 @@ jobs:
           done
           echo "Stashed $(ls /tmp/stash_pdfs/ | wc -l) new PDF(s)"
 
-          # Restaurar todos los PDFs existentes desde DVC
-          dvc pull --force
-          echo "DVC pull complete: $(ls data/raw_PDFs/ | wc -l) existing PDF(s)"
+          # Restaurar todos los PDFs existentes desde DVC (dirigido: si DVC no ve el
+          # puntero, falla en vez de no hacer nada)
+          dvc pull --force data/raw_PDFs.dvc
+          RESTAURADOS=$(find data/raw_PDFs -maxdepth 1 -name '*.pdf' 2>/dev/null | wc -l)
+          ESPERADOS=$(awk '/nfiles:/ {print $2}' data/raw_PDFs.dvc)
+          echo "DVC pull complete: ${RESTAURADOS} existing PDF(s), puntero declara ${ESPERADOS}"
+          # Guarda: sellar una carpeta incompleta reemplaza el historico por lo descargado
+          # hoy (sep-oct 2026 se sellaron carpetas de un solo PDF durante seis semanas).
+          if [ "$RESTAURADOS" -ne "$ESPERADOS" ] || [ "$RESTAURADOS" -lt 600 ]; then
+            echo "::error::dvc pull restauro ${RESTAURADOS} PDFs y el puntero declara ${ESPERADOS}; no se sella"
+            exit 1
+          fi
 
       - name: Restore new PDFs + DVC add/push
         if: steps.scraper.outputs.new_count != '0'
@@ -122,9 +131,13 @@ jobs:
           cp /tmp/stash_pdfs/*.pdf data/raw_PDFs/
           echo "Total PDFs: $(ls data/raw_PDFs/ | wc -l)"
 
-          # Re-trackear con DVC y subir solo los nuevos
+          # Re-trackear con DVC y subir solo los nuevos (push dirigido al puntero)
           dvc add data/raw_PDFs
-          dvc push
+          dvc push data/raw_PDFs.dvc
+          # El puntero que se va a commitear debe existir completo en el remoto.
+          dvc status -c data/raw_PDFs.dvc | tee /tmp/dvc_status_c.txt
+          grep -qE "in sync|up to date" /tmp/dvc_status_c.txt || {
+            echo "::error::el remoto no tiene completo data/raw_PDFs; no se commitea el puntero"; exit 1; }
 
       # ── Fase 3: Git commit (siempre, por si registry cambio) ──
       - name: Commit changes
