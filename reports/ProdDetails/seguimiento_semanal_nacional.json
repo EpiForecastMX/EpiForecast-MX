@@ -10,10 +10,10 @@
   "motor": "Prophet",
   "anio": 2026,
   "corte": "2026-W37",
-  "ultima_semana_observada": "2026-W40",
-  "semanas_seguimiento": 3,
-  "semanas_reales": 40,
-  "semanas_pronostico": 12,
+  "ultima_semana_observada": "2026-W41",
+  "semanas_seguimiento": 4,
+  "semanas_reales": 41,
+  "semanas_pronostico": 11,
   "pronostico_52_pasos": 1915,
   "semanas": [
    {
@@ -403,15 +403,15 @@
     "etiqueta": "2026-W41",
     "periodo_inicio": "2026-10-11",
     "periodo_fin": "2026-10-17",
-    "fase": "pronostico",
+    "fase": "seguimiento",
     "corte": "2026-W37",
     "horizonte": 4,
     "pronostico": 40,
-    "real": null,
-    "prophet": 40,
-    "deepar": 39,
-    "ensemble": 46,
-    "stacking": 41
+    "real": 55,
+    "estado": "par",
+    "motivo": "",
+    "error_abs": 15,
+    "diferencia": -15
    },
    {
     "anio": 2026,
@@ -602,10 +602,10 @@
   "motor": "Ensemble",
   "anio": 2026,
   "corte": "2026-W37",
-  "ultima_semana_observada": "2026-W40",
-  "semanas_seguimiento": 3,
-  "semanas_reales": 40,
-  "semanas_pronostico": 12,
+  "ultima_semana_observada": "2026-W41",
+  "semanas_seguimiento": 4,
+  "semanas_reales": 41,
+  "semanas_pronostico": 11,
   "pronostico_52_pasos": 160999,
   "semanas": [
    {
@@ -995,15 +995,15 @@
     "etiqueta": "2026-W41",
     "periodo_inicio": "2026-10-11",
     "periodo_fin": "2026-10-17",
-    "fase": "pronostico",
+    "fase": "seguimiento",
     "corte": "2026-W37",
     "horizonte": 4,
     "pronostico": 3237,
-    "real": null,
-    "prophet": 1577,
-    "deepar": 3229,
-    "ensemble": 3237,
-    "stacking": 3407
+    "real": 3417,
+    "estado": "par",
+    "motivo": "",
+    "error_abs": 180,
+    "diferencia": -180
    },
    {
     "anio": 2026,
@@ -1194,10 +1194,10 @@
   "motor": "Prophet",
   "anio": 2026,
   "corte": "2026-W37",
-  "ultima_semana_observada": "2026-W40",
-  "semanas_seguimiento": 3,
-  "semanas_reales": 40,
-  "semanas_pronostico": 12,
+  "ultima_semana_observada": "2026-W41",
+  "semanas_seguimiento": 4,
+  "semanas_reales": 41,
+  "semanas_pronostico": 11,
   "pronostico_52_pasos": 7391,
   "semanas": [
    {
@@ -1587,15 +1587,15 @@
     "etiqueta": "2026-W41",
     "periodo_inicio": "2026-10-11",
     "periodo_fin": "2026-10-17",
-    "fase": "pronostico",
+    "fase": "seguimiento",
     "corte": "2026-W37",
     "horizonte": 4,
     "pronostico": 150,
-    "real": null,
-    "prophet": 150,
-    "deepar": 170,
-    "ensemble": 162,
-    "stacking": 173
+    "real": 145,
+    "estado": "par",
+    "motivo": "",
+    "error_abs": 5,
+    "diferencia": 5
    },
    {
     "anio": 2026,
@@ -1786,10 +1786,10 @@
   "motor": "DeepAR",
   "anio": 2026,
   "corte": "2026-W37",
-  "ultima_semana_observada": "2026-W40",
-  "semanas_seguimiento": 3,
-  "semanas_reales": 40,
-  "semanas_pronostico": 12,
+  "ultima_semana_observada": "2026-W41",
+  "semanas_seguimiento": 4,
+  "semanas_reales": 41,
+  "semanas_pronostico": 11,
   "pronostico_52_pasos": 8811,
   "semanas": [
    {
@@ -2179,11 +2179,15 @@
     "etiqueta": "2026-W41",
     "periodo_inicio": "2026-10-11",
     "periodo_fin": "2026-10-17",
-    "fase": "pronostico",
+    "fase": "seguimiento",
     "corte": "2026-W37",
     "horizonte": 4,
     "pronostico": 321,
-    "real": null
+    "real": 678,
+    "estado": "par",
+    "motivo": "",
+    "error_abs": 357,
+    "diferencia": -357
    },
    {
     "anio": 2026,

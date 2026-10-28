@@ -8,11 +8,11 @@
   "ds": "2026-08-31"
  },
  "ultima_semana_observada": {
-  "etiqueta": "2026-W40",
+  "etiqueta": "2026-W41",
   "anio": 2026,
-  "semana": 40
+  "semana": 41
  },
- "semanas_evaluadas": 3,
+ "semanas_evaluadas": 4,
  "pasos_sin_semana_excluidos": [],
  "asignacion": {
   "neuro": {
@@ -425,6 +425,133 @@
      ]
     }
    }
+  },
+  {
+   "etiqueta": "2026-W41",
+   "ds": "2026-09-28",
+   "inicio": "2026-10-11",
+   "fin": "2026-10-17",
+   "horizonte": 4,
+   "cohortes": {
+    "dengue": {
+     "series": 99,
+     "pares": 99,
+     "ausentes": 0,
+     "motivos_ausencia": {},
+     "error_abs_medio": 26.14,
+     "error_abs_mediano": 4.0,
+     "nacional": [
+      {
+       "padecimiento": "Dengue",
+       "sexo": "general",
+       "motor": "DeepAR",
+       "pronostico": 321,
+       "real": 678,
+       "definicion_real": "casos de la semana (Casos_semana)"
+      },
+      {
+       "padecimiento": "Dengue",
+       "sexo": "hombres",
+       "motor": "DeepAR",
+       "pronostico": 172,
+       "real": 312,
+       "definicion_real": "incremento neto del acumulado por sexo, sujeto a revisiones"
+      },
+      {
+       "padecimiento": "Dengue",
+       "sexo": "mujeres",
+       "motor": "DeepAR",
+       "pronostico": 290,
+       "real": 366,
+       "definicion_real": "incremento neto del acumulado por sexo, sujeto a revisiones"
+      }
+     ]
+    },
+    "neuro": {
+     "series": 333,
+     "pares": 332,
+     "ausentes": 1,
+     "motivos_ausencia": {
+      "revisión negativa del acumulado por sexo (226 → 221): no es la observación de una semana": 1
+     },
+     "error_abs_medio": 8.32,
+     "error_abs_mediano": 2.0,
+     "nacional": [
+      {
+       "padecimiento": "Alzheimer",
+       "sexo": "hombres",
+       "motor": "Ensemble",
+       "pronostico": 17,
+       "real": 21,
+       "definicion_real": "incremento neto del acumulado por sexo, sujeto a revisiones"
+      },
+      {
+       "padecimiento": "Alzheimer",
+       "sexo": "mujeres",
+       "motor": "Prophet",
+       "pronostico": 30,
+       "real": 36,
+       "definicion_real": "incremento neto del acumulado por sexo, sujeto a revisiones"
+      },
+      {
+       "padecimiento": "Alzheimer",
+       "sexo": "general",
+       "motor": "Prophet",
+       "pronostico": 40,
+       "real": 55,
+       "definicion_real": "casos de la semana (Casos_semana)"
+      },
+      {
+       "padecimiento": "Depresion",
+       "sexo": "hombres",
+       "motor": "Ensemble",
+       "pronostico": 838,
+       "real": 961,
+       "definicion_real": "incremento neto del acumulado por sexo, sujeto a revisiones"
+      },
+      {
+       "padecimiento": "Depresion",
+       "sexo": "mujeres",
+       "motor": "Ensemble",
+       "pronostico": 2394,
+       "real": 2580,
+       "definicion_real": "incremento neto del acumulado por sexo, sujeto a revisiones"
+      },
+      {
+       "padecimiento": "Depresion",
+       "sexo": "general",
+       "motor": "Ensemble",
+       "pronostico": 3237,
+       "real": 3417,
+       "definicion_real": "casos de la semana (Casos_semana)"
+      },
+      {
+       "padecimiento": "Parkinson",
+       "sexo": "hombres",
+       "motor": "Ensemble",
+       "pronostico": 90,
+       "real": 75,
+       "definicion_real": "incremento neto del acumulado por sexo, sujeto a revisiones"
+      },
+      {
+       "padecimiento": "Parkinson",
+       "sexo": "mujeres",
+       "motor": "Prophet",
+       "pronostico": 71,
+       "real": 74,
+       "definicion_real": "incremento neto del acumulado por sexo, sujeto a revisiones"
+      },
+      {
+       "padecimiento": "Parkinson",
+       "sexo": "general",
+       "motor": "Prophet",
+       "pronostico": 150,
+       "real": 145,
+       "definicion_real": "casos de la semana (Casos_semana)"
+      }
+     ]
+    }
+   }
   }
  ],
  "ausentes": [
@@ -502,6 +629,21 @@
    "motivo": "revisión negativa del acumulado por sexo (148 → 146): no es la observación de una semana",
    "acumulado_semana_previa": 148,
    "acumulado_semana": 146
+  },
+  {
+   "semana_objetivo": "2026-W41",
+   "horizonte": 4,
+   "cohorte": "neuro",
+   "padecimiento": "Depresion",
+   "entidad": "Querétaro",
+   "sexo": "hombres",
+   "nivel": "estatal",
+   "motor": "DeepAR",
+   "pronostico": 9,
+   "real": null,
+   "motivo": "revisión negativa del acumulado por sexo (226 → 221): no es la observación de una semana",
+   "acumulado_semana_previa": 226,
+   "acumulado_semana": 221
   }
  ],
  "agregacion_sexo": [
@@ -920,6 +1062,144 @@
    "neto": 314,
    "real_publicado": 314,
    "suma_estatal_recortada": 314,
+   "entidades_con_revision_negativa": {}
+  },
+  {
+   "semana_objetivo": "2026-W41",
+   "semana_previa": "2026-W40",
+   "cohorte": "neuro",
+   "padecimiento": "Alzheimer",
+   "sexo": "hombres",
+   "definicion_real": "incremento neto del acumulado por sexo, sujeto a revisiones",
+   "entidades_semana": 32,
+   "entidades_semana_previa": 32,
+   "semanas_consecutivas": true,
+   "acumulado_semana_previa": 662,
+   "acumulado_semana": 683,
+   "neto": 21,
+   "real_publicado": 21,
+   "suma_estatal_recortada": 21,
+   "entidades_con_revision_negativa": {}
+  },
+  {
+   "semana_objetivo": "2026-W41",
+   "semana_previa": "2026-W40",
+   "cohorte": "neuro",
+   "padecimiento": "Alzheimer",
+   "sexo": "mujeres",
+   "definicion_real": "incremento neto del acumulado por sexo, sujeto a revisiones",
+   "entidades_semana": 32,
+   "entidades_semana_previa": 32,
+   "semanas_consecutivas": true,
+   "acumulado_semana_previa": 1066,
+   "acumulado_semana": 1102,
+   "neto": 36,
+   "real_publicado": 36,
+   "suma_estatal_recortada": 36,
+   "entidades_con_revision_negativa": {}
+  },
+  {
+   "semana_objetivo": "2026-W41",
+   "semana_previa": "2026-W40",
+   "cohorte": "neuro",
+   "padecimiento": "Depresion",
+   "sexo": "hombres",
+   "definicion_real": "incremento neto del acumulado por sexo, sujeto a revisiones",
+   "entidades_semana": 32,
+   "entidades_semana_previa": 32,
+   "semanas_consecutivas": true,
+   "acumulado_semana_previa": 32823,
+   "acumulado_semana": 33784,
+   "neto": 961,
+   "real_publicado": 961,
+   "suma_estatal_recortada": 966,
+   "entidades_con_revision_negativa": {
+    "Querétaro": -5
+   }
+  },
+  {
+   "semana_objetivo": "2026-W41",
+   "semana_previa": "2026-W40",
+   "cohorte": "neuro",
+   "padecimiento": "Depresion",
+   "sexo": "mujeres",
+   "definicion_real": "incremento neto del acumulado por sexo, sujeto a revisiones",
+   "entidades_semana": 32,
+   "entidades_semana_previa": 32,
+   "semanas_consecutivas": true,
+   "acumulado_semana_previa": 89234,
+   "acumulado_semana": 91814,
+   "neto": 2580,
+   "real_publicado": 2580,
+   "suma_estatal_recortada": 2580,
+   "entidades_con_revision_negativa": {}
+  },
+  {
+   "semana_objetivo": "2026-W41",
+   "semana_previa": "2026-W40",
+   "cohorte": "neuro",
+   "padecimiento": "Parkinson",
+   "sexo": "hombres",
+   "definicion_real": "incremento neto del acumulado por sexo, sujeto a revisiones",
+   "entidades_semana": 32,
+   "entidades_semana_previa": 32,
+   "semanas_consecutivas": true,
+   "acumulado_semana_previa": 3291,
+   "acumulado_semana": 3366,
+   "neto": 75,
+   "real_publicado": 75,
+   "suma_estatal_recortada": 75,
+   "entidades_con_revision_negativa": {}
+  },
+  {
+   "semana_objetivo": "2026-W41",
+   "semana_previa": "2026-W40",
+   "cohorte": "neuro",
+   "padecimiento": "Parkinson",
+   "sexo": "mujeres",
+   "definicion_real": "incremento neto del acumulado por sexo, sujeto a revisiones",
+   "entidades_semana": 32,
+   "entidades_semana_previa": 32,
+   "semanas_consecutivas": true,
+   "acumulado_semana_previa": 2841,
+   "acumulado_semana": 2915,
+   "neto": 74,
+   "real_publicado": 74,
+   "suma_estatal_recortada": 74,
+   "entidades_con_revision_negativa": {}
+  },
+  {
+   "semana_objetivo": "2026-W41",
+   "semana_previa": "2026-W40",
+   "cohorte": "dengue",
+   "padecimiento": "Dengue",
+   "sexo": "hombres",
+   "definicion_real": "incremento neto del acumulado por sexo, sujeto a revisiones",
+   "entidades_semana": 32,
+   "entidades_semana_previa": 32,
+   "semanas_consecutivas": true,
+   "acumulado_semana_previa": 3331,
+   "acumulado_semana": 3643,
+   "neto": 312,
+   "real_publicado": 312,
+   "suma_estatal_recortada": 312,
+   "entidades_con_revision_negativa": {}
+  },
+  {
+   "semana_objetivo": "2026-W41",
+   "semana_previa": "2026-W40",
+   "cohorte": "dengue",
+   "padecimiento": "Dengue",
+   "sexo": "mujeres",
+   "definicion_real": "incremento neto del acumulado por sexo, sujeto a revisiones",
+   "entidades_semana": 32,
+   "entidades_semana_previa": 32,
+   "semanas_consecutivas": true,
+   "acumulado_semana_previa": 4038,
+   "acumulado_semana": 4404,
+   "neto": 366,
+   "real_publicado": 366,
+   "suma_estatal_recortada": 366,
    "entidades_con_revision_negativa": {}
   }
  ]
