@@ -253,10 +253,16 @@ def _entradas(
     return seg, cat, ag
 
 
-TODOS = {"Depresión": 39, "Parkinson": 39, "Alzheimer": 39, "Dengue": 39}
+def _todos() -> dict[str, int]:
+    from epiforecast import registry
+
+    return {pad: 39 for pad in registry.published_members()}
 
 
-def test_la_semana_vigente_exige_el_mismo_corte_en_los_cuatro(tmp_path: Path) -> None:
+TODOS = _todos()
+
+
+def test_la_semana_vigente_exige_el_mismo_corte_en_todos(tmp_path: Path) -> None:
     from scripts.build_news_weekly import compute_data, semana_vigente
 
     assert semana_vigente(_boletin(tmp_path, TODOS)) == (2026, 39)
@@ -315,3 +321,18 @@ def test_reaplicar_la_semana_no_anade_ni_reescribe_y_no_lee_tableau(
     ) == 1
     assert items[0]["iso"] == "2026-10-14" and len(items) == 3
     assert "Edición de la semana 39, 2026" in primero[1].decode()
+
+
+def test_obesidad_publicada_entra_en_la_paridad_y_en_la_nota(tmp_path: Path) -> None:
+    """C7.7: con Obesidad publicada son cinco; si se queda atrás, la semana no cierra."""
+    from scripts.build_news_weekly import SUB_NEUTRAL, build_item, publicados, semana_vigente
+
+    assert "Obesidad" in publicados() and len(publicados()) == 5
+    with pytest.raises(ValueError, match="corte desigual"):
+        semana_vigente(_boletin(tmp_path, {**TODOS, "Obesidad": 38}))
+    sin = {k: v for k, v in TODOS.items() if k != "Obesidad"}
+    with pytest.raises(ValueError, match="Obesidad sin ninguna semana completa"):
+        semana_vigente(_boletin(tmp_path, sin))
+    body = " ".join(build_item(_data_w39())["body"])
+    assert "en los cinco padecimientos" in body and "cuatro padecimientos" not in body
+    assert "cuatro" not in SUB_NEUTRAL

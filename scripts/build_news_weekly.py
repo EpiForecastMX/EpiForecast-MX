@@ -33,13 +33,29 @@ from typing import Any
 
 import pandas as pd
 
+from epiforecast import registry
 from epiforecast.utils.semana_epi import fin_semana_boletin, inicio_semana_boletin
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DASHBOARD = REPO_ROOT.parent / "EpiForecast-IMSS-Dashboard"
 PROD_DETAILS = REPO_ROOT / "reports" / "ProdDetails"
 
-PUBLICADOS = ["Depresión", "Parkinson", "Alzheimer", "Dengue"]
+# Los publicados salen del registry (C7.7: incluye Obesidad, publicada desde su release). La
+# nota y su semana cubren a TODOS: la paridad de corte no distingue carril legacy de release.
+_NUMERO = {2: "dos", 3: "tres", 4: "cuatro", 5: "cinco", 6: "seis", 7: "siete", 8: "ocho"}
+
+
+def publicados() -> list[str]:
+    """Nombres de los padecimientos publicados tal como aparecen en el consolidado."""
+    return registry.published_members()
+
+
+def padecimientos_txt() -> str:
+    """«los cinco padecimientos», con el número que diga el registry."""
+    n = len(publicados())
+    return f"los {_NUMERO.get(n, str(n))} padecimientos"
+
+
 N_ENTIDADES = 32
 MESES = [
     "enero",
@@ -67,13 +83,13 @@ def _sha(p: Path) -> str:
 
 
 def semana_vigente(boletin: Path) -> tuple[int, int]:
-    """La última semana del boletín con las 32 entidades, común a los cuatro publicados."""
+    """La última semana del boletín con las 32 entidades, común a todos los publicados."""
     df = pd.read_csv(boletin, usecols=["Anio", "Semana", "Entidad", "Padecimiento"])
     df["Entidad"] = df["Entidad"].replace({"Distrito Federal": "Ciudad de México"})
     n = df.groupby(["Padecimiento", "Anio", "Semana"])["Entidad"].nunique().reset_index()
     completas = n[n["Entidad"] >= N_ENTIDADES]
     ultimas = {}
-    for pad in PUBLICADOS:
+    for pad in publicados():
         g = completas[completas["Padecimiento"] == pad]
         if g.empty:
             raise ValueError(f"{pad} sin ninguna semana completa en el boletín")
@@ -133,7 +149,7 @@ def build_item(data: dict[str, Any], fecha: datetime | None = None) -> dict[str,
     corte = _semana_txt(data["corte"])
     body0 = (
         f'Se integró el Boletín SINAVE hasta la <strong style="{CREAM}">semana {wk} '
-        f"de {year}</strong> ({periodo}) en los cuatro padecimientos, con las "
+        f"de {year}</strong> ({periodo}) en {padecimientos_txt()}, con las "
         f"{N_ENTIDADES} entidades."
     )
     body1 = (
@@ -186,7 +202,7 @@ def upsert_news(item: dict[str, Any], news_path: Path) -> dict[str, Any]:
 
 
 SUB_NEUTRAL = (
-    "Se integró el Boletín SINAVE en los cuatro padecimientos; el detalle por padecimiento "
+    "Se integró el Boletín SINAVE en los padecimientos publicados; el detalle por padecimiento "
     "aparece en esta sección."
 )
 _RE_BANNER = re.compile(
