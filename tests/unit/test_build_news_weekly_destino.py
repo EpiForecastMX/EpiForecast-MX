@@ -329,16 +329,23 @@ def test_reaplicar_la_semana_no_anade_ni_reescribe_y_no_lee_tableau(
 
 
 def test_obesidad_publicada_entra_en_la_paridad_y_en_la_nota(tmp_path: Path) -> None:
-    """C7.7: con Obesidad publicada son cinco; si se queda atrás, la semana no cierra."""
+    """C7.7: con Obesidad publicada son cinco; si se queda atrás, la semana no cierra.
+
+    El estado publicado se FIJA (registry_c77): la prueba no depende de que el registry vivo siga
+    así, y sigue verde tras el rollback de la guía."""
     from scripts.build_news_weekly import SUB_NEUTRAL, build_item, publicados, semana_vigente
 
-    assert "Obesidad" in publicados() and len(publicados()) == 5
-    with pytest.raises(ValueError, match="corte desigual"):
-        semana_vigente(_boletin(tmp_path, {**TODOS, "Obesidad": 38}))
-    sin = {k: v for k, v in TODOS.items() if k != "Obesidad"}
-    with pytest.raises(ValueError, match="Obesidad sin ninguna semana completa"):
-        semana_vigente(_boletin(tmp_path, sin))
-    body = " ".join(build_item(_data_w39())["body"])
+    from tests.unit.registry_pre_c77 import registry_c77
+
+    with registry_c77():
+        todos = _todos()
+        assert "Obesidad" in publicados() and len(publicados()) == 5
+        with pytest.raises(ValueError, match="corte desigual"):
+            semana_vigente(_boletin(tmp_path, {**todos, "Obesidad": 38}))
+        sin = {k: v for k, v in todos.items() if k != "Obesidad"}
+        with pytest.raises(ValueError, match="Obesidad sin ninguna semana completa"):
+            semana_vigente(_boletin(tmp_path, sin))
+        body = " ".join(build_item(_data_w39())["body"])
     assert "en los cinco padecimientos" in body and "cuatro padecimientos" not in body
     assert "cuatro" not in SUB_NEUTRAL
 
@@ -361,14 +368,16 @@ def test_los_releases_se_leen_de_su_manifiesto_y_fallan_cerrados(tmp_path: Path)
     from scripts.build_news_weekly import releases_publicados
 
     from epiforecast.publication.status import load_declared_status
+    from tests.unit.registry_pre_c77 import registry_c77
 
     rid = load_declared_status("obesidad").release_id
-    with pytest.raises(FileNotFoundError):
-        releases_publicados(tmp_path)
-    raiz = tmp_path / "obesidad" / rid
-    raiz.mkdir(parents=True)
-    (raiz / "release_manifest.json").write_text(
-        json.dumps({"calendar": {"origin": [2026, 26]}, "counts": {"products": 111}}),
-        encoding="utf-8",
-    )
-    assert releases_publicados(tmp_path) == [OBESIDAD_RELEASE]
+    with registry_c77():
+        with pytest.raises(FileNotFoundError):
+            releases_publicados(tmp_path)
+        raiz = tmp_path / "obesidad" / rid
+        raiz.mkdir(parents=True)
+        (raiz / "release_manifest.json").write_text(
+            json.dumps({"calendar": {"origin": [2026, 26]}, "counts": {"products": 111}}),
+            encoding="utf-8",
+        )
+        assert releases_publicados(tmp_path) == [OBESIDAD_RELEASE]
