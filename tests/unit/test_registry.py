@@ -70,9 +70,10 @@ def test_none_y_desconocido_devuelven_none():
 def test_cohortes_y_lote():
     assert set(registry.production_cohort()) == {"Depresión", "Parkinson", "Alzheimer"}
     assert "Dengue" in registry.standalone_members()
-    # Obesidad registrada pero NO publicada -> invisible
-    assert "Obesidad" not in registry.published_members()
+    # C7.7: Obesidad publicada desde su release, fuera de la cohorte neuro y del carril legacy
+    assert "Obesidad" in registry.published_members()
     assert "Obesidad" not in registry.production_cohort()
+    assert "Obesidad" not in [d.data_name for d in registry.legacy_published()]
 
 
 def test_cie_map():
@@ -88,7 +89,7 @@ def test_cie_map():
 
 def test_obesidad_configurada_perfil_propio():
     obe = registry.require("Obesidad")
-    assert obe.lifecycle == "trained"  # C5 cerrado; NUNCA published (ver test_lifecycle_trained)
+    assert obe.lifecycle == "published"  # C7.7, desde su release (ver test_lifecycle_trained)
     assert obe.profile.cohorte_id == "obesidad"  # ni neuro ni conteos
     assert obe.batch == "standalone"
     # C7.1: el carril nuevo no entrena motores legacy, así que Obesidad no declara ninguno; su

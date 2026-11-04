@@ -428,8 +428,10 @@ def test_el_carril_legacy_rechaza_a_obesidad(tmp_path, monkeypatch):
     obesidad = mod.registry.require("Obesidad")
     assert obesidad.eligible_engines == () and obesidad.training_engines == ()
     _write_completo(tmp_path, "Prophet", "Obesidad", "prophet")
-    # rc=1 es el contrato observado: "Ningún motor entrenado", no un fallo genérico.
-    assert mod.main(["--disease", "Obesidad", "--allow-preliminary"]) == 1
+    # C7.7: publicada desde su release; un preliminar de un published es contradicción (rc=2) y
+    # sin preliminar el genérico no tiene destino canónico (gate de ownership, rc=2).
+    assert mod.main(["--disease", "Obesidad", "--allow-preliminary"]) == 2
+    assert mod.main(["--disease", "Obesidad"]) == 2
     assert not _preliminar_de(tmp_path, obesidad.slug).exists()
 
 
