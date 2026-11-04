@@ -24,18 +24,29 @@ la memoria:
 | Emisión del pronóstico | 25-jul-2026 04:55 UTC (24-jul, 22:55 en CDMX) | `forecast/run_manifest.json` · `created_at` |
 | Gate de la validación fijado | 26-jul-2026 | commits `f41c2e3d`, `83f04ce6` |
 | Boletín 28 (semana 27) capturado | 28-jul-2026; la corrida del 23-jul no lo encontró | `ci: actualiza dataset.dvc` `a2bbb103` |
+| PDF del boletín 28 creado | 27-jul-2026, 10:48 (CDMX) | metadatos `CreationDate` del PDF (ver abajo) |
 | Primera semana registrada | 29-jul-2026 | `f025045a` |
 | Semanas 28 a 30 registradas | 19-ago-2026 (boletines 29 a 31, publicados en agosto) | `7385fdf9`, `d9fd64b6`, `a8f62672` |
 
 Lectura correcta:
 
-- **Prospectivo respecto de la información, con una reserva en W27:** los datos de las semanas 28
-  a 30 se publicaron después de emitir el pronóstico. El boletín con la semana 27 se capturó el
-  28 de julio, cuatro días después de la emisión. Capturarlo ese día **no demuestra** que se
-  publicara después del 24: solo acota su publicación entre el 23 (última corrida que no lo
-  encontró) y el 28. Esta reserva documental va aparte del `PASS 4/4` numérico. Por eso las
-  superficies dicen que esas semanas se **registraron** después de la emisión, no que se
-  publicaran.
+- **Prospectivo respecto de la información.** Los datos de las semanas 28 a 30 se publicaron
+  después de emitir el pronóstico. Para la semana 27, el PDF del boletín 28 que usó la validación
+  se **creó el 27 de julio a las 10:48** (CDMX), casi tres días después de la emisión (24-jul,
+  22:55). Esa fecha la escriben los metadatos del propio archivo, cuyo hash coincide con el que
+  registró la validación:
+
+  | boletín | semana de Obesidad | `CreationDate` (CDMX) | sha256 (16) | uso |
+  | --- | --- | --- | --- | --- |
+  | 2026_sem27 | 26 (último dato de entrenamiento) | 20-jul-2026 12:43 | `7289f6864759eb27` | entrenamiento |
+  | 2026_sem28 | 27 | 27-jul-2026 10:48 | `4b131609a8ab3b76` | evalúa la semana 27 (1 de 4) |
+  | 2026_sem29 | 28 | 03-ago-2026 11:47 | `6b6627a3173cc2db` | evalúa la semana 28 (2 de 4) |
+  | 2026_sem30 | 29 | 10-ago-2026 12:05 | `f6d37aade1e72fa1` | evalúa la semana 29 (3 de 4) |
+  | 2026_sem31 | 30 | 17-ago-2026 12:23 | `4657affc19d9f327` | evalúa la semana 30 (4 de 4) |
+
+  Salvedad: los metadatos los escribe el software que generó el PDF («Microsoft: Print To PDF»).
+  Acreditan que **este** archivo no existía al emitir el pronóstico, no que no circulara antes otra
+  versión. La cadencia es coherente: un boletín cada lunes y la captura al día siguiente.
 - **No es prospectivo en el calendario:** al emitirse, las semanas 27 y 28 ya habían terminado y la
   29 estaba en curso. No se afirma que fueran semanas futuras ni que el pronóstico se emitiera
   «en la semana de origen».
@@ -97,34 +108,63 @@ La nota semanal (`scripts/build_news_weekly.py`) describe los dos carriles. El c
 los 432 gráficos son del carril semanal. Cada release conserva su origen y suma sus series (111 en
 Obesidad); la galería muestra en total 543 tarjetas.
 
-## Rollback (objetivo: menos de 30 minutos, sin reentrenar; no ensayado, sin plazo demostrado)
+## Rollback (ensayado el 4-nov-2026 en clones desechables)
+
+Ensayo completo, sin tocar producción, sobre los `main` de GitHub (frontend `9052fd7b`, backend
+`39b0123f`):
+
+| paso | tiempo de reloj |
+| --- | --- |
+| clones de ambos repos | 5 s |
+| frontend: cinco reversiones en orden (un conflicto, resuelto) | 42 s |
+| `npm run rag:build` (445 chunks, los mismos que antes de C7.7) | 8 s |
+| controles del frontend (`npm test`, `check`, `cifras:test`, `deploy:verify`, `test:wcp`) | 20 s |
+| backend: reversión de la publicación conservando la evidencia | 13 s |
+| suite unitaria del backend (2,523 passed, 484 skipped en local) | 40 s |
+| sitio revertido servido en local y revisado | 1 min |
+| **total del ensayo** | **unos 5 min** |
+
+Lo que no se ensaya sin tocar producción es el CI del backend (unos 6 min), el deploy de Netlify
+(unos 3 min) y la revisión en vivo. Con eso, el rollback real **estimado** es de unos 20 minutos.
+El ensayo encontró y corrigió dos problemas: la reversión del backend borraba la evidencia, y tres
+pruebas dependían del registry vivo.
 
 Obesidad llega al sitio por varias superficies, añadidas en PRs sucesivos. Se retiran **en orden
 inverso**, para que ninguna página quede apuntando a un recurso retirado. Se conserva toda la
 evidencia (bundle, observaciones, PRs).
 
-1. **Frontend** (un solo PR que revierte, en este orden, los merges de #45, #44, #42, #41 y #39):
-   - #45: `epibot/js/obesidad_kb.js`, el marcador `<!--OBESIDAD:-->`, el alias de Obesidad en
-     `entities.js` y la vista con `forecast_emitted_at`. Al revertirlo, `kb.js` recupera el
-     handler en línea que trae #41;
-   - #44 y #42: la Figura 1, la galería (`Reports/obesidad_galeria.js` y sus tarjetas), la noticia
-     de `news.json` (con el banner estático regenerado con `render_news_banner`) y los textos y la
-     tarjeta de la portada;
-   - #41: `epibot/js/obesidad_charts.js` y el panel del EpiBot;
-   - #39: `publication/` (catálogo, punteros, vista), `obesidad.html`, el handler y el sitemap.
+1. **Frontend**: un PR con `git revert -m 1` de los merges de #45 (`9052fd7b`), #44
+   (`d6deb21d`), #42 (`c724aa9c`), #41 (`47b894ef`) y #39 (`f99666a7`), en ese orden.
+   - **Conflicto conocido** al revertir #39, porque #40 tocó las mismas líneas:
+     - `epibot/index.html`: dejar `js/app.js?v=` con un número **nuevo**, mayor que todos los
+       usados (en el ensayo, 159). `app.js` conserva el cambio de #40 y no puede reusar una versión
+       que los navegadores ya tienen en caché;
+     - `epibot/package.json`: conservar `tests/test_polish_publica.mjs` y quitar
+       `tests/test_obesidad_handler.mjs`.
+   - #40 (tilde de «publica») y #43 (caché de la galería) no dependen de Obesidad y se conservan.
+   - Después, `npm run rag:build` y **confirmar el índice regenerado en el mismo PR**. Luego
+     `npm run check` y `npm run deploy:verify` en verde.
+2. **Backend**: retirar **solo la publicación**, sin borrar la evidencia:
 
-   #40 (tilde de «publica») y #43 (caché de la galería) no dependen de Obesidad y se conservan.
-   Después: `npm run rag:build`, `npm run check` y `npm run deploy:verify` en verde.
-2. **Backend**: revertir **solo** el commit `C7.7 publish obesity release obesidad_release_2517e7858901`
-   (lifecycle `trained`, canales y puntero).
-   - **No** revertir #30, #31 ni el de hidratación de manifiestos. Todo se deriva del registry:
+   ```bash
+   git revert --no-commit 49733586
+   git checkout HEAD -- artifacts/observations/obesidad \
+       config/publication/obesidad/prospective_evaluation.json \
+       config/publication/obesidad/prospective_status.json
+   git commit -m "rollback: retira la publicación de Obesidad (conserva observaciones y validación)"
+   ```
+
+   Un `git revert 49733586` a secas retiraría también los 11 `.dvc` de las observaciones W32 a W42
+   y devolvería la validación a W30.
+   - **No** revertir #30, #31 ni #32. Todo se deriva del registry:
      - con Obesidad en `trained`, `published_members()` vuelve a cuatro y la nota dice «cuatro»;
      - `release_published()` queda vacío, la nota no describe releases y el sandbox no hidrata
        ningún manifiesto.
+   - Las pruebas de C7.7 fijan su propio registry (`registry_c77`), así que la suite sigue verde.
    - Revertir #30 sobre #31 chocaría, porque tocan las mismas líneas.
-3. **Fusionar y desplegar** (frontend antes que backend). En vivo:
-   - `/obesidad` responde 404;
-   - la galería no muestra Obesidad y cuenta 432;
+3. **Fusionar y desplegar** (frontend antes que backend). En vivo, como en el ensayo:
+   - `/obesidad` y `publication/obesidad/vista.json` responden 404;
+   - la galería cuenta 432 y no tiene el grupo de Obesidad;
    - la Figura 1 tiene cuatro pastillas;
-   - el EpiBot ya no responde sobre Obesidad.
+   - el EpiBot responde que no modela obesidad.
 4. No borrar nada: el bundle y las observaciones quedan en DVC.

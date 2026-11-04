@@ -641,10 +641,13 @@ def test_el_manifiesto_del_release_baja_al_sandbox_como_entrada_inmutable(
     meta = RegistroHidratacion.lee(trabajo).entradas[rel]
     assert meta["rol"] == "release" and "release" in ROLES_INMUTABLES
     assert meta["sha256"] == hashlib.sha256(manifiesto.encode()).hexdigest()
-    # Lo que hará el paso de novedades dentro del sandbox.
-    assert releases_publicados(backend / "artifacts" / "releases") == [
-        {"nombre": "Obesidad", "origen": [2026, 26], "series": 111}
-    ]
+    # Lo que hará el paso de novedades dentro del sandbox, con Obesidad publicada (fijado).
+    from tests.unit.registry_pre_c77 import registry_c77
+
+    with registry_c77():
+        assert releases_publicados(backend / "artifacts" / "releases") == [
+            {"nombre": "Obesidad", "origen": [2026, 26], "series": 111}
+        ]
 
 
 def test_sin_el_manifiesto_del_release_la_hidratacion_aborta_sin_dejar_medias(
