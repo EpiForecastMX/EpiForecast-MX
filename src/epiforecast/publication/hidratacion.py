@@ -70,11 +70,14 @@ ROLES = (
     "metricas",  # métricas CV de los modelos congelados (entrada de tabla-produccion)
     "dengue_interim",  # serie extraída y manifiesto de Dengue: la extracción incremental parte de ahí
     "geo",  # geometría de entidades para los mapas
+    # Manifiesto de un publicado del runner (C7.7). No viaja en la allowlist: lo hidrata el
+    # contrato desde el bundle verificado, para que la nota semanal lea su origen y sus series.
+    "release",
 )
 # Roles que ningún generador del refresh reescribe: si al sellar difieren de lo hidratado,
 # algo escribió sobre una entrada y el candidato no salió de las entradas selladas.
 ROLES_INMUTABLES = frozenset(
-    {"forecast", "forecast_conteo", "inegi", "contexto", "metricas", "geo", "pdf"}
+    {"forecast", "forecast_conteo", "inegi", "contexto", "metricas", "geo", "pdf", "release"}
 )
 _RE_NOMBRE_PDF = re.compile(r"[A-Za-z0-9_.-]{1,120}\.pdf")
 _CARACTERES_PATRON = frozenset("*?[")
@@ -388,6 +391,15 @@ def hidrata(
                 "sha256": digest,
             }
         _copia_regular(repo_real / lista.consolidado, inputs / "consolidado_base.csv")
+        # Publicados del runner: su bundle se verifica en el repo canónico (revisa_releases);
+        # al sandbox sólo baja su manifiesto, que es lo que leen los generadores (la nota
+        # semanal describe su origen y sus series). Inmutable: el sello exige el mismo digest.
+        for disease_id, release_id in sorted(contrato.releases.values()):
+            rel = f"artifacts/releases/{disease_id}/{release_id}/release_manifest.json"
+            if rel in inventario:
+                raise StagingError(f"el manifiesto {rel} ya lo declara la allowlist")
+            tamano, digest = _hidrata_entrada(repo_real / rel, backend / rel)
+            inventario[rel] = {"rol": "release", "bytes": tamano, "sha256": digest}
 
         coberturas = _revisa(backend, inventario, contrato, padecimientos_autorizados)
         registro = RegistroHidratacion(

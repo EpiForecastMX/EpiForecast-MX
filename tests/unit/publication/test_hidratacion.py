@@ -594,3 +594,68 @@ def test_la_copia_conserva_el_mtime_del_origen(tmp_path: Path) -> None:
     hidratacion._copia_regular(origen, tmp_path / "copia.csv")
 
     assert int((tmp_path / "copia.csv").stat().st_mtime) == antiguo
+
+
+# ── C7.7: el manifiesto de los publicados del runner baja al sandbox ──────────────────────────
+
+
+def _contrato_con_release():  # noqa: ANN202
+    """El contrato sintético, más un publicado del runner que NO toca la paridad del consolidado
+    (sólo el mapeo de releases): basta para ejercitar la hidratación de su manifiesto."""
+    import dataclasses
+
+    from epiforecast.publication.status import load_declared_status
+
+    rid = load_declared_status("obesidad").release_id
+    return dataclasses.replace(fab.CONTRATO, releases={"obesidad": ("obesidad", rid)}), rid
+
+
+def _sin_revisar_bundles(monkeypatch) -> None:  # noqa: ANN001
+    # El bundle real vive en DVC (ausente en CI); su verificación tiene sus propias pruebas.
+    from epiforecast.publication import hidratacion
+    from epiforecast.publication.contratos_datos import Cobertura
+
+    monkeypatch.setattr(hidratacion, "revisa_releases", lambda *_a: Cobertura("releases", {}, ()))
+
+
+def test_el_manifiesto_del_release_baja_al_sandbox_como_entrada_inmutable(
+    tmp_path: Path, monkeypatch
+) -> None:  # noqa: ANN001
+    """Auditoría C7.7: la nota semanal corre en el sandbox y lee el manifiesto del release."""
+    from scripts.build_news_weekly import releases_publicados
+
+    from epiforecast.publication.hidratacion import ROLES_INMUTABLES
+
+    contrato, rid = _contrato_con_release()
+    rel = f"artifacts/releases/obesidad/{rid}/release_manifest.json"
+    manifiesto = json.dumps({"calendar": {"origin": [2026, 26]}, "counts": {"products": 111}})
+    repo_b, head_b, _, trabajo = _montaje(tmp_path, extra_sin_rastrear={rel: manifiesto})
+    _sin_revisar_bundles(monkeypatch)
+
+    resultado = hidrata(
+        trabajo, repo_b, head_b, padecimientos_autorizados=fab.PADECIMIENTOS, contrato=contrato
+    )
+
+    backend = resultado.sandbox / "EpiForecast-MX"
+    assert (backend / rel).read_text() == manifiesto
+    meta = RegistroHidratacion.lee(trabajo).entradas[rel]
+    assert meta["rol"] == "release" and "release" in ROLES_INMUTABLES
+    assert meta["sha256"] == hashlib.sha256(manifiesto.encode()).hexdigest()
+    # Lo que hará el paso de novedades dentro del sandbox.
+    assert releases_publicados(backend / "artifacts" / "releases") == [
+        {"nombre": "Obesidad", "origen": [2026, 26], "series": 111}
+    ]
+
+
+def test_sin_el_manifiesto_del_release_la_hidratacion_aborta_sin_dejar_medias(
+    tmp_path: Path, monkeypatch
+) -> None:  # noqa: ANN001
+    contrato, _ = _contrato_con_release()
+    repo_b, head_b, _, trabajo = _montaje(tmp_path)
+    _sin_revisar_bundles(monkeypatch)
+    with pytest.raises((StagingError, OSError)):
+        hidrata(
+            trabajo, repo_b, head_b, padecimientos_autorizados=fab.PADECIMIENTOS, contrato=contrato
+        )
+    assert not (tmp_path / "trabajo.sandbox").exists()
+    assert not (trabajo / "inputs").exists()
