@@ -10,7 +10,7 @@ Desktop. `gallery_enabled` sigue en `false`. F50 y Diabetes siguen ocultas.
 | Release | `obesidad_release_2517e7858901` (64 modelos, 111 productos, origen 2026-W26, 52 semanas, sin intervalos) |
 | Validación prospectiva | PASS 4/4 (W27–W30) con gate congelado `5bc39aa5…` |
 | Verdad observada | `obesidad_b5e1209fe31b` (boletín W42, semana epidemiológica W41) |
-| Desempeño fuera de muestra W27–W41 | nacional sMAPE 13.8 %, sesgo −11.4 %; mediana estatal 20.2 |
+| Desempeño fuera de muestra W27–W41 | nacional sMAPE 13.8 %, sesgo −11.4 %; mediana estatal 17.9 % (32 estados, ambos sexos) y 21.3 % en las 64 series base |
 | Puntero activo | `config/publication/obesidad/public_release_pointer.json` |
 
 ## Qué cambió en el contrato semanal
