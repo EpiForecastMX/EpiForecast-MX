@@ -15,6 +15,7 @@ C7_SCRIPTS = \
 	scripts/prospective_status.py \
 	scripts/publication_readiness.py \
 	scripts/publication_activate.py \
+	scripts/publication_view.py \
 	scripts/tableau_workbook.py
 QUALITY_PATHS = src/epiforecast/ tests/ scripts/run_isolated_pytest.py $(C7_SCRIPTS)
 
