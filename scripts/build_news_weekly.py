@@ -34,6 +34,8 @@ from typing import Any
 import pandas as pd
 
 from epiforecast import registry
+from epiforecast.publication.status import load_declared_status
+from epiforecast.runner.release_store import default_releases_root, release_path
 from epiforecast.utils.semana_epi import fin_semana_boletin, inicio_semana_boletin
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -48,6 +50,32 @@ _NUMERO = {2: "dos", 3: "tres", 4: "cuatro", 5: "cinco", 6: "seis", 7: "siete", 
 def publicados() -> list[str]:
     """Nombres de los padecimientos publicados tal como aparecen en el consolidado."""
     return registry.published_members()
+
+
+def _enumera(nombres: list[str]) -> str:
+    return nombres[0] if len(nombres) == 1 else ", ".join(nombres[:-1]) + " y " + nombres[-1]
+
+
+def releases_publicados(releases_root: Path | None = None) -> list[dict[str, Any]]:
+    """Publicados desde un release sellado: su origen y sus series, leídos del release declarado.
+
+    Falla cerrada si falta el manifiesto: la nota no describe un release que no puede leer.
+    """
+    raiz = releases_root or default_releases_root()
+    out = []
+    for d in registry.release_published():
+        release_id = load_declared_status(d.id).release_id
+        man = json.loads(
+            (release_path(raiz, d.id, release_id) / "release_manifest.json").read_text("utf-8")
+        )
+        out.append(
+            {
+                "nombre": d.display_name,
+                "origen": [int(x) for x in man["calendar"]["origin"]],
+                "series": int(man["counts"]["products"]),
+            }
+        )
+    return out
 
 
 def padecimientos_txt() -> str:
@@ -131,6 +159,7 @@ def compute_data(
         "corte": corte,
         "semanas_evaluadas": evaluadas,
         "graficos": int(graficos),
+        "releases": releases_publicados(),
         "procedencia": {str(p): _sha(p) for p in (boletin, seguimiento, catalogo, agregado)},
     }
 
@@ -152,13 +181,21 @@ def build_item(data: dict[str, Any], fecha: datetime | None = None) -> dict[str,
         f"de {year}</strong> ({periodo}) en {padecimientos_txt()}, con las "
         f"{N_ENTIDADES} entidades."
     )
+    # Dos carriles: los legacy comparten el corte de la ronda; cada release conserva el suyo.
+    legacy = _enumera([d.display_name for d in registry.legacy_published()])
     body1 = (
-        f"Los pronósticos son los de los modelos con corte en la semana {corte}; no hubo "
-        f"reentrenamiento. La galería publica {data['graficos']} gráficos y la validación "
-        f"muestra el seguimiento de las semanas {sem_txt}: el pronóstico guardado frente a lo "
-        f"observado esa misma semana, sin calificarlo. Son semanas de diagnóstico, no el "
-        f"resultado general del modelo."
+        f"Los pronósticos de {legacy} son los de los modelos con corte en la semana {corte}; "
+        f"no hubo reentrenamiento. La galería publica sus {data['graficos']} gráficos y la "
+        f"validación muestra el seguimiento de las semanas {sem_txt}: el pronóstico guardado "
+        f"frente a lo observado esa misma semana, sin calificarlo. Son semanas de diagnóstico, "
+        f"no el resultado general del modelo."
     )
+    for r in data.get("releases", []):
+        ya, wa = r["origen"]
+        body1 += (
+            f" {r['nombre']} conserva su pronóstico, con datos hasta la semana {wa} de {ya} y "
+            f"sin reentrenar, y suma {r['series']} series a la galería."
+        )
     return {
         "date": _fecha_es(hoy),
         "iso": hoy.strftime("%Y-%m-%d"),

@@ -124,7 +124,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         resumen = activate(args.disease_id, out=args.out, write_pointer=args.write_pointer)
     except (ArtifactValidationError, KeyError, ValueError) as exc:
-        print(f"✖ activación de {args.disease_id}: {exc}", file=sys.stderr)
+        print(f"ERROR: activación de {args.disease_id}: {exc}", file=sys.stderr)
         return 1
     print(json.dumps(resumen, ensure_ascii=False, sort_keys=True))
     return 0

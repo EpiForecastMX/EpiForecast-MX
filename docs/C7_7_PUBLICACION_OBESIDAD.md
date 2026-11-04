@@ -8,10 +8,37 @@ Desktop. `gallery_enabled` sigue en `false`. F50 y Diabetes siguen ocultas.
 | hecho | valor |
 | --- | --- |
 | Release | `obesidad_release_2517e7858901` (64 modelos, 111 productos, origen 2026-W26, 52 semanas, sin intervalos) |
-| Validación prospectiva | PASS 4/4 (W27–W30) con gate congelado `5bc39aa5…` |
+| Validación prospectiva | PASS 4/4 (W27–W30) con gate congelado `5bc39aa5…` (ver «Cronología») |
 | Verdad observada | `obesidad_b5e1209fe31b` (boletín W42, semana epidemiológica W41) |
 | Desempeño fuera de muestra W27–W41 | nacional sMAPE 13.8 %, sesgo −11.4 %; mediana estatal 17.9 % (32 estados, ambos sexos) y 21.3 % en las 64 series base |
 | Puntero activo | `config/publication/obesidad/public_release_pointer.json` |
+
+## Cronología del pronóstico (qué sostiene «prospectivo»)
+
+Auditoría del 4-nov-2026. Las fechas salen de artefactos sellados y de la historia de Git, no de
+la memoria:
+
+| hecho | fecha | fuente |
+| --- | --- | --- |
+| Último dato de entrenamiento | semana 26 de 2026 (653 semanas) | `release_manifest.json` · `calendar`; `train_end` de cada modelo |
+| Emisión del pronóstico | 25-jul-2026 04:55 UTC (24-jul, 22:55 en CDMX) | `forecast/run_manifest.json` · `created_at` |
+| Gate de la validación fijado | 26-jul-2026 | commits `f41c2e3d`, `83f04ce6` |
+| Boletín 28 (semana 27) capturado | 28-jul-2026; la corrida del 23-jul no lo encontró | `ci: actualiza dataset.dvc` `a2bbb103` |
+| Primera semana registrada | 29-jul-2026 | `f025045a` |
+| Semanas 28 a 30 registradas | 19-ago-2026 (boletines 29 a 31, publicados en agosto) | `7385fdf9`, `d9fd64b6`, `a8f62672` |
+
+Lectura correcta:
+
+- **Prospectivo respecto de la información:** los datos de las semanas 28 a 30 se publicaron después
+  de emitir el pronóstico. La semana 27 se capturó cuatro días después de la emisión, y no podemos
+  fechar su publicación con más precisión que «entre el 23 y el 28 de julio».
+- **No es prospectivo en el calendario:** al emitirse, las semanas 27 y 28 ya habían terminado y la
+  29 estaba en curso. No se afirma que fueran semanas futuras ni que el pronóstico se emitiera
+  «en la semana de origen».
+- La selección de motores usó validación cruzada temporal en pliegues de 2021 a 2024
+  (`rolling_cv_v1`). No se describe como hecha «antes del origen».
+- La vista pública lleva `forecast_emitted_at` (leído del bundle verificado). Las superficies
+  muestran la fecha de emisión junto al origen.
 
 ## Qué cambió en el contrato semanal
 
@@ -62,13 +89,32 @@ Para el boletín N, sin reentrenar ni tocar el release:
 
 Si Obesidad no avanza con los demás, la paridad falla cerrada. No se publica parcialmente.
 
-## Rollback (objetivo: menos de 30 minutos, sin reentrenar)
+La nota semanal (`scripts/build_news_weekly.py`) describe los dos carriles. El corte de la ronda y
+los 432 gráficos son del carril semanal. Cada release conserva su origen y suma sus series (111 en
+Obesidad); la galería muestra en total 543 tarjetas.
 
-1. Revertir en el backend el commit `C7.7 publish obesity release …` (lifecycle `trained`,
-   canales y puntero).
-2. Revertir en el frontend el commit de instalación. Sale `publication/` con catálogo, punteros y
-   vista, y salen `obesidad.html`, la tarjeta de la portada y el handler. Después,
-   `npm run rag:build`.
-3. Fusionar y desplegar. Comprobar en vivo que `/obesidad` responde 404 y que el EpiBot ya no
-   responde sobre Obesidad.
-4. Conservar el bundle, las observaciones y la evidencia. No borrar nada.
+## Rollback (objetivo: menos de 30 minutos, sin reentrenar; no ensayado)
+
+Obesidad llega al sitio por varias superficies, añadidas en PRs sucesivos. Se retiran **en orden
+inverso**, para que ninguna página quede apuntando a un recurso retirado. Se conserva toda la
+evidencia (bundle, observaciones, PRs).
+
+1. **Frontend, presentación** (un solo PR que revierte, en este orden, los merges de #44, #42 y #41):
+   - Figura 1 de la portada (pastilla de Obesidad);
+   - galería: tarjetas y `Reports/obesidad_galeria.js`;
+   - noticia de `news.json` y banner estático, regenerado con `render_news_banner`;
+   - textos y tarjeta de la portada;
+   - gráficas y panel del EpiBot (`obesidad_charts.js`).
+
+   Tras revertir, `npm run check` y `npm run deploy:verify` en verde.
+2. **Frontend, instalación** (revertir el merge de #39):
+   - salen `publication/` (catálogo, punteros, vista), `obesidad.html`, el handler y el sitemap;
+   - `npm run rag:build` para retirar los chunks del release;
+   - `npm run deploy:verify`.
+3. **Backend** (revertir `C7.7 publish obesity release …`): lifecycle `trained`, canales y puntero.
+   Revertir también #30, para que la nota semanal vuelva a exigir solo a los cuatro.
+4. **Fusionar y desplegar** (frontend antes que backend). En vivo:
+   - `/obesidad` responde 404;
+   - la galería no muestra Obesidad y cuenta 432;
+   - el EpiBot ya no responde sobre Obesidad.
+5. No borrar nada: el bundle y las observaciones quedan en DVC.

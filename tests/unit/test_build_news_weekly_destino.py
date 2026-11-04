@@ -183,6 +183,9 @@ def test_falla_en_seco_si_falta_el_bloque_o_news_json(tmp_path: Path) -> None:
     )
 
 
+OBESIDAD_RELEASE = {"nombre": "Obesidad", "origen": [2026, 26], "series": 111}
+
+
 def _data_w39() -> dict:
     from datetime import date
 
@@ -290,6 +293,8 @@ def test_reaplicar_la_semana_no_anade_ni_reescribe_y_no_lee_tableau(
         return abrir(f, *a, **k)
 
     monkeypatch.setattr(builtins, "open", vigila)
+    # El release sellado vive en DVC (ausente en CI): la nota lo lee de su manifiesto.
+    monkeypatch.setattr(g, "releases_publicados", lambda *_a, **_k: [OBESIDAD_RELEASE])
     (tmp_path / "index.html").write_text(PORTADA, encoding="utf-8")
     (tmp_path / "novedades.html").write_text(NOVEDADES, encoding="utf-8")
     _escribe_news(tmp_path, [CALASS, W27])
@@ -336,3 +341,34 @@ def test_obesidad_publicada_entra_en_la_paridad_y_en_la_nota(tmp_path: Path) -> 
     body = " ".join(build_item(_data_w39())["body"])
     assert "en los cinco padecimientos" in body and "cuatro padecimientos" not in body
     assert "cuatro" not in SUB_NEUTRAL
+
+
+def test_la_nota_distingue_el_carril_semanal_del_release() -> None:
+    """Auditoría C7.7: «cinco padecimientos» no puede ir seguido de un corte y una galería que
+    sólo describen a los cuatro del carril semanal."""
+    from scripts.build_news_weekly import build_item
+
+    body = " ".join(build_item({**_data_w39(), "releases": [OBESIDAD_RELEASE]})["body"])
+    assert "Los pronósticos de Depresión, Parkinson, Alzheimer y Dengue" in body
+    assert "corte en la semana 37" in body and "sus 432 gráficos" in body
+    assert "Obesidad conserva su pronóstico, con datos hasta la semana 26 de 2026" in body
+    assert "suma 111 series a la galería" in body
+
+
+def test_los_releases_se_leen_de_su_manifiesto_y_fallan_cerrados(tmp_path: Path) -> None:
+    import json
+
+    from scripts.build_news_weekly import releases_publicados
+
+    from epiforecast.publication.status import load_declared_status
+
+    rid = load_declared_status("obesidad").release_id
+    with pytest.raises(FileNotFoundError):
+        releases_publicados(tmp_path)
+    raiz = tmp_path / "obesidad" / rid
+    raiz.mkdir(parents=True)
+    (raiz / "release_manifest.json").write_text(
+        json.dumps({"calendar": {"origin": [2026, 26]}, "counts": {"products": 111}}),
+        encoding="utf-8",
+    )
+    assert releases_publicados(tmp_path) == [OBESIDAD_RELEASE]
