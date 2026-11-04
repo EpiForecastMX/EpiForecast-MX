@@ -135,7 +135,7 @@ def ds_legado_semana_uno(anio: int) -> pd.Timestamp:
 
 def colision_legado_semana_uno(anio: int) -> bool:
     """True si la semana 1 y la 2 de ``anio`` comparten ``ds`` legado (años tras una semana 53)."""
-    return ds_legado_semana_uno(anio) == ds_de_semana_boletin(anio, 2)
+    return bool(ds_legado_semana_uno(anio) == ds_de_semana_boletin(anio, 2))
 
 
 def semana_boletin_de_ds(ds: date | pd.Timestamp | str) -> SemanaBoletin:

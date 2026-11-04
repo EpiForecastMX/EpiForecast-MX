@@ -125,11 +125,11 @@ def test_no_publicado_con_flag_va_a_preliminar(reg, tmp_path, name):
 
 
 def test_obesidad_real_gated_por_defecto(tmp_path):
-    """Con el registry REAL: Obesidad (configured) está gated y no toca el canónico."""
+    """Con el registry REAL: Obesidad publica desde su release; el genérico no toca el canónico."""
     from epiforecast import registry
 
     d = registry.require("Obesidad")
-    assert d.lifecycle != "published"
+    assert d.lifecycle == "published" and d.is_release_backed
     assert resolve_destination(d, tmp_path, allow_preliminary=False) is None
 
 

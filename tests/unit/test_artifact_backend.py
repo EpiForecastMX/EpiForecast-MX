@@ -49,8 +49,8 @@ def test_obesidad_declara_su_release_bundle_y_ningun_motor_legacy():
         "backend": "runner_release",
         "release_id": "obesidad_release_2517e7858901",
     }
-    # `runner_release` es admisible con `trained`: declararlo NO publica nada.
-    assert spec.lifecycle == "trained"
+    # C7.7: publicada DESDE el release; el backend `runner_release` es el único admisible.
+    assert spec.lifecycle == "published"
 
 
 # ── Acción 2: gate positivo y negativo del loader ──────────────────────────────────────────────
@@ -253,9 +253,16 @@ def test_el_doctor_reporta_un_veredicto_de_aceptacion_negativo(sellado):
     assert _errores_en(sellado) == ["aceptacion: el veredicto no es accepted=true"]
 
 
-def test_obesidad_sigue_trained_e_invisible():
-    assert registry.require(_OBESIDAD).lifecycle == "trained"
-    assert registry.names(published_only=True) == ["Depresión", "Parkinson", "Alzheimer", "Dengue"]
+def test_obesidad_publicada_solo_desde_su_release_y_f50_invisible():
+    assert registry.require(_OBESIDAD).lifecycle == "published"
+    assert [d.data_name for d in registry.release_published()] == ["Obesidad"]
+    # El carril legacy (all_forecast, tabla_333, zoom) sigue siendo exactamente los cuatro.
+    assert [d.data_name for d in registry.legacy_published()] == [
+        "Depresión",
+        "Parkinson",
+        "Alzheimer",
+        "Dengue",
+    ]
     assert "anorexia_f50" not in [n.lower() for n in registry.names(published_only=True)]
 
 

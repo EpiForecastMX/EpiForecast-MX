@@ -224,11 +224,13 @@ padecimientos:
     # configured -> trained -> published (cada flip es un gate). `trained` = C5 cerrado: selección
     # congelada, gate 2025 aceptado, 64 modelos finales y forecast preliminar reproducibles bajo
     # runs/. NO habilita publicación ni rutas canónicas: sigue invisible para published_only.
-    lifecycle: trained
-    # C7.5-PREP: canales candidatos EXACTOS. `weekly_validation` y `prospective_validation` no
-    # aplican a un release del runner (no hay tabla_333 ni congelado legacy detrás). Cambiarlos NO
-    # mueve el `release_id`: la activación pública salió del bundle en C7.2-A.1.
-    channels: [web, epibot, reports, tableau]
+    # C7.7 (4-nov-2026): PUBLICADA con OK formal del autor. Validación prospectiva 4/4 PASS
+    # (W27-W30) y observada hasta el boletín W42. Su paridad de corte se exige con los demás
+    # publicados; sus artefactos legacy se sustituyen por el release sellado (revisa_releases).
+    lifecycle: published
+    # Canales públicos EXACTOS. Tableau queda FUERA por decisión del autor (requiere pasos
+    # manuales de Sheets/Tableau Desktop); reincorporarlo NO mueve el `release_id`.
+    channels: [web, epibot, reports]
     # C7.1: el carril nuevo NO entrenó DeepAR/Ensemble/Stacking. Vaciar estos campos legacy impide
     # que un PKL preliminar del carril viejo se haga pasar por artefacto de Obesidad. Los motores
     # reales viven en la política (candidatos) y en final_selection.csv (los 6 seleccionados).

@@ -40,6 +40,8 @@ __all__ = [
     "production_cohort",
     "standalone_members",
     "published_members",
+    "legacy_published",
+    "release_published",
     "profile",
     "trait",
     "trait_or",
@@ -222,6 +224,11 @@ class Disease:
     @property
     def artifact_backend(self) -> str:
         return self.artifact_source.backend
+
+    @property
+    def is_release_backed(self) -> bool:
+        """Sus modelos salen de un release sellado del runner, no de ``models/<motor>/``."""
+        return self.artifact_source.backend == BACKEND_RUNNER_RELEASE
 
 
 @dataclass(frozen=True)
@@ -527,6 +534,31 @@ def published_members(channel: str | None = None) -> list[str]:
         if channel is None or channel in d.channels:
             out.append(d.data_name)
     return out
+
+
+def legacy_published() -> list[Disease]:
+    """Publicados del carril legacy: los que consumen all_forecast, tabla_333 y zoom.
+
+    Un publicado respaldado por un release del runner (C7.7) NO tiene artefactos legacy: sus
+    superficies salen del shard compilado del release. Los generadores y contratos que leen
+    archivos legacy iteran SOLO estos; la paridad de corte, en cambio, cubre a todos.
+    """
+    return [
+        d
+        for d in get_registry().diseases
+        if d.lifecycle == "published" and not d.is_release_backed
+    ]
+
+
+def release_published(channel: str | None = None) -> list[Disease]:
+    """Publicados respaldados por un release sellado del runner (opcionalmente, por canal)."""
+    return [
+        d
+        for d in get_registry().diseases
+        if d.lifecycle == "published"
+        and d.is_release_backed
+        and (channel is None or channel in d.channels)
+    ]
 
 
 def profile(key: str) -> Profile:

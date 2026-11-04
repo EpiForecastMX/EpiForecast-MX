@@ -483,7 +483,8 @@ class KnowledgeBase:
             # escrita a mano, para que dar de alta un padecimiento no reabra la fuga.
             from epiforecast import registry
 
-            publicables = set(registry.names(published_only=True))
+            # Sólo publicados legacy: los del runner publican su demografía en su propio shard.
+            publicables = {d.data_name for d in registry.legacy_published()}
             if pad_col and ah_col and am_col:
                 for pad in bol[pad_col].dropna().unique():
                     if str(pad) not in publicables:

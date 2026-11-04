@@ -1063,9 +1063,9 @@ def build_padecimientos() -> dict[str, Any]:
     by_id = df.groupby("disease_id").size().to_dict()
 
     pads: list[dict[str, Any]] = []
-    for d in registry.get_registry().diseases:
-        if d.lifecycle != "published":
-            continue
+    # Sólo el carril legacy: un publicado del runner (Obesidad) trae su propio knowledge en el
+    # shard de su release y no aporta series a estos rosters (432 se conserva).
+    for d in registry.legacy_published():
         pads.append(
             {
                 "id": d.id,

@@ -126,6 +126,35 @@ def write_pointer(
     return destino
 
 
+def declared_pointer_path(disease_id: str, *, config_root_path: Path | None = None) -> Path:
+    """Sede DECLARATIVA del puntero activo: ``config/publication/<disease_id>/``, versionada."""
+    from .status import config_root
+
+    raiz = config_root_path if config_root_path is not None else config_root()
+    return raiz / disease_id / POINTER_FILE
+
+
+def write_active_pointer(
+    pointer: PublicPointer, disease: registry.Disease, *, config_root_path: Path | None = None
+) -> Path:
+    """C7.7: activar es escribir el puntero ACTIVO en su sede declarativa, nunca en staging.
+
+    Sólo un puntero activo, derivado del registry y con ``lifecycle=published`` del MISMO release
+    llega aquí; cualquier otra cosa falla antes de tocar el disco.
+    """
+    require(pointer.active, f"{pointer.disease_id}: este escritor sólo activa punteros")
+    equal(
+        f"{pointer.disease_id}: puntero del registry", pointer, pointer_for(disease, active=True)
+    )
+    check_activation(pointer, disease)
+    destino = declared_pointer_path(pointer.disease_id, config_root_path=config_root_path)
+    destino.parent.mkdir(parents=True, exist_ok=True)
+    temporal = destino.with_suffix(".tmp")
+    temporal.write_bytes(canonical_json(pointer.payload()))
+    temporal.replace(destino)
+    return destino
+
+
 def read_pointer(path: Path) -> PublicPointer:
     """Lee y valida un puntero; el schema se comprueba primero, como en el resto del contrato."""
     datos = read_json(path, POINTER_FILE, POINTER_SCHEMA)

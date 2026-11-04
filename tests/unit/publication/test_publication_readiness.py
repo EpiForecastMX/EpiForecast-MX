@@ -55,8 +55,17 @@ from epiforecast.publication.tableau_adapter import (
 )
 from epiforecast.runner.artifact_identity import ArtifactValidationError
 from epiforecast.runner.release_store import promote_release
+from tests.unit.registry_pre_c77 import registry_pre_c77
 from tests.unit.runner import artifact_fixtures as af
 from tests.unit.runner import release_fixtures as rf
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _registry_pre_c77():
+    """Carril candidato: Obesidad en su estado previo a C7.7 (ver tests/unit/registry_pre_c77)."""
+    with registry_pre_c77():
+        yield
+
 
 pytestmark = pytest.mark.skipif(
     not af.hay_runs(), reason="los runs sellados de C5 no están en este entorno (runs/ gitignored)"

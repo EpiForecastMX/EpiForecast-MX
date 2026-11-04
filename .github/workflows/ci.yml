@@ -34,6 +34,8 @@ env:
     scripts/prospective_week.py
     scripts/prospective_status.py
     scripts/publication_readiness.py
+    scripts/publication_activate.py
+    scripts/publication_view.py
     scripts/tableau_workbook.py
 
 jobs:
