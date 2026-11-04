@@ -29,9 +29,13 @@ la memoria:
 
 Lectura correcta:
 
-- **Prospectivo respecto de la información:** los datos de las semanas 28 a 30 se publicaron después
-  de emitir el pronóstico. La semana 27 se capturó cuatro días después de la emisión, y no podemos
-  fechar su publicación con más precisión que «entre el 23 y el 28 de julio».
+- **Prospectivo respecto de la información, con una reserva en W27:** los datos de las semanas 28
+  a 30 se publicaron después de emitir el pronóstico. El boletín con la semana 27 se capturó el
+  28 de julio, cuatro días después de la emisión. Capturarlo ese día **no demuestra** que se
+  publicara después del 24: solo acota su publicación entre el 23 (última corrida que no lo
+  encontró) y el 28. Esta reserva documental va aparte del `PASS 4/4` numérico. Por eso las
+  superficies dicen que esas semanas se **registraron** después de la emisión, no que se
+  publicaran.
 - **No es prospectivo en el calendario:** al emitirse, las semanas 27 y 28 ya habían terminado y la
   29 estaba en curso. No se afirma que fueran semanas futuras ni que el pronóstico se emitiera
   «en la semana de origen».
@@ -93,28 +97,34 @@ La nota semanal (`scripts/build_news_weekly.py`) describe los dos carriles. El c
 los 432 gráficos son del carril semanal. Cada release conserva su origen y suma sus series (111 en
 Obesidad); la galería muestra en total 543 tarjetas.
 
-## Rollback (objetivo: menos de 30 minutos, sin reentrenar; no ensayado)
+## Rollback (objetivo: menos de 30 minutos, sin reentrenar; no ensayado, sin plazo demostrado)
 
 Obesidad llega al sitio por varias superficies, añadidas en PRs sucesivos. Se retiran **en orden
 inverso**, para que ninguna página quede apuntando a un recurso retirado. Se conserva toda la
 evidencia (bundle, observaciones, PRs).
 
-1. **Frontend, presentación** (un solo PR que revierte, en este orden, los merges de #44, #42 y #41):
-   - Figura 1 de la portada (pastilla de Obesidad);
-   - galería: tarjetas y `Reports/obesidad_galeria.js`;
-   - noticia de `news.json` y banner estático, regenerado con `render_news_banner`;
-   - textos y tarjeta de la portada;
-   - gráficas y panel del EpiBot (`obesidad_charts.js`).
+1. **Frontend** (un solo PR que revierte, en este orden, los merges de #45, #44, #42, #41 y #39):
+   - #45: `epibot/js/obesidad_kb.js`, el marcador `<!--OBESIDAD:-->`, el alias de Obesidad en
+     `entities.js` y la vista con `forecast_emitted_at`. Al revertirlo, `kb.js` recupera el
+     handler en línea que trae #41;
+   - #44 y #42: la Figura 1, la galería (`Reports/obesidad_galeria.js` y sus tarjetas), la noticia
+     de `news.json` (con el banner estático regenerado con `render_news_banner`) y los textos y la
+     tarjeta de la portada;
+   - #41: `epibot/js/obesidad_charts.js` y el panel del EpiBot;
+   - #39: `publication/` (catálogo, punteros, vista), `obesidad.html`, el handler y el sitemap.
 
-   Tras revertir, `npm run check` y `npm run deploy:verify` en verde.
-2. **Frontend, instalación** (revertir el merge de #39):
-   - salen `publication/` (catálogo, punteros, vista), `obesidad.html`, el handler y el sitemap;
-   - `npm run rag:build` para retirar los chunks del release;
-   - `npm run deploy:verify`.
-3. **Backend** (revertir `C7.7 publish obesity release …`): lifecycle `trained`, canales y puntero.
-   Revertir también #30, para que la nota semanal vuelva a exigir solo a los cuatro.
-4. **Fusionar y desplegar** (frontend antes que backend). En vivo:
+   #40 (tilde de «publica») y #43 (caché de la galería) no dependen de Obesidad y se conservan.
+   Después: `npm run rag:build`, `npm run check` y `npm run deploy:verify` en verde.
+2. **Backend**: revertir **solo** el commit `C7.7 publish obesity release obesidad_release_2517e7858901`
+   (lifecycle `trained`, canales y puntero).
+   - **No** revertir #30, #31 ni el de hidratación de manifiestos. Todo se deriva del registry:
+     - con Obesidad en `trained`, `published_members()` vuelve a cuatro y la nota dice «cuatro»;
+     - `release_published()` queda vacío, la nota no describe releases y el sandbox no hidrata
+       ningún manifiesto.
+   - Revertir #30 sobre #31 chocaría, porque tocan las mismas líneas.
+3. **Fusionar y desplegar** (frontend antes que backend). En vivo:
    - `/obesidad` responde 404;
    - la galería no muestra Obesidad y cuenta 432;
+   - la Figura 1 tiene cuatro pastillas;
    - el EpiBot ya no responde sobre Obesidad.
-5. No borrar nada: el bundle y las observaciones quedan en DVC.
+4. No borrar nada: el bundle y las observaciones quedan en DVC.
