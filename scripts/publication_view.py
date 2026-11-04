@@ -32,6 +32,8 @@ import pandas as pd
 from epiforecast import registry
 from epiforecast.publication.status import load_declared_status
 from epiforecast.runner.artifact_identity import ArtifactValidationError, equal, require
+from epiforecast.runner.release_loader import verify_bundle
+from epiforecast.runner.release_store import default_releases_root, release_path
 
 VIEW_SCHEMA = "publication_view.v1"
 _REPO = Path(__file__).resolve().parents[1]
@@ -65,6 +67,19 @@ def _nombres() -> dict[tuple[str, str], str]:
     return nombres
 
 
+def emision_del_pronostico(bundle: Path) -> str:
+    """Instante en que se escribió el pronóstico sellado (``forecast/run_manifest.json``).
+
+    Es la fecha que sostiene cualquier afirmación prospectiva: las semanas evaluadas sólo son
+    «futuras» respecto de lo que se sabía en ese momento. Se lee del bundle ya verificado.
+    """
+    manifiesto = json.loads((bundle / "forecast" / "run_manifest.json").read_text("utf-8"))
+    equal("vista: comando del pronóstico", manifiesto.get("command"), "forecast")
+    creado = manifiesto.get("created_at")
+    require(isinstance(creado, str) and creado.endswith("+00:00"), "vista: created_at sin UTC")
+    return str(creado)
+
+
 def _smape(y: pd.Series, f: pd.Series) -> float:
     den = y.abs() + f.abs()
     term = (2.0 * (y - f).abs() / den).where(den > 0, 0.0)
@@ -81,6 +96,9 @@ def build_view(disease_id: str, shard_root: Path) -> dict[str, Any]:
     estado = load_declared_status(disease.id)
     release_id = estado.release_id
     manifiesto = _verifica_shard(shard_root, disease.id, release_id)
+    bundle = release_path(default_releases_root(), disease.id, release_id)
+    verify_bundle(bundle)
+    emitido = emision_del_pronostico(bundle)
     web = json.loads((shard_root / "web" / "manifest.json").read_text("utf-8"))
 
     obs_id = estado.status.observation_dataset_id
@@ -110,6 +128,9 @@ def build_view(disease_id: str, shard_root: Path) -> dict[str, Any]:
             [(a, s) > origen for a, s in zip(cruce["epi_year"], cruce["epi_week"], strict=True)]
         ]
         motores = sorted(set(grupo["engine"]))
+        # Los puntos se publican a un decimal; el total de 52 semanas es la suma de ESOS puntos,
+        # para que ningún consumidor (acumulados, tablas) vea dos cifras distintas.
+        puntos = [round(float(y), 1) for y in grupo["yhat_cases"]]
         series[f"{nivel}|{geo}|{sexo}"] = {
             "nivel": nivel,
             "id": geo,
@@ -120,10 +141,7 @@ def build_view(disease_id: str, shard_root: Path) -> dict[str, Any]:
             "observado": [
                 [str(d), int(y)] for d, y in zip(historia["ds"], historia["y_cases"], strict=True)
             ],
-            "pronostico": [
-                [str(d), round(float(y), 1)]
-                for d, y in zip(grupo["ds"], grupo["yhat_cases"], strict=True)
-            ],
+            "pronostico": [[str(d), y] for d, y in zip(grupo["ds"], puntos, strict=True)],
             "oos": {
                 "semanas": int(len(cruce)),
                 "smape": _num(_smape(cruce["y_cases"], cruce["yhat_cases"]))
@@ -140,7 +158,7 @@ def build_view(disease_id: str, shard_root: Path) -> dict[str, Any]:
                 "observado_total": int(cruce["y_cases"].sum()),
                 "pronostico_total": round(float(cruce["yhat_cases"].sum()), 1),
             },
-            "pronostico_52_total": round(float(grupo["yhat_cases"].sum()), 1),
+            "pronostico_52_total": round(sum(puntos), 1),
         }
 
     return {
@@ -151,6 +169,7 @@ def build_view(disease_id: str, shard_root: Path) -> dict[str, Any]:
         "color": disease.web.get("color"),
         "release_id": release_id,
         "origin": list(origen),
+        "forecast_emitted_at": emitido,
         "horizon_weeks": int(web["horizon_weeks"]),
         "publication_label": web["publication_label"],
         "uncertainty_label": web["uncertainty_label"],
@@ -179,7 +198,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         vista = build_view(args.disease_id, args.shard_root)
     except (ArtifactValidationError, KeyError, ValueError, OSError) as exc:
-        print(f"✖ vista de {args.disease_id}: {exc}", file=sys.stderr)
+        print(f"ERROR: vista de {args.disease_id}: {exc}", file=sys.stderr)
         return 1
     datos = json.dumps(vista, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
     args.out.parent.mkdir(parents=True, exist_ok=True)

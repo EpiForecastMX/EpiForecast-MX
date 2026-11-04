@@ -67,3 +67,14 @@ def test_los_nombres_cubren_estados_regiones_y_nacional():
     assert nombres[("estado", "09")] == "Ciudad de México"
     assert sum(1 for nivel, _ in nombres if nivel == "estado") == 32
     assert sum(1 for nivel, _ in nombres if nivel == "region") == 4
+
+
+def test_la_emision_sale_del_manifiesto_del_pronostico(tmp_path):
+    (tmp_path / "forecast").mkdir()
+    m = {"command": "forecast", "created_at": "2026-07-25T04:55:28.423845+00:00"}
+    (tmp_path / "forecast" / "run_manifest.json").write_text(json.dumps(m), encoding="utf-8")
+    assert vista.emision_del_pronostico(tmp_path) == m["created_at"]
+    m["command"] = "benchmark"
+    (tmp_path / "forecast" / "run_manifest.json").write_text(json.dumps(m), encoding="utf-8")
+    with pytest.raises(ArtifactValidationError, match="comando"):
+        vista.emision_del_pronostico(tmp_path)
