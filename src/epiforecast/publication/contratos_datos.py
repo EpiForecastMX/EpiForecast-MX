@@ -18,7 +18,7 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Iterable, Mapping
 import csv
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 from pathlib import Path
 import re
@@ -76,12 +76,24 @@ class ContratoCobertura:
     entidades: tuple[str, ...]
     alias: Mapping[str, str]
     regiones: tuple[str, ...]
+    # Publicados respaldados por un release sellado del runner (C7.7). Entran a la paridad de
+    # corte del consolidado como cualquier publicado, pero no tienen artefactos legacy: en vez
+    # de all_forecast/tabla_333/zoom se les exige su bundle íntegro y su validación prospectiva.
+    release: tuple[str, ...] = ()
+    # slug -> (disease_id, release_id) de cada publicado del runner.
+    releases: Mapping[str, tuple[str, str]] = field(default_factory=dict)
     # Semanas que el consolidado tiene que traer por padecimiento, contiguas al corte. No
     # es una ventana «relativa» que se conforma con lo que haya: es un mínimo absoluto.
     profundidad_minima: int = PROFUNDIDAD_MINIMA_POR_DEFECTO
 
     @property
     def padecimientos(self) -> tuple[str, ...]:
+        """TODOS los publicados: los que avanzan juntos en el consolidado (paridad de corte)."""
+        return self.neuro + self.conteo + self.release
+
+    @property
+    def legado(self) -> tuple[str, ...]:
+        """Los publicados con artefactos legacy (forecasts, tabla de producción, zoom)."""
         return self.neuro + self.conteo
 
     def entidad_canonica(self, nombre: Any) -> str | None:
@@ -106,13 +118,17 @@ class ContratoCobertura:
             entidades = (*self.entidades, NACIONAL, *(f"region {r}" for r in self.regiones))
         elif pad in self.conteo:
             entidades = (*self.entidades, NACIONAL)
+        elif pad in self.release:
+            raise StagingError(
+                f"{padecimiento!r} publica desde un release del runner: no tiene series legacy"
+            )
         else:
             raise StagingError(f"padecimiento fuera del contrato: {padecimiento!r}")
         return frozenset((pad, e, sexo) for e in entidades for sexo in SEXOS)
 
     def claves_esperadas(self) -> frozenset[Clave]:
         """Todas las series productivas: 3×111 neuro + 99 Dengue = 432 en el contrato real."""
-        return frozenset().union(*(self.productos(p) for p in self.padecimientos))
+        return frozenset().union(*(self.productos(p) for p in self.legado))
 
     def zoom_esperado(self) -> frozenset[Clave]:
         """La galería/zoom publica exactamente las series productivas: 432 en el contrato real.
@@ -187,9 +203,16 @@ class ContratoCobertura:
         if registro is None:
             registro = registry.get_registry()
         publicados = [d for d in registro.diseases if d.lifecycle == "published"]
+        legado = [d for d in publicados if not d.is_release_backed]
         return ContratoCobertura(
-            neuro=tuple(slug(d.data_name) for d in publicados if d.batch == "General"),
-            conteo=tuple(slug(d.data_name) for d in publicados if d.batch != "General"),
+            neuro=tuple(slug(d.data_name) for d in legado if d.batch == "General"),
+            conteo=tuple(slug(d.data_name) for d in legado if d.batch != "General"),
+            release=tuple(slug(d.data_name) for d in publicados if d.is_release_backed),
+            releases={
+                slug(d.data_name): (d.id, str(d.artifact_source.release_id))
+                for d in publicados
+                if d.is_release_backed
+            },
             entidades=tuple(entidades),
             alias=alias,
             regiones=tuple(slug(r) for r in INEGI_REGIONS),
@@ -494,6 +517,49 @@ def revisa_produccion_dengue(ruta: Path, contrato: ContratoCobertura) -> Cobertu
     return Cobertura("produccion_dengue", {**cifras, "filas": int(len(df))}, tuple(problemas))
 
 
+def revisa_releases(raiz_backend: Path, contrato: ContratoCobertura) -> Cobertura:
+    """Lo que sustituye a los artefactos legacy para un publicado del runner.
+
+    Cada uno tiene que traer su bundle sellado íntegro (inventario y checksums) bajo
+    ``artifacts/releases/<disease_id>/<release_id>/`` y una validación prospectiva declarada,
+    coherente con su gate y su evaluación, con veredicto publicable y del MISMO release. No se
+    mira ningún archivo legacy: el release es la única fuente de sus modelos.
+    """
+    from epiforecast.publication import status as estado
+    from epiforecast.runner.release_loader import verify_bundle
+    from epiforecast.runner.release_store import release_path
+
+    problemas: list[str] = []
+    cifras: dict[str, Any] = {}
+    for pad, (disease_id, release_id) in sorted(contrato.releases.items()):
+        try:
+            verificado = verify_bundle(
+                release_path(raiz_backend / "artifacts" / "releases", disease_id, release_id)
+            )
+            capacidad = estado.load_declared_status(
+                disease_id, config_root_path=raiz_backend / "config" / estado.CONFIG_DIRNAME
+            )
+        except Exception as exc:  # bundle o estado ilegibles: el publicado no se sostiene
+            problemas.append(f"release {pad}: {exc}")
+            continue
+        if capacidad.release_id != release_id:
+            problemas.append(
+                f"release {pad}: la validación prospectiva es de {capacidad.release_id}, "
+                f"el registry declara {release_id}"
+            )
+        if not capacidad.publishable:
+            problemas.append(
+                f"release {pad}: validación prospectiva no publicable ({capacidad.verdict})"
+            )
+        cifras[pad] = {
+            "release_id": release_id,
+            "verdict": capacidad.verdict,
+            "observation_dataset_id": capacidad.status.observation_dataset_id,
+            "modelos": len(verificado.selection),
+        }
+    return Cobertura("releases", cifras, tuple(problemas))
+
+
 def revisa_entradas(
     raiz_backend: Path, contrato: ContratoCobertura, padecimientos_autorizados: Iterable[str]
 ) -> list[Cobertura]:
@@ -503,6 +569,7 @@ def revisa_entradas(
         revisa_forecasts(raiz_backend / DIR_FORECASTS, contrato),
         revisa_tabla_produccion(raiz_backend / RUTA_TABLA_PRODUCCION, contrato),
         revisa_produccion_dengue(raiz_backend / RUTA_PRODUCCION_DENGUE, contrato),
+        revisa_releases(raiz_backend, contrato),
     ]
 
 

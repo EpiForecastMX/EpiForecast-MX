@@ -28,6 +28,15 @@ from epiforecast.publication.pointer import (
     write_pointer,
 )
 from epiforecast.runner.artifact_identity import ArtifactValidationError
+from tests.unit.registry_pre_c77 import registry_pre_c77
+
+
+@pytest.fixture(scope="module", autouse=True)
+def _registry_pre_c77():
+    """Carril candidato: Obesidad en su estado previo a C7.7 (ver tests/unit/registry_pre_c77)."""
+    with registry_pre_c77():
+        yield
+
 
 DISEASE = "obesidad"
 REPO = Path(__file__).resolve().parents[3]

@@ -32,11 +32,13 @@ import subprocess
 from typing import Any
 
 from epiforecast.publication.contratos_datos import (
+    _REPO,
     Cobertura,
     ContratoCobertura,
     revisa_consolidado,
     revisa_forecasts_listados,
     revisa_produccion_dengue,
+    revisa_releases,
     revisa_tabla_produccion,
     slug,
 )
@@ -425,6 +427,10 @@ def _revisa(
     coberturas: list[Cobertura] = [
         revisa_consolidado(backend / por_rol["consolidado"][0], contrato, contrato.padecimientos)
     ]
+    if contrato.releases:
+        # Los publicados del runner no viajan en la allowlist: su bundle es inmutable y se
+        # verifica por digest en el repo canónico, junto con su validación prospectiva.
+        coberturas.append(revisa_releases(_REPO, contrato))
     if forecasts := por_rol.get("forecast"):
         coberturas.append(revisa_forecasts_listados([backend / r for r in forecasts], contrato))
     if conteo := por_rol.get("forecast_conteo"):

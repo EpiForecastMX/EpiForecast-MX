@@ -30,14 +30,29 @@ from epiforecast.publication.weekly_staging import (
 
 TRUE = shutil.which("true") or "/usr/bin/true"
 _RAIZ_REAL = Path(__file__).resolve().parents[3]
-# El registry real, tal cual: el contrato del CLI lo lee del HEAD del repositorio sintético.
-REGISTRY_YAML = (_RAIZ_REAL / "config" / "padecimientos.yaml").read_text(encoding="utf-8")
+# El registry real: el contrato del CLI lo lee del HEAD del repositorio sintético. Este repo
+# sintético modela SÓLO el carril legacy, así que los publicados del runner (C7.7: Obesidad)
+# vuelven a `trained` aquí; su contrato propio (paridad + release) se prueba aparte.
+_YAML_REAL = (_RAIZ_REAL / "config" / "padecimientos.yaml").read_text(encoding="utf-8")
+
+
+def _solo_legacy(texto: str) -> str:
+    bloques = texto.split("\n  - id: ")
+    for i, bloque in enumerate(bloques[1:], start=1):
+        if "backend: runner_release" in bloque:
+            bloques[i] = bloque.replace("lifecycle: published", "lifecycle: trained", 1)
+    return "\n  - id: ".join(bloques)
+
+
+REGISTRY_YAML = _solo_legacy(_YAML_REAL)
 PROFUNDIDAD_MINIMA = 2  # las semanas del contrato pequeño
 
 # Padecimientos y regiones REALES (registry y constants, que es de donde el CLI deriva el
 # contrato); sólo el catálogo de entidades es diminuto: dos, con un alias.
 PADECIMIENTOS_NEURO = tuple(registry.production_cohort())
-PADECIMIENTOS_CONTEO = tuple(registry.standalone_members(published_only=True))
+PADECIMIENTOS_CONTEO = tuple(
+    d.data_name for d in registry.legacy_published() if d.batch != "General"
+)
 PADECIMIENTOS = (*PADECIMIENTOS_NEURO, *PADECIMIENTOS_CONTEO)
 PAD_NEURO = PADECIMIENTOS_NEURO[0]
 PAD_CONTEO = PADECIMIENTOS_CONTEO[0]

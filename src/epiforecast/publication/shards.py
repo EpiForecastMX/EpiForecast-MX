@@ -31,7 +31,13 @@ from epiforecast.data.epi_dataset_spec import (
 from epiforecast.runner.artifact_identity import require
 from epiforecast.runner.release_contract import canonical_json, sha256_bytes
 
-from .compiler import MODE_CANDIDATE, UNCERTAINTY_LABEL, Compilation, check_staging_root
+from .compiler import (
+    MODE_CANDIDATE,
+    MODE_PUBLIC,
+    UNCERTAINTY_LABEL,
+    Compilation,
+    check_staging_root,
+)
 from .status import status_facts
 
 CHANNEL_REPORTS = "reports"
@@ -138,7 +144,11 @@ def _reports(c: Compilation, root: Path, reg: dict[str, str]) -> None:
         f"{hechos['publication_status']['weeks_required']} semanas objetivo con verdad disponible.",
         f"- Gate congelado `{hechos['publication_status']['gate_digest']}`.",
         "",
-        f"**Lifecycle `{hechos['lifecycle']}`**: shard de compilación, no publicación.",
+        (
+            f"**Lifecycle `{hechos['lifecycle']}`**: release publicado desde su bundle sellado."
+            if c.mode == MODE_PUBLIC
+            else f"**Lifecycle `{hechos['lifecycle']}`**: shard de compilación, no publicación."
+        ),
     ]
     _write(root, f"{CHANNEL_REPORTS}/report.md", ("\n".join(lineas) + "\n").encode("utf-8"), reg)
 
