@@ -253,10 +253,11 @@ def test_el_doctor_reporta_un_veredicto_de_aceptacion_negativo(sellado):
     assert _errores_en(sellado) == ["aceptacion: el veredicto no es accepted=true"]
 
 
-def test_obesidad_publicada_solo_desde_su_release_y_f50_invisible():
+def test_obesidad_y_f50_publicadas_solo_desde_su_release():
     assert registry.require(_OBESIDAD).lifecycle == "published"
     assert [d.data_name for d in registry.release_published()] == [
         "Obesidad",
+        "Anorexia F50",
         "Diabetes tipo I",
         "Diabetes tipo II",
     ]

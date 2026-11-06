@@ -294,11 +294,18 @@ padecimientos:
     batch: standalone
     extraction_group: trastornos_nutricion
     exposure_source_id: inegi_cpv2020_static   # EpiDatasetV2 lo EXIGE
-    lifecycle: configured             # C6 demuestra N+1; NO entrena ni publica
-    channels: []                      # sin canal alguno: no se emite a ninguna superficie
+    # Publicado con OK del autor (6-nov-2026) con el CONTROL estacional: el gate de 2025 rechazó
+    # el portafolio. Nunca se presenta como aceptado. Sin Tableau, como Obesidad y Diabetes.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []              # ningún motor legacy autorizado; el smoke usa --engines
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: anorexia_f50_release_173404ea4ef0
+    # El gate de 2025 rechazó el portafolio; el autor autorizó publicar el control (6-nov-2026).
+    acceptance_fallback_run: anorexia_f50_benchmark_test_55217549bb4e_066db81a313d
     prophet_grid_key: null            # no entrena Prophet legacy (training_engines vacío)
     deepar_grid_key: null
     aggregate_national: false

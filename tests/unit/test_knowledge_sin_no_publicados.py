@@ -89,7 +89,7 @@ def test_el_filtro_sale_del_registry_y_no_de_una_lista_escrita_a_mano() -> None:
     todos = set(registry.names())
 
     assert publicados < todos, "la prueba pierde sentido si todo esta publicado"
-    assert "Anorexia F50" in todos - publicados
+    assert "Covid-19" in todos - publicados
 
 
 # El del dashboard es el que se publica; vive fuera de este repositorio.

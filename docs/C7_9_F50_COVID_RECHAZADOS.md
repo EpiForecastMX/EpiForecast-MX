@@ -1,8 +1,8 @@
 # C7.9 — Anorexia/bulimia (F50) y Covid-19: rechazados por el gate de 2025
 
-**Estado al 6-nov-2026:** ninguno se publica. El autor pidió probar el skill publicándolos; la ruta
-llegó hasta el stage test y el gate los rechazó. Siguen `configured`, sin canales. El stage 2025 ya se
-abrió para ambos y no se reabre.
+**Estado al 6-nov-2026:** el gate de 2025 rechazó ambos portafolios. El autor pidió publicar F50 con
+el control (`seasonal_naive_lag52`) y dejar Covid-19 sin publicar. El stage 2025 ya se abrió para
+ambos y no se reabre.
 
 | hecho | Anorexia, bulimia (F50) | Covid-19 (U07.1) |
 | --- | --- | --- |
@@ -24,12 +24,25 @@ abrió para ambos y no se reabre.
   sirve como pronóstico. Además, la última semana de cada boletín llega incompleta (75 casos en W41
   y 13 en W42 de 2026).
 
-## Qué dice la política y qué hace el código
+## F50 publicada con el control
 
-`acceptance` declara que, si se rechaza el portafolio, la selección final cae al control. Pero
-`refit` se niega y `artifact_acceptance` exige `accepted=true`, de modo que un portafolio rechazado no
-produce release. Publicar el control exigiría cambiar esa cadena y decidir cómo se presenta: es una
-decisión del autor, no una corrección técnica.
+La política ya declaraba que un portafolio rechazado cae al control, pero `refit` se negaba. Ahora:
+
+- `refit` acepta un rechazo sólo si `acceptance_fallback_run` del registry nombra ESE run y las 64
+  bases están en el control (`acceptance.fallback_problem`). Sin eso sigue negándose.
+- `validate_acceptance` aplica la misma regla y la cadena del release declara
+  `acceptance_outcome: fallback_control`; los releases aceptados no cambian de identidad.
+- La etiqueta pública dice «Control estacional publicado…», nunca «Validación prospectiva en curso».
+- El candidato ES el control (digests idénticos): el gate prospectivo no puede dar PASS comparándolo
+  consigo mismo. Con las cuatro semanas el veredicto es `CONTROL_ONLY`, no `PASS`.
+
+Release `anorexia_f50_release_173404ea4ef0`, origen 2026-W41, 52 semanas, 64 modelos del control,
+emitido 2026-11-06T13:51:05Z. Refit `anorexia_f50_refit_final_9fe0414b00c7_558c30c685eb`, forecast
+`anorexia_f50_forecast_h52_558c30c685eb_dcb6224a5dfc`. Pronóstico nacional a 52 semanas: 5,014 casos.
+
+Límites que hay que decir siempre: es la misma semana del año anterior, sin intervalos; en 2025 su
+sMAPE fue 18.1 en el nacional y 97.8 en la mediana de las bases, así que no sirve para leer una
+entidad con sexo concreto como cifra precisa.
 
 ## Lo que sí queda
 

@@ -32,7 +32,8 @@ import pandas as pd
 from epiforecast import registry
 from epiforecast.publication.status import load_declared_status
 from epiforecast.runner.artifact_identity import ArtifactValidationError, equal, require
-from epiforecast.runner.release_loader import verify_bundle
+from epiforecast.runner.release_loader import VerifiedRelease, verify_bundle
+from epiforecast.runner.release_sources import ACCEPTANCE_FILE, DIR_SELECTION
 from epiforecast.runner.release_store import default_releases_root, release_path
 
 VIEW_SCHEMA = "publication_view.v1"
@@ -100,6 +101,31 @@ def tras_origen(cruce: pd.DataFrame, origen: tuple[int, int]) -> pd.DataFrame:
     return cruce.loc[posteriores]
 
 
+def caida_al_control(bundle: Path, verificado: VerifiedRelease) -> dict[str, Any] | None:
+    """Qué rechazó el gate cuando lo publicado es el control; ``None`` en un release aceptado.
+
+    Las cifras salen del veredicto sellado dentro del bundle, nunca se escriben a mano.
+    """
+    resultado = verificado.chain.get("acceptance_outcome")
+    if resultado is None:
+        return None
+    acta = json.loads((bundle / DIR_SELECTION / ACCEPTANCE_FILE).read_text("utf-8"))
+    return {
+        "resultado": resultado,
+        "motor": acta["rule"]["control_engine"],
+        "fold": acta["provenance"]["fold_id"],
+        "comprobaciones": [
+            {
+                "ambito": check["scope"],
+                "portafolio": round(float(check["portfolio"]), 1),
+                "control": round(float(check["control"]), 1),
+                "pasa": bool(check["passed"]),
+            }
+            for check in acta["checks"]
+        ],
+    }
+
+
 def build_view(disease_id: str, shard_root: Path) -> dict[str, Any]:
     disease = registry.require(disease_id)
     equal(f"{disease.id}: lifecycle", disease.lifecycle, "published")
@@ -107,7 +133,7 @@ def build_view(disease_id: str, shard_root: Path) -> dict[str, Any]:
     release_id = estado.release_id
     manifiesto = _verifica_shard(shard_root, disease.id, release_id)
     bundle = release_path(default_releases_root(), disease.id, release_id)
-    verify_bundle(bundle)
+    verificado = verify_bundle(bundle)
     emitido = emision_del_pronostico(bundle)
     web = json.loads((shard_root / "web" / "manifest.json").read_text("utf-8"))
 
@@ -169,7 +195,7 @@ def build_view(disease_id: str, shard_root: Path) -> dict[str, Any]:
             "pronostico_52_total": round(sum(puntos), 1),
         }
 
-    return {
+    vista: dict[str, Any] = {
         "schema": VIEW_SCHEMA,
         "disease_id": disease.id,
         "display_name": disease.display_name,
@@ -193,6 +219,10 @@ def build_view(disease_id: str, shard_root: Path) -> dict[str, Any]:
         "shard_manifest_files": manifiesto["files"],
         "series": series,
     }
+    control = caida_al_control(bundle, verificado)
+    if control is not None:
+        vista["caida_al_control"] = control
+    return vista
 
 
 def main(argv: Sequence[str] | None = None) -> int:

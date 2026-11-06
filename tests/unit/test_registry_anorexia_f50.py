@@ -1,4 +1,4 @@
-"""C6.1 — N+1: Anorexia F50 se registra por CONFIGURACIÓN y nace invisible."""
+"""C6.1 — N+1: Anorexia F50 se registró por CONFIGURACIÓN; se publicó con el control (C7.9)."""
 
 from __future__ import annotations
 
@@ -46,29 +46,18 @@ def test_perfil_de_baja_incidencia_sin_traits_legacy():
         assert registry.trait("Anorexia F50", motor, trait, default=True) is False, (motor, trait)
 
 
-def test_nace_configured_y_sin_motores_legacy():
+def test_publicada_con_el_control_y_sin_motores_legacy():
     spec = registry.require(_F50)
-    assert spec.lifecycle == "configured"
+    assert spec.lifecycle == "published"
     assert spec.training_engines == () and spec.eligible_engines == ()
-    assert spec.channels == () and spec.gallery_enabled is False
+    assert list(spec.channels) == ["web", "epibot", "reports"]
+    assert spec.gallery_enabled is False
+    assert spec.acceptance_fallback_run == "anorexia_f50_benchmark_test_55217549bb4e_066db81a313d"
 
 
-def test_invisible_en_todo_filtro_published_only():
-    assert registry.names(published_only=True) == [
-        "Depresión",
-        "Parkinson",
-        "Alzheimer",
-        "Dengue",
-        "Obesidad",
-        "Diabetes tipo I",
-        "Diabetes tipo II",
-    ]
-    for nombres in (
-        registry.standalone_members(published_only=True),
-        registry.published_members(),
-        *[registry.published_members(channel=c) for c in ("web", "epibot", "reports", "tableau")],
-    ):
-        assert _F50 not in [n.lower() for n in nombres]
+def test_entra_en_los_publicados_sin_canal_tableau():
+    assert "Anorexia F50" in registry.names(published_only=True)
+    assert "Anorexia F50" not in registry.published_members(channel="tableau")
 
 
 def test_doctor_sin_problemas():

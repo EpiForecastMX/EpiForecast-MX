@@ -358,6 +358,7 @@ class _Release:
 
     def __init__(self, uncertainty_available: bool) -> None:
         self.uncertainty_available = uncertainty_available
+        self.chain: dict[str, str] = {}
 
 
 def _st(tmp_path: Path, verdict: str, disponibles: int):
@@ -384,6 +385,15 @@ def test_la_etiqueta_sale_de_los_datos(tmp_path, verdict, disponibles, esperado)
     assert publication_label(st, _Release(False)) == f"{esperado} · {POINT_ONLY_SUFFIX}"
     # Con intervalos disponibles, la cola point-only NO se inventa.
     assert publication_label(st, _Release(True)) == esperado
+
+
+def test_el_release_del_control_no_se_anuncia_como_validacion(tmp_path):
+    st = _st(tmp_path, VERDICT_INCOMPLETE, 0)
+    release = _Release(False)
+    release.chain = {"acceptance_outcome": "fallback_control"}
+    etiqueta = publication_label(st, release)
+    assert etiqueta.startswith("Control estacional publicado")
+    assert "Validación prospectiva" not in etiqueta
 
 
 # ── Contra el release real ────────────────────────────────────────────────────────────────────

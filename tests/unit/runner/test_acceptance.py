@@ -104,3 +104,38 @@ def test_stage_test_exige_seleccion_congelada():
 def test_tune_con_stage_test_esta_prohibido():
     with pytest.raises(orch.RunnerError, match="solo existe para benchmark"):
         orch.run_command("Obesidad", "tune", stage="test", selection_run_id="cualquiera")
+
+
+def _rechazo() -> dict:
+    return {
+        "accepted": False,
+        "checks": [{"scope": "smape_nacional_general", "passed": False}],
+        "rule": _RULE.to_dict(),
+    }
+
+
+def _final_control() -> pd.DataFrame:
+    return acceptance.final_selection(_sel(), {"accepted": False, "checks": []}, _RULE)
+
+
+def test_una_caida_limpia_al_control_no_tiene_problemas():
+    assert acceptance.fallback_problem(_final_control(), _rechazo()) is None
+
+
+@pytest.mark.parametrize(
+    ("cambio", "motivo"),
+    [
+        ({"accepted": True}, "no es un rechazo"),
+        ({"checks": [{"scope": "x", "passed": True}]}, "ninguna comprobación fallida"),
+        ({"rule": {"fallback_engine": "otro", "control_engine": "x"}}, "no es el motor"),
+    ],
+)
+def test_no_cae_al_control_sin_un_rechazo_real(cambio, motivo):
+    problema = acceptance.fallback_problem(_final_control(), {**_rechazo(), **cambio})
+    assert problema is not None and motivo in problema
+
+
+def test_un_portafolio_mixto_no_pasa_por_caida_al_control():
+    final = _final_control()
+    final.loc[0, "selected_engine"] = "seasonal_mean_5y"
+    assert "entera" in str(acceptance.fallback_problem(final, _rechazo()))

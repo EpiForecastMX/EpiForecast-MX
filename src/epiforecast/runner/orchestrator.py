@@ -575,7 +575,14 @@ def _refit_context(
             raise RunnerError(f"{acceptance_run_id}: {nombre} no coincide con el manifiesto")
     final, payload = acceptance.load_accepted(test_dir)  # re-verifica digests de la evidencia
     if not payload.get("accepted"):
-        raise RunnerError(f"{acceptance_run_id}: la aceptación fue NEGATIVA; no se refitea")
+        # Un rechazo sólo refitea si el autor autorizó ESTE run y la selección cayó entera al control.
+        autorizado = registry.require(dm.disease_id).acceptance_fallback_run
+        problema = acceptance.fallback_problem(final, payload)
+        if autorizado != acceptance_run_id or problema:
+            detalle = problema or "sin autorización en el registry"
+            raise RunnerError(
+                f"{acceptance_run_id}: la aceptación fue NEGATIVA; no se refitea ({detalle})"
+            )
     keys = set(zip(final["geography_id"], final["sex"], strict=True))
     if len(final) != 64 or len(keys) != 64:
         raise RunnerError(f"{acceptance_run_id}: la selección final no tiene 64 claves únicas")
