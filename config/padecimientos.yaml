@@ -391,11 +391,17 @@ padecimientos:
     batch: standalone
     extraction_group: enfermedades_respiratorias
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: covid_19_refit_final_9fe0414b00c7_0010942f228b
+      forecast_run_id: covid_19_forecast_h52_0010942f228b_275958805c0d
+      policy_digest: a240067c4fb2b3ee872fdfd5bb6a48b9aa016fe1220ffab522805d91e25ca57f
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # El gate de 2025 rechazó el portafolio; el autor autorizó sellar el control (6-nov-2026) para la
     # sección de rechazados. No se publica como padecimiento modelado.
     acceptance_fallback_run: covid_19_benchmark_test_effc1d95aa18_cc0cc27ec02b
