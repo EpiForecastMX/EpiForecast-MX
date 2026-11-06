@@ -90,6 +90,16 @@ def _num(valor: float) -> float | None:
     return None if valor is None or not math.isfinite(valor) else round(float(valor), 2)
 
 
+def tras_origen(cruce: pd.DataFrame, origen: tuple[int, int]) -> pd.DataFrame:
+    """Filas posteriores al origen; con 0 semanas observadas, frame vacío con sus columnas."""
+    posteriores = pd.Series(
+        [(a, s) > origen for a, s in zip(cruce["epi_year"], cruce["epi_week"], strict=True)],
+        index=cruce.index,
+        dtype=bool,
+    )
+    return cruce.loc[posteriores]
+
+
 def build_view(disease_id: str, shard_root: Path) -> dict[str, Any]:
     disease = registry.require(disease_id)
     equal(f"{disease.id}: lifecycle", disease.lifecycle, "published")
@@ -124,9 +134,7 @@ def build_view(disease_id: str, shard_root: Path) -> dict[str, Any]:
         ].sort_values(["epi_year", "epi_week"])
         historia = o[o["epi_year"] >= ANIO_HISTORIA]
         cruce = grupo.merge(o[["epi_year", "epi_week", "y_cases"]], on=["epi_year", "epi_week"])
-        cruce = cruce[
-            [(a, s) > origen for a, s in zip(cruce["epi_year"], cruce["epi_week"], strict=True)]
-        ]
+        cruce = tras_origen(cruce, origen)
         motores = sorted(set(grupo["engine"]))
         # Los puntos se publican a un decimal; el total de 52 semanas es la suma de ESOS puntos,
         # para que ningún consumidor (acumulados, tablas) vea dos cifras distintas.

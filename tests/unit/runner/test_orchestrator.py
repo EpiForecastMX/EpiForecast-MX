@@ -175,3 +175,11 @@ def test_guard_rechaza_residuos_de_ejecucion_en_un_dataset(tmp_path):
     (d / "jobs").mkdir()
     with pytest.raises(orch.RunnerError, match="artefactos de ejecución"):
         orch.reject_run_residues(d)
+
+
+def test_la_politica_sale_del_registry_salvo_override():
+    assert orch.declared_policy("obesidad") == "rolling_cv_v1"
+    assert orch.declared_policy("anorexia_f50") == "rolling_cv_baja_incidencia_v1"
+    assert orch.declared_policy("diabetes_t1") == "rolling_cv_baja_incidencia_v1"
+    assert orch.declared_policy("diabetes_t2") == "rolling_cv_v1"
+    assert orch.declared_policy("obesidad", "otra") == "otra"

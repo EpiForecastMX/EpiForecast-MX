@@ -33,10 +33,15 @@ def test_el_contrato_separa_legacy_de_release():
     c = ContratoCobertura.canonico()
     assert c.neuro == ("depresion", "parkinson", "alzheimer")
     assert c.conteo == ("dengue",)
-    assert c.release == ("obesidad",)
-    assert c.releases == {"obesidad": (_OBESIDAD, _RELEASE)}
-    # La paridad de corte cubre a los cinco; las series legacy siguen siendo 3×111 + 99.
-    assert c.padecimientos == ("depresion", "parkinson", "alzheimer", "dengue", "obesidad")
+    assert c.release == ("obesidad", "diabetes tipo i", "diabetes tipo ii")
+    assert c.releases["obesidad"] == (_OBESIDAD, _RELEASE)
+    assert sorted(i for i, _ in c.releases.values()) == [
+        "diabetes_t1",
+        "diabetes_t2",
+        "obesidad",
+    ]
+    # La paridad de corte cubre a los siete; las series legacy siguen siendo 3×111 + 99.
+    assert c.padecimientos == (*c.legado, *c.release)
     assert c.legado == ("depresion", "parkinson", "alzheimer", "dengue")
     assert len(c.claves_esperadas()) == 432
 
@@ -68,6 +73,7 @@ def _contrato_pequeno() -> ContratoCobertura:
 def test_la_paridad_de_corte_incluye_al_publicado_del_runner(tmp_path):
     contrato = _contrato_pequeno()
     pads = {"Depresión": 42, "Parkinson": 42, "Alzheimer": 42, "Dengue": 42}
+    pads |= {"Diabetes tipo I": 42, "Diabetes tipo II": 42}
     rezagada = _consolidado(tmp_path / "a.csv", {**pads, "Obesidad": 27})
     resultado = revisa_consolidado(rezagada, contrato, contrato.padecimientos)
     assert not resultado.pasa
@@ -87,7 +93,9 @@ def test_un_publicado_del_runner_ausente_del_consolidado_falla(tmp_path):
 def test_revisa_releases_falla_cerrado_sin_bundle_ni_estado(tmp_path):
     resultado = revisa_releases(tmp_path, ContratoCobertura.canonico())
     assert not resultado.pasa
-    assert len(resultado.problemas) == 1 and "release obesidad" in resultado.problemas[0]
+    assert len(resultado.problemas) == 3
+    assert any("release obesidad" in p for p in resultado.problemas)
+    assert any("release diabetes tipo i:" in p for p in resultado.problemas)
 
 
 def test_sin_publicados_del_runner_revisa_releases_no_exige_nada(tmp_path):

@@ -33,9 +33,23 @@ def _bloque_obesidad(texto: str, de: tuple[str, str], a: tuple[str, str]) -> str
     return cabeza + separador + bloque + siguiente + cola
 
 
+def _diabetes_sin_publicar(texto: str) -> str:
+    """Las pruebas C7.7 describen un solo release publicado: Diabetes vuelve a ``trained``."""
+    for disease_id in ("diabetes_t1", "diabetes_t2"):
+        cabeza, separador, resto = texto.partition(f"\n  - id: {disease_id}\n")
+        if not separador:
+            continue
+        bloque, siguiente, cola = resto.partition("\n  - id: ")
+        bloque = bloque.replace("lifecycle: published", "lifecycle: trained", 1)
+        bloque = bloque.replace(_CANALES_C77, "channels: []", 1)
+        texto = cabeza + separador + bloque + siguiente + cola
+    return texto
+
+
 def yaml_pre_c77(texto: str | None = None) -> str:
     """El yaml real con Obesidad devuelta a ``trained`` y a sus cuatro canales candidatos."""
     texto = _YAML_REAL.read_text(encoding="utf-8") if texto is None else texto
+    texto = _diabetes_sin_publicar(texto)
     return _bloque_obesidad(texto, ("published", _CANALES_C77), ("trained", _CANALES_CANDIDATOS))
 
 
@@ -47,6 +61,7 @@ def yaml_c77(texto: str | None = None) -> str:
     el rollback de la guía devuelva Obesidad a ``trained`` (y sin cambiar el número de skips).
     """
     texto = _YAML_REAL.read_text(encoding="utf-8") if texto is None else texto
+    texto = _diabetes_sin_publicar(texto)
     return _bloque_obesidad(texto, ("trained", _CANALES_CANDIDATOS), ("published", _CANALES_C77))
 
 

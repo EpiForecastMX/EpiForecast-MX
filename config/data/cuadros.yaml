@@ -39,3 +39,43 @@ cuadro_groups:
         has_prev_year: false
     n_states_expected: 32
     backend: camelot_stream            # pdfplumber-por-posición aplazado (sin fixture que falle)
+
+  enfermedades_no_transmisibles:
+    # CUADRO 13 "Casos por entidad federativa de Enfermedades No Transmisibles": Bocio E01,
+    # Diabetes tipo I E10 y Diabetes tipo II E11-E14. Discovery 2026-10-17 sobre 658 boletines:
+    # 4 columnas por bloque (Sem, Acum H, Acum M, Acum año anterior) desde 2014_sem02; en 648
+    # boletines con renglón TOTAL legible la suma de los 32 estados cuadra exacto con él.
+    # Anclas: 2014 no imprime los códigos E10/E11-E14, así que se ancla por nombre. Marcadores
+    # sin "aguascalientes" ni "veracruz": pypdf los parte en 2018_sem48 y en 2014-2016.
+    page_anchors: ["bocio", "diabetes"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1           # "hasta la semana N" en el boletín N+1, igual que 14.1
+    diseases:
+      - id: bocio_e01
+        keyword: "Bocio_E01"
+        block_index: 0
+        onboard: false
+      - id: diabetes_t1
+        keyword: "Diabetes_T1"
+        block_index: 1
+        onboard: true
+      - id: diabetes_t2
+        keyword: "Diabetes_T2"
+        block_index: 2
+        onboard: true
+    # Erratas de FUENTE: el boletín se descarta para los padecimientos listados (nunca se corrige
+    # a mano). keep_period: true emite el periodo con valores vacíos para que la reconciliación lo
+    # impute causalmente (flag total_imputed) y la serie siga contigua; sin él, el periodo no existe.
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [diabetes_t1, diabetes_t2]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2016_sem20.pdf"
+        diseases: [diabetes_t2]
+        keep_period: true              # semana interior: el runner exige series contiguas
+        reason: >-
+          bloques E01 y E11-E14 intercambiados y el de E11-E14 ajeno a la semana 19 (acum
+          68,724/96,370 mayor que el de la semana 21); E10 sí es coherente
+    n_states_expected: 32
+    backend: camelot_stream

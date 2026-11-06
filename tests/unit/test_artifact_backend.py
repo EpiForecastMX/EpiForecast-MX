@@ -255,7 +255,11 @@ def test_el_doctor_reporta_un_veredicto_de_aceptacion_negativo(sellado):
 
 def test_obesidad_publicada_solo_desde_su_release_y_f50_invisible():
     assert registry.require(_OBESIDAD).lifecycle == "published"
-    assert [d.data_name for d in registry.release_published()] == ["Obesidad"]
+    assert [d.data_name for d in registry.release_published()] == [
+        "Obesidad",
+        "Diabetes tipo I",
+        "Diabetes tipo II",
+    ]
     # El carril legacy (all_forecast, tabla_333, zoom) sigue siendo exactamente los cuatro.
     assert [d.data_name for d in registry.legacy_published()] == [
         "Depresión",
