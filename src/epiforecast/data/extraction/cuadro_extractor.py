@@ -120,7 +120,7 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
             out["reason"] = f"columnas inesperadas: {total} (esperaba {sorted(last_block)})"
             return out
         df_clean = df_clean.iloc[:, [0, *range(total + 1 - width, total + 1)]]
-        df_clean.columns = range(width + 1)
+        df_clean = df_clean.set_axis(list(range(width + 1)), axis=1)
 
     keywords = [d["keyword"] for d in spec["diseases"]]
     n_dis = len(keywords)
