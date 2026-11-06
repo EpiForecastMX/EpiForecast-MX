@@ -104,6 +104,7 @@ _DISEASE_KEYS = frozenset(
         "gallery_enabled",
         "web",
         "artifact_source",
+        "acceptance_fallback_run",
     }
 )
 _LIFECYCLES = frozenset({"configured", "trained", "published"})
@@ -216,6 +217,8 @@ class Disease:
     web: Mapping[str, Any]
     profile: Profile
     exposure_source_id: str | None = None  # solo EpiDatasetV2 lo exige; legacy = None
+    # Run de test RECHAZADO cuya caída al control autorizó el autor. Sin esto, un rechazo no refitea.
+    acceptance_fallback_run: str | None = None
     # De dónde salen los modelos (C7.1). Sin declarar = backend legacy.
     artifact_source: ArtifactSource = field(
         default_factory=lambda: ArtifactSource(backend=BACKEND_LEGACY)
@@ -388,6 +391,7 @@ def _build_disease(body: Mapping[str, Any], profiles: Mapping[str, Profile]) -> 
         artifact_source=_build_artifact_source(body, lifecycle),
         profile=profiles[pname],
         exposure_source_id=(body.get("exposure_source_id") or None),
+        acceptance_fallback_run=(body.get("acceptance_fallback_run") or None),
     )
 
 

@@ -253,6 +253,60 @@ def test_el_doctor_reporta_un_veredicto_de_aceptacion_negativo(sellado):
     assert _errores_en(sellado) == ["aceptacion: el veredicto no es accepted=true"]
 
 
+def _rechazado_con_control(root) -> str:
+    """Convierte la copia sellada en un rechazo real con las 64 bases en el control."""
+    import pandas as pd
+
+    from epiforecast.runner.acceptance import SOURCE_FALLBACK
+
+    acta = fx.acceptance_dir(root)
+    data = fx.leer(acta / "acceptance.json")
+    data["checks"][0]["passed"] = False
+    data["accepted"] = False
+    fx.escribir(acta / "acceptance.json", data)
+    ruta = acta / "final_selection.csv"
+    final = pd.read_csv(ruta, dtype={"geography_id": str})
+    final["selected_engine"] = data["rule"]["control_engine"]
+    final["source"] = SOURCE_FALLBACK
+    final.to_csv(ruta, index=False)
+    fx.resellar(root)
+    return acta.name
+
+
+def test_la_caida_al_control_no_valida_sin_autorizacion(sellado):
+    _rechazado_con_control(sellado)
+    errores = _errores_en(sellado)
+    assert errores and any("accepted=true" in e for e in errores)
+
+
+def test_la_autorizacion_no_valida_un_portafolio_mixto(sellado):
+    """Autorizar el run no basta: un rechazo con motores mezclados sigue fallando cerrado."""
+    from epiforecast.runner.artifact_acceptance import validate_acceptance
+    from epiforecast.runner.artifact_identity import ArtifactValidationError
+
+    acta = fx.acceptance_dir(sellado)
+    data = fx.leer(acta / "acceptance.json")
+    data["checks"][0]["passed"] = False
+    data["accepted"] = False
+    fx.escribir(acta / "acceptance.json", data)
+    fx.resellar(sellado)
+    man = fx.leer(acta / "run_manifest.json")
+    procedencia = data["provenance"]
+    with pytest.raises(ArtifactValidationError, match="entera"):
+        validate_acceptance(
+            acta,
+            run_id=acta.name,
+            disease_id=man["disease_id"],
+            dataset_id=man["dataset_id"],
+            policy_digest=man["policy_digest"],
+            acceptance_digest=fx.sha256(acta / "acceptance.json"),
+            selection_digest=procedencia["selection_digest"],
+            selection_run_id=procedencia["selection_run_id"],
+            final_selection_digest=fx.sha256(acta / "final_selection.csv"),
+            authorized_fallback_run=acta.name,
+        )
+
+
 def test_obesidad_publicada_solo_desde_su_release_y_f50_invisible():
     assert registry.require(_OBESIDAD).lifecycle == "published"
     assert [d.data_name for d in registry.release_published()] == [

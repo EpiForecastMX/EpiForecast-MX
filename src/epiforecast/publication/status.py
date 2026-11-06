@@ -41,6 +41,7 @@ from epiforecast.publication.prospective import (
     SCOPE_PRODUCTS,
     SCOPES,
     SKIP_REASONS,
+    VERDICT_CONTROL_ONLY,
     VERDICT_FAIL,
     VERDICT_INCOMPLETE,
     VERDICT_PASS,
@@ -63,10 +64,15 @@ STATUS_FILE = "prospective_status.json"
 EVALUATION_FILE = "prospective_evaluation.json"
 CONFIG_DIRNAME = "publication"
 
-VERDICTS: tuple[str, ...] = (VERDICT_INCOMPLETE, VERDICT_PASS, VERDICT_FAIL)
+VERDICTS: tuple[str, ...] = (
+    VERDICT_INCOMPLETE,
+    VERDICT_PASS,
+    VERDICT_FAIL,
+    VERDICT_CONTROL_ONLY,
+)
 # Sólo un veredicto habilita el modo público. FAIL nunca; INCOMPLETE únicamente porque el usuario
 # autorizó publicación condicionada, y jamás se representa como PASS.
-VERDICTS_PUBLICABLES: tuple[str, ...] = (VERDICT_INCOMPLETE, VERDICT_PASS)
+VERDICTS_PUBLICABLES: tuple[str, ...] = (VERDICT_INCOMPLETE, VERDICT_PASS, VERDICT_CONTROL_ONLY)
 
 Period = tuple[int, int]
 
@@ -346,6 +352,8 @@ class ProspectiveStatus:
             return f"Validación prospectiva superada {avance}"
         if self.verdict == VERDICT_FAIL:
             return f"Validación prospectiva NO superada {avance}"
+        if self.verdict == VERDICT_CONTROL_ONLY:
+            return f"Publicado el control: sin contraste prospectivo {avance}"
         return f"Validación prospectiva en curso {avance}"
 
 
@@ -451,7 +459,12 @@ def _check_scopes(evaluation: ProspectiveEvaluation, gate: FrozenGate) -> None:
         pasan.append(bool(cuerpo["passes"]))
 
     completo = semanas >= len(gate.target_weeks)
-    esperado = (VERDICT_PASS if all(pasan) else VERDICT_FAIL) if completo else VERDICT_INCOMPLETE
+    if not completo:
+        esperado = VERDICT_INCOMPLETE
+    elif gate.candidate_digest == gate.control_digest:
+        esperado = VERDICT_CONTROL_ONLY
+    else:
+        esperado = VERDICT_PASS if all(pasan) else VERDICT_FAIL
     equal("evaluación: veredicto recomputado desde los ámbitos", evaluation.verdict, esperado)
 
 

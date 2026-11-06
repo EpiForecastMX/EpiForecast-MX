@@ -15,6 +15,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+import pandas as pd
+
+from epiforecast.runner.acceptance import OUTCOME_ACCEPTED, OUTCOME_FALLBACK, fallback_problem
 from epiforecast.runner.artifact_identity import (
     ArtifactValidationError,
     equal,
@@ -46,6 +49,7 @@ class VerifiedAcceptance:
     digest: str
     selection_digest: str
     scopes: tuple[str, ...]
+    outcome: str = OUTCOME_ACCEPTED
 
 
 def _records(raw: object, label: str) -> list[ArtifactRecord]:
@@ -71,8 +75,13 @@ def validate_acceptance(
     selection_digest: str,
     selection_run_id: str,
     final_selection_digest: str,
+    authorized_fallback_run: str | None = None,
 ) -> VerifiedAcceptance:
-    """Abre el run de aceptación declarado por el refit y exige un veredicto POSITIVO."""
+    """Abre el run de aceptación declarado por el refit y exige un veredicto POSITIVO.
+
+    La única excepción es un rechazo cuyo run autorizó el autor en el registry, y sólo si la
+    selección final cayó entera al control (``fallback_problem``).
+    """
     who = "aceptacion"
     man: RunManifest = read_manifest(acceptance_dir, run_id, disease_id, CMD_BENCHMARK)
     equal(f"{who}: stage", man.stage, STAGE_TEST)
@@ -91,14 +100,20 @@ def validate_acceptance(
         acceptance_digest,
     )
     acta = read_json(acceptance_dir / ACCEPTANCE_FILE, who, SCHEMA_ACCEPTANCE)
-    require(acta.get("accepted") is True, f"{who}: el veredicto no es accepted=true")
+    cae_al_control = acta.get("accepted") is False and authorized_fallback_run == run_id
+    require(
+        acta.get("accepted") is True or cae_al_control, f"{who}: el veredicto no es accepted=true"
+    )
     checks = sequence_of(acta.get("checks") or [], f"{who}: checks")
     require(checks, f"{who}: veredicto sin comprobaciones")
     scopes: list[str] = []
     for crudo in checks:
         check = mapping_of(crudo, f"{who}: check")
         scope = text_of(check.get("scope"), f"{who}: scope de una comprobación")
-        require(check.get("passed") is True, f"{who}: la comprobación {scope!r} no pasó")
+        require(
+            check.get("passed") is True or cae_al_control,
+            f"{who}: la comprobación {scope!r} no pasó",
+        )
         scopes.append(scope)
 
     # Los outputs que el propio veredicto declara son parte del contrato del run.
@@ -122,9 +137,13 @@ def validate_acceptance(
         sha256_file(acceptance_dir / SELECTION_FILE, SELECTION_FILE),
         final_selection_digest,
     )
+    if cae_al_control:
+        problema = fallback_problem(pd.read_csv(acceptance_dir / SELECTION_FILE), acta)
+        require(problema is None, f"{who}: {problema}")
     return VerifiedAcceptance(
         run_id=run_id,
         digest=acceptance_digest,
         selection_digest=selection_digest,
         scopes=tuple(scopes),
+        outcome=OUTCOME_FALLBACK if cae_al_control else OUTCOME_ACCEPTED,
     )

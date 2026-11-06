@@ -35,6 +35,10 @@ SCHEMA_ACCEPTANCE_REPORT = "acceptance_report.v1"
 
 _SCOPES = ("smape_bases", "smape_all", "smape_nacional_general")
 
+OUTCOME_ACCEPTED = "accepted"
+OUTCOME_FALLBACK = "fallback_control"
+SOURCE_FALLBACK = "acceptance_fallback"
+
 
 class AcceptanceError(ValueError):
     """El gate de aceptación no puede evaluarse (regla o insumos inválidos)."""
@@ -101,8 +105,27 @@ def final_selection(
     out = sel[[COL_GEO_ID, COL_SEX, "selected_engine"]].copy()
     if not verdict["accepted"]:
         out["selected_engine"] = rule.fallback_engine
-    out["source"] = "development_selection" if verdict["accepted"] else "acceptance_fallback"
+    out["source"] = "development_selection" if verdict["accepted"] else SOURCE_FALLBACK
     return out.sort_values([COL_GEO_ID, COL_SEX]).reset_index(drop=True)
+
+
+def fallback_problem(final: pd.DataFrame, payload: dict[str, Any]) -> str | None:
+    """Por qué un veredicto NO es una caída limpia al control; ``None`` si lo es.
+
+    La caída sólo vale tras un rechazo real, con el control declarado por la política como motor de
+    fallback y con las 64 bases en él: nada de portafolios mixtos publicados bajo este rótulo.
+    """
+    if payload.get("accepted") is not False:
+        return "el veredicto no es un rechazo"
+    if all(check.get("passed") is True for check in payload.get("checks") or []):
+        return "el veredicto no registra ninguna comprobación fallida"
+    regla = payload.get("rule") or {}
+    fallback = regla.get("fallback_engine")
+    if not fallback or fallback != regla.get("control_engine"):
+        return f"el fallback {fallback!r} no es el motor de control"
+    if set(final["selected_engine"]) != {fallback} or set(final["source"]) != {SOURCE_FALLBACK}:
+        return f"la selección final no está entera en {fallback!r}"
+    return None
 
 
 def render_report(

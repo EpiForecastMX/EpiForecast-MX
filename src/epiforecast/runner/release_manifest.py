@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from epiforecast.data.epi_calendar import shift
+from epiforecast.runner.acceptance import OUTCOME_ACCEPTED
 from epiforecast.runner.artifact_identity import int_of, read_json, require, text_of
 from epiforecast.runner.release_contract import (
     BUILDER_VERSION,
@@ -54,7 +55,7 @@ def chain_of(verified: VerifiedRunnerRuns, sources: ReleaseSources) -> dict[str,
     refit = read_json(sources.refit_dir / RUN_MANIFEST, "refit: manifiesto")
     forecast = read_json(sources.forecast_dir / RUN_MANIFEST, "forecast: manifiesto")
     dataset = read_json(sources.dataset_dir / DATASET_MANIFEST, "dataset: manifiesto")
-    return {
+    cadena = {
         "dataset_id": verified.dataset_id,
         "dataset_digest": dataset_digests(sources, "dataset"),
         "policy_digest": verified.policy_digest,
@@ -70,6 +71,10 @@ def chain_of(verified: VerifiedRunnerRuns, sources: ReleaseSources) -> dict[str,
         "refit_code_commit": text_of(refit.get("code_commit"), "refit: code_commit"),
         "forecast_code_commit": text_of(forecast.get("code_commit"), "forecast: code_commit"),
     }
+    # Sólo aparece si el portafolio cayó al control: los releases aceptados no cambian de identidad.
+    if verified.acceptance_outcome != OUTCOME_ACCEPTED:
+        cadena["acceptance_outcome"] = verified.acceptance_outcome
+    return cadena
 
 
 def _calendar(verified: VerifiedRunnerRuns, horizon: int) -> dict[str, Any]:

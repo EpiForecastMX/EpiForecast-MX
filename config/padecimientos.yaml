@@ -299,6 +299,8 @@ padecimientos:
     training_engines: []              # ningún motor legacy autorizado; el smoke usa --engines
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    # El gate de 2025 rechazó el portafolio; el autor autorizó publicar el control (6-nov-2026).
+    acceptance_fallback_run: anorexia_f50_benchmark_test_55217549bb4e_066db81a313d
     prophet_grid_key: null            # no entrena Prophet legacy (training_engines vacío)
     deepar_grid_key: null
     aggregate_national: false

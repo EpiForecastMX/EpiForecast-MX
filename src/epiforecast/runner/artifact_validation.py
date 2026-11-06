@@ -21,6 +21,7 @@ from pathlib import Path
 
 from epiforecast.data.epi_geo_exposure import GeoCatalog
 from epiforecast.runner import artifact_portfolio as portfolio
+from epiforecast.runner.acceptance import OUTCOME_ACCEPTED
 from epiforecast.runner.artifact_acceptance import validate_acceptance
 from epiforecast.runner.artifact_dataset import dataset_window
 from epiforecast.runner.artifact_forecast import validate_forecast
@@ -83,6 +84,7 @@ class VerifiedRunnerRuns:
     n_train: int
     train_end: tuple[int, int]
     counts: tuple[tuple[str, int], ...]
+    acceptance_outcome: str = OUTCOME_ACCEPTED
 
     @property
     def engines(self) -> tuple[str, ...]:
@@ -124,6 +126,7 @@ def validate_runner_runs(
     runs_root: Path,
     policy_path: Path,
     geo_catalog: GeoCatalog | None = None,
+    acceptance_fallback_run: str | None = None,
 ) -> VerifiedRunnerRuns:
     """Valida la cadena completa o levanta ``ArtifactValidationError`` en el primer incumplimiento."""
     catalogo = _catalog(geo_catalog)
@@ -220,6 +223,7 @@ def validate_runner_runs(
         selection_digest=selection_digest,
         selection_run_id=resumen.selection_run_id,
         final_selection_digest=final_selection_digest,
+        authorized_fallback_run=acceptance_fallback_run,
     )
 
     resultado = VerifiedRunnerRuns(
@@ -239,6 +243,7 @@ def validate_runner_runs(
         n_train=n_train,
         train_end=train_end,
         counts=tuple(sorted(conteos.items())),
+        acceptance_outcome=veredicto.outcome,
     )
     # Acción 4: el forecast publicable se valida por CONTENIDO, no sólo por su lineage.
     validate_forecast(forecast_dir, resultado, catalogo)

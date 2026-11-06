@@ -49,6 +49,8 @@ GATE_WEEKS = 4
 VERDICT_PASS = "PASS"
 VERDICT_FAIL = "FAIL"
 VERDICT_INCOMPLETE = "INCOMPLETE"
+# El candidato ES el control: la degradación es cero por construcción y no valida nada.
+VERDICT_CONTROL_ONLY = "CONTROL_ONLY"
 
 # Degradación máxima frente al control, por ámbito. Es la regla ya aprobada; se congela con el
 # gate para que no pueda "ajustarse" después de ver los resultados.
@@ -554,6 +556,8 @@ def evaluate(
 
     if not completo:
         veredicto = VERDICT_INCOMPLETE
+    elif gate.candidate_digest == gate.control_digest:
+        veredicto = VERDICT_CONTROL_ONLY
     elif all(scopes[s]["passes"] for s in SCOPES):
         veredicto = VERDICT_PASS
     else:

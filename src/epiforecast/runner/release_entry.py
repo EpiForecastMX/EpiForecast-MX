@@ -49,6 +49,7 @@ def verify_chain(
         runs_root=runs_root,
         policy_path=policy_path,
         geo_catalog=geo_catalog,
+        acceptance_fallback_run=disease.acceptance_fallback_run,
     )
 
 

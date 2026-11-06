@@ -16,6 +16,7 @@ from epiforecast.data.epi_calendar import shift
 from epiforecast.publication.prospective import (
     ACCEPTANCE_RULE,
     GATE_WEEKS,
+    VERDICT_CONTROL_ONLY,
     VERDICT_INCOMPLETE,
     VERDICT_PASS,
     FrozenGate,
@@ -182,6 +183,18 @@ def test_con_las_cuatro_semanas_completas_se_evalua_y_se_reporta_por_semana():
     # El candidato clava la verdad y el control no: el detalle por semana lo refleja.
     assert all(w["smape_candidate"] == 0.0 for w in res["per_week"])
     assert all(w["smape_control"] > 0.0 for w in res["per_week"])
+
+
+def test_el_control_contra_si_mismo_nunca_es_pass():
+    """Candidato y control idénticos: degradación cero por construcción, no una validación."""
+    hist = _historia()
+    semanas = horizon_periods(ORIGEN, 4)
+    for serie in hist.values():
+        for p in semanas:
+            serie[p] = 5.0
+    gate = _gate(candidate_digest="d" * 64, control_digest="d" * 64)
+    res = evaluate(gate, _forecast(7.0, semanas), _forecast(7.0, semanas), hist)
+    assert res["verdict"] == VERDICT_CONTROL_ONLY
 
 
 def test_el_veredicto_lleva_el_digest_del_gate_congelado():

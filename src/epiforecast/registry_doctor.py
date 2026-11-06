@@ -149,6 +149,7 @@ def _diagnose_runner_runs(d: registry.Disease, runs_root: Path) -> list[Problem]
             final_selection_digest=str(src.final_selection_digest),
             runs_root=runs_root,
             policy_path=_policy_path(d),
+            acceptance_fallback_run=d.acceptance_fallback_run,
         )
     except ArtifactValidationError as exc:
         problems.append(Problem(d.id, "error", str(exc)))
@@ -190,6 +191,13 @@ def _diagnose_runner_release(d: registry.Disease, releases_root: Path) -> list[P
         if verificado.disease_id != d.id:
             raise ArtifactValidationError(
                 f"el release es de {verificado.disease_id!r}, no de {d.id!r}"
+            )
+        # Un release del control exige que el registry siga autorizando ese mismo rechazo.
+        if verificado.chain.get("acceptance_outcome") and (
+            verificado.chain["acceptance_run_id"] != d.acceptance_fallback_run
+        ):
+            raise ArtifactValidationError(
+                f"el release cae al control sin autorización vigente: {d.acceptance_fallback_run!r}"
             )
         check_reproduction(verificado, tol=0.0)
     except ArtifactValidationError as exc:
