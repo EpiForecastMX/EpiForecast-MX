@@ -610,6 +610,7 @@ endif
 
 .PHONY: prospective-week-record
 ## Tras un dry-run verde, materializa la observación y actualiza el estado prospectivo declarado.
+## FIRST_AVAILABLE='<ISO con zona>|<evidencia>' registra la primera disponibilidad verificable.
 prospective-week-record:
 ifndef DISEASE
 	$(error Uso: make prospective-week-record DISEASE=<id> PDF=<ruta.pdf>)
@@ -620,6 +621,7 @@ endif
 	$(PYTHON) -m scripts.prospective_week \
 		--disease $(DISEASE) \
 		--pdf "$(PDF)" \
+		$(if $(FIRST_AVAILABLE),--first-available "$(FIRST_AVAILABLE)") \
 		--write
 
 #################################################################################

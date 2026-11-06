@@ -33,11 +33,15 @@ es `INCOMPLETE` (0 de 4 semanas) y nunca se presenta como PASS.
 
 - El error de tipo I por estado y sexo es alto: esas series tienen muy pocos casos por semana. El
   nacional es el nivel útil; lo estatal se lee como orden de magnitud.
-- Las semanas objetivo son W42 a W45, publicadas en los boletines 43 a 46, posteriores a la emisión.
+- Las semanas objetivo son W42 a W45, de los boletines 43 a 46. Que esos boletines sean posteriores a
+  la emisión **no está acreditado todavía**: se comprueba boletín por boletín en
+  `config/publication/<id>/bulletin_provenance.json`, que separa creación del PDF, primera
+  disponibilidad verificable y captura. Si un boletín ya existía o circulaba al emitir, se declara
+  así; esos metadatos no excluyen que hubiera otra versión anterior.
 
 ## Cada boletín
 
-Igual que Obesidad, para cada `<id>`: `make prospective-week-record DISEASE=<id> PDF=…`, `dvc add` y
+Igual que Obesidad, para cada `<id>`: `make prospective-week-record DISEASE=<id> PDF=… FIRST_AVAILABLE='<ISO>|<evidencia>'`, `dvc add` y
 `dvc push` de la observación, filas al consolidado, vista desde el shard original
 (`runs/publication/<id>/compile_a/<id>/<release_id>`) y reinstalación. Si cualquiera de las dos se
 queda atrás, la paridad falla cerrada.
