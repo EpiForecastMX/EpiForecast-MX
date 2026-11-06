@@ -294,11 +294,17 @@ padecimientos:
     batch: standalone
     extraction_group: trastornos_nutricion
     exposure_source_id: inegi_cpv2020_static   # EpiDatasetV2 lo EXIGE
-    lifecycle: configured             # C6 demuestra N+1; NO entrena ni publica
-    channels: []                      # sin canal alguno: no se emite a ninguna superficie
+    lifecycle: trained
+    channels: []
     training_engines: []              # ningún motor legacy autorizado; el smoke usa --engines
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: anorexia_f50_refit_final_9fe0414b00c7_558c30c685eb
+      forecast_run_id: anorexia_f50_forecast_h52_558c30c685eb_dcb6224a5dfc
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # El gate de 2025 rechazó el portafolio; el autor autorizó publicar el control (6-nov-2026).
     acceptance_fallback_run: anorexia_f50_benchmark_test_55217549bb4e_066db81a313d
     prophet_grid_key: null            # no entrena Prophet legacy (training_engines vacío)

@@ -61,7 +61,7 @@ def test_politica_de_historia_corta_conserva_la_aceptacion():
 
 
 @pytest.mark.unit
-@pytest.mark.parametrize("disease", ["anorexia_f50", "covid_19"])
+@pytest.mark.parametrize("disease", ["covid_19"])
 def test_rechazados_en_2025_siguen_invisibles(disease):
     spec = registry.require(disease)
     assert spec.lifecycle == "configured"
