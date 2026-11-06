@@ -35,11 +35,12 @@ def test_el_carril_legacy_no_cambia():
     assert registry.names(published_only=True) == [
         *_LEGACY,
         "Obesidad",
+        "Anorexia F50",
         "Diabetes tipo I",
         "Diabetes tipo II",
     ]
 
 
-def test_f50_sigue_invisible():
+def test_covid_sigue_invisible():
     publicados = [n.lower() for n in registry.names(published_only=True)]
-    assert "anorexia f50" not in publicados
+    assert "covid-19" not in publicados

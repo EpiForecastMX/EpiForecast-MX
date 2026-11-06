@@ -125,6 +125,12 @@ def publication_label(status: PublicationStatus, verified: VerifiedRelease) -> s
     release. Ni el texto del avance ni el ``n/4`` se escriben a mano en ningún puente.
     """
     partes = [status.progress_label()]
+    if verified.chain.get("acceptance_outcome"):
+        # Lo publicado es el control: la comparación prospectiva sería contra sí mismo.
+        partes = [
+            "Control estacional publicado: portafolio rechazado por el gate de aceptación, "
+            "sin contraste prospectivo"
+        ]
     if not verified.uncertainty_available:
         partes.append(POINT_ONLY_SUFFIX)
     return LABEL_SEPARATOR.join(partes)

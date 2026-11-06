@@ -307,10 +307,11 @@ def test_la_autorizacion_no_valida_un_portafolio_mixto(sellado):
         )
 
 
-def test_obesidad_publicada_solo_desde_su_release_y_f50_invisible():
+def test_obesidad_y_f50_publicadas_solo_desde_su_release():
     assert registry.require(_OBESIDAD).lifecycle == "published"
     assert [d.data_name for d in registry.release_published()] == [
         "Obesidad",
+        "Anorexia F50",
         "Diabetes tipo I",
         "Diabetes tipo II",
     ]

@@ -35,7 +35,7 @@ def _bloque_obesidad(texto: str, de: tuple[str, str], a: tuple[str, str]) -> str
 
 def _diabetes_sin_publicar(texto: str) -> str:
     """Las pruebas C7.7 describen un solo release publicado: Diabetes vuelve a ``trained``."""
-    for disease_id in ("diabetes_t1", "diabetes_t2"):
+    for disease_id in ("anorexia_f50", "diabetes_t1", "diabetes_t2"):
         cabeza, separador, resto = texto.partition(f"\n  - id: {disease_id}\n")
         if not separador:
             continue
