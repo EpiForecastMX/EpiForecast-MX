@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from epiforecast.runner import policy
+from epiforecast.runner import policy, selection
 
 
 def test_candidate_engines_desde_politica():
@@ -109,3 +109,22 @@ def test_validate_rechaza_pocas_semanas_previas():
     )
     with pytest.raises(policy.PolicyError):
         policy._validate(pol)
+
+
+def test_baja_incidencia_solo_cambia_los_candidatos():
+    """La variante conserva folds, semilla, aceptación y regla; sólo retira motores que ajustan."""
+    canonica = policy.load_policy("rolling_cv_v1")
+    baja = policy.load_policy("rolling_cv_baja_incidencia_v1")
+    assert baja.name == "rolling_cv_baja_incidencia_v1"
+    assert baja.folds == canonica.folds and baja.seed == canonica.seed
+    assert baja.stages == canonica.stages and baja.acceptance == canonica.acceptance
+    assert baja.candidate_engines == (
+        "seasonal_naive_lag52",
+        "seasonal_mean_3y",
+        "seasonal_median_3y",
+        "seasonal_mean_5y",
+        "seasonal_median_5y",
+    )
+    regla = selection.SelectionRule.from_policy(baja)
+    assert regla.incumbents == baja.candidate_engines and regla.challengers == ()
+    assert regla.band_pct == selection.SelectionRule.from_policy(canonica).band_pct

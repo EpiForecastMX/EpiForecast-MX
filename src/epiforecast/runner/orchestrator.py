@@ -327,11 +327,16 @@ def run_engines(
     return man
 
 
+def declared_policy(disease: str, policy_name: str | None = None) -> str:
+    """Política del run: la explícita o, por defecto, la que el registry declara al padecimiento."""
+    return policy_name or registry.require(disease).selection_policy
+
+
 def run_selection(
     disease: str,
     benchmark_run_id: str,
     *,
-    policy_name: str = "rolling_cv_v1",
+    policy_name: str | None = None,
     runs_root: Path | None = None,
     require_clean: bool = False,
 ) -> RunManifest:
@@ -367,6 +372,7 @@ def run_selection(
         if problems:
             raise RunnerError(f"{benchmark_run_id}/{engine}: {'; '.join(problems)}")
 
+    policy_name = declared_policy(disease, policy_name)
     policy = load_policy(policy_name)
     rule = selection.SelectionRule.from_policy(policy)
     metrics = pd.concat(
@@ -590,7 +596,7 @@ def run_command(
     stage: str = "full",
     engines: list[str] | None = None,
     horizon: int | None = None,
-    policy_name: str = "rolling_cv_v1",
+    policy_name: str | None = None,
     runs_root: Path | None = None,
     resume: bool = True,
     require_clean: bool = False,
@@ -632,6 +638,7 @@ def run_command(
     runs_base = runs_root or (_ROOT / "runs")
     dataset_dir = runs_base / dataset_id
 
+    policy_name = declared_policy(disease, policy_name)
     pol_digest = policy_digest(policy_name)
     seed = policy_seed(policy_name)
     used_engines = engines if engines else candidate_engines(policy_name)

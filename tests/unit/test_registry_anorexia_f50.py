@@ -16,7 +16,7 @@ def test_identidad_declarada():
     assert spec.cie_codes == ("F50",)
     assert spec.extraction_group == _GRUPO
     assert spec.exposure_source_id == "inegi_cpv2020_static"
-    assert spec.selection_policy == "rolling_cv_v1"
+    assert spec.selection_policy == "rolling_cv_baja_incidencia_v1"
 
 
 def test_aliases_clinicos_resuelven():

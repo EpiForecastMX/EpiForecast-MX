@@ -1,0 +1,87 @@
+# Política de backtest OOS para padecimientos de BAJA INCIDENCIA semanal (F50, Diabetes tipo I).
+# Mismos folds, métricas, semilla, banda, desempates y aceptación que `rolling_cv_v1`: sólo cambia
+# el conjunto de candidatos. En series estado×sexo casi siempre en cero, ETS y Ridge (log1p)
+# producen pronósticos negativos en parte de los ajustes y, por contrato, fallan cerrado: no
+# recortan ni caen a un fallback. Smoke de F50 del 5-nov-2026: ETS falló 64 de 256 ajustes y Ridge
+# 7 de 256. Aquí sólo compiten los cinco motores estacionales, que no extrapolan. Prophet queda
+# fuera: sus hiperparámetros congelados son de Obesidad.
+# DECLARATIVA: el runner/evaluador lee esto; nada de folds/años en condicionales Python.
+# El train de cada fold es toda la historia estrictamente anterior al inicio del holdout
+# (mínimo 260 semanas). Toda transformación/feature/escala se ajusta EXCLUSIVAMENTE con el
+# train del fold. Distinto stage/motores/seed → distinto run_id.
+version: 1
+name: rolling_cv_baja_incidencia_v1
+
+seed: 20260724
+seasonal_horizon: 52 # horizonte estacional (semanas) del pronóstico OOS
+min_train_weeks: 260 # historia previa mínima exigida por fold
+mase_seasonal_lag: 52 # denominador naive estacional de MASE (calculado SOLO sobre train)
+
+# Origen de la serie E66 (define cuántas semanas previas tiene cada fold).
+series_start: {epi_year: 2014, epi_week: 1}
+
+metrics:
+  primary: smape # sMAPE es la métrica principal (selección)
+  reported: [smape, mase, mae, rmse, wape, bias]
+
+# Candidatos del benchmark: NO son los training_engines legacy del registry.
+candidate_engines:
+  - seasonal_naive_lag52
+  - seasonal_mean_3y
+  - seasonal_median_3y
+  - seasonal_mean_5y
+  - seasonal_median_5y
+
+# Folds por año epidemiológico. n_weeks = semanas MMWR del año (verificado con epi_calendar).
+folds:
+  development: # elegibles para selección/tuning
+    - {epi_year: 2021, n_weeks: 52}
+    - {epi_year: 2022, n_weeks: 52}
+    - {epi_year: 2023, n_weeks: 52}
+    - {epi_year: 2024, n_weeks: 52}
+  test: # bloqueado: no participa en tuning
+    - {epi_year: 2025, n_weeks: 53}
+  stress: # solo reporte
+    - {epi_year: 2020, n_weeks: 53}
+  prospective: # solo reporte (parcial; la serie llega a 2026-W26)
+    - {epi_year: 2026}
+
+# Selección por SeriesKey CONSCIENTE DE COMPLEJIDAD (C5): los motores nuevos solo desplazan a un
+# incumbent si la mejora es material. Todo declarativo; el selector no tiene preferencias en código.
+selection:
+  aggregate: median # mediana de los folds de development (2021-24)
+  challenger_min_improvement_pct: 5.0 # sin efecto aquí: esta política no declara challengers
+  band_pct: 5.0 # banda de candidatos dentro del tier elegido
+  tie_break: [mase, rmse, cost, engine] # dentro de la banda, en este orden
+  tiers:
+    incumbents: # baseline + ventanas estacionales
+      - seasonal_naive_lag52
+      - seasonal_mean_3y
+      - seasonal_median_3y
+      - seasonal_mean_5y
+      - seasonal_median_5y
+    challengers: []
+  # Costo DECLARATIVO: 1 = tabla sin ajuste.
+  cost:
+    seasonal_naive_lag52: 1
+    seasonal_mean_3y: 1
+    seasonal_median_3y: 1
+    seasonal_mean_5y: 1
+    seasonal_median_5y: 1
+
+# Gate de aceptación del stage `test` (2025). Se abre UNA sola vez, con la selección ya congelada:
+# si el portafolio no pasa, NO se retunea ni se cambia ninguna selección por resultados de 2025 —
+# se rechaza entero y la selección final cae al motor de control.
+acceptance:
+  control_engine: seasonal_naive_lag52
+  max_worse_pct: # cuánto puede empeorar el portafolio frente al control, por ámbito
+    smape_bases: 5.0
+    smape_all: 5.0
+    smape_nacional_general: 10.0
+  fallback_engine: seasonal_naive_lag52 # las 64 bases si el portafolio se rechaza
+
+# Alcance por stage del comando benchmark.
+stages:
+  smoke: {fold_groups: [development], last_n_folds: 1} # último fold dev (verificación rápida)
+  full: {fold_groups: [development]} # los 4 folds dev = 64×208 predicciones base
+  test: {fold_groups: [test]} # 2025 (53 sem): se abre UNA sola vez, con selección congelada

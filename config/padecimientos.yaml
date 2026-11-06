@@ -298,7 +298,7 @@ padecimientos:
     channels: []                      # sin canal alguno: no se emite a ninguna superficie
     training_engines: []              # ningún motor legacy autorizado; el smoke usa --engines
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null            # no entrena Prophet legacy (training_engines vacío)
     deepar_grid_key: null
     aggregate_national: false
