@@ -240,3 +240,44 @@ def test_siguiente_semana_parte_del_ultimo_raw_declarado(monkeypatch, tmp_path):
         observation_store_root=store_root,
     )
     assert result == observed
+
+
+def test_write_registra_la_cronologia_del_boletin(monkeypatch, tmp_path):
+    """El registro se escribe junto al gate y no toca el reporte, que sigue siendo determinista."""
+    pdf = tmp_path / "2026_sem43.pdf"
+    pdf.write_bytes(b"%PDF")
+    raiz = tmp_path / "config"
+    raiz.mkdir()
+    captura = {}
+    monkeypatch.setattr(pw, "declared_paths", lambda _d: {"root": raiz})
+    monkeypatch.setattr(pw, "emision_del_pronostico", lambda _b: "2026-11-06T03:44:45+00:00")
+
+    def _escribe(root, **kw):
+        captura.update(root=root, **kw)
+
+    monkeypatch.setattr(pw, "write_provenance", _escribe)
+    args = pw._parser().parse_args(["--disease", "diabetes_t2", "--pdf", str(pdf), "--write"])
+    pw._record_provenance(args, {"disease_id": "diabetes_t2", "release_id": "r1"}, None)
+    assert captura["root"] == raiz
+    assert captura["forecast_emitted_at"] == "2026-11-06T03:44:45+00:00"
+    assert captura["pdfs"] == [pdf.resolve()]
+
+
+def test_disponibilidad_mal_declarada_falla_antes_de_escribir(tmp_path, capsys, monkeypatch):
+    def _no(*_a, **_k):
+        raise AssertionError("no debe correr")
+
+    monkeypatch.setattr(pw, "run_week", _no)
+    rc = pw.main(
+        [
+            "--disease",
+            "diabetes_t2",
+            "--pdf",
+            str(tmp_path / "a.pdf"),
+            "--write",
+            "--first-available",
+            "sin evidencia",
+        ]
+    )
+    assert rc == 2
+    assert "exige" in capsys.readouterr().err

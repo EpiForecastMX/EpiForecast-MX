@@ -25,12 +25,19 @@ from typing import Any
 import pandas as pd
 from scripts.prospective_status import derive_evaluation
 from scripts.prospective_status import main as status_main
+from scripts.publication_view import emision_del_pronostico
 
 from epiforecast import registry
 from epiforecast.data import epi_calendar as ec
 from epiforecast.data.epi_dataset import load_config, raw_path_for
 from epiforecast.data.epi_geo_exposure import GeoCatalog, load_geo_catalog
 from epiforecast.data.extraction.cuadro_extractor import extract_cuadro_from_pdf
+from epiforecast.publication.bulletin_provenance import (
+    FirstAvailability,
+    ProvenanceError,
+    parse_first_available,
+    write_provenance,
+)
 from epiforecast.publication.observation_store import (
     REPORT_FILE,
     effective_raw_path,
@@ -43,6 +50,7 @@ from epiforecast.runner import orchestrator
 from epiforecast.runner.artifact_identity import ArtifactValidationError
 from epiforecast.runner.manifest import default_runs_root
 from epiforecast.runner.release_contract import canonical_json, sha256_bytes
+from epiforecast.runner.release_store import default_releases_root, release_path
 
 REPORT_SCHEMA = "prospective_week_dry_run.v1"
 RAW_COLUMNS: tuple[str, ...] = (
@@ -431,6 +439,26 @@ def run_week(
         )
 
 
+def _record_provenance(
+    args: argparse.Namespace,
+    payload: dict[str, Any],
+    first_available: FirstAvailability | None,
+) -> None:
+    """Añade la cronología de los boletines registrados; no interviene en el veredicto."""
+    disease_id = str(payload["disease_id"])
+    release_id = str(payload["release_id"])
+    bundle = release_path(default_releases_root(), disease_id, release_id)
+    write_provenance(
+        declared_paths(disease_id)["root"],
+        disease_id=disease_id,
+        release_id=release_id,
+        forecast_emitted_at=emision_del_pronostico(bundle),
+        pdfs=[Path(path).resolve() for path in args.pdf],
+        first_available=first_available,
+        captured_at=args.captured_at,
+    )
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--disease", required=True)
@@ -438,6 +466,18 @@ def _parser() -> argparse.ArgumentParser:
     parser.add_argument("--baseline-raw", type=Path, default=None)
     parser.add_argument("--runs-root", type=Path, default=None)
     parser.add_argument("--observation-store-root", type=Path, default=None)
+    parser.add_argument(
+        "--first-available",
+        default=None,
+        metavar="ISO|EVIDENCIA",
+        help="primera disponibilidad pública verificable del boletín, con su evidencia",
+    )
+    parser.add_argument(
+        "--captured-at",
+        default=None,
+        metavar="ISO",
+        help="momento de captura si difiere de la fecha del archivo en disco",
+    )
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument(
         "--dry-run",
@@ -462,6 +502,10 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2
     try:
+        # Antes de escribir nada: una evidencia mal declarada no debe dejar el registro a medias.
+        first_available = (
+            parse_first_available(args.first_available) if args.first_available else None
+        )
         payload = run_week(
             args.disease,
             args.pdf,
@@ -494,10 +538,12 @@ def main(argv: list[str] | None = None) -> int:
                 raise ProspectiveWeekError(
                     f"la observación quedó en {destination}, pero el estado no pudo actualizarse"
                 )
+            _record_provenance(args, payload, first_available)
     except (
         ArtifactValidationError,
         OSError,
         ProspectiveWeekError,
+        ProvenanceError,
         ValueError,
     ) as exc:
         print(f"✖ prospective-week: {exc}", file=sys.stderr)
