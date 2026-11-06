@@ -353,3 +353,6 @@ reports/dashboards/*_W31_*.twb
 # Obesidad (E66) es NO-GO: no se publica ni se hace `git push` de sus artefactos
 # sin OK formal explicito. Ver CLAUDE.md.
 reports/docs/EDA_Obesidad*.pdf
+
+# Configuración local del asistente y sus worktrees
+.claude/

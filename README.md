@@ -4,6 +4,18 @@
 
 <h1 align="center">EpiForecast-MX</h1>
 
+> **WCP 2026 #3134 — cierre operativo ratificado, 9-sep-2026.**
+> Póster inglés cargado (portal: 09.09.2026 03:19); web vigente en `f02d2d16`,
+> PDF EN `ec5ebd80…` / ES `8a0a9018…` intactos. No repetir carga o ratificación.
+> 35 criterios registrados; 46+52 controles y 22 de exportación correctos. Sello 110, manifiesto 103.
+> Las nueve dependencias recuperadas ya son obligatorias al generar y verificar;
+> índice de salida desde workspace: `planes/SALIDA_WCP_2026-09-09.md`.
+> Gobernante: 13 PASA, 3 EXC, 13 N/A, 4 FALLA por formularios nominales no aportados;
+> la ratificación del autor no se presenta como certificación independiente.
+> Estado único: [ESTADO_ACTUAL_WCP.md](Congresos/Mundial/ESTADO_ACTUAL_WCP.md).
+> Handoff desde workspace: `planes/PROMPT_REANUDAR_WCP_ENVIADO_2026-09-09.md`.
+> Memorias locales, sin commit/push/deploy. Versiones históricas preservadas.
+
 <p align="center">
   <strong>Epidemiological Intelligence Platform for Neurological Disease Forecasting in Mexico</strong>
 </p>
@@ -448,8 +460,12 @@ make update-week     # BLOCKED while the sealed P0 workflow is completed (see se
 > (`3bd67236`, main CI run 33677859434 green) and frontend PR #12 (`8490e433`). The production smoke
 > passed with and without JavaScript: static banner and rendered DOM equal to `news.json`, W33 for
 > all four diseases, DATA_VERSION 20260826, `app.js?v=140`, 333/99/432/444, RAG 453 chunks.
-> Repository hygiene (2026-09-02): both repositories keep only `main`/`origin/main`, no extra
-> worktrees; the P0 pre-rebase backup lives in the local tag `archive/p0-pre-rebase-584cf72d-2026-09-02`.
+> Repository hygiene (2026-09-02): both repositories keep only `main` locally and
+> `origin/main` as the active remote branch, with no extra worktrees; backend also preserves
+> the remote archive ref `respaldo/paper/micai-2026-camera-ready`. Backend is
+> `main@77dc2dcb` (final CI run 33683584455 green) and frontend is
+> `main@8490e433`; the P0 pre-rebase backup lives in the local tag
+> `archive/p0-pre-rebase-584cf72d-2026-09-02`.
 
 Historically this was described as a one-command weekly refresh that keeps
 the working copy, DVC artifacts and the public dashboard in lockstep with the
@@ -496,10 +512,11 @@ push permission to `main`.
 
 ### Current Data Snapshot
 
-- **Published cut:** W31/2026 until the P1 PRs are reviewed and merged.
-- **Sealed candidate cut:** W33/2026 for all four published diseases — Alzheimer,
-  Depression, Parkinson and Dengue. W34 was checked against the official page on 2-sep and
-  is not available.
+- **Published cut:** W33/2026 for all four published diseases — Alzheimer, Depression,
+  Parkinson and Dengue — with a permanent fail-closed rule that forbids mixed public cuts.
+- **Next cut:** W34 was checked against the official page on 2-sep and was not available;
+  it cannot be processed until its official PDF exists and all four diseases can advance
+  together.
 - **Local consolidated dataset:** 96,864 rows: 63,072 neuro (3 × 21,024), 12,896
   Dengue and 20,896 Obesidad. The Obesidad rows are local NO-GO material; this
   superposition must not be versioned or published until decision P0.11.
