@@ -40,6 +40,33 @@ cuadro_groups:
     n_states_expected: 32
     backend: camelot_stream            # pdfplumber-por-posición aplazado (sin fixture que falle)
 
+  enfermedades_respiratorias:
+    # CUADRO 5.1/5.2 "Enfermedades Infecciosas del Aparato Respiratorio": Covid-19 U07.1 por estado
+    # y sexo desde 2020_sem08. Es siempre el ÚLTIMO bloque, con formatos distintos: 3 columnas en
+    # 2020 (sin año anterior) tras dos bloques de 4 (11 en total), 4 tras dos bloques en 2021-2024
+    # (12) y 4 tras uno desde 2024_sem07 (8). Discovery del 6-nov-2026 sobre 408 boletines.
+    page_anchors: ["u07.1"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 0           # el título dice «Covid 19 hasta la N» en el boletín N
+    last_block_columns: {11: 3, 12: 4, 8: 4}
+    diseases:
+      - id: covid_19
+        keyword: "Covid_19"
+        block_index: 0
+        onboard: true
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "2021_sem01"
+        cols_per_disease: 4
+        has_prev_year: true
+      - id: v_3col_noprev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 3
+        has_prev_year: false
+    n_states_expected: 32
+    backend: camelot_stream
+
   enfermedades_no_transmisibles:
     # CUADRO 13 "Casos por entidad federativa de Enfermedades No Transmisibles": Bocio E01,
     # Diabetes tipo I E10 y Diabetes tipo II E11-E14. Discovery 2026-10-17 sobre 658 boletines:

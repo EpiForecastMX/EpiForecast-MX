@@ -286,7 +286,7 @@ padecimientos:
     data_name: "Anorexia F50"
     artifact_key: Anorexia_F50        # dir/stem en disco y data/raw/data_raw_<artifact_key>.csv
     slug: anorexia_f50
-    display_name: "Anorexia F50"
+    display_name: "Anorexia, bulimia y otros trastornos alimentarios"
     cie_codes: ["F50"]
     aliases: ["anorexia", "anorexia f50", "anorexia nerviosa", "trastorno de la conducta alimentaria",
               "tca", "bulimia", "trastornos alimentarios"]
@@ -305,8 +305,8 @@ padecimientos:
     gallery_enabled: false
     web:                              # mínimos que exige el doctor; NO se consumen públicamente
       color: "#6D28D9"                # violeta (no colisiona con la paleta publicada)
-      label: "Anorexia F50"
-      nombre_completo: "Anorexia y otros trastornos de la conducta alimentaria (F50)"
+      label: "Anorexia y bulimia"
+      nombre_completo: "Anorexia, bulimia y otros trastornos alimentarios (F50)"
 
   # ── Diabetes (Cuadro 13, Enfermedades No Transmisibles): bloques 1 y 2. INVISIBLES. ──
   # Alta por configuración (mismo patrón N+1 que F50): sólo dataset, sin entrenar ni publicar.
@@ -371,3 +371,29 @@ padecimientos:
       color: "#BE185D"
       label: "Diabetes tipo II"
       nombre_completo: "Diabetes mellitus no insulinodependiente, tipo II (E11-E14)"
+
+  # ── Covid-19 (Cuadro 5.1/5.2): historia corta desde 2020-W08. INVISIBLE hasta aprobar su gate. ──
+  - id: covid_19
+    data_name: "Covid-19"
+    artifact_key: Covid_19
+    slug: covid_19
+    display_name: "Covid-19"
+    cie_codes: ["U07.1"]
+    aliases: ["covid", "covid 19", "covid-19", "coronavirus", "sars-cov-2", "u07.1"]
+    profile: baja_incidencia_semanal
+    batch: standalone
+    extraction_group: enfermedades_respiratorias
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#0F766E"
+      label: "Covid-19"
+      nombre_completo: "Covid-19 (U07.1), casos confirmados por laboratorio"
