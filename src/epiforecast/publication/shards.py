@@ -232,12 +232,18 @@ def _epibot(c: Compilation, root: Path, reg: dict[str, str]) -> None:
         f"{str(hechos['uncertainty_available']).lower()}: este release NO tiene intervalos de "
         "confianza ni bandas de incertidumbre. No deben describirse como si existieran.",
         "",
-        f"IMPORTANTE — validación prospectiva: {hechos['publication_label']}. "
-        f"El veredicto del gate congelado es {hechos['publication_status']['verdict']} con "
-        f"{hechos['publication_status']['weeks_available']} de "
-        f"{hechos['publication_status']['weeks_required']} semanas objetivo observadas "
-        f"(gate {hechos['publication_status']['gate_digest']}). Cualquier respuesta que use estas "
-        "cifras debe declarar esa condición.",
+        (
+            f"IMPORTANTE — sin validación: {hechos['publication_label']}. El gate de aceptación "
+            "RECHAZÓ el portafolio y lo publicado es el control: comparar con el mismo control no "
+            "valida nada. Cualquier respuesta que use estas cifras debe declarar esa condición."
+            if c.verified.chain.get("acceptance_outcome")
+            else f"IMPORTANTE — validación prospectiva: {hechos['publication_label']}. "
+            f"El veredicto del gate congelado es {hechos['publication_status']['verdict']} con "
+            f"{hechos['publication_status']['weeks_available']} de "
+            f"{hechos['publication_status']['weeks_required']} semanas objetivo observadas "
+            f"(gate {hechos['publication_status']['gate_digest']}). Cualquier respuesta que use "
+            "estas cifras debe declarar esa condición."
+        ),
         "",
         f"Estado de publicación: lifecycle={hechos['lifecycle']}.",
     ]
