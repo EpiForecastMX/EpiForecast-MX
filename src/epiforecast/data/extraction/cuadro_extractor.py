@@ -111,6 +111,17 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
     df_raw = max((t.df for t in tables), key=len)
     df_clean = _restrict_to_states(clean_df(df_raw))
 
+    # Cuadro cuyo bloque objetivo es el último y comparte página con bloques de otro ancho.
+    last_block = spec.get("last_block_columns")
+    if last_block:
+        total = df_clean.shape[1] - 1
+        width = last_block.get(total)
+        if width is None:
+            out["reason"] = f"columnas inesperadas: {total} (esperaba {sorted(last_block)})"
+            return out
+        df_clean = df_clean.iloc[:, [0, *range(total + 1 - width, total + 1)]]
+        df_clean.columns = range(width + 1)
+
     keywords = [d["keyword"] for d in spec["diseases"]]
     n_dis = len(keywords)
     data_cols = df_clean.shape[1] - 1
