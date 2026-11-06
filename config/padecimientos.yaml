@@ -286,7 +286,7 @@ padecimientos:
     data_name: "Anorexia F50"
     artifact_key: Anorexia_F50        # dir/stem en disco y data/raw/data_raw_<artifact_key>.csv
     slug: anorexia_f50
-    display_name: "Anorexia F50"
+    display_name: "Anorexia, bulimia y otros trastornos alimentarios"
     cie_codes: ["F50"]
     aliases: ["anorexia", "anorexia f50", "anorexia nerviosa", "trastorno de la conducta alimentaria",
               "tca", "bulimia", "trastornos alimentarios"]
@@ -305,8 +305,8 @@ padecimientos:
     gallery_enabled: false
     web:                              # mínimos que exige el doctor; NO se consumen públicamente
       color: "#6D28D9"                # violeta (no colisiona con la paleta publicada)
-      label: "Anorexia F50"
-      nombre_completo: "Anorexia y otros trastornos de la conducta alimentaria (F50)"
+      label: "Anorexia y bulimia"
+      nombre_completo: "Anorexia, bulimia y otros trastornos alimentarios (F50)"
 
   # ── Diabetes (Cuadro 13, Enfermedades No Transmisibles): bloques 1 y 2. INVISIBLES. ──
   # Alta por configuración (mismo patrón N+1 que F50): sólo dataset, sin entrenar ni publicar.
