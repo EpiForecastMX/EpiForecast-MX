@@ -322,8 +322,10 @@ padecimientos:
     batch: standalone
     extraction_group: enfermedades_no_transmisibles
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    # Publicada con OK del autor (5-nov-2026) desde su release, con validación prospectiva EN
+    # CURSO (INCOMPLETE 0/4, W42-W45): nunca se representa como PASS. Sin Tableau, como Obesidad.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
@@ -351,8 +353,10 @@ padecimientos:
     batch: standalone
     extraction_group: enfermedades_no_transmisibles
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    # Publicada con OK del autor (5-nov-2026) desde su release, con validación prospectiva EN
+    # CURSO (INCOMPLETE 0/4, W42-W45): nunca se representa como PASS. Sin Tableau, como Obesidad.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1

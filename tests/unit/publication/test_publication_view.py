@@ -78,3 +78,11 @@ def test_la_emision_sale_del_manifiesto_del_pronostico(tmp_path):
     (tmp_path / "forecast" / "run_manifest.json").write_text(json.dumps(m), encoding="utf-8")
     with pytest.raises(ArtifactValidationError, match="comando"):
         vista.emision_del_pronostico(tmp_path)
+
+
+def test_sin_semanas_observadas_el_cruce_conserva_sus_columnas():
+    """Un release recién emitido (0/4) no tiene cruce: una lista vacía seleccionaría columnas."""
+    vacio = pd.DataFrame(columns=["epi_year", "epi_week", "y_cases", "yhat_cases"])
+    assert list(vista.tras_origen(vacio, (2026, 41)).columns) == list(vacio.columns)
+    filas = pd.DataFrame({"epi_year": [2026, 2026], "epi_week": [41, 42]})
+    assert vista.tras_origen(filas, (2026, 41))["epi_week"].tolist() == [42]

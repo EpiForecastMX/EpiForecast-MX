@@ -22,8 +22,8 @@ def test_identidad_e_invisibilidad(disease_id: str, cie: tuple[str, ...], alias:
     assert registry.require(alias).id == disease_id
     assert spec.extraction_group == _GRUPO
     assert spec.exposure_source_id == "inegi_cpv2020_static"
-    assert spec.lifecycle == "trained"
-    assert spec.channels == () or list(spec.channels) == []
+    assert spec.lifecycle == "published"
+    assert list(spec.channels) == ["web", "epibot", "reports"]
     assert not spec.gallery_enabled
 
 

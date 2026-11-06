@@ -60,6 +60,8 @@ def test_invisible_en_todo_filtro_published_only():
         "Alzheimer",
         "Dengue",
         "Obesidad",
+        "Diabetes tipo I",
+        "Diabetes tipo II",
     ]
     for nombres in (
         registry.standalone_members(published_only=True),

@@ -32,10 +32,14 @@ def test_canales_exactos_sin_tableau_ni_galeria():
 def test_el_carril_legacy_no_cambia():
     assert [d.data_name for d in registry.legacy_published()] == _LEGACY
     assert registry.production_cohort() == ["Depresión", "Parkinson", "Alzheimer"]
-    assert registry.names(published_only=True) == [*_LEGACY, "Obesidad"]
+    assert registry.names(published_only=True) == [
+        *_LEGACY,
+        "Obesidad",
+        "Diabetes tipo I",
+        "Diabetes tipo II",
+    ]
 
 
-def test_f50_y_diabetes_siguen_invisibles():
+def test_f50_sigue_invisible():
     publicados = [n.lower() for n in registry.names(published_only=True)]
-    for oculto in ("anorexia f50", "diabetes tipo i", "diabetes tipo ii"):
-        assert oculto not in publicados
+    assert "anorexia f50" not in publicados
