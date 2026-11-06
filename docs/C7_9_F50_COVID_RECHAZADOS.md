@@ -1,8 +1,9 @@
 # C7.9 — Anorexia/bulimia (F50) y Covid-19: rechazados por el gate de 2025
 
 **Estado al 6-nov-2026:** el gate de 2025 rechazó ambos portafolios. El autor pidió publicar F50 con
-el control (`seasonal_naive_lag52`) y dejar Covid-19 sin publicar. El stage 2025 ya se abrió para
-ambos y no se reabre.
+el control (`seasonal_naive_lag52`) y mostrar Covid-19 en una sección de rechazados, con su referencia
+del control, sin publicarlo como padecimiento modelado. El stage 2025 ya se abrió para ambos y no se
+reabre.
 
 | hecho | Anorexia, bulimia (F50) | Covid-19 (U07.1) |
 | --- | --- | --- |
@@ -11,7 +12,7 @@ ambos y no se reabre.
 | Selección | `anorexia_f50_select_fb8b8179d4d9_4aaab5fc0a51` | `covid_19_select_bc96406cf2de_ac2957800551` |
 | Stage test | `anorexia_f50_benchmark_test_55217549bb4e_066db81a313d` | `covid_19_benchmark_test_effc1d95aa18_cc0cc27ec02b` |
 | sMAPE bases 2025 (control) | 85.1 (97.8), pasa | 112.0 (111.0), pasa |
-| sMAPE nacional 2025 (control) | 40.5 (18.1), **+123.6 %** | 104.8 (87.7), **+19.5 %** |
+| sMAPE nacional 2025 (control) | 40.5 (18.1), **+123.6 %** | 104.7 (87.7), **+19.5 %** |
 | Veredicto | RECHAZADO | RECHAZADO |
 
 ## Por qué
@@ -20,7 +21,7 @@ ambos y no se reabre.
   2025). Las ventanas de varios años bajan la suma de los estados frente al nivel reciente; mejoran
   estado por sexo, pero degradan el nacional, que es el nivel que el público leería primero.
 - **Covid-19:** tiene un cambio de régimen, no estacionalidad: 3.1 millones de casos en 2022,
-  14,239 en 2024 y 7,421 en 2025. Incluso el control tiene sMAPE nacional de 87.7, así que tampoco
+  14,115 en 2024 y 7,421 en 2025. Incluso el control tiene sMAPE nacional de 87.7, así que tampoco
   sirve como pronóstico. Además, la última semana de cada boletín llega incompleta (75 casos en W41
   y 13 en W42 de 2026).
 
@@ -43,6 +44,18 @@ emitido 2026-11-06T13:51:05Z. Refit `anorexia_f50_refit_final_9fe0414b00c7_558c3
 Límites que hay que decir siempre: es la misma semana del año anterior, sin intervalos; en 2025 su
 sMAPE fue 18.1 en el nacional y 97.8 en la mediana de las bases, así que no sirve para leer una
 entidad con sexo concreto como cifra precisa.
+
+## Covid-19 en la sección de rechazados
+
+`trained`, sin canales, con release `covid_19_release_1c3b3b6f32a3` y `acceptance_fallback_run`. Origen
+2026-W42, 52 semanas, 3,427 casos nacionales de referencia, emitido 2026-11-06T14:54:37Z. No entra al
+catálogo, a la galería, a la Figura 1, a la paridad ni al paso semanal: es una foto fija.
+
+`scripts/rejected_view.py` genera `publication/rechazados/<id>.json` desde los runs y el release, y
+falla si el padecimiento está publicado o el run no está autorizado. La página `rechazados.html`
+muestra 2025 (observado, portafolio y control), la referencia del control y la tabla del gate. El bot
+sigue diciendo que no lo modela y remite a esa página. Para otro rechazado: mismo flujo, sin
+`published`. No hay RAG de esa sección.
 
 ## Lo que sí queda
 

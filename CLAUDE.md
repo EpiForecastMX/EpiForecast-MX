@@ -33,8 +33,9 @@ que terminaban dejando el checkout en una rama de trabajo.
 Anorexia, bulimia y otros trastornos alimentarios (F50) está publicada desde
 `anorexia_f50_release_173404ea4ef0` con el control `seasonal_naive_lag52`: el gate de 2025 rechazó el
 portafolio y el autor autorizó esa caída (`acceptance_fallback_run`). Nunca presentarlo como aceptado
-ni como validado: la comparación prospectiva sería contra sí mismo (`CONTROL_ONLY`). Covid-19 sigue
-sin publicar. Detalle en `docs/C7_9_F50_COVID_RECHAZADOS.md`.
+ni como validado: la comparación prospectiva sería contra sí mismo (`CONTROL_ONLY`). Covid-19 no es
+padecimiento modelado: va en `rechazados.html` como foto fija, `trained` y sin canales, sin paso
+semanal. Detalle en `docs/C7_9_F50_COVID_RECHAZADOS.md`.
 
 ## Diabetes publicada y árboles integrados — 5-nov-2026
 
