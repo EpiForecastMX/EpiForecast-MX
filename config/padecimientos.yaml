@@ -322,11 +322,17 @@ padecimientos:
     batch: standalone
     extraction_group: enfermedades_no_transmisibles
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: diabetes_t1_refit_final_b9f043c4718d_39882dc0ce2c
+      forecast_run_id: diabetes_t1_forecast_h52_39882dc0ce2c_66ff57c8aa76
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: b9f043c4718deacd7062cb2f5670dcc27426e70b912372c86c10ad5cfa52dbd7
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -348,11 +354,17 @@ padecimientos:
     batch: standalone
     extraction_group: enfermedades_no_transmisibles
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: diabetes_t2_refit_final_e256d411c6cd_2a570102fc55
+      forecast_run_id: diabetes_t2_forecast_h52_2a570102fc55_2e1b428ff7ba
+      policy_digest: dd6d4a0274a6f8bb0f51d27628294b7db694b792966abaa92528dc2765020b2a
+      final_selection_digest: e256d411c6cd0c677140189d122fce9e74672eb3be657032bc5f21634b5def87
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
