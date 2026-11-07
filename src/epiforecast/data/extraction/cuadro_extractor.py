@@ -18,6 +18,7 @@ from typing import Any, cast
 
 import camelot
 from omegaconf import OmegaConf
+import pandas as pd
 from pypdf import PdfReader
 
 from epiforecast import registry
@@ -56,6 +57,26 @@ def source_exclusion(
         if exc["file"] == filename and disease_id in exc["diseases"]:
             return cast("dict[str, Any]", exc)
     return None
+
+
+def alinea_renglones(df: pd.DataFrame) -> pd.DataFrame:
+    """Une el renglón de valores con el nombre de la entidad cuando camelot los separa.
+
+    En 68 boletines de 2014-2015 cada entidad sale en dos renglones: los valores sin nombre y,
+    debajo, el nombre sin valores. Sin esto, ``reshape`` los lee como ceros con estado ``ok``.
+    Sólo actúa sobre ese patrón exacto; cualquier otra tabla pasa igual.
+    """
+    filas = df.astype(str).to_numpy(copy=True)
+    vacio = filas[:, 1:] == ""
+    for i in range(1, len(filas)):
+        con_nombre = filas[i, 0].strip() != "" and bool(vacio[i].all())
+        previa_sin_nombre = filas[i - 1, 0].strip() == "" and not bool(vacio[i - 1].all())
+        if con_nombre and previa_sin_nombre:
+            filas[i, 1:] = filas[i - 1, 1:]
+            filas[i - 1, 1:] = ""
+            vacio[i - 1] = True
+            vacio[i] = False
+    return pd.DataFrame(filas, index=df.index, columns=df.columns)
 
 
 def find_cuadro_page(pdf_path: str, anchors: list[str], state_markers: list[str]) -> int | None:
@@ -109,7 +130,7 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
         return out
     # La tabla estatal es la de más filas.
     df_raw = max((t.df for t in tables), key=len)
-    df_clean = _restrict_to_states(clean_df(df_raw))
+    df_clean = _restrict_to_states(clean_df(alinea_renglones(df_raw)))
 
     # Cuadro cuyo bloque objetivo es el último y comparte página con bloques de otro ancho.
     last_block = spec.get("last_block_columns")

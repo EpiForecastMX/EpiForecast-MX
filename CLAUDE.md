@@ -28,6 +28,12 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
+## Cardiovasculares publicadas — 7-nov-2026
+
+Hipertensión arterial, enfermedad isquémica y cerebrovascular están publicadas; detalle en
+`docs/C7_10_CARDIOVASCULARES.md`. Sólo hipertensión superó el gate de 2025; las otras dos son el
+control, nunca validadas. Entran en la paridad semanal con los otros ocho.
+
 ## F50 publicada con el control — 6-nov-2026
 
 Anorexia, bulimia y otros trastornos alimentarios (F50) está publicada desde

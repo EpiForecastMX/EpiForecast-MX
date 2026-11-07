@@ -38,6 +38,9 @@ def test_el_carril_legacy_no_cambia():
         "Anorexia F50",
         "Diabetes tipo I",
         "Diabetes tipo II",
+        "Hipertensión arterial",
+        "Enfermedad isquémica del corazón",
+        "Enfermedad cerebrovascular",
     ]
 
 

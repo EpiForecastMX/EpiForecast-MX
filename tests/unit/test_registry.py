@@ -87,6 +87,9 @@ def test_cie_map():
         "E10": "Diabetes tipo I",  # cuadro 13, bloque 1 (configured, invisible)
         "E11": "Diabetes tipo II",  # cuadro 13, bloque 2 (configured, invisible)
         "U07.1": "Covid-19",  # cuadro 5, último bloque (configured, invisible)
+        "I10": "Hipertensión arterial",
+        "I20": "Enfermedad isquémica del corazón",
+        "I60": "Enfermedad cerebrovascular",
     }
 
 
