@@ -106,3 +106,32 @@ cuadro_groups:
           68,724/96,370 mayor que el de la semana 21); E10 sí es coherente
     n_states_expected: 32
     backend: camelot_stream
+
+  enfermedades_cardiovasculares:
+    # CUADRO 13 (continuación) "Enfermedades No Transmisibles": Hipertensión arterial I10-I15,
+    # Enfermedad isquémica del corazón I20, I25 y Enfermedad cerebrovascular I60-I67, I69, en
+    # 3 bloques de 4 columnas (Sem, Acum H, Acum M, Acum año anterior). Discovery del 7-nov-2026
+    # sobre 669 boletines: la página existe en todos.
+    page_anchors: ["hipertensi", "cerebrovascular"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1           # igual que el resto del Cuadro 13
+    diseases:
+      - id: hipertension_i10
+        keyword: "Hipertension_I10"
+        block_index: 0
+        onboard: true
+      - id: isquemica_i20
+        keyword: "Isquemica_I20"
+        block_index: 1
+        onboard: true
+      - id: cerebrovascular_i60
+        keyword: "Cerebrovascular_I60"
+        block_index: 2
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [hipertension_i10, isquemica_i20, cerebrovascular_i60]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    n_states_expected: 32
+    backend: camelot_stream

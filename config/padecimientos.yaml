@@ -379,6 +379,82 @@ padecimientos:
       label: "Diabetes tipo II"
       nombre_completo: "Diabetes mellitus no insulinodependiente, tipo II (E11-E14)"
 
+  # ── Cardiovasculares (Cuadro 13, continuación): alta por configuración, sin publicar. ──
+  - id: hipertension_i10
+    data_name: "Hipertensión arterial"
+    artifact_key: Hipertension_I10
+    slug: hipertension_i10
+    display_name: "Hipertensión arterial"
+    cie_codes: ["I10", "I11", "I12", "I13", "I14", "I15"]
+    aliases: ["hipertension", "hipertension arterial", "presion arterial alta", "i10"]
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: enfermedades_cardiovasculares
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#EF4444"
+      label: "Hipertensión arterial"
+      nombre_completo: "Hipertensión arterial (I10-I15)"
+
+  - id: isquemica_i20
+    data_name: "Enfermedad isquémica del corazón"
+    artifact_key: Isquemica_I20
+    slug: isquemica_i20
+    display_name: "Enfermedad isquémica del corazón"
+    cie_codes: ["I20", "I25"]
+    aliases: ["enfermedad isquemica", "cardiopatia isquemica", "enfermedad isquemica del corazon", "i20"]
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: enfermedades_cardiovasculares
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#F97316"
+      label: "Enfermedad isquémica"
+      nombre_completo: "Enfermedad isquémica del corazón (I20, I25)"
+
+  - id: cerebrovascular_i60
+    data_name: "Enfermedad cerebrovascular"
+    artifact_key: Cerebrovascular_I60
+    slug: cerebrovascular_i60
+    display_name: "Enfermedad cerebrovascular"
+    cie_codes: ["I60", "I61", "I62", "I63", "I64", "I65", "I66", "I67", "I69"]
+    aliases: ["enfermedad cerebrovascular", "cerebrovascular", "i60"]
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: enfermedades_cardiovasculares
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#FBBF24"
+      label: "Enfermedad cerebrovascular"
+      nombre_completo: "Enfermedad cerebrovascular (I60-I67, I69)"
+
   # ── Covid-19 (Cuadro 5.1/5.2): historia corta desde 2020-W08. INVISIBLE hasta aprobar su gate. ──
   - id: covid_19
     data_name: "Covid-19"
