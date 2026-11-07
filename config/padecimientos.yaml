@@ -412,7 +412,7 @@ padecimientos:
     display_name: "Enfermedad isquémica del corazón"
     cie_codes: ["I20", "I25"]
     aliases: ["enfermedad isquemica", "cardiopatia isquemica", "enfermedad isquemica del corazon", "i20"]
-    profile: cronica_conteos
+    profile: baja_incidencia_semanal
     batch: standalone
     extraction_group: enfermedades_cardiovasculares
     exposure_source_id: inegi_cpv2020_static
@@ -420,7 +420,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # ETS falla cerrado en series estado×sexo de pocos casos: política de motores estacionales.
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -437,7 +438,7 @@ padecimientos:
     display_name: "Enfermedad cerebrovascular"
     cie_codes: ["I60", "I61", "I62", "I63", "I64", "I65", "I66", "I67", "I69"]
     aliases: ["enfermedad cerebrovascular", "cerebrovascular", "i60"]
-    profile: cronica_conteos
+    profile: baja_incidencia_semanal
     batch: standalone
     extraction_group: enfermedades_cardiovasculares
     exposure_source_id: inegi_cpv2020_static
@@ -445,7 +446,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # ETS falla cerrado en series estado×sexo de pocos casos: política de motores estacionales.
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
