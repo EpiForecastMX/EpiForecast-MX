@@ -103,6 +103,11 @@ def _portafolio_prueba(
     return evaluacion
 
 
+def sexo_estimado_pct(flags: pd.Series) -> float:
+    """% de filas con el reparto por sexo estimado. Un total discordante no es una estimación."""
+    return round(float(flags.str.contains("sex_fallback").mean()) * 100.0, 1)
+
+
 def build_view(disease_id: str, runs: Path) -> dict[str, Any]:
     disease = registry.require(disease_id)
     release_id = str(disease.artifact_source.release_id)
@@ -157,7 +162,6 @@ def build_view(disease_id: str, runs: Path) -> dict[str, Any]:
     nacional = obs[(obs["geography_level"] == "nacional") & (obs["sex"] == "general")]
     bases = obs[(obs["geography_level"] == "estado") & (obs["sex"] != "general")]
     recientes = bases[bases["epi_year"] >= ANIO_HISTORIA]
-    estimado = recientes["quality_flags"].str.contains("sex_fallback|sex_delta").mean()
     ultima = obs.sort_values(ORDEN).iloc[-1]
     return {
         "schema": VIEW_SCHEMA,
@@ -177,7 +181,7 @@ def build_view(disease_id: str, runs: Path) -> dict[str, Any]:
         "casos_por_anio": {
             str(a): int(v) for a, v in nacional.groupby("epi_year")["y_cases"].sum().items()
         },
-        "sexo_estimado_pct": round(float(estimado) * 100.0, 1),
+        "sexo_estimado_pct": sexo_estimado_pct(recientes["quality_flags"]),
         "series": series,
     }
 

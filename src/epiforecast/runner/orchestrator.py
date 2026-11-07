@@ -35,6 +35,7 @@ from epiforecast.runner import contracts as ct
 from epiforecast.runner import refit as refit_mod
 from epiforecast.runner.contracts import SCHEMA_DATASET, SCHEMA_PRODUCTS
 from epiforecast.runner.manifest import (
+    STAGE_FULL,
     STAGES,
     STATUS_FAILED,
     STATUS_SUCCEEDED,
@@ -361,6 +362,11 @@ def run_selection(
     bench = RunManifest.read(bench_dir)
     if bench.command != "benchmark" or bench.status != STATUS_SUCCEEDED:
         raise RunnerError(f"{benchmark_run_id}: no es un benchmark exitoso ({bench.status})")
+    if bench.stage != STAGE_FULL:
+        raise RunnerError(
+            f"{benchmark_run_id}: stage {bench.stage!r}; la selección exige un benchmark "
+            f"{STAGE_FULL!r} (un smoke sólo cubre un fold)"
+        )
     if bench.dataset_id != dm.dataset_id:
         raise RunnerError(
             f"{benchmark_run_id}: dataset {bench.dataset_id} != actual {dm.dataset_id}"

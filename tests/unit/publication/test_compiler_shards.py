@@ -243,14 +243,6 @@ def test_obesidad_sigue_invisible_en_todo_lo_publico(shards):
         assert af.DISEASE not in [d.lower() for d in registry.published_members(canal)]
 
 
-def test_f50_no_se_compila(sede):
-    """Prueba negativa explícita (regla 8): F50 no tiene release y el compilador lo rechaza."""
-    f50 = registry.require("anorexia_f50")
-    assert f50.lifecycle == "configured"
-    with pytest.raises(ArtifactValidationError, match="exige backend 'runner_release'"):
-        compile_release(disease_id="anorexia_f50", mode=MODE_CANDIDATE, releases_root=sede)
-
-
 def test_un_padecimiento_legacy_tampoco_se_compila(sede):
     """Los cuatro publicados viven en el carril legacy: este compilador no los toca."""
     with pytest.raises(ArtifactValidationError, match="exige backend 'runner_release'"):

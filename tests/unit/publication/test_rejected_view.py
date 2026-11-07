@@ -6,7 +6,12 @@ from types import SimpleNamespace
 
 import pandas as pd
 import pytest
-from scripts.rejected_view import comprobaciones, exige_rechazo, prueba_serie
+from scripts.rejected_view import (
+    comprobaciones,
+    exige_rechazo,
+    prueba_serie,
+    sexo_estimado_pct,
+)
 
 from epiforecast import registry
 from epiforecast.runner.artifact_identity import ArtifactValidationError
@@ -77,6 +82,11 @@ def test_la_prueba_separa_portafolio_y_control():
     assert r["observado"] == [10, 10]
     assert r["smape_control"] == 0.0
     assert r["smape_portafolio"] > 0.0
+
+
+def test_un_total_discordante_no_cuenta_como_sexo_estimado():
+    flags = pd.Series(["sex_fallback_state_13w", "sex_delta_total_mismatch", "", ""])
+    assert sexo_estimado_pct(flags) == 25.0
 
 
 def test_covid_es_el_rechazado_autorizado_sin_canales():

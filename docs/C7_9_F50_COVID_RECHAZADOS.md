@@ -15,15 +15,27 @@ reabre.
 | sMAPE nacional 2025 (control) | 40.5 (18.1), **+123.6 %** | 104.7 (87.7), **+19.5 %** |
 | Veredicto | RECHAZADO | RECHAZADO |
 
-## Por qué
+## Qué se midió y qué no
 
-- **F50:** los casos anuales se multiplicaron desde 2022 (2,965 en 2021, 8,591 en 2023, 5,330 en
-  2025). Las ventanas de varios años bajan la suma de los estados frente al nivel reciente; mejoran
-  estado por sexo, pero degradan el nacional, que es el nivel que el público leería primero.
-- **Covid-19:** tiene un cambio de régimen, no estacionalidad: 3.1 millones de casos en 2022,
-  14,115 en 2024 y 7,421 en 2025. Incluso el control tiene sMAPE nacional de 87.7, así que tampoco
-  sirve como pronóstico. Además, la última semana de cada boletín llega incompleta (75 casos en W41
-  y 13 en W42 de 2026).
+- **F50:** los casos anuales subieron (2,965 en 2021, 8,591 en 2023, 5,330 en 2025). Explicación
+  probable, no demostrada: las ventanas de varios años bajan la suma de los estados frente al nivel
+  reciente, y por eso mejoran estado por sexo y degradan el nacional.
+- **Covid-19:** los casos en semanas con boletín cayeron de 3.1 millones en 2022 a 14,115 en 2024 y
+  7,421 en 2025, y el sMAPE nacional del control en 2025 fue 87.7. Ese descenso **no demuestra** que
+  falte estacionalidad: no se evaluó.
+- **Última semana:** los 13 casos de W42 frente a los 75 de W41 no demuestran que esté incompleta;
+  para eso hacen falta versiones sucesivas del mismo periodo. Lo único comprobable sin ellas: en 2025
+  y 2026 el aumento del acumulado nunca superó los casos de la semana, así que ningún boletín añadió
+  casos a semanas anteriores (`data_raw_Covid_19.csv`, suma nacional). Sí hubo correcciones a la baja.
+- **Sexo:** 34.7 % de las filas estado por sexo desde 2024 usan un reparto estimado (`sex_fallback`).
+
+## Si se retoma Covid-19
+
+2025 ya no es un test independiente. Antes de modelos más complejos: referencias recientes, horizontes
+de 1 a 4 semanas y total nacional, validados con datos futuros reservados. La auditoría del 7-nov-2026
+vio una mejora exploratoria con el promedio de las últimas 13 semanas frente al año anterior (2023:
+95.0 contra 131.7; 2024: 87.7 contra 163.6), pero el error sigue alto y esas cifras no se reprodujeron
+aquí ni autorizan publicar nada.
 
 ## F50 publicada con el control
 
