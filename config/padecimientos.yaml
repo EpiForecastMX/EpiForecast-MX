@@ -391,8 +391,9 @@ padecimientos:
     batch: standalone
     extraction_group: enfermedades_cardiovasculares
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    # Publicada con orden del autor (7-nov-2026) tras aceptar el gate de 2025; validación prospectiva en curso.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
@@ -419,8 +420,9 @@ padecimientos:
     batch: standalone
     extraction_group: enfermedades_cardiovasculares
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    # Publicada con el CONTROL estacional: el gate de 2025 rechazó el portafolio. Nunca como validada.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # ETS falla cerrado en series estado×sexo de pocos casos: política de motores estacionales.
@@ -450,8 +452,9 @@ padecimientos:
     batch: standalone
     extraction_group: enfermedades_cardiovasculares
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    # Publicada con el CONTROL estacional: el gate de 2025 rechazó el portafolio. Nunca como validada.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # ETS falla cerrado en series estado×sexo de pocos casos: política de motores estacionales.

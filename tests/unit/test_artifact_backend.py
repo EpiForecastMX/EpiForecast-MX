@@ -260,6 +260,9 @@ def test_obesidad_y_f50_publicadas_solo_desde_su_release():
         "Anorexia F50",
         "Diabetes tipo I",
         "Diabetes tipo II",
+        "Hipertensión arterial",
+        "Enfermedad isquémica del corazón",
+        "Enfermedad cerebrovascular",
     ]
     # El carril legacy (all_forecast, tabla_333, zoom) sigue siendo exactamente los cuatro.
     assert [d.data_name for d in registry.legacy_published()] == [

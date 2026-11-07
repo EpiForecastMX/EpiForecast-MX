@@ -33,12 +33,23 @@ def test_el_contrato_separa_legacy_de_release():
     c = ContratoCobertura.canonico()
     assert c.neuro == ("depresion", "parkinson", "alzheimer")
     assert c.conteo == ("dengue",)
-    assert c.release == ("obesidad", "anorexia f50", "diabetes tipo i", "diabetes tipo ii")
+    assert c.release == (
+        "obesidad",
+        "anorexia f50",
+        "diabetes tipo i",
+        "diabetes tipo ii",
+        "hipertension arterial",
+        "enfermedad isquemica del corazon",
+        "enfermedad cerebrovascular",
+    )
     assert c.releases["obesidad"] == (_OBESIDAD, _RELEASE)
     assert sorted(i for i, _ in c.releases.values()) == [
         "anorexia_f50",
+        "cerebrovascular_i60",
         "diabetes_t1",
         "diabetes_t2",
+        "hipertension_i10",
+        "isquemica_i20",
         "obesidad",
     ]
     # La paridad de corte cubre a los siete; las series legacy siguen siendo 3×111 + 99.
@@ -75,6 +86,11 @@ def test_la_paridad_de_corte_incluye_al_publicado_del_runner(tmp_path):
     contrato = _contrato_pequeno()
     pads = {"Depresión": 42, "Parkinson": 42, "Alzheimer": 42, "Dengue": 42}
     pads |= {"Anorexia F50": 42, "Diabetes tipo I": 42, "Diabetes tipo II": 42}
+    pads |= {
+        "Hipertensión arterial": 42,
+        "Enfermedad isquémica del corazón": 42,
+        "Enfermedad cerebrovascular": 42,
+    }
     rezagada = _consolidado(tmp_path / "a.csv", {**pads, "Obesidad": 27})
     resultado = revisa_consolidado(rezagada, contrato, contrato.padecimientos)
     assert not resultado.pasa
@@ -94,7 +110,7 @@ def test_un_publicado_del_runner_ausente_del_consolidado_falla(tmp_path):
 def test_revisa_releases_falla_cerrado_sin_bundle_ni_estado(tmp_path):
     resultado = revisa_releases(tmp_path, ContratoCobertura.canonico())
     assert not resultado.pasa
-    assert len(resultado.problemas) == 4
+    assert len(resultado.problemas) == 7
     assert any("release obesidad" in p for p in resultado.problemas)
     assert any("release diabetes tipo i:" in p for p in resultado.problemas)
 
