@@ -58,6 +58,16 @@ def _check_output(out: Path) -> Path:
     return destino
 
 
+def exige_out_propio(destino: Path, disease_id: str) -> None:
+    """``--out`` no puede ser el de otro padecimiento: se borrarían sus shards originales."""
+    raiz = destino / "compile_a"
+    ajenos = sorted(d.name for d in raiz.iterdir() if d.is_dir()) if raiz.is_dir() else []
+    require(
+        all(nombre == disease_id for nombre in ajenos),
+        f"activación: {destino} guarda los shards de {ajenos}; usa runs/publication/{disease_id}",
+    )
+
+
 def activate(
     disease_id: str, *, out: Path, write_pointer: bool, releases_root: Path = RELEASES_ROOT
 ) -> dict[str, Any]:
@@ -76,6 +86,7 @@ def activate(
     check_activation(puntero, disease)
 
     destino = _check_output(out)
+    exige_out_propio(destino, disease.id)
     arboles: list[Path] = []
     for nombre in ("compile_a", "compile_b"):
         raiz = destino / nombre
