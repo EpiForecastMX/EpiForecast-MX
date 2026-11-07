@@ -31,11 +31,11 @@ reabre.
 
 ## Si se retoma Covid-19
 
-2025 ya no es un test independiente. Antes de modelos más complejos: referencias recientes, horizontes
-de 1 a 4 semanas y total nacional, validados con datos futuros reservados. La auditoría del 7-nov-2026
-vio una mejora exploratoria con el promedio de las últimas 13 semanas frente al año anterior (2023:
-95.0 contra 131.7; 2024: 87.7 contra 163.6), pero el error sigue alto y esas cifras no se reprodujeron
-aquí ni autorizan publicar nada.
+2025 ya no es un test independiente. Evaluación preregistrada del 7-nov-2026, sin publicar nada
+(`planes/evaluacion_covid_referencias_2026-11-07/`): elegida con 2023 y 2024, la última semana
+observada dio sMAPE nacional 49.2 a 1-4 semanas en 2026 frente a 103.5 del control, y 32.4 a una
+semana. El error crece rápido con el horizonte y 2026 ya se había visto, así que no es un test ciego.
+Lo válido sería congelarla y compararla desde el boletín 43.
 
 ## F50 publicada con el control
 
