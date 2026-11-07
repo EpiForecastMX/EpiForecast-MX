@@ -211,7 +211,7 @@ def build_view(disease_id: str, shard_root: Path) -> dict[str, Any]:
         "forecast_emitted_at": emitido,
         "horizon_weeks": int(web["horizon_weeks"]),
         # Del estado vigente, no del shard: el shard se compiló en 0/N y es inmutable.
-        "publication_label": publication_label(estado.status, verificado),
+        "publication_label": publication_label(estado, verificado),
         "uncertainty_label": web["uncertainty_label"],
         "verdict": estado.verdict,
         "weeks_required": estado.status.weeks_required,

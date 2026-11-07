@@ -136,6 +136,7 @@ def _vista_sintetica(monkeypatch, tmp_path, *, publicable: bool = True) -> Path:
         verdict="INCOMPLETE" if publicable else VERDICT_FAIL,
         release_id="x_release",
         status=_Avance(),
+        progress_label=_Avance.progress_label,
     )
     disease = SimpleNamespace(id="x", lifecycle="published", display_name="X", web={})
     verificado = SimpleNamespace(chain={}, uncertainty_available=False)
