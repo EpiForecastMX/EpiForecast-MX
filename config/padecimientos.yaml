@@ -422,6 +422,8 @@ padecimientos:
     eligible_engines: []
     # ETS falla cerrado en series estado×sexo de pocos casos: política de motores estacionales.
     selection_policy: rolling_cv_baja_incidencia_v1
+    # El gate de 2025 rechazó el portafolio; el autor pidió incorporarlo: cae al control, como F50.
+    acceptance_fallback_run: isquemica_i20_benchmark_test_3bf76a262521_d2a56a6dea44
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -448,6 +450,8 @@ padecimientos:
     eligible_engines: []
     # ETS falla cerrado en series estado×sexo de pocos casos: política de motores estacionales.
     selection_policy: rolling_cv_baja_incidencia_v1
+    # El gate de 2025 rechazó el portafolio; el autor pidió incorporarlo: cae al control, como F50.
+    acceptance_fallback_run: cerebrovascular_i60_benchmark_test_20e3b946599c_01b5beae1f90
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
