@@ -83,8 +83,10 @@ node scripts/install_publication.mjs \
 GEMINI_API_KEY=… npm run rag:build && npm run check && npm run deploy:verify
 ```
 
-`publication_activate` compila dos veces y exige árboles idénticos. Con `--write-pointer`, en vez
-de `--check`, escribe el puntero, y solo lo acepta si el registry ya está en `published`. El
+`publication_activate` compila dos veces y exige árboles idénticos. `--check` compila en un temporal
+y no toca `--out`. Con `--write-pointer` escribe el puntero, solo lo acepta si el registry ya está en
+`published`, y se niega si ya hay un shard de ese padecimiento, porque es el original del paso
+semanal; `--reemplazar-shards` lo permite solo antes de fusionar el frontend. El
 instalador vuelve a verificar cada archivo del shard. El release instalado es inmutable y
 `publication/catalog.json` es el único commit visible.
 
