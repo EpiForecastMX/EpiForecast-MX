@@ -133,5 +133,13 @@ cuadro_groups:
       - file: "2014_sem01.pdf"
         diseases: [hipertension_i10, isquemica_i20, cerebrovascular_i60]
         reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2016_sem20.pdf"
+        diseases: [hipertension_i10, isquemica_i20, cerebrovascular_i60]
+        keep_period: true
+        reason: "bloques rotados frente a los boletines vecinos: el acumulado salta y vuelve"
+      - file: "2019_sem28.pdf"
+        diseases: [hipertension_i10, isquemica_i20, cerebrovascular_i60]
+        keep_period: true
+        reason: "camelot pierde un renglón de entidad: 31 de 32"
     n_states_expected: 32
     backend: camelot_stream
