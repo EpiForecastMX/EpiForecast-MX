@@ -397,11 +397,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: hipertension_i10_refit_final_77c2913a54c0_ce7a1a0df050
-      forecast_run_id: hipertension_i10_forecast_h52_ce7a1a0df050_c46385c639ae
-      policy_digest: dd6d4a0274a6f8bb0f51d27628294b7db694b792966abaa92528dc2765020b2a
-      final_selection_digest: 77c2913a54c00f5ff4a9ee36edecab661a45ae1d6378ef2e341579c1600ee31a
+      backend: runner_release
+      release_id: hipertension_i10_release_053505b088df
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -429,11 +426,8 @@ padecimientos:
     # ETS falla cerrado en series estado×sexo de pocos casos: política de motores estacionales.
     selection_policy: rolling_cv_baja_incidencia_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: isquemica_i20_refit_final_9fe0414b00c7_5d2b385eff70
-      forecast_run_id: isquemica_i20_forecast_h52_5d2b385eff70_b8b69ffff56d
-      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
-      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
+      backend: runner_release
+      release_id: isquemica_i20_release_791553dfcf93
     # El gate de 2025 rechazó el portafolio; el autor pidió incorporarlo: cae al control, como F50.
     acceptance_fallback_run: isquemica_i20_benchmark_test_3bf76a262521_d2a56a6dea44
     prophet_grid_key: null
@@ -463,11 +457,8 @@ padecimientos:
     # ETS falla cerrado en series estado×sexo de pocos casos: política de motores estacionales.
     selection_policy: rolling_cv_baja_incidencia_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: cerebrovascular_i60_refit_final_9fe0414b00c7_00a883ae9bab
-      forecast_run_id: cerebrovascular_i60_forecast_h52_00a883ae9bab_6a73b07a9460
-      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
-      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
+      backend: runner_release
+      release_id: cerebrovascular_i60_release_9831f39d074e
     # El gate de 2025 rechazó el portafolio; el autor pidió incorporarlo: cae al control, como F50.
     acceptance_fallback_run: cerebrovascular_i60_benchmark_test_20e3b946599c_01b5beae1f90
     prophet_grid_key: null
