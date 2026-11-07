@@ -15,8 +15,10 @@ hipertensión superó el gate de 2025. Ideación suicida (R45.8) no se incorpor�
 | Release | `hipertension_i10_release_053505b088df` | `isquemica_i20_release_791553dfcf93` | `cerebrovascular_i60_release_9831f39d074e` |
 
 Origen 2026-W41, 52 semanas, emitidos el 7-nov-2026. Las dos caídas al control siguen la ruta de F50
-(`acceptance_fallback_run`, `CONTROL_ONLY`): se decidió sin una segunda consulta porque el autor pidió
-incorporarlas sin detenerse y el control tuvo un error nacional bajo en 2025. Ver si lo confirma.
+(`acceptance_fallback_run`, `CONTROL_ONLY`): se publicaron sin una segunda consulta porque el autor pidió
+incorporarlas sin detenerse y el control tuvo un error nacional bajo en 2025. El autor lo confirmó
+expresamente después de revisarlo, el 7-nov-2026. La confirmación mantiene ambas publicadas con el
+control y no las convierte en aceptadas ni validadas.
 
 ## Datos
 
