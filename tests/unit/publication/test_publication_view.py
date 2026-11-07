@@ -8,11 +8,14 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+from types import SimpleNamespace
 
 import pandas as pd
 import pytest
 from scripts import publication_view as vista
 
+from epiforecast.publication.compiler import POINT_ONLY_SUFFIX
+from epiforecast.publication.status import VERDICT_FAIL
 from epiforecast.runner.artifact_identity import ArtifactValidationError
 
 
@@ -86,3 +89,74 @@ def test_sin_semanas_observadas_el_cruce_conserva_sus_columnas():
     assert list(vista.tras_origen(vacio, (2026, 41)).columns) == list(vacio.columns)
     filas = pd.DataFrame({"epi_year": [2026, 2026], "epi_week": [41, 42]})
     assert vista.tras_origen(filas, (2026, 41))["epi_week"].tolist() == [42]
+
+
+class _Avance:
+    weeks_required = 4
+    weeks_available = 1
+    observation_dataset_id = "obs"
+
+    @staticmethod
+    def progress_label() -> str:
+        return "Validación prospectiva en curso (1/4 semanas)"
+
+
+def _vista_sintetica(monkeypatch, tmp_path, *, publicable: bool = True) -> Path:
+    """Shard compilado en 0/4 y estado vigente en 1/4, sin datos reales."""
+    shard = tmp_path / "shard"
+    (shard / "web").mkdir(parents=True)
+    (shard / "web" / "manifest.json").write_text(
+        json.dumps(
+            {
+                "origin": [2026, 41],
+                "horizon_weeks": 1,
+                "publication_label": "Validación prospectiva en curso (0/4 semanas)",
+                "uncertainty_label": "puntual",
+                "engines": ["motor"],
+                "models": 64,
+                "products": 111,
+            }
+        ),
+        "utf-8",
+    )
+    fila = "nacional,mx,general,2026,42,2026-10-18,motor,5\n"
+    (shard / "web" / "series.csv").write_text(
+        "geography_level,geography_id,sex,epi_year,epi_week,ds,engine,yhat_cases\n" + fila + "",
+        "utf-8",
+    )
+    obs = tmp_path / "obs" / "x" / "obs"
+    obs.mkdir(parents=True)
+    (obs / "products.csv").write_text(
+        "geography_level,geography_id,sex,epi_year,epi_week,ds,y_cases,observed\n"
+        "nacional,mx,general,2026,42,2026-10-18,7,True\n",
+        "utf-8",
+    )
+    estado = SimpleNamespace(
+        publishable=publicable,
+        verdict="INCOMPLETE" if publicable else VERDICT_FAIL,
+        release_id="x_release",
+        status=_Avance(),
+    )
+    disease = SimpleNamespace(id="x", lifecycle="published", display_name="X", web={})
+    verificado = SimpleNamespace(chain={}, uncertainty_available=False)
+    monkeypatch.setattr(vista.registry, "require", lambda _i: disease)
+    monkeypatch.setattr(vista, "load_declared_status", lambda _i: estado)
+    monkeypatch.setattr(vista, "_verifica_shard", lambda *_a: {"files": {}})
+    monkeypatch.setattr(vista, "verify_bundle", lambda _b: verificado)
+    monkeypatch.setattr(vista, "emision_del_pronostico", lambda _b: "2026-11-07T00:00:00+00:00")
+    monkeypatch.setattr(vista, "OBSERVACIONES", tmp_path / "obs")
+    monkeypatch.setattr(vista, "_nombres", lambda: {("nacional", "mx"): "Nacional"})
+    return shard
+
+
+def test_la_etiqueta_sale_del_estado_vigente_no_del_shard(monkeypatch, tmp_path):
+    shard = _vista_sintetica(monkeypatch, tmp_path)
+    v = vista.build_view("x", shard)
+    assert v["publication_label"].startswith("Validación prospectiva en curso (1/4 semanas)")
+    assert v["publication_label"].endswith(POINT_ONLY_SUFFIX)
+
+
+def test_un_fail_no_genera_vista_publica(monkeypatch, tmp_path):
+    shard = _vista_sintetica(monkeypatch, tmp_path, publicable=False)
+    with pytest.raises(ArtifactValidationError, match="FAIL"):
+        vista.build_view("x", shard)

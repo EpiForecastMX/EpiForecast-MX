@@ -30,6 +30,7 @@ from typing import Any
 import pandas as pd
 
 from epiforecast import registry
+from epiforecast.publication.compiler import publication_label
 from epiforecast.publication.status import load_declared_status
 from epiforecast.runner.artifact_identity import ArtifactValidationError, equal, require
 from epiforecast.runner.release_loader import VerifiedRelease, verify_bundle
@@ -130,6 +131,10 @@ def build_view(disease_id: str, shard_root: Path) -> dict[str, Any]:
     disease = registry.require(disease_id)
     equal(f"{disease.id}: lifecycle", disease.lifecycle, "published")
     estado = load_declared_status(disease.id)
+    # La vista alimenta el sitio: un FAIL se conserva como evidencia y detiene la semana, no se pinta.
+    require(
+        estado.publishable, f"{disease.id}: veredicto {estado.verdict}; no se genera vista pública"
+    )
     release_id = estado.release_id
     manifiesto = _verifica_shard(shard_root, disease.id, release_id)
     bundle = release_path(default_releases_root(), disease.id, release_id)
@@ -205,7 +210,8 @@ def build_view(disease_id: str, shard_root: Path) -> dict[str, Any]:
         "origin": list(origen),
         "forecast_emitted_at": emitido,
         "horizon_weeks": int(web["horizon_weeks"]),
-        "publication_label": web["publication_label"],
+        # Del estado vigente, no del shard: el shard se compiló en 0/N y es inmutable.
+        "publication_label": publication_label(estado.status, verificado),
         "uncertainty_label": web["uncertainty_label"],
         "verdict": estado.verdict,
         "weeks_required": estado.status.weeks_required,

@@ -190,6 +190,16 @@ def test_cli_dry_run_es_obligatorio():
         pw._parser().parse_args(["--disease", "obesidad", "--pdf", "x.pdf"])
 
 
+@pytest.mark.parametrize(("veredicto", "esperado"), [("FAIL", pw.RC_FAIL), ("INCOMPLETE", 0)])
+def test_un_dry_run_con_fail_no_sale_en_cero(monkeypatch, tmp_path, capsys, veredicto, esperado):
+    """Un bucle con ``|| break`` no debe pasar de largo por un FAIL."""
+    payload = {"disease_id": "obesidad", "verdict": veredicto}
+    monkeypatch.setattr(pw, "run_week", lambda *_a, **_k: payload)
+    rc = pw.main(["--disease", "obesidad", "--pdf", str(tmp_path / "x.pdf"), "--dry-run"])
+    assert rc == esperado
+    assert ("FAIL" in capsys.readouterr().err) is (veredicto == "FAIL")
+
+
 def test_cli_write_rechaza_un_baseline_manual_antes_de_leerlo(tmp_path, capsys):
     """Un baseline arbitrario puede retroceder el estado; sólo se admite para inspección."""
     rc = pw.main(

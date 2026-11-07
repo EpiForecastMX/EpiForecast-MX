@@ -45,6 +45,7 @@ from epiforecast.publication.observation_store import (
     observation_path,
     resolve_observation_dir,
 )
+from epiforecast.publication.prospective import VERDICT_FAIL
 from epiforecast.publication.status import declared_paths
 from epiforecast.runner import orchestrator
 from epiforecast.runner.artifact_identity import ArtifactValidationError
@@ -53,6 +54,7 @@ from epiforecast.runner.release_contract import canonical_json, sha256_bytes
 from epiforecast.runner.release_store import default_releases_root, release_path
 
 REPORT_SCHEMA = "prospective_week_dry_run.v1"
+RC_FAIL = 3  # La semana quedó evaluada, con evidencia si fue --write, y no debe publicarse.
 RAW_COLUMNS: tuple[str, ...] = (
     "Anio",
     "Semana",
@@ -549,6 +551,13 @@ def main(argv: list[str] | None = None) -> int:
         print(f"✖ prospective-week: {exc}", file=sys.stderr)
         return 2
     sys.stdout.buffer.write(canonical_json(payload))
+    if payload["verdict"] == VERDICT_FAIL:
+        print(
+            f"✖ prospective-week: {payload['disease_id']} con veredicto FAIL: la semana se detiene "
+            "hasta que decida el autor",
+            file=sys.stderr,
+        )
+        return RC_FAIL
     return 0
 
 
