@@ -28,12 +28,13 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
-## Cáncer de mama publicado con el control — 8-nov-2026
+## Cánceres: mama con el control y cuello del útero — 8-nov-2026
 
-Tumor maligno de la mama (C50) reprobó el gate de 2025 en el nacional y está publicado con el control por
-orden del autor, nunca como validado. Cuello del útero espera soporte de un solo sexo; los otros 15
-cánceres sólo tienen datos desde 2023. Detalle en `docs/C7_12_CANCER.md`. Son trece padecimientos del
-runner en la paridad semanal.
+Tumor maligno de la mama (C50) reprobó el gate de 2025 y está publicado con el control por orden
+del autor, nunca como validado. Cuello del útero (C53) superó el gate y es el primer padecimiento
+sin desglose por sexo (`sex_breakdown: false`: 32 bases «general», 37 productos). Los otros 15
+cánceres sólo tienen datos desde 2023. Detalle en `docs/C7_12_CANCER.md`. Son catorce padecimientos
+del runner en la paridad semanal.
 
 ## Radar del boletín 42 — 8-nov-2026
 

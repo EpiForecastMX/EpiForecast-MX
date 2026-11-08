@@ -47,6 +47,7 @@ def test_el_carril_legacy_no_cambia():
         "Gingivitis y enfermedad periodontal",
         "Úlceras, gastritis y duodenitis",
         "Tumor maligno de la mama",
+        "Tumor maligno del cuello del útero",
     ]
 
 

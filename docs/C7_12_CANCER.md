@@ -6,7 +6,7 @@ y los siguientes traen 17 tumores malignos; sólo dos tienen historia desde 2013
 | grupo | padecimientos | historia | situación |
 | --- | --- | --- | --- |
 | Mama (C50) | 1 | 2013-W05 a hoy, con sexo | publicado con el control estacional |
-| Cuello del útero (C53) | 1 | 2013-W05 a hoy, sin desglose por sexo | requiere soporte de un solo sexo en el runner |
+| Cuello del útero (C53) | 1 | 2013-W05 a hoy, sin desglose por sexo | publicado: superó el gate de 2025 con 32 bases sin sexo |
 | Pulmón, estómago, colon y recto, hígado, linfomas, leucemia, esófago, páncreas, SNC, huesos, riñón, próstata, cuerpo del útero, ovario | 15 | desde 2023-W01 | no alcanzan las 260 semanas de `min_train_weeks`; el autor pidió diseñar una política de historia corta, sujeta a su revisión antes de publicar |
 
 ## Tumor maligno de la mama (C50)
@@ -32,3 +32,32 @@ Política `rolling_cv_baja_incidencia_v1` (cinco motores estacionales): las seri
 
 Con las cifras a la vista, el autor ordenó publicar el control. Gate 0/4 (W42-W45); al completar será
 `CONTROL_ONLY`. Consolidado W42 `candidato_con_cancer`: paridad PASS con los diecisiete.
+
+## Padecimientos sin desglose por sexo y cuello del útero (C53)
+
+El autor eligió el refactor completo («2»): el runner ya no asume 64 bases. El registry declara
+`sex_breakdown: false` cuando el boletín sólo da el total; `SexScheme` (`epi_dataset_spec`) fija la
+partición y `sex_scheme.py` la consulta desde el registry o la infiere de un frame. Sin desglose, la
+base es el total reconciliado de cada entidad como serie «general» con la exposición total del CPV:
+32 bases, 4 regiones, 1 nacional, 37 productos. Ningún módulo inventa hombres ni mujeres. Con
+desglose, el dataset de vías urinarias sale byte a byte igual al publicado (`ivu_n39_0683429134d9`),
+y la suite completa pasa sin cambiar ningún conteo existente.
+
+Cuello del útero: Cuadro 15, último bloque (Sem, acumulado y año anterior); 666 de 669 boletines,
+las mismas tres exclusiones que mama, determinista (`8530cccef216…`); W42 igual al radar en las 32
+entidades y sólo 1 de 32 semanas igual a mama.
+
+| hecho | valor |
+| --- | --- |
+| Dataset | `cancer_cuello_utero_c53_4ad50c282abf` (32 series, 668 periodos) |
+| Selección | `cancer_cuello_utero_c53_select_15758701c65e_60ac551e9441` (medias y medianas de 3 y 5 años) |
+| Prueba 2025 | `cancer_cuello_utero_c53_benchmark_test_1241d3b04626_5382fe5f63bf` |
+| sMAPE bases / 37 / nacional | 83.0 / 79.2 / 21.7, control 96.9 / 86.9 / 20.9 |
+| Veredicto | ACEPTADO (nacional +3.6 %, dentro del 10 %) |
+| Release | `cancer_cuello_utero_c53_release_a2dd2900a980` |
+| Emitido | 2026-11-08 22:43:37 UTC; el boletín 43 no existía |
+
+Las series estatales tienen pocos casos (unas 71 semanales en todo el país) y su sMAPE es alto; el
+total nacional es la lectura útil. El paso semanal acepta el raw sin sexo (`prospective_week`,
+ensayado en seco con un boletín simulado) y `une_consolidado.sh` lo proyecta al consolidado con
+hombres y mujeres vacíos. Consolidado W42 `candidato_con_cuello`: paridad PASS con los dieciocho.
