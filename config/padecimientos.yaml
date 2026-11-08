@@ -702,11 +702,8 @@ padecimientos:
     selection_policy: rolling_cv_baja_incidencia_v1
     # El gate de 2025 rechazó el portafolio; el autor ordenó publicar el control (8-nov-2026).
     artifact_source:
-      backend: runner_runs
-      refit_run_id: cancer_mama_c50_refit_final_9fe0414b00c7_4bc2c7ac4efa
-      forecast_run_id: cancer_mama_c50_forecast_h52_4bc2c7ac4efa_68d55b0a092a
-      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
-      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
+      backend: runner_release
+      release_id: cancer_mama_c50_release_ee47f3dfc962
     acceptance_fallback_run: cancer_mama_c50_benchmark_test_e44ce18e1b64_0e469c4fcc08
     prophet_grid_key: null
     deepar_grid_key: null
