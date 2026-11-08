@@ -700,6 +700,8 @@ padecimientos:
     eligible_engines: []
     # Series de hombres casi nulas: política de motores estacionales, como isquémica.
     selection_policy: rolling_cv_baja_incidencia_v1
+    # El gate de 2025 rechazó el portafolio; el autor ordenó publicar el control (8-nov-2026).
+    acceptance_fallback_run: cancer_mama_c50_benchmark_test_e44ce18e1b64_0e469c4fcc08
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
