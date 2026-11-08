@@ -682,3 +682,29 @@ padecimientos:
       color: "#A855F7"
       label: "Úlceras, gastritis y duodenitis"
       nombre_completo: "Úlceras, gastritis y duodenitis (K25-K29)"
+
+  - id: cancer_mama_c50
+    data_name: "Tumor maligno de la mama"
+    artifact_key: Cancer_Mama_C50
+    slug: cancer_mama_c50
+    display_name: "Tumor maligno de la mama"
+    cie_codes: ["C50"]
+    aliases: ["tumor maligno de la mama", "cancer de mama", "cancer de seno", "c50"]
+    profile: baja_incidencia_semanal
+    batch: standalone
+    extraction_group: displasias_neoplasias_mama
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # Series de hombres casi nulas: política de motores estacionales, como isquémica.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#DB2777"
+      label: "Cáncer de mama"
+      nombre_completo: "Tumor maligno de la mama (C50)"
