@@ -41,6 +41,9 @@ def test_el_contrato_separa_legacy_de_release():
         "hipertension arterial",
         "enfermedad isquemica del corazon",
         "enfermedad cerebrovascular",
+        "infecciones intestinales por otros organismos y las mal definidas",
+        "infeccion de vias urinarias",
+        "ulceras gastritis y duodenitis",
     )
     assert c.releases["obesidad"] == (_OBESIDAD, _RELEASE)
     assert sorted(i for i, _ in c.releases.values()) == [
@@ -49,10 +52,13 @@ def test_el_contrato_separa_legacy_de_release():
         "diabetes_t1",
         "diabetes_t2",
         "hipertension_i10",
+        "intestinales_a04",
         "isquemica_i20",
+        "ivu_n39",
         "obesidad",
+        "ulceras_k25",
     ]
-    # La paridad de corte cubre a los siete; las series legacy siguen siendo 3×111 + 99.
+    # La paridad de corte cubre a los diez; las series legacy siguen siendo 3×111 + 99.
     assert c.padecimientos == (*c.legado, *c.release)
     assert c.legado == ("depresion", "parkinson", "alzheimer", "dengue")
     assert len(c.claves_esperadas()) == 432
@@ -68,7 +74,7 @@ def _consolidado(ruta: Path, cortes: dict[str, int]) -> Path:
     for pad, ultima in cortes.items():
         for semana in range(ultima - 1, ultima + 1):
             for entidad in ("Aguascalientes", "México"):
-                filas.append(f"2026,{semana},{entidad},{pad}")
+                filas.append(f'2026,{semana},{entidad},"{pad}"')
     ruta.write_text("\n".join(filas) + "\n", encoding="utf-8")
     return ruta
 
@@ -90,6 +96,9 @@ def test_la_paridad_de_corte_incluye_al_publicado_del_runner(tmp_path):
         "Hipertensión arterial": 42,
         "Enfermedad isquémica del corazón": 42,
         "Enfermedad cerebrovascular": 42,
+        "Infecciones intestinales por otros organismos y las mal definidas": 42,
+        "Infección de vías urinarias": 42,
+        "Úlceras, gastritis y duodenitis": 42,
     }
     rezagada = _consolidado(tmp_path / "a.csv", {**pads, "Obesidad": 27})
     resultado = revisa_consolidado(rezagada, contrato, contrato.padecimientos)
@@ -110,7 +119,7 @@ def test_un_publicado_del_runner_ausente_del_consolidado_falla(tmp_path):
 def test_revisa_releases_falla_cerrado_sin_bundle_ni_estado(tmp_path):
     resultado = revisa_releases(tmp_path, ContratoCobertura.canonico())
     assert not resultado.pasa
-    assert len(resultado.problemas) == 7
+    assert len(resultado.problemas) == 10
     assert any("release obesidad" in p for p in resultado.problemas)
     assert any("release diabetes tipo i:" in p for p in resultado.problemas)
 

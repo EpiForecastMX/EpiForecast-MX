@@ -28,6 +28,13 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
+## Radar del boletín 42 — 8-nov-2026
+
+Infecciones intestinales por otros organismos (A04, A08-A09), infección de vías urinarias y úlceras,
+gastritis y duodenitis están publicadas desde sus releases, 0/4 en curso; detalle en
+`docs/C7_11_RADAR_W42.md`. IRA y gingivitis reprobaron el gate de 2025 y siguen `configured`: publicar su
+control exige orden expresa del autor. Son diez padecimientos del runner en la paridad semanal.
+
 ## Cardiovasculares publicadas — 7-nov-2026
 
 Hipertensión arterial, enfermedad isquémica y cerebrovascular están publicadas; detalle en

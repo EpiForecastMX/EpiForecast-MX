@@ -41,6 +41,9 @@ def test_el_carril_legacy_no_cambia():
         "Hipertensión arterial",
         "Enfermedad isquémica del corazón",
         "Enfermedad cerebrovascular",
+        "Infecciones intestinales por otros organismos y las mal definidas",
+        "Infección de vías urinarias",
+        "Úlceras, gastritis y duodenitis",
     ]
 
 

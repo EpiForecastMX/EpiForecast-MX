@@ -143,3 +143,138 @@ cuadro_groups:
         reason: "camelot pierde un renglón de entidad: 31 de 32"
     n_states_expected: 32
     backend: camelot_stream
+
+  # ── Radar del boletín W42 (8-nov-2026): cinco padecimientos de alta incidencia. Discovery sobre
+  # 669 boletines (2014_sem01..2026_sem42): la página existe en todos y el bloque objetivo es
+  # siempre el primero o el último, de 4 columnas (Sem, Acum H, Acum M, Acum año anterior), aunque
+  # el número de bloques vecinos cambia según el año. Todos dicen «hasta la semana N-1».
+  infecciosas_digestivas_intestinales:
+    # CUADRO 4.x: Infecciones intestinales por otros organismos y las mal definidas (A04, A08-A09
+    # excepto A08.0), último bloque. 11 columnas hasta 2015_sem01, 12 hasta 2024_sem05 y 8 después.
+    page_anchors: ["mal definidas"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    last_block_columns: {8: 4, 11: 4, 12: 4}
+    diseases:
+      - id: intestinales_a04
+        keyword: "Intestinales_A04"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [intestinales_a04]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  infecciosas_respiratorias_agudas:
+    # CUADRO 5.1: Infecciones respiratorias agudas (J00-J06, J20, J21 excepto J02, J03.0), primer
+    # bloque. 8 columnas hasta 2020_sem07, 11 en 2020, 12 hasta 2024_sem06 y 8 después.
+    page_anchors: ["respiratorias agudas"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {8: 4, 11: 4, 12: 4}
+    diseases:
+      - id: ira_j00
+        keyword: "IRA_J00"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [ira_j00]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  vigilancia_sindromatica_ivu:
+    # CUADRO 12: Infección de vías urinarias (N30, N34, N39.0), último de dos bloques (8 columnas;
+    # 9 en 2014_sem02-03 por una columna vacía del bloque vecino).
+    page_anchors: ["urinarias"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    last_block_columns: {8: 4, 9: 4}
+    diseases:
+      - id: ivu_n39
+        keyword: "IVU_N39"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [ivu_n39]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  no_transmisibles_gingivitis:
+    # CUADRO 13.3: Gingivitis y enfermedad periodontal (K05), último bloque, tras insuficiencia
+    # venosa periférica y asma. 11 columnas hasta 2015_sem01 y 12 después.
+    page_anchors: ["gingivitis"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    last_block_columns: {11: 4, 12: 4}
+    diseases:
+      - id: gingivitis_k05
+        keyword: "Gingivitis_K05"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [gingivitis_k05]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2023_sem45.pdf"
+        diseases: [gingivitis_k05]
+        keep_period: true
+        reason: >-
+          renglón de Chiapas alterado en el PDF («Chiapas San Luis Potosí», 11 valores en vez de 12)
+          y camelot no reconoce ninguna entidad de la tabla
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  no_transmisibles_ulceras:
+    # CUADRO 13.4: Úlceras, gastritis y duodenitis (K25-K29), primer bloque, antes de enfermedad
+    # alcohólica del hígado y cirrosis hepática alcohólica. 11 columnas hasta 2015_sem01 y 12 después.
+    page_anchors: ["gastritis"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {11: 4, 12: 4}
+    diseases:
+      - id: ulceras_k25
+        keyword: "Ulceras_K25"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [ulceras_k25]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
