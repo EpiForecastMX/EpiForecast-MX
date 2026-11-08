@@ -2,7 +2,8 @@
 
 **Estado al 8-nov-2026:** por orden del autor («incorpora» sobre la lista del radar) se dieron de alta cinco
 padecimientos. Tres superaron el gate de 2025 y se publicaron desde sus releases; infecciones
-respiratorias agudas (IRA) y gingivitis lo reprobaron y siguen `configured`, sin publicar. El agregado
+respiratorias agudas (IRA) y gingivitis lo reprobaron. Ese mismo día, con las cifras a la vista, el autor
+ordenó publicar su control estacional («ok hazlo»): están publicadas como control, nunca como validadas. El agregado
 «Enfermedades infecciosas intestinales» no se incorporó: el radar lo marca como agregado y contiene el
 bloque A04, A08-A09 ya incorporado.
 
@@ -15,7 +16,7 @@ bloque A04, A08-A09 ya incorporado.
 | sMAPE 111 series (control) | 14.2 (15.0) | 9.4 (9.9) | 13.1 (14.3) | 17.9 (13.5) | 19.5 (17.9) |
 | sMAPE nacional (control) | 5.5 (8.7) | 4.4 (5.3) | 4.7 (4.8) | 14.0 (8.8) | 12.8 (8.5) |
 | Veredicto | ACEPTADO | ACEPTADO | ACEPTADO | RECHAZADO | RECHAZADO |
-| Release | `intestinales_a04_release_8f5baa0a6556` | `ivu_n39_release_7d2b810a3793` | `ulceras_k25_release_9d58ce6ad597` | ninguno | ninguno |
+| Release | `intestinales_a04_release_8f5baa0a6556` | `ivu_n39_release_7d2b810a3793` | `ulceras_k25_release_9d58ce6ad597` | `ira_j00_release_9669e8caafea` (control) | `gingivitis_k05_release_9a2bcab11a53` (control) |
 
 Política `rolling_cv_v1` con siete motores (sin Prophet); el smoke pasó con ETS y Ridge en los cinco. Origen
 2026-W41, 52 semanas, emitidos el 8-nov-2026 entre las 16:15 y las 16:17 UTC. Gate prospectivo 0/4
@@ -24,8 +25,24 @@ Política `rolling_cv_v1` con siete motores (sin Prophet); el smoke pasó con ET
 
 IRA y gingivitis: la selección de 2021-2024 eligió sobre todo ETS y medias de cinco años (IRA: ETS en 26
 bases, `seasonal_mean_5y` en 25; gingivitis: ETS en 34), y en 2025 ese portafolio empeoró al control
-en los tres ámbitos. Tras el rechazo, `final_selection.csv` pone las 64 bases en `seasonal_naive_lag52`. Publicar el control requiere una orden expresa del autor que nombre el padecimiento y el run
-rechazado. Hasta entonces van en `noModeladas` del frontend.
+en los tres ámbitos. Tras el rechazo, `final_selection.csv` pone las 64 bases en `seasonal_naive_lag52`.
+
+## Control de IRA y gingivitis (8-nov-2026)
+
+Orden del autor tras ver las cifras: «ok hazlo» a «¿Publico el control estacional de IRA y gingivitis?».
+`acceptance_fallback_run` apunta a los dos runs de prueba rechazados, commiteado antes del `refit`.
+
+| hecho | IRA | Gingivitis |
+| --- | --- | --- |
+| Refit | `ira_j00_refit_final_9fe0414b00c7_5b4bd4056a06` | `gingivitis_k05_refit_final_9fe0414b00c7_f4154619fa62` |
+| Pronóstico | `ira_j00_forecast_h52_5b4bd4056a06_c0e9d9538bad` | `gingivitis_k05_forecast_h52_f4154619fa62_038636600236` |
+| Emitido (UTC) | 2026-11-08 20:29:32 | 2026-11-08 20:29:37 |
+| Release | `ira_j00_release_9669e8caafea` | `gingivitis_k05_release_9a2bcab11a53` |
+| Gate prospectivo | `f31a712e…`, W42-W45 | `6a4ce42b…`, W42-W45 |
+
+Ambos releases llevan `acceptance_outcome: fallback_control` y la vista `caida_al_control` con las cifras
+selladas de la tabla de arriba. Candidato y control del gate son idénticos: al llegar a cuatro semanas el
+veredicto será `CONTROL_ONLY`, nunca `PASS`. Ninguna superficie dice «validación en curso».
 
 ## Datos
 
@@ -44,5 +61,5 @@ Caída de 2020 en los cinco, con nivel posterior más bajo en IRA (unos 24 millo
 pandemia; no se midió si es menos enfermedad, menos consulta o menos registro. Los pliegues de 2021-2024 y
 la prueba de 2025 quedan dentro del nivel nuevo.
 
-Consolidado W42: `candidato_con_radar`, que parte de `candidato_con_cardio` con prefijo byte-idéntico;
-paridad PASS con los catorce en (2026, 42). Shards respaldados en `planes/respaldo_shards_2026-11-08/`.
+Consolidado W42: `candidato_con_control`, que parte de `candidato_con_radar` (y éste de
+`candidato_con_cardio`) con prefijo byte-idéntico; paridad PASS con los dieciséis en (2026, 42). Shards respaldados en `planes/respaldo_shards_2026-11-08/`.

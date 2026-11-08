@@ -530,8 +530,8 @@ padecimientos:
       label: "Covid-19"
       nombre_completo: "Covid-19 (U07.1), casos confirmados por laboratorio"
 
-  # ── Radar del boletín W42 (8-nov-2026). Intestinales, vías urinarias y úlceras publicadas; IRA y
-  # gingivitis reprobaron el gate de 2025 y siguen configured, a la espera del autor. ──
+  # ── Radar del boletín W42 (8-nov-2026). Intestinales, vías urinarias y úlceras superaron el gate de
+  # 2025; IRA y gingivitis lo reprobaron y se publican con el control por orden del autor. ──
   - id: intestinales_a04
     data_name: "Infecciones intestinales por otros organismos y las mal definidas"
     artifact_key: Intestinales_A04
@@ -572,8 +572,10 @@ padecimientos:
     batch: standalone
     extraction_group: infecciosas_respiratorias_agudas
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    # Publicada con el CONTROL estacional por orden del autor (8-nov-2026): el gate de 2025 rechazó
+    # el portafolio. Nunca se presenta como validada.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
@@ -631,8 +633,10 @@ padecimientos:
     batch: standalone
     extraction_group: no_transmisibles_gingivitis
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    # Publicada con el CONTROL estacional por orden del autor (8-nov-2026): el gate de 2025 rechazó
+    # el portafolio. Nunca se presenta como validada.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1

@@ -42,7 +42,9 @@ def test_el_carril_legacy_no_cambia():
         "Enfermedad isquémica del corazón",
         "Enfermedad cerebrovascular",
         "Infecciones intestinales por otros organismos y las mal definidas",
+        "Infecciones respiratorias agudas",
         "Infección de vías urinarias",
+        "Gingivitis y enfermedad periodontal",
         "Úlceras, gastritis y duodenitis",
     ]
 
