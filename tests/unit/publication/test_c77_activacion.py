@@ -46,10 +46,12 @@ def test_el_contrato_separa_legacy_de_release():
         "infeccion de vias urinarias",
         "gingivitis y enfermedad periodontal",
         "ulceras gastritis y duodenitis",
+        "tumor maligno de la mama",
     )
     assert c.releases["obesidad"] == (_OBESIDAD, _RELEASE)
     assert sorted(i for i, _ in c.releases.values()) == [
         "anorexia_f50",
+        "cancer_mama_c50",
         "cerebrovascular_i60",
         "diabetes_t1",
         "diabetes_t2",
@@ -62,7 +64,7 @@ def test_el_contrato_separa_legacy_de_release():
         "obesidad",
         "ulceras_k25",
     ]
-    # La paridad de corte cubre a los doce; las series legacy siguen siendo 3×111 + 99.
+    # La paridad de corte cubre a los trece; las series legacy siguen siendo 3×111 + 99.
     assert c.padecimientos == (*c.legado, *c.release)
     assert c.legado == ("depresion", "parkinson", "alzheimer", "dengue")
     assert len(c.claves_esperadas()) == 432
@@ -105,6 +107,7 @@ def test_la_paridad_de_corte_incluye_al_publicado_del_runner(tmp_path):
         "Úlceras, gastritis y duodenitis": 42,
         "Infecciones respiratorias agudas": 42,
         "Gingivitis y enfermedad periodontal": 42,
+        "Tumor maligno de la mama": 42,
     }
     rezagada = _consolidado(tmp_path / "a.csv", {**pads, "Obesidad": 27})
     resultado = revisa_consolidado(rezagada, contrato, contrato.padecimientos)
@@ -125,7 +128,7 @@ def test_un_publicado_del_runner_ausente_del_consolidado_falla(tmp_path):
 def test_revisa_releases_falla_cerrado_sin_bundle_ni_estado(tmp_path):
     resultado = revisa_releases(tmp_path, ContratoCobertura.canonico())
     assert not resultado.pasa
-    assert len(resultado.problemas) == 12
+    assert len(resultado.problemas) == 13
     assert any("release obesidad" in p for p in resultado.problemas)
     assert any("release diabetes tipo i:" in p for p in resultado.problemas)
 

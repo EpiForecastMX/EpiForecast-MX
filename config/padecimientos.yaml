@@ -694,8 +694,10 @@ padecimientos:
     batch: standalone
     extraction_group: displasias_neoplasias_mama
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    # Publicada con el CONTROL estacional por orden del autor (8-nov-2026): el gate de 2025 rechazó
+    # el portafolio. Nunca se presenta como validada.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Series de hombres casi nulas: política de motores estacionales, como isquémica.

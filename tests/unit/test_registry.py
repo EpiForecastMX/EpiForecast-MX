@@ -95,6 +95,7 @@ def test_cie_map():
         "N30": "Infección de vías urinarias",
         "K05": "Gingivitis y enfermedad periodontal",
         "K25": "Úlceras, gastritis y duodenitis",
+        "C50": "Tumor maligno de la mama",
     }
 
 
