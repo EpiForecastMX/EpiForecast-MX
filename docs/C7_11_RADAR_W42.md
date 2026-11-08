@@ -43,6 +43,8 @@ Orden del autor tras ver las cifras: «ok hazlo» a «¿Publico el control estac
 Ambos releases llevan `acceptance_outcome: fallback_control` y la vista `caida_al_control` con las cifras
 selladas de la tabla de arriba. Candidato y control del gate son idénticos: al llegar a cuatro semanas el
 veredicto será `CONTROL_ONLY`, nunca `PASS`. Ninguna superficie dice «validación en curso».
+A las 20:43 UTC de ese día la página oficial seguía listando como último el boletín 42
+(`Boletin-4226.pdf`): el 43 no existía al emitir.
 
 ## Datos
 
