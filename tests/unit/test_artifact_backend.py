@@ -268,6 +268,7 @@ def test_obesidad_y_f50_publicadas_solo_desde_su_release():
         "Infección de vías urinarias",
         "Gingivitis y enfermedad periodontal",
         "Úlceras, gastritis y duodenitis",
+        "Tumor maligno de la mama",
     ]
     # El carril legacy (all_forecast, tabla_333, zoom) sigue siendo exactamente los cuatro.
     assert [d.data_name for d in registry.legacy_published()] == [

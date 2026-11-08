@@ -46,6 +46,7 @@ def test_el_carril_legacy_no_cambia():
         "Infección de vías urinarias",
         "Gingivitis y enfermedad periodontal",
         "Úlceras, gastritis y duodenitis",
+        "Tumor maligno de la mama",
     ]
 
 

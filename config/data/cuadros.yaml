@@ -278,3 +278,40 @@ cuadro_groups:
         has_prev_year: true
     n_states_expected: 32
     backend: camelot_stream
+
+  displasias_neoplasias_mama:
+    # CUADRO 15: Displasias y Neoplasias. Tumor maligno de la mama (C50) es el primer bloque, con
+    # columnas Sem, H, M y año anterior; le sigue cuello del útero, sin desglose por sexo.
+    page_anchors: ["mama"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {7: 4, 8: 4}
+    diseases:
+      - id: cancer_mama_c50
+        keyword: "Cancer_Mama_C50"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [cancer_mama_c50]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2014_sem07.pdf"
+        diseases: [cancer_mama_c50]
+        keep_period: true
+        reason: >-
+          una nota editorial sobre tumor maligno de mama en hombres (Cuadro 3, con tasas) precede al
+          Cuadro 15 y el extractor toma la primera página con las anclas
+      - file: "2014_sem08.pdf"
+        diseases: [cancer_mama_c50]
+        keep_period: true
+        reason: >-
+          la portada resume la nota editorial de tumor maligno de mama en hombres y precede al
+          Cuadro 15; el extractor toma la primera página con las anclas
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
