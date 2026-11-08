@@ -1,0 +1,66 @@
+# Política de backtest OOS para series que EMPIEZAN EN 2023: los tumores malignos que el boletín
+# publica desde 2023-W01 (Cuadros 15.2 a 15.6). Diseñada el 8-nov-2026 por orden del autor, que la
+# revisa antes de publicar nada.
+#
+# Distinta de `rolling_cv_historia_corta_v1` (Covid-19, desde 2020), que no se toca. Por qué no basta
+# `rolling_cv_baja_incidencia_v1`: exige 260 semanas previas a cada pliegue y cuatro
+# pliegues de desarrollo (2021-2024); aquí la serie empieza en 2023. Con 2023 como único año previo, un
+# pliegue 2024 sólo admitiría el naive (cualquier ventana de varios años cae a él), así que no habría
+# nada que elegir. Por eso:
+#   - desarrollo: UN pliegue, 2025 completo (53 semanas MMWR), con 2023-2024 como train (104 semanas);
+#   - prueba bloqueada: 2026-W01 a W41, las semanas observadas (boletín 42), nunca vistas al elegir;
+#   - candidatos: el control `seasonal_naive_lag52` y `seasonal_mean_2y`, la única ventana distinta con
+#     dos años; ETS y Ridge fallan cerrado en series de pocos casos y Prophet no tiene congelados.
+# Regla de aceptación IDÉNTICA a las demás políticas (5 % bases y 111 productos, 10 % nacional). Es una
+# evidencia más débil: un solo pliegue de desarrollo y 41 semanas de prueba.
+version: 1
+name: rolling_cv_historia_corta_2023_v1
+
+seed: 20260724
+seasonal_horizon: 52
+min_train_weeks: 104 # dos años completos antes del pliegue de desarrollo
+mase_seasonal_lag: 52
+allow_53_week_development: true
+
+series_start: {epi_year: 2023, epi_week: 1}
+
+metrics:
+  primary: smape
+  reported: [smape, mase, mae, rmse, wape, bias]
+
+candidate_engines:
+  - seasonal_naive_lag52
+  - seasonal_mean_2y
+
+folds:
+  development:
+    - {epi_year: 2025, n_weeks: 53}
+  test: # bloqueado: 2026-W01..W41, sin participar en la selección
+    - {epi_year: 2026, n_weeks: 41, partial: true}
+
+selection:
+  aggregate: median
+  challenger_min_improvement_pct: 5.0 # sin efecto aquí: esta política no declara challengers
+  band_pct: 5.0
+  tie_break: [mase, rmse, cost, engine]
+  tiers:
+    incumbents:
+      - seasonal_naive_lag52
+      - seasonal_mean_2y
+    challengers: []
+  cost:
+    seasonal_naive_lag52: 1
+    seasonal_mean_2y: 1
+
+acceptance:
+  control_engine: seasonal_naive_lag52
+  max_worse_pct:
+    smape_bases: 5.0
+    smape_all: 5.0
+    smape_nacional_general: 10.0
+  fallback_engine: seasonal_naive_lag52
+
+stages:
+  smoke: {fold_groups: [development], last_n_folds: 1}
+  full: {fold_groups: [development]}
+  test: {fold_groups: [test]} # 2026-W01..W41: se abre UNA sola vez, con selección congelada

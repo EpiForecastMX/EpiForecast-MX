@@ -132,7 +132,7 @@ def test_baja_incidencia_solo_cambia_los_candidatos():
 
 def test_historia_corta_un_pliegue_2025_y_prueba_parcial_2026():
     """Cánceres desde 2023: desarrollo 2025 (53 sem, 104 previas) y prueba 2026-W01..W41."""
-    corta = policy.load_policy("rolling_cv_historia_corta_v1")
+    corta = policy.load_policy("rolling_cv_historia_corta_2023_v1")
     canonica = policy.load_policy("rolling_cv_v1")
     assert [(f.fold_id, f.n_weeks, f.train_weeks_before) for f in corta.folds] == [
         ("development_2025", 53, 104),

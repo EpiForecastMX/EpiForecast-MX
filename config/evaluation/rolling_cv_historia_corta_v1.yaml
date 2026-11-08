@@ -1,65 +1,78 @@
-# Política de backtest OOS para padecimientos con HISTORIA CORTA: los tumores malignos que el boletín
-# publica desde 2023-W01 (Cuadros 15.2 a 15.6). Diseñada el 8-nov-2026 por orden del autor, que la
-# revisa antes de publicar nada.
-#
-# Por qué no basta `rolling_cv_baja_incidencia_v1`: exige 260 semanas previas a cada pliegue y cuatro
-# pliegues de desarrollo (2021-2024); aquí la serie empieza en 2023. Con 2023 como único año previo, un
-# pliegue 2024 sólo admitiría el naive (cualquier ventana de varios años cae a él), así que no habría
-# nada que elegir. Por eso:
-#   - desarrollo: UN pliegue, 2025 completo (53 semanas MMWR), con 2023-2024 como train (104 semanas);
-#   - prueba bloqueada: 2026-W01 a W41, las semanas observadas (boletín 42), nunca vistas al elegir;
-#   - candidatos: el control `seasonal_naive_lag52` y `seasonal_mean_2y`, la única ventana distinta con
-#     dos años; ETS y Ridge fallan cerrado en series de pocos casos y Prophet no tiene congelados.
-# Regla de aceptación IDÉNTICA a las demás políticas (5 % bases y 111 productos, 10 % nacional). Es una
-# evidencia más débil: un solo pliegue de desarrollo y 41 semanas de prueba.
+# Política de backtest OOS para padecimientos con HISTORIA CORTA (Covid-19, desde 2020-W08).
+# Mismas métricas, semilla, banda, desempates, candidatos y aceptación que
+# `rolling_cv_baja_incidencia_v1`. Solo cambian los pliegues: con menos de 260 semanas previas no
+# existe ningún fold de `rolling_cv_v1`, así que el desarrollo usa 2023 y 2024 con 104 semanas
+# mínimas de train. Registrada ANTES de abrir 2025. No es una política para series largas.
 version: 1
 name: rolling_cv_historia_corta_v1
 
 seed: 20260724
-seasonal_horizon: 52
-min_train_weeks: 104 # dos años completos antes del pliegue de desarrollo
-mase_seasonal_lag: 52
-allow_53_week_development: true
+seasonal_horizon: 52 # horizonte estacional (semanas) del pronóstico OOS
+min_train_weeks: 104 # historia previa mínima exigida por fold
+mase_seasonal_lag: 52 # denominador naive estacional de MASE (calculado SOLO sobre train)
 
-series_start: {epi_year: 2023, epi_week: 1}
+# Origen de la serie U07.1 (define cuántas semanas previas tiene cada fold).
+series_start: {epi_year: 2020, epi_week: 8}
 
 metrics:
-  primary: smape
+  primary: smape # sMAPE es la métrica principal (selección)
   reported: [smape, mase, mae, rmse, wape, bias]
 
+# Candidatos del benchmark: NO son los training_engines legacy del registry.
 candidate_engines:
   - seasonal_naive_lag52
-  - seasonal_mean_2y
+  - seasonal_mean_3y
+  - seasonal_median_3y
+  - seasonal_mean_5y
+  - seasonal_median_5y
 
+# Folds por año epidemiológico. n_weeks = semanas MMWR del año (verificado con epi_calendar).
 folds:
-  development:
+  development: # elegibles para selección/tuning
+    - {epi_year: 2023, n_weeks: 52}
+    - {epi_year: 2024, n_weeks: 52}
+  test: # bloqueado: no participa en tuning
     - {epi_year: 2025, n_weeks: 53}
-  test: # bloqueado: 2026-W01..W41, sin participar en la selección
-    - {epi_year: 2026, n_weeks: 41, partial: true}
+  stress: [] # 2020 es el inicio de la serie: no hay train previo
+  prospective: # solo reporte (parcial; la serie llega a 2026-W26)
+    - {epi_year: 2026}
 
+# Selección por SeriesKey CONSCIENTE DE COMPLEJIDAD (C5): los motores nuevos solo desplazan a un
+# incumbent si la mejora es material. Todo declarativo; el selector no tiene preferencias en código.
 selection:
-  aggregate: median
+  aggregate: median # mediana de los folds de development (2023-24)
   challenger_min_improvement_pct: 5.0 # sin efecto aquí: esta política no declara challengers
-  band_pct: 5.0
-  tie_break: [mase, rmse, cost, engine]
+  band_pct: 5.0 # banda de candidatos dentro del tier elegido
+  tie_break: [mase, rmse, cost, engine] # dentro de la banda, en este orden
   tiers:
-    incumbents:
+    incumbents: # baseline + ventanas estacionales
       - seasonal_naive_lag52
-      - seasonal_mean_2y
+      - seasonal_mean_3y
+      - seasonal_median_3y
+      - seasonal_mean_5y
+      - seasonal_median_5y
     challengers: []
+  # Costo DECLARATIVO: 1 = tabla sin ajuste.
   cost:
     seasonal_naive_lag52: 1
-    seasonal_mean_2y: 1
+    seasonal_mean_3y: 1
+    seasonal_median_3y: 1
+    seasonal_mean_5y: 1
+    seasonal_median_5y: 1
 
+# Gate de aceptación del stage `test` (2025). Se abre UNA sola vez, con la selección ya congelada:
+# si el portafolio no pasa, NO se retunea ni se cambia ninguna selección por resultados de 2025 —
+# se rechaza entero y la selección final cae al motor de control.
 acceptance:
   control_engine: seasonal_naive_lag52
-  max_worse_pct:
+  max_worse_pct: # cuánto puede empeorar el portafolio frente al control, por ámbito
     smape_bases: 5.0
     smape_all: 5.0
     smape_nacional_general: 10.0
-  fallback_engine: seasonal_naive_lag52
+  fallback_engine: seasonal_naive_lag52 # las 64 bases si el portafolio se rechaza
 
+# Alcance por stage del comando benchmark.
 stages:
-  smoke: {fold_groups: [development], last_n_folds: 1}
-  full: {fold_groups: [development]}
-  test: {fold_groups: [test]} # 2026-W01..W41: se abre UNA sola vez, con selección congelada
+  smoke: {fold_groups: [development], last_n_folds: 1} # último fold dev (verificación rápida)
+  full: {fold_groups: [development]} # los 2 folds dev = 64×104 predicciones base
+  test: {fold_groups: [test]} # 2025 (53 sem): se abre UNA sola vez, con selección congelada

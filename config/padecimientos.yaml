@@ -765,7 +765,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_historia_corta_v1
+    selection_policy: rolling_cv_historia_corta_2023_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -792,7 +792,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_historia_corta_v1
+    selection_policy: rolling_cv_historia_corta_2023_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -819,7 +819,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_historia_corta_v1
+    selection_policy: rolling_cv_historia_corta_2023_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -844,7 +844,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_historia_corta_v1
+    selection_policy: rolling_cv_historia_corta_2023_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -869,7 +869,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_historia_corta_v1
+    selection_policy: rolling_cv_historia_corta_2023_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -894,7 +894,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_historia_corta_v1
+    selection_policy: rolling_cv_historia_corta_2023_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -919,7 +919,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_historia_corta_v1
+    selection_policy: rolling_cv_historia_corta_2023_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -944,7 +944,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_historia_corta_v1
+    selection_policy: rolling_cv_historia_corta_2023_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -969,7 +969,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_historia_corta_v1
+    selection_policy: rolling_cv_historia_corta_2023_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -994,7 +994,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_historia_corta_v1
+    selection_policy: rolling_cv_historia_corta_2023_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1019,7 +1019,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_historia_corta_v1
+    selection_policy: rolling_cv_historia_corta_2023_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1044,7 +1044,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_historia_corta_v1
+    selection_policy: rolling_cv_historia_corta_2023_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1069,7 +1069,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_historia_corta_v1
+    selection_policy: rolling_cv_historia_corta_2023_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1094,7 +1094,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_historia_corta_v1
+    selection_policy: rolling_cv_historia_corta_2023_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1119,7 +1119,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_historia_corta_v1
+    selection_policy: rolling_cv_historia_corta_2023_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
