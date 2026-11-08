@@ -729,8 +729,9 @@ padecimientos:
     exposure_source_id: inegi_cpv2020_static
     # El boletín sólo publica el total: 32 bases «general», sin hombres ni mujeres.
     sex_breakdown: false
-    lifecycle: trained
-    channels: []
+    # Publicado (8-nov-2026) tras superar el gate de 2025; validación prospectiva en curso.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1

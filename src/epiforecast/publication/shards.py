@@ -215,7 +215,8 @@ def _epibot(c: Compilation, root: Path, reg: dict[str, str]) -> None:
         f"# {hechos['display_name']} — release {hechos['release_id']}",
         "",
         f"{hechos['display_name']} ({', '.join(hechos['cie_codes'])}) tiene "
-        f"{hechos['models']} modelos finales, uno por serie base (estado × sexo). "
+        f"{hechos['models']} modelos finales, uno por serie base "
+        f"({'estado × sexo' if c.disease.sex_breakdown else 'entidad; el boletín no desglosa sexo'}). "
         f"De esas {hechos['base_series']} series base se derivan por suma "
         f"{hechos['derived_products']} productos agregados, hasta un total de "
         f"{hechos['products']} productos. Los modelos y los productos NO son lo mismo: "
