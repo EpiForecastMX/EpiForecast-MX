@@ -79,6 +79,17 @@ def alinea_renglones(df: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(filas, index=df.index, columns=df.columns)
 
 
+def sin_llamadas(df: pd.DataFrame) -> pd.DataFrame:
+    """Quita las llamadas de nota (``*``, ``§``) al final del nombre de la entidad.
+
+    En 2014_sem28-31 el Cuadro 5.1 imprime «Michoacán *» por una fe de erratas: sin esto la
+    entidad no se reconoce y el boletín queda con 31 estados aunque el PDF trae las 32 filas.
+    """
+    df = df.copy()
+    df[df.columns[0]] = df[df.columns[0]].astype(str).str.replace(r"[\s*§]+$", "", regex=True)
+    return df
+
+
 def find_cuadro_page(pdf_path: str, anchors: list[str], state_markers: list[str]) -> int | None:
     """Página (1-based) que contiene TODAS las anclas y los marcadores de estado."""
     reader = PdfReader(pdf_path)
@@ -130,17 +141,21 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
         return out
     # La tabla estatal es la de más filas.
     df_raw = max((t.df for t in tables), key=len)
-    df_clean = _restrict_to_states(clean_df(alinea_renglones(df_raw)))
+    df_clean = _restrict_to_states(sin_llamadas(clean_df(alinea_renglones(df_raw))))
 
-    # Cuadro cuyo bloque objetivo es el último y comparte página con bloques de otro ancho.
-    last_block = spec.get("last_block_columns")
-    if last_block:
+    # Cuadro cuyo bloque objetivo es el primero o el último y comparte página con bloques de
+    # otro ancho o en otro número según el año: se recorta por el conteo real de columnas.
+    for clave, al_final in (("first_block_columns", False), ("last_block_columns", True)):
+        anchos = spec.get(clave)
+        if not anchos:
+            continue
         total = df_clean.shape[1] - 1
-        width = last_block.get(total)
+        width = anchos.get(total)
         if width is None:
-            out["reason"] = f"columnas inesperadas: {total} (esperaba {sorted(last_block)})"
+            out["reason"] = f"columnas inesperadas: {total} (esperaba {sorted(anchos)})"
             return out
-        df_clean = df_clean.iloc[:, [0, *range(total + 1 - width, total + 1)]]
+        inicio = total + 1 - width if al_final else 1
+        df_clean = df_clean.iloc[:, [0, *range(inicio, inicio + width)]]
         df_clean = df_clean.set_axis(list(range(width + 1)), axis=1)
 
     keywords = [d["keyword"] for d in spec["diseases"]]

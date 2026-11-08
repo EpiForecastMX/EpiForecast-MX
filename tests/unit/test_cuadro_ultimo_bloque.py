@@ -66,3 +66,54 @@ def test_rechazados_en_2025_siguen_invisibles(disease):
     spec = registry.require(disease)
     assert spec.lifecycle == "trained"
     assert list(spec.channels) == []
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("grupo", "disease", "total", "al_final"),
+    [
+        ("infecciosas_respiratorias_agudas", "ira_j00", 8, False),
+        ("infecciosas_respiratorias_agudas", "ira_j00", 11, False),
+        ("infecciosas_respiratorias_agudas", "ira_j00", 12, False),
+        ("no_transmisibles_ulceras", "ulceras_k25", 12, False),
+        ("infecciosas_digestivas_intestinales", "intestinales_a04", 11, True),
+        ("vigilancia_sindromatica_ivu", "ivu_n39", 9, True),
+        ("no_transmisibles_gingivitis", "gingivitis_k05", 12, True),
+    ],
+)
+def test_toma_el_primer_o_ultimo_bloque_de_cuatro(
+    monkeypatch, tmp_path, grupo, disease, total, al_final
+):
+    pdf = tmp_path / "2021_sem10.pdf"
+    pdf.write_bytes(b"%PDF")
+    tablas = [type("T", (), {"df": _tabla(total)})()]
+    monkeypatch.setattr(ce, "find_cuadro_page", lambda *_a: 7)
+    monkeypatch.setattr(ce.camelot, "read_pdf", lambda *_a, **_k: tablas)
+    monkeypatch.setattr(ce, "clean_df", lambda df: df)
+    monkeypatch.setattr(ce, "_restrict_to_states", lambda df: df)
+    salida = ce.extract_cuadro_from_pdf(str(pdf), grupo, disease)
+    assert salida["valid"]
+    assert salida["layout"] == "4col_prev"
+    primera = 10 + (total - 4 if al_final else 0)
+    assert salida["df"]["Casos_semana"].iloc[0] == primera
+
+
+@pytest.mark.unit
+def test_primer_bloque_con_ancho_desconocido_falla_cerrado(monkeypatch, tmp_path):
+    pdf = tmp_path / "2021_sem10.pdf"
+    pdf.write_bytes(b"%PDF")
+    tablas = [type("T", (), {"df": _tabla(10)})()]
+    monkeypatch.setattr(ce, "find_cuadro_page", lambda *_a: 7)
+    monkeypatch.setattr(ce.camelot, "read_pdf", lambda *_a, **_k: tablas)
+    monkeypatch.setattr(ce, "clean_df", lambda df: df)
+    monkeypatch.setattr(ce, "_restrict_to_states", lambda df: df)
+    salida = ce.extract_cuadro_from_pdf(str(pdf), "no_transmisibles_ulceras", "ulceras_k25")
+    assert not salida["valid"]
+    assert "columnas inesperadas" in salida["reason"]
+
+
+@pytest.mark.unit
+def test_entidad_con_llamada_de_nota_se_reconoce():
+    tabla = pd.DataFrame([["Michoacán *", "1"], ["Sonora§", "2"], ["Jalisco", "3"]])
+    limpia = ce._restrict_to_states(ce.sin_llamadas(tabla))
+    assert limpia[0].tolist() == ["Michoacán", "Sonora", "Jalisco"]

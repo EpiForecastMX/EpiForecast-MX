@@ -90,6 +90,11 @@ def test_cie_map():
         "I10": "Hipertensión arterial",
         "I20": "Enfermedad isquémica del corazón",
         "I60": "Enfermedad cerebrovascular",
+        "A04": "Infecciones intestinales por otros organismos y las mal definidas",
+        "J00": "Infecciones respiratorias agudas",
+        "N30": "Infección de vías urinarias",
+        "K05": "Gingivitis y enfermedad periodontal",
+        "K25": "Úlceras, gastritis y duodenitis",
     }
 
 

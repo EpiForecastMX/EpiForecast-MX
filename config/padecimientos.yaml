@@ -136,6 +136,31 @@ perfiles:
       ensemble: false
       stacking: false
 
+  aguda_conteos:
+    # Padecimiento agudo de ALTA incidencia semanal (IRA, infecciones intestinales, vías urinarias:
+    # miles de casos por semana). Mismos traits que cronica_conteos: conteos absolutos y CERO traits
+    # legacy activos; sólo cambia la cohorte, que no gobierna ningún motor del runner.
+    cohorte_id: aguda
+    unidad: conteos
+    rate_scale: 100000
+    prophet_log_transform: false
+    prophet_covid_holidays: false
+    ensemble_covid_holidays: false
+    prophet_cv_weights: false
+    prophet_enso: false
+    nbglm_enso: false
+    ensemble_clamp: false
+    stacking_clamp: false
+    deepar_short_series: false
+    fallback_regional: false
+    excluir_outliers: false
+    invert_log_predict: false
+    motor_rate:
+      prophet: false
+      deepar: false
+      ensemble: false
+      stacking: false
+
 # ── Padecimientos ──
 padecimientos:
   - id: depresion
@@ -504,3 +529,129 @@ padecimientos:
       color: "#0F766E"
       label: "Covid-19"
       nombre_completo: "Covid-19 (U07.1), casos confirmados por laboratorio"
+
+  # ── Radar del boletín W42 (8-nov-2026): alta por configuración, sin publicar. ──
+  - id: intestinales_a04
+    data_name: "Infecciones intestinales por otros organismos y las mal definidas"
+    artifact_key: Intestinales_A04
+    slug: intestinales_a04
+    display_name: "Infecciones intestinales por otros organismos y las mal definidas"
+    cie_codes: ["A04", "A08", "A09"]
+    aliases: ["infecciones intestinales", "infeccion intestinal", "infecciones intestinales por otros organismos", "a04", "a08-a09"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: infecciosas_digestivas_intestinales
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#0EA5E9"
+      label: "Infecciones intestinales"
+      nombre_completo: "Infecciones intestinales por otros organismos y las mal definidas (A04, A08-A09 excepto A08.0)"
+
+  - id: ira_j00
+    data_name: "Infecciones respiratorias agudas"
+    artifact_key: IRA_J00
+    slug: ira_j00
+    display_name: "Infecciones respiratorias agudas"
+    cie_codes: ["J00", "J01", "J03", "J04", "J05", "J06", "J20", "J21"]
+    aliases: ["infecciones respiratorias agudas", "infeccion respiratoria aguda", "infecciones respiratorias", "j00-j06"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: infecciosas_respiratorias_agudas
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#6366F1"
+      label: "Infecciones respiratorias agudas"
+      nombre_completo: "Infecciones respiratorias agudas (J00-J06, J20, J21 excepto J02, J03.0)"
+
+  - id: ivu_n39
+    data_name: "Infección de vías urinarias"
+    artifact_key: IVU_N39
+    slug: ivu_n39
+    display_name: "Infección de vías urinarias"
+    cie_codes: ["N30", "N34", "N39.0"]
+    aliases: ["infeccion de vias urinarias", "infecciones de vias urinarias", "infeccion urinaria", "infecciones urinarias", "ivu", "cistitis", "n39.0"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: vigilancia_sindromatica_ivu
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#14B8A6"
+      label: "Infección de vías urinarias"
+      nombre_completo: "Infección de vías urinarias (N30, N34, N39.0)"
+
+  - id: gingivitis_k05
+    data_name: "Gingivitis y enfermedad periodontal"
+    artifact_key: Gingivitis_K05
+    slug: gingivitis_k05
+    display_name: "Gingivitis y enfermedad periodontal"
+    cie_codes: ["K05"]
+    aliases: ["gingivitis", "enfermedad periodontal", "periodontitis", "gingivitis y enfermedad periodontal", "k05"]
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: no_transmisibles_gingivitis
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#EC4899"
+      label: "Gingivitis y enfermedad periodontal"
+      nombre_completo: "Gingivitis y enfermedad periodontal (K05)"
+
+  - id: ulceras_k25
+    data_name: "Úlceras, gastritis y duodenitis"
+    artifact_key: Ulceras_K25
+    slug: ulceras_k25
+    display_name: "Úlceras, gastritis y duodenitis"
+    cie_codes: ["K25", "K26", "K27", "K28", "K29"]
+    aliases: ["ulceras gastritis y duodenitis", "gastritis", "duodenitis", "ulcera gastrica", "ulcera peptica", "k25-k29"]
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: no_transmisibles_ulceras
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#A855F7"
+      label: "Úlceras, gastritis y duodenitis"
+      nombre_completo: "Úlceras, gastritis y duodenitis (K25-K29)"
