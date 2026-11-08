@@ -22,9 +22,9 @@ Política `rolling_cv_v1` con siete motores (sin Prophet); el smoke pasó con ET
 (W42-W45). A las 16:30 UTC de ese día, la página oficial del boletín listaba como último el 42
 (`Boletin-4226.pdf`): el boletín 43 no existía al emitir.
 
-IRA y gingivitis: en la selección de 2021-2024 los siete motores no superaron al control en ninguna serie
-(las 64 bases quedaron en `seasonal_naive_lag52`), y en 2025 el portafolio empeoró al control en los tres
-ámbitos. Publicar el control requiere una orden expresa del autor que nombre el padecimiento y el run
+IRA y gingivitis: la selección de 2021-2024 eligió sobre todo ETS y medias de cinco años (IRA: ETS en 26
+bases, `seasonal_mean_5y` en 25; gingivitis: ETS en 34), y en 2025 ese portafolio empeoró al control
+en los tres ámbitos. Tras el rechazo, `final_selection.csv` pone las 64 bases en `seasonal_naive_lag52`. Publicar el control requiere una orden expresa del autor que nombre el padecimiento y el run
 rechazado. Hasta entonces van en `noModeladas` del frontend.
 
 ## Datos
