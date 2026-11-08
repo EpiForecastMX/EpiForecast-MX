@@ -577,6 +577,8 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
+    # El gate de 2025 rechazó el portafolio; el autor ordenó publicar el control (8-nov-2026), como F50.
+    acceptance_fallback_run: ira_j00_benchmark_test_11d0b11ac60c_476ea7475f4d
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -631,6 +633,8 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
+    # El gate de 2025 rechazó el portafolio; el autor ordenó publicar el control (8-nov-2026), como F50.
+    acceptance_fallback_run: gingivitis_k05_benchmark_test_b2a6d1a0a37f_4a28a7a32302
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
