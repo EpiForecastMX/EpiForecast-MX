@@ -10,3 +10,6 @@ engines:
   seasonal_median_3y: {statistic: median, years: 3, min_obs: 1, fallback: seasonal_naive_lag52}
   seasonal_mean_5y: {statistic: mean, years: 5, min_obs: 1, fallback: seasonal_naive_lag52}
   seasonal_median_5y: {statistic: median, years: 5, min_obs: 1, fallback: seasonal_naive_lag52}
+  # Historia corta (cánceres desde 2023): con dos años previos, la media de 2 años es la única
+  # ventana distinta del naive; la mediana de dos valores es la misma media.
+  seasonal_mean_2y: {statistic: mean, years: 2, min_obs: 1, fallback: seasonal_naive_lag52}

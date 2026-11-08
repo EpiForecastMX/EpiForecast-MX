@@ -197,10 +197,20 @@ def _sin_sexo(
     year: int,
     week: int,
 ) -> dict[str, Any]:
-    """Bloque sin desglose por sexo: Sem, acumulado del año y acumulado del anterior."""
-    if df_clean.shape[1] - 1 != 3:
-        out["reason"] = f"columnas inesperadas: {df_clean.shape[1] - 1} (esperaba 3, sin sexo)"
+    """Bloques sin desglose por sexo: Sem, acumulado del año y acumulado del anterior.
+
+    El cuadro puede traer varios padecimientos sin sexo en bloques de 3 columnas; se toma el bloque
+    del padecimiento por su ``block_index``.
+    """
+    bloques = spec.get("diseases") or [{"id": disease_id, "block_index": 0}]
+    if df_clean.shape[1] - 1 != 3 * len(bloques):
+        out["reason"] = (
+            f"columnas inesperadas: {df_clean.shape[1] - 1} (esperaba {3 * len(bloques)}, sin sexo)"
+        )
         return out
+    bloque = next((int(d["block_index"]) for d in bloques if d["id"] == disease_id), 0)
+    inicio = 1 + 3 * bloque
+    df_clean = df_clean.iloc[:, [0, inicio, inicio + 1, inicio + 2]].set_axis([0, 1, 2, 3], axis=1)
     out["layout"] = "3col_total"
     df_dis = pd.DataFrame(
         {

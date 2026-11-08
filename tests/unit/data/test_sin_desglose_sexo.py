@@ -241,3 +241,38 @@ def test_el_extractor_lee_el_bloque_sin_sexo():
     assert out["df"]["Acumulado_total"].tolist() == [35, 7]
     ancho = pd.DataFrame({0: ["Aguascalientes"], 1: ["1"], 2: ["2"], 3: ["3"], 4: ["4"]})
     assert "columnas inesperadas" in ce._sin_sexo({}, ancho, {}, "x", 2026, 42)["reason"]
+
+
+def test_el_extractor_toma_el_bloque_sin_sexo_de_un_cuadro_de_tres():
+    from epiforecast.data.extraction import cuadro_extractor as ce
+
+    df = pd.DataFrame(
+        {
+            0: ["Aguascalientes"],
+            1: ["1"],
+            2: ["2"],
+            3: ["3"],
+            4: ["4"],
+            5: ["5"],
+            6: ["6"],
+            7: ["7"],
+            8: ["8"],
+            9: ["9"],
+        }
+    )
+    spec_ = {
+        "n_states_expected": 1,
+        "diseases": [
+            {"id": "cancer_prostata_c61", "block_index": 0},
+            {"id": "cancer_cuerpo_utero_c54", "block_index": 1},
+            {"id": "cancer_ovario_c56", "block_index": 2},
+        ],
+    }
+    out = ce._sin_sexo({}, df, spec_, "cancer_cuerpo_utero_c54", 2026, 42)
+    assert out["valid"]
+    fila = out["df"].iloc[0]
+    assert (fila["Casos_semana"], fila["Acumulado_total"], fila["Acumulado_anio_anterior"]) == (
+        4,
+        5,
+        6,
+    )
