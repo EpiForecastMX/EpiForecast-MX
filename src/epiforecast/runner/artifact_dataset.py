@@ -17,13 +17,13 @@ import pandas as pd
 
 from epiforecast.data.epi_calendar import shift, weeks_in_year
 from epiforecast.data.epi_dataset_spec import (
-    BASE_SEXES,
     COL_CVE_ENT,
     COL_DISEASE_ID,
     COL_EPI_WEEK,
     COL_EPI_YEAR,
     COL_SEXO,
 )
+from epiforecast.data.sex_scheme import base_sexes_of
 from epiforecast.runner.artifact_identity import (
     IO_ERRORS,
     ArtifactValidationError,
@@ -122,7 +122,8 @@ def dataset_window(
     frame = _read_identity(dataset_dir)
     require(len(frame), f"{DATASET_FILE}: sin filas")
     equal(f"{DATASET_FILE}: disease_id", sorted(set(frame[COL_DISEASE_ID])), [disease_id])
-    esperado = sorted((geo, sex) for geo in geography_ids for sex in BASE_SEXES)
+    sexos = base_sexes_of(frame[COL_SEXO].unique())
+    esperado = sorted((geo, sex) for geo in geography_ids for sex in sexos)
     series = {clave: grupo for clave, grupo in frame.groupby([COL_CVE_ENT, COL_SEXO], sort=True)}
     equal(f"{DATASET_FILE}: universo de series", sorted(series), esperado)
 

@@ -22,8 +22,9 @@ from typing import Any
 
 import pandas as pd
 
-from epiforecast.data.epi_dataset_spec import BASE_SEXES, COL_CVE_ENT
+from epiforecast.data.epi_dataset_spec import COL_CVE_ENT
 from epiforecast.data.epi_geo_exposure import GeoCatalog, load_geo_catalog
+from epiforecast.data.sex_scheme import base_sexes_of
 from epiforecast.runner.artifact_identity import (
     IO_ERRORS,
     ArtifactValidationError,
@@ -86,7 +87,8 @@ def read_projected_exposure(
     label: str,
 ) -> dict[SeriesId, int]:
     """``(cve_ent, sexo) -> exposición`` desde el CSV proyectado, con cobertura EXACTA del catálogo."""
-    equal(f"{label}: sexos base declarados", sorted(columns_by_sex), sorted(BASE_SEXES))
+    sexos = base_sexes_of(columns_by_sex)
+    equal(f"{label}: sexos base declarados", sorted(columns_by_sex), sorted(sexos))
     try:
         frame = pd.read_csv(path, dtype={COL_CVE_ENT: str})
     except IO_ERRORS as exc:
@@ -102,7 +104,7 @@ def read_projected_exposure(
         require(cve not in vistos, f"{label}: {cve} está duplicado")
         vistos.add(cve)
         valores = {c: _strict_positive_int(fila[c], f"{label}: {cve}/{c}") for c in columnas}
-        if total_column:
+        if total_column and columns_by_sex.get("general") != total_column:
             equal(
                 f"{label}: {cve}: {total_column} declarado",
                 sum(valores[c] for c in columns_by_sex.values()),
@@ -110,7 +112,7 @@ def read_projected_exposure(
             )
         for sexo, columna in columns_by_sex.items():
             exposicion[(cve, sexo)] = valores[columna]
-    esperado = sorted((geo, sexo) for geo in geography_ids for sexo in BASE_SEXES)
+    esperado = sorted((geo, sexo) for geo in geography_ids for sexo in sexos)
     equal(f"{label}: cobertura del catálogo", sorted(exposicion), esperado)
     return exposicion
 
@@ -150,7 +152,7 @@ def build_runtime_config(
     exposicion = mapping_of(dataset_config.get("exposure"), f"{who}: exposure del dataset")
     calendario = mapping_of(dataset_config.get("calendar"), f"{who}: calendar del dataset")
     columnas = mapping_of(exposicion.get("columns_by_sex"), f"{who}: columns_by_sex")
-    equal(f"{who}: sexos base declarados", sorted(columnas), sorted(BASE_SEXES))
+    equal(f"{who}: sexos base declarados", sorted(columnas), sorted(base_sexes_of(columnas)))
     total = exposicion.get("total_column")
     return {
         "schema": RUNTIME_CONFIG_SCHEMA,

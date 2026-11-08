@@ -32,6 +32,7 @@ from epiforecast.data.epi_geo_exposure import (
     load_geo_catalog,
 )
 from epiforecast.data.epi_reconcile import reconcile_state
+from epiforecast.data.sex_scheme import exposure_for_sex, scheme_for, sin_banderas_de_sexo
 
 _ROOT = Path(__file__).resolve().parents[3]
 # Orden canónico ESTABLE (serie contigua) antes de digestar.
@@ -51,6 +52,9 @@ class EpiDatasetV2Result:
     config: spec.EpiDatasetConfig
     snapshot: ExposureSnapshot
     digests: dict[str, str]  # raw / exposure / config / dataset
+
+
+_NAN = float("nan")
 
 
 def _sha256_bytes(b: bytes) -> str:
@@ -113,6 +117,7 @@ def raw_path_for(disease: str) -> Path:
 def build_prep(raw: pd.DataFrame, catalog: GeoCatalog, lag: int) -> pd.DataFrame:
     """raw E66 → prep (calendario objetivo + cve_ent), listo para ``reconcile_state``."""
     recs: list[dict[str, object]] = []
+    sin_sexo = "Acumulado_total" in raw.columns
     for r in raw.itertuples(index=False):
         tp = ec.target_period(_i(r.Anio), _i(r.Semana), lag)
         recs.append(
@@ -125,23 +130,37 @@ def build_prep(raw: pd.DataFrame, catalog: GeoCatalog, lag: int) -> pd.DataFrame
                 "period_start": tp.period_start,
                 "ds": tp.ds,
                 "casos_source": (float("nan") if pd.isna(r.Casos_semana) else _f(r.Casos_semana)),
-                "acum_h": _f(r.Acumulado_hombres),
-                "acum_m": _f(r.Acumulado_mujeres),
+                # Sin desglose por sexo, el acumulado total ocupa el lugar de «hombres» y
+                # «mujeres» queda en cero: la reconciliación del total no cambia.
+                "acum_h": _f(r.Acumulado_total if sin_sexo else r.Acumulado_hombres),
+                "acum_m": 0.0 if sin_sexo else _f(r.Acumulado_mujeres),
             }
         )
     return pd.DataFrame(recs)
 
 
 def explode_base(
-    state: pd.DataFrame, snapshot: ExposureSnapshot, catalog: GeoCatalog, disease_id: str
+    state: pd.DataFrame,
+    snapshot: ExposureSnapshot,
+    catalog: GeoCatalog,
+    disease_id: str,
+    scheme: spec.SexScheme = spec.SCHEME_POR_SEXO,
 ) -> pd.DataFrame:
-    """Frame estatal (20,896) → base largo (41,792): una fila por sexo con exposición y y_cases."""
+    """Frame estatal → base largo: una fila por sexo base con exposición y y_cases.
+
+    Sin desglose por sexo la única base es «general» (el total reconciliado) y las columnas de
+    proporción sexual quedan vacías.
+    """
     rows: list[dict[str, object]] = []
+    total = not scheme.desglosado
     for r in state.itertuples(index=False):
         cve = str(r.cve_ent)
         ent = catalog.entity(cve)
-        for sexo in spec.BASE_SEXES:
-            y = r.y_hombres if sexo == spec.SEX_HOMBRES else r.y_mujeres
+        for sexo in scheme.base:
+            if total:
+                y = r.total_reconciled
+            else:
+                y = r.y_hombres if sexo == spec.SEX_HOMBRES else r.y_mujeres
             rows.append(
                 {
                     spec.COL_DISEASE_ID: disease_id,
@@ -156,15 +175,17 @@ def explode_base(
                     spec.COL_DS: r.ds,
                     spec.COL_SEXO: sexo,
                     spec.COL_Y_CASES: _i(y),
-                    spec.COL_EXPOSURE: snapshot.exposure_for(cve, sexo),
+                    spec.COL_EXPOSURE: exposure_for_sex(snapshot, cve, sexo),
                     spec.COL_OBSERVED: bool(r.observed),
                     spec.COL_TOTAL_SOURCE: r.total_source,
                     spec.COL_TOTAL_RECONCILED: _i(r.total_reconciled),
-                    spec.COL_SEX_PROP_SOURCE: r.sex_prop_source,
-                    spec.COL_SEX_PROP_APPLIED: _f(r.sex_prop_applied),
-                    spec.COL_SEX_DELTA_TOTAL: r.sex_delta_total,
-                    spec.COL_SEX_DELTA_RESIDUAL: r.sex_delta_residual,
-                    spec.COL_QUALITY_FLAGS: r.quality_flags,
+                    spec.COL_SEX_PROP_SOURCE: _NAN if total else r.sex_prop_source,
+                    spec.COL_SEX_PROP_APPLIED: _NAN if total else _f(r.sex_prop_applied),
+                    spec.COL_SEX_DELTA_TOTAL: _NAN if total else r.sex_delta_total,
+                    spec.COL_SEX_DELTA_RESIDUAL: _NAN if total else r.sex_delta_residual,
+                    spec.COL_QUALITY_FLAGS: (
+                        sin_banderas_de_sexo(str(r.quality_flags)) if total else r.quality_flags
+                    ),
                 }
             )
     return pd.DataFrame(rows, columns=list(spec.BASE_COLUMNS))
@@ -191,6 +212,7 @@ def build_epi_dataset_v2(
         raise EpiDatasetError(
             f"columns_by_sex debe ser exactamente {set(spec.BASE_SEXES)}: {set(snapshot.columns_by_sex)}"
         )
+    scheme = scheme_for(cfg.disease_id)
 
     effective_raw_path = (raw_path or raw_path_for(disease)).resolve()
     if not effective_raw_path.is_file():
@@ -200,7 +222,7 @@ def build_epi_dataset_v2(
 
     prep = build_prep(raw, catalog, cfg.observation_lag_weeks)
     state = reconcile_state(prep, set(catalog.cve_ents()))
-    base = explode_base(state, snapshot, catalog, cfg.disease_id)
+    base = explode_base(state, snapshot, catalog, cfg.disease_id, scheme)
     base = base.sort_values(_CANONICAL_ORDER).reset_index(drop=True)
 
     catalog_path = geo_catalog_path()
@@ -214,7 +236,11 @@ def build_epi_dataset_v2(
             "source_id": cfg.exposure_source_id,
             "reference": snapshot.reference,
             "cutoff": str(snapshot.cutoff),
-            "columns_by_sex": snapshot.columns_by_sex,
+            "columns_by_sex": (
+                snapshot.columns_by_sex
+                if scheme.desglosado
+                else {spec.SEX_GENERAL: str(snapshot.total_column)}
+            ),
             "total_column": snapshot.total_column,
             "digest": snapshot.digest,
         },

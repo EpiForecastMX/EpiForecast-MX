@@ -29,13 +29,13 @@ import numpy as np
 import pandas as pd
 
 from epiforecast.data.epi_dataset_spec import (
-    BASE_SEXES,
     COL_CVE_ENT,
     COL_EPI_WEEK,
     COL_EPI_YEAR,
     COL_SEXO,
     COL_Y_CASES,
 )
+from epiforecast.data.sex_scheme import base_mask, base_sexes_of
 from epiforecast.runner import contracts as ct
 from epiforecast.runner.artifact_identity import IO_ERRORS, ArtifactValidationError, equal, require
 from epiforecast.runner.evaluation import smape_percent
@@ -118,7 +118,7 @@ def check_dataset_frame(dataset_csv: Path, *, expected_series: int | None = None
     except ValueError as exc:
         raise ArtifactValidationError(f"dataset: columnas requeridas ausentes ({exc})") from exc
 
-    base = frame[frame[COL_SEXO].isin(BASE_SEXES)]
+    base = frame[frame[COL_SEXO].isin(base_sexes_of(frame[COL_SEXO].unique()))]
     require(len(base) > 0, "dataset: no hay filas de series base")
 
     claves = list(
@@ -173,7 +173,7 @@ def read_base_history(dataset_csv: Path) -> dict[SeriesId, dict[Period, float]]:
         )
     except IO_ERRORS as exc:
         raise ArtifactValidationError(f"dataset: ilegible ({exc})") from exc
-    frame = frame[frame[COL_SEXO].isin(BASE_SEXES)]
+    frame = frame[frame[COL_SEXO].isin(base_sexes_of(frame[COL_SEXO].unique()))]
     historia: dict[SeriesId, dict[Period, float]] = {}
     for (cve, sexo), grupo in frame.groupby([COL_CVE_ENT, COL_SEXO], sort=True):
         historia[(str(cve), str(sexo))] = {
@@ -369,7 +369,6 @@ def _truth_frame(
 def _scope_rows(products: pd.DataFrame, scope: str) -> pd.DataFrame:
     """Filas del ámbito: 64 bases, los 111 productos completos o sólo Nacional General."""
     from epiforecast.data.epi_dataset_spec import (
-        GEO_LEVEL_ESTADO,
         GEO_LEVEL_NACIONAL,
         NATIONAL_GEO_ID,
         SEX_GENERAL,
@@ -383,9 +382,7 @@ def _scope_rows(products: pd.DataFrame, scope: str) -> pd.DataFrame:
             & (products["geography_id"] == NATIONAL_GEO_ID)
             & (products["sex"] == SEX_GENERAL)
         ]
-    return products[
-        (products["geography_level"] == GEO_LEVEL_ESTADO) & (products["sex"].isin(BASE_SEXES))
-    ]
+    return products[base_mask(products, "geography_level", "sex")]
 
 
 def check_series_frame(frame: pd.DataFrame, etiqueta: str, esperadas: set[SeriesId]) -> None:

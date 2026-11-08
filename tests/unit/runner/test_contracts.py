@@ -45,7 +45,8 @@ def test_training_spec_valido():
     [
         SeriesKey("obesidad", "nacional", "mx", "general"),
         SeriesKey("obesidad", "region", "norte", "hombres"),
-        SeriesKey("obesidad", "estado", "05", "general"),  # general no es base
+        SeriesKey("obesidad", "estado", "05", "ambos"),  # sexo inexistente
+        SeriesKey("obesidad", "region", "norte", "general"),
     ],
 )
 def test_training_spec_rechaza_no_base(key):

@@ -33,6 +33,7 @@ from epiforecast.data.epi_dataset_spec import (
     SEX_GENERAL,
 )
 from epiforecast.data.epi_geo_exposure import GeoCatalog
+from epiforecast.data.sex_scheme import scheme_of
 from epiforecast.runner import contracts as ct
 from epiforecast.runner.contracts import (
     COL_BIAS,
@@ -107,6 +108,19 @@ def derive_forecast_products(base_fc: pd.DataFrame, catalog: GeoCatalog) -> pd.D
     base_r = base_fc.copy()
     base_r[_MR] = base_fc[COL_GEO_ID].map(catalog.macroregion_of)
 
+    if not scheme_of(base_fc[COL_SEX].unique()).desglosado:
+        # Sin desglose por sexo: las bases ya son los generales estatales.
+        tiers = [
+            base_fc[list(ct.FORECAST_COLUMNS)],
+            _tier_fc(base_r, [_MR], GEO_LEVEL_REGION, lambda o: o[_MR], lambda o: SEX_GENERAL),
+            _tier_fc(
+                base_fc, [], GEO_LEVEL_NACIONAL, lambda o: NATIONAL_GEO_ID, lambda o: SEX_GENERAL
+            ),
+        ]
+        products = pd.concat(tiers, ignore_index=True)
+        _reconcile(products, catalog)
+        return products
+
     tiers = [
         base_fc[list(ct.FORECAST_COLUMNS)],  # 64 bases (conservan sus intervalos)
         _tier_fc(
@@ -139,7 +153,7 @@ def _reconcile(products: pd.DataFrame, catalog: GeoCatalog) -> None:
         values=COL_Y_PRED,
         aggfunc="sum",
     )
-    if not _close(piv[SEX_GENERAL], piv["hombres"] + piv["mujeres"]):
+    if "hombres" in piv.columns and not _close(piv[SEX_GENERAL], piv["hombres"] + piv["mujeres"]):
         raise EvaluationError("reconciliación de pronóstico: general != H+M")
 
     pk = [COL_EPI_YEAR, COL_EPI_WEEK]

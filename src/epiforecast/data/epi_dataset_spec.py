@@ -16,6 +16,55 @@ SEX_HOMBRES = "hombres"
 SEX_MUJERES = "mujeres"
 BASE_SEXES: tuple[str, str] = (SEX_HOMBRES, SEX_MUJERES)
 
+# ── Esquema de sexo por padecimiento ──
+# La mayoría de los cuadros del boletín desglosan hombres y mujeres: 32 × 2 = 64 bases y 47
+# derivados (111 productos). Algunos (cuello del útero, próstata, ovario) sólo dan el total: sus
+# bases son las 32 series estatales «general» y sólo se derivan regiones y nacional (37 productos).
+SEX_GENERAL_BASE = "general"
+
+
+@dataclass(frozen=True)
+class SexScheme:
+    """Qué sexos se modelan como base y cuáles se derivan, con los conteos de la partición."""
+
+    base: tuple[str, ...]
+
+    @property
+    def desglosado(self) -> bool:
+        return len(self.base) > 1
+
+    @property
+    def product_sexes(self) -> tuple[str, ...]:
+        """Sexos de los productos: los base más «general» cuando éste se deriva."""
+        return (*self.base, SEX_GENERAL_BASE) if self.desglosado else self.base
+
+    def counts(self, n_states: int = 32, n_regions: int = 4) -> dict[str, int]:
+        """Conteos de la partición: bases, derivados y productos."""
+        base = n_states * len(self.base)
+        state_general = n_states if self.desglosado else 0
+        regional = n_regions * len(self.product_sexes)
+        national = len(self.product_sexes)
+        derived = state_general + regional + national
+        return {
+            "base": base,
+            "state_general": state_general,
+            "regional": regional,
+            "national": national,
+            "derived": derived,
+            "products": base + derived,
+        }
+
+
+def scheme_from_sexes(sexes: Iterable[str]) -> SexScheme:
+    """Esquema a partir de los sexos base observados o declarados; falla si no es uno válido."""
+    got = tuple(sorted(set(sexes)))
+    if got == tuple(sorted(BASE_SEXES)):
+        return SCHEME_POR_SEXO
+    if got == (SEX_GENERAL_BASE,):
+        return SCHEME_TOTAL
+    raise ValueError(f"sexos base no reconocidos: {got}")
+
+
 # El mapeo sexo → columna de exposición NO se hard-codea aquí: vive en config/exposicion.yaml
 # (``columns_by_sex``) y viaja en ``ExposureSnapshot.columns_by_sex``.
 
@@ -97,8 +146,10 @@ STATE_KEY: tuple[str, ...] = (COL_EPI_YEAR, COL_EPI_WEEK, COL_CVE_ENT)
 BASE_KEY: tuple[str, ...] = (COL_EPI_YEAR, COL_EPI_WEEK, COL_CVE_ENT, COL_SEXO)
 
 # ── Productos derivados (F2/C2): niveles/identidad geográfica y sexo agregado ──
-SEX_GENERAL = "general"  # H + M (nivel agregado; nunca se entrena directo)
+SEX_GENERAL = SEX_GENERAL_BASE  # H + M; base sólo en padecimientos sin desglose por sexo
 ALL_SEXES: tuple[str, str, str] = (SEX_HOMBRES, SEX_MUJERES, SEX_GENERAL)
+SCHEME_POR_SEXO = SexScheme(BASE_SEXES)
+SCHEME_TOTAL = SexScheme((SEX_GENERAL,))
 
 GEO_LEVEL_ESTADO = "estado"
 GEO_LEVEL_REGION = "region"  # macrorregión (norte|occidente|centro|sureste)

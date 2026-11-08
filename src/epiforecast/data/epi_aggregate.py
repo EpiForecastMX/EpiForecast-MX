@@ -52,7 +52,9 @@ from epiforecast.data.epi_dataset_spec import (
     SEX_GENERAL,
     SEX_HOMBRES,
     SEX_MUJERES,
+    SexScheme,
     merge_quality_flags,
+    scheme_from_sexes,
 )
 from epiforecast.data.epi_geo_exposure import GeoCatalog
 
@@ -121,40 +123,51 @@ def _key(disease_id: str, level: str, geo_id: str, sex: str) -> str:
     return f"{disease_id}/{level}/{geo_id}/{sex}"
 
 
-def _lineage(catalog: GeoCatalog, disease_id: str) -> dict[str, list[str]]:
-    """Composición determinista de los 47 derivados (desde el catálogo, no desde datos)."""
+def _lineage(catalog: GeoCatalog, disease_id: str, scheme: SexScheme) -> dict[str, list[str]]:
+    """Composición determinista de los derivados (desde el catálogo, no desde datos)."""
 
     def base_key(cve: str, sx: str) -> str:
         return _key(disease_id, GEO_LEVEL_ESTADO, cve, sx)
 
     lin: dict[str, list[str]] = {}
-    for cve in catalog.cve_ents():  # 32 estado-general
-        lin[_key(disease_id, GEO_LEVEL_ESTADO, cve, SEX_GENERAL)] = [
-            base_key(cve, SEX_HOMBRES),
-            base_key(cve, SEX_MUJERES),
-        ]
-    for mr in catalog.macroregion_ids():  # 4 regiones × 3 sexos = 12
+    if scheme.desglosado:
+        for cve in catalog.cve_ents():  # 32 estado-general
+            lin[_key(disease_id, GEO_LEVEL_ESTADO, cve, SEX_GENERAL)] = [
+                base_key(cve, SEX_HOMBRES),
+                base_key(cve, SEX_MUJERES),
+            ]
+    for mr in catalog.macroregion_ids():  # 4 regiones × sexos de producto
         states = catalog.states_in_macroregion(mr)
-        for sx in BASE_SEXES:
+        for sx in scheme.base:
             lin[_key(disease_id, GEO_LEVEL_REGION, mr, sx)] = [base_key(c, sx) for c in states]
-        lin[_key(disease_id, GEO_LEVEL_REGION, mr, SEX_GENERAL)] = [
-            base_key(c, sx) for c in states for sx in BASE_SEXES
-        ]
-    for sx in BASE_SEXES:  # 3 nacional
+        if scheme.desglosado:
+            lin[_key(disease_id, GEO_LEVEL_REGION, mr, SEX_GENERAL)] = [
+                base_key(c, sx) for c in states for sx in scheme.base
+            ]
+    for sx in scheme.base:  # nacional por sexo base
         lin[_key(disease_id, GEO_LEVEL_NACIONAL, NATIONAL_GEO_ID, sx)] = [
             base_key(c, sx) for c in catalog.cve_ents()
         ]
-    lin[_key(disease_id, GEO_LEVEL_NACIONAL, NATIONAL_GEO_ID, SEX_GENERAL)] = [
-        base_key(c, sx) for c in catalog.cve_ents() for sx in BASE_SEXES
-    ]
+    if scheme.desglosado:
+        lin[_key(disease_id, GEO_LEVEL_NACIONAL, NATIONAL_GEO_ID, SEX_GENERAL)] = [
+            base_key(c, sx) for c in catalog.cve_ents() for sx in scheme.base
+        ]
     return lin
 
 
 def build_products(base: pd.DataFrame, catalog: GeoCatalog, disease_id: str) -> AggregateResult:
-    """Deriva los 111 productos desde las 64 bases y valida con tolerancia cero."""
-    if base.groupby([COL_CVE_ENT, COL_SEXO]).ngroups != N_BASE:
+    """Deriva los productos desde las bases y valida con tolerancia cero.
+
+    Con desglose por sexo: 64 bases → 111 productos. Sin desglose: 32 bases «general» → 37.
+    """
+    try:
+        scheme = scheme_from_sexes(base[COL_SEXO].unique())
+    except ValueError as e:
+        raise AggregateError(str(e)) from e
+    esperadas = scheme.counts(len(catalog.cve_ents()), len(catalog.macroregion_ids()))["base"]
+    if base.groupby([COL_CVE_ENT, COL_SEXO]).ngroups != esperadas:
         raise AggregateError(
-            f"se esperaban {N_BASE} series base (32 estados × 2 sexos), "
+            f"se esperaban {esperadas} series base, "
             f"hay {base.groupby([COL_CVE_ENT, COL_SEXO]).ngroups}"
         )
     base_r = base.copy()
@@ -168,6 +181,25 @@ def build_products(base: pd.DataFrame, catalog: GeoCatalog, disease_id: str) -> 
     base_products[COL_FREQUENCY] = FREQ_EPI_WEEK
     base_products = base_products[list(PRODUCT_COLUMNS)]
 
+    if not scheme.desglosado:
+        tiers = [
+            base_products,
+            _tier(  # 4 región general (suma de los estados de la región)
+                base_r,
+                [COL_DISEASE_ID, _MACROREGION],
+                GEO_LEVEL_REGION,
+                lambda o: o[_MACROREGION],
+                lambda o: SEX_GENERAL,
+            ),
+            _tier(  # 1 nacional general (suma directa de las 32 bases)
+                base,
+                [COL_DISEASE_ID],
+                GEO_LEVEL_NACIONAL,
+                lambda o: NATIONAL_GEO_ID,
+                lambda o: SEX_GENERAL,
+            ),
+        ]
+        return _ensambla(tiers, catalog, disease_id, scheme)
     tiers = [
         base_products,
         _tier(  # 32 estado-general (H + M)
@@ -206,6 +238,12 @@ def build_products(base: pd.DataFrame, catalog: GeoCatalog, disease_id: str) -> 
             lambda o: SEX_GENERAL,
         ),
     ]
+    return _ensambla(tiers, catalog, disease_id, scheme)
+
+
+def _ensambla(
+    tiers: list[pd.DataFrame], catalog: GeoCatalog, disease_id: str, scheme: SexScheme
+) -> AggregateResult:
     products = (
         pd.concat(tiers, ignore_index=True)
         .sort_values(
@@ -213,8 +251,9 @@ def build_products(base: pd.DataFrame, catalog: GeoCatalog, disease_id: str) -> 
         )
         .reset_index(drop=True)
     )
-    counts = _validate(products, catalog)
-    return AggregateResult(products=products, lineage=_lineage(catalog, disease_id), counts=counts)
+    counts = _validate(products, catalog, scheme)
+    lineage = _lineage(catalog, disease_id, scheme)
+    return AggregateResult(products=products, lineage=lineage, counts=counts)
 
 
 def _assert_equal(left: pd.Series, right: pd.Series, ctx: str) -> None:
@@ -233,14 +272,21 @@ def _sum_over(df: pd.DataFrame, group: list[str], value: str) -> pd.Series:
     return df.groupby(group, sort=True)[value].sum()
 
 
-def _validate(products: pd.DataFrame, catalog: GeoCatalog) -> dict[str, int]:
+def _validate(
+    products: pd.DataFrame, catalog: GeoCatalog, scheme: SexScheme | None = None
+) -> dict[str, int]:
     """Verifica partición, unicidad e identidades aritméticas de y_cases y exposición."""
     # Partición y unicidad de claves.
     if products.duplicated(list(PRODUCT_KEY)).any():
         raise AggregateError("claves de producto duplicadas")
+    if scheme is None:
+        estado = products[COL_GEO_LEVEL] == GEO_LEVEL_ESTADO
+        sexos = set(products.loc[estado, COL_SEX].unique())
+        scheme = scheme_from_sexes(BASE_SEXES if sexos & set(BASE_SEXES) else (SEX_GENERAL,))
+    esperados = scheme.counts(len(catalog.cve_ents()), len(catalog.macroregion_ids()))
     n_products = products.groupby([COL_GEO_LEVEL, COL_GEO_ID, COL_SEX]).ngroups
-    if n_products != N_PRODUCTS:
-        raise AggregateError(f"se esperaban {N_PRODUCTS} productos, hay {n_products}")
+    if n_products != esperados["products"]:
+        raise AggregateError(f"se esperaban {esperados['products']} productos, hay {n_products}")
     per_series = products.groupby([COL_GEO_LEVEL, COL_GEO_ID, COL_SEX]).size().unique()
     if len(per_series) != 1:
         raise AggregateError(f"los productos no comparten el mismo nº de periodos: {per_series}")
@@ -263,9 +309,10 @@ def _validate(products: pd.DataFrame, catalog: GeoCatalog) -> dict[str, int]:
             values=value,
             aggfunc="sum",
         )
-        _assert_equal(
-            piv[SEX_GENERAL], piv[SEX_HOMBRES] + piv[SEX_MUJERES], f"{value}: general==H+M"
-        )
+        if scheme.desglosado:
+            _assert_equal(
+                piv[SEX_GENERAL], piv[SEX_HOMBRES] + piv[SEX_MUJERES], f"{value}: general==H+M"
+            )
 
         # (b) Estados de una región suman su región (estado-general → región-general).
         sg = products[
@@ -295,8 +342,8 @@ def _validate(products: pd.DataFrame, catalog: GeoCatalog) -> dict[str, int]:
 
     return {
         "products": n_products,
-        "base": N_BASE,
-        "derived": N_DERIVED,
+        "base": esperados["base"],
+        "derived": esperados["derived"],
         "periods": n_periods,
         "rows": int(len(products)),
     }

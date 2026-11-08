@@ -37,6 +37,7 @@ from epiforecast.data.epi_dataset_spec import (
     GEO_LEVEL_ESTADO,
     GEO_LEVEL_NACIONAL,
     GEO_LEVEL_REGION,
+    SEX_GENERAL,
     SeriesKey,
 )
 
@@ -194,9 +195,13 @@ class TrainingSpec:
     resource_limits: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        if self.key.geography_level != GEO_LEVEL_ESTADO or self.key.sex not in BASE_SEXES:
+        if self.key.geography_level != GEO_LEVEL_ESTADO or self.key.sex not in (
+            *BASE_SEXES,
+            SEX_GENERAL,
+        ):
             raise ContractError(
-                "TrainingSpec SOLO admite las 64 claves estado×{hombres,mujeres}: "
+                "TrainingSpec SOLO admite claves estado×{hombres,mujeres} o estado×general "
+                "(sin desglose por sexo): "
                 f"{self.key.geography_level}/{self.key.sex}"
             )
         if self.key.frequency != FREQ_EPI_WEEK:
