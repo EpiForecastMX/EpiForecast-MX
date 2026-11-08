@@ -578,11 +578,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: ira_j00_refit_final_9fe0414b00c7_5b4bd4056a06
-      forecast_run_id: ira_j00_forecast_h52_5b4bd4056a06_c0e9d9538bad
-      policy_digest: dd6d4a0274a6f8bb0f51d27628294b7db694b792966abaa92528dc2765020b2a
-      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
+      backend: runner_release
+      release_id: ira_j00_release_9669e8caafea
     # El gate de 2025 rechazó el portafolio; el autor ordenó publicar el control (8-nov-2026), como F50.
     acceptance_fallback_run: ira_j00_benchmark_test_11d0b11ac60c_476ea7475f4d
     prophet_grid_key: null
@@ -640,11 +637,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: gingivitis_k05_refit_final_9fe0414b00c7_f4154619fa62
-      forecast_run_id: gingivitis_k05_forecast_h52_f4154619fa62_038636600236
-      policy_digest: dd6d4a0274a6f8bb0f51d27628294b7db694b792966abaa92528dc2765020b2a
-      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
+      backend: runner_release
+      release_id: gingivitis_k05_release_9a2bcab11a53
     # El gate de 2025 rechazó el portafolio; el autor ordenó publicar el control (8-nov-2026), como F50.
     acceptance_fallback_run: gingivitis_k05_benchmark_test_b2a6d1a0a37f_4a28a7a32302
     prophet_grid_key: null
