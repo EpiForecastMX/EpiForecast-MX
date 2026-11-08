@@ -548,11 +548,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: intestinales_a04_refit_final_a30f815ff09f_bc8fcb94f171
-      forecast_run_id: intestinales_a04_forecast_h52_bc8fcb94f171_da7510aebba7
-      policy_digest: dd6d4a0274a6f8bb0f51d27628294b7db694b792966abaa92528dc2765020b2a
-      final_selection_digest: a30f815ff09f2ee1fda9762ed533b16e36a95142d0696d396303845df56837c4
+      backend: runner_release
+      release_id: intestinales_a04_release_8f5baa0a6556
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -604,11 +601,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: ivu_n39_refit_final_1445c163c5dc_4bc662a85238
-      forecast_run_id: ivu_n39_forecast_h52_4bc662a85238_ee7aa62ab9e6
-      policy_digest: dd6d4a0274a6f8bb0f51d27628294b7db694b792966abaa92528dc2765020b2a
-      final_selection_digest: 1445c163c5dc8c155a245c67c27f586c3d60f640d2b713823d1400227d22fab0
+      backend: runner_release
+      release_id: ivu_n39_release_7d2b810a3793
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -660,11 +654,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: ulceras_k25_refit_final_270b28206dc6_022d0a6b1f8b
-      forecast_run_id: ulceras_k25_forecast_h52_022d0a6b1f8b_81e1cdf68a04
-      policy_digest: dd6d4a0274a6f8bb0f51d27628294b7db694b792966abaa92528dc2765020b2a
-      final_selection_digest: 270b28206dc6778c5a358546bd284b470cfa4fbf9a2b848f9a73f0975a2c2419
+      backend: runner_release
+      release_id: ulceras_k25_release_9d58ce6ad597
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
