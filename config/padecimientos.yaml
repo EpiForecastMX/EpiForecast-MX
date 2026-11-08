@@ -729,11 +729,17 @@ padecimientos:
     exposure_source_id: inegi_cpv2020_static
     # El boletín sólo publica el total: 32 bases «general», sin hombres ni mujeres.
     sex_breakdown: false
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: cancer_cuello_utero_c53_refit_final_49988b9fcead_0d6b065264f8
+      forecast_run_id: cancer_cuello_utero_c53_forecast_h52_0d6b065264f8_71417f56ebea
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 49988b9fcead20a7b07d41a89fae2874072398b2ca51f7e83923df584e5204da
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
