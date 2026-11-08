@@ -27,6 +27,7 @@ from epiforecast.data.epi_dataset_spec import (
     FREQ_EPI_WEEK,
     GEO_LEVEL_ESTADO,
 )
+from epiforecast.data.sex_scheme import base_sexes_of
 from epiforecast.runner.artifact_identity import (
     IO_ERRORS,
     ArtifactValidationError,
@@ -44,6 +45,9 @@ from epiforecast.runner.final_models import (
     SCHEMA_MODEL_INDEX,
     load_models,
 )
+
+# Sexos que pueden ser base: hombres y mujeres, o «general» sin desglose por sexo.
+BASE_SERIES_SEXES = (*BASE_SEXES, "general")
 
 SELECTION_FILE = "final_selection.csv"
 COL_SELECTED_ENGINE = "selected_engine"
@@ -104,7 +108,8 @@ def read_selection(refit_dir: Path, expected_digest: str) -> dict[SeriesId, str]
 
 def check_universe(selection: Mapping[SeriesId, str], geography_ids: list[str]) -> None:
     """El universo entrenable es catálogo × sexos base: ni una serie de menos ni una ajena."""
-    esperado = {(geo, sex) for geo in geography_ids for sex in BASE_SEXES}
+    sexos = base_sexes_of(sex for _, sex in selection)
+    esperado = {(geo, sex) for geo in geography_ids for sex in sexos}
     faltan = sorted(esperado - set(selection))
     sobran = sorted(set(selection) - esperado)
     require(not faltan, f"selección: faltan {len(faltan)} series del catálogo, p.ej. {faltan[:3]}")
@@ -203,7 +208,7 @@ def _check_envelope(
     equal(f"{who}: geography_level", key.get("geography_level"), GEO_LEVEL_ESTADO)
     equal(f"{who}: frequency", key.get("frequency"), FREQ_EPI_WEEK)
     sexo = text_of(key.get("sex"), f"{who}: sex")
-    require(sexo in BASE_SEXES, f"{who}: {sexo!r} no es un sexo de serie base")
+    require(sexo in BASE_SERIES_SEXES, f"{who}: {sexo!r} no es un sexo de serie base")
     equal(f"{who}: n_train", envelope.get("n_train"), exp.n_train)
     equal(f"{who}: train_end", tuple(envelope.get("train_end") or ()), exp.train_end)
     provenance_of(envelope.get("provenance"), dict(exp.provenance), who)

@@ -27,15 +27,14 @@ from typing import Any
 import pandas as pd
 
 from epiforecast.data.epi_dataset_spec import (
-    BASE_SEXES,
     COL_EPI_WEEK,
     COL_EPI_YEAR,
     COL_GEO_ID,
     COL_GEO_LEVEL,
     COL_SEX,
-    GEO_LEVEL_ESTADO,
 )
 from epiforecast.data.epi_geo_exposure import load_geo_catalog
+from epiforecast.data.sex_scheme import base_mask, n_bases_of
 from epiforecast.runner import contracts as ct
 from epiforecast.runner.evaluation import (
     build_evaluation_frame,
@@ -191,11 +190,7 @@ def select_for_series(rows: pd.DataFrame, rule: SelectionRule) -> dict[str, Any]
 
 def aggregate_metrics(metrics: pd.DataFrame, rule: SelectionRule) -> pd.DataFrame:
     """Mediana por (SeriesKey, motor) sobre los folds de development, SOLO en las 64 bases."""
-    base = metrics[
-        (metrics[COL_GEO_LEVEL] == GEO_LEVEL_ESTADO)
-        & metrics[COL_SEX].isin(BASE_SEXES)
-        & (metrics[ct.COL_SPLIT] == ct.SPLIT_DEVELOPMENT)
-    ]
+    base = metrics[base_mask(metrics) & (metrics[ct.COL_SPLIT] == ct.SPLIT_DEVELOPMENT)]
     known = set(rule.incumbents) | set(rule.challengers)
     base = base[base[ct.COL_ENGINE].isin(known)]
     return (
@@ -211,8 +206,11 @@ def build_selection(metrics: pd.DataFrame, rule: SelectionRule) -> pd.DataFrame:
         for (cve, sex), grp in agg.groupby(_IDENTITY, sort=True)
     ]
     out = pd.DataFrame(rows)
-    if len(out) != 64 or out.duplicated(_IDENTITY).any():
-        raise SelectionError(f"la selección debe cubrir las 64 bases sin duplicados ({len(out)})")
+    esperadas = n_bases_of(out[COL_SEX]) if len(out) else 64
+    if len(out) != esperadas or out.duplicated(_IDENTITY).any():
+        raise SelectionError(
+            f"la selección debe cubrir las {esperadas} bases sin duplicados ({len(out)})"
+        )
     return out
 
 
@@ -237,7 +235,7 @@ def compose_base_forecast(
     chosen = {(r[COL_GEO_ID], r[COL_SEX]): r["selected_engine"] for _, r in sel.iterrows()}
     parts: list[pd.DataFrame] = []
     for engine, frame in forecasts.items():
-        base = frame[(frame[COL_GEO_LEVEL] == GEO_LEVEL_ESTADO) & frame[COL_SEX].isin(BASE_SEXES)]
+        base = frame[base_mask(frame)]
         keys = {k for k, e in chosen.items() if e == engine}
         if not keys:
             continue
@@ -250,7 +248,7 @@ def compose_base_forecast(
     out[ct.COL_RUN_ID] = run_id
     got = set(zip(out[COL_GEO_ID], out[COL_SEX], strict=True))
     if got != set(chosen):
-        raise SelectionError(f"el portafolio no cubre las 64 bases ({len(got)})")
+        raise SelectionError(f"el portafolio no cubre las {len(chosen)} bases ({len(got)})")
     return out.sort_values([ct.COL_FOLD, COL_GEO_ID, COL_SEX, COL_EPI_YEAR, COL_EPI_WEEK])
 
 
@@ -280,9 +278,7 @@ def evaluate_portfolio(
 
 def portfolio_summary(metrics: pd.DataFrame) -> dict[str, float]:
     """Medianas del portafolio: 64 bases, 111 productos y nacional General."""
-    base = metrics[
-        (metrics[COL_GEO_LEVEL] == GEO_LEVEL_ESTADO) & metrics[COL_SEX].isin(BASE_SEXES)
-    ]
+    base = metrics[base_mask(metrics)]
     nat = metrics[(metrics[COL_GEO_LEVEL] == "nacional") & (metrics[COL_SEX] == "general")]
     return {
         "smape_bases": float(base[ct.COL_SMAPE].median()),
@@ -407,6 +403,6 @@ def load_frozen_selection(selection_dir: Path) -> tuple[pd.DataFrame, dict[str, 
         if hashlib.sha256(path.read_bytes()).hexdigest() != art["digest"]:
             raise SelectionError(f"artefacto de selección alterado: {art['path']}")
     sel = pd.read_csv(selection_dir / "selection.csv", dtype={COL_GEO_ID: str})
-    if len(sel) != 64:
+    if len(sel) != n_bases_of(sel[COL_SEX]):
         raise SelectionError(f"selección incompleta: {len(sel)} bases")
     return sel, manifest

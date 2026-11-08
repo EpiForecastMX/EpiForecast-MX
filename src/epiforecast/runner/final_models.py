@@ -263,18 +263,14 @@ def final_windows(
 ) -> list[FinalWindow]:
     """Ventanas de refit: TODA la historia de cada serie asignada al motor (nunca derivadas)."""
     from epiforecast.data.epi_dataset_spec import (
-        BASE_SEXES,
         COL_EPI_WEEK,
         COL_EPI_YEAR,
         COL_EXPOSURE,
-        COL_GEO_LEVEL,
         COL_Y_CASES,
-        GEO_LEVEL_ESTADO,
     )
+    from epiforecast.data.sex_scheme import base_mask
 
-    base = products[
-        (products[COL_GEO_LEVEL] == GEO_LEVEL_ESTADO) & products[COL_SEX].isin(BASE_SEXES)
-    ]
+    base = products[base_mask(products)]
     windows: list[FinalWindow] = []
     for (cve, sexo), grp in base.groupby([COL_GEO_ID, COL_SEX], sort=True):
         if (str(cve), str(sexo)) not in assigned:

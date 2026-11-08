@@ -394,6 +394,19 @@ PER_WEEK_KEYS: frozenset[str] = frozenset({"week", "series", "smape_candidate", 
 SCOPE_ROWS_PER_WEEK: dict[str, int] = {SCOPE_BASE: 64, SCOPE_PRODUCTS: 111, SCOPE_NATIONAL: 1}
 
 
+def scope_rows_per_week(disease_id: str) -> dict[str, int]:
+    """Filas por semana según el esquema de sexo del padecimiento (32/37 sin desglose)."""
+    from epiforecast import registry
+    from epiforecast.data.epi_dataset_spec import SCHEME_POR_SEXO
+    from epiforecast.data.sex_scheme import scheme_for
+
+    try:
+        conteos = scheme_for(disease_id).counts()
+    except registry.RegistryError:  # fuera del registry no se publica: se valida como por sexo
+        conteos = SCHEME_POR_SEXO.counts()
+    return {SCOPE_BASE: conteos["base"], SCOPE_PRODUCTS: conteos["products"], SCOPE_NATIONAL: 1}
+
+
 def _number(valor: Any, etiqueta: str, *, permite_inf: bool = False) -> float:
     require(
         isinstance(valor, (int, float)) and not isinstance(valor, bool),
@@ -430,7 +443,7 @@ def _check_scopes(evaluation: ProspectiveEvaluation, gate: FrozenGate) -> None:
         equal(
             f"evaluación: filas del ámbito {scope}",
             _strict_int(cuerpo["rows"], f"evaluación: {scope}.rows"),
-            SCOPE_ROWS_PER_WEEK[scope] * semanas,
+            scope_rows_per_week(evaluation.disease_id)[scope] * semanas,
         )
         candidato = _number(cuerpo["smape_candidate"], f"evaluación: {scope}.smape_candidate")
         control = _number(cuerpo["smape_control"], f"evaluación: {scope}.smape_control")
@@ -482,7 +495,7 @@ def _check_metrics(evaluation: ProspectiveEvaluation) -> None:
             equal(
                 f"evaluación: productos del ámbito {scope}.{lado}",
                 productos,
-                SCOPE_ROWS_PER_WEEK[scope],
+                scope_rows_per_week(evaluation.disease_id)[scope],
             )
             mediana = bloque["median"]
             require(
@@ -520,7 +533,7 @@ def _check_per_week(evaluation: ProspectiveEvaluation) -> None:
         equal(
             "evaluación: series del detalle semanal",
             _strict_int(detalle["series"], "evaluación: detalle semanal .series"),
-            SCOPE_ROWS_PER_WEEK[SCOPE_BASE],
+            scope_rows_per_week(evaluation.disease_id)[SCOPE_BASE],
         )
         _number(detalle["smape_candidate"], "evaluación: detalle semanal .smape_candidate")
         _number(detalle["smape_control"], "evaluación: detalle semanal .smape_control")

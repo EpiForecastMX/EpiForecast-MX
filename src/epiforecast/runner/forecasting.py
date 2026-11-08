@@ -30,6 +30,7 @@ from epiforecast.data.epi_dataset_spec import (
     GEO_LEVEL_ESTADO,
 )
 from epiforecast.data.epi_geo_exposure import load_exposure_snapshot, load_geo_catalog
+from epiforecast.data.sex_scheme import exposure_for_sex, scheme_of
 from epiforecast.runner import contracts as ct
 from epiforecast.runner import final_models as fm
 from epiforecast.runner.manifest import ArtifactRecord
@@ -79,7 +80,7 @@ def run_forecast(
             )
         transform = TransformContract.from_dict(envelope["transform"])
         exposure = {
-            p: float(snapshot.exposure_for(key["geography_id"], key["sex"])) for p in periods
+            p: float(exposure_for_sex(snapshot, key["geography_id"], key["sex"])) for p in periods
         }
         started = time.perf_counter()
         preds = forecast_fn(state, fm.ForecastRequest(transform, periods, exposure))
@@ -149,12 +150,14 @@ def finish_forecast(run_dir: Path, man: Any, refit_dir: Path, code_commit: str |
     base[ct.COL_ENGINE] = "portfolio"  # identidad del portafolio, no del motor donante
     keys = base.groupby([COL_GEO_ID, COL_SEX]).ngroups
     horizon = int(base[ct.COL_HORIZON].max())
-    if keys != 64 or len(base) != 64 * horizon:
+    esquema = scheme_of(base[COL_SEX])
+    conteos = esquema.counts()
+    if keys != conteos["base"] or len(base) != conteos["base"] * horizon:
         raise ForecastError(f"forecast base incompleto: {len(base)} filas / {keys} series")
     ct.validate_forecast_frame(base)
 
     full = derive_forecast_products(base, load_geo_catalog())  # reconciliación exacta incluida
-    if len(full) != 111 * horizon:
+    if len(full) != conteos["products"] * horizon:
         raise ForecastError(f"forecast derivado incompleto: {len(full)} filas")
     ct.validate_forecast_frame(full)
 
@@ -184,18 +187,26 @@ def finish_forecast(run_dir: Path, man: Any, refit_dir: Path, code_commit: str |
 
     lineage = {
         "schema": "lineage.v1",
-        "base_series": 64,
-        "derived_products": 47,
-        "products": 111,
+        "base_series": conteos["base"],
+        "derived_products": conteos["derived"],
+        "products": conteos["products"],
         "horizon": horizon,
         "origin": [
             int(base[ct.COL_ORIGIN_EPI_YEAR].iloc[0]),
             int(base[ct.COL_ORIGIN_EPI_WEEK].iloc[0]),
         ],
         "rule": (
-            "los 47 derivados se MATERIALIZAN sumando las 64 bases: general=H+M por estado, "
-            "región=Σ estados de la macrorregión y nacional=Σ de los 32 estados. Que Σ regiones "
-            "== nacional es una validación EQUIVALENTE, no la definición"
+            (
+                "los 47 derivados se MATERIALIZAN sumando las 64 bases: general=H+M por estado, "
+                "región=Σ estados de la macrorregión y nacional=Σ de los 32 estados. Que Σ "
+                "regiones == nacional es una validación EQUIVALENTE, no la definición"
+            )
+            if esquema.desglosado
+            else (
+                "sin desglose por sexo: los 5 derivados se MATERIALIZAN sumando las 32 bases "
+                "generales: región=Σ estados de la macrorregión y nacional=Σ de los 32 estados. "
+                "Que Σ regiones == nacional es una validación EQUIVALENTE, no la definición"
+            )
         ),
         "refit_run_id": refit_dir.name,
         "refit_digest": refit_digest,

@@ -19,7 +19,8 @@ from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 
-from epiforecast.data.epi_dataset_spec import BASE_SEXES, COL_CVE_ENT, COL_EXPOSURE, COL_SEXO
+from epiforecast.data.epi_dataset_spec import COL_CVE_ENT, COL_EXPOSURE, COL_SEXO
+from epiforecast.data.sex_scheme import base_sexes_of
 from epiforecast.runner.artifact_identity import (
     IO_ERRORS,
     ArtifactValidationError,
@@ -164,7 +165,8 @@ def dataset_exposure(sources: ReleaseSources, geography_ids: list[str]) -> dict[
         valor = float(valores.pop())
         require(valor.is_integer() and valor > 0, f"{who}: exposición inválida en {clave}")
         salida[(str(clave[0]), str(clave[1]))] = int(valor)
-    esperado = sorted((geo, sexo) for geo in geography_ids for sexo in BASE_SEXES)
+    sexos = base_sexes_of(sexo for _, sexo in salida)
+    esperado = sorted((geo, sexo) for geo in geography_ids for sexo in sexos)
     equal(f"{who}: universo de exposición", sorted(salida), esperado)
     return salida
 

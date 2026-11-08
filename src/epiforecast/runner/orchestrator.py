@@ -30,6 +30,7 @@ from epiforecast import registry
 from epiforecast.data.epi_aggregate import build_products
 from epiforecast.data.epi_dataset import build_epi_dataset_v2
 from epiforecast.data.epi_geo_exposure import load_exposure_snapshot, load_geo_catalog
+from epiforecast.data.sex_scheme import n_bases_of, scheme_of
 from epiforecast.runner import acceptance, final_models, forecasting, selection
 from epiforecast.runner import contracts as ct
 from epiforecast.runner import refit as refit_mod
@@ -461,7 +462,10 @@ def run_selection(
         engines=list(bench.engines),
     )
     man.input_digests = {**dm.digests, "selection": digest}
-    man.counts = {"series": int(len(sel)), "products": 111}
+    man.counts = {
+        "series": int(len(sel)),
+        "products": scheme_of(sel["sex"]).counts()["products"],
+    }
     man.start()
     man.artifacts = arts
     man.succeed()
@@ -590,8 +594,11 @@ def _refit_context(
                 f"{acceptance_run_id}: la aceptación fue NEGATIVA; no se refitea ({detalle})"
             )
     keys = set(zip(final["geography_id"], final["sex"], strict=True))
-    if len(final) != 64 or len(keys) != 64:
-        raise RunnerError(f"{acceptance_run_id}: la selección final no tiene 64 claves únicas")
+    esperadas = n_bases_of(final["sex"])
+    if len(final) != esperadas or len(keys) != esperadas:
+        raise RunnerError(
+            f"{acceptance_run_id}: la selección final no tiene {esperadas} claves únicas"
+        )
     provenance = {
         "acceptance_run_id": acceptance_run_id,
         "acceptance_digest": _sha256(test_dir / "acceptance.json"),

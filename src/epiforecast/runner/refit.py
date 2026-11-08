@@ -18,6 +18,7 @@ import pandas as pd
 
 from epiforecast.artifacts.transforms import TransformContract
 from epiforecast.data.epi_dataset_spec import COL_GEO_ID, COL_SEX, GEO_LEVEL_ESTADO, SeriesKey
+from epiforecast.data.sex_scheme import n_bases_of
 from epiforecast.runner import contracts as ct
 from epiforecast.runner import final_models as fm
 from epiforecast.runner.manifest import ArtifactRecord
@@ -174,8 +175,9 @@ def write_summary(
     models = [(engine, m) for engine, ix in indexes.items() for m in ix["models"]]
     train_ends = {tuple(m["train_end"]) for _, m in models}
     n_trains = {int(m["n_train"]) for _, m in models}
-    if len(models) != 64:
-        raise fm.FinalModelError(f"refit final: {len(models)} modelos, se esperan 64")
+    esperados = n_bases_of(m["sex"] for _, m in models) if models else 64
+    if len(models) != esperados:
+        raise fm.FinalModelError(f"refit final: {len(models)} modelos, se esperan {esperados}")
     if len(train_ends) != 1:
         raise fm.FinalModelError(f"refit final: train_end heterogéneo {sorted(train_ends)}")
     summary = {

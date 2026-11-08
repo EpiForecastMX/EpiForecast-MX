@@ -96,6 +96,7 @@ def test_cie_map():
         "K05": "Gingivitis y enfermedad periodontal",
         "K25": "Úlceras, gastritis y duodenitis",
         "C50": "Tumor maligno de la mama",
+        "C53": "Tumor maligno del cuello del útero",
     }
 
 

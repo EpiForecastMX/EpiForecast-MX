@@ -24,15 +24,14 @@ import pandas as pd
 
 from epiforecast import registry
 from epiforecast.data.epi_dataset_spec import (
-    BASE_SEXES,
     COL_EPI_WEEK,
     COL_EPI_YEAR,
     COL_GEO_ID,
     COL_GEO_LEVEL,
     COL_SEX,
     FREQ_EPI_WEEK,
-    GEO_LEVEL_ESTADO,
 )
+from epiforecast.data.sex_scheme import base_mask
 from epiforecast.runner import contracts as ct
 from epiforecast.runner.artifact_identity import (
     IO_ERRORS,
@@ -253,7 +252,7 @@ def _rows(verified: VerifiedRelease, disease_id: str) -> pd.DataFrame:
         raise ArtifactValidationError(f"{disease_id}: forecast sellado inválido ({exc})") from exc
 
     seleccion = verified.selection
-    es_base = (frame[COL_GEO_LEVEL] == GEO_LEVEL_ESTADO) & frame[COL_SEX].isin(BASE_SEXES)
+    es_base = base_mask(frame)
     motores = [
         seleccion[(str(g), str(s))] if base else PORTFOLIO
         for g, s, base in zip(frame[COL_GEO_ID], frame[COL_SEX], es_base, strict=True)

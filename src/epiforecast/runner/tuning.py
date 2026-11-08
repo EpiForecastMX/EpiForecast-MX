@@ -30,15 +30,13 @@ from typing import Any
 import pandas as pd
 
 from epiforecast.data.epi_dataset_spec import (
-    BASE_SEXES,
     COL_EPI_WEEK,
     COL_EPI_YEAR,
     COL_GEO_ID,
-    COL_GEO_LEVEL,
     COL_SEX,
     COL_Y_CASES,
-    GEO_LEVEL_ESTADO,
 )
+from epiforecast.data.sex_scheme import base_mask, base_sexes_of
 from epiforecast.runner import contracts as ct
 from epiforecast.runner.engines import harness
 from epiforecast.runner.evaluation import smape_percent
@@ -67,7 +65,7 @@ def select_sentinels(base_truth: pd.DataFrame, fold: Fold) -> list[dict[str, Any
         <= fold.train_end[0] * 100 + fold.train_end[1]
     ]
     chosen: list[dict[str, Any]] = []
-    for sex in BASE_SEXES:
+    for sex in base_sexes_of(base_truth[COL_SEX].unique()):
         means = (
             train[train[COL_SEX] == sex]
             .groupby(COL_GEO_ID)[COL_Y_CASES]
@@ -185,9 +183,7 @@ def run_tuning(
         params=dict(params or {}),
         resource_limits=dict(resource_limits or {}),
     )
-    base_truth = products[
-        (products[COL_GEO_LEVEL] == GEO_LEVEL_ESTADO) & products[COL_SEX].isin(BASE_SEXES)
-    ]
+    base_truth = products[base_mask(products)]
 
     sentinels = select_sentinels(base_truth, fold)
     wanted = {(s[COL_GEO_ID], s[COL_SEX]): s for s in sentinels}

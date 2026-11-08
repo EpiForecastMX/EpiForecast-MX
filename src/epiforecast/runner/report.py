@@ -12,13 +12,14 @@ from pathlib import Path
 
 import pandas as pd
 
+from epiforecast.data.sex_scheme import base_mask
 from epiforecast.runner.manifest import STATUS_SUCCEEDED, JobRecord, RunManifest
 
 BASELINE_ENGINE = "seasonal_naive_lag52"
 
 
 def _summary(mf: pd.DataFrame) -> dict[str, float]:
-    base = mf[(mf["geography_level"] == "estado") & mf["sex"].isin(["hombres", "mujeres"])]
+    base = mf[base_mask(mf, "geography_level", "sex")]
     nat_gen = mf[(mf["geography_level"] == "nacional") & (mf["sex"] == "general")]
     return {
         "smape_bases": float(base["smape"].median()),

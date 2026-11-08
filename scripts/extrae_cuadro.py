@@ -31,6 +31,24 @@ CONSOLIDATED_COLS = [
     "Acumulado_mujeres",
     "Acumulado_anio_anterior",
 ]
+# Padecimientos sin desglose por sexo (``sex_breakdown: false``): sólo el acumulado total.
+CONSOLIDATED_COLS_TOTAL = [
+    "Anio",
+    "Semana",
+    "Entidad",
+    "Padecimiento",
+    "Casos_semana",
+    "Acumulado_total",
+    "Acumulado_anio_anterior",
+]
+
+
+def _columnas(disease_id: str) -> list[str]:
+    return (
+        CONSOLIDATED_COLS
+        if registry.require(disease_id).sex_breakdown
+        else CONSOLIDATED_COLS_TOTAL
+    )
 
 
 def _extract_one(task: tuple[str, str, str]) -> dict[str, Any] | str:
@@ -50,7 +68,12 @@ def _results(tasks: list[tuple[str, str, str]], jobs: int) -> Iterator[dict[str,
         yield from ex.map(_extract_one, tasks, chunksize=4)
 
 
-def _empty_periods(kept: list[tuple[int, int]], like: pd.DataFrame, name: str) -> pd.DataFrame:
+def _empty_periods(
+    kept: list[tuple[int, int]],
+    like: pd.DataFrame,
+    name: str,
+    cols: list[str] = CONSOLIDATED_COLS,
+) -> pd.DataFrame:
     """Filas vacías (sin casos ni acumulados) para las erratas que conservan su periodo.
 
     Las entidades salen de un boletín válido, con la misma canonicalización del extractor.
@@ -61,7 +84,7 @@ def _empty_periods(kept: list[tuple[int, int]], like: pd.DataFrame, name: str) -
         for y, w in kept
         for e in entidades
     ]
-    return pd.DataFrame(rows).reindex(columns=CONSOLIDATED_COLS)
+    return pd.DataFrame(rows).reindex(columns=cols)
 
 
 def main() -> int:
@@ -116,9 +139,9 @@ def main() -> int:
     manifest_path = out_dir / f"{d.slug}_extraccion_manifest.csv"
 
     if frames and kept:
-        frames.append(_empty_periods(kept, frames[0], d.data_name))
+        frames.append(_empty_periods(kept, frames[0], d.data_name, _columnas(d.id)))
     if frames:
-        serie = pd.concat(frames, ignore_index=True)[CONSOLIDATED_COLS]
+        serie = pd.concat(frames, ignore_index=True)[_columnas(d.id)]
         serie = serie.drop_duplicates(subset=["Anio", "Semana", "Entidad", "Padecimiento"])
         serie = serie.sort_values(["Anio", "Semana", "Entidad"]).reset_index(drop=True)
         serie.to_csv(serie_path, index=False, encoding="utf-8")

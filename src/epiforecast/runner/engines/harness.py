@@ -36,7 +36,6 @@ import pandas as pd
 from epiforecast.artifacts.transforms import TransformContract
 from epiforecast.data.epi_calendar import ds_for, shift
 from epiforecast.data.epi_dataset_spec import (
-    BASE_SEXES,
     COL_DS,
     COL_EPI_WEEK,
     COL_EPI_YEAR,
@@ -49,6 +48,7 @@ from epiforecast.data.epi_dataset_spec import (
     SeriesKey,
 )
 from epiforecast.data.epi_geo_exposure import load_geo_catalog
+from epiforecast.data.sex_scheme import base_mask
 from epiforecast.runner import contracts as ct
 from epiforecast.runner.evaluation import (
     build_evaluation_frame,
@@ -330,9 +330,7 @@ def run_benchmark(
         resource_limits=dict(resource_limits or {}),
     )
 
-    base_truth = products[
-        (products[COL_GEO_LEVEL] == GEO_LEVEL_ESTADO) & products[COL_SEX].isin(BASE_SEXES)
-    ]
+    base_truth = products[base_mask(products)]
 
     fc_parts, ev_parts = [], []
     diagnostics: list[dict[str, Any]] = []

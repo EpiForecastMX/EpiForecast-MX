@@ -29,6 +29,7 @@ from epiforecast.data.extraction.dengue_extractor import (
 from epiforecast.data.extraction.pdf_extractor import (
     build_column_map,
     clean_df,
+    normalize_number,
     pad_prev_year_cols,
     reshape,
 )
@@ -161,6 +162,8 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
     keywords = [d["keyword"] for d in spec["diseases"]]
     n_dis = len(keywords)
     data_cols = df_clean.shape[1] - 1
+    if not registry.require(disease_id).sex_breakdown:
+        return _sin_sexo(out, df_clean, spec, disease_id, year, week)
     if data_cols == n_dis * 3:
         df_clean = pad_prev_year_cols(df_clean, keywords)
         out["layout"] = "3col_noprev"
@@ -178,6 +181,38 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
     df_dis = df_long[df_long["Padecimiento"] == target["keyword"]].copy()
     df_dis["Padecimiento"] = target_name
 
+    n_states = int(df_dis["Entidad"].nunique())
+    out["df"] = df_dis.reset_index(drop=True)
+    out["n_states"] = n_states
+    out["valid"] = n_states == int(spec.get("n_states_expected", 32))
+    out["reason"] = "ok" if out["valid"] else f"{n_states} estados (esperaba 32)"
+    return out
+
+
+def _sin_sexo(
+    out: dict[str, Any],
+    df_clean: pd.DataFrame,
+    spec: dict[str, Any],
+    disease_id: str,
+    year: int,
+    week: int,
+) -> dict[str, Any]:
+    """Bloque sin desglose por sexo: Sem, acumulado del año y acumulado del anterior."""
+    if df_clean.shape[1] - 1 != 3:
+        out["reason"] = f"columnas inesperadas: {df_clean.shape[1] - 1} (esperaba 3, sin sexo)"
+        return out
+    out["layout"] = "3col_total"
+    df_dis = pd.DataFrame(
+        {
+            "Anio": year,
+            "Semana": f"{week:02d}",
+            "Entidad": df_clean[0].to_numpy(),
+            "Padecimiento": registry.require(disease_id).data_name,
+            "Casos_semana": [normalize_number(v) for v in df_clean[1]],
+            "Acumulado_total": [normalize_number(v) for v in df_clean[2]],
+            "Acumulado_anio_anterior": [normalize_number(v) for v in df_clean[3]],
+        }
+    )
     n_states = int(df_dis["Entidad"].nunique())
     out["df"] = df_dis.reset_index(drop=True)
     out["n_states"] = n_states

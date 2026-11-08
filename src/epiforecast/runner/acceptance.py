@@ -24,6 +24,7 @@ from typing import Any
 import pandas as pd
 
 from epiforecast.data.epi_dataset_spec import COL_GEO_ID, COL_SEX
+from epiforecast.data.sex_scheme import n_bases_of
 from epiforecast.runner.manifest import ArtifactRecord
 from epiforecast.runner.policy import EvaluationPolicy
 from epiforecast.runner.selection import portfolio_summary
@@ -229,7 +230,7 @@ def load_accepted(test_dir: Path) -> tuple[pd.DataFrame, dict[str, Any]]:
         if hashlib.sha256(target.read_bytes()).hexdigest() != art["digest"]:
             raise AcceptanceError(f"artefacto de aceptación alterado: {art['path']}")
     final = pd.read_csv(test_dir / "final_selection.csv", dtype={COL_GEO_ID: str})
-    if len(final) != 64:
+    if len(final) != n_bases_of(final[COL_SEX]):
         raise AcceptanceError(f"selección final incompleta: {len(final)} bases")
     return final, payload
 

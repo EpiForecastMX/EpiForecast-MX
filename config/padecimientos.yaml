@@ -715,3 +715,34 @@ padecimientos:
       color: "#DB2777"
       label: "Cáncer de mama"
       nombre_completo: "Tumor maligno de la mama (C50)"
+
+  - id: cancer_cuello_utero_c53
+    data_name: "Tumor maligno del cuello del útero"
+    artifact_key: Cancer_Cuello_Utero_C53
+    slug: cancer_cuello_utero_c53
+    display_name: "Tumor maligno del cuello del útero"
+    cie_codes: ["C53"]
+    aliases: ["tumor maligno del cuello del utero", "cancer cervicouterino", "cancer de cuello uterino", "c53"]
+    profile: baja_incidencia_semanal
+    batch: standalone
+    extraction_group: displasias_neoplasias_cuello_utero
+    exposure_source_id: inegi_cpv2020_static
+    # El boletín sólo publica el total: 32 bases «general», sin hombres ni mujeres.
+    sex_breakdown: false
+    # Publicado (8-nov-2026) tras superar el gate de 2025; validación prospectiva en curso.
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: cancer_cuello_utero_c53_release_a2dd2900a980
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#A855F7"
+      label: "Cáncer de cuello del útero"
+      nombre_completo: "Tumor maligno del cuello del útero (C53)"

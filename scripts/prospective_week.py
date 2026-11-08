@@ -65,6 +65,16 @@ RAW_COLUMNS: tuple[str, ...] = (
     "Acumulado_mujeres",
     "Acumulado_anio_anterior",
 )
+# Padecimientos sin desglose por sexo: el boletín sólo da el acumulado total.
+RAW_COLUMNS_TOTAL: tuple[str, ...] = (
+    "Anio",
+    "Semana",
+    "Entidad",
+    "Padecimiento",
+    "Casos_semana",
+    "Acumulado_total",
+    "Acumulado_anio_anterior",
+)
 RAW_KEY: tuple[str, ...] = ("Anio", "Semana", "Entidad", "Padecimiento")
 
 
@@ -101,13 +111,14 @@ def _period(year: object, week: object, label: str) -> tuple[int, int]:
 
 
 def _require_raw_shape(frame: pd.DataFrame, *, disease_name: str, label: str) -> pd.DataFrame:
-    missing = sorted(set(RAW_COLUMNS) - set(frame.columns))
-    extra = sorted(set(frame.columns) - set(RAW_COLUMNS))
+    columnas = RAW_COLUMNS_TOTAL if "Acumulado_total" in frame.columns else RAW_COLUMNS
+    missing = sorted(set(columnas) - set(frame.columns))
+    extra = sorted(set(frame.columns) - set(columnas))
     if missing or extra:
         raise ProspectiveWeekError(
             f"{label}: columnas inválidas; faltan={missing}, sobran={extra}"
         )
-    out = frame.loc[:, RAW_COLUMNS].copy()
+    out = frame.loc[:, columnas].copy()
     if out.empty:
         raise ProspectiveWeekError(f"{label}: sin filas")
     diseases = sorted(str(v) for v in out["Padecimiento"].dropna().unique())

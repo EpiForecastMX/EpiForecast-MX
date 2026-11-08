@@ -315,3 +315,40 @@ cuadro_groups:
         has_prev_year: true
     n_states_expected: 32
     backend: camelot_stream
+
+  displasias_neoplasias_cuello_utero:
+    # CUADRO 15: Displasias y Neoplasias. Tumor maligno del cuello del útero (C53) es el último
+    # bloque, sin desglose por sexo: Sem, acumulado del año y del anterior.
+    page_anchors: ["mama"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    last_block_columns: {7: 3, 8: 3}
+    diseases:
+      - id: cancer_cuello_utero_c53
+        keyword: "Cancer_Cuello_Utero_C53"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [cancer_cuello_utero_c53]
+        reason: "formato de cierre anual: sólo acumulados, sin columna Sem"
+      - file: "2014_sem07.pdf"
+        diseases: [cancer_cuello_utero_c53]
+        keep_period: true
+        reason: >-
+          una nota editorial sobre tumor maligno de mama en hombres precede al Cuadro 15 y el
+          extractor toma la primera página con las anclas
+      - file: "2014_sem08.pdf"
+        diseases: [cancer_cuello_utero_c53]
+        keep_period: true
+        reason: >-
+          la portada resume la nota editorial de tumor maligno de mama en hombres y precede al
+          Cuadro 15; el extractor toma la primera página con las anclas
+    layout_variants:
+      - id: v_3col_total
+        min_year_week: "0000_sem00"
+        cols_per_disease: 3
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
