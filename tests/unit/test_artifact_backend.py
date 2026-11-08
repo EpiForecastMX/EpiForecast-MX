@@ -263,6 +263,9 @@ def test_obesidad_y_f50_publicadas_solo_desde_su_release():
         "Hipertensión arterial",
         "Enfermedad isquémica del corazón",
         "Enfermedad cerebrovascular",
+        "Infecciones intestinales por otros organismos y las mal definidas",
+        "Infección de vías urinarias",
+        "Úlceras, gastritis y duodenitis",
     ]
     # El carril legacy (all_forecast, tabla_333, zoom) sigue siendo exactamente los cuatro.
     assert [d.data_name for d in registry.legacy_published()] == [
