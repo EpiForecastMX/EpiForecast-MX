@@ -270,3 +270,18 @@ una observación de comunicación científica.
   mediana de la entidad y 5 veces la mayor vecina, que el pronóstico de 364 días después repite con al
   menos 5 veces esa mediana. `node epibot/scripts/picos_heredados.mjs --write` regenera las notas y
   `--check` corre en `deploy:verify`, así que un release nuevo con un pico sin nota no se despliega.
+
+## Cuarta auditoría del 9-nov-2026 (B1 a B3)
+
+Los tres hallazgos de la tercera ronda quedaron confirmados y las seis notas de picos se cotejaron otra vez
+contra PDF, raw, dataset y pronóstico.
+
+- **B2, semanas fraccionarias.** `int(float("2.5"))` daba 2: una semana fraccionaria pasaba por la de su
+  parte entera. `consolidado_base.entero` acepta `2` y `2.0` y rechaza fracciones, vacíos y no finitos;
+  `consolida` falla con rc 2 si una clave de la base o del raw no es entera. La base vigente sigue sin
+  diferencias en los 29 publicados.
+- **B3, rezago de 52 semanas.** La nota de picos decía «misma semana de años anteriores» también para el
+  ingenuo estacional, que desplaza 52 semanas (364 días): Hodgkin enlaza 2025-W43 con 2026-W42 porque
+  2025 tuvo 53 semanas MMWR. La explicación sale ahora del motor de las series base de la entidad (ingenuo:
+  52 semanas antes; medias estacionales: misma semana epidemiológica de años anteriores).
+- **B1** está en el preparador de evals del skill (`scripts/prepara_evals.sh`), fuera de este repositorio.

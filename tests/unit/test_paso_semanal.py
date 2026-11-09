@@ -259,3 +259,14 @@ def test_consolida_rechaza_sexo_inventado_en_una_serie_sin_desglose(tmp_path: Pa
     assert (
         ps.consolida(43, 2026, e["base"], e["leg_base"], e["leg_cand"], e["out"], e["root"]) == 2
     )
+
+
+def test_consolida_rechaza_una_semana_fraccionaria_en_la_base(tmp_path: Path, monkeypatch, capsys):
+    """Cuarta auditoría, B2."""
+    e = _escenario(tmp_path, monkeypatch, 32)
+    filas = "".join(f"2026,{'42.5' if i == 3 else '42'},E{i},X,2,,,4\n" for i in range(32))
+    _con_historia(e, filas)
+    assert (
+        ps.consolida(43, 2026, e["base"], e["leg_base"], e["leg_cand"], e["out"], e["root"]) == 2
+    )
+    assert "no entero" in capsys.readouterr().err and not e["out"].exists()
