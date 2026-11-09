@@ -4,20 +4,10 @@
 
 <h1 align="center">EpiForecast-MX</h1>
 
-> **WCP 2026 #3134 — cierre operativo ratificado, 9-sep-2026.**
-> Póster inglés cargado (portal: 09.09.2026 03:19); web vigente en `f02d2d16`,
-> PDF EN `ec5ebd80…` / ES `8a0a9018…` intactos. No repetir carga o ratificación.
-> 35 criterios registrados; 46+52 controles y 22 de exportación correctos. Sello 110, manifiesto 103.
-> Las nueve dependencias recuperadas ya son obligatorias al generar y verificar;
-> índice de salida desde workspace: `planes/SALIDA_WCP_2026-09-09.md`.
-> Gobernante: 13 PASA, 3 EXC, 13 N/A, 4 FALLA por formularios nominales no aportados;
-> la ratificación del autor no se presenta como certificación independiente.
-> Estado único: [ESTADO_ACTUAL_WCP.md](Congresos/Mundial/ESTADO_ACTUAL_WCP.md).
-> Handoff desde workspace: `planes/PROMPT_REANUDAR_WCP_ENVIADO_2026-09-09.md`.
-> Memorias locales, sin commit/push/deploy. Versiones históricas preservadas.
+> WCP 2026 e-poster (#3134) presented in September 2026; its working file lives outside the repository.
 
 <p align="center">
-  <strong>Epidemiological Intelligence Platform for Neurological Disease Forecasting in Mexico</strong>
+  <strong>Epidemiological Intelligence Platform for Disease Forecasting in Mexico</strong>
 </p>
 
 <p align="center">
@@ -29,7 +19,7 @@
   <img src="https://img.shields.io/badge/Python-3.12-blue?style=flat&logo=python&logoColor=white" alt="Python 3.12"/>
   <img src="https://img.shields.io/badge/Models-Prophet_%2B_DeepAR_%2B_Ensemble_%2B_Stacking-orange?style=flat" alt="Multi-Model"/>
   <img src="https://img.shields.io/badge/GPU-SageMaker_T4-76b900?style=flat&logo=nvidia&logoColor=white" alt="GPU SageMaker"/>
-  <img src="https://img.shields.io/badge/Tests-2509-brightgreen?style=flat" alt="2509 Tests"/>
+  <img src="https://img.shields.io/badge/Tests-3249-brightgreen?style=flat" alt="3249 Tests"/>
   <img src="https://img.shields.io/badge/DVC-S3-945DD6?style=flat&logo=dvc&logoColor=white" alt="DVC + S3"/>
 </p>
 
@@ -37,7 +27,7 @@
 
 ## Project Description
 
-**EpiForecast-MX** is a production-grade epidemiological intelligence platform developed in partnership with the **Instituto Mexicano del Seguro Social (IMSS)** to forecast the weekly incidence of neurological and mental-health conditions across Mexico's 32 states with a 52-week horizon.
+**EpiForecast-MX** is a production-grade epidemiological intelligence platform developed in partnership with the **Instituto Mexicano del Seguro Social (IMSS)** to forecast the weekly incidence of thirty-three reportable conditions across Mexico's 32 states with a 52-week horizon.
 
 The platform uses a **polymorphic Factory pattern** to support multiple forecasting engines (**Prophet**, **DeepAR**, **Ensemble**, and **Stacking**), ensuring scalability and ease of integration for future algorithms. DeepAR training runs on AWS SageMaker with NVIDIA T4 GPUs for fast iteration. The Ensemble model combines Prophet with XGBoost residual correction, while the Stacking model uses Prophet + ETS + LightGBM experts with a Ridge meta-learner for optimal weight combination.
 
@@ -47,8 +37,9 @@ The platform uses a **polymorphic Factory pattern** to support multiple forecast
 | Parkinson's disease | G20 | Low incidence, volatile per-state series |
 | Alzheimer's disease | G30 | Aging-population trends, underreporting |
 | Dengue *(extra deliverable)* | A97 | Vector-borne, ~4-5 year epidemic cycle, near-zero off-season series |
+| Generic runner releases (29) | various | Obesity, eating disorders, diabetes, cardiovascular, bulletin radar group and seventeen cancers; see the registry |
 
-The three neurological/mental-health conditions are the core production cohort (333 models). **Dengue** was incorporated as a fourth, vector-borne condition with its own count-based pipeline — see [Dengue (Fourth Condition)](#dengue-fourth-condition--extra-deliverable).
+Four conditions (Depression, Parkinson's, Alzheimer's and Dengue) run on the legacy multi-model pipeline (333 neuro models plus 99 Dengue series); see [Dengue (Fourth Condition)](#dengue-fourth-condition-extra-deliverable). Twenty-nine more are published from sealed releases of the generic runner (`src/epiforecast/runner/`). The registry (`config/padecimientos.yaml`) decides which ones are public. Releases that failed the 2025 acceptance gate are published with the seasonal control by express order of the author, never as validated. Publication history: `docs/C7_7_PUBLICACION_OBESIDAD.md` through `docs/C7_12_CANCER.md`.
 
 ---
 
@@ -59,13 +50,13 @@ The three neurological/mental-health conditions are the core production cohort (
 - **EPI Interactive Console** -- AI-powered CLI (`python epi.py`) with natural-language command translation (Gemini), local KnowledgeBase for data queries, Rich TUI with IMSS institutional branding, risk-based command approval, session statistics, and persistent command history.
 - **End-to-End ML Pipeline** -- Automated from PDF scraping (SINAVE bulletins) through INEGI demographic mapping to forecast charts and HTML reports.
 - **Model Comparison Engine** -- High-contrast professional charts comparing Real vs. Prophet vs. DeepAR vs. Ensemble vs. Stacking performance across all states and conditions.
-- **Weekly Validation** -- Automated comparison of model forecasts against real SINAVE bulletin data for the most recent epidemiological week (`make tabla-produccion`).
-- **Reality-Calibrated Model Selection** -- Production engine selection uses SMAPE on the most recent SINAVE Boletin weeks (canonical since 2026-04-30 via `scripts/reselect_motor_2026.py`): series with >=10 real 2026 weeks and >=10 cases pick the engine with lowest 2026 SMAPE; noisy series (<10 cases) default to Ensemble; series without recent reality keep the CV assignment. Engines within a 5% SMAPE band of the best are treated as tied and broken by MAE, so a noise-level margin does not flip the selection to an engine that tracks the signal worse. The Tableau dataset exposes `modelo_productivo`. Distribution shifts each bulletin (week 21: DeepAR 157, Prophet 124, Ensemble 90, Stacking 64). Audit trail in `reports/ProdDetails/auditoria_motores_2026.xlsx`.
-- **Production Model Table** -- Excel with 2 sheets: (1) 333 production models with diagnostics, overfitting/leakage, precision historica, and weekly validation columns; (2) 52-week detail with real vs forecast vs % accuracy per week. IMSS 2026 styling.
+- **Weekly Validation** -- `scripts/genera_validacion_semanal.py` pairs each forecast with the bulletin value of the same week after the release cut; since round W37 it reports the pairs without scoring them.
+- **Out-of-Sample Model Selection** -- Production engines for the 333 neuro series are selected out of sample on the W28-W37 window (round W37, criterion `H3 W28–W37`). Selection metrics are a selection diagnostic, not a published evaluation. Current distribution: Ensemble 109, Stacking 107, Prophet 78, DeepAR 39. `scripts/reselect_motor_2026.py` is the earlier in-sample selector (2026-04-30) and must not be rerun over the release table. The Tableau dataset exposes `modelo_productivo`.
+- **Production Model Table** -- Excel with 3 sheets (Produccion, Detalle Semanal, Análisis Visual); 432 rows: 333 neuro production models plus 99 Dengue series.
 - **Overfitting and Data Leakage Detection** -- Train metrics (RMSE, SMAPE) computed in-sample for all 4 models. HTML report shows diagnostic badges: Overfitting (test/train SMAPE ratio) and Leakage (suspiciously low train SMAPE).
 - **Hybrid Fallback** -- Zero-incidence and low-confidence (<5 cases/52 weeks) state models automatically defer to regional aggregates to ensure 100% forecast coverage. Integer-rounded predictions (no fractional cases).
 - **MLflow Experiment Tracking** -- Optional integration logs all training runs (metrics, hyperparameters, elapsed time) to MLflow. Non-intrusive: no-op when not installed. Install with `pip install -e ".[mlflow]"`, browse with `mlflow server --backend-store-uri ./mlruns`.
-- **Automated Bulletin Pipeline** -- GitHub Actions scrapes new SINAVE bulletins daily, processes PDFs with Camelot, and merges into the consolidated dataset.
+- **Automated Bulletin Pipeline** -- GitHub Actions scrapes new SINAVE bulletins Tuesday to Thursday at 20:00 UTC (plus manual dispatch), processes PDFs with Camelot, and merges into the consolidated dataset.
 - **Cross-Validation** -- Prophet uses weighted time-series CV (4 folds, progressive weights). DeepAR uses multi-series CV with early stopping.
 - **IMSS Institutional Branding** -- All visualizations and reports follow official IMSS 2026 chromatic and styling guidelines.
 
@@ -106,6 +97,9 @@ EpiForecast-MX/
 |
 |-- config/                       # Unified YAML configuration
 |   |-- base.yaml                 #   Active model, paths, disease settings
+|   |-- padecimientos.yaml        #   Disease registry: profiles, lifecycle, channels, releases
+|   |-- engines/, evaluation/     #   Runner engines and selection policies
+|   |-- publication/              #   Per-disease prospective gates and release pointers
 |   |-- models/                   #   Per-algorithm hyperparameters
 |   |   |-- prophet.yaml          #     Prophet HP grids, seasonality, regime changes
 |   |   |-- deepar.yaml           #     DeepAR epochs, layers, dropout, context length
@@ -123,13 +117,17 @@ EpiForecast-MX/
 |   |   |-- prophet/              #     ProphetForecaster + cross-validator + tuner + data_prep
 |   |   |-- deepar/               #     DeepARForecaster + cross-validator
 |   |   |-- ensemble/             #     EnsembleForecaster (Prophet + XGBoost) + helpers
-|   |   +-- stacking/             #     StackingForecaster (Prophet + ETS + LightGBM + Ridge)
+|   |   |-- stacking/             #     StackingForecaster (Prophet + ETS + LightGBM + Ridge)
+|   |   +-- nbglm/                #     NB-GLM (suspended for Dengue since round W37)
 |   |-- data/                     #   PDF extraction, INEGI ingestion, preprocessing
 |   |-- evaluation/               #   Metrics (RMSE, MAE, MAPE, SMAPE, MASE)
 |   |-- visualization/            #   IMSS publication-quality charts and reports
 |   |-- features/                 #   Demographic feature engineering
 |   |-- utils/                    #   Configuration loader, path management, helpers
-|   +-- pipelines/                #   Pipeline base
+|   |-- pipelines/                #   Pipeline base
+|   |-- runner/                   #   Generic runner: datasets, rolling-origin CV, engines, sealed releases
+|   |-- publication/              #   Publication: views, prospective gates, consolidated-file checks
+|   +-- registry.py               #   Disease registry (lifecycle, channels, backends)
 |
 |-- epi_modules/                  # EPI interactive console modules
 |   |-- engine.py                 #   EpiEngine (Makefile parsing, Gemini translation, execution)
@@ -181,7 +179,7 @@ EpiForecast-MX/
 |   |-- ci_process_boletines.py   #   CI/CD bulletin processing (Camelot)
 |   +-- publish_gsheets.py        #   Google Sheets publisher
 |
-|-- tests/                        # Test suite (136 test files, 2,509 tests; last CI 74.5%, gate at 70%)
+|-- tests/                        # Test suite (176 test files, 3,249 tests; last CI 79.0%, gate at 70%)
 |   |-- unit/                     #   Unit tests for all modules
 |   +-- integration/              #   End-to-end pipeline tests
 |
@@ -200,17 +198,16 @@ EpiForecast-MX/
 |   |-- forecasts/                #   Forecast CSVs, comparison charts, ensemble PNGs
 |   |-- figures/                  #   EDA and analysis plots (ModeloFinal/ for Avance 5)
 |   |-- ProdDetails/              #   Production Excel, weekly validation HTML
-|   |-- reports/                  #   Markdown reports and production CSV
 |   +-- docs/                     #   PDF reports
 |
 |-- .github/workflows/            # CI/CD
 |   |-- ci.yml                    #   Quality gate (lint + typecheck + tests); integration is manual-only
-|   |-- scrape_boletines.yml      #   Daily automated bulletin scraping
+|   |-- scrape_boletines.yml      #   Bulletin scraping (Tue-Thu)
 |   |-- process_boletines.yml     #   Bulletin PDF processing (Camelot)
 |   +-- gsheets.yml               #   Google Sheets publishing
 |
 |-- epi.py                        # EPI interactive console entry point
-|-- Makefile                      # MLOps orchestration (~55 targets)
+|-- Makefile                      # MLOps orchestration (~80 targets)
 +-- pyproject.toml                # Dependencies, Ruff, Mypy, Pytest config
 ```
 
@@ -344,9 +341,9 @@ The Tableau dataset (`data/processed/tableau.csv`) includes:
 - Per-model metrics: `rmse_{model}`, `mae_{model}`, `mape_{model}`, `smape_{model}`, `mase_{model}`
 - Productive model metrics: `rmse`, `mae`, `mape`, `smape`, `mase`
 
-The production Excel (`reports/ProdDetails/tabla_333_modelos_produccion.xlsx`) has 2 sheets:
+The production Excel (`reports/ProdDetails/tabla_333_modelos_produccion.xlsx`) has 3 sheets (the third, Análisis Visual, holds embedded charts):
 
-**Sheet 1 - Produccion** (333 rows x ~50 columns):
+**Sheet 1 - Produccion** (432 rows x 55 columns: 333 neuro plus 99 Dengue):
 - Per-model metrics (RMSE, MAE, SMAPE, MASE) for all 4 algorithms
 - `casos_52_semanas_futuro`: Total projected cases for 52-week horizon (integer)
 - `smape_prod`, `mase_prod`, `rmse_prod`, `mae_prod`: Metrics of the selected model (recomputed after re-selection)
@@ -356,9 +353,9 @@ The production Excel (`reports/ProdDetails/tabla_333_modelos_produccion.xlsx`) h
 - `precision_historica`: Forecast/real ratio as percentage
 - `pron_sem_previa / realidad_sem_previa`: Last week values for live validation
 - `modelo_produccion`, `tipo_modelo`, `region_asignada`, `justificacion`
-- **2026 reality audit columns** (added by `reselect_motor_2026.py`): `n_semanas_real_2026`, `total_real_2026`, `smape_2026_{prophet,deepar,ensemble,stacking}`, `mase_2026_{prophet,deepar,ensemble,stacking}` (seasonal-naive lag 52), `smape_real_2026_ganador`, `motor_anterior`, `criterio_seleccion`
+- **2026 reality audit columns** (added by `reselect_motor_2026.py`): `n_semanas_real_2026`, `total_real_2026`, `smape_2026_{prophet,deepar,ensemble,stacking}`, `smape_real_2026_ganador`, `motor_anterior`, `criterio_seleccion`, `semana_validacion`
 
-**Sheet 2 - Detalle Semanal** (333 rows x 163 columns):
+**Sheet 2 - Detalle Semanal** (432 rows x 163 columns):
 - 52 columns `real_sem_N`: Actual weekly incidence
 - 52 columns `pron_sem_N`: Model backtest prediction per week
 - 52 columns `acierto_sem_N`: Forecast accuracy percentage per week
@@ -375,8 +372,8 @@ make compare-metrics
 # Generate production model table (333 models, CV-based first-pass selection)
 make tabla-produccion
 
-# Re-select productive engine using 2026 SINAVE Boletin reality (canonical)
-python3 scripts/reselect_motor_2026.py
+# Legacy in-sample re-selector (superseded by the W37 out-of-sample selection; do not rerun on the release table)
+# python3 scripts/reselect_motor_2026.py
 
 # Generate HTML results report
 make report
@@ -391,7 +388,7 @@ make reporte-avance5
 python scripts/compliance_check.py
 ```
 
-Comparison charts are saved in `reports/forecasts/comparacion_modelos/` using CDMX timezone (UTC-6) for audit logs. The Avance 5 report generates `reports/ProdDetails/avance5_modelo_final.md`, `reports/ProdDetails/tabla_333_modelos_produccion.xlsx` (Excel with 2 sheets: production summary + 52-week detail), and 18 analysis charts in `reports/figures/ModeloFinal/`.
+Comparison charts are saved in `reports/forecasts/comparacion_modelos/` using CDMX timezone (UTC-6) for audit logs. The Avance 5 report generates `reports/ProdDetails/avance5_modelo_final.md`, `reports/ProdDetails/tabla_333_modelos_produccion.xlsx` (Excel with 3 sheets), and 18 analysis charts in `reports/figures/ModeloFinal/`.
 
 #### Prospective Out-of-Sample Validation (frozen forecast)
 
@@ -403,7 +400,7 @@ Comparison charts are saved in `reports/forecasts/comparacion_modelos/` using CD
 
 ```bash
 # Freeze the current productive forecast (future tail only, ds > cutoff = unseen).
-# Covers all 4 conditions (neuro via tabla_333 + Dengue via produccion_dengue.csv).
+# Covers the 4 legacy conditions; runner releases use their own frozen prospective gates (prospective_week.py).
 make congela-pronostico
 
 # Validate the frozen forecast against the current bulletin (honest OOS SMAPE/MAE).
@@ -416,8 +413,7 @@ plus the `forecast_congelado_latest.txt` pointer; `validar` writes
 `reports/ProdDetails/validacion_prospectiva.html` (+ `.csv`).
 
 **Golden rule (do not forget):** after each new bulletin, run `make valida-prospectivo`
-**before** retraining. The weekly pipeline retrains on the new data, so if you retrain
-first, the newly arrived week becomes in-sample again and the test is lost. **Do not
+**before** retraining. Retraining first makes the newly arrived week becomes in-sample again and the test is lost. **Do not
 re-freeze every week** (that resets the experiment); re-freeze only to set a new
 baseline. Decision rule: if OOS SMAPE stays close to in-sample, the selection is sound;
 if OOS exceeds ~2x in-sample, switch selection to `smape_prod` (rolling CV) or to a
@@ -444,84 +440,38 @@ make data-push       # Upload data to S3
 make models-push     # Version and upload trained models
 make s3-sync         # Quick sync CSVs + forecasts to S3 (no DVC)
 make data-weekly     # Add + commit new weekly bulletin data
-make update-week     # BLOCKED while the sealed P0 workflow is completed (see section 8)
+make update-week     # disabled: aborts in preflight (see section 8)
 ```
 
-### 8. Weekly Update Flow (`make update-week`)
+### 8. Weekly Step
 
-> **Operational status — 2026-09-02: P1 W33 and corrective batch P1b published.** The
-> sealed run `882663dac1f1e39b` (Alzheimer, Depression, Parkinson and Dengue together at W33,
-> 1,800 artifacts, zero tombstones, `cifras` and `rag` gates passing) was merged: backend
-> `d7c9c6c2` (main CI run 33672251817 green) and frontend `72ae9e83`; Netlify deployed
-> https://epiforecast.mx at W33 (DATA_VERSION 20260825, RAG 453 chunks, zoom 444 series).
-> The production smoke found the landing's static news fallback out of sync (CALASS headline
-> with the W33 date); `1ae477d5` rewrites that block from `news.json` and the frontend `cifras`
-> gate now enforces it (`84536608`). Re-sealed as `89d70cc441ee255a` and merged: backend PR #16
-> (`3bd67236`, main CI run 33677859434 green) and frontend PR #12 (`8490e433`). The production smoke
-> passed with and without JavaScript: static banner and rendered DOM equal to `news.json`, W33 for
-> all four diseases, DATA_VERSION 20260826, `app.js?v=140`, 333/99/432/444, RAG 453 chunks.
-> Repository hygiene (2026-09-02): both repositories keep only `main` locally and
-> `origin/main` as the active remote branch, with no extra worktrees; backend also preserves
-> the remote archive ref `respaldo/paper/micai-2026-camera-ready`. Backend is
-> `main@77dc2dcb` (final CI run 33683584455 green) and frontend is
-> `main@8490e433`; the P0 pre-rebase backup lives in the local tag
-> `archive/p0-pre-rebase-584cf72d-2026-09-02`.
+`make update-week` is permanently guarded and aborts in preflight (`scripts/actualiza_semanal.sh`).
+The weekly step has three lanes, and none of them publishes a partial week:
 
-Historically this was described as a one-command weekly refresh that keeps
-the working copy, DVC artifacts and the public dashboard in lockstep with the
-latest SINAVE bulletin ingested by the CI scraper. Delegates to
-`scripts/actualiza_semanal.sh` and runs 11 ordered steps:
+1. **Legacy conditions** (Depression, Parkinson, Alzheimer, Dengue) through the v5 producer kept
+   outside the repository.
+2. **The 29 runner releases** through `make semana-revisa`, `make semana-observa PDF=… SALIDA=… [WRITE=1]`,
+   `python -m scripts.paso_semanal consolida` and `make semana-vistas N=… FE=…`, failing closed for all
+   if any one fails. `consolida` keeps the base byte for byte, rejects a superseded or altered base and
+   runs `revisa_consolidado` (parity of every published condition).
+3. **The bulletin radar** (`boletin.html`) through `scripts/boletin_semana.py` in the dashboard repo.
 
-1. **Git pull** on `main` to pick up commits from the `scrape_boletines` /
-   `process_boletines` workflows.
-2. **`dvc pull --force`** to materialize the new raw PDFs and the consolidated dataset.
-3. **Dengue extract (`--incremental`) → merge → prep** (best-effort). Incremental
-   extraction parses only the *new* bulletin PDF (it skips the ~648 already in the
-   manifest), so Dengue advances in seconds instead of re-parsing every PDF.
-4. **Re-select the productive engine** on the recent SINAVE reality
-   (`reselect_motor_2026.py`). The CV backtest table (`tabla-produccion`, ~19 min)
-   is **not** rebuilt here — its cross-validation metrics depend only on the frozen
-   models and the 2014-2025 history, not on the new bulletin. Pass
-   `RETRAIN=1 make update-week` to rebuild it after an actual retrain.
-5. **Rebuild** the Tableau dataset and the weekly validation HTML.
-6. **Regenerate the neuro gallery** (333 charts + `zoom_data_neuro.json`).
-7. **Dengue production + web** (gallery, forecast JSON, knowledge.json).
-8. **Rebuild the EpiBot zoom** — *after* the Dengue web, so it is not stale.
-9. **Regenerate** `knowledge.json` and copy it to `EpiForecast-IMSS-Dashboard/epibot/` — now including a `rendimiento_2026` section (per-condition × per-engine SMAPE + MASE tables, neuro + Dengue) that the EpiBot renders as on-demand tables ("rendimiento por padecimiento", "cuadro de dengue").
-10. **Auto-update the dashboard date bar** (`actualiza_barra_fechas.py`) — derived
-    from the chart data, no hardcoded dates.
-11. **Publish**: commit + push the dashboard repo (gallery, zoom, knowledge, index)
-    and version the consolidated dataset + production tables in DVC/S3.
+The full procedure lives in the `padecimiento-epiforecast` skill (`references/paso_semanal.md`).
+Historical note: the 11-step `update-week` refresh and the P1/P1b W33 publication (2-Sep-2026) are
+documented in `CLAUDE.md` and the git history.
 
-The governed P1 run was executed through the sealed staging commands. Do not use these
-legacy invocations as a publication bypass:
-
-```bash
-make update-week              # remains guarded; requires the explicit weekly authorization
-RETRAIN=1 make update-week    # never use RETRAIN as an authorization bypass
-```
-
-> **Before retraining on a new bulletin, run `make valida-prospectivo`** to score
-> the frozen forecast against the just-arrived weeks while they are still genuinely
-> out-of-sample. Retraining first turns those weeks into in-sample data and the
-> honest OOS check is lost. See section 5 ("Prospective Out-of-Sample Validation").
-
-Requires: local `.venv` with project installed, AWS credentials for DVC/S3 pull,
-and a clone of `EpiForecast-IMSS-Dashboard` at the expected sibling path with
-push permission to `main`.
+> **Before retraining on a new bulletin, run `make valida-prospectivo`** to score the frozen forecast
+> against the just-arrived weeks while they are still genuinely out-of-sample.
 
 ### Current Data Snapshot
 
-- **Published cut:** W33/2026 for all four published diseases — Alzheimer, Depression,
-  Parkinson and Dengue — with a permanent fail-closed rule that forbids mixed public cuts.
-- **Next cut:** W34 was checked against the official page on 2-sep and was not available;
-  it cannot be processed until its official PDF exists and all four diseases can advance
-  together.
-- **Local consolidated dataset:** 96,864 rows: 63,072 neuro (3 × 21,024), 12,896
-  Dengue and 20,896 Obesidad. The Obesidad rows are local NO-GO material; this
-  superposition must not be versioned or published until decision P0.11.
-- **Knowledge base:** ~220 KB — 333 neuro production models + a `dengue` section, 51 stats keys, 6 boletin sections
-- **Forecast horizon:** 52 weeks ahead (rolling, regenerated per weekly update); Dengue adds a 5-year illustrative seasonal projection
+- **Published cut:** W42/2026 for the four legacy conditions and the bulletin radar; the 29 runner
+  releases observe through 2026-W41 (their 52-week horizon runs 2026-W42 to 2027-W41). A fail-closed
+  parity rule forbids mixed public cuts.
+- **Knowledge base:** about 260 KB (333 neuro production models, a `dengue` section, 26 stats keys,
+  6 bulletin sections); each runner condition ships its own `knowledge.json` under
+  `publication/<id>/<release>/` in the dashboard repo.
+- **Forecast horizon:** 52 weeks ahead for every published condition.
 
 ---
 
@@ -542,7 +492,7 @@ class ForecastModel(ABC):
     def run(self) -> tuple[Any, dict, dict]: ...
 ```
 
-Models register themselves with `@register_model("name")` and are instantiated via `create_model(name, **kwargs)`. This allows transparent switching between algorithms without modifying pipeline code. Currently registered models: `prophet`, `deepar`, `ensemble`, `stacking`, `nbglm` (the count-correct Negative-Binomial GLM + Fourier + El Niño/ONI engine used for Dengue; see the Dengue section below).
+Models register themselves with `@register_model("name")` and are instantiated via `create_model(name, **kwargs)`. This allows transparent switching between algorithms without modifying pipeline code. Currently registered models: `prophet`, `deepar`, `ensemble`, `stacking`, `nbglm` (the Negative-Binomial GLM + Fourier + El Niño/ONI engine, suspended for Dengue since round W37; see the Dengue section below). The generic runner registers its own engines (`src/epiforecast/runner/engines/`).
 
 ### Prophet
 
@@ -591,25 +541,25 @@ python -m scripts.entrena modelo_activo='deepar' padecimiento.tipo='Alzheimer'
 
 ---
 
-## Dengue (Fourth Condition — Extra Deliverable)
+## Dengue (Fourth Condition, Extra Deliverable)
 
-Beyond the three neurological/mental-health conditions, EpiForecast-MX incorporates **Dengue (ICD-10 A97)** as a fourth, vector-borne condition — an extra deliverable that exercises the platform's extensibility on a disease with fundamentally different dynamics (climate-driven seasonality, multi-year epidemic cycles, near-zero off-season series). Dengue is **fully in production**: trained, model-selected, served on the public site, and answered by the EpiBot assistant.
+Beyond the three neurological/mental-health conditions, EpiForecast-MX incorporates **Dengue (ICD-10 A97)** as a fourth, vector-borne condition: an extra deliverable that exercises the platform's extensibility on a disease with fundamentally different dynamics (climate-driven seasonality, multi-year epidemic cycles, near-zero off-season series). Dengue is **fully in production**: trained, model-selected, served on the public site, and answered by the EpiBot assistant.
 
 **Modeling decision (evidence-based).** Dengue is reported under the WHO 2009 classification across three severity tiers: non-severe (`A97.0`), with warning signs (`A97.1`), and severe (`A97.2`). A literature review concluded that incidence should be modeled as **total dengue (the three tiers aggregated)**, not as separate severity series: severe dengue is a tiny fraction of cases (~0.1-0.2% in the Americas), so per-severity series are sparse and near-zero; predictive skill comes from the autocorrelation and seasonality of the aggregate. Dengue is modeled as **absolute counts** (not population-normalized rates).
 
-**Data — series 2018-2026 (~392 national weeks).** A dedicated extractor parses the per-entity Dengue table from SINAVE bulletins (a separate page with its own layout), validated cell-by-cell against the printed `TOTAL` row:
+**Data: series 2018-2026 (~414 bulletins through 2026-W42).** A dedicated extractor parses the per-entity Dengue table from SINAVE bulletins (a separate page with its own layout), validated cell-by-cell against the printed `TOTAL` row:
 
-- `src/epiforecast/data/extraction/dengue_extractor.py` — locates the table by ICD codes (`A97.0/A97.1/A97.2`), aggregates the three tiers per state and sex. Supports two WHO-2009 layouts: production 2020+ (12 columns) and historical 2018-W27..2019 (10 columns, `dengue_historico.py`).
-- `scripts/extrae_dengue.py` / `scripts/merge_dengue.py` — batch extraction with a dataset-level audit, then an idempotent merge into the DVC-versioned consolidated dataset (**74,688 rows = 62,112 neuro + 12,576 Dengue**). `extrae_dengue --incremental` parses only bulletins not yet in the manifest (the weekly refresh path: seconds instead of re-reading every PDF).
+- `src/epiforecast/data/extraction/dengue_extractor.py`: locates the table by ICD codes (`A97.0/A97.1/A97.2`), aggregates the three tiers per state and sex. Supports two WHO-2009 layouts: production 2020+ (12 columns) and historical 2018-W27..2019 (10 columns, `dengue_historico.py`).
+- `scripts/extrae_dengue.py` / `scripts/merge_dengue.py`: batch extraction with a dataset-level audit, then an idempotent merge into the DVC-versioned consolidated dataset (13,248 Dengue rows through 2026-W42). `extrae_dengue --incremental` parses only bulletins not yet in the manifest (the weekly refresh path: seconds instead of re-reading every PDF).
 - A separate WHO-1997 `A90/A91` series (2014-2018, confirmed-by-sex) is extracted for **context/EDA only** (`dengue_historico_a9091.py`) and does not feed the production pipeline.
 
 **Cohort-aware modeling (neuro path untouched).** Dengue belongs to a "count-log" cohort (`utils.cohorts.is_count_log_cohort`): Prophet runs **with** `log_transform` and **without** rate normalization (the multiplicative trend otherwise collapses to ~0 when extrapolated), with a fixed `changepoint_prior_scale=0.05`, no COVID holiday, uniform CV weights, and **no regional fallback** (if a state has no transmission, it forecasts zero). The neurological flows stay byte-identical via `constants.NEURO_CONDITIONS` / `filter_neuro`.
 
-**Production = DeepAR + Prophet + NB-GLM.** Five engines are trained per series (33 geographies × 3 sexes = 99 series), and the productive selector (`scripts/produccion_dengue.py`, by SMAPE on 2026 reality with a 5% tie band broken by MAE) keeps **DeepAR, Prophet and NB-GLM** (week 21 distribution **DeepAR 45 / NB-GLM 33 / Prophet 21**; national = DeepAR). The tie band matters in a low-incidence year: without it, a 0.13-point SMAPE margin once flipped the national series to Prophet, which badly overshoots the epidemic peak (in-sample fit ~1,895 vs ~1,154 observed) while DeepAR tracks it (~1,125); MAE breaks the tie back to DeepAR. The **NB-GLM** engine (`models/nbglm/` — Negative-Binomial GLM + Fourier seasonality + lags + an **El Niño/ONI** regressor) is the best in leave-one-epidemic-out backtest (SMAPE 52 vs Prophet+ENSO 76 vs plain Prophet 102): it is count-correct, extrapolates without tree divergence, is deterministic, and carries the inter-annual epidemic signal (ENSO) that purely autoregressive models cannot see. Prophet (Dengue) also gained the ONI regressor. Ensemble and Stacking are excluded because their tree learners do not extrapolate the epidemic dynamic to 52 weeks (a seasonal-envelope guard, `models/forecast_guards.py`, caps them but they are never chosen).
+**Production = DeepAR + Prophet.** NB-GLM was suspended in round W37 for recursive instability (45/99 W37 forecasts above 3× the historical maximum). Out-of-sample assignment on W28-W37: DeepAR 53 / Prophet 46; national = DeepAR. The leave-one-epidemic-out backtest result (NB-GLM SMAPE 52 vs Prophet+ENSO 76 vs plain Prophet 102) is kept as research evidence, not as a production claim. Ensemble and Stacking are excluded because their tree learners do not extrapolate the epidemic dynamic to 52 weeks (a seasonal-envelope guard, `models/forecast_guards.py`, caps them but they are never chosen).
 
-**Horizon: 1-year precise + 5-year illustrative.** The accurate forecast is 52 weeks. A 5-year band (flat-growth Prophet on `log1p`) is **illustrative**: with only two epidemic cycles in the data the ~4-5 year cycle is not learnable, so it shows the expected seasonal pattern, not the magnitude of the next epidemic.
+**Horizon: 52 weeks, no multi-year projection.** The former 5-year NB-GLM band and the El Niño scenario were withdrawn from the public product in round W37 (`ENMIENDA_DENGUE_NBGLM_W37`, 13-Oct-2026): they reused the suspended recursive predictor and had no validation of their own.
 
-**Live.** Public forecast page at **epiforecast.mx/dengue** (`dengue_forecast.json` + `dengue_serie.json` + showcase/EDA charts), and the **EpiBot** assistant answers Dengue questions (`answerDengue` handler, fed by a `dengue` section in `knowledge.json` generated from the production artifacts). It also renders a per-engine SMAPE + MASE performance table for Dengue (`answerRendimientoPorPadecimiento` / `_cuadroDengue`, e.g. "cuadro de dengue"), computed on 2026 reality (`mase_real_<engine>` added to `produccion_dengue.csv`).
+**Live.** Public forecast page at **epiforecast.mx/dengue** (`dengue_forecast.json` + `dengue_serie.json` + showcase/EDA charts), and the **EpiBot** assistant answers Dengue questions (`answerDengue` handler, fed by a `dengue` section in `knowledge.json`). Per-engine error metrics from the W28-W37 selection window are a selection diagnostic and are not published; they stay in the review evidence.
 
 ```bash
 # End-to-end Dengue pipeline
@@ -626,23 +576,23 @@ make dengue-web                # public charts + JSON + EpiBot knowledge.json
 
 ## CI/CD
 
-La cola técnica vigente —separada de las bitácoras históricas— está en
+La cola técnica vigente (separada de las bitácoras históricas) está en
 [`docs/DEUDAS_VIGENTES.md`](docs/DEUDAS_VIGENTES.md).
 
 GitHub Actions runs on pushes to `main` and `refactor/*`, pull requests to `main`, and a
 weekly Monday 06:00 UTC schedule:
 
 1. **Code Quality** (`ci.yml`): Ruff lint + format check + mypy type checking.
-2. **Tests** (`ci.yml`): 2,509 collected tests; slow and integration tests are deselected.
+2. **Tests** (`ci.yml`): 3,249 collected tests; slow and integration tests are deselected.
    Coverage is declared by this job and enforced from the single canonical
    `[tool.coverage.report] fail_under = 70` setting. The current clean Ubuntu runner result
-   is 1,946 passed, 497 skipped, 66 deselected, and 74.50% coverage (`main` run
-   `33467472543`). A skip budget of 497 makes any new omission an explicit decision.
+   is 2,687 passed, 496 skipped, 66 deselected, and 79.02% coverage (`main` run
+   `42664206931`, `d715de54`). A skip ceiling of 497 makes any new omission an explicit decision.
 3. **Integration Tests** (`ci.yml`): Legacy, manual-only (`workflow_dispatch`). It requires
    the sealed `runs/` chain, which is absent from clean runners, so scheduled, push, and PR
    workflows report this job as **skipped**, not as a misleading green integration check.
    Scheduled runs use a distinct concurrency group and are not cancelled by pushes to `main`.
-4. **Bulletin Scraping** (`scrape_boletines.yml`): Daily automated SINAVE bulletin download via Selenium.
+4. **Bulletin Scraping** (`scrape_boletines.yml`): SINAVE bulletin download via Selenium, Tuesday to Thursday at 20:00 UTC plus manual dispatch.
 5. **Bulletin Processing** (`process_boletines.yml`): Camelot PDF extraction and dataset consolidation.
 6. **Google Sheets** (`gsheets.yml`): Publishes Tableau data to shared spreadsheet.
 
@@ -653,8 +603,8 @@ weekly Monday 06:00 UTC schedule:
 | Name | Role | Organization |
 |------|------|--------------|
 | Javier Augusto Rebull Saucedo | Technical lead and MLOps pipeline architect | Santander Bank US |
-| Juan Carlos Perez Nava | EDA, feature engineering, and Prophet base model | Instituto Mexicano del Seguro Social (IMSS) |
-| Luis Gerardo Sanchez Salazar | Dashboard design, development, and optimization | Tesla |
+| Juan Carlos Pérez Nava | EDA, feature engineering, and Prophet base model | Instituto Mexicano del Seguro Social (IMSS) |
+| Luis Gerardo Sánchez Salazar | Dashboard design, development, and optimization | Tesla |
 
 ---
 
