@@ -198,10 +198,12 @@ dengue-train-estatal:
 	$(PYTHON) -m scripts.entrena padecimiento.tipo='Dengue' padecimiento.solo_nacional=False modelo_activo=$(MODELO) $(ARGS)
 
 ## Seleccionar motor productivo por serie (DeepAR/Prophet) via SMAPE 2026 real
+## Selector in-sample de Dengue (DeepAR/Prophet; NBGLM suspendido desde W37). Se niega a
+## sobrescribir la asignación congelada de la ronda vigente salvo con ARGS=--sobrescribe-congelada.
 .PHONY: dengue-produccion
 dengue-produccion:
 	@echo ">>> Seleccionando motor productivo de Dengue..."
-	$(PYTHON) -m scripts.produccion_dengue
+	$(PYTHON) -m scripts.produccion_dengue $(ARGS)
 	@echo ">>> -> reports/ProdDetails/produccion_dengue.{csv,xlsx}"
 
 ## Regenerar artefactos web de Dengue (charts + JSON tabla en vivo + galeria EDA)

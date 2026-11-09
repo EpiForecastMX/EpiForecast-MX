@@ -18,6 +18,12 @@ incidencia de neuro):
    se cae al SMAPE de validación cruzada del propio modelo (``smape_usado``
    embebido en el forecast). criterio="cv_smape".
 
+Ronda W37 (ENMIENDA_DENGUE_NBGLM_W37, 13-oct-2026): NBGLM queda suspendido y sólo son elegibles
+Prophet y DeepAR; sus métricas se siguen reportando. La asignación publicada (DeepAR 53 / Prophet 46)
+la congeló el productor W37 sobre la ventana fuera de muestra W28-W37. Esta regla in-sample no la
+reproduce, así que ``main`` se niega a sobrescribir una asignación congelada salvo con
+``--sobrescribe-congelada`` y una decisión expresa.
+
 Salidas (``reports/ProdDetails/``):
 - ``produccion_dengue.csv``  — 1 fila por serie (entidad × sexo) con ``anio_eval``,
   SMAPE/MAE reales y CV de los 4 motores, motor ganador, criterio y justificación.
@@ -55,12 +61,15 @@ def _out_paths() -> tuple[Path, Path]:
     return prod / "produccion_dengue.csv", prod / "produccion_dengue.xlsx"
 
 
-# Productivos: DeepAR, Prophet y NBGLM. Ensemble (Prophet+XGBoost) y Stacking
-# (Prophet+ETS+LightGBM) divergen ~33x/99x: los árboles no extrapolan la dinámica epidémica
-# a 52 sem. NBGLM (Negative-Binomial GLM + Fourier + ENSO) sí extrapola (estacionalidad
-# paramétrica) y es count-correcto; validado en backtest leave-one-epidemic-out (SMAPE 52 vs
-# Prophet+ENSO 76). Se reportan las métricas de los árboles para auditoría pero NO se eligen.
-MOTORES_ELEGIBLES = ["Prophet", "DeepAR", "NBGLM"]
+# Productivos: DeepAR y Prophet. Ensemble (Prophet+XGBoost) y Stacking (Prophet+ETS+LightGBM)
+# divergen ~33x/99x: los árboles no extrapolan la dinámica epidémica a 52 sem. NBGLM
+# (Negative-Binomial GLM + Fourier + ENSO) fue el mejor en el backtest leave-one-epidemic-out
+# (SMAPE 52 vs Prophet+ENSO 76), pero está SUSPENDIDO desde la ronda W37 por inestabilidad
+# recursiva (45/99 pronósticos W37 > 3x el máximo histórico). Se reportan las métricas de los
+# cinco motores para auditoría, pero sólo se eligen estos dos.
+MOTORES_ELEGIBLES = ["Prophet", "DeepAR"]
+# Huella de una asignación congelada por el productor de una ronda (ventana fuera de muestra).
+_MARCA_CONGELADA = "ventana W"
 MIN_WEEKS_REAL = 10  # mínimo de semanas reales del año de eval. para usar criterio real
 MIN_TOTAL_CASOS = 10  # por debajo: serie casi-cero ("si es 0, es 0")
 SMAPE_TIE_BAND = 0.05  # motores dentro del 5% del mejor SMAPE se consideran empatados
@@ -156,7 +165,8 @@ def metrics_per_motor(
 def _pick(row: pd.Series) -> tuple[str, str, float | None]:
     n = row["n_semanas_real"]
     total = row["total_real"]
-    # Selección solo entre motores elegibles (DeepAR/Prophet); Ensemble/Stacking divergen.
+    # Selección sólo entre motores elegibles (DeepAR/Prophet): Ensemble/Stacking divergen y
+    # NBGLM está suspendido desde W37.
     smapes = {m: row[f"smape_real_{m.lower()}"] for m in MOTORES_ELEGIBLES}
     smapes = {m: v for m, v in smapes.items() if pd.notna(v)}
     maes = {m: row[f"mae_real_{m.lower()}"] for m in MOTORES_ELEGIBLES}
@@ -208,7 +218,33 @@ def select(metrics: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-def main() -> None:
+def asignacion_congelada(path: Path) -> bool:
+    """True si ``path`` es una asignación congelada por el productor de una ronda (p. ej. W37)."""
+    if not path.exists():
+        return False
+    just = pd.read_csv(path, usecols=lambda c: c == "justificacion")
+    return bool(
+        "justificacion" in just
+        and just["justificacion"].astype(str).str.contains(_MARCA_CONGELADA).any()
+    )
+
+
+def main(argv: list[str] | None = None) -> None:
+    import argparse
+
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument(
+        "--sobrescribe-congelada",
+        action="store_true",
+        help="reemplaza una asignación congelada por una ronda (requiere decisión expresa)",
+    )
+    args = ap.parse_args(argv)
+    out_csv, out_xlsx = _out_paths()
+    if asignacion_congelada(out_csv) and not args.sobrescribe_congelada:
+        raise SystemExit(
+            f"{out_csv} es la asignación congelada de la ronda vigente (ventana fuera de muestra); "
+            "esta regla in-sample no la reproduce. No se sobrescribe sin --sobrescribe-congelada."
+        )
     pads = [PADECIMIENTO]
     anio = eval_year(_boletin(), pads)
     bol = pd.read_csv(_boletin(), usecols=["Padecimiento", "Anio", "Semana"])
@@ -225,7 +261,6 @@ def main() -> None:
     result = select(metrics)
     result.insert(3, "anio_eval", anio)
 
-    out_csv, out_xlsx = _out_paths()
     out_csv.parent.mkdir(parents=True, exist_ok=True)
     result.to_csv(out_csv, index=False)
     result.to_excel(out_xlsx, index=False)
