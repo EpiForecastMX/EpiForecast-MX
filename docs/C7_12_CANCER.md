@@ -208,3 +208,30 @@ tres. Shards respaldados en `planes/respaldo_shards_2026-11-09_reevaluacion/`.
 | `cancer_pancreas_c26` | `cancer_pancreas_c26_benchmark_test_c330418f2b55_53c86c8d0696` | `cancer_pancreas_c26_release_b7eeb1352582` | 2026-11-09 05:14:58 |
 | `cancer_higado_c22` | `cancer_higado_c22_benchmark_test_f4d4974a5710_fff4aa718d8a` | `cancer_higado_c22_release_b4a6f8ab36bb` | 2026-11-09 05:14:41 |
 | `cancer_esofago_c15` | `cancer_esofago_c15_benchmark_test_1d27e82840b1_f184e9927821` | `cancer_esofago_c15_release_5c6a6bc1f3da` | 2026-11-09 05:14:54 |
+
+## Segunda auditoría del 9-nov-2026 (R1 a R6) y ensayo de la semana
+
+Datos recuperados, releases, gates y archivos públicos verificados por la auditoría; quedaron seis
+hallazgos operativos, corregidos aquí y en el frontend:
+
+- **R1, base del consolidado:** `paso_semanal consolida` compara la historia de cada publicado en la base
+  con el raw de su observación vigente en todas las semanas anteriores a N y falla si una fila difiere,
+  falta o sobra (`epiforecast.publication.consolidado_base`). Rechaza `candidato_con_cancer_control` en las
+  480 filas corregidas y acepta `candidato_reevaluado` en los 29.
+- **R2, FAIL en seco:** con un FAIL se registra igual a todos con `WRITE=1`; el retiro llega después y el
+  consolidado cierra con los demás (prueba de la ruta literal en `test_paso_semanal.py`).
+- **R3 a R6 (frontend):** el corpus del bot nombra la primera y la última semana pronosticadas y distingue el
+  corte de datos; la noticia separa siete validaciones prospectivas de dos controles sin contraste; las
+  cifras estáticas de cada página se prueban contra su vista (próstata decía 64/111); cada página
+  reevaluada explica la sustitución del release y su carácter retrospectivo.
+
+Ensayo de punta a punta en clones desechables con un boletín 43 simulado (detalle en el historial del
+skill): además de R1 y R2, destapó que la tarjeta nacional de un control perdía su aviso al registrar la
+primera semana y dos pruebas de Diabetes ancladas a 0/4. El productor legacy v5 no se ensayó: exige el
+boletín real.
+
+Observación de fuente, sin cambio: el boletín 2025_sem44 imprime 213 casos semanales de linfoma de Hodgkin
+en Morelos (TOTAL nacional 229, frente a unos 20 habituales) y el acumulado de hombres salta de 91 a 303.
+Es dato impreso, no error de extracción, y el pronóstico estacional lo repite: 227 casos nacionales en
+2026-W42. Estómago conserva dos bases imputadas en Chiapas 2026-W39 por celda vacía en la fuente; excluirlas
+no cambia la aceptación (auditoría).
