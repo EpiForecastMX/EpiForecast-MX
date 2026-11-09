@@ -36,6 +36,8 @@ sin desglose por sexo (`sex_breakdown: false`: 32 bases «general», 37 producto
 cánceres sólo tienen datos desde 2023: con la política `rolling_cv_historia_corta_2023_v1` (desarrollo
 2025, prueba 2026-W01..W41) 10 aceptan y están publicados; los 5 rechazados están publicados con el
 control por orden del autor, nunca como validados.
+El 9-nov-2026 nueve de ellos se reevaluaron con la verdad
+de 2026 recuperada (sin filas imputadas): ningún veredicto cambió y sus releases se reemplazaron.
 Detalle en `docs/C7_12_CANCER.md`. Son veintinueve padecimientos
 del runner en la paridad semanal.
 
