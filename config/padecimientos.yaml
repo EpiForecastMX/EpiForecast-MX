@@ -675,11 +675,8 @@ padecimientos:
     # política deja fuera también a Ridge, que no falló. Sólo compiten los cinco estacionales.
     selection_policy: rolling_cv_baja_incidencia_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: asma_j45_refit_final_a6da6e7705d0_08aa2ad1ad02
-      forecast_run_id: asma_j45_forecast_h52_08aa2ad1ad02_3803b15e8d7f
-      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
-      final_selection_digest: a6da6e7705d063de4f774c4ec43dda73719a74557937744a0835eb8317652232
+      backend: runner_release
+      release_id: asma_j45_release_28da01ab0b42
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
