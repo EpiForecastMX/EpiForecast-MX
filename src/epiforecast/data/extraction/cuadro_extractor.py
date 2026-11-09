@@ -101,6 +101,15 @@ def find_cuadro_page(pdf_path: str, anchors: list[str], state_markers: list[str]
     return None
 
 
+def _tabla_estatal(pdf_path: str, page: int, **kw: Any) -> pd.DataFrame | None:
+    """Tabla estatal limpia de la página (la de más filas), o None si camelot no detecta tabla."""
+    tables = camelot.read_pdf(pdf_path, pages=str(page), flavor="stream", **kw)
+    if not tables or len(tables) == 0:
+        return None
+    df_raw = max((t.df for t in tables), key=len)
+    return _restrict_to_states(sin_llamadas(clean_df(alinea_renglones(df_raw))))
+
+
 def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> dict[str, Any]:
     """Extrae el bloque de un padecimiento del cuadro de un boletín.
 
@@ -136,13 +145,18 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
         out["reason"] = "página del cuadro no encontrada"
         return out
 
-    tables = camelot.read_pdf(pdf_path, pages=str(page), flavor="stream")
-    if not tables or len(tables) == 0:
+    df_clean = _tabla_estatal(pdf_path, page)
+    if df_clean is None:
         out["reason"] = "camelot no detectó tabla"
         return out
-    # La tabla estatal es la de más filas.
-    df_raw = max((t.df for t in tables), key=len)
-    df_clean = _restrict_to_states(sin_llamadas(clean_df(alinea_renglones(df_raw))))
+    esperados = int(spec.get("n_states_expected", 32))
+    if len(df_clean) < esperados:
+        # En algunas páginas camelot parte la tabla y pierde renglones de estados; con un margen
+        # de borde amplio la lee completa. Sólo se reintenta cuando faltan estados, así que las
+        # extracciones que ya funcionaban no cambian.
+        amplia = _tabla_estatal(pdf_path, page, edge_tol=500)
+        if amplia is not None and len(amplia) == esperados:
+            df_clean = amplia
 
     # Cuadro cuyo bloque objetivo es el primero o el último y comparte página con bloques de
     # otro ancho o en otro número según el año: se recorta por el conteo real de columnas.

@@ -4,7 +4,8 @@ Un boletín nuevo exige, para cada padecimiento con ``lifecycle: published`` y b
 ``runner_release`` del registry (la lista NO se escribe a mano):
 
     revisa     prerequisitos: puntero, bundle sellado, shard original y estado prospectivo válido
-    observa    registro prospectivo de la semana (``prospective_week``) en seco o con ``--write``
+    observa    registro prospectivo de la semana (``prospective_week``) en seco o con ``--write``;
+               un FAIL no corta el registro de los demás, pero la semana no se publica
     consolida  une al consolidado semanal las filas de la semana, sólo añadiendo, y verifica paridad
     vistas     regenera cada vista desde su shard ORIGINAL y la instala en el frontend
 
@@ -65,6 +66,25 @@ def observacion_actual(disease: str, root: Path = _ROOT) -> str:
 
 def _sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def reporte_de(stdout: str) -> dict[str, Any] | None:
+    """El reporte JSON de ``prospective_week`` dentro de su stdout.
+
+    Con ``--write`` el estado prospectivo imprime antes su resumen en texto, así que el JSON no es
+    todo el stdout: se busca el objeto que lleva ``verdict``.
+    """
+    dec = json.JSONDecoder()
+    for i, ch in enumerate(stdout):
+        if ch != "{" or (i and stdout[i - 1] != "\n"):
+            continue
+        try:
+            obj, _ = dec.raw_decode(stdout, i)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(obj, dict) and "verdict" in obj:
+            return obj
+    return None
 
 
 def _py() -> list[str]:
@@ -128,20 +148,23 @@ def observa(
         res = subprocess.run(cmd, cwd=root, capture_output=True, text=True)
         (salida / f"{d}.json").write_text(res.stdout, encoding="utf-8")
         fila: dict[str, Any] = {"disease": d, "rc": res.returncode}
-        try:
-            rep = json.loads(res.stdout)
+        rep = reporte_de(res.stdout)
+        if rep is not None:
             fila |= {
                 "verdict": rep.get("verdict"),
                 "weeks": f"{rep.get('weeks_available')}/{rep.get('weeks_required')}",
                 "cutoff": rep.get("observation_cutoff"),
             }
-        except json.JSONDecodeError:
+        else:
             fila["error"] = (res.stderr.strip().splitlines() or ["sin salida"])[-1]
         filas.append(fila)
         print(json.dumps(fila, ensure_ascii=False), flush=True)
         if res.returncode != 0:
-            rc_total = res.returncode if rc_total == 0 else rc_total
-            if write:
+            rc_total = res.returncode if rc_total in (0, RC_FAIL) else rc_total
+            # Un FAIL (rc 3) deja su evidencia y detiene la PUBLICACIÓN de la semana, no el registro
+            # de los demás: si se cortara aquí, al retirar el FAIL quedarían observaciones pendientes
+            # y el consolidado no tendría sus filas. Cualquier otro error sí detiene el registro.
+            if write and res.returncode != RC_FAIL:
                 break
     (salida / "resumen.json").write_text(
         json.dumps(filas, ensure_ascii=False, indent=2), encoding="utf-8"
