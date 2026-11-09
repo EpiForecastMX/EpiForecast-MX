@@ -46,6 +46,7 @@ def _diabetes_sin_publicar(texto: str) -> str:
         "ira_j00",
         "ivu_n39",
         "gingivitis_k05",
+        "asma_j45",
         "ulceras_k25",
         "cancer_mama_c50",
         "cancer_cuello_utero_c53",

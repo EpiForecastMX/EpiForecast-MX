@@ -28,6 +28,15 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
+## Asma publicada — 9-nov-2026
+
+Asma (J45, J46) superó el gate de 2025 con `rolling_cv_baja_incidencia_v1`, política que eligió el autor
+tras el fallo cerrado de ETS en dos ajustes de Tlaxcala (asma no es de baja incidencia; Ridge quedó fuera
+sin fallar). Publicada desde `asma_j45_release_28da01ab0b42`, 0/4 en curso. El boletín 43 (W42) ya era
+público al emitir: W42 no es prospectiva respecto de la información y ninguna superficie lo afirma.
+Detalle en `docs/C7_13_ASMA.md`. Son treinta padecimientos del runner en la paridad semanal; el
+consolidado vigente de W42 es `candidato_con_asma`.
+
 ## Cánceres: mama con el control y cuello del útero — 8-nov-2026
 
 Tumor maligno de la mama (C50) reprobó el gate de 2025 y está publicado con el control por orden

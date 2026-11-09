@@ -45,6 +45,7 @@ def test_el_contrato_separa_legacy_de_release():
         "infecciones respiratorias agudas",
         "infeccion de vias urinarias",
         "gingivitis y enfermedad periodontal",
+        "asma",
         "ulceras gastritis y duodenitis",
         "tumor maligno de la mama",
         "tumor maligno del cuello del utero",
@@ -67,6 +68,7 @@ def test_el_contrato_separa_legacy_de_release():
     assert c.releases["obesidad"] == (_OBESIDAD, _RELEASE)
     assert sorted(i for i, _ in c.releases.values()) == [
         "anorexia_f50",
+        "asma_j45",
         "cancer_colon_c18",
         "cancer_cuello_utero_c53",
         "cancer_cuerpo_utero_c54",
@@ -96,7 +98,7 @@ def test_el_contrato_separa_legacy_de_release():
         "obesidad",
         "ulceras_k25",
     ]
-    # La paridad de corte cubre a los veintinueve; las series legacy siguen siendo 3×111 + 99.
+    # La paridad de corte cubre a los treinta; las series legacy siguen siendo 3×111 + 99.
     assert c.padecimientos == (*c.legado, *c.release)
     assert c.legado == ("depresion", "parkinson", "alzheimer", "dengue")
     assert len(c.claves_esperadas()) == 432
@@ -139,6 +141,7 @@ def test_la_paridad_de_corte_incluye_al_publicado_del_runner(tmp_path):
         "Úlceras, gastritis y duodenitis": 42,
         "Infecciones respiratorias agudas": 42,
         "Gingivitis y enfermedad periodontal": 42,
+        "Asma": 42,
         "Tumor maligno de la mama": 42,
         "Tumor maligno del cuello del útero": 42,
         "Tumor maligno del riñón": 42,
@@ -176,7 +179,7 @@ def test_un_publicado_del_runner_ausente_del_consolidado_falla(tmp_path):
 def test_revisa_releases_falla_cerrado_sin_bundle_ni_estado(tmp_path):
     resultado = revisa_releases(tmp_path, ContratoCobertura.canonico())
     assert not resultado.pasa
-    assert len(resultado.problemas) == 29
+    assert len(resultado.problemas) == 30
     assert any("release obesidad" in p for p in resultado.problemas)
     assert any("release diabetes tipo i:" in p for p in resultado.problemas)
 

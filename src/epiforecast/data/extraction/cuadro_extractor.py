@@ -14,6 +14,7 @@ el año — más robusto que la heurística de texto.
 from __future__ import annotations
 
 from pathlib import Path
+import re
 from typing import Any, cast
 
 import camelot
@@ -91,6 +92,35 @@ def sin_llamadas(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+_NUMERO_SUELTO = re.compile(r"^(?:\d[\d ]*|-)$")
+
+
+def despega_primera_columna(df: pd.DataFrame) -> pd.DataFrame:
+    """Separa el primer valor cuando camelot lo pega al nombre de la entidad.
+
+    En 2023_sem45 (Cuadro 13.3) un renglón alterado («Chiapas San Luis Potosí») hace que camelot
+    funda la primera columna de valores con el nombre en toda la tabla («53\nAguascalientes» o
+    «Yucatán\n28»): ninguna entidad se reconoce y sobra una columna. El valor es la línea numérica
+    de la celda y el nombre, la última línea que no lo es. Donde no hay valor legible queda vacío,
+    así que quien llama sólo usa esta reparación para bloques que no empiezan en la primera
+    columna; un nombre mal elegido deja una entidad repetida y la extracción falla cerrada.
+    """
+    nombres, valores = [], []
+    for celda in df.iloc[:, 0].astype(str):
+        lineas = [x.strip() for x in celda.split("\n") if x.strip()]
+        numeros = [x for x in lineas if _NUMERO_SUELTO.match(x)]
+        textos = [x for x in lineas if not _NUMERO_SUELTO.match(x)]
+        nombres.append(textos[-1] if textos else "")
+        valores.append(numeros[0] if len(numeros) == 1 and textos else "")
+    out = df.copy()
+    out.columns = pd.RangeIndex(start=0, stop=2 * out.shape[1], step=2)
+    out[0] = nombres
+    out[1] = valores
+    out = out[sorted(out.columns)]
+    out.columns = pd.RangeIndex(out.shape[1])
+    return out
+
+
 def find_cuadro_page(pdf_path: str, anchors: list[str], state_markers: list[str]) -> int | None:
     """Página (1-based) que contiene TODAS las anclas y los marcadores de estado."""
     reader = PdfReader(pdf_path)
@@ -101,12 +131,16 @@ def find_cuadro_page(pdf_path: str, anchors: list[str], state_markers: list[str]
     return None
 
 
-def _tabla_estatal(pdf_path: str, page: int, **kw: Any) -> pd.DataFrame | None:
+def _tabla_estatal(
+    pdf_path: str, page: int, *, despegar: bool = False, **kw: Any
+) -> pd.DataFrame | None:
     """Tabla estatal limpia de la página (la de más filas), o None si camelot no detecta tabla."""
     tables = camelot.read_pdf(pdf_path, pages=str(page), flavor="stream", **kw)
     if not tables or len(tables) == 0:
         return None
     df_raw = max((t.df for t in tables), key=len)
+    if despegar:
+        df_raw = despega_primera_columna(df_raw)
     return _restrict_to_states(sin_llamadas(clean_df(alinea_renglones(df_raw))))
 
 
@@ -157,6 +191,12 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
         amplia = _tabla_estatal(pdf_path, page, edge_tol=500)
         if amplia is not None and len(amplia) == esperados:
             df_clean = amplia
+    bloque_posterior = bool(spec.get("last_block_columns") or spec.get("inner_block_columns"))
+    if len(df_clean) < esperados and bloque_posterior and not spec.get("first_block_columns"):
+        # Primer valor pegado al nombre: sólo se repara si el bloque objetivo no lo contiene.
+        despegada = _tabla_estatal(pdf_path, page, despegar=True)
+        if despegada is not None and len(despegada) == esperados:
+            df_clean = despegada
 
     # Cuadro cuyo bloque objetivo es el primero o el último y comparte página con bloques de
     # otro ancho o en otro número según el año: se recorta por el conteo real de columnas.
@@ -170,6 +210,20 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
             out["reason"] = f"columnas inesperadas: {total} (esperaba {sorted(anchos)})"
             return out
         inicio = total + 1 - width if al_final else 1
+        df_clean = df_clean.iloc[:, [0, *range(inicio, inicio + width)]]
+        df_clean = df_clean.set_axis(list(range(width + 1)), axis=1)
+
+    # Bloque intermedio (ni primero ni último): por conteo real de columnas se declara
+    # ``[columnas desde el final hasta su inicio, ancho]``. Falla cerrado ante otro ancho.
+    internos = spec.get("inner_block_columns")
+    if internos:
+        total = df_clean.shape[1] - 1
+        corte = internos.get(total)
+        if corte is None:
+            out["reason"] = f"columnas inesperadas: {total} (esperaba {sorted(internos)})"
+            return out
+        desde_el_final, width = (int(v) for v in corte)
+        inicio = total + 1 - desde_el_final
         df_clean = df_clean.iloc[:, [0, *range(inicio, inicio + width)]]
         df_clean = df_clean.set_axis(list(range(width + 1)), axis=1)
 

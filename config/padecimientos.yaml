@@ -654,6 +654,40 @@ padecimientos:
       label: "Gingivitis y enfermedad periodontal"
       nombre_completo: "Gingivitis y enfermedad periodontal (K05)"
 
+  - id: asma_j45
+    data_name: "Asma"
+    artifact_key: Asma_J45
+    slug: asma_j45
+    display_name: "Asma"
+    cie_codes: ["J45", "J46"]
+    aliases: ["asma", "estado asmatico", "asma y estado asmatico", "j45", "j46"]
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: no_transmisibles_asma
+    exposure_source_id: inegi_cpv2020_static
+    # Publicada con orden del autor (9-nov-2026) tras aceptar el gate de 2025; validación prospectiva en
+    # curso. El boletín 43 (W42) ya era público al emitir: W42 no es prospectiva respecto de la información.
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    # Decisión del autor (9-nov-2026), antes de abrir 2025: con rolling_cv_v1 ETS falló cerrado en 2 de
+    # 256 ajustes de desarrollo (Tlaxcala hombres y mujeres, pliegue 2021, mínimos de -0.008 y -0.016
+    # casos). Asma NO es de baja incidencia (mediana semanal por serie base 26 en 2021-2025); la
+    # política deja fuera también a Ridge, que no falló. Sólo compiten los cinco estacionales.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: asma_j45_release_28da01ab0b42
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#38BDF8"
+      label: "Asma"
+      nombre_completo: "Asma (J45, J46)"
+
   - id: ulceras_k25
     data_name: "Úlceras, gastritis y duodenitis"
     artifact_key: Ulceras_K25

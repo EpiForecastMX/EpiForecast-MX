@@ -117,3 +117,71 @@ def test_entidad_con_llamada_de_nota_se_reconoce():
     tabla = pd.DataFrame([["Michoacán *", "1"], ["Sonora§", "2"], ["Jalisco", "3"]])
     limpia = ce._restrict_to_states(ce.sin_llamadas(tabla))
     assert limpia[0].tolist() == ["Michoacán", "Sonora", "Jalisco"]
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize("total", [11, 12])
+def test_toma_el_bloque_intermedio_de_asma(monkeypatch, tmp_path, total):
+    pdf = tmp_path / "2021_sem10.pdf"
+    pdf.write_bytes(b"%PDF")
+    tablas = [type("T", (), {"df": _tabla(total)})()]
+    monkeypatch.setattr(ce, "find_cuadro_page", lambda *_a: 7)
+    monkeypatch.setattr(ce.camelot, "read_pdf", lambda *_a, **_k: tablas)
+    monkeypatch.setattr(ce, "clean_df", lambda df: df)
+    monkeypatch.setattr(ce, "_restrict_to_states", lambda df: df)
+    salida = ce.extract_cuadro_from_pdf(str(pdf), "no_transmisibles_asma", "asma_j45")
+    assert salida["valid"]
+    assert salida["layout"] == "4col_prev"
+    # Las cuatro columnas previas al último bloque de cuatro: nunca las de gingivitis.
+    assert salida["df"]["Casos_semana"].iloc[0] == 10 + (total - 8)
+    assert salida["df"]["Acumulado_anio_anterior"].iloc[0] == 10 + (total - 5)
+
+
+@pytest.mark.unit
+def test_bloque_intermedio_con_ancho_desconocido_falla_cerrado(monkeypatch, tmp_path):
+    pdf = tmp_path / "2021_sem10.pdf"
+    pdf.write_bytes(b"%PDF")
+    tablas = [type("T", (), {"df": _tabla(8)})()]
+    monkeypatch.setattr(ce, "find_cuadro_page", lambda *_a: 7)
+    monkeypatch.setattr(ce.camelot, "read_pdf", lambda *_a, **_k: tablas)
+    monkeypatch.setattr(ce, "clean_df", lambda df: df)
+    monkeypatch.setattr(ce, "_restrict_to_states", lambda df: df)
+    salida = ce.extract_cuadro_from_pdf(str(pdf), "no_transmisibles_asma", "asma_j45")
+    assert not salida["valid"]
+    assert "columnas inesperadas" in salida["reason"]
+
+
+@pytest.mark.unit
+def test_despega_el_valor_pegado_al_nombre():
+    tabla = pd.DataFrame(
+        [
+            ["FEDERATIVA", "", ""],
+            ["53\nAguascalientes", "570", "1 862"],
+            ["-\nColima", "4", "5"],
+            ["San Luis Potosí\nChiapas", "924", "3 318"],
+            ["Yucatán\n  28", "340", "991"],
+        ]
+    )
+    limpia = ce.despega_primera_columna(tabla)
+    assert limpia.shape == (5, 4)
+    assert limpia[0].tolist() == ["FEDERATIVA", "Aguascalientes", "Colima", "Chiapas", "Yucatán"]
+    # El valor ilegible de Chiapas queda vacío: nunca se inventa.
+    assert limpia[1].tolist() == ["", "53", "-", "", "28"]
+    assert limpia[2].tolist() == ["", "570", "4", "924", "340"]
+
+
+@pytest.mark.unit
+def test_la_reparacion_no_aplica_a_un_primer_bloque(monkeypatch, tmp_path):
+    pdf = tmp_path / "2021_sem10.pdf"
+    pdf.write_bytes(b"%PDF")
+    llamadas = []
+
+    def tabla(_pdf, _page, **kw):
+        llamadas.append(kw)
+        return _tabla(12).iloc[:5]
+
+    monkeypatch.setattr(ce, "find_cuadro_page", lambda *_a: 7)
+    monkeypatch.setattr(ce, "_tabla_estatal", tabla)
+    salida = ce.extract_cuadro_from_pdf(str(pdf), "no_transmisibles_ulceras", "ulceras_k25")
+    assert not salida["valid"]
+    assert all("despegar" not in kw for kw in llamadas)
