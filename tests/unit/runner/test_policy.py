@@ -128,3 +128,52 @@ def test_baja_incidencia_solo_cambia_los_candidatos():
     regla = selection.SelectionRule.from_policy(baja)
     assert regla.incumbents == baja.candidate_engines and regla.challengers == ()
     assert regla.band_pct == selection.SelectionRule.from_policy(canonica).band_pct
+
+
+def test_historia_corta_un_pliegue_2025_y_prueba_parcial_2026():
+    """Cánceres desde 2023: desarrollo 2025 (53 sem, 104 previas) y prueba 2026-W01..W41."""
+    corta = policy.load_policy("rolling_cv_historia_corta_2023_v1")
+    canonica = policy.load_policy("rolling_cv_v1")
+    assert [(f.fold_id, f.n_weeks, f.train_weeks_before) for f in corta.folds] == [
+        ("development_2025", 53, 104),
+        ("test_2026", 41, 157),
+    ]
+    assert corta.folds[1].holdout[-1] == (2026, 41)
+    assert corta.candidate_engines == ("seasonal_naive_lag52", "seasonal_mean_2y")
+    # La regla de aceptación es la misma: sólo cambian los pliegues y los candidatos.
+    assert corta.acceptance == canonica.acceptance
+    assert corta.min_train_weeks == 104 and corta.allow_53_week_development
+
+
+def test_un_pliegue_de_53_semanas_exige_declararlo():
+    f = policy._build_fold("development", {"epi_year": 2025, "n_weeks": 53}, (2023, 1))
+    base = dict(
+        name="x",
+        digest="d",
+        seed=1,
+        seasonal_horizon=52,
+        min_train_weeks=104,
+        mase_seasonal_lag=52,
+        series_start=(2023, 1),
+        primary_metric="smape",
+        reported_metrics=("smape",),
+        candidate_engines=("seasonal_naive_lag52",),
+        folds=(f,),
+        stages={},
+    )
+    with pytest.raises(policy.PolicyError, match="53 semanas"):
+        policy._validate(policy.EvaluationPolicy(**base))
+    policy._validate(policy.EvaluationPolicy(**base, allow_53_week_development=True))
+
+
+@pytest.mark.parametrize(
+    ("grupo", "entrada"),
+    [
+        ("development", {"epi_year": 2026, "n_weeks": 41, "partial": True}),  # dev no es parcial
+        ("test", {"epi_year": 2026, "n_weeks": 52, "partial": True}),  # no es menor al año
+        ("test", {"epi_year": 2026, "n_weeks": 41}),  # sin declarar parcial
+    ],
+)
+def test_un_fold_parcial_sólo_si_se_declara_y_no_en_desarrollo(grupo, entrada):
+    with pytest.raises(policy.PolicyError):
+        policy._build_fold(grupo, entrada, (2023, 1))

@@ -746,3 +746,399 @@ padecimientos:
       color: "#A855F7"
       label: "Cáncer de cuello del útero"
       nombre_completo: "Tumor maligno del cuello del útero (C53)"
+
+  - id: cancer_prostata_c61
+    data_name: "Tumor maligno de la próstata"
+    artifact_key: Cancer_Prostata_C61
+    slug: cancer_prostata_c61
+    display_name: "Tumor maligno de la próstata"
+    cie_codes: ["C61"]
+    aliases: ["cancer de prostata", "tumor maligno de la prostata", "c61"]
+    profile: baja_incidencia_semanal
+    batch: standalone
+    extraction_group: neoplasias_15_2
+    exposure_source_id: inegi_cpv2020_static
+    # El boletín sólo publica el total: 32 bases «general», sin hombres ni mujeres.
+    sex_breakdown: false
+    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#60A5FA"
+      label: "Tumor maligno de la próstata"
+      nombre_completo: "Tumor maligno de la próstata (C61)"
+
+  - id: cancer_cuerpo_utero_c54
+    data_name: "Tumor maligno del cuerpo del útero"
+    artifact_key: Cancer_Cuerpo_Utero_C54
+    slug: cancer_cuerpo_utero_c54
+    display_name: "Tumor maligno del cuerpo del útero"
+    cie_codes: ["C54"]
+    aliases: ["cancer de endometrio", "cancer del cuerpo del utero", "tumor maligno del cuerpo del utero", "c54"]
+    profile: baja_incidencia_semanal
+    batch: standalone
+    extraction_group: neoplasias_15_2
+    exposure_source_id: inegi_cpv2020_static
+    # El boletín sólo publica el total: 32 bases «general», sin hombres ni mujeres.
+    sex_breakdown: false
+    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#E879F9"
+      label: "Tumor maligno del cuerpo del útero"
+      nombre_completo: "Tumor maligno del cuerpo del útero (C54)"
+
+  - id: cancer_ovario_c56
+    data_name: "Tumor maligno del ovario"
+    artifact_key: Cancer_Ovario_C56
+    slug: cancer_ovario_c56
+    display_name: "Tumor maligno del ovario"
+    cie_codes: ["C56"]
+    aliases: ["cancer de ovario", "tumor maligno del ovario", "c56"]
+    profile: baja_incidencia_semanal
+    batch: standalone
+    extraction_group: neoplasias_15_2
+    exposure_source_id: inegi_cpv2020_static
+    # El boletín sólo publica el total: 32 bases «general», sin hombres ni mujeres.
+    sex_breakdown: false
+    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#F0ABFC"
+      label: "Tumor maligno del ovario"
+      nombre_completo: "Tumor maligno del ovario (C56)"
+
+  - id: cancer_pulmon_c33
+    data_name: "Tumor maligno de tráquea, bronquios y pulmón"
+    artifact_key: Cancer_Pulmon_C33
+    slug: cancer_pulmon_c33
+    display_name: "Tumor maligno de tráquea, bronquios y pulmón"
+    cie_codes: ["C33", "C34"]
+    aliases: ["cancer de pulmon", "tumor maligno de traquea bronquios y pulmon", "c34"]
+    profile: baja_incidencia_semanal
+    batch: standalone
+    extraction_group: neoplasias_15_3
+    exposure_source_id: inegi_cpv2020_static
+    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#94A3B8"
+      label: "Tumor maligno de tráquea, bronquios y pulmón"
+      nombre_completo: "Tumor maligno de tráquea, bronquios y pulmón (C33, C34)"
+
+  - id: cancer_estomago_c16
+    data_name: "Tumor maligno del estómago"
+    artifact_key: Cancer_Estomago_C16
+    slug: cancer_estomago_c16
+    display_name: "Tumor maligno del estómago"
+    cie_codes: ["C16"]
+    aliases: ["cancer de estomago", "cancer gastrico", "tumor maligno del estomago", "c16"]
+    profile: baja_incidencia_semanal
+    batch: standalone
+    extraction_group: neoplasias_15_3
+    exposure_source_id: inegi_cpv2020_static
+    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#FCD34D"
+      label: "Tumor maligno del estómago"
+      nombre_completo: "Tumor maligno del estómago (C16)"
+
+  - id: cancer_colon_c18
+    data_name: "Tumor maligno del colon y recto"
+    artifact_key: Cancer_Colon_C18
+    slug: cancer_colon_c18
+    display_name: "Tumor maligno del colon y recto"
+    cie_codes: ["C18", "C19", "C20", "C21"]
+    aliases: ["cancer de colon", "cancer colorrectal", "tumor maligno del colon y recto", "c18"]
+    profile: baja_incidencia_semanal
+    batch: standalone
+    extraction_group: neoplasias_15_3
+    exposure_source_id: inegi_cpv2020_static
+    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#FDBA74"
+      label: "Tumor maligno del colon y recto"
+      nombre_completo: "Tumor maligno del colon y recto (C18-C21)"
+
+  - id: cancer_higado_c22
+    data_name: "Tumor maligno del hígado y de las vías biliares intrahepáticas"
+    artifact_key: Cancer_Higado_C22
+    slug: cancer_higado_c22
+    display_name: "Tumor maligno del hígado y de las vías biliares intrahepáticas"
+    cie_codes: ["C22"]
+    aliases: ["cancer de higado", "cancer hepatico", "c22"]
+    profile: baja_incidencia_semanal
+    batch: standalone
+    extraction_group: neoplasias_15_4
+    exposure_source_id: inegi_cpv2020_static
+    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#A16207"
+      label: "Tumor maligno del hígado y de las vías biliares intrahepáticas"
+      nombre_completo: "Tumor maligno del hígado y de las vías biliares intrahepáticas (C22)"
+
+  - id: linfoma_hodgkin_c81
+    data_name: "Linfoma de Hodgkin"
+    artifact_key: Linfoma_Hodgkin_C81
+    slug: linfoma_hodgkin_c81
+    display_name: "Linfoma de Hodgkin"
+    cie_codes: ["C81"]
+    aliases: ["linfoma de hodgkin", "linfoma hodgkin", "c81"]
+    profile: baja_incidencia_semanal
+    batch: standalone
+    extraction_group: neoplasias_15_4
+    exposure_source_id: inegi_cpv2020_static
+    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#67E8F9"
+      label: "Linfoma de Hodgkin"
+      nombre_completo: "Linfoma de Hodgkin (C81)"
+
+  - id: linfoma_no_hodgkin_c82
+    data_name: "Linfoma no Hodgkin"
+    artifact_key: Linfoma_No_Hodgkin_C82
+    slug: linfoma_no_hodgkin_c82
+    display_name: "Linfoma no Hodgkin"
+    cie_codes: ["C82", "C83", "C84", "C85"]
+    aliases: ["linfoma no hodgkin", "c82"]
+    profile: baja_incidencia_semanal
+    batch: standalone
+    extraction_group: neoplasias_15_4
+    exposure_source_id: inegi_cpv2020_static
+    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#22D3EE"
+      label: "Linfoma no Hodgkin"
+      nombre_completo: "Linfoma no Hodgkin (C82-C85)"
+
+  - id: leucemia_c91
+    data_name: "Leucemia"
+    artifact_key: Leucemia_C91
+    slug: leucemia_c91
+    display_name: "Leucemia"
+    cie_codes: ["C91", "C92", "C93", "C94", "C95"]
+    aliases: ["leucemia", "leucemias", "c91"]
+    profile: baja_incidencia_semanal
+    batch: standalone
+    extraction_group: neoplasias_15_5
+    exposure_source_id: inegi_cpv2020_static
+    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#F43F5E"
+      label: "Leucemia"
+      nombre_completo: "Leucemia (C91-C95)"
+
+  - id: cancer_esofago_c15
+    data_name: "Tumor maligno del esófago"
+    artifact_key: Cancer_Esofago_C15
+    slug: cancer_esofago_c15
+    display_name: "Tumor maligno del esófago"
+    cie_codes: ["C15"]
+    aliases: ["cancer de esofago", "tumor maligno del esofago", "c15"]
+    profile: baja_incidencia_semanal
+    batch: standalone
+    extraction_group: neoplasias_15_5
+    exposure_source_id: inegi_cpv2020_static
+    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#FDE68A"
+      label: "Tumor maligno del esófago"
+      nombre_completo: "Tumor maligno del esófago (C15)"
+
+  - id: cancer_pancreas_c26
+    data_name: "Tumor maligno del páncreas"
+    artifact_key: Cancer_Pancreas_C26
+    slug: cancer_pancreas_c26
+    display_name: "Tumor maligno del páncreas"
+    cie_codes: ["C26"]
+    aliases: ["cancer de pancreas", "tumor maligno del pancreas", "c26"]
+    profile: baja_incidencia_semanal
+    batch: standalone
+    extraction_group: neoplasias_15_5
+    exposure_source_id: inegi_cpv2020_static
+    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#86EFAC"
+      label: "Tumor maligno del páncreas"
+      nombre_completo: "Tumor maligno del páncreas (C26)"
+
+  - id: cancer_encefalo_c70
+    data_name: "Tumores malignos del encéfalo y otras partes del sistema nervioso central"
+    artifact_key: Cancer_Encefalo_C70
+    slug: cancer_encefalo_c70
+    display_name: "Tumores malignos del encéfalo y otras partes del sistema nervioso central"
+    cie_codes: ["C70", "C71", "C72"]
+    aliases: ["cancer cerebral", "tumor maligno del encefalo", "c71"]
+    profile: baja_incidencia_semanal
+    batch: standalone
+    extraction_group: neoplasias_15_6
+    exposure_source_id: inegi_cpv2020_static
+    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#C4B5FD"
+      label: "Tumores malignos del encéfalo y otras partes del sistema nervioso central"
+      nombre_completo: "Tumores malignos del encéfalo y otras partes del sistema nervioso central (C70-C72)"
+
+  - id: cancer_huesos_c40
+    data_name: "Tumores malignos de los huesos y de los cartílagos articulares"
+    artifact_key: Cancer_Huesos_C40
+    slug: cancer_huesos_c40
+    display_name: "Tumores malignos de los huesos y de los cartílagos articulares"
+    cie_codes: ["C40", "C41"]
+    aliases: ["cancer de hueso", "cancer oseo", "c40"]
+    profile: baja_incidencia_semanal
+    batch: standalone
+    extraction_group: neoplasias_15_6
+    exposure_source_id: inegi_cpv2020_static
+    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#E5E7EB"
+      label: "Tumores malignos de los huesos y de los cartílagos articulares"
+      nombre_completo: "Tumores malignos de los huesos y de los cartílagos articulares (C40, C41)"
+
+  - id: cancer_rinon_c64
+    data_name: "Tumor maligno del riñón"
+    artifact_key: Cancer_Rinon_C64
+    slug: cancer_rinon_c64
+    display_name: "Tumor maligno del riñón"
+    cie_codes: ["C64"]
+    aliases: ["cancer de rinon", "cancer renal", "tumor maligno del rinon", "c64"]
+    profile: baja_incidencia_semanal
+    batch: standalone
+    extraction_group: neoplasias_15_6
+    exposure_source_id: inegi_cpv2020_static
+    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#4ADE80"
+      label: "Tumor maligno del riñón"
+      nombre_completo: "Tumor maligno del riñón (C64)"

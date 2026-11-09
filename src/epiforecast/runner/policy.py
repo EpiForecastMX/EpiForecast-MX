@@ -105,6 +105,8 @@ class EvaluationPolicy:
     stages: dict[str, Any]
     selection: dict[str, Any] = field(default_factory=dict)
     acceptance: dict[str, Any] = field(default_factory=dict)
+    # Historia corta: el único año completo de desarrollo puede ser uno de 53 semanas MMWR.
+    allow_53_week_development: bool = False
 
     def development_folds(self) -> tuple[Fold, ...]:
         return tuple(f for f in self.folds if f.group == GROUP_DEVELOPMENT)
@@ -125,7 +127,15 @@ def _build_fold(group: str, entry: dict[str, Any], series_start: tuple[int, int]
     year = int(entry["epi_year"])
     calendar_weeks = weeks_in_year(year)
     n_weeks = int(entry.get("n_weeks", calendar_weeks))
-    if "n_weeks" in entry and n_weeks != calendar_weeks:
+    parcial = bool(entry.get("partial", False))
+    if parcial and (
+        group not in (GROUP_TEST, GROUP_PROSPECTIVE) or not 0 < n_weeks < calendar_weeks
+    ):
+        raise PolicyError(
+            f"fold {group}_{year}: un fold parcial sólo puede ser test o prospectivo y con "
+            f"menos semanas que el calendario ({calendar_weeks})"
+        )
+    if "n_weeks" in entry and not parcial and n_weeks != calendar_weeks:
         raise PolicyError(
             f"fold {group}_{year}: n_weeks={n_weeks} no coincide con el calendario "
             f"({calendar_weeks} semanas MMWR)"
@@ -162,6 +172,7 @@ def load_policy(name: str) -> EvaluationPolicy:
         stages=dict(raw["stages"]),
         selection=dict(raw.get("selection", {})),
         acceptance=dict(raw.get("acceptance", {})),
+        allow_53_week_development=bool(raw.get("allow_53_week_development", False)),
     )
     _validate(pol)
     return pol
@@ -173,9 +184,10 @@ def _validate(pol: EvaluationPolicy) -> None:
     dev = pol.development_folds()
     if len(dev) < 1:
         raise PolicyError("la política no declara folds de development")
-    # Dev: cada fold con 52 semanas y ≥ min_train_weeks previas.
+    # Dev: cada fold con 52 semanas (53 sólo si la política lo declara) y ≥ min_train_weeks previas.
+    permitidas = {52, 53} if pol.allow_53_week_development else {52}
     for f in dev:
-        if f.n_weeks != 52:
+        if f.n_weeks not in permitidas:
             raise PolicyError(f"fold dev {f.fold_id}: {f.n_weeks} semanas (se esperan 52)")
         if f.train_weeks_before < pol.min_train_weeks:
             raise PolicyError(

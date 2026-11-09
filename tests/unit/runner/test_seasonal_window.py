@@ -16,7 +16,13 @@ from epiforecast.runner.engines.seasonal_window import (
     make_predictor,
 )
 
-_NAMES = {"seasonal_mean_3y", "seasonal_median_3y", "seasonal_mean_5y", "seasonal_median_5y"}
+_NAMES = {
+    "seasonal_mean_2y",
+    "seasonal_mean_3y",
+    "seasonal_median_3y",
+    "seasonal_mean_5y",
+    "seasonal_median_5y",
+}
 
 
 def _spec_for(engine: str) -> ct.TrainingSpec:
