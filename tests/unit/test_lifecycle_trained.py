@@ -48,16 +48,21 @@ def test_el_carril_legacy_no_cambia():
         "Úlceras, gastritis y duodenitis",
         "Tumor maligno de la mama",
         "Tumor maligno del cuello del útero",
+        "Tumor maligno de la próstata",
         "Tumor maligno del cuerpo del útero",
         "Tumor maligno del ovario",
         "Tumor maligno de tráquea, bronquios y pulmón",
         "Tumor maligno del estómago",
         "Tumor maligno del colon y recto",
+        "Tumor maligno del hígado y de las vías biliares intrahepáticas",
         "Linfoma de Hodgkin",
         "Linfoma no Hodgkin",
         "Leucemia",
+        "Tumor maligno del esófago",
         "Tumor maligno del páncreas",
         "Tumores malignos del encéfalo y otras partes del sistema nervioso central",
+        "Tumores malignos de los huesos y de los cartílagos articulares",
+        "Tumor maligno del riñón",
     ]
 
 

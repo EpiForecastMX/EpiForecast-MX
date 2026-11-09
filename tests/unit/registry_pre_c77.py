@@ -59,6 +59,11 @@ def _diabetes_sin_publicar(texto: str) -> str:
         "cancer_encefalo_c70",
         "cancer_cuerpo_utero_c54",
         "cancer_ovario_c56",
+        "cancer_rinon_c64",
+        "cancer_prostata_c61",
+        "cancer_huesos_c40",
+        "cancer_higado_c22",
+        "cancer_esofago_c15",
     ):
         cabeza, separador, resto = texto.partition(f"\n  - id: {disease_id}\n")
         if not separador:
