@@ -7,7 +7,7 @@ y los siguientes traen 17 tumores malignos; sólo dos tienen historia desde 2013
 | --- | --- | --- | --- |
 | Mama (C50) | 1 | 2013-W05 a hoy, con sexo | publicado con el control estacional |
 | Cuello del útero (C53) | 1 | 2013-W05 a hoy, sin desglose por sexo | publicado: superó el gate de 2025 con 32 bases sin sexo |
-| Pulmón, estómago, colon y recto, hígado, linfomas, leucemia, esófago, páncreas, SNC, huesos, riñón, próstata, cuerpo del útero, ovario | 15 | desde 2023-W01 | `rolling_cv_historia_corta_2023_v1`: los 10 aceptados están publicados («publica», 8-nov-2026); los 5 rechazados siguen `configured` |
+| Pulmón, estómago, colon y recto, hígado, linfomas, leucemia, esófago, páncreas, SNC, huesos, riñón, próstata, cuerpo del útero, ovario | 15 | desde 2023-W01 | `rolling_cv_historia_corta_2023_v1`: los 10 aceptados están publicados («publica», 8-nov-2026) y los 5 rechazados, con el control («autorizo») |
 
 ## Tumor maligno de la mama (C50)
 
@@ -115,8 +115,7 @@ Runs de prueba: `<id>_benchmark_test_*` en `runs/` del backend (conservados).
 
 Con los resultados a la vista, el autor ordenó «publica». Refit y pronóstico a 52 semanas con origen
 2026-W41; el boletín 43 no existía al emitir. Gates prospectivos 0/4 (W42-W45). Consolidado W42
-`candidato_con_cancer_corto`: paridad PASS con los veintiocho. Los cinco rechazados (riñón, próstata, huesos,
-hígado, esófago) siguen `configured`: publicar su control exige orden expresa con el run nombrado.
+`candidato_con_cancer_corto`: paridad PASS con los veintiocho. Los cinco rechazados se publicaron después con el control (sección siguiente).
 
 | padecimiento | release | emitido (UTC) |
 | --- | --- | --- |
@@ -130,3 +129,20 @@ hígado, esófago) siguen `configured`: publicar su control exige orden expresa 
 | `cancer_encefalo_c70` | `cancer_encefalo_c70_release_0de6f44f8bfd` | 2026-11-09 01:36:33 |
 | `cancer_cuerpo_utero_c54` | `cancer_cuerpo_utero_c54_release_3523a60b29ef` | 2026-11-09 01:36:37 |
 | `cancer_ovario_c56` | `cancer_ovario_c56_release_bc43fe23e398` | 2026-11-09 01:36:40 |
+
+### Control de los cinco rechazados
+
+Con la tabla de resultados a la vista, el autor respondió «autorizo» a publicar el control de riñón, próstata,
+huesos, hígado y esófago. `acceptance_fallback_run` apunta a cada run de prueba rechazado (commiteado antes
+del refit). Releases con `fallback_control`, gates 0/4 (W42-W45) con candidato igual al control: al completar
+serán `CONTROL_ONLY`, nunca `PASS`. Ámbitos que reprobaron: riñón en las bases (88.9 frente a 84.0), esófago
+en todos los productos (48.8 frente a 44.8), y próstata, huesos e hígado en el nacional. Consolidado W42
+`candidato_con_cancer_control`: paridad PASS con los treinta y tres.
+
+| padecimiento | prueba rechazada | release (control) | emitido (UTC) |
+| --- | --- | --- | --- |
+| `cancer_rinon_c64` | `cancer_rinon_c64_benchmark_test_6f85ddda7aa1_b46f5e8a0fae` | `cancer_rinon_c64_release_2cbedc349fbf` | 2026-11-09 02:44:32 |
+| `cancer_prostata_c61` | `cancer_prostata_c61_benchmark_test_4ef016e56f8f_56f68de1cdc5` | `cancer_prostata_c61_release_433d60a37c6a` | 2026-11-09 02:44:34 |
+| `cancer_huesos_c40` | `cancer_huesos_c40_benchmark_test_42bc72d33354_3c32f13e2cb3` | `cancer_huesos_c40_release_4448e9604b95` | 2026-11-09 02:44:37 |
+| `cancer_higado_c22` | `cancer_higado_c22_benchmark_test_f3c5e961cd52_0f0275e364ff` | `cancer_higado_c22_release_0340c3e974c5` | 2026-11-09 02:44:40 |
+| `cancer_esofago_c15` | `cancer_esofago_c15_benchmark_test_2a83a6e8a70f_33cd417d156d` | `cancer_esofago_c15_release_9b1f38c2dea0` | 2026-11-09 02:44:43 |

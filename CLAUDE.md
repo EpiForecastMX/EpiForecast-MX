@@ -34,9 +34,9 @@ Tumor maligno de la mama (C50) reprobó el gate de 2025 y está publicado con el
 del autor, nunca como validado. Cuello del útero (C53) superó el gate y es el primer padecimiento
 sin desglose por sexo (`sex_breakdown: false`: 32 bases «general», 37 productos). Los otros 15
 cánceres sólo tienen datos desde 2023: con la política `rolling_cv_historia_corta_2023_v1` (desarrollo
-2025, prueba 2026-W01..W41) 10 aceptan y están publicados por orden del autor; los 5 rechazados siguen
-`configured`.
-Detalle en `docs/C7_12_CANCER.md`. Son veinticuatro padecimientos
+2025, prueba 2026-W01..W41) 10 aceptan y están publicados; los 5 rechazados están publicados con el
+control por orden del autor, nunca como validados.
+Detalle en `docs/C7_12_CANCER.md`. Son veintinueve padecimientos
 del runner en la paridad semanal.
 
 ## Radar del boletín 42 — 8-nov-2026

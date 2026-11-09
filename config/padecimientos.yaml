@@ -760,12 +760,18 @@ padecimientos:
     exposure_source_id: inegi_cpv2020_static
     # El boletín sólo publica el total: 32 bases «general», sin hombres ni mujeres.
     sex_breakdown: false
-    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
-    lifecycle: configured
-    channels: []
+    # Serie desde 2023-W01. Publicada con el CONTROL estacional por orden del autor (8-nov-2026): la
+    # prueba de 2026 rechazó el portafolio. Nunca se presenta como validada.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
+    # La prueba de 2026 rechazó el portafolio; el autor autorizó publicar el control (8-nov-2026).
+    artifact_source:
+      backend: runner_release
+      release_id: cancer_prostata_c61_release_433d60a37c6a
+    acceptance_fallback_run: cancer_prostata_c61_benchmark_test_4ef016e56f8f_56f68de1cdc5
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -940,12 +946,18 @@ padecimientos:
     batch: standalone
     extraction_group: neoplasias_15_4
     exposure_source_id: inegi_cpv2020_static
-    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
-    lifecycle: configured
-    channels: []
+    # Serie desde 2023-W01. Publicada con el CONTROL estacional por orden del autor (8-nov-2026): la
+    # prueba de 2026 rechazó el portafolio. Nunca se presenta como validada.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
+    # La prueba de 2026 rechazó el portafolio; el autor autorizó publicar el control (8-nov-2026).
+    artifact_source:
+      backend: runner_release
+      release_id: cancer_higado_c22_release_0340c3e974c5
+    acceptance_fallback_run: cancer_higado_c22_benchmark_test_f3c5e961cd52_0f0275e364ff
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1056,12 +1068,18 @@ padecimientos:
     batch: standalone
     extraction_group: neoplasias_15_5
     exposure_source_id: inegi_cpv2020_static
-    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
-    lifecycle: configured
-    channels: []
+    # Serie desde 2023-W01. Publicada con el CONTROL estacional por orden del autor (8-nov-2026): la
+    # prueba de 2026 rechazó el portafolio. Nunca se presenta como validada.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
+    # La prueba de 2026 rechazó el portafolio; el autor autorizó publicar el control (8-nov-2026).
+    artifact_source:
+      backend: runner_release
+      release_id: cancer_esofago_c15_release_9b1f38c2dea0
+    acceptance_fallback_run: cancer_esofago_c15_benchmark_test_2a83a6e8a70f_33cd417d156d
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1142,12 +1160,18 @@ padecimientos:
     batch: standalone
     extraction_group: neoplasias_15_6
     exposure_source_id: inegi_cpv2020_static
-    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
-    lifecycle: configured
-    channels: []
+    # Serie desde 2023-W01. Publicada con el CONTROL estacional por orden del autor (8-nov-2026): la
+    # prueba de 2026 rechazó el portafolio. Nunca se presenta como validada.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
+    # La prueba de 2026 rechazó el portafolio; el autor autorizó publicar el control (8-nov-2026).
+    artifact_source:
+      backend: runner_release
+      release_id: cancer_huesos_c40_release_4448e9604b95
+    acceptance_fallback_run: cancer_huesos_c40_benchmark_test_42bc72d33354_3c32f13e2cb3
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1168,12 +1192,18 @@ padecimientos:
     batch: standalone
     extraction_group: neoplasias_15_6
     exposure_source_id: inegi_cpv2020_static
-    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
-    lifecycle: configured
-    channels: []
+    # Serie desde 2023-W01. Publicada con el CONTROL estacional por orden del autor (8-nov-2026): la
+    # prueba de 2026 rechazó el portafolio. Nunca se presenta como validada.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
+    # La prueba de 2026 rechazó el portafolio; el autor autorizó publicar el control (8-nov-2026).
+    artifact_source:
+      backend: runner_release
+      release_id: cancer_rinon_c64_release_2cbedc349fbf
+    acceptance_fallback_run: cancer_rinon_c64_benchmark_test_6f85ddda7aa1_b46f5e8a0fae
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
