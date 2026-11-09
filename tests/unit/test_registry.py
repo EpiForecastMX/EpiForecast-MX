@@ -97,6 +97,21 @@ def test_cie_map():
         "K25": "Úlceras, gastritis y duodenitis",
         "C50": "Tumor maligno de la mama",
         "C53": "Tumor maligno del cuello del útero",
+        "C61": "Tumor maligno de la próstata",
+        "C54": "Tumor maligno del cuerpo del útero",
+        "C56": "Tumor maligno del ovario",
+        "C33": "Tumor maligno de tráquea, bronquios y pulmón",
+        "C16": "Tumor maligno del estómago",
+        "C18": "Tumor maligno del colon y recto",
+        "C22": "Tumor maligno del hígado y de las vías biliares intrahepáticas",
+        "C81": "Linfoma de Hodgkin",
+        "C82": "Linfoma no Hodgkin",
+        "C91": "Leucemia",
+        "C15": "Tumor maligno del esófago",
+        "C26": "Tumor maligno del páncreas",
+        "C70": "Tumores malignos del encéfalo y otras partes del sistema nervioso central",
+        "C40": "Tumores malignos de los huesos y de los cartílagos articulares",
+        "C64": "Tumor maligno del riñón",
     }
 
 

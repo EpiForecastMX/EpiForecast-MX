@@ -7,7 +7,7 @@ y los siguientes traen 17 tumores malignos; sólo dos tienen historia desde 2013
 | --- | --- | --- | --- |
 | Mama (C50) | 1 | 2013-W05 a hoy, con sexo | publicado con el control estacional |
 | Cuello del útero (C53) | 1 | 2013-W05 a hoy, sin desglose por sexo | publicado: superó el gate de 2025 con 32 bases sin sexo |
-| Pulmón, estómago, colon y recto, hígado, linfomas, leucemia, esófago, páncreas, SNC, huesos, riñón, próstata, cuerpo del útero, ovario | 15 | desde 2023-W01 | no alcanzan las 260 semanas de `min_train_weeks`; el autor pidió diseñar una política de historia corta, sujeta a su revisión antes de publicar |
+| Pulmón, estómago, colon y recto, hígado, linfomas, leucemia, esófago, páncreas, SNC, huesos, riñón, próstata, cuerpo del útero, ovario | 15 | desde 2023-W01 | evaluados con `rolling_cv_historia_corta_2023_v1`: 10 aceptados y 5 rechazados; `configured`, sin publicar hasta la revisión del autor |
 
 ## Tumor maligno de la mama (C50)
 
@@ -61,3 +61,53 @@ Las series estatales tienen pocos casos (unas 71 semanales en todo el país) y s
 total nacional es la lectura útil. El paso semanal acepta el raw sin sexo (`prospective_week`,
 ensayado en seco con un boletín simulado) y `une_consolidado.sh` lo proyecta al consolidado con
 hombres y mujeres vacíos. Consolidado W42 `candidato_con_cuello`: paridad PASS con los dieciocho.
+
+## Quince cánceres desde 2023: política de historia corta (8-nov-2026)
+
+El autor pidió diseñarla («de una vez») y revisarla antes de publicar nada. Los Cuadros 15.2 a 15.6 existen
+desde el boletín 2023_sem02 (serie desde 2023-W01), así que ninguna política vigente aplica: exigen 260
+semanas previas. Con 2023 como único año previo, un pliegue 2024 sólo admitiría el naive, porque cualquier
+ventana de varios años cae a él.
+
+`rolling_cv_historia_corta_2023_v1` (distinta de `rolling_cv_historia_corta_v1`, la de Covid-19, que no
+cambia):
+
+- desarrollo: un pliegue, 2025 completo (53 semanas MMWR), con 104 semanas previas; la política lo declara
+  con `allow_53_week_development`;
+- prueba bloqueada: 2026-W01 a W41 (fold `partial: true`), nunca vista al elegir;
+- candidatos: `seasonal_naive_lag52` (control) y `seasonal_mean_2y`, la única ventana distinta con dos años;
+  ETS y Ridge fallan cerrado en series de pocos casos;
+- aceptación idéntica a las demás políticas (5 % bases y todos los productos, 10 % nacional).
+
+Es evidencia más débil que la de las series largas: un solo pliegue de desarrollo y 41 semanas de prueba, y
+el portafolio es casi siempre el propio control (el naive gana la mayoría de las series), así que «aceptado»
+significa sobre todo que la media de dos años no empeoró al naive. Los errores estatales son altos (sMAPE de
+32 a 99) porque son pocos casos por semana; el nacional es la lectura útil.
+
+Extracción: 198 boletines (2023_sem02 a 2026_sem42, `--pdf-dir` con sólo esos), semana 42 igual al radar en
+las 32 entidades de los quince, determinista (uno por cuadro, dos corridas con el mismo sha256). Próstata,
+cuerpo del útero y ovario vienen sin desglose por sexo (`sex_breakdown: false`, 32 bases). Exclusiones con
+periodo conservado donde camelot pierde renglones de estados (la fuente se lee completa con pdftotext):
+`2026_sem09` (15.3 y 15.5), `2024_sem23` y `2026_sem20` (15.4), `2025_sem11` (15.5); dos de ellas caen en la
+prueba de 2026 y su verdad es imputada.
+
+| padecimiento | sMAPE bases | todos | nacional (portafolio / control) | veredicto | selección (naive / media 2 años) |
+| --- | --- | --- | --- | --- | --- |
+| Pulmón (C33-C34) | 73.2 / 73.2 | 73.2 / 73.2 | 27.4 / 31.2 | ACEPTADO | 50 / 14 |
+| Estómago (C16) | 92.7 / 92.0 | 87.8 / 87.8 | 20.4 / 20.3 | ACEPTADO | 47 / 17 |
+| Colon y recto (C18-C21) | 92.0 / 96.4 | 84.7 / 88.2 | 21.7 / 20.2 | ACEPTADO | 39 / 25 |
+| Linfoma de Hodgkin (C81) | 43.9 / 43.9 | 58.5 / 58.5 | 39.8 / 39.5 | ACEPTADO | 52 / 12 |
+| Linfoma no Hodgkin (C82-C85) | 86.3 / 87.9 | 81.4 / 82.9 | 28.0 / 25.8 | ACEPTADO | 48 / 16 |
+| Leucemia (C91-C95) | 77.1 / 78.0 | 74.4 / 77.1 | 17.8 / 17.6 | ACEPTADO | 46 / 18 |
+| Páncreas (C26) | 63.4 / 63.9 | 72.1 / 69.9 | 22.7 / 27.6 | ACEPTADO | 54 / 10 |
+| Encéfalo y SNC (C70-C72) | 53.7 / 53.7 | 65.7 / 63.4 | 27.4 / 31.0 | ACEPTADO | 56 / 8 |
+| Cuerpo del útero (C54), sin sexo | 98.7 / 99.6 | 89.4 / 94.9 | 32.2 / 29.7 | ACEPTADO | 21 / 11 |
+| Ovario (C56), sin sexo | 96.7 / 100.7 | 93.0 / 99.1 | 23.0 / 21.1 | ACEPTADO | 19 / 13 |
+| Riñón (C64) | 88.9 / 84.0 | 82.9 / 79.7 | 23.9 / 24.3 | RECHAZADO | 49 / 15 |
+| Próstata (C61), sin sexo | 76.0 / 89.4 | 74.2 / 84.1 | 27.7 / 24.6 | RECHAZADO | 10 / 22 |
+| Huesos (C40-C41) | 39.0 / 39.0 | 53.7 / 52.0 | 43.1 / 38.6 | RECHAZADO | 54 / 10 |
+| Hígado (C22) | 78.9 / 79.7 | 79.7 / 80.0 | 29.3 / 26.1 | RECHAZADO | 54 / 10 |
+| Esófago (C15) | 32.5 / 32.5 | 48.8 / 44.8 | 40.0 / 42.0 | RECHAZADO | 46 / 18 |
+
+Runs de prueba: `<id>_benchmark_test_*` en `runs/` del backend (conservados). Ninguno se refiteó ni tiene
+release: publicar exige la revisión del autor; los rechazados, además, su orden expresa para el control.

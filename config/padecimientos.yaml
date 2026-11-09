@@ -771,6 +771,7 @@ padecimientos:
     aggregate_national: false
     gallery_enabled: false
     web:
+      color: "#60A5FA"
       label: "Tumor maligno de la próstata"
       nombre_completo: "Tumor maligno de la próstata (C61)"
 
@@ -798,6 +799,7 @@ padecimientos:
     aggregate_national: false
     gallery_enabled: false
     web:
+      color: "#E879F9"
       label: "Tumor maligno del cuerpo del útero"
       nombre_completo: "Tumor maligno del cuerpo del útero (C54)"
 
@@ -825,6 +827,7 @@ padecimientos:
     aggregate_national: false
     gallery_enabled: false
     web:
+      color: "#F0ABFC"
       label: "Tumor maligno del ovario"
       nombre_completo: "Tumor maligno del ovario (C56)"
 
@@ -850,6 +853,7 @@ padecimientos:
     aggregate_national: false
     gallery_enabled: false
     web:
+      color: "#94A3B8"
       label: "Tumor maligno de tráquea, bronquios y pulmón"
       nombre_completo: "Tumor maligno de tráquea, bronquios y pulmón (C33, C34)"
 
@@ -875,6 +879,7 @@ padecimientos:
     aggregate_national: false
     gallery_enabled: false
     web:
+      color: "#FCD34D"
       label: "Tumor maligno del estómago"
       nombre_completo: "Tumor maligno del estómago (C16)"
 
@@ -900,6 +905,7 @@ padecimientos:
     aggregate_national: false
     gallery_enabled: false
     web:
+      color: "#FDBA74"
       label: "Tumor maligno del colon y recto"
       nombre_completo: "Tumor maligno del colon y recto (C18-C21)"
 
@@ -925,6 +931,7 @@ padecimientos:
     aggregate_national: false
     gallery_enabled: false
     web:
+      color: "#A16207"
       label: "Tumor maligno del hígado y de las vías biliares intrahepáticas"
       nombre_completo: "Tumor maligno del hígado y de las vías biliares intrahepáticas (C22)"
 
@@ -950,6 +957,7 @@ padecimientos:
     aggregate_national: false
     gallery_enabled: false
     web:
+      color: "#67E8F9"
       label: "Linfoma de Hodgkin"
       nombre_completo: "Linfoma de Hodgkin (C81)"
 
@@ -975,6 +983,7 @@ padecimientos:
     aggregate_national: false
     gallery_enabled: false
     web:
+      color: "#22D3EE"
       label: "Linfoma no Hodgkin"
       nombre_completo: "Linfoma no Hodgkin (C82-C85)"
 
@@ -1000,6 +1009,7 @@ padecimientos:
     aggregate_national: false
     gallery_enabled: false
     web:
+      color: "#F43F5E"
       label: "Leucemia"
       nombre_completo: "Leucemia (C91-C95)"
 
@@ -1025,6 +1035,7 @@ padecimientos:
     aggregate_national: false
     gallery_enabled: false
     web:
+      color: "#FDE68A"
       label: "Tumor maligno del esófago"
       nombre_completo: "Tumor maligno del esófago (C15)"
 
@@ -1050,6 +1061,7 @@ padecimientos:
     aggregate_national: false
     gallery_enabled: false
     web:
+      color: "#86EFAC"
       label: "Tumor maligno del páncreas"
       nombre_completo: "Tumor maligno del páncreas (C26)"
 
@@ -1075,6 +1087,7 @@ padecimientos:
     aggregate_national: false
     gallery_enabled: false
     web:
+      color: "#C4B5FD"
       label: "Tumores malignos del encéfalo y otras partes del sistema nervioso central"
       nombre_completo: "Tumores malignos del encéfalo y otras partes del sistema nervioso central (C70-C72)"
 
@@ -1100,6 +1113,7 @@ padecimientos:
     aggregate_national: false
     gallery_enabled: false
     web:
+      color: "#E5E7EB"
       label: "Tumores malignos de los huesos y de los cartílagos articulares"
       nombre_completo: "Tumores malignos de los huesos y de los cartílagos articulares (C40, C41)"
 
@@ -1125,5 +1139,6 @@ padecimientos:
     aggregate_national: false
     gallery_enabled: false
     web:
+      color: "#4ADE80"
       label: "Tumor maligno del riñón"
       nombre_completo: "Tumor maligno del riñón (C64)"
