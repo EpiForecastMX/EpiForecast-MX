@@ -81,7 +81,11 @@ fatal "el productor semanal sigue BLOQUEADO a propósito hasta la autorización 
     prepare-worktrees → apply → check-completeness está probado (P0.1, P0.2 y P0.8
     cerrados); correrlo de verdad exige red (pull, dvc pull, sincronización aditiva) y
     la decisión de publicar. Decisión P0.11: opción C, superficies públicas al día y
-    dataset DVC pendiente. La puesta al día (P1) exige autorización aparte."
+    dataset DVC pendiente. La puesta al día (P1) exige autorización aparte.
+    El paso semanal vigente es: legacy con el productor v5 (planes/) y los publicados del
+    runner con «make semana-revisa», «make semana-observa» y «make semana-vistas»; el radar
+    del boletín con su generador del frontend. Receta completa: skill padecimiento-epiforecast,
+    references/paso_semanal.md."
 
 paso "PREFLIGHT (modo: ${MODE})"
 
