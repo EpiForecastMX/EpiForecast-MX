@@ -858,14 +858,17 @@ padecimientos:
     exposure_source_id: inegi_cpv2020_static
     # Serie desde 2023-W01. Publicada por orden del autor (8-nov-2026) tras superar la prueba de
     # 2026-W01..W41 de la política de historia corta; validación prospectiva en curso.
-    lifecycle: published
+    lifecycle: trained
     channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
     artifact_source:
-      backend: runner_release
-      release_id: cancer_pulmon_c33_release_7f3634aa0f22
+      backend: runner_runs
+      refit_run_id: cancer_pulmon_c33_refit_final_f0e7458fef3a_22c4341cfa02
+      forecast_run_id: cancer_pulmon_c33_forecast_h52_22c4341cfa02_a96d417e3de6
+      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
+      final_selection_digest: f0e7458fef3af9beeb2959ea32b0650cb495676068e22f3f7bed1cb9a7883bf2
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -888,14 +891,17 @@ padecimientos:
     exposure_source_id: inegi_cpv2020_static
     # Serie desde 2023-W01. Publicada por orden del autor (8-nov-2026) tras superar la prueba de
     # 2026-W01..W41 de la política de historia corta; validación prospectiva en curso.
-    lifecycle: published
+    lifecycle: trained
     channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
     artifact_source:
-      backend: runner_release
-      release_id: cancer_estomago_c16_release_bcb7311dcd13
+      backend: runner_runs
+      refit_run_id: cancer_estomago_c16_refit_final_036e95dfdcbf_557475727717
+      forecast_run_id: cancer_estomago_c16_forecast_h52_557475727717_e69668b9fe0c
+      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
+      final_selection_digest: 036e95dfdcbfbe728424b8f8f59663b0112fbb42ef1ca5d85368b34495bac5a8
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -918,14 +924,17 @@ padecimientos:
     exposure_source_id: inegi_cpv2020_static
     # Serie desde 2023-W01. Publicada por orden del autor (8-nov-2026) tras superar la prueba de
     # 2026-W01..W41 de la política de historia corta; validación prospectiva en curso.
-    lifecycle: published
+    lifecycle: trained
     channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
     artifact_source:
-      backend: runner_release
-      release_id: cancer_colon_c18_release_30b04f3b5815
+      backend: runner_runs
+      refit_run_id: cancer_colon_c18_refit_final_074419c03585_df9640e77d80
+      forecast_run_id: cancer_colon_c18_forecast_h52_df9640e77d80_0a098745e7eb
+      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
+      final_selection_digest: 074419c0358587e36b26564b044e7bdd664bc9c66feb47dccb06d40f350b2040
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -948,15 +957,18 @@ padecimientos:
     exposure_source_id: inegi_cpv2020_static
     # Serie desde 2023-W01. Publicada con el CONTROL estacional por orden del autor (8-nov-2026): la
     # prueba de 2026 rechazó el portafolio. Nunca se presenta como validada.
-    lifecycle: published
+    lifecycle: trained
     channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
     # La prueba de 2026 rechazó el portafolio; el autor autorizó publicar el control (8-nov-2026).
     artifact_source:
-      backend: runner_release
-      release_id: cancer_higado_c22_release_0340c3e974c5
+      backend: runner_runs
+      refit_run_id: cancer_higado_c22_refit_final_9fe0414b00c7_d05e1898ed99
+      forecast_run_id: cancer_higado_c22_forecast_h52_d05e1898ed99_34636704e2f9
+      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     acceptance_fallback_run: cancer_higado_c22_benchmark_test_f4d4974a5710_fff4aa718d8a
     prophet_grid_key: null
     deepar_grid_key: null
@@ -980,14 +992,17 @@ padecimientos:
     exposure_source_id: inegi_cpv2020_static
     # Serie desde 2023-W01. Publicada por orden del autor (8-nov-2026) tras superar la prueba de
     # 2026-W01..W41 de la política de historia corta; validación prospectiva en curso.
-    lifecycle: published
+    lifecycle: trained
     channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
     artifact_source:
-      backend: runner_release
-      release_id: linfoma_hodgkin_c81_release_9b738cbb8583
+      backend: runner_runs
+      refit_run_id: linfoma_hodgkin_c81_refit_final_bb7200dc9609_88b360a2524f
+      forecast_run_id: linfoma_hodgkin_c81_forecast_h52_88b360a2524f_0d9d6c3d8c8f
+      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
+      final_selection_digest: bb7200dc9609e7a52f4fffccf3043809ba16e5badf8a15bbe4afabfb497428ab
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1010,14 +1025,17 @@ padecimientos:
     exposure_source_id: inegi_cpv2020_static
     # Serie desde 2023-W01. Publicada por orden del autor (8-nov-2026) tras superar la prueba de
     # 2026-W01..W41 de la política de historia corta; validación prospectiva en curso.
-    lifecycle: published
+    lifecycle: trained
     channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
     artifact_source:
-      backend: runner_release
-      release_id: linfoma_no_hodgkin_c82_release_77a32affcf0d
+      backend: runner_runs
+      refit_run_id: linfoma_no_hodgkin_c82_refit_final_4af87dc22242_cb9cfee0dab3
+      forecast_run_id: linfoma_no_hodgkin_c82_forecast_h52_cb9cfee0dab3_747f57b348d4
+      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
+      final_selection_digest: 4af87dc2224250a04bb6bf8219a277d4149fc77d6fc2e04ca2655840a212ec3e
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1040,14 +1058,17 @@ padecimientos:
     exposure_source_id: inegi_cpv2020_static
     # Serie desde 2023-W01. Publicada por orden del autor (8-nov-2026) tras superar la prueba de
     # 2026-W01..W41 de la política de historia corta; validación prospectiva en curso.
-    lifecycle: published
+    lifecycle: trained
     channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
     artifact_source:
-      backend: runner_release
-      release_id: leucemia_c91_release_927f100c33f3
+      backend: runner_runs
+      refit_run_id: leucemia_c91_refit_final_e4bf876b034e_92a9b6840d9e
+      forecast_run_id: leucemia_c91_forecast_h52_92a9b6840d9e_653dccad91d8
+      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
+      final_selection_digest: e4bf876b034e3629b9ff7965515707249dd87f3f76597fc4825b7d077c86b671
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1070,15 +1091,18 @@ padecimientos:
     exposure_source_id: inegi_cpv2020_static
     # Serie desde 2023-W01. Publicada con el CONTROL estacional por orden del autor (8-nov-2026): la
     # prueba de 2026 rechazó el portafolio. Nunca se presenta como validada.
-    lifecycle: published
+    lifecycle: trained
     channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
     # La prueba de 2026 rechazó el portafolio; el autor autorizó publicar el control (8-nov-2026).
     artifact_source:
-      backend: runner_release
-      release_id: cancer_esofago_c15_release_9b1f38c2dea0
+      backend: runner_runs
+      refit_run_id: cancer_esofago_c15_refit_final_9fe0414b00c7_0f2526b59df5
+      forecast_run_id: cancer_esofago_c15_forecast_h52_0f2526b59df5_2f65bcbf4193
+      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     acceptance_fallback_run: cancer_esofago_c15_benchmark_test_1d27e82840b1_f184e9927821
     prophet_grid_key: null
     deepar_grid_key: null
@@ -1102,14 +1126,17 @@ padecimientos:
     exposure_source_id: inegi_cpv2020_static
     # Serie desde 2023-W01. Publicada por orden del autor (8-nov-2026) tras superar la prueba de
     # 2026-W01..W41 de la política de historia corta; validación prospectiva en curso.
-    lifecycle: published
+    lifecycle: trained
     channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
     artifact_source:
-      backend: runner_release
-      release_id: cancer_pancreas_c26_release_22b93205d12a
+      backend: runner_runs
+      refit_run_id: cancer_pancreas_c26_refit_final_e65ea9b99fbb_2e84d47cf45a
+      forecast_run_id: cancer_pancreas_c26_forecast_h52_2e84d47cf45a_b0b0e87889ba
+      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
+      final_selection_digest: e65ea9b99fbba821d93efb48ce9d68472afb8c21536033fc63f507ea89e94498
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
