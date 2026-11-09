@@ -237,8 +237,8 @@ def consolida(
         for d, periodos in viejas.items():
             muestra = ", ".join(f"{a}-W{s:02d}" for a, s in periodos[:4])
             print(
-                f"✖ {d}: la base difiere de su observación vigente en {len(periodos)} semanas "
-                f"({muestra}); ¿es un consolidado sustituido?",
+                f"✖ {d}: la base difiere de su observación vigente o repite filas en "
+                f"{len(periodos)} semanas ({muestra}); ¿es un consolidado sustituido o alterado?",
                 file=sys.stderr,
             )
         return 2

@@ -234,3 +234,28 @@ def test_tras_un_fail_en_seco_se_registra_a_todos_y_se_consolida_sin_el_retirado
     out = tmp_path / "out.csv"
     assert ps.consolida(43, 2026, base, base, base, out, root) == 0
     assert out.read_text(encoding="utf-8").count("2026,43,") == 64
+
+
+def test_consolida_rechaza_una_base_con_un_duplicado_falso(tmp_path: Path, monkeypatch, capsys):
+    """Tercera auditoría, A1: una fila falsa antes de la correcta no se oculta al indexar."""
+    e = _escenario(tmp_path, monkeypatch, 32)
+    _con_historia(
+        e, "2026,42,E7,X,999999,,,4\n" + "".join(f"2026,42,E{i},X,2,,,4\n" for i in range(32))
+    )
+    assert (
+        ps.consolida(43, 2026, e["base"], e["leg_base"], e["leg_cand"], e["out"], e["root"]) == 2
+    )
+    assert "repite filas" in capsys.readouterr().err and not e["out"].exists()
+
+
+def test_consolida_rechaza_sexo_inventado_en_una_serie_sin_desglose(tmp_path: Path, monkeypatch):
+    """Tercera auditoría, A2."""
+    e = _escenario(tmp_path, monkeypatch, 32)
+    filas = "".join(
+        f"2026,42,E{i},X,2,{'12345' if i == 0 else ''},{'67890' if i == 0 else ''},4\n"
+        for i in range(32)
+    )
+    _con_historia(e, filas)
+    assert (
+        ps.consolida(43, 2026, e["base"], e["leg_base"], e["leg_cand"], e["out"], e["root"]) == 2
+    )

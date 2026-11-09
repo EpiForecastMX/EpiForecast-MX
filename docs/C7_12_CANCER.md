@@ -235,3 +235,38 @@ en Morelos (TOTAL nacional 229, frente a unos 20 habituales) y el acumulado de h
 Es dato impreso, no error de extracción, y el pronóstico estacional lo repite: 227 casos nacionales en
 2026-W42. Estómago conserva dos bases imputadas en Chiapas 2026-W39 por celda vacía en la fuente; excluirlas
 no cambia la aceptación (auditoría).
+
+## Tercera auditoría del 9-nov-2026 (A1 a A3)
+
+Las seis correcciones de la segunda ronda quedaron confirmadas. La tercera encontró dos escapes del
+validador de la base, reproducidos sólo en copias sintéticas (no hay tal alteración en los datos), y
+una observación de comunicación científica.
+
+- **A1, duplicados.** `diferencias_base` indexaba por clave y la última fila ocultaba a la primera:
+  una fila falsa seguida de la correcta pasaba. Ahora exige que cada clave (año, semana, entidad)
+  aparezca una sola vez en toda la historia, en la base y en el raw, antes de comparar.
+- **A2, sexo inventado.** Para una serie sin desglose se vaciaban H/M tanto en el raw como en la
+  base. Ahora sólo se proyecta el raw; la base debe traer H/M vacíos.
+- Comprobación sobre datos reales: la base vigente `373d01e5…` sigue sin diferencias en los 29
+  publicados, la sustituida sigue rechazada (15 semanas) y las dos copias sintéticas de la auditoría
+  (`SINTETICA_base_duplicate_old_wrong_first`, `SINTETICA_base_nonsex_invented_sex`) se rechazan en
+  Obesidad 2014-W02 y cuello del útero 2026-W42. Nueve pruebas nuevas fallan con el código anterior.
+- **A3, picos heredados de la fuente.** El barrido de las 29 vistas encontró seis releases cuyo
+  pronóstico repite (o promedia) una semana aislada impresa en el boletín. Los seis valores se
+  cotejaron contra el PDF:
+
+| Release | Entidad | Semana epi. | PDF (sha256) | Impreso (nacional) | Pronóstico heredado (nacional) |
+|---|---|---|---|---|---|
+| Linfoma de Hodgkin | Morelos | 2025-W43 | 2025_sem44 `3519f61f…` | 213 (229) | 213 en 2026-W42 (227) |
+| Páncreas | Jalisco | 2026-W01 | 2026_sem02 `0762ffd6…` | 147 (172) | 78 en 2027-W01 (101.5) |
+| Pulmón | Sonora | 2026-W04 | 2026_sem05 `c777132b…` | 171 (209) | 171 en 2027-W04 (205.5) |
+| Próstata | Puebla | 2026-W08 | 2026_sem09 `337e0a0e…` | 116 (252) | 116 en 2027-W08 (252) |
+| Ovario | Puebla | 2026-W17 | 2026_sem18 `46fd5712…` | 211 (262) | 106.5 en 2027-W17 (151.5) |
+| Cerebrovascular (control) | Hidalgo | 2026-W38 | 2026_sem39 `c112674e…` | 1,150 (2,606) | 1,150 en 2027-W38 (2,606) |
+
+  La causa de esos valores no está establecida y no se califican de errata. El dato y los releases
+  no se tocan. La página y el corpus del RAG llevan una nota derivada de la vista
+  (`epibot/scripts/lib/picos_heredados.mjs`): semana aislada de al menos 50 casos, 10 veces la
+  mediana de la entidad y 5 veces la mayor vecina, que el pronóstico de 364 días después repite con al
+  menos 5 veces esa mediana. `node epibot/scripts/picos_heredados.mjs --write` regenera las notas y
+  `--check` corre en `deploy:verify`, así que un release nuevo con un pico sin nota no se despliega.
