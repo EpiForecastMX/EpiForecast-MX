@@ -1,0 +1,6 @@
+outs:
+- md5: 9554c985f52a843e82888878bbad228f.dir
+  size: 1716750
+  nfiles: 146
+  hash: md5
+  path: cancer_estomago_c16_release_bcb7311dcd13

@@ -1,0 +1,6 @@
+outs:
+- md5: 20db26dd671dfac5050019f7e2c3fa28.dir
+  size: 1702677
+  nfiles: 146
+  hash: md5
+  path: cancer_encefalo_c70_release_0de6f44f8bfd

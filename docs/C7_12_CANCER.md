@@ -7,7 +7,7 @@ y los siguientes traen 17 tumores malignos; sólo dos tienen historia desde 2013
 | --- | --- | --- | --- |
 | Mama (C50) | 1 | 2013-W05 a hoy, con sexo | publicado con el control estacional |
 | Cuello del útero (C53) | 1 | 2013-W05 a hoy, sin desglose por sexo | publicado: superó el gate de 2025 con 32 bases sin sexo |
-| Pulmón, estómago, colon y recto, hígado, linfomas, leucemia, esófago, páncreas, SNC, huesos, riñón, próstata, cuerpo del útero, ovario | 15 | desde 2023-W01 | evaluados con `rolling_cv_historia_corta_2023_v1`: 10 aceptados y 5 rechazados; `configured`, sin publicar hasta la revisión del autor |
+| Pulmón, estómago, colon y recto, hígado, linfomas, leucemia, esófago, páncreas, SNC, huesos, riñón, próstata, cuerpo del útero, ovario | 15 | desde 2023-W01 | `rolling_cv_historia_corta_2023_v1`: los 10 aceptados están publicados («publica», 8-nov-2026); los 5 rechazados siguen `configured` |
 
 ## Tumor maligno de la mama (C50)
 
@@ -109,5 +109,24 @@ prueba de 2026 y su verdad es imputada.
 | Hígado (C22) | 78.9 / 79.7 | 79.7 / 80.0 | 29.3 / 26.1 | RECHAZADO | 54 / 10 |
 | Esófago (C15) | 32.5 / 32.5 | 48.8 / 44.8 | 40.0 / 42.0 | RECHAZADO | 46 / 18 |
 
-Runs de prueba: `<id>_benchmark_test_*` en `runs/` del backend (conservados). Ninguno se refiteó ni tiene
-release: publicar exige la revisión del autor; los rechazados, además, su orden expresa para el control.
+Runs de prueba: `<id>_benchmark_test_*` en `runs/` del backend (conservados).
+
+### Publicación de los diez aceptados
+
+Con los resultados a la vista, el autor ordenó «publica». Refit y pronóstico a 52 semanas con origen
+2026-W41; el boletín 43 no existía al emitir. Gates prospectivos 0/4 (W42-W45). Consolidado W42
+`candidato_con_cancer_corto`: paridad PASS con los veintiocho. Los cinco rechazados (riñón, próstata, huesos,
+hígado, esófago) siguen `configured`: publicar su control exige orden expresa con el run nombrado.
+
+| padecimiento | release | emitido (UTC) |
+| --- | --- | --- |
+| `cancer_pulmon_c33` | `cancer_pulmon_c33_release_7f3634aa0f22` | 2026-11-09 01:36:09 |
+| `cancer_estomago_c16` | `cancer_estomago_c16_release_bcb7311dcd13` | 2026-11-09 01:36:12 |
+| `cancer_colon_c18` | `cancer_colon_c18_release_30b04f3b5815` | 2026-11-09 01:36:16 |
+| `linfoma_hodgkin_c81` | `linfoma_hodgkin_c81_release_9b738cbb8583` | 2026-11-09 01:36:19 |
+| `linfoma_no_hodgkin_c82` | `linfoma_no_hodgkin_c82_release_77a32affcf0d` | 2026-11-09 01:36:23 |
+| `leucemia_c91` | `leucemia_c91_release_927f100c33f3` | 2026-11-09 01:36:26 |
+| `cancer_pancreas_c26` | `cancer_pancreas_c26_release_22b93205d12a` | 2026-11-09 01:36:30 |
+| `cancer_encefalo_c70` | `cancer_encefalo_c70_release_0de6f44f8bfd` | 2026-11-09 01:36:33 |
+| `cancer_cuerpo_utero_c54` | `cancer_cuerpo_utero_c54_release_3523a60b29ef` | 2026-11-09 01:36:37 |
+| `cancer_ovario_c56` | `cancer_ovario_c56_release_bc43fe23e398` | 2026-11-09 01:36:40 |

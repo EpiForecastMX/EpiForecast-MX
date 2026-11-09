@@ -48,12 +48,29 @@ def test_el_contrato_separa_legacy_de_release():
         "ulceras gastritis y duodenitis",
         "tumor maligno de la mama",
         "tumor maligno del cuello del utero",
+        "tumor maligno del cuerpo del utero",
+        "tumor maligno del ovario",
+        "tumor maligno de traquea bronquios y pulmon",
+        "tumor maligno del estomago",
+        "tumor maligno del colon y recto",
+        "linfoma de hodgkin",
+        "linfoma no hodgkin",
+        "leucemia",
+        "tumor maligno del pancreas",
+        "tumores malignos del encefalo y otras partes del sistema nervioso central",
     )
     assert c.releases["obesidad"] == (_OBESIDAD, _RELEASE)
     assert sorted(i for i, _ in c.releases.values()) == [
         "anorexia_f50",
+        "cancer_colon_c18",
         "cancer_cuello_utero_c53",
+        "cancer_cuerpo_utero_c54",
+        "cancer_encefalo_c70",
+        "cancer_estomago_c16",
         "cancer_mama_c50",
+        "cancer_ovario_c56",
+        "cancer_pancreas_c26",
+        "cancer_pulmon_c33",
         "cerebrovascular_i60",
         "diabetes_t1",
         "diabetes_t2",
@@ -63,10 +80,13 @@ def test_el_contrato_separa_legacy_de_release():
         "ira_j00",
         "isquemica_i20",
         "ivu_n39",
+        "leucemia_c91",
+        "linfoma_hodgkin_c81",
+        "linfoma_no_hodgkin_c82",
         "obesidad",
         "ulceras_k25",
     ]
-    # La paridad de corte cubre a los catorce; las series legacy siguen siendo 3×111 + 99.
+    # La paridad de corte cubre a los veinticuatro; las series legacy siguen siendo 3×111 + 99.
     assert c.padecimientos == (*c.legado, *c.release)
     assert c.legado == ("depresion", "parkinson", "alzheimer", "dengue")
     assert len(c.claves_esperadas()) == 432
@@ -111,6 +131,16 @@ def test_la_paridad_de_corte_incluye_al_publicado_del_runner(tmp_path):
         "Gingivitis y enfermedad periodontal": 42,
         "Tumor maligno de la mama": 42,
         "Tumor maligno del cuello del útero": 42,
+        "Tumor maligno de tráquea, bronquios y pulmón": 42,
+        "Tumor maligno del estómago": 42,
+        "Tumor maligno del colon y recto": 42,
+        "Linfoma de Hodgkin": 42,
+        "Linfoma no Hodgkin": 42,
+        "Leucemia": 42,
+        "Tumor maligno del páncreas": 42,
+        "Tumores malignos del encéfalo y otras partes del sistema nervioso central": 42,
+        "Tumor maligno del cuerpo del útero": 42,
+        "Tumor maligno del ovario": 42,
     }
     rezagada = _consolidado(tmp_path / "a.csv", {**pads, "Obesidad": 27})
     resultado = revisa_consolidado(rezagada, contrato, contrato.padecimientos)
@@ -131,7 +161,7 @@ def test_un_publicado_del_runner_ausente_del_consolidado_falla(tmp_path):
 def test_revisa_releases_falla_cerrado_sin_bundle_ni_estado(tmp_path):
     resultado = revisa_releases(tmp_path, ContratoCobertura.canonico())
     assert not resultado.pasa
-    assert len(resultado.problemas) == 14
+    assert len(resultado.problemas) == 24
     assert any("release obesidad" in p for p in resultado.problemas)
     assert any("release diabetes tipo i:" in p for p in resultado.problemas)
 

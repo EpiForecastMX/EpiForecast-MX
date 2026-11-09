@@ -788,12 +788,16 @@ padecimientos:
     exposure_source_id: inegi_cpv2020_static
     # El boletín sólo publica el total: 32 bases «general», sin hombres ni mujeres.
     sex_breakdown: false
-    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
-    lifecycle: configured
-    channels: []
+    # Serie desde 2023-W01. Publicada por orden del autor (8-nov-2026) tras superar la prueba de
+    # 2026-W01..W41 de la política de historia corta; validación prospectiva en curso.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_release
+      release_id: cancer_cuerpo_utero_c54_release_3523a60b29ef
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -816,12 +820,16 @@ padecimientos:
     exposure_source_id: inegi_cpv2020_static
     # El boletín sólo publica el total: 32 bases «general», sin hombres ni mujeres.
     sex_breakdown: false
-    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
-    lifecycle: configured
-    channels: []
+    # Serie desde 2023-W01. Publicada por orden del autor (8-nov-2026) tras superar la prueba de
+    # 2026-W01..W41 de la política de historia corta; validación prospectiva en curso.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_release
+      release_id: cancer_ovario_c56_release_bc43fe23e398
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -842,12 +850,16 @@ padecimientos:
     batch: standalone
     extraction_group: neoplasias_15_3
     exposure_source_id: inegi_cpv2020_static
-    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
-    lifecycle: configured
-    channels: []
+    # Serie desde 2023-W01. Publicada por orden del autor (8-nov-2026) tras superar la prueba de
+    # 2026-W01..W41 de la política de historia corta; validación prospectiva en curso.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_release
+      release_id: cancer_pulmon_c33_release_7f3634aa0f22
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -868,12 +880,16 @@ padecimientos:
     batch: standalone
     extraction_group: neoplasias_15_3
     exposure_source_id: inegi_cpv2020_static
-    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
-    lifecycle: configured
-    channels: []
+    # Serie desde 2023-W01. Publicada por orden del autor (8-nov-2026) tras superar la prueba de
+    # 2026-W01..W41 de la política de historia corta; validación prospectiva en curso.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_release
+      release_id: cancer_estomago_c16_release_bcb7311dcd13
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -894,12 +910,16 @@ padecimientos:
     batch: standalone
     extraction_group: neoplasias_15_3
     exposure_source_id: inegi_cpv2020_static
-    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
-    lifecycle: configured
-    channels: []
+    # Serie desde 2023-W01. Publicada por orden del autor (8-nov-2026) tras superar la prueba de
+    # 2026-W01..W41 de la política de historia corta; validación prospectiva en curso.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_release
+      release_id: cancer_colon_c18_release_30b04f3b5815
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -946,12 +966,16 @@ padecimientos:
     batch: standalone
     extraction_group: neoplasias_15_4
     exposure_source_id: inegi_cpv2020_static
-    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
-    lifecycle: configured
-    channels: []
+    # Serie desde 2023-W01. Publicada por orden del autor (8-nov-2026) tras superar la prueba de
+    # 2026-W01..W41 de la política de historia corta; validación prospectiva en curso.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_release
+      release_id: linfoma_hodgkin_c81_release_9b738cbb8583
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -972,12 +996,16 @@ padecimientos:
     batch: standalone
     extraction_group: neoplasias_15_4
     exposure_source_id: inegi_cpv2020_static
-    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
-    lifecycle: configured
-    channels: []
+    # Serie desde 2023-W01. Publicada por orden del autor (8-nov-2026) tras superar la prueba de
+    # 2026-W01..W41 de la política de historia corta; validación prospectiva en curso.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_release
+      release_id: linfoma_no_hodgkin_c82_release_77a32affcf0d
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -998,12 +1026,16 @@ padecimientos:
     batch: standalone
     extraction_group: neoplasias_15_5
     exposure_source_id: inegi_cpv2020_static
-    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
-    lifecycle: configured
-    channels: []
+    # Serie desde 2023-W01. Publicada por orden del autor (8-nov-2026) tras superar la prueba de
+    # 2026-W01..W41 de la política de historia corta; validación prospectiva en curso.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_release
+      release_id: leucemia_c91_release_927f100c33f3
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1050,12 +1082,16 @@ padecimientos:
     batch: standalone
     extraction_group: neoplasias_15_5
     exposure_source_id: inegi_cpv2020_static
-    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
-    lifecycle: configured
-    channels: []
+    # Serie desde 2023-W01. Publicada por orden del autor (8-nov-2026) tras superar la prueba de
+    # 2026-W01..W41 de la política de historia corta; validación prospectiva en curso.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_release
+      release_id: cancer_pancreas_c26_release_22b93205d12a
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1076,12 +1112,16 @@ padecimientos:
     batch: standalone
     extraction_group: neoplasias_15_6
     exposure_source_id: inegi_cpv2020_static
-    # Serie desde 2023-W01: política de historia corta, en revisión del autor antes de publicar.
-    lifecycle: configured
-    channels: []
+    # Serie desde 2023-W01. Publicada por orden del autor (8-nov-2026) tras superar la prueba de
+    # 2026-W01..W41 de la política de historia corta; validación prospectiva en curso.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_release
+      release_id: cancer_encefalo_c70_release_0de6f44f8bfd
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false

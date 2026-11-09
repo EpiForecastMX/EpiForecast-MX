@@ -270,6 +270,16 @@ def test_obesidad_y_f50_publicadas_solo_desde_su_release():
         "Úlceras, gastritis y duodenitis",
         "Tumor maligno de la mama",
         "Tumor maligno del cuello del útero",
+        "Tumor maligno del cuerpo del útero",
+        "Tumor maligno del ovario",
+        "Tumor maligno de tráquea, bronquios y pulmón",
+        "Tumor maligno del estómago",
+        "Tumor maligno del colon y recto",
+        "Linfoma de Hodgkin",
+        "Linfoma no Hodgkin",
+        "Leucemia",
+        "Tumor maligno del páncreas",
+        "Tumores malignos del encéfalo y otras partes del sistema nervioso central",
     ]
     # El carril legacy (all_forecast, tabla_333, zoom) sigue siendo exactamente los cuatro.
     assert [d.data_name for d in registry.legacy_published()] == [
