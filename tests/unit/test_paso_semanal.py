@@ -146,3 +146,91 @@ def test_un_fail_no_deja_observaciones_pendientes(tmp_path: Path, monkeypatch):
 def test_un_error_que_no_es_fail_si_detiene_el_registro(tmp_path: Path, monkeypatch):
     rc, corridos = _corre_observa(tmp_path, monkeypatch, {"a": 0, "b": 2, "c": 0})
     assert corridos == ["a", "b"] and rc == 2
+
+
+def _con_historia(e: dict[str, Path], base_x: str) -> None:
+    """El raw vigente de X trae W42 y W43; la base trae W42 de X como se indique."""
+    raw = next((e["root"] / "artifacts").rglob("data_raw_X.csv"))
+    raw.write_text(
+        raw.read_text(encoding="utf-8") + "".join(f"2026,42,E{i},X,2,5,4\n" for i in range(32)),
+        encoding="utf-8",
+    )
+    e["base"].write_text(e["base"].read_text(encoding="utf-8") + base_x, encoding="utf-8")
+
+
+def test_consolida_acepta_la_base_vigente_aunque_cambie_el_formato(tmp_path: Path, monkeypatch):
+    e = _escenario(tmp_path, monkeypatch, 32)
+    _con_historia(e, "".join(f"2026,42,E{i},X,2.0,,,4.0\n" for i in range(32)))
+    assert (
+        ps.consolida(43, 2026, e["base"], e["leg_base"], e["leg_cand"], e["out"], e["root"]) == 0
+    )
+
+
+def test_consolida_rechaza_una_base_sustituida(tmp_path: Path, monkeypatch, capsys):
+    """Auditoría 9-nov-2026, R1: una base anterior a una corrección no se hereda en silencio."""
+    e = _escenario(tmp_path, monkeypatch, 32)
+    vieja = "".join(f"2026,42,E{i},X,{1 if i == 7 else 2},,,4\n" for i in range(32))
+    _con_historia(e, vieja)
+    assert (
+        ps.consolida(43, 2026, e["base"], e["leg_base"], e["leg_cand"], e["out"], e["root"]) == 2
+    )
+    assert "2026-W42" in capsys.readouterr().err and not e["out"].exists()
+
+
+def test_consolida_rechaza_una_base_a_la_que_le_falta_historia(tmp_path: Path, monkeypatch):
+    e = _escenario(tmp_path, monkeypatch, 32)
+    _con_historia(e, "".join(f"2026,42,E{i},X,2,,,4\n" for i in range(31)))
+    assert (
+        ps.consolida(43, 2026, e["base"], e["leg_base"], e["leg_cand"], e["out"], e["root"]) == 2
+    )
+
+
+def test_tras_un_fail_en_seco_se_registra_a_todos_y_se_consolida_sin_el_retirado(
+    tmp_path: Path, monkeypatch
+):
+    """Auditoría 9-nov-2026, R2: la ruta literal seco (FAIL) → registro → retiro → consolidado."""
+    rcs = {"a": 0, "b": 3, "c": 0}
+    llamadas: list[tuple[str, bool]] = []
+    monkeypatch.setattr(ps, "publicados", lambda: list(rcs))
+
+    def run(cmd, **kw):
+        d = cmd[cmd.index("--disease") + 1]
+        llamadas.append((d, "--write" in cmd))
+        veredicto = "FAIL" if rcs[d] == 3 else "PASS"
+        return SimpleNamespace(returncode=rcs[d], stdout=f'{{"verdict":"{veredicto}"}}', stderr="")
+
+    monkeypatch.setattr(ps.subprocess, "run", run)
+    kw = {"first_available": None, "runs_root": None}
+    assert ps.observa(Path("b.pdf"), write=False, salida=tmp_path / "seco", **kw) == ps.RC_FAIL
+    # La guía: con un FAIL en seco se registra igual a todos; el FAIL queda como evidencia.
+    assert ps.observa(Path("b.pdf"), write=True, salida=tmp_path / "reg", **kw) == ps.RC_FAIL
+    assert [d for d, w in llamadas if w] == ["a", "b", "c"]
+
+    # El autor retira b: a y c ya tienen su observación de la semana y el consolidado cierra.
+    root = tmp_path / "be"
+    for d in ("a", "c"):
+        raw = root / "artifacts" / "observations" / d / "obs" / "inputs" / f"data_raw_{d}.csv"
+        raw.parent.mkdir(parents=True)
+        raw.write_text(
+            _CAB_SEXO + "".join(f"2026,43,E{i},{d.upper()},1,1,1,1\n" for i in range(32)),
+            encoding="utf-8",
+        )
+    monkeypatch.setattr(ps, "publicados", lambda: ["a", "c"])
+    monkeypatch.setattr(ps, "observacion_actual", lambda d, r=None: "obs")
+    import epiforecast.publication.contratos_datos as cd
+
+    monkeypatch.setattr(
+        cd,
+        "revisa_consolidado",
+        lambda out, c, p: SimpleNamespace(pasa=True, problemas=(), cifras={"cortes": {}}),
+    )
+    monkeypatch.setattr(
+        cd.ContratoCobertura,
+        "canonico",
+        classmethod(lambda cls: SimpleNamespace(padecimientos=())),
+    )
+    base = tmp_path / "base.csv"
+    base.write_text(_CAB_SEXO, encoding="utf-8")
+    out = tmp_path / "out.csv"
+    assert ps.consolida(43, 2026, base, base, base, out, root) == 0
+    assert out.read_text(encoding="utf-8").count("2026,43,") == 64
