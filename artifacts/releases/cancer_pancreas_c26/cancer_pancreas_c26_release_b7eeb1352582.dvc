@@ -1,0 +1,6 @@
+outs:
+- md5: 16ed4a74d5f87d0dc5649abbfc79da62.dir
+  size: 1705914
+  nfiles: 146
+  hash: md5
+  path: cancer_pancreas_c26_release_b7eeb1352582
