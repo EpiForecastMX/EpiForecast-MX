@@ -500,6 +500,23 @@ data-weekly: data-add data-commit
 ## sella. El cableado esta probado con repos sinteticos, no con datos reales; faltan
 ## P0.1, P0.2 y P0.8. Aborta en el preflight, antes de descargar o generar nada.
 .PHONY: update-week
+## Paso semanal único del runner (todos los publicados desde un release; la lista sale del registry)
+semana-revisa:
+	$(PYTHON) -m scripts.paso_semanal revisa
+
+semana-observa:
+ifndef PDF
+	$(error Uso: make semana-observa PDF=<ruta.pdf> SALIDA=<dir> [WRITE=1 FIRST_AVAILABLE='<ISO|evidencia>'])
+endif
+	$(PYTHON) -m scripts.paso_semanal observa --pdf "$(PDF)" --salida "$(or $(SALIDA),runs/semana)" \
+		$(if $(WRITE),--write) $(if $(FIRST_AVAILABLE),--first-available "$(FIRST_AVAILABLE)")
+
+semana-vistas:
+ifndef N
+	$(error Uso: make semana-vistas N=<boletín> FE=<checkout del frontend>)
+endif
+	$(PYTHON) -m scripts.paso_semanal vistas --n $(N) --frontend "$(FE)"
+
 update-week:
 	bash scripts/actualiza_semanal.sh
 
