@@ -1,0 +1,6 @@
+outs:
+- md5: b51c3048ab742ff1ca9f03a0d49b3a08.dir
+  size: 1668220
+  nfiles: 145
+  hash: md5
+  path: cancer_esofago_c15_release_9b1f38c2dea0

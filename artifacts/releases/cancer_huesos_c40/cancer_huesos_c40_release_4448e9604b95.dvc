@@ -1,0 +1,6 @@
+outs:
+- md5: 0c465c820b152b380556c2efade99aed.dir
+  size: 1649820
+  nfiles: 145
+  hash: md5
+  path: cancer_huesos_c40_release_4448e9604b95

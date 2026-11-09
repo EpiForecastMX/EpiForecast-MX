@@ -1,0 +1,6 @@
+outs:
+- md5: b4e4300dd06b9581f8a518a79f9a627a.dir
+  size: 12955602
+  nfiles: 20
+  hash: md5
+  path: cancer_huesos_c40_d2e864a2d1d0

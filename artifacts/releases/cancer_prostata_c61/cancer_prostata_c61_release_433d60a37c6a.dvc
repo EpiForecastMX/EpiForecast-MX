@@ -1,0 +1,6 @@
+outs:
+- md5: bb1892bd2a139327989a4abb9ecfcf1a.dir
+  size: 709093
+  nfiles: 81
+  hash: md5
+  path: cancer_prostata_c61_release_433d60a37c6a

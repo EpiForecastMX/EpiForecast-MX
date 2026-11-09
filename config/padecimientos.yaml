@@ -768,11 +768,8 @@ padecimientos:
     selection_policy: rolling_cv_historia_corta_2023_v1
     # La prueba de 2026 rechazó el portafolio; el autor autorizó publicar el control (8-nov-2026).
     artifact_source:
-      backend: runner_runs
-      refit_run_id: cancer_prostata_c61_refit_final_30e6b4ef89df_d066831a5245
-      forecast_run_id: cancer_prostata_c61_forecast_h52_d066831a5245_da18c53bfee8
-      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
-      final_selection_digest: 30e6b4ef89dfaec5091ac2ecb9959eb91024576e6ead3f9293537f0c2cc7be9f
+      backend: runner_release
+      release_id: cancer_prostata_c61_release_433d60a37c6a
     acceptance_fallback_run: cancer_prostata_c61_benchmark_test_4ef016e56f8f_56f68de1cdc5
     prophet_grid_key: null
     deepar_grid_key: null
@@ -956,11 +953,8 @@ padecimientos:
     selection_policy: rolling_cv_historia_corta_2023_v1
     # La prueba de 2026 rechazó el portafolio; el autor autorizó publicar el control (8-nov-2026).
     artifact_source:
-      backend: runner_runs
-      refit_run_id: cancer_higado_c22_refit_final_9fe0414b00c7_abdd07455a8c
-      forecast_run_id: cancer_higado_c22_forecast_h52_abdd07455a8c_5bdac1b43132
-      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
-      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
+      backend: runner_release
+      release_id: cancer_higado_c22_release_0340c3e974c5
     acceptance_fallback_run: cancer_higado_c22_benchmark_test_f3c5e961cd52_0f0275e364ff
     prophet_grid_key: null
     deepar_grid_key: null
@@ -1080,11 +1074,8 @@ padecimientos:
     selection_policy: rolling_cv_historia_corta_2023_v1
     # La prueba de 2026 rechazó el portafolio; el autor autorizó publicar el control (8-nov-2026).
     artifact_source:
-      backend: runner_runs
-      refit_run_id: cancer_esofago_c15_refit_final_9fe0414b00c7_8d281eed1dba
-      forecast_run_id: cancer_esofago_c15_forecast_h52_8d281eed1dba_1dde200f684b
-      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
-      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
+      backend: runner_release
+      release_id: cancer_esofago_c15_release_9b1f38c2dea0
     acceptance_fallback_run: cancer_esofago_c15_benchmark_test_2a83a6e8a70f_33cd417d156d
     prophet_grid_key: null
     deepar_grid_key: null
@@ -1174,11 +1165,8 @@ padecimientos:
     selection_policy: rolling_cv_historia_corta_2023_v1
     # La prueba de 2026 rechazó el portafolio; el autor autorizó publicar el control (8-nov-2026).
     artifact_source:
-      backend: runner_runs
-      refit_run_id: cancer_huesos_c40_refit_final_9fe0414b00c7_f6bae80d531e
-      forecast_run_id: cancer_huesos_c40_forecast_h52_f6bae80d531e_28fff14c654f
-      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
-      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
+      backend: runner_release
+      release_id: cancer_huesos_c40_release_4448e9604b95
     acceptance_fallback_run: cancer_huesos_c40_benchmark_test_42bc72d33354_3c32f13e2cb3
     prophet_grid_key: null
     deepar_grid_key: null
@@ -1208,11 +1196,8 @@ padecimientos:
     selection_policy: rolling_cv_historia_corta_2023_v1
     # La prueba de 2026 rechazó el portafolio; el autor autorizó publicar el control (8-nov-2026).
     artifact_source:
-      backend: runner_runs
-      refit_run_id: cancer_rinon_c64_refit_final_9fe0414b00c7_6d9a62e74e78
-      forecast_run_id: cancer_rinon_c64_forecast_h52_6d9a62e74e78_fc90c523e50f
-      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
-      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
+      backend: runner_release
+      release_id: cancer_rinon_c64_release_2cbedc349fbf
     acceptance_fallback_run: cancer_rinon_c64_benchmark_test_6f85ddda7aa1_b46f5e8a0fae
     prophet_grid_key: null
     deepar_grid_key: null
