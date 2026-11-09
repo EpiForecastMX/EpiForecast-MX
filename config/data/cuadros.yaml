@@ -254,6 +254,32 @@ cuadro_groups:
     n_states_expected: 32
     backend: camelot_stream
 
+  no_transmisibles_asma:
+    # CUADRO 13.3: Asma (J45, J46), bloque intermedio entre insuficiencia venosa periférica y
+    # gingivitis. 11 columnas hasta 2015_sem01 (el primer bloque no trae año anterior) y 12 después:
+    # en ambos casos el bloque de asma son las cuatro columnas previas a las cuatro de gingivitis.
+    page_anchors: ["asma", "gingivitis"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    inner_block_columns: {11: [8, 4], 12: [8, 4]}
+    diseases:
+      - id: asma_j45
+        keyword: "Asma_J45"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [asma_j45]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
   no_transmisibles_ulceras:
     # CUADRO 13.4: Úlceras, gastritis y duodenitis (K25-K29), primer bloque, antes de enfermedad
     # alcohólica del hígado y cirrosis hepática alcohólica. 11 columnas hasta 2015_sem01 y 12 después.

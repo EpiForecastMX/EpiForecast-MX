@@ -654,6 +654,31 @@ padecimientos:
       label: "Gingivitis y enfermedad periodontal"
       nombre_completo: "Gingivitis y enfermedad periodontal (K05)"
 
+  - id: asma_j45
+    data_name: "Asma"
+    artifact_key: Asma_J45
+    slug: asma_j45
+    display_name: "Asma"
+    cie_codes: ["J45", "J46"]
+    aliases: ["asma", "estado asmatico", "asma y estado asmatico", "j45", "j46"]
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: no_transmisibles_asma
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#38BDF8"
+      label: "Asma"
+      nombre_completo: "Asma (J45, J46)"
+
   - id: ulceras_k25
     data_name: "Úlceras, gastritis y duodenitis"
     artifact_key: Ulceras_K25
