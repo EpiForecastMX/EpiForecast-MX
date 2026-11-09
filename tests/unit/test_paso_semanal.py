@@ -107,3 +107,42 @@ def test_consolida_falla_si_el_legacy_reescribe_su_base(tmp_path: Path, monkeypa
     assert (
         ps.consolida(43, 2026, e["base"], e["leg_base"], e["leg_cand"], e["out"], e["root"]) == 2
     )
+
+
+def test_el_reporte_se_lee_aunque_el_estado_imprima_texto_antes():
+    texto = (
+        "✔ x: Validación prospectiva en curso (1/4 semanas)\n  estado:     ruta\n"
+        '{"disease_id":"x","verdict":"INCOMPLETE","weeks_available":1,"weeks_required":4}'
+    )
+    rep = ps.reporte_de(texto)
+    assert rep is not None and rep["verdict"] == "INCOMPLETE" and rep["weeks_available"] == 1
+    assert ps.reporte_de("sin json") is None
+
+
+def _corre_observa(tmp_path, monkeypatch, rcs: dict[str, int]) -> tuple[int, list[str]]:
+    corridos: list[str] = []
+    monkeypatch.setattr(ps, "publicados", lambda: list(rcs))
+
+    def run(cmd, **kw):
+        d = cmd[cmd.index("--disease") + 1]
+        corridos.append(d)
+        out = (
+            f'texto\n{{"verdict":"{"FAIL" if rcs[d] == 3 else "INCOMPLETE"}","weeks_available":1}}'
+        )
+        return SimpleNamespace(returncode=rcs[d], stdout=out, stderr="")
+
+    monkeypatch.setattr(ps.subprocess, "run", run)
+    rc = ps.observa(
+        Path("b.pdf"), write=True, first_available=None, runs_root=None, salida=tmp_path / "s"
+    )
+    return rc, corridos
+
+
+def test_un_fail_no_deja_observaciones_pendientes(tmp_path: Path, monkeypatch):
+    rc, corridos = _corre_observa(tmp_path, monkeypatch, {"a": 0, "b": 3, "c": 0})
+    assert corridos == ["a", "b", "c"] and rc == ps.RC_FAIL
+
+
+def test_un_error_que_no_es_fail_si_detiene_el_registro(tmp_path: Path, monkeypatch):
+    rc, corridos = _corre_observa(tmp_path, monkeypatch, {"a": 0, "b": 2, "c": 0})
+    assert corridos == ["a", "b"] and rc == 2

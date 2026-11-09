@@ -401,13 +401,6 @@ cuadro_groups:
         keyword: "Cancer_Colon_C18"
         block_index: 2
         onboard: true
-    source_exclusions:
-      - file: "2026_sem09.pdf"
-        diseases: [cancer_pulmon_c33, cancer_estomago_c16, cancer_colon_c18]
-        keep_period: true
-        reason: >-
-          camelot pierde renglones de estados en la página (la fuente se lee completa con
-          pdftotext): el periodo se conserva y se imputa
     layout_variants:
       - id: v_4col_prev
         min_year_week: "0000_sem00"
@@ -436,19 +429,6 @@ cuadro_groups:
         keyword: "Linfoma_No_Hodgkin_C82"
         block_index: 2
         onboard: true
-    source_exclusions:
-      - file: "2024_sem23.pdf"
-        diseases: [cancer_higado_c22, linfoma_hodgkin_c81, linfoma_no_hodgkin_c82]
-        keep_period: true
-        reason: >-
-          camelot pierde renglones de estados en la página (la fuente se lee completa con
-          pdftotext): el periodo se conserva y se imputa
-      - file: "2026_sem20.pdf"
-        diseases: [cancer_higado_c22, linfoma_hodgkin_c81, linfoma_no_hodgkin_c82]
-        keep_period: true
-        reason: >-
-          camelot pierde renglones de estados en la página (la fuente se lee completa con
-          pdftotext): el periodo se conserva y se imputa
     layout_variants:
       - id: v_4col_prev
         min_year_week: "0000_sem00"
@@ -477,19 +457,6 @@ cuadro_groups:
         keyword: "Cancer_Pancreas_C26"
         block_index: 2
         onboard: true
-    source_exclusions:
-      - file: "2025_sem11.pdf"
-        diseases: [leucemia_c91, cancer_esofago_c15, cancer_pancreas_c26]
-        keep_period: true
-        reason: >-
-          camelot pierde renglones de estados en la página (la fuente se lee completa con
-          pdftotext): el periodo se conserva y se imputa
-      - file: "2026_sem09.pdf"
-        diseases: [leucemia_c91, cancer_esofago_c15, cancer_pancreas_c26]
-        keep_period: true
-        reason: >-
-          camelot pierde renglones de estados en la página (la fuente se lee completa con
-          pdftotext): el periodo se conserva y se imputa
     layout_variants:
       - id: v_4col_prev
         min_year_week: "0000_sem00"
