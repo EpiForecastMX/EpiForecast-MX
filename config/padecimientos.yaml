@@ -795,11 +795,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: cancer_cuerpo_utero_c54_refit_final_08e83d492040_f72035c0d41b
-      forecast_run_id: cancer_cuerpo_utero_c54_forecast_h52_f72035c0d41b_377bcbb2af4b
-      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
-      final_selection_digest: 08e83d4920407d47b07a22947c004ce57feadcf1b21c98b4e4f4a5eceb193ab8
+      backend: runner_release
+      release_id: cancer_cuerpo_utero_c54_release_3523a60b29ef
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -829,11 +826,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: cancer_ovario_c56_refit_final_05fffc1f92a5_3379c6aac08d
-      forecast_run_id: cancer_ovario_c56_forecast_h52_3379c6aac08d_5452a5670ee7
-      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
-      final_selection_digest: 05fffc1f92a5743f6299ee0a035731682ec21b40f451a489257b5714ed28d59f
+      backend: runner_release
+      release_id: cancer_ovario_c56_release_bc43fe23e398
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -861,11 +855,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: cancer_pulmon_c33_refit_final_f0e7458fef3a_0c69fc2023c6
-      forecast_run_id: cancer_pulmon_c33_forecast_h52_0c69fc2023c6_169f263b1596
-      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
-      final_selection_digest: f0e7458fef3af9beeb2959ea32b0650cb495676068e22f3f7bed1cb9a7883bf2
+      backend: runner_release
+      release_id: cancer_pulmon_c33_release_7f3634aa0f22
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -893,11 +884,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: cancer_estomago_c16_refit_final_036e95dfdcbf_b01d2ad5863e
-      forecast_run_id: cancer_estomago_c16_forecast_h52_b01d2ad5863e_9bc71f0c6140
-      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
-      final_selection_digest: 036e95dfdcbfbe728424b8f8f59663b0112fbb42ef1ca5d85368b34495bac5a8
+      backend: runner_release
+      release_id: cancer_estomago_c16_release_bcb7311dcd13
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -925,11 +913,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: cancer_colon_c18_refit_final_074419c03585_6e09b709e3ba
-      forecast_run_id: cancer_colon_c18_forecast_h52_6e09b709e3ba_19a286194a9f
-      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
-      final_selection_digest: 074419c0358587e36b26564b044e7bdd664bc9c66feb47dccb06d40f350b2040
+      backend: runner_release
+      release_id: cancer_colon_c18_release_30b04f3b5815
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -983,11 +968,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: linfoma_hodgkin_c81_refit_final_bb7200dc9609_f164efca60f6
-      forecast_run_id: linfoma_hodgkin_c81_forecast_h52_f164efca60f6_cf8e97a175b1
-      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
-      final_selection_digest: bb7200dc9609e7a52f4fffccf3043809ba16e5badf8a15bbe4afabfb497428ab
+      backend: runner_release
+      release_id: linfoma_hodgkin_c81_release_9b738cbb8583
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1015,11 +997,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: linfoma_no_hodgkin_c82_refit_final_39efe15eafcc_f36a56a5eb8b
-      forecast_run_id: linfoma_no_hodgkin_c82_forecast_h52_f36a56a5eb8b_742ce8cac806
-      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
-      final_selection_digest: 39efe15eafcc1f5e2c872337609c624adcbe71a318c66b99a7b68f2c1dc6e27b
+      backend: runner_release
+      release_id: linfoma_no_hodgkin_c82_release_77a32affcf0d
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1047,11 +1026,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: leucemia_c91_refit_final_fd72c61146f7_7eb8a67fa8e0
-      forecast_run_id: leucemia_c91_forecast_h52_7eb8a67fa8e0_a8a64dc6351b
-      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
-      final_selection_digest: fd72c61146f7d2e63c9c1d93f0a18eef8596dd65576ae1041521758dc7f4f87a
+      backend: runner_release
+      release_id: leucemia_c91_release_927f100c33f3
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1105,11 +1081,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: cancer_pancreas_c26_refit_final_e65ea9b99fbb_816324b0daf0
-      forecast_run_id: cancer_pancreas_c26_forecast_h52_816324b0daf0_6cdeb79fd273
-      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
-      final_selection_digest: e65ea9b99fbba821d93efb48ce9d68472afb8c21536033fc63f507ea89e94498
+      backend: runner_release
+      release_id: cancer_pancreas_c26_release_22b93205d12a
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1137,11 +1110,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: cancer_encefalo_c70_refit_final_73829e7b7d9b_6d075bd6ec46
-      forecast_run_id: cancer_encefalo_c70_forecast_h52_6d075bd6ec46_182befaf355b
-      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
-      final_selection_digest: 73829e7b7d9b833c3ec94df4565ade23fd5b62c01daddac7c0d0b8c1e6317fdc
+      backend: runner_release
+      release_id: cancer_encefalo_c70_release_0de6f44f8bfd
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
