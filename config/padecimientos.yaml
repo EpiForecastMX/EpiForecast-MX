@@ -865,7 +865,7 @@ padecimientos:
     selection_policy: rolling_cv_historia_corta_2023_v1
     artifact_source:
       backend: runner_release
-      release_id: cancer_pulmon_c33_release_7f3634aa0f22
+      release_id: cancer_pulmon_c33_release_0bfb82648d55
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -895,7 +895,7 @@ padecimientos:
     selection_policy: rolling_cv_historia_corta_2023_v1
     artifact_source:
       backend: runner_release
-      release_id: cancer_estomago_c16_release_bcb7311dcd13
+      release_id: cancer_estomago_c16_release_94460da48374
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -925,7 +925,7 @@ padecimientos:
     selection_policy: rolling_cv_historia_corta_2023_v1
     artifact_source:
       backend: runner_release
-      release_id: cancer_colon_c18_release_30b04f3b5815
+      release_id: cancer_colon_c18_release_5da7b90e5db1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -956,8 +956,8 @@ padecimientos:
     # La prueba de 2026 rechazó el portafolio; el autor autorizó publicar el control (8-nov-2026).
     artifact_source:
       backend: runner_release
-      release_id: cancer_higado_c22_release_0340c3e974c5
-    acceptance_fallback_run: cancer_higado_c22_benchmark_test_f3c5e961cd52_0f0275e364ff
+      release_id: cancer_higado_c22_release_b4a6f8ab36bb
+    acceptance_fallback_run: cancer_higado_c22_benchmark_test_f4d4974a5710_fff4aa718d8a
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -987,7 +987,7 @@ padecimientos:
     selection_policy: rolling_cv_historia_corta_2023_v1
     artifact_source:
       backend: runner_release
-      release_id: linfoma_hodgkin_c81_release_9b738cbb8583
+      release_id: linfoma_hodgkin_c81_release_4ea7e36a6ed6
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1017,7 +1017,7 @@ padecimientos:
     selection_policy: rolling_cv_historia_corta_2023_v1
     artifact_source:
       backend: runner_release
-      release_id: linfoma_no_hodgkin_c82_release_77a32affcf0d
+      release_id: linfoma_no_hodgkin_c82_release_f13bb4b27953
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1047,7 +1047,7 @@ padecimientos:
     selection_policy: rolling_cv_historia_corta_2023_v1
     artifact_source:
       backend: runner_release
-      release_id: leucemia_c91_release_927f100c33f3
+      release_id: leucemia_c91_release_0aa2412f36a6
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1078,8 +1078,8 @@ padecimientos:
     # La prueba de 2026 rechazó el portafolio; el autor autorizó publicar el control (8-nov-2026).
     artifact_source:
       backend: runner_release
-      release_id: cancer_esofago_c15_release_9b1f38c2dea0
-    acceptance_fallback_run: cancer_esofago_c15_benchmark_test_2a83a6e8a70f_33cd417d156d
+      release_id: cancer_esofago_c15_release_5c6a6bc1f3da
+    acceptance_fallback_run: cancer_esofago_c15_benchmark_test_1d27e82840b1_f184e9927821
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1109,7 +1109,7 @@ padecimientos:
     selection_policy: rolling_cv_historia_corta_2023_v1
     artifact_source:
       backend: runner_release
-      release_id: cancer_pancreas_c26_release_22b93205d12a
+      release_id: cancer_pancreas_c26_release_b7eeb1352582
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false

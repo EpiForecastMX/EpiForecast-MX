@@ -160,5 +160,51 @@ usó 86 casos frente a 132 impresos. La evaluación cuenta las filas imputadas c
   impreso (pulmón, estómago y colon W08: 45, 43 y 132).
 - **Sensibilidad (auditoría):** excluyendo las filas imputadas se conservan los 10 aceptados y los 5
   rechazados; colon queda en +9.945 % nacional frente al control, con límite de +10 %.
-- **Releases sellados sin cambios:** sus datasets conservan la imputación. Reevaluar oficialmente con
-  los datos recuperados reabriría la prueba de 2026, que se abre una vez: es decisión del autor.
+- **Releases sellados de la primera corrida:** sus datasets conservan la imputación. Se conservan como
+  evidencia en DVC; el autor ordenó reevaluar («re-evalúa obvio») y la sección siguiente los reemplaza.
+
+## Reevaluación del 9-nov-2026 con la verdad recuperada
+
+Por orden del autor («re-evalúa obvio») se reextrajeron los nueve cánceres de los Cuadros 15.3 a 15.5
+(198 boletines, 6,336 filas cada uno, sin exclusiones) y se repitió la cadena completa con la misma
+política, los mismos candidatos y los mismos criterios: `validate-data`, benchmark smoke y full,
+`select`, prueba 2026-W01..W41, refit y pronóstico. Los raws nuevos difieren de los publicados sólo en las
+semanas recuperadas (comparación numérica): 2026-W09 en pulmón, estómago, colon, leucemia, esófago y
+páncreas; 2026-W20 en hígado y los dos linfomas; 2024-W23 y 2025-W11 fuera de la prueba. La semana 42 no
+cambia. Los otros seis cánceres de historia corta no tenían filas imputadas y siguen igual.
+
+**Ningún veredicto cambia.** Los siete aceptados lo siguen siendo y hígado y esófago vuelven a reprobar;
+su `acceptance_fallback_run` apunta ahora a la prueba nueva (commiteado antes del refit), bajo la misma orden
+de publicar el control. Colon, el más cercano al límite, queda en +8.64 % nacional frente al control (límite
+10 %).
+
+| padecimiento | bases (antes → ahora) | todos | nacional (portafolio / control) | veredicto |
+| --- | --- | --- | --- | --- |
+| Pulmón | 73.2 / 73.2 → 73.2 / 73.2 | 73.2 / 73.2 → 73.2 / 73.2 | 27.4 / 31.2 → 26.3 / 30.2 | ACEPTADO |
+| Estómago | 92.7 / 92.0 → 93.5 / 93.5 | 87.8 / 87.8 → 89.4 / 90.3 | 20.4 / 20.3 → 19.5 / 19.5 | ACEPTADO |
+| Colon y recto | 92.0 / 96.4 → 91.8 / 97.7 | 84.7 / 88.2 → 83.3 / 91.2 | 21.7 / 20.2 → 20.8 / 19.2 | ACEPTADO |
+| Linfoma de Hodgkin | 43.9 / 43.9 → 41.5 / 41.5 | 58.5 / 58.5 → 60.2 / 58.5 | 39.8 / 39.5 → 40.4 / 39.8 | ACEPTADO |
+| Linfoma no Hodgkin | 86.3 / 87.9 → 89.2 / 90.6 | 81.4 / 82.9 → 82.9 / 82.9 | 28.0 / 25.8 → 27.4 / 26.0 | ACEPTADO |
+| Leucemia | 77.1 / 78.0 → 78.0 / 78.0 | 74.4 / 77.1 → 75.4 / 76.3 | 17.8 / 17.6 → 17.7 / 17.5 | ACEPTADO |
+| Páncreas | 63.4 / 63.9 → 63.9 / 64.2 | 72.1 / 69.9 → 68.3 / 68.3 | 22.7 / 27.6 → 22.8 / 27.9 | ACEPTADO |
+| Hígado | 78.9 / 79.7 → 78.6 / 80.5 | 79.7 / 80.0 → 79.7 / 81.3 | 29.3 / 26.1 → 28.4 / 25.5 | RECHAZADO, control |
+| Esófago | 32.5 / 32.5 → 32.5 / 32.5 | 48.8 / 44.8 → 47.4 / 44.2 | 40.0 / 42.0 → 40.1 / 42.0 | RECHAZADO, control |
+
+Releases nuevos con origen 2026-W41 (el boletín 43 no existía al emitir), dos builds con el mismo
+`release_id`, gates prospectivos congelados de nuevo (0/4, W42-W45; los de hígado y esófago con candidato
+igual al control, `CONTROL_ONLY` al completar) y baselines nuevas. Los releases anteriores siguen en DVC.
+Consolidado W42 `candidato_reevaluado` (sha256 `373d01e5…`): difiere de `candidato_con_cancer_control`
+sólo en las 15 semanas-padecimiento recuperadas (32 filas cada una) y la paridad pasa con los treinta y
+tres. Shards respaldados en `planes/respaldo_shards_2026-11-09_reevaluacion/`.
+
+| padecimiento | prueba | release | emitido (UTC) |
+| --- | --- | --- | --- |
+| `cancer_pulmon_c33` | `cancer_pulmon_c33_benchmark_test_2d2d31a7c68a_7347dec5a3ac` | `cancer_pulmon_c33_release_0bfb82648d55` | 2026-11-09 05:14:30 |
+| `cancer_estomago_c16` | `cancer_estomago_c16_benchmark_test_0bc8d3ba0d7e_ab74589b67ce` | `cancer_estomago_c16_release_94460da48374` | 2026-11-09 05:14:34 |
+| `cancer_colon_c18` | `cancer_colon_c18_benchmark_test_8b0ab407ba06_55d3c0049b72` | `cancer_colon_c18_release_5da7b90e5db1` | 2026-11-09 05:14:38 |
+| `linfoma_hodgkin_c81` | `linfoma_hodgkin_c81_benchmark_test_7dfe1d52767d_c0e66ac80d8c` | `linfoma_hodgkin_c81_release_4ea7e36a6ed6` | 2026-11-09 05:14:44 |
+| `linfoma_no_hodgkin_c82` | `linfoma_no_hodgkin_c82_benchmark_test_325bc498b4e3_06114effc08d` | `linfoma_no_hodgkin_c82_release_f13bb4b27953` | 2026-11-09 05:14:48 |
+| `leucemia_c91` | `leucemia_c91_benchmark_test_5a82891edd36_bef2f6d272be` | `leucemia_c91_release_0aa2412f36a6` | 2026-11-09 05:14:51 |
+| `cancer_pancreas_c26` | `cancer_pancreas_c26_benchmark_test_c330418f2b55_53c86c8d0696` | `cancer_pancreas_c26_release_b7eeb1352582` | 2026-11-09 05:14:58 |
+| `cancer_higado_c22` | `cancer_higado_c22_benchmark_test_f4d4974a5710_fff4aa718d8a` | `cancer_higado_c22_release_b4a6f8ab36bb` | 2026-11-09 05:14:41 |
+| `cancer_esofago_c15` | `cancer_esofago_c15_benchmark_test_1d27e82840b1_f184e9927821` | `cancer_esofago_c15_release_5c6a6bc1f3da` | 2026-11-09 05:14:54 |
