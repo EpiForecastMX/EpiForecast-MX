@@ -957,7 +957,7 @@ padecimientos:
     artifact_source:
       backend: runner_release
       release_id: cancer_higado_c22_release_0340c3e974c5
-    acceptance_fallback_run: cancer_higado_c22_benchmark_test_f3c5e961cd52_0f0275e364ff
+    acceptance_fallback_run: cancer_higado_c22_benchmark_test_f4d4974a5710_fff4aa718d8a
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1079,7 +1079,7 @@ padecimientos:
     artifact_source:
       backend: runner_release
       release_id: cancer_esofago_c15_release_9b1f38c2dea0
-    acceptance_fallback_run: cancer_esofago_c15_benchmark_test_2a83a6e8a70f_33cd417d156d
+    acceptance_fallback_run: cancer_esofago_c15_benchmark_test_1d27e82840b1_f184e9927821
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
