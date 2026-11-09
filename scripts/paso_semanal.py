@@ -220,6 +220,7 @@ def consolida(
         print("✖ el candidato legacy no conserva su base byte a byte", file=sys.stderr)
         return 2
     lineas = [legacy_cand.read_bytes()[len(b_legacy) :].decode("utf-8")]
+    vigentes: dict[str, Path] = {}
     for d in publicados():
         obs = observacion_actual(d, root)
         raws = sorted(
@@ -228,7 +229,21 @@ def consolida(
         if len(raws) != 1:
             print(f"✖ {d}: raw de observación ausente o ambiguo en {obs}", file=sys.stderr)
             return 2
-        filas = filas_de_semana(raws[0], anio, n)
+        vigentes[d] = raws[0]
+    from epiforecast.publication.consolidado_base import diferencias_base
+
+    viejas = diferencias_base(base, vigentes, (anio, n))
+    if viejas:
+        for d, periodos in viejas.items():
+            muestra = ", ".join(f"{a}-W{s:02d}" for a, s in periodos[:4])
+            print(
+                f"✖ {d}: la base difiere de su observación vigente en {len(periodos)} semanas "
+                f"({muestra}); ¿es un consolidado sustituido?",
+                file=sys.stderr,
+            )
+        return 2
+    for d, raw in vigentes.items():
+        filas = filas_de_semana(raw, anio, n)
         if len(filas) != 32:
             print(f"✖ {d}: {len(filas)} filas en {anio}-W{n} (se esperan 32)", file=sys.stderr)
             return 2
