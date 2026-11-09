@@ -669,7 +669,11 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Decisión del autor (9-nov-2026), antes de abrir 2025: con rolling_cv_v1 ETS falló cerrado en 2 de
+    # 256 ajustes de desarrollo (Tlaxcala hombres y mujeres, pliegue 2021, mínimos de -0.008 y -0.016
+    # casos). Asma NO es de baja incidencia (mediana semanal por serie base 26 en 2021-2025); la
+    # política deja fuera también a Ridge, que no falló. Sólo compiten los cinco estacionales.
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
