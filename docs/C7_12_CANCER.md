@@ -146,3 +146,19 @@ en todos los productos (48.8 frente a 44.8), y próstata, huesos e hígado en el
 | `cancer_huesos_c40` | `cancer_huesos_c40_benchmark_test_42bc72d33354_3c32f13e2cb3` | `cancer_huesos_c40_release_4448e9604b95` | 2026-11-09 02:44:37 |
 | `cancer_higado_c22` | `cancer_higado_c22_benchmark_test_f3c5e961cd52_0f0275e364ff` | `cancer_higado_c22_release_0340c3e974c5` | 2026-11-09 02:44:40 |
 | `cancer_esofago_c15` | `cancer_esofago_c15_benchmark_test_2a83a6e8a70f_33cd417d156d` | `cancer_esofago_c15_release_9b1f38c2dea0` | 2026-11-09 02:44:43 |
+
+## Auditoría del 9-nov-2026: verdad imputada en la prueba de 2026
+
+La auditoría independiente encontró que nueve cánceres de historia corta (Cuadros 15.3 a 15.5) se
+evaluaron con 1,008 filas producto × semana imputadas en la prueba 2026-W01..W41, aunque el PDF sí
+trae los datos: camelot perdía renglones de estados en 2026_sem09 y 2026_sem20 (y en 2024_sem23 y
+2025_sem11, fuera de la prueba), y las exclusiones con `keep_period` los imputaron. Ejemplo: colon W08
+usó 86 casos frente a 132 impresos. La evaluación cuenta las filas imputadas como observadas.
+
+- **Extracción corregida:** el extractor reintenta con `edge_tol=500` cuando faltan estados y las cinco
+  exclusiones se retiraron; las 32 entidades de cada página recuperada cuadran con su renglón TOTAL
+  impreso (pulmón, estómago y colon W08: 45, 43 y 132).
+- **Sensibilidad (auditoría):** excluyendo las filas imputadas se conservan los 10 aceptados y los 5
+  rechazados; colon queda en +9.945 % nacional frente al control, con límite de +10 %.
+- **Releases sellados sin cambios:** sus datasets conservan la imputación. Reevaluar oficialmente con
+  los datos recuperados reabriría la prueba de 2026, que se abre una vez: es decisión del autor.
