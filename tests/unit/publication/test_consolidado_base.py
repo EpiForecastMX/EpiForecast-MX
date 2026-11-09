@@ -81,3 +81,15 @@ def test_la_serie_sin_desglose_rechaza_acumulados_por_sexo_inventados(
     """A2: la base de una serie sin desglose debe traer H/M vacíos, como se proyecta."""
     fila = f"2026,42,Aguascalientes,Tumor maligno del cuello del útero,2,{h},{m},57.0\n"
     assert _sin_sexo(tmp_path, fila) == {"c53": [(2026, 42)]}
+
+
+@pytest.mark.parametrize("semana", ["2.5", "nan", "inf", "", "dos"])
+def test_una_semana_que_no_es_entera_se_rechaza(tmp_path: Path, semana: str):
+    """Cuarta auditoría, B2: ``int(float("2.5"))`` daba 2 y la fila pasaba por la de la semana 2."""
+    fila = f"2014,{semana},Aguascalientes,Obesidad,10,6,4,\n"
+    with pytest.raises(ValueError, match="Semana"):
+        _con_sexo(tmp_path, fila, _FILA)
+
+
+def test_semanas_enteras_escritas_con_decimal_cero_se_aceptan(tmp_path: Path):
+    assert _con_sexo(tmp_path, "2014.0,2.0,Aguascalientes,Obesidad,10,6,4,\n", _FILA) == {}

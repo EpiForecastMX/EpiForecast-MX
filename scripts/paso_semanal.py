@@ -181,12 +181,14 @@ def filas_de_semana(raw: Path, anio: int, semana: int) -> list[str]:
     import csv
     import io
 
+    from epiforecast.publication.consolidado_base import entero
+
     with raw.open(encoding="utf-8", newline="") as fh:
         lector = csv.DictReader(fh)
         sin_sexo = "Acumulado_total" in (lector.fieldnames or [])
         out: list[str] = []
         for r in lector:
-            if int(float(r["Anio"])) != anio or int(float(r["Semana"])) != semana:
+            if entero(r["Anio"], "Anio") != anio or entero(r["Semana"], "Semana") != semana:
                 continue
             buf = io.StringIO()
             csv.writer(buf, lineterminator="").writerow(
@@ -232,7 +234,11 @@ def consolida(
         vigentes[d] = raws[0]
     from epiforecast.publication.consolidado_base import diferencias_base
 
-    viejas = diferencias_base(base, vigentes, (anio, n))
+    try:
+        viejas = diferencias_base(base, vigentes, (anio, n))
+    except ValueError as exc:
+        print(f"✖ base o raw con una clave inválida: {exc}", file=sys.stderr)
+        return 2
     if viejas:
         for d, periodos in viejas.items():
             muestra = ", ".join(f"{a}-W{s:02d}" for a, s in periodos[:4])
@@ -243,7 +249,11 @@ def consolida(
             )
         return 2
     for d, raw in vigentes.items():
-        filas = filas_de_semana(raw, anio, n)
+        try:
+            filas = filas_de_semana(raw, anio, n)
+        except ValueError as exc:
+            print(f"✖ {d}: clave inválida en el raw: {exc}", file=sys.stderr)
+            return 2
         if len(filas) != 32:
             print(f"✖ {d}: {len(filas)} filas en {anio}-W{n} (se esperan 32)", file=sys.stderr)
             return 2

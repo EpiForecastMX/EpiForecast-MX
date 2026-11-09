@@ -19,6 +19,7 @@ sus copias coincidiera, porque al indexar por clave la última fila ocultaría a
 from __future__ import annotations
 
 import csv
+import math
 from pathlib import Path
 
 Clave = tuple[int, int, str]
@@ -30,8 +31,23 @@ def _num(v: str | None) -> float | None:
     return None if v == "" else float(v)
 
 
+def entero(v: str | None, campo: str) -> int:
+    """Año o semana como entero: acepta ``2`` y ``2.0``; rechaza fracciones, vacíos y no finitos.
+
+    ``int(float("2.5"))`` daba 2 y una semana fraccionaria pasaba por la de su parte entera
+    (cuarta auditoría, 9-nov-2026, B2).
+    """
+    try:
+        x = float((v or "").strip())
+    except ValueError:
+        raise ValueError(f"{campo} no numérico: {v!r}") from None
+    if not math.isfinite(x) or not x.is_integer():
+        raise ValueError(f"{campo} no entero: {v!r}")
+    return int(x)
+
+
 def _clave(r: dict[str, str]) -> Clave:
-    return (int(float(r["Anio"])), int(float(r["Semana"])), r["Entidad"])
+    return (entero(r["Anio"], "Anio"), entero(r["Semana"], "Semana"), r["Entidad"])
 
 
 def _valores(r: dict[str, str], proyecta_sin_sexo: bool) -> Valores:
