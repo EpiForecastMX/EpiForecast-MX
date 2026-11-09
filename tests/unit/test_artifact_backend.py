@@ -267,6 +267,7 @@ def test_obesidad_y_f50_publicadas_solo_desde_su_release():
         "Infecciones respiratorias agudas",
         "Infección de vías urinarias",
         "Gingivitis y enfermedad periodontal",
+        "Asma",
         "Úlceras, gastritis y duodenitis",
         "Tumor maligno de la mama",
         "Tumor maligno del cuello del útero",

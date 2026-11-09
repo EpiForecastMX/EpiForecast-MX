@@ -45,6 +45,7 @@ def test_el_carril_legacy_no_cambia():
         "Infecciones respiratorias agudas",
         "Infección de vías urinarias",
         "Gingivitis y enfermedad periodontal",
+        "Asma",
         "Úlceras, gastritis y duodenitis",
         "Tumor maligno de la mama",
         "Tumor maligno del cuello del útero",
