@@ -39,7 +39,7 @@ The platform uses a **polymorphic Factory pattern** to support multiple forecast
 | Dengue *(extra deliverable)* | A97 | Vector-borne, ~4-5 year epidemic cycle, near-zero off-season series |
 | Generic runner releases (29) | various | Obesity, eating disorders, diabetes, cardiovascular, bulletin radar group and seventeen cancers; see the registry |
 
-Four conditions (Depression, Parkinson's, Alzheimer's and Dengue) run on the legacy multi-model pipeline (333 neuro models plus 99 Dengue series); see [Dengue (Fourth Condition)](#dengue-fourth-condition-extra-deliverable). Twenty-nine more are published from sealed releases of the generic runner (`src/epiforecast/runner/`). The registry (`config/padecimientos.yaml`) decides which ones are public. Releases that failed the 2025 acceptance gate are published with the seasonal control by express order of the author, never as validated. Publication history: `docs/C7_7_PUBLICACION_OBESIDAD.md` through `docs/C7_12_CANCER.md`.
+Four conditions (Depression, Parkinson's, Alzheimer's and Dengue) run on the legacy multi-model pipeline (333 neuro models plus 99 Dengue series); see [Dengue (Fourth Condition)](#dengue-fourth-condition-extra-deliverable). Twenty-nine more are published from sealed releases of the generic runner (`src/epiforecast/runner/`). The registry (`config/padecimientos.yaml`) decides which ones are public. Releases that failed their acceptance test (2025 for most of them; 2026-W01 to W41 for the fifteen cancers with data only since 2023, under policy `rolling_cv_historia_corta_2023_v1`) are published with the seasonal control by express order of the author, never as validated. Publication history: `docs/C7_7_PUBLICACION_OBESIDAD.md` through `docs/C7_12_CANCER.md`.
 
 ---
 
@@ -52,7 +52,7 @@ Four conditions (Depression, Parkinson's, Alzheimer's and Dengue) run on the leg
 - **Model Comparison Engine** -- High-contrast professional charts comparing Real vs. Prophet vs. DeepAR vs. Ensemble vs. Stacking performance across all states and conditions.
 - **Weekly Validation** -- `scripts/genera_validacion_semanal.py` pairs each forecast with the bulletin value of the same week after the release cut; since round W37 it reports the pairs without scoring them.
 - **Out-of-Sample Model Selection** -- Production engines for the 333 neuro series are selected out of sample on the W28-W37 window (round W37, criterion `H3 W28–W37`). Selection metrics are a selection diagnostic, not a published evaluation. Current distribution: Ensemble 109, Stacking 107, Prophet 78, DeepAR 39. `scripts/reselect_motor_2026.py` is the earlier in-sample selector (2026-04-30) and must not be rerun over the release table. The Tableau dataset exposes `modelo_productivo`.
-- **Production Model Table** -- Excel with 3 sheets (Produccion, Detalle Semanal, Análisis Visual); 432 rows: 333 neuro production models plus 99 Dengue series.
+- **Production Model Table** -- Excel with 3 sheets (Produccion, Detalle Semanal, Análisis Visual); 432 rows: 333 neuro production models plus 99 Dengue series. Its 99 Dengue rows are stale (see [Prediction and Tableau](#4-prediction-and-tableau)); the Dengue assignment is governed by `reports/ProdDetails/produccion_dengue.csv`.
 - **Overfitting and Data Leakage Detection** -- Train metrics (RMSE, SMAPE) computed in-sample for all 4 models. HTML report shows diagnostic badges: Overfitting (test/train SMAPE ratio) and Leakage (suspiciously low train SMAPE).
 - **Hybrid Fallback** -- Zero-incidence and low-confidence (<5 cases/52 weeks) state models automatically defer to regional aggregates to ensure 100% forecast coverage. Integer-rounded predictions (no fractional cases).
 - **MLflow Experiment Tracking** -- Optional integration logs all training runs (metrics, hyperparameters, elapsed time) to MLflow. Non-intrusive: no-op when not installed. Install with `pip install -e ".[mlflow]"`, browse with `mlflow server --backend-store-uri ./mlruns`.
@@ -343,6 +343,13 @@ The Tableau dataset (`data/processed/tableau.csv`) includes:
 
 The production Excel (`reports/ProdDetails/tabla_333_modelos_produccion.xlsx`) has 3 sheets (the third, Análisis Visual, holds embedded charts):
 
+> **Dengue rows are stale.** The 99 Dengue rows of this workbook keep an older CV-based assignment
+> (DeepAR 56, Prophet 30, Stacking 8, Ensemble 5, criterion `cv_smape (sin realidad reciente)`) and
+> differ from the published one in 43 series, the national ones included. The source that governs
+> Dengue is `reports/ProdDetails/produccion_dengue.csv` (DeepAR 53 / Prophet 46, frozen by round
+> W37); the public site and the EpiBot read that file. The neuro rows match the W37 selection.
+> Regenerating the workbook is a separate, reviewed change.
+
 **Sheet 1 - Produccion** (432 rows x 55 columns: 333 neuro plus 99 Dengue):
 - Per-model metrics (RMSE, MAE, SMAPE, MASE) for all 4 algorithms
 - `casos_52_semanas_futuro`: Total projected cases for 52-week horizon (integer)
@@ -390,34 +397,29 @@ python scripts/compliance_check.py
 
 Comparison charts are saved in `reports/forecasts/comparacion_modelos/` using CDMX timezone (UTC-6) for audit logs. The Avance 5 report generates `reports/ProdDetails/avance5_modelo_final.md`, `reports/ProdDetails/tabla_333_modelos_produccion.xlsx` (Excel with 3 sheets), and 18 analysis charts in `reports/figures/ModeloFinal/`.
 
-#### Prospective Out-of-Sample Validation (frozen forecast)
+#### Frozen forecast of 5-Jun-2026 (historical stage)
 
-> **Read this before trusting `smape_real_2026`.** The engine-selection metric is
-> **in-sample**: production models are refit on the full series (2026 H1 included)
-> and scored on their own in-sample fit. To measure honest out-of-sample skill we
-> freeze today's forecast and compare it against bulletins that arrive **later**.
-> Full audit: `docs/research/hallazgos/DENGUE_AUDITORIA_LEAKAGE.md`.
+> **Historical stage, not the current procedure.** In June 2026 engine selection used
+> `smape_real_2026`, an **in-sample** metric (models refit on the full series, 2026 H1 included, and
+> scored on their own fit; audit in `docs/research/hallazgos/DENGUE_AUDITORIA_LEAKAGE.md`). To measure
+> honest skill the forecast was frozen on 5-Jun-2026 (cut W20,
+> `reports/ProdDetails/congelado/forecast_congelado_20260605.csv`) and compared with later bulletins.
+> Round W37 replaced that selection: the 333 neuro series and the 99 Dengue series are now assigned
+> out of sample on W28-W37 (criterion `H3 W28–W37`), and the 29 runner releases have their own
+> acceptance gates and frozen prospective gates (`config/publication/<id>/prospective_gate.json`).
+> The June decision rule (switch selection if OOS exceeds about 2x in-sample) is part of that
+> history; it does not authorize changing a frozen assignment.
+
+The tooling is kept for reproducing that stage:
 
 ```bash
-# Freeze the current productive forecast (future tail only, ds > cutoff = unseen).
-# Covers the 4 legacy conditions; runner releases use their own frozen prospective gates (prospective_week.py).
-make congela-pronostico
-
-# Validate the frozen forecast against the current bulletin (honest OOS SMAPE/MAE).
-# Only scores weeks AFTER the freeze cutoff (genuinely unseen when frozen).
-make valida-prospectivo
+make congela-pronostico   # freeze the productive forecast (future tail only, ds > cutoff)
+make valida-prospectivo   # score a frozen forecast against later bulletins (weeks after the cut)
 ```
 
-`freeze` writes `reports/ProdDetails/congelado/forecast_congelado_<YYYYMMDD>.csv`
-plus the `forecast_congelado_latest.txt` pointer; `validar` writes
-`reports/ProdDetails/validacion_prospectiva.html` (+ `.csv`).
-
-**Golden rule (do not forget):** after each new bulletin, run `make valida-prospectivo`
-**before** retraining. Retraining first makes the newly arrived week becomes in-sample again and the test is lost. **Do not
-re-freeze every week** (that resets the experiment); re-freeze only to set a new
-baseline. Decision rule: if OOS SMAPE stays close to in-sample, the selection is sound;
-if OOS exceeds ~2x in-sample, switch selection to `smape_prod` (rolling CV) or to a
-locked forecast trained through end-2025.
+`freeze` writes `reports/ProdDetails/congelado/forecast_congelado_<YYYYMMDD>.csv` plus the
+`forecast_congelado_latest.txt` pointer; `validar` writes
+`reports/ProdDetails/validacion_prospectiva.html` (+ `.csv`). Re-freezing resets the experiment.
 
 ### 6. Code Quality
 
@@ -460,14 +462,13 @@ The full procedure lives in the `padecimiento-epiforecast` skill (`references/pa
 Historical note: the 11-step `update-week` refresh and the P1/P1b W33 publication (2-Sep-2026) are
 documented in `CLAUDE.md` and the git history.
 
-> **Before retraining on a new bulletin, run `make valida-prospectivo`** to score the frozen forecast
-> against the just-arrived weeks while they are still genuinely out-of-sample.
-
 ### Current Data Snapshot
 
 - **Published cut:** W42/2026 for the four legacy conditions and the bulletin radar; the 29 runner
-  releases observe through 2026-W41 (their 52-week horizon runs 2026-W42 to 2027-W41). A fail-closed
-  parity rule forbids mixed public cuts.
+  releases observe through 2026-W41. Forecast origin and horizon are fixed per release and do not
+  move with the observations: 28 releases have origin 2026-W41 and horizon 2026-W42 to 2027-W41;
+  Obesity keeps origin 2026-W26 and horizon 2026-W27 to 2027-W26. A fail-closed parity rule forbids
+  mixed public cuts.
 - **Knowledge base:** about 260 KB (333 neuro production models, a `dengue` section, 26 stats keys,
   6 bulletin sections); each runner condition ships its own `knowledge.json` under
   `publication/<id>/<release>/` in the dashboard repo.
@@ -561,16 +562,23 @@ Beyond the three neurological/mental-health conditions, EpiForecast-MX incorpora
 
 **Live.** Public forecast page at **epiforecast.mx/dengue** (`dengue_forecast.json` + `dengue_serie.json` + showcase/EDA charts), and the **EpiBot** assistant answers Dengue questions (`answerDengue` handler, fed by a `dengue` section in `knowledge.json`). Per-engine error metrics from the W28-W37 selection window are a selection diagnostic and are not published; they stay in the review evidence.
 
+The weekly Dengue update goes through the legacy v5 producer (lane 1 of the [Weekly Step](#8-weekly-step)),
+which keeps the frozen W37 assignment. The targets below are research and rebuild tooling, not the
+weekly procedure:
+
 ```bash
-# End-to-end Dengue pipeline
 make dengue-extract            # parse A97.x tables from bulletins
 make dengue-merge              # idempotent merge into the consolidated (+ DVC)
 make dengue-prep               # filter -> clean -> transform -> INEGI map
 make dengue-train-estatal MODELO=prophet   # (and deepar / ensemble / stacking)
 make predict-all ARGS="padecimiento.tipo='Dengue' padecimiento.modelado_hibrido=False"
-make dengue-produccion         # DeepAR/Prophet per-series selector
+make dengue-produccion         # research selector (Prophet/DeepAR, recent-reality SMAPE)
 make dengue-web                # public charts + JSON + EpiBot knowledge.json
 ```
+
+`make dengue-produccion` refuses to overwrite the frozen W37 assignment in
+`produccion_dengue.csv`: its rule is not the out-of-sample W28-W37 selection. Replacing that
+assignment is an author's decision, not a routine step.
 
 ---
 
