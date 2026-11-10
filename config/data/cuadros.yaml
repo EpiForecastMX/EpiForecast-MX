@@ -198,6 +198,39 @@ cuadro_groups:
     n_states_expected: 32
     backend: camelot_stream
 
+  infecciosas_respiratorias_neumonias:
+    # Neumonías y bronconeumonías (J12-J18 excepto J18.2, J13 y J14; hasta 2024 «J12, J15-J18
+    # excepto J18.2», el mismo conjunto). Discovery del 10-nov-2026 sobre 670 boletines: la página
+    # con «bronconeumon» y entidades es el Cuadro 5.1 hasta 2024_sem06 (527 boletines) y el 5.2
+    # desde 2024_sem07 (142). En el 5.1 es el segundo bloque, tras IRA: último de 8 columnas hasta
+    # 2020_sem07, intermedio antes de Covid-19 con 11 (2020) o 12. En el 5.2 es el primero de 8,
+    # antes de Covid-19: el mismo ancho que antes de 2020 en otra posición, por eso el periodo.
+    page_anchors: ["bronconeumon"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1           # «hasta la semana N-1» en el boletín N, en ambos cuadros
+    inner_block_columns: {8: [4, 4], 11: [7, 4], 12: [8, 4]}
+    periodos:
+      - desde: "2024_sem07"
+        inner_block_columns: null
+        first_block_columns: {8: 4}
+    diseases:
+      - id: neumonias_j12
+        keyword: "Neumonias_J12"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [neumonias_j12]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
   vigilancia_sindromatica_ivu:
     # CUADRO 12: Infección de vías urinarias (N30, N34, N39.0), último de dos bloques (8 columnas;
     # 9 en 2014_sem02-03 por una columna vacía del bloque vecino).
