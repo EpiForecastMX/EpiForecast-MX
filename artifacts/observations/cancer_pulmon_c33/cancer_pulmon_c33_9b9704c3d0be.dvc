@@ -1,0 +1,6 @@
+outs:
+- md5: 619fed09a838d15638e5ad29c0f90dd3.dir
+  size: 11597103
+  nfiles: 20
+  hash: md5
+  path: cancer_pulmon_c33_9b9704c3d0be

@@ -1,0 +1,28 @@
+{
+  "bulletins": [
+    {
+      "after_emission": {
+        "captured": true,
+        "created": true,
+        "first_available": true
+      },
+      "bytes": 2350631,
+      "captured_utc": "2026-11-10T00:09:39.456413+00:00",
+      "first_available_evidence": "Cabecera HTTP Last-Modified de https://www.gob.mx/cms/uploads/attachment/file/1115232/sem43.pdf (Mon, 09 Nov 2026 18:53:35 GMT), consultada el 2026-11-10T00:05Z; sha256 f24aea9306d95d1489d3a8f373527918db1ae31a9c6a6f6aeab63826842f3c8a",
+      "first_available_utc": "2026-11-09T18:53:35+00:00",
+      "name": "2026_sem43.pdf",
+      "pdf_metadata": {
+        "created_raw": "D:20261109115229-06'00'",
+        "created_utc": "2026-11-09T17:52:29+00:00",
+        "error": null,
+        "modified_raw": "D:20261109115229-06'00'",
+        "modified_utc": "2026-11-09T17:52:29+00:00"
+      },
+      "sha256": "f24aea9306d95d1489d3a8f373527918db1ae31a9c6a6f6aeab63826842f3c8a"
+    }
+  ],
+  "disease_id": "cancer_cuerpo_utero_c54",
+  "forecast_emitted_at": "2026-11-09T01:36:37.007066+00:00",
+  "release_id": "cancer_cuerpo_utero_c54_release_3523a60b29ef",
+  "schema": "bulletin_provenance.v1"
+}
