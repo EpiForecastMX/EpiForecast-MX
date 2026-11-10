@@ -185,3 +185,42 @@ def test_la_reparacion_no_aplica_a_un_primer_bloque(monkeypatch, tmp_path):
     salida = ce.extract_cuadro_from_pdf(str(pdf), "no_transmisibles_ulceras", "ulceras_k25")
     assert not salida["valid"]
     assert all("despegar" not in kw for kw in llamadas)
+
+
+@pytest.mark.unit
+def test_el_periodo_sustituye_y_retira_claves():
+    spec = {"a": 1, "b": {8: [4, 4]}, "periodos": [{"desde": "2024_sem07", "b": None, "c": 2}]}
+    assert ce.spec_del_periodo(spec, 2024, 6) == {"a": 1, "b": {8: [4, 4]}}
+    assert ce.spec_del_periodo(spec, 2024, 7) == {"a": 1, "c": 2}
+    assert ce.spec_del_periodo(spec, 2026, 1) == {"a": 1, "c": 2}
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("archivo", "total", "inicio"),
+    [
+        # Cuadro 5.1: tras IRA, último de 8 hasta 2020_sem07 e intermedio antes de Covid-19.
+        ("2019_sem10.pdf", 8, 5),
+        ("2020_sem20.pdf", 11, 5),
+        ("2024_sem06.pdf", 12, 5),
+        # Cuadro 5.2 desde 2024_sem07: primero de 8, antes de Covid-19. Mismo ancho, otra posición.
+        ("2024_sem07.pdf", 8, 1),
+        ("2026_sem43.pdf", 8, 1),
+    ],
+)
+def test_neumonias_toma_su_bloque_segun_el_periodo(monkeypatch, tmp_path, archivo, total, inicio):
+    pdf = tmp_path / archivo
+    pdf.write_bytes(b"%PDF")
+    tablas = [type("T", (), {"df": _tabla(total)})()]
+    monkeypatch.setattr(ce, "find_cuadro_page", lambda *_a: 7)
+    monkeypatch.setattr(ce.camelot, "read_pdf", lambda *_a, **_k: tablas)
+    monkeypatch.setattr(ce, "clean_df", lambda df: df)
+    monkeypatch.setattr(ce, "_restrict_to_states", lambda df: df)
+    salida = ce.extract_cuadro_from_pdf(
+        str(pdf), "infecciosas_respiratorias_neumonias", "neumonias_j12"
+    )
+    assert salida["valid"]
+    assert salida["layout"] == "4col_prev"
+    assert salida["df"]["Casos_semana"].iloc[0] == 10 + (inicio - 1)
+    assert salida["df"]["Acumulado_anio_anterior"].iloc[0] == 10 + (inicio + 2)
+    assert salida["df"]["Padecimiento"].iloc[0] == "Neumonías y bronconeumonías"

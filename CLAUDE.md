@@ -28,6 +28,15 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
+## Neumonías y bronconeumonías con el control — 10-nov-2026
+
+Neumonías y bronconeumonías (J12-J18 excepto J18.2, J13 y J14) reprobó el gate de 2025 en el total
+nacional (sMAPE 18.0 frente a 13.4 del control) y está publicada con el control por orden del autor, nunca
+como validada. El bloque pasa del Cuadro 5.1 al 5.2 en 2024_sem07 con el mismo ancho: el grupo de cuadro
+declara `periodos`. Consolidado vigente de W42: `ingestion_observado_W43/candidato_con_neumonias`
+(sha256 `3e3cf0fd…`), base de la semana siguiente. Son treinta y un padecimientos del runner en la paridad
+semanal. Detalle en `docs/C7_14_NEUMONIAS.md`.
+
 ## Boletín 43 integrado — 9-nov-2026
 
 Primer paso semanal de punta a punta con un boletín real (`sem43.pdf`, sha256 `f24aea93…842f3c8a`,

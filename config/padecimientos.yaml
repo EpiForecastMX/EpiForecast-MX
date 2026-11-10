@@ -1246,3 +1246,36 @@ padecimientos:
       color: "#4ADE80"
       label: "Tumor maligno del riñón"
       nombre_completo: "Tumor maligno del riñón (C64)"
+
+  - id: neumonias_j12
+    data_name: "Neumonías y bronconeumonías"
+    artifact_key: Neumonias_J12
+    slug: neumonias_j12
+    display_name: "Neumonías y bronconeumonías"
+    cie_codes: ["J12", "J15", "J16", "J17", "J18"]
+    aliases: ["neumonias y bronconeumonias", "neumonias", "neumonia", "bronconeumonias", "bronconeumonia", "pulmonia", "j12-j18"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: infecciosas_respiratorias_neumonias
+    exposure_source_id: inegi_cpv2020_static
+    # Publicada con el CONTROL estacional por orden del autor (10-nov-2026): el gate de 2025 rechazó
+    # el portafolio. Nunca se presenta como validada.
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    artifact_source:
+      backend: runner_release
+      release_id: neumonias_j12_release_5814ddca1860
+    # El gate de 2025 rechazó el portafolio (nacional 18.0 frente a 13.4 del control); el autor
+    # ordenó publicar el control (10-nov-2026), como IRA y F50.
+    acceptance_fallback_run: neumonias_j12_benchmark_test_6e4224ea51c8_9f5d2f8fd1a6
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#65A30D"
+      label: "Neumonías y bronconeumonías"
+      nombre_completo: "Neumonías y bronconeumonías (J12-J18 excepto J18.2, J13 y J14)"

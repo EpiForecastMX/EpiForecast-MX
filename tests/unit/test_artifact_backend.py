@@ -286,6 +286,7 @@ def test_obesidad_y_f50_publicadas_solo_desde_su_release():
         "Tumores malignos del encéfalo y otras partes del sistema nervioso central",
         "Tumores malignos de los huesos y de los cartílagos articulares",
         "Tumor maligno del riñón",
+        "Neumonías y bronconeumonías",
     ]
     # El carril legacy (all_forecast, tabla_333, zoom) sigue siendo exactamente los cuatro.
     assert [d.data_name for d in registry.legacy_published()] == [
