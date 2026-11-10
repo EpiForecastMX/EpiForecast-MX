@@ -1264,6 +1264,9 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
+    # El gate de 2025 rechazó el portafolio (nacional 18.0 frente a 13.4 del control); el autor
+    # ordenó publicar el control (10-nov-2026), como IRA y F50.
+    acceptance_fallback_run: neumonias_j12_benchmark_test_6e4224ea51c8_9f5d2f8fd1a6
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
