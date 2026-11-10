@@ -1,0 +1,6 @@
+outs:
+- md5: b1c837cb36d2911c52253177d5d0f3ce.dir
+  size: 11189704
+  nfiles: 20
+  hash: md5
+  path: cancer_rinon_c64_a6e6ad2c2ec9

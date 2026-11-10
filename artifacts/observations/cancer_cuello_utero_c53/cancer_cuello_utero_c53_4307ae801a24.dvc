@@ -1,0 +1,6 @@
+outs:
+- md5: c3f72206f64453ba06be66051a5f7e23.dir
+  size: 15240285
+  nfiles: 20
+  hash: md5
+  path: cancer_cuello_utero_c53_4307ae801a24

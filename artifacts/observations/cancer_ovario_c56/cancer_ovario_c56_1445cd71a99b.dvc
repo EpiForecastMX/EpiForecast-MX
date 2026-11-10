@@ -1,0 +1,6 @@
+outs:
+- md5: c181ba47189a6806c11f4f92210ad955.dir
+  size: 5787531
+  nfiles: 20
+  hash: md5
+  path: cancer_ovario_c56_1445cd71a99b
