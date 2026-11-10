@@ -1259,11 +1259,17 @@ padecimientos:
     batch: standalone
     extraction_group: infecciosas_respiratorias_neumonias
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: neumonias_j12_refit_final_9fe0414b00c7_dc007321409a
+      forecast_run_id: neumonias_j12_forecast_h52_dc007321409a_4e880f5255b7
+      policy_digest: dd6d4a0274a6f8bb0f51d27628294b7db694b792966abaa92528dc2765020b2a
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # El gate de 2025 rechazó el portafolio (nacional 18.0 frente a 13.4 del control); el autor
     # ordenó publicar el control (10-nov-2026), como IRA y F50.
     acceptance_fallback_run: neumonias_j12_benchmark_test_6e4224ea51c8_9f5d2f8fd1a6
