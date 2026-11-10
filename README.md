@@ -39,7 +39,7 @@ The platform uses a **polymorphic Factory pattern** to support multiple forecast
 | Dengue *(extra deliverable)* | A97 | Vector-borne, ~4-5 year epidemic cycle, near-zero off-season series |
 | Generic runner releases (30) | various | Obesity, eating disorders, diabetes, cardiovascular, bulletin radar group (asthma included) and seventeen cancers; see the registry |
 
-Four conditions (Depression, Parkinson's, Alzheimer's and Dengue) run on the legacy multi-model pipeline (333 neuro models plus 99 Dengue series); see [Dengue (Fourth Condition)](#dengue-fourth-condition-extra-deliverable). Thirty more are published from sealed releases of the generic runner (`src/epiforecast/runner/`). The registry (`config/padecimientos.yaml`) decides which ones are public. Releases that failed their acceptance test (2025 for most of them; 2026-W01 to W41 for the fifteen cancers with data only since 2023, under policy `rolling_cv_historia_corta_2023_v1`) are published with the seasonal control by express order of the author, never as validated. Publication history: `docs/C7_7_PUBLICACION_OBESIDAD.md` through `docs/C7_12_CANCER.md`.
+Four conditions (Depression, Parkinson's, Alzheimer's and Dengue) run on the legacy multi-model pipeline (333 neuro models plus 99 Dengue series); see [Dengue (Fourth Condition)](#dengue-fourth-condition-extra-deliverable). Thirty-one more are published from sealed releases of the generic runner (`src/epiforecast/runner/`). The registry (`config/padecimientos.yaml`) decides which ones are public. Releases that failed their acceptance test (2025 for most of them; 2026-W01 to W41 for the fifteen cancers with data only since 2023, under policy `rolling_cv_historia_corta_2023_v1`) are published with the seasonal control by express order of the author, never as validated. Publication history: `docs/C7_7_PUBLICACION_OBESIDAD.md` through `docs/C7_14_NEUMONIAS.md`.
 
 ---
 
@@ -405,7 +405,7 @@ Comparison charts are saved in `reports/forecasts/comparacion_modelos/` using CD
 > honest skill the forecast was frozen on 5-Jun-2026 (cut W20,
 > `reports/ProdDetails/congelado/forecast_congelado_20260605.csv`) and compared with later bulletins.
 > Round W37 replaced that selection: the 333 neuro series and the 99 Dengue series are now assigned
-> out of sample on W28-W37 (criterion `H3 W28–W37`), and the 30 runner releases have their own
+> out of sample on W28-W37 (criterion `H3 W28–W37`), and the 31 runner releases have their own
 > acceptance gates and frozen prospective gates (`config/publication/<id>/prospective_gate.json`).
 > The June decision rule (switch selection if OOS exceeds about 2x in-sample) is part of that
 > history; it does not authorize changing a frozen assignment.
@@ -452,7 +452,7 @@ The weekly step has three lanes, and none of them publishes a partial week:
 
 1. **Legacy conditions** (Depression, Parkinson, Alzheimer, Dengue) through the v5 producer kept
    outside the repository.
-2. **The 30 runner releases** through `make semana-revisa`, `make semana-observa PDF=… SALIDA=… [WRITE=1]`,
+2. **The 31 runner releases** through `make semana-revisa`, `make semana-observa PDF=… SALIDA=… [WRITE=1]`,
    `python -m scripts.paso_semanal consolida` and `make semana-vistas N=… FE=…`, failing closed for all
    if any one fails. `consolida` keeps the base byte for byte, rejects a superseded or altered base and
    runs `revisa_consolidado` (parity of every published condition).
@@ -464,9 +464,10 @@ documented in `CLAUDE.md` and the git history.
 
 ### Current Data Snapshot
 
-- **Published cut:** W42/2026 for the four legacy conditions and the bulletin radar; the 30 runner
-  releases observe through 2026-W41. Forecast origin and horizon are fixed per release and do not
-  move with the observations: 28 releases have origin 2026-W41 and horizon 2026-W42 to 2027-W41;
+- **Published cut:** bulletin 43 of 2026 for the four legacy conditions and the bulletin radar; the
+  31 runner releases observe through 2026-W42. Forecast origin and horizon are fixed per release and
+  do not move with the observations: 29 releases have origin 2026-W41 and horizon 2026-W42 to
+  2027-W41; pneumonia and bronchopneumonia has origin 2026-W42 and horizon 2026-W43 to 2027-W42;
   Obesity keeps origin 2026-W26 and horizon 2026-W27 to 2027-W26. A fail-closed parity rule forbids
   mixed public cuts.
 - **Knowledge base:** about 260 KB (333 neuro production models, a `dengue` section, 26 stats keys,
