@@ -64,6 +64,7 @@ def test_el_contrato_separa_legacy_de_release():
         "tumores malignos del encefalo y otras partes del sistema nervioso central",
         "tumores malignos de los huesos y de los cartilagos articulares",
         "tumor maligno del rinon",
+        "neumonias y bronconeumonias",
     )
     assert c.releases["obesidad"] == (_OBESIDAD, _RELEASE)
     assert sorted(i for i, _ in c.releases.values()) == [
@@ -95,10 +96,11 @@ def test_el_contrato_separa_legacy_de_release():
         "leucemia_c91",
         "linfoma_hodgkin_c81",
         "linfoma_no_hodgkin_c82",
+        "neumonias_j12",
         "obesidad",
         "ulceras_k25",
     ]
-    # La paridad de corte cubre a los treinta; las series legacy siguen siendo 3×111 + 99.
+    # La paridad de corte cubre a los treinta y uno; las series legacy siguen siendo 3×111 + 99.
     assert c.padecimientos == (*c.legado, *c.release)
     assert c.legado == ("depresion", "parkinson", "alzheimer", "dengue")
     assert len(c.claves_esperadas()) == 432
@@ -145,6 +147,7 @@ def test_la_paridad_de_corte_incluye_al_publicado_del_runner(tmp_path):
         "Tumor maligno de la mama": 42,
         "Tumor maligno del cuello del útero": 42,
         "Tumor maligno del riñón": 42,
+        "Neumonías y bronconeumonías": 42,
         "Tumor maligno de la próstata": 42,
         "Tumores malignos de los huesos y de los cartílagos articulares": 42,
         "Tumor maligno del hígado y de las vías biliares intrahepáticas": 42,
@@ -179,7 +182,7 @@ def test_un_publicado_del_runner_ausente_del_consolidado_falla(tmp_path):
 def test_revisa_releases_falla_cerrado_sin_bundle_ni_estado(tmp_path):
     resultado = revisa_releases(tmp_path, ContratoCobertura.canonico())
     assert not resultado.pasa
-    assert len(resultado.problemas) == 30
+    assert len(resultado.problemas) == 31
     assert any("release obesidad" in p for p in resultado.problemas)
     assert any("release diabetes tipo i:" in p for p in resultado.problemas)
 

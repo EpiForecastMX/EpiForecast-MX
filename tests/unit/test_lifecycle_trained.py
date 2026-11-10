@@ -64,6 +64,7 @@ def test_el_carril_legacy_no_cambia():
         "Tumores malignos del encéfalo y otras partes del sistema nervioso central",
         "Tumores malignos de los huesos y de los cartílagos articulares",
         "Tumor maligno del riñón",
+        "Neumonías y bronconeumonías",
     ]
 
 
