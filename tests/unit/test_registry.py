@@ -113,6 +113,7 @@ def test_cie_map():
         "C70": "Tumores malignos del encéfalo y otras partes del sistema nervioso central",
         "C40": "Tumores malignos de los huesos y de los cartílagos articulares",
         "C64": "Tumor maligno del riñón",
+        "J12": "Neumonías y bronconeumonías",
     }
 
 
