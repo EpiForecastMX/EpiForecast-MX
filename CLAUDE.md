@@ -28,6 +28,16 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
+## Boletín 43 integrado — 9-nov-2026
+
+Primer paso semanal de punta a punta con un boletín real (`sem43.pdf`, sha256 `f24aea93…842f3c8a`,
+disponible en gob.mx desde 2026-11-09 18:53:35 UTC). Los cuatro legacy avanzan al boletín 43 con el
+productor v5 y los 30 del runner registran la observación 2026-W42: Obesidad PASS 4/4 y los otros 29 a
+1/4, sin ningún FAIL. Para Asma esa disponibilidad es anterior a su emisión
+(`after_emission.first_available: false`). Consolidado vigente:
+`ingestion_observado_W43/candidato_completo` (sha256 `be9883bc…`, paridad PASS para los 34), que sustituye
+a `candidato_con_asma` como base de la semana siguiente. Covid-19: emisión `2026-W43.json`.
+
 ## Asma publicada — 9-nov-2026
 
 Asma (J45, J46) superó el gate de 2025 con `rolling_cv_baja_incidencia_v1`, política que eligió el autor
