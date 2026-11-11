@@ -28,6 +28,17 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
+## Sin boletín 44 y EPI con el radar — 10-nov-2026
+
+El índice oficial de gob.mx, consultado el 2026-11-11 04:44:58Z (22:44 del 10-nov en Ciudad de México),
+lista 43 boletines de 2026 y el último es `sem43.pdf`: no hay semana nueva, así que no se registró
+ninguna observación ni se tocó el consolidado (`candidato_con_neumonias` sigue siendo la base). El sitio
+servido coincidía con el frontend `main` en los 31 `vista.json` (corte W42), catálogo, punteros,
+`knowledge.json`, `news.json` y `assets/boletin/actual.json` (boletín 43). EPI ahora lee esa misma foto
+del radar y, para las categorías no modeladas, responde con las cifras impresas del cuadro y su
+estado, sin pronóstico (frontend PR #86, `epibot/js/radar_boletin.js`); los temas sensibles siguen en
+la respuesta de crisis. El commit del bot `69e761f3` (registro del 43, `[skip ci]`) no tenía CI propio.
+
 ## Neumonías y bronconeumonías con el control — 10-nov-2026
 
 Neumonías y bronconeumonías (J12-J18 excepto J18.2, J13 y J14) reprobó el gate de 2025 en el total
