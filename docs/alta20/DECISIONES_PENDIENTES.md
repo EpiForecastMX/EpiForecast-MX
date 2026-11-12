@@ -71,7 +71,7 @@ Motor que falla cerrado por etapa de desarrollo (sólo se listan los que fallan;
 
 ## 2. Controles de los rechazos
 
-**Decidido en parte (12-nov-2026, noche):** el autor autorizó el control de diez
+**Decidido en parte (12-nov-2026):** el autor autorizó el control de diez
 (`AUTORIZACION_CONTROLES_10.md`). Siguen sin control, y sin orden, displasia_severa_n87, salmonelosis_a02,
 tifoidea_a01, escarlatina_a38 y hepatitis_c_b17. Texto original:
 

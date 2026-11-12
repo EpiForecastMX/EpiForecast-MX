@@ -36,10 +36,10 @@ en curso, y diez controles estacionales no validados por autorización nominal d
 `config/padecimientos.yaml` (lifecycle) y `publication/catalog.json` del frontend; guía
 `docs/C7_15_ALTA20.md`; decisiones pendientes en `docs/alta20/DECISIONES_PENDIENTES.md`. Base semanal de W42:
 `ingestion_observado_W43/candidato_con_alta20_controles10` (sha256 `fad3c95c…`). Cierre del lote: backend
-`bca67a68` (CI verde), frontend `939e1d86` (versión servida comprobada por contenido). Las secciones
-inferiores con 31, 36 o 41 del runner, o con otra base, son historia.
+`bca67a68` (CI verde), frontend `939e1d86` (versión servida comprobada por contenido). Cualquier otra cifra o
+base en secciones fechadas inferiores es historia.
 
-## Diez controles autorizados: meta de veinte alcanzada — 12-nov-2026 (noche)
+## Diez controles autorizados: meta de veinte alcanzada — 12-nov-2026
 
 El autor autorizó por nombre publicar el control estacional de diez rechazos de 2025 («Autorizar estos diez
 controles», `docs/alta20/AUTORIZACION_CONTROLES_10.md`): quemaduras, insuficiencia venosa periférica,
