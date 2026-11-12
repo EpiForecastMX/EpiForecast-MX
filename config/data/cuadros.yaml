@@ -1599,13 +1599,16 @@ cuadro_groups:
   alta10b_absceso_hepatico_a064:
     # Absceso hepático amebiano (A06.4): último bloque (tras A05 y amebiasis intestinal) hasta
     # 2024_sem06 y primero (con protozoarios) desde 2024_sem07. 31 boletines de 2014 no imprimen el
-    # código: se ancla por nombre.
+    # código: se ancla por nombre. Hasta 2015_sem01 el bloque se imprime sin año anterior (3 columnas,
+    # 11 en la página): leer 4 tomaba el acumulado de amebiasis como semana (2014 sumaba 9.2 millones).
     page_anchors: ["absceso"]
     state_markers: ["zacatecas", "tamaulipas"]
     year_week_source: filename
     observation_lag_weeks: 1
-    last_block_columns: {12: 4, 11: 4}
+    last_block_columns: {12: 4, 11: 3}
     periodos:
+      - desde: "2015_sem02"
+        last_block_columns: {12: 4, 11: 4}
       - desde: "2024_sem07"
         last_block_columns: null
         first_block_columns: {8: 4}
