@@ -799,6 +799,9 @@ cuadro_groups:
     state_markers: ["zacatecas", "tamaulipas"]
     year_week_source: filename
     observation_lag_weeks: 1
+    # Desde 2024_sem50 camelot entrega cada entidad en dos renglones con el primer valor en la columna
+    # del nombre (2025_sem04, página 23): sin esta reparación esos boletines se leían como ceros.
+    valor_en_columna_nombre: true
     inner_block_columns: {12: [8, 4]}
     periodos:
       - desde: "2024_sem07"
@@ -1503,6 +1506,9 @@ cuadro_groups:
     state_markers: ["zacatecas", "tamaulipas"]
     year_week_source: filename
     observation_lag_weeks: 1
+    # Desde 2024_sem50 camelot entrega cada entidad en dos renglones con el primer valor en la columna
+    # del nombre (2025_sem04, página 23): sin esta reparación esos boletines se leían como ceros.
+    valor_en_columna_nombre: true
     last_block_columns: {12: 4, 8: 4, 7: 4}
     diseases:
       - id: helmintiasis_b65

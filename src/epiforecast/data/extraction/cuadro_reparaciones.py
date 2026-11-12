@@ -93,3 +93,31 @@ def despega_primera_columna(df: pd.DataFrame) -> pd.DataFrame:
     out = out[sorted(out.columns)]
     out.columns = pd.RangeIndex(out.shape[1])
     return out
+
+
+def alinea_valor_en_nombre(df: pd.DataFrame) -> pd.DataFrame:
+    """Une valores y entidad cuando el primer valor cae en la columna del nombre.
+
+    Desde 2024_sem50 la página de giardiasis y otras helmintiasis sale de camelot con cada entidad en
+    dos renglones: arriba los valores, con el primero («-» o un número) en la columna del nombre y la
+    segunda columna vacía, y abajo el nombre sin valores. ``alinea_renglones`` no lo une porque el
+    renglón de valores no tiene la columna del nombre vacía, y ``reshape`` lo leía como ceros con
+    estado ``ok``. Aquí el primer valor pasa a la segunda columna y el renglón se une con el nombre.
+    Sólo actúa sobre ese patrón exacto y sólo en los grupos que lo declaran
+    (``valor_en_columna_nombre: true``).
+    """
+    filas = df.astype(str).to_numpy(copy=True)
+    if filas.shape[1] < 3:
+        return pd.DataFrame(filas, index=df.index, columns=df.columns)
+    for i in range(1, len(filas)):
+        nombre = filas[i, 0].strip()
+        con_nombre = nombre != "" and not _NUMERO_SUELTO.match(nombre)
+        sin_valores = bool((filas[i, 1:] == "").all())
+        previa = filas[i - 1]
+        valor_en_nombre = bool(_NUMERO_SUELTO.match(previa[0].strip())) and previa[1].strip() == ""
+        con_mas_valores = bool((previa[2:] != "").any())
+        if con_nombre and sin_valores and valor_en_nombre and con_mas_valores:
+            filas[i, 1] = previa[0].strip()
+            filas[i, 2:] = previa[2:]
+            filas[i - 1, :] = ""
+    return pd.DataFrame(filas, index=df.index, columns=df.columns)
