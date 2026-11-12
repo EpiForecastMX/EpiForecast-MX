@@ -1,8 +1,11 @@
 # Decisiones pendientes del autor (lote alta20, 12-nov-2026)
 
-Ninguna se ha tomado. Lo que sigue son cifras para decidir, no recomendaciones de política.
+**Actualización de la tarde del 12-nov-2026.** El punto 1 ya se decidió: el autor autorizó la política de
+cinco motores para los 17 (`AUTORIZACION_POLITICA_17.md`). Resultado de la prueba única de 2025: cinco aceptados
+y publicados, doce rechazados (cifras en `docs/C7_15_ALTA20.md`, «Lote 17»). Siguen pendientes los puntos 2 a 4.
+Lo que sigue son cifras para decidir, no recomendaciones de política.
 
-## 1. Política para los detenidos por ETS o Ridge
+## 1. Política para los detenidos por ETS o Ridge (decidida: ver arriba)
 
 `rolling_cv_v1` exige ETS y Ridge como incumbentes; en series estado×sexo con semanas en cero o casi en cero
 ambos producen pronósticos negativos y fallan cerrado (trampa 16). Ningún candidato detenido abrió 2025, así
@@ -65,8 +68,15 @@ Motor que falla cerrado por etapa de desarrollo (sólo se listan los que fallan;
 
 ## 2. Controles de los rechazos
 
-quemaduras_t20, ivp_i87 e hiperplasia_prostata_n40 rechazaron en el total nacional (cifras en
-`docs/C7_15_ALTA20.md`). Publicar su control exige orden nominal con esas cifras.
+**Decidido en parte (12-nov-2026, noche):** el autor autorizó el control de diez
+(`AUTORIZACION_CONTROLES_10.md`). Siguen sin control, y sin orden, displasia_severa_n87, salmonelosis_a02,
+tifoidea_a01, escarlatina_a38 y hepatitis_c_b17. Texto original:
+
+Quince rechazados en la prueba de 2025, todos en el total nacional (cifras en `docs/C7_15_ALTA20.md`): con siete
+motores, quemaduras_t20, ivp_i87 e hiperplasia_prostata_n40; con cinco motores, faringitis_j02, protozoarios_a07,
+salmonelosis_a02, tifoidea_a01, escabiosis_b86, escarlatina_a38, parotiditis_b26, peaton_v01, varicela_b01,
+displasia_leve_n87, displasia_severa_n87 y hepatitis_c_b17. Publicar el control de cualquiera exige una orden
+nominal del autor con esas cifras a la vista; la prueba de 2025 no se repite.
 
 ## 3. Comparabilidad
 
@@ -84,4 +94,5 @@ se modelaron.
 - **Absceso hepático amebiano (A06.4), Tuberculosis otras formas, Otras hepatitis víricas e Intoxicación
   por monóxido de carbono**: 10, 16, 21 y 9 casos en la semana 42 de 2026 en todo el país (radar del boletín
   43), por debajo de shigelosis (58) y erisipela (166), que ya fallan ETS y Ridge en el smoke. Quedarían bajo
-  la misma decisión de política del punto 1; no se dieron de alta.
+  la misma decisión de política del punto 1, que el autor tomó sólo para los 17; no se dieron de alta y no
+  entran en esa autorización.

@@ -28,6 +28,31 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
+## Diez controles autorizados: meta de veinte alcanzada — 12-nov-2026 (noche)
+
+El autor autorizó por nombre publicar el control estacional de diez rechazos de 2025 («Autorizar estos diez
+controles», `docs/alta20/AUTORIZACION_CONTROLES_10.md`): quemaduras, insuficiencia venosa periférica,
+hiperplasia de la próstata (sin sexo), escabiosis, protozoarios intestinales, faringitis estreptocócica,
+peatón lesionado, displasia cervical leve y moderada (sin sexo), varicela y parotiditis. Cada uno lleva
+`acceptance_fallback_run` con su run rechazado (commit `1e5602ce`, antes del refit), release con
+`acceptance_outcome: fallback_control` y gate con candidato igual al control: nunca validados ni PASS. Son
+cincuenta y cinco en el sitio y cincuenta y uno del runner (baseline 35/31): veinte nuevos = diez portafolios
+aceptados en la prueba de 2025 y diez controles no validados. Los otros cinco rechazos (displasia severa,
+salmonelosis, tifoidea, escarlatina, hepatitis C) siguen `configured`, sin control. Consolidado vigente de
+W42: `ingestion_observado_W43/candidato_con_alta20_controles10` (sha256 `fad3c95c…`), base de la semana
+siguiente. Evidencia fuera del repo: `planes/alta20_controles10_2026-11-12/` (SHA256SUMS).
+
+## Lote 17 con cinco motores: cinco más publicados — 12-nov-2026 (tarde)
+
+El autor autorizó por nombre la política `rolling_cv_baja_incidencia_v1` (cinco motores, sin ETS ni Ridge) para
+los 17 detenidos (`docs/alta20/AUTORIZACION_POLITICA_17.md`). Prueba única de 2025: intoxicación alimentaria
+bacteriana, shigelosis, erisipela, candidiasis urogenital y diabetes mellitus en el embarazo (sin sexo, 37
+productos) se aceptaron y están publicadas, 0/4 en curso; los otros doce rechazaron en el nacional y siguen
+`configured`, sin control. Son cuarenta y cinco en el sitio y cuarenta y uno del runner en la paridad. La meta de
+veinte nuevos no se alcanzó (diez en el día). Consolidado vigente de W42:
+`ingestion_observado_W43/candidato_con_alta20_lote17` (sha256 `036f4416…`). `dvc push` con el `dvc` de Homebrew
+(el del venv falla con botocore 1.43). Detalle en `docs/C7_15_ALTA20.md`, «Lote 17».
+
 ## Lote alta20: cinco publicados, diecisiete detenidos — 12-nov-2026
 
 Orden del autor: incorporar al menos veinte padecimientos por el camino normal. Cinco superaron la prueba de

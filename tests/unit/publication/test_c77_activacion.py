@@ -66,13 +66,29 @@ def test_el_contrato_separa_legacy_de_release():
         "tumor maligno del rinon",
         "neumonias y bronconeumonias",
         "otitis media aguda",
+        "faringitis y amigdalitis estreptococicas",
         "conjuntivitis",
         "amebiasis intestinal",
+        "otras infecciones intestinales debidas a protozoarios",
+        "intoxicacion alimentaria bacteriana",
+        "shigelosis",
+        "escabiosis",
+        "erisipela",
+        "parotiditis infecciosa",
+        "varicela",
+        "peaton lesionado en accidente de transporte",
         "accidente de transporte en vehiculos con motor",
+        "candidiasis urogenital",
+        "quemaduras",
+        "insuficiencia venosa periferica",
+        "displasia cervical leve y moderada",
+        "hiperplasia de la prostata",
         "edema proteinuria y trastornos hipertensivos en el embarazo parto y puerperio",
+        "diabetes mellitus en el embarazo",
     )
     assert c.releases["obesidad"] == (_OBESIDAD, _RELEASE)
     assert sorted(i for i, _ in c.releases.values()) == [
+        "alimentaria_a05",
         "amebiasis_a06",
         "anorexia_f50",
         "asma_j45",
@@ -90,16 +106,24 @@ def test_el_contrato_separa_legacy_de_release():
         "cancer_prostata_c61",
         "cancer_pulmon_c33",
         "cancer_rinon_c64",
+        "candidiasis_b37",
         "cerebrovascular_i60",
         "conjuntivitis_h10",
         "diabetes_t1",
         "diabetes_t2",
+        "displasia_leve_n87",
+        "embarazo_diabetes_o24",
         "embarazo_hipertensivos_o10",
+        "erisipela_a46",
+        "escabiosis_b86",
+        "faringitis_j02",
         "gingivitis_k05",
+        "hiperplasia_prostata_n40",
         "hipertension_i10",
         "intestinales_a04",
         "ira_j00",
         "isquemica_i20",
+        "ivp_i87",
         "ivu_n39",
         "leucemia_c91",
         "linfoma_hodgkin_c81",
@@ -107,10 +131,16 @@ def test_el_contrato_separa_legacy_de_release():
         "neumonias_j12",
         "obesidad",
         "otitis_h65",
+        "parotiditis_b26",
+        "peaton_v01",
+        "protozoarios_a07",
+        "quemaduras_t20",
+        "shigelosis_a03",
         "ulceras_k25",
+        "varicela_b01",
         "vehiculos_v20",
     ]
-    # La paridad de corte cubre a los treinta y seis; las series legacy siguen siendo 3×111 + 99.
+    # La paridad de corte cubre a los cincuenta y uno; las series legacy siguen siendo 3×111 + 99.
     assert c.padecimientos == (*c.legado, *c.release)
     assert c.legado == ("depresion", "parkinson", "alzheimer", "dengue")
     assert len(c.claves_esperadas()) == 432
@@ -173,10 +203,25 @@ def test_la_paridad_de_corte_incluye_al_publicado_del_runner(tmp_path):
         "Tumor maligno del cuerpo del útero": 42,
         "Tumor maligno del ovario": 42,
         "Otitis media aguda": 42,
+        "Faringitis y amigdalitis estreptocócicas": 42,
         "Conjuntivitis": 42,
         "Amebiasis intestinal": 42,
+        "Otras infecciones intestinales debidas a protozoarios": 42,
+        "Intoxicación alimentaria bacteriana": 42,
+        "Shigelosis": 42,
+        "Escabiosis": 42,
+        "Erisipela": 42,
+        "Parotiditis infecciosa": 42,
+        "Varicela": 42,
+        "Peatón lesionado en accidente de transporte": 42,
         "Accidente de transporte en vehículos con motor": 42,
+        "Candidiasis urogenital": 42,
+        "Quemaduras": 42,
+        "Insuficiencia venosa periférica": 42,
+        "Displasia cervical leve y moderada": 42,
+        "Hiperplasia de la próstata": 42,
         "Edema, proteinuria y trastornos hipertensivos en el embarazo, parto y puerperio": 42,
+        "Diabetes mellitus en el embarazo": 42,
     }
     rezagada = _consolidado(tmp_path / "a.csv", {**pads, "Obesidad": 27})
     resultado = revisa_consolidado(rezagada, contrato, contrato.padecimientos)
@@ -197,7 +242,7 @@ def test_un_publicado_del_runner_ausente_del_consolidado_falla(tmp_path):
 def test_revisa_releases_falla_cerrado_sin_bundle_ni_estado(tmp_path):
     resultado = revisa_releases(tmp_path, ContratoCobertura.canonico())
     assert not resultado.pasa
-    assert len(resultado.problemas) == 36
+    assert len(resultado.problemas) == 51
     assert any("release obesidad" in p for p in resultado.problemas)
     assert any("release diabetes tipo i:" in p for p in resultado.problemas)
 
