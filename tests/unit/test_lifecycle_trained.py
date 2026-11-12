@@ -68,8 +68,13 @@ def test_el_carril_legacy_no_cambia():
         "Otitis media aguda",
         "Conjuntivitis",
         "Amebiasis intestinal",
+        "Intoxicación alimentaria bacteriana",
+        "Shigelosis",
+        "Erisipela",
         "Accidente de transporte en vehículos con motor",
+        "Candidiasis urogenital",
         "Edema, proteinuria y trastornos hipertensivos en el embarazo, parto y puerperio",
+        "Diabetes mellitus en el embarazo",
     ]
 
 

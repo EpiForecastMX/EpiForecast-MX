@@ -68,11 +68,17 @@ def test_el_contrato_separa_legacy_de_release():
         "otitis media aguda",
         "conjuntivitis",
         "amebiasis intestinal",
+        "intoxicacion alimentaria bacteriana",
+        "shigelosis",
+        "erisipela",
         "accidente de transporte en vehiculos con motor",
+        "candidiasis urogenital",
         "edema proteinuria y trastornos hipertensivos en el embarazo parto y puerperio",
+        "diabetes mellitus en el embarazo",
     )
     assert c.releases["obesidad"] == (_OBESIDAD, _RELEASE)
     assert sorted(i for i, _ in c.releases.values()) == [
+        "alimentaria_a05",
         "amebiasis_a06",
         "anorexia_f50",
         "asma_j45",
@@ -90,11 +96,14 @@ def test_el_contrato_separa_legacy_de_release():
         "cancer_prostata_c61",
         "cancer_pulmon_c33",
         "cancer_rinon_c64",
+        "candidiasis_b37",
         "cerebrovascular_i60",
         "conjuntivitis_h10",
         "diabetes_t1",
         "diabetes_t2",
+        "embarazo_diabetes_o24",
         "embarazo_hipertensivos_o10",
+        "erisipela_a46",
         "gingivitis_k05",
         "hipertension_i10",
         "intestinales_a04",
@@ -107,10 +116,11 @@ def test_el_contrato_separa_legacy_de_release():
         "neumonias_j12",
         "obesidad",
         "otitis_h65",
+        "shigelosis_a03",
         "ulceras_k25",
         "vehiculos_v20",
     ]
-    # La paridad de corte cubre a los treinta y seis; las series legacy siguen siendo 3×111 + 99.
+    # La paridad de corte cubre a los cuarenta y uno; las series legacy siguen siendo 3×111 + 99.
     assert c.padecimientos == (*c.legado, *c.release)
     assert c.legado == ("depresion", "parkinson", "alzheimer", "dengue")
     assert len(c.claves_esperadas()) == 432
@@ -175,8 +185,13 @@ def test_la_paridad_de_corte_incluye_al_publicado_del_runner(tmp_path):
         "Otitis media aguda": 42,
         "Conjuntivitis": 42,
         "Amebiasis intestinal": 42,
+        "Intoxicación alimentaria bacteriana": 42,
+        "Shigelosis": 42,
+        "Erisipela": 42,
         "Accidente de transporte en vehículos con motor": 42,
+        "Candidiasis urogenital": 42,
         "Edema, proteinuria y trastornos hipertensivos en el embarazo, parto y puerperio": 42,
+        "Diabetes mellitus en el embarazo": 42,
     }
     rezagada = _consolidado(tmp_path / "a.csv", {**pads, "Obesidad": 27})
     resultado = revisa_consolidado(rezagada, contrato, contrato.padecimientos)
@@ -197,7 +212,7 @@ def test_un_publicado_del_runner_ausente_del_consolidado_falla(tmp_path):
 def test_revisa_releases_falla_cerrado_sin_bundle_ni_estado(tmp_path):
     resultado = revisa_releases(tmp_path, ContratoCobertura.canonico())
     assert not resultado.pasa
-    assert len(resultado.problemas) == 36
+    assert len(resultado.problemas) == 41
     assert any("release obesidad" in p for p in resultado.problemas)
     assert any("release diabetes tipo i:" in p for p in resultado.problemas)
 

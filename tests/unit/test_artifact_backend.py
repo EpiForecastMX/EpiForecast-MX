@@ -290,8 +290,13 @@ def test_obesidad_y_f50_publicadas_solo_desde_su_release():
         "Otitis media aguda",
         "Conjuntivitis",
         "Amebiasis intestinal",
+        "Intoxicación alimentaria bacteriana",
+        "Shigelosis",
+        "Erisipela",
         "Accidente de transporte en vehículos con motor",
+        "Candidiasis urogenital",
         "Edema, proteinuria y trastornos hipertensivos en el embarazo, parto y puerperio",
+        "Diabetes mellitus en el embarazo",
     ]
     # El carril legacy (all_forecast, tabla_333, zoom) sigue siendo exactamente los cuatro.
     assert [d.data_name for d in registry.legacy_published()] == [
