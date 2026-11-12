@@ -72,3 +72,16 @@ quemaduras_t20, ivp_i87 e hiperplasia_prostata_n40 rechazaron en el total nacion
 
 Mordeduras por perro y por otros mamíferos suben en 2024 junto con el cambio de formato del Cuadro 18.1. No
 se modelaron.
+
+## 4. Reservas que no se dieron de alta
+
+- **Vulvovaginitis (N76)**: sin problema de datos que la bloquee. Desde 2017 el boletín la imprime como N76
+  (hasta 2016 «Vulvovaginitis inespecífica A76.0») y reexpresa 2016 casi igual bajo el código nuevo
+  (acumulado de 2016: 487,508 en `2016_sem52`; 484,590 como año anterior en `2017_sem52`); el salto de
+  2016 a 2017 (+28 %) es del mismo tipo que el de otitis y conjuntivitis. Está en el Cuadro 6.2,
+  Enfermedades de Transmisión Sexual, y el primer dictamen de Fable puso esa familia bajo decisión nominal
+  del autor: no se dio de alta sin ella (12.4 mil casos por semana en la W42 de 2026).
+- **Absceso hepático amebiano (A06.4), Tuberculosis otras formas, Otras hepatitis víricas e Intoxicación
+  por monóxido de carbono**: 10, 16, 21 y 9 casos en la semana 42 de 2026 en todo el país (radar del boletín
+  43), por debajo de shigelosis (58) y erisipela (166), que ya fallan ETS y Ridge en el smoke. Quedarían bajo
+  la misma decisión de política del punto 1; no se dieron de alta.
