@@ -10,7 +10,7 @@ que la prueba sigue disponible. La alternativa vigente es `rolling_cv_baja_incid
 estacionales, mismos pliegues y la misma aceptación), que no tiene criterio escrito: hace falta una orden
 nominal por padecimiento o un criterio medible.
 
-Detenidos: faringitis_j02, protozoarios_a07, salmonelosis_a02, alimentaria_a05, tifoidea_a01, shigelosis_a03,
+Detenidos (diecisiete): faringitis_j02, protozoarios_a07, salmonelosis_a02, alimentaria_a05, tifoidea_a01, shigelosis_a03,
 escabiosis_b86, erisipela_a46, escarlatina_a38, parotiditis_b26, peaton_v01, varicela_b01 (smoke OK, full
 falla), candidiasis_b37 (Ridge OK, ETS falla en series de hombres), displasia_leve_n87, displasia_severa_n87,
 embarazo_diabetes_o24, hepatitis_c_b17.
@@ -42,7 +42,26 @@ conjuntivitis_h10 conjuntivitis_h10_631e8317331c               148.50        75.
 escarlatina_a38 escarlatina_a38_536f06aba41f                 0.00          0.0          0.0              82.21                     58             21.38
 parotiditis_b26 parotiditis_b26_e0e6fceef8f7                 0.00          0.0          0.0              57.93                     42             57.50
   vehiculos_v20   vehiculos_v20_d62f799adf95                40.25          9.6          2.0               0.00                      0           3441.03
+      candidiasis_b37       candidiasis_b37_6e4dfd284f90                 11.0          1.0          0.0               0.00                      1           2238.09
+   displasia_leve_n87    displasia_leve_n87_9598d047995c                 10.0          2.0          1.0               2.16                      0            588.60
+ displasia_severa_n87  displasia_severa_n87_538858b62aa5                  1.5          0.0          0.0              24.04                      9             85.33
+embarazo_diabetes_o24 embarazo_diabetes_o24_da850db74ab8                  6.5          2.1          1.0               1.20                      0            413.98
+      hepatitis_c_b17       hepatitis_c_b17_0a974ec6fc81                  0.0          0.0          0.0              66.35                     43             79.06
 ```
+
+Los cinco últimos se midieron el 12-nov-2026 con el mismo cálculo (`epi_dataset_v2.csv` de cada dataset,
+2021-2024). Displasias y diabetes del embarazo no tienen sexo: sus series base son 32.
+
+Motor que falla cerrado por etapa de desarrollo (sólo se listan los que fallan; los demás motores terminaron):
+
+| id | smoke | full |
+| --- | --- | --- |
+| faringitis_j02, protozoarios_a07, salmonelosis_a02, alimentaria_a05, tifoidea_a01, shigelosis_a03, erisipela_a46, escarlatina_a38, peaton_v01, displasia_severa_n87, hepatitis_c_b17 | ETS y Ridge | ETS y Ridge |
+| parotiditis_b26 | ETS y Ridge | no se corrió |
+| escabiosis_b86 | ETS | ETS |
+| varicela_b01, displasia_leve_n87 | ninguno | ETS y Ridge |
+| candidiasis_b37, embarazo_diabetes_o24 | ninguno | ETS |
+
 
 ## 2. Controles de los rechazos
 
