@@ -11,7 +11,7 @@ repos:
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
-        exclude: ^(docs|notebooks)/   # igual que [tool.ruff] exclude de pyproject.toml
+        exclude: ^(docs|notebooks)/   # docs/ y notebooks/ no se lintan (el CI sólo pasa src/, tests/ y scripts nombrados)
       - id: ruff-format
         exclude: ^(docs|notebooks)/
 

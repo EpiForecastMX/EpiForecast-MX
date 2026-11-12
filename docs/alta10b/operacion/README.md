@@ -1,7 +1,7 @@
 # Cápsula operativa del lote alta10b (no es código de producción)
 
 Guiones con los que se preparó alta10b. Están fuera de `tests/` y de `src/`: el CI no los ejecuta ni los
-analiza (ruff excluye `docs/`). Sirven para reanudar la tanda y como referencia para el skill.
+analiza (el ruff del CI sólo revisa `src/`, `tests/` y scripts nombrados; el hook de pre-commit excluye `docs/`). Sirven para reanudar la tanda y como referencia para el skill.
 
 ## Limitaciones
 

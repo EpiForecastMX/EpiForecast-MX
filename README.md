@@ -19,7 +19,7 @@
   <img src="https://img.shields.io/badge/Python-3.12-blue?style=flat&logo=python&logoColor=white" alt="Python 3.12"/>
   <img src="https://img.shields.io/badge/Models-Prophet_%2B_DeepAR_%2B_Ensemble_%2B_Stacking-orange?style=flat" alt="Multi-Model"/>
   <img src="https://img.shields.io/badge/GPU-SageMaker_T4-76b900?style=flat&logo=nvidia&logoColor=white" alt="GPU SageMaker"/>
-  <img src="https://img.shields.io/badge/Tests-3249-brightgreen?style=flat" alt="3249 Tests"/>
+  <img src="https://github.com/EpiForecastMX/EpiForecast-MX/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"/>
   <img src="https://img.shields.io/badge/DVC-S3-945DD6?style=flat&logo=dvc&logoColor=white" alt="DVC + S3"/>
 </p>
 
@@ -179,7 +179,7 @@ EpiForecast-MX/
 |   |-- ci_process_boletines.py   #   CI/CD bulletin processing (Camelot)
 |   +-- publish_gsheets.py        #   Google Sheets publisher
 |
-|-- tests/                        # Test suite (176 test files, 3,249 tests; last CI 79.0%, gate at 70%)
+|-- tests/                        # Test suite (coverage gate at 70%)
 |   |-- unit/                     #   Unit tests for all modules
 |   +-- integration/              #   End-to-end pipeline tests
 |
@@ -405,7 +405,7 @@ Comparison charts are saved in `reports/forecasts/comparacion_modelos/` using CD
 > honest skill the forecast was frozen on 5-Jun-2026 (cut W20,
 > `reports/ProdDetails/congelado/forecast_congelado_20260605.csv`) and compared with later bulletins.
 > Round W37 replaced that selection: the 333 neuro series and the 99 Dengue series are now assigned
-> out of sample on W28-W37 (criterion `H3 W28–W37`), and the 31 runner releases have their own
+> out of sample on W28-W37 (criterion `H3 W28–W37`), and the published runner releases have their own
 > acceptance gates and frozen prospective gates (`config/publication/<id>/prospective_gate.json`).
 > The June decision rule (switch selection if OOS exceeds about 2x in-sample) is part of that
 > history; it does not authorize changing a frozen assignment.
@@ -452,7 +452,7 @@ The weekly step has three lanes, and none of them publishes a partial week:
 
 1. **Legacy conditions** (Depression, Parkinson, Alzheimer, Dengue) through the v5 producer kept
    outside the repository.
-2. **The 31 runner releases** through `make semana-revisa`, `make semana-observa PDF=… SALIDA=… [WRITE=1]`,
+2. **The published runner releases** (51 as of 12-Nov-2026; the registry is the single authoritative count) through `make semana-revisa`, `make semana-observa PDF=… SALIDA=… [WRITE=1]`,
    `python -m scripts.paso_semanal consolida` and `make semana-vistas N=… FE=…`, failing closed for all
    if any one fails. `consolida` keeps the base byte for byte, rejects a superseded or altered base and
    runs `revisa_consolidado` (parity of every published condition).
@@ -464,18 +464,16 @@ documented in `CLAUDE.md` and the git history.
 
 ### Current Data Snapshot
 
+- **Published (12-Nov-2026):** 55 conditions on the site, 51 of them from runner releases. The
+  2026-11-12 batch alta10b is in preparation with none published (`docs/C7_16_ALTA10B.md`).
 - **Published cut:** bulletin 43 of 2026 for the four legacy conditions and the bulletin radar; the
-  36 runner releases observe through 2026-W42. Forecast origin and horizon are fixed per release and
-  do not move with the observations: 29 releases have origin 2026-W41 and horizon 2026-W42 to
-  2027-W41; pneumonia and bronchopneumonia and the five added on 2026-11-12 (acute otitis media,
-  conjunctivitis, intestinal amoebiasis, motor-vehicle transport accidents and hypertensive disorders of
-  pregnancy) have origin 2026-W42 and horizon 2026-W43 to 2027-W42;
-  Obesity keeps origin 2026-W26 and horizon 2026-W27 to 2027-W26. A fail-closed parity rule forbids
-  mixed public cuts.
-- **Knowledge base:** about 260 KB (333 neuro production models, a `dengue` section, 26 stats keys,
-  6 bulletin sections); each runner condition ships its own `knowledge.json` under
+  51 runner releases observe through 2026-W42. Forecast origin is fixed per release and does not move
+  with the observations (counted from the 51 frontend views): 29 releases have origin 2026-W41, 21 have
+  origin 2026-W42 and Obesity keeps origin 2026-W26. A fail-closed parity rule forbids mixed public cuts.
+- **Forecast horizon:** each release forecasts 52 weeks from its own origin (for example, origin
+  2026-W41 covers 2026-W42 to 2027-W41), not 52 weeks from today.
+- **Knowledge base:** each runner condition ships its own `knowledge.json` under
   `publication/<id>/<release>/` in the dashboard repo.
-- **Forecast horizon:** 52 weeks ahead for every published condition.
 
 ---
 
@@ -594,11 +592,11 @@ GitHub Actions runs on pushes to `main` and `refactor/*`, pull requests to `main
 weekly Monday 06:00 UTC schedule:
 
 1. **Code Quality** (`ci.yml`): Ruff lint + format check + mypy type checking.
-2. **Tests** (`ci.yml`): 3,249 collected tests; slow and integration tests are deselected.
+2. **Tests** (`ci.yml`): slow and integration tests are deselected.
    Coverage is declared by this job and enforced from the single canonical
-   `[tool.coverage.report] fail_under = 70` setting. The current clean Ubuntu runner result
-   is 2,687 passed, 496 skipped, 66 deselected, and 79.02% coverage (`main` run
-   `42664206931`, `d715de54`). A skip ceiling of 497 makes any new omission an explicit decision.
+   `[tool.coverage.report] fail_under = 70` setting. A skip ceiling of 497 (`--max-skips=497`)
+   makes any new omission an explicit decision. Observed on 12-Nov-2026, PR #70 run `43328630569`
+   (head `53875019`): 2,750 passed, 496 skipped, 66 deselected, 79.45% coverage.
 3. **Integration Tests** (`ci.yml`): Legacy, manual-only (`workflow_dispatch`). It requires
    the sealed `runs/` chain, which is absent from clean runners, so scheduled, push, and PR
    workflows report this job as **skipped**, not as a misleading green integration check.

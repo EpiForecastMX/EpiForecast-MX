@@ -54,7 +54,10 @@ Preguntas nominales ya enviadas por el supervisor, sin respuesta:
   `docs/alta10b/PROPUESTA_CONTROL_LEVE.md`, `docs/alta10b/PROPUESTA_CONTROLES_RESERVA_5.md`.
 - **B2**: política `rolling_cv_baja_incidencia_v1` para moderada y severa; **B14**: la misma para los otros
   catorce (`docs/alta10b/PROPUESTA_POLITICAS.md`).
-Una autorización sólo vale en el formato de `docs/alta10b/ESQUEMA_AUTORIZACION.md`. Los datos agregados de
+El autor decide en el chat; root registra su respuesta auténtica (pregunta y respuesta literales) como JSON
+con el esquema de `docs/alta10b/ESQUEMA_AUTORIZACION.md` para que las herramientas la consuman. El formato no
+crea consentimiento ni revoca permisos ya otorgados (como la política de cinco motores de los 17 de alta20), y
+no se vuelve a pedir una confirmación ya dada por falta del archivo. Los datos agregados de
 esta tanda sí están autorizados para el análisis por los modelos (respuesta del usuario del 12-nov, 22:03 UTC).
 
 ## Operación y evidencia
