@@ -28,6 +28,17 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
+## Lote 17 con cinco motores: cinco más publicados — 12-nov-2026 (tarde)
+
+El autor autorizó por nombre la política `rolling_cv_baja_incidencia_v1` (cinco motores, sin ETS ni Ridge) para
+los 17 detenidos (`docs/alta20/AUTORIZACION_POLITICA_17.md`). Prueba única de 2025: intoxicación alimentaria
+bacteriana, shigelosis, erisipela, candidiasis urogenital y diabetes mellitus en el embarazo (sin sexo, 37
+productos) se aceptaron y están publicadas, 0/4 en curso; los otros doce rechazaron en el nacional y siguen
+`configured`, sin control. Son cuarenta y cinco en el sitio y cuarenta y uno del runner en la paridad. La meta de
+veinte nuevos no se alcanzó (diez en el día). Consolidado vigente de W42:
+`ingestion_observado_W43/candidato_con_alta20_lote17` (sha256 `036f4416…`). `dvc push` con el `dvc` de Homebrew
+(el del venv falla con botocore 1.43). Detalle en `docs/C7_15_ALTA20.md`, «Lote 17».
+
 ## Lote alta20: cinco publicados, diecisiete detenidos — 12-nov-2026
 
 Orden del autor: incorporar al menos veinte padecimientos por el camino normal. Cinco superaron la prueba de
