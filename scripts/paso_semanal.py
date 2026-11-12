@@ -332,14 +332,22 @@ def main(argv: list[str] | None = None) -> int:
     o.add_argument("--runs-root", type=Path, default=None)
     o.add_argument("--salida", type=Path, required=True)
     c = sub.add_parser("consolida", help="consolidado de la semana, sólo añadiendo")
-    c.add_argument("--n", type=int, required=True, help="semana observada (boletín N trae W(N-1))")
+    c.add_argument(
+        "--n",
+        type=int,
+        required=True,
+        help=(
+            "semana fuente (columna Semana del raw y del consolidado; boletín N; "
+            "el dataset aplica observation_lag_weeks)"
+        ),
+    )
     c.add_argument("--anio", type=int, default=2026)
     c.add_argument("--base", type=Path, required=True)
     c.add_argument("--legacy-base", type=Path, required=True)
     c.add_argument("--legacy-candidato", type=Path, required=True)
     c.add_argument("--out", type=Path, required=True)
     v = sub.add_parser("vistas", help="vistas de la semana instaladas en el frontend")
-    v.add_argument("--n", type=int, required=True)
+    v.add_argument("--n", type=int, required=True, help="número del boletín (semana fuente)")
     v.add_argument("--frontend", type=Path, required=True)
     a = ap.parse_args(argv)
     if a.cmd == "lista":
