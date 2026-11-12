@@ -1439,13 +1439,14 @@ cuadro_groups:
     backend: camelot_stream
 
   alta10b_brucelosis_a23:
-    # Brucelosis (A23): primer bloque del cuadro de zoonosis. pdftotext: tres bloques (con rabia)
-    # hasta 2022_sem52 y dos (con leptospirosis) desde 2023_sem01.
+    # Brucelosis (A23): primer bloque del cuadro de zoonosis. pdftotext: tres bloques (con rabia,
+    # que en 2014-2022 viene con 3 o 4 columnas: 11 o 12 en total) hasta 2022_sem52 y dos (con
+    # leptospirosis) desde 2023_sem01.
     page_anchors: ["a23"]
     state_markers: ["zacatecas", "tamaulipas"]
     year_week_source: filename
     observation_lag_weeks: 1
-    first_block_columns: {12: 4, 8: 4}
+    first_block_columns: {12: 4, 11: 4, 8: 4}
     diseases:
       - id: brucelosis_a23
         keyword: "Brucelosis_A23"
@@ -1470,7 +1471,7 @@ cuadro_groups:
     state_markers: ["zacatecas", "tamaulipas"]
     year_week_source: filename
     observation_lag_weeks: 1
-    inner_block_columns: {12: [8, 4]}
+    inner_block_columns: {12: [8, 4], 11: [7, 4]}
     periodos:
       - desde: "2023_sem01"
         inner_block_columns: null
