@@ -1449,8 +1449,8 @@ cuadro_groups:
     # que en 2014-2022 viene con 3 o 4 columnas: 11 o 12 en total) hasta 2022_sem52 y dos (con
     # leptospirosis) desde 2023_sem01.
     # «a23» sola coincide en pypdf con otra página (2020_sem31 tomaba la 23 en vez de la 33): se ancla
-    # por los dos nombres del cuadro, página única en 669 de 670 boletines (pdftotext).
-    page_anchors: ["brucel", "leptosp"]
+    # por los dos nombres y el código; en 2023-2024_sem03 una segunda página (8.2) repite los nombres sin el código.
+    page_anchors: ["brucel", "leptosp", "a23"]
     state_markers: ["zacatecas", "tamaulipas"]
     year_week_source: filename
     observation_lag_weeks: 1
@@ -1476,8 +1476,8 @@ cuadro_groups:
     # Leptospirosis (A27): segundo bloque del cuadro de zoonosis (intermedio con rabia hasta
     # 2022_sem52, último desde 2023_sem01).
     # «a23» sola coincide en pypdf con otra página (2020_sem31 tomaba la 23 en vez de la 33): se ancla
-    # por los dos nombres del cuadro, página única en 669 de 670 boletines (pdftotext).
-    page_anchors: ["brucel", "leptosp"]
+    # por los dos nombres y el código; en 2023-2024_sem03 una segunda página (8.2) repite los nombres sin el código.
+    page_anchors: ["brucel", "leptosp", "a23"]
     state_markers: ["zacatecas", "tamaulipas"]
     year_week_source: filename
     observation_lag_weeks: 1
