@@ -149,6 +149,17 @@ def test_cie_map():
         "N40": "Hiperplasia de la próstata",
         "O10": "Edema, proteinuria y trastornos hipertensivos en el embarazo, parto y puerperio",
         "O24.4": "Diabetes mellitus en el embarazo",
+        "E44.1": "Desnutrición leve",
+        "E44.0": "Desnutrición moderada",
+        "E40": "Desnutrición severa",
+        "B17.0": "Otras hepatitis víricas",
+        "A23": "Brucelosis",
+        "A27": "Leptospirosis",
+        "B65": "Otras helmintiasis",
+        "A08.0": "Enteritis debida a rotavirus",
+        "T67": "Efectos del calor y de la luz",
+        "A06.4": "Absceso hepático amebiano",
+        "E01": "Bocio endémico",
     }
 
 
