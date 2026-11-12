@@ -1293,8 +1293,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_otitis_h65
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
@@ -1346,8 +1346,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_conjuntivitis_h10
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
@@ -1374,8 +1374,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_amebiasis_a06
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
@@ -1777,8 +1777,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_vehiculos_v20
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
@@ -2110,8 +2110,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_cuadro_13_5
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
