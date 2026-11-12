@@ -697,6 +697,9 @@ cuadro_groups:
     state_markers: ["zacatecas", "tamaulipas"]
     year_week_source: filename
     observation_lag_weeks: 1
+    # 2025_sem02: camelot entrega cada entidad en dos renglones con el primer valor en la columna
+    # del nombre (página 20); sin la reparación el boletín se leía en ceros (TOTAL impreso 131/59).
+    valor_en_columna_nombre: true
     # En 13 boletines de 2025-2026 (2025_sem02, 12, 25, 28, 31; 2026_sem08, 09, 10, 17, 20, 23, 34
     # y 42) la fuente imprime este bloque sin el acumulado del año anterior: 11 columnas en la página
     # (encabezado y renglones, medido con pdftotext en 2026_sem42), no un fallo de camelot.
@@ -724,6 +727,9 @@ cuadro_groups:
     state_markers: ["zacatecas", "tamaulipas"]
     year_week_source: filename
     observation_lag_weeks: 1
+    # 2025_sem02: camelot entrega cada entidad en dos renglones con el primer valor en la columna
+    # del nombre (página 20); sin la reparación el boletín se leía en ceros (TOTAL impreso 131/59).
+    valor_en_columna_nombre: true
     # 11 columnas en 13 boletines de 2025-2026: el bloque de enterobiasis (segundo) sale sin año
     # anterior en la fuente; ascariasis, primer bloque, conserva sus 4 columnas.
     first_block_columns: {12: 4, 11: 4}

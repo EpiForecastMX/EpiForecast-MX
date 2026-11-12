@@ -71,4 +71,5 @@ def test_la_reparacion_de_valor_en_nombre_solo_se_pide_en_grupos_que_la_declaran
     assert falso_pdf[-1].get("valor_en_nombre") is False
     assert ce.load_group("alta10b_helmintiasis_b65").get("valor_en_columna_nombre") is True
     assert ce.load_group("alta20_giardiasis_a071").get("valor_en_columna_nombre") is True
-    assert not ce.load_group("alta20_ascariasis_b77").get("valor_en_columna_nombre")
+    assert ce.load_group("alta20_ascariasis_b77").get("valor_en_columna_nombre") is True
+    assert not ce.load_group("alta20_hepatitis_a_b15").get("valor_en_columna_nombre")
