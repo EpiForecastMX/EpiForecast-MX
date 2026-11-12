@@ -1289,3 +1289,33 @@ cuadro_groups:
         has_prev_year: true
     n_states_expected: 32
     backend: camelot_stream
+
+  alta20_displasias:
+    # CUADRO 15.1: Displasia cervical leve y moderada (N87.0-N87.1) y severa y CaCu in situ
+    # (N87.2, D06), dos bloques de 3 columnas (Sem, acumulado del año y del anterior) sin desglose
+    # por sexo en 669 de 670 boletines. «displasia» sola encuentra también el 15.2 en 2023-2024 (su
+    # encabezado repite el rótulo); con «severa» la página es única en los 670.
+    page_anchors: ["severa", "displasia"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    diseases:
+      - id: displasia_leve_n87
+        keyword: "Displasia_Leve_N87"
+        block_index: 0
+        onboard: true
+      - id: displasia_severa_n87
+        keyword: "Displasia_Severa_N87"
+        block_index: 1
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [displasia_leve_n87, displasia_severa_n87]
+        reason: "formato de cierre anual: sólo acumulados, sin columna Sem"
+    layout_variants:
+      - id: v_3col_total
+        min_year_week: "0000_sem00"
+        cols_per_disease: 3
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream

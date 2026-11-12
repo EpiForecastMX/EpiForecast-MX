@@ -144,6 +144,8 @@ def test_cie_map():
         "W55": "Mordeduras por otros mamíferos",
         "I00": "Fiebre reumática aguda",
         "I87.2": "Insuficiencia venosa periférica",
+        "N87.0": "Displasia cervical leve y moderada",
+        "N87.2": "Displasia cervical severa y CaCu in situ",
     }
 
 

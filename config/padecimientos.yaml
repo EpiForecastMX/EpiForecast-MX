@@ -2006,3 +2006,56 @@ padecimientos:
       color: "#7C3AED"
       label: "Insuficiencia venosa periférica"
       nombre_completo: "Insuficiencia venosa periférica (I87.2)"
+
+  # Displasias cervicales (Cuadro 15.1): dos bloques de 3 columnas sin desglose por sexo.
+  - id: displasia_leve_n87
+    data_name: "Displasia cervical leve y moderada"
+    artifact_key: Displasia_Leve_N87
+    slug: displasia_leve_n87
+    display_name: "Displasia cervical leve y moderada"
+    cie_codes: ["N87.0", "N87.1"]
+    aliases: ["displasia cervical leve y moderada", "displasia cervical leve", "displasia cervical moderada", "displasia leve", "displasia moderada", "n87.0", "n87.1"]
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: alta20_displasias
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    sex_breakdown: false
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#F9A8D4"
+      label: "Displasia cervical leve y moderada"
+      nombre_completo: "Displasia cervical leve y moderada (N87.0-N87.1)"
+
+  - id: displasia_severa_n87
+    data_name: "Displasia cervical severa y CaCu in situ"
+    artifact_key: Displasia_Severa_N87
+    slug: displasia_severa_n87
+    display_name: "Displasia cervical severa y CaCu in situ"
+    cie_codes: ["N87.2", "D06"]
+    aliases: ["displasia cervical severa y cacu in situ", "displasia cervical severa", "displasia severa", "cacu in situ", "carcinoma in situ del cuello del utero", "n87.2", "d06"]
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: alta20_displasias
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    sex_breakdown: false
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#BE185D"
+      label: "Displasia cervical severa y CaCu in situ"
+      nombre_completo: "Displasia cervical severa y CaCu in situ (N87.2, D06)"
