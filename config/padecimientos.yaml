@@ -1502,8 +1502,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_alimentaria_a05
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
@@ -1580,8 +1580,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_shigelosis_a03
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
@@ -1633,8 +1633,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_erisipela_a46
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
@@ -1814,8 +1814,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_candidiasis_b37
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
@@ -2151,8 +2151,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_cuadro_13_5
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
