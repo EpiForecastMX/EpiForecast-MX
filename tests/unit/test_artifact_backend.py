@@ -287,6 +287,11 @@ def test_obesidad_y_f50_publicadas_solo_desde_su_release():
         "Tumores malignos de los huesos y de los cartílagos articulares",
         "Tumor maligno del riñón",
         "Neumonías y bronconeumonías",
+        "Otitis media aguda",
+        "Conjuntivitis",
+        "Amebiasis intestinal",
+        "Accidente de transporte en vehículos con motor",
+        "Edema, proteinuria y trastornos hipertensivos en el embarazo, parto y puerperio",
     ]
     # El carril legacy (all_forecast, tabla_333, zoom) sigue siendo exactamente los cuatro.
     assert [d.data_name for d in registry.legacy_published()] == [

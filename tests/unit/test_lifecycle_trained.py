@@ -65,6 +65,11 @@ def test_el_carril_legacy_no_cambia():
         "Tumores malignos de los huesos y de los cartílagos articulares",
         "Tumor maligno del riñón",
         "Neumonías y bronconeumonías",
+        "Otitis media aguda",
+        "Conjuntivitis",
+        "Amebiasis intestinal",
+        "Accidente de transporte en vehículos con motor",
+        "Edema, proteinuria y trastornos hipertensivos en el embarazo, parto y puerperio",
     ]
 
 

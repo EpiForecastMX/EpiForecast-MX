@@ -1279,3 +1279,877 @@ padecimientos:
       color: "#65A30D"
       label: "Neumonías y bronconeumonías"
       nombre_completo: "Neumonías y bronconeumonías (J12-J18 excepto J18.2, J13 y J14)"
+
+  # ── Lote alta20 (12-nov-2026): altas por configuración, sin publicar. Una entrada por bloque del
+  # boletín, con su rótulo impreso; grupo de cuadro propio en config/data/cuadros.yaml (alta20_<id>). ──
+  - id: otitis_h65
+    data_name: "Otitis media aguda"
+    artifact_key: Otitis_H65
+    slug: otitis_h65
+    display_name: "Otitis media aguda"
+    cie_codes: ["H65.0", "H65.1"]
+    aliases: ["otitis media aguda", "otitis media", "otitis", "h65"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_otitis_h65
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    artifact_source:
+      backend: runner_release
+      release_id: otitis_h65_release_3dce204c0ac3
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#7DD3FC"
+      label: "Otitis media aguda"
+      nombre_completo: "Otitis media aguda (H65.0-H65.1)"
+
+  - id: faringitis_j02
+    data_name: "Faringitis y amigdalitis estreptocócicas"
+    artifact_key: Faringitis_J02
+    slug: faringitis_j02
+    display_name: "Faringitis y amigdalitis estreptocócicas"
+    cie_codes: ["J02.0", "J03.0"]
+    aliases: ["faringitis y amigdalitis estreptococicas", "faringitis estreptococica", "amigdalitis estreptococica", "faringoamigdalitis estreptococica", "j02.0"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_faringitis_j02
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#FB7185"
+      label: "Faringitis estreptocócica"
+      nombre_completo: "Faringitis y amigdalitis estreptocócicas (J02.0, J03.0)"
+
+  - id: conjuntivitis_h10
+    data_name: "Conjuntivitis"
+    artifact_key: Conjuntivitis_H10
+    slug: conjuntivitis_h10
+    display_name: "Conjuntivitis"
+    cie_codes: ["H10"]
+    aliases: ["conjuntivitis", "h10"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_conjuntivitis_h10
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    artifact_source:
+      backend: runner_release
+      release_id: conjuntivitis_h10_release_f16745bc73a4
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#93C5FD"
+      label: "Conjuntivitis"
+      nombre_completo: "Conjuntivitis (H10)"
+
+  - id: amebiasis_a06
+    data_name: "Amebiasis intestinal"
+    artifact_key: Amebiasis_A06
+    slug: amebiasis_a06
+    display_name: "Amebiasis intestinal"
+    cie_codes: ["A06.0", "A06.1", "A06.2", "A06.3", "A06.9"]
+    aliases: ["amebiasis intestinal", "amebiasis", "a06"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_amebiasis_a06
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    artifact_source:
+      backend: runner_release
+      release_id: amebiasis_a06_release_aaf5c1da2175
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#B45309"
+      label: "Amebiasis intestinal"
+      nombre_completo: "Amebiasis intestinal (A06.0-A06.3, A06.9)"
+
+  - id: protozoarios_a07
+    data_name: "Otras infecciones intestinales debidas a protozoarios"
+    artifact_key: Protozoarios_A07
+    slug: protozoarios_a07
+    display_name: "Otras infecciones intestinales debidas a protozoarios"
+    cie_codes: ["A07.0", "A07.2", "A07.9"]
+    aliases: ["infecciones intestinales debidas a protozoarios", "infecciones por protozoarios", "protozoarios", "otras infecciones intestinales debidas a protozoarios"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_protozoarios_a07
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#CA8A04"
+      label: "Infecciones por protozoarios"
+      nombre_completo: "Otras infecciones intestinales debidas a protozoarios (A07.0, A07.2, A07.9)"
+
+  - id: enterobiasis_b80
+    data_name: "Enterobiasis"
+    artifact_key: Enterobiasis_B80
+    slug: enterobiasis_b80
+    display_name: "Enterobiasis"
+    cie_codes: ["B80"]
+    aliases: ["enterobiasis", "oxiuriasis", "oxiuros", "b80"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_enterobiasis_b80
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#84CC16"
+      label: "Enterobiasis"
+      nombre_completo: "Enterobiasis (B80)"
+
+  - id: ascariasis_b77
+    data_name: "Ascariasis"
+    artifact_key: Ascariasis_B77
+    slug: ascariasis_b77
+    display_name: "Ascariasis"
+    cie_codes: ["B77"]
+    aliases: ["ascariasis", "ascaridiasis", "b77"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_ascariasis_b77
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#A3E635"
+      label: "Ascariasis"
+      nombre_completo: "Ascariasis (B77)"
+
+  - id: salmonelosis_a02
+    data_name: "Otras salmonelosis"
+    artifact_key: Salmonelosis_A02
+    slug: salmonelosis_a02
+    display_name: "Otras salmonelosis"
+    cie_codes: ["A02"]
+    aliases: ["otras salmonelosis", "salmonelosis", "salmonela", "salmonella", "a02"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_salmonelosis_a02
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#EAB308"
+      label: "Otras salmonelosis"
+      nombre_completo: "Otras salmonelosis (A02)"
+
+  - id: alimentaria_a05
+    data_name: "Intoxicación alimentaria bacteriana"
+    artifact_key: Alimentaria_A05
+    slug: alimentaria_a05
+    display_name: "Intoxicación alimentaria bacteriana"
+    cie_codes: ["A05"]
+    aliases: ["intoxicacion alimentaria bacteriana", "intoxicacion alimentaria", "intoxicaciones alimentarias", "a05"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_alimentaria_a05
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#F87171"
+      label: "Intoxicación alimentaria"
+      nombre_completo: "Intoxicación alimentaria bacteriana (A05)"
+
+  - id: giardiasis_a071
+    data_name: "Giardiasis"
+    artifact_key: Giardiasis_A071
+    slug: giardiasis_a071
+    display_name: "Giardiasis"
+    cie_codes: ["A07.1"]
+    aliases: ["giardiasis", "giardia", "a07.1"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_giardiasis_a071
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#BEF264"
+      label: "Giardiasis"
+      nombre_completo: "Giardiasis (A07.1)"
+
+  - id: tifoidea_a01
+    data_name: "Fiebre tifoidea"
+    artifact_key: Tifoidea_A01
+    slug: tifoidea_a01
+    display_name: "Fiebre tifoidea"
+    cie_codes: ["A01.0"]
+    aliases: ["fiebre tifoidea", "tifoidea", "a01.0"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_tifoidea_a01
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#DC2626"
+      label: "Fiebre tifoidea"
+      nombre_completo: "Fiebre tifoidea (A01.0)"
+
+  - id: shigelosis_a03
+    data_name: "Shigelosis"
+    artifact_key: Shigelosis_A03
+    slug: shigelosis_a03
+    display_name: "Shigelosis"
+    cie_codes: ["A03"]
+    aliases: ["shigelosis", "shigella", "disenteria bacilar", "a03"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_shigelosis_a03
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#9A3412"
+      label: "Shigelosis"
+      nombre_completo: "Shigelosis (A03)"
+
+  - id: escabiosis_b86
+    data_name: "Escabiosis"
+    artifact_key: Escabiosis_B86
+    slug: escabiosis_b86
+    display_name: "Escabiosis"
+    cie_codes: ["B86"]
+    aliases: ["escabiosis", "sarna", "b86"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_escabiosis_b86
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#78716C"
+      label: "Escabiosis"
+      nombre_completo: "Escabiosis (B86)"
+
+  - id: erisipela_a46
+    data_name: "Erisipela"
+    artifact_key: Erisipela_A46
+    slug: erisipela_a46
+    display_name: "Erisipela"
+    cie_codes: ["A46"]
+    aliases: ["erisipela", "a46"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_erisipela_a46
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#E11D48"
+      label: "Erisipela"
+      nombre_completo: "Erisipela (A46)"
+
+  - id: escarlatina_a38
+    data_name: "Escarlatina"
+    artifact_key: Escarlatina_A38
+    slug: escarlatina_a38
+    display_name: "Escarlatina"
+    cie_codes: ["A38"]
+    aliases: ["escarlatina", "fiebre escarlatina", "a38"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_escarlatina_a38
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#FCA5A5"
+      label: "Escarlatina"
+      nombre_completo: "Escarlatina (A38)"
+
+  - id: parotiditis_b26
+    data_name: "Parotiditis infecciosa"
+    artifact_key: Parotiditis_B26
+    slug: parotiditis_b26
+    display_name: "Parotiditis infecciosa"
+    cie_codes: ["B26"]
+    aliases: ["parotiditis infecciosa", "parotiditis", "paperas", "b26"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_parotiditis_b26
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#C084FC"
+      label: "Parotiditis"
+      nombre_completo: "Parotiditis infecciosa (B26)"
+
+  - id: varicela_b01
+    data_name: "Varicela"
+    artifact_key: Varicela_B01
+    slug: varicela_b01
+    display_name: "Varicela"
+    cie_codes: ["B01"]
+    aliases: ["varicela", "b01"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_varicela_b01
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#D946EF"
+      label: "Varicela"
+      nombre_completo: "Varicela (B01)"
+
+  - id: alacran_t63
+    data_name: "Intoxicación por picadura de alacrán"
+    artifact_key: Alacran_T63
+    slug: alacran_t63
+    display_name: "Intoxicación por picadura de alacrán"
+    cie_codes: ["T63.2", "X22"]
+    aliases: ["intoxicacion por picadura de alacran", "picadura de alacran", "picaduras de alacran", "alacranismo", "alacran", "t63.2"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_alacran_t63
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#92400E"
+      label: "Picadura de alacrán"
+      nombre_completo: "Intoxicación por picadura de alacrán (T63.2, X22)"
+
+  - id: peaton_v01
+    data_name: "Peatón lesionado en accidente de transporte"
+    artifact_key: Peaton_V01
+    slug: peaton_v01
+    display_name: "Peatón lesionado en accidente de transporte"
+    cie_codes: ["V01", "V02", "V03", "V04", "V05", "V06", "V07", "V08", "V09"]
+    aliases: ["peaton lesionado en accidente de transporte", "peaton lesionado", "peatones lesionados", "atropellamiento", "atropellados", "v01-v09"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_peaton_v01
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#475569"
+      label: "Peatón lesionado"
+      nombre_completo: "Peatón lesionado en accidente de transporte (V01-V09)"
+
+  - id: vehiculos_v20
+    data_name: "Accidente de transporte en vehículos con motor"
+    artifact_key: Vehiculos_V20
+    slug: vehiculos_v20
+    display_name: "Accidente de transporte en vehículos con motor"
+    cie_codes: ["V20", "V40"]
+    aliases: ["accidente de transporte en vehiculos con motor", "accidentes de transporte en vehiculos con motor", "accidentes de transito", "accidente de transito", "accidentes viales", "v20-v29"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_vehiculos_v20
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    artifact_source:
+      backend: runner_release
+      release_id: vehiculos_v20_release_6d63522d4523
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#334155"
+      label: "Accidentes en vehículos con motor"
+      nombre_completo: "Accidente de transporte en vehículos con motor (V20-V29, V40-V79)"
+
+  - id: candidiasis_b37
+    data_name: "Candidiasis urogenital"
+    artifact_key: Candidiasis_B37
+    slug: candidiasis_b37
+    display_name: "Candidiasis urogenital"
+    cie_codes: ["B37.3", "B37.4"]
+    aliases: ["candidiasis urogenital", "candidiasis vaginal", "candidiasis", "b37.3"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_candidiasis_b37
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#FDA4AF"
+      label: "Candidiasis urogenital"
+      nombre_completo: "Candidiasis urogenital (B37.3-B37.4)"
+
+  - id: hepatitis_a_b15
+    data_name: "Hepatitis vírica A"
+    artifact_key: Hepatitis_A_B15
+    slug: hepatitis_a_b15
+    display_name: "Hepatitis vírica A"
+    cie_codes: ["B15"]
+    aliases: ["hepatitis virica a", "hepatitis viral a", "hepatitis a", "b15"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_hepatitis_a_b15
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#FACC15"
+      label: "Hepatitis A"
+      nombre_completo: "Hepatitis vírica A (B15)"
+
+  - id: hepatitis_b_b16
+    data_name: "Hepatitis vírica B"
+    artifact_key: Hepatitis_B_B16
+    slug: hepatitis_b_b16
+    display_name: "Hepatitis vírica B"
+    cie_codes: ["B16"]
+    aliases: ["hepatitis virica b", "hepatitis viral b", "hepatitis b", "b16"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_hepatitis_b_b16
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#EA580C"
+      label: "Hepatitis B"
+      nombre_completo: "Hepatitis vírica B (B16)"
+
+  - id: hepatitis_c_b17
+    data_name: "Hepatitis vírica C"
+    artifact_key: Hepatitis_C_B17
+    slug: hepatitis_c_b17
+    display_name: "Hepatitis vírica C"
+    cie_codes: ["B17.1", "B18.2"]
+    aliases: ["hepatitis virica c", "hepatitis viral c", "hepatitis c", "b17.1"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_hepatitis_c_b17
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#C2410C"
+      label: "Hepatitis C"
+      nombre_completo: "Hepatitis vírica C (B17.1, B18.2)"
+
+  - id: quemaduras_t20
+    data_name: "Quemaduras"
+    artifact_key: Quemaduras_T20
+    slug: quemaduras_t20
+    display_name: "Quemaduras"
+    cie_codes: ["T20", "T21", "T22", "T23", "T24", "T25", "T26", "T27", "T28", "T29", "T30", "T31", "T32"]
+    aliases: ["quemaduras", "quemadura", "t20-t32"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_quemaduras_t20
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#FB923C"
+      label: "Quemaduras"
+      nombre_completo: "Quemaduras (T20-T32)"
+
+  - id: mordedura_perro_w54
+    data_name: "Mordeduras por perro"
+    artifact_key: Mordedura_Perro_W54
+    slug: mordedura_perro_w54
+    display_name: "Mordeduras por perro"
+    cie_codes: ["W54"]
+    aliases: ["mordeduras por perro", "mordedura de perro", "mordedura por perro", "mordeduras de perro", "w54"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_mordedura_perro_w54
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#57534E"
+      label: "Mordeduras por perro"
+      nombre_completo: "Mordeduras por perro (W54)"
+
+  - id: mordedura_mamiferos_w55
+    data_name: "Mordeduras por otros mamíferos"
+    artifact_key: Mordedura_Mamiferos_W55
+    slug: mordedura_mamiferos_w55
+    display_name: "Mordeduras por otros mamíferos"
+    cie_codes: ["W55"]
+    aliases: ["mordeduras por otros mamiferos", "mordedura de otros mamiferos", "mordedura por otros mamiferos", "w55"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_mordedura_mamiferos_w55
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#A8A29E"
+      label: "Mordeduras por otros mamíferos"
+      nombre_completo: "Mordeduras por otros mamíferos (W55)"
+
+  - id: reumatica_i00
+    data_name: "Fiebre reumática aguda"
+    artifact_key: Reumatica_I00
+    slug: reumatica_i00
+    display_name: "Fiebre reumática aguda"
+    cie_codes: ["I00", "I01", "I02"]
+    aliases: ["fiebre reumatica aguda", "fiebre reumatica", "i00-i02"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20_reumatica_i00
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#BE123C"
+      label: "Fiebre reumática aguda"
+      nombre_completo: "Fiebre reumática aguda (I00-I02)"
+
+  - id: ivp_i87
+    data_name: "Insuficiencia venosa periférica"
+    artifact_key: IVP_I87
+    slug: ivp_i87
+    display_name: "Insuficiencia venosa periférica"
+    cie_codes: ["I87.2"]
+    aliases: ["insuficiencia venosa periferica", "insuficiencia venosa", "i87.2"]
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: alta20_ivp_i87
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#7C3AED"
+      label: "Insuficiencia venosa periférica"
+      nombre_completo: "Insuficiencia venosa periférica (I87.2)"
+
+  # Displasias cervicales (Cuadro 15.1): dos bloques de 3 columnas sin desglose por sexo.
+  - id: displasia_leve_n87
+    data_name: "Displasia cervical leve y moderada"
+    artifact_key: Displasia_Leve_N87
+    slug: displasia_leve_n87
+    display_name: "Displasia cervical leve y moderada"
+    cie_codes: ["N87.0", "N87.1"]
+    aliases: ["displasia cervical leve y moderada", "displasia cervical leve", "displasia cervical moderada", "displasia leve", "displasia moderada", "n87.0", "n87.1"]
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: alta20_displasias
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    sex_breakdown: false
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#F9A8D4"
+      label: "Displasia cervical leve y moderada"
+      nombre_completo: "Displasia cervical leve y moderada (N87.0-N87.1)"
+
+  - id: displasia_severa_n87
+    data_name: "Displasia cervical severa y CaCu in situ"
+    artifact_key: Displasia_Severa_N87
+    slug: displasia_severa_n87
+    display_name: "Displasia cervical severa y CaCu in situ"
+    cie_codes: ["N87.2", "D06"]
+    aliases: ["displasia cervical severa y cacu in situ", "displasia cervical severa", "displasia severa", "cacu in situ", "carcinoma in situ del cuello del utero", "n87.2", "d06"]
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: alta20_displasias
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    sex_breakdown: false
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#BE185D"
+      label: "Displasia cervical severa y CaCu in situ"
+      nombre_completo: "Displasia cervical severa y CaCu in situ (N87.2, D06)"
+
+  # Cuadro 13.5: tres bloques sin desglose por sexo (hiperplasia de próstata y dos del embarazo).
+  - id: hiperplasia_prostata_n40
+    data_name: "Hiperplasia de la próstata"
+    artifact_key: Hiperplasia_Prostata_N40
+    slug: hiperplasia_prostata_n40
+    display_name: "Hiperplasia de la próstata"
+    cie_codes: ["N40"]
+    aliases: ["hiperplasia de la prostata", "hiperplasia de prostata", "hiperplasia prostatica", "crecimiento de la prostata", "n40"]
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: alta20_cuadro_13_5
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    sex_breakdown: false
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#0284C7"
+      label: "Hiperplasia de la próstata"
+      nombre_completo: "Hiperplasia de la próstata (N40)"
+
+  - id: embarazo_hipertensivos_o10
+    data_name: "Edema, proteinuria y trastornos hipertensivos en el embarazo, parto y puerperio"
+    artifact_key: Embarazo_Hipertensivos_O10
+    slug: embarazo_hipertensivos_o10
+    display_name: "Edema, proteinuria y trastornos hipertensivos en el embarazo, parto y puerperio"
+    cie_codes: ["O10", "O11", "O12", "O13", "O14", "O15", "O16"]
+    aliases: ["trastornos hipertensivos en el embarazo", "trastornos hipertensivos del embarazo", "hipertension en el embarazo", "hipertension del embarazo", "hipertension gestacional", "preeclampsia", "eclampsia", "o10-o16"]
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: alta20_cuadro_13_5
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    artifact_source:
+      backend: runner_release
+      release_id: embarazo_hipertensivos_o10_release_3139b1adfd8f
+    sex_breakdown: false
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#9F1239"
+      label: "Trastornos hipertensivos del embarazo"
+      nombre_completo: "Edema, proteinuria y trastornos hipertensivos en el embarazo, parto y puerperio (O10-O16)"
+
+  - id: embarazo_diabetes_o24
+    data_name: "Diabetes mellitus en el embarazo"
+    artifact_key: Embarazo_Diabetes_O24
+    slug: embarazo_diabetes_o24
+    display_name: "Diabetes mellitus en el embarazo"
+    cie_codes: ["O24.4"]
+    aliases: ["diabetes mellitus en el embarazo", "diabetes en el embarazo", "diabetes del embarazo", "diabetes gestacional", "o24.4"]
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: alta20_cuadro_13_5
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    sex_breakdown: false
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#7E22CE"
+      label: "Diabetes en el embarazo"
+      nombre_completo: "Diabetes mellitus en el embarazo (O24.4)"

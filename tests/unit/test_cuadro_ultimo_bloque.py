@@ -224,3 +224,48 @@ def test_neumonias_toma_su_bloque_segun_el_periodo(monkeypatch, tmp_path, archiv
     assert salida["df"]["Casos_semana"].iloc[0] == 10 + (inicio - 1)
     assert salida["df"]["Acumulado_anio_anterior"].iloc[0] == 10 + (inicio + 2)
     assert salida["df"]["Padecimiento"].iloc[0] == "Neumonías y bronconeumonías"
+
+
+def _extrae_sin_sexo(monkeypatch, tmp_path, archivo, total, disease_id):
+    pdf = tmp_path / archivo
+    pdf.write_bytes(b"%PDF")
+    tablas = [type("T", (), {"df": _tabla(total)})()]
+    monkeypatch.setattr(ce, "find_cuadro_page", lambda *_a: 7)
+    monkeypatch.setattr(ce.camelot, "read_pdf", lambda *_a, **_k: tablas)
+    monkeypatch.setattr(ce, "clean_df", lambda df: df)
+    monkeypatch.setattr(ce, "_restrict_to_states", lambda df: df)
+    return ce.extract_cuadro_from_pdf(str(pdf), "alta20_cuadro_13_5", disease_id)
+
+
+@pytest.mark.unit
+@pytest.mark.parametrize(
+    ("archivo", "total", "disease_id", "inicio", "layout"),
+    [
+        # 2014: Sem y acumulado (sin año anterior) en los dos primeros bloques; 7 columnas.
+        ("2014_sem30.pdf", 7, "hiperplasia_prostata_n40", 1, "2col_total_noprev"),
+        ("2014_sem30.pdf", 7, "embarazo_hipertensivos_o10", 3, "2col_total_noprev"),
+        ("2014_sem30.pdf", 7, "embarazo_diabetes_o24", 5, "3col_total"),
+        # Desde 2015_sem02 los tres bloques traen año anterior: 9 columnas.
+        ("2015_sem02.pdf", 9, "hiperplasia_prostata_n40", 1, "3col_total"),
+        ("2026_sem43.pdf", 9, "embarazo_hipertensivos_o10", 4, "3col_total"),
+        ("2026_sem43.pdf", 9, "embarazo_diabetes_o24", 7, "3col_total"),
+    ],
+)
+def test_bloques_sin_sexo_de_ancho_declarado(
+    monkeypatch, tmp_path, archivo, total, disease_id, inicio, layout
+):
+    salida = _extrae_sin_sexo(monkeypatch, tmp_path, archivo, total, disease_id)
+    assert salida["valid"]
+    assert salida["layout"] == layout
+    df = salida["df"]
+    assert df["Casos_semana"].iloc[0] == 10 + (inicio - 1)
+    assert df["Acumulado_total"].iloc[0] == 10 + inicio
+    anterior = df["Acumulado_anio_anterior"].iloc[0]
+    assert (anterior == 10 + inicio + 1) if layout == "3col_total" else pd.isna(anterior)
+
+
+@pytest.mark.unit
+def test_bloques_sin_sexo_fallan_cerrado_ante_otro_ancho(monkeypatch, tmp_path):
+    salida = _extrae_sin_sexo(monkeypatch, tmp_path, "2014_sem30.pdf", 9, "embarazo_diabetes_o24")
+    assert not salida["valid"]
+    assert salida["reason"] == "columnas inesperadas: 9 (esperaba 7, sin sexo)"

@@ -28,6 +28,20 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
+## Lote alta20: cinco publicados, diecisiete detenidos — 12-nov-2026
+
+Orden del autor: incorporar al menos veinte padecimientos por el camino normal. Cinco superaron la prueba de
+2025 con `rolling_cv_v1` (siete motores) y están publicados, 0/4 en curso: otitis media aguda,
+conjuntivitis, amebiasis intestinal, accidente de transporte en vehículos con motor y edema, proteinuria y
+trastornos hipertensivos del embarazo (sin sexo, 37 productos). Son cuarenta en el sitio y treinta y seis del
+runner en la paridad. Quemaduras, insuficiencia venosa e hiperplasia de próstata rechazaron (nacional) y
+siguen `configured`; diecisiete más están detenidos porque ETS o Ridge fallan en series escasas y la política de
+baja incidencia es decisión del autor, no tomada (`docs/alta20/DECISIONES_PENDIENTES.md`). Consolidado
+vigente de W42: `ingestion_observado_W43/candidato_con_alta20` (sha256 `fce8f3bc…`). Detalle en
+`docs/C7_15_ALTA20.md`. El EpiBot pide precisar ante «otitis» o «amebiasis» a secas (abarcan más que el
+bloque) y no da cifras de los subtipos con código propio; segundo dictamen de Fable en
+`docs/alta20/DICTAMEN_FABLE_IMPLEMENTACION_2026-11-12.md`.
+
 ## Sin boletín 44 y EPI con el radar — 10-nov-2026
 
 El índice oficial de gob.mx, consultado el 2026-11-11 04:44:58Z (22:44 del 10-nov en Ciudad de México),

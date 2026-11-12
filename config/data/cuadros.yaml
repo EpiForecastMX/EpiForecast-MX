@@ -551,3 +551,817 @@ cuadro_groups:
         has_prev_year: true
     n_states_expected: 32
     backend: camelot_stream
+
+  # ── Lote alta20 (12-nov-2026). Discovery sobre 670 boletines (2014_sem01..2026_sem43): anclas
+  # verificadas con una sola página por boletín (pypdf, como find_cuadro_page) y anchos por conteo
+  # real de columnas de camelot en boletines de muestra de cada época. 2014_sem01 es el cierre anual
+  # (sólo acumulados, sin columna Sem) en todos los cuadros. ──
+  alta20_otitis_h65:
+    # Otitis media aguda (H65.0-H65.1).
+    page_anchors: ["otitis media"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    inner_block_columns: {12: [8, 4]}
+    periodos:
+      - desde: "2024_sem07"
+        inner_block_columns: null
+        last_block_columns: {8: 4}
+    diseases:
+      - id: otitis_h65
+        keyword: "Otitis_H65"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [otitis_h65]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_faringitis_j02:
+    # Faringitis y amigdalitis estreptocócicas (J02.0, J03.0).
+    page_anchors: ["faringitis"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    last_block_columns: {12: 4, 8: 4}
+    diseases:
+      - id: faringitis_j02
+        keyword: "Faringitis_J02"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [faringitis_j02]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_conjuntivitis_h10:
+    # Conjuntivitis (H10).
+    page_anchors: ["conjuntivitis", "escabiosis"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    inner_block_columns: {10: [6, 3], 12: [8, 4]}
+    diseases:
+      - id: conjuntivitis_h10
+        keyword: "Conjuntivitis_H10"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [conjuntivitis_h10]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_amebiasis_a06:
+    # Amebiasis intestinal (A06.0-A06.3, A06.9).
+    page_anchors: ["amebiasis intestinal"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    inner_block_columns: {11: [7, 4], 12: [8, 4]}
+    periodos:
+      - desde: "2024_sem07"
+        inner_block_columns: null
+        last_block_columns: {8: 4}
+    diseases:
+      - id: amebiasis_a06
+        keyword: "Amebiasis_A06"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [amebiasis_a06]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_protozoarios_a07:
+    # Otras infecciones intestinales debidas a protozoarios (A07.0, A07.2, A07.9).
+    page_anchors: ["protozoarios"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {12: 4}
+    periodos:
+      - desde: "2024_sem07"
+        first_block_columns: null
+        last_block_columns: {8: 4}
+    diseases:
+      - id: protozoarios_a07
+        keyword: "Protozoarios_A07"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [protozoarios_a07]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_enterobiasis_b80:
+    # Enterobiasis (B80).
+    page_anchors: ["enterobiasis"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    inner_block_columns: {12: [8, 4]}
+    diseases:
+      - id: enterobiasis_b80
+        keyword: "Enterobiasis_B80"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [enterobiasis_b80]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_ascariasis_b77:
+    # Ascariasis (B77).
+    page_anchors: ["ascariasis"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {12: 4}
+    diseases:
+      - id: ascariasis_b77
+        keyword: "Ascariasis_B77"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [ascariasis_b77]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_salmonelosis_a02:
+    # Otras salmonelosis (A02).
+    page_anchors: ["salmonelosis"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {11: 3, 12: 4}
+    periodos:
+      - desde: "2024_sem06"
+        first_block_columns: null
+        last_block_columns: {8: 4}
+    diseases:
+      - id: salmonelosis_a02
+        keyword: "Salmonelosis_A02"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [salmonelosis_a02]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_alimentaria_a05:
+    # Intoxicación alimentaria bacteriana (A05).
+    page_anchors: ["alimentaria"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {11: 4, 12: 4, 8: 4}
+    diseases:
+      - id: alimentaria_a05
+        keyword: "Alimentaria_A05"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [alimentaria_a05]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_giardiasis_a071:
+    # Giardiasis (A07.1).
+    page_anchors: ["giardiasis"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    inner_block_columns: {12: [8, 4]}
+    periodos:
+      - desde: "2024_sem07"
+        inner_block_columns: null
+        first_block_columns: {8: 4}
+    diseases:
+      - id: giardiasis_a071
+        keyword: "Giardiasis_A071"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [giardiasis_a071]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_tifoidea_a01:
+    # Fiebre tifoidea (A01.0).
+    page_anchors: ["fiebre tifoidea"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    inner_block_columns: {11: [7, 4], 12: [8, 4]}
+    periodos:
+      - desde: "2024_sem06"
+        inner_block_columns: null
+        last_block_columns: {8: 4}
+    diseases:
+      - id: tifoidea_a01
+        keyword: "Tifoidea_A01"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [tifoidea_a01]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_shigelosis_a03:
+    # Shigelosis (A03).
+    page_anchors: ["shigelosis"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    inner_block_columns: {11: [8, 4], 12: [8, 4]}
+    periodos:
+      - desde: "2024_sem06"
+        inner_block_columns: null
+        first_block_columns: {8: 4}
+    diseases:
+      - id: shigelosis_a03
+        keyword: "Shigelosis_A03"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [shigelosis_a03]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_escabiosis_b86:
+    # Escabiosis (B86).
+    page_anchors: ["escabiosis"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {10: 4, 12: 4}
+    diseases:
+      - id: escabiosis_b86
+        keyword: "Escabiosis_B86"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [escabiosis_b86]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_erisipela_a46:
+    # Erisipela (A46).
+    page_anchors: ["erisipela"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    last_block_columns: {7: 3, 8: 4}
+    diseases:
+      - id: erisipela_a46
+        keyword: "Erisipela_A46"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [erisipela_a46]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_escarlatina_a38:
+    # Escarlatina (A38).
+    page_anchors: ["escarlatina"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {7: 4, 8: 4}
+    diseases:
+      - id: escarlatina_a38
+        keyword: "Escarlatina_A38"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [escarlatina_a38]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_parotiditis_b26:
+    # Parotiditis infecciosa (B26).
+    page_anchors: ["parotiditis"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {8: 4}
+    diseases:
+      - id: parotiditis_b26
+        keyword: "Parotiditis_B26"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [parotiditis_b26]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_varicela_b01:
+    # Varicela (B01).
+    page_anchors: ["varicela"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {8: 4, 12: 4}
+    diseases:
+      - id: varicela_b01
+        keyword: "Varicela_B01"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [varicela_b01]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_alacran_t63:
+    # Intoxicación por picadura de alacrán (T63.2, X22).
+    page_anchors: ["alacr"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    inner_block_columns: {11: [7, 4], 12: [8, 4]}
+    periodos:
+      - desde: "2025_sem02"
+        inner_block_columns: null
+        last_block_columns: {8: 4}
+    diseases:
+      - id: alacran_t63
+        keyword: "Alacran_T63"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [alacran_t63]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_peaton_v01:
+    # Peatón lesionado en accidente de transporte (V01-V09).
+    page_anchors: ["peat"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {8: 4}
+    diseases:
+      - id: peaton_v01
+        keyword: "Peaton_V01"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [peaton_v01]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_vehiculos_v20:
+    # Accidente de transporte en vehículos con motor (V20-V29, V40-V79).
+    page_anchors: ["peat"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    last_block_columns: {8: 4}
+    diseases:
+      - id: vehiculos_v20
+        keyword: "Vehiculos_V20"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [vehiculos_v20]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_candidiasis_b37:
+    # Candidiasis urogenital (B37.3-B37.4), primer bloque de dos (8 columnas). En 2016_sem50 y
+    # 2022_sem16 camelot añade una columna casi vacía entre la entidad y el bloque (9 en total): por
+    # eso se recorta contando desde el final, que deja el bloque en su sitio con 8 o 9 columnas.
+    page_anchors: ["candidiasis"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    inner_block_columns: {8: [8, 4], 9: [8, 4]}
+    diseases:
+      - id: candidiasis_b37
+        keyword: "Candidiasis_B37"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [candidiasis_b37]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_hepatitis_a_b15:
+    # Hepatitis vírica A (B15).
+    page_anchors: ["b15", "b16"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {8: 4}
+    diseases:
+      - id: hepatitis_a_b15
+        keyword: "Hepatitis_A_B15"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [hepatitis_a_b15]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_hepatitis_b_b16:
+    # Hepatitis vírica B (B16).
+    page_anchors: ["b15", "b16"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    last_block_columns: {8: 4}
+    diseases:
+      - id: hepatitis_b_b16
+        keyword: "Hepatitis_B_B16"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [hepatitis_b_b16]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_hepatitis_c_b17:
+    # Hepatitis vírica C (B17.1, B18.2).
+    page_anchors: ["b17.1"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {11: 4, 12: 4}
+    diseases:
+      - id: hepatitis_c_b17
+        keyword: "Hepatitis_C_B17"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [hepatitis_c_b17]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_quemaduras_t20:
+    # Quemaduras (T20-T32), primer bloque de tres. En 2020_sem20, 2020_sem21 y 2020_sem32 camelot
+    # añade una columna casi vacía tras la entidad (13 en total): se recorta contando desde el final.
+    page_anchors: ["quemaduras", "t58"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    inner_block_columns: {11: [11, 4], 12: [12, 4], 13: [12, 4]}
+    diseases:
+      - id: quemaduras_t20
+        keyword: "Quemaduras_T20"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [quemaduras_t20]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_mordedura_perro_w54:
+    # Mordeduras por perro (W54).
+    page_anchors: ["w54"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {12: 4, 8: 4}
+    diseases:
+      - id: mordedura_perro_w54
+        keyword: "Mordedura_Perro_W54"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [mordedura_perro_w54]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_mordedura_mamiferos_w55:
+    # Mordeduras por otros mamíferos (W55).
+    page_anchors: ["w54"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    inner_block_columns: {12: [8, 4]}
+    periodos:
+      - desde: "2024_sem02"
+        inner_block_columns: null
+        last_block_columns: {8: 4}
+    diseases:
+      - id: mordedura_mamiferos_w55
+        keyword: "Mordedura_Mamiferos_W55"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [mordedura_mamiferos_w55]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_reumatica_i00:
+    # Fiebre reumática aguda (I00-I02).
+    page_anchors: ["reumática"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    last_block_columns: {11: 4, 12: 4, 8: 4}
+    diseases:
+      - id: reumatica_i00
+        keyword: "Reumatica_I00"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [reumatica_i00]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_ivp_i87:
+    # Insuficiencia venosa periférica (I87.2).
+    page_anchors: ["asma", "gingivitis"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {11: 3, 12: 4}
+    diseases:
+      - id: ivp_i87
+        keyword: "IVP_I87"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [ivp_i87]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2023_sem45.pdf"
+        diseases: [ivp_i87]
+        keep_period: true
+        reason: >-
+          renglón de Chiapas alterado en el PDF («Chiapas San Luis Potosí», 11 valores en vez de 12)
+          y camelot no reconoce ninguna entidad de la tabla (misma página y exclusión que gingivitis)
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_displasias:
+    # CUADRO 15.1: Displasia cervical leve y moderada (N87.0-N87.1) y severa y CaCu in situ
+    # (N87.2, D06), dos bloques de 3 columnas (Sem, acumulado del año y del anterior) sin desglose
+    # por sexo en 669 de 670 boletines. «displasia» sola encuentra también el 15.2 en 2023-2024 (su
+    # encabezado repite el rótulo); con «severa» la página es única en los 670.
+    page_anchors: ["severa", "displasia"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    diseases:
+      - id: displasia_leve_n87
+        keyword: "Displasia_Leve_N87"
+        block_index: 0
+        onboard: true
+      - id: displasia_severa_n87
+        keyword: "Displasia_Severa_N87"
+        block_index: 1
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [displasia_leve_n87, displasia_severa_n87]
+        reason: "formato de cierre anual: sólo acumulados, sin columna Sem"
+    layout_variants:
+      - id: v_3col_total
+        min_year_week: "0000_sem00"
+        cols_per_disease: 3
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20_cuadro_13_5:
+    # CUADRO 13.5: hiperplasia de la próstata (N40), edema, proteinuria y trastornos hipertensivos
+    # en el embarazo, parto y puerperio (O10-O16) y diabetes mellitus en el embarazo (O24.4), tres
+    # bloques sin desglose por sexo. Hasta 2015_sem01 los dos primeros traen sólo Sem y acumulado
+    # (7 columnas); desde 2015_sem02 los tres traen además el acumulado del año anterior (9).
+    # «hiperplasia» con los marcadores encuentra una sola página en 669 de 670 boletines.
+    page_anchors: ["hiperplasia"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    anchos_sin_sexo: [2, 2, 3]
+    periodos:
+      - desde: "2015_sem02"
+        anchos_sin_sexo: null
+    diseases:
+      - id: hiperplasia_prostata_n40
+        keyword: "Hiperplasia_Prostata_N40"
+        block_index: 0
+        onboard: true
+      - id: embarazo_hipertensivos_o10
+        keyword: "Embarazo_Hipertensivos_O10"
+        block_index: 1
+        onboard: true
+      - id: embarazo_diabetes_o24
+        keyword: "Embarazo_Diabetes_O24"
+        block_index: 2
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [hiperplasia_prostata_n40, embarazo_hipertensivos_o10, embarazo_diabetes_o24]
+        reason: "formato de cierre anual: sólo acumulados, sin columna Sem"
+    layout_variants:
+      - id: v_3col_total
+        min_year_week: "0000_sem00"
+        cols_per_disease: 3
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
