@@ -2410,3 +2410,103 @@ padecimientos:
       color: "#65A30D"
       label: "Otras helmintiasis"
       nombre_completo: "Otras helmintiasis (B65-B67, B70-B76, B78, B79, B81-B83, excepto B73 y B75)"
+
+  - id: rotavirus_a080
+    data_name: "Enteritis debida a rotavirus"
+    artifact_key: Rotavirus_A080
+    slug: rotavirus_a080
+    display_name: "Enteritis debida a rotavirus"
+    cie_codes: ["A08.0"]
+    aliases: ["enteritis debida a rotavirus", "enteritis por rotavirus", "a08.0"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta10b_rotavirus_a080
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#B91C1C"
+      label: "Enteritis por rotavirus"
+      nombre_completo: "Enteritis debida a rotavirus (A08.0)"
+
+  - id: calor_t67
+    data_name: "Efectos del calor y de la luz"
+    artifact_key: Calor_T67
+    slug: calor_t67
+    display_name: "Efectos del calor y de la luz"
+    cie_codes: ["T67", "X30"]
+    aliases: ["efectos del calor y de la luz", "efectos del calor", "golpe de calor", "t67"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta10b_calor_t67
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#EA580C"
+      label: "Efectos del calor"
+      nombre_completo: "Efectos del calor y de la luz (T67, X30)"
+
+  - id: absceso_hepatico_a064
+    data_name: "Absceso hepático amebiano"
+    artifact_key: Absceso_Hepatico_A064
+    slug: absceso_hepatico_a064
+    display_name: "Absceso hepático amebiano"
+    cie_codes: ["A06.4"]
+    aliases: ["absceso hepatico amebiano", "absceso amebiano del higado", "a06.4"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta10b_absceso_hepatico_a064
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#9A3412"
+      label: "Absceso hepático amebiano"
+      nombre_completo: "Absceso hepático amebiano (A06.4)"
+
+  - id: bocio_e01
+    data_name: "Bocio endémico"
+    artifact_key: Bocio_E01
+    slug: bocio_e01
+    display_name: "Bocio endémico"
+    cie_codes: ["E01"]
+    aliases: ["bocio endemico", "bocio por deficiencia de yodo", "e01"]
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: enfermedades_no_transmisibles
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#0F766E"
+      label: "Bocio endémico"
+      nombre_completo: "Bocio endémico (E01)"

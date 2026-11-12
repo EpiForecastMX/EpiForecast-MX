@@ -82,7 +82,7 @@ cuadro_groups:
       - id: bocio_e01
         keyword: "Bocio_E01"
         block_index: 0
-        onboard: false
+        onboard: true
       - id: diabetes_t1
         keyword: "Diabetes_T1"
         block_index: 1
@@ -101,6 +101,9 @@ cuadro_groups:
       - file: "2016_sem20.pdf"
         diseases: [diabetes_t2]
         keep_period: true              # semana interior: el runner exige series contiguas
+      - file: "2016_sem20.pdf"
+        diseases: [bocio_e01]
+        keep_period: true              # misma errata de fuente: el bloque E01 trae cifras de E11-E14
         reason: >-
           bloques E01 y E11-E14 intercambiados y el de E11-E14 ajeno a la semana 19 (acum
           68,724/96,370 mayor que el de la semana 21); E10 sí es coherente
@@ -1512,6 +1515,91 @@ cuadro_groups:
     source_exclusions:
       - file: "2014_sem01.pdf"
         diseases: [helmintiasis_b65]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta10b_rotavirus_a080:
+    # Enteritis debida a rotavirus (A08.0): primer bloque, con meningitis tuberculosa (A17.0), 8
+    # columnas en 2014-2026 (pdftotext). «a08.0» sola aparece también en otra página.
+    page_anchors: ["rotavirus", "a17.0"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {8: 4}
+    diseases:
+      - id: rotavirus_a080
+        keyword: "Rotavirus_A080"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [rotavirus_a080]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta10b_calor_t67:
+    # Efectos del calor y de la luz (T67; desde 2025 «T67, X30»): bloque intermedio (síndrome febril,
+    # calor, enfermedad febril exantemática) hasta 2025_sem01 y primero (con depleción del volumen)
+    # desde 2025_sem02.
+    page_anchors: ["calor"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    inner_block_columns: {12: [8, 4]}
+    periodos:
+      - desde: "2025_sem02"
+        inner_block_columns: null
+        first_block_columns: {8: 4}
+    diseases:
+      - id: calor_t67
+        keyword: "Calor_T67"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [calor_t67]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta10b_absceso_hepatico_a064:
+    # Absceso hepático amebiano (A06.4): último bloque (tras A05 y amebiasis intestinal) hasta
+    # 2024_sem06 y primero (con protozoarios) desde 2024_sem07. 31 boletines de 2014 no imprimen el
+    # código: se ancla por nombre.
+    page_anchors: ["absceso"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    last_block_columns: {12: 4, 11: 4}
+    periodos:
+      - desde: "2024_sem07"
+        last_block_columns: null
+        first_block_columns: {8: 4}
+    diseases:
+      - id: absceso_hepatico_a064
+        keyword: "Absceso_Hepatico_A064"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [absceso_hepatico_a064]
         reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
     layout_variants:
       - id: v_4col_prev
