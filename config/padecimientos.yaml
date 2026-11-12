@@ -1425,7 +1425,7 @@ padecimientos:
     gallery_enabled: false
     web:
       color: "#CA8A04"
-      label: "Infecciones por protozoarios"
+      label: "Otras protozoosis intestinales"
       nombre_completo: "Otras infecciones intestinales debidas a protozoarios (A07.0, A07.2, A07.9)"
 
   - id: enterobiasis_b80
