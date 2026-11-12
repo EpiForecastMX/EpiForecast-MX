@@ -1321,8 +1321,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_faringitis_j02
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
@@ -1408,8 +1408,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_protozoarios_a07
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
@@ -1620,8 +1620,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_escabiosis_b86
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
@@ -1704,8 +1704,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_parotiditis_b26
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
@@ -1735,8 +1735,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_varicela_b01
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
@@ -1791,8 +1791,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_peaton_v01
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
@@ -1953,8 +1953,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_quemaduras_t20
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
@@ -2059,8 +2059,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_ivp_i87
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
@@ -2091,8 +2091,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_displasias
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
@@ -2150,8 +2150,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_cuadro_13_5
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
