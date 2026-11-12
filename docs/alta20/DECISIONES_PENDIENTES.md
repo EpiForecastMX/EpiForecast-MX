@@ -1,15 +1,18 @@
 # Decisiones pendientes del autor (lote alta20, 12-nov-2026)
 
-**Actualización de la tarde del 12-nov-2026.** El punto 1 ya se decidió: el autor autorizó la política de
-cinco motores para los 17 (`AUTORIZACION_POLITICA_17.md`). Resultado de la prueba única de 2025: cinco aceptados
-y publicados, doce rechazados (cifras en `docs/C7_15_ALTA20.md`, «Lote 17»). Siguen pendientes los puntos 2 a 4.
-Lo que sigue son cifras para decidir, no recomendaciones de política.
+**Estado actual (cierre del 12-nov-2026).** Decidido: la política de cinco motores para los 17 detenidos
+(`AUTORIZACION_POLITICA_17.md`; cinco aceptados y publicados, doce rechazados) y el control de diez rechazos
+(`AUTORIZACION_CONTROLES_10.md`; publicados, no validados). **Pendiente del autor:** el control de los cinco
+rechazos no autorizados (displasia_severa_n87, salmonelosis_a02, tifoidea_a01, escarlatina_a38, hepatitis_c_b17),
+la comparabilidad de mordeduras (punto 3) y las reservas que no se dieron de alta (punto 4). Las secciones
+siguientes conservan el texto de cada fase; donde dicen «pendiente» o «sigue disponible», es historia anterior a
+esas autorizaciones. Lo que sigue son cifras para decidir, no recomendaciones de política.
 
-## 1. Política para los detenidos por ETS o Ridge (decidida: ver arriba)
+## 1. Política para los detenidos por ETS o Ridge (decidida el 12-nov-2026; texto anterior a la autorización)
 
 `rolling_cv_v1` exige ETS y Ridge como incumbentes; en series estado×sexo con semanas en cero o casi en cero
-ambos producen pronósticos negativos y fallan cerrado (trampa 16). Ningún candidato detenido abrió 2025, así
-que la prueba sigue disponible. La alternativa vigente es `rolling_cv_baja_incidencia_v1` (los cinco motores
+ambos producen pronósticos negativos y fallan cerrado (trampa 16). Antes de la autorización, ningún candidato
+detenido había abierto 2025; después de ella cada uno la abrió una sola vez y ya no está disponible. La alternativa vigente es `rolling_cv_baja_incidencia_v1` (los cinco motores
 estacionales, mismos pliegues y la misma aceptación), que no tiene criterio escrito: hace falta una orden
 nominal por padecimiento o un criterio medible.
 

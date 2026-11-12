@@ -28,6 +28,17 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
+## Checkpoint vigente — lote alta20 cerrado — 12-nov-2026
+
+Prevalece sobre las secciones fechadas inferiores en cuanto al número de publicados y la base semanal.
+Publicados: 55 en el sitio y 51 del runner (veinte nuevos el 12-nov: diez aceptados en la prueba de 2025, 0/4
+en curso, y diez controles estacionales no validados por autorización nominal del autor). Fuente de verdad:
+`config/padecimientos.yaml` (lifecycle) y `publication/catalog.json` del frontend; guía
+`docs/C7_15_ALTA20.md`; decisiones pendientes en `docs/alta20/DECISIONES_PENDIENTES.md`. Base semanal de W42:
+`ingestion_observado_W43/candidato_con_alta20_controles10` (sha256 `fad3c95c…`). Cierre del lote: backend
+`bca67a68` (CI verde), frontend `939e1d86` (versión servida comprobada por contenido). Las secciones
+inferiores con 31, 36 o 41 del runner, o con otra base, son historia.
+
 ## Diez controles autorizados: meta de veinte alcanzada — 12-nov-2026 (noche)
 
 El autor autorizó por nombre publicar el control estacional de diez rechazos de 2025 («Autorizar estos diez
