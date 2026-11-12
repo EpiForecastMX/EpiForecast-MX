@@ -1118,12 +1118,6 @@ cuadro_groups:
       - file: "2014_sem01.pdf"
         diseases: [hepatitis_a_b15]
         reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
-      - file: "2024_sem09.pdf"
-        diseases: [hepatitis_a_b15]
-        keep_period: true              # semana interior de 2024 (pliegue de desarrollo, no prueba)
-        reason: >-
-          fallo del EXTRACTOR, no de la fuente: camelot lee 31 entidades y el PDF (pdftotext, página
-          16, Cuadro 3.5) trae las 32 con su TOTAL; se imputa causalmente esa sola semana de 2024
     layout_variants:
       - id: v_4col_prev
         min_year_week: "0000_sem00"

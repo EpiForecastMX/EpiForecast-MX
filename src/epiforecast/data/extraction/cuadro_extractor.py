@@ -77,6 +77,15 @@ def find_cuadro_page(pdf_path: str, anchors: list[str], state_markers: list[str]
     return None
 
 
+def _area_pagina(pdf_path: str, page: int) -> str | None:
+    """Área de camelot (``x1,y1,x2,y2``) que cubre la página completa, o None si no se lee."""
+    try:
+        caja = PdfReader(pdf_path).pages[page - 1].mediabox
+    except Exception:  # noqa: BLE001 - un PDF ilegible deja la lectura como estaba
+        return None
+    return f"0,{float(caja.height)},{float(caja.width)},0"
+
+
 def _tabla_estatal(
     pdf_path: str,
     page: int,
@@ -146,6 +155,14 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
         amplia = _tabla_estatal(pdf_path, page, valor_en_nombre=vn, edge_tol=500)
         if amplia is not None and len(amplia) == esperados:
             df_clean = amplia
+    area = _area_pagina(pdf_path, page) if len(df_clean) < esperados else None
+    if area is not None and len(df_clean) < esperados:
+        # camelot puede dejar fuera el primer renglón de estados al delimitar la tabla (2024_sem09,
+        # Cuadro 3.5: falta Aguascalientes). Con el área de la página completa la lee entera. Sólo
+        # se reintenta cuando faltan estados: una extracción válida no cambia.
+        completa = _tabla_estatal(pdf_path, page, valor_en_nombre=vn, table_areas=[area])
+        if completa is not None and len(completa) == esperados:
+            df_clean = completa
     bloque_posterior = bool(spec.get("last_block_columns") or spec.get("inner_block_columns"))
     if len(df_clean) < esperados and bloque_posterior and not spec.get("first_block_columns"):
         # Primer valor pegado al nombre: sólo se repara si el bloque objetivo no lo contiene.

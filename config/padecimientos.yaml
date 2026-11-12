@@ -2313,8 +2313,9 @@ padecimientos:
     artifact_key: Otras_Hepatitis_B17
     slug: otras_hepatitis_b17
     display_name: "Otras hepatitis víricas"
-    cie_codes: ["B17", "B18", "B19"]
-    aliases: ["otras hepatitis viricas", "otras hepatitis virales", "b17-b19"]
+    # Rótulo de la fuente desde 2015: «B17-B19 excepto B17.1 y B18.2» (hepatitis C va aparte).
+    cie_codes: ["B17.0", "B17.2", "B17.8", "B17.9", "B18.0", "B18.1", "B18.8", "B18.9", "B19"]
+    aliases: ["otras hepatitis viricas", "otras hepatitis virales"]
     profile: aguda_conteos
     batch: standalone
     extraction_group: alta10b_otras_hepatitis_b17
@@ -2388,8 +2389,10 @@ padecimientos:
     artifact_key: Helmintiasis_B65
     slug: helmintiasis_b65
     display_name: "Otras helmintiasis"
-    cie_codes: ["B65-B67", "B70-B76", "B78", "B79", "B81-B83"]
-    aliases: ["otras helmintiasis", "helmintiasis", "parasitosis por helmintos", "b65-b83"]
+    # Rótulo de la fuente desde 2017: «B65-B67, B70-B76, B78, B79, B81-B83 excepto B73 y B75».
+    # Se enumera sin B73 (oncocercosis) ni B75 (triquinosis), que el boletín publica aparte.
+    cie_codes: ["B65", "B66", "B67", "B70", "B71", "B72", "B74", "B76", "B78", "B79", "B81", "B82", "B83"]
+    aliases: ["otras helmintiasis"]
     profile: aguda_conteos
     batch: standalone
     extraction_group: alta10b_helmintiasis_b65
