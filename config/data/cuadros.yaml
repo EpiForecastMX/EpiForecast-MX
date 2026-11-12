@@ -1130,6 +1130,12 @@ cuadro_groups:
       - file: "2014_sem01.pdf"
         diseases: [hepatitis_a_b15]
         reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2016_sem20.pdf"
+        diseases: [hepatitis_a_b15]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes y
+          cardiovasculares en este boletín): semana 151/9/127 y acumulado 2 549/92/2 806 (semanas 19/20/21); el acumulado salta y vuelve
     layout_variants:
       - id: v_4col_prev
         min_year_week: "0000_sem00"
@@ -1279,6 +1285,12 @@ cuadro_groups:
       - file: "2014_sem01.pdf"
         diseases: [reumatica_i00]
         reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2016_sem20.pdf"
+        diseases: [reumatica_i00]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes y
+          cardiovasculares en este boletín): semana 28/63/10 y acumulado 339/1 088/360 (semanas 19/20/21); el acumulado salta y vuelve
     layout_variants:
       - id: v_4col_prev
         min_year_week: "0000_sem00"
@@ -1439,6 +1451,12 @@ cuadro_groups:
       - file: "2014_sem01.pdf"
         diseases: [otras_hepatitis_b17]
         reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2016_sem20.pdf"
+        diseases: [otras_hepatitis_b17]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes y
+          cardiovasculares en este boletín): acumulado 468/294/516 (semanas 19/20/21); el acumulado salta y vuelve
     layout_variants:
       - id: v_4col_prev
         min_year_week: "0000_sem00"
@@ -1553,6 +1571,12 @@ cuadro_groups:
       - file: "2014_sem01.pdf"
         diseases: [rotavirus_a080]
         reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2016_sem20.pdf"
+        diseases: [rotavirus_a080]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes y
+          cardiovasculares en este boletín): semana 50/199/25 y acumulado 543/4 186/614 (semanas 19/20/21); el acumulado salta y vuelve
     layout_variants:
       - id: v_4col_prev
         min_year_week: "0000_sem00"
@@ -1588,6 +1612,12 @@ cuadro_groups:
       - file: "2014_sem01.pdf"
         diseases: [calor_t67]
         reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2016_sem20.pdf"
+        diseases: [calor_t67]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes y
+          cardiovasculares en este boletín): semana 65/3 347/108 y acumulado 1 121/87 121/1 336 (semanas 19/20/21); el acumulado salta y vuelve
     layout_variants:
       - id: v_4col_prev
         min_year_week: "0000_sem00"
