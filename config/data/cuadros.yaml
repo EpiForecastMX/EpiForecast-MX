@@ -1069,12 +1069,14 @@ cuadro_groups:
     backend: camelot_stream
 
   alta20_candidiasis_b37:
-    # Candidiasis urogenital (B37.3-B37.4).
+    # Candidiasis urogenital (B37.3-B37.4), primer bloque de dos (8 columnas). En 2016_sem50 y
+    # 2022_sem16 camelot añade una columna casi vacía entre la entidad y el bloque (9 en total): por
+    # eso se recorta contando desde el final, que deja el bloque en su sitio con 8 o 9 columnas.
     page_anchors: ["candidiasis"]
     state_markers: ["zacatecas", "tamaulipas"]
     year_week_source: filename
     observation_lag_weeks: 1
-    first_block_columns: {8: 4}
+    inner_block_columns: {8: [8, 4], 9: [8, 4]}
     diseases:
       - id: candidiasis_b37
         keyword: "Candidiasis_B37"
