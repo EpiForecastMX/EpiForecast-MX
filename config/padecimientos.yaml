@@ -1502,11 +1502,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_alimentaria_a05
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: alimentaria_a05_refit_final_2e62af0adb90_d7d823a85316
+      forecast_run_id: alimentaria_a05_forecast_h52_d7d823a85316_044d3b8faae1
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 2e62af0adb909c7fcbc01d82e48f9abe106ba948ba77d88d0a564b5cc3ae62bd
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1577,11 +1583,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_shigelosis_a03
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: shigelosis_a03_refit_final_c765d8acc370_e5d40ff04ac4
+      forecast_run_id: shigelosis_a03_forecast_h52_e5d40ff04ac4_57263b96169e
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: c765d8acc370bae0535377558a8e27cdf5f04926a1a2b6b102d2146555b8bdd8
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1627,11 +1639,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_erisipela_a46
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: erisipela_a46_refit_final_587f6de63158_41e9e306fedc
+      forecast_run_id: erisipela_a46_forecast_h52_41e9e306fedc_69bc3228ff18
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 587f6de63158750aee2042966ac1b65f1a7d67957683090e4abf00e1b9f7f442
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1805,11 +1823,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_candidiasis_b37
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: candidiasis_b37_refit_final_2308c0eac8eb_5b97cd9cc039
+      forecast_run_id: candidiasis_b37_forecast_h52_5b97cd9cc039_8eae52889016
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 2308c0eac8ebcb523fb492de23c32050cd8442057b369e99cadef302cad2b9f2
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2139,11 +2163,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_cuadro_13_5
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: embarazo_diabetes_o24_refit_final_4d328188cbcb_44c7cce1a7be
+      forecast_run_id: embarazo_diabetes_o24_forecast_h52_44c7cce1a7be_d997e88ca8b3
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 4d328188cbcb2500e591f3ce074b880ecd7917c015aec20e0aae4fd14eb6fff4
     sex_breakdown: false
     prophet_grid_key: null
     deepar_grid_key: null
