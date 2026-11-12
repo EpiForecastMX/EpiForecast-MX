@@ -27,7 +27,7 @@
 
 ## Project Description
 
-**EpiForecast-MX** is a production-grade epidemiological intelligence platform developed in partnership with the **Instituto Mexicano del Seguro Social (IMSS)** to forecast the weekly incidence of thirty-five reportable conditions across Mexico's 32 states with a 52-week horizon.
+**EpiForecast-MX** is a production-grade epidemiological intelligence platform developed in partnership with the **Instituto Mexicano del Seguro Social (IMSS)** to forecast the weekly incidence of forty reportable conditions across Mexico's 32 states with a 52-week horizon.
 
 The platform uses a **polymorphic Factory pattern** to support multiple forecasting engines (**Prophet**, **DeepAR**, **Ensemble**, and **Stacking**), ensuring scalability and ease of integration for future algorithms. DeepAR training runs on AWS SageMaker with NVIDIA T4 GPUs for fast iteration. The Ensemble model combines Prophet with XGBoost residual correction, while the Stacking model uses Prophet + ETS + LightGBM experts with a Ridge meta-learner for optimal weight combination.
 
@@ -39,7 +39,7 @@ The platform uses a **polymorphic Factory pattern** to support multiple forecast
 | Dengue *(extra deliverable)* | A97 | Vector-borne, ~4-5 year epidemic cycle, near-zero off-season series |
 | Generic runner releases (30) | various | Obesity, eating disorders, diabetes, cardiovascular, bulletin radar group (asthma included) and seventeen cancers; see the registry |
 
-Four conditions (Depression, Parkinson's, Alzheimer's and Dengue) run on the legacy multi-model pipeline (333 neuro models plus 99 Dengue series); see [Dengue (Fourth Condition)](#dengue-fourth-condition-extra-deliverable). Thirty-one more are published from sealed releases of the generic runner (`src/epiforecast/runner/`). The registry (`config/padecimientos.yaml`) decides which ones are public. Releases that failed their acceptance test (2025 for most of them; 2026-W01 to W41 for the fifteen cancers with data only since 2023, under policy `rolling_cv_historia_corta_2023_v1`) are published with the seasonal control by express order of the author, never as validated. Publication history: `docs/C7_7_PUBLICACION_OBESIDAD.md` through `docs/C7_14_NEUMONIAS.md`.
+Four conditions (Depression, Parkinson's, Alzheimer's and Dengue) run on the legacy multi-model pipeline (333 neuro models plus 99 Dengue series); see [Dengue (Fourth Condition)](#dengue-fourth-condition-extra-deliverable). Thirty-six more are published from sealed releases of the generic runner (`src/epiforecast/runner/`). The registry (`config/padecimientos.yaml`) decides which ones are public. Releases that failed their acceptance test (2025 for most of them; 2026-W01 to W41 for the fifteen cancers with data only since 2023, under policy `rolling_cv_historia_corta_2023_v1`) are published with the seasonal control by express order of the author, never as validated. Publication history: `docs/C7_7_PUBLICACION_OBESIDAD.md` through `docs/C7_15_ALTA20.md`.
 
 ---
 
@@ -465,9 +465,11 @@ documented in `CLAUDE.md` and the git history.
 ### Current Data Snapshot
 
 - **Published cut:** bulletin 43 of 2026 for the four legacy conditions and the bulletin radar; the
-  31 runner releases observe through 2026-W42. Forecast origin and horizon are fixed per release and
+  36 runner releases observe through 2026-W42. Forecast origin and horizon are fixed per release and
   do not move with the observations: 29 releases have origin 2026-W41 and horizon 2026-W42 to
-  2027-W41; pneumonia and bronchopneumonia has origin 2026-W42 and horizon 2026-W43 to 2027-W42;
+  2027-W41; pneumonia and bronchopneumonia and the five added on 2026-11-12 (acute otitis media,
+  conjunctivitis, intestinal amoebiasis, motor-vehicle transport accidents and hypertensive disorders of
+  pregnancy) have origin 2026-W42 and horizon 2026-W43 to 2027-W42;
   Obesity keeps origin 2026-W26 and horizon 2026-W27 to 2027-W26. A fail-closed parity rule forbids
   mixed public cuts.
 - **Knowledge base:** about 260 KB (333 neuro production models, a `dengue` section, 26 stats keys,
