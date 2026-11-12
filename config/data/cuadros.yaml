@@ -1563,7 +1563,9 @@ cuadro_groups:
     # Efectos del calor y de la luz (T67; desde 2025 «T67, X30»): bloque intermedio (síndrome febril,
     # calor, enfermedad febril exantemática) hasta 2025_sem01 y primero (con depleción del volumen)
     # desde 2025_sem02.
-    page_anchors: ["calor"]
+    # «calor» sola coincide desde 2025_sem02 con el Cuadro 18.5 (contacto con calor); con el código es
+    # página única en 669 de 670 boletines (pdftotext).
+    page_anchors: ["calor", "t67"]
     state_markers: ["zacatecas", "tamaulipas"]
     year_week_source: filename
     observation_lag_weeks: 1
