@@ -65,9 +65,15 @@ def test_el_contrato_separa_legacy_de_release():
         "tumores malignos de los huesos y de los cartilagos articulares",
         "tumor maligno del rinon",
         "neumonias y bronconeumonias",
+        "otitis media aguda",
+        "conjuntivitis",
+        "amebiasis intestinal",
+        "accidente de transporte en vehiculos con motor",
+        "edema proteinuria y trastornos hipertensivos en el embarazo parto y puerperio",
     )
     assert c.releases["obesidad"] == (_OBESIDAD, _RELEASE)
     assert sorted(i for i, _ in c.releases.values()) == [
+        "amebiasis_a06",
         "anorexia_f50",
         "asma_j45",
         "cancer_colon_c18",
@@ -85,8 +91,10 @@ def test_el_contrato_separa_legacy_de_release():
         "cancer_pulmon_c33",
         "cancer_rinon_c64",
         "cerebrovascular_i60",
+        "conjuntivitis_h10",
         "diabetes_t1",
         "diabetes_t2",
+        "embarazo_hipertensivos_o10",
         "gingivitis_k05",
         "hipertension_i10",
         "intestinales_a04",
@@ -98,9 +106,11 @@ def test_el_contrato_separa_legacy_de_release():
         "linfoma_no_hodgkin_c82",
         "neumonias_j12",
         "obesidad",
+        "otitis_h65",
         "ulceras_k25",
+        "vehiculos_v20",
     ]
-    # La paridad de corte cubre a los treinta y uno; las series legacy siguen siendo 3×111 + 99.
+    # La paridad de corte cubre a los treinta y seis; las series legacy siguen siendo 3×111 + 99.
     assert c.padecimientos == (*c.legado, *c.release)
     assert c.legado == ("depresion", "parkinson", "alzheimer", "dengue")
     assert len(c.claves_esperadas()) == 432
@@ -162,6 +172,11 @@ def test_la_paridad_de_corte_incluye_al_publicado_del_runner(tmp_path):
         "Tumores malignos del encéfalo y otras partes del sistema nervioso central": 42,
         "Tumor maligno del cuerpo del útero": 42,
         "Tumor maligno del ovario": 42,
+        "Otitis media aguda": 42,
+        "Conjuntivitis": 42,
+        "Amebiasis intestinal": 42,
+        "Accidente de transporte en vehículos con motor": 42,
+        "Edema, proteinuria y trastornos hipertensivos en el embarazo, parto y puerperio": 42,
     }
     rezagada = _consolidado(tmp_path / "a.csv", {**pads, "Obesidad": 27})
     resultado = revisa_consolidado(rezagada, contrato, contrato.padecimientos)
@@ -182,7 +197,7 @@ def test_un_publicado_del_runner_ausente_del_consolidado_falla(tmp_path):
 def test_revisa_releases_falla_cerrado_sin_bundle_ni_estado(tmp_path):
     resultado = revisa_releases(tmp_path, ContratoCobertura.canonico())
     assert not resultado.pasa
-    assert len(resultado.problemas) == 31
+    assert len(resultado.problemas) == 36
     assert any("release obesidad" in p for p in resultado.problemas)
     assert any("release diabetes tipo i:" in p for p in resultado.problemas)
 
