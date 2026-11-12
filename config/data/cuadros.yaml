@@ -1562,19 +1562,22 @@ cuadro_groups:
     backend: camelot_stream
 
   alta10b_calor_t67:
-    # Efectos del calor y de la luz (T67; desde 2025 «T67, X30»): bloque intermedio (síndrome febril,
-    # calor, enfermedad febril exantemática) hasta 2025_sem01 y primero (con depleción del volumen)
-    # desde 2025_sem02.
-    # «calor» sola coincide desde 2025_sem02 con el Cuadro 18.5 (contacto con calor); con el código es
-    # página única en 669 de 670 boletines (pdftotext).
+    # Efectos del calor y de la luz (T67; desde 2017 «T67, X30»). Cambia de cuadro (pdftotext):
+    # 2014_sem02-2017_sem01 bloque intermedio de la página de síndrome febril (10 columnas hasta
+    # 2015_sem01, con calor sin año anterior; 12 después); 2017_sem02-2025_sem01 último bloque de la
+    # página de alacrán; desde 2025_sem02 primer bloque, con depleción del volumen (E86).
+    # «calor» sola coincide desde 2025_sem02 con el Cuadro 18.5: se ancla con el código.
     page_anchors: ["calor", "t67"]
     state_markers: ["zacatecas", "tamaulipas"]
     year_week_source: filename
     observation_lag_weeks: 1
-    inner_block_columns: {12: [8, 4]}
+    inner_block_columns: {12: [8, 4], 10: [7, 3]}
     periodos:
-      - desde: "2025_sem02"
+      - desde: "2017_sem02"
         inner_block_columns: null
+        last_block_columns: {12: 4}
+      - desde: "2025_sem02"
+        last_block_columns: null
         first_block_columns: {8: 4}
     diseases:
       - id: calor_t67
