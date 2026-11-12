@@ -109,6 +109,17 @@ def alinea_valor_en_nombre(df: pd.DataFrame) -> pd.DataFrame:
     filas = df.astype(str).to_numpy(copy=True)
     if filas.shape[1] < 3:
         return pd.DataFrame(filas, index=df.index, columns=df.columns)
+    for i in range(len(filas)):
+        # Misma página, otra variante: el valor pegado al nombre en la celda («8\nCiudad de México»).
+        partes = filas[i, 0].split("\n")
+        if (
+            len(partes) == 2
+            and _NUMERO_SUELTO.match(partes[0].strip())
+            and not _NUMERO_SUELTO.match(partes[1].strip())
+            and filas[i, 1].strip() == ""
+            and bool((filas[i, 2:] != "").any())
+        ):
+            filas[i, 0], filas[i, 1] = partes[1].strip(), partes[0].strip()
     for i in range(1, len(filas)):
         nombre = filas[i, 0].strip()
         con_nombre = nombre != "" and not _NUMERO_SUELTO.match(nombre)

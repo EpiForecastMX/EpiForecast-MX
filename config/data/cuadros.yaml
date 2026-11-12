@@ -815,7 +815,7 @@ cuadro_groups:
     periodos:
       - desde: "2024_sem07"
         inner_block_columns: null
-        first_block_columns: {8: 4}
+        first_block_columns: {8: 4, 7: 4}
     diseases:
       - id: giardiasis_a071
         keyword: "Giardiasis_A071"
@@ -1504,11 +1504,9 @@ cuadro_groups:
     backend: camelot_stream
 
   alta10b_helmintiasis_b65:
-    # Otras helmintiasis (B65-B67, B70-B76, B78, B79, B81-B83; desde 2017 «excepto B73 y B75»):
-    # último bloque de la página de giardiasis. pdftotext: tres bloques (protozoarios, giardiasis,
-    # helmintiasis) hasta 2024_sem06 y dos desde 2024_sem07. Desde 2024_sem50 camelot une columnas
-    # del bloque de giardiasis (7 columnas) y la página impresa trae 8: el último bloque se toma por
-    # su ancho y se coteja con el TOTAL impreso.
+    # Otras helmintiasis (B65-B67, B70-B76, B78, B79, B81-B83; el boletín imprime «excepto B73 y B75»
+    # desde 2017 y el formato SUIVE-1 de 2014 ya lo excluía): último bloque de la página de giardiasis.
+    # Tres bloques (protozoarios, giardiasis, helmintiasis) hasta 2024_sem06 y dos desde 2024_sem07.
     page_anchors: ["giardiasis"]
     state_markers: ["zacatecas", "tamaulipas"]
     year_week_source: filename
@@ -1516,7 +1514,8 @@ cuadro_groups:
     # Desde 2024_sem50 camelot entrega cada entidad en dos renglones con el primer valor en la columna
     # del nombre (2025_sem04, página 23): sin esta reparación esos boletines se leían como ceros.
     valor_en_columna_nombre: true
-    last_block_columns: {12: 4, 8: 4, 7: 4}
+    # 7 columnas: boletines en que la fuente imprime helmintiasis sin año anterior (2026_sem42: 4 + 3).
+    last_block_columns: {12: 4, 8: 4, 7: 3}
     diseases:
       - id: helmintiasis_b65
         keyword: "Helmintiasis_B65"
