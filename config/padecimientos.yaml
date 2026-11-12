@@ -1321,11 +1321,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_faringitis_j02
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: faringitis_j02_refit_final_9fe0414b00c7_bbb188de53b3
+      forecast_run_id: faringitis_j02_forecast_h52_bbb188de53b3_785544542479
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (12-nov-2026,
     # CONTROLS_10_AUTHORIZATION). Nunca como validado.
     acceptance_fallback_run: faringitis_j02_benchmark_test_b3be128c1aba_bbdda2490c60
@@ -1405,11 +1411,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_protozoarios_a07
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: protozoarios_a07_refit_final_9fe0414b00c7_9a28a3d3d00d
+      forecast_run_id: protozoarios_a07_forecast_h52_9a28a3d3d00d_7e033fec2967
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (12-nov-2026,
     # CONTROLS_10_AUTHORIZATION). Nunca como validado.
     acceptance_fallback_run: protozoarios_a07_benchmark_test_60c51f1b0a1a_6e4ed0a35dea
@@ -1614,11 +1626,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_escabiosis_b86
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: escabiosis_b86_refit_final_9fe0414b00c7_49303fdeec36
+      forecast_run_id: escabiosis_b86_forecast_h52_49303fdeec36_cab22387abbf
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (12-nov-2026,
     # CONTROLS_10_AUTHORIZATION). Nunca como validado.
     acceptance_fallback_run: escabiosis_b86_benchmark_test_f757ff2af8bc_89ef62587a7c
@@ -1695,11 +1713,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_parotiditis_b26
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: parotiditis_b26_refit_final_9fe0414b00c7_a26ee2d5434b
+      forecast_run_id: parotiditis_b26_forecast_h52_a26ee2d5434b_80c9a8baae6f
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (12-nov-2026,
     # CONTROLS_10_AUTHORIZATION). Nunca como validado.
     acceptance_fallback_run: parotiditis_b26_benchmark_test_6a754a997a97_37028dd91872
@@ -1723,11 +1747,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_varicela_b01
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: varicela_b01_refit_final_9fe0414b00c7_773ae56e9f11
+      forecast_run_id: varicela_b01_forecast_h52_773ae56e9f11_05f4961e437f
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (12-nov-2026,
     # CONTROLS_10_AUTHORIZATION). Nunca como validado.
     acceptance_fallback_run: varicela_b01_benchmark_test_8309f5910745_d751580feeaa
@@ -1776,11 +1806,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_peaton_v01
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: peaton_v01_refit_final_9fe0414b00c7_75712d57e01c
+      forecast_run_id: peaton_v01_forecast_h52_75712d57e01c_bd93fcf87e18
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (12-nov-2026,
     # CONTROLS_10_AUTHORIZATION). Nunca como validado.
     acceptance_fallback_run: peaton_v01_benchmark_test_e57ad653f75b_4f91a630c610
@@ -1935,11 +1971,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_quemaduras_t20
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: quemaduras_t20_refit_final_9fe0414b00c7_27f30c8a4d7a
+      forecast_run_id: quemaduras_t20_forecast_h52_27f30c8a4d7a_3bc2f693f43a
+      policy_digest: dd6d4a0274a6f8bb0f51d27628294b7db694b792966abaa92528dc2765020b2a
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (12-nov-2026,
     # CONTROLS_10_AUTHORIZATION). Nunca como validado.
     acceptance_fallback_run: quemaduras_t20_benchmark_test_3ee23b369061_7fd183fca72f
@@ -2038,11 +2080,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_ivp_i87
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: ivp_i87_refit_final_9fe0414b00c7_494905741dc9
+      forecast_run_id: ivp_i87_forecast_h52_494905741dc9_d91d6d4b6564
+      policy_digest: dd6d4a0274a6f8bb0f51d27628294b7db694b792966abaa92528dc2765020b2a
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (12-nov-2026,
     # CONTROLS_10_AUTHORIZATION). Nunca como validado.
     acceptance_fallback_run: ivp_i87_benchmark_test_86b795779321_7a69e6966bcb
@@ -2067,11 +2115,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_displasias
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: displasia_leve_n87_refit_final_30e6b4ef89df_7223bba1daed
+      forecast_run_id: displasia_leve_n87_forecast_h52_7223bba1daed_a546339278f8
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 30e6b4ef89dfaec5091ac2ecb9959eb91024576e6ead3f9293537f0c2cc7be9f
     # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (12-nov-2026,
     # CONTROLS_10_AUTHORIZATION). Nunca como validado.
     acceptance_fallback_run: displasia_leve_n87_benchmark_test_541e5a8aff9a_0719c523962f
@@ -2123,11 +2177,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_cuadro_13_5
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: hiperplasia_prostata_n40_refit_final_30e6b4ef89df_b75a59c06b37
+      forecast_run_id: hiperplasia_prostata_n40_forecast_h52_b75a59c06b37_a586b18aaf3f
+      policy_digest: dd6d4a0274a6f8bb0f51d27628294b7db694b792966abaa92528dc2765020b2a
+      final_selection_digest: 30e6b4ef89dfaec5091ac2ecb9959eb91024576e6ead3f9293537f0c2cc7be9f
     # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (12-nov-2026,
     # CONTROLS_10_AUTHORIZATION). Nunca como validado.
     acceptance_fallback_run: hiperplasia_prostata_n40_benchmark_test_4a45876cb639_6a1049adb802
