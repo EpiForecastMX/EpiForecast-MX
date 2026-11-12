@@ -1,0 +1,20 @@
+{
+ "_nota": "Metadatos de redacción por id para las fichas; cuadro = número vigente en el boletín 43 (qa/cuadro_vigente_sem43.json). No es autorización: la lista de qué se publica sale de scripts/lista_publicables.py.",
+ "desnutricion_leve_e441": {"art": "la", "low": "desnutrición leve", "cuadro": "14"},
+ "desnutricion_moderada_e440": {"art": "la", "low": "desnutrición moderada", "cuadro": "14"},
+ "desnutricion_severa_e40": {"art": "la", "low": "desnutrición severa", "cuadro": "14"},
+ "otras_hepatitis_b17": {"art": "las", "low": "otras hepatitis víricas", "cuadro": "10.1"},
+ "hepatitis_a_b15": {"art": "la", "low": "hepatitis vírica A", "cuadro": "3.5"},
+ "hepatitis_b_b16": {"art": "la", "low": "hepatitis vírica B", "cuadro": "3.5"},
+ "helmintiasis_b65": {"art": "las", "low": "otras helmintiasis", "cuadro": "4.5"},
+ "giardiasis_a071": {"art": "la", "low": "giardiasis", "cuadro": "4.5"},
+ "ascariasis_b77": {"art": "la", "low": "ascariasis", "cuadro": "4.6"},
+ "enterobiasis_b80": {"art": "la", "low": "enterobiasis", "cuadro": "4.6"},
+ "brucelosis_a23": {"art": "la", "low": "brucelosis", "cuadro": "8"},
+ "leptospirosis_a27": {"art": "la", "low": "leptospirosis", "cuadro": "8"},
+ "reumatica_i00": {"art": "la", "low": "fiebre reumática aguda", "cuadro": "13.1"},
+ "rotavirus_a080": {"art": "la", "low": "enteritis debida a rotavirus", "cuadro": "3"},
+ "calor_t67": {"art": "los", "low": "efectos del calor y de la luz", "cuadro": "13.11"},
+ "absceso_hepatico_a064": {"art": "el", "low": "absceso hepático amebiano", "cuadro": "4.4"},
+ "bocio_e01": {"art": "el", "low": "bocio endémico", "cuadro": "13"}
+}

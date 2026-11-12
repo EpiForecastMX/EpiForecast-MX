@@ -1,0 +1,10 @@
+{
+  "id": "desnutricion_leve_e441",
+  "dataset_id": "desnutricion_leve_e441_e211223d9d39",
+  "raw_sha256": "d88a5327544cde78960e8114deb657b9ad52bc728ca9e7d3a0a5bebd7fb62ef5",
+  "selection_policy": "rolling_cv_v1",
+  "selection_run": "desnutricion_leve_e441_select_f114ac85adf5_fe2324b2e0e7",
+  "review": "FABLE_PRETEST_LEVE_REVISION.md",
+  "approved_utc": "2026-11-12T21:31:56.804088+00:00",
+  "source_sha256": "f24aea9306d95d1489d3a8f373527918db1ae31a9c6a6f6aeab63826842f3c8a"
+}

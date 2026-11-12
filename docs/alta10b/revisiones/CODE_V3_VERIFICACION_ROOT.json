@@ -1,0 +1,15 @@
+{
+  "verified_utc": "2026-11-12T22:56:55.839312+00:00",
+  "live_differences": {},
+  "backend_head": "fe593a446b1833394dd924c2de08c50d8255700f",
+  "exclusions_2016_sem20_committed": {
+    "otras_hepatitis_b17": true,
+    "reumatica_i00": true,
+    "calor_t67": true,
+    "rotavirus_a080": true,
+    "hepatitis_b_b16": true,
+    "hepatitis_a_b15": true
+  },
+  "code_scope": "Fable v3 estática apta para fallback y aceptado con contraste; no acepta ciencia/pretest/publicación",
+  "all_source_fixes_committed": true
+}

@@ -28,7 +28,19 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
-## Checkpoint vigente — lote alta20 cerrado — 12-nov-2026
+## Checkpoint vigente — lote alta10b en preparación, 0 publicados — 12-nov-2026
+
+Prevalece sobre las secciones fechadas inferiores. Publicados: siguen 55 en el sitio y 51 del runner. La
+orden de incorporar diez más (alta10b) está abierta y **no completada**: se integró sólo código del
+extractor, once altas `configured`, pruebas y documentación (`docs/C7_16_ALTA10B.md`). Desnutrición leve
+rechazó su prueba única de 2025 en el total nacional y queda `configured` sin control; los otros dieciséis
+candidatos tienen raw canónico revalidado y smoke de siete motores fallido sólo por ETS y Ridge, así que
+ninguno avanza con `rolling_cv_v1`. Pendientes del autor, sin respuesta: A6 (controles de leve y de los cinco
+rechazos antiguos), B2 (cinco motores para moderada y severa) y B14 (los otros catorce). Una autorización
+sólo vale con el esquema de `docs/alta10b/ESQUEMA_AUTORIZACION.md`; los datos agregados de la tanda sí están
+autorizados. No reabrir la prueba de leve ni los cinco antiguos. Evidencia en `planes/alta10b_2026-11-12/`.
+
+## Checkpoint — lote alta20 cerrado — 12-nov-2026
 
 Prevalece sobre las secciones fechadas inferiores en cuanto al número de publicados y la base semanal.
 Publicados: 55 en el sitio y 51 del runner (veinte nuevos el 12-nov: diez aceptados en la prueba de 2025, 0/4
