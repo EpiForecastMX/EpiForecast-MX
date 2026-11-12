@@ -26,6 +26,11 @@ Fallo adicional que Fable no vio y verificó el supervisor en el navegador: las 
 de su plantilla el origen W41, la emisión del 8-nov y la ventana W42-W45 en el HTML estático. Corregido a W42,
 12-nov-2026 y W43-W46 (los gates sellados), con prueba contra el manifiesto y la vista de cada release.
 
+Fallo encontrado al probar la función RAG real en la preview: «presión arterial baja en el embarazo en
+Jalisco» respondía con los casos de O10-O16 que traía la recuperación. Con presión baja o diabetes del
+embarazo y sin otro padecimiento publicado en la consulta, la función responde sin cifras (frontend
+`0383594d`, cinco pruebas que fallan con el `rag.mjs` anterior).
+
 ## Texto del dictamen
 
 **Dictamen: sin bloqueantes de publicación en lo leído, pero con cuatro fallos de alcance reales en el EpiBot que conviene corregir antes de dar por cerrado el arreglo de A06.4/H65.2.** Todo sale de lectura de código: no ejecuté pruebas ni consultas, así que cada reproducción es el resultado esperado según el código y falta confirmarla con un caso de prueba.
