@@ -31,7 +31,7 @@ def test_bloques_del_cuadro_13() -> None:
     grupo = cuadro_extractor.load_group(_GRUPO)
     bloques = {d["id"]: (d["block_index"], d["onboard"]) for d in grupo["diseases"]}
     assert bloques == {
-        "bocio_e01": (0, False),
+        "bocio_e01": (0, True),  # configured en alta10b (12-nov-2026); no publicado
         "diabetes_t1": (1, True),
         "diabetes_t2": (2, True),
     }

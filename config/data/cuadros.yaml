@@ -96,17 +96,20 @@ cuadro_groups:
     # impute causalmente (flag total_imputed) y la serie siga contigua; sin él, el periodo no existe.
     source_exclusions:
       - file: "2014_sem01.pdf"
-        diseases: [diabetes_t1, diabetes_t2]
+        diseases: [bocio_e01, diabetes_t1, diabetes_t2]
         reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
       - file: "2016_sem20.pdf"
         diseases: [diabetes_t2]
         keep_period: true              # semana interior: el runner exige series contiguas
+        reason: >-
+          bloques E01 y E11-E14 intercambiados y el de E11-E14 ajeno a la semana 19 (acum
+          68,724/96,370 mayor que el de la semana 21); E10 sí es coherente
       - file: "2016_sem20.pdf"
         diseases: [bocio_e01]
         keep_period: true              # misma errata de fuente: el bloque E01 trae cifras de E11-E14
         reason: >-
-          bloques E01 y E11-E14 intercambiados y el de E11-E14 ajeno a la semana 19 (acum
-          68,724/96,370 mayor que el de la semana 21); E10 sí es coherente
+          misma errata de fuente que diabetes tipo II: bloques E01 y E11-E14 intercambiados en el
+          boletín (el bloque de bocio imprime cifras de diabetes); semana interior de 2016, desarrollo
     n_states_expected: 32
     backend: camelot_stream
 
