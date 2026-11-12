@@ -1160,6 +1160,13 @@ cuadro_groups:
       - file: "2014_sem01.pdf"
         diseases: [hepatitis_b_b16]
         reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2016_sem20.pdf"
+        diseases: [hepatitis_b_b16]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes y
+          cardiovasculares en este boletín): semana 17/115/17 y acumulado 277/2 664/313 (semanas
+          19/20/21); el acumulado salta y vuelve
     layout_variants:
       - id: v_4col_prev
         min_year_week: "0000_sem00"
