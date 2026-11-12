@@ -1167,12 +1167,13 @@ cuadro_groups:
     backend: camelot_stream
 
   alta20_quemaduras_t20:
-    # Quemaduras (T20-T32).
+    # Quemaduras (T20-T32), primer bloque de tres. En 2020_sem20, 2020_sem21 y 2020_sem32 camelot
+    # añade una columna casi vacía tras la entidad (13 en total): se recorta contando desde el final.
     page_anchors: ["quemaduras", "t58"]
     state_markers: ["zacatecas", "tamaulipas"]
     year_week_source: filename
     observation_lag_weeks: 1
-    first_block_columns: {11: 4, 12: 4}
+    inner_block_columns: {11: [11, 4], 12: [12, 4], 13: [12, 4]}
     diseases:
       - id: quemaduras_t20
         keyword: "Quemaduras_T20"
@@ -1282,6 +1283,12 @@ cuadro_groups:
       - file: "2014_sem01.pdf"
         diseases: [ivp_i87]
         reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2023_sem45.pdf"
+        diseases: [ivp_i87]
+        keep_period: true
+        reason: >-
+          renglón de Chiapas alterado en el PDF («Chiapas San Luis Potosí», 11 valores en vez de 12)
+          y camelot no reconoce ninguna entidad de la tabla (misma página y exclusión que gingivitis)
     layout_variants:
       - id: v_4col_prev
         min_year_week: "0000_sem00"
