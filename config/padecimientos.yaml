@@ -1293,11 +1293,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_otitis_h65
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: otitis_h65_refit_final_e6e3eba32fd9_bc7326bf0ed5
+      forecast_run_id: otitis_h65_forecast_h52_bc7326bf0ed5_aae183503c7a
+      policy_digest: dd6d4a0274a6f8bb0f51d27628294b7db694b792966abaa92528dc2765020b2a
+      final_selection_digest: e6e3eba32fd96c45f13ecc93c9337441505848f9d41adee5ea235f48c887409d
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1343,11 +1349,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_conjuntivitis_h10
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: conjuntivitis_h10_refit_final_52417197b687_7b8020abd25c
+      forecast_run_id: conjuntivitis_h10_forecast_h52_7b8020abd25c_1bde761d119c
+      policy_digest: dd6d4a0274a6f8bb0f51d27628294b7db694b792966abaa92528dc2765020b2a
+      final_selection_digest: 52417197b687cdbd5ef54aad7bdb390d509eb67aead8eb7513f13d5ddc45608a
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1368,11 +1380,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_amebiasis_a06
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: amebiasis_a06_refit_final_d113b2329a60_279af4cb1e3e
+      forecast_run_id: amebiasis_a06_forecast_h52_279af4cb1e3e_afcaad6df825
+      policy_digest: dd6d4a0274a6f8bb0f51d27628294b7db694b792966abaa92528dc2765020b2a
+      final_selection_digest: d113b2329a60ed1764fc2541d41dca609f3f3e194fef8bef96287d47b97c1bd6
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1768,11 +1786,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_vehiculos_v20
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: vehiculos_v20_refit_final_37f5567cf3d1_aa0abd2843d1
+      forecast_run_id: vehiculos_v20_forecast_h52_aa0abd2843d1_ac86b7589e08
+      policy_digest: dd6d4a0274a6f8bb0f51d27628294b7db694b792966abaa92528dc2765020b2a
+      final_selection_digest: 37f5567cf3d1aa3570707ffe337a57a4718eab9340ae9f377cc35bbefa852e07
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2098,11 +2122,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_cuadro_13_5
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: embarazo_hipertensivos_o10_refit_final_3b2bf888eca5_36c2bfdb8677
+      forecast_run_id: embarazo_hipertensivos_o10_forecast_h52_36c2bfdb8677_a3e5d135c191
+      policy_digest: dd6d4a0274a6f8bb0f51d27628294b7db694b792966abaa92528dc2765020b2a
+      final_selection_digest: 3b2bf888eca5ef117cf078d2a7d8cd34b6e1cb4e53e66cb8c0ae67cecd700542
     sex_breakdown: false
     prophet_grid_key: null
     deepar_grid_key: null
