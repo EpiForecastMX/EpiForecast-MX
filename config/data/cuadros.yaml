@@ -1326,3 +1326,42 @@ cuadro_groups:
         has_prev_year: true
     n_states_expected: 32
     backend: camelot_stream
+
+  alta20_cuadro_13_5:
+    # CUADRO 13.5: hiperplasia de la próstata (N40), edema, proteinuria y trastornos hipertensivos
+    # en el embarazo, parto y puerperio (O10-O16) y diabetes mellitus en el embarazo (O24.4), tres
+    # bloques sin desglose por sexo. Hasta 2015_sem01 los dos primeros traen sólo Sem y acumulado
+    # (7 columnas); desde 2015_sem02 los tres traen además el acumulado del año anterior (9).
+    # «hiperplasia» con los marcadores encuentra una sola página en 669 de 670 boletines.
+    page_anchors: ["hiperplasia"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    anchos_sin_sexo: [2, 2, 3]
+    periodos:
+      - desde: "2015_sem02"
+        anchos_sin_sexo: null
+    diseases:
+      - id: hiperplasia_prostata_n40
+        keyword: "Hiperplasia_Prostata_N40"
+        block_index: 0
+        onboard: true
+      - id: embarazo_hipertensivos_o10
+        keyword: "Embarazo_Hipertensivos_O10"
+        block_index: 1
+        onboard: true
+      - id: embarazo_diabetes_o24
+        keyword: "Embarazo_Diabetes_O24"
+        block_index: 2
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [hiperplasia_prostata_n40, embarazo_hipertensivos_o10, embarazo_diabetes_o24]
+        reason: "formato de cierre anual: sólo acumulados, sin columna Sem"
+    layout_variants:
+      - id: v_3col_total
+        min_year_week: "0000_sem00"
+        cols_per_disease: 3
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream

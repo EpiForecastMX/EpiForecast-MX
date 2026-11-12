@@ -146,6 +146,9 @@ def test_cie_map():
         "I87.2": "Insuficiencia venosa periférica",
         "N87.0": "Displasia cervical leve y moderada",
         "N87.2": "Displasia cervical severa y CaCu in situ",
+        "N40": "Hiperplasia de la próstata",
+        "O10": "Edema, proteinuria y trastornos hipertensivos en el embarazo, parto y puerperio",
+        "O24.4": "Diabetes mellitus en el embarazo",
     }
 
 

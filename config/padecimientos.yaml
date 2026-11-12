@@ -2059,3 +2059,82 @@ padecimientos:
       color: "#BE185D"
       label: "Displasia cervical severa y CaCu in situ"
       nombre_completo: "Displasia cervical severa y CaCu in situ (N87.2, D06)"
+
+  # Cuadro 13.5: tres bloques sin desglose por sexo (hiperplasia de próstata y dos del embarazo).
+  - id: hiperplasia_prostata_n40
+    data_name: "Hiperplasia de la próstata"
+    artifact_key: Hiperplasia_Prostata_N40
+    slug: hiperplasia_prostata_n40
+    display_name: "Hiperplasia de la próstata"
+    cie_codes: ["N40"]
+    aliases: ["hiperplasia de la prostata", "hiperplasia de prostata", "hiperplasia prostatica", "crecimiento de la prostata", "n40"]
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: alta20_cuadro_13_5
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    sex_breakdown: false
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#0284C7"
+      label: "Hiperplasia de la próstata"
+      nombre_completo: "Hiperplasia de la próstata (N40)"
+
+  - id: embarazo_hipertensivos_o10
+    data_name: "Edema, proteinuria y trastornos hipertensivos en el embarazo, parto y puerperio"
+    artifact_key: Embarazo_Hipertensivos_O10
+    slug: embarazo_hipertensivos_o10
+    display_name: "Edema, proteinuria y trastornos hipertensivos en el embarazo, parto y puerperio"
+    cie_codes: ["O10", "O11", "O12", "O13", "O14", "O15", "O16"]
+    aliases: ["trastornos hipertensivos en el embarazo", "trastornos hipertensivos del embarazo", "hipertension en el embarazo", "hipertension del embarazo", "hipertension gestacional", "preeclampsia", "eclampsia", "o10-o16"]
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: alta20_cuadro_13_5
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    sex_breakdown: false
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#9F1239"
+      label: "Trastornos hipertensivos del embarazo"
+      nombre_completo: "Edema, proteinuria y trastornos hipertensivos en el embarazo, parto y puerperio (O10-O16)"
+
+  - id: embarazo_diabetes_o24
+    data_name: "Diabetes mellitus en el embarazo"
+    artifact_key: Embarazo_Diabetes_O24
+    slug: embarazo_diabetes_o24
+    display_name: "Diabetes mellitus en el embarazo"
+    cie_codes: ["O24.4"]
+    aliases: ["diabetes mellitus en el embarazo", "diabetes en el embarazo", "diabetes del embarazo", "diabetes gestacional", "o24.4"]
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: alta20_cuadro_13_5
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    sex_breakdown: false
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#7E22CE"
+      label: "Diabetes en el embarazo"
+      nombre_completo: "Diabetes mellitus en el embarazo (O24.4)"
