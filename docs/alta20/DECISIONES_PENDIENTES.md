@@ -68,6 +68,10 @@ Motor que falla cerrado por etapa de desarrollo (sólo se listan los que fallan;
 
 ## 2. Controles de los rechazos
 
+**Decidido en parte (12-nov-2026, noche):** el autor autorizó el control de diez
+(`AUTORIZACION_CONTROLES_10.md`). Siguen sin control, y sin orden, displasia_severa_n87, salmonelosis_a02,
+tifoidea_a01, escarlatina_a38 y hepatitis_c_b17. Texto original:
+
 Quince rechazados en la prueba de 2025, todos en el total nacional (cifras en `docs/C7_15_ALTA20.md`): con siete
 motores, quemaduras_t20, ivp_i87 e hiperplasia_prostata_n40; con cinco motores, faringitis_j02, protozoarios_a07,
 salmonelosis_a02, tifoidea_a01, escabiosis_b86, escarlatina_a38, parotiditis_b26, peaton_v01, varicela_b01,
