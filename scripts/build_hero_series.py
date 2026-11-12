@@ -128,6 +128,10 @@ def construye(reports: Path, knowledge: dict[str, Any], generado: str) -> dict[s
                 f"{pad}: {casos} casos ≠ 52 pasos desde el corte de la tabla semanal ({esperado})"
             )
         despues = [d > dsc for d in z["d"]]
+        # Banda sólo si el zoom la declara (intervalo_disponible): con la bandera en falso, lo/hi
+        # quedan nulos aunque el zoom traiga valores (p. ej. lo == hi == y de un motor degenerado).
+        # El zoom publicado no se toca: esta regla vive en la derivación de la portada.
+        banda = z.get("intervalo_disponible") is True
         series.append(
             {
                 "pad": pad,
@@ -141,12 +145,12 @@ def construye(reports: Path, knowledge: dict[str, Any], generado: str) -> dict[s
                 "corte": corte,
                 "ultima_observada": ultima,
                 "last_real": z["last_real"],
-                "intervalo_disponible": bool(z.get("intervalo_disponible")),
+                "intervalo_disponible": banda,
                 "d": z["d"],
                 "r": z["r"],
                 "y": [v if a else None for v, a in zip(z["y"], despues, strict=True)],
-                "lo": [v if a else None for v, a in zip(z["lo"], despues, strict=True)],
-                "hi": [v if a else None for v, a in zip(z["hi"], despues, strict=True)],
+                "lo": [v if a and banda else None for v, a in zip(z["lo"], despues, strict=True)],
+                "hi": [v if a and banda else None for v, a in zip(z["hi"], despues, strict=True)],
             }
         )
     return {"_generated": generado, "corte": corte, "ultima_observada": ultima, "series": series}

@@ -3,15 +3,20 @@ Genera bitacora HTML interactiva documentando el recorrido completo del modelado
 Prophet v1-v6: decisiones, feature engineering, grids, hallazgos y lecciones.
 
 Uso:
-    python -m scripts.genera_bitacora
+    python -m scripts.genera_bitacora [--out RUTA] [--dashboard DASHBOARD]
 
 Salida:
-    reports/forecasts/bitacora_modelado.html
+    reports/forecasts/bitacora_modelado.html (copia local; no escribe en el dashboard)
+
+La página sale en el sistema visual común del sitio (epiforecast.publication.editorial_chrome):
+sin la barra vieja; cabecera y pie estampados si se da un dashboard con fragmentos.
 """
 
+import argparse
 from datetime import datetime
 from pathlib import Path
 
+from epiforecast.publication.editorial_chrome import publica_editorial
 from epiforecast.utils.config import logger
 
 # ---------------------------------------------------------------------------
@@ -1246,14 +1251,22 @@ try {{
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
-def main():
+def main(argv: list[str] | None = None) -> None:
+    ap = argparse.ArgumentParser(description="Bitacora del modelado Prophet v1-v6.")
+    ap.add_argument("--out", type=Path, default=OUTPUT_HTML, help="ruta del HTML de salida")
+    ap.add_argument(
+        "--dashboard",
+        type=Path,
+        default=None,
+        help="dashboard con assets/site/shell.fragments.json para estampar cabecera y pie",
+    )
+    args = ap.parse_args(argv)
     logger.info("Generando bitacora del modelado Prophet...")
-    html = build_html()
+    html = publica_editorial(build_html(), args.dashboard)
 
-    OUTPUT_HTML.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_HTML.write_text(html, encoding="utf-8")
-    logger.info("Bitacora generada: {}", OUTPUT_HTML)
-    logger.info("Abrir con: open {}", OUTPUT_HTML)
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(html, encoding="utf-8")
+    logger.info("Bitacora generada: {}", args.out)
 
 
 if __name__ == "__main__":

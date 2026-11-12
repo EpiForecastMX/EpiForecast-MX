@@ -30,6 +30,7 @@ import json
 from pathlib import Path
 import re
 from typing import Any
+import unicodedata
 
 import pandas as pd
 
@@ -266,8 +267,45 @@ def _esc(x: Any) -> str:
     return html_mod.escape(str(x if x is not None else ""), quote=False)
 
 
+_RE_COMBINANTES = re.compile("[\u0300-\u036f]")
+
+
+def _slug(texto: Any) -> str:
+    """Espejo de `slug()` de `assets/site/nota-ancla.js` (frontend): mismo resultado byte a byte."""
+    t = _RE_COMBINANTES.sub(
+        "", unicodedata.normalize("NFD", str(texto if texto is not None else ""))
+    )
+    t = re.sub(r"[^a-z0-9]+", "-", t.lower()).strip("-")
+    return t[:48].rstrip("-")
+
+
+def nota_ancla(it: dict[str, Any]) -> str:
+    """Ancla estable de una nota en `novedades.html` (`nota-<iso>-<título>`).
+
+    El frontend pone el mismo `id` a cada nota y la portada enlaza a él; los vectores de prueba
+    son los mismos en ambos repositorios. Si dos notas comparten iso y título, ver `anclas()`.
+    """
+    iso = str(it.get("iso") or "")
+    iso = iso if re.fullmatch(r"\d{4}-\d{2}-\d{2}", iso) else "sin-fecha"
+    return f"nota-{iso}-{_slug(it.get('title')) or 'sin-titulo'}"
+
+
+def anclas(items: list[dict[str, Any]]) -> list[str]:
+    """Anclas de toda la lista en orden; la repetición n-ésima lleva el sufijo `-n`."""
+    vistos: dict[str, int] = {}
+    out = []
+    for it in items:
+        a = nota_ancla(it)
+        vistos[a] = vistos.get(a, 0) + 1
+        out.append(a if vistos[a] == 1 else f"{a}-{vistos[a]}")
+    return out
+
+
 def render_news_banner(items: list[dict[str, Any]]) -> str:
     """HTML interior de `#newsBannerRow`: lead = items[0], minis = items[1:3].
+
+    Cada enlace apunta al ancla de su nota en `novedades.html` (`nota_ancla`). El bloque y su
+    marcador no cambian, así que sirve igual a la portada anterior y a la del rediseño.
 
     Es el fallback que se ve cuando falla el fetch de `news.json`, así que replica lo que
     pinta el JS (`leadHtml`/`miniHtml`) para que estático y dinámico digan lo mismo. Para la
@@ -276,11 +314,12 @@ def render_news_banner(items: list[dict[str, Any]]) -> str:
     if not items:
         raise ValueError("news.json sin items: no hay con qué escribir el fallback estático")
     top = items[:3]
+    ids = anclas(items)
     lead = top[0]
     tipo = lead.get("type") or "datos"
     sub = SUB_NEUTRAL if tipo == "datos" else _summary(lead)
     partes = [
-        '          <a href="novedades.html" class="news-lead">',
+        f'          <a href="novedades.html#{ids[0]}" class="news-lead">',
         '            <div class="news-lead-meta">',
         f'              <span class="news-date">{_esc(lead.get("date"))}</span>',
         f'              <span class="news-tag news-tag--{_esc(tipo)}">{_esc(lead.get("tag"))}</span>',
@@ -290,10 +329,10 @@ def render_news_banner(items: list[dict[str, Any]]) -> str:
         "          </a>",
         '          <div class="news-mini-list">',
     ]
-    for it in top[1:]:
+    for i, it in enumerate(top[1:], start=1):
         t = it.get("type") or "datos"
         partes += [
-            '            <a href="novedades.html" class="news-mini">',
+            f'            <a href="novedades.html#{ids[i]}" class="news-mini">',
             f'              <span class="news-tag news-tag--{_esc(t)}">{_esc(it.get("tag"))}</span>',
             f'              <span class="news-mini-title">{_esc(it.get("title"))}</span>',
             f'              <span class="news-mini-date">{_esc(it.get("date"))}</span>',
@@ -301,6 +340,78 @@ def render_news_banner(items: list[dict[str, Any]]) -> str:
         ]
     partes.append("          </div>")
     return "\n" + "\n".join(partes)
+
+
+_RE_ARCHIVO = re.compile(
+    r"(<!-- noticias:archivo:start -->)(.*?)(<!-- noticias:archivo:end -->)", re.S
+)
+
+
+def render_archivo_noticias(items: list[dict[str, Any]]) -> str:
+    """Archivo estático de `novedades.html`: una nota por línea, igual que la pinta su JS (`ih`).
+
+    Sin JavaScript la página ya no queda vacía, y cada nota lleva el `id` de `anclas()` al que
+    enlazan la portada y su banner estático. El JS de la página la vuelve a pintar desde
+    `news.json` con el mismo marcado; si el fetch falla, queda esta versión.
+    """
+    ids = anclas(items)
+    filas = []
+    for i, it in enumerate(items):
+        destacada = " arch-item--featured" if i == 0 or it.get("featured") else ""
+        cuerpo = "".join(f"<p>{p}</p>" for p in (it.get("body") or []))
+        enlace = (it.get("link") or {}).get("href") or "#"
+        rotulo = (it.get("link") or {}).get("text") or "Leer más"
+        nota = (
+            f'<p class="arch-nota">{it.get("nota_historica")}</p>' if it.get("historico") else ""
+        )
+        filas.append(
+            f'<article class="arch-item{destacada}" id="{ids[i]}" tabindex="-1">'
+            f'<div class="arch-meta"><span class="arch-date">{it.get("date", "")}</span>'
+            f'<span class="arch-tag">{it.get("tag", "")}</span></div>'
+            f'<h2 class="arch-title"><a href="{enlace}">{it.get("title", "")}</a></h2>'
+            f'<div class="arch-body">{cuerpo}</div>{nota}'
+            f'<a class="arch-link" href="{enlace}">{rotulo} &rarr;</a></article>'
+        )
+    return "\n" + "\n".join(filas) + "\n"
+
+
+def reescribe_archivo(html: str, items: list[dict[str, Any]]) -> str:
+    """Sustituye el bloque del archivo si la página lo lleva; la plantilla anterior (sin él) no cambia."""
+    encontrados = list(_RE_ARCHIVO.finditer(html))
+    if len(encontrados) > 1:
+        raise ValueError("novedades.html con más de un bloque noticias:archivo")
+    if not encontrados:
+        return html
+    m = encontrados[0]
+    return html[: m.start(2)] + render_archivo_noticias(items) + html[m.end(2) :]
+
+
+def reescribe_estaticos(dashboard: Path) -> list[str]:
+    """Regenera sólo los respaldos estáticos (banner de la portada y archivo de novedades) desde el
+    `news.json` vigente. No añade notas ni lee datos: es lo que corre quien edita `news.json` a mano."""
+    items = json.loads((dashboard / "news.json").read_text(encoding="utf-8")).get("items", [])
+    if not items:
+        raise ValueError("news.json sin items")
+    tocados = []
+    portada = dashboard / "index.html"
+    if portada.is_file():
+        html = portada.read_text(encoding="utf-8")
+        encontrados = list(_RE_BANNER.finditer(html))
+        if len(encontrados) != 1:
+            raise ValueError("index.html sin el bloque #newsBannerRow")
+        m = encontrados[0]
+        nuevo = html[: m.start(2)] + render_news_banner(items) + html[m.end(2) :]
+        if nuevo != html:
+            portada.write_text(nuevo, encoding="utf-8")
+            tocados.append("index.html")
+    nov = dashboard / "novedades.html"
+    if nov.is_file():
+        html = nov.read_text(encoding="utf-8")
+        nuevo = reescribe_archivo(html, items)
+        if nuevo != html:
+            nov.write_text(nuevo, encoding="utf-8")
+            tocados.append("novedades.html")
+    return tocados
 
 
 def _items_para_el_banner(dashboard: Path, item: dict[str, Any]) -> list[dict[str, Any]]:
@@ -344,6 +455,8 @@ def bump_static_html(data: dict[str, Any], item: dict[str, Any], dashboard: Path
         html = re.sub(
             r"Edición de la semana \d+, \d{4}", f"Edición de la semana {wk}, {year}", html
         )
+        if name == "novedades.html":
+            html = reescribe_archivo(html, _items_para_el_banner(dashboard, item))
         if name == "index.html":
             bloque = render_news_banner(_items_para_el_banner(dashboard, item))
             encontrados = list(_RE_BANNER.finditer(html))
@@ -375,8 +488,17 @@ def main(argv: list[str] | None = None) -> int:
     )
     ap.add_argument("--agregado", type=Path, default=PROD_DETAILS / "agregado_estatal_neuro.json")
     ap.add_argument("--fecha", default=None, help="AAAA-MM-DD de la nota (por defecto, hoy)")
+    ap.add_argument(
+        "--solo-estaticos",
+        action="store_true",
+        help="sólo reescribe el banner de la portada y el archivo de novedades desde news.json",
+    )
     ap.add_argument("--evidencia", type=Path, default=None, help="JSON con entradas y hashes")
     args = ap.parse_args(argv)
+    if args.solo_estaticos:
+        tocados = reescribe_estaticos(args.dashboard)
+        print("estáticos de noticias:", ", ".join(tocados) or "sin cambios")
+        return 0
 
     data = compute_data(args.boletin, args.seguimiento, args.catalogo, args.agregado)
     fecha = datetime.strptime(args.fecha, "%Y-%m-%d") if args.fecha else None

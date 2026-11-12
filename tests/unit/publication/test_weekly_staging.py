@@ -2069,6 +2069,30 @@ def test_la_politica_canonica_del_repositorio_es_valida() -> None:
     assert all(gate.cwd == "dashboard/epibot/" for gate in politica.gates)
 
 
+def test_la_politica_censa_las_superficies_json_del_shell_comun() -> None:
+    """Rediseño del sitio: `assets/site/shell.config.json` y `shell.fragments.json` se publican
+    (Netlify publica la raíz) y caen en el patrón de superficie. Se declaran exactamente esas dos,
+    sin comodines ni prefijos nuevos, y el censo sigue cerrando ante cualquier otra no declarada."""
+    from scripts.refresh_staging import POLITICA_CANONICA
+
+    politica = PoliticaCenso.desde_bytes(POLITICA_CANONICA.read_bytes())
+    shell = {
+        "dashboard/assets/site/shell.config.json",
+        "dashboard/assets/site/shell.fragments.json",
+    }
+
+    assert all(politica.es_superficie(rel) for rel in shell)
+    assert {rel for rel in politica.superficies_verificables if "/assets/" in rel} == shell
+    arbol = dict.fromkeys(politica.superficies_verificables, "x")
+    politica.revisa_universos(arbol, ())
+    with pytest.raises(StagingError, match="no declara"):
+        politica.revisa_universos(arbol | {"dashboard/assets/site/otro.json": "x"}, ())
+    with pytest.raises(StagingError, match="no cubre"):
+        politica.revisa_universos(
+            {k: v for k, v in arbol.items() if k != "dashboard/assets/site/shell.config.json"}, ()
+        )
+
+
 # ── 24 · el censo replica la regla del gate real, y la política no se elige ─
 
 

@@ -1,0 +1,27 @@
+{
+  "action": "applied",
+  "beforeCount": 577,
+  "afterCount": 575,
+  "reused": 575,
+  "generated": 0,
+  "apiKeyUsed": false,
+  "providerCalls": 0,
+  "removed": [
+    {
+      "id": "Avance1.Equipo01#0",
+      "text": "Avance 1 — EpiForecast-MX\nEpiForecast -MX\nProyecto\nInicio\nDashboard\nPronósticos\nNovedades\nDengue\nEPI Chatbot\nMetodología\nBitácora v1-v6\nFicha Prophet\nMetodología Dengue\nHPs SageMaker\nArquitectura Dashboard\nResultados\nResultados\nComparación SageMaker\nValidación Semanal\nAuditoría y Remediación\nConclusiones\nReferencias\nMICAI 2026\nPonencia, seguimiento y artículo\nDescargar PDF\nDashboard\nEPI Chatbot\nProyecto\nInicio\nDashboard\nPronósticos\nNovedades\nDengue\nEPI Chatbot\nMetodología\nBitácora v1-v6\nFicha Prophet\nMetodología Dengue\nHPs SageMaker\nArquitectura Dashboard\nResultados\nResultados\nComparación SageMaker\nValidación Semanal\nAuditoría y Remediación\nConclusiones\nReferencias\nMICAI 2026\nPonencia, seguimiento y artículo\nDescargar PDF\nDashboard\nPronósticos\nDocumento principal\nAbrir\nDescargar\n◀\n— / —\n▶\n−\n+\n↔ Ajustar\nCargando documento…"
+    },
+    {
+      "id": "Avance2_Equipo01#0",
+      "text": "Avance 2 — EpiForecast-MX\nEpiForecast -MX\nProyecto\nInicio\nDashboard\nPronósticos\nNovedades\nDengue\nEPI Chatbot\nMetodología\nBitácora v1-v6\nFicha Prophet\nMetodología Dengue\nHPs SageMaker\nArquitectura Dashboard\nResultados\nResultados\nComparación SageMaker\nValidación Semanal\nAuditoría y Remediación\nConclusiones\nReferencias\nMICAI 2026\nPonencia, seguimiento y artículo\nDescargar PDF\nDashboard\nEPI Chatbot\nProyecto\nInicio\nDashboard\nPronósticos\nNovedades\nDengue\nEPI Chatbot\nMetodología\nBitácora v1-v6\nFicha Prophet\nMetodología Dengue\nHPs SageMaker\nArquitectura Dashboard\nResultados\nResultados\nComparación SageMaker\nValidación Semanal\nAuditoría y Remediación\nConclusiones\nReferencias\nMICAI 2026\nPonencia, seguimiento y artículo\nDescargar PDF\nDashboard\nPronósticos\nDocumento principal\nAbrir\nDescargar\n◀\n— / —\n▶\n−\n+\n↔ Ajustar\nCargando documento…"
+    }
+  ],
+  "remainingChunksMetadataTextAndVectorsEqual": true,
+  "oldSha256": "ef269fa3643d3fae7626dace920d807227c1c0016ac27b959f08682183cf1f26",
+  "newSha256": "f855bf7c264d9b632b148e3df1b6f3496c102accc9eed0dcc353f3ffeadafc78",
+  "metadataOnly": [
+    "built",
+    "count"
+  ],
+  "capturedAt": "2026-11-12T10:17:31.409Z"
+}

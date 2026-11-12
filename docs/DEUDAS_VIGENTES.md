@@ -302,6 +302,22 @@ atomicidad entre repositorios; la identidad del huérfano exige `ps` con `lstart
   con error máximo `2.27e-13`; 54 pruebas focales, el carril completo y el run de `main`
   `33467472543` pasan.
 
+## Activa — censo de superficies del refresh semanal, deuda previa al rediseño (12-nov-2026)
+
+Medido en sólo lectura con `PoliticaCenso.revisa_universos` sobre el árbol Git del dashboard
+(producción `580d0486`): 474 superficies `.html`/`.json` publicadas frente a 41 declaradas en
+`config/publication/politica_censo.json` → **434 sobrantes** (Bento/Galería, fichas, boletín,
+Reports de congresos, datos del radar…) y **1 faltante** (`dashboard/bento.json`, retirado del
+sitio). El gate falla cerrado ya antes del rediseño; el refresh semanal completo no puede sellar
+hasta resolverlo. El rediseño sólo añadió dos superficies (`assets/site/shell.config.json` y
+`shell.fragments.json`), ya declaradas con prueba
+(`test_la_politica_censa_las_superficies_json_del_shell_comun`); con ellas la cuenta vuelve a
+434 + 1, igual que antes.
+
+No reconciliar a ciegas: cada superficie declarada es una afirmación revisada. Requiere microplan
+propio (qué páginas/JSON son verificables, cuáles retirables, qué hacer con `bento.json`) con
+revisión científica; no borrar Bento/Reports ni relajar el patrón para que pase.
+
 ## Prioridad 0 — siguiente trabajo local seguro
 
 1. **Política de skips del carril manual.** El job Tests ya tiene presupuesto; falta decidir

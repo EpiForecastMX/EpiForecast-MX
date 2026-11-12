@@ -86,3 +86,23 @@ def test_falla_si_el_total_no_es_el_de_la_tabla_semanal_o_cambia_el_motor(tmp_pa
     kb["prod_models"][0]["modelo_produccion"] = "DeepAR"
     with pytest.raises(SystemExit, match="motor"):
         construye(rep, kb, "x")
+
+
+def test_sin_bandera_de_intervalo_la_portada_no_lleva_banda(tmp_path: Path) -> None:
+    """Gate de la derivación: intervalo_disponible falso ⇒ lo/hi nulos aunque el zoom los traiga.
+
+    El zoom publicado no se modifica (un motor degenerado puede dejar lo == hi == y con la
+    bandera en falso); la regla vive sólo aquí, en la serie de la portada.
+    """
+    rep, kb = _entradas(tmp_path)
+    neuro = json.loads((rep / "zoom_data_neuro.json").read_text("utf-8"))
+    clave = PADECIMIENTOS[0][-1]
+    neuro[clave]["intervalo_disponible"] = False
+    (rep / "zoom_data_neuro.json").write_text(json.dumps(neuro), "utf-8")
+    hero = construye(rep, kb, "2026-10-14")
+    dep = hero["series"][0]
+    assert dep["intervalo_disponible"] is False
+    assert dep["lo"] == [None] * 5 and dep["hi"] == [None] * 5
+    assert dep["y"] == [None, None, 5, 6, 7]  # el pronóstico puntual se conserva
+    par = hero["series"][1]
+    assert par["intervalo_disponible"] is True and par["hi"][2:] == [6, 7, 8]

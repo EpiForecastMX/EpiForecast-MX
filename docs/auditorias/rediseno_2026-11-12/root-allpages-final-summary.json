@@ -1,0 +1,59 @@
+{
+  "pages": 62,
+  "renders": 186,
+  "issues": [
+    {
+      "route": "EpiDashboard-tableau.html",
+      "width": 360,
+      "errors": [],
+      "httpErrors": [],
+      "scrollWidth": 360,
+      "duplicateIds": [
+        {
+          "id": "head",
+          "count": 10
+        },
+        {
+          "id": "tail",
+          "count": 10
+        }
+      ]
+    },
+    {
+      "route": "EpiDashboard-tableau.html",
+      "width": 768,
+      "errors": [],
+      "httpErrors": [],
+      "scrollWidth": 768,
+      "duplicateIds": [
+        {
+          "id": "head",
+          "count": 10
+        },
+        {
+          "id": "tail",
+          "count": 10
+        }
+      ]
+    },
+    {
+      "route": "EpiDashboard-tableau.html",
+      "width": 1280,
+      "errors": [],
+      "httpErrors": [],
+      "scrollWidth": 1280,
+      "duplicateIds": [
+        {
+          "id": "head",
+          "count": 10
+        },
+        {
+          "id": "tail",
+          "count": 10
+        }
+      ]
+    }
+  ],
+  "contrastIssues": [],
+  "sourceSha256": "1c38d7e67839449fff66c81ad8eae73aecd0589991c1e159adf55113be8fcb44"
+}

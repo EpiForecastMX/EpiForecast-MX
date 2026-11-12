@@ -1,0 +1,17 @@
+[
+  {
+    "check": "ruff-check",
+    "exitCode": 0,
+    "log": "root-final-ruff-check.log"
+  },
+  {
+    "check": "ruff-format",
+    "exitCode": 0,
+    "log": "root-final-ruff-format.log"
+  },
+  {
+    "check": "mypy",
+    "exitCode": 0,
+    "log": "root-final-mypy.log"
+  }
+]

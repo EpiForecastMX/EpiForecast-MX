@@ -1,0 +1,38 @@
+{
+  "root-pilot-final": {
+    "cases": 19,
+    "passed": 19,
+    "failed": [],
+    "sourceSha256": "1c38d7e67839449fff66c81ad8eae73aecd0589991c1e159adf55113be8fcb44"
+  },
+  "fixfinal-navigation": {
+    "cases": 124,
+    "passed": 124,
+    "failed": [],
+    "sourceSha256": "539e1e453b8784065a4219897869545e51c9bed9d1b27c2c82d9f8c8a4a9bf24"
+  },
+  "fixfinal-responsive": {
+    "cases": 60,
+    "passed": 60,
+    "failed": [],
+    "sourceSha256": "539e1e453b8784065a4219897869545e51c9bed9d1b27c2c82d9f8c8a4a9bf24"
+  },
+  "fixfinal-core-flows": {
+    "cases": 12,
+    "passed": 12,
+    "failed": [],
+    "sourceSha256": "539e1e453b8784065a4219897869545e51c9bed9d1b27c2c82d9f8c8a4a9bf24"
+  },
+  "fixfinal-editorial-flows": {
+    "cases": 8,
+    "passed": 8,
+    "failed": [],
+    "sourceSha256": "539e1e453b8784065a4219897869545e51c9bed9d1b27c2c82d9f8c8a4a9bf24"
+  },
+  "micro-wcp-contrast": {
+    "cases": 2,
+    "passed": 2,
+    "failed": [],
+    "sourceSha256": "1c38d7e67839449fff66c81ad8eae73aecd0589991c1e159adf55113be8fcb44"
+  }
+}

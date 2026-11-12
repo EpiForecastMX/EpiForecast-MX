@@ -1,0 +1,156 @@
+[
+  {
+    "variant": "baseline",
+    "errors": [],
+    "httpErrors": [
+      {
+        "url": "https://public.tableau.com/api/exp/sites/49f38034-8408-4682-90f1-dbf6d81cbe59/packages/rest-allowlist",
+        "status": 404
+      },
+      {
+        "url": "https://public.tableau.com/api/exp/sites/49f38034-8408-4682-90f1-dbf6d81cbe59/extensions?type=workspace&target=toolbar",
+        "status": 404
+      },
+      {
+        "url": "https://public.tableau.com/api/exp/sites/49f38034-8408-4682-90f1-dbf6d81cbe59/extensions?type=workspace&target=toolbar",
+        "status": 404
+      },
+      {
+        "url": "https://public.tableau.com/api/exp/sites/49f38034-8408-4682-90f1-dbf6d81cbe59/packages/rest-allowlist",
+        "status": 404
+      },
+      {
+        "url": "https://public.tableau.com/api/exp/sites/49f38034-8408-4682-90f1-dbf6d81cbe59/packages/rest-allowlist",
+        "status": 404
+      },
+      {
+        "url": "https://public.tableau.com/api/exp/sites/49f38034-8408-4682-90f1-dbf6d81cbe59/extensions?type=workspace&target=toolbar",
+        "status": 404
+      }
+    ],
+    "details": {
+      "duplicates": [
+        {
+          "id": "head",
+          "count": 7,
+          "first": "<path id=\"head\" d=\"M0 25a25 25 0 1 0 50 0h-3.9a21.1 21.1 0 1 1-42.2 0\"></path>",
+          "ancestors": [
+            "path#head.null",
+            "svg#tableau-svg-spinner-3.null",
+            "DIV#tableau-svg-spinner-container-3.null",
+            "DIV#.null",
+            "DIV#.null",
+            "DIV#viz1771742789816.tableauPlaceholder",
+            "DIV#.tableau-wrap",
+            "SECTION#anual.viz-section reveal"
+          ]
+        },
+        {
+          "id": "tail",
+          "count": 7,
+          "first": "<path id=\"tail\" d=\"M50 25a25 25 0 0 0-50 0h3.9a21.1 21.1 0 1 1 42.2 0\"></path>",
+          "ancestors": [
+            "path#tail.null",
+            "svg#tableau-svg-spinner-3.null",
+            "DIV#tableau-svg-spinner-container-3.null",
+            "DIV#.null",
+            "DIV#.null",
+            "DIV#viz1771742789816.tableauPlaceholder",
+            "DIV#.tableau-wrap",
+            "SECTION#anual.viz-section reveal"
+          ]
+        }
+      ],
+      "iframes": 10
+    }
+  },
+  {
+    "variant": "candidate",
+    "errors": [],
+    "httpErrors": [
+      {
+        "url": "https://public.tableau.com/api/exp/sites/49f38034-8408-4682-90f1-dbf6d81cbe59/extensions?type=workspace&target=toolbar",
+        "status": 404
+      },
+      {
+        "url": "https://public.tableau.com/api/exp/sites/49f38034-8408-4682-90f1-dbf6d81cbe59/packages/rest-allowlist",
+        "status": 404
+      },
+      {
+        "url": "https://public.tableau.com/api/exp/sites/49f38034-8408-4682-90f1-dbf6d81cbe59/extensions?type=workspace&target=toolbar",
+        "status": 404
+      },
+      {
+        "url": "https://public.tableau.com/api/exp/sites/49f38034-8408-4682-90f1-dbf6d81cbe59/packages/rest-allowlist",
+        "status": 404
+      },
+      {
+        "url": "https://public.tableau.com/api/exp/sites/49f38034-8408-4682-90f1-dbf6d81cbe59/extensions?type=workspace&target=toolbar",
+        "status": 404
+      },
+      {
+        "url": "https://public.tableau.com/api/exp/sites/49f38034-8408-4682-90f1-dbf6d81cbe59/packages/rest-allowlist",
+        "status": 404
+      },
+      {
+        "url": "https://public.tableau.com/api/exp/sites/49f38034-8408-4682-90f1-dbf6d81cbe59/extensions?type=workspace&target=toolbar",
+        "status": 404
+      },
+      {
+        "url": "https://public.tableau.com/api/exp/sites/49f38034-8408-4682-90f1-dbf6d81cbe59/packages/rest-allowlist",
+        "status": 404
+      },
+      {
+        "url": "https://public.tableau.com/api/exp/sites/49f38034-8408-4682-90f1-dbf6d81cbe59/packages/rest-allowlist",
+        "status": 404
+      },
+      {
+        "url": "https://public.tableau.com/api/exp/sites/49f38034-8408-4682-90f1-dbf6d81cbe59/extensions?type=workspace&target=toolbar",
+        "status": 404
+      },
+      {
+        "url": "https://public.tableau.com/api/exp/sites/49f38034-8408-4682-90f1-dbf6d81cbe59/packages/rest-allowlist",
+        "status": 404
+      },
+      {
+        "url": "https://public.tableau.com/api/exp/sites/49f38034-8408-4682-90f1-dbf6d81cbe59/extensions?type=workspace&target=toolbar",
+        "status": 404
+      }
+    ],
+    "details": {
+      "duplicates": [
+        {
+          "id": "head",
+          "count": 5,
+          "first": "<path id=\"head\" d=\"M0 25a25 25 0 1 0 50 0h-3.9a21.1 21.1 0 1 1-42.2 0\"></path>",
+          "ancestors": [
+            "path#head.null",
+            "svg#tableau-svg-spinner-5.null",
+            "DIV#tableau-svg-spinner-container-5.null",
+            "DIV#.null",
+            "DIV#.null",
+            "DIV#viz1772521211528.tableauPlaceholder",
+            "DIV#.tableau-wrap",
+            "SECTION#pred-nacional.viz-section reveal"
+          ]
+        },
+        {
+          "id": "tail",
+          "count": 5,
+          "first": "<path id=\"tail\" d=\"M50 25a25 25 0 0 0-50 0h3.9a21.1 21.1 0 1 1 42.2 0\"></path>",
+          "ancestors": [
+            "path#tail.null",
+            "svg#tableau-svg-spinner-5.null",
+            "DIV#tableau-svg-spinner-container-5.null",
+            "DIV#.null",
+            "DIV#.null",
+            "DIV#viz1772521211528.tableauPlaceholder",
+            "DIV#.tableau-wrap",
+            "SECTION#pred-nacional.viz-section reveal"
+          ]
+        }
+      ],
+      "iframes": 10
+    }
+  }
+]

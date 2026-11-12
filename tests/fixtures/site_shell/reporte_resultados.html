@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resultados del Modelado — EpiForecast-MX</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+*:not(:where(.site-header, .site-footer) *),*:not(:where(.site-header, .site-footer) *)::before,*:not(:where(.site-header, .site-footer) *)::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  /* Superficies — Clinical Indigo */
+  --bg-deep:        #fafbf7;
+  --bg-base:        #fafbf7;
+  --bg-raised:      #f1f6ef;
+  --bg-card:        #ffffff;
+  --bg-card-hover:  #dbe3dc;
+  /* Texto */
+  --text-primary:   #173c33;
+  --text-secondary: #40594f;
+  --text-muted:     #53675e;
+  --text-faint:     #5b6f66;
+  /* Acentos */
+  --burgundy:       #a3367a;
+  --dark-burgundy:  #8E2A63;
+  --teal:           #2f5f9e;
+  --gold:           #0f6e66;
+  /* Aliases legacy */
+  --neutral-black:  #0B0F1A;
+  --cool-gray:      #40594f;
+  --dark-teal:      #f1f6ef;
+  --cream:          #173c33;
+  --cream-light:    #ffffff;
+  --cream-pale:     #fafbf7;
+  --teal-glow:      rgba(91,141,239,0.15);
+  --burgundy-glow:  rgba(244,114,182,0.15);
+  --gold-glow:      rgba(45,212,191,0.15);
+  /* Extra legacy aliases */
+  --burgundy-light: #a3367a;
+  --teal-light:     #93C5FD;
+  --gold-light:     #0f6e66;
+  /* Tipografía */
+  --font-display:   'Playfair Display', Georgia, serif;
+  --font-body:      'Outfit', system-ui, -apple-system, sans-serif;
+  --font-mono:      'JetBrains Mono', 'SF Mono', monospace;
+  --shadow-sm:      0 2px 8px rgba(0,0,0,.35);
+  --shadow-md:      0 8px 24px rgba(0,0,0,.40);
+  --shadow-lg:      0 16px 48px rgba(0,0,0,.45);
+  --radius:         16px;
+  --radius-sm:      10px;
+}
+body{font-family:var(--font-body);background:var(--bg-base);color:var(--text-primary);line-height:1.7;-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");opacity:.025;pointer-events:none;z-index:0}
+
+/* Nav */
+@media(max-width:768px){}
+
+.container{max-width:1200px;margin:0 auto;padding:0 2rem;position:relative;z-index:1}
+section:not(:where(.site-header, .site-footer) *){padding:4rem 0}
+.section-title{font-family:var(--font-display);font-size:clamp(1.8rem,4vw,2.5rem);margin-bottom:.5rem;color:var(--cream)}
+.section-sub{color:var(--cool-gray);font-size:1rem;margin-bottom:2.5rem}
+
+.hero{padding:10rem 2rem 6rem;text-align:center;background:linear-gradient(170deg,var(--dark-teal) 0%,var(--teal) 60%,rgba(0,82,78,.85) 100%);color:var(--cream-pale);position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 800px 600px at 30% 20%,rgba(45,212,191,.12),transparent),radial-gradient(ellipse 600px 500px at 70% 80%,rgba(244,114,182,.08),transparent);pointer-events:none}
+.hero h1{font-family:var(--font-display);font-size:clamp(2.5rem,6vw,4.5rem);line-height:1.1;margin-bottom:1rem;position:relative}
+.hero .subtitle{font-size:clamp(1rem,2vw,1.25rem);opacity:.8;font-weight:300;margin-bottom:3rem;position:relative}
+.hero-kpis{display:flex;justify-content:center;gap:2rem;flex-wrap:wrap;position:relative}
+.hero-kpi{background:rgba(91,141,239,.10);border:1px solid rgba(91,141,239,.20);border-radius:var(--radius);padding:2rem 2.5rem;backdrop-filter:blur(8px);min-width:180px;transition:transform .3s,box-shadow .3s}
+.hero-kpi:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(0,0,0,.2)}
+.hero-kpi .value{font-family:var(--font-display);font-size:3rem;display:block;background:linear-gradient(135deg,var(--cream),var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero-kpi .label{font-size:.85rem;text-transform:uppercase;letter-spacing:1px;opacity:.7}
+
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:2rem}
+.card{background:var(--bg-card);border-radius:var(--radius);padding:2rem;box-shadow:var(--shadow-md);border:1px solid rgba(91,141,239,.12);transition:transform .3s,box-shadow .3s}
+.card:hover{transform:translateY(-3px);box-shadow:var(--shadow-lg)}
+.card-header{display:flex;align-items:center;gap:.75rem;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:2px solid rgba(91,141,239,.2)}
+.card-dot{width:14px;height:14px;border-radius:50%;flex-shrink:0;box-shadow:0 0 8px currentColor}
+.card-title{font-family:var(--font-display);font-size:1.4rem}
+.card-metrics{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.metric{background:var(--bg-raised);border-radius:var(--radius-sm);padding:.75rem 1rem}
+.metric-value{font-family:var(--font-mono);font-size:1.4rem;font-weight:500}
+.metric-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.5px;color:var(--text-secondary)}
+
+.chart-wrap{background:var(--bg-card);border-radius:var(--radius);padding:2rem;box-shadow:var(--shadow-md);border:1px solid rgba(91,141,239,.12)}
+.chart-wrap canvas{max-height:400px}
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:2rem}
+
+/* guide cards */
+.guide-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:1.5rem;margin-top:1.5rem}
+.guide-card{background:var(--bg-card);border-radius:var(--radius);padding:1.5rem 1.75rem;box-shadow:var(--shadow-sm);border-left:4px solid var(--teal)}
+.guide-card h3{font-family:var(--font-display);font-size:1.15rem;margin-bottom:.5rem;color:var(--cream)}
+.guide-card p{font-size:.92rem;color:var(--text-secondary);line-height:1.7}
+.guide-card .badge{margin:0 2px}
+
+/* region map */
+.region-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:1rem;margin-top:1rem}
+.region-card{background:var(--bg-raised);border-radius:var(--radius-sm);padding:1rem 1.25rem;border:1px solid rgba(91,141,239,.15)}
+.region-card h4{font-size:.95rem;font-weight:700;margin-bottom:.4rem;color:var(--cream)}
+.region-card p{font-size:.82rem;color:var(--text-secondary);line-height:1.5}
+
+/* referencias */
+.ref-cat{font-family:var(--font-body);font-weight:700;text-transform:uppercase;letter-spacing:.08em;font-size:.78rem;color:var(--gold);margin:2rem 0 1rem}
+.ref-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(330px,1fr));gap:1rem}
+.ref-item{background:var(--bg-card);border-radius:var(--radius-sm);padding:1.1rem 1.25rem;box-shadow:var(--shadow-sm);border:1px solid rgba(91,141,239,.12);border-left:3px solid var(--teal)}
+.ref-item .ref-authors{font-weight:600;color:var(--text-primary);font-size:.9rem;margin-bottom:.2rem}
+.ref-item .ref-title{font-style:italic;color:var(--text-secondary);font-size:.92rem;line-height:1.45;margin-bottom:.2rem}
+.ref-item .ref-source{font-family:var(--font-mono);font-size:.76rem;color:var(--text-muted);margin-bottom:.45rem}
+.ref-item .ref-link{display:inline-flex;align-items:center;gap:.35rem;font-family:var(--font-mono);font-size:.76rem;color:var(--teal);text-decoration:none}
+.ref-item .ref-link:hover{color:var(--gold)}
+.ref-item .ref-link svg{width:13px;height:13px}
+
+/* table */
+.table-wrapper{background:var(--bg-card);border-radius:var(--radius);box-shadow:var(--shadow-md);border:1px solid rgba(91,141,239,.12);overflow:hidden}
+.table-controls{display:flex;gap:1rem;padding:1.5rem 2rem;flex-wrap:wrap;border-bottom:1px solid rgba(91,141,239,.15);align-items:center}
+.table-controls input,.table-controls select{font-family:var(--font-body);font-size:.9rem;padding:.5rem 1rem;border:1px solid rgba(91,141,239,.25);border-radius:6px;background:var(--bg-raised);color:var(--text-primary);outline:none;transition:border-color .2s}
+.table-controls input:focus,.table-controls select:focus{border-color:var(--teal)}
+.table-controls input{flex:1;min-width:180px}
+table:not(:where(.site-header, .site-footer) *){width:100%;border-collapse:collapse;font-size:.9rem}
+thead th:not(:where(.site-header, .site-footer) *){padding:1rem 1.25rem;text-align:left;font-weight:600;text-transform:uppercase;font-size:.75rem;letter-spacing:.5px;color:var(--text-secondary);border-bottom:2px solid rgba(91,141,239,.2);cursor:pointer;user-select:none;white-space:nowrap;transition:color .2s}
+thead th:hover:not(:where(.site-header, .site-footer) *){color:var(--teal)}
+thead th.sorted-asc::after{content:' \25B2';font-size:.65rem}
+thead th.sorted-desc::after{content:' \25BC';font-size:.65rem}
+tbody td:not(:where(.site-header, .site-footer) *){padding:.85rem 1.25rem;border-bottom:1px solid rgba(91,141,239,.10);vertical-align:middle}
+tbody tr:not(:where(.site-header, .site-footer) *){transition:background .15s}
+tbody tr:hover:not(:where(.site-header, .site-footer) *){background:var(--bg-card-hover)}
+.group-header td{background:var(--tint);color:var(--cream);font-weight:700;font-size:.8rem;text-transform:uppercase;letter-spacing:1px;padding:.6rem 1.25rem;border:none}
+
+.badge{display:inline-block;padding:.2rem .7rem;border-radius:100px;font-family:var(--font-mono);font-size:.8rem;font-weight:500}
+.badge-green{background:rgba(45,212,191,.15);color:#0f6e66}
+.badge-yellow{background:rgba(251,191,36,.15);color:#7d4400}
+.badge-red{background:rgba(244,114,182,.15);color:#a3367a}
+.badge-tipo{font-family:var(--font-body);font-size:.78rem;font-weight:600;padding:.25rem .8rem;border-radius:100px}
+.badge-propio{background:rgba(45,212,191,.15);color:#0f6e66}
+.badge-fallback{background:rgba(251,146,60,.15);color:#c2410c}
+
+.cob-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:.75rem}
+.cob-item{display:flex;align-items:center;gap:.75rem;background:var(--bg-card);border-radius:var(--radius-sm);padding:.6rem 1rem;box-shadow:var(--shadow-sm);border:1px solid rgba(91,141,239,.12);font-size:.88rem}
+.cob-item .estado-name{flex:1;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cob-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.cob-dot.propio{background:#0f6e66;box-shadow:0 0 4px rgba(45,212,191,.4)}
+.cob-dot.fallback{background:#c2410c;box-shadow:0 0 4px rgba(251,146,60,.4)}
+.cob-dot.sin_modelo{background:var(--cool-gray);opacity:.4}
+.cob-summary{display:flex;gap:2rem;margin-bottom:1.5rem;flex-wrap:wrap}
+.cob-summary-item{display:flex;align-items:center;gap:.5rem;font-size:.85rem}
+
+.reveal{opacity:0;transform:translateY(30px);transition:opacity .6s ease,transform .6s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+footer:not(.site-footer){background:var(--tint);color:rgba(232,213,181,.7);padding:3rem 2rem;text-align:center;font-size:.85rem;position:relative;z-index:1}
+footer:not(.site-footer) a{color:var(--gold-light);text-decoration:none}
+footer:not(.site-footer) a:hover{color:var(--cream)}
+footer:not(.site-footer) .footer-title{font-family:var(--font-display);color:var(--cream);font-size:1.2rem;margin-bottom:.5rem}
+
+@media(max-width:768px){
+  .hero{padding:8rem 1.5rem 4rem}.hero-kpis{gap:1rem}.hero-kpi{min-width:140px;padding:1.25rem}.hero-kpi .value{font-size:2.2rem}
+  .card-grid,.charts-row,.guide-grid,.region-grid{grid-template-columns:1fr}
+  .table-controls{flex-direction:column}section:not(:where(.site-header, .site-footer) *){padding:2.5rem 0}.container{padding:0 1rem}
+}
+</style>
+<link rel="stylesheet" href="assets/site/site.css?v=5">
+<link rel="stylesheet" href="editorial.css?v=4">
+</head>
+<body class="editorial-page">
+<!-- build: r2 metodologia-dengue link -->
+
+<a class="skip" href="#contenido">Saltar al contenido</a>
+<!-- site:header:start -->
+<header class="site-header" id="nav" lang="es">
+  <div class="site-header__inner">
+    <a class="site-brand" href="index.html" aria-label="EpiForecast-MX, inicio"><span class="site-brand__symbol" aria-hidden="true">E<span>+</span></span><span class="site-brand__name"><span class="site-brand__word">EpiForecast<span class="site-brand__mx">MX</span></span><small>Inteligencia epidemiológica</small></span></a>
+    <nav class="site-nav" aria-label="Navegación principal">
+      <ul class="nav-menu">
+        <li><a href="Reports/index.html">Galería</a></li>
+        <li><a href="epibot/index.html">EpiBot</a></li>
+        <li><a href="EpiDashboard.html">Dashboard</a></li>
+        <li><a href="boletin.html">Radar del boletín</a></li>
+        <li><a href="novedades.html">Noticias</a></li>
+        <li class="nav-group">
+          <button type="button" class="nav-group__toggle" aria-expanded="false" aria-controls="navGroup-congresos">Congresos</button>
+          <ul class="nav-group__list" id="navGroup-congresos">
+            <li><a href="wcp2026.html">WCP 2026 · Estocolmo</a></li>
+            <li><a href="micai2026.html">MICAI 2026 · Chihuahua</a></li>
+            <li><a href="calass.html">CALASS 2026 · Montréal</a></li>
+            <li><a href="index.html#congresos">Todos los congresos</a></li>
+          </ul>
+        </li>
+        <li class="nav-group">
+          <button type="button" class="nav-group__toggle" aria-expanded="false" aria-controls="navGroup-mas">Más</button>
+          <ul class="nav-group__list" id="navGroup-mas">
+            <li><a href="index.html#diseases">Padecimientos</a></li>
+            <li><a href="index.html#metodologia">Evidencia y método</a></li>
+            <li><a href="index.html#about">Proyecto y equipo</a></li>
+          </ul>
+        </li>
+      </ul>
+    </nav>
+    <button type="button" class="site-nav__toggle" aria-controls="navMobile" aria-expanded="false"><span class="site-nav__toggle-icon" aria-hidden="true"></span><span class="site-nav__toggle-text">Menú</span></button>
+  </div>
+  <div id="navMobile" class="site-nav__mobile">
+    <div class="nav-mobile-items">
+      <a class="nav-mobile-link" href="Reports/index.html">Galería</a>
+      <a class="nav-mobile-link" href="epibot/index.html">EpiBot</a>
+      <a class="nav-mobile-link" href="EpiDashboard.html">Dashboard</a>
+      <a class="nav-mobile-link" href="boletin.html">Radar del boletín</a>
+      <a class="nav-mobile-link" href="novedades.html">Noticias</a>
+      <p class="nav-mobile-group">Congresos</p>
+      <a class="nav-mobile-link nav-mobile-link--sub" href="wcp2026.html">WCP 2026 · Estocolmo</a>
+      <a class="nav-mobile-link nav-mobile-link--sub" href="micai2026.html">MICAI 2026 · Chihuahua</a>
+      <a class="nav-mobile-link nav-mobile-link--sub" href="calass.html">CALASS 2026 · Montréal</a>
+      <a class="nav-mobile-link nav-mobile-link--sub" href="index.html#congresos">Todos los congresos</a>
+      <p class="nav-mobile-group">Más</p>
+      <a class="nav-mobile-link nav-mobile-link--sub" href="index.html#diseases">Padecimientos</a>
+      <a class="nav-mobile-link nav-mobile-link--sub" href="index.html#metodologia">Evidencia y método</a>
+      <a class="nav-mobile-link nav-mobile-link--sub" href="index.html#about">Proyecto y equipo</a>
+    </div>
+  </div>
+</header>
+<!-- site:header:end -->
+
+<!-- ═══ HERO ═══ -->
+<section id="contenido" class="hero">
+  <h1>Resultados del Modelado</h1>
+  <p class="subtitle">EpiForecast-MX &middot; IMSS &times; Tec de Monterrey &middot; 09/11/2026</p>
+  <div class="hero-kpis">
+    <div class="hero-kpi"><span class="value">4</span><span class="label">Padecimientos</span></div>
+    <div class="hero-kpi"><span class="value">432</span><span class="label">Series con pronóstico</span></div>
+    <div class="hero-kpi"><span class="value">5</span><span class="label">Motores compitiendo</span></div>
+    <div class="hero-kpi"><span class="value">52 sem</span><span class="label">Horizonte productivo</span></div>
+  </div>
+  <p style="max-width:760px;margin:1.5rem auto 0;color:var(--text-secondary);line-height:1.6;font-size:.97rem">
+    De un solo modelo Prophet por serie pasamos a <strong style="color:var(--cream)">selección de motor por serie</strong>:
+    cada combinación entidad × sexo elige, contra la realidad del Boletín SINAVE 2026, el mejor de
+    <strong style="color:var(--cream)">cuatro motores</strong> (Prophet, DeepAR, Ensemble y Stacking).
+    Y se incorporó el <strong style="color:var(--gold)">Dengue</strong> como cuarto padecimiento, con un quinto motor nuevo, el <strong style="color:var(--gold)">NB-GLM</strong>.
+    <a href="#dengue" style="color:var(--teal)">Ver la sección de Dengue ↓</a>
+  </p>
+</section>
+
+<!-- ═══ NOVEDADES 2026 ═══ -->
+<section id="novedades" style="padding:3rem 0">
+  <div class="container">
+    <h2 class="section-title reveal">Lo nuevo en 2026</h2>
+    <p class="section-sub reveal">Cómo evolucionó el modelado desde el primer reporte (Prophet único) a hoy</p>
+    <div class="guide-grid">
+      <div class="guide-card reveal" style="border-left-color:var(--teal)">
+        <h3>Selección de motor por serie</h3>
+        <p>Ya no es «Prophet para todo». Cada una de las <strong>333 series neurológicas</strong> usa el motor que mejor
+        pronosticó, fuera de muestra, las semanas 28 a 37 de 2026 (modelos entrenados hasta la semana 27). Distribución
+        productiva actual: <span class="badge badge-green">DeepAR 39</span>
+        <span class="badge badge-green">Prophet 78</span>
+        <span class="badge badge-yellow">Ensemble 109</span>
+        <span class="badge badge-yellow">Stacking 107</span>.</p>
+      </div>
+      <div class="guide-card reveal" style="border-left-color:var(--gold)">
+        <h3>Nuevo motor NB-GLM</h3>
+        <p>Un GLM Negative-Binomial con estacionalidad de Fourier y el índice <strong>El Niño (ONI)</strong>.
+        Es count-correcto y el <strong>mejor del estudio</strong> para Dengue en backtest leave-one-epidemic-out
+        (SMAPE 52 vs Prophet 102). Su pronóstico es recursivo y en muchas series se desboca más allá de ~10 semanas:
+        <strong>suspendido en esta ronda</strong>.</p>
+      </div>
+      <div class="guide-card reveal" style="border-left-color:#9a5200">
+        <h3>Dengue en producción</h3>
+        <p>Cuarto padecimiento y primera enfermedad por vector. Serie semanal <strong>2018–2026</strong> de las 32
+        entidades, modelada en conteos. Productivos <strong>DeepAR + Prophet</strong>. En vivo en
+        <a href="dengue.html" style="color:var(--teal)">epiforecast.mx/dengue</a>.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ GUIA ═══ -->
+<section id="guia" style="background:var(--bg-raised);padding:4rem 0">
+  <div class="container">
+    <h2 class="section-title reveal">Antes de empezar: guía rápida</h2>
+    <p class="section-sub reveal">Todo lo que necesitas saber para entender este reporte, explicado de forma sencilla</p>
+    <div class="guide-grid">
+      <div class="guide-card" style="border-left-color:var(--teal)">
+        <h3>Qué mide el MASE</h3>
+        <p>El MASE es como una <strong>calificación</strong> del modelo. Lo compara contra el método más simple posible: repetir lo que pasó hace exactamente un año.
+        <br><br><span class="badge badge-green">&lt; 0.7 Excelente</span> <span class="badge badge-yellow">0.7 – 1.0 Bueno</span> <span class="badge badge-red">&gt; 1.0 Necesita mejora</span>
+        <br><br>Si el MASE es menor a 1, <strong>nuestro modelo es mejor que solo copiar el pasado</strong>. Entre más bajo, mejor.</p>
+      </div>
+      <div class="guide-card" style="border-left-color:var(--gold)">
+        <h3>Las 4 regiones INEGI de salud mental</h3>
+        <p>El INEGI agrupa los 32 estados en <strong>4 zonas</strong> según sus patrones de salud mental. Esto importa porque estados de la misma zona se comportan de forma similar:</p>
+        <div class="region-grid" style="margin-top:.75rem">
+          <div class="region-card"><h4>Metropolitana alta</h4><p>CDMX, Edo. Méx., Jalisco, Nuevo León, Chihuahua, Baja California, Coahuila, Sinaloa, Sonora, Tamaulipas</p></div>
+          <div class="region-card"><h4>Urbana media</h4><p>Aguascalientes, BCS, Colima, Durango, Guanajuato, Morelos, Querétaro, San Luis Potosí, Zacatecas</p></div>
+          <div class="region-card"><h4>Sur-Sureste vulnerable</h4><p>Campeche, Chiapas, Oaxaca, Quintana Roo, Tabasco, Veracruz, Yucatán</p></div>
+          <div class="region-card"><h4>Rural / dispersa</h4><p>Guerrero, Hidalgo, Michoacán, Nayarit, Puebla, Tlaxcala</p></div>
+        </div>
+      </div>
+      <div class="guide-card" style="border-left-color:var(--burgundy)">
+        <h3>Qué es un modelo &laquo;fallback&raquo; regional</h3>
+        <p>Algunos estados tienen <strong>tan pocos casos</strong> (menos de 0.5 por semana) que no hay datos suficientes para entrenar un modelo confiable solo para ese estado.
+        <br><br>En lugar de dar un pronóstico malo, <strong>usamos el modelo de toda su región INEGI</strong>, que tiene muchos más datos. El pronóstico final se ajusta con la población individual de cada estado.
+        <br><br>Es como pedir prestada la experiencia de los vecinos para hacer una mejor predicción.</p>
+      </div>
+      <div class="guide-card" style="border-left-color:var(--cool-gray)">
+        <h3>Por qué hay diferente número de modelos</h3>
+        <p>Cada padecimiento tiene una base de <strong>99 modelos</strong> (32 estados &times; 3 modos de sexo + 3 nacionales). La diferencia viene de cuántos modelos regionales de respaldo se necesitan:
+        <br><br><strong>Alzheimer</strong>: 111 modelos (99 base + 12 regionales de respaldo). Todos los estados tienen su propio modelo.<br><strong>Depresión</strong>: 111 modelos (99 base + 12 regionales de respaldo). Todos los estados tienen su propio modelo.<br><strong>Parkinson</strong>: 111 modelos (99 base + 12 regionales de respaldo). Todos los estados tienen su propio modelo.</p>
+      </div>
+      <div class="guide-card" style="border-left-color:var(--teal)">
+        <h3>Las 4 métricas del modelo</h3>
+        <p>Cada modelo se evalúa con cuatro métricas complementarias:
+        <br><br><strong>MASE</strong> &mdash; Compara el error del modelo contra un baseline naive (repetir el valor de hace 1 año). Menor a 1 = mejor que el baseline. <em>Métrica principal.</em>
+        <br><strong>SMAPE</strong> &mdash; Error porcentual simétrico, acotado entre 0% y 200%. Intuitivo y más estable que el MAPE, aunque también se infla cuando la incidencia es cercana a cero.
+        <br><strong>RMSE</strong> &mdash; Error cuadrático medio. Penaliza errores grandes. Está en casos por semana del motor productivo.
+        <br><strong>MAE</strong> &mdash; Error absoluto medio. Similar al RMSE pero sin penalizar extremos, tambien en casos por semana.
+        <br><br><em>Nota: MASE es adimensional (comparable entre padecimientos); SMAPE en %, y RMSE/MAE en casos del motor productivo de cada serie.</em></p>
+      </div>
+      <div class="guide-card" style="border-left-color:var(--burgundy)">
+        <h3>Por qué el SMAPE es alto en baja incidencia</h3>
+        <p>El SMAPE promedia el error relativo semana a semana. Cuando la incidencia es cercana a cero (común en <strong>Alzheimer y Parkinson</strong> estatales), una diferencia de uno o dos casos representa un error porcentual enorme, así que el SMAPE sube hacia su tope de 200% aunque el pronóstico siga el patrón.
+        <br><br>Por eso en esos padecimientos verás SMAPE alto junto a un <strong>MASE bajo</strong>: el modelo sí le gana al baseline, solo que la métrica porcentual castiga los ceros.
+        <br><br>Por esta razón <strong>MASE es la métrica principal</strong> de selección: compara contra un baseline en vez de dividir por el valor real.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ RESUMEN ═══ -->
+<section id="resumen">
+  <div class="container">
+    <h2 class="section-title reveal">Resumen por Padecimiento (neuro)</h2>
+    <p class="section-sub reveal">Series y modelos de los 3 padecimientos neurológicos (Dengue tiene su propia sección abajo)</p>
+    <div class="card-grid" id="pad-cards"></div>
+    <div class="charts-row">
+      <div class="chart-wrap"><canvas id="doughnutChart"></canvas></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ MÉTRICAS DE SELECCIÓN (ronda W37) ═══ -->
+<section id="metricas" style="background:var(--bg-raised);padding:4rem 0">
+  <div class="container">
+    <h2 class="section-title reveal">Métricas de error de esta ronda</h2>
+    <p class="section-sub reveal">El motor de cada serie se eligió <strong>fuera de muestra</strong>: los modelos se entrenaron
+    con los boletines hasta la semana 27 de 2026 y se compararon contra las semanas 28 a 37, que no habían visto. Ese error
+    (SMAPE, MASE, RMSE, MAE) sirvió para <strong>elegir</strong> el motor y por eso es un <strong>diagnóstico de selección W28–W37; no evaluación independiente</strong>:
+    no se publica como desempeño del pronóstico. El desempeño se medirá con el seguimiento prospectivo de las semanas
+    posteriores al corte (semana 37).</p>
+  </div>
+</section>
+
+<!-- ═══ COBERTURA ═══ -->
+<section id="cobertura" style="background:var(--bg-raised);padding:4rem 0">
+  <div class="container">
+    <h2 class="section-title reveal">Cobertura Geográfica</h2>
+    <p class="section-sub reveal">Tipo de modelo por estado: <span class="cob-dot propio" style="display:inline-block;vertical-align:middle"></span> Propio (datos suficientes) &nbsp; <span class="cob-dot fallback" style="display:inline-block;vertical-align:middle"></span> Fallback regional (usa modelo de su zona). Orden: Alzheimer, Depresión, Parkinson.</p>
+    <div class="cob-summary" id="cobSummary"></div>
+    <div class="cob-grid" id="cobGrid"></div>
+  </div>
+</section>
+
+<!-- ═══ DENGUE ═══ -->
+<section id="dengue" style="background:linear-gradient(180deg,var(--bg-raised),var(--bg));padding:4.5rem 0;border-top:1px solid rgba(245,158,11,.18)">
+  <div class="container">
+    <h2 class="section-title reveal" style="color:#9a5200">Dengue — 4.º padecimiento</h2>
+    <p class="section-sub reveal">Primera enfermedad transmitida por vector del proyecto. Serie semanal del dengue confirmado <strong>2018–2026</strong> de las 32 entidades, reconstruida desde los boletines del SINAVE y modelada en <strong>conteos absolutos</strong> (no en tasa, como neuro).</p>
+
+    <!-- Stats -->
+    <div class="region-grid reveal" style="grid-template-columns:repeat(auto-fill,minmax(190px,1fr))">
+      <div class="region-card"><h4 style="color:#9a5200">392 sem</h4><p>Serie nacional 2018–2026 (≈8 años)</p></div>
+      <div class="region-card"><h4 style="color:#9a5200">99 series</h4><p>(Nacional + 32 entidades) × 3 sexos</p></div>
+      <div class="region-card"><h4 style="color:#9a5200">5 motores</h4><p>Prophet, DeepAR, Ensemble, Stacking, NB-GLM</p></div>
+      <div class="region-card"><h4 style="color:#9a5200">DeepAR</h4><p>Motor nacional productivo</p></div>
+      <div class="region-card"><h4 style="color:#9a5200">52 sem</h4><p>Pronóstico a 1 año, sin proyección multi-año</p></div>
+    </div>
+
+    <!-- Resultados de modelado (interactivos, propios de esta página) -->
+    <div class="charts-row" style="margin-top:2.5rem">
+      <div class="chart-wrap"><canvas id="dengueMotorChart"></canvas></div>
+      <div class="chart-wrap"><canvas id="dengueBacktestChart"></canvas></div>
+    </div>
+    <p style="text-align:center;color:var(--text-muted);font-size:.82rem;margin-top:.5rem">Izquierda: motor productivo por serie (DeepAR a nivel nacional; a nivel general DeepAR 19, Prophet 14). Derecha: backtest fuera de muestra sobre la epidemia 2024 (leave-one-epidemic-out); agregar El Niño y el motor NB-GLM reducen el SMAPE de 102 a 52.</p>
+
+    <!-- Hallazgos -->
+    <h3 class="section-title reveal" style="font-size:1.5rem;margin-top:3rem">Hallazgos clave</h3>
+    <div class="guide-grid">
+      <div class="guide-card reveal" style="border-left-color:#9a5200">
+        <h3>El Niño como regresor</h3>
+        <p>El dengue sigue el ciclo ENSO, pero esa señal no vive en los conteos recientes. Al agregar el índice
+        <strong>ONI rezagado 16 sem</strong> a Prophet, el backtest leave-one-epidemic-out mejora el nacional de
+        <span class="badge badge-red">SMAPE 102</span> a <span class="badge badge-yellow">76</span>, y el pico 2024
+        de ratio 1.61 a 0.87.</p>
+      </div>
+      <div class="guide-card reveal" style="border-left-color:var(--teal)">
+        <h3>NB-GLM: mejor en backtest, suspendido</h3>
+        <p>GLM Negative-Binomial + Fourier + El Niño: count-correcto y el mejor del estudio en backtest
+        (<span class="badge badge-green">SMAPE 52</span> vs Prophet+ENSO 76 vs Prophet 102), pero su predicción
+        recursiva se desboca a horizontes largos y queda <strong>suspendido en esta ronda</strong>. Ensemble y
+        Stacking <strong>no son elegibles</strong>: los árboles no extrapolan la dinámica epidémica a 52 sem.</p>
+      </div>
+      <div class="guide-card reveal" style="border-left-color:var(--burgundy)">
+        <h3>Regiones con DeepAR nativo</h3>
+        <p>Un backtest OOS sobre la epidemia 2024 mostró que <strong>agregar los estados</strong> compone los
+        sobre-tiros y explota (ratio de pico 34–157x). Las 4 regiones usan <strong>DeepAR nativo</strong>, el más
+        contenido y fiel en magnitud (<span class="badge badge-green">MAE 460</span> vs 3.7k–10k de la agregación).</p>
+      </div>
+      <div class="guide-card reveal" style="border-left-color:var(--cool-gray)">
+        <h3>Nota honesta de validación</h3>
+        <p>En esta ronda el motor de cada serie se eligió <strong>fuera de muestra</strong> (modelos hasta la semana 27
+        de 2026 frente a las semanas 28 a 37); esa comparación sirve para elegir motor, no es una medida publicada del
+        desempeño. El <strong>backtest</strong> de NB-GLM es limpio (leave-one-epidemic-out). Ver <a href="auditoria_remediacion_2026.html" style="color:var(--teal)">Auditoría</a>.</p>
+      </div>
+    </div>
+
+    <!-- Tabla de motores -->
+    <h3 class="section-title reveal" style="font-size:1.5rem;margin-top:3rem">Motores en competencia</h3>
+    <p class="section-sub reveal">Cuántas de las 99 series gana cada motor y cuáles quedan fuera de producción</p>
+    <div class="table-wrapper reveal">
+      <div style="overflow-x:auto">
+        <div class="tabla-desplazable"><table id="dengueMotorTable">
+          <thead><tr>
+            <th>Motor</th>
+            <th>Series ganadas</th>
+            <th>En producción</th>
+            <th>Nota</th>
+          </tr></thead>
+          <tbody id="dengueMotorBody"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- Ranking de series -->
+    <h3 class="section-title reveal" style="font-size:1.5rem;margin-top:3rem">Las 99 series de Dengue</h3>
+    <p class="section-sub reveal">Motor productivo asignado y casos 2026 por entidad y sexo. El error de la ventana de selección (semanas 28 a 37) no se publica: es un diagnóstico de selección W28–W37; no evaluación independiente.</p>
+    <div class="table-wrapper reveal">
+      <div class="table-controls">
+        <input type="text" id="dengueSearch" placeholder="Buscar entidad...">
+        <select id="dengueModo">
+          <option value="">Todos los modos</option>
+          <option value="General">General</option>
+          <option value="Hombres">Hombres</option>
+          <option value="Mujeres">Mujeres</option>
+        </select>
+        <select id="dengueMotorF">
+          <option value="">Todos los motores</option>
+          <option value="DeepAR">DeepAR</option>
+          <option value="Prophet">Prophet</option>
+        </select>
+      </div>
+      <div style="overflow-x:auto">
+        <div class="tabla-desplazable"><table id="dengueTable">
+          <thead><tr>
+            <th data-col="entidad">Entidad</th>
+            <th data-col="modo">Modo</th>
+            <th data-col="motor">Motor productivo</th>
+            <th data-col="casos">Casos 2026</th>
+          </tr></thead>
+          <tbody id="dengueBody"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <p style="text-align:center;color:var(--text-secondary);font-size:.92rem;margin-top:2.5rem">
+      El ciclo epidémico y el mapa de carga por entidad se exploran
+      a fondo en la <a href="dengue.html" style="color:var(--teal)">página de Dengue en vivo</a>.</p>
+
+    <p style="text-align:center;margin-top:2.5rem">
+      <a href="dengue.html" class="nav-cta nav-cta--primary" style="display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.6rem">
+        Ver el pronóstico de Dengue en vivo →
+      </a>
+      <a href="metodologia_dengue.html" class="nav-cta nav-cta--secondary" style="display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.6rem;margin-left:.6rem">
+        Metodología de Dengue (parámetros y modelos) →
+      </a>
+    </p>
+  </div>
+</section>
+
+<!-- ═══ REFERENCIAS ═══ -->
+<section id="referencias" style="background:var(--bg-raised);padding:4.5rem 0">
+  <div class="container">
+    <h2 class="section-title reveal">Referencias</h2>
+    <p class="section-sub reveal">Fuentes que sustentan los métodos, las métricas y los datos de este reporte. La bibliografía completa del proyecto está en <a href="referencias.html" style="color:var(--teal)">Referencias</a>.</p>
+
+    <h3 class="ref-cat reveal">Motores de pronóstico</h3>
+    <div class="ref-grid">
+      <div class="ref-item reveal">
+        <p class="ref-authors">Taylor, S. J., y Letham, B.</p>
+        <p class="ref-title">Forecasting at scale</p>
+        <p class="ref-source">The American Statistician, 72(1), 37&ndash;45, 2018</p>
+        <a href="https://doi.org/10.1080/00031305.2017.1380080" target="_blank" rel="noopener" class="ref-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>doi.org/10.1080/00031305.2017.1380080</a>
+      </div>
+      <div class="ref-item reveal">
+        <p class="ref-authors">Salinas, D., Flunkert, V., Gasthaus, J., y Januschowski, T.</p>
+        <p class="ref-title">DeepAR: Probabilistic forecasting with autoregressive recurrent networks</p>
+        <p class="ref-source">International Journal of Forecasting, 36(3), 1181&ndash;1191, 2020</p>
+        <a href="https://doi.org/10.1016/j.ijforecast.2019.07.001" target="_blank" rel="noopener" class="ref-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>doi.org/10.1016/j.ijforecast.2019.07.001</a>
+      </div>
+      <div class="ref-item reveal">
+        <p class="ref-authors">Chen, T., y Guestrin, C.</p>
+        <p class="ref-title">XGBoost: A scalable tree boosting system</p>
+        <p class="ref-source">KDD '16: 22nd ACM SIGKDD, 785&ndash;794, 2016</p>
+        <a href="https://doi.org/10.1145/2939672.2939785" target="_blank" rel="noopener" class="ref-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>doi.org/10.1145/2939672.2939785</a>
+      </div>
+      <div class="ref-item reveal">
+        <p class="ref-authors">Ke, G., Meng, Q., Finley, T., et al.</p>
+        <p class="ref-title">LightGBM: A highly efficient gradient boosting decision tree</p>
+        <p class="ref-source">Advances in Neural Information Processing Systems (NeurIPS) 30, 2017</p>
+        <a href="https://proceedings.neurips.cc/paper/2017/hash/6449f44a102fde848669bdd9eb6b76fa-Abstract.html" target="_blank" rel="noopener" class="ref-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>proceedings.neurips.cc</a>
+      </div>
+      <div class="ref-item reveal">
+        <p class="ref-authors">Hilbe, J. M.</p>
+        <p class="ref-title">Negative Binomial Regression (2.ª ed.)</p>
+        <p class="ref-source">Cambridge University Press, 2011</p>
+        <a href="https://doi.org/10.1017/CBO9780511973420" target="_blank" rel="noopener" class="ref-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>doi.org/10.1017/CBO9780511973420</a>
+      </div>
+    </div>
+
+    <h3 class="ref-cat reveal">Métricas y validación</h3>
+    <div class="ref-grid">
+      <div class="ref-item reveal">
+        <p class="ref-authors">Hyndman, R. J., y Koehler, A. B.</p>
+        <p class="ref-title">Another look at measures of forecast accuracy</p>
+        <p class="ref-source">International Journal of Forecasting, 22(4), 679&ndash;688, 2006</p>
+        <a href="https://doi.org/10.1016/j.ijforecast.2006.03.001" target="_blank" rel="noopener" class="ref-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>doi.org/10.1016/j.ijforecast.2006.03.001</a>
+      </div>
+      <div class="ref-item reveal">
+        <p class="ref-authors">Hyndman, R. J., y Athanasopoulos, G.</p>
+        <p class="ref-title">Forecasting: Principles and practice (3.ª ed.)</p>
+        <p class="ref-source">OTexts, 2021</p>
+        <a href="https://otexts.com/fpp3/" target="_blank" rel="noopener" class="ref-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>otexts.com/fpp3</a>
+      </div>
+      <div class="ref-item reveal">
+        <p class="ref-authors">Bergmeir, C., y Benítez, J. M.</p>
+        <p class="ref-title">On the use of cross-validation for time series predictor evaluation</p>
+        <p class="ref-source">Information Sciences, 191, 192&ndash;213, 2012</p>
+        <a href="https://doi.org/10.1016/j.ins.2011.12.028" target="_blank" rel="noopener" class="ref-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>doi.org/10.1016/j.ins.2011.12.028</a>
+      </div>
+    </div>
+
+    <h3 class="ref-cat reveal">Señal climática y fuentes de datos</h3>
+    <div class="ref-grid">
+      <div class="ref-item reveal" style="border-left-color:#9a5200">
+        <p class="ref-authors">NOAA Climate Prediction Center</p>
+        <p class="ref-title">Oceanic Niño Index (ONI) &mdash; ENSO monitoring</p>
+        <p class="ref-source">National Weather Service, NOAA</p>
+        <a href="https://www.cpc.ncep.noaa.gov/products/analysis_monitoring/ensostuff/ONI_v5.php" target="_blank" rel="noopener" class="ref-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>cpc.ncep.noaa.gov</a>
+      </div>
+      <div class="ref-item reveal" style="border-left-color:#9a5200">
+        <p class="ref-authors">Secretaría de Salud / SINAVE</p>
+        <p class="ref-title">Boletín Epidemiológico &mdash; Sistema Nacional de Vigilancia Epidemiológica</p>
+        <p class="ref-source">Gobierno de México, 2012&ndash;2026</p>
+        <a href="https://www.gob.mx/salud/acciones-y-programas/historico-boletin-epidemiologico" target="_blank" rel="noopener" class="ref-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>gob.mx/salud</a>
+      </div>
+      <div class="ref-item reveal" style="border-left-color:#9a5200">
+        <p class="ref-authors">INEGI</p>
+        <p class="ref-title">Marco geoestadístico y proyecciones demográficas por entidad federativa</p>
+        <p class="ref-source">Instituto Nacional de Estadística y Geografía</p>
+        <a href="https://www.inegi.org.mx/" target="_blank" rel="noopener" class="ref-link"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>inegi.org.mx</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ═══ -->
+<div class="legacy-colophon">
+  <div class="footer-title">EpiForecast-MX</div>
+  <p>Plataforma de inteligencia epidemiológica &middot; IMSS &times; Tec de Monterrey</p>
+  <p style="margin-top:.75rem">
+    <a href="index.html">Inicio</a> &middot;
+    <a href="EpiDashboard.html">Dashboard</a> &middot;
+    <a href="reporte_resultados.html">Resultados</a> &middot;
+    <a href="Reports/index.html">Pronósticos</a> &middot;
+    <a href="dengue.html">Dengue</a> &middot;
+    <a href="bitacora_modelado.html">Bitácora</a> &middot;
+    <a href="comparacion_modelos.html">Comparación</a> &middot;
+    <a href="ficha_tecnica_prophet.html">Ficha Prophet</a> &middot;
+    <a href="hiperparametros_modelos.html">HPs SageMaker</a> &middot;
+    <a href="construccion_dashboard.html">Arquitectura</a> &middot;
+    <a href="validacion_semanal.html">Validación</a> &middot;
+    <a href="auditoria_remediacion_2026.html">Auditoría</a> &middot;
+    <a href="conclusiones.html">Conclusiones</a> &middot;
+    <a href="referencias.html">Referencias</a>
+  </p>
+  <p style="margin-top:.5rem">Maestría en Inteligencia Artificial Aplicada &mdash; Proyecto Capstone 2026</p>
+  <p style="margin-top:.5rem;font-family:var(--font-mono);font-size:.75rem;opacity:.5">Actualizado: 09/11/2026 &middot; neuro 2014–2026 + Dengue 2018–2026</p>
+</div>
+<!-- site:footer:start -->
+<footer class="site-footer" lang="es">
+  <div class="site-footer__inner">
+    <div class="site-footer__brand">
+      <a class="site-brand" href="index.html" aria-label="EpiForecast-MX, inicio"><span class="site-brand__name"><span class="site-brand__word">EpiForecast<span class="site-brand__mx">MX</span></span></span></a>
+      <p>Datos oficiales. Investigación abierta. Una mirada informada a la salud de México.</p>
+    </div>
+    <div class="site-footer__col">
+      <p class="site-footer__title">Explorar</p>
+      <a href="Reports/index.html">Galería de pronósticos</a>
+      <a href="epibot/index.html">Pregúntale a EPI</a>
+      <a href="EpiDashboard.html">Dashboard</a>
+      <a href="boletin.html">Radar del boletín</a>
+    </div>
+    <div class="site-footer__col">
+      <p class="site-footer__title">Evidencia</p>
+      <a href="validacion_semanal.html">Validación semanal</a>
+      <a href="reporte_resultados.html">Resultados</a>
+      <a href="referencias.html">Fuentes y referencias</a>
+      <a href="rechazados.html">Analizados y rechazados</a>
+    </div>
+    <div class="site-footer__col">
+      <p class="site-footer__title">Proyecto</p>
+      <a href="novedades.html">Noticias</a>
+      <a href="index.html#congresos">Congresos</a>
+      <a href="EpiDashboard-tableau.html">Archivo Tableau (corte W31)</a>
+      <a href="https://github.com/IntegradorIMSS2026Team01" rel="noopener" target="_blank">GitHub ↗</a>
+    </div>
+  </div>
+  <div class="site-footer__legal"><span>© 2026 EpiForecast-MX · Tecnológico de Monterrey · IMSS · SINAVE</span><a href="#nav">Volver arriba ↑</a></div>
+</footer>
+<!-- site:footer:end -->
+
+<script>
+// Clinical Indigo: set Chart.js global defaults for dark theme
+Chart.defaults.color = '#40594f';
+Chart.defaults.borderColor = 'rgba(91,141,239,0.12)';
+
+const D = {"total_modelos": 333, "cobertura_estatal": 100, "fecha": "09/11/2026", "conteo_tipo": {"nacional": 9, "regional": 36, "estatal": 288}, "dist_neuro": {"Ensemble": 109, "Stacking": 107, "Prophet": 78, "DeepAR": 39}, "por_padecimiento": [{"padecimiento": "Alzheimer", "total": 111, "estatales": 96, "nacionales": 3, "regionales": 12, "insuficientes": 0, "fallback": 0}, {"padecimiento": "Depresión", "total": 111, "estatales": 96, "nacionales": 3, "regionales": 12, "insuficientes": 0, "fallback": 0}, {"padecimiento": "Parkinson", "total": 111, "estatales": 96, "nacionales": 3, "regionales": 12, "insuficientes": 0, "fallback": 0}], "cobertura": [{"estado": "Aguascalientes", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Baja California", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Baja California Sur", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Campeche", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Chiapas", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Chihuahua", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Ciudad de México", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Coahuila", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Colima", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Durango", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Estado de México", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Guanajuato", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Guerrero", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Hidalgo", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Jalisco", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Michoacán", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Morelos", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Nayarit", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Nuevo León", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Oaxaca", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Puebla", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Querétaro", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Quintana Roo", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "San Luis Potosí", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Sinaloa", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Sonora", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Tabasco", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Tamaulipas", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Tlaxcala", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Veracruz", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Yucatán", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}, {"estado": "Zacatecas", "alzheimer": "propio", "depresion": "propio", "parkinson": "propio"}], "cobertura_resumen": {"alzheimer": {"propios": 32, "fallback": 0}, "depresion": {"propios": 32, "fallback": 0}, "parkinson": {"propios": 32, "fallback": 0}}, "pad_meta": [{"name": "Alzheimer", "key": "alzheimer", "main": "#0f6e66", "light": "#5EEAD4", "glow": "rgba(45,212,191,0.12)"}, {"name": "Depresión", "key": "depresion", "main": "#a3367a", "light": "#F9A8D4", "glow": "rgba(244,114,182,0.12)"}, {"name": "Parkinson", "key": "parkinson", "main": "#2f5f9e", "light": "#93C5FD", "glow": "rgba(91,141,239,0.12)"}], "regiones_inegi": {"Metropolitana alta": ["Baja California", "Chihuahua", "Ciudad de México", "Coahuila", "Jalisco", "México", "Nuevo León", "Sinaloa", "Sonora", "Tamaulipas"], "Urbana media": ["Aguascalientes", "Baja California Sur", "Colima", "Durango", "Guanajuato", "Morelos", "Querétaro", "San Luis Potosí", "Zacatecas"], "Sur-Sureste vulnerable": ["Campeche", "Chiapas", "Oaxaca", "Quintana Roo", "Tabasco", "Veracruz", "Yucatán"], "Rural / dispersa": ["Guerrero", "Hidalgo", "Michoacán", "Nayarit", "Puebla", "Tlaxcala"]}, "dengue": {"n_series": 99, "n_semanas_real": 10, "casos_2026": 2686, "dist_all": {"DeepAR": 53, "Prophet": 46}, "dist_general": {"DeepAR": 19, "Prophet": 14}, "nacional_motor": "DeepAR", "backtest": {"prophet": 102, "prophet_enso": 76, "nbglm": 52}, "motor_table": [{"motor": "DeepAR", "ganadas": 53, "en_produccion": true, "nota": "En producción"}, {"motor": "NB-GLM", "ganadas": 0, "en_produccion": false, "nota": "Suspendido en esta ronda: su predicción recursiva es inestable."}, {"motor": "Prophet", "ganadas": 46, "en_produccion": true, "nota": "En producción"}, {"motor": "Ensemble", "ganadas": 0, "en_produccion": false, "nota": "No elegible: los árboles no extrapolan la dinámica epidémica a 52 sem."}, {"motor": "Stacking", "ganadas": 0, "en_produccion": false, "nota": "No elegible: los árboles no extrapolan la dinámica epidémica a 52 sem."}], "ranking": [{"entidad": "Aguascalientes", "modo": "General", "motor": "DeepAR", "casos": 210, "grupo": "Estatal", "orden": 1}, {"entidad": "Aguascalientes", "modo": "Hombres", "motor": "DeepAR", "casos": 95, "grupo": "Estatal", "orden": 1}, {"entidad": "Aguascalientes", "modo": "Mujeres", "motor": "DeepAR", "casos": 115, "grupo": "Estatal", "orden": 1}, {"entidad": "Baja California", "modo": "General", "motor": "DeepAR", "casos": 5, "grupo": "Estatal", "orden": 1}, {"entidad": "Baja California", "modo": "Hombres", "motor": "Prophet", "casos": 2, "grupo": "Estatal", "orden": 1}, {"entidad": "Baja California", "modo": "Mujeres", "motor": "DeepAR", "casos": 3, "grupo": "Estatal", "orden": 1}, {"entidad": "Baja California Sur", "modo": "General", "motor": "DeepAR", "casos": 66, "grupo": "Estatal", "orden": 1}, {"entidad": "Baja California Sur", "modo": "Hombres", "motor": "DeepAR", "casos": 29, "grupo": "Estatal", "orden": 1}, {"entidad": "Baja California Sur", "modo": "Mujeres", "motor": "DeepAR", "casos": 36, "grupo": "Estatal", "orden": 1}, {"entidad": "Campeche", "modo": "General", "motor": "DeepAR", "casos": 32, "grupo": "Estatal", "orden": 1}, {"entidad": "Campeche", "modo": "Hombres", "motor": "DeepAR", "casos": 12, "grupo": "Estatal", "orden": 1}, {"entidad": "Campeche", "modo": "Mujeres", "motor": "DeepAR", "casos": 20, "grupo": "Estatal", "orden": 1}, {"entidad": "Chiapas", "modo": "General", "motor": "Prophet", "casos": 205, "grupo": "Estatal", "orden": 1}, {"entidad": "Chiapas", "modo": "Hombres", "motor": "DeepAR", "casos": 91, "grupo": "Estatal", "orden": 1}, {"entidad": "Chiapas", "modo": "Mujeres", "motor": "Prophet", "casos": 114, "grupo": "Estatal", "orden": 1}, {"entidad": "Chihuahua", "modo": "General", "motor": "DeepAR", "casos": 0, "grupo": "Estatal", "orden": 1}, {"entidad": "Chihuahua", "modo": "Hombres", "motor": "DeepAR", "casos": 0, "grupo": "Estatal", "orden": 1}, {"entidad": "Chihuahua", "modo": "Mujeres", "motor": "DeepAR", "casos": 0, "grupo": "Estatal", "orden": 1}, {"entidad": "Ciudad de México", "modo": "General", "motor": "DeepAR", "casos": 0, "grupo": "Estatal", "orden": 1}, {"entidad": "Ciudad de México", "modo": "Hombres", "motor": "DeepAR", "casos": 0, "grupo": "Estatal", "orden": 1}, {"entidad": "Ciudad de México", "modo": "Mujeres", "motor": "DeepAR", "casos": 0, "grupo": "Estatal", "orden": 1}, {"entidad": "Coahuila", "modo": "General", "motor": "Prophet", "casos": 16, "grupo": "Estatal", "orden": 1}, {"entidad": "Coahuila", "modo": "Hombres", "motor": "Prophet", "casos": 5, "grupo": "Estatal", "orden": 1}, {"entidad": "Coahuila", "modo": "Mujeres", "motor": "Prophet", "casos": 11, "grupo": "Estatal", "orden": 1}, {"entidad": "Colima", "modo": "General", "motor": "Prophet", "casos": 2, "grupo": "Estatal", "orden": 1}, {"entidad": "Colima", "modo": "Hombres", "motor": "Prophet", "casos": 1, "grupo": "Estatal", "orden": 1}, {"entidad": "Colima", "modo": "Mujeres", "motor": "Prophet", "casos": 1, "grupo": "Estatal", "orden": 1}, {"entidad": "Durango", "modo": "General", "motor": "DeepAR", "casos": 6, "grupo": "Estatal", "orden": 1}, {"entidad": "Durango", "modo": "Hombres", "motor": "DeepAR", "casos": 2, "grupo": "Estatal", "orden": 1}, {"entidad": "Durango", "modo": "Mujeres", "motor": "DeepAR", "casos": 4, "grupo": "Estatal", "orden": 1}, {"entidad": "Guanajuato", "modo": "General", "motor": "Prophet", "casos": 107, "grupo": "Estatal", "orden": 1}, {"entidad": "Guanajuato", "modo": "Hombres", "motor": "Prophet", "casos": 53, "grupo": "Estatal", "orden": 1}, {"entidad": "Guanajuato", "modo": "Mujeres", "motor": "Prophet", "casos": 54, "grupo": "Estatal", "orden": 1}, {"entidad": "Guerrero", "modo": "General", "motor": "Prophet", "casos": 12, "grupo": "Estatal", "orden": 1}, {"entidad": "Guerrero", "modo": "Hombres", "motor": "Prophet", "casos": 7, "grupo": "Estatal", "orden": 1}, {"entidad": "Guerrero", "modo": "Mujeres", "motor": "Prophet", "casos": 5, "grupo": "Estatal", "orden": 1}, {"entidad": "Hidalgo", "modo": "General", "motor": "DeepAR", "casos": 19, "grupo": "Estatal", "orden": 1}, {"entidad": "Hidalgo", "modo": "Hombres", "motor": "DeepAR", "casos": 6, "grupo": "Estatal", "orden": 1}, {"entidad": "Hidalgo", "modo": "Mujeres", "motor": "DeepAR", "casos": 13, "grupo": "Estatal", "orden": 1}, {"entidad": "Jalisco", "modo": "General", "motor": "Prophet", "casos": 89, "grupo": "Estatal", "orden": 1}, {"entidad": "Jalisco", "modo": "Hombres", "motor": "Prophet", "casos": 41, "grupo": "Estatal", "orden": 1}, {"entidad": "Jalisco", "modo": "Mujeres", "motor": "Prophet", "casos": 48, "grupo": "Estatal", "orden": 1}, {"entidad": "Michoacán", "modo": "General", "motor": "DeepAR", "casos": 93, "grupo": "Estatal", "orden": 1}, {"entidad": "Michoacán", "modo": "Hombres", "motor": "DeepAR", "casos": 46, "grupo": "Estatal", "orden": 1}, {"entidad": "Michoacán", "modo": "Mujeres", "motor": "DeepAR", "casos": 47, "grupo": "Estatal", "orden": 1}, {"entidad": "Morelos", "modo": "General", "motor": "DeepAR", "casos": 26, "grupo": "Estatal", "orden": 1}, {"entidad": "Morelos", "modo": "Hombres", "motor": "DeepAR", "casos": 11, "grupo": "Estatal", "orden": 1}, {"entidad": "Morelos", "modo": "Mujeres", "motor": "DeepAR", "casos": 15, "grupo": "Estatal", "orden": 1}, {"entidad": "México", "modo": "General", "motor": "Prophet", "casos": 104, "grupo": "Estatal", "orden": 1}, {"entidad": "México", "modo": "Hombres", "motor": "Prophet", "casos": 43, "grupo": "Estatal", "orden": 1}, {"entidad": "México", "modo": "Mujeres", "motor": "Prophet", "casos": 61, "grupo": "Estatal", "orden": 1}, {"entidad": "Nacional", "modo": "General", "motor": "DeepAR", "casos": 2686, "grupo": "Nacional", "orden": 0}, {"entidad": "Nacional", "modo": "Hombres", "motor": "DeepAR", "casos": 1209, "grupo": "Nacional", "orden": 0}, {"entidad": "Nacional", "modo": "Mujeres", "motor": "DeepAR", "casos": 1478, "grupo": "Nacional", "orden": 0}, {"entidad": "Nayarit", "modo": "General", "motor": "DeepAR", "casos": 60, "grupo": "Estatal", "orden": 1}, {"entidad": "Nayarit", "modo": "Hombres", "motor": "DeepAR", "casos": 28, "grupo": "Estatal", "orden": 1}, {"entidad": "Nayarit", "modo": "Mujeres", "motor": "Prophet", "casos": 32, "grupo": "Estatal", "orden": 1}, {"entidad": "Nuevo León", "modo": "General", "motor": "DeepAR", "casos": 11, "grupo": "Estatal", "orden": 1}, {"entidad": "Nuevo León", "modo": "Hombres", "motor": "Prophet", "casos": 6, "grupo": "Estatal", "orden": 1}, {"entidad": "Nuevo León", "modo": "Mujeres", "motor": "Prophet", "casos": 5, "grupo": "Estatal", "orden": 1}, {"entidad": "Oaxaca", "modo": "General", "motor": "Prophet", "casos": 39, "grupo": "Estatal", "orden": 1}, {"entidad": "Oaxaca", "modo": "Hombres", "motor": "Prophet", "casos": 18, "grupo": "Estatal", "orden": 1}, {"entidad": "Oaxaca", "modo": "Mujeres", "motor": "Prophet", "casos": 22, "grupo": "Estatal", "orden": 1}, {"entidad": "Puebla", "modo": "General", "motor": "DeepAR", "casos": 40, "grupo": "Estatal", "orden": 1}, {"entidad": "Puebla", "modo": "Hombres", "motor": "DeepAR", "casos": 17, "grupo": "Estatal", "orden": 1}, {"entidad": "Puebla", "modo": "Mujeres", "motor": "Prophet", "casos": 22, "grupo": "Estatal", "orden": 1}, {"entidad": "Querétaro", "modo": "General", "motor": "Prophet", "casos": 0, "grupo": "Estatal", "orden": 1}, {"entidad": "Querétaro", "modo": "Hombres", "motor": "Prophet", "casos": 0, "grupo": "Estatal", "orden": 1}, {"entidad": "Querétaro", "modo": "Mujeres", "motor": "Prophet", "casos": 0, "grupo": "Estatal", "orden": 1}, {"entidad": "Quintana Roo", "modo": "General", "motor": "DeepAR", "casos": 177, "grupo": "Estatal", "orden": 1}, {"entidad": "Quintana Roo", "modo": "Hombres", "motor": "Prophet", "casos": 76, "grupo": "Estatal", "orden": 1}, {"entidad": "Quintana Roo", "modo": "Mujeres", "motor": "DeepAR", "casos": 101, "grupo": "Estatal", "orden": 1}, {"entidad": "San Luis Potosí", "modo": "General", "motor": "Prophet", "casos": 26, "grupo": "Estatal", "orden": 1}, {"entidad": "San Luis Potosí", "modo": "Hombres", "motor": "DeepAR", "casos": 8, "grupo": "Estatal", "orden": 1}, {"entidad": "San Luis Potosí", "modo": "Mujeres", "motor": "Prophet", "casos": 18, "grupo": "Estatal", "orden": 1}, {"entidad": "Sinaloa", "modo": "General", "motor": "Prophet", "casos": 161, "grupo": "Estatal", "orden": 1}, {"entidad": "Sinaloa", "modo": "Hombres", "motor": "Prophet", "casos": 87, "grupo": "Estatal", "orden": 1}, {"entidad": "Sinaloa", "modo": "Mujeres", "motor": "Prophet", "casos": 75, "grupo": "Estatal", "orden": 1}, {"entidad": "Sonora", "modo": "General", "motor": "Prophet", "casos": 372, "grupo": "Estatal", "orden": 1}, {"entidad": "Sonora", "modo": "Hombres", "motor": "Prophet", "casos": 160, "grupo": "Estatal", "orden": 1}, {"entidad": "Sonora", "modo": "Mujeres", "motor": "Prophet", "casos": 212, "grupo": "Estatal", "orden": 1}, {"entidad": "Tabasco", "modo": "General", "motor": "Prophet", "casos": 229, "grupo": "Estatal", "orden": 1}, {"entidad": "Tabasco", "modo": "Hombres", "motor": "DeepAR", "casos": 112, "grupo": "Estatal", "orden": 1}, {"entidad": "Tabasco", "modo": "Mujeres", "motor": "Prophet", "casos": 117, "grupo": "Estatal", "orden": 1}, {"entidad": "Tamaulipas", "modo": "General", "motor": "DeepAR", "casos": 16, "grupo": "Estatal", "orden": 1}, {"entidad": "Tamaulipas", "modo": "Hombres", "motor": "DeepAR", "casos": 6, "grupo": "Estatal", "orden": 1}, {"entidad": "Tamaulipas", "modo": "Mujeres", "motor": "DeepAR", "casos": 10, "grupo": "Estatal", "orden": 1}, {"entidad": "Tlaxcala", "modo": "General", "motor": "DeepAR", "casos": 0, "grupo": "Estatal", "orden": 1}, {"entidad": "Tlaxcala", "modo": "Hombres", "motor": "DeepAR", "casos": 0, "grupo": "Estatal", "orden": 1}, {"entidad": "Tlaxcala", "modo": "Mujeres", "motor": "DeepAR", "casos": 0, "grupo": "Estatal", "orden": 1}, {"entidad": "Veracruz", "modo": "General", "motor": "DeepAR", "casos": 533, "grupo": "Estatal", "orden": 1}, {"entidad": "Veracruz", "modo": "Hombres", "motor": "DeepAR", "casos": 230, "grupo": "Estatal", "orden": 1}, {"entidad": "Veracruz", "modo": "Mujeres", "motor": "DeepAR", "casos": 304, "grupo": "Estatal", "orden": 1}, {"entidad": "Yucatán", "modo": "General", "motor": "Prophet", "casos": 30, "grupo": "Estatal", "orden": 1}, {"entidad": "Yucatán", "modo": "Hombres", "motor": "Prophet", "casos": 17, "grupo": "Estatal", "orden": 1}, {"entidad": "Yucatán", "modo": "Mujeres", "motor": "Prophet", "casos": 13, "grupo": "Estatal", "orden": 1}, {"entidad": "Zacatecas", "modo": "General", "motor": "DeepAR", "casos": 0, "grupo": "Estatal", "orden": 1}, {"entidad": "Zacatecas", "modo": "Hombres", "motor": "Prophet", "casos": 0, "grupo": "Estatal", "orden": 1}, {"entidad": "Zacatecas", "modo": "Mujeres", "motor": "DeepAR", "casos": 0, "grupo": "Estatal", "orden": 1}]}, "metricas_seleccion": {"publicadas": false, "ventana": "W28–W37", "rotulo": "diagnóstico de selección W28–W37; no evaluación independiente", "nota": "Las métricas de error de esta ronda midieron la ventana con la que se eligió el motor de cada serie; no se publican como desempeño del pronóstico."}};
+
+const PC = {};
+D.pad_meta.forEach(p => { PC[p.name] = {main:p.main,light:p.light,glow:p.glow}; });
+
+// Reveal
+const obs = new IntersectionObserver(es => { es.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); }); }, {threshold:.08});
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+/* ── Pad cards ── */
+try {
+  const ct = document.getElementById('pad-cards');
+  D.por_padecimiento.forEach(p => {
+    const c = PC[p.padecimiento] || {main:'#40594f',glow:'rgba(91,141,239,.10)'};
+    const card = document.createElement('div');
+    card.className = 'card reveal';
+    card.innerHTML = `
+      <div class="card-header">
+        <span class="card-dot" style="color:${c.main};background:${c.main}"></span>
+        <span class="card-title">${p.padecimiento}</span>
+      </div>
+      <div class="card-metrics">
+        <div class="metric"><div class="metric-value">${p.total}</div><div class="metric-label">Modelos</div></div>
+        <div class="metric"><div class="metric-value">${p.estatales}</div><div class="metric-label">Estatales</div></div>
+        <div class="metric"><div class="metric-value">${p.regionales}</div><div class="metric-label">Regionales</div></div>
+        <div class="metric"><div class="metric-value">${p.insuficientes}</div><div class="metric-label">Insuficientes</div></div>
+        <div class="metric"><div class="metric-value">${p.fallback}</div><div class="metric-label">Fallback Regional</div></div>
+      </div>`;
+    ct.appendChild(card);
+    obs.observe(card);
+  });
+} catch(e) { console.warn('cards:', e); }
+
+/* ── Doughnut: propio vs fallback ── */
+try {
+  const pads = D.por_padecimiento;
+  const propios = pads.map(p => p.estatales - p.fallback);
+  const fallbacks = pads.map(p => p.fallback);
+  new Chart(document.getElementById('doughnutChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Modelo propio', 'Fallback regional'],
+      datasets: pads.map((p, i) => ({
+        label: p.padecimiento,
+        data: [propios[i], fallbacks[i]],
+        backgroundColor: ['#0f6e66', '#c2410c'],
+        borderWidth: 2, borderColor: '#ffffff'
+      }))
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: { display:true, text:'Modelos Propios vs Fallback (estatales)', font:{ family:"'Outfit'", size:14 } },
+        legend: { position:'bottom', labels:{ font:{ family:"'Outfit'" } } },
+        tooltip: { callbacks: { label: ctx => {
+          const ds = ctx.dataset;
+          const total = ds.data.reduce((a,b)=>a+b,0);
+          const pct = total ? Math.round(ctx.parsed / total * 100) : 0;
+          return `${ctx.label}: ${ctx.parsed} (${pct}%)`;
+        } } }
+      }
+    }
+  });
+} catch(e) { console.warn('doughnut:', e); }
+
+/* ── Cobertura ── */
+try {
+  const grid = document.getElementById('cobGrid');
+  const summary = document.getElementById('cobSummary');
+  const padKeys = D.pad_meta.map(p=>p.key);
+  const padLabels = {}; D.pad_meta.forEach(p=>{padLabels[p.key]=p.name;});
+
+  padKeys.forEach(pk => {
+    const res = D.cobertura_resumen[pk];
+    const c = PC[padLabels[pk]];
+    summary.innerHTML += `<div class="cob-summary-item">
+      <span class="cob-dot propio"></span>
+      <span style="color:${c.main};font-weight:600">${padLabels[pk]}</span>
+      ${res.propios} propios, ${res.fallback} fallback
+    </div>`;
+  });
+
+  D.cobertura.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'cob-item';
+    const dots = padKeys.map(pk=>`<span class="cob-dot ${item[pk]}" title="${padLabels[pk]}: ${item[pk]}"></span>`).join('');
+    div.innerHTML = `<span class="estado-name">${item.estado}</span>${dots}`;
+    grid.appendChild(div);
+  });
+} catch(e) { console.warn('cobertura:', e); }
+
+/* ── Dengue: motor productivo (doughnut) ── */
+try {
+  const dg = D.dengue;
+  const ent = Object.entries(dg.dist_all).sort((a,b)=>b[1]-a[1]);
+  const motorColors = {DeepAR:'#a3367a', NBGLM:'#9a5200', Prophet:'#0f6e66', Ensemble:'#c2410c', Stacking:'#4b52b8'};
+  new Chart(document.getElementById('dengueMotorChart'), {
+    type:'doughnut',
+    data:{ labels:ent.map(e=>e[0]==='NBGLM'?'NB-GLM':e[0]),
+      datasets:[{ data:ent.map(e=>e[1]), backgroundColor:ent.map(e=>motorColors[e[0]]||'#40594f'),
+        borderWidth:2, borderColor:'#ffffff' }] },
+    options:{ responsive:true, cutout:'58%',
+      plugins:{
+        title:{ display:true, text:`Motor productivo por serie de Dengue (${dg.n_series} series)`, font:{family:"'Outfit'",size:14} },
+        legend:{ position:'bottom', labels:{ font:{family:"'Outfit'"} } },
+        tooltip:{ callbacks:{ label: ctx => {
+          const total = ctx.dataset.data.reduce((a,b)=>a+b,0);
+          const pct = total ? Math.round(ctx.parsed/total*100) : 0;
+          return `${ctx.label}: ${ctx.parsed} series (${pct}%)`;
+        } } }
+      } }
+  });
+} catch(e) { console.warn('dengueMotor:', e); }
+
+/* ── Dengue: backtest leave-one-epidemic-out (bar) ── */
+try {
+  const bt = D.dengue.backtest;
+  new Chart(document.getElementById('dengueBacktestChart'), {
+    type:'bar',
+    data:{ labels:['Prophet','Prophet + El Niño','NB-GLM'],
+      datasets:[{ data:[bt.prophet, bt.prophet_enso, bt.nbglm],
+        backgroundColor:['#a3367a','#7d4400','#0f6e66'], borderRadius:6, borderSkipped:false }] },
+    options:{ responsive:true,
+      plugins:{
+        title:{ display:true, text:'Backtest fuera de muestra (SMAPE nacional, epidemia 2024)', font:{family:"'Outfit'",size:14} },
+        legend:{ display:false },
+        tooltip:{ callbacks:{ label: ctx => `SMAPE ${ctx.parsed.y}` } }
+      },
+      scales:{
+        y:{ beginAtZero:true, title:{ display:true, text:'SMAPE (menor = mejor)', font:{family:"'Outfit'"} }, grid:{ color:'rgba(91,141,239,.12)' } },
+        x:{ grid:{ display:false } }
+      } }
+  });
+} catch(e) { console.warn('dengueBacktest:', e); }
+
+/* ── Dengue: tabla de motores ── */
+try {
+  const mc = {DeepAR:'#a3367a','NB-GLM':'#9a5200',Prophet:'#0f6e66',Ensemble:'#c2410c',Stacking:'#4b52b8'};
+  const tb = document.getElementById('dengueMotorBody');
+  tb.innerHTML = D.dengue.motor_table.map(m => `<tr>
+    <td style="font-weight:600;color:${mc[m.motor]||'#173c33'}">${m.motor}</td>
+    <td style="font-family:var(--font-mono)">${m.ganadas}</td>
+    <td>${m.en_produccion?'<span class="badge-tipo badge-propio">Sí</span>':'<span class="badge-tipo badge-fallback">No</span>'}</td>
+    <td style="font-size:.85rem;color:var(--text-secondary)">${m.nota}</td>
+  </tr>`).join('');
+} catch(e) { console.warn('dengueMotorTable:', e); }
+
+/* ── Dengue: ranking de 99 series ── */
+try {
+  const rows = D.dengue.ranking;
+  const tbody = document.getElementById('dengueBody');
+  let sortCol = 'orden', sortAsc = true;
+  const motColor = {DeepAR:'#a3367a','NB-GLM':'#9a5200',Prophet:'#0f6e66'};
+  function render(data) {
+    const groups = {Nacional:[], Estatal:[]};
+    data.forEach(r => groups[r.grupo].push(r));
+    let html = '';
+    ['Nacional','Estatal'].forEach(g => {
+      const items = groups[g];
+      if(!items.length) return;
+      html += `<tr class="group-header"><td colspan="4">${g} (${items.length})</td></tr>`;
+      items.forEach(r => {
+        html += `<tr>
+          <td style="font-weight:600">${r.entidad}</td>
+          <td>${r.modo}</td>
+          <td><span style="color:${motColor[r.motor]||'#173c33'};font-weight:600">${r.motor}</span></td>
+          <td style="font-family:var(--font-mono)">${r.casos ?? '—'}</td>
+        </tr>`;
+      });
+    });
+    tbody.innerHTML = html;
+  }
+  function apply() {
+    const q = document.getElementById('dengueSearch').value.toLowerCase();
+    const modoF = document.getElementById('dengueModo').value;
+    const motF = document.getElementById('dengueMotorF').value;
+    let f = rows.filter(r => {
+      if(q && !r.entidad.toLowerCase().includes(q)) return false;
+      if(modoF && r.modo!==modoF) return false;
+      if(motF && r.motor!==motF) return false;
+      return true;
+    });
+    f.sort((a,b) => {
+      let va=a[sortCol],vb=b[sortCol];
+      if(va==null)va=1e9; if(vb==null)vb=1e9;
+      if(typeof va==='string'){va=va.toLowerCase();vb=(vb||'').toLowerCase();}
+      return sortAsc?(va<vb?-1:va>vb?1:0):(va>vb?-1:va<vb?1:0);
+    });
+    render(f);
+  }
+  document.getElementById('dengueSearch').addEventListener('input', apply);
+  document.getElementById('dengueModo').addEventListener('change', apply);
+  document.getElementById('dengueMotorF').addEventListener('change', apply);
+  document.querySelectorAll('#dengueTable thead th').forEach(th => {
+    th.addEventListener('click', () => {
+      const col = th.dataset.col; if(!col) return;
+      if(sortCol===col) sortAsc=!sortAsc; else { sortCol=col; sortAsc=true; }
+      document.querySelectorAll('#dengueTable thead th').forEach(t=>t.classList.remove('sorted-asc','sorted-desc'));
+      th.classList.add(sortAsc?'sorted-asc':'sorted-desc');
+      apply();
+    });
+  });
+  apply();
+} catch(e) { console.warn('dengueRanking:', e); }
+
+/* ── Smooth scroll ── */
+document.querySelectorAll('nav a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const el = document.querySelector(a.getAttribute('href'));
+    if(el) el.scrollIntoView({ behavior:'smooth' });
+  });
+});
+</script>
+<script>
+window.addEventListener('scroll',function(){document.getElementById('nav').classList.toggle('scrolled',window.scrollY>20)});
+</script>
+<script src="assets/site/site-nav.js?v=4"></script>
+</body>
+</html>

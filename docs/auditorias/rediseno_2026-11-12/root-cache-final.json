@@ -1,0 +1,9 @@
+{
+  "aplica": true,
+  "cambiados": [
+    "epibot/css/shell.css",
+    "epibot/js/app.js",
+    "epibot/js/ux.js"
+  ],
+  "problemas": []
+}

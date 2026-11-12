@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
+from epiforecast.publication.editorial_chrome import publica_editorial
 from epiforecast.utils import paths as directory_manager
 from epiforecast.utils.config import conf, logger
 from epiforecast.visualization.comparison_html import (
@@ -94,7 +95,9 @@ def generar_reporte_html(config: dict[str, Any] | None = None) -> Path | None:
 
     html_parts.append(html_footer(ahora))
 
-    output_html.write_text("\n".join(html_parts), encoding="utf-8")
+    # Sistema visual común del sitio (sin barra vieja ni tema oscuro); con $EPIFORECAST_DASHBOARD
+    # se estampan la cabecera y el pie comunes.
+    output_html.write_text(publica_editorial("\n".join(html_parts)), encoding="utf-8")
     logger.success("Reporte HTML generado: {}", output_html)
     return output_html
 

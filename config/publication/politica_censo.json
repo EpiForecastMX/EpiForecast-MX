@@ -27,6 +27,8 @@
     "dashboard/Reports/index.html",
     "dashboard/Reports/zoom_data_dengue.json",
     "dashboard/Reports/zoom_data_neuro.json",
+    "dashboard/assets/site/shell.config.json",
+    "dashboard/assets/site/shell.fragments.json",
     "dashboard/auditoria_remediacion_2026.html",
     "dashboard/bento.json",
     "dashboard/bitacora_modelado.html",

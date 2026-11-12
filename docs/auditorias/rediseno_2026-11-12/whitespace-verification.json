@@ -1,0 +1,16 @@
+{
+  "beforeSource": "1c38d7e67839449fff66c81ad8eae73aecd0589991c1e159adf55113be8fcb44",
+  "afterSource": "9077b8dad2dd5dff29e787687178b8811a8f110e801e3170884df5cdee9f0c06",
+  "changedFiles": [
+    "auditoria_remediacion_2026.html",
+    "bitacora_modelado.html",
+    "calass.html",
+    "ficha_tecnica_prophet.html",
+    "future_health.html",
+    "helix.html",
+    "hiperparametros_modelos.html",
+    "rechazados.html"
+  ],
+  "onlyBlankLineIndentation": true,
+  "htmlContentAndLineBreaksUnchanged": true
+}

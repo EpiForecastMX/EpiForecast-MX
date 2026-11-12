@@ -1,0 +1,50 @@
+[
+  {
+    "check": "test:dashboard",
+    "scope": "dashboard",
+    "exitCode": 0,
+    "log": "root-final-dashboard.log"
+  },
+  {
+    "check": "test:boletin",
+    "scope": "boletin",
+    "exitCode": 0,
+    "log": "root-final-boletin.log"
+  },
+  {
+    "check": "test:site",
+    "scope": "site",
+    "exitCode": 0,
+    "log": "root-final-site.log"
+  },
+  {
+    "check": "check:wcp",
+    "scope": "wcp",
+    "exitCode": 0,
+    "log": "root-final-wcp.log"
+  },
+  {
+    "check": "test",
+    "scope": "epibot-unit",
+    "exitCode": 0,
+    "log": "root-final-epibot-unit.log"
+  },
+  {
+    "check": "check",
+    "scope": "epibot-check",
+    "exitCode": 0,
+    "log": "root-final-epibot-check.log"
+  },
+  {
+    "check": "cifras:test",
+    "scope": "epibot-cifras",
+    "exitCode": 0,
+    "log": "root-final-epibot-cifras.log"
+  },
+  {
+    "check": "deploy:verify",
+    "scope": "epibot-deploy",
+    "exitCode": 0,
+    "log": "root-final-epibot-deploy.log"
+  }
+]

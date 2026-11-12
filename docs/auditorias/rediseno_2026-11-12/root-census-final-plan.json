@@ -1,0 +1,14 @@
+{
+  "declared": 43,
+  "observed": 476,
+  "addedOnly": [
+    "dashboard/assets/site/shell.config.json",
+    "dashboard/assets/site/shell.fragments.json"
+  ],
+  "allOtherPolicyFieldsUnchanged": true,
+  "preexistingSurplusUnchanged": 434,
+  "preexistingMissingUnchanged": [
+    "dashboard/bento.json"
+  ],
+  "redesignDeltaResolved": true
+}

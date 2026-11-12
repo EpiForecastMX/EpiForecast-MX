@@ -34,6 +34,7 @@ from zoneinfo import ZoneInfo
 
 import pandas as pd
 
+from epiforecast.publication.editorial_chrome import publica_editorial
 from epiforecast.utils.semana_epi import fin_semana_boletin, inicio_semana_boletin
 
 # ---------------------------------------------------------------------------
@@ -890,6 +891,14 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "Con otro directorio el Excel del arbol real no se toca.",
     )
     parser.add_argument(
+        "--dashboard",
+        type=Path,
+        default=None,
+        help="dashboard cuyos fragmentos del chrome común (assets/site/shell.fragments.json) se "
+        "estampan en la página; por defecto $EPIFORECAST_DASHBOARD. Sin ninguno, la página sale con "
+        "los marcadores vacíos (copia local del backend).",
+    )
+    parser.add_argument(
         "--seguimiento",
         type=Path,
         required=True,
@@ -957,6 +966,9 @@ def main(argv: list[str] | None = None) -> None:
     print("Generando HTML...")
     html = _generate_html(seg, corte, resumen)
     salida_html.parent.mkdir(parents=True, exist_ok=True)
+    # Chrome común del sitio (cabecera/pie, tema claro); el pie propio queda como colofón porque la
+    # página está en el corpus del EpiBot. Ver epiforecast.publication.editorial_chrome.
+    html = publica_editorial(html, args.dashboard)
     salida_html.write_text(_normaliza_para_hooks(html), encoding="utf-8")
     print(f"  {salida_html} ({len(html):,} bytes)")
 

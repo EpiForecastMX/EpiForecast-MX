@@ -10,8 +10,10 @@ la pagina productiva en vivo a partir de las fuentes canonicas:
   * Dengue (4.o padecimiento): ``reports/ProdDetails/produccion_dengue.csv``
     -> distribucion de motor productivo + backtest leave-one-epidemic-out.
 
-El diseno (tema Clinical Indigo, hero, novedades, guia, secciones, Dengue) vive en la plantilla
-``scripts/templates/reporte_resultados.tmpl.html`` (versionada). Este script solo inyecta los
+El diseno (hero, novedades, guia, secciones, Dengue) vive en la plantilla
+``scripts/templates/reporte_resultados.tmpl.html`` (versionada), ya en el sistema visual comun del
+sitio: la cabecera y el pie se estampan con ``epiforecast.publication.editorial_chrome`` desde los
+fragmentos del dashboard. Este script solo inyecta los
 datos dinamicos en los tokens ``__...__``, de modo que ``make report`` reproduce la pagina y NO
 la regresa a la version Prophet-unica.
 
@@ -36,6 +38,7 @@ import unicodedata
 
 import pandas as pd
 
+from epiforecast.publication.editorial_chrome import publica_editorial
 from epiforecast.publication.metricas_seleccion import ROTULO, separa_metricas
 from epiforecast.utils.cohorts import filter_neuro
 from epiforecast.utils.config import logger
@@ -489,14 +492,20 @@ def build_html(stats: dict, dengue: dict) -> str:
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
         "--dashboard",
         default=str(DEFAULT_DASHBOARD),
         help="Ruta al repo del dashboard (se publica ahi reporte_resultados.html)",
     )
-    args = ap.parse_args()
+    ap.add_argument(
+        "--local",
+        type=Path,
+        default=OUTPUT_LOCAL,
+        help="copia local del reporte (por defecto reports/forecasts/reporte_resultados.html)",
+    )
+    args = ap.parse_args(argv)
 
     logger.info("Leyendo neuro: {}", TABLA_NEURO)
     neuro = load_neuro()
@@ -510,12 +519,15 @@ def main() -> int:
     logger.info("Generando HTML desde plantilla {}", TEMPLATE)
     html = build_html(stats, dengue)
 
-    outputs = [OUTPUT_LOCAL]
+    outputs = [args.local]
     dash = Path(args.dashboard)
     if dash.exists():
         outputs.append(dash / "reporte_resultados.html")
+        # Se escribe en un dashboard: el chrome común es obligatorio (falla cerrado sin fragmentos).
+        html = publica_editorial(html, dash, exigir=True)
     else:
         logger.warning("Dashboard no encontrado en {}; solo se escribe la copia local.", dash)
+        html = publica_editorial(html)
 
     for out in outputs:
         out.parent.mkdir(parents=True, exist_ok=True)

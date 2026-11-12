@@ -1,0 +1,13 @@
+{
+  "baselineProtectedFiles": 1999,
+  "unexpectedDifferences": [],
+  "approvedDerivedIndexChange": [
+    {
+      "path": "epibot/rag_index.json",
+      "newSha256": "f855bf7c264d9b632b148e3df1b6f3496c102accc9eed0dcc353f3ffeadafc78",
+      "reason": "two navigation chunks removed,575 reused0new"
+    }
+  ],
+  "catalogByteEqual": true,
+  "backendScientificTrackedDifferences": []
+}
