@@ -2228,3 +2228,182 @@ padecimientos:
       color: "#7E22CE"
       label: "Diabetes en el embarazo"
       nombre_completo: "Diabetes mellitus en el embarazo (O24.4)"
+
+  # Lote alta10b (12-nov-2026): Cuadro de Trastornos de la Nutrición, tres bloques de desnutrición
+  # (severa E40-E43, moderada E44.0, leve E44.1), 4 columnas cada uno (Sem, acumulado H y M, año
+  # anterior) en 2014-2026. Cada bloque es un padecimiento; no se suman entre sí.
+  - id: desnutricion_leve_e441
+    data_name: "Desnutrición leve"
+    artifact_key: Desnutricion_Leve_E441
+    slug: desnutricion_leve_e441
+    display_name: "Desnutrición leve"
+    cie_codes: ["E44.1"]
+    aliases: ["desnutricion leve", "desnutricion grado leve", "e44.1"]
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: alta10b_desnutricion
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#A16207"
+      label: "Desnutrición leve"
+      nombre_completo: "Desnutrición leve (E44.1)"
+
+  - id: desnutricion_moderada_e440
+    data_name: "Desnutrición moderada"
+    artifact_key: Desnutricion_Moderada_E440
+    slug: desnutricion_moderada_e440
+    display_name: "Desnutrición moderada"
+    cie_codes: ["E44.0"]
+    aliases: ["desnutricion moderada", "desnutricion grado moderado", "e44.0"]
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: alta10b_desnutricion
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#B45309"
+      label: "Desnutrición moderada"
+      nombre_completo: "Desnutrición moderada (E44.0)"
+
+  - id: desnutricion_severa_e40
+    data_name: "Desnutrición severa"
+    artifact_key: Desnutricion_Severa_E40
+    slug: desnutricion_severa_e40
+    display_name: "Desnutrición severa"
+    cie_codes: ["E40", "E41", "E42", "E43"]
+    aliases: ["desnutricion severa", "desnutricion grave", "kwashiorkor", "marasmo", "e40-e43"]
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: alta10b_desnutricion
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#92400E"
+      label: "Desnutrición severa"
+      nombre_completo: "Desnutrición severa (E40-E43)"
+
+  # Reservas del lote alta10b (12-nov-2026), baja incidencia medida antes del alta.
+  - id: otras_hepatitis_b17
+    data_name: "Otras hepatitis víricas"
+    artifact_key: Otras_Hepatitis_B17
+    slug: otras_hepatitis_b17
+    display_name: "Otras hepatitis víricas"
+    cie_codes: ["B17", "B18", "B19"]
+    aliases: ["otras hepatitis viricas", "otras hepatitis virales", "b17-b19"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta10b_otras_hepatitis_b17
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#9F1239"
+      label: "Otras hepatitis víricas"
+      nombre_completo: "Otras hepatitis víricas (B17-B19, excepto B17.1 y B18.2)"
+
+  - id: brucelosis_a23
+    data_name: "Brucelosis"
+    artifact_key: Brucelosis_A23
+    slug: brucelosis_a23
+    display_name: "Brucelosis"
+    cie_codes: ["A23"]
+    aliases: ["brucelosis", "fiebre de malta", "fiebre ondulante", "a23"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta10b_brucelosis_a23
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#4D7C0F"
+      label: "Brucelosis"
+      nombre_completo: "Brucelosis (A23)"
+
+  - id: leptospirosis_a27
+    data_name: "Leptospirosis"
+    artifact_key: Leptospirosis_A27
+    slug: leptospirosis_a27
+    display_name: "Leptospirosis"
+    cie_codes: ["A27"]
+    aliases: ["leptospirosis", "a27"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta10b_leptospirosis_a27
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#0E7490"
+      label: "Leptospirosis"
+      nombre_completo: "Leptospirosis (A27)"
+
+  - id: helmintiasis_b65
+    data_name: "Otras helmintiasis"
+    artifact_key: Helmintiasis_B65
+    slug: helmintiasis_b65
+    display_name: "Otras helmintiasis"
+    cie_codes: ["B65-B67", "B70-B76", "B78", "B79", "B81-B83"]
+    aliases: ["otras helmintiasis", "helmintiasis", "parasitosis por helmintos", "b65-b83"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta10b_helmintiasis_b65
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#65A30D"
+      label: "Otras helmintiasis"
+      nombre_completo: "Otras helmintiasis (B65-B67, B70-B76, B78, B79, B81-B83, excepto B73 y B75)"
