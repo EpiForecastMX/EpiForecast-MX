@@ -264,13 +264,94 @@ def test_dos_aperturas_no_publican(tmp_path):
     assert _estado(_lista(tmp_path), 'sint_2')[0] == 'pendientes'
 
 
-def test_control_sólo_con_autorizacion_estructurada(tmp_path):
-    tr, _ = _prueba(tmp_path, 'sint_c', False)
+def test_control_sólo_con_autorizacion_estructurada_y_linaje(tmp_path):
+    tr, dig = _prueba(tmp_path, 'sint_c', False)
     (tmp_path / 'AUTORIZACION_AUTOR_sint.md').write_text(f'AUTORIZA_CONTROL sint_c {tr}\n')
-    assert _estado(_lista(tmp_path), 'sint_c')[0] == 'rechazados'
+    assert _estado(_lista(tmp_path), 'sint_c')[0] == 'rechazados'            # un .md no autoriza
     _escribe_aut(tmp_path, 'a.json', _aut(alcance=[{'tipo': 'control', 'id': 'sint_c', 'test_run': tr}]))
     k, x = _estado(_lista(tmp_path), 'sint_c')
-    assert k == 'publicables' and x['tipo'] == 'control' and len(x['autorizacion']['sha256']) == 64
+    assert k == 'pendientes' and 'sin refit' in x['motivo']                 # la autorización sola no publica
+    _run(tmp_path / 'runs', 'sint_c_refit_final_x', refit_summary__json={'provenance': {'acceptance_run_id': tr, 'acceptance_digest': dig}})
+    _run(tmp_path / 'runs', 'sint_c_forecast_h52_x', lineage__json={'refit_run_id': 'sint_c_refit_final_x'})
+    k, x = _estado(_lista(tmp_path), 'sint_c')
+    assert k == 'publicables' and x['tipo'] == 'control' and x['forecast_run'] == 'sint_c_forecast_h52_x'
+    assert len(x['autorizacion']['sha256']) == 64
+
+
+def test_control_con_refit_de_otro_rechazo_no_publica(tmp_path):
+    tr, dig = _prueba(tmp_path, 'sint_c', False)
+    _escribe_aut(tmp_path, 'a.json', _aut(alcance=[{'tipo': 'control', 'id': 'sint_c', 'test_run': tr}]))
+    _run(tmp_path / 'runs', 'sint_c_refit_final_x', refit_summary__json={'provenance': {'acceptance_run_id': 'otro', 'acceptance_digest': dig}})
+    _run(tmp_path / 'runs', 'sint_c_forecast_h52_x', lineage__json={'refit_run_id': 'sint_c_refit_final_x'})
+    assert _estado(_lista(tmp_path), 'sint_c')[0] == 'pendientes'
+
+
+def test_ids_de_controles_en_carpetas_ctrl(tmp_path):
+    tr, dig = _prueba(tmp_path, 'sint_k', False)
+    (tmp_path / 'model' / 'sint_k').rename(tmp_path / 'model' / 'ctrl_sint_k')
+    assert _estado(_lista(tmp_path), 'sint_k')[0] == 'rechazados'
+
+# ---------------------------------------------------------------- guarda_orden (sintético)
+
+
+def _orden(tmp_path, orden=('a_x', 'b_x', 'c_x', 'd_x', 'e_x', 'f_x')):
+    import hashlib
+    runs = tmp_path / 'runs'; runs.mkdir(exist_ok=True)
+    items = []
+    for n, i in enumerate(orden, 1):
+        sel = f'{i}_select_s'; (runs / sel).mkdir(parents=True, exist_ok=True)
+        (runs / sel / 'selection.csv').write_text(f'selected_engine\nseasonal_mean_3y\n{i}\n')
+        items.append({'orden': n, 'id': i, 'selection_run': sel,
+                      'selection_csv_sha256': hashlib.sha256((runs / sel / 'selection.csv').read_bytes()).hexdigest()})
+    m = tmp_path / 'MANIFIESTO_SELECCIONES_16.json'; m.write_text(json.dumps({'orden_apertura': list(orden), 'items': items}))
+    (tmp_path / 'MANIFIESTO_SELECCIONES_16.sha256').write_text(hashlib.sha256(m.read_bytes()).hexdigest() + '\n')
+    return runs
+
+
+def _test(runs, i, accepted=None):
+    d = runs / f'{i}_benchmark_test_t'; d.mkdir()
+    if accepted is not None:
+        (d / 'acceptance.json').write_text(json.dumps({'accepted': accepted}))
+
+
+def _go(tmp_path, runs, i):
+    return sp.run([sys.executable, str(S / 'guarda_orden.py'), i, str(runs), str(tmp_path)], capture_output=True, text=True)
+
+
+def test_orden_primero_pasa_y_segundo_espera(tmp_path):
+    runs = _orden(tmp_path)
+    assert _go(tmp_path, runs, 'a_x').returncode == 0
+    assert _go(tmp_path, runs, 'b_x').returncode == 1          # a_x sin prueba sellada
+
+
+def test_orden_tope_de_cuatro_aceptados(tmp_path):
+    runs = _orden(tmp_path)
+    for i, acc in zip(('a_x', 'b_x', 'c_x', 'd_x'), (True, True, False, True)):
+        _test(runs, i, acc)
+    assert _go(tmp_path, runs, 'e_x').returncode == 0           # 3 aceptados
+    _test(runs, 'e_x', True)
+    r = _go(tmp_path, runs, 'f_x')
+    assert r.returncode == 1 and 'aceptados' in r.stdout
+
+
+def test_orden_fallo_tecnico_bloquea_sin_decision(tmp_path):
+    runs = _orden(tmp_path); _test(runs, 'a_x', None)
+    r = _go(tmp_path, runs, 'b_x')
+    assert r.returncode == 1 and 'fallo técnico' in r.stdout
+
+
+def test_orden_no_reabre_ni_acepta_seleccion_alterada(tmp_path):
+    runs = _orden(tmp_path); _test(runs, 'a_x', False)
+    assert _go(tmp_path, runs, 'a_x').returncode == 1           # ya abierto
+    (runs / 'b_x_select_s' / 'selection.csv').write_text('selected_engine\nseasonal_naive_lag52\n')
+    assert _go(tmp_path, runs, 'b_x').returncode == 1           # selección distinta de la congelada
+
+
+def test_orden_manifiesto_alterado(tmp_path):
+    runs = _orden(tmp_path)
+    m = tmp_path / 'MANIFIESTO_SELECCIONES_16.json'; m.write_text(m.read_text().replace('a_x', 'z_x', 1))
+    assert _go(tmp_path, runs, 'a_x').returncode == 1
+
 
 # ---------------------------------------------------------------- gen_fichas: tipo, calendario y disponibilidad
 

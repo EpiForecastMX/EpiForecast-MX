@@ -28,17 +28,36 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 # AGENTS.md: Guia de Desarrollo EpiForecast-MX
 
-## Checkpoint vigente — lote alta10b en preparación, 0 publicados — 12-nov-2026
+## Checkpoint vigente — lote alta10b publicado — 12-nov-2026
+
+Prevalece sobre las secciones fechadas inferiores en cuanto al número de publicados y la base semanal.
+Publicados: 65 en el sitio y 61 del runner (diez nuevos con alta10b: cuatro aceptados en su prueba única de
+2025 con cinco motores, ascariasis, hepatitis vírica A, efectos del calor y de la luz y otras hepatitis
+víricas, 0/4 en curso; y seis controles estacionales no validados por autorización A6, desnutrición leve,
+otras salmonelosis, fiebre tifoidea, escarlatina, hepatitis vírica C y displasia severa sin sexo). Los
+dieciséis candidatos llegaron a selección congelada; en orden fijo y con tope de cuatro se abrieron nueve
+pruebas de 2025: cuatro aceptadas, cinco rechazadas (quedan `configured` sin control) y siete sin abrir. Ningún rechazo futuro tiene control autorizado. Base semanal de W42:
+`ingestion_observado_W43/candidato_con_alta10b` (sha256 `be7abfa5…`). Guía: `docs/C7_16_ALTA10B.md`.
+
+## Checkpoint — alta10b en publicación — 12/13-nov-2026
+
+Historia. El autor autorizó A6 (seis controles con su run exacto), B2 y B14
+(cinco motores para dieciséis candidatos): `docs/alta10b/AUTORIZACION_A6_B2_B14.md`. Fase de publicación en
+curso en la rama `codex/alta10b-publicacion`; meta: diez nuevos (55 → 65 en el sitio, 51 → 61 del runner).
+Hasta que se publiquen, siguen 55/51. Ningún rechazo futuro tiene control autorizado.
+
+## Checkpoint — lote alta10b en preparación, 0 publicados — 12-nov-2026
 
 Prevalece sobre las secciones fechadas inferiores. Publicados: siguen 55 en el sitio y 51 del runner. La
 orden de incorporar diez más (alta10b) está abierta y **no completada**: se integró sólo código del
 extractor, once altas `configured`, pruebas y documentación (`docs/C7_16_ALTA10B.md`). Desnutrición leve
 rechazó su prueba única de 2025 en el total nacional y queda `configured` sin control; los otros dieciséis
 candidatos tienen raw canónico revalidado y smoke de siete motores fallido sólo por ETS y Ridge, así que
-ninguno avanza con `rolling_cv_v1`. Pendientes del autor, sin respuesta: A6 (controles de leve y de los cinco
-rechazos antiguos), B2 (cinco motores para moderada y severa) y B14 (los otros catorce). Una autorización
-sólo vale con el esquema de `docs/alta10b/ESQUEMA_AUTORIZACION.md`; los datos agregados de la tanda sí están
-autorizados. No reabrir la prueba de leve ni los cinco antiguos. Evidencia en `planes/alta10b_2026-11-12/`.
+ninguno avanza con `rolling_cv_v1`. Hasta el 12-nov por la noche estaban pendientes A6, B2 y B14; el autor los
+autorizó en el chat (ver la sección superior y `docs/alta10b/AUTORIZACION_A6_B2_B14.md`). La autorización
+vale por la respuesta del autor; root la registra como JSON con el esquema de
+`docs/alta10b/ESQUEMA_AUTORIZACION.md` para las herramientas, sin crear ni revocar permisos. Los datos
+agregados de la tanda también están autorizados. No reabrir la prueba de leve ni los cinco antiguos. Evidencia en `planes/alta10b_2026-11-12/`.
 
 ## Checkpoint — lote alta20 cerrado — 12-nov-2026
 

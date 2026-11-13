@@ -31,9 +31,9 @@ repos:
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
-        exclude: ^docs/alta10b/revisiones/   # dictámenes copiados tal cual (huellas)
+        exclude: ^docs/alta10b/(revisiones/|MANIFIESTO_|orden_apertura_|AUTORIZACION_.*\.json)   # copias tal cual con huella
       - id: end-of-file-fixer
-        exclude: ^docs/alta10b/revisiones/
+        exclude: ^docs/alta10b/(revisiones/|MANIFIESTO_|orden_apertura_|AUTORIZACION_.*\.json)
       - id: check-yaml
       - id: check-toml
       - id: check-merge-conflict

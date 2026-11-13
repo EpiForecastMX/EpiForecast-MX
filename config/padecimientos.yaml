@@ -1443,7 +1443,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1464,11 +1465,15 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_ascariasis_b77
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: ascariasis_b77_release_f1406e8ab382
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1489,11 +1494,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_salmonelosis_a02
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: salmonelosis_a02_release_0f0ca5f81ea8
+    # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (A6, 12-nov-2026).
+    # Nunca como validado.
+    acceptance_fallback_run: salmonelosis_a02_benchmark_test_75d53be6359d_87e5e12dc46a
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1546,7 +1557,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1567,11 +1579,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_tifoidea_a01
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: tifoidea_a01_release_ea50e14a0371
+    # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (A6, 12-nov-2026).
+    # Nunca como validado.
+    acceptance_fallback_run: tifoidea_a01_benchmark_test_4510e3cd424e_28c71501a392
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1679,11 +1697,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_escarlatina_a38
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: escarlatina_a38_release_82d03cfdfa0f
+    # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (A6, 12-nov-2026).
+    # Nunca como validado.
+    acceptance_fallback_run: escarlatina_a38_benchmark_test_fd6d4b0c510d_57d3b1ad9b6a
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1878,11 +1902,15 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_hepatitis_a_b15
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: hepatitis_a_b15_release_6181173f5150
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1907,7 +1935,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1928,11 +1957,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_hepatitis_c_b17
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: hepatitis_c_b17_release_1b625a4d7f43
+    # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (A6, 12-nov-2026).
+    # Nunca como validado.
+    acceptance_fallback_run: hepatitis_c_b17_benchmark_test_dc3594e102bf_63c4ba3b7395
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2038,7 +2073,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2123,11 +2159,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_displasias
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: displasia_severa_n87_release_2046566a5794
+    # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (A6, 12-nov-2026).
+    # Nunca como validado.
+    acceptance_fallback_run: displasia_severa_n87_benchmark_test_c9f925d40d4c_ab071604cd0a
     sex_breakdown: false
     prophet_grid_key: null
     deepar_grid_key: null
@@ -2243,11 +2285,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta10b_desnutricion
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
+    artifact_source:
+      backend: runner_release
+      release_id: desnutricion_leve_e441_release_30b1895c19bd
+    # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (A6, 12-nov-2026).
+    # Nunca como validado.
+    acceptance_fallback_run: desnutricion_leve_e441_benchmark_test_6b07ee8c6316_dd8194504c84
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2272,7 +2320,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2297,7 +2346,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2320,11 +2370,15 @@ padecimientos:
     batch: standalone
     extraction_group: alta10b_otras_hepatitis_b17
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: otras_hepatitis_b17_release_08de6f7ff77b
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2349,7 +2403,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2374,7 +2429,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2401,7 +2457,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2426,7 +2483,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2447,11 +2505,15 @@ padecimientos:
     batch: standalone
     extraction_group: alta10b_calor_t67
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: calor_t67_release_39efd657d7d7
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2476,7 +2538,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2501,7 +2564,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
