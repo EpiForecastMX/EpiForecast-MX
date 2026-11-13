@@ -39,7 +39,7 @@ The platform uses a **polymorphic Factory pattern** to support multiple forecast
 | Dengue *(extra deliverable)* | A97 | Vector-borne, ~4-5 year epidemic cycle, near-zero off-season series |
 | Generic runner releases (51) | various | Obesity, eating disorders, diabetes, cardiovascular, bulletin radar group (asthma included), pneumonia, seventeen cancers and the twenty added on 12-Nov-2026; see the registry |
 
-Four conditions (Depression, Parkinson's, Alzheimer's and Dengue) run on the legacy multi-model pipeline (333 neuro models plus 99 Dengue series); see [Dengue (Fourth Condition)](#dengue-fourth-condition-extra-deliverable). Fifty-one more are published from sealed releases of the generic runner (`src/epiforecast/runner/`). The twenty added on 12-Nov-2026 are ten portfolios accepted in the 2025 test (prospective validation 0/4 in progress) and ten seasonal controls published after a 2025 rejection by named authorization of the author, never as validated (`docs/C7_15_ALTA20.md`). The registry (`config/padecimientos.yaml`) decides which ones are public. Releases that failed their acceptance test (2025 for most of them; 2026-W01 to W41 for the fifteen cancers with data only since 2023, under policy `rolling_cv_historia_corta_2023_v1`) are published with the seasonal control by express order of the author, never as validated. Publication history: `docs/C7_7_PUBLICACION_OBESIDAD.md` through `docs/C7_15_ALTA20.md`.
+Four conditions (Depression, Parkinson's, Alzheimer's and Dengue) run on the legacy multi-model pipeline (333 neuro models plus 99 Dengue series); see [Dengue (Fourth Condition)](#dengue-fourth-condition-extra-deliverable). Sixty-one more are published from sealed releases of the generic runner (`src/epiforecast/runner/`). The thirty added on 12-Nov-2026 are fourteen portfolios accepted in the 2025 test (prospective validation 0/4 in progress) and sixteen seasonal controls published after a 2025 rejection by named authorization of the author, never as validated (`docs/C7_15_ALTA20.md` and `docs/C7_16_ALTA10B.md`). The registry (`config/padecimientos.yaml`) decides which ones are public. Releases that failed their acceptance test (2025 for most of them; 2026-W01 to W41 for the fifteen cancers with data only since 2023, under policy `rolling_cv_historia_corta_2023_v1`) are published with the seasonal control by express order of the author, never as validated. Publication history: `docs/C7_7_PUBLICACION_OBESIDAD.md` through `docs/C7_16_ALTA10B.md`.
 
 ---
 
@@ -452,7 +452,7 @@ The weekly step has three lanes, and none of them publishes a partial week:
 
 1. **Legacy conditions** (Depression, Parkinson, Alzheimer, Dengue) through the v5 producer kept
    outside the repository.
-2. **The published runner releases** (51 as of 12-Nov-2026; the registry is the single authoritative count) through `make semana-revisa`, `make semana-observa PDF=… SALIDA=… [WRITE=1]`,
+2. **The published runner releases** (61 as of 12-Nov-2026; the registry is the single authoritative count) through `make semana-revisa`, `make semana-observa PDF=… SALIDA=… [WRITE=1]`,
    `python -m scripts.paso_semanal consolida` and `make semana-vistas N=… FE=…`, failing closed for all
    if any one fails. `consolida` keeps the base byte for byte, rejects a superseded or altered base and
    runs `revisa_consolidado` (parity of every published condition).
@@ -464,11 +464,12 @@ documented in `CLAUDE.md` and the git history.
 
 ### Current Data Snapshot
 
-- **Published (12-Nov-2026):** 55 conditions on the site, 51 of them from runner releases. The
-  2026-11-12 batch alta10b is in preparation with none published (`docs/C7_16_ALTA10B.md`).
+- **Published (12-Nov-2026):** 65 conditions on the site, 61 of them from runner releases. Batch
+  alta10b added ten: four accepted in their single 2025 test and six seasonal controls, never validated
+  (`docs/C7_16_ALTA10B.md`).
 - **Published cut:** bulletin 43 of 2026 for the four legacy conditions and the bulletin radar; the
-  51 runner releases observe through 2026-W42. Forecast origin is fixed per release and does not move
-  with the observations (counted from the 51 frontend views): 29 releases have origin 2026-W41, 21 have
+  61 runner releases observe through 2026-W42. Forecast origin is fixed per release and does not move
+  with the observations (counted from the 61 frontend views): 29 releases have origin 2026-W41, 31 have
   origin 2026-W42 and Obesity keeps origin 2026-W26. A fail-closed parity rule forbids mixed public cuts.
 - **Forecast horizon:** each release forecasts 52 weeks from its own origin (for example, origin
   2026-W41 covers 2026-W42 to 2027-W41), not 52 weeks from today.
