@@ -1465,12 +1465,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_ascariasis_b77
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: ascariasis_b77_refit_final_05beef53925a_219e43f413c9
+      forecast_run_id: ascariasis_b77_forecast_h52_219e43f413c9_e12385006ba2
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 05beef53925a7b330c9793ad406f1baa4ad843276337375b528457e60a83ab00
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1899,12 +1905,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_hepatitis_a_b15
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: hepatitis_a_b15_refit_final_5df884c80201_0cfc7057a8ba
+      forecast_run_id: hepatitis_a_b15_forecast_h52_0cfc7057a8ba_dc6764daef98
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 5df884c802017802a5db0a0766756d8cee3bb93c9236f810f8b75e8c99de7587
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2364,12 +2376,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta10b_otras_hepatitis_b17
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: otras_hepatitis_b17_refit_final_d8b065b55da0_a107823a5ace
+      forecast_run_id: otras_hepatitis_b17_forecast_h52_a107823a5ace_14ea655a4b49
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: d8b065b55da0eaa778b864e21156347eeebb753c0cf21e3f0f8ae5e72da38f4a
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2496,12 +2514,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta10b_calor_t67
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: calor_t67_refit_final_34127b737986_2d683b02ea88
+      forecast_run_id: calor_t67_forecast_h52_2d683b02ea88_da3a2b8eb620
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 34127b7379868701486a9f00116c29e2cccbd3c394357d5e3cd3f87c69a1c511
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
