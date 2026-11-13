@@ -20,9 +20,15 @@ analiza (el ruff del CI sólo revisa `src/`, `tests/` y scripts nombrados; el ho
   selección), `post_snap.sh` (raw canónico, cotejo, desarrollo).
 - Desarrollo y prueba: `model_dev.sh` (sólo raw canónico; smoke 7 -> full -> select con linaje),
   `model_test.sh` (apertura única de 2025 con aprobación nominal P1-P7 y A3), `guarda_aprobacion.py`.
-- Autoridad y publicación (preparadas, sin uso real todavía): `autoridad.py` (esquema en
+- Autoridad y publicación (usadas el 12-nov-2026 para publicar los diez): `autoridad.py` (esquema en
   `../ESQUEMA_AUTORIZACION.md`), `lista_publicables.py`, `gen_fichas.py` (tres estados: aceptado, aceptado
-  CONTROL_ONLY que aborta, control).
+  CONTROL_ONLY que aborta, control), `model_control.sh` (refit y forecast de un control autorizado),
+  `guarda_orden.py` (orden fijo y tope), `registry_fase.py` y `construye_release.py`.
+- Fase de publicación: `cola_tests.sh` (recorre el orden fijo; espera la aprobación nominal de cada id, no la
+  crea; se detiene con cuatro aceptados o ante un rc distinto de cero), `resultado_test.py` (resultado desde
+  manifiestos), `consolida_controles6.py` y `consolida_alta10b.py` (consolidado de paridad sólo añadiendo
+  filas), `postedita_controles6.py` (dos frases editoriales medidas sobre las fichas v3 de los controles) y
+  `radar_update.py` (marca los publicados en el radar vigente del frontend).
 - QA: `qa_total_terna.py`, `qa_acumulado.py`, `qa_identidad.py`, `encabezados.py`, `estadisticas_canon.py`,
   `diag_motores.py`, `propuesta.py`.
 
