@@ -82,7 +82,7 @@ cuadro_groups:
       - id: bocio_e01
         keyword: "Bocio_E01"
         block_index: 0
-        onboard: false
+        onboard: true
       - id: diabetes_t1
         keyword: "Diabetes_T1"
         block_index: 1
@@ -96,7 +96,7 @@ cuadro_groups:
     # impute causalmente (flag total_imputed) y la serie siga contigua; sin él, el periodo no existe.
     source_exclusions:
       - file: "2014_sem01.pdf"
-        diseases: [diabetes_t1, diabetes_t2]
+        diseases: [bocio_e01, diabetes_t1, diabetes_t2]
         reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
       - file: "2016_sem20.pdf"
         diseases: [diabetes_t2]
@@ -104,6 +104,12 @@ cuadro_groups:
         reason: >-
           bloques E01 y E11-E14 intercambiados y el de E11-E14 ajeno a la semana 19 (acum
           68,724/96,370 mayor que el de la semana 21); E10 sí es coherente
+      - file: "2016_sem20.pdf"
+        diseases: [bocio_e01]
+        keep_period: true              # misma errata de fuente: el bloque E01 trae cifras de E11-E14
+        reason: >-
+          misma errata de fuente que diabetes tipo II: bloques E01 y E11-E14 intercambiados en el
+          boletín (el bloque de bocio imprime cifras de diabetes); semana interior de 2016, desarrollo
     n_states_expected: 32
     backend: camelot_stream
 
@@ -694,7 +700,13 @@ cuadro_groups:
     state_markers: ["zacatecas", "tamaulipas"]
     year_week_source: filename
     observation_lag_weeks: 1
-    inner_block_columns: {12: [8, 4]}
+    # 2025_sem02: camelot entrega cada entidad en dos renglones con el primer valor en la columna
+    # del nombre (página 20); sin la reparación el boletín se leía en ceros (TOTAL impreso 131/59).
+    valor_en_columna_nombre: true
+    # En 13 boletines de 2025-2026 (2025_sem02, 12, 25, 28, 31; 2026_sem08, 09, 10, 17, 20, 23, 34
+    # y 42) la fuente imprime este bloque sin el acumulado del año anterior: 11 columnas en la página
+    # (encabezado y renglones, medido con pdftotext en 2026_sem42), no un fallo de camelot.
+    inner_block_columns: {12: [8, 4], 11: [7, 3]}
     diseases:
       - id: enterobiasis_b80
         keyword: "Enterobiasis_B80"
@@ -718,7 +730,12 @@ cuadro_groups:
     state_markers: ["zacatecas", "tamaulipas"]
     year_week_source: filename
     observation_lag_weeks: 1
-    first_block_columns: {12: 4}
+    # 2025_sem02: camelot entrega cada entidad en dos renglones con el primer valor en la columna
+    # del nombre (página 20); sin la reparación el boletín se leía en ceros (TOTAL impreso 131/59).
+    valor_en_columna_nombre: true
+    # 11 columnas en 13 boletines de 2025-2026: el bloque de enterobiasis (segundo) sale sin año
+    # anterior en la fuente; ascariasis, primer bloque, conserva sus 4 columnas.
+    first_block_columns: {12: 4, 11: 4}
     diseases:
       - id: ascariasis_b77
         keyword: "Ascariasis_B77"
@@ -794,11 +811,14 @@ cuadro_groups:
     state_markers: ["zacatecas", "tamaulipas"]
     year_week_source: filename
     observation_lag_weeks: 1
+    # Desde 2024_sem50 camelot entrega cada entidad en dos renglones con el primer valor en la columna
+    # del nombre (2025_sem04, página 23): sin esta reparación esos boletines se leían como ceros.
+    valor_en_columna_nombre: true
     inner_block_columns: {12: [8, 4]}
     periodos:
       - desde: "2024_sem07"
         inner_block_columns: null
-        first_block_columns: {8: 4}
+        first_block_columns: {8: 4, 7: 4}
     diseases:
       - id: giardiasis_a071
         keyword: "Giardiasis_A071"
@@ -1110,6 +1130,12 @@ cuadro_groups:
       - file: "2014_sem01.pdf"
         diseases: [hepatitis_a_b15]
         reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2016_sem20.pdf"
+        diseases: [hepatitis_a_b15]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes y
+          cardiovasculares en este boletín): semana 151/9/127 y acumulado 2 549/92/2 806 (semanas 19/20/21); el acumulado salta y vuelve
     layout_variants:
       - id: v_4col_prev
         min_year_week: "0000_sem00"
@@ -1134,6 +1160,13 @@ cuadro_groups:
       - file: "2014_sem01.pdf"
         diseases: [hepatitis_b_b16]
         reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2016_sem20.pdf"
+        diseases: [hepatitis_b_b16]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes y
+          cardiovasculares en este boletín): semana 17/115/17 y acumulado 277/2 664/313 (semanas
+          19/20/21); el acumulado salta y vuelve
     layout_variants:
       - id: v_4col_prev
         min_year_week: "0000_sem00"
@@ -1259,6 +1292,12 @@ cuadro_groups:
       - file: "2014_sem01.pdf"
         diseases: [reumatica_i00]
         reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2016_sem20.pdf"
+        diseases: [reumatica_i00]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes y
+          cardiovasculares en este boletín): semana 28/63/10 y acumulado 339/1 088/360 (semanas 19/20/21); el acumulado salta y vuelve
     layout_variants:
       - id: v_4col_prev
         min_year_week: "0000_sem00"
@@ -1362,6 +1401,267 @@ cuadro_groups:
       - id: v_3col_total
         min_year_week: "0000_sem00"
         cols_per_disease: 3
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta10b_desnutricion:
+    # Cuadro de Trastornos de la Nutrición con los tres bloques de desnutrición, izquierda a derecha:
+    # severa (E40-E43), moderada (E44.0) y leve (E44.1), 4 columnas cada uno (Sem, acumulado H y M,
+    # acumulado del año anterior). Medido con pdftotext en 2014_sem10, 2016_sem10, 2019_sem10,
+    # 2022_sem10, 2025_sem10 y 2026_sem43 (12 columnas en todos). Obesidad y F50 viven en otra página
+    # (anclas e66/obesidad).
+    page_anchors: ["desnutrici", "e44.1"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    diseases:
+      - id: desnutricion_severa_e40
+        keyword: "Desnutricion_Severa_E40"
+        block_index: 0
+        onboard: true
+      - id: desnutricion_moderada_e440
+        keyword: "Desnutricion_Moderada_E440"
+        block_index: 1
+        onboard: true
+      - id: desnutricion_leve_e441
+        keyword: "Desnutricion_Leve_E441"
+        block_index: 2
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [desnutricion_severa_e40, desnutricion_moderada_e440, desnutricion_leve_e441]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta10b_otras_hepatitis_b17:
+    # Otras hepatitis víricas (B17-B19 excepto B17.1 y B18.2): bloque intermedio del cuadro de
+    # hepatitis C (B17.1, B18.2) y conjuntivitis hemorrágica (B30.3). pdftotext: 11 columnas en
+    # 2014_sem02..2015_sem01 (el último bloque sin año anterior) y 12 desde 2015_sem02.
+    page_anchors: ["b17.1"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    inner_block_columns: {11: [7, 4], 12: [8, 4]}
+    diseases:
+      - id: otras_hepatitis_b17
+        keyword: "Otras_Hepatitis_B17"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [otras_hepatitis_b17]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2016_sem20.pdf"
+        diseases: [otras_hepatitis_b17]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes y
+          cardiovasculares en este boletín): acumulado 468/294/516 (semanas 19/20/21); el acumulado salta y vuelve
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta10b_brucelosis_a23:
+    # Brucelosis (A23): primer bloque del cuadro de zoonosis. pdftotext: tres bloques (con rabia,
+    # que en 2014-2022 viene con 3 o 4 columnas: 11 o 12 en total) hasta 2022_sem52 y dos (con
+    # leptospirosis) desde 2023_sem01.
+    # «a23» sola coincide en pypdf con otra página (2020_sem31 tomaba la 23 en vez de la 33): se ancla
+    # por los dos nombres y el código; en 2023-2024_sem03 una segunda página (8.2) repite los nombres sin el código.
+    page_anchors: ["brucel", "leptosp", "a23"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {12: 4, 11: 4, 8: 4}
+    diseases:
+      - id: brucelosis_a23
+        keyword: "Brucelosis_A23"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [brucelosis_a23]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta10b_leptospirosis_a27:
+    # Leptospirosis (A27): segundo bloque del cuadro de zoonosis (intermedio con rabia hasta
+    # 2022_sem52, último desde 2023_sem01).
+    # «a23» sola coincide en pypdf con otra página (2020_sem31 tomaba la 23 en vez de la 33): se ancla
+    # por los dos nombres y el código; en 2023-2024_sem03 una segunda página (8.2) repite los nombres sin el código.
+    page_anchors: ["brucel", "leptosp", "a23"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    inner_block_columns: {12: [8, 4], 11: [7, 4]}
+    periodos:
+      - desde: "2023_sem01"
+        inner_block_columns: null
+        last_block_columns: {8: 4}
+    diseases:
+      - id: leptospirosis_a27
+        keyword: "Leptospirosis_A27"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [leptospirosis_a27]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta10b_helmintiasis_b65:
+    # Otras helmintiasis (B65-B67, B70-B76, B78, B79, B81-B83; el boletín imprime «excepto B73 y B75»
+    # desde 2017 y el formato SUIVE-1 de 2014 ya lo excluía): último bloque de la página de giardiasis.
+    # Tres bloques (protozoarios, giardiasis, helmintiasis) hasta 2024_sem06 y dos desde 2024_sem07.
+    page_anchors: ["giardiasis"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    # Desde 2024_sem50 camelot entrega cada entidad en dos renglones con el primer valor en la columna
+    # del nombre (2025_sem04, página 23): sin esta reparación esos boletines se leían como ceros.
+    valor_en_columna_nombre: true
+    # 7 columnas: boletines en que la fuente imprime helmintiasis sin año anterior (2026_sem42: 4 + 3).
+    last_block_columns: {12: 4, 8: 4, 7: 3}
+    diseases:
+      - id: helmintiasis_b65
+        keyword: "Helmintiasis_B65"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [helmintiasis_b65]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta10b_rotavirus_a080:
+    # Enteritis debida a rotavirus (A08.0): primer bloque, con meningitis tuberculosa (A17.0), 8
+    # columnas en 2014-2026 (pdftotext). «a08.0» sola aparece también en otra página.
+    page_anchors: ["rotavirus", "a17.0"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {8: 4}
+    diseases:
+      - id: rotavirus_a080
+        keyword: "Rotavirus_A080"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [rotavirus_a080]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2016_sem20.pdf"
+        diseases: [rotavirus_a080]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes y
+          cardiovasculares en este boletín): semana 50/199/25 y acumulado 543/4 186/614 (semanas 19/20/21); el acumulado salta y vuelve
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta10b_calor_t67:
+    # Efectos del calor y de la luz (T67; desde 2017 «T67, X30»). Cambia de cuadro (pdftotext):
+    # 2014_sem02-2017_sem01 bloque intermedio de la página de síndrome febril (10 columnas hasta
+    # 2015_sem01, con calor sin año anterior; 12 después); 2017_sem02-2025_sem01 último bloque de la
+    # página de alacrán; desde 2025_sem02 primer bloque, con depleción del volumen (E86).
+    # «calor» sola coincide desde 2025_sem02 con el Cuadro 18.5: se ancla con el código.
+    page_anchors: ["calor", "t67"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    inner_block_columns: {12: [8, 4], 10: [7, 3]}
+    periodos:
+      - desde: "2017_sem02"
+        inner_block_columns: null
+        last_block_columns: {12: 4}
+      - desde: "2025_sem02"
+        last_block_columns: null
+        first_block_columns: {8: 4}
+    diseases:
+      - id: calor_t67
+        keyword: "Calor_T67"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [calor_t67]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2016_sem20.pdf"
+        diseases: [calor_t67]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes y
+          cardiovasculares en este boletín): semana 65/3 347/108 y acumulado 1 121/87 121/1 336 (semanas 19/20/21); el acumulado salta y vuelve
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta10b_absceso_hepatico_a064:
+    # Absceso hepático amebiano (A06.4): último bloque (tras A05 y amebiasis intestinal) hasta
+    # 2024_sem06 y primero (con protozoarios) desde 2024_sem07. 31 boletines de 2014 no imprimen el
+    # código: se ancla por nombre. Hasta 2015_sem01 el bloque se imprime sin año anterior (3 columnas,
+    # 11 en la página): leer 4 tomaba el acumulado de amebiasis como semana (2014 sumaba 9.2 millones).
+    page_anchors: ["absceso"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    last_block_columns: {12: 4, 11: 3}
+    periodos:
+      - desde: "2015_sem02"
+        last_block_columns: {12: 4, 11: 4}
+      - desde: "2024_sem07"
+        last_block_columns: null
+        first_block_columns: {8: 4}
+    diseases:
+      - id: absceso_hepatico_a064
+        keyword: "Absceso_Hepatico_A064"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [absceso_hepatico_a064]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
         has_prev_year: true
     n_states_expected: 32
     backend: camelot_stream

@@ -1,0 +1,171 @@
+{
+  "verified_utc": "2026-11-12T22:57:43.672473+00:00",
+  "source": "FABLE_CODE_V3.md",
+  "scope": "Código fallback y aceptado con contraste; no aceptación científica, permiso humano, pretest, publicación ni merge",
+  "live_hash_verification": "CODE_V3_VERIFICACION_ROOT.json",
+  "validator_sha256": "e1ed53a6696eb46a3d9b432a0e1a0d3fc55970e7087ad8aa482fb00c055c41c3",
+  "runs_revalidated_checked": [
+    {
+      "pasada": "snapA",
+      "id": "absceso_hepatico_a064",
+      "verified": true
+    },
+    {
+      "pasada": "snapA",
+      "id": "ascariasis_b77",
+      "verified": true
+    },
+    {
+      "pasada": "snapA",
+      "id": "bocio_e01",
+      "verified": true
+    },
+    {
+      "pasada": "snapA",
+      "id": "brucelosis_a23",
+      "verified": true
+    },
+    {
+      "pasada": "snapA",
+      "id": "calor_t67",
+      "verified": true
+    },
+    {
+      "pasada": "snapA",
+      "id": "desnutricion_moderada_e440",
+      "verified": true
+    },
+    {
+      "pasada": "snapA",
+      "id": "desnutricion_severa_e40",
+      "verified": true
+    },
+    {
+      "pasada": "snapA",
+      "id": "enterobiasis_b80",
+      "verified": true
+    },
+    {
+      "pasada": "snapA",
+      "id": "giardiasis_a071",
+      "verified": true
+    },
+    {
+      "pasada": "snapA",
+      "id": "helmintiasis_b65",
+      "verified": true
+    },
+    {
+      "pasada": "snapA",
+      "id": "hepatitis_a_b15",
+      "verified": true
+    },
+    {
+      "pasada": "snapA",
+      "id": "hepatitis_b_b16",
+      "verified": true
+    },
+    {
+      "pasada": "snapA",
+      "id": "leptospirosis_a27",
+      "verified": true
+    },
+    {
+      "pasada": "snapA",
+      "id": "otras_hepatitis_b17",
+      "verified": true
+    },
+    {
+      "pasada": "snapA",
+      "id": "reumatica_i00",
+      "verified": true
+    },
+    {
+      "pasada": "snapA",
+      "id": "rotavirus_a080",
+      "verified": true
+    },
+    {
+      "pasada": "snapB",
+      "id": "absceso_hepatico_a064",
+      "verified": true
+    },
+    {
+      "pasada": "snapB",
+      "id": "ascariasis_b77",
+      "verified": true
+    },
+    {
+      "pasada": "snapB",
+      "id": "bocio_e01",
+      "verified": true
+    },
+    {
+      "pasada": "snapB",
+      "id": "brucelosis_a23",
+      "verified": true
+    },
+    {
+      "pasada": "snapB",
+      "id": "calor_t67",
+      "verified": true
+    },
+    {
+      "pasada": "snapB",
+      "id": "desnutricion_moderada_e440",
+      "verified": true
+    },
+    {
+      "pasada": "snapB",
+      "id": "desnutricion_severa_e40",
+      "verified": true
+    },
+    {
+      "pasada": "snapB",
+      "id": "enterobiasis_b80",
+      "verified": true
+    },
+    {
+      "pasada": "snapB",
+      "id": "giardiasis_a071",
+      "verified": true
+    },
+    {
+      "pasada": "snapB",
+      "id": "helmintiasis_b65",
+      "verified": true
+    },
+    {
+      "pasada": "snapB",
+      "id": "hepatitis_a_b15",
+      "verified": true
+    },
+    {
+      "pasada": "snapB",
+      "id": "hepatitis_b_b16",
+      "verified": true
+    },
+    {
+      "pasada": "snapB",
+      "id": "leptospirosis_a27",
+      "verified": true
+    },
+    {
+      "pasada": "snapB",
+      "id": "otras_hepatitis_b17",
+      "verified": true
+    },
+    {
+      "pasada": "snapB",
+      "id": "reumatica_i00",
+      "verified": true
+    },
+    {
+      "pasada": "snapB",
+      "id": "rotavirus_a080",
+      "verified": true
+    }
+  ],
+  "current_source_changes": "Seis ids deben usar C/D porque cambiaron exclusiones; A/B de esos seis no son canónicos",
+  "unsupported_conditional_case": "Aceptado candidato==control se detiene sin plantilla; si aparece requiere narrativa propia antes de publicación, sin nuevo permiso científico cuando ya esté aceptado/autorizado"
+}
