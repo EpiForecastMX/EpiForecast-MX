@@ -1465,8 +1465,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_ascariasis_b77
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
@@ -1902,8 +1902,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_hepatitis_a_b15
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
@@ -2370,8 +2370,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta10b_otras_hepatitis_b17
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
@@ -2505,8 +2505,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta10b_calor_t67
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
