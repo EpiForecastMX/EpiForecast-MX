@@ -1491,11 +1491,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_salmonelosis_a02
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: salmonelosis_a02_refit_final_9fe0414b00c7_3facf4ad2605
+      forecast_run_id: salmonelosis_a02_forecast_h52_3facf4ad2605_158ecfae97ad
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (A6, 12-nov-2026).
     # Nunca como validado.
     acceptance_fallback_run: salmonelosis_a02_benchmark_test_75d53be6359d_87e5e12dc46a
@@ -1573,11 +1579,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_tifoidea_a01
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: tifoidea_a01_refit_final_9fe0414b00c7_02535aabd48d
+      forecast_run_id: tifoidea_a01_forecast_h52_02535aabd48d_263f3695fd5e
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (A6, 12-nov-2026).
     # Nunca como validado.
     acceptance_fallback_run: tifoidea_a01_benchmark_test_4510e3cd424e_28c71501a392
@@ -1688,11 +1700,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_escarlatina_a38
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: escarlatina_a38_refit_final_9fe0414b00c7_16dc6075c0ae
+      forecast_run_id: escarlatina_a38_forecast_h52_16dc6075c0ae_57b9f464803d
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (A6, 12-nov-2026).
     # Nunca como validado.
     acceptance_fallback_run: escarlatina_a38_benchmark_test_fd6d4b0c510d_57d3b1ad9b6a
@@ -1942,11 +1960,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_hepatitis_c_b17
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: hepatitis_c_b17_refit_final_9fe0414b00c7_a59fc6cd2199
+      forecast_run_id: hepatitis_c_b17_forecast_h52_a59fc6cd2199_2dfbc0c21f6a
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (A6, 12-nov-2026).
     # Nunca como validado.
     acceptance_fallback_run: hepatitis_c_b17_benchmark_test_dc3594e102bf_63c4ba3b7395
@@ -2141,11 +2165,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_displasias
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: displasia_severa_n87_refit_final_30e6b4ef89df_4e7d9a83cee0
+      forecast_run_id: displasia_severa_n87_forecast_h52_4e7d9a83cee0_73157a5e81c3
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 30e6b4ef89dfaec5091ac2ecb9959eb91024576e6ead3f9293537f0c2cc7be9f
     # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (A6, 12-nov-2026).
     # Nunca como validado.
     acceptance_fallback_run: displasia_severa_n87_benchmark_test_c9f925d40d4c_ab071604cd0a
@@ -2264,11 +2294,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta10b_desnutricion
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: desnutricion_leve_e441_refit_final_9fe0414b00c7_61b317b8eb85
+      forecast_run_id: desnutricion_leve_e441_forecast_h52_61b317b8eb85_72b6bc5ce874
+      policy_digest: dd6d4a0274a6f8bb0f51d27628294b7db694b792966abaa92528dc2765020b2a
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (A6, 12-nov-2026).
     # Nunca como validado.
     acceptance_fallback_run: desnutricion_leve_e441_benchmark_test_6b07ee8c6316_dd8194504c84
