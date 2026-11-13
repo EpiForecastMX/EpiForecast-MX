@@ -1,0 +1,121 @@
+{
+  "schema": "autorizacion_autor.v1",
+  "registrado_por": "root",
+  "recibida_utc": "2026-11-13T00:21:22.202656+00:00",
+  "canal": "Chat del supervisor Codex, respuesta directa del autor",
+  "pregunta_literal": "¿Autorizas A6, B2 y B14, o sólo algunas?",
+  "respuesta_literal": "Autorizo A6, B2 y B14. Continúa con Opus y Fable hasta incorporar los 10 padecimientos y deja todo actualizado y sincronizado en main.",
+  "alcance": [
+    {
+      "tipo": "control",
+      "id": "desnutricion_leve_e441",
+      "test_run": "desnutricion_leve_e441_benchmark_test_6b07ee8c6316_dd8194504c84"
+    },
+    {
+      "tipo": "control",
+      "id": "salmonelosis_a02",
+      "test_run": "salmonelosis_a02_benchmark_test_75d53be6359d_87e5e12dc46a"
+    },
+    {
+      "tipo": "control",
+      "id": "tifoidea_a01",
+      "test_run": "tifoidea_a01_benchmark_test_4510e3cd424e_28c71501a392"
+    },
+    {
+      "tipo": "control",
+      "id": "escarlatina_a38",
+      "test_run": "escarlatina_a38_benchmark_test_fd6d4b0c510d_57d3b1ad9b6a"
+    },
+    {
+      "tipo": "control",
+      "id": "hepatitis_c_b17",
+      "test_run": "hepatitis_c_b17_benchmark_test_dc3594e102bf_63c4ba3b7395"
+    },
+    {
+      "tipo": "control",
+      "id": "displasia_severa_n87",
+      "test_run": "displasia_severa_n87_benchmark_test_c9f925d40d4c_ab071604cd0a"
+    },
+    {
+      "tipo": "politica",
+      "id": "desnutricion_moderada_e440",
+      "politica": "rolling_cv_baja_incidencia_v1"
+    },
+    {
+      "tipo": "politica",
+      "id": "desnutricion_severa_e40",
+      "politica": "rolling_cv_baja_incidencia_v1"
+    },
+    {
+      "tipo": "politica",
+      "id": "absceso_hepatico_a064",
+      "politica": "rolling_cv_baja_incidencia_v1"
+    },
+    {
+      "tipo": "politica",
+      "id": "ascariasis_b77",
+      "politica": "rolling_cv_baja_incidencia_v1"
+    },
+    {
+      "tipo": "politica",
+      "id": "bocio_e01",
+      "politica": "rolling_cv_baja_incidencia_v1"
+    },
+    {
+      "tipo": "politica",
+      "id": "brucelosis_a23",
+      "politica": "rolling_cv_baja_incidencia_v1"
+    },
+    {
+      "tipo": "politica",
+      "id": "calor_t67",
+      "politica": "rolling_cv_baja_incidencia_v1"
+    },
+    {
+      "tipo": "politica",
+      "id": "enterobiasis_b80",
+      "politica": "rolling_cv_baja_incidencia_v1"
+    },
+    {
+      "tipo": "politica",
+      "id": "giardiasis_a071",
+      "politica": "rolling_cv_baja_incidencia_v1"
+    },
+    {
+      "tipo": "politica",
+      "id": "helmintiasis_b65",
+      "politica": "rolling_cv_baja_incidencia_v1"
+    },
+    {
+      "tipo": "politica",
+      "id": "hepatitis_a_b15",
+      "politica": "rolling_cv_baja_incidencia_v1"
+    },
+    {
+      "tipo": "politica",
+      "id": "hepatitis_b_b16",
+      "politica": "rolling_cv_baja_incidencia_v1"
+    },
+    {
+      "tipo": "politica",
+      "id": "leptospirosis_a27",
+      "politica": "rolling_cv_baja_incidencia_v1"
+    },
+    {
+      "tipo": "politica",
+      "id": "otras_hepatitis_b17",
+      "politica": "rolling_cv_baja_incidencia_v1"
+    },
+    {
+      "tipo": "politica",
+      "id": "reumatica_i00",
+      "politica": "rolling_cv_baja_incidencia_v1"
+    },
+    {
+      "tipo": "politica",
+      "id": "rotavirus_a080",
+      "politica": "rolling_cv_baja_incidencia_v1"
+    }
+  ],
+  "evidencia": "Propuestas nominales presentadas en el chat: runs/alta10b_root_20261112/DECISIONES_AUTOR_A6_B2.md sha256 f77b3aea72236a30f5830a134d84e0add2acbd62037e6097b8527f9f94afd286; PROPUESTA_POLITICAS_B14_FINAL.md sha256 188e0235b57576971901e47f8bfe2fcf20cf3709ad37841b50e377e0e5130170. Autoriza seis controles exactos tras rechazo y política para dieciséis; no autoriza controles de futuros rechazos."
+}

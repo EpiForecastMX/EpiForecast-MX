@@ -1443,7 +1443,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1468,7 +1469,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1494,6 +1496,9 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (A6, 12-nov-2026).
+    # Nunca como validado.
+    acceptance_fallback_run: salmonelosis_a02_benchmark_test_75d53be6359d_87e5e12dc46a
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1546,7 +1551,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1572,6 +1578,9 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (A6, 12-nov-2026).
+    # Nunca como validado.
+    acceptance_fallback_run: tifoidea_a01_benchmark_test_4510e3cd424e_28c71501a392
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1684,6 +1693,9 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (A6, 12-nov-2026).
+    # Nunca como validado.
+    acceptance_fallback_run: escarlatina_a38_benchmark_test_fd6d4b0c510d_57d3b1ad9b6a
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1882,7 +1894,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1907,7 +1920,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1933,6 +1947,9 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (A6, 12-nov-2026).
+    # Nunca como validado.
+    acceptance_fallback_run: hepatitis_c_b17_benchmark_test_dc3594e102bf_63c4ba3b7395
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2038,7 +2055,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2128,6 +2146,9 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (A6, 12-nov-2026).
+    # Nunca como validado.
+    acceptance_fallback_run: displasia_severa_n87_benchmark_test_c9f925d40d4c_ab071604cd0a
     sex_breakdown: false
     prophet_grid_key: null
     deepar_grid_key: null
@@ -2248,6 +2269,9 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
+    # Gate de 2025 rechazado; el autor autorizó publicar el control estacional (A6, 12-nov-2026).
+    # Nunca como validado.
+    acceptance_fallback_run: desnutricion_leve_e441_benchmark_test_6b07ee8c6316_dd8194504c84
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2272,7 +2296,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2297,7 +2322,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2324,7 +2350,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2349,7 +2376,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2374,7 +2402,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2401,7 +2430,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2426,7 +2456,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2451,7 +2482,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2476,7 +2508,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2501,7 +2534,8 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
