@@ -8,8 +8,9 @@ Para cada id (subcarpetas de <base>/model/), todo se verifica en los manifiestos
             refit_summary.provenance.acceptance_run_id/acceptance_digest = ese test y el sha256 de su
             acceptance.json; y un forecast_h52 con manifest succeeded, mismo dataset y
             lineage.refit_run_id = ese refit;
-  control   accepted=False y autorización estructurada (scripts/autoridad.py) de control para ese
-            test_run; se registra el archivo y su sha256;
+  control   accepted=False, autorización estructurada (scripts/autoridad.py) de control para ese
+            test_run y, como un aceptado, refit y forecast succeeded ligados al rechazo (la autorización sola
+            no hace publicable); se registra el archivo y su sha256;
   rechazado accepted=False sin autorización: queda configured, sin release;
   pendiente sin prueba, con varias aperturas, o con linaje incompleto (motivo explícito).
 Uso: lista_publicables.py [--json salida]. Env: ALTA10B_BASE, ALTA10B_RUNS.
@@ -53,40 +54,43 @@ def evaluar(i: str) -> tuple[str, dict]:
     if acc.get('provenance', {}).get('run_id') != tr:
         return 'pendiente', {'id': i, 'motivo': f'{tr}: acceptance.json de otro run'}
     ds = mt['dataset_id']
-    if acc['accepted']:
-        dig = hashlib.sha256(open(acc_p, 'rb').read()).hexdigest()
-        refits = []
-        for p in glob.glob(f'{RUNS}/{i}_refit_final_*'):
-            r = os.path.basename(p); rok, rm = _ok(r)
-            prov = _j(f'{p}/refit_summary.json').get('provenance', {}) if os.path.exists(f'{p}/refit_summary.json') else {}
-            if rok and rm['dataset_id'] == ds and prov.get('acceptance_run_id') == tr and prov.get('acceptance_digest') == dig:
-                refits.append(r)
-        if len(refits) != 1:
-            return 'pendiente', {'id': i, 'motivo': f'aceptado con {len(refits)} refits ligados a {tr}'}
-        fcs = []
+    dig = hashlib.sha256(open(acc_p, 'rb').read()).hexdigest()
+    refits = []
+    for p in glob.glob(f'{RUNS}/{i}_refit_final_*'):
+        r = os.path.basename(p); rok, rm = _ok(r)
+        prov = _j(f'{p}/refit_summary.json').get('provenance', {}) if os.path.exists(f'{p}/refit_summary.json') else {}
+        if rok and rm['dataset_id'] == ds and prov.get('acceptance_run_id') == tr and prov.get('acceptance_digest') == dig:
+            refits.append(r)
+    fcs = []
+    if len(refits) == 1:
         for p in glob.glob(f'{RUNS}/{i}_forecast_h52_*'):
             f = os.path.basename(p); fok, fm = _ok(f)
             lin = _j(f'{p}/lineage.json') if os.path.exists(f'{p}/lineage.json') else {}
             if fok and fm['dataset_id'] == ds and lin.get('refit_run_id') == refits[0]:
                 fcs.append(f)
-        if len(fcs) != 1:
-            return 'pendiente', {'id': i, 'motivo': f'aceptado con {len(fcs)} forecasts ligados a {refits[0]}'}
+    ligado = len(refits) == 1 and len(fcs) == 1
+    if acc['accepted']:
+        if not ligado:
+            return 'pendiente', {'id': i, 'motivo': f'aceptado con {len(refits)} refits y {len(fcs)} forecasts ligados a {tr}'}
         motores = _j(f'{RUNS}/{refits[0]}/refit_summary.json').get('engines', {})
         tipo = 'aceptado_control_only' if set(motores) == {'seasonal_naive_lag52'} else 'aceptado'
         return 'publicable', {'id': i, 'tipo': tipo, 'test_run': tr, 'dataset_id': ds,
                               'refit_run': refits[0], 'forecast_run': fcs[0], 'acceptance_sha256': dig}
     aut = autoridad.autoriza(B, 'control', i, tr)
-    if aut:
+    if aut and ligado:
         return 'publicable', {'id': i, 'tipo': 'control', 'test_run': tr, 'dataset_id': ds, 'autorizacion': aut,
-                              'acceptance_sha256': hashlib.sha256(open(acc_p, 'rb').read()).hexdigest()}
+                              'refit_run': refits[0], 'forecast_run': fcs[0], 'acceptance_sha256': dig}
+    if aut:
+        return 'pendiente', {'id': i, 'motivo': f'control autorizado sin refit y forecast ligados a {tr}'}
     return 'rechazado', {'id': i, 'test_run': tr, 'fallas': [c['scope'] for c in acc['checks'] if not c['passed']],
                          'control_autorizado': False}
 
 
 def main() -> dict:
     out = {'publicables': [], 'rechazados': [], 'pendientes': []}
-    for d in sorted(glob.glob(f'{B}/model/*/')):
-        k, v = evaluar(os.path.basename(d.rstrip('/')))
+    ids = sorted({os.path.basename(d.rstrip('/')).removeprefix('ctrl_') for d in glob.glob(f'{B}/model/*/')})
+    for i in ids:
+        k, v = evaluar(i)
         out[{'publicable': 'publicables', 'rechazado': 'rechazados', 'pendiente': 'pendientes'}[k]].append(v)
     out['autorizaciones_rechazadas'] = autoridad.cargar(B)[1]
     return out

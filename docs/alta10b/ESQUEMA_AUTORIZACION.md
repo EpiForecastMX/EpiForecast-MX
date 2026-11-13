@@ -1,8 +1,8 @@
 # Esquema de autorizaciones nominales del autor (alta10b)
 
-Única fuente de autoridad para políticas y controles: archivos JSON en
+Registro para las herramientas de las autorizaciones del autor (políticas y controles): archivos JSON en
 `/tmp/epiforecast-alta10b-20261112/autorizaciones/<nombre>.json`, validados por `scripts/autoridad.py`.
-Ningún `.md` (propuestas, resúmenes, ejemplos en bloques de código) ni archivo vacío (`.ok`) autoriza nada.
+La autorización vale por la respuesta del autor (en el chat); el JSON la registra para que las herramientas la consuman, sin crear ni revocar permisos. Las herramientas no leen `.md` (propuestas, resúmenes, ejemplos en bloques de código) ni archivos vacíos (`.ok`).
 
 Root escribe un archivo por respuesta del usuario, con la pregunta y la respuesta **literales**. El
 validador no autentica a una persona (root no inventa respuestas ni firmas): sólo impide que un texto
@@ -28,4 +28,4 @@ invalidan el archivo completo. Una autorización parcial se expresa listando só
 Consumidores: `model_dev.sh` y `model_test.sh` (política distinta de `rolling_cv_v1`),
 `lista_publicables.py` (control). Comprobar a mano: `python3 scripts/autoridad.py lista`.
 
-Estado actual: no hay ninguna autorización de política ni de control para este lote.
+Estado (13-nov-2026): registro `autor_A6_B2_B14_20261112.json` con seis controles y dieciséis políticas; ver `AUTORIZACION_A6_B2_B14.md`.

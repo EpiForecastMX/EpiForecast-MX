@@ -36,6 +36,10 @@ SC=$($PY -c "import json;print(json.load(open('runs/$SEL/run_manifest.json'))['c
 $PY $B/scripts/guarda_aprobacion.py $B/FABLE_PLAN_APPROVED.md $AP "$id" "$DS" "$hr" "$pol" "$SEL" \
     || alto "APROBACION NOMINAL ausente o distinta de la identidad congelada" 10
 
+# --- orden fijo y tope de cuatro aceptados (sólo los dieciséis de B2/B14) -------------------
+if grep -q "\"id\": \"$id\"" $B/MANIFIESTO_SELECCIONES_16.json 2>/dev/null; then
+  $PY $B/scripts/guarda_orden.py "$id" "$PWD/runs" "$B" | tee -a $L/registro.txt; [ "${PIPESTATUS[0]}" = "0" ] || alto "orden o tope" 12
+fi
 # --- P4 identidad -------------------------------------------------------------------------
 h1=$(shasum -a 256 $B/extract/$P1/${id}_boletin.csv | cut -c1-64); h2=$(shasum -a 256 $B/extract/$P2/${id}_boletin.csv | cut -c1-64)
 [ "$h1" = "$h2" ] && [ "$h1" = "$hr" ] || alto "DETERMINISMO/RAW NO VERIFICADO $h1 $h2 $hr" 8
