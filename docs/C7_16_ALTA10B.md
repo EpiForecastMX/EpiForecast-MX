@@ -46,12 +46,16 @@ hepatitis B, rotavirus, absceso hepático y leptospirosis) no se abrieron. Los c
 portafolios reales (bases con lag52: 9, 20, 7 y 3 de 64; candidato distinto del control en el gate, no
 CONTROL_ONLY). Releases: `ascariasis_b77_release_f1406e8ab382`, `hepatitis_a_b15_release_6181173f5150`,
 `calor_t67_release_39efd657d7d7`, `otras_hepatitis_b17_release_08de6f7ff77b`; validación prospectiva 0/4
-(W43 a W46 de 2026), emitidos antes del boletín 44.
+(W43 a W46 de 2026). Se emitieron antes de que existiera el boletín 44: es prospectiva respecto de la
+información publicada, no del calendario (al emitir, W43 y W44 ya habían concluido y W45 estaba en curso).
+Aceptar significa no empeorar al control más de lo que permite la regla (5 % en bases y en el conjunto, 10 %
+en el nacional); no es un error absoluto bajo: el sMAPE de las series por estado de estos portafolios en 2025
+va de 65 a 98, y no califica precisión clínica.
 
 **Paridad semanal.** Consolidado vigente de W42: `ingestion_observado_W43/candidato_con_alta10b`
 (sha256 `be7abfa5…`), sobre `candidato_con_alta10b_controles6` (`c86ba374…`) y éste sobre
-`candidato_con_alta20_controles10` (`fad3c95c…`), sólo añadiendo filas: 65 padecimientos, todos en 2026-W43,
-sin problemas de cobertura. Es la base de la semana siguiente.
+`candidato_con_alta20_controles10` (`fad3c95c…`), sólo añadiendo filas: 65 padecimientos, todos con corte en la semana fuente 2026-W43
+(boletín 43; semana objetivo observada 2026-W42), sin problemas de cobertura. Es la base de la semana siguiente.
 
 **Notas de las fichas.** Hepatitis C hereda dos picos aislados impresos en el boletín (Ciudad de México
 2026-W04, 83 casos; Morelos 2026-W38, 124), fieles a la fuente y señalados en su página. Salmonelosis y

@@ -36,7 +36,7 @@ analiza (el ruff del CI sólo revisa `src/`, `tests/` y scripts nombrados; el ho
 
     PYTHONPATH=<repo>/src:<repo> <venv>/bin/python -m pytest docs/alta10b/operacion/tests -q
 
-84 pruebas; incluyen mutantes de las guardas revisadas por Fable (dictámenes en `../revisiones/`).
+91 pruebas; incluyen mutantes de las guardas revisadas por Fable (dictámenes en `../revisiones/`).
 `SHA256SUMS` registra los archivos de esta carpeta.
 
 ## Recuperación

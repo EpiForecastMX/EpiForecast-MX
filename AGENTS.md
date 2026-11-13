@@ -35,8 +35,8 @@ Publicados: 65 en el sitio y 61 del runner (diez nuevos con alta10b: cuatro acep
 2025 con cinco motores, ascariasis, hepatitis vírica A, efectos del calor y de la luz y otras hepatitis
 víricas, 0/4 en curso; y seis controles estacionales no validados por autorización A6, desnutrición leve,
 otras salmonelosis, fiebre tifoidea, escarlatina, hepatitis vírica C y displasia severa sin sexo). Los
-dieciséis candidatos se abrieron en orden fijo con tope de cuatro: cinco rechazados quedan `configured` sin
-control y siete no se abrieron. Ningún rechazo futuro tiene control autorizado. Base semanal de W42:
+dieciséis candidatos llegaron a selección congelada; en orden fijo y con tope de cuatro se abrieron nueve
+pruebas de 2025: cuatro aceptadas, cinco rechazadas (quedan `configured` sin control) y siete sin abrir. Ningún rechazo futuro tiene control autorizado. Base semanal de W42:
 `ingestion_observado_W43/candidato_con_alta10b` (sha256 `be7abfa5…`). Guía: `docs/C7_16_ALTA10B.md`.
 
 ## Checkpoint — alta10b en publicación — 12/13-nov-2026
