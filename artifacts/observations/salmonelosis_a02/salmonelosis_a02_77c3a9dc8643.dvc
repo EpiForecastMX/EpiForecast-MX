@@ -1,0 +1,6 @@
+outs:
+- md5: d474db96e3bcf63431d7b35a82aa8ff8.dir
+  size: 32576768
+  nfiles: 20
+  hash: md5
+  path: salmonelosis_a02_77c3a9dc8643
