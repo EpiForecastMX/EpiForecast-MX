@@ -166,6 +166,7 @@ def test_cie_map():
         "B69": "Cisticercosis",
         "B75": "Triquinosis",
         "A67": "Mal del pinto",
+        "J09": "Influenza",
     }
 
 

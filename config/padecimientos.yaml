@@ -2734,3 +2734,33 @@ padecimientos:
       color: "#155E75"
       label: "Mal del pinto"
       nombre_completo: "Mal del pinto (A67)"
+
+  - id: influenza_j09
+    # Rótulo del boletín «Influenza§», CIE J09-J11 (Cuadro 3.6). § = Sistema Especial de
+    # Vigilancia Epidemiológica, información preliminar de casos confirmados por RT-PCR; desde 2025
+    # & = Unidades de Salud Monitoras de Enfermedad Respiratoria Viral (USMER). No son casos
+    # probables: el acumulado se revisa con confirmaciones tardías (ver QA_influenza_j09.md).
+    data_name: "Influenza"
+    artifact_key: Influenza_J09
+    slug: influenza_j09
+    display_name: "Influenza"
+    cie_codes: ["J09", "J10", "J11"]
+    aliases: ["influenza", "gripe", "j09", "j10", "j11"]
+    # Agudo infeccioso en conteos, sin traits legacy (precedente: brucelosis_a23, rotavirus_a080).
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20c_influenza_j09
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#1D4ED8"
+      label: "Influenza"
+      nombre_completo: "Influenza (J09-J11)"

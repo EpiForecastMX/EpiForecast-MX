@@ -1870,3 +1870,47 @@ cuadro_groups:
         has_prev_year: true
     n_states_expected: 32
     backend: camelot_stream
+
+  alta20c_influenza_j09:
+    # Influenza (J09-J11): último bloque del Cuadro 3.6 (Prevenibles por vacunación), con
+    # parotiditis infecciosa (B26) en el primero; 8 columnas (4 + 4) en 2014_sem02-2026_sem43
+    # (pdftotext, 669 boletines). El título lleva una excepción nominal: «… hasta la semana
+    # epidemiológica N-1 …; Influenza hasta la N [del AAAA]»: el bloque de influenza llega hasta la
+    # semana del boletín (rezago 0 en los 658 títulos legibles; los 12 sin título en el texto se
+    # contrastan por acumulado). Desde 2015_sem52 el rótulo lleva «§» (sistema especial, casos
+    # confirmados preliminares) y desde 2025 además «&» (USMER). «influenza» sola coincide con el
+    # Cuadro 3.3 (Haemophilus influenzae): se ancla con el código. NO modifica alta20_parotiditis_b26.
+    page_anchors: ["influenza", "j09"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 0
+    last_block_columns: {8: 4}
+    diseases:
+      - id: influenza_j09
+        keyword: "Influenza_J09"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [influenza_j09]
+        reason: >-
+          otro cuadro y otra desagregación: Cuadro 5.2 (respiratorias) con «Influenza (A H1N1)» J09
+          (Sem 69, acumulado 28+41) e «Influenza Estacional» J10-J11 sólo con acumulado (12+12), sin
+          columna Sem del bloque J09-J11; la suma 93 cuadra con 2014_sem02 (acumulado 556 menos Sem
+          463). Sin keep_period: es el primer periodo y no hay base causal para imputarlo
+      - file: "2022_sem13.pdf"
+        diseases: [influenza_j09]
+        keep_period: true
+        reason: >-
+          fallo del extractor, no de la fuente: el renglón de Zacatecas se imprime encimado con
+          el TOTAL (pdftotext: «271 50 / 546 55 / 767»); camelot desplaza las columnas del bloque
+          y lee Sem 0 en 31 entidades y el TOTAL (27, 546, 767) como Zacatecas. El TOTAL impreso
+          (Sem 27; acumulado 546+767, que menos 526+760 de 2022_sem12 da 27) es legible: corregirlo
+          exige código del extractor; mientras, se conserva el periodo imputado
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
