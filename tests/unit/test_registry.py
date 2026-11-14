@@ -160,6 +160,7 @@ def test_cie_map():
         "T67": "Efectos del calor y de la luz",
         "A06.4": "Absceso hepático amebiano",
         "E01": "Bocio endémico",
+        "A37": "Tos ferina",  # alta20c, configured
     }
 
 

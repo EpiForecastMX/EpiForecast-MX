@@ -1665,3 +1665,34 @@ cuadro_groups:
         has_prev_year: true
     n_states_expected: 32
     backend: camelot_stream
+
+  alta20c_tos_ferina_a37:
+    # Tos ferina (A37; «Tos Ferina» en 2014): primer bloque del Cuadro 3.2 de prevenibles por
+    # vacunación, con meningitis meningocócica (A39.0), 8 columnas en 2014_sem02-2026_sem43
+    # (pdftotext, 669 boletines; página 13 del boletín 43). En 2014_sem01 es el último bloque del
+    # Cuadro 3.1, con tétanos neonatal (A33), también de 8 columnas y con columna Sem de la semana 1.
+    # RETRASO 0 en todos los boletines: el título dice «Tos ferina hasta la N» (2014) o «hasta la
+    # semana epidemiológica N» (Cuadro 3.2 entero) en el boletín N.
+    # Anclas: el Cuadro 1 imprime «Tos ferina A37» sin estados; ninguna otra página con estados
+    # contiene ambas.
+    page_anchors: ["ferina", "a37"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 0
+    last_block_columns: {8: 4}
+    periodos:
+      - desde: "2014_sem02"
+        last_block_columns: null
+        first_block_columns: {8: 4}
+    diseases:
+      - id: tos_ferina_a37
+        keyword: "Tos_Ferina_A37"
+        block_index: 0
+        onboard: true
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
