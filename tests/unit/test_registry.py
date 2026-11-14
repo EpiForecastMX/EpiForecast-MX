@@ -167,6 +167,7 @@ def test_cie_map():
         "B75": "Triquinosis",
         "A67": "Mal del pinto",
         "J09": "Influenza",
+        "U99": "Síndrome coqueluchoide",
     }
 
 

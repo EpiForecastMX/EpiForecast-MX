@@ -1914,3 +1914,35 @@ cuadro_groups:
         has_prev_year: true
     n_states_expected: 32
     backend: camelot_stream
+
+  alta20c_coqueluchoide_u99:
+    # Síndrome coqueluchoide (U99), Vigilancia sindromática. Siempre es el ÚLTIMO bloque de su
+    # página (pdftotext, 670 boletines): 2014_sem02-2017_sem01 en el Cuadro 12.2, tras parálisis
+    # flácida aguda (8 columnas); desde 2017_sem02 en la única página 12.1, tras U97 y U98 (12).
+    # Rezago impreso 0 CONSTANTE (QA, 669 boletines con página; 2014_sem01 excluido): el título de su
+    # página dice «hasta la semana epidemiológica N» en el boletín N (Cuadro 12.2 hasta 2017_sem01,
+    # 12.1 después; 657 por texto y 12 de 2025-2026 leídos de la imagen del título, que pdftotext no
+    # extrae). El «hasta la 9; Enfermedad Febril Exantemática hasta la 10» de 2014 es el título del
+    # Cuadro 12.1 (U97), no el de U99.
+    # «coqueluch» sola aparece en otras páginas (tos ferina): se ancla con el código.
+    page_anchors: ["u99", "coqueluch"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 0
+    last_block_columns: {8: 4, 12: 4}
+    diseases:
+      - id: coqueluchoide_u99
+        keyword: "Coqueluchoide_U99"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [coqueluchoide_u99]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream

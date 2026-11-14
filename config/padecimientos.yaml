@@ -2764,3 +2764,29 @@ padecimientos:
       color: "#1D4ED8"
       label: "Influenza"
       nombre_completo: "Influenza (J09-J11)"
+
+  - id: coqueluchoide_u99
+    data_name: "Síndrome coqueluchoide"
+    artifact_key: Coqueluchoide_U99
+    slug: coqueluchoide_u99
+    display_name: "Síndrome coqueluchoide"
+    cie_codes: ["U99"]
+    # Sin «tos ferina» ni «pertussis»: A37 es otro bloque del boletín y otro candidato.
+    aliases: ["sindrome coqueluchoide", "coqueluchoide", "u99"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20c_coqueluchoide_u99
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#5B21B6"
+      label: "Síndrome coqueluchoide"
+      nombre_completo: "Síndrome coqueluchoide (U99)"
