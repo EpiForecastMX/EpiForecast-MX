@@ -2601,3 +2601,136 @@ padecimientos:
       color: "#155E75"
       label: "Tos ferina"
       nombre_completo: "Tos ferina (A37)"
+
+  - id: toxoplasmosis_b58
+    data_name: "Toxoplasmosis"
+    artifact_key: Toxoplasmosis_B58
+    slug: toxoplasmosis_b58
+    display_name: "Toxoplasmosis"
+    cie_codes: ["B58"]
+    aliases: ["toxoplasmosis", "b58"]
+    # Perfil: infección de curso agudo, de muy baja incidencia; los perfiles sólo cambian la cohorte
+    # (los traits del runner son idénticos), como las zoonosis de alta10b.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20c_toxoplasmosis_b58
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#854D0E"
+      label: "Toxoplasmosis"
+      nombre_completo: "Toxoplasmosis (B58)"
+
+  - id: teniasis_b68
+    data_name: "Teniasis"
+    artifact_key: Teniasis_B68
+    slug: teniasis_b68
+    display_name: "Teniasis"
+    cie_codes: ["B68"]
+    aliases: ["teniasis", "taeniasis", "b68"]
+    # Perfil: infección de curso agudo, de muy baja incidencia; los perfiles sólo cambian la cohorte
+    # (los traits del runner son idénticos), como las zoonosis de alta10b.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20c_teniasis_b68
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#3F6212"
+      label: "Teniasis"
+      nombre_completo: "Teniasis (B68)"
+
+  - id: cisticercosis_b69
+    data_name: "Cisticercosis"
+    artifact_key: Cisticercosis_B69
+    slug: cisticercosis_b69
+    display_name: "Cisticercosis"
+    cie_codes: ["B69"]
+    aliases: ["cisticercosis", "b69"]
+    # Perfil: infección de curso crónico; los perfiles sólo cambian la cohorte (traits idénticos).
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: alta20c_cisticercosis_b69
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#166534"
+      label: "Cisticercosis"
+      nombre_completo: "Cisticercosis (B69)"
+
+  - id: triquinosis_b75
+    data_name: "Triquinosis"
+    artifact_key: Triquinosis_B75
+    slug: triquinosis_b75
+    display_name: "Triquinosis"
+    cie_codes: ["B75"]
+    aliases: ["triquinosis", "triquinelosis", "b75"]
+    # Perfil: infección de curso agudo, de muy baja incidencia; los perfiles sólo cambian la cohorte
+    # (los traits del runner son idénticos), como las zoonosis de alta10b.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20c_triquinosis_b75
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#7F1D1D"
+      label: "Triquinosis"
+      nombre_completo: "Triquinosis (B75)"
+
+  - id: mal_del_pinto_a67
+    data_name: "Mal del pinto"
+    artifact_key: Mal_Del_Pinto_A67
+    slug: mal_del_pinto_a67
+    display_name: "Mal del pinto"
+    cie_codes: ["A67"]
+    aliases: ["mal del pinto", "a67"]
+    # Perfil: infección de curso crónico; los perfiles sólo cambian la cohorte (traits idénticos).
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: alta20c_mal_del_pinto_a67
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#155E75"
+      label: "Mal del pinto"
+      nombre_completo: "Mal del pinto (A67)"

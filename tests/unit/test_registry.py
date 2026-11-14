@@ -161,6 +161,11 @@ def test_cie_map():
         "A06.4": "Absceso hepático amebiano",
         "E01": "Bocio endémico",
         "A37": "Tos ferina",  # alta20c, configured
+        "B58": "Toxoplasmosis",
+        "B68": "Teniasis",
+        "B69": "Cisticercosis",
+        "B75": "Triquinosis",
+        "A67": "Mal del pinto",
     }
 
 

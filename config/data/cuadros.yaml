@@ -1709,3 +1709,164 @@ cuadro_groups:
         has_prev_year: true
     n_states_expected: 32
     backend: camelot_stream
+
+  alta20c_toxoplasmosis_b58:
+    # Toxoplasmosis (B58). Cambia de cuadro (pdftotext, los 670 boletines):
+    # 2014_sem02-2017_sem01 bloque intermedio del Cuadro 10.2 (tripanosomiasis americana B57,
+    # toxoplasmosis B58, meningoencefalitis amebiana primaria B60.2): 11 columnas hasta 2015_sem01,
+    # con toxoplasmosis sin año anterior (3), y 12 después. Desde 2017_sem02 primer bloque del
+    # Cuadro 10.3, con meningoencefalitis amebiana primaria (8 columnas).
+    # Se ancla con los dos códigos: la página de resumen nacional también nombra «Toxoplasmosis».
+    page_anchors: ["toxoplasm", "b58", "b60.2"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    inner_block_columns: {12: [8, 4], 11: [7, 3]}
+    periodos:
+      - desde: "2017_sem02"
+        inner_block_columns: null
+        first_block_columns: {8: 4}
+    diseases:
+      - id: toxoplasmosis_b58
+        keyword: "Toxoplasmosis_B58"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [toxoplasmosis_b58]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20c_teniasis_b68:
+    # Teniasis (B68): primer bloque del Cuadro 8.1 de zoonosis (teniasis B68, cisticercosis B69,
+    # triquinosis B75), 12 columnas en 2014_sem02-2026_sem43 (pdftotext, los 670 boletines).
+    page_anchors: ["teniasis", "cisticerc", "b69"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {12: 4}
+    diseases:
+      - id: teniasis_b68
+        keyword: "Teniasis_B68"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [teniasis_b68]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20c_cisticercosis_b69:
+    # Cisticercosis (B69): bloque intermedio del Cuadro 8.1 de zoonosis (teniasis B68,
+    # cisticercosis B69, triquinosis B75), 12 columnas en 2014_sem02-2026_sem43 (pdftotext).
+    page_anchors: ["teniasis", "cisticerc", "b69"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    inner_block_columns: {12: [8, 4]}
+    diseases:
+      - id: cisticercosis_b69
+        keyword: "Cisticercosis_B69"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [cisticercosis_b69]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2016_sem20.pdf"
+        diseases: [cisticercosis_b69]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes, cardiovasculares
+          y rotavirus en este boletín): semana 3/57/9 y acumulado 91/907/106 con año anterior
+          75/987/87 (semanas 19/20/21); el acumulado salta y vuelve. El PDF lo imprime así (p. 34)
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20c_triquinosis_b75:
+    # Triquinosis (B75): último bloque del Cuadro 8.1 de zoonosis (teniasis B68, cisticercosis B69,
+    # triquinosis B75), 12 columnas en 2014_sem02-2026_sem43 (pdftotext). 2016_sem47 trae en la
+    # página 7 una nota editorial sobre triquinosis con nombres de estados: se ancla con los tres
+    # nombres del cuadro y el código.
+    page_anchors: ["teniasis", "cisticerc", "triquinosis", "b75"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    last_block_columns: {12: 4}
+    diseases:
+      - id: triquinosis_b75
+        keyword: "Triquinosis_B75"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [triquinosis_b75]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20c_mal_del_pinto_a67:
+    # Mal del pinto (A67): primer bloque del Cuadro 10 (mal del pinto A67, tuberculosis otras
+    # formas, lepra A30). 11 columnas hasta 2015_sem01, con mal del pinto sin año anterior (3), y 12
+    # después. Rezago impreso 1 en los 670 boletines: hasta 2020 por el título general («hasta la
+    # semana N-1») y desde 2021_sem01 por la excepción del título («Mal del Pinto hasta la semana
+    # N-1»), aunque el resto del cuadro pase a N. Se ancla con los códigos (notas editoriales de
+    # lepra en 2016_sem09 y 2023_sem29).
+    page_anchors: ["pinto", "a67", "a30"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {11: 3, 12: 4}
+    diseases:
+      - id: mal_del_pinto_a67
+        keyword: "Mal_Del_Pinto_A67"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [mal_del_pinto_a67]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2016_sem20.pdf"
+        diseases: [mal_del_pinto_a67]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes, cardiovasculares
+          y rotavirus en este boletín): semana 3/7/5 y acumulado 101/291/114 con año anterior
+          95/371/107 (semanas 19/20/21); el acumulado salta y vuelve. El PDF lo imprime así (p. 36)
+      - file: "2023_sem25.pdf"
+        diseases: [mal_del_pinto_a67]
+        keep_period: true
+        reason: >-
+          fallo del extractor, no de la fuente: el PDF (p. 40) trae las 32 entidades, pero el renglón
+          de Aguascalientes imprime 11 celdas (falta la Sem de tuberculosis otras formas) y camelot
+          lo pierde aun con edge_tol y página completa (31 entidades). Mal del pinto en Aguascalientes
+          es «- 3 2 3» y el TOTAL «3 49 86 138»; se imputa la semana objetivo 2023-W24 (desarrollo)
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
