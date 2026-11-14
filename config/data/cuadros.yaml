@@ -1689,6 +1689,19 @@ cuadro_groups:
         keyword: "Tos_Ferina_A37"
         block_index: 0
         onboard: true
+    source_exclusions:
+      - file: "2014_sem14.pdf"
+        diseases: [tos_ferina_a37]
+        keep_period: true
+        reason: >-
+          bloque reimpreso: Sem y acumulados H/M de las 32 entidades idénticos a 2014_sem13 (TOTAL 29 51 52)
+          con Sem > 0 y acumulado sin cambio; la columna de año anterior sí avanza (85 → 144)
+      - file: "2024_sem32.pdf"
+        diseases: [tos_ferina_a37]
+        keep_period: true
+        reason: >-
+          bloque reimpreso: Sem y acumulados H/M de las 32 entidades idénticos a 2024_sem31 (TOTAL 24 113 110)
+          con Sem > 0 y acumulado sin cambio; 2024_sem33 imprime Sem 0 con el mismo acumulado
     layout_variants:
       - id: v_4col_prev
         min_year_week: "0000_sem00"
