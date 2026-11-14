@@ -2790,3 +2790,111 @@ padecimientos:
       color: "#5B21B6"
       label: "Síndrome coqueluchoide"
       nombre_completo: "Síndrome coqueluchoide (U99)"
+
+  - id: paratifoidea_a011
+    data_name: "Fiebre paratifoidea"
+    artifact_key: Paratifoidea_A011
+    slug: paratifoidea_a011
+    display_name: "Fiebre paratifoidea"
+    # Rótulo vigente de la fuente (desde 2024_sem06): «A01.1 - A01.4». En 2014_sem02-2017_sem01 y
+    # 2018_sem14-2024_sem05 imprimía sólo «A01.1» (ver QA_paratifoidea_a011.md).
+    cie_codes: ["A01.1", "A01.2", "A01.3", "A01.4"]
+    aliases: ["fiebre paratifoidea", "paratifoidea", "a01.1"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20c_paratifoidea_a011
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#B45309"
+      label: "Fiebre paratifoidea"
+      nombre_completo: "Fiebre paratifoidea (A01.1-A01.4)"
+
+  - id: conjuntivitis_hemorragica_b303
+    data_name: "Conjuntivitis epidémica aguda hemorrágica"
+    artifact_key: Conjuntivitis_Hemorragica_B303
+    slug: conjuntivitis_hemorragica_b303
+    display_name: "Conjuntivitis epidémica aguda hemorrágica"
+    cie_codes: ["B30.3"]
+    # Sin «conjuntivitis» a secas: es alias de conjuntivitis_h10 (H10), ya publicado.
+    aliases: ["conjuntivitis epidemica aguda hemorragica", "conjuntivitis hemorragica", "conjuntivitis aguda hemorragica", "b30.3"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20c_conjuntivitis_hemorragica_b303
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#BE185D"
+      label: "Conjuntivitis epidémica aguda hemorrágica"
+      nombre_completo: "Conjuntivitis epidémica aguda hemorrágica (B30.3)"
+
+  - id: tracoma_a71
+    data_name: "Tracoma"
+    artifact_key: Tracoma_A71
+    slug: tracoma_a71
+    display_name: "Tracoma"
+    cie_codes: ["A71"]
+    aliases: ["tracoma", "a71"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20c_tracoma_a71
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#4338CA"
+      label: "Tracoma"
+      nombre_completo: "Tracoma (A71)"
+
+  - id: sindrome_meningeo_g00
+    data_name: "Síndrome meníngeo"
+    artifact_key: Sindrome_Meningeo_G00
+    slug: sindrome_meningeo_g00
+    display_name: "Síndrome meníngeo"
+    # Rótulo de la fuente desde 2018_sem15: «G00-G03 excepto G00.0 y G00.1»; antes «excepto G00.0 y
+    # G01» y, hasta 2017_sem01, con el nombre «Meningitis» (ver QA_sindrome_meningeo_g00.md).
+    cie_codes: ["G00.2", "G00.3", "G00.8", "G00.9", "G01", "G02", "G03"]
+    # Sin «meningitis» a secas: abarcaría la tuberculosa (A17.0) y la meningocócica (A39.0), que el
+    # boletín vigila en otros cuadros.
+    aliases: ["sindrome meningeo", "g00-g03"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20c_sindrome_meningeo_g00
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # Bloque presente desde 2014 (como «Meningitis»): 364 semanas objetivo antes de 2021-W01 (ver QA).
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#0E7490"
+      label: "Síndrome meníngeo"
+      nombre_completo: "Síndrome meníngeo (G00-G03, excepto G00.0 y G00.1)"

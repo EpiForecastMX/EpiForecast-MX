@@ -1946,3 +1946,155 @@ cuadro_groups:
         has_prev_year: true
     n_states_expected: 32
     backend: camelot_stream
+
+  alta20c_paratifoidea_a011:
+    # Fiebre paratifoidea. pdftotext (670 boletines): hasta 2024_sem05 es el ÚLTIMO bloque del
+    # Cuadro 4 (Cólera, Fiebre tifoidea, Paratifoidea); 11 columnas hasta 2015_sem01 (paratifoidea sin
+    # año anterior) y 12 desde 2015_sem02. Desde 2024_sem06 es el PRIMER bloque del Cuadro 4.1, con
+    # otras salmonelosis (8 columnas). Mismas fronteras que alta20_tifoidea_a01.
+    # Rótulo impreso: «A01.1» en 2014_sem02-2017_sem01 y 2018_sem14-2024_sem05; «A01.1-A01.4» en
+    # 2017_sem02-2018_sem13 y desde 2024_sem06 (ver QA: el nivel no salta en esas fronteras).
+    page_anchors: ["paratif", "a01.1"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1           # rezago impreso medido = 1 en los 670 boletines
+    last_block_columns: {11: 3, 12: 4}
+    periodos:
+      - desde: "2024_sem06"
+        last_block_columns: null
+        first_block_columns: {8: 4}
+    diseases:
+      - id: paratifoidea_a011
+        keyword: "Paratifoidea_A011"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [paratifoidea_a011]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2016_sem20.pdf"
+        diseases: [paratifoidea_a011]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes y
+          cardiovasculares en este boletín): semana 173/1 494/164 y acumulado 3 382/28 342/3 761 (semanas 19/20/21; TOTAL impreso); el acumulado salta y vuelve
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20c_conjuntivitis_hemorragica_b303:
+    # Conjuntivitis epidémica aguda hemorrágica (B30.3): ÚLTIMO bloque del Cuadro 10.1, tras hepatitis
+    # vírica C y otras hepatitis víricas. pdftotext: 11 columnas en 2014_sem02-2015_sem01
+    # (conjuntivitis sin año anterior) y 12 desde 2015_sem02. «b30.3» sola aparece desde 2021 en otra
+    # página sin tabla estatal: se ancla también por «b17.1».
+    page_anchors: ["b17.1", "b30.3"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1           # rezago impreso medido = 1 en los 669 boletines con página
+    last_block_columns: {11: 3, 12: 4}
+    diseases:
+      - id: conjuntivitis_hemorragica_b303
+        keyword: "Conjuntivitis_Hemorragica_B303"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [conjuntivitis_hemorragica_b303]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2016_sem20.pdf"
+        diseases: [conjuntivitis_hemorragica_b303]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes y
+          cardiovasculares en este boletín): semana 6/200/8 y acumulado 84/3 864/98 (semanas 19/20/21; TOTAL impreso); el acumulado salta y vuelve
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20c_tracoma_a71:
+    # Tracoma (A71): PRIMER bloque del Cuadro 11 en todos los boletines. pdftotext:
+    #   2014_sem02-2014_sem44  2 bloques sin año anterior (con leishmaniasis visceral): 6 columnas;
+    #   2014_sem45-2014_sem53  3 bloques sin año anterior (+ chikungunya): 9 columnas;
+    #   2015_sem01             3 bloques, sólo chikungunya con año anterior: 10 columnas;
+    #   2015_sem02-2017_sem01  3 bloques con año anterior: 12 columnas;
+    #   2017_sem02-2025_sem01  2 bloques (leishmaniasis; oncocercosis desde 2021): 8 columnas;
+    #   desde 2025_sem02       3 bloques (+ miasis): 12 columnas.
+    page_anchors: ["tracoma", "a71"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1           # rezago impreso medido = 1 en los 669 boletines con página
+    first_block_columns: {6: 3, 9: 3, 10: 3, 12: 4, 8: 4}
+    diseases:
+      - id: tracoma_a71
+        keyword: "Tracoma_A71"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [tracoma_a71]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2016_sem20.pdf"
+        diseases: [tracoma_a71]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes y
+          cardiovasculares en este boletín): acumulado 1/44/3 y año anterior 0/73/0 (semanas 19/20/21; TOTAL impreso); el acumulado salta y vuelve
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20c_sindrome_meningeo_g00:
+    # Síndrome meníngeo (G00-G03 excepto G00.0 y G00.1): PRIMER bloque del Cuadro 12 (vigilancia
+    # sindromática), con infección de vías urinarias; 8 columnas en 2014-2026 (pdftotext).
+    # Rótulo impreso: «Meningitis, G00-G03 excepto G00.0 y G01» en 2014_sem02-2017_sem01; «Síndrome
+    # Meníngeo» con la misma exclusión en 2017_sem02-2018_sem14; «excepto G00.0 y G00.1» desde
+    # 2018_sem15 (ver QA: comparabilidad).
+    page_anchors: ["urinarias", "g00"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1           # rezago impreso medido = 1 en los 670 boletines
+    first_block_columns: {8: 4}
+    diseases:
+      - id: sindrome_meningeo_g00
+        keyword: "Sindrome_Meningeo_G00"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [sindrome_meningeo_g00]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2014_sem02.pdf"
+        diseases: [sindrome_meningeo_g00]
+        reason: >-
+          guiones desplazados en la fuente: el PDF imprime guiones sueltos entre columnas del bloque
+          (Sem. y Acum. H pegados, p. ej. «- -» y «1 -»); camelot da 9 columnas y el bloque no se
+          puede recortar sin reparación de código. Legible a mano (TOTAL 8/3/5/15).
+      - file: "2014_sem03.pdf"
+        diseases: [sindrome_meningeo_g00]
+        reason: >-
+          guiones desplazados en la fuente, igual que 2014_sem02 (9 columnas en camelot).
+      - file: "2016_sem20.pdf"
+        diseases: [sindrome_meningeo_g00]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes y
+          cardiovasculares en este boletín): semana 5/0/11 y acumulado 252/6/275 (semanas 19/20/21; TOTAL impreso); el acumulado salta y vuelve
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream

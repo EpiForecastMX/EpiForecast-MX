@@ -168,6 +168,10 @@ def test_cie_map():
         "A67": "Mal del pinto",
         "J09": "Influenza",
         "U99": "Síndrome coqueluchoide",
+        "A01.1": "Fiebre paratifoidea",
+        "B30.3": "Conjuntivitis epidémica aguda hemorrágica",
+        "A71": "Tracoma",
+        "G00.2": "Síndrome meníngeo",
     }
 
 
