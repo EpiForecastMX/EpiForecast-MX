@@ -2,14 +2,19 @@
 boletines 2025_sem45..2026_sem43, rezago 1). Un «retiro» es una caída del acumulado impreso (H+M) de una entidad entre un
 boletín y el siguiente cuyo acumulado es del mismo año OBJETIVO (rezago 1: el boletín AAAA_sem01 trae la última semana del año anterior). Para cada uno: Sem impreso en el boletín previo a la caída, caída,
 fracción retirada de esa Sem (min(1, caída/Sem)), y el total nacional de esa semana (el control repite ambos 52 semanas
-después). Sólo lectura de los raws sellados de la observación. Uso: qa_retiros_ventana.py <id>... > tsv"""
-import csv, glob, sys
-sys.path.insert(0, '/tmp/epiforecast-alta20c-20261114/wt-ctl/src')
-from epiforecast.data import epi_calendar as ec
-B = '/tmp/epiforecast-alta20c-20261114'
+después). Sólo lectura de los raws sellados de la observación.
+Uso: qa_retiros_ventana.py --be <backend> <id>... > tsv   (por omisión, el backend que contiene este archivo)"""
+import argparse, csv, glob, sys
+from pathlib import Path
+ap = argparse.ArgumentParser()
+ap.add_argument('--be', default=str(Path(__file__).resolve().parents[3]), help='raíz del backend EpiForecast-MX')
+ap.add_argument('ids', nargs='+')
+args = ap.parse_args()
+sys.path.insert(0, f'{args.be}/src')
+from epiforecast.data import epi_calendar as ec  # noqa: E402
 print('\t'.join(['id', 'entidad', 'boletin', 'sem_impreso', 'acum', 'acum_siguiente', 'caida', 'fraccion_retirada', 'nacional_semana']))
-for d in sys.argv[1:]:
-    R = glob.glob(f'{B}/wt-ctl/artifacts/observations/{d}/*/inputs/data_raw_*.csv')[0]
+for d in args.ids:
+    R = glob.glob(f'{args.be}/artifacts/observations/{d}/*/inputs/data_raw_*.csv')[0]
     rows = list(csv.DictReader(open(R, encoding='utf-8')))
     f = lambda x: float(x) if x not in ('', None) else 0.0
     nat = {}

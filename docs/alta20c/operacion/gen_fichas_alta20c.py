@@ -120,6 +120,12 @@ def ajusta_semanas(s: str, lag: int) -> str:
     """Sustituye las dos expresiones por EpiEstadoFicha.semanaMas (MMWR) con el rezago del cuadro y sube la caché
     del ayudante a v=2 (que trae semanaMas). Falla cerrado si la plantilla ya no trae exactamente esas expresiones."""
     assert lag in (0, 1), lag
+    # Plantilla ya migrada a semanaMas (frontend 9d956b3c): sólo se ajusta el rezago del boletín.
+    if SEMANA_BOLETIN not in s and 'EpiEstadoFicha.semanaMas(a, w, ' in s:
+        s = re.sub(r'EpiEstadoFicha\.semanaMas\(a, w, [01]\)', 'EpiEstadoFicha.semanaMas(a, w, %d)' % lag, s)
+        assert s.count('EpiEstadoFicha.semanaMas(a, w, %d)' % lag) == 1 and s.count('EpiEstadoFicha.semanaMas(V.origin[0], V.origin[1], 1)') >= 1
+        assert s.count('assets/site/estado-ficha.js?v=2"') == 1 and '${w + 1}' not in s and 'origin[1] + 1' not in s
+        return s
     assert s.count(SEMANA_BOLETIN) == 1, 'plantilla sin la frase del boletín (o repetida)'
     assert s.count(SEMANA_OOS) >= 1, 'plantilla sin la primera semana fuera de muestra'
     assert s.count(AYUDANTE_V1) == 1, 'plantilla sin estado-ficha.js?v=1'

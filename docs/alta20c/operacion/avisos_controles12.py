@@ -40,6 +40,7 @@ f = lambda x: float(x) if x not in ('', None) else 0.0
 bol = lambda k: f'{k[0]}_sem{k[1]:02d}'
 sem = lambda k: f'{k[0]}-W{k[1]:02d}'
 miles = lambda n: f'{int(n):,}'
+ncasos = lambda n: f'{miles(n)} caso' if int(n) == 1 else f'{miles(n)} casos'
 
 
 def raw(d):
@@ -67,7 +68,7 @@ def repetido(d, ent, y, w):
     v = vista(d)
     s = next(x for k, x in v['series'].items() if k.startswith('estado|') and k.endswith('|general') and x['nombre'] == ent)
     t = cal.shift(y, w, 52); ds = str(cal.ds_for(*t))[:10]
-    return t, int(dict(s['pronostico'])[ds]), int(dict(v['series']['nacional|mx|general']['pronostico'])[ds])
+    return t, int(round(dict(s['pronostico'])[ds])), int(round(dict(v['series']['nacional|mx|general']['pronostico'])[ds]))
 
 
 def de(nombre):
@@ -88,20 +89,25 @@ def retirado(d, ent, nombre, y, w, esperado):
     fin = '' if b[0] != VENTANA[1][0] else f' En {bol(VENTANA[1])} el acumulado anual era {miles(af)}.'
     return {'clave': f'{ent}|{sem((y, w))}', 'estado': 'retirado', 'titulo': 'Un valor que la propia fuente retiró.',
             'texto': f'El boletín {bol(b)} imprimió {c} casos {de(nombre)} en la semana {sem((y, w))}, con un acumulado anual de '
-                     f'{miles(a1)}; el boletín siguiente, {bol(s)}, imprimió un acumulado de {miles(a2)} con {s2} casos nuevos: '
+                     f'{miles(a1)}; el boletín siguiente, {bol(s)}, imprimió un acumulado de {miles(a2)} con {nuevos(s2)}: '
                      f'un retiro neto de {parte}.{fin} El control repite lo impreso 52 semanas antes y no hay un criterio vigente '
                      f'para excluir un valor impreso y luego retirado: el pronóstico de {sem(t)} trae esos {c} casos {de(nombre)}, '
                      f'de {miles(nac)} nacionales. Esa semana no debe leerse como un aumento esperado. El dato y el pronóstico se '
                      'publican sin modificar.'}
 
 
-def conservado(d, ent, nombre, y, w, esperado, transitoria=None):
+def nuevos(n):
+    return '1 caso nuevo' if n == 1 else f'{miles(n)} casos nuevos'
+
+
+def conservado(d, ent, nombre, y, w, esperado, transitoria=None, portafolio=False):
     """Pico que sigue en el acumulado hasta el último boletín de la ventana. esperado = (casos, antes, con, fin)."""
     R = raw(d); b = cal.shift(y, w, 1); p = cal.shift(*b, -1)
     medido = (casos(R[b + (ent,)]), acum(R[p + (ent,)]), acum(R[b + (ent,)]), acum(R[VENTANA[1] + (ent,)]))
     assert medido == esperado, (d, ent, medido, esperado)
     c, a0, a1, af = medido
-    t, est, nac = repetido(d, ent, y, w); assert est == c, (d, est)
+    t, est, nac = repetido(d, ent, y, w)
+    assert portafolio or est == c, (d, est)
     extra = ''
     if transitoria:
         kb, (h, m), kr, ar = transitoria
@@ -111,8 +117,10 @@ def conservado(d, ent, nombre, y, w, esperado, transitoria=None):
                  f'a {ar}: fue una baja transitoria.')
     return {'clave': f'{ent}|{sem((y, w))}|sostenido', 'estado': 'conservado', 'titulo': 'Un pico que la fuente conserva.',
             'texto': f'Los {c} casos {de(nombre)} en {sem((y, w))} siguen en el acumulado anual: {miles(a0)} antes, {miles(a1)} con '
-                     f'esa semana y {miles(af)} en {bol(VENTANA[1])}, el último boletín de la ventana.{extra} El control los repite '
-                     f'en {sem(t)}: {c} de {miles(nac)} casos nacionales.'}
+                     f'esa semana y {miles(af)} en {bol(VENTANA[1])}, el último boletín {"disponible" if portafolio else "de la ventana"}.{extra}' +
+                     (f' Los motores de esa serie repiten o promedian semanas de años anteriores: el pronóstico de {sem(t)} trae '
+                      f'{est} casos {de(nombre)}, de unos {miles(nac)} nacionales. Esa semana no debe leerse como un aumento esperado.'
+                      if portafolio else f' El control los repite en {sem(t)}: {c} de {miles(nac)} casos nacionales.')}
 
 
 def lepto():
@@ -144,7 +152,11 @@ NOMINALES = {
     'desnutricion_severa_e40': lambda: [conservado('desnutricion_severa_e40', 'Jalisco', 'Jalisco', 2026, 34, (152, 316, 469, 571)),
                                         conservado('desnutricion_severa_e40', 'Querétaro', 'Querétaro', 2026, 37, (91, 12, 104, 111))],
     'enterobiasis_b80': lambda: [conservado('enterobiasis_b80', 'Tlaxcala', 'Tlaxcala', 2026, 10, (73, 0, 73, 112))],
+    # Aceptada (portafolio real, no control): sólo la celda de picos_heredados, sin nota general de la ventana del control.
+    'paratifoidea_a011': lambda: [conservado('paratifoidea_a011', 'Michoacán', 'Michoacán', 2026, 32, (121, 250, 372, 398),
+                                             portafolio=True)],
 }
+SOLO_NOMINALES = ['paratifoidea_a011']
 
 
 def nota_general(d):
@@ -162,17 +174,26 @@ def nota_general(d):
                 s2 = casos(R[k2 + (e,)])
                 bajas.append({'ent': e, 'b1': k1, 'b2': k2, 'a1': a1, 'a2': a2, 's2': s2, 'caida': a1 - a2, 'bruto': a1 - a2 + s2})
     n = len(bajas); bruto = sum(x['bruto'] for x in bajas)
-    m = sorted(bajas, key=lambda x: (-x['caida'], x['b1'], x['ent']))[0]
-    mb = sorted(bajas, key=lambda x: (-x['bruto'], x['b1'], x['ent']))[0]
+    # Empates explícitos (revisión final de Fable): se nombran todos los casos con la cifra máxima, sin desempatar.
+    orden = lambda x: (x['b1'], x['ent'])
+    mc = max(x['caida'] for x in bajas); M = sorted((x for x in bajas if x['caida'] == mc), key=orden)
+    mbr = max(x['bruto'] for x in bajas); MB = sorted((x for x in bajas if x['bruto'] == mbr), key=orden)
+    caso = lambda x, extra='': (f'en {x["ent"]} (acumulado {miles(x["a1"])} a {miles(x["a2"])} entre {bol(x["b1"])} y '
+                                f'{bol(x["b2"])}{extra})')
+    lista = lambda xs: xs[0] if len(xs) == 1 else ', '.join(xs[:-1]) + ' y ' + xs[-1]
+    veces = {2: 'dos', 3: 'tres', 4: 'cuatro', 5: 'cinco'}
     texto = (f'Entre los boletines {bol(VENTANA[0])} y {bol(VENTANA[1])}, cuyas semanas (2025-W44 a 2026-W42) repite este control, el '
              f'acumulado anual impreso de alguna entidad bajó {n} veces de un boletín al siguiente (se compara cada boletín con el '
              f'siguiente dentro del mismo año epidemiológico; no se cuenta el reinicio anual). En esas bajas la fuente quitó en bruto '
              f'{miles(bruto)} casos, contados como la baja del acumulado más los casos nuevos del boletín siguiente; la cifra incluye '
-             f'bajas transitorias que después se restituyen. La mayor baja fue en {m["ent"]}: acumulado {miles(m["a1"])} a '
-             f'{miles(m["a2"])} entre {bol(m["b1"])} y {bol(m["b2"])}.')
-    if mb is not m:
-        texto += (f' El mayor retiro en un solo boletín fue en {mb["ent"]}: acumulado {miles(mb["a1"])} a {miles(mb["a2"])} con '
-                  f'{mb["s2"]} casos nuevos ({miles(mb["bruto"])} casos), entre {bol(mb["b1"])} y {bol(mb["b2"])}.')
+             f'bajas transitorias que después se restituyen. ' +
+             (f'La mayor baja, de {ncasos(mc)}, fue {caso(M[0])}.' if len(M) == 1 else
+              f'La mayor baja, de {ncasos(mc)}, se repite {veces[len(M)]} veces, empatada: {lista([caso(x) for x in M])}.'))
+    if [id(x) for x in MB] != [id(x) for x in M]:
+        cb = lambda x: caso(x, f', con {nuevos(x["s2"])}')
+        texto += (f' El mayor retiro en un solo boletín, de {ncasos(mbr)}, fue {cb(MB[0])}.' if len(MB) == 1 else
+                  f' El mayor retiro en un solo boletín, de {ncasos(mbr)}, se repite {veces[len(MB)]} veces, empatado: '
+                  f'{lista([cb(x) for x in MB])}.')
     texto += ' El control repite el valor semanal impreso en cada boletín y no descuenta estas correcciones posteriores.'
     return {'clave': 'bajas-acumulado', 'estado': 'nota', 'titulo': 'Correcciones de la fuente en la ventana que repite el control.',
             'texto': texto, 'bajas': n, 'retiro_bruto': bruto}
@@ -204,18 +225,18 @@ SEMANAS_CON = ('Esas semanas (W43 a W46 de 2026) llegan con los boletines 44 a 4
 EVID = re.compile(r' <span class="evidencia-indice">[^<]*</span>')
 
 datos = {}; cambios = []
-for d in IDS:
-    nom = NOMINALES.get(d, lambda: [])(); nota = nota_general(d)
+for d in IDS + SOLO_NOMINALES:
+    nom = NOMINALES.get(d, lambda: [])(); nota = nota_general(d) if d in IDS else None
     ts, emi, ult = indice(d)
     evid = (f'Lo comprueba la consulta del índice oficial de boletines del {ts.day} de noviembre de {ts.year} a las '
             f'{ts:%H:%M:%S} UTC, posterior a la emisión ({emi:%H:%M:%S} UTC), que listaba como último el boletín {ult}.')
     datos[d] = {'avisos': [{k: x[k] for k in ('clave', 'estado', 'titulo', 'texto')} for x in nom],
-                'nota': {k: nota[k] for k in ('clave', 'titulo', 'texto', 'bajas', 'retiro_bruto')},
+                'nota': {k: nota[k] for k in ('clave', 'titulo', 'texto', 'bajas', 'retiro_bruto')} if nota else None,
                 'indice_posterior': {'consulta': f'{ts:%Y-%m-%dT%H:%M:%SZ}', 'emision': vista(d)['forecast_emitted_at'], 'ultimo_boletin': ult}}
     p = f'{a.fe}/{d}.html'; s0 = open(p, encoding='utf-8').read()
     s = VIEJOS.sub('', s0)
     assert s.count(ANCLA) == 1, (d, 'ancla')
-    s = s.replace(ANCLA, ''.join(html_p(x) for x in [*nom, nota]) + ANCLA)
+    s = s.replace(ANCLA, ''.join(html_p(x) for x in [*nom, nota] if x) + ANCLA)
     if SEMANAS_SIN in s:
         s = s.replace(SEMANAS_SIN, SEMANAS_CON + '</p>')
     s = EVID.sub('', s)
@@ -226,7 +247,7 @@ for d in IDS:
         cambios.append(f'{d}.html')
         if not a.check:
             open(p, 'w', encoding='utf-8').write(s)
-    print(d, f'bajas={nota["bajas"]}', f'bruto={nota["retiro_bruto"]}', f'nominales={len(nom)}', f'indice={ts:%H:%M:%S}')
+    print(d, f'bajas={nota["bajas"] if nota else "-"}', f'bruto={nota["retiro_bruto"] if nota else "-"}', f'nominales={len(nom)}', f'indice={ts:%H:%M:%S}')
 
 js = ('// Generado por docs/alta20c/operacion/avisos_controles12.py (backend EpiForecast-MX); no editar a mano.\n'
       '// Avisos de la fuente de los doce controles de alta20c: nominales (dictamen §1 y picos heredados) y nota general\n'
