@@ -2998,7 +2998,9 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado complementario de Fable
+    # FABLE_DECISION_PLAGUICIDAS_20261115 (sha256 19e61453…), enlazado a la delegación y al dictamen 7832594e.
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
