@@ -26,6 +26,8 @@ from epiforecast.data.extraction.cuadro_reparaciones import (
     alinea_renglones,
     alinea_valor_en_nombre,
     despega_primera_columna,
+    fila_total,
+    primer_bloque_por_orden,
     sin_llamadas,
     spec_del_periodo,
 )
@@ -170,6 +172,18 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
         if despegada is not None and len(despegada) == esperados:
             df_clean = despegada
 
+    # Opt-in (``primer_bloque_por_orden: {total: [columnas, ancho]}``): valores desacomodados del
+    # primer bloque, repartidos en orden de lectura y validados contra el TOTAL impreso.
+    orden = (spec.get("primer_bloque_por_orden") or {}).get(df_clean.shape[1] - 1)
+    if orden is not None:
+        tablas = camelot.read_pdf(pdf_path, pages=str(page), flavor="stream")
+        impreso = fila_total(max((t.df for t in tablas), key=len)) if tablas else None
+        reparada, motivo = primer_bloque_por_orden(df_clean, impreso, *(int(v) for v in orden))
+        if reparada is None:
+            out["reason"] = motivo
+            return out
+        df_clean, out["reparacion"] = reparada, "primer_bloque_por_orden"
+
     # Cuadro cuyo bloque objetivo es el primero o el último y comparte página con bloques de
     # otro ancho o en otro número según el año: se recorta por el conteo real de columnas.
     for clave, al_final in (("first_block_columns", False), ("last_block_columns", True)):
@@ -226,6 +240,8 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
     out["n_states"] = n_states
     out["valid"] = n_states == int(spec.get("n_states_expected", 32))
     out["reason"] = "ok" if out["valid"] else f"{n_states} estados (esperaba 32)"
+    if out["valid"] and out.get("reparacion"):
+        out["reason"] = f"ok; reparación {out['reparacion']} (cuadra con el TOTAL impreso)"
     return out
 
 

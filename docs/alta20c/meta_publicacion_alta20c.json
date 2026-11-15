@@ -1,0 +1,124 @@
+{
+ "_nota": "Metadatos de redacción por id para las fichas de los doce controles de alta20c (dictamen delegado de Fable §1, 15-nov-2026). art, low y cuadro se copian de docs/alta10b/meta_publicacion_alta10b.json (cuadro vigente en el boletín 43). fecha_orden: fecha de la decisión del autor sobre la política de cinco motores (B2/B14, 12-nov-2026), con la que se eligió el portafolio rechazado. No es autorización. paratifoidea_a011 (aceptada): cuadro 4.1 en el boletín 43 (txt/2026_sem43.txt); falla_motores y fecha_orden = política de cinco motores del dictamen delegado de Fable (15-nov-2026), no una orden nominal del autor. mal_del_pinto_a67 (aceptado, cinco motores por el mismo dictamen delegado) y vulvovaginitis_n76 (aceptada, rolling_cv_v1, sin sexo): cuadros 10 y 6.2 en el boletín 43. Cinco controles nuevos (dictamen delegado complementario FABLE_CONTROLES5_DECISION_20261115.json): cuadros 12.1, 13.6, 3.2, 12 y 13.6 en el boletín 43; fecha_orden = política de cinco motores del dictamen delegado.",
+ "brucelosis_a23": {
+  "art": "la",
+  "low": "brucelosis",
+  "cuadro": "8",
+  "fecha_orden": "12 de noviembre de 2026"
+ },
+ "reumatica_i00": {
+  "art": "la",
+  "low": "fiebre reumática aguda",
+  "cuadro": "13.1",
+  "fecha_orden": "12 de noviembre de 2026"
+ },
+ "bocio_e01": {
+  "art": "el",
+  "low": "bocio endémico",
+  "cuadro": "13",
+  "fecha_orden": "12 de noviembre de 2026"
+ },
+ "hepatitis_b_b16": {
+  "art": "la",
+  "low": "hepatitis vírica B",
+  "cuadro": "3.5",
+  "fecha_orden": "12 de noviembre de 2026"
+ },
+ "rotavirus_a080": {
+  "art": "la",
+  "low": "enteritis debida a rotavirus",
+  "cuadro": "3",
+  "fecha_orden": "12 de noviembre de 2026"
+ },
+ "absceso_hepatico_a064": {
+  "art": "el",
+  "low": "absceso hepático amebiano",
+  "cuadro": "4.4",
+  "fecha_orden": "12 de noviembre de 2026"
+ },
+ "leptospirosis_a27": {
+  "art": "la",
+  "low": "leptospirosis",
+  "cuadro": "8",
+  "fecha_orden": "12 de noviembre de 2026"
+ },
+ "helmintiasis_b65": {
+  "art": "las",
+  "low": "otras helmintiasis",
+  "cuadro": "4.5",
+  "fecha_orden": "12 de noviembre de 2026"
+ },
+ "desnutricion_moderada_e440": {
+  "art": "la",
+  "low": "desnutrición moderada",
+  "cuadro": "14",
+  "fecha_orden": "12 de noviembre de 2026"
+ },
+ "desnutricion_severa_e40": {
+  "art": "la",
+  "low": "desnutrición severa",
+  "cuadro": "14",
+  "fecha_orden": "12 de noviembre de 2026"
+ },
+ "enterobiasis_b80": {
+  "art": "la",
+  "low": "enterobiasis",
+  "cuadro": "4.6",
+  "fecha_orden": "12 de noviembre de 2026"
+ },
+ "giardiasis_a071": {
+  "art": "la",
+  "low": "giardiasis",
+  "cuadro": "4.5",
+  "fecha_orden": "12 de noviembre de 2026"
+ },
+ "paratifoidea_a011": {
+  "art": "la",
+  "low": "fiebre paratifoidea",
+  "cuadro": "4.1",
+  "falla_motores": "ETS y Ridge",
+  "fecha_orden": "15 de noviembre de 2026"
+ },
+ "mal_del_pinto_a67": {
+  "art": "el",
+  "low": "mal del pinto",
+  "cuadro": "10",
+  "falla_motores": "ETS y Ridge",
+  "fecha_orden": "15 de noviembre de 2026"
+ },
+ "vulvovaginitis_n76": {
+  "art": "la",
+  "low": "vulvovaginitis",
+  "cuadro": "6.2"
+ },
+ "coqueluchoide_u99": {
+  "art": "el",
+  "low": "síndrome coqueluchoide",
+  "cuadro": "12.1",
+  "fecha_orden": "15 de noviembre de 2026"
+ },
+ "plaguicidas_t60": {
+  "art": "la",
+  "low": "intoxicación por plaguicidas",
+  "cuadro": "13.6",
+  "fecha_orden": "15 de noviembre de 2026"
+ },
+ "tos_ferina_a37": {
+  "art": "la",
+  "low": "tos ferina",
+  "cuadro": "3.2",
+  "fecha_orden": "15 de noviembre de 2026"
+ },
+ "sindrome_meningeo_g00": {
+  "art": "el",
+  "low": "síndrome meníngeo",
+  "cuadro": "12",
+  "fecha_orden": "15 de noviembre de 2026"
+ },
+ "monoxido_t58": {
+  "art": "la",
+  "low": "intoxicación por monóxido de carbono",
+  "cuadro": "13.6",
+  "fecha_orden": "15 de noviembre de 2026"
+ }
+}

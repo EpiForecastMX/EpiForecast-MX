@@ -1665,3 +1665,668 @@ cuadro_groups:
         has_prev_year: true
     n_states_expected: 32
     backend: camelot_stream
+
+  alta20c_tos_ferina_a37:
+    # Tos ferina (A37; «Tos Ferina» en 2014): primer bloque del Cuadro 3.2 de prevenibles por
+    # vacunación, con meningitis meningocócica (A39.0), 8 columnas en 2014_sem02-2026_sem43
+    # (pdftotext, 669 boletines; página 13 del boletín 43). En 2014_sem01 es el último bloque del
+    # Cuadro 3.1, con tétanos neonatal (A33), también de 8 columnas y con columna Sem de la semana 1.
+    # RETRASO 0 en todos los boletines: el título dice «Tos ferina hasta la N» (2014) o «hasta la
+    # semana epidemiológica N» (Cuadro 3.2 entero) en el boletín N.
+    # Anclas: el Cuadro 1 imprime «Tos ferina A37» sin estados; ninguna otra página con estados
+    # contiene ambas.
+    page_anchors: ["ferina", "a37"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 0
+    last_block_columns: {8: 4}
+    periodos:
+      - desde: "2014_sem02"
+        last_block_columns: null
+        first_block_columns: {8: 4}
+    diseases:
+      - id: tos_ferina_a37
+        keyword: "Tos_Ferina_A37"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem14.pdf"
+        diseases: [tos_ferina_a37]
+        keep_period: true
+        reason: >-
+          bloque reimpreso: Sem y acumulados H/M de las 32 entidades idénticos a 2014_sem13 (TOTAL 29 51 52)
+          con Sem > 0 y acumulado sin cambio; la columna de año anterior sí avanza (85 → 144)
+      - file: "2024_sem32.pdf"
+        diseases: [tos_ferina_a37]
+        keep_period: true
+        reason: >-
+          bloque reimpreso: Sem y acumulados H/M de las 32 entidades idénticos a 2024_sem31 (TOTAL 24 113 110)
+          con Sem > 0 y acumulado sin cambio; 2024_sem33 imprime Sem 0 con el mismo acumulado
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20c_toxoplasmosis_b58:
+    # Toxoplasmosis (B58). Cambia de cuadro (pdftotext, los 670 boletines):
+    # 2014_sem02-2017_sem01 bloque intermedio del Cuadro 10.2 (tripanosomiasis americana B57,
+    # toxoplasmosis B58, meningoencefalitis amebiana primaria B60.2): 11 columnas hasta 2015_sem01,
+    # con toxoplasmosis sin año anterior (3), y 12 después. Desde 2017_sem02 primer bloque del
+    # Cuadro 10.3, con meningoencefalitis amebiana primaria (8 columnas).
+    # Se ancla con los dos códigos: la página de resumen nacional también nombra «Toxoplasmosis».
+    page_anchors: ["toxoplasm", "b58", "b60.2"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    inner_block_columns: {12: [8, 4], 11: [7, 3]}
+    periodos:
+      - desde: "2017_sem02"
+        inner_block_columns: null
+        first_block_columns: {8: 4}
+    diseases:
+      - id: toxoplasmosis_b58
+        keyword: "Toxoplasmosis_B58"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [toxoplasmosis_b58]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20c_teniasis_b68:
+    # Teniasis (B68): primer bloque del Cuadro 8.1 de zoonosis (teniasis B68, cisticercosis B69,
+    # triquinosis B75), 12 columnas en 2014_sem02-2026_sem43 (pdftotext, los 670 boletines).
+    page_anchors: ["teniasis", "cisticerc", "b69"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {12: 4}
+    diseases:
+      - id: teniasis_b68
+        keyword: "Teniasis_B68"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [teniasis_b68]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20c_cisticercosis_b69:
+    # Cisticercosis (B69): bloque intermedio del Cuadro 8.1 de zoonosis (teniasis B68,
+    # cisticercosis B69, triquinosis B75), 12 columnas en 2014_sem02-2026_sem43 (pdftotext).
+    page_anchors: ["teniasis", "cisticerc", "b69"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    inner_block_columns: {12: [8, 4]}
+    diseases:
+      - id: cisticercosis_b69
+        keyword: "Cisticercosis_B69"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [cisticercosis_b69]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2016_sem20.pdf"
+        diseases: [cisticercosis_b69]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes, cardiovasculares
+          y rotavirus en este boletín): semana 3/57/9 y acumulado 91/907/106 con año anterior
+          75/987/87 (semanas 19/20/21); el acumulado salta y vuelve. El PDF lo imprime así (p. 34)
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20c_triquinosis_b75:
+    # Triquinosis (B75): último bloque del Cuadro 8.1 de zoonosis (teniasis B68, cisticercosis B69,
+    # triquinosis B75), 12 columnas en 2014_sem02-2026_sem43 (pdftotext). 2016_sem47 trae en la
+    # página 7 una nota editorial sobre triquinosis con nombres de estados: se ancla con los tres
+    # nombres del cuadro y el código.
+    page_anchors: ["teniasis", "cisticerc", "triquinosis", "b75"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    last_block_columns: {12: 4}
+    diseases:
+      - id: triquinosis_b75
+        keyword: "Triquinosis_B75"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [triquinosis_b75]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20c_mal_del_pinto_a67:
+    # Mal del pinto (A67): primer bloque del Cuadro 10 (mal del pinto A67, tuberculosis otras
+    # formas, lepra A30). 11 columnas hasta 2015_sem01, con mal del pinto sin año anterior (3), y 12
+    # después. Rezago impreso 1 en los 670 boletines: hasta 2020 por el título general («hasta la
+    # semana N-1») y desde 2021_sem01 por la excepción del título («Mal del Pinto hasta la semana
+    # N-1»), aunque el resto del cuadro pase a N. Se ancla con los códigos (notas editoriales de
+    # lepra en 2016_sem09 y 2023_sem29).
+    page_anchors: ["pinto", "a67", "a30"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {11: 3, 12: 4}
+    diseases:
+      - id: mal_del_pinto_a67
+        keyword: "Mal_Del_Pinto_A67"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [mal_del_pinto_a67]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2016_sem20.pdf"
+        diseases: [mal_del_pinto_a67]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes, cardiovasculares
+          y rotavirus en este boletín): semana 3/7/5 y acumulado 101/291/114 con año anterior
+          95/371/107 (semanas 19/20/21); el acumulado salta y vuelve. El PDF lo imprime así (p. 36)
+      - file: "2023_sem25.pdf"
+        diseases: [mal_del_pinto_a67]
+        keep_period: true
+        reason: >-
+          fallo del extractor, no de la fuente: el PDF (p. 40) trae las 32 entidades, pero el renglón
+          de Aguascalientes imprime 11 celdas (falta la Sem de tuberculosis otras formas) y camelot
+          lo pierde aun con edge_tol y página completa (31 entidades). Mal del pinto en Aguascalientes
+          es «- 3 2 3» y el TOTAL «3 49 86 138»; se imputa la semana objetivo 2023-W24 (desarrollo)
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20c_influenza_j09:
+    # Influenza (J09-J11): último bloque del Cuadro 3.6 (Prevenibles por vacunación), con
+    # parotiditis infecciosa (B26) en el primero; 8 columnas (4 + 4) en 2014_sem02-2026_sem43
+    # (pdftotext, 669 boletines). El título lleva una excepción nominal: «… hasta la semana
+    # epidemiológica N-1 …; Influenza hasta la N [del AAAA]»: el bloque de influenza llega hasta la
+    # semana del boletín (rezago 0 en los 658 títulos legibles; los 12 sin título en el texto se
+    # contrastan por acumulado). En la página del cuadro (pdftotext), «§» aparece desde 2015_sem25,
+    # «Sistema Especial» desde 2021_sem01 y «&»/USMER desde 2024_sem34. «influenza» sola coincide con el
+    # Cuadro 3.3 (Haemophilus influenzae): se ancla con el código. NO modifica alta20_parotiditis_b26.
+    page_anchors: ["influenza", "j09"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 0
+    last_block_columns: {8: 4}
+    diseases:
+      - id: influenza_j09
+        keyword: "Influenza_J09"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [influenza_j09]
+        reason: >-
+          otro cuadro y otra desagregación: Cuadro 5.2 (respiratorias) con «Influenza (A H1N1)» J09
+          (Sem 69, acumulado 28+41) e «Influenza Estacional» J10-J11 sólo con acumulado (12+12), sin
+          columna Sem del bloque J09-J11; la suma 93 cuadra con 2014_sem02 (acumulado 556 menos Sem
+          463). Sin keep_period: es el primer periodo y no hay base causal para imputarlo
+      - file: "2022_sem13.pdf"
+        diseases: [influenza_j09]
+        keep_period: true
+        reason: >-
+          fallo del extractor, no de la fuente: el renglón de Zacatecas se imprime encimado con
+          el TOTAL (pdftotext: «271 50 / 546 55 / 767»); camelot desplaza las columnas del bloque
+          y lee Sem 0 en 31 entidades y el TOTAL (27, 546, 767) como Zacatecas. El TOTAL impreso
+          (Sem 27; acumulado 546+767, que menos 526+760 de 2022_sem12 da 27) es legible: corregirlo
+          exige código del extractor; mientras, se conserva el periodo imputado
+      - file: "2014_sem03.pdf"
+        diseases: [influenza_j09]
+        keep_period: true
+        reason: >-
+          errata aritmética de la fuente en la columna Sem (FABLE_INFLUENZA_FUENTE_REVISION): en 2014_sem03-sem08
+          Sem(w) = acum(w) - Sem(w-1) en las 32 entidades; el acumulado continúa aditivo en sem09 y 2015_sem08
+          reimprime 2014 a W08 como 6 540. W03-W08 suman 13 002 impresos frente a 5 294 de Δ acumulado; con
+          keep_period la reconciliación imputa el valor de W02 (463 nacional por semana, 2 778 en total)
+      - file: "2014_sem04.pdf"
+        diseases: [influenza_j09]
+        keep_period: true
+        reason: >-
+          errata aritmética de la fuente en la columna Sem (FABLE_INFLUENZA_FUENTE_REVISION): en 2014_sem03-sem08
+          Sem(w) = acum(w) - Sem(w-1) en las 32 entidades; el acumulado continúa aditivo en sem09 y 2015_sem08
+          reimprime 2014 a W08 como 6 540. W03-W08 suman 13 002 impresos frente a 5 294 de Δ acumulado; con
+          keep_period la reconciliación imputa el valor de W02 (463 nacional por semana, 2 778 en total)
+      - file: "2014_sem05.pdf"
+        diseases: [influenza_j09]
+        keep_period: true
+        reason: >-
+          errata aritmética de la fuente en la columna Sem (FABLE_INFLUENZA_FUENTE_REVISION): en 2014_sem03-sem08
+          Sem(w) = acum(w) - Sem(w-1) en las 32 entidades; el acumulado continúa aditivo en sem09 y 2015_sem08
+          reimprime 2014 a W08 como 6 540. W03-W08 suman 13 002 impresos frente a 5 294 de Δ acumulado; con
+          keep_period la reconciliación imputa el valor de W02 (463 nacional por semana, 2 778 en total)
+      - file: "2014_sem06.pdf"
+        diseases: [influenza_j09]
+        keep_period: true
+        reason: >-
+          errata aritmética de la fuente en la columna Sem (FABLE_INFLUENZA_FUENTE_REVISION): en 2014_sem03-sem08
+          Sem(w) = acum(w) - Sem(w-1) en las 32 entidades; el acumulado continúa aditivo en sem09 y 2015_sem08
+          reimprime 2014 a W08 como 6 540. W03-W08 suman 13 002 impresos frente a 5 294 de Δ acumulado; con
+          keep_period la reconciliación imputa el valor de W02 (463 nacional por semana, 2 778 en total)
+      - file: "2014_sem07.pdf"
+        diseases: [influenza_j09]
+        keep_period: true
+        reason: >-
+          errata aritmética de la fuente en la columna Sem (FABLE_INFLUENZA_FUENTE_REVISION): en 2014_sem03-sem08
+          Sem(w) = acum(w) - Sem(w-1) en las 32 entidades; el acumulado continúa aditivo en sem09 y 2015_sem08
+          reimprime 2014 a W08 como 6 540. W03-W08 suman 13 002 impresos frente a 5 294 de Δ acumulado; con
+          keep_period la reconciliación imputa el valor de W02 (463 nacional por semana, 2 778 en total)
+      - file: "2014_sem08.pdf"
+        diseases: [influenza_j09]
+        keep_period: true
+        reason: >-
+          errata aritmética de la fuente en la columna Sem (FABLE_INFLUENZA_FUENTE_REVISION): en 2014_sem03-sem08
+          Sem(w) = acum(w) - Sem(w-1) en las 32 entidades; el acumulado continúa aditivo en sem09 y 2015_sem08
+          reimprime 2014 a W08 como 6 540. W03-W08 suman 13 002 impresos frente a 5 294 de Δ acumulado; con
+          keep_period la reconciliación imputa el valor de W02 (463 nacional por semana, 2 778 en total)
+      - file: "2015_sem09.pdf"
+        diseases: [influenza_j09]
+        keep_period: true
+        reason: >-
+          bloque sin actualizar: Sem «-» en las 32 entidades y acumulado y año anterior iguales a 2015_sem08
+          (1 122); 2015_sem10 trae Sem 11 con Δ acumulado 94. Mismo patrón que los bloques reimpresos de tos ferina
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20c_coqueluchoide_u99:
+    # Síndrome coqueluchoide (U99), Vigilancia sindromática. Siempre es el ÚLTIMO bloque de su
+    # página (pdftotext, 670 boletines): 2014_sem02-2017_sem01 en el Cuadro 12.2, tras parálisis
+    # flácida aguda (8 columnas); desde 2017_sem02 en la única página 12.1, tras U97 y U98 (12).
+    # Rezago impreso 0 CONSTANTE (QA, 669 boletines con página; 2014_sem01 excluido): el título de su
+    # página dice «hasta la semana epidemiológica N» en el boletín N (Cuadro 12.2 hasta 2017_sem01,
+    # 12.1 después; 657 por texto y 12 de 2025-2026 leídos de la imagen del título, que pdftotext no
+    # extrae). El «hasta la 9; Enfermedad Febril Exantemática hasta la 10» de 2014 es el título del
+    # Cuadro 12.1 (U97), no el de U99.
+    # «coqueluch» sola aparece en otras páginas (tos ferina): se ancla con el código.
+    page_anchors: ["u99", "coqueluch"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 0
+    last_block_columns: {8: 4, 12: 4}
+    diseases:
+      - id: coqueluchoide_u99
+        keyword: "Coqueluchoide_U99"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [coqueluchoide_u99]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20c_paratifoidea_a011:
+    # Fiebre paratifoidea. pdftotext (670 boletines): hasta 2024_sem05 es el ÚLTIMO bloque del
+    # Cuadro 4 (Cólera, Fiebre tifoidea, Paratifoidea); 11 columnas hasta 2015_sem01 (paratifoidea sin
+    # año anterior) y 12 desde 2015_sem02. Desde 2024_sem06 es el PRIMER bloque del Cuadro 4.1, con
+    # otras salmonelosis (8 columnas). Mismas fronteras que alta20_tifoidea_a01.
+    # Rótulo impreso: «A01.1» en 2014_sem02-2017_sem01 y 2018_sem14-2024_sem05; «A01.1-A01.4» en
+    # 2017_sem02-2018_sem13 y desde 2024_sem06 (ver QA: el nivel no salta en esas fronteras).
+    page_anchors: ["paratif", "a01.1"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1           # rezago impreso medido = 1 en los 670 boletines
+    last_block_columns: {11: 3, 12: 4}
+    periodos:
+      - desde: "2024_sem06"
+        last_block_columns: null
+        first_block_columns: {8: 4}
+    diseases:
+      - id: paratifoidea_a011
+        keyword: "Paratifoidea_A011"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [paratifoidea_a011]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2016_sem20.pdf"
+        diseases: [paratifoidea_a011]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes y
+          cardiovasculares en este boletín): semana 173/1 494/164 y acumulado 3 382/28 342/3 761 (semanas 19/20/21; TOTAL impreso); el acumulado salta y vuelve
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20c_conjuntivitis_hemorragica_b303:
+    # Conjuntivitis epidémica aguda hemorrágica (B30.3): ÚLTIMO bloque del Cuadro 10.1, tras hepatitis
+    # vírica C y otras hepatitis víricas. pdftotext: 11 columnas en 2014_sem02-2015_sem01
+    # (conjuntivitis sin año anterior) y 12 desde 2015_sem02. «b30.3» sola aparece desde 2021 en otra
+    # página sin tabla estatal: se ancla también por «b17.1».
+    page_anchors: ["b17.1", "b30.3"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1           # rezago impreso medido = 1 en los 669 boletines con página
+    last_block_columns: {11: 3, 12: 4}
+    diseases:
+      - id: conjuntivitis_hemorragica_b303
+        keyword: "Conjuntivitis_Hemorragica_B303"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [conjuntivitis_hemorragica_b303]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2016_sem20.pdf"
+        diseases: [conjuntivitis_hemorragica_b303]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes y
+          cardiovasculares en este boletín): semana 6/200/8 y acumulado 84/3 864/98 (semanas 19/20/21; TOTAL impreso); el acumulado salta y vuelve
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20c_tracoma_a71:
+    # Tracoma (A71): PRIMER bloque del Cuadro 11 en todos los boletines. pdftotext:
+    #   2014_sem02-2014_sem44  2 bloques sin año anterior (con leishmaniasis visceral): 6 columnas;
+    #   2014_sem45-2014_sem53  3 bloques sin año anterior (+ chikungunya): 9 columnas;
+    #   2015_sem01             3 bloques, sólo chikungunya con año anterior: 10 columnas;
+    #   2015_sem02-2017_sem01  3 bloques con año anterior: 12 columnas;
+    #   2017_sem02-2025_sem01  2 bloques (leishmaniasis; oncocercosis desde 2021): 8 columnas;
+    #   desde 2025_sem02       3 bloques (+ miasis): 12 columnas.
+    page_anchors: ["tracoma", "a71"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1           # rezago impreso medido = 1 en los 669 boletines con página
+    first_block_columns: {6: 3, 9: 3, 10: 3, 12: 4, 8: 4}
+    diseases:
+      - id: tracoma_a71
+        keyword: "Tracoma_A71"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [tracoma_a71]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2016_sem20.pdf"
+        diseases: [tracoma_a71]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes y
+          cardiovasculares en este boletín): acumulado 1/44/3 y año anterior 0/73/0 (semanas 19/20/21; TOTAL impreso); el acumulado salta y vuelve
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20c_sindrome_meningeo_g00:
+    # Síndrome meníngeo (G00-G03 excepto G00.0 y G00.1): PRIMER bloque del Cuadro 12 (vigilancia
+    # sindromática), con infección de vías urinarias; 8 columnas en 2014-2026 (pdftotext).
+    # Rótulo impreso: «Meningitis, G00-G03 excepto G00.0 y G01» en 2014_sem02-2017_sem01; «Síndrome
+    # Meníngeo» con la misma exclusión en 2017_sem02-2018_sem14; «excepto G00.0 y G00.1» desde
+    # 2018_sem15 (ver QA: comparabilidad).
+    page_anchors: ["urinarias", "g00"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1           # rezago impreso medido = 1 en los 670 boletines
+    first_block_columns: {8: 4}
+    # 2014_sem02-03: el PDF imprime cada guion corrido ~40 pt a la izquierda, junto al valor de la
+    # columna anterior (pdfplumber: guiones con borde derecho en 209.8/258.0/306.1 en vez de
+    # 250.2/298.3/346.5); camelot da 9 columnas, 5 del bloque. Cada renglón conserva sus 4 valores
+    # en orden: se reparten en orden de lectura y se validan contra el TOTAL impreso (falla cerrado).
+    # Sólo hasta 2014_sem03 (periodos).
+    primer_bloque_por_orden: {9: [5, 4]}
+    periodos:
+      - desde: "2014_sem04"
+        primer_bloque_por_orden: null
+    diseases:
+      - id: sindrome_meningeo_g00
+        keyword: "Sindrome_Meningeo_G00"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [sindrome_meningeo_g00]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2016_sem20.pdf"
+        diseases: [sindrome_meningeo_g00]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes y
+          cardiovasculares en este boletín): semana 5/0/11 y acumulado 252/6/275 (semanas 19/20/21; TOTAL impreso); el acumulado salta y vuelve
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20c_monoxido_t58:
+    # Intoxicación por monóxido de carbono (T58): bloque intermedio del Cuadro 13.6 (tras quemaduras,
+    # antes de plaguicidas) en 2014_sem02..2026_sem43. Hasta 2015_sem01 se imprime sin año anterior
+    # (3 columnas, 11 en la página); desde 2015_sem02 con 4 (12 en la página).
+    # El rótulo «monóxido» se parte en dos renglones en pdftotext en varios años: se ancla por el
+    # código T58 y por «plaguicid» (la página es la misma que la de plaguicidas).
+    page_anchors: ["plaguicid", "t58"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    inner_block_columns: {11: [7, 3]}
+    periodos:
+      - desde: "2015_sem02"
+        inner_block_columns: {12: [8, 4], 13: [8, 4]}
+    diseases:
+      - id: monoxido_t58
+        keyword: "Monoxido_T58"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [monoxido_t58]
+        reason: >-
+          boletín con el formato de 2013 (Cuadro 11.4): no trae el bloque de monóxido de carbono;
+          su semana objetivo es 2013-W52, anterior al inicio de la serie (2014-W01)
+      - file: "2016_sem20.pdf"
+        diseases: [monoxido_t58]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes y
+          cardiovasculares en este boletín): acumulado 259/115/271 (semanas 19/20/21); el
+          acumulado salta y vuelve
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20c_hipotermia_t68:
+    # Hipotermia (T68). Cambia de cuadro (pdftotext):
+    # 2014_sem02-2015_sem01 último bloque del Cuadro 13.7 (ponzoña de animales, alacrán, hipotermia),
+    # sin año anterior (3 columnas, 11 en la página); 2015_sem02-2017_sem01 mismo cuadro con 4 (12);
+    # 2017_sem02-2024_sem01 primer bloque del Cuadro 13.8 (con avispas X23 y ESAVI, 12 columnas);
+    # desde 2024_sem02 primer bloque del Cuadro 13.10 (con ESAVI, 8 columnas). ESAVI va a la semana
+    # del boletín, pero hipotermia una semana atrás («hasta la semana N-1»).
+    page_anchors: ["hipoterm", "t68"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    last_block_columns: {11: 3}
+    periodos:
+      - desde: "2015_sem02"
+        last_block_columns: {12: 4}
+      - desde: "2017_sem02"
+        last_block_columns: null
+        first_block_columns: {12: 4}
+      - desde: "2024_sem02"
+        first_block_columns: {8: 4}
+    diseases:
+      - id: hipotermia_t68
+        keyword: "Hipotermia_T68"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [hipotermia_t68]
+        reason: >-
+          boletín con el formato de 2013: no trae el bloque de hipotermia; su semana objetivo es
+          2013-W52, anterior al inicio de la serie (2014-W01)
+      - file: "2016_sem20.pdf"
+        diseases: [hipotermia_t68]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes y
+          cardiovasculares en este boletín): semana 4/1 546/3 y acumulado 107/33 612/118
+          (semanas 19/20/21); el acumulado salta y vuelve
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20c_plaguicidas_t60:
+    # Intoxicación por plaguicidas (T60): último bloque de tres del Cuadro 13.6 (quemaduras T20-T32,
+    # monóxido de carbono T58, plaguicidas) en todos los boletines 2014_sem02..2026_sem43.
+    # pdftotext/camelot: 11 columnas hasta 2015_sem01 (monóxido sin año anterior: 4 + 3 + 4) y 12
+    # desde 2015_sem02 (4 + 4 + 4). El bloque de plaguicidas siempre trae 4 columnas.
+    # «t60» no está impresa en 32 boletines (2014_sem02..2015_sem02, rótulo sin código): se ancla
+    # por el nombre y el código del vecino T58, únicos en la página del cuadro en los 669 boletines.
+    page_anchors: ["plaguicid", "t58"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    last_block_columns: {11: 4}
+    periodos:
+      - desde: "2015_sem02"
+        last_block_columns: {12: 4, 13: 4}
+    diseases:
+      - id: plaguicidas_t60
+        keyword: "Plaguicidas_T60"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [plaguicidas_t60]
+        reason: >-
+          boletín con el formato de 2013 (Cuadro 11.4, plaguicidas como primer bloque): su semana
+          objetivo es 2013-W52, anterior al inicio de la serie (2014-W01)
+      - file: "2016_sem20.pdf"
+        diseases: [plaguicidas_t60]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes y
+          cardiovasculares en este boletín): semana 56/4 152/79 y acumulado 914/99 657/1 058
+          (semanas 19/20/21); el acumulado salta y vuelve
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20c_vulvovaginitis_n76:
+    # CUADRO 6.2 «Casos por entidad federativa de Enfermedades de Transmisión Sexual». Vulvovaginitis
+    # es el segundo bloque, tras Herpes genital (A60.0, 4 columnas con sexo), y SIN desglose por sexo:
+    # Sem, acumulado del año y acumulado del anterior. Medido con pdftotext en los 670 boletines:
+    #   2014_sem02..2015_sem01: Herpes 4 + Vulvovaginitis 2 (Sem y acumulado, sin año anterior) + SIDA
+    #     (B20-B24) 4 = 10 columnas; rótulo «Vulvovaginitis Inespecífica», CIE impreso «A76.0».
+    #   2015_sem02..2020_sem26: 4 + 3 + 4 = 11; mismo rótulo hasta 2017_sem01; desde 2017_sem02
+    #     «Vulvovaginitis», CIE N76 (continuidad medida en QA: 2017 reexpresa 2016 al 99.4 %).
+    #   2020_sem27..2026_sem43: SIDA pasa al Cuadro 6.3; 4 + 3 = 7 y Vulvovaginitis es el último.
+    # El bloque se recorta contando desde el final (inner_block_columns) y luego se lee sin sexo.
+    # Anclas: «vulvovag» sola también encuentra el Cuadro 6.3 de 2020-2023 (texto fantasma del
+    # encabezado); con «a60.0» la página es única en 669 de 670 boletines.
+    page_anchors: ["vulvovag", "a60.0"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    # Título «hasta la semana epidemiológica N-1» en el boletín N en los 669 boletines con la página
+    # (doce títulos de 2025-2026 son imagen y se leyeron renderizados): rezago 1 constante.
+    observation_lag_weeks: 1
+    inner_block_columns: {10: [6, 2]}
+    anchos_sin_sexo: [2]
+    periodos:
+      - desde: "2015_sem02"
+        inner_block_columns: {11: [7, 3]}
+        anchos_sin_sexo: null
+      - desde: "2020_sem27"
+        inner_block_columns: {7: [3, 3]}
+    diseases:
+      - id: vulvovaginitis_n76
+        keyword: "Vulvovaginitis_N76"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [vulvovaginitis_n76]
+        reason: >-
+          formato de cierre anual 2013: el Cuadro 6.2 trae Herpes, Candidiasis urogenital y VPH sólo
+          con acumulados y no imprime Vulvovaginitis
+      - file: "2016_sem20.pdf"
+        diseases: [vulvovaginitis_n76]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo boletín y criterio que hepatitis A y B):
+          TOTAL impreso Sem 228 y acumulado 3 597 frente a 9 116/164 438 en la semana 19 y 10 842/184 198
+          en la 21; el acumulado salta y vuelve
+    layout_variants:
+      - id: v_3col_total
+        min_year_week: "0000_sem00"
+        cols_per_disease: 3
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream

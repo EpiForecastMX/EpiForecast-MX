@@ -1439,12 +1439,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_enterobiasis_b80
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: enterobiasis_b80_release_d97747797808
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
+    # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
+    acceptance_fallback_run: enterobiasis_b80_benchmark_test_e0da98a0e642_cc06383a9e66
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1553,12 +1559,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_giardiasis_a071
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: giardiasis_a071_release_e3458e42deda
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
+    # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
+    acceptance_fallback_run: giardiasis_a071_benchmark_test_743866512c1d_28c7e68ce6e2
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1931,12 +1943,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_hepatitis_b_b16
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: hepatitis_b_b16_release_72228e00fe8e
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
+    # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
+    acceptance_fallback_run: hepatitis_b_b16_benchmark_test_a47b95614898_50ac460e5ec1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2069,12 +2087,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_reumatica_i00
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: reumatica_i00_release_6ed116c23499
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
+    # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
+    acceptance_fallback_run: reumatica_i00_benchmark_test_87ea0dfbca64_14db5b16f704
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2316,12 +2340,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta10b_desnutricion
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: desnutricion_moderada_e440_release_c6ab8deedd22
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
+    # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
+    acceptance_fallback_run: desnutricion_moderada_e440_benchmark_test_d0e8bcde9786_42ed81ea6639
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2342,12 +2372,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta10b_desnutricion
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: desnutricion_severa_e40_release_2a04bbc9573a
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
+    # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
+    acceptance_fallback_run: desnutricion_severa_e40_benchmark_test_df9942c01891_920173defee4
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2399,12 +2435,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta10b_brucelosis_a23
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: brucelosis_a23_release_e4ffbfd8332b
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
+    # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
+    acceptance_fallback_run: brucelosis_a23_benchmark_test_f5af3a7f0d34_dc75570639e8
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2425,12 +2467,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta10b_leptospirosis_a27
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: leptospirosis_a27_release_5c71dba18511
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
+    # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
+    acceptance_fallback_run: leptospirosis_a27_benchmark_test_b00e9b50b8cf_e9f72df0dfbb
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2453,12 +2501,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta10b_helmintiasis_b65
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: helmintiasis_b65_release_319fbff1ce0c
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
+    # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
+    acceptance_fallback_run: helmintiasis_b65_benchmark_test_53040bc8cfdc_fb95a2672712
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2479,12 +2533,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta10b_rotavirus_a080
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: rotavirus_a080_release_7d93e256d814
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
+    # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
+    acceptance_fallback_run: rotavirus_a080_benchmark_test_f8677b403d52_38a46f4a3ca2
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2534,12 +2594,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta10b_absceso_hepatico_a064
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: absceso_hepatico_a064_release_0ec9c6dfc5f8
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
+    # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
+    acceptance_fallback_run: absceso_hepatico_a064_benchmark_test_226b0375a681_9b7f9ed0a205
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2560,12 +2626,18 @@ padecimientos:
     batch: standalone
     extraction_group: enfermedades_no_transmisibles
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: bocio_e01_release_07940d3a8530
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
+    # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
+    acceptance_fallback_run: bocio_e01_benchmark_test_4921ca54134d_695bc4d1d9a3
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2574,3 +2646,507 @@ padecimientos:
       color: "#0F766E"
       label: "Bocio endémico"
       nombre_completo: "Bocio endémico (E01)"
+
+  - id: tos_ferina_a37
+    data_name: "Tos ferina"
+    artifact_key: Tos_Ferina_A37
+    slug: tos_ferina_a37
+    display_name: "Tos ferina"
+    cie_codes: ["A37"]
+    # Sin «coqueluche» ni «coqueluchoide»: el síndrome coqueluchoide (U99) es otra categoría del
+    # boletín, más amplia, que contiene a la tos ferina.
+    aliases: ["tos ferina", "tosferina", "pertussis", "a37"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20c_tos_ferina_a37
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
+    # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: tos_ferina_a37_release_f9c47054e402
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado complementario de Fable
+    # FABLE_CONTROLES5_DECISION_20261115, enlazado a la delegación y al dictamen 7832594e.
+    acceptance_fallback_run: tos_ferina_a37_benchmark_test_29be0241481b_6033dcf2a06f
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#155E75"
+      label: "Tos ferina"
+      nombre_completo: "Tos ferina (A37)"
+
+  - id: toxoplasmosis_b58
+    data_name: "Toxoplasmosis"
+    artifact_key: Toxoplasmosis_B58
+    slug: toxoplasmosis_b58
+    display_name: "Toxoplasmosis"
+    cie_codes: ["B58"]
+    aliases: ["toxoplasmosis", "b58"]
+    # Perfil: infección de curso agudo, de muy baja incidencia; los perfiles sólo cambian la cohorte
+    # (los traits del runner son idénticos), como las zoonosis de alta10b.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20c_toxoplasmosis_b58
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
+    # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#854D0E"
+      label: "Toxoplasmosis"
+      nombre_completo: "Toxoplasmosis (B58)"
+
+  - id: teniasis_b68
+    data_name: "Teniasis"
+    artifact_key: Teniasis_B68
+    slug: teniasis_b68
+    display_name: "Teniasis"
+    cie_codes: ["B68"]
+    aliases: ["teniasis", "taeniasis", "b68"]
+    # Perfil: infección de curso agudo, de muy baja incidencia; los perfiles sólo cambian la cohorte
+    # (los traits del runner son idénticos), como las zoonosis de alta10b.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20c_teniasis_b68
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
+    # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#3F6212"
+      label: "Teniasis"
+      nombre_completo: "Teniasis (B68)"
+
+  - id: cisticercosis_b69
+    data_name: "Cisticercosis"
+    artifact_key: Cisticercosis_B69
+    slug: cisticercosis_b69
+    display_name: "Cisticercosis"
+    cie_codes: ["B69"]
+    aliases: ["cisticercosis", "b69"]
+    # Perfil: infección de curso crónico; los perfiles sólo cambian la cohorte (traits idénticos).
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: alta20c_cisticercosis_b69
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
+    # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#166534"
+      label: "Cisticercosis"
+      nombre_completo: "Cisticercosis (B69)"
+
+  - id: triquinosis_b75
+    data_name: "Triquinosis"
+    artifact_key: Triquinosis_B75
+    slug: triquinosis_b75
+    display_name: "Triquinosis"
+    cie_codes: ["B75"]
+    aliases: ["triquinosis", "triquinelosis", "b75"]
+    # Perfil: infección de curso agudo, de muy baja incidencia; los perfiles sólo cambian la cohorte
+    # (los traits del runner son idénticos), como las zoonosis de alta10b.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20c_triquinosis_b75
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
+    # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#7F1D1D"
+      label: "Triquinosis"
+      nombre_completo: "Triquinosis (B75)"
+
+  - id: mal_del_pinto_a67
+    data_name: "Mal del pinto"
+    artifact_key: Mal_Del_Pinto_A67
+    slug: mal_del_pinto_a67
+    display_name: "Mal del pinto"
+    cie_codes: ["A67"]
+    aliases: ["mal del pinto", "a67"]
+    # Perfil: infección de curso crónico; los perfiles sólo cambian la cohorte (traits idénticos).
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: alta20c_mal_del_pinto_a67
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
+    # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: mal_del_pinto_a67_release_b5c696472e9e
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#155E75"
+      label: "Mal del pinto"
+      nombre_completo: "Mal del pinto (A67)"
+
+  - id: influenza_j09
+    # Rótulo del boletín «Influenza§», CIE J09-J11 (Cuadro 3.6). § = Sistema Especial de
+    # Vigilancia Epidemiológica, información preliminar de casos confirmados por RT-PCR; desde 2025
+    # & = Unidades de Salud Monitoras de Enfermedad Respiratoria Viral (USMER). No son casos
+    # probables: el acumulado se revisa con confirmaciones tardías (ver QA_influenza_j09.md).
+    data_name: "Influenza"
+    artifact_key: Influenza_J09
+    slug: influenza_j09
+    display_name: "Influenza"
+    cie_codes: ["J09", "J10", "J11"]
+    aliases: ["influenza", "gripe", "j09", "j10", "j11"]
+    # Agudo infeccioso en conteos, sin traits legacy (precedente: brucelosis_a23, rotavirus_a080).
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20c_influenza_j09
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#1D4ED8"
+      label: "Influenza"
+      nombre_completo: "Influenza (J09-J11)"
+
+  - id: coqueluchoide_u99
+    data_name: "Síndrome coqueluchoide"
+    artifact_key: Coqueluchoide_U99
+    slug: coqueluchoide_u99
+    display_name: "Síndrome coqueluchoide"
+    cie_codes: ["U99"]
+    # Sin «tos ferina» ni «pertussis»: A37 es otro bloque del boletín y otro candidato.
+    aliases: ["sindrome coqueluchoide", "coqueluchoide", "u99"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20c_coqueluchoide_u99
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
+    # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: coqueluchoide_u99_release_d3adeef64700
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado complementario de Fable
+    # FABLE_CONTROLES5_DECISION_20261115, enlazado a la delegación y al dictamen 7832594e.
+    acceptance_fallback_run: coqueluchoide_u99_benchmark_test_4423d856db6a_943074b5f147
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#5B21B6"
+      label: "Síndrome coqueluchoide"
+      nombre_completo: "Síndrome coqueluchoide (U99)"
+
+  - id: paratifoidea_a011
+    data_name: "Fiebre paratifoidea"
+    artifact_key: Paratifoidea_A011
+    slug: paratifoidea_a011
+    display_name: "Fiebre paratifoidea"
+    # Rótulo vigente de la fuente (desde 2024_sem06): «A01.1 - A01.4». En 2014_sem02-2017_sem01 y
+    # 2018_sem14-2024_sem05 imprimía sólo «A01.1» (ver QA_paratifoidea_a011.md).
+    cie_codes: ["A01.1", "A01.2", "A01.3", "A01.4"]
+    aliases: ["fiebre paratifoidea", "paratifoidea", "a01.1"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20c_paratifoidea_a011
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
+    # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: paratifoidea_a011_release_45a8e45e816c
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#B45309"
+      label: "Fiebre paratifoidea"
+      nombre_completo: "Fiebre paratifoidea (A01.1-A01.4)"
+
+  - id: conjuntivitis_hemorragica_b303
+    data_name: "Conjuntivitis epidémica aguda hemorrágica"
+    artifact_key: Conjuntivitis_Hemorragica_B303
+    slug: conjuntivitis_hemorragica_b303
+    display_name: "Conjuntivitis epidémica aguda hemorrágica"
+    cie_codes: ["B30.3"]
+    # Sin «conjuntivitis» a secas: es alias de conjuntivitis_h10 (H10), ya publicado.
+    aliases: ["conjuntivitis epidemica aguda hemorragica", "conjuntivitis hemorragica", "conjuntivitis aguda hemorragica", "b30.3"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20c_conjuntivitis_hemorragica_b303
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
+    # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#BE185D"
+      label: "Conjuntivitis epidémica aguda hemorrágica"
+      nombre_completo: "Conjuntivitis epidémica aguda hemorrágica (B30.3)"
+
+  - id: tracoma_a71
+    data_name: "Tracoma"
+    artifact_key: Tracoma_A71
+    slug: tracoma_a71
+    display_name: "Tracoma"
+    cie_codes: ["A71"]
+    aliases: ["tracoma", "a71"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20c_tracoma_a71
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
+    # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#4338CA"
+      label: "Tracoma"
+      nombre_completo: "Tracoma (A71)"
+
+  - id: sindrome_meningeo_g00
+    data_name: "Síndrome meníngeo"
+    artifact_key: Sindrome_Meningeo_G00
+    slug: sindrome_meningeo_g00
+    display_name: "Síndrome meníngeo"
+    # Rótulo de la fuente desde 2018_sem15: «G00-G03 excepto G00.0 y G00.1»; antes «excepto G00.0 y
+    # G01» y, hasta 2017_sem01, con el nombre «Meningitis» (ver QA_sindrome_meningeo_g00.md). El renglón 41
+    # del SUIVE-1 (2014 y 2019) define siempre G00-G03 excepto G00.0 y G00.1 (D9_COMPARABILIDAD_SUIVE.md).
+    cie_codes: ["G00.2", "G00.3", "G00.8", "G00.9", "G01", "G02", "G03"]
+    # Sin «meningitis» a secas: abarcaría la tuberculosa (A17.0) y la meningocócica (A39.0), que el
+    # boletín vigila en otros cuadros.
+    # Sin el rango «g00-g03»: nombraría G00.0 y G00.1, que el bloque excluye (renglones 99 y 176 del SUIVE-1).
+    aliases: ["sindrome meningeo"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20c_sindrome_meningeo_g00
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    # Bloque presente desde 2014 (como «Meningitis»): 364 semanas objetivo antes de 2021-W01 (ver QA).
+    # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
+    # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: sindrome_meningeo_g00_release_7fd7ccde48c7
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado complementario de Fable
+    # FABLE_CONTROLES5_DECISION_20261115, enlazado a la delegación y al dictamen 7832594e.
+    acceptance_fallback_run: sindrome_meningeo_g00_benchmark_test_866b910c8bf0_05fc53c086f5
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#0E7490"
+      label: "Síndrome meníngeo"
+      nombre_completo: "Síndrome meníngeo (G00-G03 excepto G00.0 y G00.1)"
+
+  - id: monoxido_t58
+    data_name: "Intoxicación por monóxido de carbono"
+    artifact_key: Monoxido_T58
+    slug: monoxido_t58
+    display_name: "Intoxicación por monóxido de carbono"
+    cie_codes: ["T58"]
+    aliases: ["intoxicacion por monoxido de carbono", "monoxido de carbono", "t58"]
+    # Baja incidencia: mediana semanal nacional 2021-2024 de pocos casos (ver QA_monoxido_t58.md).
+    profile: baja_incidencia_semanal
+    batch: standalone
+    extraction_group: alta20c_monoxido_t58
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
+    # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: monoxido_t58_release_292de8154869
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado complementario de Fable
+    # FABLE_CONTROLES5_DECISION_20261115, enlazado a la delegación y al dictamen 7832594e.
+    acceptance_fallback_run: monoxido_t58_benchmark_test_1a53e686abb1_193db9d6ce10
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#52525B"
+      label: "Monóxido de carbono"
+      nombre_completo: "Intoxicación por monóxido de carbono (T58)"
+
+  - id: hipotermia_t68
+    data_name: "Hipotermia"
+    artifact_key: Hipotermia_T68
+    slug: hipotermia_t68
+    display_name: "Hipotermia"
+    cie_codes: ["T68"]
+    aliases: ["hipotermia", "t68"]
+    # Baja incidencia: mediana semanal nacional 2021-2024 de pocos casos (ver QA_hipotermia_t68.md).
+    profile: baja_incidencia_semanal
+    batch: standalone
+    extraction_group: alta20c_hipotermia_t68
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
+    # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#1E40AF"
+      label: "Hipotermia"
+      nombre_completo: "Hipotermia (T68)"
+
+  - id: plaguicidas_t60
+    data_name: "Intoxicación por plaguicidas"
+    artifact_key: Plaguicidas_T60
+    slug: plaguicidas_t60
+    display_name: "Intoxicación por plaguicidas"
+    cie_codes: ["T60"]
+    aliases: ["intoxicacion por plaguicidas", "plaguicidas", "t60"]
+    # Perfil agudo de conteos: mediana semanal nacional 2021-2024 de decenas de casos.
+    # El bloque no separa intención. Sensibilidad resuelta por el dictamen delegado de Fable (D7,
+    # FABLE_DECISIONES_DELEGADAS_20261115): no se excluye; ficha y EpiBot dicen que la serie no distingue
+    # intención y las consultas de autolesión siguen en la respuesta de crisis.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20c_plaguicidas_t60
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado complementario de Fable
+    # FABLE_DECISION_PLAGUICIDAS_20261115 (sha256 19e61453…), enlazado a la delegación y al dictamen 7832594e.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: plaguicidas_t60_release_f85321a34bb9
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado complementario de Fable
+    # FABLE_CONTROLES5_DECISION_20261115, enlazado a la delegación y al dictamen 7832594e.
+    acceptance_fallback_run: plaguicidas_t60_benchmark_test_b6852ce6dc8d_b705e2d831c3
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#3F6212"
+      label: "Intoxicación por plaguicidas"
+      nombre_completo: "Intoxicación por plaguicidas (T60)"
+
+  # Cuadro 6.2 (transmisión sexual), segundo bloque, sin desglose por sexo. Alta de alta20c autorizada
+  # por el decisor delegado (FABLE_DECISIONES_DELEGADAS_20261115.md §4 D3), sin exclusión por título.
+  - id: vulvovaginitis_n76
+    data_name: "Vulvovaginitis"
+    artifact_key: Vulvovaginitis_N76
+    slug: vulvovaginitis_n76
+    display_name: "Vulvovaginitis"
+    # Hasta 2017_sem01 el boletín imprime «Vulvovaginitis Inespecífica» con «A76.0»; desde 2017_sem02, N76.
+    cie_codes: ["N76"]
+    # Sin «vaginitis» ni «infección vaginal»: abarcan candidiasis urogenital y tricomoniasis.
+    aliases: ["vulvovaginitis", "vulvovaginitis inespecifica", "n76"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20c_vulvovaginitis_n76
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    artifact_source:
+      backend: runner_release
+      release_id: vulvovaginitis_n76_release_150d6148d568
+    sex_breakdown: false
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#DB2777"
+      label: "Vulvovaginitis"
+      nombre_completo: "Vulvovaginitis (N76)"

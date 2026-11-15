@@ -160,6 +160,22 @@ def test_cie_map():
         "T67": "Efectos del calor y de la luz",
         "A06.4": "Absceso hepático amebiano",
         "E01": "Bocio endémico",
+        "A37": "Tos ferina",  # alta20c, configured
+        "B58": "Toxoplasmosis",
+        "B68": "Teniasis",
+        "B69": "Cisticercosis",
+        "B75": "Triquinosis",
+        "A67": "Mal del pinto",
+        "J09": "Influenza",
+        "U99": "Síndrome coqueluchoide",
+        "A01.1": "Fiebre paratifoidea",
+        "B30.3": "Conjuntivitis epidémica aguda hemorrágica",
+        "A71": "Tracoma",
+        "G00.2": "Síndrome meníngeo",
+        "T58": "Intoxicación por monóxido de carbono",
+        "T68": "Hipotermia",
+        "T60": "Intoxicación por plaguicidas",
+        "N76": "Vulvovaginitis",
     }
 
 
