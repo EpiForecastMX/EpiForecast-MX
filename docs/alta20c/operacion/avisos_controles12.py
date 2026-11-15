@@ -35,6 +35,11 @@ from epiforecast.data import epi_calendar as cal  # noqa: E402
 IDS = ['brucelosis_a23', 'reumatica_i00', 'bocio_e01', 'hepatitis_b_b16', 'rotavirus_a080', 'absceso_hepatico_a064',
        'leptospirosis_a27', 'helmintiasis_b65', 'desnutricion_moderada_e440', 'desnutricion_severa_e40',
        'enterobiasis_b80', 'giardiasis_a071']
+# Cinco controles nuevos (dictamen delegado complementario FABLE_CONTROLES5_DECISION_20261115.json). Rezago impreso 0 en
+# coqueluchoide y tos ferina: el boletín N trae la semana N (origen 2026-W43; la ventana repite 2025-W45..2026-W43).
+IDS += ['coqueluchoide_u99', 'plaguicidas_t60', 'tos_ferina_a37', 'sindrome_meningeo_g00', 'monoxido_t58']
+LAGS = {'coqueluchoide_u99': 0, 'tos_ferina_a37': 0}
+lag = lambda d: LAGS.get(d, 1)
 VENTANA = ((2025, 45), (2026, 43))
 f = lambda x: float(x) if x not in ('', None) else 0.0
 bol = lambda k: f'{k[0]}_sem{k[1]:02d}'
@@ -77,7 +82,7 @@ def de(nombre):
 
 def retirado(d, ent, nombre, y, w, esperado):
     """Valor impreso y retirado en el boletín siguiente. esperado = (casos, acum, acum_sig, sem_sig, acum_fin)."""
-    R = raw(d); b = cal.shift(y, w, 1); s = cal.shift(*b, 1)
+    R = raw(d); b = cal.shift(y, w, lag(d)); s = cal.shift(*b, 1)
     r1, r2, rf = R[b + (ent,)], R[s + (ent,)], R[VENTANA[1] + (ent,)]
     # El acumulado al cierre de la ventana sólo es comparable si el pico es del mismo año que 2026_sem43.
     medido = (casos(r1), acum(r1), acum(r2), casos(r2), acum(rf) if b[0] == VENTANA[1][0] else None)
@@ -102,7 +107,7 @@ def nuevos(n):
 
 def conservado(d, ent, nombre, y, w, esperado, transitoria=None, portafolio=False):
     """Pico que sigue en el acumulado hasta el último boletín de la ventana. esperado = (casos, antes, con, fin)."""
-    R = raw(d); b = cal.shift(y, w, 1); p = cal.shift(*b, -1)
+    R = raw(d); b = cal.shift(y, w, lag(d)); p = cal.shift(*b, -1)
     medido = (casos(R[b + (ent,)]), acum(R[p + (ent,)]), acum(R[b + (ent,)]), acum(R[VENTANA[1] + (ent,)]))
     assert medido == esperado, (d, ent, medido, esperado)
     c, a0, a1, af = medido
@@ -153,6 +158,9 @@ NOMINALES = {
                                         conservado('desnutricion_severa_e40', 'Querétaro', 'Querétaro', 2026, 37, (91, 12, 104, 111))],
     'enterobiasis_b80': lambda: [conservado('enterobiasis_b80', 'Tlaxcala', 'Tlaxcala', 2026, 10, (73, 0, 73, 112))],
     # Aceptada (portafolio real, no control): sólo la celda de picos_heredados, sin nota general de la ventana del control.
+    'coqueluchoide_u99': lambda: [retirado('coqueluchoide_u99', 'Chiapas', 'Chiapas', 2026, 16, (39, 60, 24, 0, 57))],
+    'plaguicidas_t60': lambda: [retirado('plaguicidas_t60', 'México', 'el Estado de México', 2026, 16, (60, 100, 46, 3, 118))],
+    'sindrome_meningeo_g00': lambda: [retirado('sindrome_meningeo_g00', 'Ciudad de México', 'la Ciudad de México', 2026, 26, (32, 83, 54, 2, 91))],
     'paratifoidea_a011': lambda: [conservado('paratifoidea_a011', 'Michoacán', 'Michoacán', 2026, 32, (121, 250, 372, 398),
                                              portafolio=True)],
 }
@@ -167,7 +175,7 @@ def nota_general(d):
         for k1, k2 in zip(ks, ks[1:]):
             if not (VENTANA[0] <= k1 <= VENTANA[1]):
                 continue
-            if cal.target_period(*k1, 1).epi_year != cal.target_period(*k2, 1).epi_year:
+            if cal.target_period(*k1, lag(d)).epi_year != cal.target_period(*k2, lag(d)).epi_year:
                 continue
             a1, a2 = acum(R[k1 + (e,)]), acum(R[k2 + (e,)])
             if a2 < a1:
@@ -182,7 +190,7 @@ def nota_general(d):
                                 f'{bol(x["b2"])}{extra})')
     lista = lambda xs: xs[0] if len(xs) == 1 else ', '.join(xs[:-1]) + ' y ' + xs[-1]
     veces = {2: 'dos', 3: 'tres', 4: 'cuatro', 5: 'cinco'}
-    texto = (f'Entre los boletines {bol(VENTANA[0])} y {bol(VENTANA[1])}, cuyas semanas (2025-W44 a 2026-W42) repite este control, el '
+    texto = (f'Entre los boletines {bol(VENTANA[0])} y {bol(VENTANA[1])}, cuyas semanas ({sem(cal.shift(*VENTANA[0], -lag(d)))} a {sem(cal.shift(*VENTANA[1], -lag(d)))}) repite este control, el '
              f'acumulado anual impreso de alguna entidad bajó {n} veces de un boletín al siguiente (se compara cada boletín con el '
              f'siguiente dentro del mismo año epidemiológico; no se cuenta el reinicio anual). En esas bajas la fuente quitó en bruto '
              f'{miles(bruto)} casos, contados como la baja del acumulado más los casos nuevos del boletín siguiente; la cifra incluye '

@@ -1,5 +1,5 @@
 {
- "_nota": "Metadatos de redacción por id para las fichas de los doce controles de alta20c (dictamen delegado de Fable §1, 15-nov-2026). art, low y cuadro se copian de docs/alta10b/meta_publicacion_alta10b.json (cuadro vigente en el boletín 43). fecha_orden: fecha de la decisión del autor sobre la política de cinco motores (B2/B14, 12-nov-2026), con la que se eligió el portafolio rechazado. No es autorización. paratifoidea_a011 (aceptada): cuadro 4.1 en el boletín 43 (txt/2026_sem43.txt); falla_motores y fecha_orden = política de cinco motores del dictamen delegado de Fable (15-nov-2026), no una orden nominal del autor. mal_del_pinto_a67 (aceptado, cinco motores por el mismo dictamen delegado) y vulvovaginitis_n76 (aceptada, rolling_cv_v1, sin sexo): cuadros 10 y 6.2 en el boletín 43.",
+ "_nota": "Metadatos de redacción por id para las fichas de los doce controles de alta20c (dictamen delegado de Fable §1, 15-nov-2026). art, low y cuadro se copian de docs/alta10b/meta_publicacion_alta10b.json (cuadro vigente en el boletín 43). fecha_orden: fecha de la decisión del autor sobre la política de cinco motores (B2/B14, 12-nov-2026), con la que se eligió el portafolio rechazado. No es autorización. paratifoidea_a011 (aceptada): cuadro 4.1 en el boletín 43 (txt/2026_sem43.txt); falla_motores y fecha_orden = política de cinco motores del dictamen delegado de Fable (15-nov-2026), no una orden nominal del autor. mal_del_pinto_a67 (aceptado, cinco motores por el mismo dictamen delegado) y vulvovaginitis_n76 (aceptada, rolling_cv_v1, sin sexo): cuadros 10 y 6.2 en el boletín 43. Cinco controles nuevos (dictamen delegado complementario FABLE_CONTROLES5_DECISION_20261115.json): cuadros 12.1, 13.6, 3.2, 12 y 13.6 en el boletín 43; fecha_orden = política de cinco motores del dictamen delegado.",
  "brucelosis_a23": {
   "art": "la",
   "low": "brucelosis",
@@ -90,5 +90,35 @@
   "art": "la",
   "low": "vulvovaginitis",
   "cuadro": "6.2"
+ },
+ "coqueluchoide_u99": {
+  "art": "el",
+  "low": "síndrome coqueluchoide",
+  "cuadro": "12.1",
+  "fecha_orden": "15 de noviembre de 2026"
+ },
+ "plaguicidas_t60": {
+  "art": "la",
+  "low": "intoxicación por plaguicidas",
+  "cuadro": "13.6",
+  "fecha_orden": "15 de noviembre de 2026"
+ },
+ "tos_ferina_a37": {
+  "art": "la",
+  "low": "tos ferina",
+  "cuadro": "3.2",
+  "fecha_orden": "15 de noviembre de 2026"
+ },
+ "sindrome_meningeo_g00": {
+  "art": "el",
+  "low": "síndrome meníngeo",
+  "cuadro": "12",
+  "fecha_orden": "15 de noviembre de 2026"
+ },
+ "monoxido_t58": {
+  "art": "la",
+  "low": "intoxicación por monóxido de carbono",
+  "cuadro": "13.6",
+  "fecha_orden": "15 de noviembre de 2026"
  }
 }
