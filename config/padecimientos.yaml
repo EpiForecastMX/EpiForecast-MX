@@ -1439,12 +1439,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_enterobiasis_b80
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: enterobiasis_b80_refit_final_9fe0414b00c7_673791e8de04
+      forecast_run_id: enterobiasis_b80_forecast_h52_673791e8de04_a8609ddbc500
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
     # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
     acceptance_fallback_run: enterobiasis_b80_benchmark_test_e0da98a0e642_cc06383a9e66
@@ -1556,12 +1562,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_giardiasis_a071
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: giardiasis_a071_refit_final_9fe0414b00c7_34685d3bceee
+      forecast_run_id: giardiasis_a071_forecast_h52_34685d3bceee_ac8d0421e334
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
     # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
     acceptance_fallback_run: giardiasis_a071_benchmark_test_743866512c1d_28c7e68ce6e2
@@ -1937,12 +1949,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_hepatitis_b_b16
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: hepatitis_b_b16_refit_final_9fe0414b00c7_84d5066c3bee
+      forecast_run_id: hepatitis_b_b16_forecast_h52_84d5066c3bee_9c96d4f24fca
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
     # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
     acceptance_fallback_run: hepatitis_b_b16_benchmark_test_a47b95614898_50ac460e5ec1
@@ -2078,12 +2096,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_reumatica_i00
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: reumatica_i00_refit_final_9fe0414b00c7_9b9a65b9f116
+      forecast_run_id: reumatica_i00_forecast_h52_9b9a65b9f116_0af64e671a06
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
     # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
     acceptance_fallback_run: reumatica_i00_benchmark_test_87ea0dfbca64_14db5b16f704
@@ -2328,12 +2352,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta10b_desnutricion
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: desnutricion_moderada_e440_refit_final_9fe0414b00c7_56c36ad3db27
+      forecast_run_id: desnutricion_moderada_e440_forecast_h52_56c36ad3db27_dbabf3a735e2
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
     # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
     acceptance_fallback_run: desnutricion_moderada_e440_benchmark_test_d0e8bcde9786_42ed81ea6639
@@ -2357,12 +2387,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta10b_desnutricion
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: desnutricion_severa_e40_refit_final_9fe0414b00c7_ef6a86292c91
+      forecast_run_id: desnutricion_severa_e40_forecast_h52_ef6a86292c91_f5eaad96452e
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
     # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
     acceptance_fallback_run: desnutricion_severa_e40_benchmark_test_df9942c01891_920173defee4
@@ -2417,12 +2453,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta10b_brucelosis_a23
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: brucelosis_a23_refit_final_9fe0414b00c7_c5673e4393a1
+      forecast_run_id: brucelosis_a23_forecast_h52_c5673e4393a1_0b7d4954843d
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
     # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
     acceptance_fallback_run: brucelosis_a23_benchmark_test_f5af3a7f0d34_dc75570639e8
@@ -2446,12 +2488,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta10b_leptospirosis_a27
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: leptospirosis_a27_refit_final_9fe0414b00c7_e3949f1cc8c0
+      forecast_run_id: leptospirosis_a27_forecast_h52_e3949f1cc8c0_28493d3f3725
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
     # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
     acceptance_fallback_run: leptospirosis_a27_benchmark_test_b00e9b50b8cf_e9f72df0dfbb
@@ -2477,12 +2525,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta10b_helmintiasis_b65
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: helmintiasis_b65_refit_final_9fe0414b00c7_e9c807ad4bea
+      forecast_run_id: helmintiasis_b65_forecast_h52_e9c807ad4bea_02a4122dd70c
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
     # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
     acceptance_fallback_run: helmintiasis_b65_benchmark_test_53040bc8cfdc_fb95a2672712
@@ -2506,12 +2560,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta10b_rotavirus_a080
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: rotavirus_a080_refit_final_9fe0414b00c7_97bc3e4ec865
+      forecast_run_id: rotavirus_a080_forecast_h52_97bc3e4ec865_bf75035a1de0
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
     # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
     acceptance_fallback_run: rotavirus_a080_benchmark_test_f8677b403d52_38a46f4a3ca2
@@ -2564,12 +2624,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta10b_absceso_hepatico_a064
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: absceso_hepatico_a064_refit_final_9fe0414b00c7_03fece3e0c02
+      forecast_run_id: absceso_hepatico_a064_forecast_h52_03fece3e0c02_49059cd58bb2
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
     # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
     acceptance_fallback_run: absceso_hepatico_a064_benchmark_test_226b0375a681_9b7f9ed0a205
@@ -2593,12 +2659,18 @@ padecimientos:
     batch: standalone
     extraction_group: enfermedades_no_transmisibles
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: bocio_e01_refit_final_9fe0414b00c7_d83919a668e8
+      forecast_run_id: bocio_e01_forecast_h52_d83919a668e8_67e009f1d2a8
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
     # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
     acceptance_fallback_run: bocio_e01_benchmark_test_4921ca54134d_695bc4d1d9a3
