@@ -2895,11 +2895,13 @@ padecimientos:
     slug: sindrome_meningeo_g00
     display_name: "Síndrome meníngeo"
     # Rótulo de la fuente desde 2018_sem15: «G00-G03 excepto G00.0 y G00.1»; antes «excepto G00.0 y
-    # G01» y, hasta 2017_sem01, con el nombre «Meningitis» (ver QA_sindrome_meningeo_g00.md).
+    # G01» y, hasta 2017_sem01, con el nombre «Meningitis» (ver QA_sindrome_meningeo_g00.md). El renglón 41
+    # del SUIVE-1 (2014 y 2019) define siempre G00-G03 excepto G00.0 y G00.1 (D9_COMPARABILIDAD_SUIVE.md).
     cie_codes: ["G00.2", "G00.3", "G00.8", "G00.9", "G01", "G02", "G03"]
     # Sin «meningitis» a secas: abarcaría la tuberculosa (A17.0) y la meningocócica (A39.0), que el
     # boletín vigila en otros cuadros.
-    aliases: ["sindrome meningeo", "g00-g03"]
+    # Sin el rango «g00-g03»: nombraría G00.0 y G00.1, que el bloque excluye (renglones 99 y 176 del SUIVE-1).
+    aliases: ["sindrome meningeo"]
     profile: aguda_conteos
     batch: standalone
     extraction_group: alta20c_sindrome_meningeo_g00
@@ -2919,7 +2921,7 @@ padecimientos:
     web:
       color: "#0E7490"
       label: "Síndrome meníngeo"
-      nombre_completo: "Síndrome meníngeo (G00-G03, excepto G00.0 y G00.1)"
+      nombre_completo: "Síndrome meníngeo (G00-G03 excepto G00.0 y G00.1)"
 
   - id: monoxido_t58
     data_name: "Intoxicación por monóxido de carbono"
