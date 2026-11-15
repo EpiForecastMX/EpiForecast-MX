@@ -2826,11 +2826,8 @@ padecimientos:
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: paratifoidea_a011_refit_final_8b7a13f1f129_bc51a427a76e
-      forecast_run_id: paratifoidea_a011_forecast_h52_bc51a427a76e_64a4ee63b691
-      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
-      final_selection_digest: 8b7a13f1f1293a498c473e6871bb5bf44e75f053c6ee41173f66f3cb7ff67020
+      backend: runner_release
+      release_id: paratifoidea_a011_release_45a8e45e816c
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
