@@ -2667,6 +2667,9 @@ padecimientos:
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado complementario de Fable
+    # FABLE_CONTROLES5_DECISION_20261115, enlazado a la delegación y al dictamen 7832594e.
+    acceptance_fallback_run: tos_ferina_a37_benchmark_test_29be0241481b_6033dcf2a06f
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2871,6 +2874,9 @@ padecimientos:
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado complementario de Fable
+    # FABLE_CONTROLES5_DECISION_20261115, enlazado a la delegación y al dictamen 7832594e.
+    acceptance_fallback_run: coqueluchoide_u99_benchmark_test_4423d856db6a_943074b5f147
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2992,6 +2998,9 @@ padecimientos:
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado complementario de Fable
+    # FABLE_CONTROLES5_DECISION_20261115, enlazado a la delegación y al dictamen 7832594e.
+    acceptance_fallback_run: sindrome_meningeo_g00_benchmark_test_866b910c8bf0_05fc53c086f5
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3020,6 +3029,9 @@ padecimientos:
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado complementario de Fable
+    # FABLE_CONTROLES5_DECISION_20261115, enlazado a la delegación y al dictamen 7832594e.
+    acceptance_fallback_run: monoxido_t58_benchmark_test_1a53e686abb1_193db9d6ce10
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3079,6 +3091,9 @@ padecimientos:
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado complementario de Fable
     # FABLE_DECISION_PLAGUICIDAS_20261115 (sha256 19e61453…), enlazado a la delegación y al dictamen 7832594e.
     selection_policy: rolling_cv_baja_incidencia_v1
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado complementario de Fable
+    # FABLE_CONTROLES5_DECISION_20261115, enlazado a la delegación y al dictamen 7832594e.
+    acceptance_fallback_run: plaguicidas_t60_benchmark_test_b6852ce6dc8d_b705e2d831c3
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
