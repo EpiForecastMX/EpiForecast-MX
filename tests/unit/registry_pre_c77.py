@@ -108,6 +108,7 @@ def _diabetes_sin_publicar(texto: str) -> str:
         "helmintiasis_b65",
         "desnutricion_moderada_e440",
         "desnutricion_severa_e40",
+        "paratifoidea_a011",
         "hiperplasia_prostata_n40",
         "embarazo_hipertensivos_o10",
         "embarazo_diabetes_o24",

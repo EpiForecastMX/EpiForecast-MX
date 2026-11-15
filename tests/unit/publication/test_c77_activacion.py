@@ -107,6 +107,7 @@ def test_el_contrato_separa_legacy_de_release():
         "efectos del calor y de la luz",
         "absceso hepatico amebiano",
         "bocio endemico",
+        "fiebre paratifoidea",
     )
     assert c.releases["obesidad"] == (_OBESIDAD, _RELEASE)
     assert sorted(i for i, _ in c.releases.values()) == [
@@ -171,6 +172,7 @@ def test_el_contrato_separa_legacy_de_release():
         "obesidad",
         "otitis_h65",
         "otras_hepatitis_b17",
+        "paratifoidea_a011",
         "parotiditis_b26",
         "peaton_v01",
         "protozoarios_a07",
@@ -184,7 +186,7 @@ def test_el_contrato_separa_legacy_de_release():
         "varicela_b01",
         "vehiculos_v20",
     ]
-    # La paridad de corte cubre a los setenta y tres; las series legacy siguen siendo 3×111 + 99.
+    # La paridad de corte cubre a los setenta y cuatro; las series legacy siguen siendo 3×111 + 99.
     assert c.padecimientos == (*c.legado, *c.release)
     assert c.legado == ("depresion", "parkinson", "alzheimer", "dengue")
     assert len(c.claves_esperadas()) == 432
@@ -288,6 +290,7 @@ def test_la_paridad_de_corte_incluye_al_publicado_del_runner(tmp_path):
         "Desnutrición severa": 42,
         "Enterobiasis": 42,
         "Giardiasis": 42,
+        "Fiebre paratifoidea": 42,
     }
     rezagada = _consolidado(tmp_path / "a.csv", {**pads, "Obesidad": 27})
     resultado = revisa_consolidado(rezagada, contrato, contrato.padecimientos)
@@ -308,7 +311,7 @@ def test_un_publicado_del_runner_ausente_del_consolidado_falla(tmp_path):
 def test_revisa_releases_falla_cerrado_sin_bundle_ni_estado(tmp_path):
     resultado = revisa_releases(tmp_path, ContratoCobertura.canonico())
     assert not resultado.pasa
-    assert len(resultado.problemas) == 73
+    assert len(resultado.problemas) == 74
     assert any("release obesidad" in p for p in resultado.problemas)
     assert any("release diabetes tipo i:" in p for p in resultado.problemas)
 

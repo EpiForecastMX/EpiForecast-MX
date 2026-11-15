@@ -329,6 +329,7 @@ def test_obesidad_y_f50_publicadas_solo_desde_su_release():
         "Efectos del calor y de la luz",
         "Absceso hepático amebiano",
         "Bocio endémico",
+        "Fiebre paratifoidea",
     ]
     # El carril legacy (all_forecast, tabla_333, zoom) sigue siendo exactamente los cuatro.
     assert [d.data_name for d in registry.legacy_published()] == [

@@ -2890,8 +2890,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_paratifoidea_a011
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
