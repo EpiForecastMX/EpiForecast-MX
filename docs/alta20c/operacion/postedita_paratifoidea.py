@@ -5,13 +5,19 @@ gen_fichas_alta20c.py. No toca datos: lee el dataset v2 de la observación y el 
 - Comparabilidad (D9, D9_COMPARABILIDAD_SUIVE.md): renglón 178 del formato SUIVE-1, A01.1-A01.4 en 2014 y 2019.
 - Tendencia anual medida, descrita sin causalidad.
 - Evidencia del índice posterior a la emisión.
+- Error en la prueba retrospectiva de 2025 (sMAPE nacional y por series, frente al control), desde el acceptance.json
+  sellado que liga el release_manifest del backend (prueba2025.py).
 Uso: postedita_paratifoidea.py --ficha <html> --dataset <epi_dataset_v2.csv> --vista <vista.json> --indice <registro.txt>
+                               --be <backend> --runs <runs>
 """
-import argparse, collections, csv, json
+import argparse, collections, csv, json, os, sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from prueba2025 import nota_prueba  # noqa: E402
 from datetime import datetime, timezone
 
 ap = argparse.ArgumentParser()
-for k in ('--ficha', '--dataset', '--vista', '--indice'):
+for k in ('--ficha', '--dataset', '--vista', '--indice', '--be', '--runs'):
     ap.add_argument(k, required=True)
 a = ap.parse_args()
 
@@ -39,6 +45,9 @@ s = sub(s, fin_datos,
         f'({anual[2017]:,}) y 2022 ({anual[2022]:,}); son notificaciones y no permiten atribuir la baja a una causa.</p></div>')
 
 v = json.load(open(a.vista)); e = datetime.fromisoformat(v['forecast_emitted_at'])
+QUE = 'La comparación con lo observado se actualizará con cada boletín nuevo sin reentrenar los modelos.</p>'
+nota, run = nota_prueba(a.be, a.runs, v, (22.7, 27.6))
+s = sub(s, QUE, QUE[:-4] + nota + '</p>')
 for linea in open(a.indice):
     p = linea.split()
     if len(p) >= 4 and p[1] == 'http=200':
@@ -53,4 +62,4 @@ s = sub(s, 'W46 estaba en curso.</p>',
         f'como último el boletín {ult}.</span></p>')
 assert ' y el autor decidió' not in s
 open(a.ficha, 'w', encoding='utf-8').write(s)
-print('ok', ts.isoformat())
+print('ok', ts.isoformat(), run)

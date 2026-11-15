@@ -29,3 +29,16 @@ Fable (§1). No son código de producción: el CI no los ejecuta. Rutas por omis
   `python avisos_controles12.py --fe <wt-fe> --be <wt-ctl> --indice <base>/indices/registro.txt [--check]`
 - `qa_retiros_ventana.py`: barrido sin umbral de bajas del acumulado (misma ventana y mismo criterio de año objetivo); su
   número de bajas por id es el que usa la nota general (242 en total).
+
+## Prueba retrospectiva de los tres aceptados en sus fichas (15-nov-2026)
+
+- `prueba2025.py`: nota con rótulo «Error en la prueba de 2025» desde el `acceptance.json` sellado, localizado por la cadena
+  del `release_manifest` del backend (release_id de la vista) y verificado por su sha256; sMAPE nacional y de las series
+  frente al control, límites de la regla y la advertencia de que no es desempeño fuera de muestra. Aborta si la cifra
+  nacional redondeada no coincide con la cotejada a mano o si el manifiesto no liga.
+- `postedita_paratifoidea.py` (ahora con `--be <wt-ctl> --runs <runs>`) y `postedita_aceptados2.py` (ahora con
+  `--be <wt-ctl>`) la añaden a paratifoidea (22.7 frente a 27.6) y vulvovaginitis (8.9 frente a 11.4). El mal del pinto
+  ya la tenía en «Error alto aunque aceptado» (111.3 frente a 115.8) y no se duplica.
+- Reproducción de las tres fichas, byte a byte, en un frontend temporal (copias, no enlaces): `gen_fichas_alta20c.py`
+  → `postedita_paratifoidea.py` → `postedita_aceptados2.py` → `picos_heredados.mjs` (`revisa(<fe>, true)`) →
+  `avisos_controles12.py`. Runs de las pruebas: `<base>/wt-be/runs`.

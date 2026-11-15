@@ -4,15 +4,20 @@ acceptance.json sellado y el registro del índice oficial. Cada cifra se recalcu
 
 - Mal del pinto (D10, dictamen delegado §2): sMAPE absoluto alto (aceptar = no empeorar al control) y el cambio de
   nivel de 2024 en casi todas las entidades, sin leerlo como menor incidencia; política decidida por el dictamen.
-- Vulvovaginitis: continuidad del rótulo «Vulvovaginitis Inespecífica A76.0» a N76 desde 2017_sem02.
+- Vulvovaginitis: continuidad del rótulo «Vulvovaginitis Inespecífica A76.0» a N76 desde 2017_sem02, y error en la prueba
+  retrospectiva de 2025 desde el acceptance.json sellado que liga el release_manifest del backend (prueba2025.py). El del
+  mal del pinto ya va en su nota «Error alto aunque aceptado» y no se duplica.
 - Ambas: evidencia del índice posterior a la emisión y «W43, W44 y W45».
-Uso: postedita_aceptados2.py --fe <frontend> --runs <runs> --indice <registro.txt>
+Uso: postedita_aceptados2.py --fe <frontend> --runs <runs> --indice <registro.txt> --be <backend>
 """
-import argparse, collections, csv, json, statistics
+import argparse, collections, csv, json, os, statistics, sys
 from datetime import datetime, timezone
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from prueba2025 import nota_prueba  # noqa: E402
+
 ap = argparse.ArgumentParser()
-for k in ('--fe', '--runs', '--indice'):
+for k in ('--fe', '--runs', '--indice', '--be'):
     ap.add_argument(k, required=True)
 a = ap.parse_args()
 
@@ -82,5 +87,7 @@ s = sub(s, 'registros entidad-semana).</p></div>',
         'registros entidad-semana). Hasta 2017_sem01 el boletín imprime el renglón como «Vulvovaginitis Inespecífica» con el código '
         'A76.0; desde 2017_sem02, «Vulvovaginitis» con N76. La serie es continua en ese cambio de rótulo y no se mide un cambio de '
         'definición en el total nacional. La candidiasis urogenital (B37.3-B37.4) y la tricomoniasis se notifican aparte.</p></div>')
+nota, run2 = nota_prueba(a.be, a.runs, v, (8.9, 11.4))
+s = sub(s, QUE, QUE[:-4] + nota + '</p>')
 s, ts2 = evidencia(s, v)
-open(p, 'w', encoding='utf-8').write(s); print(d, 'ok', ts2)
+open(p, 'w', encoding='utf-8').write(s); print(d, 'ok', ts2, run2)
