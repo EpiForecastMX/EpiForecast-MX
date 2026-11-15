@@ -28,7 +28,17 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
-## Checkpoint vigente — lote alta10b publicado — 12-nov-2026
+## Checkpoint vigente — lote alta20c publicado — 15-nov-2026
+
+Prevalece sobre las secciones fechadas inferiores en cuanto al número de publicados y la base semanal.
+Publicados: 85 en el sitio y 81 del runner (veinte nuevos con alta20c: tres portafolios aceptados en su prueba única
+de 2025, fiebre paratifoidea, mal del pinto y vulvovaginitis, 0/4 en curso; y diecisiete controles estacionales no
+validados). Las decisiones de gobierno las tomó Fable por delegación literal del autor del 15-nov («todo lo pendiente
+preguntarte a fable y él decide…»): son dictámenes delegados, no firmas humanas. Siete rechazos de la tanda quedan
+`configured` fuera de cupo; influenza y febril exantemática bloqueadas (Sem «-1» en 2025). Base semanal de W42:
+`ingestion_observado_W43/candidato_con_alta20c_final20` (sha256 `8c21883a…`). Guía: `docs/C7_17_ALTA20C.md`.
+
+## Checkpoint — lote alta10b publicado — 12-nov-2026
 
 Prevalece sobre las secciones fechadas inferiores en cuanto al número de publicados y la base semanal.
 Publicados: 65 en el sitio y 61 del runner (diez nuevos con alta10b: cuatro aceptados en su prueba única de
