@@ -107,8 +107,13 @@ def test_el_contrato_separa_legacy_de_release():
         "efectos del calor y de la luz",
         "absceso hepatico amebiano",
         "bocio endemico",
+        "tos ferina",
         "mal del pinto",
+        "sindrome coqueluchoide",
         "fiebre paratifoidea",
+        "sindrome meningeo",
+        "intoxicacion por monoxido de carbono",
+        "intoxicacion por plaguicidas",
         "vulvovaginitis",
     )
     assert c.releases["obesidad"] == (_OBESIDAD, _RELEASE)
@@ -139,6 +144,7 @@ def test_el_contrato_separa_legacy_de_release():
         "candidiasis_b37",
         "cerebrovascular_i60",
         "conjuntivitis_h10",
+        "coqueluchoide_u99",
         "desnutricion_leve_e441",
         "desnutricion_moderada_e440",
         "desnutricion_severa_e40",
@@ -171,6 +177,7 @@ def test_el_contrato_separa_legacy_de_release():
         "linfoma_hodgkin_c81",
         "linfoma_no_hodgkin_c82",
         "mal_del_pinto_a67",
+        "monoxido_t58",
         "neumonias_j12",
         "obesidad",
         "otitis_h65",
@@ -178,19 +185,22 @@ def test_el_contrato_separa_legacy_de_release():
         "paratifoidea_a011",
         "parotiditis_b26",
         "peaton_v01",
+        "plaguicidas_t60",
         "protozoarios_a07",
         "quemaduras_t20",
         "reumatica_i00",
         "rotavirus_a080",
         "salmonelosis_a02",
         "shigelosis_a03",
+        "sindrome_meningeo_g00",
         "tifoidea_a01",
+        "tos_ferina_a37",
         "ulceras_k25",
         "varicela_b01",
         "vehiculos_v20",
         "vulvovaginitis_n76",
     ]
-    # La paridad de corte cubre a los setenta y seis; las series legacy siguen siendo 3×111 + 99.
+    # La paridad de corte cubre a los ochenta y uno; las series legacy siguen siendo 3×111 + 99.
     assert c.padecimientos == (*c.legado, *c.release)
     assert c.legado == ("depresion", "parkinson", "alzheimer", "dengue")
     assert len(c.claves_esperadas()) == 432
@@ -297,6 +307,11 @@ def test_la_paridad_de_corte_incluye_al_publicado_del_runner(tmp_path):
         "Fiebre paratifoidea": 42,
         "Mal del pinto": 42,
         "Vulvovaginitis": 42,
+        "Tos ferina": 42,
+        "Síndrome coqueluchoide": 42,
+        "Síndrome meníngeo": 42,
+        "Intoxicación por monóxido de carbono": 42,
+        "Intoxicación por plaguicidas": 42,
     }
     rezagada = _consolidado(tmp_path / "a.csv", {**pads, "Obesidad": 27})
     resultado = revisa_consolidado(rezagada, contrato, contrato.padecimientos)
@@ -317,7 +332,7 @@ def test_un_publicado_del_runner_ausente_del_consolidado_falla(tmp_path):
 def test_revisa_releases_falla_cerrado_sin_bundle_ni_estado(tmp_path):
     resultado = revisa_releases(tmp_path, ContratoCobertura.canonico())
     assert not resultado.pasa
-    assert len(resultado.problemas) == 76
+    assert len(resultado.problemas) == 81
     assert any("release obesidad" in p for p in resultado.problemas)
     assert any("release diabetes tipo i:" in p for p in resultado.problemas)
 

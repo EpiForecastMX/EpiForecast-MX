@@ -107,8 +107,13 @@ def test_el_carril_legacy_no_cambia():
         "Efectos del calor y de la luz",
         "Absceso hepático amebiano",
         "Bocio endémico",
+        "Tos ferina",
         "Mal del pinto",
+        "Síndrome coqueluchoide",
         "Fiebre paratifoidea",
+        "Síndrome meníngeo",
+        "Intoxicación por monóxido de carbono",
+        "Intoxicación por plaguicidas",
         "Vulvovaginitis",
     ]
 

@@ -2660,8 +2660,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_tos_ferina_a37
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
@@ -2870,8 +2870,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_coqueluchoide_u99
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
@@ -2996,8 +2996,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_sindrome_meningeo_g00
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Bloque presente desde 2014 (como «Meningitis»): 364 semanas objetivo antes de 2021-W01 (ver QA).
@@ -3031,8 +3031,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_monoxido_t58
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
@@ -3096,8 +3096,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_plaguicidas_t60
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado complementario de Fable

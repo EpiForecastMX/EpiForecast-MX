@@ -329,8 +329,13 @@ def test_obesidad_y_f50_publicadas_solo_desde_su_release():
         "Efectos del calor y de la luz",
         "Absceso hepático amebiano",
         "Bocio endémico",
+        "Tos ferina",
         "Mal del pinto",
+        "Síndrome coqueluchoide",
         "Fiebre paratifoidea",
+        "Síndrome meníngeo",
+        "Intoxicación por monóxido de carbono",
+        "Intoxicación por plaguicidas",
         "Vulvovaginitis",
     ]
     # El carril legacy (all_forecast, tabla_333, zoom) sigue siendo exactamente los cuatro.
