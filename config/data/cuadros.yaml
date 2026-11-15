@@ -1877,8 +1877,8 @@ cuadro_groups:
     # (pdftotext, 669 boletines). El título lleva una excepción nominal: «… hasta la semana
     # epidemiológica N-1 …; Influenza hasta la N [del AAAA]»: el bloque de influenza llega hasta la
     # semana del boletín (rezago 0 en los 658 títulos legibles; los 12 sin título en el texto se
-    # contrastan por acumulado). Desde 2015_sem52 el rótulo lleva «§» (sistema especial, casos
-    # confirmados preliminares) y desde 2025 además «&» (USMER). «influenza» sola coincide con el
+    # contrastan por acumulado). En la página del cuadro (pdftotext), «§» aparece desde 2015_sem25,
+    # «Sistema Especial» desde 2021_sem01 y «&»/USMER desde 2024_sem34. «influenza» sola coincide con el
     # Cuadro 3.3 (Haemophilus influenzae): se ancla con el código. NO modifica alta20_parotiditis_b26.
     page_anchors: ["influenza", "j09"]
     state_markers: ["zacatecas", "tamaulipas"]
@@ -1907,6 +1907,60 @@ cuadro_groups:
           y lee Sem 0 en 31 entidades y el TOTAL (27, 546, 767) como Zacatecas. El TOTAL impreso
           (Sem 27; acumulado 546+767, que menos 526+760 de 2022_sem12 da 27) es legible: corregirlo
           exige código del extractor; mientras, se conserva el periodo imputado
+      - file: "2014_sem03.pdf"
+        diseases: [influenza_j09]
+        keep_period: true
+        reason: >-
+          errata aritmética de la fuente en la columna Sem (FABLE_INFLUENZA_FUENTE_REVISION): en 2014_sem03-sem08
+          Sem(w) = acum(w) - Sem(w-1) en las 32 entidades; el acumulado continúa aditivo en sem09 y 2015_sem08
+          reimprime 2014 a W08 como 6 540. W03-W08 suman 13 002 impresos frente a 5 294 de Δ acumulado; con
+          keep_period la reconciliación imputa el valor de W02 (463 nacional por semana, 2 778 en total)
+      - file: "2014_sem04.pdf"
+        diseases: [influenza_j09]
+        keep_period: true
+        reason: >-
+          errata aritmética de la fuente en la columna Sem (FABLE_INFLUENZA_FUENTE_REVISION): en 2014_sem03-sem08
+          Sem(w) = acum(w) - Sem(w-1) en las 32 entidades; el acumulado continúa aditivo en sem09 y 2015_sem08
+          reimprime 2014 a W08 como 6 540. W03-W08 suman 13 002 impresos frente a 5 294 de Δ acumulado; con
+          keep_period la reconciliación imputa el valor de W02 (463 nacional por semana, 2 778 en total)
+      - file: "2014_sem05.pdf"
+        diseases: [influenza_j09]
+        keep_period: true
+        reason: >-
+          errata aritmética de la fuente en la columna Sem (FABLE_INFLUENZA_FUENTE_REVISION): en 2014_sem03-sem08
+          Sem(w) = acum(w) - Sem(w-1) en las 32 entidades; el acumulado continúa aditivo en sem09 y 2015_sem08
+          reimprime 2014 a W08 como 6 540. W03-W08 suman 13 002 impresos frente a 5 294 de Δ acumulado; con
+          keep_period la reconciliación imputa el valor de W02 (463 nacional por semana, 2 778 en total)
+      - file: "2014_sem06.pdf"
+        diseases: [influenza_j09]
+        keep_period: true
+        reason: >-
+          errata aritmética de la fuente en la columna Sem (FABLE_INFLUENZA_FUENTE_REVISION): en 2014_sem03-sem08
+          Sem(w) = acum(w) - Sem(w-1) en las 32 entidades; el acumulado continúa aditivo en sem09 y 2015_sem08
+          reimprime 2014 a W08 como 6 540. W03-W08 suman 13 002 impresos frente a 5 294 de Δ acumulado; con
+          keep_period la reconciliación imputa el valor de W02 (463 nacional por semana, 2 778 en total)
+      - file: "2014_sem07.pdf"
+        diseases: [influenza_j09]
+        keep_period: true
+        reason: >-
+          errata aritmética de la fuente en la columna Sem (FABLE_INFLUENZA_FUENTE_REVISION): en 2014_sem03-sem08
+          Sem(w) = acum(w) - Sem(w-1) en las 32 entidades; el acumulado continúa aditivo en sem09 y 2015_sem08
+          reimprime 2014 a W08 como 6 540. W03-W08 suman 13 002 impresos frente a 5 294 de Δ acumulado; con
+          keep_period la reconciliación imputa el valor de W02 (463 nacional por semana, 2 778 en total)
+      - file: "2014_sem08.pdf"
+        diseases: [influenza_j09]
+        keep_period: true
+        reason: >-
+          errata aritmética de la fuente en la columna Sem (FABLE_INFLUENZA_FUENTE_REVISION): en 2014_sem03-sem08
+          Sem(w) = acum(w) - Sem(w-1) en las 32 entidades; el acumulado continúa aditivo en sem09 y 2015_sem08
+          reimprime 2014 a W08 como 6 540. W03-W08 suman 13 002 impresos frente a 5 294 de Δ acumulado; con
+          keep_period la reconciliación imputa el valor de W02 (463 nacional por semana, 2 778 en total)
+      - file: "2015_sem09.pdf"
+        diseases: [influenza_j09]
+        keep_period: true
+        reason: >-
+          bloque sin actualizar: Sem «-» en las 32 entidades y acumulado y año anterior iguales a 2015_sem08
+          (1 122); 2015_sem10 trae Sem 11 con Δ acumulado 94. Mismo patrón que los bloques reimpresos de tos ferina
     layout_variants:
       - id: v_4col_prev
         min_year_week: "0000_sem00"
