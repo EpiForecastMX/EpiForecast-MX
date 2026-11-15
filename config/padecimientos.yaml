@@ -2660,13 +2660,19 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_tos_ferina_a37
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: tos_ferina_a37_refit_final_9fe0414b00c7_2ed0302add91
+      forecast_run_id: tos_ferina_a37_forecast_h52_2ed0302add91_14a67df15be5
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado complementario de Fable
     # FABLE_CONTROLES5_DECISION_20261115, enlazado a la delegación y al dictamen 7832594e.
     acceptance_fallback_run: tos_ferina_a37_benchmark_test_29be0241481b_6033dcf2a06f
@@ -2867,13 +2873,19 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_coqueluchoide_u99
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: coqueluchoide_u99_refit_final_9fe0414b00c7_9c259609d693
+      forecast_run_id: coqueluchoide_u99_forecast_h52_9c259609d693_0f56b7151c33
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado complementario de Fable
     # FABLE_CONTROLES5_DECISION_20261115, enlazado a la delegación y al dictamen 7832594e.
     acceptance_fallback_run: coqueluchoide_u99_benchmark_test_4423d856db6a_943074b5f147
@@ -2990,7 +3002,7 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_sindrome_meningeo_g00
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
@@ -2998,6 +3010,12 @@ padecimientos:
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: sindrome_meningeo_g00_refit_final_9fe0414b00c7_8d8d5afee9b9
+      forecast_run_id: sindrome_meningeo_g00_forecast_h52_8d8d5afee9b9_8cd754509ce7
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado complementario de Fable
     # FABLE_CONTROLES5_DECISION_20261115, enlazado a la delegación y al dictamen 7832594e.
     acceptance_fallback_run: sindrome_meningeo_g00_benchmark_test_866b910c8bf0_05fc53c086f5
@@ -3022,13 +3040,19 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_monoxido_t58
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: monoxido_t58_refit_final_9fe0414b00c7_524123164c06
+      forecast_run_id: monoxido_t58_forecast_h52_524123164c06_88616285e4b3
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado complementario de Fable
     # FABLE_CONTROLES5_DECISION_20261115, enlazado a la delegación y al dictamen 7832594e.
     acceptance_fallback_run: monoxido_t58_benchmark_test_1a53e686abb1_193db9d6ce10
@@ -3084,13 +3108,19 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_plaguicidas_t60
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado complementario de Fable
     # FABLE_DECISION_PLAGUICIDAS_20261115 (sha256 19e61453…), enlazado a la delegación y al dictamen 7832594e.
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: plaguicidas_t60_refit_final_9fe0414b00c7_e2892a726558
+      forecast_run_id: plaguicidas_t60_forecast_h52_e2892a726558_5682ed4592d8
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado complementario de Fable
     # FABLE_CONTROLES5_DECISION_20261115, enlazado a la delegación y al dictamen 7832594e.
     acceptance_fallback_run: plaguicidas_t60_benchmark_test_b6852ce6dc8d_b705e2d831c3
