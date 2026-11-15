@@ -156,7 +156,8 @@ Cada uno pide su prueba que falle antes del cambio y su propia revisión.
 
 Limitaciones registradas, no deudas de código: `test:site` en el checkout principal del frontend da 106/107 por EPERM
 ambiental al copiar `LuisMNA.jpeg` (mismo árbol 107/107 en copia hermética; no tocar el archivo ni la prueba), y los
-evals del skill afectados quedaron 17/18 con el fallo de `bot-pierde-padecimiento/03` confirmado a ciegas.
+evals del skill afectados del cierre de alta20c (resultado histórico, skill de ese momento) quedaron 17/18 con el fallo de
+`bot-pierde-padecimiento/03` confirmado a ciegas; no acreditan el skill editado después.
 
 ## Activa — deudas tras publicar P1 W33 y P1b (2-sep-2026)
 

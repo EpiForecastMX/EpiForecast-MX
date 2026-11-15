@@ -103,8 +103,9 @@ plaguicidas no depende de esa semana.
 - Limitación ambiental: `test:site` en el checkout principal del frontend da 106/107 (caso 101, EPERM al copiar
   `LuisMNA.jpeg`, que lleva un atributo de privacidad de macOS); el mismo árbol da 107/107 en copia hermética
   (dictamen de entorno de Fable: no bloquea). No se tocó el archivo ni la prueba.
-- Evals del skill afectados: 17/18; el fallo de `bot-pierde-padecimiento/03` se confirmó en un contraste ciego y la
-  guía no se reescribió para aprobarlo.
+- Evals del skill afectados, resultado histórico del cierre (snapshot BE 924d64b5 / FE 3ed9ee35, skill de ese momento):
+  17/18; el fallo de `bot-pierde-padecimiento/03` se confirmó en un contraste ciego y la guía no se reescribió para
+  aprobarlo. No acredita el skill editado después (auditoría documental del 15-nov, con sus propios evals por versión).
 
 ## Evidencia
 
