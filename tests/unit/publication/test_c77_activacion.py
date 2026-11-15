@@ -70,9 +70,11 @@ def test_el_contrato_separa_legacy_de_release():
         "conjuntivitis",
         "amebiasis intestinal",
         "otras infecciones intestinales debidas a protozoarios",
+        "enterobiasis",
         "ascariasis",
         "otras salmonelosis",
         "intoxicacion alimentaria bacteriana",
+        "giardiasis",
         "fiebre tifoidea",
         "shigelosis",
         "escabiosis",
@@ -84,8 +86,10 @@ def test_el_contrato_separa_legacy_de_release():
         "accidente de transporte en vehiculos con motor",
         "candidiasis urogenital",
         "hepatitis virica a",
+        "hepatitis virica b",
         "hepatitis virica c",
         "quemaduras",
+        "fiebre reumatica aguda",
         "insuficiencia venosa periferica",
         "displasia cervical leve y moderada",
         "displasia cervical severa y cacu in situ",
@@ -93,16 +97,27 @@ def test_el_contrato_separa_legacy_de_release():
         "edema proteinuria y trastornos hipertensivos en el embarazo parto y puerperio",
         "diabetes mellitus en el embarazo",
         "desnutricion leve",
+        "desnutricion moderada",
+        "desnutricion severa",
         "otras hepatitis viricas",
+        "brucelosis",
+        "leptospirosis",
+        "otras helmintiasis",
+        "enteritis debida a rotavirus",
         "efectos del calor y de la luz",
+        "absceso hepatico amebiano",
+        "bocio endemico",
     )
     assert c.releases["obesidad"] == (_OBESIDAD, _RELEASE)
     assert sorted(i for i, _ in c.releases.values()) == [
+        "absceso_hepatico_a064",
         "alimentaria_a05",
         "amebiasis_a06",
         "anorexia_f50",
         "ascariasis_b77",
         "asma_j45",
+        "bocio_e01",
+        "brucelosis_a23",
         "calor_t67",
         "cancer_colon_c18",
         "cancer_cuello_utero_c53",
@@ -122,18 +137,24 @@ def test_el_contrato_separa_legacy_de_release():
         "cerebrovascular_i60",
         "conjuntivitis_h10",
         "desnutricion_leve_e441",
+        "desnutricion_moderada_e440",
+        "desnutricion_severa_e40",
         "diabetes_t1",
         "diabetes_t2",
         "displasia_leve_n87",
         "displasia_severa_n87",
         "embarazo_diabetes_o24",
         "embarazo_hipertensivos_o10",
+        "enterobiasis_b80",
         "erisipela_a46",
         "escabiosis_b86",
         "escarlatina_a38",
         "faringitis_j02",
+        "giardiasis_a071",
         "gingivitis_k05",
+        "helmintiasis_b65",
         "hepatitis_a_b15",
+        "hepatitis_b_b16",
         "hepatitis_c_b17",
         "hiperplasia_prostata_n40",
         "hipertension_i10",
@@ -142,6 +163,7 @@ def test_el_contrato_separa_legacy_de_release():
         "isquemica_i20",
         "ivp_i87",
         "ivu_n39",
+        "leptospirosis_a27",
         "leucemia_c91",
         "linfoma_hodgkin_c81",
         "linfoma_no_hodgkin_c82",
@@ -153,6 +175,8 @@ def test_el_contrato_separa_legacy_de_release():
         "peaton_v01",
         "protozoarios_a07",
         "quemaduras_t20",
+        "reumatica_i00",
+        "rotavirus_a080",
         "salmonelosis_a02",
         "shigelosis_a03",
         "tifoidea_a01",
@@ -160,7 +184,7 @@ def test_el_contrato_separa_legacy_de_release():
         "varicela_b01",
         "vehiculos_v20",
     ]
-    # La paridad de corte cubre a los sesenta y uno; las series legacy siguen siendo 3×111 + 99.
+    # La paridad de corte cubre a los setenta y tres; las series legacy siguen siendo 3×111 + 99.
     assert c.padecimientos == (*c.legado, *c.release)
     assert c.legado == ("depresion", "parkinson", "alzheimer", "dengue")
     assert len(c.claves_esperadas()) == 432
@@ -252,6 +276,18 @@ def test_la_paridad_de_corte_incluye_al_publicado_del_runner(tmp_path):
         "Desnutrición leve": 42,
         "Otras hepatitis víricas": 42,
         "Efectos del calor y de la luz": 42,
+        "Brucelosis": 42,
+        "Fiebre reumática aguda": 42,
+        "Bocio endémico": 42,
+        "Hepatitis vírica B": 42,
+        "Enteritis debida a rotavirus": 42,
+        "Absceso hepático amebiano": 42,
+        "Leptospirosis": 42,
+        "Otras helmintiasis": 42,
+        "Desnutrición moderada": 42,
+        "Desnutrición severa": 42,
+        "Enterobiasis": 42,
+        "Giardiasis": 42,
     }
     rezagada = _consolidado(tmp_path / "a.csv", {**pads, "Obesidad": 27})
     resultado = revisa_consolidado(rezagada, contrato, contrato.padecimientos)
@@ -272,7 +308,7 @@ def test_un_publicado_del_runner_ausente_del_consolidado_falla(tmp_path):
 def test_revisa_releases_falla_cerrado_sin_bundle_ni_estado(tmp_path):
     resultado = revisa_releases(tmp_path, ContratoCobertura.canonico())
     assert not resultado.pasa
-    assert len(resultado.problemas) == 61
+    assert len(resultado.problemas) == 73
     assert any("release obesidad" in p for p in resultado.problemas)
     assert any("release diabetes tipo i:" in p for p in resultado.problemas)
 
