@@ -109,6 +109,8 @@ def _diabetes_sin_publicar(texto: str) -> str:
         "desnutricion_moderada_e440",
         "desnutricion_severa_e40",
         "paratifoidea_a011",
+        "mal_del_pinto_a67",
+        "vulvovaginitis_n76",
         "hiperplasia_prostata_n40",
         "embarazo_hipertensivos_o10",
         "embarazo_diabetes_o24",

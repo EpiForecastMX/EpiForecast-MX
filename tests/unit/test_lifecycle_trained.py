@@ -107,7 +107,9 @@ def test_el_carril_legacy_no_cambia():
         "Efectos del calor y de la luz",
         "Absceso hepático amebiano",
         "Bocio endémico",
+        "Mal del pinto",
         "Fiebre paratifoidea",
+        "Vulvovaginitis",
     ]
 
 

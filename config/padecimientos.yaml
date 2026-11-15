@@ -2803,8 +2803,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_mal_del_pinto_a67
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
@@ -3103,8 +3103,8 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_vulvovaginitis_n76
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1

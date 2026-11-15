@@ -107,7 +107,9 @@ def test_el_contrato_separa_legacy_de_release():
         "efectos del calor y de la luz",
         "absceso hepatico amebiano",
         "bocio endemico",
+        "mal del pinto",
         "fiebre paratifoidea",
+        "vulvovaginitis",
     )
     assert c.releases["obesidad"] == (_OBESIDAD, _RELEASE)
     assert sorted(i for i, _ in c.releases.values()) == [
@@ -168,6 +170,7 @@ def test_el_contrato_separa_legacy_de_release():
         "leucemia_c91",
         "linfoma_hodgkin_c81",
         "linfoma_no_hodgkin_c82",
+        "mal_del_pinto_a67",
         "neumonias_j12",
         "obesidad",
         "otitis_h65",
@@ -185,8 +188,9 @@ def test_el_contrato_separa_legacy_de_release():
         "ulceras_k25",
         "varicela_b01",
         "vehiculos_v20",
+        "vulvovaginitis_n76",
     ]
-    # La paridad de corte cubre a los setenta y cuatro; las series legacy siguen siendo 3×111 + 99.
+    # La paridad de corte cubre a los setenta y seis; las series legacy siguen siendo 3×111 + 99.
     assert c.padecimientos == (*c.legado, *c.release)
     assert c.legado == ("depresion", "parkinson", "alzheimer", "dengue")
     assert len(c.claves_esperadas()) == 432
@@ -291,6 +295,8 @@ def test_la_paridad_de_corte_incluye_al_publicado_del_runner(tmp_path):
         "Enterobiasis": 42,
         "Giardiasis": 42,
         "Fiebre paratifoidea": 42,
+        "Mal del pinto": 42,
+        "Vulvovaginitis": 42,
     }
     rezagada = _consolidado(tmp_path / "a.csv", {**pads, "Obesidad": 27})
     resultado = revisa_consolidado(rezagada, contrato, contrato.padecimientos)
@@ -311,7 +317,7 @@ def test_un_publicado_del_runner_ausente_del_consolidado_falla(tmp_path):
 def test_revisa_releases_falla_cerrado_sin_bundle_ni_estado(tmp_path):
     resultado = revisa_releases(tmp_path, ContratoCobertura.canonico())
     assert not resultado.pasa
-    assert len(resultado.problemas) == 74
+    assert len(resultado.problemas) == 76
     assert any("release obesidad" in p for p in resultado.problemas)
     assert any("release diabetes tipo i:" in p for p in resultado.problemas)
 
