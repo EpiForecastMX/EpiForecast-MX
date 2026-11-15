@@ -18,3 +18,14 @@ Fable (§1). No son código de producción: el CI no los ejecuta. Rutas por omis
 - `fe_regen_rag_list.mjs`: regenera la lista esperada de `test_rag_alcance.mjs` desde el catálogo.
 
 `SHA256SUMS` registra los archivos de esta carpeta.
+
+## Revisión delegada de PUB12 (15-nov-2026)
+
+- `avisos_controles12.py` **sustituye** a la parte de avisos de `postedita_controles12.py` (no volver a correr ésta para
+  avisos: reinsertaría el texto anterior). Genera desde los raws sellados, las vistas y `indices/registro.txt` los avisos
+  nominales (dictamen §1 y picos heredados, con «conservado» o «retirado» y sus acumulados), la nota general de bajas del
+  acumulado y la evidencia del índice posterior a la emisión, en las doce fichas y en `epibot/js/avisos_fuente.js`, que
+  leen el EpiBot, la función RAG y el corpus. `--check` falla si algo difiere de lo generado.
+  `python avisos_controles12.py --fe <wt-fe> --be <wt-ctl> --indice <base>/indices/registro.txt [--check]`
+- `qa_retiros_ventana.py`: barrido sin umbral de bajas del acumulado (misma ventana y mismo criterio de año objetivo); su
+  número de bajas por id es el que usa la nota general (242 en total).
