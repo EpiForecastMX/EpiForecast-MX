@@ -2120,6 +2120,15 @@ cuadro_groups:
     year_week_source: filename
     observation_lag_weeks: 1           # rezago impreso medido = 1 en los 670 boletines
     first_block_columns: {8: 4}
+    # 2014_sem02-03: el PDF imprime cada guion corrido ~40 pt a la izquierda, junto al valor de la
+    # columna anterior (pdfplumber: guiones con borde derecho en 209.8/258.0/306.1 en vez de
+    # 250.2/298.3/346.5); camelot da 9 columnas, 5 del bloque. Cada renglón conserva sus 4 valores
+    # en orden: se reparten en orden de lectura y se validan contra el TOTAL impreso (falla cerrado).
+    # Sólo hasta 2014_sem03 (periodos).
+    primer_bloque_por_orden: {9: [5, 4]}
+    periodos:
+      - desde: "2014_sem04"
+        primer_bloque_por_orden: null
     diseases:
       - id: sindrome_meningeo_g00
         keyword: "Sindrome_Meningeo_G00"
@@ -2129,16 +2138,6 @@ cuadro_groups:
       - file: "2014_sem01.pdf"
         diseases: [sindrome_meningeo_g00]
         reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
-      - file: "2014_sem02.pdf"
-        diseases: [sindrome_meningeo_g00]
-        reason: >-
-          guiones desplazados en la fuente: el PDF imprime guiones sueltos entre columnas del bloque
-          (Sem. y Acum. H pegados, p. ej. «- -» y «1 -»); camelot da 9 columnas y el bloque no se
-          puede recortar sin reparación de código. Legible a mano (TOTAL 8/3/5/15).
-      - file: "2014_sem03.pdf"
-        diseases: [sindrome_meningeo_g00]
-        reason: >-
-          guiones desplazados en la fuente, igual que 2014_sem02 (9 columnas en camelot).
       - file: "2016_sem20.pdf"
         diseases: [sindrome_meningeo_g00]
         keep_period: true

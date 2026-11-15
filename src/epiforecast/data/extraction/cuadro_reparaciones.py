@@ -12,6 +12,8 @@ from typing import Any
 
 import pandas as pd
 
+from epiforecast.data.extraction.pdf_extractor import eliminar_columnas_vacias, normalize_number
+
 
 def spec_del_periodo(spec: dict[str, Any], year: int, week: int) -> dict[str, Any]:
     """Configuración del grupo vigente para el boletín ``year``/``week``.
@@ -132,3 +134,60 @@ def alinea_valor_en_nombre(df: pd.DataFrame) -> pd.DataFrame:
             filas[i, 2:] = previa[2:]
             filas[i - 1, :] = ""
     return pd.DataFrame(filas, index=df.index, columns=df.columns)
+
+
+_TOKEN = re.compile(r"^(?:\d+|-)$")
+_MILES = re.compile(r"\d \d{3}(?!\d)")
+
+
+def _tokens_en_orden(celdas: list[str], ancho: int) -> list[str] | None:
+    """Los ``ancho`` valores de las celdas en orden de lectura, o None si no son exactamente esos.
+
+    Un número con separador de miles («1 070») se partiría en dos valores: ante ese patrón no se
+    reparte (None), igual que ante un texto que no sea entero ni guion.
+    """
+    if any(_MILES.search(c) for c in celdas):
+        return None
+    tokens = " ".join(celdas).split()
+    if len(tokens) != ancho or not all(_TOKEN.match(t) for t in tokens):
+        return None
+    return tokens
+
+
+def fila_total(df_raw: pd.DataFrame) -> list[str] | None:
+    """Celdas del renglón TOTAL impreso con las mismas columnas que deja ``clean_df``."""
+    df = eliminar_columnas_vacias(alinea_renglones(df_raw))
+    fila = df[df[0].astype(str).str.strip().str.upper().eq("TOTAL")]
+    return None if len(fila) != 1 else [str(v) for v in fila.iloc[0, 1:]]
+
+
+def primer_bloque_por_orden(
+    df: pd.DataFrame, total: list[str] | None, columnas: int, ancho: int
+) -> tuple[pd.DataFrame | None, str]:
+    """Reparte en orden de lectura los valores del primer bloque cuando camelot los desacomoda.
+
+    En 2014_sem02 y 2014_sem03 (Cuadro 12, meningitis) el PDF imprime cada guion de una columna
+    corrido unos 40 pt a la izquierda, junto al valor de la columna anterior: camelot pega
+    «- -» o «1 -» en una celda y el bloque de 4 valores ocupa 5 columnas. Cada renglón conserva
+    sus 4 valores en orden, así que se toman en orden de lectura. Falla cerrado (None y motivo) si
+    algún renglón o el TOTAL no trae exactamente ``ancho`` valores, o si la suma de las entidades
+    no es el TOTAL impreso en cada columna. Sólo para grupos que lo declaran
+    (``primer_bloque_por_orden``).
+    """
+    if df.empty:
+        return None, "reparto por orden: tabla sin entidades"
+    valores = []
+    for _, fila in df.iterrows():
+        tokens = _tokens_en_orden([str(v) for v in fila.iloc[1 : 1 + columnas]], ancho)
+        if tokens is None:
+            return None, f"reparto por orden: {fila.iloc[0]} no trae {ancho} valores legibles"
+        valores.append(tokens)
+    impreso = _tokens_en_orden(total[:columnas], ancho) if total is not None else None
+    if impreso is None:
+        return None, f"reparto por orden: TOTAL impreso sin {ancho} valores legibles"
+    sumas = [sum(int(normalize_number(f[j])) for f in valores) for j in range(ancho)]
+    if sumas != [int(normalize_number(t)) for t in impreso]:
+        return None, f"reparto por orden: suma {sumas} distinta del TOTAL impreso {impreso}"
+    resto = df.iloc[:, 1 + columnas :].to_numpy().tolist()
+    filas = [[n, *v, *r] for n, v, r in zip(df.iloc[:, 0], valores, resto, strict=True)]
+    return pd.DataFrame(filas, columns=range(1 + ancho + len(resto[0]))), "ok"
