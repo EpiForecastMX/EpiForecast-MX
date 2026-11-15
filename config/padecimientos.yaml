@@ -2890,13 +2890,16 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_paratifoidea_a011
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: paratifoidea_a011_release_45a8e45e816c
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3050,3 +3053,64 @@ padecimientos:
       color: "#1E40AF"
       label: "Hipotermia"
       nombre_completo: "Hipotermia (T68)"
+
+  - id: plaguicidas_t60
+    data_name: "Intoxicación por plaguicidas"
+    artifact_key: Plaguicidas_T60
+    slug: plaguicidas_t60
+    display_name: "Intoxicación por plaguicidas"
+    cie_codes: ["T60"]
+    aliases: ["intoxicacion por plaguicidas", "plaguicidas", "t60"]
+    # Perfil agudo de conteos: mediana semanal nacional 2021-2024 de decenas de casos.
+    # El bloque no separa intención. Sensibilidad resuelta por el dictamen delegado de Fable (D7,
+    # FABLE_DECISIONES_DELEGADAS_20261115): no se excluye; ficha y EpiBot dicen que la serie no distingue
+    # intención y las consultas de autolesión siguen en la respuesta de crisis.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20c_plaguicidas_t60
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado complementario de Fable
+    # FABLE_DECISION_PLAGUICIDAS_20261115 (sha256 19e61453…), enlazado a la delegación y al dictamen 7832594e.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#3F6212"
+      label: "Intoxicación por plaguicidas"
+      nombre_completo: "Intoxicación por plaguicidas (T60)"
+
+  # Cuadro 6.2 (transmisión sexual), segundo bloque, sin desglose por sexo. Alta de alta20c autorizada
+  # por el decisor delegado (FABLE_DECISIONES_DELEGADAS_20261115.md §4 D3), sin exclusión por título.
+  - id: vulvovaginitis_n76
+    data_name: "Vulvovaginitis"
+    artifact_key: Vulvovaginitis_N76
+    slug: vulvovaginitis_n76
+    display_name: "Vulvovaginitis"
+    # Hasta 2017_sem01 el boletín imprime «Vulvovaginitis Inespecífica» con «A76.0»; desde 2017_sem02, N76.
+    cie_codes: ["N76"]
+    # Sin «vaginitis» ni «infección vaginal»: abarcan candidiasis urogenital y tricomoniasis.
+    aliases: ["vulvovaginitis", "vulvovaginitis inespecifica", "n76"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20c_vulvovaginitis_n76
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    sex_breakdown: false
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#DB2777"
+      label: "Vulvovaginitis"
+      nombre_completo: "Vulvovaginitis (N76)"
