@@ -134,6 +134,26 @@ humanos ni acredita ceguera. Frontend y fuentes/modelos no fueron modificados.
 > trabajo vigente de bitácoras históricas. Una deuda que aparezca sólo en un documento
 > antiguo no se ejecuta hasta contrastarla aquí y en el código.
 
+## Activa — mantenimiento tras alta20c (15-nov-2026), no bloqueante y no ejecutado
+
+Recomendado por la revisión final de Fable (`planes/alta20c_2026-11-14/evidencia_publicacion_20261115_1515/
+FABLE_FINAL_REVISION.md`, dictamen delegado, no firma humana). Ninguno bloqueó la publicación; ninguno está hecho.
+Cada uno pide su prueba que falle antes del cambio y su propia revisión.
+
+- **O1.** Las fichas de los doce controles base de alta20c conservan el rótulo transitorio «Cargando el estado de la
+  validación…» en `#pubLabel` (los cinco nuevos ya dicen «Cargando el estado…»). Corrección: la sustitución de
+  `docs/alta20c/operacion/postedita_controles5.py` en el generador de los doce.
+- **O2.** `guardaMeningitisTipo` (`epibot/js/kb.js`) y `guardaMeningitisTipoRag` (`epibot/netlify/functions/rag.mjs`)
+  devuelven `null` si la consulta nombra el síndrome meníngeo: «síndrome meníngeo meningocócica nacional» llega al
+  modelo. Medido en la API real, el modelo no atribuyó cifras; con un modelo adverso dependería de él.
+- **O3.** La guarda D7 de dosis o método (mismos dos archivos) no cubre «mata», «mortal», «tóxico» ni «cantidad».
+  Medido en la API real, el modelo declinó y la nota D7 se añadió; la garantía determinista sólo alcanza los términos
+  literales.
+
+Limitaciones registradas, no deudas de código: `test:site` en el checkout principal del frontend da 106/107 por EPERM
+ambiental al copiar `LuisMNA.jpeg` (mismo árbol 107/107 en copia hermética; no tocar el archivo ni la prueba), y los
+evals del skill afectados quedaron 17/18 con el fallo de `bot-pierde-padecimiento/03` confirmado a ciegas.
+
 ## Activa — deudas tras publicar P1 W33 y P1b (2-sep-2026)
 
 La fuente oficial 2026 fue comprobada el 2-sep-2026: contiene 33 boletines y el último

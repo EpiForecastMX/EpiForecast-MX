@@ -1,5 +1,9 @@
 # C7.16 · Lote alta10b: diez publicados (12-nov-2026)
 
+> **Historia.** Este documento describe su lote en su fecha. El estado vigente (85 en el sitio, 81 del runner desde el
+> 15-nov-2026, base `candidato_con_alta20c_final20`) está en el checkpoint del `CLAUDE.md` y en `docs/C7_17_ALTA20C.md`;
+> «actual» o «vigente» abajo se refiere a la fecha del lote.
+
 Orden del autor: incorporar diez padecimientos más. **Estado: publicados los diez.** El sitio pasa de 55 a 65
 padecimientos y el runner de 51 a 61, sin retirar ninguno: cuatro portafolios aceptados en su prueba única de
 2025 y seis controles estacionales no validados por autorización nominal del autor.

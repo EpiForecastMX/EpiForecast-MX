@@ -31,22 +31,30 @@ que terminaban dejando el checkout en una rama de trabajo.
 ## Checkpoint vigente — lote alta20c publicado — 15-nov-2026
 
 Prevalece sobre las secciones fechadas inferiores en cuanto al número de publicados y la base semanal.
-Publicados: 85 en el sitio y 81 del runner (veinte nuevos con alta20c: tres portafolios aceptados en su prueba única
-de 2025, fiebre paratifoidea, mal del pinto y vulvovaginitis, 0/4 en curso; y diecisiete controles estacionales no
-validados). Las decisiones de gobierno las tomó Fable por delegación literal del autor del 15-nov («todo lo pendiente
-preguntarte a fable y él decide…»): son dictámenes delegados, no firmas humanas. Siete rechazos de la tanda quedan
-`configured` fuera de cupo; influenza y febril exantemática bloqueadas (Sem «-1» en 2025). Base semanal de W42:
-`ingestion_observado_W43/candidato_con_alta20c_final20` (sha256 `8c21883a…`). Guía: `docs/C7_17_ALTA20C.md`.
+Publicados y medidos en producción servida: 85 en el sitio y 81 del runner (main backend `f63490f7`, CI verde;
+main frontend `f065b839`, Netlify `6af9d133`). Veinte nuevos con alta20c: tres portafolios aceptados en su prueba
+única de 2025 (fiebre paratifoidea, mal del pinto y vulvovaginitis; validación prospectiva `INCOMPLETE` 0/4) y
+diecisiete controles estacionales no validados: doce base (los siete reutilizables con la selección congelada de
+alta10b, que abrieron y rechazaron su prueba de 2025 en esta tanda, y los cinco rechazos de alta10b) y cinco
+rechazos nuevos de alta20c. Las decisiones de gobierno las tomó Fable por delegación literal del autor del 15-nov
+(«todo lo pendiente preguntarte a fable y él decide…»): son dictámenes delegados, no firmas humanas ni certificación
+científica. Siete rechazos de la tanda quedan `configured` fuera de cupo; influenza y febril exantemática bloqueadas
+(Sem «-1» en 2025). Base semanal: `ingestion_observado_W43/candidato_con_alta20c_final20` (sha256 `8c21883a…`), con
+los 85 en la semana **fuente** 2026-W43 (boletín 43); el último objetivo depende del rezago de cada id: W42 con
+rezago 1 y W43 con rezago 0 (síndrome coqueluchoide y tos ferina). El paso siguiente usa la semana fuente 44 una sola
+vez para todos. Guía: `docs/C7_17_ALTA20C.md`; cierre y evidencia fuera del repo:
+`planes/alta20c_2026-11-14/CIERRE_ALTA20C.md`. Pendiente de mantenimiento, no bloqueante ni ejecutado: O1 a O3 de la
+revisión final (`docs/DEUDAS_VIGENTES.md`).
 
 ## Checkpoint — lote alta10b publicado — 12-nov-2026
 
-Prevalece sobre las secciones fechadas inferiores en cuanto al número de publicados y la base semanal.
-Publicados: 65 en el sitio y 61 del runner (diez nuevos con alta10b: cuatro aceptados en su prueba única de
+Historia (superada por alta20c). Publicados: 65 en el sitio y 61 del runner (diez nuevos con alta10b: cuatro aceptados en su prueba única de
 2025 con cinco motores, ascariasis, hepatitis vírica A, efectos del calor y de la luz y otras hepatitis
 víricas, 0/4 en curso; y seis controles estacionales no validados por autorización A6, desnutrición leve,
 otras salmonelosis, fiebre tifoidea, escarlatina, hepatitis vírica C y displasia severa sin sexo). Los
 dieciséis candidatos llegaron a selección congelada; en orden fijo y con tope de cuatro se abrieron nueve
-pruebas de 2025: cuatro aceptadas, cinco rechazadas (quedan `configured` sin control) y siete sin abrir. Ningún rechazo futuro tiene control autorizado. Base semanal de W42:
+pruebas de 2025: cuatro aceptadas, cinco rechazadas (quedan `configured` sin control) y siete sin abrir. Ningún rechazo futuro tenía entonces control autorizado (después, alta20c publicó con control los cinco rechazos
+de alta10b por dictamen delegado). Base semanal de entonces (fuente W43):
 `ingestion_observado_W43/candidato_con_alta10b` (sha256 `be7abfa5…`). Guía: `docs/C7_16_ALTA10B.md`.
 
 ## Checkpoint — alta10b en publicación — 12/13-nov-2026
@@ -58,7 +66,7 @@ Hasta que se publiquen, siguen 55/51. Ningún rechazo futuro tiene control autor
 
 ## Checkpoint — lote alta10b en preparación, 0 publicados — 12-nov-2026
 
-Prevalece sobre las secciones fechadas inferiores. Publicados: siguen 55 en el sitio y 51 del runner. La
+Historia (superada por la publicación de alta10b y luego alta20c). Publicados entonces: seguían 55 en el sitio y 51 del runner. La
 orden de incorporar diez más (alta10b) está abierta y **no completada**: se integró sólo código del
 extractor, once altas `configured`, pruebas y documentación (`docs/C7_16_ALTA10B.md`). Desnutrición leve
 rechazó su prueba única de 2025 en el total nacional y queda `configured` sin control; los otros dieciséis
@@ -71,7 +79,7 @@ agregados de la tanda también están autorizados. No reabrir la prueba de leve 
 
 ## Checkpoint — lote alta20 cerrado — 12-nov-2026
 
-Prevalece sobre las secciones fechadas inferiores en cuanto al número de publicados y la base semanal.
+Historia (superada por alta10b y alta20c); en su momento prevalecía sobre las secciones inferiores.
 Publicados: 55 en el sitio y 51 del runner (veinte nuevos el 12-nov: diez aceptados en la prueba de 2025, 0/4
 en curso, y diez controles estacionales no validados por autorización nominal del autor). Fuente de verdad:
 `config/padecimientos.yaml` (lifecycle) y `publication/catalog.json` del frontend; guía

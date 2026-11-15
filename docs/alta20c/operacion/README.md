@@ -42,3 +42,24 @@ Fable (§1). No son código de producción: el CI no los ejecuta. Rutas por omis
 - Reproducción de las tres fichas, byte a byte, en un frontend temporal (copias, no enlaces): `gen_fichas_alta20c.py`
   → `postedita_paratifoidea.py` → `postedita_aceptados2.py` → `picos_heredados.mjs` (`revisa(<fe>, true)`) →
   `avisos_controles12.py`. Runs de las pruebas: `<base>/wt-be/runs`.
+
+## Cinco controles nuevos, revisión focal de su publicación y conteos (15-nov-2026)
+
+- `postedita_controles5.py`: post-edición medida de las fichas de los cinco controles del dictamen complementario
+  (coqueluchoide, plaguicidas, tos ferina, síndrome meníngeo, monóxido) sobre la salida de `gen_fichas_alta20c.py`:
+  condiciones comunes y por id, «salto de 2025» de tos ferina con sus cifras y rótulo de carga «Cargando el estado…».
+  Cadena reproducible: `gen_fichas_alta20c.py` → `postedita_controles5.py` → `avisos_controles12.py` →
+  `picos_heredados.mjs` (`revisa(<fe>, true)`) → `avisos_controles12.py` otra vez (idempotente).
+- `avisos_controles12.py` cubre ya los diecisiete controles (rezago por id) y, para plaguicidas y monóxido, añade a
+  `avisos_fuente.js` la nota D7 «No distingue intención» (estado `alcance`, no se pinta en la ficha) y las cifras de
+  retiro que usa la nota de pico heredado.
+- `radar_update_paratifoidea.py`, `radar_update_aceptados2.py`, `radar_update_controles5.py`: marcan en el radar vigente
+  los releases publicados del registry («Publicada» o «Control publicado»), uno por etapa de la tanda.
+- `fe_conteos.py <frontend>`: conteos escritos en las pruebas del frontend desde `publication/catalog.json` y el
+  catálogo del dashboard generado.
+- `fe_fixtures.py <frontend> <backend>`: listas de las pruebas del frontend que dependen de los releases instalados.
+
+**Rutas por omisión, historia.** Los worktrees `wt-be`, `wt-ctl` y `wt-fe` de `/tmp/epiforecast-alta20c-20261114` se
+retiraron tras la publicación; los runs están en el checkout principal (`runs/`) y los respaldos en
+`planes/alta20c_2026-11-14/` (`worktrees_ignorados_pre_retiro_20261115`, `git_bundles_20261115*`). Para volver a correr
+un guion, pasar rutas explícitas a un checkout de `main`.
