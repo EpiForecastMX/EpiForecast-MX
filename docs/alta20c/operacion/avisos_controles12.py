@@ -93,6 +93,7 @@ def retirado(d, ent, nombre, y, w, esperado):
     parte = f'{neto} de los {c} de esa semana' if neto <= c else f'{neto} casos, más que los {c} de esa semana'
     fin = '' if b[0] != VENTANA[1][0] else f' En {bol(VENTANA[1])} el acumulado anual era {miles(af)}.'
     return {'clave': f'{ent}|{sem((y, w))}', 'estado': 'retirado', 'titulo': 'Un valor que la propia fuente retiró.',
+            'entidad': ent, 'de_nombre': de(nombre), 'retiro_neto': neto, 'casos': c,
             'texto': f'El boletín {bol(b)} imprimió {c} casos {de(nombre)} en la semana {sem((y, w))}, con un acumulado anual de '
                      f'{miles(a1)}; el boletín siguiente, {bol(s)}, imprimió un acumulado de {miles(a2)} con {nuevos(s2)}: '
                      f'un retiro neto de {parte}.{fin} El control repite lo impreso 52 semanas antes y no hay un criterio vigente '
@@ -166,6 +167,18 @@ NOMINALES = {
 }
 SOLO_NOMINALES = ['paratifoidea_a011']
 
+# Condición D7 del dictamen complementario, en el EpiBot, la función RAG y el corpus (revisión focal de Fable de la
+# publicación de los cinco, A1). La ficha ya la dice en su nota de alcance: este aviso no se pinta en la ficha.
+D7_COD = {'plaguicidas_t60': 'T60', 'monoxido_t58': 'T58'}
+
+
+def d7(d):
+    return {'clave': 'd7-intencion', 'estado': 'alcance', 'titulo': 'No distingue intención.',
+            'texto': f'El código {D7_COD[d]} describe la naturaleza de la lesión, no si fue accidental, laboral, autoinfligida o por '
+                     'agresión: la serie cuenta intoxicaciones notificadas de cualquier intención. El sitio no describe mecanismos, '
+                     'productos ni dosis. Si estás pensando en hacerte daño, llama a la Línea de la Vida, gratis y las 24 horas: '
+                     '800 911 2000, o al 911 en una emergencia.'}
+
 
 def nota_general(d):
     R = raw(d); ents = sorted({k[2] for k in R})
@@ -235,10 +248,13 @@ EVID = re.compile(r' <span class="evidencia-indice">[^<]*</span>')
 datos = {}; cambios = []
 for d in IDS + SOLO_NOMINALES:
     nom = NOMINALES.get(d, lambda: [])(); nota = nota_general(d) if d in IDS else None
+    alcance = [d7(d)] if d in D7_COD else []
     ts, emi, ult = indice(d)
     evid = (f'Lo comprueba la consulta del índice oficial de boletines del {ts.day} de noviembre de {ts.year} a las '
             f'{ts:%H:%M:%S} UTC, posterior a la emisión ({emi:%H:%M:%S} UTC), que listaba como último el boletín {ult}.')
-    datos[d] = {'avisos': [{k: x[k] for k in ('clave', 'estado', 'titulo', 'texto')} for x in nom],
+    datos[d] = {'avisos': [{k: x[k] for k in ('clave', 'estado', 'titulo', 'texto') + (('entidad', 'de_nombre', 'retiro_neto', 'casos')
+                                                                                    if x['estado'] == 'retirado' else ())}
+                           for x in alcance + nom],
                 'nota': {k: nota[k] for k in ('clave', 'titulo', 'texto', 'bajas', 'retiro_bruto')} if nota else None,
                 'indice_posterior': {'consulta': f'{ts:%Y-%m-%dT%H:%M:%SZ}', 'emision': vista(d)['forecast_emitted_at'], 'ultimo_boletin': ult}}
     p = f'{a.fe}/{d}.html'; s0 = open(p, encoding='utf-8').read()

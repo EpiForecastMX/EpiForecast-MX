@@ -6,7 +6,8 @@ control repite lo observado 52 semanas antes, incluidos picos y valores retirado
 dataset y en la ventana (flag que contiene «sex_fallback», la definición del dictamen); «W43, W44 y W45».
 Condiciones por id: error nacional y salto o nivel (coqueluchoide, tos ferina), definición sindrómica frente a A37,
 D7 (plaguicidas y monóxido: no distingue intención), alcance exacto del síndrome meníngeo y la baja de Tamaulipas,
-series escasas (tos ferina y monóxido). Cada cifra se recalcula del dataset v2, la vista o el raw y aborta si no
+series escasas (tos ferina y monóxido). Revisión focal de Fable de la publicación: salto de 2025 de tos ferina con sus
+cifras (M1) y rótulo de carga sin «validación» (B2). Cada cifra se recalcula del dataset v2, la vista o el raw y aborta si no
 coincide con la del dictamen. Idempotente.
 
 Uso: postedita_controles5.py --fe <frontend> --be <backend> --runs <runs>
@@ -85,8 +86,8 @@ for d in LAG:
         assert (an[2024], an[2025], an[2026], vent, med) == (461, 1600, 204, 258, 4.0), (an, vent, med)
         assert (pn, cn) == (169.7, 108.7)  # la vista sellada redondea 108.75 a 108.7
         extra03 += (f' En el total nacional de 2025 el control tuvo sMAPE {cn} (el portafolio, {pn}; MASE del control, 2.27), el mayor error '
-                    'de los controles de esta tanda: no anticipó el salto observado de 2025 y no anticipa brotes, así que los valores bajos del horizonte '
-                    'no significan que no se espere uno.')
+                    f'de los controles de esta tanda: no anticipó el salto de 2025 ({an[2025]:,} casos frente a {an[2024]:,} en 2024) y no '
+                    'anticipa brotes; los valores bajos del horizonte no significan que no se espere uno.')
         notas.append('<strong>Serie distinta del síndrome coqueluchoide.</strong> La tos ferina (A37) y el síndrome coqueluchoide (U99) son '
                      'series distintas del boletín: no se suman.')
         notas.append(f'<strong>Serie escasa.</strong> En las semanas que repite el control, la mediana nacional fue de {med:.0f} casos por semana '
@@ -119,6 +120,8 @@ for d in LAG:
     if cb >= 70:  # mismo umbral y texto que los controles anteriores (controlEstatalPocoInformativo en el EpiBot)
         extra03 += f' Por estado es una referencia poco informativa: su error en las series por estado y sexo fue sMAPE {cb:.1f} en esa prueba.'
     s = sub(s, FIN03, ' en el total nacional.' + extra03 + FIN03[len(' en el total nacional.'):])
+    # Un control no tiene validación propia: el rótulo de carga no la anuncia (revisión focal de Fable, B2).
+    s = sub(s, '<span id="pubLabel">Cargando el estado de la validación…</span>', '<span id="pubLabel">Cargando el estado…</span>')
     for n in notas:
         bloque = p('nota-alcance', n)
         if bloque not in s:
