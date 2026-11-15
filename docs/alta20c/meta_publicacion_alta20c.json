@@ -1,5 +1,5 @@
 {
- "_nota": "Metadatos de redacción por id para las fichas de los doce controles de alta20c (dictamen delegado de Fable §1, 15-nov-2026). art, low y cuadro se copian de docs/alta10b/meta_publicacion_alta10b.json (cuadro vigente en el boletín 43). fecha_orden: fecha de la decisión del autor sobre la política de cinco motores (B2/B14, 12-nov-2026), con la que se eligió el portafolio rechazado. No es autorización. paratifoidea_a011 (aceptada): cuadro 4.1 en el boletín 43 (txt/2026_sem43.txt); falla_motores y fecha_orden = política de cinco motores del dictamen delegado de Fable (15-nov-2026), no una orden nominal del autor.",
+ "_nota": "Metadatos de redacción por id para las fichas de los doce controles de alta20c (dictamen delegado de Fable §1, 15-nov-2026). art, low y cuadro se copian de docs/alta10b/meta_publicacion_alta10b.json (cuadro vigente en el boletín 43). fecha_orden: fecha de la decisión del autor sobre la política de cinco motores (B2/B14, 12-nov-2026), con la que se eligió el portafolio rechazado. No es autorización. paratifoidea_a011 (aceptada): cuadro 4.1 en el boletín 43 (txt/2026_sem43.txt); falla_motores y fecha_orden = política de cinco motores del dictamen delegado de Fable (15-nov-2026), no una orden nominal del autor. mal_del_pinto_a67 (aceptado, cinco motores por el mismo dictamen delegado) y vulvovaginitis_n76 (aceptada, rolling_cv_v1, sin sexo): cuadros 10 y 6.2 en el boletín 43.",
  "brucelosis_a23": {
   "art": "la",
   "low": "brucelosis",
@@ -78,5 +78,17 @@
   "cuadro": "4.1",
   "falla_motores": "ETS y Ridge",
   "fecha_orden": "15 de noviembre de 2026"
+ },
+ "mal_del_pinto_a67": {
+  "art": "el",
+  "low": "mal del pinto",
+  "cuadro": "10",
+  "falla_motores": "ETS y Ridge",
+  "fecha_orden": "15 de noviembre de 2026"
+ },
+ "vulvovaginitis_n76": {
+  "art": "la",
+  "low": "vulvovaginitis",
+  "cuadro": "6.2"
  }
 }
