@@ -172,6 +172,8 @@ def test_cie_map():
         "B30.3": "Conjuntivitis epidémica aguda hemorrágica",
         "A71": "Tracoma",
         "G00.2": "Síndrome meníngeo",
+        "T58": "Intoxicación por monóxido de carbono",
+        "T68": "Hipotermia",
     }
 
 

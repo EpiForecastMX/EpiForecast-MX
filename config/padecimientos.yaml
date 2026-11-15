@@ -2898,3 +2898,55 @@ padecimientos:
       color: "#0E7490"
       label: "Síndrome meníngeo"
       nombre_completo: "Síndrome meníngeo (G00-G03, excepto G00.0 y G00.1)"
+
+  - id: monoxido_t58
+    data_name: "Intoxicación por monóxido de carbono"
+    artifact_key: Monoxido_T58
+    slug: monoxido_t58
+    display_name: "Intoxicación por monóxido de carbono"
+    cie_codes: ["T58"]
+    aliases: ["intoxicacion por monoxido de carbono", "monoxido de carbono", "t58"]
+    # Baja incidencia: mediana semanal nacional 2021-2024 de pocos casos (ver QA_monoxido_t58.md).
+    profile: baja_incidencia_semanal
+    batch: standalone
+    extraction_group: alta20c_monoxido_t58
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#52525B"
+      label: "Monóxido de carbono"
+      nombre_completo: "Intoxicación por monóxido de carbono (T58)"
+
+  - id: hipotermia_t68
+    data_name: "Hipotermia"
+    artifact_key: Hipotermia_T68
+    slug: hipotermia_t68
+    display_name: "Hipotermia"
+    cie_codes: ["T68"]
+    aliases: ["hipotermia", "t68"]
+    # Baja incidencia: mediana semanal nacional 2021-2024 de pocos casos (ver QA_hipotermia_t68.md).
+    profile: baja_incidencia_semanal
+    batch: standalone
+    extraction_group: alta20c_hipotermia_t68
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#1E40AF"
+      label: "Hipotermia"
+      nombre_completo: "Hipotermia (T68)"

@@ -2098,3 +2098,89 @@ cuadro_groups:
         has_prev_year: true
     n_states_expected: 32
     backend: camelot_stream
+
+  alta20c_monoxido_t58:
+    # Intoxicación por monóxido de carbono (T58): bloque intermedio del Cuadro 13.6 (tras quemaduras,
+    # antes de plaguicidas) en 2014_sem02..2026_sem43. Hasta 2015_sem01 se imprime sin año anterior
+    # (3 columnas, 11 en la página); desde 2015_sem02 con 4 (12 en la página).
+    # El rótulo «monóxido» se parte en dos renglones en pdftotext en varios años: se ancla por el
+    # código T58 y por «plaguicid» (la página es la misma que la de plaguicidas).
+    page_anchors: ["plaguicid", "t58"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    inner_block_columns: {11: [7, 3]}
+    periodos:
+      - desde: "2015_sem02"
+        inner_block_columns: {12: [8, 4], 13: [8, 4]}
+    diseases:
+      - id: monoxido_t58
+        keyword: "Monoxido_T58"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [monoxido_t58]
+        reason: >-
+          boletín con el formato de 2013 (Cuadro 11.4): no trae el bloque de monóxido de carbono;
+          su semana objetivo es 2013-W52, anterior al inicio de la serie (2014-W01)
+      - file: "2016_sem20.pdf"
+        diseases: [monoxido_t58]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes y
+          cardiovasculares en este boletín): acumulado 259/115/271 (semanas 19/20/21); el
+          acumulado salta y vuelve
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  alta20c_hipotermia_t68:
+    # Hipotermia (T68). Cambia de cuadro (pdftotext):
+    # 2014_sem02-2015_sem01 último bloque del Cuadro 13.7 (ponzoña de animales, alacrán, hipotermia),
+    # sin año anterior (3 columnas, 11 en la página); 2015_sem02-2017_sem01 mismo cuadro con 4 (12);
+    # 2017_sem02-2024_sem01 primer bloque del Cuadro 13.8 (con avispas X23 y ESAVI, 12 columnas);
+    # desde 2024_sem02 primer bloque del Cuadro 13.10 (con ESAVI, 8 columnas). ESAVI va a la semana
+    # del boletín, pero hipotermia una semana atrás («hasta la semana N-1»).
+    page_anchors: ["hipoterm", "t68"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    last_block_columns: {11: 3}
+    periodos:
+      - desde: "2015_sem02"
+        last_block_columns: {12: 4}
+      - desde: "2017_sem02"
+        last_block_columns: null
+        first_block_columns: {12: 4}
+      - desde: "2024_sem02"
+        first_block_columns: {8: 4}
+    diseases:
+      - id: hipotermia_t68
+        keyword: "Hipotermia_T68"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [hipotermia_t68]
+        reason: >-
+          boletín con el formato de 2013: no trae el bloque de hipotermia; su semana objetivo es
+          2013-W52, anterior al inicio de la serie (2014-W01)
+      - file: "2016_sem20.pdf"
+        diseases: [hipotermia_t68]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes y
+          cardiovasculares en este boletín): semana 4/1 546/3 y acumulado 107/33 612/118
+          (semanas 19/20/21); el acumulado salta y vuelve
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
