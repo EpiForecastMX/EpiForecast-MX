@@ -85,7 +85,7 @@ for d in LAG:
         assert (an[2024], an[2025], an[2026], vent, med) == (461, 1600, 204, 258, 4.0), (an, vent, med)
         assert (pn, cn) == (169.7, 108.7)  # la vista sellada redondea 108.75 a 108.7
         extra03 += (f' En el total nacional de 2025 el control tuvo sMAPE {cn} (el portafolio, {pn}; MASE del control, 2.27), el mayor error '
-                    'de los controles de esta tanda: no anticipó el brote de 2025 y no anticipa brotes, así que los valores bajos del horizonte '
+                    'de los controles de esta tanda: no anticipó el salto observado de 2025 y no anticipa brotes, así que los valores bajos del horizonte '
                     'no significan que no se espere uno.')
         notas.append('<strong>Serie distinta del síndrome coqueluchoide.</strong> La tos ferina (A37) y el síndrome coqueluchoide (U99) son '
                      'series distintas del boletín: no se suman.')
