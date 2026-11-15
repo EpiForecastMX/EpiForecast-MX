@@ -175,6 +175,7 @@ def test_cie_map():
         "T58": "Intoxicación por monóxido de carbono",
         "T68": "Hipotermia",
         "T60": "Intoxicación por plaguicidas",
+        "N76": "Vulvovaginitis",
     }
 
 

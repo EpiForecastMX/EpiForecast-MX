@@ -2278,3 +2278,55 @@ cuadro_groups:
         has_prev_year: true
     n_states_expected: 32
     backend: camelot_stream
+
+  alta20c_vulvovaginitis_n76:
+    # CUADRO 6.2 «Casos por entidad federativa de Enfermedades de Transmisión Sexual». Vulvovaginitis
+    # es el segundo bloque, tras Herpes genital (A60.0, 4 columnas con sexo), y SIN desglose por sexo:
+    # Sem, acumulado del año y acumulado del anterior. Medido con pdftotext en los 670 boletines:
+    #   2014_sem02..2015_sem01: Herpes 4 + Vulvovaginitis 2 (Sem y acumulado, sin año anterior) + SIDA
+    #     (B20-B24) 4 = 10 columnas; rótulo «Vulvovaginitis Inespecífica», CIE impreso «A76.0».
+    #   2015_sem02..2020_sem26: 4 + 3 + 4 = 11; mismo rótulo hasta 2017_sem01; desde 2017_sem02
+    #     «Vulvovaginitis», CIE N76 (continuidad medida en QA: 2017 reexpresa 2016 al 99.4 %).
+    #   2020_sem27..2026_sem43: SIDA pasa al Cuadro 6.3; 4 + 3 = 7 y Vulvovaginitis es el último.
+    # El bloque se recorta contando desde el final (inner_block_columns) y luego se lee sin sexo.
+    # Anclas: «vulvovag» sola también encuentra el Cuadro 6.3 de 2020-2023 (texto fantasma del
+    # encabezado); con «a60.0» la página es única en 669 de 670 boletines.
+    page_anchors: ["vulvovag", "a60.0"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    # Título «hasta la semana epidemiológica N-1» en el boletín N en los 669 boletines con la página
+    # (doce títulos de 2025-2026 son imagen y se leyeron renderizados): rezago 1 constante.
+    observation_lag_weeks: 1
+    inner_block_columns: {10: [6, 2]}
+    anchos_sin_sexo: [2]
+    periodos:
+      - desde: "2015_sem02"
+        inner_block_columns: {11: [7, 3]}
+        anchos_sin_sexo: null
+      - desde: "2020_sem27"
+        inner_block_columns: {7: [3, 3]}
+    diseases:
+      - id: vulvovaginitis_n76
+        keyword: "Vulvovaginitis_N76"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [vulvovaginitis_n76]
+        reason: >-
+          formato de cierre anual 2013: el Cuadro 6.2 trae Herpes, Candidiasis urogenital y VPH sólo
+          con acumulados y no imprime Vulvovaginitis
+      - file: "2016_sem20.pdf"
+        diseases: [vulvovaginitis_n76]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo boletín y criterio que hepatitis A y B):
+          TOTAL impreso Sem 228 y acumulado 3 597 frente a 9 116/164 438 en la semana 19 y 10 842/184 198
+          en la 21; el acumulado salta y vuelve
+    layout_variants:
+      - id: v_3col_total
+        min_year_week: "0000_sem00"
+        cols_per_disease: 3
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
