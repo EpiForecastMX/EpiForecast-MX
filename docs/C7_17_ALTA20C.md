@@ -90,10 +90,13 @@ plaguicidas no depende de esa semana.
 
 ## Publicación y cierre (15-nov-2026)
 
-- Fusión por merge commit: backend `f63490f7` (PR #72; CI 43729638086 verde) y frontend `f065b839` (PR #98; árbol igual
-  al head aprobado `3ed9ee35`). Producción Netlify `6af9d133`: 26/26 consultas a la API real, 141/141 archivos servidos
-  byte iguales, 25/25 fichas y navegador real; los siete fuera de cupo e influenza dan 404.
-- Revisión final de Fable (delegada): `APTO_PREPUBLICACION_MERGE_Y_DESPLIEGUE` para esos heads. Observaciones bajas,
+- Revisión final de Fable (delegada): `APTO_PREPUBLICACION_MERGE_Y_DESPLIEGUE` para los heads de las PR, backend
+  `924d64b5` y frontend `3ed9ee35`. Fusión por merge commit: backend `f63490f7` (PR #72; CI 43729638086 verde) y frontend
+  `f065b839` (PR #98); ambos merges tienen el árbol de sus heads aprobados, y la revisión de entorno de Fable los verificó
+  después. Producción Netlify `6af9d133`, medida por root: 26/26 consultas a la API real, 141/141 archivos servidos byte
+  iguales, 25/25 páginas por semántica HTML (las veinte fichas y cinco páginas más) y navegador real; los siete fuera de
+  cupo e influenza dan 404.
+- Observaciones de la revisión final: bajas,
   no bloqueantes y **no ejecutadas**: O1 rótulo «Cargando el estado de la validación…» en los doce controles base; O2
   «síndrome meníngeo meningocócica» llega al modelo; O3 sinónimos de letalidad («mata», «mortal») fuera de la guarda
   D7. Registradas en `docs/DEUDAS_VIGENTES.md`.

@@ -1,5 +1,9 @@
 # Deudas vigentes — índice canónico
 
+> **Estado del producto al 15-nov-2026:** 85 padecimientos publicados (81 del runner) tras alta20c; estado y base semanal en
+> el checkpoint vigente del `CLAUDE.md`. Deudas abiertas de esa tanda: O1 a O3 en «Activa — mantenimiento tras alta20c»,
+> más abajo (no ejecutadas). Las secciones WCP que siguen son el cierre de ese carril, ratificado; no reabren nada.
+
 ## Salida de sesión WCP — estado único vigente — 9-sep-2026
 
 **Trabajo operativo cerrado por ratificación expresa del autor.** Póster inglés
