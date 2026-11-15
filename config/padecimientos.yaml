@@ -1445,6 +1445,9 @@ padecimientos:
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
+    # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
+    acceptance_fallback_run: enterobiasis_b80_benchmark_test_e0da98a0e642_cc06383a9e66
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1559,6 +1562,9 @@ padecimientos:
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
+    # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
+    acceptance_fallback_run: giardiasis_a071_benchmark_test_743866512c1d_28c7e68ce6e2
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -1937,6 +1943,9 @@ padecimientos:
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
+    # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
+    acceptance_fallback_run: hepatitis_b_b16_benchmark_test_a47b95614898_50ac460e5ec1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2075,6 +2084,9 @@ padecimientos:
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
+    # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
+    acceptance_fallback_run: reumatica_i00_benchmark_test_87ea0dfbca64_14db5b16f704
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2322,6 +2334,9 @@ padecimientos:
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
+    # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
+    acceptance_fallback_run: desnutricion_moderada_e440_benchmark_test_d0e8bcde9786_42ed81ea6639
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2348,6 +2363,9 @@ padecimientos:
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
+    # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
+    acceptance_fallback_run: desnutricion_severa_e40_benchmark_test_df9942c01891_920173defee4
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2405,6 +2423,9 @@ padecimientos:
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
+    # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
+    acceptance_fallback_run: brucelosis_a23_benchmark_test_f5af3a7f0d34_dc75570639e8
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2431,6 +2452,9 @@ padecimientos:
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
+    # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
+    acceptance_fallback_run: leptospirosis_a27_benchmark_test_b00e9b50b8cf_e9f72df0dfbb
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2459,6 +2483,9 @@ padecimientos:
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
+    # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
+    acceptance_fallback_run: helmintiasis_b65_benchmark_test_53040bc8cfdc_fb95a2672712
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2485,6 +2512,9 @@ padecimientos:
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
+    # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
+    acceptance_fallback_run: rotavirus_a080_benchmark_test_f8677b403d52_38a46f4a3ca2
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2540,6 +2570,9 @@ padecimientos:
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
+    # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
+    acceptance_fallback_run: absceso_hepatico_a064_benchmark_test_226b0375a681_9b7f9ed0a205
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2566,6 +2599,9 @@ padecimientos:
     eligible_engines: []
     # Política de cinco motores autorizada por nombre por el autor (B2/B14, 12-nov-2026).
     selection_policy: rolling_cv_baja_incidencia_v1
+    # Control estacional (seasonal_naive_lag52), nunca validado: dictamen delegado de Fable
+    # FABLE_DECISIONES_DELEGADAS_20261115 (sha256 7832594e…), por delegación literal del autor.
+    acceptance_fallback_run: bocio_e01_benchmark_test_4921ca54134d_695bc4d1d9a3
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
