@@ -2978,3 +2978,31 @@ padecimientos:
       color: "#1E40AF"
       label: "Hipotermia"
       nombre_completo: "Hipotermia (T68)"
+
+  - id: plaguicidas_t60
+    data_name: "Intoxicación por plaguicidas"
+    artifact_key: Plaguicidas_T60
+    slug: plaguicidas_t60
+    display_name: "Intoxicación por plaguicidas"
+    cie_codes: ["T60"]
+    aliases: ["intoxicacion por plaguicidas", "plaguicidas", "t60"]
+    # Perfil agudo de conteos: mediana semanal nacional 2021-2024 de decenas de casos.
+    # SENSIBLE: el bloque no separa intención (incluye intoxicaciones autoinfligidas); pendiente
+    # de decisión nominal del autor antes de cualquier alta efectiva.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: alta20c_plaguicidas_t60
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#3F6212"
+      label: "Intoxicación por plaguicidas"
+      nombre_completo: "Intoxicación por plaguicidas (T60)"

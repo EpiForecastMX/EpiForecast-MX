@@ -2237,3 +2237,44 @@ cuadro_groups:
         has_prev_year: true
     n_states_expected: 32
     backend: camelot_stream
+
+  alta20c_plaguicidas_t60:
+    # Intoxicación por plaguicidas (T60): último bloque de tres del Cuadro 13.6 (quemaduras T20-T32,
+    # monóxido de carbono T58, plaguicidas) en todos los boletines 2014_sem02..2026_sem43.
+    # pdftotext/camelot: 11 columnas hasta 2015_sem01 (monóxido sin año anterior: 4 + 3 + 4) y 12
+    # desde 2015_sem02 (4 + 4 + 4). El bloque de plaguicidas siempre trae 4 columnas.
+    # «t60» no está impresa en 32 boletines (2014_sem02..2015_sem02, rótulo sin código): se ancla
+    # por el nombre y el código del vecino T58, únicos en la página del cuadro en los 669 boletines.
+    page_anchors: ["plaguicid", "t58"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    last_block_columns: {11: 4}
+    periodos:
+      - desde: "2015_sem02"
+        last_block_columns: {12: 4, 13: 4}
+    diseases:
+      - id: plaguicidas_t60
+        keyword: "Plaguicidas_T60"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [plaguicidas_t60]
+        reason: >-
+          boletín con el formato de 2013 (Cuadro 11.4, plaguicidas como primer bloque): su semana
+          objetivo es 2013-W52, anterior al inicio de la serie (2014-W01)
+      - file: "2016_sem20.pdf"
+        diseases: [plaguicidas_t60]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo criterio que diabetes y
+          cardiovasculares en este boletín): semana 56/4 152/79 y acumulado 914/99 657/1 058
+          (semanas 19/20/21); el acumulado salta y vuelve
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
