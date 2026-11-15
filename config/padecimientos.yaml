@@ -2987,8 +2987,9 @@ padecimientos:
     cie_codes: ["T60"]
     aliases: ["intoxicacion por plaguicidas", "plaguicidas", "t60"]
     # Perfil agudo de conteos: mediana semanal nacional 2021-2024 de decenas de casos.
-    # SENSIBLE: el bloque no separa intención (incluye intoxicaciones autoinfligidas); pendiente
-    # de decisión nominal del autor antes de cualquier alta efectiva.
+    # El bloque no separa intención. Sensibilidad resuelta por el dictamen delegado de Fable (D7,
+    # FABLE_DECISIONES_DELEGADAS_20261115): no se excluye; ficha y EpiBot dicen que la serie no distingue
+    # intención y las consultas de autolesión siguen en la respuesta de crisis.
     profile: aguda_conteos
     batch: standalone
     extraction_group: alta20c_plaguicidas_t60
