@@ -36,8 +36,10 @@ _SEALED_MARKERS: tuple[str, ...] = (
     "lineage.json",
 )
 _REMEDY_HINT = (
-    "usa un runs_root limpio o mueve el directorio previo a runs/_quarantine/ a mano "
-    "(nunca se autoelimina)"
+    "prefiere un worktree limpio nuevo o un runs_root aislado vía API Python; "
+    "sólo mueve a runs/_quarantine/ a mano sin procesos activos y tras inventariar y "
+    "respaldar por SHA-256 el contexto previo (no borrar trabajo único: las corridas y "
+    "selecciones dependientes del dataset anterior pierden su contexto y quedan invalidadas)"
 )
 
 

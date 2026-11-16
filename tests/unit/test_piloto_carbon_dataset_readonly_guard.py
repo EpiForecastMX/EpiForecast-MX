@@ -606,3 +606,157 @@ def test_srp_module_budget_and_fable_g1_g4_diagnostics(
     assert action == "created"
     assert write_order == ["r.csv", "epi_dataset_v2.csv", "manifest.json"]
     _ = res1
+
+
+def test_r1_interrupted_staging_recovery_completed_partial_manifest_last(
+    syn_env: dict[str, Any], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Fable R1: interrupción tras escribir artefactos deja manifest ausente y reingreso recupera."""
+    ed_io = importlib.import_module("epiforecast.data.epi_dataset_io")
+    orig_writer = ed_io.write_exclusive_no_replace
+
+    # Parte A: stage_dataset_run interrumpido tras epi_dataset_v2.csv (con manifest primero en tupla)
+    man_payload = {
+        "run_id": "r1_partial_ctx",
+        "disease_id": _DISEASE_ID,
+        "digests": {"raw": "1" * 64, "dataset": "2" * 64},
+    }
+    man_bytes = json.dumps(man_payload, indent=2).encode("utf-8")
+    raw_b = b"Anio,Semana\n2026,1\n"
+    cfg_b = b'{"disease_id": "sifilis_adquirida_a51"}\n'
+    ds_b = b"cve_ent,y_cases\n01,5\n"
+    artifacts_reordered = (
+        ed_io.StagedArtifact("manifest.json", man_bytes, hashlib.sha256(man_bytes).hexdigest()),
+        ed_io.StagedArtifact("inputs/raw.csv", raw_b, hashlib.sha256(raw_b).hexdigest()),
+        ed_io.StagedArtifact(
+            "inputs/config_effective.json", cfg_b, hashlib.sha256(cfg_b).hexdigest()
+        ),
+        ed_io.StagedArtifact("epi_dataset_v2.csv", ds_b, hashlib.sha256(ds_b).hexdigest()),
+    )
+    ctx_dir = tmp_path / "r1_runs" / "r1_partial_ctx"
+
+    def _crash_after_dataset_csv(
+        dst: Path, content: bytes, expected_digest: str, **kw: Any
+    ) -> None:
+        orig_writer(dst, content, expected_digest, **kw)
+        if dst.name == "epi_dataset_v2.csv":
+            raise RuntimeError("interrupción simulada tras epi_dataset_v2.csv")
+
+    monkeypatch.setattr(ed_io, "write_exclusive_no_replace", _crash_after_dataset_csv)
+    with pytest.raises(RuntimeError, match="interrupción simulada"):
+        ed_io.stage_dataset_run(
+            run_dir=ctx_dir,
+            run_id="r1_partial_ctx",
+            disease_id=_DISEASE_ID,
+            digests={"raw": "1" * 64, "dataset": "2" * 64},
+            artifacts=artifacts_reordered,
+            error_cls=ed.EpiDatasetError,
+        )
+
+    assert not (ctx_dir / "manifest.json").exists()
+    assert (ctx_dir / "epi_dataset_v2.csv").is_file()
+    # Sellar los artefactos previos en 0444 para demostrar que la recuperación NO los sobrescribe
+    for rel in ("inputs/raw.csv", "inputs/config_effective.json", "epi_dataset_v2.csv"):
+        (ctx_dir / rel).chmod(_READONLY_FILE_MODE)
+    partial_snap = _snapshot_tree(ctx_dir)
+
+    reentry_written: list[str] = []
+
+    def _recording_writer(dst: Path, content: bytes, expected_digest: str, **kw: Any) -> None:
+        reentry_written.append(dst.name)
+        orig_writer(dst, content, expected_digest, **kw)
+
+    monkeypatch.setattr(ed_io, "write_exclusive_no_replace", _recording_writer)
+    action = ed_io.stage_dataset_run(
+        run_dir=ctx_dir,
+        run_id="r1_partial_ctx",
+        disease_id=_DISEASE_ID,
+        digests={"raw": "1" * 64, "dataset": "2" * 64},
+        artifacts=artifacts_reordered,
+        error_cls=ed.EpiDatasetError,
+    )
+    assert action == "completed_partial"
+    assert reentry_written == ["manifest.json"]
+    recovered_snap = _snapshot_tree(ctx_dir)
+    for rel, meta_before in partial_snap.items():
+        if meta_before[0] != "DIR":
+            assert recovered_snap[rel] == meta_before
+    assert (ctx_dir / "manifest.json").is_file()
+
+    # Parte B: build_epi_dataset_v2 real interrumpido tras el primer artefacto (raw 0444) y reingreso
+    raw_csv: Path = syn_env["raw_csv"]
+    b_runs = tmp_path / "r1_builder_runs"
+    calls = 0
+
+    def _crash_after_first_file(
+        dst: Path, content: bytes, expected_digest: str, **kw: Any
+    ) -> None:
+        nonlocal calls
+        orig_writer(dst, content, expected_digest, **kw)
+        calls += 1
+        if calls == 1:
+            raise RuntimeError("interrupción simulada tras primer insumo")
+
+    monkeypatch.setattr(ed_io, "write_exclusive_no_replace", _crash_after_first_file)
+    with pytest.raises(RuntimeError, match="primer insumo"):
+        ed.build_epi_dataset_v2(
+            _DISEASE_ID, runs_root=b_runs, run_id="r1_builder_ctx", raw_path=raw_csv
+        )
+
+    staged_first = b_runs / "r1_builder_ctx" / "inputs" / _RAW_FILENAME
+    assert staged_first.is_file()
+    assert not (b_runs / "r1_builder_ctx" / "manifest.json").exists()
+    first_stat_before = staged_first.lstat()
+    first_sha_before = _sha256(staged_first)
+
+    monkeypatch.setattr(ed_io, "write_exclusive_no_replace", orig_writer)
+    res_rec = ed.build_epi_dataset_v2(
+        _DISEASE_ID, runs_root=b_runs, run_id="r1_builder_ctx", raw_path=raw_csv
+    )
+    assert (res_rec.run_dir / "manifest.json").is_file()
+    first_stat_after = staged_first.lstat()
+    assert (
+        first_stat_after.st_ino,
+        first_stat_after.st_mtime_ns,
+        stat.S_IMODE(first_stat_after.st_mode),
+        _sha256(staged_first),
+    ) == (
+        first_stat_before.st_ino,
+        first_stat_before.st_mtime_ns,
+        _READONLY_FILE_MODE,
+        first_sha_before,
+    )
+
+
+def test_r2_precise_remedy_hint_quarantine_backup_invalidation_and_no_invented_cli(
+    syn_env: dict[str, Any], tmp_path: Path
+) -> None:
+    """Fable R2: el remedio prioriza worktree/runs_root limpio, exige SHA-256 e invalida corridas."""
+    catalog: GeoCatalog = syn_env["catalog"]
+    raw_csv: Path = syn_env["raw_csv"]
+    runs_root: Path = syn_env["runs_root"]
+
+    res1 = ed.build_epi_dataset_v2(_DISEASE_ID, runs_root=runs_root, raw_path=raw_csv)
+    snap_before = _snapshot_tree(res1.run_dir)
+
+    raw_v2 = tmp_path / "r2_raw" / _RAW_FILENAME
+    raw_v2.parent.mkdir()
+    _synthetic_raw_df(catalog, prev_year_acum=777).to_csv(raw_v2, index=False)
+
+    with pytest.raises(ed.EpiDatasetError) as exc_info:
+        ed.build_epi_dataset_v2(_DISEASE_ID, runs_root=runs_root, raw_path=raw_v2)
+
+    msg = str(exc_info.value)
+    for required_fragment in (
+        "worktree limpio",
+        "runs_root",
+        "runs/_quarantine/",
+        "sin procesos activos",
+        "SHA-256",
+        "no borrar",
+        "invalidadas",
+    ):
+        assert required_fragment in msg, f"Falta {required_fragment!r} en mensaje R2: {msg}"
+    for forbidden_cli in ("--runs-root", "--dataset-id"):
+        assert forbidden_cli not in msg
+    assert _snapshot_tree(res1.run_dir) == snap_before

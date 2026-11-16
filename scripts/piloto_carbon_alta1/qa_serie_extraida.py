@@ -178,39 +178,35 @@ def _parse_printed_total_12(
     return parsed, []
 
 
-def measure_printed_total_12_pdfplumber(
+def measure_printed_total_12_pdfplumber_traced(
     pdf_path: str, page: int
-) -> tuple[list[int | None] | None, list[dict[str, Any]], bool]:
-    """Mide las 12 celdas impresas de ``TOTAL`` sobre la geometría de columnas del PDF.
+) -> tuple[list[int | None] | None, list[dict[str, Any]], bool, str | None]:
+    """Mide ``TOTAL`` impreso por geometría de 12 columnas devolviendo traza de motivo de fallback.
 
-    Determina las 12 posiciones de alineación derecha de las columnas impresas en la página
-    (sin leer ni sumar valores estatales como oráculo) y reparte los tokens impresos en el
-    renglón ``TOTAL`` según esos intervalos geométricos. Devuelve
-    ``(tot_12, unknowns, has_12_col_geometry)``:
-    - ``has_12_col_geometry=False`` si el archivo no tiene geometría PDF de 12 columnas (p. ej.
-      stubs sintéticos sin página real);
-    - ``has_12_col_geometry=True`` cuando la geometría de 12 columnas está presente, preservando
-      tanto discrepancias impresas genuinas como denominadores faltantes (``tot_12=None``).
+    Devuelve ``(tot_12, unknowns, has_12_col_geometry, fallback_reason)`` sin usar sumas estatales
+    ni calendario como oráculo. Cuando ``has_12_col_geometry=True``, ``fallback_reason`` es ``None``;
+    cuando ``has_12_col_geometry=False``, ``fallback_reason`` documenta la causa exacta (incluidas
+    excepciones de ``pdfplumber``).
     """
     try:
         with pdfplumber.open(pdf_path) as pdf:
             if page < 1 or page > len(pdf.pages):
-                return None, [], False
+                return None, [], False, f"page_out_of_range:{page}/{len(pdf.pages)}"
             words = pdf.pages[page - 1].extract_words(x_tolerance=1, y_tolerance=2)
-    except Exception:  # noqa: BLE001 - stubs sintéticos no-PDF caen al respaldo Camelot estricto
-        return None, [], False
+    except Exception as exc:  # noqa: BLE001 - registra motivo explícito antes del respaldo Camelot
+        return None, [], False, f"pdfplumber_exception:{type(exc).__name__}: {exc}"
 
     ags = [w for w in words if str(w["text"]).startswith("Aguascalientes")]
     tot_lbls = [w for w in words if str(w["text"]).strip().upper() == "TOTAL"]
     if not ags or not tot_lbls:
-        return None, [], False
+        return None, [], False, "missing_state_or_total_anchor"
 
     y_ags = float(ags[0]["top"])
     tot_lbl = tot_lbls[-1]
     y_tot = float(tot_lbl["top"])
     x_tot_right = float(tot_lbl["x1"])
     if y_tot <= y_ags + 20.0:
-        return None, [], False
+        return None, [], False, "invalid_vertical_span_ags_to_total"
 
     hdr = [w for w in words if (y_ags - 65.0) <= float(w["top"]) < (y_ags - 2.0)]
     sem_h = sorted(
@@ -301,14 +297,14 @@ def measure_printed_total_12_pdfplumber(
 
     stops = [statistics.median(c) for c in clusters if len(c) >= 5]
     if len(stops) != 12:
-        return None, [], False
+        return None, [], False, f"column_stops_count:{len(stops)}!=12"
 
     if header_anchors_12 is not None:
         for idx in range(12):
             hx0 = float(header_anchors_12[idx]["x0"])
             hx1 = float(header_anchors_12[idx]["x1"])
             if not (hx0 - 8.0 <= stops[idx] <= hx1 + 12.0):
-                return None, [], False
+                return None, [], False, f"column_stop_header_mismatch:col_{idx}"
 
     boundaries = [min(stops[c] + 3.5, 0.5 * (stops[c] + stops[c + 1])) for c in range(11)]
     tot_words = sorted(
@@ -339,11 +335,19 @@ def measure_printed_total_12_pdfplumber(
             col_tokens[col_idx].append(tok_str)
 
     if bridging_unknowns:
-        return None, bridging_unknowns, True
+        return None, bridging_unknowns, True, None
 
     raw_cells_12 = [" ".join(toks) for toks in col_tokens]
     parsed_12, unknowns_12 = _parse_printed_total_12(raw_cells_12)
-    return parsed_12, unknowns_12, True
+    return parsed_12, unknowns_12, True, None
+
+
+def measure_printed_total_12_pdfplumber(
+    pdf_path: str, page: int
+) -> tuple[list[int | None] | None, list[dict[str, Any]], bool]:
+    """Contrato retrocompatible de 3 elementos sobre ``measure_printed_total_12_pdfplumber_traced``."""
+    tot_12, unknowns_12, has_geo, _ = measure_printed_total_12_pdfplumber_traced(pdf_path, page)
+    return tot_12, unknowns_12, has_geo
 
 
 def _project_total_11_to_12(tot_11: list[int] | None) -> list[int | None] | None:
@@ -375,7 +379,14 @@ def inspect_one_pdf(task: InspectTask) -> dict[str, Any]:
     fname = Path(pdf_path).name
     yr, wk = _year_week_from_filename(pdf_path)
     if yr is None or wk is None:
-        return {"file": fname, "year": yr, "week": wk, "status": "bad_filename"}
+        return {
+            "file": fname,
+            "year": yr,
+            "week": wk,
+            "status": "bad_filename",
+            "total_measurement_method": None,
+            "total_measurement_fallback_reason": None,
+        }
 
     try:
         catalog = load_geo_catalog()
@@ -389,7 +400,14 @@ def inspect_one_pdf(task: InspectTask) -> dict[str, Any]:
 
         page = find_cuadro_page(pdf_path, eff_anchors, eff_markers)
         if page is None:
-            return {"file": fname, "year": yr, "week": wk, "status": "no_page"}
+            return {
+                "file": fname,
+                "year": yr,
+                "week": wk,
+                "status": "no_page",
+                "total_measurement_method": None,
+                "total_measurement_fallback_reason": None,
+            }
 
         reader = PdfReader(pdf_path)
         text = reader.pages[page - 1].extract_text() or ""
@@ -435,6 +453,8 @@ def inspect_one_pdf(task: InspectTask) -> dict[str, Any]:
                 "printed_target": printed_target,
                 "mmwr_target": mmwr_target,
                 "lag_matches_mmwr": lag_matches_mmwr,
+                "total_measurement_method": None,
+                "total_measurement_fallback_reason": None,
             }
 
         reparaciones_aplicadas: list[str] = []
@@ -461,6 +481,8 @@ def inspect_one_pdf(task: InspectTask) -> dict[str, Any]:
                     "printed_target": printed_target,
                     "mmwr_target": mmwr_target,
                     "lag_matches_mmwr": lag_matches_mmwr,
+                    "total_measurement_method": None,
+                    "total_measurement_fallback_reason": None,
                 }
             df_clean = reparada_rt
             if etiqueta_rt:
@@ -503,6 +525,8 @@ def inspect_one_pdf(task: InspectTask) -> dict[str, Any]:
                         "printed_target": printed_target,
                         "mmwr_target": mmwr_target,
                         "lag_matches_mmwr": lag_matches_mmwr,
+                        "total_measurement_method": None,
+                        "total_measurement_fallback_reason": None,
                     }
 
             for r_idx in range(32):
@@ -523,19 +547,23 @@ def inspect_one_pdf(task: InspectTask) -> dict[str, Any]:
                 cells_a51[cve] = row_51
                 cells_a54[cve] = [_norm_int(df_clean.iloc[r_idx, c]) for c in range(9, 13)]
 
-            geo_tot_12, geo_unknown, has_12_col_geometry = measure_printed_total_12_pdfplumber(
-                pdf_path, page
+            geo_tot_12, geo_unknown, has_12_col_geometry, geo_fallback_reason = (
+                measure_printed_total_12_pdfplumber_traced(pdf_path, page)
             )
             if has_12_col_geometry:
                 tot_12: list[int | None] | None = geo_tot_12
                 tot_unknown: list[dict[str, Any]] = geo_unknown
+                total_method = "pdfplumber_geometry_12col"
+                total_fallback_reason: str | None = None
             elif row_tol_used is not None:
+                total_fallback_reason = geo_fallback_reason or "geometry_12col_unavailable"
                 tot_rt = total_impreso_pagina(
                     pdf_path, page, row_tol=row_tol_used, area_fn=_area_pagina
                 )
                 if tot_rt is not None and len(tot_rt) == 12:
                     tot_12 = [int(v) for v in tot_rt]
                     tot_unknown = []
+                    total_method = "camelot_fallback_total_impreso_row_tol"
                 else:
                     tables_rt = camelot.read_pdf(
                         pdf_path, pages=str(page), flavor="stream", row_tol=row_tol_used
@@ -544,17 +572,21 @@ def inspect_one_pdf(task: InspectTask) -> dict[str, Any]:
                     tot_12, tot_unknown = _parse_printed_total_12(
                         fila_total(raw_tbl_rt) if raw_tbl_rt is not None else None
                     )
+                    total_method = "camelot_fallback_stream_row_tol"
             else:
+                total_fallback_reason = geo_fallback_reason or "geometry_12col_unavailable"
                 tables = camelot.read_pdf(pdf_path, pages=str(page), flavor="stream")
                 raw_tbl = max((t.df for t in tables), key=len) if tables else None
                 tot_vals = fila_total(raw_tbl) if raw_tbl is not None else None
                 tot_12, tot_unknown = _parse_printed_total_12(tot_vals)
+                total_method = "camelot_fallback_stream"
                 if tot_12 is None and not tot_unknown and group_spec is not None:
                     tot_area = total_impreso_pagina(
                         pdf_path, page, row_tol=None, area_fn=_area_pagina
                     )
                     if tot_area is not None and len(tot_area) == 12:
                         tot_12 = [int(v) for v in tot_area]
+                        total_method = "camelot_fallback_total_impreso_area"
 
             return {
                 "file": fname,
@@ -574,6 +606,9 @@ def inspect_one_pdf(task: InspectTask) -> dict[str, Any]:
                 "cells_a54": cells_a54,
                 "printed_total_12": tot_12,
                 "printed_total_unknown_tokens": tot_unknown,
+                "has_12_col_geometry": has_12_col_geometry,
+                "total_measurement_method": total_method,
+                "total_measurement_fallback_reason": total_fallback_reason,
                 "raw_minus_one_a51": raw_minus_one_a51,
                 "raw_non_numeric_a51": raw_non_numeric_a51,
             }
@@ -601,6 +636,8 @@ def inspect_one_pdf(task: InspectTask) -> dict[str, Any]:
                     "printed_target": printed_target,
                     "mmwr_target": mmwr_target,
                     "lag_matches_mmwr": lag_matches_mmwr,
+                    "total_measurement_method": None,
+                    "total_measurement_fallback_reason": None,
                 }
             reparto = sin_prev_cfg[data_cols]
             if reparto != [4, 3, 4] or n_states != 32:
@@ -619,6 +656,8 @@ def inspect_one_pdf(task: InspectTask) -> dict[str, Any]:
                     "printed_target": printed_target,
                     "mmwr_target": mmwr_target,
                     "lag_matches_mmwr": lag_matches_mmwr,
+                    "total_measurement_method": None,
+                    "total_measurement_fallback_reason": None,
                 }
             if etiqueta_sp:
                 reparaciones_aplicadas.append(etiqueta_sp)
@@ -669,6 +708,9 @@ def inspect_one_pdf(task: InspectTask) -> dict[str, Any]:
                 "printed_total_11": tot_11,
                 "printed_total_12": tot_12_proj,
                 "printed_total_unknown_tokens": [],
+                "has_12_col_geometry": False,
+                "total_measurement_method": "camelot_11col_sin_prev_projected",
+                "total_measurement_fallback_reason": "optional_prev_in_image_11col",
                 "raw_minus_one_a51": raw_minus_one_a51,
                 "raw_non_numeric_a51": raw_non_numeric_a51,
             }
@@ -688,6 +730,8 @@ def inspect_one_pdf(task: InspectTask) -> dict[str, Any]:
             "printed_target": printed_target,
             "mmwr_target": mmwr_target,
             "lag_matches_mmwr": lag_matches_mmwr,
+            "total_measurement_method": None,
+            "total_measurement_fallback_reason": None,
         }
     except Exception as exc:  # noqa: BLE001 - capturar y persistir por PDF sin abortar lote (H6(b))
         return {
@@ -696,6 +740,8 @@ def inspect_one_pdf(task: InspectTask) -> dict[str, Any]:
             "week": wk,
             "status": "exception",
             "error": f"{type(exc).__name__}: {exc}",
+            "total_measurement_method": None,
+            "total_measurement_fallback_reason": None,
         }
 
 
@@ -1288,6 +1334,8 @@ def compare_canon_against_pdf_blocks(
     raw_pdf_non_num_2025: list[dict[str, Any]] = []
     cols_counter: Counter[int] = Counter()
     pages_by_year: dict[int, set[int]] = {}
+    total_method_counter: Counter[str] = Counter()
+    total_fallback_files: list[dict[str, Any]] = []
 
     for r in pdf_rows:
         st = str(r.get("status", "unknown"))
@@ -1312,6 +1360,17 @@ def compare_canon_against_pdf_blocks(
         cols_counter[int(r["data_cols"])] += 1
 
         optional_prev = bool(r.get("optional_prev_in_image", False))
+        tot_method_raw = r.get("total_measurement_method")
+        tot_method_key = str(tot_method_raw) if tot_method_raw is not None else "unspecified"
+        total_method_counter[tot_method_key] += 1
+        if not optional_prev and tot_method_key != "pdfplumber_geometry_12col":
+            total_fallback_files.append(
+                {
+                    "file": fname,
+                    "method": tot_method_raw,
+                    "fallback_reason": r.get("total_measurement_fallback_reason"),
+                }
+            )
         reparaciones = [str(x) for x in (r.get("layout_reparaciones") or [])]
         if any(x.startswith("row_tol=") for x in reparaciones):
             files_by_status["reparado_row_tol"].append(fname)
@@ -1452,6 +1511,10 @@ def compare_canon_against_pdf_blocks(
     return {
         "files_by_status": {k: sorted(v) for k, v in files_by_status.items()},
         "status_counts": {k: len(v) for k, v in files_by_status.items()},
+        "total_measurement_method_counts": dict(sorted(total_method_counter.items())),
+        "total_measurement_fallback_files": sorted(
+            total_fallback_files, key=lambda item: str(item["file"])
+        ),
         "exception_details": exception_details,
         "unexpected_shape_details": unexpected_shape_details,
         "data_columns_distribution": {str(k): v for k, v in sorted(cols_counter.items())},
@@ -1845,6 +1908,8 @@ def run_qa_report(
         f"`11col_sin_prev={len(c6['files_by_status']['total_coincide_11col_sin_prev'])}`), "
         f"`difiere={c6['files_by_status']['total_difiere']}`, "
         f"`sin_total_12={c6['files_by_status']['sin_total_12']}`",
+        f"- Traza de método `TOTAL` por PDF: `metodos={c6['total_measurement_method_counts']}`, "
+        f"`fallbacks_12col={len(c6['total_measurement_fallback_files'])}`",
         "",
         "## 2. Calendario MMWR, objetivos 2025, trayectorias y densidad (`C7`)",
         f"- Rango objetivo: `{c7['series_span']['first_target_period']}` a "
