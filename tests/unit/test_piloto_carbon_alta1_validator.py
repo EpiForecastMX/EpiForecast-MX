@@ -1511,3 +1511,613 @@ def test_n3_checkpoint_por_pdf_antes_de_csv_y_canon_raw_sha256sums_obligatorios(
     # 2014_sem02.pdf no está excluido en sifilis_adquirida_a51 (2014_sem01 y 2016_sem20 sí)
     assert [r["file"] for r in por_pdf_doc["pdf_rows"]] == ["2014_sem02.pdf"]
     assert sha_wt != sha_real_cfg
+
+
+class _FakePageGeometryQA:
+    """Página sintética pdfplumber con geometría válida/negativa del Cuadro 6 para pruebas QA."""
+
+    width = 540.0
+    height = 720.0
+
+    def __init__(
+        self,
+        *,
+        include_central_acum_text: bool = False,
+        omit_left_acum_text: bool = False,
+        n_central_images: int = 33,
+        extra_outside_image: bool = False,
+        stray_word_in_gap: bool = False,
+    ) -> None:
+        self._words: list[dict[str, Any]] = [
+            {"text": "Sem.", "x0": 139.9, "x1": 156.3, "top": 183.5},
+            {"text": "H", "x0": 175.2, "x1": 180.3, "top": 189.5},
+            {"text": "M", "x0": 204.3, "x1": 210.6, "top": 189.5},
+            {"text": "Sem.", "x0": 258.3, "x1": 274.7, "top": 183.5},
+            {"text": "H", "x0": 293.1, "x1": 298.3, "top": 189.5},
+            {"text": "M", "x0": 321.2, "x1": 327.6, "top": 189.5},
+            {"text": "Sem.", "x0": 375.7, "x1": 392.2, "top": 183.5},
+            {"text": "H", "x0": 412.1, "x1": 417.3, "top": 189.5},
+            {"text": "M", "x0": 444.3, "x1": 450.7, "top": 189.5},
+            {"text": "Acum.", "x0": 469.3, "x1": 490.9, "top": 183.5},
+            {"text": "Aguascalientes", "x0": 45.3, "x1": 98.8, "top": 201.3},
+            {"text": "95", "x0": 326.9, "x1": 334.4, "top": 201.0},
+            {"text": "-", "x0": 391.8, "x1": 394.0, "top": 201.0},
+            {"text": "TOTAL", "x0": 75.9, "x1": 101.1, "top": 637.0},
+        ]
+        if not omit_left_acum_text:
+            self._words.append({"text": "Acum.", "x0": 226.1, "x1": 247.7, "top": 183.5})
+        if include_central_acum_text:
+            self._words.append({"text": "Acum.", "x0": 342.0, "x1": 364.0, "top": 183.5})
+        if stray_word_in_gap:
+            self._words.append({"text": "429", "x0": 348.0, "x1": 362.0, "top": 215.0})
+
+        self.images: list[dict[str, float]] = [{"x0": 410.0, "x1": 510.0, "top": 35.0}]
+        for k in range(n_central_images):
+            self.images.append({"x0": 345.0, "x1": 368.0, "top": 201.0 + k * 13.0})
+        if extra_outside_image:
+            self.images.append({"x0": 230.0, "x1": 247.0, "top": 220.0})
+
+    def extract_words(self, **_kw: Any) -> list[dict[str, Any]]:
+        return list(self._words)
+
+
+class _FakePdfPlumberDocQA:
+    def __init__(self, page_obj: _FakePageGeometryQA, n_pages: int = 24) -> None:
+        self.pages = [page_obj] * n_pages
+
+    def __enter__(self) -> _FakePdfPlumberDocQA:
+        return self
+
+    def __exit__(self, *_args: object) -> None:
+        return None
+
+
+def _build_layout_tables_qa() -> tuple[
+    Any,
+    Any,
+    Any,
+    dict[str, list[int]],
+    dict[str, list[int]],
+    list[int],
+    list[int],
+]:
+    """Construye tablas Camelot 100 % sintéticas: 12 col unida, partida (row_tol=2) y 11 col."""
+    import pandas as pd
+
+    catalog = load_geo_catalog()
+    cves = sorted(catalog.cve_ents())
+    entidades = [catalog.entity(cve).nombre_canonico for cve in cves]
+
+    filas_partidas: list[list[str]] = [
+        ["", "Sem.", "", "", "Acum.", "Sem.", "", "", "Acum.", "Sem.", "", "", "Acum.", "", ""]
+    ]
+    filas_12: list[list[str]] = [["FEDERATIVA", *[""] * 12]]
+    filas_11: list[list[str]] = [["FEDERATIVA", *[""] * 11]]
+    expected_12_a51: dict[str, list[int]] = {}
+    expected_11_a51_3: dict[str, list[int]] = {}
+    sums_12 = [0] * 12
+    sums_11 = [0] * 11
+
+    for idx, (cve, ent) in enumerate(zip(cves, entidades, strict=True)):
+        sem_51, h_51, m_51, prev_51 = idx + 1, 20 + idx, 10 + idx, 100 + idx
+        expected_12_a51[cve] = [sem_51, h_51, m_51, prev_51]
+        vals_12 = [0, 2, 1, 5, sem_51, h_51, m_51, prev_51, 3, 4, 5, 6]
+        for j, val in enumerate(vals_12):
+            sums_12[j] += val
+        filas_partidas.append(
+            [
+                "-",
+                "2",
+                "1",
+                "5",
+                str(sem_51),
+                "",
+                str(h_51),
+                str(m_51),
+                str(prev_51),
+                "3",
+                "",
+                "4",
+                "",
+                "5",
+                "6",
+            ]
+        )
+        filas_partidas.append([ent, *[""] * 14])
+        filas_12.append([ent, *("-" if v == 0 else str(v) for v in vals_12)])
+
+        a50_11 = [400 + idx, 500 + idx, 600 + idx, 700 + idx]
+        a51_3 = [idx + 2, 30 + idx, 15 + idx]
+        a54_11 = [800 + idx, 900 + idx, 1000 + idx, 1100 + idx]
+        expected_11_a51_3[cve] = a51_3
+        vals_11 = [*a50_11, *a51_3, *a54_11]
+        for j, val in enumerate(vals_11):
+            sums_11[j] += val
+        filas_11.append([ent, *(f"{v:,}".replace(",", " ") for v in vals_11)])
+
+    filas_12.append(["TOTAL", *("-" if s == 0 else f"{s:,}".replace(",", " ") for s in sums_12)])
+    filas_11.append(["TOTAL", *(f"{s:,}".replace(",", " ") for s in sums_11)])
+    return (
+        pd.DataFrame(filas_12),
+        pd.DataFrame(filas_partidas),
+        pd.DataFrame(filas_11),
+        expected_12_a51,
+        expected_11_a51_3,
+        sums_12,
+        sums_11,
+    )
+
+
+def _optin_group_spec_qa() -> dict[str, Any]:
+    return {
+        "page_anchors": ["adquirida"],
+        "state_markers": ["zacatecas"],
+        "observation_lag_weeks": 1,
+        "n_states_expected": 32,
+        "reintento_row_tol": 4,
+        "inner_block_columns": {12: [8, 4]},
+        "bloque_sin_prev_en_capa_texto": {11: [4, 3, 4]},
+    }
+
+
+def test_p1_tracked_extraction_inputs_incluye_cuadro_capa_texto_y_rechaza_mutacion(
+    tmp_path: Path,
+) -> None:
+    """P1: cuadro_capa_texto.py está fijado en TRACKED_EXTRACTION_INPUTS para RUN_v2 y pin N2."""
+    helper_rel = "src/epiforecast/data/extraction/cuadro_capa_texto.py"
+    assert helper_rel in vr.TRACKED_EXTRACTION_INPUTS
+
+    # 1) RUN_v2 rechaza si cambia el hash de cuadro_capa_texto.py respecto a RUN_raw
+    wt, out_dir, pdf_dir, inv_json, sha40, inv_sha, val_sha, _ = _build_synthetic_env(
+        tmp_path / "p1_single"
+    )
+    rc_ok, res_ok = vr.validate_single_run(
+        run_raw_path=out_dir / "sint_id_RUN_raw.json",
+        worktree=wt,
+        out_dir=out_dir,
+        pdf_dir=pdf_dir,
+        inventory_json=inv_json,
+        expected_commit=sha40,
+        expected_inventory_sha256=inv_sha,
+        expected_validator_sha256=val_sha,
+        validator_file=wt / vr.VALIDATOR_REL_PATH,
+    )
+    assert rc_ok == 0 and helper_rel in res_ok["tracked_hashes_recomputed"]
+
+    wt_mut, out_mut, pdf_mut, inv_mut, sha_mut, inv_sha_mut, val_sha_mut, _ = _build_synthetic_env(
+        tmp_path / "p1_mut_raw"
+    )
+    raw_mut = json.loads((out_mut / "sint_id_RUN_raw.json").read_text(encoding="utf-8"))
+    raw_mut["tracked_hashes_inicio"][helper_rel] = "f" * 64
+    (out_mut / "sint_id_RUN_raw.json").write_text(json.dumps(raw_mut, indent=2), encoding="utf-8")
+    rc_mut, res_mut = vr.validate_single_run(
+        run_raw_path=out_mut / "sint_id_RUN_raw.json",
+        worktree=wt_mut,
+        out_dir=out_mut,
+        pdf_dir=pdf_mut,
+        inventory_json=inv_mut,
+        expected_commit=sha_mut,
+        expected_inventory_sha256=inv_sha_mut,
+        expected_validator_sha256=val_sha_mut,
+        validator_file=wt_mut / vr.VALIDATOR_REL_PATH,
+    )
+    assert rc_mut == 1 and any("tracked_hashes_inicio" in f for f in res_mut["fallas"])
+
+    # 2) Pin cruzado N2 en QA rechaza un commit posterior si muta cuadro_capa_texto.py
+    wt_n2, out_n2, pdf_n2, inv_n2, sha_ext, inv_sha_n2, _, _ = _build_synthetic_env(
+        tmp_path / "p1_cross_n2"
+    )
+    canon_dir = tmp_path / "canon_p1_n2"
+    canon_dir.mkdir()
+    canon_csv = canon_dir / "sint_id_boletin.csv"
+    shutil.copyfile(out_n2 / "sint_id_boletin.csv", canon_csv)
+    canon_sha = vr.sha256_file(canon_csv)
+    assert canon_sha is not None
+    (canon_dir / "SHA256SUMS").write_text(
+        f"{canon_sha}  sint_id_boletin.csv\n",
+        encoding="utf-8",
+    )
+    (canon_dir / "sint_id_CANON_RAW.json").write_text(
+        json.dumps(
+            {
+                "id": "sint_id",
+                "valida": True,
+                "raw_sha256": canon_sha,
+                "snapshot_sha": sha_ext,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    helper_file = wt_n2 / helper_rel
+    helper_file.write_text(
+        helper_file.read_text(encoding="utf-8") + "# mutacion helper layout\n",
+        encoding="utf-8",
+    )
+    _git(wt_n2, "add", helper_rel)
+    _git(wt_n2, "commit", "-qm", "feat(extract): mutate cuadro_capa_texto")
+    sha_after_helper_mut = _git(wt_n2, "rev-parse", "HEAD")
+
+    with pytest.raises(RuntimeError, match=r"TRACKED_EXTRACTION_INPUTS cambió.*cuadro_capa_texto"):
+        qa.verify_qa_preconditions(
+            disease_id="sint_id",
+            canon_csv=canon_csv,
+            expected_canon_sha256=canon_sha,
+            pdf_dir=pdf_n2,
+            inventory_json=inv_n2,
+            expected_inventory_sha256=inv_sha_n2,
+            worktree=wt_n2,
+            expected_commit=sha_after_helper_mut,
+            expected_extraction_commit=sha_ext,
+            check_cwd_and_imports=False,
+        )
+
+
+def test_p2_regresion_12col_normal_y_row_tol_4_con_grupos_sin_opt_in_intactos(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """P2: 12 col normal no reintenta; renglón partido recupera con row_tol=4 sólo con opt-in."""
+    df_12, df_split, _, exp_12_a51, _, sums_12, _ = _build_layout_tables_qa()
+    spec_optin = _optin_group_spec_qa()
+    spec_no_optin = {
+        "page_anchors": ["adquirida"],
+        "state_markers": ["zacatecas"],
+        "observation_lag_weeks": 1,
+        "n_states_expected": 32,
+        "inner_block_columns": {12: [8, 4]},
+    }
+
+    pdf_normal = tmp_path / "2025_sem11.pdf"
+    pdf_split = tmp_path / "2025_sem02.pdf"
+    pdf_normal.write_bytes(b"%PDF-1.4\n")
+    pdf_split.write_bytes(b"%PDF-1.4\n")
+
+    class _FakeCutoffPage:
+        def __init__(self, txt: str) -> None:
+            self._txt = txt
+
+        def extract_text(self) -> str:
+            return self._txt
+
+    class _FakeCutoffReader:
+        def __init__(self, path: str) -> None:
+            txt = (
+                "Casos hasta la semana epidemiológica 10 del 2025"
+                if path.endswith("2025_sem11.pdf")
+                else "Casos hasta la semana epidemiológica 1 del 2025"
+            )
+            self.pages = [_FakeCutoffPage(txt)]
+
+    monkeypatch.setattr(qa, "find_cuadro_page", lambda *_a, **_k: 1)
+    monkeypatch.setattr(qa, "_area_pagina", lambda *_a, **_k: "0,720,540,0")
+    monkeypatch.setattr(qa, "PdfReader", _FakeCutoffReader)
+
+    # 1) Regresión 12 columnas normal: no lanza row_tol=4 y mantiene A50/A51/A54 + TOTAL 12
+    calls_12: list[dict[str, Any]] = []
+
+    def _read_normal_12(_path: str, **kw: Any) -> list[Any]:
+        calls_12.append(kw)
+        return [type("T", (), {"df": df_12.copy()})()]
+
+    monkeypatch.setattr(
+        "epiforecast.data.extraction.cuadro_extractor.camelot.read_pdf", _read_normal_12
+    )
+    monkeypatch.setattr(
+        "epiforecast.data.extraction.cuadro_capa_texto.camelot.read_pdf", _read_normal_12
+    )
+    monkeypatch.setattr(
+        "scripts.piloto_carbon_alta1.qa_serie_extraida.camelot.read_pdf", _read_normal_12
+    )
+
+    res_12 = qa.inspect_one_pdf((str(pdf_normal), ["adquirida"], ["zacatecas"], 1, spec_optin))
+    assert res_12["status"] == "ok"
+    assert res_12["data_cols"] == 12
+    assert res_12["optional_prev_in_image"] is False
+    assert res_12["layout_reparaciones"] == []
+    assert res_12["printed_total_12"] == sums_12
+    assert res_12["lag_matches_mmwr"] is True
+    assert not any(c.get("row_tol") == 4 for c in calls_12)
+    assert res_12["cells_a51"] == exp_12_a51
+
+    # 2) Boletín con renglón partido: sin opt-in falla en unexpected_shape; con opt-in recupera row_tol=4
+    def _read_split_then_rt4(_path: str, **kw: Any) -> list[Any]:
+        chosen = df_12.copy() if kw.get("row_tol") == 4 else df_split.copy()
+        return [type("T", (), {"df": chosen})()]
+
+    monkeypatch.setattr(
+        "epiforecast.data.extraction.cuadro_extractor.camelot.read_pdf", _read_split_then_rt4
+    )
+    monkeypatch.setattr(
+        "epiforecast.data.extraction.cuadro_capa_texto.camelot.read_pdf", _read_split_then_rt4
+    )
+    monkeypatch.setattr(
+        "scripts.piloto_carbon_alta1.qa_serie_extraida.camelot.read_pdf", _read_split_then_rt4
+    )
+
+    res_no_opt = qa.inspect_one_pdf(
+        (str(pdf_split), ["adquirida"], ["zacatecas"], 1, spec_no_optin)
+    )
+    assert res_no_opt["status"] == "unexpected_shape"
+    res_4tuple = qa.inspect_one_pdf((str(pdf_split), ["adquirida"], ["zacatecas"], 1))
+    assert res_4tuple["status"] == "unexpected_shape"
+
+    res_rt4 = qa.inspect_one_pdf((str(pdf_split), ["adquirida"], ["zacatecas"], 1, spec_optin))
+    assert res_rt4["status"] == "ok"
+    assert res_rt4["data_cols"] == 12
+    assert res_rt4["layout_reparaciones"] == ["row_tol=4"]
+    assert res_rt4["optional_prev_in_image"] is False
+    assert res_rt4["printed_total_12"] == sums_12
+    assert res_rt4["cells_a51"] == exp_12_a51
+
+    canon_rt4: dict[tuple[int, int], dict[str, list[int | None]]] = {
+        (2025, 2): {cve: list(vals) for cve, vals in exp_12_a51.items()}
+    }
+    c6_rt4 = qa.compare_canon_against_pdf_blocks(canon_rt4, [res_rt4])
+    assert c6_rt4["files_by_status"]["reparado_row_tol"] == ["2025_sem02.pdf"]
+    assert c6_rt4["files_by_status"]["total_coincide"] == ["2025_sem02.pdf"]
+    assert c6_rt4["files_by_status"]["total_coincide_12col"] == ["2025_sem02.pdf"]
+    assert c6_rt4["canon_cell_by_cell_contrast"]["canon_vs_target_a51_diff_cells"] == 0
+
+    # 3) Negativa row_tol=4: si el TOTAL impreso no cuadra con las 32 entidades, falla cerrado
+    df_bad_tot = df_12.copy()
+    df_bad_tot.iloc[-1, 5] = "99999"
+
+    def _read_split_bad_tot(_path: str, **kw: Any) -> list[Any]:
+        chosen = df_bad_tot.copy() if kw.get("row_tol") == 4 else df_split.copy()
+        return [type("T", (), {"df": chosen})()]
+
+    monkeypatch.setattr(
+        "epiforecast.data.extraction.cuadro_extractor.camelot.read_pdf", _read_split_bad_tot
+    )
+    monkeypatch.setattr(
+        "epiforecast.data.extraction.cuadro_capa_texto.camelot.read_pdf", _read_split_bad_tot
+    )
+    monkeypatch.setattr(
+        "scripts.piloto_carbon_alta1.qa_serie_extraida.camelot.read_pdf", _read_split_bad_tot
+    )
+
+    res_rt4_bad = qa.inspect_one_pdf((str(pdf_split), ["adquirida"], ["zacatecas"], 1, spec_optin))
+    assert res_rt4_bad["status"] == "unexpected_shape"
+    assert "TOTAL impreso" in str(res_rt4_bad.get("reason", ""))
+
+
+def test_p2_11col_prev_en_imagen_total_proyectado_corte_raster_y_deltas_sin_caida_falsa(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """P2+L2: 11 col proyecta None en prev/TOTAL[7], corte raster es denominador ausente y sin caída falsa."""
+    df_12, _, df_11, exp_12_a51, exp_11_a51_3, sums_12, sums_11 = _build_layout_tables_qa()
+    spec_optin = _optin_group_spec_qa()
+    spec_no_sp = {k: v for k, v in spec_optin.items() if k != "bloque_sin_prev_en_capa_texto"}
+
+    pdf_11_w11 = tmp_path / "2025_sem11.pdf"
+    pdf_11_w12 = tmp_path / "2025_sem12.pdf"
+    pdf_11_w11.write_bytes(b"%PDF-1.4\n")
+    pdf_11_w12.write_bytes(b"%PDF-1.4\n")
+
+    class _FakePageText:
+        def __init__(self, txt: str) -> None:
+            self._txt = txt
+
+        def extract_text(self) -> str:
+            return self._txt
+
+    class _FakeMixedReader:
+        def __init__(self, path: str) -> None:
+            # En 2025_sem12.pdf el subtítulo de corte también es imagen rasterizada (sin texto)
+            txt = (
+                "Casos hasta la semana epidemiológica 10 del 2025"
+                if path.endswith("2025_sem11.pdf")
+                else "CUADRO 6 Sífilis adquirida"
+            )
+            self.pages = [_FakePageText(txt)]
+
+    def _read_mixed(path: str, **_kw: Any) -> list[Any]:
+        chosen = df_12.copy() if path.endswith("2025_sem11.pdf") else df_11.copy()
+        return [type("T", (), {"df": chosen})()]
+
+    monkeypatch.setattr(qa, "find_cuadro_page", lambda *_a, **_k: 1)
+    monkeypatch.setattr(qa, "_area_pagina", lambda *_a, **_k: "0,720,540,0")
+    monkeypatch.setattr(qa, "PdfReader", _FakeMixedReader)
+    monkeypatch.setattr(
+        "epiforecast.data.extraction.cuadro_extractor.camelot.read_pdf", _read_mixed
+    )
+    monkeypatch.setattr(
+        "epiforecast.data.extraction.cuadro_capa_texto.camelot.read_pdf", _read_mixed
+    )
+    monkeypatch.setattr(
+        "scripts.piloto_carbon_alta1.qa_serie_extraida.camelot.read_pdf", _read_mixed
+    )
+    monkeypatch.setattr(
+        "epiforecast.data.extraction.cuadro_capa_texto.pdfplumber.open",
+        lambda _p: _FakePdfPlumberDocQA(_FakePageGeometryQA()),
+    )
+
+    # 1) Sin bloque_sin_prev_en_capa_texto, 11 columnas sigue rechazándose como unexpected_shape
+    res_no_sp = qa.inspect_one_pdf((str(pdf_11_w12), ["adquirida"], ["zacatecas"], 1, spec_no_sp))
+    assert res_no_sp["status"] == "unexpected_shape"
+
+    # 2) Con opt-in real: valida geometría + TOTAL 11, proyecta prev=None y TOTAL[7]=None
+    res_w11 = qa.inspect_one_pdf((str(pdf_11_w11), ["adquirida"], ["zacatecas"], 1, spec_optin))
+    res_w12 = qa.inspect_one_pdf((str(pdf_11_w12), ["adquirida"], ["zacatecas"], 1, spec_optin))
+    assert res_w11["status"] == "ok" and res_w12["status"] == "ok"
+    assert res_w12["data_cols"] == 11
+    assert res_w12["optional_prev_in_image"] is True
+    assert res_w12["layout_reparaciones"] == ["sin_prev_en_capa_texto"]
+    assert res_w12["printed_target"] is None and res_w12["lag_matches_mmwr"] is None
+
+    tot_proj = res_w12["printed_total_12"]
+    assert isinstance(tot_proj, list) and len(tot_proj) == 12
+    assert tot_proj[7] is None
+    assert tot_proj[:7] == sums_11[:7]
+    assert tot_proj[8:] == sums_11[7:]
+
+    for cve, vals3 in exp_11_a51_3.items():
+        assert res_w12["cells_a51"][cve] == [*vals3, None]
+        assert len(res_w12["cells_a50"][cve]) == 4 and None not in res_w12["cells_a50"][cve]
+        assert len(res_w12["cells_a54"][cve]) == 4 and None not in res_w12["cells_a54"][cve]
+
+    # 3) Contraste C6 sobre el par (12 col + 11 col): TOTAL coincide en Sem/H/M disponibles,
+    #    corte raster es denominador ausente (ni lag_verified_match ni lag_mismatch), y NA separados
+    canon_pair: dict[tuple[int, int], dict[str, list[int | None]]] = {
+        (2025, 11): {cve: list(vals) for cve, vals in exp_12_a51.items()},
+        (2025, 12): {cve: [*vals3, None] for cve, vals3 in exp_11_a51_3.items()},
+    }
+    c6 = qa.compare_canon_against_pdf_blocks(canon_pair, [res_w11, res_w12])
+    assert c6["files_by_status"]["ok"] == ["2025_sem11.pdf", "2025_sem12.pdf"]
+    assert c6["files_by_status"]["sin_prev_en_capa_texto"] == ["2025_sem12.pdf"]
+    assert c6["files_by_status"]["total_coincide"] == ["2025_sem11.pdf", "2025_sem12.pdf"]
+    assert c6["files_by_status"]["total_coincide_12col"] == ["2025_sem11.pdf"]
+    assert c6["files_by_status"]["total_coincide_11col_sin_prev"] == ["2025_sem12.pdf"]
+    assert c6["files_by_status"]["total_difiere"] == []
+    assert c6["files_by_status"]["sin_total_12"] == []
+
+    # Rezago: 1 legible verificado, 0 discrepancias, 1 denominador ausente por raster
+    assert c6["files_by_status"]["lag_verified_match"] == ["2025_sem11.pdf"]
+    assert c6["files_by_status"]["lag_mismatch"] == []
+    assert c6["files_by_status"]["header_cutoff_unparsed"] == ["2025_sem12.pdf"]
+    assert c6["files_by_status"]["header_cutoff_unparsed_raster_prev"] == ["2025_sem12.pdf"]
+    assert c6["files_by_status"]["header_cutoff_unparsed_full_text"] == []
+
+    cc = c6["canon_cell_by_cell_contrast"]
+    assert cc["denominator_bulletins"] == 2
+    assert cc["denominator_cells_4col"] == 256
+    assert cc["optional_prev_image_bulletins"] == 1
+    assert cc["optional_prev_image_cells"] == 32
+    assert cc["denominator_text_extractable_cells"] == 224
+    assert cc["canon_vs_target_a51_diff_cells"] == 0
+    assert cc["canon_vs_target_a51_current_sem_h_m_diff_cells"] == 0
+    assert cc["canon_missing_current_sem_h_m_cells"] == 0
+    assert cc["canon_missing_prev_year_cells"] == 32
+    assert cc["pdf_a51_missing_current_sem_h_m_cells"] == 0
+    assert cc["pdf_a51_missing_prev_year_cells"] == 32
+    assert cc["pdf_a51_missing_prev_year_text_cells"] == 0
+    assert sums_12 != sums_11
+
+    # Negativa: si canon_csv hubiera rellenado 0 en lugar de NA para 2025_sem12, C6 lo detecta
+    canon_zero_bug: dict[tuple[int, int], dict[str, list[int | None]]] = {
+        (2025, 12): {cve: [*vals3, 0] for cve, vals3 in exp_11_a51_3.items()}
+    }
+    c6_zero_bug = qa.compare_canon_against_pdf_blocks(canon_zero_bug, [res_w12])
+    assert c6_zero_bug["canon_cell_by_cell_contrast"]["canon_vs_target_a51_diff_cells"] == 32
+    assert c6_zero_bug["files_by_status"]["total_difiere"] == ["2025_sem12.pdf"]
+
+    # 4) Trayectorias y NA separados en CSV: acum_prev vacío NO fabrica caída falsa en 2025_sem12
+    catalog = load_geo_catalog()
+    entidades = [catalog.entity(cve).nombre_canonico for cve in sorted(catalog.cve_ents())]
+    header = (
+        "Anio,Semana,Entidad,Padecimiento,Casos_semana,Acumulado_hombres,"
+        "Acumulado_mujeres,Acumulado_anio_anterior"
+    )
+    csv_ok_lines = [header]
+    for ent in entidades:
+        csv_ok_lines.append(f"2025,11,{ent},Sífilis adquirida,2,20,10,100")
+        csv_ok_lines.append(f"2025,12,{ent},Sífilis adquirida,3,23,12,")
+        csv_ok_lines.append(f"2025,13,{ent},Sífilis adquirida,2,25,14,110")
+    csv_ok = tmp_path / "canon_prev_na_ok.csv"
+    csv_ok.write_text("\n".join(csv_ok_lines) + "\n", encoding="utf-8")
+
+    _, diag_ok = qa.analyze_canon_csv_cells_and_trajectories(
+        csv_ok, lag=1, keep_period_files=set()
+    )
+    t25 = diag_ok["target_2025_csv_na_and_minus_one"]
+    assert t25["na_current_sem_h_m_cells_in_2025_targets"] == 0
+    assert t25["na_optional_prev_year_cells_in_2025_targets"] == 32
+    assert t25["na_optional_prev_year_files_in_2025_targets"] == ["2025_sem12.pdf"]
+
+    raw_sum = diag_ok["raw_csv_missing_cells_summary"]
+    assert raw_sum["missing_current_sem_h_m_cells_total"] == 0
+    assert raw_sum["missing_optional_prev_year_cells_total"] == 32
+    assert raw_sum["missing_optional_prev_year_files"] == ["2025_sem12.pdf"]
+
+    traj_ok = diag_ok["cumulative_trajectories_and_anomalies"]
+    nat_by_file = {r["file"]: r for r in traj_ok["national_series_by_source_week"]}
+    assert nat_by_file["2025_sem12.pdf"]["acum_prev"] is None
+    assert traj_ok["optional_prev_na_national_files"] == ["2025_sem12.pdf"]
+    assert traj_ok["national_cumulative_drops_by_file"] == []
+    assert traj_ok["national_prev_year_drops_by_file"] == []
+
+    # L2: si 2025_sem13 cae realmente en Acumulado_anio_anterior respecto a 2025_sem11 (a través del NA), sí se detecta
+    csv_drop_lines = [header]
+    for ent in entidades:
+        csv_drop_lines.append(f"2025,11,{ent},Sífilis adquirida,2,20,10,100")
+        csv_drop_lines.append(f"2025,12,{ent},Sífilis adquirida,3,23,12,")
+        csv_drop_lines.append(f"2025,13,{ent},Sífilis adquirida,2,25,14,80")
+    csv_drop = tmp_path / "canon_prev_drop_l2.csv"
+    csv_drop.write_text("\n".join(csv_drop_lines) + "\n", encoding="utf-8")
+    _, diag_drop = qa.analyze_canon_csv_cells_and_trajectories(
+        csv_drop, lag=1, keep_period_files=set()
+    )
+    traj_drop = diag_drop["cumulative_trajectories_and_anomalies"]
+    assert [x["file"] for x in traj_drop["national_prev_year_drops_by_file"]] == ["2025_sem13.pdf"]
+    assert [x["file"] for x in traj_drop["national_cumulative_drops_by_file"]] == [
+        "2025_sem13.pdf"
+    ]
+    assert traj_drop["state_prev_year_negative_delta_files"] == ["2025_sem13.pdf"]
+
+
+@pytest.mark.parametrize(
+    ("geo_kwargs", "mutate_mode", "expected_reason"),
+    [
+        ({"include_central_acum_text": True}, "none", "patrón de encabezados Acum."),
+        ({"omit_left_acum_text": True}, "none", "patrón de encabezados Acum."),
+        ({"n_central_images": 10}, "none", "imágenes de celda en banda central"),
+        ({"extra_outside_image": True}, "none", "imágenes de celda en banda central"),
+        ({"stray_word_in_gap": True}, "none", "tokens de texto dentro de la banda"),
+        ({}, "bad_total", "distinta del TOTAL impreso"),
+        ({}, "empty_cell", "celdas o filas vacías"),
+    ],
+)
+def test_p2_11col_geometria_negativa_y_total_descuadrado_fallan_cerrado(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    geo_kwargs: dict[str, Any],
+    mutate_mode: str,
+    expected_reason: str,
+) -> None:
+    """P2: cualquier desviación de geometría PDF, TOTAL 11 o celda vacía rechaza en unexpected_shape."""
+    _, _, df_11, _, _, _, _ = _build_layout_tables_qa()
+    spec_optin = _optin_group_spec_qa()
+    pdf = tmp_path / "2026_sem42.pdf"
+    pdf.write_bytes(b"%PDF-1.4\n")
+
+    tbl_used = df_11.copy()
+    if mutate_mode == "bad_total":
+        tbl_used.iloc[-1, 6] = "1"
+    elif mutate_mode == "empty_cell":
+        tbl_used.iloc[2, 6] = ""
+
+    class _FakePage:
+        def extract_text(self) -> str:
+            return "CUADRO 6 Sífilis adquirida"
+
+    class _FakeReader:
+        def __init__(self, _path: str) -> None:
+            self.pages = [_FakePage()]
+
+    monkeypatch.setattr(qa, "find_cuadro_page", lambda *_a, **_k: 1)
+    monkeypatch.setattr(qa, "_area_pagina", lambda *_a, **_k: "0,720,540,0")
+    monkeypatch.setattr(qa, "PdfReader", _FakeReader)
+    monkeypatch.setattr(
+        "epiforecast.data.extraction.cuadro_extractor.camelot.read_pdf",
+        lambda *_a, **_k: [type("T", (), {"df": tbl_used.copy()})()],
+    )
+    monkeypatch.setattr(
+        "epiforecast.data.extraction.cuadro_capa_texto.camelot.read_pdf",
+        lambda *_a, **_k: [type("T", (), {"df": tbl_used.copy()})()],
+    )
+    monkeypatch.setattr(
+        "epiforecast.data.extraction.cuadro_capa_texto.pdfplumber.open",
+        lambda _p: _FakePdfPlumberDocQA(_FakePageGeometryQA(**geo_kwargs)),
+    )
+
+    res = qa.inspect_one_pdf((str(pdf), ["adquirida"], ["zacatecas"], 1, spec_optin))
+    assert res["status"] == "unexpected_shape"
+    assert expected_reason in str(res.get("reason", ""))
+
+    c6 = qa.compare_canon_against_pdf_blocks({}, [res])
+    assert c6["files_by_status"]["ok"] == []
+    assert c6["files_by_status"]["unexpected_shape"] == ["2026_sem42.pdf"]
+    assert len(c6["unexpected_shape_details"]) == 1

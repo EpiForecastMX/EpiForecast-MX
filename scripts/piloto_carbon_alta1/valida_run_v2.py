@@ -49,6 +49,7 @@ TRACKED_EXTRACTION_INPUTS: tuple[str, ...] = (
     "config/data/cuadros.yaml",
     "config/padecimientos.yaml",
     "src/epiforecast/data/extraction/cuadro_extractor.py",
+    "src/epiforecast/data/extraction/cuadro_capa_texto.py",
     "src/epiforecast/data/extraction/cuadro_reparaciones.py",
     "src/epiforecast/data/extraction/pdf_extractor.py",
     "src/epiforecast/data/extraction/dengue_extractor.py",

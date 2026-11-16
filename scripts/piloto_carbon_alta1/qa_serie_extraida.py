@@ -1,28 +1,34 @@
-"""QA cuantitativo post-extracción (C6, C7 y C8; H6 + N1/N2/N3 corregidos) — piloto Carbon alta1.
+"""QA cuantitativo post-extracción (C6, C7, C8; H6 + N1/N2/N3 + P2 layout) — piloto Carbon alta1.
 
 Mide sobre el CSV canónico sellado y el corpus PDF sellado (sin crear criterios nuevos ni consultar
 métricas de pronóstico de 2025):
-- Pines y entorno obligatorios (``H6(g)``, ``N2``, ``N3(c)``): exige ``expected_commit`` (40 hex del
-  código de QA) separado de ``expected_extraction_commit`` (40 hex del snapshot canónico en
-  ``CANON_RAW.json``) verificando igualdad exacta de blobs en ``TRACKED_EXTRACTION_INPUTS``, además
-  de ``inventory_json`` + ``expected_inventory_sha256`` (64 hex), ``expected_canon_sha256`` (64 hex),
-  ``SHA256SUMS`` y ``<id>_CANON_RAW.json`` obligatorios, ``cwd == worktree``, árbol git limpio e
-  imports resueltos bajo ``worktree``.
-- Inspección por PDF tolerante y checkpoint inmediato (``H6(b)``, ``H6(e)``, ``N1``, ``N3(b)``):
-  parsea el renglón ``TOTAL`` con ``_norm_int`` (miles con espacio y guiones) dejando ``None`` ante
-  valores desconocidos sin descartar celdas estatales, captura excepciones como ``status="exception"``
-  y persiste ``<out_json>_por_pdf.json`` (``0444``) inmediatamente al terminar el pool y ANTES de
-  analizar el CSV o ejecutar ``validate-data``.
-- Comparación celda a celda del CSV canónico contra los 3 bloques (``C6`` / ``H6(c)``): compara las
-  ``32 × 4 = 128`` celdas por boletín del CSV canónico contra el bloque central ``A51-A53`` y contra
-  los vecinos ``A50`` (izq.) y ``A54.0-A54.2`` (der.), además de la fila ``TOTAL`` impresa.
-- Trayectoria de acumulados y detector descriptivo de caídas/saltos (``H6(d)``): serie nacional por
-  semana de fuente y listado por archivo de caídas, picos revertidos (tipo ``2016_sem20``) y deltas
-  estatales negativos, sin umbrales nuevos ni autoexclusión.
-- Medición real de ``-1`` crudo y ``NA`` en objetivos 2025 (``H6(a)``): cuenta tokens ``"-1"`` y no
-  numéricos directamente en las celdas crudas de Camelot antes de ``normalize_number``, y celdas
-  vacías/``NA`` en ``boletin.csv`` (leído con ``dtype=str, keep_default_na=False``) mapeadas por
-  ``epi_calendar.target_period`` a ``epi_year == 2025``.
+- Pines y entorno obligatorios (``H6(g)``, ``N2``, ``N3(c)``, ``P1``): exige ``expected_commit``
+  (40 hex del código de QA) separado de ``expected_extraction_commit`` (40 hex del snapshot
+  canónico en ``CANON_RAW.json``) verificando igualdad exacta de blobs en
+  ``TRACKED_EXTRACTION_INPUTS`` (incluido ``cuadro_capa_texto.py``), además de ``inventory_json`` +
+  ``expected_inventory_sha256`` (64 hex), ``expected_canon_sha256`` (64 hex), ``SHA256SUMS`` y
+  ``<id>_CANON_RAW.json`` obligatorios, ``cwd == worktree``, árbol git limpio e imports resueltos
+  bajo ``worktree``.
+- Inspección por PDF integrada con contratos reales de layout (``H6(b)``, ``H6(e)``, ``N1``,
+  ``N3(b)``, ``P2``): reutiliza ``reintenta_row_tol_si_vacia``, ``recorta_bloque_interno`` y
+  ``total_impreso_pagina`` de ``cuadro_capa_texto.py`` únicamente cuando el grupo declara los flags
+  opt-in ``reintento_row_tol`` y/o ``bloque_sin_prev_en_capa_texto`` (otros grupos sin cambio).
+  Inspecciona la tabla completa antes del recorte al bloque objetivo:
+  * 12 columnas normales (o recuperadas con ``row_tol``): ``A50[4] + A51[4] + A54[4]`` y ``TOTAL``
+    impreso de 12 enteros;
+  * 11 columnas en capa de texto validadas por ``TOTAL`` y geometría PDF
+    (``4 A50 + 3 A51 [Sem, H, M] + 4 A54``): proyecta ``A51`` a 4 posiciones con ``None`` explícito
+    (nunca ``0``) en el acumulado del año anterior impreso como imagen, y proyecta el ``TOTAL`` de
+    11 enteros a 12 posiciones con ``None`` en el índice ``7``, comparando ``Sem/H/M`` contra el
+    ``TOTAL`` disponible sin falsa excepción ni falso ``total_difiere`` por el slot opcional.
+- Subtítulo de corte no extraíble en boletines con encabezado en imagen (``P2``): se registra como
+  denominador de rezago ausente (``header_cutoff_unparsed``), nunca como falso PASS ni como
+  ``lag_mismatch``.
+- Trayectoria de acumulados y separación de ``NA`` opcionales vs actuales (``H6(a)``, ``H6(d)``,
+  ``P2``, ``L2``): preserva ``None`` en el acumulado nacional del año anterior (sin ``fillna(0)``
+  que fabricaría caídas falsas), contrasta deltas del año anterior contra el último boletín con
+  texto disponible y reporta por separado las celdas ``NA`` de ``Acumulado_anio_anterior`` frente a
+  las de ``Casos_semana``, ``Acumulado_hombres`` y ``Acumulado_mujeres``.
 - Copia segura a ``data/raw`` (``H6(f)``): si ``data/raw/data_raw_<key>.csv`` ya existe con el mismo
   SHA-256 hace no-op verificado sin ``PermissionError``; si difiere, rehúsa sobrescribir.
 """
@@ -53,12 +59,17 @@ from epiforecast.data import epi_calendar as ec
 from epiforecast.data.epi_dataset import build_epi_dataset_v2
 from epiforecast.data.epi_dataset_spec import QualityFlag
 from epiforecast.data.epi_geo_exposure import load_geo_catalog
+from epiforecast.data.extraction.cuadro_capa_texto import (
+    recorta_bloque_interno,
+    reintenta_row_tol_si_vacia,
+    total_impreso_pagina,
+)
 from epiforecast.data.extraction.cuadro_extractor import (
     _area_pagina,
     _tabla_estatal,
     find_cuadro_page,
 )
-from epiforecast.data.extraction.cuadro_reparaciones import fila_total
+from epiforecast.data.extraction.cuadro_reparaciones import fila_total, spec_del_periodo
 from epiforecast.data.extraction.dengue_extractor import _year_week_from_filename
 from epiforecast.data.extraction.pdf_extractor import normalize_number
 from epiforecast.runner import orchestrator as orch
@@ -66,6 +77,11 @@ from epiforecast.runner import orchestrator as orch
 CUTOFF_RE = re.compile(
     r"hasta\s+la\s+semana\s+epidemiol[oó]gica\s+(\d{1,2})\s+del?\s+(\d{4})",
     re.IGNORECASE,
+)
+
+InspectTask = (
+    tuple[str, list[str], list[str], int]
+    | tuple[str, list[str], list[str], int, dict[str, Any] | None]
 )
 
 
@@ -78,9 +94,19 @@ def _norm_int(v: Any) -> int | None:
     return None if pd.isna(n) else int(n)
 
 
+def _normalize_spec_int_keys(spec: dict[str, Any]) -> dict[str, Any]:
+    """Asegura claves enteras en mapas por conteo de columnas del spec de grupo."""
+    out = dict(spec)
+    for key in ("inner_block_columns", "bloque_sin_prev_en_capa_texto"):
+        raw_map = out.get(key)
+        if isinstance(raw_map, dict):
+            out[key] = {int(k): [int(v) for v in vals] for k, vals in raw_map.items()}
+    return out
+
+
 def _parse_printed_total_12(
     tot_vals: list[str] | None,
-) -> tuple[list[int] | None, list[dict[str, Any]]]:
+) -> tuple[list[int | None] | None, list[dict[str, Any]]]:
     """Normaliza las 12 celdas crudas del renglón TOTAL con ``_norm_int`` (N1).
 
     Acepta separadores de miles con espacio o coma (p. ej. ``"12 537"`` -> ``12537``) y guiones
@@ -90,7 +116,7 @@ def _parse_printed_total_12(
     """
     if tot_vals is None or len(tot_vals) != 12:
         return None, []
-    parsed: list[int] = []
+    parsed: list[int | None] = []
     unknowns: list[dict[str, Any]] = []
     for idx, raw_v in enumerate(tot_vals):
         nv = _norm_int(raw_v)
@@ -101,6 +127,13 @@ def _parse_printed_total_12(
     if unknowns:
         return None, unknowns
     return parsed, []
+
+
+def _project_total_11_to_12(tot_11: list[int] | None) -> list[int | None] | None:
+    """Proyecta TOTAL validado de 11 columnas a 12 posiciones con ``None`` explícito en índice 7."""
+    if tot_11 is None or len(tot_11) != 11:
+        return None
+    return [*tot_11[:7], None, *tot_11[7:]]
 
 
 def _parse_csv_cell_str(raw_val: str) -> int | None:
@@ -114,9 +147,14 @@ def _parse_csv_cell_str(raw_val: str) -> int | None:
     return int(f) if f.is_integer() and f >= 0 else None
 
 
-def inspect_one_pdf(task: tuple[str, list[str], list[str], int]) -> dict[str, Any]:
-    """Inspecciona un PDF con captura de excepciones por archivo (H6(a), H6(b), H6(c))."""
-    pdf_path, anchors, markers, lag = task
+def inspect_one_pdf(task: InspectTask) -> dict[str, Any]:
+    """Inspecciona un PDF reutilizando los contratos opt-in de layout cuando el grupo los declara."""
+    if len(task) == 4:
+        pdf_path, anchors, markers, lag = task
+        group_spec: dict[str, Any] | None = None
+    else:
+        pdf_path, anchors, markers, lag, group_spec = task
+
     fname = Path(pdf_path).name
     yr, wk = _year_week_from_filename(pdf_path)
     if yr is None or wk is None:
@@ -124,7 +162,15 @@ def inspect_one_pdf(task: tuple[str, list[str], list[str], int]) -> dict[str, An
 
     try:
         catalog = load_geo_catalog()
-        page = find_cuadro_page(pdf_path, anchors, markers)
+        spec_eff = (
+            _normalize_spec_int_keys(spec_del_periodo(group_spec, yr, wk))
+            if group_spec is not None
+            else {}
+        )
+        eff_anchors = list(spec_eff.get("page_anchors", anchors))
+        eff_markers = list(spec_eff.get("state_markers", markers))
+
+        page = find_cuadro_page(pdf_path, eff_anchors, eff_markers)
         if page is None:
             return {"file": fname, "year": yr, "week": wk, "status": "no_page"}
 
@@ -136,20 +182,32 @@ def inspect_one_pdf(task: tuple[str, list[str], list[str], int]) -> dict[str, An
         mmwr_target = [tp.epi_year, tp.epi_week]
         lag_matches_mmwr = printed_target == mmwr_target if printed_target is not None else None
 
-        tables = camelot.read_pdf(pdf_path, pages=str(page), flavor="stream")
-        raw_tbl = max((t.df for t in tables), key=len) if tables else None
-        tot_vals = fila_total(raw_tbl) if raw_tbl is not None else None
+        esperados = int(spec_eff.get("n_states_expected", 32))
+        vn = bool(spec_eff.get("valor_en_columna_nombre"))
+        kw_vn: dict[str, Any] = {"valor_en_nombre": vn} if vn else {}
 
-        df_clean = _tabla_estatal(pdf_path, page)
-        if df_clean is not None and len(df_clean) < 32:
-            amp = _tabla_estatal(pdf_path, page, edge_tol=500)
-            if amp is not None and len(amp) == 32:
+        df_clean = _tabla_estatal(pdf_path, page, **kw_vn)
+        if df_clean is not None and len(df_clean) < esperados:
+            amp = _tabla_estatal(pdf_path, page, edge_tol=500, **kw_vn)
+            if amp is not None and len(amp) == esperados:
                 df_clean = amp
-        if df_clean is not None and len(df_clean) < 32:
+        if df_clean is not None and len(df_clean) < esperados:
             area = _area_pagina(pdf_path, page)
-            comp = _tabla_estatal(pdf_path, page, table_areas=[area]) if area else None
-            if comp is not None and len(comp) == 32:
+            comp = _tabla_estatal(pdf_path, page, table_areas=[area], **kw_vn) if area else None
+            if comp is not None and len(comp) == esperados:
                 df_clean = comp
+        bloque_posterior = bool(
+            spec_eff.get("last_block_columns") or spec_eff.get("inner_block_columns")
+        )
+        if (
+            df_clean is not None
+            and len(df_clean) < esperados
+            and bloque_posterior
+            and not spec_eff.get("first_block_columns")
+        ):
+            despegada = _tabla_estatal(pdf_path, page, despegar=True, **kw_vn)
+            if despegada is not None and len(despegada) == esperados:
+                df_clean = despegada
 
         if df_clean is None:
             return {
@@ -163,21 +221,42 @@ def inspect_one_pdf(task: tuple[str, list[str], list[str], int]) -> dict[str, An
                 "lag_matches_mmwr": lag_matches_mmwr,
             }
 
+        reparaciones_aplicadas: list[str] = []
+        row_tol_used: int | None = None
+        if spec_eff.get("reintento_row_tol") is not None:
+            reparada_rt, etiqueta_rt, motivo_rt = reintenta_row_tol_si_vacia(
+                df_clean,
+                pdf_path,
+                page,
+                spec_eff,
+                tabla_fn=_tabla_estatal,
+                area_fn=_area_pagina,
+            )
+            if reparada_rt is None:
+                return {
+                    "file": fname,
+                    "year": yr,
+                    "week": wk,
+                    "page": page,
+                    "status": "unexpected_shape",
+                    "reason": motivo_rt,
+                    "data_cols": int(df_clean.shape[1] - 1),
+                    "n_states": int(len(df_clean)),
+                    "printed_target": printed_target,
+                    "mmwr_target": mmwr_target,
+                    "lag_matches_mmwr": lag_matches_mmwr,
+                }
+            df_clean = reparada_rt
+            if etiqueta_rt:
+                reparaciones_aplicadas.append(etiqueta_rt)
+                row_tol_used = int(spec_eff["reintento_row_tol"])
+
         data_cols = int(df_clean.shape[1] - 1)
         n_states = int(len(df_clean))
-        if data_cols != 12 or n_states != 32:
-            return {
-                "file": fname,
-                "year": yr,
-                "week": wk,
-                "page": page,
-                "status": "unexpected_shape",
-                "data_cols": data_cols,
-                "n_states": n_states,
-                "printed_target": printed_target,
-                "mmwr_target": mmwr_target,
-                "lag_matches_mmwr": lag_matches_mmwr,
-            }
+        sin_prev_cfg = cast(
+            "dict[int, list[int]]", spec_eff.get("bloque_sin_prev_en_capa_texto") or {}
+        )
+        inner_cfg = cast("dict[int, list[int]]", spec_eff.get("inner_block_columns") or {})
 
         cells_a50: dict[str, list[int | None]] = {}
         cells_a51: dict[str, list[int | None]] = {}
@@ -185,44 +264,208 @@ def inspect_one_pdf(task: tuple[str, list[str], list[str], int]) -> dict[str, An
         raw_minus_one_a51: list[dict[str, Any]] = []
         raw_non_numeric_a51: list[dict[str, Any]] = []
 
-        for r_idx in range(32):
-            state_raw = str(df_clean.iloc[r_idx, 0])
-            cve = catalog.resolve(state_raw)
-            cells_a50[cve] = [_norm_int(df_clean.iloc[r_idx, c]) for c in range(1, 5)]
-            row_51: list[int | None] = []
-            for offset, c in enumerate(range(5, 9)):
-                raw_tok = str(df_clean.iloc[r_idx, c]).strip()
-                norm_v = _norm_int(raw_tok)
-                row_51.append(norm_v)
-                if raw_tok == "-1":
-                    raw_minus_one_a51.append({"cve_ent": cve, "col_offset": offset})
-                if raw_tok not in ("", "-") and norm_v is None:
-                    raw_non_numeric_a51.append(
-                        {"cve_ent": cve, "col_offset": offset, "raw_token": raw_tok}
-                    )
-            cells_a51[cve] = row_51
-            cells_a54[cve] = [_norm_int(df_clean.iloc[r_idx, c]) for c in range(9, 13)]
+        if data_cols == 12 and n_states == esperados and esperados == 32:
+            if inner_cfg:
+                recortada_12, _, motivo_12 = recorta_bloque_interno(
+                    df_clean,
+                    pdf_path,
+                    page,
+                    spec_eff,
+                    esperados=esperados,
+                    area_fn=_area_pagina,
+                )
+                if recortada_12 is None or int(recortada_12.shape[1] - 1) != 4:
+                    return {
+                        "file": fname,
+                        "year": yr,
+                        "week": wk,
+                        "page": page,
+                        "status": "unexpected_shape",
+                        "reason": motivo_12,
+                        "data_cols": data_cols,
+                        "n_states": n_states,
+                        "printed_target": printed_target,
+                        "mmwr_target": mmwr_target,
+                        "lag_matches_mmwr": lag_matches_mmwr,
+                    }
 
-        tot_12, tot_unknown = _parse_printed_total_12(tot_vals)
+            for r_idx in range(32):
+                state_raw = str(df_clean.iloc[r_idx, 0])
+                cve = catalog.resolve(state_raw)
+                cells_a50[cve] = [_norm_int(df_clean.iloc[r_idx, c]) for c in range(1, 5)]
+                row_51: list[int | None] = []
+                for offset, c in enumerate(range(5, 9)):
+                    raw_tok = str(df_clean.iloc[r_idx, c]).strip()
+                    norm_v = _norm_int(raw_tok)
+                    row_51.append(norm_v)
+                    if raw_tok == "-1":
+                        raw_minus_one_a51.append({"cve_ent": cve, "col_offset": offset})
+                    if raw_tok not in ("", "-") and norm_v is None:
+                        raw_non_numeric_a51.append(
+                            {"cve_ent": cve, "col_offset": offset, "raw_token": raw_tok}
+                        )
+                cells_a51[cve] = row_51
+                cells_a54[cve] = [_norm_int(df_clean.iloc[r_idx, c]) for c in range(9, 13)]
+
+            if row_tol_used is not None:
+                tot_rt = total_impreso_pagina(
+                    pdf_path, page, row_tol=row_tol_used, area_fn=_area_pagina
+                )
+                if tot_rt is not None and len(tot_rt) == 12:
+                    tot_12: list[int | None] | None = [int(v) for v in tot_rt]
+                    tot_unknown: list[dict[str, Any]] = []
+                else:
+                    tables_rt = camelot.read_pdf(
+                        pdf_path, pages=str(page), flavor="stream", row_tol=row_tol_used
+                    )
+                    raw_tbl_rt = max((t.df for t in tables_rt), key=len) if tables_rt else None
+                    tot_12, tot_unknown = _parse_printed_total_12(
+                        fila_total(raw_tbl_rt) if raw_tbl_rt is not None else None
+                    )
+            else:
+                tables = camelot.read_pdf(pdf_path, pages=str(page), flavor="stream")
+                raw_tbl = max((t.df for t in tables), key=len) if tables else None
+                tot_vals = fila_total(raw_tbl) if raw_tbl is not None else None
+                tot_12, tot_unknown = _parse_printed_total_12(tot_vals)
+                if tot_12 is None and not tot_unknown and group_spec is not None:
+                    tot_area = total_impreso_pagina(
+                        pdf_path, page, row_tol=None, area_fn=_area_pagina
+                    )
+                    if tot_area is not None and len(tot_area) == 12:
+                        tot_12 = [int(v) for v in tot_area]
+
+            return {
+                "file": fname,
+                "year": yr,
+                "week": wk,
+                "page": page,
+                "status": "ok",
+                "data_cols": data_cols,
+                "n_states": n_states,
+                "layout_reparaciones": reparaciones_aplicadas,
+                "optional_prev_in_image": False,
+                "printed_target": printed_target,
+                "mmwr_target": mmwr_target,
+                "lag_matches_mmwr": lag_matches_mmwr,
+                "cells_a50": cells_a50,
+                "cells_a51": cells_a51,
+                "cells_a54": cells_a54,
+                "printed_total_12": tot_12,
+                "printed_total_unknown_tokens": tot_unknown,
+                "raw_minus_one_a51": raw_minus_one_a51,
+                "raw_non_numeric_a51": raw_non_numeric_a51,
+            }
+
+        if data_cols in sin_prev_cfg:
+            spec_for_crop = {"inner_block_columns": inner_cfg, **spec_eff}
+            recortada_sp, etiqueta_sp, motivo_sp = recorta_bloque_interno(
+                df_clean,
+                pdf_path,
+                page,
+                spec_for_crop,
+                esperados=esperados,
+                area_fn=_area_pagina,
+            )
+            if recortada_sp is None:
+                return {
+                    "file": fname,
+                    "year": yr,
+                    "week": wk,
+                    "page": page,
+                    "status": "unexpected_shape",
+                    "reason": motivo_sp,
+                    "data_cols": data_cols,
+                    "n_states": n_states,
+                    "printed_target": printed_target,
+                    "mmwr_target": mmwr_target,
+                    "lag_matches_mmwr": lag_matches_mmwr,
+                }
+            reparto = sin_prev_cfg[data_cols]
+            if reparto != [4, 3, 4] or n_states != 32:
+                return {
+                    "file": fname,
+                    "year": yr,
+                    "week": wk,
+                    "page": page,
+                    "status": "unexpected_shape",
+                    "reason": (
+                        f"reparto {reparto} o n_states={n_states} incompatible con "
+                        "inspección de 3 bloques (esperaba [4, 3, 4] y 32 estados)"
+                    ),
+                    "data_cols": data_cols,
+                    "n_states": n_states,
+                    "printed_target": printed_target,
+                    "mmwr_target": mmwr_target,
+                    "lag_matches_mmwr": lag_matches_mmwr,
+                }
+            if etiqueta_sp:
+                reparaciones_aplicadas.append(etiqueta_sp)
+
+            for r_idx in range(32):
+                state_raw = str(df_clean.iloc[r_idx, 0])
+                cve = catalog.resolve(state_raw)
+                cells_a50[cve] = [_norm_int(df_clean.iloc[r_idx, c]) for c in range(1, 5)]
+                row_51_sp: list[int | None] = []
+                for offset in range(3):
+                    raw_tok = str(recortada_sp.iloc[r_idx, offset + 1]).strip()
+                    norm_v = _norm_int(raw_tok)
+                    row_51_sp.append(norm_v)
+                    if raw_tok == "-1":
+                        raw_minus_one_a51.append({"cve_ent": cve, "col_offset": offset})
+                    if raw_tok not in ("", "-") and norm_v is None:
+                        raw_non_numeric_a51.append(
+                            {"cve_ent": cve, "col_offset": offset, "raw_token": raw_tok}
+                        )
+                row_51_sp.append(None)
+                cells_a51[cve] = row_51_sp
+                cells_a54[cve] = [_norm_int(df_clean.iloc[r_idx, c]) for c in range(8, 12)]
+
+            rt_opt = (
+                int(spec_eff["reintento_row_tol"])
+                if spec_eff.get("reintento_row_tol") is not None
+                else None
+            )
+            tot_11 = total_impreso_pagina(pdf_path, page, row_tol=rt_opt, area_fn=_area_pagina)
+            tot_12_proj = _project_total_11_to_12(tot_11)
+
+            return {
+                "file": fname,
+                "year": yr,
+                "week": wk,
+                "page": page,
+                "status": "ok",
+                "data_cols": data_cols,
+                "n_states": n_states,
+                "layout_reparaciones": reparaciones_aplicadas,
+                "optional_prev_in_image": True,
+                "printed_target": printed_target,
+                "mmwr_target": mmwr_target,
+                "lag_matches_mmwr": lag_matches_mmwr,
+                "cells_a50": cells_a50,
+                "cells_a51": cells_a51,
+                "cells_a54": cells_a54,
+                "printed_total_11": tot_11,
+                "printed_total_12": tot_12_proj,
+                "printed_total_unknown_tokens": [],
+                "raw_minus_one_a51": raw_minus_one_a51,
+                "raw_non_numeric_a51": raw_non_numeric_a51,
+            }
 
         return {
             "file": fname,
             "year": yr,
             "week": wk,
             "page": page,
-            "status": "ok",
+            "status": "unexpected_shape",
+            "reason": (
+                f"columnas inesperadas: {data_cols}, n_states={n_states} "
+                f"(esperaba 12 columnas y {esperados} estados)"
+            ),
             "data_cols": data_cols,
             "n_states": n_states,
             "printed_target": printed_target,
             "mmwr_target": mmwr_target,
             "lag_matches_mmwr": lag_matches_mmwr,
-            "cells_a50": cells_a50,
-            "cells_a51": cells_a51,
-            "cells_a54": cells_a54,
-            "printed_total_12": tot_12,
-            "printed_total_unknown_tokens": tot_unknown,
-            "raw_minus_one_a51": raw_minus_one_a51,
-            "raw_non_numeric_a51": raw_non_numeric_a51,
         }
     except Exception as exc:  # noqa: BLE001 - capturar y persistir por PDF sin abortar lote (H6(b))
         return {
@@ -413,7 +656,7 @@ def analyze_canon_csv_cells_and_trajectories(
     lag: int,
     keep_period_files: set[str],
 ) -> tuple[dict[tuple[int, int], dict[str, list[int | None]]], dict[str, Any]]:
-    """Lee canon_csv como texto crudo, mide NA/-1 en objetivos 2025 y trayectorias de acumulados."""
+    """Lee canon_csv como texto crudo, separa NA actuales vs año anterior y mide trayectorias."""
     catalog = load_geo_catalog()
     raw_str_df = pd.read_csv(canon_csv, dtype=str, keep_default_na=False)
     value_cols = (
@@ -422,10 +665,17 @@ def analyze_canon_csv_cells_and_trajectories(
         "Acumulado_mujeres",
         "Acumulado_anio_anterior",
     )
+    current_cols = ("Casos_semana", "Acumulado_hombres", "Acumulado_mujeres")
 
     canon_lookup: dict[tuple[int, int], dict[str, list[int | None]]] = {}
+    raw_missing_all_by_col: Counter[str] = Counter()
+    raw_missing_current_all_details: list[dict[str, Any]] = []
+    raw_missing_prev_all_files: set[str] = set()
+
     na_2025_by_col: Counter[str] = Counter()
     na_2025_details: list[dict[str, Any]] = []
+    na_2025_current_details: list[dict[str, Any]] = []
+    na_2025_prev_files: set[str] = set()
     literal_minus_one_csv_2025: list[dict[str, Any]] = []
     target_weeks_2025_seen: set[int] = set()
 
@@ -437,11 +687,28 @@ def analyze_canon_csv_cells_and_trajectories(
         cve = catalog.resolve(str(row["Entidad"]))
         tp = ec.target_period(yr, wk, lag)
         vals = [_parse_csv_cell_str(str(row[c])) for c in value_cols]
+        is_keep = fname in keep_period_files
 
-        if fname not in keep_period_files:
+        if not is_keep:
             canon_lookup.setdefault((yr, wk), {})[cve] = vals
+            for c_name, parsed_v in zip(value_cols, vals, strict=True):
+                if parsed_v is None:
+                    raw_missing_all_by_col[c_name] += 1
+                    if c_name == "Acumulado_anio_anterior":
+                        raw_missing_prev_all_files.add(fname)
+                    elif len(raw_missing_current_all_details) < 100:
+                        raw_missing_current_all_details.append(
+                            {
+                                "source_file": fname,
+                                "target_period": [tp.epi_year, tp.epi_week],
+                                "cve_ent": cve,
+                                "entidad": row["Entidad"],
+                                "col": c_name,
+                                "raw_value": str(row[c_name]).strip(),
+                            }
+                        )
 
-        if tp.epi_year == 2025:
+        if not is_keep and tp.epi_year == 2025:
             target_weeks_2025_seen.add(tp.epi_week)
             for c_name, parsed_v in zip(value_cols, vals, strict=True):
                 raw_cell = str(row[c_name]).strip()
@@ -451,17 +718,20 @@ def analyze_canon_csv_cells_and_trajectories(
                     )
                 if parsed_v is None:
                     na_2025_by_col[c_name] += 1
+                    detail_item = {
+                        "source_file": fname,
+                        "target_period": [tp.epi_year, tp.epi_week],
+                        "cve_ent": cve,
+                        "entidad": row["Entidad"],
+                        "col": c_name,
+                        "raw_value": raw_cell,
+                    }
                     if len(na_2025_details) < 100:
-                        na_2025_details.append(
-                            {
-                                "source_file": fname,
-                                "target_period": [tp.epi_year, tp.epi_week],
-                                "cve_ent": cve,
-                                "entidad": row["Entidad"],
-                                "col": c_name,
-                                "raw_value": raw_cell,
-                            }
-                        )
+                        na_2025_details.append(detail_item)
+                    if c_name == "Acumulado_anio_anterior":
+                        na_2025_prev_files.add(fname)
+                    elif len(na_2025_current_details) < 100:
+                        na_2025_current_details.append(detail_item)
 
         parsed_rows.append(
             {
@@ -474,7 +744,7 @@ def analyze_canon_csv_cells_and_trajectories(
                 "acum_h": vals[1],
                 "acum_m": vals[2],
                 "acum_prev": vals[3],
-                "is_keep_period": fname in keep_period_files,
+                "is_keep_period": is_keep,
             }
         )
 
@@ -485,17 +755,22 @@ def analyze_canon_csv_cells_and_trajectories(
     obs_df = obs_df.sort_values(["cve_ent", "Anio", "Semana"]).reset_index(drop=True)
     state_neg_events: list[dict[str, Any]] = []
     state_neg_files: set[str] = set()
+    state_prev_neg_files: set[str] = set()
     neg_h_count = 0
     neg_m_count = 0
+    neg_prev_count = 0
     total_state_transitions = 0
     for (_, _), grp in obs_df.groupby(["cve_ent", "Anio"], sort=False):
         recs = grp.to_dict(orient="records")
+        last_prev_val: int | None = (
+            int(recs[0]["acum_prev"]) if recs and pd.notna(recs[0]["acum_prev"]) else None
+        )
         for idx in range(1, len(recs)):
             prev_r, curr_r = recs[idx - 1], recs[idx]
             total_state_transitions += 1
             for key_col, label in (("acum_h", "hombres"), ("acum_m", "mujeres")):
                 pv, cv = prev_r[key_col], curr_r[key_col]
-                if pv is not None and cv is not None and cv < pv:
+                if pd.notna(pv) and pd.notna(cv) and int(cv) < int(pv):
                     if label == "hombres":
                         neg_h_count += 1
                     else:
@@ -511,21 +786,35 @@ def analyze_canon_csv_cells_and_trajectories(
                                 "sexo": label,
                                 "prev_acum": int(pv),
                                 "curr_acum": int(cv),
-                                "delta": int(cv - pv),
+                                "delta": int(cv) - int(pv),
                             }
                         )
+            curr_prev = curr_r["acum_prev"]
+            if pd.notna(curr_prev):
+                curr_prev_int = int(curr_prev)
+                if last_prev_val is not None and curr_prev_int < last_prev_val:
+                    neg_prev_count += 1
+                    state_prev_neg_files.add(str(curr_r["file"]))
+                last_prev_val = curr_prev_int
 
-    # Serie nacional por semana de fuente dentro de cada año: caídas y picos revertidos (H6(d))
+    # Serie nacional por semana de fuente dentro de cada año: preserva None en acum_prev (sin 0 falso)
     nat_rows: list[dict[str, Any]] = []
+    optional_prev_na_nat_files: list[str] = []
     for (yr_k, wk_k), grp_yw in obs_df.groupby(["Anio", "Semana"], sort=True):
         yr_i, wk_i = int(str(yr_k)), int(str(wk_k))
+        fname_yw = f"{yr_i}_sem{wk_i:02d}.pdf"
         s_sem = int(grp_yw["sem"].fillna(0).sum())
         s_h = int(grp_yw["acum_h"].fillna(0).sum())
         s_m = int(grp_yw["acum_m"].fillna(0).sum())
-        s_prev = int(grp_yw["acum_prev"].fillna(0).sum())
+        prev_missing_n = int(grp_yw["acum_prev"].isna().sum())
+        if prev_missing_n > 0:
+            s_prev: int | None = None
+            optional_prev_na_nat_files.append(fname_yw)
+        else:
+            s_prev = int(grp_yw["acum_prev"].sum())
         nat_rows.append(
             {
-                "file": f"{yr_i}_sem{wk_i:02d}.pdf",
+                "file": fname_yw,
                 "year": yr_i,
                 "week": wk_i,
                 "sem": s_sem,
@@ -533,10 +822,12 @@ def analyze_canon_csv_cells_and_trajectories(
                 "acum_m": s_m,
                 "acum_total": s_h + s_m,
                 "acum_prev": s_prev,
+                "acum_prev_missing_states": prev_missing_n,
             }
         )
 
     nat_drops: list[dict[str, Any]] = []
+    nat_prev_drops: list[dict[str, Any]] = []
     nat_spikes_reverted: list[dict[str, Any]] = []
     weekly_increments: list[dict[str, Any]] = []
     sem_vs_delta_gaps: list[dict[str, Any]] = []
@@ -546,12 +837,29 @@ def analyze_canon_csv_cells_and_trajectories(
         by_year.setdefault(int(nr["year"]), []).append(nr)
 
     for _yr, seq in sorted(by_year.items()):
+        last_avail_prev_row: dict[str, Any] | None = (
+            seq[0] if seq and seq[0]["acum_prev"] is not None else None
+        )
         for idx in range(1, len(seq)):
             p, c = seq[idx - 1], seq[idx]
-            dh = c["acum_h"] - p["acum_h"]
-            dm = c["acum_m"] - p["acum_m"]
-            dt = c["acum_total"] - p["acum_total"]
-            dp = c["acum_prev"] - p["acum_prev"]
+            dh = int(c["acum_h"] - p["acum_h"])
+            dm = int(c["acum_m"] - p["acum_m"])
+            dt = int(c["acum_total"] - p["acum_total"])
+            dp: int | None = (
+                int(c["acum_prev"] - p["acum_prev"])
+                if (c["acum_prev"] is not None and p["acum_prev"] is not None)
+                else None
+            )
+            dp_vs_last: int | None = (
+                int(c["acum_prev"] - last_avail_prev_row["acum_prev"])
+                if (c["acum_prev"] is not None and last_avail_prev_row is not None)
+                else None
+            )
+            last_prev_file = (
+                str(last_avail_prev_row["file"])
+                if (c["acum_prev"] is not None and last_avail_prev_row is not None)
+                else None
+            )
             inc_entry = {
                 "file": c["file"],
                 "prev_file": p["file"],
@@ -560,14 +868,24 @@ def analyze_canon_csv_cells_and_trajectories(
                 "delta_acum_m": dm,
                 "delta_acum_total": dt,
                 "delta_acum_prev": dp,
+                "delta_acum_prev_vs_last_available": dp_vs_last,
+                "last_available_prev_file": last_prev_file,
                 "sem_minus_delta_total": c["sem"] - dt,
                 "prev_acum_total": p["acum_total"],
                 "curr_acum_total": c["acum_total"],
             }
             weekly_increments.append(inc_entry)
             sem_vs_delta_gaps.append(inc_entry)
-            if dh < 0 or dm < 0 or dt < 0 or dp < 0:
+            has_prev_drop = (dp is not None and dp < 0) or (
+                dp is None and dp_vs_last is not None and dp_vs_last < 0
+            )
+            if has_prev_drop:
+                nat_prev_drops.append(inc_entry)
+            if dh < 0 or dm < 0 or dt < 0 or has_prev_drop:
                 nat_drops.append(inc_entry)
+            if c["acum_prev"] is not None:
+                last_avail_prev_row = c
+
         for idx in range(1, len(seq) - 1):
             p, c, n = seq[idx - 1], seq[idx], seq[idx + 1]
             if (p["acum_total"] < c["acum_total"] and c["acum_total"] > n["acum_total"]) or (
@@ -592,17 +910,36 @@ def analyze_canon_csv_cells_and_trajectories(
         sem_vs_delta_gaps, key=lambda x: abs(int(x["sem_minus_delta_total"])), reverse=True
     )[:10]
 
+    na_2025_current_total = sum(int(na_2025_by_col[c]) for c in current_cols)
+    na_2025_prev_total = int(na_2025_by_col["Acumulado_anio_anterior"])
+    raw_missing_current_all_total = sum(int(raw_missing_all_by_col[c]) for c in current_cols)
+    raw_missing_prev_all_total = int(raw_missing_all_by_col["Acumulado_anio_anterior"])
+
     diagnostics = {
+        "raw_csv_missing_cells_summary": {
+            "missing_counts_by_column_non_excluded": {
+                c: int(raw_missing_all_by_col[c]) for c in value_cols
+            },
+            "missing_current_sem_h_m_cells_total": raw_missing_current_all_total,
+            "missing_current_sem_h_m_sample": raw_missing_current_all_details,
+            "missing_optional_prev_year_cells_total": raw_missing_prev_all_total,
+            "missing_optional_prev_year_files": sorted(raw_missing_prev_all_files),
+        },
         "target_2025_csv_na_and_minus_one": {
             "extractor_note": (
                 "pdf_extractor.normalize_number convierte '-1' y tokens no numéricos ('s.n.', "
-                "'n.e.') en pd.NA (cadena vacía en boletin.csv). Por ello se auditan tanto las "
-                "celdas vacías/NA en boletin.csv que mapean a objetivos 2025 como los tokens "
-                "crudos '-1'/no-numéricos directamente en Camelot antes de normalize_number."
+                "'n.e.') en pd.NA (cadena vacía en boletin.csv); además, los boletines con "
+                "Acumulado_anio_anterior impreso como imagen dejan esa columna opcional en NA "
+                "explícito (nunca 0). Se separan explícitamente las celdas NA de Sem/H/M frente "
+                "a las NA opcionales de Acumulado_anio_anterior."
             ),
             "target_weeks_2025_mapped_from_csv": len(target_weeks_2025_seen),
             "na_counts_by_column_in_2025_targets": {c: int(na_2025_by_col[c]) for c in value_cols},
             "na_total_cells_in_2025_targets": int(sum(na_2025_by_col.values())),
+            "na_current_sem_h_m_cells_in_2025_targets": na_2025_current_total,
+            "na_current_sem_h_m_sample_in_2025_targets": na_2025_current_details,
+            "na_optional_prev_year_cells_in_2025_targets": na_2025_prev_total,
+            "na_optional_prev_year_files_in_2025_targets": sorted(na_2025_prev_files),
             "na_cells_sample_in_2025_targets": na_2025_details,
             "literal_minus_one_strings_in_csv_2025": literal_minus_one_csv_2025,
         },
@@ -610,9 +947,13 @@ def analyze_canon_csv_cells_and_trajectories(
             "intra_year_state_transitions": total_state_transitions,
             "raw_negative_deltas_hombres": neg_h_count,
             "raw_negative_deltas_mujeres": neg_m_count,
+            "raw_negative_deltas_anio_anterior": neg_prev_count,
             "state_negative_delta_files": sorted(state_neg_files),
+            "state_prev_year_negative_delta_files": sorted(state_prev_neg_files),
             "state_negative_deltas_sample": state_neg_events,
+            "optional_prev_na_national_files": optional_prev_na_nat_files,
             "national_cumulative_drops_by_file": nat_drops,
+            "national_prev_year_drops_by_file": nat_prev_drops,
             "national_spike_or_drop_reverted_triplets": nat_spikes_reverted,
             "top_10_weekly_acum_total_jumps": top_jumps,
             "top_10_abs_sem_minus_delta_acum_total": top_gaps,
@@ -626,7 +967,7 @@ def compare_canon_against_pdf_blocks(
     canon_lookup: dict[tuple[int, int], dict[str, list[int | None]]],
     pdf_rows: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    """Compara el CSV canónico celda a celda contra los 3 bloques de cada boletín (H6(c), H6(e))."""
+    """Compara el CSV canónico celda a celda contra los 3 bloques de cada boletín (H6(c), P2, L2)."""
     files_by_status: dict[str, list[str]] = {
         "ok": [],
         "no_page": [],
@@ -634,20 +975,36 @@ def compare_canon_against_pdf_blocks(
         "unexpected_shape": [],
         "exception": [],
         "bad_filename": [],
+        "reparado_row_tol": [],
+        "sin_prev_en_capa_texto": [],
         "total_coincide": [],
+        "total_coincide_12col": [],
+        "total_coincide_11col_sin_prev": [],
         "total_difiere": [],
         "sin_total_12": [],
+        "lag_verified_match": [],
         "lag_mismatch": [],
         "header_cutoff_unparsed": [],
+        "header_cutoff_unparsed_raster_prev": [],
+        "header_cutoff_unparsed_full_text": [],
     }
     lag_mismatch_details: list[dict[str, Any]] = []
     exception_details: list[dict[str, Any]] = []
+    unexpected_shape_details: list[dict[str, Any]] = []
 
     denom_bulletins = 0
     denom_cells = 0
+    optional_prev_bulletins = 0
+    optional_prev_cells = 0
     canon_missing_cells = 0
+    canon_missing_current_cells = 0
+    canon_missing_prev_cells = 0
     pdf_a51_missing_cells = 0
+    pdf_a51_missing_current_cells = 0
+    pdf_a51_missing_prev_cells = 0
+    pdf_a51_missing_prev_text_cells = 0
     diff_cells_vs_a51 = 0
+    diff_current_vs_a51 = 0
     diff_cells_vs_a50 = 0
     diff_cells_vs_a54 = 0
     mismatch_a51_details: list[dict[str, Any]] = []
@@ -668,6 +1025,15 @@ def compare_canon_against_pdf_blocks(
         files_by_status.setdefault(st, []).append(fname)
         if st == "exception":
             exception_details.append({"file": fname, "error": r.get("error")})
+        if st == "unexpected_shape":
+            unexpected_shape_details.append(
+                {
+                    "file": fname,
+                    "data_cols": r.get("data_cols"),
+                    "n_states": r.get("n_states"),
+                    "reason": r.get("reason"),
+                }
+            )
         if st != "ok":
             continue
 
@@ -675,7 +1041,16 @@ def compare_canon_against_pdf_blocks(
         pages_by_year.setdefault(yr, set()).add(int(r["page"]))
         cols_counter[int(r["data_cols"])] += 1
 
-        if r["lag_matches_mmwr"] is False:
+        optional_prev = bool(r.get("optional_prev_in_image", False))
+        reparaciones = [str(x) for x in (r.get("layout_reparaciones") or [])]
+        if any(x.startswith("row_tol=") for x in reparaciones):
+            files_by_status["reparado_row_tol"].append(fname)
+        if optional_prev:
+            files_by_status["sin_prev_en_capa_texto"].append(fname)
+
+        if r["lag_matches_mmwr"] is True:
+            files_by_status["lag_verified_match"].append(fname)
+        elif r["lag_matches_mmwr"] is False:
             files_by_status["lag_mismatch"].append(fname)
             lag_mismatch_details.append(
                 {
@@ -686,6 +1061,10 @@ def compare_canon_against_pdf_blocks(
             )
         elif r["lag_matches_mmwr"] is None:
             files_by_status["header_cutoff_unparsed"].append(fname)
+            if optional_prev:
+                files_by_status["header_cutoff_unparsed_raster_prev"].append(fname)
+            else:
+                files_by_status["header_cutoff_unparsed_full_text"].append(fname)
 
         for item in r["raw_minus_one_a51"]:
             entry = {"file": fname, "mmwr_target": r["mmwr_target"], **item}
@@ -704,13 +1083,22 @@ def compare_canon_against_pdf_blocks(
                 {"file": fname, "reason": "boletín ausente o sin 32 entidades en canon_csv"}
             )
             diff_cells_vs_a51 += 128
+            diff_current_vs_a51 += 96
             continue
 
         denom_bulletins += 1
         denom_cells += 128
+        if optional_prev:
+            optional_prev_bulletins += 1
+            optional_prev_cells += 32
+
         bul_diff_a51 = 0
+        bul_diff_current_a51 = 0
         bul_diff_a50 = 0
         bul_diff_a54 = 0
+        ks_avail = (0, 1, 2) if optional_prev else (0, 1, 2, 3)
+        bul_avail_diff_a50 = 0
+        bul_avail_diff_a54 = 0
 
         for cve in sorted(canon_states):
             c_row = canon_states[cve]
@@ -720,10 +1108,22 @@ def compare_canon_against_pdf_blocks(
             for k in range(4):
                 if c_row[k] is None:
                     canon_missing_cells += 1
+                    if k < 3:
+                        canon_missing_current_cells += 1
+                    else:
+                        canon_missing_prev_cells += 1
                 if p_51[k] is None:
                     pdf_a51_missing_cells += 1
+                    if k < 3:
+                        pdf_a51_missing_current_cells += 1
+                    else:
+                        pdf_a51_missing_prev_cells += 1
+                        if not optional_prev:
+                            pdf_a51_missing_prev_text_cells += 1
                 if c_row[k] != p_51[k]:
                     bul_diff_a51 += 1
+                    if k < 3:
+                        bul_diff_current_a51 += 1
                     if len(mismatch_a51_details) < 50:
                         mismatch_a51_details.append(
                             {
@@ -736,35 +1136,54 @@ def compare_canon_against_pdf_blocks(
                         )
                 if c_row[k] != p_50[k]:
                     bul_diff_a50 += 1
+                    if k in ks_avail:
+                        bul_avail_diff_a50 += 1
                 if c_row[k] != p_54[k]:
                     bul_diff_a54 += 1
+                    if k in ks_avail:
+                        bul_avail_diff_a54 += 1
 
         diff_cells_vs_a51 += bul_diff_a51
+        diff_current_vs_a51 += bul_diff_current_a51
         diff_cells_vs_a50 += bul_diff_a50
         diff_cells_vs_a54 += bul_diff_a54
-        if bul_diff_a50 == 0:
+        if bul_avail_diff_a50 == 0:
             canon_eq_a50_files.append(fname)
-        if bul_diff_a54 == 0:
+        if bul_avail_diff_a54 == 0:
             canon_eq_a54_files.append(fname)
 
-        canon_sum_4 = [sum(canon_states[cve][k] or 0 for cve in canon_states) for k in range(4)]
+        canon_sum_4: list[int | None] = []
+        for k in range(4):
+            vals_k = [canon_states[cve][k] for cve in canon_states]
+            if all(v is None for v in vals_k):
+                canon_sum_4.append(None)
+            else:
+                canon_sum_4.append(sum(v for v in vals_k if v is not None))
+
         tot_12 = r["printed_total_12"]
         if tot_12 is None:
             files_by_status["sin_total_12"].append(fname)
         else:
-            if canon_sum_4 == tot_12[4:8]:
+            target_tot_4 = tot_12[4:8]
+            ks_tot = [k for k in range(4) if target_tot_4[k] is not None]
+            if canon_sum_4 == target_tot_4:
                 files_by_status["total_coincide"].append(fname)
+                if optional_prev:
+                    files_by_status["total_coincide_11col_sin_prev"].append(fname)
+                else:
+                    files_by_status["total_coincide_12col"].append(fname)
             else:
                 files_by_status["total_difiere"].append(fname)
-            if canon_sum_4 == tot_12[0:4]:
+            if ks_tot and [canon_sum_4[k] for k in ks_tot] == [tot_12[k] for k in ks_tot]:
                 total_eq_a50_files.append(fname)
-            if canon_sum_4 == tot_12[8:12]:
+            if ks_tot and [canon_sum_4[k] for k in ks_tot] == [tot_12[8 + k] for k in ks_tot]:
                 total_eq_a54_files.append(fname)
 
     return {
         "files_by_status": {k: sorted(v) for k, v in files_by_status.items()},
         "status_counts": {k: len(v) for k, v in files_by_status.items()},
         "exception_details": exception_details,
+        "unexpected_shape_details": unexpected_shape_details,
         "data_columns_distribution": {str(k): v for k, v in sorted(cols_counter.items())},
         "pages_range_by_year": {
             str(y): [min(ps), max(ps)] for y, ps in sorted(pages_by_year.items())
@@ -773,9 +1192,18 @@ def compare_canon_against_pdf_blocks(
         "canon_cell_by_cell_contrast": {
             "denominator_bulletins": denom_bulletins,
             "denominator_cells_4col": denom_cells,
+            "optional_prev_image_bulletins": optional_prev_bulletins,
+            "optional_prev_image_cells": optional_prev_cells,
+            "denominator_text_extractable_cells": denom_cells - optional_prev_cells,
             "canon_missing_cells": canon_missing_cells,
+            "canon_missing_current_sem_h_m_cells": canon_missing_current_cells,
+            "canon_missing_prev_year_cells": canon_missing_prev_cells,
             "pdf_a51_missing_cells": pdf_a51_missing_cells,
+            "pdf_a51_missing_current_sem_h_m_cells": pdf_a51_missing_current_cells,
+            "pdf_a51_missing_prev_year_cells": pdf_a51_missing_prev_cells,
+            "pdf_a51_missing_prev_year_text_cells": pdf_a51_missing_prev_text_cells,
             "canon_vs_target_a51_diff_cells": diff_cells_vs_a51,
+            "canon_vs_target_a51_current_sem_h_m_diff_cells": diff_current_vs_a51,
             "canon_vs_target_a51_mismatch_sample": mismatch_a51_details,
             "canon_vs_left_a50_diff_cells": diff_cells_vs_a50,
             "bulletins_where_canon_equals_left_a50": canon_eq_a50_files,
@@ -839,7 +1267,9 @@ def run_qa_report(
             OmegaConf.load(wt / "config" / "data" / "cuadros.yaml"), resolve=True
         ),
     )
-    grp = cast("dict[str, Any]", cuadros_raw["cuadro_groups"][spec_reg.extraction_group])
+    grp = _normalize_spec_int_keys(
+        cast("dict[str, Any]", cuadros_raw["cuadro_groups"][spec_reg.extraction_group])
+    )
     lag = int(grp["observation_lag_weeks"])
     excl_entries = [
         e for e in (grp.get("source_exclusions") or []) if disease_id in e.get("diseases", [])
@@ -848,7 +1278,9 @@ def run_qa_report(
     keep_period_files = {str(e["file"]) for e in excl_entries if e.get("keep_period", False)}
 
     pdfs = [str(p) for p in sorted(pdf_dir.resolve().glob("*.pdf")) if p.name not in excl_files]
-    tasks = [(p, list(grp["page_anchors"]), list(grp["state_markers"]), lag) for p in pdfs]
+    tasks: list[InspectTask] = [
+        (p, list(grp["page_anchors"]), list(grp["state_markers"]), lag, grp) for p in pdfs
+    ]
 
     if jobs <= 1:
         pdf_rows = list(map(inspect_one_pdf, tasks))
@@ -1000,6 +1432,10 @@ def run_qa_report(
         for y in (2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026)
     }
 
+    n_lag_verified = len(c6_block["files_by_status"]["lag_verified_match"])
+    n_lag_mismatch = len(c6_block["files_by_status"]["lag_mismatch"])
+    n_lag_absent = len(c6_block["files_by_status"]["header_cutoff_unparsed"])
+
     report: dict[str, Any] = {
         "schema": "piloto_carbon_alta1.qa_serie_extraida.v2",
         "generated_at": datetime.now(UTC).isoformat(),
@@ -1017,12 +1453,22 @@ def run_qa_report(
             "historical_lag_verification": {
                 "expected_lag_weeks": lag,
                 "bulletins_ok": len(c6_block["files_by_status"]["ok"]),
+                "denominator_readable_cutoff_bulletins": n_lag_verified + n_lag_mismatch,
+                "denominator_absent_cutoff_bulletins": n_lag_absent,
+                "lag_verified_match_count": n_lag_verified,
                 "lag_mismatch_files": c6_block["files_by_status"]["lag_mismatch"],
                 "lag_mismatch_details": c6_block["lag_mismatch_details"],
                 "header_cutoff_unparsed_files": c6_block["files_by_status"][
                     "header_cutoff_unparsed"
                 ],
+                "header_cutoff_unparsed_raster_prev_files": c6_block["files_by_status"][
+                    "header_cutoff_unparsed_raster_prev"
+                ],
+                "header_cutoff_unparsed_full_text_files": c6_block["files_by_status"][
+                    "header_cutoff_unparsed_full_text"
+                ],
             },
+            "raw_csv_missing_cells_summary": csv_diag["raw_csv_missing_cells_summary"],
             "series_span": {
                 "first_target_period": first_period,
                 "last_target_period": last_period,
@@ -1082,6 +1528,9 @@ def run_qa_report(
     c6 = report["c6_antibloque_y_total"]
     c7 = report["c7_calendario_lag_densidad_calidad"]
     cc = c6["canon_cell_by_cell_contrast"]
+    lag_info = c7["historical_lag_verification"]
+    raw_miss = c7["raw_csv_missing_cells_summary"]
+    t25 = c7["target_2025_integrity_no_forecast"]
     traj = c7["cumulative_trajectories_and_anomalies"]
     md_lines = [
         f"# Reporte QA de Serie Extraída (`C6`, `C7`, `C8`) — `{disease_id}`",
@@ -1104,18 +1553,26 @@ def run_qa_report(
         f"`no_table={c6['files_by_status']['no_table']}`, "
         f"`unexpected_shape={c6['files_by_status']['unexpected_shape']}`, "
         f"`exception={c6['files_by_status']['exception']}`",
+        f"- Reparaciones opt-in verificadas: "
+        f"`row_tol={len(c6['files_by_status']['reparado_row_tol'])}`, "
+        f"`sin_prev_en_capa_texto={len(c6['files_by_status']['sin_prev_en_capa_texto'])}`",
         f"- Celdas del CSV canónico comparadas contra `A51-A53` (PDF): "
-        f"`{cc['denominator_cells_4col']}` en `{cc['denominator_bulletins']}` boletines "
+        f"`4col={cc['denominator_cells_4col']}` (`texto_extraible={cc['denominator_text_extractable_cells']}`, "
+        f"`prev_opcional_imagen={cc['optional_prev_image_cells']}`) en `{cc['denominator_bulletins']}` boletines "
         f"(`difieren={cc['canon_vs_target_a51_diff_cells']}`, "
-        f"`ausentes_canon={cc['canon_missing_cells']}`, "
-        f"`ausentes_pdf={cc['pdf_a51_missing_cells']}`)",
+        f"`ausentes_canon_Sem_H_M={cc['canon_missing_current_sem_h_m_cells']}`, "
+        f"`ausentes_canon_prev_opcional={cc['canon_missing_prev_year_cells']}`, "
+        f"`ausentes_pdf_Sem_H_M={cc['pdf_a51_missing_current_sem_h_m_cells']}`, "
+        f"`ausentes_pdf_prev_opcional={cc['pdf_a51_missing_prev_year_cells']}`)",
         f"- Contraste celda a celda del CSV canónico contra vecino izquierdo `A50`: "
         f"`difieren={cc['canon_vs_left_a50_diff_cells']}` / `{cc['denominator_cells_4col']}`, "
         f"`boletines_identicos={cc['bulletins_where_canon_equals_left_a50']}`",
         f"- Contraste celda a celda del CSV canónico contra vecino derecho `A54.0-A54.2`: "
         f"`difieren={cc['canon_vs_right_a54_diff_cells']}` / `{cc['denominator_cells_4col']}`, "
         f"`boletines_identicos={cc['bulletins_where_canon_equals_right_a54']}`",
-        f"- Fila `TOTAL` impresa: `coincide={len(c6['files_by_status']['total_coincide'])}`, "
+        f"- Fila `TOTAL` impresa: `coincide={len(c6['files_by_status']['total_coincide'])}` "
+        f"(`12col={len(c6['files_by_status']['total_coincide_12col'])}`, "
+        f"`11col_sin_prev={len(c6['files_by_status']['total_coincide_11col_sin_prev'])}`), "
         f"`difiere={c6['files_by_status']['total_difiere']}`, "
         f"`sin_total_12={c6['files_by_status']['sin_total_12']}`",
         "",
@@ -1124,21 +1581,34 @@ def run_qa_report(
         f"`{c7['series_span']['last_target_period']}` "
         f"(`{c7['series_span']['total_target_weeks']}` semanas, "
         f"`{c7['series_span']['total_base_rows']}` filas base)",
-        f"- Discrepancias de rezago impreso vs `epi_calendar`: "
-        f"`{c7['historical_lag_verification']['lag_mismatch_files']}`",
+        f"- Verificación de rezago impreso vs `epi_calendar`: "
+        f"`denominador_legible={lag_info['denominator_readable_cutoff_bulletins']}`, "
+        f"`coinciden={lag_info['lag_verified_match_count']}`, "
+        f"`discrepancias={lag_info['lag_mismatch_files']}`, "
+        f"`denominador_ausente_corte_no_extraible={lag_info['denominator_absent_cutoff_bulletins']}` "
+        f"(`raster_prev={lag_info['header_cutoff_unparsed_raster_prev_files']}`, "
+        f"`texto_12col={lag_info['header_cutoff_unparsed_full_text_files']}`)",
+        f"- Celdas crudas ausentes en CSV (todo el corpus no excluido): "
+        f"`Sem_H_M={raw_miss['missing_current_sem_h_m_cells_total']}`, "
+        f"`Acumulado_anio_anterior_opcional={raw_miss['missing_optional_prev_year_cells_total']}`",
         f"- Semanas de entrenamiento previas por pliegue: `{c7['train_weeks_before_folds']}`",
         f"- Integridad objetivos 2025 (sin pronóstico): "
-        f"`semanas={c7['target_2025_integrity_no_forecast']['target_weeks_present_2025']}`, "
-        f"`total_imputed={c7['target_2025_integrity_no_forecast']['total_imputed_rows_2025']}`, "
-        f"`NA_csv_por_col={c7['target_2025_integrity_no_forecast']['na_counts_by_column_in_2025_targets']}`, "
-        f"`tokens_-1_crudos_camelot={len(c7['target_2025_integrity_no_forecast']['raw_pdf_minus_one_cells_target_2025'])}`",
+        f"`semanas={t25['target_weeks_present_2025']}`, "
+        f"`total_imputed={t25['total_imputed_rows_2025']}`, "
+        f"`NA_Sem_H_M_2025={t25['na_current_sem_h_m_cells_in_2025_targets']}`, "
+        f"`NA_prev_opcional_2025={t25['na_optional_prev_year_cells_in_2025_targets']}`, "
+        f"`NA_csv_por_col={t25['na_counts_by_column_in_2025_targets']}`, "
+        f"`tokens_-1_crudos_camelot={len(t25['raw_pdf_minus_one_cells_target_2025'])}`",
         f"- Caídas nacionales intra-año de acumulados: "
-        f"`{[x['file'] for x in traj['national_cumulative_drops_by_file']]}`",
+        f"`{[x['file'] for x in traj['national_cumulative_drops_by_file']]}` "
+        f"(`anio_anterior={[x['file'] for x in traj['national_prev_year_drops_by_file']]}`)",
         f"- Picos/caídas nacionales revertidos (tripleta): "
         f"`{[x['file'] for x in traj['national_spike_or_drop_reverted_triplets']]}`",
         f"- Deltas estatales negativos crudos: "
         f"`H={traj['raw_negative_deltas_hombres']}`, `M={traj['raw_negative_deltas_mujeres']}` "
-        f"en `{len(traj['state_negative_delta_files'])}` archivos",
+        f"en `{len(traj['state_negative_delta_files'])}` archivos "
+        f"(`prev={traj['raw_negative_deltas_anio_anterior']}` en "
+        f"`{len(traj['state_prev_year_negative_delta_files'])}` archivos)",
         f"- Banderas de reconciliación (filas base): `{c7['reconciled_quality_flags_rows']}`",
         f"- Fracción de ceros en las 64 series base (mín / med / máx): "
         f"`{c7['weekly_density_summary_64_bases']['min_zero_fraction']}` / "
