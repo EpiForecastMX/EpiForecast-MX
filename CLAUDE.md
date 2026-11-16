@@ -28,6 +28,36 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
+## Checkpoint post-merge PR #74 — piloto Carbon (`sifilis_adquirida_a51`, `configured`, 0/1) — 16-nov-2026
+
+Complementa sin reemplazar el checkpoint de `alta20c` inferior: producción servida conserva **85 publicados en el
+sitio y 81 del runner** sobre la misma base semanal
+`planes/alta20c_2026-11-14/ingestion_observado_W43/candidato_con_alta20c_final20/dataset_boletin_epidemiologico.csv`
+(sha256 `8c21883a3a1d5e1b4daeabe1f5e3ab27f931f1f0177b74fd78fb696e8ad88852`, verificado en
+`ROOT_WEEKLY_PATHS_ACTUAL.json`), con `main` frontend en `73079eeb` (auditoría documental `#99` del 15-nov, sin
+cambios por el piloto), catálogo servido HTTP 200 byte-idéntico, las `97` entradas previas de
+`config/padecimientos.yaml` iguales y `0` artefactos antiguos modificados. PR `#74` de integración exclusivamente
+técnica (`TECHNICAL_ONLY_PR74`, `delta = 0` publicados; guardas idempotentes de dataset `0444` y de `policy_digest`
+en selección) quedó fusionada en `main` backend `919159e8b0856aa3e59866715cd7063ffa070e63` (desde `7b42e4d8` sobre
+`30cb7b4f`, con aprobación final independiente de Fable `FABLE_FINAL_APPROVED_TECHNICAL_ONLY` y CI remoto de PR
+`43902888808` en `SUCCESS`), con **CI remoto de `main` `43905851850` en verde** (`SUCCESS`: `2,874 passed,
+496 skipped, 66 deselected`), `119` artefactos científicos materializados por hash en el checkout principal y
+respaldos previos verificados por hash; asimismo, la revisión `v3` del skill `padecimiento-epiforecast` (`6`
+archivos aprobados en `fable_skill_v3_delta/FABLE_SKILL_V3_DELTA.{json,md}`) quedó instalada con copia canónica y
+espejo idénticos (`diff = 0`, `quick_validate` `rc=0`, `ROOT_SKILL_INSTALACION_FINAL.json`; las sondas focales se
+registran por versión evaluada y no constituyen suite nativa completa ni `PASS` científico). **El piloto permanece
+incompleto únicamente por su estado científico (`0 / 1` publicado, sin declarar «todo cerrado»):** el candidato
+`sifilis_adquirida_a51` (`A51-A53`, `CUADRO 6`, rezago `1`) sigue en `lifecycle: configured` con **`0` pruebas de
+2025** abiertas o consumidas; sobre los pines científicos `98675bb0` (extracción doble canónica `raw` `7fc521b7…`)
+y `373ea5f6` (dataset `sifilis_adquirida_a51_0cc942faddb8`, QA y corridas, que **no requieren reextraer `raw` ni
+reescribir manifiestos** por commits posteriores de código o documentación), `smoke` de 7 motores (`f7bc088ceb95`)
+terminó `succeeded` (`7/7`), `full` de 7 motores (`0419b6adfda7`) terminó `FAILED` (`5` estacionales `succeeded`;
+fallaron `ETS` en `01` hombres `2021` y `Ridge` en `17` mujeres `2021`), y la propuesta nominal `v2` de política de
+5 motores (`a4d0544d…`) sigue **sin respuesta del autor** (`propuesta ≠ autorización`: no están autorizados
+`select`, `full5`, control estacional, `test` de 2025, `refit` ni publicación; las delegaciones de `alta20c` no se
+heredan y 2025 exige revisión pretest de Fable). Guía: `docs/C7_18_PILOTO_CARBON.md`; evidencia externa:
+`planes/piloto_carbon_alta1_2026-11-15/`.
+
 ## Checkpoint vigente — lote alta20c publicado — 15-nov-2026
 
 Prevalece sobre las secciones fechadas inferiores en cuanto al número de publicados y la base semanal.
