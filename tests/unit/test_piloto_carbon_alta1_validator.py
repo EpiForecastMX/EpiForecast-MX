@@ -1148,42 +1148,366 @@ def test_h6_qa_mediciones_na_2025_celdas_3bloques_caidas_excepcion_raw_noop_y_pi
     assert exc_qa_cli.value.code != 0
 
     wt_q, _, pdf_q, inv_q, sha_q, inv_sha_q, _, _ = _build_synthetic_env(tmp_path / "qa_pins")
+    canon_dir_q = tmp_path / "canon_sealed_q"
+    canon_dir_q.mkdir()
+    canon_csv_q = canon_dir_q / "sint_id_boletin.csv"
+    canon_csv_q.write_bytes(canon_csv.read_bytes())
+    (canon_dir_q / "SHA256SUMS").write_text(
+        f"{canon_sha}  sint_id_boletin.csv\n",
+        encoding="utf-8",
+    )
+    (canon_dir_q / "sint_id_CANON_RAW.json").write_text(
+        json.dumps(
+            {
+                "id": "sint_id",
+                "valida": True,
+                "raw_sha256": canon_sha,
+                "snapshot_sha": sha_q,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
     # cwd distinto de worktree debe fallar cuando check_cwd_and_imports=True
     with pytest.raises(RuntimeError, match="cwd actual"):
         qa.verify_qa_preconditions(
             disease_id="sint_id",
-            canon_csv=canon_csv,
+            canon_csv=canon_csv_q,
             expected_canon_sha256=canon_sha,
             pdf_dir=pdf_q,
             inventory_json=inv_q,
             expected_inventory_sha256=inv_sha_q,
             worktree=wt_q,
             expected_commit=sha_q,
+            expected_extraction_commit=sha_q,
             check_cwd_and_imports=True,
         )
     # expected_canon_sha256 distinto falla
     with pytest.raises(RuntimeError, match="canon_csv sha256"):
         qa.verify_qa_preconditions(
             disease_id="sint_id",
-            canon_csv=canon_csv,
+            canon_csv=canon_csv_q,
             expected_canon_sha256="0" * 64,
             pdf_dir=pdf_q,
             inventory_json=inv_q,
             expected_inventory_sha256=inv_sha_q,
             worktree=wt_q,
             expected_commit=sha_q,
+            expected_extraction_commit=sha_q,
             check_cwd_and_imports=False,
         )
     # Con pines exactos pasa
     prov_ok = qa.verify_qa_preconditions(
         disease_id="sint_id",
-        canon_csv=canon_csv,
+        canon_csv=canon_csv_q,
         expected_canon_sha256=canon_sha,
         pdf_dir=pdf_q,
         inventory_json=inv_q,
         expected_inventory_sha256=inv_sha_q,
         worktree=wt_q,
         expected_commit=sha_q,
+        expected_extraction_commit=sha_q,
         check_cwd_and_imports=False,
     )
-    assert prov_ok["commit_sha40"] == sha_q and prov_ok["canon_csv_sha256"] == canon_sha
+    assert (
+        prov_ok["commit_sha40"] == sha_q
+        and prov_ok["extraction_commit_sha40"] == sha_q
+        and prov_ok["cross_commit_revalidation"] is False
+        and prov_ok["canon_csv_sha256"] == canon_sha
+    )
+
+
+def test_n1_inspect_one_pdf_ruta_real_miles_guion_y_desconocido_sin_descartar_celdas(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """N1: inspect_one_pdf parsea miles con espacio y guion en TOTAL y no descarta celdas si falla."""
+    import pandas as pd
+
+    catalog = load_geo_catalog()
+    cves = sorted(catalog.cve_ents())
+    entidades = [catalog.entity(cve).nombre_canonico for cve in cves]
+    fake_pdf = tmp_path / "2026_sem43.pdf"
+    fake_pdf.write_bytes(b"%PDF-1.4\n% sint\n")
+
+    class _FakePage:
+        def extract_text(self) -> str:
+            return "Casos hasta la semana epidemiológica 42 del 2026"
+
+    class _FakeReader:
+        def __init__(self, _path: str) -> None:
+            self.pages = [_FakePage()]
+
+    class _FakeTable:
+        def __init__(self, df: pd.DataFrame) -> None:
+            self.df = df
+
+    state_rows = [
+        [ent, "-", "10", "5", "-", "13", "391", "271", "559", "-", "-", "2", "-"]
+        for ent in entidades
+    ]
+    clean_state_df = pd.DataFrame(state_rows)
+
+    def _run_with_total_row(total_cells_12: list[str]) -> dict[str, Any]:
+        raw_df = pd.DataFrame([*state_rows, ["TOTAL", *total_cells_12]])
+        monkeypatch.setattr(qa, "find_cuadro_page", lambda *_a, **_k: 1)
+        monkeypatch.setattr(qa, "PdfReader", _FakeReader)
+        monkeypatch.setattr(
+            "scripts.piloto_carbon_alta1.qa_serie_extraida.camelot.read_pdf",
+            lambda *_a, **_k: [_FakeTable(raw_df)],
+        )
+        monkeypatch.setattr(qa, "_tabla_estatal", lambda *_a, **_k: clean_state_df.copy())
+        return qa.inspect_one_pdf((str(fake_pdf), ["adquirida"], ["zacatecas"], 1))
+
+    # Caso 1: TOTAL con separador de miles con espacio ("12 537") y guiones ("-")
+    res_miles = _run_with_total_row(
+        ["-", "1 200", "800", "-", "425", "12 537", "8 676", "17 918", "-", "-", "5 000", "-"]
+    )
+    assert res_miles["status"] == "ok"
+    assert res_miles["printed_total_12"] == [
+        0,
+        1200,
+        800,
+        0,
+        425,
+        12537,
+        8676,
+        17918,
+        0,
+        0,
+        5000,
+        0,
+    ]
+    tot_12 = res_miles["printed_total_12"]
+    assert isinstance(tot_12, list) and tot_12[4:8] == [425, 12537, 8676, 17918]
+    assert res_miles["printed_total_unknown_tokens"] == []
+    cells_51 = res_miles["cells_a51"]
+    assert isinstance(cells_51, dict) and len(cells_51) == 32
+
+    # Caso 2: TOTAL con token desconocido ("S/D") -> printed_total_12=None, pero status=="ok" y
+    # las 32 entidades (128 celdas) NO se descartan en compare_canon_against_pdf_blocks.
+    res_unk = _run_with_total_row(
+        ["-", "1 200", "800", "-", "425", "S/D", "8 676", "17 918", "-", "-", "5 000", "-"]
+    )
+    assert res_unk["status"] == "ok"
+    assert res_unk["printed_total_12"] is None
+    assert res_unk["printed_total_unknown_tokens"] == [{"col_index": 5, "raw_token": "S/D"}]
+    cells_51_unk = res_unk["cells_a51"]
+    assert isinstance(cells_51_unk, dict) and len(cells_51_unk) == 32
+
+    canon_lookup_n1: dict[tuple[int, int], dict[str, list[int | None]]] = {
+        (2026, 43): {cve: [13, 391, 271, 559] for cve in cves}
+    }
+    c6_unk = qa.compare_canon_against_pdf_blocks(canon_lookup_n1, [res_unk])
+    assert c6_unk["files_by_status"]["ok"] == ["2026_sem43.pdf"]
+    assert c6_unk["files_by_status"]["sin_total_12"] == ["2026_sem43.pdf"]
+    assert c6_unk["canon_cell_by_cell_contrast"]["denominator_bulletins"] == 1
+    assert c6_unk["canon_cell_by_cell_contrast"]["denominator_cells_4col"] == 128
+    assert c6_unk["canon_cell_by_cell_contrast"]["canon_vs_target_a51_diff_cells"] == 0
+
+
+def test_n2_cross_commit_misma_ciencia_acepta_y_source_cambiado_rechaza(tmp_path: Path) -> None:
+    """N2: QA en commit posterior acepta si TRACKED_EXTRACTION_INPUTS es idéntico y rechaza si cambia."""
+    wt, out_dir, pdf_dir, inv_json, sha_ext, inv_sha, _, _ = _build_synthetic_env(
+        tmp_path / "n2_env"
+    )
+    canon_dir = tmp_path / "canon_n2"
+    canon_dir.mkdir()
+    canon_csv = canon_dir / "sint_id_boletin.csv"
+    shutil.copyfile(out_dir / "sint_id_boletin.csv", canon_csv)
+    canon_sha = vr.sha256_file(canon_csv)
+    assert canon_sha is not None
+    (canon_dir / "SHA256SUMS").write_text(
+        f"{canon_sha}  sint_id_boletin.csv\n",
+        encoding="utf-8",
+    )
+    (canon_dir / "sint_id_CANON_RAW.json").write_text(
+        json.dumps(
+            {
+                "id": "sint_id",
+                "valida": True,
+                "raw_sha256": canon_sha,
+                "snapshot_sha": sha_ext,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    # Pin --expected-extraction-commit faltante en CLI debe abortar
+    with pytest.raises(SystemExit) as exc_cli:
+        qa.main(
+            [
+                "--disease",
+                "sint_id",
+                "--canon-csv",
+                str(canon_csv),
+                "--expected-canon-sha256",
+                canon_sha,
+                "--pdf-dir",
+                str(pdf_dir),
+                "--inventory-json",
+                str(inv_json),
+                "--expected-inventory-sha256",
+                inv_sha,
+                "--worktree",
+                str(wt),
+                "--expected-commit",
+                sha_ext,
+                "--out-json",
+                str(tmp_path / "o.json"),
+                "--out-md",
+                str(tmp_path / "o.md"),
+            ]
+        )
+    assert exc_cli.value.code != 0
+
+    # Commit posterior que SÓLO toca un helper de medición (sin tocar TRACKED_EXTRACTION_INPUTS)
+    (wt / "scripts/piloto_carbon_alta1/qa_helper_note.py").write_text(
+        "# fix medicion N1\n",
+        encoding="utf-8",
+    )
+    _git(wt, "add", "scripts/piloto_carbon_alta1/qa_helper_note.py")
+    _git(wt, "commit", "-qm", "fix(qa): measurement only")
+    sha_qa_ok = _git(wt, "rev-parse", "HEAD")
+    assert sha_qa_ok != sha_ext
+
+    prov_cross = qa.verify_qa_preconditions(
+        disease_id="sint_id",
+        canon_csv=canon_csv,
+        expected_canon_sha256=canon_sha,
+        pdf_dir=pdf_dir,
+        inventory_json=inv_json,
+        expected_inventory_sha256=inv_sha,
+        worktree=wt,
+        expected_commit=sha_qa_ok,
+        expected_extraction_commit=sha_ext,
+        check_cwd_and_imports=False,
+    )
+    assert prov_cross["commit_sha40"] == sha_qa_ok
+    assert prov_cross["extraction_commit_sha40"] == sha_ext
+    assert prov_cross["cross_commit_revalidation"] is True
+
+    # Commit posterior que cambia una fuente de extracción (cuadro_extractor.py) -> DEBE RECHAZAR
+    ext_src = wt / "src/epiforecast/data/extraction/cuadro_extractor.py"
+    ext_src.write_text(
+        ext_src.read_text(encoding="utf-8") + "# cambio extractor\n", encoding="utf-8"
+    )
+    _git(wt, "add", "src/epiforecast/data/extraction/cuadro_extractor.py")
+    _git(wt, "commit", "-qm", "feat(extract): mutated extractor")
+    sha_qa_mutated = _git(wt, "rev-parse", "HEAD")
+
+    with pytest.raises(RuntimeError, match="TRACKED_EXTRACTION_INPUTS cambió"):
+        qa.verify_qa_preconditions(
+            disease_id="sint_id",
+            canon_csv=canon_csv,
+            expected_canon_sha256=canon_sha,
+            pdf_dir=pdf_dir,
+            inventory_json=inv_json,
+            expected_inventory_sha256=inv_sha,
+            worktree=wt,
+            expected_commit=sha_qa_mutated,
+            expected_extraction_commit=sha_ext,
+            check_cwd_and_imports=False,
+        )
+
+
+def test_n3_checkpoint_por_pdf_antes_de_csv_y_canon_raw_sha256sums_obligatorios(
+    tmp_path: Path,
+) -> None:
+    """N3: SHA256SUMS + CANON_RAW obligatorios y <stem>_por_pdf.json se persiste antes de leer CSV."""
+    wt, _, pdf_dir, inv_json, sha_wt, inv_sha, _, _ = _build_synthetic_env(tmp_path / "n3_env")
+
+    # Copiar configuración real de sifilis_adquirida_a51 al worktree sintético para run_qa_report
+    repo_root = Path(__file__).resolve().parents[2]
+    shutil.copyfile(repo_root / "config/data/cuadros.yaml", wt / "config/data/cuadros.yaml")
+    shutil.copyfile(repo_root / "config/padecimientos.yaml", wt / "config/padecimientos.yaml")
+    _git(wt, "add", "config/data/cuadros.yaml", "config/padecimientos.yaml")
+    _git(wt, "commit", "-qm", "chore(qa): real sifilis config for N3")
+    sha_real_cfg = _git(wt, "rev-parse", "HEAD")
+
+    canon_dir = tmp_path / "canon_n3"
+    canon_dir.mkdir()
+    bad_csv = canon_dir / "sifilis_adquirida_a51_boletin.csv"
+    bad_csv.write_text("ColumnaInvalida\n1\n", encoding="utf-8")
+    bad_sha = vr.sha256_file(bad_csv)
+    assert bad_sha is not None
+
+    # 1) Sin SHA256SUMS falla cerrado
+    with pytest.raises(RuntimeError, match="Falta archivo obligatorio SHA256SUMS"):
+        qa.verify_qa_preconditions(
+            disease_id="sifilis_adquirida_a51",
+            canon_csv=bad_csv,
+            expected_canon_sha256=bad_sha,
+            pdf_dir=pdf_dir,
+            inventory_json=inv_json,
+            expected_inventory_sha256=inv_sha,
+            worktree=wt,
+            expected_commit=sha_real_cfg,
+            expected_extraction_commit=sha_real_cfg,
+            check_cwd_and_imports=False,
+        )
+
+    # 2) Con SHA256SUMS pero sin CANON_RAW.json falla cerrado
+    (canon_dir / "SHA256SUMS").write_text(
+        f"{bad_sha}  sifilis_adquirida_a51_boletin.csv\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(RuntimeError, match=r"Falta archivo obligatorio CANON_RAW\.json"):
+        qa.verify_qa_preconditions(
+            disease_id="sifilis_adquirida_a51",
+            canon_csv=bad_csv,
+            expected_canon_sha256=bad_sha,
+            pdf_dir=pdf_dir,
+            inventory_json=inv_json,
+            expected_inventory_sha256=inv_sha,
+            worktree=wt,
+            expected_commit=sha_real_cfg,
+            expected_extraction_commit=sha_real_cfg,
+            check_cwd_and_imports=False,
+        )
+
+    # 3) Con SHA256SUMS y CANON_RAW válidos apuntando a un CSV que revienta en analyze_canon_csv:
+    #    <stem>_por_pdf.json YA debe quedar persistido y en 0444 en disco antes de analizar el CSV.
+    (canon_dir / "sifilis_adquirida_a51_CANON_RAW.json").write_text(
+        json.dumps(
+            {
+                "id": "sifilis_adquirida_a51",
+                "valida": True,
+                "raw_sha256": bad_sha,
+                "snapshot_sha": sha_real_cfg,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    out_json = tmp_path / "out_n3" / "QA_N3.json"
+    out_md = tmp_path / "out_n3" / "QA_N3.md"
+    out_por_pdf = tmp_path / "out_n3" / "QA_N3_por_pdf.json"
+
+    with pytest.raises(KeyError):
+        qa.run_qa_report(
+            disease_id="sifilis_adquirida_a51",
+            canon_csv=bad_csv,
+            expected_canon_sha256=bad_sha,
+            pdf_dir=pdf_dir,
+            inventory_json=inv_json,
+            expected_inventory_sha256=inv_sha,
+            worktree=wt,
+            expected_commit=sha_real_cfg,
+            expected_extraction_commit=sha_real_cfg,
+            out_json=out_json,
+            out_md=out_md,
+            jobs=1,
+            run_validate_data=False,
+            check_cwd_and_imports=False,
+        )
+
+    assert out_por_pdf.is_file()
+    assert not (out_por_pdf.stat().st_mode & stat.S_IWUSR)
+    por_pdf_doc = json.loads(out_por_pdf.read_text(encoding="utf-8"))
+    assert por_pdf_doc["schema"] == "piloto_carbon_alta1.qa_por_pdf.v2"
+    # 2014_sem02.pdf no está excluido en sifilis_adquirida_a51 (2014_sem01 y 2016_sem20 sí)
+    assert [r["file"] for r in por_pdf_doc["pdf_rows"]] == ["2014_sem02.pdf"]
+    assert sha_wt != sha_real_cfg

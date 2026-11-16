@@ -1,14 +1,18 @@
-"""QA cuantitativo post-extracción (C6, C7 y C8; H6 corregido) — piloto Carbon alta1.
+"""QA cuantitativo post-extracción (C6, C7 y C8; H6 + N1/N2/N3 corregidos) — piloto Carbon alta1.
 
 Mide sobre el CSV canónico sellado y el corpus PDF sellado (sin crear criterios nuevos ni consultar
 métricas de pronóstico de 2025):
-- Pines y entorno obligatorios (``H6(g)``): exige ``expected_commit`` (40 hex), ``inventory_json`` y
-  ``expected_inventory_sha256`` (64 hex), ``expected_canon_sha256`` (64 hex), ``cwd == worktree``,
-  árbol git limpio (incluyendo no rastreados en raíz), ``registry.__file__`` y
-  ``orchestrator.__file__`` bajo ``worktree``, y concordancia con ``SHA256SUMS`` / ``CANON_RAW.json``.
-- Inspección por PDF tolerante y persistida (``H6(b)``, ``H6(e)``): ``_inspect_one_pdf`` captura
-  excepciones como ``status="exception"``, lista archivos por cada estado y persiste
-  ``<out_json>_por_pdf.json`` (``0444``) ANTES de ``validate-data``.
+- Pines y entorno obligatorios (``H6(g)``, ``N2``, ``N3(c)``): exige ``expected_commit`` (40 hex del
+  código de QA) separado de ``expected_extraction_commit`` (40 hex del snapshot canónico en
+  ``CANON_RAW.json``) verificando igualdad exacta de blobs en ``TRACKED_EXTRACTION_INPUTS``, además
+  de ``inventory_json`` + ``expected_inventory_sha256`` (64 hex), ``expected_canon_sha256`` (64 hex),
+  ``SHA256SUMS`` y ``<id>_CANON_RAW.json`` obligatorios, ``cwd == worktree``, árbol git limpio e
+  imports resueltos bajo ``worktree``.
+- Inspección por PDF tolerante y checkpoint inmediato (``H6(b)``, ``H6(e)``, ``N1``, ``N3(b)``):
+  parsea el renglón ``TOTAL`` con ``_norm_int`` (miles con espacio y guiones) dejando ``None`` ante
+  valores desconocidos sin descartar celdas estatales, captura excepciones como ``status="exception"``
+  y persiste ``<out_json>_por_pdf.json`` (``0444``) inmediatamente al terminar el pool y ANTES de
+  analizar el CSV o ejecutar ``validate-data``.
 - Comparación celda a celda del CSV canónico contra los 3 bloques (``C6`` / ``H6(c)``): compara las
   ``32 × 4 = 128`` celdas por boletín del CSV canónico contra el bloque central ``A51-A53`` y contra
   los vecinos ``A50`` (izq.) y ``A54.0-A54.2`` (der.), además de la fila ``TOTAL`` impresa.
@@ -35,9 +39,10 @@ import re
 import shutil
 import stat
 import sys
-from typing import Any
+from typing import Any, cast
 
 import camelot
+from omegaconf import OmegaConf
 import pandas as pd
 from pypdf import PdfReader
 from scripts.piloto_carbon_alta1 import valida_run_v2 as vr
@@ -52,7 +57,6 @@ from epiforecast.data.extraction.cuadro_extractor import (
     _area_pagina,
     _tabla_estatal,
     find_cuadro_page,
-    load_group,
 )
 from epiforecast.data.extraction.cuadro_reparaciones import fila_total
 from epiforecast.data.extraction.dengue_extractor import _year_week_from_filename
@@ -72,6 +76,31 @@ def _set_readonly(path: Path) -> None:
 def _norm_int(v: Any) -> int | None:
     n = normalize_number(v)
     return None if pd.isna(n) else int(n)
+
+
+def _parse_printed_total_12(
+    tot_vals: list[str] | None,
+) -> tuple[list[int] | None, list[dict[str, Any]]]:
+    """Normaliza las 12 celdas crudas del renglón TOTAL con ``_norm_int`` (N1).
+
+    Acepta separadores de miles con espacio o coma (p. ej. ``"12 537"`` -> ``12537``) y guiones
+    de cero (``"-"`` -> ``0``). Si ``tot_vals`` no trae 12 celdas o alguna celda contiene un token
+    desconocido (``_norm_int(v) is None``), devuelve ``(None, unknowns)`` para registrar
+    ``sin_total_12`` sin lanzar excepción ni descartar las celdas estatales del boletín.
+    """
+    if tot_vals is None or len(tot_vals) != 12:
+        return None, []
+    parsed: list[int] = []
+    unknowns: list[dict[str, Any]] = []
+    for idx, raw_v in enumerate(tot_vals):
+        nv = _norm_int(raw_v)
+        if nv is None:
+            unknowns.append({"col_index": idx, "raw_token": str(raw_v).strip()})
+        else:
+            parsed.append(nv)
+    if unknowns:
+        return None, unknowns
+    return parsed, []
 
 
 def _parse_csv_cell_str(raw_val: str) -> int | None:
@@ -174,9 +203,7 @@ def inspect_one_pdf(task: tuple[str, list[str], list[str], int]) -> dict[str, An
             cells_a51[cve] = row_51
             cells_a54[cve] = [_norm_int(df_clean.iloc[r_idx, c]) for c in range(9, 13)]
 
-        tot_12: list[int] | None = None
-        if tot_vals is not None and len(tot_vals) == 12:
-            tot_12 = [int(v) for v in tot_vals]
+        tot_12, tot_unknown = _parse_printed_total_12(tot_vals)
 
         return {
             "file": fname,
@@ -193,6 +220,7 @@ def inspect_one_pdf(task: tuple[str, list[str], list[str], int]) -> dict[str, An
             "cells_a51": cells_a51,
             "cells_a54": cells_a54,
             "printed_total_12": tot_12,
+            "printed_total_unknown_tokens": tot_unknown,
             "raw_minus_one_a51": raw_minus_one_a51,
             "raw_non_numeric_a51": raw_non_numeric_a51,
         }
@@ -224,6 +252,23 @@ def stage_raw_for_validate_data(canon_csv: Path, raw_dest: Path, expected_sha256
     return "copied_and_sealed_readonly"
 
 
+def _load_json_strict(path: Path) -> dict[str, Any]:
+    """Carga JSON rechazando claves duplicadas."""
+
+    def _no_dups(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        out: dict[str, Any] = {}
+        for k, v in pairs:
+            if k in out:
+                raise ValueError(f"clave JSON duplicada: {k}")
+            out[k] = v
+        return out
+
+    loaded = json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=_no_dups)
+    if not isinstance(loaded, dict):
+        raise ValueError("raíz JSON no es un objeto")
+    return loaded
+
+
 def verify_qa_preconditions(
     *,
     disease_id: str,
@@ -234,12 +279,15 @@ def verify_qa_preconditions(
     expected_inventory_sha256: str,
     worktree: Path,
     expected_commit: str,
+    expected_extraction_commit: str,
     check_cwd_and_imports: bool = True,
 ) -> dict[str, Any]:
-    """Verifica todos los pines, limpieza git, cwd e imports antes de ejecutar QA (H6(g))."""
+    """Verifica pines separados QA vs extracción, blobs científicos, git y CANON_RAW (H6g, N2, N3c)."""
     wt = worktree.resolve()
     if not vr.HEX40_RE.fullmatch(expected_commit or ""):
         raise RuntimeError("expected_commit ausente o no es SHA de 40 hex")
+    if not vr.HEX40_RE.fullmatch(expected_extraction_commit or ""):
+        raise RuntimeError("expected_extraction_commit ausente o no es SHA de 40 hex")
     if not vr.HEX64_RE.fullmatch(expected_inventory_sha256 or ""):
         raise RuntimeError("expected_inventory_sha256 ausente o no es SHA-256 de 64 hex")
     if not vr.HEX64_RE.fullmatch(expected_canon_sha256 or ""):
@@ -265,6 +313,28 @@ def verify_qa_preconditions(
     if dirty:
         raise RuntimeError(f"Worktree sucio antes de QA: {dirty}")
 
+    tracked_blobs_verified: dict[str, str] = {}
+    for rel in vr.TRACKED_EXTRACTION_INPUTS:
+        b_qa = vr.git_blob_sha256(wt, expected_commit, rel)
+        b_ext = vr.git_blob_sha256(wt, expected_extraction_commit, rel)
+        disk_sha = vr.sha256_file(wt / rel)
+        if b_qa is None:
+            raise RuntimeError(f"No se pudo resolver blob git {expected_commit}:{rel}")
+        if b_ext is None:
+            raise RuntimeError(
+                f"No se pudo resolver blob git {expected_extraction_commit}:{rel} "
+                "(commit de extracción desconocido o incompleto)"
+            )
+        if b_qa != b_ext:
+            raise RuntimeError(
+                f"TRACKED_EXTRACTION_INPUTS cambió entre expected_extraction_commit "
+                f"({expected_extraction_commit}) y expected_commit ({expected_commit}) en "
+                f"{rel}: ext={b_ext} != qa={b_qa}"
+            )
+        if disk_sha != b_qa:
+            raise RuntimeError(f"Archivo en disco {rel} ({disk_sha}) != blob git ({b_qa})")
+        tracked_blobs_verified[rel] = b_qa
+
     inv_fallas, inv_meta = vr.verify_pdf_inventory(
         pdf_dir,
         inventory_json,
@@ -283,29 +353,46 @@ def verify_qa_preconditions(
     canon_dir = canon_csv.resolve().parent
     sums_path = canon_dir / "SHA256SUMS"
     canon_raw_json = canon_dir / f"{disease_id}_CANON_RAW.json"
+    if not sums_path.is_file():
+        raise RuntimeError(f"Falta archivo obligatorio SHA256SUMS junto al canónico: {sums_path}")
+    expected_line = f"{expected_canon_sha256}  {canon_csv.name}"
+    if expected_line not in sums_path.read_text(encoding="utf-8").splitlines():
+        raise RuntimeError(f"{sums_path} no contiene la línea esperada para {canon_csv.name}")
+
+    if not canon_raw_json.is_file():
+        raise RuntimeError(
+            f"Falta archivo obligatorio CANON_RAW.json junto al canónico: {canon_raw_json}"
+        )
+    try:
+        cr_doc = _load_json_strict(canon_raw_json)
+    except (OSError, ValueError) as exc:
+        raise RuntimeError(f"CANON_RAW.json inválido ({canon_raw_json}): {exc}") from exc
+    if (
+        cr_doc.get("valida") is not True
+        or cr_doc.get("id") != disease_id
+        or cr_doc.get("raw_sha256") != expected_canon_sha256
+        or cr_doc.get("snapshot_sha") != expected_extraction_commit
+    ):
+        raise RuntimeError(
+            f"{canon_raw_json} no concuerda con los pines de QA "
+            f"(esperado id={disease_id}, raw_sha256={expected_canon_sha256}, "
+            f"snapshot_sha={expected_extraction_commit})"
+        )
+
     canon_provenance: dict[str, Any] = {
-        "sums_verified": False,
-        "canon_raw_json_verified": False,
+        "sums_verified": True,
+        "sums_sha256": vr.sha256_file(sums_path),
+        "canon_raw_json_verified": True,
+        "canon_raw_json_sha256": vr.sha256_file(canon_raw_json),
+        "canon_snapshot_sha40": cr_doc.get("snapshot_sha"),
     }
-    if sums_path.is_file():
-        expected_line = f"{expected_canon_sha256}  {canon_csv.name}"
-        if expected_line not in sums_path.read_text(encoding="utf-8").splitlines():
-            raise RuntimeError(f"{sums_path} no contiene la línea esperada para {canon_csv.name}")
-        canon_provenance["sums_verified"] = True
-    if canon_raw_json.is_file():
-        cr_doc = json.loads(canon_raw_json.read_text(encoding="utf-8"))
-        if (
-            cr_doc.get("valida") is not True
-            or cr_doc.get("raw_sha256") != expected_canon_sha256
-            or cr_doc.get("snapshot_sha") != expected_commit
-        ):
-            raise RuntimeError(f"{canon_raw_json} no concuerda con los pines de QA")
-        canon_provenance["canon_raw_json_verified"] = True
-        canon_provenance["canon_raw_json_sha256"] = vr.sha256_file(canon_raw_json)
 
     return {
         "worktree": str(wt),
         "commit_sha40": head40,
+        "extraction_commit_sha40": expected_extraction_commit,
+        "cross_commit_revalidation": head40 != expected_extraction_commit,
+        "tracked_extraction_inputs_blobs_sha256": tracked_blobs_verified,
         "cwd": str(Path.cwd().resolve()),
         "registry_file": str(Path(registry.__file__).resolve()),
         "orchestrator_file": str(Path(orch.__file__).resolve()),
@@ -715,6 +802,7 @@ def run_qa_report(
     expected_inventory_sha256: str,
     worktree: Path,
     expected_commit: str,
+    expected_extraction_commit: str,
     out_json: Path,
     out_md: Path,
     jobs: int = 4,
@@ -739,12 +827,19 @@ def run_qa_report(
         expected_inventory_sha256=expected_inventory_sha256,
         worktree=worktree,
         expected_commit=expected_commit,
+        expected_extraction_commit=expected_extraction_commit,
         check_cwd_and_imports=check_cwd_and_imports,
     )
 
     wt = worktree.resolve()
     spec_reg = registry.require(disease_id)
-    grp = load_group(spec_reg.extraction_group)
+    cuadros_raw = cast(
+        "dict[str, Any]",
+        OmegaConf.to_container(
+            OmegaConf.load(wt / "config" / "data" / "cuadros.yaml"), resolve=True
+        ),
+    )
+    grp = cast("dict[str, Any]", cuadros_raw["cuadro_groups"][spec_reg.extraction_group])
     lag = int(grp["observation_lag_weeks"])
     excl_entries = [
         e for e in (grp.get("source_exclusions") or []) if disease_id in e.get("diseases", [])
@@ -761,14 +856,8 @@ def run_qa_report(
         with ProcessPoolExecutor(max_workers=jobs) as ex:
             pdf_rows = list(ex.map(inspect_one_pdf, tasks, chunksize=4))
 
-    canon_lookup, csv_diag = analyze_canon_csv_cells_and_trajectories(
-        canon_csv,
-        lag=lag,
-        keep_period_files=keep_period_files,
-    )
-    c6_block = compare_canon_against_pdf_blocks(canon_lookup, pdf_rows)
-
-    # H6(b): persistir evidencia por PDF ANTES de la etapa de dataset / validate-data
+    # N3(b) + H6(b): persistir filas crudas por PDF inmediatamente al terminar el pool,
+    # ANTES de analizar el CSV canónico, comparar bloques o ejecutar validate-data.
     out_json.parent.mkdir(parents=True, exist_ok=True)
     compact_pdf_rows = [
         {k: v for k, v in r.items() if k not in {"cells_a50", "cells_a51", "cells_a54"}}
@@ -778,10 +867,13 @@ def run_qa_report(
         fh.write(
             json.dumps(
                 {
-                    "schema": "piloto_carbon_alta1.qa_por_pdf.v1",
+                    "schema": "piloto_carbon_alta1.qa_por_pdf.v2",
                     "generated_at": datetime.now(UTC).isoformat(),
+                    "disease_id": disease_id,
                     "provenance": provenance,
-                    "c6_summary": c6_block,
+                    "excluded_pdfs_declared": sorted(excl_files),
+                    "keep_period_pdfs_declared": sorted(keep_period_files),
+                    "pdf_status_counts": dict(Counter(str(r.get("status")) for r in pdf_rows)),
                     "pdf_rows": compact_pdf_rows,
                 },
                 ensure_ascii=False,
@@ -790,6 +882,13 @@ def run_qa_report(
             + "\n"
         )
     _set_readonly(out_pdf_detail_json)
+
+    canon_lookup, csv_diag = analyze_canon_csv_cells_and_trajectories(
+        canon_csv,
+        lag=lag,
+        keep_period_files=keep_period_files,
+    )
+    c6_block = compare_canon_against_pdf_blocks(canon_lookup, pdf_rows)
 
     raw_dest = wt / "data" / "raw" / f"data_raw_{spec_reg.artifact_key}.csv"
     dataset_manifest_info: dict[str, Any] = {"executed": False}
@@ -987,7 +1086,10 @@ def run_qa_report(
     md_lines = [
         f"# Reporte QA de Serie Extraída (`C6`, `C7`, `C8`) — `{disease_id}`",
         "",
-        f"- **Commit QA fijado (`40` hex)**: `{provenance['commit_sha40']}`",
+        f"- **Commit código QA fijado (`40` hex)**: `{provenance['commit_sha40']}`",
+        f"- **Commit snapshot extracción canónica (`40` hex)**: "
+        f"`{provenance['extraction_commit_sha40']}` "
+        f"(`cross_commit_revalidation={provenance['cross_commit_revalidation']}`)",
         f"- **Inventario PDF sellado**: `{provenance['inventory_sha256']}` "
         f"(`{provenance['pdf_count']}` PDFs)",
         f"- **CSV canónico**: `{provenance['canon_csv']}` (`sha256: {provenance['canon_csv_sha256']}`)",
@@ -1069,6 +1171,7 @@ def _build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--expected-inventory-sha256", required=True)
     ap.add_argument("--worktree", type=Path, required=True)
     ap.add_argument("--expected-commit", required=True)
+    ap.add_argument("--expected-extraction-commit", required=True)
     ap.add_argument("--out-json", type=Path, required=True)
     ap.add_argument("--out-md", type=Path, required=True)
     ap.add_argument("--jobs", type=int, default=4)
@@ -1087,6 +1190,7 @@ def main(argv: list[str] | None = None) -> int:
         expected_inventory_sha256=args.expected_inventory_sha256,
         worktree=args.worktree,
         expected_commit=args.expected_commit,
+        expected_extraction_commit=args.expected_extraction_commit,
         out_json=args.out_json,
         out_md=args.out_md,
         jobs=args.jobs,
