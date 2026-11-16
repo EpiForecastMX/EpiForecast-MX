@@ -224,7 +224,7 @@ def test_config_aislada_sifilis_adquirida_invisible_y_doctor_verde(
     assert spec.lifecycle == "configured"
     assert spec.channels == ()
     assert spec.gallery_enabled is False
-    assert spec.selection_policy == "rolling_cv_v1"
+    assert spec.selection_policy == "rolling_cv_baja_incidencia_v1"
     assert "Sífilis adquirida" not in registry.published_members()
     assert registry.try_get("sifilis") is None
     assert registry.try_get("a50") is None
