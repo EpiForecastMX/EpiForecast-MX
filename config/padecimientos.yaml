@@ -3151,8 +3151,8 @@ padecimientos:
       label: "Vulvovaginitis"
       nombre_completo: "Vulvovaginitis (N76)"
 
-  # Soporte aislado de extracción/QA en rama temporal codex/piloto-carbon-alta1-qa (no constituye
-  # alta integrada ni publicación; invisible: lifecycle=configured, channels=[], gallery_enabled=false).
+  # Candidato del piloto Carbon (docs/C7_18_PILOTO_CARBON.md; no publicado e invisible para
+  # consumidores published_only: lifecycle=configured, channels=[], gallery_enabled=false).
   - id: sifilis_adquirida_a51
     data_name: "Sífilis adquirida"
     artifact_key: Sifilis_Adquirida_A51

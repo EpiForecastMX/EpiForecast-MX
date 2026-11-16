@@ -1,17 +1,19 @@
-# C7.18 · Piloto Carbon (`sifilis_adquirida_a51`, `configured`, 0 publicados) y guarda idempotente semanal (16-nov-2026)
+# C7.18 · Piloto Carbon (`sifilis_adquirida_a51`, `configured`, 0 publicados) y guardas semanales / de selección (16-nov-2026)
 
-> **Estado real: guía operativa y registro intermedio; NO es cierre del piloto ni alta publicada.**
+> **Estado real al 16-nov-2026: guía operativa y registro intermedio; NO es cierre del piloto ni alta publicada.**
 > Al corte fechado del 15-nov-2026 producción sirve **85 padecimientos publicados** (4 legacy + 81
 > releases del runner, `docs/C7_17_ALTA20C.md`; la lista autoritativa sale siempre de
 > `registry.published_members()`). El candidato del piloto (`sifilis_adquirida_a51`, Sífilis adquirida
-> `A51-A53`, `CUADRO 6`, `observation_lag_weeks: 1`) permanece **`lifecycle: configured`** (`0 / 1`
-> publicado), con **0 pruebas de 2025 abiertas o consumidas** y sin fusión en `main`.
+> `A51-A53`, `CUADRO 6`, `observation_lag_weeks: 1`) se mantiene en **`lifecycle: configured`**
+> (`0 / 1` publicado) y con **0 pruebas de 2025 abiertas o consumidas**. Antes de cualquier fusión en
+> `main` se solicitará revisión final independiente de Fable sobre el `HEAD` exacto y verificación de CI
+> remoto (ninguna se preafirma aquí).
 
-## 1. Historia ejecutada en `373ea5f6` frente a estado nominal pendiente
+## 1. Historia técnica ejecutada (`98675bb0` → `373ea5f6` → `480a0347`) frente a estado nominal pendiente
 
-### 1.1 Historia técnica ya medida (rama QA `373ea5f6833473f26f80bb998ed2ecbfe1da334f`)
+### 1.1 Medición científica e historial en `373ea5f6` (sin reextracción ni nuevas corridas después)
 
-- **Extracción canónica doble `C / D` (`98675bb07f6eefab6e8e2e2e6e91881fed3a34cb`, sin reextracción posterior):**
+- **Extracción canónica doble `C / D` (`98675bb07f6eefab6e8e2e2e6e91881fed3a34cb`; las 8 fuentes de extracción permanecieron byte-idénticas hasta `480a0347`, y el único cambio ulterior en `config/padecimientos.yaml` es de comentario `D3` con `7 / 8` fuentes byte-idénticas e igualdad semántica `yaml.safe_load` completa probada, sin efecto en extracción y conservando intactos los pines `98675bb0`/`373ea5f6`/`480a0347`, `raw` `7fc521b7…` y los 4 digests sin reextraer ni retroeditar manifiestos):**
   sobre el inventario sellado de `670` boletines (`ROOT_PDF_INVENTORY.json`, sha256 `b857cef9…`),
   las pasadas aisladas `C` y `D` produjeron `668 ok` y `2 excluded` (`2014_sem01.pdf` por corte
   `2013-W52` y `2016_sem20.pdf` con `keep_period=true`), `21,408` filas e igualdad byte a byte en
@@ -21,14 +23,18 @@
   (`15` con `reintento_row_tol: 4` y `12` con `bloque_sin_prev_en_capa_texto: {11: [4, 3, 4]}`) mantuvo
   exactos en valor (`Decimal`) y `NA` los `641` boletines previos (revisión `L1` de Fable: cambio
   únicamente de formato `"X.0"` → `"X"` en `Acumulado_anio_anterior`, columna no modelada).
-- **Medición `QA_FINAL_373ea5f6` y dataset reconciliado (`sifilis_adquirida_a51_0cc942faddb8`):**
+- **Medición `QA_FINAL_373ea5f6` (ejecutada en `373ea5f6833473f26f80bb998ed2ecbfe1da334f`) y dataset reconciliado (`sifilis_adquirida_a51_0cc942faddb8`):**
   `64` series base × `669` semanas (`2014-W01..2026-W42`, `42,816` filas, `111` productos; digest de
   dataset `0cc942faddb89b7fcbf83a784858b88f37d23d8b048cd1a49d113083349bfb31`; mínimo `366` frames /
   `364` observadas antes de `2021` frente a `min_train_weeks: 260` de `rolling_cv_v1`; `53 / 53`
   semanas MMWR en 2025 con `total_imputed = 0`).
-  - `0 / 85,504` diferencias celda a celda contra `A51-A53` (`1` `Sem` ausente en `2016_sem50.pdf`
-    Querétaro `n.e.`, señalada en fila nacional por `sem_missing_states=1`, y `384` `NA` opcionales de
-    año anterior en imagen).
+  - Posiciones de `4` columnas comparadas contra `A51-A53` (`668 × 32 × 4 = 85,504` posiciones totales):
+    compuestas por **`85,120` posiciones de texto extraíble** y **`384` posiciones opcionales de
+    `Acumulado_anio_anterior` (`NA`) en imagen** (`12 × 32`), con **`1` celda `Casos_semana` `n.e.`
+    (`NA`) en `2016_sem50.pdf` Querétaro contada aparte** (`sem_missing_states=1` en fila nacional).
+    Se midieron **`0` discrepancias entre CSV canónico y PDF (`difieren = 0`), lo que NO equivale a un
+    `ALL PASS` de calidad de fuente**: subsisten la errata impresa de `2015_sem40.pdf` y los `12`
+    encabezados raster no extraíbles por texto.
   - Renglón `TOTAL` impreso: **`667 / 668` coinciden** directamente en el lector QA (`655` de 12
     columnas + `12` de 11 columnas `sin_prev`) y **`1` difiere por errata real de fuente** en
     `2015_sem40.pdf` (pág. 23, `Acumulado_hombres`: imprime `18` en Aguascalientes y `121` en las
@@ -39,13 +45,6 @@
   - Cortes impresos (`lag=1`): `656` verificados automáticamente en capa de texto (`0` discrepancias) +
     `12` encabezados en imagen mantenidos como `None` automatizado (sin OCR) y comprobados visualmente
     uno a uno contra `A50` (`N` vs objetivo `epi_calendar.target_period`).
-- **Revisión técnica focal de Fable sobre `373ea5f6` (`FABLE_IO_QA_373_RESET.{json,md}`):**
-  tras el límite semanal previo (`ROOT_FABLE_PROVIDER_373.json`), tanto Fable como Opus completaron sus
-  sesiones con `rc=0` sin `is_error` (sin `429` activo). Fable emitió dictamen
-  **`APTO_TECNICO_FOCAL_IO_QA_373_CON_OBSERVACIONES_MENORES`** (partición SRP `297/275/250` líneas y
-  lector QA correctos, sin hallazgos bloqueantes; observaciones menores `R1-R3` atendidas en un
-  contexto externo separado y **aún no integradas** en `373ea5f6`). No es PASS científico ni autoriza
-  política de 5 motores, selección, 2025, control o publicación.
 - **`smoke` y `full` con los 7 motores explícitos sobre `373ea5f6`:**
   - `sifilis_adquirida_a51_benchmark_smoke_f7bc088ceb95`: **`7 / 7` motores `succeeded`** (`30`
     artefactos verificados por SHA-256).
@@ -55,29 +54,79 @@
     negativa `-0.0715996` primaria / `-0.071725` reintento) y **`ridge_harmonic_log1p` falló** en
     entidad `17` `mujeres` (`development` `2021`, ningún conteo utilizable).
 
-### 1.2 Estado nominal pendiente y guardas de selección (`propuesta ≠ autorización`)
+### 1.2 Checkpoint de guardas técnicas integradas (`480a034704c45ac9c65a2e45d7dee853eabfd20a`)
 
-- **Ninguna etapa posterior está autorizada hoy:** tras el fallo real de `ETS` y `Ridge` en `full7_373`,
-  **no** están autorizados `select`, un `full` de 5 motores (`full5`), un control estacional ni la
-  apertura de `test` 2025. Las decisiones delegadas históricas de `alta20c` no se heredan.
-- **Propuesta nominal y guardas de `select`:** otro contexto actualiza la propuesta nominal de política
-  para `sifilis_adquirida_a51`, cuya autorización por el autor sigue **pendiente** (excluyendo 2025,
-  control y publicación). En el código actual (`373ea5f6`), `select_for_series`
-  (`src/epiforecast/runner/selection.py:144-147`, cubierto por `tests/unit/runner/test_selection.py:123-126`)
-  **sí exige que todos los motores `incumbent` de la política estén disponibles** por serie (`C5` ya
-  existente), mientras que la verificación de `policy_digest` en `orchestrator.run_selection` (`C1`
-  señalado por Opus) se prepara como parche externo separado y **aún no está integrada** en `373ea5f6`.
-- **Puertas pendientes de Fable:** la revisión pretest (antes de abrir 2025) y la revisión final (antes
-  de integrar en `main` o publicar) siguen siendo requisitos bloqueantes pendientes.
+Tras restablecerse el acceso de Fable y Opus (`rc=0`, `is_error=false` en
+`ROOT_REVIEWS_RESET_VERIFICADOS.json`, superando el `429` semanal previo de
+`ROOT_FABLE_PROVIDER_373.json`), Fable emitió sobre `373ea5f6` el dictamen
+**`APTO_TECNICO_FOCAL_IO_QA_373_CON_OBSERVACIONES_MENORES`** (`FABLE_IO_QA_373_RESET.{json,md}`). A
+continuación se integraron tres commits técnicos limpios sin tocar fuentes de extracción, `raw` ni
+políticas:
+
+1. **`5200777286b42402018f50861d1e771387b64b68`:** documentación del procedimiento semanal y registro
+   inicial `C7.18`.
+2. **`757f1e7db377277dd773d59a28f28eb4d1c3951a` (Guarda `C1` en `select`):**
+   `orchestrator.run_selection` (`src/epiforecast/runner/orchestrator.py:385-391`) exige coincidencia
+   exacta `bench.policy_digest == policy.digest` antes de leer métricas, complementando la guarda `C5`
+   ya existente en `select_for_series` (`src/epiforecast/runner/selection.py:144-147`, cubierta por
+   `tests/unit/runner/test_selection.py:123-126`) que exige todos los motores `incumbent` por serie.
+   La auditoría de metadatos de los `81` releases vigentes dio **`MATCH = 81, errors = []`**
+   (`ROOT_SELECT_POLICY_COMPATIBILITY_81.json`).
+3. **`480a034704c45ac9c65a2e45d7dee853eabfd20a` (Observaciones `R1–R3` de Fable, dictamen `FABLE_TECNICO_480` y CI remoto):**
+   añade la prueba de recuperación tras interrupción a mitad de escritura (`R1`), precisa en
+   `epi_dataset_guard.py:38-43` el requisito de inventario/respaldo SHA-256 y la invalidación de
+   corridas/selecciones dependientes al mover a `runs/_quarantine/` (`R2`), y persiste por PDF
+   `total_measurement_method` y `total_measurement_fallback_reason` en
+   `scripts/piloto_carbon_alta1/qa_serie_extraida.py` (`R3`). **No se ha ejecutado una QA completa nueva
+   con la traza `R3`**: `QA_FINAL_373ea5f6` es anterior a `480a0347` y no debe afirmarse retroactivamente
+   que los `655` boletines de 12 columnas se midieron por geometría `pdfplumber`; en el contador agregado
+   `total_measurement_method_counts` del resumen QA (`qa_serie_extraida.py`, esquema de filas vigente
+   `piloto_carbon_alta1.qa_por_pdf.v2`), la categoría `"unspecified"` (`T1`) indica filas previas cuyo
+   campo `total_measurement_method` está ausente/`None` (no es un literal persistido en la fila previa ni
+   un fallo de método probado, sin inventar método retroactivo ni hacer reanudaciones mixtas), y
+   `pdfplumber_exception` (`T4`) conserva el texto crudo de excepción si ocurriese un fallo de lectura.
+   Fable revisó PR `#74` en `480a0347` (`fable_tecnico_PR74_480/FABLE_TECNICO_480.{json,md}`) con
+   dictamen **`APTO_TECNICO_FOCAL_C1_R123_480_CON_OBSERVACIONES_MENORES`** (sin bloqueantes; observaciones
+   documentales `D1–D3`): al emitirse el dictamen estaba `Code Quality` `PASS` y `Tests` en curso, y
+   posteriormente el CI remoto de `480a0347` terminó en **`SUCCESS`** (run `43896392431`,
+   `integracion_tecnica_480/CI_480_FINAL.json` y `CI_480_TESTS.log`: `Code Quality` `PASS`, `Tests` `PASS`
+   con `2,874 passed, 496 skipped, 66 deselected` y cobertura `81 %`, `Integration Tests` `SKIPPED` por
+   diseño, e idénticos `496` nodeids omitidos con `added_skips = []` frente al baseline `30cb7b4f` en
+   `SKIP_DELTA.json`; ello certifica `480a0347`, sin preafirmar el CI de un `HEAD` posterior ni el estado
+   tras fusión en `main`).
+
+### 1.3 Estado nominal pendiente (`propuesta ≠ autorización`)
+
+- **Ninguna etapa científica posterior está autorizada al 16-nov-2026:** tras el fallo real de `ETS` y
+  `Ridge` en `full7_373`, **no** están autorizados `select`, un `full` de 5 motores (`full5`), un
+  control estacional ni la apertura de `test` 2025. Las delegaciones de `alta20c` no se heredan.
+- **Propuesta nominal `v2` (`PROPUESTA_POLITICA_NOMINAL_v2.{json,md}`, sha256 `a4d0544d…`):** incorpora
+  las precisiones del contraste con Opus y su addendum (`ROOT_REVIEWS_RESET_VERIFICADOS.json`):
+  - `C2`: si el autor autorizara desarrollo con 5 motores y más adelante se autorizara 2025, la prueba
+    de 2025, el `refit` y el `forecast` quedarían igualmente restringidos a esos 5 motores estacionales;
+  - `C3`: coste descriptivo medido en `smoke` (`development_2024`, `root_opus_medidas_373/RESULTADO.json`),
+    donde `ETS` (`29`) o `Ridge` (`23`) mejoran **en más de `5 %` (`> 5 %` estricto) sobre el mejor de
+    los 5 motores estacionales** en **`38 / 64` series base**;
+  - `C4`: hipótesis causal calibrada únicamente al primer fallo observado por motor, sin extrapolar a
+    pliegues no ejecutados;
+  - `C5`: reclamo inicial de Opus sobre subconjuntos de `incumbents` descartado por addendum al existir
+    ya la guarda en `selection.py:144-147`.
+  La pregunta asíncrona actualizada al autor permanece **pendiente sin respuesta**.
+- **Condiciones de integración técnica de PR `#74` (`delta = 0` publicados) y puertas del piloto:** para
+  fusionar PR `#74` en `main` se requiere verificación de Fable sobre el `HEAD` final exacto y CI remoto
+  verde del SHA final (condición procedimental de software, sin preafirmar su emisión ni su ausencia, y sin
+  constituir PASS científico ni aprobar 2025). El paso científico sobre desarrollo con 5 motores **sí
+  sigue pendiente de decisión del autor**, y cualquier futura apertura de 2025 requiere además revisión
+  pretest independiente de Fable y autorización nominal explícita.
 
 ## 2. Guarda idempotente de dataset `0444` y procedimiento semanal
 
 El primer intento de `smoke` en `935642c6` (`jobs/smoke7_935`) falló **antes de crear `RunManifest` o
 ejecutar motores** por `PermissionError` al invocar `shutil.copy2` sobre el insumo `0444` de sólo
-lectura ya copiado en `runs/<dataset_id>/inputs/` por `validate_data`. La corrección integrada en
-`373ea5f6` divide responsabilidades respetando el tope SRP de `<= 300` líneas por módulo:
+lectura ya copiado en `runs/<dataset_id>/inputs/` por `validate_data`. La partición SRP integrada desde
+`373ea5f6` y afinada en `480a0347` respeta el tope de `<= 300` líneas por módulo en `src/`:
 `src/epiforecast/data/epi_dataset.py` (`297` líneas), `src/epiforecast/data/epi_dataset_guard.py`
-(`275` líneas) y `src/epiforecast/data/epi_dataset_io.py` (`250` líneas).
+(`277` líneas) y `src/epiforecast/data/epi_dataset_io.py` (`250` líneas).
 
 ### 2.1 Alcance exacto de los 6 artefactos del builder frente a `orchestrator.validate_data`
 
@@ -113,34 +162,35 @@ lectura ya copiado en `runs/<dataset_id>/inputs/` por `validate_data`. La correc
    cambio, un cambio en `raw` **sólo de formato o en columnas no modeladas** (p. ej. `"X.0"` vs `"X"`
    en `Acumulado_anio_anterior`) puede conservar el **mismo `dataset_id`** con distinto `raw_digest`,
    provocando rechazo `fail-closed` si `runs/<dataset_id>/` ya existía con el otro `raw`.
-4. **Remedio ante colisión o residuos (sin inventar flags CLI y preservando trazabilidad):**
+4. **Remedio ante colisión o residuos (sin inventar flags CLI y preservando trazabilidad, `R2` en `480a0347`):**
    cualquier divergencia de bytes/digests, sello incompleto, symlink, artefacto de corrida
    (`run_manifest.json`, `jobs`) o temporal/sistema (`.tmp`, `.DS_Store`) falla cerrado sin `chmod`,
    sobrescritura ni borrado automático.
    - **Opción preferida:** ejecutar en un **worktree limpio nuevo** (para CLI de `scripts/disease_run.py`,
-     que **no tiene** `--dataset-id` ni `--runs-root`) o pasar un **`runs_root` limpio** por API Python
+     que **no tiene** `--dataset-id` ni `--runs-root`) o pasar un **`runs_root` aislado** por API Python
      (`build_epi_dataset_v2` / `orchestrator`, expuesto como `--runs-root` en `scripts/prospective_week.py`).
-   - **Si se mueve manualmente un contexto inactivo a `runs/_quarantine/`:** inventariar y registrar
-     antes por SHA-256 el respaldo del directorio previo y tener presente que **las corridas previas
-     (`benchmark` / `select`) que referenciaban ese `dataset_id` quedan invalidadas sin su dataset**;
-     nunca autoeliminar ni sustituir silenciosamente en sitio (`R2` de Fable afina este aviso en un
-     parche externo pendiente).
+   - **Si se mueve manualmente un contexto inactivo a `runs/_quarantine/`:** hacerlo sólo sin procesos
+     activos y tras inventariar y respaldar por SHA-256 el contexto previo, advirtiendo que **las
+     corridas y selecciones dependientes de ese `dataset_id` pierden su contexto y quedan invalidadas**
+     (`epi_dataset_guard.py:38-43`); nunca autoeliminar ni sustituir silenciosamente en sitio.
 
 ### 2.2 Invariantes conservados del paso semanal de producción
 
-El carril semanal (`scripts/paso_semanal.py`) mantiene intactos sus comandos y reglas generales:
+El paso semanal mantiene intactos sus comandos por carril y su regla global de paridad:
 
-- `make semana-revisa` → `make semana-observa PDF=<boletin.pdf> SALIDA=<dir> [WRITE=1 FIRST_AVAILABLE='<ISO|evidencia>']`
-  → `python -m scripts.paso_semanal consolida` → `make semana-vistas N=<boletin> FE=<checkout_fe>`.
-- Todos los miembros de **`registry.published_members()`** (con `observa`/`vistas` iterando
-  `registry.release_published()`; `85` totales / `81` del runner al corte del 15-nov-2026) avanzan
-  juntos a la misma semana **fuente** `W`, calculando el periodo objetivo MMWR una sola vez mediante
-  `epi_calendar.target_period(year, week, observation_lag_weeks)`.
+- `scripts/paso_semanal.py` (`make semana-revisa` → `make semana-observa PDF=<boletin.pdf> SALIDA=<dir> [WRITE=1 FIRST_AVAILABLE='<ISO|evidencia>']`
+  → `python -m scripts.paso_semanal consolida` → `make semana-vistas N=<boletin> FE=<checkout_fe>`)
+  ejecuta **únicamente `registry.release_published()`** (`81` releases del runner al corte del
+  15-nov-2026, calculando cada periodo objetivo MMWR una sola vez mediante
+  `epi_calendar.target_period(year, week, observation_lag_weeks)`), mientras el productor v5 avanza los
+  `4` padecimientos legacy.
+- La regla global de publicación (`revisa_consolidado`) exige paridad en la misma semana **fuente** `W`
+  para todos los miembros de **`registry.published_members()`** (`85` al corte del 15-nov-2026).
 - Un veredicto `FAIL` (`rc=3`), un prerrequisito ausente o una paridad rota en `revisa_consolidado`
   **detienen la publicación semanal para todos**; nunca se publica una semana parcial ni se omiten
   padecimientos previamente publicados.
 
-## 3. Cobertura de pruebas locales sobre `373ea5f6` (software local, no CI remoto)
+## 3. Cobertura de pruebas locales verificada sobre `480a0347` (software local, no CI remoto)
 
 - **Interacción del llamador `prospective_week` (`17` pruebas en `tests/unit/publication/test_prospective_week.py`):**
   cubre la validación de extracción por boletín (`32` entidades, periodo y padecimiento con `4`
@@ -149,33 +199,38 @@ El carril semanal (`scripts/paso_semanal.py`) mantiene intactos sus comandos y r
   explícitos y deterministas a `orchestrator.validate_data` (monkeypatched en la frontera unitaria del
   llamador), `_baseline_from_declared_state`, `FAIL → rc=3`, el rechazo de `--baseline-raw` con
   `--write` y `bulletin_provenance`.
-- **Guardas sintéticas en disco y lector QA (`tests/unit/test_piloto_carbon_dataset_readonly_guard.py` + `test_piloto_carbon_alta1_qa_total_header.py`):**
-  prueban sobre archivos reales temporales el árbol completo de `build_epi_dataset_v2` (incluidos
-  permisos `0444`, `verified_noop`, `completed_partial` en pre-stage sin marcadores de sellado, orden
-  `manifest.json` al final y rechazos `fail-closed` con mismo o distinto `dataset_id`), la reentrada
-  de `orchestrator.validate_data` entre commits y el lector de `TOTAL`/encabezados (la interrupción a
-  mitad de escritura `R1` se añade en parche externo separado). Suite focal en
-  `planes/piloto_carbon_alta1_2026-11-15/root_checks_IO_QA_final/RESULTADO.json`: **`106 passed`**,
-  `ruff check` `0`, `ruff format --check` `0` (`6` archivos) y `mypy` `0` (`184` módulos en
-  `src/epiforecast/` + `7` helpers/tests).
-- **Suite canónica local completa (`planes/piloto_carbon_alta1_2026-11-15/ROOT_VERIFICACION_SOFTWARE_373.json`):**
-  **`2,867 passed, 491 skipped, 66 deselected` (`rc=0`)**, dentro del techo vigente `--max-skips=497`.
-  Es verificación local de software en snapshot limpio; **no equivale a CI remoto ni a certificación
-  científica**.
+- **Guardas de dataset (`R1–R2`), selección (`C1`) y traza QA (`R3`) en `480a0347`:**
+  - `tests/unit/runner/test_select_policy_digest_guard.py` + suite de `runner` en `757f1e7d`: `76 passed`
+    y calidad en `0`, más compatibilidad `81 / 81` `MATCH` en `ROOT_SELECT_POLICY_COMPATIBILITY_81.json`.
+  - `tests/unit/test_piloto_carbon_dataset_readonly_guard.py` (incluyendo fallo inyectado a mitad de
+    escritura y recuperación `completed_partial` con `manifest.json` al final, `R1`, y aviso `R2`) +
+    `tests/unit/test_piloto_carbon_qa_total_trace.py` (`R3`) en
+    `planes/piloto_carbon_alta1_2026-11-15/root_checks_R123/RESULTADO.json`: **`118 passed` en `46.79 s`**,
+    `ruff check` `0`, `ruff format --check` `0` y `mypy` `0` (`184` módulos en `src/epiforecast/` + `9`
+    helpers/tests).
+- **Suite canónica local completa sobre `480a0347` (`planes/piloto_carbon_alta1_2026-11-15/jobs/unit_ci_480a0347/command_completed.json`):**
+  **`2,879 passed, 491 skipped, 66 deselected` (`rc=0`, `204.80 s`, `stdout` `d0583fde…`)**, dentro del
+  techo vigente `--max-skips=497` (antecedente en `373ea5f6`: `2,867 passed, 491 skipped, 66 deselected`
+  en `ROOT_VERIFICACION_SOFTWARE_373.json`). Es verificación **local** de software; **no equivale a CI
+  remoto ni a certificación científica**.
 
 ## 4. Evidencia externa de referencia
 
 Toda la evidencia operativa del piloto vive fuera del árbol del repositorio bajo
 `planes/piloto_carbon_alta1_2026-11-15/`:
 
-- Plan y bitácora aditiva: `PLAN_CARBON_ALTA1.md`, `PROGRESS.md` y `ROOT_FEEDBACK.md`.
-- Extracción canónica y QA: `extraccion_qa/canonico_98675bb0/sifilis_adquirida_a51_CANON_RAW.json` y
-  `QA_FINAL_373ea5f6/QA_COMPLETA.{json,md}`.
-- Revisión focal de Fable sobre `373ea5f6`:
-  `fable_reset_373_20261116T144834Z/FABLE_IO_QA_373_RESET.{json,md}` (antecedente `429` en
-  `ROOT_FABLE_PROVIDER_373.json`).
-- Guardas y suite local: `root_checks_IO_QA_final/RESULTADO.json`,
-  `root_real_guard_373/RESULTADO.json` y `ROOT_VERIFICACION_SOFTWARE_373.json`.
-- Corridas y pregunta nominal pendiente: `ROOT_AUTH_SMOKE7_373.json`, `ROOT_AUTH_FULL7_373.json`,
+- Plan, bitácora y propuesta nominal `v2`: `PLAN_CARBON_ALTA1.md`, `PROGRESS.md`, `ROOT_FEEDBACK.md` y
+  `carbon_propuesta_politica_v2/PROPUESTA_POLITICA_NOMINAL_v2.{json,md}` (`a4d0544d…`).
+- Extracción canónica y QA (`373ea5f6`): `extraccion_qa/canonico_98675bb0/sifilis_adquirida_a51_CANON_RAW.json`
+  y `QA_FINAL_373ea5f6/QA_COMPLETA.{json,md}`.
+- Revisiones independientes verificadas: `ROOT_REVIEWS_RESET_VERIFICADOS.json`,
+  `fable_reset_373_20261116T144834Z/FABLE_IO_QA_373_RESET.{json,md}` y
+  `fable_tecnico_PR74_480/FABLE_TECNICO_480.{json,md}`.
+- Guardas, paridad de extracción, compatibilidad y suites locales (`373ea5f6` y `480a0347`):
+  `ROOT_EXTRACTION_PARITY_480.json`, `root_real_guard_373/RESULTADO.json`,
+  `ROOT_SELECT_POLICY_COMPATIBILITY_81.json`, `root_checks_R123/RESULTADO.json`,
+  `ROOT_VERIFICACION_SOFTWARE_373.json`, `ROOT_VERIFICACION_SOFTWARE_480.json` y
+  `jobs/unit_ci_480a0347/command_completed.json`.
+- Corridas y mediciones descriptivas: `ROOT_AUTH_SMOKE7_373.json`, `ROOT_AUTH_FULL7_373.json`,
   `jobs/smoke7_373/command_completed.json`, `jobs/full7_373/command_completed.json` y
-  `ROOT_PROPUESTA_NOMINAL_SNAPSHOT.json`.
+  `root_opus_medidas_373/RESULTADO.json`.

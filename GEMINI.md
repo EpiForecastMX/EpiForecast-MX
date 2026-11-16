@@ -28,7 +28,7 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 # GEMINI.md — Contexto operativo de EpiForecast-MX
 
-## Checkpoint operativo vigente — publicados al 15-nov-2026 (85/81) y piloto Carbon — 16-nov-2026
+## Checkpoint operativo vigente — publicados al 15-nov-2026 (85/81), guardas `480a0347` y piloto Carbon — 16-nov-2026
 
 **Prevalece sobre las secciones inferiores de este archivo.** La fuente autoritativa de checkpoints
 vigentes del repositorio está en `AGENTS.md` y `CLAUDE.md`; las secciones inferiores de `GEMINI.md`
@@ -39,31 +39,39 @@ vigentes del repositorio está en `AGENTS.md` y `CLAUDE.md`; las secciones infer
   padecimientos publicados** en el sitio (**4** legacy + **81** releases del runner; la lista vigente
   sale siempre de `registry.published_members()` / `registry.release_published()`, no de un número fijo),
   alineados en la semana **fuente** `2026-W43` (`ingestion_observado_W43/candidato_con_alta20c_final20`,
-  sha256 `8c21883a…`). Cada paso semanal incorpora la nueva semana fuente una sola vez para todos
-  los miembros publicados (periodo objetivo calculado por `epi_calendar.target_period`, sin resta
-  aritmética ad hoc) mediante `make semana-revisa`, `make semana-observa`,
-  `python -m scripts.paso_semanal consolida` y `make semana-vistas`, deteniendo la publicación del
-  lote entero ante cualquier `FAIL` sin omitir publicados previos.
-- **Piloto Carbon (`sifilis_adquirida_a51`, `docs/C7_18_PILOTO_CARBON.md`) — `0 / 1` publicado:**
-  permanece en `lifecycle: configured` en rama aislada de QA (`373ea5f6833473f26f80bb998ed2ecbfe1da334f`,
-  sin fusionar en `main`) y con **0 pruebas de 2025 abiertas o consumidas**.
-  - *Historia ejecutada en `373ea5f6`:* doble extracción limpia `C/D` sobre `98675bb0` (`raw`
-    `7fc521b7…`, `dataset_id` `sifilis_adquirida_a51_0cc942faddb8`), guarda SRP de los 6 artefactos del
-    builder (`verified_noop` en contexto idéntico `0444`, `completed_partial` en parcial sin marcadores
-    de sellado y fallo cerrado ante sello incompleto o colisión) + lector QA `QA_FINAL_373ea5f6` (`667`
-    `TOTAL` coincidentes + `1` errata real en `2015_sem40.pdf` `Acumulado_hombres`), dictamen focal de
-    Fable **`APTO_TECNICO_FOCAL_IO_QA_373_CON_OBSERVACIONES_MENORES`** (acceso actual de Fable y Opus
-    restablecido con `rc=0`; correcciones menores `R1-R3` y guarda `C1` de `policy_digest` en `select`
-    en preparación externa aún no integradas en `373ea5f6`), `smoke` de 7 motores
-    `sifilis_adquirida_a51_benchmark_smoke_f7bc088ceb95` (`7/7 succeeded`), y **`full` de 7 motores
-    `sifilis_adquirida_a51_benchmark_full_0419b6adfda7` `FAILED`** (`5` estacionales `succeeded`;
-    `ETS` `01` hombres `2021` negativo `-0.0715996`/`-0.071725`; `Ridge` `17` mujeres `2021` sin
-    conteos utilizables).
-  - *Estado nominal pendiente (`propuesta ≠ autorización`):* **no están autorizados `select`,
-    `full` con 5 motores (`full5`), control estacional ni `test` de 2025**. La propuesta nominal sobre
-    desarrollo con 5 motores sigue **pendiente de decisión del autor** (las delegaciones de `alta20c`
-    no se heredan), y las revisiones independientes pretest (antes de 2025) y final (antes de fusionar)
-    de Fable siguen pendientes y obligatorias.
+  sha256 `8c21883a…`). En cada paso semanal, `scripts/paso_semanal.py` (`make semana-revisa`,
+  `make semana-observa`, `python -m scripts.paso_semanal consolida` y `make semana-vistas`) mueve los
+  releases del runner (`registry.release_published()`, calculando el periodo objetivo una sola vez con
+  `epi_calendar.target_period`), el productor v5 mueve los 4 legacy, y `revisa_consolidado` exige
+  paridad global sobre todos los `registry.published_members()`, deteniendo la publicación del lote
+  entero ante cualquier `FAIL` sin omitir publicados previos.
+- **Guardas técnicas y PR `#74` al 16-nov-2026 (`docs/C7_18_PILOTO_CARBON.md`, `delta = 0` publicados):**
+  sobre `373ea5f6` (guarda SRP de los 6 artefactos del builder + lector QA; dictamen de Fable
+  `APTO_TECNICO_FOCAL_IO_QA_373_CON_OBSERVACIONES_MENORES` con accesos de Fable y Opus restablecidos
+  `rc=0`), se integraron en `480a034704c45ac9c65a2e45d7dee853eabfd20a` la documentación semanal `v2`
+  (`52007772`), la guarda `C1` de `policy_digest` en `orchestrator.run_selection` (`757f1e7d`, `81/81`
+  publicados `MATCH`) y los ajustes `R1–R3` (`480a0347`; `118` pytest + Ruff/format/mypy `0`, y suite
+  **local** `2,879 passed, 491 skipped, 66 deselected`, `rc=0`, no CI remoto; no se corrió nueva QA
+  completa con la traza `R3`). Fable emitió sobre `480a0347` el dictamen
+  **`APTO_TECNICO_FOCAL_C1_R123_480_CON_OBSERVACIONES_MENORES`** (sin bloqueantes; `D1–D3` resueltos,
+  con ajuste sólo de comentario en `config/padecimientos.yaml` y `tests/unit/test_registry.py` sin
+  cambio semántico YAML/AST). Antes de fusionar PR `#74` a `main` siguen requeridos el seguimiento de
+  Fable sobre el `HEAD` exacto y el CI remoto verde del SHA final (sin preafirmarlos).
+- **Piloto Carbon (`sifilis_adquirida_a51`) — al 16-nov-2026 `0 / 1` publicado (`lifecycle: configured`, 0 pruebas de 2025):**
+  - *Historia científica medida en `373ea5f6` (8 fuentes de extracción byte-iguales hasta `480a0347` y
+    cambio ulterior sólo de comentario en `padecimientos.yaml` con 7/8 byte-iguales, preservando sin
+    reextracción ni retroedición `raw` `7fc521b7…` y `sifilis_adquirida_a51_0cc942faddb8`):*
+    `QA_FINAL_373ea5f6` (`667` `TOTAL` coincidentes + `1` errata real en `2015_sem40.pdf`
+    `Acumulado_hombres`), `smoke` de 7 motores `sifilis_adquirida_a51_benchmark_smoke_f7bc088ceb95`
+    (`7/7 succeeded`), y **`full` de 7 motores `sifilis_adquirida_a51_benchmark_full_0419b6adfda7`
+    `FAILED`** (`5` estacionales `succeeded`; `ETS` `01` hombres `2021` negativo `-0.0715996`/`-0.071725`;
+    `Ridge` `17` mujeres `2021` sin conteos utilizables).
+  - *Estado nominal pendiente (`propuesta ≠ autorización`):* **no están autorizados `select`, `full5`,
+    control estacional ni `test` de 2025**. La propuesta nominal `v2` (`a4d0544d…`, con alcance `C2`,
+    coste descriptivo `38/64` con mejora `> 5 %` sobre el mejor de los 5 estacionales en `2024` `C3`,
+    hipótesis acotada `C4` y corrección `C5`) mantiene su pregunta asíncrona **pendiente de respuesta
+    del autor** (las delegaciones de `alta20c` no se heredan), y la revisión pretest de Fable sigue
+    siendo obligatoria antes de abrir 2025.
 
 ## Continuidad OnePlus — 20-sep-2026
 
