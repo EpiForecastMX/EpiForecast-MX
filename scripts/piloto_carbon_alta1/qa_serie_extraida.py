@@ -15,15 +15,20 @@ métricas de pronóstico de 2025):
   opt-in ``reintento_row_tol`` y/o ``bloque_sin_prev_en_capa_texto`` (otros grupos sin cambio).
   Inspecciona la tabla completa antes del recorte al bloque objetivo:
   * 12 columnas normales (o recuperadas con ``row_tol``): ``A50[4] + A51[4] + A54[4]`` y ``TOTAL``
-    impreso de 12 enteros;
+    impreso de 12 enteros medido sobre las posiciones geométricas reales de las 12 columnas en el
+    PDF (``pdfplumber``) para separar celdas adyacentes que Camelot fusiona en ``TOTAL`` (p. ej.
+    ``"104 3 334"`` + ``""``) sin usar sumas estatales como oráculo y preservando erratas reales
+    impresas (p. ej. ``2015_sem40.pdf``) y denominadores ausentes (``sin_total_12``);
   * 11 columnas en capa de texto validadas por ``TOTAL`` y geometría PDF
     (``4 A50 + 3 A51 [Sem, H, M] + 4 A54``): proyecta ``A51`` a 4 posiciones con ``None`` explícito
     (nunca ``0``) en el acumulado del año anterior impreso como imagen, y proyecta el ``TOTAL`` de
     11 enteros a 12 posiciones con ``None`` en el índice ``7``, comparando ``Sem/H/M`` contra el
     ``TOTAL`` disponible sin falsa excepción ni falso ``total_difiere`` por el slot opcional.
-- Subtítulo de corte no extraíble en boletines con encabezado en imagen (``P2``): se registra como
-  denominador de rezago ausente (``header_cutoff_unparsed``), nunca como falso PASS ni como
-  ``lag_mismatch``.
+- Subtítulo de corte principal (``P2``): normaliza de forma defensiva únicamente espacios internos
+  conocidos por kerning en ``epidemiológica`` y en el año de 4 dígitos (p. ej.
+  ``"e pidemioló gica"``, ``"20 21"``), trunca antes de ``";"`` para no elegir jamás el subtítulo
+  secundario de rezago 0 del vecino ``A50``, y mantiene ``None`` (``header_cutoff_unparsed``) en
+  encabezados rasterizados sin inferir ``N - lag``.
 - Trayectoria de acumulados y separación de ``NA`` opcionales vs actuales (``H6(a)``, ``H6(d)``,
   ``P2``, ``L2``): preserva ``None`` en el acumulado nacional del año anterior (sin ``fillna(0)``
   que fabricaría caídas falsas), contrasta deltas del año anterior contra el último boletín con
@@ -44,12 +49,14 @@ from pathlib import Path
 import re
 import shutil
 import stat
+import statistics
 import sys
 from typing import Any, cast
 
 import camelot
 from omegaconf import OmegaConf
 import pandas as pd
+import pdfplumber
 from pypdf import PdfReader
 from scripts.piloto_carbon_alta1 import valida_run_v2 as vr
 import yaml
@@ -74,10 +81,20 @@ from epiforecast.data.extraction.dengue_extractor import _year_week_from_filenam
 from epiforecast.data.extraction.pdf_extractor import normalize_number
 from epiforecast.runner import orchestrator as orch
 
-CUTOFF_RE = re.compile(
-    r"hasta\s+la\s+semana\s+epidemiol[oó]gica\s+(\d{1,2})\s+del?\s+(\d{4})",
+_FIRST_HASTA_RE = re.compile(r"hasta[ \t]+la[ \t]+semana\b", re.IGNORECASE)
+_NEIGHBOR_SUBTITLE_PREFIX_RE = re.compile(
+    r"(?:;\s*[^;\n]*|cong[eé]nita[§* \t]*|a50\b[^;\n]*)$",
     re.IGNORECASE,
 )
+CUTOFF_RE = re.compile(
+    r"hasta[ \t]+la[ \t]+semana\s+"
+    r"e ?p ?i ?d ?e ?m ?i ?o ?l ?[oó] ?g ?i ?c ?a\s+"
+    r"(\d{1,2})(?!\d)\s+del?\s+"
+    r"((?:1 ?9|2 ?0) ?\d ?\d)(?! ?\d)",
+    re.IGNORECASE,
+)
+_SINGLE_PRINTED_TOTAL_CELL_RE = re.compile(r"^(?:-|\d+|\d{1,3}(?: \d{3})+|\d{1,3}(?:,\d{3})+)$")
+_BODY_NUMERIC_TOKEN_RE = re.compile(r"^(?:\d[\d,]*|-|-1|n\.e\.|s\.n\.)$", re.IGNORECASE)
 
 InspectTask = (
     tuple[str, list[str], list[str], int]
@@ -94,6 +111,33 @@ def _norm_int(v: Any) -> int | None:
     return None if pd.isna(n) else int(n)
 
 
+def parse_printed_cutoff_target(text: str) -> list[int] | None:
+    """Extrae ``[anio, semana]`` del corte principal antes de ``';'`` sin inferir ``N - lag``.
+
+    Normaliza de forma defensiva sólo espacios simples intrapalabra por kerning en
+    ``epidemiológica`` y en el año de 4 dígitos (``19xx``/``20xx``). Trunca en el primer ``';'``
+    y rechaza prefijos del vecino ``A50`` (``Sífilis Congénita``) para no elegir jamás el
+    subtítulo secundario de rezago 0. Si el encabezado está rasterizado o truncado devuelve
+    ``None``.
+    """
+    m_start = _FIRST_HASTA_RE.search(text)
+    if m_start is None:
+        return None
+    line_start = text.rfind("\n", 0, m_start.start()) + 1
+    prefix_in_line = text[line_start : m_start.start()]
+    if _NEIGHBOR_SUBTITLE_PREFIX_RE.search(prefix_in_line):
+        return None
+    clause = text[m_start.start() :].split(";", 1)[0]
+    m = CUTOFF_RE.match(clause)
+    if m is None:
+        return None
+    wk_parsed = int(m.group(1))
+    yr_parsed = int(m.group(2).replace(" ", ""))
+    if not (1 <= wk_parsed <= 53):
+        return None
+    return [yr_parsed, wk_parsed]
+
+
 def _normalize_spec_int_keys(spec: dict[str, Any]) -> dict[str, Any]:
     """Asegura claves enteras en mapas por conteo de columnas del spec de grupo."""
     out = dict(spec)
@@ -107,26 +151,199 @@ def _normalize_spec_int_keys(spec: dict[str, Any]) -> dict[str, Any]:
 def _parse_printed_total_12(
     tot_vals: list[str] | None,
 ) -> tuple[list[int | None] | None, list[dict[str, Any]]]:
-    """Normaliza las 12 celdas crudas del renglón TOTAL con ``_norm_int`` (N1).
+    """Normaliza 12 celdas individuales del renglón TOTAL rechazando fusiones y vacíos (N1).
 
-    Acepta separadores de miles con espacio o coma (p. ej. ``"12 537"`` -> ``12537``) y guiones
-    de cero (``"-"`` -> ``0``). Si ``tot_vals`` no trae 12 celdas o alguna celda contiene un token
-    desconocido (``_norm_int(v) is None``), devuelve ``(None, unknowns)`` para registrar
-    ``sin_total_12`` sin lanzar excepción ni descartar las celdas estatales del boletín.
+    Acepta separadores de miles con grupos exactos de 3 dígitos (``"12 537"`` / ``"12,537"``),
+    enteros simples y guiones de cero (``"-"`` -> ``0``). Rechaza celdas vacías (``""``, que
+    nunca representan ``0`` impreso en ``TOTAL`` sino celda fusionada o ausente) y cadenas con
+    múltiples números fusionados (p. ej. ``"104 3 334"``), devolviendo ``(None, unknowns)`` para
+    preservar denominadores ausentes (``sin_total_12``) sin fabricar ceros.
     """
     if tot_vals is None or len(tot_vals) != 12:
         return None, []
     parsed: list[int | None] = []
     unknowns: list[dict[str, Any]] = []
     for idx, raw_v in enumerate(tot_vals):
-        nv = _norm_int(raw_v)
+        s = str(raw_v).strip()
+        if not _SINGLE_PRINTED_TOTAL_CELL_RE.fullmatch(s):
+            unknowns.append({"col_index": idx, "raw_token": s})
+            continue
+        nv = _norm_int(s)
         if nv is None:
-            unknowns.append({"col_index": idx, "raw_token": str(raw_v).strip()})
+            unknowns.append({"col_index": idx, "raw_token": s})
         else:
             parsed.append(nv)
     if unknowns:
         return None, unknowns
     return parsed, []
+
+
+def measure_printed_total_12_pdfplumber(
+    pdf_path: str, page: int
+) -> tuple[list[int | None] | None, list[dict[str, Any]], bool]:
+    """Mide las 12 celdas impresas de ``TOTAL`` sobre la geometría de columnas del PDF.
+
+    Determina las 12 posiciones de alineación derecha de las columnas impresas en la página
+    (sin leer ni sumar valores estatales como oráculo) y reparte los tokens impresos en el
+    renglón ``TOTAL`` según esos intervalos geométricos. Devuelve
+    ``(tot_12, unknowns, has_12_col_geometry)``:
+    - ``has_12_col_geometry=False`` si el archivo no tiene geometría PDF de 12 columnas (p. ej.
+      stubs sintéticos sin página real);
+    - ``has_12_col_geometry=True`` cuando la geometría de 12 columnas está presente, preservando
+      tanto discrepancias impresas genuinas como denominadores faltantes (``tot_12=None``).
+    """
+    try:
+        with pdfplumber.open(pdf_path) as pdf:
+            if page < 1 or page > len(pdf.pages):
+                return None, [], False
+            words = pdf.pages[page - 1].extract_words(x_tolerance=1, y_tolerance=2)
+    except Exception:  # noqa: BLE001 - stubs sintéticos no-PDF caen al respaldo Camelot estricto
+        return None, [], False
+
+    ags = [w for w in words if str(w["text"]).startswith("Aguascalientes")]
+    tot_lbls = [w for w in words if str(w["text"]).strip().upper() == "TOTAL"]
+    if not ags or not tot_lbls:
+        return None, [], False
+
+    y_ags = float(ags[0]["top"])
+    tot_lbl = tot_lbls[-1]
+    y_tot = float(tot_lbl["top"])
+    x_tot_right = float(tot_lbl["x1"])
+    if y_tot <= y_ags + 20.0:
+        return None, [], False
+
+    hdr = [w for w in words if (y_ags - 65.0) <= float(w["top"]) < (y_ags - 2.0)]
+    sem_h = sorted(
+        (w for w in hdr if str(w["text"]).rstrip(".*§") == "Sem"),
+        key=lambda w: float(w["x0"]),
+    )
+    sex_h = sorted(
+        (w for w in hdr if str(w["text"]).rstrip(".*§") in {"H", "M", "F"}),
+        key=lambda w: float(w["x0"]),
+    )
+    header_anchors_12: list[dict[str, Any]] | None = None
+    if len(sem_h) == 3 and len(sex_h) == 6:
+        y_sem = statistics.median(float(w["top"]) for w in sem_h)
+        acum_candidates = [
+            w
+            for w in hdr
+            if str(w["text"]).startswith("Acum") and abs(float(w["top"]) - y_sem) <= 7.0
+        ]
+        cols_h: list[dict[str, Any]] = []
+        valid_blocks = True
+        for b in range(3):
+            s_w = sem_h[b]
+            sx1, sx2 = sex_h[2 * b], sex_h[2 * b + 1]
+            right_bound = float(sem_h[b + 1]["x0"]) if b < 2 else float("inf")
+            prev_acums = [
+                w for w in acum_candidates if float(sx2["x1"]) <= float(w["x0"]) < right_bound
+            ]
+            if (
+                not (float(s_w["x0"]) < float(sx1["x0"]) < float(sx2["x0"]))
+                or len(prev_acums) != 1
+            ):
+                valid_blocks = False
+                break
+            cols_h.extend([s_w, sx1, sx2, prev_acums[0]])
+        if valid_blocks and len(cols_h) == 12:
+            header_anchors_12 = cols_h
+
+    x_data_min = max(
+        x_tot_right + 4.0,
+        (float(sem_h[0]["x0"]) - 12.0) if sem_h else (x_tot_right + 4.0),
+    )
+    body_boxes = [
+        w
+        for w in words
+        if (y_ags - 2.0) <= float(w["top"]) < (y_tot - 4.0)
+        and float(w["x0"]) >= x_data_min
+        and _BODY_NUMERIC_TOKEN_RE.fullmatch(str(w["text"]).strip()) is not None
+    ]
+    body_by_y = sorted(body_boxes, key=lambda w: (float(w["top"]), float(w["x0"])))
+    rows_b: list[list[dict[str, Any]]] = []
+    for w in body_by_y:
+        if not rows_b or abs(float(w["top"]) - float(rows_b[-1][0]["top"])) > 3.5:
+            rows_b.append([w])
+        else:
+            rows_b[-1].append(w)
+
+    merged_body_x1s: list[float] = []
+    for rw in rows_b:
+        rw_sorted = sorted(rw, key=lambda w: float(w["x0"]))
+        i = 0
+        while i < len(rw_sorted):
+            curr_x1 = float(rw_sorted[i]["x1"])
+            curr_txt = str(rw_sorted[i]["text"]).strip()
+            while i + 1 < len(rw_sorted):
+                nxt = rw_sorted[i + 1]
+                gap = float(nxt["x0"]) - curr_x1
+                nxt_txt = str(nxt["text"]).strip()
+                if (
+                    0.0 <= gap <= 3.8
+                    and re.fullmatch(r"\d{1,3}", curr_txt) is not None
+                    and re.fullmatch(r"\d{3}", nxt_txt) is not None
+                ):
+                    curr_x1 = float(nxt["x1"])
+                    curr_txt = curr_txt + nxt_txt
+                    i += 1
+                else:
+                    break
+            merged_body_x1s.append(curr_x1)
+            i += 1
+
+    merged_body_x1s.sort()
+    clusters: list[list[float]] = []
+    for x in merged_body_x1s:
+        if not clusters or (x - statistics.median(clusters[-1])) > 8.0:
+            clusters.append([x])
+        else:
+            clusters[-1].append(x)
+
+    stops = [statistics.median(c) for c in clusters if len(c) >= 5]
+    if len(stops) != 12:
+        return None, [], False
+
+    if header_anchors_12 is not None:
+        for idx in range(12):
+            hx0 = float(header_anchors_12[idx]["x0"])
+            hx1 = float(header_anchors_12[idx]["x1"])
+            if not (hx0 - 8.0 <= stops[idx] <= hx1 + 12.0):
+                return None, [], False
+
+    boundaries = [min(stops[c] + 3.5, 0.5 * (stops[c] + stops[c + 1])) for c in range(11)]
+    tot_words = sorted(
+        (
+            w
+            for w in words
+            if abs(float(w["top"]) - y_tot) <= 4.0
+            and x_data_min <= float(w["x0"]) <= (stops[11] + 10.0)
+        ),
+        key=lambda w: float(w["x0"]),
+    )
+
+    col_tokens: list[list[str]] = [[] for _ in range(12)]
+    bridging_unknowns: list[dict[str, Any]] = []
+    for w in tot_words:
+        wx0 = float(w["x0"])
+        wx1 = float(w["x1"])
+        xc = 0.5 * (wx0 + wx1)
+        col_idx = 11
+        for c in range(11):
+            if xc <= boundaries[c]:
+                col_idx = c
+                break
+        tok_str = str(w["text"]).strip()
+        if wx1 > stops[col_idx] + 4.5 or (col_idx > 0 and wx0 < stops[col_idx - 1] + 1.0):
+            bridging_unknowns.append({"col_index": col_idx, "raw_token": tok_str})
+        else:
+            col_tokens[col_idx].append(tok_str)
+
+    if bridging_unknowns:
+        return None, bridging_unknowns, True
+
+    raw_cells_12 = [" ".join(toks) for toks in col_tokens]
+    parsed_12, unknowns_12 = _parse_printed_total_12(raw_cells_12)
+    return parsed_12, unknowns_12, True
 
 
 def _project_total_11_to_12(tot_11: list[int] | None) -> list[int | None] | None:
@@ -176,8 +393,7 @@ def inspect_one_pdf(task: InspectTask) -> dict[str, Any]:
 
         reader = PdfReader(pdf_path)
         text = reader.pages[page - 1].extract_text() or ""
-        m = CUTOFF_RE.search(text)
-        printed_target = [int(m.group(2)), int(m.group(1))] if m else None
+        printed_target = parse_printed_cutoff_target(text)
         tp = ec.target_period(yr, wk, lag)
         mmwr_target = [tp.epi_year, tp.epi_week]
         lag_matches_mmwr = printed_target == mmwr_target if printed_target is not None else None
@@ -307,13 +523,19 @@ def inspect_one_pdf(task: InspectTask) -> dict[str, Any]:
                 cells_a51[cve] = row_51
                 cells_a54[cve] = [_norm_int(df_clean.iloc[r_idx, c]) for c in range(9, 13)]
 
-            if row_tol_used is not None:
+            geo_tot_12, geo_unknown, has_12_col_geometry = measure_printed_total_12_pdfplumber(
+                pdf_path, page
+            )
+            if has_12_col_geometry:
+                tot_12: list[int | None] | None = geo_tot_12
+                tot_unknown: list[dict[str, Any]] = geo_unknown
+            elif row_tol_used is not None:
                 tot_rt = total_impreso_pagina(
                     pdf_path, page, row_tol=row_tol_used, area_fn=_area_pagina
                 )
                 if tot_rt is not None and len(tot_rt) == 12:
-                    tot_12: list[int | None] | None = [int(v) for v in tot_rt]
-                    tot_unknown: list[dict[str, Any]] = []
+                    tot_12 = [int(v) for v in tot_rt]
+                    tot_unknown = []
                 else:
                     tables_rt = camelot.read_pdf(
                         pdf_path, pages=str(page), flavor="stream", row_tol=row_tol_used
