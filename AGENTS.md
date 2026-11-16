@@ -49,8 +49,11 @@ registran por versión evaluada y no constituyen suite nativa completa ni `PASS`
 incompleto únicamente por su estado científico (`0 / 1` publicado, sin declarar «todo cerrado»):** el candidato
 `sifilis_adquirida_a51` (`A51-A53`, `CUADRO 6`, rezago `1`) sigue en `lifecycle: configured` con **`0` pruebas de
 2025** abiertas o consumidas; sobre los pines científicos `98675bb0` (extracción doble canónica `raw` `7fc521b7…`)
-y `373ea5f6` (dataset `sifilis_adquirida_a51_0cc942faddb8`, QA y corridas, que **no requieren reextraer `raw` ni
-reescribir manifiestos** por commits posteriores de código o documentación), `smoke` de 7 motores (`f7bc088ceb95`)
+y `373ea5f6` (dataset `sifilis_adquirida_a51_0cc942faddb8`, QA y corridas; **no requirieron repetir la extracción ni
+reescribir manifiestos** por los cambios de guardas, comentarios o documentación ya integrados —ni por avances de
+`HEAD` o HTML web— que no alteraron fuentes efectivas ni `raw`; cambios materiales del extractor, configuración fuente
+o `source_exclusions` que afecten `raw` sí requieren doble extracción y QA nuevas, sin reabrir pruebas consumidas),
+`smoke` de 7 motores (`f7bc088ceb95`)
 terminó `succeeded` (`7/7`), `full` de 7 motores (`0419b6adfda7`) terminó `FAILED` (`5` estacionales `succeeded`;
 fallaron `ETS` en `01` hombres `2021` y `Ridge` en `17` mujeres `2021`), y la propuesta nominal `v2` de política de
 5 motores (`a4d0544d…`) sigue **sin respuesta del autor** (`propuesta ≠ autorización`: no están autorizados

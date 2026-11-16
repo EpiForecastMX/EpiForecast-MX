@@ -67,8 +67,11 @@ vigentes del repositorio está en `AGENTS.md` y `CLAUDE.md`; las secciones infer
     base semanal `8c21883a3a1d5e1b4daeabe1f5e3ab27f931f1f0177b74fd78fb696e8ad88852` verificada en
     `ROOT_WEEKLY_PATHS_ACTUAL.json`), las `97` entradas previas del registry, los `119` artefactos
     científicos materializados por hash en el checkout principal con respaldos previos verificados, los pines
-    científicos `98675bb0` / `373ea5f6` (sin reextraer `raw` ni reescribir manifiestos por avances
-    posteriores de código o documentación), y la revisión `v3` del skill `padecimiento-epiforecast` ya
+    científicos `98675bb0` / `373ea5f6` (no requirieron repetir la extracción ni reescribir manifiestos por
+    los cambios de guardas, comentarios o documentación ya integrados —ni por avances de `HEAD` o HTML web—
+    que no alteraron fuentes efectivas ni `raw`; cambios materiales del extractor, configuración fuente o
+    `source_exclusions` que afecten `raw` sí requieren doble extracción y QA nuevas, sin reabrir pruebas
+    consumidas), y la revisión `v3` del skill `padecimiento-epiforecast` ya
     instalada (`6` archivos aprobados en `fable_skill_v3_delta/FABLE_SKILL_V3_DELTA.{json,md}`, `diff = 0`
     entre copia canónica y espejo y `quick_validate` `rc=0` en `ROOT_SKILL_INSTALACION_FINAL.json`; sondas
     focales registradas por versión evaluada, sin equivaler a suite nativa completa ni `PASS` científico).

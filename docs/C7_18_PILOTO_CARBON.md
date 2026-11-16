@@ -20,13 +20,19 @@
 > sitio / `81` del runner; base semanal verificada en `ROOT_WEEKLY_PATHS_ACTUAL.json`), las `97` entradas
 > previas del registry (`0` artefactos antiguos modificados), los `119` artefactos científicos materializados
 > con todos sus hashes verificados en el checkout principal junto con sus respaldos previos verificados, y los
-> pines científicos `98675bb0` / `373ea5f6` (sin reextraer `raw` ni reescribir manifiestos por commits
-> posteriores de código o documentación). La revisión `v3` del skill `padecimiento-epiforecast` (`6` archivos
-> aprobados en `fable_skill_v3_delta/FABLE_SKILL_V3_DELTA.{json,md}`) quedó instalada con copia canónica y
-> espejo idénticos (`diff = 0`, `quick_validate` `rc=0`, `ROOT_SKILL_INSTALACION_FINAL.json`; las sondas
-> focales se acreditan por versión evaluada —`V2` `22/23` rúbricas + `3/3` contratos con `semana-11` `FAIL` en
-> `fable_skill_evals_final/EVAL_RESULTADOS.{json,md}`— sin equivaler a suite nativa completa ni a `PASS`
-> científico). **El piloto permanece incompleto únicamente por las puertas científicas pendientes** (sin
+> pines científicos `98675bb0` / `373ea5f6` (no requirieron repetir la extracción ni reescribir manifiestos por
+> los cambios de guardas, comentarios o documentación ya integrados —ni por avances de `HEAD` o HTML web— que no
+> alteraron fuentes efectivas ni `raw`; cambios materiales del extractor, configuración fuente o
+> `source_exclusions` que afecten `raw` sí requieren doble extracción y QA nuevas, sin reabrir pruebas
+> consumidas). La revisión `v3` del skill `padecimiento-epiforecast` (`6` archivos aprobados en
+> `fable_skill_v3_delta/FABLE_SKILL_V3_DELTA.{json,md}`) quedó instalada con copia canónica y espejo idénticos
+> (`diff = 0`, `quick_validate` `rc=0`, `ROOT_SKILL_INSTALACION_FINAL.json`; las sondas focales se acreditan por
+> versión evaluada —`V2` `22/23` rúbricas + `3/3` contratos con `semana-11` `FAIL` conservado sin retro-`PASS`
+> en `fable_skill_evals_final/EVAL_RESULTADOS.{json,md}`—). Por separado, en
+> `fable_eval_weekly_v3_final/EVAL_SEMANAL_V3.{json,md}` Fable calificó una corrida nueva de `semana-siguiente`
+> con `v3` en `12/12` `PASS` y recalificó aparte `A07` sobre la `alta.md` original contra el grader `07` de `v3`
+> en `1/1` `PASS` (mediciones distintas sin afirmar un `23/23` único, sin convertir en `PASS` el `S11` `FAIL`
+> original, ni equivaler a la suite nativa completa o a `PASS` científico). **El piloto permanece incompleto únicamente por las puertas científicas pendientes** (sin
 > declarar «todo cerrado»): `sifilis_adquirida_a51` sigue `configured` (`0 / 1` publicado, `smoke7`
 > `succeeded`, `full7` `ETS`/`Ridge` `FAILED`, `0` pruebas de 2025) y la propuesta nominal `v2` de 5 motores
 > continúa sin respuesta del autor.
@@ -270,5 +276,6 @@ Toda la evidencia operativa del piloto vive fuera del árbol del repositorio baj
   `ROOT_MAIN_PRESERVACION_PREVIOS.json`, `ROOT_PERSISTENCIA_CIENTIFICA_MAIN.json`,
   `materializacion_principal_373/MANIFEST.json`, `backup_final_worktrees_7b42/MANIFEST.json`,
   `RETIREMENT_OLD_PILOT_COMPLETED.json`, `fable_skill_evals_final/EVAL_RESULTADOS.{json,md}`,
-  `fable_skill_v3_delta/FABLE_SKILL_V3_DELTA.{json,md}`, `ROOT_SKILL_INSTALACION_FINAL.json` y
+  `fable_skill_v3_delta/FABLE_SKILL_V3_DELTA.{json,md}`,
+  `fable_eval_weekly_v3_final/EVAL_SEMANAL_V3.{json,md}`, `ROOT_SKILL_INSTALACION_FINAL.json` y
   `opus_memory_current_audit/AUDITORIA_MEMORIAS.{json,md}`.
