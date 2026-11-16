@@ -1,6 +1,6 @@
-# C7.18 · Piloto Carbon (`sifilis_adquirida_a51`, `configured`, 0 publicados) y guardas semanales / de selección (16-nov-2026)
+# C7.18 · Piloto Carbon (`sifilis_adquirida_a51`, `configured`, 0 publicados), desarrollo `policy5` (`8bbb72da`) y guardas semanales / de selección (16-nov-2026)
 
-> **Estado real al 16-nov-2026: guía operativa y registro intermedio; NO es cierre del piloto ni alta publicada.**
+> **Estado real al 16-nov-2026: guía operativa y registro intermedio; NO es cierre del piloto, aceptación ni alta publicada.**
 > Al corte fechado del 15-nov-2026 producción sirve **85 padecimientos publicados** (4 legacy + 81
 > releases del runner, `docs/C7_17_ALTA20C.md`; la lista autoritativa sale siempre de
 > `registry.published_members()`). El candidato del piloto (`sifilis_adquirida_a51`, Sífilis adquirida
@@ -9,13 +9,15 @@
 > `main` se solicitará revisión final independiente de Fable sobre el `HEAD` exacto y verificación de CI
 > remoto (ninguna se preafirma aquí).
 >
-> **Nota actual post-merge de PR `#74` (16-nov-2026, `TECHNICAL_ONLY_PR74`, `delta = 0` publicados):** las
-> condiciones procedimentales de fusión indicadas arriba ya se cumplieron sobre el `HEAD` exacto
+> **Nota post-merge de PR `#74` / `#75` y desarrollo autorizado `policy5` en `8bbb72da` (16-nov-2026, `delta = 0` publicados):**
+> las condiciones procedimentales de fusión técnica se cumplieron primero sobre el `HEAD` exacto
 > `7b42e4d893588239380b32debfb2da711aa88e31` (revisión de código y docs `FABLE_FINAL_REVIEW`, CI remoto de PR
 > run `43902888808` en `SUCCESS` con `2,874 passed, 496 skipped, 66 deselected` y aprobación final
-> independiente `FABLE_FINAL_APPROVED_TECHNICAL_ONLY`), integrándose PR `#74` en **`main` backend
-> `919159e8b0856aa3e59866715cd7063ffa070e63`** con **CI remoto de `main` run `43905851850` en `SUCCESS`**
-> (`2,874 passed, 496 skipped, 66 deselected`, `integracion_tecnica_480/CI_MAIN_919_FINAL.json`). Se
+> independiente `FABLE_FINAL_APPROVED_TECHNICAL_ONLY`), integrándose PR `#74` (`TECHNICAL_ONLY_PR74`) en
+> **`main` backend `919159e8b0856aa3e59866715cd7063ffa070e63`** con **CI remoto de `main` run `43905851850`
+> en `SUCCESS`** (`2,874 passed, 496 skipped, 66 deselected`, `integracion_tecnica_480/CI_MAIN_919_FINAL.json`),
+> seguida de PR `#75` documental en **`main` backend `d46effa6e754ef5a98abd70c52968a8d3ac664db`** con **CI
+> remoto de `main` run `43917609205` en `SUCCESS`** (`integracion_docs_postmerge/CI_MAIN_D46_FINAL.json`). Se
 > preservan `main` frontend `73079eeb` sin cambios, catálogo servido HTTP 200 byte-idéntico (`85` en el
 > sitio / `81` del runner; base semanal verificada en `ROOT_WEEKLY_PATHS_ACTUAL.json`), las `97` entradas
 > previas del registry (`0` artefactos antiguos modificados), los `119` artefactos científicos materializados
@@ -25,21 +27,41 @@
 > alteraron fuentes efectivas ni `raw`; cambios materiales del extractor, configuración fuente o
 > `source_exclusions` que afecten `raw` sí requieren doble extracción y QA nuevas, sin reabrir pruebas
 > consumidas). La revisión `v3` del skill `padecimiento-epiforecast` (`6` archivos aprobados en
-> `fable_skill_v3_delta/FABLE_SKILL_V3_DELTA.{json,md}`) quedó instalada con copia canónica y espejo idénticos
-> (`diff = 0`, `quick_validate` `rc=0`, `ROOT_SKILL_INSTALACION_FINAL.json`; las sondas focales se acreditan por
+> `fable_skill_v3_delta/FABLE_SKILL_V3_DELTA.{json,md}`, `ROOT_SKILL_INSTALACION_FINAL.json`) y el ajuste
+> documental ulterior de `1` línea sobre la fuente del rezago en `references/paso_semanal.md` (`75886c87…`,
+> `ROOT_SKILL_INSTALACION_LAG.json`, revisión de lectura `FABLE_LAG_SOURCE.json`) quedaron instalados con copia
+> canónica y espejo idénticos (`diff = 0`, `quick_validate` `rc=0`; las sondas focales se acreditan por
 > versión evaluada —`V2` `22/23` rúbricas + `3/3` contratos con `semana-11` `FAIL` conservado sin retro-`PASS`
 > en `fable_skill_evals_final/EVAL_RESULTADOS.{json,md}`—). Por separado, en
 > `fable_eval_weekly_v3_final/EVAL_SEMANAL_V3.{json,md}` Fable calificó una corrida nueva de `semana-siguiente`
 > con `v3` en `12/12` `PASS` y recalificó aparte `A07` sobre la `alta.md` original contra el grader `07` de `v3`
 > en `1/1` `PASS` (mediciones distintas sin afirmar un `23/23` único, sin convertir en `PASS` el `S11` `FAIL`
-> original, ni equivaler a la suite nativa completa o a `PASS` científico). **El piloto permanece incompleto únicamente por las puertas científicas pendientes** (sin
-> declarar «todo cerrado»): `sifilis_adquirida_a51` sigue `configured` (`0 / 1` publicado, `smoke7`
-> `succeeded`, `full7` `ETS`/`Ridge` `FAILED`, `0` pruebas de 2025) y la propuesta nominal `v2` de 5 motores
-> continúa sin respuesta del autor.
+> original, ni equivaler a la suite nativa completa o a `PASS` científico). Posteriormente, el autor respondió
+> directamente **`«si autorizo»`** (`carbon_policy5_authorized/AUTORIZACION_AUTOR.json`, sha256 `da3b72f4…`, sin
+> delegación de `alta20c`) a la propuesta nominal `v2` (`a4d0544d…`), autorizando **únicamente el desarrollo
+> `smoke5`, `full5` y `select5`** bajo `rolling_cv_baja_incidencia_v1` (`6d2350be…`). Sobre el commit fuente
+> científico `8bbb72da8faffbdf0319f6c721618a3989f87af7` (`1` línea en `config/padecimientos.yaml:3172` sobre
+> `d46effa6`, mantenido quieto en su worktree científico; dictamen Fable
+> `FUENTE_Y_ALCANCE_CONFORMES_CON_1_ERROR_REAL_NO_CIENTIFICO` y corrección técnica separada de `E1` en
+> `tests/unit/test_piloto_carbon_alta1_validator.py:227`, ya medida `1 failed` antes en `jobs/test_E1_before_8bbb` y
+> `1 passed` después en `jobs/test_E1_after_policy5`, `ccf5fddd…`, ya con commit técnico E1 `75152360b105af196079d9e954d22143e3a429cf` en `worktrees/policy5_integration`),
+> los **`4` digests autorizados** coincidieron con `sifilis_adquirida_a51_0cc942faddb8`, se respaldaron `102` archivos y
+> se materializaron los `91` archivos nuevos de corrida en el checkout principal sin sobrescribir contextos previos, y
+> terminaron **`succeeded`** `smoke5` (`b2b6e5bc21ba`), `full5` (`57698d37e134`) y `select5`
+> (`57698d37e134_b41ca5664941`, **`64` selecciones**, estado `DEVELOPMENT_COMPLETED_NOT_ACCEPTANCE` — **no es aceptación
+> ni `PASS` científico**). Fable completó la revisión pretest independiente
+> (`fable_pretest_policy5_8bbb/FABLE_PRETEST_POLICY5.{json,md}`, `a3f61df2…` / `3232dd9e…`) con veredicto
+> **`CONDICIONAL`** (`0` defectos técnicos; riesgo medido en desarrollo `2021–2024`: nacional General **`+50.05 %` peor
+> que el control** `51.97` vs `34.63`, límite `10 %`, fuera en `3/4` pliegues, con bases `−9.98 %` y `111` productos
+> `−9.19 %`; divulgación `D1` sobre visibilidad del nivel anual público de `2025` en `QA_COMPLETA.md` §3 y divulgaciones
+> `K6` previas a cualquier publicación). **Siguen NO autorizados `test` de 2025, `refit`, `forecast`, control estacional
+> de respaldo y publicación**; el piloto sigue en `0 / 1` publicado (`configured`, `0` pruebas de 2025), y la **nueva
+> pregunta nominal al autor para abrir 2025** (`carbon_policy5_authorized/ROOT_TEST2025_QUESTION_SENT.json`, propuesta
+> `485075c5…`) permanece **`PENDING` sin respuesta** (distinta de `«si autorizo»`).
 
-## 1. Historia técnica ejecutada (`98675bb0` → `373ea5f6` → `480a0347`) frente a estado nominal pendiente
+## 1. Historia técnica y científica ejecutada (`98675bb0` → `373ea5f6` → `480a0347` → `d46effa6` → `8bbb72da`) y compuertas pendientes
 
-### 1.1 Medición científica e historial en `373ea5f6` (sin reextracción ni nuevas corridas después)
+### 1.1 Medición científica e instantánea histórica en `373ea5f6`
 
 - **Extracción canónica doble `C / D` (`98675bb07f6eefab6e8e2e2e6e91881fed3a34cb`; las 8 fuentes de extracción permanecieron byte-idénticas hasta `480a0347`, y el único cambio ulterior en `config/padecimientos.yaml` es de comentario `D3` con `7 / 8` fuentes byte-idénticas e igualdad semántica `yaml.safe_load` completa probada, sin efecto en extracción y conservando intactos los pines `98675bb0`/`373ea5f6`/`480a0347`, `raw` `7fc521b7…` y los 4 digests sin reextraer ni retroeditar manifiestos):**
   sobre el inventario sellado de `670` boletines (`ROOT_PDF_INVENTORY.json`, sha256 `b857cef9…`),
@@ -123,35 +145,133 @@ políticas:
    diseño, e idénticos `496` nodeids omitidos con `added_skips = []` frente al baseline `30cb7b4f` en
    `SKIP_DELTA.json`; ello certificó `480a0347`, sin preafirmar entonces un `HEAD` posterior).
 
-### 1.3 Estado nominal pendiente (`propuesta ≠ autorización`)
+### 1.3 Antecedente de propuesta nominal `v2` (`a4d0544d…`) e integración técnica PR `#74` / `#75` (`d46effa6`)
 
-- **Ninguna etapa científica posterior está autorizada al 16-nov-2026:** tras el fallo real de `ETS` y
-  `Ridge` en `full7_373`, **no** están autorizados `select`, un `full` de 5 motores (`full5`), un
-  control estacional ni la apertura de `test` 2025. Las delegaciones de `alta20c` no se heredan.
-- **Propuesta nominal `v2` (`PROPUESTA_POLITICA_NOMINAL_v2.{json,md}`, sha256 `a4d0544d…`):** incorpora
-  las precisiones del contraste con Opus y su addendum (`ROOT_REVIEWS_RESET_VERIFICADOS.json`):
-  - `C2`: si el autor autorizara desarrollo con 5 motores y más adelante se autorizara 2025, la prueba
+- **Detención gobernada previa tras `full7_373` (`propuesta ≠ autorización`):** tras el fallo real de `ETS` y
+  `Ridge` en `full7_373`, se detuvo el flujo científico sin abrir `select`, `full5`, control estacional ni
+  `test` 2025 (las delegaciones de `alta20c` no se heredan), formulándose la propuesta nominal `v2`
+  (`PROPUESTA_POLITICA_NOMINAL_v2.{json,md}`, sha256 `a4d0544dc50843f1631cc78e75ad71124600041d2a165008db3aa9522cfcdb21`)
+  con las precisiones del contraste con Opus y su addendum (`ROOT_REVIEWS_RESET_VERIFICADOS.json`):
+  - `C2`: si el autor autorizaba desarrollo con 5 motores y más adelante se autorizara 2025, la prueba
     de 2025, el `refit` y el `forecast` quedarían igualmente restringidos a esos 5 motores estacionales;
   - `C3`: coste descriptivo medido en `smoke` (`development_2024`, `root_opus_medidas_373/RESULTADO.json`),
     donde `ETS` (`29`) o `Ridge` (`23`) mejoran **en más de `5 %` (`> 5 %` estricto) sobre el mejor de
-    los 5 motores estacionales** en **`38 / 64` series base**;
-  - `C4`: hipótesis causal calibrada únicamente al primer fallo observado por motor, sin extrapolar a
-    pliegues no ejecutados;
+    los 5 motores estacionales** en **`38 / 64` series base** (un único pliegue; no anticipa los 4 pliegues
+    ni 2025);
+  - `C4`: hipótesis causal calibrada únicamente al primer fallo observado por motor en `development_2021`
+    (`ETS` en `01` hombres, base `1/64`; `Ridge` en `17` mujeres, base `34/64`), sin extrapolar a pliegues
+    no ejecutados (`2022` y `2023`) ni inferir baja incidencia nacional (`9,523 / 14,368 / 17,854 / 17,206`
+    casos anuales en `2021–2024`);
   - `C5`: reclamo inicial de Opus sobre subconjuntos de `incumbents` descartado por addendum al existir
-    ya la guarda en `selection.py:139-141`.
-  La pregunta asíncrona actualizada al autor permanece **pendiente sin respuesta**.
-- **Condiciones de integración técnica de PR `#74` (`delta = 0` publicados) y puertas del piloto:** para
-  fusionar PR `#74` en `main` se requiere verificación de Fable sobre el `HEAD` final exacto y CI remoto
-  verde del SHA final (condición procedimental de software, sin preafirmar su emisión ni su ausencia, y sin
-  constituir PASS científico ni aprobar 2025). El paso científico sobre desarrollo con 5 motores **sí
-  sigue pendiente de decisión del autor**, y cualquier futura apertura de 2025 requiere además revisión
-  pretest independiente de Fable y autorización nominal explícita.
-  - *Nota post-merge (16-nov-2026):* las condiciones procedimentales de fusión de PR `#74` ya se
-    cumplieron sobre `7b42e4d8` → `main` `919159e8` (`TECHNICAL_ONLY_PR74`, `delta = 0`, Fable final +
-    CI PR `43902888808` y CI `main` `43905851850` en `SUCCESS`) y el skill `v3` quedó instalado
-    (`ROOT_SKILL_INSTALACION_FINAL.json`; ver nota inicial). El piloto **permanece incompleto únicamente por
-    las puertas científicas posteriores pendientes** (`0 / 1` publicado, `full7` `FAILED`, propuesta nominal
-    de 5 motores sin respuesta y `0` pruebas de 2025).
+    ya la guarda en `selection.py`.
+- **Integración técnica PR `#74` (`919159e8`) y documental PR `#75` (`d46effa6`, `delta = 0` publicados):**
+  cumplidos el dictamen final independiente de Fable (`FABLE_FINAL_APPROVED_TECHNICAL_ONLY`) y el CI remoto
+  del SHA exacto `7b42e4d8` (`43902888808` `SUCCESS`), se fusionaron PR `#74` en `main` `919159e8` (CI
+  `43905851850` `SUCCESS`) y PR `#75` en `main` `d46effa6` (`5ed4441c…`, `4` archivos `.md`, CI `43917609205`
+  `SUCCESS`, `ROOT_FINAL_TECHNICAL_PROOF.json`), dejando ambos checkouts principales limpios y sincronizados
+  mientras se esperaba la respuesta del autor a la propuesta `v2`.
+
+### 1.4 Autorización acotada («si autorizo»), fuente científica `8bbb72da`, desarrollo `smoke5` / `full5` / `select5` y compuerta pretest de 2025
+
+- **Respuesta directa del autor y alcance estricto (`AUTORIZACION_AUTOR.json`, sha256 `da3b72f492d63f69d2ba23b4ae8766da4d557aaa3fb099e176a2ec56cc90a977`):**
+  el autor respondió literalmente **`«si autorizo»`** (`recorded_at = 2026-11-16T18:09:29.652123+00:00`,
+  autoridad directa sin delegación de `alta20c`) sobre la propuesta `v2` (`a4d0544d…`) y la política
+  `config/evaluation/rolling_cv_baja_incidencia_v1.yaml` (`6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad`),
+  autorizando **únicamente las tres etapas de desarrollo `smoke5`, `full5` y `select5`**.
+  - **Exclusiones expresas (NO autorizadas por esta respuesta):** **`test` de 2025 (`test2025`), `refit`,
+    `forecast` (excluido por `C2` de la propuesta y precisado en `O3` de Fable), control estacional de
+    respaldo y publicación.**
+  - **Preflight independiente de Opus (`OPUS_POLICY5_PREFLIGHT.{json,md}`, `5935fcd4…` / `796a0730…`, verificado en `ROOT_PREFLIGHT_VERIFICADO.json` `fadb588c…`):**
+    `blocking_findings = 0`, contrato de política recomputado igual (`seed = 20260724`, `min_train_weeks = 260`,
+    pliegues `2021..2024`, test `2025` de `53` semanas, banda `5 %`, gate `5/5/10` contra
+    `seasonal_naive_lag52`, `5` incumbents y `0` challengers) y sondeo de fuente SINAVE sin efecto sobre `raw`.
+- **Commit fuente científico `8bbb72da8faffbdf0319f6c721618a3989f87af7` (mantenido fijo en su worktree científico) y dictamen `FABLE_POLICY5_SOURCE`:**
+  - Creado sobre padre único `d46effa6e754ef5a98abd70c52968a8d3ac664db` (`tree = 2bd08302bcf89717cc94db2b78385655e15ff046`),
+    con diff exacto de **`1` línea** en `config/padecimientos.yaml:3172` (`selection_policy: rolling_cv_v1` →
+    `rolling_cv_baja_incidencia_v1`, sha256 `5db1f16a828e40673b0c995de1f606f6718047f2e28914df066faf774ed7aaf5`),
+    preservando las otras `97` entradas byte a byte, manteniendo `sifilis_adquirida_a51` invisible
+    (`lifecycle: configured`, `channels: []`, `training_engines: []`, `eligible_engines: []`,
+    `gallery_enabled: false`) y conservando `profile: aguda_conteos` (`O5`: precedente Asma; el nombre de la
+    política no describe epidemiológicamente a la sífilis; `O2`: quien autoriza es el autor y el commit sólo
+    aplica, sin reescribir `8bbb72da` por ser el `code_commit` de las corridas).
+  - En `fable_policy5_source_8bbb/FABLE_POLICY5_SOURCE.{json,md}` (`2026-11-16T18:31:03Z`), Fable emitió el
+    veredicto **`FUENTE_Y_ALCANCE_CONFORMES_CON_1_ERROR_REAL_NO_CIENTIFICO`** (no es revisión pretest de 2025,
+    aceptación ni `PASS`): `0` bloqueantes para `smoke5`/`full5`/`select5` y **`1` error real no científico
+    `E1`** en `tests/unit/test_piloto_carbon_alta1_validator.py:227` (`spec.selection_policy == "rolling_cv_v1"`),
+    corregido a `"rolling_cv_baja_incidencia_v1"` en `worktrees/policy5_integration` (padre `8bbb72da`, ya
+    medido `1 failed` antes en `jobs/test_E1_before_8bbb/command_completed.json` `rc=1` y `1 passed` después en
+    `jobs/test_E1_after_policy5/command_completed.json` `rc=0`, `stdout` `ccf5fddd…`, ya con commit técnico E1 `75152360b105af196079d9e954d22143e3a429cf`) sin mover ni
+    enmendar `8bbb72da`.
+- **Resultados reales de desarrollo verificados sobre `8bbb72da` (`ROOT_RESULTADOS_SELECT5_VERIFICADOS.json`, estado `DEVELOPMENT_COMPLETED_NOT_ACCEPTANCE`):**
+  - **Reproducción exacta del dataset (`sifilis_adquirida_a51_0cc942faddb8`) y preservación sin sobrescritura:** los
+    **`4` digests autorizados** coincidieron bit a bit (`raw: 7fc521b717c723e4a0625c5910c1585d10461b9ee8f95ba14b943c83aa3ec0f9`,
+    `exposure: d1453197abfc18b52955fbc7e86c4750e4f1ec9f1c9987a02a293139d70be3e2`,
+    `config: d545a3d5e99e0acab68d3e06ba2238d0a7ad19ddd74a9424356332c60c694375`,
+    `dataset: 0cc942faddb89b7fcbf83a784858b88f37d23d8b048cd1a49d113083349bfb31`), y se respaldaron `102` archivos y
+    materializaron los `91` archivos nuevos de corrida (`smoke5`/`full5`/`select5`) en el checkout principal (`runs/`,
+    ignorado por Git) con los mismos hashes y **sin sobrescribir ningún contexto antiguo** (`0` corridas de `test` en
+    ambos árboles).
+  - **`smoke5` (`sifilis_adquirida_a51_benchmark_smoke_b2b6e5bc21ba`):** **`succeeded`**
+    (`manifest_sha256 = 376d08433ffa52f6133d1a1d909401a6867edbc096b625406f267f1ee641ebaf`, `20` artefactos
+    verificados; `5,772` filas de `forecast.csv` y `111` filas de `metrics.csv` por cada uno de los `5` motores
+    estacionales en `development_2024`).
+  - **`full5` (`sifilis_adquirida_a51_benchmark_full_57698d37e134`):** **`succeeded`**
+    (`manifest_sha256 = b1f3d41bbbd7620707d3bc09af6560b632bf50c443463d4e7a23be4dbeb4cf98`, `20` artefactos
+    verificados; `23,088` filas de `forecast.csv` y `444` filas de `metrics.csv` por motor en
+    `development_2021..2024`).
+  - **`select5` (`sifilis_adquirida_a51_select_57698d37e134_b41ca5664941`):** **`succeeded`**
+    (`manifest_sha256 = 708f2e7062d9149231b799c4524eb835f60896b8bb0b016e8a8e6a403c9c7776`,
+    `selection_digest = 73490ea8b2b51a416fe1ce9cfc779bf914ce0fa53a7865ccb82543d8f939b4bd`, `4` artefactos
+    verificados: `selection.csv` `324021fd…`, `portfolio_development.csv` `80297a44…`, `selection_report.md`
+    `e8854cef…`; `code_commit = benchmark_code_commit = 8bbb72da8faffbdf0319f6c721618a3989f87af7`).
+    - **Distribución en las `64` series base (`engines_selected = 5`, `challengers = 0`):**
+      `seasonal_mean_3y = 22`, `seasonal_median_5y = 16`, `seasonal_naive_lag52 = 13`,
+      `seasonal_mean_5y = 10`, `seasonal_median_3y = 3`.
+    - **Métricas descriptivas de desarrollo (`2021–2024`; NO es prueba de 2025, aceptación ni `PASS`):**
+      `smape_nacional_general = 51.965748`, `smape_all = 78.205128`, `smape_bases = 85.564430`,
+      `mase_all = 1.558029`, `mase_bases = 1.470477`.
+- **Dictamen pretest independiente de Fable completado (`CONDICIONAL`, NO pendiente de revisión) y decisión nominal del autor para 2025 `PENDING`:**
+  - En `fable_pretest_policy5_8bbb/FABLE_PRETEST_POLICY5.{json,md}` (`2026-11-16T18:40:38Z`, `json`
+    `a3f61df2f57dec26a7734c8bfacca996b42614979df5d715a2c31c8f701f72a8`, `md`
+    `3232dd9e3b8e0f08f961b82be09330181af595b7bd6c2e1ac4b9b33261e6da84`), Fable emitió el veredicto
+    **`CONDICIONAL`** (`blocking_technical_defects = 0`, `0` defectos de integridad, recómputo independiente con
+    `0` diferencias en las `64` selecciones y barrido de `1,169` manifiestos con `0` pruebas previas de `A51`;
+    **no abre 2025, no amplía autorización y no es aceptación ni `PASS`**).
+  - **Riesgo científico medido en desarrollo (`P9` / `P8`, descriptivo sobre `2021–2024`):** aplicando la misma
+    fórmula del gate a desarrollo, el portafolio congelado mejora al control `seasonal_naive_lag52` en las **`64`
+    bases (`−9.98 %`, `85.56` vs `95.05`, límite `5 %`)** y en los **`111` productos (`−9.19 %`, `78.21` vs
+    `86.12`, límite `5 %`)**, pero queda **`+50.05 %` peor que el control en `nacional General` (`51.97` vs
+    `34.63`, límite `10 %`)**, fuera de límite en **`3 / 4` pliegues** (`2022: +42.56 %`, `2023: +78.29 %`,
+    `2024: +18.76 %`; `2021: −25.98 %`). La subpredicción observada es compatible con el cambio de nivel nacional `2021–2023` (interpretación descriptiva, no prueba causal formal) (`×2.58` en
+    `2024` frente a `2019`): los motores de ventana (`3` y `5` años) subpredicen mientras el nivel sube y la suma
+    nacional hereda esa subpredicción (no predice `2025`).
+  - **Divulgación de exposición `D1` (`K5`):** `QA_FINAL_373ea5f6/QA_COMPLETA.md` §3 incluye la fila anual
+    nacional reconciliada pública de `2025` (y `2026` parcial), por lo que la evaluación **no es ciega al nivel
+    anual público de `2025`**; no existen ni se usaron pronósticos, errores ni métricas de `2025`, la selección
+    `select5` es determinista exclusivamente sobre métricas de desarrollo `2021–2024` (`epi_year <= 2024`), y
+    ese nivel anual no debe usarse para decidir entre portafolio y control.
+  - **Condiciones `K1–K5` antes de abrir 2025 y pregunta al autor `PENDING` (`ROOT_TEST2025_QUESTION_SENT.json`):**
+    se envió al autor una **nueva pregunta nominal específica para abrir 2025** (`2026-11-16T18:46:17Z`,
+    `proposal_sha256 = 485075c5ee78473876a93539149cda550d62baa57d22b0222a2cd70a2ee7e773`, estado **`PENDING`
+    sin respuesta**, que no debe confundirse con `«si autorizo»` de desarrollo). Antes de ejecutar `test` de 2025
+    deben cumplirse `K1–K5`: **(1)** nueva autorización expresa del autor para 2025 con el riesgo `+50.05 %` y la
+    consecuencia del rechazo a la vista (`K2`, `K3`: hoy **no hay control estacional autorizado** para `A51`, por
+    lo que un `REJECTED` en 2025 deja `lifecycle: configured`, piloto `0 / 1` publicado y la prueba única de 2025
+    **consumida**, sin control de respaldo, `refit`, cambio de política/motores/umbrales ni retest), **(2)**
+    compuerta nominal de `root` fijando `8bbb72da…`, dataset `0cc942faddb8` (`4` digests), política `6d2350be…`,
+    `full5` `57698d37e134`, `select5` `57698d37e134_b41ca5664941` (`selection_digest` `73490ea8…`,
+    `selection.csv` `324021fd…`), el dictamen pretest por SHA-256 y `D1` (`K1`, `K5`), y **(3)** ejecución única
+    sobre `8bbb72da` limpio sin `--allow-dirty` (`K4`; cumplidas `K1–K5` sin cambiar ningún pin, no requiere otra
+    corrida pretest de Fable).
+  - **Divulgaciones obligatorias previas a cualquier eventual publicación (`K6`, no antes del test):** errata
+    `2015_sem40.pdf` (desglose por sexo no fiable en `2015-W39` y `2015-W40` y posible arrastre en ventana de `13`
+    semanas), peso de `sex_fallback_state_13w` (`18.8 %`) y `sex_delta_total_mismatch` (`14.9 %`), imputaciones
+    de `2016_sem20` y Querétaro `2016_sem50`, que el nombre «baja incidencia» de la política no describe a la
+    sífilis (`9,523..17,854` casos anuales), `MASE > 1` en `57 / 64` series en desarrollo, exclusión de `ETS` y
+    `Ridge` tras fallo real en `full7` (`38 / 64` bases con mejora `> 5 %` en `2024`), `12` encabezados ráster
+    sin automatizar en QA, registro `D1`, integración de `E1`/docs y revisión final independiente de Fable.
+  - Producción continúa en **`85` publicados en el sitio / `81` del runner**, y el piloto en **`0 / 1`
+    publicado** (`lifecycle: configured`, `0` pruebas de 2025).
 
 ## 2. Guarda idempotente de dataset `0444` y procedimiento semanal
 
@@ -279,3 +399,16 @@ Toda la evidencia operativa del piloto vive fuera del árbol del repositorio baj
   `fable_skill_v3_delta/FABLE_SKILL_V3_DELTA.{json,md}`,
   `fable_eval_weekly_v3_final/EVAL_SEMANAL_V3.{json,md}`, `ROOT_SKILL_INSTALACION_FINAL.json` y
   `opus_memory_current_audit/AUDITORIA_MEMORIAS.{json,md}`.
+- Cierre documental PR `#75` (`d46effa6`), autorización nominal «si autorizo», fuente `8bbb72da`, desarrollo `smoke5`/`full5`/`select5`, remedio `E1`, dictamen pretest `CONDICIONAL` de Fable y pregunta nominal `2025` pendiente:
+  `integracion_docs_postmerge/{CI_MAIN_D46_FINAL,SKIP_DELTA_MAIN_D46}.json`, `ROOT_FINAL_TECHNICAL_PROOF.json`,
+  `fable_lag_source_precision/FABLE_LAG_SOURCE.json`, `ROOT_SKILL_INSTALACION_LAG.json`,
+  `carbon_policy5_authorized/AUTORIZACION_AUTOR.json`,
+  `opus_policy5_authorization_preflight/OPUS_POLICY5_PREFLIGHT.{json,md}`,
+  `carbon_policy5_authorized/ROOT_PREFLIGHT_VERIFICADO.json`,
+  `carbon_policy5_execution_fresh/ROOT_COMMIT_READY.json`,
+  `fable_policy5_source_8bbb/FABLE_POLICY5_SOURCE.{json,md}`,
+  `carbon_policy5_authorized/ROOT_RESULTADOS_SELECT5_VERIFICADOS.json`,
+  `jobs/test_E1_before_8bbb/command_completed.json`,
+  `jobs/test_E1_after_policy5/command_completed.json`,
+  `fable_pretest_policy5_8bbb/FABLE_PRETEST_POLICY5.{json,md}` y
+  `carbon_policy5_authorized/ROOT_TEST2025_QUESTION_SENT.json`.
