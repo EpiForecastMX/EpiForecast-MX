@@ -28,6 +28,43 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 # GEMINI.md — Contexto operativo de EpiForecast-MX
 
+## Checkpoint operativo vigente — publicados al 15-nov-2026 (85/81) y piloto Carbon — 16-nov-2026
+
+**Prevalece sobre las secciones inferiores de este archivo.** La fuente autoritativa de checkpoints
+vigentes del repositorio está en `AGENTS.md` y `CLAUDE.md`; las secciones inferiores de `GEMINI.md`
+(`Continuidad OnePlus — 20-sep-2026`, `Salida de sesión WCP — 9-sep-2026`, `P1 W33`, etc.) son
+**historia de otros carriles** y no deben ejecutarse como instrucciones actuales.
+
+- **Sitio y paso semanal vigentes (`docs/C7_17_ALTA20C.md`):** al corte del 15-nov-2026 hay **85
+  padecimientos publicados** en el sitio (**4** legacy + **81** releases del runner; la lista vigente
+  sale siempre de `registry.published_members()` / `registry.release_published()`, no de un número fijo),
+  alineados en la semana **fuente** `2026-W43` (`ingestion_observado_W43/candidato_con_alta20c_final20`,
+  sha256 `8c21883a…`). Cada paso semanal incorpora la nueva semana fuente una sola vez para todos
+  los miembros publicados (periodo objetivo calculado por `epi_calendar.target_period`, sin resta
+  aritmética ad hoc) mediante `make semana-revisa`, `make semana-observa`,
+  `python -m scripts.paso_semanal consolida` y `make semana-vistas`, deteniendo la publicación del
+  lote entero ante cualquier `FAIL` sin omitir publicados previos.
+- **Piloto Carbon (`sifilis_adquirida_a51`, `docs/C7_18_PILOTO_CARBON.md`) — `0 / 1` publicado:**
+  permanece en `lifecycle: configured` en rama aislada de QA (`373ea5f6833473f26f80bb998ed2ecbfe1da334f`,
+  sin fusionar en `main`) y con **0 pruebas de 2025 abiertas o consumidas**.
+  - *Historia ejecutada en `373ea5f6`:* doble extracción limpia `C/D` sobre `98675bb0` (`raw`
+    `7fc521b7…`, `dataset_id` `sifilis_adquirida_a51_0cc942faddb8`), guarda SRP de los 6 artefactos del
+    builder (`verified_noop` en contexto idéntico `0444`, `completed_partial` en parcial sin marcadores
+    de sellado y fallo cerrado ante sello incompleto o colisión) + lector QA `QA_FINAL_373ea5f6` (`667`
+    `TOTAL` coincidentes + `1` errata real en `2015_sem40.pdf` `Acumulado_hombres`), dictamen focal de
+    Fable **`APTO_TECNICO_FOCAL_IO_QA_373_CON_OBSERVACIONES_MENORES`** (acceso actual de Fable y Opus
+    restablecido con `rc=0`; correcciones menores `R1-R3` y guarda `C1` de `policy_digest` en `select`
+    en preparación externa aún no integradas en `373ea5f6`), `smoke` de 7 motores
+    `sifilis_adquirida_a51_benchmark_smoke_f7bc088ceb95` (`7/7 succeeded`), y **`full` de 7 motores
+    `sifilis_adquirida_a51_benchmark_full_0419b6adfda7` `FAILED`** (`5` estacionales `succeeded`;
+    `ETS` `01` hombres `2021` negativo `-0.0715996`/`-0.071725`; `Ridge` `17` mujeres `2021` sin
+    conteos utilizables).
+  - *Estado nominal pendiente (`propuesta ≠ autorización`):* **no están autorizados `select`,
+    `full` con 5 motores (`full5`), control estacional ni `test` de 2025**. La propuesta nominal sobre
+    desarrollo con 5 motores sigue **pendiente de decisión del autor** (las delegaciones de `alta20c`
+    no se heredan), y las revisiones independientes pretest (antes de 2025) y final (antes de fusionar)
+    de Fable siguen pendientes y obligatorias.
+
 ## Continuidad OnePlus — 20-sep-2026
 
 El artículo PLOS ONE ya tiene C, D y A+B ampliada aplicadas y selladas; aún no está

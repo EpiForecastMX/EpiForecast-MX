@@ -452,10 +452,24 @@ The weekly step has three lanes, and none of them publishes a partial week:
 
 1. **Legacy conditions** (Depression, Parkinson, Alzheimer, Dengue) through the v5 producer kept
    outside the repository.
-2. **The published runner releases** (81 as of 15-Nov-2026; the registry is the single authoritative count) through `make semana-revisa`, `make semana-observa PDF=… SALIDA=… [WRITE=1]`,
-   `python -m scripts.paso_semanal consolida` and `make semana-vistas N=… FE=…`, failing closed for all
-   if any one fails. `consolida` keeps the base byte for byte, rejects a superseded or altered base and
-   runs `revisa_consolidado` (parity of every published condition).
+2. **The published runner releases** (`registry.release_published()`, 81 of the 85 `registry.published_members()` as of 15-Nov-2026; the registry is the single authoritative count) through `make semana-revisa`, `make semana-observa PDF=… SALIDA=… [WRITE=1]`,
+   `python -m scripts.paso_semanal consolida` and `make semana-vistas N=… FE=…`, advancing every
+   `registry.published_members()` entry together to source week `W`—computing its MMWR target period
+   once via `epi_calendar.target_period(year, week, lag)`—and failing closed for the entire batch if
+   any one returns `FAIL` (never omitting prior published conditions). `consolida` keeps the base byte
+   for byte, rejects a superseded or altered base and runs `revisa_consolidado` (parity of every
+   published condition). Under `runs/<dataset_id>/` (`src/epiforecast/data/epi_dataset_{guard,io}.py`,
+   `docs/C7_18_PILOTO_CARBON.md`), `stage_dataset_run` treats the 6 builder artifacts (`4` `inputs/*`
+   including `0444` read-only files, `epi_dataset_v2.csv` and `manifest.json`) as a byte-verified
+   `verified_noop` when identical, or completes missing files (`completed_partial`, writing
+   `manifest.json` last) when an unsealed partial directory has no sealing markers; `orchestrator.validate_data`
+   then rewrites `products.csv`, `lineage.json` and `dataset_manifest.json` (`code_commit`/`created_at`).
+   A new `dataset_id` is derived when modeled `epi_dataset_v2.csv` content changes, whereas any
+   differing bytes/digests (including format-only `raw` changes with the same `dataset_id`), incomplete
+   *sealed* context, symlink or run/temp residue fails closed without `chmod`, overwrite or auto-delete.
+   Prefer a fresh clean worktree (CLI) or a clean `runs_root` parameter (Python API; `scripts/disease_run.py`
+   has no `--dataset-id` or `--runs-root` flags); if moving an idle directory to `runs/_quarantine/`
+   manually, inventory/hash it first because runs referencing that `dataset_id` become invalidated.
 3. **The bulletin radar** (`boletin.html`) through `scripts/boletin_semana.py` in the dashboard repo.
 
 The full procedure lives in the `padecimiento-epiforecast` skill (`references/paso_semanal.md`).
