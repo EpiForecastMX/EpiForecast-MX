@@ -28,6 +28,16 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 # AGENTS.md: Guia de Desarrollo EpiForecast-MX
 
+
+## Checkpoint A51 (`A51-A53`) — Corte post-test 16 nov 2026 (antes de decisión de control)
+
+> **Vigencia (`A51` solamente):** Las referencias inferiores a `0 tests`, cierre pretest o prueba pendiente son **historia pretest exclusiva de `A51`**, superada por este resultado (no generalizar a otros IDs).
+
+- **Corrida única:** Sífilis adquirida `A51` (`configured` `0/1`, sitio `85`/runner `81`), `test_2025` **CONSUMIDA y RECHAZADA** (run `sifilis_adquirida_a51_benchmark_test_73490ea8b2b5_749316ac335e`, fuente `8bbb72da8faffbdf0319f6c721618a3989f87af7`, dataset `sifilis_adquirida_a51_0cc942faddb8`).
+- **Resultados:** Nacional `25.4877` vs `19.9564` (`+27.7169%` > límite `10%`). El portafolio mejora frente al control `12.9918%` en `64` bases (`peor_pct` `-12.991767%`) y `4.8410%` en `111` productos (`peor_pct` `-4.841037%`). `MASE > 1` del control en `64/64` bases.
+- **Auditoría `fable` y `D1`:** Recomputación CSV con diferencia `0` (`47` archivos, `24` SHA). Cinco motores cubrieron con pronósticos las `53` semanas MMWR de `test_2025`; `horizon=52` en `job_context` es contexto y **no truncó la evaluación** (el forecast futuro de 52 semanas sigue sin ejecutarse). `D1` retrospectiva no ciega (total 2025 visible antes). Riesgos: sexo, errata `2015`, imputados `2016`, `12` headers raster.
+- **Gobernanza y evidencia:** Autorización sólo para test, sin autorizaciones heredadas (`fable` no autoriza control). Nueva pregunta nominal de ROOT sobre `seasonal_naive_lag52` **sin respuesta al corte**; prohibidos `refit`, `forecast`, `control`, publicación, `retest` 2025, reselección, cambio de criterios y exportar baselines privados. Evidencia: `planes/piloto_carbon_alta1_2026-11-15/test2025_autorizado_20261116/RESULTADO_TEST2025.json` y `planes/piloto_carbon_alta1_2026-11-15/test2025_autorizado_20261116/fable_posttest/FABLE_POSTTEST.json` (`.md`).
+
 ## Checkpoint desarrollo policy5 (`8bbb72da`) y post-merge PR #74/#75 — piloto Carbon (`sifilis_adquirida_a51`, `configured`, 0/1) — 16-nov-2026
 
 Complementa sin reemplazar el checkpoint de `alta20c` inferior: producción servida conserva **85 publicados en el
