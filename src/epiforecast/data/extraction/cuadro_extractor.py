@@ -1,14 +1,7 @@
 """Extractor genérico por 'grupo de cuadro' (EPIC 2).
 
-Generaliza el extractor de Dengue a cualquier cuadro del boletín descrito en
-``config/data/cuadros.yaml``. Reutiliza la maquinaria neuro (``pdf_extractor``:
-clean/pad/reshape/build_column_map) y la canonicalización de entidad de
-``dengue_extractor`` (``_restrict_to_states``, ``_year_week_from_filename``).
-
-El cuadro puede alojar varios padecimientos lado a lado (Obesidad + Anorexia F50); se
-extraen todos los bloques con el layout compartido y se filtra al padecimiento objetivo.
-El conteo REAL de columnas (camelot) determina la variante de layout (3col vs 4col), no
-el año — más robusto que la heurística de texto.
+Generaliza el extractor de Dengue a cualquier cuadro descrito en ``config/data/cuadros.yaml``,
+reutilizando ``pdf_extractor`` y ``dengue_extractor``; el conteo real de columnas fija el layout.
 """
 
 from __future__ import annotations
@@ -22,6 +15,11 @@ import pandas as pd
 from pypdf import PdfReader
 
 from epiforecast import registry
+from epiforecast.data.extraction.cuadro_capa_texto import (
+    MOTIVO_SIN_PREV_TEXTO,
+    recorta_bloque_interno,
+    reintenta_row_tol_si_vacia,
+)
 from epiforecast.data.extraction.cuadro_reparaciones import (
     alinea_renglones,
     alinea_valor_en_nombre,
@@ -151,29 +149,33 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
         return out
     esperados = int(spec.get("n_states_expected", 32))
     if len(df_clean) < esperados:
-        # En algunas páginas camelot parte la tabla y pierde renglones de estados; con un margen
-        # de borde amplio la lee completa. Sólo se reintenta cuando faltan estados, así que las
-        # extracciones que ya funcionaban no cambian.
+        # Margen amplio de borde sólo cuando faltan entidades: una lectura válida no cambia.
         amplia = _tabla_estatal(pdf_path, page, valor_en_nombre=vn, edge_tol=500)
         if amplia is not None and len(amplia) == esperados:
             df_clean = amplia
     area = _area_pagina(pdf_path, page) if len(df_clean) < esperados else None
     if area is not None and len(df_clean) < esperados:
-        # camelot puede dejar fuera el primer renglón de estados al delimitar la tabla (2024_sem09,
-        # Cuadro 3.5: falta Aguascalientes). Con el área de la página completa la lee entera. Sólo
-        # se reintenta cuando faltan estados: una extracción válida no cambia.
+        # Área de página completa cuando camelot recorta la primera entidad (2024_sem09, 3.5).
         completa = _tabla_estatal(pdf_path, page, valor_en_nombre=vn, table_areas=[area])
         if completa is not None and len(completa) == esperados:
             df_clean = completa
     bloque_posterior = bool(spec.get("last_block_columns") or spec.get("inner_block_columns"))
     if len(df_clean) < esperados and bloque_posterior and not spec.get("first_block_columns"):
-        # Primer valor pegado al nombre: sólo se repara si el bloque objetivo no lo contiene.
         despegada = _tabla_estatal(pdf_path, page, despegar=True, valor_en_nombre=vn)
         if despegada is not None and len(despegada) == esperados:
             df_clean = despegada
+    if spec.get("reintento_row_tol") is not None:
+        reparada_rt, etiqueta_rt, motivo_rt = reintenta_row_tol_si_vacia(
+            df_clean, pdf_path, page, spec, tabla_fn=_tabla_estatal, area_fn=_area_pagina
+        )
+        if reparada_rt is None:
+            out["reason"] = motivo_rt
+            return out
+        df_clean = reparada_rt
+        if etiqueta_rt:
+            out["reparacion"] = etiqueta_rt
 
-    # Opt-in (``primer_bloque_por_orden: {total: [columnas, ancho]}``): valores desacomodados del
-    # primer bloque, repartidos en orden de lectura y validados contra el TOTAL impreso.
+    # Opt-in (``primer_bloque_por_orden: {total: [columnas, ancho]}``): validado contra TOTAL.
     orden = (spec.get("primer_bloque_por_orden") or {}).get(df_clean.shape[1] - 1)
     if orden is not None:
         tablas = camelot.read_pdf(pdf_path, pages=str(page), flavor="stream")
@@ -184,8 +186,7 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
             return out
         df_clean, out["reparacion"] = reparada, "primer_bloque_por_orden"
 
-    # Cuadro cuyo bloque objetivo es el primero o el último y comparte página con bloques de
-    # otro ancho o en otro número según el año: se recorta por el conteo real de columnas.
+    # Primer o último bloque con vecinos de ancho variable: recorte por conteo real de columnas.
     for clave, al_final in (("first_block_columns", False), ("last_block_columns", True)):
         anchos = spec.get(clave)
         if not anchos:
@@ -199,19 +200,17 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
         df_clean = df_clean.iloc[:, [0, *range(inicio, inicio + width)]]
         df_clean = df_clean.set_axis(list(range(width + 1)), axis=1)
 
-    # Bloque intermedio (ni primero ni último): por conteo real de columnas se declara
-    # ``[columnas desde el final hasta su inicio, ancho]``. Falla cerrado ante otro ancho.
-    internos = spec.get("inner_block_columns")
-    if internos:
-        total = df_clean.shape[1] - 1
-        corte = internos.get(total)
-        if corte is None:
-            out["reason"] = f"columnas inesperadas: {total} (esperaba {sorted(internos)})"
+    # Bloque intermedio: ``[columnas desde el final, ancho]`` o recorte 3col sin prev en texto.
+    if spec.get("inner_block_columns"):
+        recortada_in, etiqueta_in, motivo_in = recorta_bloque_interno(
+            df_clean, pdf_path, page, spec, esperados=esperados, area_fn=_area_pagina
+        )
+        if recortada_in is None:
+            out["reason"] = motivo_in
             return out
-        desde_el_final, width = (int(v) for v in corte)
-        inicio = total + 1 - desde_el_final
-        df_clean = df_clean.iloc[:, [0, *range(inicio, inicio + width)]]
-        df_clean = df_clean.set_axis(list(range(width + 1)), axis=1)
+        df_clean = recortada_in
+        if etiqueta_in:
+            out["reparacion"] = etiqueta_in
 
     keywords = [d["keyword"] for d in spec["diseases"]]
     n_dis = len(keywords)
@@ -240,7 +239,9 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
     out["n_states"] = n_states
     out["valid"] = n_states == int(spec.get("n_states_expected", 32))
     out["reason"] = "ok" if out["valid"] else f"{n_states} estados (esperaba 32)"
-    if out["valid"] and out.get("reparacion"):
+    if out["valid"] and out.get("reparacion") == "sin_prev_en_capa_texto":
+        out["reason"] = MOTIVO_SIN_PREV_TEXTO
+    elif out["valid"] and out.get("reparacion"):
         out["reason"] = f"ok; reparación {out['reparacion']} (cuadra con el TOTAL impreso)"
     return out
 
