@@ -28,7 +28,7 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 # AGENTS.md: Guia de Desarrollo EpiForecast-MX
 
-## Checkpoint post-merge PR #74 — piloto Carbon (`sifilis_adquirida_a51`, `configured`, 0/1) — 16-nov-2026
+## Checkpoint desarrollo policy5 (`8bbb72da`) y post-merge PR #74/#75 — piloto Carbon (`sifilis_adquirida_a51`, `configured`, 0/1) — 16-nov-2026
 
 Complementa sin reemplazar el checkpoint de `alta20c` inferior: producción servida conserva **85 publicados en el
 sitio y 81 del runner** sobre la misma base semanal
@@ -41,25 +41,60 @@ técnica (`TECHNICAL_ONLY_PR74`, `delta = 0` publicados; guardas idempotentes de
 en selección) quedó fusionada en `main` backend `919159e8b0856aa3e59866715cd7063ffa070e63` (desde `7b42e4d8` sobre
 `30cb7b4f`, con aprobación final independiente de Fable `FABLE_FINAL_APPROVED_TECHNICAL_ONLY` y CI remoto de PR
 `43902888808` en `SUCCESS`), con **CI remoto de `main` `43905851850` en verde** (`SUCCESS`: `2,874 passed,
-496 skipped, 66 deselected`), `119` artefactos científicos materializados por hash en el checkout principal y
-respaldos previos verificados por hash; asimismo, la revisión `v3` del skill `padecimiento-epiforecast` (`6`
-archivos aprobados en `fable_skill_v3_delta/FABLE_SKILL_V3_DELTA.{json,md}`) quedó instalada con copia canónica y
-espejo idénticos (`diff = 0`, `quick_validate` `rc=0`, `ROOT_SKILL_INSTALACION_FINAL.json`; las sondas focales se
-registran por versión evaluada y no constituyen suite nativa completa ni `PASS` científico). **El piloto permanece
-incompleto únicamente por su estado científico (`0 / 1` publicado, sin declarar «todo cerrado»):** el candidato
-`sifilis_adquirida_a51` (`A51-A53`, `CUADRO 6`, rezago `1`) sigue en `lifecycle: configured` con **`0` pruebas de
-2025** abiertas o consumidas; sobre los pines científicos `98675bb0` (extracción doble canónica `raw` `7fc521b7…`)
-y `373ea5f6` (dataset `sifilis_adquirida_a51_0cc942faddb8`, QA y corridas; **no requirieron repetir la extracción ni
+496 skipped, 66 deselected`), seguida de PR `#75` documental en `main` backend
+`d46effa6e754ef5a98abd70c52968a8d3ac664db` (CI remoto de `main` `43917609205` en `SUCCESS`), `119` artefactos
+científicos materializados por hash en el checkout principal y respaldos previos verificados por hash; asimismo, la
+revisión `v3` del skill `padecimiento-epiforecast` (`6` archivos aprobados en
+`fable_skill_v3_delta/FABLE_SKILL_V3_DELTA.{json,md}`, `ROOT_SKILL_INSTALACION_FINAL.json`) y el ajuste documental de
+`1` línea sobre la fuente del rezago en `references/paso_semanal.md` (`75886c87…`, `ROOT_SKILL_INSTALACION_LAG.json`,
+revisión de lectura `FABLE_LAG_SOURCE.json`) quedaron instalados con copia canónica y espejo idénticos (`diff = 0`,
+`quick_validate` `rc=0`; las sondas focales se registran por versión evaluada y no constituyen suite nativa completa
+ni `PASS` científico). Sobre los pines científicos `98675bb0` (extracción doble canónica `raw` `7fc521b7…`) y
+`373ea5f6` (dataset `sifilis_adquirida_a51_0cc942faddb8`, QA y corridas; **no requirieron repetir la extracción ni
 reescribir manifiestos** por los cambios de guardas, comentarios o documentación ya integrados —ni por avances de
 `HEAD` o HTML web— que no alteraron fuentes efectivas ni `raw`; cambios materiales del extractor, configuración fuente
 o `source_exclusions` que afecten `raw` sí requieren doble extracción y QA nuevas, sin reabrir pruebas consumidas),
-`smoke` de 7 motores (`f7bc088ceb95`)
-terminó `succeeded` (`7/7`), `full` de 7 motores (`0419b6adfda7`) terminó `FAILED` (`5` estacionales `succeeded`;
-fallaron `ETS` en `01` hombres `2021` y `Ridge` en `17` mujeres `2021`), y la propuesta nominal `v2` de política de
-5 motores (`a4d0544d…`) sigue **sin respuesta del autor** (`propuesta ≠ autorización`: no están autorizados
-`select`, `full5`, control estacional, `test` de 2025, `refit` ni publicación; las delegaciones de `alta20c` no se
-heredan y 2025 exige revisión pretest de Fable). Guía: `docs/C7_18_PILOTO_CARBON.md`; evidencia externa:
-`planes/piloto_carbon_alta1_2026-11-15/`.
+`smoke` de 7 motores (`f7bc088ceb95`) terminó `succeeded` (`7/7`) y `full` de 7 motores (`0419b6adfda7`) terminó
+`FAILED` (`5` estacionales `succeeded`; primeros fallos observados en `2021`: `ETS` en `01` hombres y `Ridge` en `17`
+mujeres). Ante la propuesta nominal `v2` (`a4d0544d…`; coste descriptivo en `development_2024`: `ETS` o `Ridge`
+superan en `> 5 %` de sMAPE al mejor estacional en `38/64` bases), el autor respondió directamente **`«si autorizo»`**
+(`carbon_policy5_authorized/AUTORIZACION_AUTOR.json`, sha256 `da3b72f4…`; autoridad directa del autor, sin heredar
+delegaciones de `alta20c`), autorizando **únicamente el desarrollo `smoke5`, `full5` y `select5`** bajo
+`rolling_cv_baja_incidencia_v1` (`6d2350be…`; el nombre de la política no acredita baja incidencia nacional
+—`9,523..17,854` casos anuales en `2021–2024`— y `sifilis_adquirida_a51` conserva `profile: aguda_conteos`). **No
+están autorizados por esta respuesta `test` de 2025, `refit`, `forecast`, control estacional de respaldo ni
+publicación.** En el commit fuente científico `8bbb72da8faffbdf0319f6c721618a3989f87af7` (`1` línea en
+`config/padecimientos.yaml:3172` sobre `d46effa6`, mantenido fijo en su worktree científico; dictamen Fable de fuente y
+alcance `FUENTE_Y_ALCANCE_CONFORMES_CON_1_ERROR_REAL_NO_CIENTIFICO` en `fable_policy5_source_8bbb/FABLE_POLICY5_SOURCE.{json,md}`,
+`0` bloqueantes para el desarrollo y remedio técnico separado de `1` línea para `E1` en
+`tests/unit/test_piloto_carbon_alta1_validator.py:227` —ya medido `1 failed` antes en `jobs/test_E1_before_8bbb` y
+`1 passed` después en `jobs/test_E1_after_policy5`, `ccf5fddd…`, ya con commit técnico E1 `75152360b105af196079d9e954d22143e3a429cf` en `worktrees/policy5_integration`—),
+se verificaron idénticos los **`4` digests autorizados** de `sifilis_adquirida_a51_0cc942faddb8`, se respaldaron `102`
+archivos y se materializaron los `91` archivos nuevos de corrida en el checkout principal sin sobrescribir contextos
+previos, y terminaron **`succeeded`** las tres etapas de desarrollo
+(`carbon_policy5_authorized/ROOT_RESULTADOS_SELECT5_VERIFICADOS.json`, estado
+`DEVELOPMENT_COMPLETED_NOT_ACCEPTANCE`, **no es aceptación ni `PASS` científico**): `smoke5`
+`sifilis_adquirida_a51_benchmark_smoke_b2b6e5bc21ba` (manifiesto `376d0843…`, `20` artefactos), `full5`
+`sifilis_adquirida_a51_benchmark_full_57698d37e134` (manifiesto `b1f3d41b…`, `20` artefactos en
+`development_2021..2024`) y `select5` `sifilis_adquirida_a51_select_57698d37e134_b41ca5664941` (manifiesto
+`708f2e70…`, `selection_digest` `73490ea8…`, `4` artefactos, **`64` series base seleccionadas**:
+`seasonal_mean_3y=22`, `seasonal_median_5y=16`, `seasonal_naive_lag52=13`, `seasonal_mean_5y=10`,
+`seasonal_median_3y=3`; portafolio de desarrollo `smape_nacional_general=51.97`, `smape_all=78.21`,
+`smape_bases=85.56`, `mase_all=1.558`, `mase_bases=1.470`). Fable completó la revisión pretest independiente
+(`fable_pretest_policy5_8bbb/FABLE_PRETEST_POLICY5.{json,md}`, `a3f61df2…` / `3232dd9e…`) con dictamen
+**`CONDICIONAL`** (`0` defectos técnicos, `0` pruebas previas de `A51`; **no es aceptación de 2025 ni `PASS`**): en
+desarrollo `2021–2024` el portafolio mejora al control `seasonal_naive_lag52` en bases (`−9.98 %`) y `111` productos
+(`−9.19 %`), pero es **`+50.05 %` peor en nacional General (`51.97` vs `34.63`, límite `10 %`, fuera en `3/4`
+pliegues)**, en un contexto de cambio de nivel `2021–2023`; registra además `D1` (nivel anual público de `2025` visible en
+`QA_COMPLETA.md` §3 —no es evaluación ciega al nivel anual, aunque la selección usó sólo métricas de desarrollo
+`2021–2024`—) y las divulgaciones obligatorias previas a cualquier eventual publicación (`K6`). **El piloto permanece en
+`0 / 1` publicado (`lifecycle: configured`) con `0` pruebas de 2025 abiertas o consumidas**, y se envió una **nueva
+pregunta nominal al autor para abrir 2025** (`carbon_policy5_authorized/ROOT_TEST2025_QUESTION_SENT.json`, propuesta
+`485075c5…`, **actualmente `PENDING` sin respuesta**, distinta de `«si autorizo»`): antes de abrir 2025 se exigen
+`K1–K5` (nueva autorización del autor + compuerta `root` fijando `8bbb72da`, los `4` digests de `0cc942faddb8`,
+política `6d2350be…`, `select5` `73490ea8…` y `D1`), quedando fijado que un rechazo en 2025 deja `configured` (`0/1`)
+con la prueba única consumida y sin control de respaldo, `refit` ni retest. Guía: `docs/C7_18_PILOTO_CARBON.md`;
+evidencia externa: `planes/piloto_carbon_alta1_2026-11-15/`.
 
 ## Checkpoint vigente — lote alta20c publicado — 15-nov-2026
 
