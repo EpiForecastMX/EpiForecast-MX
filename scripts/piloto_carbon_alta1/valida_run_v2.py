@@ -1,14 +1,20 @@
 """Validador reproducible RUN_v2 (SHA40) y comparador de doble corrida — piloto Carbon alta1.
 
 Recomputa todos los hashes desde disco y git sin confiar en autodeclaraciones previas:
-- Pines obligatorios (``ROOT_V2``): ``expected_commit`` (40 hex), ``expected_inventory_sha256``
-  (64 hex) y ``expected_validator_sha256`` (64 hex) son obligatorios en API y CLI. No existe opción
-  para omitir el cálculo de hashes SHA-256 de los PDFs del corpus.
-- Inmutabilidad de evidencia previa (``ROOT_V1``): nunca se aplica ``chmod +w`` ni se sobrescribe un
-  ``<id>_RUN_v2.json`` existente (válido o fallido) ni ningún artefacto existente en ``canon_dir``.
-  Si ya existen con bytes y estado válidos idénticos, la revalidación es no-op sobre el original y
-  registra un informe aditivo en ``revalidaciones/``; si difieren o fallan, conserva el original
-  intacto y escribe un informe aditivo en ``revalidaciones/`` o ``conflictos/``.
+- Pines obligatorios (``ROOT_V2`` / ``H2``): ``expected_commit`` (40 hex),
+  ``expected_inventory_sha256`` (64 hex) y ``expected_validator_sha256`` (64 hex) obligatorios en
+  API y CLI. Sin opción de omitir hashes SHA-256 de los PDFs del corpus.
+- Inmutabilidad (``ROOT_V1`` / ``H1``): cero ``chmod +w`` y cero sobrescritura sobre ``RUN_v2.json``
+  (válidos o fallidos) y sobre ``canon_dir``; revalidaciones idénticas son no-op con bytes
+  originales intactos e informe aditivo en ``revalidaciones/``; divergencias o fallos escriben en
+  ``revalidaciones/`` o ``conflictos/``.
+- Tolerancia ante filas ``error`` del manifiesto (``H4``): ``n_states`` como ``"32.0"`` o vacío no
+  lanza ``ValueError``; se parsea de forma segura y se reporta la falla en ``RUN_v2.json``.
+- Verificación de evidencia del orquestador (``H5``): verifica ``pre_interim_entries``,
+  ``post_inventory_fallas`` y el log capturado del subproceso (con su SHA-256) cuando figuran en
+  ``RUN_raw.json``.
+- Árbol limpio completo (``H7``): cualquier salida de ``git status --porcelain --untracked-files=all``
+  (incluidos archivos no rastreados no ignorados en la raíz del worktree) se marca como sucia.
 """
 
 from __future__ import annotations
@@ -29,7 +35,7 @@ from typing import Any
 
 import yaml
 
-VERSION = "piloto_carbon_alta1.valida_run_v2.v2"
+VERSION = "piloto_carbon_alta1.valida_run_v2.v3"
 SCHEMA_RUN_V2 = "piloto_carbon_alta1.run_v2"
 SCHEMA_REVAL_V2 = "piloto_carbon_alta1.run_v2_revalidacion.v1"
 SCHEMA_CANON = "piloto_carbon_alta1.canon_raw.v1"
@@ -90,6 +96,22 @@ def _substantive_run_v2(doc: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in doc.items() if k not in {"revalidado_utc", "revalidacion_aditiva"}}
 
 
+def parse_n_states(val: Any) -> int | None:
+    """Parsea n_states de forma tolerante ('32', '32.0', '', None) sin lanzar ValueError (H4)."""
+    if val is None:
+        return None
+    s = str(val).strip()
+    if not s:
+        return None
+    try:
+        f = float(s)
+    except ValueError:
+        return None
+    if not f.is_integer():
+        return None
+    return int(f)
+
+
 def compute_tracked_hashes(worktree: Path) -> dict[str, str | None]:
     """Calcula el mapa de hashes SHA-256 de las entradas rastreadas del extractor."""
     return {rel: sha256_file(worktree / rel) for rel in TRACKED_EXTRACTION_INPUTS}
@@ -110,25 +132,16 @@ def git_head_40(worktree: Path) -> str | None:
 
 
 def git_dirty_entries(worktree: Path) -> list[str]:
-    """Entradas sucias en archivos rastreados o no rastreados bajo config/, src/, scripts/, tests/."""
+    """Toda entrada de ``git status --porcelain --untracked-files=all`` cuenta como sucia (H7)."""
     res = subprocess.run(
-        ["git", "-C", str(worktree), "status", "--porcelain"],
+        ["git", "-C", str(worktree), "status", "--porcelain", "--untracked-files=all"],
         capture_output=True,
         text=True,
         check=False,
     )
     if res.returncode != 0:
         return ["git_status_error"]
-    dirty: list[str] = []
-    protected_prefixes = ("config/", "src/", "scripts/", "tests/")
-    for line in res.stdout.splitlines():
-        if not line:
-            continue
-        status_code = line[:2]
-        rel = line[3:].strip()
-        if status_code != "??" or rel.startswith(protected_prefixes):
-            dirty.append(line)
-    return dirty
+    return [line for line in res.stdout.splitlines() if line.strip()]
 
 
 def git_blob_sha256(worktree: Path, commit40: str, rel_path: str) -> str | None:
@@ -341,8 +354,35 @@ def validate_single_run(
 
     if int(run_raw.get("rc", -1)) != 0:
         fallas.append(f"rc={run_raw.get('rc')}")
-    if run_raw.get("pre_interim_absent") is not True:
-        fallas.append("pre_interim_absent no es True (data/interim no estaba limpio al iniciar)")
+
+    pad_cfg = yaml.safe_load((wt / "config" / "padecimientos.yaml").read_text(encoding="utf-8"))
+    cuadros_cfg = yaml.safe_load(
+        (wt / "config" / "data" / "cuadros.yaml").read_text(encoding="utf-8")
+    )
+    slug = slug_for_disease(pad_cfg, disease_id)
+    decl_all, decl_keep, n_states_expected = declarados_cuadros(cuadros_cfg, disease_id)
+
+    pre_entries = run_raw.get("pre_interim_entries")
+    if run_raw.get("pre_interim_absent") is not True or not isinstance(pre_entries, list):
+        fallas.append(
+            "pre_interim_absent no es True o falta listado pre_interim_entries en run_raw"
+        )
+    elif any(str(x).startswith(f"{slug}_") for x in pre_entries):
+        fallas.append(
+            f"pre_interim_entries contenía archivos previos del slug {slug}: {pre_entries}"
+        )
+
+    post_inv_fallas = run_raw.get("post_inventory_fallas")
+    if post_inv_fallas:
+        fallas.append(f"fallas de inventario post-extracción registradas: {post_inv_fallas}")
+
+    sub_log = run_raw.get("subprocess_log_path")
+    sub_log_sha = run_raw.get("subprocess_log_sha256")
+    if sub_log is not None or sub_log_sha is not None:
+        actual_log_sha = sha256_file(Path(str(sub_log))) if sub_log else None
+        if actual_log_sha is None or actual_log_sha != sub_log_sha:
+            fallas.append("subprocess_log inexistente o su sha256 no coincide con run_raw")
+
     if str(run_raw.get("cwd", "")) != str(wt):
         fallas.append(f"cwd registrado ({run_raw.get('cwd')}) != worktree ({wt})")
 
@@ -383,13 +423,6 @@ def validate_single_run(
         fallas.append("inventory_sha256_inicio != sha256 actual de inventory_json")
     if run_raw.get("inventory_sha256_fin") != inv_meta["inventory_sha256"]:
         fallas.append("inventory_sha256_fin != sha256 actual de inventory_json")
-
-    pad_cfg = yaml.safe_load((wt / "config" / "padecimientos.yaml").read_text(encoding="utf-8"))
-    cuadros_cfg = yaml.safe_load(
-        (wt / "config" / "data" / "cuadros.yaml").read_text(encoding="utf-8")
-    )
-    slug = slug_for_disease(pad_cfg, disease_id)
-    decl_all, decl_keep, n_states_expected = declarados_cuadros(cuadros_cfg, disease_id)
 
     interim_csv = wt / "data" / "interim" / f"{slug}_boletin.csv"
     interim_man = wt / "data" / "interim" / f"{slug}_extraccion_manifest.csv"
@@ -441,17 +474,21 @@ def validate_single_run(
             )
         bad_states_rows: list[str] = []
         for r in manifest_rows:
-            st = r["status"]
+            st = str(r.get("status", "")).strip()
             estados[st] = estados.get(st, 0) + 1
-            if st == "ok" and int(r.get("n_states") or 0) != n_states_expected:
-                bad_states_rows.append(f"{r['file']}:{r.get('n_states')}")
+            if st == "ok":
+                parsed_n = parse_n_states(r.get("n_states"))
+                if parsed_n != n_states_expected:
+                    bad_states_rows.append(f"{r.get('file')}:{r.get('n_states')!r}")
         if set(estados) - ESTADOS_VALIDOS:
             fallas.append(
                 f"estados no válidos en manifiesto: {sorted(set(estados) - ESTADOS_VALIDOS)}"
             )
         if bad_states_rows:
             fallas.append(f"boletines ok sin {n_states_expected} entidades: {bad_states_rows[:5]}")
-        excluidos = sorted(r["file"] for r in manifest_rows if r["status"] == "excluded")
+        excluidos = sorted(
+            r["file"] for r in manifest_rows if str(r.get("status", "")).strip() == "excluded"
+        )
         if excluidos != decl_all:
             fallas.append(f"excluidos {excluidos} != declarados {decl_all}")
 
@@ -521,7 +558,6 @@ def validate_single_run(
         _set_readonly(out_v2)
         return (0 if not fallas else 1), payload
 
-    # ROOT_V1: RUN_v2 ya existe -> jamás aplicar chmod +w ni sobrescribir el archivo original.
     existing_sha = sha256_file(out_v2)
     try:
         existing_doc = json.loads(out_v2.read_text(encoding="utf-8"))
@@ -657,7 +693,6 @@ def validate_pair(
     )
 
     if any_existing_canon:
-        # ROOT_V1: jamás hacer chmod +w ni sobrescribir ningún archivo existente en canon_dir.
         all_present = all(p.is_file() for p in canon_targets)
         existing_canon_doc: dict[str, Any] = {}
         if canon_json.is_file():
@@ -732,7 +767,6 @@ def validate_pair(
             "conflict_report_path": str(conflict_report),
         }
 
-    # canon_dir virgen
     if fallas:
         fail_report = _write_additive_readonly_json(
             canon_dir / "conflictos",
