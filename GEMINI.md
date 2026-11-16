@@ -57,6 +57,28 @@ vigentes del repositorio está en `AGENTS.md` y `CLAUDE.md`; las secciones infer
   con ajuste sólo de comentario en `config/padecimientos.yaml` y `tests/unit/test_registry.py` sin
   cambio semántico YAML/AST). Antes de fusionar PR `#74` a `main` siguen requeridos el seguimiento de
   Fable sobre el `HEAD` exacto y el CI remoto verde del SHA final (sin preafirmarlos).
+  - *Nota actual post-merge (16-nov-2026, `TECHNICAL_ONLY_PR74`, `delta = 0` publicados):* cumplidas las
+    condiciones procedimentales anteriores sobre el `HEAD` exacto `7b42e4d893588239380b32debfb2da711aa88e31`
+    (aprobación final independiente de Fable `FABLE_FINAL_APPROVED_TECHNICAL_ONLY` y CI remoto de PR
+    `43902888808` en `SUCCESS`), PR `#74` quedó fusionada en `main` backend
+    `919159e8b0856aa3e59866715cd7063ffa070e63` con **CI remoto de `main` `43905851850` en `SUCCESS`**
+    (`2,874 passed, 496 skipped, 66 deselected`, `integracion_tecnica_480/CI_MAIN_919_FINAL.json`). Se
+    conservan `main` frontend `73079eeb` sin cambios, producción servida `85/81` (catálogo byte-idéntico y
+    base semanal `8c21883a3a1d5e1b4daeabe1f5e3ab27f931f1f0177b74fd78fb696e8ad88852` verificada en
+    `ROOT_WEEKLY_PATHS_ACTUAL.json`), las `97` entradas previas del registry, los `119` artefactos
+    científicos materializados por hash en el checkout principal con respaldos previos verificados, los pines
+    científicos `98675bb0` / `373ea5f6` (no requirieron repetir la extracción ni reescribir manifiestos por
+    los cambios de guardas, comentarios o documentación ya integrados —ni por avances de `HEAD` o HTML web—
+    que no alteraron fuentes efectivas ni `raw`; cambios materiales del extractor, configuración fuente o
+    `source_exclusions` que afecten `raw` sí requieren doble extracción y QA nuevas, sin reabrir pruebas
+    consumidas), y la revisión `v3` del skill `padecimiento-epiforecast` ya
+    instalada (`6` archivos aprobados en `fable_skill_v3_delta/FABLE_SKILL_V3_DELTA.{json,md}`, `diff = 0`
+    entre copia canónica y espejo y `quick_validate` `rc=0` en `ROOT_SKILL_INSTALACION_FINAL.json`; sondas
+    focales registradas por versión evaluada, sin equivaler a suite nativa completa ni `PASS` científico).
+    **El piloto permanece incompleto únicamente en el plano científico** (sin declarar «todo cerrado»):
+    `sifilis_adquirida_a51` sigue `configured` (`0/1`, `smoke7` `succeeded`, `full7` `ETS`/`Ridge` `FAILED`,
+    `0` pruebas de 2025) y la propuesta nominal `v2` de 5 motores continúa sin respuesta del autor
+    (`docs/C7_18_PILOTO_CARBON.md`, evidencia en `planes/piloto_carbon_alta1_2026-11-15/`).
 - **Piloto Carbon (`sifilis_adquirida_a51`) — al 16-nov-2026 `0 / 1` publicado (`lifecycle: configured`, 0 pruebas de 2025):**
   - *Historia científica medida en `373ea5f6` (8 fuentes de extracción byte-iguales hasta `480a0347` y
     cambio ulterior sólo de comentario en `padecimientos.yaml` con 7/8 byte-iguales, preservando sin

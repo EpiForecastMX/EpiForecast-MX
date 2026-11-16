@@ -8,6 +8,34 @@
 > (`0 / 1` publicado) y con **0 pruebas de 2025 abiertas o consumidas**. Antes de cualquier fusión en
 > `main` se solicitará revisión final independiente de Fable sobre el `HEAD` exacto y verificación de CI
 > remoto (ninguna se preafirma aquí).
+>
+> **Nota actual post-merge de PR `#74` (16-nov-2026, `TECHNICAL_ONLY_PR74`, `delta = 0` publicados):** las
+> condiciones procedimentales de fusión indicadas arriba ya se cumplieron sobre el `HEAD` exacto
+> `7b42e4d893588239380b32debfb2da711aa88e31` (revisión de código y docs `FABLE_FINAL_REVIEW`, CI remoto de PR
+> run `43902888808` en `SUCCESS` con `2,874 passed, 496 skipped, 66 deselected` y aprobación final
+> independiente `FABLE_FINAL_APPROVED_TECHNICAL_ONLY`), integrándose PR `#74` en **`main` backend
+> `919159e8b0856aa3e59866715cd7063ffa070e63`** con **CI remoto de `main` run `43905851850` en `SUCCESS`**
+> (`2,874 passed, 496 skipped, 66 deselected`, `integracion_tecnica_480/CI_MAIN_919_FINAL.json`). Se
+> preservan `main` frontend `73079eeb` sin cambios, catálogo servido HTTP 200 byte-idéntico (`85` en el
+> sitio / `81` del runner; base semanal verificada en `ROOT_WEEKLY_PATHS_ACTUAL.json`), las `97` entradas
+> previas del registry (`0` artefactos antiguos modificados), los `119` artefactos científicos materializados
+> con todos sus hashes verificados en el checkout principal junto con sus respaldos previos verificados, y los
+> pines científicos `98675bb0` / `373ea5f6` (no requirieron repetir la extracción ni reescribir manifiestos por
+> los cambios de guardas, comentarios o documentación ya integrados —ni por avances de `HEAD` o HTML web— que no
+> alteraron fuentes efectivas ni `raw`; cambios materiales del extractor, configuración fuente o
+> `source_exclusions` que afecten `raw` sí requieren doble extracción y QA nuevas, sin reabrir pruebas
+> consumidas). La revisión `v3` del skill `padecimiento-epiforecast` (`6` archivos aprobados en
+> `fable_skill_v3_delta/FABLE_SKILL_V3_DELTA.{json,md}`) quedó instalada con copia canónica y espejo idénticos
+> (`diff = 0`, `quick_validate` `rc=0`, `ROOT_SKILL_INSTALACION_FINAL.json`; las sondas focales se acreditan por
+> versión evaluada —`V2` `22/23` rúbricas + `3/3` contratos con `semana-11` `FAIL` conservado sin retro-`PASS`
+> en `fable_skill_evals_final/EVAL_RESULTADOS.{json,md}`—). Por separado, en
+> `fable_eval_weekly_v3_final/EVAL_SEMANAL_V3.{json,md}` Fable calificó una corrida nueva de `semana-siguiente`
+> con `v3` en `12/12` `PASS` y recalificó aparte `A07` sobre la `alta.md` original contra el grader `07` de `v3`
+> en `1/1` `PASS` (mediciones distintas sin afirmar un `23/23` único, sin convertir en `PASS` el `S11` `FAIL`
+> original, ni equivaler a la suite nativa completa o a `PASS` científico). **El piloto permanece incompleto únicamente por las puertas científicas pendientes** (sin
+> declarar «todo cerrado»): `sifilis_adquirida_a51` sigue `configured` (`0 / 1` publicado, `smoke7`
+> `succeeded`, `full7` `ETS`/`Ridge` `FAILED`, `0` pruebas de 2025) y la propuesta nominal `v2` de 5 motores
+> continúa sin respuesta del autor.
 
 ## 1. Historia técnica ejecutada (`98675bb0` → `373ea5f6` → `480a0347`) frente a estado nominal pendiente
 
@@ -68,11 +96,11 @@ políticas:
 2. **`757f1e7db377277dd773d59a28f28eb4d1c3951a` (Guarda `C1` en `select`):**
    `orchestrator.run_selection` (`src/epiforecast/runner/orchestrator.py:385-391`) exige coincidencia
    exacta `bench.policy_digest == policy.digest` antes de leer métricas, complementando la guarda `C5`
-   ya existente en `select_for_series` (`src/epiforecast/runner/selection.py:144-147`, cubierta por
+   ya existente en `select_for_series` (`src/epiforecast/runner/selection.py:139-141`, cubierta por
    `tests/unit/runner/test_selection.py:123-126`) que exige todos los motores `incumbent` por serie.
    La auditoría de metadatos de los `81` releases vigentes dio **`MATCH = 81, errors = []`**
    (`ROOT_SELECT_POLICY_COMPATIBILITY_81.json`).
-3. **`480a034704c45ac9c65a2e45d7dee853eabfd20a` (Observaciones `R1–R3` de Fable, dictamen `FABLE_TECNICO_480` y CI remoto):**
+3. **`480a034704c45ac9c65a2e45d7dee853eabfd20a` (Observaciones `R1–R3` de Fable, dictamen `FABLE_TECNICO_480` y verificación posterior de CI remoto por root):**
    añade la prueba de recuperación tras interrupción a mitad de escritura (`R1`), precisa en
    `epi_dataset_guard.py:38-43` el requisito de inventario/respaldo SHA-256 y la invalidación de
    corridas/selecciones dependientes al mover a `runs/_quarantine/` (`R2`), y persiste por PDF
@@ -87,13 +115,13 @@ políticas:
    `pdfplumber_exception` (`T4`) conserva el texto crudo de excepción si ocurriese un fallo de lectura.
    Fable revisó PR `#74` en `480a0347` (`fable_tecnico_PR74_480/FABLE_TECNICO_480.{json,md}`) con
    dictamen **`APTO_TECNICO_FOCAL_C1_R123_480_CON_OBSERVACIONES_MENORES`** (sin bloqueantes; observaciones
-   documentales `D1–D3`): al emitirse el dictamen estaba `Code Quality` `PASS` y `Tests` en curso, y
-   posteriormente el CI remoto de `480a0347` terminó en **`SUCCESS`** (run `43896392431`,
+   documentales `D1–D3`), sin consultar el CI remoto en ese dictamen (sólo leyó
+   `ESTADO_PREPUBLICACION.json`, donde `Code Quality` figuraba `IN_PROGRESS`). Por separado, root verificó
+   posteriormente que el CI remoto de `480a0347` terminó en **`SUCCESS`** (run `43896392431`,
    `integracion_tecnica_480/CI_480_FINAL.json` y `CI_480_TESTS.log`: `Code Quality` `PASS`, `Tests` `PASS`
    con `2,874 passed, 496 skipped, 66 deselected` y cobertura `81 %`, `Integration Tests` `SKIPPED` por
    diseño, e idénticos `496` nodeids omitidos con `added_skips = []` frente al baseline `30cb7b4f` en
-   `SKIP_DELTA.json`; ello certifica `480a0347`, sin preafirmar el CI de un `HEAD` posterior ni el estado
-   tras fusión en `main`).
+   `SKIP_DELTA.json`; ello certificó `480a0347`, sin preafirmar entonces un `HEAD` posterior).
 
 ### 1.3 Estado nominal pendiente (`propuesta ≠ autorización`)
 
@@ -110,7 +138,7 @@ políticas:
   - `C4`: hipótesis causal calibrada únicamente al primer fallo observado por motor, sin extrapolar a
     pliegues no ejecutados;
   - `C5`: reclamo inicial de Opus sobre subconjuntos de `incumbents` descartado por addendum al existir
-    ya la guarda en `selection.py:144-147`.
+    ya la guarda en `selection.py:139-141`.
   La pregunta asíncrona actualizada al autor permanece **pendiente sin respuesta**.
 - **Condiciones de integración técnica de PR `#74` (`delta = 0` publicados) y puertas del piloto:** para
   fusionar PR `#74` en `main` se requiere verificación de Fable sobre el `HEAD` final exacto y CI remoto
@@ -118,6 +146,12 @@ políticas:
   constituir PASS científico ni aprobar 2025). El paso científico sobre desarrollo con 5 motores **sí
   sigue pendiente de decisión del autor**, y cualquier futura apertura de 2025 requiere además revisión
   pretest independiente de Fable y autorización nominal explícita.
+  - *Nota post-merge (16-nov-2026):* las condiciones procedimentales de fusión de PR `#74` ya se
+    cumplieron sobre `7b42e4d8` → `main` `919159e8` (`TECHNICAL_ONLY_PR74`, `delta = 0`, Fable final +
+    CI PR `43902888808` y CI `main` `43905851850` en `SUCCESS`) y el skill `v3` quedó instalado
+    (`ROOT_SKILL_INSTALACION_FINAL.json`; ver nota inicial). El piloto **permanece incompleto únicamente por
+    las puertas científicas posteriores pendientes** (`0 / 1` publicado, `full7` `FAILED`, propuesta nominal
+    de 5 motores sin respuesta y `0` pruebas de 2025).
 
 ## 2. Guarda idempotente de dataset `0444` y procedimiento semanal
 
@@ -234,3 +268,14 @@ Toda la evidencia operativa del piloto vive fuera del árbol del repositorio baj
 - Corridas y mediciones descriptivas: `ROOT_AUTH_SMOKE7_373.json`, `ROOT_AUTH_FULL7_373.json`,
   `jobs/smoke7_373/command_completed.json`, `jobs/full7_373/command_completed.json` y
   `root_opus_medidas_373/RESULTADO.json`.
+- Seguimiento final Fable, integración técnica PR `#74`, CI, instalación del skill `v3` y preservación post-merge (`7b42e4d8` → `main` `919159e8`):
+  `fable_final_PR74_7b42/FABLE_FINAL_REVIEW.{json,md}`,
+  `fable_final_PR74_7b42_CI/FABLE_FINAL_APPROVED.{json,md}`,
+  `integracion_tecnica_480/{CI_480_FINAL,CI_7b42_FINAL,PR74_MERGED,CI_MAIN_919_FINAL}.json`,
+  `root_served_after_PR74/RESULTADO.json`, `ROOT_WEEKLY_PATHS_ACTUAL.json`,
+  `ROOT_MAIN_PRESERVACION_PREVIOS.json`, `ROOT_PERSISTENCIA_CIENTIFICA_MAIN.json`,
+  `materializacion_principal_373/MANIFEST.json`, `backup_final_worktrees_7b42/MANIFEST.json`,
+  `RETIREMENT_OLD_PILOT_COMPLETED.json`, `fable_skill_evals_final/EVAL_RESULTADOS.{json,md}`,
+  `fable_skill_v3_delta/FABLE_SKILL_V3_DELTA.{json,md}`,
+  `fable_eval_weekly_v3_final/EVAL_SEMANAL_V3.{json,md}`, `ROOT_SKILL_INSTALACION_FINAL.json` y
+  `opus_memory_current_audit/AUDITORIA_MEMORIAS.{json,md}`.
