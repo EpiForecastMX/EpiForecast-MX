@@ -2121,3 +2121,132 @@ def test_p2_11col_geometria_negativa_y_total_descuadrado_fallan_cerrado(
     assert c6["files_by_status"]["ok"] == []
     assert c6["files_by_status"]["unexpected_shape"] == ["2026_sem42.pdf"]
     assert len(c6["unexpected_shape_details"]) == 1
+
+
+def test_i1_fila_nacional_y_trayectorias_marcan_estados_sin_sem_h_m_independiente_de_prev(
+    tmp_path: Path,
+) -> None:
+    """I1: contadores exactos de estados sin Sem/H/M en fila nacional y caídas/saltos, independientes de prev."""
+    catalog = load_geo_catalog()
+    entidades = [catalog.entity(cve).nombre_canonico for cve in sorted(catalog.cve_ents())]
+    header = (
+        "Anio,Semana,Entidad,Padecimiento,Casos_semana,Acumulado_hombres,"
+        "Acumulado_mujeres,Acumulado_anio_anterior"
+    )
+
+    lines_with_na = [header]
+    lines_control = [header]
+    for ent in entidades:
+        # 2016_sem49: las 32 entidades completas
+        lines_with_na.append(f"2016,49,{ent},Sífilis adquirida,2,24,14,52")
+        lines_control.append(f"2016,49,{ent},Sífilis adquirida,2,24,14,52")
+
+        # 2016_sem50: Querétaro trae Casos_semana vacío (n.e. en fuente abierta -> NA, no 0) y acumulados presentes
+        sem_50 = "" if ent == "Querétaro" else "2"
+        lines_with_na.append(f"2016,50,{ent},Sífilis adquirida,{sem_50},26,15,54")
+        lines_control.append(f"2016,50,{ent},Sífilis adquirida,2,26,15,54")
+
+        # 2016_sem51: las 32 entidades completas de nuevo (sin umbral nuevo ni alteración del resto)
+        lines_with_na.append(f"2016,51,{ent},Sífilis adquirida,2,28,16,56")
+        lines_control.append(f"2016,51,{ent},Sífilis adquirida,2,28,16,56")
+
+        # 2017_sem04..06: ausencia sintética en acum_h (1 estado) y acum_m (2 estados) en sem05 para verificar
+        # arrastre de contadores a caídas, saltos y tripletas revertidas
+        lines_with_na.append(f"2017,04,{ent},Sífilis adquirida,2,10,10,8")
+        h_05 = "" if ent == "Aguascalientes" else "12"
+        m_05 = "" if ent in {"Aguascalientes", "Zacatecas"} else "12"
+        lines_with_na.append(f"2017,05,{ent},Sífilis adquirida,2,{h_05},{m_05},10")
+        lines_with_na.append(f"2017,06,{ent},Sífilis adquirida,2,14,14,12")
+
+        # 2026_sem08: las 32 entidades sin Acumulado_anio_anterior (3col_noprev) pero con Sem/H/M completos
+        lines_with_na.append(f"2026,08,{ent},Sífilis adquirida,3,30,20,")
+
+    csv_na = tmp_path / "canon_i1_na.csv"
+    csv_ctrl = tmp_path / "canon_i1_ctrl.csv"
+    csv_na.write_text("\n".join(lines_with_na) + "\n", encoding="utf-8")
+    csv_ctrl.write_text("\n".join(lines_control) + "\n", encoding="utf-8")
+
+    _, diag_na = qa.analyze_canon_csv_cells_and_trajectories(
+        csv_na, lag=1, keep_period_files=set()
+    )
+    _, diag_ctrl = qa.analyze_canon_csv_cells_and_trajectories(
+        csv_ctrl, lag=1, keep_period_files=set()
+    )
+
+    traj = diag_na["cumulative_trajectories_and_anomalies"]
+    traj_ctrl = diag_ctrl["cumulative_trajectories_and_anomalies"]
+    nat_by_file = {r["file"]: r for r in traj["national_series_by_source_week"]}
+    ctrl_by_file = {r["file"]: r for r in traj_ctrl["national_series_by_source_week"]}
+
+    # 1) Caso 2016_sem50 (Querétaro Sem NA): contador sem_missing_states=1 y acum_prev independiente (0)
+    r50 = nat_by_file["2016_sem50.pdf"]
+    assert r50["sem"] == 62  # 31 estados numéricos * 2; la ausencia queda marcada explícitamente
+    assert r50["acum_h"] == 832 and r50["acum_m"] == 480 and r50["acum_total"] == 1312
+    assert r50["acum_prev"] == 1728
+    assert r50["sem_missing_states"] == 1
+    assert r50["acum_h_missing_states"] == 0
+    assert r50["acum_m_missing_states"] == 0
+    assert r50["has_current_missing_states"] is True
+    assert r50["acum_prev_missing_states"] == 0
+
+    # Datos numéricos idénticos en las semanas completas adyacentes (2016_sem49 y 2016_sem51)
+    for intact_file in ("2016_sem49.pdf", "2016_sem51.pdf"):
+        assert nat_by_file[intact_file] == ctrl_by_file[intact_file]
+        assert nat_by_file[intact_file]["has_current_missing_states"] is False
+
+    # La entrada de brecha Sem - delta_acum_total para 2016_sem50 arrastra el indicador exacto
+    gaps_by_file = {g["file"]: g for g in traj["top_10_abs_sem_minus_delta_acum_total"]}
+    g50 = gaps_by_file["2016_sem50.pdf"]
+    assert g50["sem_printed"] == 62
+    assert g50["delta_acum_total"] == 96
+    assert g50["sem_minus_delta_total"] == -34
+    assert g50["sem_missing_states"] == 1
+    assert g50["acum_h_missing_states"] == 0
+    assert g50["acum_m_missing_states"] == 0
+    assert g50["has_current_missing_states"] is True
+    assert g50["acum_prev_missing_states"] == 0
+
+    # 2) Independencia frente a NA del año anterior (2026_sem08: prev NA=32, actuales NA=0)
+    r26 = nat_by_file["2026_sem08.pdf"]
+    assert r26["acum_prev"] is None
+    assert r26["acum_prev_missing_states"] == 32
+    assert r26["sem_missing_states"] == 0
+    assert r26["acum_h_missing_states"] == 0
+    assert r26["acum_m_missing_states"] == 0
+    assert r26["has_current_missing_states"] is False
+    assert traj["current_sem_h_m_na_national_files"] == ["2016_sem50.pdf", "2017_sem05.pdf"]
+    assert traj["optional_prev_na_national_files"] == ["2026_sem08.pdf"]
+
+    # 3) Arrastre a caídas, saltos y tripletas revertidas cuando faltan acum_h / acum_m (2017_sem05..06)
+    r17_05 = nat_by_file["2017_sem05.pdf"]
+    assert r17_05["acum_h_missing_states"] == 1 and r17_05["acum_m_missing_states"] == 2
+    jumps_by_file = {j["file"]: j for j in traj["top_10_weekly_acum_total_jumps"]}
+    j06 = jumps_by_file["2017_sem06.pdf"]
+    assert j06["prev_acum_h_missing_states"] == 1
+    assert j06["prev_acum_m_missing_states"] == 2
+    assert j06["acum_h_missing_states"] == 0 and j06["acum_m_missing_states"] == 0
+    assert j06["has_current_missing_states"] is True
+
+    # 2017_sem05 tuvo 31*12 + 30*12 = 732 > 640 (sem04), pero si probamos caída aparente con valores altos:
+    # Verificamos también que cualquier caída aparente en national_cumulative_drops_by_file conserva los contadores
+    lines_drop_na = [
+        header,
+        *(f"2018,01,{ent},Sífilis adquirida,5,100,100,90" for ent in entidades),
+        *(
+            f"2018,02,{ent},Sífilis adquirida,5,{'101' if idx > 1 else ''},101,95"
+            for idx, ent in enumerate(entidades)
+        ),
+        *(f"2018,03,{ent},Sífilis adquirida,5,102,102,98" for ent in entidades),
+    ]
+    csv_drop_na = tmp_path / "canon_i1_drop_triplet.csv"
+    csv_drop_na.write_text("\n".join(lines_drop_na) + "\n", encoding="utf-8")
+    _, diag_drop_na = qa.analyze_canon_csv_cells_and_trajectories(
+        csv_drop_na, lag=1, keep_period_files=set()
+    )
+    traj_dn = diag_drop_na["cumulative_trajectories_and_anomalies"]
+    drops_dn = {d["file"]: d for d in traj_dn["national_cumulative_drops_by_file"]}
+    assert drops_dn["2018_sem02.pdf"]["acum_h_missing_states"] == 2
+    assert drops_dn["2018_sem02.pdf"]["has_current_missing_states"] is True
+    triplets_dn = {t["file"]: t for t in traj_dn["national_spike_or_drop_reverted_triplets"]}
+    assert triplets_dn["2018_sem02.pdf"]["triplet_acum_h_missing_states"] == [0, 2, 0]
+    assert triplets_dn["2018_sem02.pdf"]["triplet_has_current_missing_states"] is True

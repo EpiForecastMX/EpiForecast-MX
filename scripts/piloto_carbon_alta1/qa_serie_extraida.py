@@ -797,16 +797,23 @@ def analyze_canon_csv_cells_and_trajectories(
                     state_prev_neg_files.add(str(curr_r["file"]))
                 last_prev_val = curr_prev_int
 
-    # Serie nacional por semana de fuente dentro de cada año: preserva None en acum_prev (sin 0 falso)
+    # Serie nacional por semana de fuente: contadores exactos de estados sin Sem/H/M (I1) y prev (P2)
     nat_rows: list[dict[str, Any]] = []
+    current_na_nat_files: list[str] = []
     optional_prev_na_nat_files: list[str] = []
     for (yr_k, wk_k), grp_yw in obs_df.groupby(["Anio", "Semana"], sort=True):
         yr_i, wk_i = int(str(yr_k)), int(str(wk_k))
         fname_yw = f"{yr_i}_sem{wk_i:02d}.pdf"
-        s_sem = int(grp_yw["sem"].fillna(0).sum())
-        s_h = int(grp_yw["acum_h"].fillna(0).sum())
-        s_m = int(grp_yw["acum_m"].fillna(0).sum())
+        sem_missing_n = int(grp_yw["sem"].isna().sum())
+        h_missing_n = int(grp_yw["acum_h"].isna().sum())
+        m_missing_n = int(grp_yw["acum_m"].isna().sum())
         prev_missing_n = int(grp_yw["acum_prev"].isna().sum())
+        has_curr_missing = (sem_missing_n + h_missing_n + m_missing_n) > 0
+        if has_curr_missing:
+            current_na_nat_files.append(fname_yw)
+        s_sem = int(grp_yw["sem"].dropna().sum())
+        s_h = int(grp_yw["acum_h"].dropna().sum())
+        s_m = int(grp_yw["acum_m"].dropna().sum())
         if prev_missing_n > 0:
             s_prev: int | None = None
             optional_prev_na_nat_files.append(fname_yw)
@@ -822,6 +829,10 @@ def analyze_canon_csv_cells_and_trajectories(
                 "acum_m": s_m,
                 "acum_total": s_h + s_m,
                 "acum_prev": s_prev,
+                "sem_missing_states": sem_missing_n,
+                "acum_h_missing_states": h_missing_n,
+                "acum_m_missing_states": m_missing_n,
+                "has_current_missing_states": has_curr_missing,
                 "acum_prev_missing_states": prev_missing_n,
             }
         )
@@ -873,6 +884,17 @@ def analyze_canon_csv_cells_and_trajectories(
                 "sem_minus_delta_total": c["sem"] - dt,
                 "prev_acum_total": p["acum_total"],
                 "curr_acum_total": c["acum_total"],
+                "sem_missing_states": c["sem_missing_states"],
+                "acum_h_missing_states": c["acum_h_missing_states"],
+                "acum_m_missing_states": c["acum_m_missing_states"],
+                "prev_sem_missing_states": p["sem_missing_states"],
+                "prev_acum_h_missing_states": p["acum_h_missing_states"],
+                "prev_acum_m_missing_states": p["acum_m_missing_states"],
+                "has_current_missing_states": bool(
+                    c["has_current_missing_states"] or p["has_current_missing_states"]
+                ),
+                "acum_prev_missing_states": c["acum_prev_missing_states"],
+                "prev_acum_prev_missing_states": p["acum_prev_missing_states"],
             }
             weekly_increments.append(inc_entry)
             sem_vs_delta_gaps.append(inc_entry)
@@ -902,6 +924,31 @@ def analyze_canon_csv_cells_and_trajectories(
                             n["acum_total"],
                         ],
                         "triplet_sem": [p["sem"], c["sem"], n["sem"]],
+                        "triplet_sem_missing_states": [
+                            p["sem_missing_states"],
+                            c["sem_missing_states"],
+                            n["sem_missing_states"],
+                        ],
+                        "triplet_acum_h_missing_states": [
+                            p["acum_h_missing_states"],
+                            c["acum_h_missing_states"],
+                            n["acum_h_missing_states"],
+                        ],
+                        "triplet_acum_m_missing_states": [
+                            p["acum_m_missing_states"],
+                            c["acum_m_missing_states"],
+                            n["acum_m_missing_states"],
+                        ],
+                        "triplet_has_current_missing_states": bool(
+                            p["has_current_missing_states"]
+                            or c["has_current_missing_states"]
+                            or n["has_current_missing_states"]
+                        ),
+                        "triplet_acum_prev_missing_states": [
+                            p["acum_prev_missing_states"],
+                            c["acum_prev_missing_states"],
+                            n["acum_prev_missing_states"],
+                        ],
                     }
                 )
 
@@ -951,6 +998,7 @@ def analyze_canon_csv_cells_and_trajectories(
             "state_negative_delta_files": sorted(state_neg_files),
             "state_prev_year_negative_delta_files": sorted(state_prev_neg_files),
             "state_negative_deltas_sample": state_neg_events,
+            "current_sem_h_m_na_national_files": current_na_nat_files,
             "optional_prev_na_national_files": optional_prev_na_nat_files,
             "national_cumulative_drops_by_file": nat_drops,
             "national_prev_year_drops_by_file": nat_prev_drops,
@@ -1589,7 +1637,8 @@ def run_qa_report(
         f"(`raster_prev={lag_info['header_cutoff_unparsed_raster_prev_files']}`, "
         f"`texto_12col={lag_info['header_cutoff_unparsed_full_text_files']}`)",
         f"- Celdas crudas ausentes en CSV (todo el corpus no excluido): "
-        f"`Sem_H_M={raw_miss['missing_current_sem_h_m_cells_total']}`, "
+        f"`Sem_H_M={raw_miss['missing_current_sem_h_m_cells_total']}` "
+        f"(`archivos_fila_nacional={traj['current_sem_h_m_na_national_files']}`), "
         f"`Acumulado_anio_anterior_opcional={raw_miss['missing_optional_prev_year_cells_total']}`",
         f"- Semanas de entrenamiento previas por pliegue: `{c7['train_weeks_before_folds']}`",
         f"- Integridad objetivos 2025 (sin pronóstico): "
