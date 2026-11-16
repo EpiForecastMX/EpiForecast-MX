@@ -176,6 +176,7 @@ def test_cie_map():
         "T68": "Hipotermia",
         "T60": "Intoxicación por plaguicidas",
         "N76": "Vulvovaginitis",
+        "A51": "Sífilis adquirida",  # soporte QA aislado codex/piloto-carbon-alta1-qa
     }
 
 
