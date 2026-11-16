@@ -344,9 +344,10 @@ def run_selection(
 ) -> RunManifest:
     """Congela la selección por SeriesKey a partir de un benchmark YA ejecutado (no entrena nada).
 
-    Verifica que el benchmark sea exitoso, del mismo dataset y con sus artefactos intactos; aplica
-    la regla declarada en la política; compone el portafolio 64→111 en development y escribe
-    selection.csv, portfolio_development.csv, selection_report.md y selection_manifest.json.
+    Verifica que el benchmark sea exitoso, del mismo dataset, de la misma política y con sus
+    artefactos intactos; aplica la regla declarada en la política; compone el portafolio 64→111 en
+    development y escribe selection.csv, portfolio_development.csv, selection_report.md y
+    selection_manifest.json.
     """
     if require_clean:
         dirty = _tracked_dirty()
@@ -381,6 +382,13 @@ def run_selection(
 
     policy_name = declared_policy(disease, policy_name)
     policy = load_policy(policy_name)
+    if bench.policy_digest != policy.digest:
+        actual_digest = bench.policy_digest if bench.policy_digest else "<ausente>"
+        raise RunnerError(
+            f"{benchmark_run_id}: policy_digest del benchmark incompatible con la política "
+            f"{policy_name!r} (expected={policy.digest}, actual={actual_digest}); "
+            f"ejecuta un benchmark {STAGE_FULL!r} bajo {policy_name!r} antes de seleccionar"
+        )
     rule = selection.SelectionRule.from_policy(policy)
     metrics = pd.concat(
         [
