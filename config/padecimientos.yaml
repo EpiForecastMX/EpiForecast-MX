@@ -3150,3 +3150,31 @@ padecimientos:
       color: "#DB2777"
       label: "Vulvovaginitis"
       nombre_completo: "Vulvovaginitis (N76)"
+
+  # Candidato del piloto Carbon (docs/C7_18_PILOTO_CARBON.md; no publicado e invisible para
+  # consumidores published_only: lifecycle=configured, channels=[], gallery_enabled=false).
+  - id: sifilis_adquirida_a51
+    data_name: "Sífilis adquirida"
+    artifact_key: Sifilis_Adquirida_A51
+    slug: sifilis_adquirida_a51
+    display_name: "Sífilis adquirida"
+    cie_codes: ["A51", "A52", "A53"]
+    # Sin «sífilis» a secas: evitaría desambiguar frente a Sífilis congénita (A50).
+    aliases: ["sifilis adquirida", "a51", "a52", "a53"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: cuadro_6_sifilis_adquirida
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#0F766E"
+      label: "Sífilis adquirida"
+      nombre_completo: "Sífilis adquirida (A51-A53)"

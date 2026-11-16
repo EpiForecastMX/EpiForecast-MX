@@ -1,21 +1,19 @@
-"""F1/C1 — orquestación EpiDatasetV2 (carril nuevo E66; legacy intacto).
+"""F1/C1 — orquestación EpiDatasetV2 (carril de releases del boletín; legacy intacto).
 
-Ensambla el dataset base semanal de un padecimiento del boletín a partir del raw extraído + el
-calendario epidemiológico + la reconciliación causal + la exposición estática, y lo versiona en un
-run local ``runs/<run_id>/`` con digests separados (raw / exposición / config / dataset) y copia de
-los INSUMOS efectivos. NO reemplaza el dataset productivo ni toca DVC/legacy.
-
-Pipeline: raw → ``target_period`` (lag) + geo → ``reconcile_state`` (estatal, 20,896) → explode a 64
-series base × 653 periodos = 41,792 filas con exposición por sexo (``columns_by_sex``, no hard-code).
+Ensambla el dataset base semanal de un padecimiento del boletín a partir del raw extraído, el
+calendario epidemiológico, la reconciliación causal y la exposición estática, versionándolo en
+``runs/<run_id>/`` con digests separados (raw / exposición / config / dataset) e insumos efectivos.
+Pipeline: raw → ``target_period`` (lag) + geo → ``reconcile_state`` → ``explode_base`` con
+exposición por esquema de sexo (``columns_by_sex`` / ``total_column``, sin hard-code).
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 import hashlib
+import io
 import json
 from pathlib import Path
-import shutil
 from typing import Any, SupportsFloat, SupportsInt, cast
 
 from omegaconf import OmegaConf
@@ -24,6 +22,7 @@ import pandas as pd
 from epiforecast import registry
 from epiforecast.data import epi_calendar as ec
 from epiforecast.data import epi_dataset_spec as spec
+from epiforecast.data.epi_dataset_io import assemble_dataset_artifacts, stage_dataset_run
 from epiforecast.data.epi_dataset_spec import ExposureSnapshot
 from epiforecast.data.epi_geo_exposure import (
     GeoCatalog,
@@ -47,8 +46,8 @@ class EpiDatasetError(ValueError):
 class EpiDatasetV2Result:
     run_id: str
     run_dir: Path
-    dataset: pd.DataFrame  # 41,792 filas base (orden canónico)
-    state: pd.DataFrame  # 20,896 filas estatales reconciliadas
+    dataset: pd.DataFrame  # filas base en orden canónico
+    state: pd.DataFrame  # filas estatales reconciliadas
     config: spec.EpiDatasetConfig
     snapshot: ExposureSnapshot
     digests: dict[str, str]  # raw / exposure / config / dataset
@@ -217,8 +216,9 @@ def build_epi_dataset_v2(
     effective_raw_path = (raw_path or raw_path_for(disease)).resolve()
     if not effective_raw_path.is_file():
         raise EpiDatasetError(f"raw explícito inexistente o no regular: {effective_raw_path}")
-    raw = pd.read_csv(effective_raw_path, low_memory=False)
-    raw_digest = _sha256_bytes(effective_raw_path.read_bytes())
+    raw_bytes = effective_raw_path.read_bytes()
+    raw = pd.read_csv(io.BytesIO(raw_bytes), low_memory=False)
+    raw_digest = _sha256_bytes(raw_bytes)
 
     prep = build_prep(raw, catalog, cfg.observation_lag_weeks)
     state = reconcile_state(prep, set(catalog.cve_ents()))
@@ -226,8 +226,10 @@ def build_epi_dataset_v2(
     base = base.sort_values(_CANONICAL_ORDER).reset_index(drop=True)
 
     catalog_path = geo_catalog_path()
-    catalog_digest = _sha256_bytes(catalog_path.read_bytes())
-    dataset_digest = _sha256_bytes(_canonical_csv(base).encode("utf-8"))
+    catalog_bytes = catalog_path.read_bytes()
+    catalog_digest = _sha256_bytes(catalog_bytes)
+    dataset_bytes = _canonical_csv(base).encode("utf-8")
+    dataset_digest = _sha256_bytes(dataset_bytes)
     config_payload = {
         "disease_id": cfg.disease_id,
         "calendar": {"kind": "epi_mmwr", "observation_lag_weeks": cfg.observation_lag_weeks},
@@ -258,41 +260,30 @@ def build_epi_dataset_v2(
 
     run_id = run_id or f"{cfg.disease_id}_{dataset_digest[:12]}"
     run_dir = (runs_root or (_ROOT / "runs")) / run_id
-    inputs_dir = run_dir / "inputs"
-    inputs_dir.mkdir(parents=True, exist_ok=True)
-
-    # Insumos efectivos: raw, catálogo geográfico, exposición canónica y config.
-    shutil.copy2(effective_raw_path, inputs_dir / effective_raw_path.name)
-    shutil.copy2(catalog_path, inputs_dir / catalog_path.name)
-    exp_proj = pd.DataFrame(
-        [{"cve_ent": c, **snapshot.by_cve_ent[c]} for c in sorted(snapshot.by_cve_ent)]
+    artifacts = assemble_dataset_artifacts(
+        run_id=run_id,
+        cfg=cfg,
+        effective_raw_path=effective_raw_path,
+        raw_bytes=raw_bytes,
+        raw_digest=raw_digest,
+        catalog_path=catalog_path,
+        catalog_bytes=catalog_bytes,
+        catalog_digest=catalog_digest,
+        snapshot=snapshot,
+        config_payload=config_payload,
+        digests=digests,
+        base=base,
+        state=state,
+        dataset_bytes=dataset_bytes,
+        dataset_digest=dataset_digest,
     )
-    exp_proj.to_csv(inputs_dir / f"exposure_{cfg.exposure_source_id}.csv", index=False)
-    (inputs_dir / "config_effective.json").write_text(
-        json.dumps(config_payload, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
-
-    # Dataset + manifest.
-    base.to_csv(run_dir / "epi_dataset_v2.csv", index=False)
-    manifest = {
-        "run_id": run_id,
-        "disease_id": cfg.disease_id,
-        "digests": digests,
-        "exposure": {
-            "source_id": snapshot.source_id,
-            "reference": snapshot.reference,
-            "cutoff": str(snapshot.cutoff),
-        },
-        "counts": {
-            "base_rows": int(len(base)),
-            "state_rows": int(len(state)),
-            "series": int(base.groupby([spec.COL_CVE_ENT, spec.COL_SEXO]).ngroups),
-            "periods": int(state.groupby([spec.COL_EPI_YEAR, spec.COL_EPI_WEEK]).ngroups),
-            "imputed_totals": int((~state["observed"]).sum()),
-        },
-    }
-    (run_dir / "manifest.json").write_text(
-        json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8"
+    stage_dataset_run(
+        run_dir=run_dir,
+        run_id=run_id,
+        disease_id=cfg.disease_id,
+        digests=digests,
+        artifacts=artifacts,
+        error_cls=EpiDatasetError,
     )
 
     return EpiDatasetV2Result(

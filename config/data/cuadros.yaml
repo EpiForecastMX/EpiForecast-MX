@@ -2330,3 +2330,56 @@ cuadro_groups:
         has_prev_year: true
     n_states_expected: 32
     backend: camelot_stream
+
+  cuadro_6_sifilis_adquirida:
+    # CUADRO 6 «Casos por entidad federativa de Enfermedades de Transmisión Sexual»:
+    # Sífilis congénita (A50, 4 col), Sífilis adquirida (A51-A53, 4 col) e Infección gonocócica
+    # del tracto genitourinario (A54.0-A54.2, 4 col). Medido en los 670 boletines (2014-2026):
+    # rezago impreso 1 para Sífilis adquirida (desde 2021_sem01 A50 pasa a rezago 0).
+    # Anclas sin «a51-a53» completo porque pypdf separa «A51 -A53» con espacio en 2014_sem01/02.
+    # Reparaciones opt-in medidas sobre los 27 boletines no leídos con la configuración inicial:
+    #   1) En 15 boletines (2025_sem01..02, 04..09 y 2026_sem01..07) camelot con row_tol=2 separa
+    #      valores y nombres en dos renglones y deja 32 filas vacías; reintento_row_tol: 4 recupera
+    #      las 32 filas y 12 columnas cuadrando con el TOTAL impreso (sin tocar los 641 ya válidos).
+    #   2) En 12 boletines (2025_sem12, 25, 28, 31 y 2026_sem08, 09, 10, 17, 20, 23, 34, 42) el PDF
+    #      sí imprime las 12 columnas visualmente, pero la columna Acum. año anterior de A51-A53
+    #      está incrustada como imágenes de celda sin capa de texto: camelot/pdftotext ven 11
+    #      columnas de texto (4 A50 + 3 A51 [Sem, H, M] + 4 A54). bloque_sin_prev_en_capa_texto
+    #      verifica el TOTAL de 11 columnas y la geometría de imágenes en esa banda antes de emitir
+    #      3col_noprev con Acumulado_anio_anterior = NA explícito (nunca 0 ni fuente declarada vacía).
+    page_anchors: ["adquirida", "gonoc", "a51"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    reintento_row_tol: 4
+    inner_block_columns: {12: [8, 4]}
+    bloque_sin_prev_en_capa_texto: {11: [4, 3, 4]}
+    diseases:
+      - id: sifilis_adquirida_a51
+        keyword: "Sifilis_Adquirida_A51"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [sifilis_adquirida_a51]
+        reason: >-
+          boletín con corte hasta la semana epidemiológica 52 del 2013 (objetivo 2013-W52, con
+          columna Sem=15 presente en Cuadro 6): anterior a series_start (2014-W01)
+      - file: "2016_sem20.pdf"
+        diseases: [sifilis_adquirida_a51]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (verificado contra 2016_sem19 y 2016_sem21):
+          imprime bajo Sífilis Adquirida cifras de Linfogranuloma Venéreo A55 (TOTAL Sem 1, Acum H 34,
+          M 40, prev 79 frente a 67/757/449/1 245 en sem19 y 79/845/517/1 394 en sem21)
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+      - id: v_3col_noprev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 3
+        has_prev_year: false
+    n_states_expected: 32
+    backend: camelot_stream
