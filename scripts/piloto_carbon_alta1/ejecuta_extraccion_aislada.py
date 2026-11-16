@@ -1,16 +1,20 @@
 """Orquestador de extracción aislada por worktree detached — piloto Carbon alta1.
 
 Ejecuta una pasada exclusiva de ``scripts.extrae_cuadro`` bajo contratos estrictos:
-- Si ``<out_dir>/<id>_RUN_raw.json`` ya existe y ``valida_run_v2`` la revalida como válida para el
-  mismo commit40 e inventario sellado, NO reextrae: reporta ``REVERIFICADO_POR_HASH_SIN_REEXTRAER``.
+- Exige los tres pines obligatorios (``ROOT_V2``): ``expected_commit`` (40 hex),
+  ``expected_inventory_sha256`` (64 hex) y ``expected_validator_sha256`` (64 hex), y verifica
+  siempre tamaño y SHA-256 de todos los PDFs del corpus.
+- Si ``<out_dir>/<id>_RUN_raw.json`` ya existe y ``valida_run_v2`` la revalida como válida para los
+  mismos pines, NO reextrae ni sobrescribe ``RUN_v2.json``: reporta
+  ``REVERIFICADO_POR_HASH_SIN_REEXTRAER`` y emite únicamente registro aditivo (``ROOT_V1``).
 - Exige ``HEAD == expected_commit`` (40 hex) y árbol limpio antes de arrancar.
 - Exige que ``<worktree>/data/interim/<slug>_boletin.csv`` y ``_extraccion_manifest.csv`` NO existan
   al iniciar (no copia ni pisa salidas viejas).
 - Verifica el inventario PDF sellado antes y después de la extracción.
 - Lanza ``sys.executable -m scripts.extrae_cuadro`` con ``cwd=<worktree>``,
   ``PYTHONPATH=<worktree>/src:<worktree>``, ``MPLCONFIGDIR`` propio escribible e hilos numéricos a 1.
-- Archiva copias de sólo lectura (``0444``) y ``SHA256SUMS`` en ``<out_dir>``, escribe
-  ``<id>_RUN_raw.json`` y ejecuta ``valida_run_v2.validate_single_run`` para emitir ``<id>_RUN_v2.json``.
+- Archiva copias de sólo lectura (``0444``) y ``SHA256SUMS`` en ``<out_dir>`` sin sobrescribir,
+  escribe ``<id>_RUN_raw.json`` (``0444``) y ejecuta ``valida_run_v2.validate_single_run``.
 """
 
 from __future__ import annotations
@@ -64,11 +68,18 @@ def run_isolated_extraction(
     out_dir: Path,
     pasada: str,
     expected_commit: str,
-    expected_inventory_sha256: str | None = None,
-    expected_validator_sha256: str | None = None,
+    expected_inventory_sha256: str,
+    expected_validator_sha256: str,
     jobs: int = 4,
 ) -> int:
-    """Ejecuta o reverifica por hash una corrida aislada de extracción."""
+    """Ejecuta o reverifica por hash una corrida aislada de extracción con pines obligatorios."""
+    if not vr.HEX40_RE.fullmatch(expected_commit or ""):
+        raise RuntimeError("expected_commit ausente o no es SHA de 40 hex")
+    if not vr.HEX64_RE.fullmatch(expected_inventory_sha256 or ""):
+        raise RuntimeError("expected_inventory_sha256 ausente o no es SHA-256 de 64 hex")
+    if not vr.HEX64_RE.fullmatch(expected_validator_sha256 or ""):
+        raise RuntimeError("expected_validator_sha256 ausente o no es SHA-256 de 64 hex")
+
     wt = worktree.resolve()
     out = out_dir.resolve()
     pdfs = pdf_dir.resolve()
@@ -85,7 +96,6 @@ def run_isolated_extraction(
             expected_commit=expected_commit,
             expected_inventory_sha256=expected_inventory_sha256,
             expected_validator_sha256=expected_validator_sha256,
-            verify_pdf_hashes=True,
         )
         if rc_prev == 0 and v2_prev["valida"]:
             print(
@@ -95,7 +105,7 @@ def run_isolated_extraction(
             return 0
         raise RuntimeError(
             f"Existe {raw_meta_path} pero no valida ({v2_prev['fallas']}); "
-            "no se sobrescribe evidencia previa."
+            "evidencia previa preservada intacta sin sobrescribir."
         )
 
     head40 = vr.git_head_40(wt)
@@ -104,6 +114,13 @@ def run_isolated_extraction(
     dirty = vr.git_dirty_entries(wt)
     if dirty:
         raise RuntimeError(f"Worktree sucio antes de extraer: {dirty}")
+
+    val_disk_sha = vr.sha256_file((wt / vr.VALIDATOR_REL_PATH).resolve())
+    if val_disk_sha != expected_validator_sha256:
+        raise RuntimeError(
+            f"Validador en worktree ({val_disk_sha}) != expected_validator_sha256 "
+            f"({expected_validator_sha256})"
+        )
 
     pad_cfg = yaml.safe_load((wt / "config" / "padecimientos.yaml").read_text(encoding="utf-8"))
     slug = vr.slug_for_disease(pad_cfg, disease_id)
@@ -114,16 +131,21 @@ def run_isolated_extraction(
             f"data/interim ya contiene salidas para {slug} en {wt}; abortando para no pisar ni "
             "reusar salidas rancias (F5)."
         )
-    if (out / f"{disease_id}_boletin.csv").exists() or (
-        out / f"{disease_id}_extraccion_manifest.csv"
-    ).exists():
-        raise RuntimeError(f"out_dir {out} ya contiene salidas previas; use un out_dir limpio.")
+    for existing_target in (
+        out / f"{disease_id}_boletin.csv",
+        out / f"{disease_id}_extraccion_manifest.csv",
+        out / f"{disease_id}_RUN_v2.json",
+        out / "SHA256SUMS",
+    ):
+        if existing_target.exists():
+            raise RuntimeError(
+                f"out_dir {out} ya contiene {existing_target.name}; no se sobrescribe evidencia."
+            )
 
     inv_fallas_pre, inv_meta_pre = vr.verify_pdf_inventory(
         pdfs,
         inv,
         expected_inventory_sha256=expected_inventory_sha256,
-        verify_pdf_hashes=True,
     )
     if inv_fallas_pre:
         raise RuntimeError(f"Inventario PDF inválido antes de extraer: {inv_fallas_pre}")
@@ -167,7 +189,6 @@ def run_isolated_extraction(
         pdfs,
         inv,
         expected_inventory_sha256=expected_inventory_sha256,
-        verify_pdf_hashes=True,
     )
     if inv_fallas_post:
         raise RuntimeError(f"Inventario PDF cambió o falló tras extraer: {inv_fallas_post}")
@@ -186,10 +207,8 @@ def run_isolated_extraction(
     man_sha = vr.sha256_file(copy_man)
     if csv_sha and man_sha:
         sums_path = out / "SHA256SUMS"
-        sums_path.write_text(
-            f"{csv_sha}  {copy_csv.name}\n{man_sha}  {copy_man.name}\n",
-            encoding="utf-8",
-        )
+        with sums_path.open("x", encoding="utf-8") as fh:
+            fh.write(f"{csv_sha}  {copy_csv.name}\n{man_sha}  {copy_man.name}\n")
         _set_readonly(sums_path)
 
     run_raw: dict[str, Any] = {
@@ -221,9 +240,8 @@ def run_isolated_extraction(
         "csv_sha256": csv_sha,
         "manifiesto_sha256": man_sha,
     }
-    raw_meta_path.write_text(
-        json.dumps(run_raw, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-    )
+    with raw_meta_path.open("x", encoding="utf-8") as fh:
+        fh.write(json.dumps(run_raw, ensure_ascii=False, indent=2) + "\n")
     _set_readonly(raw_meta_path)
 
     rc_v2, res_v2 = vr.validate_single_run(
@@ -235,7 +253,6 @@ def run_isolated_extraction(
         expected_commit=expected_commit,
         expected_inventory_sha256=expected_inventory_sha256,
         expected_validator_sha256=expected_validator_sha256,
-        verify_pdf_hashes=True,
     )
     print(
         f"{disease_id} {pasada} {'VALIDA' if res_v2['valida'] else 'FALLA'} "
@@ -253,8 +270,8 @@ def _build_parser() -> argparse.ArgumentParser:
     ap.add_argument("--out-dir", type=Path, required=True)
     ap.add_argument("--pasada", required=True)
     ap.add_argument("--expected-commit", required=True)
-    ap.add_argument("--expected-inventory-sha256", default=None)
-    ap.add_argument("--expected-validator-sha256", default=None)
+    ap.add_argument("--expected-inventory-sha256", required=True)
+    ap.add_argument("--expected-validator-sha256", required=True)
     ap.add_argument("--jobs", type=int, default=4)
     return ap
 

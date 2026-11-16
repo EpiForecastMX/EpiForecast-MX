@@ -1,19 +1,14 @@
 """Validador reproducible RUN_v2 (SHA40) y comparador de doble corrida — piloto Carbon alta1.
 
 Recomputa todos los hashes desde disco y git sin confiar en autodeclaraciones previas:
-- Commit exacto de 40 hex en el worktree y árbol git limpio (sin modificaciones ni archivos no
-  rastreados en config/, src/, scripts/).
-- Fijación del propio validador contra el blob ``HEAD:scripts/piloto_carbon_alta1/valida_run_v2.py``
-  (y opcionalmente ``--expected-validator-sha256``).
-- Hashes SHA-256 de configuración y fuentes del extractor idénticos en inicio, fin, árbol actual y
-  blob de ``HEAD``.
-- Inventario del corpus PDF variable por archivo JSON sellado (ej. ``ROOT_PDF_INVENTORY.json`` de
-  670 PDFs), verificando presencia exacta, tamaño y SHA-256 de cada PDF en ``--pdf-dir``.
-- Frescura (``mtime >= t0_epoch``), ausencia previa de ``data/interim/<slug>_*`` antes de extraer,
-  e igualdad byte a byte entre el original en ``data/interim/`` y la copia archivada en ``out_dir``.
-- El manifiesto por PDF es el gate: sin duplicados, cobertura exacta del inventario, sólo estados
-  ``ok`` / ``excluded``, ``32`` entidades en cada ``ok``, exclusiones iguales a ``cuadros.yaml`` y
-  conteo exacto de filas en ``<id>_boletin.csv``.
+- Pines obligatorios (``ROOT_V2``): ``expected_commit`` (40 hex), ``expected_inventory_sha256``
+  (64 hex) y ``expected_validator_sha256`` (64 hex) son obligatorios en API y CLI. No existe opción
+  para omitir el cálculo de hashes SHA-256 de los PDFs del corpus.
+- Inmutabilidad de evidencia previa (``ROOT_V1``): nunca se aplica ``chmod +w`` ni se sobrescribe un
+  ``<id>_RUN_v2.json`` existente (válido o fallido) ni ningún artefacto existente en ``canon_dir``.
+  Si ya existen con bytes y estado válidos idénticos, la revalidación es no-op sobre el original y
+  registra un informe aditivo en ``revalidaciones/``; si difieren o fallan, conserva el original
+  intacto y escribe un informe aditivo en ``revalidaciones/`` o ``conflictos/``.
 """
 
 from __future__ import annotations
@@ -25,6 +20,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import secrets
 import shutil
 import stat
 import subprocess
@@ -33,11 +29,14 @@ from typing import Any
 
 import yaml
 
-VERSION = "piloto_carbon_alta1.valida_run_v2.v1"
+VERSION = "piloto_carbon_alta1.valida_run_v2.v2"
 SCHEMA_RUN_V2 = "piloto_carbon_alta1.run_v2"
+SCHEMA_REVAL_V2 = "piloto_carbon_alta1.run_v2_revalidacion.v1"
 SCHEMA_CANON = "piloto_carbon_alta1.canon_raw.v1"
+SCHEMA_CANON_REPORT = "piloto_carbon_alta1.canon_revalidacion.v1"
 ESTADOS_VALIDOS = frozenset({"ok", "excluded"})
 HEX40_RE = re.compile(r"^[0-9a-f]{40}$")
+HEX64_RE = re.compile(r"^[0-9a-f]{64}$")
 VALIDATOR_REL_PATH = "scripts/piloto_carbon_alta1/valida_run_v2.py"
 
 TRACKED_EXTRACTION_INPUTS: tuple[str, ...] = (
@@ -68,6 +67,27 @@ def sha256_file(path: Path) -> str | None:
         while chunk := fh.read(1024 * 1024):
             h.update(chunk)
     return h.hexdigest()
+
+
+def _set_readonly(path: Path) -> None:
+    path.chmod(stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)
+
+
+def _write_additive_readonly_json(directory: Path, prefix: str, payload: dict[str, Any]) -> Path:
+    """Escribe un informe JSON aditivo único en modo sólo lectura (0444) sin sobrescribir nada."""
+    directory.mkdir(parents=True, exist_ok=True)
+    stamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    nonce = secrets.token_hex(4)
+    target = directory / f"{prefix}_{stamp}_{nonce}.json"
+    with target.open("x", encoding="utf-8") as fh:
+        fh.write(json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
+    _set_readonly(target)
+    return target
+
+
+def _substantive_run_v2(doc: dict[str, Any]) -> dict[str, Any]:
+    """Campos sustantivos de RUN_v2 (excluyendo marcas temporales de revalidación aditiva)."""
+    return {k: v for k, v in doc.items() if k not in {"revalidado_utc", "revalidacion_aditiva"}}
 
 
 def compute_tracked_hashes(worktree: Path) -> dict[str, str | None]:
@@ -161,16 +181,29 @@ def verify_pdf_inventory(
     pdf_dir: Path,
     inventory_json: Path,
     *,
-    expected_inventory_sha256: str | None = None,
-    verify_pdf_hashes: bool = True,
+    expected_inventory_sha256: str,
 ) -> tuple[list[str], dict[str, Any]]:
-    """Verifica el directorio PDF contra el JSON sellado del inventario."""
+    """Verifica obligatoriamente el JSON del inventario y el tamaño + SHA-256 de cada PDF."""
     fallas: list[str] = []
+    if not HEX64_RE.fullmatch(expected_inventory_sha256 or ""):
+        fallas.append("expected_inventory_sha256 ausente o no es SHA-256 de 64 hex")
+
     inv_sha = sha256_file(inventory_json)
     if inv_sha is None:
-        return ["inventory_json inexistente"], {"inventory_sha256": None, "count": 0, "files": []}
-    if expected_inventory_sha256 and inv_sha != expected_inventory_sha256:
-        fallas.append(f"inventory_json sha256 {inv_sha} != esperado {expected_inventory_sha256}")
+        return [*fallas, "inventory_json inexistente"], {
+            "inventory_sha256": None,
+            "count": 0,
+            "files": [],
+        }
+    if (
+        HEX64_RE.fullmatch(expected_inventory_sha256 or "")
+        and inv_sha != expected_inventory_sha256
+    ):
+        fallas.append(
+            f"inventory_json sha256 {inv_sha} != expected_inventory_sha256 "
+            f"{expected_inventory_sha256}"
+        )
+
     data = json.loads(inventory_json.read_text(encoding="utf-8"))
     entries = data.get("files")
     if not isinstance(entries, list) or not entries:
@@ -184,11 +217,22 @@ def verify_pdf_inventory(
         fallas.append(f"inventory_json count={declared_count} != len(files)={len(entries)}")
 
     expected_map: dict[str, dict[str, Any]] = {}
+    invalid_spec_files: list[str] = []
     for item in entries:
-        fname = str(item["file"])
+        fname = str(item.get("file", ""))
+        if not fname:
+            invalid_spec_files.append("<sin_nombre>")
+            continue
         if fname in expected_map:
             fallas.append(f"PDF duplicado en inventory_json: {fname}")
+        item_sha = str(item.get("sha256", ""))
+        if "bytes" not in item or not HEX64_RE.fullmatch(item_sha):
+            invalid_spec_files.append(fname)
         expected_map[fname] = item
+    if invalid_spec_files:
+        fallas.append(
+            f"entradas en inventory_json sin bytes o sha256 de 64 hex: {invalid_spec_files[:5]}"
+        )
 
     if not pdf_dir.is_dir():
         return [*fallas, f"pdf_dir inexistente: {pdf_dir}"], {
@@ -207,16 +251,17 @@ def verify_pdf_inventory(
             f"sobran={sobran[:5]} ({len(sobran)})"
         )
 
-    hash_mismatches: list[str] = []
     size_mismatches: list[str] = []
-    if verify_pdf_hashes:
-        for fname in sorted(set(expected_pdfs) & set(actual_pdfs)):
-            p = pdf_dir / fname
-            spec_item = expected_map[fname]
-            if "bytes" in spec_item and p.stat().st_size != int(spec_item["bytes"]):
-                size_mismatches.append(fname)
-            if "sha256" in spec_item and sha256_file(p) != str(spec_item["sha256"]):
-                hash_mismatches.append(fname)
+    hash_mismatches: list[str] = []
+    for fname in sorted(set(expected_pdfs) & set(actual_pdfs)):
+        p = pdf_dir / fname
+        spec_item = expected_map[fname]
+        if "bytes" in spec_item and p.stat().st_size != int(spec_item["bytes"]):
+            size_mismatches.append(fname)
+        expected_pdf_sha = str(spec_item.get("sha256", ""))
+        if HEX64_RE.fullmatch(expected_pdf_sha) and sha256_file(p) != expected_pdf_sha:
+            hash_mismatches.append(fname)
+
     if size_mismatches:
         fallas.append(
             f"tamaño PDF distinto del inventario: {size_mismatches[:5]} ({len(size_mismatches)})"
@@ -242,18 +287,22 @@ def validate_single_run(
     out_dir: Path,
     pdf_dir: Path,
     inventory_json: Path,
-    expected_commit: str | None = None,
-    expected_inventory_sha256: str | None = None,
-    expected_validator_sha256: str | None = None,
+    expected_commit: str,
+    expected_inventory_sha256: str,
+    expected_validator_sha256: str,
     validator_file: Path | None = None,
-    verify_pdf_hashes: bool = True,
 ) -> tuple[int, dict[str, Any]]:
-    """Recomputa hashes y valida una corrida individual, escribiendo ``<id>_RUN_v2.json``."""
+    """Recomputa hashes y valida una corrida; preserva intacto cualquier ``RUN_v2`` previo."""
     fallas: list[str] = []
     wt = worktree.resolve()
     out = out_dir.resolve()
     val_path = (validator_file or Path(__file__)).resolve()
     val_disk_sha = sha256_file(val_path)
+
+    if not HEX40_RE.fullmatch(expected_commit or ""):
+        fallas.append("expected_commit ausente o no es SHA de 40 hex")
+    if not HEX64_RE.fullmatch(expected_validator_sha256 or ""):
+        fallas.append("expected_validator_sha256 ausente o no es SHA-256 de 64 hex")
 
     if not run_raw_path.is_file():
         raise FileNotFoundError(f"run_raw_path inexistente: {run_raw_path}")
@@ -269,7 +318,7 @@ def validate_single_run(
             fallas.append(
                 f"snapshot_sha registrado ({run_raw.get('snapshot_sha')}) != HEAD ({head40})"
             )
-        if expected_commit and head40 != expected_commit:
+        if HEX40_RE.fullmatch(expected_commit or "") and head40 != expected_commit:
             fallas.append(f"HEAD ({head40}) != expected_commit ({expected_commit})")
 
     dirty = git_dirty_entries(wt)
@@ -281,7 +330,10 @@ def validate_single_run(
         fallas.append(
             f"validador en disco ({val_disk_sha}) != blob fijado en HEAD ({val_git_sha})"
         )
-    if expected_validator_sha256 and val_disk_sha != expected_validator_sha256:
+    if (
+        HEX64_RE.fullmatch(expected_validator_sha256 or "")
+        and val_disk_sha != expected_validator_sha256
+    ):
         fallas.append(
             f"validador en disco ({val_disk_sha}) != expected_validator_sha256 "
             f"({expected_validator_sha256})"
@@ -325,7 +377,6 @@ def validate_single_run(
         pdf_dir,
         inventory_json,
         expected_inventory_sha256=expected_inventory_sha256,
-        verify_pdf_hashes=verify_pdf_hashes,
     )
     fallas.extend(inv_fallas)
     if run_raw.get("inventory_sha256_inicio") != inv_meta["inventory_sha256"]:
@@ -426,6 +477,11 @@ def validate_single_run(
         "pasada": pasada,
         "worktree": str(wt),
         "snapshot_sha": head40,
+        "pines_exigidos": {
+            "expected_commit": expected_commit,
+            "expected_inventory_sha256": expected_inventory_sha256,
+            "expected_validator_sha256": expected_validator_sha256,
+        },
         "run_raw": {
             "path": str(run_raw_path.resolve()),
             "sha256": sha256_file(run_raw_path),
@@ -436,7 +492,7 @@ def validate_single_run(
             "json_sha256": inv_meta.get("inventory_sha256"),
             "pdf_dir": inv_meta.get("pdf_dir"),
             "pdf_count": inv_meta.get("count"),
-            "pdf_hashes_verified": verify_pdf_hashes,
+            "pdf_hashes_verified": True,
         },
         "csv_sha256": copy_csv_sha,
         "manifiesto_sha256": copy_man_sha,
@@ -455,14 +511,75 @@ def validate_single_run(
         "valida": len(fallas) == 0,
         "fallas": fallas,
     }
+
     out.mkdir(parents=True, exist_ok=True)
     out_v2 = out / f"{disease_id}_RUN_v2.json"
-    out_v2.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    return (0 if not fallas else 1), payload
 
+    if not out_v2.exists():
+        with out_v2.open("x", encoding="utf-8") as fh:
+            fh.write(json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
+        _set_readonly(out_v2)
+        return (0 if not fallas else 1), payload
 
-def _set_readonly(path: Path) -> None:
-    path.chmod(stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH)
+    # ROOT_V1: RUN_v2 ya existe -> jamás aplicar chmod +w ni sobrescribir el archivo original.
+    existing_sha = sha256_file(out_v2)
+    try:
+        existing_doc = json.loads(out_v2.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        existing_doc = {"valida": False, "parse_error": str(exc)}
+
+    same_substantive = _substantive_run_v2(existing_doc) == _substantive_run_v2(payload)
+    if existing_doc.get("valida") is True and payload["valida"] is True and same_substantive:
+        reval_report = _write_additive_readonly_json(
+            out / "revalidaciones",
+            f"{disease_id}_REVAL_OK",
+            {
+                "schema": SCHEMA_REVAL_V2,
+                "outcome": "noop_identical_valid",
+                "original_run_v2_path": str(out_v2),
+                "original_run_v2_sha256": existing_sha,
+                "snapshot_sha": payload["snapshot_sha"],
+                "csv_sha256": payload["csv_sha256"],
+                "manifiesto_sha256": payload["manifiesto_sha256"],
+                "revalidado_utc": payload["revalidado_utc"],
+            },
+        )
+        payload["revalidacion_aditiva"] = {
+            "noop_preserved_original": True,
+            "original_run_v2_sha256": existing_sha,
+            "report_path": str(reval_report),
+        }
+        return 0, payload
+
+    combined_fallas = list(fallas)
+    if existing_doc.get("valida") is not True:
+        combined_fallas.append(
+            "RUN_v2 original previo registró valida=False; evidencia original preservada intacta"
+        )
+    if not same_substantive:
+        combined_fallas.append(
+            "RUN_v2 existente difiere de la revalidación actual; original preservado intacto"
+        )
+    payload["fallas"] = combined_fallas
+    payload["valida"] = False
+    reval_fail = _write_additive_readonly_json(
+        out / "revalidaciones",
+        f"{disease_id}_REVAL_FALLA",
+        {
+            "schema": SCHEMA_REVAL_V2,
+            "outcome": "preserved_original_on_mismatch_or_failure",
+            "original_run_v2_path": str(out_v2),
+            "original_run_v2_sha256": existing_sha,
+            "existing_valida": existing_doc.get("valida"),
+            "recomputed": payload,
+        },
+    )
+    payload["revalidacion_aditiva"] = {
+        "noop_preserved_original": True,
+        "original_run_v2_sha256": existing_sha,
+        "report_path": str(reval_fail),
+    }
+    return 1, payload
 
 
 def validate_pair(
@@ -475,12 +592,12 @@ def validate_pair(
     canon_dir: Path,
     pdf_dir: Path,
     inventory_json: Path,
-    expected_commit: str | None = None,
-    expected_inventory_sha256: str | None = None,
-    expected_validator_sha256: str | None = None,
-    verify_pdf_hashes: bool = True,
+    expected_commit: str,
+    expected_inventory_sha256: str,
+    expected_validator_sha256: str,
+    validator_file: Path | None = None,
 ) -> tuple[int, dict[str, Any]]:
-    """Revalida ambas corridas independientes y sella el canónico si coinciden byte a byte."""
+    """Revalida ambas corridas independientes y sella o verifica el canónico sin sobrescribir."""
     fallas: list[str] = []
     if worktree_a.resolve() == worktree_b.resolve():
         fallas.append("worktree_a y worktree_b deben ser directorios distintos (F5)")
@@ -496,7 +613,7 @@ def validate_pair(
         expected_commit=expected_commit,
         expected_inventory_sha256=expected_inventory_sha256,
         expected_validator_sha256=expected_validator_sha256,
-        verify_pdf_hashes=verify_pdf_hashes,
+        validator_file=validator_file,
     )
     rc_b, v2_b = validate_single_run(
         run_raw_path=dir_b / f"{disease_id}_RUN_raw.json",
@@ -507,7 +624,7 @@ def validate_pair(
         expected_commit=expected_commit,
         expected_inventory_sha256=expected_inventory_sha256,
         expected_validator_sha256=expected_validator_sha256,
-        verify_pdf_hashes=verify_pdf_hashes,
+        validator_file=validator_file,
     )
     if rc_a != 0 or not v2_a["valida"]:
         fallas.append(f"corrida A inválida: {v2_a['fallas']}")
@@ -532,46 +649,149 @@ def validate_pair(
     canon_man = canon_dir / f"{disease_id}_extraccion_manifest.csv"
     sums_path = canon_dir / "SHA256SUMS"
     canon_json = canon_dir / f"{disease_id}_CANON_RAW.json"
+    canon_targets = (canon_csv, canon_man, sums_path, canon_json)
+    any_existing_canon = any(p.exists() for p in canon_targets)
 
-    if not fallas:
-        for dst in (canon_csv, canon_man, sums_path):
-            if dst.exists():
-                dst.chmod(stat.S_IWUSR | stat.S_IRUSR)
-        shutil.copy2(dir_a / f"{disease_id}_boletin.csv", canon_csv)
-        shutil.copy2(dir_a / f"{disease_id}_extraccion_manifest.csv", canon_man)
-        if sha256_file(canon_csv) != v2_a["csv_sha256"]:
-            fallas.append("copia canónica boletin.csv no coincide con sha256 validado")
-        if sha256_file(canon_man) != v2_a["manifiesto_sha256"]:
-            fallas.append("copia canónica manifiesto no coincide con sha256 validado")
-        sums_text = (
-            f"{v2_a['csv_sha256']}  {canon_csv.name}\n"
-            f"{v2_a['manifiesto_sha256']}  {canon_man.name}\n"
+    expected_sums_text = (
+        f"{v2_a['csv_sha256']}  {canon_csv.name}\n{v2_a['manifiesto_sha256']}  {canon_man.name}\n"
+    )
+
+    if any_existing_canon:
+        # ROOT_V1: jamás hacer chmod +w ni sobrescribir ningún archivo existente en canon_dir.
+        all_present = all(p.is_file() for p in canon_targets)
+        existing_canon_doc: dict[str, Any] = {}
+        if canon_json.is_file():
+            try:
+                existing_canon_doc = json.loads(canon_json.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                existing_canon_doc = {}
+
+        canon_matches = (
+            all_present
+            and not fallas
+            and existing_canon_doc.get("valida") is True
+            and existing_canon_doc.get("snapshot_sha") == v2_a["snapshot_sha"]
+            and existing_canon_doc.get("raw_sha256") == v2_a["csv_sha256"]
+            and existing_canon_doc.get("manifiesto_sha256") == v2_a["manifiesto_sha256"]
+            and sha256_file(canon_csv) == v2_a["csv_sha256"]
+            and sha256_file(canon_man) == v2_a["manifiesto_sha256"]
+            and sums_path.read_text(encoding="utf-8") == expected_sums_text
         )
-        sums_path.write_text(sums_text, encoding="utf-8")
-        _set_readonly(canon_csv)
-        _set_readonly(canon_man)
-        _set_readonly(sums_path)
+        if canon_matches:
+            reval_ok = _write_additive_readonly_json(
+                canon_dir / "revalidaciones",
+                f"{disease_id}_CANON_REVAL_OK",
+                {
+                    "schema": SCHEMA_CANON_REPORT,
+                    "outcome": "noop_identical_valid_canonical",
+                    "canon_json_path": str(canon_json),
+                    "canon_json_sha256": sha256_file(canon_json),
+                    "snapshot_sha": v2_a["snapshot_sha"],
+                    "raw_sha256": v2_a["csv_sha256"],
+                    "manifiesto_sha256": v2_a["manifiesto_sha256"],
+                    "revalidado_utc": datetime.now(UTC).isoformat(),
+                },
+            )
+            return 0, {
+                **existing_canon_doc,
+                "revalidacion_aditiva": {
+                    "noop_preserved_original": True,
+                    "report_path": str(reval_ok),
+                },
+            }
+
+        fallas.append(
+            "canon_dir ya contiene artefactos previos distintos o inválidos; "
+            "se preservan intactos sin sobrescribir"
+        )
+        conflict_report = _write_additive_readonly_json(
+            canon_dir / "conflictos",
+            f"{disease_id}_PAIR_CONFLICTO",
+            {
+                "schema": SCHEMA_CANON_REPORT,
+                "outcome": "preserved_existing_canonical_on_conflict_or_failure",
+                "id": disease_id,
+                "existing_canon_json_sha256": sha256_file(canon_json),
+                "existing_csv_sha256": sha256_file(canon_csv),
+                "pasadas": {"a": v2_a, "b": v2_b},
+                "valida": False,
+                "fallas": fallas,
+                "registrado_utc": datetime.now(UTC).isoformat(),
+            },
+        )
+        return 1, {
+            "schema": SCHEMA_CANON,
+            "id": disease_id,
+            "snapshot_sha": None,
+            "raw_sha256": None,
+            "manifiesto_sha256": None,
+            "csv_rows": 0,
+            "pasadas": {"a": v2_a, "b": v2_b},
+            "valida": False,
+            "fallas": fallas,
+            "conflict_report_path": str(conflict_report),
+        }
+
+    # canon_dir virgen
+    if fallas:
+        fail_report = _write_additive_readonly_json(
+            canon_dir / "conflictos",
+            f"{disease_id}_PAIR_FALLA",
+            {
+                "schema": SCHEMA_CANON_REPORT,
+                "outcome": "pair_validation_failed_on_empty_canon",
+                "id": disease_id,
+                "pasadas": {"a": v2_a, "b": v2_b},
+                "valida": False,
+                "fallas": fallas,
+                "registrado_utc": datetime.now(UTC).isoformat(),
+            },
+        )
+        return 1, {
+            "schema": SCHEMA_CANON,
+            "id": disease_id,
+            "snapshot_sha": None,
+            "raw_sha256": None,
+            "manifiesto_sha256": None,
+            "csv_rows": 0,
+            "pasadas": {"a": v2_a, "b": v2_b},
+            "valida": False,
+            "fallas": fallas,
+            "conflict_report_path": str(fail_report),
+        }
+
+    shutil.copy2(dir_a / f"{disease_id}_boletin.csv", canon_csv)
+    shutil.copy2(dir_a / f"{disease_id}_extraccion_manifest.csv", canon_man)
+    if sha256_file(canon_csv) != v2_a["csv_sha256"]:
+        raise RuntimeError("copia canónica boletin.csv no coincide con sha256 validado")
+    if sha256_file(canon_man) != v2_a["manifiesto_sha256"]:
+        raise RuntimeError("copia canónica manifiesto no coincide con sha256 validado")
+    with sums_path.open("x", encoding="utf-8") as fh:
+        fh.write(expected_sums_text)
 
     payload: dict[str, Any] = {
         "schema": SCHEMA_CANON,
         "id": disease_id,
-        "snapshot_sha": v2_a["snapshot_sha"] if not fallas else None,
-        "raw_sha256": v2_a["csv_sha256"] if not fallas else None,
-        "manifiesto_sha256": v2_a["manifiesto_sha256"] if not fallas else None,
-        "csv_rows": v2_a["csv_rows"] if not fallas else 0,
+        "snapshot_sha": v2_a["snapshot_sha"],
+        "raw_sha256": v2_a["csv_sha256"],
+        "manifiesto_sha256": v2_a["manifiesto_sha256"],
+        "csv_rows": v2_a["csv_rows"],
+        "pines_exigidos": {
+            "expected_commit": expected_commit,
+            "expected_inventory_sha256": expected_inventory_sha256,
+            "expected_validator_sha256": expected_validator_sha256,
+        },
         "pasadas": {"a": v2_a, "b": v2_b},
         "sellado_utc": datetime.now(UTC).isoformat(),
-        "valida": len(fallas) == 0,
-        "fallas": fallas,
+        "valida": True,
+        "fallas": [],
     }
-    if canon_json.exists():
-        canon_json.chmod(stat.S_IWUSR | stat.S_IRUSR)
-    canon_json.write_text(
-        json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-    )
-    if not fallas:
-        _set_readonly(canon_json)
-    return (0 if not fallas else 1), payload
+    with canon_json.open("x", encoding="utf-8") as fh:
+        fh.write(json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
+
+    for p in canon_targets:
+        _set_readonly(p)
+    return 0, payload
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -584,10 +804,9 @@ def _build_parser() -> argparse.ArgumentParser:
     p_single.add_argument("--out-dir", type=Path, required=True)
     p_single.add_argument("--pdf-dir", type=Path, required=True)
     p_single.add_argument("--inventory-json", type=Path, required=True)
-    p_single.add_argument("--expected-commit", default=None)
-    p_single.add_argument("--expected-inventory-sha256", default=None)
-    p_single.add_argument("--expected-validator-sha256", default=None)
-    p_single.add_argument("--skip-pdf-hashes", action="store_true")
+    p_single.add_argument("--expected-commit", required=True)
+    p_single.add_argument("--expected-inventory-sha256", required=True)
+    p_single.add_argument("--expected-validator-sha256", required=True)
 
     p_pair = sub.add_parser("pair", help="revalida dos corridas aisladas y sella el canónico")
     p_pair.add_argument("--disease", required=True)
@@ -598,10 +817,9 @@ def _build_parser() -> argparse.ArgumentParser:
     p_pair.add_argument("--canon-dir", type=Path, required=True)
     p_pair.add_argument("--pdf-dir", type=Path, required=True)
     p_pair.add_argument("--inventory-json", type=Path, required=True)
-    p_pair.add_argument("--expected-commit", default=None)
-    p_pair.add_argument("--expected-inventory-sha256", default=None)
-    p_pair.add_argument("--expected-validator-sha256", default=None)
-    p_pair.add_argument("--skip-pdf-hashes", action="store_true")
+    p_pair.add_argument("--expected-commit", required=True)
+    p_pair.add_argument("--expected-inventory-sha256", required=True)
+    p_pair.add_argument("--expected-validator-sha256", required=True)
     return ap
 
 
@@ -617,7 +835,6 @@ def main(argv: list[str] | None = None) -> int:
             expected_commit=args.expected_commit,
             expected_inventory_sha256=args.expected_inventory_sha256,
             expected_validator_sha256=args.expected_validator_sha256,
-            verify_pdf_hashes=not args.skip_pdf_hashes,
         )
         print(
             f"{res['id']} {res['pasada']} "
@@ -638,7 +855,6 @@ def main(argv: list[str] | None = None) -> int:
         expected_commit=args.expected_commit,
         expected_inventory_sha256=args.expected_inventory_sha256,
         expected_validator_sha256=args.expected_validator_sha256,
-        verify_pdf_hashes=not args.skip_pdf_hashes,
     )
     print(
         f"{res['id']} PAIR {'VALIDA' if res['valida'] else 'FALLA'} "
