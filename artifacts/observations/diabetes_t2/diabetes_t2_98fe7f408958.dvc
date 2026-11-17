@@ -1,0 +1,6 @@
+outs:
+- md5: 4b859e73c4881464c0bc5d2fc282dce7.dir
+  size: 35308921
+  nfiles: 20
+  hash: md5
+  path: diabetes_t2_98fe7f408958
