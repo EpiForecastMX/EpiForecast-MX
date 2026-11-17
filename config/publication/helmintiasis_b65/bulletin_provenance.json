@@ -1,0 +1,28 @@
+{
+  "bulletins": [
+    {
+      "after_emission": {
+        "captured": true,
+        "created": false,
+        "first_available": true
+      },
+      "bytes": 3195949,
+      "captured_utc": "2026-11-17T01:27:43.409595+00:00",
+      "first_available_evidence": "Primera disponibilidad verificable por captura del índice oficial: /Users/haowei/Documents/Integrador/planes/piloto_carbon_alta1_2026-11-15/control_autorizado_20261116/source_recheck/RESULTADO.json; PDF44 sha256 c6b328e4a88c293cbd9b912403b14f8e8a27ab54b780566fc51537b03b52d1a3; CreationDate no equivale a disponibilidad; no excluye versiones previas",
+      "first_available_utc": "2026-11-17T01:23:31.237010+00:00",
+      "name": "2026_sem44.pdf",
+      "pdf_metadata": {
+        "created_raw": "D:20261113172106-06'00'",
+        "created_utc": "2026-11-13T23:21:06+00:00",
+        "error": null,
+        "modified_raw": "D:20261113172106-06'00'",
+        "modified_utc": "2026-11-13T23:21:06+00:00"
+      },
+      "sha256": "c6b328e4a88c293cbd9b912403b14f8e8a27ab54b780566fc51537b03b52d1a3"
+    }
+  ],
+  "disease_id": "helmintiasis_b65",
+  "forecast_emitted_at": "2026-11-15T06:07:01.095647+00:00",
+  "release_id": "helmintiasis_b65_release_319fbff1ce0c",
+  "schema": "bulletin_provenance.v1"
+}
