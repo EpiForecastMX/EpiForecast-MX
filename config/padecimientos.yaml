@@ -3170,6 +3170,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: sifilis_adquirida_a51_benchmark_test_73490ea8b2b5_749316ac335e
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
