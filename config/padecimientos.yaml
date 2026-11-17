@@ -3151,8 +3151,8 @@ padecimientos:
       label: "Vulvovaginitis"
       nombre_completo: "Vulvovaginitis (N76)"
 
-  # Candidato del piloto Carbon (docs/C7_18_PILOTO_CARBON.md; no publicado e invisible para
-  # consumidores published_only: lifecycle=configured, channels=[], gallery_enabled=false).
+  # Piloto Carbon (docs/C7_18_PILOTO_CARBON.md): publicación bajo control estacional no validado
+  # (seasonal_naive_lag52) por autorización directa del autor tras test_2025 rechazado y consumido.
   - id: sifilis_adquirida_a51
     data_name: "Sífilis adquirida"
     artifact_key: Sifilis_Adquirida_A51
@@ -3165,15 +3165,19 @@ padecimientos:
     batch: standalone
     extraction_group: cuadro_6_sifilis_adquirida
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: sifilis_adquirida_a51_release_a18527def134
+    acceptance_fallback_run: sifilis_adquirida_a51_benchmark_test_73490ea8b2b5_749316ac335e
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
-    gallery_enabled: false
+    gallery_enabled: true
     web:
       color: "#0F766E"
       label: "Sífilis adquirida"

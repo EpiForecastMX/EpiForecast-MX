@@ -115,8 +115,13 @@ def test_el_contrato_separa_legacy_de_release():
         "intoxicacion por monoxido de carbono",
         "intoxicacion por plaguicidas",
         "vulvovaginitis",
+        "sifilis adquirida",
     )
     assert c.releases["obesidad"] == (_OBESIDAD, _RELEASE)
+    assert c.releases["sifilis adquirida"] == (
+        "sifilis_adquirida_a51",
+        "sifilis_adquirida_a51_release_a18527def134",
+    )
     assert sorted(i for i, _ in c.releases.values()) == [
         "absceso_hepatico_a064",
         "alimentaria_a05",
@@ -192,6 +197,7 @@ def test_el_contrato_separa_legacy_de_release():
         "rotavirus_a080",
         "salmonelosis_a02",
         "shigelosis_a03",
+        "sifilis_adquirida_a51",
         "sindrome_meningeo_g00",
         "tifoidea_a01",
         "tos_ferina_a37",
@@ -200,7 +206,7 @@ def test_el_contrato_separa_legacy_de_release():
         "vehiculos_v20",
         "vulvovaginitis_n76",
     ]
-    # La paridad de corte cubre a los ochenta y uno; las series legacy siguen siendo 3×111 + 99.
+    # La paridad de corte cubre a los ochenta y dos; las series legacy siguen siendo 3×111 + 99.
     assert c.padecimientos == (*c.legado, *c.release)
     assert c.legado == ("depresion", "parkinson", "alzheimer", "dengue")
     assert len(c.claves_esperadas()) == 432
@@ -312,6 +318,7 @@ def test_la_paridad_de_corte_incluye_al_publicado_del_runner(tmp_path):
         "Síndrome meníngeo": 42,
         "Intoxicación por monóxido de carbono": 42,
         "Intoxicación por plaguicidas": 42,
+        "Sífilis adquirida": 42,
     }
     rezagada = _consolidado(tmp_path / "a.csv", {**pads, "Obesidad": 27})
     resultado = revisa_consolidado(rezagada, contrato, contrato.padecimientos)
@@ -332,9 +339,10 @@ def test_un_publicado_del_runner_ausente_del_consolidado_falla(tmp_path):
 def test_revisa_releases_falla_cerrado_sin_bundle_ni_estado(tmp_path):
     resultado = revisa_releases(tmp_path, ContratoCobertura.canonico())
     assert not resultado.pasa
-    assert len(resultado.problemas) == 81
+    assert len(resultado.problemas) == 82
     assert any("release obesidad" in p for p in resultado.problemas)
     assert any("release diabetes tipo i:" in p for p in resultado.problemas)
+    assert any("release sifilis adquirida:" in p for p in resultado.problemas)
 
 
 def test_sin_publicados_del_runner_revisa_releases_no_exige_nada(tmp_path):

@@ -1,0 +1,6 @@
+outs:
+- md5: e209a0503449919c6d9f7cad828ff91e.dir
+  size: 13041561
+  nfiles: 20
+  hash: md5
+  path: cancer_encefalo_c70_d039d48b796a

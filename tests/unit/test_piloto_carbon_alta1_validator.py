@@ -6,6 +6,8 @@ sintéticos en ``tmp_path`` (sin PDFs reales ni métricas de 2025), cubriendo ``
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import UTC, datetime
 import hashlib
 import json
@@ -14,19 +16,26 @@ from pathlib import Path
 import shutil
 import stat
 import subprocess
+import tempfile
 import time
 from typing import Any
 
 import pytest
+from scripts import paso_semanal
+from scripts.piloto_carbon_alta1 import add_a51_history_base as ahb
 from scripts.piloto_carbon_alta1 import ejecuta_extraccion_aislada as ea
 from scripts.piloto_carbon_alta1 import qa_serie_extraida as qa
 from scripts.piloto_carbon_alta1 import valida_run_v2 as vr
 import yaml
 
 from epiforecast import registry
+from epiforecast.data.epi_calendar import shift as semana_siguiente
 from epiforecast.data.epi_geo_exposure import load_geo_catalog
 from epiforecast.data.extraction import cuadro_extractor
+from epiforecast.publication import pointer as pt
+from epiforecast.publication.contratos_datos import ContratoCobertura
 from epiforecast.registry_doctor import diagnose
+from epiforecast.runner.artifact_identity import ArtifactValidationError
 
 pytestmark = pytest.mark.unit
 
@@ -211,24 +220,144 @@ def _build_synthetic_env(
     return wt, out_dir, pdf_dir, inv_json, sha40, inv_sha, val_sha, t0
 
 
-def test_config_aislada_sifilis_adquirida_invisible_y_doctor_verde(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    repo_root = Path(registry.__file__).resolve().parents[2]
-    monkeypatch.chdir(repo_root)
+_YAML_PADECIMIENTOS_REAL = (
+    Path(registry.__file__).resolve().parents[2] / "config" / "padecimientos.yaml"
+)
+_A51_RELEASE_ID = "sifilis_adquirida_a51_release_a18527def134"
+_A51_FALLBACK_RUN = "sifilis_adquirida_a51_benchmark_test_73490ea8b2b5_749316ac335e"
+
+
+def _bloque_a51(texto: str) -> tuple[str, str, str, str, str]:
+    cabeza, separador, resto = texto.partition("\n  - id: sifilis_adquirida_a51\n")
+    if not separador:
+        raise AssertionError("el registry real ya no declara sifilis_adquirida_a51")
+    bloque, siguiente, cola = resto.partition("\n  - id: ")
+    return cabeza, separador, bloque, siguiente, cola
+
+
+def _yaml_a51_pre_pubflag_trained(texto: str | None = None) -> str:
+    """Fixture hermético previo al pubflag (trained, channels=[], gallery_enabled=false)."""
+    src = _YAML_PADECIMIENTOS_REAL.read_text(encoding="utf-8") if texto is None else texto
+    cabeza, separador, bloque, siguiente, cola = _bloque_a51(src)
+    assert "    lifecycle: published\n" in bloque
+    assert "    channels: [web, epibot, reports]\n" in bloque
+    assert "    gallery_enabled: true\n" in bloque
+    bloque = bloque.replace("    lifecycle: published\n", "    lifecycle: trained\n", 1)
+    bloque = bloque.replace("    channels: [web, epibot, reports]\n", "    channels: []\n", 1)
+    bloque = bloque.replace("    gallery_enabled: true\n", "    gallery_enabled: false\n", 1)
+    return cabeza + separador + bloque + siguiente + cola
+
+
+def _yaml_a51_configured(texto: str | None = None) -> str:
+    """Fixture hermético de fase aislada configured (patrón registry_pre_c77, sin bundle DVC)."""
+    trained_yaml = _yaml_a51_pre_pubflag_trained(texto)
+    cabeza, separador, bloque, siguiente, cola = _bloque_a51(trained_yaml)
+    art_block = (
+        "    artifact_source:\n"
+        "      backend: runner_release\n"
+        f"      release_id: {_A51_RELEASE_ID}\n"
+    )
+    fb_line = f"    acceptance_fallback_run: {_A51_FALLBACK_RUN}\n"
+    assert art_block in bloque and fb_line in bloque
+    bloque = bloque.replace("    lifecycle: trained\n", "    lifecycle: configured\n", 1)
+    bloque = bloque.replace(art_block, "", 1)
+    bloque = bloque.replace(fb_line, "", 1)
+    return cabeza + separador + bloque + siguiente + cola
+
+
+@contextmanager
+def _registry_desde_yaml(texto: str) -> Iterator[registry._Registry]:
+    """Instala un registry derivado en memoria temporal y restaura el cache original al salir."""
+    anterior = registry._CACHE
+    with tempfile.TemporaryDirectory() as tmp:
+        ruta = Path(tmp) / "padecimientos.yaml"
+        ruta.write_text(texto, encoding="utf-8")
+        cargado = registry.load_registry(ruta)
+    registry._CACHE = cargado
+    try:
+        yield cargado
+    finally:
+        registry._CACHE = anterior
+
+
+def _verifica_metadata_publicacion_a51() -> None:
+    """Comprobación real de metadata de publicación en staging (sin leer bundles DVC locales)."""
     spec = registry.require("sifilis_adquirida_a51")
     assert spec.data_name == "Sífilis adquirida"
     assert spec.artifact_key == "Sifilis_Adquirida_A51"
     assert spec.cie_codes == ("A51", "A52", "A53")
     assert spec.exposure_source_id == "inegi_cpv2020_static"
-    assert spec.lifecycle == "configured"
-    assert spec.channels == ()
-    assert spec.gallery_enabled is False
     assert spec.selection_policy == "rolling_cv_baja_incidencia_v1"
-    assert "Sífilis adquirida" not in registry.published_members()
-    assert registry.try_get("sifilis") is None
-    assert registry.try_get("a50") is None
-    assert [p for p in diagnose("sifilis_adquirida_a51") if p.severity == "error"] == []
+    assert spec.lifecycle == "published"
+    assert spec.channels == ("web", "epibot", "reports")
+    assert spec.gallery_enabled is True
+    assert spec.is_release_backed
+    assert spec.artifact_source.backend == registry.BACKEND_RUNNER_RELEASE
+    assert spec.artifact_source.release_id == _A51_RELEASE_ID
+    assert spec.acceptance_fallback_run == _A51_FALLBACK_RUN
+
+    # Nota contractual: registry.published_members() devuelve data_name; release_published() y
+    # paso_semanal.publicados() exponen el id canónico. Verificamos ambos sin aserción vacua.
+    assert spec.data_name in registry.published_members()
+    assert spec.data_name in registry.names(published_only=True)
+    assert spec.id in [d.id for d in registry.release_published()]
+    assert spec.id in paso_semanal.publicados()
+    for canal in ("web", "epibot", "reports"):
+        assert spec.data_name in registry.published_members(channel=canal)
+        assert spec.id in [d.id for d in registry.release_published(channel=canal)]
+    assert spec.data_name not in registry.published_members(channel="tableau")
+    assert spec.id not in [d.id for d in registry.release_published(channel="tableau")]
+    assert spec.data_name not in [d.data_name for d in registry.legacy_published()]
+
+    puntero = pt.pointer_for(spec, active=True)
+    pt.check_activation(puntero, spec)
+    assert puntero.disease_id == "sifilis_adquirida_a51"
+    assert puntero.release_id == _A51_RELEASE_ID
+    assert puntero.channels == ("epibot", "reports", "web")
+    assert puntero.gallery_enabled is True
+    assert puntero.active is True
+
+    contrato = ContratoCobertura.canonico()
+    assert "sifilis adquirida" in contrato.release
+    assert contrato.releases["sifilis adquirida"] == ("sifilis_adquirida_a51", _A51_RELEASE_ID)
+    errores = [
+        p
+        for p in diagnose("sifilis_adquirida_a51", check_artifacts=False)
+        if p.severity == "error"
+    ]
+    assert errores == []
+
+
+def test_config_aislada_sifilis_adquirida_invisible_y_doctor_verde(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo_root = Path(registry.__file__).resolve().parents[2]
+    monkeypatch.chdir(repo_root)
+    with _registry_desde_yaml(_yaml_a51_configured()):
+        spec = registry.require("sifilis_adquirida_a51")
+        assert spec.data_name == "Sífilis adquirida"
+        assert spec.artifact_key == "Sifilis_Adquirida_A51"
+        assert spec.cie_codes == ("A51", "A52", "A53")
+        assert spec.exposure_source_id == "inegi_cpv2020_static"
+        assert spec.lifecycle == "configured"
+        assert spec.channels == ()
+        assert spec.gallery_enabled is False
+        assert spec.selection_policy == "rolling_cv_baja_incidencia_v1"
+        assert spec.artifact_source.backend == registry.BACKEND_LEGACY
+        assert spec.acceptance_fallback_run is None
+        assert spec.data_name not in registry.published_members()
+        assert spec.data_name not in registry.names(published_only=True)
+        assert spec.id not in [d.id for d in registry.release_published()]
+        assert spec.id not in paso_semanal.publicados()
+        assert "sifilis adquirida" not in ContratoCobertura.canonico().release
+        assert registry.try_get("sifilis") is None
+        assert registry.try_get("a50") is None
+        errores_cfg = [
+            p
+            for p in diagnose("sifilis_adquirida_a51", check_artifacts=False)
+            if p.severity == "error"
+        ]
+        assert errores_cfg == []
 
     grupo = cuadro_extractor.load_group("cuadro_6_sifilis_adquirida")
     assert grupo["observation_lag_weeks"] == 1
@@ -238,6 +367,34 @@ def test_config_aislada_sifilis_adquirida_invisible_y_doctor_verde(
     exc_20 = cuadro_extractor.source_exclusion(grupo, "2016_sem20.pdf", "sifilis_adquirida_a51")
     assert exc_01 is not None and not exc_01.get("keep_period", False)
     assert exc_20 is not None and exc_20["keep_period"] is True
+
+
+def test_metadata_publicacion_control_sifilis_adquirida_real_y_falla_antes_de_pubflag(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    repo_root = Path(registry.__file__).resolve().parents[2]
+    monkeypatch.chdir(repo_root)
+    texto_real = _YAML_PADECIMIENTOS_REAL.read_text(encoding="utf-8")
+
+    # 1) Después del pubflag (estado real de config/padecimientos.yaml en preparación BE)
+    with _registry_desde_yaml(texto_real):
+        _verifica_metadata_publicacion_a51()
+
+    # 2) Antes del pubflag (fixtures trained y configured): la misma comprobación falla cerrado
+    for yaml_previo in (
+        _yaml_a51_pre_pubflag_trained(texto_real),
+        _yaml_a51_configured(texto_real),
+    ):
+        with _registry_desde_yaml(yaml_previo):
+            spec_prev = registry.require("sifilis_adquirida_a51")
+            assert spec_prev.data_name not in registry.published_members()
+            assert spec_prev.id not in [d.id for d in registry.release_published()]
+            assert spec_prev.id not in paso_semanal.publicados()
+            with pytest.raises(ArtifactValidationError):
+                p_prev = pt.pointer_for(spec_prev, active=True)
+                pt.check_activation(p_prev, spec_prev)
+            with pytest.raises(AssertionError):
+                _verifica_metadata_publicacion_a51()
 
 
 def test_valida_run_v2_acepta_corrida_limpia_sha40_y_sella_readonly(tmp_path: Path) -> None:
@@ -2250,3 +2407,136 @@ def test_i1_fila_nacional_y_trayectorias_marcan_estados_sin_sem_h_m_independient
     triplets_dn = {t["file"]: t for t in traj_dn["national_spike_or_drop_reverted_triplets"]}
     assert triplets_dn["2018_sem02.pdf"]["triplet_acum_h_missing_states"] == [0, 2, 0]
     assert triplets_dn["2018_sem02.pdf"]["triplet_has_current_missing_states"] is True
+
+
+def test_add_a51_history_base_hermetico_paridad_85_a_86_noop_y_no_overwrite(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Verifica add_a51_history_base: prefijo idéntico, <=W43, NO-OP y no-overwrite."""
+    import csv as csv_mod
+    import io
+
+    repo_root = Path(registry.__file__).resolve().parents[2]
+    monkeypatch.chdir(repo_root)
+    texto_real = _YAML_PADECIMIENTOS_REAL.read_text(encoding="utf-8")
+
+    with _registry_desde_yaml(texto_real):
+        catalog = load_geo_catalog()
+        entidades = [catalog.entity(cve).nombre_canonico for cve in sorted(catalog.cve_ents())]
+        assert len(entidades) == 32
+        old_85_names = [
+            d.data_name
+            for d in registry.get_registry().diseases
+            if d.lifecycle == "published" and d.id != "sifilis_adquirida_a51"
+        ]
+        assert len(old_85_names) == 85
+
+        # Generar 53 semanas MMWR contiguas hasta (2026, 43) inclusive + (2026, 44) post-corte
+        start_period = (2025, 44)
+        periods_53: list[tuple[int, int]] = [start_period]
+        while periods_53[-1] != (2026, 43):
+            periods_53.append(semana_siguiente(periods_53[-1][0], periods_53[-1][1], 1))
+        assert len(periods_53) == 53
+
+        buf_base = io.StringIO()
+        w_base = csv_mod.writer(buf_base, lineterminator="\n")
+        w_base.writerow(paso_semanal.CONSOLIDADO_COLS.split(","))
+        for pad_name in old_85_names:
+            for anio, sem in periods_53[-52:]:
+                for ent in entidades:
+                    w_base.writerow([anio, sem, ent, pad_name, "1", "2", "3", "4"])
+        base_csv = tmp_path / "base_85_w43.csv"
+        base_bytes = buf_base.getvalue().encode("utf-8")
+        base_csv.write_bytes(base_bytes)
+        base_sha = _sha256_bytes(base_bytes)
+
+        buf_raw = io.StringIO()
+        w_raw = csv_mod.writer(buf_raw, lineterminator="\n")
+        w_raw.writerow(paso_semanal.CONSOLIDADO_COLS.split(","))
+        full_na_p = periods_53[0]
+        prev_na_p = periods_53[1]
+        partial_na_p = periods_53[2]
+        for anio, sem in [*periods_53, (2026, 44)]:
+            for ent in entidades:
+                if (anio, sem) == full_na_p:
+                    vals = ["", "", "", ""]
+                elif (anio, sem) == prev_na_p:
+                    vals = ["2", "10.0", "8.0", ""]
+                elif (anio, sem) == partial_na_p and ent == "Querétaro":
+                    vals = ["", "11.0", "9.0", "15"]
+                else:
+                    vals = ["3", "12.0", "10.0", "18"]
+                w_raw.writerow([anio, f"{sem:02d}", ent, "Sífilis adquirida", *vals])
+        raw_csv = tmp_path / "raw_a51.csv"
+        raw_bytes = buf_raw.getvalue().encode("utf-8")
+        raw_csv.write_bytes(raw_bytes)
+        raw_sha = _sha256_bytes(raw_bytes)
+
+        out_csv = tmp_path / "out" / "base_86_w43.csv"
+        rep_json = tmp_path / "out" / "report_86.json"
+        cli_args = [
+            "--base-csv",
+            str(base_csv),
+            "--expected-base-sha256",
+            base_sha,
+            "--raw-a51-csv",
+            str(raw_csv),
+            "--expected-raw-sha256",
+            raw_sha,
+            "--cutoff-year",
+            "2026",
+            "--cutoff-week",
+            "43",
+            "--out-csv",
+            str(out_csv),
+            "--report-json",
+            str(rep_json),
+        ]
+
+        # 1) Sin pubflag falla cerrado sin crear salida
+        with _registry_desde_yaml(_yaml_a51_pre_pubflag_trained(texto_real)):
+            assert ahb.main(cli_args) == 2
+            assert not out_csv.exists()
+
+        # 2) Con pubflag construye BASE_86_W43 conservando prefijo byte a byte y excluyendo W44
+        assert ahb.main(cli_args) == 0
+        assert out_csv.is_file() and rep_json.is_file()
+        assert base_csv.read_bytes() == base_bytes
+        out_bytes = out_csv.read_bytes()
+        assert out_bytes[: len(base_bytes)] == base_bytes
+        rep = json.loads(rep_json.read_text(encoding="utf-8"))
+        assert rep["status"] == "CREATED_VERIFIED" and rep["noop_identical"] is False
+        assert rep["old85_guard"]["old_published_verified"] == 85
+        assert rep["new86_guard"]["new_published_verified"] == 86
+        assert rep["a51_history"]["rows_added"] == 53 * 32
+        assert rep["a51_history"]["periods_excluded_after_cutoff"] == [[2026, 44]]
+        assert rep["a51_history"]["na_declaration"]["full_row_na_periods"] == [list(full_na_p)]
+        assert rep["a51_history"]["na_declaration"]["prev_year_only_na_periods"] == [
+            list(prev_na_p)
+        ]
+        assert len(rep["a51_history"]["na_declaration"]["partial_na_cells"]) == 1
+        assert rep["inherited_exclusions_and_lag"]["lag_applied_in_consolidado"] is False
+
+        # 3) Segunda pasada sobre archivo idéntico: NO-OP sin reescribir el inodo
+        ino_before = out_csv.stat().st_ino
+        rep2 = ahb.build_base_86_w43(
+            base_csv=base_csv,
+            expected_base_sha256=base_sha,
+            raw_a51_csv=raw_csv,
+            expected_raw_sha256=raw_sha,
+            cutoff_year=2026,
+            cutoff_week=43,
+            out_csv=out_csv,
+            report_json=None,
+        )
+        assert rep2["status"] == "NOOP_IDENTICAL" and rep2["noop_identical"] is True
+        assert out_csv.stat().st_ino == ino_before
+
+        # 4) Archivo existente distinto jamás se sobrescribe
+        unique_existing = tmp_path / "unique_existing.csv"
+        unique_payload = b"unique_content_do_not_touch\n"
+        unique_existing.write_bytes(unique_payload)
+        bad_args = [*cli_args[:-4], "--out-csv", str(unique_existing)]
+        assert ahb.main(bad_args) == 2
+        assert unique_existing.read_bytes() == unique_payload
