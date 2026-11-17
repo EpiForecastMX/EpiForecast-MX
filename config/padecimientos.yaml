@@ -3151,8 +3151,8 @@ padecimientos:
       label: "Vulvovaginitis"
       nombre_completo: "Vulvovaginitis (N76)"
 
-  # Piloto Carbon (docs/C7_18_PILOTO_CARBON.md): preparación en staging de publicación con control
-  # estacional autorizado (producción sigue 85/81 y piloto 0/1 hasta dictamen final y deploy).
+  # Piloto Carbon (docs/C7_18_PILOTO_CARBON.md): publicación bajo control estacional no validado
+  # (seasonal_naive_lag52) por autorización directa del autor tras test_2025 rechazado y consumido.
   - id: sifilis_adquirida_a51
     data_name: "Sífilis adquirida"
     artifact_key: Sifilis_Adquirida_A51

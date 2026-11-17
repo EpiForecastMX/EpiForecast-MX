@@ -1,5 +1,12 @@
 # C7.18 · Piloto Carbon (`sifilis_adquirida_a51`, `configured`, 0 publicados), desarrollo `policy5` (`8bbb72da`) y guardas semanales / de selección (16-nov-2026)
 
+## Versión con control A51 y fuente 2026-W44
+
+Esta versión incorpora —como **versión candidata** previa al despliegue efectivo (mientras la producción actualmente servida en `https://epiforecast.mx/` permanece en **`85` padecimientos / `81` releases del runner y piloto `0/1`** hasta consumar la publicación real)— la configuración conjunta de **86 padecimientos para el sitio** (`4` del carril original + **82 releases del runner**, gobernados por `config/padecimientos.yaml` y `publication/catalog.json`) en paridad `F5` sobre la **semana fuente `2026-W44`** (`dataset_boletin_epidemiologico.csv` consolidado candidato, sha256 `0f6252f94e78b4af62044f81abe3977006f7e1cadb45bab8baf1512fb823ad44`, `92,155,130` B), el `raw` actualizado de COVID-19 `2026-W44` (`cf66c8704d57d8239156a46d396da2c8edf2758b0ec9a783ca3b6d53a0e1daa4`) con emisión protocolaria `2026-W44.json` (`c8c88c36…`, sin evaluación acumulada) para el próximo paso `N=45`, la incorporación candidata de `sifilis_adquirida_a51` (`A51-A53`) bajo **control estacional no validado** sin intervalos (`seasonal_naive_lag52`, release `sifilis_adquirida_a51_release_a18527def134`, contador meramente técnico `1/4 INCOMPLETE` → `CONTROL_ONLY` sin aprobación científica, nunca `PASS`) por autorización nominal directa del autor posterior al rechazo (registro JSON local privado fuera de la web con sha256 opaco `8f3805d467815766228d2c34047bad9f69d80e7b9f1eed2e9bfa892a76e19d68`), y la disposición nominal real de `miasis` en `2026_sem44.pdf` (autorización nominal directa del autor en registro JSON local privado fuera de la web con sha256 opaco `febd17075686c7c63b7efe4e9e266ca8af865bfc0ca43c935d7741ca8530b45e`, pág. `81` col. `7`, suma estatal **`830`** vs total impreso **`831`** y Chihuahua `0 + 2 ≠ 1` con `1` impreso sin modificar celdas bajo `NO_RECONCILIADO` / etiqueta humana `NO RECONCILIADO`; la foto `2026-w44` del radar ya está generada, visible localmente e instalada en el candidato de frontend, proyectando únicamente **`13` claves técnicas públicas exactas —no `131`—** con el payload privado de autorización/disposición estrictamente fuera de la web, y rotulando el `16 de noviembre de 2026` como **fecha de referencia / primera disponibilidad comprobada**). Véase el detalle íntegro en **§5** al final de esta guía.
+
+- **Vigencia sobre el historial inferior:** esta sección y **§5** describen **esta versión candidata** (producción actual servida sigue en `85/81` y piloto `0/1` hasta el despliegue efectivo) y superan las menciones inferiores fechadas en `2026-W43` (`15-nov-2026`) y las referencias de `A51` a `lifecycle: configured` (`0/1`), pregunta nominal sin respuesta o prohibición de control (que se conservan como historia anterior a la autorización del control). **En cambio, la prueba única `test_2025` de `A51` (`sifilis_adquirida_a51_benchmark_test_73490ea8b2b5_749316ac335e`, `+27.716934 %` / `+27.7169 %` > `10 %` en nacional General) permanece definitivamente consumida y rechazada** (prohibido reabrir `2025`, reseleccionar o cambiar criterios).
+- **Condición de disponibilidad pública efectiva:** el despliegue efectivo en `https://epiforecast.mx/` depende de completar la revisión final independiente (`Fable FINAL`, aún no emitida), la integración sincronizada en `main` de [EpiForecast-MX](https://github.com/EpiForecastMX/EpiForecast-MX) y [EpiForecast-IMSS-Dashboard](https://github.com/EpiForecastMX/EpiForecast-IMSS-Dashboard), las verificaciones remotas y la comprobación del contenido servido (ninguna se preafirma aquí; en el árbol candidato de backend `6c8021313f4589b070c726382ba8fe57abab882b` se verificó la suite local hidratada en `2,885 passed, 491 skipped, 66 deselected` con `6` docs propios en edición y sin equivaler a `main` integrado, y en el candidato local de frontend `fd10869af2fe17c06babd7ee14a4cea60c14557b` —sin push, PR ni deploy— se verificó el índice RAG real `epibot/rag_index.json` sha256 `c9ab21fd93f2a36fb92cea2a574ed71eebcfd5309c61ec65a1c3374d6a4a143b` de `806` vectores reales —`486` reutilizados y `320` nuevos bajo autorización nominal directa del autor para embeddings en Google Gemini— con `deploy:verify` local en `PASS`). Estado operativo dinámico vigente: `planes/piloto_carbon_alta1_2026-11-15/ROOT_CURRENT_STATUS.json` (las instantáneas intermedias como `CURRENT_STATUS_CONTROL_v5.json` son registros históricos parciales y no cierre, sin reescribirlas) y, cuando ocurra el despliegue real, el registro final de cierre verificado que emita `ROOT`.
+
 ## Checkpoint A51 (`A51-A53`) — Corte post-test 16 nov 2026 (antes de decisión de control)
 
 > **Vigencia (`A51` solamente):** Las referencias inferiores a `0 tests`, cierre pretest o prueba pendiente son **historia pretest exclusiva de `A51`**, superada por este resultado (no generalizar a otros IDs).
@@ -422,3 +429,160 @@ Toda la evidencia operativa del piloto vive fuera del árbol del repositorio baj
   `jobs/test_E1_after_policy5/command_completed.json`,
   `fable_pretest_policy5_8bbb/FABLE_PRETEST_POLICY5.{json,md}` y
   `carbon_policy5_authorized/ROOT_TEST2025_QUESTION_SENT.json`.
+
+## 5. Addendum de versión: control estacional autorizado de `sifilis_adquirida_a51`, paso conjunto `2026-W44` y disposición nominal de `miasis` en fuente `44`
+
+Esta versión incorpora —como **versión candidata** previa al despliegue efectivo (mientras la producción actualmente servida en `https://epiforecast.mx/` permanece en **`85` padecimientos / `81` del runner y piloto `0/1`** hasta consumar la publicación real)— `sifilis_adquirida_a51` bajo control estacional no validado y el avance conjunto en paridad `F5` a la semana fuente `2026-W44` (`86` padecimientos en la versión candidata: `4` legacy + `82` releases del runner). Se conserva íntegro todo el historial previo de §§1–4 y del corte post-test superior: las referencias anteriores de `A51` a `lifecycle: configured` (`0 / 1`), pregunta pendiente o prohibición de control constituyen historia previa a la autorización nominal directa del autor, mientras que el rechazo de la prueba única `test_2025` permanece plenamente vigente e inmutable. La disponibilidad pública efectiva en `https://epiforecast.mx/` queda sujeta a la revisión final independiente (`Fable FINAL`, aún no emitida), la integración sincronizada en `main` de [EpiForecast-MX](https://github.com/EpiForecastMX/EpiForecast-MX) y [EpiForecast-IMSS-Dashboard](https://github.com/EpiForecastMX/EpiForecast-IMSS-Dashboard), las verificaciones remotas y la comprobación del contenido servido (ninguna se preafirma en este documento; en el árbol candidato de backend `6c8021313f4589b070c726382ba8fe57abab882b` se verificó la suite local hidratada en `2,885 passed, 491 skipped, 66 deselected` con `6` docs propios en edición y sin equivaler a `main` integrado, y en el candidato local de frontend `fd10869af2fe17c06babd7ee14a4cea60c14557b` —sin push, PR ni deploy— se instaló y verificó el índice RAG real `epibot/rag_index.json` sha256 `c9ab21fd93f2a36fb92cea2a574ed71eebcfd5309c61ec65a1c3374d6a4a143b` de `806` vectores reales —`486` reutilizados y `320` nuevos bajo autorización nominal directa del autor para embeddings en Google Gemini— con `deploy:verify` local en `PASS`). El estado operativo dinámico vigente se consulta en `planes/piloto_carbon_alta1_2026-11-15/ROOT_CURRENT_STATUS.json` (las instantáneas intermedias como `CURRENT_STATUS_CONTROL_v5.json` son registros históricos parciales y no constituyen cierre ni se reescriben) y, cuando ocurra el despliegue real, en el registro final de cierre verificado que emita `ROOT`.
+
+### 5.1 Registro inmutable de `test_2025` (rechazado y consumido) y de los 4 digests científicos
+
+- **Pines de datos e identidad congelados (sin reextracción, sin reselección y sin cambios de política):**
+  el dataset reconciliado `sifilis_adquirida_a51_0cc942faddb8` (`2014-W01..2026-W42`, `669` semanas MMWR hasta
+  el boletín fuente `2026-W43` con `observation_lag_weeks = 1`, `64` series base estatales H/M, `111` productos)
+  conserva intactos sus **4 digests autorizados**:
+  - `raw`: `7fc521b717c723e4a0625c5910c1585d10461b9ee8f95ba14b943c83aa3ec0f9`
+  - `exposure`: `d1453197abfc18b52955fbc7e86c4750e4f1ec9f1c9987a02a293139d70be3e2`
+  - `config`: `d545a3d5e99e0acab68d3e06ba2238d0a7ad19ddd74a9424356332c60c694375`
+  - `dataset`: `0cc942faddb89b7fcbf83a784858b88f37d23d8b048cd1a49d113083349bfb31`
+- **Política y selección congeladas previas al test:**
+  `config/evaluation/rolling_cv_baja_incidencia_v1.yaml`
+  (`policy_digest = 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad`; el nombre de la
+  política no implica baja incidencia epidemiológica nacional: `9,523..17,854` casos anuales en `2021–2024`) y
+  selección congelada `sifilis_adquirida_a51_select_57698d37e134_b41ca5664941`
+  (`selection_digest = 73490ea8b2b51a416fe1ce9cfc779bf914ce0fa53a7865ccb82543d8f939b4bd`).
+- **Resultado definitivo de la prueba única `test_2025` (`CONSUMIDA y RECHAZADA`):**
+  ejecutada una sola vez en `sifilis_adquirida_a51_benchmark_test_73490ea8b2b5_749316ac335e` sobre el commit
+  fuente `8bbb72da8faffbdf0319f6c721618a3989f87af7` (`run_manifest` `b7aa53b4…`, `acceptance.json` `ca247ca7…`,
+  `final_selection_digest = 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072`; auditada en
+  `FABLE_POSTTEST.{json,md}` con diferencia CSV `0` en `47` archivos / `24` SHA y cobertura completa de las `53`
+  semanas MMWR de `2025`, sin truncamiento por el parámetro contextual `horizon = 52`):
+  - `smape_bases` (`64` series estatales H/M): portafolio `66.4452` vs control `76.3666` (**`-12.9918 %`**, límite `+5.0 %`, cumple);
+  - `smape_all` (`111` productos): portafolio `61.0466` vs control `64.1522` (**`-4.8410 %`**, límite `+5.0 %`, cumple);
+  - `smape_nacional_general`: portafolio `25.4877` vs control `19.9564` (**`+27.7169 %` > límite `+10.0 %`**, **NO cumple**).
+  La prueba única de `2025` quedó **definitivamente consumida y rechazada**; permanece prohibido reabrir `2025`,
+  reseleccionar motores, alterar criterios de aceptación o modificar artefactos sellados.
+
+### 5.2 Gobernanza y autorización directa del autor en esta alta `A51`
+
+- Tras recibir las cifras íntegras del rechazo y la pregunta nominal post-test, el autor respondió directamente en el
+  chat **`«autorizo publicar el control»`**. `ROOT` registró esa respuesta en
+  `control_autorizado_20261116/AUTORIZACION_AUTOR_CONTROL.json` (`sha256 =
+  8f3805d467815766228d2c34047bad9f69d80e7b9f1eed2e9bfa892a76e19d68`) con marca de registro del archivo JSON
+  `at = 2026-11-17T01:20:40.821319+00:00` (**instante de registro en JSON por `ROOT`, sin afirmar el timestamp
+  exacto del mensaje en el chat**), ligada a `proposal_sha256 =
+  b929b7ebc68692667d2b86d79b4a72ecfb33833fdedc3300abf4114d4a1813b9`.
+- **Delimitación institucional exacta:** en **esta alta de `sifilis_adquirida_a51`** (`acceptance_fallback_run:
+  sifilis_adquirida_a51_benchmark_test_73490ea8b2b5_749316ac335e`), **decide directamente el autor y Fable audita de
+  forma independiente sin decidir ni autorizar**, sin negar por ello la delegación literal histórica otorgada por el
+  autor a Fable en `alta20c` (`15-nov-2026`), la cual fue específica de aquel lote, no se hereda a otros lotes ni
+  constituye firma humana o validación clínica independiente.
+
+### 5.3 Release de control (`a18527def134`) y significado exacto del horizonte `h=52`
+
+- Sobre el mismo dataset sellado `sifilis_adquirida_a51_0cc942faddb8` (entrenamiento hasta **`2026-W42`** inclusive,
+  extraído hasta el boletín fuente **`2026-W43`**), se ejecutaron una sola vez el `refit` de control
+  (`sifilis_adquirida_a51_refit_final_9fe0414b00c7_f05fe8367f4d`, `64 / 64` modelos estatales H/M con
+  `seasonal_naive_lag52`, `train_end = [2026, 42]`, `669` semanas), el pronóstico único congelado emitido el
+  **`2026-11-17T01:32:25.156213+00:00` UTC** (`16 de noviembre de 2026` en Ciudad de México) y el release sellado
+  **`sifilis_adquirida_a51_release_a18527def134`** (sin intervalos de incertidumbre).
+- **Horizonte de `52` semanas desde el origen de entrenamiento, NO `52` semanas futuras:**
+  el pronóstico abarca **`52` semanas MMWR medidas desde el origen `2026-W42` (`2026-W43` a `2027-W42`)**,
+  repitiendo por serie el valor observado `52` semanas antes (`seasonal_naive_lag52`). **No equivale a `52` semanas
+  futuras respecto del momento de emisión ni respecto del boletín `44`** (con `2026-W43` ya disponible en fuente `44`,
+  restan `51` semanas posteriores a `2026-W43`).
+
+### 5.4 Cronología de fuentes `43` y `44` (`01:23:31Z` vs `01:32:25Z` UTC del 17-nov-2026) y transición `1/4 INCOMPLETE` → `CONTROL_ONLY`
+
+- **Boletín `2026-W44` conocido pre-emisión:** el boletín **`2026_sem44.pdf`** (semana objetivo **`2026-W43`** con
+  `lag = 1`) tuvo primera disponibilidad pública verificable a las **`2026-11-17T01:23:31.237010+00:00` UTC**,
+  **antes** de la emisión del pronóstico congelado (**`2026-11-17T01:32:25.156213+00:00` UTC**).
+- **Observación separada sin tocar el dataset de entrenamiento:** `0cc942faddb8` (`train <= 2026-W42` desde fuente
+  `43`) y `raw` `7fc521b7…` se mantuvieron intactos; el boletín `44` se registró aparte en
+  **`sifilis_adquirida_a51_eaca7efc1a11`**, dejando explícito que **el primer objetivo `2026-W43` ya era conocido
+  pre-emisión y NO es prospectivo respecto de la información pública**.
+- **Contador técnico no validado `1/4 INCOMPLETE` → `CONTROL_ONLY` (nunca `PASS`):** el registro de `4` semanas
+  (`2026-W43` a `2026-W46`, en **`1/4 INCOMPLETE`** al corte fuente `44`) es únicamente un contador técnico de un
+  control no validado que pasa a **`CONTROL_ONLY`** al reunir las `4` semanas, **sin alcanzar nunca `PASS` científico
+  ni aprobación prospectiva**.
+
+### 5.5 Divulgaciones obligatorias (`MASE > 1` en `64/64`, sexo, `D1`, `K6` y pico heredado de Coahuila)
+
+1. **`MASE > 1` del control en `64 / 64` series base:** en `test_2025`, `seasonal_naive_lag52` presentó `MASE > 1` en
+   las **`64 / 64` series estatales por sexo**; se publica sólo como referencia estacional explícita no validada.
+2. **Exposición retrospectiva `D1`:** `test_2025` fue retrospectiva y no ciega al nivel anual nacional `2025` visible
+   previamente en `QA_COMPLETA.md` §3 (la selección usó sólo `2021–2024` y `test_2025` fue rechazado).
+3. **Riesgos de fuente, sexo e imputaciones (`K6`):**
+   - desglose estatal H/M con `sex_fallback_state_13w = 18.8 %`, `sex_delta_total_mismatch = 14.9 %` y errata impresa
+     en `2015_sem40.pdf` (`Acumulado_hombres`: suma estatal `3,769` vs `1,697` impreso; sexo no fiable en `2015-W39`
+     y `2015-W40`);
+   - distinción exacta entre `raw` y serie modelada: en `raw`, la exclusión `2016_sem20.pdf` con
+     `keep_period = true` deja **`32` filas estatales vacías** y Querétaro `2016_sem50.pdf` presenta **`1` celda
+     `Casos_semana` `n.e.` (`NA`)**; en el dataset reconciliado modelado por sexo resultan **`66` filas modeladas
+     imputadas** en toda la historia (**`64` filas estado×sexo** por `2016_sem20.pdf` más **`2` filas H/M** de
+     Querétaro por `2016_sem50.pdf`), mientras que **`2025` tiene `total_imputed = 0`** (`53 / 53` semanas MMWR);
+   - **`12` encabezados impresos en imagen dentro del corpus de entrenamiento hasta la fuente `2026-W43`**
+     verificados visualmente; el encabezado del boletín **`2026_sem44.pdf` se verificó aparte** en su observación
+     (sin afirmar que el total acumulado actual tras `W43` sea `12`);
+   - alcance acotado a **Sífilis adquirida (`A51-A53`)** sin estratificación por edad ni embarazo (excluyendo `A50` y
+     `O98.1`, y desambiguando `sífilis` genérica y consultas en menores).
+4. **Pico heredado en Coahuila (`250` en `2026_sem12.pdf` → objetivo `2026-W11` → eco `2027-W11`):**
+   en `pico_A51_source_QA/VERIFICACION_VISUAL_Y_RAW.json` (`2026_sem12.pdf`, sha256
+   `8554bf064969cbec7c2caf5c42d9755fe6f2882b7579d117e47d8c072f75c7bc`, pág. 24), el boletín **fuente `12` de `2026`**
+   (encabezado hasta semana `11`) imprime en **Coahuila** `Casos_semana = 250` (`H = 518`, `M = 165`, `prev = 163`,
+   `TOTAL` semanal nacional `629`, frente a `27` en fuente `11` y `24` en fuente `13`). Con
+   `observation_lag_weeks = 1`, la fuente `2026-W12` mapea al objetivo **`2026-W11`**, y `seasonal_naive_lag52`
+   traslada ese registro oficial `52` semanas después como un pico puntual en **`2027-W11`**, divulgado sin excluir el
+   dato ni modificar el modelo.
+
+### 5.6 Base consolidada `86` en `2026-W44` e insumo COVID-19 `W44` para el próximo paso `N=45`
+
+- **Cadena de prefijos y consolidado `W44` (`86` publicados / `82` del runner, `CONSOLIDADO86_W44_VERIFIED.json`):**
+  `BASE_85_W43` (`8c21883a3a1d5e1b4daeabe1f5e3ab27f931f1f0177b74fd78fb696e8ad88852`, `90,858,703` B) **es prefijo
+  byte a byte de `BASE_86_W43`** (`82b6bd85d3f47ecdd9d95b578f1da2effe47daf028381c20fbb907b3463b0ebf`, que le añade
+  las `21,408` filas / `669` periodos `<= fuente W43` de `A51`), y **`BASE_86_W43` es a su vez prefijo byte a byte
+  del consolidado conjunto `W44`**
+  (`/Users/haowei/Documents/Integrador/planes/piloto_carbon_alta1_2026-11-15/control_autorizado_20261116/week44/candidato_completo/dataset_boletin_epidemiologico.csv`,
+  `sha256 = 0f6252f94e78b4af62044f81abe3977006f7e1cadb45bab8baf1512fb823ad44`, `92,155,130` B, `+2,752` filas =
+  `86 × 32` entidades en paridad `F5` de los `86` publicados), base de entrada para el próximo paso semanal `N=45`.
+- **COVID-19 `2026-W44` para el próximo `N=45` (`COVID_EMISSION44_VERIFIED.json`):**
+  incorpora el `raw` actualizado
+  `/Users/haowei/Documents/Integrador/planes/boletin_2026_sem44_2026-11-16/covid/data_raw_Covid_19_W44.csv`
+  (`sha256 = cf66c8704d57d8239156a46d396da2c8edf2758b0ec9a783ca3b6d53a0e1daa4`, dataset `covid_19_0c57bf9b6617`) y la
+  emisión protocolaria `docs/prospectivo_covid/emisiones/2026-W44.json`
+  (`sha256 = c8c88c36f89f104300ef00aca51ad4702d425355efb6659b68dbe89a694f05fb`, objetivos `2026-W45..2026-W48`,
+  emitida antes de recibir el boletín `45`, sin evaluación acumulada).
+
+### 5.7 Autorización nominal real del autor para `miasis` en `2026_sem44.pdf` y proyección pública de `13` claves instalada en el candidato
+
+- **Autoridad nominal descriptiva y registro privado fuera de la web (`authorization_sha256`):**
+  ante la discrepancia interna impresa detectada en el boletín `44` (propuesta técnica evaluada con `sha256 =
+  508ed3e4cf6b8a25b1c599b4d760078ce955ac017c1457fd36f9ad9d8a3f6661`), el autor otorgó **autorización nominal directa**
+  para conservar las cifras impresas intactas y mostrar aviso explícito de tabla no reconciliada, registrada por `ROOT`
+  en un archivo JSON local privado fuera del repositorio web con huella opaca `authorization_sha256 =
+  febd17075686c7c63b7efe4e9e266ca8af865bfc0ca43c935d7741ca8530b45e` (`recorded_at_utc =
+  2026-11-17T03:47:17.342707+00:00` como marca de registro JSON por `ROOT` y no timestamp inventado del mensaje; ni el
+  acta ni el JSON local de disposición se copian ni publican en `assets/` ni en el repositorio web).
+- **Alcance nominal exacto y no heredable:**
+  aplica exclusivamente a `2026_sem44.pdf` (`pdf_sha256 =
+  c6b328e4a88c293cbd9b912403b14f8e8a27ab54b780566fc51537b03b52d1a3`), página `81`, tabla `miasis`, columna `7`,
+  donde la suma estatal es **`830`** frente al total impreso **`831`** (`delta = +1`) y el renglón de **Chihuahua**
+  imprime `0` en `2025`, `2` en `2026` y `1` en el total (**`0 + 2 ≠ 1`**; `29` entidades listadas sin imputar las `3`
+  ausentes). Conserva todas las cifras impresas intactas (**`celdas_modificadas = 0`**, sin corregir `1` a `2` ni `831`
+  a `830`) bajo estado **`NO_RECONCILIADO`** (etiqueta humana visible **`NO RECONCILIADO`**) y aviso ligado a los
+  hashes/página/columna/delta exactos; **no crea tolerancias ni umbrales nuevos, no presenta `miasis` como reconciliada
+  ni `PASS`, y no se hereda a ningún otro PDF, semana o tabla**.
+- **Foto `2026-w44` generada e instalada en el candidato local (`13` claves exactas, no `131`):**
+  la foto del radar `assets/boletin/2026-w44/` (`181` bloques estatales, `77` filas nacionales, `187` categorías, `86`
+  IDs cubiertos) y la actualización del histórico (`+188` puntos, `0` revisiones) **ya están generadas, visibles
+  localmente e instaladas en el candidato local de frontend** (`fd10869af2fe17c06babd7ee14a4cea60c14557b`, sin push, PR
+  ni deploy). En los artefactos públicos (`data.json` y `verification.json`, con `myiasis_reconciled = false`) se expone
+  **únicamente la proyección técnica pública de `13` claves exactas** (`CLAVES_PROYECCION_MIASIS`:
+  `authorization_sha256`, `celdas_modificadas`, `columna`, `cuadro`, `delta`, `disposition_file_sha256`, `estado`,
+  `filas_con_identidad_rota`, `nombre_columna`, `pagina`, `pdf_sha256`, `suma_estados`, `total_impreso` —**`13` claves
+  exactas, no `131`**), rechazando cerrado cualquier ruta local o metadato privado; además, la fecha `16 de noviembre de
+  2026` del boletín `44` se presenta como **fecha de referencia / primera disponibilidad comprobada**
+  (`publication_date_basis = "first_verified_availability"`), sin afirmar fecha de publicación original desconocida (ni
+  tomar como prueba la fecha de creación interna del PDF del `13` de noviembre). Mientras se completan los últimos
+  ajustes de guardas/fixtures locales y `Fable FINAL`, el estado dinámico vigente se sigue en
+  `planes/piloto_carbon_alta1_2026-11-15/ROOT_CURRENT_STATUS.json` (sin tratar `CURRENT_STATUS_CONTROL_v5.json` como
+  cierre ni reescribirlo) y, tras la publicación efectiva, en el registro final de cierre verificado que emita `ROOT`.
