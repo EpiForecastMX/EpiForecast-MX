@@ -119,6 +119,7 @@ def _diabetes_sin_publicar(texto: str) -> str:
         "hiperplasia_prostata_n40",
         "embarazo_hipertensivos_o10",
         "embarazo_diabetes_o24",
+        "sifilis_adquirida_a51",
     ):
         cabeza, separador, resto = texto.partition(f"\n  - id: {disease_id}\n")
         if not separador:
