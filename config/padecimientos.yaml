@@ -3165,11 +3165,17 @@ padecimientos:
     batch: standalone
     extraction_group: cuadro_6_sifilis_adquirida
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: sifilis_adquirida_a51_refit_final_9fe0414b00c7_f05fe8367f4d
+      forecast_run_id: sifilis_adquirida_a51_forecast_h52_f05fe8367f4d_2d757fa262c6
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     acceptance_fallback_run: sifilis_adquirida_a51_benchmark_test_73490ea8b2b5_749316ac335e
     prophet_grid_key: null
     deepar_grid_key: null
