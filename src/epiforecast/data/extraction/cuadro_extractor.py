@@ -6,6 +6,7 @@ reutilizando ``pdf_extractor`` y ``dengue_extractor``; el conteo real de columna
 
 from __future__ import annotations
 
+from functools import partial
 from pathlib import Path
 from typing import Any, cast
 
@@ -25,6 +26,7 @@ from epiforecast.data.extraction.cuadro_reparaciones import (
     alinea_valor_en_nombre,
     despega_primera_columna,
     fila_total,
+    opciones_tabla,
     primer_bloque_por_orden,
     sin_llamadas,
     spec_del_periodo,
@@ -92,6 +94,7 @@ def _tabla_estatal(
     *,
     despegar: bool = False,
     valor_en_nombre: bool = False,
+    parciales: bool = False,
     **kw: Any,
 ) -> pd.DataFrame | None:
     """Tabla estatal limpia de la página (la de más filas), o None si camelot no detecta tabla."""
@@ -103,15 +106,13 @@ def _tabla_estatal(
         df_raw = despega_primera_columna(df_raw)
     if valor_en_nombre:
         df_raw = alinea_valor_en_nombre(df_raw)
-    return _restrict_to_states(sin_llamadas(clean_df(alinea_renglones(df_raw))))
+    return _restrict_to_states(sin_llamadas(clean_df(alinea_renglones(df_raw, parciales))))
 
 
 def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> dict[str, Any]:
-    """Extrae el bloque de un padecimiento del cuadro de un boletín.
-
-    Returns dict: ``df`` (largo, 8 col del consolidado, o None), ``page``, ``year``,
-    ``week``, ``n_states``, ``layout``, ``valid``, ``reason``.
-    """
+    """Extrae el bloque de un padecimiento del cuadro de un boletín. Devuelve un dict con ``df``
+    (largo, 8 col del consolidado, o None), ``page``, ``year``, ``week``, ``n_states``, ``layout``,
+    ``valid`` y ``reason``."""
     spec = load_group(group_id)
     year, week = _year_week_from_filename(pdf_path)
     out: dict[str, Any] = {
@@ -142,31 +143,31 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
         out["reason"] = "página del cuadro no encontrada"
         return out
 
-    vn = bool(spec.get("valor_en_columna_nombre"))
-    df_clean = _tabla_estatal(pdf_path, page, valor_en_nombre=vn)
+    tabla = partial(_tabla_estatal, **opciones_tabla(spec))
+    df_clean = tabla(pdf_path, page)
     if df_clean is None:
         out["reason"] = "camelot no detectó tabla"
         return out
     esperados = int(spec.get("n_states_expected", 32))
     if len(df_clean) < esperados:
         # Margen amplio de borde sólo cuando faltan entidades: una lectura válida no cambia.
-        amplia = _tabla_estatal(pdf_path, page, valor_en_nombre=vn, edge_tol=500)
+        amplia = tabla(pdf_path, page, edge_tol=500)
         if amplia is not None and len(amplia) == esperados:
             df_clean = amplia
     area = _area_pagina(pdf_path, page) if len(df_clean) < esperados else None
     if area is not None and len(df_clean) < esperados:
         # Área de página completa cuando camelot recorta la primera entidad (2024_sem09, 3.5).
-        completa = _tabla_estatal(pdf_path, page, valor_en_nombre=vn, table_areas=[area])
+        completa = tabla(pdf_path, page, table_areas=[area])
         if completa is not None and len(completa) == esperados:
             df_clean = completa
     bloque_posterior = bool(spec.get("last_block_columns") or spec.get("inner_block_columns"))
     if len(df_clean) < esperados and bloque_posterior and not spec.get("first_block_columns"):
-        despegada = _tabla_estatal(pdf_path, page, despegar=True, valor_en_nombre=vn)
+        despegada = tabla(pdf_path, page, despegar=True)
         if despegada is not None and len(despegada) == esperados:
             df_clean = despegada
     if spec.get("reintento_row_tol") is not None:
         reparada_rt, etiqueta_rt, motivo_rt = reintenta_row_tol_si_vacia(
-            df_clean, pdf_path, page, spec, tabla_fn=_tabla_estatal, area_fn=_area_pagina
+            df_clean, pdf_path, page, spec, tabla_fn=tabla, area_fn=_area_pagina
         )
         if reparada_rt is None:
             out["reason"] = motivo_rt

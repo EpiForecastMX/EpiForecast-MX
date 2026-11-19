@@ -8,7 +8,7 @@ grupo para el boletín, cuando el bloque cambia de página o de posición según
 from __future__ import annotations
 
 import re
-from typing import Any
+from typing import Any, TypedDict
 
 import pandas as pd
 
@@ -37,12 +37,26 @@ def spec_del_periodo(spec: dict[str, Any], year: int, week: int) -> dict[str, An
     return actual
 
 
-def alinea_renglones(df: pd.DataFrame) -> pd.DataFrame:
+class OpcionesTabla(TypedDict):
+    valor_en_nombre: bool
+    parciales: bool
+
+
+def opciones_tabla(spec: dict[str, Any]) -> OpcionesTabla:
+    """Reparaciones opt-in de la lectura de camelot que declara el grupo (``_tabla_estatal``)."""
+    return OpcionesTabla(
+        valor_en_nombre=bool(spec.get("valor_en_columna_nombre")),
+        parciales=bool(spec.get("une_renglones_parciales")),
+    )
+
+
+def alinea_renglones(df: pd.DataFrame, parciales: bool = False) -> pd.DataFrame:
     """Une el renglón de valores con el nombre de la entidad cuando camelot los separa.
 
     En 68 boletines de 2014-2015 cada entidad sale en dos renglones: los valores sin nombre y,
     debajo, el nombre sin valores. Sin esto, ``reshape`` los lee como ceros con estado ``ok``.
-    Sólo actúa sobre ese patrón exacto; cualquier otra tabla pasa igual.
+    Sólo actúa sobre ese patrón exacto; cualquier otra tabla pasa igual. Con ``parciales`` (opt-in
+    del grupo) aplica además ``une_renglones_parciales``.
     """
     filas = df.astype(str).to_numpy(copy=True)
     vacio = filas[:, 1:] == ""
@@ -54,6 +68,33 @@ def alinea_renglones(df: pd.DataFrame) -> pd.DataFrame:
             filas[i - 1, 1:] = ""
             vacio[i - 1] = True
             vacio[i] = False
+    alineada = pd.DataFrame(filas, index=df.index, columns=df.columns)
+    return une_renglones_parciales(alineada) if parciales else alineada
+
+
+def une_renglones_parciales(df: pd.DataFrame) -> pd.DataFrame:
+    """Une una entidad con valores parciales y el renglón siguiente sin nombre que los completa.
+
+    En el Cuadro 18.1 de 2019_sem48 a 2024_sem01 camelot parte el renglón de algunas entidades
+    (Ciudad de México, México, Nuevo León...): arriba el nombre con los valores de un bloque y abajo,
+    sin nombre, los de los otros. Sin esto ``reshape`` lee los bloques vacíos como ceros con estado
+    ``ok``. Se unen sólo si ningún valor se solapa; cualquier otra tabla pasa igual. Sólo en los
+    grupos que lo declaran (``une_renglones_parciales: true``).
+    """
+    filas = df.astype(str).to_numpy(copy=True)
+    vacio = filas[:, 1:] == ""
+    for i in range(len(filas) - 1):
+        sig = i + 1
+        con_nombre = filas[i, 0].strip() != "" and not bool(vacio[i].all())
+        siguiente_sin_nombre = filas[sig, 0].strip() == "" and not bool(vacio[sig].all())
+        if not (con_nombre and siguiente_sin_nombre) or bool((~vacio[i] & ~vacio[sig]).any()):
+            continue
+        filas[i, 1:] = [
+            a if a != "" else b for a, b in zip(filas[i, 1:], filas[sig, 1:], strict=True)
+        ]
+        filas[sig, 1:] = ""
+        vacio[i] = filas[i, 1:] == ""
+        vacio[sig] = True
     return pd.DataFrame(filas, index=df.index, columns=df.columns)
 
 
