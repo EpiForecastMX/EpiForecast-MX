@@ -4847,11 +4847,17 @@ padecimientos:
     batch: standalone
     extraction_group: b44_meningitis_tuberculosa_a170
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: meningitis_tuberculosa_a170_refit_final_9fe0414b00c7_d49353e8d601
+      forecast_run_id: meningitis_tuberculosa_a170_forecast_h52_d49353e8d601_727edd158872
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     acceptance_fallback_run: meningitis_tuberculosa_a170_benchmark_test_603dc0738a05_ce31ac51d3d0
     prophet_grid_key: null
     deepar_grid_key: null
@@ -4875,11 +4881,17 @@ padecimientos:
     batch: standalone
     extraction_group: b44_tuberculosis_respiratoria_a15
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: tuberculosis_respiratoria_a15_refit_final_70fd35c5ec2d_0522af7483b5
+      forecast_run_id: tuberculosis_respiratoria_a15_forecast_h52_0522af7483b5_e95b2096c627
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 70fd35c5ec2dbaec373e0cf895eb90970538fc9337e1533cdf1a7bb15ef4276b
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4900,11 +4912,17 @@ padecimientos:
     batch: standalone
     extraction_group: b44_lepra_a30
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: lepra_a30_refit_final_9fe0414b00c7_7f2bdc66d791
+      forecast_run_id: lepra_a30_forecast_h52_7f2bdc66d791_06f974a8e1ec
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     acceptance_fallback_run: lepra_a30_benchmark_test_e32febcfffc6_43af25133ba7
     prophet_grid_key: null
     deepar_grid_key: null
@@ -4927,11 +4945,17 @@ padecimientos:
     batch: standalone
     extraction_group: b44_fiebre_manchada_a770
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: fiebre_manchada_a770_refit_final_9fe0414b00c7_d10a5bcd07fd
+      forecast_run_id: fiebre_manchada_a770_forecast_h52_d10a5bcd07fd_0cb9650cb5ae
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     acceptance_fallback_run: fiebre_manchada_a770_benchmark_test_4796443c1ec0_3c412db5b412
     prophet_grid_key: null
     deepar_grid_key: null
@@ -4954,13 +4978,19 @@ padecimientos:
     batch: standalone
     extraction_group: b44_otras_rickettsiosis_a79
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # El bloque A79 se imprime desde 2017_sem02 (objetivo 2017-W02; antes, «Otras Rickettsiosis»
     # con CIE A75.9, no incorporado): historia corta.
     selection_policy: rolling_cv_historia_corta_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: otras_rickettsiosis_a79_refit_final_9fe0414b00c7_58fba2b36852
+      forecast_run_id: otras_rickettsiosis_a79_forecast_h52_58fba2b36852_97fdd6ec8ae6
+      policy_digest: a240067c4fb2b3ee872fdfd5bb6a48b9aa016fe1220ffab522805d91e25ca57f
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     acceptance_fallback_run: otras_rickettsiosis_a79_benchmark_test_93487cbe470a_81ce3ccf5de0
     prophet_grid_key: null
     deepar_grid_key: null
@@ -4983,11 +5013,17 @@ padecimientos:
     batch: standalone
     extraction_group: b44_leishmaniasis_cutanea_b551
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: leishmaniasis_cutanea_b551_refit_final_9fe0414b00c7_52ce1d9ecaa5
+      forecast_run_id: leishmaniasis_cutanea_b551_forecast_h52_52ce1d9ecaa5_259662aaceb5
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     acceptance_fallback_run: leishmaniasis_cutanea_b551_benchmark_test_96c14e031372_1a51517c071c
     prophet_grid_key: null
     deepar_grid_key: null
