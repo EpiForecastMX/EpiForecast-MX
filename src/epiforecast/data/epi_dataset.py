@@ -29,7 +29,9 @@ from epiforecast.data.epi_geo_exposure import (
     load_exposure_snapshot,
     load_geo_catalog,
 )
+from epiforecast.data.epi_lag_calendar import calendar_payload, schedule_from_calendar
 from epiforecast.data.epi_lag_schedule import (
+    LagSchedule,
     LagScheduleError,
     mark_gap_rows,
     schedule_from_group,
@@ -219,10 +221,14 @@ def build_epi_dataset_v2(
     catalog_digest = _sha256_bytes(catalog_bytes)
     dataset_bytes = _canonical_csv(base).encode("utf-8")
     dataset_digest = _sha256_bytes(dataset_bytes)
+    aplicado = schedule or LagSchedule(cfg.observation_lag_weeks)
+    calendario = {"kind": "epi_mmwr"} | calendar_payload(aplicado)
+    # Guarda: la configuración efectiva debe bastar para reconstruir el plan de rezago aplicado.
+    if schedule_from_calendar(calendario) != aplicado:
+        raise EpiDatasetError("calendar de la configuración efectiva no reproduce el rezago")
     config_payload = {
         "disease_id": cfg.disease_id,
-        "calendar": {"kind": "epi_mmwr", "observation_lag_weeks": cfg.observation_lag_weeks}
-        | ({"lag_schedule": schedule.payload()} if schedule else {}),
+        "calendar": calendario,
         "expected_n_states": cfg.expected_n_states,
         "exposure": {
             "source_id": cfg.exposure_source_id,
