@@ -4038,3 +4038,58 @@ padecimientos:
       color: "#6B4F2A"
       label: "Mordedura por otras serpientes"
       nombre_completo: "Mordedura por otras serpientes (T63.0, X20 excepto U60.0 y U60.1)"
+
+# Lote alta_b44 · c4b: entradas del registry (cirrosis y chikungunya). alacran_t63 ya existe en main sin cambios.
+  - id: cirrosis_alcoholica_k703
+    data_name: "Cirrosis hepática alcohólica"
+    artifact_key: Cirrosis_Alcoholica_K703
+    slug: cirrosis_alcoholica_k703
+    display_name: "Cirrosis hepática alcohólica"
+    cie_codes: ["K70.3"]
+    # Sin «cirrosis» a secas: el boletín no vigila otras cirrosis, pero el usuario podría pedir una no
+    # alcohólica (K74); se exige el calificativo.
+    aliases: ["cirrosis hepatica alcoholica", "cirrosis alcoholica", "k70.3"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_cirrosis_alcoholica_k703
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # Serie desde 2016-W01 por decisión nominal del autor (lote alta_b44): inicio_serie del grupo.
+    # rolling_cv_v1: 2016-W01..2020-W53 = 261 semanas antes del pliegue 2021 (mínimo 260).
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#713F12"
+      label: "Cirrosis alcohólica"
+      nombre_completo: "Cirrosis hepática alcohólica (K70.3)"
+
+  - id: chikungunya_a920
+    data_name: "Enfermedad por virus Chikungunya"
+    artifact_key: Chikungunya_A920
+    slug: chikungunya_a920
+    display_name: "Enfermedad por virus Chikungunya"
+    cie_codes: ["A92.0"]
+    aliases: ["enfermedad por virus chikungunya", "chikungunya", "fiebre chikungunya", "a92.0"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_chikungunya_a920
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#B91C1C"
+      label: "Chikungunya"
+      nombre_completo: "Enfermedad por virus Chikungunya (A92.0)"

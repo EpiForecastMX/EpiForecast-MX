@@ -204,6 +204,8 @@ def test_cie_map():
         "U60.0": "Mordedura por serpiente de cascabel",
         "U60.1": "Mordedura por serpiente coral",
         "T63.0": "Mordedura por otras serpientes",
+        "K70.3": "Cirrosis hepática alcohólica",
+        "A92.0": "Enfermedad por virus Chikungunya",
     }
 
 

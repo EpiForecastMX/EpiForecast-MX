@@ -3129,3 +3129,100 @@ cuadro_groups:
         has_prev_year: true
     n_states_expected: 32
     backend: camelot_stream
+
+  b44_cirrosis_alcoholica_k703:
+    # Cirrosis hepática alcohólica (K70.3): último bloque del Cuadro 13.4. Sin año anterior hasta
+    # 2015_sem01 (3 columnas, 11 en la página) y con él después (4, de 12). Rezago 1.
+    # Serie desde 2016-W01 por decisión nominal del autor (lote alta_b44, DECISIONES_AUTOR_3.json):
+    # 2014 casi sin registro semanal y 2015_sem02..2015_sem41 impresos en «-» (frag/c4). Con rezago
+    # 1, el primer boletín es 2016_sem02 (2016_sem01 observa 2015-W52).
+    page_anchors: ["k70"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    last_block_columns: {11: 3, 12: 4}
+    diseases:
+      - id: cirrosis_alcoholica_k703
+        keyword: "Cirrosis_Alcoholica_K703"
+        block_index: 0
+        onboard: true
+    inicio_serie:
+      - diseases: [cirrosis_alcoholica_k703]
+        desde: "2016_sem02"
+        motivo: >-
+          decisión nominal del autor (lote alta_b44, 19-nov-2026): serie desde 2016-W01; 2014 con 581
+          casos en el año y 40 boletines de 2015 (sem02-sem41) impresos en «-» en todas las entidades
+          y el TOTAL, aunque el año anterior impreso en 2016 muestra casos en 2015
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [cirrosis_alcoholica_k703]
+        reason: >-
+          formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem; el cuadro de
+          ese boletín no trae el bloque de cirrosis
+      - file: "2016_sem20.pdf"
+        diseases: [cirrosis_alcoholica_k703]
+        keep_period: true
+        reason: >-
+          bloque rotado frente a los boletines vecinos (PDF abierto, pág. 49: TOTAL impreso Sem 519,
+          acumulado 7 164/1 739, año anterior 6 077); semanas 19/20/21 dan 150/519/185 y acumulado
+          H+M 2 785/8 903/3 131: el acumulado salta y vuelve (mismo criterio que hipotermia y fiebre
+          reumática en este boletín)
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "2015_sem02"
+        cols_per_disease: 4
+        has_prev_year: true
+      - id: v_3col_noprev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 3
+        has_prev_year: false
+    n_states_expected: 32
+    backend: camelot_stream
+
+  b44_chikungunya_a920:
+    # Enfermedad por virus Chikungunya (A92.0). Primer boletín con el bloque: 2014_sem45.
+    # 2014_sem45-2017_sem01: bloque INTERMEDIO del Cuadro 11 (tracoma, Chikungunya, leishmaniasis
+    # visceral); 9 columnas en 2014 (sin año anterior), 10 en 2015_sem01 (tracoma y leishmaniasis
+    # con 2014 sin año anterior; Chikungunya con 4) y 12 después. Desde 2017_sem02: PRIMER bloque
+    # del Cuadro 7.3 (con fiebre del oeste del Nilo y Zika; 11 o 12 columnas).
+    # Rezago impreso 0 desde 2014_sem47 («E. V. Chikungunya hasta la N» en el boletín N hasta
+    # 2017_sem01; título general «hasta la semana N» después; 13 títulos de 2025-2026 por OCR).
+    # Decisión nominal del autor (lote alta_b44, DECISIONES_AUTOR_3.json): serie desde 2014-W47,
+    # excluyendo 2014_sem45-46; el texto «PENDIENTE» de sus exclusiones se conserva para reutilizar
+    # sin reextraer el raw de c3 (sha256 087b37c3…), cuyo manifiesto lo imprime así.
+    page_anchors: ["chikungunya"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 0
+    inner_block_columns: {9: [6, 3], 10: [7, 4], 12: [8, 4]}
+    periodos:
+      - desde: "2017_sem02"
+        inner_block_columns: null
+        first_block_columns: {11: 4, 12: 4}
+    diseases:
+      - id: chikungunya_a920
+        keyword: "Chikungunya_A920"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem45.pdf"
+        diseases: [chikungunya_a920]
+        reason: >-
+          título impreso con rezago 1 («hasta la semana epidemiológica 44» en el boletín 45), frente
+          al rezago 0 del resto de la serie desde 2014_sem47; PENDIENTE de decisión del autor
+      - file: "2014_sem46.pdf"
+        diseases: [chikungunya_a920]
+        reason: >-
+          título impreso con rezago 1 («hasta la semana epidemiológica 45» en el boletín 46), frente
+          al rezago 0 del resto de la serie desde 2014_sem47; PENDIENTE de decisión del autor
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+      - id: v_3col_noprev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 3
+        has_prev_year: false
+    n_states_expected: 32
+    backend: camelot_stream
