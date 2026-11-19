@@ -101,7 +101,9 @@ class _Avance:
         return "Validación prospectiva en curso (1/4 semanas)"
 
 
-def _vista_sintetica(monkeypatch, tmp_path, *, publicable: bool = True) -> Path:
+def _vista_sintetica(
+    monkeypatch, tmp_path, *, publicable: bool = True, control_digest: str = "ctrl"
+) -> Path:
     """Shard compilado en 0/4 y estado vigente en 1/4, sin datos reales."""
     shard = tmp_path / "shard"
     (shard / "web").mkdir(parents=True)
@@ -132,6 +134,7 @@ def _vista_sintetica(monkeypatch, tmp_path, *, publicable: bool = True) -> Path:
         "utf-8",
     )
     estado = SimpleNamespace(
+        gate=SimpleNamespace(candidate_digest="cand", control_digest=control_digest),
         publishable=publicable,
         verdict="INCOMPLETE" if publicable else VERDICT_FAIL,
         release_id="x_release",
@@ -155,6 +158,18 @@ def test_la_etiqueta_sale_del_estado_vigente_no_del_shard(monkeypatch, tmp_path)
     v = vista.build_view("x", shard)
     assert v["publication_label"].startswith("Validación prospectiva en curso (1/4 semanas)")
     assert v["publication_label"].endswith(POINT_ONLY_SUFFIX)
+
+
+def test_un_aceptado_distinto_del_control_no_lleva_la_marca(monkeypatch, tmp_path):
+    shard = _vista_sintetica(monkeypatch, tmp_path)
+    assert "portafolio_igual_al_control" not in vista.build_view("x", shard)
+
+
+def test_un_aceptado_igual_al_control_lo_declara(monkeypatch, tmp_path):
+    shard = _vista_sintetica(monkeypatch, tmp_path, control_digest="cand")
+    v = vista.build_view("x", shard)
+    assert v["portafolio_igual_al_control"] is True
+    assert "caida_al_control" not in v
 
 
 def test_un_fail_no_genera_vista_publica(monkeypatch, tmp_path):
