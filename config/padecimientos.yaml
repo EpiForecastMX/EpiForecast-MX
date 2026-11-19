@@ -4059,7 +4059,7 @@ padecimientos:
     eligible_engines: []
     # Serie desde 2016-W01 por decisión nominal del autor (lote alta_b44): inicio_serie del grupo.
     # rolling_cv_v1: 2016-W01..2020-W53 = 261 semanas antes del pliegue 2021 (mínimo 260).
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4084,7 +4084,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
