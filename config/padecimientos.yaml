@@ -4345,3 +4345,224 @@ padecimientos:
       color: "#B91C1C"
       label: "Violencia intrafamiliar"
       nombre_completo: "Violencia intrafamiliar (Y07.0-Y07.2)"
+
+  - id: tuberculosis_otras_formas_a171
+    data_name: "Tuberculosis otras formas"
+    artifact_key: Tuberculosis_Otras_Formas_A171
+    slug: tuberculosis_otras_formas_a171
+    display_name: "Tuberculosis otras formas"
+    cie_codes: ["A17.1", "A17.8", "A17.9", "A18", "A19"]
+    # Sin «tuberculosis» a secas: abarcaría la respiratoria (A15-A16) y la meningitis tuberculosa
+    # (A17.0), que el boletín publica en otros bloques.
+    aliases: ["tuberculosis otras formas", "otras formas de tuberculosis", "tuberculosis extrapulmonar", "a18", "a19"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_tuberculosis_otras_formas_a171
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#7F1D1D"
+      label: "Tuberculosis otras formas"
+      nombre_completo: "Tuberculosis otras formas (A17.1, A17.8, A17.9, A18-A19)"
+
+  - id: chagas_aguda_b570
+    data_name: "Tripanosomiasis americana (enfermedad de Chagas) aguda"
+    artifact_key: Chagas_Aguda_B570
+    slug: chagas_aguda_b570
+    display_name: "Tripanosomiasis americana (enfermedad de Chagas) aguda"
+    cie_codes: ["B57.0", "B57.1"]
+    # Sin «chagas» ni «tripanosomiasis» a secas: abarcarían también la forma crónica (B57.2-B57.5).
+    aliases: ["tripanosomiasis americana aguda", "enfermedad de chagas aguda", "chagas aguda", "chagas agudo", "b57.0", "b57.1"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_chagas_aguda_b570
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # El bloque se imprime desde 2017_sem02 (objetivo 2017-W01): historia corta.
+    selection_policy: rolling_cv_historia_corta_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#9A3412"
+      label: "Chagas aguda"
+      nombre_completo: "Tripanosomiasis americana (enfermedad de Chagas) aguda (B57.0-B57.1)"
+
+  - id: tifo_murino_a752
+    data_name: "Tifo murino"
+    artifact_key: Tifo_Murino_A752
+    slug: tifo_murino_a752
+    display_name: "Tifo murino"
+    cie_codes: ["A75.2"]
+    # Sin «tifo» a secas: abarcaría el tifo epidémico (A75.0) del mismo cuadro.
+    aliases: ["tifo murino", "tifus murino", "tifo endemico", "a75.2"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_tifo_murino_a752
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#A16207"
+      label: "Tifo murino"
+      nombre_completo: "Tifo murino (A75.2)"
+
+  - id: sifilis_congenita_a50
+    data_name: "Sífilis congénita"
+    artifact_key: Sifilis_Congenita_A50
+    slug: sifilis_congenita_a50
+    display_name: "Sífilis congénita"
+    cie_codes: ["A50"]
+    # Sin «sífilis» a secas: abarcaría la sífilis adquirida (A51-A53), bloque vecino del Cuadro 6.
+    aliases: ["sifilis congenita", "a50"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_sifilis_congenita_a50
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#BE185D"
+      label: "Sífilis congénita"
+      nombre_completo: "Sífilis congénita (A50)"
+
+  - id: esavi_y58
+    data_name: "Eventos supuestamente asociados a la vacunación (ESAVI)"
+    artifact_key: Esavi_Y58
+    slug: esavi_y58
+    display_name: "Eventos supuestamente asociados a la vacunación (ESAVI)"
+    cie_codes: ["Y58", "Y59"]
+    # Hasta 2017_sem01 el boletín rotula el bloque «Efectos adversos temporalmente asociados a
+    # vacunas» con los mismos códigos (Y58, Y59).
+    aliases: ["eventos supuestamente asociados a la vacunacion", "esavi", "efectos adversos temporalmente asociados a vacunas", "y58", "y59"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_esavi_y58
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#4338CA"
+      label: "ESAVI"
+      nombre_completo: "Eventos supuestamente asociados a la vacunación, ESAVI (Y58, Y59)"
+
+  - id: meningococica_a39
+    data_name: "Meningitis meningocócica"
+    artifact_key: Meningococica_A39
+    slug: meningococica_a39
+    display_name: "Meningitis meningocócica"
+    cie_codes: ["A39.0"]
+    # Sin «meningitis» a secas: abarcaría la tuberculosa (A17.0) y el síndrome meníngeo (G00-G03).
+    aliases: ["meningitis meningococica", "meningococo", "meningococica", "a39.0"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_meningococica_a39
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # Rezago impreso por periodo (1 hasta 2020_sem53, 0 desde 2021_sem01; cuadros.yaml). Supuesto del
+    # autor (DECISIONES_AUTOR_3, supuesto_autor_guion_2025_cero): el «-» de 2025 se trata como cero.
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#9F1239"
+      label: "Meningitis meningocócica"
+      nombre_completo: "Meningitis meningocócica (A39.0)"
+
+  - id: neumococo_a40
+    data_name: "Enfermedad invasiva por neumococo"
+    artifact_key: Neumococo_A40
+    slug: neumococo_a40
+    display_name: "Enfermedad invasiva por neumococo"
+    # Alcance del bloque: sepsis neumocócica (A40.3), meningitis neumocócica (G00.1) y neumonía por
+    # S. pneumoniae (J13). Sindrome_meningeo_g00 excluye G00.1 y neumonias_j12 excluye J13: no hay
+    # solapamiento de códigos. Sin «neumonia» ni «meningitis» en los alias (son de esos otros dos).
+    cie_codes: ["A40.3", "G00.1", "J13"]
+    aliases: ["enfermedad invasiva por neumococo", "neumococo", "neumococica", "a40.3"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_neumococo_a40
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # Rezago impreso por periodo (1 hasta 2020_sem53, 0 desde 2021_sem01; cuadros.yaml). Supuesto del
+    # autor (DECISIONES_AUTOR_3, supuesto_autor_guion_2025_cero): el «-» de 2025 se trata como cero.
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#1E3A8A"
+      label: "Neumococo invasivo"
+      nombre_completo: "Enfermedad invasiva por neumococo (A40.3, G00.1, J13)"
+
+  - id: haemophilus_a41
+    data_name: "Infecciones invasivas por Haemophilus influenzae"
+    artifact_key: Haemophilus_A41
+    slug: haemophilus_a41
+    display_name: "Infecciones invasivas por Haemophilus influenzae"
+    # Alcance del bloque: sepsis por H. influenzae (A41.3), meningitis por H. influenzae (G00.0) y
+    # neumonía por H. influenzae (J14). Sindrome_meningeo_g00 excluye G00.0 y neumonias_j12 excluye
+    # J14. Sin «influenza» (es de influenza_j09) ni «meningitis» o «neumonia» en los alias.
+    cie_codes: ["A41.3", "G00.0", "J14"]
+    aliases: ["infecciones invasivas por haemophilus influenzae", "haemophilus influenzae", "haemophilus", "a41.3"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_haemophilus_a41
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # Rezago impreso por periodo (1 hasta 2020_sem53, 0 desde 2021_sem01; cuadros.yaml). Supuesto del
+    # autor (DECISIONES_AUTOR_3, supuesto_autor_guion_2025_cero): el «-» de 2025 se trata como cero.
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#4C1D95"
+      label: "Haemophilus influenzae invasivo"
+      nombre_completo: "Infecciones invasivas por Haemophilus influenzae (A41.3, G00.0, J14)"

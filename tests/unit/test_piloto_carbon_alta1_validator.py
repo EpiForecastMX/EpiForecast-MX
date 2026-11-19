@@ -351,7 +351,9 @@ def test_config_aislada_sifilis_adquirida_invisible_y_doctor_verde(
         assert spec.id not in paso_semanal.publicados()
         assert "sifilis adquirida" not in ContratoCobertura.canonico().release
         assert registry.try_get("sifilis") is None
-        assert registry.try_get("a50") is None
+        # alta_b44: A50 es sífilis congénita, nunca la adquirida (A51-A53).
+        a50 = registry.try_get("a50")
+        assert a50 is not None and a50.id == "sifilis_congenita_a50"
         errores_cfg = [
             p
             for p in diagnose("sifilis_adquirida_a51", check_artifacts=False)

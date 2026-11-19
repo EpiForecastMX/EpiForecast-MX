@@ -215,6 +215,14 @@ def test_cie_map():
         "Z91.5": "Historia personal de lesión autoinfligida intencionalmente (intento de suicidio)",
         "R45.8": "Otros síntomas y signos que involucran el estado emocional (ideación suicida)",
         "Y07.0": "Violencia intrafamiliar",
+        "A17.1": "Tuberculosis otras formas",
+        "B57.0": "Tripanosomiasis americana (enfermedad de Chagas) aguda",
+        "A75.2": "Tifo murino",
+        "A50": "Sífilis congénita",
+        "Y58": "Eventos supuestamente asociados a la vacunación (ESAVI)",
+        "A39.0": "Meningitis meningocócica",
+        "A40.3": "Enfermedad invasiva por neumococo",
+        "A41.3": "Infecciones invasivas por Haemophilus influenzae",
     }
 
 
