@@ -4804,8 +4804,19 @@ padecimientos:
     batch: standalone
     extraction_group: b44_vih_b20
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    # Aviso: sólo la definición VIH (B20-B24, Z21) desde 2020-W28; los boletines anteriores
+    # imprimen SIDA (B20-B24), otra definición, y quedan fuera
+    # (planes/alta_b44_2026-11-19/DECISIONES_AUTOR_3.json, vih_b20).
+    # Aviso: salto de nivel 2020-2021 sin atribuir causa: mediana semanal nacional 146 en
+    # 2020-W28..W53 frente a 274.5 en 2021 (planes/alta_b44_2026-11-19/qa/c2b/vih_b20.qa.raw.json,
+    # nivel_por_anio).
+    # Aviso: control estacional seasonal_naive_lag52 publicado por decisión nominal del autor tras
+    # el rechazo de la prueba única de 2025 (vih_b20_benchmark_test_c3f728ee557c_2d304e21eaf9:
+    # nacional General 36.44 frente a 26.21 del control, +39.03 % > 10 %;
+    # planes/alta_b44_2026-11-19/DECISIONES_AUTOR_8.json, «Sí, publicar control»); nunca validado:
+    # a las 4 semanas sólo cabe CONTROL_ONLY.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Historia desde 2020-W28: 130 semanas antes de 2023-W01 y 182 antes de 2024-W01 (>= 104).
