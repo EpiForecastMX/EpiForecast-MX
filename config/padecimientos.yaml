@@ -4618,3 +4618,31 @@ padecimientos:
       color: "#4C1D95"
       label: "Haemophilus influenzae invasivo"
       nombre_completo: "Infecciones invasivas por Haemophilus influenzae (A41.3, G00.0, J14)"
+
+  - id: herida_arma_fuego_w32
+    data_name: "Herida por arma de fuego"
+    artifact_key: Herida_Arma_Fuego_W32
+    slug: herida_arma_fuego_w32
+    display_name: "Herida por arma de fuego"
+    cie_codes: ["W32", "W33", "W34"]
+    aliases: ["herida por arma de fuego", "w32-w34"]
+    # SENSIBLE: alta con OK nominal del autor («incluir todooo», 19-nov-2026, AUTORIZACION_AUTOR.json del
+    # lote alta_b44) SIN revisión clínica ni de comunicación acreditada. Respuesta de crisis con la Línea
+    # de la Vida obligatoria antes que cualquier cifra (trampa 34). Alias sólo técnicos: ver el qa.md.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_herida_arma_fuego_w32
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#7F1D1D"
+      label: "Herida por arma de fuego"
+      nombre_completo: "Herida por arma de fuego (W32-W34)"

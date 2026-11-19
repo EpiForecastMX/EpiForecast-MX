@@ -226,6 +226,7 @@ def test_solo_cuadro_6_sifilis_adquirida_declara_reparaciones_opt_in() -> None:
             "b44_gonococica_a54",
             "b44_violencia_intrafamiliar_y07",
             "b44_sifilis_congenita_a50",
+            "b44_herida_arma_fuego_w32",
         ]
     )
     assert con_sp == [GRUPO]

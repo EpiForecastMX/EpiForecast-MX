@@ -223,6 +223,7 @@ def test_cie_map():
         "A39.0": "Meningitis meningocócica",
         "A40.3": "Enfermedad invasiva por neumococo",
         "A41.3": "Infecciones invasivas por Haemophilus influenzae",
+        "W32": "Herida por arma de fuego",
     }
 
 

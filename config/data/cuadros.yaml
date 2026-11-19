@@ -3814,3 +3814,48 @@ cuadro_groups:
         has_prev_year: true
     n_states_expected: 32
     backend: camelot_stream
+
+  b44_herida_arma_fuego_w32:
+    # Cuadro 18.2 (Accidentes), página de violencia intrafamiliar (Y07.0-Y07.2) y herida por arma
+    # de fuego (W32-W34). Hasta 2015_sem01 el bloque W32-W34 se imprime sin año anterior (7 columnas en la
+    # página); después, 8. El rótulo del bloque W32-W34 decía «Herida por arma de fuego y punzocortantes».
+    # Bloque 1 de la página.
+    page_anchors: ['y07', 'w32']
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    # reintento_row_tol: 4 (opt-in medido): en 2014_sem26 camelot parte en dos renglones Veracruz, Yucatán y
+    # Zacatecas y desplaza sus valores una entidad (Veracruz vacía); con row_tol=4 las 32 filas cuadran con el
+    # TOTAL impreso. Sólo se activa ante una fila estatal vacía o estados faltantes.
+    reintento_row_tol: 4
+    # En 2014_sem02..05 camelot parte en dos renglones Veracruz, Yucatán y Zacatecas (nombre y primer
+    # valor arriba, el resto abajo sin nombre); sin unirlos su Sem. se leía como 0 (faltaban 54, 48, 57
+    # y 51 casos frente al TOTAL impreso; QA c5 y c5b).
+    une_renglones_parciales: true
+    last_block_columns: {7: 3, 8: 4}
+    diseases:
+      - id: herida_arma_fuego_w32
+        keyword: "Herida_Arma_Fuego_W32"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [herida_arma_fuego_w32]
+        reason: >-
+          boletín con el formato de 2013 (Cuadro 15, sólo acumulados, sin el bloque W32-W34): su semana
+          objetivo es 2013-W52, anterior al inicio de la serie (2014-W01)
+      - file: "2016_sem20.pdf"
+        diseases: [herida_arma_fuego_w32]
+        keep_period: true
+        reason: >-
+          errata de la fuente verificada abriendo el PDF (página 63, render): bajo el encabezado W32-W34 el boletín imprime
+          un bloque ajeno (TOTAL Sem. 38, acumulado 419/578, año anterior 767) frente a 785 / 9,718 / 3,432 en 2016_sem19 y
+          953 / 11,101 / 3,855 en 2016_sem21; el acumulado nacional salta 13,150 -> 997 -> 14,956. Mismo boletín de
+          bloques rotados que monóxido (2016_sem20). Se conserva el periodo vacío para imputación
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
