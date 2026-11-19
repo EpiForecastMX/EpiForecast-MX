@@ -87,15 +87,16 @@ def une_renglones_parciales(df: pd.DataFrame) -> pd.DataFrame:
 
     En el Cuadro 18.1 de 2019_sem48 a 2024_sem01 camelot parte el renglón de algunas entidades
     (Ciudad de México, México, Nuevo León...): arriba el nombre con los valores de un bloque y abajo,
-    sin nombre, los de los otros. Sin esto ``reshape`` lee los bloques vacíos como ceros con estado
-    ``ok``. Se unen sólo si ningún valor se solapa; cualquier otra tabla pasa igual.
+    sin nombre, los de los otros (uno o varios renglones complementarios seguidos). Sin esto
+    ``reshape`` lee los bloques vacíos como ceros con estado ``ok``. Se une toda la secuencia sólo si
+    ningún valor se solapa entre ella y el renglón con nombre; cualquier otra tabla pasa igual.
 
     Si el renglón con nombre es una entidad federativa parcial (vacía en una columna que usan las
-    entidades) y el siguiente sin nombre trae valores que se solapan con los suyos, no hay unión
-    legítima: no se une y se marcan con :data:`AMBIGUO` sus celdas vacías y toda columna en que el
-    renglón siguiente trae un valor, que se perdería aunque ninguna entidad con nombre use esa
-    columna (todas partidas). Tras recortar el bloque
-    del padecimiento, :func:`motivo_ambiguo` invalida la tabla sólo si la marca cae en ese bloque;
+    entidades) y la secuencia sin nombre trae valores que se solapan (con los suyos o entre sí), no
+    hay unión legítima: no se une nada y se marcan con :data:`AMBIGUO` sus celdas vacías y toda
+    columna en que algún renglón complementario trae un valor, que se perdería aunque ninguna
+    entidad con nombre use esa columna (todas partidas). Tras recortar el bloque del padecimiento,
+    :func:`motivo_ambiguo` invalida la tabla sólo si la marca cae en ese bloque;
     una ambigüedad en el bloque de otro padecimiento no lo afecta. Encabezados y TOTAL no son
     entidades y siguen como antes. Sólo en los grupos que lo declaran
     (``une_renglones_parciales: true``).
@@ -105,23 +106,28 @@ def une_renglones_parciales(df: pd.DataFrame) -> pd.DataFrame:
     entidades = np.array([_es_entidad(n) for n in filas[:, 0]], dtype=bool)
     usadas = ~vacio[entidades].all(axis=0) if entidades.any() else np.zeros(vacio.shape[1], bool)
     for i in range(len(filas) - 1):
-        sig = i + 1
-        con_nombre = filas[i, 0].strip() != "" and not bool(vacio[i].all())
-        siguiente_sin_nombre = filas[sig, 0].strip() == "" and not bool(vacio[sig].all())
-        if not (con_nombre and siguiente_sin_nombre):
+        if filas[i, 0].strip() == "" or bool(vacio[i].all()):
             continue
-        if bool((~vacio[i] & ~vacio[sig]).any()):
+        # Toda la secuencia de renglones complementarios (sin nombre y con valores), no sólo el 1.º.
+        comp = []
+        for j in range(i + 1, len(filas)):
+            if filas[j, 0].strip() != "" or bool(vacio[j].all()):
+                break
+            comp.append(j)
+        if not comp:
+            continue
+        llenas = (~vacio[[i, *comp]]).sum(axis=0)
+        if bool((llenas > 1).any()):
             if entidades[i]:
-                # Cada columna con valor en el renglón complementario lo pierde al no unir, aunque
-                # ninguna entidad con nombre la use (todas partidas): también se marca.
-                filas[i, 1:][(vacio[i] & usadas) | ~vacio[sig]] = AMBIGUO
+                # Cada columna con valor en un complementario lo pierde al no unir, aunque ninguna
+                # entidad con nombre la use (todas partidas): también se marca.
+                filas[i, 1:][(vacio[i] & usadas) | (~vacio[comp]).any(axis=0)] = AMBIGUO
             continue
-        filas[i, 1:] = [
-            a if a != "" else b for a, b in zip(filas[i, 1:], filas[sig, 1:], strict=True)
-        ]
-        filas[sig, 1:] = ""
+        for j in comp:
+            filas[i, 1:][~vacio[j]] = filas[j, 1:][~vacio[j]]
+            filas[j, 1:] = ""
+            vacio[j] = True
         vacio[i] = filas[i, 1:] == ""
-        vacio[sig] = True
     return pd.DataFrame(filas, index=df.index, columns=df.columns)
 
 

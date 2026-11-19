@@ -144,6 +144,56 @@ def test_todas_partidas_y_solapamiento_solo_en_cdmx_invalida_la_tabla(monkeypatc
     assert "Ciudad de México" in salida["reason"]
 
 
+def _cruda_tres(solapa_tercero: bool) -> pd.DataFrame:
+    """CDMX con nombre y bloque vecino, y dos complementarios: 108/1008 y luego 2008/3008."""
+    filas = [["ENTIDAD", "Sem.", "H", "M", "Ant.", "Sem.", "H", "M", "Ant."]]
+    for i, estado in enumerate(ESTADOS):
+        propio = [str(100 + i), str(1000 + i), str(2000 + i), str(3000 + i)]
+        vecino = [str(5 + i), str(50 + i), str(60 + i), str(110 + i)]
+        if estado == "Ciudad de México":
+            filas.append([estado, "", "", "", "", *vecino])
+            filas.append(["", *propio[:2], "", "", "", "", "", ""])
+            extra = "9" if solapa_tercero else ""
+            filas.append(["", extra, "", *propio[2:], "", "", "", ""])
+        else:
+            filas.append([estado, *propio, *vecino])
+    return pd.DataFrame(filas)
+
+
+@pytest.mark.parametrize("solapa_tercero", [False, True])
+def test_dos_renglones_complementarios_no_pierden_valores(monkeypatch, tmp_path, solapa_tercero):
+    """Re-auditoría 3: el segundo complementario se descartaba y CDMX salía 108/1008/0/0 con ok."""
+    pdf = tmp_path / "2020_sem10.pdf"
+    pdf.write_bytes(b"%PDF")
+    monkeypatch.setattr(ce, "load_group", lambda _g: _spec(True))
+    monkeypatch.setattr(ce, "find_cuadro_page", lambda *_a: 62)
+    tabla = _cruda_tres(solapa_tercero)
+    monkeypatch.setattr(ce.camelot, "read_pdf", lambda *_a, **_k: [type("T", (), {"df": tabla})()])
+    salida = ce.extract_cuadro_from_pdf(str(pdf), "grupo_sintetico", DISEASE)
+    if solapa_tercero:
+        assert salida["valid"] is False and salida["df"] is None
+        assert "Ciudad de México" in salida["reason"]
+        return
+    assert salida["valid"], salida["reason"]
+    cdmx = salida["df"].set_index("Entidad").loc["Ciudad de México"]
+    assert [cdmx["Casos_semana"], cdmx["Acumulado_hombres"]] == [108, 1008]
+    assert [cdmx["Acumulado_mujeres"], cdmx["Acumulado_anio_anterior"]] == [2008, 3008]
+
+
+def test_secuencia_de_complementarios_se_une_entera_o_se_marca():
+    df = pd.DataFrame(
+        [["Nuevo León", "", "", "", "8"], ["", "1", "", "", ""], ["", "", "2", "3", ""]]
+    )
+    unida = une_renglones_parciales(df)
+    assert unida.iloc[0].tolist() == ["Nuevo León", "1", "2", "3", "8"]
+    assert (unida.iloc[1:, 1:] == "").all().all()
+    solapada = df.copy()
+    solapada.iloc[2, 1] = "9"  # el tercero se solapa con el segundo
+    out = une_renglones_parciales(solapada)
+    assert out.iloc[0].tolist() == ["Nuevo León", AMBIGUO, AMBIGUO, AMBIGUO, "8"]
+    assert out.iloc[1:].equals(solapada.iloc[1:].astype(str))
+
+
 def test_solapamiento_que_pierde_un_valor_del_bloque_propio_se_marca():
     """El valor del renglón complementario que no se une se pierde: su columna queda marcada."""
     df = pd.DataFrame([["Nuevo León", "", "", "7", "8"], ["", "1", "2", "3", ""]])
