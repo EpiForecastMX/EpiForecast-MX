@@ -4852,6 +4852,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: meningitis_tuberculosa_a170_benchmark_test_603dc0738a05_ce31ac51d3d0
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4904,6 +4905,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: lepra_a30_benchmark_test_e32febcfffc6_43af25133ba7
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4930,6 +4932,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: fiebre_manchada_a770_benchmark_test_4796443c1ec0_3c412db5b412
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4958,6 +4961,7 @@ padecimientos:
     # El bloque A79 se imprime desde 2017_sem02 (objetivo 2017-W02; antes, «Otras Rickettsiosis»
     # con CIE A75.9, no incorporado): historia corta.
     selection_policy: rolling_cv_historia_corta_v1
+    acceptance_fallback_run: otras_rickettsiosis_a79_benchmark_test_93487cbe470a_81ce3ccf5de0
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4984,6 +4988,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: leishmaniasis_cutanea_b551_benchmark_test_96c14e031372_1a51517c071c
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
