@@ -2037,6 +2037,9 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_mordedura_perro_w54
     exposure_source_id: inegi_cpv2020_static
+    # El autor autorizó modelarla pese al salto de nivel señalado con el cambio del Cuadro 18.1 de
+    # 2024 (DECISIONES_AUTOR_2.json, «Sí, con aviso de salto»); niveles medidos en el QA del lote
+    # alta_b44. Renglones partidos: une_renglones_parciales en su grupo (QA c7b).
     lifecycle: configured
     channels: []
     training_engines: []
@@ -2062,6 +2065,9 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_mordedura_mamiferos_w55
     exposure_source_id: inegi_cpv2020_static
+    # El autor autorizó modelarla pese al salto de nivel señalado con el cambio del Cuadro 18.1 de
+    # 2024 (DECISIONES_AUTOR_2.json, «Sí, con aviso de salto»); niveles medidos en el QA del lote
+    # alta_b44. Renglones partidos: une_renglones_parciales en su grupo (QA c7b).
     lifecycle: configured
     channels: []
     training_engines: []

@@ -1225,12 +1225,24 @@ cuadro_groups:
     backend: camelot_stream
 
   alta20_mordedura_perro_w54:
-    # Mordeduras por perro (W54).
+    # Mordeduras por perro (W54). Cuadro 18.1 de Accidentes: primer bloque de 4 columnas (Sem,
+    # acumulado H, acumulado M, acumulado del año anterior). Hasta 2024_sem01 la página trae tres
+    # bloques (perro, otros mamíferos, serpiente: 12 columnas); desde 2024_sem02 dos (8 columnas).
+    # Rezago impreso «hasta la semana N» = 1 en los 658 boletines con título legible (13 con título
+    # en imagen: 2025_sem12/25/28/31, 2026_sem08/09/10/17/20/23/34/42/44).
     page_anchors: ["w54"]
     state_markers: ["zacatecas", "tamaulipas"]
     year_week_source: filename
     observation_lag_weeks: 1
-    first_block_columns: {12: 4, 8: 4}
+    # Camelot parte en dos el renglón de algunas entidades (2019_sem48..2024_sem01: nombre con
+    # los valores de un bloque y debajo, sin nombre, los del otro); sin unirlos el bloque se leía
+    # como ceros con estado ok (1,121 filas en perro, 1,137 en mamíferos; QA c7 y c7b).
+    une_renglones_parciales: true
+    # 10 columnas: 2019_sem35 y 2019_sem39, camelot funde dos celdas del bloque de mamíferos; el
+    # bloque de perro sale íntegro y su suma cuadra con el TOTAL impreso (2,493 y 2,247).
+    first_block_columns: {12: 4, 10: 4, 8: 4}
+    # 2018_sem02/03/05: renglones estatales vacíos; row_tol=4 los recupera y cuadra con el TOTAL.
+    reintento_row_tol: 4
     diseases:
       - id: mordedura_perro_w54
         keyword: "Mordedura_Perro_W54"
@@ -1240,6 +1252,19 @@ cuadro_groups:
       - file: "2014_sem01.pdf"
         diseases: [mordedura_perro_w54]
         reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2015_sem01.pdf"
+        diseases: [mordedura_perro_w54]
+        keep_period: true              # semana interior (2014-W53): el runner exige series contiguas
+        reason: >-
+          fallo del EXTRACTOR, no de la fuente: el PDF (pág. 60) trae las 32 entidades completas;
+          camelot pega el Sem al acumulado («17\n632») y sólo el área completa da 32 renglones, con
+          5 columnas
+      - file: "2015_sem02.pdf"
+        diseases: [mordedura_perro_w54]
+        keep_period: true              # semana interior (2015-W01)
+        reason: >-
+          fallo del EXTRACTOR, no de la fuente: el PDF (pág. 61) trae las 32 entidades completas;
+          camelot sólo reconoce Tlaxcala y el área completa funde H, M y año anterior en una celda
     layout_variants:
       - id: v_4col_prev
         min_year_week: "0000_sem00"
@@ -1249,12 +1274,20 @@ cuadro_groups:
     backend: camelot_stream
 
   alta20_mordedura_mamiferos_w55:
-    # Mordeduras por otros mamíferos (W55).
+    # Mordeduras por otros mamíferos (W55). Segundo bloque del Cuadro 18.1: intermedio de 12
+    # columnas hasta 2024_sem01 y último de 8 desde 2024_sem02. Rezago impreso = 1 (mismo título
+    # que perro).
     page_anchors: ["w54"]
     state_markers: ["zacatecas", "tamaulipas"]
     year_week_source: filename
     observation_lag_weeks: 1
+    # Camelot parte en dos el renglón de algunas entidades (2019_sem48..2024_sem01: nombre con
+    # los valores de un bloque y debajo, sin nombre, los del otro); sin unirlos el bloque se leía
+    # como ceros con estado ok (1,121 filas en perro, 1,137 en mamíferos; QA c7 y c7b).
+    une_renglones_parciales: true
     inner_block_columns: {12: [8, 4]}
+    # 2018_sem02/03/05: renglones estatales vacíos; row_tol=4 los recupera y cuadra con el TOTAL.
+    reintento_row_tol: 4
     periodos:
       - desde: "2024_sem02"
         inner_block_columns: null
@@ -1268,6 +1301,30 @@ cuadro_groups:
       - file: "2014_sem01.pdf"
         diseases: [mordedura_mamiferos_w55]
         reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2015_sem01.pdf"
+        diseases: [mordedura_mamiferos_w55]
+        keep_period: true              # semana interior (2014-W53)
+        reason: >-
+          fallo del EXTRACTOR, no de la fuente: el PDF (pág. 60) trae las 32 entidades completas;
+          camelot pega el Sem al acumulado y el área completa funde columnas
+      - file: "2015_sem02.pdf"
+        diseases: [mordedura_mamiferos_w55]
+        keep_period: true              # semana interior (2015-W01)
+        reason: >-
+          fallo del EXTRACTOR, no de la fuente: el PDF (pág. 61) trae las 32 entidades completas;
+          camelot sólo reconoce Tlaxcala y el área completa funde columnas
+      - file: "2019_sem35.pdf"
+        diseases: [mordedura_mamiferos_w55]
+        keep_period: true              # semana interior (2019-W34)
+        reason: >-
+          fallo del EXTRACTOR, no de la fuente: el PDF (pág. 62) trae el bloque completo (TOTAL
+          199, 2,957, 3,807, 6,625); camelot funde acumulado H y M («61\n56») y deja 10 columnas
+      - file: "2019_sem39.pdf"
+        diseases: [mordedura_mamiferos_w55]
+        keep_period: true              # semana interior (2019-W38)
+        reason: >-
+          fallo del EXTRACTOR, no de la fuente: el PDF (pág. 62) trae el bloque completo (TOTAL
+          200, 3,277, 4,254, 7,415); camelot funde acumulado H y M y deja 10 columnas
     layout_variants:
       - id: v_4col_prev
         min_year_week: "0000_sem00"

@@ -218,7 +218,14 @@ def test_solo_cuadro_6_sifilis_adquirida_declara_reparaciones_opt_in() -> None:
     con_rt = sorted(g for g, s in grupos.items() if "reintento_row_tol" in s)
     con_sp = sorted(g for g, s in grupos.items() if "bloque_sin_prev_en_capa_texto" in s)
     # alta_b44: la gonocócica comparte la página del cuadro 6 y su renglón partido.
-    assert con_rt == sorted([GRUPO, "b44_gonococica_a54"])
+    assert con_rt == sorted(
+        [
+            GRUPO,
+            "b44_gonococica_a54",
+            "alta20_mordedura_perro_w54",
+            "alta20_mordedura_mamiferos_w55",
+        ]
+    )
     assert con_sp == [GRUPO]
 
     spec = grupos[GRUPO]
