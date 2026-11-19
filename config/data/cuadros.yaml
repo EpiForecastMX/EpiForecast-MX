@@ -4411,3 +4411,48 @@ cuadro_groups:
         has_prev_year: true
     n_states_expected: 32
     backend: camelot_stream
+
+  b44_paludismo_vivax_b51:
+    # Paludismo por Plasmodium vivax (B51; el cuadro de 2026 imprime B50 en ambos bloques de
+    # paludismo y el resumen de la página 4, B51): ÚLTIMO bloque del cuadro de transmitidas por
+    # vector, tras paludismo por P. falciparum (y, hasta 2016_sem52, fiebre del oeste del Nilo).
+    # Anclas «vivax» y «falciparum»: una página por boletín en los 671 (pypdf, medido).
+    # Anchos de camelot (renglón de Zacatecas, medidos): 6 en 2014_sem01, 9 de 2014_sem02 a
+    # 2016_sem52 (tres bloques de 3), 6 de 2017_sem01 a 2020_sem53 (dos bloques de 3: Sem., acumulado
+    # del año y del anterior, SIN sexo) y 8 desde 2021_sem01 (dos bloques de 4: Sem., acumulados de
+    # hombres y de mujeres y año anterior). Por decisión del autor (DECISIONES_AUTOR_9, 19-nov-2026)
+    # se modela sin sexo desde 2014: desde 2021_sem01 ``suma_sexos`` lee el bloque H/M como acumulado
+    # total = H + M, validado contra el TOTAL impreso en sus 4 columnas (falla cerrado si no cuadra).
+    # Rezago impreso por periodo, medido en los 671 títulos (658 por texto y 13 por OCR): «hasta la
+    # semana N-1» de 2014_sem01 a 2017_sem01 y «Paludismo por P. vivax hasta la semana N» desde
+    # 2017_sem02. 2019_sem01 titula «hasta la semana epidemiológica 52 del 2018; Paludismo por P.
+    # falciparum hasta la 1», pero el bloque de vivax imprime 2019/2018 y su TOTAL acumulado es 0
+    # frente a 799 en 2018_sem52: es 2019-W01, coherente con el rezago 0 del periodo.
+    page_anchors: ["vivax", "falciparum"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    last_block_columns: {6: 3, 8: 4, 9: 3}
+    periodos:
+      - desde: "2017_sem02"
+        observation_lag_weeks: 0
+        huecos_objetivo:
+          - periodo: "2017-W01"
+            motivo: >-
+              2017_sem01 imprime «hasta la semana N-1» (objetivo 2016-W52) y 2017_sem02 «Paludismo
+              por P. vivax hasta la semana 2» (2017-W02): ningún boletín imprime la semana 1 de 2017
+              de este bloque; se imputa causalmente y se marca
+      - desde: "2021_sem01"
+        suma_sexos: true
+    diseases:
+      - id: paludismo_vivax_b51
+        keyword: "Paludismo_Vivax_B51"
+        block_index: 0
+        onboard: true
+    layout_variants:
+      - id: v_3col_total
+        min_year_week: "0000_sem00"
+        cols_per_disease: 3
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream

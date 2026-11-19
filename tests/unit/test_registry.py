@@ -232,6 +232,7 @@ def test_cie_map():
         "A77.0": "Fiebre manchada",
         "A79": "Otras rickettsiosis",
         "B55.1": "Leishmaniasis cutánea",
+        "B51": "Paludismo por Plasmodium vivax",  # alta_b44, configured, sin sexo
     }
 
 

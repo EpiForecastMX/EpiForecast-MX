@@ -5073,3 +5073,33 @@ padecimientos:
       color: "#4D7C0F"
       label: "Leishmaniasis cutánea"
       nombre_completo: "Leishmaniasis cutánea (B55.1)"
+
+  - id: paludismo_vivax_b51
+    data_name: "Paludismo por Plasmodium vivax"
+    artifact_key: Paludismo_Vivax_B51
+    slug: paludismo_vivax_b51
+    display_name: "Paludismo por Plasmodium vivax"
+    cie_codes: ["B51"]
+    # Sin «paludismo» ni «malaria» a secas: abarcarían el paludismo por P. falciparum (B50), que el
+    # boletín publica en el bloque vecino de la misma página.
+    aliases: ["paludismo por plasmodium vivax", "paludismo por vivax", "paludismo vivax", "malaria por vivax", "malaria vivax", "plasmodium vivax", "b51"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_paludismo_vivax_b51
+    exposure_source_id: inegi_cpv2020_static
+    # Sin H/M hasta 2020 y con H/M desde 2021: por decisión del autor (19-nov-2026) se modela sin
+    # sexo desde 2014 (32 bases «general», 37 productos), sumando H + M desde 2021_sem01.
+    sex_breakdown: false
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#115E59"
+      label: "Paludismo por P. vivax"
+      nombre_completo: "Paludismo por Plasmodium vivax (B51)"
