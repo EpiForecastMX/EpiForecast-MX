@@ -174,6 +174,7 @@ def test_el_carril_legacy_no_cambia():
         "Infecciones invasivas por Haemophilus influenzae",
         "Herida por arma de fuego",
         "Tripanosomiasis americana (enfermedad de Chagas) crónica",
+        "Infección por el virus de la inmunodeficiencia humana",
     ]
 
 

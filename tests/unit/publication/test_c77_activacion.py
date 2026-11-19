@@ -174,6 +174,7 @@ def test_el_contrato_separa_legacy_de_release():
         "infecciones invasivas por haemophilus influenzae",
         "herida por arma de fuego",
         "tripanosomiasis americana enfermedad de chagas cronica",
+        "infeccion por el virus de la inmunodeficiencia humana",
     )
     assert c.releases["obesidad"] == (_OBESIDAD, _RELEASE)
     assert c.releases["sifilis adquirida"] == (
@@ -315,6 +316,7 @@ def test_el_contrato_separa_legacy_de_release():
         "ulceras_k25",
         "varicela_b01",
         "vehiculos_v20",
+        "vih_b20",
         "violencia_intrafamiliar_y07",
         "violinista_u603",
         "viruela_simica_b04",
@@ -493,6 +495,7 @@ def test_la_paridad_de_corte_incluye_al_publicado_del_runner(tmp_path):
         "Infecciones invasivas por Haemophilus influenzae": 42,
         "Herida por arma de fuego": 42,
         "Tripanosomiasis americana (enfermedad de Chagas) crónica": 42,
+        "Infección por el virus de la inmunodeficiencia humana": 42,
     }
     rezagada = _consolidado(tmp_path / "a.csv", {**pads, "Obesidad": 27})
     resultado = revisa_consolidado(rezagada, contrato, contrato.padecimientos)
@@ -513,7 +516,7 @@ def test_un_publicado_del_runner_ausente_del_consolidado_falla(tmp_path):
 def test_revisa_releases_falla_cerrado_sin_bundle_ni_estado(tmp_path):
     resultado = revisa_releases(tmp_path, ContratoCobertura.canonico())
     assert not resultado.pasa
-    assert len(resultado.problemas) == 140
+    assert len(resultado.problemas) == 141
     assert any("release obesidad" in p for p in resultado.problemas)
     assert any("release diabetes tipo i:" in p for p in resultado.problemas)
     assert any("release sifilis adquirida:" in p for p in resultado.problemas)

@@ -33,7 +33,8 @@ def _bloque_obesidad(texto: str, de: tuple[str, str], a: tuple[str, str]) -> str
     return cabeza + separador + bloque + siguiente + cola
 
 
-# Lote alta_b44 (19-nov-2026): 58 releases del runner publicados juntos en la semana fuente 2026-W44.
+# Lote alta_b44 (19-nov-2026): 58 releases del runner publicados juntos en la semana fuente 2026-W44,
+# más vih_b20 (control autorizado), publicado después en el mismo lote: 59.
 ALTA_B44 = (
     "alacran_t63",
     "mordedura_perro_w54",
@@ -93,6 +94,8 @@ ALTA_B44 = (
     "haemophilus_a41",
     "herida_arma_fuego_w32",
     "chagas_cronica_b572",
+    # Control autorizado de VIH, publicado después en el mismo lote (DECISIONES_AUTOR_8.json).
+    "vih_b20",
 )
 
 
@@ -263,14 +266,14 @@ def registry_c77() -> Iterator[registry._Registry]:
 
 
 def yaml_sin_alta_b44(texto: str | None = None) -> str:
-    """El yaml real (o ``texto``) con los 58 de alta_b44 devueltos a ``trained``."""
+    """El yaml real (o ``texto``) con los 59 de alta_b44 devueltos a ``trained``."""
     texto = _YAML_REAL.read_text(encoding="utf-8") if texto is None else texto
     return _sin_publicar(texto, ALTA_B44)
 
 
 @contextmanager
 def registry_sin_alta_b44() -> Iterator[registry._Registry]:
-    """Registry real con los 58 de alta_b44 devueltos a ``trained`` (estado de 86 publicados)."""
+    """Registry real con los 59 de alta_b44 devueltos a ``trained`` (estado de 86 publicados)."""
     anterior = registry._CACHE
     registro = _carga(yaml_sin_alta_b44())
     registry._CACHE = registro
