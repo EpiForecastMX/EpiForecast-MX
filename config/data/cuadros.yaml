@@ -4082,6 +4082,80 @@ cuadro_groups:
         keyword: "Vih_B20"
         block_index: 0
         onboard: true
+    source_exclusions:
+      - file: "2022_sem27.pdf"
+        diseases: [vih_b20]
+        keep_period: true
+        reason: >-
+          errata de la fuente (PDF abierto): la suma de las 32 entidades no es el TOTAL impreso
+          (Sem. 309 frente a 310 impreso y estadio 3 H 1 244 frente a 1 245); sin renglón identificable, no se corrige ninguna celda
+      - file: "2022_sem28.pdf"
+        diseases: [vih_b20]
+        keep_period: true
+        reason: >-
+          errata de la fuente (PDF abierto): la suma de las 32 entidades no es el TOTAL impreso
+          (estadio 3 H 1 283 frente a 1 284); sin renglón identificable, no se corrige ninguna celda
+      - file: "2022_sem29.pdf"
+        diseases: [vih_b20]
+        keep_period: true
+        reason: >-
+          errata de la fuente (PDF abierto): la suma de las 32 entidades no es el TOTAL impreso
+          (estadio 3 H 1 361 frente a 1 362); sin renglón identificable, no se corrige ninguna celda
+      - file: "2022_sem30.pdf"
+        diseases: [vih_b20]
+        keep_period: true
+        reason: >-
+          errata de la fuente (PDF abierto): la suma de las 32 entidades no es el TOTAL impreso
+          (estadio 3 H 1 397 frente a 1 398); sin renglón identificable, no se corrige ninguna celda
+      - file: "2022_sem31.pdf"
+        diseases: [vih_b20]
+        keep_period: true
+        reason: >-
+          errata de la fuente (PDF abierto): la suma de las 32 entidades no es el TOTAL impreso
+          (estadio 3 H 1 459 frente a 1 460); sin renglón identificable, no se corrige ninguna celda
+      - file: "2022_sem32.pdf"
+        diseases: [vih_b20]
+        keep_period: true
+        reason: >-
+          errata de la fuente (PDF abierto): la suma de las 32 entidades no es el TOTAL impreso
+          (estadio 3 H 1 505 frente a 1 506); sin renglón identificable, no se corrige ninguna celda
+      - file: "2022_sem33.pdf"
+        diseases: [vih_b20]
+        keep_period: true
+        reason: >-
+          errata de la fuente (PDF abierto): la suma de las 32 entidades no es el TOTAL impreso
+          (estadio 3 H 1 559 frente a 1 560); sin renglón identificable, no se corrige ninguna celda
+      - file: "2022_sem34.pdf"
+        diseases: [vih_b20]
+        keep_period: true
+        reason: >-
+          errata de la fuente (PDF abierto): la suma de las 32 entidades no es el TOTAL impreso
+          (estadio 3 H 1 612 frente a 1 613); sin renglón identificable, no se corrige ninguna celda
+      - file: "2022_sem35.pdf"
+        diseases: [vih_b20]
+        keep_period: true
+        reason: >-
+          errata de la fuente (PDF abierto): la suma de las 32 entidades no es el TOTAL impreso
+          (estadio 3 H 1 679 frente a 1 680); sin renglón identificable, no se corrige ninguna celda
+      - file: "2022_sem36.pdf"
+        diseases: [vih_b20]
+        keep_period: true
+        reason: >-
+          errata de la fuente (PDF abierto): la suma de las 32 entidades no es el TOTAL impreso
+          (estadio 3 H 1 750 frente a 1 751); sin renglón identificable, no se corrige ninguna celda
+      - file: "2022_sem37.pdf"
+        diseases: [vih_b20]
+        keep_period: true
+        reason: >-
+          errata de la fuente (PDF abierto): la suma de las 32 entidades no es el TOTAL impreso
+          (estadio 3 H 1 788 frente a 1 789); sin renglón identificable, no se corrige ninguna celda
+      - file: "2023_sem30.pdf"
+        diseases: [vih_b20]
+        keep_period: true
+        reason: >-
+          errata de la fuente (PDF abierto): la celda Sem. de Aguascalientes imprime «.» en lugar de
+          «-» o de un número; la suma de las otras 31 es el TOTAL impreso (434), pero no se interpreta
+          el signo
     layout_variants:
       - id: v_4col_prev
         min_year_week: "0000_sem00"
