@@ -13,6 +13,7 @@ import pytest
 
 from epiforecast.data.extraction import cuadro_extractor as ce
 from epiforecast.data.extraction.cuadro_reparaciones import (
+    RenglonesAmbiguosError,
     alinea_renglones,
     opciones_tabla,
     une_renglones_parciales,
@@ -31,15 +32,19 @@ PARTIDAS = {"Ciudad de México", "México", "Nuevo León"}
 DISEASE = "mordedura_perro_w54"
 
 
-def _cruda() -> pd.DataFrame:
-    """Dos bloques de 4 columnas; tres entidades partidas: nombre con el 2.º bloque, debajo el 1.º."""
+def _cruda(solapa: str | None = None) -> pd.DataFrame:
+    """Dos bloques de 4 columnas; tres entidades partidas: nombre con el 2.º bloque, debajo el 1.º.
+
+    ``solapa`` añade al renglón complementario de esa entidad una celda que se solapa con su
+    renglón con nombre (el caso ambiguo reproducido por la auditoría).
+    """
     filas = [["ENTIDAD", "Sem.", "H", "M", "Ant.", "Sem.", "H", "M", "Ant."]]
     for i, estado in enumerate(ESTADOS):
         propio = [str(100 + i), str(1000 + i), str(2000 + i), str(3000 + i)]
         vecino = [str(5 + i), str(50 + i), str(60 + i), str(110 + i)]
         if estado in PARTIDAS:
             filas.append([estado, "", "", "", "", *vecino])
-            filas.append(["", *propio, "", "", "", ""])
+            filas.append(["", *propio, "9" if estado == solapa else "", "", "", ""])
         else:
             filas.append([estado, *propio, *vecino])
     return pd.DataFrame(filas)
@@ -58,13 +63,13 @@ def _spec(opt_in: bool) -> dict:
     return spec
 
 
-def _extrae(monkeypatch, tmp_path, opt_in: bool) -> dict:
+def _extrae(monkeypatch, tmp_path, opt_in: bool, solapa: str | None = None) -> dict:
     pdf = tmp_path / "2020_sem10.pdf"
     pdf.write_bytes(b"%PDF")
     monkeypatch.setattr(ce, "load_group", lambda _g: _spec(opt_in))
     monkeypatch.setattr(ce, "find_cuadro_page", lambda *_a: 62)
     monkeypatch.setattr(
-        ce.camelot, "read_pdf", lambda *_a, **_k: [type("T", (), {"df": _cruda()})()]
+        ce.camelot, "read_pdf", lambda *_a, **_k: [type("T", (), {"df": _cruda(solapa)})()]
     )
     return ce.extract_cuadro_from_pdf(str(pdf), "grupo_sintetico", DISEASE)
 
@@ -97,9 +102,24 @@ def test_une_renglon_con_nombre_y_el_siguiente_sin_nombre():
     assert alinea_renglones(df, parciales=True).equals(out)
 
 
-def test_no_une_si_los_valores_se_solapan_ni_si_el_siguiente_tiene_nombre():
+def test_renglones_ambiguos_invalidan_la_tabla_de_extremo_a_extremo(monkeypatch, tmp_path):
+    """Una celda solapada en el renglón complementario no puede dejar ceros con ``ok``."""
+    salida = _extrae(monkeypatch, tmp_path, opt_in=True, solapa="Ciudad de México")
+    assert salida["valid"] is False
+    assert salida["df"] is None and salida["n_states"] == 0
+    assert "renglones partidos ambiguos" in salida["reason"]
+    assert "Ciudad de México" in salida["reason"]
+
+
+def test_parcial_con_valores_solapados_falla_cerrado():
     solapados = pd.DataFrame([["Nuevo León", "5", "", "7"], ["", "1", "2", ""]])
-    assert une_renglones_parciales(solapados).equals(solapados.astype(str))
+    with pytest.raises(RenglonesAmbiguosError, match="Nuevo León"):
+        une_renglones_parciales(solapados)
+
+
+def test_no_une_si_el_renglon_esta_completo_ni_si_el_siguiente_tiene_nombre():
+    completo = pd.DataFrame([["Nuevo León", "5", "6", "7"], ["", "1", "2", ""]])
+    assert une_renglones_parciales(completo).equals(completo.astype(str))
     con_nombre = pd.DataFrame([["Nuevo León", "", "", "7"], ["Oaxaca", "1", "2", ""]])
     assert une_renglones_parciales(con_nombre).equals(con_nombre.astype(str))
     alineada = pd.DataFrame([["ENTIDAD", "Sem.", "Acum."], ["Aguascalientes", "194", "766"]])

@@ -72,22 +72,37 @@ def alinea_renglones(df: pd.DataFrame, parciales: bool = False) -> pd.DataFrame:
     return une_renglones_parciales(alineada) if parciales else alineada
 
 
+class RenglonesAmbiguosError(ValueError):
+    """Renglón parcial y renglón sin nombre con valores solapados: la tabla del boletín no vale."""
+
+
 def une_renglones_parciales(df: pd.DataFrame) -> pd.DataFrame:
     """Une una entidad con valores parciales y el renglón siguiente sin nombre que los completa.
 
     En el Cuadro 18.1 de 2019_sem48 a 2024_sem01 camelot parte el renglón de algunas entidades
     (Ciudad de México, México, Nuevo León...): arriba el nombre con los valores de un bloque y abajo,
     sin nombre, los de los otros. Sin esto ``reshape`` lee los bloques vacíos como ceros con estado
-    ``ok``. Se unen sólo si ningún valor se solapa; cualquier otra tabla pasa igual. Sólo en los
-    grupos que lo declaran (``une_renglones_parciales: true``).
+    ``ok``. Se unen sólo si ningún valor se solapa; cualquier otra tabla pasa igual. Si el renglón
+    con nombre es parcial (le falta un valor en una columna que la tabla sí usa) y el siguiente sin
+    nombre trae valores que se solapan con los suyos, no hay unión legítima ni lectura segura:
+    falla cerrado con :class:`RenglonesAmbiguosError` en vez de dejar ceros. Sólo en los grupos que lo
+    declaran (``une_renglones_parciales: true``).
     """
     filas = df.astype(str).to_numpy(copy=True)
     vacio = filas[:, 1:] == ""
+    usadas = ~vacio.all(axis=0)
     for i in range(len(filas) - 1):
         sig = i + 1
         con_nombre = filas[i, 0].strip() != "" and not bool(vacio[i].all())
         siguiente_sin_nombre = filas[sig, 0].strip() == "" and not bool(vacio[sig].all())
-        if not (con_nombre and siguiente_sin_nombre) or bool((~vacio[i] & ~vacio[sig]).any()):
+        if not (con_nombre and siguiente_sin_nombre):
+            continue
+        if bool((~vacio[i] & ~vacio[sig]).any()):
+            if bool((vacio[i] & usadas).any()):
+                raise RenglonesAmbiguosError(
+                    f"renglones partidos ambiguos: {filas[i, 0].strip()!r} es parcial y el "
+                    "renglón siguiente sin nombre trae valores solapados; no se une ni se lee"
+                )
             continue
         filas[i, 1:] = [
             a if a != "" else b for a, b in zip(filas[i, 1:], filas[sig, 1:], strict=True)
