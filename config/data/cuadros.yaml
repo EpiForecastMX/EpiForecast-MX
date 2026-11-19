@@ -4449,6 +4449,14 @@ cuadro_groups:
         keyword: "Paludismo_Vivax_B51"
         block_index: 0
         onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [paludismo_vivax_b51]
+        reason: >-
+          boletín con corte «Paludismo por P. vivax hasta la 52 del 2013» (objetivo 2013-W52, con
+          columna Sem presente): anterior a series_start (2014-W01); PDF abierto, el Sem impreso es
+          «s.n.» en Coahuila, Durango, Puebla y Tamaulipas y el primer periodo no tiene base causal
+          para imputarlo
     layout_variants:
       - id: v_3col_total
         min_year_week: "0000_sem00"
