@@ -32,6 +32,7 @@ from epiforecast.data.extraction.cuadro_reparaciones import (
     spec_del_periodo,
 )
 from epiforecast.data.extraction.cuadro_sin_sexo import extrae_sin_sexo as _sin_sexo
+from epiforecast.data.extraction.cuadro_suma_sexos import marca_suma_sexos, suma_sexos
 from epiforecast.data.extraction.dengue_extractor import (
     _restrict_to_states,
     _year_week_from_filename,
@@ -187,6 +188,7 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
             return out
         df_clean, out["reparacion"] = reparada, "primer_bloque_por_orden"
 
+    ancho_tabla = df_clean.shape[1] - 1  # antes del recorte: ubica el bloque en el TOTAL
     # Primer o último bloque con vecinos de ancho variable: recorte por conteo real de columnas.
     for clave, al_final in (("first_block_columns", False), ("last_block_columns", True)):
         anchos = spec.get(clave)
@@ -218,11 +220,17 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
         return out
     if (df_clean := suma_estadios(df_clean, pdf_path, page, spec, out)) is None:
         return out
+    convertida = suma_sexos(
+        df_clean, pdf_path, page, spec, out, disease_id=disease_id, ancho_tabla=ancho_tabla
+    )
+    if convertida is None:
+        return out
+    df_clean = convertida
     keywords = [d["keyword"] for d in spec["diseases"]]
     n_dis = len(keywords)
     data_cols = df_clean.shape[1] - 1
     if not registry.require(disease_id).sex_breakdown:
-        return _sin_sexo(out, df_clean, spec, disease_id, year, week)
+        return marca_suma_sexos(_sin_sexo(out, df_clean, spec, disease_id, year, week))
     if data_cols == n_dis * 3:
         df_clean = pad_prev_year_cols(df_clean, keywords)
         out["layout"] = "3col_noprev"
