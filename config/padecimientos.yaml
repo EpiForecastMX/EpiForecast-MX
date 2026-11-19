@@ -3233,6 +3233,7 @@ padecimientos:
     eligible_engines: []
     # Bloque presente en los 671 boletines (2014_sem01..2026_sem44) con rezago 0 constante.
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: tetanos_a34_benchmark_test_971231460db0_5636cff894f8
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3259,6 +3260,7 @@ padecimientos:
     eligible_engines: []
     # Bloque desde el boletín 2023_sem01 (serie desde 2023-W01, rezago 0).
     selection_policy: rolling_cv_historia_corta_2023_v1
+    acceptance_fallback_run: viruela_simica_b04_benchmark_test_a3a2cc05fc62_16e3f0229be2
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3285,6 +3287,7 @@ padecimientos:
     eligible_engines: []
     # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante.
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: vph_b97_benchmark_test_fb582cee63bd_0e7319569cad
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3341,6 +3344,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: linfogranuloma_a55_benchmark_test_4268b164fdef_dfd54f629be2
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3369,6 +3373,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: chancro_blando_a57_benchmark_test_228f25d257fa_5a412edf7418
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3450,6 +3455,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: paralisis_flacida_u98_benchmark_test_2c6f031bc3b7_101b4e49596e
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3477,6 +3483,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: iaas_sc_benchmark_test_ff25e3c28d91_2f483c0261b7
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3540,6 +3547,7 @@ padecimientos:
     eligible_engines: []
     # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: alcoholica_higado_k70_benchmark_test_d99a39b269f0_df4a70d4138f
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3566,6 +3574,7 @@ padecimientos:
     eligible_engines: []
     # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: anencefalia_q00_benchmark_test_771a8f72370c_f11ff866e566
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3592,6 +3601,7 @@ padecimientos:
     eligible_engines: []
     # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: encefalocele_q01_benchmark_test_22ecaf241930_d2158a6a0c4f
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3619,6 +3629,7 @@ padecimientos:
     # Serie desde 2017_sem02 (2017-W01): rolling_cv_historia_corta_v1 por decisión del autor
     # (DECISIONES_AUTOR_2.json del lote alta_b44, «desde_2017»). Rezago 1 constante.
     selection_policy: rolling_cv_historia_corta_v1
+    acceptance_fallback_run: microcefalia_q02_benchmark_test_33c6e5b804ed_5dd8492f03ca
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3645,6 +3656,7 @@ padecimientos:
     eligible_engines: []
     # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: espina_bifida_q05_benchmark_test_da25c9f8ff01_1fe8a04d2087
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3671,6 +3683,7 @@ padecimientos:
     eligible_engines: []
     # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: labio_paladar_q35_benchmark_test_3c5fe2a07bcf_4a71799cad33
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
