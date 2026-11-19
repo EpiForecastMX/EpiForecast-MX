@@ -3234,11 +3234,8 @@ padecimientos:
     # Bloque presente en los 671 boletines (2014_sem01..2026_sem44) con rezago 0 constante.
     selection_policy: rolling_cv_baja_incidencia_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: tetanos_a34_refit_final_9fe0414b00c7_1b728d367f0e
-      forecast_run_id: tetanos_a34_forecast_h52_1b728d367f0e_78a973635e32
-      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
-      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
+      backend: runner_release
+      release_id: tetanos_a34_release_cd4de88372e8
     acceptance_fallback_run: tetanos_a34_benchmark_test_971231460db0_5636cff894f8
     prophet_grid_key: null
     deepar_grid_key: null
@@ -3267,11 +3264,8 @@ padecimientos:
     # Bloque desde el boletín 2023_sem01 (serie desde 2023-W01, rezago 0).
     selection_policy: rolling_cv_historia_corta_2023_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: viruela_simica_b04_refit_final_9fe0414b00c7_fd1ec78329ca
-      forecast_run_id: viruela_simica_b04_forecast_h52_fd1ec78329ca_6dcbf43dafcd
-      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
-      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
+      backend: runner_release
+      release_id: viruela_simica_b04_release_91d2eda13c7d
     acceptance_fallback_run: viruela_simica_b04_benchmark_test_a3a2cc05fc62_16e3f0229be2
     prophet_grid_key: null
     deepar_grid_key: null
@@ -3300,11 +3294,8 @@ padecimientos:
     # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante.
     selection_policy: rolling_cv_baja_incidencia_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: vph_b97_refit_final_9fe0414b00c7_b0650e639a1d
-      forecast_run_id: vph_b97_forecast_h52_b0650e639a1d_619b5fc1ba13
-      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
-      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
+      backend: runner_release
+      release_id: vph_b97_release_532749b67520
     acceptance_fallback_run: vph_b97_benchmark_test_fb582cee63bd_0e7319569cad
     prophet_grid_key: null
     deepar_grid_key: null
@@ -3335,11 +3326,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: gonococica_a54_refit_final_96d350394855_75e7ab9b0410
-      forecast_run_id: gonococica_a54_forecast_h52_75e7ab9b0410_f03eceec0bf6
-      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
-      final_selection_digest: 96d350394855c1a9591da85bc3c80e51bb1eac38dc7137639fde98d8feaaa27d
+      backend: runner_release
+      release_id: gonococica_a54_release_fe58b3b5a738
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3369,11 +3357,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: linfogranuloma_a55_refit_final_9fe0414b00c7_153e6e80cf27
-      forecast_run_id: linfogranuloma_a55_forecast_h52_153e6e80cf27_ce8a76d5f1e6
-      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
-      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
+      backend: runner_release
+      release_id: linfogranuloma_a55_release_13706f4a5596
     acceptance_fallback_run: linfogranuloma_a55_benchmark_test_4268b164fdef_dfd54f629be2
     prophet_grid_key: null
     deepar_grid_key: null
@@ -3404,11 +3389,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: chancro_blando_a57_refit_final_9fe0414b00c7_5e52806326de
-      forecast_run_id: chancro_blando_a57_forecast_h52_5e52806326de_26221cb9e8b9
-      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
-      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
+      backend: runner_release
+      release_id: chancro_blando_a57_release_45732e3c94c8
     acceptance_fallback_run: chancro_blando_a57_benchmark_test_228f25d257fa_5a412edf7418
     prophet_grid_key: null
     deepar_grid_key: null
@@ -3439,11 +3421,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: herpes_genital_a600_refit_final_c2d5fb7d5280_0e2050f7fe67
-      forecast_run_id: herpes_genital_a600_forecast_h52_0e2050f7fe67_833a27eea659
-      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
-      final_selection_digest: c2d5fb7d5280ef25de481b3f0257ab9dbc877fad2e4dd20df71b1ce8c827cded
+      backend: runner_release
+      release_id: herpes_genital_a600_release_44e74814d66b
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3473,11 +3452,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: tricomoniasis_a590_refit_final_3108464b3ffd_9c88906e9b18
-      forecast_run_id: tricomoniasis_a590_forecast_h52_9c88906e9b18_07649965e9ee
-      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
-      final_selection_digest: 3108464b3ffd92d3ff311d7e7dbd0c6f7cc5cbcb56bec26269ce476a5d0ac812
+      backend: runner_release
+      release_id: tricomoniasis_a590_release_8f50a2144dd3
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3504,11 +3480,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: paralisis_flacida_u98_refit_final_9fe0414b00c7_0c3c7ad27b81
-      forecast_run_id: paralisis_flacida_u98_forecast_h52_0c3c7ad27b81_cc9f05c366b0
-      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
-      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
+      backend: runner_release
+      release_id: paralisis_flacida_u98_release_f6173413b054
     acceptance_fallback_run: paralisis_flacida_u98_benchmark_test_2c6f031bc3b7_101b4e49596e
     prophet_grid_key: null
     deepar_grid_key: null
@@ -3538,11 +3511,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: iaas_sc_refit_final_9fe0414b00c7_ee64e8d6e9fe
-      forecast_run_id: iaas_sc_forecast_h52_ee64e8d6e9fe_a21591729d05
-      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
-      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
+      backend: runner_release
+      release_id: iaas_sc_release_b0e917832a47
     acceptance_fallback_run: iaas_sc_benchmark_test_ff25e3c28d91_2f483c0261b7
     prophet_grid_key: null
     deepar_grid_key: null
@@ -3580,11 +3550,8 @@ padecimientos:
     # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
     selection_policy: rolling_cv_baja_incidencia_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: intox_alcohol_f100_refit_final_a17325e9fa53_6eb243d76865
-      forecast_run_id: intox_alcohol_f100_forecast_h52_6eb243d76865_74292e2d64fb
-      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
-      final_selection_digest: a17325e9fa53b3407d22609b55ee2681938de9dff9b77e100daed692cedf26a6
+      backend: runner_release
+      release_id: intox_alcohol_f100_release_84f8eb61d01b
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3614,11 +3581,8 @@ padecimientos:
     # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
     selection_policy: rolling_cv_baja_incidencia_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: alcoholica_higado_k70_refit_final_9fe0414b00c7_bae69435be68
-      forecast_run_id: alcoholica_higado_k70_forecast_h52_bae69435be68_594e1044d288
-      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
-      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
+      backend: runner_release
+      release_id: alcoholica_higado_k70_release_c45df29720a9
     acceptance_fallback_run: alcoholica_higado_k70_benchmark_test_d99a39b269f0_df4a70d4138f
     prophet_grid_key: null
     deepar_grid_key: null
@@ -3647,11 +3611,8 @@ padecimientos:
     # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
     selection_policy: rolling_cv_baja_incidencia_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: anencefalia_q00_refit_final_9fe0414b00c7_af2e6de2748c
-      forecast_run_id: anencefalia_q00_forecast_h52_af2e6de2748c_d3b5dcbe4f8b
-      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
-      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
+      backend: runner_release
+      release_id: anencefalia_q00_release_b8dd98d57ec0
     acceptance_fallback_run: anencefalia_q00_benchmark_test_771a8f72370c_f11ff866e566
     prophet_grid_key: null
     deepar_grid_key: null
@@ -3680,11 +3641,8 @@ padecimientos:
     # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
     selection_policy: rolling_cv_baja_incidencia_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: encefalocele_q01_refit_final_9fe0414b00c7_037e90557764
-      forecast_run_id: encefalocele_q01_forecast_h52_037e90557764_09516e035637
-      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
-      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
+      backend: runner_release
+      release_id: encefalocele_q01_release_cb7eebcb8f73
     acceptance_fallback_run: encefalocele_q01_benchmark_test_22ecaf241930_d2158a6a0c4f
     prophet_grid_key: null
     deepar_grid_key: null
@@ -3714,11 +3672,8 @@ padecimientos:
     # (DECISIONES_AUTOR_2.json del lote alta_b44, «desde_2017»). Rezago 1 constante.
     selection_policy: rolling_cv_historia_corta_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: microcefalia_q02_refit_final_9fe0414b00c7_84d3c17b9ccf
-      forecast_run_id: microcefalia_q02_forecast_h52_84d3c17b9ccf_4f6fe1f26d22
-      policy_digest: a240067c4fb2b3ee872fdfd5bb6a48b9aa016fe1220ffab522805d91e25ca57f
-      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
+      backend: runner_release
+      release_id: microcefalia_q02_release_2d6eb394c859
     acceptance_fallback_run: microcefalia_q02_benchmark_test_33c6e5b804ed_5dd8492f03ca
     prophet_grid_key: null
     deepar_grid_key: null
@@ -3747,11 +3702,8 @@ padecimientos:
     # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
     selection_policy: rolling_cv_baja_incidencia_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: espina_bifida_q05_refit_final_9fe0414b00c7_18971a866bca
-      forecast_run_id: espina_bifida_q05_forecast_h52_18971a866bca_4a44e009e9f6
-      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
-      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
+      backend: runner_release
+      release_id: espina_bifida_q05_release_05b90a9cbef9
     acceptance_fallback_run: espina_bifida_q05_benchmark_test_da25c9f8ff01_1fe8a04d2087
     prophet_grid_key: null
     deepar_grid_key: null
@@ -3780,11 +3732,8 @@ padecimientos:
     # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
     selection_policy: rolling_cv_baja_incidencia_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: labio_paladar_q35_refit_final_9fe0414b00c7_464bc164d4bb
-      forecast_run_id: labio_paladar_q35_forecast_h52_464bc164d4bb_ef8d3be6ab2e
-      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
-      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
+      backend: runner_release
+      release_id: labio_paladar_q35_release_5a88e7c03f1d
     acceptance_fallback_run: labio_paladar_q35_benchmark_test_3c5fe2a07bcf_4a71799cad33
     prophet_grid_key: null
     deepar_grid_key: null
@@ -3815,11 +3764,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2024_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: viuda_negra_u602_refit_final_947eb11f60fe_92a3ba3f3658
-      forecast_run_id: viuda_negra_u602_forecast_h52_92a3ba3f3658_2a454e980366
-      policy_digest: 188943c9543206799db95050f85d440796f78e5c9aaa8b0ac8171290508d1131
-      final_selection_digest: 947eb11f60fea7f78dd09cac72accb423acbab2d984e3dbb53276fd694a43110
+      backend: runner_release
+      release_id: viuda_negra_u602_release_d9135bf29d3b
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3846,11 +3792,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2024_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: violinista_u603_refit_final_947eb11f60fe_b9ee9ba47594
-      forecast_run_id: violinista_u603_forecast_h52_b9ee9ba47594_2f6b205ffd4e
-      policy_digest: 188943c9543206799db95050f85d440796f78e5c9aaa8b0ac8171290508d1131
-      final_selection_digest: 947eb11f60fea7f78dd09cac72accb423acbab2d984e3dbb53276fd694a43110
+      backend: runner_release
+      release_id: violinista_u603_release_d9c99e3a01f2
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3878,11 +3821,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2024_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: otras_aranas_t633_refit_final_947eb11f60fe_5017c3a63203
-      forecast_run_id: otras_aranas_t633_forecast_h52_5017c3a63203_4066cb78af81
-      policy_digest: 188943c9543206799db95050f85d440796f78e5c9aaa8b0ac8171290508d1131
-      final_selection_digest: 947eb11f60fea7f78dd09cac72accb423acbab2d984e3dbb53276fd694a43110
+      backend: runner_release
+      release_id: otras_aranas_t633_release_f4663d8c58e0
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3909,11 +3849,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2024_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: abeja_u604_refit_final_947eb11f60fe_4cde10a1fbe3
-      forecast_run_id: abeja_u604_forecast_h52_4cde10a1fbe3_4553aa01585b
-      policy_digest: 188943c9543206799db95050f85d440796f78e5c9aaa8b0ac8171290508d1131
-      final_selection_digest: 947eb11f60fea7f78dd09cac72accb423acbab2d984e3dbb53276fd694a43110
+      backend: runner_release
+      release_id: abeja_u604_release_2ac0e95c3567
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3940,11 +3877,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2024_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: avispa_u605_refit_final_947eb11f60fe_26fe87c998c5
-      forecast_run_id: avispa_u605_forecast_h52_26fe87c998c5_98aea16c791d
-      policy_digest: 188943c9543206799db95050f85d440796f78e5c9aaa8b0ac8171290508d1131
-      final_selection_digest: 947eb11f60fea7f78dd09cac72accb423acbab2d984e3dbb53276fd694a43110
+      backend: runner_release
+      release_id: avispa_u605_release_47baa704f452
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3972,11 +3906,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2024_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: otros_artropodos_t634_refit_final_947eb11f60fe_acab0dac42c0
-      forecast_run_id: otros_artropodos_t634_forecast_h52_acab0dac42c0_f9e0e5aba3ef
-      policy_digest: 188943c9543206799db95050f85d440796f78e5c9aaa8b0ac8171290508d1131
-      final_selection_digest: 947eb11f60fea7f78dd09cac72accb423acbab2d984e3dbb53276fd694a43110
+      backend: runner_release
+      release_id: otros_artropodos_t634_release_746ed7f15dcc
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4004,11 +3935,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2024_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: otros_ponzonosos_t631_refit_final_947eb11f60fe_17d7588f06f8
-      forecast_run_id: otros_ponzonosos_t631_forecast_h52_17d7588f06f8_b2e58c90cf99
-      policy_digest: 188943c9543206799db95050f85d440796f78e5c9aaa8b0ac8171290508d1131
-      final_selection_digest: 947eb11f60fea7f78dd09cac72accb423acbab2d984e3dbb53276fd694a43110
+      backend: runner_release
+      release_id: otros_ponzonosos_t631_release_788cffc12537
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4036,11 +3964,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2024_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: mordedura_cascabel_u600_refit_final_947eb11f60fe_26ba9324af7e
-      forecast_run_id: mordedura_cascabel_u600_forecast_h52_26ba9324af7e_588c21cd2ca1
-      policy_digest: 188943c9543206799db95050f85d440796f78e5c9aaa8b0ac8171290508d1131
-      final_selection_digest: 947eb11f60fea7f78dd09cac72accb423acbab2d984e3dbb53276fd694a43110
+      backend: runner_release
+      release_id: mordedura_cascabel_u600_release_76429c90d256
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4068,11 +3993,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2024_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: mordedura_coral_u601_refit_final_947eb11f60fe_db54a0973656
-      forecast_run_id: mordedura_coral_u601_forecast_h52_db54a0973656_4126114c0f6c
-      policy_digest: 188943c9543206799db95050f85d440796f78e5c9aaa8b0ac8171290508d1131
-      final_selection_digest: 947eb11f60fea7f78dd09cac72accb423acbab2d984e3dbb53276fd694a43110
+      backend: runner_release
+      release_id: mordedura_coral_u601_release_cd0f4b8a48ac
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4100,11 +4022,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2024_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: mordedura_otras_serpientes_t630_refit_final_947eb11f60fe_f2b096b80115
-      forecast_run_id: mordedura_otras_serpientes_t630_forecast_h52_f2b096b80115_264ad4ef84fd
-      policy_digest: 188943c9543206799db95050f85d440796f78e5c9aaa8b0ac8171290508d1131
-      final_selection_digest: 947eb11f60fea7f78dd09cac72accb423acbab2d984e3dbb53276fd694a43110
+      backend: runner_release
+      release_id: mordedura_otras_serpientes_t630_release_15f4ad5a7c59
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false

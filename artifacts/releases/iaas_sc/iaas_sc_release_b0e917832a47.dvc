@@ -1,0 +1,6 @@
+outs:
+- md5: 9a5adbd1a47239dd8811c945702b95d7.dir
+  size: 1481758
+  nfiles: 145
+  hash: md5
+  path: iaas_sc_release_b0e917832a47
