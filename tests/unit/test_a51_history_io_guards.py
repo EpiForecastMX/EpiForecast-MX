@@ -21,8 +21,16 @@ from epiforecast import registry
 from epiforecast.data.epi_calendar import shift as semana_siguiente
 from epiforecast.data.epi_geo_exposure import load_geo_catalog
 from epiforecast.publication.contratos_datos import ContratoCobertura
+from tests.unit.registry_pre_c77 import registry_sin_alta_b44
 
 pytestmark = pytest.mark.unit
+
+
+@pytest.fixture(autouse=True)
+def _registry_de_86_publicados():
+    """El script histórico de A51 exige 86 publicados: alta_b44 vuelve a ``trained``."""
+    with registry_sin_alta_b44():
+        yield
 
 
 def _old_85_names() -> list[str]:

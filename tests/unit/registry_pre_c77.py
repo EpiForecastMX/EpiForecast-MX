@@ -33,8 +33,85 @@ def _bloque_obesidad(texto: str, de: tuple[str, str], a: tuple[str, str]) -> str
     return cabeza + separador + bloque + siguiente + cola
 
 
+# Lote alta_b44 (19-nov-2026): 58 releases del runner publicados juntos en la semana fuente 2026-W44.
+ALTA_B44 = (
+    "alacran_t63",
+    "mordedura_perro_w54",
+    "mordedura_mamiferos_w55",
+    "toxoplasmosis_b58",
+    "teniasis_b68",
+    "cisticercosis_b69",
+    "triquinosis_b75",
+    "conjuntivitis_hemorragica_b303",
+    "tracoma_a71",
+    "hipotermia_t68",
+    "tetanos_a34",
+    "viruela_simica_b04",
+    "vph_b97",
+    "gonococica_a54",
+    "linfogranuloma_a55",
+    "chancro_blando_a57",
+    "herpes_genital_a600",
+    "tricomoniasis_a590",
+    "paralisis_flacida_u98",
+    "iaas_sc",
+    "intox_alcohol_f100",
+    "alcoholica_higado_k70",
+    "anencefalia_q00",
+    "encefalocele_q01",
+    "microcefalia_q02",
+    "espina_bifida_q05",
+    "labio_paladar_q35",
+    "viuda_negra_u602",
+    "violinista_u603",
+    "otras_aranas_t633",
+    "abeja_u604",
+    "avispa_u605",
+    "otros_artropodos_t634",
+    "otros_ponzonosos_t631",
+    "mordedura_cascabel_u600",
+    "mordedura_coral_u601",
+    "mordedura_otras_serpientes_t630",
+    "cirrosis_alcoholica_k703",
+    "chikungunya_a920",
+    "envenenamiento_analgesicos_x60",
+    "envenenamiento_psicotropicos_x61",
+    "ahorcamiento_x70",
+    "disparo_arma_corta_x72",
+    "objeto_cortante_x78",
+    "salto_lugar_elevado_x80",
+    "intento_suicidio_z915",
+    "ideacion_suicida_r458",
+    "violencia_intrafamiliar_y07",
+    "tuberculosis_otras_formas_a171",
+    "chagas_aguda_b570",
+    "tifo_murino_a752",
+    "sifilis_congenita_a50",
+    "esavi_y58",
+    "meningococica_a39",
+    "neumococo_a40",
+    "haemophilus_a41",
+    "herida_arma_fuego_w32",
+    "chagas_cronica_b572",
+)
+
+
+def _sin_publicar(texto: str, ids: tuple[str, ...]) -> str:
+    """Devuelve a ``trained`` y sin canales los bloques ``published`` de ``ids``."""
+    for disease_id in ids:
+        cabeza, separador, resto = texto.partition(f"\n  - id: {disease_id}\n")
+        if not separador:
+            continue
+        bloque, siguiente, cola = resto.partition("\n  - id: ")
+        bloque = bloque.replace("lifecycle: published", "lifecycle: trained", 1)
+        bloque = bloque.replace(_CANALES_C77, "channels: []", 1)
+        texto = cabeza + separador + bloque + siguiente + cola
+    return texto
+
+
 def _diabetes_sin_publicar(texto: str) -> str:
     """Las pruebas C7.7 describen un solo release publicado: Diabetes vuelve a ``trained``."""
+    texto = _sin_publicar(texto, ALTA_B44)
     for disease_id in (
         "anorexia_f50",
         "diabetes_t1",
@@ -178,6 +255,24 @@ def registry_c77() -> Iterator[registry._Registry]:
     """Instala el registry con Obesidad publicada (C7.7) y restaura el real al salir."""
     anterior = registry._CACHE
     registro = _carga(yaml_c77())
+    registry._CACHE = registro
+    try:
+        yield registro
+    finally:
+        registry._CACHE = anterior
+
+
+def yaml_sin_alta_b44(texto: str | None = None) -> str:
+    """El yaml real (o ``texto``) con los 58 de alta_b44 devueltos a ``trained``."""
+    texto = _YAML_REAL.read_text(encoding="utf-8") if texto is None else texto
+    return _sin_publicar(texto, ALTA_B44)
+
+
+@contextmanager
+def registry_sin_alta_b44() -> Iterator[registry._Registry]:
+    """Registry real con los 58 de alta_b44 devueltos a ``trained`` (estado de 86 publicados)."""
+    anterior = registry._CACHE
+    registro = _carga(yaml_sin_alta_b44())
     registry._CACHE = registro
     try:
         yield registro
