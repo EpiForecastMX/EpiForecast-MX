@@ -4833,3 +4833,162 @@ padecimientos:
       color: "#7C2D12"
       label: "VIH"
       nombre_completo: "Infección por el virus de la inmunodeficiencia humana (B20-B24, Z21)"
+
+  - id: meningitis_tuberculosa_a170
+    data_name: "Meningitis tuberculosa"
+    artifact_key: Meningitis_Tuberculosa_A170
+    slug: meningitis_tuberculosa_a170
+    display_name: "Meningitis tuberculosa"
+    cie_codes: ["A17.0"]
+    # Sin «meningitis» ni «tuberculosis» a secas: abarcarían la meningocócica (A39.0), el síndrome
+    # meníngeo (G00-G03), la tuberculosis respiratoria (A15-A16) y otras formas (A17.1-A19).
+    aliases: ["meningitis tuberculosa", "meningitis por tuberculosis", "tuberculosis meningea", "a17.0"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_meningitis_tuberculosa_a170
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#881337"
+      label: "Meningitis tuberculosa"
+      nombre_completo: "Meningitis tuberculosa (A17.0)"
+
+  - id: tuberculosis_respiratoria_a15
+    data_name: "Tuberculosis respiratoria"
+    artifact_key: Tuberculosis_Respiratoria_A15
+    slug: tuberculosis_respiratoria_a15
+    display_name: "Tuberculosis respiratoria"
+    cie_codes: ["A15", "A16"]
+    # Sin «tuberculosis» a secas: abarcaría la meningitis tuberculosa (A17.0) y otras formas
+    # (A17.1-A19), que el boletín publica en otros bloques.
+    aliases: ["tuberculosis respiratoria", "tuberculosis pulmonar", "tb pulmonar", "tb respiratoria", "a15", "a16"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_tuberculosis_respiratoria_a15
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#9F1239"
+      label: "Tuberculosis respiratoria"
+      nombre_completo: "Tuberculosis respiratoria (A15-A16)"
+
+  - id: lepra_a30
+    data_name: "Lepra"
+    artifact_key: Lepra_A30
+    slug: lepra_a30
+    display_name: "Lepra"
+    cie_codes: ["A30"]
+    aliases: ["lepra", "enfermedad de hansen", "hansen", "a30"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_lepra_a30
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#78350F"
+      label: "Lepra"
+      nombre_completo: "Lepra (A30)"
+
+  - id: fiebre_manchada_a770
+    data_name: "Fiebre manchada"
+    artifact_key: Fiebre_Manchada_A770
+    slug: fiebre_manchada_a770
+    display_name: "Fiebre manchada"
+    cie_codes: ["A77.0"]
+    # Sin «rickettsiosis» a secas: abarcaría las otras rickettsiosis (A79) y el tifo (A75).
+    aliases: ["fiebre manchada", "fiebre manchada de las montanas rocosas", "rickettsia rickettsii", "a77.0"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_fiebre_manchada_a770
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#B45309"
+      label: "Fiebre manchada"
+      nombre_completo: "Fiebre manchada (A77.0)"
+
+  - id: otras_rickettsiosis_a79
+    data_name: "Otras rickettsiosis"
+    artifact_key: Otras_Rickettsiosis_A79
+    slug: otras_rickettsiosis_a79
+    display_name: "Otras rickettsiosis"
+    cie_codes: ["A79"]
+    # Sin «rickettsiosis» a secas: abarcaría la fiebre manchada (A77.0) y el tifo (A75).
+    aliases: ["otras rickettsiosis", "rickettsiosis sin clasificacion de especie", "a79"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_otras_rickettsiosis_a79
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # El bloque A79 se imprime desde 2017_sem02 (objetivo 2017-W02; antes, «Otras Rickettsiosis»
+    # con CIE A75.9, no incorporado): historia corta.
+    selection_policy: rolling_cv_historia_corta_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#A16207"
+      label: "Otras rickettsiosis"
+      nombre_completo: "Otras rickettsiosis (A79)"
+
+  - id: leishmaniasis_cutanea_b551
+    data_name: "Leishmaniasis cutánea"
+    artifact_key: Leishmaniasis_Cutanea_B551
+    slug: leishmaniasis_cutanea_b551
+    display_name: "Leishmaniasis cutánea"
+    cie_codes: ["B55.1"]
+    # Sin «leishmaniasis» a secas: abarcaría la visceral (B55.0).
+    aliases: ["leishmaniasis cutanea", "ulcera de los chicleros", "b55.1"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_leishmaniasis_cutanea_b551
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#4D7C0F"
+      label: "Leishmaniasis cutánea"
+      nombre_completo: "Leishmaniasis cutánea (B55.1)"

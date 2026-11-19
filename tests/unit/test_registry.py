@@ -226,6 +226,12 @@ def test_cie_map():
         "W32": "Herida por arma de fuego",
         "B57.2": "Tripanosomiasis americana (enfermedad de Chagas) crónica",
         "B20": "Infección por el virus de la inmunodeficiencia humana",  # alta_b44, configured
+        "A17.0": "Meningitis tuberculosa",
+        "A15": "Tuberculosis respiratoria",
+        "A30": "Lepra",
+        "A77.0": "Fiebre manchada",
+        "A79": "Otras rickettsiosis",
+        "B55.1": "Leishmaniasis cutánea",
     }
 
 

@@ -4163,3 +4163,251 @@ cuadro_groups:
         has_prev_year: true
     n_states_expected: 32
     backend: camelot_stream
+
+  b44_meningitis_tuberculosa_a170:
+    # Meningitis tuberculosa (A17.0): SEGUNDO y último bloque del Cuadro 3 (prevenibles por
+    # vacunación), tras enteritis debida a rotavirus (A08.0); 8 columnas (pdftotext, renglón de
+    # Zacatecas) en los 670 boletines con página. Mismas anclas que alta10b_rotavirus_a080 (una
+    # página por boletín en 670 de 671; 2014_sem01 sin página, formato de cierre anual).
+    # Rezago impreso por periodo, medido en los 670 títulos (657 por texto y 13 de 2025-2026 en
+    # imagen leídos con OCR): «Prevenibles por Vacunación hasta la semana N-1» de 2014_sem02 a
+    # 2020_sem53 (365) y, desde 2021_sem01, la excepción del título «Meningitis Tuberculosa hasta la
+    # N» (305).
+    page_anchors: ["rotavirus", "a17.0"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    last_block_columns: {8: 4}
+    periodos:
+      - desde: "2021_sem01"
+        observation_lag_weeks: 0
+        huecos_objetivo:
+          - periodo: "2020-W53"
+            motivo: >-
+              2020_sem53 imprime «hasta la semana epidemiológica 52 del 2020» (objetivo 2020-W52) y
+              2021_sem01 «Meningitis Tuberculosa hasta la 1 del 2021» (2021-W01): ningún boletín
+              imprime la semana 53 de 2020 de este bloque; se imputa causalmente y se marca
+    diseases:
+      - id: meningitis_tuberculosa_a170
+        keyword: "Meningitis_Tuberculosa_A170"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2016_sem20.pdf"
+        diseases: [meningitis_tuberculosa_a170]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo boletín y criterio que
+          alta10b_rotavirus_a080 y b44_tuberculosis_otras_formas_a171; PDF abierto, texto de la
+          página): el TOTAL impreso bajo meningitis tuberculosa es Sem 1 588, Acum. H 17 759, M 23 329 y año anterior 39 884 frente a 4/61/29/90 en 2016_sem19 y 6/65/35/95 en 2016_sem21; el acumulado salta y vuelve. Se imputa la semana objetivo 2016-W19
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  b44_tuberculosis_respiratoria_a15:
+    # Tuberculosis respiratoria (A15-A16): PRIMER bloque del Cuadro 5 (infecciosas del aparato
+    # respiratorio), con otitis media aguda y, hasta 2024_sem06, faringitis y amigdalitis
+    # estreptocócicas: 12 columnas hasta 2024_sem06 y 8 desde 2024_sem07 (mismas fronteras que
+    # alta20_otitis_h65 y alta20_faringitis_j02). Anclas: una página por boletín en los 671.
+    # Rezago impreso por periodo, medido en los 671 títulos (658 por texto y 13 por OCR): «hasta la
+    # semana N-1» de 2014_sem01 a 2020_sem53 (366) y, desde 2021_sem01, la excepción del título
+    # «Tuberculosis Respiratoria hasta la semana N» (305).
+    # Anclas: las de alta20_otitis_h65 (la página de otitis media aguda es la de este bloque en los
+    # 671 boletines); «a15-a16» no aparece en la capa de texto de pypdf de 5 boletines de 2014-2015.
+    page_anchors: ["otitis media"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {12: 4, 8: 4}
+    periodos:
+      - desde: "2021_sem01"
+        observation_lag_weeks: 0
+        huecos_objetivo:
+          - periodo: "2020-W53"
+            motivo: >-
+              2020_sem53 imprime «hasta la semana epidemiológica 52 del 2020» (objetivo 2020-W52) y
+              2021_sem01 «Tuberculosis Respiratoria hasta la semana 1 del 2021» (2021-W01): ningún
+              boletín imprime la semana 53 de 2020 de este bloque; se imputa causalmente y se marca
+    diseases:
+      - id: tuberculosis_respiratoria_a15
+        keyword: "Tuberculosis_Respiratoria_A15"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [tuberculosis_respiratoria_a15]
+        reason: "formato de cierre anual: sólo acumulados H/M/año anterior, sin columna Sem"
+      - file: "2016_sem20.pdf"
+        diseases: [tuberculosis_respiratoria_a15]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo boletín y criterio que
+          alta10b_rotavirus_a080 y b44_tuberculosis_otras_formas_a171; PDF abierto, texto de la
+          página): el TOTAL impreso bajo tuberculosis respiratoria es Sem 2, Acum. H 1, M 1 y año anterior «-» frente a 283/3 296/1 911/5 996 en 2016_sem19 y 362/3 715/2 175/6 721 en 2016_sem21; el acumulado salta y vuelve. Se imputa la semana objetivo 2016-W19
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  b44_lepra_a30:
+    # Lepra (A30): ÚLTIMO bloque del Cuadro 10 (mal del pinto A67, tuberculosis otras formas,
+    # lepra); 11 columnas hasta 2015_sem01 (mal del pinto sin año anterior) y 12 después
+    # (pdftotext, renglón de Zacatecas). Mismas anclas que alta20c_mal_del_pinto_a67 y
+    # b44_tuberculosis_otras_formas_a171 (una página por boletín en 670 de 671; 2014_sem01 sin
+    # página, formato de cierre anual). La nota «° La información de Lepra esta reportada por
+    # entidad notificante» acompaña al bloque.
+    # Rezago impreso por periodo, medido en los 670 títulos (657 por texto y 13 por OCR; el OCR de
+    # 2025_sem28 lee «semana epidemiológica 28 del 2025» tras ruido de imagen): «hasta la semana
+    # N-1» de 2014_sem02 a 2020_sem53 (365) y «hasta la semana N» desde 2021_sem01 (305). La
+    # excepción «Mal del Pinto hasta la semana N-1» del título desde 2021 no alcanza a este bloque.
+    page_anchors: ["pinto", "a67", "a30"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    last_block_columns: {11: 4, 12: 4}
+    periodos:
+      - desde: "2021_sem01"
+        observation_lag_weeks: 0
+        huecos_objetivo:
+          - periodo: "2020-W53"
+            motivo: >-
+              2020_sem53 imprime «hasta la semana epidemiológica 52 del 2020» (objetivo 2020-W52) y
+              2021_sem01 «hasta la semana epidemiológica 1 del 2021» (2021-W01): ningún boletín
+              imprime la semana 53 de 2020 de este bloque; se imputa causalmente y se marca
+    diseases:
+      - id: lepra_a30
+        keyword: "Lepra_A30"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2016_sem20.pdf"
+        diseases: [lepra_a30]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo boletín y criterio que
+          alta10b_rotavirus_a080 y b44_tuberculosis_otras_formas_a171; PDF abierto, texto de la
+          página): el TOTAL impreso bajo lepra es Sem 7, Acum. H 52, M 57 y año anterior 102 frente a 2/29/13/70 en 2016_sem19 y 2/36/13/78 en 2016_sem21; el acumulado salta y vuelve. Se imputa la semana objetivo 2016-W19
+      - file: "2023_sem25.pdf"
+        diseases: [lepra_a30]
+        keep_period: true
+        reason: >-
+          fallo del extractor, no de la fuente (mismo boletín y criterio que alta20c_mal_del_pinto_a67
+          y b44_tuberculosis_otras_formas_a171): el PDF trae las 32 entidades, pero el renglón de
+          Aguascalientes imprime 11 celdas (falta la Sem de tuberculosis otras formas) y camelot lee
+          31 entidades. Lepra en Aguascalientes es «- - - -» y el TOTAL «3 33 25 69»; se imputa la
+          semana objetivo 2023-W25 (desarrollo)
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  b44_fiebre_manchada_a770:
+    # Fiebre manchada (A77.0): ÚLTIMO bloque del Cuadro 7.1 de transmitidas por vector (otras
+    # rickettsiosis A75.9 hasta 2017_sem01 y A79 desde 2017_sem02, fiebre manchada); 7 columnas
+    # hasta 2015_sem01 (el primer bloque sin año anterior) y 8 después (pdftotext, renglón de
+    # Zacatecas). Anclas: una página por boletín en 670 de 671 (2014_sem01 sin página).
+    # Rezago impreso por periodo (título de la página, 657 por texto y 13 por OCR): «N-1» de
+    # 2014_sem02 a 2015_sem48 (100) y «N» desde 2015_sem49 (570), el mismo cambio que tifo murino.
+    page_anchors: ["a77.0", "manchada"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    last_block_columns: {7: 4, 8: 4}
+    periodos:
+      - desde: "2015_sem49"
+        observation_lag_weeks: 0
+        huecos_objetivo:
+          - periodo: "2015-W48"
+            motivo: >-
+              2015_sem48 imprime «hasta la semana epidemiológica 47 del 2015» (objetivo 2015-W47) y
+              2015_sem49 «hasta la semana epidemiológica 49 del 2015» (2015-W49): ningún boletín
+              imprime la columna Sem de la semana 48 de 2015; se imputa causalmente y se marca
+    diseases:
+      - id: fiebre_manchada_a770
+        keyword: "Fiebre_Manchada_A770"
+        block_index: 0
+        onboard: true
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  b44_otras_rickettsiosis_a79:
+    # Otras rickettsiosis (A79; de 2021_sem42 a 2023 rotulada «Rickettsiosis sin Clasificación de
+    # Especie»): PRIMER bloque del Cuadro 7.1, con fiebre manchada; 8 columnas en los 513 boletines
+    # con página (2017_sem02..2026_sem44). Hasta 2017_sem01 el bloque se rotula con CIE A75.9: sin
+    # página para estas anclas (158 boletines, «no_page» esperado; no incorporado).
+    # Rezago impreso constante, medido en los 513 títulos (500 por texto y 13 por OCR): «hasta la
+    # semana N» en todos.
+    page_anchors: ["a79", "rickettsiosis"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 0
+    first_block_columns: {8: 4}
+    diseases:
+      - id: otras_rickettsiosis_a79
+        keyword: "Otras_Rickettsiosis_A79"
+        block_index: 0
+        onboard: true
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  b44_leishmaniasis_cutanea_b551:
+    # Leishmaniasis cutánea (B55.1): PRIMER bloque en las dos épocas (pdftotext, renglón de
+    # Zacatecas): Cuadro 11.1 con oncocercosis (B73) de 2014_sem02 a 2020_sem53 y, desde 2021_sem01,
+    # con leishmaniasis visceral (B55.0); 7 columnas hasta 2015_sem01 (leishmaniasis sin año
+    # anterior) y 8 después. Anclas: una página por boletín en 670 de 671 (2014_sem01 sin página).
+    # Rezago impreso por periodo (título de la página, 657 por texto y 13 por OCR): «N-1» de
+    # 2014_sem02 a 2020_sem53 (365) y «N» desde 2021_sem01 (305).
+    page_anchors: ["b55.1", "cut", "leishmania"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {7: 3, 8: 4}
+    periodos:
+      - desde: "2021_sem01"
+        observation_lag_weeks: 0
+        huecos_objetivo:
+          - periodo: "2020-W53"
+            motivo: >-
+              2020_sem53 imprime «hasta la semana epidemiológica 52 del 2020» (objetivo 2020-W52) y
+              2021_sem01 «hasta la semana epidemiológica 1 del 2021» (2021-W01): ningún boletín
+              imprime la semana 53 de 2020 de este bloque; se imputa causalmente y se marca
+    diseases:
+      - id: leishmaniasis_cutanea_b551
+        keyword: "Leishmaniasis_Cutanea_B551"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2016_sem20.pdf"
+        diseases: [leishmaniasis_cutanea_b551]
+        keep_period: true
+        reason: >-
+          bloques rotados frente a los boletines vecinos (mismo boletín y criterio que
+          alta10b_rotavirus_a080 y b44_tuberculosis_otras_formas_a171; PDF abierto, texto de la
+          página): el TOTAL impreso bajo leishmaniasis cutánea es Sem 1, Acum. H «-», M 2 y año anterior «-» frente a 6/89/15/212 en 2016_sem19 y 9/109/21/240 en 2016_sem21; el acumulado salta y vuelve. Se imputa la semana objetivo 2016-W19
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
