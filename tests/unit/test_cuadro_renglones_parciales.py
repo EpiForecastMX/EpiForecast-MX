@@ -117,6 +117,19 @@ def test_parcial_con_valores_solapados_falla_cerrado():
         une_renglones_parciales(solapados)
 
 
+def test_encabezado_y_total_partidos_no_son_entidades_y_pasan_igual():
+    """Falsos positivos medidos en 2018-2019 («FEDERATIVA») y 2024 («TOTAL»): no son entidades."""
+    for nombre in ("FEDERATIVA", "TOTAL"):
+        df = pd.DataFrame([[nombre, "Sem.", "", "Acum."], ["", "H", "M", "Ant."]])
+        assert une_renglones_parciales(df).equals(df.astype(str))
+
+
+def test_entidad_con_llamada_de_nota_tambien_falla_cerrado():
+    solapados = pd.DataFrame([["Michoacán *", "5", "", "7"], ["", "1", "2", ""]])
+    with pytest.raises(RenglonesAmbiguosError, match="Michoacán"):
+        une_renglones_parciales(solapados)
+
+
 def test_no_une_si_el_renglon_esta_completo_ni_si_el_siguiente_tiene_nombre():
     completo = pd.DataFrame([["Nuevo León", "5", "6", "7"], ["", "1", "2", ""]])
     assert une_renglones_parciales(completo).equals(completo.astype(str))

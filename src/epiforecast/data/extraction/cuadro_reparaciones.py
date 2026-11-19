@@ -12,6 +12,7 @@ from typing import Any, TypedDict
 
 import pandas as pd
 
+from epiforecast.data.extraction.dengue_extractor import _STATE_LOOKUP, _norm_entity
 from epiforecast.data.extraction.pdf_extractor import eliminar_columnas_vacias, normalize_number
 
 
@@ -72,6 +73,11 @@ def alinea_renglones(df: pd.DataFrame, parciales: bool = False) -> pd.DataFrame:
     return une_renglones_parciales(alineada) if parciales else alineada
 
 
+def _es_entidad(nombre: str) -> bool:
+    """Si el nombre (sin llamadas de nota) es una entidad federativa canónica o un alias."""
+    return _norm_entity(re.sub(r"[\s*§]+$", "", nombre)) in _STATE_LOOKUP
+
+
 class RenglonesAmbiguosError(ValueError):
     """Renglón parcial y renglón sin nombre con valores solapados: la tabla del boletín no vale."""
 
@@ -83,9 +89,10 @@ def une_renglones_parciales(df: pd.DataFrame) -> pd.DataFrame:
     (Ciudad de México, México, Nuevo León...): arriba el nombre con los valores de un bloque y abajo,
     sin nombre, los de los otros. Sin esto ``reshape`` lee los bloques vacíos como ceros con estado
     ``ok``. Se unen sólo si ningún valor se solapa; cualquier otra tabla pasa igual. Si el renglón
-    con nombre es parcial (le falta un valor en una columna que la tabla sí usa) y el siguiente sin
-    nombre trae valores que se solapan con los suyos, no hay unión legítima ni lectura segura:
-    falla cerrado con :class:`RenglonesAmbiguosError` en vez de dejar ceros. Sólo en los grupos que lo
+    con nombre es una entidad federativa parcial (le falta un valor en una columna que la tabla sí
+    usa) y el siguiente sin nombre trae valores que se solapan con los suyos, no hay unión legítima
+    ni lectura segura: falla cerrado con :class:`RenglonesAmbiguosError` en vez de dejar ceros. Los
+    encabezados y el TOTAL partidos no son entidades y siguen como antes. Sólo en los grupos que lo
     declaran (``une_renglones_parciales: true``).
     """
     filas = df.astype(str).to_numpy(copy=True)
@@ -98,7 +105,7 @@ def une_renglones_parciales(df: pd.DataFrame) -> pd.DataFrame:
         if not (con_nombre and siguiente_sin_nombre):
             continue
         if bool((~vacio[i] & ~vacio[sig]).any()):
-            if bool((vacio[i] & usadas).any()):
+            if bool((vacio[i] & usadas).any()) and _es_entidad(filas[i, 0]):
                 raise RenglonesAmbiguosError(
                     f"renglones partidos ambiguos: {filas[i, 0].strip()!r} es parcial y el "
                     "renglón siguiente sin nombre trae valores solapados; no se une ni se lee"
