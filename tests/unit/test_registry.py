@@ -224,6 +224,7 @@ def test_cie_map():
         "A40.3": "Enfermedad invasiva por neumococo",
         "A41.3": "Infecciones invasivas por Haemophilus influenzae",
         "W32": "Herida por arma de fuego",
+        "B57.2": "Tripanosomiasis americana (enfermedad de Chagas) crónica",
     }
 
 

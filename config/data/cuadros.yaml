@@ -1028,6 +1028,162 @@ cuadro_groups:
         keyword: "Alacran_T63"
         block_index: 0
         onboard: true
+    reparaciones:
+      # Reparación declarada por decisión nominal del autor (lote alta_b44, 19-nov-2026,
+      # DECISIONES_AUTOR_3.json). Regla escrita en cuadro_reparacion_serie.py; registro por fila en
+      # <slug>_reparaciones.csv y motivo por boletín en el manifiesto.
+      - tipo: sem_desde_delta_acumulado
+        diseases: [alacran_t63]
+        desde: "2024_sem02"
+        hasta: "2025_sem01"
+        motivo: >-
+          la fuente imprime en Sem. el acumulado del año H+M en los 52 boletines 2024_sem02..2025_sem01
+          (periodos 2024-W01..W52): Sem == H+M en 1664/1664 filas estado-boletín y en el TOTAL
+          (lote alta_b44, frag/c6/alacran_t63.qa.md)
+    correcciones_celda:
+      # Decisión nominal del autor (lote alta_b44, 19-nov-2026, DECISIONES_AUTOR_5.json): imputar
+      # las 17 celdas estado-boletín de 14 boletines (2024_sem16..2025_sem01, objetivos 2024) donde
+      # la fuente imprime un acumulado del año H+M menor que el del boletín previo, con lo que la
+      # reparación declarada daría un negativo. Quedan con Casos_semana vacía (el dataset v2 las
+      # imputa: total_imputed) y los acumulados impresos intactos. Aviso de nivel 2024: la serie
+      # reparada suma Δ acumulado (incluye revisiones tardías) y queda por encima del nivel de Σ Sem.
+      # de los demás años (frag/c4b/alacran_t63.qa.md, frag/c8/alacran_t63.qa.md).
+      - archivo: "2024_sem16.pdf"
+        diseases: [alacran_t63]
+        entidad: "Chiapas"
+        columna: Casos_semana
+        esperado: 73
+        imputar: true
+        motivo: "el acumulado H+M impreso baja de 79 (2024_sem15) a 73; la reparación por delta daría -6"
+        autoridad: "decisión nominal del autor, lote alta_b44 (19-nov-2026), DECISIONES_AUTOR_5.json: alacran_t63"
+      - archivo: "2024_sem20.pdf"
+        diseases: [alacran_t63]
+        entidad: "Tabasco"
+        columna: Casos_semana
+        esperado: 35
+        imputar: true
+        motivo: "el acumulado H+M impreso baja de 36 (2024_sem19) a 35; la reparación por delta daría -1"
+        autoridad: "decisión nominal del autor, lote alta_b44 (19-nov-2026), DECISIONES_AUTOR_5.json: alacran_t63"
+      - archivo: "2024_sem24.pdf"
+        diseases: [alacran_t63]
+        entidad: "Tabasco"
+        columna: Casos_semana
+        esperado: 39
+        imputar: true
+        motivo: "el acumulado H+M impreso baja de 43 (2024_sem23) a 39; la reparación por delta daría -4"
+        autoridad: "decisión nominal del autor, lote alta_b44 (19-nov-2026), DECISIONES_AUTOR_5.json: alacran_t63"
+      - archivo: "2024_sem25.pdf"
+        diseases: [alacran_t63]
+        entidad: "Tabasco"
+        columna: Casos_semana
+        esperado: 37
+        imputar: true
+        motivo: "el acumulado H+M impreso baja de 39 (2024_sem24) a 37; la reparación por delta daría -2"
+        autoridad: "decisión nominal del autor, lote alta_b44 (19-nov-2026), DECISIONES_AUTOR_5.json: alacran_t63"
+      - archivo: "2024_sem31.pdf"
+        diseases: [alacran_t63]
+        entidad: "Tabasco"
+        columna: Casos_semana
+        esperado: 40
+        imputar: true
+        motivo: "el acumulado H+M impreso baja de 43 (2024_sem30) a 40; la reparación por delta daría -3"
+        autoridad: "decisión nominal del autor, lote alta_b44 (19-nov-2026), DECISIONES_AUTOR_5.json: alacran_t63"
+      - archivo: "2024_sem32.pdf"
+        diseases: [alacran_t63]
+        entidad: "Tabasco"
+        columna: Casos_semana
+        esperado: 38
+        imputar: true
+        motivo: "el acumulado H+M impreso baja de 40 (2024_sem31) a 38; la reparación por delta daría -2"
+        autoridad: "decisión nominal del autor, lote alta_b44 (19-nov-2026), DECISIONES_AUTOR_5.json: alacran_t63"
+      - archivo: "2024_sem33.pdf"
+        diseases: [alacran_t63]
+        entidad: "Tabasco"
+        columna: Casos_semana
+        esperado: 37
+        imputar: true
+        motivo: "el acumulado H+M impreso baja de 38 (2024_sem32) a 37; la reparación por delta daría -1"
+        autoridad: "decisión nominal del autor, lote alta_b44 (19-nov-2026), DECISIONES_AUTOR_5.json: alacran_t63"
+      - archivo: "2024_sem33.pdf"
+        diseases: [alacran_t63]
+        entidad: "Veracruz"
+        columna: Casos_semana
+        esperado: 129
+        imputar: true
+        motivo: "el acumulado H+M impreso baja de 167 (2024_sem32) a 129; la reparación por delta daría -38"
+        autoridad: "decisión nominal del autor, lote alta_b44 (19-nov-2026), DECISIONES_AUTOR_5.json: alacran_t63"
+      - archivo: "2024_sem34.pdf"
+        diseases: [alacran_t63]
+        entidad: "Veracruz"
+        columna: Casos_semana
+        esperado: 110
+        imputar: true
+        motivo: "el acumulado H+M impreso baja de 129 (2024_sem33) a 110; la reparación por delta daría -19"
+        autoridad: "decisión nominal del autor, lote alta_b44 (19-nov-2026), DECISIONES_AUTOR_5.json: alacran_t63"
+      - archivo: "2024_sem39.pdf"
+        diseases: [alacran_t63]
+        entidad: "Chihuahua"
+        columna: Casos_semana
+        esperado: 217
+        imputar: true
+        motivo: "el acumulado H+M impreso baja de 219 (2024_sem38) a 217; la reparación por delta daría -2"
+        autoridad: "decisión nominal del autor, lote alta_b44 (19-nov-2026), DECISIONES_AUTOR_5.json: alacran_t63"
+      - archivo: "2024_sem44.pdf"
+        diseases: [alacran_t63]
+        entidad: "Chihuahua"
+        columna: Casos_semana
+        esperado: 240
+        imputar: true
+        motivo: "el acumulado H+M impreso baja de 247 (2024_sem43) a 240; la reparación por delta daría -7"
+        autoridad: "decisión nominal del autor, lote alta_b44 (19-nov-2026), DECISIONES_AUTOR_5.json: alacran_t63"
+      - archivo: "2024_sem49.pdf"
+        diseases: [alacran_t63]
+        entidad: "Chihuahua"
+        columna: Casos_semana
+        esperado: 250
+        imputar: true
+        motivo: "el acumulado H+M impreso baja de 264 (2024_sem48) a 250; la reparación por delta daría -14"
+        autoridad: "decisión nominal del autor, lote alta_b44 (19-nov-2026), DECISIONES_AUTOR_5.json: alacran_t63"
+      - archivo: "2024_sem50.pdf"
+        diseases: [alacran_t63]
+        entidad: "Nayarit"
+        columna: Casos_semana
+        esperado: 14060
+        imputar: true
+        motivo: "el acumulado H+M impreso baja de 14123 (2024_sem49) a 14060; la reparación por delta daría -63"
+        autoridad: "decisión nominal del autor, lote alta_b44 (19-nov-2026), DECISIONES_AUTOR_5.json: alacran_t63"
+      - archivo: "2024_sem52.pdf"
+        diseases: [alacran_t63]
+        entidad: "Chihuahua"
+        columna: Casos_semana
+        esperado: 268
+        imputar: true
+        motivo: "el acumulado H+M impreso baja de 272 (2024_sem51) a 268; la reparación por delta daría -4"
+        autoridad: "decisión nominal del autor, lote alta_b44 (19-nov-2026), DECISIONES_AUTOR_5.json: alacran_t63"
+      - archivo: "2025_sem01.pdf"
+        diseases: [alacran_t63]
+        entidad: "Chihuahua"
+        columna: Casos_semana
+        esperado: 257
+        imputar: true
+        motivo: "el acumulado H+M impreso baja de 268 (2024_sem52) a 257; la reparación por delta daría -11"
+        autoridad: "decisión nominal del autor, lote alta_b44 (19-nov-2026), DECISIONES_AUTOR_5.json: alacran_t63"
+      - archivo: "2025_sem01.pdf"
+        diseases: [alacran_t63]
+        entidad: "Durango"
+        columna: Casos_semana
+        esperado: 9945
+        imputar: true
+        motivo: "el acumulado H+M impreso baja de 9973 (2024_sem52) a 9945; la reparación por delta daría -28"
+        autoridad: "decisión nominal del autor, lote alta_b44 (19-nov-2026), DECISIONES_AUTOR_5.json: alacran_t63"
+      - archivo: "2025_sem01.pdf"
+        diseases: [alacran_t63]
+        entidad: "Nayarit"
+        columna: Casos_semana
+        esperado: 14601
+        imputar: true
+        motivo: "el acumulado H+M impreso baja de 14738 (2024_sem52) a 14601; la reparación por delta daría -137"
+        autoridad: "decisión nominal del autor, lote alta_b44 (19-nov-2026), DECISIONES_AUTOR_5.json: alacran_t63"
     source_exclusions:
       - file: "2014_sem01.pdf"
         diseases: [alacran_t63]
@@ -3852,6 +4008,48 @@ cuadro_groups:
           un bloque ajeno (TOTAL Sem. 38, acumulado 419/578, año anterior 767) frente a 785 / 9,718 / 3,432 en 2016_sem19 y
           953 / 11,101 / 3,855 en 2016_sem21; el acumulado nacional salta 13,150 -> 997 -> 14,956. Mismo boletín de
           bloques rotados que monóxido (2016_sem20). Se conserva el periodo vacío para imputación
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  b44_chagas_cronica_b572:
+    # Tripanosomiasis americana (enfermedad de Chagas) crónica (B57.2-B57.5): ÚLTIMO bloque de la
+    # misma página que la aguda (b44_chagas_aguda_b570), con el mismo rezago por periodo.
+    page_anchors: ["chagas", "b57.0", "b57.2"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    last_block_columns: {8: 4}
+    periodos:
+      - desde: "2021_sem01"
+        observation_lag_weeks: 0
+        huecos_objetivo:
+          - periodo: "2020-W53"
+            motivo: >-
+              2020_sem53 imprime «hasta la semana epidemiológica 52 del 2020» (objetivo 2020-W52) y
+              2021_sem01 «hasta la semana epidemiológica 1 del 2021» (2021-W01): ningún boletín
+              imprime la semana 53 de 2020 de este bloque; se imputa causalmente y se marca
+    diseases:
+      - id: chagas_cronica_b572
+        keyword: "Chagas_Cronica_B572"
+        block_index: 0
+        onboard: true
+    correcciones_celda:
+      - archivo: "2025_sem17.pdf"
+        diseases: [chagas_cronica_b572]
+        entidad: "Nuevo León"
+        columna: Casos_semana
+        esperado: null
+        valor: 0
+        motivo: >-
+          la fuente imprime Sem. «- 1» (reclasificación negativa; acumulado M 1 -> 0, TOTAL impreso 14
+          frente a 15 de las demás entidades) y el extractor lo lee vacío; supuesto del autor: se trata
+          como 0 en vez de imputarlo en el año de prueba (frag/c3b/chagas_cronica_b572.qa.md)
+        autoridad: "decisión nominal del autor, lote alta_b44 (19-nov-2026), DECISIONES_AUTOR_5.json: chagas_cronica_b572"
     layout_variants:
       - id: v_4col_prev
         min_year_week: "0000_sem00"

@@ -4646,3 +4646,30 @@ padecimientos:
       color: "#7F1D1D"
       label: "Herida por arma de fuego"
       nombre_completo: "Herida por arma de fuego (W32-W34)"
+
+  - id: chagas_cronica_b572
+    data_name: "Tripanosomiasis americana (enfermedad de Chagas) crónica"
+    artifact_key: Chagas_Cronica_B572
+    slug: chagas_cronica_b572
+    display_name: "Tripanosomiasis americana (enfermedad de Chagas) crónica"
+    cie_codes: ["B57.2", "B57.3", "B57.4", "B57.5"]
+    # Sin «chagas» ni «tripanosomiasis» a secas: abarcarían también la forma aguda (B57.0-B57.1).
+    aliases: ["tripanosomiasis americana cronica", "enfermedad de chagas cronica", "chagas cronica", "chagas cronico", "b57.2", "b57.5"]
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: b44_chagas_cronica_b572
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # El bloque se imprime desde 2017_sem02 (objetivo 2017-W01): historia corta.
+    selection_policy: rolling_cv_historia_corta_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#7C2D12"
+      label: "Chagas crónica"
+      nombre_completo: "Tripanosomiasis americana (enfermedad de Chagas) crónica (B57.2-B57.5)"
