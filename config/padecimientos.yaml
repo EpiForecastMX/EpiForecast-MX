@@ -4410,6 +4410,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: tuberculosis_otras_formas_a171_benchmark_test_36fe36e344ff_6971f74a19eb
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4466,6 +4467,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: tifo_murino_a752_benchmark_test_1b58f710fb71_536eba77c76d
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4492,6 +4494,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: sifilis_congenita_a50_benchmark_test_0203cdfc8b6f_deda62953648
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4519,6 +4522,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: esavi_y58_benchmark_test_9021be3ca4c8_d060f189bb01
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4547,6 +4551,7 @@ padecimientos:
     # Rezago impreso por periodo (1 hasta 2020_sem53, 0 desde 2021_sem01; cuadros.yaml). Supuesto del
     # autor (DECISIONES_AUTOR_3, supuesto_autor_guion_2025_cero): el «-» de 2025 se trata como cero.
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: meningococica_a39_benchmark_test_38372a4c8a10_644b389e3839
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4610,6 +4615,7 @@ padecimientos:
     # Rezago impreso por periodo (1 hasta 2020_sem53, 0 desde 2021_sem01; cuadros.yaml). Supuesto del
     # autor (DECISIONES_AUTOR_3, supuesto_autor_guion_2025_cero): el «-» de 2025 se trata como cero.
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: haemophilus_a41_benchmark_test_49af163dda48_6f488cdae1b6
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4665,6 +4671,7 @@ padecimientos:
     eligible_engines: []
     # El bloque se imprime desde 2017_sem02 (objetivo 2017-W01): historia corta.
     selection_policy: rolling_cv_historia_corta_v1
+    acceptance_fallback_run: chagas_cronica_b572_benchmark_test_612c8772a7e0_dff2b8eb1d19
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
