@@ -1,8 +1,5 @@
-"""Extractor genérico por 'grupo de cuadro' (EPIC 2).
-
-Generaliza el extractor de Dengue a cualquier cuadro descrito en ``config/data/cuadros.yaml``,
-reutilizando ``pdf_extractor`` y ``dengue_extractor``; el conteo real de columnas fija el layout.
-"""
+"""Extractor genérico por grupo de cuadro (``config/data/cuadros.yaml``); el conteo real de
+columnas fija el layout. Reutiliza ``pdf_extractor`` y ``dengue_extractor``."""
 
 from __future__ import annotations
 
@@ -21,6 +18,7 @@ from epiforecast.data.extraction.cuadro_capa_texto import (
     recorta_bloque_interno,
     reintenta_row_tol_si_vacia,
 )
+from epiforecast.data.extraction.cuadro_estadios import suma_estadios
 from epiforecast.data.extraction.cuadro_reparacion_serie import exclusion_por_inicio
 from epiforecast.data.extraction.cuadro_reparaciones import (
     alinea_renglones,
@@ -214,6 +212,8 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
         if etiqueta_in:
             out["reparacion"] = etiqueta_in
 
+    if (df_clean := suma_estadios(df_clean, pdf_path, page, spec, out)) is None:
+        return out
     keywords = [d["keyword"] for d in spec["diseases"]]
     n_dis = len(keywords)
     data_cols = df_clean.shape[1] - 1

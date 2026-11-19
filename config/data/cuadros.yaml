@@ -4057,3 +4057,32 @@ cuadro_groups:
         has_prev_year: true
     n_states_expected: 32
     backend: camelot_stream
+
+  b44_vih_b20:
+    # Cuadro 6.3 «Infección por el Virus de la Inmunodeficiencia Humana» (B20-B24, Z21), lote alta_b44.
+    # Definición VIH desde 2020_sem28; hasta 2020_sem26 el boletín imprime SIDA (B20-B24, Cuadro 6.2)
+    # y 2020_sem27 SIDA por estadios: otra definición, fuera de la serie por decisión del autor
+    # (DECISIONES_AUTOR_3.json). Las anclas exigen «z21» y «estad», que sólo reúne la página de VIH
+    # (medido con pypdf en los 671 boletines, qa/c2b/anclas_vih.json): los anteriores quedan sin
+    # página. Bloque único por estadios clínicos 1-4 en pares H/M de acumulados del año, sin
+    # acumulado por sexo impreso: 11 columnas en 2020_sem28..2024 (Sem, 8 de estadio, Sem y Acum. del
+    # año anterior) y 10 desde 2025 (sin el Sem. del año anterior). ``estadios_por_sexo`` suma los
+    # estadios de cada sexo y valida contra el TOTAL impreso. Rezago impreso 0 («hasta la semana N»
+    # en el boletín N).
+    page_anchors: ["b20", "z21", "estad"]
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 0
+    estadios_por_sexo: {estadios: 4, anchos: [10, 11]}
+    diseases:
+      - id: vih_b20
+        keyword: "Vih_B20"
+        block_index: 0
+        onboard: true
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream

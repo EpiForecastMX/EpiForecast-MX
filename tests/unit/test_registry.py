@@ -225,6 +225,7 @@ def test_cie_map():
         "A41.3": "Infecciones invasivas por Haemophilus influenzae",
         "W32": "Herida por arma de fuego",
         "B57.2": "Tripanosomiasis americana (enfermedad de Chagas) crónica",
+        "B20": "Infección por el virus de la inmunodeficiencia humana",  # alta_b44, configured
     }
 
 

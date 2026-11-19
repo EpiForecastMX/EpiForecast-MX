@@ -4788,3 +4788,33 @@ padecimientos:
       color: "#7C2D12"
       label: "Chagas crónica"
       nombre_completo: "Tripanosomiasis americana (enfermedad de Chagas) crónica (B57.2-B57.5)"
+
+  - id: vih_b20
+    data_name: "Infección por el virus de la inmunodeficiencia humana"
+    artifact_key: Vih_B20
+    slug: vih_b20
+    display_name: "Infección por el virus de la inmunodeficiencia humana"
+    cie_codes: ["B20", "B21", "B22", "B23", "B24", "Z21"]
+    # Lote alta_b44: decisión nominal del autor (DECISIONES_AUTOR_3.json, 19-nov-2026) de integrar
+    # sólo la definición VIH (B20-B24, Z21) desde 2020-W28; los boletines anteriores imprimen SIDA
+    # (B20-B24), otra definición, y quedan fuera de la serie. Alias técnicos sin «sida» (otra
+    # definición y subcadena de «obesidad», trampa 1) ni términos de conducta o revelación personal.
+    aliases: ["vih", "infeccion por vih", "virus de la inmunodeficiencia humana", "b20", "z21"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_vih_b20
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # Historia desde 2020-W28: 130 semanas antes de 2023-W01 y 182 antes de 2024-W01 (>= 104).
+    selection_policy: rolling_cv_historia_corta_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#7C2D12"
+      label: "VIH"
+      nombre_completo: "Infección por el virus de la inmunodeficiencia humana (B20-B24, Z21)"
