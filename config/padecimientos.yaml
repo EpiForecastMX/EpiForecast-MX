@@ -4804,12 +4804,18 @@ padecimientos:
     batch: standalone
     extraction_group: b44_vih_b20
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Historia desde 2020-W28: 130 semanas antes de 2023-W01 y 182 antes de 2024-W01 (>= 104).
     selection_policy: rolling_cv_historia_corta_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: vih_b20_refit_final_9fe0414b00c7_7f39a7deb042
+      forecast_run_id: vih_b20_forecast_h52_7f39a7deb042_1769097d5216
+      policy_digest: a240067c4fb2b3ee872fdfd5bb6a48b9aa016fe1220ffab522805d91e25ca57f
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     acceptance_fallback_run: vih_b20_benchmark_test_c3f728ee557c_2d304e21eaf9
     prophet_grid_key: null
     deepar_grid_key: null
