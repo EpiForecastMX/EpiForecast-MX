@@ -10,6 +10,10 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from epiforecast.data.epi_lag_schedule import LagSchedule
 
 # ── Sexos base (se entrenan 32 estados × 2 sexos = 64 series) ──
 SEX_HOMBRES = "hombres"
@@ -82,6 +86,7 @@ class QualityFlag:
     SEX_FALLBACK_HALF = "sex_fallback_half"  # 0.5 sin historia
     NEGATIVE_SOURCE = "negative_source"  # valor fuente negativo (revisión) conservado
     NOT_SPECIFIED = "not_specified"  # n.e. en la fuente
+    LAG_REGIME_GAP = "lag_regime_gap"  # objetivo sin fuente declarado al cambiar el rezago
 
 
 # Orden canónico de las banderas para la unión ordenada de los agregados (F2/C2).
@@ -95,6 +100,7 @@ QUALITY_FLAG_ORDER: tuple[str, ...] = (
     QualityFlag.SEX_FALLBACK_HALF,
     QualityFlag.NEGATIVE_SOURCE,
     QualityFlag.NOT_SPECIFIED,
+    QualityFlag.LAG_REGIME_GAP,
 )
 _FLAG_RANK: dict[str, int] = {f: i for i, f in enumerate(QUALITY_FLAG_ORDER)}
 
@@ -251,6 +257,7 @@ class EpiDatasetConfig:
     """Config del carril EpiDatasetV2 leída del registry/cuadros (no hard-code)."""
 
     disease_id: str
-    observation_lag_weeks: int
+    observation_lag_weeks: int  # rezago VIGENTE (el del último régimen declarado)
     exposure_source_id: str
     expected_n_states: int
+    lag_schedule: LagSchedule | None = None  # None = rezago constante

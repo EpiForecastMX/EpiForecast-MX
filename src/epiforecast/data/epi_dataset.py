@@ -3,8 +3,8 @@
 Ensambla el dataset base semanal de un padecimiento del boletín a partir del raw extraído, el
 calendario epidemiológico, la reconciliación causal y la exposición estática, versionándolo en
 ``runs/<run_id>/`` con digests separados (raw / exposición / config / dataset) e insumos efectivos.
-Pipeline: raw → ``target_period`` (lag) + geo → ``reconcile_state`` → ``explode_base`` con
-exposición por esquema de sexo (``columns_by_sex`` / ``total_column``, sin hard-code).
+Pipeline: raw → ``epi_lag_schedule.build_prep`` (rezago constante o por periodo) + geo →
+``reconcile_state`` → ``explode_base`` con exposición por esquema de sexo (``columns_by_sex`` / ``total_column``, sin hard-code).
 """
 
 from __future__ import annotations
@@ -20,7 +20,6 @@ from omegaconf import OmegaConf
 import pandas as pd
 
 from epiforecast import registry
-from epiforecast.data import epi_calendar as ec
 from epiforecast.data import epi_dataset_spec as spec
 from epiforecast.data.epi_dataset_io import assemble_dataset_artifacts, stage_dataset_run
 from epiforecast.data.epi_dataset_spec import ExposureSnapshot
@@ -29,6 +28,14 @@ from epiforecast.data.epi_geo_exposure import (
     geo_catalog_path,
     load_exposure_snapshot,
     load_geo_catalog,
+)
+from epiforecast.data.epi_lag_schedule import (
+    LagScheduleError,
+    mark_gap_rows,
+    schedule_from_group,
+)
+from epiforecast.data.epi_lag_schedule import (
+    build_prep as build_prep,  # re-exportado: API histórica de este módulo
 )
 from epiforecast.data.epi_reconcile import reconcile_state
 from epiforecast.data.sex_scheme import exposure_for_sex, scheme_for, sin_banderas_de_sexo
@@ -89,17 +96,19 @@ def load_config(disease: str) -> spec.EpiDatasetConfig:
             f"{d.data_name}: EpiDatasetV2 exige exposure_source_id en el registry"
         )
     group = _cuadros_group(d.extraction_group)
-    lag = group.get("observation_lag_weeks")
-    if isinstance(lag, bool) or not isinstance(lag, int) or lag < 0:
-        raise EpiDatasetError(f"observation_lag_weeks inválido (entero >=0, no bool): {lag!r}")
+    try:
+        schedule = schedule_from_group(group)
+    except LagScheduleError as exc:
+        raise EpiDatasetError(str(exc)) from exc
     n_states = group.get("n_states_expected")
     if isinstance(n_states, bool) or not isinstance(n_states, int) or n_states <= 0:
         raise EpiDatasetError(f"n_states_expected inválido: {n_states!r}")
     return spec.EpiDatasetConfig(
         disease_id=d.id,  # id del registry (invariante N+1); NO el slug (coinciden en Obesidad)
-        observation_lag_weeks=lag,
+        observation_lag_weeks=schedule.vigente,
         exposure_source_id=d.exposure_source_id,
         expected_n_states=n_states,
+        lag_schedule=schedule if schedule.changes else None,
     )
 
 
@@ -111,31 +120,6 @@ def raw_path_for(disease: str) -> Path:
     digests históricos.
     """
     return _ROOT / "data" / "raw" / f"data_raw_{registry.require(disease).artifact_key}.csv"
-
-
-def build_prep(raw: pd.DataFrame, catalog: GeoCatalog, lag: int) -> pd.DataFrame:
-    """raw E66 → prep (calendario objetivo + cve_ent), listo para ``reconcile_state``."""
-    recs: list[dict[str, object]] = []
-    sin_sexo = "Acumulado_total" in raw.columns
-    for r in raw.itertuples(index=False):
-        tp = ec.target_period(_i(r.Anio), _i(r.Semana), lag)
-        recs.append(
-            {
-                "cve_ent": catalog.resolve(str(r.Entidad)),
-                "source_year": _i(r.Anio),
-                "source_week": _i(r.Semana),
-                "epi_year": tp.epi_year,
-                "epi_week": tp.epi_week,
-                "period_start": tp.period_start,
-                "ds": tp.ds,
-                "casos_source": (float("nan") if pd.isna(r.Casos_semana) else _f(r.Casos_semana)),
-                # Sin desglose por sexo, el acumulado total ocupa el lugar de «hombres» y
-                # «mujeres» queda en cero: la reconciliación del total no cambia.
-                "acum_h": _f(r.Acumulado_total if sin_sexo else r.Acumulado_hombres),
-                "acum_m": 0.0 if sin_sexo else _f(r.Acumulado_mujeres),
-            }
-        )
-    return pd.DataFrame(recs)
 
 
 def explode_base(
@@ -220,8 +204,13 @@ def build_epi_dataset_v2(
     raw = pd.read_csv(io.BytesIO(raw_bytes), low_memory=False)
     raw_digest = _sha256_bytes(raw_bytes)
 
-    prep = build_prep(raw, catalog, cfg.observation_lag_weeks)
+    schedule = cfg.lag_schedule
+    try:
+        prep = build_prep(raw, catalog, schedule or cfg.observation_lag_weeks)
+    except LagScheduleError as exc:
+        raise EpiDatasetError(str(exc)) from exc
     state = reconcile_state(prep, set(catalog.cve_ents()))
+    state = mark_gap_rows(state, schedule) if schedule else state
     base = explode_base(state, snapshot, catalog, cfg.disease_id, scheme)
     base = base.sort_values(_CANONICAL_ORDER).reset_index(drop=True)
 
@@ -232,7 +221,8 @@ def build_epi_dataset_v2(
     dataset_digest = _sha256_bytes(dataset_bytes)
     config_payload = {
         "disease_id": cfg.disease_id,
-        "calendar": {"kind": "epi_mmwr", "observation_lag_weeks": cfg.observation_lag_weeks},
+        "calendar": {"kind": "epi_mmwr", "observation_lag_weeks": cfg.observation_lag_weeks}
+        | ({"lag_schedule": schedule.payload()} if schedule else {}),
         "expected_n_states": cfg.expected_n_states,
         "exposure": {
             "source_id": cfg.exposure_source_id,
