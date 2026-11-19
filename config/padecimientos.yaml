@@ -2045,6 +2045,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
+    acceptance_fallback_run: mordedura_perro_w54_benchmark_test_f1a52ee5b970_0b47eb0b4935
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2073,6 +2074,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: mordedura_mamiferos_w55_benchmark_test_cdb7fd09b69a_f7f6bd4ad3bb
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4060,6 +4062,7 @@ padecimientos:
     # Serie desde 2016-W01 por decisión nominal del autor (lote alta_b44): inicio_serie del grupo.
     # rolling_cv_v1: 2016-W01..2020-W53 = 261 semanas antes del pliegue 2021 (mínimo 260).
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: cirrosis_alcoholica_k703_benchmark_test_b00632d2b94c_b411e241f371
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4085,6 +4088,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: chikungunya_a920_benchmark_test_ebdabdb503c8_89ef88099d64
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4197,6 +4201,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
+    acceptance_fallback_run: disparo_arma_corta_x72_benchmark_test_9287298680f0_52b014d7edc8
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4281,6 +4286,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
+    acceptance_fallback_run: intento_suicidio_z915_benchmark_test_69d514c4117e_3192cd793d1e
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4309,6 +4315,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
+    acceptance_fallback_run: ideacion_suicida_r458_benchmark_test_70824d3e8302_b0b43d8009b8
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
