@@ -4093,3 +4093,255 @@ padecimientos:
       color: "#B91C1C"
       label: "Chikungunya"
       nombre_completo: "Enfermedad por virus Chikungunya (A92.0)"
+
+  - id: envenenamiento_analgesicos_x60
+    data_name: "Envenenamiento autoinfligido intencionalmente por analgésicos no narcóticos, antipiréticos y antirreumáticos"
+    artifact_key: Envenenamiento_Analgesicos_X60
+    slug: envenenamiento_analgesicos_x60
+    display_name: "Envenenamiento autoinfligido intencionalmente por analgésicos no narcóticos, antipiréticos y antirreumáticos"
+    cie_codes: ["X60"]
+    aliases: ["envenenamiento autoinfligido intencionalmente por analgesicos no narcoticos, antipireticos y antirreumaticos", "x60"]
+    # SENSIBLE: alta con OK nominal del autor («incluir todooo», 19-nov-2026, AUTORIZACION_AUTOR.json del
+    # lote alta_b44) SIN revisión clínica ni de comunicación acreditada. Respuesta de crisis con la Línea
+    # de la Vida obligatoria antes que cualquier cifra (trampa 34). Alias sólo técnicos: ver el qa.md.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_envenenamiento_analgesicos_x60
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#7C3AED"
+      label: "Envenenamiento autoinfligido por analgésicos"
+      nombre_completo: "Envenenamiento autoinfligido intencionalmente por analgésicos no narcóticos, antipiréticos y antirreumáticos (X60)"
+
+  - id: envenenamiento_psicotropicos_x61
+    data_name: "Envenenamiento autoinfligido intencionalmente por drogas antiepilépticas, sedantes, hipnóticas, antiparkinsonianas y psicotrópicas"
+    artifact_key: Envenenamiento_Psicotropicos_X61
+    slug: envenenamiento_psicotropicos_x61
+    display_name: "Envenenamiento autoinfligido intencionalmente por drogas antiepilépticas, sedantes, hipnóticas, antiparkinsonianas y psicotrópicas"
+    cie_codes: ["X61"]
+    aliases: ["envenenamiento autoinfligido intencionalmente por drogas antiepilepticas, sedantes, hipnoticas, antiparkinsonianas y psicotropicas", "x61"]
+    # SENSIBLE: alta con OK nominal del autor («incluir todooo», 19-nov-2026, AUTORIZACION_AUTOR.json del
+    # lote alta_b44) SIN revisión clínica ni de comunicación acreditada. Respuesta de crisis con la Línea
+    # de la Vida obligatoria antes que cualquier cifra (trampa 34). Alias sólo técnicos: ver el qa.md.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_envenenamiento_psicotropicos_x61
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#6D28D9"
+      label: "Envenenamiento autoinfligido por psicotrópicos"
+      nombre_completo: "Envenenamiento autoinfligido intencionalmente por drogas antiepilépticas, sedantes, hipnóticas, antiparkinsonianas y psicotrópicas (X61)"
+
+  - id: ahorcamiento_x70
+    data_name: "Lesión autoinfligida intencionalmente por ahorcamiento, estrangulamiento o sofocación"
+    artifact_key: Ahorcamiento_X70
+    slug: ahorcamiento_x70
+    display_name: "Lesión autoinfligida intencionalmente por ahorcamiento, estrangulamiento o sofocación"
+    cie_codes: ["X70"]
+    aliases: ["lesion autoinfligida intencionalmente por ahorcamiento, estrangulamiento o sofocacion", "x70"]
+    # SENSIBLE: alta con OK nominal del autor («incluir todooo», 19-nov-2026, AUTORIZACION_AUTOR.json del
+    # lote alta_b44) SIN revisión clínica ni de comunicación acreditada. Respuesta de crisis con la Línea
+    # de la Vida obligatoria antes que cualquier cifra (trampa 34). Alias sólo técnicos: ver el qa.md.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_ahorcamiento_x70
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#5B21B6"
+      label: "Lesión autoinfligida por ahorcamiento"
+      nombre_completo: "Lesión autoinfligida intencionalmente por ahorcamiento, estrangulamiento o sofocación (X70)"
+
+  - id: disparo_arma_corta_x72
+    data_name: "Lesión autoinfligida intencionalmente por disparo de arma corta"
+    artifact_key: Disparo_Arma_Corta_X72
+    slug: disparo_arma_corta_x72
+    display_name: "Lesión autoinfligida intencionalmente por disparo de arma corta"
+    cie_codes: ["X72"]
+    aliases: ["lesion autoinfligida intencionalmente por disparo de arma corta", "x72"]
+    # SENSIBLE: alta con OK nominal del autor («incluir todooo», 19-nov-2026, AUTORIZACION_AUTOR.json del
+    # lote alta_b44) SIN revisión clínica ni de comunicación acreditada. Respuesta de crisis con la Línea
+    # de la Vida obligatoria antes que cualquier cifra (trampa 34). Alias sólo técnicos: ver el qa.md.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_disparo_arma_corta_x72
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#4C1D95"
+      label: "Lesión autoinfligida por arma corta"
+      nombre_completo: "Lesión autoinfligida intencionalmente por disparo de arma corta (X72)"
+
+  - id: objeto_cortante_x78
+    data_name: "Lesión autoinfligida intencionalmente por objeto cortante"
+    artifact_key: Objeto_Cortante_X78
+    slug: objeto_cortante_x78
+    display_name: "Lesión autoinfligida intencionalmente por objeto cortante"
+    cie_codes: ["X78"]
+    aliases: ["lesion autoinfligida intencionalmente por objeto cortante", "x78"]
+    # SENSIBLE: alta con OK nominal del autor («incluir todooo», 19-nov-2026, AUTORIZACION_AUTOR.json del
+    # lote alta_b44) SIN revisión clínica ni de comunicación acreditada. Respuesta de crisis con la Línea
+    # de la Vida obligatoria antes que cualquier cifra (trampa 34). Alias sólo técnicos: ver el qa.md.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_objeto_cortante_x78
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#8B5CF6"
+      label: "Lesión autoinfligida por objeto cortante"
+      nombre_completo: "Lesión autoinfligida intencionalmente por objeto cortante (X78)"
+
+  - id: salto_lugar_elevado_x80
+    data_name: "Lesión autoinfligida intencionalmente al saltar desde un lugar elevado"
+    artifact_key: Salto_Lugar_Elevado_X80
+    slug: salto_lugar_elevado_x80
+    display_name: "Lesión autoinfligida intencionalmente al saltar desde un lugar elevado"
+    cie_codes: ["X80"]
+    aliases: ["lesion autoinfligida intencionalmente al saltar desde un lugar elevado", "x80"]
+    # SENSIBLE: alta con OK nominal del autor («incluir todooo», 19-nov-2026, AUTORIZACION_AUTOR.json del
+    # lote alta_b44) SIN revisión clínica ni de comunicación acreditada. Respuesta de crisis con la Línea
+    # de la Vida obligatoria antes que cualquier cifra (trampa 34). Alias sólo técnicos: ver el qa.md.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_salto_lugar_elevado_x80
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#A78BFA"
+      label: "Lesión autoinfligida al saltar"
+      nombre_completo: "Lesión autoinfligida intencionalmente al saltar desde un lugar elevado (X80)"
+
+  - id: intento_suicidio_z915
+    data_name: "Historia personal de lesión autoinfligida intencionalmente (intento de suicidio)"
+    artifact_key: Intento_Suicidio_Z915
+    slug: intento_suicidio_z915
+    display_name: "Historia personal de lesión autoinfligida intencionalmente (intento de suicidio)"
+    cie_codes: ["Z91.5"]
+    aliases: ["historia personal de lesion autoinfligida intencionalmente", "z91.5"]
+    # SENSIBLE: alta con OK nominal del autor («incluir todooo», 19-nov-2026, AUTORIZACION_AUTOR.json del
+    # lote alta_b44) SIN revisión clínica ni de comunicación acreditada. Respuesta de crisis con la Línea
+    # de la Vida obligatoria antes que cualquier cifra (trampa 34). Alias sólo técnicos: ver el qa.md.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_intento_suicidio_z915
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#9333EA"
+      label: "Historia personal de lesión autoinfligida"
+      nombre_completo: "Historia personal de lesión autoinfligida intencionalmente (intento de suicidio) (Z91.5)"
+
+  - id: ideacion_suicida_r458
+    data_name: "Otros síntomas y signos que involucran el estado emocional (ideación suicida)"
+    artifact_key: Ideacion_Suicida_R458
+    slug: ideacion_suicida_r458
+    display_name: "Otros síntomas y signos que involucran el estado emocional (ideación suicida)"
+    cie_codes: ["R45.8"]
+    aliases: ["otros sintomas y signos que involucran el estado emocional", "r45.8"]
+    # SENSIBLE: alta con OK nominal del autor («incluir todooo», 19-nov-2026, AUTORIZACION_AUTOR.json del
+    # lote alta_b44) SIN revisión clínica ni de comunicación acreditada. Respuesta de crisis con la Línea
+    # de la Vida obligatoria antes que cualquier cifra (trampa 34). Alias sólo técnicos: ver el qa.md.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_ideacion_suicida_r458
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#A855F7"
+      label: "Síntomas del estado emocional (R45.8)"
+      nombre_completo: "Otros síntomas y signos que involucran el estado emocional (ideación suicida) (R45.8)"
+
+  - id: violencia_intrafamiliar_y07
+    data_name: "Violencia intrafamiliar"
+    artifact_key: Violencia_Intrafamiliar_Y07
+    slug: violencia_intrafamiliar_y07
+    display_name: "Violencia intrafamiliar"
+    cie_codes: ["Y07.0", "Y07.1", "Y07.2"]
+    aliases: ["violencia intrafamiliar", "y07"]
+    # SENSIBLE: alta con OK nominal del autor («incluir todooo», 19-nov-2026, AUTORIZACION_AUTOR.json del
+    # lote alta_b44) SIN revisión clínica ni de comunicación acreditada. Respuesta de crisis con la Línea
+    # de la Vida obligatoria antes que cualquier cifra (trampa 34). Alias sólo técnicos: ver el qa.md.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_violencia_intrafamiliar_y07
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#B91C1C"
+      label: "Violencia intrafamiliar"
+      nombre_completo: "Violencia intrafamiliar (Y07.0-Y07.2)"

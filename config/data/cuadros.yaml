@@ -3226,3 +3226,227 @@ cuadro_groups:
         has_prev_year: false
     n_states_expected: 32
     backend: camelot_stream
+
+  b44_envenenamiento_analgesicos_x60:
+    # Cuadro 17.1 (Neurológicas y de salud mental), página de X60, X61 y X70: tres bloques de 4
+    # columnas (Sem, H, M, año anterior; en 2023 rotulados M/F, masculino primero). Existe desde el boletín
+    # 2023_sem02 (serie desde 2023-W01). En 2023_sem03..2024_sem01 (49 boletines) el bloque X61 no imprime
+    # su código: se ancla por X60 y X70.
+    # Bloque 0 de la página.
+    page_anchors: ['x60', 'x70']
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {12: 4}
+    diseases:
+      - id: envenenamiento_analgesicos_x60
+        keyword: "Envenenamiento_Analgesicos_X60"
+        block_index: 0
+        onboard: true
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  b44_envenenamiento_psicotropicos_x61:
+    # Cuadro 17.1 (Neurológicas y de salud mental), página de X60, X61 y X70: tres bloques de 4
+    # columnas (Sem, H, M, año anterior; en 2023 rotulados M/F, masculino primero). Existe desde el boletín
+    # 2023_sem02 (serie desde 2023-W01). En 2023_sem03..2024_sem01 (49 boletines) el bloque X61 no imprime
+    # su código: se ancla por X60 y X70.
+    # Bloque 1 de la página.
+    page_anchors: ['x60', 'x70']
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    inner_block_columns: {12: [8, 4]}
+    diseases:
+      - id: envenenamiento_psicotropicos_x61
+        keyword: "Envenenamiento_Psicotropicos_X61"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2023_sem24.pdf"
+        diseases: [envenenamiento_psicotropicos_x61]
+        keep_period: true
+        reason: >-
+          errata de la fuente verificada abriendo el PDF (página 68, render): la columna Sem. del bloque X61 trae «-»
+          en 31 entidades y 1 en Aguascalientes, pero el renglón TOTAL imprime 49; los acumulados H/M sí cuadran con
+          el TOTAL (335/480). Se conserva el periodo vacío para imputación en vez de 31 ceros falsos
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  b44_ahorcamiento_x70:
+    # Cuadro 17.1 (Neurológicas y de salud mental), página de X60, X61 y X70: tres bloques de 4
+    # columnas (Sem, H, M, año anterior; en 2023 rotulados M/F, masculino primero). Existe desde el boletín
+    # 2023_sem02 (serie desde 2023-W01). En 2023_sem03..2024_sem01 (49 boletines) el bloque X61 no imprime
+    # su código: se ancla por X60 y X70.
+    # Bloque 2 de la página.
+    page_anchors: ['x60', 'x70']
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    last_block_columns: {12: 4}
+    diseases:
+      - id: ahorcamiento_x70
+        keyword: "Ahorcamiento_X70"
+        block_index: 0
+        onboard: true
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  b44_disparo_arma_corta_x72:
+    # Cuadro 17.x (Neurológicas y de salud mental), página de X72, X78 y X80: tres bloques de 4
+    # columnas. Existe desde el boletín 2023_sem02 (serie desde 2023-W01).
+    # Bloque 0 de la página.
+    page_anchors: ['x72', 'x80']
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {12: 4}
+    diseases:
+      - id: disparo_arma_corta_x72
+        keyword: "Disparo_Arma_Corta_X72"
+        block_index: 0
+        onboard: true
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  b44_objeto_cortante_x78:
+    # Cuadro 17.x (Neurológicas y de salud mental), página de X72, X78 y X80: tres bloques de 4
+    # columnas. Existe desde el boletín 2023_sem02 (serie desde 2023-W01).
+    # Bloque 1 de la página.
+    page_anchors: ['x72', 'x80']
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    inner_block_columns: {12: [8, 4]}
+    diseases:
+      - id: objeto_cortante_x78
+        keyword: "Objeto_Cortante_X78"
+        block_index: 0
+        onboard: true
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  b44_salto_lugar_elevado_x80:
+    # Cuadro 17.x (Neurológicas y de salud mental), página de X72, X78 y X80: tres bloques de 4
+    # columnas. Existe desde el boletín 2023_sem02 (serie desde 2023-W01).
+    # Bloque 2 de la página.
+    page_anchors: ['x72', 'x80']
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    last_block_columns: {12: 4}
+    diseases:
+      - id: salto_lugar_elevado_x80
+        keyword: "Salto_Lugar_Elevado_X80"
+        block_index: 0
+        onboard: true
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  b44_intento_suicidio_z915:
+    # Cuadro 17.x (Neurológicas y de salud mental), página de Z91.5 y R45.8: dos bloques de 4
+    # columnas. Existe desde el boletín 2023_sem02 (serie desde 2023-W01).
+    # Bloque 0 de la página.
+    page_anchors: ['z91.5', 'r45.8']
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    first_block_columns: {8: 4}
+    diseases:
+      - id: intento_suicidio_z915
+        keyword: "Intento_Suicidio_Z915"
+        block_index: 0
+        onboard: true
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  b44_ideacion_suicida_r458:
+    # Cuadro 17.x (Neurológicas y de salud mental), página de Z91.5 y R45.8: dos bloques de 4
+    # columnas. Existe desde el boletín 2023_sem02 (serie desde 2023-W01).
+    # Bloque 1 de la página.
+    page_anchors: ['z91.5', 'r45.8']
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    last_block_columns: {8: 4}
+    diseases:
+      - id: ideacion_suicida_r458
+        keyword: "Ideacion_Suicida_R458"
+        block_index: 0
+        onboard: true
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream
+
+  b44_violencia_intrafamiliar_y07:
+    # Cuadro 18.2 (Accidentes), página de violencia intrafamiliar (Y07.0-Y07.2) y herida por arma
+    # de fuego (W32-W34). Hasta 2015_sem01 el bloque W32-W34 se imprime sin año anterior (7 columnas en la
+    # página); después, 8. El rótulo del bloque W32-W34 decía «Herida por arma de fuego y punzocortantes».
+    # Bloque 0 de la página.
+    page_anchors: ['y07', 'w32']
+    state_markers: ["zacatecas", "tamaulipas"]
+    year_week_source: filename
+    observation_lag_weeks: 1
+    # reintento_row_tol: 4 (opt-in medido): en 2014_sem26 camelot parte en dos renglones Veracruz, Yucatán y
+    # Zacatecas y desplaza sus valores una entidad (Veracruz vacía); con row_tol=4 las 32 filas cuadran con el
+    # TOTAL impreso. Sólo se activa ante una fila estatal vacía o estados faltantes. En 2014_sem02..05 la
+    # misma partición deja filas parciales (no vacías) y no se repara por configuración (ver qa.md).
+    reintento_row_tol: 4
+    first_block_columns: {7: 4, 8: 4}
+    diseases:
+      - id: violencia_intrafamiliar_y07
+        keyword: "Violencia_Intrafamiliar_Y07"
+        block_index: 0
+        onboard: true
+    source_exclusions:
+      - file: "2014_sem01.pdf"
+        diseases: [violencia_intrafamiliar_y07]
+        reason: >-
+          boletín con el formato de 2013 (Cuadro 15, sólo acumulados): su semana
+          objetivo es 2013-W52, anterior al inicio de la serie (2014-W01)
+    layout_variants:
+      - id: v_4col_prev
+        min_year_week: "0000_sem00"
+        cols_per_disease: 4
+        has_prev_year: true
+    n_states_expected: 32
+    backend: camelot_stream

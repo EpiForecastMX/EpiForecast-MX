@@ -224,6 +224,7 @@ def test_solo_cuadro_6_sifilis_adquirida_declara_reparaciones_opt_in() -> None:
             "b44_gonococica_a54",
             "alta20_mordedura_perro_w54",
             "alta20_mordedura_mamiferos_w55",
+            "b44_violencia_intrafamiliar_y07",
         ]
     )
     assert con_sp == [GRUPO]

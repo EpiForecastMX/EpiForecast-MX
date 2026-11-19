@@ -206,6 +206,15 @@ def test_cie_map():
         "T63.0": "Mordedura por otras serpientes",
         "K70.3": "Cirrosis hepática alcohólica",
         "A92.0": "Enfermedad por virus Chikungunya",
+        "X60": "Envenenamiento autoinfligido intencionalmente por analgésicos no narcóticos, antipiréticos y antirreumáticos",
+        "X61": "Envenenamiento autoinfligido intencionalmente por drogas antiepilépticas, sedantes, hipnóticas, antiparkinsonianas y psicotrópicas",
+        "X70": "Lesión autoinfligida intencionalmente por ahorcamiento, estrangulamiento o sofocación",
+        "X72": "Lesión autoinfligida intencionalmente por disparo de arma corta",
+        "X78": "Lesión autoinfligida intencionalmente por objeto cortante",
+        "X80": "Lesión autoinfligida intencionalmente al saltar desde un lugar elevado",
+        "Z91.5": "Historia personal de lesión autoinfligida intencionalmente (intento de suicidio)",
+        "R45.8": "Otros síntomas y signos que involucran el estado emocional (ideación suicida)",
+        "Y07.0": "Violencia intrafamiliar",
     }
 
 
