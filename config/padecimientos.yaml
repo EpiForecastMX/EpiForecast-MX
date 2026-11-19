@@ -3232,7 +3232,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     # Bloque presente en los 671 boletines (2014_sem01..2026_sem44) con rezago 0 constante.
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3284,7 +3284,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante.
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3312,7 +3312,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3340,7 +3340,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3368,7 +3368,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3396,7 +3396,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3424,7 +3424,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3449,7 +3449,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3476,7 +3476,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3511,7 +3511,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3539,7 +3539,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3565,7 +3565,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3591,7 +3591,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3644,7 +3644,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3670,7 +3670,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
