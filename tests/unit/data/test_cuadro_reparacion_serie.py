@@ -218,3 +218,59 @@ def test_cli_falla_cerrado_sin_escribir(monkeypatch: pytest.MonkeyPatch, tmp_pat
     assert _cli(monkeypatch, tmp_path, acum) == 2
     assert not (tmp_path / "data" / "interim" / "x_t00_boletin.csv").exists()
     assert not (tmp_path / "data" / "interim" / "x_t00_extraccion_manifest.csv").exists()
+
+
+# ── Rezago por periodo (``periodos``): el objetivo de cada boletín usa SU rezago ──
+
+_CAMBIO_2021 = {
+    "desde": "2021_sem01",
+    "observation_lag_weeks": 0,
+    "huecos_objetivo": [{"periodo": "2020-W53", "motivo": "ningún boletín imprime 2020-W53"}],
+}
+
+
+def _spec_cambio(desde: str, hasta: str, cambio: dict[str, Any] = _CAMBIO_2021) -> dict[str, Any]:
+    regla = dict(_REGLA, desde=desde, hasta=hasta)
+    return {"observation_lag_weeks": 1, "periodos": [cambio], "reparaciones": [regla]}
+
+
+def test_rezago_variable_en_la_frontera_2020_w53_a_2021_w01() -> None:
+    """Caso de la auditoría: rezago 1 hasta 2020_sem53 y 0 desde 2021_sem01; A = 6 y 10 → 4."""
+    acum = {(2020, 52): (40, 50), (2020, 53): (44, 52), (2021, 1): (5, 7), (2021, 2): (9, 8)}
+    serie, registro, motivos = aplica_reparaciones(
+        _serie(acum), _spec_cambio("2020_sem53", "2021_sem02"), "x_t00"
+    )
+    sem = serie.set_index(["Anio", "Semana", "Entidad"])["Casos_semana"]
+    # 2020_sem53 (rezago 1) observa 2020-W52: delta respecto de 2020_sem52.
+    assert sem[(2020, "53", "A")] == 4 and sem[(2020, "53", "B")] == 2
+    # 2021_sem01 (rezago 0) observa 2021-W01: reinicio anual, Sem. = acumulado.
+    assert sem[(2021, "01", "A")] == 6 and sem[(2021, "01", "B")] == 8
+    # 2021_sem02 (rezago 0) observa 2021-W02: 10 - 6 = 4 (no 10 con «reinicio_anual»).
+    assert sem[(2021, "02", "A")] == 4 and sem[(2021, "02", "B")] == 1
+    reglas = registro.set_index(["Anio", "Semana", "Entidad"])["Regla"]
+    assert reglas[(2020, "53", "A")] == "delta_acumulado"
+    assert reglas[(2021, "01", "A")] == "reinicio_anual"
+    assert reglas[(2021, "02", "A")] == "delta_acumulado"
+    assert "respecto de 2021_sem01" in motivos["2021_sem02.pdf"]
+
+
+def test_cambio_de_rezago_a_mitad_de_anio_falla_cerrado() -> None:
+    """Con el previo en otro rezago el delta abarcaría dos semanas objetivo: no se repara."""
+    cambio = {
+        "desde": "2022_sem10",
+        "observation_lag_weeks": 0,
+        "huecos_objetivo": [{"periodo": "2022-W09", "motivo": "frontera sintética"}],
+    }
+    acum = {(2022, 8): (10, 10), (2022, 9): (12, 11), (2022, 10): (15, 13)}
+    with pytest.raises(ReparacionError, match="cambio de rezago"):
+        aplica_reparaciones(
+            _serie(acum), _spec_cambio("2022_sem09", "2022_sem10", cambio), "x_t00"
+        )
+
+
+def test_rezago_del_grupo_mal_declarado_falla_cerrado() -> None:
+    spec = _spec_cambio(
+        "2021_sem01", "2021_sem02", {"desde": "2021_sem01", "observation_lag_weeks": -1}
+    )
+    with pytest.raises(ReparacionError, match="rezago del grupo"):
+        aplica_reparaciones(_serie({(2021, 1): (1, 1), (2021, 2): (2, 2)}), spec, "x_t00")

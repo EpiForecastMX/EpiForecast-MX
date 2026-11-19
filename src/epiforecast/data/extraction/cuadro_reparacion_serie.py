@@ -16,10 +16,13 @@ necesitan varios boletines o sólo el nombre del archivo. Todo es opt-in por gru
 Regla escrita de ``sem_desde_delta_acumulado``: para cada boletín del rango y cada entidad,
 ``Casos_semana := A(b) - A(b-1)``, donde ``A`` es el acumulado del año impreso (``H + M``, o
 ``Acumulado_total`` sin desglose por sexo) y ``b-1`` el boletín de la semana fuente anterior.
-Si el periodo objetivo del boletín (``observation_lag_weeks``) es la semana 1 de su año, el
-acumulado se reinicia y ``Casos_semana := A(b)`` sin boletín previo. Falla cerrado
-(:class:`ReparacionError`) si un boletín del rango o su previo falta, si una entidad no trae
-acumulado o si el acumulado baja (diferencia negativa): nunca recorta, imputa ni redondea.
+El periodo objetivo de cada boletín sale del rezago **de ese boletín** según el plan del grupo
+(``epi_lag_schedule``: ``observation_lag_weeks`` más sus cambios en ``periodos``). Si es la semana
+1 de su año, el acumulado se reinicia y ``Casos_semana := A(b)`` sin boletín previo. Falla cerrado
+(:class:`ReparacionError`) si un boletín del rango o su previo falta, si el objetivo del previo no
+es la semana objetivo inmediatamente anterior (un cambio de rezago a mitad de año: el delta
+abarcaría varias semanas), si una entidad no trae acumulado o si el acumulado baja (diferencia
+negativa): nunca recorta, imputa ni redondea.
 
 ``inicio_serie`` (lista)::
 
@@ -40,6 +43,7 @@ from typing import Any
 import pandas as pd
 
 from epiforecast.data.epi_calendar import shift, target_period
+from epiforecast.data.epi_lag_schedule import LagScheduleError, schedule_from_group
 
 TIPO_DELTA = "sem_desde_delta_acumulado"
 TIPOS_REPARACION = frozenset({TIPO_DELTA})
@@ -135,7 +139,10 @@ def aplica_reparaciones(
     reglas = reparaciones_de(spec, disease_id)
     if not reglas:
         return serie, pd.DataFrame(), {}
-    lag = int(spec.get("observation_lag_weeks", 0))
+    try:
+        plan = schedule_from_group({"observation_lag_weeks": 0, **spec})
+    except LagScheduleError as exc:
+        raise ReparacionError(f"{disease_id}: rezago del grupo inválido: {exc}") from exc
     serie = serie.copy()
     anio = serie["Anio"].astype(int)
     semana = serie["Semana"].astype(int)
@@ -156,13 +163,24 @@ def aplica_reparaciones(
             actual = _por_entidad(serie, b)
             if actual is None:
                 continue
-            objetivo = target_period(b[0], b[1], lag)
+            objetivo = target_period(b[0], b[1], plan.lag_for(b))
             reinicio = objetivo.epi_week == 1
             previo_b = None if reinicio else shift(b[0], b[1], -1)
             previo = None if previo_b is None else _por_entidad(serie, previo_b)
             if previo_b is not None and previo is None:
                 errores.append(f"{_etiqueta(b)}: falta el boletín previo {_etiqueta(previo_b)}")
                 continue
+            if previo_b is not None:
+                obj_p = target_period(previo_b[0], previo_b[1], plan.lag_for(previo_b))
+                if shift(obj_p.epi_year, obj_p.epi_week, 1) != (
+                    objetivo.epi_year,
+                    objetivo.epi_week,
+                ):
+                    errores.append(
+                        f"{_etiqueta(b)}: el previo {_etiqueta(previo_b)} no observa la semana "
+                        "objetivo anterior (cambio de rezago): el delta abarcaría varias semanas"
+                    )
+                    continue
             for entidad, a_b in actual.items():
                 if (b[0], b[1], entidad) in omitir:
                     continue
