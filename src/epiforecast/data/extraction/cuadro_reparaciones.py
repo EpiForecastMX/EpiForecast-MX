@@ -92,7 +92,9 @@ def une_renglones_parciales(df: pd.DataFrame) -> pd.DataFrame:
 
     Si el renglón con nombre es una entidad federativa parcial (vacía en una columna que usan las
     entidades) y el siguiente sin nombre trae valores que se solapan con los suyos, no hay unión
-    legítima: no se une y sus celdas vacías se marcan con :data:`AMBIGUO`. Tras recortar el bloque
+    legítima: no se une y se marcan con :data:`AMBIGUO` sus celdas vacías y toda columna en que el
+    renglón siguiente trae un valor, que se perdería aunque ninguna entidad con nombre use esa
+    columna (todas partidas). Tras recortar el bloque
     del padecimiento, :func:`motivo_ambiguo` invalida la tabla sólo si la marca cae en ese bloque;
     una ambigüedad en el bloque de otro padecimiento no lo afecta. Encabezados y TOTAL no son
     entidades y siguen como antes. Sólo en los grupos que lo declaran
@@ -110,7 +112,9 @@ def une_renglones_parciales(df: pd.DataFrame) -> pd.DataFrame:
             continue
         if bool((~vacio[i] & ~vacio[sig]).any()):
             if entidades[i]:
-                filas[i, 1:][vacio[i] & usadas] = AMBIGUO
+                # Cada columna con valor en el renglón complementario lo pierde al no unir, aunque
+                # ninguna entidad con nombre la use (todas partidas): también se marca.
+                filas[i, 1:][(vacio[i] & usadas) | ~vacio[sig]] = AMBIGUO
             continue
         filas[i, 1:] = [
             a if a != "" else b for a, b in zip(filas[i, 1:], filas[sig, 1:], strict=True)

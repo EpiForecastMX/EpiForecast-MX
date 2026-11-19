@@ -33,18 +33,21 @@ PARTIDAS = {"Ciudad de México", "México", "Nuevo León"}
 DISEASE = "mordedura_perro_w54"
 
 
-def _cruda(solapa: str | None = None, ajena: str | None = None) -> pd.DataFrame:
+def _cruda(
+    solapa: str | None = None, ajena: str | None = None, partidas: set[str] = PARTIDAS
+) -> pd.DataFrame:
     """Dos bloques de 4 columnas; tres entidades partidas: nombre con el 2.º bloque, debajo el 1.º.
 
     ``solapa`` añade al renglón complementario de esa entidad una celda que se solapa con su
     renglón con nombre (el caso ambiguo reproducido por la auditoría). ``ajena`` deja a esa entidad
     con su bloque completo y la ambigüedad sólo en el bloque vecino (2019_sem35 y 2019_sem39).
+    ``partidas`` elige qué entidades salen partidas (la re-auditoría las parte todas).
     """
     filas = [["ENTIDAD", "Sem.", "H", "M", "Ant.", "Sem.", "H", "M", "Ant."]]
     for i, estado in enumerate(ESTADOS):
         propio = [str(100 + i), str(1000 + i), str(2000 + i), str(3000 + i)]
         vecino = [str(5 + i), str(50 + i), str(60 + i), str(110 + i)]
-        if estado in PARTIDAS:
+        if estado in partidas:
             filas.append([estado, "", "", "", "", *vecino])
             filas.append(["", *propio, "9" if estado == solapa else "", "", "", ""])
         elif estado == ajena:
@@ -69,14 +72,21 @@ def _spec(opt_in: bool) -> dict:
 
 
 def _extrae(
-    monkeypatch, tmp_path, opt_in: bool, solapa: str | None = None, ajena: str | None = None
+    monkeypatch,
+    tmp_path,
+    opt_in: bool,
+    solapa: str | None = None,
+    ajena: str | None = None,
+    partidas: set[str] = PARTIDAS,
 ) -> dict:
     pdf = tmp_path / "2020_sem10.pdf"
     pdf.write_bytes(b"%PDF")
     monkeypatch.setattr(ce, "load_group", lambda _g: _spec(opt_in))
     monkeypatch.setattr(ce, "find_cuadro_page", lambda *_a: 62)
     monkeypatch.setattr(
-        ce.camelot, "read_pdf", lambda *_a, **_k: [type("T", (), {"df": _cruda(solapa, ajena)})()]
+        ce.camelot,
+        "read_pdf",
+        lambda *_a, **_k: [type("T", (), {"df": _cruda(solapa, ajena, partidas)})()],
     )
     return ce.extract_cuadro_from_pdf(str(pdf), "grupo_sintetico", DISEASE)
 
@@ -117,6 +127,32 @@ def test_ambiguedad_en_el_bloque_propio_invalida_la_tabla(monkeypatch, tmp_path)
     assert "Ciudad de México" in salida["reason"]
 
 
+def test_todas_partidas_y_solapamiento_solo_en_cdmx_invalida_la_tabla(monkeypatch, tmp_path):
+    """Variante de la re-auditoría: las 32 entidades partidas y una sola celda solapada en CDMX.
+
+    Ninguna entidad con nombre usa las columnas del bloque propio (sólo aparecen en los renglones
+    complementarios), así que el código anterior no marcaba nada y CDMX salía con
+    108/1008/2008/3008 convertidos en ceros con ``valid=True``.
+    """
+    todas = set(ESTADOS)
+    unida = _extrae(monkeypatch, tmp_path, opt_in=True, partidas=todas)
+    assert unida["valid"], unida["reason"]
+    assert unida["df"].set_index("Entidad").loc["Ciudad de México", "Casos_semana"] == 108
+    salida = _extrae(monkeypatch, tmp_path, opt_in=True, solapa="Ciudad de México", partidas=todas)
+    assert salida["valid"] is False and salida["df"] is None
+    assert "renglones partidos ambiguos" in salida["reason"]
+    assert "Ciudad de México" in salida["reason"]
+
+
+def test_solapamiento_que_pierde_un_valor_del_bloque_propio_se_marca():
+    """El valor del renglón complementario que no se une se pierde: su columna queda marcada."""
+    df = pd.DataFrame([["Nuevo León", "", "", "7", "8"], ["", "1", "2", "3", ""]])
+    out = une_renglones_parciales(df)
+    assert out.iloc[0].tolist() == ["Nuevo León", AMBIGUO, AMBIGUO, AMBIGUO, "8"]
+    assert motivo_ambiguo(out.iloc[:, [0, 4]]) is None  # sólo pierde valores fuera del bloque
+    assert "Nuevo León" in (motivo_ambiguo(out.iloc[:, [0, 3]]) or "")
+
+
 def test_ambiguedad_solo_en_otro_bloque_no_invalida(monkeypatch, tmp_path):
     salida = _extrae(monkeypatch, tmp_path, opt_in=True, ajena="Aguascalientes")
     assert salida["valid"], salida["reason"]
@@ -130,10 +166,11 @@ def test_parcial_con_valores_solapados_se_marca_y_no_se_une():
         [["Oaxaca", "4", "4", "4"], ["Nuevo León", "5", "", "7"], ["", "1", "2", ""]]
     )
     out = une_renglones_parciales(solapados).iloc[1:]
-    assert out.iloc[0].tolist() == ["Nuevo León", "5", AMBIGUO, "7"]
+    # «5» frente a «1» es ambiguo y «2» se perdería: ambas columnas quedan marcadas.
+    assert out.iloc[0].tolist() == ["Nuevo León", AMBIGUO, AMBIGUO, "7"]
     assert out.iloc[1].tolist() == ["", "1", "2", ""]
     assert "Nuevo León" in (motivo_ambiguo(out) or "")
-    assert motivo_ambiguo(out.iloc[:, [0, 1, 3]]) is None  # la marca quedó fuera del bloque
+    assert motivo_ambiguo(out.iloc[:, [0, 3]]) is None  # la marca quedó fuera del bloque
 
 
 def test_encabezado_y_total_partidos_no_son_entidades_y_pasan_igual():
@@ -154,7 +191,10 @@ def test_entidad_con_llamada_de_nota_tambien_se_marca():
 
 def test_no_une_si_el_renglon_esta_completo_ni_si_el_siguiente_tiene_nombre():
     completo = pd.DataFrame([["Nuevo León", "5", "6", "7"], ["", "1", "2", ""]])
-    assert une_renglones_parciales(completo).equals(completo.astype(str))
+    out = une_renglones_parciales(completo)
+    assert out.iloc[1].tolist() == ["", "1", "2", ""]  # no se une
+    # «1» y «2» se perderían frente a «5» y «6»: el renglón completo también queda marcado.
+    assert out.iloc[0].tolist() == ["Nuevo León", AMBIGUO, AMBIGUO, "7"]
     con_nombre = pd.DataFrame([["Nuevo León", "", "", "7"], ["Oaxaca", "1", "2", ""]])
     assert une_renglones_parciales(con_nombre).equals(con_nombre.astype(str))
     alineada = pd.DataFrame([["ENTIDAD", "Sem.", "Acum."], ["Aguascalientes", "194", "766"]])
