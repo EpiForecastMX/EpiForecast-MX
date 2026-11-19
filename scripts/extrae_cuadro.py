@@ -18,7 +18,12 @@ from typing import Any
 import pandas as pd
 
 from epiforecast import registry
-from epiforecast.data.extraction.cuadro_extractor import extract_cuadro_from_pdf
+from epiforecast.data.extraction.cuadro_extractor import extract_cuadro_from_pdf, load_group
+from epiforecast.data.extraction.cuadro_reparacion_serie import (
+    ReparacionError,
+    aplica_reparaciones,
+    ruta_registro,
+)
 from epiforecast.utils.config import logger
 
 CONSOLIDATED_COLS = [
@@ -144,6 +149,16 @@ def main() -> int:
         serie = pd.concat(frames, ignore_index=True)[_columnas(d.id)]
         serie = serie.drop_duplicates(subset=["Anio", "Semana", "Entidad", "Padecimiento"])
         serie = serie.sort_values(["Anio", "Semana", "Entidad"]).reset_index(drop=True)
+        # Reparaciones declaradas (opt-in por grupo): fallan cerradas sin escribir nada.
+        try:
+            serie, registro, motivos = aplica_reparaciones(serie, load_group(args.group), d.id)
+        except ReparacionError as e:
+            logger.error("Extracción detenida, nada escrito: {}", e)
+            return 2
+        for m in manifest:
+            m["reason"] = motivos.get(m["file"], m["reason"])
+        if not registro.empty:
+            registro.to_csv(ruta_registro(serie_path), index=False, encoding="utf-8")
         serie.to_csv(serie_path, index=False, encoding="utf-8")
     pd.DataFrame(manifest).to_csv(manifest_path, index=False, encoding="utf-8")
 

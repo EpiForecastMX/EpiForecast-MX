@@ -21,6 +21,7 @@ from epiforecast.data.extraction.cuadro_capa_texto import (
     recorta_bloque_interno,
     reintenta_row_tol_si_vacia,
 )
+from epiforecast.data.extraction.cuadro_reparacion_serie import exclusion_por_inicio
 from epiforecast.data.extraction.cuadro_reparaciones import (
     alinea_renglones,
     alinea_valor_en_nombre,
@@ -62,11 +63,11 @@ def load_group(group_id: str) -> dict[str, Any]:
 def source_exclusion(
     spec: dict[str, Any], filename: str, disease_id: str
 ) -> dict[str, Any] | None:
-    """Entrada de ``source_exclusions`` si el boletín es errata de fuente para el padecimiento."""
+    """Entrada de ``source_exclusions`` (errata de fuente) o de ``inicio_serie`` del padecimiento."""
     for exc in spec.get("source_exclusions") or []:
         if exc["file"] == filename and disease_id in exc["diseases"]:
             return cast("dict[str, Any]", exc)
-    return None
+    return exclusion_por_inicio(spec, filename, disease_id)
 
 
 def find_cuadro_page(pdf_path: str, anchors: list[str], state_markers: list[str]) -> int | None:
