@@ -120,13 +120,17 @@ def _por_entidad(serie: pd.DataFrame, b: tuple[int, int]) -> pd.Series | None:
 
 
 def aplica_reparaciones(
-    serie: pd.DataFrame, spec: dict[str, Any], disease_id: str
+    serie: pd.DataFrame,
+    spec: dict[str, Any],
+    disease_id: str,
+    omitir: frozenset[tuple[int, int, str]] = frozenset(),
 ) -> tuple[pd.DataFrame, pd.DataFrame, dict[str, str]]:
     """Aplica las reparaciones declaradas del padecimiento a la serie larga ya extraída.
 
     Devuelve la serie reparada, el registro por fila (boletín, entidad, valor impreso, acumulados
     y valor reparado) y el motivo por boletín para el manifiesto. Sin reparaciones declaradas
-    devuelve la misma serie, sin copiarla. Reúne todos los defectos antes de fallar.
+    devuelve la misma serie, sin copiarla. Reúne todos los defectos antes de fallar. Las celdas
+    ``(año, semana, entidad)`` de ``omitir`` (correcciones de celda declaradas) no se recalculan.
     """
     reglas = reparaciones_de(spec, disease_id)
     if not reglas:
@@ -160,6 +164,8 @@ def aplica_reparaciones(
                 errores.append(f"{_etiqueta(b)}: falta el boletín previo {_etiqueta(previo_b)}")
                 continue
             for entidad, a_b in actual.items():
+                if (b[0], b[1], entidad) in omitir:
+                    continue
                 a_p = 0.0 if previo is None else previo.get(entidad, float("nan"))
                 if pd.isna(a_b) or pd.isna(a_p):
                     errores.append(f"{_etiqueta(b)} {entidad}: acumulado ausente")
