@@ -8,6 +8,8 @@ la frontera, estas pruebas fallan. Con el código anterior (rezago único por gr
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
@@ -173,6 +175,32 @@ def test_entero_y_plan_constante_dan_el_mismo_prep(catalog: GeoCatalog) -> None:
         (2021, 1),
         (2021, 2),
     ]
+
+
+_DORADO = Path(__file__).resolve().parents[2] / "fixtures" / "build_prep_origin_main.json"
+
+
+@pytest.mark.parametrize("plan_constante", [False, True], ids=["entero", "LagSchedule"])
+def test_build_prep_igual_al_dorado_de_origin_main(
+    catalog: GeoCatalog, plan_constante: bool
+) -> None:
+    """Rezago constante 0/1/2, con y sin sexo, cruzando 2020-W53: idéntico a ``origin/main``.
+
+    El dorado se generó ejecutando ``build_prep`` de ``origin/main`` (e25c1635) en un worktree
+    aparte (``planes/alta_b44_2026-11-19/codex/fix1/genera_dorado.py``): columnas, tipos y cada
+    celda (``repr``), sin pasar por la implementación nueva.
+    """
+    casos = json.loads(_DORADO.read_text(encoding="utf-8"))["cases"]
+    assert set(casos) == {f"{s}_sexo_lag{lag}" for s in ("con", "sin") for lag in (0, 1, 2)}
+    for nombre, caso in casos.items():
+        raw = pd.DataFrame(caso["input"]["records"]).astype(caso["input"]["dtypes"])
+        lag = ls.LagSchedule(caso["lag"]) if plan_constante else caso["lag"]
+        prep = ed.build_prep(raw, catalog, lag)
+        esperado = caso["output"]
+        assert list(prep.columns) == esperado["columns"], nombre
+        assert {c: str(t) for c, t in prep.dtypes.items()} == esperado["dtypes"], nombre
+        celdas = [[repr(v) for v in fila] for fila in prep.itertuples(index=False)]
+        assert celdas == esperado["cells"], nombre
 
 
 def test_hueco_declarado_se_imputa_y_se_marca(catalog: GeoCatalog) -> None:

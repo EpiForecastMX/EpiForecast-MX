@@ -1,0 +1,2982 @@
+{
+ "generated_from": "origin/main e25c1635b27a4b760523307900ec6f480e3c5846",
+ "function": "epi_dataset.build_prep",
+ "cases": {
+  "con_sexo_lag0": {
+   "lag": 0,
+   "input": {
+    "dtypes": {
+     "Anio": "int64",
+     "Semana": "object",
+     "Entidad": "object",
+     "Padecimiento": "object",
+     "Casos_semana": "float64",
+     "Acumulado_anio_anterior": "int64",
+     "Acumulado_hombres": "int64",
+     "Acumulado_mujeres": "int64"
+    },
+    "records": [
+     {
+      "Anio": 2020,
+      "Semana": "50",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 0.0,
+      "Acumulado_hombres": 0,
+      "Acumulado_mujeres": 0,
+      "Acumulado_anio_anterior": 100
+     },
+     {
+      "Anio": 2020,
+      "Semana": "50",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 1.0,
+      "Acumulado_hombres": 1,
+      "Acumulado_mujeres": 2,
+      "Acumulado_anio_anterior": 100
+     },
+     {
+      "Anio": 2020,
+      "Semana": "50",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 2.0,
+      "Acumulado_hombres": 2,
+      "Acumulado_mujeres": 4,
+      "Acumulado_anio_anterior": 100
+     },
+     {
+      "Anio": 2020,
+      "Semana": "51",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 3.0,
+      "Acumulado_hombres": 10,
+      "Acumulado_mujeres": 7,
+      "Acumulado_anio_anterior": 101
+     },
+     {
+      "Anio": 2020,
+      "Semana": "51",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 4.0,
+      "Acumulado_hombres": 11,
+      "Acumulado_mujeres": 9,
+      "Acumulado_anio_anterior": 101
+     },
+     {
+      "Anio": 2020,
+      "Semana": "51",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 5.0,
+      "Acumulado_hombres": 12,
+      "Acumulado_mujeres": 11,
+      "Acumulado_anio_anterior": 101
+     },
+     {
+      "Anio": 2020,
+      "Semana": "52",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 6.0,
+      "Acumulado_hombres": 20,
+      "Acumulado_mujeres": 14,
+      "Acumulado_anio_anterior": 102
+     },
+     {
+      "Anio": 2020,
+      "Semana": "52",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": null,
+      "Acumulado_hombres": 21,
+      "Acumulado_mujeres": 16,
+      "Acumulado_anio_anterior": 102
+     },
+     {
+      "Anio": 2020,
+      "Semana": "52",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 8.0,
+      "Acumulado_hombres": 22,
+      "Acumulado_mujeres": 18,
+      "Acumulado_anio_anterior": 102
+     },
+     {
+      "Anio": 2020,
+      "Semana": "53",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 9.0,
+      "Acumulado_hombres": 30,
+      "Acumulado_mujeres": 21,
+      "Acumulado_anio_anterior": 103
+     },
+     {
+      "Anio": 2020,
+      "Semana": "53",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 10.0,
+      "Acumulado_hombres": 31,
+      "Acumulado_mujeres": 23,
+      "Acumulado_anio_anterior": 103
+     },
+     {
+      "Anio": 2020,
+      "Semana": "53",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 11.0,
+      "Acumulado_hombres": 32,
+      "Acumulado_mujeres": 25,
+      "Acumulado_anio_anterior": 103
+     },
+     {
+      "Anio": 2021,
+      "Semana": "01",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 12.0,
+      "Acumulado_hombres": 40,
+      "Acumulado_mujeres": 28,
+      "Acumulado_anio_anterior": 104
+     },
+     {
+      "Anio": 2021,
+      "Semana": "01",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 13.0,
+      "Acumulado_hombres": 41,
+      "Acumulado_mujeres": 30,
+      "Acumulado_anio_anterior": 104
+     },
+     {
+      "Anio": 2021,
+      "Semana": "01",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 14.5,
+      "Acumulado_hombres": 42,
+      "Acumulado_mujeres": 32,
+      "Acumulado_anio_anterior": 104
+     },
+     {
+      "Anio": 2021,
+      "Semana": "02",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 15.0,
+      "Acumulado_hombres": 50,
+      "Acumulado_mujeres": 35,
+      "Acumulado_anio_anterior": 105
+     },
+     {
+      "Anio": 2021,
+      "Semana": "02",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 16.0,
+      "Acumulado_hombres": 51,
+      "Acumulado_mujeres": 37,
+      "Acumulado_anio_anterior": 105
+     },
+     {
+      "Anio": 2021,
+      "Semana": "02",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 17.0,
+      "Acumulado_hombres": 52,
+      "Acumulado_mujeres": 39,
+      "Acumulado_anio_anterior": 105
+     },
+     {
+      "Anio": 2021,
+      "Semana": "03",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 18.0,
+      "Acumulado_hombres": 60,
+      "Acumulado_mujeres": 42,
+      "Acumulado_anio_anterior": 106
+     },
+     {
+      "Anio": 2021,
+      "Semana": "03",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 19.0,
+      "Acumulado_hombres": 61,
+      "Acumulado_mujeres": 44,
+      "Acumulado_anio_anterior": 106
+     },
+     {
+      "Anio": 2021,
+      "Semana": "03",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 20.0,
+      "Acumulado_hombres": 62,
+      "Acumulado_mujeres": 46,
+      "Acumulado_anio_anterior": 106
+     }
+    ]
+   },
+   "output": {
+    "columns": [
+     "cve_ent",
+     "source_year",
+     "source_week",
+     "epi_year",
+     "epi_week",
+     "period_start",
+     "ds",
+     "casos_source",
+     "acum_h",
+     "acum_m"
+    ],
+    "dtypes": {
+     "cve_ent": "object",
+     "source_year": "int64",
+     "source_week": "int64",
+     "epi_year": "int64",
+     "epi_week": "int64",
+     "period_start": "object",
+     "ds": "object",
+     "casos_source": "float64",
+     "acum_h": "float64",
+     "acum_m": "float64"
+    },
+    "cells": [
+     [
+      "'01'",
+      "2020",
+      "50",
+      "2020",
+      "50",
+      "datetime.date(2020, 12, 6)",
+      "datetime.date(2020, 12, 7)",
+      "0.0",
+      "0.0",
+      "0.0"
+     ],
+     [
+      "'09'",
+      "2020",
+      "50",
+      "2020",
+      "50",
+      "datetime.date(2020, 12, 6)",
+      "datetime.date(2020, 12, 7)",
+      "1.0",
+      "1.0",
+      "2.0"
+     ],
+     [
+      "'32'",
+      "2020",
+      "50",
+      "2020",
+      "50",
+      "datetime.date(2020, 12, 6)",
+      "datetime.date(2020, 12, 7)",
+      "2.0",
+      "2.0",
+      "4.0"
+     ],
+     [
+      "'01'",
+      "2020",
+      "51",
+      "2020",
+      "51",
+      "datetime.date(2020, 12, 13)",
+      "datetime.date(2020, 12, 14)",
+      "3.0",
+      "10.0",
+      "7.0"
+     ],
+     [
+      "'09'",
+      "2020",
+      "51",
+      "2020",
+      "51",
+      "datetime.date(2020, 12, 13)",
+      "datetime.date(2020, 12, 14)",
+      "4.0",
+      "11.0",
+      "9.0"
+     ],
+     [
+      "'32'",
+      "2020",
+      "51",
+      "2020",
+      "51",
+      "datetime.date(2020, 12, 13)",
+      "datetime.date(2020, 12, 14)",
+      "5.0",
+      "12.0",
+      "11.0"
+     ],
+     [
+      "'01'",
+      "2020",
+      "52",
+      "2020",
+      "52",
+      "datetime.date(2020, 12, 20)",
+      "datetime.date(2020, 12, 21)",
+      "6.0",
+      "20.0",
+      "14.0"
+     ],
+     [
+      "'09'",
+      "2020",
+      "52",
+      "2020",
+      "52",
+      "datetime.date(2020, 12, 20)",
+      "datetime.date(2020, 12, 21)",
+      "nan",
+      "21.0",
+      "16.0"
+     ],
+     [
+      "'32'",
+      "2020",
+      "52",
+      "2020",
+      "52",
+      "datetime.date(2020, 12, 20)",
+      "datetime.date(2020, 12, 21)",
+      "8.0",
+      "22.0",
+      "18.0"
+     ],
+     [
+      "'01'",
+      "2020",
+      "53",
+      "2020",
+      "53",
+      "datetime.date(2020, 12, 27)",
+      "datetime.date(2020, 12, 28)",
+      "9.0",
+      "30.0",
+      "21.0"
+     ],
+     [
+      "'09'",
+      "2020",
+      "53",
+      "2020",
+      "53",
+      "datetime.date(2020, 12, 27)",
+      "datetime.date(2020, 12, 28)",
+      "10.0",
+      "31.0",
+      "23.0"
+     ],
+     [
+      "'32'",
+      "2020",
+      "53",
+      "2020",
+      "53",
+      "datetime.date(2020, 12, 27)",
+      "datetime.date(2020, 12, 28)",
+      "11.0",
+      "32.0",
+      "25.0"
+     ],
+     [
+      "'01'",
+      "2021",
+      "1",
+      "2021",
+      "1",
+      "datetime.date(2021, 1, 3)",
+      "datetime.date(2021, 1, 4)",
+      "12.0",
+      "40.0",
+      "28.0"
+     ],
+     [
+      "'09'",
+      "2021",
+      "1",
+      "2021",
+      "1",
+      "datetime.date(2021, 1, 3)",
+      "datetime.date(2021, 1, 4)",
+      "13.0",
+      "41.0",
+      "30.0"
+     ],
+     [
+      "'32'",
+      "2021",
+      "1",
+      "2021",
+      "1",
+      "datetime.date(2021, 1, 3)",
+      "datetime.date(2021, 1, 4)",
+      "14.5",
+      "42.0",
+      "32.0"
+     ],
+     [
+      "'01'",
+      "2021",
+      "2",
+      "2021",
+      "2",
+      "datetime.date(2021, 1, 10)",
+      "datetime.date(2021, 1, 11)",
+      "15.0",
+      "50.0",
+      "35.0"
+     ],
+     [
+      "'09'",
+      "2021",
+      "2",
+      "2021",
+      "2",
+      "datetime.date(2021, 1, 10)",
+      "datetime.date(2021, 1, 11)",
+      "16.0",
+      "51.0",
+      "37.0"
+     ],
+     [
+      "'32'",
+      "2021",
+      "2",
+      "2021",
+      "2",
+      "datetime.date(2021, 1, 10)",
+      "datetime.date(2021, 1, 11)",
+      "17.0",
+      "52.0",
+      "39.0"
+     ],
+     [
+      "'01'",
+      "2021",
+      "3",
+      "2021",
+      "3",
+      "datetime.date(2021, 1, 17)",
+      "datetime.date(2021, 1, 18)",
+      "18.0",
+      "60.0",
+      "42.0"
+     ],
+     [
+      "'09'",
+      "2021",
+      "3",
+      "2021",
+      "3",
+      "datetime.date(2021, 1, 17)",
+      "datetime.date(2021, 1, 18)",
+      "19.0",
+      "61.0",
+      "44.0"
+     ],
+     [
+      "'32'",
+      "2021",
+      "3",
+      "2021",
+      "3",
+      "datetime.date(2021, 1, 17)",
+      "datetime.date(2021, 1, 18)",
+      "20.0",
+      "62.0",
+      "46.0"
+     ]
+    ]
+   }
+  },
+  "con_sexo_lag1": {
+   "lag": 1,
+   "input": {
+    "dtypes": {
+     "Anio": "int64",
+     "Semana": "object",
+     "Entidad": "object",
+     "Padecimiento": "object",
+     "Casos_semana": "float64",
+     "Acumulado_anio_anterior": "int64",
+     "Acumulado_hombres": "int64",
+     "Acumulado_mujeres": "int64"
+    },
+    "records": [
+     {
+      "Anio": 2020,
+      "Semana": "50",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 0.0,
+      "Acumulado_hombres": 0,
+      "Acumulado_mujeres": 0,
+      "Acumulado_anio_anterior": 100
+     },
+     {
+      "Anio": 2020,
+      "Semana": "50",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 1.0,
+      "Acumulado_hombres": 1,
+      "Acumulado_mujeres": 2,
+      "Acumulado_anio_anterior": 100
+     },
+     {
+      "Anio": 2020,
+      "Semana": "50",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 2.0,
+      "Acumulado_hombres": 2,
+      "Acumulado_mujeres": 4,
+      "Acumulado_anio_anterior": 100
+     },
+     {
+      "Anio": 2020,
+      "Semana": "51",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 3.0,
+      "Acumulado_hombres": 10,
+      "Acumulado_mujeres": 7,
+      "Acumulado_anio_anterior": 101
+     },
+     {
+      "Anio": 2020,
+      "Semana": "51",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 4.0,
+      "Acumulado_hombres": 11,
+      "Acumulado_mujeres": 9,
+      "Acumulado_anio_anterior": 101
+     },
+     {
+      "Anio": 2020,
+      "Semana": "51",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 5.0,
+      "Acumulado_hombres": 12,
+      "Acumulado_mujeres": 11,
+      "Acumulado_anio_anterior": 101
+     },
+     {
+      "Anio": 2020,
+      "Semana": "52",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 6.0,
+      "Acumulado_hombres": 20,
+      "Acumulado_mujeres": 14,
+      "Acumulado_anio_anterior": 102
+     },
+     {
+      "Anio": 2020,
+      "Semana": "52",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": null,
+      "Acumulado_hombres": 21,
+      "Acumulado_mujeres": 16,
+      "Acumulado_anio_anterior": 102
+     },
+     {
+      "Anio": 2020,
+      "Semana": "52",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 8.0,
+      "Acumulado_hombres": 22,
+      "Acumulado_mujeres": 18,
+      "Acumulado_anio_anterior": 102
+     },
+     {
+      "Anio": 2020,
+      "Semana": "53",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 9.0,
+      "Acumulado_hombres": 30,
+      "Acumulado_mujeres": 21,
+      "Acumulado_anio_anterior": 103
+     },
+     {
+      "Anio": 2020,
+      "Semana": "53",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 10.0,
+      "Acumulado_hombres": 31,
+      "Acumulado_mujeres": 23,
+      "Acumulado_anio_anterior": 103
+     },
+     {
+      "Anio": 2020,
+      "Semana": "53",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 11.0,
+      "Acumulado_hombres": 32,
+      "Acumulado_mujeres": 25,
+      "Acumulado_anio_anterior": 103
+     },
+     {
+      "Anio": 2021,
+      "Semana": "01",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 12.0,
+      "Acumulado_hombres": 40,
+      "Acumulado_mujeres": 28,
+      "Acumulado_anio_anterior": 104
+     },
+     {
+      "Anio": 2021,
+      "Semana": "01",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 13.0,
+      "Acumulado_hombres": 41,
+      "Acumulado_mujeres": 30,
+      "Acumulado_anio_anterior": 104
+     },
+     {
+      "Anio": 2021,
+      "Semana": "01",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 14.5,
+      "Acumulado_hombres": 42,
+      "Acumulado_mujeres": 32,
+      "Acumulado_anio_anterior": 104
+     },
+     {
+      "Anio": 2021,
+      "Semana": "02",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 15.0,
+      "Acumulado_hombres": 50,
+      "Acumulado_mujeres": 35,
+      "Acumulado_anio_anterior": 105
+     },
+     {
+      "Anio": 2021,
+      "Semana": "02",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 16.0,
+      "Acumulado_hombres": 51,
+      "Acumulado_mujeres": 37,
+      "Acumulado_anio_anterior": 105
+     },
+     {
+      "Anio": 2021,
+      "Semana": "02",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 17.0,
+      "Acumulado_hombres": 52,
+      "Acumulado_mujeres": 39,
+      "Acumulado_anio_anterior": 105
+     },
+     {
+      "Anio": 2021,
+      "Semana": "03",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 18.0,
+      "Acumulado_hombres": 60,
+      "Acumulado_mujeres": 42,
+      "Acumulado_anio_anterior": 106
+     },
+     {
+      "Anio": 2021,
+      "Semana": "03",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 19.0,
+      "Acumulado_hombres": 61,
+      "Acumulado_mujeres": 44,
+      "Acumulado_anio_anterior": 106
+     },
+     {
+      "Anio": 2021,
+      "Semana": "03",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 20.0,
+      "Acumulado_hombres": 62,
+      "Acumulado_mujeres": 46,
+      "Acumulado_anio_anterior": 106
+     }
+    ]
+   },
+   "output": {
+    "columns": [
+     "cve_ent",
+     "source_year",
+     "source_week",
+     "epi_year",
+     "epi_week",
+     "period_start",
+     "ds",
+     "casos_source",
+     "acum_h",
+     "acum_m"
+    ],
+    "dtypes": {
+     "cve_ent": "object",
+     "source_year": "int64",
+     "source_week": "int64",
+     "epi_year": "int64",
+     "epi_week": "int64",
+     "period_start": "object",
+     "ds": "object",
+     "casos_source": "float64",
+     "acum_h": "float64",
+     "acum_m": "float64"
+    },
+    "cells": [
+     [
+      "'01'",
+      "2020",
+      "50",
+      "2020",
+      "49",
+      "datetime.date(2020, 11, 29)",
+      "datetime.date(2020, 11, 30)",
+      "0.0",
+      "0.0",
+      "0.0"
+     ],
+     [
+      "'09'",
+      "2020",
+      "50",
+      "2020",
+      "49",
+      "datetime.date(2020, 11, 29)",
+      "datetime.date(2020, 11, 30)",
+      "1.0",
+      "1.0",
+      "2.0"
+     ],
+     [
+      "'32'",
+      "2020",
+      "50",
+      "2020",
+      "49",
+      "datetime.date(2020, 11, 29)",
+      "datetime.date(2020, 11, 30)",
+      "2.0",
+      "2.0",
+      "4.0"
+     ],
+     [
+      "'01'",
+      "2020",
+      "51",
+      "2020",
+      "50",
+      "datetime.date(2020, 12, 6)",
+      "datetime.date(2020, 12, 7)",
+      "3.0",
+      "10.0",
+      "7.0"
+     ],
+     [
+      "'09'",
+      "2020",
+      "51",
+      "2020",
+      "50",
+      "datetime.date(2020, 12, 6)",
+      "datetime.date(2020, 12, 7)",
+      "4.0",
+      "11.0",
+      "9.0"
+     ],
+     [
+      "'32'",
+      "2020",
+      "51",
+      "2020",
+      "50",
+      "datetime.date(2020, 12, 6)",
+      "datetime.date(2020, 12, 7)",
+      "5.0",
+      "12.0",
+      "11.0"
+     ],
+     [
+      "'01'",
+      "2020",
+      "52",
+      "2020",
+      "51",
+      "datetime.date(2020, 12, 13)",
+      "datetime.date(2020, 12, 14)",
+      "6.0",
+      "20.0",
+      "14.0"
+     ],
+     [
+      "'09'",
+      "2020",
+      "52",
+      "2020",
+      "51",
+      "datetime.date(2020, 12, 13)",
+      "datetime.date(2020, 12, 14)",
+      "nan",
+      "21.0",
+      "16.0"
+     ],
+     [
+      "'32'",
+      "2020",
+      "52",
+      "2020",
+      "51",
+      "datetime.date(2020, 12, 13)",
+      "datetime.date(2020, 12, 14)",
+      "8.0",
+      "22.0",
+      "18.0"
+     ],
+     [
+      "'01'",
+      "2020",
+      "53",
+      "2020",
+      "52",
+      "datetime.date(2020, 12, 20)",
+      "datetime.date(2020, 12, 21)",
+      "9.0",
+      "30.0",
+      "21.0"
+     ],
+     [
+      "'09'",
+      "2020",
+      "53",
+      "2020",
+      "52",
+      "datetime.date(2020, 12, 20)",
+      "datetime.date(2020, 12, 21)",
+      "10.0",
+      "31.0",
+      "23.0"
+     ],
+     [
+      "'32'",
+      "2020",
+      "53",
+      "2020",
+      "52",
+      "datetime.date(2020, 12, 20)",
+      "datetime.date(2020, 12, 21)",
+      "11.0",
+      "32.0",
+      "25.0"
+     ],
+     [
+      "'01'",
+      "2021",
+      "1",
+      "2020",
+      "53",
+      "datetime.date(2020, 12, 27)",
+      "datetime.date(2020, 12, 28)",
+      "12.0",
+      "40.0",
+      "28.0"
+     ],
+     [
+      "'09'",
+      "2021",
+      "1",
+      "2020",
+      "53",
+      "datetime.date(2020, 12, 27)",
+      "datetime.date(2020, 12, 28)",
+      "13.0",
+      "41.0",
+      "30.0"
+     ],
+     [
+      "'32'",
+      "2021",
+      "1",
+      "2020",
+      "53",
+      "datetime.date(2020, 12, 27)",
+      "datetime.date(2020, 12, 28)",
+      "14.5",
+      "42.0",
+      "32.0"
+     ],
+     [
+      "'01'",
+      "2021",
+      "2",
+      "2021",
+      "1",
+      "datetime.date(2021, 1, 3)",
+      "datetime.date(2021, 1, 4)",
+      "15.0",
+      "50.0",
+      "35.0"
+     ],
+     [
+      "'09'",
+      "2021",
+      "2",
+      "2021",
+      "1",
+      "datetime.date(2021, 1, 3)",
+      "datetime.date(2021, 1, 4)",
+      "16.0",
+      "51.0",
+      "37.0"
+     ],
+     [
+      "'32'",
+      "2021",
+      "2",
+      "2021",
+      "1",
+      "datetime.date(2021, 1, 3)",
+      "datetime.date(2021, 1, 4)",
+      "17.0",
+      "52.0",
+      "39.0"
+     ],
+     [
+      "'01'",
+      "2021",
+      "3",
+      "2021",
+      "2",
+      "datetime.date(2021, 1, 10)",
+      "datetime.date(2021, 1, 11)",
+      "18.0",
+      "60.0",
+      "42.0"
+     ],
+     [
+      "'09'",
+      "2021",
+      "3",
+      "2021",
+      "2",
+      "datetime.date(2021, 1, 10)",
+      "datetime.date(2021, 1, 11)",
+      "19.0",
+      "61.0",
+      "44.0"
+     ],
+     [
+      "'32'",
+      "2021",
+      "3",
+      "2021",
+      "2",
+      "datetime.date(2021, 1, 10)",
+      "datetime.date(2021, 1, 11)",
+      "20.0",
+      "62.0",
+      "46.0"
+     ]
+    ]
+   }
+  },
+  "con_sexo_lag2": {
+   "lag": 2,
+   "input": {
+    "dtypes": {
+     "Anio": "int64",
+     "Semana": "object",
+     "Entidad": "object",
+     "Padecimiento": "object",
+     "Casos_semana": "float64",
+     "Acumulado_anio_anterior": "int64",
+     "Acumulado_hombres": "int64",
+     "Acumulado_mujeres": "int64"
+    },
+    "records": [
+     {
+      "Anio": 2020,
+      "Semana": "50",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 0.0,
+      "Acumulado_hombres": 0,
+      "Acumulado_mujeres": 0,
+      "Acumulado_anio_anterior": 100
+     },
+     {
+      "Anio": 2020,
+      "Semana": "50",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 1.0,
+      "Acumulado_hombres": 1,
+      "Acumulado_mujeres": 2,
+      "Acumulado_anio_anterior": 100
+     },
+     {
+      "Anio": 2020,
+      "Semana": "50",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 2.0,
+      "Acumulado_hombres": 2,
+      "Acumulado_mujeres": 4,
+      "Acumulado_anio_anterior": 100
+     },
+     {
+      "Anio": 2020,
+      "Semana": "51",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 3.0,
+      "Acumulado_hombres": 10,
+      "Acumulado_mujeres": 7,
+      "Acumulado_anio_anterior": 101
+     },
+     {
+      "Anio": 2020,
+      "Semana": "51",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 4.0,
+      "Acumulado_hombres": 11,
+      "Acumulado_mujeres": 9,
+      "Acumulado_anio_anterior": 101
+     },
+     {
+      "Anio": 2020,
+      "Semana": "51",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 5.0,
+      "Acumulado_hombres": 12,
+      "Acumulado_mujeres": 11,
+      "Acumulado_anio_anterior": 101
+     },
+     {
+      "Anio": 2020,
+      "Semana": "52",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 6.0,
+      "Acumulado_hombres": 20,
+      "Acumulado_mujeres": 14,
+      "Acumulado_anio_anterior": 102
+     },
+     {
+      "Anio": 2020,
+      "Semana": "52",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": null,
+      "Acumulado_hombres": 21,
+      "Acumulado_mujeres": 16,
+      "Acumulado_anio_anterior": 102
+     },
+     {
+      "Anio": 2020,
+      "Semana": "52",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 8.0,
+      "Acumulado_hombres": 22,
+      "Acumulado_mujeres": 18,
+      "Acumulado_anio_anterior": 102
+     },
+     {
+      "Anio": 2020,
+      "Semana": "53",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 9.0,
+      "Acumulado_hombres": 30,
+      "Acumulado_mujeres": 21,
+      "Acumulado_anio_anterior": 103
+     },
+     {
+      "Anio": 2020,
+      "Semana": "53",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 10.0,
+      "Acumulado_hombres": 31,
+      "Acumulado_mujeres": 23,
+      "Acumulado_anio_anterior": 103
+     },
+     {
+      "Anio": 2020,
+      "Semana": "53",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 11.0,
+      "Acumulado_hombres": 32,
+      "Acumulado_mujeres": 25,
+      "Acumulado_anio_anterior": 103
+     },
+     {
+      "Anio": 2021,
+      "Semana": "01",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 12.0,
+      "Acumulado_hombres": 40,
+      "Acumulado_mujeres": 28,
+      "Acumulado_anio_anterior": 104
+     },
+     {
+      "Anio": 2021,
+      "Semana": "01",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 13.0,
+      "Acumulado_hombres": 41,
+      "Acumulado_mujeres": 30,
+      "Acumulado_anio_anterior": 104
+     },
+     {
+      "Anio": 2021,
+      "Semana": "01",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 14.5,
+      "Acumulado_hombres": 42,
+      "Acumulado_mujeres": 32,
+      "Acumulado_anio_anterior": 104
+     },
+     {
+      "Anio": 2021,
+      "Semana": "02",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 15.0,
+      "Acumulado_hombres": 50,
+      "Acumulado_mujeres": 35,
+      "Acumulado_anio_anterior": 105
+     },
+     {
+      "Anio": 2021,
+      "Semana": "02",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 16.0,
+      "Acumulado_hombres": 51,
+      "Acumulado_mujeres": 37,
+      "Acumulado_anio_anterior": 105
+     },
+     {
+      "Anio": 2021,
+      "Semana": "02",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 17.0,
+      "Acumulado_hombres": 52,
+      "Acumulado_mujeres": 39,
+      "Acumulado_anio_anterior": 105
+     },
+     {
+      "Anio": 2021,
+      "Semana": "03",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 18.0,
+      "Acumulado_hombres": 60,
+      "Acumulado_mujeres": 42,
+      "Acumulado_anio_anterior": 106
+     },
+     {
+      "Anio": 2021,
+      "Semana": "03",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 19.0,
+      "Acumulado_hombres": 61,
+      "Acumulado_mujeres": 44,
+      "Acumulado_anio_anterior": 106
+     },
+     {
+      "Anio": 2021,
+      "Semana": "03",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 20.0,
+      "Acumulado_hombres": 62,
+      "Acumulado_mujeres": 46,
+      "Acumulado_anio_anterior": 106
+     }
+    ]
+   },
+   "output": {
+    "columns": [
+     "cve_ent",
+     "source_year",
+     "source_week",
+     "epi_year",
+     "epi_week",
+     "period_start",
+     "ds",
+     "casos_source",
+     "acum_h",
+     "acum_m"
+    ],
+    "dtypes": {
+     "cve_ent": "object",
+     "source_year": "int64",
+     "source_week": "int64",
+     "epi_year": "int64",
+     "epi_week": "int64",
+     "period_start": "object",
+     "ds": "object",
+     "casos_source": "float64",
+     "acum_h": "float64",
+     "acum_m": "float64"
+    },
+    "cells": [
+     [
+      "'01'",
+      "2020",
+      "50",
+      "2020",
+      "48",
+      "datetime.date(2020, 11, 22)",
+      "datetime.date(2020, 11, 23)",
+      "0.0",
+      "0.0",
+      "0.0"
+     ],
+     [
+      "'09'",
+      "2020",
+      "50",
+      "2020",
+      "48",
+      "datetime.date(2020, 11, 22)",
+      "datetime.date(2020, 11, 23)",
+      "1.0",
+      "1.0",
+      "2.0"
+     ],
+     [
+      "'32'",
+      "2020",
+      "50",
+      "2020",
+      "48",
+      "datetime.date(2020, 11, 22)",
+      "datetime.date(2020, 11, 23)",
+      "2.0",
+      "2.0",
+      "4.0"
+     ],
+     [
+      "'01'",
+      "2020",
+      "51",
+      "2020",
+      "49",
+      "datetime.date(2020, 11, 29)",
+      "datetime.date(2020, 11, 30)",
+      "3.0",
+      "10.0",
+      "7.0"
+     ],
+     [
+      "'09'",
+      "2020",
+      "51",
+      "2020",
+      "49",
+      "datetime.date(2020, 11, 29)",
+      "datetime.date(2020, 11, 30)",
+      "4.0",
+      "11.0",
+      "9.0"
+     ],
+     [
+      "'32'",
+      "2020",
+      "51",
+      "2020",
+      "49",
+      "datetime.date(2020, 11, 29)",
+      "datetime.date(2020, 11, 30)",
+      "5.0",
+      "12.0",
+      "11.0"
+     ],
+     [
+      "'01'",
+      "2020",
+      "52",
+      "2020",
+      "50",
+      "datetime.date(2020, 12, 6)",
+      "datetime.date(2020, 12, 7)",
+      "6.0",
+      "20.0",
+      "14.0"
+     ],
+     [
+      "'09'",
+      "2020",
+      "52",
+      "2020",
+      "50",
+      "datetime.date(2020, 12, 6)",
+      "datetime.date(2020, 12, 7)",
+      "nan",
+      "21.0",
+      "16.0"
+     ],
+     [
+      "'32'",
+      "2020",
+      "52",
+      "2020",
+      "50",
+      "datetime.date(2020, 12, 6)",
+      "datetime.date(2020, 12, 7)",
+      "8.0",
+      "22.0",
+      "18.0"
+     ],
+     [
+      "'01'",
+      "2020",
+      "53",
+      "2020",
+      "51",
+      "datetime.date(2020, 12, 13)",
+      "datetime.date(2020, 12, 14)",
+      "9.0",
+      "30.0",
+      "21.0"
+     ],
+     [
+      "'09'",
+      "2020",
+      "53",
+      "2020",
+      "51",
+      "datetime.date(2020, 12, 13)",
+      "datetime.date(2020, 12, 14)",
+      "10.0",
+      "31.0",
+      "23.0"
+     ],
+     [
+      "'32'",
+      "2020",
+      "53",
+      "2020",
+      "51",
+      "datetime.date(2020, 12, 13)",
+      "datetime.date(2020, 12, 14)",
+      "11.0",
+      "32.0",
+      "25.0"
+     ],
+     [
+      "'01'",
+      "2021",
+      "1",
+      "2020",
+      "52",
+      "datetime.date(2020, 12, 20)",
+      "datetime.date(2020, 12, 21)",
+      "12.0",
+      "40.0",
+      "28.0"
+     ],
+     [
+      "'09'",
+      "2021",
+      "1",
+      "2020",
+      "52",
+      "datetime.date(2020, 12, 20)",
+      "datetime.date(2020, 12, 21)",
+      "13.0",
+      "41.0",
+      "30.0"
+     ],
+     [
+      "'32'",
+      "2021",
+      "1",
+      "2020",
+      "52",
+      "datetime.date(2020, 12, 20)",
+      "datetime.date(2020, 12, 21)",
+      "14.5",
+      "42.0",
+      "32.0"
+     ],
+     [
+      "'01'",
+      "2021",
+      "2",
+      "2020",
+      "53",
+      "datetime.date(2020, 12, 27)",
+      "datetime.date(2020, 12, 28)",
+      "15.0",
+      "50.0",
+      "35.0"
+     ],
+     [
+      "'09'",
+      "2021",
+      "2",
+      "2020",
+      "53",
+      "datetime.date(2020, 12, 27)",
+      "datetime.date(2020, 12, 28)",
+      "16.0",
+      "51.0",
+      "37.0"
+     ],
+     [
+      "'32'",
+      "2021",
+      "2",
+      "2020",
+      "53",
+      "datetime.date(2020, 12, 27)",
+      "datetime.date(2020, 12, 28)",
+      "17.0",
+      "52.0",
+      "39.0"
+     ],
+     [
+      "'01'",
+      "2021",
+      "3",
+      "2021",
+      "1",
+      "datetime.date(2021, 1, 3)",
+      "datetime.date(2021, 1, 4)",
+      "18.0",
+      "60.0",
+      "42.0"
+     ],
+     [
+      "'09'",
+      "2021",
+      "3",
+      "2021",
+      "1",
+      "datetime.date(2021, 1, 3)",
+      "datetime.date(2021, 1, 4)",
+      "19.0",
+      "61.0",
+      "44.0"
+     ],
+     [
+      "'32'",
+      "2021",
+      "3",
+      "2021",
+      "1",
+      "datetime.date(2021, 1, 3)",
+      "datetime.date(2021, 1, 4)",
+      "20.0",
+      "62.0",
+      "46.0"
+     ]
+    ]
+   }
+  },
+  "sin_sexo_lag0": {
+   "lag": 0,
+   "input": {
+    "dtypes": {
+     "Anio": "int64",
+     "Semana": "object",
+     "Entidad": "object",
+     "Padecimiento": "object",
+     "Casos_semana": "float64",
+     "Acumulado_anio_anterior": "int64",
+     "Acumulado_total": "int64"
+    },
+    "records": [
+     {
+      "Anio": 2020,
+      "Semana": "50",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 0.0,
+      "Acumulado_total": 0,
+      "Acumulado_anio_anterior": 100
+     },
+     {
+      "Anio": 2020,
+      "Semana": "50",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 1.0,
+      "Acumulado_total": 1,
+      "Acumulado_anio_anterior": 100
+     },
+     {
+      "Anio": 2020,
+      "Semana": "50",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 2.0,
+      "Acumulado_total": 2,
+      "Acumulado_anio_anterior": 100
+     },
+     {
+      "Anio": 2020,
+      "Semana": "51",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 3.0,
+      "Acumulado_total": 10,
+      "Acumulado_anio_anterior": 101
+     },
+     {
+      "Anio": 2020,
+      "Semana": "51",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 4.0,
+      "Acumulado_total": 11,
+      "Acumulado_anio_anterior": 101
+     },
+     {
+      "Anio": 2020,
+      "Semana": "51",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 5.0,
+      "Acumulado_total": 12,
+      "Acumulado_anio_anterior": 101
+     },
+     {
+      "Anio": 2020,
+      "Semana": "52",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 6.0,
+      "Acumulado_total": 20,
+      "Acumulado_anio_anterior": 102
+     },
+     {
+      "Anio": 2020,
+      "Semana": "52",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": null,
+      "Acumulado_total": 21,
+      "Acumulado_anio_anterior": 102
+     },
+     {
+      "Anio": 2020,
+      "Semana": "52",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 8.0,
+      "Acumulado_total": 22,
+      "Acumulado_anio_anterior": 102
+     },
+     {
+      "Anio": 2020,
+      "Semana": "53",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 9.0,
+      "Acumulado_total": 30,
+      "Acumulado_anio_anterior": 103
+     },
+     {
+      "Anio": 2020,
+      "Semana": "53",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 10.0,
+      "Acumulado_total": 31,
+      "Acumulado_anio_anterior": 103
+     },
+     {
+      "Anio": 2020,
+      "Semana": "53",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 11.0,
+      "Acumulado_total": 32,
+      "Acumulado_anio_anterior": 103
+     },
+     {
+      "Anio": 2021,
+      "Semana": "01",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 12.0,
+      "Acumulado_total": 40,
+      "Acumulado_anio_anterior": 104
+     },
+     {
+      "Anio": 2021,
+      "Semana": "01",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 13.0,
+      "Acumulado_total": 41,
+      "Acumulado_anio_anterior": 104
+     },
+     {
+      "Anio": 2021,
+      "Semana": "01",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 14.5,
+      "Acumulado_total": 42,
+      "Acumulado_anio_anterior": 104
+     },
+     {
+      "Anio": 2021,
+      "Semana": "02",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 15.0,
+      "Acumulado_total": 50,
+      "Acumulado_anio_anterior": 105
+     },
+     {
+      "Anio": 2021,
+      "Semana": "02",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 16.0,
+      "Acumulado_total": 51,
+      "Acumulado_anio_anterior": 105
+     },
+     {
+      "Anio": 2021,
+      "Semana": "02",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 17.0,
+      "Acumulado_total": 52,
+      "Acumulado_anio_anterior": 105
+     },
+     {
+      "Anio": 2021,
+      "Semana": "03",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 18.0,
+      "Acumulado_total": 60,
+      "Acumulado_anio_anterior": 106
+     },
+     {
+      "Anio": 2021,
+      "Semana": "03",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 19.0,
+      "Acumulado_total": 61,
+      "Acumulado_anio_anterior": 106
+     },
+     {
+      "Anio": 2021,
+      "Semana": "03",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 20.0,
+      "Acumulado_total": 62,
+      "Acumulado_anio_anterior": 106
+     }
+    ]
+   },
+   "output": {
+    "columns": [
+     "cve_ent",
+     "source_year",
+     "source_week",
+     "epi_year",
+     "epi_week",
+     "period_start",
+     "ds",
+     "casos_source",
+     "acum_h",
+     "acum_m"
+    ],
+    "dtypes": {
+     "cve_ent": "object",
+     "source_year": "int64",
+     "source_week": "int64",
+     "epi_year": "int64",
+     "epi_week": "int64",
+     "period_start": "object",
+     "ds": "object",
+     "casos_source": "float64",
+     "acum_h": "float64",
+     "acum_m": "float64"
+    },
+    "cells": [
+     [
+      "'01'",
+      "2020",
+      "50",
+      "2020",
+      "50",
+      "datetime.date(2020, 12, 6)",
+      "datetime.date(2020, 12, 7)",
+      "0.0",
+      "0.0",
+      "0.0"
+     ],
+     [
+      "'09'",
+      "2020",
+      "50",
+      "2020",
+      "50",
+      "datetime.date(2020, 12, 6)",
+      "datetime.date(2020, 12, 7)",
+      "1.0",
+      "1.0",
+      "0.0"
+     ],
+     [
+      "'32'",
+      "2020",
+      "50",
+      "2020",
+      "50",
+      "datetime.date(2020, 12, 6)",
+      "datetime.date(2020, 12, 7)",
+      "2.0",
+      "2.0",
+      "0.0"
+     ],
+     [
+      "'01'",
+      "2020",
+      "51",
+      "2020",
+      "51",
+      "datetime.date(2020, 12, 13)",
+      "datetime.date(2020, 12, 14)",
+      "3.0",
+      "10.0",
+      "0.0"
+     ],
+     [
+      "'09'",
+      "2020",
+      "51",
+      "2020",
+      "51",
+      "datetime.date(2020, 12, 13)",
+      "datetime.date(2020, 12, 14)",
+      "4.0",
+      "11.0",
+      "0.0"
+     ],
+     [
+      "'32'",
+      "2020",
+      "51",
+      "2020",
+      "51",
+      "datetime.date(2020, 12, 13)",
+      "datetime.date(2020, 12, 14)",
+      "5.0",
+      "12.0",
+      "0.0"
+     ],
+     [
+      "'01'",
+      "2020",
+      "52",
+      "2020",
+      "52",
+      "datetime.date(2020, 12, 20)",
+      "datetime.date(2020, 12, 21)",
+      "6.0",
+      "20.0",
+      "0.0"
+     ],
+     [
+      "'09'",
+      "2020",
+      "52",
+      "2020",
+      "52",
+      "datetime.date(2020, 12, 20)",
+      "datetime.date(2020, 12, 21)",
+      "nan",
+      "21.0",
+      "0.0"
+     ],
+     [
+      "'32'",
+      "2020",
+      "52",
+      "2020",
+      "52",
+      "datetime.date(2020, 12, 20)",
+      "datetime.date(2020, 12, 21)",
+      "8.0",
+      "22.0",
+      "0.0"
+     ],
+     [
+      "'01'",
+      "2020",
+      "53",
+      "2020",
+      "53",
+      "datetime.date(2020, 12, 27)",
+      "datetime.date(2020, 12, 28)",
+      "9.0",
+      "30.0",
+      "0.0"
+     ],
+     [
+      "'09'",
+      "2020",
+      "53",
+      "2020",
+      "53",
+      "datetime.date(2020, 12, 27)",
+      "datetime.date(2020, 12, 28)",
+      "10.0",
+      "31.0",
+      "0.0"
+     ],
+     [
+      "'32'",
+      "2020",
+      "53",
+      "2020",
+      "53",
+      "datetime.date(2020, 12, 27)",
+      "datetime.date(2020, 12, 28)",
+      "11.0",
+      "32.0",
+      "0.0"
+     ],
+     [
+      "'01'",
+      "2021",
+      "1",
+      "2021",
+      "1",
+      "datetime.date(2021, 1, 3)",
+      "datetime.date(2021, 1, 4)",
+      "12.0",
+      "40.0",
+      "0.0"
+     ],
+     [
+      "'09'",
+      "2021",
+      "1",
+      "2021",
+      "1",
+      "datetime.date(2021, 1, 3)",
+      "datetime.date(2021, 1, 4)",
+      "13.0",
+      "41.0",
+      "0.0"
+     ],
+     [
+      "'32'",
+      "2021",
+      "1",
+      "2021",
+      "1",
+      "datetime.date(2021, 1, 3)",
+      "datetime.date(2021, 1, 4)",
+      "14.5",
+      "42.0",
+      "0.0"
+     ],
+     [
+      "'01'",
+      "2021",
+      "2",
+      "2021",
+      "2",
+      "datetime.date(2021, 1, 10)",
+      "datetime.date(2021, 1, 11)",
+      "15.0",
+      "50.0",
+      "0.0"
+     ],
+     [
+      "'09'",
+      "2021",
+      "2",
+      "2021",
+      "2",
+      "datetime.date(2021, 1, 10)",
+      "datetime.date(2021, 1, 11)",
+      "16.0",
+      "51.0",
+      "0.0"
+     ],
+     [
+      "'32'",
+      "2021",
+      "2",
+      "2021",
+      "2",
+      "datetime.date(2021, 1, 10)",
+      "datetime.date(2021, 1, 11)",
+      "17.0",
+      "52.0",
+      "0.0"
+     ],
+     [
+      "'01'",
+      "2021",
+      "3",
+      "2021",
+      "3",
+      "datetime.date(2021, 1, 17)",
+      "datetime.date(2021, 1, 18)",
+      "18.0",
+      "60.0",
+      "0.0"
+     ],
+     [
+      "'09'",
+      "2021",
+      "3",
+      "2021",
+      "3",
+      "datetime.date(2021, 1, 17)",
+      "datetime.date(2021, 1, 18)",
+      "19.0",
+      "61.0",
+      "0.0"
+     ],
+     [
+      "'32'",
+      "2021",
+      "3",
+      "2021",
+      "3",
+      "datetime.date(2021, 1, 17)",
+      "datetime.date(2021, 1, 18)",
+      "20.0",
+      "62.0",
+      "0.0"
+     ]
+    ]
+   }
+  },
+  "sin_sexo_lag1": {
+   "lag": 1,
+   "input": {
+    "dtypes": {
+     "Anio": "int64",
+     "Semana": "object",
+     "Entidad": "object",
+     "Padecimiento": "object",
+     "Casos_semana": "float64",
+     "Acumulado_anio_anterior": "int64",
+     "Acumulado_total": "int64"
+    },
+    "records": [
+     {
+      "Anio": 2020,
+      "Semana": "50",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 0.0,
+      "Acumulado_total": 0,
+      "Acumulado_anio_anterior": 100
+     },
+     {
+      "Anio": 2020,
+      "Semana": "50",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 1.0,
+      "Acumulado_total": 1,
+      "Acumulado_anio_anterior": 100
+     },
+     {
+      "Anio": 2020,
+      "Semana": "50",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 2.0,
+      "Acumulado_total": 2,
+      "Acumulado_anio_anterior": 100
+     },
+     {
+      "Anio": 2020,
+      "Semana": "51",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 3.0,
+      "Acumulado_total": 10,
+      "Acumulado_anio_anterior": 101
+     },
+     {
+      "Anio": 2020,
+      "Semana": "51",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 4.0,
+      "Acumulado_total": 11,
+      "Acumulado_anio_anterior": 101
+     },
+     {
+      "Anio": 2020,
+      "Semana": "51",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 5.0,
+      "Acumulado_total": 12,
+      "Acumulado_anio_anterior": 101
+     },
+     {
+      "Anio": 2020,
+      "Semana": "52",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 6.0,
+      "Acumulado_total": 20,
+      "Acumulado_anio_anterior": 102
+     },
+     {
+      "Anio": 2020,
+      "Semana": "52",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": null,
+      "Acumulado_total": 21,
+      "Acumulado_anio_anterior": 102
+     },
+     {
+      "Anio": 2020,
+      "Semana": "52",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 8.0,
+      "Acumulado_total": 22,
+      "Acumulado_anio_anterior": 102
+     },
+     {
+      "Anio": 2020,
+      "Semana": "53",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 9.0,
+      "Acumulado_total": 30,
+      "Acumulado_anio_anterior": 103
+     },
+     {
+      "Anio": 2020,
+      "Semana": "53",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 10.0,
+      "Acumulado_total": 31,
+      "Acumulado_anio_anterior": 103
+     },
+     {
+      "Anio": 2020,
+      "Semana": "53",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 11.0,
+      "Acumulado_total": 32,
+      "Acumulado_anio_anterior": 103
+     },
+     {
+      "Anio": 2021,
+      "Semana": "01",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 12.0,
+      "Acumulado_total": 40,
+      "Acumulado_anio_anterior": 104
+     },
+     {
+      "Anio": 2021,
+      "Semana": "01",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 13.0,
+      "Acumulado_total": 41,
+      "Acumulado_anio_anterior": 104
+     },
+     {
+      "Anio": 2021,
+      "Semana": "01",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 14.5,
+      "Acumulado_total": 42,
+      "Acumulado_anio_anterior": 104
+     },
+     {
+      "Anio": 2021,
+      "Semana": "02",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 15.0,
+      "Acumulado_total": 50,
+      "Acumulado_anio_anterior": 105
+     },
+     {
+      "Anio": 2021,
+      "Semana": "02",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 16.0,
+      "Acumulado_total": 51,
+      "Acumulado_anio_anterior": 105
+     },
+     {
+      "Anio": 2021,
+      "Semana": "02",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 17.0,
+      "Acumulado_total": 52,
+      "Acumulado_anio_anterior": 105
+     },
+     {
+      "Anio": 2021,
+      "Semana": "03",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 18.0,
+      "Acumulado_total": 60,
+      "Acumulado_anio_anterior": 106
+     },
+     {
+      "Anio": 2021,
+      "Semana": "03",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 19.0,
+      "Acumulado_total": 61,
+      "Acumulado_anio_anterior": 106
+     },
+     {
+      "Anio": 2021,
+      "Semana": "03",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 20.0,
+      "Acumulado_total": 62,
+      "Acumulado_anio_anterior": 106
+     }
+    ]
+   },
+   "output": {
+    "columns": [
+     "cve_ent",
+     "source_year",
+     "source_week",
+     "epi_year",
+     "epi_week",
+     "period_start",
+     "ds",
+     "casos_source",
+     "acum_h",
+     "acum_m"
+    ],
+    "dtypes": {
+     "cve_ent": "object",
+     "source_year": "int64",
+     "source_week": "int64",
+     "epi_year": "int64",
+     "epi_week": "int64",
+     "period_start": "object",
+     "ds": "object",
+     "casos_source": "float64",
+     "acum_h": "float64",
+     "acum_m": "float64"
+    },
+    "cells": [
+     [
+      "'01'",
+      "2020",
+      "50",
+      "2020",
+      "49",
+      "datetime.date(2020, 11, 29)",
+      "datetime.date(2020, 11, 30)",
+      "0.0",
+      "0.0",
+      "0.0"
+     ],
+     [
+      "'09'",
+      "2020",
+      "50",
+      "2020",
+      "49",
+      "datetime.date(2020, 11, 29)",
+      "datetime.date(2020, 11, 30)",
+      "1.0",
+      "1.0",
+      "0.0"
+     ],
+     [
+      "'32'",
+      "2020",
+      "50",
+      "2020",
+      "49",
+      "datetime.date(2020, 11, 29)",
+      "datetime.date(2020, 11, 30)",
+      "2.0",
+      "2.0",
+      "0.0"
+     ],
+     [
+      "'01'",
+      "2020",
+      "51",
+      "2020",
+      "50",
+      "datetime.date(2020, 12, 6)",
+      "datetime.date(2020, 12, 7)",
+      "3.0",
+      "10.0",
+      "0.0"
+     ],
+     [
+      "'09'",
+      "2020",
+      "51",
+      "2020",
+      "50",
+      "datetime.date(2020, 12, 6)",
+      "datetime.date(2020, 12, 7)",
+      "4.0",
+      "11.0",
+      "0.0"
+     ],
+     [
+      "'32'",
+      "2020",
+      "51",
+      "2020",
+      "50",
+      "datetime.date(2020, 12, 6)",
+      "datetime.date(2020, 12, 7)",
+      "5.0",
+      "12.0",
+      "0.0"
+     ],
+     [
+      "'01'",
+      "2020",
+      "52",
+      "2020",
+      "51",
+      "datetime.date(2020, 12, 13)",
+      "datetime.date(2020, 12, 14)",
+      "6.0",
+      "20.0",
+      "0.0"
+     ],
+     [
+      "'09'",
+      "2020",
+      "52",
+      "2020",
+      "51",
+      "datetime.date(2020, 12, 13)",
+      "datetime.date(2020, 12, 14)",
+      "nan",
+      "21.0",
+      "0.0"
+     ],
+     [
+      "'32'",
+      "2020",
+      "52",
+      "2020",
+      "51",
+      "datetime.date(2020, 12, 13)",
+      "datetime.date(2020, 12, 14)",
+      "8.0",
+      "22.0",
+      "0.0"
+     ],
+     [
+      "'01'",
+      "2020",
+      "53",
+      "2020",
+      "52",
+      "datetime.date(2020, 12, 20)",
+      "datetime.date(2020, 12, 21)",
+      "9.0",
+      "30.0",
+      "0.0"
+     ],
+     [
+      "'09'",
+      "2020",
+      "53",
+      "2020",
+      "52",
+      "datetime.date(2020, 12, 20)",
+      "datetime.date(2020, 12, 21)",
+      "10.0",
+      "31.0",
+      "0.0"
+     ],
+     [
+      "'32'",
+      "2020",
+      "53",
+      "2020",
+      "52",
+      "datetime.date(2020, 12, 20)",
+      "datetime.date(2020, 12, 21)",
+      "11.0",
+      "32.0",
+      "0.0"
+     ],
+     [
+      "'01'",
+      "2021",
+      "1",
+      "2020",
+      "53",
+      "datetime.date(2020, 12, 27)",
+      "datetime.date(2020, 12, 28)",
+      "12.0",
+      "40.0",
+      "0.0"
+     ],
+     [
+      "'09'",
+      "2021",
+      "1",
+      "2020",
+      "53",
+      "datetime.date(2020, 12, 27)",
+      "datetime.date(2020, 12, 28)",
+      "13.0",
+      "41.0",
+      "0.0"
+     ],
+     [
+      "'32'",
+      "2021",
+      "1",
+      "2020",
+      "53",
+      "datetime.date(2020, 12, 27)",
+      "datetime.date(2020, 12, 28)",
+      "14.5",
+      "42.0",
+      "0.0"
+     ],
+     [
+      "'01'",
+      "2021",
+      "2",
+      "2021",
+      "1",
+      "datetime.date(2021, 1, 3)",
+      "datetime.date(2021, 1, 4)",
+      "15.0",
+      "50.0",
+      "0.0"
+     ],
+     [
+      "'09'",
+      "2021",
+      "2",
+      "2021",
+      "1",
+      "datetime.date(2021, 1, 3)",
+      "datetime.date(2021, 1, 4)",
+      "16.0",
+      "51.0",
+      "0.0"
+     ],
+     [
+      "'32'",
+      "2021",
+      "2",
+      "2021",
+      "1",
+      "datetime.date(2021, 1, 3)",
+      "datetime.date(2021, 1, 4)",
+      "17.0",
+      "52.0",
+      "0.0"
+     ],
+     [
+      "'01'",
+      "2021",
+      "3",
+      "2021",
+      "2",
+      "datetime.date(2021, 1, 10)",
+      "datetime.date(2021, 1, 11)",
+      "18.0",
+      "60.0",
+      "0.0"
+     ],
+     [
+      "'09'",
+      "2021",
+      "3",
+      "2021",
+      "2",
+      "datetime.date(2021, 1, 10)",
+      "datetime.date(2021, 1, 11)",
+      "19.0",
+      "61.0",
+      "0.0"
+     ],
+     [
+      "'32'",
+      "2021",
+      "3",
+      "2021",
+      "2",
+      "datetime.date(2021, 1, 10)",
+      "datetime.date(2021, 1, 11)",
+      "20.0",
+      "62.0",
+      "0.0"
+     ]
+    ]
+   }
+  },
+  "sin_sexo_lag2": {
+   "lag": 2,
+   "input": {
+    "dtypes": {
+     "Anio": "int64",
+     "Semana": "object",
+     "Entidad": "object",
+     "Padecimiento": "object",
+     "Casos_semana": "float64",
+     "Acumulado_anio_anterior": "int64",
+     "Acumulado_total": "int64"
+    },
+    "records": [
+     {
+      "Anio": 2020,
+      "Semana": "50",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 0.0,
+      "Acumulado_total": 0,
+      "Acumulado_anio_anterior": 100
+     },
+     {
+      "Anio": 2020,
+      "Semana": "50",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 1.0,
+      "Acumulado_total": 1,
+      "Acumulado_anio_anterior": 100
+     },
+     {
+      "Anio": 2020,
+      "Semana": "50",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 2.0,
+      "Acumulado_total": 2,
+      "Acumulado_anio_anterior": 100
+     },
+     {
+      "Anio": 2020,
+      "Semana": "51",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 3.0,
+      "Acumulado_total": 10,
+      "Acumulado_anio_anterior": 101
+     },
+     {
+      "Anio": 2020,
+      "Semana": "51",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 4.0,
+      "Acumulado_total": 11,
+      "Acumulado_anio_anterior": 101
+     },
+     {
+      "Anio": 2020,
+      "Semana": "51",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 5.0,
+      "Acumulado_total": 12,
+      "Acumulado_anio_anterior": 101
+     },
+     {
+      "Anio": 2020,
+      "Semana": "52",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 6.0,
+      "Acumulado_total": 20,
+      "Acumulado_anio_anterior": 102
+     },
+     {
+      "Anio": 2020,
+      "Semana": "52",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": null,
+      "Acumulado_total": 21,
+      "Acumulado_anio_anterior": 102
+     },
+     {
+      "Anio": 2020,
+      "Semana": "52",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 8.0,
+      "Acumulado_total": 22,
+      "Acumulado_anio_anterior": 102
+     },
+     {
+      "Anio": 2020,
+      "Semana": "53",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 9.0,
+      "Acumulado_total": 30,
+      "Acumulado_anio_anterior": 103
+     },
+     {
+      "Anio": 2020,
+      "Semana": "53",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 10.0,
+      "Acumulado_total": 31,
+      "Acumulado_anio_anterior": 103
+     },
+     {
+      "Anio": 2020,
+      "Semana": "53",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 11.0,
+      "Acumulado_total": 32,
+      "Acumulado_anio_anterior": 103
+     },
+     {
+      "Anio": 2021,
+      "Semana": "01",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 12.0,
+      "Acumulado_total": 40,
+      "Acumulado_anio_anterior": 104
+     },
+     {
+      "Anio": 2021,
+      "Semana": "01",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 13.0,
+      "Acumulado_total": 41,
+      "Acumulado_anio_anterior": 104
+     },
+     {
+      "Anio": 2021,
+      "Semana": "01",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 14.5,
+      "Acumulado_total": 42,
+      "Acumulado_anio_anterior": 104
+     },
+     {
+      "Anio": 2021,
+      "Semana": "02",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 15.0,
+      "Acumulado_total": 50,
+      "Acumulado_anio_anterior": 105
+     },
+     {
+      "Anio": 2021,
+      "Semana": "02",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 16.0,
+      "Acumulado_total": 51,
+      "Acumulado_anio_anterior": 105
+     },
+     {
+      "Anio": 2021,
+      "Semana": "02",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 17.0,
+      "Acumulado_total": 52,
+      "Acumulado_anio_anterior": 105
+     },
+     {
+      "Anio": 2021,
+      "Semana": "03",
+      "Entidad": "Aguascalientes",
+      "Padecimiento": "X",
+      "Casos_semana": 18.0,
+      "Acumulado_total": 60,
+      "Acumulado_anio_anterior": 106
+     },
+     {
+      "Anio": 2021,
+      "Semana": "03",
+      "Entidad": "Ciudad de México",
+      "Padecimiento": "X",
+      "Casos_semana": 19.0,
+      "Acumulado_total": 61,
+      "Acumulado_anio_anterior": 106
+     },
+     {
+      "Anio": 2021,
+      "Semana": "03",
+      "Entidad": "Zacatecas",
+      "Padecimiento": "X",
+      "Casos_semana": 20.0,
+      "Acumulado_total": 62,
+      "Acumulado_anio_anterior": 106
+     }
+    ]
+   },
+   "output": {
+    "columns": [
+     "cve_ent",
+     "source_year",
+     "source_week",
+     "epi_year",
+     "epi_week",
+     "period_start",
+     "ds",
+     "casos_source",
+     "acum_h",
+     "acum_m"
+    ],
+    "dtypes": {
+     "cve_ent": "object",
+     "source_year": "int64",
+     "source_week": "int64",
+     "epi_year": "int64",
+     "epi_week": "int64",
+     "period_start": "object",
+     "ds": "object",
+     "casos_source": "float64",
+     "acum_h": "float64",
+     "acum_m": "float64"
+    },
+    "cells": [
+     [
+      "'01'",
+      "2020",
+      "50",
+      "2020",
+      "48",
+      "datetime.date(2020, 11, 22)",
+      "datetime.date(2020, 11, 23)",
+      "0.0",
+      "0.0",
+      "0.0"
+     ],
+     [
+      "'09'",
+      "2020",
+      "50",
+      "2020",
+      "48",
+      "datetime.date(2020, 11, 22)",
+      "datetime.date(2020, 11, 23)",
+      "1.0",
+      "1.0",
+      "0.0"
+     ],
+     [
+      "'32'",
+      "2020",
+      "50",
+      "2020",
+      "48",
+      "datetime.date(2020, 11, 22)",
+      "datetime.date(2020, 11, 23)",
+      "2.0",
+      "2.0",
+      "0.0"
+     ],
+     [
+      "'01'",
+      "2020",
+      "51",
+      "2020",
+      "49",
+      "datetime.date(2020, 11, 29)",
+      "datetime.date(2020, 11, 30)",
+      "3.0",
+      "10.0",
+      "0.0"
+     ],
+     [
+      "'09'",
+      "2020",
+      "51",
+      "2020",
+      "49",
+      "datetime.date(2020, 11, 29)",
+      "datetime.date(2020, 11, 30)",
+      "4.0",
+      "11.0",
+      "0.0"
+     ],
+     [
+      "'32'",
+      "2020",
+      "51",
+      "2020",
+      "49",
+      "datetime.date(2020, 11, 29)",
+      "datetime.date(2020, 11, 30)",
+      "5.0",
+      "12.0",
+      "0.0"
+     ],
+     [
+      "'01'",
+      "2020",
+      "52",
+      "2020",
+      "50",
+      "datetime.date(2020, 12, 6)",
+      "datetime.date(2020, 12, 7)",
+      "6.0",
+      "20.0",
+      "0.0"
+     ],
+     [
+      "'09'",
+      "2020",
+      "52",
+      "2020",
+      "50",
+      "datetime.date(2020, 12, 6)",
+      "datetime.date(2020, 12, 7)",
+      "nan",
+      "21.0",
+      "0.0"
+     ],
+     [
+      "'32'",
+      "2020",
+      "52",
+      "2020",
+      "50",
+      "datetime.date(2020, 12, 6)",
+      "datetime.date(2020, 12, 7)",
+      "8.0",
+      "22.0",
+      "0.0"
+     ],
+     [
+      "'01'",
+      "2020",
+      "53",
+      "2020",
+      "51",
+      "datetime.date(2020, 12, 13)",
+      "datetime.date(2020, 12, 14)",
+      "9.0",
+      "30.0",
+      "0.0"
+     ],
+     [
+      "'09'",
+      "2020",
+      "53",
+      "2020",
+      "51",
+      "datetime.date(2020, 12, 13)",
+      "datetime.date(2020, 12, 14)",
+      "10.0",
+      "31.0",
+      "0.0"
+     ],
+     [
+      "'32'",
+      "2020",
+      "53",
+      "2020",
+      "51",
+      "datetime.date(2020, 12, 13)",
+      "datetime.date(2020, 12, 14)",
+      "11.0",
+      "32.0",
+      "0.0"
+     ],
+     [
+      "'01'",
+      "2021",
+      "1",
+      "2020",
+      "52",
+      "datetime.date(2020, 12, 20)",
+      "datetime.date(2020, 12, 21)",
+      "12.0",
+      "40.0",
+      "0.0"
+     ],
+     [
+      "'09'",
+      "2021",
+      "1",
+      "2020",
+      "52",
+      "datetime.date(2020, 12, 20)",
+      "datetime.date(2020, 12, 21)",
+      "13.0",
+      "41.0",
+      "0.0"
+     ],
+     [
+      "'32'",
+      "2021",
+      "1",
+      "2020",
+      "52",
+      "datetime.date(2020, 12, 20)",
+      "datetime.date(2020, 12, 21)",
+      "14.5",
+      "42.0",
+      "0.0"
+     ],
+     [
+      "'01'",
+      "2021",
+      "2",
+      "2020",
+      "53",
+      "datetime.date(2020, 12, 27)",
+      "datetime.date(2020, 12, 28)",
+      "15.0",
+      "50.0",
+      "0.0"
+     ],
+     [
+      "'09'",
+      "2021",
+      "2",
+      "2020",
+      "53",
+      "datetime.date(2020, 12, 27)",
+      "datetime.date(2020, 12, 28)",
+      "16.0",
+      "51.0",
+      "0.0"
+     ],
+     [
+      "'32'",
+      "2021",
+      "2",
+      "2020",
+      "53",
+      "datetime.date(2020, 12, 27)",
+      "datetime.date(2020, 12, 28)",
+      "17.0",
+      "52.0",
+      "0.0"
+     ],
+     [
+      "'01'",
+      "2021",
+      "3",
+      "2021",
+      "1",
+      "datetime.date(2021, 1, 3)",
+      "datetime.date(2021, 1, 4)",
+      "18.0",
+      "60.0",
+      "0.0"
+     ],
+     [
+      "'09'",
+      "2021",
+      "3",
+      "2021",
+      "1",
+      "datetime.date(2021, 1, 3)",
+      "datetime.date(2021, 1, 4)",
+      "19.0",
+      "61.0",
+      "0.0"
+     ],
+     [
+      "'32'",
+      "2021",
+      "3",
+      "2021",
+      "1",
+      "datetime.date(2021, 1, 3)",
+      "datetime.date(2021, 1, 4)",
+      "20.0",
+      "62.0",
+      "0.0"
+     ]
+    ]
+   }
+  }
+ }
+}
