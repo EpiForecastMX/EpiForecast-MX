@@ -4363,7 +4363,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4416,7 +4416,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4442,7 +4442,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4469,7 +4469,7 @@ padecimientos:
     channels: []
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4497,7 +4497,7 @@ padecimientos:
     eligible_engines: []
     # Rezago impreso por periodo (1 hasta 2020_sem53, 0 desde 2021_sem01; cuadros.yaml). Supuesto del
     # autor (DECISIONES_AUTOR_3, supuesto_autor_guion_2025_cero): el «-» de 2025 se trata como cero.
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4527,7 +4527,7 @@ padecimientos:
     eligible_engines: []
     # Rezago impreso por periodo (1 hasta 2020_sem53, 0 desde 2021_sem01; cuadros.yaml). Supuesto del
     # autor (DECISIONES_AUTOR_3, supuesto_autor_guion_2025_cero): el «-» de 2025 se trata como cero.
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4557,7 +4557,7 @@ padecimientos:
     eligible_engines: []
     # Rezago impreso por periodo (1 hasta 2020_sem53, 0 desde 2021_sem01; cuadros.yaml). Supuesto del
     # autor (DECISIONES_AUTOR_3, supuesto_autor_guion_2025_cero): el «-» de 2025 se trata como cero.
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
