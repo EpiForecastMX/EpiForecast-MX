@@ -6,8 +6,9 @@ columnas (``Sem.`` y ``Acum.``) y desde 2025 sólo ``Acum.``. No hay acumulado p
 Un grupo que declara ``estadios_por_sexo: {estadios: N, anchos: [...]}`` convierte ese bloque al
 esquema común de 4 columnas (``Sem.``, acumulado de hombres, de mujeres y año anterior), sumando
 los estadios de cada sexo. Falla cerrado si el ancho no es uno de los declarados, si una celda de
-estadio no es numérica o si la suma de las entidades no es el renglón TOTAL impreso en ``Sem.`` y
-en cada columna de estadio.
+``Sem.`` o de estadio está vacía o no es numérica (el PDF imprime «-» para cero: una celda vacía es
+una lectura fallida, no un cero) o si la suma de las entidades no es el renglón TOTAL impreso en
+``Sem.`` y en cada columna de estadio.
 """
 
 from __future__ import annotations
@@ -16,6 +17,7 @@ from typing import Any
 
 import camelot
 import pandas as pd
+from pypdf import PdfReader
 
 from epiforecast.data.extraction.cuadro_reparaciones import fila_total
 from epiforecast.data.extraction.pdf_extractor import normalize_number
@@ -24,13 +26,33 @@ ETIQUETA = "suma_estadios"
 
 
 def _entero(valor: Any) -> int | None:
+    """Entero de la celda; None si está vacía (el PDF imprime «-» para cero) o no es numérica."""
+    if str(valor).strip() == "":
+        return None
     numero = normalize_number(valor)
     return None if numero is pd.NA else int(numero)
 
 
-def _total_impreso(pdf_path: str, page: int) -> list[str] | None:
-    tablas = camelot.read_pdf(pdf_path, pages=str(page), flavor="stream")
-    return fila_total(max((t.df for t in tablas), key=len)) if tablas else None
+def _total_impreso(pdf_path: str, page: int, reparacion: str | None) -> list[str] | None:
+    """Celdas del TOTAL con la lectura que dio la tabla (``row_tol`` del reintento, si lo hubo).
+
+    Si el renglón no sale con la página detectada, reintenta con el área de la página completa.
+    """
+    kw: dict[str, Any] = {}
+    if reparacion and reparacion.startswith("row_tol="):
+        kw["row_tol"] = int(reparacion.removeprefix("row_tol="))
+    intentos = [kw]
+    try:
+        caja = PdfReader(pdf_path).pages[page - 1].mediabox
+        intentos.append({**kw, "table_areas": [f"0,{float(caja.height)},{float(caja.width)},0"]})
+    except Exception:  # noqa: BLE001 - un PDF ilegible deja sólo la primera lectura
+        pass
+    for params in intentos:
+        tablas = camelot.read_pdf(pdf_path, pages=str(page), flavor="stream", **params)
+        total = fila_total(max((t.df for t in tablas), key=len)) if tablas else None
+        if total is not None and any(str(v).strip() for v in total):
+            return total
+    return None
 
 
 def convierte_estadios(
@@ -81,12 +103,13 @@ def suma_estadios(
         return df
     convertida, motivo = convierte_estadios(
         df,
-        _total_impreso(pdf_path, page),
+        _total_impreso(pdf_path, page, out.get("reparacion")),
         int(conf["estadios"]),
         [int(a) for a in conf["anchos"]],
     )
     if convertida is None:
         out["reason"] = motivo
         return None
-    out["reparacion"] = ETIQUETA
+    previa = out.get("reparacion")
+    out["reparacion"] = f"{previa}+{ETIQUETA}" if previa else ETIQUETA
     return convertida

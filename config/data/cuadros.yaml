@@ -4068,12 +4068,15 @@ cuadro_groups:
     # acumulado por sexo impreso: 11 columnas en 2020_sem28..2024 (Sem, 8 de estadio, Sem y Acum. del
     # año anterior) y 10 desde 2025 (sin el Sem. del año anterior). ``estadios_por_sexo`` suma los
     # estadios de cada sexo y valida contra el TOTAL impreso. Rezago impreso 0 («hasta la semana N»
-    # en el boletín N).
+    # en el boletín N). En 2025-2026 camelot con row_tol=2 separa valores y nombres en dos renglones
+    # (filas estatales vacías) en varios boletines: reintento_row_tol: 4, como Sífilis adquirida,
+    # sólo cuando faltan entidades o quedan filas vacías, validado contra el TOTAL impreso.
     page_anchors: ["b20", "z21", "estad"]
     state_markers: ["zacatecas", "tamaulipas"]
     year_week_source: filename
     observation_lag_weeks: 0
     estadios_por_sexo: {estadios: 4, anchos: [10, 11]}
+    reintento_row_tol: 4
     diseases:
       - id: vih_b20
         keyword: "Vih_B20"
