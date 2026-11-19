@@ -2040,11 +2040,17 @@ padecimientos:
     # El autor autorizó modelarla pese al salto de nivel señalado con el cambio del Cuadro 18.1 de
     # 2024 (DECISIONES_AUTOR_2.json, «Sí, con aviso de salto»); niveles medidos en el QA del lote
     # alta_b44. Renglones partidos: une_renglones_parciales en su grupo (QA c7b).
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: mordedura_perro_w54_refit_final_9fe0414b00c7_ec77ec4e98bb
+      forecast_run_id: mordedura_perro_w54_forecast_h52_ec77ec4e98bb_c45b5aa546c2
+      policy_digest: dd6d4a0274a6f8bb0f51d27628294b7db694b792966abaa92528dc2765020b2a
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     acceptance_fallback_run: mordedura_perro_w54_benchmark_test_f1a52ee5b970_0b47eb0b4935
     prophet_grid_key: null
     deepar_grid_key: null
@@ -2069,11 +2075,17 @@ padecimientos:
     # El autor autorizó modelarla pese al salto de nivel señalado con el cambio del Cuadro 18.1 de
     # 2024 (DECISIONES_AUTOR_2.json, «Sí, con aviso de salto»); niveles medidos en el QA del lote
     # alta_b44. Renglones partidos: une_renglones_parciales en su grupo (QA c7b).
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: mordedura_mamiferos_w55_refit_final_9fe0414b00c7_59612e4fa035
+      forecast_run_id: mordedura_mamiferos_w55_forecast_h52_59612e4fa035_f4d289bd6b6f
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     acceptance_fallback_run: mordedura_mamiferos_w55_benchmark_test_cdb7fd09b69a_f7f6bd4ad3bb
     prophet_grid_key: null
     deepar_grid_key: null
@@ -4055,13 +4067,19 @@ padecimientos:
     batch: standalone
     extraction_group: b44_cirrosis_alcoholica_k703
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Serie desde 2016-W01 por decisión nominal del autor (lote alta_b44): inicio_serie del grupo.
     # rolling_cv_v1: 2016-W01..2020-W53 = 261 semanas antes del pliegue 2021 (mínimo 260).
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: cirrosis_alcoholica_k703_refit_final_9fe0414b00c7_16029f60bac1
+      forecast_run_id: cirrosis_alcoholica_k703_forecast_h52_16029f60bac1_d55d85c54cb9
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     acceptance_fallback_run: cirrosis_alcoholica_k703_benchmark_test_b00632d2b94c_b411e241f371
     prophet_grid_key: null
     deepar_grid_key: null
@@ -4083,11 +4101,17 @@ padecimientos:
     batch: standalone
     extraction_group: b44_chikungunya_a920
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: chikungunya_a920_refit_final_9fe0414b00c7_973ed0e91e2c
+      forecast_run_id: chikungunya_a920_forecast_h52_973ed0e91e2c_c0d42513b186
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     acceptance_fallback_run: chikungunya_a920_benchmark_test_ebdabdb503c8_89ef88099d64
     prophet_grid_key: null
     deepar_grid_key: null
@@ -4112,11 +4136,17 @@ padecimientos:
     batch: standalone
     extraction_group: b44_envenenamiento_analgesicos_x60
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: envenenamiento_analgesicos_x60_refit_final_354f6d2d8ae1_0090ba17cc9b
+      forecast_run_id: envenenamiento_analgesicos_x60_forecast_h52_0090ba17cc9b_684a5c694c21
+      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
+      final_selection_digest: 354f6d2d8ae198448d6146b7d994a41555d9766b5b57150c9a5456b0a4c539a7
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4140,11 +4170,17 @@ padecimientos:
     batch: standalone
     extraction_group: b44_envenenamiento_psicotropicos_x61
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: envenenamiento_psicotropicos_x61_refit_final_11423534b84b_b93e13cfb4a7
+      forecast_run_id: envenenamiento_psicotropicos_x61_forecast_h52_b93e13cfb4a7_e8ca6f98da92
+      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
+      final_selection_digest: 11423534b84b42cdc17aaccead229cf8457e030aa2413b36ac14f904976ee7b7
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4168,11 +4204,17 @@ padecimientos:
     batch: standalone
     extraction_group: b44_ahorcamiento_x70
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: ahorcamiento_x70_refit_final_debb7ecb3452_bbb45b843cfb
+      forecast_run_id: ahorcamiento_x70_forecast_h52_bbb45b843cfb_0defbb61b1f3
+      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
+      final_selection_digest: debb7ecb34522398c7d718bd8740085d8a1bbb2c531eab9c610bacec79ce8012
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4196,11 +4238,17 @@ padecimientos:
     batch: standalone
     extraction_group: b44_disparo_arma_corta_x72
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: disparo_arma_corta_x72_refit_final_9fe0414b00c7_be4f503699f0
+      forecast_run_id: disparo_arma_corta_x72_forecast_h52_be4f503699f0_5cf5a9bf9ff7
+      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     acceptance_fallback_run: disparo_arma_corta_x72_benchmark_test_9287298680f0_52b014d7edc8
     prophet_grid_key: null
     deepar_grid_key: null
@@ -4225,11 +4273,17 @@ padecimientos:
     batch: standalone
     extraction_group: b44_objeto_cortante_x78
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: objeto_cortante_x78_refit_final_7350c102eae7_31e60fac18fb
+      forecast_run_id: objeto_cortante_x78_forecast_h52_31e60fac18fb_97f6c2e08a71
+      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
+      final_selection_digest: 7350c102eae7d15c0d3a2972d9ff5f538ac9bb17a1fe88bd481ca265d6fe051b
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4253,11 +4307,17 @@ padecimientos:
     batch: standalone
     extraction_group: b44_salto_lugar_elevado_x80
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: salto_lugar_elevado_x80_refit_final_be825ec81429_7fe8053ad48d
+      forecast_run_id: salto_lugar_elevado_x80_forecast_h52_7fe8053ad48d_a501fd78dbda
+      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
+      final_selection_digest: be825ec8142951c17f7cd7c696d2c5eb611baa0f769993db014f49d5321d8121
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4281,11 +4341,17 @@ padecimientos:
     batch: standalone
     extraction_group: b44_intento_suicidio_z915
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: intento_suicidio_z915_refit_final_9fe0414b00c7_d176dedd38a8
+      forecast_run_id: intento_suicidio_z915_forecast_h52_d176dedd38a8_faa6be1c8fe4
+      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     acceptance_fallback_run: intento_suicidio_z915_benchmark_test_69d514c4117e_3192cd793d1e
     prophet_grid_key: null
     deepar_grid_key: null
@@ -4310,11 +4376,17 @@ padecimientos:
     batch: standalone
     extraction_group: b44_ideacion_suicida_r458
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: ideacion_suicida_r458_refit_final_9fe0414b00c7_0a48f3625536
+      forecast_run_id: ideacion_suicida_r458_forecast_h52_0a48f3625536_7402bd71c32e
+      policy_digest: 67a1f37666a65416fe865beb836bac515a6569cff4631c87673b080af817eb65
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     acceptance_fallback_run: ideacion_suicida_r458_benchmark_test_70824d3e8302_b0b43d8009b8
     prophet_grid_key: null
     deepar_grid_key: null
@@ -4339,11 +4411,17 @@ padecimientos:
     batch: standalone
     extraction_group: b44_violencia_intrafamiliar_y07
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: violencia_intrafamiliar_y07_refit_final_63d78a05a4d5_feb0307ca230
+      forecast_run_id: violencia_intrafamiliar_y07_forecast_h52_feb0307ca230_079a992c7397
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 63d78a05a4d5d46b9277328fcc3292afbc84092250e7f9fb76a8ebce300f5310
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4392,12 +4470,18 @@ padecimientos:
     batch: standalone
     extraction_group: b44_chagas_aguda_b570
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # El bloque se imprime desde 2017_sem02 (objetivo 2017-W01): historia corta.
     selection_policy: rolling_cv_historia_corta_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: chagas_aguda_b570_refit_final_ea2c127364e6_24820f121da0
+      forecast_run_id: chagas_aguda_b570_forecast_h52_24820f121da0_79544526bc33
+      policy_digest: a240067c4fb2b3ee872fdfd5bb6a48b9aa016fe1220ffab522805d91e25ca57f
+      final_selection_digest: ea2c127364e6a82e42f230de3c9d848bffcaac72f959661e08fa5d142d55023b
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -4528,13 +4612,19 @@ padecimientos:
     batch: standalone
     extraction_group: b44_neumococo_a40
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Rezago impreso por periodo (1 hasta 2020_sem53, 0 desde 2021_sem01; cuadros.yaml). Supuesto del
     # autor (DECISIONES_AUTOR_3, supuesto_autor_guion_2025_cero): el «-» de 2025 se trata como cero.
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: neumococo_a40_refit_final_7e306c2dbc40_e93a6545b73c
+      forecast_run_id: neumococo_a40_forecast_h52_e93a6545b73c_d405f14a2f04
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 7e306c2dbc408b18fce15cd7688fcc1f058872a8a43cff2ba0418287f097b35f
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
