@@ -2695,13 +2695,19 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_toxoplasmosis_b58
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: toxoplasmosis_b58_refit_final_9fe0414b00c7_89d1ececa9a8
+      forecast_run_id: toxoplasmosis_b58_forecast_h52_89d1ececa9a8_6056e968c8b2
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     acceptance_fallback_run: toxoplasmosis_b58_benchmark_test_925fbc3db73e_16ac46d1ea67
     prophet_grid_key: null
     deepar_grid_key: null
@@ -2725,13 +2731,19 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_teniasis_b68
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: teniasis_b68_refit_final_9fe0414b00c7_51c08b18cb38
+      forecast_run_id: teniasis_b68_forecast_h52_51c08b18cb38_731fa9aa7998
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     acceptance_fallback_run: teniasis_b68_benchmark_test_fc599daa8d11_3783f99df506
     prophet_grid_key: null
     deepar_grid_key: null
@@ -2754,13 +2766,19 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_cisticercosis_b69
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: cisticercosis_b69_refit_final_9fe0414b00c7_a0b5c9cd7a58
+      forecast_run_id: cisticercosis_b69_forecast_h52_a0b5c9cd7a58_a0d2e1cf00c2
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     acceptance_fallback_run: cisticercosis_b69_benchmark_test_e654df902c88_4acf3ba6378a
     prophet_grid_key: null
     deepar_grid_key: null
@@ -2784,13 +2802,19 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_triquinosis_b75
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: triquinosis_b75_refit_final_9fe0414b00c7_9ed45427ba2d
+      forecast_run_id: triquinosis_b75_forecast_h52_9ed45427ba2d_6baf5cd5c375
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     acceptance_fallback_run: triquinosis_b75_benchmark_test_a6c1b9a1c403_1f204d2ef4e0
     prophet_grid_key: null
     deepar_grid_key: null
@@ -2940,13 +2964,19 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_conjuntivitis_hemorragica_b303
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: conjuntivitis_hemorragica_b303_refit_final_9fe0414b00c7_b96a82ebbbfe
+      forecast_run_id: conjuntivitis_hemorragica_b303_forecast_h52_b96a82ebbbfe_ccde970463a9
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     acceptance_fallback_run: conjuntivitis_hemorragica_b303_benchmark_test_d60c57f68c51_8e6f4ab2d8b9
     prophet_grid_key: null
     deepar_grid_key: null
@@ -2968,13 +2998,19 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_tracoma_a71
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: tracoma_a71_refit_final_9fe0414b00c7_856fe0b99067
+      forecast_run_id: tracoma_a71_forecast_h52_856fe0b99067_dc3a4b9d836b
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     acceptance_fallback_run: tracoma_a71_benchmark_test_5b413cec154e_4e0bc824dc00
     prophet_grid_key: null
     deepar_grid_key: null
@@ -3071,13 +3107,19 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_hipotermia_t68
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
+    lifecycle: trained
     channels: []
     training_engines: []
     eligible_engines: []
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_runs
+      refit_run_id: hipotermia_t68_refit_final_9fe0414b00c7_b91f3c93c639
+      forecast_run_id: hipotermia_t68_forecast_h52_b91f3c93c639_171e269ca9bc
+      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
+      final_selection_digest: 9fe0414b00c7be2d4d93236e7512dea73dc0e5e19a16bb11fc6a88ba206c0072
     acceptance_fallback_run: hipotermia_t68_benchmark_test_f5d97a7dab8a_851a7d333a96
     prophet_grid_key: null
     deepar_grid_key: null
