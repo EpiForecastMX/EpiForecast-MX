@@ -10,6 +10,7 @@ from __future__ import annotations
 import re
 from typing import Any, TypedDict
 
+import numpy as np
 import pandas as pd
 
 from epiforecast.data.extraction.dengue_extractor import _STATE_LOOKUP, _norm_entity
@@ -78,8 +79,7 @@ def _es_entidad(nombre: str) -> bool:
     return _norm_entity(re.sub(r"[\s*§]+$", "", nombre)) in _STATE_LOOKUP
 
 
-class RenglonesAmbiguosError(ValueError):
-    """Renglón parcial y renglón sin nombre con valores solapados: la tabla del boletín no vale."""
+AMBIGUO = "<renglon_ambiguo>"
 
 
 def une_renglones_parciales(df: pd.DataFrame) -> pd.DataFrame:
@@ -88,16 +88,20 @@ def une_renglones_parciales(df: pd.DataFrame) -> pd.DataFrame:
     En el Cuadro 18.1 de 2019_sem48 a 2024_sem01 camelot parte el renglón de algunas entidades
     (Ciudad de México, México, Nuevo León...): arriba el nombre con los valores de un bloque y abajo,
     sin nombre, los de los otros. Sin esto ``reshape`` lee los bloques vacíos como ceros con estado
-    ``ok``. Se unen sólo si ningún valor se solapa; cualquier otra tabla pasa igual. Si el renglón
-    con nombre es una entidad federativa parcial (le falta un valor en una columna que la tabla sí
-    usa) y el siguiente sin nombre trae valores que se solapan con los suyos, no hay unión legítima
-    ni lectura segura: falla cerrado con :class:`RenglonesAmbiguosError` en vez de dejar ceros. Los
-    encabezados y el TOTAL partidos no son entidades y siguen como antes. Sólo en los grupos que lo
-    declaran (``une_renglones_parciales: true``).
+    ``ok``. Se unen sólo si ningún valor se solapa; cualquier otra tabla pasa igual.
+
+    Si el renglón con nombre es una entidad federativa parcial (vacía en una columna que usan las
+    entidades) y el siguiente sin nombre trae valores que se solapan con los suyos, no hay unión
+    legítima: no se une y sus celdas vacías se marcan con :data:`AMBIGUO`. Tras recortar el bloque
+    del padecimiento, :func:`motivo_ambiguo` invalida la tabla sólo si la marca cae en ese bloque;
+    una ambigüedad en el bloque de otro padecimiento no lo afecta. Encabezados y TOTAL no son
+    entidades y siguen como antes. Sólo en los grupos que lo declaran
+    (``une_renglones_parciales: true``).
     """
     filas = df.astype(str).to_numpy(copy=True)
     vacio = filas[:, 1:] == ""
-    usadas = ~vacio.all(axis=0)
+    entidades = np.array([_es_entidad(n) for n in filas[:, 0]], dtype=bool)
+    usadas = ~vacio[entidades].all(axis=0) if entidades.any() else np.zeros(vacio.shape[1], bool)
     for i in range(len(filas) - 1):
         sig = i + 1
         con_nombre = filas[i, 0].strip() != "" and not bool(vacio[i].all())
@@ -105,11 +109,8 @@ def une_renglones_parciales(df: pd.DataFrame) -> pd.DataFrame:
         if not (con_nombre and siguiente_sin_nombre):
             continue
         if bool((~vacio[i] & ~vacio[sig]).any()):
-            if bool((vacio[i] & usadas).any()) and _es_entidad(filas[i, 0]):
-                raise RenglonesAmbiguosError(
-                    f"renglones partidos ambiguos: {filas[i, 0].strip()!r} es parcial y el "
-                    "renglón siguiente sin nombre trae valores solapados; no se une ni se lee"
-                )
+            if entidades[i]:
+                filas[i, 1:][vacio[i] & usadas] = AMBIGUO
             continue
         filas[i, 1:] = [
             a if a != "" else b for a, b in zip(filas[i, 1:], filas[sig, 1:], strict=True)
@@ -118,6 +119,18 @@ def une_renglones_parciales(df: pd.DataFrame) -> pd.DataFrame:
         vacio[i] = filas[i, 1:] == ""
         vacio[sig] = True
     return pd.DataFrame(filas, index=df.index, columns=df.columns)
+
+
+def motivo_ambiguo(df: pd.DataFrame) -> str | None:
+    """Motivo de invalidez si el bloque ya recortado conserva una celda :data:`AMBIGUO`."""
+    marcadas = (df.iloc[:, 1:].astype(str) == AMBIGUO).any(axis=1)
+    if not bool(marcadas.any()):
+        return None
+    nombres = ", ".join(sorted(df.loc[marcadas, df.columns[0]].astype(str)))
+    return (
+        f"renglones partidos ambiguos en el bloque del padecimiento ({nombres}): el renglón "
+        "siguiente sin nombre trae valores solapados; no se une ni se lee"
+    )
 
 
 def sin_llamadas(df: pd.DataFrame) -> pd.DataFrame:

@@ -21,11 +21,11 @@ from epiforecast.data.extraction.cuadro_capa_texto import (
 from epiforecast.data.extraction.cuadro_estadios import suma_estadios
 from epiforecast.data.extraction.cuadro_reparacion_serie import exclusion_por_inicio
 from epiforecast.data.extraction.cuadro_reparaciones import (
-    RenglonesAmbiguosError,
     alinea_renglones,
     alinea_valor_en_nombre,
     despega_primera_columna,
     fila_total,
+    motivo_ambiguo,
     opciones_tabla,
     primer_bloque_por_orden,
     sin_llamadas,
@@ -112,7 +112,7 @@ def _tabla_estatal(
 def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> dict[str, Any]:
     """Extrae el bloque de un padecimiento del cuadro de un boletín. Devuelve un dict con ``df``
     (largo, 8 col del consolidado, o None), ``page``, ``year``, ``week``, ``n_states``, ``layout``,
-    ``valid`` y ``reason``. Unos renglones partidos ambiguos invalidan la tabla (falla cerrado)."""
+    ``valid`` y ``reason``. Renglones partidos ambiguos en el bloque propio invalidan la tabla."""
     year, week = _year_week_from_filename(pdf_path)
     out: dict[str, Any] = {
         "df": None,
@@ -124,16 +124,7 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
         "valid": False,
         "reason": "",
     }
-    try:
-        return _extrae(pdf_path, group_id, disease_id, out)
-    except RenglonesAmbiguosError as exc:
-        out.update(df=None, n_states=0, valid=False, reason=str(exc))
-        return out
-
-
-def _extrae(pdf_path: str, group_id: str, disease_id: str, out: dict[str, Any]) -> dict[str, Any]:
     spec = load_group(group_id)
-    year, week = out["year"], out["week"]
     if year is None or week is None:
         out["reason"] = "sin año/semana en filename"
         return out
@@ -222,6 +213,9 @@ def _extrae(pdf_path: str, group_id: str, disease_id: str, out: dict[str, Any]) 
         if etiqueta_in:
             out["reparacion"] = etiqueta_in
 
+    if (ambiguo := motivo_ambiguo(df_clean)) is not None:
+        out["reason"] = ambiguo
+        return out
     if (df_clean := suma_estadios(df_clean, pdf_path, page, spec, out)) is None:
         return out
     keywords = [d["keyword"] for d in spec["diseases"]]
