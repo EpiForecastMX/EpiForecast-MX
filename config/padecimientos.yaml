@@ -3210,3 +3210,731 @@ padecimientos:
       color: "#0F766E"
       label: "Sífilis adquirida"
       nombre_completo: "Sífilis adquirida (A51-A53)"
+
+  # Lote alta_b44 (19-nov-2026), cúmulo c1: prevenibles por vacunación del boletín 44. Alta por
+  # configuración (F1); sin modelar, sin abrir 2025 y sin publicar. Evidencia en
+  # planes/alta_b44_2026-11-19/frag/c1/<id>.qa.{json,md}.
+  - id: tetanos_a34
+    data_name: "Tétanos"
+    artifact_key: Tetanos_A34
+    slug: tetanos_a34
+    display_name: "Tétanos"
+    cie_codes: ["A34", "A35"]
+    # Sin «tétanos» a secas: abarcaría el tétanos neonatal (A33), que el boletín vigila en el bloque
+    # vecino del mismo cuadro (3.1). Decidir con el autor la precedencia antes de añadirlo.
+    aliases: ["tetanos obstetrico", "otros tetanos", "a34", "a35"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_tetanos_a34
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # Bloque presente en los 671 boletines (2014_sem01..2026_sem44) con rezago 0 constante.
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#7C2D12"
+      label: "Tétanos"
+      nombre_completo: "Tétanos (A34, A35)"
+
+  - id: viruela_simica_b04
+    data_name: "Viruela símica"
+    artifact_key: Viruela_Simica_B04
+    slug: viruela_simica_b04
+    display_name: "Viruela símica"
+    cie_codes: ["B04"]
+    aliases: ["viruela simica", "viruela del mono", "mpox", "monkeypox", "b04"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_viruela_simica_b04
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # Bloque desde el boletín 2023_sem01 (serie desde 2023-W01, rezago 0).
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#A16207"
+      label: "Viruela símica"
+      nombre_completo: "Viruela símica (B04)"
+
+  - id: vph_b97
+    data_name: "Infección por virus de papiloma humano"
+    artifact_key: VPH_B97
+    slug: vph_b97
+    display_name: "Infección por virus de papiloma humano"
+    cie_codes: ["B97.7"]
+    aliases: ["infeccion por virus de papiloma humano", "virus de papiloma humano", "virus del papiloma humano", "papiloma humano", "vph", "b97.7"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_vph_b97
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante.
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#BE185D"
+      label: "Virus de papiloma humano"
+      nombre_completo: "Infección por virus de papiloma humano (B97.7)"
+
+  # Cuadro 6 (transmisión sexual), último bloque, con sexo. Alta b44 (19-nov-2026), lote alta_b44.
+  - id: gonococica_a54
+    data_name: "Infección gonocócica del tracto genitourinario"
+    artifact_key: Gonococica_A54
+    slug: gonococica_a54
+    display_name: "Infección gonocócica del tracto genitourinario"
+    cie_codes: ["A54.0", "A54.1", "A54.2"]
+    # Sin «a54» a secas: el bloque es A54.0-A54.2, no toda la infección gonocócica (A54.3-A54.9).
+    aliases: ["infeccion gonococica del tracto genitourinario", "infeccion gonococica genitourinaria",
+              "gonorrea", "a54.0", "a54.1", "a54.2"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_gonococica_a54
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#9D174D"
+      label: "Infección gonocócica"
+      nombre_completo: "Infección gonocócica del tracto genitourinario (A54.0-A54.2)"
+
+  # Cuadro 6.1 (transmisión sexual), primer bloque, con sexo. Alta b44 (19-nov-2026).
+
+  - id: linfogranuloma_a55
+    data_name: "Linfogranuloma venéreo por Clamidias"
+    artifact_key: Linfogranuloma_A55
+    slug: linfogranuloma_a55
+    display_name: "Linfogranuloma venéreo por Clamidias"
+    cie_codes: ["A55"]
+    # Sin «clamidia» a secas: abarca otras infecciones por clamidias (A56) fuera del bloque.
+    aliases: ["linfogranuloma venereo por clamidias", "linfogranuloma venereo", "linfogranuloma", "a55"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_linfogranuloma_a55
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#7C2D12"
+      label: "Linfogranuloma venéreo"
+      nombre_completo: "Linfogranuloma venéreo por Clamidias (A55)"
+
+  # Cuadro 6.1 (transmisión sexual), segundo bloque, con sexo. Alta b44 (19-nov-2026).
+
+  - id: chancro_blando_a57
+    data_name: "Chancro blando"
+    artifact_key: Chancro_Blando_A57
+    slug: chancro_blando_a57
+    display_name: "Chancro blando"
+    cie_codes: ["A57"]
+    # Sin «chancro» a secas: el chancro duro es sífilis (A51), otro bloque publicado.
+    aliases: ["chancro blando", "chancroide", "a57"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_chancro_blando_a57
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#A21CAF"
+      label: "Chancro blando"
+      nombre_completo: "Chancro blando (A57)"
+
+  # Cuadro 6.2 (transmisión sexual), primer bloque, con sexo. Alta b44 (19-nov-2026).
+
+  - id: herpes_genital_a600
+    data_name: "Herpes genital"
+    artifact_key: Herpes_Genital_A600
+    slug: herpes_genital_a600
+    display_name: "Herpes genital"
+    cie_codes: ["A60.0"]
+    # Sin «herpes» a secas: abarca herpes zóster, labial y otros fuera del bloque.
+    aliases: ["herpes genital", "a60.0"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_herpes_genital_a600
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#4C1D95"
+      label: "Herpes genital"
+      nombre_completo: "Herpes genital (A60.0)"
+
+  # Cuadro 6.1 (2014-2020_sem27) y 6.4 (desde 2020_sem28), último bloque, con sexo. Alta b44.
+
+  - id: tricomoniasis_a590
+    data_name: "Tricomoniasis urogenital"
+    artifact_key: Tricomoniasis_A590
+    slug: tricomoniasis_a590
+    display_name: "Tricomoniasis urogenital"
+    cie_codes: ["A59.0"]
+    # Sin «vaginitis» ni «infección vaginal»: abarcan vulvovaginitis y candidiasis urogenital.
+    aliases: ["tricomoniasis urogenital", "tricomoniasis", "a59.0"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_tricomoniasis_a590
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#0369A1"
+      label: "Tricomoniasis urogenital"
+      nombre_completo: "Tricomoniasis urogenital (A59.0)"
+
+  - id: paralisis_flacida_u98
+    data_name: "Parálisis flácida aguda (menores de 15 años)"
+    artifact_key: Paralisis_Flacida_U98
+    slug: paralisis_flacida_u98
+    display_name: "Parálisis flácida aguda (menores de 15 años)"
+    cie_codes: ["U98"]
+    aliases: ["paralisis flacida aguda", "paralisis flacida aguda en menores de 15 anos", "paralisis flacida", "u98"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_paralisis_flacida_u98
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#7C3AED"
+      label: "Parálisis flácida aguda"
+      nombre_completo: "Parálisis flácida aguda en menores de 15 años (U98)"
+
+  - id: iaas_sc
+    data_name: "Infección asociada a la atención de la salud"
+    artifact_key: IAAS_SC
+    slug: iaas_sc
+    display_name: "Infección asociada a la atención de la salud"
+    # El boletín imprime «S/C» (sin código CIE); hasta 2017_sem01 el renglón era «Afección
+    # nosocomial» (Y95). Sin «infección» a secas como alias.
+    cie_codes: ["S/C"]  # el boletín la imprime sin código CIE («S/C»)
+    aliases: ["infeccion asociada a la atencion de la salud", "infecciones asociadas a la atencion de la salud", "iaas", "infeccion nosocomial", "infecciones nosocomiales", "afeccion nosocomial", "y95"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_iaas_sc
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#0E7490"
+      label: "Infección asociada a la atención de la salud"
+      nombre_completo: "Infección asociada a la atención de la salud (sin código CIE)"
+
+  # Lote alta_b44 (19-nov-2026), cúmulo c4: alcohol, ESAVI y defectos al nacimiento del boletín 44.
+  # Alta por configuración (F1); sin modelar, sin abrir 2025 y sin publicar. Evidencia en
+  # planes/alta_b44_2026-11-19/frag/c4/<id>.qa.{json,md}. Defectos al nacimiento: vigilancia
+  # ordinaria por decisión del autor («No, son vigilancia normal»), no salud de menores sensible.
+  - id: intox_alcohol_f100
+    data_name: "Intoxicación aguda por alcohol"
+    artifact_key: Intox_Alcohol_F100
+    slug: intox_alcohol_f100
+    display_name: "Intoxicación aguda por alcohol"
+    cie_codes: ["F10.0"]
+    # Sin «alcohol» ni «alcoholismo» a secas: abarcarían la enfermedad alcohólica del hígado (K70) y la
+    # cirrosis hepática alcohólica (K70.3), del Cuadro 13.4.
+    # SENSIBLE (adicciones): OK nominal del autor («incluir todooo», AUTORIZACION_AUTOR.json del lote
+    # alta_b44) SIN revisión clínica ni de comunicación acreditada; al publicar va en noModeladas
+    # hasta su release y su respuesta de crisis lleva la Línea de la Vida.
+    aliases: ["intoxicacion aguda por alcohol", "intoxicacion por alcohol", "intoxicacion alcoholica", "f10.0"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_intox_alcohol_f100
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#9A3412"
+      label: "Intoxicación por alcohol"
+      nombre_completo: "Intoxicación aguda por alcohol (F10.0)"
+
+  - id: alcoholica_higado_k70
+    data_name: "Enfermedad alcohólica del hígado"
+    artifact_key: Alcoholica_Higado_K70
+    slug: alcoholica_higado_k70
+    display_name: "Enfermedad alcohólica del hígado"
+    cie_codes: ["K70"]
+    # Rótulo del boletín: «K70 excepto K70.3». Sin «cirrosis» ni «alcohol» a secas: la cirrosis hepática
+    # alcohólica (K70.3) es el bloque vecino del mismo cuadro y se vigila aparte.
+    aliases: ["enfermedad alcoholica del higado", "hepatopatia alcoholica", "k70"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_alcoholica_higado_k70
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#854D0E"
+      label: "Enfermedad alcohólica del hígado"
+      nombre_completo: "Enfermedad alcohólica del hígado (K70 excepto K70.3)"
+
+  - id: anencefalia_q00
+    data_name: "Anencefalia"
+    artifact_key: Anencefalia_Q00
+    slug: anencefalia_q00
+    display_name: "Anencefalia"
+    cie_codes: ["Q00"]
+    aliases: ["anencefalia", "q00"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_anencefalia_q00
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#BE185D"
+      label: "Anencefalia"
+      nombre_completo: "Anencefalia (Q00)"
+
+  - id: encefalocele_q01
+    data_name: "Encefalocele"
+    artifact_key: Encefalocele_Q01
+    slug: encefalocele_q01
+    display_name: "Encefalocele"
+    cie_codes: ["Q01"]
+    aliases: ["encefalocele", "q01"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_encefalocele_q01
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#9D174D"
+      label: "Encefalocele"
+      nombre_completo: "Encefalocele (Q01)"
+
+  - id: microcefalia_q02
+    data_name: "Microcefalia"
+    artifact_key: Microcefalia_Q02
+    slug: microcefalia_q02
+    display_name: "Microcefalia"
+    cie_codes: ["Q02"]
+    aliases: ["microcefalia", "q02"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_microcefalia_q02
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # Serie desde 2017_sem02 (2017-W01): rolling_cv_historia_corta_v1 por decisión del autor
+    # (DECISIONES_AUTOR_2.json del lote alta_b44, «desde_2017»). Rezago 1 constante.
+    selection_policy: rolling_cv_historia_corta_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#831843"
+      label: "Microcefalia"
+      nombre_completo: "Microcefalia (Q02)"
+
+  - id: espina_bifida_q05
+    data_name: "Espina bífida"
+    artifact_key: Espina_Bifida_Q05
+    slug: espina_bifida_q05
+    display_name: "Espina bífida"
+    cie_codes: ["Q05"]
+    aliases: ["espina bifida", "q05"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_espina_bifida_q05
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#A21CAF"
+      label: "Espina bífida"
+      nombre_completo: "Espina bífida (Q05)"
+
+  - id: labio_paladar_q35
+    data_name: "Labio y paladar hendido"
+    artifact_key: Labio_Paladar_Q35
+    slug: labio_paladar_q35
+    display_name: "Labio y paladar hendido"
+    cie_codes: ["Q35", "Q36", "Q37"]
+    aliases: ["labio y paladar hendido", "labio hendido", "paladar hendido", "q35", "q36", "q37"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_labio_paladar_q35
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
+    selection_policy: rolling_cv_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#86198F"
+      label: "Labio y paladar hendido"
+      nombre_completo: "Labio y paladar hendido (Q35-Q37)"
+
+  # Lote alta_b44 (cúmulo c6, 19-nov-2026). Siete categorías que el boletín imprime como bloque propio
+  # sólo desde 2024_sem02 (Cuadros 13.7 a 13.9 de 2024; páginas 54 a 56 del boletín 2026_sem44). Antes
+  # de 2024 vivían agrupadas en otros renglones: la serie empieza en 2024-W01, sin reconstruir historia.
+  - id: viuda_negra_u602
+    data_name: "Mordedura de araña viuda negra"
+    artifact_key: Viuda_Negra_U602
+    slug: viuda_negra_u602
+    display_name: "Mordedura de araña viuda negra"
+    cie_codes: ["U60.2"]
+    aliases: ["mordedura de arana viuda negra", "picadura de arana viuda negra", "arana viuda negra", "viuda negra", "u60.2"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_aranas_u60
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2024_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#3F3F46"
+      label: "Araña viuda negra"
+      nombre_completo: "Mordedura de araña viuda negra (U60.2)"
+
+  - id: violinista_u603
+    data_name: "Mordedura de araña violinista"
+    artifact_key: Violinista_U603
+    slug: violinista_u603
+    display_name: "Mordedura de araña violinista"
+    cie_codes: ["U60.3"]
+    aliases: ["mordedura de arana violinista", "picadura de arana violinista", "arana violinista", "arana reclusa", "loxoscelismo", "u60.3"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_aranas_u60
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2024_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#78350F"
+      label: "Araña violinista"
+      nombre_completo: "Mordedura de araña violinista (U60.3)"
+
+  - id: otras_aranas_t633
+    data_name: "Mordedura de otras arañas"
+    artifact_key: Otras_Aranas_T633
+    slug: otras_aranas_t633
+    display_name: "Mordedura de otras arañas"
+    cie_codes: ["T63.3", "X21"]
+    # Sin «arana»/«mordedura de arana» a secas: abarcan también viuda negra y violinista (trampa 2).
+    aliases: ["mordedura de otras aranas", "picadura de otras aranas", "otras aranas", "t63.3", "x21"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_aranas_u60
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2024_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#57534E"
+      label: "Otras arañas"
+      nombre_completo: "Mordedura de otras arañas (T63.3, X21 excepto U60.2 y U60.3)"
+
+  - id: abeja_u604
+    data_name: "Picadura de abeja"
+    artifact_key: Abeja_U604
+    slug: abeja_u604
+    display_name: "Picadura de abeja"
+    cie_codes: ["U60.4"]
+    aliases: ["picadura de abeja", "picaduras de abeja", "piquete de abeja", "u60.4"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_abeja_avispa_u60
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2024_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#CA8A04"
+      label: "Picadura de abeja"
+      nombre_completo: "Picadura de abeja (U60.4)"
+
+  - id: avispa_u605
+    data_name: "Picadura de avispa"
+    artifact_key: Avispa_U605
+    slug: avispa_u605
+    display_name: "Picadura de avispa"
+    cie_codes: ["U60.5"]
+    aliases: ["picadura de avispa", "picaduras de avispa", "piquete de avispa", "u60.5"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_abeja_avispa_u60
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2024_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#B45309"
+      label: "Picadura de avispa"
+      nombre_completo: "Picadura de avispa (U60.5)"
+
+  - id: otros_artropodos_t634
+    data_name: "Picadura por otros artrópodos"
+    artifact_key: Otros_Artropodos_T634
+    slug: otros_artropodos_t634
+    display_name: "Picadura por otros artrópodos"
+    cie_codes: ["T63.4"]
+    # Sin «picadura de insecto» ni «artropodos» a secas: abarcan abeja y avispa (trampa 2).
+    aliases: ["picadura por otros artropodos", "picadura de otros artropodos", "otros artropodos", "t63.4"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_abeja_avispa_u60
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2024_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#4D7C0F"
+      label: "Otros artrópodos"
+      nombre_completo: "Picadura por otros artrópodos (T63.4 excepto U60.4 y U60.5)"
+
+  - id: otros_ponzonosos_t631
+    data_name: "Picadura o intoxicación por otros animales ponzoñosos"
+    artifact_key: Otros_Ponzonosos_T631
+    slug: otros_ponzonosos_t631
+    display_name: "Picadura o intoxicación por otros animales ponzoñosos"
+    cie_codes: ["T63.1", "T63.5", "T63.6", "T63.7", "T63.8", "T63.9", "X27", "U60.8"]
+    # Sin «animales ponzonosos» a secas: el término general abarca alacrán, arañas y serpientes (trampa 2).
+    aliases: ["picadura o intoxicacion por otros animales ponzonosos", "intoxicacion por otros animales ponzonosos", "otros animales ponzonosos", "u60.8", "x27"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_ponzonosos_t631
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2024_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#7E22CE"
+      label: "Otros animales ponzoñosos"
+      nombre_completo: "Picadura o intoxicación por otros animales ponzoñosos (T63.1, T63.5-T63.9, X27, U60.8)"
+
+  - id: mordedura_cascabel_u600
+    data_name: "Mordedura por serpiente de cascabel"
+    artifact_key: Mordedura_Cascabel_U600
+    slug: mordedura_cascabel_u600
+    display_name: "Mordedura por serpiente de cascabel"
+    cie_codes: ["U60.0"]
+    aliases: ["mordedura por serpiente de cascabel", "mordedura de serpiente de cascabel", "mordedura de cascabel", "serpiente de cascabel", "u60.0"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_mordedura_cascabel_u600
+    exposure_source_id: inegi_cpv2020_static
+    # Bloque propio del Cuadro 18 sólo desde el boletín 2024_sem02 (serie desde 2024-W01).
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2024_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#8A6A3B"
+      label: "Mordedura por serpiente de cascabel"
+      nombre_completo: "Mordedura por serpiente de cascabel (U60.0)"
+
+  - id: mordedura_coral_u601
+    data_name: "Mordedura por serpiente coral"
+    artifact_key: Mordedura_Coral_U601
+    slug: mordedura_coral_u601
+    display_name: "Mordedura por serpiente coral"
+    cie_codes: ["U60.1"]
+    aliases: ["mordedura por serpiente coral", "mordedura de serpiente coral", "mordedura de coralillo", "serpiente coral", "coralillo", "u60.1"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_mordedura_coral_u601
+    exposure_source_id: inegi_cpv2020_static
+    # Bloque propio del Cuadro 18 sólo desde el boletín 2024_sem02 (serie desde 2024-W01).
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2024_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#7C5E3C"
+      label: "Mordedura por serpiente coral"
+      nombre_completo: "Mordedura por serpiente coral (U60.1)"
+
+  - id: mordedura_otras_serpientes_t630
+    data_name: "Mordedura por otras serpientes"
+    artifact_key: Mordedura_Otras_Serpientes_T630
+    slug: mordedura_otras_serpientes_t630
+    display_name: "Mordedura por otras serpientes"
+    cie_codes: ["T63.0", "X20"]
+    aliases: ["mordedura por otras serpientes", "mordedura de otras serpientes", "otras serpientes"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_mordedura_otras_serpientes_t630
+    exposure_source_id: inegi_cpv2020_static
+    # Bloque «T63.0, X20 excepto U60.0 y U60.1» desde 2024_sem02; el bloque 2023 «Mordeduras por serpiente» (T63.0, X20) es otra definición.
+    lifecycle: configured
+    channels: []
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2024_v1
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#6B4F2A"
+      label: "Mordedura por otras serpientes"
+      nombre_completo: "Mordedura por otras serpientes (T63.0, X20 excepto U60.0 y U60.1)"

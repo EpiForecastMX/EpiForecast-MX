@@ -177,6 +177,33 @@ def test_cie_map():
         "T60": "Intoxicación por plaguicidas",
         "N76": "Vulvovaginitis",
         "A51": "Sífilis adquirida",  # piloto Carbon, configured (invisible)
+        "A34": "Tétanos",  # lote alta_b44 (19-nov-2026), configured
+        "B04": "Viruela símica",
+        "B97.7": "Infección por virus de papiloma humano",
+        "A54.0": "Infección gonocócica del tracto genitourinario",
+        "A55": "Linfogranuloma venéreo por Clamidias",
+        "A57": "Chancro blando",
+        "A60.0": "Herpes genital",
+        "A59.0": "Tricomoniasis urogenital",
+        "U98": "Parálisis flácida aguda (menores de 15 años)",
+        "S/C": "Infección asociada a la atención de la salud",
+        "F10.0": "Intoxicación aguda por alcohol",
+        "K70": "Enfermedad alcohólica del hígado",
+        "Q00": "Anencefalia",
+        "Q01": "Encefalocele",
+        "Q02": "Microcefalia",
+        "Q05": "Espina bífida",
+        "Q35": "Labio y paladar hendido",
+        "U60.2": "Mordedura de araña viuda negra",
+        "U60.3": "Mordedura de araña violinista",
+        "T63.3": "Mordedura de otras arañas",
+        "U60.4": "Picadura de abeja",
+        "U60.5": "Picadura de avispa",
+        "T63.4": "Picadura por otros artrópodos",
+        "T63.1": "Picadura o intoxicación por otros animales ponzoñosos",
+        "U60.0": "Mordedura por serpiente de cascabel",
+        "U60.1": "Mordedura por serpiente coral",
+        "T63.0": "Mordedura por otras serpientes",
     }
 
 
