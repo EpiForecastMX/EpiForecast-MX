@@ -87,19 +87,20 @@ def une_renglones_parciales(df: pd.DataFrame) -> pd.DataFrame:
 
     En el Cuadro 18.1 de 2019_sem48 a 2024_sem01 camelot parte el renglón de algunas entidades
     (Ciudad de México, México, Nuevo León...): arriba el nombre con los valores de un bloque y abajo,
-    sin nombre, los de los otros (uno o varios renglones complementarios seguidos). Sin esto
-    ``reshape`` lee los bloques vacíos como ceros con estado ``ok``. Se une toda la secuencia sólo si
-    ningún valor se solapa entre ella y el renglón con nombre; cualquier otra tabla pasa igual.
+    sin nombre, los de los otros, en uno o varios renglones seguidos. Sin esto ``reshape`` lee los
+    bloques vacíos como ceros con estado ``ok``. Los complementarios se unen en orden mientras no se
+    solapen con lo ya reunido; cualquier otra tabla pasa igual.
 
-    Si el renglón con nombre es una entidad federativa parcial (vacía en una columna que usan las
-    entidades) y la secuencia sin nombre trae valores que se solapan (con los suyos o entre sí), no
-    hay unión legítima: no se une nada y se marcan con :data:`AMBIGUO` sus celdas vacías y toda
-    columna en que algún renglón complementario trae un valor, que se perdería aunque ninguna
-    entidad con nombre use esa columna (todas partidas). Tras recortar el bloque del padecimiento,
-    :func:`motivo_ambiguo` invalida la tabla sólo si la marca cae en ese bloque;
-    una ambigüedad en el bloque de otro padecimiento no lo afecta. Encabezados y TOTAL no son
-    entidades y siguen como antes. Sólo en los grupos que lo declaran
-    (``une_renglones_parciales: true``).
+    Si el renglón con nombre es una entidad federativa y un complementario se solapa con lo ya
+    reunido, no hay unión legítima de ése ni de los siguientes: no se unen y se marcan con
+    :data:`AMBIGUO` las celdas vacías que usan las entidades y toda columna en que alguno de esos
+    complementarios trae un valor, que se perdería aunque ninguna entidad con nombre la use (todas
+    partidas). En 2020_sem52 (pág. 62) el renglón del bloque de la derecha de la entidad siguiente
+    cae tras el complementario: sólo sus columnas quedan marcadas. Tras recortar el bloque del
+    padecimiento, :func:`motivo_ambiguo` invalida la tabla sólo si la marca cae en ese bloque; una
+    ambigüedad en el bloque de otro padecimiento no lo afecta. Encabezados y TOTAL no son
+    entidades: sólo se unen con el renglón siguiente, sin marcas, como antes. Sólo en los grupos que
+    lo declaran (``une_renglones_parciales: true``).
     """
     filas = df.astype(str).to_numpy(copy=True)
     vacio = filas[:, 1:] == ""
@@ -108,26 +109,25 @@ def une_renglones_parciales(df: pd.DataFrame) -> pd.DataFrame:
     for i in range(len(filas) - 1):
         if filas[i, 0].strip() == "" or bool(vacio[i].all()):
             continue
-        # Toda la secuencia de renglones complementarios (sin nombre y con valores), no sólo el 1.º.
-        comp = []
-        for j in range(i + 1, len(filas)):
+        # Renglones complementarios seguidos (sin nombre y con valores). Sólo una entidad absorbe
+        # la secuencia; TOTAL y encabezados conservan la regla de un único renglón siguiente.
+        comp: list[int] = []
+        for j in range(i + 1, len(filas) if entidades[i] else i + 2):
             if filas[j, 0].strip() != "" or bool(vacio[j].all()):
                 break
             comp.append(j)
-        if not comp:
-            continue
-        llenas = (~vacio[[i, *comp]]).sum(axis=0)
-        if bool((llenas > 1).any()):
-            if entidades[i]:
-                # Cada columna con valor en un complementario lo pierde al no unir, aunque ninguna
-                # entidad con nombre la use (todas partidas): también se marca.
-                filas[i, 1:][(vacio[i] & usadas) | (~vacio[comp]).any(axis=0)] = AMBIGUO
-            continue
-        for j in comp:
+        for k, j in enumerate(comp):
+            if bool((~vacio[i] & ~vacio[j]).any()):
+                if entidades[i]:
+                    # Desde el primer solape, cada columna con valor en un complementario restante
+                    # lo pierde al no unirse (aunque ninguna entidad con nombre la use): se marca.
+                    perdidas = (~vacio[comp[k:]]).any(axis=0)
+                    filas[i, 1:][(vacio[i] & usadas) | perdidas] = AMBIGUO
+                break
             filas[i, 1:][~vacio[j]] = filas[j, 1:][~vacio[j]]
             filas[j, 1:] = ""
             vacio[j] = True
-        vacio[i] = filas[i, 1:] == ""
+            vacio[i] = filas[i, 1:] == ""
     return pd.DataFrame(filas, index=df.index, columns=df.columns)
 
 

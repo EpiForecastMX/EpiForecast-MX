@@ -188,10 +188,65 @@ def test_secuencia_de_complementarios_se_une_entera_o_se_marca():
     assert unida.iloc[0].tolist() == ["Nuevo León", "1", "2", "3", "8"]
     assert (unida.iloc[1:, 1:] == "").all().all()
     solapada = df.copy()
-    solapada.iloc[2, 1] = "9"  # el tercero se solapa con el segundo
+    solapada.iloc[2, 1] = "9"  # el tercero se solapa con el segundo, ya unido
     out = une_renglones_parciales(solapada)
     assert out.iloc[0].tolist() == ["Nuevo León", AMBIGUO, AMBIGUO, AMBIGUO, "8"]
-    assert out.iloc[1:].equals(solapada.iloc[1:].astype(str))
+    assert out.iloc[2].tolist() == ["", "9", "2", "3", ""]  # no se une
+
+
+def test_total_y_encabezado_solo_absorben_un_renglon_siguiente():
+    df = pd.DataFrame([["TOTAL", "", "", "", "8"], ["", "1", "", "", ""], ["", "", "2", "3", ""]])
+    out = une_renglones_parciales(df)
+    assert out.iloc[0].tolist() == ["TOTAL", "1", "", "", "8"]
+    assert out.iloc[2].tolist() == ["", "", "2", "3", ""]
+
+
+def _cruda_sem52() -> pd.DataFrame:
+    """Patrón leído por camelot en 2020_sem52, pág. 62 (tres bloques de 4 columnas).
+
+    CDMX sale con nombre y sólo dos celdas del bloque de la derecha; debajo, sin nombre, los bloques
+    0 y 1 y la última celda; y debajo otro renglón sin nombre con las dos celdas del bloque de la
+    derecha de la entidad siguiente (Durango), que se solapa con las de CDMX.
+    """
+    filas = [["ENTIDAD", *["Sem.", "H", "M", "Ant."] * 3]]
+    for i, estado in enumerate(ESTADOS):
+        b0 = [str(100 + i), str(1000 + i), str(2000 + i), str(3000 + i)]
+        b1 = [str(5 + i), str(50 + i), str(60 + i), str(110 + i)]
+        b2 = [str(7 + i), str(70 + i), str(80 + i), str(90 + i)]
+        if estado == "Ciudad de México":
+            filas.append([estado, *[""] * 9, b2[1], b2[2], ""])
+            filas.append(["", *b0, *b1, b2[0], "", "", b2[3]])
+            filas.append(["", *[""] * 9, "52", "17", ""])
+        elif estado == "Durango":
+            filas.append([estado, *b0, *b1, b2[0], "", "", b2[3]])
+        else:
+            filas.append([estado, *b0, *b1, *b2])
+    return pd.DataFrame(filas)
+
+
+@pytest.mark.parametrize(("recorte", "valida"), [("first", True), ("last", False)])
+def test_patron_2020_sem52_solo_invalida_el_bloque_solapado(
+    monkeypatch, tmp_path, recorte, valida
+):
+    """Con d33d95dd el solape del bloque de la derecha marcaba toda la fila de CDMX e invalidaba
+    también el primer bloque (mordeduras por perro y por otros mamíferos en 2020_sem52)."""
+    pdf = tmp_path / "2020_sem52.pdf"
+    pdf.write_bytes(b"%PDF")
+    spec = {k: v for k, v in _spec(True).items() if k != "first_block_columns"}
+    spec[f"{recorte}_block_columns"] = {12: 4}
+    monkeypatch.setattr(ce, "load_group", lambda _g: spec)
+    monkeypatch.setattr(ce, "find_cuadro_page", lambda *_a: 62)
+    tabla = _cruda_sem52()
+    monkeypatch.setattr(ce.camelot, "read_pdf", lambda *_a, **_k: [type("T", (), {"df": tabla})()])
+    salida = ce.extract_cuadro_from_pdf(str(pdf), "grupo_sintetico", DISEASE)
+    if not valida:
+        assert salida["valid"] is False and "Ciudad de México" in salida["reason"]
+        return
+    assert salida["valid"], salida["reason"]
+    df = salida["df"].set_index("Entidad")
+    assert df.loc["Ciudad de México", "Casos_semana"] == 108
+    assert df.loc["Ciudad de México", "Acumulado_anio_anterior"] == 3008
+    assert df.loc["Durango", "Acumulado_hombres"] == 1009
 
 
 def test_solapamiento_que_pierde_un_valor_del_bloque_propio_se_marca():
