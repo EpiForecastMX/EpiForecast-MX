@@ -2702,6 +2702,7 @@ padecimientos:
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: toxoplasmosis_b58_benchmark_test_925fbc3db73e_16ac46d1ea67
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2731,6 +2732,7 @@ padecimientos:
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: teniasis_b68_benchmark_test_fc599daa8d11_3783f99df506
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2759,6 +2761,7 @@ padecimientos:
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: cisticercosis_b69_benchmark_test_e654df902c88_4acf3ba6378a
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2788,6 +2791,7 @@ padecimientos:
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: triquinosis_b75_benchmark_test_a6c1b9a1c403_1f204d2ef4e0
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2943,6 +2947,7 @@ padecimientos:
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: conjuntivitis_hemorragica_b303_benchmark_test_d60c57f68c51_8e6f4ab2d8b9
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2970,6 +2975,7 @@ padecimientos:
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: tracoma_a71_benchmark_test_5b413cec154e_4e0bc824dc00
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3072,6 +3078,7 @@ padecimientos:
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: hipotermia_t68_benchmark_test_f5d97a7dab8a_851a7d333a96
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
