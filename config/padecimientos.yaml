@@ -4847,8 +4847,20 @@ padecimientos:
     batch: standalone
     extraction_group: b44_meningitis_tuberculosa_a170
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    # Aviso: salto de nivel 2021 sin atribuir causa: unos 200-330 casos anuales en 2014-2020
+    # (mediana semanal 3-6) frente a 455-590 en 2021-2025 (mediana 8.5-12), con cambio de rótulo y
+    # de rezago en 2021 (planes/alta_b44_2026-11-19/frag/c9/meningitis_tuberculosa_a170.qa.md).
+    # Aviso: objetivo 2020-W53 sin fuente por cambio de rezago, imputado y marcado lag_regime_gap
+    # (huecos_objetivo en cuadros.yaml; planes/alta_b44_2026-11-19/DECISIONES_AUTOR_5.json: «Sí,
+    # imputar»).
+    # Aviso: control estacional seasonal_naive_lag52 publicado por decisión nominal del autor tras
+    # el rechazo de la prueba única de 2025
+    # (meningitis_tuberculosa_a170_benchmark_test_603dc0738a05_ce31ac51d3d0: nacional General
+    # 104.54 frente a 57.88 del control, +80.61 % > 10 %;
+    # planes/alta_b44_2026-11-19/DECISIONES_AUTOR_10.json, «Sí, los cinco»); nunca validado: a las
+    # 4 semanas sólo cabe CONTROL_ONLY.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
@@ -4878,8 +4890,16 @@ padecimientos:
     batch: standalone
     extraction_group: b44_tuberculosis_respiratoria_a15
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    # Aviso: pico 2019-2020 sin atribuir causa, por decisión del autor
+    # (planes/alta_b44_2026-11-19/DECISIONES_AUTOR_9.json, «Sí, con aviso del pico 2019-2020 sin
+    # atribuir causa»): 13 454-15 285 casos anuales en 2014-2018 (mediana semanal 259-298), 36 761
+    # en 2019 (mediana 763), 26 139 en 2020 y 16 008-21 291 en 2021-2025 (mediana 333-430)
+    # (planes/alta_b44_2026-11-19/frag/c9/tuberculosis_respiratoria_a15.qa.md).
+    # Aviso: objetivo 2020-W53 sin fuente por cambio de rezago, imputado y marcado lag_regime_gap
+    # (huecos_objetivo en cuadros.yaml; planes/alta_b44_2026-11-19/DECISIONES_AUTOR_5.json: «Sí,
+    # imputar»).
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
@@ -4906,8 +4926,16 @@ padecimientos:
     batch: standalone
     extraction_group: b44_lepra_a30
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    # Aviso: objetivo 2020-W53 sin fuente por cambio de rezago, imputado y marcado lag_regime_gap
+    # (huecos_objetivo en cuadros.yaml; planes/alta_b44_2026-11-19/DECISIONES_AUTOR_5.json: «Sí,
+    # imputar»).
+    # Aviso: control estacional seasonal_naive_lag52 publicado por decisión nominal del autor tras
+    # el rechazo de la prueba única de 2025 (lepra_a30_benchmark_test_e32febcfffc6_43af25133ba7:
+    # nacional General 154.72 frente a 98.49 del control, +57.09 % > 10 %;
+    # planes/alta_b44_2026-11-19/DECISIONES_AUTOR_10.json, «Sí, los cinco»); nunca validado: a las
+    # 4 semanas sólo cabe CONTROL_ONLY.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
@@ -4936,8 +4964,20 @@ padecimientos:
     batch: standalone
     extraction_group: b44_fiebre_manchada_a770
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    # Aviso: niveles cambiantes sin atribuir causa: 208 casos en 2014, 500 en 2015, 81-315 en
+    # 2016-2022, 42, 35 y 23 en 2023-2025 y 236 a 2026-W44; mediana semanal nacional 0 en 2016,
+    # 2021 y 2023-2026 (planes/alta_b44_2026-11-19/frag/c9/fiebre_manchada_a770.qa.md).
+    # Aviso: objetivo 2015-W48 sin fuente por cambio de rezago, imputado y marcado lag_regime_gap
+    # (huecos_objetivo en cuadros.yaml; planes/alta_b44_2026-11-19/DECISIONES_AUTOR_5.json: «Sí,
+    # imputar»).
+    # Aviso: control estacional seasonal_naive_lag52 publicado por decisión nominal del autor tras
+    # el rechazo de la prueba única de 2025
+    # (fiebre_manchada_a770_benchmark_test_4796443c1ec0_3c412db5b412: bases 0.00 frente a 0.00 del
+    # control, no finito (0 frente a 0) > 5 %; 111 series 0.00 frente a 0.00 del control, no finito
+    # (0 frente a 0) > 5 %; planes/alta_b44_2026-11-19/DECISIONES_AUTOR_10.json, «Sí, los cinco»);
+    # nunca validado: a las 4 semanas sólo cabe CONTROL_ONLY.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
@@ -4966,8 +5006,17 @@ padecimientos:
     batch: standalone
     extraction_group: b44_otras_rickettsiosis_a79
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    # Aviso: salto de nivel 2022 sin atribuir causa: 147, 159, 143, 59 y 185 casos en 2017-2021
+    # (mediana semanal 0-3) frente a 600, 497, 499 y 544 en 2022-2025 (mediana 8.5-10)
+    # (planes/alta_b44_2026-11-19/frag/c9/otras_rickettsiosis_a79.qa.md).
+    # Aviso: control estacional seasonal_naive_lag52 publicado por decisión nominal del autor tras
+    # el rechazo de la prueba única de 2025
+    # (otras_rickettsiosis_a79_benchmark_test_93487cbe470a_81ce3ccf5de0: nacional General 77.17
+    # frente a 43.46 del control, +77.56 % > 10 %;
+    # planes/alta_b44_2026-11-19/DECISIONES_AUTOR_10.json, «Sí, los cinco»); nunca validado: a las
+    # 4 semanas sólo cabe CONTROL_ONLY.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # El bloque A79 se imprime desde 2017_sem02 (objetivo 2017-W02; antes, «Otras Rickettsiosis»
@@ -4998,8 +5047,17 @@ padecimientos:
     batch: standalone
     extraction_group: b44_leishmaniasis_cutanea_b551
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: trained
-    channels: []
+    # Aviso: objetivo 2020-W53 sin fuente por cambio de rezago, imputado y marcado lag_regime_gap
+    # (huecos_objetivo en cuadros.yaml; planes/alta_b44_2026-11-19/DECISIONES_AUTOR_5.json: «Sí,
+    # imputar»).
+    # Aviso: control estacional seasonal_naive_lag52 publicado por decisión nominal del autor tras
+    # el rechazo de la prueba única de 2025
+    # (leishmaniasis_cutanea_b551_benchmark_test_96c14e031372_1a51517c071c: bases 0.00 frente a
+    # 0.00 del control, no finito (0 frente a 0) > 5 %; nacional General 87.56 frente a 72.22 del
+    # control, +21.24 % > 10 %; planes/alta_b44_2026-11-19/DECISIONES_AUTOR_10.json, «Sí, los
+    # cinco»); nunca validado: a las 4 semanas sólo cabe CONTROL_ONLY.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
