@@ -5095,6 +5095,7 @@ padecimientos:
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
+    acceptance_fallback_run: paludismo_vivax_b51_benchmark_test_f767fecd0236_203959bd6b26
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
