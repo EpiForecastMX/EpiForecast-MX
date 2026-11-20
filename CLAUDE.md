@@ -28,6 +28,19 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 # CLAUDE.md: Guia de Desarrollo EpiForecast-MX
 
+## Checkpoint vigente — lote alta_b44 publicado — 19/20-nov-2026
+
+Prevalece sobre todas las secciones inferiores (incluida «Versión con control A51») en conteos y base semanal.
+Publicados y medidos en producción servida: **152 en el sitio y 148 del runner** (backend `main` `bdfd03bb`, PR #79,
+CI 44667657252 verde; frontend `main` `4a9fdba1`, PR #102, `publication/catalog.json` servido byte-idéntico, 148
+releases). Sesenta y seis nuevos por orden y decisiones nominales del autor: 15 aceptados en su prueba única de 2025
+(0/4), 41 controles estacionales no validados tras rechazo y 10 controles por construcción
+(`rolling_cv_historia_corta_2024_v1`). Base semanal: `planes/alta_b44_2026-11-19/consolidado_W44/dataset_boletin_epidemiologico.csv`
+(sha256 `819796694c1993e0012fc1cbb6dc489df2fdd3d4b0e43900f3af290c397468de`, con el consolidado previo de 86 `0f6252f9…`
+como prefijo byte a byte); los 152 en la semana fuente 2026-W44. **El paso siguiente usa la semana fuente 45 una sola
+vez para los 152.** Guía, exclusiones, código nuevo opt-in, decisiones con sha256 y auditorías Codex:
+`docs/C7_19_ALTA_B44.md`; evidencia fuera del repo en `planes/alta_b44_2026-11-19/`.
+
 
 ## Versión con control A51 y fuente 2026-W44
 
