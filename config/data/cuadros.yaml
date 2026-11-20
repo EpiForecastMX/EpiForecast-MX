@@ -4421,7 +4421,7 @@ cuadro_groups:
     # 2016_sem52 (tres bloques de 3), 6 de 2017_sem01 a 2020_sem53 (dos bloques de 3: Sem., acumulado
     # del año y del anterior, SIN sexo) y 8 desde 2021_sem01 (dos bloques de 4: Sem., acumulados de
     # hombres y de mujeres y año anterior). Por decisión del autor (DECISIONES_AUTOR_9, 19-nov-2026)
-    # se modela sin sexo desde 2014: desde 2021_sem01 ``suma_sexos`` lee el bloque H/M como acumulado
+    # se modela sin sexo (desde 2015-W01, DECISIONES_AUTOR_11): desde 2021_sem01 ``suma_sexos`` lee el bloque H/M como acumulado
     # total = H + M, validado contra el TOTAL impreso en sus 4 columnas (falla cerrado si no cuadra).
     # Rezago impreso por periodo, medido en los 671 títulos (658 por texto y 13 por OCR): «hasta la
     # semana N-1» de 2014_sem01 a 2017_sem01 y «Paludismo por P. vivax hasta la semana N» desde
@@ -4449,14 +4449,17 @@ cuadro_groups:
         keyword: "Paludismo_Vivax_B51"
         block_index: 0
         onboard: true
-    source_exclusions:
-      - file: "2014_sem01.pdf"
-        diseases: [paludismo_vivax_b51]
-        reason: >-
-          boletín con corte «Paludismo por P. vivax hasta la 52 del 2013» (objetivo 2013-W52, con
-          columna Sem presente): anterior a series_start (2014-W01); PDF abierto, el Sem impreso es
-          «s.n.» en Coahuila, Durango, Puebla y Tamaulipas y el primer periodo no tiene base causal
-          para imputarlo
+    # Inicio de la serie en 2015-W01 por decisión del autor (DECISIONES_AUTOR_11, 19-nov-2026), sin
+    # tocar la reconciliación común: 2014 imprime «s.n.» en Sem en 185 celdas (2014_sem02 a
+    # 2014_sem53; cinco ya en 2014_sem02, objetivo 2014-W01) y el primer periodo no tiene base causal
+    # para imputarlas. 2014_sem01 (objetivo 2013-W52) y 2015_sem01 (objetivo 2014-W53) quedan fuera.
+    inicio_serie:
+      - diseases: [paludismo_vivax_b51]
+        desde: "2015_sem02"
+        motivo: >-
+          decisión nominal del autor (lote alta_b44, 19-nov-2026): serie desde 2015-W01; 2014 imprime
+          «s.n.» en la columna Sem en 185 celdas y el primer periodo no tiene base causal para
+          imputarlas sin cambiar la reconciliación común
     layout_variants:
       - id: v_3col_total
         min_year_week: "0000_sem00"

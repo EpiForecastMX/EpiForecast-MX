@@ -5088,7 +5088,7 @@ padecimientos:
     extraction_group: b44_paludismo_vivax_b51
     exposure_source_id: inegi_cpv2020_static
     # Sin H/M hasta 2020 y con H/M desde 2021: por decisión del autor (19-nov-2026) se modela sin
-    # sexo desde 2014 (32 bases «general», 37 productos), sumando H + M desde 2021_sem01.
+    # sexo desde 2015-W01 (decisión del 19-nov-2026; 32 bases «general», 37 productos), sumando H + M desde 2021_sem01.
     sex_breakdown: false
     lifecycle: configured
     channels: []
