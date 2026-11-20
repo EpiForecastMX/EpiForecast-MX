@@ -39,7 +39,8 @@ releases). Sesenta y seis nuevos por orden y decisiones nominales del autor: 15 
 (sha256 `819796694c1993e0012fc1cbb6dc489df2fdd3d4b0e43900f3af290c397468de`, con el consolidado previo de 86 `0f6252f9…`
 como prefijo byte a byte); los 152 en la semana fuente 2026-W44. **El paso siguiente usa la semana fuente 45 una sola
 vez para los 152.** Las 32 categorías restantes del boletín 44 están integradas **sin pronóstico** (radar «No
-modelable», `no_modelables.html`, EpiBot y RAG; frontend PR #103 `2d2c3ffe`). Guía, exclusiones, código nuevo opt-in, decisiones con sha256 y auditorías Codex:
+modelable», `no_modelables.html`, EpiBot y RAG; frontend PR #103 `2d2c3ffe`). El radar ofrece la opción «Pronóstico» para las 187 categorías (100 %): 154 con
+pronóstico publicado y 33 con pronóstico exploratorio, no validado (frontend PR #104 `7553966e`). Guía, exclusiones, código nuevo opt-in, decisiones con sha256 y auditorías Codex:
 `docs/C7_19_ALTA_B44.md`; evidencia fuera del repo en `planes/alta_b44_2026-11-19/`.
 
 

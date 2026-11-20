@@ -53,6 +53,19 @@ P. falciparum se rotulan «casos insuficientes o no publicados»: el guion del c
 las notas del boletín reportan casos. Auditoría Codex `gpt-6.1-sol` (medium) de esa rama: 5 rondas corregidas,
 veredicto final APTO sobre `1cde388a`. No se crearon pronósticos ni controles para ellas.
 
+## Opción «Pronóstico» en el radar: cobertura 100 % (20-nov-2026)
+
+Por orden del autor («quiero todos todos los padecimientos… que pueda darme el forecast»;
+`planes/alta_b44_2026-11-19/DECISIONES_AUTOR_15.json`), el radar del boletín tiene una opción «Pronóstico» junto a la
+serie para las 187 categorías no agregadas (frontend PR #104, `main` `7553966e`): 154 muestran su pronóstico
+publicado (vista del release o serie legacy, con su etiqueta) y 33 un **pronóstico exploratorio, no validado**,
+nacional de 52 semanas y generado offline (`scripts/radar_pronostico_exploratorio.mjs`): 28 con la media de la misma
+semana de hasta tres años previos, 3 con nivel reciente sin estacionalidad y 2 (sarampión y P. falciparum) con un
+nivel derivado del acumulado nacional impreso en las notas del boletín (`scripts/radar_notas_acumulados.mjs`, con
+evidencia por boletín). No pasan por el runner, no tienen prueba de desempeño ni intervalos y no cuentan como
+publicados. Auditoría Codex `gpt-6.1-sol` (medium): 4 rondas, APTO sobre `a37651e7`, más una verificación acotada del
+cambio de redacción.
+
 ## Por qué no tienen pronóstico
 
 El runner exige 32 entidades, casos, rezago impreso fijo o declarado por periodo, total no imputado en el año de
