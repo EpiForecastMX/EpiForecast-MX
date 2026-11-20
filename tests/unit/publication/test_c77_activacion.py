@@ -181,6 +181,7 @@ def test_el_contrato_separa_legacy_de_release():
         "fiebre manchada",
         "otras rickettsiosis",
         "leishmaniasis cutanea",
+        "paludismo por plasmodium vivax",
     )
     assert c.releases["obesidad"] == (_OBESIDAD, _RELEASE)
     assert c.releases["sifilis adquirida"] == (
@@ -299,6 +300,7 @@ def test_el_contrato_separa_legacy_de_release():
         "otras_rickettsiosis_a79",
         "otros_artropodos_t634",
         "otros_ponzonosos_t631",
+        "paludismo_vivax_b51",
         "paralisis_flacida_u98",
         "paratifoidea_a011",
         "parotiditis_b26",
@@ -514,6 +516,7 @@ def test_la_paridad_de_corte_incluye_al_publicado_del_runner(tmp_path):
         "Otras rickettsiosis": 42,
         "Fiebre manchada": 42,
         "Leishmaniasis cutánea": 42,
+        "Paludismo por Plasmodium vivax": 42,
     }
     rezagada = _consolidado(tmp_path / "a.csv", {**pads, "Obesidad": 27})
     resultado = revisa_consolidado(rezagada, contrato, contrato.padecimientos)
@@ -534,7 +537,7 @@ def test_un_publicado_del_runner_ausente_del_consolidado_falla(tmp_path):
 def test_revisa_releases_falla_cerrado_sin_bundle_ni_estado(tmp_path):
     resultado = revisa_releases(tmp_path, ContratoCobertura.canonico())
     assert not resultado.pasa
-    assert len(resultado.problemas) == 147
+    assert len(resultado.problemas) == 148
     assert any("release obesidad" in p for p in resultado.problemas)
     assert any("release diabetes tipo i:" in p for p in resultado.problemas)
     assert any("release sifilis adquirida:" in p for p in resultado.problemas)

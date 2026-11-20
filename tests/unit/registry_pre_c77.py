@@ -34,8 +34,9 @@ def _bloque_obesidad(texto: str, de: tuple[str, str], a: tuple[str, str]) -> str
 
 
 # Lote alta_b44 (19-nov-2026): 58 releases del runner publicados juntos en la semana fuente 2026-W44,
-# más vih_b20 (control autorizado), publicado después en el mismo lote, y lote6 (tuberculosis
-# respiratoria aceptada y cinco controles autorizados): 65.
+# más vih_b20 (control autorizado), publicado después en el mismo lote, lote6 (tuberculosis
+# respiratoria aceptada y cinco controles autorizados), y paludismo_vivax_b51 (control
+# autorizado): 66.
 ALTA_B44 = (
     "alacran_t63",
     "mordedura_perro_w54",
@@ -105,6 +106,9 @@ ALTA_B44 = (
     "otras_rickettsiosis_a79",
     "fiebre_manchada_a770",
     "leishmaniasis_cutanea_b551",
+    # Control autorizado de paludismo por P. vivax (DECISIONES_AUTOR_12.json), publicado después
+    # en el mismo lote.
+    "paludismo_vivax_b51",
 )
 
 

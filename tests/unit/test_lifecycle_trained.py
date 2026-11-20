@@ -181,6 +181,7 @@ def test_el_carril_legacy_no_cambia():
         "Fiebre manchada",
         "Otras rickettsiosis",
         "Leishmaniasis cutánea",
+        "Paludismo por Plasmodium vivax",
     ]
 
 

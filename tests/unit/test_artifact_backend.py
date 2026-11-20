@@ -403,6 +403,7 @@ def test_obesidad_y_f50_publicadas_solo_desde_su_release():
         "Fiebre manchada",
         "Otras rickettsiosis",
         "Leishmaniasis cutánea",
+        "Paludismo por Plasmodium vivax",
     ]
     # El carril legacy (all_forecast, tabla_333, zoom) sigue siendo exactamente los cuatro.
     assert [d.data_name for d in registry.legacy_published()] == [
