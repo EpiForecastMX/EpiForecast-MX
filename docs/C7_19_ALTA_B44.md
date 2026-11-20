@@ -43,7 +43,17 @@ sólo añadiendo filas: el consolidado previo de 86 en `2026-W44` (`0f6252f9…`
 (recomprobado el 20-nov-2026). Los 152 están en la semana fuente `2026-W44` (boletín 44); el periodo objetivo de cada
 uno depende de su `observation_lag_weeks`. **El paso siguiente usa la semana fuente 45, una sola vez, para los 152.**
 
-## Lo que no se integró y por qué
+## Integradas sin pronóstico (32)
+
+Por decisión del autor (`planes/alta_b44_2026-11-19/DECISIONES_AUTOR_14.json`), las 32 categorías de abajo se
+integraron al sitio **sin pronóstico** (frontend PR #103, `main` `2d2c3ffe`, 20-nov-2026): el radar del boletín 44 las
+marca «No modelable» con su motivo medido, `no_modelables.html` las lista con las cifras impresas del boletín y el
+EpiBot y la función RAG responden por nombre y código con «sin pronóstico», motivo y cifras impresas. Sarampión y
+P. falciparum se rotulan «casos insuficientes o no publicados»: el guion del cuadro estatal significa «no publicado» y
+las notas del boletín reportan casos. Auditoría Codex `gpt-6.1-sol` (medium) de esa rama: 5 rondas corregidas,
+veredicto final APTO sobre `1cde388a`. No se crearon pronósticos ni controles para ellas.
+
+## Por qué no tienen pronóstico
 
 El runner exige 32 entidades, casos, rezago impreso fijo o declarado por periodo, total no imputado en el año de
 prueba y al menos un pliegue de desarrollo. Ninguna guarda se relajó. Siguen fuera:
