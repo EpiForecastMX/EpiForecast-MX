@@ -5096,11 +5096,8 @@ padecimientos:
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
     artifact_source:
-      backend: runner_runs
-      refit_run_id: paludismo_vivax_b51_refit_final_30e6b4ef89df_74810fe4d75b
-      forecast_run_id: paludismo_vivax_b51_forecast_h52_74810fe4d75b_cd583a3ff0aa
-      policy_digest: 6d2350be2f1b7735ad5b6350fe4360faf63c7afda8b7c4a2c973c8e2f593dbad
-      final_selection_digest: 30e6b4ef89dfaec5091ac2ecb9959eb91024576e6ead3f9293537f0c2cc7be9f
+      backend: runner_release
+      release_id: paludismo_vivax_b51_release_8af7d6f484a6
     acceptance_fallback_run: paludismo_vivax_b51_benchmark_test_f767fecd0236_203959bd6b26
     prophet_grid_key: null
     deepar_grid_key: null
