@@ -175,6 +175,12 @@ def test_el_carril_legacy_no_cambia():
         "Herida por arma de fuego",
         "Tripanosomiasis americana (enfermedad de Chagas) crónica",
         "Infección por el virus de la inmunodeficiencia humana",
+        "Meningitis tuberculosa",
+        "Tuberculosis respiratoria",
+        "Lepra",
+        "Fiebre manchada",
+        "Otras rickettsiosis",
+        "Leishmaniasis cutánea",
     ]
 
 

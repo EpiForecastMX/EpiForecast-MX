@@ -175,6 +175,12 @@ def test_el_contrato_separa_legacy_de_release():
         "herida por arma de fuego",
         "tripanosomiasis americana enfermedad de chagas cronica",
         "infeccion por el virus de la inmunodeficiencia humana",
+        "meningitis tuberculosa",
+        "tuberculosis respiratoria",
+        "lepra",
+        "fiebre manchada",
+        "otras rickettsiosis",
+        "leishmaniasis cutanea",
     )
     assert c.releases["obesidad"] == (_OBESIDAD, _RELEASE)
     assert c.releases["sifilis adquirida"] == (
@@ -242,6 +248,7 @@ def test_el_contrato_separa_legacy_de_release():
         "escarlatina_a38",
         "espina_bifida_q05",
         "faringitis_j02",
+        "fiebre_manchada_a770",
         "giardiasis_a071",
         "gingivitis_k05",
         "gonococica_a54",
@@ -265,12 +272,15 @@ def test_el_contrato_separa_legacy_de_release():
         "ivp_i87",
         "ivu_n39",
         "labio_paladar_q35",
+        "leishmaniasis_cutanea_b551",
+        "lepra_a30",
         "leptospirosis_a27",
         "leucemia_c91",
         "linfogranuloma_a55",
         "linfoma_hodgkin_c81",
         "linfoma_no_hodgkin_c82",
         "mal_del_pinto_a67",
+        "meningitis_tuberculosa_a170",
         "meningococica_a39",
         "microcefalia_q02",
         "monoxido_t58",
@@ -286,6 +296,7 @@ def test_el_contrato_separa_legacy_de_release():
         "otitis_h65",
         "otras_aranas_t633",
         "otras_hepatitis_b17",
+        "otras_rickettsiosis_a79",
         "otros_artropodos_t634",
         "otros_ponzonosos_t631",
         "paralisis_flacida_u98",
@@ -313,6 +324,7 @@ def test_el_contrato_separa_legacy_de_release():
         "tricomoniasis_a590",
         "triquinosis_b75",
         "tuberculosis_otras_formas_a171",
+        "tuberculosis_respiratoria_a15",
         "ulceras_k25",
         "varicela_b01",
         "vehiculos_v20",
@@ -496,6 +508,12 @@ def test_la_paridad_de_corte_incluye_al_publicado_del_runner(tmp_path):
         "Herida por arma de fuego": 42,
         "Tripanosomiasis americana (enfermedad de Chagas) crónica": 42,
         "Infección por el virus de la inmunodeficiencia humana": 42,
+        "Tuberculosis respiratoria": 42,
+        "Meningitis tuberculosa": 42,
+        "Lepra": 42,
+        "Otras rickettsiosis": 42,
+        "Fiebre manchada": 42,
+        "Leishmaniasis cutánea": 42,
     }
     rezagada = _consolidado(tmp_path / "a.csv", {**pads, "Obesidad": 27})
     resultado = revisa_consolidado(rezagada, contrato, contrato.padecimientos)
@@ -516,7 +534,7 @@ def test_un_publicado_del_runner_ausente_del_consolidado_falla(tmp_path):
 def test_revisa_releases_falla_cerrado_sin_bundle_ni_estado(tmp_path):
     resultado = revisa_releases(tmp_path, ContratoCobertura.canonico())
     assert not resultado.pasa
-    assert len(resultado.problemas) == 141
+    assert len(resultado.problemas) == 147
     assert any("release obesidad" in p for p in resultado.problemas)
     assert any("release diabetes tipo i:" in p for p in resultado.problemas)
     assert any("release sifilis adquirida:" in p for p in resultado.problemas)
