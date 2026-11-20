@@ -5090,8 +5090,30 @@ padecimientos:
     # Sin H/M hasta 2020 y con H/M desde 2021: por decisión del autor (19-nov-2026) se modela sin
     # sexo desde 2015-W01 (decisión del 19-nov-2026; 32 bases «general», 37 productos), sumando H + M desde 2021_sem01.
     sex_breakdown: false
-    lifecycle: trained
-    channels: []
+    # Aviso: sin desglose por sexo por decisión del autor
+    # (planes/alta_b44_2026-11-19/DECISIONES_AUTOR_9.json, «Código nuevo: sumar H+M desde 2021 y
+    # modelar sin sexo desde 2014», inicio movido a 2015 por DECISIONES_AUTOR_11): hasta 2020 el
+    # cuadro imprime sólo el total y desde 2021_sem01 suma_sexos lee el acumulado como H + M,
+    # validado contra el TOTAL impreso; 32 bases «general» y 37 productos.
+    # Aviso: serie desde 2015-W01 por decisión del autor
+    # (planes/alta_b44_2026-11-19/DECISIONES_AUTOR_11.json, «Desde 2015»; inicio_serie en
+    # cuadros.yaml): 2014 imprime «s.n.» en Sem en 185 celdas.
+    # Aviso: objetivo 2017-W01 sin fuente por cambio de rezago (N-1 hasta 2017_sem01, N desde
+    # 2017_sem02), imputado causalmente y marcado (huecos_objetivo en cuadros.yaml): 32 filas, más
+    # 1 celda «Z» de 2016_sem27; 0 imputadas en 2025
+    # (planes/alta_b44_2026-11-19/frag/c10/paludismo_vivax_b51.qa.md).
+    # Aviso: nivel cambiante sin atribuir causa: de 501 a 802 casos anuales en 2015-2019, 39 en
+    # 2023 y 166 en 2025 (planes/alta_b44_2026-11-19/frag/c10/paludismo_vivax_b51.qa.md).
+    # Aviso: control estacional seasonal_naive_lag52 publicado por decisión nominal del autor tras
+    # el rechazo de la prueba única de 2025
+    # (paludismo_vivax_b51_benchmark_test_f767fecd0236_203959bd6b26: rechazo sólo por 0 frente a 0
+    # en bases 0.00 frente a 0.00 del control, no finito (0 frente a 0) > 5 %; 37 series 0.00
+    # frente a 0.00 del control, no finito (0 frente a 0) > 5 %; pasa nacional General 119.46
+    # frente a 117.95 del control, +1.28 % <= 10 %;
+    # planes/alta_b44_2026-11-19/DECISIONES_AUTOR_12.json, «Sí, publicar control»); nunca validado:
+    # a las 4 semanas sólo cabe CONTROL_ONLY.
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_baja_incidencia_v1
