@@ -29,6 +29,20 @@ que terminaban dejando el checkout en una rama de trabajo.
 # AGENTS.md: Guia de Desarrollo EpiForecast-MX
 
 
+## Checkpoint vigente — lote alta_b44 publicado — 19/20-nov-2026
+
+Prevalece sobre todas las secciones inferiores (incluida «Versión con control A51») en conteos y base semanal.
+Publicados y medidos en producción servida: **152 en el sitio y 148 del runner** (backend `main` `bdfd03bb`, PR #79,
+CI 44667657252 verde; frontend `main` `4a9fdba1`, PR #102, `publication/catalog.json` servido byte-idéntico, 148
+releases). Sesenta y seis nuevos por orden y decisiones nominales del autor: 15 aceptados en su prueba única de 2025
+(0/4), 41 controles estacionales no validados tras rechazo y 10 controles por construcción
+(`rolling_cv_historia_corta_2024_v1`). Base semanal: `planes/alta_b44_2026-11-19/consolidado_W44/dataset_boletin_epidemiologico.csv`
+(sha256 `819796694c1993e0012fc1cbb6dc489df2fdd3d4b0e43900f3af290c397468de`, con el consolidado previo de 86 `0f6252f9…`
+como prefijo byte a byte); los 152 en la semana fuente 2026-W44. **El paso siguiente usa la semana fuente 45 una sola
+vez para los 152.** Las 32 categorías restantes del boletín 44 están integradas **sin pronóstico** (radar «No
+modelable», `no_modelables.html`, EpiBot y RAG; frontend PR #103 `2d2c3ffe`). Guía, exclusiones, código nuevo opt-in, decisiones con sha256 y auditorías Codex:
+`docs/C7_19_ALTA_B44.md`; evidencia fuera del repo en `planes/alta_b44_2026-11-19/`.
+
 ## Versión con control A51 y fuente 2026-W44
 
 Esta versión incorpora —como **versión candidata** previa al despliegue efectivo (mientras la producción actualmente servida en `https://epiforecast.mx/` permanece en **`85` padecimientos / `81` releases del runner y piloto `0/1`** hasta consumar la publicación real)— la configuración conjunta de **86 padecimientos para el sitio** (`4` del carril original + **82 releases del runner**, gobernados por `config/padecimientos.yaml` y `publication/catalog.json`) en paridad `F5` sobre la **semana fuente `2026-W44`** (`dataset_boletin_epidemiologico.csv` consolidado candidato, sha256 `0f6252f94e78b4af62044f81abe3977006f7e1cadb45bab8baf1512fb823ad44`, `92,155,130` B; `BASE_85_W43` `8c21883a…` es prefijo byte a byte de `BASE_86_W43` `82b6bd85…`, y `BASE_86_W43` es prefijo byte a byte de este consolidado `W44`), junto con el `raw` actualizado de COVID-19 `2026-W44` (`cf66c8704d57d8239156a46d396da2c8edf2758b0ec9a783ca3b6d53a0e1daa4`) y su emisión protocolaria `docs/prospectivo_covid/emisiones/2026-W44.json` (`c8c88c36…`, sin evaluación acumulada) como base previa para `N=45`.

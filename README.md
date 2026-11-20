@@ -25,6 +25,15 @@
 
 ---
 
+## Estado vigente — lote alta_b44 publicado — 19/20-nov-2026
+
+Prevalece sobre la sección «Versión con control A51» (historia previa a este lote) en conteos y base semanal.
+Publicados en producción servida: **152 padecimientos en el sitio, 148 de ellos releases del runner**. El lote
+alta_b44 añadió 66 del boletín 44: 15 portafolios aceptados en su prueba única, 41 controles estacionales no
+validados tras rechazo y 10 controles por construcción (series impresas sólo desde 2024). Las 32 categorías
+restantes del boletín 44 se integraron **sin pronóstico** (radar «No modelable», `no_modelables.html`, EpiBot).
+Todos en la semana fuente 2026-W44; la siguiente es la 45. Guía: `docs/C7_19_ALTA_B44.md`.
+
 ## Versión con control A51 y fuente 2026-W44
 
 Esta versión incorpora —como **versión candidata** previa al despliegue efectivo (mientras la producción actualmente servida en `https://epiforecast.mx/` permanece en **`85` padecimientos / `81` releases del runner y piloto `0/1`** hasta consumar la publicación real)— la configuración conjunta de **86 padecimientos para el sitio** (`4` del carril original + **82 releases del runner**, gobernados por `config/padecimientos.yaml` y `publication/catalog.json`) en paridad `F5` sobre la **semana fuente `2026-W44`** (`dataset_boletin_epidemiologico.csv` consolidado candidato, sha256 `0f6252f94e78b4af62044f81abe3977006f7e1cadb45bab8baf1512fb823ad44`, `92,155,130` B; `BASE_85_W43` `8c21883a…` es prefijo byte a byte de `BASE_86_W43` `82b6bd85…`, y `BASE_86_W43` es prefijo byte a byte de este consolidado `W44`), junto con el `raw` actualizado de COVID-19 `2026-W44` (`cf66c8704d57d8239156a46d396da2c8edf2758b0ec9a783ca3b6d53a0e1daa4`) y su emisión protocolaria `docs/prospectivo_covid/emisiones/2026-W44.json` (`c8c88c36…`, sin evaluación acumulada) como base previa para `N=45`.
@@ -47,9 +56,9 @@ The platform uses a **polymorphic Factory pattern** to support multiple forecast
 | Parkinson's disease | G20 | Low incidence, volatile per-state series |
 | Alzheimer's disease | G30 | Aging-population trends, underreporting |
 | Dengue *(extra deliverable)* | A97 | Vector-borne, ~4-5 year epidemic cycle, near-zero off-season series |
-| Generic runner releases (81) | various | Obesity, eating disorders, diabetes, cardiovascular, bulletin radar group (asthma included), pneumonia, seventeen cancers, the twenty of batch alta20 and the ten of batch alta10b (both on 12-Nov-2026) and the twenty of batch alta20c (15-Nov-2026); see the registry |
+| Generic runner releases (148) | various | Obesity, eating disorders, diabetes, cardiovascular, bulletin radar group (asthma included), pneumonia, seventeen cancers, the twenty of batch alta20 and the ten of batch alta10b (both on 12-Nov-2026) and the twenty of batch alta20c (15-Nov-2026), acquired syphilis (16-Nov-2026) and the sixty-six of batch alta_b44 (19/20-Nov-2026); see the registry |
 
-Four conditions (Depression, Parkinson's, Alzheimer's and Dengue) run on the legacy multi-model pipeline (333 neuro models plus 99 Dengue series); see [Dengue (Fourth Condition)](#dengue-fourth-condition-extra-deliverable). Eighty-one more are published from sealed releases of the generic runner (`src/epiforecast/runner/`). The twenty added on 15-Nov-2026 (batch alta20c) are three portfolios accepted in their single 2025 test (prospective validation 0/4 in progress) and seventeen seasonal controls published after a 2025 rejection by delegated decisions of the reviewing model under the author's literal delegation, never as validated and not human sign-off (`docs/C7_17_ALTA20C.md`); the thirty added on 12-Nov-2026 are described in `docs/C7_15_ALTA20.md` and `docs/C7_16_ALTA10B.md`. The registry (`config/padecimientos.yaml`) decides which ones are public. Releases that failed their acceptance test (2025 for most of them; 2026-W01 to W41 for the fifteen cancers with data only since 2023, under policy `rolling_cv_historia_corta_2023_v1`) are published with the seasonal control by express order of the author (or, for alta20c, by delegated decision), never as validated. Publication history: `docs/C7_7_PUBLICACION_OBESIDAD.md` through `docs/C7_17_ALTA20C.md` (the highest number is the most recent).
+Four conditions (Depression, Parkinson's, Alzheimer's and Dengue) run on the legacy multi-model pipeline (333 neuro models plus 99 Dengue series); see [Dengue (Fourth Condition)](#dengue-fourth-condition-extra-deliverable). One hundred forty-eight more are published from sealed releases of the generic runner (`src/epiforecast/runner/`). The sixty-six added on 19/20-Nov-2026 (batch alta_b44) are fifteen portfolios accepted in their single test, forty-one seasonal controls published after a rejection by nominal decision of the author and ten controls by construction (series printed only since 2024), never presented as validated (`docs/C7_19_ALTA_B44.md`); the 32 remaining categories of bulletin 44 are shown without a forecast. The twenty added on 15-Nov-2026 (batch alta20c) are three portfolios accepted in their single 2025 test (prospective validation 0/4 in progress) and seventeen seasonal controls published after a 2025 rejection by delegated decisions of the reviewing model under the author's literal delegation, never as validated and not human sign-off (`docs/C7_17_ALTA20C.md`); the thirty added on 12-Nov-2026 are described in `docs/C7_15_ALTA20.md` and `docs/C7_16_ALTA10B.md`. The registry (`config/padecimientos.yaml`) decides which ones are public. Releases that failed their acceptance test (2025 for most of them; 2026-W01 to W41 for the fifteen cancers with data only since 2023, under policy `rolling_cv_historia_corta_2023_v1`) are published with the seasonal control by express order of the author (or, for alta20c, by delegated decision), never as validated. Publication history: `docs/C7_7_PUBLICACION_OBESIDAD.md` through `docs/C7_19_ALTA_B44.md` (the highest number is the most recent).
 
 ---
 
@@ -462,7 +471,7 @@ The weekly step has three lanes, and none of them publishes a partial week:
 
 1. **Legacy conditions** (Depression, Parkinson, Alzheimer, Dengue) through the v5 producer kept
    outside the repository.
-2. **The published runner releases** (`registry.release_published()`, 81 of the 85 `registry.published_members()` as of 15-Nov-2026; the registry is the single authoritative count) through `make semana-revisa`, `make semana-observa PDF=… SALIDA=… [WRITE=1]`,
+2. **The published runner releases** (`registry.release_published()`, 148 of the 152 `registry.published_members()` as of 20-Nov-2026; the registry is the single authoritative count) through `make semana-revisa`, `make semana-observa PDF=… SALIDA=… [WRITE=1]`,
    `python -m scripts.paso_semanal consolida` and `make semana-vistas N=… FE=…`: `scripts/paso_semanal.py`
    iterates `registry.release_published()` only (computing each MMWR target period once via
    `epi_calendar.target_period(year, week, lag)`), while lane 1's v5 producer advances the legacy
@@ -491,13 +500,15 @@ documented in `CLAUDE.md` and the git history.
 
 ### Current Data Snapshot
 
-- **Published (15-Nov-2026):** 85 conditions on the site, 81 of them from runner releases. Batch
-  alta20c added twenty: three accepted in their single 2025 test and seventeen seasonal controls, never
-  validated, by delegated decisions of the reviewing model (not human sign-off; `docs/C7_17_ALTA20C.md`).
-- **Published cut:** bulletin 43 of 2026 for the four legacy conditions and the bulletin radar; the
-  runner releases observe through 2026-W42 (2026-W43 for the two with printed lag 0). Forecast origin is
-  fixed per release and does not move with the observations (counted from the 81 views): 29 releases have
-  origin 2026-W41, 49 have origin 2026-W42, 2 have origin 2026-W43 and Obesity keeps origin 2026-W26. A fail-closed parity rule forbids mixed public cuts.
+- **Published (20-Nov-2026):** 152 conditions on the site, 148 of them from runner releases. Batch
+  alta_b44 added sixty-six from bulletin 44: fifteen accepted in their single test, forty-one seasonal controls
+  after a rejection and ten controls by construction, never validated (`docs/C7_19_ALTA_B44.md`). The 32
+  remaining bulletin 44 categories are listed without a forecast (`no_modelables.html`).
+- **Published cut:** source week 2026-W44 (bulletin 44) for all 152; the runner releases observe through
+  2026-W43 (125 views) or 2026-W44 (23 views, printed lag 0). Forecast origin is fixed per release and does
+  not move with the observations (counted from the 148 views): 29 releases have origin 2026-W41, 57 have
+  2026-W42, 40 have 2026-W43, 21 have 2026-W44 and Obesity keeps 2026-W26. A fail-closed parity rule forbids
+  mixed public cuts.
 - **Forecast horizon:** each release forecasts 52 weeks from its own origin (for example, origin
   2026-W41 covers 2026-W42 to 2027-W41), not 52 weeks from today.
 - **Knowledge base:** each runner condition ships its own `knowledge.json` under
