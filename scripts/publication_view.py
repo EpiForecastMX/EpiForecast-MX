@@ -228,6 +228,10 @@ def build_view(disease_id: str, shard_root: Path) -> dict[str, Any]:
     control = caida_al_control(bundle, verificado)
     if control is not None:
         vista["caida_al_control"] = control
+    elif estado.gate.candidate_digest == estado.gate.control_digest:
+        # Aceptado, pero el portafolio seleccionó el control en todas las series: el gate congeló
+        # candidato y control idénticos, así que al completar las semanas sólo cabe CONTROL_ONLY.
+        vista["portafolio_igual_al_control"] = True
     return vista
 
 

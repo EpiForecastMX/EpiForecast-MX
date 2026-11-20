@@ -36,6 +36,7 @@ from epiforecast.publication import pointer as pt
 from epiforecast.publication.contratos_datos import ContratoCobertura
 from epiforecast.registry_doctor import diagnose
 from epiforecast.runner.artifact_identity import ArtifactValidationError
+from tests.unit.registry_pre_c77 import yaml_sin_alta_b44
 
 pytestmark = pytest.mark.unit
 
@@ -351,7 +352,9 @@ def test_config_aislada_sifilis_adquirida_invisible_y_doctor_verde(
         assert spec.id not in paso_semanal.publicados()
         assert "sifilis adquirida" not in ContratoCobertura.canonico().release
         assert registry.try_get("sifilis") is None
-        assert registry.try_get("a50") is None
+        # alta_b44: A50 es sífilis congénita, nunca la adquirida (A51-A53).
+        a50 = registry.try_get("a50")
+        assert a50 is not None and a50.id == "sifilis_congenita_a50"
         errores_cfg = [
             p
             for p in diagnose("sifilis_adquirida_a51", check_artifacts=False)
@@ -2419,7 +2422,8 @@ def test_add_a51_history_base_hermetico_paridad_85_a_86_noop_y_no_overwrite(
 
     repo_root = Path(registry.__file__).resolve().parents[2]
     monkeypatch.chdir(repo_root)
-    texto_real = _YAML_PADECIMIENTOS_REAL.read_text(encoding="utf-8")
+    # Estado de 86 publicados que el script histórico exige: alta_b44 vuelve a ``trained``.
+    texto_real = yaml_sin_alta_b44(_YAML_PADECIMIENTOS_REAL.read_text(encoding="utf-8"))
 
     with _registry_desde_yaml(texto_real):
         catalog = load_geo_catalog()

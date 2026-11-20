@@ -8,10 +8,12 @@ grupo para el boletín, cuando el bloque cambia de página o de posición según
 from __future__ import annotations
 
 import re
-from typing import Any
+from typing import Any, TypedDict
 
+import numpy as np
 import pandas as pd
 
+from epiforecast.data.extraction.dengue_extractor import _STATE_LOOKUP, _norm_entity
 from epiforecast.data.extraction.pdf_extractor import eliminar_columnas_vacias, normalize_number
 
 
@@ -37,12 +39,26 @@ def spec_del_periodo(spec: dict[str, Any], year: int, week: int) -> dict[str, An
     return actual
 
 
-def alinea_renglones(df: pd.DataFrame) -> pd.DataFrame:
+class OpcionesTabla(TypedDict):
+    valor_en_nombre: bool
+    parciales: bool
+
+
+def opciones_tabla(spec: dict[str, Any]) -> OpcionesTabla:
+    """Reparaciones opt-in de la lectura de camelot que declara el grupo (``_tabla_estatal``)."""
+    return OpcionesTabla(
+        valor_en_nombre=bool(spec.get("valor_en_columna_nombre")),
+        parciales=bool(spec.get("une_renglones_parciales")),
+    )
+
+
+def alinea_renglones(df: pd.DataFrame, parciales: bool = False) -> pd.DataFrame:
     """Une el renglón de valores con el nombre de la entidad cuando camelot los separa.
 
     En 68 boletines de 2014-2015 cada entidad sale en dos renglones: los valores sin nombre y,
     debajo, el nombre sin valores. Sin esto, ``reshape`` los lee como ceros con estado ``ok``.
-    Sólo actúa sobre ese patrón exacto; cualquier otra tabla pasa igual.
+    Sólo actúa sobre ese patrón exacto; cualquier otra tabla pasa igual. Con ``parciales`` (opt-in
+    del grupo) aplica además ``une_renglones_parciales``.
     """
     filas = df.astype(str).to_numpy(copy=True)
     vacio = filas[:, 1:] == ""
@@ -54,7 +70,77 @@ def alinea_renglones(df: pd.DataFrame) -> pd.DataFrame:
             filas[i - 1, 1:] = ""
             vacio[i - 1] = True
             vacio[i] = False
+    alineada = pd.DataFrame(filas, index=df.index, columns=df.columns)
+    return une_renglones_parciales(alineada) if parciales else alineada
+
+
+def _es_entidad(nombre: str) -> bool:
+    """Si el nombre (sin llamadas de nota) es una entidad federativa canónica o un alias."""
+    return _norm_entity(re.sub(r"[\s*§]+$", "", nombre)) in _STATE_LOOKUP
+
+
+AMBIGUO = "<renglon_ambiguo>"
+
+
+def une_renglones_parciales(df: pd.DataFrame) -> pd.DataFrame:
+    """Une una entidad con valores parciales y el renglón siguiente sin nombre que los completa.
+
+    En el Cuadro 18.1 de 2019_sem48 a 2024_sem01 camelot parte el renglón de algunas entidades
+    (Ciudad de México, México, Nuevo León...): arriba el nombre con los valores de un bloque y abajo,
+    sin nombre, los de los otros, en uno o varios renglones seguidos. Sin esto ``reshape`` lee los
+    bloques vacíos como ceros con estado ``ok``. Los complementarios se unen en orden mientras no se
+    solapen con lo ya reunido; cualquier otra tabla pasa igual.
+
+    Si el renglón con nombre es una entidad federativa y un complementario se solapa con lo ya
+    reunido, no hay unión legítima de ése ni de los siguientes: no se unen y se marcan con
+    :data:`AMBIGUO` las celdas vacías que usan las entidades y toda columna en que alguno de esos
+    complementarios trae un valor, que se perdería aunque ninguna entidad con nombre la use (todas
+    partidas). En 2020_sem52 (pág. 62) el renglón del bloque de la derecha de la entidad siguiente
+    cae tras el complementario: sólo sus columnas quedan marcadas. Tras recortar el bloque del
+    padecimiento, :func:`motivo_ambiguo` invalida la tabla sólo si la marca cae en ese bloque; una
+    ambigüedad en el bloque de otro padecimiento no lo afecta. Encabezados y TOTAL no son
+    entidades: sólo se unen con el renglón siguiente, sin marcas, como antes. Sólo en los grupos que
+    lo declaran (``une_renglones_parciales: true``).
+    """
+    filas = df.astype(str).to_numpy(copy=True)
+    vacio = filas[:, 1:] == ""
+    entidades = np.array([_es_entidad(n) for n in filas[:, 0]], dtype=bool)
+    usadas = ~vacio[entidades].all(axis=0) if entidades.any() else np.zeros(vacio.shape[1], bool)
+    for i in range(len(filas) - 1):
+        if filas[i, 0].strip() == "" or bool(vacio[i].all()):
+            continue
+        # Renglones complementarios seguidos (sin nombre y con valores). Sólo una entidad absorbe
+        # la secuencia; TOTAL y encabezados conservan la regla de un único renglón siguiente.
+        comp: list[int] = []
+        for j in range(i + 1, len(filas) if entidades[i] else i + 2):
+            if filas[j, 0].strip() != "" or bool(vacio[j].all()):
+                break
+            comp.append(j)
+        for k, j in enumerate(comp):
+            if bool((~vacio[i] & ~vacio[j]).any()):
+                if entidades[i]:
+                    # Desde el primer solape, cada columna con valor en un complementario restante
+                    # lo pierde al no unirse (aunque ninguna entidad con nombre la use): se marca.
+                    perdidas = (~vacio[comp[k:]]).any(axis=0)
+                    filas[i, 1:][(vacio[i] & usadas) | perdidas] = AMBIGUO
+                break
+            filas[i, 1:][~vacio[j]] = filas[j, 1:][~vacio[j]]
+            filas[j, 1:] = ""
+            vacio[j] = True
+            vacio[i] = filas[i, 1:] == ""
     return pd.DataFrame(filas, index=df.index, columns=df.columns)
+
+
+def motivo_ambiguo(df: pd.DataFrame) -> str | None:
+    """Motivo de invalidez si el bloque ya recortado conserva una celda :data:`AMBIGUO`."""
+    marcadas = (df.iloc[:, 1:].astype(str) == AMBIGUO).any(axis=1)
+    if not bool(marcadas.any()):
+        return None
+    nombres = ", ".join(sorted(df.loc[marcadas, df.columns[0]].astype(str)))
+    return (
+        f"renglones partidos ambiguos en el bloque del padecimiento ({nombres}): el renglón "
+        "siguiente sin nombre trae valores solapados; no se une ni se lee"
+    )
 
 
 def sin_llamadas(df: pd.DataFrame) -> pd.DataFrame:

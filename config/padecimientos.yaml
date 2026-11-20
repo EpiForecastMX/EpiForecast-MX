@@ -1802,11 +1802,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_alacran_t63
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    # Aviso: 2024 con reparación declarada (Sem. = diferencia del acumulado H+M) y 17 celdas
+    # imputadas donde la fuente baja el acumulado
+    # (planes/alta_b44_2026-11-19/DECISIONES_AUTOR_3.json y _5.json, «aviso del nivel 2024»;
+    # reparaciones en cuadros.yaml).
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: alacran_t63_release_7c33784322ef
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2037,11 +2044,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_mordedura_perro_w54
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    # El autor autorizó modelarla pese al salto de nivel señalado con el cambio del Cuadro 18.1 de
+    # 2024 (DECISIONES_AUTOR_2.json, «Sí, con aviso de salto»); niveles medidos en el QA del lote
+    # alta_b44. Renglones partidos: une_renglones_parciales en su grupo (QA c7b).
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     selection_policy: rolling_cv_v1
+    artifact_source:
+      backend: runner_release
+      release_id: mordedura_perro_w54_release_5d8684017cba
+    acceptance_fallback_run: mordedura_perro_w54_benchmark_test_f1a52ee5b970_0b47eb0b4935
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2062,11 +2076,18 @@ padecimientos:
     batch: standalone
     extraction_group: alta20_mordedura_mamiferos_w55
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    # El autor autorizó modelarla pese al salto de nivel señalado con el cambio del Cuadro 18.1 de
+    # 2024 (DECISIONES_AUTOR_2.json, «Sí, con aviso de salto»); niveles medidos en el QA del lote
+    # alta_b44. Renglones partidos: une_renglones_parciales en su grupo (QA c7b).
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
-    selection_policy: rolling_cv_v1
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: mordedura_mamiferos_w55_release_41b1df4d6c71
+    acceptance_fallback_run: mordedura_mamiferos_w55_benchmark_test_cdb7fd09b69a_f7f6bd4ad3bb
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2695,13 +2716,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_toxoplasmosis_b58
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: toxoplasmosis_b58_release_4be4a46a1fc9
+    acceptance_fallback_run: toxoplasmosis_b58_benchmark_test_925fbc3db73e_16ac46d1ea67
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2724,13 +2749,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_teniasis_b68
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: teniasis_b68_release_8387657b0aab
+    acceptance_fallback_run: teniasis_b68_benchmark_test_fc599daa8d11_3783f99df506
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2752,13 +2781,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_cisticercosis_b69
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: cisticercosis_b69_release_97c002e252a3
+    acceptance_fallback_run: cisticercosis_b69_benchmark_test_e654df902c88_4acf3ba6378a
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2781,13 +2814,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_triquinosis_b75
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: triquinosis_b75_release_e73fafd6857f
+    acceptance_fallback_run: triquinosis_b75_benchmark_test_a6c1b9a1c403_1f204d2ef4e0
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2936,13 +2973,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_conjuntivitis_hemorragica_b303
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: conjuntivitis_hemorragica_b303_release_87c64c5f9316
+    acceptance_fallback_run: conjuntivitis_hemorragica_b303_benchmark_test_d60c57f68c51_8e6f4ab2d8b9
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -2963,13 +3004,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_tracoma_a71
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: tracoma_a71_release_9c3f6e560f0b
+    acceptance_fallback_run: tracoma_a71_benchmark_test_5b413cec154e_4e0bc824dc00
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3065,13 +3110,17 @@ padecimientos:
     batch: standalone
     extraction_group: alta20c_hipotermia_t68
     exposure_source_id: inegi_cpv2020_static
-    lifecycle: configured
-    channels: []
+    lifecycle: published
+    channels: [web, epibot, reports]
     training_engines: []
     eligible_engines: []
     # Política de cinco motores tras el fallo medido de ETS/Ridge: dictamen delegado de Fable
     # (FABLE_DECISIONES_DELEGADAS_20261115, sha256 7832594e…), por delegación literal del autor.
     selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: hipotermia_t68_release_a61d512904f1
+    acceptance_fallback_run: hipotermia_t68_benchmark_test_f5d97a7dab8a_851a7d333a96
     prophet_grid_key: null
     deepar_grid_key: null
     aggregate_national: false
@@ -3182,3 +3231,1901 @@ padecimientos:
       color: "#0F766E"
       label: "Sífilis adquirida"
       nombre_completo: "Sífilis adquirida (A51-A53)"
+
+  # Lote alta_b44 (19-nov-2026), cúmulo c1: prevenibles por vacunación del boletín 44. Alta por
+  # configuración (F1); sin modelar, sin abrir 2025 y sin publicar. Evidencia en
+  # planes/alta_b44_2026-11-19/frag/c1/<id>.qa.{json,md}.
+  - id: tetanos_a34
+    data_name: "Tétanos"
+    artifact_key: Tetanos_A34
+    slug: tetanos_a34
+    display_name: "Tétanos"
+    cie_codes: ["A34", "A35"]
+    # Sin «tétanos» a secas: abarcaría el tétanos neonatal (A33), que el boletín vigila en el bloque
+    # vecino del mismo cuadro (3.1). Decidir con el autor la precedencia antes de añadirlo.
+    aliases: ["tetanos obstetrico", "otros tetanos", "a34", "a35"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_tetanos_a34
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    # Bloque presente en los 671 boletines (2014_sem01..2026_sem44) con rezago 0 constante.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: tetanos_a34_release_cd4de88372e8
+    acceptance_fallback_run: tetanos_a34_benchmark_test_971231460db0_5636cff894f8
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#7C2D12"
+      label: "Tétanos"
+      nombre_completo: "Tétanos (A34, A35)"
+
+  - id: viruela_simica_b04
+    data_name: "Viruela símica"
+    artifact_key: Viruela_Simica_B04
+    slug: viruela_simica_b04
+    display_name: "Viruela símica"
+    cie_codes: ["B04"]
+    aliases: ["viruela simica", "viruela del mono", "mpox", "monkeypox", "b04"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_viruela_simica_b04
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    # Bloque desde el boletín 2023_sem01 (serie desde 2023-W01, rezago 0).
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_release
+      release_id: viruela_simica_b04_release_91d2eda13c7d
+    acceptance_fallback_run: viruela_simica_b04_benchmark_test_a3a2cc05fc62_16e3f0229be2
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#A16207"
+      label: "Viruela símica"
+      nombre_completo: "Viruela símica (B04)"
+
+  - id: vph_b97
+    data_name: "Infección por virus de papiloma humano"
+    artifact_key: VPH_B97
+    slug: vph_b97
+    display_name: "Infección por virus de papiloma humano"
+    cie_codes: ["B97.7"]
+    aliases: ["infeccion por virus de papiloma humano", "virus de papiloma humano", "virus del papiloma humano", "papiloma humano", "vph", "b97.7"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_vph_b97
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: vph_b97_release_532749b67520
+    acceptance_fallback_run: vph_b97_benchmark_test_fb582cee63bd_0e7319569cad
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#BE185D"
+      label: "Virus de papiloma humano"
+      nombre_completo: "Infección por virus de papiloma humano (B97.7)"
+
+  # Cuadro 6 (transmisión sexual), último bloque, con sexo. Alta b44 (19-nov-2026), lote alta_b44.
+  - id: gonococica_a54
+    data_name: "Infección gonocócica del tracto genitourinario"
+    artifact_key: Gonococica_A54
+    slug: gonococica_a54
+    display_name: "Infección gonocócica del tracto genitourinario"
+    cie_codes: ["A54.0", "A54.1", "A54.2"]
+    # Sin «a54» a secas: el bloque es A54.0-A54.2, no toda la infección gonocócica (A54.3-A54.9).
+    aliases: ["infeccion gonococica del tracto genitourinario", "infeccion gonococica genitourinaria",
+              "gonorrea", "a54.0", "a54.1", "a54.2"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_gonococica_a54
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: salto de nivel modelado con aviso por decisión del autor
+    # (planes/alta_b44_2026-11-19/DECISIONES_AUTOR_3.json, saltos_de_nivel_modelar_con_aviso).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: gonococica_a54_release_fe58b3b5a738
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#9D174D"
+      label: "Infección gonocócica"
+      nombre_completo: "Infección gonocócica del tracto genitourinario (A54.0-A54.2)"
+
+  # Cuadro 6.1 (transmisión sexual), primer bloque, con sexo. Alta b44 (19-nov-2026).
+
+  - id: linfogranuloma_a55
+    data_name: "Linfogranuloma venéreo por Clamidias"
+    artifact_key: Linfogranuloma_A55
+    slug: linfogranuloma_a55
+    display_name: "Linfogranuloma venéreo por Clamidias"
+    cie_codes: ["A55"]
+    # Sin «clamidia» a secas: abarca otras infecciones por clamidias (A56) fuera del bloque.
+    aliases: ["linfogranuloma venereo por clamidias", "linfogranuloma venereo", "linfogranuloma", "a55"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_linfogranuloma_a55
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: linfogranuloma_a55_release_13706f4a5596
+    acceptance_fallback_run: linfogranuloma_a55_benchmark_test_4268b164fdef_dfd54f629be2
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#7C2D12"
+      label: "Linfogranuloma venéreo"
+      nombre_completo: "Linfogranuloma venéreo por Clamidias (A55)"
+
+  # Cuadro 6.1 (transmisión sexual), segundo bloque, con sexo. Alta b44 (19-nov-2026).
+
+  - id: chancro_blando_a57
+    data_name: "Chancro blando"
+    artifact_key: Chancro_Blando_A57
+    slug: chancro_blando_a57
+    display_name: "Chancro blando"
+    cie_codes: ["A57"]
+    # Sin «chancro» a secas: el chancro duro es sífilis (A51), otro bloque publicado.
+    aliases: ["chancro blando", "chancroide", "a57"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_chancro_blando_a57
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: chancro_blando_a57_release_45732e3c94c8
+    acceptance_fallback_run: chancro_blando_a57_benchmark_test_228f25d257fa_5a412edf7418
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#A21CAF"
+      label: "Chancro blando"
+      nombre_completo: "Chancro blando (A57)"
+
+  # Cuadro 6.2 (transmisión sexual), primer bloque, con sexo. Alta b44 (19-nov-2026).
+
+  - id: herpes_genital_a600
+    data_name: "Herpes genital"
+    artifact_key: Herpes_Genital_A600
+    slug: herpes_genital_a600
+    display_name: "Herpes genital"
+    cie_codes: ["A60.0"]
+    # Sin «herpes» a secas: abarca herpes zóster, labial y otros fuera del bloque.
+    aliases: ["herpes genital", "a60.0"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_herpes_genital_a600
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: salto de nivel modelado con aviso por decisión del autor
+    # (planes/alta_b44_2026-11-19/DECISIONES_AUTOR_3.json, saltos_de_nivel_modelar_con_aviso).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: herpes_genital_a600_release_44e74814d66b
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#4C1D95"
+      label: "Herpes genital"
+      nombre_completo: "Herpes genital (A60.0)"
+
+  # Cuadro 6.1 (2014-2020_sem27) y 6.4 (desde 2020_sem28), último bloque, con sexo. Alta b44.
+
+  - id: tricomoniasis_a590
+    data_name: "Tricomoniasis urogenital"
+    artifact_key: Tricomoniasis_A590
+    slug: tricomoniasis_a590
+    display_name: "Tricomoniasis urogenital"
+    cie_codes: ["A59.0"]
+    # Sin «vaginitis» ni «infección vaginal»: abarcan vulvovaginitis y candidiasis urogenital.
+    aliases: ["tricomoniasis urogenital", "tricomoniasis", "a59.0"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_tricomoniasis_a590
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: salto de nivel modelado con aviso por decisión del autor
+    # (planes/alta_b44_2026-11-19/DECISIONES_AUTOR_3.json, saltos_de_nivel_modelar_con_aviso).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: tricomoniasis_a590_release_8f50a2144dd3
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#0369A1"
+      label: "Tricomoniasis urogenital"
+      nombre_completo: "Tricomoniasis urogenital (A59.0)"
+
+  - id: paralisis_flacida_u98
+    data_name: "Parálisis flácida aguda (menores de 15 años)"
+    artifact_key: Paralisis_Flacida_U98
+    slug: paralisis_flacida_u98
+    display_name: "Parálisis flácida aguda (menores de 15 años)"
+    cie_codes: ["U98"]
+    aliases: ["paralisis flacida aguda", "paralisis flacida aguda en menores de 15 anos", "paralisis flacida", "u98"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_paralisis_flacida_u98
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: paralisis_flacida_u98_release_f6173413b054
+    acceptance_fallback_run: paralisis_flacida_u98_benchmark_test_2c6f031bc3b7_101b4e49596e
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#7C3AED"
+      label: "Parálisis flácida aguda"
+      nombre_completo: "Parálisis flácida aguda en menores de 15 años (U98)"
+
+  - id: iaas_sc
+    data_name: "Infección asociada a la atención de la salud"
+    artifact_key: IAAS_SC
+    slug: iaas_sc
+    display_name: "Infección asociada a la atención de la salud"
+    # El boletín imprime «S/C» (sin código CIE); hasta 2017_sem01 el renglón era «Afección
+    # nosocomial» (Y95). Sin «infección» a secas como alias.
+    cie_codes: ["S/C"]  # el boletín la imprime sin código CIE («S/C»)
+    aliases: ["infeccion asociada a la atencion de la salud", "infecciones asociadas a la atencion de la salud", "iaas", "infeccion nosocomial", "infecciones nosocomiales", "afeccion nosocomial", "y95"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_iaas_sc
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: salto de nivel modelado con aviso por decisión del autor
+    # (planes/alta_b44_2026-11-19/DECISIONES_AUTOR_3.json, saltos_de_nivel_modelar_con_aviso).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: iaas_sc_release_b0e917832a47
+    acceptance_fallback_run: iaas_sc_benchmark_test_ff25e3c28d91_2f483c0261b7
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#0E7490"
+      label: "Infección asociada a la atención de la salud"
+      nombre_completo: "Infección asociada a la atención de la salud (sin código CIE)"
+
+  # Lote alta_b44 (19-nov-2026), cúmulo c4: alcohol, ESAVI y defectos al nacimiento del boletín 44.
+  # Alta por configuración (F1); sin modelar, sin abrir 2025 y sin publicar. Evidencia en
+  # planes/alta_b44_2026-11-19/frag/c4/<id>.qa.{json,md}. Defectos al nacimiento: vigilancia
+  # ordinaria por decisión del autor («No, son vigilancia normal»), no salud de menores sensible.
+  - id: intox_alcohol_f100
+    data_name: "Intoxicación aguda por alcohol"
+    artifact_key: Intox_Alcohol_F100
+    slug: intox_alcohol_f100
+    display_name: "Intoxicación aguda por alcohol"
+    cie_codes: ["F10.0"]
+    # Sin «alcohol» ni «alcoholismo» a secas: abarcarían la enfermedad alcohólica del hígado (K70) y la
+    # cirrosis hepática alcohólica (K70.3), del Cuadro 13.4.
+    # SENSIBLE (adicciones): OK nominal del autor («incluir todooo», AUTORIZACION_AUTOR.json del lote
+    # alta_b44) SIN revisión clínica ni de comunicación acreditada; al publicar va en noModeladas
+    # hasta su release y su respuesta de crisis lleva la Línea de la Vida.
+    aliases: ["intoxicacion aguda por alcohol", "intoxicacion por alcohol", "intoxicacion alcoholica", "f10.0"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_intox_alcohol_f100
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: salto de nivel modelado con aviso por decisión del autor
+    # (planes/alta_b44_2026-11-19/DECISIONES_AUTOR_3.json, saltos_de_nivel_modelar_con_aviso).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: intox_alcohol_f100_release_84f8eb61d01b
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#9A3412"
+      label: "Intoxicación por alcohol"
+      nombre_completo: "Intoxicación aguda por alcohol (F10.0)"
+
+  - id: alcoholica_higado_k70
+    data_name: "Enfermedad alcohólica del hígado"
+    artifact_key: Alcoholica_Higado_K70
+    slug: alcoholica_higado_k70
+    display_name: "Enfermedad alcohólica del hígado"
+    cie_codes: ["K70"]
+    # Rótulo del boletín: «K70 excepto K70.3». Sin «cirrosis» ni «alcohol» a secas: la cirrosis hepática
+    # alcohólica (K70.3) es el bloque vecino del mismo cuadro y se vigila aparte.
+    aliases: ["enfermedad alcoholica del higado", "hepatopatia alcoholica", "k70"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_alcoholica_higado_k70
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: alcoholica_higado_k70_release_c45df29720a9
+    acceptance_fallback_run: alcoholica_higado_k70_benchmark_test_d99a39b269f0_df4a70d4138f
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#854D0E"
+      label: "Enfermedad alcohólica del hígado"
+      nombre_completo: "Enfermedad alcohólica del hígado (K70 excepto K70.3)"
+
+  - id: anencefalia_q00
+    data_name: "Anencefalia"
+    artifact_key: Anencefalia_Q00
+    slug: anencefalia_q00
+    display_name: "Anencefalia"
+    cie_codes: ["Q00"]
+    aliases: ["anencefalia", "q00"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_anencefalia_q00
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: anencefalia_q00_release_b8dd98d57ec0
+    acceptance_fallback_run: anencefalia_q00_benchmark_test_771a8f72370c_f11ff866e566
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#BE185D"
+      label: "Anencefalia"
+      nombre_completo: "Anencefalia (Q00)"
+
+  - id: encefalocele_q01
+    data_name: "Encefalocele"
+    artifact_key: Encefalocele_Q01
+    slug: encefalocele_q01
+    display_name: "Encefalocele"
+    cie_codes: ["Q01"]
+    aliases: ["encefalocele", "q01"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_encefalocele_q01
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: «Conservar impresos (Recommended), con aviso de picos retirados»
+    # (planes/alta_b44_2026-11-19/DECISIONES_AUTOR_3.json, encefalocele_picos).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: encefalocele_q01_release_cb7eebcb8f73
+    acceptance_fallback_run: encefalocele_q01_benchmark_test_22ecaf241930_d2158a6a0c4f
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#9D174D"
+      label: "Encefalocele"
+      nombre_completo: "Encefalocele (Q01)"
+
+  - id: microcefalia_q02
+    data_name: "Microcefalia"
+    artifact_key: Microcefalia_Q02
+    slug: microcefalia_q02
+    display_name: "Microcefalia"
+    cie_codes: ["Q02"]
+    aliases: ["microcefalia", "q02"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_microcefalia_q02
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    # Serie desde 2017_sem02 (2017-W01): rolling_cv_historia_corta_v1 por decisión del autor
+    # (DECISIONES_AUTOR_2.json del lote alta_b44, «desde_2017»). Rezago 1 constante.
+    selection_policy: rolling_cv_historia_corta_v1
+    artifact_source:
+      backend: runner_release
+      release_id: microcefalia_q02_release_2d6eb394c859
+    acceptance_fallback_run: microcefalia_q02_benchmark_test_33c6e5b804ed_5dd8492f03ca
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#831843"
+      label: "Microcefalia"
+      nombre_completo: "Microcefalia (Q02)"
+
+  - id: espina_bifida_q05
+    data_name: "Espina bífida"
+    artifact_key: Espina_Bifida_Q05
+    slug: espina_bifida_q05
+    display_name: "Espina bífida"
+    cie_codes: ["Q05"]
+    aliases: ["espina bifida", "q05"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_espina_bifida_q05
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: espina_bifida_q05_release_05b90a9cbef9
+    acceptance_fallback_run: espina_bifida_q05_benchmark_test_da25c9f8ff01_1fe8a04d2087
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#A21CAF"
+      label: "Espina bífida"
+      nombre_completo: "Espina bífida (Q05)"
+
+  - id: labio_paladar_q35
+    data_name: "Labio y paladar hendido"
+    artifact_key: Labio_Paladar_Q35
+    slug: labio_paladar_q35
+    display_name: "Labio y paladar hendido"
+    cie_codes: ["Q35", "Q36", "Q37"]
+    aliases: ["labio y paladar hendido", "labio hendido", "paladar hendido", "q35", "q36", "q37"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_labio_paladar_q35
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    # Bloque presente en 2014_sem02..2026_sem44 con rezago 1 constante en todos los títulos.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: labio_paladar_q35_release_5a88e7c03f1d
+    acceptance_fallback_run: labio_paladar_q35_benchmark_test_3c5fe2a07bcf_4a71799cad33
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#86198F"
+      label: "Labio y paladar hendido"
+      nombre_completo: "Labio y paladar hendido (Q35-Q37)"
+
+  # Lote alta_b44 (cúmulo c6, 19-nov-2026). Siete categorías que el boletín imprime como bloque propio
+  # sólo desde 2024_sem02 (Cuadros 13.7 a 13.9 de 2024; páginas 54 a 56 del boletín 2026_sem44). Antes
+  # de 2024 vivían agrupadas en otros renglones: la serie empieza en 2024-W01, sin reconstruir historia.
+  - id: viuda_negra_u602
+    data_name: "Mordedura de araña viuda negra"
+    artifact_key: Viuda_Negra_U602
+    slug: viuda_negra_u602
+    display_name: "Mordedura de araña viuda negra"
+    cie_codes: ["U60.2"]
+    aliases: ["mordedura de arana viuda negra", "picadura de arana viuda negra", "arana viuda negra", "viuda negra", "u60.2"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_aranas_u60
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: portafolio aceptado igual al control seasonal_naive_lag52 en todas las series (gate
+    # con candidato = control): a las 4 semanas sólo cabe CONTROL_ONLY; la vista lo declara
+    # (portafolio_igual_al_control).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2024_v1
+    artifact_source:
+      backend: runner_release
+      release_id: viuda_negra_u602_release_d9135bf29d3b
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#3F3F46"
+      label: "Araña viuda negra"
+      nombre_completo: "Mordedura de araña viuda negra (U60.2)"
+
+  - id: violinista_u603
+    data_name: "Mordedura de araña violinista"
+    artifact_key: Violinista_U603
+    slug: violinista_u603
+    display_name: "Mordedura de araña violinista"
+    cie_codes: ["U60.3"]
+    aliases: ["mordedura de arana violinista", "picadura de arana violinista", "arana violinista", "arana reclusa", "loxoscelismo", "u60.3"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_aranas_u60
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: portafolio aceptado igual al control seasonal_naive_lag52 en todas las series (gate
+    # con candidato = control): a las 4 semanas sólo cabe CONTROL_ONLY; la vista lo declara
+    # (portafolio_igual_al_control).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2024_v1
+    artifact_source:
+      backend: runner_release
+      release_id: violinista_u603_release_d9c99e3a01f2
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#78350F"
+      label: "Araña violinista"
+      nombre_completo: "Mordedura de araña violinista (U60.3)"
+
+  - id: otras_aranas_t633
+    data_name: "Mordedura de otras arañas"
+    artifact_key: Otras_Aranas_T633
+    slug: otras_aranas_t633
+    display_name: "Mordedura de otras arañas"
+    cie_codes: ["T63.3", "X21"]
+    # Sin «arana»/«mordedura de arana» a secas: abarcan también viuda negra y violinista (trampa 2).
+    aliases: ["mordedura de otras aranas", "picadura de otras aranas", "otras aranas", "t63.3", "x21"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_aranas_u60
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: portafolio aceptado igual al control seasonal_naive_lag52 en todas las series (gate
+    # con candidato = control): a las 4 semanas sólo cabe CONTROL_ONLY; la vista lo declara
+    # (portafolio_igual_al_control).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2024_v1
+    artifact_source:
+      backend: runner_release
+      release_id: otras_aranas_t633_release_f4663d8c58e0
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#57534E"
+      label: "Otras arañas"
+      nombre_completo: "Mordedura de otras arañas (T63.3, X21 excepto U60.2 y U60.3)"
+
+  - id: abeja_u604
+    data_name: "Picadura de abeja"
+    artifact_key: Abeja_U604
+    slug: abeja_u604
+    display_name: "Picadura de abeja"
+    cie_codes: ["U60.4"]
+    aliases: ["picadura de abeja", "picaduras de abeja", "piquete de abeja", "u60.4"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_abeja_avispa_u60
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: portafolio aceptado igual al control seasonal_naive_lag52 en todas las series (gate
+    # con candidato = control): a las 4 semanas sólo cabe CONTROL_ONLY; la vista lo declara
+    # (portafolio_igual_al_control).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2024_v1
+    artifact_source:
+      backend: runner_release
+      release_id: abeja_u604_release_2ac0e95c3567
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#CA8A04"
+      label: "Picadura de abeja"
+      nombre_completo: "Picadura de abeja (U60.4)"
+
+  - id: avispa_u605
+    data_name: "Picadura de avispa"
+    artifact_key: Avispa_U605
+    slug: avispa_u605
+    display_name: "Picadura de avispa"
+    cie_codes: ["U60.5"]
+    aliases: ["picadura de avispa", "picaduras de avispa", "piquete de avispa", "u60.5"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_abeja_avispa_u60
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: portafolio aceptado igual al control seasonal_naive_lag52 en todas las series (gate
+    # con candidato = control): a las 4 semanas sólo cabe CONTROL_ONLY; la vista lo declara
+    # (portafolio_igual_al_control).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2024_v1
+    artifact_source:
+      backend: runner_release
+      release_id: avispa_u605_release_47baa704f452
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#B45309"
+      label: "Picadura de avispa"
+      nombre_completo: "Picadura de avispa (U60.5)"
+
+  - id: otros_artropodos_t634
+    data_name: "Picadura por otros artrópodos"
+    artifact_key: Otros_Artropodos_T634
+    slug: otros_artropodos_t634
+    display_name: "Picadura por otros artrópodos"
+    cie_codes: ["T63.4"]
+    # Sin «picadura de insecto» ni «artropodos» a secas: abarcan abeja y avispa (trampa 2).
+    aliases: ["picadura por otros artropodos", "picadura de otros artropodos", "otros artropodos", "t63.4"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_abeja_avispa_u60
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: portafolio aceptado igual al control seasonal_naive_lag52 en todas las series (gate
+    # con candidato = control): a las 4 semanas sólo cabe CONTROL_ONLY; la vista lo declara
+    # (portafolio_igual_al_control).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2024_v1
+    artifact_source:
+      backend: runner_release
+      release_id: otros_artropodos_t634_release_746ed7f15dcc
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#4D7C0F"
+      label: "Otros artrópodos"
+      nombre_completo: "Picadura por otros artrópodos (T63.4 excepto U60.4 y U60.5)"
+
+  - id: otros_ponzonosos_t631
+    data_name: "Picadura o intoxicación por otros animales ponzoñosos"
+    artifact_key: Otros_Ponzonosos_T631
+    slug: otros_ponzonosos_t631
+    display_name: "Picadura o intoxicación por otros animales ponzoñosos"
+    cie_codes: ["T63.1", "T63.5", "T63.6", "T63.7", "T63.8", "T63.9", "X27", "U60.8"]
+    # Sin «animales ponzonosos» a secas: el término general abarca alacrán, arañas y serpientes (trampa 2).
+    aliases: ["picadura o intoxicacion por otros animales ponzonosos", "intoxicacion por otros animales ponzonosos", "otros animales ponzonosos", "u60.8", "x27"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_ponzonosos_t631
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: portafolio aceptado igual al control seasonal_naive_lag52 en todas las series (gate
+    # con candidato = control): a las 4 semanas sólo cabe CONTROL_ONLY; la vista lo declara
+    # (portafolio_igual_al_control).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2024_v1
+    artifact_source:
+      backend: runner_release
+      release_id: otros_ponzonosos_t631_release_788cffc12537
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#7E22CE"
+      label: "Otros animales ponzoñosos"
+      nombre_completo: "Picadura o intoxicación por otros animales ponzoñosos (T63.1, T63.5-T63.9, X27, U60.8)"
+
+  - id: mordedura_cascabel_u600
+    data_name: "Mordedura por serpiente de cascabel"
+    artifact_key: Mordedura_Cascabel_U600
+    slug: mordedura_cascabel_u600
+    display_name: "Mordedura por serpiente de cascabel"
+    cie_codes: ["U60.0"]
+    aliases: ["mordedura por serpiente de cascabel", "mordedura de serpiente de cascabel", "mordedura de cascabel", "serpiente de cascabel", "u60.0"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_mordedura_cascabel_u600
+    exposure_source_id: inegi_cpv2020_static
+    # Bloque propio del Cuadro 18 sólo desde el boletín 2024_sem02 (serie desde 2024-W01).
+    # Aviso: portafolio aceptado igual al control seasonal_naive_lag52 en todas las series (gate
+    # con candidato = control): a las 4 semanas sólo cabe CONTROL_ONLY; la vista lo declara
+    # (portafolio_igual_al_control).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2024_v1
+    artifact_source:
+      backend: runner_release
+      release_id: mordedura_cascabel_u600_release_76429c90d256
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#8A6A3B"
+      label: "Mordedura por serpiente de cascabel"
+      nombre_completo: "Mordedura por serpiente de cascabel (U60.0)"
+
+  - id: mordedura_coral_u601
+    data_name: "Mordedura por serpiente coral"
+    artifact_key: Mordedura_Coral_U601
+    slug: mordedura_coral_u601
+    display_name: "Mordedura por serpiente coral"
+    cie_codes: ["U60.1"]
+    aliases: ["mordedura por serpiente coral", "mordedura de serpiente coral", "mordedura de coralillo", "serpiente coral", "coralillo", "u60.1"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_mordedura_coral_u601
+    exposure_source_id: inegi_cpv2020_static
+    # Bloque propio del Cuadro 18 sólo desde el boletín 2024_sem02 (serie desde 2024-W01).
+    # Aviso: portafolio aceptado igual al control seasonal_naive_lag52 en todas las series (gate
+    # con candidato = control): a las 4 semanas sólo cabe CONTROL_ONLY; la vista lo declara
+    # (portafolio_igual_al_control).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2024_v1
+    artifact_source:
+      backend: runner_release
+      release_id: mordedura_coral_u601_release_cd0f4b8a48ac
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#7C5E3C"
+      label: "Mordedura por serpiente coral"
+      nombre_completo: "Mordedura por serpiente coral (U60.1)"
+
+  - id: mordedura_otras_serpientes_t630
+    data_name: "Mordedura por otras serpientes"
+    artifact_key: Mordedura_Otras_Serpientes_T630
+    slug: mordedura_otras_serpientes_t630
+    display_name: "Mordedura por otras serpientes"
+    cie_codes: ["T63.0", "X20"]
+    aliases: ["mordedura por otras serpientes", "mordedura de otras serpientes", "otras serpientes"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_mordedura_otras_serpientes_t630
+    exposure_source_id: inegi_cpv2020_static
+    # Bloque «T63.0, X20 excepto U60.0 y U60.1» desde 2024_sem02; el bloque 2023 «Mordeduras por serpiente» (T63.0, X20) es otra definición.
+    # Aviso: portafolio aceptado igual al control seasonal_naive_lag52 en todas las series (gate
+    # con candidato = control): a las 4 semanas sólo cabe CONTROL_ONLY; la vista lo declara
+    # (portafolio_igual_al_control).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2024_v1
+    artifact_source:
+      backend: runner_release
+      release_id: mordedura_otras_serpientes_t630_release_15f4ad5a7c59
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#6B4F2A"
+      label: "Mordedura por otras serpientes"
+      nombre_completo: "Mordedura por otras serpientes (T63.0, X20 excepto U60.0 y U60.1)"
+
+# Lote alta_b44 · c4b: entradas del registry (cirrosis y chikungunya). alacran_t63 ya existe en main sin cambios.
+  - id: cirrosis_alcoholica_k703
+    data_name: "Cirrosis hepática alcohólica"
+    artifact_key: Cirrosis_Alcoholica_K703
+    slug: cirrosis_alcoholica_k703
+    display_name: "Cirrosis hepática alcohólica"
+    cie_codes: ["K70.3"]
+    # Sin «cirrosis» a secas: el boletín no vigila otras cirrosis, pero el usuario podría pedir una no
+    # alcohólica (K74); se exige el calificativo.
+    aliases: ["cirrosis hepatica alcoholica", "cirrosis alcoholica", "k70.3"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_cirrosis_alcoholica_k703
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    # Serie desde 2016-W01 por decisión nominal del autor (lote alta_b44): inicio_serie del grupo.
+    # rolling_cv_v1: 2016-W01..2020-W53 = 261 semanas antes del pliegue 2021 (mínimo 260).
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: cirrosis_alcoholica_k703_release_bfd7449b90a6
+    acceptance_fallback_run: cirrosis_alcoholica_k703_benchmark_test_b00632d2b94c_b411e241f371
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#713F12"
+      label: "Cirrosis alcohólica"
+      nombre_completo: "Cirrosis hepática alcohólica (K70.3)"
+
+  - id: chikungunya_a920
+    data_name: "Enfermedad por virus Chikungunya"
+    artifact_key: Chikungunya_A920
+    slug: chikungunya_a920
+    display_name: "Enfermedad por virus Chikungunya"
+    cie_codes: ["A92.0"]
+    aliases: ["enfermedad por virus chikungunya", "chikungunya", "fiebre chikungunya", "a92.0"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_chikungunya_a920
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: serie desde 2014-W47, excluyendo 2014_sem45-46
+    # (planes/alta_b44_2026-11-19/DECISIONES_AUTOR_3.json, chikungunya_a920).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: chikungunya_a920_release_6a16fc7fbe23
+    acceptance_fallback_run: chikungunya_a920_benchmark_test_ebdabdb503c8_89ef88099d64
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#B91C1C"
+      label: "Chikungunya"
+      nombre_completo: "Enfermedad por virus Chikungunya (A92.0)"
+
+  - id: envenenamiento_analgesicos_x60
+    data_name: "Envenenamiento autoinfligido intencionalmente por analgésicos no narcóticos, antipiréticos y antirreumáticos"
+    artifact_key: Envenenamiento_Analgesicos_X60
+    slug: envenenamiento_analgesicos_x60
+    display_name: "Envenenamiento autoinfligido intencionalmente por analgésicos no narcóticos, antipiréticos y antirreumáticos"
+    cie_codes: ["X60"]
+    aliases: ["envenenamiento autoinfligido intencionalmente por analgesicos no narcoticos, antipireticos y antirreumaticos", "x60"]
+    # SENSIBLE: alta con OK nominal del autor («incluir todooo», 19-nov-2026, AUTORIZACION_AUTOR.json del
+    # lote alta_b44) SIN revisión clínica ni de comunicación acreditada. Respuesta de crisis con la Línea
+    # de la Vida obligatoria antes que cualquier cifra (trampa 34). Alias sólo técnicos: ver el qa.md.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_envenenamiento_analgesicos_x60
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_release
+      release_id: envenenamiento_analgesicos_x60_release_ad01a4df3ba9
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#7C3AED"
+      label: "Envenenamiento autoinfligido por analgésicos"
+      nombre_completo: "Envenenamiento autoinfligido intencionalmente por analgésicos no narcóticos, antipiréticos y antirreumáticos (X60)"
+
+  - id: envenenamiento_psicotropicos_x61
+    data_name: "Envenenamiento autoinfligido intencionalmente por drogas antiepilépticas, sedantes, hipnóticas, antiparkinsonianas y psicotrópicas"
+    artifact_key: Envenenamiento_Psicotropicos_X61
+    slug: envenenamiento_psicotropicos_x61
+    display_name: "Envenenamiento autoinfligido intencionalmente por drogas antiepilépticas, sedantes, hipnóticas, antiparkinsonianas y psicotrópicas"
+    cie_codes: ["X61"]
+    aliases: ["envenenamiento autoinfligido intencionalmente por drogas antiepilepticas, sedantes, hipnoticas, antiparkinsonianas y psicotropicas", "x61"]
+    # SENSIBLE: alta con OK nominal del autor («incluir todooo», 19-nov-2026, AUTORIZACION_AUTOR.json del
+    # lote alta_b44) SIN revisión clínica ni de comunicación acreditada. Respuesta de crisis con la Línea
+    # de la Vida obligatoria antes que cualquier cifra (trampa 34). Alias sólo técnicos: ver el qa.md.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_envenenamiento_psicotropicos_x61
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_release
+      release_id: envenenamiento_psicotropicos_x61_release_7f83d7b4ff0d
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#6D28D9"
+      label: "Envenenamiento autoinfligido por psicotrópicos"
+      nombre_completo: "Envenenamiento autoinfligido intencionalmente por drogas antiepilépticas, sedantes, hipnóticas, antiparkinsonianas y psicotrópicas (X61)"
+
+  - id: ahorcamiento_x70
+    data_name: "Lesión autoinfligida intencionalmente por ahorcamiento, estrangulamiento o sofocación"
+    artifact_key: Ahorcamiento_X70
+    slug: ahorcamiento_x70
+    display_name: "Lesión autoinfligida intencionalmente por ahorcamiento, estrangulamiento o sofocación"
+    cie_codes: ["X70"]
+    aliases: ["lesion autoinfligida intencionalmente por ahorcamiento, estrangulamiento o sofocacion", "x70"]
+    # SENSIBLE: alta con OK nominal del autor («incluir todooo», 19-nov-2026, AUTORIZACION_AUTOR.json del
+    # lote alta_b44) SIN revisión clínica ni de comunicación acreditada. Respuesta de crisis con la Línea
+    # de la Vida obligatoria antes que cualquier cifra (trampa 34). Alias sólo técnicos: ver el qa.md.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_ahorcamiento_x70
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_release
+      release_id: ahorcamiento_x70_release_6d68f72ec4bd
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#5B21B6"
+      label: "Lesión autoinfligida por ahorcamiento"
+      nombre_completo: "Lesión autoinfligida intencionalmente por ahorcamiento, estrangulamiento o sofocación (X70)"
+
+  - id: disparo_arma_corta_x72
+    data_name: "Lesión autoinfligida intencionalmente por disparo de arma corta"
+    artifact_key: Disparo_Arma_Corta_X72
+    slug: disparo_arma_corta_x72
+    display_name: "Lesión autoinfligida intencionalmente por disparo de arma corta"
+    cie_codes: ["X72"]
+    aliases: ["lesion autoinfligida intencionalmente por disparo de arma corta", "x72"]
+    # SENSIBLE: alta con OK nominal del autor («incluir todooo», 19-nov-2026, AUTORIZACION_AUTOR.json del
+    # lote alta_b44) SIN revisión clínica ni de comunicación acreditada. Respuesta de crisis con la Línea
+    # de la Vida obligatoria antes que cualquier cifra (trampa 34). Alias sólo técnicos: ver el qa.md.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_disparo_arma_corta_x72
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_release
+      release_id: disparo_arma_corta_x72_release_64ebcb4253e4
+    acceptance_fallback_run: disparo_arma_corta_x72_benchmark_test_9287298680f0_52b014d7edc8
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#4C1D95"
+      label: "Lesión autoinfligida por arma corta"
+      nombre_completo: "Lesión autoinfligida intencionalmente por disparo de arma corta (X72)"
+
+  - id: objeto_cortante_x78
+    data_name: "Lesión autoinfligida intencionalmente por objeto cortante"
+    artifact_key: Objeto_Cortante_X78
+    slug: objeto_cortante_x78
+    display_name: "Lesión autoinfligida intencionalmente por objeto cortante"
+    cie_codes: ["X78"]
+    aliases: ["lesion autoinfligida intencionalmente por objeto cortante", "x78"]
+    # SENSIBLE: alta con OK nominal del autor («incluir todooo», 19-nov-2026, AUTORIZACION_AUTOR.json del
+    # lote alta_b44) SIN revisión clínica ni de comunicación acreditada. Respuesta de crisis con la Línea
+    # de la Vida obligatoria antes que cualquier cifra (trampa 34). Alias sólo técnicos: ver el qa.md.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_objeto_cortante_x78
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_release
+      release_id: objeto_cortante_x78_release_5377b5f38b46
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#8B5CF6"
+      label: "Lesión autoinfligida por objeto cortante"
+      nombre_completo: "Lesión autoinfligida intencionalmente por objeto cortante (X78)"
+
+  - id: salto_lugar_elevado_x80
+    data_name: "Lesión autoinfligida intencionalmente al saltar desde un lugar elevado"
+    artifact_key: Salto_Lugar_Elevado_X80
+    slug: salto_lugar_elevado_x80
+    display_name: "Lesión autoinfligida intencionalmente al saltar desde un lugar elevado"
+    cie_codes: ["X80"]
+    aliases: ["lesion autoinfligida intencionalmente al saltar desde un lugar elevado", "x80"]
+    # SENSIBLE: alta con OK nominal del autor («incluir todooo», 19-nov-2026, AUTORIZACION_AUTOR.json del
+    # lote alta_b44) SIN revisión clínica ni de comunicación acreditada. Respuesta de crisis con la Línea
+    # de la Vida obligatoria antes que cualquier cifra (trampa 34). Alias sólo técnicos: ver el qa.md.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_salto_lugar_elevado_x80
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_release
+      release_id: salto_lugar_elevado_x80_release_38e9519e4884
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#A78BFA"
+      label: "Lesión autoinfligida al saltar"
+      nombre_completo: "Lesión autoinfligida intencionalmente al saltar desde un lugar elevado (X80)"
+
+  - id: intento_suicidio_z915
+    data_name: "Historia personal de lesión autoinfligida intencionalmente (intento de suicidio)"
+    artifact_key: Intento_Suicidio_Z915
+    slug: intento_suicidio_z915
+    display_name: "Historia personal de lesión autoinfligida intencionalmente (intento de suicidio)"
+    cie_codes: ["Z91.5"]
+    aliases: ["historia personal de lesion autoinfligida intencionalmente", "z91.5"]
+    # SENSIBLE: alta con OK nominal del autor («incluir todooo», 19-nov-2026, AUTORIZACION_AUTOR.json del
+    # lote alta_b44) SIN revisión clínica ni de comunicación acreditada. Respuesta de crisis con la Línea
+    # de la Vida obligatoria antes que cualquier cifra (trampa 34). Alias sólo técnicos: ver el qa.md.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_intento_suicidio_z915
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_release
+      release_id: intento_suicidio_z915_release_7e3a250aa23a
+    acceptance_fallback_run: intento_suicidio_z915_benchmark_test_69d514c4117e_3192cd793d1e
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#9333EA"
+      label: "Historia personal de lesión autoinfligida"
+      nombre_completo: "Historia personal de lesión autoinfligida intencionalmente (intento de suicidio) (Z91.5)"
+
+  - id: ideacion_suicida_r458
+    data_name: "Otros síntomas y signos que involucran el estado emocional (ideación suicida)"
+    artifact_key: Ideacion_Suicida_R458
+    slug: ideacion_suicida_r458
+    display_name: "Otros síntomas y signos que involucran el estado emocional (ideación suicida)"
+    cie_codes: ["R45.8"]
+    aliases: ["otros sintomas y signos que involucran el estado emocional", "r45.8"]
+    # SENSIBLE: alta con OK nominal del autor («incluir todooo», 19-nov-2026, AUTORIZACION_AUTOR.json del
+    # lote alta_b44) SIN revisión clínica ni de comunicación acreditada. Respuesta de crisis con la Línea
+    # de la Vida obligatoria antes que cualquier cifra (trampa 34). Alias sólo técnicos: ver el qa.md.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_ideacion_suicida_r458
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_historia_corta_2023_v1
+    artifact_source:
+      backend: runner_release
+      release_id: ideacion_suicida_r458_release_7c08365e2e32
+    acceptance_fallback_run: ideacion_suicida_r458_benchmark_test_70824d3e8302_b0b43d8009b8
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#A855F7"
+      label: "Síntomas del estado emocional (R45.8)"
+      nombre_completo: "Otros síntomas y signos que involucran el estado emocional (ideación suicida) (R45.8)"
+
+  - id: violencia_intrafamiliar_y07
+    data_name: "Violencia intrafamiliar"
+    artifact_key: Violencia_Intrafamiliar_Y07
+    slug: violencia_intrafamiliar_y07
+    display_name: "Violencia intrafamiliar"
+    cie_codes: ["Y07.0", "Y07.1", "Y07.2"]
+    aliases: ["violencia intrafamiliar", "y07"]
+    # SENSIBLE: alta con OK nominal del autor («incluir todooo», 19-nov-2026, AUTORIZACION_AUTOR.json del
+    # lote alta_b44) SIN revisión clínica ni de comunicación acreditada. Respuesta de crisis con la Línea
+    # de la Vida obligatoria antes que cualquier cifra (trampa 34). Alias sólo técnicos: ver el qa.md.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_violencia_intrafamiliar_y07
+    exposure_source_id: inegi_cpv2020_static
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: violencia_intrafamiliar_y07_release_c56e23ab2467
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#B91C1C"
+      label: "Violencia intrafamiliar"
+      nombre_completo: "Violencia intrafamiliar (Y07.0-Y07.2)"
+
+  - id: tuberculosis_otras_formas_a171
+    data_name: "Tuberculosis otras formas"
+    artifact_key: Tuberculosis_Otras_Formas_A171
+    slug: tuberculosis_otras_formas_a171
+    display_name: "Tuberculosis otras formas"
+    cie_codes: ["A17.1", "A17.8", "A17.9", "A18", "A19"]
+    # Sin «tuberculosis» a secas: abarcaría la respiratoria (A15-A16) y la meningitis tuberculosa
+    # (A17.0), que el boletín publica en otros bloques.
+    aliases: ["tuberculosis otras formas", "otras formas de tuberculosis", "tuberculosis extrapulmonar", "a18", "a19"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_tuberculosis_otras_formas_a171
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: objetivo 2020-W53 sin fuente por cambio de rezago, imputado y marcado lag_regime_gap
+    # (huecos_objetivo en cuadros.yaml; planes/alta_b44_2026-11-19/DECISIONES_AUTOR_5.json: «Sí,
+    # imputar»).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: tuberculosis_otras_formas_a171_release_ca444e2b0856
+    acceptance_fallback_run: tuberculosis_otras_formas_a171_benchmark_test_36fe36e344ff_6971f74a19eb
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#7F1D1D"
+      label: "Tuberculosis otras formas"
+      nombre_completo: "Tuberculosis otras formas (A17.1, A17.8, A17.9, A18-A19)"
+
+  - id: chagas_aguda_b570
+    data_name: "Tripanosomiasis americana (enfermedad de Chagas) aguda"
+    artifact_key: Chagas_Aguda_B570
+    slug: chagas_aguda_b570
+    display_name: "Tripanosomiasis americana (enfermedad de Chagas) aguda"
+    cie_codes: ["B57.0", "B57.1"]
+    # Sin «chagas» ni «tripanosomiasis» a secas: abarcarían también la forma crónica (B57.2-B57.5).
+    aliases: ["tripanosomiasis americana aguda", "enfermedad de chagas aguda", "chagas aguda", "chagas agudo", "b57.0", "b57.1"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_chagas_aguda_b570
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: objetivo 2020-W53 sin fuente por cambio de rezago, imputado y marcado lag_regime_gap
+    # (huecos_objetivo en cuadros.yaml; planes/alta_b44_2026-11-19/DECISIONES_AUTOR_5.json: «Sí,
+    # imputar»).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    # El bloque se imprime desde 2017_sem02 (objetivo 2017-W01): historia corta.
+    selection_policy: rolling_cv_historia_corta_v1
+    artifact_source:
+      backend: runner_release
+      release_id: chagas_aguda_b570_release_765162b97f96
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#9A3412"
+      label: "Chagas aguda"
+      nombre_completo: "Tripanosomiasis americana (enfermedad de Chagas) aguda (B57.0-B57.1)"
+
+  - id: tifo_murino_a752
+    data_name: "Tifo murino"
+    artifact_key: Tifo_Murino_A752
+    slug: tifo_murino_a752
+    display_name: "Tifo murino"
+    cie_codes: ["A75.2"]
+    # Sin «tifo» a secas: abarcaría el tifo epidémico (A75.0) del mismo cuadro.
+    aliases: ["tifo murino", "tifus murino", "tifo endemico", "a75.2"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_tifo_murino_a752
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: objetivo 2015-W48 sin fuente por cambio de rezago, imputado y marcado lag_regime_gap
+    # (huecos_objetivo en cuadros.yaml; planes/alta_b44_2026-11-19/DECISIONES_AUTOR_5.json: «Sí,
+    # imputar»).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: tifo_murino_a752_release_d0c157fd3d15
+    acceptance_fallback_run: tifo_murino_a752_benchmark_test_1b58f710fb71_536eba77c76d
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#A16207"
+      label: "Tifo murino"
+      nombre_completo: "Tifo murino (A75.2)"
+
+  - id: sifilis_congenita_a50
+    data_name: "Sífilis congénita"
+    artifact_key: Sifilis_Congenita_A50
+    slug: sifilis_congenita_a50
+    display_name: "Sífilis congénita"
+    cie_codes: ["A50"]
+    # Sin «sífilis» a secas: abarcaría la sífilis adquirida (A51-A53), bloque vecino del Cuadro 6.
+    aliases: ["sifilis congenita", "a50"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_sifilis_congenita_a50
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: objetivo 2020-W53 sin fuente por cambio de rezago, imputado y marcado lag_regime_gap
+    # (huecos_objetivo en cuadros.yaml; planes/alta_b44_2026-11-19/DECISIONES_AUTOR_5.json: «Sí,
+    # imputar»).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: sifilis_congenita_a50_release_75a396570357
+    acceptance_fallback_run: sifilis_congenita_a50_benchmark_test_0203cdfc8b6f_deda62953648
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#BE185D"
+      label: "Sífilis congénita"
+      nombre_completo: "Sífilis congénita (A50)"
+
+  - id: esavi_y58
+    data_name: "Eventos supuestamente asociados a la vacunación (ESAVI)"
+    artifact_key: Esavi_Y58
+    slug: esavi_y58
+    display_name: "Eventos supuestamente asociados a la vacunación (ESAVI)"
+    cie_codes: ["Y58", "Y59"]
+    # Hasta 2017_sem01 el boletín rotula el bloque «Efectos adversos temporalmente asociados a
+    # vacunas» con los mismos códigos (Y58, Y59).
+    aliases: ["eventos supuestamente asociados a la vacunacion", "esavi", "efectos adversos temporalmente asociados a vacunas", "y58", "y59"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_esavi_y58
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: salto 2021 y ceros impresos de 2023, sin atribuir causa
+    # (planes/alta_b44_2026-11-19/DECISIONES_AUTOR_5.json, esavi_y58).
+    # Aviso: objetivo 2020-W53 sin fuente por cambio de rezago, imputado y marcado lag_regime_gap
+    # (huecos_objetivo en cuadros.yaml; planes/alta_b44_2026-11-19/DECISIONES_AUTOR_5.json: «Sí,
+    # imputar»).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: esavi_y58_release_703090d3bcb4
+    acceptance_fallback_run: esavi_y58_benchmark_test_9021be3ca4c8_d060f189bb01
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#4338CA"
+      label: "ESAVI"
+      nombre_completo: "Eventos supuestamente asociados a la vacunación, ESAVI (Y58, Y59)"
+
+  - id: meningococica_a39
+    data_name: "Meningitis meningocócica"
+    artifact_key: Meningococica_A39
+    slug: meningococica_a39
+    display_name: "Meningitis meningocócica"
+    cie_codes: ["A39.0"]
+    # Sin «meningitis» a secas: abarcaría la tuberculosa (A17.0) y el síndrome meníngeo (G00-G03).
+    aliases: ["meningitis meningococica", "meningococo", "meningococica", "a39.0"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_meningococica_a39
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: objetivo 2020-W53 sin fuente por cambio de rezago, imputado y marcado lag_regime_gap
+    # (huecos_objetivo en cuadros.yaml; planes/alta_b44_2026-11-19/DECISIONES_AUTOR_5.json: «Sí,
+    # imputar»).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    # Rezago impreso por periodo (1 hasta 2020_sem53, 0 desde 2021_sem01; cuadros.yaml). Supuesto del
+    # autor (DECISIONES_AUTOR_3, supuesto_autor_guion_2025_cero): el «-» de 2025 se trata como cero.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: meningococica_a39_release_c3c7e1915698
+    acceptance_fallback_run: meningococica_a39_benchmark_test_38372a4c8a10_644b389e3839
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#9F1239"
+      label: "Meningitis meningocócica"
+      nombre_completo: "Meningitis meningocócica (A39.0)"
+
+  - id: neumococo_a40
+    data_name: "Enfermedad invasiva por neumococo"
+    artifact_key: Neumococo_A40
+    slug: neumococo_a40
+    display_name: "Enfermedad invasiva por neumococo"
+    # Alcance del bloque: sepsis neumocócica (A40.3), meningitis neumocócica (G00.1) y neumonía por
+    # S. pneumoniae (J13). Sindrome_meningeo_g00 excluye G00.1 y neumonias_j12 excluye J13: no hay
+    # solapamiento de códigos. Sin «neumonia» ni «meningitis» en los alias (son de esos otros dos).
+    cie_codes: ["A40.3", "G00.1", "J13"]
+    aliases: ["enfermedad invasiva por neumococo", "neumococo", "neumococica", "a40.3"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_neumococo_a40
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: objetivo 2020-W53 sin fuente por cambio de rezago, imputado y marcado lag_regime_gap
+    # (huecos_objetivo en cuadros.yaml; planes/alta_b44_2026-11-19/DECISIONES_AUTOR_5.json: «Sí,
+    # imputar»).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    # Rezago impreso por periodo (1 hasta 2020_sem53, 0 desde 2021_sem01; cuadros.yaml). Supuesto del
+    # autor (DECISIONES_AUTOR_3, supuesto_autor_guion_2025_cero): el «-» de 2025 se trata como cero.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: neumococo_a40_release_5895fcd30f54
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#1E3A8A"
+      label: "Neumococo invasivo"
+      nombre_completo: "Enfermedad invasiva por neumococo (A40.3, G00.1, J13)"
+
+  - id: haemophilus_a41
+    data_name: "Infecciones invasivas por Haemophilus influenzae"
+    artifact_key: Haemophilus_A41
+    slug: haemophilus_a41
+    display_name: "Infecciones invasivas por Haemophilus influenzae"
+    # Alcance del bloque: sepsis por H. influenzae (A41.3), meningitis por H. influenzae (G00.0) y
+    # neumonía por H. influenzae (J14). Sindrome_meningeo_g00 excluye G00.0 y neumonias_j12 excluye
+    # J14. Sin «influenza» (es de influenza_j09) ni «meningitis» o «neumonia» en los alias.
+    cie_codes: ["A41.3", "G00.0", "J14"]
+    aliases: ["infecciones invasivas por haemophilus influenzae", "haemophilus influenzae", "haemophilus", "a41.3"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_haemophilus_a41
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: objetivo 2020-W53 sin fuente por cambio de rezago, imputado y marcado lag_regime_gap
+    # (huecos_objetivo en cuadros.yaml; planes/alta_b44_2026-11-19/DECISIONES_AUTOR_5.json: «Sí,
+    # imputar»).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    # Rezago impreso por periodo (1 hasta 2020_sem53, 0 desde 2021_sem01; cuadros.yaml). Supuesto del
+    # autor (DECISIONES_AUTOR_3, supuesto_autor_guion_2025_cero): el «-» de 2025 se trata como cero.
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: haemophilus_a41_release_11c95a322723
+    acceptance_fallback_run: haemophilus_a41_benchmark_test_49af163dda48_6f488cdae1b6
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#4C1D95"
+      label: "Haemophilus influenzae invasivo"
+      nombre_completo: "Infecciones invasivas por Haemophilus influenzae (A41.3, G00.0, J14)"
+
+  - id: herida_arma_fuego_w32
+    data_name: "Herida por arma de fuego"
+    artifact_key: Herida_Arma_Fuego_W32
+    slug: herida_arma_fuego_w32
+    display_name: "Herida por arma de fuego"
+    cie_codes: ["W32", "W33", "W34"]
+    aliases: ["herida por arma de fuego", "w32-w34"]
+    # SENSIBLE: alta con OK nominal del autor («incluir todooo», 19-nov-2026, AUTORIZACION_AUTOR.json del
+    # lote alta_b44) SIN revisión clínica ni de comunicación acreditada. Respuesta de crisis con la Línea
+    # de la Vida obligatoria antes que cualquier cifra (trampa 34). Alias sólo técnicos: ver el qa.md.
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_herida_arma_fuego_w32
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: comparable con aviso del cambio de rótulo en 2025_sem07
+    # (planes/alta_b44_2026-11-19/DECISIONES_AUTOR_6.json, herida_arma_fuego_w32).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: herida_arma_fuego_w32_release_780cec433710
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#7F1D1D"
+      label: "Herida por arma de fuego"
+      nombre_completo: "Herida por arma de fuego (W32-W34)"
+
+  - id: chagas_cronica_b572
+    data_name: "Tripanosomiasis americana (enfermedad de Chagas) crónica"
+    artifact_key: Chagas_Cronica_B572
+    slug: chagas_cronica_b572
+    display_name: "Tripanosomiasis americana (enfermedad de Chagas) crónica"
+    cie_codes: ["B57.2", "B57.3", "B57.4", "B57.5"]
+    # Sin «chagas» ni «tripanosomiasis» a secas: abarcarían también la forma aguda (B57.0-B57.1).
+    aliases: ["tripanosomiasis americana cronica", "enfermedad de chagas cronica", "chagas cronica", "chagas cronico", "b57.2", "b57.5"]
+    profile: cronica_conteos
+    batch: standalone
+    extraction_group: b44_chagas_cronica_b572
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: supuesto del autor declarado, «-1» de Nuevo León en 2025_sem17 tratado como 0
+    # (planes/alta_b44_2026-11-19/DECISIONES_AUTOR_5.json, chagas_cronica_b572).
+    # Aviso: objetivo 2020-W53 sin fuente por cambio de rezago, imputado y marcado lag_regime_gap
+    # (huecos_objetivo en cuadros.yaml; planes/alta_b44_2026-11-19/DECISIONES_AUTOR_5.json: «Sí,
+    # imputar»).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    # El bloque se imprime desde 2017_sem02 (objetivo 2017-W01): historia corta.
+    selection_policy: rolling_cv_historia_corta_v1
+    artifact_source:
+      backend: runner_release
+      release_id: chagas_cronica_b572_release_67c0a551a6f4
+    acceptance_fallback_run: chagas_cronica_b572_benchmark_test_612c8772a7e0_dff2b8eb1d19
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#7C2D12"
+      label: "Chagas crónica"
+      nombre_completo: "Tripanosomiasis americana (enfermedad de Chagas) crónica (B57.2-B57.5)"
+
+  - id: vih_b20
+    data_name: "Infección por el virus de la inmunodeficiencia humana"
+    artifact_key: Vih_B20
+    slug: vih_b20
+    display_name: "Infección por el virus de la inmunodeficiencia humana"
+    cie_codes: ["B20", "B21", "B22", "B23", "B24", "Z21"]
+    # Lote alta_b44: decisión nominal del autor (DECISIONES_AUTOR_3.json, 19-nov-2026) de integrar
+    # sólo la definición VIH (B20-B24, Z21) desde 2020-W28; los boletines anteriores imprimen SIDA
+    # (B20-B24), otra definición, y quedan fuera de la serie. Alias técnicos sin «sida» (otra
+    # definición y subcadena de «obesidad», trampa 1) ni términos de conducta o revelación personal.
+    aliases: ["vih", "infeccion por vih", "virus de la inmunodeficiencia humana", "b20", "z21"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_vih_b20
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: sólo la definición VIH (B20-B24, Z21) desde 2020-W28; los boletines anteriores
+    # imprimen SIDA (B20-B24), otra definición, y quedan fuera
+    # (planes/alta_b44_2026-11-19/DECISIONES_AUTOR_3.json, vih_b20).
+    # Aviso: salto de nivel 2020-2021 sin atribuir causa: mediana semanal nacional 146 en
+    # 2020-W28..W53 frente a 274.5 en 2021 (planes/alta_b44_2026-11-19/qa/c2b/vih_b20.qa.raw.json,
+    # nivel_por_anio).
+    # Aviso: control estacional seasonal_naive_lag52 publicado por decisión nominal del autor tras
+    # el rechazo de la prueba única de 2025 (vih_b20_benchmark_test_c3f728ee557c_2d304e21eaf9:
+    # nacional General 36.44 frente a 26.21 del control, +39.03 % > 10 %;
+    # planes/alta_b44_2026-11-19/DECISIONES_AUTOR_8.json, «Sí, publicar control»); nunca validado:
+    # a las 4 semanas sólo cabe CONTROL_ONLY.
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    # Historia desde 2020-W28: 130 semanas antes de 2023-W01 y 182 antes de 2024-W01 (>= 104).
+    selection_policy: rolling_cv_historia_corta_v1
+    artifact_source:
+      backend: runner_release
+      release_id: vih_b20_release_ea7cd45d29e7
+    acceptance_fallback_run: vih_b20_benchmark_test_c3f728ee557c_2d304e21eaf9
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#7C2D12"
+      label: "VIH"
+      nombre_completo: "Infección por el virus de la inmunodeficiencia humana (B20-B24, Z21)"
+
+  - id: meningitis_tuberculosa_a170
+    data_name: "Meningitis tuberculosa"
+    artifact_key: Meningitis_Tuberculosa_A170
+    slug: meningitis_tuberculosa_a170
+    display_name: "Meningitis tuberculosa"
+    cie_codes: ["A17.0"]
+    # Sin «meningitis» ni «tuberculosis» a secas: abarcarían la meningocócica (A39.0), el síndrome
+    # meníngeo (G00-G03), la tuberculosis respiratoria (A15-A16) y otras formas (A17.1-A19).
+    aliases: ["meningitis tuberculosa", "meningitis por tuberculosis", "tuberculosis meningea", "a17.0"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_meningitis_tuberculosa_a170
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: salto de nivel 2021 sin atribuir causa: unos 200-330 casos anuales en 2014-2020
+    # (mediana semanal 3-6) frente a 455-590 en 2021-2025 (mediana 8.5-12), con cambio de rótulo y
+    # de rezago en 2021 (planes/alta_b44_2026-11-19/frag/c9/meningitis_tuberculosa_a170.qa.md).
+    # Aviso: objetivo 2020-W53 sin fuente por cambio de rezago, imputado y marcado lag_regime_gap
+    # (huecos_objetivo en cuadros.yaml; planes/alta_b44_2026-11-19/DECISIONES_AUTOR_5.json: «Sí,
+    # imputar»).
+    # Aviso: control estacional seasonal_naive_lag52 publicado por decisión nominal del autor tras
+    # el rechazo de la prueba única de 2025
+    # (meningitis_tuberculosa_a170_benchmark_test_603dc0738a05_ce31ac51d3d0: nacional General
+    # 104.54 frente a 57.88 del control, +80.61 % > 10 %;
+    # planes/alta_b44_2026-11-19/DECISIONES_AUTOR_10.json, «Sí, los cinco»); nunca validado: a las
+    # 4 semanas sólo cabe CONTROL_ONLY.
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: meningitis_tuberculosa_a170_release_75c0eed24564
+    acceptance_fallback_run: meningitis_tuberculosa_a170_benchmark_test_603dc0738a05_ce31ac51d3d0
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#881337"
+      label: "Meningitis tuberculosa"
+      nombre_completo: "Meningitis tuberculosa (A17.0)"
+
+  - id: tuberculosis_respiratoria_a15
+    data_name: "Tuberculosis respiratoria"
+    artifact_key: Tuberculosis_Respiratoria_A15
+    slug: tuberculosis_respiratoria_a15
+    display_name: "Tuberculosis respiratoria"
+    cie_codes: ["A15", "A16"]
+    # Sin «tuberculosis» a secas: abarcaría la meningitis tuberculosa (A17.0) y otras formas
+    # (A17.1-A19), que el boletín publica en otros bloques.
+    aliases: ["tuberculosis respiratoria", "tuberculosis pulmonar", "tb pulmonar", "tb respiratoria", "a15", "a16"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_tuberculosis_respiratoria_a15
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: pico 2019-2020 sin atribuir causa, por decisión del autor
+    # (planes/alta_b44_2026-11-19/DECISIONES_AUTOR_9.json, «Sí, con aviso del pico 2019-2020 sin
+    # atribuir causa»): 13 454-15 285 casos anuales en 2014-2018 (mediana semanal 259-298), 36 761
+    # en 2019 (mediana 763), 26 139 en 2020 y 16 008-21 291 en 2021-2025 (mediana 333-430)
+    # (planes/alta_b44_2026-11-19/frag/c9/tuberculosis_respiratoria_a15.qa.md).
+    # Aviso: objetivo 2020-W53 sin fuente por cambio de rezago, imputado y marcado lag_regime_gap
+    # (huecos_objetivo en cuadros.yaml; planes/alta_b44_2026-11-19/DECISIONES_AUTOR_5.json: «Sí,
+    # imputar»).
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: tuberculosis_respiratoria_a15_release_5098dd8fc6e4
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#9F1239"
+      label: "Tuberculosis respiratoria"
+      nombre_completo: "Tuberculosis respiratoria (A15-A16)"
+
+  - id: lepra_a30
+    data_name: "Lepra"
+    artifact_key: Lepra_A30
+    slug: lepra_a30
+    display_name: "Lepra"
+    cie_codes: ["A30"]
+    aliases: ["lepra", "enfermedad de hansen", "hansen", "a30"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_lepra_a30
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: objetivo 2020-W53 sin fuente por cambio de rezago, imputado y marcado lag_regime_gap
+    # (huecos_objetivo en cuadros.yaml; planes/alta_b44_2026-11-19/DECISIONES_AUTOR_5.json: «Sí,
+    # imputar»).
+    # Aviso: control estacional seasonal_naive_lag52 publicado por decisión nominal del autor tras
+    # el rechazo de la prueba única de 2025 (lepra_a30_benchmark_test_e32febcfffc6_43af25133ba7:
+    # nacional General 154.72 frente a 98.49 del control, +57.09 % > 10 %;
+    # planes/alta_b44_2026-11-19/DECISIONES_AUTOR_10.json, «Sí, los cinco»); nunca validado: a las
+    # 4 semanas sólo cabe CONTROL_ONLY.
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: lepra_a30_release_6466f4bf7835
+    acceptance_fallback_run: lepra_a30_benchmark_test_e32febcfffc6_43af25133ba7
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#78350F"
+      label: "Lepra"
+      nombre_completo: "Lepra (A30)"
+
+  - id: fiebre_manchada_a770
+    data_name: "Fiebre manchada"
+    artifact_key: Fiebre_Manchada_A770
+    slug: fiebre_manchada_a770
+    display_name: "Fiebre manchada"
+    cie_codes: ["A77.0"]
+    # Sin «rickettsiosis» a secas: abarcaría las otras rickettsiosis (A79) y el tifo (A75).
+    aliases: ["fiebre manchada", "fiebre manchada de las montanas rocosas", "rickettsia rickettsii", "a77.0"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_fiebre_manchada_a770
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: niveles cambiantes sin atribuir causa: 208 casos en 2014, 500 en 2015, 81-315 en
+    # 2016-2022, 42, 35 y 23 en 2023-2025 y 236 a 2026-W44; mediana semanal nacional 0 en 2016,
+    # 2021 y 2023-2026 (planes/alta_b44_2026-11-19/frag/c9/fiebre_manchada_a770.qa.md).
+    # Aviso: objetivo 2015-W48 sin fuente por cambio de rezago, imputado y marcado lag_regime_gap
+    # (huecos_objetivo en cuadros.yaml; planes/alta_b44_2026-11-19/DECISIONES_AUTOR_5.json: «Sí,
+    # imputar»).
+    # Aviso: control estacional seasonal_naive_lag52 publicado por decisión nominal del autor tras
+    # el rechazo de la prueba única de 2025
+    # (fiebre_manchada_a770_benchmark_test_4796443c1ec0_3c412db5b412: bases 0.00 frente a 0.00 del
+    # control, no finito (0 frente a 0) > 5 %; 111 series 0.00 frente a 0.00 del control, no finito
+    # (0 frente a 0) > 5 %; planes/alta_b44_2026-11-19/DECISIONES_AUTOR_10.json, «Sí, los cinco»);
+    # nunca validado: a las 4 semanas sólo cabe CONTROL_ONLY.
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: fiebre_manchada_a770_release_a37deb0ac7f9
+    acceptance_fallback_run: fiebre_manchada_a770_benchmark_test_4796443c1ec0_3c412db5b412
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#B45309"
+      label: "Fiebre manchada"
+      nombre_completo: "Fiebre manchada (A77.0)"
+
+  - id: otras_rickettsiosis_a79
+    data_name: "Otras rickettsiosis"
+    artifact_key: Otras_Rickettsiosis_A79
+    slug: otras_rickettsiosis_a79
+    display_name: "Otras rickettsiosis"
+    cie_codes: ["A79"]
+    # Sin «rickettsiosis» a secas: abarcaría la fiebre manchada (A77.0) y el tifo (A75).
+    aliases: ["otras rickettsiosis", "rickettsiosis sin clasificacion de especie", "a79"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_otras_rickettsiosis_a79
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: salto de nivel 2022 sin atribuir causa: 147, 159, 143, 59 y 185 casos en 2017-2021
+    # (mediana semanal 0-3) frente a 600, 497, 499 y 544 en 2022-2025 (mediana 8.5-10)
+    # (planes/alta_b44_2026-11-19/frag/c9/otras_rickettsiosis_a79.qa.md).
+    # Aviso: control estacional seasonal_naive_lag52 publicado por decisión nominal del autor tras
+    # el rechazo de la prueba única de 2025
+    # (otras_rickettsiosis_a79_benchmark_test_93487cbe470a_81ce3ccf5de0: nacional General 77.17
+    # frente a 43.46 del control, +77.56 % > 10 %;
+    # planes/alta_b44_2026-11-19/DECISIONES_AUTOR_10.json, «Sí, los cinco»); nunca validado: a las
+    # 4 semanas sólo cabe CONTROL_ONLY.
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    # El bloque A79 se imprime desde 2017_sem02 (objetivo 2017-W02; antes, «Otras Rickettsiosis»
+    # con CIE A75.9, no incorporado): historia corta.
+    selection_policy: rolling_cv_historia_corta_v1
+    artifact_source:
+      backend: runner_release
+      release_id: otras_rickettsiosis_a79_release_32fb40365d94
+    acceptance_fallback_run: otras_rickettsiosis_a79_benchmark_test_93487cbe470a_81ce3ccf5de0
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#A16207"
+      label: "Otras rickettsiosis"
+      nombre_completo: "Otras rickettsiosis (A79)"
+
+  - id: leishmaniasis_cutanea_b551
+    data_name: "Leishmaniasis cutánea"
+    artifact_key: Leishmaniasis_Cutanea_B551
+    slug: leishmaniasis_cutanea_b551
+    display_name: "Leishmaniasis cutánea"
+    cie_codes: ["B55.1"]
+    # Sin «leishmaniasis» a secas: abarcaría la visceral (B55.0).
+    aliases: ["leishmaniasis cutanea", "ulcera de los chicleros", "b55.1"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_leishmaniasis_cutanea_b551
+    exposure_source_id: inegi_cpv2020_static
+    # Aviso: objetivo 2020-W53 sin fuente por cambio de rezago, imputado y marcado lag_regime_gap
+    # (huecos_objetivo en cuadros.yaml; planes/alta_b44_2026-11-19/DECISIONES_AUTOR_5.json: «Sí,
+    # imputar»).
+    # Aviso: control estacional seasonal_naive_lag52 publicado por decisión nominal del autor tras
+    # el rechazo de la prueba única de 2025
+    # (leishmaniasis_cutanea_b551_benchmark_test_96c14e031372_1a51517c071c: bases 0.00 frente a
+    # 0.00 del control, no finito (0 frente a 0) > 5 %; nacional General 87.56 frente a 72.22 del
+    # control, +21.24 % > 10 %; planes/alta_b44_2026-11-19/DECISIONES_AUTOR_10.json, «Sí, los
+    # cinco»); nunca validado: a las 4 semanas sólo cabe CONTROL_ONLY.
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: leishmaniasis_cutanea_b551_release_8fbbddb9d08e
+    acceptance_fallback_run: leishmaniasis_cutanea_b551_benchmark_test_96c14e031372_1a51517c071c
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#4D7C0F"
+      label: "Leishmaniasis cutánea"
+      nombre_completo: "Leishmaniasis cutánea (B55.1)"
+
+  - id: paludismo_vivax_b51
+    data_name: "Paludismo por Plasmodium vivax"
+    artifact_key: Paludismo_Vivax_B51
+    slug: paludismo_vivax_b51
+    display_name: "Paludismo por Plasmodium vivax"
+    cie_codes: ["B51"]
+    # Sin «paludismo» ni «malaria» a secas: abarcarían el paludismo por P. falciparum (B50), que el
+    # boletín publica en el bloque vecino de la misma página.
+    aliases: ["paludismo por plasmodium vivax", "paludismo por vivax", "paludismo vivax", "malaria por vivax", "malaria vivax", "plasmodium vivax", "b51"]
+    profile: aguda_conteos
+    batch: standalone
+    extraction_group: b44_paludismo_vivax_b51
+    exposure_source_id: inegi_cpv2020_static
+    # Sin H/M hasta 2020 y con H/M desde 2021: por decisión del autor (19-nov-2026) se modela sin
+    # sexo desde 2015-W01 (decisión del 19-nov-2026; 32 bases «general», 37 productos), sumando H + M desde 2021_sem01.
+    sex_breakdown: false
+    # Aviso: sin desglose por sexo por decisión del autor
+    # (planes/alta_b44_2026-11-19/DECISIONES_AUTOR_9.json, «Código nuevo: sumar H+M desde 2021 y
+    # modelar sin sexo desde 2014», inicio movido a 2015 por DECISIONES_AUTOR_11): hasta 2020 el
+    # cuadro imprime sólo el total y desde 2021_sem01 suma_sexos lee el acumulado como H + M,
+    # validado contra el TOTAL impreso; 32 bases «general» y 37 productos.
+    # Aviso: serie desde 2015-W01 por decisión del autor
+    # (planes/alta_b44_2026-11-19/DECISIONES_AUTOR_11.json, «Desde 2015»; inicio_serie en
+    # cuadros.yaml): 2014 imprime «s.n.» en Sem en 185 celdas.
+    # Aviso: objetivo 2017-W01 sin fuente por cambio de rezago (N-1 hasta 2017_sem01, N desde
+    # 2017_sem02), imputado causalmente y marcado (huecos_objetivo en cuadros.yaml): 32 filas, más
+    # 1 celda «Z» de 2016_sem27; 0 imputadas en 2025
+    # (planes/alta_b44_2026-11-19/frag/c10/paludismo_vivax_b51.qa.md).
+    # Aviso: nivel cambiante sin atribuir causa: de 501 a 802 casos anuales en 2015-2019, 39 en
+    # 2023 y 166 en 2025 (planes/alta_b44_2026-11-19/frag/c10/paludismo_vivax_b51.qa.md).
+    # Aviso: control estacional seasonal_naive_lag52 publicado por decisión nominal del autor tras
+    # el rechazo de la prueba única de 2025
+    # (paludismo_vivax_b51_benchmark_test_f767fecd0236_203959bd6b26: rechazo sólo por 0 frente a 0
+    # en bases 0.00 frente a 0.00 del control, no finito (0 frente a 0) > 5 %; 37 series 0.00
+    # frente a 0.00 del control, no finito (0 frente a 0) > 5 %; pasa nacional General 119.46
+    # frente a 117.95 del control, +1.28 % <= 10 %;
+    # planes/alta_b44_2026-11-19/DECISIONES_AUTOR_12.json, «Sí, publicar control»); nunca validado:
+    # a las 4 semanas sólo cabe CONTROL_ONLY.
+    lifecycle: published
+    channels: [web, epibot, reports]
+    training_engines: []
+    eligible_engines: []
+    selection_policy: rolling_cv_baja_incidencia_v1
+    artifact_source:
+      backend: runner_release
+      release_id: paludismo_vivax_b51_release_8af7d6f484a6
+    acceptance_fallback_run: paludismo_vivax_b51_benchmark_test_f767fecd0236_203959bd6b26
+    prophet_grid_key: null
+    deepar_grid_key: null
+    aggregate_national: false
+    gallery_enabled: false
+    web:
+      color: "#115E59"
+      label: "Paludismo por P. vivax"
+      nombre_completo: "Paludismo por Plasmodium vivax (B51)"

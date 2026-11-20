@@ -1,11 +1,9 @@
-"""Extractor genérico por 'grupo de cuadro' (EPIC 2).
-
-Generaliza el extractor de Dengue a cualquier cuadro descrito en ``config/data/cuadros.yaml``,
-reutilizando ``pdf_extractor`` y ``dengue_extractor``; el conteo real de columnas fija el layout.
-"""
+"""Extractor genérico por grupo de cuadro (``config/data/cuadros.yaml``); el conteo real de
+columnas fija el layout. Reutiliza ``pdf_extractor`` y ``dengue_extractor``."""
 
 from __future__ import annotations
 
+from functools import partial
 from pathlib import Path
 from typing import Any, cast
 
@@ -20,15 +18,21 @@ from epiforecast.data.extraction.cuadro_capa_texto import (
     recorta_bloque_interno,
     reintenta_row_tol_si_vacia,
 )
+from epiforecast.data.extraction.cuadro_estadios import suma_estadios
+from epiforecast.data.extraction.cuadro_reparacion_serie import exclusion_por_inicio
 from epiforecast.data.extraction.cuadro_reparaciones import (
     alinea_renglones,
     alinea_valor_en_nombre,
     despega_primera_columna,
     fila_total,
+    motivo_ambiguo,
+    opciones_tabla,
     primer_bloque_por_orden,
     sin_llamadas,
     spec_del_periodo,
 )
+from epiforecast.data.extraction.cuadro_sin_sexo import extrae_sin_sexo as _sin_sexo
+from epiforecast.data.extraction.cuadro_suma_sexos import marca_suma_sexos, suma_sexos
 from epiforecast.data.extraction.dengue_extractor import (
     _restrict_to_states,
     _year_week_from_filename,
@@ -36,7 +40,6 @@ from epiforecast.data.extraction.dengue_extractor import (
 from epiforecast.data.extraction.pdf_extractor import (
     build_column_map,
     clean_df,
-    normalize_number,
     pad_prev_year_cols,
     reshape,
 )
@@ -60,11 +63,11 @@ def load_group(group_id: str) -> dict[str, Any]:
 def source_exclusion(
     spec: dict[str, Any], filename: str, disease_id: str
 ) -> dict[str, Any] | None:
-    """Entrada de ``source_exclusions`` si el boletín es errata de fuente para el padecimiento."""
+    """Entrada de ``source_exclusions`` (errata de fuente) o de ``inicio_serie`` del padecimiento."""
     for exc in spec.get("source_exclusions") or []:
         if exc["file"] == filename and disease_id in exc["diseases"]:
             return cast("dict[str, Any]", exc)
-    return None
+    return exclusion_por_inicio(spec, filename, disease_id)
 
 
 def find_cuadro_page(pdf_path: str, anchors: list[str], state_markers: list[str]) -> int | None:
@@ -92,6 +95,7 @@ def _tabla_estatal(
     *,
     despegar: bool = False,
     valor_en_nombre: bool = False,
+    parciales: bool = False,
     **kw: Any,
 ) -> pd.DataFrame | None:
     """Tabla estatal limpia de la página (la de más filas), o None si camelot no detecta tabla."""
@@ -103,16 +107,13 @@ def _tabla_estatal(
         df_raw = despega_primera_columna(df_raw)
     if valor_en_nombre:
         df_raw = alinea_valor_en_nombre(df_raw)
-    return _restrict_to_states(sin_llamadas(clean_df(alinea_renglones(df_raw))))
+    return _restrict_to_states(sin_llamadas(clean_df(alinea_renglones(df_raw, parciales))))
 
 
 def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> dict[str, Any]:
-    """Extrae el bloque de un padecimiento del cuadro de un boletín.
-
-    Returns dict: ``df`` (largo, 8 col del consolidado, o None), ``page``, ``year``,
-    ``week``, ``n_states``, ``layout``, ``valid``, ``reason``.
-    """
-    spec = load_group(group_id)
+    """Extrae el bloque de un padecimiento del cuadro de un boletín. Devuelve un dict con ``df``
+    (largo, 8 col del consolidado, o None), ``page``, ``year``, ``week``, ``n_states``, ``layout``,
+    ``valid`` y ``reason``. Renglones partidos ambiguos en el bloque propio invalidan la tabla."""
     year, week = _year_week_from_filename(pdf_path)
     out: dict[str, Any] = {
         "df": None,
@@ -124,6 +125,7 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
         "valid": False,
         "reason": "",
     }
+    spec = load_group(group_id)
     if year is None or week is None:
         out["reason"] = "sin año/semana en filename"
         return out
@@ -142,31 +144,31 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
         out["reason"] = "página del cuadro no encontrada"
         return out
 
-    vn = bool(spec.get("valor_en_columna_nombre"))
-    df_clean = _tabla_estatal(pdf_path, page, valor_en_nombre=vn)
+    tabla = partial(_tabla_estatal, **opciones_tabla(spec))
+    df_clean = tabla(pdf_path, page)
     if df_clean is None:
         out["reason"] = "camelot no detectó tabla"
         return out
     esperados = int(spec.get("n_states_expected", 32))
     if len(df_clean) < esperados:
         # Margen amplio de borde sólo cuando faltan entidades: una lectura válida no cambia.
-        amplia = _tabla_estatal(pdf_path, page, valor_en_nombre=vn, edge_tol=500)
+        amplia = tabla(pdf_path, page, edge_tol=500)
         if amplia is not None and len(amplia) == esperados:
             df_clean = amplia
     area = _area_pagina(pdf_path, page) if len(df_clean) < esperados else None
     if area is not None and len(df_clean) < esperados:
         # Área de página completa cuando camelot recorta la primera entidad (2024_sem09, 3.5).
-        completa = _tabla_estatal(pdf_path, page, valor_en_nombre=vn, table_areas=[area])
+        completa = tabla(pdf_path, page, table_areas=[area])
         if completa is not None and len(completa) == esperados:
             df_clean = completa
     bloque_posterior = bool(spec.get("last_block_columns") or spec.get("inner_block_columns"))
     if len(df_clean) < esperados and bloque_posterior and not spec.get("first_block_columns"):
-        despegada = _tabla_estatal(pdf_path, page, despegar=True, valor_en_nombre=vn)
+        despegada = tabla(pdf_path, page, despegar=True)
         if despegada is not None and len(despegada) == esperados:
             df_clean = despegada
     if spec.get("reintento_row_tol") is not None:
         reparada_rt, etiqueta_rt, motivo_rt = reintenta_row_tol_si_vacia(
-            df_clean, pdf_path, page, spec, tabla_fn=_tabla_estatal, area_fn=_area_pagina
+            df_clean, pdf_path, page, spec, tabla_fn=tabla, area_fn=_area_pagina
         )
         if reparada_rt is None:
             out["reason"] = motivo_rt
@@ -186,6 +188,7 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
             return out
         df_clean, out["reparacion"] = reparada, "primer_bloque_por_orden"
 
+    ancho_tabla = df_clean.shape[1] - 1  # antes del recorte: ubica el bloque en el TOTAL
     # Primer o último bloque con vecinos de ancho variable: recorte por conteo real de columnas.
     for clave, al_final in (("first_block_columns", False), ("last_block_columns", True)):
         anchos = spec.get(clave)
@@ -212,11 +215,22 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
         if etiqueta_in:
             out["reparacion"] = etiqueta_in
 
+    if (ambiguo := motivo_ambiguo(df_clean)) is not None:
+        out["reason"] = ambiguo
+        return out
+    if (df_clean := suma_estadios(df_clean, pdf_path, page, spec, out)) is None:
+        return out
+    convertida = suma_sexos(
+        df_clean, pdf_path, page, spec, out, disease_id=disease_id, ancho_tabla=ancho_tabla
+    )
+    if convertida is None:
+        return out
+    df_clean = convertida
     keywords = [d["keyword"] for d in spec["diseases"]]
     n_dis = len(keywords)
     data_cols = df_clean.shape[1] - 1
     if not registry.require(disease_id).sex_breakdown:
-        return _sin_sexo(out, df_clean, spec, disease_id, year, week)
+        return marca_suma_sexos(_sin_sexo(out, df_clean, spec, disease_id, year, week))
     if data_cols == n_dis * 3:
         df_clean = pad_prev_year_cols(df_clean, keywords)
         out["layout"] = "3col_noprev"
@@ -243,56 +257,4 @@ def extract_cuadro_from_pdf(pdf_path: str, group_id: str, disease_id: str) -> di
         out["reason"] = MOTIVO_SIN_PREV_TEXTO
     elif out["valid"] and out.get("reparacion"):
         out["reason"] = f"ok; reparación {out['reparacion']} (cuadra con el TOTAL impreso)"
-    return out
-
-
-def _sin_sexo(
-    out: dict[str, Any],
-    df_clean: pd.DataFrame,
-    spec: dict[str, Any],
-    disease_id: str,
-    year: int,
-    week: int,
-) -> dict[str, Any]:
-    """Bloques sin desglose por sexo: Sem, acumulado del año y acumulado del anterior.
-
-    El cuadro puede traer varios padecimientos sin sexo en bloques de 3 columnas; se toma el bloque
-    del padecimiento por su ``block_index``. ``anchos_sin_sexo`` declara otros anchos por bloque
-    (2 = Sem y acumulado, sin año anterior, como en los boletines de 2014 del Cuadro 13.5).
-    """
-    bloques = spec.get("diseases") or [{"id": disease_id, "block_index": 0}]
-    anchos = [int(a) for a in spec.get("anchos_sin_sexo") or [3] * len(bloques)]
-    if len(anchos) != len(bloques) or any(a not in (2, 3) for a in anchos):
-        out["reason"] = f"anchos_sin_sexo inválidos: {anchos} para {len(bloques)} bloques"
-        return out
-    if df_clean.shape[1] - 1 != sum(anchos):
-        out["reason"] = (
-            f"columnas inesperadas: {df_clean.shape[1] - 1} (esperaba {sum(anchos)}, sin sexo)"
-        )
-        return out
-    bloque = next((int(d["block_index"]) for d in bloques if d["id"] == disease_id), 0)
-    inicio = 1 + sum(anchos[:bloque])
-    ancho = anchos[bloque]
-    anterior = (
-        [normalize_number(v) for v in df_clean.iloc[:, inicio + 2]]
-        if ancho == 3
-        else [None] * len(df_clean)
-    )
-    out["layout"] = "3col_total" if ancho == 3 else "2col_total_noprev"
-    df_dis = pd.DataFrame(
-        {
-            "Anio": year,
-            "Semana": f"{week:02d}",
-            "Entidad": df_clean.iloc[:, 0].to_numpy(),
-            "Padecimiento": registry.require(disease_id).data_name,
-            "Casos_semana": [normalize_number(v) for v in df_clean.iloc[:, inicio]],
-            "Acumulado_total": [normalize_number(v) for v in df_clean.iloc[:, inicio + 1]],
-            "Acumulado_anio_anterior": anterior,
-        }
-    )
-    n_states = int(df_dis["Entidad"].nunique())
-    out["df"] = df_dis.reset_index(drop=True)
-    out["n_states"] = n_states
-    out["valid"] = n_states == int(spec.get("n_states_expected", 32))
-    out["reason"] = "ok" if out["valid"] else f"{n_states} estados (esperaba 32)"
     return out

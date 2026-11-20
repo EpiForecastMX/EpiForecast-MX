@@ -145,6 +145,22 @@ def test_historia_corta_un_pliegue_2025_y_prueba_parcial_2026():
     assert corta.min_train_weeks == 104 and corta.allow_53_week_development
 
 
+def test_historia_corta_2024_solo_el_control_y_prueba_2026_w43():
+    """Series desde 2024: desarrollo 2025 (53 sem, 52 previas), prueba 2026-W01..W43 y el control
+    como único candidato (con un año previo, toda ventana de varios años cae al naive)."""
+    corta = policy.load_policy("rolling_cv_historia_corta_2024_v1")
+    canonica = policy.load_policy("rolling_cv_v1")
+    assert [(f.fold_id, f.n_weeks, f.train_weeks_before) for f in corta.folds] == [
+        ("development_2025", 53, 52),
+        ("test_2026", 43, 105),
+    ]
+    assert corta.folds[1].holdout[-1] == (2026, 43)
+    assert corta.candidate_engines == ("seasonal_naive_lag52",)
+    assert corta.acceptance == canonica.acceptance
+    regla = selection.SelectionRule.from_policy(corta)
+    assert regla.incumbents == ("seasonal_naive_lag52",) and regla.challengers == ()
+
+
 def test_un_pliegue_de_53_semanas_exige_declararlo():
     f = policy._build_fold("development", {"epi_year": 2025, "n_weeks": 53}, (2023, 1))
     base = dict(
