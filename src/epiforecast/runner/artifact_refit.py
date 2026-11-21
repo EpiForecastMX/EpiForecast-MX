@@ -60,11 +60,11 @@ def read_summary(refit_dir: Path, man: RunManifest, reparto: Mapping[str, int]) 
     )
     procedencia = resumen.get("provenance")
     provenance_of(procedencia, {c: input_digest(man, c, who) for c in CHAIN_DIGESTS}, who)
-    origen = dict(procedencia or {})  # type: ignore[arg-type]
+    origen = dict(procedencia or {})
     return Summary(
         acceptance_run_id=text_of(origen.get("acceptance_run_id"), f"{who}: acceptance_run_id"),
         selection_run_id=text_of(origen.get("selection_run_id"), f"{who}: selection_run_id"),
-        train_end=tuple(resumen.get("train_end") or ()),  # type: ignore[arg-type]
+        train_end=tuple(resumen.get("train_end") or ()),
         n_train_values=tuple(resumen.get("n_train_values") or ()),
     )
 

@@ -153,7 +153,7 @@ force-sort-within-sections = true
 [tool.mypy]
 python_version = "3.12"
 strict = true
-warn_unused_ignores = false            # pre-commit mypy no trae los stubs del venv
+warn_unused_ignores = true             # pre-commit corre el mypy del venv (hook local)
 ignore_missing_imports = true          # needed until all stubs exist
 exclude = ["notebooks/", "docs/"]
 

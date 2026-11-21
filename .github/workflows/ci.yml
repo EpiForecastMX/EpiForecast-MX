@@ -56,6 +56,7 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
+          cache-dependency-path: requirements.lock
 
       - name: Create isolated venv
         run: |
@@ -65,7 +66,8 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -e ".[dev]"
+          # El lock fija el entorno validado; los rangos de pyproject sólo acotan.
+          pip install -c requirements.lock -e ".[dev]"
 
       - name: Dependency consistency (pip check)
         # Un entorno con requisitos rotos puede pasar las pruebas y fallar en otro paso
@@ -99,6 +101,7 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
+          cache-dependency-path: requirements.lock
 
       - name: Install system deps
         # `poppler-utils` trae `pdftotext`, que usan las cinco pruebas del bundle de MICAI
@@ -115,7 +118,8 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -e ".[dev,scraping]"
+          # El lock fija el entorno validado; los rangos de pyproject sólo acotan.
+          pip install -c requirements.lock -e ".[dev,scraping]"
 
       - name: Dependency consistency (pip check)
         # Un entorno con requisitos rotos puede pasar las pruebas y fallar en otro paso
@@ -155,6 +159,7 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: pip
+          cache-dependency-path: requirements.lock
 
       - name: Install system deps
         # `poppler-utils` trae `pdftotext`, que usan las cinco pruebas del bundle de MICAI
@@ -171,7 +176,8 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          pip install -e ".[dev,scraping]"
+          # El lock fija el entorno validado; los rangos de pyproject sólo acotan.
+          pip install -c requirements.lock -e ".[dev,scraping]"
 
       - name: Run integration tests
         # Incluye los cuatro agregados legacy: si no fueron restaurados, sus checks
