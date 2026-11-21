@@ -159,8 +159,17 @@ celerybeat.pid
 # SageMath parsed files
 *.sage.py
 
-# Environments
+# Environments y credenciales (nunca versionar)
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+id_rsa*
+credentials*.json
+*service_account*.json
+gen-lang-client-*.json
+.dvc/config.local
 .venv
 env/
 venv/
@@ -350,9 +359,12 @@ reports/*.pdf
 # versionado; estos son los intermedios de la reparacion de W31 y no se publican.
 reports/dashboards/*_W31_*.twb
 
-# Obesidad (E66) es NO-GO: no se publica ni se hace `git push` de sus artefactos
-# sin OK formal explicito. Ver CLAUDE.md.
+# EDA local de Obesidad (E66): no se versiona.
 reports/docs/EDA_Obesidad*.pdf
 
 # Configuración local del asistente y sus worktrees
 .claude/
+
+# Excepciones explícitas: archivos versionados a propósito que una regla general cubre.
+!data/registry.json
+!Congresos/MICAI/CHECKLIST_ENVIO.md

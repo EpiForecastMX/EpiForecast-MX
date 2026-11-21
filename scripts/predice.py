@@ -147,7 +147,8 @@ def _cargar_mapeo_hibrido(base_models: Path, padecimiento_sin_acento: str = "") 
     for csv_path in sorted(folder_pad.rglob("*_completo.csv")):
         try:
             df = pd.read_csv(csv_path)
-        except Exception:
+        except Exception as exc:
+            logger.warning("No se pudo leer {}: {}", csv_path, exc)
             continue
         if "usar_regional" not in df.columns:
             continue
@@ -177,7 +178,8 @@ def _cargar_metricas_completos(
     for csv_path in sorted(folder_pad.rglob("*_completo.csv")):
         try:
             df = pd.read_csv(csv_path)
-        except Exception:
+        except Exception as exc:
+            logger.warning("No se pudo leer {}: {}", csv_path, exc)
             continue
         if "archivo_modelo" not in df.columns:
             continue

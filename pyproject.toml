@@ -5,7 +5,7 @@ build-backend = "flit_core.buildapi"
 [project]
 name = "epiforecast-mx"
 version = "2.0.0"
-description = "Sistema de pronóstico epidemiológico para Depresión (F32), Parkinson (G20) y Alzheimer (G30) en México, desarrollado en colaboración con el IMSS."
+description = "Plataforma de pronóstico epidemiológico semanal para padecimientos del Boletín Epidemiológico de México, desarrollada en colaboración con el IMSS."
 authors = [
   { name = "Javier Augusto Rebull Saucedo" },
   { name = "Juan Carlos Pérez Nava" },
@@ -105,7 +105,10 @@ epi = "epiforecast.cli:main"
 line-length = 99
 target-version = "py312"
 src = ["src"]
-include = ["pyproject.toml", "src/**/*.py", "scripts/**/*.py", "tests/**/*.py"]
+include = [
+    "pyproject.toml", "src/**/*.py", "scripts/**/*.py", "tests/**/*.py",
+    "epi.py", "epi_modules/**/*.py",
+]
 
 [tool.ruff.lint]
 extend-select = [

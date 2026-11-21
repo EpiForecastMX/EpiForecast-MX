@@ -996,7 +996,7 @@ def build_static_data() -> dict[str, Any]:
         "archivos_test": 46,
         "evaluaciones_totales": 1332,
         "ci_cd": "GitHub Actions (lint + typecheck + tests)",
-        "sagemaker": "ml.g4dn.xlarge (NVIDIA T4), cuenta 564141855321",
+        "sagemaker": "ml.g4dn.xlarge (NVIDIA T4)",
         "bucket_s3": "s3://epiforecast-mx-data",
     }
 

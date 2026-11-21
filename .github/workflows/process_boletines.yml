@@ -17,6 +17,7 @@ on:
   workflow_run:
     workflows: ["Scrape Boletines SINAVE"]   # ← nombre exacto del scraper workflow
     types: [completed]
+    branches: [main]   # un dispatch del scraper en otra rama no procesa ni empuja a main
 
   # Dispatch manual (para re-procesar o testing)
   workflow_dispatch:
@@ -40,7 +41,8 @@ jobs:
     # Solo corre si el scraper terminó con éxito (o si es dispatch manual)
     if: >
       github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.head_branch == 'main')
 
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -74,9 +76,13 @@ jobs:
         run: pip install -e ".[extraction,dvc]"
 
       - name: Configure DVC remote
+        # Los secretos llegan por entorno, nunca interpolados en el script.
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         run: |
-          dvc remote modify s3remote --local access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
-          dvc remote modify s3remote --local secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          dvc remote modify s3remote --local access_key_id "$AWS_ACCESS_KEY_ID"
+          dvc remote modify s3remote --local secret_access_key "$AWS_SECRET_ACCESS_KEY"
 
       - name: Pull PDFs from S3
         run: dvc pull data/raw_PDFs.dvc data/processed/dataset_boletin_epidemiologico.csv.dvc
@@ -120,6 +126,9 @@ jobs:
 
       # ── 6. Git commit del .dvc file ──
       - name: Commit .dvc pointer
+        env:
+          ROWS: ${{ steps.process.outputs.rows_added || '?' }}
+          FILES: ${{ steps.process.outputs.files_processed || '?' }}
         run: |
           git config user.name "Javier Rebull"
           git config user.email "168046724+jrebull@users.noreply.github.com"
@@ -130,8 +139,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No hay cambios en el .dvc. Nada que commitear."
           else
-            ROWS="${{ steps.process.outputs.rows_added || '?' }}"
-            FILES="${{ steps.process.outputs.files_processed || '?' }}"
             git commit -m "ci: actualiza dataset.dvc — ${FILES} boletín(es), ${ROWS} filas nuevas [skip ci]"
             git push
             echo "dataset.dvc actualizado y pusheado."
@@ -145,9 +152,9 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
+          ROWS: ${{ steps.process.outputs.rows_added || 'N/A' }}
+          FILES: ${{ steps.process.outputs.files_processed || 'N/A' }}
         run: |
-          ROWS="${{ steps.process.outputs.rows_added || 'N/A' }}"
-          FILES="${{ steps.process.outputs.files_processed || 'N/A' }}"
           aws sns publish \
             --topic-arn "$SNS_TOPIC_ARN" \
             --subject "EpiForecast-MX: pipeline completado" \

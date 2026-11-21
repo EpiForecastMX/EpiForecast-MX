@@ -1,24 +1,25 @@
 # Dependencias minimas para container SageMaker (DeepAR + pipeline)
-# Extraidas de pyproject.toml, sin dev/scraping/DVC
+# Extraidas de pyproject.toml, sin dev/scraping/DVC. Los topes deben coincidir con
+# los de pyproject.toml (omegaconf 2.4, numpy 2.5 y prophet 1.4 rompen el proyecto).
 
 # Core
-loguru>=0.7
-omegaconf>=2.3
-numpy>=1.26
-pandas>=2.2
-joblib>=1.3
-scikit-learn>=1.4
+loguru>=0.7,<1.0
+omegaconf>=2.3,<2.4
+numpy>=1.26,<2.5
+pandas>=2.2,<3.0
+joblib>=1.3,<2.0
+scikit-learn>=1.4,<2.0
 
 # Prophet (necesario para pipeline mixto)
-prophet>=1.1
-cmdstanpy>=1.2
+prophet>=1.1,<1.4
+cmdstanpy>=1.2,<2.0
 
 # DeepAR (GluonTS) — torch ya viene en la imagen base con CUDA
-gluonts[torch]>=0.15
+gluonts[torch]>=0.15,<1.0
 
 # Visualizacion y metricas
-matplotlib>=3.8
-rich>=13.7
+matplotlib>=3.8,<4.0
+rich>=13.7,<15.0
 
 # SageMaker Training Toolkit
 sagemaker-training>=4.7
