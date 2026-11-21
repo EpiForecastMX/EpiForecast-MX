@@ -89,7 +89,7 @@ def _make_progress_callback(total_epochs: int, description: str = "DeepAR") -> A
         TimeRemainingColumn,
     )
 
-    class _RichEpochProgress(Callback):  # type: ignore[misc]
+    class _RichEpochProgress(Callback):
         def __init__(self) -> None:
             self._progress: Progress | None = None
             self._task: Any = None

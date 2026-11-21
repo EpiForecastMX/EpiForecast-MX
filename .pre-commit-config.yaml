@@ -16,15 +16,16 @@ repos:
         exclude: ^(docs|notebooks)/
 
   # ── Mypy: type checking ─────────────────────────────────────────
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.19.1
+  # Hook local: corre el mypy del venv con el mismo alcance que `make typecheck` y el CI
+  # (mismos stubs y dependencias), en lugar de un entorno aislado que no ve el proyecto.
+  - repo: local
     hooks:
       - id: mypy
-        additional_dependencies:
-          - types-requests
-        args: [--config-file=pyproject.toml, src/epiforecast/]
+        name: mypy (make typecheck)
+        entry: make typecheck
+        language: system
         pass_filenames: false
-        files: ^src/epiforecast/
+        files: \.py$
 
   # ── General hooks ────────────────────────────────────────────────
   - repo: https://github.com/pre-commit/pre-commit-hooks
