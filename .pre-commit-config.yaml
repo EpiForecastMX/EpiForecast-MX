@@ -22,7 +22,8 @@ repos:
     hooks:
       - id: mypy
         name: mypy (make typecheck)
-        entry: make typecheck
+        # El venv vive en el checkout principal: los worktrees comparten estos hooks y no tienen .venv.
+        entry: bash -c 'make typecheck PYTHON="${PYTHON:-$(git rev-parse --path-format=absolute --git-common-dir)/../.venv/bin/python}"'
         language: system
         pass_filenames: false
         files: \.py$

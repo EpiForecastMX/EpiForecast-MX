@@ -27,7 +27,7 @@
 
 ## Estado vigente — lote alta_b44 publicado — 19/20-nov-2026
 
-Prevalece sobre la sección «Versión con control A51» (historia previa a este lote) en conteos y base semanal.
+Prevalece sobre la historia de la versión candidata con control A51 (sección siguiente) en conteos y base semanal.
 Publicados en producción servida: **152 padecimientos en el sitio, 148 de ellos releases del runner**. El lote
 alta_b44 añadió 66 del boletín 44: 15 portafolios aceptados en su prueba única, 41 controles estacionales no
 validados tras rechazo y 10 controles por construcción (series impresas sólo desde 2024). Las 32 categorías
@@ -253,7 +253,8 @@ cd EpiForecast-MX
 # Create virtual environment and install dependencies
 python3.12 -m venv .venv
 source .venv/bin/activate
-pip install -e ".[dev]"
+# Same pinned environment as CI (requirements.lock constrains every version)
+pip install -c requirements.lock -e ".[dev]"
 
 # Optional: install DVC for data versioning
 pip install -e ".[dvc]"
