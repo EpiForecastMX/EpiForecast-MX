@@ -28,9 +28,15 @@ on:
 permissions:
   contents: write
 
+# Comparte grupo con Process Boletines: ambos empujan a main y no deben cruzarse.
+concurrency:
+  group: boletines-main
+  cancel-in-progress: false
+
 jobs:
   scrape:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
 
     steps:
       - name: Checkout
@@ -47,7 +53,7 @@ jobs:
           chrome-version: stable
 
       - name: Install dependencies
-        run: pip install selenium requests boto3
+        run: pip install "selenium>=4.20,<5.0" "requests>=2.31,<3.0" "boto3>=1.34,<2.0"   # rangos de pyproject [scraping]
 
       - name: Install xvfb (display virtual para Chrome no-headless)
         run: sudo apt-get update && sudo apt-get install -y xvfb
@@ -89,7 +95,7 @@ jobs:
       # ── Fase 2: DVC (solo si hay boletines nuevos) ──
       - name: Install DVC
         if: steps.scraper.outputs.new_count != '0'
-        run: pip install dvc[s3]
+        run: pip install "dvc[s3]>=3.40,<4.0"   # rango de pyproject [dvc]
 
       - name: Stash new PDFs + DVC pull
         if: steps.scraper.outputs.new_count != '0'
