@@ -19,7 +19,7 @@ import warnings
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-from epi_modules.engine import EpiEngine
+from epi_modules.engine import EpiEngine, SessionStats
 from epi_modules.features.ai_chat import handle_chat, invalidate_kb
 from epi_modules.features.dashboard import show_dashboard
 from epi_modules.features.data_cache import ProjectDataCache
@@ -380,7 +380,7 @@ def main() -> None:
                 cache.invalidate()
                 invalidate_kb()
                 chat_history.clear()
-                engine.cmd_count = 0
+                engine.stats = SessionStats()
                 show_banner(console)
                 continue
 

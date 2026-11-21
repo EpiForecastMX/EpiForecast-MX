@@ -48,7 +48,7 @@ setup: setup-mac requirements data-pull
 .PHONY: setup-linux
 setup-linux: setup-linux-deps requirements
 	@echo ">>> Instalando DVC[s3]..."
-	. $(PROJECT_NAME)/$(ACTIVATE) && pip install "dvc[s3]"
+	$(PYTHON) -m pip install -e ".[dvc]"
 	$(MAKE) data-pull
 	@echo ">>> Setup completo. Proyecto listo."
 
@@ -67,9 +67,10 @@ setup-linux-deps:
 ## Crear entorno virtual (venv)
 .PHONY: create-env
 create-env:
-	$(PYTHON)$(PYTHON_VERSION) -m venv $(PROJECT_NAME)
-	. $(PROJECT_NAME)/$(ACTIVATE) && pip install --upgrade pip && pip install -e ".[dev]"
-	@echo ">>> venv creado. Activa con: source $(PROJECT_NAME)/$(ACTIVATE)"
+	python$(PYTHON_VERSION) -m venv .venv
+	.venv/bin/python -m pip install --upgrade pip
+	.venv/bin/python -m pip install -e ".[dev]"
+	@echo ">>> venv creado. Activa con: source .venv/bin/activate"
 
 
 
@@ -492,28 +493,25 @@ endif
 	dvc add data/raw_PDFs
 	@echo ">>> PDF agregado. Ejecuta 'make data-commit'."
 
-## Commitear datos + push Git y S3
+## Commitear el puntero DVC de los PDFs y subirlos a S3 (el push de git va por PR)
 .PHONY: data-commit
 data-commit:
-	git add data/raw_PDFs.dvc data/.gitignore
-	git commit -m "data: add new weekly PDF $$(date +%Y-%W)"
+	git add data/raw_PDFs.dvc
+	git commit -m "data: add new weekly PDF $$(date +%Y-%m-%d)"
 	dvc push
-	git push
-	@echo ">>> Datos commiteados y sincronizados."
+	@echo ">>> PDFs en S3 y puntero commiteado. Abre una PR para integrarlo en main."
 
 ## Flujo semanal completo (uso: make data-weekly PDF=ruta/archivo.pdf)
 .PHONY: data-weekly
 data-weekly: data-add data-commit
 	@echo ">>> Flujo semanal completado."
 
-## BLOQUEADO hasta P1: materializa 41/41, genera, corre los gates de la politica y
-## sella. El cableado esta probado con repos sinteticos, no con datos reales; faltan
-## P0.1, P0.2 y P0.8. Aborta en el preflight, antes de descargar o generar nada.
-.PHONY: update-week
-## Paso semanal único del runner (todos los publicados desde un release; la lista sale del registry)
+.PHONY: semana-revisa semana-observa semana-vistas
+## Paso semanal único del runner: revisa (la lista de publicados sale del registry)
 semana-revisa:
 	$(PYTHON) -m scripts.paso_semanal revisa
 
+## Paso semanal único del runner: registra la observación de un boletín
 semana-observa:
 ifndef PDF
 	$(error Uso: make semana-observa PDF=<ruta.pdf> SALIDA=<dir> [WRITE=1 FIRST_AVAILABLE='<ISO|evidencia>'])
@@ -521,12 +519,17 @@ endif
 	$(PYTHON) -m scripts.paso_semanal observa --pdf "$(PDF)" --salida "$(or $(SALIDA),runs/semana)" \
 		$(if $(WRITE),--write) $(if $(FIRST_AVAILABLE),--first-available "$(FIRST_AVAILABLE)")
 
+## Paso semanal único del runner: regenera las vistas del frontend
 semana-vistas:
 ifndef N
 	$(error Uso: make semana-vistas N=<boletín> FE=<checkout del frontend>)
 endif
 	$(PYTHON) -m scripts.paso_semanal vistas --n $(N) --frontend "$(FE)"
 
+## BLOQUEADO hasta P1: materializa 41/41, genera, corre los gates de la politica y
+## sella. El cableado esta probado con repos sinteticos, no con datos reales; faltan
+## P0.1, P0.2 y P0.8. Aborta en el preflight, antes de descargar o generar nada.
+.PHONY: update-week
 update-week:
 	bash scripts/actualiza_semanal.sh
 
@@ -600,9 +603,11 @@ s3-sync:
 #################################################################################
 
 ## Web Knowledge Base
+.PHONY: web-build web-dev
 web-build:
 	$(PYTHON) scripts/build_web_knowledge.py
 
+## Sirve web_dashboard en localhost:3000
 web-dev: web-build
 	cd web_dashboard && npx serve -l 3000
 
@@ -657,12 +662,13 @@ endif
 
 define PRINT_HELP_PYSCRIPT
 import re, sys; \
-lines = '\n'.join([line for line in sys.stdin]); \
-matches = re.findall(r'\n## (.*)\n[\s\S]+?\n([a-zA-Z_-]+):', lines); \
+lines = '\n' + sys.stdin.read(); \
+matches = re.findall(r'\n## (.*)\n(?:## .*\n)*(?:\.PHONY.*\n)*(?:## .*\n)*([a-zA-Z0-9_-]+):', lines); \
 print('EpiForecast-MX — Available commands:\n'); \
 print('\n'.join(['{:25}{}'.format(*reversed(match)) for match in matches]))
 endef
 export PRINT_HELP_PYSCRIPT
 
+.PHONY: help
 help:
 	@$(PYTHON) -c "${PRINT_HELP_PYSCRIPT}" < $(MAKEFILE_LIST)
