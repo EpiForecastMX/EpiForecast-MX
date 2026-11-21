@@ -31,6 +31,14 @@ requirements:
 	$(PYTHON) -m pip install -U pip
 	$(PYTHON) -m pip install -e ".[dev]"
 
+## Regenerar requirements.lock desde el venv validado (correr tras cambiar dependencias)
+.PHONY: lock
+lock:
+	$(PYTHON) -m pip check
+	@{ grep '^#' requirements.lock; $(PYTHON) -m pip freeze --exclude-editable | grep '==' | LC_ALL=C sort -f; } > requirements.lock.tmp
+	@mv requirements.lock.tmp requirements.lock
+	@echo ">>> requirements.lock regenerado; actualiza los pines de requirements.txt y corre tests/unit/test_requirements_lock.py"
+
 ## Setup completo macOS (Ghostscript + deps + data)
 .PHONY: setup
 setup: setup-mac requirements data-pull

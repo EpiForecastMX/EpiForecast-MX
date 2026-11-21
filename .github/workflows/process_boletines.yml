@@ -26,6 +26,15 @@ on:
         required: false
         default: ""
 
+# Empuja el puntero .dvc a main: necesita escribir contenidos y nada más.
+permissions:
+  contents: write
+
+# Comparte grupo con el scraper: ambos empujan a main y no deben cruzarse.
+concurrency:
+  group: boletines-main
+  cancel-in-progress: false
+
 jobs:
   process:
     # Solo corre si el scraper terminó con éxito (o si es dispatch manual)
@@ -62,7 +71,7 @@ jobs:
 
       # ── 3. DVC + pull ──
       - name: Install DVC
-        run: pip install dvc[s3]
+        run: pip install -e ".[extraction,dvc]"
 
       - name: Configure DVC remote
         run: |
@@ -91,8 +100,9 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ secrets.AWS_REGION }}
+          # Entrada del dispatch por variable de entorno, nunca interpolada en el shell.
+          NEW_FILES: ${{ github.event.inputs.new_files || '' }}
         run: |
-          NEW_FILES="${{ github.event.inputs.new_files || '' }}"
           if [ -n "$NEW_FILES" ]; then
             python scripts/ci_process_boletines.py --new-files "$NEW_FILES"
           else
@@ -124,7 +134,7 @@ jobs:
             FILES="${{ steps.process.outputs.files_processed || '?' }}"
             git commit -m "ci: actualiza dataset.dvc — ${FILES} boletín(es), ${ROWS} filas nuevas [skip ci]"
             git push
-            echo "✅ dataset.dvc actualizado y pusheado."
+            echo "dataset.dvc actualizado y pusheado."
           fi
 
       # ── 7. Notificación SNS (éxito) ──
@@ -140,13 +150,13 @@ jobs:
           FILES="${{ steps.process.outputs.files_processed || 'N/A' }}"
           aws sns publish \
             --topic-arn "$SNS_TOPIC_ARN" \
-            --subject "✅ EpiForecast-MX: Pipeline completado" \
+            --subject "EpiForecast-MX: pipeline completado" \
             --message "Pipeline de procesamiento ejecutado exitosamente.
 
-          📊 Archivos procesados: ${FILES}
-          📈 Filas agregadas: ${ROWS}
-          🔗 Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          ⏰ Fecha: $(date -u '+%Y-%m-%d %H:%M UTC')"
+          Archivos procesados: ${FILES}
+          Filas agregadas: ${ROWS}
+          Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          Fecha: $(date -u '+%Y-%m-%d %H:%M UTC')"
 
       # ── 8. Notificación SNS (fallo) ──
       - name: SNS Notification (Failure)
@@ -159,9 +169,9 @@ jobs:
         run: |
           aws sns publish \
             --topic-arn "$SNS_TOPIC_ARN" \
-            --subject "❌ EpiForecast-MX: Pipeline fallido" \
+            --subject "EpiForecast-MX: pipeline fallido" \
             --message "El pipeline de procesamiento ha fallado.
 
-          ⚠️ Revisar logs para más detalles.
-          🔗 Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          ⏰ Fecha: $(date -u '+%Y-%m-%d %H:%M UTC')"
+          Revisar logs para más detalles.
+          Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          Fecha: $(date -u '+%Y-%m-%d %H:%M UTC')"
