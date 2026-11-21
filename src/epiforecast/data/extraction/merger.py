@@ -194,7 +194,7 @@ def _find_missing_rows(
     return missing_rows, int(missing_mask.sum())
 
 
-@app.command()  # type: ignore[misc]
+@app.command()  # type: ignore[misc,untyped-decorator]
 def main(
     input_dir: Path = typer.Option(
         DEFAULT_INPUT_DIR, "--input", "-i", file_okay=False, dir_okay=True

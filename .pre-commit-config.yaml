@@ -17,7 +17,7 @@ repos:
 
   # ── Mypy: type checking ─────────────────────────────────────────
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.14.1
+    rev: v1.19.1
     hooks:
       - id: mypy
         additional_dependencies:
@@ -31,9 +31,9 @@ repos:
     rev: v5.0.0
     hooks:
       - id: trailing-whitespace
-        exclude: ^docs/alta10b/(revisiones/|MANIFIESTO_|orden_apertura_|AUTORIZACION_.*\.json)   # copias tal cual con huella
+        exclude: ^(docs/alta10b/(revisiones/|MANIFIESTO_|orden_apertura_|AUTORIZACION_.*\.json)|docs/auditorias/|data/registry\.json)   # evidencia con huella y JSON generado
       - id: end-of-file-fixer
-        exclude: ^docs/alta10b/(revisiones/|MANIFIESTO_|orden_apertura_|AUTORIZACION_.*\.json)
+        exclude: ^(docs/alta10b/(revisiones/|MANIFIESTO_|orden_apertura_|AUTORIZACION_.*\.json)|docs/auditorias/|data/registry\.json)
       - id: check-yaml
       - id: check-toml
       - id: check-merge-conflict

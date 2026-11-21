@@ -1,0 +1,9 @@
+# Las acciones van fijadas por SHA; Dependabot propone el SHA nuevo con su etiqueta.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: ci

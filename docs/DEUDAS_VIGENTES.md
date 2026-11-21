@@ -382,7 +382,7 @@ revisión científica; no borrar Bento/Reports ni relajar el patrón para que pa
   el estado efectivo para operar.
 - `PLAN_CONVERGENCIA_RAMAS_Y_DATOS.md`: bitácora de la convergencia del 18-ago; sus ramas,
   estado 1/4 y siguientes acciones quedaron superados.
-- `PENDIENTES_2026-08-25.md`: bitácora CALASS/cifras; sus ítems vigentes se reflejan aquí.
+- `docs/PENDIENTES_2026-08-25.md`: bitácora CALASS/cifras; sus ítems vigentes se reflejan aquí.
 - `RONDA_128_AUDITORIA_PENDIENTE_DE_PEGAR.md`: evidencia de una ronda, no cola de trabajo.
 
 ## Regla de cierre
