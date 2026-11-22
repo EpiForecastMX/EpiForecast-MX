@@ -1,0 +1,3906 @@
+{
+ "schema": "sombra_v2_emision.v1",
+ "emision_id": "sombra_v3_20261122_c0f26063ce",
+ "emitida_utc": "2026-11-22T07:46:56.247177+00:00",
+ "code_commit": "2e5ddf923da55feb0171ed135dbe11da1ba8a9ac",
+ "config_sha256": "c5f35a01a370a2363c41bbdbbb1d335c35887e43bd53a9d65862cddeb5e6e029",
+ "fuente_desarrollo": "banco",
+ "padecimientos": [
+  {
+   "engine": "media_26s",
+   "dev_smape_nacional": 27.100568378152246,
+   "dev_smape_nacional_control": 51.14607047012596,
+   "dev_vs_control_pct": -47.01339100140355,
+   "elegibles": [
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "abeja_u604",
+   "release_id": "abeja_u604_release_2ac0e95c3567",
+   "observation_dataset_id": "abeja_u604_171a6a33dda6",
+   "observation_sha256": "171a6a33dda6d55db194eb97aaf858c681458a5580dcc1c144aefa88b2cd3b5a",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "dc6fadf55c408ccd114ead75ec94e5c432ca9b2370387f37154ae4d96f49cf42",
+   "filas": 5772
+  },
+  {
+   "engine": "tsb",
+   "dev_smape_nacional": 36.6960897441316,
+   "dev_smape_nacional_control": 54.697467731276625,
+   "dev_vs_control_pct": -32.91080690532889,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "absceso_hepatico_a064",
+   "release_id": "absceso_hepatico_a064_release_0ec9c6dfc5f8",
+   "observation_dataset_id": "absceso_hepatico_a064_6189aa55e451",
+   "observation_sha256": "6189aa55e45199f69780ac92c12f6f35e2f67933dcf92163d96af0547d37fe91",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "5a4dc923c9932639654caac07c73bb5258388460fcaa8acb6461a155ff618852",
+   "filas": 5772
+  },
+  {
+   "engine": "media_26s",
+   "dev_smape_nacional": 28.265976279611255,
+   "dev_smape_nacional_control": 35.88045471475878,
+   "dev_vs_control_pct": -21.221800268923136,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "ahorcamiento_x70",
+   "release_id": "ahorcamiento_x70_release_6d68f72ec4bd",
+   "observation_dataset_id": "ahorcamiento_x70_93c8f14524d4",
+   "observation_sha256": "93c8f14524d4ecb4223cbff8d0e2f3124b59b2deddc285db4f349a1aca696f07",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "654b33464ae772455b464a9c4c7991f49389eaa9fb9af28e2adec83b95a20f34",
+   "filas": 5772
+  },
+  {
+   "engine": "topdown_ets_nacional",
+   "dev_smape_nacional": 9.10037187049509,
+   "dev_smape_nacional_control": 11.594318227197927,
+   "dev_vs_control_pct": -21.510073363801098,
+   "elegibles": [
+    "ets_amortiguado_log1p",
+    "naive_lag52",
+    "topdown_ets_nacional"
+   ],
+   "pliegues": 4,
+   "disease_id": "alacran_t63",
+   "release_id": "alacran_t63_release_7c33784322ef",
+   "observation_dataset_id": "alacran_t63_d38c6efe3231",
+   "observation_sha256": "d38c6efe3231b458632159a094db368a906a6bd9b0f82c640b252845b2764c12",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "fd5d84d628085e73bb5017626161e40a834bf080374301bd1cd2857cd23fa4f1",
+   "filas": 5772
+  },
+  {
+   "engine": "nivel_x_perfil_5y",
+   "dev_smape_nacional": 16.238753581824867,
+   "dev_smape_nacional_control": 25.743311765280676,
+   "dev_vs_control_pct": -36.92049519547192,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "media_13s",
+    "media_26s",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "alcoholica_higado_k70",
+   "release_id": "alcoholica_higado_k70_release_c45df29720a9",
+   "observation_dataset_id": "alcoholica_higado_k70_fe87182bbe1b",
+   "observation_sha256": "fe87182bbe1b82915a0b26e3dc6dcea6b005d13f6e727c49832e5413f98eb3fd",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "584b24e0735a888d2e1187ae419d99647b3d31116f9430818979e6d9234004d5",
+   "filas": 5772
+  },
+  {
+   "engine": "topdown_ets_nacional",
+   "dev_smape_nacional": 14.334377068157227,
+   "dev_smape_nacional_control": 23.32955730129732,
+   "dev_vs_control_pct": -38.55701210686877,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_26s",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "mediana_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "alimentaria_a05",
+   "release_id": "alimentaria_a05_release_0c7272c14624",
+   "observation_dataset_id": "alimentaria_a05_95717b48544d",
+   "observation_sha256": "95717b48544ddf44ccfb982aad9d6d5d1e54a4361f73edc33ffaf742c69e6fc1",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "ed29f160284b54c924936cebad4a2440c7f6944dee3aa75595e03de8358e16e6",
+   "filas": 5772
+  },
+  {
+   "engine": "topdown_ets_nacional",
+   "dev_smape_nacional": 14.676666048176257,
+   "dev_smape_nacional_control": 17.055115797121168,
+   "dev_vs_control_pct": -13.945667547718344,
+   "elegibles": [
+    "naive_lag52",
+    "topdown_ets_nacional"
+   ],
+   "pliegues": 4,
+   "disease_id": "amebiasis_a06",
+   "release_id": "amebiasis_a06_release_aaf5c1da2175",
+   "observation_dataset_id": "amebiasis_a06_76ffb8c2fc32",
+   "observation_sha256": "76ffb8c2fc3258c54f552011fbf23794c78d8912ef4986e577e50404de59b186",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "eb261a41d29cc48a8ac0ee65230cdad5e3978df0247309ae0b344cea21deb6cf",
+   "filas": 5772
+  },
+  {
+   "engine": "combo_media_top3",
+   "dev_smape_nacional": 60.935196278780396,
+   "dev_smape_nacional_control": 82.8439082285236,
+   "dev_vs_control_pct": -26.445773042609694,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "anencefalia_q00",
+   "release_id": "anencefalia_q00_release_b8dd98d57ec0",
+   "observation_dataset_id": "anencefalia_q00_c3f7c70a279a",
+   "observation_sha256": "c3f7c70a279a4bd18f2c1caf73b2776a9c40e1cf8f65fa4ae074e320f51c7f33",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "9812d16b18b8fd4d279a2be25068e6f01776de143e9cdb0e3c6b76002a502b44",
+   "filas": 5772
+  },
+  {
+   "engine": "topdown_ets_nacional",
+   "dev_smape_nacional": 33.39370637564721,
+   "dev_smape_nacional_control": 50.00804864884475,
+   "dev_vs_control_pct": -33.22333648701837,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "anorexia_f50",
+   "release_id": "anorexia_f50_release_173404ea4ef0",
+   "observation_dataset_id": "anorexia_f50_48aa3f3a8d78",
+   "observation_sha256": "48aa3f3a8d782d2d642490a289584c8ba2acdcc1dde03b74d06fd79ab9295602",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "510aaf78df64b53060c6c95d14b65fd699bf0b01692844d1c92a430ab1ec4840",
+   "filas": 5772
+  },
+  {
+   "engine": "ets_amortiguado_log1p",
+   "dev_smape_nacional": 13.877597917817955,
+   "dev_smape_nacional_control": 17.59245633256027,
+   "dev_vs_control_pct": -21.116200856311487,
+   "elegibles": [
+    "ets_amortiguado_log1p",
+    "naive_lag52",
+    "topdown_ets_nacional"
+   ],
+   "pliegues": 4,
+   "disease_id": "ascariasis_b77",
+   "release_id": "ascariasis_b77_release_f1406e8ab382",
+   "observation_dataset_id": "ascariasis_b77_acd909ddd6b4",
+   "observation_sha256": "acd909ddd6b4ee5b78d1a384f8c5cf7f16b1a3f7b1b486eb0946a0e552f2eaed",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "ef1323e756cd185a88f859775b311000df5f7a9b2879c9ac159ad932d3b350d2",
+   "filas": 5772
+  },
+  {
+   "engine": "combo_media_top3",
+   "dev_smape_nacional": 17.823918557086365,
+   "dev_smape_nacional_control": 30.143891389198007,
+   "dev_vs_control_pct": -40.87054545494572,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "asma_j45",
+   "release_id": "asma_j45_release_28da01ab0b42",
+   "observation_dataset_id": "asma_j45_4bc2fff14f5c",
+   "observation_sha256": "4bc2fff14f5cf285a899d9fe49729c4c823c480f9d3809199b17fcac8243b7d8",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "7b31128bccee5790d2ac6a108936214a99ec0b2f9cf7583dc60338bf966a326f",
+   "filas": 5772
+  },
+  {
+   "engine": "media_26s",
+   "dev_smape_nacional": 49.84819911505031,
+   "dev_smape_nacional_control": 65.24698995207854,
+   "dev_vs_control_pct": -23.60076817081992,
+   "elegibles": [
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "avispa_u605",
+   "release_id": "avispa_u605_release_47baa704f452",
+   "observation_dataset_id": "avispa_u605_2608ce24ad8f",
+   "observation_sha256": "2608ce24ad8ff08a2e56089ae9df99d1012a8087aeed4ae8e35ea5e5afb10f99",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "a39ead28fc50d7b3339083453315334adc9b05627bde305bffb59c840b908410",
+   "filas": 5772
+  },
+  {
+   "engine": "tsb",
+   "dev_smape_nacional": 39.12494649993589,
+   "dev_smape_nacional_control": 53.868129433456424,
+   "dev_vs_control_pct": -27.369027082577404,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "bocio_e01",
+   "release_id": "bocio_e01_release_07940d3a8530",
+   "observation_dataset_id": "bocio_e01_f77eea61757d",
+   "observation_sha256": "f77eea61757d8ad3ce0679bbd0045d77456429b77ae8f7872b591b0be44e7830",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "aa20fa7f7a88c76dc3d16a7cfed44016d258ab2d4e86893d512c0987cbba1a63",
+   "filas": 5772
+  },
+  {
+   "engine": "nivel_x_perfil_5y",
+   "dev_smape_nacional": 33.04099470130077,
+   "dev_smape_nacional_control": 39.690614088873886,
+   "dev_vs_control_pct": -16.753631910767403,
+   "elegibles": [
+    "combo_media_top3",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional"
+   ],
+   "pliegues": 4,
+   "disease_id": "brucelosis_a23",
+   "release_id": "brucelosis_a23_release_e4ffbfd8332b",
+   "observation_dataset_id": "brucelosis_a23_04862c49ed70",
+   "observation_sha256": "04862c49ed70993a2da0f08eb27fd56888fbef56da80287ad05d0f57bacbf3ba",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "356f2efc319e7b556816b1541bb4a568b0ac8bcb1ae0636ad1b24d0f86298ca6",
+   "filas": 5772
+  },
+  {
+   "engine": "naive_lag52",
+   "dev_smape_nacional": 47.821297698090596,
+   "dev_smape_nacional_control": 47.821297698090596,
+   "dev_vs_control_pct": 0.0,
+   "elegibles": [
+    "naive_lag52"
+   ],
+   "pliegues": 4,
+   "disease_id": "calor_t67",
+   "release_id": "calor_t67_release_39efd657d7d7",
+   "observation_dataset_id": "calor_t67_6c480f1c0447",
+   "observation_sha256": "6c480f1c044713c87d6cd545a2196a55c7e3b4dae7f6fa8d749c57d7b13ebb21",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "b9a27aa5860768e90a474f721abaf4737e97bbce347580a61b89ba0926350274",
+   "filas": 5772
+  },
+  {
+   "engine": "media_52s",
+   "dev_smape_nacional": 16.645095871587497,
+   "dev_smape_nacional_control": 21.740406095093206,
+   "dev_vs_control_pct": -23.437051733158366,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "cancer_colon_c18",
+   "release_id": "cancer_colon_c18_release_5da7b90e5db1",
+   "observation_dataset_id": "cancer_colon_c18_79078baeb01b",
+   "observation_sha256": "79078baeb01b1fd5d52249e7e677eef31a3be3553a210289ac94bad553f7f04e",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "a70e5873ae4b111b59c380d776b6dd4e691f14a3c5a639e2f529206424c14402",
+   "filas": 5772
+  },
+  {
+   "engine": "topdown_ets_nacional",
+   "dev_smape_nacional": 22.277682064686623,
+   "dev_smape_nacional_control": 28.90756680311177,
+   "dev_vs_control_pct": -22.934772696647265,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "cancer_cuello_utero_c53",
+   "release_id": "cancer_cuello_utero_c53_release_a2dd2900a980",
+   "observation_dataset_id": "cancer_cuello_utero_c53_8e35f29c02a3",
+   "observation_sha256": "8e35f29c02a37bed634cf2944856e007278130c4f5e7a512cba39956eb573b52",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "51c3b226f45a030b443bb80a279b173b2ff94b07d21a71927b2b3f9240d451ee",
+   "filas": 1924
+  },
+  {
+   "engine": "nivel_x_perfil_5y",
+   "dev_smape_nacional": 36.650785379791785,
+   "dev_smape_nacional_control": 42.378111582520205,
+   "dev_vs_control_pct": -13.514821658761178,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y"
+   ],
+   "pliegues": 1,
+   "disease_id": "cancer_cuerpo_utero_c54",
+   "release_id": "cancer_cuerpo_utero_c54_release_3523a60b29ef",
+   "observation_dataset_id": "cancer_cuerpo_utero_c54_04123859acb9",
+   "observation_sha256": "04123859acb94f439fd9cab8e24608f1135dec50d7ecf474ad739314f1b254fb",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "c46bb00bb14835b7403fcef53eabad4c3cee2f68106eca251177a2c5052257c3",
+   "filas": 1924
+  },
+  {
+   "engine": "media_13s",
+   "dev_smape_nacional": 26.389730411949586,
+   "dev_smape_nacional_control": 29.885554714838747,
+   "dev_vs_control_pct": -11.697371309468846,
+   "elegibles": [
+    "combo_media_top3",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "cancer_encefalo_c70",
+   "release_id": "cancer_encefalo_c70_release_0de6f44f8bfd",
+   "observation_dataset_id": "cancer_encefalo_c70_d039d48b796a",
+   "observation_sha256": "d039d48b796a08c776ccbaa11136fc6b1377e205a2a73c36c0b2662a42390d52",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "7dcedc3d08e837e29c4f966bf276bb4d05bba78b1b88f6f9e7b83f111e97134e",
+   "filas": 5772
+  },
+  {
+   "engine": "nivel_x_perfil_5y",
+   "dev_smape_nacional": 26.587424974739164,
+   "dev_smape_nacional_control": 34.903465563715926,
+   "dev_vs_control_pct": -23.82583062932795,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "mediana_3y",
+    "mediana_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "cancer_esofago_c15",
+   "release_id": "cancer_esofago_c15_release_5c6a6bc1f3da",
+   "observation_dataset_id": "cancer_esofago_c15_e86c89813c1b",
+   "observation_sha256": "e86c89813c1b5a6c6d4a630d198d6fe54c4097d7d63e4d414dd5c44eef2d9f2f",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "4a863995c55bfe0e70432430912bdf512f57755c3e0e6c598825550e9d379e6f",
+   "filas": 5772
+  },
+  {
+   "engine": "nivel_x_perfil_5y",
+   "dev_smape_nacional": 21.529914997409673,
+   "dev_smape_nacional_control": 26.78872889836318,
+   "dev_vs_control_pct": -19.630695882979445,
+   "elegibles": [
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "mediana_3y",
+    "mediana_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional"
+   ],
+   "pliegues": 1,
+   "disease_id": "cancer_estomago_c16",
+   "release_id": "cancer_estomago_c16_release_94460da48374",
+   "observation_dataset_id": "cancer_estomago_c16_b3fd76fa0309",
+   "observation_sha256": "b3fd76fa03092a92c5532faa60c7ced19f84350890c626b8f7801e9bbd735f85",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "97b6758854838134cadffa1299f4db6cb4371adc2e548007867e68b6ee77c16c",
+   "filas": 5772
+  },
+  {
+   "engine": "nivel_x_perfil_5y",
+   "dev_smape_nacional": 22.084821524216682,
+   "dev_smape_nacional_control": 27.06879850764892,
+   "dev_vs_control_pct": -18.41225786960548,
+   "elegibles": [
+    "combo_media_top3",
+    "media_13s",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "mediana_3y",
+    "mediana_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "cancer_higado_c22",
+   "release_id": "cancer_higado_c22_release_b4a6f8ab36bb",
+   "observation_dataset_id": "cancer_higado_c22_9a57cbc7184c",
+   "observation_sha256": "9a57cbc7184c4e3e69c5af7dd2fd748e1f8e9902f8c1c31bdb584478d2c767cf",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "201dc21a26a4e06e33297d43bd5270c94235e376bfeae7f42f15a1a23db231d6",
+   "filas": 5772
+  },
+  {
+   "engine": "media_52s",
+   "dev_smape_nacional": 14.45026816171885,
+   "dev_smape_nacional_control": 29.188370822176914,
+   "dev_vs_control_pct": -50.49306365965538,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "media_26s",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "mediana_3y",
+    "mediana_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "cancer_huesos_c40",
+   "release_id": "cancer_huesos_c40_release_4448e9604b95",
+   "observation_dataset_id": "cancer_huesos_c40_9fc7c39fcf7a",
+   "observation_sha256": "9fc7c39fcf7a461746b14f899cbe20fee9fbd711671d282586a5a28e7ea5af38",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "f0da20ad8ceb5b5da7c5e260be7cfa8798e4f52ed1932d0556a883fcf5334eb9",
+   "filas": 5772
+  },
+  {
+   "engine": "topdown_ets_nacional",
+   "dev_smape_nacional": 17.51295059658148,
+   "dev_smape_nacional_control": 24.51138262547879,
+   "dev_vs_control_pct": -28.551763626841137,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "cancer_mama_c50",
+   "release_id": "cancer_mama_c50_release_ee47f3dfc962",
+   "observation_dataset_id": "cancer_mama_c50_0819caff220a",
+   "observation_sha256": "0819caff220a82f930f20e532b7855d8fc4ff7ad1360fc5afd0dbed12bbe872f",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "6514480d8a666f15223b5e654ac510b6c91072d57602fba569b560d49e4ac07e",
+   "filas": 5772
+  },
+  {
+   "engine": "media_52s",
+   "dev_smape_nacional": 19.908412834844064,
+   "dev_smape_nacional_control": 28.014475300795983,
+   "dev_vs_control_pct": -28.935264283609836,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "mediana_3y",
+    "mediana_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "cancer_ovario_c56",
+   "release_id": "cancer_ovario_c56_release_bc43fe23e398",
+   "observation_dataset_id": "cancer_ovario_c56_87af05dbf1a0",
+   "observation_sha256": "87af05dbf1a005bfb19021f1b91d405fb87315aba0c82c200774ba5130c92c07",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "01cc0b171aaa6fb88b34da157712ed81c864648ffa49da10816d586041561ded",
+   "filas": 1924
+  },
+  {
+   "engine": "nivel_x_perfil_5y",
+   "dev_smape_nacional": 21.612163027835024,
+   "dev_smape_nacional_control": 30.910937347845802,
+   "dev_vs_control_pct": -30.082472800388288,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "cancer_pancreas_c26",
+   "release_id": "cancer_pancreas_c26_release_b7eeb1352582",
+   "observation_dataset_id": "cancer_pancreas_c26_5f22abf5887e",
+   "observation_sha256": "5f22abf5887e4adbd8a9a03489d383b5e99cffcaed4121b47f69caa8fb2bd47a",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "560786ddb55cfd6d901b6284831a50a61be92f818fa1d8aa892e3f642b0976f2",
+   "filas": 5772
+  },
+  {
+   "engine": "nivel_x_perfil_5y",
+   "dev_smape_nacional": 19.464607972044035,
+   "dev_smape_nacional_control": 23.55333053213634,
+   "dev_vs_control_pct": -17.35942419911112,
+   "elegibles": [
+    "combo_media_top3",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional"
+   ],
+   "pliegues": 1,
+   "disease_id": "cancer_prostata_c61",
+   "release_id": "cancer_prostata_c61_release_433d60a37c6a",
+   "observation_dataset_id": "cancer_prostata_c61_b75d5b3bfd3c",
+   "observation_sha256": "b75d5b3bfd3ce38694c4afe45923bd8fc9581588b9d44ac7be41acbc0d7b5f3e",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "bd1f49665f616876b93e7cef62068450f9f0c28b0a286c8fef70115cfce4fc64",
+   "filas": 1924
+  },
+  {
+   "engine": "media_52s",
+   "dev_smape_nacional": 19.9790820240884,
+   "dev_smape_nacional_control": 23.550113393764764,
+   "dev_vs_control_pct": -15.163542145074546,
+   "elegibles": [
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y"
+   ],
+   "pliegues": 1,
+   "disease_id": "cancer_pulmon_c33",
+   "release_id": "cancer_pulmon_c33_release_0bfb82648d55",
+   "observation_dataset_id": "cancer_pulmon_c33_65974e5e84f9",
+   "observation_sha256": "65974e5e84f9f3aa79b0e37a2b3a28693ac3a537507f71a86276cf7cc3151352",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "9e9b086fcd75efc807df2e2df53d63683d1a663fbda7025d3e521aca395b0014",
+   "filas": 5772
+  },
+  {
+   "engine": "nivel_x_perfil_5y",
+   "dev_smape_nacional": 27.10019945105801,
+   "dev_smape_nacional_control": 37.479078767640445,
+   "dev_vs_control_pct": -27.69246112191955,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "mediana_3y",
+    "mediana_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y"
+   ],
+   "pliegues": 1,
+   "disease_id": "cancer_rinon_c64",
+   "release_id": "cancer_rinon_c64_release_2cbedc349fbf",
+   "observation_dataset_id": "cancer_rinon_c64_becdedaf7a8a",
+   "observation_sha256": "becdedaf7a8ab6e782ab030700ebdb32684305d21168bd0e5d0616258b25e6e2",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "b048039ad2f3622aae5b24dc684771ee60a36edcce4faadbf8e107f747815ece",
+   "filas": 5772
+  },
+  {
+   "engine": "naive_lag52",
+   "dev_smape_nacional": 9.848887768082353,
+   "dev_smape_nacional_control": 9.848887768082353,
+   "dev_vs_control_pct": 0.0,
+   "elegibles": [
+    "naive_lag52"
+   ],
+   "pliegues": 4,
+   "disease_id": "candidiasis_b37",
+   "release_id": "candidiasis_b37_release_8f4852b71575",
+   "observation_dataset_id": "candidiasis_b37_a294babbfc32",
+   "observation_sha256": "a294babbfc3245352dfca02ea01776971fcdeb3caa11283679b5c61837f41152",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "b83cb838e5c534174d4d40d72a13d3f1ccaa57b534095731455d192abe62b0b1",
+   "filas": 5772
+  },
+  {
+   "engine": "media_13s",
+   "dev_smape_nacional": 12.246687921171736,
+   "dev_smape_nacional_control": 19.58357760297291,
+   "dev_vs_control_pct": -37.46450128033494,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "cerebrovascular_i60",
+   "release_id": "cerebrovascular_i60_release_9831f39d074e",
+   "observation_dataset_id": "cerebrovascular_i60_7c1152dab6a4",
+   "observation_sha256": "7c1152dab6a404a032a7e1b668c4af6351bb9d81a6b3370e4af2fc92b0466520",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "dce30872ce6182b6d7048f70c8c5ca128a51370546b5b3a52a13991498b2d545",
+   "filas": 5772
+  },
+  {
+   "engine": "naive_lag52",
+   "dev_smape_nacional": 122.13217338217336,
+   "dev_smape_nacional_control": 122.13217338217336,
+   "dev_vs_control_pct": 0.0,
+   "elegibles": [
+    "naive_lag52"
+   ],
+   "pliegues": 2,
+   "disease_id": "chagas_aguda_b570",
+   "release_id": "chagas_aguda_b570_release_765162b97f96",
+   "observation_dataset_id": "chagas_aguda_b570_750e05062261",
+   "observation_sha256": "750e05062261240ff2b39efb16aa2b9a072a7e4d775a3c1201ca4544ed5acc2f",
+   "origen": [
+    2026,
+    44
+   ],
+   "forecast_sha256": "d17179840395b1e5d665b1d5ad11b470533b856233a5c4137da90396a3844642",
+   "filas": 5772
+  },
+  {
+   "engine": "naive_lag52",
+   "dev_smape_nacional": 51.78441304435678,
+   "dev_smape_nacional_control": 51.78441304435678,
+   "dev_vs_control_pct": 0.0,
+   "elegibles": [
+    "naive_lag52"
+   ],
+   "pliegues": 2,
+   "disease_id": "chagas_cronica_b572",
+   "release_id": "chagas_cronica_b572_release_67c0a551a6f4",
+   "observation_dataset_id": "chagas_cronica_b572_3a1662191a14",
+   "observation_sha256": "3a1662191a14da9fefb74dfb783ac4b5db5d1f2d4ba22a43e7df72b904e60fe0",
+   "origen": [
+    2026,
+    44
+   ],
+   "forecast_sha256": "38ac1b9ea902ab43a34004cf7dad8172f767b342467d3a70727b23128055f950",
+   "filas": 5772
+  },
+  {
+   "engine": "media_13s",
+   "dev_smape_nacional": 25.03926444610313,
+   "dev_smape_nacional_control": 40.639821463687504,
+   "dev_vs_control_pct": -38.38736602601413,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "media_13s",
+    "media_26s",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "chancro_blando_a57",
+   "release_id": "chancro_blando_a57_release_45732e3c94c8",
+   "observation_dataset_id": "chancro_blando_a57_4e3557090c3f",
+   "observation_sha256": "4e3557090c3f43e94ed422e0de0b6594e19921ca6bfedb949e23e6e989bb14b9",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "d82a5219a24a29a2626694a8a09037b57874e3db661b20640ca5f36a9e492212",
+   "filas": 5772
+  },
+  {
+   "engine": "mediana_3y",
+   "dev_smape_nacional": 9.615384615384615,
+   "dev_smape_nacional_control": 23.076923076923077,
+   "dev_vs_control_pct": -58.333333333333336,
+   "elegibles": [
+    "mediana_3y",
+    "mediana_5y",
+    "naive_lag52"
+   ],
+   "pliegues": 4,
+   "disease_id": "chikungunya_a920",
+   "release_id": "chikungunya_a920_release_6a16fc7fbe23",
+   "observation_dataset_id": "chikungunya_a920_708ee6cf989e",
+   "observation_sha256": "708ee6cf989e6d7f87410def31c68698d84112992565048822fabef79f27c2cc",
+   "origen": [
+    2026,
+    44
+   ],
+   "forecast_sha256": "5cdba764dd6d49ad8bfa9e68a98d5d93edbcc5be0d9a6ef3bb047730d2132597",
+   "filas": 5772
+  },
+  {
+   "engine": "media_52s",
+   "dev_smape_nacional": 17.444825324207052,
+   "dev_smape_nacional_control": 25.579136350009872,
+   "dev_vs_control_pct": -31.8005694738778,
+   "elegibles": [
+    "combo_mediana_top3",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "cirrosis_alcoholica_k703",
+   "release_id": "cirrosis_alcoholica_k703_release_bfd7449b90a6",
+   "observation_dataset_id": "cirrosis_alcoholica_k703_5efeabed79ed",
+   "observation_sha256": "5efeabed79ed8ba81008be5b5d438fea3d776e8b25cfddeaba6c8ea99d93c1f2",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "883d515c42d3a384e05470a4b31166b684198fb725d93fdaa7ea1c1be6404326",
+   "filas": 5772
+  },
+  {
+   "engine": "combo_mediana_top3",
+   "dev_smape_nacional": 54.40139406589053,
+   "dev_smape_nacional_control": 74.34780039454971,
+   "dev_vs_control_pct": -26.828509011439984,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "cisticercosis_b69",
+   "release_id": "cisticercosis_b69_release_97c002e252a3",
+   "observation_dataset_id": "cisticercosis_b69_fe1c2b19bed3",
+   "observation_sha256": "fe1c2b19bed39cc611222f473c9603df0af0344d538102e6a12388da74b4c49a",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "5237e4ebf251f276b3c0f9c5fd1d2429bb1a0ec789d457ed5cffe1fd0b1f0fd3",
+   "filas": 5772
+  },
+  {
+   "engine": "topdown_ets_nacional",
+   "dev_smape_nacional": 14.812660155137754,
+   "dev_smape_nacional_control": 23.959523260686666,
+   "dev_vs_control_pct": -38.17631513794473,
+   "elegibles": [
+    "combo_media_top3",
+    "ets_amortiguado_log1p",
+    "naive_lag52",
+    "topdown_ets_nacional"
+   ],
+   "pliegues": 4,
+   "disease_id": "conjuntivitis_h10",
+   "release_id": "conjuntivitis_h10_release_f16745bc73a4",
+   "observation_dataset_id": "conjuntivitis_h10_9dffbd99e3d1",
+   "observation_sha256": "9dffbd99e3d11029f0f24f083051ed93e3b9df9bbbec46d6a76640ddde5776d7",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "adba1a6d2fb10c932531f54036f17ac238e1ab0338d088447ecbb1732cf682df",
+   "filas": 5772
+  },
+  {
+   "engine": "media_26s",
+   "dev_smape_nacional": 74.81907777584883,
+   "dev_smape_nacional_control": 96.50324340649257,
+   "dev_vs_control_pct": -22.469882736796052,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "conjuntivitis_hemorragica_b303",
+   "release_id": "conjuntivitis_hemorragica_b303_release_87c64c5f9316",
+   "observation_dataset_id": "conjuntivitis_hemorragica_b303_f0c4a3215b7e",
+   "observation_sha256": "f0c4a3215b7e4fe1243bb850437a50d966e3e91bb7d2b5df92ee84b5514423dc",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "3712f52fe052b1274420e0aa583bf20d6c2d277f020d6cdd33f681baa6c46302",
+   "filas": 5772
+  },
+  {
+   "engine": "nivel_x_perfil_5y",
+   "dev_smape_nacional": 68.06092114314747,
+   "dev_smape_nacional_control": 90.26941659067379,
+   "dev_vs_control_pct": -24.602458159479003,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "coqueluchoide_u99",
+   "release_id": "coqueluchoide_u99_release_d3adeef64700",
+   "observation_dataset_id": "coqueluchoide_u99_bcc9c33d5b73",
+   "observation_sha256": "bcc9c33d5b73193e6bca2d039c7339656517ebb835287b6afb4434f345db94ca",
+   "origen": [
+    2026,
+    44
+   ],
+   "forecast_sha256": "a8c99a49de3e9254a79ae9e7210056e1a160aeff1a5de7093c9848ae5876eea0",
+   "filas": 5772
+  },
+  {
+   "engine": "ets_amortiguado_log1p",
+   "dev_smape_nacional": 18.822018331621923,
+   "dev_smape_nacional_control": 27.536239526482774,
+   "dev_vs_control_pct": -31.64637345081203,
+   "elegibles": [
+    "ets_amortiguado_log1p",
+    "media_3y",
+    "media_5y",
+    "mediana_5y",
+    "naive_lag52",
+    "topdown_ets_nacional"
+   ],
+   "pliegues": 4,
+   "disease_id": "desnutricion_leve_e441",
+   "release_id": "desnutricion_leve_e441_release_30b1895c19bd",
+   "observation_dataset_id": "desnutricion_leve_e441_03839bfa21c2",
+   "observation_sha256": "03839bfa21c20b1836dcfee3a1bbda34c6f87800b3fdf1719d84ae8f3216c4a0",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "96a260689875b25b2227dabc9ac44b72ba9609c086dd4713bcdf6941e9d6608d",
+   "filas": 5772
+  },
+  {
+   "engine": "nivel_x_perfil_5y",
+   "dev_smape_nacional": 25.643554803673105,
+   "dev_smape_nacional_control": 34.428380508872266,
+   "dev_vs_control_pct": -25.51623275726052,
+   "elegibles": [
+    "media_26s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional"
+   ],
+   "pliegues": 4,
+   "disease_id": "desnutricion_moderada_e440",
+   "release_id": "desnutricion_moderada_e440_release_c6ab8deedd22",
+   "observation_dataset_id": "desnutricion_moderada_e440_25369adc5ee4",
+   "observation_sha256": "25369adc5ee44efe3f92afbf8116cee74333840dd47eb8aa6bf0eda038eead1a",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "f87da63dfa745475e16f308455ba070d5aaabd06619e54ae2a30ab962803bc4d",
+   "filas": 5772
+  },
+  {
+   "engine": "nivel_x_perfil_5y",
+   "dev_smape_nacional": 23.765318076442938,
+   "dev_smape_nacional_control": 32.665050292222666,
+   "dev_vs_control_pct": -27.245426338433333,
+   "elegibles": [
+    "combo_mediana_top3",
+    "media_13s",
+    "media_26s",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "desnutricion_severa_e40",
+   "release_id": "desnutricion_severa_e40_release_2a04bbc9573a",
+   "observation_dataset_id": "desnutricion_severa_e40_1bf266da0ceb",
+   "observation_sha256": "1bf266da0ceb119d9d33c8b2f3973838531e5306351e6546db34f180db06615f",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "1141bf782d9ebedb0fa6388baf63eb6b320b286ae5266ea62929bd07eedec20a",
+   "filas": 5772
+  },
+  {
+   "engine": "media_13s",
+   "dev_smape_nacional": 19.53915351356582,
+   "dev_smape_nacional_control": 29.07698964159634,
+   "dev_vs_control_pct": -32.80200682943493,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "diabetes_t1",
+   "release_id": "diabetes_t1_release_2c4a288ee348",
+   "observation_dataset_id": "diabetes_t1_b43694d0f24d",
+   "observation_sha256": "b43694d0f24dea896db6aacb4a1c81edc706d28c269a90ced95da43d9371b7de",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "79ec63baaaf6639cc6f3a3ec6bcdb053dcfb9ce65516168de25d92838fbe3e80",
+   "filas": 5772
+  },
+  {
+   "engine": "ets_amortiguado_log1p",
+   "dev_smape_nacional": 13.471417705832318,
+   "dev_smape_nacional_control": 18.97222137654315,
+   "dev_vs_control_pct": -28.993988429377644,
+   "elegibles": [
+    "ets_amortiguado_log1p",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional"
+   ],
+   "pliegues": 4,
+   "disease_id": "diabetes_t2",
+   "release_id": "diabetes_t2_release_e0153e391d08",
+   "observation_dataset_id": "diabetes_t2_98fe7f408958",
+   "observation_sha256": "98fe7f40895881d76b773071d06fb1e8da86600f1905ef69a08de18902ab5902",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "b1115d8943a6b59c98ecce611f84afdc9fb5cc4cd6afc41764161a86f4753e80",
+   "filas": 5772
+  },
+  {
+   "engine": "combo_mediana_top3",
+   "dev_smape_nacional": 60.056003450243324,
+   "dev_smape_nacional_control": 96.26542569938798,
+   "dev_vs_control_pct": -37.614150652818296,
+   "elegibles": [
+    "combo_mediana_top3",
+    "media_13s",
+    "media_26s",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "mediana_3y",
+    "mediana_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "disparo_arma_corta_x72",
+   "release_id": "disparo_arma_corta_x72_release_64ebcb4253e4",
+   "observation_dataset_id": "disparo_arma_corta_x72_39090d760d91",
+   "observation_sha256": "39090d760d91b0dc3d27f850f377a8e638ca13645859229e5682d14b95b8c375",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "3901e866321c252fa3cd10f66f5f09899ca1fcb93cb4b4de6f9f1de1d7bf7b7d",
+   "filas": 5772
+  },
+  {
+   "engine": "ets_amortiguado_log1p",
+   "dev_smape_nacional": 26.674400748047827,
+   "dev_smape_nacional_control": 37.26109958922921,
+   "dev_vs_control_pct": -28.412201888539013,
+   "elegibles": [
+    "ets_amortiguado_log1p",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional"
+   ],
+   "pliegues": 4,
+   "disease_id": "displasia_leve_n87",
+   "release_id": "displasia_leve_n87_release_df5afab4a165",
+   "observation_dataset_id": "displasia_leve_n87_f7dee85b049f",
+   "observation_sha256": "f7dee85b049f9ae3e0c236fd0a58489c1b270e35234a367e767b2dfbd0c958ba",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "0c5db52a416c182fe0b0e94b5813b995bcdab1deaf0e46f6f2a217455f0434f6",
+   "filas": 1924
+  },
+  {
+   "engine": "topdown_ets_nacional",
+   "dev_smape_nacional": 26.100746519153674,
+   "dev_smape_nacional_control": 38.45742967448272,
+   "dev_vs_control_pct": -32.13080868877712,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "displasia_severa_n87",
+   "release_id": "displasia_severa_n87_release_2046566a5794",
+   "observation_dataset_id": "displasia_severa_n87_616759c2c035",
+   "observation_sha256": "616759c2c035bbcb693e0d991135f3f4a54f288a94674581d382ee80f2a9b92d",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "25e7e4de18c3b4bd750328698eacda9cddf64a0daee9c7b8ad9eb07f8ab54a57",
+   "filas": 1924
+  },
+  {
+   "engine": "topdown_ets_nacional",
+   "dev_smape_nacional": 16.344976620173355,
+   "dev_smape_nacional_control": 21.760774439950648,
+   "dev_vs_control_pct": -24.88789098348641,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "embarazo_diabetes_o24",
+   "release_id": "embarazo_diabetes_o24_release_87604598111d",
+   "observation_dataset_id": "embarazo_diabetes_o24_0f37595f6b0b",
+   "observation_sha256": "0f37595f6b0b2ca30f63fcdd3fba9c67c8f8edef79d21c021010308dff08a253",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "49ede1a859f804cc056b8335465a217366bcac29fd0faa091054045d5c39207c",
+   "filas": 1924
+  },
+  {
+   "engine": "media_26s",
+   "dev_smape_nacional": 10.446696719595803,
+   "dev_smape_nacional_control": 15.71823422491314,
+   "dev_vs_control_pct": -33.53772077630729,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "mediana_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "embarazo_hipertensivos_o10",
+   "release_id": "embarazo_hipertensivos_o10_release_3139b1adfd8f",
+   "observation_dataset_id": "embarazo_hipertensivos_o10_fd718a9745d4",
+   "observation_sha256": "fd718a9745d41fbb250112b894b201909ce07b4d2c85e370d810616bd06c8d2b",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "b24d1135cd1f646ed06f54e148a4fc9ebcd5c9bda67a168436c33e2152e0f95f",
+   "filas": 1924
+  },
+  {
+   "engine": "media_52s",
+   "dev_smape_nacional": 80.20906610497025,
+   "dev_smape_nacional_control": 107.2214590964591,
+   "dev_vs_control_pct": -25.19308468576969,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "encefalocele_q01",
+   "release_id": "encefalocele_q01_release_cb7eebcb8f73",
+   "observation_dataset_id": "encefalocele_q01_486f65f622e6",
+   "observation_sha256": "486f65f622e6fa58959c07ca04b28d1e99bee29500a0c5683018e0f1dfe22a40",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "5b0dbf404f836aed3c367b7b7a0363900a97af47399c480daaedf7acfd600718",
+   "filas": 5772
+  },
+  {
+   "engine": "nivel_x_perfil_5y",
+   "dev_smape_nacional": 19.66038793464062,
+   "dev_smape_nacional_control": 25.36214138667895,
+   "dev_vs_control_pct": -22.4813566216971,
+   "elegibles": [
+    "media_52s",
+    "mediana_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional"
+   ],
+   "pliegues": 4,
+   "disease_id": "enterobiasis_b80",
+   "release_id": "enterobiasis_b80_release_d97747797808",
+   "observation_dataset_id": "enterobiasis_b80_b988ca72640d",
+   "observation_sha256": "b988ca72640d113a9a99362d060da0d3c423e930c0be6639fecd2b7f8e829b3e",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "1b8b2ce8dc0990124bf59cdd3f4974be747953fcfa167601a8ee36c7bc3b8023",
+   "filas": 5772
+  },
+  {
+   "engine": "topdown_ets_nacional",
+   "dev_smape_nacional": 25.992880892425802,
+   "dev_smape_nacional_control": 38.60988970759801,
+   "dev_vs_control_pct": -32.67817885708519,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "envenenamiento_analgesicos_x60",
+   "release_id": "envenenamiento_analgesicos_x60_release_ad01a4df3ba9",
+   "observation_dataset_id": "envenenamiento_analgesicos_x60_5e1e8c7fde66",
+   "observation_sha256": "5e1e8c7fde66c82507b2ce2b0179bb8b8ea3cbd1960174921655d619e12a2a30",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "52c272d567dd0e83975a38c2b94b2449e54a70920e123bf92ec925bd66a5f34c",
+   "filas": 5772
+  },
+  {
+   "engine": "combo_media_top3",
+   "dev_smape_nacional": 18.15302079514559,
+   "dev_smape_nacional_control": 28.212037438118344,
+   "dev_vs_control_pct": -35.655052085609526,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "envenenamiento_psicotropicos_x61",
+   "release_id": "envenenamiento_psicotropicos_x61_release_7f83d7b4ff0d",
+   "observation_dataset_id": "envenenamiento_psicotropicos_x61_68ef80c1cc9c",
+   "observation_sha256": "68ef80c1cc9c6245e6d496fb644b86695b2c6292c8cd7eb24ab1dc4ff5f2132d",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "977127896ae13eaa1d854e3ecf80a6f836d00ba1a968324eb0a5da2e7f134581",
+   "filas": 5772
+  },
+  {
+   "engine": "nivel_x_perfil_5y",
+   "dev_smape_nacional": 13.290681418171499,
+   "dev_smape_nacional_control": 19.062825611585577,
+   "dev_vs_control_pct": -30.27958347321823,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional"
+   ],
+   "pliegues": 4,
+   "disease_id": "erisipela_a46",
+   "release_id": "erisipela_a46_release_c7240805b2a2",
+   "observation_dataset_id": "erisipela_a46_3bb37cceb5be",
+   "observation_sha256": "3bb37cceb5bec0edd2569bbaf38b8a8982031efd62fe3d64f1f540779d34c81b",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "482606c5b5c85dcb52fdc3a7b56f81221662f961733e2f1ac82e17235b3398e7",
+   "filas": 5772
+  },
+  {
+   "engine": "combo_media_top3",
+   "dev_smape_nacional": 106.48747838640261,
+   "dev_smape_nacional_control": 138.54086626431825,
+   "dev_vs_control_pct": -23.136413638963305,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_2y",
+    "media_52s",
+    "media_5y",
+    "mediana_3y",
+    "mediana_5y",
+    "naive_lag52",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "esavi_y58",
+   "release_id": "esavi_y58_release_703090d3bcb4",
+   "observation_dataset_id": "esavi_y58_ee73a3c4236c",
+   "observation_sha256": "ee73a3c4236c3c67c6c2dbc4ab9a729ef75b61961e723e22b36877f0812ad499",
+   "origen": [
+    2026,
+    44
+   ],
+   "forecast_sha256": "817fa5dfbf918d68fdb4810169c49ff243c7b9f22b6f3cc20e0a4fd71a3f72f1",
+   "filas": 5772
+  },
+  {
+   "engine": "combo_media_top3",
+   "dev_smape_nacional": 11.13477048309316,
+   "dev_smape_nacional_control": 18.34074426769039,
+   "dev_vs_control_pct": -39.289429476924184,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "media_13s",
+    "media_26s",
+    "naive_lag52",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "escabiosis_b86",
+   "release_id": "escabiosis_b86_release_55c69e88b18a",
+   "observation_dataset_id": "escabiosis_b86_b0ad0de0e12b",
+   "observation_sha256": "b0ad0de0e12b2e078a7a97ff47a2f0d6219e8b27e029628d6a55e2181c843c94",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "4d0fa2a90ff45ddeb1d82b1072bd8f5fad5bac6a364f659b0429fb8c3de32df9",
+   "filas": 5772
+  },
+  {
+   "engine": "topdown_ets_nacional",
+   "dev_smape_nacional": 30.934657216647636,
+   "dev_smape_nacional_control": 49.18671747263277,
+   "dev_vs_control_pct": -37.10770141581513,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "media_13s",
+    "media_26s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "escarlatina_a38",
+   "release_id": "escarlatina_a38_release_82d03cfdfa0f",
+   "observation_dataset_id": "escarlatina_a38_4ac901b5f31d",
+   "observation_sha256": "4ac901b5f31d4f5ae0b8f03cf1de581c8d21a2b001f6c26cb8e792aa17a3aa9b",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "c70edef5f2f4f6824668c26e4eb2d2dfa624b67bbd37e001062e597202fe9900",
+   "filas": 5772
+  },
+  {
+   "engine": "combo_media_top3",
+   "dev_smape_nacional": 45.853082156450235,
+   "dev_smape_nacional_control": 65.03087099825001,
+   "dev_vs_control_pct": -29.490284456309762,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "espina_bifida_q05",
+   "release_id": "espina_bifida_q05_release_05b90a9cbef9",
+   "observation_dataset_id": "espina_bifida_q05_ee364ae199af",
+   "observation_sha256": "ee364ae199af210c81c2c554fdec7dbf9ce356cd179dd0905e2d51d9d4aa5005",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "888112075c2f76e2b325ad318755d6b2025cc1cf57c7a446586627f46ad4cb0d",
+   "filas": 5772
+  },
+  {
+   "engine": "combo_media_top3",
+   "dev_smape_nacional": 18.550575194892556,
+   "dev_smape_nacional_control": 25.915824144805498,
+   "dev_vs_control_pct": -28.419890908193302,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "faringitis_j02",
+   "release_id": "faringitis_j02_release_2733559c9175",
+   "observation_dataset_id": "faringitis_j02_d4889b510fcb",
+   "observation_sha256": "d4889b510fcb83c32935ca08ed4450a92be94614555cd8868e3dcc46c7dcc83f",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "9f9028a118d89dd8044d0bac28e0abc4e3e0d8c44f99fd336da96a95c5aee5d1",
+   "filas": 5772
+  },
+  {
+   "engine": "mediana_5y",
+   "dev_smape_nacional": 95.41343460461107,
+   "dev_smape_nacional_control": 111.16900382171875,
+   "dev_vs_control_pct": -14.172627868803083,
+   "elegibles": [
+    "mediana_5y",
+    "naive_lag52"
+   ],
+   "pliegues": 4,
+   "disease_id": "fiebre_manchada_a770",
+   "release_id": "fiebre_manchada_a770_release_a37deb0ac7f9",
+   "observation_dataset_id": "fiebre_manchada_a770_e127fe52d053",
+   "observation_sha256": "e127fe52d05303a7543fa4d8989963b1ad30d4164d112fdebf01d16e3b694a90",
+   "origen": [
+    2026,
+    44
+   ],
+   "forecast_sha256": "5bc5a7d453f8f8fc9ecb8a23ced551be00ce3314c0c15041d4ba7920618bb637",
+   "filas": 5772
+  },
+  {
+   "engine": "topdown_ets_nacional",
+   "dev_smape_nacional": 19.13905426138877,
+   "dev_smape_nacional_control": 29.70372989058971,
+   "dev_vs_control_pct": -35.56683173498652,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "mediana_3y",
+    "mediana_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "giardiasis_a071",
+   "release_id": "giardiasis_a071_release_e3458e42deda",
+   "observation_dataset_id": "giardiasis_a071_eb78a4b78144",
+   "observation_sha256": "eb78a4b781440bfebe93a165df552d5ceb919e05d76fbb33a6fad2faf4cb3b65",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "cacd94a735b5790e706aea0fb824e77f0fca83e0b53dea57460ae543b341e358",
+   "filas": 5772
+  },
+  {
+   "engine": "nivel_x_perfil_5y",
+   "dev_smape_nacional": 29.17143204911939,
+   "dev_smape_nacional_control": 42.00671197240997,
+   "dev_vs_control_pct": -30.555307284513955,
+   "elegibles": [
+    "combo_media_top3",
+    "ets_amortiguado_log1p",
+    "media_26s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional"
+   ],
+   "pliegues": 4,
+   "disease_id": "gingivitis_k05",
+   "release_id": "gingivitis_k05_release_9a2bcab11a53",
+   "observation_dataset_id": "gingivitis_k05_108c4ad26618",
+   "observation_sha256": "108c4ad266182e1b0cacabb94ae929a2eaabf7da0c009f8caa517d35b9956125",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "3323e249c721cb869991d9f7e2673ced7176aae17245e35b3e557d708ff63c97",
+   "filas": 5772
+  },
+  {
+   "engine": "topdown_ets_nacional",
+   "dev_smape_nacional": 27.427446271280054,
+   "dev_smape_nacional_control": 38.694004642998934,
+   "dev_vs_control_pct": -29.117064712394363,
+   "elegibles": [
+    "combo_media_top3",
+    "ets_amortiguado_log1p",
+    "media_26s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional"
+   ],
+   "pliegues": 4,
+   "disease_id": "gonococica_a54",
+   "release_id": "gonococica_a54_release_fe58b3b5a738",
+   "observation_dataset_id": "gonococica_a54_e2749a858cbf",
+   "observation_sha256": "e2749a858cbfcdc4da7c64022e1b064526f7bdaf98e7be495fa7a2c59439018f",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "5fdc9b3da76a5632155644dbd7e965e26833d2829447fa59ac2c3a40a8918ccf",
+   "filas": 5772
+  },
+  {
+   "engine": "naive_lag52",
+   "dev_smape_nacional": 83.37606837606839,
+   "dev_smape_nacional_control": 83.37606837606839,
+   "dev_vs_control_pct": 0.0,
+   "elegibles": [
+    "naive_lag52"
+   ],
+   "pliegues": 4,
+   "disease_id": "haemophilus_a41",
+   "release_id": "haemophilus_a41_release_11c95a322723",
+   "observation_dataset_id": "haemophilus_a41_3fb1fa28fbac",
+   "observation_sha256": "3fb1fa28fbacf174e23931af8e71135926fcdc0a04e21cc2e54c0b6edc4e1adb",
+   "origen": [
+    2026,
+    44
+   ],
+   "forecast_sha256": "2789e07e9bf73077cf8830691b3de68c5c422b11d86b815891108c4b52ea7e8f",
+   "filas": 5772
+  },
+  {
+   "engine": "naive_lag52",
+   "dev_smape_nacional": 23.61965343655725,
+   "dev_smape_nacional_control": 23.61965343655725,
+   "dev_vs_control_pct": 0.0,
+   "elegibles": [
+    "naive_lag52"
+   ],
+   "pliegues": 4,
+   "disease_id": "helmintiasis_b65",
+   "release_id": "helmintiasis_b65_release_319fbff1ce0c",
+   "observation_dataset_id": "helmintiasis_b65_3fd31871bb19",
+   "observation_sha256": "3fd31871bb190a9a3d6be90ab5577a01830f251d685041bc201ec4fd78134d79",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "3e70795e5701bee01dcd8f8e89f89ccba44a7b42195c3aacf751fc02cba721ef",
+   "filas": 5772
+  },
+  {
+   "engine": "media_26s",
+   "dev_smape_nacional": 42.27628766399821,
+   "dev_smape_nacional_control": 49.534757743012115,
+   "dev_vs_control_pct": -14.653286721762274,
+   "elegibles": [
+    "media_26s",
+    "naive_lag52"
+   ],
+   "pliegues": 4,
+   "disease_id": "hepatitis_a_b15",
+   "release_id": "hepatitis_a_b15_release_6181173f5150",
+   "observation_dataset_id": "hepatitis_a_b15_ec3ff7128f29",
+   "observation_sha256": "ec3ff7128f290ebb7d5601a9a64f8098e83c28608b1fd4087b5ed263cf17af56",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "a81563e5dfd00ef39bbcc58332eff3ebb42d5748785df4dfba0f708097625deb",
+   "filas": 5772
+  },
+  {
+   "engine": "nivel_x_perfil_5y",
+   "dev_smape_nacional": 35.95719839864534,
+   "dev_smape_nacional_control": 51.947677004853354,
+   "dev_vs_control_pct": -30.781893490086304,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "media_13s",
+    "media_26s",
+    "media_2y",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "hepatitis_b_b16",
+   "release_id": "hepatitis_b_b16_release_72228e00fe8e",
+   "observation_dataset_id": "hepatitis_b_b16_fbec77272292",
+   "observation_sha256": "fbec77272292571c2c5a0ce56de054a1e6f2af59b4444f7250002c3d1cab32b9",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "beb3cc6ab5509c78c0d85187acaf9978d20e12b8b3c8fa9373643ef682242d22",
+   "filas": 5772
+  },
+  {
+   "engine": "media_13s",
+   "dev_smape_nacional": 36.98182016725744,
+   "dev_smape_nacional_control": 50.20989911135369,
+   "dev_vs_control_pct": -26.345559696822928,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "hepatitis_c_b17",
+   "release_id": "hepatitis_c_b17_release_1b625a4d7f43",
+   "observation_dataset_id": "hepatitis_c_b17_e2f6d5f7443e",
+   "observation_sha256": "e2f6d5f7443e629eaaa05354fed772b7aad3e52c02593e84249fc6088f2d3d2b",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "97e27554e53cca3a10694fdd2853b4a7320238cff8789416dbf8ded305fcee72",
+   "filas": 5772
+  },
+  {
+   "engine": "topdown_ets_nacional",
+   "dev_smape_nacional": 8.779493294360238,
+   "dev_smape_nacional_control": 10.545452515706248,
+   "dev_vs_control_pct": -16.746168253242956,
+   "elegibles": [
+    "media_2y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional"
+   ],
+   "pliegues": 4,
+   "disease_id": "herida_arma_fuego_w32",
+   "release_id": "herida_arma_fuego_w32_release_780cec433710",
+   "observation_dataset_id": "herida_arma_fuego_w32_7b7f65b008a6",
+   "observation_sha256": "7b7f65b008a6361c2e32cd05b986ee1d00e73cab2f7b2462b0286fbf480b9d57",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "1e257a3324df971851e70e02b4c93383963c90462c7b59769cd38e91522fcd29",
+   "filas": 5772
+  },
+  {
+   "engine": "media_13s",
+   "dev_smape_nacional": 21.43895721534861,
+   "dev_smape_nacional_control": 27.692858189187007,
+   "dev_vs_control_pct": -22.583082364103195,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "herpes_genital_a600",
+   "release_id": "herpes_genital_a600_release_44e74814d66b",
+   "observation_dataset_id": "herpes_genital_a600_f667ad17ce0b",
+   "observation_sha256": "f667ad17ce0bbf57023d973c9f70661981f03291219889d3447a89c892970210",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "b287c874d586855e67fbf0a93335e6776c78683d7cb41c14f479cb7ec54df39d",
+   "filas": 5772
+  },
+  {
+   "engine": "media_13s",
+   "dev_smape_nacional": 19.421703842891382,
+   "dev_smape_nacional_control": 31.56275309294337,
+   "dev_vs_control_pct": -38.46638223953416,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "hiperplasia_prostata_n40",
+   "release_id": "hiperplasia_prostata_n40_release_7078e93866c5",
+   "observation_dataset_id": "hiperplasia_prostata_n40_86e14e2063ef",
+   "observation_sha256": "86e14e2063efa26726004b338c69849f049b7e58785447fdea528e1ff8891803",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "9c21fe49f20ee6291549097f223f5acf6cc4aab877e7ac507e295a3ba38d0f68",
+   "filas": 1924
+  },
+  {
+   "engine": "topdown_ets_nacional",
+   "dev_smape_nacional": 10.455812707658783,
+   "dev_smape_nacional_control": 15.949728135310616,
+   "dev_vs_control_pct": -34.44519794346226,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "hipertension_i10",
+   "release_id": "hipertension_i10_release_053505b088df",
+   "observation_dataset_id": "hipertension_i10_2a2338c9bc1e",
+   "observation_sha256": "2a2338c9bc1e928a6f3e9e45e9b9d30d3c84799096269437efa7283353843b25",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "e08b1c6513f26d64b38c1c5387ffff8729277accce3fcc51afc77fa15bbd0c55",
+   "filas": 5772
+  },
+  {
+   "engine": "combo_media_top3",
+   "dev_smape_nacional": 74.27104348422324,
+   "dev_smape_nacional_control": 96.0536714096337,
+   "dev_vs_control_pct": -22.677558916530664,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "hipotermia_t68",
+   "release_id": "hipotermia_t68_release_a61d512904f1",
+   "observation_dataset_id": "hipotermia_t68_18d7d58ccaa7",
+   "observation_sha256": "18d7d58ccaa7d0f552341c22830ab8e62cef4d003f2ddb568695fb2b19cc9bc4",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "4cd2c1eb7d6dc8860e11c2b9bd9f4ac0de30d0645b80d529301887924fe721a5",
+   "filas": 5772
+  },
+  {
+   "engine": "topdown_ets_nacional",
+   "dev_smape_nacional": 22.298038675093313,
+   "dev_smape_nacional_control": 40.802924116571766,
+   "dev_vs_control_pct": -45.35186102988842,
+   "elegibles": [
+    "combo_media_top3",
+    "ets_amortiguado_log1p",
+    "media_26s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional"
+   ],
+   "pliegues": 4,
+   "disease_id": "iaas_sc",
+   "release_id": "iaas_sc_release_b0e917832a47",
+   "observation_dataset_id": "iaas_sc_9ac79006df40",
+   "observation_sha256": "9ac79006df404b3e3d087fa117f1a1ac517709e22af2f8f2ce9cd558e19afdeb",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "779a89b96ee43ea09979f188ffa912d11fe86fd44e563aa78de7c27b88100b43",
+   "filas": 5772
+  },
+  {
+   "engine": "topdown_ets_nacional",
+   "dev_smape_nacional": 23.81590036595929,
+   "dev_smape_nacional_control": 40.35884946544021,
+   "dev_vs_control_pct": -40.98964494428131,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "ideacion_suicida_r458",
+   "release_id": "ideacion_suicida_r458_release_7c08365e2e32",
+   "observation_dataset_id": "ideacion_suicida_r458_0c67aa6c3488",
+   "observation_sha256": "0c67aa6c348894dae28d4919e2d115af17bc9d5001381462474a4744b3407fe3",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "d8a78d657e18368b8c568fca9c6192410539934c3b966a79d06b334b22c9b81e",
+   "filas": 5772
+  },
+  {
+   "engine": "media_26s",
+   "dev_smape_nacional": 15.585378334241028,
+   "dev_smape_nacional_control": 29.914911915922204,
+   "dev_vs_control_pct": -47.90097200337831,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "intento_suicidio_z915",
+   "release_id": "intento_suicidio_z915_release_7e3a250aa23a",
+   "observation_dataset_id": "intento_suicidio_z915_29472542bf03",
+   "observation_sha256": "29472542bf0322439f34d7d8f9b007a8af9583919731d4e606df28e8a74aaba2",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "4d17eafb9e6eb41717da56d84900dd0b62aaace557b301938feaeb5d095c0d06",
+   "filas": 5772
+  },
+  {
+   "engine": "nivel_x_perfil_5y",
+   "dev_smape_nacional": 14.791363438773605,
+   "dev_smape_nacional_control": 19.811198593942034,
+   "dev_vs_control_pct": -25.33837178687119,
+   "elegibles": [
+    "naive_lag52",
+    "nivel_x_perfil_5y"
+   ],
+   "pliegues": 4,
+   "disease_id": "intestinales_a04",
+   "release_id": "intestinales_a04_release_8f5baa0a6556",
+   "observation_dataset_id": "intestinales_a04_8d9fbe64b858",
+   "observation_sha256": "8d9fbe64b858a8f935745df621fa3b93df2328875570e878ac6ee221a4f03ac4",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "654ae940376c247c256680111c7719108db6cf8070994fd22aea639a18e7d8e0",
+   "filas": 5772
+  },
+  {
+   "engine": "topdown_ets_nacional",
+   "dev_smape_nacional": 13.719344792590814,
+   "dev_smape_nacional_control": 20.883181471496858,
+   "dev_vs_control_pct": -34.304335709977224,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "naive_lag52",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "intox_alcohol_f100",
+   "release_id": "intox_alcohol_f100_release_84f8eb61d01b",
+   "observation_dataset_id": "intox_alcohol_f100_74454bc6852d",
+   "observation_sha256": "74454bc6852da1a67359e7987246438d3bb5c19f2c631d8c32468b086cd9eb97",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "7c64e70ef514399c3c6bf21f8a398b6d1560011302d047c36938a7155a0da332",
+   "filas": 5772
+  },
+  {
+   "engine": "combo_media_top3",
+   "dev_smape_nacional": 20.9328150724465,
+   "dev_smape_nacional_control": 30.71197998097469,
+   "dev_vs_control_pct": -31.84153191876962,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "ira_j00",
+   "release_id": "ira_j00_release_9669e8caafea",
+   "observation_dataset_id": "ira_j00_5ddeec6ac867",
+   "observation_sha256": "5ddeec6ac867b4acfea7f2e113d9b1d9c1e59dc4e8ec73d41b1526ce62a7c50e",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "20941068d52287f0f4c9ba0a425e7bf8a1f1ba5a16af59e4b1ec8b520434438d",
+   "filas": 5772
+  },
+  {
+   "engine": "media_52s",
+   "dev_smape_nacional": 16.35732485646107,
+   "dev_smape_nacional_control": 24.603258682325993,
+   "dev_vs_control_pct": -33.51561649753525,
+   "elegibles": [
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional"
+   ],
+   "pliegues": 4,
+   "disease_id": "isquemica_i20",
+   "release_id": "isquemica_i20_release_791553dfcf93",
+   "observation_dataset_id": "isquemica_i20_0608315e714d",
+   "observation_sha256": "0608315e714d58e4727c91eadd7f9a48ee579b84b4565520dcd64633cff31ee1",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "3366ff969456d835f261290c4a99fe713b88b3c2a85b13ca2cacdd1bb3292d84",
+   "filas": 5772
+  },
+  {
+   "engine": "media_5y",
+   "dev_smape_nacional": 17.246213151223056,
+   "dev_smape_nacional_control": 25.23479031966868,
+   "dev_vs_control_pct": -31.65699840279279,
+   "elegibles": [
+    "ets_amortiguado_log1p",
+    "media_5y",
+    "mediana_5y",
+    "naive_lag52"
+   ],
+   "pliegues": 4,
+   "disease_id": "ivp_i87",
+   "release_id": "ivp_i87_release_0b4b7fb06127",
+   "observation_dataset_id": "ivp_i87_cbd14652a392",
+   "observation_sha256": "cbd14652a392631e274fd6b8421865a45162f65943d733e4c617a59004cc7fe5",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "b21f38f59d014f7a89865ce7b571e933ea4266c9f1d499758b5edeae74c5468e",
+   "filas": 5772
+  },
+  {
+   "engine": "ets_amortiguado_log1p",
+   "dev_smape_nacional": 9.596300653499455,
+   "dev_smape_nacional_control": 13.890832535399664,
+   "dev_vs_control_pct": -30.916303043434883,
+   "elegibles": [
+    "ets_amortiguado_log1p",
+    "naive_lag52"
+   ],
+   "pliegues": 4,
+   "disease_id": "ivu_n39",
+   "release_id": "ivu_n39_release_7d2b810a3793",
+   "observation_dataset_id": "ivu_n39_1bc2114a3c28",
+   "observation_sha256": "1bc2114a3c28ffc6c746afe1756b4ce07a348cb62836cbfdb19b0028694c3f91",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "7ed6a0c025fdffe0ccb4aef0c379dcef293bd39340b8bf30a4001e723522f07f",
+   "filas": 5772
+  },
+  {
+   "engine": "media_26s",
+   "dev_smape_nacional": 24.457606261733673,
+   "dev_smape_nacional_control": 36.70105767407202,
+   "dev_vs_control_pct": -33.35994161549166,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "media_13s",
+    "media_26s",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "labio_paladar_q35",
+   "release_id": "labio_paladar_q35_release_5a88e7c03f1d",
+   "observation_dataset_id": "labio_paladar_q35_eedbd29c8f39",
+   "observation_sha256": "eedbd29c8f392bff50bba512e7bb7805cf476194db910ae8075efa9123503beb",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "b53d58ac0d7a24006d615cc90a3793b7f68ee56cc25f6e7dd2bfd9779f38a3bf",
+   "filas": 5772
+  },
+  {
+   "engine": "naive_lag52",
+   "dev_smape_nacional": 119.48387920493134,
+   "dev_smape_nacional_control": 119.48387920493134,
+   "dev_vs_control_pct": 0.0,
+   "elegibles": [
+    "naive_lag52"
+   ],
+   "pliegues": 4,
+   "disease_id": "leishmaniasis_cutanea_b551",
+   "release_id": "leishmaniasis_cutanea_b551_release_8fbbddb9d08e",
+   "observation_dataset_id": "leishmaniasis_cutanea_b551_fe671041b5e3",
+   "observation_sha256": "fe671041b5e364724a4caa20810bdaafd224d2f15366ebd21c516dc66d6f41dd",
+   "origen": [
+    2026,
+    44
+   ],
+   "forecast_sha256": "3933e5e2adba527d36a4885a2e4396c3993f594112b90904aa9d3e78bedb7840",
+   "filas": 5772
+  },
+  {
+   "engine": "media_52s",
+   "dev_smape_nacional": 80.72609988762332,
+   "dev_smape_nacional_control": 95.11622521520712,
+   "dev_vs_control_pct": -15.128991184232907,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "lepra_a30",
+   "release_id": "lepra_a30_release_6466f4bf7835",
+   "observation_dataset_id": "lepra_a30_be2e2f57a320",
+   "observation_sha256": "be2e2f57a3203e3eff6cf3dbb90bb12abc6d9e50dde18e33d673b67b7a8fe335",
+   "origen": [
+    2026,
+    44
+   ],
+   "forecast_sha256": "a8c5925c4b6d7ba58eee44ce79179f3f58d1b04199ff8568ea4e574961c30dda",
+   "filas": 5772
+  },
+  {
+   "engine": "media_13s",
+   "dev_smape_nacional": 49.75354941589346,
+   "dev_smape_nacional_control": 80.33131149683227,
+   "dev_vs_control_pct": -38.06456226243063,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "leptospirosis_a27",
+   "release_id": "leptospirosis_a27_release_5c71dba18511",
+   "observation_dataset_id": "leptospirosis_a27_8f0ae77024b2",
+   "observation_sha256": "8f0ae77024b2013f492dd1ea24f46d58345c8fb13de6dd21a789f97ebedcd9d0",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "3a14446899c1536df15fd2c92ccead1c7e7be8aca347c533a8385be91ff0f865",
+   "filas": 5772
+  },
+  {
+   "engine": "media_52s",
+   "dev_smape_nacional": 15.22748240884724,
+   "dev_smape_nacional_control": 22.291558268931123,
+   "dev_vs_control_pct": -31.68946636597157,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "leucemia_c91",
+   "release_id": "leucemia_c91_release_0aa2412f36a6",
+   "observation_dataset_id": "leucemia_c91_67547e2b7146",
+   "observation_sha256": "67547e2b7146e95baf04a1ebc2471949d404d3435e0b662ab8c055ce8bee2286",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "0b07a6f4f6106cfea5afcc44defa158cfdfbf5abb390cd85aebd1afd5532f812",
+   "filas": 5772
+  },
+  {
+   "engine": "media_13s",
+   "dev_smape_nacional": 45.13946046586373,
+   "dev_smape_nacional_control": 62.76480057599074,
+   "dev_vs_control_pct": -28.08156793040013,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "linfogranuloma_a55",
+   "release_id": "linfogranuloma_a55_release_13706f4a5596",
+   "observation_dataset_id": "linfogranuloma_a55_b9b66d16e50b",
+   "observation_sha256": "b9b66d16e50b7ca2ccd2df013cea2e60392ca53d3c7671233c8af1eb9f6991d0",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "3c6ca9ce098357284ba42dd1e901f7656c704e1041e8eb075f7648b3fa11998a",
+   "filas": 5772
+  },
+  {
+   "engine": "topdown_ets_nacional",
+   "dev_smape_nacional": 32.18996266785478,
+   "dev_smape_nacional_control": 38.45303089754805,
+   "dev_vs_control_pct": -16.28758015559349,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "linfoma_hodgkin_c81",
+   "release_id": "linfoma_hodgkin_c81_release_4ea7e36a6ed6",
+   "observation_dataset_id": "linfoma_hodgkin_c81_a60bbecdaa64",
+   "observation_sha256": "a60bbecdaa64c4f7959147701b02ed64a500d7239ca583106ce3193da4389a75",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "baf03246d593c2fe7be266dd8cc64d12f6603b6b01817445019cb81b469199b3",
+   "filas": 5772
+  },
+  {
+   "engine": "naive_lag52",
+   "dev_smape_nacional": 17.503303913456797,
+   "dev_smape_nacional_control": 17.503303913456797,
+   "dev_vs_control_pct": 0.0,
+   "elegibles": [
+    "naive_lag52"
+   ],
+   "pliegues": 1,
+   "disease_id": "linfoma_no_hodgkin_c82",
+   "release_id": "linfoma_no_hodgkin_c82_release_f13bb4b27953",
+   "observation_dataset_id": "linfoma_no_hodgkin_c82_5389ecd2d084",
+   "observation_sha256": "5389ecd2d084125730df59fbfd16128bb0254f40eaf137943d5e58be545ae181",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "7d2dec1cead9be8318e264c72289176a6dbfac915fdc86ba1ac6f7d4ec54a67b",
+   "filas": 5772
+  },
+  {
+   "engine": "topdown_ets_nacional",
+   "dev_smape_nacional": 48.54134280281126,
+   "dev_smape_nacional_control": 63.917590325996954,
+   "dev_vs_control_pct": -24.056362958557553,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "mal_del_pinto_a67",
+   "release_id": "mal_del_pinto_a67_release_b5c696472e9e",
+   "observation_dataset_id": "mal_del_pinto_a67_fd0058b7eccb",
+   "observation_sha256": "fd0058b7eccb963938f2ebabd01aff5f3c9d6709e9ec73260b483c9de993c277",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "c2b39ca9cccc450b032f2c323abf9c4afcc46d3a4daa55a69ccfe157922f861b",
+   "filas": 5772
+  },
+  {
+   "engine": "media_52s",
+   "dev_smape_nacional": 47.36445245812051,
+   "dev_smape_nacional_control": 50.4335741761997,
+   "dev_vs_control_pct": -6.085473354231454,
+   "elegibles": [
+    "media_13s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y"
+   ],
+   "pliegues": 4,
+   "disease_id": "meningitis_tuberculosa_a170",
+   "release_id": "meningitis_tuberculosa_a170_release_75c0eed24564",
+   "observation_dataset_id": "meningitis_tuberculosa_a170_41037e61fabc",
+   "observation_sha256": "41037e61fabcc39b775ae56bdd3f83f7a51716216777c1f6ae45b94bc8323a59",
+   "origen": [
+    2026,
+    44
+   ],
+   "forecast_sha256": "685b145e0af38a8ed02de18c719666a40405d5df9a57466ff368d5ec0e7ca9e3",
+   "filas": 5772
+  },
+  {
+   "engine": "mediana_3y",
+   "dev_smape_nacional": 50.0,
+   "dev_smape_nacional_control": 77.54273504273505,
+   "dev_vs_control_pct": -35.51942683934969,
+   "elegibles": [
+    "mediana_3y",
+    "mediana_5y",
+    "naive_lag52"
+   ],
+   "pliegues": 4,
+   "disease_id": "meningococica_a39",
+   "release_id": "meningococica_a39_release_c3c7e1915698",
+   "observation_dataset_id": "meningococica_a39_00785a71e727",
+   "observation_sha256": "00785a71e727bb12d89ec47026d9a25d69bed7c9a13e6f3f5fb513cff932890c",
+   "origen": [
+    2026,
+    44
+   ],
+   "forecast_sha256": "0f00d22a5abea6bf43fe4e6ca65e2e2cc8c38cdc6f9cece4bab4c1051744a358",
+   "filas": 5772
+  },
+  {
+   "engine": "nivel_x_perfil_5y",
+   "dev_smape_nacional": 49.8027412989612,
+   "dev_smape_nacional_control": 69.85375811376049,
+   "dev_vs_control_pct": -28.704277845932303,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 2,
+   "disease_id": "microcefalia_q02",
+   "release_id": "microcefalia_q02_release_2d6eb394c859",
+   "observation_dataset_id": "microcefalia_q02_09f9354bf30e",
+   "observation_sha256": "09f9354bf30ef8576bcfcd991b8ec14f275266b72d03d13e86fc0f33b2e7ea31",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "aa806d44122be7345ae95fcd33a7c63c0c7703468b2d87b4b79f9a3d531ac013",
+   "filas": 5772
+  },
+  {
+   "engine": "nivel_x_perfil_5y",
+   "dev_smape_nacional": 60.026879447926035,
+   "dev_smape_nacional_control": 78.24382786404946,
+   "dev_vs_control_pct": -23.28228169993909,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "monoxido_t58",
+   "release_id": "monoxido_t58_release_292de8154869",
+   "observation_dataset_id": "monoxido_t58_f1233d490f77",
+   "observation_sha256": "f1233d490f77371122fb0ff17c88af3178de4d8f7fea9cf484aa425a6db868ff",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "1cc1e96dc2711107b27b1189b081476b6f8e11218b472f6c636b1956b9111fee",
+   "filas": 5772
+  },
+  {
+   "engine": "naive_lag52",
+   "dev_smape_nacional": 43.30691929024232,
+   "dev_smape_nacional_control": 43.30691929024232,
+   "dev_vs_control_pct": 0.0,
+   "elegibles": [
+    "naive_lag52"
+   ],
+   "pliegues": 1,
+   "disease_id": "mordedura_cascabel_u600",
+   "release_id": "mordedura_cascabel_u600_release_76429c90d256",
+   "observation_dataset_id": "mordedura_cascabel_u600_416ed9229e43",
+   "observation_sha256": "416ed9229e433741993858eaf84384ee34c1fb4e2caf8a688e419b578df9c29c",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "01409bc32819e3c50a9db64777e0395c348b1ee79fc88b49e12af49c86c37cdb",
+   "filas": 5772
+  },
+  {
+   "engine": "media_26s",
+   "dev_smape_nacional": 75.04835213190563,
+   "dev_smape_nacional_control": 96.76631544556072,
+   "dev_vs_control_pct": -22.443722501631562,
+   "elegibles": [
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "mordedura_coral_u601",
+   "release_id": "mordedura_coral_u601_release_cd0f4b8a48ac",
+   "observation_dataset_id": "mordedura_coral_u601_0406ecb79302",
+   "observation_sha256": "0406ecb79302c6908471313894e4065e3b571836cad5216e4b782aa2e5cfc575",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "3fff2b04009a8f80fb4a6f3965211f3734238500c97e801f65fbbf7bc0cd5182",
+   "filas": 5772
+  },
+  {
+   "engine": "topdown_ets_nacional",
+   "dev_smape_nacional": 15.883278601737867,
+   "dev_smape_nacional_control": 29.191478655826984,
+   "dev_vs_control_pct": -45.58933177382104,
+   "elegibles": [
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional"
+   ],
+   "pliegues": 4,
+   "disease_id": "mordedura_mamiferos_w55",
+   "release_id": "mordedura_mamiferos_w55_release_41b1df4d6c71",
+   "observation_dataset_id": "mordedura_mamiferos_w55_b65afdb7b1d0",
+   "observation_sha256": "b65afdb7b1d02aa9838126a1986036d0b657728e4b16cc5e1d3ddcf352358ef2",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "e03dd15d8d06b0d2bce616ddec1edd4b1af645cc5cfc0b46d2a68c08da9fe7ce",
+   "filas": 5772
+  },
+  {
+   "engine": "nivel_x_perfil_5y",
+   "dev_smape_nacional": 40.87754227553135,
+   "dev_smape_nacional_control": 50.191528610983205,
+   "dev_vs_control_pct": -18.55688916677807,
+   "elegibles": [
+    "media_13s",
+    "media_26s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "mordedura_otras_serpientes_t630",
+   "release_id": "mordedura_otras_serpientes_t630_release_15f4ad5a7c59",
+   "observation_dataset_id": "mordedura_otras_serpientes_t630_b6d8bbf479c6",
+   "observation_sha256": "b6d8bbf479c64feeb13e6ea5198e3dbf0b46b5f9b0b15676619b38e7f15464bc",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "160315269d19587ec0beead4dae862fe8ad488de78204952be699f53fc22276d",
+   "filas": 5772
+  },
+  {
+   "engine": "topdown_ets_nacional",
+   "dev_smape_nacional": 12.683666781145678,
+   "dev_smape_nacional_control": 19.487215974532766,
+   "dev_vs_control_pct": -34.912884438076915,
+   "elegibles": [
+    "combo_media_top3",
+    "ets_amortiguado_log1p",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional"
+   ],
+   "pliegues": 4,
+   "disease_id": "mordedura_perro_w54",
+   "release_id": "mordedura_perro_w54_release_5d8684017cba",
+   "observation_dataset_id": "mordedura_perro_w54_8feaad606895",
+   "observation_sha256": "8feaad60689518ef9ff2e34e6fc083289e4ce487828c4c92f31f74903e6df1b2",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "a06d020df33e5e9a2144429919d641bc9b05620019a547a51a4daed053c65f64",
+   "filas": 5772
+  },
+  {
+   "engine": "naive_lag52",
+   "dev_smape_nacional": 111.01495726495727,
+   "dev_smape_nacional_control": 111.01495726495727,
+   "dev_vs_control_pct": 0.0,
+   "elegibles": [
+    "naive_lag52"
+   ],
+   "pliegues": 4,
+   "disease_id": "neumococo_a40",
+   "release_id": "neumococo_a40_release_5895fcd30f54",
+   "observation_dataset_id": "neumococo_a40_64c5d5f81a85",
+   "observation_sha256": "64c5d5f81a850d672b7e146fafadca982dd8c05ca84c499b87e5a22bf436867e",
+   "origen": [
+    2026,
+    44
+   ],
+   "forecast_sha256": "e56b1365597f32aef59901cdd48e4af64c5652f7121f7da7c34991ebcb76f62d",
+   "filas": 5772
+  },
+  {
+   "engine": "topdown_ets_nacional",
+   "dev_smape_nacional": 22.371411953028296,
+   "dev_smape_nacional_control": 25.853503499226246,
+   "dev_vs_control_pct": -13.468548068551572,
+   "elegibles": [
+    "media_5y",
+    "mediana_5y",
+    "naive_lag52",
+    "topdown_ets_nacional"
+   ],
+   "pliegues": 4,
+   "disease_id": "neumonias_j12",
+   "release_id": "neumonias_j12_release_5814ddca1860",
+   "observation_dataset_id": "neumonias_j12_1f3512f9ea5c",
+   "observation_sha256": "1f3512f9ea5c54e20a55034accd7c15f67626e47c6b15a83edb6e9fdfd395dcc",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "03d9091cdb86b752d74dc2a27c79121762b26f71015633c38b7110c98d3804b4",
+   "filas": 5772
+  },
+  {
+   "engine": "mediana_5y",
+   "dev_smape_nacional": 22.075554702121963,
+   "dev_smape_nacional_control": 36.33633332799699,
+   "dev_vs_control_pct": -39.24660888908997,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "mediana_3y",
+    "mediana_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "obesidad",
+   "release_id": "obesidad_release_2517e7858901",
+   "observation_dataset_id": "obesidad_aa88edd8ebbc",
+   "observation_sha256": "aa88edd8ebbc692227f111bfdec38561cf831b0f4bae6714de0fd311628a90dd",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "c84b35e1bbc7a4bcc1d0ea03dc3fa3e149b7196ef832bee7ca23925492ffcb6d",
+   "filas": 5772
+  },
+  {
+   "engine": "media_13s",
+   "dev_smape_nacional": 16.257019877228508,
+   "dev_smape_nacional_control": 27.16358118503982,
+   "dev_vs_control_pct": -40.15141167696267,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "objeto_cortante_x78",
+   "release_id": "objeto_cortante_x78_release_5377b5f38b46",
+   "observation_dataset_id": "objeto_cortante_x78_84c718e04498",
+   "observation_sha256": "84c718e044983ed99cf3be719a114ba6f6aeaefe4baf9a45112fd3fa28eed134",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "43b5f2c82db7f468ac1e425934b70394e02949b6572b288e453c699dde87fee3",
+   "filas": 5772
+  },
+  {
+   "engine": "media_13s",
+   "dev_smape_nacional": 10.799467864058569,
+   "dev_smape_nacional_control": 17.75355340821052,
+   "dev_vs_control_pct": -39.17010518545478,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "naive_lag52",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "otitis_h65",
+   "release_id": "otitis_h65_release_3dce204c0ac3",
+   "observation_dataset_id": "otitis_h65_2e0ff1aef3f5",
+   "observation_sha256": "2e0ff1aef3f5212ebcd15099457b882402c1a60448917b31e918601a1c7e9af2",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "5a6fdd4afb1dbfb116044fd5aea9fdc10c1239cc38a7edf2907ef3fc32d19fa5",
+   "filas": 5772
+  },
+  {
+   "engine": "media_26s",
+   "dev_smape_nacional": 35.65975197179182,
+   "dev_smape_nacional_control": 45.45548166888754,
+   "dev_vs_control_pct": -21.55016147106523,
+   "elegibles": [
+    "media_13s",
+    "media_26s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "otras_aranas_t633",
+   "release_id": "otras_aranas_t633_release_f4663d8c58e0",
+   "observation_dataset_id": "otras_aranas_t633_b6f93fdb7e0f",
+   "observation_sha256": "b6f93fdb7e0f837ddc9931edff854b4fcf9813a801b9af2b6b553003c93493f7",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "e796b3f008de0b021e2de6b3b14cc54e41cb1f572e8b1fe5ea6f35b61ee1c393",
+   "filas": 5772
+  },
+  {
+   "engine": "media_26s",
+   "dev_smape_nacional": 31.655363759490367,
+   "dev_smape_nacional_control": 44.44789463034088,
+   "dev_vs_control_pct": -28.78096021699556,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "otras_hepatitis_b17",
+   "release_id": "otras_hepatitis_b17_release_08de6f7ff77b",
+   "observation_dataset_id": "otras_hepatitis_b17_e01c3e806ef4",
+   "observation_sha256": "e01c3e806ef4101155a0d63f70d756003373e56afc6a43b2afc732eb28c53c36",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "c6cb759f791dbc7e9ed16049988108a8f6fc85d34105a3be96440d0a8ab75167",
+   "filas": 5772
+  },
+  {
+   "engine": "naive_lag52",
+   "dev_smape_nacional": 56.48153630931631,
+   "dev_smape_nacional_control": 56.48153630931631,
+   "dev_vs_control_pct": 0.0,
+   "elegibles": [
+    "naive_lag52"
+   ],
+   "pliegues": 2,
+   "disease_id": "otras_rickettsiosis_a79",
+   "release_id": "otras_rickettsiosis_a79_release_32fb40365d94",
+   "observation_dataset_id": "otras_rickettsiosis_a79_8bbb140ee21d",
+   "observation_sha256": "8bbb140ee21d3a1a78b57f6cbc6c191a6a830322c872e9476045fab6b339f917",
+   "origen": [
+    2026,
+    44
+   ],
+   "forecast_sha256": "d4b26903c728c4af4d88fce09de659c34766a32564eb5af48fb17011b2480504",
+   "filas": 5772
+  },
+  {
+   "engine": "media_26s",
+   "dev_smape_nacional": 35.22152539530732,
+   "dev_smape_nacional_control": 50.1784318665352,
+   "dev_vs_control_pct": -29.807440995785445,
+   "elegibles": [
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "otros_artropodos_t634",
+   "release_id": "otros_artropodos_t634_release_746ed7f15dcc",
+   "observation_dataset_id": "otros_artropodos_t634_abf93a5f314d",
+   "observation_sha256": "abf93a5f314d45fa4f1d9ba16c7aa7c860097d7889759cc4eab40006ecac124e",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "1b098c28f66452d02a694396037c7bac5b2d09a3b16d018e66a9fffb6bf49405",
+   "filas": 5772
+  },
+  {
+   "engine": "media_26s",
+   "dev_smape_nacional": 31.11711221440044,
+   "dev_smape_nacional_control": 84.20148352522999,
+   "dev_vs_control_pct": -63.04446084364231,
+   "elegibles": [
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "otros_ponzonosos_t631",
+   "release_id": "otros_ponzonosos_t631_release_788cffc12537",
+   "observation_dataset_id": "otros_ponzonosos_t631_ffe78f339439",
+   "observation_sha256": "ffe78f33943999b658ceb0708accd1cff1ad922e393398c63c93d19d6d79dd45",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "76d14cf295f955eebb416003342fba25ff6ef4769b93d263a2d36c540805a2b3",
+   "filas": 5772
+  },
+  {
+   "engine": "naive_lag52",
+   "dev_smape_nacional": 104.35870691574118,
+   "dev_smape_nacional_control": 104.35870691574118,
+   "dev_vs_control_pct": 0.0,
+   "elegibles": [
+    "naive_lag52"
+   ],
+   "pliegues": 4,
+   "disease_id": "paludismo_vivax_b51",
+   "release_id": "paludismo_vivax_b51_release_8af7d6f484a6",
+   "observation_dataset_id": "paludismo_vivax_b51_3ddb06978792",
+   "observation_sha256": "3ddb06978792b2df91706e6d9c5726e50aa0c7a858c3bea9251ecc2d9ed2dc60",
+   "origen": [
+    2026,
+    44
+   ],
+   "forecast_sha256": "2942b18ab8d51a359cc78512d069e2ff114589d549bad1a0228934bc73deccb4",
+   "filas": 1924
+  },
+  {
+   "engine": "nivel_x_perfil_5y",
+   "dev_smape_nacional": 43.185631352976046,
+   "dev_smape_nacional_control": 54.15944210594287,
+   "dev_vs_control_pct": -20.26204540936857,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "media_13s",
+    "media_26s",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "paralisis_flacida_u98",
+   "release_id": "paralisis_flacida_u98_release_f6173413b054",
+   "observation_dataset_id": "paralisis_flacida_u98_dc27023625ef",
+   "observation_sha256": "dc27023625ef3cf69a7d155c558cd8ea0031fb7be153e3f5d364769559e61182",
+   "origen": [
+    2026,
+    44
+   ],
+   "forecast_sha256": "35b19f3eea8195025a75be5a9a18086740b24e31eed086629b0e733172715d8c",
+   "filas": 5772
+  },
+  {
+   "engine": "ets_amortiguado_log1p",
+   "dev_smape_nacional": 22.267996043842707,
+   "dev_smape_nacional_control": 27.88577100674035,
+   "dev_vs_control_pct": -20.145668418275946,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "naive_lag52",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "paratifoidea_a011",
+   "release_id": "paratifoidea_a011_release_45a8e45e816c",
+   "observation_dataset_id": "paratifoidea_a011_0e77fceb725e",
+   "observation_sha256": "0e77fceb725e9e063b5fede3f6b125e772c794ad40b5a60b497ddd7ad4dc41aa",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "a17008a753a7096d2e3c7d9efc4525e7b3e9c5023e773ac54cd647c5137106c7",
+   "filas": 5772
+  },
+  {
+   "engine": "media_26s",
+   "dev_smape_nacional": 20.887022523033487,
+   "dev_smape_nacional_control": 34.55770913636913,
+   "dev_vs_control_pct": -39.55900710718227,
+   "elegibles": [
+    "combo_mediana_top3",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "parotiditis_b26",
+   "release_id": "parotiditis_b26_release_703a6ec438ef",
+   "observation_dataset_id": "parotiditis_b26_6b0b7025ad8c",
+   "observation_sha256": "6b0b7025ad8c4245e97867a57567b47eece9dd86214fe85db5f3a5abaf45dd69",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "7257269438223752ccf274bcff8deb27f60806ee4ef70e3836c954f33a421639",
+   "filas": 5772
+  },
+  {
+   "engine": "media_26s",
+   "dev_smape_nacional": 19.0838054060835,
+   "dev_smape_nacional_control": 28.120879687767577,
+   "dev_vs_control_pct": -32.13652766920785,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "media_13s",
+    "media_26s",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "peaton_v01",
+   "release_id": "peaton_v01_release_59de3df5aba6",
+   "observation_dataset_id": "peaton_v01_cc1cea93a71a",
+   "observation_sha256": "cc1cea93a71ae033aeef9c3132cf8a519fa4834a0aee5b165000684a3f669ff5",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "0f1f6198f8e4a7959893ae7f88ba03f63b6dabfd678b35a8783a3f76369554f3",
+   "filas": 5772
+  },
+  {
+   "engine": "topdown_ets_nacional",
+   "dev_smape_nacional": 23.151333391706384,
+   "dev_smape_nacional_control": 29.489512321539223,
+   "dev_vs_control_pct": -21.492993375829467,
+   "elegibles": [
+    "combo_media_top3",
+    "media_2y",
+    "media_3y",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional"
+   ],
+   "pliegues": 4,
+   "disease_id": "plaguicidas_t60",
+   "release_id": "plaguicidas_t60_release_f85321a34bb9",
+   "observation_dataset_id": "plaguicidas_t60_fd84b091f122",
+   "observation_sha256": "fd84b091f122858d0037c2be5fe1014ab0d69cbe93447e9ecdee0be0f55273e4",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "fada27607a29161324e9dcf6c4c747c0bd866fbc310140482653721a0b69f91b",
+   "filas": 5772
+  },
+  {
+   "engine": "nivel_x_perfil_5y",
+   "dev_smape_nacional": 10.562392962354274,
+   "dev_smape_nacional_control": 14.662821427186898,
+   "dev_vs_control_pct": -27.964798488440046,
+   "elegibles": [
+    "ets_amortiguado_log1p",
+    "naive_lag52",
+    "nivel_x_perfil_5y"
+   ],
+   "pliegues": 4,
+   "disease_id": "protozoarios_a07",
+   "release_id": "protozoarios_a07_release_f2efbad8fcea",
+   "observation_dataset_id": "protozoarios_a07_9550d43ff5a0",
+   "observation_sha256": "9550d43ff5a0fa7cc94da9737f8e573b8ebfe34b90bee9b8fce9f5e676b24e0c",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "763874c9161782fd807ef686d3dfaa9dac50884cf5db4386cec5bba664387c01",
+   "filas": 5772
+  },
+  {
+   "engine": "media_13s",
+   "dev_smape_nacional": 14.088316077974337,
+   "dev_smape_nacional_control": 19.174825496223377,
+   "dev_vs_control_pct": -26.52701803857806,
+   "elegibles": [
+    "combo_mediana_top3",
+    "media_13s",
+    "media_26s",
+    "naive_lag52",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "quemaduras_t20",
+   "release_id": "quemaduras_t20_release_5913e2fa576b",
+   "observation_dataset_id": "quemaduras_t20_95a151970de7",
+   "observation_sha256": "95a151970de7a02703cdf3b25f1f1adf2188c803fd0201cb1ad3c48681e0960b",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "26fa4044b96aa1feb61c6225ea0e59659c5a6fd6b27f3c511e77a5ded890a70d",
+   "filas": 5772
+  },
+  {
+   "engine": "combo_mediana_top3",
+   "dev_smape_nacional": 39.04304949390749,
+   "dev_smape_nacional_control": 53.7217959238564,
+   "dev_vs_control_pct": -27.323633131614045,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_26s",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "reumatica_i00",
+   "release_id": "reumatica_i00_release_6ed116c23499",
+   "observation_dataset_id": "reumatica_i00_b61682a6ceb5",
+   "observation_sha256": "b61682a6ceb57f367a6a0133674fe7301602f49aff44763b514dc62d08808576",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "e72a5bb4b1355afc094aee7a71e77159789e6b8ff4c70e5d61df63942289b84f",
+   "filas": 5772
+  },
+  {
+   "engine": "ets_amortiguado_log1p",
+   "dev_smape_nacional": 50.893131098072224,
+   "dev_smape_nacional_control": 66.4372237907564,
+   "dev_vs_control_pct": -23.396662000266897,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional"
+   ],
+   "pliegues": 4,
+   "disease_id": "rotavirus_a080",
+   "release_id": "rotavirus_a080_release_7d93e256d814",
+   "observation_dataset_id": "rotavirus_a080_9939af18d596",
+   "observation_sha256": "9939af18d596bdbd935e56da6a26717e09abdcd9f1eabd5687993af486c6ff54",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "3fe36bbbdc7bdd2ba6dff53dd402054e99c658600b0f4ead1d202a71f78b1ddf",
+   "filas": 5772
+  },
+  {
+   "engine": "ets_amortiguado_log1p",
+   "dev_smape_nacional": 15.342141874126371,
+   "dev_smape_nacional_control": 20.96513486795608,
+   "dev_vs_control_pct": -26.820686006766927,
+   "elegibles": [
+    "ets_amortiguado_log1p",
+    "naive_lag52",
+    "topdown_ets_nacional"
+   ],
+   "pliegues": 4,
+   "disease_id": "salmonelosis_a02",
+   "release_id": "salmonelosis_a02_release_0f0ca5f81ea8",
+   "observation_dataset_id": "salmonelosis_a02_f146da28006d",
+   "observation_sha256": "f146da28006da6ab9095244109d6a987a91cddb616b4e7e34ddacc7175aef00c",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "2cd0910ba99f639688142c06fb47e109acd5d2184b347c453e93440193e5b020",
+   "filas": 5772
+  },
+  {
+   "engine": "media_13s",
+   "dev_smape_nacional": 58.82320656221482,
+   "dev_smape_nacional_control": 93.67209310605536,
+   "dev_vs_control_pct": -37.20306164652977,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "mediana_3y",
+    "mediana_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "salto_lugar_elevado_x80",
+   "release_id": "salto_lugar_elevado_x80_release_38e9519e4884",
+   "observation_dataset_id": "salto_lugar_elevado_x80_b89eebda586b",
+   "observation_sha256": "b89eebda586bdf755be3de3950fe19a2951ffd88252a2926b108895371462194",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "fbf3e9279e691d161ae8ae578ce4c1992faba10f1935901c5bc8cdcedb18ec4c",
+   "filas": 5772
+  },
+  {
+   "engine": "combo_mediana_top3",
+   "dev_smape_nacional": 33.36832567448785,
+   "dev_smape_nacional_control": 44.86502098492389,
+   "dev_vs_control_pct": -25.625075076414884,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_26s",
+    "media_3y",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "shigelosis_a03",
+   "release_id": "shigelosis_a03_release_aaa538d66c6c",
+   "observation_dataset_id": "shigelosis_a03_cdcde25528a9",
+   "observation_sha256": "cdcde25528a97ab6cc73180cde44a734f4bc5979dd0c1bf223f3aea2a49eb18c",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "7d00016d90b7843c99379731cc1fc7ff49b10327efd41e2e9bfeee73cbcaa3b1",
+   "filas": 5772
+  },
+  {
+   "engine": "topdown_ets_nacional",
+   "dev_smape_nacional": 26.56901042325385,
+   "dev_smape_nacional_control": 40.424023436390314,
+   "dev_vs_control_pct": -34.2742058690377,
+   "elegibles": [
+    "combo_media_top3",
+    "ets_amortiguado_log1p",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional"
+   ],
+   "pliegues": 4,
+   "disease_id": "sifilis_adquirida_a51",
+   "release_id": "sifilis_adquirida_a51_release_a18527def134",
+   "observation_dataset_id": "sifilis_adquirida_a51_eaca7efc1a11",
+   "observation_sha256": "eaca7efc1a111cabb86fe2b18cb1c0215e6b9812799f4d04b611395e28e43510",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "77cbb5caea20d5401663e0bb36a041ef5554496fffad1a99a8770532942b9c64",
+   "filas": 5772
+  },
+  {
+   "engine": "media_13s",
+   "dev_smape_nacional": 68.8930848060804,
+   "dev_smape_nacional_control": 86.91128668017716,
+   "dev_vs_control_pct": -20.73171686020658,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "sifilis_congenita_a50",
+   "release_id": "sifilis_congenita_a50_release_75a396570357",
+   "observation_dataset_id": "sifilis_congenita_a50_6ab969a14a45",
+   "observation_sha256": "6ab969a14a45c59c08576ea1339117ac6a22e48c79b1dce4c6c480ff40ddaa19",
+   "origen": [
+    2026,
+    44
+   ],
+   "forecast_sha256": "b36fd4c528be51c01cef8eebe276bb6a68d4ba0a29b326ea05d83e8135dff4d9",
+   "filas": 5772
+  },
+  {
+   "engine": "tsb",
+   "dev_smape_nacional": 37.85386026667999,
+   "dev_smape_nacional_control": 59.11053344883551,
+   "dev_vs_control_pct": -35.960888765375,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "sindrome_meningeo_g00",
+   "release_id": "sindrome_meningeo_g00_release_7fd7ccde48c7",
+   "observation_dataset_id": "sindrome_meningeo_g00_550fe6d36c42",
+   "observation_sha256": "550fe6d36c423cf2ef8d2e61461729bbea586ca979245fa71642baecb43a0f06",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "9553a128ad90215cb8e0193e2640948af2fbefd7952288f6d74bb2aae1a07493",
+   "filas": 5772
+  },
+  {
+   "engine": "combo_mediana_top3",
+   "dev_smape_nacional": 73.05414148955941,
+   "dev_smape_nacional_control": 99.13180669535309,
+   "dev_vs_control_pct": -26.306052593124075,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "teniasis_b68",
+   "release_id": "teniasis_b68_release_8387657b0aab",
+   "observation_dataset_id": "teniasis_b68_5df03584bac6",
+   "observation_sha256": "5df03584bac69f91b879936ac4bebb24fd1693b230237e88013db8dc5bbdb0fb",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "39671a39fe7269dbdaf750724ab9566ef9be18c5f6bf8b54b391f55cede02118",
+   "filas": 5772
+  },
+  {
+   "engine": "mediana_5y",
+   "dev_smape_nacional": 78.84615384615385,
+   "dev_smape_nacional_control": 92.82051282051282,
+   "dev_vs_control_pct": -15.05524861878452,
+   "elegibles": [
+    "mediana_3y",
+    "mediana_5y",
+    "naive_lag52"
+   ],
+   "pliegues": 4,
+   "disease_id": "tetanos_a34",
+   "release_id": "tetanos_a34_release_cd4de88372e8",
+   "observation_dataset_id": "tetanos_a34_ef42a36243c2",
+   "observation_sha256": "ef42a36243c2b6dcfcef0ddf793771aea0b80b37cea018c55f5d5e9528c6779c",
+   "origen": [
+    2026,
+    44
+   ],
+   "forecast_sha256": "e99a9f013875b8609d32f9b446a1e526be72108310b15b67919f0408f46e79ad",
+   "filas": 5772
+  },
+  {
+   "engine": "mediana_5y",
+   "dev_smape_nacional": 21.634615384615383,
+   "dev_smape_nacional_control": 43.58974358974359,
+   "dev_vs_control_pct": -50.367647058823536,
+   "elegibles": [
+    "mediana_3y",
+    "mediana_5y",
+    "naive_lag52"
+   ],
+   "pliegues": 4,
+   "disease_id": "tifo_murino_a752",
+   "release_id": "tifo_murino_a752_release_d0c157fd3d15",
+   "observation_dataset_id": "tifo_murino_a752_69c79c925e08",
+   "observation_sha256": "69c79c925e08b16e419861113f607d086455819274c219f5a22205c338efe189",
+   "origen": [
+    2026,
+    44
+   ],
+   "forecast_sha256": "7be5b0cde63e26d175d448cd970e4f1e61f4c3c9fcd5baddcfab6ab9026a5910",
+   "filas": 5772
+  },
+  {
+   "engine": "ets_amortiguado_log1p",
+   "dev_smape_nacional": 15.67999230957448,
+   "dev_smape_nacional_control": 22.50953376754125,
+   "dev_vs_control_pct": -30.340661554771824,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "naive_lag52",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "tifoidea_a01",
+   "release_id": "tifoidea_a01_release_ea50e14a0371",
+   "observation_dataset_id": "tifoidea_a01_eab5fbece704",
+   "observation_sha256": "eab5fbece704c45e2e9ae533efd9fc03688db5d4447b46eec8dafdc7a8c93db3",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "5657a7c727c5dc33a988c9507abe8d395dec9615a932ef421d5eb51320c88e03",
+   "filas": 5772
+  },
+  {
+   "engine": "naive_lag52",
+   "dev_smape_nacional": 115.06303820448557,
+   "dev_smape_nacional_control": 115.06303820448557,
+   "dev_vs_control_pct": 0.0,
+   "elegibles": [
+    "naive_lag52"
+   ],
+   "pliegues": 4,
+   "disease_id": "tos_ferina_a37",
+   "release_id": "tos_ferina_a37_release_f9c47054e402",
+   "observation_dataset_id": "tos_ferina_a37_bdd26560eea4",
+   "observation_sha256": "bdd26560eea41e8e484a7b24636ef9e9345a2b6f9a37b2c67ccdbcdf4bc621e1",
+   "origen": [
+    2026,
+    44
+   ],
+   "forecast_sha256": "85d547bf3c1e953149f0d081081a9d7f0f41d3a81101f73aad342cd7b3e0f7db",
+   "filas": 5772
+  },
+  {
+   "engine": "tsb",
+   "dev_smape_nacional": 71.87872119038579,
+   "dev_smape_nacional_control": 101.33304070238458,
+   "dev_vs_control_pct": -29.06684661571166,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_2y",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "toxoplasmosis_b58",
+   "release_id": "toxoplasmosis_b58_release_4be4a46a1fc9",
+   "observation_dataset_id": "toxoplasmosis_b58_57c2305d7e99",
+   "observation_sha256": "57c2305d7e997a741f96138c5787ffb2077479fce5a6f0540bd0c045942cd468",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "811a85817c79d25c65657ab5861c0526baf323b693c77a3611faab88e6275993",
+   "filas": 5772
+  },
+  {
+   "engine": "mediana_5y",
+   "dev_smape_nacional": 29.807692307692307,
+   "dev_smape_nacional_control": 53.36538461538462,
+   "dev_vs_control_pct": -44.14414414414416,
+   "elegibles": [
+    "mediana_3y",
+    "mediana_5y",
+    "naive_lag52"
+   ],
+   "pliegues": 4,
+   "disease_id": "tracoma_a71",
+   "release_id": "tracoma_a71_release_9c3f6e560f0b",
+   "observation_dataset_id": "tracoma_a71_e19dc92ac6d6",
+   "observation_sha256": "e19dc92ac6d628a53638073ef8b6aab6569d44b0178fa724324cc469c12dfffe",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "6d2fb98a9a8c9d4e52863a6c56e3027083ac8068ac6d334b3d356ddc714035f8",
+   "filas": 5772
+  },
+  {
+   "engine": "combo_media_top3",
+   "dev_smape_nacional": 12.635726128973683,
+   "dev_smape_nacional_control": 14.465603247471911,
+   "dev_vs_control_pct": -12.649850042154497,
+   "elegibles": [
+    "combo_media_top3",
+    "naive_lag52"
+   ],
+   "pliegues": 4,
+   "disease_id": "tricomoniasis_a590",
+   "release_id": "tricomoniasis_a590_release_8f50a2144dd3",
+   "observation_dataset_id": "tricomoniasis_a590_4af440b1edcc",
+   "observation_sha256": "4af440b1edccc459833125c707eca85b06562c4bd70f097fa1d093c286e9e845",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "f41376bcecabe9ee9cec908e22608ec655a13909d3d44268ee0db412dec0c67b",
+   "filas": 5772
+  },
+  {
+   "engine": "mediana_3y",
+   "dev_smape_nacional": 46.63461538461539,
+   "dev_smape_nacional_control": 77.80500749250749,
+   "dev_vs_control_pct": -40.06219279767278,
+   "elegibles": [
+    "mediana_3y",
+    "mediana_5y",
+    "naive_lag52"
+   ],
+   "pliegues": 4,
+   "disease_id": "triquinosis_b75",
+   "release_id": "triquinosis_b75_release_e73fafd6857f",
+   "observation_dataset_id": "triquinosis_b75_248ad10f21a7",
+   "observation_sha256": "248ad10f21a75e270bbfda7df6b236762bcde07611799beac6740bb78db3923c",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "e0436441c5430718f55c0e774fc1f25fbbaeb229dd718bf22de493dcfee074a7",
+   "filas": 5772
+  },
+  {
+   "engine": "naive_lag52",
+   "dev_smape_nacional": 33.40197460154421,
+   "dev_smape_nacional_control": 33.40197460154421,
+   "dev_vs_control_pct": 0.0,
+   "elegibles": [
+    "naive_lag52"
+   ],
+   "pliegues": 4,
+   "disease_id": "tuberculosis_otras_formas_a171",
+   "release_id": "tuberculosis_otras_formas_a171_release_ca444e2b0856",
+   "observation_dataset_id": "tuberculosis_otras_formas_a171_ed692b9053e8",
+   "observation_sha256": "ed692b9053e8fac29bbe19e2a640355c9984deee39e8e928b68b56d0059d784b",
+   "origen": [
+    2026,
+    44
+   ],
+   "forecast_sha256": "cd1e3872bbbd77a055392395356d0130f4cdaf24aa96d8a874a30b585c6b4da1",
+   "filas": 5772
+  },
+  {
+   "engine": "naive_lag52",
+   "dev_smape_nacional": 29.395724642147897,
+   "dev_smape_nacional_control": 29.395724642147897,
+   "dev_vs_control_pct": 0.0,
+   "elegibles": [
+    "naive_lag52"
+   ],
+   "pliegues": 4,
+   "disease_id": "tuberculosis_respiratoria_a15",
+   "release_id": "tuberculosis_respiratoria_a15_release_5098dd8fc6e4",
+   "observation_dataset_id": "tuberculosis_respiratoria_a15_b851946a9510",
+   "observation_sha256": "b851946a9510ef07eca965713cbfecf835682ded5a5fca8152e8cee3b55d0504",
+   "origen": [
+    2026,
+    44
+   ],
+   "forecast_sha256": "e299e8e0bb534960711379b361c28edd11e873e4a3a460cdcc7a194a7e83c09a",
+   "filas": 5772
+  },
+  {
+   "engine": "nivel_x_perfil_5y",
+   "dev_smape_nacional": 6.946763905036029,
+   "dev_smape_nacional_control": 10.867947468259809,
+   "dev_vs_control_pct": -36.08025871192074,
+   "elegibles": [
+    "ets_amortiguado_log1p",
+    "naive_lag52",
+    "nivel_x_perfil_5y"
+   ],
+   "pliegues": 4,
+   "disease_id": "ulceras_k25",
+   "release_id": "ulceras_k25_release_9d58ce6ad597",
+   "observation_dataset_id": "ulceras_k25_64f04037fb88",
+   "observation_sha256": "64f04037fb88f2a9834d6de8bd5dba3c7fabc8188e0ed72ae96ba1ee25ac25a4",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "451f68eff465b8932aac85e46b368cb29592865458c1e4b42b84a3bdc4331685",
+   "filas": 5772
+  },
+  {
+   "engine": "tsb",
+   "dev_smape_nacional": 34.77886018611629,
+   "dev_smape_nacional_control": 51.27660962046888,
+   "dev_vs_control_pct": -32.174025460074354,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "media_13s",
+    "media_26s",
+    "naive_lag52",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "varicela_b01",
+   "release_id": "varicela_b01_release_1233ee2e330c",
+   "observation_dataset_id": "varicela_b01_22d0f3e8a870",
+   "observation_sha256": "22d0f3e8a8705479dd37c72f63d9851cfc0ef5b94446004283f0b162c04cc3af",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "6be0524c28a69d100cc1ce7e80a23efdc8e351a83e97837ae8d055a0288040b9",
+   "filas": 5772
+  },
+  {
+   "engine": "topdown_ets_nacional",
+   "dev_smape_nacional": 16.50235716380524,
+   "dev_smape_nacional_control": 27.592466696643758,
+   "dev_vs_control_pct": -40.19252665868933,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "vehiculos_v20",
+   "release_id": "vehiculos_v20_release_6d63522d4523",
+   "observation_dataset_id": "vehiculos_v20_f34e4ea79f8c",
+   "observation_sha256": "f34e4ea79f8cdb79e1afd1a66d8274bfab00d9a20a69c04dcb4c03f0227717bf",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "69d7b635fea4e4c5c450ebc6d27b842861d3e92cc38135d778bc3c26c92be955",
+   "filas": 5772
+  },
+  {
+   "engine": "naive_lag52",
+   "dev_smape_nacional": 27.20311619472053,
+   "dev_smape_nacional_control": 27.20311619472053,
+   "dev_vs_control_pct": 0.0,
+   "elegibles": [
+    "naive_lag52"
+   ],
+   "pliegues": 2,
+   "disease_id": "vih_b20",
+   "release_id": "vih_b20_release_ea7cd45d29e7",
+   "observation_dataset_id": "vih_b20_8783ea5a6a52",
+   "observation_sha256": "8783ea5a6a52274069d528d450b48af2852f1470919f3949d59ffcac3010cb67",
+   "origen": [
+    2026,
+    44
+   ],
+   "forecast_sha256": "3b2d1e8b1d17eb2607e8375740dee715f21b989410d88858a8e0e48f100fa19f",
+   "filas": 5772
+  },
+  {
+   "engine": "mediana_5y",
+   "dev_smape_nacional": 15.613351122288691,
+   "dev_smape_nacional_control": 22.550930867910658,
+   "dev_vs_control_pct": -30.764050434361216,
+   "elegibles": [
+    "combo_media_top3",
+    "media_2y",
+    "media_3y",
+    "mediana_3y",
+    "mediana_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y"
+   ],
+   "pliegues": 4,
+   "disease_id": "violencia_intrafamiliar_y07",
+   "release_id": "violencia_intrafamiliar_y07_release_c56e23ab2467",
+   "observation_dataset_id": "violencia_intrafamiliar_y07_f872e6e9115c",
+   "observation_sha256": "f872e6e9115c48bd142a01dd251e8f11e64edbf137668a7341e47e314ae17b90",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "6dd2f1778780045604d34575087ef05b612572c8c0a9727553417926ea88d81b",
+   "filas": 5772
+  },
+  {
+   "engine": "nivel_x_perfil_5y",
+   "dev_smape_nacional": 38.34741623323034,
+   "dev_smape_nacional_control": 50.32843744357043,
+   "dev_vs_control_pct": -23.805668959568884,
+   "elegibles": [
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "violinista_u603",
+   "release_id": "violinista_u603_release_d9c99e3a01f2",
+   "observation_dataset_id": "violinista_u603_f214f2185db2",
+   "observation_sha256": "f214f2185db2f10e4e65d125244e961b98ccda720d84752f52b49b11499c8e04",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "72d3c331f767f39fa5a4fb486afa94714b8902ccf8e231114af1ef3b670c7667",
+   "filas": 5772
+  },
+  {
+   "engine": "media_26s",
+   "dev_smape_nacional": 121.86677003930633,
+   "dev_smape_nacional_control": 145.09022904252498,
+   "dev_vs_control_pct": -16.006218445221425,
+   "elegibles": [
+    "media_13s",
+    "media_26s",
+    "naive_lag52",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "viruela_simica_b04",
+   "release_id": "viruela_simica_b04_release_91d2eda13c7d",
+   "observation_dataset_id": "viruela_simica_b04_48ff960c9890",
+   "observation_sha256": "48ff960c9890d38749e25bf05d3bc6ca58071f696d32d92cebbe1e22c6fd9b6d",
+   "origen": [
+    2026,
+    44
+   ],
+   "forecast_sha256": "d65755fa2b88086154068ff47fc7819948d74d7607f581778a2889946a583f6d",
+   "filas": 5772
+  },
+  {
+   "engine": "media_26s",
+   "dev_smape_nacional": 38.35280059211414,
+   "dev_smape_nacional_control": 59.2023860359853,
+   "dev_vs_control_pct": -35.21747490244403,
+   "elegibles": [
+    "media_13s",
+    "media_26s",
+    "media_52s",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "tsb"
+   ],
+   "pliegues": 1,
+   "disease_id": "viuda_negra_u602",
+   "release_id": "viuda_negra_u602_release_d9135bf29d3b",
+   "observation_dataset_id": "viuda_negra_u602_0e21c90f2060",
+   "observation_sha256": "0e21c90f20609aced376958a2e7c0f79dcada3edd24dbf141d3b5b3148677955",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "a6a708e1e460bb743d09166de2707cfebab688694881701e164def76a27a4f97",
+   "filas": 5772
+  },
+  {
+   "engine": "nivel_x_perfil_5y",
+   "dev_smape_nacional": 28.11119680265965,
+   "dev_smape_nacional_control": 41.91205930536333,
+   "dev_vs_control_pct": -32.92814223742434,
+   "elegibles": [
+    "combo_media_top3",
+    "combo_mediana_top3",
+    "ets_amortiguado_log1p",
+    "media_13s",
+    "media_26s",
+    "media_3y",
+    "media_52s",
+    "media_5y",
+    "naive_lag52",
+    "nivel_x_perfil_5y",
+    "topdown_ets_nacional",
+    "tsb"
+   ],
+   "pliegues": 4,
+   "disease_id": "vph_b97",
+   "release_id": "vph_b97_release_532749b67520",
+   "observation_dataset_id": "vph_b97_1f7e0b59881f",
+   "observation_sha256": "1f7e0b59881ffd6b2243da749943d9c16758edf6b5f07167928830e037d0adf0",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "2edeff837a953d745971b2b15a7481e01a7562f24a82120a164adfcedb3b75f9",
+   "filas": 5772
+  },
+  {
+   "engine": "nivel_x_perfil_5y",
+   "dev_smape_nacional": 12.858241061640673,
+   "dev_smape_nacional_control": 15.90163119788491,
+   "dev_vs_control_pct": -19.138854991486923,
+   "elegibles": [
+    "naive_lag52",
+    "nivel_x_perfil_5y"
+   ],
+   "pliegues": 4,
+   "disease_id": "vulvovaginitis_n76",
+   "release_id": "vulvovaginitis_n76_release_150d6148d568",
+   "observation_dataset_id": "vulvovaginitis_n76_234c7e21a549",
+   "observation_sha256": "234c7e21a5495b88fed7ddca672f068da7e00e2881617d73ebed5bd8960a058f",
+   "origen": [
+    2026,
+    43
+   ],
+   "forecast_sha256": "390704bb639f4ff2b6ec632a91ca9039e0fc1114c6bf9139b824bdd1118c7fa7",
+   "filas": 1924
+  }
+ ]
+}

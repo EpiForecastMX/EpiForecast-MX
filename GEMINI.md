@@ -30,12 +30,14 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 > Espejo generado de `CLAUDE.md`: no editar aquí. Editar `CLAUDE.md` y correr `make sync-instrucciones`.
 
-## Banco ampliado de motores — 23-nov-2026
+## Banco ampliado y sombra v3 — 22-nov-2026
 
-19 motores en los 148 del runner, sólo en pliegues de desarrollo (sin años de prueba, sin publicar):
-la media de las últimas 52 semanas le gana al naive en 120/148 (mediana −14.9 %); ETS y TSB quedan
-a la par; Prophet, Ridge, Theta y LightGBM pierden contra el naive en la mediana. Elegir motor por
-ventana creciente apenas mejora (27.50 frente a 28.30). Detalle: `docs/BANCO_AMPLIADO.md`.
+Banco de 30 motores en los 148 del runner, sólo en pliegues de desarrollo (sin años de prueba, sin
+publicar). Los mejores separan nivel y estacionalidad o pronostican el nacional directo: top-down
+ETS (mediana 27.55) y nivel × perfil estacional (le gana al naive en 129/148); Prophet, Ridge,
+Theta y LightGBM pierden contra el naive. La **sombra v3** (`sombra_v3_20261122_c0f26063ce`) usa
+esos candidatos; validar con `python -m scripts.sombra_v2 --politica sombra_v3 valida …` y no
+re-emitir. Detalle: `docs/BANCO_AMPLIADO.md` y `docs/SOMBRA_V2.md`.
 
 ## Política v2 en sombra — 22-nov-2026
 
