@@ -25,9 +25,10 @@ import pandas as pd
 from epiforecast.data.epi_dataset_spec import NATIONAL_GEO_ID, SEX_GENERAL
 from epiforecast.data.epi_geo_exposure import GeoCatalog
 from epiforecast.data.sex_scheme import base_sexes_of
-from epiforecast.runner.engines import seasonal_naive, seasonal_window
 from epiforecast.runner.evaluation import smape_percent
 from epiforecast.runner.forecasting import horizon_periods
+from epiforecast.runner.sombra_predictores import SombraError as SombraError
+from epiforecast.runner.sombra_predictores import predicciones_base
 
 _ROOT = Path(__file__).resolve().parents[3]
 CONFIG = _ROOT / "config" / "sombra" / "sombra_v2.yaml"
@@ -35,10 +36,6 @@ Period = tuple[int, int]
 Predictor = Callable[[dict[Period, float], list[Period]], dict[Period, float]]
 LLAVE = ["geography_level", "geography_id", "sex"]
 PERIODO = ["epi_year", "epi_week"]
-
-
-class SombraError(ValueError):
-    """La sombra violó una regla declarada (datos, cobertura o configuración)."""
 
 
 @dataclass(frozen=True)
@@ -50,6 +47,10 @@ class Reglas:
     niveles: tuple[int, ...]
     min_residuos: int
     horizonte: int
+    nombre: str = "sombra_v2"
+    fuente: str = "benchmark"  # de dónde salen las predicciones de desarrollo: benchmark | banco
+    ruta: str = ""  # archivo de configuración (su SHA-256 viaja en el índice de la emisión)
+    cuantil_de: tuple[float, ...] = ()  # nivel de cuantil usado por banda; vacío = el nominal
 
 
 def cargar_reglas(path: Path = CONFIG) -> Reglas:
@@ -59,6 +60,8 @@ def cargar_reglas(path: Path = CONFIG) -> Reglas:
         raise SombraError(f"selección no soportada: {sel['metrica']}/{sel['agregado']}")
     if itv["metodo"] != "cuantil_residuo_log1p":
         raise SombraError(f"método de intervalos no soportado: {itv['metodo']}")
+    if raw.get("fuente_desarrollo", "benchmark") not in {"benchmark", "banco"}:
+        raise SombraError(f"fuente de desarrollo no soportada: {raw['fuente_desarrollo']}")
     if raw["control"] not in raw["candidatos"]:
         raise SombraError("el control debe estar entre los candidatos")
     return Reglas(
@@ -69,20 +72,13 @@ def cargar_reglas(path: Path = CONFIG) -> Reglas:
         niveles=tuple(int(n) for n in itv["niveles"]),
         min_residuos=int(itv["min_residuos"]),
         horizonte=int(raw["horizonte"]),
+        nombre=str(raw["name"]),
+        fuente=str(raw.get("fuente_desarrollo", "benchmark")),
+        ruta=str(path),
+        cuantil_de=tuple(
+            float(itv.get("cuantil_por_nivel", {}).get(n, n)) for n in itv["niveles"]
+        ),
     )
-
-
-def predictor(engine: str) -> Predictor:
-    """El predictor puro del motor, el mismo que usa el runner (sin ajuste ni estado)."""
-    if engine == seasonal_naive.ENGINE:
-        return seasonal_naive.predict_series
-    cfg = seasonal_window.load_window_config().get(engine)
-    if cfg is None:
-        raise SombraError(f"motor sin predictor puro: {engine}")
-    fn = seasonal_window.make_predictor(
-        int(cfg["years"]), str(cfg["statistic"]), int(cfg["min_obs"])
-    )
-    return lambda train, periods: fn(train, periods)[0]
 
 
 def productos(base: pd.DataFrame, catalog: GeoCatalog, valores: list[str]) -> pd.DataFrame:
@@ -184,8 +180,8 @@ def cuantiles(ev_motor: pd.DataFrame, catalog: GeoCatalog, reglas: Reglas) -> pd
         if len(g) < reglas.min_residuos:
             raise SombraError(f"{llave}: {len(g)} residuos < {reglas.min_residuos}")
         fila = dict(zip(LLAVE, llave, strict=True)) | {"n_residuos": len(g)}
-        for n in reglas.niveles:
-            a = (100 - n) / 200
+        for i, n in enumerate(reglas.niveles):
+            a = (100 - (reglas.cuantil_de[i] if reglas.cuantil_de else n)) / 200
             fila[f"q_lo_{n}"], fila[f"q_hi_{n}"] = np.quantile(g["r"], [a, 1 - a])
         filas.append(fila)
     return pd.DataFrame(filas)
@@ -201,11 +197,11 @@ def pronostico(
     """Motor elegido y control desde el último periodo observado común, con intervalos."""
     origen = min(max(h) for h in historia.values())
     periodos = horizon_periods(origen, reglas.horizonte)
-    fn, ctrl = predictor(engine), predictor(reglas.control)
+    trains = {k: {p: v for p, v in h.items() if p <= origen} for k, h in historia.items()}
+    pv = predicciones_base(trains, engine, periodos, reglas.fuente)
+    pc = predicciones_base(trains, reglas.control, periodos, reglas.fuente)
     filas = []
-    for (geo, sex), h in sorted(historia.items()):
-        train = {p: v for p, v in h.items() if p <= origen}
-        pv, pc = fn(train, periodos), ctrl(train, periodos)
+    for geo, sex in sorted(historia):
         for i, p in enumerate(periodos, 1):
             filas.append(
                 {
@@ -214,8 +210,8 @@ def pronostico(
                     "epi_year": p[0],
                     "epi_week": p[1],
                     "horizon": i,
-                    "y_pred_cases": pv[p],
-                    "control_cases": pc[p],
+                    "y_pred_cases": pv[(geo, sex)][p],
+                    "control_cases": pc[(geo, sex)][p],
                 }
             )
     prod = productos(pd.DataFrame(filas), catalog, ["y_pred_cases", "control_cases"])

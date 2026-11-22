@@ -178,3 +178,44 @@ def test_desarrollo_rechaza_anios_de_prueba(tmp_path: Path) -> None:
         flujo.desarrollo(d, REGLAS, tmp_path)
     ev.assign(epi_year=2024).to_csv(edir / "evaluation.csv", index=False)
     assert len(flujo.desarrollo(d, REGLAS, tmp_path)) == len(ev)
+
+
+def test_predicciones_banco_coinciden_con_el_runner_en_el_naive() -> None:
+    from epiforecast.runner.sombra_predictores import predicciones_base
+
+    trains = _historia(range(2019, 2025), valor=3.0)
+    from epiforecast.runner.forecasting import horizon_periods
+
+    periodos = horizon_periods((2024, 52), 10)
+    a = predicciones_base(trains, "seasonal_naive_lag52", periodos, "benchmark")
+    b = predicciones_base(trains, "naive_lag52", periodos, "banco")
+    assert a == b
+
+
+def test_cuantiles_ampliados_ensanchan_la_banda() -> None:
+    ev = _ev_dev(1.0).assign(y_pred_cases=lambda d: d["y_pred_cases"] * (1 + d["epi_week"] / 100))
+    amplio = dataclasses.replace(REGLAS, cuantil_de=(90.0, 99.0))
+    q, qa = sv.cuantiles(ev, CAT, REGLAS), sv.cuantiles(ev, CAT, amplio)
+    assert ((qa["q_hi_80"] - qa["q_lo_80"]) >= (q["q_hi_80"] - q["q_lo_80"])).all()
+
+
+def test_desarrollo_banco_excluye_motores_con_fallos(tmp_path: Path) -> None:
+    d, rel = "x_a00", "x_a00_release_1"
+    (tmp_path / "config/publication" / d).mkdir(parents=True)
+    (tmp_path / "config/publication" / d / "public_release_pointer.json").write_text(
+        json.dumps({"release_id": rel})
+    )
+    pol = tmp_path / "artifacts/releases" / d / rel / "policy"
+    pol.mkdir(parents=True)
+    (pol / "p.yaml").write_text("folds:\n  test:\n    - {epi_year: 2025}\n")
+    banco = tmp_path / "runs/banco_ampliado/v1/tareas"
+    banco.mkdir(parents=True)
+    df = _ev_dev(0.0).rename(columns={"y_true_cases": "y_true", "y_pred_cases": "y_pred"})
+    df = df.assign(fold=2024)
+    for motor, fallos in (("naive_lag52", []), ("tsb", [{"fold": 2024}])):
+        df.to_parquet(banco / f"{d}__{motor}.parquet", index=False)
+        (banco / f"{d}__{motor}.json").write_text(json.dumps({"fallos": fallos}))
+    v3 = sv.cargar_reglas(sv.CONFIG.parent / "sombra_v3.yaml")
+    ev = flujo.desarrollo(d, v3, tmp_path)
+    assert set(ev["engine"]) == {"naive_lag52"}
+    assert set(ev["fold"]) == {"development_2024"}

@@ -16,13 +16,18 @@ from omegaconf import OmegaConf
 import pandas as pd
 import yaml
 
-from epiforecast.banco import global_ml, motores
+from epiforecast.banco import global_ml, motores, motores_extra
 from epiforecast.publication.prospective import read_base_history
 from epiforecast.runner.evaluation import smape_percent
 
 _ROOT = Path(__file__).resolve().parents[3]
 CONFIG = _ROOT / "config" / "banco" / "banco_ampliado_v1.yaml"
-GLOBALES = {"lgbm_global_directo": global_ml.lgbm_global_directo}
+GLOBALES = {
+    "lgbm_global_directo": global_ml.lgbm_global_directo,
+    "topdown_ets_nacional": global_ml.topdown("ets_amortiguado_log1p"),
+    "topdown_media52_nacional": global_ml.topdown("media_52s"),
+}
+LOCALES = {**motores.MOTORES, **motores_extra.MOTORES_EXTRA}
 
 
 class BancoError(ValueError):
@@ -32,7 +37,7 @@ class BancoError(ValueError):
 def cargar_config(path: Path = CONFIG) -> dict[str, Any]:
     cfg = cast("dict[str, Any]", OmegaConf.to_container(OmegaConf.load(path), resolve=True))
     todos = [m for ms in cfg["clases"].values() for m in ms]
-    faltan = [m for m in todos if m not in motores.MOTORES and m not in GLOBALES]
+    faltan = [m for m in todos if m not in LOCALES and m not in GLOBALES]
     if faltan or len(set(todos)) != len(todos):
         raise BancoError(f"motores sin implementación o repetidos: {faltan}")
     cfg["motores"] = todos
@@ -97,7 +102,7 @@ def correr(
             preds = {}
             for k, s in series.items():
                 try:
-                    preds[k] = motores.MOTORES[motor](s[:n], train, hold, p)
+                    preds[k] = LOCALES[motor](s[:n], train, hold, p)
                 except Exception as exc:  # noqa: BLE001
                     fallos.append({"fold": anio, "serie": "/".join(k), "error": repr(exc)[:200]})
         for (geo, sex), v in preds.items():

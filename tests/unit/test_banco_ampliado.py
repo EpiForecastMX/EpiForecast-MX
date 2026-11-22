@@ -27,15 +27,15 @@ def _serie(periodos: list[tuple[int, int]], nivel: float = 10.0) -> np.ndarray:
 
 def test_config_todos_los_motores_implementados() -> None:
     assert CFG["control"] in CFG["motores"]
-    assert len(CFG["motores"]) == 19
+    assert len(CFG["motores"]) == 30
 
 
-@pytest.mark.parametrize("motor", [m for m in motores.MOTORES if m != "prophet_log1p"])
+@pytest.mark.parametrize("motor", [m for m in flujo.LOCALES if m != "prophet_log1p"])
 def test_motores_locales_dan_pronostico_finito(motor: str) -> None:
     per = _periodos(2016, 2022)
     train, hold = per[:-52], per[-52:]
     y = _serie(train)
-    v = motores.MOTORES[motor](y, train, hold, P)
+    v = flujo.LOCALES[motor](y, train, hold, P)
     assert v.shape == (52,) and np.isfinite(v).all()
 
 
@@ -141,3 +141,13 @@ def test_reporte_cuenta_victorias_sobre_el_naive() -> None:
     fijo = reporte.motor_fijo(t, "naive_lag52", CFG["clase_de"]).set_index("engine")
     assert fijo.loc["ets_amortiguado_log1p", "gana_al_naive"] == 1
     assert fijo.loc["ets_amortiguado_log1p", "gana_al_mejor_simple"] == 1
+
+
+def test_topdown_reparte_el_nacional_por_proporcion() -> None:
+    per = _periodos(2017, 2023)
+    train, hold = per[:-52], per[-52:]
+    series = {("01", "general"): _serie(train, 10), ("02", "general"): _serie(train, 30)}
+    out = flujo.GLOBALES["topdown_media52_nacional"](series, train, hold, P)
+    total = sum(s[-52:].mean() for s in series.values())
+    assert np.allclose(out[("01", "general")] + out[("02", "general")], total)
+    assert out[("02", "general")][0] > out[("01", "general")][0]

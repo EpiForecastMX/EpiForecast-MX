@@ -22,11 +22,17 @@ clases:
     - media_2y
     - media_52s # media de las últimas 52 semanas, plana
     - ultimo_valor # último valor observado, plano
+    - media_26s # ronda 2: medias móviles cortas y mediana de 52 semanas
+    - media_13s
+    - mediana_52s
   combinacion_simple:
     - promedio_estacionales # media de naive, media/mediana 3y y 5y
+    - combo_media_top3 # ronda 2: media de media_52s, ETS y TSB
+    - combo_mediana_top3 # ronda 2: mediana de los mismos tres
   ajuste_nivel:
     - naive_nivel_13s # naive × (últimas 13 sem / mismas 13 sem un año antes), acotado
     - media_3y_nivel_13s
+    - nivel_x_perfil_5y # ronda 2: media de 52 sem × índice estacional de 5 años encogido
   estadistico:
     - ets_amortiguado_log1p # Holt-Winters aditivo amortiguado, estacionalidad 52, sobre log1p
     - theta_log1p # Theta estándar con desestacionalización aditiva, periodo 52
@@ -35,8 +41,14 @@ clases:
     - croston_sba # demanda intermitente (Syntetos-Boylan), plano
     - tsb # Teunter-Syntetos-Babai, plano
     - prophet_log1p # MAP, configuración congelada del runner (additive, cp 0.01, sp 0.5, F=5)
+    - ses_optimizado # ronda 2: suavizado exponencial simple, alfa optimizado
+    - stl_ets_log1p # ronda 2: STL robusta (periodo 52) + ETS amortiguado sobre log1p
+    - negbin_fourier # ronda 2: GLM binomial negativo con tendencia + Fourier K=4
   ml:
     - lgbm_global_directo # LightGBM global por padecimiento, directo (sin recursión)
+  jerarquico:
+    - topdown_ets_nacional # ronda 2: ETS sobre el nacional, repartido por proporción de 104 sem
+    - topdown_media52_nacional # ronda 2: media de 52 sem del nacional, repartida igual
 
 parametros:
   nivel_ventana: 13
@@ -47,6 +59,8 @@ parametros:
   croston_alpha: 0.1
   tsb_alpha: 0.1
   tsb_beta: 0.1
+  perfil_encogimiento: 0.5 # el índice estacional se encoge a la mitad hacia 1
+  negbin_alpha: 0.5
   lgbm:
     n_estimators: 300
     learning_rate: 0.05

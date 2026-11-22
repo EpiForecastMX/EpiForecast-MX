@@ -78,3 +78,25 @@ def lgbm_global_directo(
         rasgos = [_rasgos(y, o_final, h, hold[h - 1][1]) for h in range(1, horizonte + 1)]
         out[key] = np.expm1(modelo.predict(np.array(rasgos)))
     return out
+
+
+def topdown(motor: str) -> Any:
+    """Pronostica el nacional con ``motor`` y lo reparte por la proporción de las últimas 104 sem."""
+
+    def fn(
+        series: dict[tuple[str, str], Arr],
+        train: list[Period],
+        hold: list[Period],
+        p: dict[str, Any],
+    ) -> dict[tuple[str, str], Arr]:
+        from epiforecast.banco import motores
+
+        nacional = np.sum(list(series.values()), axis=0)
+        total = np.maximum(motores.MOTORES[motor](nacional, train, hold, p), 0.0)
+        pesos = {k: float(s[-104:].sum()) for k, s in series.items()}
+        suma = sum(pesos.values())
+        if suma == 0:
+            return {k: np.zeros(len(hold)) for k in series}
+        return {k: total * w / suma for k, w in pesos.items()}
+
+    return fn
