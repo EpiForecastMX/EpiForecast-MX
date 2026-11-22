@@ -6,6 +6,7 @@ Escribe en docs/paper_comia2027/evidencia/:
 - padecimientos.csv: un renglón por padecimiento publicado (legacy y del runner) con su perfil,
   política, desenlace de aceptación, motores del release y fecha de alta en git.
 - cronologia.csv: publicados acumulados por fecha (de 4 legacy a todos los del runner).
+- actividad_diaria.csv: commits, PR fusionadas y corridas de CI por día.
 - resumen.json: conteos del sistema (releases, productos, pronósticos, políticas, commits, PR, CI).
 
 Sin red (``--sin-red``) se omiten los conteos de GitHub (PR fusionadas y corridas de CI).
@@ -181,6 +182,30 @@ def _corridas(repo: str | None, workflow: str | None) -> dict[str, object] | Non
     }
 
 
+def actividad(con_red: bool) -> pd.DataFrame:
+    """Por día: commits de main (fecha de autor), PR fusionadas y corridas de CI del backend."""
+    fechas = _git("log", "--format=%ad", "--date=short").splitlines()
+    df = pd.Series(fechas).value_counts().rename("commits").to_frame()
+    if con_red:
+        for nombre, extra in (("pr_backend", []), ("pr_frontend", ["--repo", FRONTEND])):
+            prs = _gh(
+                ["pr", "list", "--state", "merged", "--limit", "2000", "--json", "mergedAt"]
+                + extra
+            )
+            if prs:
+                dias = pd.Series([str(x["mergedAt"])[:10] for x in prs]).value_counts()
+                df = df.join(dias.rename(nombre), how="outer")
+        runs = _gh(
+            ["run", "list", "--limit", "5000", "--json", "createdAt", "--workflow", "ci.yml"]
+        )
+        if runs:
+            dias = pd.Series([str(x["createdAt"])[:10] for x in runs]).value_counts()
+            df = df.join(dias.rename("ci_backend"), how="outer")
+    out = df.fillna(0).astype(int).sort_index()
+    out.index.name = "fecha"
+    return out.reset_index()
+
+
 def resumen(p: pd.DataFrame, con_red: bool) -> dict[str, object]:
     runner = p[p["carril"] == "runner"]
     motores: Counter[str] = Counter()
@@ -209,6 +234,9 @@ def resumen(p: pd.DataFrame, con_red: bool) -> dict[str, object]:
         "primer_commit": _git("log", "--reverse", "--format=%ad", "--date=short").splitlines()[0],
         "head": _git("rev-parse", "HEAD"),
         "archivos_de_prueba": sum(1 for _ in (_ROOT / "tests").rglob("test_*.py")),
+        "registry_lifecycle": dict(
+            Counter(str(d.lifecycle) for d in registry.all_diseases()).most_common()
+        ),
         "definiciones": DEFINICIONES,
     }
     if con_red:
@@ -247,6 +275,7 @@ def main(argv: list[str] | None = None) -> int:
     p = padecimientos()
     p.to_csv(OUT / "padecimientos.csv", index=False)
     cronologia(p).to_csv(OUT / "cronologia.csv", index=False)
+    actividad(not args.sin_red).to_csv(OUT / "actividad_diaria.csv", index=False)
     res = resumen(p, not args.sin_red)
     (OUT / "resumen.json").write_text(json.dumps(res, ensure_ascii=False, indent=1) + "\n")
     print(json.dumps(res, ensure_ascii=False, indent=1))
