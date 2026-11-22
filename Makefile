@@ -409,6 +409,21 @@ model-pipeline: train models-push predict report forecast-push
 sync-instrucciones:
 	$(PYTHON) scripts/sync_instrucciones.py
 
+## Política v2 en sombra: retroprueba en desarrollo (no publica ni reentrena)
+.PHONY: sombra-retro
+sombra-retro:
+	$(PYTHON) -m scripts.sombra_v2 retro
+
+## Política v2 en sombra: emisión congelada de los publicados del runner
+.PHONY: sombra-emite
+sombra-emite:
+	$(PYTHON) -m scripts.sombra_v2 emite
+
+## Política v2 en sombra: validación prospectiva (make sombra-valida EMISION=sombra_v2_...)
+.PHONY: sombra-valida
+sombra-valida:
+	$(PYTHON) -m scripts.sombra_v2 valida $(EMISION)
+
 ## Lint: verificar formato y calidad
 .PHONY: lint
 lint:

@@ -1,0 +1,41 @@
+# Política v2 EN SOMBRA (22-nov-2026). Corre en paralelo a lo publicado y NO publica nada.
+#
+# Por qué existe: la auditoría del 21-nov-2026 encontró que elegir motor serie por serie con sMAPE
+# premia pronosticar cero en series escasas y deja el nacional (suma de las bases) sesgado a la baja,
+# y que ningún release trae intervalos. La v2 prueba dos cambios y los mide sólo en semanas de 2026
+# que todavía no existían al emitir:
+#   1. Selección consciente del nacional: UN motor por padecimiento, elegido por el sMAPE del
+#      nacional General en los pliegues de desarrollo; el control sólo se desplaza con mejora material.
+#   2. Intervalos empíricos: cuantiles del residuo log1p del motor elegido en desarrollo, por producto.
+#
+# Datos permitidos: SOLO las filas `split == development` del benchmark sellado de cada release y la
+# observación vigente del padecimiento. Nunca la prueba de 2025 (consumida) ni la de 2026 de las
+# políticas de historia corta: el cargador falla cerrado si ve un año de prueba.
+# DECLARATIVA: el código no tiene motores, umbrales ni niveles fuera de este archivo.
+version: 1
+name: sombra_v2
+
+# Motores sin ajuste (tablas de la misma semana de años previos): se recalculan exactos al emitir,
+# sin reentrenar. Un padecimiento compite sólo con los que su benchmark de desarrollo evaluó.
+candidatos:
+  - seasonal_naive_lag52
+  - seasonal_mean_2y
+  - seasonal_mean_3y
+  - seasonal_median_3y
+  - seasonal_mean_5y
+  - seasonal_median_5y
+control: seasonal_naive_lag52
+
+seleccion:
+  metrica: smape_nacional_general # sMAPE del nacional General = suma de las bases
+  agregado: mean # media de los pliegues de desarrollo
+  margen_minimo_pct: 5.0 # un motor distinto del control debe mejorar su sMAPE nacional ≥ 5 %
+  mayoria_pliegues: true # y ganarle al control en la mayoría estricta de los pliegues
+  desempate: [smape_bases, engine] # mediana del sMAPE por base; luego orden alfabético
+
+intervalos:
+  metodo: cuantil_residuo_log1p # r = log1p(y) - log1p(ŷ), por producto, todos los pliegues
+  niveles: [80, 95]
+  min_residuos: 52 # menos residuos que esto en un producto → falla cerrado
+
+horizonte: 52
