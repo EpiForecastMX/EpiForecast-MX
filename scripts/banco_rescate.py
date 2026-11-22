@@ -25,7 +25,6 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
-from scipy import stats
 
 from epiforecast.banco import flujo, rescate
 from epiforecast.data.epi_geo_exposure import load_geo_catalog
@@ -61,7 +60,6 @@ def _resumen(v: pd.DataFrame, ext: pd.DataFrame) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for grupo, sub in v.groupby("grupo"):
         e = ext[ext["disease_id"].isin(sub["disease_id"])]
-        lr = np.log1p(e.groupby("disease_id")["peor_smape_nacional_general"].mean() / 100)
         out[str(grupo)] = {
             "padecimientos": int(len(sub)),
             "rescatados": int(sub["rescatado"].sum()),
@@ -73,7 +71,6 @@ def _resumen(v: pd.DataFrame, ext: pd.DataFrame) -> dict[str, Any]:
             "mejora_nacional_mediana_pct": float(e["peor_smape_nacional_general"].median()),
             "peor_bases_mediana_pct": float(e["peor_smape_bases"].median()),
             "peor_all_mediana_pct": float(e["peor_smape_all"].median()),
-            "wilcoxon_p_nacional": float(stats.wilcoxon(lr).pvalue) if len(lr) > 5 else None,
         }
     return out
 

@@ -99,6 +99,8 @@ def test_compuerta_aplica_los_tres_limites() -> None:
     )
     g = rescate.compuerta(df).set_index("motor")
     assert g.loc["a", "positivo"] and not g.loc["b", "pasa"]
+    cero = df.assign(smape_bases=0.0)  # control y variante en 0: el runner reprueba (inf)
+    assert not rescate.compuerta(cero)["pasa"].any()
 
 
 def test_motor_fijo_ignora_la_seleccion() -> None:

@@ -136,7 +136,8 @@ def compuerta(df: pd.DataFrame) -> pd.DataFrame:
     ok = pd.Series(True, index=m.index)
     for k in AMBITOS:
         c, v = m[f"{k}_control"], m[k]
-        peor = np.where(c > 0, (v - c) / c.where(c > 0, 1.0) * 100, np.where(v > 0, np.inf, 0.0))
+        # Igual que ``acceptance.evaluate_gate``: con el control en 0 la comprobación reprueba.
+        peor = np.where(c > 0, (v - c) / c.where(c > 0, 1.0) * 100, np.inf)
         m[f"peor_{k}"] = peor
         ok &= m[f"peor_{k}"] <= m[f"lim_{k}"]
     m["pasa"] = ok
