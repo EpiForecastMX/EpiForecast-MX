@@ -15,7 +15,6 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
-import shutil
 import subprocess
 
 import matplotlib
@@ -65,6 +64,12 @@ SCRIPTS = [
 TINTA, ACENTO, GRIS = "#1E293B", "#4F46E5", "#94A3B8"
 
 
+def _copiar_texto(src: Path, dst: Path) -> None:
+    """Copia con salto de línea final (el hook end-of-file-fixer no alterará el hash)."""
+    datos = src.read_bytes()
+    dst.write_bytes(datos if datos.endswith(b"\n") else datos + b"\n")
+
+
 def _sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -76,12 +81,12 @@ def copiar() -> list[str]:
             raise FileNotFoundError(f"falta el insumo {src.relative_to(_ROOT)}")
         dst = DOC / "resultados" / rel
         dst.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(src, dst)
+        _copiar_texto(src, dst)
         hechos.append(rel)
     for g in sorted((OPT / "global").glob("*.json")):
         dst = DOC / "resultados" / "optuna" / "global" / g.name
         dst.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(g, dst)
+        _copiar_texto(g, dst)
     return hechos
 
 
