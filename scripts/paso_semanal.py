@@ -341,7 +341,12 @@ def main(argv: list[str] | None = None) -> int:
             "el dataset aplica observation_lag_weeks)"
         ),
     )
-    c.add_argument("--anio", type=int, default=2026)
+    c.add_argument(
+        "--anio",
+        type=int,
+        required=True,
+        help="año de la semana fuente (sin default: en 2027 un default fijo tomaría filas de 2026)",
+    )
     c.add_argument("--base", type=Path, required=True)
     c.add_argument("--legacy-base", type=Path, required=True)
     c.add_argument("--legacy-candidato", type=Path, required=True)
