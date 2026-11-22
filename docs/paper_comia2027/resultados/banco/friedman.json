@@ -1,0 +1,59 @@
+{
+ "padecimientos": 138,
+ "motores": 27,
+ "chi2": 914.4215384070302,
+ "p_chi2": 4.880574408064448e-176,
+ "F_iman_davenport": 46.856956906782315,
+ "p_iman_davenport": 4.910040861264643e-205,
+ "q_alfa": 3.6964133491850117,
+ "diferencia_critica": 3.532045254330551,
+ "rangos_medios": {
+  "combo_media_top3": 7.1812,
+  "nivel_x_perfil_5y": 7.5362,
+  "media_52s": 8.8261,
+  "topdown_ets_nacional": 8.942,
+  "media_26s": 9.5109,
+  "combo_mediana_top3": 9.5362,
+  "media_13s": 10.4819,
+  "tsb": 10.9493,
+  "ets_amortiguado_log1p": 11.1884,
+  "media_3y_nivel_13s": 12.279,
+  "ses_optimizado": 13.1884,
+  "stl_ets_log1p": 13.3406,
+  "poisson_fourier": 13.442,
+  "croston_sba": 14.6304,
+  "promedio_estacionales": 15.2319,
+  "naive_lag52": 15.4928,
+  "media_5y": 15.6957,
+  "media_2y": 15.8696,
+  "media_3y": 16.3587,
+  "ridge_fourier_log1p": 16.3696,
+  "prophet_log1p": 16.9493,
+  "naive_nivel_13s": 17.5435,
+  "theta_log1p": 17.7029,
+  "mediana_5y": 18.8116,
+  "mediana_52s": 19.5145,
+  "mediana_3y": 19.7246,
+  "ultimo_valor": 21.7029
+ },
+ "clones_excluidos": {
+  "topdown_media52_nacional": "media_52s"
+ },
+ "motores_excluidos_por_cobertura": {
+  "lgbm_global_directo": 0.77,
+  "negbin_fourier": 0.696
+ },
+ "padecimientos_excluidos": [
+  "abeja_u604",
+  "avispa_u605",
+  "mordedura_cascabel_u600",
+  "mordedura_coral_u601",
+  "mordedura_otras_serpientes_t630",
+  "otras_aranas_t633",
+  "otros_artropodos_t634",
+  "otros_ponzonosos_t631",
+  "violinista_u603",
+  "viuda_negra_u602"
+ ],
+ "nota": "DC de Nemenyi descriptiva; la inferencia contra el control usa Wilcoxon + Holm."
+}
