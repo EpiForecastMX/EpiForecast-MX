@@ -51,6 +51,7 @@ COPIAS = {
     OPT / "externo_por_padecimiento.csv": "optuna/externo_por_padecimiento.csv",
     SEN / "resumen.csv": "sensibilidad/resumen.csv",
     SEN / "pruebas_holm.csv": "sensibilidad/pruebas_holm.csv",
+    SEN / "por_anio.csv": "sensibilidad/por_anio.csv",
     SEN / "procedencia.json": "sensibilidad/procedencia.json",
 }
 SCRIPTS = [
