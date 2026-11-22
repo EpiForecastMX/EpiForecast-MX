@@ -52,11 +52,11 @@
   "rolling_cv_historia_corta_v1",
   "rolling_cv_v1"
  ],
- "commits": 1738,
- "merges": 107,
+ "commits": 1745,
+ "merges": 108,
  "primer_commit": "2025-12-21",
- "head": "4b1c38baa1dcdcfa5ed303d236e9280260112d06",
- "archivos_de_prueba": 203,
+ "head": "cf20d4a45c333e260f6038330dec5f047bd3b499",
+ "archivos_de_prueba": 204,
  "definiciones": {
   "fecha_alta": "runner: primer commit de main (first-parent) que agrega el puntero de release público; legacy: creación del registry (línea base t0)",
   "fecha_registry": "primer commit en que el id aparece en config/padecimientos.yaml",
@@ -65,45 +65,45 @@
   "corridas_ci": "corridas del workflow CI del backend en GitHub, por conclusión y evento"
  },
  "pr_fusionadas": {
-  "backend": 98,
+  "backend": 99,
   "frontend": 103
  },
  "corridas_ci": {
   "backend_ci": {
-   "total": 555,
+   "total": 557,
    "por_conclusion": {
-    "success": 413,
+    "success": 415,
     "failure": 81,
     "cancelled": 61
    },
    "por_evento": {
-    "push": 367,
-    "pull_request": 150,
+    "push": 368,
+    "pull_request": 151,
     "schedule": 37,
     "workflow_dispatch": 1
    },
    "por_workflow": {
-    "CI": 555
+    "CI": 557
    }
   },
   "backend_todas": {
-   "total": 979,
+   "total": 981,
    "por_conclusion": {
-    "success": 797,
+    "success": 799,
     "failure": 117,
     "cancelled": 61,
     "skipped": 4
    },
    "por_evento": {
-    "push": 367,
+    "push": 368,
     "schedule": 233,
     "workflow_run": 204,
-    "pull_request": 150,
+    "pull_request": 151,
     "workflow_dispatch": 24,
     "dynamic": 1
    },
    "por_workflow": {
-    "CI": 555,
+    "CI": 557,
     "Process Boletines": 212,
     "Scrape Boletines SINAVE": 211,
     "Dependabot Updates": 1

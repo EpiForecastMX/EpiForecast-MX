@@ -1,24 +1,26 @@
 {
- "commit_origen": "60adaad419a3d8ea8ece9488320270c01ea862df",
+ "commit_origen": "cf20d4a45c333e260f6038330dec5f047bd3b499",
  "arbol_limpio": true,
  "codigo": {
   "scripts/banco_ampliado.py": "1bf09a174728ec977e5ca70bd78e92235a6e2edca2fbb4cddbe72917ec9a5d16",
   "scripts/banco_estadistica.py": "983135b8e18f165d49c728405847f954c304562b939e68a511b3e95428ad04c1",
   "scripts/banco_optuna.py": "f1ed4ee4d2319b772610377e0449f4cd9ba524c896ecb62af41c34deb747a2ea",
   "scripts/banco_optuna_evalua.py": "9855a445488e4610dcf15f196575626cae120d75e4427bbc95c465a37647821a",
+  "scripts/banco_sensibilidad.py": "490ae1684e8970cfd732f60ae3cdecc4c07efffafe3ca67f1886447f1d8888ca",
   "scripts/paper_comia_evidencia.py": "b4e7c195dd0f2f891b535519c496feb9f1a9d7d948012cac3435e58d2b5648df",
-  "scripts/paper_comia_paquete.py": "3b8aa6a5151f4e939a111e28915ff7a1ecc1b3075d9d9555da6b9d59b16a9a5f",
+  "scripts/paper_comia_paquete.py": "5f47e40ca1eea40986e0a16451ab03d54ffe391cd506cf3ec6ee71e4b2ebe2eb",
   "src/epiforecast/banco/ajuste.py": "161489ff07c7ffc287be31a7c06405108f605aa5e27ee46100c4686e80e1e491",
   "src/epiforecast/banco/ajuste_flujo.py": "472166e61b31a03d4bd88e94b409225bf8c63fd3eb97cc778299ed59e88412d5",
   "src/epiforecast/banco/estadistica.py": "0e7f0355bd11b39bf6333835a7e6adb7dcf7c71a008317ec94f89c8866a9af61",
   "src/epiforecast/banco/estadistica_banco.py": "00caa74ef88747e5a3d9821c12412b9ec0f39eb2020a35c6f7fccb99b8b477d6",
+  "src/epiforecast/banco/sensibilidad.py": "c8c60025df106c761bc7beaaa5e51255156323eda7ac11411a394bafe0ea8d37",
   "config/banco/banco_ampliado_v1.yaml": "6615c238e44cb2969532a31edffe1fc3f5a46d8f2e3eb979b32bfed31c069dd5"
  },
  "archivos": {
-  "README.md": "e6df006917360a553f2fbba00c0440b282503e2f0eb050b83bb4953cf494783b",
+  "README.md": "dc995a5ff63df08d979af980f42b982836da90dc24982eb0dd769c6af723b8d9",
   "evidencia/cronologia.csv": "170d84ccebfb8cccb2ce39bdbd60cabea56df2e56990eb54f91b22d0c3708e86",
   "evidencia/padecimientos.csv": "6af98b5dd65cb88347cd57d4fa5536e24de07fe11aa5608ab0cf906a8a29323b",
-  "evidencia/resumen.json": "7bebf4ddea1fd1369d3cd6c2281f566c43b10709899757070935e2d7679b17bf",
+  "evidencia/resumen.json": "e1851b8ee626956df23ec2d3a69d3b423e801cd2a85e313f464b5170bbfd64d5",
   "figuras/cronologia.png": "0439c4168f1b8ff90c2e34a998aa9d1fece548897a0e04adea14f4a5280c88cd",
   "figuras/diferencia_critica.png": "2d118851c32efbe24f948b9c5fc342929c1758965369bb1081ef693d5b113334",
   "figuras/mejora_vs_naive.png": "59f712345c1d4f2ef2e0881abae19c84fa1ced952653229e4f323c0f56d3526f",
@@ -54,7 +56,10 @@
   "resultados/optuna/global/tsb__transferencia.json": "dd1999e99b669498acaea9e6e4c826c655a5e0fde5016199e8e38e6618b9e4d9",
   "resultados/optuna/pruebas_holm.csv": "0a3fd2a5a1be728832312ddfcc06d4f5bf2c46e12ad188479673f97d1bf1d541",
   "resultados/optuna/resumen.json": "2578ee993dbbb45d7de7f0c726842ef2b128f1a9137533016bda2f96f1047474",
-  "resultados/optuna/resumen_configuraciones.csv": "ee63fe2336c0d994e766fac598ca7da57c0bcd4cf83ca0b17e18fde7d20db110"
+  "resultados/optuna/resumen_configuraciones.csv": "ee63fe2336c0d994e766fac598ca7da57c0bcd4cf83ca0b17e18fde7d20db110",
+  "resultados/sensibilidad/procedencia.json": "a340c8843eff8c49e3f2f2f10dd1b2fe10ba2e1213c38538ece132e6e59c6089",
+  "resultados/sensibilidad/pruebas_holm.csv": "4f442b2fb62abc52a2497d1b9ff1cfcd548dd52ed297f08bf9a0da8ec6f13c9f",
+  "resultados/sensibilidad/resumen.csv": "3a649cb32cbbba45f8ad2f65267fc71e5b3c50c619cebb3203d5813911163d1b"
  },
  "insumos_runs": {
   "runs/banco_ampliado/v1/metricas.csv": "b618a9fdbbd05416250c35eef3f2452c953aef5f1c1bed4cb04a3726a2a90244",
@@ -73,7 +78,10 @@
   "runs/banco_optuna/v2/resumen.json": "7ee69f823121bd8d464f85b660726fd6e16a89b97c2ba9d69db106bb15b01ec7",
   "runs/banco_optuna/v2/resumen_configuraciones.csv": "ee63fe2336c0d994e766fac598ca7da57c0bcd4cf83ca0b17e18fde7d20db110",
   "runs/banco_optuna/v2/pruebas_holm.csv": "0a3fd2a5a1be728832312ddfcc06d4f5bf2c46e12ad188479673f97d1bf1d541",
-  "runs/banco_optuna/v2/externo_por_padecimiento.csv": "666fd193cf77c8de928f128c8ce6af046c82ff3ebf03de073d550867fafb0ca1"
+  "runs/banco_optuna/v2/externo_por_padecimiento.csv": "666fd193cf77c8de928f128c8ce6af046c82ff3ebf03de073d550867fafb0ca1",
+  "runs/banco_sensibilidad/v1/resumen.csv": "3a649cb32cbbba45f8ad2f65267fc71e5b3c50c619cebb3203d5813911163d1b",
+  "runs/banco_sensibilidad/v1/pruebas_holm.csv": "4f442b2fb62abc52a2497d1b9ff1cfcd548dd52ed297f08bf9a0da8ec6f13c9f",
+  "runs/banco_sensibilidad/v1/procedencia.json": "a340c8843eff8c49e3f2f2f10dd1b2fe10ba2e1213c38538ece132e6e59c6089"
  },
  "copiados": [
   "banco/metricas.csv",
@@ -92,6 +100,9 @@
   "optuna/resumen.json",
   "optuna/resumen_configuraciones.csv",
   "optuna/pruebas_holm.csv",
-  "optuna/externo_por_padecimiento.csv"
+  "optuna/externo_por_padecimiento.csv",
+  "sensibilidad/resumen.csv",
+  "sensibilidad/pruebas_holm.csv",
+  "sensibilidad/procedencia.json"
  ]
 }

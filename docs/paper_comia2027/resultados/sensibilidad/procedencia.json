@@ -1,0 +1,27 @@
+{
+ "commit": "cf20d4a45c333e260f6038330dec5f047bd3b499",
+ "arbol_limpio": true,
+ "semilla": 20261122,
+ "optuna": "4.9.0",
+ "statsmodels": "0.14.6",
+ "numpy": "2.4.6",
+ "datos_sha256": "d7f462027f9c3c5c0a0cb893a056edf87f20e072b392791c6a9685b8db74caeb",
+ "recorte_objetivo": 0.1,
+ "padecimientos": 113,
+ "variantes": {
+  "completa": [],
+  "sin_2020": [
+   2020
+  ],
+  "sin_2020_2021": [
+   2020,
+   2021
+  ]
+ },
+ "pliegues": [
+  2022,
+  2023,
+  2024
+ ],
+ "referencia": "naive lag 52 con historia completa"
+}
