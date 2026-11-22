@@ -1,0 +1,116 @@
+{
+ "publicados_total": 152,
+ "legacy": 4,
+ "runner": 148,
+ "desenlaces": {
+  "control_tras_rechazo": 87,
+  "portafolio_aceptado": 51,
+  "control_por_construccion": 10
+ },
+ "politicas": {
+  "rolling_cv_baja_incidencia_v1": 89,
+  "rolling_cv_historia_corta_2023_v1": 24,
+  "rolling_cv_v1": 20,
+  "rolling_cv_historia_corta_2024_v1": 10,
+  "rolling_cv_historia_corta_v1": 5
+ },
+ "perfiles": {
+  "aguda_conteos": 106,
+  "baja_incidencia_semanal": 23,
+  "cronica_conteos": 18,
+  "obesidad_cronica": 1
+ },
+ "sin_desglose_por_sexo": 11,
+ "productos_runner": 15614,
+ "series_base_por_motor_en_releases": {
+  "seasonal_naive_lag52": 6883,
+  "seasonal_median_5y": 544,
+  "ets_add_damped_log1p": 409,
+  "seasonal_median_3y": 369,
+  "seasonal_mean_5y": 321,
+  "seasonal_mean_2y": 245,
+  "seasonal_mean_3y": 191,
+  "ridge_harmonic_log1p": 148,
+  "prophet_count_log1p": 5,
+  "prophet_rate_log1p": 5
+ },
+ "releases_totales": 158,
+ "dias_registry_a_publicacion_runner": {
+  "count": 148.0,
+  "mean": 2.3,
+  "std": 12.3,
+  "min": 0.0,
+  "25%": 0.0,
+  "50%": 0.0,
+  "75%": 0.0,
+  "max": 105.0
+ },
+ "politicas_declaradas": [
+  "rolling_cv_baja_incidencia_v1",
+  "rolling_cv_historia_corta_2023_v1",
+  "rolling_cv_historia_corta_2024_v1",
+  "rolling_cv_historia_corta_v1",
+  "rolling_cv_v1"
+ ],
+ "commits": 1737,
+ "merges": 107,
+ "primer_commit": "2025-12-21",
+ "head": "3e8c7dca8aa634b825275a6a3afa9b95732fd4de",
+ "archivos_de_prueba": 203,
+ "definiciones": {
+  "fecha_alta": "runner: primer commit de main (first-parent) que agrega el puntero de release público; legacy: creación del registry (línea base t0)",
+  "fecha_registry": "primer commit en que el id aparece en config/padecimientos.yaml",
+  "releases_totales": "carpetas de release en disco, incluidas las reemplazadas",
+  "commits": "historia de main; reescrita con filter-repo en junio de 2026 (conserva fechas de autor, cambia hashes anteriores)",
+  "corridas_ci": "corridas del workflow CI del backend en GitHub, por conclusión y evento"
+ },
+ "pr_fusionadas": {
+  "backend": 98,
+  "frontend": 103
+ },
+ "corridas_ci": {
+  "backend_ci": {
+   "total": 555,
+   "por_conclusion": {
+    "success": 413,
+    "failure": 81,
+    "cancelled": 61
+   },
+   "por_evento": {
+    "push": 367,
+    "pull_request": 150,
+    "schedule": 37,
+    "workflow_dispatch": 1
+   },
+   "por_workflow": {
+    "CI": 555
+   }
+  },
+  "backend_todas": {
+   "total": 979,
+   "por_conclusion": {
+    "success": 797,
+    "failure": 117,
+    "cancelled": 61,
+    "skipped": 4
+   },
+   "por_evento": {
+    "push": 367,
+    "schedule": 233,
+    "workflow_run": 204,
+    "pull_request": 150,
+    "workflow_dispatch": 24,
+    "dynamic": 1
+   },
+   "por_workflow": {
+    "CI": 555,
+    "Process Boletines": 212,
+    "Scrape Boletines SINAVE": 211,
+    "Dependabot Updates": 1
+   }
+  },
+  "frontend_todas": {
+   "total": 0
+  }
+ }
+}

@@ -70,6 +70,9 @@ mlflow = [
 dvc = [
     "dvc[s3]>=3.40,<4.0",
 ]
+tuning = [
+    "optuna>=4.0,<5.0",    # búsqueda anidada del banco (scripts/banco_optuna.py); 4.9 verificado
+]
 extraction = [
     "camelot-py[cv]>=0.11,<1.0",
     "opencv-python-headless>=4.9,<5.0",
