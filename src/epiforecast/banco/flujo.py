@@ -16,7 +16,7 @@ from omegaconf import OmegaConf
 import pandas as pd
 import yaml
 
-from epiforecast.banco import global_ml, motores, motores_extra
+from epiforecast.banco import coherente, global_ml, motores, motores_extra
 from epiforecast.publication.prospective import read_base_history
 from epiforecast.runner.evaluation import smape_percent
 
@@ -26,6 +26,8 @@ GLOBALES = {
     "lgbm_global_directo": global_ml.lgbm_global_directo,
     "topdown_ets_nacional": global_ml.topdown("ets_amortiguado_log1p"),
     "topdown_media52_nacional": global_ml.topdown("media_52s"),
+    # Rescate de controles (docs/RESCATE_CONTROLES.md): fuera del reporte del banco v1.
+    "naive_coherente_f4": coherente.motor_global("f4", entero=True),
 }
 LOCALES = {**motores.MOTORES, **motores_extra.MOTORES_EXTRA}
 

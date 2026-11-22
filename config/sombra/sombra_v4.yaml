@@ -1,0 +1,35 @@
+# Política v4 EN SOMBRA (22-nov-2026): rescate de controles. Corre en paralelo a lo publicado y a
+# las sombras v2 y v3; NO publica, NO reentrena y NO toca releases sellados.
+#
+# Un solo método para los 148 del runner, sin selección por padecimiento: el naive coherente
+# (src/epiforecast/banco/coherente.py, variante f4). Parte del control naive lag 52 por serie, le
+# corrige la forma del nacional con la mediana de formas de cuatro miembros (naive, nivel × perfil,
+# ETS amortiguado y media de 3 años, todos al nivel de las últimas 52 semanas), reparte cada semana
+# con un factor común acotado a [0.5, 2] (los ceros del naive siguen en cero) y redondea a enteros
+# coherentes. En desarrollo pasó la compuerta completa y mejoró el nacional en 88 de los 97
+# controles (docs/RESCATE_CONTROLES.md). La variante f4 se fijó después de ver los años de
+# desarrollo; por eso sólo cuenta la validación prospectiva.
+version: 1
+name: sombra_v4
+fuente_desarrollo: banco
+
+candidatos:
+  - naive_lag52
+  - naive_coherente_f4
+control: naive_lag52
+
+seleccion:
+  metrica: smape_nacional_general
+  agregado: mean
+  margen_minimo_pct: 0.0
+  mayoria_pliegues: false
+  fijo: naive_coherente_f4 # motor único, sin selección
+  desempate: [smape_bases, engine]
+
+intervalos:
+  metodo: cuantil_residuo_log1p
+  niveles: [80, 95]
+  # Cuantiles nominales: con la recalibración de la v3 la retroprueba cubría 90 y 97 %.
+  min_residuos: 52
+
+horizonte: 52
