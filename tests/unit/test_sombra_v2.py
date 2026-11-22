@@ -213,7 +213,7 @@ def test_desarrollo_banco_excluye_motores_con_fallos(tmp_path: Path) -> None:
     df = _ev_dev(0.0).rename(columns={"y_true_cases": "y_true", "y_pred_cases": "y_pred"})
     df = df.assign(fold=2024)
     for motor, fallos in (("naive_lag52", []), ("tsb", [{"fold": 2024}])):
-        df.to_parquet(banco / f"{d}__{motor}.parquet", index=False)
+        df.to_csv(banco / f"{d}__{motor}.csv.gz", index=False)
         (banco / f"{d}__{motor}.json").write_text(json.dumps({"fallos": fallos}))
     v3 = sv.cargar_reglas(sv.CONFIG.parent / "sombra_v3.yaml")
     ev = flujo.desarrollo(d, v3, tmp_path)

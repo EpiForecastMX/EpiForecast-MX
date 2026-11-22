@@ -78,7 +78,11 @@ def _desarrollo_banco(disease: str, reglas: sv.Reglas, root: Path) -> pd.DataFra
             continue
         if _json(info_f)["fallos"]:
             continue
-        df = pd.read_parquet(base / f"{disease}__{engine}.parquet")
+        csv = base / f"{disease}__{engine}.csv.gz"  # formato portátil, sin pyarrow
+        if csv.is_file():
+            df = pd.read_csv(csv, dtype={"geography_id": str})
+        else:
+            df = pd.read_parquet(base / f"{disease}__{engine}.parquet")
         frames.append(
             df.rename(columns={"y_true": "y_true_cases", "y_pred": "y_pred_cases"}).assign(
                 engine=engine, fold=lambda d: "development_" + d["fold"].astype(str)
