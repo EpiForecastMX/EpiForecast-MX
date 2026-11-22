@@ -30,6 +30,15 @@ que terminaban dejando el checkout en una rama de trabajo.
 
 > Espejo generado de `CLAUDE.md`: no editar aquí. Editar `CLAUDE.md` y correr `make sync-instrucciones`.
 
+## Política v2 en sombra — 22-nov-2026
+
+Por orden del autor («si constrúyela»), la v2 corre **en sombra**: no publica, no reentrena y no toca
+releases. Elige un motor estacional por padecimiento con el sMAPE nacional de desarrollo (el control
+sólo cede con mejora de 5 % y mayoritaria) y da intervalos 80/95 por cuantiles del residuo log1p.
+Primera emisión congelada `sombra_v2_20261122_4ba61a03dc` (148, origen W43/W44); validar cada semana
+con `make sombra-valida EMISION=…` y **no re-emitir**. Adoptarla requiere autorización del autor.
+Guía y retroprueba: `docs/SOMBRA_V2.md`.
+
 ## Checkpoint vigente — lote alta_b44 publicado — 19/20-nov-2026
 
 Prevalece sobre todas las secciones inferiores (incluida «Versión con control A51») en conteos y base semanal.
