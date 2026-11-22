@@ -5,9 +5,19 @@ expertos para escribir el artículo «De 4 a 152 padecimientos con pronóstico s
 vigilancia epidemiológica de México». No es el artículo ni una publicación: nada de esto cambió un
 pronóstico publicado, reentrenó un release ni leyó un año de prueba.
 
-La convocatoria de COMIA 2027 en Guadalajara no se localizó al 22-nov-2026 (búsqueda web sin
-resultados; la SMIA sí convocó sedes para MICAI 2027). Formato, extensión, idioma y fechas quedan por
-confirmar en el sitio de la SMIA antes de redactar.
+**Convocatoria** (https://comia.com.mx/2027/autores/, consultada el 22-nov-2026): 19.º COMIA, 19 al
+23 de abril de 2027, CUCEI de la UdeG, Guadalajara.
+- Fechas: envío hasta el **17 de enero de 2027**; notificación el 28 de febrero; versión final el 14
+  de marzo; inscripción y pago de autores hasta el 9 de abril.
+- Formato: plantilla de Springer (LNCS, Word o LaTeX), **12 páginas como máximo**, revisión
+  **doble ciego** (sin nombres, adscripción ni autorreferencias), envío por Microsoft CMT
+  (`cmt3.research.microsoft.com/COMIA2027`).
+- Idioma: en inglés, los mejores aceptados van a un volumen de *Communications in Computer and
+  Information Science* (Springer, Scopus); en español, a un número especial de *Research in
+  Computing Science* (Latindex, DBLP). El tema cabe en «Aplicaciones con IA» y en «Bioinformática y
+  aplicaciones médicas».
+- Consecuencia para el expediente: el doble ciego exige anonimizar `epiforecast.mx`, el repositorio,
+  el IMSS y la autocita del artículo de MICAI 2026 en la versión de envío.
 
 ## 1. Preguntas de investigación
 
@@ -45,6 +55,9 @@ pip install -e ".[tuning]"
 ```
 ```bash
 make banco-optuna
+```
+```bash
+make banco-sensibilidad
 ```
 ```bash
 make paper-comia
@@ -134,6 +147,28 @@ Todas las cifras son de desarrollo y vienen de los archivos indicados (copias en
 - **Transferencia:** top-down con nivel × perfil nacional, ajustado con los padecimientos de
   historia larga, da −25.0 % en los 34 de historia corta, que la búsqueda nunca vio.
 
+### P4. Sensibilidad sin 2020–2021 en la historia (`resultados/sensibilidad/`)
+
+- **Diseño:** se quitan de la historia de entrenamiento las semanas de 2020, o de 2020 y 2021, y se
+  vuelven a pronosticar los años de desarrollo 2022–2024 con las mismas configuraciones (113
+  padecimientos con historia previa a 2020). La referencia es siempre el naive con la historia
+  completa, así que la diferencia entre variantes sólo refleja lo que vio el motor. En 2023 y 2024
+  el naive no cambia al recortar; en 2022 sin 2020–2021 copiaría 2019 (19 % peor).
+  - Wilcoxon de cada variante contra la completa, misma configuración, Holm en una sola familia
+    (`pruebas_holm.csv`). La configuración de Optuna sólo tiene estudios para 2023 y 2024.
+- **La conclusión principal no depende de la pandemia** (2023–2024, `resumen.csv`): nivel × perfil
+  le gana al naive con la historia completa (−9.6 %), sin 2020 (−10.1 %) y sin 2020–2021 (−11.8 %);
+  la configuración de Optuna pasa de −12.8 % a −16.7 % (el −13.6 % de P3 se mide sobre otro conjunto de padecimientos) y el top-down ETS de −9.6 % a −14.6 %. Los
+  cuatro primeros lugares son los mismos en las tres variantes.
+- **Quitar la pandemia del perfil ayuda poco pero de forma consistente:** en 2023–2024, recortar
+  2020–2021 mejora a nivel × perfil 1.3 % (86 de 113, Holm p < 0.001) y a la de Optuna 2.1 % (88 de
+  113). Los motores que sólo miran el último año (media móvil, TSB) no cambian.
+- **El nivel necesita el año reciente, aunque sea atípico:** en 2022, sin 2021 el nivel sale de
+  2019 y todos empeoran (nivel × perfil de −5.8 % a +22.5 % contra el naive completo). Quitar sólo
+  2020 sí ayuda en 2022 (top-down ETS de −18.0 % a −24.1 %).
+- Lectura para el artículo: separar nivel y perfil es lo que hace robusto al método; el perfil
+  puede excluir años de choque, el nivel no.
+
 ## 5. Lo que no se puede afirmar
 
 - Que 152 padecimientos tengan pronóstico **validado**: 97 de 148 son el naive estacional
@@ -157,7 +192,9 @@ Todas las cifras son de desarrollo y vienen de los archivos indicados (copias en
   tomaron por delegación en un agente: hay que declararlo.
 - Ceros y sMAPE: el titular nacional y el de bases pueden contradecirse según la métrica; se reportan
   sMAPE, WAPE y MAE relativo geométrico.
-- Años MMWR de 53 semanas: el naive y ETS (periodo 52) desfasan una semana tras 2020 y 2025.
+- Años MMWR de 53 semanas: el naive y ETS (periodo 52) desfasan una semana tras 2020 y 2025. Al
+  recortar 2020–2021 (P4) ese desfase desaparece para los años anteriores, lo que también puede
+  explicar parte de la mejora.
 - Rezago y revisiones del boletín: se pronostica la primera publicación; no se cuantificó la
   magnitud de las revisiones.
 - Historia de git reescrita en junio de 2026 (filter-repo): conserva fechas de autor y cambia hashes
@@ -190,15 +227,16 @@ hiperparámetros, epidemiología y MLOps con revisión adversarial para COMIA.
 | Fechas de rama y no de main | `--first-parent` sobre main | Atendido |
 | Conteos de GitHub incompletos | Por conclusión, evento y frontend | Atendido |
 | Estratos por perfil e incidencia | `por_estrato.csv` | Atendido |
-| Sensibilidad sin 2020–2021 en la historia | Pendiente | Pendiente |
+| Sensibilidad sin 2020–2021 en la historia | P4, `make banco-sensibilidad` | Atendido |
 | Magnitud de las revisiones del boletín | Pendiente | Pendiente |
 | Candado de la prueba única en código | Pendiente (decisión del autor) | Pendiente |
 
 ## 8. Pendientes antes de redactar
 
-1. Confirmar la convocatoria de COMIA 2027 (formato, idioma, extensión, fechas).
+1. Convocatoria confirmada (encabezado). Decidir idioma (inglés para CCIS) y preparar una versión
+   anonimizada para el doble ciego antes del 17 de enero de 2027.
 2. Acumular de 4 a 8 boletines de las sombras v2 y v3 (desde el 45) para tener evidencia prospectiva.
-3. Sensibilidad excluyendo 2020–2021 de la historia de entrenamiento.
+3. Sensibilidad sin 2020–2021: hecha (P4).
 4. Medir las revisiones del boletín para una misma semana en boletines sucesivos.
 5. Depósito público (Zenodo) de los agregados y manifiestos, con DOI.
 6. Medir el tiempo de alta a publicación y las intervenciones humanas por lote; hoy el registry y la

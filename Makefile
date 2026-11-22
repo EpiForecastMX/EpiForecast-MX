@@ -424,6 +424,11 @@ banco-reporte:
 banco-estadistica:
 	$(PYTHON) -m scripts.banco_estadistica
 
+## Sensibilidad sin 2020-2021 en la historia (usa runs/banco_optuna/v2/datos.pkl)
+.PHONY: banco-sensibilidad
+banco-sensibilidad:
+	$(PYTHON) -m scripts.banco_sensibilidad
+
 ## Búsqueda anidada con Optuna (requiere pip install -e ".[tuning]")
 .PHONY: banco-optuna
 banco-optuna:

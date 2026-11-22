@@ -4,7 +4,8 @@ Uso: python -m scripts.paper_comia_paquete
 
 Lee los resultados ya calculados (no recalcula ni publica nada):
 - runs/banco_ampliado/v1/ (banco de motores y sus pruebas estadísticas),
-- runs/banco_optuna/v1/ (búsqueda anidada),
+- runs/banco_optuna/v2/ (búsqueda anidada),
+- runs/banco_sensibilidad/v1/ (sensibilidad sin 2020–2021),
 - docs/paper_comia2027/evidencia/ (MLOps, de ``paper_comia_evidencia``),
 y escribe en docs/paper_comia2027/ las tablas resumidas (resultados/), las figuras (figuras/) y
 MANIFEST.json con el SHA-256 de cada archivo y de cada insumo, más el commit de origen.
@@ -28,6 +29,7 @@ _ROOT = Path(__file__).resolve().parents[1]
 DOC = _ROOT / "docs" / "paper_comia2027"
 BANCO = _ROOT / "runs" / "banco_ampliado" / "v1"
 OPT = _ROOT / "runs" / "banco_optuna" / "v2"
+SEN = _ROOT / "runs" / "banco_sensibilidad" / "v1"
 EST = BANCO / "estadistica"
 COPIAS = {
     BANCO / "metricas.csv": "banco/metricas.csv",
@@ -47,18 +49,23 @@ COPIAS = {
     OPT / "resumen_configuraciones.csv": "optuna/resumen_configuraciones.csv",
     OPT / "pruebas_holm.csv": "optuna/pruebas_holm.csv",
     OPT / "externo_por_padecimiento.csv": "optuna/externo_por_padecimiento.csv",
+    SEN / "resumen.csv": "sensibilidad/resumen.csv",
+    SEN / "pruebas_holm.csv": "sensibilidad/pruebas_holm.csv",
+    SEN / "procedencia.json": "sensibilidad/procedencia.json",
 }
 SCRIPTS = [
     "scripts/banco_ampliado.py",
     "scripts/banco_estadistica.py",
     "scripts/banco_optuna.py",
     "scripts/banco_optuna_evalua.py",
+    "scripts/banco_sensibilidad.py",
     "scripts/paper_comia_evidencia.py",
     "scripts/paper_comia_paquete.py",
     "src/epiforecast/banco/ajuste.py",
     "src/epiforecast/banco/ajuste_flujo.py",
     "src/epiforecast/banco/estadistica.py",
     "src/epiforecast/banco/estadistica_banco.py",
+    "src/epiforecast/banco/sensibilidad.py",
     "config/banco/banco_ampliado_v1.yaml",
 ]
 TINTA, ACENTO, GRIS = "#1E293B", "#4F46E5", "#94A3B8"

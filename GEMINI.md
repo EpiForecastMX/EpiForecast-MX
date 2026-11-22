@@ -39,7 +39,10 @@ citables con su archivo, lo que no se puede afirmar, amenazas y pendientes). Hal
 nivel × perfil global le gana al naive 13.6 % en años externos; el ajuste por padecimiento
 sobreajusta. 97 de 148 publicados del runner son el control: presentar «cobertura con gobierno», no
 «validación». Regenerar con `make banco-estadistica`, `make banco-optuna` y `make paper-comia` (exige
-árbol limpio). Nada de esto publica, reentrena ni toca releases.
+árbol limpio). Convocatoria confirmada: envío hasta el 17-ene-2027, LNCS de 12 páginas, doble ciego, CMT (detalle en el
+README). Sensibilidad sin 2020–2021 (`make banco-sensibilidad`): nivel × perfil sigue ganando (−11.8 %
+en 2023–2024); el perfil puede excluir la pandemia, el nivel necesita el año reciente.
+Nada de esto publica, reentrena ni toca releases.
 
 ## Banco ampliado y sombra v3 — 22-nov-2026
 
