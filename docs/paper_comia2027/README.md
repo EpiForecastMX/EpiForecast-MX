@@ -157,15 +157,15 @@ Todas las cifras son de desarrollo y vienen de los archivos indicados (copias en
   - Wilcoxon de cada variante contra la completa, misma configuración, Holm en una sola familia
     (`pruebas_holm.csv`). La configuración de Optuna sólo tiene estudios para 2023 y 2024.
 - **La conclusión principal no depende de la pandemia** (2023–2024, `resumen.csv`): nivel × perfil
-  le gana al naive con la historia completa (−9.6 %), sin 2020 (−10.1 %) y sin 2020–2021 (−11.8 %);
+  le gana al naive con la historia completa (−9.6 %), sin 2020 (−10.1 %) y sin 2020–2021 (−11.7 %);
   la configuración de Optuna pasa de −12.8 % a −16.7 % (el −13.6 % de P3 se mide sobre otro conjunto de padecimientos) y el top-down ETS de −9.6 % a −14.6 %. Los
   cuatro primeros lugares son los mismos en las tres variantes.
 - **Quitar la pandemia del perfil ayuda poco pero de forma consistente:** en 2023–2024, recortar
   2020–2021 mejora a nivel × perfil 1.3 % (86 de 113, Holm p < 0.001) y a la de Optuna 2.1 % (88 de
   113). Los motores que sólo miran el último año (media móvil, TSB) no cambian.
 - **El nivel necesita el año reciente, aunque sea atípico:** en 2022, sin 2021 el nivel sale de
-  2019 y todos empeoran (nivel × perfil de −5.8 % a +22.5 % contra el naive completo). Quitar sólo
-  2020 sí ayuda en 2022 (top-down ETS de −18.0 % a −24.1 %).
+  2019 y todos empeoran (nivel × perfil de −5.8 % a +22.5 % contra el naive completo;
+  `por_anio.csv`). Quitar sólo 2020 sí ayuda en 2022 (top-down ETS de −18.0 % a −24.1 %).
 - Lectura para el artículo: separar nivel y perfil es lo que hace robusto al método; el perfil
   puede excluir años de choque, el nivel no.
 

@@ -10,6 +10,7 @@ parámetros globales de nivel × perfil de esa búsqueda. Escribe en runs/banco_
   bootstrap, victorias y Wilcoxon; en todos los pliegues y sólo en 2023–2024.
 - ``pruebas_holm.csv``: cada variante recortada contra la completa, misma configuración (Holm en
   una sola familia), y cada configuración contra el naive.
+- ``por_anio.csv``: lo mismo por año de desarrollo (2022 muestra el efecto de perder el nivel).
 - ``procedencia.json``.
 """
 
@@ -120,6 +121,19 @@ def resumir(t: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     return res.sort_values(["tramo", "variante", "mejora_mediana_pct"]), pr
 
 
+def por_anio(t: pd.DataFrame) -> pd.DataFrame:
+    """Por año, variante y configuración: mediana del cambio contra el naive completo."""
+    g = t.groupby(["pliegue", "variante", "config"])["log_ratio"]
+    out = pd.DataFrame(
+        {
+            "padecimientos": g.size(),
+            "mejora_mediana_pct": np.expm1(g.median()) * 100,
+            "gana_al_naive": g.apply(lambda x: int((x < 0).sum())),
+        }
+    )
+    return out.reset_index()
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter
@@ -138,6 +152,7 @@ def main(argv: list[str] | None = None) -> int:
     res, pr = resumir(t)
     res.to_csv(OUT / "resumen.csv", index=False)
     pr.to_csv(OUT / "pruebas_holm.csv", index=False)
+    por_anio(t).to_csv(OUT / "por_anio.csv", index=False)
     proc = banco_optuna.procedencia() | {
         "padecimientos": len(largos),
         "variantes": {k: list(v) for k, v in sensibilidad.VARIANTES.items()},
