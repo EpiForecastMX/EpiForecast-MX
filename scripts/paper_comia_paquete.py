@@ -247,9 +247,10 @@ def main(argv: list[str] | None = None) -> int:
         if p.is_file() and p.name != "MANIFEST.json"
     }
     insumos = {str(s.relative_to(_ROOT)): _sha(s) for s in COPIAS}
-    insumos[str((BANCO / "metricas.csv").relative_to(_ROOT))] = _sha(BANCO / "metricas.csv")
     manifiesto = {
         "commit_origen": head,
+        "arbol_limpio": not sucio,
+        "codigo": {s_: _sha(_ROOT / s_) for s_ in SCRIPTS},
         "archivos": archivos,
         "insumos_runs": insumos,
         "copiados": copiadas,
