@@ -404,6 +404,11 @@ model-pipeline: train models-push predict report forecast-push
 # ✅ CODE QUALITY                                                               #
 #################################################################################
 
+## Regenerar AGENTS.md y GEMINI.md como espejos de CLAUDE.md
+.PHONY: sync-instrucciones
+sync-instrucciones:
+	$(PYTHON) scripts/sync_instrucciones.py
+
 ## Lint: verificar formato y calidad
 .PHONY: lint
 lint:
