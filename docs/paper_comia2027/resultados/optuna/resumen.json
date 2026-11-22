@@ -1,0 +1,15 @@
+{
+ "pliegues_externos": "{('externo', 2024): 114, ('externo', 2023): 109, ('transferencia', 2025): 34}",
+ "sistema_elecciones": {
+  "topdown__padecimiento": 69,
+  "estacional_nivel__padecimiento": 67,
+  "nivel_x_perfil__padecimiento": 45,
+  "tsb__padecimiento": 25,
+  "media_movil__padecimiento": 9,
+  "topdown__global": 3,
+  "estacional_nivel__default": 2,
+  "estacional_nivel__global": 1,
+  "nivel_x_perfil__default": 1,
+  "topdown__default": 1
+ }
+}
